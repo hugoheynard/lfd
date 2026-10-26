@@ -17,6 +17,8 @@ export interface DossierShortfallLine {
 /** Ce que le dossier sait d'une commande à livrer, lu au tirage. */
 export interface DossierOrderFacts {
   readonly orderId: string;
+  /** Le numéro du BL de l'envoi (« BL-1042-1 »), ou `null` : aucun BL vivant (2026-10-26). */
+  readonly deliveryNoteNumber: string | null;
   /** La tournée qui la porte (« Camion 1 · passage 1 »), ou `null` : hors tournée. */
   readonly roundTitle: string | null;
   /** `null` : le commerce ne connaît pas (ou plus) la commande. */
@@ -38,6 +40,8 @@ export interface DossierOrderFacts {
 /** Une commande à vérifier, et pourquoi — chaque raison est une phrase imprimée. */
 export interface DossierCheck {
   readonly reference: string;
+  /** Imprimé à côté de la référence ; `null` : rien, jamais un numéro deviné. */
+  readonly deliveryNoteNumber: string | null;
   readonly customerLabel: string;
   readonly roundTitle: string | null;
   readonly reasons: readonly string[];
@@ -88,6 +92,7 @@ export function dossierChecksOf(
         : [
             {
               reference: facts.order?.reference ?? facts.orderId,
+              deliveryNoteNumber: facts.deliveryNoteNumber,
               customerLabel: facts.order?.customerLabel ?? "",
               roundTitle: facts.roundTitle,
               reasons,

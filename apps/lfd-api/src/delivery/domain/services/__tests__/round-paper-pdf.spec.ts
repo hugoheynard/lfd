@@ -2,6 +2,7 @@ import { pdfPages } from "../../../../platform/pdf/__tests__/pdf-text.js";
 import { PlannedTiming } from "../../value-objects/planned-timing.js";
 import {
   kmPaperLabel,
+  orderWithNoteLabel,
   plannedPaperLabel,
   type RoundPaper,
   type RoundPaperSheetStop,
@@ -25,6 +26,7 @@ function stop(
   return {
     kind: "sheet",
     reference,
+    deliveryNoteNumber: null,
     customerLabel: `Hôtel ${reference}`,
     addressLines: ["3 rue du Four", "73150 Val d'Isère"],
     window: { start: "07:00", end: "08:30", source: "override" },
@@ -165,6 +167,15 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
     }
   });
 
+  it("imprime le BL de l'envoi à côté de la commande (Hugo, 2026-10-26)", async () => {
+    const stops = [stop("ORD-1042", { deliveryNoteNumber: "BL-1042-2" }), stop("ORD-1043")];
+    const text = pdfPages(await renderRoundPaperPdf(paper({ stops }))).join("\n");
+    expect(text).toContain("Commande ORD-1042 · BL-1042-2");
+    // Sans BL (commande hors plan), la commande seule : aucun numéro deviné.
+    expect(text).toContain("Commande ORD-1043");
+    expect(text).not.toContain("BL-1043");
+  });
+
   it("n'invente rien pour un arrêt absent de la feuille de route", async () => {
     const text = pdfPages(
       await renderRoundPaperPdf(paper({ stops: [{ kind: "absent", orderId: "ord_9" }] })),
@@ -273,6 +284,11 @@ describe("renderRoundPaperPdf — la feuille de tournée", () => {
 });
 
 describe("libellés du papier", () => {
+  it("dit la commande et son BL, ou la commande seule sans BL", () => {
+    expect(orderWithNoteLabel("ORD-1042", "BL-1042-1")).toBe("ORD-1042 · BL-1042-1");
+    expect(orderWithNoteLabel("ORD-1042", null)).toBe("ORD-1042");
+  });
+
   it("écrit une échéance sans début « avant », sans préciser un horaire par défaut", () => {
     expect(windowPaperLabel({ start: null, end: "10:00", source: "default" })).toBe(
       "avant 10 h 00",

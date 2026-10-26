@@ -7,6 +7,7 @@ import type {
   RoundPaperTransferStop,
 } from "../domain/services/round-paper.js";
 import { addressLinesOf } from "./round-paper-address.js";
+import type { ShipmentNoteNumbers } from "./shipment-note-numbers.js";
 
 /** Ce que le papier d'une tournée assemble — les lectures faites au même moment. */
 export interface RoundPaperInputs {
@@ -21,6 +22,8 @@ export interface RoundPaperInputs {
   readonly transfers: ReadonlyMap<string, RoundPaperTransferStop>;
   /** La couleur de chaque arrêt, lue au tirage (L5) ; une absente : aucun carré. */
   readonly colors: ReadonlyMap<string, string>;
+  /** Le BL de chaque envoi, lu au tirage (2026-10-26) ; un absent : rien ne s'imprime. */
+  readonly noteNumbers: ShipmentNoteNumbers;
 }
 
 /**
@@ -61,6 +64,7 @@ function stopOf(stop: RoundPaperStopRow, inputs: RoundPaperInputs): RoundPaperSt
   return {
     kind: "sheet",
     ...door,
+    deliveryNoteNumber: inputs.noteNumbers.numberOf(stop.orderId, stop.shipmentRank),
     binCodes: stop.binCodes,
     color: inputs.colors.get(stop.orderId) ?? null,
     steps: (inputs.procedures.get(stop.orderId) ?? []).map((step) => ({
@@ -72,7 +76,7 @@ function stopOf(stop: RoundPaperStopRow, inputs: RoundPaperInputs): RoundPaperSt
 
 type Door = Omit<
   Extract<RoundPaperStop, { kind: "sheet" }>,
-  "kind" | "binCodes" | "steps" | "color"
+  "kind" | "binCodes" | "steps" | "color" | "deliveryNoteNumber"
 >;
 
 /** Figé si la tournée est partie, vivant sinon ; `null` : le commerce ne la connaît pas. */

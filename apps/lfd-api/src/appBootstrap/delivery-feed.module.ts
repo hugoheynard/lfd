@@ -7,6 +7,7 @@ import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/cat
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
 import { PrismaDeliveryOrderStatesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-states.reader.js";
+import { PrismaDeliveryNoteNumbersReader } from "../b2b/delivery-notes/infrastructure/prisma-delivery-note-numbers.reader.js";
 import { PrismaDeliveryDeparturesReader } from "../b2b/orders/infrastructure/prisma-delivery-departures.reader.js";
 import { PrismaDeliveryOrderLinesReader } from "../b2b/orders/infrastructure/prisma-delivery-order-lines.reader.js";
 import { PrismaDeliveryAddressPointsReader } from "../b2b/orders/infrastructure/prisma-delivery-address-points.reader.js";
@@ -35,6 +36,7 @@ import {
   BinLabelColorsReader,
   DeliveryAddressPointsReader,
   DeliveryDeparturesReader,
+  DeliveryNoteNumbersReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
@@ -119,6 +121,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: DeliveryProductsReader, useClass: CatalogDeliveryProductsReader },
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
     { provide: DeliveryDeparturesReader, useClass: PrismaDeliveryDeparturesReader },
+    // Le numéro du BL de chaque envoi, sur les papiers de tournée (2026-10-26).
+    { provide: DeliveryNoteNumbersReader, useClass: PrismaDeliveryNoteNumbersReader },
     { provide: DeliveryProceduresReader, useClass: PrismaDeliveryProceduresReader },
     { provide: DeliveryStepPhotosReader, useClass: PrismaDeliveryStepPhotosReader },
     { provide: DeliveryOrderStatesReader, useClass: PrismaDeliveryOrderStatesReader },
@@ -149,6 +153,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DeliveryProductsReader,
     DeliveryOrderLinesReader,
     DeliveryDeparturesReader,
+    DeliveryNoteNumbersReader,
     DeliveryProceduresReader,
     DeliveryStepPhotosReader,
     DeliveryOrderStatesReader,

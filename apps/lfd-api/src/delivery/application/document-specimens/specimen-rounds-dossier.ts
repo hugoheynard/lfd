@@ -83,7 +83,14 @@ export function specimenRoundsDossier(now: Date): DayRoundsDossier {
         transfers: [{ siteLabel: "EXEMPLE — Val Village", color: SPECIMEN_TRANSFER_COLOR }],
       },
     ],
-    unplaced: [{ reference: "EXEMPLE-0009", customerLabel: "EXEMPLE — Hôtel du Col" }],
+    // Hors tournée, hors plan : pas encore de BL, rien ne s'imprime.
+    unplaced: [
+      {
+        reference: "EXEMPLE-0009",
+        deliveryNoteNumber: null,
+        customerLabel: "EXEMPLE — Hôtel du Col",
+      },
+    ],
     // Les alertes de l'ancienne feuille de route (2026-10-26), par les règles mêmes.
     checks: dossierChecksOf([
       specimenFacts("EXEMPLE-0003", "Café de la Gare", sectionTitleOf(first), {
@@ -110,6 +117,8 @@ function specimenFacts(
 ): DossierOrderFacts {
   return {
     orderId: reference,
+    // Dans une tournée : le BL-1 du plan ; hors tournée : pas encore de BL.
+    deliveryNoteNumber: roundTitle === null ? null : `BL-${reference}-1`,
     roundTitle,
     order: { reference, customerLabel: `EXEMPLE — ${customer}`, cancelled: false },
     hasAddress: true,

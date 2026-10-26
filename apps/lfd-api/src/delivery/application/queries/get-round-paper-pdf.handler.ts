@@ -6,6 +6,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import {
   DeliveryColorsReader,
+  DeliveryNoteNumbersReader,
   DeliveryOrdersReader,
   DeliveryProceduresReader,
   TransferOrderColorsReader,
@@ -57,6 +58,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
     private readonly colors: DeliveryColorsReader,
     private readonly resupplies: TransferResupplyContents,
     private readonly transferColors: TransferOrderColorsReader,
+    private readonly noteNumbers: DeliveryNoteNumbersReader,
   ) {}
 
   async execute(query: GetRoundPaperPdfQuery): Promise<RoundPaperFile> {
@@ -85,6 +87,7 @@ export class GetRoundPaperPdfHandler implements IQueryHandler<
       colors: this.colors,
       resupplies: this.resupplies,
       transferColors: this.transferColors,
+      noteNumbers: this.noteNumbers,
     };
   }
 }

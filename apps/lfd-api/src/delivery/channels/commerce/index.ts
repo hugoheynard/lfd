@@ -30,6 +30,12 @@ export {
   type DeliveryDeparture,
   type DeliveryShortfall,
 } from "./delivery-departures.reader.js";
+// Le numéro du BL de chaque envoi, imprimé sur les papiers de tournée (2026-10-26).
+export {
+  DeliveryNoteNumbersReader,
+  type DeliveryShipmentKey,
+  type DeliveryShipmentNoteNumber,
+} from "./delivery-note-numbers.reader.js";
 export { DeliveryProductsReader, type DeliveryProduct } from "./delivery-products.reader.js";
 export {
   DeliveryProceduresReader,

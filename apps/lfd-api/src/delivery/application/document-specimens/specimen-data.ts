@@ -25,6 +25,7 @@ function stop(overrides: Partial<RoundPaperSheetStop>): RoundPaperSheetStop {
   return {
     kind: "sheet",
     reference: "EXEMPLE-0000",
+    deliveryNoteNumber: null,
     customerLabel: "EXEMPLE",
     addressLines: [],
     window: null,
@@ -43,6 +44,7 @@ function stop(overrides: Partial<RoundPaperSheetStop>): RoundPaperSheetStop {
 const STOPS: RoundPaper["stops"] = [
   stop({
     reference: "EXEMPLE-0001",
+    deliveryNoteNumber: "BL-EXEMPLE-0001-1",
     customerLabel: "EXEMPLE — Hôtel des Trois Ponts",
     addressLines: ["EXEMPLE — 1 rue des Trois Ponts", "73150 Val d'Isère"],
     window: { start: "07:00", end: "08:30", source: "override" },
@@ -58,6 +60,7 @@ const STOPS: RoundPaper["stops"] = [
   }),
   stop({
     reference: "EXEMPLE-0002",
+    deliveryNoteNumber: "BL-EXEMPLE-0002-1",
     customerLabel: "EXEMPLE — Restaurant Le Chalet",
     addressLines: ["EXEMPLE — 12 chemin du Fornet", "73150 Val d'Isère"],
     window: { start: null, end: "09:00", source: "default" },

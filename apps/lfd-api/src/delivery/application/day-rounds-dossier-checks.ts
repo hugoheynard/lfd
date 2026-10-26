@@ -6,6 +6,7 @@ import {
   DeliveryDeparturesReader,
   DeliveryOrdersReader,
 } from "../channels/commerce/index.js";
+import type { ShipmentNoteNumbers } from "./shipment-note-numbers.js";
 import {
   type DossierCheck,
   dossierChecksOf,
@@ -15,6 +16,8 @@ import {
 /** Une commande à passer en revue, et la tournée qui la porte (`null` : hors tournée). */
 export interface DossierCheckTarget {
   readonly orderId: string;
+  /** Le rang de l'envoi — celui de son BL ; 1 pour une livraison non placée. */
+  readonly rank: number;
   readonly roundTitle: string | null;
 }
 
@@ -40,7 +43,11 @@ export class DayRoundsDossierChecks {
     private readonly departures: DeliveryDeparturesReader,
   ) {}
 
-  async checksOf(targets: readonly DossierCheckTarget[]): Promise<readonly DossierCheck[]> {
+  /** `noteNumbers` : les BL des envois, lus une fois par le dossier pour toutes ses rubriques. */
+  async checksOf(
+    targets: readonly DossierCheckTarget[],
+    noteNumbers: ShipmentNoteNumbers,
+  ): Promise<readonly DossierCheck[]> {
     // Une commande dans deux tournées n'est vérifiée qu'une fois : la première la nomme.
     const firstOf = new Map<string, DossierCheckTarget>();
     for (const target of targets) {
@@ -69,6 +76,7 @@ export class DayRoundsDossierChecks {
         const shortfall = (departureById.get(target.orderId) ?? NO_DEPARTURE).shortfall;
         return {
           orderId: target.orderId,
+          deliveryNoteNumber: noteNumbers.numberOf(target.orderId, target.rank),
           roundTitle: target.roundTitle,
           order:
             fact === undefined

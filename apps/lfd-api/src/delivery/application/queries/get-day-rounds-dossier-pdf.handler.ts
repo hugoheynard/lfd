@@ -2,13 +2,18 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../platform/time/clock.js";
-import { DeliveryOrdersReader, TransferSiteColorsReader } from "../../channels/commerce/index.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/delivery/index.js";
+import {
+  DeliveryNoteNumbersReader,
+  DeliveryOrdersReader,
+  TransferSiteColorsReader,
+} from "../../channels/commerce/index.js";
 import {
   DeliveryLoadingReader,
   type LoadingRoundRow,
 } from "../../domain/ports/delivery-loading.reader.js";
 import { DeliveryRoundsReader } from "../../domain/ports/delivery-rounds.reader.js";
-import { DayRoundPapersReader } from "../../domain/ports/round-paper.reader.js";
+import { DayRoundPapersReader, type RoundPaperRow } from "../../domain/ports/round-paper.reader.js";
 import {
   dayRoundsDossierOf,
   type UnplacedDelivery,
@@ -18,8 +23,9 @@ import {
   renderDayRoundsDossierPdf,
   sectionTitleOf,
 } from "../../domain/services/day-rounds-dossier-pdf.js";
-import { DayRoundsDossierChecks } from "../day-rounds-dossier-checks.js";
+import { DayRoundsDossierChecks, type DossierCheckTarget } from "../day-rounds-dossier-checks.js";
 import { RoundPaperAssembler } from "../round-paper-assembly.js";
+import { ShipmentNoteNumbers } from "../shipment-note-numbers.js";
 import type { RoundPaperFile } from "./get-round-paper-pdf.handler.js";
 import { GetDayRoundsDossierPdfQuery } from "./get-day-rounds-dossier-pdf.query.js";
 
@@ -46,6 +52,7 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
     private readonly composition: DeliveryRoundsReader,
     private readonly siteColors: TransferSiteColorsReader,
     private readonly checks: DayRoundsDossierChecks,
+    private readonly noteNumbers: DeliveryNoteNumbersReader,
     private readonly logo: BrandLogoSource,
     private readonly clock: Clock,
   ) {}
@@ -60,6 +67,8 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
       this.logo.load(),
     ]);
     const loadingById = new Map(loading.map((round) => [round.id, round]));
+    const targets = checkTargetsOf(rows, unplaced);
+    const noteNumbers = await ShipmentNoteNumbers.read(this.noteNumbers, targets);
     const [rounds, siteColors, checks] = await Promise.all([
       Promise.all(
         rows.map(async (row) => ({
@@ -68,21 +77,19 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
         })),
       ),
       this.siteColors.colorsOf(siteIdsOf(loading)),
-      // Les alertes de l'ancienne feuille de route (2026-10-26) : les commandes
-      // des tournées du jour, puis celles qu'aucune ne porte.
-      this.checks.checksOf([
-        ...rows.flatMap((row) =>
-          row.stops.map((stop) => ({ orderId: stop.orderId, roundTitle: sectionTitleOf(row) })),
-        ),
-        ...unplaced.map((order) => ({ orderId: order.orderId, roundTitle: null })),
-      ]),
+      // Les alertes de l'ancienne feuille de route (2026-10-26).
+      this.checks.checksOf(targets, noteNumbers),
     ]);
     const dossier = dayRoundsDossierOf({
       serviceDay: query.day,
       printedAt,
       rounds,
       siteColors,
-      unplaced: unplaced.map(({ reference, customerLabel }) => ({ reference, customerLabel })),
+      unplaced: unplaced.map(({ orderId, reference, customerLabel }) => ({
+        reference,
+        deliveryNoteNumber: noteNumbers.numberOf(orderId, FIRST_SHIPMENT_RANK),
+        customerLabel,
+      })),
       checks,
     });
     return {
@@ -124,9 +131,33 @@ export class GetDayRoundsDossierPdfHandler implements IQueryHandler<
   }
 }
 
-/** Une livraison non placée, avec l'identifiant que « À vérifier » relit. */
-interface UnplacedOrder extends UnplacedDelivery {
+/** Une livraison non placée, avec l'identifiant que « À vérifier » et le BL relisent. */
+interface UnplacedOrder extends Omit<UnplacedDelivery, "deliveryNoteNumber"> {
   readonly orderId: string;
+}
+
+/**
+ * Les envois que le dossier nomme : ceux des tournées du jour, à leur rang,
+ * puis les livraisons qu'aucune ne porte — au rang 1, la commande elle-même.
+ */
+function checkTargetsOf(
+  rows: readonly RoundPaperRow[],
+  unplaced: readonly UnplacedOrder[],
+): readonly DossierCheckTarget[] {
+  return [
+    ...rows.flatMap((row) =>
+      row.stops.map((stop) => ({
+        orderId: stop.orderId,
+        rank: stop.shipmentRank,
+        roundTitle: sectionTitleOf(row),
+      })),
+    ),
+    ...unplaced.map((order) => ({
+      orderId: order.orderId,
+      rank: FIRST_SHIPMENT_RANK,
+      roundTitle: null,
+    })),
+  ];
 }
 
 /** Les sites des arrêts de transfert du jour, sans doublon. */

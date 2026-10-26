@@ -19,6 +19,7 @@ function sheet(reference: string, end: string | null, cancelled = false): RoundP
   return {
     kind: "sheet",
     reference,
+    deliveryNoteNumber: null,
     customerLabel: `Client ${reference}`,
     addressLines: [],
     window: end === null ? null : { start: null, end, source: "override" },
@@ -102,7 +103,7 @@ function dossierOf(rounds: readonly DossierRound[], checks: readonly DossierChec
     printedAt: PRINTED,
     rounds,
     siteColors: new Map([["site_vv", "#8e24aa"]]),
-    unplaced: [{ reference: "ORD-9", customerLabel: "Hôtel du Col" }],
+    unplaced: [{ reference: "ORD-9", deliveryNoteNumber: null, customerLabel: "Hôtel du Col" }],
     checks,
   });
 }
@@ -138,7 +139,9 @@ describe("dayRoundsDossierOf — la répartition du jour", () => {
   });
 
   it("garde les livraisons non placées : elles ne disparaissent pas du dossier", () => {
-    expect(dossierOf([]).unplaced).toEqual([{ reference: "ORD-9", customerLabel: "Hôtel du Col" }]);
+    expect(dossierOf([]).unplaced).toEqual([
+      { reference: "ORD-9", deliveryNoteNumber: null, customerLabel: "Hôtel du Col" },
+    ]);
   });
 });
 
@@ -191,12 +194,14 @@ describe("renderDayRoundsDossierPdf", () => {
       [
         {
           reference: "ORD-3",
+          deliveryNoteNumber: "BL-3-1",
           customerLabel: "Café de la Gare",
           roundTitle: "Camion 1 · passage 1",
           reasons: ["Adresse non reliée au carnet : ni point GPS, ni consignes, ni procédure"],
         },
         {
           reference: "ORD-9",
+          deliveryNoteNumber: null,
           customerLabel: "Hôtel du Col",
           roundTitle: null,
           reasons: ["Aucune adresse sur la commande", "Aucun contact sur la commande"],
@@ -209,6 +214,20 @@ describe("renderDayRoundsDossierPdf", () => {
     expect(dispatch).toContain("Adresse non reliée au carnet");
     expect(dispatch).toContain("Hors tournée");
     expect(dispatch).toContain("Aucun contact sur la commande");
+    // Le BL à côté de la commande qui en a un ; aucun numéro deviné pour l'autre.
+    expect(dispatch).toContain("BL-3-1");
+    expect(dispatch).not.toContain("BL-9");
+  });
+
+  it("imprime le BL d'une livraison non placée qui en a un (2026-10-26)", async () => {
+    const dossier = {
+      ...dossierOf([]),
+      unplaced: [{ reference: "ORD-8", deliveryNoteNumber: "BL-8-1", customerLabel: "Le Refuge" }],
+    };
+    const [dispatch] = pdfPages(await renderDayRoundsDossierPdf(dossier, { logo: BRAND_LOGO }));
+    expect(dispatch).toContain("ORD-8");
+    expect(dispatch).toContain("BL-8-1");
+    expect(dispatch).toContain("Le Refuge");
   });
 
   it("dit qu'il n'y a rien à vérifier plutôt que de taire la section", async () => {

@@ -9,6 +9,12 @@ import { Buffer } from "node:buffer";
 
 import type { StaffRole } from "@lfd/contracts";
 
+import {
+  DeliveryNote,
+  type DeliveryNoteSource,
+} from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
+import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
+import { ORDER_TERMS } from "../src/b2b/delivery-notes/domain/value-objects/__tests__/delivery-note-terms.fixture.js";
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
 import {
   addVehicle,
@@ -54,6 +60,31 @@ async function asRole(role: StaffRole): Promise<ReturnType<E2eContext["asSub"]>>
     },
   });
   return ctx.asSub(sub);
+}
+
+/** Le BL-1 prévu d'une commande, comme à l'arrêt du plan — par le domaine. */
+async function planNote(order: { readonly id: string; readonly reference: string }) {
+  const source: DeliveryNoteSource = {
+    orderId: order.id,
+    orderNumber: order.reference,
+    terms: ORDER_TERMS,
+    lines: [
+      {
+        sku: "VIE-001",
+        productName: "Croissant",
+        unitPriceMillicents: 95_000,
+        vatRate: 5.5,
+        quantity: 5,
+        lineTotalCents: 4_750,
+        unitPriceTtcCents: null,
+        lineTotalTtcCents: null,
+        pickupDiscountEligible: true,
+      },
+    ],
+  };
+  const note = DeliveryNote.planFromOrder(`dn_${order.id}`, source, new Date(0));
+  await ctx.app.get(DeliveryNoteRepository).saveNew(note);
+  return note.toState().number;
 }
 
 describe("GET /admin/delivery/rounds/:roundId/round.pdf", () => {
@@ -111,6 +142,8 @@ describe("GET /admin/delivery/rounds/day/:day/dossier.pdf", () => {
     const placed = await seedDelivery(ctx, DAY);
     const loose = await seedDelivery(ctx, DAY);
     await assign(ctx, DAY, round, placed.id);
+    // Le BL de la commande placée (2026-10-26) ; la non placée n'en a pas encore.
+    const placedNote = await planNote(placed);
 
     const response = await admin(ctx)
       .get(`${ROUNDS}/day/${DAY}/dossier.pdf`)
@@ -142,7 +175,8 @@ describe("GET /admin/delivery/rounds/day/:day/dossier.pdf", () => {
     expect(pages[0]).toContain("Répartition des tournées");
     expect(pages[0]).toContain(loose.reference);
     expect(pages.join("\n")).toContain("Kangoo blanc · passage 1");
-    expect(pages.join("\n")).toContain(`Commande ${placed.reference}`);
+    expect(pages.join("\n")).toContain(`Commande ${placed.reference} · ${placedNote}`);
+    expect(pages.join("\n")).not.toContain(`BL-${loose.reference.slice("ORD-".length)}`);
   });
 
   it("refuse un jour mal formé (400)", async () => {

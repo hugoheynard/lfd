@@ -34,6 +34,7 @@ import {
 import { GetRoundPaperPdfHandler, type RoundPaperFile } from "../get-round-paper-pdf.handler.js";
 import { GetRoundPaperPdfQuery } from "../get-round-paper-pdf.query.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { FixedNoteNumbers } from "../../__tests__/delivery-note-numbers-doubles.js";
 import { FixedTransferOrderColors } from "../../__tests__/transfer-colors-doubles.js";
 
 /** Le jour n'est que recopié dans le papier : rien ne le compare à l'horloge. */
@@ -103,6 +104,7 @@ function stopRow(orderId: string, overrides: Partial<RoundPaperStopRow> = {}): R
   return {
     stopId: `stop_${orderId}`,
     orderId,
+    shipmentRank: 1,
     position: 0,
     departed: null,
     binCodes: [],
@@ -132,7 +134,8 @@ const ROUND: RoundPaperRow = {
   driverStaffId: "staff_paul",
   planned: null,
   stops: [
-    stopRow("o2", { binCodes: ["K7Q2"], position: 1 }),
+    // o2 part en reliquat (rang 2) : il imprime SON bon, pas le BL-1.
+    stopRow("o2", { binCodes: ["K7Q2"], position: 1, shipmentRank: 2 }),
     stopRow("o1", { departed: FROZEN, position: 2 }),
     stopRow("o_unknown", { position: 4 }),
   ],
@@ -154,6 +157,10 @@ function subject(
   round: RoundPaperRow | null = ROUND,
   colors = new FixedDeliveryColors(NO_COLORS),
   transferColors = new FixedTransferOrderColors(),
+  noteNumbers = new FixedNoteNumbers([
+    { orderId: "o2", rank: 1, number: "BL-o2-1" },
+    { orderId: "o2", rank: 2, number: "BL-o2-2" },
+  ]),
 ) {
   const procedures = new FixedProcedures([PROCEDURE]);
   const handler = new GetRoundPaperPdfHandler(
@@ -183,8 +190,9 @@ function subject(
     colors,
     resupplyContentsOver(),
     transferColors,
+    noteNumbers,
   );
-  return { handler, procedures, colors, transferColors };
+  return { handler, procedures, colors, transferColors, noteNumbers };
 }
 
 function textOf(file: RoundPaperFile): string {
@@ -206,6 +214,22 @@ describe("GetRoundPaperPdfHandler — la feuille de tournée tirée au moment", 
     expect(text).toContain("Livreur : Paul Durand");
     expect(text).toContain("Tiré le mercredi 7 octobre 2026 à 06:15");
     expect(file.fileName).toBe("tournee-2026-10-07-Kangoo blanc.pdf");
+  });
+
+  it("imprime le BL de l'envoi à son rang, et rien pour une commande sans BL (2026-10-26)", async () => {
+    const { handler, noteNumbers } = subject();
+    const text = textOf(await handler.execute(new GetRoundPaperPdfQuery("round_1", true)));
+    expect(text).toContain("Commande ORD-o2 · BL-o2-2");
+    expect(text).not.toContain("BL-o2-1");
+    // o1 n'a pas de BL (hors plan) : la commande seule.
+    expect(text).not.toContain("FIGEE-1 · ");
+    expect(noteNumbers.asked).toEqual([
+      [
+        { orderId: "o2", rank: 2 },
+        { orderId: "o1", rank: 1 },
+        { orderId: "o_unknown", rank: 1 },
+      ],
+    ]);
   });
 
   it("imprime l'arrêt de transfert à sa place : site, heure, bacs, total des commandes", async () => {

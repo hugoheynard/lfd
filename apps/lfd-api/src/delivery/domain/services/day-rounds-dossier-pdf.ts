@@ -1,6 +1,7 @@
 import type { Buffer } from "node:buffer";
 
 import {
+  BOLD,
   type Doc,
   LEFT,
   MM,
@@ -196,6 +197,49 @@ function drawTransfers(doc: Doc, row: RoundDispatchRow, y: number): void {
   }
 }
 
+const CUSTOMER_COLUMN = 32 * MM;
+const HEAD_GAP = 3 * MM;
+
+/**
+ * La commande en gras, son BL à côté quand il existe (2026-10-26), puis le
+ * client — dans sa colonne, ou repoussé après le BL quand la référence et le
+ * numéro la débordent.
+ */
+function putOrderHead(
+  doc: Doc,
+  order: {
+    readonly reference: string;
+    readonly deliveryNoteNumber: string | null;
+    readonly customerLabel: string;
+  },
+  y: number,
+  right: number = RIGHT,
+): void {
+  put(doc, order.reference, LEFT, y, { size: 11, bold: true });
+  let end = LEFT + doc.font(BOLD).fontSize(11).widthOfString(order.reference);
+  if (order.deliveryNoteNumber !== null) {
+    const x = end + HEAD_GAP;
+    put(doc, order.deliveryNoteNumber, x, y, { size: 11 });
+    end = x + doc.font(REGULAR).fontSize(11).widthOfString(order.deliveryNoteNumber);
+  }
+  const customerX = Math.max(LEFT + CUSTOMER_COLUMN, end + HEAD_GAP);
+  const label = fitted(doc, order.customerLabel, right - HEAD_GAP - customerX);
+  put(doc, label, customerX, y, { size: 11, color: MUTED });
+}
+
+/** Le texte tel quel s'il tient, sinon raccourci d'un « … » : il ne chevauche pas la tournée. */
+function fitted(doc: Doc, text: string, width: number): string {
+  doc.font(REGULAR).fontSize(11);
+  if (doc.widthOfString(text) <= width) {
+    return text;
+  }
+  let cut = text;
+  while (cut.length > 0 && doc.widthOfString(`${cut}…`) > width) {
+    cut = cut.slice(0, -1);
+  }
+  return `${cut.trimEnd()}…`;
+}
+
 /** Les livraisons du jour qu'aucune tournée ne porte : elles ne disparaissent pas du dossier. */
 function drawUnplaced(
   doc: Doc,
@@ -213,8 +257,7 @@ function drawUnplaced(
   }
   for (const order of unplaced) {
     y = room(y, UNPLACED_ROW);
-    put(doc, order.reference, LEFT, y, { size: 11, bold: true });
-    put(doc, order.customerLabel, LEFT + 32 * MM, y, { size: 11, color: MUTED });
+    putOrderHead(doc, order, y);
     y += UNPLACED_ROW;
   }
   return y;
@@ -249,9 +292,10 @@ function drawChecks(
     );
     const height = CHECK_HEAD + heights.reduce((sum, h) => sum + h, 0) + 2 * MM;
     y = room(y, height);
-    put(doc, check.reference, LEFT, y, { size: 11, bold: true });
-    put(doc, check.customerLabel, LEFT + 32 * MM, y, { size: 11, color: MUTED });
-    putRight(doc, check.roundTitle ?? "Hors tournée", RIGHT, y, 10.5, false);
+    const roundTitle = check.roundTitle ?? "Hors tournée";
+    const titleWidth = doc.font(REGULAR).fontSize(10.5).widthOfString(roundTitle);
+    putOrderHead(doc, check, y, RIGHT - titleWidth);
+    putRight(doc, roundTitle, RIGHT, y, 10.5, false);
     let line = y + CHECK_HEAD;
     lines.forEach((text, index) => {
       put(doc, text, LEFT + 4 * MM, line, { size: 10.5, width: REASON_WIDTH });

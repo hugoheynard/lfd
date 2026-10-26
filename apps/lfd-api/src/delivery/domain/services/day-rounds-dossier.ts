@@ -31,6 +31,8 @@ export interface RoundDispatchRow {
 /** Une livraison du jour qu'aucune tournée vivante ne porte. */
 export interface UnplacedDelivery {
   readonly reference: string;
+  /** Le numéro de son BL, ou `null` : pas encore de BL (commande hors plan) — rien ne s'imprime. */
+  readonly deliveryNoteNumber: string | null;
   /** `""` : le commerce ne la nomme plus. */
   readonly customerLabel: string;
 }

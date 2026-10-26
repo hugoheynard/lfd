@@ -34,7 +34,7 @@ import {
 } from "./round-paper-pdf-rows.js";
 import { droppedAtRow } from "./round-paper-pdf-dropped.js";
 import type { RoundPaperAbsentStop, RoundPaperSheetStop } from "./round-paper.js";
-import { windowPaperLabel } from "./round-paper.js";
+import { orderWithNoteLabel, windowPaperLabel } from "./round-paper.js";
 
 /** La pastille du rang, et sous elle la case « Livré » (ou `checkLabel`). */
 export function rail(
@@ -234,10 +234,14 @@ function bodyRows(doc: Doc, stop: RoundPaperSheetStop, tone: Tone): readonly Row
 /** Le bloc d'un arrêt servi par la feuille de route. */
 export function sheetStopBlock(doc: Doc, stop: RoundPaperSheetStop, rank: number): Block {
   const tone = stop.cancelled ? VOID : LIVE;
-  const reference = textRow(doc, `Commande ${stop.reference}`, {
-    size: SMALL_SIZE,
-    color: tone.muted,
-  });
+  const reference = textRow(
+    doc,
+    `Commande ${orderWithNoteLabel(stop.reference, stop.deliveryNoteNumber)}`,
+    {
+      size: SMALL_SIZE,
+      color: tone.muted,
+    },
+  );
   return {
     ...rail(rank, tone, !stop.cancelled),
     rows: [

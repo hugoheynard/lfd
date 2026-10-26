@@ -3,6 +3,7 @@ import { dossierChecksOf, type DossierOrderFacts } from "../day-rounds-dossier-c
 function facts(orderId: string, overrides: Partial<DossierOrderFacts> = {}): DossierOrderFacts {
   return {
     orderId,
+    deliveryNoteNumber: null,
     roundTitle: "Camion 1 · passage 1",
     order: { reference: `ORD-${orderId}`, customerLabel: `Client ${orderId}`, cancelled: false },
     hasAddress: true,
@@ -18,10 +19,18 @@ describe("dossierChecksOf — « À vérifier », les alertes de l'ancienne feui
     expect(dossierChecksOf([facts("a")])).toEqual([]);
   });
 
+  it("porte le BL de l'envoi à côté de la référence (2026-10-26)", () => {
+    const [check] = dossierChecksOf([
+      facts("a", { deliveryNoteNumber: "BL-a-1", hasContact: false }),
+    ]);
+    expect(check?.deliveryNoteNumber).toBe("BL-a-1");
+  });
+
   it("dit l'adresse non reliée au carnet, comme le badge de la feuille de route", () => {
     expect(dossierChecksOf([facts("a", { linkedToAddressBook: false })])).toEqual([
       {
         reference: "ORD-a",
+        deliveryNoteNumber: null,
         customerLabel: "Client a",
         roundTitle: "Camion 1 · passage 1",
         reasons: ["Adresse non reliée au carnet : ni point GPS, ni consignes, ni procédure"],

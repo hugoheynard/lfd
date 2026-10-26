@@ -14,6 +14,12 @@ export interface RoundPaperStep {
 export interface RoundPaperSheetStop {
   readonly kind: "sheet";
   readonly reference: string;
+  /**
+   * Le numéro du bon de livraison de CET envoi (« BL-1042-1 », reliquat
+   * compris) ; `null` : aucun BL vivant (commande hors plan) — rien ne
+   * s'imprime, jamais un numéro deviné (Hugo, 2026-10-26).
+   */
+  readonly deliveryNoteNumber: string | null;
   readonly customerLabel: string;
   /** Les lignes postales non vides ; vide sans adresse sur la commande. */
   readonly addressLines: readonly string[];
@@ -105,6 +111,15 @@ export function roundPaperTitle(paper: Pick<RoundPaper, "vehicleName" | "passage
   return paper.passage > 1
     ? `${paper.vehicleName} · passage ${String(paper.passage)}`
     : paper.vehicleName;
+}
+
+/**
+ * « Commande ORD-1042 · BL-1042-1 » — la commande et le bon qui voyage avec
+ * elle, ou la commande seule sans BL. La référence d'une ligne du dossier se
+ * dit de la même façon, sans le mot « Commande ».
+ */
+export function orderWithNoteLabel(reference: string, deliveryNoteNumber: string | null): string {
+  return deliveryNoteNumber === null ? reference : `${reference} · ${deliveryNoteNumber}`;
 }
 
 /** « 8 h 30 » à partir de « 08:30 » ; une valeur illisible est rendue telle quelle. */

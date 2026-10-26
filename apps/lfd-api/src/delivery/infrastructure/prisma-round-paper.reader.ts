@@ -29,6 +29,7 @@ const PAPER_SELECT = {
     select: {
       id: true,
       orderId: true,
+      rank: true,
       transferId: true,
       position: true,
       execution: { select: EXECUTION_SELECT },
@@ -117,6 +118,7 @@ function paperRowOf(
     stops: stops.map((stop) => ({
       stopId: stop.id,
       orderId: stop.orderId,
+      shipmentRank: stop.rank,
       position: stop.position,
       departed: stop.execution === null ? null : departedStopOf(stop.execution),
       binCodes: codes.get(stop.orderId) ?? [],

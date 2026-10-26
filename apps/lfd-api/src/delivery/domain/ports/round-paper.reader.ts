@@ -5,6 +5,11 @@ import type { DepartedStopRow } from "./driver-rounds.reader.js";
 export interface RoundPaperStopRow {
   readonly stopId: string;
   readonly orderId: string;
+  /**
+   * Le rang de l'envoi : 1 pour la commande elle-même, au-delà un reliquat —
+   * celui de son bon de livraison (plan E7).
+   */
+  readonly shipmentRank: number;
   /** Sa place dans la séquence ENTIÈRE de la tournée, transferts compris. */
   readonly position: number;
   /** L'instantané du départ, ou `null` : au dépôt, la feuille se lit vivante. */

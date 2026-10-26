@@ -6,6 +6,7 @@ import type { DepartureSheet } from "../../domain/entities/departure-sheet.js";
 import { deliveryOn, FixedDeliveryOrders } from "../commands/__tests__/round-doubles.js";
 import { FixedDepartures } from "../queries/__tests__/packing-doubles.js";
 import { DayRoundsDossierChecks } from "../day-rounds-dossier-checks.js";
+import { ShipmentNoteNumbers } from "../shipment-note-numbers.js";
 
 /** Le jour n'est que recopié : rien ici ne lit l'horloge. */
 const DAY = "2026-10-07";
@@ -97,14 +98,17 @@ function subject() {
 describe("DayRoundsDossierChecks — les alertes lues aux canaux de la livraison", () => {
   it("croise commande, feuille, carnet et départ, et ne garde que ce qui est à vérifier", async () => {
     const { checks } = subject();
-    const result = await checks.checksOf([
-      { orderId: "o_ok", roundTitle: "Camion 1 · passage 1" },
-      { orderId: "o_loose", roundTitle: "Camion 1 · passage 1" },
-      { orderId: "o_bare", roundTitle: null },
-      { orderId: "o_short", roundTitle: "Camion 2 · passage 1" },
-      { orderId: "o_gone", roundTitle: "Camion 2 · passage 1" },
-      { orderId: "o_ghost", roundTitle: "Camion 2 · passage 1" },
-    ]);
+    const result = await checks.checksOf(
+      [
+        { orderId: "o_ok", rank: 1, roundTitle: "Camion 1 · passage 1" },
+        { orderId: "o_loose", rank: 1, roundTitle: "Camion 1 · passage 1" },
+        { orderId: "o_bare", rank: 1, roundTitle: null },
+        { orderId: "o_short", rank: 1, roundTitle: "Camion 2 · passage 1" },
+        { orderId: "o_gone", rank: 1, roundTitle: "Camion 2 · passage 1" },
+        { orderId: "o_ghost", rank: 1, roundTitle: "Camion 2 · passage 1" },
+      ],
+      ShipmentNoteNumbers.NONE,
+    );
     expect(result.map((check) => [check.reference, check.roundTitle, check.reasons])).toEqual([
       [
         "o_ghost",
@@ -121,19 +125,44 @@ describe("DayRoundsDossierChecks — les alertes lues aux canaux de la livraison
     ]);
   });
 
+  it("porte le BL de l'envoi à son rang, rien sans BL (2026-10-26)", async () => {
+    const { checks } = subject();
+    const numbers = ShipmentNoteNumbers.of([
+      { orderId: "o_loose", rank: 1, number: "BL-loose-1" },
+      { orderId: "o_short", rank: 1, number: "BL-short-1" },
+      { orderId: "o_short", rank: 2, number: "BL-short-2" },
+    ]);
+    const result = await checks.checksOf(
+      [
+        { orderId: "o_loose", rank: 1, roundTitle: null },
+        { orderId: "o_short", rank: 2, roundTitle: null },
+        { orderId: "o_bare", rank: 1, roundTitle: null },
+      ],
+      numbers,
+    );
+    expect(result.map((check) => [check.reference, check.deliveryNoteNumber])).toEqual([
+      ["ORD-o_bare", null],
+      ["ORD-o_loose", "BL-loose-1"],
+      ["ORD-o_short", "BL-short-2"],
+    ]);
+  });
+
   it("ne lit rien quand il n'y a aucune commande", async () => {
     const { checks, addresses } = subject();
-    expect(await checks.checksOf([])).toEqual([]);
+    expect(await checks.checksOf([], ShipmentNoteNumbers.NONE)).toEqual([]);
     expect(addresses.asked).toEqual([]);
   });
 
   it("lit le carnet une fois pour le lot, sans doublon", async () => {
     const { checks, addresses } = subject();
-    await checks.checksOf([
-      { orderId: "o_ok", roundTitle: null },
-      { orderId: "o_ok", roundTitle: null },
-      { orderId: "o_loose", roundTitle: null },
-    ]);
+    await checks.checksOf(
+      [
+        { orderId: "o_ok", rank: 1, roundTitle: null },
+        { orderId: "o_ok", rank: 1, roundTitle: null },
+        { orderId: "o_loose", rank: 1, roundTitle: null },
+      ],
+      ShipmentNoteNumbers.NONE,
+    );
     expect(addresses.asked).toEqual([["o_ok", "o_loose"]]);
   });
 });

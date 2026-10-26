@@ -38,6 +38,7 @@ import { DayRoundsDossierChecks } from "../../day-rounds-dossier-checks.js";
 import { RoundPaperAssembler } from "../../round-paper-assembly.js";
 import { GetDayRoundsDossierPdfHandler } from "../get-day-rounds-dossier-pdf.handler.js";
 import { GetDayRoundsDossierPdfQuery } from "../get-day-rounds-dossier-pdf.query.js";
+import { FixedNoteNumbers } from "../../__tests__/delivery-note-numbers-doubles.js";
 import { FixedDepartures, FixedLoading, roundRow } from "./packing-doubles.js";
 
 /** Le jour n'est que recopié et comparé à lui-même : rien ne le compare à l'horloge. */
@@ -124,7 +125,16 @@ function paperRow(
       returnAt: new Date(`${DAY}T12:00:00.000Z`),
       meters: 5000,
     }),
-    stops: [{ stopId: `s_${orderId}`, orderId, position: 1, departed: null, binCodes: [] }],
+    stops: [
+      {
+        stopId: `s_${orderId}`,
+        orderId,
+        shipmentRank: 1,
+        position: 1,
+        departed: null,
+        binCodes: [],
+      },
+    ],
     transferStops: [],
   };
 }
@@ -137,6 +147,11 @@ function subject() {
     deliveryOn("o_gone", DAY, { status: "cancelled" }),
   ]);
   const procedures = new CountedProcedures();
+  // o_late n'a pas de BL : rien ne s'imprime à côté de sa référence.
+  const noteNumbers = new FixedNoteNumbers([
+    { orderId: "o_early", rank: 1, number: "BL-early-1" },
+    { orderId: "o_loose", rank: 1, number: "BL-loose-1" },
+  ]);
   const papers = new FixedDayPapers([
     paperRow("r_late", "Camion tardif", "08:00", "o_late"),
     paperRow("r_early", "Camion matinal", "05:00", "o_early"),
@@ -155,12 +170,14 @@ function subject() {
       new NoColors(),
       resupplyContentsOver(),
       new FixedTransferOrderColors(),
+      noteNumbers,
     ),
     new FixedLoading([roundRow("r_early", [{ orderId: "o_early" }])]),
     orders,
     new ComposedAmong(new Set(["o_late", "o_early"])),
     new NoSiteColors(),
     new DayRoundsDossierChecks(orders, new NoAddressBook(), new FixedDepartures(new Map())),
+    noteNumbers,
     new FixedBrandLogo(),
     new FixedClock(NOW),
   );
@@ -200,6 +217,20 @@ describe("GetDayRoundsDossierPdfHandler — le dossier des tournées du jour", (
     expect(dispatch).toContain("Adresse non reliée au carnet");
     expect(dispatch).toContain("Hors tournée");
     expect(dispatch).not.toContain("ORD-o_gone");
+  });
+
+  it("imprime le BL de chaque commande nommée : feuilles, non placées, « À vérifier » (2026-10-26)", async () => {
+    const { handler } = subject();
+    const pages = pdfPages(
+      (await handler.execute(new GetDayRoundsDossierPdfQuery(DAY, true))).bytes,
+    );
+    const [dispatch = "", early = "", late = ""] = pages;
+    // Non placée, et « à vérifier » : son BL dans les deux rubriques.
+    expect(dispatch.split("BL-loose-1").length - 1).toBe(2);
+    expect(dispatch).toContain("BL-early-1");
+    expect(early).toContain("Commande ORD-o_early · BL-early-1");
+    expect(late).toContain("Commande ORD-o_late");
+    expect(pages.join("\n")).not.toContain("BL-late");
   });
 
   it("ne lit même pas la procédure sans le droit, comme round.pdf", async () => {
