@@ -84,7 +84,11 @@
 >   sites — ne se lit que par la requête partagée `readCompanyStanding`
 >   (`apps/lfd-api/src/b2b/shared/company-standing/`) ; une dizaine de
 >   lecteurs en recopiaient chacun la condition, et chaque copie oubliée
->   était une fuite entre frères. C'est la
+>   était une fuite entre frères. Et **49** depuis le 2026-10-26
+>   avec `lint:rgaa-digest` : le suivi des corrections d'accessibilité publié
+>   dans le dialogue de la boutique est tiré de la grille d'audit
+>   (`documentation/accessibilite/grille-audit-rgaa.json`), et une ligne changée
+>   sans `pnpm rgaa:digest` le fait mentir. C'est la
 >   **seule** correction faite dans le corps, parce qu'un chiffre faux se vérifie
 >   en une commande et trompe tout de suite ;
 > - le dossier **`documentation/pricing/`** (ouvert le 2026-09-06) et le dossier
@@ -1244,7 +1248,7 @@ pnpm --filter lfd-api seed:pim       # catalogue rejoué PAR LE BUS (cible local
 pnpm lint               # turbo, toutes les apps
 pnpm test
 pnpm build
-pnpm lint:gates         # les 48 portes du dépôt, d'un coup
+pnpm lint:gates         # les 49 portes du dépôt, d'un coup
 pnpm lint:no-direct-env # gate repo : aucun accès direct à process.env
 ```
 
