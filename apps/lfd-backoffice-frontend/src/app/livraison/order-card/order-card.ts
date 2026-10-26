@@ -10,7 +10,7 @@ export interface OrderCardTag {
 /** Le liseré gauche d'une carte : signal (rouge), fenêtre ou rapportée (ambre), proposé (bleu). */
 export type OrderCardEdge = 'none' | 'alert' | 'warning' | 'proposed';
 
-/** Le rond du numéro de passage : graphite, bleu si proposé, gris si la tournée est partie. */
+/** Le rond du numéro de passage : couleur de la tournée, bleu si proposé, gris si la tournée est partie. */
 export type OrderCardMark = 'placed' | 'proposed' | 'frozen';
 
 /**

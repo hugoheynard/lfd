@@ -68,7 +68,9 @@
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
-  background: var(--fold-color-text);
+  /* La couleur de la tournée (Hugo, 2026-10-26), posée par la colonne en
+     `--vehicle-color` et héritée ; hors d'une colonne, le graphite. */
+  background: var(--vehicle-color, var(--fold-color-text));
   border-radius: var(--fold-radius-round);
 }
 
