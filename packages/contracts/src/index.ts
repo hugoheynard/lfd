@@ -62,7 +62,6 @@ export {
   billingAddressPayloadSchema,
   deliveryAddressPayloadSchema,
   memberDeliveryAddressPayloadSchema,
-  deliveryDepositPayloadSchema,
 } from "./address.js";
 export type {
   Weekday,
@@ -77,7 +76,6 @@ export type {
   BillingAddressPayload,
   DeliveryAddressPayload,
   MemberDeliveryAddressPayload,
-  DeliveryDepositPayload,
   BillingAddressView,
   DeliveryAddressView,
   CompanyAddressesView,

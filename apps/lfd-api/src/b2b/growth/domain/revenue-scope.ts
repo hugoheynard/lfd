@@ -10,6 +10,8 @@ export const REVENUE_ORDER_STATUSES = [
   "placed",
   "confirmed",
   "in_production",
+  // Décision de Hugo du 2026-10-26 : « prête » compte — elle comptait la veille en `confirmed`.
+  "ready",
   // Plan E7 reliquat (L5a) : en partie retirée, la commande reste une commande passée.
   "partially_handed_over",
   "fulfilled",

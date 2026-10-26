@@ -41,6 +41,7 @@ function order(
     totalCents: 1_200,
     status,
     invoiceNumber: null,
+    remainderPlannedOn: null,
     ...over,
   };
 }
@@ -54,7 +55,7 @@ const MIXED = procedureInvoices({
     order('c', 'receipt_confirmed'),
     order('d', 'receipt_to_confirm'),
   ],
-  figures: { invoiced: 1, receiptConfirmed: 2, receiptToConfirm: 1 },
+  figures: { invoiced: 1, receiptConfirmed: 2, receiptToConfirm: 1, awaitingRemainder: 0 },
   issuableCount: 2,
   closure: CLOSURE,
 });
@@ -104,7 +105,7 @@ describe('l’onglet Factures de la procédure', () => {
     const { fixture } = boot(
       procedureInvoices({
         orders: [order('a', 'invoiced', { invoiceNumber: 'FA-LFD-2026-000001' })],
-        figures: { invoiced: 1, receiptConfirmed: 0, receiptToConfirm: 0 },
+        figures: { invoiced: 1, receiptConfirmed: 0, receiptToConfirm: 0, awaitingRemainder: 0 },
         closure: CLOSURE,
       }),
     );
@@ -146,6 +147,35 @@ describe('l’onglet Factures de la procédure', () => {
     figure?.click();
     fixture.detectChanges();
     expect(statuses(host)).toHaveLength(4);
+  });
+
+  /** Décision de Hugo du 2026-10-26 : une commande en partie retirée paraît, jamais « à facturer ». */
+  it('une partielle : son statut, le jour de son reste, aucun geste ni bouton', () => {
+    const { fixture } = boot(
+      procedureInvoices({
+        orders: [order('p', 'awaiting_remainder', { remainderPlannedOn: '2026-10-22' })],
+        figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 0, awaitingRemainder: 1 },
+        issuableCount: 0,
+        closure: CLOSURE,
+      }),
+    );
+    const host = root(fixture);
+    expect(statuses(host)).toEqual(['awaiting_remainder']);
+    expect(host.querySelector('[data-order-status]')?.textContent).toContain(
+      'Partielle — reste à relivrer',
+    );
+    expect(host.querySelector('[data-order-remainder-day]')).not.toBeNull();
+    expect(host.querySelector('[data-confirm-receipt]')).toBeNull();
+    expect(host.querySelector('[data-issue-invoices]')).toBeNull();
+    expect(host.querySelector('[data-invoices-reason]')?.textContent).toContain(
+      '1 partielle, reste à relivrer.',
+    );
+    expect(host.querySelector('[data-figure="awaiting_remainder"]')).not.toBeNull();
+  });
+
+  it('sans partielle, son chiffre ne paraît pas', () => {
+    const { fixture } = boot(MIXED);
+    expect(root(fixture).querySelector('[data-figure="awaiting_remainder"]')).toBeNull();
   });
 
   it('« Émettre les factures des réceptions confirmées (N) » émet la clôture', () => {

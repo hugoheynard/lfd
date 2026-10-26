@@ -74,6 +74,8 @@ export function procedureRow(
     billedCompanyId: null,
     handedOver: true,
     receivedOn: "2026-10-12",
+    partiallyHandedOver: false,
+    remainderPlannedOn: null,
     invoice: null,
     ...overrides,
   };

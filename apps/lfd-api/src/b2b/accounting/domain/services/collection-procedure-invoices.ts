@@ -17,9 +17,13 @@ import type { ProcedureStepState } from "./collection-procedure.js";
  *
  * - `receipt_to_confirm` — aucune remise enregistrée, son jour passé ;
  * - `receipt_confirmed` — remise enregistrée, pas encore facturée ;
- * - `invoiced` — une facture 380 la porte.
+ * - `invoiced` — une facture 380 la porte ;
+ * - `awaiting_remainder` — en partie retirée, un reste à relivrer (décision
+ *   de Hugo du 2026-10-26) : on facture sur le livré une fois le sort du
+ *   reste décidé, pas avant. Ni « à confirmer », ni « à facturer ».
  */
-export type ProcedureOrderStatus = "receipt_to_confirm" | "receipt_confirmed" | "invoiced";
+export type ProcedureOrderStatus =
+  "receipt_to_confirm" | "receipt_confirmed" | "invoiced" | "awaiting_remainder";
 
 export interface ProcedureOrderFacts {
   /** Une facture 380 porte la commande. */
@@ -28,6 +32,8 @@ export interface ProcedureOrderFacts {
   readonly handedOver: boolean;
   /** `AAAA-MM-JJ` — le jour de réception ; `null` s'il n'est pas posé. */
   readonly receivedOn: string | null;
+  /** La commande est en partie retirée : un reste suit (plan E7 reliquat). */
+  readonly awaitingRemainder: boolean;
 }
 
 /**
@@ -43,6 +49,9 @@ export interface ProcedureOrderFacts {
 export function procedureOrderStatus(facts: ProcedureOrderFacts): ProcedureOrderStatus {
   if (facts.invoiced) {
     return "invoiced";
+  }
+  if (facts.awaitingRemainder) {
+    return "awaiting_remainder";
   }
   return facts.handedOver || facts.receivedOn !== null ? "receipt_confirmed" : "receipt_to_confirm";
 }
@@ -73,6 +82,10 @@ export interface InvoicesFacts {
 }
 
 /**
+ * Une commande `awaiting_remainder` ne bloque rien : aucun geste de l'onglet
+ * ne la fait avancer, son reste se livre ailleurs (décision de Hugo du
+ * 2026-10-26).
+ *
  * « Fait » quand plus aucune commande n'est « à confirmer » ni « confirmée
  * non facturée » ; « à faire » sinon ; « verrouillé » tant que la clôture est
  * à venir. Confirmer passe en premier : c'est le premier geste — la réception

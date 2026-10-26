@@ -363,6 +363,7 @@
   "test/public-pickup-slots-surface.e2e-spec.ts": 3930,
   "test/public-pickup-slots.e2e-spec.ts": 5155,
   "test/quote-order-parity.e2e-spec.ts": 5784,
+  "test/ready-order-counts.e2e-spec.ts": 10500,
   "test/recompute.e2e-spec.ts": 3486,
   "test/remainder-settlement.e2e-spec.ts": 9500,
   "test/request-reasons-access.e2e-spec.ts": 6209,

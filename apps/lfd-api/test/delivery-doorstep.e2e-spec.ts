@@ -225,12 +225,12 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
         where: { id: orderId },
         select: { companyId: true, deliveryAddressId: true },
       });
-      await admin(ctx)
-        .put(
-          `/admin/companies/${order.companyId ?? ""}/delivery-addresses/${order.deliveryAddressId ?? ""}/deposit`,
-        )
-        .send({ depositAllowed: true })
-        .expect(204);
+      // La route staff du réglage est retirée (2026-10-26) : la colonne reste,
+      // écrite ici pour éprouver qu'elle se fige encore et ne décide plus rien.
+      await ctx.prisma.address.update({
+        where: { id: order.deliveryAddressId ?? "" },
+        data: { depositAllowed: true },
+      });
       await ctx.prisma.order.update({
         where: { id: orderId },
         data: {
@@ -255,10 +255,7 @@ describe("le dépôt autorisé, figé au départ, et la signature qui l'emporte 
       .send({ staffUserId: paul.id, version })
       .expect(204);
     const atDepot = await myRound(paul.agent, roundId);
-    expect(atDepot.stops.map((stop) => [stop.depositAllowed, stop.canDeposit])).toEqual([
-      [true, true],
-      [true, false],
-    ]);
+    expect(atDepot.stops.map((stop) => stop.canDeposit)).toEqual([true, false]);
 
     await paul.agent
       .post(`${MY_ROUND}/${roundId}/departure`)

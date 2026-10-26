@@ -37,9 +37,13 @@ export type CollectionProcedureInvoicesReasonView =
  * - `receipt_to_confirm` — aucune remise enregistrée, son jour est passé ;
  * - `receipt_confirmed` — remise enregistrée, pas encore facturée ;
  * - `invoiced` — une facture (380) la porte. L'emporte TOUJOURS, quel que
- *   soit son jour de réception.
+ *   soit son jour de réception ;
+ * - `awaiting_remainder` — en partie retirée, un reste à relivrer : elle ne
+ *   se facture qu'au sort du reste, et n'est pas comptée « à facturer »
+ *   (décision de Hugo du 2026-10-26).
  */
-export type ProcedureOrderStatusView = "receipt_to_confirm" | "receipt_confirmed" | "invoiced";
+export type ProcedureOrderStatusView =
+  "receipt_to_confirm" | "receipt_confirmed" | "invoiced" | "awaiting_remainder";
 
 /** Une commande de la période, telle que l'onglet la liste. */
 export interface ProcedureOrderView {
@@ -56,6 +60,11 @@ export interface ProcedureOrderView {
   readonly status: ProcedureOrderStatusView;
   /** Le numéro de la facture qui la porte ; `null` tant qu'elle n'est pas facturée. */
   readonly invoiceNumber: string | null;
+  /**
+   * `AAAA-MM-JJ` — le jour prévu du prochain reste, sous `awaiting_remainder`
+   * quand il est connu ; `null` sinon.
+   */
+  readonly remainderPlannedOn: string | null;
 }
 
 /** Les trois chiffres clés de l'onglet, au vocabulaire des statuts. */
@@ -64,6 +73,8 @@ export interface ProcedureOrderFiguresView {
   /** Réceptions confirmées, pas encore facturées. */
   readonly receiptConfirmed: number;
   readonly receiptToConfirm: number;
+  /** En partie retirées, un reste à relivrer : ni à confirmer, ni à facturer. */
+  readonly awaitingRemainder: number;
 }
 
 /** Onglet 3 — les factures de LA période de la procédure. */

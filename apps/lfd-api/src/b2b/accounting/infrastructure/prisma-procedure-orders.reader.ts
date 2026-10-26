@@ -12,6 +12,12 @@ import { accountOrderWhere, billableOrderWhere, dayColumnOf } from "./billable-o
 /** Une partie retirée, le reste à venir : pas facturable avant son solde. */
 const PARTIALLY_HANDED_OVER = "partially_handed_over" as const;
 
+/** Le rang de la commande elle-même ; au-delà, un reste (plan E7 reliquat). */
+const FIRST_RANK = 1;
+
+/** Les BL encore à remettre : ni remis, ni annulés. */
+const PENDING_NOTE_STATUSES = ["planned", "prepared"] as const;
+
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
 
@@ -49,15 +55,9 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
           {
             ...accountOrderWhere(),
             // Pas soldée (E6c2) : une commande remise en partie attend encore.
+            // En partie retirée, elle en est — « partielle, reste à relivrer »
+            // (décision de Hugo du 2026-10-26, qui annule l'exclusion de L5c).
             settledOn: null,
-            // Ni en partie retirée (plan E7 reliquat, L5c) : son reste suit, elle
-            // ne se facture qu'à son solde — ni « réception confirmée », ni « à
-            // facturer ». Exclue plutôt qu'un statut de plus au contrat
-            // (`ProcedureOrderStatusView`) : aucun geste de l'onglet ne la
-            // concerne, et les bons à constater disent déjà le jour du reste.
-            // En `AND` : un `status` à côté écraserait celui du critère
-            // partagé (`not: cancelled`).
-            AND: [{ status: { not: PARTIALLY_HANDED_OVER } }],
             requestedDeliveryDate: {
               gte: dayColumnOf(scope.servedFrom),
               lte: dayColumnOf(scope.servedThrough),
@@ -78,7 +78,14 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
         billedCompanyId: true,
         handedOverAt: true,
         settledOn: true,
+        status: true,
         company: { select: { raisonSociale: true } },
+        deliveryNotes: {
+          where: { rank: { gt: FIRST_RANK }, status: { in: [...PENDING_NOTE_STATUSES] } },
+          orderBy: { serviceDay: "asc" },
+          take: 1,
+          select: { serviceDay: true },
+        },
       },
     });
     const invoices = await this.invoicesOf(orders.map((order) => order.id));
@@ -100,6 +107,8 @@ export class PrismaProcedureOrdersReader extends ProcedureOrdersReader {
               handedOver: row.handedOverAt !== null,
               // Le jour du solde (E6c2) : celui qui la fait entrer dans l'assiette.
               receivedOn: dayOf(row.settledOn),
+              partiallyHandedOver: row.status === PARTIALLY_HANDED_OVER,
+              remainderPlannedOn: dayOf(row.deliveryNotes[0]?.serviceDay ?? null),
               invoice: invoices.get(row.id) ?? null,
             },
           ],

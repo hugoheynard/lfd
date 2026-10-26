@@ -350,21 +350,13 @@ export type DeliveryAddressPayload = z.infer<typeof deliveryAddressPayloadSchema
  * n'est pas une clé de `specs`, que l'écran réécrit d'un bloc.
  *
  * Le staff ne passe pas par ici : sa route d'édition d'adresse (sous
- * `b2b_companies`) ne le touche pas, et il a la sienne
- * ({@link deliveryDepositPayloadSchema}, sous `delivery_procedures`).
+ * `b2b_companies`) ne le touche pas. Sa route à part a été retirée le
+ * 2026-10-26 (décision de Hugo) : la règle du dépôt ne lit plus ce réglage.
  */
 export const memberDeliveryAddressPayloadSchema = deliveryAddressFieldsSchema()
   .extend({ depositAllowed: z.boolean().optional() })
   .superRefine(refuseDeliveryPayload);
 export type MemberDeliveryAddressPayload = z.infer<typeof memberDeliveryAddressPayloadSchema>;
-
-/**
- * « Dépôt autorisé » réglé par le staff
- * (`PUT admin/companies/:companyId/delivery-addresses/:addressId/deposit`,
- * sous `delivery_procedures`) — AP-D5.
- */
-export const deliveryDepositPayloadSchema = z.object({ depositAllowed: z.boolean() });
-export type DeliveryDepositPayload = z.infer<typeof deliveryDepositPayloadSchema>;
 
 // ─── Vues de LECTURE (réponses) ──────────────────────────────────────────────
 // Interfaces et non schémas : une réponse n'est pas re-validée à l'émission ; le

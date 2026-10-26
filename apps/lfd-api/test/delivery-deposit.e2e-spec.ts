@@ -1,8 +1,9 @@
 /**
  * E2E du **« dépôt autorisé »** sur une adresse de livraison
  * (`documentation/livraisons/livreur/a-la-porte.md`, AP-Q1, AP-D5) — une colonne
- * du carnet, réglée par le client sur sa route d'édition et par le staff sur
- * une route à part, sous `delivery_procedures`.
+ * du carnet, réglée par le client sur sa route d'édition. La route à part du
+ * staff a été retirée le 2026-10-26 (décision de Hugo) : la règle du dépôt ne
+ * lit plus ce réglage.
  *
  * 🔴 Ce que seul le vrai SQL prouve : une édition du client qui ne l'envoie
  * pas — un front en ligne qui ne le connaît pas — ne le remet pas à `false`,
@@ -13,7 +14,6 @@ import type { CompanyAddressesView, DeliveryAddressPayload } from "@lfd/contract
 import { CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { admin, ADMIN_VERIFIER_OVERRIDE } from "./delivery-rounds-scene.js";
-import { staffWithRole } from "./delivery-driver-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const OWNER = "auth0|owner";
@@ -96,32 +96,20 @@ describe("« dépôt autorisé » (AP-D5)", () => {
     ).toBe(1);
   });
 
-  it("le staff le règle sur sa route à part ; son édition d'adresse ne le touche pas", async () => {
-    await admin(ctx).put(STAFF_DEPOSIT()).send({ depositAllowed: true }).expect(204);
-    expect(await depositOf()).toBe(true);
+  it("le staff n'a plus de route pour le régler (retirée le 2026-10-26) ; son édition d'adresse ne le touche pas", async () => {
+    await admin(ctx).put(STAFF_DEPOSIT()).send({ depositAllowed: true }).expect(404);
+    expect(await depositOf()).toBe(false);
 
+    await ctx
+      .asSub(OWNER)
+      .patch(CLIENT_EDIT())
+      .send({ ...ADDRESS, depositAllowed: true })
+      .expect(204);
     await admin(ctx)
       .patch(`/admin/companies/${companyId}/delivery-addresses/${addressId}`)
       .send({ ...ADDRESS, depositAllowed: false })
       .expect(204);
 
     expect(await depositOf()).toBe(true);
-  });
-
-  it("la route staff est sous `delivery_procedures` : le comptoir, qui ne l’a pas, prend 403", async () => {
-    const counter = await staffWithRole(ctx, "vendeur", "comptoir", "comptoir");
-
-    await counter.agent.put(STAFF_DEPOSIT()).send({ depositAllowed: true }).expect(403);
-    expect(await depositOf()).toBe(false);
-  });
-
-  it("une adresse d'une autre société est introuvable (404)", async () => {
-    const other = (await createCompany(ctx.prisma, { raisonSociale: "Autre SAS" })).id;
-
-    await admin(ctx)
-      .put(`/admin/companies/${other}/delivery-addresses/${addressId}/deposit`)
-      .send({ depositAllowed: true })
-      .expect(404);
-    expect(await depositOf()).toBe(false);
   });
 });

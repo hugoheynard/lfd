@@ -26,6 +26,7 @@ const STATUS_VARIANTS: Readonly<Record<ProcedureOrderStatusView, 'warning' | 'in
     receipt_to_confirm: 'warning',
     receipt_confirmed: 'info',
     invoiced: 'success',
+    awaiting_remainder: 'info',
   };
 
 /**
@@ -33,7 +34,9 @@ const STATUS_VARIANTS: Readonly<Record<ProcedureOrderStatusView, 'warning' | 'in
  * Hugo, 2026-10-24). Le statut vient du serveur ; une commande facturée dit
  * son numéro de facture, une réception confirmée sans jour de réception le
  * dit (« à reprendre »), une réception à confirmer porte son geste : la
- * commande, où l'on enregistre la remise — retrait ou livraison.
+ * commande, où l'on enregistre la remise — retrait ou livraison. Une commande
+ * en partie retirée dit le jour de son reste quand il est connu (décision de
+ * Hugo du 2026-10-26).
  */
 @Component({
   selector: 'app-procedure-orders',
@@ -60,6 +63,7 @@ export class ProcedureOrders {
       day: order.serviceDay === null ? '—' : day(order.serviceDay),
       total: euros(order.totalCents),
       statusLabel: STATUS_LABELS[order.status],
+      remainderDay: order.remainderPlannedOn === null ? null : day(order.remainderPlannedOn),
       statusVariant: STATUS_VARIANTS[order.status],
     })),
   );

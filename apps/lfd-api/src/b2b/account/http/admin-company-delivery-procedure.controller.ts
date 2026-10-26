@@ -3,8 +3,6 @@ import {
   addressDoorstepRulePayloadSchema,
   type AddressDoorstepRuleView,
   type CreatedDeliveryStepResponse,
-  type DeliveryDepositPayload,
-  deliveryDepositPayloadSchema,
   type DeliveryProcedureOrderPayload,
   deliveryProcedureOrderPayloadSchema,
   type DeliveryProcedureView,
@@ -39,7 +37,6 @@ import { RemoveDeliveryStepByStaffCommand } from "../application/commands/remove
 import { ReorderDeliveryStepsByStaffCommand } from "../application/commands/reorder-delivery-steps-by-staff.command.js";
 import { ReviseDeliveryStepByStaffCommand } from "../application/commands/revise-delivery-step-by-staff.command.js";
 import type { DeliveryStepPhotoDownload } from "../application/queries/delivery-procedure-reading.js";
-import { SetDeliveryDepositByStaffCommand } from "../application/commands/set-delivery-deposit-by-staff.command.js";
 import { SetDeliveryDoorstepRuleByStaffCommand } from "../application/commands/set-delivery-doorstep-rule-by-staff.command.js";
 import { GetDeliveryDoorstepRuleForStaffQuery } from "../application/queries/get-delivery-doorstep-rule-for-staff.query.js";
 import { GetDeliveryProcedureForStaffQuery } from "../application/queries/get-delivery-procedure-for-staff.query.js";
@@ -52,7 +49,6 @@ import {
 import { deliveryStepPhotoUpload } from "./delivery-procedure-http.js";
 
 const PROCEDURE = ":companyId/delivery-addresses/:addressId/procedure";
-const DEPOSIT = ":companyId/delivery-addresses/:addressId/deposit";
 const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
 
 /**
@@ -65,10 +61,10 @@ const DOORSTEP_RULE = ":companyId/delivery-addresses/:addressId/doorstep-rule";
  * `b2b_companies`. Aucun mur membership ; chaque écriture inscrit son fait au
  * journal, dans sa transaction.
  *
- * Depuis le 2026-10-01, il règle aussi **« dépôt autorisé »** sur l'adresse
- * (`a-la-porte.md`, AP-D5) : le commercial le règle comme la procédure,
- * et la route d'édition de l'adresse — sous `b2b_companies` — ne le touche pas.
- * Et, du même jour, la **décision réglée d'avance à la porte** de l'adresse
+ * Il a réglé aussi **« dépôt autorisé »** sur l'adresse (`a-la-porte.md`,
+ * AP-D5) du 2026-10-01 au 2026-10-26 : la règle du dépôt ne le lit plus
+ * (« dépôt A »), et Hugo a retiré la route et l'écran ce jour-là.
+ * Depuis le 2026-10-01, la **décision réglée d'avance à la porte** de l'adresse
  * (B3 bis, LB-Q6) : le commercial seul, le client ne la règle ni ne la lit.
  */
 @Controller("admin/companies")
@@ -86,18 +82,6 @@ export class AdminCompanyDeliveryProcedureController {
   ): Promise<DeliveryProcedureView> {
     return this.queries.execute<GetDeliveryProcedureForStaffQuery, DeliveryProcedureView>(
       new GetDeliveryProcedureForStaffQuery(companyId, addressId),
-    );
-  }
-
-  @Put(DEPOSIT)
-  @HttpCode(HttpStatus.NO_CONTENT)
-  async setDeposit(
-    @Param("companyId") companyId: string,
-    @Param("addressId") addressId: string,
-    @Body(new ZodBody(deliveryDepositPayloadSchema)) payload: DeliveryDepositPayload,
-  ): Promise<void> {
-    await this.commands.execute<SetDeliveryDepositByStaffCommand, void>(
-      new SetDeliveryDepositByStaffCommand(companyId, addressId, payload.depositAllowed),
     );
   }
 

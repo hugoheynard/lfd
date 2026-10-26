@@ -55,7 +55,6 @@ interface DoorFacts {
   readonly window: MyDeliveryStopView["window"];
   readonly contact: MyDeliveryStopView["contact"];
   readonly signatureRequired: boolean;
-  readonly depositAllowed: boolean;
   readonly orderNote: string;
   readonly addressNote: string | null;
   readonly parking: MyDeliveryStopView["parking"];
@@ -69,7 +68,6 @@ const UNKNOWN_DOOR: DoorFacts = {
   window: null,
   contact: null,
   signatureRequired: false,
-  depositAllowed: false,
   orderNote: "",
   addressNote: null,
   parking: null,
@@ -206,7 +204,6 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
       window: frozen.window,
       contact: frozen.contact,
       signatureRequired: frozen.signatureRequired,
-      depositAllowed: frozen.depositAllowed,
       orderNote: frozen.note,
       addressNote: frozen.addressNote,
       parking: frozen.parking,
@@ -222,7 +219,6 @@ function doorFactsOf(stop: DriverStopRow, live: DepartureSheet | undefined): Doo
     window: live.window,
     contact: live.contact,
     signatureRequired: live.signatureRequired,
-    depositAllowed: live.depositAllowed,
     orderNote: live.note,
     addressNote: live.addressNote,
     parking: live.parking,

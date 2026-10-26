@@ -32,6 +32,8 @@ export interface DoorstepStopState {
   /**
    * Le dépôt autorisé par le client à l'adresse, FIGÉ au départ (AP-D5) ;
    * `false` au dépôt.
+   *
+   * Mort depuis le 2026-10-26 (décision de Hugo) : la règle du dépôt ne le lit plus et aucun écran ne le montre ; la colonne reste en base, sans suppression.
    */
   readonly depositAllowed: boolean;
   /**

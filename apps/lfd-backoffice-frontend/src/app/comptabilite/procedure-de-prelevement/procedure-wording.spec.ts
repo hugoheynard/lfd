@@ -77,7 +77,7 @@ describe('l’onglet Factures dans la barre', () => {
       invoices: procedureInvoices({
         state: 'to_do',
         reason: 'receipts_to_confirm',
-        figures: { invoiced: 5, receiptConfirmed: 2, receiptToConfirm: 1 },
+        figures: { invoiced: 5, receiptConfirmed: 2, receiptToConfirm: 1, awaitingRemainder: 0 },
       }),
     });
     const tab = procedureTabs(view).find((item) => item.key === 'invoices');

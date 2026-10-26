@@ -31,7 +31,6 @@ import { PreferFulfillmentByStaffHandler } from "./application/commands/prefer-f
 import { RemoveDeliveryAddressByStaffHandler } from "./application/commands/remove-delivery-address-by-staff.handler.js";
 import { SetDefaultDeliveryByStaffHandler } from "./application/commands/set-default-delivery-by-staff.handler.js";
 import { UpdateDeliveryAddressByStaffHandler } from "./application/commands/update-delivery-address-by-staff.handler.js";
-import { SetDeliveryDepositByStaffHandler } from "./application/commands/set-delivery-deposit-by-staff.handler.js";
 import { SetDeliveryDoorstepRuleByStaffHandler } from "./application/commands/set-delivery-doorstep-rule-by-staff.handler.js";
 import { GetDeliveryDoorstepRuleForStaffHandler } from "./application/queries/get-delivery-doorstep-rule-for-staff.handler.js";
 import { GrantTermsHandler } from "./application/commands/grant-terms.handler.js";
@@ -346,7 +345,6 @@ import {
     SaveBillingAddressByStaffHandler,
     AddDeliveryAddressByStaffHandler,
     UpdateDeliveryAddressByStaffHandler,
-    SetDeliveryDepositByStaffHandler,
     // La décision réglée d'avance à la porte, par adresse (B3 bis).
     SetDeliveryDoorstepRuleByStaffHandler,
     GetDeliveryDoorstepRuleForStaffHandler,

@@ -15,6 +15,7 @@ export const STATUS_LABELS: Readonly<Record<ProcedureOrderStatusView, string>> =
   receipt_to_confirm: 'Réception à confirmer',
   receipt_confirmed: 'Réception confirmée',
   invoiced: 'Facturée',
+  awaiting_remainder: 'Partielle — reste à relivrer',
 };
 
 /** Les trois chiffres clés, dans l'ordre des gestes : confirmer, émettre, c'est fait. */
@@ -22,12 +23,14 @@ export const FIGURE_ORDER: readonly ProcedureOrderStatusView[] = [
   'receipt_to_confirm',
   'receipt_confirmed',
   'invoiced',
+  'awaiting_remainder',
 ];
 
 export const FIGURE_LABELS: Readonly<Record<ProcedureOrderStatusView, string>> = {
   receipt_to_confirm: 'Réceptions à confirmer',
   receipt_confirmed: 'Réceptions confirmées à facturer',
   invoiced: 'Facturées',
+  awaiting_remainder: 'Partielles — reste à relivrer',
 };
 
 /** Le chiffre d'un statut. */
@@ -42,6 +45,8 @@ export function figureOf(
       return figures.receiptConfirmed;
     case 'invoiced':
       return figures.invoiced;
+    case 'awaiting_remainder':
+      return figures.awaitingRemainder;
   }
 }
 
@@ -71,7 +76,11 @@ export function invoicesSentence(view: CollectionProcedureInvoicesView): string 
 }
 
 function figuresSentence(figures: ProcedureOrderFiguresView): string {
-  if (figures.receiptConfirmed === 0 && figures.receiptToConfirm === 0) {
+  if (
+    figures.receiptConfirmed === 0 &&
+    figures.receiptToConfirm === 0 &&
+    figures.awaitingRemainder === 0
+  ) {
     return figures.invoiced === 0
       ? 'Aucune commande au compte dans la période.'
       : 'Toutes les commandes de la période sont facturées.';
@@ -88,6 +97,14 @@ function figuresSentence(figures: ProcedureOrderFiguresView): string {
     figures.receiptToConfirm === 0
       ? null
       : plural(figures.receiptToConfirm, 'réception à confirmer', 'réceptions à confirmer'),
+    // Décision de Hugo du 2026-10-26 : une partielle se dit, sans être « à facturer ».
+    figures.awaitingRemainder === 0
+      ? null
+      : plural(
+          figures.awaitingRemainder,
+          'partielle, reste à relivrer',
+          'partielles, reste à relivrer',
+        ),
   ];
   return `${parts.filter((part) => part !== null).join(', ')}.`;
 }

@@ -497,6 +497,20 @@ dans la graine ; en production, accordé à l'écran).
   défaut. Références `ESS-<ULID>` (`MsgId`, `EndToEndId`) et
   `ESS-<ULID>-<séquence>` (`PmtInfId`). Contrôlé par `isAuditCoherent` avant
   d'être gardé (`collection_test.xml`, empreinte vérifiée au téléchargement).
+- **Séquence par défaut : `RCUR`** (décision de Hugo du 2026-10-26, D3 de
+  [`reponses-de-la-banque.md`](reponses-de-la-banque.md) tranchée ainsi :
+  comme les vrais lots, réponse 20). L'écran la propose d'office dès que le
+  mandat l'admet (`defaultSequence`, panneau de génération) ; `FRST` et `OOFF`
+  restent possibles. L'API n'a pas de défaut : la séquence est obligatoire
+  dans la charge.
+- **Pas de jumeau** (décision de Hugo du 2026-10-26, réponse 21 : la banque
+  peut prendre pour un doublon deux débits au même débiteur, même montant,
+  même échéance, sur 10 à 15 jours) : l'agrégat refuse (409,
+  `CollectionTestLookalikeError`) un essai sur le même mandat avec le même
+  montant qu'un essai généré depuis moins de **15 jours**
+  (`LOOKALIKE_WINDOW_DAYS`, `domain/services/collection-test-lookalike.ts`,
+  compté depuis l'instant de génération du `Clock`). Le refus nomme l'essai
+  précédent, son jour, et dit « Choisissez un autre montant ».
 - **Ce qu'il ne touche pas** : aucune facture, aucun bon, aucun lot, aucun état
   d'encaissement — prouvé par l'e2e `apps/lfd-api/test/collection-test-generate.e2e-spec.ts`.
 - **Après** : « à rembourser » une fois l'échéance passée sans retour, jusqu'au
@@ -509,7 +523,8 @@ dans la graine ; en production, accordé à l'écran).
   Nos établissements — pas d'avis individuel pour nos propres établissements.
 - **Le XSD** : `pain.008.001.02` (ISO 20022, provenance dans
   `apps/lfd-api/test/fixtures/pain008/README.md`) valide un lot réel et un
-  essai dans les specs. Ce n'est pas le XSD restreint de l'EPC (non récupéré).
+  essai dans les specs — et, depuis le 2026-10-26, le rendu direct de
+  `renderTestFile` en `RCUR`, `FRST` et `OOFF`. Ce n'est pas le XSD restreint de l'EPC (non récupéré).
 
 ## 8. Le cycle mensuel et la transmission
 

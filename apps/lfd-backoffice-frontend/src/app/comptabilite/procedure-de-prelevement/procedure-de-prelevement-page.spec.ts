@@ -357,9 +357,10 @@ describe('la page « Procédure de prélèvement »', () => {
             totalCents: 1_200,
             status: 'receipt_to_confirm',
             invoiceNumber: null,
+            remainderPlannedOn: null,
           },
         ],
-        figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 1 },
+        figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 1, awaitingRemainder: 0 },
       }),
     });
     const fixture = await render();

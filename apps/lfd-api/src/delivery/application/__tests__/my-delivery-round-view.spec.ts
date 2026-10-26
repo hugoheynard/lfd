@@ -217,7 +217,6 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
         "customerLabel",
         // Plan « À la porte », B3 : la décision du commercial, décidée.
         "decision",
-        "depositAllowed",
         "gps",
         "orderNote",
         "orderState",
@@ -278,12 +277,10 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
       }),
     );
 
-    expect(view.stops.map((s) => [s.depositAllowed, s.canDeposit])).toEqual([
-      [true, false],
-      [true, true],
-      // « Dépôt A » (Hugo, 2026-10-25) : l'adresse ne compte plus sans signature exigée.
-      [false, true],
-    ]);
+    // « Dépôt A » (Hugo, 2026-10-25) : l'adresse ne compte plus sans signature exigée ;
+    // son « dépôt autorisé » a quitté la vue le 2026-10-26.
+    expect(view.stops.map((s) => s.canDeposit)).toEqual([false, true, true]);
+    expect(view.stops[0]).not.toHaveProperty("depositAllowed");
   });
 
   it("🔴 B3 / LB-Q5 : l'autorisation d'un commercial ouvre `canDeposit`, même signature exigée", () => {
@@ -341,7 +338,7 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
     ]);
   });
 
-  it("au dépôt, le dépôt autorisé se lit sur la feuille vivante", () => {
+  it("au dépôt, `canDeposit` se lit sur la feuille vivante ; le « dépôt autorisé » n'est plus montré", () => {
     const view = myDeliveryRoundView(
       inputs({
         round: round([stop("a", 1)], null),
@@ -349,10 +346,8 @@ describe("myDeliveryRoundView — à la porte (plan « À la porte », lot A)", 
       }),
     );
 
-    expect(view.stops[0]).toMatchObject({
-      depositAllowed: true,
-      canDeposit: true,
-    });
+    expect(view.stops[0]).toMatchObject({ canDeposit: true });
+    expect(view.stops[0]).not.toHaveProperty("depositAllowed");
   });
 
   it("porte l'état de la commande lu au commerce, et les signalements", () => {

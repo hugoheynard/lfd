@@ -75,9 +75,39 @@ describe("ProcedureInvoicesStep — l'onglet Factures de la procédure", () => {
       ["ORD-given", "receipt_confirmed", null],
       ["ORD-late", "receipt_to_confirm", null],
     ]);
-    expect(view.figures).toEqual({ invoiced: 1, receiptConfirmed: 1, receiptToConfirm: 1 });
+    expect(view.figures).toEqual({
+      invoiced: 1,
+      receiptConfirmed: 1,
+      receiptToConfirm: 1,
+      awaitingRemainder: 0,
+    });
     expect(view.issuableCount).toBe(1);
     expect(view).toMatchObject({ state: "to_do", reason: "receipts_to_confirm" });
+  });
+
+  /**
+   * Décision de Hugo du 2026-10-26 : une commande en partie retirée paraît
+   * « partielle, reste à relivrer », avec le jour du reste ; elle n'est ni
+   * comptée « à facturer », ni prise par l'émission.
+   */
+  it("en partie retirée : partielle avec le jour du reste, jamais à facturer", async () => {
+    const world = invoicesStepWorld();
+    world.invoices.floorAt = FLOOR;
+    world.orders.rows = [
+      procedureRow("partial", {
+        receivedOn: null,
+        partiallyHandedOver: true,
+        remainderPlannedOn: "2026-10-22",
+      }),
+    ];
+
+    const view = await read(world);
+
+    expect(view.orders).toEqual([
+      expect.objectContaining({ status: "awaiting_remainder", remainderPlannedOn: "2026-10-22" }),
+    ]);
+    expect(view.figures).toMatchObject({ receiptConfirmed: 0, awaitingRemainder: 1 });
+    expect(view.issuableCount).toBe(0);
   });
 
   /** Régression (dev, 2026-10-24) : une commande remise et facturée avant ZL, sans `received_on`, était « à constater ». */

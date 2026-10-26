@@ -29,6 +29,10 @@ export interface ProcedureOrderRow {
   readonly handedOver: boolean;
   /** `AAAA-MM-JJ` ; `null` : pas de jour de réception. */
   readonly receivedOn: string | null;
+  /** `partially_handed_over` : une partie retirée, un reste à relivrer. */
+  readonly partiallyHandedOver: boolean;
+  /** `AAAA-MM-JJ` — le jour du prochain reste vivant (rang > 1) ; `null` sans. */
+  readonly remainderPlannedOn: string | null;
   /** La facture 380 qui la porte, quelle que soit sa période ; `null` sinon. */
   readonly invoice: { readonly invoiceId: string; readonly number: string } | null;
 }
@@ -43,9 +47,9 @@ export interface ProcedureOrderRow {
  * 1. une facture de la clôture la porte ;
  * 2. elle est dans l'assiette de l'émission (`billableOrderWhere`) ;
  * 3. passée au compte, non soldée, son jour demandé est dans la période et
- *    passé — sauf en partie retirée (plan E7 reliquat, L5c) : son reste suit,
- *    elle n'est facturable qu'à son solde, et l'onglet n'a aucun geste pour
- *    elle.
+ *    passé — en partie retirée comprise : elle y paraît « partielle, reste à
+ *    relivrer », jamais « à facturer » (décision de Hugo du 2026-10-26, qui
+ *    annule l'exclusion posée en L5c).
  *
  * L'adaptateur ne décide rien d'autre : le tri par payeur et le statut
  * appartiennent à l'application et au domaine.

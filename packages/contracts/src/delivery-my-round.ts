@@ -168,15 +168,11 @@ export interface MyDeliveryStopView {
    */
   readonly closedAt: string | null;
   /**
-   * Le client autorise le dépôt sans personne à cette adresse — FIGÉ au départ,
-   * lu vivant au dépôt ; `false` sans adresse reliée au carnet (AP-D5).
-   */
-  readonly depositAllowed: boolean;
-  /**
-   * « Déposé avec preuve » est-il permis ? Calculé par le serveur : le dépôt
-   * autorisé ET aucune signature exigée — la signature l'emporte (AP-Q6) —,
-   * OU l'autorisation d'un commercial pour cet arrêt, qui l'emporte sur la
-   * signature (B3, LB-Q5). L'écran ne refait pas la règle.
+   * « Déposé avec preuve » est-il permis ? Calculé par le serveur : aucune
+   * signature exigée (« dépôt A », 2026-10-25), OU l'autorisation d'un
+   * commercial pour cet arrêt, qui l'emporte sur la signature (B3, LB-Q5).
+   * L'écran ne refait pas la règle. Le « dépôt autorisé » de l'adresse n'y
+   * entre plus, et a quitté cette vue le 2026-10-26 (décision de Hugo).
    */
   readonly canDeposit: boolean;
   /**

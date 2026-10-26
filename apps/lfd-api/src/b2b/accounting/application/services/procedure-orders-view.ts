@@ -19,6 +19,7 @@ export function procedureOrdersView(
       invoiced: count("invoiced"),
       receiptConfirmed: count("receipt_confirmed"),
       receiptToConfirm: count("receipt_to_confirm"),
+      awaitingRemainder: count("awaiting_remainder"),
     },
     issuableCount: count("receipt_confirmed"),
   };

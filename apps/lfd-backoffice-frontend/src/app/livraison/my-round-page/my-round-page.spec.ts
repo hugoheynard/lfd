@@ -507,11 +507,10 @@ describe('MyRoundPage — à la porte (lot A, PL2)', () => {
       round: myRoundOf({
         departedAt,
         stops: [
-          myStopOf({ rank: 1, depositAllowed: true, canDeposit: true }),
-          // Dépôt autorisé à l'adresse, mais signature exigée : `canDeposit` est faux (AP-Q6).
+          myStopOf({ rank: 1, canDeposit: true }),
+          // Signature exigée : `canDeposit` est faux (AP-Q6).
           myStopOf({
             rank: 2,
-            depositAllowed: true,
             signatureRequired: true,
             canDeposit: false,
           }),

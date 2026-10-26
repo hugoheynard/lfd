@@ -16,7 +16,6 @@ import { FoldPanelRef, provideFoldInlineConfirmLabels } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
-import { AdminDeliveryDepositService } from '../../../comptes-clients/admin-delivery-deposit.service';
 import { AdminDeliveryDoorstepRuleService } from '../../../comptes-clients/admin-delivery-doorstep-rule.service';
 import { AdminDeliveryProcedurePanel } from './delivery-procedure-panel';
 
@@ -140,7 +139,6 @@ describe('AdminDeliveryProcedurePanel', () => {
         { provide: DeliveryProcedureGateway, useValue: gateway },
         { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
         { provide: PermissionsStore, useValue: grants },
-        { provide: AdminDeliveryDepositService, useValue: { set: () => Promise.resolve() } },
         // La décision à la porte de l'adresse a sa propre spec (B3 bis) ; ici,
         // on ne compte que ses lectures.
         {
@@ -162,7 +160,6 @@ describe('AdminDeliveryProcedurePanel', () => {
       companyId: 'cmp_1',
       address: ADDRESS,
       onStepCountChange: (count: number) => counts.push(count),
-      onDepositChange: () => undefined,
     });
     await settle(fixture);
     return fixture;

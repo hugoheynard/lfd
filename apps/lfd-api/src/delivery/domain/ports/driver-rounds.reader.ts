@@ -31,7 +31,9 @@ export interface DepartedStopRow {
   readonly gps: GpsPoint | null;
   /** Le stationnement du carnet figé au départ (§6) ; `null` : aucun, ou parti avant. */
   readonly parking: GpsPoint | null;
-  /** « Dépôt autorisé », figé au départ (AP-D5) ; `false` avant la migration qui l'a ajouté. */
+  /**
+   * « Dépôt autorisé », figé au départ (AP-D5). Mort depuis le 2026-10-26 (décision de Hugo) : la règle du dépôt ne le lit plus et aucun écran ne le montre ; la colonne reste en base, sans suppression.
+   */
   readonly depositAllowed: boolean;
   /** La décision réglée d'avance, résolue et figée au départ (B3 bis) ; `ask` avant la migration. */
   readonly doorstepRule: DoorstepRule;

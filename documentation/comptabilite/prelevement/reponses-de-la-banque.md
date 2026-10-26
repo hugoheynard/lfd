@@ -250,8 +250,9 @@ relevé des rejets permettent de rapprocher un à un.
 - _Code_ : le lot réel n'écrit jamais `FRST` (`SequenceType = "RCUR" | "OOFF"`,
   `pain008-document.ts:28`) ✔ ; l'essai le permet encore (`TestSequence`,
   l. 35).
-- ⚪ lot réel. 🟡 **Décision D3** : retirer `FRST` de l'essai (il ne teste plus
-  rien que la banque exige) ou le garder pour vérifier qu'il passe.
+- ⚪ lot réel. ✅ **Décision D3, tranchée par Hugo le 2026-10-26** : `FRST`
+  reste dans l'essai, `RCUR` y est la séquence par défaut
+  ([`prelevement-sepa.md`](prelevement-sepa.md) §7 bis).
 
 **21. Doublons** : niveau fichier (`MsgId` + nombre de transactions + montant
 global) et niveau transaction (`EndToEndId`, RUM, IBAN, montant, échéance),
@@ -501,7 +502,7 @@ Réponses 7, 11 (en-tête, longueur), 17, 18, 19, 20 (lot réel), 21 (lot réel)
 | --- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------- |
 | D1  | Les **plafonds** à communiquer : unitaire, par remise, cumul mensuel                                                                                                                                     | 2       | à chiffrer depuis le plus gros client et le chiffre mensuel prévu, avec marge                                   |
 | D2  | **Passer en `pain.008.001.08`**, et quand                                                                                                                                                                | 16      | pas avant la première remise ; avant 2027                                                                       |
-| D3  | **`FRST`** : le retirer de l'essai, ou le garder                                                                                                                                                         | 20      | le retirer : il ne teste plus une exigence                                                                      |
+| D3  | ✅ **Tranchée le 2026-10-26 (Hugo)** : `FRST` reste possible dans l'essai, mais la séquence proposée par défaut est **`RCUR`**, comme les vrais lots                                                     | 20      | —                                                                                                               |
 | D4  | **Limite de dépôt** : J-2 (réponse 3) ou J-1 avant 13 h 45 en B2B, 14 h 45 en CORE (réponse 22) — **contradiction à faire lever par la banque**                                                          | 3, 22   | **Tranché par Hugo le 2026-10-23 : J-3 ouvrés, 13:45** — plus prudent que les deux réponses ; réglage à l'écran |
 | D5  | **PSR2** : positif + négatif, ou négatif seul                                                                                                                                                            | 24      | positif + négatif au début                                                                                      |
 | D6  | Retours en **`pain.002` ou `camt.054`**                                                                                                                                                                  | 30      | celui que la banque recommande ; l'import lit les deux                                                          |

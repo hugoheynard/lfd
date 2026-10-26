@@ -54,6 +54,13 @@
 >   (`deposit_allowed`) reste en base et à l'écran, **sans effet** sur le
 >   dépôt — à Hugo de dire s'il sort de l'écran. `DepositNotAllowedError`,
 >   devenue inatteignable, est retirée.
+> - 🔴 **2026-10-26, décision de Hugo** : « dépôt autorisé » **sort de
+>   l'écran du commercial**. Retirés : le contrôle de la fiche client
+>   (`delivery-deposit-toggle`), sa route (`PUT admin/companies/…/deposit`)
+>   et le champ `depositAllowed` de « Ma tournée » (seul `canDeposit` y
+>   reste). La colonne `deposit_allowed` **reste en base**, sans migration ;
+>   son gel au départ est annoté mort. Le client le règle encore sur ses
+>   adresses (`company-addresses.controller.ts`, boutique) — non tranché.
 > - ⏳ **Décision PROVISOIRE** (« pour le moment », à revoir) : quand le client
 >   n'autorise pas le dépôt mais que le réglage du commercial autorise le
 >   dépôt « sauvage », **le commercial l'emporte**.
@@ -197,10 +204,10 @@ décision, une règle autre que `ask` s'applique aussitôt (`source = setting`,
 sans auteur, **sans notification**). Défaut global : `ask`.
 
 **« Dépôt autorisé » de l'adresse** — réglé par le client sur ses adresses
-(`company-addresses.controller.ts`) et par le commercial
-(`PUT admin/companies/…/deposit`, sous `delivery_procedures`). ⚠️ Sans effet
-sur le dépôt depuis le 2026-10-25 (« dépôt A », bandeau en tête) : il est
-encore figé au départ et affiché, plus lu par la règle.
+(`company-addresses.controller.ts`). ⚠️ Sans effet sur le dépôt depuis le
+2026-10-25 (« dépôt A », bandeau en tête) ; la route du commercial et
+l'affichage ont été retirés le 2026-10-26 (décision de Hugo). Il est encore
+figé au départ, annoté mort, et lu par personne.
 
 **Prévenir (B5)** — une notice « Livraison à décider » par signalement qui
 ouvre une décision, après validation, adressée par droit

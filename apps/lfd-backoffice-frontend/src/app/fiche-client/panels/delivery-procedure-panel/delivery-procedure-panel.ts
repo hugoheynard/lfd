@@ -12,37 +12,33 @@ import {
 import { DeliveryProcedureEditor } from '@lfd/b2b-ui/company';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
-import { DeliveryDepositToggle } from '../delivery-deposit-toggle/delivery-deposit-toggle';
 import { DeliveryDoorstepRule } from '../delivery-doorstep-rule/delivery-doorstep-rule';
 
 /** Charge d'ouverture : l'adresse, et de quoi prévenir la fiche que son compteur a bougé. */
 export interface AdminDeliveryProcedurePanelData {
-  /** La société de la fiche — la route de « dépôt autorisé » la nomme. */
+  /** La société de la fiche — la route de la décision à la porte la nomme. */
   readonly companyId: string;
   readonly address: DeliveryAddressView;
   /** Appelé à chaque changement du nombre d'étapes. */
   readonly onStepCountChange: (count: number) => void;
-  /** Appelé quand « dépôt autorisé » a été enregistré. */
-  readonly onDepositChange: (depositAllowed: boolean) => void;
 }
 
 /**
  * La **procédure de livraison** d'une adresse, côté staff : l'éditeur partagé
  * dans un panneau. Le commercial la règle au téléphone, comme le reste de
- * l'adresse. « Dépôt autorisé » y vit aussi (`a-la-porte.md`, AP-D5) : même
- * droit, même interlocuteur, même moment. Et la décision réglée d'avance à la
- * porte de l'adresse (B3 bis), pour la même raison.
+ * l'adresse. La décision réglée d'avance à la porte de l'adresse (B3 bis) y
+ * vit aussi : même droit, même interlocuteur, même moment. « Dépôt autorisé »
+ * en est sorti le 2026-10-26 (décision de Hugo) : la règle du dépôt ne le lit
+ * plus.
  *
- * 🔴 **Les trois suivent `delivery_procedures`**, comme toutes leurs routes
+ * 🔴 **Les deux suivent `delivery_procedures`**, comme toutes leurs routes
  * (`@AdminSurface("delivery_procedures")`) : lire sous `:read`, écrire sous
  * `:write`. L'éditeur s'ouvrait en écriture sans test de droit, et un rôle sans
  * la ressource prenait 403 dès la première lecture (audit F2, 2026-10-07).
  *
- * ⚠️ Sans `:read`, le panneau ne monte AUCUN des trois blocs et dit pourquoi :
+ * ⚠️ Sans `:read`, le panneau ne monte AUCUN des deux blocs et dit pourquoi :
  * la décision à la porte et l'éditeur lisent leur route en paraissant (403 sans
- * le droit) ; « Dépôt autorisé » ne lit rien, mais ne s'écrit que sous `:write`,
- * et un panneau à un bloc sur trois dirait moins que l'état vide (vérifié le
- * 2026-10-07). Il s'ouvre quand même : l'entrée
+ * le droit). Il s'ouvre quand même : l'entrée
  * « Procédure de livraison » vit dans la carte d'adresses partagée, qui la
  * propose à tous, et un clic qui n'ouvrirait rien ne dirait pas ce qui manque.
  *
@@ -58,7 +54,6 @@ export interface AdminDeliveryProcedurePanelData {
     FoldPanelFooterComponent,
     FoldButtonComponent,
     FoldEmptyStateComponent,
-    DeliveryDepositToggle,
     DeliveryDoorstepRule,
     DeliveryProcedureEditor,
   ],

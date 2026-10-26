@@ -31,6 +31,7 @@ export const GLOSSARY_ORDER_CANCEL: Readonly<Record<string, string>> = {
   in_preparation: 'Refus : déjà en production',
   ready: 'Refus : prête',
   fulfilled: 'Refus : déjà retirée',
+  partially_handed_over: 'Refus : déjà retirée en partie',
   too_late: 'Refus : délai dépassé',
   tooLateUndated: 'Refus : délai dépassé, commande sans date',
   payment_in_progress: 'Refus : paiement en cours',

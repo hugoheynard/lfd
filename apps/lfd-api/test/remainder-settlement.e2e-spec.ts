@@ -16,7 +16,11 @@
  * le passage à `paid`, qu'aucune route ne fait pour une commande au compte.
  */
 import { MonthlyInvoicingReader } from "../src/b2b/accounting/domain/ports/monthly-invoicing.reader.js";
-import { ProcedureOrdersReader } from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
+import {
+  ProcedureOrdersReader,
+  type ProcedureOrderRow,
+} from "../src/b2b/accounting/domain/ports/procedure-orders.reader.js";
+import { procedureOrderStatus } from "../src/b2b/accounting/domain/services/collection-procedure-invoices.js";
 import { UnconfirmedDeliveriesReader } from "../src/b2b/accounting/domain/ports/unconfirmed-deliveries.reader.js";
 import { DeliveryNote } from "../src/b2b/delivery-notes/domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../src/b2b/delivery-notes/domain/ports/delivery-note.repository.js";
@@ -188,7 +192,7 @@ async function invoicingOf(orderId: string) {
 }
 
 /** L'onglet « Factures » d'une procédure qui couvre le jour servi, ce jour passé. */
-async function procedureHas(orderId: string): Promise<boolean> {
+async function procedureRowOf(orderId: string): Promise<ProcedureOrderRow | undefined> {
   const { from, to } = windowAroundServiceDay();
   const rows = await ctx.app.get(ProcedureOrdersReader, { strict: false }).ofPeriod({
     periodInvoiceIds: [],
@@ -198,7 +202,7 @@ async function procedureHas(orderId: string): Promise<boolean> {
     servedThrough: SERVICE_DAY,
     servedBefore: LATER_DAY,
   });
-  return rows.some((row) => row.orderId === orderId);
+  return rows.find((row) => row.orderId === orderId);
 }
 
 describe("le solde dérivé (plan E7 reliquat, L5b)", () => {
@@ -323,17 +327,29 @@ describe("le solde dérivé (plan E7 reliquat, L5b)", () => {
   /**
    * Régression (L5c) : l'onglet « Factures » de la procédure classait une
    * commande en partie retirée « réception confirmée » et la comptait « à
-   * facturer », alors qu'elle ne se facture qu'à son solde.
+   * facturer », alors qu'elle ne se facture qu'à son solde. L5c l'excluait ;
+   * décision de Hugo du 2026-10-26 : elle paraît, « partielle — reste à
+   * relivrer », jamais « à facturer ».
    */
-  it("l'onglet « Factures » de la procédure ne la montre pas tant que son reste suit", async () => {
+  it("l'onglet « Factures » de la procédure la montre « partielle, reste à relivrer », avec le jour du reste", async () => {
     const order = await decidedOrder();
     await planRemainder(order);
     // Témoin : son jour passé, non retirée, elle y est (« réception à confirmer »).
-    expect(await procedureHas(order.id)).toBe(true);
+    const before = await procedureRowOf(order.id);
+    expect(before).toMatchObject({ partiallyHandedOver: false });
 
     await handOverAtCounter(order.orderNumber);
 
     expect((await orderRow(order.id)).status).toBe("partially_handed_over");
-    expect(await procedureHas(order.id)).toBe(false);
+    const row = await procedureRowOf(order.id);
+    expect(row).toMatchObject({ partiallyHandedOver: true, remainderPlannedOn: REMAINDER_DAY });
+    expect(
+      procedureOrderStatus({
+        invoiced: row?.invoice !== null,
+        handedOver: row?.handedOver ?? false,
+        receivedOn: row?.receivedOn ?? null,
+        awaitingRemainder: row?.partiallyHandedOver ?? false,
+      }),
+    ).toBe("awaiting_remainder");
   });
 });

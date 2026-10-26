@@ -1,9 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
-import { CompanyAddressNotFoundError } from "../../../domain/errors/account-errors.js";
 import { UpdateDeliveryAddressCommand } from "../address-commands.js";
-import { SetDeliveryDepositByStaffCommand } from "../set-delivery-deposit-by-staff.command.js";
-import { SetDeliveryDepositByStaffHandler } from "../set-delivery-deposit-by-staff.handler.js";
 import { UpdateDeliveryAddressHandler } from "../update-delivery-address.handler.js";
 import {
   COMPANY_LABEL,
@@ -17,8 +14,9 @@ import { silentGestures } from "./site-gesture-doubles.js";
 
 /**
  * **« Dépôt autorisé »** (`documentation/livraisons/livreur/a-la-porte.md`, AP-D5) :
- * réglé par le client sur la route d'édition de son adresse, ou par le staff
- * sur sa route à part. Absent de la charge du client, il reste INCHANGÉ.
+ * réglé par le client sur la route d'édition de son adresse. Absent de sa
+ * charge, il reste INCHANGÉ. La route du staff a été retirée le 2026-10-26
+ * (décision de Hugo) : la règle du dépôt ne lit plus ce réglage.
  */
 function build() {
   const events = new RecordingPublisher();
@@ -32,13 +30,7 @@ function build() {
     names,
     silentGestures(),
   );
-  const staff = new SetDeliveryDepositByStaffHandler(
-    addresses,
-    events,
-    new DirectUnitOfWork(),
-    names,
-  );
-  return { events, addresses, member, staff };
+  return { events, addresses, member };
 }
 
 async function depositOf(addresses: InMemoryAddresses): Promise<boolean | undefined> {
@@ -56,7 +48,7 @@ const DEPOSIT_FACT = {
   },
 };
 
-describe("« dépôt autorisé », par le client et par le staff (AP-D5)", () => {
+describe("« dépôt autorisé », par le client (AP-D5)", () => {
   it("le client l'autorise en éditant son adresse : un fait de plus, à part", async () => {
     const { events, addresses, member } = build();
 
@@ -78,25 +70,5 @@ describe("« dépôt autorisé », par le client et par le staff (AP-D5)", () =>
 
     expect(await depositOf(addresses)).toBe(true);
     expect(events.factTypes().at(-1)).toBe("company.delivery_address_updated");
-  });
-
-  it("le staff le règle sur sa route à part ; inchangé, rien ne s'écrit", async () => {
-    const { events, addresses, staff } = build();
-
-    await staff.execute(new SetDeliveryDepositByStaffCommand("c1", "a1", true));
-    await staff.execute(new SetDeliveryDepositByStaffCommand("c1", "a1", true));
-
-    expect(await depositOf(addresses)).toBe(true);
-    expect(addresses.writes).toEqual(["book"]);
-    expect(events.traced.map((event) => event.journalFact())).toEqual([DEPOSIT_FACT]);
-  });
-
-  it("le staff ne touche pas une adresse qui n'est pas à cette société", async () => {
-    const { staff, addresses } = build();
-
-    await expect(
-      staff.execute(new SetDeliveryDepositByStaffCommand("c1", "ailleurs", true)),
-    ).rejects.toBeInstanceOf(CompanyAddressNotFoundError);
-    expect(addresses.writes).toEqual([]);
   });
 });

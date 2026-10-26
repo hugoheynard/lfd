@@ -22,6 +22,8 @@ const COUNTED_STATUSES = [
   "placed",
   "confirmed",
   "in_production",
+  // Décision de Hugo du 2026-10-26 : « prête » compte — elle comptait la veille en `confirmed`.
+  "ready",
   "partially_handed_over",
   "fulfilled",
 ] as const;

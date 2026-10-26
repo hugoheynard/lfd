@@ -18,6 +18,9 @@
       @if (row.invoiceNumber !== null) {
         <span data-order-invoice>{{ row.invoiceNumber }}</span>
       }
+      @if (row.remainderDay !== null) {
+        <span data-order-remainder-day>reste prévu le {{ row.remainderDay }}</span>
+      }
     </span>
   </ng-template>
   <ng-template foldCell="gesture" let-row>

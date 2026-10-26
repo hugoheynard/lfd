@@ -55,6 +55,8 @@ export interface DepartureSheet {
   /**
    * « Dépôt autorisé » de l'adresse du carnet reliée, lu sous le même mur que
    * la note ; `false` sans adresse reliée (`a-la-porte.md`, AP-D5).
+   *
+   * Mort depuis le 2026-10-26 (décision de Hugo) : la règle du dépôt ne le lit plus et aucun écran ne le montre ; la colonne reste en base, sans suppression.
    */
   readonly depositAllowed: boolean;
   /**

@@ -681,6 +681,26 @@ CONFLICT` écrit à la main mais un `createMany … skipDuplicates` sur
     son handler ne lisaient pas les colonnes mais leur adaptateur : rien à y
     changer.
 
+- **Décisions de Hugo du 2026-10-26** (bâties le même jour, non commitées à
+  l'écriture) :
+  - **le port d'un reste ne se lit pas sur le papier** : le BL d'un reste
+    garde dans son modèle port, surtaxe et remise fixe à 0 €
+    (`remainderAdjustmentsOf`) ; le PDF du BL (le pavé de totaux du bon de
+    commande, `order-sheet-pdf-totals.ts`) et la facture (`invoice-dossier.ts`,
+    `facturx-settlement.ts`) ne posaient déjà aucune ligne à 0 € — c'est
+    désormais éprouvé (`remainder-note-paper.spec.ts`,
+    `invoice-remainder-zero-fees.spec.ts`) ;
+  - **« prête » compte** dans le chiffre d'affaires, les volumes et
+    l'historique d'alertes : `ready` entre dans les cinq listes de l'annexe F
+    (constat hors plan **tranché**). Régression e2e par liste, et le passage
+    prête → retirée ne compte qu'une fois (`apps/lfd-api/test/ready-order-counts.e2e-spec.ts`) ;
+  - **une commande en partie retirée paraît dans l'onglet « Factures » de la
+    procédure**, au statut `awaiting_remainder` (« Partielle — reste à
+    relivrer », avec `remainderPlannedOn`), jamais comptée « à facturer » ;
+    elle ne bloque pas l'onglet. **Annule l'exclusion posée en L5c.** Règle
+    confirmée : on facture sur le livré une fois le sort du reste décidé —
+    abandonné ⇒ soldée et facturée sur le livré ; à relivrer ⇒ en attente.
+
 ## 4. Les risques, dans l'ordre
 
 1. **L3**, le plus large : 13 clés qui changent, 4 payloads, huit tables, trois
@@ -1161,7 +1181,7 @@ libellé « En partie retirée » ; le filtre de la liste du back-office
 boutique, `revision-wording.ts` (aucun geste) et les textes du refus
 d'annulation. **Restent** : `order-rows.ts` et `order-cancel-section.ts` (L5c).
 
-**Constat hors plan** : les cinq listes « chiffre d'affaires » ci-dessus
-omettent toutes `ready` — une commande prête n'entre pas dans le CA, le
+**Constat hors plan** (tranché par Hugo le 2026-10-26 : `ready` y entre, §3 bis) : les cinq listes « chiffre d'affaires » ci-dessus
+omettaient toutes `ready` — une commande prête n'entre pas dans le CA, le
 volume ni l'historique d'alertes, alors qu'elle y était `confirmed` la veille.
 Ce n'est pas E7 ; c'est à trancher avant L5, qui touche ces cinq listes.

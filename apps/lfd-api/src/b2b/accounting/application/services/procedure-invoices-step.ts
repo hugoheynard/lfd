@@ -35,7 +35,7 @@ export interface ProcedureInvoicesQuery {
 
 const NO_ORDERS = {
   orders: [],
-  figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 0 },
+  figures: { invoiced: 0, receiptConfirmed: 0, receiptToConfirm: 0, awaitingRemainder: 0 },
   issuableCount: 0,
 } as const;
 
@@ -130,7 +130,9 @@ function orderView(row: ProcedureOrderRow): ProcedureOrderView {
     invoiced: row.invoice !== null,
     handedOver: row.handedOver,
     receivedOn: row.receivedOn,
+    awaitingRemainder: row.partiallyHandedOver,
   };
+  const status = procedureOrderStatus(facts);
   return {
     orderId: row.orderId,
     orderNumber: row.orderNumber,
@@ -138,8 +140,9 @@ function orderView(row: ProcedureOrderRow): ProcedureOrderView {
     serviceDay: row.serviceDay ?? row.receivedOn,
     fulfillmentMethod: row.fulfillmentMethod,
     totalCents: row.totalCents,
-    status: procedureOrderStatus(facts),
+    status,
     invoiceNumber: row.invoice?.number ?? null,
+    remainderPlannedOn: status === "awaiting_remainder" ? row.remainderPlannedOn : null,
   };
 }
 

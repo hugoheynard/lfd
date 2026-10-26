@@ -7,7 +7,12 @@ import {
 
 const FACTS: InvoicesFacts = { reached: true, open: true, statuses: [] };
 
-const NOTHING: ProcedureOrderFacts = { invoiced: false, handedOver: false, receivedOn: null };
+const NOTHING: ProcedureOrderFacts = {
+  invoiced: false,
+  handedOver: false,
+  receivedOn: null,
+  awaitingRemainder: false,
+};
 
 describe("le statut d'une commande de la période", () => {
   it("aucune remise enregistrée : réception à confirmer", () => {
@@ -27,7 +32,12 @@ describe("le statut d'une commande de la période", () => {
 
   it("facturée : l'emporte sur tout", () => {
     expect(
-      procedureOrderStatus({ invoiced: true, handedOver: true, receivedOn: "2026-10-12" }),
+      procedureOrderStatus({
+        ...NOTHING,
+        invoiced: true,
+        handedOver: true,
+        receivedOn: "2026-10-12",
+      }),
     ).toBe("invoiced");
   });
 
@@ -35,6 +45,24 @@ describe("le statut d'une commande de la période", () => {
   it("facturée sans jour de réception : facturée, jamais à confirmer", () => {
     const facts = { ...NOTHING, invoiced: true };
     expect(procedureOrderStatus(facts)).toBe("invoiced");
+  });
+
+  /** Décision de Hugo du 2026-10-26 : une commande en partie retirée paraît, jamais « à facturer ». */
+  it("en partie retirée, retrait enregistré : partielle, reste à relivrer — pas réception confirmée", () => {
+    const facts = {
+      ...NOTHING,
+      handedOver: true,
+      receivedOn: "2026-10-12",
+      awaitingRemainder: true,
+    };
+    expect(procedureOrderStatus(facts)).toBe("awaiting_remainder");
+  });
+
+  it("une partielle ne bloque pas l'onglet : rien à confirmer ni à facturer", () => {
+    expect(invoicesStatus({ ...FACTS, statuses: ["invoiced", "awaiting_remainder"] })).toEqual({
+      state: "done",
+      reason: "all_invoiced",
+    });
   });
 });
 

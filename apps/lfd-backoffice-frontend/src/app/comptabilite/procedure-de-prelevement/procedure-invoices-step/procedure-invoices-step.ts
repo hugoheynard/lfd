@@ -54,12 +54,13 @@ export class ProcedureInvoicesStep {
 
   protected readonly sentence = computed(() => invoicesSentence(this.view()));
 
+  /** Les partielles ne se montrent que s'il y en a : elles n'appellent aucun geste. */
   protected readonly figures = computed(() =>
     FIGURE_ORDER.map((status) => ({
       status,
       count: figureOf(this.view().figures, status),
       label: FIGURE_LABELS[status],
-    })),
+    })).filter((figure) => figure.status !== 'awaiting_remainder' || figure.count > 0),
   );
 
   protected readonly orders = computed(() => {
