@@ -9,7 +9,8 @@ import {
 import { PackingOrderPackedEvent } from "../../../../../production/channels/commerce/index.js";
 import type { DurableEvent } from "../../../../../platform/outbox/durable-event.js";
 import type { DurableSubscriber } from "../../../../../platform/outbox/durable-handler.js";
-import { appliesToOrder } from "../later-shipment-guard.js";
+import { LaterShipmentNotYetHandledError } from "../../../domain/errors/order-errors.js";
+import { ensureFirstShipment } from "../later-shipment-guard.js";
 import { OnOrderHandedOver } from "../on-order-handed-over.handler.js";
 import { OnPackingOrderPacked } from "../on-packing-order-packed.handler.js";
 import { OnPackingShortfallCleared } from "../on-packing-shortfall-cleared.handler.js";
@@ -42,7 +43,6 @@ async function subject(handlerClass: SubscriberClass) {
 
 function factsOf(rank: number): readonly (readonly [SubscriberClass, DurableEvent])[] {
   return [
-    [OnPackingOrderPacked, new PackingOrderPackedEvent("ord_1", rank, "ORD-0001", AT, "s1")],
     [OnOrderHandedOver, new OrderHandedOverEvent("ord_1", rank, "ORD-0001", AT, "s1", "scan")],
     [
       OnPackingShortfallReported,
@@ -55,19 +55,21 @@ function factsOf(rank: number): readonly (readonly [SubscriberClass, DurableEven
 }
 
 /**
- * Régression (plan E7 reliquat, §3 bis) : depuis L3a, ces quatre faits portent
- * un rang, et leurs abonnés du commerce le relisaient sans s'en servir — un
- * fait de reliquat aurait rendu prête, remise ou en manque la commande ENTIÈRE.
+ * Régression (plan E7 reliquat, §3 bis) : depuis L3a, ces faits portent un
+ * rang, et leurs abonnés du commerce le relisaient sans s'en servir — un fait
+ * de reliquat aurait rendu remise ou en manque la commande ENTIÈRE. Ignoré
+ * avec trace en L3b, il est REFUSÉ depuis L4a : le message reste rejouable.
  */
-describe("Abonnés du commerce face à un fait de reliquat (L3b)", () => {
+describe("Abonnés du commerce face à un fait de reliquat (L3b, L4a)", () => {
   it.each(factsOf(REMAINDER_RANK).map(([cls, event]) => [cls.name, cls, event] as const))(
-    "%s ignore un fait de rang 2 sans rien demander au commerce",
+    "%s refuse un fait de rang 2, rejouable, sans rien demander au commerce",
     async (_name, handlerClass, event) => {
       const { sent, handler } = await subject(handlerClass);
       const fact = event.durableFact();
 
-      await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
-
+      await expect(
+        handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload }),
+      ).rejects.toBeInstanceOf(LaterShipmentNotYetHandledError);
       expect(sent).toEqual([]);
     },
   );
@@ -83,28 +85,33 @@ describe("Abonnés du commerce face à un fait de reliquat (L3b)", () => {
       expect(sent).toHaveLength(1);
     },
   );
+
+  it("OnPackingOrderPacked laisse le bac d'un reliquat à son bon de livraison", async () => {
+    const { sent, handler } = await subject(OnPackingOrderPacked);
+    const fact = new PackingOrderPackedEvent(
+      "ord_1",
+      REMAINDER_RANK,
+      "ORD-0001",
+      AT,
+      "s1",
+    ).durableFact();
+
+    await handler.handle({ eventId: "evt_1", type: fact.type, payload: fact.payload });
+
+    expect(sent).toEqual([]);
+  });
 });
 
-describe("appliesToOrder", () => {
-  function recording() {
-    const warnings: string[] = [];
-    return { warnings, trace: { warn: (message: string) => warnings.push(message) } };
-  }
-
-  it("laisse passer le rang 1 sans trace", () => {
-    const { warnings, trace } = recording();
-
-    expect(appliesToOrder({ orderId: "ord_1", rank: 1 }, "packing.order_packed", trace)).toBe(true);
-    expect(warnings).toEqual([]);
+describe("ensureFirstShipment", () => {
+  it("laisse passer le rang 1", () => {
+    expect(() => {
+      ensureFirstShipment({ orderId: "ord_1", rank: 1 }, "packing.shortfall_reported", "LB");
+    }).not.toThrow();
   });
 
-  it("écarte un rang > 1 et le dit, en nommant le fait, le rang et la commande", () => {
-    const { warnings, trace } = recording();
-
-    expect(appliesToOrder({ orderId: "ord_1", rank: 2 }, "handover.handed_over", trace)).toBe(
-      false,
-    );
-    expect(warnings).toHaveLength(1);
-    expect(warnings[0]).toMatch(/handover\.handed_over.*rang 2.*ord_1/);
+  it("refuse un rang > 1 en nommant le fait, le rang, la commande et le lot", () => {
+    expect(() => {
+      ensureFirstShipment({ orderId: "ord_1", rank: 2 }, "handover.handed_over", "L4b");
+    }).toThrow(/handover\.handed_over.*rang 2.*ord_1.*L4b/);
   });
 });

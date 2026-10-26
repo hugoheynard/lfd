@@ -536,3 +536,22 @@ export class SlotNotRegisteredError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un fait d'un reliquat (rang > 1) que le commerce ne sait pas encore appliquer
+ * à un envoi seul (plan E7 reliquat, §3 bis, lot L4a). **Refus rejouable** : le
+ * message reste en boîte d'envoi, finit mort sur la carte de santé, et se
+ * rejoue une fois le lot qui le traite déployé — là où l'ignorer l'aurait
+ * acquitté pour toujours.
+ */
+export class LaterShipmentNotYetHandledError extends BusinessError {
+  constructor(factType: string, orderId: string, rank: number, lot: string) {
+    super(
+      "orders.shipment.later_rank_not_handled",
+      `Le fait « ${factType} » vise le reliquat de rang ${rank} de la commande ${orderId}, ` +
+        `que le commerce ne sait pas encore traiter seul (plan E7 reliquat, lot ${lot}). ` +
+        "La commande n'a pas été touchée. Rejouer ce message depuis la carte de santé " +
+        "une fois ce lot déployé.",
+    );
+  }
+}

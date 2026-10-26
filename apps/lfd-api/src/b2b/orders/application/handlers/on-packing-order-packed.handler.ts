@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
@@ -7,11 +7,11 @@ import {
   type DurableSubscriber,
 } from "../../../../platform/outbox/durable-handler.js";
 import {
+  FIRST_SHIPMENT_RANK,
   PACKING_ORDER_PACKED,
   PackingOrderPackedEvent,
 } from "../../../../production/channels/commerce/index.js";
 import { MarkOrderReadyCommand } from "../commands/mark-order-ready.command.js";
-import { appliesToOrder } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
@@ -24,17 +24,20 @@ export const ON_PACKING_ORDER_PACKED = "b2b.orders.mark-ready-from-packing";
  * écoutait `production.order_packed` de l'ancien poste du fournil, est retiré
  * avec lui. `MarkOrderReadyCommand` ne fait rien sur une commande déjà prête :
  * une réannonce est sans effet.
+ *
+ * Un fait de rang > 1 n'est pas le sien : le bac d'un reliquat prépare SON
+ * bon de livraison, par l'abonné `OnRemainderPacked` des bons de livraison
+ * (plan E7 reliquat, choix 4, lot L4a). La commande, elle, reste celle du
+ * rang 1 (choix 3).
  */
 @Injectable()
 @DurableHandler({ type: PACKING_ORDER_PACKED, subscriber: ON_PACKING_ORDER_PACKED })
 export class OnPackingOrderPacked implements DurableSubscriber {
-  private readonly logger = new Logger(OnPackingOrderPacked.name);
-
   constructor(private readonly commands: CommandBus) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = PackingOrderPackedEvent.fromPayload(delivery.payload);
-    if (!appliesToOrder(event, PACKING_ORDER_PACKED, this.logger)) {
+    if (event.rank !== FIRST_SHIPMENT_RANK) {
       return;
     }
     // L'identité et l'instant viennent du FAIT : la fermeture a eu lieu au colisage.

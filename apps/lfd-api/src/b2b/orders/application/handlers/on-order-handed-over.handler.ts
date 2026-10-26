@@ -1,4 +1,4 @@
-import { Injectable, Logger } from "@nestjs/common";
+import { Injectable } from "@nestjs/common";
 import { CommandBus } from "@nestjs/cqrs";
 
 import type { DurableDelivery } from "../../../../platform/outbox/durable-event.js";
@@ -11,7 +11,7 @@ import {
   OrderHandedOverEvent,
 } from "../../../../handover/channels/commerce/index.js";
 import { MarkOrderFulfilledCommand } from "../commands/mark-order-fulfilled.command.js";
-import { appliesToOrder } from "./later-shipment-guard.js";
+import { ensureFirstShipment } from "./later-shipment-guard.js";
 
 /** Nom STABLE de l'abonné — clé de son reçu dans la boîte d'envoi. */
 export const ON_ORDER_HANDED_OVER = "b2b.orders.mark-fulfilled";
@@ -41,15 +41,11 @@ export const ON_ORDER_HANDED_OVER = "b2b.orders.mark-fulfilled";
 @Injectable()
 @DurableHandler({ type: HANDOVER_HANDED_OVER, subscriber: ON_ORDER_HANDED_OVER })
 export class OnOrderHandedOver implements DurableSubscriber {
-  private readonly logger = new Logger(OnOrderHandedOver.name);
-
   constructor(private readonly commands: CommandBus) {}
 
   async handle(delivery: DurableDelivery): Promise<void> {
     const event = OrderHandedOverEvent.fromPayload(delivery.payload);
-    if (!appliesToOrder(event, HANDOVER_HANDED_OVER, this.logger)) {
-      return;
-    }
+    ensureFirstShipment(event, HANDOVER_HANDED_OVER, "L4b");
     // L'identité et l'instant viennent du FAIT, pas de l'horloge d'ici : le
     // retrait a eu lieu au comptoir ou à la porte, et c'est cette heure-là.
     await this.commands.execute(

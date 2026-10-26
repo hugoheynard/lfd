@@ -174,3 +174,19 @@ export class InvalidDeliveryNoteRemainderError extends DomainError {
     );
   }
 }
+
+/**
+ * Le colisage a fermé le bac d'un reliquat dont le commerce n'a aucun BL
+ * (plan E7 reliquat, choix 4, lot L4a). Une feuille de rang > 1 ne naît que
+ * d'un BL de ce rang : c'est une divergence, pas un cas d'usage.
+ */
+export class RemainderNoteNotFoundError extends ResourceNotFoundError {
+  constructor(orderId: string, rank: number) {
+    super(
+      "delivery_notes.remainder.not_found",
+      `Le bac du reliquat de rang ${rank} de la commande ${orderId} a été fermé au colisage, ` +
+        "mais aucun bon de livraison de ce rang n'existe pour elle. Rien n'a été écrit ; " +
+        "prévenir l'équipe technique, puis rejouer ce message depuis la carte de santé.",
+    );
+  }
+}

@@ -19,6 +19,9 @@ import { ORDER_TERMS } from "../src/b2b/delivery-notes/domain/value-objects/__te
 import { MarkOrderFulfilledCommand } from "../src/b2b/orders/application/commands/mark-order-fulfilled.command.js";
 import { MarkOrderReadyCommand } from "../src/b2b/orders/application/commands/mark-order-ready.command.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
+import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
+import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
+import { PackingOrderPackedEvent } from "../src/production/channels/commerce/index.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -249,5 +252,60 @@ describe("le réconciliateur aligne par rang (plan E7, choix 3)", () => {
       { rank: 1, status: "handed_over" },
       { rank: 2, status: "planned" },
     ]);
+  });
+});
+
+/** Le bac fermé au colisage, publié comme le colisage le publie : dans une unité de travail. */
+async function packed(orderId: string, rank: number): Promise<void> {
+  const fact = new PackingOrderPackedEvent(
+    orderId,
+    rank,
+    await numberOf(orderId),
+    new Date(),
+    E2E_STAFF_ID,
+  );
+  await ctx.app
+    .get(UnitOfWork)
+    .run(() => ctx.app.get(DurablePublisher).publish(fact.durableFact()));
+  await ctx.drain();
+}
+
+function orderStateOf(orderId: string) {
+  return ctx.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { status: true, readyAt: true, handedOverAt: true },
+  });
+}
+
+describe("prêt par envoi (plan E7, choix 4, lot L4a)", () => {
+  it("avec un seul envoi : le bac fermé rend la commande prête et son BL préparé, comme avant", async () => {
+    const account = await placeOnAccount(await scene());
+    await closePlan();
+
+    await packed(account, 1);
+
+    expect((await orderStateOf(account)).status).toBe("ready");
+    expect((await notesOf(account)).map(({ rank, status }) => ({ rank, status }))).toEqual([
+      { rank: 1, status: "prepared" },
+    ]);
+  });
+
+  it("le bac du reliquat prépare le BL-2 seul : la commande et le BL-1 restent ceux du rang 1", async () => {
+    const account = await handedOverOnAccount();
+    await planRemainder(account);
+    const orderBefore = await orderStateOf(account);
+
+    await packed(account, 2);
+
+    expect(await orderStateOf(account)).toEqual(orderBefore);
+    expect((await notesOf(account)).map(({ rank, status }) => ({ rank, status }))).toEqual([
+      { rank: 1, status: "handed_over" },
+      { rank: 2, status: "prepared" },
+    ]);
+    const receipts = await ctx.prisma.outboxDelivery.findMany({
+      where: { deliveredAt: null },
+      select: { subscriber: true, lastError: true },
+    });
+    expect(receipts).toEqual([]);
   });
 });

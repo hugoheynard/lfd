@@ -203,6 +203,10 @@ export class DeliveryNote {
     return this.identity.number;
   }
 
+  get rank(): number {
+    return this.identity.rank;
+  }
+
   get status(): DeliveryNoteStatus {
     return this.progress.status;
   }

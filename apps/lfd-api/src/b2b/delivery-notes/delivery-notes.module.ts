@@ -22,6 +22,8 @@ import { DeliveryNoteAligner } from "./application/services/delivery-note-aligne
 import { DeliveryNoteFollower } from "./application/services/delivery-note-follower.js";
 import { DeliveryNoteRepository } from "./domain/ports/delivery-note.repository.js";
 import { PrismaDeliveryNoteRepository } from "./infrastructure/prisma-delivery-note.repository.js";
+import { PrepareRemainderNoteHandler } from "./application/commands/prepare-remainder-note.handler.js";
+import { OnRemainderPacked } from "./application/handlers/on-remainder-packed.handler.js";
 import { RecordDeliveryNotePrintHandler } from "./application/commands/record-delivery-note-print.handler.js";
 import { PrismaDeliveryNoteReprintsReader } from "./infrastructure/prisma-delivery-note-reprints.reader.js";
 import { OrderBillingCloser } from "./application/services/order-billing-closer.js";
@@ -55,6 +57,8 @@ import {
   providers: [
     ReconcileDeliveryNotesHandler,
     RecordDeliveryNotePrintHandler,
+    PrepareRemainderNoteHandler,
+    OnRemainderPacked,
     ListOrderDeliveryNotesHandler,
     GetCarrierNotePdfHandler,
     GetAdminClientNotePdfHandler,
