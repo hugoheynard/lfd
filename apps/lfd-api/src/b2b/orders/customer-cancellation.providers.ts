@@ -7,6 +7,7 @@ import { GetGuestOrderCancellationHandler } from "./application/queries/get-gues
 import { GetOrderCancellabilityHandler } from "./application/queries/get-order-cancellability.handler.js";
 import { CancellationWall } from "./application/services/cancellation-wall.js";
 import { CustomerCancellability } from "./application/services/customer-cancellability.js";
+import { CustomerCancellationDeadline } from "./application/services/customer-cancellation-deadline.js";
 import { CustomerCancellationPolicyGate } from "./application/services/customer-cancellation-policy.js";
 import { CustomerOrderCancellation } from "./application/services/customer-order-cancellation.js";
 import { GuestCancellationLinkResolver } from "./application/services/guest-cancellation-link.resolver.js";
@@ -34,6 +35,7 @@ export const CUSTOMER_CANCELLATION_PROVIDERS: readonly Provider[] = [
   { provide: CancellationLinkSigner, useClass: HmacCancellationLinkSigner },
   CancellationWall,
   CustomerCancellationPolicyGate,
+  CustomerCancellationDeadline,
   CustomerOrderCancellation,
   CustomerCancellability,
   GuestCancellationLinkResolver,

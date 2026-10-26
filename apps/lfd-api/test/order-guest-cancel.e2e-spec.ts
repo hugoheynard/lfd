@@ -193,14 +193,23 @@ describe("POST /shop/orders/cancellation/confirm", () => {
     expect(jsonBody<{ code: string }>(again).code).toBe("orders.customer_cancel.already_cancelled");
   });
 
-  /** Décision du 2026-10-13 : plus de « réglage fermé » — sans délai, seul le fournil limite. */
-  it("délai actif : `too_late` à J+1 ; désactivé, l'invité annule la même commande", async () => {
+  /**
+   * Décision du 2026-10-13 : plus de « réglage fermé » — sans délai, seul le
+   * fournil limite. Depuis le 2026-10-26, le délai est figé à la passation :
+   * le désactiver après ne libère pas la commande ; passée sans délai, elle
+   * s'annule.
+   */
+  it("délai actif : `too_late` à J+1, même désactivé après ; passée sans délai, l'invité annule", async () => {
     const { orderId, token } = await guestOrder({ inDays: 1 });
     const refused = await confirm(orderId, token);
     expect(jsonBody<{ code: string }>(refused).code).toBe("orders.customer_cancel.too_late");
 
     await setCancellation(false);
-    await confirm(orderId, token).expect(204);
+    const still = await confirm(orderId, token);
+    expect(jsonBody<{ code: string }>(still).code).toBe("orders.customer_cancel.too_late");
+
+    const free = await guestOrder({ inDays: 1 });
+    await confirm(free.orderId, free.token).expect(204);
   });
 
   it("le jeton n'ouvre pas `GET /orders/:id`", async () => {

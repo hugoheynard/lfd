@@ -34,7 +34,7 @@ describe('CancelOrderForm', () => {
   it('dit l’argent, le bon et l’échéance avant de confirmer', () => {
     expect(el().querySelector('[data-money]')?.textContent).toContain('18,90');
     expect(el().querySelector('[data-voucher]')?.textContent).toContain(FR.voucherBack);
-    expect(el().querySelector('[data-until]')?.textContent).toContain('14/10');
+    expect(el().querySelector('[data-until]')?.textContent).toContain('mercredi 14 octobre, 9 h');
   });
 
   it('dit « rien ne sera facturé » au compte, sans bon ni échéance', () => {

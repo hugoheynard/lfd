@@ -89,6 +89,9 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { CustomerCancellationDeadline } from "../../services/customer-cancellation-deadline.js";
+import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
+import type { CustomerCancellationSettingsView } from "@lfd/contracts";
 import {
   FixedStopwatch,
   RecordingTimings,
@@ -447,6 +450,7 @@ function scene(
     readonly welcomeBonus?: number | null;
     readonly plans?: OrderPlanGate;
     readonly salesTerms?: FixedSalesTerms;
+    readonly cancellation?: Partial<CustomerCancellationSettingsView>;
   } = {},
 ) {
   const earning = new FakeEarning(options.points ?? null);
@@ -470,6 +474,7 @@ function scene(
     intakeAt(options.opening, "active", [], {}, options.salesTerms),
     earning,
     new FakeWelcome(options.welcomeBonus ?? null),
+    new CustomerCancellationDeadline(new FixedCancellationSettings(options.cancellation)),
   );
   return { handler, sink, paid, keys, buyers, published, durable, earning };
 }
@@ -901,5 +906,25 @@ describe("PlaceShopOrderHandler — les CGV cochées au panier", () => {
         expect(error).not.toBeInstanceOf(SalesTermsOutdatedError);
       });
     expect(salesTerms.asked).toEqual([]);
+  });
+});
+
+/** Le délai d'annulation figé à la passation d'un invité (Hugo, 2026-10-26). */
+describe("PlaceShopOrderHandler — le délai d'annulation figé", () => {
+  it("fige N heures avant le début du créneau, au réglage du moment", async () => {
+    const { handler, sink } = scene({ cancellation: { delayEnabled: true, hoursBefore: 48 } });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    // Le 1er septembre 07:00 à Paris (UTC+2) = 05:00 UTC ; 48 h avant.
+    expect(sink.placed?.customerCancellableUntil).toEqual(new Date("2026-08-30T05:00:00.000Z"));
+  });
+
+  it("un réglage sans délai ne fige rien", async () => {
+    const { handler, sink } = scene({ cancellation: { delayEnabled: false } });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed?.customerCancellableUntil).toBeNull();
   });
 });

@@ -72,8 +72,10 @@ export type CustomerCancellationMoney =
  * sans verrou par la même règle que le geste : une indication, pas une
  * promesse — le `POST` relit tout sous verrou.
  *
- * `until` : l'instant ISO jusqu'auquel un particulier peut annuler (le délai du
- * réglage), `null` pour un pro. `voucherReturned` : la commande porte un bon,
+ * `until` : l'instant ISO jusqu'auquel un particulier peut annuler — celui
+ * FIGÉ à sa passation avec le réglage du moment (2026-10-26), ou, pour une
+ * commande d'avant, le délai du réglage du jour ; `null` pour un pro, ou sans
+ * délai imposé. `voucherReturned` : la commande porte un bon,
  * qui reviendra. Refusée, `until` dit l'échéance passée pour `too_late`.
  */
 export type OrderCancellability =

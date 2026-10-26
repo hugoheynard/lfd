@@ -28,6 +28,7 @@ export class PrismaCustomerCancellationSubjectReader extends CustomerCancellatio
         requestedDeliveryDate: true,
         fulfillment: true,
         createdAt: true,
+        customerCancellableUntil: true,
         placedBy: { select: { auth0Sub: true, status: true } },
       },
     });
@@ -45,6 +46,7 @@ export class PrismaCustomerCancellationSubjectReader extends CustomerCancellatio
           : row.requestedDeliveryDate.toISOString().slice(0, 10),
       windowStart: fulfillmentOf(row.fulfillment).window.value?.start ?? null,
       placedAt: row.createdAt,
+      customerCancellableUntil: row.customerCancellableUntil,
       buyer: {
         hasAccount: row.placedBy.auth0Sub !== null,
         active: row.placedBy.status !== "disabled",

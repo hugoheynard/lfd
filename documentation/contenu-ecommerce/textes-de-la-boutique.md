@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1601 textes
+## Sommaire — 1603 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 238 |
-| [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 55 |
+| [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
-| **Total** | | **1601** |
+| **Total** | | **1603** |
 
 ## Le parcours de commande
 
@@ -1164,7 +1164,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 
 ### Annuler une commande — Mes commandes et la page invité — `orderCancel`
 
-Source : `screens/order-cancel.copy.ts` · 55 textes.
+Source : `screens/order-cancel.copy.ts` · 57 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1175,9 +1175,11 @@ Source : `screens/order-cancel.copy.ts` · 55 textes.
 | `orderCancel.moneyRefund` | Vous serez remboursé de {amount} sur votre carte. | You will be refunded {amount} on your card. | Riceverete un rimborso di {amount} sulla vostra carta. | `{amount}` |
 | `orderCancel.moneyAccount` | Rien ne sera facturé ni prélevé. | Nothing will be invoiced or charged. | Nulla sarà fatturato né addebitato. |  |
 | `orderCancel.voucherBack` | Votre bon de fidélité vous sera rendu. | Your loyalty voucher will be returned to you. | Il vostro buono fedeltà vi sarà restituito. |  |
-| `orderCancel.until` | Annulation possible jusqu’au {when}. | You can cancel until {when}. | Annullamento possibile fino al {when}. | `{when}` |
-| `orderCancel.untilPassed` | L’annulation en ligne était possible jusqu’au {when}. | Online cancellation was possible until {when}. | L’annullamento online era possibile fino al {when}. | `{when}` |
-| `orderCancel.when` | {day} à {time} | {day} at {time} | {day} alle {time} | `{day}` `{time}` |
+| `orderCancel.until` | Annulable jusqu’au {when}. | Cancellable until {when}. | Annullabile fino a {when}. | `{when}` |
+| `orderCancel.untilPassed` | L’annulation en ligne était possible jusqu’au {when}. | Online cancellation was possible until {when}. | L’annullamento online era possibile fino a {when}. | `{when}` |
+| `orderCancel.when` | {day}, {time} | {day}, {time} | {day}, ore {time} | `{day}` `{time}` |
+| `orderCancel.hourOnly` | {hour} h | {hour}:00 | {hour} | `{hour}` |
+| `orderCancel.hourMinutes` | {hour} h {minutes} | {hour}:{minutes} | {hour}:{minutes} | `{hour}` `{minutes}` |
 | `orderCancel.reasonLabel` | Pourquoi annulez-vous ? | Why are you cancelling? | Perché annullate? |  |
 | `orderCancel.reasonPlaceholder` | Choisir un motif | Choose a reason | Scegliete un motivo |  |
 | `orderCancel.reasons.no_longer_needed` | Je n’en ai plus besoin | I no longer need it | Non mi serve più |  |
@@ -1197,7 +1199,7 @@ Source : `screens/order-cancel.copy.ts` · 55 textes.
 | `orderCancel.refusals.ready` | Votre commande est prête : elle ne peut plus être annulée. | Your order is ready: it can no longer be cancelled. | Il vostro ordine è pronto: non può più essere annullato. |  |
 | `orderCancel.refusals.fulfilled` | Votre commande a déjà été retirée : elle ne peut plus être annulée. | Your order has already been collected: it can no longer be cancelled. | Il vostro ordine è già stato ritirato: non può più essere annullato. |  |
 | `orderCancel.refusals.partially_handed_over` | Une partie de votre commande a déjà été retirée : elle ne peut plus être annulée. Contactez-nous pour le reste. | Part of your order has already been collected: it can no longer be cancelled. Contact us about the rest. | Una parte del vostro ordine è già stata ritirata: non può più essere annullato. Contattateci per il resto. |  |
-| `orderCancel.refusals.too_late` | Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous. | It is too late to cancel online: it was possible until {when}. Contact us. | È troppo tardi per annullare online: era possibile fino al {when}. Contattateci. | `{when}` |
+| `orderCancel.refusals.too_late` | Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous. | It is too late to cancel online: it was possible until {when}. Contact us. | È troppo tardi per annullare online: era possibile fino a {when}. Contattateci. | `{when}` |
 | `orderCancel.refusals.payment_in_progress` | Un paiement est en cours sur cette commande. Réessayez dans quelques minutes. | A payment is in progress on this order. Try again in a few minutes. | Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto. |  |
 | `orderCancel.refusals.paid_just_now` | Votre paiement vient d’aboutir. Rechargez la page pour annuler avec remboursement. | Your payment has just gone through. Reload the page to cancel with a refund. | Il vostro pagamento è appena andato a buon fine. Ricaricate la pagina per annullare con rimborso. |  |
 | `orderCancel.refusals.not_recorded` | Nous n’avons pas pu annuler votre commande. Rien n’a été prélevé de plus ; réessayez dans un instant. | We could not cancel your order. Nothing more has been charged; try again in a moment. | Non siamo riusciti ad annullare il vostro ordine. Non è stato addebitato altro; riprovate tra un istante. |  |

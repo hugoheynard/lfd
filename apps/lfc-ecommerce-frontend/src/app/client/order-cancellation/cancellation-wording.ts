@@ -38,8 +38,10 @@ export interface CancelReason {
 }
 
 /**
- * L'échéance « 14/10 à 09:00 », lue à Paris — jamais dans le fuseau du
- * navigateur : le délai est celui de la boutique.
+ * L'échéance « jeudi 31 octobre, 9 h », lue à Paris — jamais dans le fuseau
+ * du navigateur : le délai est celui de la boutique, figé à la passation
+ * (2026-10-26). Le jour est mis en forme par la langue ; l'heure, sur 24 h,
+ * par le dictionnaire — `Intl` ne dit « 9 h » ni en français ni en italien.
  */
 export function untilLabel(iso: string, locale: LocaleCode, copy: OrderCancelCopy): string {
   const instant = new Date(iso);
@@ -47,16 +49,27 @@ export function untilLabel(iso: string, locale: LocaleCode, copy: OrderCancelCop
     return iso;
   }
   const day = new Intl.DateTimeFormat(locale, {
-    day: '2-digit',
-    month: '2-digit',
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
     timeZone: SHOP_TIME_ZONE,
   }).format(instant);
-  const time = new Intl.DateTimeFormat(locale, {
+  return fill(copy.when, { day, time: timeLabel(instant, copy) });
+}
+
+/** « 9 h », « 9 h 30 » : l'heure de Paris, sur 24 h, sans zéro devant. */
+function timeLabel(instant: Date, copy: OrderCancelCopy): string {
+  const parts = new Intl.DateTimeFormat('en-GB', {
     hour: '2-digit',
     minute: '2-digit',
+    hourCycle: 'h23',
     timeZone: SHOP_TIME_ZONE,
-  }).format(instant);
-  return fill(copy.when, { day, time });
+  }).formatToParts(instant);
+  const hour = String(Number(parts.find((part) => part.type === 'hour')?.value ?? '0'));
+  const minutes = parts.find((part) => part.type === 'minute')?.value ?? '00';
+  return minutes === '00'
+    ? fill(copy.hourOnly, { hour })
+    : fill(copy.hourMinutes, { hour, minutes });
 }
 
 /** Ce qui arrivera à l'argent, en une phrase (C6.8). */

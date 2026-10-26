@@ -22,6 +22,7 @@ import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { GuestIdentity } from "../../domain/value-objects/guest-identity.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
+import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
 
@@ -76,6 +77,7 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     private readonly intake: OrderIntake,
     private readonly earning: LoyaltyEarningPreview,
     private readonly welcome: WelcomeBonusPreview,
+    private readonly cancellationDeadline: CustomerCancellationDeadline,
   ) {}
 
   /**
@@ -150,6 +152,8 @@ export class PlaceShopOrderHandler implements ICommandHandler<
       null,
       OrderLocale.ofOptional(payload.locale),
     );
+    // Le délai d'annulation du réglage d'AUJOURD'HUI, figé (Hugo, 2026-10-26).
+    await this.cancellationDeadline.fixOn(order);
 
     const intent = await this.settle(order);
     // LA COMMANDE ET SA CLÉ, ENSEMBLE. Il n'existe aucun instant où la commande

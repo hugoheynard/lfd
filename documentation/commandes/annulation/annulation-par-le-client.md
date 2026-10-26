@@ -114,9 +114,9 @@ Pour une commande **personnelle** seulement, et seulement si le réglage
 impose un délai (`open_to_b2c = true`, le défaut), un refus **devant** la
 règle du staff, lu à `customer_cancellation_settings` :
 
-| #   | Refus                                        | Code client |
-| --- | -------------------------------------------- | ----------- |
-| P2  | il reste moins de N heures avant l'**ancre** | `too_late`  |
+| #   | Refus                                                                                                | Code client |
+| --- | ---------------------------------------------------------------------------------------------------- | ----------- |
+| P2  | il reste moins de N heures avant l'**ancre** — ou l'instant figé à la passation est passé (C6.3 bis) | `too_late`  |
 
 Le refus P1 (« réglage fermé », code `closed`) a existé du déploiement de C6
 au correctif du 2026-10-13 (décision 5) ; il est retiré du code, du contrat et
@@ -127,6 +127,54 @@ de début de la fenêtre figée, heure de Paris ; sans heure de début, **minuit
 du jour — la borne la plus tôt. P2 se compare au `now` **gelé** de la requête :
 une attente de verrou ne repousse pas l'échéance. Un pro n'a pas de délai :
 seul le fournil ferme la porte.
+
+## C6.3 bis Le délai figé à la passation (2026-10-26)
+
+> **Bâti le 2026-10-26, non commité** (migration
+> `20261026170000_le_delai_d_annulation_fige`).
+
+Décision de Hugo du 2026-10-26 : les CGV promettent le délai « indiqué sur le
+Site, rappelé avant la validation de la Commande ». Le réglage était relu au
+moment où le client annule, si bien qu'un changement fait après la commande lui
+retirait ou lui donnait un droit que son contrat fixait.
+
+- **Colonne** `orders.customer_cancellable_until` (`TIMESTAMPTZ(3)`, nullable,
+  additive). Écrite par la seule passation, jamais réécrite.
+- **À la passation client** (`PlaceOrderHandler`, `PlaceShopOrderHandler`),
+  avant l'écriture : `CustomerCancellationDeadline` lit le réglage du moment
+  et appelle `Order.fixCustomerCancellationDeadline`. L'instant est calculé
+  par `customerCancellationDeadlineOf`, la fonction même que P2 applique :
+  l'ancre (début du créneau, sinon minuit du jour, heure de Paris) moins N
+  heures. La règle n'est écrite qu'une fois.
+- **Reste NULL**, et pourquoi :
+  - **commande de société** : un pro annule jusqu'à l'arrêt du plan de
+    production (décision 2), qui n'est pas un délai réglable ni un instant
+    connu à la passation ;
+  - **saisie de l'équipe** : elle porte toujours une société
+    (`PlaceOrderForCustomerHandler`, `companyId` obligatoire) — même cas, et
+    le handler n'appelle pas le service ;
+  - **réglage sans délai** au moment de la passation : sans délai, seul
+    l'arrêt du plan limite (décision 5). Il n'y a pas d'instant à figer ; NULL
+    se lit alors comme « aucun délai », c'est-à-dire le calcul actuel avec le
+    réglage du jour — voir la limite ci-dessous ;
+  - **commande sans date** (`requested_delivery_date` nul) ;
+  - **commandes d'avant la colonne** : rien n'est rempli.
+- **À l'annulation** (`CustomerCancellationPolicyGate`) : posé, l'instant fait
+  foi et le réglage n'est pas lu — ni son délai, ni son interrupteur. NULL :
+  le calcul d'avant, au réglage du jour. L'annulation staff est inchangée.
+  Le fait `order.cancelled` garde son `policy.hoursBefore`, relu sur l'écart
+  entre l'ancre et l'instant figé.
+- **À la boutique** : `cancellability.until` (`GET /orders/:id`, contrat
+  `OrderCancellability`) porte cet instant. Le tiroir l'écrit « Annulable
+  jusqu'au jeudi 31 octobre, 9 h » — heure de Paris, jour mis en forme par la
+  langue, heure par le dictionnaire (`hourOnly`, `hourMinutes`).
+
+⚠️ **Limites connues, non tranchées** :
+
+- un particulier passé **sans délai** garde NULL : si l'admin réactive le délai
+  ensuite, le réglage du jour lui en impose un ;
+- une **révision** de la commande (jour ou créneau changés,
+  `PrismaOrderRevisionRepository.save`) ne recalcule pas l'instant figé.
 
 ## C6.4 L'invité : un lien d'annulation
 
@@ -180,8 +228,8 @@ l'arrêt du plan de production, comme les pros ». Routes `GET` / `PATCH /admin/
 `../passation/plan-reglages-commandes.md`). Écran du back-office
 `/reglages/commandes/annulation` (`reglages/commandes/customer-cancellation-page/`) ;
 l'ancienne `/b2b/reglages/commandes` y redirige. La
-valeur n'est pas datée : elle décide d'un geste au moment où il est fait, et le
-journal de l'annulation fige ce qui a été appliqué. Les colonnes d'auteur sont
+valeur n'est pas datée : le délai est figé sur chaque commande à sa passation
+(C6.3 bis), et le journal de l'annulation fige ce qui a été appliqué. Les colonnes d'auteur sont
 au registre RGPD.
 
 ## C6.6 La route, la commande, l'auteur

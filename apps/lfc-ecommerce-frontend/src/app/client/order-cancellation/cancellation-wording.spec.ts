@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
+import { fill } from '../copy/client-copy.service';
 import { orderCancelCopy } from '../copy/screens/order-cancel.copy';
 import {
   moneySentence,
@@ -7,6 +8,7 @@ import {
   parseGuestFragment,
   refusalOf,
   refusalSentence,
+  untilLabel,
 } from './cancellation-wording';
 
 const FR = orderCancelCopy('fr');
@@ -25,10 +27,23 @@ describe('cancellation-wording', () => {
 
   it('date le « trop tard » à Paris, et perd la date plutôt que d’afficher un jeton', () => {
     const late = refusalSentence('too_late', '2026-10-14T07:00:00.000Z', 'fr', FR);
-    expect(late).toContain('14/10');
-    expect(late).toContain('09:00');
+    expect(late).toContain('mercredi 14 octobre, 9 h');
     expect(late).not.toContain('{when}');
     expect(refusalSentence('too_late', null, 'fr', FR)).toBe(FR.tooLateUndated);
+  });
+
+  /** 2026-10-26 : « Annulable jusqu'au jeudi 31 octobre, 9 h », dans chaque langue. */
+  it('dit l’échéance en toutes lettres, à l’heure de Paris, dans chaque langue', () => {
+    // 08:00 UTC = 9 h à Paris (heure d'hiver, le 31 octobre 2030 est un jeudi).
+    const sharp = '2030-10-31T08:00:00.000Z';
+    expect(fill(FR.until, { when: untilLabel(sharp, 'fr', FR) })).toBe(
+      'Annulable jusqu’au jeudi 31 octobre, 9 h.',
+    );
+    expect(untilLabel('2030-10-31T08:30:00.000Z', 'fr', FR)).toBe('jeudi 31 octobre, 9 h 30');
+    const en = orderCancelCopy('en');
+    expect(untilLabel(sharp, 'en', en)).toBe('Thursday, October 31, 9:00');
+    const it_ = orderCancelCopy('it');
+    expect(untilLabel(sharp, 'it', it_)).toBe('giovedì 31 ottobre, ore 9');
   });
 
   it('lit le code d’un 409, et ignore un code étranger', () => {

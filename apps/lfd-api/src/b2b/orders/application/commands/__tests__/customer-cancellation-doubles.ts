@@ -31,6 +31,7 @@ export function customerSubject(
     serviceDay: "2030-01-15",
     windowStart: null,
     placedAt: new Date(0),
+    customerCancellableUntil: null,
     buyer: { hasAccount: true, active: true },
     ...overrides,
   };

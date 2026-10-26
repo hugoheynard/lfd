@@ -417,6 +417,13 @@ model Order {
   cancelledByUser        User?   @relation("OrderCancelledByUser", fields: [cancelledByUserId], references: [id], onDelete: Restrict)
   cancellationReasonCode String? @map("cancellation_reason_code")
 
+  /// **Jusqu'à quand le particulier peut annuler**, figé à sa passation avec le
+  /// réglage du moment (Hugo, 2026-10-26 : le délai est celui que les CGV ont
+  /// rappelé avant la validation). NULL : société, saisie de l'équipe, réglage
+  /// sans délai, commande sans date, ou commande d'avant la colonne — celle-ci
+  /// garde le calcul au réglage du jour. Écrit par la seule passation.
+  customerCancellableUntil DateTime? @map("customer_cancellable_until") @db.Timestamptz(3)
+
   /// **La révision de la commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
   /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
   /// révision est conditionnée sur elle (R7), et la clé d'archive du bon la porte.

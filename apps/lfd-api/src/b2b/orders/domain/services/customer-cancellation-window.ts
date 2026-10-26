@@ -52,19 +52,42 @@ export function cancellationAnchorOf(source: CancellationAnchorSource): Date | n
 }
 
 /**
- * P2. « Jusqu'à N heures avant » est INCLUSIF : une demande faite pile à
- * l'échéance passe. Ne lit que le délai : savoir s'il est imposé est
- * l'affaire de l'appelant.
+ * **L'instant limite** : N heures avant l'ancre. `null` sans jour. La même
+ * fonction fige l'instant à la passation (`Order.fixCustomerCancellationDeadline`)
+ * et juge une commande d'avant la colonne au réglage du jour : la règle n'est
+ * écrite qu'ici.
+ */
+export function customerCancellationDeadlineOf(
+  hoursBefore: number,
+  source: CancellationAnchorSource,
+): Date | null {
+  const anchor = cancellationAnchorOf(source);
+  return anchor === null ? null : new Date(anchor.getTime() - hoursBefore * HOUR_MS);
+}
+
+/**
+ * P2 contre un instant limite déjà connu — figé à la passation, ou calculé.
+ * « Jusqu'à » est INCLUSIF : une demande faite pile à l'échéance passe.
+ */
+export function customerCancellationWindowAt(
+  until: Date | null,
+  now: Date,
+): CustomerCancellationWindow {
+  if (until === null) {
+    return { kind: "too_late", until: null };
+  }
+  return now.getTime() <= until.getTime() ? { kind: "open", until } : { kind: "too_late", until };
+}
+
+/**
+ * P2 au réglage du jour — le calcul des commandes passées avant que l'instant
+ * soit figé. Ne lit que le délai : savoir s'il est imposé est l'affaire de
+ * l'appelant.
  */
 export function customerCancellationWindowOf(
   hoursBefore: number,
   source: CancellationAnchorSource,
   now: Date,
 ): CustomerCancellationWindow {
-  const anchor = cancellationAnchorOf(source);
-  if (anchor === null) {
-    return { kind: "too_late", until: null };
-  }
-  const until = new Date(anchor.getTime() - hoursBefore * HOUR_MS);
-  return now.getTime() <= until.getTime() ? { kind: "open", until } : { kind: "too_late", until };
+  return customerCancellationWindowAt(customerCancellationDeadlineOf(hoursBefore, source), now);
 }

@@ -30,8 +30,15 @@ export interface OrderCancelCopy {
   readonly until: string;
   /** La ligne discrète d'un « trop tard » — `{when}` comme ci-dessus. */
   readonly untilPassed: string;
-  /** `{day}` et `{time}` : « 14/10 à 09:00 ». */
+  /**
+   * `{day}` (« jeudi 31 octobre », mis en forme par la langue) et `{time}`
+   * (cf. `hourOnly`, `hourMinutes`) : « jeudi 31 octobre, 9 h ». Heure de Paris.
+   */
   readonly when: string;
+  /** L'heure pile — `{hour}` sur 24 h, sans zéro : « 9 h ». */
+  readonly hourOnly: string;
+  /** L'heure avec ses minutes — `{hour}` et `{minutes}` (deux chiffres) : « 9 h 30 ». */
+  readonly hourMinutes: string;
   readonly reasonLabel: string;
   readonly reasonPlaceholder: string;
   readonly reasons: Readonly<Record<CustomerCancellationReasonCode, string>>;
@@ -77,9 +84,11 @@ const FR: OrderCancelCopy = {
   moneyRefund: 'Vous serez remboursé de {amount} sur votre carte.',
   moneyAccount: 'Rien ne sera facturé ni prélevé.',
   voucherBack: 'Votre bon de fidélité vous sera rendu.',
-  until: 'Annulation possible jusqu’au {when}.',
+  until: 'Annulable jusqu’au {when}.',
   untilPassed: 'L’annulation en ligne était possible jusqu’au {when}.',
-  when: '{day} à {time}',
+  when: '{day}, {time}',
+  hourOnly: '{hour} h',
+  hourMinutes: '{hour} h {minutes}',
   reasonLabel: 'Pourquoi annulez-vous ?',
   reasonPlaceholder: 'Choisir un motif',
   reasons: {
@@ -146,9 +155,11 @@ const EN: OrderCancelCopy = {
   moneyRefund: 'You will be refunded {amount} on your card.',
   moneyAccount: 'Nothing will be invoiced or charged.',
   voucherBack: 'Your loyalty voucher will be returned to you.',
-  until: 'You can cancel until {when}.',
+  until: 'Cancellable until {when}.',
   untilPassed: 'Online cancellation was possible until {when}.',
-  when: '{day} at {time}',
+  when: '{day}, {time}',
+  hourOnly: '{hour}:00',
+  hourMinutes: '{hour}:{minutes}',
   reasonLabel: 'Why are you cancelling?',
   reasonPlaceholder: 'Choose a reason',
   reasons: {
@@ -213,9 +224,11 @@ const IT: OrderCancelCopy = {
   moneyRefund: 'Riceverete un rimborso di {amount} sulla vostra carta.',
   moneyAccount: 'Nulla sarà fatturato né addebitato.',
   voucherBack: 'Il vostro buono fedeltà vi sarà restituito.',
-  until: 'Annullamento possibile fino al {when}.',
-  untilPassed: 'L’annullamento online era possibile fino al {when}.',
-  when: '{day} alle {time}',
+  until: 'Annullabile fino a {when}.',
+  untilPassed: 'L’annullamento online era possibile fino a {when}.',
+  when: '{day}, ore {time}',
+  hourOnly: '{hour}',
+  hourMinutes: '{hour}:{minutes}',
   reasonLabel: 'Perché annullate?',
   reasonPlaceholder: 'Scegliete un motivo',
   reasons: {
@@ -240,7 +253,7 @@ const IT: OrderCancelCopy = {
     fulfilled: 'Il vostro ordine è già stato ritirato: non può più essere annullato.',
     partially_handed_over:
       'Una parte del vostro ordine è già stata ritirata: non può più essere annullato. Contattateci per il resto.',
-    too_late: 'È troppo tardi per annullare online: era possibile fino al {when}. Contattateci.',
+    too_late: 'È troppo tardi per annullare online: era possibile fino a {when}. Contattateci.',
     payment_in_progress: 'Un pagamento è in corso su questo ordine. Riprovate tra qualche minuto.',
     paid_just_now:
       'Il vostro pagamento è appena andato a buon fine. Ricaricate la pagina per annullare con rimborso.',

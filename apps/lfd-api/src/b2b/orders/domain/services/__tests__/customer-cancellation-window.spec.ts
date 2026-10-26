@@ -1,5 +1,7 @@
 import {
   cancellationAnchorOf,
+  customerCancellationDeadlineOf,
+  customerCancellationWindowAt,
   customerCancellationWindowOf,
 } from "../customer-cancellation-window.js";
 
@@ -77,6 +79,34 @@ describe("la fenêtre d'annulation d'un particulier", () => {
     expect(customerCancellationWindowOf(0, source, anchor)).toEqual({
       kind: "open",
       until: anchor,
+    });
+  });
+});
+
+describe("l'instant limite, figé à la passation (2026-10-26)", () => {
+  const source = { serviceDay: "2030-01-15", windowStart: "08:30" };
+  const until = new Date("2030-01-14T07:30:00.000Z");
+
+  it("vaut N heures avant l'ancre, le même instant que la fenêtre au réglage", () => {
+    expect(customerCancellationDeadlineOf(OPEN_24, source)).toEqual(until);
+    expect(customerCancellationWindowOf(OPEN_24, source, until)).toEqual({ kind: "open", until });
+  });
+
+  it("n'existe pas sans jour", () => {
+    expect(
+      customerCancellationDeadlineOf(OPEN_24, { serviceDay: null, windowStart: null }),
+    ).toBeNull();
+  });
+
+  it("juge un instant connu : inclusif, puis trop tard", () => {
+    expect(customerCancellationWindowAt(until, until)).toEqual({ kind: "open", until });
+    expect(customerCancellationWindowAt(until, new Date(until.getTime() + 1))).toEqual({
+      kind: "too_late",
+      until,
+    });
+    expect(customerCancellationWindowAt(null, new Date(0))).toEqual({
+      kind: "too_late",
+      until: null,
     });
   });
 });

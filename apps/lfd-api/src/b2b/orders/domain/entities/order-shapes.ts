@@ -156,6 +156,11 @@ export interface OrderToPlace {
   readonly placedByUserId: string;
   /** Reçue par l'équipe sur un plan déjà arrêté (lot O3) — cf. `Order.receiveOffPlan`. */
   readonly placedOffPlan: boolean;
+  /**
+   * Jusqu'à quand le particulier annule, figé à la passation (2026-10-26) ;
+   * `null` : société, réglage sans délai, ou commande sans date.
+   */
+  readonly customerCancellableUntil: Date | null;
   readonly placedByStaffId: string | null;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;

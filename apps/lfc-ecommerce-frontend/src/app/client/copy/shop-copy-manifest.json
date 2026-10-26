@@ -6200,24 +6200,38 @@
         },
         {
           "key": "orderCancel.until",
-          "fr": "Annulation possible jusqu’au {when}.",
-          "en": "You can cancel until {when}.",
-          "it": "Annullamento possibile fino al {when}.",
+          "fr": "Annulable jusqu’au {when}.",
+          "en": "Cancellable until {when}.",
+          "it": "Annullabile fino a {when}.",
           "variables": ["when"]
         },
         {
           "key": "orderCancel.untilPassed",
           "fr": "L’annulation en ligne était possible jusqu’au {when}.",
           "en": "Online cancellation was possible until {when}.",
-          "it": "L’annullamento online era possibile fino al {when}.",
+          "it": "L’annullamento online era possibile fino a {when}.",
           "variables": ["when"]
         },
         {
           "key": "orderCancel.when",
-          "fr": "{day} à {time}",
-          "en": "{day} at {time}",
-          "it": "{day} alle {time}",
+          "fr": "{day}, {time}",
+          "en": "{day}, {time}",
+          "it": "{day}, ore {time}",
           "variables": ["day", "time"]
+        },
+        {
+          "key": "orderCancel.hourOnly",
+          "fr": "{hour} h",
+          "en": "{hour}:00",
+          "it": "{hour}",
+          "variables": ["hour"]
+        },
+        {
+          "key": "orderCancel.hourMinutes",
+          "fr": "{hour} h {minutes}",
+          "en": "{hour}:{minutes}",
+          "it": "{hour}:{minutes}",
+          "variables": ["hour", "minutes"]
         },
         {
           "key": "orderCancel.reasonLabel",
@@ -6356,7 +6370,7 @@
           "key": "orderCancel.refusals.too_late",
           "fr": "Il est trop tard pour annuler en ligne : c’était possible jusqu’au {when}. Contactez-nous.",
           "en": "It is too late to cancel online: it was possible until {when}. Contact us.",
-          "it": "È troppo tardi per annullare online: era possibile fino al {when}. Contattateci.",
+          "it": "È troppo tardi per annullare online: era possibile fino a {when}. Contattateci.",
           "variables": ["when"]
         },
         {

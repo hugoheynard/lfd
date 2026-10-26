@@ -146,6 +146,8 @@ import { PAINS } from "../../../../catalog/domain/__tests__/families.fixture.js"
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { CommerceOrderPlacedFact } from "../../../../../delivery/channels/commerce/index.js";
 import { RecordingDurable } from "./durable-doubles.js";
+import { CustomerCancellationDeadline } from "../../services/customer-cancellation-deadline.js";
+import { FixedCancellationSettings } from "./customer-cancellation-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
 import {
@@ -603,6 +605,7 @@ describe("PlaceOrderHandler", () => {
         new RecordingRedemption(),
         new RecordingDurable(),
         intakeAt(),
+        new CustomerCancellationDeadline(new FixedCancellationSettings()),
       );
 
       await handler.execute(
@@ -635,6 +638,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -661,6 +665,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       durable,
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -686,6 +691,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -730,6 +736,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await expect(
@@ -756,6 +763,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), null));
@@ -784,6 +792,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(
@@ -855,6 +864,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(
@@ -895,6 +905,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await expect(
@@ -922,6 +933,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -950,6 +962,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await expect(
@@ -979,6 +992,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     // 2 × 200 = 400 ; remise 20 % = 80 ; total = 320.
@@ -1028,6 +1042,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
     const lines = [
       { sku: "VIE-001", quantity: 2 },
@@ -1071,6 +1086,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1099,6 +1115,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await expect(
@@ -1130,6 +1147,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     // 2 × 200 = 400 HT (TVA 0 dans ce catalogue de test) ; frais 20 € = 2000 HT
@@ -1185,6 +1203,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(
@@ -1227,6 +1246,7 @@ describe("PlaceOrderHandler", () => {
         new RecordingRedemption(),
         new RecordingDurable(),
         intakeAt(),
+        new CustomerCancellationDeadline(new FixedCancellationSettings()),
       );
       await handler.execute(
         new PlaceOrderCommand(
@@ -1281,6 +1301,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await expect(
@@ -1316,6 +1337,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1349,6 +1371,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     const result = await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1379,6 +1402,7 @@ describe("PlaceOrderHandler", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
@@ -1433,6 +1457,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -1492,6 +1517,7 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
 
     await handler.execute(
@@ -1528,6 +1554,7 @@ describe("PlaceOrderHandler — prélèvement bloqué", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -1632,6 +1659,7 @@ describe("PlaceOrderHandler — le bon de fidélité", () => {
       over.redemption,
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -1739,6 +1767,7 @@ describe("PlaceOrderHandler — créneau ou échéance", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
     await handler.execute(
       new PlaceOrderCommand(
@@ -1858,6 +1887,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -1978,6 +2008,7 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(opening, "active"),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -2055,6 +2086,7 @@ describe("PlaceOrderHandler — l'arrêt du plan", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -2154,6 +2186,7 @@ describe("PlaceOrderHandler — les CGV en vigueur", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
     await handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
     return sink.placed;
@@ -2225,6 +2258,7 @@ describe("PlaceOrderHandler — les CGV cochées au panier", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(DEFAULT_ORDER_OPENING, "active", [], {}, salesTerms),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
     return { handler, sink, released };
   }
@@ -2340,6 +2374,7 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
       new RecordingRedemption(),
       new RecordingDurable(),
       intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
 
@@ -2359,5 +2394,66 @@ describe("PlaceOrderHandler — limite d'article et règle générale", () => {
       new PlaceOrderCommand("u1", payload({ requestedDeliveryDate: NEXT_DAY }), null),
     );
     expect(sink.placed).not.toBeNull();
+  });
+});
+
+/**
+ * Le délai d'annulation figé à la passation (Hugo, 2026-10-26). Les dates ne
+ * se comparent qu'entre elles : la passation calcule un instant, elle ne le
+ * juge pas contre l'horloge.
+ */
+describe("PlaceOrderHandler — le délai d'annulation figé", () => {
+  function handlerWith(
+    sink: { placed: OrderToPlace | null },
+    settings: FixedCancellationSettings,
+    companyGuard: OrderGuardReader = guard(null, null),
+  ): PlaceOrderHandler {
+    return new PlaceOrderHandler(
+      companyGuard,
+      drafting(pickups(LABO_POINT), zones()),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(settings),
+    );
+  }
+
+  it("un particulier : N heures avant le début du créneau, au réglage du moment", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const settings = new FixedCancellationSettings({ delayEnabled: true, hoursBefore: 24 });
+
+    await handlerWith(sink, settings).execute(new PlaceOrderCommand("u1", payload(), null));
+
+    // Le 1er septembre 07:00 à Paris (UTC+2) = 05:00 UTC ; 24 h avant.
+    expect(sink.placed?.customerCancellableUntil).toEqual(new Date("2026-08-31T05:00:00.000Z"));
+  });
+
+  it("un réglage sans délai ne fige rien : seul l'arrêt du plan limitera", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const settings = new FixedCancellationSettings({ delayEnabled: false });
+
+    await handlerWith(sink, settings).execute(new PlaceOrderCommand("u1", payload(), null));
+
+    expect(sink.placed?.customerCancellableUntil).toBeNull();
+  });
+
+  it("un pro reçoit nul : il annule jusqu'à l'arrêt du plan, sans délai réglable", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const settings = new FixedCancellationSettings({ delayEnabled: true, hoursBefore: 24 });
+
+    await handlerWith(sink, settings, guard("orders", "active")).execute(
+      new PlaceOrderCommand("u1", payload(), "c1"),
+    );
+
+    expect(sink.placed?.customerCancellableUntil).toBeNull();
   });
 });

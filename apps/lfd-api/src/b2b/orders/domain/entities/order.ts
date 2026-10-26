@@ -37,6 +37,10 @@ import type {
   OrderSalesTerms,
   OrderToPlace,
 } from "./order-shapes.js";
+import {
+  customerCancellationDeadlineOf,
+  type CustomerCancellationPolicy,
+} from "../services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import { computeOrderTotals } from "../services/vat.js";
 import { OrderLine } from "../value-objects/order-line.js";
@@ -65,6 +69,7 @@ type Payment = { readonly status: PaymentStatus; readonly intentId: string | nul
 export class Order {
   private payment: Payment = null;
   private offPlan = false;
+  private customerCancellableUntil: Date | null = null;
 
   private constructor(
     private readonly companyId: string | null,
@@ -276,6 +281,29 @@ export class Order {
     this.offPlan = true;
   }
 
+  /**
+   * **Le délai d'annulation du particulier, figé à sa passation** (Hugo,
+   * 2026-10-26) : les CGV promettent le délai rappelé avant la validation,
+   * donc le réglage d'aujourd'hui, pas celui du jour où il annulera. Calculé
+   * par la règle même du refus P2 (`customerCancellationDeadlineOf`).
+   *
+   * Reste `null` pour une commande de société — un pro annule jusqu'à l'arrêt
+   * du plan, qui n'est pas un délai à figer — et quand le réglage n'impose pas
+   * de délai : sans délai, seul l'arrêt du plan limite, et ce n'est pas non
+   * plus un instant connu à la passation.
+   */
+  fixCustomerCancellationDeadline(policy: CustomerCancellationPolicy): void {
+    if (this.companyId !== null || !policy.delayEnabled) {
+      this.customerCancellableUntil = null;
+      return;
+    }
+    this.customerCancellableUntil = customerCancellationDeadlineOf(policy.hoursBefore, {
+      // `@db.Date` composé à minuit UTC : le jour se relit tel quel.
+      serviceDay: this.requestedDeliveryDate?.toISOString().slice(0, 10) ?? null,
+      windowStart: this.agreed.window.value?.start ?? null,
+    });
+  }
+
   /** Sérialise pour l'adaptateur — refuse une commande au règlement non décidé. */
   toPersistence(): OrderToPlace {
     if (this.payment === null) {
@@ -290,6 +318,7 @@ export class Order {
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
       placedOffPlan: this.offPlan,
+      customerCancellableUntil: this.customerCancellableUntil,
       fulfillmentMethod: this.fulfillment.method,
       deliveryZoneId: this.fulfillment.deliveryZoneId,
       deliveryAddress: this.fulfillment.deliveryAddress,

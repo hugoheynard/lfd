@@ -34,6 +34,7 @@ import {
   withdrawals,
 } from "./order-staff-cancel-scene.js";
 import { seedOrder } from "./order-staff-cancel-orders.js";
+import { customerCancellationDeadlineOf } from "../src/b2b/orders/domain/services/customer-cancellation-window.js";
 
 let ctx: E2eContext;
 
@@ -62,6 +63,12 @@ const cancelColumns = (orderId: string) =>
       cancellationReason: true,
       cancellationReasonCode: true,
     },
+  });
+
+const deadlineOf = (orderId: string) =>
+  ctx.prisma.order.findUniqueOrThrow({
+    where: { id: orderId },
+    select: { customerCancellableUntil: true },
   });
 
 /** Une commande de société, et un membre ACCEPTÉ de cette société. */
@@ -185,8 +192,12 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
    * Décision de Hugo du 2026-10-13 : il n'y a plus de réglage « fermé ». Le
    * délai est ACTIF par défaut ; désactivé, seul l'arrêt du plan de
    * production limite un particulier, comme un pro.
+   *
+   * Depuis le 2026-10-26, le délai est FIGÉ à la passation : le désactiver
+   * après la commande ne la libère plus. Seule une commande passée sans délai
+   * s'annule jusqu'à l'arrêt du plan.
    */
-  it("délai actif par défaut : `too_late` à J+1 ; désactivé, la même commande s'annule", async () => {
+  it("délai actif par défaut : `too_late` à J+1, même désactivé après ; passée sans délai, elle s'annule", async () => {
     const author = await customer();
     const soon = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
     const refused = await customerCancel(author.sub, soon.orderId);
@@ -194,7 +205,12 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
     expect(codeOf(refused)).toBe("orders.customer_cancel.too_late");
 
     await setCancellation(false);
-    await customerCancel(author.sub, soon.orderId).expect(204);
+    const still = await customerCancel(author.sub, soon.orderId);
+    expect(codeOf(still)).toBe("orders.customer_cancel.too_late");
+
+    const free = await seedCustomerOrder({ placedByUserId: author.id, inDays: 1 });
+    expect((await deadlineOf(free.orderId)).customerCancellableUntil).toBeNull();
+    await customerCancel(author.sub, free.orderId).expect(204);
   });
 
   it("un pro n'a pas de délai, même actif", async () => {
@@ -218,6 +234,11 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
     await customerCancel(author.sub, later.orderId, { reasonCode: "wrong_date" }).expect(204);
   });
 
+  it("un pro reçoit nul à la passation : rien à figer", async () => {
+    const pro = await proOrder();
+    expect((await deadlineOf(pro.orderId)).customerCancellableUntil).toBeNull();
+  });
+
   it("la route admin lit et pose le réglage, l'auteur figé ; un délai hors borne est un 400", async () => {
     await setCancellation(true, 12);
     const view = await ctx.asSub(E2E_STAFF_SUB).get("/admin/customer-cancellation").expect(200);
@@ -228,6 +249,65 @@ describe("le réglage des particuliers (C6.3, C6.5)", () => {
       .patch("/admin/customer-cancellation")
       .send({ hoursBefore: 169 })
       .expect(400);
+  });
+});
+
+/**
+ * Le délai FIGÉ à la passation (Hugo, 2026-10-26) : les CGV promettent le
+ * délai rappelé avant la validation. Les jours sont relatifs (`serviceDay`) :
+ * le créneau « avant midi » ancre le délai à minuit du jour, heure de Paris.
+ */
+describe("le délai figé à la passation (2026-10-26)", () => {
+  it("posé à la passation, N heures avant l'ancre, et servi à la boutique", async () => {
+    const author = await customer();
+    const later = await seedCustomerOrder({ placedByUserId: author.id, inDays: 7 });
+    const expected = customerCancellationDeadlineOf(24, {
+      serviceDay: serviceDay(7),
+      windowStart: null,
+    });
+
+    expect((await deadlineOf(later.orderId)).customerCancellableUntil).toEqual(expected);
+    const detail = await ctx.asSub(author.sub).get(`/orders/${later.orderId}`).expect(200);
+    expect(jsonBody<CustomerOrderDetailView>(detail).cancellability).toMatchObject({
+      cancellable: true,
+      until: expected?.toISOString(),
+    });
+  });
+
+  it("le réglage s'allonge après la commande : le délai figé laisse annuler", async () => {
+    const author = await customer();
+    const later = await seedCustomerOrder({ placedByUserId: author.id, inDays: 7 });
+
+    // Au réglage du jour (une semaine), J+7 serait trop tard.
+    await setCancellation(true, 168);
+    await customerCancel(author.sub, later.orderId).expect(204);
+  });
+
+  it("le réglage se raccourcit après la commande : le délai figé refuse quand même", async () => {
+    await setCancellation(true, 168);
+    const author = await customer();
+    const soon = await seedCustomerOrder({ placedByUserId: author.id, inDays: 3 });
+
+    // Au réglage du jour (une heure), J+3 serait encore annulable.
+    await setCancellation(true, 1);
+    const refused = await customerCancel(author.sub, soon.orderId);
+    expect(refused.status).toBe(409);
+    expect(codeOf(refused)).toBe("orders.customer_cancel.too_late");
+  });
+
+  it("une commande d'avant la colonne (nulle) garde le calcul au réglage du jour", async () => {
+    const author = await customer();
+    const legacy = await seedCustomerOrder({ placedByUserId: author.id, inDays: 7 });
+    // L'état des commandes passées avant la migration : aucune passation ne
+    // l'écrit plus, seule la colonne vide le reproduit.
+    await ctx.prisma.order.update({
+      where: { id: legacy.orderId },
+      data: { customerCancellableUntil: null },
+    });
+
+    await setCancellation(true, 168);
+    const refused = await customerCancel(author.sub, legacy.orderId);
+    expect(codeOf(refused)).toBe("orders.customer_cancel.too_late");
   });
 });
 

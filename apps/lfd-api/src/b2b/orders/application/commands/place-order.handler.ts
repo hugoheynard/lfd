@@ -23,6 +23,7 @@ import { OrderRepository, type PlacedOrder } from "../../domain/ports/order.repo
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import { orderFingerprint } from "../../domain/services/order-fingerprint.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
+import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
@@ -58,6 +59,7 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
     private readonly vouchers: LoyaltyVoucherRedemption,
     private readonly durable: DurablePublisher,
     private readonly intake: OrderIntake,
+    private readonly cancellationDeadline: CustomerCancellationDeadline,
   ) {}
 
   /**
@@ -147,6 +149,9 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       voucher,
       OrderLocale.ofOptional(payload.locale),
     );
+    // Le délai d'annulation du réglage d'AUJOURD'HUI, celui que les CGV ont
+    // rappelé : figé avant l'écriture (Hugo, 2026-10-26).
+    await this.cancellationDeadline.fixOn(order);
 
     const intent = await settleOrder(
       { guard: this.guard, payments: this.payments },

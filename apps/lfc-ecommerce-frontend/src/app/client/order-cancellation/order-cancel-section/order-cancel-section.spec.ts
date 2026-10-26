@@ -61,7 +61,7 @@ describe('OrderCancelSection', () => {
       voucherReturned: false,
     });
     expect(el.querySelector('[data-cancel]')?.textContent?.trim()).toBe(FR.action);
-    expect(el.querySelector('[data-until]')?.textContent).toContain('14/10');
+    expect(el.querySelector('[data-until]')?.textContent).toContain('mercredi 14 octobre, 9 h');
   });
 
   it('ouvre la confirmation au clic, et dit « annulée » quand elle ferme sur un succès', async () => {
@@ -93,7 +93,7 @@ describe('OrderCancelSection', () => {
       code: 'too_late',
       until: '2026-10-14T07:00:00.000Z',
     });
-    expect(el.querySelector('[data-refusal]')?.textContent).toContain('14/10');
+    expect(el.querySelector('[data-refusal]')?.textContent).toContain('mercredi 14 octobre, 9 h');
   });
 
   it('se tait sur une commande déjà annulée : l’état le dit déjà', async () => {
