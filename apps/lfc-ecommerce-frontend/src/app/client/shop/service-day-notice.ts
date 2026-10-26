@@ -12,9 +12,11 @@ import { leftLabel, limitHourLabel, weekdayLabel } from './cutoff-labels';
 import { ServicePoints } from './pickup-points.store';
 import {
   type CartItemLimit,
+  dayNoLongerPossible,
   decideDayNotice,
   type DayNotice,
   limitHasPassed,
+  offersDayChange,
 } from './service-day-notice.rules';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopClock } from './shop-clock';
@@ -94,6 +96,19 @@ export class ServiceDayNotice {
 
   /** La phrase, ou `null` : rien à dire, la barre nomme déjà le jour retenu. */
   readonly message = computed<string | null>(() => this.say(this.decision()));
+
+  /**
+   * Le jour retenu n'est plus possible : le panier ne laisse pas régler
+   * (2026-10-26) — la passation le refuserait en `orders.cutoff.past`.
+   */
+  readonly dayUnavailable = computed(() =>
+    dayNoLongerPossible(this.decision(), this.order.choice()?.date ?? null),
+  );
+
+  /** L'encadré offre « Modifier » (cf. {@link offersDayChange}). */
+  readonly offersChange = computed(() =>
+    offersDayChange(this.decision(), this.order.choice()?.date ?? null),
+  );
 
   constructor() {
     effect(() => {

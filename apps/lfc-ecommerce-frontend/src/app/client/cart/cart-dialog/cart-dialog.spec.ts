@@ -22,6 +22,8 @@ import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { FoldPanelRef } from 'fold-ng';
 
 import { PieceRequest } from '../../shop/piece-request.service';
+import { ServiceDayNotice } from '../../shop/service-day-notice';
+import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { GuestIdentityForm } from '../guest-identity-form/guest-identity-form';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { CartDialog } from './cart-dialog';
@@ -73,6 +75,8 @@ interface Monde {
   readonly cgv?: boolean;
   /** Le serveur vient de refuser des CGV périmées (409). */
   readonly cgvOutdated?: boolean;
+  /** Le jour retenu n'est plus possible — l'heure limite est passée (2026-10-26). */
+  readonly dayGone?: boolean;
 }
 
 /**
@@ -127,6 +131,7 @@ function boot({
   exempted = false,
   cgv = false,
   cgvOutdated = false,
+  dayGone = false,
 }: Monde = {}): ComponentFixture<CartDialog> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -181,6 +186,16 @@ function boot({
             invites.push(buyer);
             return Promise.resolve(null);
           },
+        },
+      },
+      // La décision du jour est éprouvée dans `service-day-notice.rules.spec.ts` ;
+      // ici, seulement ce que le panier en fait.
+      {
+        provide: ServiceDayNotice,
+        useValue: {
+          message: signal(dayGone ? 'Trop tard pour lundi.' : null),
+          dayUnavailable: signal(dayGone),
+          offersChange: signal(dayGone),
         },
       },
       // Les portes sont des DIALOGUES : on n'en monte pas le contenu ici, on
@@ -614,6 +629,36 @@ describe('le panier exige un créneau choisi', () => {
 
     expect(bouton(fixture)?.disabled).toBe(false);
     expect(el(fixture).querySelector('[data-slot-missing]')).toBeNull();
+  });
+});
+
+describe('le panier refuse un jour qui n’est plus possible', () => {
+  it('🔴 grise le règlement, dit pourquoi et relie la raison au bouton', async () => {
+    const fixture = boot({ auth: RECONNU, dayGone: true });
+
+    expect(bouton(fixture)?.disabled).toBe(true);
+    expect(note(fixture)?.textContent?.trim()).toBe(COMMAND_TERMS_FR.dayUnavailable);
+    expect(bouton(fixture)?.getAttribute('aria-describedby')).toBe(note(fixture)?.id);
+    bouton(fixture)?.click();
+    await Promise.resolve();
+    expect(regle).toEqual([]);
+  });
+
+  it('montre l’encadré du jour avec « Modifier »', () => {
+    const fixture = boot({ auth: RECONNU, dayGone: true });
+
+    expect(el(fixture).querySelector('[data-late-day]')).not.toBeNull();
+    expect(el(fixture).querySelector('[data-change-day]')).not.toBeNull();
+  });
+
+  it('le créneau manquant passe avant le jour', () => {
+    const fixture = boot({
+      auth: RECONNU,
+      dayGone: true,
+      service: { ...AU_LABO, slot: '', window: null },
+    });
+
+    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.slotMissing);
   });
 });
 

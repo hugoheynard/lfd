@@ -74,11 +74,8 @@
           </button>
         </div>
       </section>
-      <!-- 🔴 Le jour n'est pas demain : on le DIT ici, à l'endroit où l'on
-           règle (Hugo, 2026-10-13 : « deux commandes pour jeudi »). -->
-      @if (lateNotice(); as notice) {
-        <fold-callout variant="warning" data-late-day>{{ notice }}</fold-callout>
-      }
+      <!-- Le même encadré que le popover du panier, « Modifier » compris. -->
+      <app-service-day-callout />
     } @else if (serviceOffered()) {
       <button class="ask" type="button" (click)="pickService()">
         <span class="ask-title">{{ t().shop.pickService }}</span>

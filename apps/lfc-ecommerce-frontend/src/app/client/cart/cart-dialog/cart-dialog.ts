@@ -44,6 +44,9 @@ import { OrderAdmissionStore } from '../../shop/order-admission.store';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { ServiceDayNotice } from '../../shop/service-day-notice';
+import { ServiceDayCallout } from '../../shop/service-day-callout/service-day-callout';
+import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
+import { screenCopy } from '../../copy/shop-copy-composer';
 
 /**
  * Où Auth0 ramène, une fois l'identité obtenue : **le rayon**.
@@ -84,6 +87,7 @@ const AFTER_SIGN_IN = '/boutique';
     GuestIdentityForm,
     RouterLink,
     SignInChoices,
+    ServiceDayCallout,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
@@ -138,7 +142,8 @@ export class CartDialog {
   private readonly doors = inject(OrderDoors);
 
   /** « Trop tard pour demain : … » — le même avertissement que la barre du rayon. */
-  protected readonly lateNotice = inject(ServiceDayNotice).message;
+  private readonly dayNotice = inject(ServiceDayNotice);
+  private readonly termsCopy = screenCopy('commandTerms', commandTermsCopy);
 
   private readonly firm = inject(ClientCompany);
 
@@ -239,6 +244,11 @@ export class CartDialog {
    * Le règlement attend qu'on sache qui commande — un compte, ou une saisie
    * complète —, que le créneau soit choisi, et que les CGV soient cochées.
    */
+  /** Le jour retenu n'est plus possible — seulement devant une commande réglable. */
+  protected readonly dayUnavailable = computed(
+    () => !this.cart.isEmpty() && this.dayNotice.dayUnavailable(),
+  );
+
   protected readonly payBlocked = computed(() => this.blockReason() !== null);
 
   /**
@@ -263,6 +273,11 @@ export class CartDialog {
     }
     if (this.slotMissing()) {
       return c.slotMissing;
+    }
+    // Le jour retenu n'est plus possible (2026-10-26) : la passation le
+    // refuserait. L'encadré du jour porte « Modifier ».
+    if (this.dayUnavailable()) {
+      return this.termsCopy().dayUnavailable;
     }
     if (this.identityNeeded() && this.signingIn()) {
       return c.payBlockedSignIn;

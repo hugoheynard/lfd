@@ -1,0 +1,22 @@
+<!-- 🔴 Le jour n'est pas demain, ou n'est plus possible : on le DIT là où l'on
+     règle (Hugo, 2026-10-13 : « deux commandes pour jeudi »). -->
+@if (notice.message(); as message) {
+  <fold-callout variant="warning" data-late-day>
+    {{ message }}
+    @if (notice.offersChange()) {
+      <button
+        actions
+        foldButton
+        size="sm"
+        intent="warning"
+        emphasis="soft"
+        type="button"
+        data-change-day
+        [attr.aria-label]="c().editDay"
+        (click)="void changeDay()"
+      >
+        {{ c().edit }}
+      </button>
+    }
+  </fold-callout>
+}

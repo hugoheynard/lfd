@@ -209,6 +209,37 @@ describe("l'heure limite est opposée au client", () => {
   });
 
   /**
+   * La passation SANS COMPTE (`POST /shop/orders`) passe par la même
+   * composition (`OrderDrafting`) : aucun e2e ne le prouvait jusqu'au
+   * 2026-10-26, et la boutique bloque désormais le règlement d'un jour qui
+   * n'est plus possible en comptant sur ce refus-là.
+   */
+  it("refuse aussi une commande sans compte dont la limite est passée, sans rien écrire", async () => {
+    await seedCutoff({ daysBefore: 1, time: "00:01" });
+
+    const response = await ctx
+      .http()
+      .post("/shop/orders")
+      .send({
+        idempotencyKey: randomUUID(),
+        salesTerms: null,
+        buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+        fulfillmentMethod: "pickup",
+        requestedWindow: { start: "07:00", end: "08:00" },
+        deliveryAddress: null,
+        deliveryAddressId: null,
+        pickupAddressId: pickupId,
+        requestedDeliveryDate: serviceDay(0),
+        note: "",
+        lines: [{ sku: "VIE-001", quantity: 3 }],
+      })
+      .expect(409);
+
+    expect(response.body).toMatchObject({ code: "orders.cutoff.past" });
+    expect(await orderCount()).toBe(0);
+  });
+
+  /**
    * Décision de Hugo du 2026-10-21 (schéma des réglages §4, point 4) : les
    * règles par point × jour sont retirées. La base les refuse désormais
    * (CHECK `order_cutoffs_general_only`), et n'en tient qu'une

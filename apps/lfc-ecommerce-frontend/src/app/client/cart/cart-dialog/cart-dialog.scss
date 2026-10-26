@@ -16,8 +16,7 @@
 }
 
 @media (min-width: 900px) {
-  .page,
-  .foot {
+  .page {
     width: min(640px, 100%);
     margin-inline: auto;
   }
@@ -214,15 +213,6 @@
   color: var(--lfc-color-on-primary-muted);
 }
 
-.foot {
-  position: sticky;
-  bottom: 0;
-  flex: none;
-  padding: 11px var(--fold-space-lg) 26px;
-  border-top: 1px solid var(--fold-color-border);
-  background: var(--fold-color-surface-card);
-}
-
 .pay {
   display: flex;
   align-items: center;
@@ -261,6 +251,11 @@
 .terms {
   font-size: var(--fold-text-sm);
   line-height: var(--lfc-leading-note);
+}
+
+/* Le lien des CGV aux couleurs fold, pas au bleu du navigateur (2026-10-26). */
+.terms a {
+  color: var(--fold-color-primary-text);
 }
 
 /* ── Le choix du règlement, pour qui l'a ─────────────────────────────────── */

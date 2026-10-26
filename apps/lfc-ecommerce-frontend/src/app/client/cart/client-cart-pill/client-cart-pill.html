@@ -36,6 +36,13 @@
     <!-- Le décompte est celui de la page panier, au caractère près : un second
          calcul serait une seconde occasion de dire un autre total. -->
     <div class="scroller">
+      <!-- L'avertissement du jour, le même qu'au panier entier (2026-10-26) :
+           « Modifier » referme le popover avant d'ouvrir le choix. DIFFÉRÉ à
+           la première ouverture : il tire le magasin des jours et le
+           catalogue, et le popover est au démarrage (budget de 1 400 kB). -->
+      @defer (when open()) {
+        <app-service-day-callout (changing)="open.set(false)" />
+      }
       <app-cart-summary />
     </div>
 

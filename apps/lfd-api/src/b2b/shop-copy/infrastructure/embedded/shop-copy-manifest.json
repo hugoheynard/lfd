@@ -2134,6 +2134,20 @@
           "variables": ["day", "next"]
         },
         {
+          "key": "commandTerms.editDay",
+          "fr": "Modifier le jour",
+          "en": "Change the day",
+          "it": "Modifica il giorno",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.dayUnavailable",
+          "fr": "Ce jour n’est plus possible : choisissez-en un autre avant de régler.",
+          "en": "This day is no longer available: choose another one before paying.",
+          "it": "Questo giorno non è più possibile: sceglietene un altro prima di pagare.",
+          "variables": []
+        },
+        {
           "key": "commandTerms.lateDeliveryAt",
           "fr": "Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}.",
           "en": "Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}.",

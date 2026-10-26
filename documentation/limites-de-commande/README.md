@@ -74,7 +74,50 @@ possible. Toutes s'appliquent : c'est la plus tôt qui ferme.
 | fiche, ligne du panier      | « Préparé sur commande — à commander 2 jours à l'avance, avant 12 h »               | `ShopItemView.orderTimeLimit` |
 
 La grâce n'est **jamais** annoncée. Tout cela est une **annonce** : seule la
-passation refuse. Détail : [`reglages-generaux.md`](reglages-generaux.md) §6 et
+passation refuse.
+
+### Au panier : le même encadré, « Modifier », et le règlement bloqué
+
+Le popover du panier (`client-cart-pill`) et le dialogue du panier
+(`cart-dialog`) montrent **le même encadré** : un seul composant,
+`client/shop/service-day-callout/`, qui dit la phrase de `ServiceDayNotice`.
+
+- **« Modifier »** paraît quand le jour **choisi** n'est plus possible
+  (« Trop tard pour lundi : le premier jour encore possible est mardi »,
+  `slipped` ; ou un article trop tard pour ce jour-là, `itemTooLate`), et aussi
+  quand la boutique a décalé le jour d'elle-même (`late`), pour qu'on puisse en
+  préférer un autre que celui proposé. Il rouvre l'heure seule en retrait (la
+  maison est prise), le dialogue du coursier en livraison — sans le jour
+  périmé, qui propose donc le premier possible. Dans le popover, il le referme
+  d'abord.
+- **Le règlement est bloqué** tant que le jour choisi n'est plus possible
+  (`dayNoLongerPossible`, `service-day-notice.rules.ts`) : le bouton est grisé,
+  la raison « Ce jour n'est plus possible : choisissez-en un autre avant de
+  régler » s'écrit dessous et lui est reliée (`aria-describedby`). Dans l'ordre
+  des causes, elle vient après « pas de service » et « pas de créneau », avant
+  l'identité et les CGV. Sans jour choisi, rien n'est bloqué : il n'y a rien à
+  corriger. La passation refuse de toute façon (`orders.cutoff.past`, avec ou
+  sans compte — `order-cutoffs.e2e-spec.ts`).
+
+### Une commande passée à temps, payée après la limite
+
+La limite gouverne la **passation**, pas le paiement. Une commande carte
+écrite avant la limite reste payable après elle, et c'est voulu :
+
+- elle a été passée à temps, et le fournil ne compte qu'à la **clôture** de la
+  journée, qui balaie d'abord les règlements non aboutis (annulation de
+  l'intention chez Stripe, puis `cancelled` + `failed`, D3 de
+  [`../commandes/reglement/architecture-abandon-du-reglement.md`](../commandes/reglement/architecture-abandon-du-reglement.md)) ;
+- une commande boutique de particulier meurt de toute façon au bout de
+  30 minutes (`UnsettledShopOrderExpiry`, au plus 35) ;
+- **refuser la confirmation du webhook** après la limite laisserait un débit
+  Stripe sans commande : c'est exclu. Un paiement déjà capté n'est jamais
+  refusé a posteriori, et un encaissement sur une commande annulée sonne « à
+  rembourser » (`confirm-order-payment.handler.ts`).
+
+Aucun nouvel état : quand le règlement est mort (expiré, clôturé), l'écran de
+règlement le dit (« Cette commande n'attend plus de paiement en ligne », phase
+`closed`) et renvoie à « Mes commandes ». Détail : [`reglages-generaux.md`](reglages-generaux.md) §6 et
 [`limites-produit.md`](limites-produit.md) §4–§6.
 
 ## 4. Le chemin

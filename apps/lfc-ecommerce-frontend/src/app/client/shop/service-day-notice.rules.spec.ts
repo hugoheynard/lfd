@@ -1,6 +1,8 @@
 import { describe, expect, it } from 'vitest';
 
 import {
+  dayNoLongerPossible,
+  offersDayChange,
   decideDayNotice,
   type DayNoticeInput,
   firstPossibleDay,
@@ -298,5 +300,35 @@ describe('decideDayNotice — un article déjà trop tard', () => {
   it('se tait quand l’article est encore possible pour ce jour', () => {
     const notice = decideDayNotice(input({ held: '2026-10-24', cartLimits: [TART] }));
     expect(notice?.kind).not.toBe('itemTooLate');
+  });
+});
+
+describe('dayNoLongerPossible et offersDayChange', () => {
+  const D = '2026-10-22';
+  const N = '2026-10-23';
+
+  it('bloque et offre « Modifier » quand le jour choisi a glissé', () => {
+    const notice = { kind: 'slipped', held: D, first: N } as const;
+    expect(dayNoLongerPossible(notice, D)).toBe(true);
+    expect(offersDayChange(notice, D)).toBe(true);
+  });
+
+  it('bloque quand un article est trop tard pour le jour CHOISI, pas sans choix', () => {
+    const notice = { kind: 'itemTooLate', day: D, item: 'la tarte', others: 0, next: N } as const;
+    expect(dayNoLongerPossible(notice, D)).toBe(true);
+    expect(dayNoLongerPossible(notice, null)).toBe(false);
+    expect(offersDayChange(notice, null)).toBe(false);
+  });
+
+  it('offre « Modifier » sans bloquer quand la boutique a décalé le jour', () => {
+    const notice = { kind: 'late', held: N, passedAt: null } as const;
+    expect(dayNoLongerPossible(notice, N)).toBe(false);
+    expect(offersDayChange(notice, N)).toBe(true);
+  });
+
+  it('se tait sur un compte à rebours, et sans rien à dire', () => {
+    const notice = { kind: 'countdown', first: D, minutesLeft: 30 } as const;
+    expect(offersDayChange(notice, D)).toBe(false);
+    expect(dayNoLongerPossible(null, D)).toBe(false);
   });
 });

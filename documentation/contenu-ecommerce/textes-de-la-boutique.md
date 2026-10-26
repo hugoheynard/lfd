@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1669 textes
+## Sommaire — 1671 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -21,7 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 67 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 19 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 36 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1669** |
+| **Total** | | **1671** |
 
 ## Le parcours de commande
 
@@ -431,7 +431,7 @@ Source : `fr.ts · en.ts · it.ts` · 19 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 36 textes.
+Source : `screens/command-terms.copy.ts` · 38 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -445,6 +445,8 @@ Source : `screens/command-terms.copy.ts` · 36 textes.
 | `commandTerms.lateDelivery` | Trop tard pour demain : votre commande sera livrée {day}. | Too late for tomorrow: your order will be delivered on {day}. | Troppo tardi per domani: il vostro ordine sarà consegnato {day}. | `{day}` |
 | `commandTerms.latePickup` | Trop tard pour demain : votre commande sera à retirer {day}. | Too late for tomorrow: your order will be ready for pickup on {day}. | Troppo tardi per domani: il vostro ordine sarà da ritirare {day}. | `{day}` |
 | `commandTerms.slipped` | Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler. | Too late for {day}: the first day still open is {next}. Change the day before paying. | Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare. | `{day}` `{next}` |
+| `commandTerms.editDay` | Modifier le jour | Change the day | Modifica il giorno |  |
+| `commandTerms.dayUnavailable` | Ce jour n’est plus possible : choisissez-en un autre avant de régler. | This day is no longer available: choose another one before paying. | Questo giorno non è più possibile: sceglietene un altro prima di pagare. |  |
 | `commandTerms.lateDeliveryAt` | Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}. | Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}. | `{time}` `{day}` |
 | `commandTerms.latePickupAt` | Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}. | Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}. | `{time}` `{day}` |
 | `commandTerms.operationPickupFrom` | Ce produit se retire à partir du {day}. | This product can be picked up from {day}. | Questo prodotto si ritira a partire da {day}. | `{day}` |

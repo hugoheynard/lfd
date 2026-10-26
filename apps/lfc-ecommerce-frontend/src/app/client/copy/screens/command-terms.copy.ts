@@ -41,6 +41,16 @@ export interface CommandTermsCopy {
    */
   readonly slipped: string;
   /**
+   * Le nom complet du « Modifier » de l'encadré du jour (2026-10-26) : le
+   * texte visible est {@link edit}, et le nom le contient (RGAA 6.1).
+   */
+  readonly editDay: string;
+  /**
+   * Pourquoi le panier ne laisse pas régler : le jour retenu n'est plus
+   * possible (heure limite passée, 2026-10-26).
+   */
+  readonly dayUnavailable: string;
+  /**
    * La même chose, quand on a lu l'heure limite de demain avant qu'elle tombe :
    * `{time}` l'heure passée — « 23 h » —, `{day}` le jour de service.
    */
@@ -130,6 +140,8 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   latePickup: 'Trop tard pour demain : votre commande sera à retirer {day}.',
   slipped:
     'Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler.',
+  editDay: 'Modifier le jour',
+  dayUnavailable: 'Ce jour n’est plus possible : choisissez-en un autre avant de régler.',
   lateDeliveryAt:
     'Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}.',
   latePickupAt:
@@ -173,6 +185,8 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   lateDelivery: 'Too late for tomorrow: your order will be delivered on {day}.',
   latePickup: 'Too late for tomorrow: your order will be ready for pickup on {day}.',
   slipped: 'Too late for {day}: the first day still open is {next}. Change the day before paying.',
+  editDay: 'Change the day',
+  dayUnavailable: 'This day is no longer available: choose another one before paying.',
   lateDeliveryAt:
     'Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}.',
   latePickupAt:
@@ -215,6 +229,8 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   latePickup: 'Troppo tardi per domani: il vostro ordine sarà da ritirare {day}.',
   slipped:
     'Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare.',
+  editDay: 'Modifica il giorno',
+  dayUnavailable: 'Questo giorno non è più possibile: sceglietene un altro prima di pagare.',
   lateDeliveryAt:
     'Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}.',
   latePickupAt:

@@ -20,6 +20,7 @@ import { CartSummary } from '../cart-summary/cart-summary';
 import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { PieceRequest } from '../../shop/piece-request.service';
+import { ServiceDayCallout } from '../../shop/service-day-callout/service-day-callout';
 
 /**
  * Le panier, dans la barre d'app.
@@ -57,6 +58,7 @@ import { PieceRequest } from '../../shop/piece-request.service';
     FoldPopoverComponent,
     FoldPopoverTriggerDirective,
     NgTemplateOutlet,
+    ServiceDayCallout,
   ],
   host: { '[class.is-full]': '!cart.isEmpty()' },
   templateUrl: './client-cart-pill.html',

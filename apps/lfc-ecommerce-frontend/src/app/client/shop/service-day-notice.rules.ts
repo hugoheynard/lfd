@@ -242,3 +242,26 @@ function deadlineNotice(
 export function limitHasPassed(orderUntil: string | null, now: Date): boolean {
   return passedLimit(orderUntil, now) !== null;
 }
+
+/**
+ * **Le jour retenu n'est plus possible** : la passation le refuserait
+ * (`orders.cutoff.past`). Deux cas seulement — le jour choisi a glissé derrière
+ * l'heure limite (`slipped`), ou la limite PROPRE d'un article du panier est
+ * passée pour ce jour choisi (`itemTooLate`). Sans choix (`held` à `null`), rien
+ * n'est « plus possible » : il n'y a encore rien à corriger (2026-10-26).
+ */
+export function dayNoLongerPossible(notice: DayNotice, held: string | null): boolean {
+  if (notice === null || held === null) {
+    return false;
+  }
+  return notice.kind === 'slipped' || notice.kind === 'itemTooLate';
+}
+
+/**
+ * **L'encadré offre « Modifier »** : quand le jour retenu n'est plus possible,
+ * et aussi quand la boutique a décalé d'elle-même le jour (`late`) — le client
+ * peut préférer un autre jour que celui proposé (Hugo, 2026-10-26).
+ */
+export function offersDayChange(notice: DayNotice, held: string | null): boolean {
+  return dayNoLongerPossible(notice, held) || (notice !== null && notice.kind === 'late');
+}
