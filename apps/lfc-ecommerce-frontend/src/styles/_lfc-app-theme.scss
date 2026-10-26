@@ -104,12 +104,17 @@
   /* ── Rôles fold : bordures ── */
   --fold-color-border: var(--lfc-paper-300);
   --fold-color-border-subtle: #ebe3d2;
+  /* Le contour d'un champ au repos (fold 0.34.0, WCAG 1.4.11) : 3,49:1 sur la
+     page, 3,73:1 sur la carte. Les deux filets au-dessus restent décoratifs. */
+  --fold-color-border-field: var(--lfc-soot-500);
 
   /* ── Rôles fold : texte ── */
   --fold-color-text: var(--lfc-soot-900);
   --fold-color-text-secondary: var(--lfc-soot-700);
   --fold-color-text-muted: var(--lfc-soot-600);
-  --fold-color-text-faded: var(--lfc-soot-400);
+  /* 3,49:1 sur la page, 3,73:1 sur la carte : le plancher de fold 0.34.0 pour
+     un texte non informatif. `soot-400` n'atteignait que 2,56:1. */
+  --fold-color-text-faded: var(--lfc-soot-500);
 
   /* ── Rôles fold : statut ── */
   --fold-color-info: var(--lfc-azure-500);
@@ -488,6 +493,8 @@
   /* ── Bordures et voiles ── */
   --fold-color-border: rgb(250 245 236 / 28%);
   --fold-color-border-subtle: rgb(250 245 236 / 16%);
+  /* Contour de champ sur l'encre : 3,89:1 sur `ink-800`, 3,12:1 sur la carte. */
+  --fold-color-border-field: rgb(250 245 236 / 50%);
   --fold-color-glass: rgb(250 245 236 / 10%);
   --fold-color-glass-border: rgb(250 245 236 / 22%);
   --fold-color-scrim: rgb(8 24 66 / 55%);

@@ -7,6 +7,7 @@ import {
   withRouterConfig,
 } from '@angular/router';
 import {
+  provideFoldAppShellLabels,
   provideFoldCommonLabels,
   provideFoldInlineConfirmLabels,
   provideFoldToasts,
@@ -83,6 +84,9 @@ export const appConfig: ApplicationConfig = {
       secret: 'Saisissez pour confirmer',
       typePrompt: (match) => `Retapez « ${match} » pour confirmer`,
     }),
+    // Le lien d'évitement et le nom du tiroir mobile de `fold-app-shell`
+    // (fold 0.34.0) : leurs défauts sont anglais.
+    provideFoldAppShellLabels({ skipLink: 'Aller au contenu', drawer: 'Menu' }),
     provideBrowserGlobalErrorListeners(),
     // `withComponentInputBinding` : un segment de route arrive dans un `input()`
     // du composant, sans passer par `ActivatedRoute`. C'est ce qui permet à une

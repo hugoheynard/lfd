@@ -6,7 +6,7 @@ import {
 } from '@angular/core';
 import { provideHttpClient, withFetch, withInterceptors } from '@angular/common/http';
 import { provideRouter, TitleStrategy } from '@angular/router';
-import { provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
+import { provideFoldAppShellLabels, provideFoldCommonLabels, provideFoldToasts } from 'fold-ng';
 
 import { routes } from './app.routes';
 import { AUTH_CONFIG } from './auth/auth.config';
@@ -47,6 +47,11 @@ export const appConfig: ApplicationConfig = {
       clear: 'Effacer',
       loading: 'Chargement…',
     }),
+    // Le lien d'évitement et le nom du tiroir mobile de `fold-app-shell`
+    // (fold 0.34.0) : leurs défauts sont anglais.
+    // Ici, pour le shell pro (`app.html`), en français seul ; la boutique
+    // passe `[skipLinkLabel]` traduit dans `client-shell.html`, qui gagne.
+    provideFoldAppShellLabels({ skipLink: 'Aller au contenu', drawer: 'Menu' }),
     provideBrowserGlobalErrorListeners(),
     provideRouter(routes),
     // L'onglet suit la langue choisie (RGAA 8.6) — `client-title.strategy.ts`.

@@ -241,7 +241,7 @@
 
 .pay:disabled {
   background: var(--fold-color-surface-band);
-  color: var(--fold-color-text-faded);
+  color: var(--fold-color-text-muted);
   cursor: not-allowed;
 }
 
@@ -257,12 +257,6 @@
 /* ── La case des CGV (2026-10-26) ───────────────────────────────────────── */
 
 .terms {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-}
-
-.terms-text {
   font-size: var(--fold-text-sm);
   line-height: var(--lfc-leading-note);
 }

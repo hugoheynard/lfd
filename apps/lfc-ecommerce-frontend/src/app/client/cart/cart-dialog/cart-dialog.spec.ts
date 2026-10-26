@@ -643,6 +643,21 @@ describe('le panier fait accepter les CGV', () => {
     expect(lien?.getAttribute('href')).toBe('/cgv?pour=particulier');
   });
 
+  /** Pré-audit RGAA 2026-10-26 : la case était nommée par un `ariaLabel` doublant le texte voisin. */
+  it('la case est nommée par sa phrase projetée, lien compris', () => {
+    const fixture = boot({ auth: RECONNU, cgv: true });
+    const input = caseCgv(fixture)?.querySelector('input[type="checkbox"]');
+    const ids = input?.getAttribute('aria-labelledby') ?? '';
+    const nom = ids
+      .split(' ')
+      .map((id) => el(fixture).querySelector(`[id="${id}"]`)?.textContent ?? '')
+      .join(' ');
+
+    expect(input?.getAttribute('aria-label')).toBeNull();
+    expect(nom).toContain(FR.cart.salesTermsAccept);
+    expect(nom).toContain(FR.cart.salesTermsLink);
+  });
+
   it('les mêmes règles pour l’invité', () => {
     const fixture = boot({ cgv: true });
 

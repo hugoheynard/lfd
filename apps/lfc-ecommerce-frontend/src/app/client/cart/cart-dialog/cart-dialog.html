@@ -110,23 +110,22 @@
       }}</fold-callout>
     }
     @if (salesTerms.asked()) {
-      <div class="terms" data-sales-terms>
-        <fold-checkbox
-          [checked]="salesTerms.checked()"
-          [ariaLabel]="t().cart.salesTermsAccept + ' ' + t().cart.salesTermsLink"
-          (checkedChange)="salesTerms.check($event)"
-        />
-        <span class="terms-text">
-          {{ t().cart.salesTermsAccept }}
-          <a
-            routerLink="/cgv"
-            [queryParams]="salesTerms.pageQuery()"
-            target="_blank"
-            rel="noopener"
-            >{{ t().cart.salesTermsLink }}</a
-          >
-        </span>
-      </div>
+      <!-- Le libellé est PROJETÉ (fold 0.34.0) : un clic sur le texte coche,
+           un clic sur le lien le suit, et la case est nommée par la phrase. -->
+      <fold-checkbox
+        class="terms"
+        data-sales-terms
+        [checked]="salesTerms.checked()"
+        (checkedChange)="salesTerms.check($event)"
+        >{{ t().cart.salesTermsAccept }}
+        <a
+          routerLink="/cgv"
+          [queryParams]="salesTerms.pageQuery()"
+          target="_blank"
+          rel="noopener"
+          >{{ t().cart.salesTermsLink }}</a
+        ></fold-checkbox
+      >
     }
   }
   @if (ordersClosed()) {
