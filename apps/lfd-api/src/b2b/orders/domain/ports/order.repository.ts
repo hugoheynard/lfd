@@ -1,4 +1,5 @@
 import type { Order } from "../entities/order.js";
+import type { FirstHandoverStatus } from "../services/shipment-settlement.js";
 import type { HandoverVia } from "../services/handover.js";
 
 /** Ce que la passation renvoie : l'id technique et le numéro humain. */
@@ -128,6 +129,11 @@ export abstract class OrderRepository {
    * instruction que `handedOverAt` — jamais une remise sans date. Une date
    * déjà posée n'est jamais remplacée (elle est figée en base), et ne
    * bloque pas la remise.
+   *
+   * **Le statut écrit est celui que l'appelant a jugé** (plan E7 reliquat,
+   * choix 8, lot L5b) : `fulfilled` si plus rien n'est à remettre,
+   * `partially_handed_over` si un reste vivant attend encore — jugé sous le
+   * verrou de la commande, par `statusAfterFirstHandover`.
    */
   abstract markFulfilled(
     reference: string,
@@ -135,6 +141,7 @@ export abstract class OrderRepository {
     by: string,
     via: HandoverVia,
     receivedOn: string,
+    status: FirstHandoverStatus,
   ): Promise<boolean>;
 
   /**

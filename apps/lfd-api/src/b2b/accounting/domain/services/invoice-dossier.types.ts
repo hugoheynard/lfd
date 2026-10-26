@@ -28,6 +28,12 @@ export interface FrozenInvoiceLine {
    * et ce que la colonne dit d'elles.
    */
   readonly pickupDiscountEligible?: boolean;
+  /**
+   * `AAAA-MM-JJ` — le jour de l'envoi qui l'a portée, quand ce n'est pas celui
+   * du bon : une ligne d'un reste livré à un autre jour (plan E7 reliquat,
+   * L5b). Absent = le jour demandé du bon.
+   */
+  readonly deliveryDate?: string;
 }
 
 /** Une part de TVA figée sur un bon. */

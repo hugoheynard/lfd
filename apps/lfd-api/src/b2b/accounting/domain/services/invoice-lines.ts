@@ -1,6 +1,10 @@
 import { InvoiceDossierUnreadableVatRateError } from "../errors/invoice-dossier-errors.js";
 import { PIECE_UNIT } from "../value-objects/invoice-unit.js";
-import type { FrozenInvoiceOrder, InvoiceLine } from "./invoice-dossier.types.js";
+import type {
+  FrozenInvoiceLine,
+  FrozenInvoiceOrder,
+  InvoiceLine,
+} from "./invoice-dossier.types.js";
 
 /**
  * **Les lignes de la facture** : une par `(sku, prix, taux normalisé,
@@ -63,7 +67,7 @@ export function aggregateInvoiceLines(
       const acc =
         byKey.get(key) ?? openAccumulator(line.sku, line.unitPriceMillicents, vatRate, eligible);
       byKey.set(key, acc);
-      accumulate(acc, order, line.productNameSnapshot, line.quantity, line.lineTotalCents);
+      accumulate(acc, order, line);
     }
   }
   return [...byKey.values()].sort(compareLines).map(closeAccumulator);
@@ -93,19 +97,19 @@ function openAccumulator(
 function accumulate(
   acc: LineAccumulator,
   order: FrozenInvoiceOrder,
-  name: string,
-  quantity: number,
-  orderLineCents: number,
+  line: FrozenInvoiceLine,
 ): void {
-  acc.quantity += quantity;
-  acc.ordersLineTotalCents += orderLineCents;
+  const name = line.productNameSnapshot;
+  acc.quantity += line.quantity;
+  acc.ordersLineTotalCents += line.lineTotalCents;
   acc.labels.add(name);
   // À égalité d'instant, le dernier lu l'emporte : l'ordre d'entrée tranche.
   if (order.createdAt.getTime() >= acc.labelAt) {
     acc.label = name;
     acc.labelAt = order.createdAt.getTime();
   }
-  const date = order.requestedDeliveryDate;
+  // Le jour de l'envoi qui a porté la ligne (un reste, E7), sinon celui du bon.
+  const date = line.deliveryDate ?? order.requestedDeliveryDate;
   if (date !== null) {
     acc.firstDeliveryDate =
       acc.firstDeliveryDate === null || date < acc.firstDeliveryDate ? date : acc.firstDeliveryDate;

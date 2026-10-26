@@ -288,6 +288,10 @@ describe("le comptoir par envoi (plan E7 reliquat, lot L4c)", () => {
       { rank: 1, status: "handed_over" },
       { rank: 2, status: "handed_over" },
     ]);
+    // L5b : quel que soit l'ordre des deux abonnés, la commande est soldée.
+    const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: account } });
+    expect(order.status).toBe("fulfilled");
+    expect(order.billableTotalCents).not.toBeNull();
   });
 
   it("la file ouvre la même liste : la ligne de la commande rend ses deux envois", async () => {

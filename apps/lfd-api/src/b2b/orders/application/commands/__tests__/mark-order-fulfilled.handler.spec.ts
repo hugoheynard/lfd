@@ -17,6 +17,9 @@ import {
 } from "../../../domain/events/order-handed-over.event.js";
 import { OrderReader, type OrderAuthor } from "../../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../../domain/ports/order.repository.js";
+import { OrderLock } from "../../../domain/ports/order-lock.js";
+import { PendingRemaindersReader } from "../../../domain/ports/pending-remainders.reader.js";
+import type { FirstHandoverStatus } from "../../../domain/services/shipment-settlement.js";
 import { MarkOrderFulfilledCommand } from "../mark-order-fulfilled.command.js";
 import { MarkOrderFulfilledHandler } from "../mark-order-fulfilled.handler.js";
 import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double.js";
@@ -55,8 +58,12 @@ class Repository extends OrderRepository {
   writes = 0;
   insideUnit: boolean[] = [];
   receivedOn: string[] = [];
+  statuses: FirstHandoverStatus[] = [];
 
-  constructor(private readonly uow: TransactionalUnitOfWork) {
+  constructor(
+    private readonly uow: TransactionalUnitOfWork,
+    private readonly journal: string[],
+  ) {
     super();
   }
 
@@ -66,9 +73,12 @@ class Repository extends OrderRepository {
     _by: string,
     _via: string,
     receivedOn: string,
+    status: FirstHandoverStatus,
   ): Promise<boolean> {
     this.insideUnit.push(this.uow.isOpen);
     this.receivedOn.push(receivedOn);
+    this.statuses.push(status);
+    this.journal.push("write");
     if (this.fulfilled) {
       return Promise.resolve(false);
     }
@@ -84,6 +94,36 @@ class Repository extends OrderRepository {
   failAtClosing = unused;
   markReady = unused;
   absorbIntoPlan = unused;
+}
+
+/** Le verrou de la commande : noté dans le journal des gestes, pour l'ordre. */
+class Lock extends OrderLock {
+  constructor(
+    private readonly uow: TransactionalUnitOfWork,
+    private readonly journal: string[],
+  ) {
+    super();
+  }
+
+  lock(orderId: string): Promise<void> {
+    this.journal.push(`lock:${orderId}:${String(this.uow.isOpen)}`);
+    return Promise.resolve();
+  }
+}
+
+/** Les restes vivants : `pending` décide. */
+class Remainders extends PendingRemaindersReader {
+  constructor(
+    private readonly pending: boolean,
+    private readonly journal: string[],
+  ) {
+    super();
+  }
+
+  anyPending(orderId: string): Promise<boolean> {
+    this.journal.push(`pending:${orderId}`);
+    return Promise.resolve(this.pending);
+  }
 }
 
 /** Ce que le retrait a attesté, commande par commande. */
@@ -112,11 +152,14 @@ interface World {
   readonly author?: OrderAuthor | null;
   readonly handovers?: readonly OrderHandoverHistoryFact[];
   readonly stops?: readonly OrderDeliveryStopFact[];
+  /** Un reste vivant attend encore son retrait (L5b). */
+  readonly pending?: boolean;
 }
 
 function subject(world: World = {}) {
   const uow = new TransactionalUnitOfWork();
-  const repository = new Repository(uow);
+  const journal: string[] = [];
+  const repository = new Repository(uow, journal);
   const notes = new RecordingDeliveryNoteFollowing(() => uow.isOpen);
   const handler = new MarkOrderFulfilledHandler(
     new Reader(world.author === undefined ? AUTHOR : world.author),
@@ -126,8 +169,10 @@ function subject(world: World = {}) {
     new Handovers(world.handovers ?? []),
     new Stops(world.stops ?? []),
     notes,
+    new Lock(uow, journal),
+    new Remainders(world.pending ?? false, journal),
   );
-  return { handler, repository, uow, notes };
+  return { handler, repository, uow, notes, journal };
 }
 
 /** Un arrêt parti et clos sans retour, le jour donné. */
@@ -252,5 +297,37 @@ describe("le BL suit la remise (plan E2, § 8.3)", () => {
     await handler.execute(command);
 
     expect(notes.calls).toEqual(["hand-over:ord_1"]);
+  });
+});
+
+describe("retirée en partie, ou soldée (plan E7 reliquat, L5b)", () => {
+  it("sans reste vivant : `fulfilled` et `order.fulfilled`, comme avant", async () => {
+    const { handler, repository, uow } = subject();
+
+    await handler.execute(handOver());
+
+    expect(repository.statuses).toEqual(["fulfilled"]);
+    expect(uow.of(ORDER_FULFILLED)).toHaveLength(1);
+  });
+
+  it("un reste vivant : `partially_handed_over`, la date posée, ni fait du solde ni solde", async () => {
+    const { handler, repository, uow, notes } = subject({ pending: true });
+
+    await handler.execute(handOver());
+
+    expect(repository.statuses).toEqual(["partially_handed_over"]);
+    expect(repository.receivedOn).toEqual([HANDED_OVER_DAY]);
+    expect(uow.of(ORDER_FULFILLED)).toEqual([]);
+    // Le BL-1 suit quand même la remise ; son solde ne se pose pas
+    // (`settlementOf` ne solde que `fulfilled`).
+    expect(notes.calls).toEqual(["hand-over:ord_1"]);
+  });
+
+  it("juge le reste SOUS le verrou de la commande, dans l'unité de travail, avant d'écrire", async () => {
+    const { handler, journal } = subject({ pending: true });
+
+    await handler.execute(handOver());
+
+    expect(journal).toEqual(["lock:ord_1:true", "pending:ord_1", "write"]);
   });
 });

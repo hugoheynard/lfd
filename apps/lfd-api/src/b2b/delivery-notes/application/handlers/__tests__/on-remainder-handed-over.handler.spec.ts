@@ -40,7 +40,9 @@ describe("OnRemainderHandedOver — le retrait d'un reliquat (L4b)", () => {
   }
 
   it("remet le BL du rang du fait, à l'instant du retrait", async () => {
-    expect(await deliver(2)).toEqual([new HandOverRemainderNoteCommand("ord_1", 2, HANDED_AT)]);
+    expect(await deliver(2)).toEqual([
+      new HandOverRemainderNoteCommand("ord_1", 2, HANDED_AT, "s1", "scan"),
+    ]);
   });
 
   it("laisse le rang 1 à la commande : rien n'est demandé", async () => {

@@ -25,6 +25,12 @@ export interface UnconfirmedDeliveryView {
    * du reste » (plan E6c2, § 4.3). `false` : rien n'est remis.
    */
   readonly awaitingRemainder: boolean;
+  /**
+   * `AAAA-MM-JJ` — le jour prévu du prochain reste à remettre (plan E7
+   * reliquat, choix 18) : « reste prévu le … », pour qu'on ne relance pas un
+   * client qui attend. `null` : aucun reste prévu.
+   */
+  readonly remainderPlannedOn: string | null;
 }
 
 /** `GET admin/accounting/unconfirmed-deliveries` — du jour le plus ancien au plus récent. */

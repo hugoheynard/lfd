@@ -85,6 +85,14 @@ import { PrismaVoucherOrderReader } from "./infrastructure/prisma-voucher-order.
 import { PrismaOrderRecipientReader } from "./infrastructure/prisma-order-recipient.reader.js";
 import { RemainderShipmentReader } from "./domain/ports/remainder-shipment.reader.js";
 import { PrismaRemainderShipmentReader } from "./infrastructure/prisma-remainder-shipment.reader.js";
+import { OrderLock } from "./domain/ports/order-lock.js";
+import { PrismaOrderLock } from "./infrastructure/prisma-order-lock.js";
+import { PendingRemaindersReader } from "./domain/ports/pending-remainders.reader.js";
+import { PrismaPendingRemaindersReader } from "./infrastructure/prisma-pending-remainders.reader.js";
+import { SettledOrderWriter } from "./domain/ports/settled-order.writer.js";
+import { PrismaSettledOrderWriter } from "./infrastructure/prisma-settled-order.writer.js";
+import { RemainderSettlement } from "./domain/ports/remainder-settlement.js";
+import { OrderRemainderSettler } from "./application/services/order-remainder-settler.js";
 import { AbandonOrderHandler } from "./application/commands/abandon-order.handler.js";
 import { CancelOrderHandler } from "./application/commands/cancel-order.handler.js";
 import { VoucherRestitutionRefusal } from "./application/services/voucher-restitution-refusal.js";
@@ -442,6 +450,11 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // le réconciliateur.
     { provide: OrderProgressForDeliveryNote, useClass: PrismaOrderProgressForDeliveryNote },
     { provide: OrdersToReconcileDeliveryNotes, useClass: PrismaOrdersToReconcileDeliveryNotes },
+    // Le solde dérivé d'une commande à plusieurs envois (plan E7 reliquat, L5b).
+    { provide: OrderLock, useClass: PrismaOrderLock },
+    { provide: PendingRemaindersReader, useClass: PrismaPendingRemaindersReader },
+    { provide: SettledOrderWriter, useClass: PrismaSettledOrderWriter },
+    { provide: RemainderSettlement, useClass: OrderRemainderSettler },
     // Le bac fermé au colisage — le seul fait « bac fait » depuis K3c.
     OnPackingOrderPacked,
     OnOrderHandedOver,
@@ -649,6 +662,9 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // Ce que le bon de livraison suit de la commande (plan E2).
     OrderProgressForDeliveryNote,
     OrdersToReconcileDeliveryNotes,
+    // Le dernier reste remis solde la commande : les bons de livraison
+    // l'appellent en remettant le BL du reste (plan E7 reliquat, L5b).
+    RemainderSettlement,
     ...ORDER_SHORTFALL_EXPORTS,
   ],
 })

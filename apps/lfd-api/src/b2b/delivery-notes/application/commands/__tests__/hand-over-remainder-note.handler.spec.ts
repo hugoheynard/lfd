@@ -6,8 +6,13 @@ import {
   HandedOverRemainderNoteNotFoundError,
 } from "../../../domain/errors/delivery-note-errors.js";
 import { ORDER_TERMS } from "../../../domain/value-objects/__tests__/delivery-note-terms.fixture.js";
+import { RemainderSettlement } from "../../../../orders/domain/ports/remainder-settlement.js";
+import type { RemainderHandoverAct } from "../../../../orders/domain/ports/remainder-settlement.js";
+import type { OrderBillingSnapshot } from "../../../../orders/domain/entities/order-billing.js";
 import {
+  billingCloserOf,
   InMemoryDeliveryNotes,
+  InMemoryOrderBillings,
   InMemoryOrderProgress,
 } from "../../__tests__/delivery-note-doubles.js";
 import { HandOverRemainderNoteCommand } from "../hand-over-remainder-note.command.js";
@@ -50,12 +55,47 @@ const ORDER: DeliveryNoteOrderProgress = {
   terms: ORDER_TERMS,
 };
 
-async function scene(options: { readonly remainder: boolean } = { remainder: true }) {
+/** Le solde de la commande, tel que les commandes le jugent : `settles` le décide. */
+class RecordingRemainderSettlement extends RemainderSettlement {
+  readonly acts: RemainderHandoverAct[] = [];
+
+  constructor(private readonly settles: boolean) {
+    super();
+  }
+
+  settleIfComplete(act: RemainderHandoverAct): Promise<boolean> {
+    this.acts.push(act);
+    return Promise.resolve(this.settles);
+  }
+}
+
+/** La commande, rang 1 retiré : `fulfilled` quand le solde l'a écrite, rien de facturé encore. */
+const BILLING: OrderBillingSnapshot = {
+  orderId: "ord_a",
+  reference: "ORD-a",
+  status: "fulfilled",
+  partial: false,
+  receivedOn: ORDER_DAY,
+  orderAmounts: {
+    subtotalCents: 300,
+    discountCents: 0,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    vatCents: 16,
+    vatShares: [{ rate: 5.5, amountCents: 16 }],
+    totalCents: 316,
+  },
+  billable: null,
+  settledOn: null,
+};
+
+async function scene(options: { readonly remainder?: boolean; readonly settles?: boolean } = {}) {
   const notes = new InMemoryDeliveryNotes();
   const orders = new InMemoryOrderProgress();
   orders.put(ORDER);
   await notes.save(DeliveryNote.planFromOrder("dn_1", ORDER, CONFIRMED_AT));
-  if (options.remainder) {
+  if (options.remainder ?? true) {
     const source = {
       ...ORDER,
       lines: [{ ...LINE, quantity: 1, lineTotalCents: 100 }],
@@ -71,8 +111,17 @@ async function scene(options: { readonly remainder: boolean } = { remainder: tru
     remainder.prepare(PACKED_AT);
     await notes.save(remainder);
   }
-  const handler = new HandOverRemainderNoteHandler(orders.scan, notes, new DirectUnitOfWork());
-  return { notes, orders, handler };
+  const billings = new InMemoryOrderBillings();
+  billings.put(BILLING);
+  const settlement = new RecordingRemainderSettlement(options.settles ?? false);
+  const handler = new HandOverRemainderNoteHandler(
+    orders.scan,
+    notes,
+    new DirectUnitOfWork(),
+    settlement,
+    billingCloserOf(notes, billings),
+  );
+  return { notes, orders, handler, settlement, billings };
 }
 
 function stateOf(notes: InMemoryDeliveryNotes, id: string) {
@@ -84,7 +133,7 @@ function stateOf(notes: InMemoryDeliveryNotes, id: string) {
 }
 
 const handedOver = (orderId = "ord_a", at = HANDED_AT) =>
-  new HandOverRemainderNoteCommand(orderId, REMAINDER_RANK, at);
+  new HandOverRemainderNoteCommand(orderId, REMAINDER_RANK, at, "staff_b", "manual");
 
 describe("HandOverRemainderNoteHandler — remis par envoi (L4b)", () => {
   it("remet le BL du reliquat à l'instant du retrait, jour de Paris, sans toucher le BL-1", async () => {
@@ -140,5 +189,44 @@ describe("HandOverRemainderNoteHandler — remis par envoi (L4b)", () => {
     await expect(handler.execute(handedOver())).rejects.toBeInstanceOf(
       DeliveryNoteTransitionRefusedError,
     );
+  });
+
+  it("un reste qui n'est pas le dernier ne solde rien : ni montants, ni demande au-delà", async () => {
+    const { handler, settlement, billings } = await scene();
+
+    await handler.execute(handedOver());
+
+    expect(settlement.acts).toEqual([
+      { orderId: "ord_a", handedOverBy: "staff_b", handedOverAt: HANDED_AT, via: "manual" },
+    ]);
+    expect(billings.writes).toEqual([]);
+  });
+
+  it("le dernier reste solde la commande : le solde est la somme des BL remis", async () => {
+    const { notes, handler, billings } = await scene({ settles: true });
+    const [first] = await notes.loadForOrders(["ord_a"]);
+    first?.prepare(PACKED_AT);
+    first?.handOver(PACKED_AT, ORDER_DAY);
+    if (first !== undefined) {
+      await notes.save(first);
+    }
+
+    await handler.execute(handedOver());
+
+    expect(billings.writes).toEqual(["closed:ord_a"]);
+    expect(billings.rows.get("ord_a")).toMatchObject({ settledOn: "2030-03-12" });
+    expect(billings.rows.get("ord_a")?.billable?.subtotalCents).toBe(
+      (stateOf(notes, "dn_1").terms?.subtotalCents ?? 0) +
+        (stateOf(notes, "dn_2").terms?.subtotalCents ?? 0),
+    );
+  });
+
+  it("un rejeu sur un reste déjà remis ne redemande pas le solde", async () => {
+    const { handler, settlement } = await scene();
+    await handler.execute(handedOver());
+
+    await handler.execute(handedOver("ord_a", LATER));
+
+    expect(settlement.acts).toHaveLength(1);
   });
 });

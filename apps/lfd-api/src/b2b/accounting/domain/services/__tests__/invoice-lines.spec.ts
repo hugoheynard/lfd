@@ -71,3 +71,22 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
     });
   });
 });
+
+describe("aggregateInvoiceLines — un reste livré à un autre jour (plan E7 reliquat, L5b)", () => {
+  it("la ligne d'un reste porte le jour de son envoi, pas celui du bon", () => {
+    const bon = bonOf("ORD-1", 1, "2026-10-02");
+    const [first] = bon.lines;
+    if (first === undefined) {
+      throw new TypeError("ligne absente de la fixture");
+    }
+    const twoShipments = { ...bon, lines: [first, { ...first, deliveryDate: "2026-10-04" }] };
+
+    const [line] = aggregateInvoiceLines([twoShipments]);
+
+    expect(line).toMatchObject({
+      quantity: 2,
+      firstDeliveryDate: "2026-10-02",
+      lastDeliveryDate: "2026-10-04",
+    });
+  });
+});

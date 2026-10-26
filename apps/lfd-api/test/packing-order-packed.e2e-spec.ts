@@ -21,6 +21,7 @@ import {
   type PlacedOrder,
 } from "../src/b2b/orders/domain/ports/order.repository.js";
 import type { HandoverVia } from "../src/b2b/orders/domain/services/handover.js";
+import type { FirstHandoverStatus } from "../src/b2b/orders/domain/services/shipment-settlement.js";
 import { ON_PACKING_ORDER_PACKED } from "../src/b2b/orders/application/handlers/on-packing-order-packed.handler.js";
 import { PrismaOrderRepository } from "../src/b2b/orders/infrastructure/prisma-order.repository.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
@@ -96,8 +97,9 @@ class FlakyOrders extends OrderRepository {
     by: string,
     via: HandoverVia,
     receivedOn: string,
+    status: FirstHandoverStatus,
   ): Promise<boolean> {
-    return this.real.markFulfilled(reference, at, by, via, receivedOn);
+    return this.real.markFulfilled(reference, at, by, via, receivedOn, status);
   }
 }
 

@@ -10,6 +10,9 @@ import { OrderHandedOverEvent } from "../../domain/events/order-handed-over.even
 import { DeliveryNoteFollowing } from "../../domain/ports/delivery-note-following.js";
 import { OrderReader } from "../../domain/ports/order.reader.js";
 import { OrderRepository } from "../../domain/ports/order.repository.js";
+import { OrderLock } from "../../domain/ports/order-lock.js";
+import { PendingRemaindersReader } from "../../domain/ports/pending-remainders.reader.js";
+import { statusAfterFirstHandover } from "../../domain/services/shipment-settlement.js";
 import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
 
 /**
@@ -60,6 +63,15 @@ import { MarkOrderFulfilledCommand } from "./mark-order-fulfilled.command.js";
  * Sous `won`, dans la même unité de travail : le BL passe `handed_over`, avec
  * l'instant et le jour de réception que cette instruction vient d'écrire
  * (plan E2 (`documentation/commandes/bon-de-livraison.md`), § 8.3).
+ *
+ * ## Retirée en partie, ou soldée (plan E7 reliquat, choix 8, lot L5b)
+ *
+ * Sous le verrou de la commande — celui que prend aussi la remise d'un reste
+ * (`HandOverRemainderNoteHandler`), sans quoi les deux remises se croiseraient
+ * sans que l'une voie l'autre —, un reste vivant non retiré fait écrire
+ * `partially_handed_over` : la première remise est posée, mais ni
+ * `order.fulfilled` ni le solde ne partent. C'est la remise du dernier reste
+ * qui les écrira (`RemainderSettlement`). Sans reste vivant, rien ne change.
  */
 @CommandHandler(MarkOrderFulfilledCommand)
 export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfilledCommand, void> {
@@ -71,6 +83,8 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
     private readonly handovers: OrderHandoverHistoryReader,
     private readonly deliveries: OrderDeliveryHistoryReader,
     private readonly deliveryNotes: DeliveryNoteFollowing,
+    private readonly lock: OrderLock,
+    private readonly remainders: PendingRemaindersReader,
   ) {}
 
   async execute(command: MarkOrderFulfilledCommand): Promise<void> {
@@ -89,15 +103,20 @@ export class MarkOrderFulfilledHandler implements ICommandHandler<MarkOrderFulfi
       command.via,
     );
     await this.uow.run(async () => {
+      await this.lock.lock(order.orderId);
+      const status = statusAfterFirstHandover(await this.remainders.anyPending(order.orderId));
       const won = await this.repository.markFulfilled(
         command.reference,
         command.at,
         command.staffUserId,
         command.via,
         receivedOn,
+        status,
       );
       if (won) {
-        await this.durable.publish(fulfilled.durableFact());
+        if (status === "fulfilled") {
+          await this.durable.publish(fulfilled.durableFact());
+        }
         // Plan E2, § 8.3 : le BL passe `handed_over` avec la commande, dans
         // cette transaction — créé plein s'il manquait (remise hors plan).
         await this.deliveryNotes.handOver(order.orderId);

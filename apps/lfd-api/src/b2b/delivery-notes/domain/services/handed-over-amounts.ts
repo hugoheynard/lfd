@@ -35,6 +35,7 @@ export function handedOverAmountsOf(
       // réconciliateur le nomme (plan E6, relecture de `vitruve`).
       .map((state) => ({
         number: state.number,
+        rank: state.rank,
         receivedOn: state.receivedOn,
         amounts: amountsOf(state.terms),
       }))

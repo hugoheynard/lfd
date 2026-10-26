@@ -4,16 +4,23 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { OrdersToReconcileDeliveryNotes } from "../../../orders/domain/ports/order-progress-for-delivery-note.js";
 import { HandedOverRemainderNoteNotFoundError } from "../../domain/errors/delivery-note-errors.js";
+import { RemainderSettlement } from "../../../orders/domain/ports/remainder-settlement.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
+import { OrderBillingCloser } from "../services/order-billing-closer.js";
 import { remainderNoteOf } from "../services/remainder-note-of.js";
 import { HandOverRemainderNoteCommand } from "./hand-over-remainder-note.command.js";
 
 /**
  * **Remis par envoi** (plan E7 reliquat, choix 3, lot L4b) : le BL d'un
- * reliquat passe `handed_over` seul. La commande reste celle du rang 1
- * jusqu'à L5 (`partially_handed_over`, solde dérivé) : ni statut, ni
- * `handed_over_at`, ni facture, ni `order.fulfilled` — donc ni points ni
- * solde.
+ * reliquat passe `handed_over`. `handed_over_at` et `received_on` de la
+ * commande restent ceux du rang 1 (choix 8).
+ *
+ * **Le dernier reste solde la commande** (lot L5b) : dans la même unité de
+ * travail, sous le même verrou, la commande en partie retirée passe
+ * `fulfilled` et publie `order.fulfilled` (`RemainderSettlement`, déclaré par
+ * les commandes) ; puis le solde des montants — la somme des BL remis — est
+ * posé par son écrivain ({@link OrderBillingCloser}). Un reste remis avant le
+ * rang 1 ne solde rien : c'est la remise du rang 1 qui le fera.
  *
  * Même arbitrage que `PrepareRemainderNoteHandler` : le verrou de la
  * COMMANDE d'abord (`lockProgressOf`), puis l'agrégat (`handOver`). Un BL
@@ -27,7 +34,7 @@ import { HandOverRemainderNoteCommand } from "./hand-over-remainder-note.command
  * reliquat ne peut donc avoir été remis qu'au comptoir.
  *
  * @sans-journal la trace est l'état du BL (`handed_over_at`) et
- *   l'attestation du retrait ; le fait de la commande soldée est L5.
+ *   l'attestation du retrait ; la commande soldée publie `order.fulfilled`.
  */
 @CommandHandler(HandOverRemainderNoteCommand)
 export class HandOverRemainderNoteHandler implements ICommandHandler<
@@ -38,6 +45,8 @@ export class HandOverRemainderNoteHandler implements ICommandHandler<
     private readonly orders: OrdersToReconcileDeliveryNotes,
     private readonly notes: DeliveryNoteRepository,
     private readonly uow: UnitOfWork,
+    private readonly settlement: RemainderSettlement,
+    private readonly billing: OrderBillingCloser,
   ) {}
 
   async execute(command: HandOverRemainderNoteCommand): Promise<void> {
@@ -54,6 +63,15 @@ export class HandOverRemainderNoteHandler implements ICommandHandler<
       }
       note.handOver(command.handedOverAt, instantToLocal(command.handedOverAt).day);
       await this.notes.save(note);
+      const settled = await this.settlement.settleIfComplete({
+        orderId: command.orderId,
+        handedOverBy: command.handedOverBy,
+        handedOverAt: command.handedOverAt,
+        via: command.via,
+      });
+      if (settled) {
+        await this.billing.closeLocked(command.orderId);
+      }
     });
   }
 }

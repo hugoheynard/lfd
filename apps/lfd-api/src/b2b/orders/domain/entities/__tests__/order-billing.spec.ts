@@ -43,7 +43,7 @@ function billing(overrides: Partial<OrderBillingSnapshot> = {}): OrderBilling {
 }
 
 const HANDED: readonly HandedOverNoteAmounts[] = [
-  { number: "BL-0001-1", receivedOn: RECEIVED_ON, amounts: PARTIAL_AMOUNTS },
+  { number: "BL-0001-1", rank: 1, receivedOn: RECEIVED_ON, amounts: PARTIAL_AMOUNTS },
 ];
 
 describe("OrderBilling.closeBilling — la commande soldée (E6c1)", () => {
@@ -66,6 +66,7 @@ describe("OrderBilling.closeBilling — la commande soldée (E6c1)", () => {
     const solde = billing({ partial: true });
     const second = {
       number: "BL-0001-2",
+      rank: 2,
       receivedOn: "2030-01-12",
       amounts: { ...PARTIAL_AMOUNTS, vatShares: [{ rate: 20, amountCents: 10 }] },
     };
@@ -99,13 +100,13 @@ describe("OrderBilling.closeBilling — la commande soldée (E6c1)", () => {
   });
 
   it("un BL remis sans en-tête (avant E4a) ne solde pas une commande décidée", () => {
-    const old = [{ number: "BL-0001-1", receivedOn: RECEIVED_ON, amounts: null }];
+    const old = [{ number: "BL-0001-1", rank: 1, receivedOn: RECEIVED_ON, amounts: null }];
     expect(billing({ partial: true }).closeBilling(old)).toBe(false);
   });
 
   it("un BL remis sans jour de réception ne solde pas : un écart nommé, pas un oubli", () => {
     const solde = billing({ partial: true });
-    const noDay = [{ number: "BL-0001-1", receivedOn: null, amounts: PARTIAL_AMOUNTS }];
+    const noDay = [{ number: "BL-0001-1", rank: 1, receivedOn: null, amounts: PARTIAL_AMOUNTS }];
 
     expect(solde.closeBilling(noDay)).toBe(false);
     expect(solde.settlementGapOf(noDay)).toBe("receivedOn");
@@ -167,6 +168,7 @@ describe("OrderBilling — frontières du solde", () => {
     const solde = billing({ partial: true });
     const bare = {
       number: "BL-2",
+      rank: 2,
       receivedOn: RECEIVED_ON,
       amounts: { ...PARTIAL_AMOUNTS, vatShares: null },
     };
@@ -177,7 +179,7 @@ describe("OrderBilling — frontières du solde", () => {
 
   it("le jour du solde est le dernier, quel que soit l'ordre des BL", () => {
     const solde = billing({ partial: true });
-    const later = { number: "BL-2", receivedOn: "2030-02-01", amounts: PARTIAL_AMOUNTS };
+    const later = { number: "BL-2", rank: 2, receivedOn: "2030-02-01", amounts: PARTIAL_AMOUNTS };
     solde.closeBilling([later, ...HANDED]);
     expect(solde.toSnapshot().settledOn).toBe("2030-02-01");
   });
@@ -185,15 +187,17 @@ describe("OrderBilling — frontières du solde", () => {
   it("nomme l'écart d'un BL remis sans jour, puis sans en-tête, et rien hors commande décidée remise", () => {
     const partial = billing({ partial: true });
     expect(
-      partial.settlementGapOf([{ number: "BL", receivedOn: null, amounts: PARTIAL_AMOUNTS }]),
+      partial.settlementGapOf([
+        { number: "BL", rank: 1, receivedOn: null, amounts: PARTIAL_AMOUNTS },
+      ]),
     ).toBe("receivedOn");
     expect(
-      partial.settlementGapOf([{ number: "BL", receivedOn: RECEIVED_ON, amounts: null }]),
+      partial.settlementGapOf([{ number: "BL", rank: 1, receivedOn: RECEIVED_ON, amounts: null }]),
     ).toBe("terms");
     expect(partial.settlementGapOf(HANDED)).toBeNull();
     expect(
       billing({ partial: true, status: "confirmed" }).settlementGapOf([
-        { number: "BL", receivedOn: null, amounts: null },
+        { number: "BL", rank: 1, receivedOn: null, amounts: null },
       ]),
     ).toBeNull();
   });
@@ -231,5 +235,66 @@ describe("OrderBilling — frontières du solde", () => {
   it("ne corrige pas des montants posés sur une commande annulée depuis", () => {
     const solde = billing({ status: "cancelled", billable: ORDER_AMOUNTS, settledOn: RECEIVED_ON });
     expect(solde.correctBilling([], false)).toBe(false);
+  });
+});
+
+describe("OrderBilling — une commande à plusieurs envois (plan E7 reliquat, L5b)", () => {
+  const FIRST = { number: "BL-0001-1", rank: 1, receivedOn: RECEIVED_ON, amounts: PARTIAL_AMOUNTS };
+  const REMAINDER_AMOUNTS: BillableAmounts = {
+    subtotalCents: 2_500,
+    discountCents: 250,
+    voucherDiscountCents: 0,
+    deliveryFeeCents: 0,
+    lateFeeCents: 0,
+    vatCents: 124,
+    vatShares: [{ rate: 5.5, amountCents: 124 }],
+    totalCents: 2_374,
+  };
+  const SECOND = {
+    number: "BL-0001-2",
+    rank: 2,
+    receivedOn: "2030-01-12",
+    amounts: REMAINDER_AMOUNTS,
+  };
+
+  it("en partie retirée : rien n'est facturable, et ce n'est pas un écart", () => {
+    const solde = billing({ status: "partially_handed_over" });
+
+    expect(solde.closeBilling([FIRST])).toBe(false);
+    expect(solde.settlementGapOf([FIRST])).toBeNull();
+    expect(solde.pendingWrite).toBeNull();
+  });
+
+  it("le dernier envoi remis : la somme des BL, au jour du dernier — même sans décision", () => {
+    const solde = billing();
+
+    expect(solde.closeBilling([FIRST, SECOND])).toBe(true);
+    expect(solde.toSnapshot()).toMatchObject({
+      settledOn: "2030-01-12",
+      billable: { subtotalCents: 10_000, discountCents: 1_000, deliveryFeeCents: 800 },
+    });
+    expect(solde.toSnapshot().billable?.totalCents).toBe(7_965 + 2_374);
+  });
+
+  it("un seul envoi, sans décision : la recopie des totaux, comme avant", () => {
+    const solde = billing();
+
+    expect(solde.closeBilling([FIRST])).toBe(true);
+    expect(solde.toSnapshot().billable).toEqual(ORDER_AMOUNTS);
+  });
+
+  it("le reste remis sans en-tête est un écart nommé, même sans décision", () => {
+    const solde = billing();
+    const bare = { ...SECOND, amounts: null };
+
+    expect(solde.closeBilling([FIRST, bare])).toBe(false);
+    expect(solde.settlementGapOf([FIRST, bare])).toBe("terms");
+  });
+
+  it("des montants posés qui ne sont pas la somme des envois sont un écart", () => {
+    // Ceux du seul rang 1 : le reste a été oublié.
+    const solde = billing({ billable: PARTIAL_AMOUNTS, settledOn: "2030-01-12" });
+
+    expect(solde.gapsOf([FIRST, SECOND])).toContain("totalCents");
   });
 });

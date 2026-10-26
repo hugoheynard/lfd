@@ -5,6 +5,8 @@ import { amountDifferences, sumOfAmounts, type BillableAmounts } from "./billabl
 /** Un bon de livraison remis, vu du solde : son jour et son en-tête (`null` avant E4a). */
 export interface HandedOverNoteAmounts {
   readonly number: string;
+  /** Le rang de l'envoi (1 = la commande) : un rang > 1 remis fait solder sur la somme des BL (E7). */
+  readonly rank: number;
   /** `AAAA-MM-JJ` ; `null` = remis sans jour de réception, un écart : le solde le refuse. */
   readonly receivedOn: string | null;
   readonly amounts: BillableAmounts | null;
@@ -25,6 +27,9 @@ export interface OrderBillingSnapshot {
   /** `AAAA-MM-JJ`, posé avec `billable`. */
   readonly settledOn: string | null;
 }
+
+/** Le rang de la commande elle-même : son BL suit ses totaux. */
+const FIRST_SHIPMENT_RANK = 1;
 
 /** Ce que le solde devrait être, ou `null` si la commande n'est pas soldée. */
 interface Settlement {
@@ -48,7 +53,10 @@ export type BillingWrite = "closed" | "corrected";
  *   l'est à sa remise : ses montants facturables sont la **recopie** de ses
  *   totaux, au jour de réception. Une commande décidée (« reste abandonné »)
  *   l'est à la remise de son BL : ses montants sont la **somme des BL remis**,
- *   au jour du dernier.
+ *   au jour du dernier. De même pour une commande à plusieurs envois (plan
+ *   E7 reliquat, choix 8 et 18, lot L5b) : soldée à la remise du DERNIER
+ *   envoi (`fulfilled` ; `partially_handed_over` ne l'est pas), sur la somme
+ *   de ses BL remis — chacun avec ses montants (choix 10).
  * - **Jamais soldée** : une commande annulée, ou pas encore remise.
  * - **Posés une fois** par {@link closeBilling} ; corrigeables par
  *   {@link correctBilling} tant que la commande n'est pas engagée — gelés
@@ -116,7 +124,7 @@ export class OrderBilling {
   /**
    * **Le contrôle** (§ 12.3) : les champs où les montants posés diffèrent de
    * la règle — la recopie pour une commande à un BL complet, la somme des BL
-   * pour une commande partielle. Vide si tout concorde ou rien n'est posé ;
+   * pour une commande partielle ou à plusieurs envois. Vide si tout concorde ou rien n'est posé ;
    * `["settlement"]` pour des montants posés sur une commande qui n'est pas
    * soldée.
    */
@@ -141,7 +149,7 @@ export class OrderBilling {
    * sinon — rien à nommer.
    */
   settlementGapOf(notes: readonly HandedOverNoteAmounts[]): string | null {
-    if (this.state.status !== "fulfilled" || !this.state.partial) {
+    if (this.state.status !== "fulfilled" || !this.sumsNotes(notes)) {
       return null;
     }
     if (notes.some((note) => note.receivedOn === null)) {
@@ -159,12 +167,20 @@ export class OrderBilling {
     this.write = write;
   }
 
+  /**
+   * Le solde se lit sur les BL remis : départ incomplet décidé (E6), ou plus
+   * d'un envoi remis (E7). Sinon, la recopie des totaux de la commande.
+   */
+  private sumsNotes(notes: readonly HandedOverNoteAmounts[]): boolean {
+    return this.state.partial || notes.some((note) => note.rank > FIRST_SHIPMENT_RANK);
+  }
+
   private settlementOf(notes: readonly HandedOverNoteAmounts[]): Settlement | null {
-    const { status, partial, receivedOn, orderAmounts } = this.state;
+    const { status, receivedOn, orderAmounts } = this.state;
     if (status !== "fulfilled") {
       return null;
     }
-    if (!partial) {
+    if (!this.sumsNotes(notes)) {
       return receivedOn === null ? null : { amounts: orderAmounts, settledOn: receivedOn };
     }
     return settlementOfNotes(notes);

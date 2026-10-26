@@ -1,3 +1,5 @@
+import type { HandoverVia } from "../../../orders/domain/services/handover.js";
+
 /**
  * **Un reliquat a été remis au client** : son BL passe remis (plan
  * `documentation/commandes/plan-e7-reliquat-bati.md`, choix 3, lot L4b).
@@ -12,5 +14,8 @@ export class HandOverRemainderNoteCommand {
     readonly rank: number,
     /** L'instant du retrait, tel que le retrait l'a attesté — pas l'heure d'ici. */
     readonly handedOverAt: Date,
+    /** Qui a remis, et comment — portés par `order.fulfilled` si ce reste solde la commande (L5b). */
+    readonly handedOverBy: string,
+    readonly via: HandoverVia,
   ) {}
 }

@@ -36,7 +36,13 @@ export class OnRemainderHandedOver implements DurableSubscriber {
       return;
     }
     await this.commands.execute(
-      new HandOverRemainderNoteCommand(event.orderId, event.rank, event.handedOverAt),
+      new HandOverRemainderNoteCommand(
+        event.orderId,
+        event.rank,
+        event.handedOverAt,
+        event.handedOverBy,
+        event.via,
+      ),
     );
   }
 }

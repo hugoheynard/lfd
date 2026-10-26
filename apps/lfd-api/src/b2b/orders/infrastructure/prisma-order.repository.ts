@@ -18,6 +18,7 @@ import {
   type PlacedOrder,
 } from "../domain/ports/order.repository.js";
 import { formatOrderNumber } from "../domain/services/order-number.js";
+import type { FirstHandoverStatus } from "../domain/services/shipment-settlement.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { orderLineDataOf } from "./order-line.data.js";
@@ -347,6 +348,7 @@ export class PrismaOrderRepository extends OrderRepository {
     by: string,
     via: HandoverVia,
     receivedOn: string,
+    status: FirstHandoverStatus,
   ): Promise<boolean> {
     // `handedOverAt: null` dans le WHERE : c'est la base qui arbitre. Le fait
     // vient du fournil, qui a déjà tranché la course sur SA contrainte
@@ -365,7 +367,9 @@ export class PrismaOrderRepository extends OrderRepository {
       handedOverAt: at,
       handedOverBy: by,
       handedOverVia: via,
-      status: OrderStatus.fulfilled,
+      // `partially_handed_over` quand un reste attend encore (L5b) : la
+      // première remise est écrite de même, seul le solde attend.
+      status: OrderStatus[status],
     };
     // La date de réception part dans la MÊME instruction que la remise
     // (date-de-reception, B2). Depuis B4, la base refuse l'une sans

@@ -10,6 +10,12 @@ import { accountOrderWhere } from "./billable-order-criterion.js";
 /** `AAAA-MM-JJ`. */
 const DAY_LENGTH = 10;
 
+/** Le rang de la commande elle-même ; au-delà, un reste (plan E7 reliquat). */
+const FIRST_RANK = 1;
+
+/** Les BL encore à remettre : ni remis, ni annulés. */
+const PENDING_NOTE_STATUSES = ["planned", "prepared"] as const;
+
 /** `@db.Date` : minuit UTC du jour, dont la date ISO EST le jour de Paris. */
 function utcMidnight(day: string): Date {
   return new Date(`${day}T00:00:00.000Z`);
@@ -19,7 +25,9 @@ function utcMidnight(day: string): Date {
  * Les bons à constater : l'assiette sans sa fenêtre (`accountOrderWhere`),
  * pas soldés (`settled_on` nul, E6c2 — § 4.3), jour demandé passé. Une
  * commande remise en partie y reste, à son total COMMANDÉ, nommée « en
- * attente du reste » : rien n'est encore facturable. Surface staff : aucune société
+ * attente du reste » : rien n'est encore facturable — avec le jour prévu du
+ * prochain reste (plan E7 reliquat, choix 18), pour qu'on ne relance pas un
+ * client qui attend. Surface staff : aucune société
  * n'est filtrée, c'est la comptabilité qui lit.
  */
 @Injectable()
@@ -47,6 +55,12 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
         billedCompanyId: true,
         receivedOn: true,
         company: { select: { raisonSociale: true } },
+        deliveryNotes: {
+          where: { rank: { gt: FIRST_RANK }, status: { in: [...PENDING_NOTE_STATUSES] } },
+          orderBy: { serviceDay: "asc" },
+          take: 1,
+          select: { serviceDay: true },
+        },
       },
     });
     return rows.flatMap((row) =>
@@ -64,6 +78,8 @@ export class PrismaUnconfirmedDeliveriesReader extends UnconfirmedDeliveriesRead
               placedAt: row.createdAt,
               billedCompanyId: row.billedCompanyId,
               awaitingRemainder: row.receivedOn !== null,
+              remainderPlannedOn:
+                row.deliveryNotes[0]?.serviceDay?.toISOString().slice(0, DAY_LENGTH) ?? null,
             },
           ],
     );

@@ -350,7 +350,7 @@ describe("S1 — le retrait ne ressuscite pas une annulée", () => {
 
     const written = await ctx.app
       .get(OrderRepository)
-      .markFulfilled(orderNumber, new Date(), E2E_STAFF_ID, "scan", serviceDay(0));
+      .markFulfilled(orderNumber, new Date(), E2E_STAFF_ID, "scan", serviceDay(0), "fulfilled");
 
     expect(written).toBe(false);
     expect((await orderState(orderId)).status).toBe(OrderStatus.cancelled);

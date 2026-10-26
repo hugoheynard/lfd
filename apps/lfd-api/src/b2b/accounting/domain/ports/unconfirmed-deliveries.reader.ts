@@ -14,6 +14,8 @@ export interface UnconfirmedDelivery {
   readonly billedCompanyId: string | null;
   /** Remise en partie, pas soldée (E6c2) : « en attente du reste ». */
   readonly awaitingRemainder: boolean;
+  /** `AAAA-MM-JJ` — le jour du prochain reste vivant (E7, choix 18) ; `null` : aucun. */
+  readonly remainderPlannedOn: string | null;
 }
 
 /**

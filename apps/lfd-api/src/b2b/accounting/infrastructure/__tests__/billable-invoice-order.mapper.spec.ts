@@ -78,14 +78,41 @@ const PARTIAL_BILLABLE = {
 };
 
 describe("toBillableInvoiceOrder", () => {
+  it("deux envois remis, sans décision (plan E7 reliquat, L5b) : les lignes des BL, le reste à son jour", () => {
+    const frozen = toBillableInvoiceOrder(
+      row({
+        ...PARTIAL_BILLABLE,
+        billableTotalCents: 317,
+        deliveryNotes: [
+          { number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 2)] },
+          {
+            number: "BL-1042-2",
+            serviceDay: new Date("2026-10-23T00:00:00.000Z"),
+            lines: [noteLine("CRO", 1)],
+          },
+        ],
+      }),
+    );
+
+    expect(frozen.lines.map((line) => [line.quantity, line.deliveryDate])).toEqual([
+      [2, undefined],
+      [1, "2026-10-23"],
+    ]);
+    expect(frozen.totalCents).toBe(317);
+  });
+
   it("un départ incomplet : les lignes des BL remis, par rang puis par ligne, et les totaux facturables", () => {
     const frozen = toBillableInvoiceOrder(
       row({
         ...PARTIAL_BILLABLE,
         shortfallDecision: { id: "dec_1" },
         deliveryNotes: [
-          { number: "BL-1042-1", lines: [noteLine("CRO", 1), noteLine("PAI", 2)] },
-          { number: "BL-1042-2", lines: [noteLine("CRO", 1)] },
+          {
+            number: "BL-1042-1",
+            serviceDay: null,
+            lines: [noteLine("CRO", 1), noteLine("PAI", 2)],
+          },
+          { number: "BL-1042-2", serviceDay: null, lines: [noteLine("CRO", 1)] },
         ],
       }),
     );
@@ -113,7 +140,7 @@ describe("toBillableInvoiceOrder", () => {
         billableVatCents: 17,
         billableVatShares: [{ rate: 5.5, amountCents: 17 }],
         billableTotalCents: 317,
-        deliveryNotes: [{ number: "BL-1042-1", lines: [noteLine("CRO", 3)] }],
+        deliveryNotes: [{ number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 3)] }],
       }),
     );
 

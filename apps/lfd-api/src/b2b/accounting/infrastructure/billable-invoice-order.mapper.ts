@@ -54,6 +54,7 @@ export const BILLABLE_INVOICE_ORDER_SELECT = {
     orderBy: { rank: "asc" },
     select: {
       number: true,
+      serviceDay: true,
       lines: {
         // Une ligne livrée à zéro n'est pas facturée (§ 4).
         where: { quantity: { gt: 0 } },
@@ -76,7 +77,11 @@ export type BillableInvoiceOrderRow = Prisma.OrderGetPayload<{
   select: typeof BILLABLE_INVOICE_ORDER_SELECT;
 }>;
 
-type NoteLineRow = BillableInvoiceOrderRow["deliveryNotes"][number]["lines"][number];
+type NoteRow = BillableInvoiceOrderRow["deliveryNotes"][number];
+type NoteLineRow = NoteRow["lines"][number];
+
+/** `AAAA-MM-JJ`. */
+const DAY_LENGTH = 10;
 
 /**
  * La ligne Prisma d'un bon au compte → les entrées du simulateur, sur ce qui
@@ -87,7 +92,8 @@ type NoteLineRow = BillableInvoiceOrderRow["deliveryNotes"][number]["lines"][num
  *   n'aurait pas encore soldé —, la recopie des totaux de la commande, qui
  *   est exactement ce que le solde y poserait.
  * - **Lignes** : celles des BL remis, par rang puis par ligne, pour une
- *   commande décidée ; celles de la commande sinon — un BL complet est leur
+ *   commande décidée ou remise en plusieurs envois (plan E7 reliquat, L5b —
+ *   la règle de `OrderBilling`) ; celles de la commande sinon — un BL complet est leur
  *   recopie (invariant 3 du plan-cadre des BL), et un bon d'avant les BL n'en
  *   a pas.
  *
@@ -96,6 +102,7 @@ type NoteLineRow = BillableInvoiceOrderRow["deliveryNotes"][number]["lines"][num
 export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvoiceOrder {
   const ordered = toFrozenInvoiceOrder(row);
   const partial = row.shortfallDecision !== null;
+  const fromNotes = partial || row.deliveryNotes.length > 1;
   if (row.billableTotalCents === null) {
     if (partial) {
       throw new UnsettledPartialOrderError(row.orderNumber);
@@ -106,9 +113,7 @@ export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvo
   // les six autres ; le repli ne sert qu'au typage.
   return {
     ...ordered,
-    lines: partial
-      ? row.deliveryNotes.flatMap((note) => note.lines.map(noteLineOf))
-      : ordered.lines,
+    lines: fromNotes ? row.deliveryNotes.flatMap(noteLinesOf) : ordered.lines,
     discountCents: row.billableDiscountCents ?? ordered.discountCents,
     voucherDiscountCents: row.billableVoucherDiscountCents ?? ordered.voucherDiscountCents,
     deliveryFeeCents: row.billableDeliveryFeeCents ?? ordered.deliveryFeeCents,
@@ -124,6 +129,15 @@ export function handedOverNoteNumbersOf(row: {
   readonly deliveryNotes: readonly { readonly number: string }[];
 }): readonly string[] {
   return row.deliveryNotes.map((note) => note.number);
+}
+
+/** Les lignes d'un BL remis ; celles d'un reste portent son jour (`service_day`, nul au rang 1). */
+function noteLinesOf(note: NoteRow): readonly FrozenInvoiceLine[] {
+  const day = note.serviceDay?.toISOString().slice(0, DAY_LENGTH);
+  return note.lines.map((line) => ({
+    ...noteLineOf(line),
+    ...(day === undefined ? {} : { deliveryDate: day }),
+  }));
 }
 
 function noteLineOf(line: NoteLineRow): FrozenInvoiceLine {
