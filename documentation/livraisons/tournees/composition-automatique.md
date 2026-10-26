@@ -333,7 +333,7 @@ flowchart TD
   Une route indisponible n'est jamais rangée : c'est l'écran qui la constate.
 - La clé est le **jour** : une ligne par `service_day`. Une journée close ne se
   rouvre pas.
-- La ligne porte un **ensemble** (`delivery_order_ids`), pas un compteur.
+- La ligne porte un **ensemble**, pas un compteur — d'envois `(commande, rang)` depuis le 2026-10-26, dans la table fille `delivery_day_readiness_shipment` (plan E7 reliquat, L3c, [`plan-e7-reliquat-bati.md`](../../commandes/plan-e7-reliquat-bati.md)) ; la colonne `delivery_order_ids` reste en base, plus lue.
   Chaque fait y ajoute ses livraisons par union. Le jeu est borné aux
   `orderIds` **du fait**, jamais au statut `confirmed`.
 - Les **commandes annulées sont exclues à la réception du fait**

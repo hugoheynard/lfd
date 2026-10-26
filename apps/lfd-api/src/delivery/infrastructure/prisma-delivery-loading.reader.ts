@@ -31,6 +31,7 @@ const ROUND_SELECT = {
       id: true,
       kind: true,
       orderId: true,
+      rank: true,
       transferId: true,
       transfer: {
         select: {

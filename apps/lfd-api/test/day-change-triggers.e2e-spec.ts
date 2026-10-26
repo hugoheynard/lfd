@@ -102,6 +102,10 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   "delivery.delivery_bin_type": "le catalogue des types de bacs, un réglage sans journée",
   "delivery.delivery_day_readiness":
     "ce que la livraison sait de l'arrêt du plan (CA6a, 2026-10-06) : écrite par un abonné au fait de clôture, elle ne fait bouger aucune tournée ; la cloche prévient le bureau, et l'écran la relit à l'ouverture",
+  // Plan E7 reliquat, L3c (2026-10-26) : la liste de la ligne précédente,
+  // passée dans une table fille par envoi.
+  "delivery.delivery_day_readiness_shipment":
+    "les envois du plan arrêté (table fille de `delivery_day_readiness`), écrits avec leur ligne dans la même transaction par le même abonné : même raison que leur ligne",
   "delivery.delivery_bin_capacity":
     "la grille des contenances bacs × produits, un réglage sans journée",
   // La bibliothèque d'achat (lot B1, 2026-09-30) : des véhicules et des bacs

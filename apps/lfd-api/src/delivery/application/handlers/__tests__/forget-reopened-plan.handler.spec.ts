@@ -11,7 +11,7 @@ import { RoundsReaderOver } from "../../commands/__tests__/routing-doubles.js";
 import { attachmentOver, InMemoryInternalTransfers } from "../../__tests__/transfer-doubles.js";
 import { frozenResupply } from "../../__tests__/resupply-transfer-doubles.js";
 import { ForgetReopenedPlan } from "../forget-reopened-plan.handler.js";
-import { InMemoryDayReadiness } from "./day-readiness-doubles.js";
+import { InMemoryDayReadiness, firsts } from "./day-readiness-doubles.js";
 
 /** Instants recopiés et comparés entre eux seulement — exception étroite du §5. */
 const CLOSED = new Date("2026-10-14T17:00:00.000Z");
@@ -41,11 +41,11 @@ function setup(
 ) {
   const days = new InMemoryDayReadiness();
   const ready = DeliveryDayReadiness.start(DAY, CLOSED);
-  ready.learnClosure(CLOSED, ["ord_1", "ord_2"], CLOSED);
+  ready.learnClosure(CLOSED, firsts("ord_1", "ord_2"), CLOSED);
   days.rows.set(DAY, {
     serviceDay: DAY,
     closedAt: ready.closedAt,
-    deliveryOrderIds: ready.deliveryOrderIds,
+    shipments: ready.shipments,
     createdAt: ready.createdAt,
     updatedAt: ready.updatedAt,
   });
@@ -82,7 +82,7 @@ describe("ForgetReopenedPlan", () => {
 
     await handler.handle(fact(["ord_1", "ord_2"]));
 
-    expect(days.rows.get(DAY)).toMatchObject({ closedAt: null, deliveryOrderIds: [] });
+    expect(days.rows.get(DAY)).toMatchObject({ closedAt: null, shipments: firsts() });
     const [round] = rounds.all();
     expect(round?.orderIds).toEqual(["ord_9"]);
   });

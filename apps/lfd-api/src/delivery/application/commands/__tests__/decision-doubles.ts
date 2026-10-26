@@ -93,6 +93,7 @@ export function openDecision(overrides: Partial<StopDecisionSnapshot> = {}): Sto
     stopId: "s_1",
     roundId: "r_1",
     orderId: "o_1",
+    shipmentRank: 1,
     serviceDay: "2030-03-12",
     openedByIncidentId: "inc_1",
     openedAt: new Date(2_000),

@@ -215,6 +215,11 @@ model DeliveryRoundStop {
   roundId         String           @map("round_id")
   kind            DeliveryStopKind @default(order)
   orderId         String?          @map("order_id")
+  /// Le rang de l'ENVOI desservi (plan E7 reliquat, L3c) : 1 = la commande
+  /// elle-même, au-delà un reliquat. Sans effet sur un arrêt de transfert.
+  /// L'index I3 (`delivery_round_stop_live_order_key`) porte sur
+  /// `(order_id, rank)` : un envoi dans au plus une tournée vivante.
+  rank            Int              @default(1)
   /// Le transfert interne d'un arrêt `transfer` ; nul pour un arrêt de commande.
   transferId      String?          @map("transfer_id")
   /// Dénormalisé depuis la tournée : le déclencheur de journée le lit ici (C6).
@@ -347,6 +352,8 @@ model DeliveryStopExecution {
   stopId            String    @id @map("stop_id")
   roundId           String    @map("round_id")
   orderId           String    @map("order_id")
+  /// Le rang de l'envoi, recopié de l'arrêt au départ (plan E7 reliquat, L3c).
+  rank              Int       @default(1)
   serviceDay        String    @map("service_day") @db.VarChar(10)
   departedAt        DateTime  @map("departed_at")
   reference         String
@@ -467,6 +474,8 @@ model DeliveryStopDecision {
   stopId             String    @id @map("stop_id")
   roundId            String    @map("round_id")
   orderId            String    @map("order_id")
+  /// Le rang de l'envoi, recopié de l'arrêt à l'ouverture (plan E7 reliquat, L3c).
+  rank               Int       @default(1)
   serviceDay         String    @map("service_day") @db.VarChar(10)
   /// Le premier signalement qui l'a ouverte.
   openedByIncidentId String    @map("opened_by_incident_id")
@@ -822,15 +831,36 @@ model DeliveryPurchaseScenario {
 ///
 /// Une ligne par journée : une journée close ne se rouvre pas (S1).
 /// `closedAt` est nul tant qu'aucune clôture n'est reçue (un retirage reçu
-/// d'abord, CA6b). `deliveryOrderIds` ne fait que grandir (union).
+/// d'abord, CA6b). Ses envois (`shipments`) ne font que grandir (union).
 model DeliveryDayReadiness {
-  serviceDay       String    @id @map("service_day") @db.VarChar(10)
-  closedAt         DateTime? @map("closed_at") @db.Timestamptz(6)
-  deliveryOrderIds String[]  @default([]) @map("delivery_order_ids")
-  createdAt        DateTime  @map("created_at") @db.Timestamptz(6)
-  updatedAt        DateTime  @map("updated_at") @db.Timestamptz(6)
+  serviceDay       String                         @id @map("service_day") @db.VarChar(10)
+  closedAt         DateTime?                      @map("closed_at") @db.Timestamptz(6)
+  /// ⚠️ MORTE depuis le 2026-10-26 (plan E7 reliquat, L3c) : ni lue ni écrite,
+  /// remplacée par `shipments`. Elle reste en base (CLAUDE.md §0) ; un lot de
+  /// resserrement la retirera.
+  deliveryOrderIds String[]                       @default([]) @map("delivery_order_ids")
+  createdAt        DateTime                       @map("created_at") @db.Timestamptz(6)
+  updatedAt        DateTime                       @map("updated_at") @db.Timestamptz(6)
+  shipments        DeliveryDayReadinessShipment[]
 
   @@map("delivery_day_readiness")
+  @@schema("delivery")
+}
+
+/// **Un envoi du plan arrêté** (plan E7 reliquat, choix 12, L3c) — la liste
+/// qui remplace `delivery_order_ids` : `(commande, rang)` plutôt qu'une chaîne
+/// `orderId#r`. Écrivain : la livraison seule, avec la ligne de sa journée,
+/// dans la même transaction. `order_id` est OPAQUE : aucune clé étrangère vers
+/// `public.orders`.
+model DeliveryDayReadinessShipment {
+  serviceDay String @map("service_day") @db.VarChar(10)
+  orderId    String @map("order_id")
+  rank       Int
+
+  readiness DeliveryDayReadiness @relation(fields: [serviceDay], references: [serviceDay], onDelete: Restrict)
+
+  @@id([serviceDay, orderId, rank])
+  @@map("delivery_day_readiness_shipment")
   @@schema("delivery")
 }
 

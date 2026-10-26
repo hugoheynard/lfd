@@ -10,6 +10,8 @@ export interface StopDecisionSnapshot {
   readonly stopId: string;
   readonly roundId: string;
   readonly orderId: string;
+  /** Le rang de l'envoi de l'arrêt (plan E7 reliquat, L3c). */
+  readonly shipmentRank: number;
   readonly serviceDay: string;
   /** Le premier signalement qui l'a ouverte. */
   readonly openedByIncidentId: string;
@@ -29,6 +31,7 @@ export interface StopDecisionOpening {
   readonly stopId: string;
   readonly roundId: string;
   readonly orderId: string;
+  readonly shipmentRank: number;
   readonly serviceDay: string;
   readonly incidentId: string;
   readonly at: Date;
@@ -89,6 +92,7 @@ export class StopDecision {
         stopId: opening.stopId,
         roundId: opening.roundId,
         orderId: opening.orderId,
+        shipmentRank: opening.shipmentRank,
         serviceDay: opening.serviceDay,
         openedByIncidentId: opening.incidentId,
         openedAt: opening.at,
@@ -116,6 +120,11 @@ export class StopDecision {
 
   get orderId(): string {
     return this.current.orderId;
+  }
+
+  /** L'envoi que l'arrêt dessert — ce que le retour rapporte. */
+  get shipmentRank(): number {
+    return this.current.shipmentRank;
   }
 
   get state(): StopDecisionState {

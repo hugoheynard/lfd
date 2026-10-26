@@ -13,7 +13,7 @@ import {
 } from "../errors/delivery-loading-errors.js";
 import { resolveDoorstepRule } from "../services/doorstep-rule.js";
 import type { DeliveryRound } from "./delivery-round.js";
-import { orderIdsOf } from "./delivery-round-state.js";
+import { orderIdsOf, shipmentRankOfStop } from "./delivery-round-state.js";
 
 /** La fenêtre convenue, avec sa provenance (`default` n'est pas une promesse). */
 export interface DepartureWindow {
@@ -76,6 +76,8 @@ export interface DepartureSheet {
 /** Une feuille figée pour UN arrêt d'une tournée partie. */
 export interface DepartedStop {
   readonly stopId: string;
+  /** Le rang de l'envoi de l'arrêt (plan E7 reliquat, L3c) — pas le rang de passage. */
+  readonly shipmentRank: number;
   readonly roundId: string;
   readonly serviceDay: string;
   readonly departedAt: Date;
@@ -139,6 +141,7 @@ export function departedStopsOf(
     return [
       {
         stopId: stop.id,
+        shipmentRank: shipmentRankOfStop(stop),
         roundId: round.id,
         serviceDay: round.serviceDay,
         departedAt,

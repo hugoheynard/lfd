@@ -33,6 +33,7 @@ export class PrismaDepartedStopRepository extends DepartedStopRepository {
         stopId: stop.stopId,
         roundId: stop.roundId,
         orderId: sheet.orderId,
+        rank: stop.shipmentRank,
         serviceDay: stop.serviceDay,
         departedAt: stop.departedAt,
         reference: sheet.reference,

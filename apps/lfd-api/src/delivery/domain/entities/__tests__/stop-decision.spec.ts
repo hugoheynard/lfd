@@ -17,6 +17,7 @@ function opened(): StopDecision {
     stopId: "s_1",
     roundId: "r_1",
     orderId: "o_1",
+    shipmentRank: 1,
     serviceDay: "2030-03-12",
     incidentId: "inc_1",
     at: OPENED,

@@ -9,6 +9,7 @@ import { Clock } from "../../../platform/time/clock.js";
 import {
   PRODUCTION_DAY_CLOSED,
   ProductionDayClosedEvent,
+  ShipmentRef,
 } from "../../../production/channels/delivery/index.js";
 import { DeliveryOrdersReader } from "../../channels/commerce/index.js";
 import { DeliveryDayReadiness } from "../../domain/entities/delivery-day-readiness.js";
@@ -66,7 +67,10 @@ export class LearnArrestedPlan implements DurableSubscriber {
     await this.attachment.attachResupplies(event.serviceDay, event.resupplyIds);
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
-    const announced = day.learnClosure(event.closedAt, deliveryIds, now);
+    // La clôture ne nomme que des commandes : chacune est l'envoi de rang 1
+    // (un reliquat du jour entrera par les sources du jour, plan E7, L7).
+    const shipments = deliveryIds.map((orderId) => ShipmentRef.firstOf(orderId));
+    const announced = day.learnClosure(event.closedAt, shipments, now);
     await this.days.save(day);
     // CA0 : le rattrapage avant le jour J — ce qu'une commande n'a pas pu
     // situer à sa passation l'est ici, après la validation, hors transaction.

@@ -19,7 +19,9 @@ import {
   type DeliveryStopState,
   type DetachedStop,
   sameSubject,
+  shipmentRankOfStop,
 } from "./delivery-round-state.js";
+import { FIRST_SHIPMENT_RANK } from "../../../production/channels/delivery/index.js";
 import type { Vehicle } from "./vehicle.js";
 
 export type {
@@ -31,7 +33,7 @@ export type {
   RoundReturn,
   StopSubject,
 } from "./delivery-round-state.js";
-export { orderIdOf, orderIdsOf } from "./delivery-round-state.js";
+export { orderIdOf, orderIdsOf, shipmentsOfStops } from "./delivery-round-state.js";
 
 /**
  * **Une tournée** — la racine de la composition (plan de tournée, lot 3, C1) :
@@ -176,7 +178,12 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
     if (after !== undefined && (after < 0 || after > this.open.length)) {
       throw new InvalidStopPositionError(after, this.open.length);
     }
-    this.attachAt({ kind: "order", id: stopId, orderId }, at, after ?? this.open.length);
+    // Rang 1 : un reliquat n'entre dans une tournée qu'avec L7/L8 (plan E7).
+    this.attachAt(
+      { kind: "order", id: stopId, orderId, shipmentRank: FIRST_SHIPMENT_RANK },
+      at,
+      after ?? this.open.length,
+    );
   }
 
   /**
@@ -317,6 +324,6 @@ export class DeliveryRound extends DeliveryRoundOnTheRoad {
 /** Un arrêt réhydraté, réduit à ce qu'un arrêt vivant porte. */
 function detachedOf(stop: DeliveryStopState): DetachedStop {
   return stop.kind === "order"
-    ? { kind: "order", id: stop.id, orderId: stop.orderId }
+    ? { kind: "order", id: stop.id, orderId: stop.orderId, shipmentRank: shipmentRankOfStop(stop) }
     : { kind: "transfer", id: stop.id, transferId: stop.transferId };
 }

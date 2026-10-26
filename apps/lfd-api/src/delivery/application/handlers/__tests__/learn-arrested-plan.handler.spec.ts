@@ -12,6 +12,7 @@ import {
   InMemoryDayReadiness,
   RecordingDayStopsLocator,
   orderFact,
+  firsts,
 } from "./day-readiness-doubles.js";
 import { attachmentOver } from "../../__tests__/transfer-doubles.js";
 
@@ -66,7 +67,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
 
     expect(days.rows.get(DAY)).toMatchObject({
       closedAt: CLOSED,
-      deliveryOrderIds: ["d1", "d2"],
+      shipments: firsts("d1", "d2"),
       createdAt: NOW,
     });
     expect(notifier.notified).toHaveLength(1);
@@ -109,7 +110,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
 
     await receive(["d2", "d1", "d3"], NOW);
 
-    expect(days.rows.get(DAY)?.deliveryOrderIds).toEqual(["d1", "d2", "d3"]);
+    expect(days.rows.get(DAY)?.shipments).toEqual(firsts("d1", "d2", "d3"));
     expect(notifier.notified.map((notice) => notice.subject)).toEqual([
       "Le plan du mercredi 7 octobre est arrêté : 2 livraisons à mettre en tournées",
       "Le plan du mercredi 7 octobre est complété : 1 nouvelle livraison à placer",
@@ -122,7 +123,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
 
     await receive(["p1"]);
 
-    expect(days.rows.get(DAY)).toMatchObject({ closedAt: CLOSED, deliveryOrderIds: [] });
+    expect(days.rows.get(DAY)).toMatchObject({ closedAt: CLOSED, shipments: firsts() });
     expect(notifier.notified).toEqual([]);
   });
 
@@ -131,7 +132,7 @@ describe("LearnArrestedPlan — la livraison apprend que le plan est arrêté", 
 
     await receive(["d1"]);
 
-    expect(days.rows.get(DAY)?.deliveryOrderIds).toEqual(["d1"]);
+    expect(days.rows.get(DAY)?.shipments).toEqual(firsts("d1"));
     expect(notifier.notified[0]?.body).toContain("Impossible de proposer les tournées");
   });
 

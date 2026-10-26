@@ -53,7 +53,7 @@ function departed(rule: DoorstepRule): DepartedStopRow {
   };
 }
 
-function driverRound(rule: DoorstepRule): DriverRoundRow {
+function driverRound(rule: DoorstepRule, shipmentRank = 1): DriverRoundRow {
   return {
     transferStops: [],
     id: "r_1",
@@ -67,6 +67,7 @@ function driverRound(rule: DoorstepRule): DriverRoundRow {
       {
         stopId: "s_1",
         orderId: "o_1",
+        shipmentRank,
         position: 1,
         closedAt: null,
         departed: departed(rule),
@@ -77,14 +78,14 @@ function driverRound(rule: DoorstepRule): DriverRoundRow {
   };
 }
 
-function reporting(rule: DoorstepRule, decisions = new InMemoryStopDecisions()) {
+function reporting(rule: DoorstepRule, decisions = new InMemoryStopDecisions(), shipmentRank = 1) {
   const rounds = new InMemoryDeliveryRounds(roundState());
   const notifier = new RecordingStaffNotifier();
   const durable = new RecordingDurable();
   const afterCommit = new HeldAfterCommit();
   const events = new RecordingPublisher();
   const handler = new ReportDeliveryIncidentHandler(
-    new FixedDriverRounds(PAUL, driverRound(rule)),
+    new FixedDriverRounds(PAUL, driverRound(rule, shipmentRank)),
     new InMemoryIncidents(),
     new InMemoryDocuments(),
     new FixedStaffAuthorDirectory(
@@ -139,6 +140,18 @@ describe("ReportDeliveryIncidentHandler — la décision réglée d'avance (B3 b
       },
     ]);
     expect(notifier.notified).toEqual([]);
+  });
+
+  /** Plan E7 reliquat, L3c : la décision et le retour portent le rang de l'arrêt. */
+  it("un arrêt de rang 2 : la décision le garde, le retour le rapporte", async () => {
+    const { handler, decisions, durable } = reporting("bring_back", new InMemoryStopDecisions(), 2);
+
+    await handler.execute(new ReportDeliveryIncidentCommand(PAUL, "r_1", NOBODY, null));
+
+    expect(decisions.stored("s_1")).toMatchObject({ shipmentRank: 2 });
+    expect(durable.payloadsOf(DELIVERY_ORDERS_BROUGHT_BACK)).toMatchObject([
+      { shipments: [{ orderId: "o_1", rank: 2 }] },
+    ]);
   });
 
   it("« Déposer » autorise le dépôt — même signature exigée — sans écrire la tournée", async () => {

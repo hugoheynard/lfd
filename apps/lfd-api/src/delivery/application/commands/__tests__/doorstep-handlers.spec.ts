@@ -164,6 +164,7 @@ describe("ReportDeliveryIncidentHandler — « Déclarer un problème » (§ 3)"
       {
         stopId: "s_1",
         orderId: "o_1",
+        shipmentRank: 1,
         position: 1,
         closedAt: null,
         departed: null,

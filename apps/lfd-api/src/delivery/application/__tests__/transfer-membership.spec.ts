@@ -8,6 +8,7 @@ import {
   FixedDeliveryOrders,
   InMemoryDayReadiness,
   orderFact,
+  firsts,
 } from "../handlers/__tests__/day-readiness-doubles.js";
 import { FixedFrozenResupplies } from "./resupply-transfer-doubles.js";
 import { TransferAttachment } from "../transfer-attachment.js";
@@ -44,7 +45,7 @@ function scene(options: {
   const days = new InMemoryDayReadiness();
   for (const day of options.closedDays ?? []) {
     const readiness = DeliveryDayReadiness.start(day, AT);
-    readiness.learnClosure(AT, [], AT);
+    readiness.learnClosure(AT, firsts(), AT);
     void days.save(readiness);
   }
   const orders = new FixedTransferOrders(options.refs);

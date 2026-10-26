@@ -48,6 +48,7 @@ describe("departedStopsOf — la feuille figée au départ", () => {
     expect(departedStopsOf(ROUND, AT, [sheet()], NO_POINTS, null)).toEqual([
       {
         stopId: "s_1",
+        shipmentRank: 1,
         roundId: "r_1",
         serviceDay: "2030-03-12",
         departedAt: AT,

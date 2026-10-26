@@ -41,6 +41,8 @@ export interface DepartedStopRow {
 export interface DriverStopRow {
   readonly stopId: string;
   readonly orderId: string;
+  /** Le rang de l'envoi desservi (plan E7 reliquat, L3c) — pas le rang de passage. */
+  readonly shipmentRank: number;
   readonly position: number;
   readonly closedAt: Date | null;
   /** L'instantané du départ, ou `null` : au dépôt. */

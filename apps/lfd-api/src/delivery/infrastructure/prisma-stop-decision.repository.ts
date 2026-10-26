@@ -31,6 +31,7 @@ export class PrismaStopDecisionRepository extends StopDecisionRepository {
         stopId: row.stopId,
         roundId: row.roundId,
         orderId: row.orderId,
+        shipmentRank: row.rank,
         serviceDay: row.serviceDay,
         openedByIncidentId: row.openedByIncidentId,
         openedAt: row.openedAt,
@@ -47,8 +48,9 @@ export class PrismaStopDecisionRepository extends StopDecisionRepository {
   async save(decision: StopDecision, label: string): Promise<void> {
     const snapshot = decision.toSnapshot();
     if (decision.loadedVersion === null) {
+      const { shipmentRank, ...columns } = snapshot;
       await this.prisma.deliveryStopDecision.createMany({
-        data: [{ ...snapshot }],
+        data: [{ ...columns, rank: shipmentRank }],
         skipDuplicates: true,
       });
       return;

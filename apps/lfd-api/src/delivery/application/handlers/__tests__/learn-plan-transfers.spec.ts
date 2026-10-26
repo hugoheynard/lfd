@@ -22,6 +22,7 @@ import {
   InMemoryDayReadiness,
   orderFact,
   RecordingDayStopsLocator,
+  firsts,
 } from "./day-readiness-doubles.js";
 
 /*
@@ -96,7 +97,7 @@ describe("l'arrêt du plan et le retirage rangent les transferts (lot T1)", () =
     await close(["d1", "v1"]);
 
     expect(transfers.all().map((t) => t.orderIds)).toEqual([["v1"]]);
-    expect(days.rows.get(DAY)?.deliveryOrderIds).toEqual(["d1"]);
+    expect(days.rows.get(DAY)?.shipments).toEqual(firsts("d1"));
   });
 
   it("au retirage d'un jour composé : range, puis demande de placer", async () => {

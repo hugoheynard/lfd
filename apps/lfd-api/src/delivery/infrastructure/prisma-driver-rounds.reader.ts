@@ -84,6 +84,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
           select: {
             id: true,
             orderId: true,
+            rank: true,
             transferId: true,
             position: true,
             closedAt: true,
@@ -109,6 +110,7 @@ export class PrismaDriverRoundsReader extends DriverRoundsReader {
       stops: stops.map((stop) => ({
         stopId: stop.id,
         orderId: stop.orderId,
+        shipmentRank: stop.rank,
         position: stop.position,
         closedAt: stop.closedAt,
         departed: stop.execution === null ? null : departedStopOf(stop.execution),

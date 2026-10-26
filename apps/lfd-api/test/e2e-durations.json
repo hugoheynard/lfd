@@ -154,6 +154,7 @@
   "test/delivery-run-sheet.e2e-spec.ts": 5767,
   "test/delivery-settings-readers.e2e-spec.ts": 2517,
   "test/delivery-settings.e2e-spec.ts": 6619,
+  "test/delivery-shipment-ranks.e2e-spec.ts": 10512,
   "test/delivery-simulation-scenarios.e2e-spec.ts": 4253,
   "test/delivery-simulator.e2e-spec.ts": 3458,
   "test/delivery-stop-decision.e2e-spec.ts": 7460,

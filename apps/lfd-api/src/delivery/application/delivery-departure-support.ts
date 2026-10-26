@@ -27,7 +27,6 @@ import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 import type { DepartedStopRepository } from "../domain/ports/departed-stop.repository.js";
 import type { DoorstepSettingsReader } from "../domain/ports/doorstep-settings.reader.js";
 import type { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
-import { ShipmentRef } from "../../production/channels/delivery/index.js";
 
 /** Les ports du départ — ceux des deux portes (chargeur et livreur). */
 export interface DepartureDeps {
@@ -110,13 +109,7 @@ export async function departAndFreeze(
   await deps.departedStops.record(departed);
   await departTransfers(transfers, at, round.driverStaffId, deps);
   await deps.durable.publish(
-    new DeliveryRoundDepartedFact(
-      round.id,
-      round.serviceDay,
-      at,
-      // Les arrêts n'ont pas encore de rang (L3b) : chacun est l'envoi de rang 1.
-      round.orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
-    ).durableFact(),
+    new DeliveryRoundDepartedFact(round.id, round.serviceDay, at, round.shipments).durableFact(),
   );
   return new DeliveryRoundDepartedEvent(round, liveBinCount(loadings));
 }

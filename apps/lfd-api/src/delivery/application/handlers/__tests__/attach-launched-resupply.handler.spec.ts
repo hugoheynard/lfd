@@ -16,7 +16,7 @@ import {
   InternalTransfersReaderOver,
 } from "../../__tests__/transfer-doubles.js";
 import { AttachLaunchedResupply } from "../attach-launched-resupply.handler.js";
-import { InMemoryDayReadiness } from "./day-readiness-doubles.js";
+import { InMemoryDayReadiness, firsts } from "./day-readiness-doubles.js";
 
 /*
  * Le réassort « au plus tôt » lancé, vu de la livraison (R4c) : attaché au
@@ -206,7 +206,7 @@ describe("AttachLaunchedResupply — la journée ouverte par le lancement (R4c, 
 
     await launch(LABO, true);
 
-    expect(days.rows.get(DAY)).toMatchObject({ closedAt: LAUNCHED, deliveryOrderIds: [] });
+    expect(days.rows.get(DAY)).toMatchObject({ closedAt: LAUNCHED, shipments: firsts() });
   });
 
   it("une journée déjà arrêtée : le lancement ne touche pas à son arrêt", async () => {

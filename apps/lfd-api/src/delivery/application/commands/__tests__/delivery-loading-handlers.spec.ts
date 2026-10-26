@@ -247,6 +247,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
     expect(departed.recorded).toEqual([
       {
         stopId: "r_1_s1",
+        shipmentRank: 1,
         roundId: "r_1",
         serviceDay: DAY,
         departedAt: NOW,

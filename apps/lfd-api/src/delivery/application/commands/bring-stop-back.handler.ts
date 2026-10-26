@@ -60,10 +60,9 @@ export class BringStopBackHandler implements ICommandHandler<BringStopBackComman
       await this.events.publishTraced(
         new DeliveryStopBroughtBackEvent(at.roundKey, at.order, "staff"),
       );
-      // Les arrêts n'ont pas encore de rang (L3b) : chacun est l'envoi de rang 1.
       const fact = new DeliveryOrdersBroughtBackFact(
         at.round.id,
-        [ShipmentRef.firstOf(at.decision.orderId)],
+        [ShipmentRef.of(at.decision.orderId, at.decision.shipmentRank)],
         now,
       );
       await this.durable.publish(fact.durableFact());

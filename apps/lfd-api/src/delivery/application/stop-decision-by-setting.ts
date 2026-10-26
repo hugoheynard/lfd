@@ -68,6 +68,7 @@ export class StopDecisionBySetting {
       stopId,
       roundId: round.id,
       orderId: report.stop.orderId,
+      shipmentRank: report.stop.shipmentRank,
       serviceDay: round.serviceDay,
       incidentId: report.incidentId,
       at: report.at,
@@ -86,10 +87,9 @@ export class StopDecisionBySetting {
   private async bringBack(round: DeliveryRound, report: SettledReport): Promise<void> {
     round.closeStop(report.stop.stopId, report.at);
     await this.rounds.save(round);
-    // Les arrêts n'ont pas encore de rang (L3b) : chacun est l'envoi de rang 1.
     const fact = new DeliveryOrdersBroughtBackFact(
       round.id,
-      [ShipmentRef.firstOf(report.stop.orderId)],
+      [ShipmentRef.of(report.stop.orderId, report.stop.shipmentRank)],
       report.at,
     );
     await this.durable.publish(fact.durableFact());

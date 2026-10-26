@@ -3,6 +3,7 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../platform/database/prisma.service.js";
 import { currentTransaction } from "../../platform/database/transaction.store.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
+import { ShipmentRef } from "../../production/channels/delivery/index.js";
 import { DeliveryDayReadiness } from "../domain/entities/delivery-day-readiness.js";
 import { DeliveryDayReadinessRepository } from "../domain/ports/delivery-day-readiness.repository.js";
 
@@ -26,6 +27,12 @@ class ReadinessLoadOutsideTransactionError extends TechnicalError {
  * aussi une journée SANS ligne, que `FOR UPDATE` ne verrouillerait pas —,
  * tenu jusqu'au `COMMIT` de l'unité ouverte par la garde du relais. Le client
  * routé vise la transaction en cours.
+ *
+ * Les envois vivent dans la table fille `delivery_day_readiness_shipment`
+ * (plan E7 reliquat, L3c) ; `delivery_order_ids` n'est plus ni lue ni écrite.
+ * `save` rend la table fille égale à l'ensemble de l'agrégat : il ne fait que
+ * grandir, sauf la réouverture, qui l'oublie — et c'est alors un ensemble
+ * qu'on vide, pas un agrégat qu'on supprime.
  */
 @Injectable()
 export class PrismaDeliveryDayReadinessRepository extends DeliveryDayReadinessRepository {
@@ -39,20 +46,45 @@ export class PrismaDeliveryDayReadinessRepository extends DeliveryDayReadinessRe
     }
     const key = `${READINESS_LOCK_NAMESPACE}${serviceDay}`;
     await this.prisma.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${key}, 0))`;
-    const row = await this.prisma.deliveryDayReadiness.findUnique({ where: { serviceDay } });
-    return row === null ? null : DeliveryDayReadiness.restore(row);
+    const row = await this.prisma.deliveryDayReadiness.findUnique({
+      where: { serviceDay },
+      select: {
+        serviceDay: true,
+        closedAt: true,
+        createdAt: true,
+        updatedAt: true,
+        shipments: { select: { orderId: true, rank: true } },
+      },
+    });
+    return row === null
+      ? null
+      : DeliveryDayReadiness.restore({
+          ...row,
+          shipments: row.shipments.map((shipment) =>
+            ShipmentRef.of(shipment.orderId, shipment.rank),
+          ),
+        });
   }
 
   async save(readiness: DeliveryDayReadiness): Promise<void> {
-    const row = {
-      closedAt: readiness.closedAt,
-      deliveryOrderIds: [...readiness.deliveryOrderIds],
-      updatedAt: readiness.updatedAt,
-    };
+    const serviceDay = readiness.serviceDay;
+    const row = { closedAt: readiness.closedAt, updatedAt: readiness.updatedAt };
     await this.prisma.deliveryDayReadiness.upsert({
-      where: { serviceDay: readiness.serviceDay },
-      create: { serviceDay: readiness.serviceDay, createdAt: readiness.createdAt, ...row },
+      where: { serviceDay },
+      create: { serviceDay, createdAt: readiness.createdAt, ...row },
       update: row,
+    });
+    const shipments = readiness.shipments.map((shipment) => ({
+      orderId: shipment.orderId,
+      rank: shipment.rank,
+    }));
+    // `OR: []` ne retient rien : un ensemble oublié vide la table fille.
+    await this.prisma.deliveryDayReadinessShipment.deleteMany({
+      where: { serviceDay, NOT: { OR: shipments } },
+    });
+    await this.prisma.deliveryDayReadinessShipment.createMany({
+      data: shipments.map((shipment) => ({ serviceDay, ...shipment })),
+      skipDuplicates: true,
     });
   }
 }

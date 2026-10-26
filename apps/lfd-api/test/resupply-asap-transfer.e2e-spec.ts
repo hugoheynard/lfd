@@ -127,9 +127,9 @@ describe("le réassort « au plus tôt » au transport (R4c)", () => {
 
     const readiness = await ctx.prisma.deliveryDayReadiness.findUniqueOrThrow({
       where: { serviceDay: SERVICE_DAY },
-      select: { closedAt: true, deliveryOrderIds: true },
+      select: { closedAt: true, shipments: true },
     });
-    expect(readiness).toEqual({ closedAt: clock.now(), deliveryOrderIds: [] });
+    expect(readiness).toEqual({ closedAt: clock.now(), shipments: [] });
     expect(await ctx.prisma.outboxMessage.count({ where: { type: "production.day_closed" } })).toBe(
       0,
     );

@@ -195,7 +195,15 @@ describe("assign / remove", () => {
       { id: "s_3", position: 2 },
     ]);
     expect(snapshot.removedStops).toEqual([
-      { kind: "order", id: "s_2", orderId: "o_2", position: 2, closedAt: null, removedAt: LATER },
+      {
+        kind: "order",
+        id: "s_2",
+        orderId: "o_2",
+        shipmentRank: 1,
+        position: 2,
+        closedAt: null,
+        removedAt: LATER,
+      },
     ]);
   });
 

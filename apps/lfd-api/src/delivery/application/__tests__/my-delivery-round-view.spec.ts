@@ -20,6 +20,7 @@ function stop(id: string, position: number, overrides: Partial<DriverStopRow> = 
   return {
     stopId: id,
     orderId: `o_${id}`,
+    shipmentRank: 1,
     position,
     closedAt: null,
     departed: null,

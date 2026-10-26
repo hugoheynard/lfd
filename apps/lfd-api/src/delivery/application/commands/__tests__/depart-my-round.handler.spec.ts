@@ -139,6 +139,23 @@ describe("DepartMyRoundHandler — « Commencer ma tournée » (MT-D3 v2)", () =
     expect(durable.facts).toEqual([]);
   });
 
+  /** Plan E7 reliquat, L3c : le fait de départ et la feuille figée lisent le rang de l'arrêt. */
+  it("un arrêt de rang 2 part comme l'envoi de rang 2", async () => {
+    const snapshot = roundOf("staff_paul").toSnapshot();
+    const reliquat = DeliveryRound.restore({
+      ...snapshot,
+      stops: snapshot.stops.map((stop) => ({ ...stop, shipmentRank: 2 })),
+    });
+    const { handler, departed, durable } = departMine(reliquat);
+
+    await handler.execute(new DepartMyRoundCommand("staff_paul", "r_1", { version: 1 }));
+
+    expect(departed.recorded.map((stop) => stop.shipmentRank)).toEqual([2]);
+    expect(durable.facts.map((fact) => fact.payload["shipments"])).toEqual([
+      [{ orderId: "o_1", rank: 2 }],
+    ]);
+  });
+
   it("le livreur affecté fait partir SA tournée : même départ, rang et point figés, tracé", async () => {
     const { handler, rounds, departed, events, durable } = departMine(roundOf("staff_paul"));
 

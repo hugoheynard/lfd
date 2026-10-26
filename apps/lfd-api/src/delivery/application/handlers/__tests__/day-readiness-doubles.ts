@@ -15,6 +15,12 @@ import {
 } from "../../../domain/ports/composition-prerequisites.readers.js";
 import { DayStopsLocator } from "../../day-stops-locator.js";
 import { DeliveryDayReadinessRepository } from "../../../domain/ports/delivery-day-readiness.repository.js";
+import { ShipmentRef } from "../../../../production/channels/delivery/index.js";
+
+/** Les envois de rang 1 de ces commandes — ce qu'une clôture fait ranger. */
+export function firsts(...orderIds: readonly string[]): readonly ShipmentRef[] {
+  return orderIds.map((orderId) => ShipmentRef.firstOf(orderId));
+}
 
 /** Le commerce, tel que la composition le lit : seul `byIds` sert ici. */
 export class FixedDeliveryOrders extends DeliveryOrdersReader {
@@ -70,7 +76,7 @@ export class InMemoryDayReadiness extends DeliveryDayReadinessRepository {
     this.rows.set(readiness.serviceDay, {
       serviceDay: readiness.serviceDay,
       closedAt: readiness.closedAt,
-      deliveryOrderIds: readiness.deliveryOrderIds,
+      shipments: readiness.shipments,
       createdAt: readiness.createdAt,
       updatedAt: readiness.updatedAt,
     });

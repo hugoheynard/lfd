@@ -20,6 +20,7 @@ function stop(stopId: string, orderId: string): DriverStopRow {
   return {
     stopId,
     orderId,
+    shipmentRank: 1,
     position: 0,
     closedAt: null,
     departed: null,

@@ -38,7 +38,7 @@ describe("moveDeliveryStop — I7", () => {
 
     const moved = moveDeliveryStop(from, to, "a_s1", LATER, false);
 
-    expect(moved).toEqual({ kind: "order", id: "a_s1", orderId: "o_1" });
+    expect(moved).toEqual({ kind: "order", id: "a_s1", orderId: "o_1", shipmentRank: 1 });
     expect(from.orderIds).toEqual(["o_2"]);
     expect(to.orderIds).toEqual(["o_3", "o_1"]);
     expect(from.toSnapshot().removedStops).toEqual([]);

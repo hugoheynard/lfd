@@ -75,6 +75,8 @@ export async function purgeDelivery(
     }),
     await tx.deliveryInternalTransfer.deleteMany({ where: { id: { in: transferIds } } }),
     await tx.deliveryDayChange.deleteMany({ where: { serviceDay: { in: days } } }),
+    // Ses envois d'abord (plan E7 reliquat, L3c) : la table fille la tient en RESTRICT.
+    await tx.deliveryDayReadinessShipment.deleteMany({ where: { serviceDay: { in: days } } }),
     await tx.deliveryDayReadiness.deleteMany({ where: { serviceDay: { in: days } } }),
     await tx.staffNotification.deleteMany({ where: planArrestedBellsOf(days) }),
   ];

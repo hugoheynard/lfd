@@ -87,6 +87,7 @@ export class PrismaStopLoadingRepository extends StopLoadingRepository {
         roundId: true,
         kind: true,
         orderId: true,
+        rank: true,
         transferId: true,
         serviceDay: true,
         removedAt: true,

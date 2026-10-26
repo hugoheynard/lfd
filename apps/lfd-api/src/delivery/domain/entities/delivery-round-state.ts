@@ -4,6 +4,7 @@
  * l'agrégat sous sa taille ; il y est ré-exporté.
  */
 
+import { FIRST_SHIPMENT_RANK, ShipmentRef } from "../../../production/channels/delivery/index.js";
 import type { GesturePosition } from "../value-objects/gesture-position.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
 
@@ -80,7 +81,16 @@ export interface DeliveryRoundSnapshot extends DeliveryRoundState {
  * `orderId` sans tester `kind` ne compile pas.
  */
 export type StopSubject =
-  | { readonly kind: "order"; readonly orderId: string }
+  | {
+      readonly kind: "order";
+      readonly orderId: string;
+      /**
+       * Le rang de l'envoi desservi (plan E7 reliquat, L3c) : 1 = la commande
+       * elle-même. Absent = 1, comme un fait écrit avant le rang
+       * (`shipmentRankOf`) ; l'adaptateur le pose toujours.
+       */
+      readonly shipmentRank?: number;
+    }
   | { readonly kind: "transfer"; readonly transferId: string };
 
 /** Un arrêt vivant, détaché d'une tournée pour entrer dans une autre (I7). */
@@ -96,10 +106,24 @@ export function orderIdsOf(stops: readonly StopSubject[]): readonly string[] {
   return stops.flatMap((stop) => (stop.kind === "order" ? [stop.orderId] : []));
 }
 
-/** Deux arrêts desservent-ils la même chose ? */
+/** Le rang de l'envoi d'un arrêt de commande — absent = 1. */
+export function shipmentRankOfStop(stop: Extract<StopSubject, { readonly kind: "order" }>): number {
+  return stop.shipmentRank ?? FIRST_SHIPMENT_RANK;
+}
+
+/** Les envois des arrêts de commande, dans l'ordre donné. */
+export function shipmentsOfStops(stops: readonly StopSubject[]): readonly ShipmentRef[] {
+  return stops.flatMap((stop) =>
+    stop.kind === "order" ? [ShipmentRef.of(stop.orderId, shipmentRankOfStop(stop))] : [],
+  );
+}
+
+/** Deux arrêts desservent-ils la même chose ? Un envoi = commande ET rang. */
 export function sameSubject(a: StopSubject, b: StopSubject): boolean {
   return a.kind === "order"
-    ? b.kind === "order" && a.orderId === b.orderId
+    ? b.kind === "order" &&
+        a.orderId === b.orderId &&
+        shipmentRankOfStop(a) === shipmentRankOfStop(b)
     : b.kind === "transfer" && a.transferId === b.transferId;
 }
 

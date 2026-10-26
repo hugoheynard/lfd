@@ -147,6 +147,21 @@ describe("BringStopBackHandler — « Rapporter » (B3, LB-Q2)", () => {
     ]);
   });
 
+  /** Plan E7 reliquat, L3c : le retour rapporte l'envoi de l'arrêt, rang compris. */
+  it("rapporte le rang de l'arrêt : un rang 2 a sa propre clé", async () => {
+    const decisions = new InMemoryStopDecisions(openDecision({ shipmentRank: 2 }));
+    const { bringBack, uow } = scene({ decisions });
+
+    await bringBack.execute(new BringStopBackCommand(LEA, "s_1"));
+
+    expect(uow.of(DELIVERY_ORDERS_BROUGHT_BACK)).toMatchObject([
+      {
+        key: `${DELIVERY_ORDERS_BROUGHT_BACK}:r_1:o_1:r2`,
+        payload: { shipments: [{ orderId: "o_1", rank: 2 }] },
+      },
+    ]);
+  });
+
   it("🔴 « Autoriser » puis « Rapporter » : permis tant que le livreur n'a pas déposé, la dernière l'emporte", async () => {
     const { authorize, bringBack, decisions } = scene();
     await authorize.execute(new AuthorizeStopDepositCommand(LEA, "s_1"));

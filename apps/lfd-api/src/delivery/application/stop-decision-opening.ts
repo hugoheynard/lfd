@@ -94,6 +94,7 @@ export class StopDecisionOpening {
         stopId: stop.stopId,
         roundId: round.id,
         orderId: stop.orderId,
+        shipmentRank: stop.shipmentRank,
         serviceDay: round.serviceDay,
         incidentId: incident.id,
         at,

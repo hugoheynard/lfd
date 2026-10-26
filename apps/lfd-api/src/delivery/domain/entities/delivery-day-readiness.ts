@@ -1,3 +1,4 @@
+import type { ShipmentRef } from "../../../production/channels/delivery/index.js";
 import { InvalidServiceDayError } from "../errors/delivery-round-errors.js";
 import { isCalendarDay } from "../value-objects/service-day.js";
 
@@ -5,7 +6,8 @@ import { isCalendarDay } from "../value-objects/service-day.js";
 export interface DeliveryDayReadinessState {
   readonly serviceDay: string;
   readonly closedAt: Date | null;
-  readonly deliveryOrderIds: readonly string[];
+  /** Les envois rangés (plan E7 reliquat, choix 12) — une commande peut en avoir deux. */
+  readonly shipments: readonly ShipmentRef[];
   readonly createdAt: Date;
   readonly updatedAt: Date;
 }
@@ -13,7 +15,9 @@ export interface DeliveryDayReadinessState {
 /**
  * **Le plan arrêté, vu par la livraison** (`documentation/livraisons/tournees/composition-automatique.md`,
  * §4, CA6a) : par journée, l'ENSEMBLE des livraisons que les faits du
- * fournil lui ont apprises.
+ * fournil lui ont apprises. Une livraison est un ENVOI `(commande, rang)`
+ * depuis le plan E7 reliquat (L3c) : deux rangs d'une commande comptent pour
+ * deux.
  *
  * L'invariant est structurel : TANT QUE le plan tient, l'ensemble ne fait
  * que grandir. Chaque fait — clôture, réannonce, retirage (CA6b) — en fait
@@ -31,7 +35,7 @@ export class DeliveryDayReadiness {
   private constructor(
     readonly serviceDay: string,
     private closed: Date | null,
-    private ids: ReadonlySet<string>,
+    private known: readonly ShipmentRef[],
     readonly createdAt: Date,
     private touchedAt: Date,
   ) {}
@@ -45,15 +49,14 @@ export class DeliveryDayReadiness {
     if (!isCalendarDay(serviceDay)) {
       throw new InvalidServiceDayError(serviceDay);
     }
-    return new DeliveryDayReadiness(serviceDay, null, new Set(), at, at);
+    return new DeliveryDayReadiness(serviceDay, null, [], at, at);
   }
 
   /** Relit une ligne rangée ; le jour revalide. */
   static restore(state: DeliveryDayReadinessState): DeliveryDayReadiness {
     const day = DeliveryDayReadiness.start(state.serviceDay, state.createdAt);
     day.closed = state.closedAt;
-    day.ids = new Set(state.deliveryOrderIds);
-    day.touchedAt = state.updatedAt;
+    day.union(state.shipments, state.updatedAt);
     return day;
   }
 
@@ -65,13 +68,15 @@ export class DeliveryDayReadiness {
     return this.touchedAt;
   }
 
-  /** Triés : une ligne réécrite à l'identique ne change pas de forme. */
-  get deliveryOrderIds(): readonly string[] {
-    return [...this.ids].sort();
+  /** Triés par commande puis rang : une ligne réécrite à l'identique ne change pas de forme. */
+  get shipments(): readonly ShipmentRef[] {
+    return [...this.known].sort((a, b) =>
+      a.orderId < b.orderId ? -1 : a.orderId > b.orderId ? 1 : a.rank - b.rank,
+    );
   }
 
   get deliveryCount(): number {
-    return this.ids.size;
+    return this.known.length;
   }
 
   /**
@@ -82,11 +87,11 @@ export class DeliveryDayReadiness {
    *   l'ensemble — y compris ce qu'un retirage arrivé avant elle avait déjà
    *   rangé ; ensuite, les seules livraisons qui n'étaient pas encore connues.
    */
-  learnClosure(closedAt: Date, deliveryOrderIds: readonly string[], at: Date): number {
+  learnClosure(closedAt: Date, shipments: readonly ShipmentRef[], at: Date): number {
     const wasArrested = this.closed !== null;
-    const added = this.union(deliveryOrderIds, at);
+    const added = this.union(shipments, at);
     this.closed ??= closedAt;
-    return wasArrested ? added : this.ids.size;
+    return wasArrested ? added : this.known.length;
   }
 
   /**
@@ -98,8 +103,8 @@ export class DeliveryDayReadiness {
    *   déjà arrêté ; rien sinon — la clôture, quand elle arrivera, annoncera
    *   le total, celles-ci comprises.
    */
-  learnRetake(deliveryOrderIds: readonly string[], at: Date): number {
-    const added = this.union(deliveryOrderIds, at);
+  learnRetake(shipments: readonly ShipmentRef[], at: Date): number {
+    const added = this.union(shipments, at);
     return this.closed === null ? 0 : added;
   }
 
@@ -110,14 +115,18 @@ export class DeliveryDayReadiness {
    */
   forgetClosure(at: Date): void {
     this.closed = null;
-    this.ids = new Set();
+    this.known = [];
     this.touchedAt = at;
   }
 
-  private union(deliveryOrderIds: readonly string[], at: Date): number {
-    const before = this.ids.size;
-    this.ids = new Set([...this.ids, ...deliveryOrderIds]);
+  private union(shipments: readonly ShipmentRef[], at: Date): number {
+    const before = this.known.length;
+    for (const shipment of shipments) {
+      if (!this.known.some((known) => known.equals(shipment))) {
+        this.known = [...this.known, shipment];
+      }
+    }
     this.touchedAt = at;
-    return this.ids.size - before;
+    return this.known.length - before;
   }
 }

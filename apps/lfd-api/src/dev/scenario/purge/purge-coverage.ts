@@ -156,7 +156,12 @@ export const SCENARIO_PURGED_TABLES: readonly PurgedTable[] = [
     referencedBy: [],
   },
   { table: "delivery.day_change", purgedIn: DELIVERY, referencedBy: [] },
-  { table: "delivery.delivery_day_readiness", purgedIn: DELIVERY, referencedBy: [] },
+  {
+    table: "delivery.delivery_day_readiness",
+    purgedIn: DELIVERY,
+    referencedBy: ["delivery.delivery_day_readiness_shipment"],
+  },
+  { table: "delivery.delivery_day_readiness_shipment", purgedIn: DELIVERY, referencedBy: [] },
 
   {
     table: "platform.outbox",

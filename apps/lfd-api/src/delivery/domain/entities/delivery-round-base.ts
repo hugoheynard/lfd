@@ -15,7 +15,8 @@ import type {
   RemovedStopState,
   RoundReturn,
 } from "./delivery-round-state.js";
-import { orderIdsOf } from "./delivery-round-state.js";
+import { orderIdsOf, shipmentsOfStops } from "./delivery-round-state.js";
+import type { ShipmentRef } from "../../../production/channels/delivery/index.js";
 
 /** L'identité d'une tournée : ce qui ne change plus après `open`. */
 export type DeliveryRoundIdentity = Omit<
@@ -106,6 +107,11 @@ export abstract class DeliveryRoundBase {
    */
   get orderIds(): readonly string[] {
     return orderIdsOf(this.open);
+  }
+
+  /** Les envois des arrêts de commande vivants, dans l'ordre de passage (plan E7, L3c). */
+  get shipments(): readonly ShipmentRef[] {
+    return shipmentsOfStops(this.open);
   }
 
   /** Les transferts internes des arrêts vivants, dans l'ordre de passage. */

@@ -57,14 +57,15 @@ export class LearnRetakenPlan implements DurableSubscriber {
     if (event.shipments === null) {
       return;
     }
-    // La journée tient encore ses livraisons par COMMANDE (la table fille par
-    // envoi vient en L3c) : les commandes distinctes des envois absorbés.
+    // Le commerce répond par COMMANDE ; la journée range les ENVOIS de
+    // celles qui sont des livraisons non annulées, avec leur rang (L3c).
     const orderIds = [...new Set(event.shipments.map((shipment) => shipment.orderId))];
-    const deliveryIds = await activeDeliveriesAmong(this.orders, orderIds);
+    const deliveryIds = new Set(await activeDeliveriesAmong(this.orders, orderIds));
+    const shipments = event.shipments.filter((shipment) => deliveryIds.has(shipment.orderId));
     const now = this.clock.now();
     const day =
       (await this.days.load(event.serviceDay)) ?? DeliveryDayReadiness.start(event.serviceDay, now);
-    const announced = day.learnRetake(deliveryIds, now);
+    const announced = day.learnRetake(shipments, now);
     await this.days.save(day);
     // CA0 : le rattrapage avant le jour J — ce qu'une commande n'a pas pu
     // situer à sa passation l'est ici, après la validation, hors transaction.

@@ -6,6 +6,8 @@ import type {
   RoundReturn,
   StopSubject,
 } from "../domain/entities/delivery-round.js";
+import { shipmentRankOfStop } from "../domain/entities/delivery-round-state.js";
+import { FIRST_SHIPMENT_RANK } from "../../production/channels/delivery/index.js";
 import {
   DeliveryRoundStaleError,
   OrderAlreadyInRoundError,
@@ -199,11 +201,12 @@ async function guard(conflict: () => AppError, write: () => Promise<unknown>): P
 function stopSubjectColumns(stop: StopSubject): {
   readonly kind: "order" | "transfer";
   readonly orderId: string | null;
+  readonly rank: number;
   readonly transferId: string | null;
 } {
   return stop.kind === "order"
-    ? { kind: "order", orderId: stop.orderId, transferId: null }
-    : { kind: "transfer", orderId: null, transferId: stop.transferId };
+    ? { kind: "order", orderId: stop.orderId, rank: shipmentRankOfStop(stop), transferId: null }
+    : { kind: "transfer", orderId: null, rank: FIRST_SHIPMENT_RANK, transferId: stop.transferId };
 }
 
 /**
@@ -215,10 +218,11 @@ export function stopSubjectOf(row: {
   readonly id: string;
   readonly kind: "order" | "transfer";
   readonly orderId: string | null;
+  readonly rank: number;
   readonly transferId: string | null;
 }): StopSubject {
   if (row.kind === "order" && row.orderId !== null) {
-    return { kind: "order", orderId: row.orderId };
+    return { kind: "order", orderId: row.orderId, shipmentRank: row.rank };
   }
   if (row.kind === "transfer" && row.transferId !== null) {
     return { kind: "transfer", transferId: row.transferId };

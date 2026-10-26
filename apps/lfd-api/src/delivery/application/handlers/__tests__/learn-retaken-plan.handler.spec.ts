@@ -17,6 +17,7 @@ import {
   InMemoryDayReadiness,
   RecordingDayStopsLocator,
   orderFact,
+  firsts,
 } from "./day-readiness-doubles.js";
 import { attachmentOver, RecordingTransferPlacer } from "../../__tests__/transfer-doubles.js";
 
@@ -84,6 +85,11 @@ function setup() {
           orderIds.map((orderId) => ShipmentRef.firstOf(orderId)),
         ).durableFact(),
       ),
+    retakeShipments: (shipments: readonly ShipmentRef[]) =>
+      deliver(
+        retakes,
+        new ProductionDayRetakenEvent(DAY, RETAKEN, shipments.length, shipments).durableFact(),
+      ),
     deliverRaw: (payload: Readonly<Record<string, unknown>>) =>
       deliver(retakes, { type: "production.day_retaken", payload }),
   };
@@ -100,7 +106,7 @@ describe("LearnRetakenPlan — un retirage complète le plan arrêté", () => {
 
     expect(days.rows.get(DAY)).toMatchObject({
       closedAt: CLOSED,
-      deliveryOrderIds: ["d1", "d2", "r1", "r2"],
+      shipments: firsts("d1", "d2", "r1", "r2"),
     });
     expect(subjects(notifier)).toEqual([
       "Le plan du mercredi 7 octobre est arrêté : 2 livraisons à mettre en tournées",
@@ -153,7 +159,7 @@ describe("LearnRetakenPlan — un retirage complète le plan arrêté", () => {
 
     await retake(["r1", "r2"]);
 
-    expect(days.rows.get(DAY)).toMatchObject({ closedAt: null, deliveryOrderIds: ["r1", "r2"] });
+    expect(days.rows.get(DAY)).toMatchObject({ closedAt: null, shipments: firsts("r1", "r2") });
     expect(notifier.notified).toEqual([]);
 
     await close(["d1", "d2"]);
@@ -171,8 +177,29 @@ describe("LearnRetakenPlan — un retirage complète le plan arrêté", () => {
 
     await deliverRaw({ serviceDay: DAY, retakenAt: RETAKEN.toISOString(), absorbed: 2 });
 
-    expect(days.rows.get(DAY)?.deliveryOrderIds).toEqual(["d1"]);
+    expect(days.rows.get(DAY)?.shipments).toEqual(firsts("d1"));
     expect(orders.asked).toEqual([["d1"]]);
     expect(notifier.notified).toHaveLength(1);
+  });
+
+  /** Plan E7 reliquat, L3c : la journée range des envois, rang compris. */
+  it("range le rang 2 d'une commande déjà arrêtée comme une livraison de plus", async () => {
+    const { days, notifier, close, retakeShipments } = setup();
+    await close(["d1"]);
+
+    await retakeShipments([
+      ShipmentRef.firstOf("d1"),
+      ShipmentRef.of("d1", 2),
+      ShipmentRef.of("p1", 2),
+    ]);
+
+    expect(days.rows.get(DAY)?.shipments).toEqual([
+      ShipmentRef.firstOf("d1"),
+      ShipmentRef.of("d1", 2),
+    ]);
+    expect(subjects(notifier)).toEqual([
+      "Le plan du mercredi 7 octobre est arrêté : 1 livraison à mettre en tournées",
+      "Le plan du mercredi 7 octobre est complété : 1 nouvelle livraison à placer",
+    ]);
   });
 });

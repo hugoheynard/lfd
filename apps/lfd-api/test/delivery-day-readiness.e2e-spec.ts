@@ -90,10 +90,12 @@ describe("la livraison apprend la clôture du fournil", () => {
 
     const row = await ctx.prisma.deliveryDayReadiness.findUniqueOrThrow({
       where: { serviceDay: DAY },
+      include: { shipments: true },
     });
     expect(row.closedAt).toEqual(new Date(closure.closedAt));
-    expect(row.deliveryOrderIds).toHaveLength(2);
-    expect(row.deliveryOrderIds).toContain(first.id);
+    // Plan E7 reliquat, L3c : la liste vit dans la table fille, par envoi.
+    expect(row.shipments).toHaveLength(2);
+    expect(row.shipments).toContainEqual({ serviceDay: DAY, orderId: first.id, rank: 1 });
     const [bell, ...others] = await bells();
     expect(others).toEqual([]);
     expect(bell?.subject).toMatch(/est arrêté : 2 livraisons à mettre en tournées$/u);
@@ -173,9 +175,10 @@ describe("la livraison apprend le retirage du fournil (CA6b)", () => {
 
     const row = await ctx.prisma.deliveryDayReadiness.findUniqueOrThrow({
       where: { serviceDay: DAY },
+      include: { shipments: true },
     });
-    expect(row.deliveryOrderIds).toHaveLength(3);
-    expect(row.deliveryOrderIds).toContain(late.id);
+    expect(row.shipments).toHaveLength(3);
+    expect(row.shipments).toContainEqual({ serviceDay: DAY, orderId: late.id, rank: 1 });
     const subjects = (await bells()).map((bell) => bell.subject);
     expect(subjects).toHaveLength(2);
     expect(subjects[0]).toMatch(/est arrêté : 1 livraison à mettre en tournées$/u);
