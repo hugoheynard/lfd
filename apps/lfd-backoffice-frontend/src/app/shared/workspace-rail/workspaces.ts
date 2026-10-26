@@ -196,15 +196,10 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   // départ, zones) vivent sous `/reglages/livraison/` depuis le 2026-10-13
   // (Hugo) ; les écrans du jour gardent `/livraison/`. Les anciennes adresses
   // redirigent.
-  {
-    key: 'feuille-de-route',
-    label: 'Feuille de route',
-    link: '/livraison/feuille-de-route',
-    icon: 'list',
-    needs: 'delivery_run_sheet:read',
-  },
   // « Organisation de tournées » en est sortie le 2026-10-10 (Hugo) : c'est
   // « Tour manager », au premier niveau sous Prod manager (`/tour-manager`).
+  // La « Feuille de route » l'y a suivie le 2026-10-26 (Hugo), en onglet
+  // (`/tour-manager/feuille-de-route`) ; `/livraison/feuille-de-route` y redirige.
   {
     // Les arrêts restés ouverts des tournées (AP-D7).
     key: 'non-remis',

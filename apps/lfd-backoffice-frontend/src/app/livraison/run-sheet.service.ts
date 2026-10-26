@@ -7,7 +7,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **La feuille de route du jour**, en lecture seule — sous la même porte que la
- * route `livraison/feuille-de-route` (`delivery_run_sheet:read`, depuis le
+ * route `tour-manager/feuille-de-route` (`delivery_run_sheet:read`, depuis le
  * 2026-09-29 ; `b2b_orders:read` avant). Aucun état : la page relit quand on
  * change de jour.
  */

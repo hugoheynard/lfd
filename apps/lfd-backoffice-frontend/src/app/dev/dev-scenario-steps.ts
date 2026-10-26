@@ -38,7 +38,7 @@ export const DEV_SCENARIO_STEPS: readonly DevScenarioStepText[] = [
     // le comptoir et la feuille de route les montrent, chacun pour son mode.
     links: [
       { label: 'Retrait boutique', route: '/comptoir/retrait' },
-      { label: 'Feuille de route', route: '/livraison/feuille-de-route' },
+      { label: 'Feuille de route', route: '/tour-manager/feuille-de-route' },
     ],
   },
   {

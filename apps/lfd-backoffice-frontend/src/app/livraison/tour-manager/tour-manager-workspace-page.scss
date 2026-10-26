@@ -1,0 +1,17 @@
+:host {
+  display: block;
+}
+
+/* `foldSurface` bascule la polarité, sans peindre : le fond se pose ici,
+   celui de la barre de l'app — comme la bande de Prod manager. */
+.masthead {
+  padding: var(--fold-space-sm) var(--fold-page-gutter) 0;
+  background: var(--fold-color-bg-header);
+}
+
+/* La feuille de route s'imprime sans les onglets. */
+@media print {
+  .masthead {
+    display: none;
+  }
+}

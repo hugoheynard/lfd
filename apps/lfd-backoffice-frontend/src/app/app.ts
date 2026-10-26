@@ -40,6 +40,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from './auth/permissions.store';
+import { TOUR_MANAGER_PERMISSIONS } from './livraison/tour-manager/tour-manager-views';
 import { UiPrefsStore } from './shared/ui-prefs/ui-prefs.store';
 import { DEV_TOOLS } from './dev/dev-tools';
 import { StaffAuth } from './auth/staff-auth';
@@ -232,9 +233,13 @@ export class App {
       this.permissions.can('production_worksheet:read'),
   );
 
-  /** Tour manager — l'organisation des tournées, au premier niveau (2026-10-10). */
+  /**
+   * Tour manager — l'organisation des tournées, au premier niveau (2026-10-10),
+   * et depuis le 2026-10-26 (Hugo) son onglet « Feuille de route » : l'entrée
+   * paraît à qui ouvre l'un OU l'autre onglet.
+   */
   protected readonly canSeeTourManager = computed(() =>
-    this.permissions.can('delivery_rounds:read'),
+    TOUR_MANAGER_PERMISSIONS.some((permission) => this.permissions.can(permission)),
   );
 
   /** Le Fournil — la fournée du jour, poste à part (2026-10-06), sous son seul droit. */

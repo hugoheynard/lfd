@@ -3,6 +3,11 @@ import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
 import { comptoirLanding } from './comptoir/comptoir-landing';
+import {
+  toRoundsTab,
+  toRunSheetTab,
+  tourManagerLanding,
+} from './livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from './production/prod-manager/prod-manager-views';
 import {
   ORDER_ENTRY_ORIGIN_KEY,
@@ -662,12 +667,34 @@ export const routes: Routes = [
     ],
   },
   // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la
-  // Livraison pour une entrée de premier niveau, sous Prod manager.
+  // Livraison pour une entrée de premier niveau, sous Prod manager. Un ESPACE
+  // depuis le 2026-10-26 (Hugo : « la Feuille de route devient un onglet de
+  // Tour manager ») : deux onglets, une route chacun, sous son propre droit.
+  // La coquille n'est pas gardée — le support n'y lit que la feuille de route.
   {
     path: 'tour-manager',
-    canActivate: [permissionGuard('delivery_rounds:read')],
-    title: 'Tour manager — LFC B2B admin',
-    loadComponent: () => import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
+    loadComponent: () =>
+      import('./livraison/tour-manager/tour-manager-workspace-page').then(
+        (m) => m.TourManagerWorkspacePage,
+      ),
+    children: [
+      // Le premier onglet PERMIS, dans l'ordre de `TOUR_MANAGER_VIEWS` ; `?jour=` suit.
+      { path: '', pathMatch: 'full', redirectTo: tourManagerLanding },
+      {
+        path: 'tournees',
+        canActivate: [permissionGuard('delivery_rounds:read')],
+        title: 'Tour manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
+      },
+      {
+        path: 'feuille-de-route',
+        canActivate: [permissionGuard('delivery_run_sheet:read')],
+        title: 'Feuille de route — Tour manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
+      },
+    ],
   },
   // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
   // devenir un poste de premier niveau, comme le Colisage — la fiche d'atelier
@@ -710,18 +737,11 @@ export const routes: Routes = [
         (m) => m.LivraisonWorkspacePage,
       ),
     children: [
-      // `/livraison` reste l'adresse de la feuille de route : elle vit dans des
-      // favoris. Une redirection et non un écran à vide : le rail marque actif
-      // tout lien dont l'URL est le préfixe, et un lien `/livraison` le serait
-      // resté sur les deux autres vues.
-      { path: '', pathMatch: 'full', redirectTo: 'feuille-de-route' },
-      {
-        path: 'feuille-de-route',
-        canActivate: [permissionGuard('delivery_run_sheet:read')],
-        title: 'Feuille de route — LFC B2B admin',
-        loadComponent: () =>
-          import('./livraison/livraison-page/livraison-page').then((m) => m.DeliveryPage),
-      },
+      // LA FEUILLE DE ROUTE est un onglet de Tour manager depuis le 2026-10-26
+      // (Hugo). `/livraison` et `/livraison/feuille-de-route` vivent dans des
+      // favoris : absolues, elles y redirigent, `?jour=` compris.
+      { path: '', pathMatch: 'full', redirectTo: toRunSheetTab },
+      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRunSheetTab },
       // « MA TOURNÉE » A DÉMÉNAGÉ sous `/coursier` (2026-10-03) : un espace à
       // part, que le livreur voit sans la Livraison. Les anciennes adresses
       // vivent dans des favoris et des liens — elles redirigent.
@@ -731,8 +751,9 @@ export const routes: Routes = [
         redirectTo: '/coursier/:roundId/chargement',
       },
       // Devenue « Tour manager », au premier niveau (2026-10-10) : favoris et
-      // liens portent `?jour=`, que la redirection garde.
-      { path: 'tournees', pathMatch: 'full', redirectTo: '/tour-manager' },
+      // liens portent `?jour=`, que la redirection garde — par une fonction
+      // depuis le 2026-10-26 : la chaîne absolue d'avant le jetait.
+      { path: 'tournees', pathMatch: 'full', redirectTo: toRoundsTab },
       // « NON REMIS » (a-la-porte.md, AP-D7) : une LECTURE, sous le droit
       // des tournées — c'est leur suite, et elle ne débloque rien.
       {

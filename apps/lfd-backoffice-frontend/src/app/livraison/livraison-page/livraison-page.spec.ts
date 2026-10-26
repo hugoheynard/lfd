@@ -299,7 +299,7 @@ describe('DeliveryPage', () => {
       'Toutes les livraisons du jour, adresse par adresse',
     );
     expect(element.querySelector('[data-rounds-link]')?.getAttribute('href')).toBe(
-      '/tour-manager?jour=2026-10-07',
+      '/tour-manager/tournees?jour=2026-10-07',
     );
   });
 

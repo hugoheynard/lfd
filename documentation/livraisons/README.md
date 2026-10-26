@@ -12,6 +12,18 @@ nous manque c'est la livraison ». Ce dossier regroupe ce qui était dispersé d
 > date de leur relecture, et les conceptions dépassées sont marquées 🗄️ avec
 > une table « ce qu'elles décrivent → ce qui existe ».
 
+## Où vivent les écrans du jour (décision de Hugo, 2026-10-26)
+
+**Tour manager** (`/tour-manager`, entrée de premier niveau sous Prod manager)
+est un espace à deux onglets, chacun sous son droit : **Tournées**
+(`/tour-manager/tournees`, `delivery_rounds:read`) et **Feuille de route**
+(`/tour-manager/feuille-de-route`, `delivery_run_sheet:read`, bouton
+« Imprimer » compris). L'entrée paraît à qui tient l'un **ou** l'autre droit ;
+`/tour-manager` ouvre le premier onglet permis. La feuille de route a quitté
+la section Livraison du rail de l'Exploitation ce jour-là : `/livraison`,
+`/livraison/feuille-de-route` et `/livraison/tournees` redirigent vers leur
+onglet, `?jour=` compris (`apps/lfd-backoffice-frontend/src/app/livraison/tour-manager/`).
+
 ## Les thèmes (rangés le 2026-10-07)
 
 Le dossier est rangé en six sous-dossiers ; chacun a son README.

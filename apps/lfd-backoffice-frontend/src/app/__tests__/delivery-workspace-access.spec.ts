@@ -13,6 +13,7 @@ import { describe, expect, it } from 'vitest';
 import { routes } from '../app.routes';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
 import { PermissionsStore } from '../auth/permissions.store';
+import { toRoundsTab, toRunSheetTab } from '../livraison/tour-manager/tour-manager-views';
 import { WorkspaceCatalogue } from '../shared/workspace-rail/workspaces';
 
 /**
@@ -75,13 +76,16 @@ async function opens(role: StaffRole | typeof LIVREUR, path: string): Promise<bo
     const reglages = routes.find((route) => route.path === 'reglages');
     return passes(reglages?.children?.find((child) => child.path === `livraison/${path}`));
   }
-  // Le Coursier (2026-10-03) et le Tour manager (2026-10-10) sont de premier
-  // niveau : pas de coquille au-dessus.
-  const shell =
-    path.startsWith('coursier') || path === 'tour-manager'
-      ? undefined
-      : routes.find((route) => route.path === 'livraison');
-  const view = (shell?.children ?? routes).find((child) => child.path === path);
+  // Le Coursier (2026-10-03) est de premier niveau : pas de coquille
+  // au-dessus. Tour manager (2026-10-10) est un espace à onglets depuis le
+  // 2026-10-26 : `tour-manager/<onglet>`, sous sa coquille non gardée.
+  const [root, tab] = path.startsWith('tour-manager/')
+    ? ['tour-manager', path.slice('tour-manager/'.length)]
+    : ['livraison', path];
+  const shell = path.startsWith('coursier')
+    ? undefined
+    : routes.find((route) => route.path === root);
+  const view = (shell?.children ?? routes).find((child) => child.path === tab);
   return passes(view, shell?.canActivate ?? []);
 }
 
@@ -115,9 +119,8 @@ function deliveryViewKeys(role: StaffRole | typeof LIVREUR): string[] {
 }
 
 describe("l'espace Livraison", () => {
-  it('ouvre les neuf vues au comptoir, et le Tour manager, qui prépare les départs, compose, relit les non-remis, corrige le carnet, simule, compare des bacs et charge (Q12, Q21, lot 9, G3, AP-D7)', async () => {
+  it('ouvre les huit vues au comptoir, et le Tour manager, qui prépare les départs, compose, relit les non-remis, corrige le carnet, simule, compare des bacs et charge (Q12, Q21, lot 9, G3, AP-D7)', async () => {
     expect(deliveryViewKeys('comptoir')).toEqual([
-      'feuille-de-route',
       'non-remis',
       'carnet-a-corriger',
       'simulateur',
@@ -127,7 +130,8 @@ describe("l'espace Livraison", () => {
       'contenances',
       'depart',
     ]);
-    expect(await opens('comptoir', 'tour-manager')).toBe(true);
+    expect(await opens('comptoir', 'tour-manager/tournees')).toBe(true);
+    expect(await opens('comptoir', 'tour-manager/feuille-de-route')).toBe(true);
     expect(await opens('comptoir', 'non-remis')).toBe(true);
     expect(await opens('comptoir', 'carnet-a-corriger')).toBe(true);
     expect(await opens('comptoir', 'simulateur')).toBe(true);
@@ -143,11 +147,11 @@ describe("l'espace Livraison", () => {
     expect(await opens('comptoir', 'depart')).toBe(true);
   });
 
-  it('garde au support la seule feuille de route (Q8)', async () => {
-    expect(deliveryViewKeys('support')).toEqual(['feuille-de-route']);
-    expect(await opens('support', 'feuille-de-route')).toBe(true);
+  it('garde au support la seule feuille de route (Q8), onglet de Tour manager depuis le 2026-10-26', async () => {
+    expect(deliveryViewKeys('support')).toEqual([]);
+    expect(await opens('support', 'tour-manager/feuille-de-route')).toBe(true);
     expect(await opens('support', 'vehicules')).toBe(false);
-    expect(await opens('support', 'tour-manager')).toBe(false);
+    expect(await opens('support', 'tour-manager/tournees')).toBe(false);
     expect(await opens('support', 'chargement')).toBe(false);
   });
 
@@ -168,8 +172,7 @@ describe("l'espace Livraison", () => {
   });
 
   it('ne montre ni n’ouvre les tournées au commercial', async () => {
-    expect(deliveryViewKeys('commercial')).not.toContain('tour-manager');
-    expect(await opens('commercial', 'tour-manager')).toBe(false);
+    expect(await opens('commercial', 'tour-manager/tournees')).toBe(false);
   });
 
   it('🔴 la coquille ne ferme aucune vue : ni la flotte à qui ne lit qu’elle, ni l’inverse', () => {
@@ -177,18 +180,28 @@ describe("l'espace Livraison", () => {
     expect((shell?.canActivate ?? []).filter(isPermissionGuard)).toEqual([]);
   });
 
-  it('renvoie l’ancienne adresse `/livraison` vers la feuille de route', () => {
+  it('renvoie `/livraison`, la feuille de route et les tournées vers leurs onglets de Tour manager (2026-10-26)', () => {
     const shell = routes.find((route) => route.path === 'livraison');
-    expect(shell?.children?.find((child) => child.path === '')?.redirectTo).toBe(
-      'feuille-de-route',
-    );
+    const redirectOf = (path: string): unknown =>
+      shell?.children?.find((child) => child.path === path)?.redirectTo;
+    // Des fonctions, qui gardent `?jour=` (joué au vrai routeur dans
+    // tour-manager-entry-access.spec.ts).
+    expect(redirectOf('')).toBe(toRunSheetTab);
+    expect(redirectOf('feuille-de-route')).toBe(toRunSheetTab);
+    expect(redirectOf('tournees')).toBe(toRoundsTab);
+  });
+
+  it('🔴 la coquille de Tour manager ne ferme aucun onglet', () => {
+    const shell = routes.find((route) => route.path === 'tour-manager');
+    expect((shell?.canActivate ?? []).filter(isAnyGuard)).toEqual([]);
   });
 
   it('ne montre au livreur aucune vue de la Livraison, et lui ouvre le Coursier', async () => {
     expect(deliveryViewKeys(LIVREUR)).toEqual([]);
     expect(await opens(LIVREUR, 'coursier')).toBe(true);
     expect(await opens(LIVREUR, 'coursier/:roundId/chargement')).toBe(true);
-    expect(await opens(LIVREUR, 'tour-manager')).toBe(false);
+    expect(await opens(LIVREUR, 'tour-manager/tournees')).toBe(false);
+    expect(await opens(LIVREUR, 'tour-manager/feuille-de-route')).toBe(false);
     expect(await opens(LIVREUR, 'chargement')).toBe(false);
     expect(await opens('comptoir', 'coursier')).toBe(false);
     expect(await opens('comptoir', 'coursier/:roundId/chargement')).toBe(false);
