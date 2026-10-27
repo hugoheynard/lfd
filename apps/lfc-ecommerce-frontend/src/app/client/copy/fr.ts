@@ -88,12 +88,6 @@ export const FR: ClientCopy = {
     close: 'Fermer le menu',
     newTab: '{name} (nouvel onglet)',
     newOrder: 'Nouvelle commande',
-    house: 'La maison',
-    houseLinks: [
-      ['Nos rayons et nos méthodes', '6 fiches'],
-      ['Le Labo — horaires et accès', 'Ouvert'],
-      ['Une urgence, un ajout ?', 'Nous appeler'],
-    ],
     logout: 'Se déconnecter',
     address: 'Le Labo · route de la Balme, Val d’Isère — 7 h – 19 h',
     hello: 'Bonjour {name}.',

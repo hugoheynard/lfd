@@ -96,12 +96,6 @@ export const IT: ClientCopy = {
     close: 'Chiudi il menu',
     newTab: '{name} (nuova scheda)',
     newOrder: 'Nuovo ordine',
-    house: 'La casa',
-    houseLinks: [
-      ['I nostri banchi e i nostri metodi', '6 schede'],
-      ['Le Labo — orari e accesso', 'Aperto'],
-      ['Un imprevisto, un’aggiunta?', 'Chiamaci'],
-    ],
     logout: 'Esci',
     address: 'Le Labo · route de la Balme, Val d’Isère — 7 – 19',
     hello: 'Ciao {name}.',

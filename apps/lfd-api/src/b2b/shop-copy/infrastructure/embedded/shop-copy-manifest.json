@@ -4696,55 +4696,6 @@
           "variables": []
         },
         {
-          "key": "nav.house",
-          "fr": "La maison",
-          "en": "The bakery",
-          "it": "La casa",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.0.0",
-          "fr": "Nos rayons et nos méthodes",
-          "en": "Our counters and our methods",
-          "it": "I nostri banchi e i nostri metodi",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.0.1",
-          "fr": "6 fiches",
-          "en": "6 notes",
-          "it": "6 schede",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.1.0",
-          "fr": "Le Labo — horaires et accès",
-          "en": "Le Labo — hours and access",
-          "it": "Le Labo — orari e accesso",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.1.1",
-          "fr": "Ouvert",
-          "en": "Open",
-          "it": "Aperto",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.2.0",
-          "fr": "Une urgence, un ajout ?",
-          "en": "Something urgent to add?",
-          "it": "Un imprevisto, un’aggiunta?",
-          "variables": []
-        },
-        {
-          "key": "nav.houseLinks.2.1",
-          "fr": "Nous appeler",
-          "en": "Call us",
-          "it": "Chiamaci",
-          "variables": []
-        },
-        {
           "key": "nav.logout",
           "fr": "Se déconnecter",
           "en": "Sign out",

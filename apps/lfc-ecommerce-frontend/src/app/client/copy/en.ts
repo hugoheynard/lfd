@@ -94,12 +94,6 @@ export const EN: ClientCopy = {
     close: 'Close the menu',
     newTab: '{name} (new tab)',
     newOrder: 'New order',
-    house: 'The bakery',
-    houseLinks: [
-      ['Our counters and our methods', '6 notes'],
-      ['Le Labo — hours and access', 'Open'],
-      ['Something urgent to add?', 'Call us'],
-    ],
     logout: 'Sign out',
     address: 'Le Labo · route de la Balme, Val d’Isère — 7 am – 7 pm',
     hello: 'Hello {name}.',

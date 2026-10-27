@@ -30,6 +30,13 @@
     "cart.feeVatStandard": null,
     "cart.feeVatProrata": null,
     "accueilPublic.hello.lede": null,
-    "nav.newOrderSub": null
+    "nav.newOrderSub": null,
+    "nav.house": null,
+    "nav.houseLinks.0.0": null,
+    "nav.houseLinks.0.1": null,
+    "nav.houseLinks.1.0": null,
+    "nav.houseLinks.1.1": null,
+    "nav.houseLinks.2.0": null,
+    "nav.houseLinks.2.1": null
   }
 }

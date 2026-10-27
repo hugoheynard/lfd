@@ -179,13 +179,6 @@ export interface ClientCopy {
      * `{name}` est remplacé par son texte visible, qui reste en tête du nom.
      */
     readonly newTab: string;
-    readonly house: string;
-    /** Les trois liens « la maison » : libellé, puis sa note à droite. */
-    readonly houseLinks: readonly [
-      readonly [string, string],
-      readonly [string, string],
-      readonly [string, string],
-    ];
     readonly logout: string;
     readonly address: string;
     /** Le salut du menu. `{name}` est remplacé par le prénom reconnu. */

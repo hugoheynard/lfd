@@ -213,44 +213,6 @@
 
 /* ── « La maison » : de la consultation, en bas de casse ────────────────── */
 
-.house-head {
-  margin: var(--fold-space-2xl) 0 var(--fold-space-sm);
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-kicker);
-  text-transform: uppercase;
-  color: var(--lfc-color-on-primary-muted);
-}
-
-.house {
-  display: flex;
-  flex-direction: column;
-  margin: 0;
-  padding: 0;
-  list-style: none;
-}
-
-.house-row {
-  display: flex;
-  align-items: baseline;
-  gap: var(--fold-space-lg);
-  padding: var(--fold-space-md) 0;
-  font-size: var(--fold-text-base);
-}
-
-.house-label {
-  min-width: 0;
-  flex: 1;
-  color: var(--fold-color-text);
-}
-
-.house-note {
-  flex: none;
-  color: var(--lfc-color-on-primary-muted);
-  white-space: nowrap;
-}
-
 /* ── Le pied : langue, sortie, adresse ──────────────────────────────────── */
 
 .foot {
