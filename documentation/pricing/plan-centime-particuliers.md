@@ -356,7 +356,7 @@ Choix faits au bâti, que le plan ne précisait pas :
 
 ## 9 ter. Lot C2 — bâti le 2026-10-27 (non commité à l'écriture)
 
-Migration `20261027100000_la_commande_d_un_particulier_en_ttc` : `vat_method`
+Migration `20261027130000_la_commande_d_un_particulier_en_ttc` : `vat_method`
 (ajoutée, remplie à `line_ht`, puis non nulle sans défaut) et les trois TTC de
 terme sur `orders` et `delivery_note`, sous un CHECK « TTC ⇔ `exact_ht` » à
 part. `Order.draft` décide la méthode (`placementVatMethodOf`, sur l'absence

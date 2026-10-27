@@ -70,7 +70,7 @@ export function termsColumns(terms: DeliveryNoteTerms | null) {
 
 /**
  * La méthode de composition d'un BL qu'on CRÉE (`delivery_note.vat_method`,
- * migration `20261027100000`) — `line_ht`, et des TTC nuls, jusqu'au lot C3
+ * migration `20261027130000`) — `line_ht`, et des TTC nuls, jusqu'au lot C3
  * du plan `documentation/pricing/plan-centime-particuliers.md`, qui recompose
  * le BL d'une commande `exact_ht`. Écrite à la création seulement : une mise
  * à jour ne réécrit pas la méthode.
