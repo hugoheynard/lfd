@@ -51,13 +51,6 @@
           "variables": []
         },
         {
-          "key": "accueilPublic.hello.lede",
-          "fr": "Vous choisissez, nous préparons. Une seule question pour démarrer : vous venez, ou on vient ?",
-          "en": "You choose, we bake. One question to start: are you coming, or are we?",
-          "it": "Lei sceglie, noi prepariamo. Una sola domanda per iniziare : viene lei, o veniamo noi ?",
-          "variables": []
-        },
-        {
           "key": "accueilPublic.hello.proPills.0",
           "fr": "Tarifs pro appliqués",
           "en": "Trade prices applied",

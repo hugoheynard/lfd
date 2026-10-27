@@ -100,7 +100,6 @@ export interface AccueilPublicCopy {
     readonly title: string;
     /** Le même, quand la fiche ne porte pas encore de prénom. */
     readonly titleAnonymous: string;
-    readonly lede: string;
     /** Les trois pastilles d'un espace PRO, et d'aucun autre. */
     readonly proPills: readonly string[];
   };
@@ -290,7 +289,6 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     kicker: 'Nouvelle commande',
     title: 'Bonjour {name}.\nOn vous sert comment ?',
     titleAnonymous: 'Bonjour.\nOn vous sert comment ?',
-    lede: 'Vous choisissez, nous préparons. Une seule question pour démarrer : vous venez, ou on vient ?',
     proPills: ['Tarifs pro appliqués', 'Livraison en station', 'Facturation mensuelle'],
   },
   doors: {
@@ -383,7 +381,6 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     kicker: 'New order',
     title: 'Hello {name}.\nHow can we serve you?',
     titleAnonymous: 'Hello.\nHow can we serve you?',
-    lede: 'You choose, we bake. One question to start: are you coming, or are we?',
     proPills: ['Trade prices applied', 'Delivery in resort', 'Monthly invoicing'],
   },
   doors: {
@@ -476,7 +473,6 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     kicker: 'Nuovo ordine',
     title: 'Buongiorno {name}.\nCome possiamo servirla ?',
     titleAnonymous: 'Buongiorno.\nCome possiamo servirla ?',
-    lede: 'Lei sceglie, noi prepariamo. Una sola domanda per iniziare : viene lei, o veniamo noi ?',
     proPills: ['Prezzi pro applicati', 'Consegna in stazione', 'Fatturazione mensile'],
   },
   doors: {

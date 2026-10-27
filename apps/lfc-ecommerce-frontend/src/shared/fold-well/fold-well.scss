@@ -109,5 +109,13 @@
    the caps title (which reads `--fold-text-base`) takes the size of the accueil's section titles. Only the
    token the caps label reads is moved, and only inside the header. */
 :host(.well-title-lg) .titles {
-  --fold-text-base: var(--fold-text-xl);
+  --fold-text-base: var(--fold-text-lg);
+}
+
+/* Au-delà du téléphone seulement : en pile, le titre agrandi heurtait
+   l'action de la tête. */
+@media (min-width: 600px) {
+  :host(.well-title-lg) .titles {
+    --fold-text-base: var(--fold-text-xl);
+  }
 }

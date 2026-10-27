@@ -280,10 +280,11 @@
      depuis que le troisième trait se range sur un bord, la boîte de contenu ne
      fait plus 38 px mais 26, et les mesures de la réf tombent à côté. */
   padding: 0;
-  border: 1px solid var(--fold-color-border);
+  border: 0;
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-hover);
-  color: var(--fold-color-text);
+  /* BLEU PLEIN, traits blancs (Hugo, 2026-10-27) ; le trait beurre reste. */
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
   cursor: pointer;
 }
 
@@ -292,7 +293,7 @@
   width: 19px;
   height: 2px;
   border-radius: 2px;
-  background: var(--fold-color-text);
+  background: var(--lfc-paper-0);
 }
 
 /* Le troisième trait est plus court et porte le beurre. Il s'aligne À GAUCHE

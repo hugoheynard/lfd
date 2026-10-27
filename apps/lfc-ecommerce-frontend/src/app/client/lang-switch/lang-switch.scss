@@ -120,10 +120,13 @@
   place-items: center;
   height: 15px;
   padding: 0 4px;
-  border: 2px solid var(--fold-color-bg-header);
+  /* Nommés et non lus sur `bg-header` : l'en-tête est BLANC depuis le
+     2026-10-27, et `bg-header` y vaut encore le bleu — le code s'écrivait
+     bleu sur bleu, invisible. */
+  border: 2px solid var(--lfc-paper-0);
   border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-text);
-  color: var(--fold-color-bg-header);
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
   font-family: var(--lfc-font-caps);
   font-size: 0.53125rem;
   font-weight: var(--lfc-weight-black);

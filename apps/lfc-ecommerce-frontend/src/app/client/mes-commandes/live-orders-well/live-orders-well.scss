@@ -37,15 +37,15 @@
    2026-10-27) : c'est la seule action de la tête. */
 .all {
   flex: none;
-  height: 44px;
-  padding: 0 var(--fold-space-lg);
+  height: 36px;
+  padding: 0 var(--fold-space-md);
   border: 0;
   border-radius: var(--fold-radius-sm);
   background: var(--lfc-color-on-well);
   color: var(--lfc-color-surface-well);
   font-family: var(--fold-font-sans);
-  /* `lg`, pas `base` : le titre agrandi déplace `base` dans l'en-tête. */
-  font-size: var(--fold-text-lg);
+  /* `sm`, pas `base` : le titre agrandi déplace `base` dans l'en-tête. */
+  font-size: var(--fold-text-sm);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
@@ -62,5 +62,14 @@
 @media (min-width: 900px) {
   .rail-card {
     width: calc(50% - var(--fold-space-lg) / 2 - 44px);
+  }
+}
+
+/* Au-delà du téléphone, la sortie prend la taille de la tête agrandie. */
+@media (min-width: 600px) {
+  .all {
+    height: 44px;
+    padding: 0 var(--fold-space-lg);
+    font-size: var(--fold-text-lg);
   }
 }

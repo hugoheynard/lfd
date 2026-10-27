@@ -33,7 +33,9 @@
          montre où l'on en est. Inséré entre les deux, il répond à la question
          que le titre vient de poser ; posé après le rail, il expliquerait une
          mécanique déjà dessinée. -->
-    <p class="screen-lede">{{ heroLede() }}</p>
+    @if (heroLede(); as lede) {
+      <p class="screen-lede">{{ lede }}</p>
+    }
 
     <!-- LES TROIS PASTILLES D'UN PRO, et d'aucun autre. Elles ne vendent rien :
          elles rappellent ce que son contrat a DÉJÀ changé pour lui — les prix

@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1690 textes
+## Sommaire — 1689 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 60 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1690** |
+| **Total** | | **1689** |
 
 ## Le parcours de commande
 
@@ -56,7 +56,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 61 textes.
+Source : `screens/accueil-public.copy.ts` · 60 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -66,7 +66,6 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 | `accueilPublic.hello.kicker` | Nouvelle commande | New order | Nuovo ordine |  |
 | `accueilPublic.hello.title` | Bonjour {name}.<br>On vous sert comment ? | Hello {name}.<br>How can we serve you? | Buongiorno {name}.<br>Come possiamo servirla ? | `{name}` |
 | `accueilPublic.hello.titleAnonymous` | Bonjour.<br>On vous sert comment ? | Hello.<br>How can we serve you? | Buongiorno.<br>Come possiamo servirla ? |  |
-| `accueilPublic.hello.lede` | Vous choisissez, nous préparons. Une seule question pour démarrer : vous venez, ou on vient ? | You choose, we bake. One question to start: are you coming, or are we? | Lei sceglie, noi prepariamo. Una sola domanda per iniziare : viene lei, o veniamo noi ? |  |
 | `accueilPublic.hello.proPills.0` | Tarifs pro appliqués | Trade prices applied | Prezzi pro applicati |  |
 | `accueilPublic.hello.proPills.1` | Livraison en station | Delivery in resort | Consegna in stazione |  |
 | `accueilPublic.hello.proPills.2` | Facturation mensuelle | Monthly invoicing | Fatturazione mensile |  |

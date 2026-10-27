@@ -272,9 +272,11 @@ export class AccueilPublic {
     this.recognised() ? this.c().hello.kicker : this.c().kicker,
   );
 
-  protected readonly heroLede = computed(() =>
-    this.recognised() ? this.c().hello.lede : this.c().lede,
-  );
+  /**
+   * Le chapô du visiteur seul : reconnu, le titre et le rail suffisent (Hugo,
+   * 2026-10-27 : « enlever des textes d'apparat »).
+   */
+  protected readonly heroLede = computed(() => (this.recognised() ? null : this.c().lede));
 
   /**
    * CE QUE DIT LA BANDE DE CONTACT, selon à qui elle parle.
