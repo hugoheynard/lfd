@@ -85,12 +85,19 @@
   height: 100%;
   padding: env(safe-area-inset-top, 0px) var(--lfc-inset) 0;
 
-  /* Un aplat du bleu de la marque, celui du site vitrine, sans dégradé (Hugo,
-     2026-10-27).
+  /* Blanc, écrit en bleu de marque (Hugo, 2026-10-27, variante B) : le bleu
+     ne reste qu'au masthead, juste en dessous. Les couleurs de texte de la
+     région sombre sont redéfinies pour la barre.
 
      ⚠️ La règle est posée sur `.bar` et non sur la région `[header]` du shell :
      la barre remplit sa rangée, et peindre la région appartient à fold. */
-  background: var(--lfc-brand-blue);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
+  --fold-color-text: var(--lfc-brand-blue);
+  --fold-color-text-muted: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+  --fold-color-text-secondary: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+  --lfc-color-on-primary-muted: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+  --fold-color-border: color-mix(in srgb, var(--lfc-brand-blue) 22%, transparent);
 }
 
 /* 🔴 La marque et le logo sont des LIENS vers `/bienvenue` depuis le

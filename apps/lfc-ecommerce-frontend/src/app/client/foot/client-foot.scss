@@ -20,7 +20,19 @@
        le pied se lisait comme un second en-tête collé sous la page au lieu de
        la fermer. La maquette du 2026-09-20 finit sur `#081437`, à un cheveu
        d'`ink-950` — c'est la fin de la même descente, pas une couleur de plus. */
-    background: var(--lfc-ink-950);
+    background: var(--lfc-paper-0);
+    /* 🔴 BLANC ÉCRIT EN BLEU depuis le 2026-10-27 (Hugo, variante B) : le pied
+       reprend l'en-tête, le bleu de la marque ne reste qu'au masthead. Les
+       couleurs de texte de la région sombre sont redéfinies ICI, pour tout ce
+       que le pied contient. */
+    --fold-color-text: var(--lfc-brand-blue);
+    --fold-color-text-muted: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+    --fold-color-text-secondary: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+    --lfc-color-on-primary-muted: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
+    --fold-color-border: color-mix(in srgb, var(--lfc-brand-blue) 22%, transparent);
+    --fold-color-border-subtle: color-mix(in srgb, var(--lfc-brand-blue) 14%, transparent);
+    border-top: 1px solid var(--fold-color-border-subtle);
+    color: var(--lfc-brand-blue);
   }
 }
 
