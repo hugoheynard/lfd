@@ -1,4 +1,7 @@
+import { orderRatesAmountsSchema } from "@lfd/contracts";
+
 import { Prisma } from "../../../platform/database/client/client.js";
+import type { OrderRateAmounts } from "../../orders/domain/value-objects/order-rate-amounts.js";
 import type {
   DeliveryNoteTerms,
   DeliveryNoteTtcTerms,
@@ -21,6 +24,7 @@ export interface DeliveryNoteTermsRow {
   readonly discountTtcCents: number | null;
   readonly voucherTtcCents: number | null;
   readonly deliveryFeeTtcCents: number | null;
+  readonly ttcByRate: Prisma.JsonValue;
 }
 
 const LINE_HT = "line_ht";
@@ -81,6 +85,18 @@ export function termsColumns(terms: DeliveryNoteTerms | null) {
   };
 }
 
+/** La part de chaque taux → JSON ; `null` s'écrit `NULL` en base. */
+function byRateJson(parts: readonly OrderRateAmounts[] | null): FrozenJson | null {
+  return parts === null
+    ? null
+    : parts.map((part) => ({
+        rate: part.rate,
+        htCents: part.htCents,
+        vatCents: part.vatCents,
+        ttcCents: part.ttcCents,
+      }));
+}
+
 /** Les TTC relus d'un BL ; le CHECK `delivery_note_ttc_terms_iff_exact_ht` les tient ensemble. */
 function ttcTermsOf(row: DeliveryNoteTermsRow): DeliveryNoteTtcTerms | null {
   const { vatMethod, discountTtcCents, voucherTtcCents, deliveryFeeTtcCents } = row;
@@ -96,7 +112,14 @@ function ttcTermsOf(row: DeliveryNoteTermsRow): DeliveryNoteTtcTerms | null {
     discountCents: discountTtcCents,
     voucherCents: voucherTtcCents,
     deliveryFeeCents: deliveryFeeTtcCents,
+    byRate: byRateOf(row.ttcByRate),
   };
+}
+
+/** La part de chaque taux relue ; une forme inconnue (écrite hors de l'application) se tait. */
+function byRateOf(value: Prisma.JsonValue): readonly OrderRateAmounts[] | null {
+  const parsed = orderRatesAmountsSchema.safeParse(value);
+  return parsed.success ? parsed.data : null;
 }
 
 /**
@@ -112,5 +135,6 @@ function vatMethodColumns(terms: DeliveryNoteTerms | null) {
     discountTtcCents: ttc?.discountCents ?? null,
     voucherTtcCents: ttc?.voucherCents ?? null,
     deliveryFeeTtcCents: ttc?.deliveryFeeCents ?? null,
+    ttcByRate: jsonColumn(byRateJson(ttc?.byRate ?? null)),
   };
 }

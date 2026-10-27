@@ -95,6 +95,38 @@ function expectAdditive(state: ReturnType<Order["toPersistence"]>): void {
   expect(state.vatShares.reduce((sum, share) => sum + share.amountCents, 0)).toBe(state.vatCents);
 }
 
+describe("Order.draft — la part figée de chaque taux (ttc_by_rate)", () => {
+  const JUICE = {
+    sku: "JUS-001",
+    productName: "Jus",
+    unitPriceMillicents: 250_000,
+    vatRate: 20,
+    quantity: 2,
+  };
+
+  it("est la composition par taux : HT, TVA, TTC, taux croissants", () => {
+    const state = placed({
+      lines: [BANANA, JUICE],
+      discountAdjustment: { mode: "percent", bp: 1_000 },
+      discountCents: 270,
+    });
+
+    expect(state.ttcByRate).toEqual([
+      { rate: 5.5, htCents: 1_791, vatCents: 99, ttcCents: 1_890 },
+      { rate: 20, htCents: 450, vatCents: 90, ttcCents: 540 },
+    ]);
+  });
+
+  it("somme vers le total, et sa TVA vers celle de la commande", () => {
+    const state = placed({ lines: [BANANA, JUICE] });
+    const parts = state.ttcByRate ?? [];
+
+    expect(parts.reduce((sum, part) => sum + part.ttcCents, 0)).toBe(state.totalCents);
+    expect(parts.reduce((sum, part) => sum + part.vatCents, 0)).toBe(state.vatCents);
+    expect(parts.every((part) => part.htCents + part.vatCents === part.ttcCents)).toBe(true);
+  });
+});
+
 describe("Order.draft — un particulier paie la somme des étiquettes (exact_ht)", () => {
   it("banana bread à 21,00 € : 21,00 € prélevés, HT 19,90, TVA 1,10", () => {
     const state = placed();

@@ -342,6 +342,7 @@ export class Order {
       loyaltyVoucherId: this.voucher?.id ?? null,
       vatCents: this.amounts.vatCents,
       vatShares: this.amounts.vatShares,
+      ttcByRate: this.amounts.ttcByRate,
       totalCents: this.amounts.totalCents,
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,

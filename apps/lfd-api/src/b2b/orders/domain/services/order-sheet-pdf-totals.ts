@@ -234,8 +234,19 @@ function publicRows(sheet: PricedPaper): readonly TotalRow[] {
     { label: "Articles", value: money(articlesCents(sheet)) },
     ...taxedGestureRows(sheet),
     { label: "Total TTC", value: money(totals.totalCents), rule: true, strong: true },
-    ...vatRows(totals),
+    ...(totals.ttcByRate === undefined ? vatRows(totals) : rateRows(totals.ttcByRate)),
   ];
+}
+
+/**
+ * Le récapitulatif par taux d'une commande composée en TTC — HT, TVA et TTC
+ * de chaque taux, LUS sur la part figée (`ttc_by_rate`), jamais reconstitués.
+ */
+function rateRows(parts: NonNullable<SheetMoney["ttcByRate"]>): readonly TotalRow[] {
+  return parts.map((part) => ({
+    label: `dont TVA ${String(part.rate).replace(".", ",")} % (HT ${money(part.htCents)} · TTC ${money(part.ttcCents)})`,
+    value: money(part.vatCents),
+  }));
 }
 
 /** Les lignes du pavé de totaux, selon le bon. */

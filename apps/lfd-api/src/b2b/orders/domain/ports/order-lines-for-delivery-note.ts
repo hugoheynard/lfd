@@ -1,3 +1,5 @@
+import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
+
 /** Une ligne de commande figée, telle que le bon de livraison la recopie. */
 export interface DeliveryNoteOrderLine {
   readonly sku: string;
@@ -49,6 +51,8 @@ export interface DeliveryNoteOrderTtcTerms {
   readonly discountCents: number;
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
+  /** La part figée de chaque taux ; `null` pour une commande d'avant la colonne. */
+  readonly byRate: readonly OrderRateAmounts[] | null;
 }
 
 /** Une commande confirmée par un arrêt du plan, vue du bon de livraison. */

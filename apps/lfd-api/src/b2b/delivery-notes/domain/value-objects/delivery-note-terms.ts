@@ -8,6 +8,7 @@ import {
 import type { FrozenOrderAdjustments } from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { computeOrderTotals } from "../../../orders/domain/services/vat.js";
 import { InvalidDeliveryNoteTermsError } from "../errors/delivery-note-errors.js";
+import type { OrderRateAmounts } from "../../../orders/domain/value-objects/order-rate-amounts.js";
 import type { DeliveryNoteSourceLine } from "./delivery-note-line.js";
 
 /**
@@ -58,6 +59,12 @@ export interface DeliveryNoteTtcTerms {
   readonly discountCents: number;
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
+  /**
+   * La part de chaque taux du BL (colonne `ttc_by_rate`) — recopiée de la
+   * commande, ou recomposée sur le livré ; `null` quand la commande est
+   * antérieure à la colonne.
+   */
+  readonly byRate: readonly OrderRateAmounts[] | null;
 }
 
 const INTEGER_FIELDS = [
@@ -103,7 +110,10 @@ export function copyOfTerms(orderNumber: string, terms: DeliveryNoteTerms): Deli
     vatShares: terms.vatShares,
     vatCents: terms.vatCents,
     totalCents: terms.totalCents,
-    ttcTerms: ttc === null ? null : { ...ttc },
+    ttcTerms:
+      ttc === null
+        ? null
+        : { ...ttc, byRate: ttc.byRate === null ? null : ttc.byRate.map((part) => ({ ...part })) },
   };
 }
 
@@ -111,7 +121,10 @@ function sameTtcTerms(a: DeliveryNoteTtcTerms | null, b: DeliveryNoteTtcTerms | 
   if (a === null || b === null) {
     return a === b;
   }
-  return TTC_FIELDS.every((field) => a[field] === b[field]);
+  return (
+    TTC_FIELDS.every((field) => a[field] === b[field]) &&
+    JSON.stringify(a.byRate) === JSON.stringify(b.byRate)
+  );
 }
 
 /** Forme canonique d'une valeur JSON : les clés d'un objet triées, pour comparer sans leur ordre. */

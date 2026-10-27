@@ -79,6 +79,12 @@ export function exactAmountsOf(
       .filter((part) => part.vatCents !== 0)
       .map((part) => ({ rate: part.vatRate, amountCents: part.vatCents })),
     totalCents: composition.total.ttcCents,
+    ttcByRate: composition.byRate.map((part) => ({
+      rate: part.vatRate,
+      htCents: part.htCents,
+      vatCents: part.vatCents,
+      ttcCents: part.ttcCents,
+    })),
     ttcTerms: {
       discountCents: composition.pickupDiscount.ttcCents,
       voucherCents: composition.voucher.ttcCents,

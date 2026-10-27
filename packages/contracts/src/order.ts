@@ -644,6 +644,25 @@ export interface OrderTtcTerms {
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
 }
+
+/**
+ * **La part d'un taux d'une commande composée en TTC**, figée à la passation
+ * (`orders.ttc_by_rate`, plan du centime) : le net du taux — lignes, moins
+ * remise et bon, plus port —, sa TVA extraite et son HT. Σ `ttcCents` = total.
+ */
+export const orderRateAmountsSchema = z.object({
+  rate: z.number(),
+  htCents: z.number().int(),
+  vatCents: z.number().int(),
+  ttcCents: z.number().int(),
+});
+export const orderRatesAmountsSchema = z.array(orderRateAmountsSchema);
+export interface OrderRateAmounts {
+  readonly rate: number;
+  readonly htCents: number;
+  readonly vatCents: number;
+  readonly ttcCents: number;
+}
 export type VatShareView = z.infer<typeof vatShareSchema>;
 
 /**
@@ -724,6 +743,11 @@ export interface OrderView {
    * composée en TTC ({@link OrderTtcTerms}) — absent sinon.
    */
   readonly ttcTerms?: OrderTtcTerms;
+  /**
+   * La part figée de chaque taux d'une commande composée en TTC
+   * ({@link OrderRateAmounts}), taux croissants — absente sinon.
+   */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
   /**
    * **Ce qui a produit** `discountCents`, figé à la commande : le taux ou le
    * montant de la remise du point de retrait. Sans lui, une facture ne peut dire

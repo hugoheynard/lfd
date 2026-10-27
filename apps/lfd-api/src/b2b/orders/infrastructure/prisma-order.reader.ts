@@ -64,6 +64,7 @@ export interface OrderRow {
   readonly discountTtcCents: number | null;
   readonly voucherTtcCents: number | null;
   readonly deliveryFeeTtcCents: number | null;
+  readonly ttcByRate: Prisma.JsonValue;
   readonly deliveryFeeAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;

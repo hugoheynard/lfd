@@ -2,12 +2,14 @@ import {
   cartAdjustmentSchema,
   deliveryVatModeSchema,
   lateFeeAdjustmentSchema,
+  orderRatesAmountsSchema,
   vatSharesSchema,
 } from "@lfd/contracts";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { BillableAmounts } from "../domain/entities/billable-amounts.js";
+import type { OrderRateAmounts } from "../domain/value-objects/order-rate-amounts.js";
 import type {
   FrozenExactTerms,
   FrozenOrderAdjustments,
@@ -209,13 +211,46 @@ export function ttcTermsColumnsOf(state: {
   readonly discountTtcCents: number | null;
   readonly voucherTtcCents: number | null;
   readonly deliveryFeeTtcCents: number | null;
+  readonly ttcByRate: readonly OrderRateAmounts[] | null;
 }) {
   return {
     vatMethod: state.vatMethod,
     discountTtcCents: state.discountTtcCents,
     voucherTtcCents: state.voucherTtcCents,
     deliveryFeeTtcCents: state.deliveryFeeTtcCents,
+    ttcByRate: ttcByRateColumn(state.ttcByRate),
   };
+}
+
+/**
+ * La part de chaque taux → `ttc_by_rate` (migration `20261027140000`) ; `NULL`
+ * en base pour `line_ht`, jamais la valeur JSON `null`. Partagé par la
+ * commande et le BL.
+ */
+export function ttcByRateColumn(
+  parts: readonly OrderRateAmounts[] | null,
+): Prisma.InputJsonValue | typeof Prisma.DbNull {
+  return parts === null
+    ? Prisma.DbNull
+    : parts.map((part) => ({
+        rate: part.rate,
+        htCents: part.htCents,
+        vatCents: part.vatCents,
+        ttcCents: part.ttcCents,
+      }));
+}
+
+/**
+ * La part de chaque taux relue, ou `null` (`line_ht`, ou `exact_ht` d'avant
+ * la colonne). Une forme inconnue a été écrite hors de l'application.
+ *
+ * @throws {FrozenAdjustmentUnreadableError}
+ */
+export function ttcByRateOf(
+  orderId: string,
+  value: Prisma.JsonValue,
+): readonly OrderRateAmounts[] | null {
+  return parsed(orderRatesAmountsSchema, value, orderId, "part de chaque taux");
 }
 
 /**

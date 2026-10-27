@@ -41,6 +41,7 @@ describe("Order.draft — vingt paniers pro figés (voie B, lot C2)", () => {
       expect(state.discountTtcCents).toBeNull();
       expect(state.voucherTtcCents).toBeNull();
       expect(state.deliveryFeeTtcCents).toBeNull();
+      expect(state.ttcByRate).toBeNull();
     },
   );
 

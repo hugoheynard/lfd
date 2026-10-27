@@ -18,6 +18,7 @@ import type { VatShare } from "@lfd/money";
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
+import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 
 // Les formes d'entrée et de sortie de l'agrégat `Order` — sorties de `order.ts`
@@ -210,6 +211,8 @@ export interface OrderToPlace {
    * commande de détailler « dont TVA 5,5 % » sans rien recalculer.
    */
   readonly vatShares: readonly VatShare[];
+  /** La part de chaque taux d'une commande `exact_ht`, `null` pour `line_ht`. */
+  readonly ttcByRate: readonly OrderRateAmounts[] | null;
   readonly totalCents: number;
   readonly paymentStatus: PaymentStatus;
   readonly stripePaymentIntentId: string | null;

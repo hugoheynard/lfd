@@ -91,6 +91,20 @@ describe("le pied du bon public", () => {
     columnAddsUp(rows);
   });
 
+  it("commande composée en TTC : le récapitulatif par taux recopié de la part figée", () => {
+    const rows = totalRows(
+      publicSheet({
+        totalCents: 12_491,
+        ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 0 },
+        ttcByRate: [{ rate: 5.5, htCents: 11_839, vatCents: 652, ttcCents: 12_491 }],
+      }),
+    );
+
+    const recap = rows.find((row) => row.label.startsWith("dont TVA 5,5 %"));
+    expect(recap?.label).toMatch(/HT 118,39\s€ · TTC 124,91\s€/u);
+    expect(recap?.value).toMatch(/6,52/u);
+  });
+
   it("sans geste : articles, Total TTC, TVA", () => {
     const rows = totalRows(publicSheet({ discountCents: 0, totalCents: 12_491 }));
 

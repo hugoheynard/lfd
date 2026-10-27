@@ -12,6 +12,7 @@ import {
 } from "./order-amount-guards.js";
 import { clienteleOf } from "./order-fulfillment.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
+import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 
 /**
  * **Les montants d'une commande, selon sa méthode** — plan
@@ -48,6 +49,8 @@ export interface DraftedAmounts {
   readonly totalCents: number;
   /** `null` pour `line_ht`. */
   readonly ttcTerms: OrderTtcTerms | null;
+  /** La part de chaque taux, taux croissants ; `null` pour `line_ht`. */
+  readonly ttcByRate: readonly OrderRateAmounts[] | null;
 }
 
 /**
@@ -112,5 +115,6 @@ export function lineHtAmountsOf(
     vatShares,
     totalCents,
     ttcTerms: null,
+    ttcByRate: null,
   };
 }

@@ -85,7 +85,16 @@ describe("exactDepartureOf — le BL partiel d'une commande en TTC", () => {
       [300, 600, 500],
     ]);
     expect(terms.totalCents).toBe(2_700);
-    expect(terms.ttcTerms).toEqual({ discountCents: 0, voucherCents: 0, deliveryFeeCents: 0 });
+    expect(terms.ttcTerms).toEqual({
+      discountCents: 0,
+      voucherCents: 0,
+      deliveryFeeCents: 0,
+      // La part de chaque taux, recomposée sur le livré (colonne `ttc_by_rate`).
+      byRate: [
+        { rate: 5.5, htCents: 1_990, vatCents: 110, ttcCents: 2_100 },
+        { rate: 20, htCents: 500, vatCents: 100, ttcCents: 600 },
+      ],
+    });
     expectAdditive(lines, terms);
   });
 
@@ -153,7 +162,10 @@ describe("departingSourceOf — une commande exact_ht passe par la recomposition
     orderId: "ord_9",
     orderNumber: "ORD-9",
     lines: [bananaBread(2), juice(2)],
-    terms: { ...ORDER_TERMS, ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 0 } },
+    terms: {
+      ...ORDER_TERMS,
+      ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 0, byRate: null },
+    },
   };
 
   it("une ligne livrée en entier n'est PAS recopiée : elle est recomposée", () => {
@@ -186,14 +198,14 @@ describe("termsDifferences — les TTC d'un BL en TTC", () => {
   it("un BL line_ht diffère d'une commande exact_ht, et deux TTC distincts aussi", () => {
     const exact: DeliveryNoteTerms = {
       ...ORDER_TERMS,
-      ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 600 },
+      ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 600, byRate: null },
     };
 
     expect(termsDifferences(ORDER_TERMS, exact)).toEqual(["ttcTerms"]);
     expect(
       termsDifferences(exact, {
         ...exact,
-        ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 601 },
+        ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 601, byRate: null },
       }),
     ).toEqual(["ttcTerms"]);
     expect(termsDifferences(exact, { ...exact })).toEqual([]);

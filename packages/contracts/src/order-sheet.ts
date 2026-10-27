@@ -12,6 +12,8 @@ import {
   fulfillmentMethodSchema,
   type OrderOrigin,
   orderOriginSchema,
+  type OrderRateAmounts,
+  orderRatesAmountsSchema,
   type OrderTtcTerms,
   orderTtcTermsSchema,
   type PickupDiscountBaseView,
@@ -179,6 +181,7 @@ export const sheetMoneySchema = z.object({
     })
     .optional(),
   ttcTerms: orderTtcTermsSchema.optional(),
+  ttcByRate: orderRatesAmountsSchema.optional(),
 });
 export interface SheetMoney {
   readonly subtotalCents: number;
@@ -222,6 +225,11 @@ export interface SheetMoney {
    * Absents : le bon les répartit depuis les HT, comme avant.
    */
   readonly ttcTerms?: OrderTtcTerms;
+  /**
+   * La part figée de chaque taux (HT, TVA, TTC) d'une commande composée en
+   * TTC — le récapitulatif du ticket, lu et jamais recalculé.
+   */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
 }
 
 /**

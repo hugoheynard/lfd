@@ -123,6 +123,12 @@ function termsOf(
       discountCents: composition.pickupDiscount.ttcCents,
       voucherCents: composition.voucher.ttcCents,
       deliveryFeeCents: composition.deliveryFee.ttcCents,
+      byRate: composition.byRate.map((part) => ({
+        rate: part.vatRate,
+        htCents: part.htCents,
+        vatCents: part.vatCents,
+        ttcCents: part.ttcCents,
+      })),
     },
   });
 }

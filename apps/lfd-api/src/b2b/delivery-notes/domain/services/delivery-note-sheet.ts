@@ -14,7 +14,11 @@ import type {
 import { reprintNeededOf, type DeliveryNoteState } from "../entities/delivery-note.js";
 import { DeliveryNoteWithoutTermsError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteLineState } from "../value-objects/delivery-note-line.js";
-import type { DeliveryNoteTerms, FrozenJson } from "../value-objects/delivery-note-terms.js";
+import type {
+  DeliveryNoteTerms,
+  DeliveryNoteTtcTerms,
+  FrozenJson,
+} from "../value-objects/delivery-note-terms.js";
 
 /**
  * **La projection d'un bon de livraison, par lecteur** (plan
@@ -144,8 +148,14 @@ function moneyFrom(terms: DeliveryNoteTerms, billing: DeliveryNoteOrderBilling):
     ...meta,
     ...(pickupDiscountBase === undefined ? {} : { pickupDiscountBase }),
     // Les TTC du BL lui-même — recomposés sur le livré (plan du centime, § 5).
-    ...(terms.ttcTerms === null ? {} : { ttcTerms: terms.ttcTerms }),
+    ...(terms.ttcTerms === null ? {} : ttcFieldsOf(terms.ttcTerms)),
   };
+}
+
+/** Les TTC du BL pour sa feuille : ses gestes, et la part de chaque taux quand elle est figée. */
+function ttcFieldsOf(ttc: DeliveryNoteTtcTerms): Pick<SheetMoney, "ttcTerms" | "ttcByRate"> {
+  const { byRate, ...gestures } = ttc;
+  return { ttcTerms: gestures, ...(byRate === null ? {} : { ttcByRate: byRate }) };
 }
 
 /**

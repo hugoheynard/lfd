@@ -1,7 +1,6 @@
 import type { ClientSheet, ClientSheetLine } from '@lfd/contracts';
 
 import { renderOrderSheetText } from '../order-sheet-text';
-import { readableRateRows } from '../order-sheet-ticket-text';
 
 /**
  * Le bon texte d'une commande de particulier composée en TTC (plan
@@ -93,9 +92,17 @@ function amountOn(text: string, label: string): number {
   return cents(line?.slice(label.length + 2) ?? '');
 }
 
+/** La part figée de chaque taux sans geste : 21,00 à 5,5 % et 6,00 à 20 %. */
+const BY_RATE = [
+  { rate: 5.5, htCents: 1_990, vatCents: 110, ttcCents: 2_100 },
+  { rate: 20, htCents: 500, vatCents: 100, ttcCents: 600 },
+];
+
 describe('le bon texte au format du ticket (commande exact_ht)', () => {
-  it('lignes en TTC, total, et un récapitulatif par taux qui somme vers le total', () => {
-    const text = renderOrderSheetText(sheet([BANANA, JUICE], { ttcTerms: NO_GESTURE }));
+  it('lignes en TTC, total, et le récapitulatif par taux recopié', () => {
+    const text = renderOrderSheetText(
+      sheet([BANANA, JUICE], { ttcTerms: NO_GESTURE, ttcByRate: BY_RATE }),
+    );
 
     expect(text).toContain('DÉCOMPTE (TTC)');
     expect(text).not.toContain('Sous-total HT');
@@ -106,63 +113,33 @@ describe('le bon texte au format du ticket (commande exact_ht)', () => {
     expect(text).toMatch(/20\s%\s+5,00\s€\s+1,00\s€\s+6,00\s€/u);
   });
 
-  it('régression : Σ lignes TTC − remises + port = total affiché', () => {
-    const lines = [{ ...BANANA, quantity: 1 }];
-    const ttcTerms = { discountCents: 210, voucherCents: 500, deliveryFeeCents: 0 };
-    const text = renderOrderSheetText(
-      sheet(lines, {
-        ttcTerms,
-        totalCents: 1_390,
-        vatCents: 73,
-        vatShares: [{ rate: 5.5, amountCents: 73 }],
-      }),
-    );
-
-    const shown =
-      amountOn(text, 'Articles') + amountOn(text, 'Remise') + amountOn(text, 'Bon fidélité');
-    expect(shown).toBe(amountOn(text, 'Total TTC'));
-    expect(amountOn(text, 'Total TTC')).toBe(1_390);
-    // Un seul taux : il porte tout le total.
-    expect(text).toMatch(/5,5\s%\s+13,17\s€\s+0,73\s€\s+13,90\s€/u);
-  });
-
-  it('des gestes sur deux taux : la TVA de chaque taux et le HT global, jamais une base reconstituée', () => {
+  it('régression : Σ lignes TTC − remises + port = total affiché, et le récap somme vers lui', () => {
+    // −10 % de 27,00 = 2,70, découpé 2,10 / 0,60 par taux à la passation.
+    const byRate = [
+      { rate: 5.5, htCents: 1_791, vatCents: 99, ttcCents: 1_890 },
+      { rate: 20, htCents: 450, vatCents: 90, ttcCents: 540 },
+    ];
     const text = renderOrderSheetText(
       sheet([BANANA, JUICE], {
         ttcTerms: { discountCents: 270, voucherCents: 0, deliveryFeeCents: 0 },
+        ttcByRate: byRate,
         totalCents: 2_430,
         vatCents: 189,
-        vatShares: [
-          { rate: 5.5, amountCents: 99 },
-          { rate: 20, amountCents: 90 },
-        ],
       }),
     );
 
-    expect(text).not.toMatch(/Taux\s+HT/u);
-    expect(text).toMatch(new RegExp('dont TVA 5,5\\s%\\s+0,99\\s€', 'u'));
-    expect(amountOn(text, 'Total HT')).toBe(2_430 - 189);
+    expect(amountOn(text, 'Articles') + amountOn(text, 'Remise')).toBe(amountOn(text, 'Total TTC'));
+    expect(amountOn(text, 'Total TTC')).toBe(2_430);
+    expect(text).toMatch(/5,5\s%\s+17,91\s€\s+0,99\s€\s+18,90\s€/u);
+    expect(text).toMatch(/20\s%\s+4,50\s€\s+0,90\s€\s+5,40\s€/u);
+    expect(byRate.reduce((sum, part) => sum + part.ttcCents, 0)).toBe(2_430);
   });
-});
 
-describe('readableRateRows — le récapitulatif somme vers le total', () => {
-  it('sans geste, Σ TTC par taux = total, et HT + TVA = TTC sur chaque taux', () => {
-    const ticket = [BANANA, JUICE].map((line) => ({
-      line,
-      totalTtcCents: line.lineTotalTtcCents ?? 0,
-    }));
-    const rows =
-      readableRateRows(ticket, NO_GESTURE, {
-        vatShares: [
-          { rate: 5.5, amountCents: 110 },
-          { rate: 20, amountCents: 100 },
-        ],
-        vatCents: 210,
-        totalCents: 2_700,
-      }) ?? [];
+  it("sans part figée (commande exact_ht d'avant la colonne) : le décompte HT, rien de reconstitué", () => {
+    const text = renderOrderSheetText(sheet([BANANA, JUICE], { ttcTerms: NO_GESTURE }));
 
-    expect(rows.reduce((sum, row) => sum + row.ttcCents, 0)).toBe(2_700);
-    expect(rows.every((row) => row.htCents + row.vatCents === row.ttcCents)).toBe(true);
+    expect(text).toContain('Sous-total HT');
+    expect(text).not.toContain('DÉCOMPTE (TTC)');
   });
 });
 

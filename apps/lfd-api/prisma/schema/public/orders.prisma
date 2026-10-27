@@ -270,6 +270,10 @@ model Order {
   discountTtcCents      Int?            @map("discount_ttc_cents")
   voucherTtcCents       Int?            @map("voucher_ttc_cents")
   deliveryFeeTtcCents   Int?            @map("delivery_fee_ttc_cents")
+  /// La part de chaque taux d'une commande `exact_ht`, figée à la passation —
+  /// `[{rate, htCents, vatCents, ttcCents}]` ; `NULL` pour `line_ht` (migration
+  /// `20261027140000`, plan du centime).
+  ttcByRate             Json?           @map("ttc_by_rate")
   deliveryFeeCents      Int             @default(0) @map("delivery_fee_cents")
   /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
   /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
