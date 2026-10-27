@@ -197,6 +197,28 @@ prend la sienne. Le lot C1 démarre ; la mise en production attend Q1.
   où elle existera, elle relira HT et TVA par taux figés sur la commande, sans
   recalculer.
 
+## 8 bis. Lot C1 — bâti le 2026-10-27
+
+`ventilateVatExact` (`packages/money/src/vat-exact.ts`), **sans appelant** ;
+`ventilateVat` n'a pas bougé et un test le fige (`vat-frozen.spec.ts`).
+
+Deux précisions que le plan ne donnait pas, prises au bâti — à relire :
+
+- **Une remise sur plusieurs taux** : le net HT d'un taux n'est plus un
+  nombre entier de centimes. Le découpage reprend celui que la facture tient
+  déjà (`splitOrderByRate`, plus fort reste) ; HT du taux = brut arrondi −
+  parts des remises + parts des extras ; l'en-tête se recompose (testé).
+  Risque théorique non observé : une part de TVA à ±1 centime sur un résidu
+  infime.
+- **Une remise bornée au HT arrondi qui dépasse le net exact** : l'assiette
+  passe à zéro, jamais négative (généralise B2).
+
+Relevé des fichiers que `vitruve` n'avait pas ouverts : le montant Stripe est
+`order.totalCents` sans comparaison au devis (corrigé par construction en
+C2) ; avoir, cohérence de facture et bon de commande PDF ne recalculent pas la
+TVA. `read-my-shop-catalogue.ts` ne reçoit qu'un `companyId` : C3 doit
+trancher comment la clientèle arrive à la vue.
+
 ## 9. Relecture `vitruve` (2026-10-27)
 
 Calculs chiffrés recalculés et confirmés (21,00 ; 2,40). Objections et sort :
