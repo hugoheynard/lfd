@@ -3592,6 +3592,27 @@
           "variables": []
         },
         {
+          "key": "cart.payHintDelivery",
+          "fr": "Paiement en ligne. Le coursier vous remet la commande, rien à régler à la livraison.",
+          "en": "Paid online. The courier hands you the order, nothing to settle on delivery.",
+          "it": "Pagamento online. Il corriere le consegna l'ordine, nulla da saldare alla consegna.",
+          "variables": []
+        },
+        {
+          "key": "cart.payHintAccountPickup",
+          "fr": "Au compte : sur la facture du mois. En direct : paiement en ligne, et votre QR au comptoir — rien à régler sur place.",
+          "en": "On account: on the monthly invoice. Direct: paid online, then your QR at the counter — nothing to settle there.",
+          "it": "Sul conto: nella fattura del mese. Diretto: pagamento online, poi il QR al banco — nulla da saldare sul posto.",
+          "variables": []
+        },
+        {
+          "key": "cart.payHintAccountDelivery",
+          "fr": "Au compte : sur la facture du mois. En direct : paiement en ligne — rien à régler à la livraison.",
+          "en": "On account: on the monthly invoice. Direct: paid online — nothing to settle on delivery.",
+          "it": "Sul conto: nella fattura del mese. Diretto: pagamento online — nulla da saldare alla consegna.",
+          "variables": []
+        },
+        {
           "key": "cart.slotMissing",
           "fr": "Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.",
           "en": "Choose a time slot to pay: tap “Change” and pick the time.",

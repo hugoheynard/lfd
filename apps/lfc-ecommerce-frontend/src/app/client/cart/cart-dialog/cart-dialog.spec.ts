@@ -39,6 +39,26 @@ const AU_LABO: ServiceChoice = {
   date: '2026-09-07',
 };
 
+const A_LA_FOLIE: ServiceChoice = {
+  mode: 'delivery',
+  place: 'La Folie Douce',
+  at: 'à La Folie Douce',
+  address: 'Sommet du téléphérique de La Daille, 73150',
+  codePostal: '73150',
+  deliveryAddress: {
+    label: '',
+    ligne1: 'Sommet du téléphérique de La Daille',
+    ligne2: '',
+    codePostal: '73150',
+    ville: 'Val d’Isère',
+    pays: 'FR',
+  },
+  deliveryAddressId: null,
+  slot: 'avant 7 h 30',
+  window: { start: '06:00', end: '07:30' },
+  date: '2026-09-07',
+};
+
 /**
  * Les trois états d'Auth0 que cet écran distingue — et il DOIT les distinguer.
  *
@@ -424,6 +444,17 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
 
     expect(ouvertes).toEqual(['choose']);
     expect(visitees).toEqual([]);
+  });
+
+  /** Comment on règle se dit selon le cas (Hugo, 2026-10-27). */
+  it('dit le paiement d’une livraison, et non le QR au comptoir', () => {
+    const fixture = boot({ auth: RECONNU, service: A_LA_FOLIE, cgv: true });
+    TestBed.inject(SalesTermsConsent).check(true);
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.pay-hint')?.textContent?.trim()).toBe(
+      FR.cart.payHintDelivery,
+    );
   });
 
   /** L'autre chemin, en lien discret sous la carte (Hugo, 2026-10-27). */

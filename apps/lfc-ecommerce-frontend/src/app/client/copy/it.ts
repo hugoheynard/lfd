@@ -390,6 +390,12 @@ export const IT: ClientCopy = {
     quantityAria: 'Quantità di {name}',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
+    payHintDelivery:
+      "Pagamento online. Il corriere le consegna l'ordine, nulla da saldare alla consegna.",
+    payHintAccountPickup:
+      'Sul conto: nella fattura del mese. Diretto: pagamento online, poi il QR al banco — nulla da saldare sul posto.',
+    payHintAccountDelivery:
+      'Sul conto: nella fattura del mese. Diretto: pagamento online — nulla da saldare alla consegna.',
     slotMissing: 'Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario.',
     ordersClosed: 'Gli ordini sono chiusi per il momento.',
     ordersClosedHint: 'Il catalogo resta consultabile e il carrello viene conservato.',

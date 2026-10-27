@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1687 textes
+## Sommaire — 1690 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -30,7 +30,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 73 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1687** |
+| **Total** | | **1690** |
 
 ## Le parcours de commande
 
@@ -685,7 +685,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 73 textes.
+Source : `fr.ts · en.ts · it.ts` · 76 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -727,6 +727,9 @@ Source : `fr.ts · en.ts · it.ts` · 73 textes.
 | `cart.quantityAria` | Quantité de {name} | Quantity of {name} | Quantità di {name} | `{name}` |
 | `cart.pay` | Régler ma commande · {total} | Pay for my order · {total} | Pago il mio ordine · {total} | `{total}` |
 | `cart.payHint` | Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place. | Paid online. You show your QR at the counter, nothing to settle there. | Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto. |  |
+| `cart.payHintDelivery` | Paiement en ligne. Le coursier vous remet la commande, rien à régler à la livraison. | Paid online. The courier hands you the order, nothing to settle on delivery. | Pagamento online. Il corriere le consegna l'ordine, nulla da saldare alla consegna. |  |
+| `cart.payHintAccountPickup` | Au compte : sur la facture du mois. En direct : paiement en ligne, et votre QR au comptoir — rien à régler sur place. | On account: on the monthly invoice. Direct: paid online, then your QR at the counter — nothing to settle there. | Sul conto: nella fattura del mese. Diretto: pagamento online, poi il QR al banco — nulla da saldare sul posto. |  |
+| `cart.payHintAccountDelivery` | Au compte : sur la facture du mois. En direct : paiement en ligne — rien à régler à la livraison. | On account: on the monthly invoice. Direct: paid online — nothing to settle on delivery. | Sul conto: nella fattura del mese. Diretto: pagamento online — nulla da saldare alla consegna. |  |
 | `cart.slotMissing` | Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure. | Choose a time slot to pay: tap “Change” and pick the time. | Scelga una fascia oraria per pagare: tocchi « Modifica » e scelga l’orario. |  |
 | `cart.ordersClosed` | Les commandes sont fermées pour le moment. | Orders are closed for the moment. | Gli ordini sono chiusi per il momento. |  |
 | `cart.ordersClosedHint` | Le catalogue reste consultable, et votre panier est gardé. | You can still browse the catalogue, and your basket is kept. | Il catalogo resta consultabile e il carrello viene conservato. |  |

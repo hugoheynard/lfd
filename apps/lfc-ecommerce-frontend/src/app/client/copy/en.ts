@@ -386,6 +386,11 @@ export const EN: ClientCopy = {
     quantityAria: 'Quantity of {name}',
     pay: 'Pay for my order · {total}',
     payHint: 'Paid online. You show your QR at the counter, nothing to settle there.',
+    payHintDelivery: 'Paid online. The courier hands you the order, nothing to settle on delivery.',
+    payHintAccountPickup:
+      'On account: on the monthly invoice. Direct: paid online, then your QR at the counter — nothing to settle there.',
+    payHintAccountDelivery:
+      'On account: on the monthly invoice. Direct: paid online — nothing to settle on delivery.',
     slotMissing: 'Choose a time slot to pay: tap “Change” and pick the time.',
     ordersClosed: 'Orders are closed for the moment.',
     ordersClosedHint: 'You can still browse the catalogue, and your basket is kept.',

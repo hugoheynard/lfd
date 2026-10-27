@@ -383,6 +383,12 @@ export const FR: ClientCopy = {
     quantityAria: 'Quantité de {name}',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
+    payHintDelivery:
+      'Paiement en ligne. Le coursier vous remet la commande, rien à régler à la livraison.',
+    payHintAccountPickup:
+      'Au compte : sur la facture du mois. En direct : paiement en ligne, et votre QR au comptoir — rien à régler sur place.',
+    payHintAccountDelivery:
+      'Au compte : sur la facture du mois. En direct : paiement en ligne — rien à régler à la livraison.',
     slotMissing: 'Choisissez un créneau pour régler : touchez « Modifier » et choisissez l’heure.',
     ordersClosed: 'Les commandes sont fermées pour le moment.',
     ordersClosedHint: 'Le catalogue reste consultable, et votre panier est gardé.',

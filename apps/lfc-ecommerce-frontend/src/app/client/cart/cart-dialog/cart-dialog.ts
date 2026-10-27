@@ -302,7 +302,17 @@ export class CartDialog {
     }
     return this.identityNeeded() && this.guest() === null
       ? this.t().cart.payBlockedIdentity
-      : this.t().cart.payHint;
+      : this.settleHint();
+  });
+
+  /** Comment on règle : retrait ou livraison, compte proposé ou non. */
+  private readonly settleHint = computed(() => {
+    const c = this.t().cart;
+    const delivery = this.choice()?.mode === 'delivery';
+    if (this.mayUseAccount()) {
+      return delivery ? c.payHintAccountDelivery : c.payHintAccountPickup;
+    }
+    return delivery ? c.payHintDelivery : c.payHint;
   });
 
   /** La note dit-elle ce qui manque ? Alors elle décrit le bouton. */

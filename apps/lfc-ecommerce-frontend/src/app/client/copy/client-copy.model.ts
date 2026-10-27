@@ -744,6 +744,13 @@ export interface ClientCopy {
     readonly pay: string;
     readonly payHint: string;
     /**
+     * Comment on règle, selon le cas (Hugo, 2026-10-27) : `payHint` est le
+     * retrait réglé en ligne ; voici la livraison, et les deux avec le compte.
+     */
+    readonly payHintDelivery: string;
+    readonly payHintAccountPickup: string;
+    readonly payHintAccountDelivery: string;
+    /**
      * Sous le bouton, quand le mode est choisi mais pas le créneau (un choix
      * posé avant le 2026-10-14) : pas de commande sans créneau, et la phrase
      * dit le geste qui débloque.
