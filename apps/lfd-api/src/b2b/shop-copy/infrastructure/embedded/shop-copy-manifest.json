@@ -2311,9 +2311,30 @@
       "entries": [
         {
           "key": "dayPicker.kicker",
-          "fr": "Étape 1 sur 3",
-          "en": "Step 1 of 3",
-          "it": "Passo 1 di 3",
+          "fr": "Ma commande",
+          "en": "My order",
+          "it": "Il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.kickerPickup",
+          "fr": "Retrait",
+          "en": "Pickup",
+          "it": "Ritiro",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.kickerPickupAt",
+          "fr": "Retrait · {place}",
+          "en": "Pickup · {place}",
+          "it": "Ritiro · {place}",
+          "variables": ["place"]
+        },
+        {
+          "key": "dayPicker.kickerDelivery",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
           "variables": []
         },
         {
@@ -3091,9 +3112,9 @@
       "entries": [
         {
           "key": "slotPicker.kicker",
-          "fr": "Étape 2 sur 3 · {place}",
-          "en": "Step 2 of 3 · {place}",
-          "it": "Passo 2 di 3 · {place}",
+          "fr": "Retrait · {place}",
+          "en": "Pickup · {place}",
+          "it": "Ritiro · {place}",
           "variables": ["place"]
         },
         {

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1705 textes
+## Sommaire — 1708 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -21,7 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 37 |
-| [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 14 |
+| [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 17 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1705** |
+| **Total** | | **1708** |
 
 ## Le parcours de commande
 
@@ -468,11 +468,14 @@ Source : `screens/command-terms.copy.ts` · 37 textes.
 
 ### Choix du jour — la première question d’une commande — `dayPicker`
 
-Source : `screens/day-picker.copy.ts` · 14 textes.
+Source : `screens/day-picker.copy.ts` · 17 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `dayPicker.kicker` | Étape 1 sur 3 | Step 1 of 3 | Passo 1 di 3 |  |
+| `dayPicker.kicker` | Ma commande | My order | Il mio ordine |  |
+| `dayPicker.kickerPickup` | Retrait | Pickup | Ritiro |  |
+| `dayPicker.kickerPickupAt` | Retrait · {place} | Pickup · {place} | Ritiro · {place} | `{place}` |
+| `dayPicker.kickerDelivery` | Livraison | Delivery | Consegna |  |
 | `dayPicker.title` | Pour quel jour ? | For which day? | Per quale giorno? |  |
 | `dayPicker.lead` | Choisissez d’abord la date à laquelle vous souhaitez recevoir votre commande. | First choose the date on which you would like to receive your order. | Scegliete prima la data in cui desiderate ricevere il vostro ordine. |  |
 | `dayPicker.loading` | Nous regardons les jours ouverts… | Checking the open days… | Controlliamo i giorni aperti… |  |
@@ -640,7 +643,7 @@ Source : `screens/slot-picker.copy.ts` · 18 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `slotPicker.kicker` | Étape 2 sur 3 · {place} | Step 2 of 3 · {place} | Passo 2 di 3 · {place} | `{place}` |
+| `slotPicker.kicker` | Retrait · {place} | Pickup · {place} | Ritiro · {place} | `{place}` |
 | `slotPicker.title` | À quelle heure ? | What time? | A che ora? |  |
 | `slotPicker.lead` | Choisissez l’heure qui vous convient. | Choose the time that suits you. | Scegliete l’ora che vi conviene. |  |
 | `slotPicker.loading` | Nous regardons les fournées… | Checking the bakes… | Controlliamo le infornate… |  |

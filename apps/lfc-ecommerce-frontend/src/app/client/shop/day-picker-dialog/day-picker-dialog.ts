@@ -19,6 +19,7 @@ import { screenCopy } from '../../copy/shop-copy-composer';
 import { dialogSide } from '../../panel-side';
 import { limitHourLabel } from '../cutoff-labels';
 import { MonthPicker } from '../month-picker/month-picker';
+import { OrderContextStore } from '../../order-context.store';
 import { ORDER_DIALOG } from '../order-dialog';
 import { ServicePoints } from '../pickup-points.store';
 import { isServedDay, servedWindow, todayService } from '../served-days';
@@ -84,6 +85,23 @@ export class DayPickerDialog {
   private readonly ref = inject(FoldPanelRef);
 
   protected readonly c = screenCopy('dayPicker', dayPickerCopy);
+
+  private readonly order = inject(OrderContextStore);
+
+  /** Ce qui est déjà acquis — le mode, la maison —, jamais un numéro d'étape. */
+  protected readonly kicker = computed(() => {
+    const copy = this.c();
+    const draft = this.order.draft();
+    if (draft?.mode === 'delivery') {
+      return copy.kickerDelivery;
+    }
+    if (draft?.mode === 'pickup') {
+      return draft.place === undefined
+        ? copy.kickerPickup
+        : fill(copy.kickerPickupAt, { place: draft.place });
+    }
+    return copy.kicker;
+  });
 
   protected readonly loading = signal(true);
 

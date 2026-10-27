@@ -5,7 +5,16 @@ import type { LocaleCode } from '../../client-locale.service';
  * neuve (plan `documentation/commandes/passation/plan-panneau-date.md`).
  */
 export interface DayPickerCopy {
+  /**
+   * Le surtitre dit ce qui est DÉJÀ acquis, pas un numéro d'étape (Hugo,
+   * 2026-10-27 : les chemins sont trop nombreux pour qu'un « 1 sur 3 » reste
+   * vrai) — la barre du pied montre la progression. Sans mode connu.
+   */
   readonly kicker: string;
+  /** Le mode est connu : retrait, `{place}` quand la maison l'est aussi. */
+  readonly kickerPickup: string;
+  readonly kickerPickupAt: string;
+  readonly kickerDelivery: string;
   readonly title: string;
   readonly lead: string;
   /** Pendant la lecture des jours servis. */
@@ -32,7 +41,10 @@ export interface DayPickerCopy {
 }
 
 export const DAY_PICKER_FR: DayPickerCopy = {
-  kicker: 'Étape 1 sur 3',
+  kicker: 'Ma commande',
+  kickerPickup: 'Retrait',
+  kickerPickupAt: 'Retrait · {place}',
+  kickerDelivery: 'Livraison',
   title: 'Pour quel jour ?',
   lead: 'Choisissez d’abord la date à laquelle vous souhaitez recevoir votre commande.',
   loading: 'Nous regardons les jours ouverts…',
@@ -51,7 +63,10 @@ export const DAY_PICKER_FR: DayPickerCopy = {
 };
 
 export const DAY_PICKER_EN: DayPickerCopy = {
-  kicker: 'Step 1 of 3',
+  kicker: 'My order',
+  kickerPickup: 'Pickup',
+  kickerPickupAt: 'Pickup · {place}',
+  kickerDelivery: 'Delivery',
   title: 'For which day?',
   lead: 'First choose the date on which you would like to receive your order.',
   loading: 'Checking the open days…',
@@ -70,7 +85,10 @@ export const DAY_PICKER_EN: DayPickerCopy = {
 };
 
 export const DAY_PICKER_IT: DayPickerCopy = {
-  kicker: 'Passo 1 di 3',
+  kicker: 'Il mio ordine',
+  kickerPickup: 'Ritiro',
+  kickerPickupAt: 'Ritiro · {place}',
+  kickerDelivery: 'Consegna',
   title: 'Per quale giorno?',
   lead: 'Scegliete prima la data in cui desiderate ricevere il vostro ordine.',
   loading: 'Controlliamo i giorni aperti…',
