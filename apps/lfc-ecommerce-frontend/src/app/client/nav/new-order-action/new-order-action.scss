@@ -10,7 +10,7 @@
   display: flex;
   align-items: center;
   gap: var(--fold-space-md);
-  min-height: 52px;
+  min-height: 48px;
   padding: var(--fold-space-sm) var(--fold-space-lg);
   border-radius: var(--fold-radius-sm);
   background: var(--lfc-paper-0);
@@ -33,21 +33,10 @@
   display: contents;
 }
 
-.new-order-titles {
-  min-width: 0;
-  display: flex;
-  flex-direction: column;
-}
-
 .new-order-title {
   font-family: var(--fold-font-sans);
   font-size: var(--fold-text-lg);
   font-weight: 700;
-}
-
-.new-order-sub {
-  font-size: var(--fold-text-sm);
-  opacity: 0.75;
 }
 
 /* Au bureau, l'action est un item de la ligne du bandeau : elle garde sa
