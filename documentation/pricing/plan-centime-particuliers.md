@@ -8,6 +8,8 @@
 > sont abandonnées ; leurs relectures restent au § 11. **Lot C1 bâti le
 > 2026-10-27** (`composeTtcOrder`, `ttcOfHtAmount`, sans appelant ; § 9 bis).
 > **Lot C2 bâti le 2026-10-27** (migration, agrégat, devis, bon ; § 9 ter).
+> **Lot C3 bâti le 2026-10-27 sur la branche `c2-c3`** (BL partiel,
+> étiquettes, documents ; § 9 quinquies), avec C2 ramené (§ 9 quater).
 >
 > 🔴 **Le pro n'est pas touché** : aucune fonction qu'un panier ou une
 > commande pro traverse ne change de résultat ; `vat-frozen.spec.ts` le fige.
@@ -63,7 +65,7 @@ ventiler leurs recettes par taux, pas au calcul d'une vente identifiée ligne à
 ligne. Et le système **n'émet aucune facture** à un particulier aujourd'hui
 (`card-invoicing.ts` : une commande publique rend `not_card`) — on ne peut donc
 pas s'appuyer sur ce qu'une facture afficherait. ⚠️ **À faire confirmer par le cabinet avant
-la mise en production** (§ 8, Q1) — la recherche n'a trouvé aucune interdiction,
+la mise en production** (§ 10, Q1 — tranchée par Hugo le 2026-10-27 sans attendre le cabinet) — la recherche n'a trouvé aucune interdiction,
 elle n'a pas trouvé non plus d'autorisation écrite.
 
 ## 3. Ce que fait un grand distributeur (ticket du 2026-10-22)
@@ -391,7 +393,45 @@ revert` sur `dev` avant la mise en production ; C1 reste (aucun appelant).
 postérieur à la dernière migration déployée — elle est aujourd'hui plus
 ancienne que `20261027110000_le_prix_pro_est_toujours_saisi`, appliquée en
 production avec R3 (relecture `lecteur-de-migrations`, 2026-10-27). C2 repart
-avec C3, et après la réponse du cabinet (§ 10, Q1).
+avec C3 ; la réponse du cabinet n'est plus attendue (§ 10, Q1, décision du
+2026-10-27).
+
+**Fait le 2026-10-27, sur la branche `c2-c3`** (partie de `dev`, non
+fusionnée) : le revert `ce2615199` est annulé, et la migration est renommée
+`20261027130000_la_commande_d_un_particulier_en_ttc` — postérieure à
+`20261027120000_les_traces_atteignent_le_commerce`, déjà en production. Son
+SQL est inchangé. La mise en production de C2 + C3 n'attend plus que les e2e
+de C3 (§ 9 quinquies).
+
+## 9 quinquies. Lot C3 — bâti le 2026-10-27 (branche `c2-c3`)
+
+- **BL partiel** (`delivery-notes/domain/services/exact-departure.ts`) :
+  `departingSourceOf` envoie une commande `exact_ht` à `exactDepartureOf`,
+  qui recompose TOUTES les lignes par `composeExactOrder` (aucune ligne figée
+  recopiée). Port fixe : le TTC figé de la commande, passé à
+  `composeTtcOrder` par un nouveau champ `frozenTtcCents` du port (découpé au
+  prorata du TTC livré, sans conversion) ; la garde compare à ce TTC. Port en
+  % et remise retrait refaits sur le TTC livré ; bon = TTC imputé, borné par
+  la composition. Le BL porte `ttcTerms` (null = `line_ht`) et écrit
+  `vat_method` et ses trois TTC — la constante `line_ht` en dur est retirée.
+  Un reliquat reprend la méthode, bon et port à zéro (déjà sur le BL-1).
+- **Étiquettes** : `ttcCentsFromHtMillicentsFor(prix, taux, audience)`
+  (`shop-catalogue-view.ts`) — `ttcCentsFromHtMillicents` pour `public`,
+  la chaîne d'avant pour `pro` ; vignette, fiche et prix barré. L'aperçu du
+  rayon au back-office (`chargedEuros`) rend la chaîne publique.
+- **Documents** : `OrderView` et `SheetMoney` gagnent `ttcTerms` (optionnel,
+  absent hors `exact_ht`) ; le bon de commande public écrit ses gestes à leur
+  TTC figé au lieu de les répartir, le courriel sa remise et son bon TTC, le
+  BL client ses propres TTC. **Vérifiés et laissés** : « Mes commandes »
+  (`order-summary-format.ts`) et le bon texte (`order-sheet-text.ts`)
+  additionnent des HT qui, depuis C2, somment exactement vers le total — ils
+  ne mentent pas ; les passer au format du ticket demande une vue TTC agrégée
+  et reste à faire.
+- **Tests** : unitaires (BL recomposé, port figé, %, bon borné, idempotence,
+  étiquette 1,53 €) ; 20 paniers pro figés verts. **E2E écrits, non lancés**
+  (`exact-ht-partial-note.e2e-spec.ts`, étiquette dans `order-exact-ht`) : la
+  base de test était partagée. Durée de la nouvelle suite estimée (12 s) dans
+  `e2e-durations.json`, à remesurer.
 
 ## 10. Décisions et questions
 
@@ -413,7 +453,14 @@ avec C3, et après la réponse du cabinet (§ 10, Q1).
   l'unité de l'audience de la commande) : imputer 5 € sur un bon de 5 €
   l'épuise, pour l'un comme pour l'autre. L'écran de réglage dira « € — HT
   pour un pro, TTC pour un particulier ».
-- **Q1 — le cabinet** : la question se resserre. « Pour une vente à un
+- **Q1 tranchée par Hugo le 2026-10-27, sans attendre le cabinet** : « je
+  l'assume, il vaut mieux faire payer un centime de plus et être juste par
+  rapport à l'État ». La méthode est retenue : TVA extraite du TTC de chaque
+  taux, arrondie au centime supérieur, HT par différence. **Le client paie
+  exactement ses étiquettes** (moins ses remises, plus son port) : c'est le
+  HT qui absorbe le centime — jamais la TVA, jamais le client. La mise en
+  production de C2 + C3 n'attend plus que C3 vert et ses e2e.
+- **Q1 — le cabinet (texte d'origine)** : la question se resserre. « Pour une vente à un
   particulier, peut-on extraire la TVA du TTC de chaque taux, arrondie au
   centime supérieur, le HT étant la différence — comme le fait un ticket de
   caisse de grande surface ? » La mise en production attend cette réponse ou
