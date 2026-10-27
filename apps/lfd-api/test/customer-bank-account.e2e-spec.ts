@@ -3,8 +3,8 @@
  *
  * Ce que ces e2e éprouvent et que les unitaires ne peuvent pas prouver :
  *
- * - que le mur lit le **vrai** rattachement en base : détenteur et facturation
- *   passent, `admin` et `orders` sont refusés (403), un membre d'une AUTRE
+ * - que le mur lit le **vrai** rattachement en base : détenteur, admin et
+ *   facturation passent, `orders` est refusé (403), un membre d'une AUTRE
  *   société ne voit rien (404) ;
  * - que la réponse ne laisse sortir **ni l'IBAN entier ni les zones 14 et 19**,
  *   réglages du mandat qui restent au staff ;
@@ -76,6 +76,7 @@ function bankAccountOf(id: string): string {
 describe.each([
   ["le détenteur", OWNER],
   ["le rôle facturation", BILLING],
+  ["l'administrateur de l'espace", ADMIN],
 ])("%s", (_label, sub) => {
   it("dépose le RIB (204) puis le relit, quatre caractères d'IBAN seulement", async () => {
     await ctx.asSub(sub).put(bankAccountOf(companyId)).send(RIB).expect(204);
@@ -130,10 +131,7 @@ it("écrit la même ligne que le staff : un client a UN RIB", async () => {
   expect(rows[0]?.ibanSealed).not.toContain(IBAN);
 });
 
-describe.each([
-  ["l'administrateur de l'espace", ADMIN],
-  ["le rôle commandes", ORDERS],
-])("%s", (_label, sub) => {
+describe.each([["le rôle commandes", ORDERS]])("%s", (_label, sub) => {
   it("est refusé en lecture (403)", async () => {
     await ctx.asSub(sub).get(bankAccountOf(companyId)).expect(403);
   });

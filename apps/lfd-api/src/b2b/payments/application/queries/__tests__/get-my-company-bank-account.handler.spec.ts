@@ -124,18 +124,15 @@ describe("GetMyCompanyBankAccountHandler", () => {
     ).resolves.toBeNull();
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])(
-    "refuse %s (403) sans lire le RIB",
-    async (role) => {
-      const repo = await repoWithAccount();
-      const handler = new GetMyCompanyBankAccountHandler(new FixedGuard(role), repo);
+  it.each<BankAccountRole>(["orders"])("refuse %s (403) sans lire le RIB", async (role) => {
+    const repo = await repoWithAccount();
+    const handler = new GetMyCompanyBankAccountHandler(new FixedGuard(role), repo);
 
-      await expect(
-        handler.execute(new GetMyCompanyBankAccountQuery("usr_1", "cmp_1")),
-      ).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
-      expect(repo.reads).toBe(0);
-    },
-  );
+    await expect(
+      handler.execute(new GetMyCompanyBankAccountQuery("usr_1", "cmp_1")),
+    ).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
+    expect(repo.reads).toBe(0);
+  });
 
   it("refuse un non-membre (404) sans lire le RIB", async () => {
     const repo = await repoWithAccount();

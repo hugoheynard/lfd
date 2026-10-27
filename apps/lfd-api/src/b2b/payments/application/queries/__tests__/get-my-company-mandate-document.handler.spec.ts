@@ -116,7 +116,7 @@ describe("GetMyCompanyMandateDocumentHandler — le mandat à signer", () => {
     await expect(harness({ mandates }).run()).rejects.toBeInstanceOf(MandateDocumentNotFoundError);
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])("refuse %s en 403", async (role) => {
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403", async (role) => {
     const h = harness({ role });
     h.mandates.draft = mandate();
 

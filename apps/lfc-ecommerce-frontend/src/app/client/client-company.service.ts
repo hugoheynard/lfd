@@ -9,7 +9,7 @@ import { ClientWorkspace, companyName } from './client-workspace.service';
 export type DossierState = 'incomplete' | CompanyStatus;
 
 /** Les rôles qui GÈRENT le compte bancaire d'une société — le mur de l'API. */
-const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
+const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin', 'billing']);
 
 /**
  * **La société du client**, telle que notre base la porte (`GET /me`).
@@ -105,10 +105,14 @@ export class ClientCompany {
   }
 
   /**
-   * Le RIB se MODIFIE-t-il ici ? Toujours le rôle, site compris : un site
-   * atteint se lit, il ne se gère pas (`admin` plafonné, R2).
+   * Le RIB se MODIFIE-t-il ici ? Le rôle propre seulement : un site atteint
+   * se lit, il ne se gère pas. Son rôle plafonné vaut `admin`, que la liste
+   * admet depuis le 2026-10-27 — d'où le refus explicite du site atteint.
    */
   readonly managesBank = computed(() => {
+    if (this.isReachableSite()) {
+      return false;
+    }
     const role = this.company()?.role;
     return role !== undefined && BANK_ROLES.has(role);
   });

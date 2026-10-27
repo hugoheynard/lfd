@@ -117,16 +117,13 @@ describe("AttachMyCompanyMandateProofHandler — le client renvoie son mandat si
     expect(h.mandates.saved[0]?.proven()).toBe(true);
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])(
-    "refuse %s en 403, sans rien ranger",
-    async (role) => {
-      const h = harness({ role });
-      h.mandates.draft = mandate();
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403, sans rien ranger", async (role) => {
+    const h = harness({ role });
+    h.mandates.draft = mandate();
 
-      await expect(h.run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
-      expect(h.store.objects.size).toBe(0);
-    },
-  );
+    await expect(h.run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
+    expect(h.store.objects.size).toBe(0);
+  });
 
   it("refuse un non-membre en 404, sans rien ranger", async () => {
     const h = harness({ role: null });

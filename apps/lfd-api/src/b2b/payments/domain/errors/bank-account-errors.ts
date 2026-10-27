@@ -30,7 +30,7 @@ export class BankAccountRoleRequiredError extends AuthorizationError {
   constructor(readonly companyId: string) {
     super(
       "payments.bank_account.role_required",
-      "Le RIB et le mandat de prélèvement de la société ne sont accessibles qu'à son détenteur et au rôle « facturation ». " +
+      "Le RIB et le mandat de prélèvement de la société ne sont accessibles qu'à son détenteur, à son administrateur et au rôle « facturation ». " +
         "Demandez au détenteur de vous attribuer ce rôle.",
     );
   }

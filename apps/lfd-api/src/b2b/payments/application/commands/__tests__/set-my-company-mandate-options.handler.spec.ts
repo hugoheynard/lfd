@@ -95,7 +95,7 @@ describe("SetMyCompanyMandateOptionsHandler — le client règle les zones 14 et
     });
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])(
+  it.each<BankAccountRole>(["orders"])(
     "refuse %s en 403, sans rien lire au-delà du mur",
     async (role) => {
       const h = harness({ role });

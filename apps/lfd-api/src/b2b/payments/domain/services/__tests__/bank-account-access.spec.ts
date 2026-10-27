@@ -13,8 +13,8 @@ describe("ensureBankAccountAccess", () => {
     expect(() => ensureBankAccountAccess("billing", "cmp_1")).not.toThrow();
   });
 
-  it("refuse l'administrateur de l'espace (403) — il gère l'espace, pas le compte prélevé", () => {
-    expect(() => ensureBankAccountAccess("admin", "cmp_1")).toThrow(BankAccountRoleRequiredError);
+  it("laisse passer l'administrateur de l'espace (ouvert le 2026-10-27)", () => {
+    expect(() => ensureBankAccountAccess("admin", "cmp_1")).not.toThrow();
   });
 
   it("refuse le rôle commandes (403)", () => {

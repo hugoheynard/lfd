@@ -14,7 +14,7 @@ function access(role: BankAccountRole | null, open: boolean) {
 }
 
 describe("ensureCustomerMandateAccess — le seuil des routes client du mandat", () => {
-  it.each<BankAccountRole>(["owner", "billing"])(
+  it.each<BankAccountRole>(["owner", "admin", "billing"])(
     "laisse passer %s quand le drapeau est ouvert",
     async (role) => {
       const { steps, run } = access(role, true);
@@ -24,15 +24,12 @@ describe("ensureCustomerMandateAccess — le seuil des routes client du mandat",
     },
   );
 
-  it.each<BankAccountRole>(["admin", "orders"])(
-    "refuse %s en 403, sans lire le drapeau",
-    async (role) => {
-      const { steps, run } = access(role, true);
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403, sans lire le drapeau", async (role) => {
+    const { steps, run } = access(role, true);
 
-      await expect(run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
-      expect(steps.log).toEqual(["guard"]);
-    },
-  );
+    await expect(run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
+    expect(steps.log).toEqual(["guard"]);
+  });
 
   it("refuse un non-membre en 404, sans lire le drapeau", async () => {
     const { steps, run } = access(null, true);

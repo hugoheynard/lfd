@@ -173,7 +173,7 @@ describe("le seuil — mur, puis drapeau", () => {
       }
       await ctx.asSub(OUTSIDER).get(optionsUrl()).expect(404);
       await ctx.asSub(OUTSIDER).put(optionsUrl()).send(OPTIONS).expect(404);
-      for (const sub of [ADMIN, ORDERS]) {
+      for (const sub of [ORDERS]) {
         await ctx.asSub(sub).get(optionsUrl()).expect(403);
         await ctx.asSub(sub).put(optionsUrl()).send(OPTIONS).expect(403);
       }

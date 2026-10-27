@@ -58,7 +58,7 @@ describe("GetMyCompanyMandateHandler — la carte mandat du client", () => {
     expect((await h.run())?.status).toBe("draft");
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])("refuse %s en 403", async (role) => {
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403", async (role) => {
     await expect(harness(role).run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
   });
 

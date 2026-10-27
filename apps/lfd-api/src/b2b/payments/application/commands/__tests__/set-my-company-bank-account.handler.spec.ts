@@ -88,7 +88,7 @@ describe("SetMyCompanyBankAccountHandler", () => {
     expect(repo.saved[0]?.account.iban.value).toBe(IBAN);
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])(
+  it.each<BankAccountRole>(["orders"])(
     "refuse %s (403) sans lire ni écrire le RIB",
     async (role) => {
       const { handler, repo } = build(role);

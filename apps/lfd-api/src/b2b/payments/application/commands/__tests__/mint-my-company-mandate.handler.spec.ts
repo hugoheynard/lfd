@@ -95,16 +95,13 @@ describe("MintMyCompanyMandateHandler — le client génère son mandat", () => 
     },
   );
 
-  it.each<BankAccountRole>(["admin", "orders"])(
-    "refuse %s en 403, sans rien frapper",
-    async (role) => {
-      const h = harness({ role });
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403, sans rien frapper", async (role) => {
+    const h = harness({ role });
 
-      await expect(h.run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
-      expect(h.mandates.created).toHaveLength(0);
-      expect(h.steps.log).toEqual(["guard"]);
-    },
-  );
+    await expect(h.run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
+    expect(h.mandates.created).toHaveLength(0);
+    expect(h.steps.log).toEqual(["guard"]);
+  });
 
   it("refuse un non-membre en 404, sans rien frapper", async () => {
     const h = harness({ role: null });

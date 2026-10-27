@@ -257,13 +257,13 @@ describe('ComptePage', () => {
    * rôle comptable. Aux autres, ni carte ni entrée de sommaire — et le sommaire
    * se renumérote sans trou.
    */
-  it('ne montre le RIB qu’aux rôles `owner` et `billing`', () => {
-    for (const role of ['owner', 'billing'] as const) {
+  it('ne montre le RIB qu’aux rôles `owner`, `admin` et `billing`', () => {
+    for (const role of ['owner', 'admin', 'billing'] as const) {
       fixture = boot([asRole(role)]);
       expect(el().querySelector('#compte-bank app-bank-desk-card')).not.toBeNull();
       expect(el().querySelector('#compte-bank app-bank-mobile-card')).not.toBeNull();
     }
-    for (const role of ['orders', 'admin'] as const) {
+    for (const role of ['orders'] as const) {
       fixture = boot([asRole(role)]);
       const links = Array.from(el().querySelectorAll('.summary-link'));
       expect(el().querySelector('#compte-bank')).toBeNull();
@@ -323,7 +323,7 @@ describe('ComptePage', () => {
     });
 
     it('reste absent aux rôles qui ne voient pas le RIB, même drapeau ouvert et RIB lu', () => {
-      for (const role of ['orders', 'admin'] as const) {
+      for (const role of ['orders'] as const) {
         fixture = boot([asRole(role)], { mandate: 'open', bank: RIB });
 
         expect(el().querySelector('#compte-mandate')).toBeNull();

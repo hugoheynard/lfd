@@ -1,5 +1,9 @@
-/** Rôle du demandeur dans la société visée (miroir de `CustomerRole` Prisma). */
-export type BankAccountRole = "owner" | "admin" | "orders" | "billing";
+/**
+ * Rôle du demandeur dans la société visée (miroir de `CustomerRole` Prisma),
+ * plus `inherited` : la personne n'y entre que par son principal (S6). Aucun
+ * mur ne l'admet — elle est vue (403), pas étrangère (404).
+ */
+export type BankAccountRole = "owner" | "admin" | "orders" | "billing" | "inherited";
 
 /**
  * Port de **lecture** du mur du RIB côté client : le rôle réel du demandeur

@@ -6,7 +6,7 @@
  * Ce que seul le vrai SQL prouve, et que les unitaires ne peuvent pas :
  *
  * - le mur lit le **vrai** rattachement : détenteur et facturation passent,
- *   `admin` et `orders` reçoivent 403, la société voisine 404 ;
+ *   `orders` reçoit 403 (`admin` passe depuis le 2026-10-27), la société voisine 404 ;
  * - le drapeau `customerMandate` est lu dans la **vraie** table des
  *   dérogations, et ferme chaque route en 409 — après le mur, jamais avant ;
  * - le PDF sort **nominatif** : la RUM du brouillon, sans « EXEMPLE » ;
@@ -160,10 +160,13 @@ async function journal(type: string): Promise<readonly Record<string, unknown>[]
 }
 
 describe("le drapeau customerMandate — fermé par défaut, sur CHAQUE route", () => {
-  it("refuse les quatre routes en 409 au détenteur tant qu'il est fermé", async () => {
-    for (const [, call] of everyRoute(OWNER)) {
-      const response = await call().expect(409);
-      expect(jsonBody<{ code: string }>(response).code).toBe("payments.mandate.customer_closed");
+  it("refuse les quatre routes en 409 au détenteur et à l'admin tant qu'il est fermé", async () => {
+    // L'admin passe le mur depuis le 2026-10-27 (Hugo) : c'est le drapeau qui le refuse.
+    for (const sub of [OWNER, ADMIN]) {
+      for (const [, call] of everyRoute(sub)) {
+        const response = await call().expect(409);
+        expect(jsonBody<{ code: string }>(response).code).toBe("payments.mandate.customer_closed");
+      }
     }
     expect(await ctx.prisma.paymentMandate.count()).toBe(0);
   });
@@ -173,7 +176,7 @@ describe("le drapeau customerMandate — fermé par défaut, sur CHAQUE route", 
     for (const [, call] of everyRoute(OUTSIDER)) {
       await call().expect(404);
     }
-    for (const sub of [ADMIN, ORDERS]) {
+    for (const sub of [ORDERS]) {
       for (const [, call] of everyRoute(sub)) {
         await call().expect(403);
       }
@@ -221,7 +224,7 @@ describe("le mur — drapeau ouvert", () => {
     expect(response.text).toBe("null");
   });
 
-  it.each([ADMIN, ORDERS])("refuse %s en 403 sur chaque route", async (sub) => {
+  it.each([ORDERS])("refuse %s en 403 sur chaque route", async (sub) => {
     for (const [, call] of everyRoute(sub)) {
       await call().expect(403);
     }

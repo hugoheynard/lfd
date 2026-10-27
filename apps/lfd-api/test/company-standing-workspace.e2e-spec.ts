@@ -183,3 +183,36 @@ describe("GET /me — les sites atteignables du sélecteur (R5)", () => {
     expect(view.reachableSites?.map((s) => s.company.id)).toEqual([f.sibling]);
   });
 });
+
+describe("le RIB d'un site atteint — l'héritage n'ouvre aucun geste", () => {
+  const RIB = {
+    iban: "FR1420041010050500013M02606",
+    bic: "CEPAFRPP751",
+    holder: "Chalet du Site SAS",
+    line1: "12 rue des Alpages",
+    line2: "",
+    postalCode: "73150",
+    city: "Val d'Isère",
+    countryCode: "FR",
+  };
+
+  /**
+   * Régression : le 2026-10-27, l'`admin` a été admis au RIB et au mandat. Le
+   * mur des gestes lisait le rôle EFFECTIF, où l'héritier vaut `admin`
+   * plafonné : le responsable d'un principal aurait pu poser le compte prélevé
+   * de chacun de ses sites.
+   */
+  it("🔴 le détenteur et l'admin du principal sont refusés (403), rien n'est écrit", async () => {
+    const f = await family();
+    for (const heir of [f.heir, f.adminHeir]) {
+      await ctx.asSub(heir.sub).put(`/companies/${f.site}/bank-account`).send(RIB).expect(403);
+    }
+    expect(await ctx.prisma.companyBankAccount.count({ where: { companyId: f.site } })).toBe(0);
+  });
+
+  it("l'admin PROPRE du site, lui, pose le RIB", async () => {
+    const f = await family();
+    await member(f.adminHeir.id, f.site, { role: CustomerRole.admin });
+    await ctx.asSub(f.adminHeir.sub).put(`/companies/${f.site}/bank-account`).send(RIB).expect(204);
+  });
+});

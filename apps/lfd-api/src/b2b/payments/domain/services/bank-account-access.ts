@@ -5,12 +5,13 @@ import {
 import type { BankAccountRole } from "../ports/bank-account-guard.reader.js";
 
 /**
- * Les rôles qui voient et déposent le RIB : le **détenteur**, et le rôle
- * **comptable**. `admin` administre l'espace (interlocuteurs, adresses) et
- * `orders` passe les commandes — ni l'un ni l'autre n'a à lire le compte qu'on
- * prélève (`documentation/comptabilite/mandat/rib-client.md`, §1).
+ * Les rôles qui voient et déposent le RIB : le **détenteur**, l'**admin** et le
+ * rôle **comptable**. `admin` y est entré le 2026-10-27 (Hugo) : c'est souvent
+ * lui qui monte le dossier, et le mandat suit le RIB. `orders` passe les
+ * commandes et n'a pas à lire le compte qu'on prélève
+ * (`documentation/comptabilite/mandat/rib-client.md`, §1).
  */
-const BANK_ACCOUNT_ROLES: ReadonlySet<BankAccountRole> = new Set(["owner", "billing"]);
+const BANK_ACCOUNT_ROLES: ReadonlySet<BankAccountRole> = new Set(["owner", "admin", "billing"]);
 
 /**
  * Le **mur du RIB** côté client. Fonction pure : le rôle vient d'un port, la
@@ -20,7 +21,7 @@ const BANK_ACCOUNT_ROLES: ReadonlySet<BankAccountRole> = new Set(["owner", "bill
  * non-divulguant ; membre sans le rôle → 403.
  *
  * @throws {BankAccountCompanyNotFoundError} le demandeur n'est pas membre.
- * @throws {BankAccountRoleRequiredError} membre, mais ni détenteur ni facturation.
+ * @throws {BankAccountRoleRequiredError} membre, mais ni détenteur, ni admin, ni facturation.
  */
 export function ensureBankAccountAccess(role: BankAccountRole | null, companyId: string): void {
   if (role === null) {

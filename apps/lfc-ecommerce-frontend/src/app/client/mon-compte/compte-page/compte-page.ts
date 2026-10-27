@@ -91,10 +91,10 @@ const SECTIONS = [
 
 /**
  * Les rôles qui voient et déposent le RIB (`rib-client.md` §1) : le
- * détenteur et le rôle comptable. L'API refuse les autres ; l'écran ne leur
+ * détenteur, l'admin (depuis le 2026-10-27) et le rôle comptable. L'API refuse les autres ; l'écran ne leur
  * propose pas une carte qui ne ferait que dire non.
  */
-const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing']);
+const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'admin', 'billing']);
 
 /**
  * `/mon-compte` — le dossier client, écrit pour celui qui le possède.
@@ -210,7 +210,7 @@ export class ComptePage {
   protected readonly client = inject(ClientCompany);
   protected readonly company = this.client.company;
 
-  /** Le RIB ne se montre qu'au détenteur et au rôle comptable de la société. */
+  /** Le RIB ne se montre qu'au détenteur, à l'admin et au rôle comptable de la société. */
   protected readonly showsBank = computed(() => this.client.readsBilling(BANK_ROLES));
 
   private readonly bank = inject(ClientBankAccount);

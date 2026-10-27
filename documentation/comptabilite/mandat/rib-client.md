@@ -16,17 +16,18 @@ commande**.
 
 ## 1. Qui peut quoi
 
-| Rôle dans la société     | Lire le RIB | Le saisir / remplacer |
-| ------------------------ | ----------- | --------------------- |
-| `owner` (détenteur)      | ✅          | ✅                    |
-| `billing` (comptable)    | ✅          | ✅                    |
-| `admin`, `orders`        | 403         | 403                   |
-| non-membre de la société | 404         | 404                   |
+| Rôle dans la société           | Lire le RIB | Le saisir / remplacer |
+| ------------------------------ | ----------- | --------------------- |
+| `owner` (détenteur)            | ✅          | ✅                    |
+| `billing` (comptable)          | ✅          | ✅                    |
+| `admin` (depuis le 2026-10-27) | ✅          | ✅                    |
+| `orders`                       | 403         | 403                   |
+| non-membre de la société       | 404         | 404                   |
 
 Le mur est une fonction pure, `ensureBankAccountAccess`
 (`apps/lfd-api/src/b2b/payments/domain/services/bank-account-access.ts`) :
 même partage que `ensureCompanyAdmin`, 404 non divulguant puis 403. Le front
-ne montre la section qu'à `owner` et `billing` (`BANK_ROLES`,
+ne montre la section qu'à `owner`, `admin` et `billing` (`BANK_ROLES`,
 `client/mon-compte/compte-page/compte-page.ts`) ; l'API refuse de toute façon.
 
 ## 2. Le flux

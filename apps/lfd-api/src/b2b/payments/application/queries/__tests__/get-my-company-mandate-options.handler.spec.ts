@@ -68,7 +68,7 @@ describe("GetMyCompanyMandateOptionsHandler — les zones 14 et 19 lues par le c
     expect(section.options).toEqual({ debtorReference: "C-1", contractNumber: "CT-7" });
   });
 
-  it.each<BankAccountRole>(["admin", "orders"])("refuse %s en 403", async (role) => {
+  it.each<BankAccountRole>(["orders"])("refuse %s en 403", async (role) => {
     await expect(harness(role).run()).rejects.toBeInstanceOf(BankAccountRoleRequiredError);
   });
 
