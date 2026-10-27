@@ -1,0 +1,9 @@
+<fold-panel-header [title]="data().title" [closeLabel]="t().dialog.close" />
+
+<fold-panel-body>
+  <lfd-company-activation-checklist
+    [steps]="data().steps"
+    [optionalNote]="data().optionalNote"
+    (stepAction)="pick($event)"
+  />
+</fold-panel-body>

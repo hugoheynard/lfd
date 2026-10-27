@@ -440,6 +440,7 @@ export const ACCOUNT_IT: AccountCopy = {
     count: '{n} elementi da completare',
     blocksActivation: 'Impedisce l’attivazione: {detail}',
     optionalNote: 'non impedisce l’attivazione',
+    see: 'Vedi',
     cardLead: 'Da completare:',
     mandateFields: 'Per generare il vostro mandato SEPA: {fields}.',
     items: {

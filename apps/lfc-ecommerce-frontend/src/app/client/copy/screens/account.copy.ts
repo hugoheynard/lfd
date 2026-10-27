@@ -506,6 +506,8 @@ export interface CompletionCopy {
   readonly blocksActivation: string;
   /** La mention d'une ligne non bloquante, sur une société en attente. */
   readonly optionalNote: string;
+  /** Le bouton qui ouvre la liste repliée, au téléphone (Hugo, 2026-10-27). */
+  readonly see: string;
   /** L'en-tête de l'encart d'une carte. */
   readonly cardLead: string;
   /** `{fields}` : les mentions que le mandat SEPA réclame (`mandateBlockers`), séparées par une virgule. */

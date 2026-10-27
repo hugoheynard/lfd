@@ -436,6 +436,7 @@ export const ACCOUNT_EN: AccountCopy = {
     count: '{n} items to complete',
     blocksActivation: 'Prevents activation: {detail}',
     optionalNote: 'does not prevent activation',
+    see: 'See',
     cardLead: 'To complete:',
     mandateFields: 'To generate your SEPA mandate: {fields}.',
     items: {

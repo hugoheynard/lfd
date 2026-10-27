@@ -9913,6 +9913,13 @@
           "variables": []
         },
         {
+          "key": "account.completion.see",
+          "fr": "Voir",
+          "en": "See",
+          "it": "Vedi",
+          "variables": []
+        },
+        {
           "key": "account.completion.cardLead",
           "fr": "À compléter :",
           "en": "To complete:",

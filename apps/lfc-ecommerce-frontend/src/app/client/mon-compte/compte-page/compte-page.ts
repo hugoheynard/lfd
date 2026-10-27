@@ -13,12 +13,14 @@ import type { CompanyMemberRole } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldEmptyStateComponent,
+  FoldIconComponent,
   FoldLoadingStateComponent,
   FoldPanelHostService,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
 import { AccountService } from '../../../account/account.service';
+import { CompletionSheet } from '../completion/completion-sheet/completion-sheet';
 import { AuthFacade } from '../../../auth/auth.facade';
 
 /** Les états de l'écran — exclusifs, et c'est tout leur intérêt. */
@@ -130,6 +132,7 @@ const BANK_ROLES: ReadonlySet<CompanyMemberRole> = new Set(['owner', 'billing'])
     DataMobileCard,
     DossierCard,
     FoldButtonComponent,
+    FoldIconComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldScrollIndicatorComponent,
@@ -295,6 +298,18 @@ export class ComptePage {
   }
 
   /** Un raccourci de la synthèse : le dialogue de l'élément. */
+  /** La liste repliée, dans la feuille du bas : une étape choisie ouvre son dialogue. */
+  protected async openCompletion(): Promise<void> {
+    const key = await CompletionSheet.open(this.panels, {
+      steps: this.completionSteps(),
+      title: this.completionCount(),
+      optionalNote: this.t().account.completion.optionalNote,
+    }).closed;
+    if (key !== undefined) {
+      this.completeStep(key);
+    }
+  }
+
   protected completeStep(key: string): void {
     const item = this.completion().find((candidate) => candidate.key === key);
     if (item !== undefined) {

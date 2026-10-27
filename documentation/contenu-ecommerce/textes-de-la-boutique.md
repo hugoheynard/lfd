@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1669 textes
+## Sommaire — 1670 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -40,14 +40,14 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 242 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 524 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1669** |
+| **Total** | | **1670** |
 
 ## Le parcours de commande
 
@@ -1306,7 +1306,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 523 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 524 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1715,6 +1715,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.completion.count` | {n} éléments à compléter | {n} items to complete | {n} elementi da completare | `{n}` |
 | `account.completion.blocksActivation` | Empêche l’activation : {detail} | Prevents activation: {detail} | Impedisce l’attivazione: {detail} | `{detail}` |
 | `account.completion.optionalNote` | n’empêche pas l’activation | does not prevent activation | non impedisce l’attivazione |  |
+| `account.completion.see` | Voir | See | Vedi |  |
 | `account.completion.cardLead` | À compléter : | To complete: | Da completare: |  |
 | `account.completion.mandateFields` | Pour générer votre mandat SEPA : {fields}. | To generate your SEPA mandate: {fields}. | Per generare il vostro mandato SEPA: {fields}. | `{fields}` |
 | `account.completion.items.identity.title` | Identité légale | Legal identity | Identità legale |  |

@@ -463,7 +463,10 @@ describe('ComptePage', () => {
     it('annonce le nombre d’éléments en tête, au-dessus des cartes', () => {
       fixture = boot([TOMMEUSES], { gate: MISSING });
 
-      const synthesis = el().querySelector('.page > lfd-company-activation-checklist + .body');
+      // La ligne repliée du téléphone s'intercale entre l'encart et les cartes.
+      const synthesis = el().querySelector(
+        '.page > lfd-company-activation-checklist + .completion-fold + .body',
+      );
       expect(synthesis).not.toBeNull();
       expect(el().querySelector('.completion-head')?.textContent?.trim()).toBe(
         COPY.count.replace('{n}', '2'),

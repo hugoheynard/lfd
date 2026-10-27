@@ -78,6 +78,22 @@
         >
           <p intro class="completion-head">{{ completionCount() }}</p>
         </lfd-company-activation-checklist>
+        <!-- Au téléphone, l'encart se REPLIE (Hugo, 2026-10-27) : sa synthèse
+             et « Voir », qui ouvre la liste dans la feuille du bas. -->
+        <div class="completion-fold">
+          <fold-icon name="warning" aria-hidden="true" />
+          <span class="completion-fold-text">{{ completionCount() }}</span>
+          <button
+            foldButton
+            size="sm"
+            intent="warning"
+            emphasis="soft"
+            type="button"
+            (click)="void openCompletion()"
+          >
+            {{ t().account.completion.see }}
+          </button>
+        </div>
       }
 
       <div class="body">
