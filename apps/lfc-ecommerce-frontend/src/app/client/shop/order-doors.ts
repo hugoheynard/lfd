@@ -1,5 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
-import { instantToLocal } from '@lfd/contracts';
+import { instantToLocal, type PublicPickupSlot } from '@lfd/contracts';
 // Par le sous-chemin `shop-values`, sans zod : la même règle que le serveur
 // applique au refus, et un sous-chemin qui reste léger si ce module (lazy
 // aujourd'hui) devenait un jour initial (budget `cloudflare`).
@@ -17,6 +17,7 @@ import {
   ServiceChangeDialog,
 } from './service-change-dialog/service-change-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
+import { PublicSlots } from './public-slots.gateway';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { CHANGE_DAY, SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 
@@ -45,6 +46,7 @@ export class OrderDoors {
   private readonly panels = inject(FoldPanelHostService);
   private readonly points = inject(ServicePoints);
   private readonly order = inject(OrderContextStore);
+  private readonly slots = inject(PublicSlots);
 
   /** Vrai pendant un parcours qui écrit : seul lui pose un brouillon. */
   private tracking = false;
@@ -110,6 +112,12 @@ export class OrderDoors {
    * ne lui sont proposés : l'écran le dit, au lieu d'ouvrir un parcours qui
    * finirait sur un refus.
    */
+  /**
+   * Plus d'une maison servie ? Avec une seule, « Changer de maison » n'a pas
+   * de sens (Hugo, 2026-10-27) : la barre et « Modifier » le taisent.
+   */
+  readonly severalPlaces = computed(() => this.points.pickups().length > 1);
+
   readonly serviceOffered = computed(() => this.pickupOpen() || this.deliveryOpen());
 
   /**
@@ -298,13 +306,38 @@ export class OrderDoors {
       return null;
     }
     this.note(this.houseOf(point));
-    return this.pickTime(
-      point.id,
-      point.label || point.ville,
-      `${point.ligne1}, ${point.ville}`,
-      this.order.choice(),
-      on,
-    );
+    const place = point.label || point.ville;
+    const address = `${point.ligne1}, ${point.ville}`;
+    const prior = this.order.choice();
+    const kept = await this.sameSlotAt(point.id, prior, on);
+    if (kept !== null) {
+      return this.choiceOf(point.id, place, address, kept);
+    }
+    return this.pickTime(point.id, place, address, prior, on);
+  }
+
+  /**
+   * **L'heure déjà retenue, si la nouvelle maison l'a aussi** (Hugo,
+   * 2026-10-27 : « ne pas ouvrir le panel d'heure si le créneau est disponible
+   * sur l'autre point »). Seulement quand la maison CHANGE, le même jour :
+   * ailleurs, l'heure se demande comme avant.
+   */
+  private async sameSlotAt(
+    pointId: string,
+    prior: ServiceChoice | null,
+    day: string,
+  ): Promise<PublicPickupSlot | null> {
+    if (
+      prior?.mode !== 'pickup' ||
+      prior.window === null ||
+      prior.date !== day ||
+      prior.pickupAddressId === pointId
+    ) {
+      return null;
+    }
+    const start = prior.window.start;
+    const slots = await this.slots.forDay(pointId, day);
+    return slots.find((slot) => slot.open && slot.time === start) ?? null;
   }
 
   /**
@@ -343,7 +376,7 @@ export class OrderDoors {
       const change = await ServiceChangeDialog.open(this.panels, {
         mode: choice.mode,
         otherOpen: pickup ? this.deliveryOpen() : this.pickupOpen(),
-        severalPlaces: this.points.pickups().length > 1,
+        severalPlaces: this.severalPlaces(),
       }).closed;
       return change === undefined ? null : this.apply(change, choice);
     });
@@ -610,6 +643,16 @@ export class OrderDoors {
     if (slot === undefined) {
       return null;
     }
+    return this.choiceOf(pickupAddressId, place, address, slot);
+  }
+
+  /** Le choix de retrait que fabrique un créneau pris. */
+  private choiceOf(
+    pickupAddressId: string,
+    place: string,
+    address: string,
+    slot: PublicPickupSlot,
+  ): ServiceChoice {
     return {
       mode: 'pickup',
       place,

@@ -26,6 +26,10 @@ nommée.
    dialogue, sur la même maison ou la même adresse**.
 5. **Ce qui est connu ne se redemande pas.** Un choix déjà posé garde son jour
    quand on change de maison, d'adresse, d'heure ou de mode.
+   **Changer de maison garde aussi l'heure** quand la nouvelle maison a le
+   même créneau ouvert ce jour-là : l'heure ne se redemande pas
+   (`sameSlotAt`, 2026-10-27). Une seule maison servie : « Changer de
+   maison » n'apparaît ni dans la barre ni dans « Modifier ».
 6. **Toucher une maison la choisit** ; toucher une heure la prend. Il n'y a pas
    de bouton de confirmation. La croix ferme, et fermer ne pose rien.
 

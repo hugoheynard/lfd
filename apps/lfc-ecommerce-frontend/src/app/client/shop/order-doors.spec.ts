@@ -20,6 +20,7 @@ import { ServiceChangeDialog } from './service-change-dialog/service-change-dial
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 import { CHANGE_DAY, SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
+import { PublicSlots } from './public-slots.gateway';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 
 /**
@@ -601,7 +602,11 @@ describe('OrderDoors — la matrice des parcours', () => {
    * Les réponses se donnent EN FILE par dialogue : un même dialogue peut
    * s'ouvrir deux fois (« Je change de date »). File vide : on ferme.
    */
-  function run(replies: Readonly<Record<string, readonly unknown[]>>, pickups = [LABO, VILLAGE]) {
+  function run(
+    replies: Readonly<Record<string, readonly unknown[]>>,
+    pickups = [LABO, VILLAGE],
+    elsewhere: readonly unknown[] = [],
+  ) {
     const queues = new Map<unknown, unknown[]>(
       Object.entries(replies).map(([name, values]) => [DIALOGS[name], [...values]]),
     );
@@ -622,6 +627,8 @@ describe('OrderDoors — la matrice des parcours', () => {
             },
           },
         },
+        // Les créneaux de la maison vers laquelle on bascule.
+        { provide: PublicSlots, useValue: { forDay: () => Promise.resolve(elsewhere) } },
         { provide: ClientAudience, useValue: { shown: signal('b2b') } },
         VISITOR_AUTH,
       ],
@@ -723,6 +730,37 @@ describe('OrderDoors — la matrice des parcours', () => {
       expect(await doors.pickup(LABO.id)).toBe(true);
       expect(trail(seen)).toEqual(['house', `slot@${DAY}`]);
       expect(store.choice()).toMatchObject({ pickupAddressId: VILLAGE.id });
+    });
+
+    /**
+     * Régression : changer de maison rouvrait toujours l'heure, même quand la
+     * nouvelle maison avait le créneau déjà retenu (Hugo, 2026-10-27).
+     */
+    it('🔴 « Changer de maison » garde l’heure si l’autre maison l’a aussi', async () => {
+      const { doors, store, seen } = run(
+        { house: [VILLAGE] },
+        [LABO, VILLAGE],
+        [{ ...SLOT, open: true }],
+      );
+      store.choice.set(PICKUP);
+      expect(await doors.pickup(LABO.id)).toBe(true);
+      expect(trail(seen)).toEqual(['house']);
+      expect(store.choice()).toMatchObject({
+        pickupAddressId: VILLAGE.id,
+        window: { start: '07:30' },
+        date: DAY,
+      });
+    });
+
+    it('« Changer de maison » redemande l’heure si elle y est complète', async () => {
+      const { doors, store, seen } = run(
+        { house: [VILLAGE], slot: [SLOT] },
+        [LABO, VILLAGE],
+        [{ ...SLOT, open: false }],
+      );
+      store.choice.set(PICKUP);
+      await doors.pickup(LABO.id);
+      expect(trail(seen)).toEqual(['house', `slot@${DAY}`]);
     });
 
     it('« Changer l’heure » (time) garde le jour', async () => {

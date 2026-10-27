@@ -113,6 +113,8 @@ export interface CommandTermsCopy {
   readonly unset: string;
   /** Le seul geste de la moitié gauche quand rien n'est choisi. */
   readonly choose: string;
+  /** Le même geste quand retrait ET livraison sont ouverts : la question du mode. */
+  readonly chooseMode: string;
   /**
    * La barre qui ACCOMPAGNE le parcours (plan `plan-barre-qui-accompagne.md`) :
    * l'étape qui reste, à la place de « Régler ». Le jour, puis l'heure (ou
@@ -161,6 +163,7 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   emptyShort: 'Panier vide',
   unset: 'Où et quand ?',
   choose: 'Choisir la maison et l’heure',
+  chooseMode: 'Retrait ou livraison ?',
   chooseDay: 'Choisissez le jour',
   chooseTime: 'Choisissez l’heure',
   chooseAddress: 'Choisissez l’adresse',
@@ -201,6 +204,7 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   emptyShort: 'Empty basket',
   unset: 'Where and when?',
   choose: 'Choose the bakery and time',
+  chooseMode: 'Pickup or delivery?',
   chooseDay: 'Choose the day',
   chooseTime: 'Choose the time',
   chooseAddress: 'Choose the address',
@@ -243,6 +247,7 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   emptyShort: 'Carrello vuoto',
   unset: 'Dove e quando?',
   choose: 'Scegli la bottega e l’ora',
+  chooseMode: 'Ritiro o consegna?',
   chooseDay: 'Scegliete il giorno',
   chooseTime: 'Scegliete l’ora',
   chooseAddress: 'Scegliete l’indirizzo',

@@ -2280,6 +2280,13 @@
           "variables": []
         },
         {
+          "key": "commandTerms.chooseMode",
+          "fr": "Retrait ou livraison ?",
+          "en": "Pickup or delivery?",
+          "it": "Ritiro o consegna?",
+          "variables": []
+        },
+        {
           "key": "commandTerms.chooseDay",
           "fr": "Choisissez le jour",
           "en": "Choose the day",

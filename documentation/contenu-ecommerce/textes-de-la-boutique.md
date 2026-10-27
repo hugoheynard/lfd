@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1705 textes
+## Sommaire — 1706 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,7 +20,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 37 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 17 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 6 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1705** |
+| **Total** | | **1706** |
 
 ## Le parcours de commande
 
@@ -422,7 +422,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 37 textes.
+Source : `screens/command-terms.copy.ts` · 38 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -460,6 +460,7 @@ Source : `screens/command-terms.copy.ts` · 37 textes.
 | `commandTerms.emptyShort` | Panier vide | Empty basket | Carrello vuoto |  |
 | `commandTerms.unset` | Où et quand ? | Where and when? | Dove e quando? |  |
 | `commandTerms.choose` | Choisir la maison et l’heure | Choose the bakery and time | Scegli la bottega e l’ora |  |
+| `commandTerms.chooseMode` | Retrait ou livraison ? | Pickup or delivery? | Ritiro o consegna? |  |
 | `commandTerms.chooseDay` | Choisissez le jour | Choose the day | Scegliete il giorno |  |
 | `commandTerms.chooseTime` | Choisissez l’heure | Choose the time | Scegliete l’ora |  |
 | `commandTerms.chooseAddress` | Choisissez l’adresse | Choose the address | Scegliete l’indirizzo |  |

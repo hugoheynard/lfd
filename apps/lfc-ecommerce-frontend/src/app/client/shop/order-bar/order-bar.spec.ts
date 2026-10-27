@@ -274,6 +274,25 @@ describe('OrderBar', () => {
     expect(textOf(fixture, '[data-act-when]')).toBe(COMMAND_TERMS_FR.changeTime);
   });
 
+  /** Une seule maison : « Changer de maison » n'a pas de sens (Hugo, 2026-10-27). */
+  it('tait « Changer de maison » quand une seule maison est servie', () => {
+    const fixture = boot();
+    fixture.componentRef.setInput('severalPlaces', false);
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('[data-act-place]')).toBeNull();
+    expect(textOf(fixture, '[data-act-when]')).toBe(COMMAND_TERMS_FR.changeTime);
+  });
+
+  /** Rien de choisi, les deux modes ouverts : le geste pose la question du mode. */
+  it('demande « Retrait ou livraison ? » tant que rien n’est choisi', () => {
+    const fixture = boot({ choice: null, panier: { count: 1, totalCents: 150 } });
+    fixture.componentRef.setInput('bothModesOpen', true);
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.bar')?.textContent).toContain(COMMAND_TERMS_FR.chooseMode);
+  });
+
   /**
    * Au bureau aussi, la bascule de mode (Hugo, 2026-10-27 : « en desktop je
    * n'ai pas de moyen de changer retrait livraison ») : en retrait « Me faire

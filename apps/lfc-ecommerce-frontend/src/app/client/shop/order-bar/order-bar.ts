@@ -75,6 +75,16 @@ export class OrderBar {
   /** L'autre mode est-il ouvert à qui regarde ? Fermé, le lien ne s'affiche pas. */
   readonly otherModeOpen = input(false);
 
+  /** Plus d'une maison ? Sinon, en retrait, « Changer de maison » se tait. */
+  readonly severalPlaces = input(true);
+
+  /**
+   * Retrait ET livraison ouverts ? Rien de choisi, le geste pose alors la
+   * question du mode ; un choix fait, elle cède la place à l'alternance
+   * (Hugo, 2026-10-27).
+   */
+  readonly bothModesOpen = input(false);
+
   /** Régler — l'écran sait ce que ça demande encore (service, identité). */
   readonly pay = output<void>();
 

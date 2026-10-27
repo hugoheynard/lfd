@@ -32,6 +32,8 @@
       (timeRequested)="changeTime()"
       (modeRequested)="void doors.switchMode()"
       [otherModeOpen]="otherModeOpen()"
+      [severalPlaces]="doors.severalPlaces()"
+      [bothModesOpen]="doors.pickupOpen() && doors.deliveryOpen()"
       (pay)="void pay()"
     />
   }

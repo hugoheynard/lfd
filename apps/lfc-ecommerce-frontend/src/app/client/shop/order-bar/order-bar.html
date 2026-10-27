@@ -43,9 +43,11 @@
            jour (Hugo, 2026-10-13). Les deux mènent au dialogue du coursier,
            où l'adresse, le jour et l'heure se tiennent. -->
         <span class="acts">
-          <button class="act" type="button" (click)="houseRequested.emit()" data-act-place>
-            {{ service.mode === 'delivery' ? c().changeAddress : c().changeHouse }}
-          </button>
+          @if (service.mode === 'delivery' || severalPlaces()) {
+            <button class="act" type="button" (click)="houseRequested.emit()" data-act-place>
+              {{ service.mode === 'delivery' ? c().changeAddress : c().changeHouse }}
+            </button>
+          }
           <button class="act" type="button" (click)="timeRequested.emit()" data-act-when>
             {{ service.mode === 'delivery' ? c().changeDay : c().changeTime }}
           </button>
@@ -78,7 +80,7 @@
         }
         <span class="acts">
           <button class="act" type="button" (click)="houseRequested.emit()">
-            {{ c().choose }}
+            {{ bothModesOpen() ? c().chooseMode : c().choose }}
           </button>
         </span>
       </div>
