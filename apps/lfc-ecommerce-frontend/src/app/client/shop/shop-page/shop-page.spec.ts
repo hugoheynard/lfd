@@ -365,14 +365,14 @@ describe('ShopPage', () => {
    * ramène sur bienvenue ») : sans maison connue, la page renvoyait à l'accueil
    * au lieu d'ouvrir les dialogues que le panier et l'accueil ouvrent sur place.
    */
-  it('« Modifier » du pied rouvre l’heure de la maison prise, sans quitter le rayon', async () => {
-    const time = vi.spyOn(TestBed.inject(OrderDoors), 'time').mockResolvedValue(false);
+  it('« Modifier » du pied demande ce qu’on change, sans quitter le rayon', async () => {
+    const modify = vi.spyOn(TestBed.inject(OrderDoors), 'modify').mockResolvedValue(false);
     const navigate = vi.spyOn(TestBed.inject(Router), 'navigate').mockResolvedValue(true);
 
     el().querySelector<HTMLButtonElement>('app-cart-bar .edit')?.click();
     await fixture.whenStable();
 
-    expect(time).toHaveBeenCalledWith('pick_labo', 'Le Labo', 'Route de la Balme, Val d’Isère');
+    expect(modify).toHaveBeenCalled();
     expect(navigate).not.toHaveBeenCalled();
   });
 

@@ -1,0 +1,24 @@
+@use '../dialog' as dlg;
+
+/* Le châssis des dialogues de commande. */
+:host {
+  @include dlg.gutters;
+}
+
+fold-panel-header {
+  @include dlg.header;
+}
+
+fold-panel-body {
+  @include dlg.body;
+}
+
+.screen {
+  @include dlg.screen;
+}
+
+.choices {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}

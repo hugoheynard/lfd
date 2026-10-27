@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1694 textes
+## Sommaire — 1699 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,8 +20,9 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 41 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 37 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 14 |
+| [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
@@ -48,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1694** |
+| **Total** | | **1699** |
 
 ## Le parcours de commande
 
@@ -419,7 +420,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 41 textes.
+Source : `screens/command-terms.copy.ts` · 37 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -430,13 +431,9 @@ Source : `screens/command-terms.copy.ts` · 41 textes.
 | `commandTerms.changeTime` | Changer l’heure | Change time | Cambia orario |  |
 | `commandTerms.changeAddress` | Changer d’adresse | Change address | Cambia indirizzo |  |
 | `commandTerms.changeDay` | Changer le jour | Change day | Cambia giorno |  |
-| `commandTerms.lateDelivery` | Trop tard pour demain : votre commande sera livrée {day}. | Too late for tomorrow: your order will be delivered on {day}. | Troppo tardi per domani: il vostro ordine sarà consegnato {day}. | `{day}` |
-| `commandTerms.latePickup` | Trop tard pour demain : votre commande sera à retirer {day}. | Too late for tomorrow: your order will be ready for pickup on {day}. | Troppo tardi per domani: il vostro ordine sarà da ritirare {day}. | `{day}` |
 | `commandTerms.slipped` | Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler. | Too late for {day}: the first day still open is {next}. Change the day before paying. | Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare. | `{day}` `{next}` |
 | `commandTerms.editDay` | Modifier le jour | Change the day | Modifica il giorno |  |
 | `commandTerms.dayUnavailable` | Ce jour n’est plus possible : choisissez-en un autre avant de régler. | This day is no longer available: choose another one before paying. | Questo giorno non è più possibile: sceglietene un altro prima di pagare. |  |
-| `commandTerms.lateDeliveryAt` | Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}. | Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}. | `{time}` `{day}` |
-| `commandTerms.latePickupAt` | Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}. | Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}. | Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}. | `{time}` `{day}` |
 | `commandTerms.operationPickupFrom` | Ce produit se retire à partir du {day}. | This product can be picked up from {day}. | Questo prodotto si ritira a partire da {day}. | `{day}` |
 | `commandTerms.cutoffCountdown` | Plus que {left} pour commander pour {day}. | Only {left} left to order for {day}. | Ancora {left} per ordinare per {day}. | `{left}` `{day}` |
 | `commandTerms.cutoffLeftHoursMinutes` | {h} h {mm} | {h} h {mm} min | {h} h {mm} | `{h}` `{mm}` |
@@ -487,6 +484,24 @@ Source : `screens/day-picker.copy.ts` · 14 textes.
 | `dayPicker.none.title` | Aucune journée ouverte | No day open | Nessuna giornata aperta |  |
 | `dayPicker.none.subtitle` | Aucun jour n’est proposé à la commande pour l’instant. | No day is open for orders right now. | Nessun giorno è aperto agli ordini per ora. |  |
 | `dayPicker.close` | Fermer | Close | Chiudi |  |
+
+<a id="espace-servicechange"></a>
+
+### Modifier — ce qu’on change d’une commande située — `serviceChange`
+
+Source : `screens/service-change.copy.ts` · 9 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `serviceChange.kicker` | Modifier mes choix | Change my choices | Modificare le mie scelte |  |
+| `serviceChange.title` | Que voulez-vous changer ? | What would you like to change? | Che cosa volete cambiare? |  |
+| `serviceChange.toDelivery` | Me faire livrer | Have it delivered | Farmelo consegnare |  |
+| `serviceChange.toPickup` | La récupérer en boutique | Pick it up in store | Ritirarlo in negozio |  |
+| `serviceChange.changeDate` | Changer la date | Change the date | Cambiare la data |  |
+| `serviceChange.changeTime` | Changer l’heure | Change the time | Cambiare l’ora |  |
+| `serviceChange.changeAddress` | Changer l’adresse ou le créneau | Change the address or the slot | Cambiare l’indirizzo o la fascia |  |
+| `serviceChange.changePlace` | Changer le point de retrait | Change the pickup point | Cambiare il punto di ritiro |  |
+| `serviceChange.close` | Fermer | Close | Chiudi |  |
 
 <a id="espace-housepicker"></a>
 
@@ -625,7 +640,7 @@ Source : `screens/slot-picker.copy.ts` · 18 textes.
 | --- | --- | --- | --- | --- |
 | `slotPicker.kicker` | Étape 2 sur 3 · {place} | Step 2 of 3 · {place} | Passo 2 di 3 · {place} | `{place}` |
 | `slotPicker.title` | À quelle heure ? | What time? | A che ora? |  |
-| `slotPicker.lead` | Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud. | Slots follow the bakes. The one you pick decides what will still be warm. | Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo. |  |
+| `slotPicker.lead` | Choisissez l’heure qui vous convient. | Choose the time that suits you. | Scegliete l’ora che vi conviene. |  |
 | `slotPicker.loading` | Nous regardons les fournées… | Checking the bakes… | Controlliamo le infornate… |  |
 | `slotPicker.days.today` | Aujourd’hui | Today | Oggi |  |
 | `slotPicker.days.tomorrow` | Demain | Tomorrow | Domani |  |

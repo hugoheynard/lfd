@@ -52,18 +52,12 @@ function notice(choice: ServiceChoice, firstDay: string): string | null {
 
 describe('ServiceDayNotice', () => {
   /**
-   * Régression (Hugo, 2026-10-13) : « je croyais commander pour demain et au
-   * final j'ai deux commandes pour jeudi ». Passé la limite de la veille, le
-   * jour accordé est le surlendemain, et rien ne le disait.
+   * Hugo, 2026-10-27 : le jour se choisit au panneau du jour ; choisi et
+   * accordé, il ne déclenche plus « trop tard pour demain ».
    */
-  it('dit « trop tard pour demain » et nomme le jour quand le service n’est pas demain', () => {
+  it('se tait pour un jour choisi et accordé après demain', () => {
     const later = addDays(TODAY, 2);
-    const message = notice(delivery(later), later);
-
-    expect(message).toContain('Trop tard pour demain');
-    expect(message).toContain('livrée');
-    // Le jour est un MOT, jamais « prochain créneau » ni une date brute.
-    expect(message).not.toContain(later);
+    expect(notice(delivery(later), later)).toBeNull();
   });
 
   it('se tait quand le service est bien demain', () => {
@@ -200,7 +194,7 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     expect(notice.message()).toBe('Plus que 12 min pour commander pour mercredi.');
   });
 
-  it('la limite tombe page ouverte : relit les jours, puis dit l’heure passée', async () => {
+  it('la limite tombe page ouverte : relit les jours, dit le jour devenu impossible', async () => {
     const { notice, clock, points } = setUp(
       new Date('2026-10-20T20:50:00.000Z'),
       [{ pickupAddressId: null, date: WEDNESDAY, orderUntil: TUESDAY_23H }],
@@ -218,9 +212,8 @@ describe('ServiceDayNotice — l’heure limite annoncée', () => {
     expect(points.nextDayFor(null)).toBe(THURSDAY);
     // Le jour gardé (mercredi) n'est plus demandable : on le dit.
     expect(notice.message()).toContain('Trop tard pour demain');
+    // Rechoisi sur jeudi, accordé : plus rien à dire (2026-10-27).
     TestBed.inject(OrderContextStore).choice.set(delivery(THURSDAY));
-    expect(notice.message()).toBe(
-      'Trop tard pour demain, la limite était 23\u00a0h : votre commande sera livrée jeudi 22 octobre.',
-    );
+    expect(notice.message()).toBeNull();
   });
 });

@@ -32,7 +32,6 @@ function input(over: Partial<DayNoticeInput> = {}): DayNoticeInput {
     held: WEDNESDAY,
     first: WEDNESDAY,
     firstOrderUntil: TUESDAY_23H,
-    tomorrowOrderUntil: null,
     byOperation: false,
     cartLimits: [],
     ...over,
@@ -79,22 +78,9 @@ describe('decideDayNotice', () => {
     expect(decideDayNotice(input({ now: tuesdayAt('23:01') }))).toBeNull();
   });
 
-  it('« trop tard » quand le premier jour accordé est après demain, avec l’heure lue', () => {
-    const notice = decideDayNotice(
-      input({
-        now: tuesdayAt('23:30'),
-        held: THURSDAY,
-        first: THURSDAY,
-        firstOrderUntil: '2026-10-21T21:00:00.000Z',
-        tomorrowOrderUntil: TUESDAY_23H,
-      }),
-    );
-    expect(notice).toEqual({ kind: 'late', held: THURSDAY, passedAt: new Date(TUESDAY_23H) });
-  });
-
-  it('« trop tard » sans heure quand celle de demain n’a pas été lue', () => {
-    const notice = decideDayNotice(input({ held: THURSDAY, first: THURSDAY }));
-    expect(notice).toEqual({ kind: 'late', held: THURSDAY, passedAt: null });
+  /** Hugo, 2026-10-27 : un jour choisi et accordé ne dit pas « trop tard pour demain ». */
+  it('premier jour accordé après demain, et choisi : rien à dire', () => {
+    expect(decideDayNotice(input({ held: THURSDAY, first: THURSDAY }))).toBeNull();
   });
 
   it('une opération datée : la raison est l’opération, pas la limite', () => {
@@ -215,7 +201,6 @@ describe('decideDayNotice — sans choix de service', () => {
         now: tuesdayAt('23:30'),
         first: THURSDAY,
         firstOrderUntil: '2026-10-21T21:00:00.000Z',
-        tomorrowOrderUntil: TUESDAY_23H,
       }),
     );
     expect(notice).toBeNull();
@@ -318,12 +303,6 @@ describe('dayNoLongerPossible et offersDayChange', () => {
     expect(dayNoLongerPossible(notice, D)).toBe(true);
     expect(dayNoLongerPossible(notice, null)).toBe(false);
     expect(offersDayChange(notice, null)).toBe(false);
-  });
-
-  it('offre « Modifier » sans bloquer quand la boutique a décalé le jour', () => {
-    const notice = { kind: 'late', held: N, passedAt: null } as const;
-    expect(dayNoLongerPossible(notice, N)).toBe(false);
-    expect(offersDayChange(notice, N)).toBe(true);
   });
 
   it('se tait sur un compte à rebours, et sans rien à dire', () => {

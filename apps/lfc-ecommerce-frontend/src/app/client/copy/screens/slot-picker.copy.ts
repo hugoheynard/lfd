@@ -66,7 +66,7 @@ export interface SlotPickerCopy {
 export const SLOT_PICKER_FR: SlotPickerCopy = {
   kicker: 'Étape 2 sur 3 · {place}',
   title: 'À quelle heure ?',
-  lead: 'Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud.',
+  lead: 'Choisissez l’heure qui vous convient.',
   loading: 'Nous regardons les fournées…',
   days: {
     today: 'Aujourd’hui',
@@ -95,7 +95,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
 export const SLOT_PICKER_EN: SlotPickerCopy = {
   kicker: 'Step 2 of 3 · {place}',
   title: 'What time?',
-  lead: 'Slots follow the bakes. The one you pick decides what will still be warm.',
+  lead: 'Choose the time that suits you.',
   loading: 'Checking the bakes…',
   days: {
     today: 'Today',
@@ -124,7 +124,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
 export const SLOT_PICKER_IT: SlotPickerCopy = {
   kicker: 'Passo 2 di 3 · {place}',
   title: 'A che ora?',
-  lead: 'Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo.',
+  lead: 'Scegliete l’ora che vi conviene.',
   loading: 'Controlliamo le infornate…',
   days: {
     today: 'Oggi',

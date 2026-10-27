@@ -238,6 +238,10 @@ function boot({
             ouvertes.push('delivery');
             return Promise.resolve(false);
           },
+          modify: (): Promise<boolean> => {
+            ouvertes.push('modify');
+            return Promise.resolve(false);
+          },
         },
       },
     ],
@@ -470,12 +474,12 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
     expect(visitees).toEqual([]);
   });
 
-  it('🔴 « Modifier » rouvre le mode déjà pris, sans naviguer', () => {
+  it('🔴 « Modifier » demande ce qu’on change, sans naviguer', () => {
     const fixture = boot({ auth: RECONNU, service: AU_LABO });
 
     clic(fixture, '.change');
 
-    expect(ouvertes).toEqual(['pickup']);
+    expect(ouvertes).toEqual(['modify']);
     expect(visitees).toEqual([]);
   });
 

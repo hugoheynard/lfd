@@ -45,17 +45,8 @@ export class JourneyBar {
     void this.router.navigateByUrl(SHOP);
   }
 
-  /** Comme le « Modifier » de la boutique : l'heure de la maison, ou l'adresse. */
+  /** « Modifier » : le panneau qui demande ce qu'on change, comme partout. */
   protected edit(): void {
-    const service = this.store.choice();
-    if (service === null) {
-      void this.doors.choose();
-    } else if (service.mode === 'delivery') {
-      void this.doors.delivery(service.deliveryAddressId, service.date);
-    } else if (service.pickupAddressId !== null) {
-      void this.doors.time(service.pickupAddressId, service.place, service.address);
-    } else {
-      void this.doors.pickup(null);
-    }
+    void this.doors.modify();
   }
 }

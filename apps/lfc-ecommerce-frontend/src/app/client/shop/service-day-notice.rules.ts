@@ -28,8 +28,6 @@ export interface DayNoticeInput {
   readonly first: string | null;
   /** La limite annoncée de ce premier jour (ISO), ou `null` : aucune. */
   readonly firstOrderUntil: string | null;
-  /** La limite de DEMAIN, si on l'a lue avant qu'elle tombe — sinon `null`. */
-  readonly tomorrowOrderUntil: string | null;
   /** Les jours sont bornés par une opération datée que porte le panier. */
   readonly byOperation: boolean;
   /**
@@ -56,8 +54,6 @@ export type DayNotice =
   | { readonly kind: 'slipped'; readonly held: string; readonly first: string }
   /** Le panier porte une opération : c'est elle qui repousse le jour, pas la limite. */
   | { readonly kind: 'operation'; readonly first: string }
-  /** Demain est VRAIMENT refusé : le premier jour accordé est postérieur. */
-  | { readonly kind: 'late'; readonly held: string; readonly passedAt: Date | null }
   /**
    * La limite du premier jour tombe aujourd'hui, dans moins de six heures.
    * `item` : c'est la limite de CET article du panier qui décide — absent
@@ -114,9 +110,13 @@ export function decideDayNotice(input: DayNoticeInput): DayNotice {
       // l'opération se dira au choix du jour — sauf un article du panier.
       return itemTooLate(first, first, input.now, input.cartLimits);
     }
-    return input.byOperation
-      ? { kind: 'operation', first }
-      : { kind: 'late', held, passedAt: passedLimit(input.tomorrowOrderUntil, input.now) };
+    if (input.byOperation) {
+      return { kind: 'operation', first };
+    }
+    // Le jour a été CHOISI au panneau du jour, et il est accordé : « trop tard
+    // pour demain » ne dit rien à qui commande pour un autre jour (Hugo,
+    // 2026-10-27). Reste ce qu'un article du panier refuserait.
+    return itemTooLate(held, first, input.now, input.cartLimits);
   }
   const tooLate = itemTooLate(held ?? first, first, input.now, input.cartLimits);
   if (tooLate !== null) {
@@ -258,10 +258,10 @@ export function dayNoLongerPossible(notice: DayNotice, held: string | null): boo
 }
 
 /**
- * **L'encadré offre « Modifier »** : quand le jour retenu n'est plus possible,
- * et aussi quand la boutique a décalé d'elle-même le jour (`late`) — le client
- * peut préférer un autre jour que celui proposé (Hugo, 2026-10-26).
+ * **L'encadré offre « Modifier »** quand le jour retenu n'est plus possible.
+ * (Il l'offrait aussi sur « trop tard pour demain », retiré le 2026-10-27 :
+ * le jour se choisit désormais au panneau du jour.)
  */
 export function offersDayChange(notice: DayNotice, held: string | null): boolean {
-  return dayNoLongerPossible(notice, held) || (notice !== null && notice.kind === 'late');
+  return dayNoLongerPossible(notice, held);
 }

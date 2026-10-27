@@ -12,6 +12,7 @@ import { type OrderDraft, OrderContextStore, type ServiceChoice } from '../order
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
+import { ServiceChangeDialog } from './service-change-dialog/service-change-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
@@ -301,6 +302,70 @@ export class OrderDoors {
       // change de date », et non les onglets de la semaine (Hugo, 2026-10-27).
       this.pickTime(pickupAddressId, place, address, this.order.choice(), date ?? null),
     );
+  }
+
+  /**
+   * **« Modifier » une commande située** : un panneau demande ce qu'on change
+   * — le mode, la date, l'heure, la maison ou l'adresse — et ne rouvre que
+   * cette étape (Hugo, 2026-10-27 : « tout me ramène à l'étape 2 »). Ce qui
+   * n'est pas changé est gardé : le jour suit une bascule de mode, la maison
+   * suit un changement de date. Sans choix, c'est {@link choose}.
+   */
+  async modify(): Promise<boolean> {
+    const choice = this.order.choice();
+    if (choice === null) {
+      return this.choose();
+    }
+    const pickup = choice.mode === 'pickup';
+    const house =
+      choice.mode === 'pickup' && choice.pickupAddressId !== null
+        ? { id: choice.pickupAddressId, place: choice.place, address: choice.address }
+        : null;
+    const deliveryId = choice.mode === 'delivery' ? (choice.deliveryAddressId ?? null) : null;
+    // Le brouillon part du choix : la barre du pied le dit dès le panneau.
+    const start: OrderDraft =
+      house === null
+        ? { mode: choice.mode, date: choice.date }
+        : {
+            mode: 'pickup',
+            date: choice.date,
+            place: house.place,
+            pickupAddressId: house.id,
+            address: house.address,
+          };
+    return this.track(start, async () => {
+      const change = await ServiceChangeDialog.open(this.panels, {
+        mode: choice.mode,
+        otherOpen: pickup ? this.deliveryOpen() : this.pickupOpen(),
+        severalPlaces: this.points.pickups().length > 1,
+      }).closed;
+      switch (change) {
+        case undefined:
+          return null;
+        case 'mode':
+          return pickup ? this.askDelivery(null, choice.date) : this.askPickup(null, choice.date);
+        case 'place':
+          return this.askPickup(house?.id ?? null, choice.date);
+        case 'address':
+          return this.askDelivery(deliveryId, choice.date);
+        case 'time':
+          return house === null
+            ? this.askPickup(null, choice.date)
+            : this.pickTime(house.id, house.place, house.address, choice, choice.date);
+        case 'date': {
+          const day = await this.askDay();
+          if (day === null) {
+            return null;
+          }
+          if (!pickup) {
+            return this.askDelivery(deliveryId, day);
+          }
+          return house === null
+            ? this.askPickup(null, day)
+            : this.pickTime(house.id, house.place, house.address, choice, day);
+        }
+      }
+    });
   }
 
   /**

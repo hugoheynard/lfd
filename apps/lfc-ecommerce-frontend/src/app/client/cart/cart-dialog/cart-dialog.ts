@@ -414,21 +414,12 @@ export class CartDialog {
     await this.doors.choose();
   }
 
-  /** Rouvre le choix déjà fait, sans quitter le panier. */
+  /**
+   * Rouvre le choix déjà fait, sans quitter le panier : le panneau « Modifier »
+   * demande ce qu'on change, et ne rouvre que cette étape (2026-10-27).
+   */
   protected async changeService(): Promise<void> {
-    const service = this.choice();
-    if (service === null) {
-      await this.doors.choose();
-      return;
-    }
-    if (service.mode === 'delivery') {
-      // L'adresse et le jour retenus se reproposent : rouvrir pour changer
-      // l'un ne doit pas faire perdre l'autre (2026-10-13).
-      await this.doors.delivery(service.deliveryAddressId ?? null, service.date);
-      return;
-    }
-    // Changer de maison périme l'heure : on rouvre les deux, dans l'ordre.
-    await this.doors.pickup(service.pickupAddressId);
+    await this.doors.modify();
   }
 
   /**

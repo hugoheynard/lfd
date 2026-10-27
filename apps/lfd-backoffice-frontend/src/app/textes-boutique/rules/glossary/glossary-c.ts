@@ -31,6 +31,8 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   changeNote: 'Modifier une commande — note',
   changeService: 'Changer de mode de service',
   changeTime: 'Changer l’heure',
+  changeDate: 'Modifier — changer la date',
+  changePlace: 'Modifier — changer le point de retrait',
   charges: 'Frais (facture)',
   choose: 'Bouton « choisir »',
   chooseAddress: 'Barre du parcours — choisir l’adresse',

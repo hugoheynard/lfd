@@ -16,6 +16,7 @@ import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-addres
 import { OrderDoors } from './order-doors';
 import { ServicePoints } from './pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
+import { ServiceChangeDialog } from './service-change-dialog/service-change-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
@@ -467,6 +468,60 @@ describe('OrderDoors — le brouillon du parcours', () => {
     await doors.time(LABO.id, 'Le Labo', 'Route de la Balme, Val d’Isère');
 
     expect(opened[0]).toMatchObject({ openOn: DAY });
+  });
+
+  describe('« Modifier » une commande située', () => {
+    const SITUATED = {
+      mode: 'pickup' as const,
+      place: 'Le Labo',
+      at: 'au Labo',
+      address: 'Route de la Balme, Val d’Isère',
+      pickupAddressId: LABO.id,
+      slot: '7 h 30',
+      window: { start: '07:30', end: '07:45' },
+      date: DAY,
+    };
+
+    it('🔴 « Changer la date » demande le jour, puis l’heure de la MÊME maison', async () => {
+      const { doors, store, seen } = setup(
+        new Map<unknown, unknown>([
+          [ServiceChangeDialog, 'date'],
+          [DayPickerDialog, DAY],
+          [SlotPickerDialog, SLOT],
+        ]),
+      );
+      store.choice.set(SITUATED);
+
+      expect(await doors.modify()).toBe(true);
+
+      expect(seen.map((step) => step.component)).toEqual([
+        ServiceChangeDialog,
+        DayPickerDialog,
+        SlotPickerDialog,
+      ]);
+    });
+
+    it('« Changer l’heure » rouvre l’heure seule', async () => {
+      const { doors, store, seen } = setup(
+        new Map<unknown, unknown>([[ServiceChangeDialog, 'time']]),
+      );
+      store.choice.set(SITUATED);
+
+      await doors.modify();
+
+      expect(seen.map((step) => step.component)).toEqual([ServiceChangeDialog, SlotPickerDialog]);
+    });
+
+    it('fermer le panneau ne change rien', async () => {
+      const { doors, store, seen } = setup(new Map());
+      store.choice.set(SITUATED);
+
+      expect(await doors.modify()).toBe(false);
+
+      expect(seen.map((step) => step.component)).toEqual([ServiceChangeDialog]);
+      expect(store.choice()).toEqual(SITUATED);
+      expect(store.draft()).toBeNull();
+    });
   });
 
   it('un « Modifier » abandonné laisse le service tel quel, sans brouillon', async () => {

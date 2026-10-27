@@ -2083,20 +2083,6 @@
           "variables": []
         },
         {
-          "key": "commandTerms.lateDelivery",
-          "fr": "Trop tard pour demain : votre commande sera livrée {day}.",
-          "en": "Too late for tomorrow: your order will be delivered on {day}.",
-          "it": "Troppo tardi per domani: il vostro ordine sarà consegnato {day}.",
-          "variables": ["day"]
-        },
-        {
-          "key": "commandTerms.latePickup",
-          "fr": "Trop tard pour demain : votre commande sera à retirer {day}.",
-          "en": "Too late for tomorrow: your order will be ready for pickup on {day}.",
-          "it": "Troppo tardi per domani: il vostro ordine sarà da ritirare {day}.",
-          "variables": ["day"]
-        },
-        {
           "key": "commandTerms.slipped",
           "fr": "Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler.",
           "en": "Too late for {day}: the first day still open is {next}. Change the day before paying.",
@@ -2116,20 +2102,6 @@
           "en": "This day is no longer available: choose another one before paying.",
           "it": "Questo giorno non è più possibile: sceglietene un altro prima di pagare.",
           "variables": []
-        },
-        {
-          "key": "commandTerms.lateDeliveryAt",
-          "fr": "Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}.",
-          "en": "Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}.",
-          "it": "Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}.",
-          "variables": ["time", "day"]
-        },
-        {
-          "key": "commandTerms.latePickupAt",
-          "fr": "Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}.",
-          "en": "Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}.",
-          "it": "Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}.",
-          "variables": ["time", "day"]
         },
         {
           "key": "commandTerms.operationPickupFrom",
@@ -2415,6 +2387,78 @@
           "variables": []
         },
         { "key": "dayPicker.close", "fr": "Fermer", "en": "Close", "it": "Chiudi", "variables": [] }
+      ],
+      "unrecorded": []
+    },
+    {
+      "space": "serviceChange",
+      "title": "Modifier — ce qu’on change d’une commande située",
+      "source": "screens/service-change.copy.ts",
+      "journey": true,
+      "entries": [
+        {
+          "key": "serviceChange.kicker",
+          "fr": "Modifier mes choix",
+          "en": "Change my choices",
+          "it": "Modificare le mie scelte",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.title",
+          "fr": "Que voulez-vous changer ?",
+          "en": "What would you like to change?",
+          "it": "Che cosa volete cambiare?",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.toDelivery",
+          "fr": "Me faire livrer",
+          "en": "Have it delivered",
+          "it": "Farmelo consegnare",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.toPickup",
+          "fr": "La récupérer en boutique",
+          "en": "Pick it up in store",
+          "it": "Ritirarlo in negozio",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.changeDate",
+          "fr": "Changer la date",
+          "en": "Change the date",
+          "it": "Cambiare la data",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.changeTime",
+          "fr": "Changer l’heure",
+          "en": "Change the time",
+          "it": "Cambiare l’ora",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.changeAddress",
+          "fr": "Changer l’adresse ou le créneau",
+          "en": "Change the address or the slot",
+          "it": "Cambiare l’indirizzo o la fascia",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.changePlace",
+          "fr": "Changer le point de retrait",
+          "en": "Change the pickup point",
+          "it": "Cambiare il punto di ritiro",
+          "variables": []
+        },
+        {
+          "key": "serviceChange.close",
+          "fr": "Fermer",
+          "en": "Close",
+          "it": "Chiudi",
+          "variables": []
+        }
       ],
       "unrecorded": []
     },
@@ -3047,9 +3091,9 @@
         },
         {
           "key": "slotPicker.lead",
-          "fr": "Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud.",
-          "en": "Slots follow the bakes. The one you pick decides what will still be warm.",
-          "it": "Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo.",
+          "fr": "Choisissez l’heure qui vous convient.",
+          "en": "Choose the time that suits you.",
+          "it": "Scegliete l’ora che vi conviene.",
           "variables": []
         },
         {

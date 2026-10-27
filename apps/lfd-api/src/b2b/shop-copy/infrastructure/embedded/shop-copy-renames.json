@@ -47,6 +47,10 @@
     "dayPicker.dateLabel": null,
     "dayPicker.notServed": null,
     "dayPicker.confirmDate": null,
-    "accueilPublic.doors.pickupSingleCta": null
+    "accueilPublic.doors.pickupSingleCta": null,
+    "commandTerms.lateDelivery": null,
+    "commandTerms.latePickup": null,
+    "commandTerms.lateDeliveryAt": null,
+    "commandTerms.latePickupAt": null
   }
 }

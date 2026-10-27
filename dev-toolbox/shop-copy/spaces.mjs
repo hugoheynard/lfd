@@ -55,6 +55,13 @@ export const ORDER_JOURNEY = [
   },
   {
     kind: "screen",
+    space: "serviceChange",
+    title: "Modifier — ce qu’on change d’une commande située",
+    file: "screens/service-change.copy.ts",
+    fn: "serviceChangeCopy",
+  },
+  {
+    kind: "screen",
     space: "housePicker",
     title: "Choix du lieu — la maison",
     file: "screens/house-picker.copy.ts",

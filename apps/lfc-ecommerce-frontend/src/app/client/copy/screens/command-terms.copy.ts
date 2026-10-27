@@ -29,13 +29,6 @@ export interface CommandTermsCopy {
   readonly changeDay: string;
 
   /**
-   * 🔴 Le jour de service n'est PAS demain (Hugo, 2026-10-13 : « je croyais
-   * commander pour demain et au final j'ai deux commandes pour jeudi »).
-   * `{day}` est TOUJOURS un jour dit en mot — « jeudi 15 octobre ».
-   */
-  readonly lateDelivery: string;
-  readonly latePickup: string;
-  /**
    * Le jour retenu n'est plus demandable (la limite est passée pendant la
    * saisie) : `{day}` le jour retenu, `{next}` le premier encore possible.
    */
@@ -50,12 +43,6 @@ export interface CommandTermsCopy {
    * possible (heure limite passée, 2026-10-26).
    */
   readonly dayUnavailable: string;
-  /**
-   * La même chose, quand on a lu l'heure limite de demain avant qu'elle tombe :
-   * `{time}` l'heure passée — « 23 h » —, `{day}` le jour de service.
-   */
-  readonly lateDeliveryAt: string;
-  readonly latePickupAt: string;
   /**
    * Le panier porte une opération datée : c'est ELLE qui repousse le jour, pas
    * l'heure limite. `{day}` le premier jour de retrait.
@@ -144,16 +131,10 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   changeTime: 'Changer l’heure',
   changeAddress: 'Changer d’adresse',
   changeDay: 'Changer le jour',
-  lateDelivery: 'Trop tard pour demain : votre commande sera livrée {day}.',
-  latePickup: 'Trop tard pour demain : votre commande sera à retirer {day}.',
   slipped:
     'Trop tard pour {day} : le premier jour encore possible est {next}. Changez le jour avant de régler.',
   editDay: 'Modifier le jour',
   dayUnavailable: 'Ce jour n’est plus possible : choisissez-en un autre avant de régler.',
-  lateDeliveryAt:
-    'Trop tard pour demain, la limite était {time} : votre commande sera livrée {day}.',
-  latePickupAt:
-    'Trop tard pour demain, la limite était {time} : votre commande sera à retirer {day}.',
   operationPickupFrom: 'Ce produit se retire à partir du {day}.',
   cutoffCountdown: 'Plus que {left} pour commander pour {day}.',
   cutoffLeftHoursMinutes: '{h} h {mm}',
@@ -193,15 +174,9 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   changeTime: 'Change time',
   changeAddress: 'Change address',
   changeDay: 'Change day',
-  lateDelivery: 'Too late for tomorrow: your order will be delivered on {day}.',
-  latePickup: 'Too late for tomorrow: your order will be ready for pickup on {day}.',
   slipped: 'Too late for {day}: the first day still open is {next}. Change the day before paying.',
   editDay: 'Change the day',
   dayUnavailable: 'This day is no longer available: choose another one before paying.',
-  lateDeliveryAt:
-    'Too late for tomorrow, orders closed at {time}: your order will be delivered on {day}.',
-  latePickupAt:
-    'Too late for tomorrow, orders closed at {time}: your order will be ready for pickup on {day}.',
   operationPickupFrom: 'This product can be picked up from {day}.',
   cutoffCountdown: 'Only {left} left to order for {day}.',
   cutoffLeftHoursMinutes: '{h} h {mm} min',
@@ -239,16 +214,10 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   changeTime: 'Cambia orario',
   changeAddress: 'Cambia indirizzo',
   changeDay: 'Cambia giorno',
-  lateDelivery: 'Troppo tardi per domani: il vostro ordine sarà consegnato {day}.',
-  latePickup: 'Troppo tardi per domani: il vostro ordine sarà da ritirare {day}.',
   slipped:
     'Troppo tardi per {day}: il primo giorno ancora possibile è {next}. Cambiate il giorno prima di pagare.',
   editDay: 'Modifica il giorno',
   dayUnavailable: 'Questo giorno non è più possibile: sceglietene un altro prima di pagare.',
-  lateDeliveryAt:
-    'Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà consegnato {day}.',
-  latePickupAt:
-    'Troppo tardi per domani, il limite era alle {time}: il vostro ordine sarà da ritirare {day}.',
   operationPickupFrom: 'Questo prodotto si ritira a partire da {day}.',
   cutoffCountdown: 'Ancora {left} per ordinare per {day}.',
   cutoffLeftHoursMinutes: '{h} h {mm}',

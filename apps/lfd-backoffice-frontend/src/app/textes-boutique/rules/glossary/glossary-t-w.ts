@@ -1,5 +1,7 @@
 /** Segments de clé `T`–`W` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
+  toDelivery: 'Modifier — passer à la livraison',
+  toPickup: 'Modifier — passer au retrait en boutique',
   todayUntil: 'Choix du jour — « Aujourd’hui » avec l’heure limite',
   tagContact: 'Pastille « contact seulement »',
   tail: 'Fin de phrase',
