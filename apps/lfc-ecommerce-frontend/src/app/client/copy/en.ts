@@ -420,10 +420,10 @@ export const EN: ClientCopy = {
     placeFailed: 'The order could not be placed.',
   },
   qr: {
-    title: 'Your handover code',
-    lead: 'Show this code. The team’s scan is what records the handover.',
+    title: 'Your QR code',
+    lead: 'Show this code to receive your order.',
     loading: 'Loading…',
-    codeLabel: 'Handover QR code',
+    codeLabel: 'Pickup QR code',
     when: 'For {day}',
     unavailable: 'This order has no code: it predates the handover code.',
     unknown: 'That order cannot be found.',

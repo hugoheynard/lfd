@@ -4281,16 +4281,16 @@
       "entries": [
         {
           "key": "qr.title",
-          "fr": "Votre code de remise",
-          "en": "Your handover code",
-          "it": "Il suo codice di consegna",
+          "fr": "Votre QR code",
+          "en": "Your QR code",
+          "it": "Il suo codice QR",
           "variables": []
         },
         {
           "key": "qr.lead",
-          "fr": "Présentez ce code. C’est le scan de l’équipe qui atteste la remise.",
-          "en": "Show this code. The team’s scan is what records the handover.",
-          "it": "Mostri questo codice. È la scansione del team che attesta la consegna.",
+          "fr": "Présentez ce code pour recevoir votre commande.",
+          "en": "Show this code to receive your order.",
+          "it": "Mostri questo codice per ricevere il suo ordine.",
           "variables": []
         },
         {
@@ -4302,9 +4302,9 @@
         },
         {
           "key": "qr.codeLabel",
-          "fr": "QR code de remise",
-          "en": "Handover QR code",
-          "it": "Codice QR di consegna",
+          "fr": "QR code de retrait",
+          "en": "Pickup QR code",
+          "it": "Codice QR di ritiro",
           "variables": []
         },
         {

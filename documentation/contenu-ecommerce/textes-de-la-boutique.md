@@ -858,10 +858,10 @@ Source : `fr.ts · en.ts · it.ts` · 8 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `qr.title` | Votre code de remise | Your handover code | Il suo codice di consegna |  |
-| `qr.lead` | Présentez ce code. C’est le scan de l’équipe qui atteste la remise. | Show this code. The team’s scan is what records the handover. | Mostri questo codice. È la scansione del team che attesta la consegna. |  |
+| `qr.title` | Votre QR code | Your QR code | Il suo codice QR |  |
+| `qr.lead` | Présentez ce code pour recevoir votre commande. | Show this code to receive your order. | Mostri questo codice per ricevere il suo ordine. |  |
 | `qr.loading` | Chargement… | Loading… | Caricamento… |  |
-| `qr.codeLabel` | QR code de remise | Handover QR code | Codice QR di consegna |  |
+| `qr.codeLabel` | QR code de retrait | Pickup QR code | Codice QR di ritiro |  |
 | `qr.when` | Pour le {day} | For {day} | Per il {day} | `{day}` |
 | `qr.unavailable` | Cette commande n’a pas de code : elle est antérieure au code de remise. | This order has no code: it predates the handover code. | Questo ordine non ha codice: è anteriore al codice di consegna. |  |
 | `qr.unknown` | Cette commande est introuvable. | That order cannot be found. | Ordine non trovato. |  |

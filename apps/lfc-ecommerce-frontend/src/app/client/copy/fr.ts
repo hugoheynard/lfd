@@ -419,10 +419,10 @@ export const FR: ClientCopy = {
     placeFailed: 'La commande n’a pas pu être passée.',
   },
   qr: {
-    title: 'Votre code de remise',
-    lead: 'Présentez ce code. C’est le scan de l’équipe qui atteste la remise.',
+    title: 'Votre QR code',
+    lead: 'Présentez ce code pour recevoir votre commande.',
     loading: 'Chargement…',
-    codeLabel: 'QR code de remise',
+    codeLabel: 'QR code de retrait',
     when: 'Pour le {day}',
     unavailable: 'Cette commande n’a pas de code : elle est antérieure au code de remise.',
     unknown: 'Cette commande est introuvable.',

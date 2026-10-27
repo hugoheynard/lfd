@@ -425,10 +425,10 @@ export const IT: ClientCopy = {
     placeFailed: 'Non è stato possibile effettuare l’ordine.',
   },
   qr: {
-    title: 'Il suo codice di consegna',
-    lead: 'Mostri questo codice. È la scansione del team che attesta la consegna.',
+    title: 'Il suo codice QR',
+    lead: 'Mostri questo codice per ricevere il suo ordine.',
     loading: 'Caricamento…',
-    codeLabel: 'Codice QR di consegna',
+    codeLabel: 'Codice QR di ritiro',
     when: 'Per il {day}',
     unavailable: 'Questo ordine non ha codice: è anteriore al codice di consegna.',
     unknown: 'Ordine non trovato.',
