@@ -120,3 +120,44 @@ commerce, contrat partagé `ProPricePolicy` (racine), lectures du rapport dans
 e2e de la migration irréalisable telle qu'écrite, ~75 fichiers concernés.
 
 **R1 n'est touché par aucune objection** et part seul.
+
+## 7. Décisions avant de bâtir R2 et R3 (2026-10-27)
+
+Hugo : « lance R2 et R3 ». La production est en `entered` (Q1). Les points
+sérieux de `vitruve` sont tranchés ainsi :
+
+- **Ordre** : R2, commité et vert, puis R3. R1 est bâti (`4f6f26fac`).
+- **Semis et fixtures d'abord** (bloquant 3) : `seed-pim/registry.ts`,
+  `test/pim-sellable.ts` et `test/catalog-facts-scene.ts` cessent de poser
+  `ratio_ttc` et **saisissent un prix pro HT** par déclinaison — au même
+  montant que le rapport donnait (prix public × 90 % au taux b2b), pour que
+  les e2e qui comptent des prix pros gardent leurs chiffres. C'est le premier
+  geste de R3, avant toute retouche du domaine.
+- **Migration** : `UPDATE` de la méthode à `entered` **pour les bases de dev
+  et de test** n'est pas fait par la migration ; la migration lève
+  l'exception si une ligne n'est pas `entered`, avec un message qui dit le
+  geste local (`pnpm --filter lfd-api seed:pim` après le nouveau semis, ou
+  « Passer au prix saisi » dans le back-office local). Garde vérifiée par un
+  test qui exécute le SQL de garde sur une transaction annulée (pas par un
+  e2e de migration, irréalisable). Phrase de runbook dans
+  `documentation/ops/runbook.md` : P3009 et `migrate resolve --rolled-back`.
+- **`pro_price_ratio_bp`** reste en base (colonne morte), plus lu ; une ligne
+  neuve y écrit la valeur existante ou la valeur par défaut actuelle — rien
+  d'inventé.
+- **Révisions** : l'en-tête garde ses deux champs, figés à leur dernière
+  valeur écrite par une constante (`entered`, rapport `null`) ; le diff
+  ignore ces deux champs quand la méthode n'existe plus, pour ne pas montrer
+  un faux changement.
+- **Journal** : les faits `accounting_rules.method_changed`,
+  `accounting_rules.pro_ratio_changed`, `product.pro_price_prefilled` restent
+  déclarés et lisibles (faits passés), leurs constantes aussi (lues par
+  `attribution.ts:42`) ; aucune nouvelle émission. L'enum du journal n'est
+  pas resserré.
+- **`pro_price_rule`** : la clé sort du calcul ; son **libellé reste** dans la
+  table unique des manques (entrées publiées avant).
+- **Contrat partagé** `ProPricePolicy` / `PRO_PRICE_METHODS` : réduit côté
+  logique, champs gardés pour la lecture des révisions ; `pnpm test` racine
+  au commit.
+- **Écran** : la fiche lit le prix pro saisi seul (`proPriceAt`,
+  `discountLabel`, `source: 'ratio'` retirés) ; les règles comptables perdent
+  méthode, rapport, pré-remplissage et « Passer au prix saisi ».
