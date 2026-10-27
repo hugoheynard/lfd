@@ -1,18 +1,14 @@
 /**
  * La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste.
  *
- * **Deux rangées, et le nom a la première pour lui seul.** Sur une rangée, le
- * champ (92 px), le total (~62) et la corbeille (34) plus leurs écarts ne
- * laissaient au nom que le reste, et il fallait une colonne de 450 px pour
- * qu'il tienne. Le nom se lit en premier : il prend toute la largeur, et les
- * trois contrôles se partagent la rangée du dessous, qui était à moitié vide.
+ * **Une seule rangée** (Hugo, 2026-10-27) : le nom et son prix unitaire en
+ * dessous, puis la quantité, le total et la corbeille. Le nom prend ce qui
+ * reste et passe à la ligne s'il le faut ; les contrôles gardent leur largeur.
  */
 :host {
   display: grid;
-  grid-template-columns: auto minmax(0, 1fr) auto;
-  grid-template-areas:
-    'what what what'
-    'qty sum drop';
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
+  grid-template-areas: 'what qty sum drop';
   align-items: center;
   gap: 9px 13px;
   padding: 13px 15px;
@@ -21,9 +17,9 @@
 .qty {
   grid-area: qty;
   justify-self: start;
-  /* Assez large pour deux chiffres et les deux boutons empilés, pas plus : le
-     nom garde le reste. */
-  width: 92px;
+  /* Deux boutons de part et d'autre d'un champ à trois chiffres : le nom
+     garde le reste. */
+  width: 148px;
 }
 
 /* Discrète au repos : elle n'est pas le geste qu'on vient faire, elle est

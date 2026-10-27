@@ -84,11 +84,13 @@ describe('CartSummary', () => {
    * applique. C'est le partage habituel — la ligne ne connaît pas le panier.
    */
   it('applique le réglage de quantité venu d’une ligne', () => {
-    // Le « + » du champ empilé, dans la PREMIÈRE ligne — pas dans la liste
-    // entière, dont le dernier bouton appartiendrait à la seconde. `fold`
-    // empile l'incrément AU-DESSUS du décrément, donc c'est le premier.
+    // Le « + » du champ, dans la PREMIÈRE ligne — pas dans la liste entière,
+    // dont le dernier bouton appartiendrait à la seconde. Les boutons
+    // encadrent le champ (`controls="outside"`) : « − » puis « + ».
     const first = el().querySelector('.lines > li');
-    const plus = first?.querySelectorAll<HTMLButtonElement>('fold-number-input button')[0];
+    const plus = [
+      ...(first?.querySelectorAll<HTMLButtonElement>('fold-number-input button') ?? []),
+    ].at(-1);
 
     plus?.click();
     fixture.detectChanges();
