@@ -30,9 +30,7 @@ import {
   observedGapLabel,
   proPriceMillicentsOf,
   proPricePayloadOf,
-  proPriceSuggestionOf,
   proPriceTextOf,
-  type ProPriceSuggestion,
 } from './pro-price-entry';
 import {
   bucketsOf,
@@ -948,9 +946,8 @@ export class ProductFormStore {
 
   /**
    * Le prix pro sous la méthode appliquée — `null` faute de taux, ou sans
-   * saisie sous `entered` (ou sous `ratio_ttc` sans rapport). Avec la
-   * suggestion (`pro-price-entry.ts`), l'un des deux appels à la porte de cet
-   * écran.
+   * saisie sous `entered` (ou sous `ratio_ttc` sans rapport). Le seul appel à
+   * la porte de cet écran depuis le retrait de la suggestion (2026-10-27).
    */
   private proPriceAt(priceEur: number, percent: number | undefined): ProPrice | null {
     const rules = this.accounting.rules();
@@ -960,28 +957,6 @@ export class ProductFormStore {
       percent ?? null,
       this.proPriceMillicents(),
     );
-  }
-
-  /**
-   * **La suggestion du rapport** (lot S, S3) — sous le champ « Prix pro HT » :
-   * ce que le rapport suggéré donnerait, au taux `b2b` de la fiche. Une
-   * proposition, jamais un prix vendu.
-   */
-  readonly proPriceSuggestion = computed<ProPriceSuggestion>(() => {
-    const priceEur = this.priceEur();
-    return proPriceSuggestionOf(
-      priceEur === null ? null : Math.round(priceEur * 100),
-      this.accounting.rules().ratioBp,
-      this.percentOf(PRO_CONTEXT_KEY) ?? null,
-    );
-  });
-
-  /** « Reprendre » : met la suggestion dans le champ, SANS enregistrer. */
-  takeProPriceSuggestion(): void {
-    const suggestion = this.proPriceSuggestion();
-    if (suggestion.kind === 'ready') {
-      this.proPriceHtText.set(proPriceTextOf(suggestion.htMillicents));
-    }
   }
 
   private readonly selectedCategory = computed<Category | undefined>(() =>

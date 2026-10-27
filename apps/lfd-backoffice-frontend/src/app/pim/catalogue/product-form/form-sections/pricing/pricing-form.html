@@ -52,32 +52,6 @@
       </span>
     </label>
 
-    <!-- La SUGGESTION du rapport (lot S) : une proposition, jamais un prix
-         vendu. « Reprendre » remplit le champ, sans enregistrer — la saisie
-         reste le geste. -->
-    @let suggestion = store.proPriceSuggestion();
-    @if (suggestion.kind === 'ready') {
-      <p class="pro-suggestion">
-        Suggéré&nbsp;: <strong>{{ htText(suggestion.htMillicents) }}&nbsp;€ HT</strong> (rapport de
-        {{ suggestion.ratioLabel }})
-        <button
-          foldButton
-          type="button"
-          emphasis="soft"
-          size="sm"
-          [disabled]="store.pricingAligned()"
-          (click)="store.takeProPriceSuggestion()"
-        >
-          Reprendre
-        </button>
-      </p>
-    } @else if (suggestion.kind === 'no_vat') {
-      <p class="pro-suggestion muted">
-        Pas de suggestion&nbsp;: la fiche n’a pas de taux B2B, et le hors taxe ne se déduit pas sans
-        lui.
-      </p>
-    }
-
     <!-- Le prix PROFESSIONNEL, sous le prix public parce qu'il en découle. La
          pastille porte la remise : sans elle, le montant tomberait de nulle
          part et personne ne saurait où aller le changer. -->

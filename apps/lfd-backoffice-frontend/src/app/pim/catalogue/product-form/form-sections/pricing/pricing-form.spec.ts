@@ -522,8 +522,13 @@ describe('PricingForm — le prix pro HT saisi', () => {
   });
 });
 
-/** Lot S (S3) : le rapport devient une suggestion sous le prix pro HT. */
-describe('PricingForm — la suggestion du rapport', () => {
+/**
+ * Régression : la fiche proposait « Suggéré : X € HT (rapport de 90 %) » et un
+ * bouton « Reprendre », tirés du rapport des règles comptables ; le prix pro
+ * est désormais toujours saisi, et la suggestion induisait en erreur (Hugo,
+ * 2026-10-27).
+ */
+describe('PricingForm — aucune suggestion de prix pro', () => {
   function withRatio(store: ProductFormStore): void {
     const rules = TestBed.inject(AccountingRulesStore);
     vi.spyOn(rules, 'rules').mockReturnValue({
@@ -541,48 +546,15 @@ describe('PricingForm — la suggestion du rapport', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  const flat = (text: string | null | undefined): string =>
-    (text ?? '').replace(/\u202f|\u00a0/g, ' ');
-
-  it('suggère le HT du rapport au taux B2B de la fiche', () => {
+  it('ne suggère aucun prix pro, même avec un rapport posé', () => {
     const store = setup();
     withRatio(store);
     const host = render();
 
-    // 12,00 € × 90 % = 10,80 € TTC ÷ 1,20 = 9 € HT.
-    const line = flat(host.querySelector('.pro-suggestion')?.textContent);
-    expect(line).toContain('Suggéré : 9 € HT');
-    expect(line).toContain('rapport de 90 %');
-  });
-
-  it('« Reprendre » remplit le champ, sans rien enregistrer', () => {
-    const store = setup();
-    withRatio(store);
-    const host = render();
-    const button = [...host.querySelectorAll<HTMLButtonElement>('.pro-suggestion button')].find(
-      (b) => b.textContent?.includes('Reprendre'),
-    );
-    if (button === undefined) {
-      throw new TypeError('bouton « Reprendre » absent');
-    }
-
-    button.click();
-
-    expect(store.proPriceHtText()).toBe('9');
-    expect(store.proPriceMillicents()).toBe(900_000);
-  });
-
-  it('dit pourquoi il n’y a pas de suggestion sans taux B2B', () => {
-    const store = setup();
-    withRatio(store);
-    store.categories.update((categories) =>
-      categories.map((category) => ({
-        ...category,
-        vatByContext: { takeaway: 'tva_55', eatIn: 'tva_55' },
-      })),
-    );
-    const host = render();
-
-    expect(host.querySelector('.pro-suggestion')?.textContent).toContain('pas de taux B2B');
+    expect(host.textContent).not.toContain('Suggéré');
+    expect(
+      [...host.querySelectorAll('button')].some((b) => b.textContent?.includes('Reprendre')),
+    ).toBe(false);
+    expect(store.proPriceHtText()).toBe('');
   });
 });
