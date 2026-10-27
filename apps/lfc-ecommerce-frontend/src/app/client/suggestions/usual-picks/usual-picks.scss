@@ -4,7 +4,7 @@
 
 .usuals {
   display: grid;
-  gap: var(--fold-space-sm);
+  gap: var(--fold-space-lg);
   /* 🔴 UNE BANDE BLEU PÂLE PLEINE LARGEUR (Hugo, 2026-10-27), le même bleu
      que « Nous contacter ». Marge négative délibérée. */
   margin-inline: calc(50% - 50vw);
@@ -16,8 +16,10 @@
 .usuals-title {
   margin: 0;
   font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
+  font-size: var(--fold-text-xl);
   font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
 }
 
 /* Comme « Notre sélection » : côte à côte dès qu'il y a la place, l'une sous l'autre sinon. */

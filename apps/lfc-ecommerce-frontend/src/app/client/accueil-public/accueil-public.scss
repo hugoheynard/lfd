@@ -945,3 +945,25 @@ app-service-doors {
   flex-direction: column;
   gap: 0;
 }
+
+/* Un bloc qui ne rend rien (des `@if` faux, rien que des commentaires) ne
+   prend pas d'écart dans la colonne. */
+.sheet > :empty {
+  display: none;
+}
+
+/* 🔴 « Vos habituels » DESCEND JUSQU'AU PIED quand rien ne la suit (Hugo,
+   2026-10-27) : la colonne lâche alors son rembourrage du bas. */
+/* (La vitrine porte toujours sa région d'annonce du panier, invisible : elle
+   est « vide » tant qu'elle n'a pas de grille.) */
+/* (Un `:has` ne s'imbrique pas : la grille absente se dit à part.) */
+.sheet:has(> app-usual-picks + app-staff-home-picks:empty + app-home-storefront:last-child):not(
+    :has(app-shelf-grid)
+  ) {
+  padding-bottom: 0;
+}
+
+/* Sans grille, elle sort du flux : pas d'écart pour une région invisible. */
+.sheet > app-home-storefront:not(:has(app-shelf-grid)) {
+  position: absolute;
+}

@@ -37,14 +37,15 @@
    2026-10-27) : c'est la seule action de la tête. */
 .all {
   flex: none;
-  height: 34px;
-  padding: 0 14px;
+  height: 44px;
+  padding: 0 var(--fold-space-lg);
   border: 0;
   border-radius: var(--fold-radius-sm);
   background: var(--lfc-color-on-well);
   color: var(--lfc-color-surface-well);
   font-family: var(--fold-font-sans);
-  font-size: var(--fold-text-sm);
+  /* `lg`, pas `base` : le titre agrandi déplace `base` dans l'en-tête. */
+  font-size: var(--fold-text-lg);
   font-weight: 600;
   white-space: nowrap;
   cursor: pointer;

@@ -104,3 +104,10 @@
    CALLER's markup, they wear the caller's encapsulation, and no selector
    written here would reach them. Piercing with `::ng-deep` would have — and
    would also have let the well silently restyle anything dropped into it. */
+
+/* A section-sized heading, asked for by the caller (`class="well-title-lg"`):
+   the caps title (which reads `--fold-text-base`) takes the size of the accueil's section titles. Only the
+   token the caps label reads is moved, and only inside the header. */
+:host(.well-title-lg) .titles {
+  --fold-text-base: var(--fold-text-xl);
+}
