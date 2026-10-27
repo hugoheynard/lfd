@@ -101,10 +101,14 @@ fold-panel-body {
    2026-09-20). Une journée tient alors d'un regard : à `minmax(15rem, …)`, six
    créneaux faisaient trois rangées et il fallait défiler pour comparer des
    heures — c'est-à-dire pour faire la seule chose qu'on est venu faire. */
+/* DEUX créneaux par rangée, à toutes les largeurs (Hugo, 2026-10-27). La
+   grille `auto-fit` en mettait trois ou quatre au bureau et un seul quand une
+   fournée n'en avait qu'un — la même heure n'avait pas la même taille d'un
+   groupe à l'autre. `minmax(0, 1fr)` : une tuile ne déborde pas sa colonne. */
 .slots {
   display: grid;
   gap: 10px;
-  grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
 .slot {
