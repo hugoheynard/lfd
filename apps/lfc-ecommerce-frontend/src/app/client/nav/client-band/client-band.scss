@@ -8,6 +8,9 @@
   background: var(--fold-color-bg-header);
 }
 
+/* 🔴 AUCUN DÉGRADÉ depuis le 2026-10-27 (Hugo) : le masthead est un aplat du
+   bleu de la marque, comme la barre, et la couture reste nulle. Ce qui suit
+   raconte le dégradé d'avant. */
 /* Le dégradé qui va de l'encre de la barre à celle de la sous-barre. Il
    s'arrête EXACTEMENT sur `--lfc-ink-950`, qui est aussi le fond de la
    sous-barre juste en dessous : c'est ce qui fait la couture à zéro. */
@@ -18,12 +21,7 @@
    la descente reste une descente, assez clair pour que ce qui s'y superpose se
    détache. La couture avec la lèvre suit la même valeur, plus bas. */
 .descent {
-  background: linear-gradient(
-    to bottom,
-    var(--lfc-ink-800) 0%,
-    var(--lfc-ink-900) 60%,
-    color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900)) 100%
-  );
+  background: var(--lfc-brand-blue);
   color: var(--fold-color-text);
 }
 
@@ -65,7 +63,7 @@
   /* La MÊME valeur que la fin du dégradé, atténuée avec lui : la lèvre ne vit
      qu'en pile, mais là, un écart d'encre ferait une marche exactement à
      l'endroit qu'on veut invisible. */
-  background: color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900));
+  background: var(--lfc-brand-blue);
 }
 
 .lip::after {

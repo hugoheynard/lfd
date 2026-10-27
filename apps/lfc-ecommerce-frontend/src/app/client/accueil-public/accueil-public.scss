@@ -50,7 +50,8 @@
 }
 
 /* ── L'accroche, sur l'encre ───────────────────────────────────────────────
-   Le dégradé est celui de la descente du shell — même départ, même arrivée : la
+   🔴 Un aplat du bleu de la marque depuis le 2026-10-27 (Hugo), comme la barre
+   et la descente du shell. Avant : le dégradé était celui de la descente du shell — même départ, même arrivée : la
    couture avec la barre ne doit pas se voir. C'est elle que le bandeau de
    retrait vient mordre, et c'est pour ça qu'elle doit vivre ICI : dans la
    descente, le bandeau passait dessous. */
@@ -58,12 +59,7 @@
   display: flex;
   gap: var(--fold-space-lg);
   padding: var(--fold-space-lg) var(--lfc-inset) var(--fold-space-2xl);
-  background: linear-gradient(
-    to bottom,
-    var(--lfc-ink-800) 0%,
-    var(--lfc-ink-900) 60%,
-    color-mix(in srgb, var(--lfc-ink-950) 55%, var(--lfc-ink-900)) 100%
-  );
+  background: var(--lfc-brand-blue);
   color: var(--lfc-paper-50);
 }
 

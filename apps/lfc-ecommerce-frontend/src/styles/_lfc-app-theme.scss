@@ -18,6 +18,9 @@
 
 [data-theme='lfc-app'] {
   /* ── Primitives : encre bleue (la marque) ── */
+  /* Le bleu de la marque, celui du site vitrine (Hugo, 2026-10-27). Il peint
+     l'en-tête de la boutique, en aplat. Texte blanc dessus : 9,2:1. */
+  --lfc-brand-blue: #1238b7;
   --lfc-ink-950: #081842;
   --lfc-ink-900: #0d2464;
   --lfc-ink-800: #12307f;

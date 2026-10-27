@@ -85,21 +85,12 @@
   height: 100%;
   padding: env(safe-area-inset-top, 0px) var(--lfc-inset) 0;
 
-  /* 🔴 LA BARRE EST LE PREMIER ÉTAGE DE LA DESCENTE, et plus un aplat
-     (2026-09-20). Elle portait `bg-header`, soit `ink-800` — exactement la
-     couleur sur laquelle le dégradé de l'accroche DÉMARRE. Les deux se
-     touchaient donc sans transition, et le haut de la descente ne se lisait pas
-     comme un haut : l'œil voyait un bloc plat de 96 px, puis un assombrissement
-     qui commençait plus bas. Le ton le plus clair de la page n'était nulle
-     part.
-
-     Elle finit toujours sur `ink-800`, et c'est ce qui compte pour le raccord :
-     ce qui la suit — la bande, puis l'accroche — part de cette valeur-là, et la
-     couture reste invisible. Seul le HAUT change.
+  /* Un aplat du bleu de la marque, celui du site vitrine, sans dégradé (Hugo,
+     2026-10-27).
 
      ⚠️ La règle est posée sur `.bar` et non sur la région `[header]` du shell :
      la barre remplit sa rangée, et peindre la région appartient à fold. */
-  background: linear-gradient(to bottom, var(--lfc-ink-700), var(--lfc-ink-800));
+  background: var(--lfc-brand-blue);
 }
 
 /* 🔴 La marque et le logo sont des LIENS vers `/bienvenue` depuis le
