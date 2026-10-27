@@ -6,6 +6,7 @@ import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
+import { PublishedAllergensReader } from "../../../catalogue/product/domain/ports/published-allergens.reader.js";
 import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
 import {
   CatalogFactsReader,
@@ -30,7 +31,8 @@ import { showcaseOf } from "./showcase.js";
  * ambiante : appelé par l'émetteur APRÈS son verrou, il voit ce que le geste
  * vient d'écrire — fiche, satellites (allergènes, rédactionnel, visuels) et
  * réglages (taux, rapport pro, contextes en service, référentiel d'allergènes),
- * et ce que la composition de chaque fiche cite (`CitedAllergensReader`).
+ * et ce que la composition de chaque fiche cite (`CitedAllergensReader`),
+ * et l'union des allergènes du catalogue publié (`PublishedAllergensReader`).
  *
  * Séparé de l'émetteur (SRP) : celui-ci tient l'ordre (verrou, numéro,
  * boîte d'envoi) ; celui-là sait seulement ce qu'une fiche est devenue.
@@ -44,6 +46,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
     private readonly allergens: AllergenCatalogueReader,
     private readonly editorials: EditorialReader,
     private readonly cited: CitedAllergensReader,
+    private readonly published: PublishedAllergensReader,
   ) {
     super();
   }
@@ -55,15 +58,17 @@ export class CatalogFactsSource extends CatalogSnapshots {
       return new Map();
     }
     const familyIds = [...new Set(products.map((product) => product.categoryId))];
-    const [families, percentOf, rules, catalogue, notes, medias, cited] = await Promise.all([
-      this.facts.families(familyIds),
-      this.percentIndex(),
-      readCompletenessRules(this.contexts),
-      this.allergens.catalogue(),
-      this.editorials.findByProducts(ids),
-      this.editorials.mediaOfProducts(ids),
-      this.cited.ofProducts(ids),
-    ]);
+    const [families, percentOf, rules, catalogue, notes, medias, cited, catalogueUnion] =
+      await Promise.all([
+        this.facts.families(familyIds),
+        this.percentIndex(),
+        readCompletenessRules(this.contexts),
+        this.allergens.catalogue(),
+        this.editorials.findByProducts(ids),
+        this.editorials.mediaOfProducts(ids),
+        this.cited.ofProducts(ids),
+        this.published.union(),
+      ]);
     const familyById = new Map(families.map((family) => [family.id, family]));
     const inco = IncoProjector.from(catalogue, SOURCE_LOCALE);
     const showcase = showcaseOf(products, notes, medias);
@@ -86,6 +91,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
           inco,
           showcase: showcase.get(product.id),
           cited: cited.get(product.id) ?? [],
+          catalogueUnion,
         }),
       );
     }

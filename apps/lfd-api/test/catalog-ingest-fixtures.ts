@@ -145,6 +145,8 @@ export function snapshotOf(
             },
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
+            mayContain: null,
+            allergensPrecautionary: false,
           },
         ],
       }),

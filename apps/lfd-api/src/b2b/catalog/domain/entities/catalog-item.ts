@@ -126,6 +126,19 @@ export interface PimFacts {
    */
   readonly allergenLabels: PimAllergenLabels | null;
   /**
+   * **Les traces** (« peut contenir ») servies par le référentiel, en codes
+   * GS1. `null` = on ne sait pas : un article reçu avant le champ
+   * (2026-10-27). `[]` = aucune trace.
+   */
+  readonly mayContain: readonly string[] | null;
+  /**
+   * **Servi par précaution** (règle B de
+   * `documentation/pim/plan-allergenes-jamais-bloquants.md`) : personne ne
+   * s'est prononcé. `allergens` ne porte alors que la composition, et une
+   * liste vide ne se lit surtout pas « aucun allergène ».
+   */
+  readonly allergensPrecautionary: boolean;
+  /**
    * La limite de commande de cet article, ou `null` = **le référentiel n'en
    * déclare aucune**. Distinct d'un article d'avant le fil v6, qui porte lui
    * aussi `null` — les deux se comportent pareil, et c'est voulu : dans les deux

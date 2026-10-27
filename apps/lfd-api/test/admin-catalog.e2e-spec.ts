@@ -75,6 +75,8 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
         kind: "daily",
         variants: [
           {
+            mayContain: null,
+            allergensPrecautionary: false,
             ...sheet,
             id: "var_1",
             sku: SKU,
@@ -675,6 +677,8 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
         variants: [
           {
             ...NO_SHEET,
+            mayContain: null,
+            allergensPrecautionary: false,
             id: `var_${sku}`,
             sku: `${sku}-1`,
             name: sku,

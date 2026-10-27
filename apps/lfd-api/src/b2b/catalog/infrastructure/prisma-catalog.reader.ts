@@ -40,6 +40,7 @@ interface ItemRow {
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly allergensPrecautionary: boolean;
   readonly note: string | null;
   readonly nameTranslations: unknown;
   readonly noteTranslations: unknown;
@@ -444,7 +445,8 @@ function orderTimeLimitOf(row: ItemRow): ResolvedCatalogItem["orderTimeLimit"] {
  * ⚠️ Rien n'est fabriqué ici. Un article sans déclaration rend `null`, et
  * jamais `{ codes: [] }` : la seconde forme affirmerait « aucun allergène » sur
  * une fiche qui n'en porte pas encore, et cette affirmation-là finirait figée
- * dans une commande — donc irrattrapable.
+ * dans une commande — donc irrattrapable. Une liste servie par précaution
+ * part avec `incomplete` levé, pour la même raison.
  */
 function frozenAllergens(row: ItemRow): OrderLineAllergens | null {
   const codes = Array.isArray(row.allergens)
@@ -475,7 +477,14 @@ function frozenAllergens(row: ItemRow): OrderLineAllergens | null {
   if (codes === null && labels === null) {
     return null;
   }
-  return { codes, labels, incomplete: labelsRaw?.incomplete === true };
+  // Servie par précaution (règle B), la liste ne porte que la composition et
+  // peut être vide : figée sans l'aveu, elle se lirait « aucun allergène »
+  // dans une commande — donc irrattrapable.
+  return {
+    codes,
+    labels,
+    incomplete: labelsRaw?.incomplete === true || row.allergensPrecautionary,
+  };
 }
 
 /**

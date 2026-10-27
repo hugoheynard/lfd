@@ -25,6 +25,7 @@ interface AdminRow {
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly allergensPrecautionary: boolean;
   readonly operationOnly: boolean;
   readonly audience: string | null;
   readonly publicReviewPending: boolean;
@@ -118,7 +119,7 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     publicTtcCents: row.publicTtcCents,
     publicVatRatePercent:
       publicByContextOf(row.publicByContext)?.[PUBLIC_SALES_CONTEXT]?.vatRatePercent ?? null,
-    ...allergensOf(row.allergens, row.allergenLabels),
+    ...withPrecaution(allergensOf(row.allergens, row.allergenLabels), row.allergensPrecautionary),
     isHidden: row.override?.isHidden ?? false,
     isHiddenPublic: row.override?.isHiddenPublic ?? false,
     audience: catalogAudienceOf(row.audience),
@@ -187,4 +188,18 @@ export function allergensOf(
     })),
     allergensIncomplete: projected.incomplete,
   };
+}
+
+/**
+ * **Une liste servie par précaution n'est jamais complète** (règle B de
+ * `documentation/pim/plan-allergenes-jamais-bloquants.md`) : elle ne porte que
+ * ce que la composition cite, et peut être VIDE. Le drapeau `incomplete`
+ * interdit au gabarit d'écrire « Sans allergène » — le même aveu que pour une
+ * liste amputée, et pour la même raison.
+ */
+export function withPrecaution<T extends { readonly allergensIncomplete: boolean }>(
+  view: T,
+  precautionary: boolean,
+): T {
+  return precautionary ? { ...view, allergensIncomplete: true } : view;
 }

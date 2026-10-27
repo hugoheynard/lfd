@@ -661,3 +661,33 @@ describe("le point focal de l'image d'opération, facultatif sur le fil (L10)", 
     expect(storedCatalogSnapshotSchema.safeParse(withOperationImage(base)).success).toBe(true);
   });
 });
+
+/**
+ * Les traces et la précaution (règle B, 2026-10-27) — ajoutées sans changer de
+ * version : un fait durable émis avant elles se rejoue avec le sens d'avant.
+ */
+describe("les traces et la précaution de l’article", () => {
+  it("lit un envoi d’avant les deux champs comme « on ne sait pas », sans précaution", () => {
+    const parsed = syncVariantSchema.parse(variant);
+
+    expect(parsed.mayContain).toBeNull();
+    expect(parsed.allergensPrecautionary).toBe(false);
+  });
+
+  it("transporte les traces et la précaution quand elles sont servies", () => {
+    const parsed = syncVariantSchema.parse({
+      ...variant,
+      allergens: [],
+      allergenLabels: { labels: [], incomplete: false },
+      mayContain: ["AW", "AM"],
+      allergensPrecautionary: true,
+    });
+
+    expect(parsed.mayContain).toEqual(["AW", "AM"]);
+    expect(parsed.allergensPrecautionary).toBe(true);
+  });
+
+  it("refuse un code de trace vide", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, mayContain: [""] }).success).toBe(false);
+  });
+});

@@ -27,6 +27,7 @@ import {
   activateFiche,
   aDraftFiche,
   anActiveFiche,
+  declareAllergens,
   deliverDirectly,
   productFactsOf,
   relayAll,
@@ -141,19 +142,31 @@ describe("une fiche créée au référentiel apparaît sur la plateforme", () =>
  */
 describe("les allergènes servis à la plateforme", () => {
   /**
-   * Règle B : en vente, allergènes à `null`. Le fil ne porte pas encore de
-   * traces — envoyer les seuls cités ferait lire « aucun allergène ».
+   * Règle B, de bout en bout : sans déclaration, la fiche part par
+   * précaution — allergènes = composition (ici rien), traces = l'union des
+   * allergènes DÉCLARÉS du catalogue publié. Une fiche déclarée, elle, porte
+   * ses traces à elle, jamais l'union.
    */
-  it("une fiche sans déclaration passe en vente, ses allergènes non renseignés", async () => {
-    const fiche = await anActiveFiche(staff, "Fougasse", null, null);
+  it("une fiche sans déclaration arrive avec les traces du catalogue publié", async () => {
+    const declared = await aDraftFiche(staff, "Brioche");
+    await declareAllergens(staff, declared, ["UW", "AM"], ["SA"]);
+    const brioche = await activateFiche(staff, declared, null, null);
+    await relayAll(ctx);
+    const fougasse = await anActiveFiche(staff, "Fougasse", null, null);
 
     await relayAll(ctx);
 
-    expect(await entryOf(fiche.id)).toMatchObject({ status: "active", gaps: {} });
-    expect(await itemOf(fiche.variantSku)).toMatchObject({
+    expect(await entryOf(fougasse.id)).toMatchObject({ status: "active", gaps: {} });
+    expect(await itemOf(fougasse.variantSku)).toMatchObject({
       withdrawnAt: null,
-      allergens: null,
-      allergenLabels: null,
+      allergens: [],
+      mayContain: ["AM", "UW"],
+      allergensPrecautionary: true,
+    });
+    expect(await itemOf(brioche.variantSku)).toMatchObject({
+      allergens: ["UW", "AM"],
+      mayContain: ["SA"],
+      allergensPrecautionary: false,
     });
   });
 

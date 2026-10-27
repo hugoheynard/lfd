@@ -27,6 +27,8 @@ const FACTS: PimFacts = {
   publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
   allergens: [],
   allergenLabels: null,
+  mayContain: null,
+  allergensPrecautionary: false,
   orderTimeLimit: null,
   note: null,
   image: null,

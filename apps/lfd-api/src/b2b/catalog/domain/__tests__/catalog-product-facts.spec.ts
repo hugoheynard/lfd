@@ -46,6 +46,8 @@ function fact(): ReceivedCatalogItem {
     publicByContext: null,
     allergens: [],
     allergenLabels: null,
+    mayContain: null,
+    allergensPrecautionary: false,
     orderTimeLimit: null,
     note: null,
     image: null,

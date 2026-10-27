@@ -21,6 +21,8 @@ export interface ItemRow {
   readonly publicByContext: unknown;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
+  readonly mayContain: unknown;
+  readonly allergensPrecautionary: boolean;
   readonly note: string | null;
   readonly imageUrl: string | null;
   readonly thumbnailUrl: string | null;
@@ -131,6 +133,8 @@ export function toDomain(row: ItemRow): CatalogItem {
       publicByContext: publicByContextOf(row.publicByContext),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),
+      mayContain: allergensOf(row.mayContain),
+      allergensPrecautionary: row.allergensPrecautionary,
       orderTimeLimit: orderTimeLimitOf(row),
       note: row.note,
       image: imageOf(row),

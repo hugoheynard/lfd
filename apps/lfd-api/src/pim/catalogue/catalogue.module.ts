@@ -85,6 +85,8 @@ import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
+import { PublishedAllergensReader } from "./product/domain/ports/published-allergens.reader.js";
+import { PrismaPublishedAllergensReader } from "./product/infrastructure/prisma-published-allergens.reader.js";
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
 import { PrismaEditorialRepository } from "./product/infrastructure/prisma-editorial.repository.js";
 import { PrismaNutritionValuesRepository } from "./product/infrastructure/prisma-nutrition-values.repository.js";
@@ -189,6 +191,7 @@ import {
     { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: PublishedAllergensReader, useClass: PrismaPublishedAllergensReader },
     { provide: ProductImageUsage, useClass: PrismaProductImageUsage },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
     { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
@@ -215,6 +218,12 @@ import {
   // `EditorialReader` sort depuis la v8 du fil : le canal B2B emporte la ligne
   // de vitrine et le packshot, et les lit en LOT pour tout le catalogue. Il
   // sort en lecture seule — l'écriture reste ici.
-  exports: [PrismaMediaCarriers, CatalogueReader, CatalogFactsReader, EditorialReader],
+  exports: [
+    PrismaMediaCarriers,
+    CatalogueReader,
+    CatalogFactsReader,
+    EditorialReader,
+    PublishedAllergensReader,
+  ],
 })
 export class CatalogueModule {}

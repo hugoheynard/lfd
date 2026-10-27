@@ -1,12 +1,14 @@
 # Plan — les allergènes ne bloquent plus jamais une publication
 
-> 🟡 **Bâti en partie le 2026-10-27** (non commité au moment d'écrire) —
-> règle A, constat `allergens_precautionary`, complétude, écran (libellé,
-> filtre « Sans information précise », toast). **Reste** : les traces de la
-> règle B n'atteignent pas le commerce, le fil (`SyncVariant`) n'a pas de
-> champ « peut contenir » ; une déclinaison sous B y part à `allergens: null`.
-> L'union du catalogue n'est donc pas encore lue par la projection. État
-> décrit dans [`data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md).
+> 🟡 **Bâti en partie le 2026-10-27** — règle A, constat
+> `allergens_precautionary`, complétude, écran (commit `326d71e73`) ; puis la
+> règle B jusqu'au commerce (non commité au moment d'écrire) : union du
+> catalogue lue par projection, fil `mayContain` / `allergensPrecautionary`,
+> colonnes `catalog_items`, aveu `incomplete` au back-office et sur la ligne
+> de commande. **Reste** le §3 : la boutique ne montre aucun allergène (la vue
+> `shop-catalogue` n'en porte pas) — ni libellés traduits des traces, ni
+> mention de précaution. État décrit dans
+> [`data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md).
 >
 > 📝 Plan d'origine (2026-10-27). Hugo : « je dois diminuer la
 > friction admin ». Il revient sur la décision du matin même (contradiction
@@ -61,7 +63,9 @@ unionCatalogue)` sert à l'activation, à la projection (`catalog-facts`) et à
 - La déclaration **enregistrée** n'est pas réécrite par A ni par B : c'est
   l'état **servi** qui l'applique. La propagation depuis un ingrédient
   (`plan-propager-allergenes-d-un-ingredient.md`) reste le geste qui écrit.
-- Aucune migration.
+- ~~Aucune migration.~~ Une, additive, côté commerce
+  (`20261027120000_les_traces_atteignent_le_commerce`) : le fil devait
+  porter les traces jusqu'à `catalog_items`.
 
 ## 5. Questions
 

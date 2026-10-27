@@ -37,6 +37,8 @@ function article(placement: Placement, sku: string = SKU): CatalogItem {
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     allergens: null,
     allergenLabels: null,
+    mayContain: null,
+    allergensPrecautionary: false,
     note: null,
     image: null,
     thumbnail: null,

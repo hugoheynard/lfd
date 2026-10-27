@@ -57,6 +57,8 @@ const VARIANT: CatalogVariantFact = {
   vatRatePercent: 5.5,
   allergens: ["UW"],
   allergenLabels: { labels: [{ category: "gluten", label: "Gluten" }], incomplete: false },
+  mayContain: null,
+  allergensPrecautionary: false,
   nameTranslations: { en: "Butter croissant" },
 };
 
@@ -190,6 +192,47 @@ describe("OnCatalogProductChangedHandler", () => {
     expect(projection.onSale).toEqual([]);
     expect(projection.kept).toEqual([]);
     expect(projection.calls).toContain("withdraw:prd_1");
+  });
+
+  /** Règle B (2026-10-27) : les traces et la précaution descendent sur l'article. */
+  it("porte les traces et la précaution d'une déclinaison sans déclaration", async () => {
+    const projection = new SpyingProduct(true);
+    const precautionary: CatalogVariantFact = {
+      ...VARIANT,
+      allergens: [],
+      allergenLabels: { labels: [], incomplete: false },
+      mayContain: ["UW", "AM"],
+      allergensPrecautionary: true,
+    };
+
+    await deliver(projection, productFact("active", { variants: [precautionary] }));
+
+    expect(projection.onSale[0]).toMatchObject({
+      allergens: [],
+      mayContain: ["UW", "AM"],
+      allergensPrecautionary: true,
+    });
+  });
+
+  /** Un fait émis avant les deux champs se rejoue avec le sens d'avant. */
+  it("lit un fait d'avant les traces comme « on ne sait pas », sans précaution", async () => {
+    const projection = new SpyingProduct(true);
+    const durable = productFact("active").durableFact();
+    const payload = JSON.parse(JSON.stringify(durable.payload)) as {
+      variants: Record<string, unknown>[];
+    };
+    for (const variant of payload.variants) {
+      delete variant["mayContain"];
+      delete variant["allergensPrecautionary"];
+    }
+
+    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+      eventId: "evt_1",
+      type: durable.type,
+      payload,
+    });
+
+    expect(projection.onSale[0]).toMatchObject({ mayContain: null, allergensPrecautionary: false });
   });
 
   it("lève sur un fait illisible : la livraison se rejoue, rien n'est avalé", async () => {

@@ -46,6 +46,8 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       publicByContext: variant.publicByContext ?? null,
       allergens: variant.allergens,
       allergenLabels: variant.allergenLabels,
+      mayContain: variant.mayContain,
+      allergensPrecautionary: variant.allergensPrecautionary,
       orderTimeLimit: null,
       note: product.note,
       nameTranslations: variant.nameTranslations,

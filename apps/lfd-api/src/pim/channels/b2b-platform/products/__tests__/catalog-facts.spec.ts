@@ -45,6 +45,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     inco: NO_ALLERGEN_REFERENCE,
     showcase: undefined,
     cited: [],
+    catalogueUnion: [],
     ...over,
   };
 }
@@ -64,22 +65,45 @@ describe("projectProductFact", () => {
 
   /**
    * Retourné le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`, règle B) :
-   * une déclinaison sans déclaration se vend par précaution. Ses allergènes
-   * partent à `null` — le fil ne porte pas encore de traces, et la liste des
-   * seuls cités se lirait « aucun allergène » quand la composition est muette.
+   * une déclinaison sans déclaration se vend par précaution — ses allergènes
+   * sont ceux de la composition, ses traces l'union du catalogue publié.
    */
-  it("vend une déclinaison sans déclaration, ses allergènes à null", () => {
+  it("vend une déclinaison sans déclaration par précaution, traces = union du catalogue", () => {
     const body = projectProductFact(
       input({
         product: tarte({
           variants: [bareVariant({ priceCents: 300, proPriceMillicents: 256_000 })],
         }),
         cited: ["gluten"],
+        catalogueUnion: ["eggs", "gluten", "milk"],
       }),
     );
 
     expect(body.gaps).toEqual({});
-    expect(body.variants[0]).toMatchObject({ allergens: null, allergenLabels: null });
+    expect(body.variants[0]).toMatchObject({
+      allergens: ["gluten"],
+      mayContain: ["eggs", "milk"],
+      allergensPrecautionary: true,
+    });
+  });
+
+  it("une déclinaison déclarée porte ses traces, jamais l'union du catalogue", () => {
+    const body = projectProductFact(
+      input({
+        product: tarte({
+          variants: [
+            { ...SELLABLE_VARIANT, allergenSheet: { declared: [], mayContain: ["nuts"] } },
+          ],
+        }),
+        catalogueUnion: ["eggs", "milk"],
+      }),
+    );
+
+    expect(body.variants[0]).toMatchObject({
+      allergens: [],
+      mayContain: ["nuts"],
+      allergensPrecautionary: false,
+    });
   });
 
   it("sert ce que la composition cite en plus de la déclaration (règle A)", () => {

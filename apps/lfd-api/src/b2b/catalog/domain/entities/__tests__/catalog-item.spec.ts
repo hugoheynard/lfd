@@ -11,6 +11,8 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     sku: "VIE-001-1",
     allergens: null,
     allergenLabels: null,
+    mayContain: null,
+    allergensPrecautionary: false,
     note: null,
     image: null,
     thumbnail: null,

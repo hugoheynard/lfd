@@ -220,6 +220,20 @@ model CatalogItem {
   /// jamais « sans allergène ». Suit ensuite `allergens` : `NULL` si `NULL`.
   allergenLabels Json? @map("allergen_labels")
 
+  /// **Les traces** (« peut contenir ») servies par le référentiel, en codes
+  /// GS1 — jamais un code de `allergens`. `NULL` = on ne sait pas : une ligne
+  /// reçue avant le champ (2026-10-27), tant qu'un fait de sa fiche ne l'a pas
+  /// réécrite. `[]` = aucune trace.
+  mayContain Json? @map("may_contain")
+
+  /// **Servie par précaution** (règle B de
+  /// `documentation/pim/plan-allergenes-jamais-bloquants.md`) : personne ne
+  /// s'est prononcé sur les allergènes de la déclinaison. `allergens` porte
+  /// alors les seuls allergènes de la composition — une liste VIDE ne se lit
+  /// donc pas « aucun allergène » — et `may_contain` l'union du catalogue.
+  /// `false` sur les lignes d'avant : le sens d'avant.
+  allergensPrecautionary Boolean @default(false) @map("allergens_precautionary")
+
   /// **Jusqu'à quand on prend commande de cet article**, résolu par le PIM.
   ///
   /// Les trois vont ensemble ou pas du tout : `NULL` partout = aucune limite

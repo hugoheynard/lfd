@@ -511,11 +511,23 @@ n'est jamais réécrite :
   l'applique, et l'encart de la fiche l'annonce.
 - **B** — sans déclaration, allergènes = cités, traces = union des allergènes
   déclarés du catalogue publié. « Aucun allergène » (`[]`) reste une
-  déclaration. ⚠️ **Le fil vers le commerce ne porte pas de traces**
-  (`SyncVariant`, vérifié le 2026-10-27) : une déclinaison sous B part donc
-  avec `allergens: null` (« non renseigné ») tant que le contrat n'a pas de
-  champ « peut contenir » — envoyer les seuls cités ferait lire « aucun
-  allergène » à une fiche muette.
+  déclaration. L'union est lue par lot, une fois par projection
+  (`PublishedAllergensReader` : déclarations propres des déclinaisons non
+  arrêtées des fiches publiées ; une déclinaison qui suit le défaut est
+  écartée, son défaut y est déjà).
+
+**Le fil porte l'état servi** (2026-10-27, après-midi) : `SyncVariant` a
+`mayContain` (codes, `null` = envoi d'avant le champ) et
+`allergensPrecautionary`, ajoutés **sans changer de version** (défauts `null`
+et `false` : un fait durable d'avant se rejoue avec le sens d'avant). Sous B,
+`allergens` porte les seuls cités — vide si la composition est muette — et
+c'est le drapeau qui interdit de lire « aucun allergène ». Le commerce les
+range dans `catalog_items.may_contain` / `allergens_precautionary`
+(migration `20261027120000_les_traces_atteignent_le_commerce`) ; l'écran
+catalogue du back-office et la ligne de commande figée lèvent `incomplete`
+sur une liste servie par précaution. ⚠️ **La boutique ne montre encore aucun
+allergène** — ni déclarés, ni traces : la vue `shop-catalogue` n'en porte pas
+(vérifié le 2026-10-27), et l'y ajouter est une décision ouverte.
 
 #### La maille du refus est le produit, celle du jugement la déclinaison
 

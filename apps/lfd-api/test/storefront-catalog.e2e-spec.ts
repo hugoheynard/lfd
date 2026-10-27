@@ -71,6 +71,8 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
         publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
         allergens: null,
         allergenLabels: null,
+        mayContain: null,
+        allergensPrecautionary: false,
       },
     ],
     note: null,

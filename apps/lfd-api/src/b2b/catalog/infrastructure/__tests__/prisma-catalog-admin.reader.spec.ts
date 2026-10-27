@@ -1,4 +1,4 @@
-import { allergensOf } from "../prisma-catalog-admin.reader.js";
+import { allergensOf, withPrecaution } from "../prisma-catalog-admin.reader.js";
 
 /**
  * **Ce que l'écran catalogue dit d'une fiche réglementaire.**
@@ -122,5 +122,25 @@ describe("allergensOf — la fiche qu'on ne sait pas rendre", () => {
     expect(
       allergensOf(["UW", "SH"], { labels: [GLUTEN, { category: 42 }], incomplete: false }),
     ).toEqual({ allergens: [], allergensIncomplete: true });
+  });
+});
+
+/**
+ * Règle B (2026-10-27) : une liste servie par précaution ne porte que la
+ * composition, et peut être vide. L'écran ne doit jamais y lire « Sans allergène ».
+ */
+describe("withPrecaution — une liste servie par précaution n'est jamais complète", () => {
+  it("lève l'aveu d'incomplétude sur une liste vide servie par précaution", () => {
+    expect(withPrecaution(allergensOf([], DECLARED_EMPTY), true)).toEqual({
+      allergens: [],
+      allergensIncomplete: true,
+    });
+  });
+
+  it("laisse intacte une déclaration qui n'est pas de précaution", () => {
+    expect(withPrecaution(allergensOf([], DECLARED_EMPTY), false)).toEqual({
+      allergens: [],
+      allergensIncomplete: false,
+    });
   });
 });

@@ -74,6 +74,9 @@ export function pimFactsColumns(facts: PimFacts) {
             })),
             incomplete: facts.allergenLabels.incomplete,
           },
+    // `DbNull` comme `allergens` : l'absence de la donnée, pas un `null` JSON.
+    mayContain: facts.mayContain === null ? Prisma.DbNull : [...facts.mayContain],
+    allergensPrecautionary: facts.allergensPrecautionary,
     operationOnly: facts.operationOnly,
     requiresCold: facts.requiresCold,
     receivedAt: facts.receivedAt,

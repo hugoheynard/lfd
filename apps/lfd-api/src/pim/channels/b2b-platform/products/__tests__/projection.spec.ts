@@ -1,7 +1,10 @@
 import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
 import type { VariantRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
-import { projectVariant, vatOf } from "../projection.js";
+import { projectVariant, vatOf, type AllergenContext } from "../projection.js";
+
+/** Ni composition citée, ni catalogue publié : la déclinaison parle seule. */
+const NOTHING_ELSE: AllergenContext = { cited: [], catalogueUnion: [] };
 
 function variant(over: Partial<VariantRecord> = {}): VariantRecord {
   return {
@@ -73,7 +76,7 @@ describe("projectVariant", () => {
   const percents = { takeaway: 5.5, eatIn: 10, b2b: 5.5 };
 
   it("porte l'ÉTIQUETTE en centimes et une entrée par contexte réglé", () => {
-    const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO);
+    const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
     expect(v.publicTtcCents).toBe(200);
     // 2,00 € à 5,5 % → 189 573 millicentimes ; à 10 % → 181 818.
@@ -90,21 +93,29 @@ describe("projectVariant", () => {
    * confondre facturerait un particulier au tarif professionnel.
    */
   it("🔴 ne confond pas le prix PRO et le prix PUBLIC au même taux", () => {
-    const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO);
+    const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
     expect(v.priceMillicents).toBe(151_659);
     expect(v.publicByContext["b2b"]?.htMillicents).toBe(189_573);
   });
 
   it("n'invente AUCUN taux : un contexte non réglé n'a pas d'entrée", () => {
-    const v = projectVariant(variant(), 151_659, 5.5, 200, { b2b: 5.5 }, INCO);
+    const v = projectVariant(variant(), 151_659, 5.5, 200, { b2b: 5.5 }, INCO, NOTHING_ELSE);
 
     expect(Object.keys(v.publicByContext)).toEqual(["b2b"]);
   });
 
   it("porte les codes ET leurs mentions, dédoublonnées en n:1", () => {
     const sheet = { declared: ["UW", "NR"], mayContain: [] };
-    const v = projectVariant(variant({ allergenSheet: sheet }), 1, 5.5, 200, percents, INCO);
+    const v = projectVariant(
+      variant({ allergenSheet: sheet }),
+      1,
+      5.5,
+      200,
+      percents,
+      INCO,
+      NOTHING_ELSE,
+    );
 
     expect(v.allergens).toEqual(["UW", "NR"]);
     expect(v.allergenLabels).toEqual({
@@ -120,7 +131,15 @@ describe("projectVariant", () => {
    */
   it("nomme un allergène hors obligation UE au lieu de déclarer la liste incomplète", () => {
     const sheet = { declared: ["UW", "SO"], mayContain: [] };
-    const v = projectVariant(variant({ allergenSheet: sheet }), 1, 5.5, 200, percents, INCO);
+    const v = projectVariant(
+      variant({ allergenSheet: sheet }),
+      1,
+      5.5,
+      200,
+      percents,
+      INCO,
+      NOTHING_ELSE,
+    );
 
     expect(v.allergenLabels).toEqual({
       labels: [
@@ -133,7 +152,15 @@ describe("projectVariant", () => {
 
   it("ne lève `incomplete` que pour un code que le référentiel ne range nulle part", () => {
     const sheet = { declared: ["UW", "ZZ"], mayContain: [] };
-    const v = projectVariant(variant({ allergenSheet: sheet }), 1, 5.5, 200, percents, INCO);
+    const v = projectVariant(
+      variant({ allergenSheet: sheet }),
+      1,
+      5.5,
+      200,
+      percents,
+      INCO,
+      NOTHING_ELSE,
+    );
 
     expect(v.allergenLabels).toEqual({
       labels: [{ category: "gluten", label: "gluten" }],
@@ -141,12 +168,43 @@ describe("projectVariant", () => {
     });
   });
 
-  it("distingue « aucune fiche » (null) de « fiche sans allergène » ([])", () => {
-    const none = projectVariant(variant({ allergenSheet: null }), 1, 5.5, 200, percents, INCO);
-    const empty = projectVariant(variant(), 1, 5.5, 200, percents, INCO);
+  /**
+   * Retourné le 2026-10-27 (règle B de `plan-allergenes-jamais-bloquants.md`) :
+   * « aucune fiche » ne part plus à `null` mais par PRÉCAUTION — et c'est le
+   * drapeau, pas la liste, qui la distingue de « fiche sans allergène ».
+   */
+  it("distingue « aucune fiche » (précaution) de « fiche sans allergène » ([])", () => {
+    const none = projectVariant(variant({ allergenSheet: null }), 1, 5.5, 200, percents, INCO, {
+      cited: ["UW"],
+      catalogueUnion: ["UW", "AM", "NR"],
+    });
+    const empty = projectVariant(variant(), 1, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
-    expect([none.allergens, none.allergenLabels]).toEqual([null, null]);
+    expect(none).toMatchObject({
+      allergens: ["UW"],
+      mayContain: ["AM", "NR"],
+      allergensPrecautionary: true,
+    });
+    expect(empty).toMatchObject({ allergens: [], mayContain: [], allergensPrecautionary: false });
     expect(empty.allergenLabels).toEqual({ labels: [], incomplete: false });
+  });
+
+  it("porte les traces déclarées, sans un allergène servi, et sans l'union du catalogue", () => {
+    const v = projectVariant(
+      variant({ allergenSheet: { declared: ["UW"], mayContain: ["AM", "NR"] } }),
+      1,
+      5.5,
+      200,
+      percents,
+      INCO,
+      { cited: ["AM"], catalogueUnion: ["SE"] },
+    );
+
+    expect(v).toMatchObject({
+      allergens: ["UW", "AM"],
+      mayContain: ["NR"],
+      allergensPrecautionary: false,
+    });
   });
 });
 

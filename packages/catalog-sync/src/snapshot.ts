@@ -264,6 +264,27 @@ export const syncVariantSchema = z.object({
    * l'inverse — « aucune fiche » ne doit pas se lire « aucun allergène ».
    */
   allergenLabels: syncAllergenLabelsSchema.nullable(),
+  /**
+   * **Les traces** (« peut contenir »), en codes GS1 — jamais un code servi
+   * dans `allergens`.
+   *
+   * `null` = on ne sait pas : un envoi d'avant ce champ (2026-10-27). `[]` =
+   * aucune trace. Sous la règle B de
+   * `documentation/pim/plan-allergenes-jamais-bloquants.md`, l'union des
+   * allergènes déclarés du catalogue publié, moins ceux de la composition.
+   *
+   * ⚠️ **Ajouté sans changer de version**, comme `focal` : un fait durable émis
+   * avant le champ se rejoue, et l'absence s'y lit `null` — le sens d'avant.
+   * Le défaut rend le champ requis en SORTIE : l'émetteur ne peut pas l'oublier.
+   */
+  mayContain: z.array(z.string().min(1)).nullable().default(null),
+  /**
+   * **Servie par précaution** (règle B) : personne ne s'est prononcé sur les
+   * allergènes de la déclinaison. `allergens` porte alors ce que la
+   * composition cite, et une liste VIDE ne se lit surtout pas « aucun
+   * allergène ». Absent d'un envoi d'avant le champ : `false`, le sens d'avant.
+   */
+  allergensPrecautionary: z.boolean().default(false),
 });
 
 export type SyncVariant = z.infer<typeof syncVariantSchema>;

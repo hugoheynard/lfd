@@ -75,6 +75,8 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     allergens: ["UW"],
     allergenLabels: null,
+    mayContain: null,
+    allergensPrecautionary: false,
   }));
 }
 

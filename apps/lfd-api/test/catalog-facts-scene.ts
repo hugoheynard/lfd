@@ -108,6 +108,21 @@ export async function activateFiche(
   return fiche;
 }
 
+/** Déclare les allergènes ET les traces de la déclinaison par défaut d'une fiche. */
+export async function declareAllergens(
+  staff: Staff,
+  fiche: Fiche,
+  allergens: readonly string[],
+  mayContain: readonly string[],
+): Promise<void> {
+  const detail = await detailOf(staff, fiche.id);
+  const variantId = detail.variants.find((entry) => entry.isDefault)?.id ?? "";
+  await staff()
+    .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/allergens`)
+    .send({ allergens, mayContain })
+    .expect(200);
+}
+
 async function detailOf(staff: Staff, id: string): Promise<Detail> {
   return jsonBody<Detail>(await staff().get(`${PRODUCTS}/${id}`).expect(200));
 }
