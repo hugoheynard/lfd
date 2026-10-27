@@ -8,9 +8,6 @@ import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
 import { lineTotalCents } from "@lfd/money";
 
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
-import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
-
 /**
  * **Ce que la commande coûterait**, demandé avant de la passer.
  *
@@ -88,45 +85,12 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       // ligne, exactement comme la commande le fera. Sommer des millicentimes
       // rendrait un devis mille fois trop cher — et un devis qui ne prédit pas
       // la facture ne sert à rien.
-      subtotalCents: subtotalOf(
-        companyId,
-        lines.map(({ line }) => line),
+      subtotalCents: lines.reduce(
+        (sum, { line }) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
+        0,
       ),
     };
   }
-}
-
-/**
- * Le sous-total HT, par la méthode de la commande que ce devis annonce (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 6) : pour une
- * société, la somme des HT de ligne arrondis ; pour un particulier
- * (`exact_ht`), la somme des HT que la composition TTC rend, sans remise ni
- * port — que ce devis ne connaît pas. ⚠️ Pour un particulier, ce HT peut
- * encore bouger d'un centime à la passation : la TVA du taux se répartit
- * aussi sur la remise et le port.
- */
-function subtotalOf(
-  companyId: string | null,
-  lines: readonly {
-    readonly unitPriceMillicents: number;
-    readonly quantity: number;
-    readonly vatRate: number;
-  }[],
-): number {
-  if (placementVatMethodOf(companyId) === "exact_ht") {
-    const composed = composeExactOrder({
-      lines,
-      discountAdjustment: null,
-      deliveryFeeAdjustment: null,
-      deliveryVatMode: null,
-      voucherFaceCents: 0,
-    });
-    return composed.lines.reduce((sum, line) => sum + line.htCents, 0);
-  }
-  return lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
-    0,
-  );
 }
 
 /**

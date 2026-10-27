@@ -32,7 +32,6 @@ export class PrismaVoucherOrderReader extends VoucherOrderReader {
         status: true,
         paymentStatus: true,
         voucherDiscountCents: true,
-        voucherTtcCents: true,
         loyaltyVoucherId: true,
         requestedDeliveryDate: true,
       },
@@ -48,8 +47,7 @@ export class PrismaVoucherOrderReader extends VoucherOrderReader {
         orderNumber: row.orderNumber,
         status: row.status,
         paymentStatus: row.paymentStatus,
-        // La valeur faciale servie : TTC pour une commande `exact_ht` (R6).
-        voucherDiscountCents: row.voucherTtcCents ?? row.voucherDiscountCents,
+        voucherDiscountCents: row.voucherDiscountCents,
         serviceDay: row.requestedDeliveryDate?.toISOString().slice(0, ISO_DAY_LENGTH) ?? null,
       });
     }

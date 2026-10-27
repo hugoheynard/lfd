@@ -175,8 +175,6 @@ async function seedOrder(index: number, days: number, totalCents: number): Promi
   const placedAt = daysAgo(days);
   await prisma.order.create({
     data: {
-      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
-      vatMethod: "line_ht",
       id: `${NS}-order-${index}`,
       // Le format réel (`ORD-<n>`), hors de la plage que le compteur atteint :
       // la base refuse tout autre numéro (CHECK `orders_order_number_format`).

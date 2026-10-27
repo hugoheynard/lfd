@@ -188,18 +188,10 @@ export class OrderRevising {
       resolved,
       requesterOf(order, actor),
     );
-    // La méthode et le mode du port RELUS sur la commande (plan du centime,
-    // § 5 ; V3) : la composition chiffre dans l'unité de la commande, avec
-    // le mode que l'agrégat appliquera.
-    const kept = {
-      ...arranged,
-      deliveryVatMode: order.deliveryVatMode ?? arranged.deliveryVatMode,
-    };
-    const input = draftInputOf(
-      order,
-      OrderComposition.draftOf(content, resolved, kept, order.vatMethod),
-      { deliveryVatMode: arranged.deliveryVatMode, subtotalCents: resolved.subtotalCents },
-    );
+    const input = draftInputOf(order, OrderComposition.draftOf(content, resolved, arranged), {
+      deliveryVatMode: arranged.deliveryVatMode,
+      subtotalCents: resolved.subtotalCents,
+    });
     return options.requireChange ? Order.revise(order, input) : Order.recompose(order, input);
   }
 
@@ -303,8 +295,7 @@ function draftInputOf(
         : cartAdjustmentCents(order.lateFeeAdjustment.adjustment, current.subtotalCents),
     lateFeeAdjustment: order.lateFeeAdjustment,
     // Le bon garde la part déjà déduite : l'agrégat la borne au nouveau total,
-    // et la révision refuse qu'elle baisse (§9). Dans l'unité de la méthode :
-    // la valeur faciale TTC pour `exact_ht` (relue par `toRevisableOrder`).
+    // et la révision refuse qu'elle baisse (§9).
     voucher:
       order.voucher === null
         ? null

@@ -23,7 +23,6 @@ import type { FixedCustomerCancellation } from "../services/customer-cancellatio
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
-import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { RefundPosition } from "./order-refund.js";
 import type {
   OrderFulfillmentInput,
@@ -74,16 +73,7 @@ export interface RevisableOrder {
   readonly deliveryVatMode: DeliveryVatMode | null;
   /** L'ajustement de la surtaxe tardive figé à la passation, `null` sans surtaxe (R4). */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
-  /**
-   * Comment ses montants ont été composés — relu sur la commande, jamais sur
-   * sa clientèle : une commande `line_ht` révisée reste `line_ht` (plan du
-   * centime, § 5, « La révision d'une commande »).
-   */
-  readonly vatMethod: OrderVatMethod;
-  /**
-   * Le bon imputé à la passation, et ce qu'il a servi **dans l'unité de la
-   * méthode** : HT pour `line_ht`, valeur faciale TTC pour `exact_ht`.
-   */
+  /** Le bon imputé à la passation, et la part HT réellement retranchée. */
   readonly voucher: { readonly id: string; readonly appliedCents: number } | null;
   /** `null` sur une commande d'avant les CGV figées — elle ne se modifie pas. */
   readonly salesTerms: OrderSalesTerms | null;
@@ -234,9 +224,7 @@ function ensureFrozenPrices(previous: readonly OrderLineSnapshot[], state: Order
 
 /** R4 : le bon déjà imputé reste imputé en entier — sa restitution partielle n'existe pas. */
 function ensureVoucherCovered(order: RevisableOrder, state: OrderToPlace): void {
-  // Dans l'unité de la méthode : la valeur faciale TTC pour `exact_ht`.
-  const served = state.voucherTtcCents ?? state.voucherDiscountCents;
-  if (order.voucher !== null && served < order.voucher.appliedCents) {
+  if (order.voucher !== null && state.voucherDiscountCents < order.voucher.appliedCents) {
     throw new RevisionBelowVoucherError(order.orderId, order.voucher.appliedCents);
   }
 }

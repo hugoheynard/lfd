@@ -1,5 +1,5 @@
 import type { OrderClientele, OrderLineAllergens, OrderLinePricingTrace } from "@lfd/contracts";
-import { lineTotalCents, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
+import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
@@ -124,7 +124,20 @@ export class OrderLine {
    * trompe en silence, et il se tromperait exactement sur le cas neuf.
    */
   static create(input: OrderLineInput, clientele: OrderClientele): OrderLine {
-    ensureQuantityAndPrice(input);
+    if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
+      throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
+    }
+    if (!Number.isInteger(input.unitPriceMillicents) || input.unitPriceMillicents < 0) {
+      // 🔴 « millicentimes » et non « centimes » : ce message est lu par du
+      // personnel qui n'a pas le code sous les yeux, et le nombre qu'il verra
+      // à côté est cent fois celui qu'il attendrait. Le vecteur de D10 était
+      // exactement là — un commentaire qui dit centimes, et quelqu'un qui le
+      // croit (R19, 2026-09-09).
+      throw new InvalidOrderLineError(
+        input.sku,
+        "prix unitaire entier ≥ 0 attendu, en millicentimes (10⁻⁵ €)",
+      );
+    }
     // **L'unique arrondi de la ligne**, nommé ici pour que le taxe compris s'en
     // dérive plutôt que de refaire sa propre multiplication.
     const htCents = lineTotalCents(input.unitPriceMillicents, input.quantity);
@@ -157,57 +170,6 @@ export class OrderLine {
     );
   }
 
-  /**
-   * **Une ligne d'une commande composée en TTC** (`exact_ht`, plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 4) : son HT est
-   * REÇU de la composition (`composeTtcOrder`), pas dérivé du prix.
-   *
-   * 🔴 L'invariant de {@link create} — « le HT de ligne dérive du prix, jamais
-   * fourni » — se lève ICI, et ici seulement. Pour un particulier, ce que la
-   * ligne vaut est quantité × étiquette TTC, et la TVA du taux se répartit sur
-   * tous les termes de la commande (lignes, remise, bon, port) : le HT d'une
-   * ligne dépend donc de ses voisines, et la ligne seule ne peut pas le
-   * calculer. Ce qu'elle garde, elle : l'étiquette est celle de la vignette
-   * (`ttcCentsFromHtMillicents`), le TTC reçu est bien quantité × étiquette,
-   * et son HT ne dépasse pas ce TTC — une composition qui dirait autre chose
-   * est refusée. Le pro garde `create`, inchangée.
-   *
-   * Les TTC scellés sont l'étiquette (`unitPriceTtcCents`) et quantité ×
-   * étiquette (`lineTotalTtcCents`) — ce que le client a lu et paie.
-   *
-   * @throws {InvalidOrderLineError} quantité, prix ou composition incohérents.
-   */
-  static ofTtc(input: OrderLineInput, composed: ComposedTtcLine): OrderLine {
-    ensureQuantityAndPrice(input);
-    if (
-      composed.vatRate !== input.vatRate ||
-      composed.labelCents !== ttcCentsFromHtMillicents(input.unitPriceMillicents, input.vatRate) ||
-      composed.ttcCents !== composed.labelCents * input.quantity ||
-      composed.htCents < 0 ||
-      composed.htCents > composed.ttcCents
-    ) {
-      throw new InvalidOrderLineError(
-        input.sku,
-        "la composition taxe comprise ne correspond pas à la ligne (étiquette, quantité ou taux)",
-      );
-    }
-    return new OrderLine(
-      input.sku,
-      input.productName,
-      input.unitPriceMillicents,
-      input.vatRate,
-      input.quantity,
-      composed.htCents,
-      composed.labelCents,
-      composed.ttcCents,
-      assertConsistent(input),
-      input.allergens ?? null,
-      input.pickupDiscountEligible ?? true,
-      input.productId ?? null,
-      input.categoryId ?? null,
-    );
-  }
-
   toSnapshot(): OrderLineSnapshot {
     return {
       sku: this.sku,
@@ -224,32 +186,6 @@ export class OrderLine {
       productId: this.productId,
       categoryId: this.categoryId,
     };
-  }
-}
-
-/** Ce que la composition TTC rend pour une ligne — la forme de `TtcComposedLine`. */
-export interface ComposedTtcLine {
-  readonly vatRate: number;
-  readonly labelCents: number;
-  readonly ttcCents: number;
-  readonly htCents: number;
-}
-
-/** Les deux refus communs aux deux factories. */
-function ensureQuantityAndPrice(input: OrderLineInput): void {
-  if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
-    throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
-  }
-  if (!Number.isInteger(input.unitPriceMillicents) || input.unitPriceMillicents < 0) {
-    // 🔴 « millicentimes » et non « centimes » : ce message est lu par du
-    // personnel qui n'a pas le code sous les yeux, et le nombre qu'il verra
-    // à côté est cent fois celui qu'il attendrait. Le vecteur de D10 était
-    // exactement là — un commentaire qui dit centimes, et quelqu'un qui le
-    // croit (R19, 2026-09-09).
-    throw new InvalidOrderLineError(
-      input.sku,
-      "prix unitaire entier ≥ 0 attendu, en millicentimes (10⁻⁵ €)",
-    );
   }
 }
 

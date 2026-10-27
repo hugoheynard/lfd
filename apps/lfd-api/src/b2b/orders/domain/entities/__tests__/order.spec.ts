@@ -89,15 +89,6 @@ function deferred(over: Partial<DraftOrderInput> = {}): ReturnType<Order["toPers
   return order.toPersistence();
 }
 
-/**
- * Une commande de SOCIÉTÉ : composée HT (`line_ht`). Depuis la voie B (plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C2), l'arithmétique
- * HT de ce bloc n'est plus celle d'un particulier — elle reste celle du pro, et
- * c'est sur lui qu'elle s'éprouve. Le particulier a sa spec
- * (`order-exact-ht.spec.ts`).
- */
-const PRO = { companyId: "co_1", billedCompanyId: "co_1" } as const;
-
 describe("Order.draft — calcul monétaire", () => {
   it("calcule sous-total, TVA par taux et total TTC", () => {
     // 3 × 200 = 600 HT ; TVA 5,5 % = round(600 × 0,055) = 33 ; total = 633.
@@ -131,7 +122,7 @@ describe("Order.draft — calcul monétaire", () => {
 
   it("déduit la remise avant la TVA et le total", () => {
     // 400 HT, taux 0, remise 80 → total = max(0, 400 − 80) = 320.
-    const state = deferred({ ...PRO, lines: [food(2, 200, 0)], discountCents: 80 });
+    const state = deferred({ lines: [food(2, 200, 0)], discountCents: 80 });
     expect(state.subtotalCents).toBe(400);
     expect(state.discountCents).toBe(80);
     expect(state.totalCents).toBe(320);
@@ -140,7 +131,6 @@ describe("Order.draft — calcul monétaire", () => {
   it("ajoute le frais de livraison et sa TVA (20 %)", () => {
     // 400 HT (taux 0) + frais 2000 → TVA livraison = 400 ; total = 400 + 2000 + 400 = 2800.
     const state = deferred({
-      ...PRO,
       lines: [food(2, 200, 0)],
       // Le barème qui les produit, exigé depuis le 2026-09-09 : des frais sans
       // origine ne se relisent pas sur une facture.
@@ -165,7 +155,6 @@ describe("Order.draft — calcul monétaire", () => {
   it("taxe le port au taux des marchandises en mode « suit la marchandise », et fige le mode", () => {
     // 400 HT à 5,5 % + frais 2000 qui suivent → (400 + 2000) × 5,5 % = 132.
     const state = deferred({
-      ...PRO,
       lines: [food(2)],
       deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
       fulfillment: {
@@ -235,7 +224,6 @@ describe("Order.draft — calcul monétaire", () => {
    */
   it("🔴 fige le barème de zone qui a produit les frais", () => {
     const state = deferred({
-      ...PRO,
       lines: [food(2, 200, 0)],
       deliveryFeeCents: 2_000,
       deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
@@ -270,7 +258,6 @@ describe("Order.draft — calcul monétaire", () => {
    */
   it("accepte des frais plus élevés que le panier", () => {
     const state = deferred({
-      ...PRO,
       lines: [food(1, 200, 0)],
       deliveryFeeCents: 2_000,
       deliveryFeeAdjustment: { mode: "amount", cents: 2_000 },
@@ -523,32 +510,28 @@ describe("Order — règlement", () => {
 });
 
 /**
- * Le bon de fidélité (plan des points, C1) : imputé APRÈS la remise du point
- * de retrait, plafonné aux marchandises restantes, et qui ne touche ni le port
- * ni la surtaxe. Depuis la voie B (plan du centime, § 10 Q2), la commande d'un
- * particulier est composée en TTC et le bon y vaut sa **valeur faciale TTC** :
- * 2 croissants à 2,00 € HT, étiquette 2,11 € → 4,22 € TTC.
+ * Le bon de fidélité (plan des points, C1) : une remise HT de plus, imputée
+ * APRÈS celle du point de retrait, plafonnée aux marchandises restantes, et qui
+ * ne touche ni le port ni la surtaxe.
  */
 describe("Order — le bon de fidélité", () => {
   it("impute le bon entier quand le panier le couvre, et réduit la base de TVA", () => {
-    // 422 TTC − bon 100 = 322 ; TVA ⌈322 × 5,5 / 105,5⌉ = 17 ; le bon porte −5 de TVA.
+    // 2 × 200 = 400 HT à 5,5 % ; bon 100 HT → 300 HT, TVA 16,5 → 17 ; total 317.
     const state = deferred({ voucher: { id: "v1", valueCents: 100 } });
-    expect(state.voucherTtcCents).toBe(100);
-    expect(state.voucherDiscountCents).toBe(95);
+    expect(state.voucherDiscountCents).toBe(100);
     expect(state.loyaltyVoucherId).toBe("v1");
     expect(state.vatCents).toBe(17);
-    expect(state.totalCents).toBe(322);
+    expect(state.totalCents).toBe(317);
   });
 
   it("s'impute APRÈS la remise du point, plafonné à ce qui reste", () => {
-    // Remise saisie 3,50 € HT → 369 TTC ; reste 53 : un bon de 100 n'en impute que 53.
+    // 400 HT, remise 350 → reste 50 : un bon de 100 n'en impute que 50.
     const state = deferred({
-      discountCents: 369,
+      discountCents: 350,
       discountAdjustment: { mode: "amount", cents: 350 },
       voucher: { id: "v1", valueCents: 100 },
     });
-    expect(state.discountTtcCents).toBe(369);
-    expect(state.voucherTtcCents).toBe(53);
+    expect(state.voucherDiscountCents).toBe(50);
     expect(state.totalCents).toBe(0);
   });
 
@@ -561,20 +544,17 @@ describe("Order — le bon de fidélité", () => {
         deliveryAddressId: null,
         pickupAddress: null,
       },
-      // Le barème saisi 10,00 € HT, converti à 20 % : 12,00 € TTC.
-      deliveryFeeCents: 1_200,
+      deliveryFeeCents: 1_000,
       deliveryFeeAdjustment: { mode: "amount", cents: 1_000 },
       voucher: { id: "v1", valueCents: 5_000 },
     });
-    expect(state.voucherTtcCents).toBe(422);
     expect(state.voucherDiscountCents).toBe(400);
-    // Seuls les frais restent : 1200 TTC.
+    // Seuls les frais restent : 1000 HT à 20 % = 1200 TTC.
     expect(state.totalCents).toBe(1_200);
   });
 
   it("un panier que le bon couvre entier a un total nul", () => {
-    const state = deferred({ voucher: { id: "v1", valueCents: 422 } });
-    expect(state.voucherTtcCents).toBe(422);
+    const state = deferred({ voucher: { id: "v1", valueCents: 400 } });
     expect(state.voucherDiscountCents).toBe(400);
     expect(state.vatCents).toBe(0);
     expect(state.totalCents).toBe(0);

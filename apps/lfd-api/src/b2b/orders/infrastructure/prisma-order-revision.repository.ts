@@ -11,7 +11,6 @@ import { OrderRevisionRepository } from "../domain/ports/order-revision.reposito
 import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { orderLineDataOf } from "./order-line.data.js";
-import { ttcTermsColumnsOf } from "./order-money-columns.js";
 import { REVISABLE_ORDER_SELECT, toRevisableOrder } from "./revisable-order.row.js";
 import { revisedCompositionOf } from "./revised-composition.js";
 
@@ -75,9 +74,6 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
         pickupAddress: state.pickupAddress ?? Prisma.DbNull,
         fulfillment: toFulfillmentJson(state.agreed),
         note: state.note,
-        // La méthode est celle relue sur la commande (`Order.recompose`) : la
-        // réécrire ne la change pas ; les TTC suivent la nouvelle composition.
-        ...ttcTermsColumnsOf(state),
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,

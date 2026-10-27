@@ -28,12 +28,10 @@ import {
   OrderLineClassificationReader,
 } from "../../domain/ports/order-line-classification.reader.js";
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
 import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
 import { revisedLineRequests } from "../../domain/services/revised-lines.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../../domain/value-objects/order-line.js";
-import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import type { OrderContent } from "./order-content.js";
@@ -187,30 +185,13 @@ export class OrderComposition {
     return { agreed, bookAddressId: defaults.bookAddressId, deliveryVatMode };
   }
 
-  /**
-   * Assemble la part composée de `DraftOrderInput`, **dans l'unité de la
-   * méthode** de la commande (plan du centime, § 5) : HT pour `line_ht`, tels
-   * que `CartAdjustments` les rend ; TTC pour `exact_ht`, par la composition
-   * TTC que l'agrégat rejoue. `vatMethod` : décidée à la passation
-   * (`placementVatMethodOf`), relue sur la commande en révision.
-   */
+  /** Assemble la part composée de `DraftOrderInput`. */
   static draftOf(
     content: OrderContent,
     resolved: ResolvedContent,
     arranged: ArrangedContent,
-    vatMethod: OrderVatMethod,
   ): ComposedDraft {
     const { fulfillment } = resolved;
-    const lines = resolved.lines.map((line) =>
-      classified(line, resolved.known, fulfillment.ineligibleSkus),
-    );
-    const amounts =
-      vatMethod === "exact_ht"
-        ? exactTermsOf(lines, fulfillment, arranged.deliveryVatMode)
-        : {
-            discountCents: fulfillment.discountCents,
-            deliveryFeeCents: fulfillment.deliveryFeeCents,
-          };
     return {
       agreed: arranged.agreed,
       fulfillment: {
@@ -227,11 +208,13 @@ export class OrderComposition {
         ? new Date(content.requestedDeliveryDate)
         : null,
       note: content.note,
-      lines,
-      discountCents: amounts.discountCents,
+      lines: resolved.lines.map((line) =>
+        classified(line, resolved.known, fulfillment.ineligibleSkus),
+      ),
+      discountCents: fulfillment.discountCents,
       discountAdjustment: fulfillment.discountAdjustment,
       deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
-      deliveryFeeCents: amounts.deliveryFeeCents,
+      deliveryFeeCents: fulfillment.deliveryFeeCents,
       deliveryVatMode: arranged.deliveryVatMode,
     };
   }
@@ -357,30 +340,6 @@ export class OrderComposition {
       globalWindowMode: coursier.globalWindowMode,
     };
   }
-}
-
-/**
- * La remise retrait et le port d'une commande `exact_ht`, en TTC — par la
- * composition même que l'agrégat rejoue pour les vérifier. Le bon n'y entre
- * pas : il s'impute après la remise et ne change ni l'une ni l'autre.
- */
-function exactTermsOf(
-  lines: readonly OrderLineInput[],
-  fulfillment: ResolvedFulfillment,
-  deliveryVatMode: DeliveryVatMode,
-): { readonly discountCents: number; readonly deliveryFeeCents: number } {
-  const composed = composeExactOrder({
-    lines,
-    discountAdjustment: fulfillment.discountAdjustment,
-    deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
-    deliveryVatMode,
-    voucherFaceCents: 0,
-  });
-  return {
-    discountCents: fulfillment.discountAdjustment === null ? 0 : composed.pickupDiscount.ttcCents,
-    deliveryFeeCents:
-      fulfillment.deliveryFeeAdjustment === null ? 0 : composed.deliveryFee.ttcCents,
-  };
 }
 
 function isLine(line: OrderLineInput | undefined): line is OrderLineInput {

@@ -1,4 +1,3 @@
-import { htMillicentsOf } from "@lfd/pim-contracts";
 /**
  * E2E de **la refusion du bon** à l'annulation staff (doc
  * `documentation/commandes/annulation/fusion-du-bon.md`, lot C3b, C3b.9) — le
@@ -50,13 +49,10 @@ describe("le total nul couvert par un bon s'annule (lot C3b)", () => {
   it("bon imputé en entier : rendu, marque effacée, courriel et journal le disent", async () => {
     const user = await fidelity();
     const parent = await convert(user);
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : le bon couvre des TTC ; deux
-    // croissants étiquetés 2,50 € TTC valent exactement le bon de 5,00 €.
-    await labelCroissantAt(250);
     const order = await placed(parent, 2);
     expect(await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } })).toMatchObject({
       totalCents: 0,
-      voucherTtcCents: 500,
+      voucherDiscountCents: 500,
     });
     expect(await liveRemainderOf(parent)).toBeNull();
 
@@ -96,8 +92,7 @@ describe("le total nul couvert par un bon s'annule (lot C3b)", () => {
 
     expect(preview).toMatchObject({
       cancellable: true,
-      // Voie B (2026-10-27) : reliquat = 5,00 € − un croissant à 2,64 € TTC (étiquette).
-      voucher: { outcome: "merged", voucherValueCents: 500, remainderValueCents: 236 },
+      voucher: { outcome: "merged", voucherValueCents: 500, remainderValueCents: 250 },
     });
     expect(await voucherRow(child)).toMatchObject({
       status: "merged_back",
@@ -199,8 +194,7 @@ describe("la chaîne P → R1 → R2", () => {
 
     await cancelRequest(second.id).expect(204);
     expect(await voucherRow(r2)).toMatchObject({ status: "merged_back" });
-    // Voie B (2026-10-27) : R1 = 10,00 € − un croissant à 2,64 € TTC (étiquette) = 7,36 €.
-    expect(await voucherRow(r1)).toMatchObject({ status: "available", valueCents: 736 });
+    expect(await voucherRow(r1)).toMatchObject({ status: "available", valueCents: 750 });
 
     await cancelRequest(first.id).expect(204);
     expect(await voucherRow(r1)).toMatchObject({ status: "merged_back" });
@@ -266,18 +260,3 @@ describe("le bon échu à l'annulation (cas 4)", () => {
     });
   });
 });
-
-/** L'étiquette publique du croissant, posée à `ttcCents` (taux 5,5 %). */
-async function labelCroissantAt(ttcCents: number): Promise<void> {
-  const htMillicents = htMillicentsOf(ttcCents, 5.5);
-  if (htMillicents === null) {
-    throw new Error("Étiquette sans hors taxe.");
-  }
-  await ctx.prisma.catalogItem.update({
-    where: { sku: "VIE-001-1" },
-    data: {
-      publicTtcCents: ttcCents,
-      publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents } },
-    },
-  });
-}

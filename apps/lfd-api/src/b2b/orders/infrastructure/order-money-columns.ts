@@ -9,7 +9,6 @@ import { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { BillableAmounts } from "../domain/entities/billable-amounts.js";
 import type { FrozenOrderAdjustments } from "../domain/ports/shortfall-decision.reader.js";
-import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/order-vat-method.js";
 
 /**
  * Les colonnes d'argent d'`orders` lues et écrites par le départ incomplet
@@ -169,47 +168,4 @@ export function billableColumns(amounts: BillableAmounts, settledOn: string) {
 /** Un `DATE` → `AAAA-MM-JJ` (son jour UTC est le jour écrit). */
 export function dayOf(date: Date | null): string | null {
   return date === null ? null : date.toISOString().slice(0, 10);
-}
-
-/**
- * La méthode de TVA et les TTC des termes, tels que l'agrégat les a figés
- * (plan `documentation/pricing/plan-centime-particuliers.md`, § 7) — écrits
- * par la passation et par la révision, de la même façon.
- */
-export function ttcTermsColumnsOf(state: {
-  readonly vatMethod: OrderVatMethod;
-  readonly discountTtcCents: number | null;
-  readonly voucherTtcCents: number | null;
-  readonly deliveryFeeTtcCents: number | null;
-}) {
-  return {
-    vatMethod: state.vatMethod,
-    discountTtcCents: state.discountTtcCents,
-    voucherTtcCents: state.voucherTtcCents,
-    deliveryFeeTtcCents: state.deliveryFeeTtcCents,
-  };
-}
-
-/**
- * Une méthode relue en base. Le CHECK `orders_vat_method` n'en laisse passer
- * que deux ; une autre valeur a été écrite hors de l'application.
- *
- * @throws {UnknownOrderVatMethodError}
- */
-export function vatMethodOf(orderId: string, value: string): OrderVatMethod {
-  const method = asOrderVatMethod(value);
-  if (method === null) {
-    throw new UnknownOrderVatMethodError(orderId, value);
-  }
-  return method;
-}
-
-/** Une méthode de TVA inconnue en base — 500. */
-export class UnknownOrderVatMethodError extends TechnicalError {
-  constructor(orderId: string, value: string) {
-    super(
-      "orders.vat_method.unknown",
-      `La commande ${orderId} porte une méthode de TVA inconnue (« ${value} ») : la colonne a été écrite hors de l'application. Signalez-le à l'équipe technique.`,
-    );
-  }
 }

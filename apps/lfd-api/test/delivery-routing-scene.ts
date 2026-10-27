@@ -185,8 +185,6 @@ export async function seedLocatedDelivery(
   // numéro suit le format réel, hors de la plage que la séquence atteint.
   const order = await ctx.prisma.order.create({
     data: {
-      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
-      vatMethod: "line_ht",
       orderNumber: `ORD-${String(RAW_REFERENCE_BASE + sequence)}`,
       placedByUserId: owner.id,
       companyId: company.id,

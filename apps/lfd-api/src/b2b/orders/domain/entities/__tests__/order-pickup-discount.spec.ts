@@ -44,17 +44,10 @@ const BOISSON: OrderLineInput = {
 };
 const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
 
-/**
- * Une commande de SOCIÉTÉ par défaut : la remise de retrait y est un montant
- * HT (`line_ht`). Depuis la voie B (plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C2), celle d'un
- * particulier se prend sur le TTC — cf. le dernier bloc et
- * `order-exact-ht.spec.ts`.
- */
 function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
   return {
-    companyId: "co_1",
-    billedCompanyId: "co_1",
+    companyId: null,
+    billedCompanyId: null,
     principal: null,
     placedByStaffId: null,
     agreed: {
@@ -132,27 +125,16 @@ describe("Order.draft — la remise de retrait sur les lignes éligibles", () =>
     expect(placed({ lines: [PAIN, unflagged], discountCents: 200 }).discountCents).toBe(200);
   });
 
-  /**
-   * Le bon de fidélité garde toutes les lignes pour assiette, après la remise —
-   * un bon n'existe que pour un particulier, donc en TTC (plan du centime,
-   * § 5 R2-R3) : pain 10,55 € et jus 12,00 € TTC, remise 10 % du pain = 1,06 €.
-   */
+  /** Le bon de fidélité garde toutes les lignes pour assiette, après la remise. */
   it("laisse le bon se ventiler sur toutes les lignes", () => {
-    const state = placed({
-      companyId: null,
-      billedCompanyId: null,
-      discountCents: 106,
-      voucher: { id: "v_1", valueCents: 190 },
-    });
+    const state = placed({ voucher: { id: "v_1", valueCents: 190 } });
 
-    expect(state.voucherTtcCents).toBe(190);
-    // Le bon se découpe au prorata du net (949 / 1 200) : 84 et 106. Le pain :
-    // 1 055 − 106 − 84 = 865 → ⌈45,09⌉ = 46 ; le jus : 1 200 − 106 = 1 094 → ⌈182,33⌉ = 183.
+    expect(state.voucherDiscountCents).toBe(190);
+    // Le pain : 900 × 0,9 = 810 → 44,55 → 45 ; le jus : 1000 × 0,9 = 900 → 180.
     expect(state.vatShares).toEqual([
-      { rate: 5.5, amountCents: 46 },
-      { rate: 20, amountCents: 183 },
+      { rate: 5.5, amountCents: 45 },
+      { rate: 20, amountCents: 180 },
     ]);
-    expect(state.totalCents).toBe(1_055 + 1_200 - 106 - 190);
   });
 });
 

@@ -5,7 +5,7 @@ import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { DeliveryNote, type DeliveryNoteState } from "../domain/entities/delivery-note.js";
 import { DeliveryNoteRepository } from "../domain/ports/delivery-note.repository.js";
 import { dateOf, NOTE_INCLUDE, stateOf } from "./delivery-note.rows.js";
-import { DELIVERY_NOTE_VAT_METHOD_UNTIL_C3, termsColumns } from "./delivery-note-terms.columns.js";
+import { termsColumns } from "./delivery-note-terms.columns.js";
 
 /** Les colonnes qui bougent avec l'état du BL. */
 function progressColumns(head: Omit<DeliveryNoteState, "lines">) {
@@ -65,7 +65,6 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
         rank: head.rank,
         number: head.number,
         serviceDay: dateOf(head.serviceDay),
-        ...DELIVERY_NOTE_VAT_METHOD_UNTIL_C3,
         ...columns,
       },
       update: columns,
@@ -85,7 +84,6 @@ export class PrismaDeliveryNoteRepository extends DeliveryNoteRepository {
           rank: head.rank,
           number: head.number,
           serviceDay: dateOf(head.serviceDay),
-          ...DELIVERY_NOTE_VAT_METHOD_UNTIL_C3,
           ...progressColumns(head),
         },
       ],

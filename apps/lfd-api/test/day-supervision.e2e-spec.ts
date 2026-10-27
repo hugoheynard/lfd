@@ -116,8 +116,6 @@ async function seedOrder(seed: OrderSeed): Promise<void> {
   seq += 1;
   await ctx.prisma.order.create({
     data: {
-      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
-      vatMethod: "line_ht",
       orderNumber: seed.reference,
       companyId: seed.companyId ?? null,
       placedByUserId: seed.placedByUserId,

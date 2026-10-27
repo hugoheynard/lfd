@@ -105,8 +105,6 @@ async function placeOrder(
 async function legacyDraft(seeded: { companyId: string; userId: string }): Promise<void> {
   await ctx.prisma.order.create({
     data: {
-      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
-      vatMethod: "line_ht",
       orderNumber: "ORD-900001",
       companyId: seeded.companyId,
       placedByUserId: seeded.userId,

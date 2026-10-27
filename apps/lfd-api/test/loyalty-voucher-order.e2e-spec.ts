@@ -200,8 +200,7 @@ describe("la passation avec un bon", () => {
     const order = await placed(basket(10, voucherId));
 
     const row = await orderRow(order.id);
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : le bon d'un particulier impute sa valeur faciale TTC.
-    expect(row).toMatchObject({ voucherTtcCents: 500, loyaltyVoucherId: voucherId });
+    expect(row).toMatchObject({ voucherDiscountCents: 500, loyaltyVoucherId: voucherId });
     expect(order.payment?.amountCents).toBe(row.totalCents);
     expect((await voucherRow(voucherId)).status).toBe("reserved");
   });
@@ -263,16 +262,12 @@ describe("le reliquat", () => {
     const row = await orderRow(order.id);
     // Un croissant vaut moins qu'un palier : le bon couvre tout, et le reste
     // devient le reliquat.
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : les marchandises se comptent en TTC (quantité × étiquette).
-    const lines = await ctx.prisma.orderLine.findMany({ where: { orderId: order.id } });
-    const goods =
-      lines.reduce((sum, line) => sum + (line.lineTotalTtcCents ?? 0), 0) -
-      (row.discountTtcCents ?? 0);
+    const goods = row.subtotalCents - row.discountCents;
     expect(goods).toBeLessThan(500);
     expect(row).toMatchObject({
       totalCents: 0,
       paymentStatus: PaymentStatus.not_required,
-      voucherTtcCents: goods,
+      voucherDiscountCents: goods,
     });
     expect(order.payment).toBeUndefined();
     const remainders = await remaindersOf(voucherId);
@@ -293,8 +288,7 @@ describe("le reliquat", () => {
   it("une commande payée reçoit son reliquat au rattrapage de nuit, une seule fois", async () => {
     const { voucherId } = await holderWithVoucher(CLIENT, 2);
     const orderId = await seedOrderCarrying(voucherId, { units: 2, delivered: true });
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : le reliquat décompte la valeur faciale TTC servie.
-    const imputed = (await orderRow(orderId)).voucherTtcCents ?? 0;
+    const imputed = (await orderRow(orderId)).voucherDiscountCents;
     expect(imputed).toBeLessThan(1_000);
 
     expect((await nightly()).vouchers.settled).toBe(1);
@@ -325,8 +319,7 @@ describe("le reliquat", () => {
     const { voucherId } = await holderWithVoucher(CLIENT, 2);
     // Dix croissants valent plus que les deux paliers : le bon est tout imputé.
     const orderId = await seedOrderCarrying(voucherId, { units: 10 });
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : imputé en valeur faciale TTC.
-    expect((await orderRow(orderId)).voucherTtcCents).toBe(1_000);
+    expect((await orderRow(orderId)).voucherDiscountCents).toBe(1_000);
 
     expect((await nightly()).vouchers).toMatchObject({ reserved: 1, settled: 1 });
     expect((await nightly()).vouchers).toMatchObject({ reserved: 0, settled: 0 });
@@ -439,11 +432,9 @@ describe("l'effet du bon sur le total (lot E2)", () => {
     const withVoucher = await myQuote(TWO_RATES, voucherId);
 
     expect(withVoucher.vat.map((share) => share.rate)).toEqual([5.5, 20]);
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : la vue garde la part HT du bon,
-    // et la baisse TTC est exactement la valeur faciale (5,00 €).
-    expect(withVoucher.voucherDiscountCents).toBeLessThan(500);
+    expect(withVoucher.voucherDiscountCents).toBe(500);
     expect(withVoucher.voucherTotalEffectCents).toBe(without.totalCents - withVoucher.totalCents);
-    expect(withVoucher.voucherTotalEffectCents).toBe(500);
+    expect(withVoucher.voucherTotalEffectCents).toBeGreaterThan(500);
   });
 
   it("un bon plus gros que le panier : l'effet est tout le TTC des marchandises", async () => {
@@ -492,11 +483,8 @@ describe("le devis et l'assiette", () => {
 
     const order = await placed(basket(10, voucherId));
 
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : la part HT du devis est celle que la commande fige, le TTC vaut 5,00 €.
-    const row = await orderRow(order.id);
-    expect(quote.voucherDiscountCents).toBe(row.voucherDiscountCents);
-    expect(row.voucherTtcCents).toBe(500);
-    expect(quote.totalCents).toBe(row.totalCents);
+    expect(quote.voucherDiscountCents).toBe(500);
+    expect(quote.totalCents).toBe((await orderRow(order.id)).totalCents);
   });
 
   it("le devis anonyme refuse un bon (400)", async () => {
@@ -514,8 +502,7 @@ describe("le devis et l'assiette", () => {
     const { userId, voucherId } = await holderWithVoucher();
     const orderId = await seedOrderCarrying(voucherId, { units: 10, fulfilled: true });
     const row = await orderRow(orderId);
-    // Voie B (2026-10-27, plan du centime § 10 Q2) : valeur faciale TTC imputée.
-    expect(row.voucherTtcCents).toBe(500);
+    expect(row.voucherDiscountCents).toBe(500);
 
     await nightly();
 

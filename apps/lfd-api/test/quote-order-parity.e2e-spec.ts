@@ -407,17 +407,11 @@ describe("le devis de la vitrine et la facture", () => {
 
     const order = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: placed },
-      select: {
-        deliveryFeeTtcCents: true,
-        deliveryFeeAdjustment: true,
-        lines: { select: { lineTotalTtcCents: true } },
-      },
+      select: { subtotalCents: true, deliveryFeeCents: true, deliveryFeeAdjustment: true },
     });
 
-    // Voie B (2026-10-27, plan du centime R1 bis) : pour un particulier, 10 % du TTC
-    // des marchandises (Σ quantité × étiquette) ; le TAUX reste figé, pas le montant.
-    const goodsTtc = order.lines.reduce((sum, line) => sum + (line.lineTotalTtcCents ?? 0), 0);
-    expect(order.deliveryFeeTtcCents).toBe(Math.round(goodsTtc * 0.1));
+    // 10 % du sous-total, et le TAUX figé — pas le montant déguisé en forfait.
+    expect(order.deliveryFeeCents).toBe(Math.round(order.subtotalCents * 0.1));
     expect(order.deliveryFeeAdjustment).toEqual({ mode: "percent", bp: 1_000 });
   });
 

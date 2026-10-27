@@ -35,7 +35,6 @@ import { OrderPlanGate } from "./order-plan-gate.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
 import type { OrderParties } from "./order-parties.js";
 import type { OrderLocale } from "../../domain/value-objects/order-locale.js";
-import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
 
 export type { OrderContent } from "./order-content.js";
 
@@ -162,14 +161,7 @@ export class OrderDrafting {
     // se paierait sur toutes les commandes à l'heure.
     const late = await this.lateFeeFor(waiverUsed, resolved.subtotalCents);
     const order = Order.draft({
-      // La méthode de la PASSATION — celle qu'`Order.draft` décidera de son
-      // côté sur la même société : les montants partent dans son unité.
-      ...OrderComposition.draftOf(
-        content,
-        resolved,
-        arranged,
-        placementVatMethodOf(parties.companyId),
-      ),
+      ...OrderComposition.draftOf(content, resolved, arranged),
       companyId: parties.companyId,
       billedCompanyId,
       principal,

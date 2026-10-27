@@ -165,8 +165,8 @@ describe("delivery_note.service_day — le jour d'un reliquat", () => {
 
     await expect(
       ctx.prisma.$executeRaw`
-        INSERT INTO "public"."delivery_note" (id, order_id, rank, number, status, planned_at, updated_at, vat_method)
-        VALUES ('dn_raw_2', ${order.id}, 2, 'BL-RAW-2', 'planned', now(), now(), 'line_ht')`,
+        INSERT INTO "public"."delivery_note" (id, order_id, rank, number, status, planned_at, updated_at)
+        VALUES ('dn_raw_2', ${order.id}, 2, 'BL-RAW-2', 'planned', now(), now())`,
     ).rejects.toThrow(/delivery_note_service_day_beyond_first_rank/);
   });
 });

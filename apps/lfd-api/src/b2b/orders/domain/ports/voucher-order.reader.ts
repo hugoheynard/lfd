@@ -13,11 +13,7 @@ export interface VoucherOrder {
   readonly orderNumber: string;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
-  /**
-   * Ce que le bon a servi, **en valeur faciale** — l'unité du registre : TTC
-   * pour une commande `exact_ht`, HT pour `line_ht` (plan du centime, § 5 R6).
-   * Le nom date d'avant la voie B, quand les deux se confondaient.
-   */
+  /** La part du bon imputée, HT. */
   readonly voucherDiscountCents: number;
   /** Le jour de service (`AAAA-MM-JJ`), ou `null` si la commande n'en porte pas. */
   readonly serviceDay: string | null;

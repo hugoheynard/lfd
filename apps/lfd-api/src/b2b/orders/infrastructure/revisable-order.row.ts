@@ -20,7 +20,6 @@ import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
 import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
-import { vatMethodOf } from "./order-money-columns.js";
 import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
 
 /** La clé de ligne d'un texte de CGV → son document (cf. `PrismaOrderRepository`). */
@@ -84,8 +83,6 @@ export const REVISABLE_ORDER_SELECT = {
   deliveryVatMode: true,
   loyaltyVoucherId: true,
   voucherDiscountCents: true,
-  vatMethod: true,
-  voucherTtcCents: true,
   salesTermsKey: true,
   salesTermsRevision: true,
   salesTermsFileId: true,
@@ -133,8 +130,6 @@ export interface RevisableOrderRow {
   readonly deliveryVatMode: string | null;
   readonly loyaltyVoucherId: string | null;
   readonly voucherDiscountCents: number;
-  readonly vatMethod: string;
-  readonly voucherTtcCents: number | null;
   readonly salesTermsKey: string | null;
   readonly salesTermsRevision: number | null;
   readonly salesTermsFileId: string | null;
@@ -189,16 +184,10 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     lateFeeAdjustment: lateFeeOf(row.lateFeeAdjustment),
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
-    vatMethod: vatMethodOf(row.id, row.vatMethod),
-    // Ce que le bon a servi, dans l'unité de la méthode : sa valeur faciale
-    // TTC pour `exact_ht` (plan du centime, § 5), le HT pour `line_ht`.
     voucher:
       row.loyaltyVoucherId === null
         ? null
-        : {
-            id: row.loyaltyVoucherId,
-            appliedCents: row.voucherTtcCents ?? row.voucherDiscountCents,
-          },
+        : { id: row.loyaltyVoucherId, appliedCents: row.voucherDiscountCents },
     salesTerms: salesTermsOf(row),
     locale: localeOf(row.locale),
     catalogVersionId: row.catalogVersionId,

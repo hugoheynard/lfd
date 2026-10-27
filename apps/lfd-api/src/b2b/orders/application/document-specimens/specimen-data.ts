@@ -4,6 +4,7 @@ import {
   type CartAdjustment,
   type ClientSheet,
   type ClientSheetLine,
+  discountCentsOf,
   instantToLocal,
   type SheetVariant,
 } from "@lfd/contracts";
@@ -11,7 +12,7 @@ import { millicentsFromCents } from "@lfd/money";
 
 import { Order, type DraftOrderInput, type OrderToPlace } from "../../domain/entities/order.js";
 import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
+import { eligibleSubtotalCents } from "../../domain/services/pickup-discount-eligibility.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
 
@@ -110,27 +111,26 @@ function line(
  * sont refusés par l'agrégat (V5 du plan
  * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
  *
- * La remise se calcule sur l'assiette TTC des lignes éligibles, par
- * `composeExactOrder` — exactement la garde que l'agrégat refait.
+ * La remise se calcule sur l'assiette des lignes éligibles, relue sur le
+ * brouillon sans remise que l'agrégat rend, le second porte la remise que
+ * `discountCentsOf` en déduit — exactement la garde que l'agrégat refait.
  */
 function specimenOrder(variant: SheetVariant, requestedFor: Date): Order {
   if (variant === "pro") {
     return Order.draft(proInput(requestedFor));
   }
   const base = publicInput(requestedFor);
-  // Le bon public est celui d'un particulier : sa commande est composée en
-  // TTC (`exact_ht`, plan du centime, lot C2), et la remise y arrive en TTC —
-  // par la composition même que l'agrégat rejoue pour la vérifier.
-  const composed = composeExactOrder({
-    lines: base.lines,
-    discountAdjustment: DISCOUNT,
-    deliveryFeeAdjustment: null,
-    deliveryVatMode: base.deliveryVatMode,
-    voucherFaceCents: 0,
-  });
+  // Sérialiser demande un règlement décidé ; celui du brouillon n'est lu nulle part.
+  const draft = Order.draft(base);
+  draft.payByCard("specimen-draft");
+  const drafted = draft.toPersistence().lines;
+  const eligibleCents = eligibleSubtotalCents(
+    drafted.map((snapshot) => ({ sku: snapshot.sku, htCents: snapshot.lineTotalCents })),
+    new Set(drafted.filter((snapshot) => !snapshot.pickupDiscountEligible).map((s) => s.sku)),
+  );
   return Order.draft({
     ...base,
-    discountCents: composed.pickupDiscount.ttcCents,
+    discountCents: discountCentsOf(DISCOUNT, eligibleCents),
     discountAdjustment: DISCOUNT,
   });
 }

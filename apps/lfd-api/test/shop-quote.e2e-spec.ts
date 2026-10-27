@@ -122,14 +122,13 @@ describe("le devis de la vitrine", () => {
       await quote({ lines: PANIER, fulfillment: null }).expect(200),
     );
 
-    // Voie B (2026-10-27, plan du centime § 4) : 12 × 1,06 € = 12,72 € TTC à 5,5 %
-    // (TVA ⌈66,31⌉ = 67, HT 12,05) ; 4 × 3,30 € = 13,20 € à 10 % (TVA 120, HT 12,00).
-    expect(view.subtotalHtCents).toBe(2_405);
+    // 12 × 1,00 € = 12,00 € à 5,5 % ; 4 × 3,00 € = 12,00 € à 10 %.
+    expect(view.subtotalHtCents).toBe(2_400);
     expect(view.vat).toEqual([
-      { rate: 5.5, amountCents: 67 },
+      { rate: 5.5, amountCents: 66 },
       { rate: 10, amountCents: 120 },
     ]);
-    expect(view.totalCents).toBe(2_592);
+    expect(view.totalCents).toBe(2_586);
   });
 
   /**
@@ -149,9 +148,8 @@ describe("le devis de la vitrine", () => {
         sku: "VIE-001",
         quantity: 12,
         unitPriceMillicents: 100_000,
-        // Voie B (2026-10-27, plan du centime § 4) : 12 × étiquette 1,06 € = 12,72 € TTC, HT 12,72 − 0,67.
-        lineTotalCents: 1_205,
-        lineTotalTtcCents: 1_272,
+        lineTotalCents: 1_200,
+        lineTotalTtcCents: 1_266,
         vatRatePercent: 5.5,
       },
     ]);
@@ -195,15 +193,13 @@ describe("le devis de la vitrine", () => {
       }).expect(200),
     );
 
-    // Voie B (2026-10-27, plan du centime § 4) : −10 % de 25,92 € TTC = 2,59 €
-    // (1,27 à 5,5 %, 1,32 à 10 %) ; sa part HT est 1,21 + 1,20 = 2,41.
-    expect(view.discountCents).toBe(241);
-    // Nets 11,45 € à 5,5 % (⌈59,69⌉ = 60) et 11,88 € à 10 % (108).
+    expect(view.discountCents).toBe(240);
+    // Chaque assiette perd 10 % : 10,80 € à 5,5 % et 10,80 € à 10 %.
     expect(view.vat).toEqual([
-      { rate: 5.5, amountCents: 60 },
+      { rate: 5.5, amountCents: 59 },
       { rate: 10, amountCents: 108 },
     ]);
-    expect(view.totalCents).toBe(2_333);
+    expect(view.totalCents).toBe(2_327);
     // Rien d'exclu : l'assiette n'a rien de neuf à dire, la clé est absente (lot C).
     expect(view).not.toHaveProperty("pickupDiscountBase");
   });
@@ -224,9 +220,7 @@ describe("le devis de la vitrine", () => {
       }).expect(200),
     );
 
-    // Voie B (2026-10-27, plan du centime § 4) : 5,00 € HT convertis au prorata des
-    // taux = 5,39 € TTC (2,59 + 2,80), dont la part HT est 2,46 + 2,55 = 5,01.
-    expect(view.discountCents).toBe(501);
+    expect(view.discountCents).toBe(500);
     expect(view.discountAdjustment).toEqual({ mode: "amount", cents: 500 });
   });
 
@@ -277,9 +271,7 @@ describe("le devis de la vitrine", () => {
     // La ligne à 20 % est celle du transport, et elle n'existait pas au panier :
     // le coursier n'était pas taxé, d'où quatre euros d'écart sur vingt.
     expect(view.vat).toContainEqual({ rate: 20, amountCents: 400 });
-    // Voie B (2026-10-27, plan du centime § 4) : 25,92 € TTC de marchandises + 20 € HT
-    // de port convertis à 20 % = 24,00 € TTC.
-    expect(view.totalCents).toBe(2_592 + 2_400);
+    expect(view.totalCents).toBe(2_400 + 2_000 + 586);
   });
 
   /**

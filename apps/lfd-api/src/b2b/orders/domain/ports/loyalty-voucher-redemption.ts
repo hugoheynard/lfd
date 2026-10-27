@@ -4,11 +4,7 @@
  */
 export interface VoucherSettlement {
   readonly voucherId: string;
-  /**
-   * Ce que le bon a servi, **en valeur faciale** — `Order.voucherFaceCents` :
-   * TTC pour une commande de particulier `exact_ht`, HT pour `line_ht` (plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 5 R6, § 10 Q2).
-   */
+  /** La part imputée, HT — `Order.voucherDiscountCents`. */
   readonly appliedCents: number;
   readonly order: { readonly id: string; readonly number: string };
 }

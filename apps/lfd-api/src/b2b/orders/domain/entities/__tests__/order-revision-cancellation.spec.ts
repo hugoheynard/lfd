@@ -76,7 +76,6 @@ function placed(
     orderId: "ord_1",
     orderNumber: "ORD-1",
     revision: 0,
-    vatMethod: state.vatMethod,
     companyId: null,
     billedCompanyId: null,
     principal: null,

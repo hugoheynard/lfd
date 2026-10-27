@@ -15,8 +15,6 @@ interface RevenueRow {
   placedByUserId: string;
   companyId: string;
   status: "placed";
-  /** Des commandes de société : composées HT (plan du centime, § 7). */
-  vatMethod: "line_ht";
   fulfillmentMethod: "pickup";
   subtotalCents: number;
   totalCents: number;
@@ -86,7 +84,6 @@ function buildOrders(
         placedByUserId: buyerId,
         companyId: company.id,
         status: "placed",
-        vatMethod: "line_ht",
         fulfillmentMethod: "pickup",
         subtotalCents: amount,
         totalCents: amount,

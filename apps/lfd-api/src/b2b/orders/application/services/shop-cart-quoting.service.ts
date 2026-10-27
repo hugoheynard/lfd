@@ -12,7 +12,6 @@ import {
   type VatVentilationInput,
 } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
-import type { CartAdjustment } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import {
@@ -26,9 +25,6 @@ import { voucherImputationCents } from "../../domain/services/voucher-imputation
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
 import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
-import type { OrderVoucher } from "../../domain/entities/order.js";
-import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
-import { exactShopQuoteOf } from "./exact-shop-quote.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
@@ -63,8 +59,6 @@ interface CartTerms {
   /** Les SKU que la remise du point ne couvre pas. */
   readonly ineligibleSkus: ReadonlySet<string>;
   readonly deliveryFeeCents: number;
-  /** Le barème de la zone, `null` hors coursier — la commande `exact_ht` le rejoue en TTC. */
-  readonly deliveryFeeAdjustment: CartAdjustment | null;
 }
 
 const NO_TERMS: CartTerms = {
@@ -72,7 +66,6 @@ const NO_TERMS: CartTerms = {
   discountAdjustment: null,
   ineligibleSkus: new Set(),
   deliveryFeeCents: 0,
-  deliveryFeeAdjustment: null,
 };
 
 /**
@@ -145,12 +138,6 @@ export class ShopCartQuoting {
       lines.map((line) => ({ sku: line.sku, htCents: line.lineTotalCents })),
       query.companyId,
     );
-    // 🔴 La méthode de la commande que ce devis annonce — celle qu'`Order.draft`
-    // décidera sur la même société, jamais l'audience : un pro ne change pas
-    // d'un centime (plan du centime, § 8).
-    if (placementVatMethodOf(query.companyId) === "exact_ht") {
-      return this.exactQuote(query, resolved, terms);
-    }
     const voucherDiscountCents = await this.voucherDiscountOf(
       query,
       subtotalHtCents - terms.discountCents,
@@ -226,22 +213,9 @@ export class ShopCartQuoting {
     query: ShopCartQuoteRequest,
     goodsAfterDiscountCents: number,
   ): Promise<number> {
-    const voucher = await this.voucherOf(query);
-    return voucher === null
-      ? 0
-      : voucherImputationCents(voucher.valueCents, goodsAfterDiscountCents);
-  }
-
-  /**
-   * Le bon nommé, lu sous le mur de la personne — ou `null` sans bon.
-   *
-   * @throws {VoucherRequiresSignInError} un bon dans un devis anonyme.
-   * @throws {VoucherNotForCompanyOrderError} un bon dans un devis de société.
-   */
-  private async voucherOf(query: ShopCartQuoteRequest): Promise<OrderVoucher | null> {
     const voucherId = query.payload.voucherId;
     if (voucherId === undefined) {
-      return null;
+      return 0;
     }
     if (query.buyerUserId === null) {
       throw new VoucherRequiresSignInError();
@@ -249,33 +223,8 @@ export class ShopCartQuoting {
     if (query.companyId !== null) {
       throw new VoucherNotForCompanyOrderError();
     }
-    return this.voucherQuotes.quote(voucherId, query.buyerUserId, this.clock.now());
-  }
-
-  /**
-   * Le devis d'un particulier, composé en TTC comme sa commande le sera
-   * (`exact_ht`) : le bon à sa valeur faciale TTC, la remise et le port
-   * rejoués en TTC depuis leurs réglages (plan du centime, § 5).
-   */
-  private async exactQuote(
-    query: ShopCartQuoteRequest,
-    resolved: readonly { readonly line: OrderLineOf }[],
-    terms: CartTerms,
-  ): Promise<ShopCartQuote> {
-    const voucher = await this.voucherOf(query);
-    return exactShopQuoteOf({
-      lines: resolved.map(({ line }) => ({
-        sku: line.sku,
-        quantity: line.quantity,
-        unitPriceMillicents: line.unitPriceMillicents,
-        vatRate: line.vatRate,
-      })),
-      ineligibleSkus: terms.ineligibleSkus,
-      discountAdjustment: terms.discountAdjustment,
-      deliveryFeeAdjustment: terms.deliveryFeeAdjustment,
-      deliveryVatMode: await this.deliveryVat.current(),
-      voucherFaceCents: voucher?.valueCents ?? 0,
-    });
+    const voucher = await this.voucherQuotes.quote(voucherId, query.buyerUserId, this.clock.now());
+    return voucherImputationCents(voucher.valueCents, goodsAfterDiscountCents);
   }
 
   /**
@@ -313,7 +262,6 @@ export class ShopCartQuoting {
         discountAdjustment: retrait.discountAdjustment,
         ineligibleSkus: retrait.ineligibleSkus,
         deliveryFeeCents: 0,
-        deliveryFeeAdjustment: null,
       };
     }
     const coursier = await this.adjustments.forDelivery(
@@ -327,7 +275,6 @@ export class ShopCartQuoting {
       discountAdjustment: null,
       ineligibleSkus: new Set(),
       deliveryFeeCents: coursier.feeCents,
-      deliveryFeeAdjustment: coursier.feeAdjustment,
     };
   }
 }
