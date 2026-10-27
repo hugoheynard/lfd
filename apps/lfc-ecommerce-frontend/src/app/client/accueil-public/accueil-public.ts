@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
-import { FoldCalloutComponent, FoldIconComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -117,8 +117,8 @@ interface House {
   imports: [
     ContactBand,
     CurrentEvents,
+    FoldButtonComponent,
     FoldCalloutComponent,
-    FoldIconComponent,
     HomeFeatured,
     HomeStorefront,
     LiveOrdersWell,

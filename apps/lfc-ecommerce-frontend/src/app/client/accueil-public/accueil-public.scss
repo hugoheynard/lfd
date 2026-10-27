@@ -953,9 +953,7 @@ app-service-doors {
 /* (La vitrine porte toujours sa région d'annonce du panier, invisible : elle
    est « vide » tant qu'elle n'a pas de grille.) */
 /* (Un `:has` ne s'imbrique pas : la grille absente se dit à part.) */
-.sheet:has(> app-usual-picks + app-staff-home-picks:empty + app-home-storefront:last-child):not(
-    :has(app-shelf-grid)
-  ) {
+.sheet:has(> app-usual-picks + :empty + app-home-storefront:last-child):not(:has(app-shelf-grid)) {
   padding-bottom: 0;
 }
 
@@ -964,66 +962,46 @@ app-service-doors {
   position: absolute;
 }
 
-/* ── Les maisons au téléphone (Hugo, 2026-10-27) ─────────────────────────────
-   Les unes au-dessus des autres, plus de rail : chaque maison a toute la
-   largeur, et son bouton d'itinéraire à côté d'elle. */
+/* ── Le bouton d'itinéraire d'une maison (Hugo, 2026-10-27) ──────────────── */
 .houses > li {
   position: relative;
 }
 
+/* Un bouton fold : seule sa place est écrite ici. */
 .house-gps {
   position: absolute;
   z-index: 1;
   top: var(--fold-space-md);
   right: var(--fold-space-md);
-  display: grid;
-  place-items: center;
-  width: 40px;
-  height: 40px;
-  border-radius: var(--fold-radius-md);
-  background: var(--lfc-brand-blue);
-  color: var(--lfc-paper-0);
-
-  fold-icon {
-    width: 20px;
-    height: 20px;
-  }
 }
 
+/* ── Au téléphone (Hugo, 2026-10-27) ──────────────────────────────────────────
+   Les maisons les unes au-dessus des autres ; le bandeau de retrait n'est plus
+   une carte, il sort de la gouttière et remonte jusqu'au bandeau de page, et
+   « Nous contacter » s'y colle (marges négatives délibérées, qui reprennent le
+   rembourrage et l'écart de la feuille) ; la sortie se résume à « Pas encore
+   décidé ? » et un gros bouton blanc. Une seule requête : la feuille de ce
+   composant est à son budget. */
 @media (max-width: 599.98px) {
   .houses {
     flex-direction: column;
     overflow-x: visible;
-    scroll-snap-type: none;
   }
 
   .houses > li {
     flex: none;
   }
-}
 
-/* 🔴 AU TÉLÉPHONE, LE BANDEAU DE RETRAIT N'EST PLUS UNE CARTE (Hugo,
-   2026-10-27 : « oublier l'aspect carte, pleine largeur et collé au
-   masthead ») : il sort de la gouttière et remonte jusqu'au bandeau de page.
-   Marges négatives délibérées — elles reprennent le rembourrage de la feuille. */
-@media (max-width: 599.98px) {
   .sheet > .banner:first-child {
     margin: calc(-1 * var(--fold-space-2xl)) calc(-1 * var(--lfc-inset)) 0;
     border-radius: 0;
     box-shadow: none;
   }
 
-  /* Et la bande « Nous contacter » s'y colle (Hugo, 2026-10-27) : la marge
-     négative reprend l'écart de la feuille. */
   .sheet > .banner:first-child + .bands {
     margin-top: calc(-1 * var(--fold-space-2xl));
   }
-}
 
-/* Au téléphone, la sortie se résume à sa question et à un GROS bouton blanc
-   (Hugo, 2026-10-27) : « Pas encore décidé ? », puis « Je visite la
-   boutique » sur toute la largeur. */
-@media (max-width: 599.98px) {
   .browse {
     flex-direction: column;
     align-items: stretch;
@@ -1035,19 +1013,15 @@ app-service-doors {
   }
 
   .browse-text {
-    font-family: var(--fold-font-label);
     font-size: var(--fold-text-lg);
     font-weight: var(--lfc-weight-black);
-    text-transform: uppercase;
   }
 
   .browse .browse-cta {
     justify-content: center;
-    width: 100%;
     min-height: 56px;
     border: 0;
     background: var(--lfc-paper-0);
     color: var(--lfc-brand-blue);
-    font-size: var(--fold-text-md);
   }
 }

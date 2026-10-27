@@ -673,6 +673,7 @@
    plus le bleu : la barre est bleue elle-même (Hugo, 2026-10-27). Ici et non
    dans le shell : la sous-barre porte `data-surface="chrome"`, dont le bloc
    ci-dessus redéfinit `bg-header` — seule une règle aussi globale le passe. */
-[data-theme='lfc-app'] fold-app-shell:has(app-order-bar) .subheader[data-surface='chrome'] {
+/* (0,2,1 : passe le bloc chrome, 0,2,0, qu'il suit dans le fichier.) */
+.subheader[data-surface]:has(app-order-bar) {
   --fold-color-bg-header: var(--lfc-paper-0);
 }
