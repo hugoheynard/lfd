@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1675 textes
+## Sommaire — 1676 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 60 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1675** |
+| **Total** | | **1676** |
 
 ## Le parcours de commande
 
@@ -55,7 +55,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 60 textes.
+Source : `screens/accueil-public.copy.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -93,6 +93,7 @@ Source : `screens/accueil-public.copy.ts` · 60 textes.
 | `accueilPublic.houses.choose` | Choisir | Choose | Scegli |  |
 | `accueilPublic.houses.count` | {count} maisons | {count} bakeries | {count} botteghe | `{count}` |
 | `accueilPublic.houses.scroll` | faites défiler | scroll to see more | scorrete |  |
+| `accueilPublic.houses.directions` | Itinéraire vers {name} | Directions to {name} | Indicazioni per {name} | `{name}` |
 | `accueilPublic.browse.helpLabel` | Bon à savoir | Good to know | Buono a sapersi |  |
 | `accueilPublic.browse.lead` | Pas encore décidé ? | Not decided yet? | Non avete ancora deciso? |  |
 | `accueilPublic.browse.strong` | Voyez d’abord les fournées | Look at today’s bakes first | Guardate prima le infornate |  |

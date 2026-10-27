@@ -963,3 +963,41 @@ app-service-doors {
 .sheet > app-home-storefront:not(:has(app-shelf-grid)) {
   position: absolute;
 }
+
+/* ── Les maisons au téléphone (Hugo, 2026-10-27) ─────────────────────────────
+   Les unes au-dessus des autres, plus de rail : chaque maison a toute la
+   largeur, et son bouton d'itinéraire à côté d'elle. */
+.houses > li {
+  position: relative;
+}
+
+.house-gps {
+  position: absolute;
+  z-index: 1;
+  top: var(--fold-space-md);
+  right: var(--fold-space-md);
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
+
+  fold-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+@media (max-width: 599.98px) {
+  .houses {
+    flex-direction: column;
+    overflow-x: visible;
+    scroll-snap-type: none;
+  }
+
+  .houses > li {
+    flex: none;
+  }
+}

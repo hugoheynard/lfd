@@ -241,6 +241,13 @@
           "variables": []
         },
         {
+          "key": "accueilPublic.houses.directions",
+          "fr": "Itinéraire vers {name}",
+          "en": "Directions to {name}",
+          "it": "Indicazioni per {name}",
+          "variables": ["name"]
+        },
+        {
           "key": "accueilPublic.browse.helpLabel",
           "fr": "Bon à savoir",
           "en": "Good to know",

@@ -176,6 +176,8 @@ export interface AccueilPublicCopy {
     /** Le compte du rail, sous les puces. */
     readonly count: string;
     readonly scroll: string;
+    /** Le nom du bouton d'itinéraire d'une maison — `{name}`. */
+    readonly directions: string;
   };
 
   /**
@@ -332,6 +334,7 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     choose: 'Choisir',
     count: '{count} maisons',
     scroll: 'faites défiler',
+    directions: 'Itinéraire vers {name}',
   },
   browse: {
     helpLabel: 'Bon à savoir',
@@ -424,6 +427,7 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     choose: 'Choose',
     count: '{count} bakeries',
     scroll: 'scroll to see more',
+    directions: 'Directions to {name}',
   },
   browse: {
     helpLabel: 'Good to know',
@@ -516,6 +520,7 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     choose: 'Scegli',
     count: '{count} botteghe',
     scroll: 'scorrete',
+    directions: 'Indicazioni per {name}',
   },
   browse: {
     helpLabel: 'Buono a sapersi',

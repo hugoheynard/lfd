@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
-import { FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { FoldCalloutComponent, FoldIconComponent, FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -118,6 +118,7 @@ interface House {
     ContactBand,
     CurrentEvents,
     FoldCalloutComponent,
+    FoldIconComponent,
     HomeFeatured,
     HomeStorefront,
     LiveOrdersWell,
@@ -499,6 +500,30 @@ export class AccueilPublic {
     const text = translated !== undefined && translated.trim() !== '' ? translated : alt.fr;
     return isMeaningfulAlt(text) ? text : null;
   });
+
+  /**
+   * L'itinéraire vers une maison, dans l'application de cartes du téléphone :
+   * son point GPS s'il est saisi, son adresse sinon. `null` sans l'un ni
+   * l'autre — pas de bouton qui mène nulle part.
+   */
+  protected directionsUrl(house: House): string | null {
+    const point = house.point;
+    const gps = point.gps ?? null;
+    const destination =
+      gps !== null
+        ? `${gps.lat},${gps.lng}`
+        : [point.ligne1, point.codePostal, point.ville].filter((part) => part !== '').join(' ');
+    return destination === ''
+      ? null
+      : `https://www.google.com/maps/dir/?api=1&destination=${encodeURIComponent(destination)}`;
+  }
+
+  /** Le nom du bouton d'itinéraire : la maison, puis « nouvel onglet ». */
+  protected directionsLabel(house: House): string {
+    return fill(this.t().nav.newTab, {
+      name: fill(this.c().houses.directions, { name: house.name }),
+    });
+  }
 
   /** Le rail des maisons, pour lire sa position de défilement. */
   private readonly rail = viewChild<ElementRef<HTMLUListElement>>('rail');
