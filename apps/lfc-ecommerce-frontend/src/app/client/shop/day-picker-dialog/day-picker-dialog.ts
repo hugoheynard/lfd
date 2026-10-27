@@ -39,7 +39,7 @@ interface NextDay {
 /**
  * **« Pour quel jour ? »** — la première question d'une commande neuve, avant
  * « retrait ou coursier ? » (plan `documentation/commandes/passation/
- * plan-panneau-date.md`).
+ * parcours-de-service.md`).
  *
  * 🔴 Le front n'invente aucun jour : tout se lit dans {@link ServicePoints}
  * (`GET /fulfillment-days`). « Aujourd'hui » n'apparaît que si le serveur le

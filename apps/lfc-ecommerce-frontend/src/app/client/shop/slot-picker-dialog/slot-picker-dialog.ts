@@ -7,7 +7,7 @@ import {
   input,
   signal,
 } from '@angular/core';
-import { addDays, instantToLocal, type PublicPickupSlot } from '@lfd/contracts';
+import { instantToLocal, type PublicPickupSlot } from '@lfd/contracts';
 import {
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -30,55 +30,36 @@ import { PublicSlots } from '../public-slots.gateway';
 import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 import { CartBar } from '../../cart/cart-bar/cart-bar';
 
-/**
- * Combien de journées le visiteur peut regarder d'un coup.
- *
- * 🔴 **Une semaine depuis le 2026-09-17** (Hugo), contre trois journées avant.
- * Un visiteur qui prépare un week-end ou un départ n'a pas de raison d'être
- * borné à après-demain : la rangée défile, et une journée sans créneau le dit
- * elle-même plutôt que d'être cachée.
- *
- * ⚠️ Ce nombre est une largeur d'ÉCRAN, pas une promesse du serveur : les
- * onglets sont fabriqués par `addDays` à partir de la première journée
- * accordée. Chaque onglet interroge ensuite ses propres créneaux, et c'est le
- * serveur qui dit s'il y en a.
- */
-const DAYS_SHOWN = 7;
-
-/** Ce qu'il faut pour ouvrir le sélecteur : la maison, et d'où partent les jours. */
+/** Ce qu'il faut pour ouvrir le sélecteur : la maison, et le jour. */
 export interface SlotPickerData {
   readonly pickupAddressId: string;
   /** Le nom d'usage de la maison — le sur-titre le rappelle. */
   readonly place: string;
   /**
-   * La première journée offerte, **du serveur** (`GET /fulfillment-days`).
-   *
-   * 🔴 Jamais « demain » calculé ici : la journée demandable dépend de l'heure
-   * limite du point, et ce dépôt a déjà corrigé un panier qui annonçait demain
-   * là où le serveur servait le surlendemain. `null` = aucune journée ouverte,
-   * et le dialogue le dit au lieu d'en inventer une.
+   * 🔴 LE JOUR, OBLIGATOIRE (Hugo, 2026-10-27 : « je ne veux aucune
+   * incohérence »). Il se choisit au panneau du jour et nulle part ailleurs :
+   * ce dialogue ne propose plus d'onglets. Les onglets de la semaine, quand on
+   * l'ouvrait sans jour, étaient le « vieux panneau qui mêlait jour et heure ».
+   * Le type le rend inexprimable.
    */
-  readonly firstDay: string | null;
+  readonly day: string;
   /**
-   * Le dernier jour proposable, ou `null` : aucun. Un panier qui porte un
-   * article réservé à une opération ne se retire que jusqu'à son `pickupUntil`
-   * ({@link ServicePoints.lastDay}) — au-delà, la commande serait refusée.
-   */
-  readonly lastDay?: string | null;
-  /**
-   * Le créneau déjà retenu À CETTE MAISON, quand on rouvre l'heure : le
-   * dialogue s'ouvre sur son jour, le présélectionne et le badge « Votre
-   * choix », comme le choix de la maison marque la sienne. `time` est l'heure
-   * de début, au format du créneau (`HH:MM`).
+   * Le créneau déjà retenu À CETTE MAISON, quand on rouvre l'heure : il est
+   * présélectionné et badgé « Votre choix », comme le choix de la maison marque
+   * la sienne. `time` est l'heure de début, au format du créneau (`HH:MM`).
    */
   readonly current?: { readonly day: string; readonly time: string } | null;
-  /**
-   * Le jour pris au panneau du jour (`DayPickerDialog`) : le dialogue s'ouvre
-   * dessus, ses onglets restent pour changer d'avis. Au-delà de la semaine
-   * montrée, les onglets partent de lui.
-   */
-  readonly openOn?: string | null;
 }
+
+/**
+ * Ce que le sélecteur rend : un créneau, ou la demande de changer de jour —
+ * que la porte traite en rouvrant le panneau du jour, puis ce dialogue.
+ * `undefined` : fermé sans rien choisir.
+ */
+export type SlotPickerResult = PublicPickupSlot | typeof CHANGE_DAY;
+
+/** « Je change de date » : le dialogue rend la main au panneau du jour. */
+export const CHANGE_DAY = 'change-day' as const;
 
 /**
  * UNE FOURNÉE, et les créneaux qu'elle sert.
@@ -99,12 +80,6 @@ export interface SlotPickerData {
 interface SlotBatch {
   readonly label: string | null;
   readonly slots: readonly PublicPickupSlot[];
-}
-
-/** Un jour, tel que l'onglet le nomme. */
-interface DayTab {
-  readonly day: string;
-  readonly label: string;
 }
 
 /**
@@ -160,8 +135,8 @@ export class SlotPickerDialog {
   static open(
     panels: FoldPanelHostService,
     data: SlotPickerData,
-  ): FoldPanelRef<PublicPickupSlot | undefined> {
-    return panels.open<SlotPickerData, PublicPickupSlot | undefined>(SlotPickerDialog, {
+  ): FoldPanelRef<SlotPickerResult | undefined> {
+    return panels.open<SlotPickerData, SlotPickerResult | undefined>(SlotPickerDialog, {
       side: dialogSide(),
       data,
     });
@@ -175,8 +150,8 @@ export class SlotPickerDialog {
 
   protected readonly c = screenCopy('slotPicker', slotPickerCopy);
 
-  /** Le jour regardé. Vide tant que la première journée n'est pas connue. */
-  protected readonly day = signal('');
+  /** Le jour, tel que le panneau l'a pris. */
+  protected readonly day = computed(() => this.data().day);
 
   protected readonly slots = signal<readonly PublicPickupSlot[]>([]);
 
@@ -191,52 +166,13 @@ export class SlotPickerDialog {
 
   protected readonly picked = signal<PublicPickupSlot | null>(null);
 
-  /**
-   * Les journées offertes, à partir de celle que le serveur accorde, et
-   * jamais au-delà du dernier jour proposable.
-   *
-   * ⚠️ Le libellé (« demain ») se lit à l'horloge du navigateur, à Paris — c'est
-   * un LIBELLÉ, pas une décision de service, et le panier fait déjà exactement
-   * ça. Seul un onglet laissé ouvert passé minuit le décalerait d'un mot.
-   */
-  /** Le jour imposé par le panneau, tant qu'on ne demande pas à en changer. */
-  private readonly dayUnlocked = signal(false);
-  protected readonly dayLocked = computed(
-    () => !this.dayUnlocked() && (this.data().openOn ?? null) !== null,
-  );
-
-  /** Les jours montrés : le seul jour choisi tant qu'il est imposé. */
-  protected readonly shownDays = computed<readonly DayTab[]>(() =>
-    this.dayLocked() ? this.days().filter((tab) => tab.day === this.day()) : this.days(),
-  );
-
-  protected unlockDay(): void {
-    this.dayUnlocked.set(true);
-  }
-
-  protected readonly days = computed<readonly DayTab[]>(() => {
-    const first = this.data().firstDay;
-    if (first === null) {
-      return [];
-    }
+  /** « Demain », « Aujourd'hui », ou la date — le jour comme un fait. */
+  protected readonly dayLabel = computed(() => {
     const copy = this.c();
-    const today = instantToLocal(new Date()).day;
-    const locale = this.locale.current();
-    const last = this.data().lastDay ?? null;
-    const openOn = this.data().openOn ?? null;
-    // Un jour pris au-delà de la semaine montrée : les onglets partent de lui.
-    const start = openOn !== null && openOn > addDays(first, DAYS_SHOWN - 1) ? openOn : first;
-    // La première journée reste : c'est le serveur qui l'a accordée, bornes
-    // d'opération comprises. Les suivantes s'arrêtent au dernier jour.
-    return Array.from({ length: DAYS_SHOWN }, (_unused, index) => addDays(start, index))
-      .filter((day, index) => index === 0 || last === null || day <= last)
-      .map((day) => ({
-        day,
-        label: serviceDayLabel(day, today, locale, {
-          today: copy.days.today,
-          tomorrow: copy.days.tomorrow,
-        }),
-      }));
+    return serviceDayLabel(this.day(), instantToLocal(new Date()).day, this.locale.current(), {
+      today: copy.days.today,
+      tomorrow: copy.days.tomorrow,
+    });
   });
 
   /**
@@ -263,29 +199,11 @@ export class SlotPickerDialog {
   protected readonly kicker = computed(() => fill(this.c().kicker, { place: this.data().place }));
 
   constructor() {
-    // La première journée ouvre le dialogue ; les suivantes s'atteignent par les
-    // onglets. Rien n'est demandé tant que le serveur n'a accordé aucun jour.
-    effect(() => {
-      const first = this.data().firstDay;
-      if (first !== null && this.day() === '') {
-        // Le jour déjà retenu, s'il est encore proposé ; sinon le premier.
-        const kept = this.data().current?.day;
-        const offered = kept !== undefined && this.days().some((tab) => tab.day === kept);
-        const openOn = this.data().openOn ?? null;
-        const opens = openOn !== null && this.days().some((tab) => tab.day === openOn);
-        this.day.set(offered ? kept : opens ? openOn : (this.days()[0]?.day ?? first));
-      }
-    });
-
-    // Le jour regardé commande la lecture. Chaque changement d'onglet relit :
-    // les créneaux dépendent de l'heure qu'il est, et en garder d'anciens
-    // proposerait une fournée déjà partie.
+    // Le jour commande la lecture : les créneaux dépendent de l'heure qu'il
+    // est, et en garder d'anciens proposerait une fournée déjà partie.
     effect(() => {
       const day = this.day();
       const point = this.data().pickupAddressId;
-      if (day === '') {
-        return;
-      }
       this.loading.set(true);
       this.picked.set(null);
       void this.slotsGateway.forDay(point, day).then((slots) => {
@@ -304,8 +222,9 @@ export class SlotPickerDialog {
     });
   }
 
-  protected showDay(day: string): void {
-    this.day.set(day);
+  /** « Je change de date » : retour au panneau du jour, puis ici. */
+  protected changeDay(): void {
+    this.ref.close(CHANGE_DAY);
   }
 
   /**

@@ -258,3 +258,33 @@ fold-panel-footer {
   color: var(--fold-color-text-muted);
   cursor: not-allowed;
 }
+
+/* Le jour du panneau, posé comme un fait — et le chemin pour en changer
+   (2026-10-27). Même lien que le sélecteur d'heure du retrait. */
+.day-fact {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--fold-space-xs) var(--fold-space-sm);
+}
+
+.day-label {
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-sm);
+}
+
+.day-value {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.change-day {
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  cursor: pointer;
+}

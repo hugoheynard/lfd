@@ -35,7 +35,7 @@
 > date on devrait toujours avoir la barre de récap du bas qui se complète au
 > fur et à mesure des étapes », en réutilisant « la barre de panier qui sera
 > ensuite présente dans la boutique, elle existe déjà et remplit ce rôle ».
-> Suite de [`plan-panneau-date.md`](plan-panneau-date.md). Front seul.
+> Suite de [`parcours-de-service.md`](parcours-de-service.md). Front seul.
 
 ## 1. Ce qui existe (lu le 2026-10-27)
 

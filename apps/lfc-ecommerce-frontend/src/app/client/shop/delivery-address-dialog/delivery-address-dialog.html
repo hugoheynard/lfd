@@ -103,18 +103,15 @@
 
   <!-- L'heure (CA3, CA1b) : une livraison ne part plus sans fenêtre. -->
   @if (freeEntry() || entries().length > 0) {
-    <!-- Le jour (2026-10-13) : AVANT l'heure, qui en dépend — une adresse
-         n'inscrit pas les mêmes heures tous les jours. -->
-    @if (dateOptions().length > 0) {
-      <fold-listbox
-        size="lg"
-        [label]="c().day.label"
-        [options]="dateOptions()"
-        [value]="date()"
-        (selectionChange)="pickDate($event)"
-        data-delivery-day
-      />
-    }
+    <!-- 🔴 LE JOUR EST UN FAIT (Hugo, 2026-10-27) : celui du panneau du jour,
+         AVANT l'heure qui en dépend. « Je change de date » y retourne. -->
+    <div class="day-fact" data-delivery-day>
+      <span class="day-label">{{ c().day.label }}</span>
+      <span class="day-value">{{ dateLabel() }}</span>
+      <button class="change-day" type="button" (click)="changeDay()">
+        {{ c().day.change }}
+      </button>
+    </div>
     <!-- Au carnet, SEULES les heures inscrites (2026-10-12) ; la saisie libre tape la sienne. -->
     @if (windowMode() === 'deadline' && freeEntry()) {
       <fold-time

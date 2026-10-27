@@ -32,49 +32,17 @@ fold-panel-body {
 
 /* ── Les journées, en onglets ────────────────────────────────────────────── */
 
-/* 🔴 La rangée DÉFILE, elle ne se replie plus (2026-09-17). À trois journées,
-   `wrap` tenait sur une ligne ; à sept, il en faisait trois et poussait les
-   créneaux hors de vue — c'est-à-dire ce qu'on est venu choisir.
-
-   Le défilement est horizontal et le reste : `nowrap` empêche les pastilles de
-   se comprimer, `flex: none` sur chacune les garde à leur largeur de texte, et
-   l'accroche par jour fait qu'on s'arrête sur une journée entière plutôt
-   qu'entre deux. */
+/* Le jour du panneau, posé comme un fait sous le filet (2026-10-27). */
 .days {
   display: flex;
-  flex-wrap: nowrap;
-  gap: var(--fold-space-sm);
-  overflow-x: auto;
-  scroll-snap-type: x proximity;
-  /* 🔴 LE FILET EST AU-DESSUS DU CHOIX DE DATE (Hugo, 2026-09-20 : « le trait
-     sur toute la largeur devrait être au dessus du choix de date »). Il sépare
-     ce que le dialogue DIT de ce qu'il DEMANDE — et ce qu'il demande commence à
-     la date, pas aux créneaux.
-
-     Porté par la rangée elle-même : une pseudo-boîte y serait devenue un
-     ÉLÉMENT DE LA RANGÉE, donc une pastille vide en tête de file.
-
-     Les 2 px du bas : sans eux, l'anneau de focus d'une pastille est rogné par
-     le conteneur qui défile. */
+  /* 🔴 LE FILET EST AU-DESSUS DU JOUR (Hugo, 2026-09-20) : il sépare ce que le
+     dialogue DIT de ce qu'il DEMANDE. */
   @include dlg.rule-above;
 
-  padding-bottom: 2px;
-  /* 🔴 L'ACCROCHE DOIT CONNAÎTRE LA GOUTTIÈRE (Hugo, 2026-09-20 : « si la
-     première date pouvait aussi respecter ce padding »).
-     `scroll-snap-align: start` colle la pastille au bord du SCROLLPORT, qui
-     ignore le `padding` du conteneur : au chargement, la rangée se trouvait
-     défilée de 22 px toute seule — mesuré — et la première date touchait le
-     bord du dialogue pendant que tout le reste respectait la marge. Rien ne le
-     disait, parce que rien n'était faux : le conteneur avait bien sa gouttière,
-     c'est le défilement qui la mangeait. */
-  scroll-padding-inline: var(--lfc-dialog-gutter);
   border-top: 1px solid var(--fold-color-border);
-  /* La barre reste disponible au trackpad et à la souris, mais discrète : c'est
-     une rangée de sept pastilles, pas une zone de texte. */
-  scrollbar-width: thin;
 }
 
-.days > .day {
+.day {
   flex: none;
   scroll-snap-align: start;
 }
@@ -101,7 +69,6 @@ fold-panel-body {
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
   font-variant-numeric: tabular-nums;
-  cursor: pointer;
 }
 
 .day.on {

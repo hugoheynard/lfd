@@ -49,6 +49,7 @@ function boot(
           pickup: record('pickup'),
           time: record('time'),
           delivery: record('delivery'),
+          changeDate: record('changeDate'),
         },
       },
     ],
@@ -74,7 +75,12 @@ describe('ServiceDayCallout', () => {
     expect(host.querySelector('[data-change-day]')).toBeNull();
   });
 
-  it('« Modifier » rouvre l’heure seule en retrait, après avoir prévenu', async () => {
+  /**
+   * « Modifier le jour » ouvre le PANNEAU DU JOUR, puis l'heure de la même
+   * maison (2026-10-27). Il rouvrait l'heure seule, sur les onglets de la
+   * semaine — le vieux panneau qui mêlait jour et heure.
+   */
+  it('« Modifier » ouvre le panneau du jour en retrait, après avoir prévenu', async () => {
     const { host, changes } = boot('Trop tard pour lundi.', true);
     const button = host.querySelector<HTMLButtonElement>('[data-change-day]');
     expect(button?.getAttribute('aria-label')).toBe('Modifier le jour');
@@ -82,10 +88,10 @@ describe('ServiceDayCallout', () => {
     // Les portes se chargent au clic (import dynamique).
     await vi.waitFor(() => expect(ouvertes).toHaveLength(1));
     expect(changes()).toBe(1);
-    expect(ouvertes).toEqual([['time', 'pick_labo', 'Le Labo', AU_LABO.address]]);
+    expect(ouvertes).toEqual([['changeDate']]);
   });
 
-  it('« Modifier » rouvre le coursier SANS le jour périmé', async () => {
+  it('« Modifier » ouvre le panneau du jour en livraison aussi', async () => {
     const { pickupAddressId: _point, ...base } = AU_LABO;
     const livraison: ServiceChoice = {
       ...base,
@@ -104,6 +110,6 @@ describe('ServiceDayCallout', () => {
     const { host } = boot('Trop tard pour lundi.', true, livraison);
     host.querySelector<HTMLButtonElement>('[data-change-day]')?.click();
     await vi.waitFor(() => expect(ouvertes).toHaveLength(1));
-    expect(ouvertes).toEqual([['delivery', 'addr_1', null]]);
+    expect(ouvertes).toEqual([['changeDate']]);
   });
 });

@@ -238,6 +238,10 @@ function boot({
             ouvertes.push('delivery');
             return Promise.resolve(false);
           },
+          switchMode: (): Promise<boolean> => {
+            ouvertes.push('switchMode');
+            return Promise.resolve(false);
+          },
           modify: (): Promise<boolean> => {
             ouvertes.push('modify');
             return Promise.resolve(false);
@@ -470,7 +474,8 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
     );
     clic(fixture, '.other-way');
 
-    expect(ouvertes).toEqual(['delivery']);
+    // L'autre mode, le jour gardé (2026-10-27) : la porte nommée, pas `delivery()`.
+    expect(ouvertes).toEqual(['switchMode']);
     expect(visitees).toEqual([]);
   });
 

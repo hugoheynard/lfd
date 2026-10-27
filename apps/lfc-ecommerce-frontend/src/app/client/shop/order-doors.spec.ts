@@ -18,9 +18,9 @@ import { ServicePoints } from './pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { ServiceChangeDialog } from './service-change-dialog/service-change-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
-import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
+import { CHANGE_DAY, SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
-import { OrderContextStore } from '../order-context.store';
+import { OrderContextStore, type ServiceChoice } from '../order-context.store';
 
 /**
  * Un visiteur : la liste posée par `receive` vaut pour lui. Sans session
@@ -196,7 +196,7 @@ describe('OrderDoors.choose — rien de choisi', () => {
     ]);
   });
 
-  /** Plan `plan-panneau-date.md` : le jour est la PREMIÈRE question, et la fermer ne pose rien. */
+  /** Doc `parcours-de-service.md` : le jour est la PREMIÈRE question, et la fermer ne pose rien. */
   it('🔴 fermer le panneau du jour n’ouvre rien d’autre et ne pose aucun choix', async () => {
     const names = await opened({ openToB2b: true, openToB2c: true }, [LABO], new Map());
     expect(names).toEqual([DayPickerDialog]);
@@ -223,7 +223,7 @@ describe('OrderDoors.choose — rien de choisi', () => {
       SlotPickerDialog,
     ]);
     expect(datas[2]).toMatchObject({ day: DAY });
-    expect(datas[3]).toMatchObject({ openOn: DAY });
+    expect(datas[3]).toMatchObject({ day: DAY });
   });
 
   /** Une seule maison servie : le jour, puis l'heure (Hugo, 2026-10-27). */
@@ -235,17 +235,17 @@ describe('OrderDoors.choose — rien de choisi', () => {
     ]);
     const names = await opened({ openToB2b: true, openToB2c: true }, [LABO], replies, datas);
     expect(names).toEqual([DayPickerDialog, ServiceModeDialog, SlotPickerDialog]);
-    expect(datas[2]).toMatchObject({ openOn: DAY });
+    expect(datas[2]).toMatchObject({ day: DAY });
   });
 
-  it('passe le jour au coursier en `currentDate`', async () => {
+  it('passe le jour au coursier', async () => {
     const datas: unknown[] = [];
     const replies = new Map<unknown, unknown>([
       [DayPickerDialog, DAY],
       [ServiceModeDialog, 'delivery'],
     ]);
     await opened({ openToB2b: true, openToB2c: true }, [LABO], replies, datas);
-    expect(datas[2]).toMatchObject({ currentDate: DAY });
+    expect(datas[2]).toMatchObject({ day: DAY });
   });
 
   it('🔴 n’ouvre rien quand ni le retrait ni le coursier ne sont proposés', async () => {
@@ -467,7 +467,7 @@ describe('OrderDoors — le brouillon du parcours', () => {
 
     await doors.time(LABO.id, 'Le Labo', 'Route de la Balme, Val d’Isère');
 
-    expect(opened[0]).toMatchObject({ openOn: DAY });
+    expect(opened[0]).toMatchObject({ day: DAY });
   });
 
   describe('« Modifier » une commande située', () => {
@@ -549,5 +549,292 @@ describe('OrderDoors — le brouillon du parcours', () => {
     await doors.askDay();
 
     expect(store.draft()).toBeNull();
+  });
+});
+
+/**
+ * 🔴 **LA MATRICE DES PARCOURS** (Hugo, 2026-10-27 : « je ne veux aucune
+ * incohérence », « j'ai vraiment besoin que cette partie soit fiable »).
+ *
+ * Une règle, éprouvée porte par porte : **le jour se choisit au panneau du jour
+ * et nulle part ailleurs** ; une porte qui le connaît ne le redemande pas ;
+ * aucun dialogue d'heure ou d'adresse ne s'ouvre sans lui. Chaque ligne nomme
+ * la SUITE EXACTE des dialogues ouverts, et le jour que chacun a reçu.
+ *
+ * Régressions d'origine, toutes vues en production le 2026-10-27 : « Changer
+ * de maison » et la bascule depuis la livraison ouvraient l'heure sur les
+ * onglets de la semaine — le vieux panneau qui mêlait jour et heure.
+ */
+describe('OrderDoors — la matrice des parcours', () => {
+  const SLOT = { day: DAY, time: '07:30', endAt: `${DAY}T06:45:00.000Z` };
+  const PICKUP = {
+    mode: 'pickup' as const,
+    place: 'Le Labo',
+    at: 'au Labo',
+    address: 'Route de la Balme, Val d’Isère',
+    pickupAddressId: LABO.id,
+    slot: '7 h 30',
+    window: { start: '07:30', end: '07:45' },
+    date: DAY,
+  };
+  const DELIVERY: ServiceChoice = {
+    mode: 'delivery',
+    place: 'Chalet',
+    at: 'au Chalet',
+    address: '1 rue du Col, 73150',
+    codePostal: '73150',
+    slot: '8 h',
+    window: { start: '08:00', end: '09:00' },
+    date: DAY,
+    deliveryAddressId: 'addr_chalet',
+    deliveryAddress: {
+      label: 'Chalet',
+      ligne1: '1 rue du Col',
+      ligne2: '',
+      codePostal: '73150',
+      ville: 'Val d’Isère',
+      pays: 'France',
+    },
+  };
+
+  /**
+   * Les réponses se donnent EN FILE par dialogue : un même dialogue peut
+   * s'ouvrir deux fois (« Je change de date »). File vide : on ferme.
+   */
+  function run(replies: Readonly<Record<string, readonly unknown[]>>, pickups = [LABO, VILLAGE]) {
+    const queues = new Map<unknown, unknown[]>(
+      Object.entries(replies).map(([name, values]) => [DIALOGS[name], [...values]]),
+    );
+    const seen: { name: string; day: unknown }[] = [];
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown, options?: { data?: { day?: unknown } }) => {
+              const name = Object.keys(DIALOGS).find((key) => DIALOGS[key] === component) ?? '?';
+              seen.push({ name, day: options?.data?.day });
+              return { closed: Promise.resolve(queues.get(component)?.shift()) };
+            },
+          },
+        },
+        { provide: ClientAudience, useValue: { shown: signal('b2b') } },
+        VISITOR_AUTH,
+      ],
+    });
+    TestBed.inject(ServicePoints).receive(
+      pickups,
+      [],
+      [
+        { pickupAddressId: LABO.id, date: DAY, orderUntil: null },
+        { pickupAddressId: VILLAGE.id, date: DAY, orderUntil: null },
+        { pickupAddressId: null, date: DAY, orderUntil: null },
+      ],
+      { openToB2b: true, openToB2c: true },
+    );
+    return { doors: TestBed.inject(OrderDoors), store: TestBed.inject(OrderContextStore), seen };
+  }
+
+  const DIALOGS: Readonly<Record<string, unknown>> = {
+    day: DayPickerDialog,
+    mode: ServiceModeDialog,
+    house: PublicHousePickerDialog,
+    slot: SlotPickerDialog,
+    delivery: DeliveryAddressDialog,
+    change: ServiceChangeDialog,
+  };
+
+  /** Ce que la matrice regarde : la suite, et le jour reçu par l'heure ou l'adresse. */
+  const trail = (seen: readonly { name: string; day: unknown }[]): string[] =>
+    seen.map((step) =>
+      step.name === 'slot' || step.name === 'delivery'
+        ? `${step.name}@${String(step.day)}`
+        : step.name,
+    );
+
+  describe('rien de choisi : le jour d’abord', () => {
+    it('choose()', async () => {
+      const { doors, seen } = run({ day: [DAY], mode: ['pickup'], house: [LABO], slot: [SLOT] });
+      expect(await doors.choose()).toBe(true);
+      expect(trail(seen)).toEqual(['day', 'mode', 'house', `slot@${DAY}`]);
+    });
+
+    it('🔴 pickup() — la barre de la boutique, l’encart du jour', async () => {
+      const { doors, seen } = run({ day: [DAY], house: [LABO], slot: [SLOT] });
+      expect(await doors.pickup(null)).toBe(true);
+      expect(trail(seen)).toEqual(['day', 'house', `slot@${DAY}`]);
+    });
+
+    it('🔴 delivery()', async () => {
+      const { doors, seen } = run({ day: [DAY], delivery: [DELIVERY] });
+      expect(await doors.delivery(null)).toBe(true);
+      expect(trail(seen)).toEqual(['day', `delivery@${DAY}`]);
+    });
+
+    it('🔴 time() sans jour retenu', async () => {
+      const { doors, seen } = run({ day: [DAY], slot: [SLOT] });
+      expect(await doors.time(LABO.id, 'Le Labo', 'Route de la Balme')).toBe(true);
+      expect(trail(seen)).toEqual(['day', `slot@${DAY}`]);
+    });
+
+    it('askChoice() — la modification d’une commande passée', async () => {
+      const { doors, seen } = run({ day: [DAY], mode: ['delivery'], delivery: [DELIVERY] });
+      expect(await doors.askChoice()).toEqual(DELIVERY);
+      expect(trail(seen)).toEqual(['day', 'mode', `delivery@${DAY}`]);
+    });
+
+    it('startPickup(), startDelivery(), startAt() — les portes de l’accueil', async () => {
+      const a = run({ day: [DAY], house: [LABO], slot: [SLOT] });
+      await a.doors.startPickup();
+      expect(trail(a.seen)).toEqual(['day', 'house', `slot@${DAY}`]);
+
+      const b = run({ day: [DAY], delivery: [DELIVERY] });
+      await b.doors.startDelivery();
+      expect(trail(b.seen)).toEqual(['day', `delivery@${DAY}`]);
+
+      const c = run({ day: [DAY], slot: [SLOT] });
+      await c.doors.startAt(LABO.id, 'Le Labo', 'Route de la Balme');
+      expect(trail(c.seen)).toEqual(['day', `slot@${DAY}`]);
+    });
+
+    it('fermer le panneau du jour n’ouvre rien d’autre, quelle que soit la porte', async () => {
+      for (const go of [
+        (d: OrderDoors) => d.pickup(null),
+        (d: OrderDoors) => d.delivery(null),
+        (d: OrderDoors) => d.time(LABO.id, 'Le Labo', 'Route de la Balme'),
+        (d: OrderDoors) => d.choose(),
+      ]) {
+        const { doors, seen, store } = run({});
+        expect(await go(doors)).toBe(false);
+        expect(trail(seen)).toEqual(['day']);
+        expect(store.choice()).toBeNull();
+      }
+    });
+  });
+
+  describe('un service choisi : le jour retenu suit, jamais redemandé', () => {
+    it('🔴 « Changer de maison » (pickup) garde le jour', async () => {
+      const { doors, store, seen } = run({ house: [VILLAGE], slot: [SLOT] });
+      store.choice.set(PICKUP);
+      expect(await doors.pickup(LABO.id)).toBe(true);
+      expect(trail(seen)).toEqual(['house', `slot@${DAY}`]);
+      expect(store.choice()).toMatchObject({ pickupAddressId: VILLAGE.id });
+    });
+
+    it('« Changer l’heure » (time) garde le jour', async () => {
+      const { doors, store, seen } = run({ slot: [SLOT] });
+      store.choice.set(PICKUP);
+      await doors.time(LABO.id, 'Le Labo', 'Route de la Balme');
+      expect(trail(seen)).toEqual([`slot@${DAY}`]);
+    });
+
+    it('« Changer d’adresse » (delivery) garde le jour', async () => {
+      const { doors, store, seen } = run({ delivery: [DELIVERY] });
+      store.choice.set(DELIVERY);
+      await doors.delivery('addr_chalet');
+      expect(trail(seen)).toEqual([`delivery@${DAY}`]);
+    });
+
+    it('🔴 switchMode() depuis le retrait : la livraison, sur le même jour', async () => {
+      const { doors, store, seen } = run({ delivery: [DELIVERY] });
+      store.choice.set(PICKUP);
+      expect(await doors.switchMode()).toBe(true);
+      expect(trail(seen)).toEqual([`delivery@${DAY}`]);
+    });
+
+    it('🔴 switchMode() depuis la livraison : la maison puis l’heure, sur le même jour', async () => {
+      const { doors, store, seen } = run({ house: [LABO], slot: [SLOT] });
+      store.choice.set(DELIVERY);
+      expect(await doors.switchMode()).toBe(true);
+      expect(trail(seen)).toEqual(['house', `slot@${DAY}`]);
+    });
+
+    it('changeDate() — l’encart « ce jour n’est plus possible »', async () => {
+      const { doors, store, seen } = run({ day: [LATER], slot: [SLOT] });
+      store.choice.set(PICKUP);
+      expect(await doors.changeDate()).toBe(true);
+      expect(trail(seen)).toEqual(['day', `slot@${LATER}`]);
+    });
+
+    it('changeDate() en livraison rouvre la même adresse sur le nouveau jour', async () => {
+      const { doors, store, seen } = run({ day: [LATER], delivery: [DELIVERY] });
+      store.choice.set(DELIVERY);
+      await doors.changeDate();
+      expect(trail(seen)).toEqual(['day', `delivery@${LATER}`]);
+    });
+
+    it.each([
+      ['mode', ['change', `delivery@${DAY}`]],
+      ['place', ['change', 'house', `slot@${DAY}`]],
+      ['time', ['change', `slot@${DAY}`]],
+      ['date', ['change', 'day', `slot@${LATER}`]],
+    ])('« Modifier › %s » depuis le retrait', async (change, expected) => {
+      const { doors, store, seen } = run({
+        change: [change],
+        day: [LATER],
+        house: [LABO],
+        slot: [SLOT],
+        delivery: [DELIVERY],
+      });
+      store.choice.set(PICKUP);
+      await doors.modify();
+      expect(trail(seen)).toEqual(expected);
+    });
+
+    it.each([
+      ['mode', ['change', 'house', `slot@${DAY}`]],
+      ['address', ['change', `delivery@${DAY}`]],
+      ['date', ['change', 'day', `delivery@${LATER}`]],
+    ])('« Modifier › %s » depuis la livraison', async (change, expected) => {
+      const { doors, store, seen } = run({
+        change: [change],
+        day: [LATER],
+        house: [LABO],
+        slot: [SLOT],
+        delivery: [DELIVERY],
+      });
+      store.choice.set(DELIVERY);
+      await doors.modify();
+      expect(trail(seen)).toEqual(expected);
+    });
+  });
+
+  describe('« Je change de date » dans l’heure ou l’adresse', () => {
+    it('🔴 l’heure rend la main au panneau du jour, puis rouvre la MÊME maison', async () => {
+      const { doors, store, seen } = run({
+        day: [DAY, LATER],
+        house: [LABO],
+        slot: [CHANGE_DAY, SLOT],
+      });
+      expect(await doors.pickup(null)).toBe(true);
+      expect(trail(seen)).toEqual(['day', 'house', `slot@${DAY}`, 'day', `slot@${LATER}`]);
+      expect(store.choice()).toMatchObject({ pickupAddressId: LABO.id });
+    });
+
+    it('🔴 l’adresse rend la main au panneau du jour, puis se rouvre', async () => {
+      const { doors, seen } = run({ day: [DAY, LATER], delivery: [CHANGE_DAY, DELIVERY] });
+      expect(await doors.delivery(null)).toBe(true);
+      expect(trail(seen)).toEqual(['day', `delivery@${DAY}`, 'day', `delivery@${LATER}`]);
+    });
+
+    it('fermer le panneau du jour à ce moment-là ne pose rien', async () => {
+      const { doors, store, seen } = run({ day: [DAY], house: [LABO], slot: [CHANGE_DAY] });
+      expect(await doors.pickup(null)).toBe(false);
+      expect(trail(seen)).toEqual(['day', 'house', `slot@${DAY}`, 'day']);
+      expect(store.choice()).toBeNull();
+    });
+  });
+
+  /** L'invariant, d'un seul regard : aucune heure, aucune adresse sans jour. */
+  it('🔴 aucun dialogue d’heure ou d’adresse ne s’ouvre sans jour', async () => {
+    const all = run({ day: [DAY, DAY], mode: ['pickup'], house: [LABO], slot: [CHANGE_DAY, SLOT] });
+    await all.doors.choose();
+    const timed = all.seen.filter((step) => step.name === 'slot' || step.name === 'delivery');
+    expect(timed.length).toBeGreaterThan(0);
+    expect(timed.every((step) => typeof step.day === 'string' && step.day !== '')).toBe(true);
   });
 });

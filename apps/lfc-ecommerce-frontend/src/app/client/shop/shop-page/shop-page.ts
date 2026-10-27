@@ -287,7 +287,7 @@ export class ShopPage {
       return this.doors.choose();
     }
     if (service.mode === 'delivery') {
-      return this.doors.delivery(service.deliveryAddressId ?? null, service.date);
+      return this.doors.delivery(service.deliveryAddressId ?? null);
     }
     if (timeOnly && service.pickupAddressId !== null) {
       return this.doors.time(service.pickupAddressId, service.place, service.address);

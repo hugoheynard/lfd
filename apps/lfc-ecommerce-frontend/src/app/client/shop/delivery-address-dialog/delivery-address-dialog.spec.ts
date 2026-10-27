@@ -1,14 +1,20 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { DeliveryAddressView, DeliverySpecs, DeliveryZoneView } from '@lfd/contracts';
+import { instantToLocal } from '@lfd/contracts';
+import type { DeliveryAddressView, DeliverySpecs, DeliveryZoneView, Weekday } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { ClientAddresses } from '../../client-addresses.service';
 import type { ServiceChoice } from '../../order-context.store';
 import { ServicePoints } from '../pickup-points.store';
+import { CHANGE_DAY } from '../slot-picker-dialog/slot-picker-dialog';
+import { weekdayOfIsoDate } from '../delivery-window';
 import { DeliveryAddressDialog } from './delivery-address-dialog';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
+
+/** Le jour du panneau — relatif à maintenant, jamais un jour du calendrier. */
+const DAY = instantToLocal(new Date()).day;
 
 /** Une zone à 6,90 € — un MONTANT, la forme la plus simple à assurer. */
 const ZONE: DeliveryZoneView = {
@@ -59,9 +65,9 @@ function boot(
   currentId: string | null = null,
   windowMode: 'slot' | 'deadline' = 'slot',
   allowFreeEntry = false,
-  currentDate: string | null = null,
+  day: string = DAY,
 ) {
-  const closed: (ServiceChoice | undefined)[] = [];
+  const closed: (ServiceChoice | typeof CHANGE_DAY | undefined)[] = [];
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [DeliveryAddressDialog],
@@ -80,12 +86,12 @@ function boot(
       },
       {
         provide: FoldPanelRef,
-        useValue: { close: (v: ServiceChoice | undefined) => closed.push(v) },
+        useValue: { close: (v: ServiceChoice | typeof CHANGE_DAY | undefined) => closed.push(v) },
       },
     ],
   });
   const fixture = TestBed.createComponent(DeliveryAddressDialog);
-  fixture.componentRef.setInput('data', { currentId, allowFreeEntry, currentDate });
+  fixture.componentRef.setInput('data', { currentId, allowFreeEntry, day });
   fixture.detectChanges();
   return { fixture, closed };
 }
@@ -151,7 +157,7 @@ describe('DeliveryAddressDialog', () => {
       mode: 'delivery',
       window: { start: '09:00', end: '11:00' },
       codePostal: '73150',
-      date: '2026-09-21',
+      date: DAY,
       // L'identité du carnet part avec le choix (2026-09-29).
       deliveryAddressId: 'a',
     });
@@ -322,39 +328,65 @@ describe('DeliveryAddressDialog', () => {
     );
   });
 
-  describe('le jour de livraison', () => {
-    const dayList = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLElement | null =>
-      (fixture.nativeElement as HTMLElement).querySelector('[data-delivery-day]');
+  describe('le jour de livraison — un fait, choisi au panneau du jour', () => {
+    const host = (fixture: ComponentFixture<DeliveryAddressDialog>): HTMLElement =>
+      fixture.nativeElement as HTMLElement;
 
-    /**
-     * Régression (Hugo, 2026-10-13) : « je ne peux pas choisir le jour ». La
-     * livraison partait sur la première journée accordée, sans autre choix.
-     */
-    it('propose un choix du jour, et rend le jour choisi', () => {
+    /** Hugo, 2026-10-27 : « le jour se choisit à un seul endroit ». */
+    it('affiche le jour reçu, et c’est lui qui part avec la commande', () => {
       const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
-      expect(dayList(fixture)).not.toBeNull();
 
-      fixture.componentInstance['pickDate']('2026-09-23');
-      fixture.componentInstance['slotPick'].set('09:00-11:00');
-      fixture.detectChanges();
-      cta(fixture)?.click();
-
-      expect(closed[0]?.date).toBe('2026-09-23');
-    });
-
-    it('repropose le jour déjà retenu', () => {
-      const { fixture, closed } = boot(
-        [address({ id: 'a', isDefault: true, specs: SLOTTED })],
-        null,
-        'slot',
-        false,
-        '2026-09-24',
+      expect(host(fixture).querySelector('[data-delivery-day] .day-value')?.textContent).toContain(
+        'Aujourd’hui',
       );
       fixture.componentInstance['slotPick'].set('09:00-11:00');
       fixture.detectChanges();
       cta(fixture)?.click();
 
-      expect(closed[0]?.date).toBe('2026-09-24');
+      expect(closed[0]).toMatchObject({ date: DAY });
+    });
+
+    it('« Je change de date » ferme sur CHANGE_DAY', () => {
+      const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
+
+      host(fixture).querySelector<HTMLButtonElement>('.change-day')?.click();
+
+      expect(closed).toEqual([CHANGE_DAY]);
+    });
+
+    /**
+     * 🔴 Régression (Hugo, 2026-10-27) : la liste de journées glissait en
+     * silence vers une journée où l'adresse avait une heure inscrite. Le jour
+     * reçu reste le jour, et le refus le dit.
+     */
+    it('🔴 sans heure inscrite CE jour-là, montre le refus et ne change pas de jour', () => {
+      // Une échéance inscrite tous les jours SAUF celui du panneau.
+      const weekday = weekdayOfIsoDate(DAY);
+      const at = (day: Weekday): string[] | null => (day === weekday ? null : ['06:00']);
+      const specs: DeliverySpecs = {
+        ...SLOTTED,
+        windowMode: 'deadline',
+        deadlines: {
+          mode: 'perDay',
+          byDay: {
+            mon: at('mon'),
+            tue: at('tue'),
+            wed: at('wed'),
+            thu: at('thu'),
+            fri: at('fri'),
+            sat: at('sat'),
+            sun: at('sun'),
+          },
+        },
+      };
+      const { fixture, closed } = boot([address({ id: 'a', isDefault: true, specs })]);
+
+      expect(host(fixture).textContent).toContain('Aucune heure de livraison n’est inscrite');
+      expect(host(fixture).querySelector('[data-deadline]')).toBeNull();
+      expect(fixture.componentInstance['date']()).toBe(DAY);
+      expect(cta(fixture)?.disabled).toBe(true);
+      cta(fixture)?.click();
+      expect(closed).toEqual([]);
     });
   });
 });

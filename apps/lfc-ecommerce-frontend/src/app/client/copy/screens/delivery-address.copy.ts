@@ -89,6 +89,8 @@ export interface DeliveryAddressCopy {
     readonly label: string;
     readonly today: string;
     readonly tomorrow: string;
+    /** Le lien qui renvoie au panneau du jour (2026-10-27). */
+    readonly change: string;
   };
 
   readonly when: {
@@ -148,7 +150,12 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'Nous ne livrons pas encore ce code postal — le retrait, lui, reste ouvert.',
   },
-  day: { label: 'Jour de livraison', today: 'Aujourd’hui', tomorrow: 'Demain' },
+  day: {
+    label: 'Jour de livraison',
+    today: 'Aujourd’hui',
+    tomorrow: 'Demain',
+    change: 'Je change de date',
+  },
   when: {
     before: 'avant',
     deadline: 'Livrée avant',
@@ -195,7 +202,7 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'We do not deliver to this postcode yet — pickup is still open.',
   },
-  day: { label: 'Delivery day', today: 'Today', tomorrow: 'Tomorrow' },
+  day: { label: 'Delivery day', today: 'Today', tomorrow: 'Tomorrow', change: 'Change the date' },
   when: {
     before: 'before',
     deadline: 'Delivered before',
@@ -241,7 +248,12 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     villePlaceholder: 'Val d’Isère',
     noZone: 'Non consegniamo ancora a questo CAP — il ritiro resta aperto.',
   },
-  day: { label: 'Giorno di consegna', today: 'Oggi', tomorrow: 'Domani' },
+  day: {
+    label: 'Giorno di consegna',
+    today: 'Oggi',
+    tomorrow: 'Domani',
+    change: 'Cambio data',
+  },
   when: {
     before: 'entro le',
     deadline: 'Consegnata entro le',

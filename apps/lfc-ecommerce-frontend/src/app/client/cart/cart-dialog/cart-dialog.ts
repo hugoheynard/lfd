@@ -445,7 +445,8 @@ export class CartDialog {
   });
 
   protected async takeOtherWay(): Promise<void> {
-    await (this.choice()?.mode === 'pickup' ? this.doors.delivery(null) : this.doors.pickup(null));
+    // L'autre mode, le jour gardé : la branche « mode » de « Modifier ».
+    await this.doors.switchMode();
   }
 
   /**

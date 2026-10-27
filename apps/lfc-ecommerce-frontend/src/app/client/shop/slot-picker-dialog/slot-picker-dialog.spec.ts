@@ -1,12 +1,12 @@
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PublicPickupSlot } from '@lfd/contracts';
+import { instantToLocal, type PublicPickupSlot } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
 import { ClientLocale } from '../../client-locale.service';
 import { PublicSlots } from '../public-slots.gateway';
-import { SlotPickerDialog, type SlotPickerData } from './slot-picker-dialog';
+import { CHANGE_DAY, SlotPickerDialog, type SlotPickerData } from './slot-picker-dialog';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
 /**
@@ -18,7 +18,8 @@ import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
  * qu'un « Continuer » qui obligerait à remonter pour vérifier.
  */
 
-const DAY = '2026-09-17';
+/** Le jour du panneau — relatif à maintenant, jamais un jour du calendrier. */
+const DAY = instantToLocal(new Date()).day;
 
 function slot(over: Partial<PublicPickupSlot> & { time: string }): PublicPickupSlot {
   return {
@@ -37,7 +38,7 @@ function slot(over: Partial<PublicPickupSlot> & { time: string }): PublicPickupS
 const DATA: SlotPickerData = {
   pickupAddressId: 'pick_labo',
   place: 'Le Labo',
-  firstDay: DAY,
+  day: DAY,
 };
 
 /** Le magasin de créneaux, rendu maître du moment où il répond. */
@@ -109,15 +110,6 @@ describe('SlotPickerDialog — ce qu’il refuse de dire', () => {
     fixture.detectChanges();
 
     expect(text(fixture)).toContain('Aucun créneau');
-  });
-
-  it('🔴 n’ouvre aucune journée quand le serveur n’en accorde pas', async () => {
-    // `firstDay: null` = aucune journée demandable. En inventer une — « demain »
-    // — ferait promettre un retrait que la commande refuserait.
-    const { fixture } = await mount({ ...DATA, firstDay: null });
-
-    expect(fixture.componentInstance['days']()).toHaveLength(0);
-    expect(text(fixture)).toContain('Aucune journée ouverte');
   });
 });
 
@@ -262,66 +254,6 @@ describe('SlotPickerDialog — les créneaux', () => {
 
     expect((fixture.nativeElement as HTMLElement).querySelector('app-cart-bar')).not.toBeNull();
   });
-
-  it('relit en changeant de journée — les créneaux dépendent de l’heure qu’il est', async () => {
-    const { fixture, slots } = await mount();
-    slots.serve([slot({ time: '06:30' })]);
-    await fixture.whenStable();
-    fixture.detectChanges();
-
-    const next = fixture.componentInstance['days']()[1];
-    fixture.componentInstance['showDay'](next?.day ?? '');
-    fixture.detectChanges();
-
-    expect(slots.asked).toHaveLength(2);
-    expect(slots.asked[1]).not.toBe(slots.asked[0]);
-    // Le choix de la veille ne survit pas au changement de jour.
-    expect(fixture.componentInstance['picked']()).toBeNull();
-  });
-});
-
-describe('SlotPickerDialog — les journées', () => {
-  /**
-   * 🔴 **Une semaine depuis le 2026-09-17**, contre trois journées avant : un
-   * visiteur qui prépare un départ n'a pas de raison d'être borné à
-   * après-demain.
-   *
-   * ⚠️ Le point de DÉPART ne change pas, et c'est ce que ce cas tient vraiment :
-   * les sept journées partent de celle que le SERVEUR accorde, jamais d'un
-   * « aujourd'hui » calculé dans le navigateur. Élargir la fenêtre n'ouvre donc
-   * aucune journée que l'heure limite refuse — elle en montre davantage après.
-   */
-  it('offre une semaine à partir de la journée que le serveur accorde', async () => {
-    const { fixture } = await mount();
-
-    const days = fixture.componentInstance['days']();
-
-    expect(days.map((tab) => tab.day)).toEqual([
-      '2026-09-17',
-      '2026-09-18',
-      '2026-09-19',
-      '2026-09-20',
-      '2026-09-21',
-      '2026-09-22',
-      '2026-09-23',
-    ]);
-  });
-});
-
-describe('SlotPickerDialog — le dernier jour proposable', () => {
-  const tabDays = (fixture: ComponentFixture<SlotPickerDialog>): readonly string[] =>
-    fixture.componentInstance['days']().map((tab) => tab.day);
-
-  /** 🔴 Les onglets dépassaient `pickupUntil` : la commande aurait refusé ces jours-là. */
-  it('ne propose aucun jour au-delà de la dernière journée d’opération du panier', async () => {
-    const { fixture } = await mount({ ...DATA, lastDay: '2026-09-19' });
-    expect(tabDays(fixture)).toEqual(['2026-09-17', '2026-09-18', '2026-09-19']);
-  });
-
-  it('sans borne, rien ne change : une semaine d’onglets', async () => {
-    const { fixture } = await mount({ ...DATA, lastDay: null });
-    expect(tabDays(fixture)).toHaveLength(7);
-  });
 });
 
 /**
@@ -375,27 +307,22 @@ describe('SlotPickerDialog — le créneau déjà retenu', () => {
   });
 });
 
-/** Le jour imposé par le panneau du jour (Hugo, 2026-10-27). */
-describe('SlotPickerDialog — un jour déjà choisi', () => {
-  it('ne montre que ce jour, et « Je change de date » rouvre les autres', async () => {
-    const { fixture } = await mount({ ...DATA, openOn: DATA.firstDay });
+/** Le jour se choisit à un seul endroit : le panneau du jour (Hugo, 2026-10-27). */
+describe('SlotPickerDialog — le jour, un fait', () => {
+  it('affiche le jour reçu, et c’est lui qui est lu', async () => {
+    const { fixture, slots } = await mount();
     const el = fixture.nativeElement as HTMLElement;
 
+    expect(slots.asked).toEqual([DAY]);
     expect(el.querySelectorAll('.days .day')).toHaveLength(1);
-    expect(el.querySelector('.days .day')?.classList.contains('on')).toBe(true);
-
-    el.querySelector<HTMLButtonElement>('.change-day')?.click();
-    fixture.detectChanges();
-
-    expect(el.querySelectorAll('.days .day').length).toBeGreaterThan(1);
-    expect(el.querySelector('.change-day')).toBeNull();
+    expect(el.querySelector('.days .day.on')?.textContent?.trim()).toBe('Aujourd’hui');
   });
 
-  it('sans jour imposé, montre tous les jours et pas de lien', async () => {
-    const { fixture } = await mount();
-    const el = fixture.nativeElement as HTMLElement;
+  it('« Je change de date » ferme sur CHANGE_DAY', async () => {
+    const { fixture, closed } = await mount();
 
-    expect(el.querySelectorAll('.days .day').length).toBeGreaterThan(1);
-    expect(el.querySelector('.change-day')).toBeNull();
+    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.change-day')?.click();
+
+    expect(closed).toEqual([CHANGE_DAY]);
   });
 });

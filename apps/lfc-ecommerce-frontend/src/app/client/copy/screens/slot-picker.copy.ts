@@ -25,15 +25,11 @@ export interface SlotPickerCopy {
   /** Pendant la lecture. Le défaut de fold parle anglais — on ne le laisse pas. */
   readonly loading: string;
 
-  /** Les trois jours en onglets. `{day}` reçoit le libellé de la journée. */
+  /** Le jour, tel que le panneau l'a pris (2026-10-27 : plus d'onglets). */
   readonly days: {
     readonly today: string;
     readonly tomorrow: string;
-    /** Ce que dit l'onglet quand le serveur n'offre aucune journée. */
-    readonly none: string;
-    /** Le nom du groupe des journées, lu par le lecteur d'écran (RGAA 7.1). */
-    readonly group: string;
-    /** Le lien qui rouvre les jours quand le panneau en a imposé un (2026-10-27). */
+    /** Le lien qui renvoie au panneau du jour. */
     readonly change: string;
   };
 
@@ -71,8 +67,6 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
   days: {
     today: 'Aujourd’hui',
     tomorrow: 'Demain',
-    none: 'Aucune journée ouverte',
-    group: 'Jour du retrait',
     change: 'Je change de date',
   },
   state: {
@@ -100,8 +94,6 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
   days: {
     today: 'Today',
     tomorrow: 'Tomorrow',
-    none: 'No day open',
-    group: 'Pickup day',
     change: 'Change the date',
   },
   state: {
@@ -129,8 +121,6 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
   days: {
     today: 'Oggi',
     tomorrow: 'Domani',
-    none: 'Nessuna giornata aperta',
-    group: 'Giorno del ritiro',
     change: 'Cambio data',
   },
   state: {

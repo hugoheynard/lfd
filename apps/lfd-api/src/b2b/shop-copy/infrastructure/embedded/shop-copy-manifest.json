@@ -2983,6 +2983,13 @@
           "variables": []
         },
         {
+          "key": "deliveryAddress.day.change",
+          "fr": "Je change de date",
+          "en": "Change the date",
+          "it": "Cambio data",
+          "variables": []
+        },
+        {
           "key": "deliveryAddress.when.before",
           "fr": "avant",
           "en": "before",
@@ -3136,20 +3143,6 @@
           "fr": "Demain",
           "en": "Tomorrow",
           "it": "Domani",
-          "variables": []
-        },
-        {
-          "key": "slotPicker.days.none",
-          "fr": "Aucune journée ouverte",
-          "en": "No day open",
-          "it": "Nessuna giornata aperta",
-          "variables": []
-        },
-        {
-          "key": "slotPicker.days.group",
-          "fr": "Jour du retrait",
-          "en": "Pickup day",
-          "it": "Giorno del ritiro",
           "variables": []
         },
         {

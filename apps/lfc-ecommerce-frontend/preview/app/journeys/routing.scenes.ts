@@ -2,7 +2,9 @@ import type { ShopCopyAudience } from '@lfd/contracts/shop-copy-preview';
 
 import type { Injector } from '@angular/core';
 
+import { OrderContextStore } from '../../../src/app/client/order-context.store';
 import { OrderDoors } from '../../../src/app/client/shop/order-doors';
+import { demoDay } from '../demo-data/demo-days';
 import { go, settleSignedIn } from './journey-steps';
 import type { PreviewJourney } from './preview-world';
 import { PERSON_WORLD, PRO_WORLD } from './signed-in-worlds';
@@ -15,8 +17,11 @@ import { VISITOR_WORLD } from './visitor-world';
 async function openDoor(injector: Injector, signedIn: boolean, delivery: boolean): Promise<void> {
   await settleSignedIn(injector, signedIn);
   await go(injector, '/bienvenue');
-  const doors = injector.get(OrderDoors);
-  void (delivery ? doors.delivery(null) : doors.pickup(null));
+  // Le jour est déjà pris (2026-10-27) : la reprise ouvre le « où » directement.
+  injector
+    .get(OrderContextStore)
+    .draft.set({ date: demoDay(1), mode: delivery ? 'delivery' : 'pickup' });
+  void injector.get(OrderDoors).resume();
 }
 
 /**

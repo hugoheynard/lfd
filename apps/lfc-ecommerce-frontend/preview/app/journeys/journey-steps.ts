@@ -143,6 +143,15 @@ export async function placeAsGuest(injector: Injector): Promise<PlacedOrder | nu
 /** Ouvre le dialogue « quand » sur le Labo, depuis l'accueil — sans l'attendre : il rend la main à sa fermeture. */
 export function openLabTime(injector: Injector): void {
   if (LAB !== undefined) {
-    void injector.get(OrderDoors).time(LAB.id, LAB.label, `${LAB.ligne1}, ${LAB.ville}`);
+    // Le jour est déjà pris, comme au bout d'un vrai parcours : l'heure ne
+    // s'ouvre jamais sans lui (2026-10-27). La reprise rouvre donc l'heure seule.
+    injector.get(OrderContextStore).draft.set({
+      date: demoDay(1),
+      mode: 'pickup',
+      place: LAB.label,
+      pickupAddressId: LAB.id,
+      address: `${LAB.ligne1}, ${LAB.ville}`,
+    });
+    void injector.get(OrderDoors).resume();
   }
 }

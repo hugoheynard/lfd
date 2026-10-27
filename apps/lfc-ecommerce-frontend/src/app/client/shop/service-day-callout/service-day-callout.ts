@@ -39,14 +39,8 @@ export class ServiceDayCallout {
     // panier est au démarrage de la boutique (budget de 1 400 kB, 2026-10-26).
     const { OrderDoors } = await import('../order-doors');
     const doors = this.injector.get(OrderDoors);
-    if (service === null) {
-      await doors.choose();
-    } else if (service.mode === 'delivery') {
-      await doors.delivery(service.deliveryAddressId, null);
-    } else if (service.pickupAddressId === null) {
-      await doors.pickup(null);
-    } else {
-      await doors.time(service.pickupAddressId, service.place, service.address);
-    }
+    // Le panneau du jour, puis l'heure de la même maison ou de la même
+    // adresse : la branche « Changer la date » de « Modifier » (2026-10-27).
+    await (service === null ? doors.choose() : doors.changeDate());
   }
 }

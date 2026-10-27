@@ -2,7 +2,7 @@ import type { LocaleCode } from '../../client-locale.service';
 
 /**
  * **Ce que dit le panneau du jour** — la première question d'une commande
- * neuve (plan `documentation/commandes/passation/plan-panneau-date.md`).
+ * neuve (plan `documentation/commandes/passation/parcours-de-service.md`).
  */
 export interface DayPickerCopy {
   /**

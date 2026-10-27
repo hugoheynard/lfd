@@ -16,47 +16,27 @@
     <p class="lead">{{ c().lead }}</p>
   </div>
 
-  @if (days().length === 0) {
-    <!-- Aucune journée accordée par le serveur : on le dit, on n'en invente
-         pas une. -->
-    <fold-empty-state [title]="c().days.none" [subtitle]="c().empty.subtitle" />
-  } @else {
-    <!-- UN CHOIX, PAS DES ONGLETS (RGAA 7.1, lot A2) : `tablist` promettait des
-         panneaux que rien ne déclarait. Le jour est un groupe radio, au clavier
-         du motif — un arrêt, les flèches (`appRovingRadioGroup`). -->
-    <div class="days" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().days.group">
-      <!-- Le jour vient du panneau : lui seul, et « Je change de date » rouvre
-           la liste (Hugo, 2026-10-27). -->
-      @for (tab of shownDays(); track tab.day) {
-        <button
-          class="day"
-          type="button"
-          role="radio"
-          [class.on]="day() === tab.day"
-          [attr.aria-checked]="day() === tab.day"
-          (click)="showDay(tab.day)"
-        >
-          {{ tab.label }}
-        </button>
-      }
-    </div>
-    @if (dayLocked()) {
-      <button class="change-day" type="button" (click)="unlockDay()">
-        {{ c().days.change }}
-      </button>
-    }
+  <!-- 🔴 LE JOUR EST UN FAIT, PAS UN CHOIX (Hugo, 2026-10-27). Il vient du
+       panneau du jour ; « Je change de date » y retourne, puis revient ici sur
+       la même maison. Plus d'onglets : c'était le vieux panneau. -->
+  <div class="days">
+    <span class="day on">{{ dayLabel() }}</span>
+  </div>
+  <button class="change-day" type="button" (click)="changeDay()">
+    {{ c().days.change }}
+  </button>
 
-    @if (loading()) {
-      <!-- Pendant la lecture, l'écran ne dit RIEN d'autre : annoncer « aucun
+  @if (loading()) {
+    <!-- Pendant la lecture, l'écran ne dit RIEN d'autre : annoncer « aucun
            créneau » ici serait une affirmation fausse. -->
-      <!-- ⚠️ `fold-loading` et non `fold-loading-state` : le second est le nom
+    <!-- ⚠️ `fold-loading` et non `fold-loading-state` : le second est le nom
            de la CLASSE, et un élément inconnu ne rend rien sans que le
            typecheck s'en aperçoive — il ne lit pas les gabarits. -->
-      <fold-loading [message]="c().loading" />
-    } @else if (slots().length === 0) {
-      <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
-    } @else {
-      <!-- 🔴 LES CRÉNEAUX SONT GROUPÉS PAR FOURNÉE, comme la maquette
+    <fold-loading [message]="c().loading" />
+  } @else if (slots().length === 0) {
+    <fold-empty-state [title]="c().empty.title" [subtitle]="c().empty.subtitle" />
+  } @else {
+    <!-- 🔴 LES CRÉNEAUX SONT GROUPÉS PAR FOURNÉE, comme la maquette
            (`captures/09-adresse-quand.png`). Le badge quitte la carte pour
            devenir le SUR-TITRE de son groupe : il désignait une plage, pas une
            heure, et le répéter sur chacune des quatre cartes d'une même fournée
@@ -66,28 +46,28 @@
            Seule la seconde moitié a une source ; le moment de la journée n'en a
            aucune, et le déduire de l'heure ferait appeler « après-ski » un
            créneau de 16 h en plein août. -->
-      <div class="batches" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().title">
-        @for (batch of batches(); track $index) {
-          @if (batch.label) {
-            <p class="batch-label">{{ batch.label }}</p>
-          }
+    <div class="batches" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().title">
+      @for (batch of batches(); track $index) {
+        @if (batch.label) {
+          <p class="batch-label">{{ batch.label }}</p>
+        }
 
-          <div class="slots">
-            @for (slot of batch.slots; track slot.startAt) {
-              <!-- 🔴 Un créneau complet reste VISIBLE et fermé : on ne fait pas
+        <div class="slots">
+          @for (slot of batch.slots; track slot.startAt) {
+            <!-- 🔴 Un créneau complet reste VISIBLE et fermé : on ne fait pas
                    disparaître une heure, on dit qu'elle est prise et on nomme
                    la suivante. Une absence serait un refus muet. -->
-              <button
-                class="slot"
-                type="button"
-                role="radio"
-                [class.on]="picked()?.startAt === slot.startAt"
-                [class.full]="!slot.open"
-                [disabled]="!slot.open"
-                [attr.aria-checked]="picked()?.startAt === slot.startAt"
-                (click)="pick(slot)"
-              >
-                <!-- 🔴 L'HEURE DE DÉBUT SEULE (Hugo, 2026-09-20 : « au niveau
+            <button
+              class="slot"
+              type="button"
+              role="radio"
+              [class.on]="picked()?.startAt === slot.startAt"
+              [class.full]="!slot.open"
+              [disabled]="!slot.open"
+              [attr.aria-checked]="picked()?.startAt === slot.startAt"
+              (click)="pick(slot)"
+            >
+              <!-- 🔴 L'HEURE DE DÉBUT SEULE (Hugo, 2026-09-20 : « au niveau
                      des horaires on ne donne que la première heure »).
                      La tuile a porté l'intervalle quelques heures — « 7 h –
                      7 h 15 » — parce que les deux bornes sont dans le contrat.
@@ -95,23 +75,22 @@
                      se déduisait de la suivante, et douze tuiles répétaient
                      deux fois la même information. On choisit une heure, pas
                      une fenêtre. -->
-                <span class="hour">{{ hourOf(slot) }}</span>
-                @if (isCurrent(slot)) {
-                  <span class="tag">{{ c().current }}</span>
-                }
-                <span class="state">{{ stateOf(slot) }}</span>
+              <span class="hour">{{ hourOf(slot) }}</span>
+              @if (isCurrent(slot)) {
+                <span class="tag">{{ c().current }}</span>
+              }
+              <span class="state">{{ stateOf(slot) }}</span>
 
-                <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme
+              <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme
                      la prochaine heure libre. -->
-                @if (!slot.open) {
-                  <span class="note">{{ fullNote(slot) }}</span>
-                }
-              </button>
-            }
-          </div>
-        }
-      </div>
-    }
+              @if (!slot.open) {
+                <span class="note">{{ fullNote(slot) }}</span>
+              }
+            </button>
+          }
+        </div>
+      }
+    </div>
   }
 </fold-panel-body>
 

@@ -29,7 +29,7 @@ export interface HousePickerData {
    * Le jour pris au panneau du jour, ou absent : seules les maisons qui le
    * servent se proposent — celles dont la première journée servie
    * (`ServicePoints.nextDayFor`) n'est pas plus tardive (plan
-   * `plan-panneau-date.md`, 2026-10-27).
+   * `parcours-de-service.md`, 2026-10-27).
    */
   readonly day?: string | null;
 }

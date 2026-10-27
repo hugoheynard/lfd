@@ -12,10 +12,13 @@ import { type OrderDraft, OrderContextStore, type ServiceChoice } from '../order
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
-import { ServiceChangeDialog } from './service-change-dialog/service-change-dialog';
+import {
+  type ServiceChange,
+  ServiceChangeDialog,
+} from './service-change-dialog/service-change-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
-import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
+import { CHANGE_DAY, SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
 
 /**
  * **Les portes de la commande** — retrait ou livraison, en dialogues.
@@ -130,7 +133,7 @@ export class OrderDoors {
     if (this.order.draft() !== null) {
       return this.resume();
     }
-    // Le JOUR d'abord (plan `plan-panneau-date.md`, 2026-10-27) : fermer le
+    // Le JOUR d'abord (doc `parcours-de-service.md`, 2026-10-27) : fermer le
     // panneau ne pose rien.
     return this.track({}, async () => {
       const day = await this.askDay();
@@ -226,18 +229,26 @@ export class OrderDoors {
    * boutique. `null` : rien n'a été choisi.
    */
   async askChoice(day: string | null = null): Promise<ServiceChoice | null> {
+    if (!this.serviceOffered()) {
+      return null;
+    }
+    // Le jour d'abord, toujours (cf. {@link dayOr}).
+    const on = await this.dayOr(day);
+    if (on === null) {
+      return null;
+    }
     if (!this.pickupOpen()) {
-      return this.askDelivery(null, day);
+      return this.askDelivery(null, on);
     }
     if (!this.deliveryOpen()) {
-      return this.askPickup(null, day);
+      return this.askPickup(null, on);
     }
     const mode = await ServiceModeDialog.open(this.panels).closed;
     if (mode === undefined) {
       return null;
     }
     this.note({ mode });
-    return mode === 'delivery' ? this.askDelivery(null, day) : this.askPickup(null, day);
+    return mode === 'delivery' ? this.askDelivery(null, on) : this.askPickup(null, on);
   }
 
   /**
@@ -272,10 +283,7 @@ export class OrderDoors {
       return null;
     }
     this.note({ mode: 'pickup' });
-    // Sans jour, on le demande D'ABORD (Hugo, 2026-10-27) : le dialogue de
-    // l'heure ouvert sans jour montrait encore les onglets de la semaine — le
-    // vieux panneau qui mêlait jour et heure.
-    const on = day ?? (await this.askDay());
+    const on = await this.dayOr(day);
     if (on === null) {
       return null;
     }
@@ -309,11 +317,12 @@ export class OrderDoors {
   async time(pickupAddressId: string, place: string, address: string): Promise<boolean> {
     const date = this.order.choice()?.date;
     const start: OrderDraft = { mode: 'pickup', place, pickupAddressId, address };
-    return this.track(date === undefined ? start : { ...start, date }, () =>
-      // Le jour retenu : « Modifier » rouvre l'étape 2 sur lui, avec « Je
-      // change de date », et non les onglets de la semaine (Hugo, 2026-10-27).
-      this.pickTime(pickupAddressId, place, address, this.order.choice(), date ?? null),
-    );
+    return this.track(date === undefined ? start : { ...start, date }, async () => {
+      const on = await this.dayOr(date ?? null);
+      return on === null
+        ? null
+        : this.pickTime(pickupAddressId, place, address, this.order.choice(), on);
+    });
   }
 
   /**
@@ -329,55 +338,77 @@ export class OrderDoors {
       return this.choose();
     }
     const pickup = choice.mode === 'pickup';
-    const house =
-      choice.mode === 'pickup' && choice.pickupAddressId !== null
-        ? { id: choice.pickupAddressId, place: choice.place, address: choice.address }
-        : null;
-    const deliveryId = choice.mode === 'delivery' ? (choice.deliveryAddressId ?? null) : null;
     // Le brouillon part du choix : la barre du pied le dit dès le panneau.
-    const start: OrderDraft =
-      house === null
-        ? { mode: choice.mode, date: choice.date }
-        : {
-            mode: 'pickup',
-            date: choice.date,
-            place: house.place,
-            pickupAddressId: house.id,
-            address: house.address,
-          };
-    return this.track(start, async () => {
+    return this.track(this.draftOf(choice), async () => {
       const change = await ServiceChangeDialog.open(this.panels, {
         mode: choice.mode,
         otherOpen: pickup ? this.deliveryOpen() : this.pickupOpen(),
         severalPlaces: this.points.pickups().length > 1,
       }).closed;
-      switch (change) {
-        case undefined:
-          return null;
-        case 'mode':
-          return pickup ? this.askDelivery(null, choice.date) : this.askPickup(null, choice.date);
-        case 'place':
-          return this.askPickup(house?.id ?? null, choice.date);
-        case 'address':
-          return this.askDelivery(deliveryId, choice.date);
-        case 'time':
-          return house === null
-            ? this.askPickup(null, choice.date)
-            : this.pickTime(house.id, house.place, house.address, choice, choice.date);
-        case 'date': {
-          const day = await this.askDay();
-          if (day === null) {
-            return null;
-          }
-          if (!pickup) {
-            return this.askDelivery(deliveryId, day);
-          }
-          return house === null
-            ? this.askPickup(null, day)
-            : this.pickTime(house.id, house.place, house.address, choice, day);
-        }
-      }
+      return change === undefined ? null : this.apply(change, choice);
     });
+  }
+
+  /**
+   * **Changer de jour** une commande située — le geste de l'encart « ce jour
+   * n'est plus possible ». La même branche que « Modifier › Changer la date » :
+   * le panneau du jour, puis l'heure de la même maison ou de la même adresse.
+   */
+  async changeDate(): Promise<boolean> {
+    const choice = this.order.choice();
+    return choice === null
+      ? this.choose()
+      : this.track(this.draftOf(choice), () => this.apply('date', choice));
+  }
+
+  /**
+   * **Passer à l'autre mode** en gardant le jour — le geste du panier
+   * (« La récupérer en boutique », « Me faire livrer »). La même branche que
+   * « Modifier › mode ».
+   */
+  async switchMode(): Promise<boolean> {
+    const choice = this.order.choice();
+    return choice === null
+      ? this.choose()
+      : this.track(this.draftOf(choice), () => this.apply('mode', choice));
+  }
+
+  /**
+   * Une réponse du panneau « Modifier mes choix » : ne rouvre que cette étape,
+   * et garde le reste — le jour suit une bascule de mode et un changement de
+   * maison ; la maison ou l'adresse suit un changement de jour.
+   */
+  private async apply(change: ServiceChange, choice: ServiceChoice): Promise<ServiceChoice | null> {
+    const pickup = choice.mode === 'pickup';
+    const house =
+      choice.mode === 'pickup' && choice.pickupAddressId !== null
+        ? { id: choice.pickupAddressId, place: choice.place, address: choice.address }
+        : null;
+    const deliveryId = choice.mode === 'delivery' ? (choice.deliveryAddressId ?? null) : null;
+    switch (change) {
+      case 'mode':
+        return pickup ? this.askDelivery(null, choice.date) : this.askPickup(null, choice.date);
+      case 'place':
+        return this.askPickup(house?.id ?? null, choice.date);
+      case 'address':
+        return this.askDelivery(deliveryId, choice.date);
+      case 'time':
+        return house === null
+          ? this.askPickup(null, choice.date)
+          : this.pickTime(house.id, house.place, house.address, choice, choice.date);
+      case 'date': {
+        const day = await this.askDay();
+        if (day === null) {
+          return null;
+        }
+        if (!pickup) {
+          return this.askDelivery(deliveryId, day);
+        }
+        return house === null
+          ? this.askPickup(null, day)
+          : this.pickTime(house.id, house.place, house.address, choice, day);
+      }
+    }
   }
 
   /**
@@ -388,7 +419,13 @@ export class OrderDoors {
     if (current.pickupAddressId === null) {
       return Promise.resolve(null);
     }
-    return this.pickTime(current.pickupAddressId, current.place, current.address, current);
+    return this.pickTime(
+      current.pickupAddressId,
+      current.place,
+      current.address,
+      current,
+      current.date,
+    );
   }
 
   /**
@@ -402,34 +439,61 @@ export class OrderDoors {
    * `false` sans rien montrer. L'appelant qui cache déjà sa porte n'y arrive
    * jamais ; celui qui l'aurait oubliée ne fait pas de dégât.
    */
-  async delivery(
-    currentId: string | null = null,
-    currentDate: string | null = null,
-  ): Promise<boolean> {
-    return this.track({ mode: 'delivery' }, () => this.askDelivery(currentId, currentDate));
+  async delivery(currentId: string | null = null): Promise<boolean> {
+    // Le jour déjà retenu suit, comme au retrait ({@link pickup}).
+    const date = this.order.choice()?.date;
+    const start: OrderDraft =
+      date === undefined ? { mode: 'delivery' } : { mode: 'delivery', date };
+    return this.track(start, () => this.askDelivery(currentId, date ?? null));
   }
 
   /** {@link delivery}, sans écrire la réponse. */
-  async askDelivery(
-    currentId: string | null,
-    currentDate: string | null = null,
-  ): Promise<ServiceChoice | null> {
+  async askDelivery(currentId: string | null, day: string | null): Promise<ServiceChoice | null> {
     if (!this.deliveryOpen()) {
       return null;
     }
     this.note({ mode: 'delivery' });
-    const choice = await DeliveryAddressDialog.open(this.panels, {
-      currentId,
-      // Le jour déjà retenu se repropose (2026-10-13) : rouvrir pour changer
-      // d'adresse ne doit pas ramener en silence à la première journée.
-      currentDate,
-      // 🔴 LA SAISIE LIBRE EST POUR LE B2C, et elle lui est réservée. Un pro
-      // tape une adresse hors de son carnet, et c'est une livraison que
-      // personne ne retrouve au bon de livraison suivant ; un visiteur n'a pas
-      // de carnet du tout, et sans elle il ne peut pas se faire livrer.
-      allowFreeEntry: this.audience() !== 'b2b',
-    }).closed;
-    return choice ?? null;
+    let on = await this.dayOr(day);
+    // « Je change de date » : le panneau du jour, puis la même adresse.
+    while (on !== null) {
+      const choice = await DeliveryAddressDialog.open(this.panels, {
+        currentId,
+        day: on,
+        // 🔴 LA SAISIE LIBRE EST POUR LE B2C, et elle lui est réservée. Un pro
+        // tape une adresse hors de son carnet, et c'est une livraison que
+        // personne ne retrouve au bon de livraison suivant ; un visiteur n'a pas
+        // de carnet du tout, et sans elle il ne peut pas se faire livrer.
+        allowFreeEntry: this.audience() !== 'b2b',
+      }).closed;
+      if (choice !== CHANGE_DAY) {
+        return choice ?? null;
+      }
+      on = await this.askDay();
+    }
+    return null;
+  }
+
+  /**
+   * 🔴 **LE JOUR D'ABORD, PARTOUT** (Hugo, 2026-10-27 : « je ne veux aucune
+   * incohérence »). Toute porte qui mène à une heure passe par ici : le jour
+   * qu'elle connaît, sinon le panneau du jour. Les dialogues d'heure et
+   * d'adresse EXIGENT un jour — leur type ne permet plus de les ouvrir sans.
+   */
+  private async dayOr(day: string | null): Promise<string | null> {
+    return day ?? this.askDay();
+  }
+
+  /** Le brouillon que pose un choix complet : la barre le dit dès le panneau. */
+  private draftOf(choice: ServiceChoice): OrderDraft {
+    return choice.mode === 'pickup' && choice.pickupAddressId !== null
+      ? {
+          mode: 'pickup',
+          date: choice.date,
+          place: choice.place,
+          pickupAddressId: choice.pickupAddressId,
+          address: choice.address,
+        }
+      : { mode: choice.mode, date: choice.date };
   }
 
   /** Écrit un choix pris ; `false` quand il n'y en a pas — fermer n'est pas choisir. */
@@ -523,19 +587,26 @@ export class OrderDoors {
     place: string,
     address: string,
     current: ServiceChoice | null,
-    openOn: string | null = null,
+    day: string,
   ): Promise<ServiceChoice | null> {
-    const slot = await SlotPickerDialog.open(this.panels, {
-      pickupAddressId,
-      place,
-      // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
-      // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
-      firstDay: this.points.nextDayFor(pickupAddressId),
-      lastDay: this.points.lastDay(),
-      current: this.currentAt(pickupAddressId, current),
-      // Le jour pris au panneau du jour : le dialogue s'ouvre dessus.
-      openOn,
-    }).closed;
+    let on: string | null = day;
+    let slot;
+    // « Je change de date » : le panneau du jour, puis la même maison.
+    for (;;) {
+      slot = await SlotPickerDialog.open(this.panels, {
+        pickupAddressId,
+        place,
+        day: on,
+        current: this.currentAt(pickupAddressId, current),
+      }).closed;
+      if (slot !== CHANGE_DAY) {
+        break;
+      }
+      on = await this.askDay();
+      if (on === null) {
+        return null;
+      }
+    }
     if (slot === undefined) {
       return null;
     }
