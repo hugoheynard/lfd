@@ -62,16 +62,4 @@ describe('JourneyBar', () => {
 
     expect(navigate).toHaveBeenCalledWith('/boutique');
   });
-
-  it('🔴 se dit « réglée » une fois le parcours fini : le bureau la masque', () => {
-    const { fixture } = boot();
-    const store = TestBed.inject(OrderContextStore);
-    store.draft.set({});
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).classList.contains('settled')).toBe(false);
-
-    store.draft.set(null);
-    fixture.detectChanges();
-    expect((fixture.nativeElement as HTMLElement).classList.contains('settled')).toBe(true);
-  });
 });

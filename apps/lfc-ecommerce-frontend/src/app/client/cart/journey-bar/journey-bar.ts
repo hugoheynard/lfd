@@ -1,7 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { Router } from '@angular/router';
 
-import { OrderContextStore } from '../../order-context.store';
 import { OrderDoors } from '../../shop/order-doors';
 import { CartBar } from '../cart-bar/cart-bar';
 
@@ -17,25 +16,20 @@ const SHOP = '/boutique';
  * reprendre le parcours, revenir sur le service retenu, et « Régler », qui
  * mène à la boutique où le règlement s'enchaîne.
  *
- * Au bureau, elle ne parle que PENDANT le parcours : une fois le choix
- * complet, la barre « Ma commande » du haut de la boutique reste celle qui le
- * dit (`settled`, masqué au-delà du pli).
+ * En mobile seulement (Hugo, 2026-10-27) : au bureau, la barre ne paraît que
+ * pendant un dialogue du parcours, qui monte la sienne (`docked`) ; hors
+ * dialogue, la barre « Ma commande » du haut de la boutique dit le choix.
  */
 @Component({
   selector: 'app-journey-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.settled]': 'settled()' },
   imports: [CartBar],
   templateUrl: './journey-bar.html',
   styleUrl: './journey-bar.scss',
 })
 export class JourneyBar {
-  private readonly store = inject(OrderContextStore);
   private readonly doors = inject(OrderDoors);
   private readonly router = inject(Router);
-
-  /** Plus de brouillon : le parcours est fini. */
-  protected readonly settled = computed(() => this.store.draft() === null);
 
   protected resume(): void {
     void this.doors.resume();
