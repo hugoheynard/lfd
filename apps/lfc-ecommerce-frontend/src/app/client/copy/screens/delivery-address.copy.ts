@@ -124,7 +124,7 @@ export interface DeliveryAddressCopy {
 }
 
 export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
-  kicker: 'Coursier · étape 1 sur 2',
+  kicker: 'Livraison',
   title: 'On livre où ?',
   lead: 'Les frais de coursier dépendent de la zone, jamais du contenu du panier — vous les voyez avant de composer.',
   defaultTag: 'Par défaut',
@@ -171,7 +171,7 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
 };
 
 export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
-  kicker: 'Courier · step 1 of 2',
+  kicker: 'Delivery',
   title: 'Where do we deliver?',
   lead: 'Courier fees depend on the zone, never on what is in the basket — you see them before you shop.',
   defaultTag: 'Default',
@@ -217,7 +217,7 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
 };
 
 export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
-  kicker: 'Corriere · passo 1 di 2',
+  kicker: 'Consegna',
   title: 'Dove consegniamo ?',
   lead: 'Le spese del corriere dipendono dalla zona, mai dal contenuto del carrello — le vedete prima di comporre.',
   defaultTag: 'Predefinito',

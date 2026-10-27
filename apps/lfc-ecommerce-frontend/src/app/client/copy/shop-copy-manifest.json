@@ -2837,9 +2837,9 @@
       "entries": [
         {
           "key": "deliveryAddress.kicker",
-          "fr": "Coursier · étape 1 sur 2",
-          "en": "Courier · step 1 of 2",
-          "it": "Corriere · passo 1 di 2",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
           "variables": []
         },
         {

@@ -596,7 +596,7 @@ Source : `screens/delivery-address.copy.ts` · 38 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `deliveryAddress.kicker` | Coursier · étape 1 sur 2 | Courier · step 1 of 2 | Corriere · passo 1 di 2 |  |
+| `deliveryAddress.kicker` | Livraison | Delivery | Consegna |  |
 | `deliveryAddress.title` | On livre où ? | Where do we deliver? | Dove consegniamo ? |  |
 | `deliveryAddress.lead` | Les frais de coursier dépendent de la zone, jamais du contenu du panier — vous les voyez avant de composer. | Courier fees depend on the zone, never on what is in the basket — you see them before you shop. | Le spese del corriere dipendono dalla zona, mai dal contenuto del carrello — le vedete prima di comporre. |  |
 | `deliveryAddress.defaultTag` | Par défaut | Default | Predefinito |  |
