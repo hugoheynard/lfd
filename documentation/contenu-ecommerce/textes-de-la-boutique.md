@@ -37,10 +37,10 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 17 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 242 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 241 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 526 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
@@ -942,7 +942,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 242 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 241 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -967,7 +967,6 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.courierOnWay` | {name} est en route | {name} is on the way | {name} è in arrivo | `{name}` |
 | `orders.courierPending` | Coursier attribué au départ | Courier assigned on departure | Corriere assegnato alla partenza |  |
 | `orders.historyHead` | Commandes passées | Past orders | Ordini passati |  |
-| `orders.historyNote` | Un tableau, parce qu’ici on compare. | A table, because this is where you compare. | Una tabella, perché qui si confronta. |  |
 | `orders.colOrder` | Commande | Order | Ordine |  |
 | `orders.colMode` | Mode | Mode | Modalità |  |
 | `orders.colDate` | Date | Date | Data |  |
@@ -1306,7 +1305,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 525 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 526 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1766,6 +1765,7 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.invoices.filterYear` | Année | Year | Anno |  |
 | `account.invoices.filterMonth` | Mois | Month | Mese |  |
 | `account.invoices.filterKind` | Pièces | Documents | Documenti |  |
+| `account.invoices.filterAll` | Tout | All | Tutto |  |
 | `account.invoices.allYears` | Toutes | All | Tutti |  |
 | `account.invoices.allMonths` | Tous | All | Tutti |  |
 | `account.invoices.kindAll` | Tout | All | Tutto |  |

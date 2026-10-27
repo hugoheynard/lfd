@@ -53,6 +53,7 @@
         <div class="filters">
           <fold-listbox
             size="sm"
+            [placeholder]="copy().filterAll"
             data-filter-year
             [label]="copy().filterYear"
             [options]="yearOptions()"
@@ -61,6 +62,7 @@
           />
           <fold-listbox
             size="sm"
+            [placeholder]="copy().filterAll"
             data-filter-month
             [label]="copy().filterMonth"
             [options]="monthOptions()"
@@ -70,6 +72,7 @@
           />
           <fold-listbox
             size="sm"
+            [placeholder]="copy().filterAll"
             data-filter-kind
             [label]="copy().filterKind"
             [options]="kindOptions()"

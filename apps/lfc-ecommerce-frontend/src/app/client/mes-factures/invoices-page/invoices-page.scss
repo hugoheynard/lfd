@@ -36,6 +36,13 @@
   gap: var(--fold-space-md);
 }
 
+/* Une largeur pour chaque liste : sans valeur choisie, elles se réduisaient à
+   leur flèche (vu au téléphone le 2026-10-27). */
+.filters > fold-listbox {
+  flex: 1 1 8rem;
+  min-width: 8rem;
+}
+
 .toolbar,
 .actions {
   display: flex;

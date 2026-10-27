@@ -316,7 +316,6 @@ export interface OrdersCopy {
   readonly courierOnWay: string;
   readonly courierPending: string;
   readonly historyHead: string;
-  readonly historyNote: string;
   readonly colOrder: string;
   readonly colMode: string;
   readonly colDate: string;
@@ -509,7 +508,6 @@ export const ORDERS_FR: OrdersCopy = {
   courierOnWay: '{name} est en route',
   courierPending: 'Coursier attribué au départ',
   historyHead: 'Commandes passées',
-  historyNote: 'Un tableau, parce qu’ici on compare.',
   colOrder: 'Commande',
   colMode: 'Mode',
   colDate: 'Date',
@@ -635,7 +633,6 @@ export const ORDERS_EN: OrdersCopy = {
   courierOnWay: '{name} is on the way',
   courierPending: 'Courier assigned on departure',
   historyHead: 'Past orders',
-  historyNote: 'A table, because this is where you compare.',
   colOrder: 'Order',
   colMode: 'Mode',
   colDate: 'Date',
@@ -761,7 +758,6 @@ export const ORDERS_IT: OrdersCopy = {
   courierOnWay: '{name} è in arrivo',
   courierPending: 'Corriere assegnato alla partenza',
   historyHead: 'Ordini passati',
-  historyNote: 'Una tabella, perché qui si confronta.',
   colOrder: 'Ordine',
   colMode: 'Modalità',
   colDate: 'Data',

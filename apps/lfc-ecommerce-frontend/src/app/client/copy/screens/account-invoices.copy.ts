@@ -43,6 +43,8 @@ export interface AccountInvoicesCopy {
   readonly filterYear: string;
   readonly filterMonth: string;
   readonly filterKind: string;
+  /** Ce que dit une liste de filtre quand rien n'y est choisi. */
+  readonly filterAll: string;
   readonly allYears: string;
   readonly allMonths: string;
   readonly kindAll: string;
@@ -158,6 +160,7 @@ export const ACCOUNT_INVOICES_FR: AccountInvoicesCopy = {
   filterYear: 'Année',
   filterMonth: 'Mois',
   filterKind: 'Pièces',
+  filterAll: 'Tout',
   allYears: 'Toutes',
   allMonths: 'Tous',
   kindAll: 'Tout',
@@ -255,6 +258,7 @@ export const ACCOUNT_INVOICES_EN: AccountInvoicesCopy = {
   filterYear: 'Year',
   filterMonth: 'Month',
   filterKind: 'Documents',
+  filterAll: 'All',
   allYears: 'All',
   allMonths: 'All',
   kindAll: 'All',
@@ -353,6 +357,7 @@ export const ACCOUNT_INVOICES_IT: AccountInvoicesCopy = {
   filterYear: 'Anno',
   filterMonth: 'Mese',
   filterKind: 'Documenti',
+  filterAll: 'Tutto',
   allYears: 'Tutti',
   allMonths: 'Tutti',
   kindAll: 'Tutto',
