@@ -17,8 +17,19 @@
   min-height: 150px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--lfc-radius-2xl);
-  background: var(--lfc-brand-blue);
-  color: var(--lfc-color-on-well);
+  /* BLANCHE sur la bande bleue (2026-10-27) : bleue, elle s'écrivait en bleu
+     sur bleu depuis que la rampe d'encre vaut une seule teinte. Les statuts
+     reprennent leurs rôles clairs, faits pour un fond blanc. */
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
+  --lfc-color-on-well-muted: rgb(18 56 183 / 72%);
+  --fold-color-success: var(--lfc-moss-600);
+  --fold-color-success-surface: #eef6f1;
+  --fold-color-success-text: var(--lfc-moss-700);
+  --fold-color-warning-surface: var(--lfc-butter-100);
+  --fold-color-warning-text: var(--lfc-butter-800);
+  --fold-color-alert-surface: #fbeae7;
+  --fold-color-alert-text: var(--lfc-brick-700);
   isolation: isolate;
   overflow: clip;
 }

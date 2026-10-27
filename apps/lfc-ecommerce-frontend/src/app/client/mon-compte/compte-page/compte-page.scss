@@ -61,7 +61,8 @@
     content: '';
     position: absolute;
     inset: var(--fold-space-lg) 0 -1px;
-    border-radius: var(--lfc-radius-sheet) var(--lfc-radius-sheet) 0 0;
+    /* À plat depuis l'en-tête blanc (2026-10-27) : plus de feuille posée. */
+    border-radius: 0;
     /* La crème NOMMÉE : sous `foldSurface="chrome"`, `bg-page` vaut l'encre. */
     background: var(--lfc-paper-50);
   }
