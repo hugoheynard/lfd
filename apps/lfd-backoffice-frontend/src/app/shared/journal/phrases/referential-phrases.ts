@@ -251,15 +251,20 @@ function pricingSaved(fact: PhraseFact): Said {
 function sheetSaved(what: string): Phrase {
   return (fact: PhraseFact): Said => {
     const variant = variantOf(fact.payload);
+    // Une modification reportée depuis un ingrédient le nomme (propagation
+    // des allergènes, 2026-10-27) : sans lui, la ligne laisserait croire à
+    // une saisie faite sur la fiche.
+    const ingredient = nameOf(fact.payload['fromIngredient']);
     return byActor(
       fact,
       [
         text(`a modifié ${what} `),
         ...theSubject(fact, OF_PRODUCT),
         ...variant.segments,
+        ...(ingredient === null ? [] : [text(` d’après l’ingrédient « ${ingredient} »`)]),
         ...whatChanged(fact.payload['changes'], fact.type),
       ],
-      ['subjectLabel', variant.key],
+      ['subjectLabel', variant.key, 'fromIngredient'],
     );
   };
 }
