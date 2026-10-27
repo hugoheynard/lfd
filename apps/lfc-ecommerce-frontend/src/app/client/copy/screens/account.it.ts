@@ -95,7 +95,8 @@ export const ACCOUNT_IT: AccountCopy = {
     'Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale.',
   identitySaveFailed: 'L’identità non è stata registrata.',
   railPosition: 'Sezione {n} di {total}',
-  usersHolder: 'Titolare dell’account · voi',
+  usersHolder: 'Titolare dell’account',
+  usersHolderYou: 'Titolare dell’account · voi',
   usersAllRights: 'Tutti i diritti',
   usersNote:
     'Un contatto può esistere senza spazio: un nome e un’e-mail bastano per ricevere le fatture. L’invito, invece, si decide caso per caso.',

@@ -95,7 +95,8 @@ export const ACCOUNT_FR: AccountCopy = {
     'Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial.',
   identitySaveFailed: 'L’identité n’a pas été enregistrée.',
   railPosition: 'Section {n} sur {total}',
-  usersHolder: 'Détenteur du compte · vous',
+  usersHolder: 'Détenteur du compte',
+  usersHolderYou: 'Détenteur du compte · vous',
   usersAllRights: 'Tous droits',
   usersNote:
     'Un contact peut exister sans espace : un nom et un e-mail suffisent pour recevoir les factures. L’invitation, elle, se décide au cas par cas.',

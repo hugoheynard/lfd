@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1670 textes
+## Sommaire — 1671 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -40,14 +40,14 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 242 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
-| [Mon compte (factures comprises)](#espace-account) | `account` | 524 |
+| [Mon compte (factures comprises)](#espace-account) | `account` | 525 |
 | [Le compte pro — le dictionnaire général](#espace-pro) | `pro` | 8 |
 | [Le compte pro — l’écran](#espace-proaccount) | `proAccount` | 27 |
 | [La procédure de livraison d’une adresse](#espace-deliveryprocedure) | `deliveryProcedure` | 47 (+ 3 non recensé) |
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1670** |
+| **Total** | | **1671** |
 
 ## Le parcours de commande
 
@@ -1306,7 +1306,7 @@ Source : `screens/loyalty.copy.ts` · 38 textes.
 
 ### Mon compte (factures comprises) — `account`
 
-Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 524 textes.
+Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 525 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1366,7 +1366,8 @@ Source : `screens/account.{fr,en,it}.ts · screens/account-invoices.copy.ts` · 
 | `account.identityLegalLocked` | Ces mentions viennent du greffe. Pour les corriger, passez par notre service commercial. | These details come from the company registry. To correct them, contact our sales team. | Queste menzioni provengono dal registro delle imprese. Per correggerle, passate dal nostro servizio commerciale. |  |
 | `account.identitySaveFailed` | L’identité n’a pas été enregistrée. | Your identity was not saved. | L’identità non è stata registrata. |  |
 | `account.railPosition` | Section {n} sur {total} | Section {n} of {total} | Sezione {n} di {total} | `{n}` `{total}` |
-| `account.usersHolder` | Détenteur du compte · vous | Account holder · you | Titolare dell’account · voi |  |
+| `account.usersHolder` | Détenteur du compte | Account holder | Titolare dell’account |  |
+| `account.usersHolderYou` | Détenteur du compte · vous | Account holder · you | Titolare dell’account · voi |  |
 | `account.usersAllRights` | Tous droits | All rights | Tutti i diritti |  |
 | `account.usersNote` | Un contact peut exister sans espace : un nom et un e-mail suffisent pour recevoir les factures. L’invitation, elle, se décide au cas par cas. | A contact can exist without a workspace: a name and an e-mail are enough to receive the invoices. The invitation is decided case by case. | Un contatto può esistere senza spazio: un nome e un’e-mail bastano per ricevere le fatture. L’invito, invece, si decide caso per caso. |  |
 | `account.usersAdd` | Ajouter un utilisateur ou un contact | Add a user or a contact | Aggiungere un utente o un contatto |  |

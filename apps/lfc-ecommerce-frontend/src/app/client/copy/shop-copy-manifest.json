@@ -7477,6 +7477,13 @@
         },
         {
           "key": "account.usersHolder",
+          "fr": "Détenteur du compte",
+          "en": "Account holder",
+          "it": "Titolare dell’account",
+          "variables": []
+        },
+        {
+          "key": "account.usersHolderYou",
           "fr": "Détenteur du compte · vous",
           "en": "Account holder · you",
           "it": "Titolare dell’account · voi",

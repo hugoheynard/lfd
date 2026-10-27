@@ -94,7 +94,8 @@ export const ACCOUNT_EN: AccountCopy = {
     'These details come from the company registry. To correct them, contact our sales team.',
   identitySaveFailed: 'Your identity was not saved.',
   railPosition: 'Section {n} of {total}',
-  usersHolder: 'Account holder · you',
+  usersHolder: 'Account holder',
+  usersHolderYou: 'Account holder · you',
   usersAllRights: 'All rights',
   usersNote:
     'A contact can exist without a workspace: a name and an e-mail are enough to receive the invoices. The invitation is decided case by case.',

@@ -3,6 +3,7 @@ import type { ContactView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientCompany } from '../../../client-company.service';
+import { ClientIdentity } from '../../../client-identity.service';
 import { ClientCopyService } from '../../../copy/client-copy.service';
 import { ContactEditPanel } from '../contact-edit-panel/contact-edit-panel';
 import { contactLine, initialsOf, nameOf } from '../users-section';
@@ -47,6 +48,7 @@ export class UsersList {
 
   protected readonly t = inject(ClientCopyService).t;
   private readonly client = inject(ClientCompany);
+  private readonly identity = inject(ClientIdentity);
   private readonly panels = inject(FoldPanelHostService);
 
   /** Le contact PRINCIPAL : le détenteur, toujours présent quand la société l'est. */
@@ -64,6 +66,18 @@ export class UsersList {
   protected readonly holderInitials = computed(() => {
     const holder = this.holder();
     return holder === null ? '' : initialsOf(holder);
+  });
+
+  /**
+   * « · vous » seulement quand le détenteur EST la personne connectée (Hugo,
+   * 2026-10-27 : le libellé le disait à tout membre de la société). Lu sur
+   * l'adresse du compte, la seule identité que les deux vues partagent.
+   */
+  protected readonly holderKicker = computed(() => {
+    const mine = this.identity.email()?.trim().toLowerCase() ?? null;
+    const holder = this.holder()?.email.trim().toLowerCase() ?? null;
+    const copy = this.t().account;
+    return mine !== null && mine === holder ? copy.usersHolderYou : copy.usersHolder;
   });
 
   protected readonly holderName = computed(() => {

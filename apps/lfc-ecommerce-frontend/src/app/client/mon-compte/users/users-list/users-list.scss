@@ -17,8 +17,14 @@
   padding: var(--fold-space-md);
   border: 0;
   border-radius: var(--lfc-radius-xl);
-  background: linear-gradient(122deg, var(--lfc-ink-800), var(--lfc-ink-900));
-  color: var(--lfc-color-on-well);
+  /* BLEU PLEIN, texte blanc (2026-10-27) : le dégradé d'encre s'écrivait en
+     bleu sur bleu depuis que la rampe vaut une seule teinte. Ses rôles « sur
+     le puits » sont nommés ici, en blanc. */
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
+  --lfc-color-on-well: var(--lfc-paper-0);
+  --lfc-color-on-well-muted: rgb(255 255 255 / 78%);
+  --lfc-color-on-well-tile: rgb(255 255 255 / 18%);
   text-align: left;
   cursor: pointer;
 }

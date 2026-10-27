@@ -116,6 +116,8 @@ export interface AccountCopy {
   /** La pastille du rail, pour qui ne la voit pas. `{n}` le rang depuis un, `{total}` le nombre de sections. */
   readonly railPosition: string;
   readonly usersHolder: string;
+  /** Le même, quand le détenteur est la personne qui regarde — et elle seule. */
+  readonly usersHolderYou: string;
   readonly usersAllRights: string;
   readonly usersNote: string;
   /** Le bouton de la carte bureau, et le titre du panneau d'ajout. */

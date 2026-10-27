@@ -2,7 +2,7 @@
   <button class="holder" type="button" (click)="open(person)">
     <span class="holder-initials" aria-hidden="true">{{ holderInitials() }}</span>
     <span class="lines">
-      <span class="holder-kicker">{{ t().account.usersHolder }}</span>
+      <span class="holder-kicker">{{ holderKicker() }}</span>
       <span class="holder-name">{{ holderName() }}</span>
       <span class="holder-mail">{{ person.email }}</span>
     </span>
