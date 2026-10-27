@@ -69,12 +69,12 @@ export function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
 }
 
 /** Une photo de porte en valeur CSS, à la largeur d'une fiche ; `null` sans photo. */
-function photoOf(image: DoorImage | null | undefined): string | null {
+function photoOf(image: DoorImage | ShopImageView | null | undefined): string | null {
   return image ? `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})` : null;
 }
 
 /** Son recadrage (`background-position`) ; `null` sans photo. */
-function focusOf(image: DoorImage | null | undefined): string | null {
+function focusOf(image: DoorImage | ShopImageView | null | undefined): string | null {
   return image ? objectPositionOf(image) : null;
 }
 
@@ -225,10 +225,22 @@ export class ProLanding {
     const state = this.storefront.stateOf(HOME_PAGE);
     return state?.status === 'ready' ? state.page : null;
   });
-  protected readonly pickupPhoto = computed(() => photoOf(this.homePage()?.pickupDoorImage));
-  protected readonly pickupPosition = computed(() => focusOf(this.homePage()?.pickupDoorImage));
-  protected readonly courierPhoto = computed(() => photoOf(this.homePage()?.deliveryDoorImage));
-  protected readonly courierPosition = computed(() => focusOf(this.homePage()?.deliveryDoorImage));
+  /**
+   * Sans photo réglée, une porte prend celle d'un incontournable (Hugo,
+   * 2026-10-27 : « par défaut ») — le premier pour le retrait, le second pour
+   * la livraison. Une photo de la médiathèque seulement, jamais un dessin.
+   */
+  private readonly fallbackDoor = (rank: number) => this.featuredItems()?.[rank]?.image ?? null;
+  private readonly pickupImage = computed(
+    () => this.homePage()?.pickupDoorImage ?? this.fallbackDoor(0),
+  );
+  private readonly courierImage = computed(
+    () => this.homePage()?.deliveryDoorImage ?? this.fallbackDoor(1),
+  );
+  protected readonly pickupPhoto = computed(() => photoOf(this.pickupImage()));
+  protected readonly pickupPosition = computed(() => focusOf(this.pickupImage()));
+  protected readonly courierPhoto = computed(() => photoOf(this.courierImage()));
+  protected readonly courierPosition = computed(() => focusOf(this.courierImage()));
 
   private readonly auth = inject(AuthFacade);
   private readonly router = inject(Router);

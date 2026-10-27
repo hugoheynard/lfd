@@ -434,7 +434,23 @@ export class AccueilPublic {
   });
 
   /** La photo de la porte « Je passe la prendre », choisie dans la vitrine (R10), ou `null`. */
-  private readonly doorImage = computed(() => this.homePage()?.pickupDoorImage ?? null);
+  private readonly doorImage = computed(
+    () => this.homePage()?.pickupDoorImage ?? this.fallbackDoor(0),
+  );
+
+  /**
+   * Sans photo réglée dans la vitrine, une porte prend celle d'un
+   * incontournable (Hugo, 2026-10-27 : « par défaut ») — le premier pour le
+   * retrait, le second pour la livraison. Une photo seulement, jamais un dessin.
+   */
+  private fallbackDoor(rank: number) {
+    return (
+      this.catalogue
+        .items()
+        .filter((item) => item.isFeatured && item.image != null)
+        .at(rank)?.image ?? null
+    );
+  }
 
   /**
    * La photo, en valeur CSS, servie à la largeur d'une fiche (elle couvre la
@@ -460,7 +476,9 @@ export class AccueilPublic {
    * `null` sans photo choisie : la carte reprend alors celle du retrait, par
    * le repli de `service-doors.scss`. Décorative : la carte a son texte.
    */
-  private readonly courierImage = computed(() => this.homePage()?.deliveryDoorImage ?? null);
+  private readonly courierImage = computed(
+    () => this.homePage()?.deliveryDoorImage ?? this.fallbackDoor(1),
+  );
   protected readonly courierPhoto = computed(() => {
     const image = this.courierImage();
     return image === null ? null : `url(${JSON.stringify(sizedMedia(image.url, SHEET_WIDTHS[1]))})`;
@@ -472,7 +490,8 @@ export class AccueilPublic {
 
   /** Son texte alternatif dans la langue du visiteur, le français sinon ; `null` : décorative. */
   protected readonly doorAlt = computed(() => {
-    const alt = this.doorImage()?.alt ?? null;
+    // Le repli d'un incontournable est décoratif : seule la photo réglée a un texte.
+    const alt = this.homePage()?.pickupDoorImage?.alt ?? null;
     if (alt === null) {
       return null;
     }
