@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
+import { RetraitOpener } from '../retrait-opener.service';
 import { FoldIconComponent } from 'fold-ng';
 
 import { formatEuro } from '../../format-money';
@@ -40,6 +41,13 @@ export class TrackCard {
 
   /** Le QR de retrait — la maquette n'en a pas encore le modèle. */
   readonly qrAsked = output<void>();
+
+  private readonly qr = inject(RetraitOpener);
+
+  /** L'avion en papier : envoyer le code à qui passera le prendre (2026-10-27). */
+  protected sendQr(): void {
+    void this.qr.send(this.order().id);
+  }
 
   protected readonly t = inject(ClientCopyService).t;
 

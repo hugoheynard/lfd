@@ -80,7 +80,12 @@
         </span>
         <!-- L'avion dit le geste : envoyer le QR à qui passera le prendre.
              Aucune phrase — elle prendrait la place de l'action. -->
-        <button class="minor square" type="button" [attr.aria-label]="t().orders.qrSend">
+        <button
+          class="minor square"
+          type="button"
+          [attr.aria-label]="t().orders.qrSend"
+          (click)="sendQr()"
+        >
           <fold-icon name="mail" />
         </button>
       </div>

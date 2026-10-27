@@ -12,12 +12,11 @@ import { RouterLink } from '@angular/router';
 import type { CustomerOrderView } from '@lfd/contracts';
 import { isSettled } from '@lfd/contracts/shop-values';
 import { FoldButtonComponent, FoldDisclosureComponent, FoldLoadingStateComponent } from 'fold-ng';
-import { QrCode, qrMatrix } from '@lfd/b2b-ui/order';
+import { QrCode } from '@lfd/b2b-ui/order';
 
-import { AUTH_CONFIG } from '../../../auth/auth.config';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { ClientOrderHistory } from '../client-order-history.service';
-import { shareQr } from './qr-share';
+import { handoverUrlOf, shareOrderQr } from './qr-share';
 
 /** L'écran ne peut être que dans un de ces états, et il n'en montre qu'un. */
 type Phase = 'loading' | 'ready' | 'none';
@@ -103,13 +102,7 @@ export class RetraitQr {
    * L'URL que le code encode, ou `null` — et `null` n'est pas un échec, c'est
    * une commande qui ne se remet pas au comptoir.
    */
-  protected readonly handoverUrl = computed<string | null>(() => {
-    const token = this.order()?.handoverToken ?? null;
-    if (token === null || AUTH_CONFIG.adminBaseUrl === '') {
-      return null;
-    }
-    return `${AUTH_CONFIG.adminBaseUrl}/retrait/${encodeURIComponent(token)}`;
-  });
+  protected readonly handoverUrl = computed(() => handoverUrlOf(this.order()));
 
   /**
    * Ce qu'on dit quand il n'y a pas de code : la raison, pas un écran vide.
@@ -139,13 +132,8 @@ export class RetraitQr {
   protected readonly lines = computed(() => this.order()?.lines ?? []);
 
   /** Envoie l'image du code — voir {@link shareQr}. */
-  protected send(url: string): void {
-    const ref = this.reference();
-    void shareQr(
-      qrMatrix(url),
-      `qr-${ref || 'retrait'}.png`,
-      fill(this.t().qr.shareTitle, { ref }),
-    );
+  protected send(): void {
+    void shareOrderQr(this.order(), (ref) => fill(this.t().qr.shareTitle, { ref }));
   }
 
   constructor() {

@@ -1,6 +1,21 @@
-import type { QrMatrix } from '@lfd/b2b-ui/order';
+import type { CustomerOrderView } from '@lfd/contracts';
+import { qrMatrix, type QrMatrix } from '@lfd/b2b-ui/order';
+
+import { AUTH_CONFIG } from '../../../auth/auth.config';
 
 import { downloadBlob } from '../download-blob';
+
+/**
+ * Ce que le code encode : l'adresse du scan, côté STAFF. `null` sans jeton,
+ * ou sans origine admin configurée — aucun code à montrer ni à envoyer.
+ */
+export function handoverUrlOf(order: CustomerOrderView | null): string | null {
+  const token = order?.handoverToken ?? null;
+  if (token === null || AUTH_CONFIG.adminBaseUrl === '') {
+    return null;
+  }
+  return `${AUTH_CONFIG.adminBaseUrl}/retrait/${encodeURIComponent(token)}`;
+}
 
 /** Pixels par module : assez pour qu'un écran photographié se scanne encore. */
 const MODULE_PX = 12;
@@ -48,4 +63,17 @@ export async function shareQr(matrix: QrMatrix, fileName: string, title: string)
     return;
   }
   downloadBlob(fileName, png);
+}
+
+/** Envoie le code d'une commande lue : rien sans code. */
+export async function shareOrderQr(
+  order: CustomerOrderView | null,
+  title: (ref: string) => string,
+): Promise<void> {
+  const url = handoverUrlOf(order);
+  if (url === null || order === null) {
+    return;
+  }
+  const ref = order.orderNumber;
+  await shareQr(qrMatrix(url), `qr-${ref || 'retrait'}.png`, title(ref));
 }
