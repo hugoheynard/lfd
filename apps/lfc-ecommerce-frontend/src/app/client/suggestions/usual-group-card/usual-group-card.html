@@ -1,0 +1,36 @@
+<div class="card" [class.is-open]="open()">
+  <div class="mosaic" [attr.data-tiles]="tiles().length" aria-hidden="true">
+    @for (tile of tiles(); track tile.sku) {
+      <img class="tile" [src]="tile.src" alt="" loading="lazy" />
+    }
+  </div>
+  <div class="head">
+    <div class="said">
+      <h3 class="title">{{ group().title }}</h3>
+      <span class="count">{{ count() }}</span>
+    </div>
+    <button
+      class="toggle"
+      type="button"
+      [attr.aria-expanded]="open()"
+      [attr.aria-label]="toggleLabel()"
+      (click)="open.set(!open())"
+    >
+      <fold-icon name="plus" />
+    </button>
+  </div>
+  <div class="drawer">
+    <div class="drawer-inner">
+      <div class="list" [attr.inert]="open() ? null : ''">
+        @for (view of group().views; track view.sku) {
+          <app-staff-suggestion-card
+            [view]="view"
+            [fallbackTitle]="group().title"
+            (opened)="picks.opened($event)"
+            (taken)="picks.taken($event)"
+          />
+        }
+      </div>
+    </div>
+  </div>
+</div>

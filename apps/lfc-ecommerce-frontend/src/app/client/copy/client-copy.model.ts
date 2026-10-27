@@ -550,6 +550,14 @@ export interface ClientCopy {
     };
     /** La raison d'un habituel sans jour qui revient (R1) — `{count}` vaut 3 au moins. */
     readonly usualOrdered: string;
+    /** Le titre de la carte qui regroupe les habituels sans jour (Hugo, 2026-10-27). */
+    readonly usualOften: string;
+    /** Le compte d'une carte d'habituels — `{count}`. */
+    readonly usualGroupCount: string;
+    /** Le nom du « + » qui déplie une carte d'habituels — `{title}`. */
+    readonly usualExpand: string;
+    /** Le même bouton, carte dépliée — `{title}`. */
+    readonly usualCollapse: string;
     /** Le bref retour après un ajout au panier, quand il propose une suggestion (RS7). */
     readonly addedToCart: string;
     /**

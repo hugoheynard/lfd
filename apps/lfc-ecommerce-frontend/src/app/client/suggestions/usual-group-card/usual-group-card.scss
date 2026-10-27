@@ -1,0 +1,133 @@
+:host {
+  display: block;
+}
+
+/* La carte galerie des incontournables : blanche, la photo en tête. */
+.card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  border-radius: var(--fold-radius-md);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
+  transition: transform 220ms ease;
+
+  &:hover {
+    transform: translateY(-2px);
+  }
+}
+
+/* Deux sur deux ; une, deux ou trois photos remplissent la même hauteur. */
+.mosaic {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  grid-auto-rows: 1fr;
+  gap: 2px;
+  aspect-ratio: 4 / 3;
+  background: var(--lfc-ink-50);
+
+  &[data-tiles='1'] {
+    grid-template-columns: 1fr;
+  }
+
+  &[data-tiles='3'] .tile:first-child {
+    grid-row: span 2;
+  }
+}
+
+.tile {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  object-fit: cover;
+  transition: transform 400ms ease;
+}
+
+.card:hover .tile {
+  transform: scale(1.04);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+}
+
+.said {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-lg);
+  font-weight: var(--lfc-weight-black);
+  text-transform: uppercase;
+}
+
+.count {
+  font-size: var(--fold-text-sm);
+}
+
+.toggle {
+  flex: none;
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
+  cursor: pointer;
+  transition: transform 260ms ease;
+
+  fold-icon {
+    width: 20px;
+    height: 20px;
+  }
+}
+
+/* Dépliée, le « + » tourne en « × ». */
+.is-open .toggle {
+  transform: rotate(45deg);
+}
+
+/* Le tiroir s'ouvre en hauteur (grille 0fr → 1fr), sans hauteur en dur. */
+.drawer {
+  display: grid;
+  grid-template-rows: 0fr;
+  transition: grid-template-rows 320ms ease;
+}
+
+.is-open .drawer {
+  grid-template-rows: 1fr;
+}
+
+.drawer-inner {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.list {
+  display: grid;
+  gap: var(--fold-space-xs);
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 0 var(--fold-space-lg) var(--fold-space-lg);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card,
+  .tile,
+  .toggle,
+  .drawer {
+    transition: none;
+  }
+}

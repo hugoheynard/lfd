@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1682 textes
+## Sommaire — 1686 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 67 |
+| [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 25 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1682** |
+| **Total** | | **1686** |
 
 ## Le parcours de commande
 
@@ -327,7 +327,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 67 textes.
+Source : `fr.ts · en.ts · it.ts` · 71 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -386,6 +386,10 @@ Source : `fr.ts · en.ts · it.ts` · 67 textes.
 | `shop.usualEvery.sat` | Tous les samedis | Every Saturday | Ogni sabato |  |
 | `shop.usualEvery.sun` | Tous les dimanches | Every Sunday | Ogni domenica |  |
 | `shop.usualOrdered` | Commandé {count} fois | Ordered {count} times | Ordinato {count} volte | `{count}` |
+| `shop.usualOften` | Souvent commandés | Often ordered | Ordinati spesso |  |
+| `shop.usualGroupCount` | {count} articles | {count} items | {count} articoli | `{count}` |
+| `shop.usualExpand` | Voir les articles de « {title} » | Show the items in “{title}” | Mostra gli articoli di «{title}» | `{title}` |
+| `shop.usualCollapse` | Replier « {title} » | Collapse “{title}” | Chiudi «{title}» | `{title}` |
 | `shop.addedToCart` | Ajouté ! | Added! | Aggiunto! |  |
 | `shop.operationOpensOn` | Ouvre le {date} | Opens {date} | Apre il {date} | `{date}` |
 | `shop.operationNotOpen` | Pas encore ouvert | Not open yet | Non ancora aperto |  |

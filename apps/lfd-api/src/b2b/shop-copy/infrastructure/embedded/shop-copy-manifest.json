@@ -1835,6 +1835,34 @@
           "variables": ["count"]
         },
         {
+          "key": "shop.usualOften",
+          "fr": "Souvent commandés",
+          "en": "Often ordered",
+          "it": "Ordinati spesso",
+          "variables": []
+        },
+        {
+          "key": "shop.usualGroupCount",
+          "fr": "{count} articles",
+          "en": "{count} items",
+          "it": "{count} articoli",
+          "variables": ["count"]
+        },
+        {
+          "key": "shop.usualExpand",
+          "fr": "Voir les articles de « {title} »",
+          "en": "Show the items in “{title}”",
+          "it": "Mostra gli articoli di «{title}»",
+          "variables": ["title"]
+        },
+        {
+          "key": "shop.usualCollapse",
+          "fr": "Replier « {title} »",
+          "en": "Collapse “{title}”",
+          "it": "Chiudi «{title}»",
+          "variables": ["title"]
+        },
+        {
           "key": "shop.addedToCart",
           "fr": "Ajouté !",
           "en": "Added!",

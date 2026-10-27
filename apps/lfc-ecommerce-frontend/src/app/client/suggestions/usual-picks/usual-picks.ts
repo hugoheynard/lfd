@@ -1,7 +1,8 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import type { UsualSuggestionView } from '@lfd/contracts';
 
 import { ClientCopyService } from '../../copy/client-copy.service';
-import { StaffSuggestionCard } from '../staff-suggestion-card/staff-suggestion-card';
+import { UsualGroupCard, type UsualGroup } from '../usual-group-card/usual-group-card';
 import { UsualPicks } from '../usual-picks.service';
 
 /**
@@ -14,7 +15,7 @@ import { UsualPicks } from '../usual-picks.service';
 @Component({
   selector: 'app-usual-picks',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [StaffSuggestionCard],
+  imports: [UsualGroupCard],
   providers: [UsualPicks],
   templateUrl: './usual-picks.html',
   styleUrl: './usual-picks.scss',
@@ -22,4 +23,25 @@ import { UsualPicks } from '../usual-picks.service';
 export class UsualPicksRow {
   protected readonly picks = inject(UsualPicks);
   protected readonly t = inject(ClientCopyService).t;
+
+  /**
+   * Une carte par rythme (Hugo, 2026-10-27) : un jour de la semaine réunit
+   * ses articles, les habituels sans jour se réunissent en « Souvent
+   * commandés ». L'ordre du serveur est gardé, dans et entre les cartes.
+   */
+  protected readonly groups = computed<readonly UsualGroup[]>(() => {
+    const shop = this.t().shop;
+    const byKey = new Map<string, { title: string; views: UsualSuggestionView[] }>();
+    for (const view of this.picks.current()) {
+      const reason = view.reason;
+      const [key, title] =
+        reason.kind === 'weekly_rhythm'
+          ? [`day:${reason.weekday}`, shop.usualEvery[reason.weekday]]
+          : ['often', shop.usualOften];
+      const group = byKey.get(key) ?? { title, views: [] };
+      group.views.push(view);
+      byKey.set(key, group);
+    }
+    return [...byKey].map(([key, group]) => ({ key, ...group }));
+  });
 }
