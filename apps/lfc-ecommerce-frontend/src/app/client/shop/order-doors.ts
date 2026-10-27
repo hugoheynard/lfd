@@ -254,7 +254,12 @@ export class OrderDoors {
    * l'enregistrer à moitié ferait croire la question répondue.
    */
   async pickup(currentId: string | null = null): Promise<boolean> {
-    return this.track({ mode: 'pickup' }, () => this.askPickup(currentId));
+    // Le jour déjà retenu suit le changement de maison (Hugo, 2026-10-27 :
+    // « quand je fais changer de maison j'ai le panel heure ancien ») : sans
+    // lui, l'heure s'ouvrait sur les onglets de la semaine.
+    const date = this.order.choice()?.date;
+    const start: OrderDraft = date === undefined ? { mode: 'pickup' } : { mode: 'pickup', date };
+    return this.track(start, () => this.askPickup(currentId, date ?? null));
   }
 
   /** {@link pickup}, sans écrire la réponse. */
@@ -267,13 +272,20 @@ export class OrderDoors {
       return null;
     }
     this.note({ mode: 'pickup' });
+    // Sans jour, on le demande D'ABORD (Hugo, 2026-10-27) : le dialogue de
+    // l'heure ouvert sans jour montrait encore les onglets de la semaine — le
+    // vieux panneau qui mêlait jour et heure.
+    const on = day ?? (await this.askDay());
+    if (on === null) {
+      return null;
+    }
     // UNE seule maison servie : on ne demande pas de la choisir (Hugo,
     // 2026-10-27 : « le parcours doit faire date, heure ») — elle est prise.
     const served = this.points.pickups();
     const point =
       served.length === 1
         ? served[0]
-        : await PublicHousePickerDialog.open(this.panels, { currentId, day }).closed;
+        : await PublicHousePickerDialog.open(this.panels, { currentId, day: on }).closed;
     if (point === undefined) {
       return null;
     }
@@ -283,7 +295,7 @@ export class OrderDoors {
       point.label || point.ville,
       `${point.ligne1}, ${point.ville}`,
       this.order.choice(),
-      day,
+      on,
     );
   }
 

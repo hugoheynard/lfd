@@ -57,25 +57,3 @@
     }
   </ul>
 </fold-panel-body>
-
-<!-- 🔴 UN PIED, COMME LE VOLET SUIVANT (Hugo, 2026-09-20). Choisir une maison
-     ne referme plus le dialogue : la rangée SÉLECTIONNE, le pied confirme. On
-     peut donc comparer deux maisons avant de trancher — la première touchée
-     n'est plus la bonne d'office — et les deux volets du parcours répondent
-     enfin au même geste.
-     L'action NOMME la suite : on sait ce qu'on ouvre avant de l'ouvrir. -->
-<fold-panel-footer>
-  <button
-    class="cta"
-    foldButton
-    emphasis="solid"
-    intent="primary"
-    size="lg"
-    type="button"
-    [disabled]="chosen() === null"
-    (click)="confirm()"
-  >
-    {{ ctaLabel() }}
-    <span aria-hidden="true">→</span>
-  </button>
-</fold-panel-footer>

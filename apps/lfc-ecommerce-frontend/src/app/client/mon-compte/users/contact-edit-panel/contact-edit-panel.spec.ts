@@ -321,8 +321,8 @@ describe('ContactEditPanel', () => {
       expect(el().querySelector('button.save')).toBeNull();
       expect(el().querySelector('fold-danger-zone')).toBeNull();
 
-      button(FR.dialog.close).click();
-      expect(wire.closes).toEqual([undefined]);
+      // Plus de pied « Fermer » : la croix de l'en-tête ferme (2026-10-27).
+      expect(el().querySelector('fold-panel-footer')).toBeNull();
       expect(wire.contacts).toEqual([]);
     });
   });

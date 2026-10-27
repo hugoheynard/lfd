@@ -1,12 +1,10 @@
-import { ChangeDetectionStrategy, Component, computed, inject, input, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
 import type { PickupAddressView } from '@lfd/contracts';
 // Par le sous-chemin sans zod : la même règle que la caisse (budget `cloudflare`).
 import { preselectedPickupId } from '@lfd/contracts/shop-values';
 import {
-  FoldButtonComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -90,13 +88,7 @@ interface House {
 @Component({
   selector: 'app-public-house-picker-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    RovingRadioGroup,
-    FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
-    FoldPanelHeaderComponent,
-  ],
+  imports: [RovingRadioGroup, FoldPanelBodyComponent, FoldPanelHeaderComponent],
   templateUrl: './public-house-picker-dialog.html',
   styleUrl: './public-house-picker-dialog.scss',
 })
@@ -153,7 +145,7 @@ export class PublicHousePickerDialog {
     const audience = this.audience();
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
-    const selectedId = this.picked() ?? currentId ?? this.preselectedId();
+    const selectedId = currentId ?? this.preselectedId();
     const day = this.data().day ?? null;
     return this.points
       .pickups()
@@ -173,32 +165,13 @@ export class PublicHousePickerDialog {
   });
 
   /**
-   * La maison retenue — celle d'où l'on vient, sinon la présélection, tant
-   * qu'on n'a rien touché.
-   *
-   * 🔴 SÉLECTIONNER N'EST PLUS CONFIRMER (Hugo, 2026-09-20 : « on met un footer
-   * avec un bouton choisir mon heure »). Le clic fermait tout et enchaînait sur
-   * l'heure : on ne pouvait pas comparer deux maisons — la première touchée
-   * était la bonne — et le geste n'avait pas de retour en arrière, alors que le
-   * volet suivant en a un.
+   * 🔴 TOUCHER UNE MAISON LA CHOISIT (Hugo, 2026-10-27 : « le click sur un
+   * point devrait suffire »). Le pied « Choisir mon heure » du 2026-09-20 est
+   * retiré : il demandait un second geste pour dire ce que le premier disait
+   * déjà. On compare toujours en lisant la liste ; fermer ne retient rien.
    */
-  protected readonly picked = signal<string | null>(null);
-
-  protected readonly chosen = computed(() => this.houses().find((house) => house.selected) ?? null);
-
-  protected readonly ctaLabel = computed(() =>
-    this.chosen() === null ? this.c().ctaIdle : this.c().cta,
-  );
-
   protected pick(house: House): void {
-    this.picked.set(house.point.id);
-  }
-
-  protected confirm(): void {
-    const house = this.chosen();
-    if (house !== null) {
-      this.ref.close(house.point);
-    }
+    this.ref.close(house.point);
   }
 }
 

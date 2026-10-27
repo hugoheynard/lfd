@@ -178,21 +178,3 @@ fold-panel-body {
   background: var(--lfc-butter-300);
   color: var(--lfc-butter-900);
 }
-
-/* ── Le pied ─────────────────────────────────────────────────────────────── */
-
-/* Pogonia, comme au volet suivant : les boutons du dépôt portent la face de
-   display par défaut, et elle se referme sous 12 px. */
-fold-panel-footer {
-  --fold-button-font: var(--fold-font-sans);
-  --fold-space-md: var(--lfc-dialog-pad-y);
-  --fold-space-lg: var(--lfc-dialog-gutter);
-}
-
-/* L'action s'éteint tant qu'aucune maison n'est retenue — en BEIGE et non par
-   une opacité, qui aurait délavé le texte : c'est lui qui dit ce qui manque. */
-.cta:disabled {
-  background: var(--lfc-paper-300);
-  color: var(--fold-color-text-muted);
-  cursor: not-allowed;
-}

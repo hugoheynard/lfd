@@ -30,22 +30,6 @@ export interface HousePickerCopy {
    */
   readonly readyFrom: string;
 
-  /**
-   * LE PIED. Choisir une maison ne referme plus le dialogue : la rangée
-   * SÉLECTIONNE, le pied confirme.
-   *
-   * 🔴 Le clic fermait tout et enchaînait sur l'heure. Deux défauts : on ne
-   * pouvait pas comparer deux maisons — la première touchée était la bonne — et
-   * le geste n'avait pas de retour en arrière, alors que le volet suivant, lui,
-   * en a un. Les deux volets répondent maintenant au même geste.
-   *
-   * `cta` NOMME la suite plutôt que de dire « Continuer » : on sait ce qu'on
-   * ouvre avant de l'ouvrir.
-   */
-  readonly cta: string;
-  /** Tant qu'aucune maison n'est retenue — le bouton demande ce qui manque. */
-  readonly ctaIdle: string;
-
   readonly close: string;
 }
 
@@ -55,8 +39,6 @@ export const HOUSE_PICKER_FR: HousePickerCopy = {
   lead: 'Changer de maison change les heures proposées — vous les choisirez juste après.',
   current: 'Votre choix',
   readyFrom: 'Prêt dès {hour}',
-  cta: 'Choisir mon heure',
-  ctaIdle: 'Choisissez un point de retrait',
   close: 'Fermer',
 };
 
@@ -66,8 +48,6 @@ export const HOUSE_PICKER_EN: HousePickerCopy = {
   lead: 'Changing bakery changes the times on offer — you will pick one right after.',
   current: 'Your choice',
   readyFrom: 'Ready from {hour}',
-  cta: 'Choose my time',
-  ctaIdle: 'Pick a pickup point',
   close: 'Close',
 };
 
@@ -77,8 +57,6 @@ export const HOUSE_PICKER_IT: HousePickerCopy = {
   lead: 'Cambiare bottega cambia gli orari proposti — li sceglierete subito dopo.',
   current: 'La vostra scelta',
   readyFrom: 'Pronto dalle {hour}',
-  cta: 'Scegliere il mio orario',
-  ctaIdle: 'Scegliete un punto di ritiro',
   close: 'Chiudi',
 };
 

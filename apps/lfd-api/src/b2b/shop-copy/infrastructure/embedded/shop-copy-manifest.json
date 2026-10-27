@@ -2539,20 +2539,6 @@
           "variables": ["hour"]
         },
         {
-          "key": "housePicker.cta",
-          "fr": "Choisir mon heure",
-          "en": "Choose my time",
-          "it": "Scegliere il mio orario",
-          "variables": []
-        },
-        {
-          "key": "housePicker.ctaIdle",
-          "fr": "Choisissez un point de retrait",
-          "en": "Pick a pickup point",
-          "it": "Scegliete un punto di ritiro",
-          "variables": []
-        },
-        {
           "key": "housePicker.close",
           "fr": "Fermer",
           "en": "Close",

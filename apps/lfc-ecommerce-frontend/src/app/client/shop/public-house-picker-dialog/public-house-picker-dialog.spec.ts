@@ -120,12 +120,10 @@ describe('PublicHousePickerDialog', () => {
         .filter((house) => house.getAttribute('aria-checked') === 'true')
         .map((house) => house.querySelector('.name')?.textContent?.trim() ?? '');
 
-    it('coche la seule maison servie, et ouvre l’action', () => {
+    it('coche la seule maison servie', () => {
       const { fixture } = boot({ points: [VILLAGE] });
 
       expect(checked(fixture)).toEqual(['Le Village']);
-      const cta = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta');
-      expect(cta?.disabled).toBe(false);
     });
 
     it('ne coche rien à plusieurs maisons, sans préférence', () => {
@@ -167,50 +165,17 @@ describe('PublicHousePickerDialog', () => {
   });
 
   /**
-   * 🔴 SÉLECTIONNER N'EST PAS CONFIRMER (2026-09-20). Toucher une rangée
-   * fermait tout et enchaînait sur l'heure : on ne pouvait pas comparer deux
-   * maisons — la première touchée était la bonne — et le geste n'avait pas de
-   * retour en arrière, alors que le volet suivant en a un.
+   * 🔴 TOUCHER UNE MAISON LA CHOISIT (Hugo, 2026-10-27 : « le click sur un
+   * point devrait suffire »). Le dialogue rend le POINT et ne décide pas de la
+   * suite : c'est l'appelant qui enchaîne sur l'heure. Plus de pied.
    */
-  it('ne ferme RIEN quand on touche une rangée', () => {
+  it('rend le point touché, sans pied à confirmer', () => {
     const { fixture, closed } = boot();
 
     houses(fixture)[1]?.click();
-    fixture.detectChanges();
-
-    expect(closed.results).toEqual([]);
-    expect(houses(fixture)[1]?.getAttribute('aria-checked')).toBe('true');
-    expect(houses(fixture)[0]?.getAttribute('aria-checked')).toBe('false');
-  });
-
-  /**
-   * 🔴 Le dialogue rend le POINT, il ne décide pas de la suite : changer de
-   * maison périme l'heure, et c'est l'appelant qui enchaîne sur le sélecteur.
-   */
-  it('rend le point retenu quand le pied confirme', () => {
-    const { fixture, closed } = boot();
-
-    houses(fixture)[1]?.click();
-    fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta')?.click();
 
     expect(closed.results).toEqual([VILLAGE]);
-  });
-
-  /**
-   * L'action est FERMÉE tant qu'aucune maison n'est retenue — le refus précède
-   * l'effort, comme partout ailleurs dans ce parcours.
-   */
-  it('garde l’action fermée tant que rien n’est retenu', () => {
-    const { fixture } = boot();
-    const cta = (fixture.nativeElement as HTMLElement).querySelector<HTMLButtonElement>('.cta');
-
-    expect(cta?.disabled).toBe(true);
-
-    houses(fixture)[0]?.click();
-    fixture.detectChanges();
-
-    expect(cta?.disabled).toBe(false);
+    expect((fixture.nativeElement as HTMLElement).querySelector('fold-panel-footer')).toBeNull();
   });
 
   /**

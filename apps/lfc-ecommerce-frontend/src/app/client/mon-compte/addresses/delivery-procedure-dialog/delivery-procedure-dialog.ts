@@ -4,11 +4,9 @@ import type { CompanyView, DeliveryAddressView } from '@lfd/contracts';
 import {
   FOLD_INLINE_CONFIRM_DEFAULT_LABELS,
   FOLD_INLINE_CONFIRM_LABELS,
-  FoldButtonComponent,
   type FoldInlineConfirmLabels,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -65,13 +63,7 @@ function removeConfirmLabels(): FoldInlineConfirmLabels {
 @Component({
   selector: 'app-delivery-procedure-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    DeliveryProcedureEditor,
-    FoldButtonComponent,
-    FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
-    FoldPanelHeaderComponent,
-  ],
+  imports: [DeliveryProcedureEditor, FoldPanelBodyComponent, FoldPanelHeaderComponent],
   providers: [{ provide: FOLD_INLINE_CONFIRM_LABELS, useFactory: removeConfirmLabels }],
   templateUrl: './delivery-procedure-dialog.html',
 })
@@ -105,7 +97,6 @@ export class DeliveryProcedureDialog {
   /** Hors de `ClientCopy` : voir `delivery-procedure.copy.ts`. */
   protected readonly procedure = screenCopy('deliveryProcedure', deliveryProcedureCopy);
   private readonly addresses = inject(ClientAddresses);
-  private readonly ref = inject(FoldPanelRef);
 
   protected readonly subtitle = computed(() => {
     const address = this.data().address;
@@ -115,9 +106,5 @@ export class DeliveryProcedureDialog {
   /** Le nombre d'étapes a changé : la ligne de l'adresse le relit dans le carnet. */
   protected stepCountChanged(): void {
     void this.addresses.refresh(this.data().companyId);
-  }
-
-  protected close(): void {
-    this.ref.close();
   }
 }

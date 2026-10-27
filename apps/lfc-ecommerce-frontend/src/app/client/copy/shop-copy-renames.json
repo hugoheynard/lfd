@@ -52,6 +52,8 @@
     "commandTerms.latePickup": null,
     "commandTerms.lateDeliveryAt": null,
     "commandTerms.latePickupAt": null,
-    "accueilPublic.doors.pickupSingleIntro": null
+    "accueilPublic.doors.pickupSingleIntro": null,
+    "housePicker.cta": null,
+    "housePicker.ctaIdle": null
   }
 }

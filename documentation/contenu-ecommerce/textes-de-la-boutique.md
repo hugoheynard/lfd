@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1708 textes
+## Sommaire — 1706 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -23,7 +23,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 37 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 17 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
-| [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
+| [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 6 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1708** |
+| **Total** | | **1706** |
 
 ## Le parcours de commande
 
@@ -512,7 +512,7 @@ Source : `screens/service-change.copy.ts` · 9 textes.
 
 ### Choix du lieu — la maison — `housePicker`
 
-Source : `screens/house-picker.copy.ts` · 8 textes.
+Source : `screens/house-picker.copy.ts` · 6 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -521,8 +521,6 @@ Source : `screens/house-picker.copy.ts` · 8 textes.
 | `housePicker.lead` | Changer de maison change les heures proposées — vous les choisirez juste après. | Changing bakery changes the times on offer — you will pick one right after. | Cambiare bottega cambia gli orari proposti — li sceglierete subito dopo. |  |
 | `housePicker.current` | Votre choix | Your choice | La vostra scelta |  |
 | `housePicker.readyFrom` | Prêt dès {hour} | Ready from {hour} | Pronto dalle {hour} | `{hour}` |
-| `housePicker.cta` | Choisir mon heure | Choose my time | Scegliere il mio orario |  |
-| `housePicker.ctaIdle` | Choisissez un point de retrait | Pick a pickup point | Scegliete un punto di ritiro |  |
 | `housePicker.close` | Fermer | Close | Chiudi |  |
 
 <a id="espace-dialog"></a>
