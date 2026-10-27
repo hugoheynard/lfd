@@ -13,6 +13,7 @@ import {
   formatOrderInstant,
   fulfillmentLabel,
 } from './order-format';
+import { ticketSections } from './order-sheet-ticket-text';
 
 /**
  * **Le bon de commande en texte brut.** Pur : rend une chaîne, ne touche ni au
@@ -178,20 +179,31 @@ function footerLines(sheet: OrderSheet): readonly string[] {
   ];
 }
 
-/** Les articles, rendus selon ce que la feuille porte vraiment. */
-function articleLines(sheet: OrderSheet): readonly string[] {
-  return [
-    '',
-    'ARTICLES',
-    ...(sheet.audience === 'atelier' ? sheet.lines.map(skuLine) : sheet.lines.map(pricedLine)),
-    '',
-    `Total articles : ${totalUnits(sheet)}`,
-  ];
+/** Ce que la feuille imprime de ses articles et de son décompte. */
+interface Body {
+  readonly articles: readonly string[];
+  readonly money: readonly string[];
 }
 
-/** Le décompte n'existe que sur les feuilles qui portent des montants. */
-function pricedSection(sheet: OrderSheet): readonly string[] {
-  return sheet.audience === 'atelier' ? [] : moneyLines(sheet.money);
+/**
+ * Les articles et le décompte, selon ce que la feuille porte vraiment : rien
+ * de chiffré pour l'atelier, le ticket pour une commande composée en TTC
+ * (`order-sheet-ticket-text.ts`), le décompte HT sinon — inchangé.
+ */
+function bodyOf(sheet: OrderSheet): Body {
+  if (sheet.audience === 'atelier') {
+    return { articles: sheet.lines.map(skuLine), money: [] };
+  }
+  return (
+    ticketSections(sheet.lines, sheet.money) ?? {
+      articles: sheet.lines.map(pricedLine),
+      money: moneyLines(sheet.money),
+    }
+  );
+}
+
+function articleLines(sheet: OrderSheet, body: Body): readonly string[] {
+  return ['', 'ARTICLES', ...body.articles, '', `Total articles : ${totalUnits(sheet)}`];
 }
 
 /**
@@ -199,10 +211,11 @@ function pricedSection(sheet: OrderSheet): readonly string[] {
  * ce qu'il montre, ni à qui.
  */
 export function renderOrderSheetText(sheet: OrderSheet): string {
+  const body = bodyOf(sheet);
   return [
     ...headerLines(sheet),
-    ...articleLines(sheet),
-    ...pricedSection(sheet),
+    ...articleLines(sheet, body),
+    ...body.money,
     ...(sheet.note === '' ? [] : ['', `Note : ${sheet.note}`]),
     ...footerLines(sheet),
   ].join('\n');
