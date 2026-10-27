@@ -514,14 +514,17 @@ describe("ce que la composition d'une fiche mentionne", () => {
 });
 
 /**
- * **Le jugement unique sur la table** — la composition contredit la
- * déclaration : bloquant depuis le 2026-10-27, et la fiche archivée sort.
+ * **Le jugement unique sur la table.** La contradiction composition ↔
+ * déclaration était bloquante le matin du 2026-10-27 ; elle est devenue une
+ * correction de l'état servi, sans constat
+ * (`documentation/pim/plan-allergenes-jamais-bloquants.md`). Reste le constat
+ * de précaution d'une déclinaison sans déclaration, et la fiche archivée sort.
  */
 describe("les constats de conformité du catalogue", () => {
   const WARNINGS = `${PRODUCTS}/compliance-warnings`;
 
   // Régression : le pain sans blé — « aucun allergène » déclaré, la farine citée.
-  it("signale en bloquant « aucun allergène » contredit, et oublie l'archivée", async () => {
+  it("ne signale plus « aucun allergène » contredit par la composition", async () => {
     const farine = await anIngredient("farine");
     await staff()
       .put(`${INGREDIENTS}/${farine}/allergens`)
@@ -541,13 +544,22 @@ describe("les constats de conformité du catalogue", () => {
     const views = jsonBody<{ productId: string; warnings: { code: string }[] }[]>(
       await staff().get(WARNINGS).expect(200),
     );
+    const codes = views
+      .find((view) => view.productId === productId)
+      ?.warnings.map((warning) => warning.code);
+    expect(codes ?? []).not.toContain("allergens_contradict_none");
+    expect(codes ?? []).not.toContain("allergens_precautionary");
+  });
+
+  it("signale une déclinaison sans déclaration par précaution, et oublie l'archivée", async () => {
+    const productId = await aProduct();
+    const variantId = await defaultVariant(productId);
+
+    const views = jsonBody<{ productId: string; warnings: { code: string }[] }[]>(
+      await staff().get(WARNINGS).expect(200),
+    );
     expect(views.find((view) => view.productId === productId)?.warnings).toContainEqual(
-      expect.objectContaining({
-        code: "allergens_contradict_none",
-        severity: "blocking",
-        variantId,
-        allergenCodes: ["UW"],
-      }),
+      expect.objectContaining({ code: "allergens_precautionary", severity: "warning", variantId }),
     );
 
     await staff().put(`${PRODUCTS}/${productId}/archive`).send({}).expect(200);

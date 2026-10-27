@@ -6,7 +6,7 @@ import { afterEach, describe, expect, it, vi } from 'vitest';
 import type { ProductComplianceFinding, ProductComplianceWarningView } from '@lfd/pim-contracts';
 
 import { CatalogueApi, type Category, type Product } from '../catalogue-api';
-import { ReferenceApi } from '../reference-api';
+import { NotifyService } from '../../../notify.service';
 import type { ProductStatus } from '../../data/models';
 import { ProductsPage } from './products-page';
 
@@ -33,11 +33,13 @@ async function render(
   publishProduct: (id: string) => Promise<void> = () => Promise.resolve(),
   products: readonly Product[] = PRODUCTS,
   compliance: () => Promise<readonly ProductComplianceWarningView[]> = () => Promise.resolve([]),
+  notices: string[] = [],
 ) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
     providers: [
       provideRouter([]),
+      { provide: NotifyService, useValue: { info: (message: string) => notices.push(message) } },
       {
         provide: CatalogueApi,
         useValue: {
@@ -46,16 +48,6 @@ async function render(
           listVatRates: () => Promise.resolve([]),
           publishProduct,
           listComplianceWarnings: compliance,
-        },
-      },
-      {
-        provide: ReferenceApi,
-        useValue: {
-          allergens: () =>
-            Promise.resolve({
-              scope: 'world',
-              entries: [{ code: 'AW', label: 'Gluten', incoCategory: 'gluten', incoLabel: null }],
-            }),
         },
       },
       {
@@ -115,6 +107,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       'Non conformes en vente',
       'Bloquants',
       'À vérifier',
+      'Sans information précise',
       'Archivées',
     ]);
   });
@@ -262,11 +255,11 @@ describe('ProductsPage — « Activer la sélection »', () => {
   /** Les constats viennent du serveur (`compliance-warnings`, 2026-10-27) : lus, jamais jugés ici. */
   describe('constats de conformité', () => {
     const blocking = (sku: string): ProductComplianceFinding => ({
-      code: 'allergens_contradict_none',
+      code: 'variant_incomplete',
       severity: 'blocking',
       variantId: 'x',
       sku,
-      allergenCodes: ['AW'],
+      missing: ['pro_price'],
     });
     // p1 est PUBLIÉE, p2 est un brouillon : le même bloquant ne se dit pas pareil.
     const FINDINGS: readonly ProductComplianceWarningView[] = [
@@ -282,6 +275,7 @@ describe('ProductsPage — « Activer la sélection »', () => {
             sku: 'V1-1',
             missing: ['price'],
           },
+          { code: 'allergens_precautionary', severity: 'warning', variantId: 'y', sku: 'V1-1' },
         ],
       },
     ];
@@ -317,6 +311,51 @@ describe('ProductsPage — « Activer la sélection »', () => {
       expect(rows(element)).toEqual(['P2']);
       await chip('data-products-status', 'À vérifier');
       expect(rows(element)).toEqual(['V1']);
+      await chip('data-products-status', 'Sans information précise');
+      expect(rows(element)).toEqual(['V1']);
+    });
+
+    /** `plan-allergenes-jamais-bloquants.md` §2 : un toast d'information, qui ne demande rien. */
+    it('annonce d’un toast la publication d’une fiche sans déclaration d’allergènes', async () => {
+      const products = [product('p2', 'pain', 'draft')];
+      const notices: string[] = [];
+      const precautionary: readonly ProductComplianceWarningView[] = [
+        {
+          productId: 'p2',
+          warnings: [
+            { code: 'allergens_precautionary', severity: 'warning', variantId: 'z', sku: 'P2-1' },
+          ],
+        },
+      ];
+      const publish = (): Promise<void> => {
+        products[0] = product('p2', 'pain', 'published');
+        return Promise.resolve();
+      };
+      const { fixture } = await render(
+        {},
+        publish,
+        products,
+        () => Promise.resolve(precautionary),
+        notices,
+      );
+
+      await fixture.componentInstance['publish'](product('p2', 'pain', 'draft'));
+
+      expect(notices).toEqual([expect.stringContaining('sans information précise')]);
+    });
+
+    it('ne dit rien à la publication d’une fiche déclarée', async () => {
+      const products = [product('p2', 'pain', 'draft')];
+      const notices: string[] = [];
+      const publish = (): Promise<void> => {
+        products[0] = product('p2', 'pain', 'published');
+        return Promise.resolve();
+      };
+      const { fixture } = await render({}, publish, products, undefined, notices);
+
+      await fixture.componentInstance['publish'](product('p2', 'pain', 'draft'));
+
+      expect(notices).toEqual([]);
     });
 
     it('garde la liste quand les constats ne se lisent pas, et le dit', async () => {

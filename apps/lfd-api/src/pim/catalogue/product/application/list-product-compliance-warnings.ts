@@ -21,7 +21,7 @@ export class ListProductComplianceWarningsQuery {}
  * pour toute la liste, jamais par fiche — comme `ListProductsHandler`.
  *
  * 🔴 Une fiche absente n'est PAS certifiée conforme (D5) : la composition est
- * éditoriale, seule une contradiction positive se signale.
+ * éditoriale ; seule l'absence de déclaration (précaution) se signale.
  */
 @QueryHandler(ListProductComplianceWarningsQuery)
 export class ListProductComplianceWarningsHandler implements IQueryHandler<
@@ -66,5 +66,5 @@ function toView(finding: ComplianceFinding): ProductComplianceFinding {
   if (finding.code === "variant_incomplete") {
     return { ...finding, missing: [...finding.missing] };
   }
-  return { ...finding, allergenCodes: [...finding.allergenCodes] };
+  return { ...finding };
 }

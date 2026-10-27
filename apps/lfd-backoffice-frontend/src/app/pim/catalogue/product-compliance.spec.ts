@@ -7,17 +7,22 @@ import {
   findingText,
   findingsText,
   gapLabel,
+  isPrecautionary,
   worstSeverity,
 } from './product-compliance';
 
-const label = (code: string): string => ({ AW: 'Gluten', ML: 'Lait' })[code] ?? code;
-
-const CONTRADICTION: ProductComplianceFinding = {
-  code: 'allergens_contradict_none',
+const BLOCKING: ProductComplianceFinding = {
+  code: 'variant_incomplete',
   severity: 'blocking',
   variantId: 'v1',
   sku: 'PAIN-1',
-  allergenCodes: ['AW', 'XX'],
+  missing: ['pro_price'],
+};
+const PRECAUTIONARY: ProductComplianceFinding = {
+  code: 'allergens_precautionary',
+  severity: 'warning',
+  variantId: 'v3',
+  sku: 'PAIN-3',
 };
 const INCOMPLETE: ProductComplianceFinding = {
   code: 'variant_incomplete',
@@ -29,7 +34,7 @@ const INCOMPLETE: ProductComplianceFinding = {
 
 describe('product-compliance', () => {
   it('un seul bloquant suffit à bloquer ; sans constat, rien', () => {
-    expect(worstSeverity([INCOMPLETE, CONTRADICTION])).toBe('blocking');
+    expect(worstSeverity([INCOMPLETE, BLOCKING])).toBe('blocking');
     expect(worstSeverity([INCOMPLETE])).toBe('warning');
     expect(worstSeverity([])).toBeNull();
     expect(worstSeverity(undefined)).toBeNull();
@@ -49,40 +54,44 @@ describe('product-compliance', () => {
     expect(gapLabel('vat:takeaway')).toBe('taux de TVA à emporter');
     expect(gapLabel('vat:b2b')).toBe('taux de TVA B2B');
     expect(gapLabel('vat:inconnu')).toBe('taux de TVA « inconnu »');
-    expect(gapLabel('allergen_contradiction')).toBe(
-      'déclaration d’allergènes cohérente avec la composition',
-    );
+    // Plus calculé depuis le 2026-10-27, relu dans des manques d'avant.
+    expect(gapLabel('allergens')).toBe('allergènes');
     expect(gapLabel('autre')).toBe('autre');
   });
 
-  it('dit la contradiction, le SKU, les allergènes et les gestes de sortie', () => {
-    expect(findingText(CONTRADICTION, label)).toBe(
-      "La composition contredit la déclaration d'allergènes (SKU PAIN-1) : Gluten, XX — " +
-        "reprenez-la dans la fiche réglementaire, ou retirez l'ingrédient en cause.",
+  it('dit la précaution et le manque, avec le SKU', () => {
+    expect(findingText(PRECAUTIONARY)).toBe(
+      'Déclinaison PAIN-3 — publiée sans information précise : traces de tous les allergènes ' +
+        'du catalogue — déclarez ses allergènes pour lever ce constat.',
     );
-    expect(findingText(INCOMPLETE, label)).toBe(
+    expect(findingText(INCOMPLETE)).toBe(
       'Déclinaison PAIN-2 — manque : prix, taux de TVA à emporter, taux de TVA « inconnu ».',
     );
   });
 
+  it('la précaution n’est qu’un avertissement, et se repère', () => {
+    expect(worstSeverity([PRECAUTIONARY])).toBe('warning');
+    expect(isPrecautionary([INCOMPLETE, PRECAUTIONARY])).toBe(true);
+    expect(isPrecautionary([INCOMPLETE])).toBe(false);
+    expect(isPrecautionary(undefined)).toBe(false);
+  });
+
   it('range les bloquants d’abord', () => {
-    expect(findingsText([INCOMPLETE, CONTRADICTION], label).startsWith('La composition')).toBe(
-      true,
-    );
+    expect(findingsText([INCOMPLETE, BLOCKING]).startsWith('Déclinaison PAIN-1')).toBe(true);
   });
 
   /** Régression : une fiche publiée bloquante se disait « Bloquant » (2026-10-27). */
   it('une fiche publiée bloquante ne dit pas Bloquant : elle est non conforme en vente', () => {
-    expect(complianceStateOf('published', [CONTRADICTION])).toBe('non_compliant_live');
-    expect(complianceStateOf('draft', [CONTRADICTION])).toBe('blocking');
+    expect(complianceStateOf('published', [BLOCKING])).toBe('non_compliant_live');
+    expect(complianceStateOf('draft', [BLOCKING])).toBe('blocking');
     expect(complianceStateOf('published', [INCOMPLETE])).toBe('warning');
     expect(complianceStateOf('published', undefined)).toBeNull();
   });
 
   it('le détail d’une fiche en vente commence par « En vente — à corriger : »', () => {
-    expect(findingsText([CONTRADICTION], label, 'non_compliant_live')).toMatch(
-      /^En vente — à corriger : La composition contredit/u,
+    expect(findingsText([BLOCKING], 'non_compliant_live')).toMatch(
+      /^En vente — à corriger : Déclinaison PAIN-1/u,
     );
-    expect(findingsText([CONTRADICTION], label, 'blocking')).toMatch(/^La composition/u);
+    expect(findingsText([BLOCKING], 'blocking')).toMatch(/^Déclinaison PAIN-1/u);
   });
 });

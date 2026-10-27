@@ -114,12 +114,17 @@ describe("déclarer les allergènes met l'agrégat à jour", () => {
       proPrice: ProPriceHt.fromMillicents(853_081),
     });
 
-    expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
-      ProductNotActivatableError,
-    );
+    const precautionary = () =>
+      product
+        .complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)
+        .some((finding) => finding.code === "allergens_precautionary");
+    // Depuis le 2026-10-27, une déclinaison muette ne refuse plus : elle se
+    // sert par précaution, et c'est ce constat que la déclaration lève.
+    expect(precautionary()).toBe(true);
 
     product.declareAllergens(variant!.id, { allergens: ["AM"], mayContain: [] });
 
+    expect(precautionary()).toBe(false);
     expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).not.toThrow();
   });
 

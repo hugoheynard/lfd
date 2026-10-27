@@ -2,7 +2,6 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import {
-  ProductAllergenContradictionError,
   ProductNotActivatableError,
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
@@ -165,13 +164,17 @@ describe("ActivateProductHandler — les allergènes", () => {
     expect(products.stored?.status).toBe("published");
   });
 
-  it("refuse des valeurs nutritionnelles sans déclaration d'allergène, en nommant la référence", async () => {
+  /**
+   * Retourné le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`, règle B) :
+   * une déclinaison sans déclaration se publie par précaution, avec un constat.
+   */
+  it("active une déclinaison sans déclaration d'allergènes, par précaution", async () => {
     const products = withVariant({ allergenSheet: null, nutrition: ENERGY_ONLY });
 
-    await expect(activating(products)).rejects.toBeInstanceOf(ProductNotActivatableError);
-    await expect(activating(products)).rejects.toThrow("PAT-7-1");
-    await expect(activating(products)).rejects.toThrow(/Allergènes/);
-    expect(products.stored?.status).toBe("draft");
+    await activating(products);
+
+    expect(products.stored?.status).toBe("published");
+    expect(products.stored?.variants[0]?.allergenSheet).toBeNull();
   });
 
   /**
@@ -196,12 +199,13 @@ describe("ActivateProductHandler — les allergènes", () => {
   });
 });
 
-describe("ActivateProductHandler — la composition contredit la déclaration", () => {
+describe("ActivateProductHandler — la composition complète la déclaration", () => {
   /**
    * Régression : un « pain sans blé » déclaré « aucun allergène » dont la
-   * composition cite la farine s'activait (décision de Hugo, 2026-10-27).
+   * composition cite la farine était REFUSÉ le matin du 2026-10-27 ; la
+   * contradiction est devenue une correction de l'état servi.
    */
-  it("refuse le pain sans blé qui déclare « aucun allergène » et cite le gluten", async () => {
+  it("le pain sans blé qui déclarait aucun allergène et citait le gluten se publie avec le gluten déclaré", async () => {
     const products = new OneProduct(
       tarte({
         variants: [
@@ -213,22 +217,12 @@ describe("ActivateProductHandler — la composition contredit la déclaration", 
         ],
       }),
     );
-    const cited = new Map([[PRODUCT_ID, ["gluten"]]]);
-
-    await expect(activating(products, { cited })).rejects.toBeInstanceOf(
-      ProductAllergenContradictionError,
-    );
-    await expect(activating(products, { cited })).rejects.toThrow(
-      /PAT-7-1 déclare « aucun allergène ».*gluten.*retirer l'ingrédient/,
-    );
-    expect(products.stored?.status).toBe("draft");
-  });
-
-  it("active quand la déclaration couvre ce que la composition cite", async () => {
-    const products = new OneProduct(tarte());
 
     await activating(products, { cited: new Map([[PRODUCT_ID, ["gluten"]]]) });
 
     expect(products.stored?.status).toBe("published");
+    // La déclaration ENREGISTRÉE n'est pas réécrite : c'est l'état servi qui
+    // porte le gluten (projection, `effective-allergens.ts`).
+    expect(products.stored?.variants[0]?.allergenSheet).toEqual({ declared: [], mayContain: [] });
   });
 });

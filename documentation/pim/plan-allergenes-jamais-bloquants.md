@@ -1,6 +1,14 @@
 # Plan — les allergènes ne bloquent plus jamais une publication
 
-> 📝 **Plan, rien n'est bâti** (2026-10-27). Hugo : « je dois diminuer la
+> 🟡 **Bâti en partie le 2026-10-27** (non commité au moment d'écrire) —
+> règle A, constat `allergens_precautionary`, complétude, écran (libellé,
+> filtre « Sans information précise », toast). **Reste** : les traces de la
+> règle B n'atteignent pas le commerce, le fil (`SyncVariant`) n'a pas de
+> champ « peut contenir » ; une déclinaison sous B y part à `allergens: null`.
+> L'union du catalogue n'est donc pas encore lue par la projection. État
+> décrit dans [`data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md).
+>
+> 📝 Plan d'origine (2026-10-27). Hugo : « je dois diminuer la
 > friction admin ». Il revient sur la décision du matin même (contradiction
 > composition / déclaration **bloquante**, `productCompliance`) : elle devient
 > une **correction automatique**, et l'absence de déclaration devient une

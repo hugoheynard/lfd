@@ -201,13 +201,10 @@ describe('PublishRail — la déclaration « publiable »', () => {
   });
 
   /**
-   * Ce que la complétude ne peut pas voir, et qu'elle ne verra jamais.
-   *
-   * Elle compte « Allergènes déclarés » comme satisfait dès qu'une affirmation
-   * existe — et « aucun allergène » en est une, fausse mais présente. Une fiche
-   * que sa propre composition dément était donc à 10/10, verte, et signable :
-   * l'avertissement s'affichait, et le bouton restait armé juste en dessous
-   * (constaté par Hugo le 2026-09-01, après la tranche 5).
+   * La composition qui dément « aucun allergène » REFUSAIT la signature
+   * (constaté par Hugo le 2026-09-01). Retourné le 2026-10-27
+   * (`plan-allergenes-jamais-bloquants.md`, règle A) : l'état servi ajoute ce
+   * que la composition cite, il n'y a plus de contradiction à refuser.
    */
   describe('quand la composition dément la déclaration', () => {
     /** « Aucun allergène » coché, et un ingrédient cité qui en porte un. */
@@ -216,53 +213,14 @@ describe('PublishRail — la déclaration « publiable »', () => {
       store['citedAllergensValue'].set(['milk']);
     }
 
-    it('REFUSE la signature sur une fiche par ailleurs complète', () => {
+    it('laisse signer une fiche par ailleurs complète, sans alerte de contradiction', () => {
       const store = setup();
       fill(store);
       contradict(store);
 
       const host = render();
-      expect(readyButton(host)?.disabled).toBe(true);
-      expect(text(host)).toContain('contredit la déclaration');
-    });
-
-    it('n’invoque pas la complétude comme motif : il ne manque rien', () => {
-      const store = setup();
-      fill(store);
-      contradict(store);
-
-      expect(text(render())).not.toContain('manque');
-    });
-
-    it('rouvre la signature dès que la contradiction est levée', () => {
-      const store = setup();
-      fill(store);
-      contradict(store);
-      store.adoptCitedAllergens();
-
-      expect(readyButton(render())?.disabled).toBe(false);
-    });
-
-    /**
-     * Une fiche DÉJÀ signée qui se met à se contredire — un ingrédient ajouté
-     * après coup. La signature reste lisible : c'est un fait daté, on ne
-     * l'efface pas dans le dos de celui qui l'a posée. Mais on ne la laisse pas
-     * se reposer, et le bouton réapparaît désarmé pour le dire.
-     */
-    it('laisse la signature en place, et refuse qu’on la repose', () => {
-      const store = setup();
-      fill(store);
-      store['readinessValue'].set({
-        readyAt: '2026-08-31T09:00:00.000Z',
-        readyBy: 'staff_hugo',
-        readyByName: null,
-      });
-      store['readinessStaleValue'].set(false);
-      contradict(store);
-
-      const host = render();
-      expect(text(host)).toContain('staff_hugo');
-      expect(readyButton(host)?.disabled).toBe(true);
+      expect(readyButton(host)?.disabled).toBe(false);
+      expect(text(host)).not.toContain('contredit la déclaration');
     });
 
     /**

@@ -14,7 +14,6 @@ import {
 const COMPLETE: CompletenessInput = {
   priceCents: 1_200,
   proPriceMillicents: 1_023_697,
-  allergenSheet: { declared: ["gluten"], mayContain: [] },
 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway", "eatIn"],
@@ -27,20 +26,21 @@ describe("variantGaps", () => {
   });
 
   it("nomme tout ce qui manque, dans l'ordre de l'écran", () => {
-    expect(variantGaps({ ...COMPLETE, priceCents: null, allergenSheet: null }, {}, RULES)).toEqual([
+    expect(variantGaps({ ...COMPLETE, priceCents: null }, {}, RULES)).toEqual([
       "price",
-      "allergens",
       "vat:b2b",
       "vat:takeaway",
       "vat:eatIn",
     ]);
   });
 
-  /** `[]` est une déclaration — « aucun allergène » est une réponse. */
-  it("compte « aucun allergène » comme déclaré", () => {
-    const none = { ...COMPLETE, allergenSheet: { declared: [], mayContain: [] } };
-
-    expect(variantGaps(none, ALL, RULES)).toEqual([]);
+  /**
+   * La déclaration d'allergènes n'est plus un manque (2026-10-27,
+   * `plan-allergenes-jamais-bloquants.md`) : la règle ne la lit plus du tout,
+   * l'absence se sert par précaution (`effective-allergens.ts`).
+   */
+  it("ne compte plus les allergènes parmi les manques", () => {
+    expect(variantGaps(COMPLETE, ALL, RULES)).not.toContain("allergens");
   });
 
   it("ignore l'audience : un contexte en service manque même s'il ne sert personne aujourd'hui", () => {

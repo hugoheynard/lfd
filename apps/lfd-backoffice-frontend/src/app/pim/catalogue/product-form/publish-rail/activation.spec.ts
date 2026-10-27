@@ -1,8 +1,9 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import type { ProductStatus } from '@lfd/pim-contracts';
+import type { ProductComplianceWarningView, ProductStatus } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
+import { NotifyService } from '../../../../notify.service';
 import { CatalogueApi } from '../../catalogue-api';
 import { ProductHttpApi } from '../../product-http-api';
 import { ReferenceApi } from '../../reference-api';
@@ -43,8 +44,13 @@ function detail(status: ProductStatus) {
   };
 }
 
-async function setup(status: ProductStatus, publish: () => Promise<void>) {
+async function setup(
+  status: ProductStatus,
+  publish: () => Promise<void>,
+  warnings: readonly ProductComplianceWarningView[] = [],
+) {
   const routes: string[] = [];
+  const notices: string[] = [];
   TestBed.configureTestingModule({
     providers: [
       ProductFormStore,
@@ -69,8 +75,10 @@ async function setup(status: ProductStatus, publish: () => Promise<void>) {
           unpublishProduct: async () => {
             routes.push('unpublish');
           },
+          listComplianceWarnings: () => Promise.resolve(warnings),
         },
       },
+      { provide: NotifyService, useValue: { info: (message: string) => notices.push(message) } },
       { provide: ReferenceApi, useValue: { allergens: () => Promise.resolve({ entries: [] }) } },
     ],
   });
@@ -80,7 +88,7 @@ async function setup(status: ProductStatus, publish: () => Promise<void>) {
   fixture.componentInstance.publish.subscribe(() => void store.runLifecycle('publish'));
   fixture.componentInstance.unpublish.subscribe(() => void store.runLifecycle('unpublish'));
   fixture.detectChanges();
-  return { store, fixture, routes, host: fixture.nativeElement as HTMLElement };
+  return { store, fixture, routes, notices, host: fixture.nativeElement as HTMLElement };
 }
 
 function buttons(host: HTMLElement): string[] {
@@ -156,5 +164,37 @@ describe('PublishRail — Activer / Désactiver', () => {
 
     expect(store.activationRefusal()).toBeNull();
     expect(store.error()).toBe('Archivé.');
+  });
+
+  /** `plan-allergenes-jamais-bloquants.md` §2 : publier sans déclaration se dit, sans rien demander. */
+  it('annonce d’un toast d’information une publication sans déclaration d’allergènes', async () => {
+    const { host, fixture, notices, store } = await setup('draft', async () => undefined, [
+      {
+        productId: 'prd_1',
+        warnings: [
+          {
+            code: 'allergens_precautionary',
+            severity: 'warning',
+            variantId: 'v',
+            sku: 'CHO-001-1',
+          },
+        ],
+      },
+    ]);
+
+    click(host, 'Activer');
+    await fixture.whenStable();
+
+    expect(notices).toEqual([expect.stringContaining('sans information précise')]);
+    expect(store.error()).toBeNull();
+  });
+
+  it('ne dit rien quand la fiche publiée est déclarée', async () => {
+    const { host, fixture, notices } = await setup('draft', async () => undefined);
+
+    click(host, 'Activer');
+    await fixture.whenStable();
+
+    expect(notices).toEqual([]);
   });
 });

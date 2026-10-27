@@ -65,6 +65,8 @@ import type { PickedMedia } from '../library-picker/library-picker';
 import { isPublishedMediaRole } from '../media-roles';
 import { MEDIA_ROLE_FORMATS, roleLabel } from '../media-formats';
 import { ReferenceApi } from '../reference-api';
+import { NotifyService } from '../../../notify.service';
+import { isPrecautionary, PRECAUTIONARY_NOTICE } from '../product-compliance';
 import {
   ProductHttpApi,
   type EditorialFields,
@@ -494,6 +496,7 @@ export class ProductFormStore {
   /** Le rapport prix public / prix pro — réglé une fois, lu partout. */
   private readonly contextStore = inject(SalesContextStore);
   private readonly reference = inject(ReferenceApi);
+  private readonly notify = inject(NotifyService);
   private readonly pendingCreatedMedia = inject(PendingCreatedMedia);
 
   readonly kinds = KINDS;
@@ -643,6 +646,12 @@ export class ProductFormStore {
 
   /** « Aucun allergène » est-il AFFIRMÉ ? */
   readonly declaresNone = computed(() => declaresNone(this.declaration()));
+
+  /**
+   * Personne ne s'est prononcé : la déclinaison se publie par précaution
+   * (`plan-allergenes-jamais-bloquants.md`, règle B).
+   */
+  readonly allergensUndeclared = computed(() => !hasDeclared(this.declaration()));
 
   /** Les traces « peut contenir » — saisies ici depuis le 2026-09-22. */
   readonly mayContain = computed(() => this.declaration().mayContain);
@@ -999,10 +1008,10 @@ export class ProductFormStore {
   /**
    * La composition contredit-elle un « aucun allergène » ?
    *
-   * Le cas le plus grave des deux, et le seul que l'écran doit crier : quelqu'un
-   * a affirmé qu'il n'y en avait aucun, et la fiche cite un ingrédient qui en
-   * porte un. C'est exactement le beurre de l'audit. Une proposition ordinaire
-   * se range, celle-ci s'oppose.
+   * Quelqu'un a affirmé qu'il n'y en avait aucun, et la fiche cite un
+   * ingrédient qui en porte un. Plus un refus depuis le 2026-10-27 (règle A de
+   * `plan-allergenes-jamais-bloquants.md`) : l'état servi ajoute ce qui est
+   * cité, et l'encart le dit dans ses propres mots.
    */
   readonly citedContradictsNone = computed(
     () => this.declaresNone() && this.citedAllergens().length > 0,
@@ -1709,6 +1718,9 @@ export class ProductFormStore {
     try {
       await this.callLifecycle(id, gesture);
       await this.refreshLifecycle(id);
+      if (gesture === 'publish') {
+        await this.noticeIfPrecautionary(id);
+      }
     } catch (caught) {
       const refusal = activationRefusalOf(caught);
       if (refusal === null) {
@@ -1718,6 +1730,23 @@ export class ProductFormStore {
       }
     } finally {
       this.busy.set(false);
+    }
+  }
+
+  /**
+   * Publiée sans déclaration d'allergènes : un toast d'information, qui ne
+   * demande rien (`plan-allergenes-jamais-bloquants.md`, §2). Lu sur le
+   * constat du serveur, jamais recalculé ; une lecture en échec se tait — la
+   * publication, elle, a réussi.
+   */
+  private async noticeIfPrecautionary(id: string): Promise<void> {
+    try {
+      const views = await this.api.listComplianceWarnings();
+      if (isPrecautionary(views.find((view) => view.productId === id)?.warnings)) {
+        this.notify.info(PRECAUTIONARY_NOTICE);
+      }
+    } catch {
+      // Le constat reste lisible dans la liste des produits.
     }
   }
 

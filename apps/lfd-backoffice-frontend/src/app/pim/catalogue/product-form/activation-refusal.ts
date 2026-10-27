@@ -4,14 +4,6 @@ import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 export const NOT_ACTIVATABLE = 'catalogue.product.not_activatable';
 
 /**
- * La composition cite un allergène que la déclaration contredit
- * (`ProductAllergenContradictionError`) — bloquant depuis le 2026-10-27. Son
- * message nomme chaque SKU, les codes et les deux gestes de sortie : il
- * s'affiche entier, il n'a pas la forme « SKU : manques » à découper.
- */
-export const ALLERGEN_CONTRADICTION = 'catalogue.product.allergen_contradiction';
-
-/**
  * **Le refus d'activer**, découpé pour l'écran : la phrase d'en-tête, puis une
  * ligne par déclinaison et ce qui lui manque.
  */
@@ -21,9 +13,10 @@ export interface ActivationRefusal {
 }
 
 /**
- * Lit les refus `catalogue.product.not_activatable` et
- * `catalogue.product.allergen_contradiction` — `null` pour tout autre
- * erreur, que l'appelant traite comme avant.
+ * Lit le refus `catalogue.product.not_activatable` — `null` pour tout autre
+ * erreur, que l'appelant traite comme avant. (La contradiction d'allergènes
+ * n'est plus un refus depuis le 2026-10-27 : la composition corrige l'état
+ * servi, `plan-allergenes-jamais-bloquants.md`.)
  *
  * ⚠️ **Le serveur ne rend que du texte** : l'enveloppe d'erreur ne porte que
  * `code` et `message` (`app-error.filter.ts`, vérifié le 2026-10-15), et le
@@ -34,11 +27,7 @@ export interface ActivationRefusal {
  * réponse (signalée au rapport du lot 3).
  */
 export function activationRefusalOf(caught: unknown): ActivationRefusal | null {
-  const code = httpErrorCode(caught);
-  if (code === ALLERGEN_CONTRADICTION) {
-    return { intro: httpErrorMessage(caught, 'Activation refusée.'), lines: [] };
-  }
-  if (code !== NOT_ACTIVATABLE) {
+  if (httpErrorCode(caught) !== NOT_ACTIVATABLE) {
     return null;
   }
   const message = httpErrorMessage(caught, 'Activation refusée.');

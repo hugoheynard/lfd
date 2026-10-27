@@ -171,37 +171,14 @@ export class PublishRail {
   protected readonly remaining = computed(() => this.total() - this.done());
 
   /**
-   * La fiche se contredit-elle elle-même ?
+   * Ce qui empêche de signer — la forme incomplète.
    *
-   * « Aucun allergène » coché sur une fiche dont la composition cite un
-   * ingrédient qui en porte un. La complétude ne peut pas le voir : elle compte
-   * « Allergènes déclarés » comme satisfait dès qu'une affirmation existe, et
-   * celle-ci en est une — fausse, mais présente. La fiche était donc 10/10, et
-   * signable, l'avertissement affiché juste au-dessus.
+   * La contradiction « aucun allergène » ↔ composition retenait aussi la
+   * signature jusqu'au 2026-10-27 ; elle n'existe plus comme refus
+   * (`plan-allergenes-jamais-bloquants.md`, règle A) : l'état servi ajoute ce
+   * que la composition cite, et l'encart des allergènes le dit.
    */
-  protected readonly contradicted = computed(() => this.store.citedContradictsNone());
-
-  /**
-   * Ce qui empêche de signer — la forme incomplète, ou la fiche qui se dément.
-   *
-   * 🔴 Ça retient la SIGNATURE, jamais la mise en vente, et la nuance est tout
-   * le contrat de `ProductIngredientAllergensView` (D5) : la composition est une
-   * aide de saisie, elle n'a **aucune valeur de contrôle** sur la déclaration
-   * réglementaire. En faire une condition de publication la transformerait en
-   * juge de ce qu'elle n'a pas qualité pour juger — une liste éditoriale cite
-   * « le beurre de Savoie AOP » et tait la farine.
-   *
-   * Refuser la signature est autre chose : signer, c'est affirmer que la fiche
-   * est juste, et l'écran vient de montrer que deux de ses champs se
-   * contredisent. Ça se lève des deux côtés — cocher l'allergène, ou retirer
-   * l'ingrédient — donc la composition ne décide toujours rien.
-   *
-   * ⚠️ Et seulement la CONTRADICTION, pas la simple proposition. « Aucun
-   * allergène » est une affirmation universelle qu'un seul allergène cité
-   * dément. « Contient du gluten » est partielle : un lait cité ne la rend pas
-   * fausse, il la complète — et bloquer là rendrait la composition obligatoire.
-   */
-  protected readonly signatureBlocked = computed(() => !this.complete() || this.contradicted());
+  protected readonly signatureBlocked = computed(() => !this.complete());
 
   /** La signature, mise en français. `null` = personne ne s'est prononcé. */
   protected readonly signature = computed<string | null>(() => {

@@ -80,17 +80,7 @@
       </p>
     }
 
-    <!-- Une fiche qui se contredit reste signée tant qu'on n'y a pas touché : la
-         signature est un fait daté, on ne l'efface pas dans le dos de celui qui
-         l'a posée. Mais on le DIT, et on ne la laisse pas se reposer. -->
-    @if (contradicted()) {
-      <fold-callout appearance="inset" variant="alert">
-        La composition contredit la déclaration d'allergènes. Reprenez-la dans la fiche
-        réglementaire, ou retirez l'ingrédient en cause.
-      </fold-callout>
-    }
-
-    @if (signature() === null || store.readinessStale() || contradicted()) {
+    @if (signature() === null || store.readinessStale()) {
       <button
         foldButton
         class="pr-cta"

@@ -62,20 +62,34 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
  * prix, un taux pour chaque contexte en service — `b2b`, `takeaway`, `eatIn`
  * (le comptoir ouvert aux deux contextes de boutique pour que leurs taux s'y
  * posent, lot 2b) —, prix pro HT saisi. `audience` déroge à celle de la
- * famille avant l'activation ; `null` = elle hérite.
+ * famille avant l'activation ; `null` = elle hérite. `allergens` à `null` :
+ * aucune déclaration — la fiche se publie par précaution depuis le
+ * 2026-10-27 (`plan-allergenes-jamais-bloquants.md`, règle B).
  */
 export async function anActiveFiche(
   staff: Staff,
   name: string,
   audience: "pro" | "public" | "both" | null = null,
+  allergens: readonly string[] | null = [],
 ): Promise<Fiche> {
-  const fiche = await aDraftFiche(staff, name);
+  return activateFiche(staff, await aDraftFiche(staff, name), audience, allergens);
+}
+
+/** Rend vendable puis active une fiche déjà créée — cf. {@link anActiveFiche}. */
+export async function activateFiche(
+  staff: Staff,
+  fiche: Fiche,
+  audience: "pro" | "public" | "both" | null = null,
+  allergens: readonly string[] | null = [],
+): Promise<Fiche> {
   const detail = await detailOf(staff, fiche.id);
   const variantId = detail.variants.find((entry) => entry.isDefault)?.id ?? "";
-  await staff()
-    .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/allergens`)
-    .send({ allergens: [] })
-    .expect(200);
+  if (allergens !== null) {
+    await staff()
+      .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/allergens`)
+      .send({ allergens })
+      .expect(200);
+  }
   const rateId = await foodRate(staff);
   const category = `${CATEGORIES}/${fiche.categoryId}`;
   await staff()

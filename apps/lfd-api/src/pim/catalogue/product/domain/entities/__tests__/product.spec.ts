@@ -276,33 +276,21 @@ describe("l’agrégat Product", () => {
     });
 
     /**
-     * 🔴 Cas 2 — **des valeurs, aucune déclaration d'allergène : refusé**, et
-     * c'est l'état nommé de D3. Un tableau nutritionnel se copie d'un document ;
-     * la déclaration d'allergène demande de regarder la recette. Laisser publier
-     * ce cas-là mettrait en vente un article non étiqueté qui a pourtant l'air
-     * renseigné.
+     * 🔴 Cas 2 — **des valeurs, aucune déclaration d'allergène.** Refusé
+     * jusqu'au 2026-10-27 (D3) ; depuis `plan-allergenes-jamais-bloquants.md`
+     * (règle B), la déclinaison se publie PAR PRÉCAUTION, signalée par le
+     * constat `allergens_precautionary`. La déclaration n'est pas inventée.
      */
-    it("refuse des valeurs nutritionnelles sans déclaration d’allergène", () => {
+    it("publie par précaution des valeurs nutritionnelles sans déclaration d’allergène", () => {
       const product = declared([
         { allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410, saltG: 2 } },
       ]);
 
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
-        ProductNotActivatableError,
-      );
-      expect(product.status).toBe("draft");
-    });
-
-    /** Et le refus NOMME la référence : le back-office lit ce message seul. */
-    it("nomme la référence en cause et le geste de sortie", () => {
-      const product = declared([{ allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410 } }]);
-
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
-        "PATI-TARTE-1",
-      );
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
-        /Allergènes/,
-      );
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
+      expect(product.snapshot().variants[0]?.allergenSheet).toBeNull();
+      expect(product.complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toEqual([
+        expect.objectContaining({ code: "allergens_precautionary", severity: "warning" }),
+      ]);
     });
 
     /**
@@ -322,12 +310,13 @@ describe("l’agrégat Product", () => {
       expect(product.status).toBe("published");
     });
 
-    it("refuse quand TOUTES sont muettes, et les nomme toutes", () => {
+    it("active même quand TOUTES sont muettes, et les signale toutes", () => {
       const product = declared([{ allergens: null }, { allergens: null }]);
 
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
-        /PATI-TARTE-1.*PATI-TARTE-2/,
-      );
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
+      expect(
+        product.complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS).map((f) => f.code),
+      ).toEqual(["allergens_precautionary", "allergens_precautionary"]);
     });
   });
 

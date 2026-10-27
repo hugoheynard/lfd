@@ -24,6 +24,13 @@ export const NON_COMPLIANT_LIVE = 'non_compliant_live';
 export const BLOCKING = 'blocking';
 export const TO_REVIEW = 'to_review';
 
+/**
+ * « Sans information précise » — les fiches dont une déclinaison est publiée
+ * par précaution, sans déclaration d'allergènes (constat
+ * `allergens_precautionary`, `plan-allergenes-jamais-bloquants.md`).
+ */
+export const PRECAUTIONARY = 'precautionary';
+
 /** Ce que l'état peut valoir dans le filtre : un statut, un jugement du serveur, ou tous. */
 export type StatusFilter =
   | typeof ALL_STATUSES
@@ -31,12 +38,18 @@ export type StatusFilter =
   | typeof NON_COMPLIANT_LIVE
   | typeof BLOCKING
   | typeof TO_REVIEW
+  | typeof PRECAUTIONARY
   | ProductStatus;
 
 /** Le pire constat d'une fiche, `null` sans constat — lu, jamais jugé ici. */
 export type ComplianceStateOf = (product: Product) => ComplianceState | null;
 
 const NO_FINDING: ComplianceStateOf = () => null;
+
+/** La fiche porte-t-elle le constat de précaution ? Lu, jamais jugé ici. */
+export type PrecautionaryOf = (product: Product) => boolean;
+
+const NOT_PRECAUTIONARY: PrecautionaryOf = () => false;
 
 /** Les trois filtres de la liste, tels que l'URL les retient. */
 export interface ProductsFilter {
@@ -60,6 +73,7 @@ const STATUSES: readonly StatusFilter[] = [
   NON_COMPLIANT_LIVE,
   BLOCKING,
   TO_REVIEW,
+  PRECAUTIONARY,
 ];
 
 /** Noms des paramètres d'URL. Seul ce qui s'écarte du défaut y est écrit. */
@@ -82,12 +96,15 @@ export function filterProducts(
   products: readonly Product[],
   filter: ProductsFilter,
   stateOf: ComplianceStateOf = NO_FINDING,
+  precautionaryOf: PrecautionaryOf = NOT_PRECAUTIONARY,
 ): Product[] {
   const hide = maskApplies(filter);
   return products.filter(
     (p) =>
       (filter.family === ALL_FAMILIES || p.categoryId === filter.family) &&
-      statusMatches(p, filter.status, stateOf) &&
+      (filter.status === PRECAUTIONARY
+        ? precautionaryOf(p)
+        : statusMatches(p, filter.status, stateOf)) &&
       !(hide && p.status === 'archived'),
   );
 }

@@ -93,8 +93,9 @@ export interface CatalogProductFactBody {
   readonly product: CatalogProductHead;
   /**
    * Les déclinaisons **complètes** au sens de `variantGaps` — non arrêtées,
-   * avec prix, prix pro résolu, allergènes déclarés et un taux par contexte en
-   * service. Ce sont les seules qu'une fiche ACTIVE vend ; une
+   * avec prix, prix pro résolu et un taux par contexte en service. Une
+   * déclaration d'allergènes n'est plus exigée depuis le 2026-10-27 : sans
+   * elle, `allergens` part à `null`. Ce sont les seules qu'une fiche ACTIVE vend ; une
    * fiche inactive les porte aussi, et la plateforme ne les vend pas.
    */
   readonly variants: readonly CatalogVariantFact[];
@@ -120,6 +121,11 @@ export interface ProductFactInput {
   readonly rules: CompletenessRules;
   readonly inco: IncoProjector;
   readonly showcase: Showcase | undefined;
+  /**
+   * Les allergènes que la composition de la fiche cite — ajoutés à ce que
+   * chaque déclinaison déclare (règle A de `plan-allergenes-jamais-bloquants.md`).
+   */
+  readonly cited: readonly string[];
 }
 
 /** La famille projetée — pure, le taux part tel quel, `null` compris. */
@@ -214,6 +220,7 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVa
       variant.priceCents,
       input.percents,
       input.inco,
+      input.cited,
     ),
     nameTranslations: variantNameTranslationsOf(variant.name, input.product.name),
   };

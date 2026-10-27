@@ -7,6 +7,7 @@ import type {
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
 import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
+import { effectiveAllergens } from "../../../catalogue/product/domain/services/effective-allergens.js";
 import type { CatalogTranslations } from "./translations.js";
 import type { CategoryVatPercents } from "../../../catalogue/shared/domain/ports/catalogue-reader.js";
 import type { VariantRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
@@ -74,13 +75,9 @@ export function projectVariant(
   publicTtcCents: number,
   percents: CategoryVatPercents,
   inco: IncoProjector,
+  cited: readonly string[] = [],
 ): SyncVariant {
-  // Le `null` est transmis TEL QUEL : c'est la différence entre « rien n'a été
-  // déclaré » et « rien ne s'y trouve », et elle ne se reconstitue pas en aval.
-  // Les mentions le suivent — « aucune fiche » ne se lit jamais « aucun
-  // allergène ». Les codes, eux, restent le stockage canonique ; leur copie
-  // n'est que le passage du `readonly` du domaine au tableau du schéma de fil.
-  const declared = variant.allergenSheet === null ? null : variant.allergenSheet.declared;
+  const declared = servedAllergens(variant, cited);
   return {
     // L'identifiant traverse depuis la v7 : une règle de rang « déclinaison »
     // vise celui-ci, et le récepteur ne pourrait pas la rattacher au SKU seul.
@@ -97,6 +94,26 @@ export function projectVariant(
     allergens: declared === null ? null : [...declared],
     allergenLabels: declared === null ? null : labelsOf(inco, declared),
   };
+}
+
+/**
+ * **Les allergènes que le fil porte** — l'état SERVI (`effectiveAllergens`,
+ * règle A de `plan-allergenes-jamais-bloquants.md`) : la déclaration, plus ce
+ * que la composition cite. La déclaration enregistrée n'est pas réécrite.
+ *
+ * 🔴 Sans déclaration, `null` TEL QUEL — la différence entre « rien n'a été
+ * déclaré » et « rien ne s'y trouve » ne se reconstitue pas en aval, et les
+ * mentions la suivent. La règle B (allergènes cités + traces de tout le
+ * catalogue) ne peut pas encore traverser : le fil (`SyncVariant`) ne porte
+ * pas de traces (vérifié le 2026-10-27). Envoyer les seuls cités ferait lire
+ * « aucun allergène » à une fiche qui n'en cite pas ; le silence reste donc le
+ * silence jusqu'à ce que le contrat porte « peut contenir ».
+ */
+function servedAllergens(variant: VariantRecord, cited: readonly string[]): string[] | null {
+  if (variant.allergenSheet === null) {
+    return null;
+  }
+  return [...effectiveAllergens(variant.allergenSheet, cited, []).allergens];
 }
 
 /**

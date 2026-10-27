@@ -44,6 +44,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     rules: B2B_ONLY,
     inco: NO_ALLERGEN_REFERENCE,
     showcase: undefined,
+    cited: [],
     ...over,
   };
 }
@@ -61,18 +62,45 @@ describe("projectProductFact", () => {
     expect(body.variants[0]?.priceMillicents).toBe(2_730_331);
   });
 
-  /** Régression du plan (C1) : une déclinaison sans déclaration ne se vend jamais. */
-  it("range sans allergènes déclarés dans les manques, pas dans les vendables", () => {
+  /**
+   * Retourné le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`, règle B) :
+   * une déclinaison sans déclaration se vend par précaution. Ses allergènes
+   * partent à `null` — le fil ne porte pas encore de traces, et la liste des
+   * seuls cités se lirait « aucun allergène » quand la composition est muette.
+   */
+  it("vend une déclinaison sans déclaration, ses allergènes à null", () => {
     const body = projectProductFact(
       input({
         product: tarte({
           variants: [bareVariant({ priceCents: 300, proPriceMillicents: 256_000 })],
         }),
+        cited: ["gluten"],
       }),
     );
 
-    expect(body.variants).toEqual([]);
-    expect(body.gaps).toEqual({ "PAT-7-1": ["allergens"] });
+    expect(body.gaps).toEqual({});
+    expect(body.variants[0]).toMatchObject({ allergens: null, allergenLabels: null });
+  });
+
+  it("sert ce que la composition cite en plus de la déclaration (règle A)", () => {
+    const body = projectProductFact(input({ cited: ["eggs", "gluten"] }));
+
+    expect(body.variants[0]?.allergens).toEqual(["gluten", "eggs"]);
+  });
+
+  /** Régression : le pain sans blé refusé le matin du 2026-10-27. */
+  it("le pain sans blé qui déclarait aucun allergène et citait le gluten se publie avec le gluten déclaré", () => {
+    const body = projectProductFact(
+      input({
+        product: tarte({
+          status: "published",
+          variants: [{ ...SELLABLE_VARIANT, allergenSheet: { declared: [], mayContain: [] } }],
+        }),
+        cited: ["gluten"],
+      }),
+    );
+
+    expect(body.variants[0]?.allergens).toEqual(["gluten"]);
   });
 
   it("nomme chaque manque : prix, prix pro, taux de chaque contexte en service", () => {
@@ -85,7 +113,7 @@ describe("projectProductFact", () => {
     );
 
     expect(body.gaps).toEqual({
-      "PAT-7-1": ["price", "allergens", "pro_price", "vat:b2b", "vat:takeaway"],
+      "PAT-7-1": ["price", "pro_price", "vat:b2b", "vat:takeaway"],
     });
   });
 

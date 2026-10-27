@@ -1,17 +1,10 @@
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
+import { effectiveAllergens } from "./effective-allergens.js";
 import { variantGaps, type CompletenessRules } from "./variant-completeness.js";
 
 /** `blocking` refuse l'activation ; `warning` se signale sans rien refuser. */
 export type ComplianceSeverity = "blocking" | "warning";
-
-/**
- * 🔴 **La sévérité d'une contradiction composition ↔ allergènes** — UNE ligne.
- * Bloquante par décision de Hugo (2026-10-27) : une fiche qui déclare « aucun
- * allergène » et cite la farine ne s'active pas. Une fiche DÉJÀ publiée n'est
- * ni retirée ni modifiée : elle apparaît en constat bloquant dans la liste.
- */
-export const ALLERGEN_CONTRADICTION_SEVERITY: ComplianceSeverity = "blocking";
 
 /** Toutes les déclinaisons sont arrêtées : rien ne se vendrait. */
 export interface AllVariantsDiscontinuedFinding {
@@ -33,20 +26,20 @@ export interface VariantIncompleteFinding {
 }
 
 /**
- * La composition cite un allergène que la déclaration de la déclinaison ne
- * porte pas — `allergens_contradict_none` quand elle affirme « aucun » (`[]`).
- * Une déclinaison sans déclaration n'est jamais comparée (D5).
+ * Une déclinaison sans déclaration d'allergènes, servie PAR PRÉCAUTION
+ * (règle B de `plan-allergenes-jamais-bloquants.md`, 2026-10-27) : allergènes
+ * de sa composition, traces de tout le catalogue. Toujours un avertissement —
+ * la fiche se publie, le constat est là pour qu'elle ne le reste pas.
  */
-export interface AllergenContradictionFinding {
-  readonly code: "allergens_cited_not_declared" | "allergens_contradict_none";
-  readonly severity: ComplianceSeverity;
+export interface AllergensPrecautionaryFinding {
+  readonly code: "allergens_precautionary";
+  readonly severity: "warning";
   readonly variantId: string;
   readonly sku: string;
-  readonly allergenCodes: readonly string[];
 }
 
 export type ComplianceFinding =
-  AllVariantsDiscontinuedFinding | VariantIncompleteFinding | AllergenContradictionFinding;
+  AllVariantsDiscontinuedFinding | VariantIncompleteFinding | AllergensPrecautionaryFinding;
 
 /**
  * **Le jugement UNIQUE d'une fiche** — activation, refus de `publish`, champ
@@ -56,6 +49,9 @@ export type ComplianceFinding =
  * défaut). Ce que la fiche ne voit pas arrive résolu : taux, contextes et
  * règle du prix pro, et les allergènes que ses ingrédients cités portent —
  * le catalogue ne lit pas les ingrédients, son handler les lui montre.
+ *
+ * Les allergènes ne refusent plus rien (2026-10-27) : la règle A corrige ce
+ * que la composition cite, sans constat ; la règle B signale seulement.
  *
  * Une déclinaison arrêtée n'est jugée sur rien : elle ne se vend plus.
  */
@@ -85,7 +81,7 @@ export function productCompliance(
       sku: variant.sku,
       missing,
     }));
-  return [...incomplete, ...allergenContradictions(live, citedAllergens)];
+  return [...incomplete, ...precautionary(live, citedAllergens)];
 }
 
 /** Aucun constat bloquant. */
@@ -93,38 +89,19 @@ export function isCompliantForActivation(findings: readonly ComplianceFinding[])
   return findings.every((finding) => finding.severity !== "blocking");
 }
 
-/**
- * Les codes cités par la composition et absents de la déclaration — une
- * proposition d'AJOUT, jamais un retrait (une contamination d'atelier
- * déclarée à la main n'est pas contredite). Sans déclaration (`null`), vide :
- * fabriquer une fiche réglementaire depuis une liste éditoriale est le geste
- * que D5 interdit. Partagée avec la lecture de la composition d'une fiche.
- */
-export function citedNotDeclared(
-  declared: readonly string[] | null,
-  citedAllergens: readonly string[],
-): string[] {
-  return declared === null ? [] : citedAllergens.filter((code) => !declared.includes(code));
-}
-
-function allergenContradictions(
+/** Les déclinaisons servies par précaution — {@link effectiveAllergens}, règle B. */
+function precautionary(
   live: readonly VariantSnapshot[],
   citedAllergens: readonly string[],
-): AllergenContradictionFinding[] {
-  return live.flatMap((variant) => {
-    const declared = variant.allergenSheet?.declared ?? null;
-    const missing = citedNotDeclared(declared, citedAllergens);
-    if (missing.length === 0) {
-      return [];
-    }
-    return [
-      {
-        code: declared?.length === 0 ? "allergens_contradict_none" : "allergens_cited_not_declared",
-        severity: ALLERGEN_CONTRADICTION_SEVERITY,
-        variantId: variant.id,
-        sku: variant.sku,
-        allergenCodes: missing,
-      },
-    ];
-  });
+): AllergensPrecautionaryFinding[] {
+  return live
+    .filter(
+      (variant) => effectiveAllergens(variant.allergenSheet, citedAllergens, []).precautionary,
+    )
+    .map((variant) => ({
+      code: "allergens_precautionary",
+      severity: "warning",
+      variantId: variant.id,
+      sku: variant.sku,
+    }));
 }

@@ -16,14 +16,10 @@ export interface ActivationGaps {
   readonly allDiscontinued: boolean;
   /**
    * SKU → ce qui lui manque, pour chaque déclinaison non arrêtée — renseignée
-   * seulement quand AUCUNE n'est complète : une seule suffit à activer. Porte
-   * aussi {@link ALLERGEN_CONTRADICTION_GAP} si cette sévérité devient bloquante.
+   * seulement quand AUCUNE n'est complète : une seule suffit à activer.
    */
   readonly byVariant: Readonly<Record<string, readonly string[]>>;
 }
-
-/** Clé de manque d'une contradiction composition ↔ allergènes devenue bloquante. */
-export const ALLERGEN_CONTRADICTION_GAP = "allergen_contradiction";
 
 /**
  * **Ce qui manque pour vendre** — la vue « refus » du jugement unique
@@ -56,8 +52,6 @@ export function activationGapsOf(findings: readonly ComplianceFinding[]): Activa
       allDiscontinued = true;
     } else if (finding.code === "variant_incomplete") {
       (byVariant[finding.sku] ??= []).push(...finding.missing);
-    } else {
-      (byVariant[finding.sku] ??= []).push(ALLERGEN_CONTRADICTION_GAP);
     }
   }
   return { allDiscontinued, byVariant };

@@ -32,10 +32,12 @@ import {
   complianceBadge,
   findingsByProduct,
   complianceStateOf,
+  isPrecautionary,
+  PRECAUTIONARY_NOTICE,
   findingsText,
   type ComplianceBadge,
 } from '../product-compliance';
-import { ReferenceApi } from '../reference-api';
+import { NotifyService } from '../../../notify.service';
 import type { ProductComplianceFinding } from '@lfd/pim-contracts';
 import type { ProductStatus } from '../../data/models';
 import {
@@ -49,6 +51,7 @@ import {
   filterProducts,
   filterToParams,
   maskApplies,
+  PRECAUTIONARY,
   type ProductsFilter,
   type StatusFilter,
 } from './products-filter';
@@ -86,7 +89,7 @@ export class ProductsPage {
   private readonly api = inject(CatalogueApi);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
-  private readonly reference = inject(ReferenceApi);
+  private readonly notify = inject(NotifyService);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -101,8 +104,6 @@ export class ProductsPage {
   );
   /** Échec PARTIEL : la liste reste, seuls les constats manquent. */
   protected readonly complianceError = signal<string | null>(null);
-  /** Code allergène → libellé français ; un code inconnu s'affiche tel quel. */
-  private readonly allergenLabels = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
 
@@ -126,6 +127,7 @@ export class ProductsPage {
     { value: NON_COMPLIANT_LIVE, label: 'Non conformes en vente' },
     { value: BLOCKING, label: 'Bloquants' },
     { value: TO_REVIEW, label: 'À vérifier' },
+    { value: PRECAUTIONARY, label: 'Sans information précise' },
     { value: 'archived', label: 'Archivées' },
   ];
   /** Le masque est sans effet hors de « Toutes » : la case se grise alors. */
@@ -146,8 +148,11 @@ export class ProductsPage {
   protected readonly visibleProducts = computed<Product[]>(() => {
     const q = this.query().trim().toLowerCase();
     const findings = this.findings();
-    const products = filterProducts(this.products(), this.filter(), (p) =>
-      complianceStateOf(p.status, findings.get(p.id)),
+    const products = filterProducts(
+      this.products(),
+      this.filter(),
+      (p) => complianceStateOf(p.status, findings.get(p.id)),
+      (p) => isPrecautionary(findings.get(p.id)),
     );
     if (q === '') {
       return products;
@@ -350,13 +355,8 @@ export class ProductsPage {
 
   /** Le détail des constats, en phrases que le staff lit sans le code. */
   protected complianceText(product: Product): string {
-    const labels = this.allergenLabels();
     const findings = this.findings().get(product.id) ?? [];
-    return findingsText(
-      findings,
-      (code) => labels.get(code) ?? code,
-      complianceStateOf(product.status, findings),
-    );
+    return findingsText(findings, complianceStateOf(product.status, findings));
   }
 
   /** Un produit précis — le bouton de la ligne. */
@@ -371,8 +371,17 @@ export class ProductsPage {
       : '';
   }
 
+  /**
+   * Une fiche publiée sans déclaration d'allergènes le dit d'un toast
+   * d'information — sans rien demander (`plan-allergenes-jamais-bloquants.md`, §2).
+   * Lu sur le constat du serveur que le rechargement vient de relire.
+   */
   protected async publish(product: Product): Promise<void> {
     await this.run(() => this.api.publishProduct(product.id));
+    const published = this.products().find((p) => p.id === product.id)?.status === 'published';
+    if (published && isPrecautionary(this.findings().get(product.id))) {
+      this.notify.info(PRECAUTIONARY_NOTICE);
+    }
   }
 
   protected async unpublish(product: Product): Promise<void> {
@@ -469,7 +478,7 @@ export class ProductsPage {
     } catch (caught) {
       this.error.set(failureMessageOf(caught));
     }
-    await Promise.all([this.reloadCompliance(), this.loadAllergenLabels()]);
+    await this.reloadCompliance();
   }
 
   /** Rien n'est appliqué en cas d'échec : les badges gardent ce qu'ils avaient. */
@@ -481,19 +490,6 @@ export class ProductsPage {
       this.complianceError.set(
         `Les constats de conformité n'ont pas pu être lus : ${failureMessageOf(caught)}`,
       );
-    }
-  }
-
-  /** Une fois : le référentiel ne bouge pas sous la liste. Sans lui, les codes restent lisibles. */
-  private async loadAllergenLabels(): Promise<void> {
-    if (this.allergenLabels().size > 0) {
-      return;
-    }
-    try {
-      const reference = await this.reference.allergens('world');
-      this.allergenLabels.set(new Map(reference.entries.map((e) => [e.code, e.label])));
-    } catch {
-      // Absorbé sciemment : le constat reste dit, avec le code au lieu du nom.
     }
   }
 }

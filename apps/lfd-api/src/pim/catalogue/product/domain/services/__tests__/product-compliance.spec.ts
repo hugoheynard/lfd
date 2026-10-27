@@ -1,11 +1,6 @@
 import type { VariantSnapshot } from "../../entities/variant.js";
 import { activationGapsOf, isActivatable } from "../activation-gaps.js";
-import {
-  ALLERGEN_CONTRADICTION_SEVERITY,
-  citedNotDeclared,
-  isCompliantForActivation,
-  productCompliance,
-} from "../product-compliance.js";
+import { isCompliantForActivation, productCompliance } from "../product-compliance.js";
 import type { CompletenessRules } from "../variant-completeness.js";
 
 function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
@@ -73,26 +68,17 @@ describe("productCompliance — le jugement unique d'une fiche", () => {
 
   /**
    * Régression : le pain sans blé — « aucun allergène » déclaré, un ingrédient
-   * qui porte le gluten — était activable (décision de Hugo, 2026-10-27).
+   * qui porte le gluten — était REFUSÉ à l'activation le matin du 2026-10-27 ;
+   * la contradiction est devenue une correction (`plan-allergenes-jamais-bloquants.md`).
    */
-  it("rend non activable le pain sans blé qui déclare « aucun allergène » et cite le gluten", () => {
+  it("le pain sans blé qui déclarait aucun allergène et citait le gluten se publie avec le gluten déclaré", () => {
     const findings = productCompliance([variant({})], ALL, RULES, ["gluten"]);
 
-    expect(findings).toEqual([
-      {
-        code: "allergens_contradict_none",
-        severity: "blocking",
-        variantId: "var_1",
-        sku: "PAIN-1",
-        allergenCodes: ["gluten"],
-      },
-    ]);
-    expect(ALLERGEN_CONTRADICTION_SEVERITY).toBe("blocking");
-    expect(isCompliantForActivation(findings)).toBe(false);
-    expect(isActivatable(activationGapsOf(findings))).toBe(false);
+    expect(findings).toEqual([]);
+    expect(isActivatable(activationGapsOf(findings))).toBe(true);
   });
 
-  it("nomme « cité non déclaré » quand la déclaration porte d'autres codes", () => {
+  it("ne rend aucun constat quand la composition cite plus que la déclaration", () => {
     const findings = productCompliance(
       [variant({ allergenSheet: { declared: ["milk"], mayContain: [] } })],
       ALL,
@@ -100,22 +86,35 @@ describe("productCompliance — le jugement unique d'une fiche", () => {
       ["gluten", "milk"],
     );
 
-    expect(findings).toEqual([
-      expect.objectContaining({ code: "allergens_cited_not_declared", allergenCodes: ["gluten"] }),
-    ]);
+    expect(findings).toEqual([]);
   });
 
-  // D5 : sans déclaration, rien à comparer — le manque d'allergènes se dit déjà.
-  it("ne compare pas une déclinaison sans déclaration", () => {
+  it("avertit d'une déclinaison sans déclaration, sans bloquer l'activation", () => {
     const findings = productCompliance([variant({ allergenSheet: null })], ALL, RULES, ["gluten"]);
 
-    expect(findings.map((finding) => finding.code)).toEqual(["variant_incomplete"]);
+    expect(findings).toEqual([
+      { code: "allergens_precautionary", severity: "warning", variantId: "var_1", sku: "PAIN-1" },
+    ]);
+    expect(isCompliantForActivation(findings)).toBe(true);
   });
-});
 
-describe("citedNotDeclared", () => {
-  it("ne propose jamais de retrait, et rien sans déclaration", () => {
-    expect(citedNotDeclared(["gluten", "milk"], ["gluten"])).toEqual([]);
-    expect(citedNotDeclared(null, ["gluten"])).toEqual([]);
+  it("ne traite pas « aucun allergène » comme une absence de déclaration", () => {
+    const findings = productCompliance([variant({})], ALL, RULES, []);
+
+    expect(findings.map((finding) => finding.code)).not.toContain("allergens_precautionary");
+  });
+
+  it("ne juge pas une déclinaison arrêtée sans déclaration", () => {
+    const findings = productCompliance(
+      [
+        variant({}),
+        variant({ id: "var_2", sku: "PAIN-2", isDiscontinued: true, allergenSheet: null }),
+      ],
+      ALL,
+      RULES,
+      [],
+    );
+
+    expect(findings).toEqual([]);
   });
 });

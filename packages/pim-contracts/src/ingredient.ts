@@ -187,7 +187,9 @@ export interface VariantAllergenGapView {
   readonly declaredAllergens: readonly string[] | null;
   /**
    * Les codes cités par la composition du PRODUIT et absents de la déclaration
-   * de CETTE déclinaison — une proposition d'ajout, jamais un retrait : un
+   * de CETTE déclinaison — ce que l'état SERVI y ajoute depuis le 2026-10-27
+   * (règle A de `plan-allergenes-jamais-bloquants.md` ; la déclaration
+   * enregistrée n'est pas réécrite), jamais un retrait : un
    * allergène déclaré à la main (contamination croisée d'atelier) n'est pas
    * contredit par une composition qui l'ignore.
    *
@@ -217,8 +219,9 @@ export interface VariantAllergenGapView {
  *    recettes différentes — « Tarte 6 pers » et « Tarte 6 pers sans gluten » —
  *    reçoivent le MÊME `citedByIngredients`. Un libellé d'écran parle donc de la
  *    composition du produit, jamais de « ce que cette déclinaison contient ».
- * 3. **Le dérivé propose, la déclaration décide.** Rien ici n'est stocké ni
- *    appliqué : la reprise est un geste explicite du staff, sur la fiche.
+ * 3. **Le dérivé complète, il ne retire rien.** Rien ici n'est stocké : ce
+ *    qui est cité est ajouté à l'état servi (règle A, 2026-10-27) ; la reprise
+ *    dans la déclaration reste un geste explicite du staff, sur la fiche.
  */
 export interface ProductIngredientAllergensView {
   readonly productId: string;
@@ -243,11 +246,16 @@ export type ComplianceSeverity = z.infer<typeof complianceSeveritySchema>;
  *
  * - `all_variants_discontinued` : rien ne se vendrait (toujours bloquant) ;
  * - `variant_incomplete` : ce qui manque à une déclinaison non arrêtée pour se
- *   vendre (`price`, `allergens`, `pro_price`, `pro_price_rule`, `vat:<ctx>`) —
+ *   vendre (`price`, `pro_price`, `vat:<ctx>`) —
  *   bloquant quand aucune n'est complète, avertissement sinon ;
- * - `allergens_cited_not_declared` / `allergens_contradict_none` : la
- *   composition cite un allergène que la déclaration ne porte pas, ou qu'elle
- *   dit « aucun ». Une déclinaison sans déclaration n'est jamais comparée (D5).
+ * - `allergens_precautionary` : la déclinaison n'a pas de déclaration
+ *   d'allergènes et se sert par précaution — allergènes de sa composition,
+ *   traces de tout le catalogue publié. Toujours un avertissement.
+ *
+ * ⚠️ `allergens_cited_not_declared` / `allergens_contradict_none` ont disparu
+ * le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`) : la composition
+ * corrige l'état servi au lieu de refuser. `allergens` n'est plus un manque
+ * calculé, et ne vit plus que dans des manques publiés avant.
  */
 export const productComplianceFindingSchema = z.discriminatedUnion("code", [
   z.object({ code: z.literal("all_variants_discontinued"), severity: complianceSeveritySchema }),
@@ -259,11 +267,10 @@ export const productComplianceFindingSchema = z.discriminatedUnion("code", [
     missing: z.array(z.string()),
   }),
   z.object({
-    code: z.enum(["allergens_cited_not_declared", "allergens_contradict_none"]),
-    severity: complianceSeveritySchema,
+    code: z.literal("allergens_precautionary"),
+    severity: z.literal("warning"),
     variantId: z.string(),
     sku: z.string(),
-    allergenCodes: z.array(z.string()),
   }),
 ]);
 export type ProductComplianceFinding = z.infer<typeof productComplianceFindingSchema>;
@@ -273,7 +280,7 @@ export type ProductComplianceFinding = z.infer<typeof productComplianceFindingSc
  * activable. Seules les fiches qui en portent au moins un sont rendues.
  *
  * 🔴 Une absence ne vaut PAS conformité (D5) : la composition est éditoriale,
- * seule une contradiction positive se signale.
+ * et ce qu'elle cite est ajouté à l'état servi sans constat.
  */
 export const productComplianceWarningViewSchema = z.object({
   productId: z.string(),

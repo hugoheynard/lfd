@@ -55,7 +55,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     const gaps = activationGaps(
       [
         variant({ priceCents: null }),
-        variant({ id: "var_2", sku: "PAT-2", allergenSheet: null }),
+        variant({ id: "var_2", sku: "PAT-2", proPriceMillicents: null }),
         variant({ id: "var_3", sku: "PAT-3", isDiscontinued: true }),
       ],
       ALL,
@@ -64,7 +64,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     );
 
     expect(isActivatable(gaps)).toBe(false);
-    expect(gaps.byVariant).toEqual({ "PAT-1": ["price"], "PAT-2": ["allergens"] });
+    expect(gaps.byVariant).toEqual({ "PAT-1": ["price"], "PAT-2": ["pro_price"] });
   });
 
   it("ne compte pas une déclinaison arrêtée, même complète", () => {

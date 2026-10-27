@@ -30,12 +30,10 @@ describe('activationRefusalOf', () => {
     });
   });
 
-  it('rend entier le refus de contradiction d’allergènes, message du serveur compris', () => {
-    const message =
-      'Activation refusée : la composition cite des allergènes que la déclaration contredit — ' +
-      'PAIN-1 ne déclare pas gluten. Reprendre ces allergènes dans la section « Allergènes ».';
+  /** Le code n'est plus levé depuis le 2026-10-27 : il ne se lit plus comme un refus d'activer. */
+  it('ne lit plus l’ancien refus de contradiction d’allergènes', () => {
     expect(
-      activationRefusalOf(refused('catalogue.product.allergen_contradiction', message)),
-    ).toEqual({ intro: message, lines: [] });
+      activationRefusalOf(refused('catalogue.product.allergen_contradiction', 'x — PAIN-1 : y.')),
+    ).toBeNull();
   });
 });

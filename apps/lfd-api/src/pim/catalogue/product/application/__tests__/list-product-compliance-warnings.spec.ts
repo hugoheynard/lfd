@@ -50,14 +50,25 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
             severity: "warning",
             variantId: "var_2",
             sku: "PAT-7-2",
-            missing: ["price", "allergens", "pro_price"],
+            missing: ["price", "pro_price"],
+          },
+          {
+            code: "allergens_precautionary",
+            severity: "warning",
+            variantId: "var_2",
+            sku: "PAT-7-2",
           },
         ],
       },
     ]);
   });
 
-  it("signale « aucun allergène » contredit par la composition, en bloquant", async () => {
+  /**
+   * Régression : le matin du 2026-10-27, « aucun allergène » contredit par la
+   * composition était un constat BLOQUANT ; la composition corrige désormais
+   * l'état servi, sans constat (`plan-allergenes-jamais-bloquants.md`).
+   */
+  it("ne signale plus « aucun allergène » contredit par la composition", async () => {
     const product = tarte({
       variants: [
         bareVariant({
@@ -69,15 +80,7 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
     });
     const cited = new FixedCitedAllergens(new Map([[PRODUCT_ID, ["gluten"]]]));
 
-    const [view] = await listing(product, cited).execute();
-
-    expect(view?.warnings).toEqual([
-      expect.objectContaining({
-        code: "allergens_contradict_none",
-        severity: "blocking",
-        allergenCodes: ["gluten"],
-      }),
-    ]);
+    expect(await listing(product, cited).execute()).toEqual([]);
   });
 
   it("ignore une fiche archivée, et lit les citations en un seul lot", async () => {

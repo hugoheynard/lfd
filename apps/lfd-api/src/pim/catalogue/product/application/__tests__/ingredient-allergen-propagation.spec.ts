@@ -316,11 +316,13 @@ describe("ApplyIngredientAllergenPropagation", () => {
   });
 
   /**
-   * Régression nommée par le plan : une fiche qui déclarait « aucun allergène »
-   * devient bloquante dès que l'ingrédient qu'elle cite porte le gluten ; la
-   * propagation est le geste qui la répare (2026-10-27).
+   * Régression nommée par le plan du 2026-10-27 : propager écrit le gluten
+   * dans la déclaration de la fiche qui déclarait « aucun allergène ». Elle
+   * n'était plus bloquée avant (la composition corrige l'état servi depuis
+   * `plan-allergenes-jamais-bloquants.md`) ; la propagation reste le geste
+   * qui ÉCRIT.
    */
-  it("ajouter le gluten à un ingrédient puis propager rend activable la fiche qui déclarait aucun allergène", async () => {
+  it("ajouter le gluten à un ingrédient puis propager écrit le gluten dans la fiche qui déclarait aucun allergène", async () => {
     const products = new SomeProducts([fiche("p_none", [])]);
     const run = harness(
       products,
@@ -330,13 +332,14 @@ describe("ApplyIngredientAllergenPropagation", () => {
     const rules: CompletenessRules = {
       activeContextKeys: ["takeaway"],
     };
-    const blocked = await products.findById("p_none");
+    const before = await products.findById("p_none");
 
     await run.apply.execute(new ApplyIngredientAllergenPropagationCommand(KEY, ["GB"], []));
     const written = run.sheets.calls[0]?.declaration;
     const after = fiche("p_none", written?.allergens ?? null);
 
-    expect(blocked?.isActivatableWith(vat, rules, ["GB"])).toBe(false);
+    expect(before?.isActivatableWith(vat, rules, ["GB"])).toBe(true);
+    expect(written?.allergens).toEqual(["GB"]);
     expect(Product.reconstitute(after).isActivatableWith(vat, rules, ["GB"])).toBe(true);
   });
 });

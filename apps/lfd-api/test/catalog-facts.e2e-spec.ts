@@ -24,6 +24,7 @@ import { CustomerRole } from "../src/platform/database/client/client.js";
 import { OutboxRelayTrigger } from "../src/platform/outbox/outbox-relay-trigger.js";
 import { Clock } from "../src/platform/time/clock.js";
 import {
+  activateFiche,
   aDraftFiche,
   anActiveFiche,
   deliverDirectly,
@@ -102,8 +103,8 @@ describe("une fiche créée au référentiel apparaît sur la plateforme", () =>
       // Lot 2b : un taux pour CHAQUE contexte en service, sur place compris.
       [fiche.variantSku]: [
         "price",
-        "allergens",
-        // Lot S : une base sans règles vaut « prix saisi » — il manque le prix
+        // Les allergènes ne sont plus un manque depuis le 2026-10-27
+        // (`plan-allergenes-jamais-bloquants.md`). Lot S : une base sans règles vaut « prix saisi » — il manque le prix
         // pro de la déclinaison, plus un rapport (`pro_price_rule`, d'avant).
         "pro_price",
         "vat:b2b",
@@ -130,6 +131,57 @@ describe("une fiche créée au référentiel apparaît sur la plateforme", () =>
     expect(await ctx.prisma.catalogPriceHistory.count({ where: { sku: fiche.variantSku } })).toBe(
       1,
     );
+  });
+});
+
+/**
+ * Les allergènes ne bloquent plus (`documentation/pim/plan-allergenes-jamais-bloquants.md`,
+ * 2026-10-27) : ce que la composition cite s'ajoute à l'état servi, et une
+ * fiche sans déclaration part en vente par précaution.
+ */
+describe("les allergènes servis à la plateforme", () => {
+  /**
+   * Règle B : en vente, allergènes à `null`. Le fil ne porte pas encore de
+   * traces — envoyer les seuls cités ferait lire « aucun allergène ».
+   */
+  it("une fiche sans déclaration passe en vente, ses allergènes non renseignés", async () => {
+    const fiche = await anActiveFiche(staff, "Fougasse", null, null);
+
+    await relayAll(ctx);
+
+    expect(await entryOf(fiche.id)).toMatchObject({ status: "active", gaps: {} });
+    expect(await itemOf(fiche.variantSku)).toMatchObject({
+      withdrawnAt: null,
+      allergens: null,
+      allergenLabels: null,
+    });
+  });
+
+  /** Régression : refusé le matin du 2026-10-27 (contradiction bloquante). */
+  it("le pain sans blé qui déclarait aucun allergène et citait le gluten se publie avec le gluten déclaré", async () => {
+    await staff()
+      .post("/pim/ingredients")
+      .send({ key: "farine-e2e", name: { fr: "Farine" }, origin: "France", appellationCode: null })
+      .expect(201);
+    await staff()
+      .put("/pim/ingredients/farine-e2e/allergens")
+      .send({ codes: ["UW"] })
+      .expect(200);
+    const fiche = await aDraftFiche(staff, "Pain sans blé");
+    await staff()
+      .put(`/pim/products/${fiche.id}/ingredients`)
+      .send({ keys: ["farine-e2e"] })
+      .expect(200);
+    const published = await activateFiche(staff, fiche);
+
+    await relayAll(ctx);
+
+    expect((await itemOf(published.variantSku))?.allergens).toEqual(["UW"]);
+    // La déclaration ENREGISTRÉE n'est pas réécrite.
+    const sheet = await ctx.prisma.variantAllergens.findFirst({
+      where: { variant: { sku: published.variantSku } },
+    });
+    expect(sheet?.allergens).toEqual([]);
   });
 });
 

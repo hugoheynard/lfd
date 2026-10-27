@@ -40,14 +40,24 @@ describe('la composition en regard de la déclaration', () => {
 
   /**
    * Le cas du beurre : un ingrédient porteur d'un allergène, sur une fiche qui
-   * affirme n'en avoir aucun. C'est une CONTRADICTION, pas une suggestion.
+   * affirme n'en avoir aucun. Plus un refus depuis le 2026-10-27 (règle A de
+   * `plan-allergenes-jamais-bloquants.md`) : l'encart annonce l'ajout.
    */
-  it('crie quand la composition contredit un « aucun allergène »', () => {
+  it('repère la composition qui dément un « aucun allergène »', () => {
     store['citedAllergensValue'].set(['milk']);
     store.declareNoAllergen(true);
 
     expect(store.citedContradictsNone()).toBe(true);
     expect(store.citedNotDeclared().map((choice) => choice.label)).toEqual(['Lait']);
+  });
+
+  /** Règle B : sans déclaration, la fiche se publie par précaution — l'encart le dit. */
+  it('sait qu’aucune déclaration n’est posée, et qu’« aucun allergène » en est une', () => {
+    expect(store.allergensUndeclared()).toBe(true);
+
+    store.declareNoAllergen(true);
+
+    expect(store.allergensUndeclared()).toBe(false);
   });
 
   it('propose ce que la déclaration ne porte pas encore', () => {

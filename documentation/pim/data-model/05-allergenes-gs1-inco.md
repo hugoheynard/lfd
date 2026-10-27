@@ -480,21 +480,42 @@ mayContain, certified)` rend la liste des contradictions, par déclinaison. Pas
 
 #### Ce qui est bâti : le jugement unique (2026-10-27)
 
-Bâti sous une forme plus large que les trois pièces ci-dessus :
+> 🔄 **Décision retournée le soir même (2026-10-27).** La contradiction était
+> **bloquante** le matin (`ALLERGEN_CONTRADICTION_SEVERITY`, refus
+> `ProductAllergenContradictionError`). Hugo l'a retournée pour « diminuer la
+> friction admin » : un refus obligeait le staff à un geste de plus pour une
+> correction que la machine sait faire seule, et l'absence de déclaration
+> rendait invendable une fiche par ailleurs prête. Plan :
+> [`plan-allergenes-jamais-bloquants.md`](../plan-allergenes-jamais-bloquants.md).
+> La sévérité, le refus et les deux constats ont été retirés du code ; le
+> texte ci-dessous décrit l'état bâti après le retournement.
+
 `productCompliance(variants résolues, taux, règles, allergènes cités)`
 (`apps/lfd-api/src/pim/catalogue/product/domain/services/product-compliance.ts`) rend **tous** les
 constats d'une fiche, chacun `blocking` ou `warning` : déclinaisons toutes
 arrêtées, déclinaison incomplète (les clés de `variantGaps` ; bloquante si
-aucune n'est complète), et contradiction composition ↔ déclaration
-(`allergens_cited_not_declared`, `allergens_contradict_none`). La contradiction
-est **bloquante** par décision de Hugo du 2026-10-27
-(`ALLERGEN_CONTRADICTION_SEVERITY`) — `may_contain` et les certifications n'y
-entrent pas encore. L'activation (`Product.activate`, refus
-`ProductAllergenContradictionError`), le champ `activatable` de la liste et la
-route `GET /pim/catalogue/products/compliance-warnings` (fiches non archivées
-portant au moins un constat) en dérivent tous. Une fiche déjà publiée et
-contradictoire n'est ni retirée ni modifiée : elle apparaît en constat
-bloquant.
+aucune n'est complète — prix, prix pro, taux ; **plus les allergènes**), et
+`allergens_precautionary` (toujours `warning`) pour une déclinaison sans
+déclaration. L'activation (`Product.activate`), le champ `activatable` de la
+liste et la route `GET /pim/catalogue/products/compliance-warnings` en
+dérivent tous.
+
+Les deux règles de l'état **servi** vivent dans un seul service,
+`effectiveAllergens(déclaration, cités, unionCatalogue)`
+(`…/domain/services/effective-allergens.ts`). La déclaration **enregistrée**
+n'est jamais réécrite :
+
+- **A** — ce que la composition cite est ajouté aux allergènes servis (et
+  retiré des traces). Aucun constat : la contradiction n'existe plus comme
+  refus. La projection vers le commerce (`catalog-facts.ts`, `projection.ts`)
+  l'applique, et l'encart de la fiche l'annonce.
+- **B** — sans déclaration, allergènes = cités, traces = union des allergènes
+  déclarés du catalogue publié. « Aucun allergène » (`[]`) reste une
+  déclaration. ⚠️ **Le fil vers le commerce ne porte pas de traces**
+  (`SyncVariant`, vérifié le 2026-10-27) : une déclinaison sous B part donc
+  avec `allergens: null` (« non renseigné ») tant que le contrat n'a pas de
+  champ « peut contenir » — envoyer les seuls cités ferait lire « aucun
+  allergène » à une fiche muette.
 
 #### La maille du refus est le produit, celle du jugement la déclinaison
 

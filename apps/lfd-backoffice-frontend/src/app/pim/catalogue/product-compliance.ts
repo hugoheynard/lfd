@@ -83,12 +83,13 @@ const VAT_GAP_PREFIX = 'vat:';
  */
 const GAP_LABELS: Readonly<Record<string, string>> = {
   price: 'prix',
+  // Plus calculé depuis le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`) :
+  // gardé pour relire les manques publiés avant.
   allergens: 'allergènes',
   pro_price: 'prix pro',
   // Plus calculé depuis le lot R3 (2026-10-27, le prix pro est toujours
   // saisi) : gardé pour relire les manques publiés avant.
   pro_price_rule: 'rapport pro',
-  allergen_contradiction: 'déclaration d’allergènes cohérente avec la composition',
 };
 
 export function gapLabel(gap: string): string {
@@ -100,37 +101,40 @@ export function gapLabel(gap: string): string {
 }
 
 /**
- * Un constat, en une phrase qui dit le cas et le geste de sortie.
- * `allergenLabel` rend le libellé français d'un code (le code lui-même faute de mieux).
+ * Une déclinaison sans déclaration d'allergènes, publiée par précaution
+ * (règle B de `plan-allergenes-jamais-bloquants.md`, 2026-10-27).
  */
-export function findingText(
-  finding: ProductComplianceFinding,
-  allergenLabel: (code: string) => string,
-): string {
+const PRECAUTIONARY_TEXT =
+  'publiée sans information précise : traces de tous les allergènes du catalogue — ' +
+  'déclarez ses allergènes pour lever ce constat.';
+
+/** Le toast d'information qui suit la publication d'une telle fiche — il ne demande rien. */
+export const PRECAUTIONARY_NOTICE =
+  'Publiée sans information précise : traces de tous les allergènes du catalogue. ' +
+  'La fiche reste « À vérifier » tant que ses allergènes ne sont pas déclarés.';
+
+/** La fiche porte-t-elle une déclinaison publiée par précaution ? Lu, jamais jugé ici. */
+export function isPrecautionary(
+  findings: readonly ProductComplianceFinding[] | undefined,
+): boolean {
+  return (findings ?? []).some((finding) => finding.code === 'allergens_precautionary');
+}
+
+/** Un constat, en une phrase qui dit le cas et le geste de sortie. */
+export function findingText(finding: ProductComplianceFinding): string {
   switch (finding.code) {
     case 'all_variants_discontinued':
       return 'Toutes les déclinaisons sont arrêtées : rien ne se vendrait — rouvrez-en une.';
     case 'variant_incomplete':
       return `Déclinaison ${finding.sku} — manque : ${finding.missing.map(gapLabel).join(', ')}.`;
-    case 'allergens_contradict_none':
-      return (
-        `La composition contredit la déclaration d'allergènes (SKU ${finding.sku}) : ` +
-        `${finding.allergenCodes.map(allergenLabel).join(', ')} — reprenez-la dans la fiche ` +
-        `réglementaire, ou retirez l'ingrédient en cause.`
-      );
-    case 'allergens_cited_not_declared':
-      return (
-        `La composition cite des allergènes absents de la déclaration (SKU ${finding.sku}) : ` +
-        `${finding.allergenCodes.map(allergenLabel).join(', ')} — déclarez-les dans la fiche ` +
-        `réglementaire, ou retirez l'ingrédient en cause.`
-      );
+    case 'allergens_precautionary':
+      return `Déclinaison ${finding.sku} — ${PRECAUTIONARY_TEXT}`;
   }
 }
 
 /** Tous les constats d'une fiche, bloquants d'abord ; préfixés quand elle est en vente. */
 export function findingsText(
   findings: readonly ProductComplianceFinding[],
-  allergenLabel: (code: string) => string,
   state: ComplianceState | null = null,
 ): string {
   const prefix = state === 'non_compliant_live' ? LIVE_PREFIX : '';
@@ -138,7 +142,7 @@ export function findingsText(
     prefix +
     [...findings]
       .sort((a, b) => Number(b.severity === 'blocking') - Number(a.severity === 'blocking'))
-      .map((finding) => findingText(finding, allergenLabel))
+      .map(findingText)
       .join(' ')
   );
 }

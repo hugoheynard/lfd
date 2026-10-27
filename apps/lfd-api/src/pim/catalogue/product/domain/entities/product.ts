@@ -309,9 +309,12 @@ export class Product {
    * construction**, déclinaison par déclinaison, et non sur la fiche entière.
    *
    * Activer exige **au moins une déclinaison non arrêtée complète** (C1 et 2b3
-   * de `plan-catalogue-synchronise-par-audience.md`) : un prix public, ses
-   * allergènes déclarés (`[]` est une réponse), un prix pro HT saisi (seule
-   * source depuis le lot R3), et un taux pour chaque contexte de vente en service. Les autres
+   * de `plan-catalogue-synchronise-par-audience.md`) : un prix public, un prix
+   * pro HT saisi (seule source depuis le lot R3), et un taux pour chaque
+   * contexte de vente en service. Les allergènes ne refusent plus rien depuis
+   * le 2026-10-27 (`plan-allergenes-jamais-bloquants.md`) : la composition
+   * corrige la déclaration servie, l'absence de déclaration se sert par
+   * précaution (`effective-allergens.ts`). Les autres
    * déclinaisons n'empêchent rien : la projection des faits ET l'envoi actuel
    * (`variant_sans_allergenes`) les écartent de la vente — c'est ce qui rend
    * l'assouplissement sûr, et c'est pourquoi il n'a pas été fait avant.

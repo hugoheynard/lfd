@@ -125,10 +125,12 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
   });
 
   it("dit tous les manques d'un coup plutôt qu'un à la fois", () => {
-    const tarte = product({ variants: [variant({ priceCents: null, allergenSheet: null })] });
+    const tarte = product({
+      variants: [variant({ priceCents: null, proPriceMillicents: null })],
+    });
 
     expect(() => tarte.activate({}, RULES, NO_CITED_ALLERGENS)).toThrow(
-      /PAT-1.*prix.*allergènes.*takeaway/,
+      /PAT-1.*prix public.*prix pro.*takeaway/,
     );
   });
 

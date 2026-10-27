@@ -160,38 +160,31 @@ describe("les allergènes suffisent, la nutrition ne remplace rien", () => {
 
   /**
    * 🔴 **Le cas 2 — l'état nommé de D3.** Des valeurs saisies, aucune
-   * déclaration d'allergène : la fiche a l'air renseignée et ne l'est pas.
-   * C'est le piège que le lot existe pour rendre bruyant, parce qu'un tableau
-   * nutritionnel se copie d'un document tandis qu'une déclaration d'allergène
-   * demande de regarder la recette.
+   * déclaration d'allergène. Refusé (409) jusqu'au 2026-10-27 ; depuis
+   * `plan-allergenes-jamais-bloquants.md` (règle B), la fiche se publie PAR
+   * PRÉCAUTION, sans qu'aucune déclaration soit inventée.
    */
-  it("refuse (409) des valeurs nutritionnelles sans déclaration d’allergène", async () => {
-    const { productId, variantId, sku } = await aProduct("-c");
+  it("publie par précaution des valeurs nutritionnelles sans déclaration d’allergène", async () => {
+    const { productId, variantId } = await aProduct("-c");
     await saveNutrition(productId, variantId, { energyKcal: SOME_ENERGY }).expect(200);
 
-    const refus = await publish(productId);
-
-    expect(refus.status).toBe(409);
-    const body = jsonBody<{ code: string; message: string }>(refus);
-    // Lot 2b : un seul refus d'activation, qui nomme ce qui manque à chacune.
-    expect(body.code).toBe("catalogue.product.not_activatable");
-    // Le SKU nommé : le back-office ne lit que ce message, et « ce produit
-    // n'est pas publiable » n'aide personne devant six déclinaisons.
-    expect(body.message).toContain(sku);
-    // …et le geste de sortie, qui n'est PAS de remplir le tableau.
-    expect(body.message).toContain("Allergènes");
-    expect((await detailOf(productId)).status).toBe("draft");
+    expect((await publish(productId)).status).toBe(200);
+    expect((await detailOf(productId)).status).toBe("published");
+    expect(
+      await ctx.prisma.$queryRawUnsafe<{ variant_id: string }[]>(
+        `SELECT variant_id FROM pim.variant_allergens WHERE variant_id = '${variantId}'`,
+      ),
+    ).toEqual([]);
   });
 
-  /** Le refus se lève dès que la moitié manquante est écrite — et elle seule. */
-  it("se publie dès que les allergènes sont déclarés, valeurs inchangées", async () => {
+  /** Déclarer après coup n'écrit que la moitié allergènes — valeurs inchangées. */
+  it("garde la déclaration posée après une publication par précaution", async () => {
     const { productId, variantId } = await aProduct("-d");
     await saveNutrition(productId, variantId, { energyKcal: SOME_ENERGY }).expect(200);
-    expect((await publish(productId)).status).toBe(409);
+    expect((await publish(productId)).status).toBe(200);
 
     await saveAllergens(productId, variantId, { allergens: [DEFAULT_ALLERGEN] }).expect(200);
 
-    expect((await publish(productId)).status).toBe(200);
     expect((await detailOf(productId)).variants[0]?.allergenSheet?.declared).toEqual([
       DEFAULT_ALLERGEN,
     ]);

@@ -4,7 +4,13 @@ import type { VariantSnapshot } from "../entities/variant.js";
 
 /** Ce qui manque à une déclinaison pour se vendre — des clés, que l'écran traduit. */
 export const PRICE_GAP = "price";
-export const ALLERGENS_GAP = "allergens";
+/**
+ * ⚠️ La déclaration d'allergènes n'est plus un manque depuis le 2026-10-27
+ * (`plan-allergenes-jamais-bloquants.md`) : une déclinaison sans déclaration
+ * se sert par précaution (`effective-allergens.ts`, règle B). La clé
+ * `allergens` ne vit plus que dans des manques publiés avant ; l'écran garde
+ * son libellé pour les relire.
+ */
 /**
  * Le prix pro HT n'est pas saisi — seule source depuis le lot R3
  * (`plan-retirer-le-rapport-pro.md`, 2026-10-27).
@@ -28,10 +34,7 @@ export interface CompletenessRules {
 }
 
 /** Ce que la règle lit d'une déclinaison — RÉSOLUE (une alignée porte le défaut). */
-export type CompletenessInput = Pick<
-  VariantSnapshot,
-  "priceCents" | "proPriceMillicents" | "allergenSheet"
->;
+export type CompletenessInput = Pick<VariantSnapshot, "priceCents" | "proPriceMillicents">;
 
 /**
  * Les contextes dont le taux est exigé : tous ceux en service, et le contexte
@@ -57,8 +60,7 @@ export function requiredContexts(rules: CompletenessRules): string[] {
  * (`catalog-facts.ts`) appellent tous deux (lot 2b de
  * `plan-catalogue-synchronise-par-audience.md`).
  *
- * Complète = un prix public, ses allergènes déclarés (`[]` est une
- * déclaration), un prix pro HT saisi, et un taux pour chaque contexte
+ * Complète = un prix public, un prix pro HT saisi, et un taux pour chaque contexte
  * requis. Vide = complète.
  *
  * Pure : le taux arrive résolu (famille, dérogation, registre), comme la
@@ -73,9 +75,6 @@ export function variantGaps(
   const missing: string[] = [];
   if (variant.priceCents === null) {
     missing.push(PRICE_GAP);
-  }
-  if (variant.allergenSheet === null) {
-    missing.push(ALLERGENS_GAP);
   }
   // Le prix pro HT saisi est sa seule source (lot R3) : sans saisie, c'est la
   // section « Tarif » qu'il faut ouvrir. Le taux `b2b` qui le facture est
