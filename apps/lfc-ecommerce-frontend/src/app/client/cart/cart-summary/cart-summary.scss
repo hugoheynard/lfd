@@ -38,6 +38,9 @@
 }
 
 .lines {
+  /* Les lignes se mettent en page selon la largeur du PANIER, pas de
+     l'écran : le popover fait 372 px même sur un grand écran. */
+  container-type: inline-size;
   display: flex;
   flex-direction: column;
   margin: 0;

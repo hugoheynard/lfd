@@ -3,7 +3,7 @@
  *
  * **Une ligne de ticket** (Hugo, 2026-10-27, option B) : au bureau, une seule
  * rangée — le nom et son prix unitaire en dessous, puis la quantité, le total
- * et la corbeille. Sur un téléphone, deux rangées : le nom et le total en
+ * et la corbeille. Dans un panier étroit (popover, téléphone), deux rangées : le nom et le total en
  * haut, le prix unitaire et la quantité en dessous.
  */
 :host {
@@ -113,7 +113,7 @@
   white-space: nowrap;
 }
 
-@media (max-width: 599.98px) {
+@container (max-width: 479.98px) {
   :host {
     grid-template-columns: minmax(0, 1fr) auto auto;
     grid-template-areas:
@@ -124,5 +124,9 @@
 
   .qty {
     justify-self: end;
+  }
+
+  .unit {
+    align-self: center;
   }
 }
