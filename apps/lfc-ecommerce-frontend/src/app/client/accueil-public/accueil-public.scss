@@ -1012,4 +1012,10 @@ app-service-doors {
     border-radius: 0;
     box-shadow: none;
   }
+
+  /* Et la bande « Nous contacter » s'y colle (Hugo, 2026-10-27) : la marge
+     négative reprend l'écart de la feuille. */
+  .sheet > .banner:first-child + .bands {
+    margin-top: calc(-1 * var(--fold-space-2xl));
+  }
 }
