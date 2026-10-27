@@ -108,7 +108,7 @@ describe('ProductSheet', () => {
     expect(el().querySelector('app-quantity-rail .qty')?.textContent?.trim()).toBe('1');
     expect(cta()?.textContent).toContain('Ajouter 1');
     // 1 × 1,40 € HT
-    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,40 €');
+    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,40 € HT');
   });
 
   it('part de la quantité au panier quand il y en a', () => {
@@ -168,7 +168,7 @@ describe('ProductSheet', () => {
     expect(batches()[1]?.classList.contains('current')).toBe(true);
     expect(cta()?.textContent).toContain('Ajouter 12');
     // 12 × 1,40 € HT
-    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('16,80 €');
+    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('16,80 € HT');
   });
 
   it('ne propose AUCUN lot à un particulier', () => {
@@ -182,7 +182,7 @@ describe('ProductSheet', () => {
 
     expect(el().querySelector('.amount')?.textContent?.trim()).toBe('1,48 €');
     expect(el().querySelector('.per')?.textContent).toContain(FR.shop.ttcSuffix);
-    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,48 €');
+    expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,48 € TTC');
   });
 
   it('dérive « Prix pro −10 % » des deux montants servis', () => {

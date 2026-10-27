@@ -286,3 +286,12 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Au téléphone, la photo ne prend pas plus du quart de l'écran : la fiche a
+   besoin de sa hauteur pour le prix, les allergènes et la quantité
+   (2026-10-27 : la zone qui défile tombait à ~200 px). */
+@media (max-width: 899.98px) {
+  .photo {
+    max-height: 25dvh;
+  }
+}
