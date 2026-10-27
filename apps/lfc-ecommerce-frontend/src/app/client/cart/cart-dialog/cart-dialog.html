@@ -87,7 +87,11 @@
       <fold-callout variant="alert" data-no-service>{{ t().shop.noService }}</fold-callout>
     }
 
-    <app-cart-summary />
+    <app-cart-summary>
+      @if (!ordersClosed() && !payNoteIsReason()) {
+        <p summaryNote class="pay-hint">{{ payNote() }}</p>
+      }
+    </app-cart-summary>
     @if (!ordersClosed() && termsShown()) {
       <!-- La case des CGV (Hugo, 2026-10-26) : une rangée à part, juste sous
            « Vider le panier » (Hugo, lot A5) — elle quitte le pied, où elle
@@ -125,79 +129,85 @@
 </fold-panel-body>
 
 <fold-panel-footer>
-  <!-- Le refus du serveur à la passation reste DANS le panier, annoncé
+  <!-- Une COLONNE : le pied rangeait titre, boutons et phrase sur une ligne,
+     et les boutons y rapetissaient (Hugo, 2026-10-27). -->
+  <div class="foot">
+    <!-- Le refus du serveur à la passation reste DANS le panier, annoncé
        (`announce` : `role="alert"`) : un toast vivait derrière le voile du
        dialogue, inerte pour un lecteur d'écran (lot A3). -->
-  @if (refusal(); as message) {
-    <fold-callout variant="alert" announce data-place-refused>{{ message }}</fold-callout>
-  }
-  <!-- La commande déjà en vol : une information, pas une panne — dite ici
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-place-refused>{{ message }}</fold-callout>
+    }
+    <!-- La commande déjà en vol : une information, pas une panne — dite ici
        pour la même raison que le refus (lot A5). -->
-  @if (inFlight(); as message) {
-    <fold-callout variant="info" announce data-place-in-flight>{{ message }}</fold-callout>
-  }
-  <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
+    @if (inFlight(); as message) {
+      <fold-callout variant="info" announce data-place-in-flight>{{ message }}</fold-callout>
+    }
+    <!-- Un panier vide n'a pas de bouton gris à offrir : il a un rayon à rouvrir.
        Le bouton ne se grise que faute de savoir qui commande, ou faute de
        créneau choisi (2026-10-14) — les deux cas où il n'a nulle part où
        mener, et la phrase dessous dit lequel. -->
-  @if (ordersClosed()) {
-    <!-- La boutique ne prend pas les commandes de cette clientèle : le
+    @if (ordersClosed()) {
+      <!-- La boutique ne prend pas les commandes de cette clientèle : le
          catalogue et le panier restent, le bouton cède la place à l'encadré.
          Une personne exemptée (2026-10-26) garde son bouton. -->
-    <fold-callout variant="info" data-orders-closed>
-      <strong>{{ t().cart.ordersClosed }}</strong>
-      {{ t().cart.ordersClosedHint }}
-    </fold-callout>
-  } @else if (mayUseAccount()) {
-    <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
+      <fold-callout variant="info" data-orders-closed>
+        <strong>{{ t().cart.ordersClosed }}</strong>
+        {{ t().cart.ordersClosedHint }}
+      </fold-callout>
+    } @else if (mayUseAccount()) {
+      <!-- 🔴 DEUX ACTIONS, et non un interrupteur (Hugo, 2026-09-21). Payer
          comptant reste TOUJOURS possible, y compris au mensuel : régler tout de
          suite avec son propre tarif est un droit, pas une exception — c'est
          écrit dans le contrat (`orderSettlementSchema`). Un interrupteur aurait
          fait du crédit un défaut dont il faut sortir. -->
-    <p class="settle-title">{{ t().cart.settleTitle }}</p>
-    <div class="settle">
+      <p class="settle-title">{{ t().cart.settleTitle }}</p>
+      <div class="settle">
+        <button
+          class="pay"
+          type="button"
+          [disabled]="payBlocked()"
+          [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
+          (click)="void proceedOnAccount()"
+        >
+          {{ t().cart.settleAccount }}
+        </button>
+        <button
+          class="pay is-quiet"
+          type="button"
+          [disabled]="payBlocked()"
+          [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
+          (click)="void proceedByCard()"
+        >
+          {{ t().cart.settleCard }}
+        </button>
+      </div>
+    } @else {
       <button
         class="pay"
         type="button"
         [disabled]="payBlocked()"
         [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
-        (click)="void proceedOnAccount()"
+        (click)="void proceed()"
       >
-        {{ t().cart.settleAccount }}
+        {{ ctaLabel() }}
       </button>
-      <button
-        class="pay is-quiet"
-        type="button"
-        [disabled]="payBlocked()"
-        [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
-        (click)="void proceedByCard()"
-      >
-        {{ t().cart.settleCard }}
-      </button>
-    </div>
-  } @else {
-    <button
-      class="pay"
-      type="button"
-      [disabled]="payBlocked()"
-      [attr.aria-describedby]="payNoteIsReason() ? payNoteId : null"
-      (click)="void proceed()"
-    >
-      {{ ctaLabel() }}
-    </button>
-  }
-  @if (!ordersClosed()) {
-    <!-- Ce qui manque pour régler, ou comment on règle (RGAA 11.10/11.11,
+    }
+    @if (!ordersClosed()) {
+      <!-- Ce qui manque pour régler, ou comment on règle (RGAA 11.10/11.11,
          lot A3) : une région `status` qui reste en place, pour que son
          CHANGEMENT s'annonce, et que le bouton cite tant qu'elle dit un manque. -->
-    <p
-      class="hint"
-      role="status"
-      [id]="payNoteId"
-      [attr.data-pay-blocked]="payNoteIsReason() ? '' : null"
-      [attr.data-slot-missing]="slotMissing() ? '' : null"
-    >
-      {{ payNote() }}
-    </p>
-  }
+      <p
+        class="hint"
+        role="status"
+        [id]="payNoteId"
+        [attr.data-pay-blocked]="payNoteIsReason() ? '' : null"
+        [attr.data-slot-missing]="slotMissing() ? '' : null"
+      >
+        @if (payNoteIsReason()) {
+          {{ payNote() }}
+        }
+      </p>
+    }
+  </div>
 </fold-panel-footer>

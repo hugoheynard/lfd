@@ -744,7 +744,12 @@ describe('le panier fait accepter les CGV', () => {
     TestBed.inject(SalesTermsConsent).check(true);
     fixture.detectChanges();
 
-    expect(note(fixture)?.textContent?.trim()).toBe(FR.cart.payHint);
+    // Rien ne manque : la note du pied se tait, et comment on règle se dit
+    // dans le corps, avant les mentions du total (Hugo, 2026-10-27).
+    expect(note(fixture)?.textContent?.trim()).toBe('');
+    expect(fixture.nativeElement.querySelector('.pay-hint')?.textContent?.trim()).toBe(
+      FR.cart.payHint,
+    );
     expect(bouton(fixture)?.getAttribute('aria-describedby')).toBeNull();
   });
 

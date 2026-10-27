@@ -248,7 +248,7 @@
 
 // La boutique fermée à la clientèle : la phrase prend la place du bouton.
 .hint {
-  margin: 9px 0 0;
+  margin: 0;
   text-align: center;
   font-size: var(--fold-text-xs);
   line-height: var(--lfc-leading-note);
@@ -282,9 +282,31 @@
   color: var(--lfc-color-text-subtle);
 }
 
+.foot {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+  width: 100%;
+}
+
+/* Comment on règle, dans le corps, juste avant les mentions du total. */
+.pay-hint {
+  margin: 0;
+  text-align: center;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-note);
+  color: var(--fold-color-text);
+}
+
+/* DEUX GROS BOUTONS côte à côte, à toutes les largeurs (Hugo, 2026-10-27). */
 .settle {
   display: grid;
+  grid-template-columns: 1fr 1fr;
   gap: var(--fold-space-sm);
+
+  .pay {
+    height: 60px;
+  }
 }
 
 /* Le comptant est la seconde réponse, pas une action mineure : même hauteur,
@@ -292,10 +314,4 @@
 .pay.is-quiet {
   background: var(--lfc-color-accent-surface);
   color: var(--fold-color-text);
-}
-
-@media (min-width: 900px) {
-  .settle {
-    grid-template-columns: 1fr 1fr;
-  }
 }
