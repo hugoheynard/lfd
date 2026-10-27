@@ -3,6 +3,15 @@
   flex-direction: column;
   min-height: 100%;
   background: var(--fold-color-bg-page);
+
+  /* Le panier est BLANC ET BLEU (Hugo, 2026-10-27 : « ça a l'air crème ») :
+     ses encadrés d'accent — la question du service, le mode de règlement —
+     quittent le beurre pour le bleu pâle. Les avertissements gardent le
+     leur : c'est leur ton, pas un décor. */
+  --lfc-color-accent-surface: var(--lfc-ink-50);
+  --lfc-color-accent-border: var(--lfc-ink-100);
+  --lfc-color-on-accent: var(--lfc-brand-blue);
+  --lfc-color-accent-text: var(--lfc-brand-blue);
 }
 
 .page {
