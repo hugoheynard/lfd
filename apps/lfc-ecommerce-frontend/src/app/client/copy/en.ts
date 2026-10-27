@@ -95,7 +95,6 @@ export const EN: ClientCopy = {
     newTab: '{name} (new tab)',
     newOrder: 'New order',
     logout: 'Sign out',
-    address: 'Le Labo · route de la Balme, Val d’Isère — 7 am – 7 pm',
     hello: 'Hello {name}.',
     helloAnonymous: 'Hello.',
   },

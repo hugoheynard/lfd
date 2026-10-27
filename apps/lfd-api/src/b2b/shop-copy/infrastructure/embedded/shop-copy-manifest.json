@@ -4703,13 +4703,6 @@
           "variables": []
         },
         {
-          "key": "nav.address",
-          "fr": "Le Labo · route de la Balme, Val d’Isère — 7 h – 19 h",
-          "en": "Le Labo · route de la Balme, Val d’Isère — 7 am – 7 pm",
-          "it": "Le Labo · route de la Balme, Val d’Isère — 7 – 19",
-          "variables": []
-        },
-        {
           "key": "nav.hello",
           "fr": "Bonjour {name}.",
           "en": "Hello {name}.",

@@ -1,3 +1,5 @@
+import { By } from '@angular/platform-browser';
+import { FoldListboxComponent } from 'fold-ng';
 import { signal, type WritableSignal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
@@ -121,39 +123,34 @@ describe('ClientMenu', () => {
 /** Plan espace de travail, D8 : le même sélecteur qu'au bureau. */
 describe('ClientMenu — le sélecteur d’espace', () => {
   const MAISON_A: CompanyView = { ...TOMMEUSES, id: 'cmp_a', enseigne: 'Maison A' };
-  const spaces = (fixture: ComponentFixture<ClientMenu>): HTMLButtonElement[] =>
-    Array.from(
-      (fixture.nativeElement as HTMLElement).querySelectorAll<HTMLButtonElement>('.spaces .space'),
-    );
+  const listbox = (
+    fixture: ComponentFixture<ClientMenu>,
+  ): FoldListboxComponent<string> | undefined =>
+    fixture.debugElement.query(By.directive(FoldListboxComponent))?.componentInstance as
+      FoldListboxComponent<string> | undefined;
 
   it('sans société, aucun sélecteur', () => {
     const fixture = boot();
     expect((fixture.nativeElement as HTMLElement).querySelector('.spaces')).toBeNull();
   });
 
-  it('« Perso » puis la société, le courant marqué, et l’espace en cours dessous', () => {
+  /** Une liste déroulante, plus des boutons empilés (Hugo, 2026-10-27). */
+  it('« Perso » puis la société, dans une liste qui montre l’espace en cours', () => {
     const fixture = boot(PROFILE, [MAISON_A]);
 
-    expect(spaces(fixture).map((b) => b.textContent?.trim())).toEqual([
+    expect((listbox(fixture)?.options() ?? []).map((o) => o.label)).toEqual([
       FR.chrome.workspacePersonal,
       'Maison A',
     ]);
-    expect(spaces(fixture).map((b) => b.getAttribute('aria-pressed'))).toEqual(['true', 'false']);
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.space-current')?.textContent?.trim(),
-    ).toBe(FR.chrome.workspaceCurrentPersonal);
+    expect(listbox(fixture)?.value()).toBe(wire.workspace.current());
   });
 
-  it('choisir la société bascule, et la coche la suit', () => {
+  it('choisir la société dans la liste bascule', () => {
     const fixture = boot(PROFILE, [MAISON_A]);
 
-    spaces(fixture)[1]?.click();
+    listbox(fixture)?.selectionChange.emit('cmp_a');
     fixture.detectChanges();
 
     expect(wire.workspace.chosen).toEqual(['cmp_a']);
-    expect(spaces(fixture)[1]?.querySelector('fold-icon')).not.toBeNull();
-    expect(
-      (fixture.nativeElement as HTMLElement).querySelector('.space-current')?.textContent?.trim(),
-    ).toBe('Maison A');
   });
 });

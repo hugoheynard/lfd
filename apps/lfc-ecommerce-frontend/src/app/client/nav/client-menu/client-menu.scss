@@ -255,12 +255,6 @@
   cursor: pointer;
 }
 
-.address {
-  margin: 0;
-  font-size: var(--fold-text-md);
-  color: var(--lfc-color-on-primary-muted);
-}
-
 /* Le menu est une affordance de POCHE. Au-delà du pli, la sous-barre porte les
    mêmes destinations en permanence : il n'y a plus rien à ouvrir. */
 @media (min-width: 1100px) {
@@ -280,45 +274,10 @@
   padding-top: var(--fold-space-lg);
 }
 
-.space {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-sm);
-  min-height: 48px;
-  padding: 0 var(--fold-space-md);
-  border: 1px solid var(--fold-color-border);
-  border-radius: var(--fold-radius-md);
-  background: transparent;
-  color: var(--fold-color-text);
-  font: inherit;
-  text-align: start;
-  cursor: pointer;
-}
-
 /* L'espace courant prend la surface que la déconnexion porte déjà : la coche dit
    lequel, la surface le détache sans une couleur de plus. */
-.space.is-on {
-  background: var(--fold-color-surface-hover);
-}
 
-.space-label {
-  font-size: var(--fold-text-base);
-  font-weight: var(--fold-weight-extrabold);
-}
-
-.space-titles {
-  display: flex;
-  flex-direction: column;
-}
-
-.space-via {
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
-}
-
-.space-current {
-  margin: 0;
-  font-size: var(--fold-text-sm);
-  color: var(--fold-color-text-muted);
+/* Le choix d'espace, en liste déroulante sous le salut. */
+.spaces {
+  margin-top: var(--fold-space-md);
 }

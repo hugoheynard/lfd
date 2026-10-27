@@ -180,7 +180,6 @@ export interface ClientCopy {
      */
     readonly newTab: string;
     readonly logout: string;
-    readonly address: string;
     /** Le salut du menu. `{name}` est remplacé par le prénom reconnu. */
     readonly hello: string;
     /** Le même, quand le compte ne porte pas encore de prénom. */

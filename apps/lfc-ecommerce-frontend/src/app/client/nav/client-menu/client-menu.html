@@ -19,28 +19,15 @@
 
     <!-- Le sélecteur d'espace, le même qu'au bureau : à partir d'une société (plan D8). -->
     @if (workspace.hasChoice()) {
-      <div class="spaces" role="group" [attr.aria-label]="t().chrome.workspaceChoice">
-        @for (space of spaces(); track space.value) {
-          <button
-            class="space"
-            type="button"
-            [class.is-on]="space.current"
-            [attr.aria-pressed]="space.current"
-            (click)="choose(space.value)"
-          >
-            <span class="space-titles">
-              <span class="space-label">{{ space.label }}</span>
-              @if (space.via; as via) {
-                <span class="space-via">{{ t().chrome.workspaceVia.replace('{name}', via) }}</span>
-              }
-            </span>
-            @if (space.current) {
-              <fold-icon name="check" />
-            }
-          </button>
-        }
-        <p class="space-current">{{ currentSpace() }}</p>
-      </div>
+      <!-- Une LISTE DÉROULANTE, plus des boutons empilés (Hugo, 2026-10-27) :
+           l'espace en cours s'y lit, et les autres s'y choisissent. -->
+      <fold-listbox
+        class="spaces"
+        [label]="t().chrome.workspaceChoice"
+        [options]="spaceOptions()"
+        [value]="workspace.current()"
+        (selectionChange)="choose($event)"
+      />
     }
 
     <a class="new-order" routerLink="/boutique" (click)="closed.emit()">
@@ -89,6 +76,5 @@
       {{ t().chrome.myProfile }}
     </button>
     <button class="logout" type="button" (click)="logout()">{{ t().nav.logout }}</button>
-    <p class="address">{{ t().nav.address }}</p>
   </div>
 </dialog>

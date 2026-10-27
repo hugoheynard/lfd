@@ -10,15 +10,11 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import { FoldIconComponent, FoldIdService } from 'fold-ng';
+import { FoldIconComponent, FoldIdService, FoldListboxComponent } from 'fold-ng';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientIdentity } from '../../client-identity.service';
-import {
-  ClientWorkspace,
-  currentWorkspaceLabel,
-  workspaceEntries,
-} from '../../client-workspace.service';
+import { ClientWorkspace, workspaceEntries } from '../../client-workspace.service';
 import { ClientWorkspaceSwitch } from '../../client-workspace-switch.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { LangSwitch } from '../../lang-switch/lang-switch';
@@ -51,7 +47,7 @@ import { ClientNav } from '../client-nav.service';
 @Component({
   selector: 'app-client-menu',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, LangSwitch, RouterLink],
+  imports: [FoldIconComponent, FoldListboxComponent, LangSwitch, RouterLink],
   templateUrl: './client-menu.html',
   styleUrl: './client-menu.scss',
 })
@@ -79,9 +75,15 @@ export class ClientMenu {
     ),
   );
 
-  /** La ligne sous le sélecteur : l'enseigne en cours, ou « Compte perso ». */
-  protected readonly currentSpace = computed(() =>
-    currentWorkspaceLabel(this.workspace.company(), this.t().chrome.workspaceCurrentPersonal),
+  /** Les espaces en options de la liste : l'enseigne, et par qui on y entre. */
+  protected readonly spaceOptions = computed(() =>
+    this.spaces().map((space) => ({
+      value: space.value,
+      label:
+        space.via === null
+          ? space.label
+          : `${space.label} — ${this.t().chrome.workspaceVia.replace('{name}', space.via)}`,
+    })),
   );
 
   /** L'espace change, et l'écran suit — cf. `ClientWorkspaceSwitch`. */
