@@ -161,7 +161,7 @@ describe('OrderBar', () => {
 
     expect(textOf(fixture, '.meta')).toBe(`3 pièces · −${formatCents(120)} de remise`);
     expect(textOf(fixture, '.pay')).toContain(COMMAND_TERMS_FR.pay);
-    expect(textOf(fixture, '.pay .total')).toBe(formatCents(1_080));
+    expect(textOf(fixture, '.pay .total')).toBe(`${formatCents(1_080)} TTC`);
   });
 
   /** « −0,00 € de remise » annoncerait un gain qui n'existe pas. */

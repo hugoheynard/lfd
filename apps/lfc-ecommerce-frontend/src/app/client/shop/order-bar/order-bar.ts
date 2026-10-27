@@ -4,6 +4,7 @@ import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientCart } from '../../cart/client-cart.service';
 import { formatCents } from '../../format-money';
+import { shownCartTotalLabel } from '../../cart/shown-cart-total';
 
 import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
@@ -85,8 +86,8 @@ export class OrderBar {
   /** Le compte de pièces du panier — celui que le pied lisait déjà. */
   protected readonly count = this.cart.count;
 
-  /** Le total du DEVIS, remise déduite : c'est ce que le règlement demandera. */
-  protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
+  /** Le total du devis, remise déduite, avec sa base (HT au compte, TTC sinon). */
+  protected readonly total = shownCartTotalLabel();
 
   /**
    * « 3 pièces · −1,20 € de remise ». La remise vient du devis, jamais d'un

@@ -15,7 +15,7 @@ import {
 } from 'fold-ng';
 
 import { BarSheet } from '../../shell/bar-sheet.service';
-import { formatCents } from '../../format-money';
+import { shownCartTotalLabel } from '../shown-cart-total';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { ClientCart } from '../client-cart.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
@@ -85,7 +85,7 @@ export class ClientCartPill {
     });
   }
 
-  protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
+  protected readonly total = shownCartTotalLabel();
 
   /** Le compte fait partie du NOM : sans lui, la pastille est muette. */
   protected readonly label = computed(() => {
