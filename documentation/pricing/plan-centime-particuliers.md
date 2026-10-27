@@ -1,19 +1,15 @@
 # Plan — un particulier paie la somme des étiquettes
 
-> 📝 **Plan, révision 3 du 2026-10-27** — le HT du taux se répartit sur les
-> lignes, plus d'écart d'en-tête. Révision 2 — la TVA d'un particulier n'est plus
-> le reste d'un HT gardé, elle se calcule « en dedans » et s'arrondit au
-> centime **supérieur** : elle ne peut jamais être inférieure à HT × taux
-> (exigence de Hugo). Le lot C1 (révision 1) est bâti et devra être repris (§ 8).
+> 📝 **Plan, révision 5 du 2026-10-27** (révision 4 relue par `vitruve`,
+> corrigée : § 4 à § 7, § 11). **Révision 4 du 2026-10-27 — voie B, choisie par Hugo** (« B, je
+> veux le système le mieux ») : une commande de particulier est **construite
+> en TTC**, de la ligne au total, et la TVA s'extrait par taux à la fin, au
+> centime supérieur. Les révisions 1 à 3 (HT gardé, écart nommé, HT réparti)
+> sont abandonnées ; leurs relectures restent au § 11. **Rien n'est bâti**
+> au-delà de `ventilateVatExact` (lot C1, à remplacer).
 >
-> Plan, première écriture le 2026-10-27. Il répond à
-> [`ecart-du-centime-particuliers.md`](ecart-du-centime-particuliers.md), dont il
-> reprend le diagnostic sans le recopier, et propose une autre piste que le
-> « TTC d'abord » retiré le 2026-10-09. Relu par `vitruve` le 2026-10-27 :
-> trois objections bloquantes, intégrées ci-dessous et listées au § 9.
->
-> 🔴 **Le pro n'est pas touché.** Aucune fonction qu'un panier ou une commande
-> pro traverse ne change de résultat ; un test le fige (§ 7, lot C3).
+> 🔴 **Le pro n'est pas touché** : aucune fonction qu'un panier ou une
+> commande pro traverse ne change de résultat ; `vat-frozen.spec.ts` le fige.
 
 ## 1. Le constat du jour
 
@@ -95,126 +91,192 @@ encaissée vaut HT × taux arrondi (11,21 × 20 % = 2,242 → 2,24) ; mais
 l'arrondi au plus proche peut, rarement, encaisser **un centime de moins** que
 HT × taux arrondi (§ 4). D'où le choix du supérieur.
 
-## 4. La méthode : TVA en dedans, arrondie au supérieur
+## 4. Le modèle : le TTC fait foi, la TVA se répartit
 
-Pour chaque taux d'une commande de particulier :
+Pour une commande `exact_ht` (clientèle `public`), **chaque terme est d'abord
+un montant TTC**, et c'est le TTC qui se garde, se borne et se fige :
 
-1. **TTC du taux** = HT exact net (millicentimes, remises au prorata, extras
-   compris) × (1 + taux), **un seul arrondi** au centime. Sans remise, c'est
-   Σ des étiquettes (lot C1, testé sur 4 000 paniers).
-2. **TVA du taux** = TTC × taux / (100 + taux), **arrondie au centime
-   supérieur**.
-3. **HT du taux** = TTC − TVA.
+| Terme           | Son TTC                                                                                                                                                                                                                                                                                                                                    |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Ligne           | **quantité × étiquette TTC** — l'étiquette étant `ttcCentsFromHtMillicents(prix résolu, taux)`, la fonction de la vignette ; le client paie ce qu'il lit, promotion comprise. ⚠️ Ce n'est PAS le TTC scellé d'aujourd'hui (`order-line.ts:160-161`, `ttcCentsOf(lineTotalCents(…))`, HT arrondi d'abord) : il est remplacé pour `exact_ht` |
+| Remise retrait  | sur le **TTC** des lignes éligibles (§ 5, R2)                                                                                                                                                                                                                                                                                              |
+| Bon de fidélité | sur le TTC des marchandises après remise (§ 5, R3)                                                                                                                                                                                                                                                                                         |
+| Frais de zone   | le barème converti en TTC à son taux (§ 5, R1)                                                                                                                                                                                                                                                                                             |
+| Total           | **Σ TTC des lignes − remises TTC + frais TTC** — rien d'autre ; c'est ce que Stripe prélève                                                                                                                                                                                                                                                |
 
-**Pourquoi la TVA ne peut jamais être inférieure** : soit x = TTC × t / (1+t)
-la TVA exacte contenue. Avec TVA = ⌈x⌉, le HT vaut TTC − ⌈x⌉ ≤ TTC − x =
-TTC / (1+t), donc HT × t ≤ x ≤ TVA. Ce n'est pas une mesure, c'est une
-inégalité. Le surplus encaissé est **< 1 centime par taux**, jamais plus.
+Puis, **pour chaque taux** :
 
-Avec l'arrondi au plus proche (le ticket U), TVA = x − δ avec δ ≤ 0,5 c, et
-HT × t = x + δ·t : la TVA peut alors tomber sous HT × t arrondi d'un centime
-(x = n,4999 c à 20 % : TVA n, HT × t = n,5999 → n + 1). Rare, mais possible —
-et c'est exactement ce que Hugo refuse.
+1. **TTC net du taux** = Σ TTC des termes de ce taux (une remise ou un port
+   qui touche plusieurs taux est d'abord découpé par taux, en centimes
+   entiers, au plus fort reste — `splitCents`, `order-vat-split.ts:75`).
+2. **TVA du taux** = TTC × taux / (100 + taux), **au centime supérieur**, en
+   arithmétique entière.
+3. **La TVA du taux se répartit sur ses termes** (lignes, part de remise, part
+   de bon, part de port), selon une règle **écrite et unique** :
+   - chaque terme reçoit d'abord l'**arrondi au plus proche de la TVA qu'il
+     contient** : TTC du terme × taux / (100 + taux), signée (une remise
+     contient une TVA négative) ;
+   - l'écart entre la TVA du taux et la somme de ces arrondis se distribue
+     **un centime à la fois**, aux termes dont le reste est le plus fort dans
+     le sens de l'écart ;
+   - **à égalité**, l'ordre est fixe : les lignes dans l'ordre de la commande,
+     puis la remise retrait, le bon, le port. Devis, agrégat et BL appellent
+     la même fonction et rendent les mêmes centimes.
 
-| Exemple               | TTC   | TVA (⌈⌉) | HT    | HT × taux | Contrôle     |
-| --------------------- | ----- | -------- | ----- | --------- | ------------ |
-| Banana bread 5,5 %    | 21,00 | 1,10     | 19,90 | 1,0945    | 1,10 ≥ ✓     |
-| Deux croissants 5,5 % | 2,40  | 0,13     | 2,27  | 0,12485   | 0,13 ≥ ✓     |
-| Ticket U, 5,5 %       | 11,03 | 0,58     | 10,45 | 0,57475   | ✓            |
-| Ticket U, 20 %        | 13,45 | 2,25     | 11,20 | 2,24      | ✓ (U : 2,24) |
+   Pondérer par la TVA **contenue**, et non par le TTC, évite les aberrations
+   relevées par `vitruve` : un bon qui solde (TTC net 0) ne divise par rien ;
+   un bon de 5,00 € sur une ligne de 5,01 € à 5,5 % laisse 1 c de TVA, et la
+   ligne porte 0,27 €, le bon −0,26 € (arrondis de 26,12 et −26,07 c, écart
+   de 1 c distribué) — pas 5,01 € et −5,00 €.
 
-Le HT du banana bread passe de 19,91 € (aujourd'hui) à 19,90 € : c'est le
-centime que le client ne paie plus, et c'est sur le HT qu'il est pris, pas sur
-la taxe.
+4. **HT de chaque terme** = son TTC − sa part de TVA.
 
-### Le HT se répartit sur les lignes (révision 3)
+Ce qui en sort, et pourquoi c'est la bonne forme :
 
-On ne peut avoir à la fois (a) TTC = étiquettes, (b) HT d'en-tête = Σ des HT
-de lignes **calculés avant**, (c) TVA ≥ HT × taux. La révision 2 lâchait (b)
-par une colonne d'écart, et `vitruve` a montré que ça cassait trois lecteurs
-(« Mes commandes », le BL, `vat_shares`) et que l'exigence de Hugo ne valait
-alors que sur l'en-tête : 30 articles à 0,50 € à 20 % → Σ lignes 12,60 € HT,
-en-tête 12,50 €, TVA 2,50 € < 12,60 × 20 %.
+- **Les colonnes HT d'aujourd'hui gardent leur sens et s'additionnent
+  exactement** : Σ HT des lignes − remises HT + frais HT + TVA = total, au
+  centime, sans colonne d'écart. Tout lecteur actuel du HT (chiffre d'affaires
+  HT, CA par SKU, « Mes commandes », bon de livraison, statistiques) reste
+  juste — c'est ce qui a manqué aux révisions 2 et 3.
+- **Jamais moins de TVA**, sur la base déclarée : par taux, HT net = TTC −
+  ⌈x⌉ ≤ TTC / (1 + t), donc HT net × t ≤ x ≤ TVA (preuve du § 4 de la
+  révision 2, confirmée deux fois par `vitruve`). Surplus < 1 c par taux.
+- **Le client paie Σ quantité × étiquette**, moins ses remises, plus son
+  port, sans exception — y compris sous promotion.
+- ⚠️ **Des étiquettes publiques bougent d'un centime** au déploiement :
+  l'étiquette passe de `ttcCentsOf(lineTotalCents(prix, 1))` à
+  `ttcCentsFromHtMillicents(prix)` (référentiel saisi à 1,53 € à 20 % :
+  affiché 1,54 aujourd'hui, 1,53 demain). C'est le retour à la valeur
+  saisie ; le pro n'est pas concerné.
+- **Aucun HT n'est arrondi avant la TVA** : il n'existe plus de « HT de ligne
+  avant » à réconcilier. Le HT est le **dernier** nombre calculé.
 
-La révision 3 garde (b) en **recalculant le HT des lignes** : une fois le HT
-de chaque taux connu, on **répartit l'écart** entre ce HT et Σ des HT de
-lignes arrondis sur les lignes de ce taux, au plus fort reste (le découpage
-de `splitOrderByRate`, que la facture tient déjà), et c'est **ce HT réparti**
-qui est figé sur chaque ligne.
+Exemples :
 
-| Exemple                    | HT de lignes avant | HT du taux | HT de lignes figé             |
-| -------------------------- | ------------------ | ---------- | ----------------------------- |
-| Banana bread 21,00 à 5,5 % | 19,91              | 19,90      | 19,90                         |
-| 30 × 0,50 € à 20 %         | 30 × 0,42 = 12,60  | 12,50      | 10 × 0,41 + 20 × 0,42 = 12,50 |
+| Panier                                      | TTC   | TVA             | HT                                                                |
+| ------------------------------------------- | ----- | --------------- | ----------------------------------------------------------------- |
+| Banana bread 21,00 à 5,5 %                  | 21,00 | ⌈1,0948⌉ = 1,10 | 19,90                                                             |
+| 30 articles à 0,50 à 20 %                   | 15,00 | ⌈2,50⌉ = 2,50   | 12,50 (10 lignes à 0,41 HT, 20 à 0,42 — TVA 0,09 / 0,08 répartie) |
+| 1,90 + 0,50 à 5,5 % (constat du 2026-10-09) | 2,40  | ⌈0,1251⌉ = 0,13 | 2,27                                                              |
 
-Conséquences :
+## 5. Les règles commerciales — ce qui change de nature
 
-- **Σ lignes = HT d'en-tête**, toujours : aucune colonne d'écart, aucun champ
-  ajouté à `vat_shares` (B1 de la révision 2 disparaît — le schéma partagé
-  avec le pro n'est pas touché). « Mes commandes » affiche 19,90 + 1,10 =
-  21,00 (B2 disparaît).
-- **L'exigence vaut sur chaque ligne** : Σ HT figés × taux = HT du taux ×
-  taux ≤ TVA.
-- **Les remises et leurs plafonds ne changent pas** : ils se calculent en
-  amont (`cart-adjustments.service.ts`) et se vérifient dans `Order.draft`
-  (`ensure*Matches`) sur le HT de ligne **avant répartition**, comme
-  aujourd'hui ; la répartition a lieu **après** les gardes, juste avant de
-  figer. Une révision recalcule ses lignes depuis le prix unitaire, donc
-  repart du HT avant répartition et refait la même chaîne.
-- **Le HT d'une ligne figée n'est plus `lineTotalCents(prix, quantité)`** à
-  quelques centimes près. Tout lecteur qui le recalcule depuis le prix
-  unitaire au lieu de le lire se tromperait : le lot C1′ les recense.
-- **Le TTC de ligne scellé** reste `ttcCentsFromHtMillicents(prix ×
-quantité)` — l'étiquette × quantité — et c'est lui que le particulier lit.
+Le passage au TTC n'est pas qu'un calcul : les montants **fixes** et les
+**pourcentages** du panier reçoivent une assiette TTC. Les réglages, eux,
+**restent saisis comme aujourd'hui** (aucun écran ne change d'unité) ; c'est
+leur application au particulier qui se fait en TTC.
+
+- **R1 — Frais de zone** (`zone-panel.html`, « Frais de livraison », saisis
+  HT). Pour un particulier : convertis en TTC **à leur taux** — 20 % en mode
+  standard (`DELIVERY_VAT_RATE`) ; en mode « suit la marchandise »,
+  découpés au prorata du TTC des marchandises par taux, puis chaque part
+  convertie à son taux. Le particulier voit et paie ce TTC ; le pro continue
+  de payer le HT + TVA d'aujourd'hui.
+- **R1 bis — Frais de zone en pourcentage** (`feeMode: "percent"`,
+  `prisma-delivery-zone.repository.ts:23`) : pour un particulier, le
+  pourcentage s'applique au **TTC** des marchandises, sans conversion.
+- **R2 — Remise retrait** : un **pourcentage** s'applique au TTC des lignes
+  éligibles (−10 % de 21,00 = 2,10 € TTC) ; un **montant fixe** saisi HT est
+  converti en TTC au prorata des taux des lignes éligibles. Bornée au TTC
+  éligible. La conversion d'un montant fixe saisi HT est **une fonction
+  nommée** de `@lfd/money` (`ttcOfHtAmount(cents, poids par taux)`, un
+  arrondi), la seule qu'appellent devis, agrégat, révision et BL. La trace
+  figée garde l'ajustement **tel que saisi** (HT) ; le montant appliqué TTC va
+  dans sa colonne (§ 7) ; la garde rejoue la conversion puis compare des TTC.
+- **R3 — Bon de fidélité** (« Valeur d'un palier (€ HT) »,
+  `loyalty-settings.html:39`) : converti en TTC au taux des marchandises
+  (prorata) et imputé sur le TTC restant. ⚠️ Un bon « de 5 € » qu'un
+  particulier voit à 5,28 € TTC est étrange : **à trancher par Hugo** —
+  soit la valeur d'un palier devient TTC pour le particulier, soit elle reste
+  HT convertie (§ 10, Q2).
+- **R4 — Promotions, paliers, prix barrés** : le prix résolu reste HT
+  (`resolvePrice`, inchangé) ; le TTC de la ligne en dérive par
+  quantité × `ttcCentsFromHtMillicents(prix)` — l'étiquette que la vignette
+  affiche, multipliée.
+- **R5 — Surtaxe de retard** : n'existe pas sur une commande de boutique
+  (`place-shop-order.handler.ts:144`, relu par `vitruve` le 2026-10-27) ;
+  `Order.draft` lève une erreur nommée si une commande `exact_ht` en porte
+  une.
+- **R6 — Registre de fidélité** : le registre garde **une seule unité**, la
+  sienne aujourd'hui (`appliedCents`, `loyalty-voucher-redemption.ts:8`). Le
+  bon imputé sur une commande `exact_ht` est figé en TTC sur la commande ; ce
+  qui est décompté au registre dépend de Q2 (§ 10), **à trancher avant C2**.
+
+**Les gardes de l'agrégat** (`order-amount-guards.ts`) gardent leur logique
+— « l'ajustement figé reproduit le montant retenu » — mais, pour `exact_ht`,
+elles comparent des **TTC** : `ensureDiscountMatches` sur le TTC éligible,
+`ensureDeliveryFeeMatches` sur le TTC converti. Une seule fonction de
+conversion (`@lfd/money`) sert au devis, à l'agrégat et au BL : trois
+traductions finiraient par diverger.
+
+### La révision d'une commande
+
+`Order.revise` rejoue `Order.draft` (`order-revising.service.ts:195`), et le
+staff peut réviser une commande publique. Trois règles :
+
+- **la méthode se lit sur la commande** (`vat_method`), jamais sur
+  `clienteleOf` : une commande `line_ht` d'avant le déploiement, révisée
+  après, reste `line_ht` ;
+- `draftInputOf` (`order-revising.service.ts:271-303`) passe les montants
+  **dans l'unité de la méthode** : TTC pour `exact_ht` (bon imputé, port) ;
+- la garde « le bon imputé reste couvert » (`order-revision.ts:227`) compare
+  des TTC pour `exact_ht`. Lecteurs à adapter : `revision-quote-view.ts`,
+  `revised-composition.ts`, `prisma-order-revision-history.reader.ts`.
 
 ### Le bon de livraison partiel
 
-Un BL partiel d'une commande `exact_ht` applique **la même fonction** au
-sous-ensemble livré (prix unitaire × quantité livrée, mêmes remises
-réparties) : TTC un arrondi, TVA ⌈en dedans⌉, HT réparti. Il range ses
-montants dans ses colonnes actuelles (le CHECK « tout ou rien » de
-`delivery-notes.prisma:45-58` est inchangé, aucune colonne n'est ajoutée).
-`departing-source.ts:61` scelle ses TTC de ligne par
-`ttcCentsFromHtMillicents`.
+Un BL partiel d'une commande `exact_ht` est **recomposé en entier** par la
+même fonction sur les lignes livrées : **toutes** ses lignes sont réécrites,
+y compris celles livrées en entier (`departing-source.ts:53-62` ne recopie
+plus une ligne figée pour `exact_ht`). Ses HT de ligne somment donc vers son
+en-tête. Un port en montant fixe garde le TTC de la commande (sa ventilation
+HT/TVA suit le mélange de taux livré) ; un port en pourcentage s'applique au
+TTC livré.
 
-### Le calcul est entier
+## 6. Ce qui change, endroit par endroit
 
-En flottant, l'arrondi au supérieur se trompe (3063 c à 2,1 % : 63,00000000000001
-→ 64). Toute la fonction travaille en entiers (`bigint`, taux en points de
-base, comme `fractionByBasisPoints`), et un test balaie 0–200 000 c sur chaque
-taux du catalogue.
+| Endroit                                                                                                                                                                                                                      | Particulier (`exact_ht`)                                                                                                                                            | Pro                  |
+| ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------- |
+| `@lfd/money` : `composeTtcOrder` (nom à fixer) **remplace** `ventilateVatExact` ; son propre type de sortie                                                                                                                  | termes TTC → TVA ⌈⌉ par taux → répartition → HT par terme ; entiers (`bigint`)                                                                                      | non lue              |
+| `ventilateVat`, `VatVentilation`, `VatShare`, `vatShareSchema`, `splitOrderByRate`                                                                                                                                           | lus, jamais modifiés                                                                                                                                                | **inchangés, figés** |
+| Vignette, fiche, prix barré, aperçu du rayon (`shop-catalogue-view.ts:75`, `shop-catalogue-pricing.service.ts:240`, `shelf-catalogue.ts:192-202`)                                                                            | `ttcCentsFromHtMillicents` ; choisi par l'audience déjà déduite (§ 8)                                                                                               | inchangé             |
+| `CartAdjustments` (`cart-adjustments.service.ts`), `pickup-discount-eligibility.ts`                                                                                                                                          | remise et frais en TTC (R1, R2) pour l'audience `public`                                                                                                            | inchangé             |
+| Devis (`shop-cart-quoting.service.ts`), effet du bon (`voucher-total-effect.ts`), imputation (`voucher-imputation.ts`)                                                                                                       | `composeTtcOrder`                                                                                                                                                   | inchangé             |
+| `Order.draft` (`order.ts:116-160`), gardes (`order-amount-guards.ts`)                                                                                                                                                        | gardes en TTC ; `composeTtcOrder` ; fige HT **et** TTC de chaque terme                                                                                              | inchangé             |
+| `OrderLine` (`order-line.ts:96-99, 143`)                                                                                                                                                                                     | nouvelle factory `OrderLine.ofTtc` : le HT est **reçu** de la composition (l'invariant « HT dérivé du prix » se lève pour `exact_ht` seulement, dit dans son JSDoc) | `create`, inchangée  |
+| BL partiel (`delivery-note-terms.ts:150-184`, `departing-source.ts:53-61`)                                                                                                                                                   | recompose le sous-ensemble livré par `composeTtcOrder` (TTC des lignes livrées, remise TTC refaite, frais TTC)                                                      | inchangé             |
+| « Mes commandes » (`order-summary-format.ts:43-51`), bon de commande (`order-sheet-pdf-totals.ts`, `order-sheet-text.ts:112-149`), e-mail (`mail-templates.ts:530`), assiette « remise sur X € » (`pickup-discount-base.ts`) | lignes TTC, remises et port TTC, total, **« dont TVA »** par taux — le format du ticket ; lus sur les colonnes TTC                                                  | inchangé             |
+| Montant Stripe (`place-shop-order.handler.ts` l. 204/256)                                                                                                                                                                    | `order.totalCents` = Σ TTC, par construction                                                                                                                        | —                    |
+| Facture, dossier, Factur-X, avoir, cohérence, relevés                                                                                                                                                                        | **hors du plan** : aucune facture à un particulier (`card-invoicing.ts`)                                                                                            | **non touché**       |
+| CA HT, CA par SKU, statistiques                                                                                                                                                                                              | lisent les colonnes HT, qui restent additives — rien à changer, **à vérifier au lot C1**                                                                            | inchangé             |
 
-## 5. Ce qui change, endroit par endroit
+## 7. Les colonnes et la migration
 
-| Endroit                                                                                                                                                                                | Particulier (`exact_ht`)                                                  | Pro                                           |
-| -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- | --------------------------------------------- |
-| `@lfd/money` : `ventilateVatExact` **réécrite** (C1′), avec son **propre type de sortie** — `VatVentilation` n'est pas touché                                                          | TTC par taux ; TVA ⌈en dedans⌉ ; HT par différence ; HT réparti par ligne | non lue                                       |
-| `ventilateVat`, `VatVentilation`, `VatShare`, `vatShareSchema`                                                                                                                         | —                                                                         | **inchangés, figés par `vat-frozen.spec.ts`** |
-| Vignette, fiche, prix barré (`shop-catalogue-view.ts:75`, `shop-catalogue-pricing.service.ts:240`), aperçu du rayon (`shelf-catalogue.ts:192-202`)                                     | `ttcCentsFromHtMillicents`                                                | inchangé                                      |
-| Devis du panier (`shop-cart-quoting.service.ts`), effet du bon (`voucher-total-effect.ts`)                                                                                             | `ventilateVatExact`                                                       | inchangé                                      |
-| `computeOrderTotals` → `Order.draft`                                                                                                                                                   | gardes sur le HT avant répartition, puis répartition, puis figer          | inchangé                                      |
-| `OrderLine` (`order-line.ts:160-161`)                                                                                                                                                  | TTC scellés `ttcCentsFromHtMillicents` ; HT de ligne = HT réparti         | `null`, inchangé                              |
-| BL partiel (`delivery-notes/domain/value-objects/delivery-note-terms.ts:173`, `departing-source.ts:61`)                                                                                | même fonction sur le sous-ensemble                                        | inchangé                                      |
-| « Mes commandes » (`order-summary-format.ts:43-51`), bon de commande PDF (`order-sheet-pdf-totals.ts`), texte du bon (`order-sheet-text.ts:112-149`), e-mail (`mail-templates.ts:530`) | lisent l'en-tête, qui se recompose : rien à changer, **à vérifier au C3** | inchangé                                      |
-| Montant Stripe (`place-shop-order.handler.ts` l. 204/256)                                                                                                                              | `order.totalCents`, corrigé par construction                              | —                                             |
-| Facture, dossier, Factur-X, avoir, cohérence                                                                                                                                           | **hors du plan** : aucune facture à un particulier (`card-invoicing.ts`)  | **non touché**                                |
+Migration **additive**, sur `orders`, `order_lines` et `delivery_notes` :
 
-## 6. Le marqueur de méthode
-
-Migration **additive** : `orders.vat_method` (`line_ht` | `exact_ht`) et la
-même sur `delivery_notes` (un BL suit la méthode de sa commande). Ajoutées
-nullables, remplies à `line_ht` pour l'existant, puis non nulles **sans
-défaut**. La méthode se décide une fois dans `Order.draft` depuis la clientèle
-(`clienteleOf`), puis se relit de la colonne. Une révision garde la méthode
-de la commande révisée (cas presque vide : `Order.revise` refuse la carte).
+- `vat_method` (`line_ht` | `exact_ht`) sur `orders` et `delivery_notes`,
+  ajoutée nullable, remplie à `line_ht` pour l'existant, puis non nulle sans
+  défaut ;
+- **les TTC de chaque terme** : `order_lines` porte déjà ses TTC scellés
+  (`unit_price_ttc_cents`, `line_total_ttc_cents`, `orders.prisma:600,606` ;
+  idem `delivery_note_lines`, `delivery-notes.prisma:97-98`) — pour
+  `exact_ht`, ils reçoivent l'étiquette et quantité × étiquette ;
+  `orders` gagne `discount_ttc_cents`, `voucher_ttc_cents`,
+  `delivery_fee_ttc_cents`, nulles hors `exact_ht` (CHECK : non nulles si et
+  seulement si `exact_ht`) ; `delivery_notes` les mêmes, sous une **contrainte conditionnelle à part**
+  — le CHECK « tout ou rien » de sept entiers (`20261024230000`) n'est pas
+  élargi ;
+- **les colonnes HT existantes** reçoivent le HT calculé au § 4 (étape 4) —
+  même sens, mêmes lecteurs ;
+- `vat_shares` inchangé : `{rate, amountCents}`.
 
 🔴 Irréversible dans les faits : dès la première commande `exact_ht`
-prélevée, deux méthodes coexistent pour toujours, et tout lecteur qui
-**recalcule** un HT de ligne depuis le prix unitaire devra brancher sur
-`vat_method`. L'agrégat de l'e-reporting B2C (2027) lira les HT et TVA figés,
-jamais un recalcul.
+prélevée, deux méthodes coexistent pour toujours. Tout lecteur futur qui
+**recompose** un total lit les colonnes figées ; aucun ne recalcule depuis le
+prix unitaire. L'agrégat de l'e-reporting B2C (2027) lira HT et TVA par taux
+figés.
 
-## 7. Qui voit quel calcul : l'espace de travail
+## 8. Qui voit quel calcul : l'espace de travail
 
 Relu le 2026-10-27, sur indication de Hugo. La boutique déclare l'**espace de
 travail** choisi sur chaque requête (`WORKSPACE_HEADER`,
@@ -230,16 +292,16 @@ l'espace, sans rien ajouter.** Un pro dans son espace perso voit le calcul
 particulier ; la vitrine pro sans jeton (`pricedWithoutCompany("pro")`) garde
 le calcul pro. Aucun chiffre ne bouge dans un espace société.
 
-## 8. Les lots
+## 9. Les lots
 
-| Lot | Contenu                                                                                            | Tests                                                                                                                                                                        |
-| --- | -------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1′ | Reprendre `ventilateVatExact` : TVA ⌈en dedans⌉ par taux, HT par différence, écart nommé en sortie | ticket U ; banana bread 1,10 / 19,90 ; 30 × 0,50 ; **TVA ≥ Σ HT figés × taux sur tout le balayage** ; Σ lignes = en-tête ; remises ; tout couvert = 0 ; 0–200 000 c par taux |
-| C2  | Migration (`vat_method` sur `orders` et `delivery_notes`) ; `Order.draft`, `OrderLine`, devis, bon | e2e : panier public = commande = montant Stripe ; pro inchangé                                                                                                               |
-| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; bon de commande PDF au format du ticket | **20 paniers pro figés** avant/après ; BL partiel public = commande                                                                                                          |
-| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état, JSDoc de `ttcCentsOf`                   | `pnpm test` racine                                                                                                                                                           |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                  | Tests                                                                                                                                                                                                                                                               |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | `composeTtcOrder` et `ttcOfHtAmount` dans `@lfd/money`, en entiers, sans appelant ; retrait de `ventilateVatExact` ; **recensement** des lecteurs des colonnes de montant et de `lineTotalCents(prix, qté)` (journal, `growth`, exports, spécimens, `order-composition.service.ts`, `quote-order.handler.ts`) — **porte d'entrée de C2** | banana bread, 30 × 0,50, croissants, ticket U ; remise % et fixe sur deux taux ; bon qui solde, bon qui laisse 1 c ; port standard, qui suit, en % ; **TVA ≥ HT net × taux** et **Σ HT + TVA = total** sur un balayage ; 0–200 000 c par taux ; `ventilateVat` figé |
+| C2  | Migration (§ 7) ; `CartAdjustments` en TTC pour `public` ; `OrderLine.ofTtc` ; `Order.draft` et ses gardes ; devis ; bon                                                                                                                                                                                                                 | e2e : panier public = commande = montant Stripe ; remise retrait et bon en TTC ; **20 paniers pro figés**                                                                                                                                                           |
+| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; « Mes commandes », bon de commande, e-mail au format du ticket                                                                                                                                                                                                                | e2e BL partiel public ; captures des documents                                                                                                                                                                                                                      |
+| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état ; JSDoc de `ttcCentsOf`, `OrderLine`                                                                                                                                                                                                                                           | `pnpm test` racine                                                                                                                                                                                                                                                  |
 
-## 9. Décisions et questions
+## 10. Décisions et questions
 
 - **Décidé par Hugo le 2026-10-27** : « on sépare le calcul particulier » — le
   pro garde le sien (HT de ligne arrondi une fois, TVA une fois par taux,
@@ -248,13 +310,20 @@ le calcul pro. Aucun chiffre ne bouge dans un espace société.
   TVA » → arrondi au supérieur.
 - **Décidé par Hugo le 2026-10-27** : « si la grande surface le fait pour le
   particulier on y va » → TVA en dedans pour le particulier.
+- **Décidé par Hugo le 2026-10-27** : « B, je veux le système le mieux » —
+  commande de particulier en TTC de bout en bout.
+- **Q2 — la valeur d'un palier de fidélité** pour un particulier : TTC, ou
+  HT converti (§ 5, R3) ?
 - **Q1 — le cabinet** : la question se resserre. « Pour une vente à un
   particulier, peut-on extraire la TVA du TTC de chaque taux, arrondie au
   centime supérieur, le HT étant la différence — comme le fait un ticket de
   caisse de grande surface ? » La mise en production attend cette réponse ou
   une décision écrite de Hugo.
 
-## 10. Relectures `vitruve`
+## 11. Relectures `vitruve`
+
+Les révisions 1 à 3 sont abandonnées ; leurs objections ont façonné la
+révision 4 (colonnes HT additives, aucun écart, TTC de référence).
 
 ### Révision 1 (2026-10-27)
 
@@ -327,3 +396,26 @@ demande un total juste en TTC. Deux voies restent, à trancher par Hugo :
 la révision 2 (écart nommé, l'exigence tenue sur la base déclarée par taux)
 en corrigeant ses lecteurs, ou une commande de particulier construite en TTC
 de bout en bout.
+
+### Révision 4
+
+Quatre bloquants, traités en révision 5 :
+
+- **B1** la répartition de la TVA n'avait pas de règle (division par zéro sur
+  un bon qui solde, taux apparent de 6,4 % sur un bon partiel) → pondération
+  par la TVA contenue, reste au plus fort, départage fixe (§ 4).
+- **B2** le TTC scellé d'aujourd'hui n'est pas quantité × étiquette, et la
+  promesse « sous promotion » était fausse → la ligne vaut quantité ×
+  étiquette ; le centime qui bouge sur certaines étiquettes est annoncé (§ 4).
+- **B3** la révision rejoue `draft` → méthode lue sur la commande, montants
+  dans l'unité de la méthode (§ 5).
+- **B4** le BL partiel mélangeait deux répartitions → recomposé en entier.
+
+Sérieux : port en pourcentage (R1 bis), conversion nommée des montants fixes
+(R2), registre de fidélité (R6, lié à Q2), recensement en porte d'entrée de
+C2. Mineurs : noms des colonnes, contrainte conditionnelle, garde de la
+surtaxe. Aucun endroit trouvé où le pro changerait.
+
+### Révision 5
+
+_À venir._
