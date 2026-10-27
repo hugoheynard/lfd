@@ -32,11 +32,18 @@ mode?, place? }`, posé par `OrderDoors` à chaque étape (jour choisi, mode
      En pile comme au bureau pendant le parcours ; au bureau, une fois le
      parcours fini, la barre « Ma commande » du haut de la boutique reste celle
      qui parle.
-3. **Visible pendant les dialogues.** La barre est posée hors de la région que
-   le dialogue modal rend inerte, au-dessus de son voile, et la feuille du bas
-   (en pile) s'arrête au-dessus d'elle. Elle s'y lit ; elle ne s'y clique pas
-   (le dialogue garde le focus). À vérifier en bâtissant : où fold monte ses
-   panneaux et son voile, et si la feuille accepte un retrait en bas.
+3. **Dans l'étape 2, la barre EST le pied** (Hugo, 2026-10-27 : « sur étape 2
+   on enlève le footer du panel, on met une croix à la place de fermer en haut
+   à droite, et à la place du footer on met la barre »). `SlotPickerDialog`
+   perd son pied (« Retour », « Choisissez un créneau ») ; « Fermer » devient
+   une croix en haut à droite ; la barre du panier se monte dans le pied du
+   dialogue — le même composant, donc cliquable, sans passer par-dessus le
+   voile. Elle dit le jour et le lieu, puis l'heure dès qu'un créneau est
+   touché, et porte le geste qui valide (« Continuer » vers la boutique, ou
+   « Régler » si le panier compte déjà).
+4. **Ailleurs pendant le parcours** (panneau du jour, choix du lieu, adresse),
+   la barre de la page reste dessous, sous le voile : elle n'a pas à y être
+   lue, l'étape 2 la montre.
 
 ## 3. Tests
 
