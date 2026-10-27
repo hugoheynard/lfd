@@ -94,6 +94,14 @@ Le prix à payer : la TVA n'est plus toujours égale au HT × taux arrondi. Sur
 l'exemple ci-dessus, 1,41 € HT et 0,09 € de TVA, quand 1,41 × 5,5 % = 0,078.
 C'est ce point, et lui seul, que le cabinet doit valider (§ 8, Q1).
 
+⚠️ **L'écart n'est pas borné à un centime** (mesuré le 2026-10-27 sur 4 000
+paniers, `vat-exact-discounts.spec.ts`) : la TVA absorbe l'arrondi de chaque
+ligne, soit jusqu'à **1 c + 0,5 c par ligne du taux**, plus 1 c par terme
+réparti entre les taux (remise retrait, bon, port qui suit). Écart observé :
+2 c à quatre lignes d'un même taux. Une commande de dix lignes à 5,5 % peut
+porter une TVA à ~6 c de HT × taux. C'est cet ordre de grandeur, et non « un
+centime », qu'il faut soumettre au cabinet.
+
 Sur le banana bread : 19,90521 × 1,055 = 20,999997 → **21,00 €** ; HT 19,91 €,
 TVA **1,09 €**. Sur les deux croissants du 2026-10-09 : 1,800948 + 0,473934 =
 2,274882 HT exact, × 1,055 = 2,399999 → **2,40 €** ; HT 2,27, TVA 0,13.
@@ -166,13 +174,30 @@ prélevée, la colonne et les deux méthodes sont permanentes. Tout lecteur
 futur qui recalcule un montant (avoir, BL, comptabilité) devra brancher sur
 `vat_method`.
 
-## 6. Le pro connecté au catalogue
+## 6. Qui voit quel calcul : l'espace de travail
 
-`read-my-shop-catalogue.ts` sert le catalogue d'un pro connecté par la même
-vue. Le TTC qu'elle porte n'est **pas** facturé à un pro. Décision proposée :
-le pro garde exactement le calcul d'aujourd'hui sur cette route — la vue reçoit
-la clientèle et ne change de fonction que pour `public`. Aucun chiffre ne
-bouge côté pro, même à l'affichage.
+Relu le 2026-10-27, sur indication de Hugo. La boutique déclare l'**espace de
+travail** choisi (perso ou une société) sur chaque requête, par l'en-tête
+`WORKSPACE_HEADER` (`client-workspace.interceptor.ts`). Le guard le confronte
+aux rattachements (`auth.guard.ts`, `declaredCompany` → `resolveCompany`) et
+les routes reçoivent la société agissante par `@ActingCompany()` : `null` dans
+l'espace perso, l'identifiant de la société sinon.
+
+Cette société est **déjà** ce qui choisit les prix :
+
+- la vitrine : `ShopCataloguePricing.priced` déduit l'audience — `companyId
+=== null ? "public" : "pro"` — au seul endroit où elle se déduit, puis
+  `pricedFor(audience, …)` ;
+- le devis du panier et le panier (`my-shop-quote.controller.ts`,
+  `shop-cart.controller.ts`) reçoivent la même société ;
+- la commande dérive sa clientèle de la même façon (`clienteleOf(companyId)`,
+  `order-fulfillment.ts`).
+
+**La méthode de calcul suit donc l'espace, sans rien ajouter** : on lit
+l'`audience` déjà déduite dans `pricedFor`. Un pro qui bascule dans son espace
+perso voit le calcul particulier, comme il y voit déjà le prix d'étiquette ; la
+vitrine pro sans jeton (`?audience=pro`, `pricedWithoutCompany`) garde le
+calcul pro. Aucun chiffre ne bouge dans un espace société.
 
 ## 7. Les lots
 
@@ -216,8 +241,8 @@ Deux précisions que le plan ne donnait pas, prises au bâti — à relire :
 Relevé des fichiers que `vitruve` n'avait pas ouverts : le montant Stripe est
 `order.totalCents` sans comparaison au devis (corrigé par construction en
 C2) ; avoir, cohérence de facture et bon de commande PDF ne recalculent pas la
-TVA. `read-my-shop-catalogue.ts` ne reçoit qu'un `companyId` : C3 doit
-trancher comment la clientèle arrive à la vue.
+TVA. `read-my-shop-catalogue.ts` ne reçoit qu'un `companyId` : c'est l'espace de
+travail, et il suffit (§ 6).
 
 ## 9. Relecture `vitruve` (2026-10-27)
 
