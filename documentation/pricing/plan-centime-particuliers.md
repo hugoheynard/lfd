@@ -185,6 +185,11 @@ bouge côté pro, même à l'affichage.
 
 ## 8. Questions ouvertes
 
+**Décidé par Hugo le 2026-10-27** : « on sépare le calcul particulier ». Le pro
+garde sa méthode — HT de ligne arrondi une fois, TVA une fois par taux sur
+l'assiette, celle que rejoue la règle BR-S-08 d'EN 16931 — et le particulier
+prend la sienne. Le lot C1 démarre ; la mise en production attend Q1.
+
 - **Q1 — le cabinet** : confirmer § 2. Le plan peut être bâti avant ; il ne se
   déploie pas en production sans cette confirmation, ou sans décision écrite
   de Hugo de l'assumer.
