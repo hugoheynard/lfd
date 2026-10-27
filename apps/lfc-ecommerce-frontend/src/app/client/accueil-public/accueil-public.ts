@@ -39,7 +39,6 @@ import {
 import { OrderDoors } from '../shop/order-doors';
 import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ServicePoints } from '../shop/pickup-points.store';
-import { PublicHousePickerDialog } from '../shop/public-house-picker-dialog/public-house-picker-dialog';
 import { ClientOrderHistory } from '../mes-commandes/client-order-history.service';
 import { LiveOrdersWell } from '../mes-commandes/live-orders-well/live-orders-well';
 import { isLive, rowCopyOf, trackedOf } from '../mes-commandes/order-rows';
@@ -737,7 +736,13 @@ export class AccueilPublic {
    * on revisitera plus tard » — il n'est simplement plus traversé.
    */
   protected async chooseHouse(house: House): Promise<void> {
+    // Le jour d'abord, même depuis la carte d'une maison (2026-10-27).
+    const day = await this.doors.askDay();
+    if (day === null) {
+      return;
+    }
     const ref = SlotPickerDialog.open(this.panels, {
+      openOn: day,
       pickupAddressId: house.point.id,
       place: house.name,
       // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
@@ -787,15 +792,10 @@ export class AccueilPublic {
    * qui l'utilise.
    */
   protected async openPickupDoor(): Promise<void> {
-    const point = await PublicHousePickerDialog.open(this.panels, { currentId: null }).closed;
-    if (point === undefined) {
-      return;
+    // Le jour d'abord, puis la maison et l'heure sur ce jour (2026-10-27).
+    if (await this.doors.startPickup()) {
+      void this.router.navigate([SHOP]);
     }
-    const house = this.houses().find((candidate) => candidate.point.id === point.id);
-    if (house === undefined) {
-      return;
-    }
-    await this.chooseHouse(house);
   }
 
   /**
@@ -814,7 +814,7 @@ export class AccueilPublic {
     // La porte, son garde et la saisie libre vivent dans `OrderDoors` : le
     // panier ouvre exactement la même, et deux copies finiraient par ne plus
     // ouvrir à la même personne.
-    if (await this.doors.delivery(null)) {
+    if (await this.doors.startDelivery()) {
       void this.router.navigate([SHOP]);
     }
   }

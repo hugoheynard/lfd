@@ -129,6 +129,26 @@ export class OrderDoors {
     return this.write(await this.askChoice(day));
   }
 
+  /** Le jour, seul : `null` quand on ferme le panneau. */
+  async askDay(): Promise<string | null> {
+    return (await DayPickerDialog.open(this.panels).closed) ?? null;
+  }
+
+  /**
+   * **Les portes de l'accueil, jour d'abord** (Hugo, 2026-10-27 : « je ne vois
+   * pas le panneau ») : « Je passe la prendre » et « On vous l'apporte »
+   * passent par le même panneau que `choose()`, puis par leur porte sur ce jour.
+   */
+  async startPickup(): Promise<boolean> {
+    const day = await this.askDay();
+    return day === null ? false : this.write(await this.askPickup(null, day));
+  }
+
+  async startDelivery(): Promise<boolean> {
+    const day = await this.askDay();
+    return day === null ? false : this.write(await this.askDelivery(null, day));
+  }
+
   /**
    * **La même question, sans écrire la réponse** — pour un écran qui compose
    * un acheminement à lui (la modification d'une commande passée, plan
