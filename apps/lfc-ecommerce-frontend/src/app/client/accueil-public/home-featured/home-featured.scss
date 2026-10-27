@@ -47,3 +47,17 @@
     overflow-x: visible;
   }
 }
+
+/* L'indicateur du rail, en blanc sur la bande bleue ; au-delà du téléphone,
+   la grille montre tout, il n'a rien à indiquer. */
+.dots {
+  align-self: center;
+  --fold-color-primary: var(--lfc-paper-0);
+  --fold-color-text-faded: rgb(255 255 255 / 45%);
+}
+
+@media (min-width: 600px) {
+  .dots {
+    display: none;
+  }
+}

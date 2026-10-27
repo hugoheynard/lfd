@@ -1,5 +1,6 @@
-import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 
+import { FoldScrollIndicatorComponent } from '../../../../shared';
 import { screenCopy } from '../../copy/shop-copy-composer';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { proLandingCopy } from '../../copy/screens/pro-landing.copy';
@@ -34,7 +35,7 @@ interface HomeFeaturedCard {
 @Component({
   selector: 'app-home-featured',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ProFeaturedCard],
+  imports: [FoldScrollIndicatorComponent, ProFeaturedCard],
   templateUrl: './home-featured.html',
   styleUrl: './home-featured.scss',
 })
@@ -42,7 +43,7 @@ export class HomeFeatured {
   private readonly catalogue = inject(ShopCatalogue);
   private readonly basis = inject(ShopPriceBasis);
   private readonly pieces = inject(PieceRequest);
-  private readonly t = inject(ClientCopyService).t;
+  protected readonly t = inject(ClientCopyService).t;
   protected readonly c = screenCopy('proLanding', proLandingCopy);
 
   protected readonly cards = computed<readonly HomeFeaturedCard[]>(() => {
@@ -71,5 +72,27 @@ export class HomeFeatured {
 
   protected open(sku: string): void {
     this.pieces.open(sku);
+  }
+
+  /**
+   * La carte en tête du rail, au téléphone — l'indicateur la suit (Hugo,
+   * 2026-10-27 : « un indicateur de scroll sur les incontournables »).
+   */
+  protected readonly active = signal(0);
+
+  /** Le défilement du rail donne la carte en tête : sa position sur le pas. */
+  protected onScroll(rail: HTMLElement): void {
+    const step = rail.firstElementChild?.getBoundingClientRect().width ?? 0;
+    if (step > 0) {
+      this.active.set(Math.round(rail.scrollLeft / step));
+    }
+  }
+
+  /** Un point touché amène sa carte en tête. */
+  protected goTo(rail: HTMLElement, index: number): void {
+    const card = rail.children.item(index);
+    if (card instanceof HTMLElement) {
+      rail.scrollTo({ left: card.offsetLeft - rail.offsetLeft, behavior: 'smooth' });
+    }
   }
 }

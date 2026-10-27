@@ -1,7 +1,7 @@
 @if (cards().length > 0) {
   <section class="featured" data-test="home-featured" [attr.aria-label]="c().featured.title">
     <h2 class="title">{{ c().featured.title }}</h2>
-    <div class="grid">
+    <div #rail class="grid" (scroll)="onScroll(rail)">
       @for (entry of cards(); track entry.card.sku) {
         <app-pro-featured-card
           [card]="entry.card"
@@ -10,5 +10,13 @@
         />
       }
     </div>
+    <fold-scroll-indicator
+      class="dots"
+      variant="morse"
+      [count]="cards().length"
+      [active]="active()"
+      [markerLabel]="t().orders.wellDot"
+      (picked)="goTo(rail, $event)"
+    />
   </section>
 }
