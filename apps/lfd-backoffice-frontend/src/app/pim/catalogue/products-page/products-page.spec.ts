@@ -3,7 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
-import type { ProductComplianceWarningView } from '@lfd/pim-contracts';
+import type { ProductComplianceFinding, ProductComplianceWarningView } from '@lfd/pim-contracts';
 
 import { CatalogueApi, type Category, type Product } from '../catalogue-api';
 import { ReferenceApi } from '../reference-api';
@@ -112,6 +112,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       'Actives',
       'Inactives',
       'Activables',
+      'Non conformes en vente',
       'Bloquants',
       'À vérifier',
       'Archivées',
@@ -260,27 +261,25 @@ describe('ProductsPage — « Activer la sélection »', () => {
 
   /** Les constats viennent du serveur (`compliance-warnings`, 2026-10-27) : lus, jamais jugés ici. */
   describe('constats de conformité', () => {
+    const blocking = (sku: string): ProductComplianceFinding => ({
+      code: 'allergens_contradict_none',
+      severity: 'blocking',
+      variantId: 'x',
+      sku,
+      allergenCodes: ['AW'],
+    });
+    // p1 est PUBLIÉE, p2 est un brouillon : le même bloquant ne se dit pas pareil.
     const FINDINGS: readonly ProductComplianceWarningView[] = [
+      { productId: 'p1', warnings: [blocking('P1-1')] },
+      { productId: 'p2', warnings: [blocking('P2-1')] },
       {
-        productId: 'p1',
-        warnings: [
-          {
-            code: 'allergens_contradict_none',
-            severity: 'blocking',
-            variantId: 'x',
-            sku: 'P1-1',
-            allergenCodes: ['AW'],
-          },
-        ],
-      },
-      {
-        productId: 'p2',
+        productId: 'v1',
         warnings: [
           {
             code: 'variant_incomplete',
             severity: 'warning',
             variantId: 'y',
-            sku: 'P2-1',
+            sku: 'V1-1',
             missing: ['price'],
           },
         ],
@@ -291,19 +290,33 @@ describe('ProductsPage — « Activer la sélection »', () => {
         (b) => b.textContent?.trim() ?? '',
       );
 
-    it('pose « Bloquant » et « À vérifier » à côté du statut', async () => {
+    it('pose « Non conforme », « Bloquant » et « À vérifier » à côté du statut', async () => {
       const { element } = await render({}, undefined, PRODUCTS, () => Promise.resolve(FINDINGS));
-      expect(badges(element)).toEqual(['Bloquant', 'À vérifier']);
+      expect(badges(element)).toEqual(['Non conforme', 'Bloquant', 'À vérifier']);
     });
 
-    it('filtre les bloquants et les fiches à vérifier', async () => {
+    /**
+     * Régression : une fiche publiée avec un constat bloquant affichait
+     * « Publiée » ET « Bloquant » — elle n'est bloquée par rien, elle est déjà
+     * en vente (Hugo, 2026-10-27).
+     */
+    it('une fiche publiée bloquante ne dit pas Bloquant', async () => {
+      const { element } = await render({}, undefined, [product('p1', 'pain', 'published')], () =>
+        Promise.resolve(FINDINGS),
+      );
+      expect(badges(element)).toEqual(['Non conforme']);
+    });
+
+    it('filtre les non conformes en vente, les bloquants et les fiches à vérifier', async () => {
       const { element, chip } = await render({}, undefined, PRODUCTS, () =>
         Promise.resolve(FINDINGS),
       );
-      await chip('data-products-status', 'Bloquants');
+      await chip('data-products-status', 'Non conformes en vente');
       expect(rows(element)).toEqual(['P1']);
-      await chip('data-products-status', 'À vérifier');
+      await chip('data-products-status', 'Bloquants');
       expect(rows(element)).toEqual(['P2']);
+      await chip('data-products-status', 'À vérifier');
+      expect(rows(element)).toEqual(['V1']);
     });
 
     it('garde la liste quand les constats ne se lisent pas, et le dit', async () => {

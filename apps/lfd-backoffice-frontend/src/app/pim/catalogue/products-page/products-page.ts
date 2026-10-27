@@ -31,8 +31,8 @@ import { productStatusLabel, productStatusVariant } from '../product-status';
 import {
   complianceBadge,
   findingsByProduct,
+  complianceStateOf,
   findingsText,
-  worstSeverity,
   type ComplianceBadge,
 } from '../product-compliance';
 import { ReferenceApi } from '../reference-api';
@@ -42,6 +42,7 @@ import {
   ACTIVATABLE,
   ALL_STATUSES,
   BLOCKING,
+  NON_COMPLIANT_LIVE,
   TO_REVIEW,
   familyOptions,
   filterFromParams,
@@ -122,6 +123,7 @@ export class ProductsPage {
     { value: 'published', label: 'Actives' },
     { value: 'draft', label: 'Inactives' },
     { value: ACTIVATABLE, label: 'Activables' },
+    { value: NON_COMPLIANT_LIVE, label: 'Non conformes en vente' },
     { value: BLOCKING, label: 'Bloquants' },
     { value: TO_REVIEW, label: 'À vérifier' },
     { value: 'archived', label: 'Archivées' },
@@ -144,8 +146,8 @@ export class ProductsPage {
   protected readonly visibleProducts = computed<Product[]>(() => {
     const q = this.query().trim().toLowerCase();
     const findings = this.findings();
-    const products = filterProducts(this.products(), this.filter(), (id) =>
-      worstSeverity(findings.get(id)),
+    const products = filterProducts(this.products(), this.filter(), (p) =>
+      complianceStateOf(p.status, findings.get(p.id)),
     );
     if (q === '') {
       return products;
@@ -342,14 +344,19 @@ export class ProductsPage {
 
   /** Le badge de conformité de la fiche, `null` quand le serveur n'a rien constaté. */
   protected complianceBadge(product: Product): ComplianceBadge | null {
-    const severity = worstSeverity(this.findings().get(product.id));
-    return severity === null ? null : complianceBadge(severity);
+    const state = complianceStateOf(product.status, this.findings().get(product.id));
+    return state === null ? null : complianceBadge(state);
   }
 
   /** Le détail des constats, en phrases que le staff lit sans le code. */
   protected complianceText(product: Product): string {
     const labels = this.allergenLabels();
-    return findingsText(this.findings().get(product.id) ?? [], (code) => labels.get(code) ?? code);
+    const findings = this.findings().get(product.id) ?? [];
+    return findingsText(
+      findings,
+      (code) => labels.get(code) ?? code,
+      complianceStateOf(product.status, findings),
+    );
   }
 
   /** Un produit précis — le bouton de la ligne. */

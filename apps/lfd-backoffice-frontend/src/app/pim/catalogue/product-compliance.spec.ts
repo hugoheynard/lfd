@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 
 import {
   complianceBadge,
+  complianceStateOf,
   findingText,
   findingsText,
   gapLabel,
@@ -35,6 +36,10 @@ describe('product-compliance', () => {
   });
 
   it('peint « Bloquant » en alerte et « À vérifier » en avertissement', () => {
+    expect(complianceBadge('non_compliant_live')).toEqual({
+      label: 'Non conforme',
+      variant: 'alert',
+    });
     expect(complianceBadge('blocking')).toEqual({ label: 'Bloquant', variant: 'alert' });
     expect(complianceBadge('warning')).toEqual({ label: 'À vérifier', variant: 'warning' });
   });
@@ -64,5 +69,20 @@ describe('product-compliance', () => {
     expect(findingsText([INCOMPLETE, CONTRADICTION], label).startsWith('La composition')).toBe(
       true,
     );
+  });
+
+  /** Régression : une fiche publiée bloquante se disait « Bloquant » (2026-10-27). */
+  it('une fiche publiée bloquante ne dit pas Bloquant : elle est non conforme en vente', () => {
+    expect(complianceStateOf('published', [CONTRADICTION])).toBe('non_compliant_live');
+    expect(complianceStateOf('draft', [CONTRADICTION])).toBe('blocking');
+    expect(complianceStateOf('published', [INCOMPLETE])).toBe('warning');
+    expect(complianceStateOf('published', undefined)).toBeNull();
+  });
+
+  it('le détail d’une fiche en vente commence par « En vente — à corriger : »', () => {
+    expect(findingsText([CONTRADICTION], label, 'non_compliant_live')).toMatch(
+      /^En vente — à corriger : La composition contredit/u,
+    );
+    expect(findingsText([CONTRADICTION], label, 'blocking')).toMatch(/^La composition/u);
   });
 });

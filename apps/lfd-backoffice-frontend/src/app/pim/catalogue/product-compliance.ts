@@ -5,6 +5,8 @@ import type {
   ProductComplianceWarningView,
 } from '@lfd/pim-contracts';
 
+import type { ProductStatus } from '../data/models';
+
 /**
  * **Dire les constats de conformité d'une fiche** — le jugement UNIQUE du
  * serveur (`GET /pim/catalogue/products/compliance-warnings`), mis en mots
@@ -34,14 +36,37 @@ export function worstSeverity(
   return findings.some((finding) => finding.severity === 'blocking') ? 'blocking' : 'warning';
 }
 
-const BADGES: Readonly<Record<ComplianceSeverity, ComplianceBadge>> = {
+/**
+ * Ce que la liste dit d'une fiche jugée. Un bloquant ne veut pas dire la même
+ * chose selon le statut : sur un brouillon, il empêche l'activation
+ * (« Bloquant ») ; sur une fiche PUBLIÉE, il n'empêche plus rien — elle est déjà
+ * en vente, et il faut la corriger (« Non conforme », Hugo le 2026-10-27).
+ */
+export type ComplianceState = 'non_compliant_live' | 'blocking' | 'warning';
+
+export function complianceStateOf(
+  status: ProductStatus,
+  findings: readonly ProductComplianceFinding[] | undefined,
+): ComplianceState | null {
+  const severity = worstSeverity(findings);
+  if (severity === 'blocking' && status === 'published') {
+    return 'non_compliant_live';
+  }
+  return severity;
+}
+
+const BADGES: Readonly<Record<ComplianceState, ComplianceBadge>> = {
+  non_compliant_live: { label: 'Non conforme', variant: 'alert' },
   blocking: { label: 'Bloquant', variant: 'alert' },
   warning: { label: 'À vérifier', variant: 'warning' },
 };
 
-export function complianceBadge(severity: ComplianceSeverity): ComplianceBadge {
-  return BADGES[severity];
+export function complianceBadge(state: ComplianceState): ComplianceBadge {
+  return BADGES[state];
 }
+
+/** Ce qui précède le détail d'une fiche en vente non conforme. */
+const LIVE_PREFIX = 'En vente — à corriger : ';
 
 /** Les contextes de vente tels que l'écran les nomme. Les clés sont celles du référentiel. */
 const VAT_CONTEXT_LABELS: Readonly<Record<string, string>> = {
@@ -100,13 +125,18 @@ export function findingText(
   }
 }
 
-/** Tous les constats d'une fiche, bloquants d'abord. */
+/** Tous les constats d'une fiche, bloquants d'abord ; préfixés quand elle est en vente. */
 export function findingsText(
   findings: readonly ProductComplianceFinding[],
   allergenLabel: (code: string) => string,
+  state: ComplianceState | null = null,
 ): string {
-  return [...findings]
-    .sort((a, b) => Number(b.severity === 'blocking') - Number(a.severity === 'blocking'))
-    .map((finding) => findingText(finding, allergenLabel))
-    .join(' ');
+  const prefix = state === 'non_compliant_live' ? LIVE_PREFIX : '';
+  return (
+    prefix +
+    [...findings]
+      .sort((a, b) => Number(b.severity === 'blocking') - Number(a.severity === 'blocking'))
+      .map((finding) => findingText(finding, allergenLabel))
+      .join(' ')
+  );
 }
