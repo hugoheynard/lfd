@@ -40,6 +40,9 @@
     "nav.houseLinks.2.1": null,
     "orders.historyNote": null,
     "nav.address": null,
-    "product.oven": null
+    "product.oven": null,
+    "dayPicker.dateLabel": null,
+    "dayPicker.notServed": null,
+    "dayPicker.confirmDate": null
   }
 }

@@ -56,24 +56,16 @@
       </button>
 
       @if (otherOpen()) {
-        <div class="other">
-          <fold-date
-            [label]="c().dateLabel"
-            [min]="min()"
-            [max]="max()"
-            [hint]="refusal()"
-            [(value)]="typed"
-          />
-          <button
-            foldButton
-            type="button"
-            data-day="confirm"
-            [disabled]="!typedServed()"
-            (click)="confirmTyped()"
-          >
-            {{ c().confirmDate }}
-          </button>
-        </div>
+        <app-month-picker
+          class="other"
+          [min]="min()"
+          [max]="max()"
+          [served]="servedDay"
+          [locale]="locale.current()"
+          [previousLabel]="c().previousMonth"
+          [nextLabel]="c().nextMonth"
+          (picked)="pick($event)"
+        />
       }
     </div>
   }

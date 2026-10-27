@@ -144,4 +144,5 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   payHintAccountDelivery: 'Comment on règle — au compte, livraison',
   pickupSingleIntro: 'Porte du retrait — une seule maison, son texte',
   pickupSingleCta: 'Porte du retrait — une seule maison, son bouton',
+  previousMonth: 'Calendrier — mois précédent',
 };

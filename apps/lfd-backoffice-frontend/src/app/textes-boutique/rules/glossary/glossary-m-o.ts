@@ -1,7 +1,6 @@
 /** Segments de clé `M`–`O` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   nextGroup: 'Choix du jour — les jours suivants (lecteur d’écran)',
-  notServed: 'Choix du jour — refus d’une date non proposée',
   otherDate: 'Choix du jour — « Autre date »',
   madeToOrderDays: 'Fiche — préparé sur commande, plusieurs jours à l’avance',
   madeToOrderEve: 'Fiche — préparé sur commande, la veille',
@@ -143,4 +142,5 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   otherPickup: 'Panier — proposer le retrait',
   otherPickupOffer: 'Panier — proposer le retrait, avec sa remise',
   otherDelivery: 'Panier — proposer la livraison',
+  nextMonth: 'Calendrier — mois suivant',
 };

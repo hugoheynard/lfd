@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import { addDays, instantToLocal } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldDateComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
@@ -18,6 +17,7 @@ import { dayPickerCopy } from '../../copy/screens/day-picker.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
 import { dialogSide } from '../../panel-side';
 import { limitHourLabel } from '../cutoff-labels';
+import { MonthPicker } from '../month-picker/month-picker';
 import { ORDER_DIALOG } from '../order-dialog';
 import { ServicePoints } from '../pickup-points.store';
 import { isServedDay, servedWindow, todayService } from '../served-days';
@@ -43,21 +43,20 @@ interface NextDay {
  * (`GET /fulfillment-days`). « Aujourd'hui » n'apparaît que si le serveur le
  * sert ; un jour non servi reste visible et grisé.
  *
- * ⚠️ « Autre date » est un `fold-date` borné et non le calendrier de fold :
- * `fold-calendar-month` est une grille d'événements, sans jour désactivable ni
- * jour sélectionné (lu dans `fold-ng.d.ts` le 2026-10-27) — le repli que le
- * plan prévoit.
+ * « Autre date » déplie un calendrier mensuel navigable (`MonthPicker`,
+ * Hugo, 2026-10-27) : `fold-calendar-month` est une grille d'événements, sans
+ * jour sélectionnable (lu dans `fold-ng.d.ts` le 2026-10-27).
  */
 @Component({
   selector: 'app-day-picker-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldDateComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
     FoldPanelHeaderComponent,
+    MonthPicker,
   ],
   templateUrl: './day-picker-dialog.html',
   styleUrl: './day-picker-dialog.scss',
@@ -78,7 +77,7 @@ export class DayPickerDialog {
   readonly data = input<undefined>();
 
   private readonly points = inject(ServicePoints);
-  private readonly locale = inject(ClientLocale);
+  protected readonly locale = inject(ClientLocale);
   private readonly clock = inject(ShopClock);
   private readonly ref = inject(FoldPanelRef);
 
@@ -88,9 +87,6 @@ export class DayPickerDialog {
 
   /** Le champ « Autre date » est-il déplié ? */
   protected readonly otherOpen = signal(false);
-
-  /** La date saisie dans le champ, `''` tant que rien. */
-  protected readonly typed = signal('');
 
   private readonly today = computed(() => instantToLocal(this.clock.now()).day);
 
@@ -136,18 +132,11 @@ export class DayPickerDialog {
   });
 
   /** Les bornes du champ : le premier et le dernier jour servis. */
-  protected readonly min = computed(() => this.window().first ?? undefined);
-  protected readonly max = computed(() => this.window().last ?? undefined);
+  protected readonly min = computed(() => this.window().first ?? '');
+  protected readonly max = computed(() => this.window().last);
 
-  /** Le refus sous le champ, ou `undefined`. */
-  protected readonly refusal = computed<string | undefined>(() => {
-    const day = this.typed();
-    return day === '' || isServedDay(day, this.window()) ? undefined : this.c().notServed;
-  });
-
-  protected readonly typedServed = computed(
-    () => this.typed() !== '' && isServedDay(this.typed(), this.window()),
-  );
+  /** Ce que le calendrier rend cliquable : la fenêtre servie, et rien d'autre. */
+  protected readonly servedDay = (day: string): boolean => isServedDay(day, this.window());
 
   constructor() {
     // Idempotent : la boutique les a souvent déjà lus.
@@ -168,9 +157,5 @@ export class DayPickerDialog {
 
   protected toggleOther(): void {
     this.otherOpen.update((open) => !open);
-  }
-
-  protected confirmTyped(): void {
-    this.pick(this.typed());
   }
 }

@@ -18,14 +18,11 @@ export interface DayPickerCopy {
   readonly nextGroup: string;
   /** Sous un jour grisé : il n'est pas proposé. */
   readonly closed: string;
-  /** Le bouton qui déplie le champ de date. */
+  /** Le bouton qui déplie le calendrier. */
   readonly otherDate: string;
-  /** Le libellé du champ de date. */
-  readonly dateLabel: string;
-  /** Le refus d'un jour non servi, sous le champ. */
-  readonly notServed: string;
-  /** L'action qui prend le jour saisi. */
-  readonly confirmDate: string;
+  /** Les noms des flèches du calendrier (lus, pas vus). */
+  readonly previousMonth: string;
+  readonly nextMonth: string;
   /** Aucun jour servi. */
   readonly none: {
     readonly title: string;
@@ -44,9 +41,8 @@ export const DAY_PICKER_FR: DayPickerCopy = {
   nextGroup: 'Les jours suivants',
   closed: 'Non proposé',
   otherDate: 'Autre date',
-  dateLabel: 'Le jour',
-  notServed: 'Ce jour-là n’est pas proposé à la commande.',
-  confirmDate: 'Prendre ce jour',
+  previousMonth: 'Mois précédent',
+  nextMonth: 'Mois suivant',
   none: {
     title: 'Aucune journée ouverte',
     subtitle: 'Aucun jour n’est proposé à la commande pour l’instant.',
@@ -64,9 +60,8 @@ export const DAY_PICKER_EN: DayPickerCopy = {
   nextGroup: 'The following days',
   closed: 'Not offered',
   otherDate: 'Another date',
-  dateLabel: 'The day',
-  notServed: 'That day is not open for orders.',
-  confirmDate: 'Take this day',
+  previousMonth: 'Previous month',
+  nextMonth: 'Next month',
   none: {
     title: 'No day open',
     subtitle: 'No day is open for orders right now.',
@@ -84,9 +79,8 @@ export const DAY_PICKER_IT: DayPickerCopy = {
   nextGroup: 'I giorni successivi',
   closed: 'Non disponibile',
   otherDate: 'Altra data',
-  dateLabel: 'Il giorno',
-  notServed: 'Quel giorno non è aperto agli ordini.',
-  confirmDate: 'Prendo questo giorno',
+  previousMonth: 'Mese precedente',
+  nextMonth: 'Mese successivo',
   none: {
     title: 'Nessuna giornata aperta',
     subtitle: 'Nessun giorno è aperto agli ordini per ora.',

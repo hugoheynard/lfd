@@ -2373,24 +2373,17 @@
           "variables": []
         },
         {
-          "key": "dayPicker.dateLabel",
-          "fr": "Le jour",
-          "en": "The day",
-          "it": "Il giorno",
+          "key": "dayPicker.previousMonth",
+          "fr": "Mois précédent",
+          "en": "Previous month",
+          "it": "Mese precedente",
           "variables": []
         },
         {
-          "key": "dayPicker.notServed",
-          "fr": "Ce jour-là n’est pas proposé à la commande.",
-          "en": "That day is not open for orders.",
-          "it": "Quel giorno non è aperto agli ordini.",
-          "variables": []
-        },
-        {
-          "key": "dayPicker.confirmDate",
-          "fr": "Prendre ce jour",
-          "en": "Take this day",
-          "it": "Prendo questo giorno",
+          "key": "dayPicker.nextMonth",
+          "fr": "Mois suivant",
+          "en": "Next month",
+          "it": "Mese successivo",
           "variables": []
         },
         {

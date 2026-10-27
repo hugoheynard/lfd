@@ -1,6 +1,5 @@
 /** Segments de clé `C` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_C: Readonly<Record<string, string>> = {
-  confirmDate: 'Choix du jour — prendre la date saisie',
   call: 'Bouton « appeler »',
   callClose: 'Appel — fermer',
   callSubtitle: 'Appel — sous-titre',

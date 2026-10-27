@@ -88,28 +88,44 @@ describe('DayPickerDialog', () => {
     expect(closed).toEqual(['2026-10-29']);
   });
 
-  it('« Autre date » borne le champ et refuse un jour non servi', async () => {
+  /** Un calendrier navigable, plus un champ (Hugo, 2026-10-27). */
+  it('« Autre date » ouvre un calendrier : jours servis cliquables, mois suivant', async () => {
     const { el, closed, detect } = await boot(
       [{ pickupAddressId: null, date: '2026-10-29', orderUntil: null }],
       '2026-12-31',
     );
     button(el, 'other')?.click();
     detect();
-    const input = el.querySelector<HTMLInputElement>('fold-date input');
-    expect(input?.min).toBe('2026-10-29');
-    expect(input?.max).toBe('2026-12-31');
+    const cal = (): HTMLElement => el.querySelector('app-month-picker') as HTMLElement;
+    const cell = (day: string): HTMLButtonElement | null =>
+      cal().querySelector<HTMLButtonElement>(`[data-day="${day}"]`);
 
-    input!.value = '2026-10-28';
-    input!.dispatchEvent(new Event('input'));
-    detect();
-    expect(el.textContent).toContain('n’est pas proposé');
-    expect(button(el, 'confirm')?.disabled).toBe(true);
+    expect(cell('2026-10-28')?.disabled).toBe(true);
+    expect(cell('2026-10-29')?.disabled).toBe(false);
+    const [previous, next] = Array.from(cal().querySelectorAll<HTMLButtonElement>('.head button'));
+    expect(previous?.disabled).toBe(true);
 
-    input!.value = '2026-11-20';
-    input!.dispatchEvent(new Event('input'));
+    next?.click();
     detect();
-    button(el, 'confirm')?.click();
+    cell('2026-11-20')?.click();
     expect(closed).toEqual(['2026-11-20']);
+  });
+
+  it('le calendrier s’arrête au dernier mois servi', async () => {
+    const { el, detect } = await boot(
+      [{ pickupAddressId: null, date: '2026-10-29', orderUntil: null }],
+      '2026-11-15',
+    );
+    button(el, 'other')?.click();
+    detect();
+    const next = (): HTMLButtonElement | undefined =>
+      Array.from(el.querySelectorAll<HTMLButtonElement>('app-month-picker .head button'))[1];
+    next()?.click();
+    detect();
+    expect(next()?.disabled).toBe(true);
+    expect(
+      el.querySelector<HTMLButtonElement>('app-month-picker [data-day="2026-11-16"]')?.disabled,
+    ).toBe(true);
   });
 
   it('dit qu’aucun jour n’est ouvert quand le serveur n’en sert aucun', async () => {

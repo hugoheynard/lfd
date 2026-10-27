@@ -1,0 +1,57 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-sm);
+}
+
+.title {
+  margin: 0;
+  font-weight: 700;
+  text-transform: capitalize;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: var(--fold-space-xs);
+}
+
+.weekday {
+  text-align: center;
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-muted);
+  text-transform: uppercase;
+}
+
+/* Un jour servi est un bouton plein de la marque ; les autres s'effacent. */
+.cell {
+  aspect-ratio: 1;
+  min-width: 0;
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-sm);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: var(--fold-color-primary);
+    color: var(--fold-color-on-primary);
+  }
+
+  &:disabled {
+    border-color: transparent;
+    background: none;
+    color: var(--fold-color-text-faded);
+    cursor: default;
+  }
+}

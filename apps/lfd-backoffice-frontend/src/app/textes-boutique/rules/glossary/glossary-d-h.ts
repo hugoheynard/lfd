@@ -1,6 +1,5 @@
 /** Segments de clé `D`–`H` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
-  dateLabel: 'Choix du jour — libellé du champ de date',
   dangerHead: 'Zone sensible — titre',
   dangerZone: 'Zone sensible',
   data: 'Mes données',

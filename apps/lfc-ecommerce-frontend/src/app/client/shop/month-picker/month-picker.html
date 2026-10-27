@@ -1,0 +1,46 @@
+<div class="head">
+  <button
+    foldButton
+    size="sm"
+    emphasis="soft"
+    intent="neutral"
+    icon="chevron-left"
+    type="button"
+    [attr.aria-label]="previousLabel()"
+    [disabled]="!canPrevious()"
+    (click)="move(-1)"
+  ></button>
+  <p class="title" aria-live="polite">{{ title() }}</p>
+  <button
+    foldButton
+    size="sm"
+    emphasis="soft"
+    intent="neutral"
+    icon="chevron-right"
+    type="button"
+    [attr.aria-label]="nextLabel()"
+    [disabled]="!canNext()"
+    (click)="move(1)"
+  ></button>
+</div>
+
+<div class="grid" role="grid">
+  @for (initial of weekdays(); track $index) {
+    <span class="weekday" aria-hidden="true">{{ initial }}</span>
+  }
+  @for (cell of cells(); track $index) {
+    @if (cell.day === null) {
+      <span class="blank"></span>
+    } @else {
+      <button
+        class="cell"
+        type="button"
+        [attr.data-day]="cell.day"
+        [disabled]="!cell.served"
+        (click)="pick(cell)"
+      >
+        {{ cell.label }}
+      </button>
+    }
+  }
+</div>
