@@ -5,7 +5,6 @@
 /* La même famille que les cartes de mode : coin de feuille, élévation douce,
    soulèvement au survol. */
 .card {
-  display: block;
   height: 100%;
   overflow: hidden;
   border-radius: var(--lfc-radius-sheet);
@@ -41,7 +40,10 @@
   transform: scale(1.05);
 }
 
+/* Le corps prend la hauteur restante : le prix tombe en bas de chaque carte,
+   aligné d'une carte à l'autre quel que soit le titre (Hugo, 2026-10-27). */
 .body {
+  flex: 1 1 auto;
   display: flex;
   flex-direction: column;
   gap: var(--fold-space-sm);
@@ -74,6 +76,7 @@
 }
 
 .price {
+  margin-top: auto;
   font-weight: var(--lfc-weight-black);
 }
 
