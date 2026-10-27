@@ -12,6 +12,20 @@ export interface FrozenOrderAdjustments {
   readonly deliveryFee: CartAdjustment | null;
   readonly lateFee: LateFeeAdjustment | null;
   readonly deliveryVatMode: DeliveryVatMode | null;
+  /**
+   * Les TTC figés d'une commande `exact_ht` (plan
+   * `documentation/pricing/plan-centime-particuliers.md`, § 5, « Le bon de
+   * livraison partiel ») : le bon imputé et le port, que le BL reprend ;
+   * `null` pour une commande `line_ht`. La remise retrait n'y est pas : elle
+   * se refait sur le livré.
+   */
+  readonly exact: FrozenExactTerms | null;
+}
+
+/** Ce que le BL partiel d'une commande `exact_ht` reprend de sa commande, en TTC. */
+export interface FrozenExactTerms {
+  readonly voucherTtcCents: number;
+  readonly deliveryFeeTtcCents: number;
 }
 
 /** Une décision prise : ce qui part, et les règles avec lesquelles on le recompte. */

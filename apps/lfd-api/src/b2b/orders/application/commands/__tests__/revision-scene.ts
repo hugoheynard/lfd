@@ -323,6 +323,8 @@ function seed(): RevisableOrder {
     note: "",
     lines: [],
     deliveryVatMode: "standard",
+    // Une commande de société : composée HT (plan du centime, § 7).
+    vatMethod: "line_ht",
     lateFeeAdjustment: null,
     voucher: null,
     salesTerms: { document: "salesTermsPro", revision: null, fileId: null },

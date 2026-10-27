@@ -1,8 +1,8 @@
 import type { ContentLocale, ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
-import { lineTotalCents, ttcCentsOf } from "@lfd/money";
+import { lineTotalCents, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
 
 import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
-import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
 import { shopAllergensOf } from "../domain/shop-allergens.js";
 import {
   itemOperationOf,
@@ -52,7 +52,8 @@ export function shopCatalogueOf(
     }
     shown.push(item);
     const operation = itemOperationOf(item, access, sale);
-    items.push(operation === null ? toItem(item) : { ...toItem(item), operation });
+    const shownItem = toItem(item, sale.audience);
+    items.push(operation === null ? shownItem : { ...shownItem, operation });
   }
   return {
     shelves: shelvesOf(sellable, items),
@@ -61,7 +62,29 @@ export function shopCatalogueOf(
   };
 }
 
-function toItem(item: ResolvedCatalogItem): ShopItemView {
+/**
+ * **L'étiquette TTC d'un article**, selon la clientèle (plan
+ * `documentation/pricing/plan-centime-particuliers.md`, § 4 et § 8) :
+ *
+ * - `public` — `ttcCentsFromHtMillicents`, la valeur saisie au référentiel, et
+ *   celle que la commande d'un particulier multiplie par la quantité : le
+ *   client paie ce qu'il lit ;
+ * - `pro` — inchangé : le HT de ligne arrondi d'abord, puis la taxe.
+ *
+ * L'audience est celle que `ShopCataloguePricing` a déjà déduite de l'espace
+ * de travail — jamais redécidée ici.
+ */
+export function ttcCentsFromHtMillicentsFor(
+  unitPriceMillicents: number,
+  vatRate: number,
+  audience: ShopAudience,
+): number {
+  return audience === "public"
+    ? ttcCentsFromHtMillicents(unitPriceMillicents, vatRate)
+    : ttcCentsOf(lineTotalCents(unitPriceMillicents, 1), vatRate);
+}
+
+function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView {
   return {
     sku: item.productSku,
     name: item.name,
@@ -73,7 +96,11 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     // appliquera : les deux viennent de la même composition, faite une fois
     // dans le lecteur.
     unitPriceMillicents: item.unitPriceMillicents,
-    unitPriceTtcCents: ttcCentsOf(lineTotalCents(item.unitPriceMillicents, 1), item.vatRate),
+    unitPriceTtcCents: ttcCentsFromHtMillicentsFor(
+      item.unitPriceMillicents,
+      item.vatRate,
+      audience,
+    ),
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,

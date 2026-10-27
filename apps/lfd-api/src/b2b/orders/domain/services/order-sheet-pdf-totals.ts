@@ -175,6 +175,10 @@ function gesturesOf(sheet: PricedPaper, ttc: boolean): readonly Gesture[] {
  * honnête n'existe, ils restent en HT et le disent.
  */
 function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
+  const frozen = frozenTtcGestureRows(sheet);
+  if (frozen !== null) {
+    return frozen;
+  }
   const gestures = gesturesOf(sheet, sheetShowsTtc(sheet));
   const pretaxSum = gestures.reduce((sum, gesture) => sum + gesture.pretaxCents, 0);
   if (gestures.length === 0) {
@@ -199,6 +203,26 @@ function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
 }
 
 /**
+ * Les gestes d'une commande **composée en TTC** (`exact_ht`, plan
+ * `documentation/pricing/plan-centime-particuliers.md`, lot C3) : leurs TTC
+ * sont figés, on les écrit tels quels — aucune répartition, le format du
+ * ticket. `null` pour une autre commande, qui garde la répartition.
+ */
+function frozenTtcGestureRows(sheet: PricedPaper): readonly TotalRow[] | null {
+  const ttc = sheet.money.ttcTerms;
+  if (ttc === undefined) {
+    return null;
+  }
+  return [
+    { label: discountLabel(sheet, true), cents: -ttc.discountCents },
+    { label: "Bon de fidélité", cents: -ttc.voucherCents },
+    { label: "Livraison", cents: ttc.deliveryFeeCents },
+  ]
+    .filter((gesture) => gesture.cents !== 0)
+    .map((gesture) => ({ label: gesture.label, value: money(gesture.cents) }));
+}
+
+/**
  * **Le pied du bon public** (plan `architecture-bon-de-commande.md`, §2.2) : les articles,
  * les gestes en TTC s'il y en a, le **Total TTC**, puis « dont TVA ». Ni
  * « Sous-total HT » ni « Total avant TVA » : un particulier lit un prix taxe
@@ -210,8 +234,19 @@ function publicRows(sheet: PricedPaper): readonly TotalRow[] {
     { label: "Articles", value: money(articlesCents(sheet)) },
     ...taxedGestureRows(sheet),
     { label: "Total TTC", value: money(totals.totalCents), rule: true, strong: true },
-    ...vatRows(totals),
+    ...(totals.ttcByRate === undefined ? vatRows(totals) : rateRows(totals.ttcByRate)),
   ];
+}
+
+/**
+ * Le récapitulatif par taux d'une commande composée en TTC — HT, TVA et TTC
+ * de chaque taux, LUS sur la part figée (`ttc_by_rate`), jamais reconstitués.
+ */
+function rateRows(parts: NonNullable<SheetMoney["ttcByRate"]>): readonly TotalRow[] {
+  return parts.map((part) => ({
+    label: `dont TVA ${String(part.rate).replace(".", ",")} % (HT ${money(part.htCents)} · TTC ${money(part.ttcCents)})`,
+    value: money(part.vatCents),
+  }));
 }
 
 /** Les lignes du pavé de totaux, selon le bon. */

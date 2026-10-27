@@ -8,6 +8,7 @@ import type {
 import { isSettled } from '@lfd/contracts/shop-values';
 
 import { formatWindow } from '../format-hour';
+import { ticketOf, type OrderTicket } from './order-ticket';
 
 /**
  * **Ce que l'écran des commandes lit** — les modèles de vue, et leur fabrication
@@ -221,6 +222,11 @@ export interface HistoryOrder {
   readonly payment: OrderPayment;
   readonly refund: OrderRefund;
   readonly origin: OrderOrigin;
+  /**
+   * Le ticket d'une commande composée en TTC (particulier) — absent pour un
+   * pro, dont le tiroir garde son affichage.
+   */
+  readonly ticket?: OrderTicket;
   /** La maison de l'espace courant — elle situe la personne, pas la ligne. */
   readonly org: string;
   /**
@@ -411,6 +417,7 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
     pretax: order.settlement === 'account',
     voucherDiscountCents: order.voucherDiscountCents,
     ...pickupDiscountOf(order),
+    ...ticketFieldOf(order),
     status: statusOf(order),
     // Le régime calculé au serveur, pas une recopie du critère (F5) : `account`
     // = portée au compte, facturée en fin de mois ; `free` (total nul) gardait
@@ -447,6 +454,11 @@ function pickupDiscountOf(order: RowSource): { pickupDiscount?: HistoryPickupDis
         .map((line) => line.productName),
     },
   };
+}
+
+function ticketFieldOf(order: RowSource): { ticket?: OrderTicket } {
+  const ticket = ticketOf(order);
+  return ticket === null ? {} : { ticket };
 }
 
 /** Qui a passé la commande, dit avec les mots de l'écran — un fait figé (§7.6). */

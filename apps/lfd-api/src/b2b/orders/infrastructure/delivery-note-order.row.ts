@@ -1,4 +1,12 @@
-import type { DeliveryNoteOrder } from "../domain/ports/order-lines-for-delivery-note.js";
+import type {
+  DeliveryNoteOrder,
+  DeliveryNoteOrderTtcTerms,
+} from "../domain/ports/order-lines-for-delivery-note.js";
+import {
+  FrozenAdjustmentUnreadableError,
+  ttcByRateOf,
+  vatMethodOf,
+} from "./order-money-columns.js";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
@@ -35,6 +43,11 @@ export const DELIVERY_NOTE_TERMS_SELECT = {
   vatShares: true,
   vatCents: true,
   totalCents: true,
+  vatMethod: true,
+  discountTtcCents: true,
+  voucherTtcCents: true,
+  deliveryFeeTtcCents: true,
+  ttcByRate: true,
 } as const;
 
 export interface DeliveryNoteOrderRow {
@@ -50,6 +63,11 @@ export interface DeliveryNoteOrderRow {
   readonly vatShares: Prisma.JsonValue;
   readonly vatCents: number;
   readonly totalCents: number;
+  readonly vatMethod: string;
+  readonly discountTtcCents: number | null;
+  readonly voucherTtcCents: number | null;
+  readonly deliveryFeeTtcCents: number | null;
+  readonly ttcByRate: Prisma.JsonValue;
   readonly lines: readonly {
     readonly sku: string;
     readonly productNameSnapshot: string;
@@ -84,6 +102,30 @@ export function toDeliveryNoteOrder(row: DeliveryNoteOrderRow): DeliveryNoteOrde
       vatShares: row.vatShares,
       vatCents: row.vatCents,
       totalCents: row.totalCents,
+      ttcTerms: ttcTermsOf(row),
     },
+  };
+}
+
+/**
+ * Les TTC figés d'une commande `exact_ht`, ou `null`. Le CHECK
+ * `orders_ttc_terms_iff_exact_ht` les garantit non nuls ensemble.
+ *
+ * @throws {UnknownOrderVatMethodError}
+ * @throws {FrozenAdjustmentUnreadableError} un TTC nul sur une commande `exact_ht`.
+ */
+function ttcTermsOf(row: DeliveryNoteOrderRow): DeliveryNoteOrderTtcTerms | null {
+  if (vatMethodOf(row.id, row.vatMethod) === "line_ht") {
+    return null;
+  }
+  const { discountTtcCents, voucherTtcCents, deliveryFeeTtcCents } = row;
+  if (discountTtcCents === null || voucherTtcCents === null || deliveryFeeTtcCents === null) {
+    throw new FrozenAdjustmentUnreadableError(row.id, "montants taxe comprise");
+  }
+  return {
+    discountCents: discountTtcCents,
+    voucherCents: voucherTtcCents,
+    deliveryFeeCents: deliveryFeeTtcCents,
+    byRate: ttcByRateOf(row.id, row.ttcByRate),
   };
 }

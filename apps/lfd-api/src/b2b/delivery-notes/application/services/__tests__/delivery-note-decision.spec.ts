@@ -66,6 +66,7 @@ function order(overrides: Partial<DeliveryNoteOrderProgress> = {}): DeliveryNote
     receivedOn: null,
     terms: {
       subtotalCents: 1_000,
+      ttcTerms: null,
       discountCents: 0,
       voucherDiscountCents: 0,
       deliveryFeeCents: 800,
@@ -90,6 +91,7 @@ const DECISION = {
     deliveryFee: { mode: "amount", cents: 800 },
     lateFee: null,
     deliveryVatMode: "standard",
+    exact: null,
   },
 } as const;
 

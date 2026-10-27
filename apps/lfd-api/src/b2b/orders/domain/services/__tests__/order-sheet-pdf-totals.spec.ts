@@ -67,6 +67,44 @@ describe("le pied du bon public", () => {
     columnAddsUp(rows);
   });
 
+  it("commande composée en TTC : les gestes figés écrits tels quels, sans répartition", () => {
+    // 124,91 − 2,10 − 5,00 + 6,00 = 123,81 : la colonne d'un ticket.
+    const rows = totalRows(
+      publicSheet({
+        discountCents: 199,
+        voucherDiscountCents: 474,
+        deliveryFeeCents: 500,
+        totalCents: 12_381,
+        ttcTerms: { discountCents: 210, voucherCents: 500, deliveryFeeCents: 600 },
+      }),
+    );
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Articles",
+      LABO,
+      "Bon de fidélité",
+      "Livraison",
+      "Total TTC",
+      "dont TVA",
+    ]);
+    expect(rows.map((row) => Math.abs(cents(row.value))).slice(1, 4)).toEqual([210, 500, 600]);
+    columnAddsUp(rows);
+  });
+
+  it("commande composée en TTC : le récapitulatif par taux recopié de la part figée", () => {
+    const rows = totalRows(
+      publicSheet({
+        totalCents: 12_491,
+        ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 0 },
+        ttcByRate: [{ rate: 5.5, htCents: 11_839, vatCents: 652, ttcCents: 12_491 }],
+      }),
+    );
+
+    const recap = rows.find((row) => row.label.startsWith("dont TVA 5,5 %"));
+    expect(recap?.label).toMatch(/HT 118,39\s€ · TTC 124,91\s€/u);
+    expect(recap?.value).toMatch(/6,52/u);
+  });
+
   it("sans geste : articles, Total TTC, TVA", () => {
     const rows = totalRows(publicSheet({ discountCents: 0, totalCents: 12_491 }));
 

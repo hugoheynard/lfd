@@ -417,6 +417,19 @@ export interface OrdersCopy {
   /** `{amount}` est remplacé par le cumul remboursé : « 12,50 € ». */
   readonly refundedPartial: string;
   readonly detailHead: string;
+  /**
+   * Le ticket d'une commande composée en TTC (particulier, plan du centime,
+   * lot C3) : ses lignes, ses gestes, son total, puis HT / TVA / TTC par taux.
+   */
+  readonly ticketHead: string;
+  readonly ticketArticles: string;
+  readonly ticketVoucher: string;
+  readonly ticketDelivery: string;
+  readonly ticketTotal: string;
+  readonly ticketRate: string;
+  readonly ticketPretax: string;
+  readonly ticketVat: string;
+  readonly ticketTaxed: string;
   readonly detailSlot: string;
   readonly detailPayment: string;
   readonly detailOrigin: string;
@@ -562,6 +575,15 @@ export const ORDERS_FR: OrdersCopy = {
   refundedFull: 'Remboursée',
   refundedPartial: 'Remboursée en partie ({amount})',
   detailHead: 'Le détail',
+  ticketHead: 'Votre ticket',
+  ticketArticles: 'Articles',
+  ticketVoucher: 'Bon de fidélité',
+  ticketDelivery: 'Livraison',
+  ticketTotal: 'Total TTC',
+  ticketRate: 'Taux',
+  ticketPretax: 'HT',
+  ticketVat: 'TVA',
+  ticketTaxed: 'TTC',
   detailSlot: 'Créneau',
   detailPayment: 'Règlement',
   detailOrigin: 'Origine',
@@ -687,6 +709,15 @@ export const ORDERS_EN: OrdersCopy = {
   refundedFull: 'Refunded',
   refundedPartial: 'Partly refunded ({amount})',
   detailHead: 'The detail',
+  ticketHead: 'Your receipt',
+  ticketArticles: 'Items',
+  ticketVoucher: 'Loyalty voucher',
+  ticketDelivery: 'Delivery',
+  ticketTotal: 'Total incl. VAT',
+  ticketRate: 'Rate',
+  ticketPretax: 'Excl. VAT',
+  ticketVat: 'VAT',
+  ticketTaxed: 'Incl. VAT',
   detailSlot: 'Slot',
   detailPayment: 'Settlement',
   detailOrigin: 'Origin',
@@ -812,6 +843,15 @@ export const ORDERS_IT: OrdersCopy = {
   refundedFull: 'Rimborsato',
   refundedPartial: 'Rimborsato in parte ({amount})',
   detailHead: 'Il dettaglio',
+  ticketHead: 'Il tuo scontrino',
+  ticketArticles: 'Articoli',
+  ticketVoucher: 'Buono fedeltà',
+  ticketDelivery: 'Consegna',
+  ticketTotal: 'Totale IVA inclusa',
+  ticketRate: 'Aliquota',
+  ticketPretax: 'Imponibile',
+  ticketVat: 'IVA',
+  ticketTaxed: 'IVA inclusa',
   detailSlot: 'Fascia oraria',
   detailPayment: 'Pagamento',
   detailOrigin: 'Origine',

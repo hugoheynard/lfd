@@ -43,6 +43,7 @@ describe("le BL d'un reste, sur le papier", () => {
       deliveryFee: { mode: "amount", cents: 1_200 },
       lateFee: null,
       deliveryVatMode: "standard",
+      exact: null,
     });
 
     expect(adjustments).toMatchObject({ discount: null, deliveryFee: null, lateFee: null });

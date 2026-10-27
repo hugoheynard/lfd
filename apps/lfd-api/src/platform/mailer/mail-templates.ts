@@ -502,28 +502,28 @@ function recapRows(
 ): readonly LayoutRow[] {
   const copy = mailCopyOf(locale)["customer.order-placed"];
   const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+  // Une commande de particulier composée en TTC écrit ses gestes tels qu'il
+  // les a payés (plan du centime, lot C3) ; sinon, les montants HT figés.
+  const ttc = sheet.money.ttcTerms;
+  const discountCents = ttc?.discountCents ?? sheet.money.discountCents;
+  const voucherCents = ttc?.voucherCents ?? sheet.money.voucherDiscountCents;
   return [
     {
       label: sheet.fulfillment.method === "pickup" ? copy.recapPickup : copy.recapDelivery,
       value: sheet.fulfillment.address?.ville ?? "—",
     },
     { label: copy.recapContent, value: fill(copy.recapPieces, { count: String(pieces) }) },
-    ...(sheet.money.discountCents === 0
+    ...(discountCents === 0
       ? []
       : [
           {
             label: pickupDiscountMailLabel(sheet, copy, (cents) => money(cents, locale), locale),
-            value: `−${money(sheet.money.discountCents, locale)}`,
+            value: `−${money(discountCents, locale)}`,
           },
         ]),
-    ...(sheet.money.voucherDiscountCents === 0
+    ...(voucherCents === 0
       ? []
-      : [
-          {
-            label: copy.recapVoucher,
-            value: `−${money(sheet.money.voucherDiscountCents, locale)}`,
-          },
-        ]),
+      : [{ label: copy.recapVoucher, value: `−${money(voucherCents, locale)}` }]),
     ...(sheet.money.settlement === "account"
       ? pretaxTotalRows(sheet, locale)
       : [

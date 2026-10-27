@@ -8,6 +8,7 @@ import {
 import type { FrozenOrderAdjustments } from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import { computeOrderTotals } from "../../../orders/domain/services/vat.js";
 import { InvalidDeliveryNoteTermsError } from "../errors/delivery-note-errors.js";
+import type { OrderRateAmounts } from "../../../orders/domain/value-objects/order-rate-amounts.js";
 import type { DeliveryNoteSourceLine } from "./delivery-note-line.js";
 
 /**
@@ -43,6 +44,27 @@ export interface DeliveryNoteTerms {
   readonly vatShares: FrozenJson | null;
   readonly vatCents: number;
   readonly totalCents: number;
+  /**
+   * Les TTC des termes d'un BL composé en TTC (`exact_ht`, plan
+   * `documentation/pricing/plan-centime-particuliers.md`, § 7) — `null` =
+   * `line_ht`. La méthode du BL EST cette présence : un BL `exact_ht` sans ses
+   * TTC, ou l'inverse, ne s'écrit pas (image du CHECK
+   * `delivery_note_ttc_terms_iff_exact_ht`).
+   */
+  readonly ttcTerms: DeliveryNoteTtcTerms | null;
+}
+
+/** Les TTC de la remise retrait, du bon imputé et du port. */
+export interface DeliveryNoteTtcTerms {
+  readonly discountCents: number;
+  readonly voucherCents: number;
+  readonly deliveryFeeCents: number;
+  /**
+   * La part de chaque taux du BL (colonne `ttc_by_rate`) — recopiée de la
+   * commande, ou recomposée sur le livré ; `null` quand la commande est
+   * antérieure à la colonne.
+   */
+  readonly byRate: readonly OrderRateAmounts[] | null;
 }
 
 const INTEGER_FIELDS = [
@@ -55,16 +77,27 @@ const INTEGER_FIELDS = [
   "totalCents",
 ] as const satisfies readonly (keyof DeliveryNoteTerms)[];
 
+const TTC_FIELDS = [
+  "discountCents",
+  "voucherCents",
+  "deliveryFeeCents",
+] as const satisfies readonly (keyof DeliveryNoteTtcTerms)[];
+
 /**
- * Recopie un en-tête champ par champ — une seule fonction nomme les dix,
+ * Recopie un en-tête champ par champ — une seule fonction nomme les onze,
  * pour qu'aucun ne soit oublié (plan E4a, § 4).
  *
- * @throws {InvalidDeliveryNoteTermsError} un des sept totaux n'est pas un entier.
+ * @throws {InvalidDeliveryNoteTermsError} un des totaux n'est pas un entier.
  */
 export function copyOfTerms(orderNumber: string, terms: DeliveryNoteTerms): DeliveryNoteTerms {
   const invalid = INTEGER_FIELDS.find((field) => !Number.isSafeInteger(terms[field]));
   if (invalid !== undefined) {
     throw new InvalidDeliveryNoteTermsError(orderNumber, invalid);
+  }
+  const ttc = terms.ttcTerms;
+  const invalidTtc = TTC_FIELDS.find((field) => ttc !== null && !Number.isSafeInteger(ttc[field]));
+  if (invalidTtc !== undefined) {
+    throw new InvalidDeliveryNoteTermsError(orderNumber, `ttcTerms.${invalidTtc}`);
   }
   return {
     subtotalCents: terms.subtotalCents,
@@ -77,7 +110,21 @@ export function copyOfTerms(orderNumber: string, terms: DeliveryNoteTerms): Deli
     vatShares: terms.vatShares,
     vatCents: terms.vatCents,
     totalCents: terms.totalCents,
+    ttcTerms:
+      ttc === null
+        ? null
+        : { ...ttc, byRate: ttc.byRate === null ? null : ttc.byRate.map((part) => ({ ...part })) },
   };
+}
+
+function sameTtcTerms(a: DeliveryNoteTtcTerms | null, b: DeliveryNoteTtcTerms | null): boolean {
+  if (a === null || b === null) {
+    return a === b;
+  }
+  return (
+    TTC_FIELDS.every((field) => a[field] === b[field]) &&
+    JSON.stringify(a.byRate) === JSON.stringify(b.byRate)
+  );
 }
 
 /** Forme canonique d'une valeur JSON : les clés d'un objet triées, pour comparer sans leur ordre. */
@@ -112,6 +159,7 @@ export function termsDifferences(
   return [
     ...scalar.filter((field) => note[field] !== order[field]),
     ...json.filter((field) => !sameJson(note[field], order[field])),
+    ...(sameTtcTerms(note.ttcTerms, order.ttcTerms) ? [] : (["ttcTerms"] as const)),
   ];
 }
 
@@ -201,6 +249,7 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
     })),
     vatCents: totals.vatCents,
     totalCents: totals.totalCents,
+    ttcTerms: null,
   });
 }
 

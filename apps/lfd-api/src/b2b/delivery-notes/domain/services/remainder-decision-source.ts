@@ -20,6 +20,8 @@ export function remainderAdjustmentsOf(order: FrozenOrderAdjustments): FrozenOrd
     deliveryFee: null,
     lateFee: null,
     deliveryVatMode: order.deliveryVatMode,
+    // Le bon et le port d'une commande en TTC sont comptés sur le BL-1, comme le port HT.
+    exact: order.exact === null ? null : { voucherTtcCents: 0, deliveryFeeTtcCents: 0 },
   };
 }
 

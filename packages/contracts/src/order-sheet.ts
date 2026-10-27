@@ -12,6 +12,10 @@ import {
   fulfillmentMethodSchema,
   type OrderOrigin,
   orderOriginSchema,
+  type OrderRateAmounts,
+  orderRatesAmountsSchema,
+  type OrderTtcTerms,
+  orderTtcTermsSchema,
   type PickupDiscountBaseView,
   type VatShareView,
   vatSharesSchema,
@@ -176,6 +180,8 @@ export const sheetMoneySchema = z.object({
       excludedSkus: z.array(z.string().min(1)),
     })
     .optional(),
+  ttcTerms: orderTtcTermsSchema.optional(),
+  ttcByRate: orderRatesAmountsSchema.optional(),
 });
 export interface SheetMoney {
   readonly subtotalCents: number;
@@ -213,6 +219,17 @@ export interface SheetMoney {
    * en est exclue. Le bon en tire « sur X € éligibles ».
    */
   readonly pickupDiscountBase?: PickupDiscountBaseView;
+  /**
+   * Les TTC des gestes d'une commande de particulier composée en TTC — le bon
+   * public les écrit tels quels, au format du ticket (plan du centime, lot C3).
+   * Absents : le bon les répartit depuis les HT, comme avant.
+   */
+  readonly ttcTerms?: OrderTtcTerms;
+  /**
+   * La part figée de chaque taux (HT, TVA, TTC) d'une commande composée en
+   * TTC — le récapitulatif du ticket, lu et jamais recalculé.
+   */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
 }
 
 /**

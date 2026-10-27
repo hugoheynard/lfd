@@ -11,16 +11,10 @@ import type {
 } from "@lfd/contracts";
 
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
-import type { VatShare } from "@lfd/money";
 
-import {
-  ensureDeliveryFeeMatches,
-  ensureDiscountMatches,
-  ensureDraftable,
-  ensureLateFeeMatches,
-  ensurePickupDiscountOnlyOnPickup,
-  voucherDiscountOf,
-} from "./order-amount-guards.js";
+import { ensureDraftable } from "./order-amount-guards.js";
+import { lineHtAmountsOf, type DraftedAmounts } from "./order-amounts.js";
+import { exactAmountsOf } from "./order-exact-amounts.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
   ensureChanged,
@@ -47,9 +41,8 @@ import {
   type FixedCustomerCancellation,
 } from "../services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
-import { computeOrderTotals } from "../services/vat.js";
-import { OrderLine } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
+import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
 
 export type {
   DraftOrderInput,
@@ -59,6 +52,20 @@ export type {
   OrderToPlace,
   OrderVoucher,
 } from "./order-shapes.js";
+
+/**
+ * Une composition par méthode de TVA (plan du centime, § 4) : on ajoute une
+ * méthode en ajoutant une entrée, pas une branche dans `compose`.
+ */
+const AMOUNTS_BY_METHOD: Readonly<
+  Record<
+    OrderVatMethod,
+    (input: DraftOrderInput, fulfillment: OrderFulfillmentInput) => DraftedAmounts
+  >
+> = {
+  line_ht: lineHtAmountsOf,
+  exact_ht: exactAmountsOf,
+};
 
 /** Décision de règlement : indécise (`null`), carte (intent), ou différée. */
 type Payment = { readonly status: PaymentStatus; readonly intentId: string | null } | null;
@@ -88,76 +95,35 @@ export class Order {
     private readonly requestedDeliveryDate: Date | null,
     private readonly note: string,
     private readonly catalogVersionId: string | null,
-    private readonly lines: readonly OrderLine[],
-    private readonly discountCents: number,
+    private readonly amounts: DraftedAmounts,
     private readonly discountAdjustment: CartAdjustment | null,
-    private readonly deliveryFeeCents: number,
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
     private readonly deliveryVatMode: DeliveryVatMode,
     private readonly voucher: { readonly id: string; readonly appliedCents: number } | null,
-    private readonly subtotalCentsValue: number,
-    private readonly vatCentsValue: number,
-    private readonly vatSharesValue: readonly VatShare[],
-    private readonly totalCentsValue: number,
     private readonly salesTerms: OrderSalesTerms,
     private readonly locale: OrderLocale | null,
   ) {}
 
-  /** Compose une commande : valide, fige les lignes et calcule tous les montants. */
+  /**
+   * Compose une commande qu'on PASSE : valide, fige les lignes et calcule tous
+   * les montants. La méthode de TVA se décide ici, une fois, sur l'absence de
+   * société (`placementVatMethodOf`) ; ensuite elle se relit (`recompose`).
+   */
   static draft(input: DraftOrderInput): Order {
+    return Order.compose(input, placementVatMethodOf(input.companyId));
+  }
+
+  /**
+   * La composition, pour une méthode DONNÉE — décidée par `draft`, relue sur
+   * la commande par `recompose`. Les montants de `input` sont dans l'unité de
+   * la méthode (HT pour `line_ht`, TTC pour `exact_ht`).
+   */
+  private static compose(input: DraftOrderInput, vatMethod: OrderVatMethod): Order {
     ensureDraftable(input);
     const fulfillment = normalizeFulfillment(input.fulfillment, input.companyId);
-    // 🔴 **L'audience est décidée UNE fois, ici** — le seul endroit qui la
-    // connaisse au moment où elle est encore vraie. Chaque ligne scelle alors
-    // son taxe compris, ou ne le scelle pas ; le document, plus tard, n'a plus
-    // qu'à regarder ce qu'il a (R3, 2026-09-21).
-    const clientele = clienteleOf(input.companyId);
-    const lines = input.lines.map((line) => OrderLine.create(line, clientele));
-    const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-    // L'assiette de la remise de retrait, relue sur le drapeau des lignes —
-    // jamais reçue de l'appelant (V1 du plan des exclusions).
-    const eligibleSubtotalCents = lines.reduce(
-      (sum, line) => (line.pickupDiscountEligible ? sum + line.lineTotalCents : sum),
-      0,
-    );
-    ensureDiscountMatches(input, eligibleSubtotalCents);
-    ensureLateFeeMatches(input, subtotalCents);
-    ensureDeliveryFeeMatches(input, subtotalCents);
-    ensurePickupDiscountOnlyOnPickup(input, fulfillment);
-    const voucherDiscountCents = voucherDiscountOf(
-      input.voucher,
-      input.companyId,
-      subtotalCents - input.discountCents,
-    );
-    // 🔴 **Une seule définition du TTC**, et elle est dans la ventilation.
-    //
-    // Le total se recomposait ici — `max(0, sous-total − remise) + frais +
-    // surtaxe + TVA` — pendant que la TVA venait de `ventilateVat`. Les deux
-    // tombaient juste, et c'est ce qui rendait la chose dangereuse : un terme
-    // ajouté au panier n'entre dans la TVA et dans le total qu'en deux gestes,
-    // dont un seul est évident.
-    //
-    // La règle que ce commentaire portait — la surtaxe s'ajoute APRÈS la remise,
-    // comme les frais de zone, parce qu'on ne fait pas de geste commercial sur
-    // une pénalité de retard — n'est pas perdue : elle est APPLIQUÉE dans
-    // `ventilateVat`, où les extras sont proratisés sur le sous-total brut
-    // quand les lignes le sont sur le net. Elle est passée de commentaire à
-    // code exécuté.
-    const { vatCents, vatShares, totalCents } = computeOrderTotals({
-      lines: lines.map((line) => ({
-        htCents: line.lineTotalCents,
-        vatRate: line.vatRate,
-        discountEligible: line.pickupDiscountEligible,
-      })),
-      discountCents: input.discountCents,
-      voucherDiscountCents,
-      deliveryFeeCents: input.deliveryFeeCents,
-      deliveryVatMode: input.deliveryVatMode,
-      lateFeeCents: input.lateFeeCents,
-      lateFeeVatRate: input.lateFeeAdjustment?.vatRatePercent ?? null,
-    });
+    const amounts = AMOUNTS_BY_METHOD[vatMethod](input, fulfillment);
     return new Order(
       input.companyId,
       input.billedCompanyId,
@@ -169,19 +135,15 @@ export class Order {
       input.requestedDeliveryDate,
       input.note,
       input.catalogVersionId,
-      lines,
-      input.discountCents,
+      amounts,
       input.discountAdjustment,
-      input.deliveryFeeCents,
       input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
       input.deliveryVatMode,
-      input.voucher === null ? null : { id: input.voucher.id, appliedCents: voucherDiscountCents },
-      subtotalCents,
-      vatCents,
-      vatShares,
-      totalCents,
+      input.voucher === null
+        ? null
+        : { id: input.voucher.id, appliedCents: amounts.voucherDiscountCents },
       input.salesTerms,
       input.locale,
     );
@@ -208,7 +170,7 @@ export class Order {
   static recompose(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
     ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
-    const revised = Order.draft(input);
+    const revised = Order.compose(input, current.vatMethod);
     revised.carryCustomerCancellation(
       effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {
         serviceDay: current.serviceDay,
@@ -229,12 +191,24 @@ export class Order {
 
   /** Total **TTC** à encaisser — la source pour dimensionner l'intention Stripe. */
   get totalCents(): number {
-    return this.totalCentsValue;
+    return this.amounts.totalCents;
   }
 
-  /** La part du bon réellement imputée, HT — `0` sans bon. Ce que le reliquat retranche. */
+  /** La part du bon réellement imputée, HT — `0` sans bon. La colonne `voucher_discount_cents`. */
   get voucherDiscountCents(): number {
     return this.voucher?.appliedCents ?? 0;
+  }
+
+  /**
+   * **Ce que le bon a servi, en valeur faciale** — l'unité du registre de
+   * fidélité (`appliedCents`, plan du centime § 5 R6, § 10 Q2) : TTC pour une
+   * commande `exact_ht`, HT pour `line_ht`. Ce que le reliquat retranche.
+   */
+  get voucherFaceCents(): number {
+    if (this.voucher === null) {
+      return 0;
+    }
+    return this.amounts.ttcTerms?.voucherCents ?? this.voucher.appliedCents;
   }
 
   /**
@@ -248,15 +222,15 @@ export class Order {
     readonly voucherDiscountCents: number;
   } {
     return {
-      subtotalCents: this.subtotalCentsValue,
-      discountCents: this.discountCents,
+      subtotalCents: this.amounts.subtotalCents,
+      discountCents: this.amounts.discountCents,
       voucherDiscountCents: this.voucherDiscountCents,
     };
   }
 
   /** Règlement **carte** : rattache l'intention Stripe. Refuse un total nul. */
   payByCard(paymentIntentId: string): void {
-    if (this.totalCentsValue <= 0) {
+    if (this.amounts.totalCents <= 0) {
       throw new InvalidOrderPaymentError("Une carte ne peut régler un total nul.");
     }
     this.payment = { status: "pending", intentId: paymentIntentId };
@@ -276,7 +250,7 @@ export class Order {
     if (this.payment === null) {
       throw new InvalidOrderPaymentError("Le règlement de la commande n'est pas décidé.");
     }
-    return settlementRegimeOf(this.payment.status, this.totalCentsValue);
+    return settlementRegimeOf(this.payment.status, this.amounts.totalCents);
   }
 
   /**
@@ -352,24 +326,29 @@ export class Order {
       requestedDeliveryDate: this.requestedDeliveryDate,
       note: this.note,
       catalogVersionId: this.catalogVersionId,
-      subtotalCents: this.subtotalCentsValue,
-      discountCents: this.discountCents,
+      vatMethod: this.amounts.vatMethod,
+      subtotalCents: this.amounts.subtotalCents,
+      discountCents: this.amounts.discountCents,
+      discountTtcCents: this.amounts.ttcTerms?.discountCents ?? null,
       discountAdjustment: this.discountAdjustment,
-      deliveryFeeCents: this.deliveryFeeCents,
+      deliveryFeeCents: this.amounts.deliveryFeeCents,
+      deliveryFeeTtcCents: this.amounts.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,
       lateFeeCents: this.lateFeeCents,
       lateFeeAdjustment: this.lateFeeAdjustment,
       deliveryVatMode: this.deliveryVatMode,
       voucherDiscountCents: this.voucherDiscountCents,
+      voucherTtcCents: this.amounts.ttcTerms?.voucherCents ?? null,
       loyaltyVoucherId: this.voucher?.id ?? null,
-      vatCents: this.vatCentsValue,
-      vatShares: this.vatSharesValue,
-      totalCents: this.totalCentsValue,
+      vatCents: this.amounts.vatCents,
+      vatShares: this.amounts.vatShares,
+      ttcByRate: this.amounts.ttcByRate,
+      totalCents: this.amounts.totalCents,
       paymentStatus: this.payment.status,
       stripePaymentIntentId: this.payment.intentId,
       salesTerms: this.salesTerms,
       locale: this.locale?.code ?? null,
-      lines: this.lines.map((line) => line.toSnapshot()),
+      lines: this.amounts.lines.map((line) => line.toSnapshot()),
     };
   }
 }

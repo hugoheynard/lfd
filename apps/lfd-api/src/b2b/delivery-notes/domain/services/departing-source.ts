@@ -5,6 +5,7 @@ import type { DeliveryNoteSource } from "../entities/delivery-note.js";
 import { DecisionOutsideOrderError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import { DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
+import { exactDepartureOf } from "./exact-departure.js";
 
 /**
  * **La commande telle que son BL la voit, une fois le départ décidé** (plan
@@ -19,6 +20,10 @@ import { DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
  * passe par `lineTotalCents`, le TTC scellé par `ttcCentsOf` — les mêmes
  * arrondis que la ligne de commande.
  *
+ * Une commande composée en TTC (`exact_ht`) ne recopie aucune ligne figée :
+ * {@link exactDepartureOf} les réécrit toutes, avec l'en-tête (plan
+ * `documentation/pricing/plan-centime-particuliers.md`, § 5).
+ *
  * Idempotente : appliquée à sa propre sortie, elle la rend.
  *
  * @throws {DecisionOutsideOrderError} un article décidé au-delà de la commande.
@@ -31,20 +36,32 @@ export function departingSourceOf<T extends DeliveryNoteSource>(
     return order;
   }
   const left = new Map(decision.departing.map((line) => [line.sku, line.quantity]));
-  const lines = order.lines.map((line) => {
+  const quantities = order.lines.map((line) => {
     const wanted = left.get(line.sku) ?? 0;
     const quantity = Math.min(wanted, line.quantity);
     left.set(line.sku, wanted - quantity);
-    return reducedLine(line, quantity);
+    return quantity;
   });
   const over = [...left.entries()].find(([, quantity]) => quantity > 0);
   if (over !== undefined) {
     throw new DecisionOutsideOrderError(order.orderNumber, over[0]);
   }
+  const { adjustments } = decision;
+  if (adjustments.exact !== null) {
+    const departing = order.lines.map((line, i) => ({ ...line, quantity: quantities[i] ?? 0 }));
+    const exact = exactDepartureOf({
+      orderNumber: order.orderNumber,
+      lines: departing,
+      adjustments,
+      exact: adjustments.exact,
+    });
+    return { ...order, lines: exact.lines, terms: exact.terms, departureDecided: true };
+  }
+  const lines = order.lines.map((line, i) => reducedLine(line, quantities[i] ?? 0));
   const terms = DeliveryNoteTerms.composePartial({
     orderNumber: order.orderNumber,
     lines,
-    adjustments: decision.adjustments,
+    adjustments,
   });
   return { ...order, lines, terms, departureDecided: true };
 }

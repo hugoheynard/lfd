@@ -626,6 +626,43 @@ export const vatShareSchema = z.object({
   amountCents: z.number().int(),
 });
 export const vatSharesSchema = z.array(vatShareSchema);
+
+/**
+ * **Les TTC des termes d'une commande composée en TTC** — celle d'un
+ * particulier (`exact_ht`, plan `documentation/pricing/plan-centime-particuliers.md`,
+ * § 7) : la remise retrait, le bon imputé et le port, tels que le client les
+ * a payés. Absents d'une commande pro ou antérieure : ses documents lisent
+ * alors les HT.
+ */
+export const orderTtcTermsSchema = z.object({
+  discountCents: z.number().int(),
+  voucherCents: z.number().int(),
+  deliveryFeeCents: z.number().int(),
+});
+export interface OrderTtcTerms {
+  readonly discountCents: number;
+  readonly voucherCents: number;
+  readonly deliveryFeeCents: number;
+}
+
+/**
+ * **La part d'un taux d'une commande composée en TTC**, figée à la passation
+ * (`orders.ttc_by_rate`, plan du centime) : le net du taux — lignes, moins
+ * remise et bon, plus port —, sa TVA extraite et son HT. Σ `ttcCents` = total.
+ */
+export const orderRateAmountsSchema = z.object({
+  rate: z.number(),
+  htCents: z.number().int(),
+  vatCents: z.number().int(),
+  ttcCents: z.number().int(),
+});
+export const orderRatesAmountsSchema = z.array(orderRateAmountsSchema);
+export interface OrderRateAmounts {
+  readonly rate: number;
+  readonly htCents: number;
+  readonly vatCents: number;
+  readonly ttcCents: number;
+}
 export type VatShareView = z.infer<typeof vatShareSchema>;
 
 /**
@@ -701,6 +738,16 @@ export interface OrderView {
    * les distinguent. `0` sans bon, et pour toute commande antérieure.
    */
   readonly voucherDiscountCents: number;
+  /**
+   * Les TTC de la remise, du bon et du port d'une commande de particulier
+   * composée en TTC ({@link OrderTtcTerms}) — absent sinon.
+   */
+  readonly ttcTerms?: OrderTtcTerms;
+  /**
+   * La part figée de chaque taux d'une commande composée en TTC
+   * ({@link OrderRateAmounts}), taux croissants — absente sinon.
+   */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
   /**
    * **Ce qui a produit** `discountCents`, figé à la commande : le taux ou le
    * montant de la remise du point de retrait. Sans lui, une facture ne peut dire
@@ -949,6 +996,13 @@ export interface CustomerOrderLineView {
   readonly allergens: OrderLineAllergens | null;
   /** Cf. {@link OrderLineView.pickupDiscountEligible}. */
   readonly pickupDiscountEligible?: false;
+  /**
+   * L'étiquette et le TTC scellés d'une ligne de commande composée en TTC
+   * (`exact_ht`) — absents sinon : « Mes commandes » les écrit au format du
+   * ticket, un pro garde son affichage.
+   */
+  readonly unitPriceTtcCents?: number;
+  readonly lineTotalTtcCents?: number;
 }
 
 /**
@@ -1017,6 +1071,10 @@ export interface CustomerOrderView {
    * attente ou en échec ne lui dit rien d'utile.
    */
   readonly refundedCents: number;
+  /** Cf. {@link OrderView.ttcTerms} — présent sur une commande composée en TTC seulement. */
+  readonly ttcTerms?: OrderTtcTerms;
+  /** Cf. {@link OrderView.ttcByRate}. */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
 }
 
 /**
@@ -1086,6 +1144,12 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
             },
       allergens: line.allergens,
       ...(line.pickupDiscountEligible === false ? { pickupDiscountEligible: false as const } : {}),
+      // Les TTC scellés ne sortent que pour une commande composée en TTC.
+      ...(view.ttcTerms === undefined ||
+      line.unitPriceTtcCents === null ||
+      line.lineTotalTtcCents === null
+        ? {}
+        : { unitPriceTtcCents: line.unitPriceTtcCents, lineTotalTtcCents: line.lineTotalTtcCents }),
     })),
     // Pas de QR tant que la commande n'est pas réglée — cf. `exposedHandoverToken`.
     handoverToken: exposedHandoverToken(view),
@@ -1093,6 +1157,8 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     readyAt: view.readyAt,
     handedOverAt: view.handedOverAt,
     refundedCents: view.refundedCents,
+    ...(view.ttcTerms === undefined ? {} : { ttcTerms: view.ttcTerms }),
+    ...(view.ttcByRate === undefined ? {} : { ttcByRate: view.ttcByRate }),
   };
 }
 

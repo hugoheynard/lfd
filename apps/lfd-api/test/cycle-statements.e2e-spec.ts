@@ -132,6 +132,8 @@ async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<st
   const createdAt = new Date();
   const created = await ctx.prisma.order.create({
     data: {
+      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
+      vatMethod: "line_ht",
       orderNumber,
       companyId: buyer.companyId,
       placedByUserId: buyer.userId,

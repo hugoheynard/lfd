@@ -1,3 +1,5 @@
+import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
+
 /** Une ligne de commande figée, telle que le bon de livraison la recopie. */
 export interface DeliveryNoteOrderLine {
   readonly sku: string;
@@ -36,6 +38,21 @@ export interface DeliveryNoteOrderTerms {
   readonly vatShares: DeliveryNoteOrderJson | null;
   readonly vatCents: number;
   readonly totalCents: number;
+  /**
+   * Les TTC figés des termes d'une commande `exact_ht` (plan
+   * `documentation/pricing/plan-centime-particuliers.md`, § 7) ; `null` pour
+   * une commande `line_ht` — la méthode se lit là.
+   */
+  readonly ttcTerms: DeliveryNoteOrderTtcTerms | null;
+}
+
+/** Les TTC de la remise retrait, du bon imputé et du port. */
+export interface DeliveryNoteOrderTtcTerms {
+  readonly discountCents: number;
+  readonly voucherCents: number;
+  readonly deliveryFeeCents: number;
+  /** La part figée de chaque taux ; `null` pour une commande d'avant la colonne. */
+  readonly byRate: readonly OrderRateAmounts[] | null;
 }
 
 /** Une commande confirmée par un arrêt du plan, vue du bon de livraison. */

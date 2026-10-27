@@ -42,6 +42,7 @@ import { companyDisplayName, vatSharesSchema, type VatShareView } from "@lfd/con
 import { orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
+import { ORDER_TTC_TERMS_SELECT, orderTtcTermsFieldOf } from "./order-ttc-terms.columns.js";
 
 /** Une commande telle que Prisma la sélectionne. */
 export interface OrderRow {
@@ -60,6 +61,10 @@ export interface OrderRow {
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
   readonly voucherDiscountCents: number;
+  readonly discountTtcCents: number | null;
+  readonly voucherTtcCents: number | null;
+  readonly deliveryFeeTtcCents: number | null;
+  readonly ttcByRate: Prisma.JsonValue;
   readonly deliveryFeeAdjustment: Prisma.JsonValue | null;
   readonly deliveryFeeCents: number;
   readonly lateFeeCents: number;
@@ -109,6 +114,7 @@ export const ORDER_SELECT = {
   discountCents: true,
   discountAdjustment: true,
   voucherDiscountCents: true,
+  ...ORDER_TTC_TERMS_SELECT,
   deliveryFeeCents: true,
   deliveryFeeAdjustment: true,
   lateFeeCents: true,
@@ -507,6 +513,7 @@ export function toOrderView(row: OrderRow): OrderView {
     discountAdjustment: parseAdjustment(row.discountAdjustment),
     ...pickupDiscountBaseFieldOf(row),
     voucherDiscountCents: row.voucherDiscountCents,
+    ...orderTtcTermsFieldOf(row),
     // Même indulgence, même barrière : un barème illisible rend `null` — la
     // facture perd le libellé de ses frais, pas son montant.
     deliveryFeeAdjustment: parseAdjustment(row.deliveryFeeAdjustment),

@@ -8,6 +8,7 @@ import { OrderCancelSection } from '../../order-cancellation/order-cancel-sectio
 import { OrderReviseSection } from '../../order-revision/order-revise-section/order-revise-section';
 import { formatCents } from '../../format-money';
 import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
+import { ticketRowsOf } from '../order-ticket-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -84,10 +85,23 @@ export class OrderDetail {
     return payment === 'due' || payment === 'refused';
   });
 
-  /** La part HT du bon de fidélité, mise en forme ; `null` sans bon. */
+  /**
+   * La part HT du bon de fidélité, mise en forme ; `null` sans bon — et sur
+   * un ticket, qui dit le bon à sa valeur TTC payée.
+   */
   protected readonly voucherAmount = computed(() => {
     const cents = this.order().voucherDiscountCents;
-    return cents > 0 ? formatCents(cents) : null;
+    return cents > 0 && this.order().ticket === undefined ? formatCents(cents) : null;
+  });
+
+  /**
+   * Les lignes du ticket d'une commande composée en TTC (plan du centime,
+   * lot C3) — des MOTS posés sur ce que la commande a figé, jamais un calcul.
+   * `null` pour un pro : son tiroir ne change pas.
+   */
+  protected readonly ticketRows = computed(() => {
+    const ticket = this.order().ticket;
+    return ticket === undefined ? null : ticketRowsOf(ticket, this.t().orders);
   });
 
   /**

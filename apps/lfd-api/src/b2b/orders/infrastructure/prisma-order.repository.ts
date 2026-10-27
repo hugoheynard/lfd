@@ -23,6 +23,7 @@ import type { FirstHandoverStatus } from "../domain/services/shipment-settlement
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { toFulfillmentJson } from "./order-json.js";
 import { orderLineDataOf } from "./order-line.data.js";
+import { ttcTermsColumnsOf } from "./order-money-columns.js";
 import { planWhere } from "./plan-filter.js";
 
 /**
@@ -137,6 +138,10 @@ export class PrismaOrderRepository extends OrderRepository {
         pickupAddress: state.pickupAddress ?? Prisma.DbNull,
         // L'acheminement convenu, figé avec sa provenance — plus jamais relu.
         fulfillment: toFulfillmentJson(state.agreed),
+        // La méthode et les TTC des termes, figés par l'agrégat (plan du
+        // centime, § 7) : `line_ht` et trois `NULL`, ou `exact_ht` et trois
+        // entiers — le CHECK `orders_ttc_terms_iff_exact_ht` le tient.
+        ...ttcTermsColumnsOf(state),
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
