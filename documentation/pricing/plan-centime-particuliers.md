@@ -361,12 +361,12 @@ Migration `20261027100000_la_commande_d_un_particulier_en_ttc` : `vat_method`
 terme sur `orders` et `delivery_note`, sous un CHECK « TTC ⇔ `exact_ht` » à
 part. `Order.draft` décide la méthode (`placementVatMethodOf`, sur l'absence
 de société — jamais l'audience) ; `Order.recompose` la relit sur la commande.
-Une composition par méthode (`order-amounts.ts`, `order-exact-amounts.ts`),
+Une composition par méthode (les fichiers « order-amounts » et « order-exact-amounts », dans le commit `4ef1316be` — retirés de l'arbre par le revert `ce2615199`),
 `OrderLine.ofTtc`, et une seule traduction vers `composeTtcOrder`
-(`exact-order-composition.ts`) pour l'agrégat, la composition de passation et
+(« exact-order-composition », même commit) pour l'agrégat, la composition de passation et
 de révision, le devis de la boutique et le devis du staff. Le registre de
 fidélité reçoit la valeur faciale (`Order.voucherFaceCents`). Vingt paniers
-pro figés (`order-pro-frozen.spec.ts`, `shop-cart-quoting-pro-frozen.spec.ts`).
+pro figés (les specs « order-pro-frozen » et « shop-cart-quoting-pro-frozen », même commit).
 
 Choix faits au bâti, que le plan ne précisait pas :
 
