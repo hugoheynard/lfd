@@ -46,6 +46,12 @@ mode?, place? }`, posé par `OrderDoors` à chaque étape (jour choisi, mode
    jour, le lieu et l'heure avec « Modifier ». Pas de bouton de validation : se
    tromper d'heure ne coûte rien et se répare en un geste ; le seul geste qui
    engage reste « Régler ».
+   **Dès l'étape 1 aussi** (Hugo, 2026-10-27 : « elle sait si on est retrait
+   ou livraison ») : partie d'une porte de l'accueil, la commande connaît son
+   mode avant le jour. Le panneau du jour porte la même barre en pied —
+   « Retrait · Le Labo · Choisissez le jour », « Livraison · Choisissez le
+   jour » — ; partie de « Où et quand ? » sans mode, la barre dit seulement
+   « Choisissez le jour ». Un clic sur un jour avance, comme une heure.
 4. **Ailleurs pendant le parcours** (panneau du jour, choix du lieu, adresse),
    la barre de la page reste dessous, sous le voile : elle n'a pas à y être
    lue, l'étape 2 la montre.
