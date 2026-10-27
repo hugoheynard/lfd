@@ -4,6 +4,9 @@
 > le jour du constat ; la décision attend le cabinet comptable (§ 6). Ce
 > document remplace un premier plan « TTC d'abord » écrit le même jour et
 > retiré après sa relecture par `vitruve` (§ 5).
+>
+> ➜ Une autre piste, qui n'inverse pas le calcul, est écrite le 2026-10-27 :
+> [`plan-centime-particuliers.md`](plan-centime-particuliers.md).
 
 ## 1. Le constat (production, 2026-10-09)
 
