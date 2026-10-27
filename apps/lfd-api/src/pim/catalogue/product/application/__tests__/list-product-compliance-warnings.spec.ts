@@ -1,4 +1,3 @@
-import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 import type { ProductSnapshot } from "../../domain/entities/product.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
@@ -20,7 +19,6 @@ function listing(
   return new ListProductComplianceWarningsHandler(
     new OneProduct(product),
     new FixedVatPercents(BOTH_RATES),
-    FixedAccountingRules.with("ratio_ttc", 9_000),
     new FixedActiveContexts(["b2b", "takeaway"]),
     cited,
   );
@@ -52,7 +50,7 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
             severity: "warning",
             variantId: "var_2",
             sku: "PAT-7-2",
-            missing: ["price", "allergens"],
+            missing: ["price", "allergens", "pro_price"],
           },
         ],
       },
@@ -61,7 +59,13 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
 
   it("signale « aucun allergène » contredit par la composition, en bloquant", async () => {
     const product = tarte({
-      variants: [bareVariant({ priceCents: 3_200, allergenSheet: EMPTY_SHEET })],
+      variants: [
+        bareVariant({
+          priceCents: 3_200,
+          proPriceMillicents: 2_730_331,
+          allergenSheet: EMPTY_SHEET,
+        }),
+      ],
     });
     const cited = new FixedCitedAllergens(new Map([[PRODUCT_ID, ["gluten"]]]));
 

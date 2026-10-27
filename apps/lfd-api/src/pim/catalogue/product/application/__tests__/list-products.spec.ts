@@ -7,25 +7,20 @@ import {
   FixedVatPercents,
   OneCategory,
   OneProduct,
+  SELLABLE_VARIANT,
   bareVariant,
   family,
   tarte,
 } from "./audience-doubles.js";
-import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
-/** Le handler de liste, avec taux, contextes et règle du prix pro doublés. */
-function listing(
-  product: ProductSnapshot,
-  category: Category | null,
-  accounting: FixedAccountingRules = FixedAccountingRules.with("ratio_ttc", 9_000),
-): ListProductsHandler {
+/** Le handler de liste, avec taux et contextes doublés. */
+function listing(product: ProductSnapshot, category: Category | null): ListProductsHandler {
   return new ListProductsHandler(
     new OneProduct(product),
     new OneCategory(category),
     new FixedVatPercents(BOTH_RATES),
-    accounting,
     new FixedActiveContexts(["b2b", "takeaway"]),
     new FixedCitedAllergens(),
   );
@@ -80,9 +75,8 @@ describe("ListProductsHandler — l'activabilité", () => {
 
   it("dit non activable un brouillon sans prix pro saisi, et nomme le manque", async () => {
     const [item] = await listing(
-      tarte(),
+      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
       family("pro"),
-      FixedAccountingRules.with("entered", 9_000),
     ).execute();
 
     expect(item?.activatable).toBe(false);

@@ -485,10 +485,10 @@ réémettre ne fait que republier l'état du référentiel, le plus récent gagn
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
-> ⚠️ **Gestes (1) et (2) retirés le 2026-10-27** (lot R2 de
+> ⚠️ **Gestes (1), (2) et (3) retirés le 2026-10-27** (lots R2 et R3 de
 > [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) :
-> la route `/pim/accounting-rules/pro-price-prefill` et son écran n'existent
-> plus, le prix pro est toujours saisi. La production était déjà en « prix
+> les routes `/pim/accounting-rules/*` et l'écran du rapport n'existent plus,
+> le prix pro est toujours saisi (voir la section suivante). La production était déjà en « prix
 > saisi » (constaté par Hugo le même jour). Une base encore en `ratio_ttc` qui
 > passe au prix saisi fait sortir du catalogue pro toute déclinaison sans
 > saisie : saisir ses prix pros d'abord. Le texte ci-dessous est l'état
@@ -553,6 +553,43 @@ Revenir à `ratio_ttc` (`PUT …/pro-price-method { "method": "ratio_ttc" }`,
 l'écran ne l'offre plus) est **illusoire après (2)** : la saisie prime, et ce
 retour ne toucherait que les déclinaisons sans saisie. Il ne rend pas « le
 prix public bouge le prix pro ».
+
+## Avant de déployer « le prix pro est toujours saisi » (lot R3)
+
+Migration `20261027110000_le_prix_pro_est_toujours_saisi`
+([`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)).
+Elle **lève une exception** si `pim.accounting_rules` porte une méthode autre
+que `entered`, avant toute écriture : cette version ne sait plus déduire le
+prix pro du prix public, et basculer d'office retirerait du catalogue pro
+toute déclinaison sans prix pro saisi. La production a été constatée en
+« prix saisi » le 2026-10-27 ; la garde est un dernier filet, pas le geste.
+
+**Avant de pousser, constater** sur la production (lecture seule) :
+
+```sql
+SELECT pro_price_method FROM pim.accounting_rules;
+```
+
+Aucune ligne, ou `entered` ⇒ déployer. `ratio_ttc` ⇒ **ne pas déployer** :
+avec le binaire d'avant, saisir les prix pros des déclinaisons vendues aux
+pros, puis « Passer au prix saisi » (section précédente), et seulement ensuite
+déployer.
+
+**Si la migration a échoué quand même** : Prisma l'inscrit en échec, et
+**tous les déploiements suivants s'arrêtent sur `P3009`** (« migrate found
+failed migrations ») tant qu'elle n'est pas résolue — y compris ceux qui ne
+touchent pas au prix. La garde n'ayant rien écrit (elle lève avant le premier
+`ALTER`), on la déclare annulée, à la main, avec l'URL directe de production :
+
+```bash
+pnpm --filter lfd-api exec prisma migrate resolve \
+  --rolled-back 20261027110000_le_prix_pro_est_toujours_saisi
+```
+
+Puis faire le geste ci-dessus (prix saisis, « Passer au prix saisi »), et
+redéployer : la migration repart de zéro. Ne **jamais** utiliser `--applied`
+ici : la contrainte et le défaut ne seraient pas posés, et Prisma croirait
+qu'ils le sont.
 
 ## Basculer les opérations au commerce — l'ordre, et le retour
 

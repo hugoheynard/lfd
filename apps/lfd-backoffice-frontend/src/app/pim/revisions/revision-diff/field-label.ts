@@ -39,6 +39,7 @@ const LABELS: Readonly<Record<string, string>> = {
   media: 'Visuels',
   readyAt: 'Signature de la fiche',
   readyBy: 'Signataire de la fiche',
+  // Figé depuis le lot R3 (2026-10-27) : relu sur les révisions d'avant.
   proRatioBp: 'Rapport prix pro / prix public',
 };
 

@@ -26,12 +26,7 @@ import { MILLICENTS_PER_CENT } from '@lfd/money';
 
 import { variantTabLabel } from './variant-label';
 import { activationRefusalOf, type ActivationRefusal } from './activation-refusal';
-import {
-  observedGapLabel,
-  proPriceMillicentsOf,
-  proPricePayloadOf,
-  proPriceTextOf,
-} from './pro-price-entry';
+import { proPriceMillicentsOf, proPricePayloadOf, proPriceTextOf } from './pro-price-entry';
 import {
   bucketsOf,
   citedNotDeclaredIn,
@@ -55,8 +50,6 @@ import {
 import { httpErrorMessage } from '@lfd/endpoints';
 
 import { formatPercent } from '../../data/channels';
-import { AccountingRulesStore } from '../../accounting-rules/accounting-rules.store';
-import { formatDiscount } from '../../accounting-rules/pro-discount';
 import { SalesContextStore } from '../../sales-contexts/sales-context-store';
 import type {
   AllergenEntry,
@@ -161,25 +154,14 @@ export interface DerivedAmount {
 }
 
 /**
- * Le prix professionnel tel que l'écran le montre : le TTC, la remise qui l'a
- * produit, et le hors taxe qui en découle.
+ * Le prix professionnel tel que l'écran le montre : le HT saisi, qui fait foi,
+ * et le TTC qui n'en est que l'affichage. Toujours saisi depuis le lot R3
+ * (`plan-retirer-le-rapport-pro.md`, 2026-10-27) : la remise des règles
+ * comptables, sa pastille et sa source `ratio` sont retirées.
  */
 export interface ProPricing {
   readonly ttc: string;
-  /**
-   * D'où vient le prix pro : la remise des règles comptables (`ratio`), ou la
-   * saisie de la déclinaison (`entered`, lot P).
-   */
-  readonly source: 'ratio' | 'entered';
-  /**
-   * « −10 % » — la pastille, pour que le nombre ne tombe pas de nulle part.
-   *
-   * Sous `entered`, c'est l'**écart constaté** entre les deux TTC, en lecture :
-   * aucune remise ne produit plus le prix, et afficher celle du ratio mentirait.
-   */
-  readonly discountLabel: string;
-  /** `null` quand le contexte professionnel n'a pas de taux réglé. */
-  readonly ht: string | null;
+  readonly ht: string;
 }
 
 /**
@@ -221,7 +203,8 @@ export interface ChannelInheritance {
    */
   readonly counterpart: DerivedAmount | null;
   /**
-   * Cette ligne part-elle d'un prix **remisé** plutôt que du prix public ?
+   * Cette ligne part-elle du **prix pro saisi** plutôt que du prix public ?
+   * (Son nom date du rapport pro, retiré au lot R3.)
    *
    * Le montant seul ne le dit pas, et un professionnel qui compare le tableau
    * au prix affiché plus haut ne retrouverait pas ses comptes sans cette
@@ -509,7 +492,6 @@ export class ProductFormStore {
   private readonly products = inject(ProductHttpApi);
   private readonly api = inject(CatalogueApi);
   /** Le rapport prix public / prix pro — réglé une fois, lu partout. */
-  private readonly accounting = inject(AccountingRulesStore);
   private readonly contextStore = inject(SalesContextStore);
   private readonly reference = inject(ReferenceApi);
   private readonly pendingCreatedMedia = inject(PendingCreatedMedia);
@@ -606,16 +588,6 @@ export class ProductFormStore {
    * serveur telles quelles, et c'est lui qui refuse la sixième.
    */
   readonly proPriceHtText = signal('');
-
-  /** La méthode « Prix saisi » est-elle appliquée ? (lot P) */
-  /**
-   * Le prix pro affiché est-il la SAISIE ? Oui dès qu'une saisie existe, quelle
-   * que soit la méthode — elle prime partout (`proPriceOf`, 2026-10-15) — et,
-   * sous « Prix saisi », même vide : la ligne dit alors qu'il manque.
-   */
-  readonly proPriceEntered = computed(
-    () => this.accounting.rules().method === 'entered' || this.proPriceMillicents() !== null,
-  );
 
   /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
   readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
@@ -866,76 +838,50 @@ export class ProductFormStore {
   }
 
   /**
-   * Le **prix professionnel**, dérivé du prix public par le rapport des règles
-   * comptables — et son hors taxe.
-   *
-   * `null` dès qu'une pièce manque : pas de prix, pas de rapport réglé, ou une
-   * fiche encore ancrée au hors taxe. Le rapport est un rapport TTC/TTC ; il ne
-   * veut rien dire appliqué à un montant hors taxe, et le faire quand même
-   * afficherait un prix que le serveur ne calculerait pas.
-   */
-  /**
    * Le prix **de départ** d'un contexte, avant son taux.
    *
    * C'est le prix public partout — sauf pour le contexte professionnel, qui ne
-   * vend pas au prix public : il vend au prix remisé. Sans cette distinction,
-   * l'écran affichait DEUX hors taxe B2B différents, l'un sous le prix pro et
-   * l'autre dans le tableau, et rien ne disait lequel serait facturé.
-   *
-   * Le rapport est un rapport TTC/TTC, et le prix saisi EST un prix public
-   * TTC : il n'y a plus d'assiette à vérifier avant de l'appliquer.
+   * vend pas au prix public : il vend au prix pro saisi. Sans cette
+   * distinction, l'écran affichait DEUX hors taxe B2B différents, l'un sous le
+   * prix pro et l'autre dans le tableau, et rien ne disait lequel serait
+   * facturé.
    */
   private basePriceEurFor(contextKey: string): number | null {
     const priceEur = this.priceEur();
     if (contextKey !== PRO_CONTEXT_KEY || priceEur === null) {
       return priceEur;
     }
-    // Le prix pro de la MÉTHODE appliquée — celle que le push suivra. Garder
-    // ici le calcul d'origine ferait afficher un prix pendant que le fil en
-    // pousse un autre, ce que le JSDoc de `proPriceOf` interdit précisément.
-    const proCents = this.proPriceAt(priceEur, this.percentOf(PRO_CONTEXT_KEY))?.ttcCents ?? null;
-    // En EUROS, comme son nom le dit et comme le rendait la version d'origine.
-    // Sans taux, on rend le prix public : cette fonction sert d'assiette à un
-    // affichage, et `null` y ferait disparaître une ligne plutôt que de la dire.
+    const proCents = this.proPrice()?.ttcCents ?? null;
+    // En EUROS, comme son nom le dit. Sans saisie ni taux, on rend le prix
+    // public : cette fonction sert d'assiette à un affichage, et `null` y
+    // ferait disparaître une ligne plutôt que de la dire.
     return proCents === null ? priceEur : proCents / 100;
   }
 
   readonly proPricing = computed<ProPricing | null>(() => {
-    const priceEur = this.priceEur();
-    const rules = this.accounting.rules();
-    // Plus de garde sur le rapport (lot S, BLOQUANT `vitruve`) : une saisie
-    // s'affiche sans rapport posé — c'est elle qui se vend. Sans saisie ni
-    // rapport, la porte rend `null` d'elle-même.
-    if (priceEur === null) {
+    // Sans prix public, la section ne dit rien du prix pro : la ligne qui
+    // manque est celle du prix public.
+    if (this.priceEur() === null) {
       return null;
     }
-    const price = this.proPriceAt(priceEur, this.percentOf(PRO_CONTEXT_KEY));
-    if (price === null) {
-      // Sans taux — ou, sous « Prix saisi », sans saisie — aucune méthode ne
-      // produit de prix, et le canal écarterait l'article pour la même raison.
-      // Montrer le TTC public ici laisserait croire à un prix pro.
-      return null;
-    }
-    const entered = this.proPriceEntered();
-    const publicCents = Math.round(priceEur * 100);
-    return {
-      ttc: euros(price.ttcCents),
-      source: entered ? 'entered' : 'ratio',
-      discountLabel:
-        entered || rules.ratioBp === null
-          ? (observedGapLabel(publicCents, price.ttcCents) ?? '—')
-          : formatDiscount(rules.ratioBp),
-      // Le hors taxe vient de `proPriceOf`, comme le TTC. Sous `ratio_ttc`, il
-      // se déduit du TTC pro ; sous `entered`, c'est la SAISIE, qui fait foi —
-      // le TTC n'en est que l'affichage, et personne n'en redérive un HT.
-      ht: euros(Math.round(price.htMillicents / MILLICENTS_PER_CENT)),
-    };
+    const price = this.proPrice();
+    // Sans saisie — ou sans taux pro, que le canal exige aussi pour facturer —
+    // il n'y a pas de prix pro. Montrer le TTC public ici laisserait croire
+    // à un prix pro.
+    return price === null
+      ? null
+      : {
+          ttc: euros(price.ttcCents),
+          // La SAISIE, qui fait foi — le TTC n'en est que l'affichage, et
+          // personne n'en redérive un HT.
+          ht: euros(Math.round(price.htMillicents / MILLICENTS_PER_CENT)),
+        };
   });
 
   /**
-   * Sous « Prix saisi », la ligne B2B du tableau montre la SAISIE, au centime
-   * d'affichage — jamais un HT redérivé du TTC pro, qui perdrait les décimales
-   * saisies (lot P, « le HT fait foi »).
+   * La ligne B2B du tableau montre la SAISIE, au centime d'affichage — jamais
+   * un HT redérivé du TTC pro, qui perdrait les décimales saisies (lot P, « le
+   * HT fait foi »).
    */
   private enteredCounterpart(): DerivedAmount | null {
     const ht = this.proPriceMillicents();
@@ -945,18 +891,11 @@ export class ProductFormStore {
   }
 
   /**
-   * Le prix pro sous la méthode appliquée — `null` faute de taux, ou sans
-   * saisie sous `entered` (ou sous `ratio_ttc` sans rapport). Le seul appel à
-   * la porte de cet écran depuis le retrait de la suggestion (2026-10-27).
+   * Le prix pro saisi, par la porte que le fil emprunte (`proPriceOf`) —
+   * `null` sans saisie ou sans taux pro.
    */
-  private proPriceAt(priceEur: number, percent: number | undefined): ProPrice | null {
-    const rules = this.accounting.rules();
-    return proPriceOf(
-      Math.round(priceEur * 100),
-      { method: rules.method, ratioBp: rules.ratioBp },
-      percent ?? null,
-      this.proPriceMillicents(),
-    );
+  private proPrice(): ProPrice | null {
+    return proPriceOf(this.percentOf(PRO_CONTEXT_KEY) ?? null, this.proPriceMillicents());
   }
 
   private readonly selectedCategory = computed<Category | undefined>(() =>
@@ -994,7 +933,7 @@ export class ProductFormStore {
       override[contextKey] ?? category.vatByContext[contextKey];
     const rateOf = (contextKey: string): RateView | null => viewOf(rateIdOf(contextKey));
     const counterpartFor = (contextKey: string): DerivedAmount | null =>
-      contextKey === PRO_CONTEXT_KEY && this.proPriceEntered()
+      contextKey === PRO_CONTEXT_KEY
         ? this.enteredCounterpart()
         : counterpartOf(this.basePriceEurFor(contextKey), this.percentOf(contextKey));
     return {

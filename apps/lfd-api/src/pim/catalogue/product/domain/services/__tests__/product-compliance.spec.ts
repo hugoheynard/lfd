@@ -19,7 +19,7 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
     position: 0,
     priceCents: 450,
     weightGrams: null,
-    proPriceMillicents: null,
+    proPriceMillicents: 400_000,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -32,7 +32,6 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
 const ALL = { b2b: 5.5, takeaway: 5.5 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 
 describe("productCompliance — le jugement unique d'une fiche", () => {

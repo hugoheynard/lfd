@@ -153,6 +153,7 @@ async function fillVariant(
     new UpdateVariantPricingCommand(productId, variant.id, {
       priceCents: product.priceCents,
       weightGrams: product.weightGrams,
+      proPriceHt: product.proPriceHt,
     }),
   );
   if (declaration !== null && variant.allergenSheet === null) {

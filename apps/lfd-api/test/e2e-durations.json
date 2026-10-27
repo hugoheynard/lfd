@@ -347,6 +347,7 @@
   "test/pricing-budget.e2e-spec.ts": 5036,
   "test/pricing-journal-pages.e2e-spec.ts": 10080,
   "test/prisma-connection-release.e2e-spec.ts": 13624,
+  "test/pro-price-entered-migration.e2e-spec.ts": 9710,
   "test/product-audience.e2e-spec.ts": 10313,
   "test/product-suggestions.e2e-spec.ts": 6000,
   "test/production-auto-close.e2e-spec.ts": 8662,

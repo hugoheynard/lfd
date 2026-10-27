@@ -1,11 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import {
-  observedGapLabel,
-  proPriceMillicentsOf,
-  proPricePayloadOf,
-  proPriceTextOf,
-} from '../pro-price-entry';
+import { proPriceMillicentsOf, proPricePayloadOf, proPriceTextOf } from '../pro-price-entry';
 
 describe('la saisie du prix pro HT', () => {
   it.each([
@@ -39,15 +34,5 @@ describe('la saisie du prix pro HT', () => {
   it('efface sur une saisie vide', () => {
     expect(proPricePayloadOf('  ')).toBeNull();
     expect(proPricePayloadOf(' 3,5 ')).toBe('3,5');
-  });
-});
-
-describe('l’écart constaté', () => {
-  it('dit l’écart entre les deux TTC, au dixième de pourcent', () => {
-    expect(observedGapLabel(1_200, 1_080)).toBe('−10 %');
-    expect(observedGapLabel(1_000, 897)).toBe('−10,3 %');
-    expect(observedGapLabel(1_000, 1_020)).toBe('+2 %');
-    expect(observedGapLabel(1_000, 1_000)).toBe('aucun écart');
-    expect(observedGapLabel(0, 10)).toBeNull();
   });
 });

@@ -4,6 +4,7 @@ import {
   VariantNotFoundError,
   VariantNotInProductError,
 } from "../../errors/product-errors.js";
+import { ProPriceHt } from "../../value-objects/pro-price-ht.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 import type { VariantNutritionValues } from "../variant.js";
@@ -45,7 +46,6 @@ const SELLABLE_RATES = { b2b: 20, takeaway: 5.5 } as const;
 /** Les contextes en service et la règle du prix pro (lot 2b) : un taux pour chacun. */
 const SELLING: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 
 function aProduct(): Product {
@@ -75,8 +75,10 @@ function withDefaultDeclared(product: Product): Product {
         allergenSheet: { declared: ["AM"], mayContain: [] },
         nutrition: null,
         // Un prix au défaut : activer en exige un depuis le lot 1 du plan
-        // d'audience, et ces cas parlent d'allergènes.
+        // d'audience, et ces cas parlent d'allergènes (un prix pro saisi aussi,
+        // lot R3).
         priceCents: 1_000,
+        proPriceMillicents: 853_081,
       },
       ...rest,
     ],
@@ -106,7 +108,11 @@ describe("déclarer les allergènes met l'agrégat à jour", () => {
     const product = aProduct();
     const [variant] = product.snapshot().variants;
     // Un prix : activer en exige un depuis le lot 1 du plan d'audience.
-    product.priceVariant(variant!.id, { priceCents: 1_000, weightGrams: null });
+    product.priceVariant(variant!.id, {
+      priceCents: 1_000,
+      weightGrams: null,
+      proPrice: ProPriceHt.fromMillicents(853_081),
+    });
 
     expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
       ProductNotActivatableError,
@@ -122,7 +128,11 @@ describe("déclarer les allergènes met l'agrégat à jour", () => {
     const product = aProduct();
     const [variant] = product.snapshot().variants;
     // Un prix : activer en exige un depuis le lot 1 du plan d'audience.
-    product.priceVariant(variant!.id, { priceCents: 1_000, weightGrams: null });
+    product.priceVariant(variant!.id, {
+      priceCents: 1_000,
+      weightGrams: null,
+      proPrice: ProPriceHt.fromMillicents(853_081),
+    });
 
     product.declareAllergens(variant!.id, { allergens: [], mayContain: [] });
 
@@ -373,8 +383,10 @@ describe("les allergènes et la nutrition s’alignent séparément", () => {
           ...first!,
           allergenSheet: { declared: ["AM"], mayContain: ["GB"] },
           nutrition: { ...BLANK, saltG: 2 },
-          // Un prix : activer en exige un depuis le lot 1 du plan d'audience.
+          // Un prix : activer en exige un depuis le lot 1 du plan d'audience,
+          // et un prix pro saisi depuis le lot R3.
           priceCents: 1_000,
+          proPriceMillicents: 853_081,
         },
         ...rest,
       ],

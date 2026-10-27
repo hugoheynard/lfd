@@ -1,7 +1,6 @@
 import { Injectable } from "@nestjs/common";
 import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
-import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import { readCompletenessRules } from "../../../catalogue/product/application/completeness-support.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
@@ -39,7 +38,6 @@ export class CatalogFactsSource extends CatalogSnapshots {
   constructor(
     private readonly facts: CatalogFactsReader,
     private readonly rates: VatRateRepository,
-    private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly allergens: AllergenCatalogueReader,
     private readonly editorials: EditorialReader,
@@ -57,7 +55,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
     const [families, percentOf, rules, catalogue, notes, medias] = await Promise.all([
       this.facts.families(familyIds),
       this.percentIndex(),
-      readCompletenessRules(this.contexts, this.accounting),
+      readCompletenessRules(this.contexts),
       this.allergens.catalogue(),
       this.editorials.findByProducts(ids),
       this.editorials.mediaOfProducts(ids),

@@ -33,7 +33,6 @@ import type { CatalogueCorpus } from "./corpus.js";
  * par les commandes, qui frappent leurs propres ULID.
  */
 export const CATALOGUE: CatalogueCorpus = {
-  proPriceRatioBp: 9000,
   salesContexts: [
     {
       key: "takeaway",
@@ -156,6 +155,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "8.17439",
       weightGrams: null,
       descriptionShort: {
         fr: "Amandes caramélisées et chocolat au lait, format généreux.",
@@ -190,6 +190,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "4.50000",
       weightGrams: null,
       descriptionShort: {
         fr: "Amandes caramélisées et chocolat noir, format généreux.",
@@ -206,6 +207,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "7.50000",
       weightGrams: 100,
       descriptionShort: {
         fr: "Tablette de chocolat au lait tempéré à l'atelier.",
@@ -222,6 +224,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "4.87500",
       weightGrams: 300,
       descriptionShort: {
         fr: "Sablé et gianduja, le duo noisette-chocolat.",
@@ -238,6 +241,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1300,
+      proPriceHt: "9.75000",
       weightGrams: 150,
       declaration: null,
       vat: {},
@@ -251,6 +255,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1700,
+      proPriceHt: "12.75000",
       weightGrams: 200,
       descriptionShort: {
         fr: "Assortiment de sablés au gianduja.",
@@ -267,6 +272,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 2800,
+      proPriceHt: "21.00000",
       weightGrams: 220,
       descriptionShort: {
         fr: "Florentins en boîte, à offrir ou à garder.",
@@ -283,6 +289,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1700,
+      proPriceHt: "12.75000",
       weightGrams: 150,
       declaration: null,
       vat: {},
@@ -296,6 +303,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1500,
+      proPriceHt: "11.25000",
       weightGrams: 150,
       descriptionShort: {
         fr: "Œufs en chocolat fourrés praliné.",
@@ -312,6 +320,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "7.50000",
       weightGrams: 100,
       descriptionShort: {
         fr: "Petites meringues à la noisette, croquantes et légères.",
@@ -328,6 +337,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 3000,
+      proPriceHt: "22.50000",
       weightGrams: 250,
       declaration: null,
       vat: {},
@@ -341,6 +351,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1600,
+      proPriceHt: "12.00000",
       weightGrams: null,
       descriptionShort: {
         fr: "Guimauve maison enrobée de chocolat, la spécialité de la maison.",
@@ -357,6 +368,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Chocolat & confiserie",
       status: "draft",
       priceCents: 1600,
+      proPriceHt: "12.00000",
       weightGrams: 200,
       descriptionShort: {
         fr: "Mendiants au chocolat et fruits secs.",
@@ -373,6 +385,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: null,
+      proPriceHt: null,
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -386,6 +399,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: null,
+      proPriceHt: null,
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -399,6 +413,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: null,
+      proPriceHt: null,
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -412,6 +427,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 200,
+      proPriceHt: "1.70616",
       weightGrams: null,
       descriptionShort: {
         fr: "Farine française, levain nourri chaque jour, croûte qui chante a la sortie du four.",
@@ -428,6 +444,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 180,
+      proPriceHt: "1.53555",
       weightGrams: 200,
       descriptionShort: {
         fr: "Baguette de fabrication artisanale, mie alvéolée et croûte fine.",
@@ -444,6 +461,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 200,
+      proPriceHt: "1.70616",
       weightGrams: 200,
       descriptionShort: {
         fr: "Baguette de plateau, format pratique pour la table.",
@@ -460,6 +478,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pain aux céréales, dense et rustique, parfait avec les fromages.",
@@ -476,6 +495,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 210,
+      proPriceHt: "1.79147",
       weightGrams: null,
       descriptionShort: {
         fr: "Petit pain au Beaufort, un classique savoyard.",
@@ -492,6 +512,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pain aux graines, mie souple et gout de céréales grillees.",
@@ -508,6 +529,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: 450,
       descriptionShort: {
         fr: "Flûte de village, croûte dorée et mie moelleuse.",
@@ -524,6 +546,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pain de campagne au levain, il tient toute la journée.",
@@ -540,6 +563,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: 200,
       descriptionShort: {
         fr: "Baguette de campagne aux graines.",
@@ -556,6 +580,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 175,
+      proPriceHt: "1.49763",
       weightGrams: 140,
       descriptionShort: {
         fr: "Petit format, beaucoup de croûte.",
@@ -572,6 +597,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 350,
+      proPriceHt: "2.98578",
       weightGrams: 420,
       descriptionShort: {
         fr: "Flûte artisanale, mie alvéolée.",
@@ -588,6 +614,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 350,
+      proPriceHt: "2.98578",
       weightGrams: 450,
       descriptionShort: {
         fr: "Flûte de tradition francaise, fermentation lente.",
@@ -604,6 +631,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pain complet à la farine française, riche en fibres.",
@@ -620,6 +648,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pain de seigle dense, idéal avec les huîtres et les fromages.",
@@ -636,6 +665,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 1600,
+      proPriceHt: "13.64929",
       weightGrams: 1000,
       descriptionShort: {
         fr: "Pain aux graines et fruits secs, vendu au kilo.",
@@ -652,6 +682,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "8.53081",
       weightGrams: 1000,
       descriptionShort: {
         fr: "Pain de campagne rustique, vendu au kilo.",
@@ -668,6 +699,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 500,
+      proPriceHt: "4.26540",
       weightGrams: 300,
       descriptionShort: {
         fr: "Pavé garni de noix, le compagnon du plateau de fromages.",
@@ -684,6 +716,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pains",
       status: "draft",
       priceCents: 550,
+      proPriceHt: "4.69194",
       weightGrams: 340,
       descriptionShort: {
         fr: "Pain de mie frais en carré, mie régulière et moelleuse.",
@@ -700,6 +733,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Myrtilles sauvages de nos alpages sur une pâte sablée.",
@@ -716,6 +750,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: null,
       descriptionShort: {
         fr: "Le flan pâtissier à l'ancienne, vanille et texture fondante.",
@@ -732,6 +767,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Framboises fraîches et crème pâtissière sur pâte sablée.",
@@ -748,6 +784,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -761,6 +798,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Pâte à choux, crème pâtissière au chocolat et glacage brillant.",
@@ -777,6 +815,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Creme au citron acidulée sur une pâte sablée croustillante.",
@@ -793,6 +832,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Pâte à choux et crème au café, le classique intemporel.",
@@ -809,6 +849,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Pâte à choux garnie de crème à la vanille.",
@@ -825,6 +866,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Citron acidulé et meringue dorée au chalumeau.",
@@ -841,6 +883,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 750,
+      proPriceHt: "6.39810",
       weightGrams: null,
       descriptionShort: {
         fr: "Framboises et pâte à crumble beurrée, servi en part.",
@@ -857,6 +900,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -870,6 +914,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 500,
+      proPriceHt: "4.26540",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -883,6 +928,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Caramel tendre et noix torréfiées sur pâte sablée.",
@@ -899,6 +945,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Mousse au chocolat aérienne, servie en part individuelle.",
@@ -915,6 +962,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 3000,
+      proPriceHt: "25.59242",
       weightGrams: null,
       descriptionShort: {
         fr: "La tarte aux myrtilles sauvages en format à partager, 4 personnes.",
@@ -931,6 +979,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Vermicelles de crème de marron, meringue et chantilly.",
@@ -947,6 +996,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 500,
+      proPriceHt: "4.26540",
       weightGrams: null,
       descriptionShort: {
         fr: "Poires fondantes sur une base d'amandes.",
@@ -963,6 +1013,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Pâtisseries",
       status: "draft",
       priceCents: 500,
+      proPriceHt: "4.26540",
       weightGrams: null,
       descriptionShort: {
         fr: "Abricots et pâte sablée, la tarte de saison à l'ancienne.",
@@ -979,6 +1030,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Jambon blanc et Beaufort sur pain maison.",
@@ -995,6 +1047,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Tourte généreuse au Beaufort, servie en part.",
@@ -1011,6 +1064,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 550,
+      proPriceHt: "4.69194",
       weightGrams: null,
       descriptionShort: {
         fr: "Quiche lorraine a l'appareil crème et lardons, part individuelle.",
@@ -1027,6 +1081,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Le pan bagnat garni au thon, version montagne.",
@@ -1043,6 +1098,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 550,
+      proPriceHt: "4.69194",
       weightGrams: null,
       descriptionShort: {
         fr: "Part de pizza maison, pâte levée sur place.",
@@ -1059,6 +1115,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Club sandwich au poulet, en trois étages.",
@@ -1075,6 +1132,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Poulet et pain aux graines, croquant et rassasiant.",
@@ -1091,6 +1149,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Jambon cru et tomme de Savoie sur pain maison.",
@@ -1107,6 +1166,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -1120,6 +1180,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Le jambon-beurre, avec les cornichons qui vont avec.",
@@ -1136,6 +1197,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 600,
+      proPriceHt: "5.11848",
       weightGrams: null,
       descriptionShort: {
         fr: "Poireaux fondants et chèvre, part individuelle.",
@@ -1152,6 +1214,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "8.53081",
       weightGrams: null,
       descriptionShort: {
         fr: "Salade Cesar en barquette, prête à emporter.",
@@ -1168,6 +1231,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Tranche garnie tomate et mozzarella.",
@@ -1184,6 +1248,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Saumon et épinards dans un appareil crèmeux.",
@@ -1200,6 +1265,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 850,
+      proPriceHt: "7.25118",
       weightGrams: null,
       descriptionShort: {
         fr: "Lentilles vertes en barquette, assaisonnées maison.",
@@ -1216,6 +1282,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Tranche garnie chèvre et miel.",
@@ -1232,6 +1299,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 550,
+      proPriceHt: "4.69194",
       weightGrams: null,
       descriptionShort: {
         fr: "Quiche aux légumes de saison, part individuelle.",
@@ -1248,6 +1316,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Rosette et beurre sur pain maison.",
@@ -1264,6 +1333,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Fougasse aux saveurs du Sud.",
@@ -1280,6 +1350,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Croque végétarien à la courgette.",
@@ -1296,6 +1367,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Croque-monsieur sur pain de campagne, jambon et fromage.",
@@ -1312,6 +1384,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: null,
       descriptionShort: {
         fr: "Tranche garnie de légumes de saison.",
@@ -1328,6 +1401,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "Sandwich végétarien aux légumes croquants.",
@@ -1344,6 +1418,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Salé & traiteur",
       status: "draft",
       priceCents: 700,
+      proPriceHt: "5.97156",
       weightGrams: null,
       descriptionShort: {
         fr: "La tartiflette en part individuelle, pommes de terre et reblochon.",
@@ -1360,6 +1435,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 200,
+      proPriceHt: "1.70616",
       weightGrams: null,
       descriptionShort: {
         fr: "Le pur beurre, le vrai : un tourage patient et un feuilletage qui craque à la première bouchée.",
@@ -1376,6 +1452,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 220,
+      proPriceHt: "1.87678",
       weightGrams: null,
       descriptionShort: {
         fr: "Feuilletage généreux et deux barres de chocolat qui ne font pas semblant.",
@@ -1392,6 +1469,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 300,
+      proPriceHt: "2.55924",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -1405,6 +1483,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: null,
       descriptionShort: {
         fr: "Spirale de crème pâtissière et raisins moelleux, roulée à la main.",
@@ -1421,6 +1500,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 300,
+      proPriceHt: "2.55924",
       weightGrams: null,
       descriptionShort: {
         fr: "Feuilletage doré et pommes fondantes, comme à la sortie du four.",
@@ -1437,6 +1517,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: null,
       descriptionShort: {
         fr: "Brioche moelleuse et pralines roses, la gourmandise version alpine.",
@@ -1453,6 +1534,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 270,
+      proPriceHt: "2.30332",
       weightGrams: null,
       descriptionShort: {
         fr: "Mie filante et pépites de chocolat généreusement reparties.",
@@ -1469,6 +1551,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 230,
+      proPriceHt: "1.96209",
       weightGrams: null,
       descriptionShort: {
         fr: "La brioche simple et bien faite, croustillante de sucre sur le dessus.",
@@ -1485,6 +1568,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 200,
+      proPriceHt: "1.70616",
       weightGrams: null,
       descriptionShort: {
         fr: "Mie douce et moelleuse, le classique du goûter.",
@@ -1501,6 +1585,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: null,
       descriptionShort: {
         fr: "La brioche parisienne traditionnelle, façonnée a la main.",
@@ -1517,6 +1602,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 1000,
+      proPriceHt: "8.53081",
       weightGrams: 350,
       descriptionShort: {
         fr: "Grande brioche à partager, mie filante et croûte dorée.",
@@ -1533,6 +1619,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -1546,6 +1633,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 250,
+      proPriceHt: "2.13270",
       weightGrams: null,
       descriptionShort: {
         fr: "Feuilletage garni de chocolat et de banane, une association qui claque.",
@@ -1562,6 +1650,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 650,
+      proPriceHt: "5.54502",
       weightGrams: 500,
       descriptionShort: {
         fr: "Pain de mie brioche, mie filante, idéal pour le petit-déjeuner et le goûter.",
@@ -1578,6 +1667,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 300,
+      proPriceHt: "2.55924",
       weightGrams: null,
       declaration: null,
       vat: {},
@@ -1591,6 +1681,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 380,
+      proPriceHt: "3.24171",
       weightGrams: null,
       descriptionShort: {
         fr: "Pâte sablée, crème pâtissière et pepites de chocolat.",
@@ -1607,6 +1698,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 300,
+      proPriceHt: "2.55924",
       weightGrams: null,
       descriptionShort: {
         fr: "Croissant garni de crème d'amandes et repassé au four, amandes effilees dessus.",
@@ -1623,6 +1715,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 300,
+      proPriceHt: "2.55924",
       weightGrams: null,
       descriptionShort: {
         fr: "Pain au chocolat garni de crème d'amandes, gratiné aux amandes effilees.",
@@ -1639,6 +1732,7 @@ export const CATALOGUE: CatalogueCorpus = {
       categoryName: "Viennoiseries",
       status: "draft",
       priceCents: 400,
+      proPriceHt: "3.41232",
       weightGrams: null,
       descriptionShort: {
         fr: "Cookie généreux, cœur moelleux et bords croustillants.",

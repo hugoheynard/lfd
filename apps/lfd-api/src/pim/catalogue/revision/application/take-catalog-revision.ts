@@ -4,11 +4,10 @@ import type { CatalogRevisionTakenView } from "@lfd/pim-contracts";
 import { currentRequestContext } from "../../../../platform/context/request-context.store.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../platform/time/clock.js";
-import { AccountingRulesRepository } from "../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import { RevisionHashAlreadyTakenError } from "../domain/errors/revision-errors.js";
 import { CatalogRevisionRepository } from "../domain/ports/catalog-revision.repository.js";
-import { buildRevision } from "../domain/revision.js";
+import { buildRevision, ENTERED_PRO_PRICE_HEADER } from "../domain/revision.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 
 /** Ce qu'une capture rend : l'ancre posée, ou celle qui existait déjà. */
@@ -67,28 +66,14 @@ export class TakeCatalogRevisionHandler implements ICommandHandler<
   constructor(
     private readonly source: CatalogRevisionSource,
     private readonly revisions: CatalogRevisionRepository,
-    private readonly accounting: AccountingRulesRepository,
     private readonly journal: PimJournal,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
   ) {}
 
   async execute(command: TakeCatalogRevisionCommand): Promise<TakenRevision> {
-    const [items, rules] = await Promise.all([this.source.snapshotItems(), this.accounting.read()]);
-
-    // Le rapport entre dans l'en-tête même ABSENT : `null` est un état du
-    // catalogue ce jour-là, et le jour où quelqu'un le règle, le diff doit
-    // pouvoir montrer le passage de « rien » à « 90 % ».
-    const revision = buildRevision(
-      {
-        proRatioBp: rules?.rules.proPriceRatio.basisPoints ?? null,
-        // La méthode voyage AVEC le rapport : une bascule déplace le prix de
-        // base sans qu'aucune ligne de produit ne change, et un en-tête qui ne
-        // la garderait pas montrerait « tout a changé » sans rien expliquer.
-        proPriceMethod: rules?.rules.proPriceMethod.method ?? null,
-      },
-      items,
-    );
+    const items = await this.source.snapshotItems();
+    const revision = buildRevision(ENTERED_PRO_PRICE_HEADER, items);
 
     // L'empreinte d'abord, la question ensuite : on ne peut pas demander « cette
     // ancre existe-t-elle ? » avant de savoir laquelle. La lecture quitte donc

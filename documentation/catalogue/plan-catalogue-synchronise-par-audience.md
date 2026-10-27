@@ -357,8 +357,8 @@ ci-dessus :**
 - **Tous les émetteurs avant la bascule** (BLOQUANT). 2a3 couvre aussi ce qui
   change un snapshot hors de `catalogue/` : `ingredients/application/set-product-ingredients.ts`
   (par fiche, émetteur direct) ; `vat-rates/*`, `sales-contexts/*`,
-  `allergens/*` (révision, archivage), `accounting-rules/application/set-pro-price-ratio.ts`
-  et `choose-pro-price-method.ts` (plusieurs fiches : tâche de réémission des
+  `allergens/*` (révision, archivage), accounting-rules/application/set-pro-price-ratio.ts (retiré le 2026-10-27)
+  et choose-pro-price-method.ts (retiré le 2026-10-27) (plusieurs fiches : tâche de réémission des
   fiches concernées, une transaction par fiche). Sans eux, ouvrir
   l'interrupteur figerait les prix servis. Le lot 4 ne garde que les
   opérations, les limites de commande et les révisions automatiques.
@@ -557,7 +557,7 @@ ont été ajoutés, les afficher dans la boutique ».
 > prendre 5 décimales. » — Hugo, 2026-10-15. Puis : par déclinaison, oui ;
 > pré-remplir depuis le ratio, oui ; exigé pour activer, oui.
 
-Ouvert avant d'écrire : `packages/pim-contracts/src/accounting-rules.ts`
+Ouvert avant d'écrire : packages/pim-contracts/src/accounting-rules.ts (retiré le 2026-10-27)
 (`PRO_PRICE_METHODS = ["ratio_ttc"]`, `proPriceOf` — « l'unique porte » du
 prix pro, qui annonce elle-même le `switch` « avec la deuxième méthode »),
 `projection.ts:228-247` et `catalog-facts.ts` (`sellableVariant`) (les deux appelants côté fil), `product.prisma`
@@ -583,7 +583,7 @@ entier, jamais un flottant.
   fait de changement de méthode valide (l. 209). Sans elle, la bascule de
   méthode échoue à la journalisation.
 - **Cinq appelants de `proPriceOf`** (BLOQUANT) : projection.ts:242 (la projection du push, retirée en X4),
-  `catalog-facts.ts` (`sellableVariant`), `accounting-rules-page.ts:217` et `:254`,
+  `catalog-facts.ts` (`sellableVariant`), accounting-rules-page.ts:217 (retiré le 2026-10-27) et `:254`,
   `product-form-store.ts:887` et `:916`. Nouvelle signature :
   `proPriceOf(publicTtcCents, policy, articleVatPercent, enteredHtMillicents: number | null)`.
   Dans `catalog-facts.ts`, `gapsOf` gagne `pro_price` **avant** que
@@ -693,9 +693,9 @@ Ouvert avant d'écrire (2026-10-16) :
   pour une déclinaison **sans saisie**, et seulement sous `ratio_ttc` ;
 - `ratio_ttc` est la valeur d'un réglage muet
   (`ProPriceMethodSetting.ratioTtc()`, appelé par
-  `accounting-rules.ts:45`) ;
-- changer le rapport (`set-pro-price-ratio.ts`) ou la méthode
-  (`choose-pro-price-method.ts`) réémet **déjà** tout le catalogue par
+  accounting-rules.ts:45 (retiré le 2026-10-27)) ;
+- changer le rapport (set-pro-price-ratio.ts (retiré le 2026-10-27)) ou la méthode
+  (choose-pro-price-method.ts (retiré le 2026-10-27)) réémet **déjà** tout le catalogue par
   `CatalogReemission`. Le « rapport pro » de la ligne 4 du tableau des lots
   est donc déjà couvert ; ce qu'en disait l'état du 2026-10-16 était faux ;
 - le pré-remplissage existe (P5, le service du pré-remplissage, retiré le 2026-10-27, aperçu puis
@@ -749,7 +749,7 @@ Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   `entered`, mais S6 se limite quand même à : **ne pas réémettre si la
   méthode était `entered` avant ET après, et que la ligne existait**. La
   méthode est lue **dans** le `uow.run` (aujourd'hui lue avant,
-  `set-pro-price-ratio.ts:59`) ; `choose-pro-price-method.ts:70-79` a le
+  set-pro-price-ratio.ts:59 (retiré le 2026-10-27)) ; choose-pro-price-method.ts:70-79 (retiré le 2026-10-27) a le
   même schéma et réémet toujours, ce qui couvre la course.
 - **Le vrai basculement est S5-(2), pas S5-(3)** (SÉRIEUX). Une fois le
   pré-remplissage écrit, chaque déclinaison a sa saisie, et « la saisie
@@ -763,7 +763,7 @@ Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   runbook dit que le retour arrière d'un prix pro est une **saisie**, fiche
   par fiche (ou l'effacement de la saisie, qui rend le repli).
 - **La suggestion passe par la porte** (SÉRIEUX) : `ratioTtcProPrice` est
-  privée (`accounting-rules.ts:241`). S3 appelle
+  privée (accounting-rules.ts:241 (retiré le 2026-10-27)). S3 appelle
   `proPriceOf(prix, { method: "ratio_ttc", ratioBp }, taux, null)`, comme
   le service du pré-remplissage, retiré le 2026-10-27. Un appelant de plus au JSDoc qui les compte.
 - **Les alignées** (SÉRIEUX) : une déclinaison qui suit le défaut sort du

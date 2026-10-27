@@ -16,7 +16,7 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
     position: 0,
     priceCents: 1_000,
     weightGrams: null,
-    proPriceMillicents: null,
+    proPriceMillicents: 812_345,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -29,7 +29,6 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
 const ALL = { b2b: 20, takeaway: 5.5, eatIn: 10 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway", "eatIn"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 
 describe("activationGaps — au moins une déclinaison complète (lot 2b)", () => {
@@ -118,45 +117,15 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     expect(isActivatable(gaps)).toBe(true);
   });
 
-  it("refuse sous ratio_ttc tant que le rapport pro n'est pas réglé", () => {
+  /** Le prix pro HT saisi est sa seule source (lot R3, 2026-10-27). */
+  it("exige le prix pro saisi, et le nomme", () => {
     const gaps = activationGaps(
-      [variant({})],
+      [variant({ proPriceMillicents: null })],
       ALL,
-      {
-        ...RULES,
-        policy: { method: "ratio_ttc", ratioBp: null },
-      },
+      RULES,
       NO_CITED_ALLERGENS,
     );
 
-    expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price_rule"] });
-  });
-
-  /** Lot P : la saisie prime ; sous `entered`, sans saisie, aucun repli. */
-  describe("le prix pro, résolu par la porte", () => {
-    const entered: CompletenessRules = { ...RULES, policy: { method: "entered", ratioBp: 9_000 } };
-
-    it("sous entered, exige la saisie", () => {
-      expect(activationGaps([variant({})], ALL, entered, NO_CITED_ALLERGENS).byVariant).toEqual({
-        "PAT-1": ["pro_price"],
-      });
-    });
-
-    it("sous entered, accepte une déclinaison qui porte les deux prix", () => {
-      const gaps = activationGaps(
-        [variant({ proPriceMillicents: 812_345 })],
-        ALL,
-        entered,
-        NO_CITED_ALLERGENS,
-      );
-
-      expect(isActivatable(gaps)).toBe(true);
-    });
-
-    it("sous ratio_ttc, le repli suffit sans saisie", () => {
-      expect(isActivatable(activationGaps([variant({})], ALL, RULES, NO_CITED_ALLERGENS))).toBe(
-        true,
-      );
-    });
+    expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price"] });
   });
 });

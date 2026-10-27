@@ -1,6 +1,7 @@
 # Plan — le prix pro est toujours saisi : retirer la suggestion et le rapport
 
-> 📝 **Plan, rien n'est bâti** (2026-10-27). Demande de Hugo : « le système de
+> 🟡 **R1 et R2 bâtis et commités, R3 bâti le 2026-10-27, non commité**
+> (§ 4). Plan écrit le 2026-10-27. Demande de Hugo : « le système de
 > suggestion de prix dans la fiche produit doit disparaître, il induit en
 > erreur avec le système de règle comptable, tout sera désormais du prix
 > saisi ». Touche au prix : `vitruve` obligatoire avant de bâtir (§ 6).
@@ -8,7 +9,7 @@
 ## 1. Ce qui existe (relu le 2026-10-27)
 
 - **Deux méthodes de prix pro** (`ProPriceMethodSetting`,
-  `apps/lfd-api/src/pim/accounting-rules/domain/value-objects/pro-price-method-setting.ts`) :
+  apps/lfd-api/src/pim/accounting-rules/domain/value-objects/pro-price-method-setting.ts (retiré le 2026-10-27)) :
   `entered` — le prix pro HT saisi par déclinaison, seule source, méthode
   d'une base vierge depuis le lot S (2026-10-16) — et `ratio_ttc`, le repli
   d'origine par le rapport (`pro_price_ratio_bp`, « le pro paie 10 % de
@@ -73,11 +74,11 @@ source, la saisie.
 
 ## 4. Lots
 
-| Lot | Contenu                                                                        | Garde                                                                                                                                               |
-| --- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | Retrait de la suggestion dans la fiche                                         | tests de la fiche ; aucune route API touchée                                                                                                        |
-| R2  | Retrait du pré-remplissage (API + écran) — **bâti le 2026-10-27, non commité** | recensement des appelants ; e2e `pim-pro-price`                                                                                                     |
-| R3  | Migration gardée, méthode unique, complétude sans `pro_price_rule`, écran      | e2e de la migration sur une base en `ratio_ttc` (elle doit échouer) et en `entered` (passer) ; catalogue servi identique avant/après sous `entered` |
+| Lot | Contenu                                                                                                         | Garde                                                                                                                                               |
+| --- | --------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Retrait de la suggestion dans la fiche                                                                          | tests de la fiche ; aucune route API touchée                                                                                                        |
+| R2  | Retrait du pré-remplissage (API + écran) — **bâti le 2026-10-27, non commité**                                  | recensement des appelants ; e2e `pim-pro-price`                                                                                                     |
+| R3  | Migration gardée, méthode unique, complétude sans `pro_price_rule`, écran — **bâti le 2026-10-27, non commité** | e2e de la migration sur une base en `ratio_ttc` (elle doit échouer) et en `entered` (passer) ; catalogue servi identique avant/après sous `entered` |
 
 R1 ne dépend de rien et part seul. R2 et R3 attendent `vitruve`.
 
@@ -161,3 +162,40 @@ sérieux de `vitruve` sont tranchés ainsi :
 - **Écran** : la fiche lit le prix pro saisi seul (`proPriceAt`,
   `discountLabel`, `source: 'ratio'` retirés) ; les règles comptables perdent
   méthode, rapport, pré-remplissage et « Passer au prix saisi ».
+
+## 8. Ce que R3 a bâti (2026-10-27)
+
+- **Semis et fixtures d'abord** : le corpus porte un `proPriceHt` par fiche,
+  figé au montant que le rapport donnait (90 % au taux b2b) ; `registry.ts`
+  ne pose plus aucune règle comptable ; `pim-sellable.ts` et
+  `catalog-facts-scene.ts` saisissent `1.70616` € HT (200 c public, 5,5 %).
+  Les 18 suites e2e qui les importent sont restées vertes avant toute retouche
+  du domaine.
+- **Migration** `20261027110000_le_prix_pro_est_toujours_saisi` : garde
+  `RAISE EXCEPTION` entre deux marqueurs, puis défaut `entered` et contrainte
+  `accounting_rules_method_known` resserrée. Éprouvée par
+  `test/pro-price-entered-migration.e2e-spec.ts` (bloc relu dans le fichier,
+  transaction annulée). Phrase de runbook : « Avant de déployer « le prix pro
+  est toujours saisi » ».
+- **Domaine** : le contexte `src/pim/accounting-rules/` est retiré entier
+  (agrégat, VO, ports, handlers, contrôleur, routes) — il n'avait plus ni
+  lecteur ni écrivain. `proPriceOf(taux, saisie)` vit dans
+  `packages/pim-contracts/src/pro-price.ts` ; `ProPricePolicy`,
+  `PRO_PRICE_METHODS`, `UNSET_PRO_PRICE_POLICY`, les schémas et la vue des
+  règles quittent `@lfd/pim-contracts` (la liste des méthodes reste dans
+  `@lfd/contracts`, pour relire les faits passés). La complétude ne lit plus
+  de politique ; `pro_price_rule` n'est plus calculé. L'en-tête des révisions
+  est `ENTERED_PRO_PRICE_HEADER`, et `headerDiff` tait le rapport quand les deux
+  côtés sont en `entered`. Les tests `ratio-parity*` sont retirés.
+- **Écran** : la fiche lit la saisie seule ; la page « Règles comptables » ne
+  dit plus que où le prix pro se saisit (aucun appel serveur).
+
+**Écart au § 7** : le message de la garde ne cite pas `seed:pim` comme sortie
+locale suffisante. Le nouveau semis n'écrit plus aucune règle comptable : le
+relancer sur une base existante en `ratio_ttc` n'en change pas la méthode. Le
+message nomme « Passer au prix saisi » avec la version précédente, ou une base
+vierge (`dev:infra:nuke` puis `seed:pim`).
+
+**Reste à décider** : la page « Règles comptables », sa route et son entrée du
+rail n'ont plus rien à régler — les retirer, ou y loger une future règle de
+la maison.

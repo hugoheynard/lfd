@@ -119,7 +119,7 @@
   color: var(--fold-color-text-muted);
 }
 
-/* La ligne qui part d'un prix remisé le dit. Discret : c'est une précision, pas
+/* La ligne qui part du prix pro saisi le dit. Discret : c'est une précision, pas
    une alerte — le montant reste ce qu'on vient lire. */
 .inherit-discounted {
   font-size: var(--fold-text-2xs);

@@ -43,9 +43,13 @@ export function bareVariant(over: Partial<VariantSnapshot> = {}): VariantSnapsho
   };
 }
 
-/** Une déclinaison vendable : un prix, une déclaration d'allergènes. */
+/**
+ * Une déclinaison vendable : un prix public, un prix pro HT saisi (seule
+ * source depuis le lot R3), une déclaration d'allergènes.
+ */
 export const SELLABLE_VARIANT = bareVariant({
   priceCents: 3_200,
+  proPriceMillicents: 2_730_331,
   allergenSheet: { declared: ["gluten"], mayContain: [] },
 });
 

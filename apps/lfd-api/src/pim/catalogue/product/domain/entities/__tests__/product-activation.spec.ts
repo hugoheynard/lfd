@@ -29,7 +29,7 @@ function variant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     position: 0,
     priceCents: 1_000,
     weightGrams: null,
-    proPriceMillicents: null,
+    proPriceMillicents: 853_081,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -61,7 +61,6 @@ function product(over: Partial<ProductSnapshot> = {}): Product {
 const ALL_RATES = { b2b: 20, takeaway: 5.5, eatIn: 10 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway", "eatIn"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 
 describe("Product.activate — au moins une déclinaison complète (lot 2b)", () => {

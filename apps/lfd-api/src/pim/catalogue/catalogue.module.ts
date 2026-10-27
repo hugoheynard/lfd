@@ -62,7 +62,6 @@ import { RepositoryCatalogFactsReader } from "./shared/infrastructure/repository
 import { SalesContextsModule } from "../sales-contexts/sales-contexts.module.js";
 import { CategoryRepository } from "./category/domain/ports/category.repository.js";
 import { ProductCountReader } from "./category/domain/ports/product-count.reader.js";
-import { AccountingRulesModule } from "../accounting-rules/accounting-rules.module.js";
 import { CatalogRevisionRepository } from "./revision/domain/ports/catalog-revision.repository.js";
 import { CatalogRevisionSource } from "./revision/domain/ports/catalog-revision.source.js";
 import { DiffCatalogRevisionsHandler } from "./revision/application/diff-catalog-revisions.js";
@@ -118,7 +117,6 @@ import {
     AllergensModule,
     VatRatesModule,
     SalesContextsModule,
-    AccountingRulesModule,
   ],
   controllers: [
     AllergenMatrixController,

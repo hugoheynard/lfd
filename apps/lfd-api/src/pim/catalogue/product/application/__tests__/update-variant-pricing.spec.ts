@@ -24,9 +24,12 @@ function pricing(
   ).execute(new UpdateVariantPricingCommand(PRODUCT_ID, SELLABLE_VARIANT.id, input));
 }
 
+/** Une fiche dont la déclinaison n'a pas encore de prix pro saisi. */
+const UNPRICED_PRO = tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] });
+
 describe("UpdateVariantPricingHandler — le prix pro HT saisi", () => {
   it("range la saisie en millicentimes, et la journalise dans le diff de la section", async () => {
-    const products = new OneProduct(tarte());
+    const products = new OneProduct(UNPRICED_PRO);
     const journal = new RecordingJournal();
 
     await pricing(
@@ -43,7 +46,7 @@ describe("UpdateVariantPricingHandler — le prix pro HT saisi", () => {
   });
 
   it("refuse une sixième décimale, sans rien écrire", async () => {
-    const products = new OneProduct(tarte());
+    const products = new OneProduct(UNPRICED_PRO);
 
     await expect(
       pricing(products, { priceCents: 3_200, weightGrams: null, proPriceHt: "27.303311" }),

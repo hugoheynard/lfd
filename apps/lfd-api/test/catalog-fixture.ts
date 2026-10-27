@@ -83,12 +83,13 @@ const PUBLIC_CONTEXT_KEY = "takeaway";
  * doivent tenir la distinction. C'est le même piège que le repli de
  * `billableRate` documenté ci-dessus — un harnais complaisant.
  *
- * Le rapport est l'INVERSE de celui de la projection : le pro paie 80 % de
+ * Le rapport est l'INVERSE de celui que la projection appliquait jusqu'au
+ * retrait du rapport pro (lot R3, 2026-10-27) : le pro paie 80 % de
  * l'étiquette, donc l'étiquette vaut 1 / 0,8 du prix pro. La fixture raconte
  * ainsi la vraie chaîne — l'étiquette est l'ancre, le prix pro en dérive —
  * plutôt qu'un écart inventé.
  *
- * ⚠️ Elle **n'appelle pas** `proPriceOf` pour autant : le semis part du prix pro
+ * ⚠️ Elle n'a jamais appelé `proPriceOf` : le semis part du prix pro
  * (que 140 suites nomment) et remonte, là où la production part de l'étiquette
  * et descend. Remonter une projection arrondie ne rend pas la valeur de départ,
  * et prétendre le contraire ferait dépendre les tests d'un aller-retour qui

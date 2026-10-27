@@ -1,26 +1,18 @@
-import { AccountingRules } from "../../../accounting-rules/domain/entities/accounting-rules.js";
-import type { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import type { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 
 /**
  * **Lit ce que la règle de complétude ne voit pas d'une fiche** : les
- * contextes en service et la règle du prix pro en vigueur (lot 2b de
- * `plan-catalogue-synchronise-par-audience.md`).
+ * contextes en service (lot 2b de `plan-catalogue-synchronise-par-audience.md`).
  *
- * Une seule lecture pour l'activation, l'aperçu de bascule et les faits du
- * catalogue : trois lectures écrites chacune de son côté finiraient par juger
- * la même fiche de deux façons. Rien de réglé au prix pro = prix saisi sans
- * rapport (`AccountingRules.effectivePolicy`, lot S), jamais un rapport
- * inventé.
+ * Une seule lecture pour l'activation, la liste et les faits du catalogue :
+ * trois lectures écrites chacune de son côté finiraient par juger la même
+ * fiche de deux façons. La règle du prix pro n'y est plus lue depuis le lot R3
+ * (`plan-retirer-le-rapport-pro.md`) : le prix pro est toujours saisi.
  */
 export async function readCompletenessRules(
   contexts: ActiveSalesContextsReader,
-  accounting: AccountingRulesReader,
 ): Promise<CompletenessRules> {
-  const [active, rules] = await Promise.all([contexts.active(), accounting.read()]);
-  return {
-    activeContextKeys: active.map((context) => context.key),
-    policy: AccountingRules.effectivePolicy(rules?.rules ?? null),
-  };
+  const active = await contexts.active();
+  return { activeContextKeys: active.map((context) => context.key) };
 }

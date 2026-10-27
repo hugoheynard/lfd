@@ -159,8 +159,11 @@ plateforme écoute un fait du canal.
 écarte les déclinaisons arrêtées, et range chaque déclinaison incomplète dans
 `gaps` avec ce qui lui manque, **au lieu de l'écarter en silence** comme le
 push. Les clés de manque (`apps/lfd-api/src/pim/catalogue/product/domain/services/variant-completeness.ts:8-22`) :
-`price`, `allergens`, `pro_price`, `pro_price_rule`, `vat:<contexte>`. Ce n'est
-plus la matrice des canaux qui filtre : c'est l'audience.
+`price`, `allergens`, `pro_price`, `vat:<contexte>`. Ce n'est
+plus la matrice des canaux qui filtre : c'est l'audience. (`pro_price_rule`,
+« rapport pro non réglé », n'est plus calculé depuis le 2026-10-27 — lot R3 de
+[`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md) ;
+l'écran garde son libellé pour les manques publiés avant.)
 
 ### La réémission
 
@@ -171,15 +174,16 @@ verrouiller le catalogue entier. Elle est appelée **après** le `uow.run`, et
 une fiche en échec est journalisée et listée sans faire échouer le geste,
 déjà validé (`apps/lfd-api/src/pim/channels/b2b-platform/products/catalog-reemission.service.ts:72-91`).
 
-| Déclencheur                                                                 | Appel                                                                                                                                |
-| --------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
-| audience, taux d'une famille                                                | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`) |
-| modifier ou retirer un taux de TVA                                          | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                           |
-| modifier ou retirer un contexte de vente                                    | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:60`, `remove-sales-context.ts:55`)            |
-| le référentiel d'allergènes (7 gestes)                                      | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                  |
-| changer la méthode du prix pro                                              | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/choose-pro-price-method.ts:81`)                                     |
-| changer le rapport pro — **seulement** au premier réglage ou hors `entered` | `everything` (`apps/lfd-api/src/pim/accounting-rules/application/set-pro-price-ratio.ts:71-75`)                                      |
-| `POST /pim/channels/b2b/reemit` — une fiche, ou tout                        | `apps/lfd-api/src/pim/channels/b2b-platform/http/reemit.controller.ts`                                                               |
+| Déclencheur                                          | Appel                                                                                                                                |
+| ---------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| audience, taux d'une famille                         | `productsOfCategories` (`apps/lfd-api/src/pim/catalogue/category/application/set-category-audience.ts:50`, `set-category-vat.ts:57`) |
+| modifier ou retirer un taux de TVA                   | `everything` (`apps/lfd-api/src/pim/vat-rates/application/update-vat-rate.ts:51`, `remove-vat-rate.ts:43`)                           |
+| modifier ou retirer un contexte de vente             | `everything` (`apps/lfd-api/src/pim/sales-contexts/application/update-sales-context.ts:60`, `remove-sales-context.ts:55`)            |
+| le référentiel d'allergènes (7 gestes)               | `everything` (par exemple `apps/lfd-api/src/pim/allergens/application/revise-allergen-entry.ts:74`)                                  |
+| `POST /pim/channels/b2b/reemit` — une fiche, ou tout | `apps/lfd-api/src/pim/channels/b2b-platform/http/reemit.controller.ts`                                                               |
+
+(La méthode et le rapport du prix pro réémettaient tout ; ils sont retirés le
+2026-10-27, lot R3.)
 
 « Tout » émet les familles d'abord, puis les fiches, puis les règles en
 dernier : c'est le fait d'une fiche qui apprend à la plateforme l'identifiant
@@ -457,43 +461,33 @@ Le refus appartient à l'agrégat (`Product.activate`,
 
 Les valeurs nutritionnelles n'y entrent pas : le règlement (UE) n° 1169/2011
 les exempte dans les deux cas de vente (`product.ts:315-318`). Le handler
-montre à l'agrégat ce qu'il ne voit pas — taux résolus, contextes en service,
-règle du prix pro (`activate-product.ts:69-77`).
+montre à l'agrégat ce qu'il ne voit pas — taux résolus, contextes en service
+(la règle du prix pro en faisait partie jusqu'au lot R3, 2026-10-27).
 
 ### Le prix — public TTC, pro HT saisi
 
 Le référentiel pose le prix public TTC et, par déclinaison, le **prix pro
-HT saisi** (lot P). Une seule porte le résout,
-`proPriceOf` (`packages/pim-contracts/src/accounting-rules.ts:230-250`) —
-appelée par le fil, la complétude, le pré-remplissage, l'écran des règles,
-la fiche et la suggestion de la fiche (liste vérifiée le 2026-10-16,
-`accounting-rules.ts:214-219`) :
-
-- **la saisie prime, quelle que soit la méthode** (Hugo, 2026-10-15) ;
-- sans saisie, sous `entered` : `null` — la déclinaison est incomplète
-  (`pro_price`), jamais vendue aux pros, et « Activer » la refuse en le
-  nommant ;
-- sans saisie, sous `ratio_ttc` avec un rapport posé : le prix dérivé du
-  rapport ; sans rapport, `null` (`pro_price_rule`) ;
-- sans taux d'article : `null` — inventer un taux facturerait un montant que
-  personne n'a décidé.
-
-**Lot S (2026-10-16)** : le prix saisi est la seule source visée. Une base
-sans règles vaut `entered` sans rapport ; le rapport n'est plus qu'une
-**suggestion** — « Suggéré : … (rapport de y %) » et « Reprendre » sous le
-champ, calculée par la même porte que le pré-remplissage
-(`apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/pro-price-entry.ts:85-91`).
-`ratio_ttc` et son code restent pour une base qui y est encore (Hugo :
-« n'efface pas le code ») ; la bascule d'une telle base est un geste écrit
-au runbook (pré-remplir, relire, « Passer au prix saisi ») — le
-pré-remplissage est retiré le 2026-10-27 (lot R2 de
+HT saisi** — sa **seule source** depuis le 2026-10-27 (lot R3 de
 [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)).
+Une seule porte le résout, `proPriceOf` (`packages/pim-contracts/src/pro-price.ts`),
+appelée par le fil (`catalog-facts.ts`) et la fiche (`product-form-store.ts`) ;
+la complétude juge directement la saisie (vérifié le 2026-10-27) :
 
-Pourquoi `ratio_ttc` fige son plus haut taux **dans le réglage** plutôt que de
-le lire au référentiel des taux (décision du 2026-09-13, toujours en place) :
-créer, modifier ou supprimer un taux déplacerait le maximum et retarifierait
-tout le catalogue professionnel sans qu'une ligne ne bouge — de l'action à
-distance sur de l'argent, la pire classe de défaut du dépôt.
+- sans saisie : `null` — la déclinaison est incomplète (`pro_price`), jamais
+  vendue aux pros, et « Activer » la refuse en le nommant ;
+- sans taux d'article : `null` — inventer un taux facturerait un montant que
+  personne n'a décidé ;
+- sinon : le HT saisi, au millicentime, et le TTC qui n'en est que l'affichage.
+
+**Retiré le 2026-10-27** : le rapport prix pro / prix public, ses deux
+méthodes (`ratio_ttc`, `entered`), la suggestion de la fiche (R1), le
+pré-remplissage (R2), l'écran du rapport et « Passer au prix saisi » (R3), et
+les routes `/pim/accounting-rules/*`. La table `pim.accounting_rules` reste en
+base, plus lue ; la migration `20261027110000_le_prix_pro_est_toujours_saisi`
+resserre sa méthode à `entered` et refuse de passer sur une ligne encore en
+`ratio_ttc` (runbook, « Avant de déployer « le prix pro est toujours saisi » »).
+Les faits passés du rapport et de la méthode restent lisibles au journal, et
+l'en-tête des révisions garde ses deux champs, figés à `entered` sans rapport.
 
 ### Le prix public — ce qui fait foi (décisions du 2026-09-21, encore vraies)
 
@@ -663,7 +657,7 @@ la TVA par contexte ne bougent pas.**
 | **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                     | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                                                                                                                                              |
 | **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)     | une ligne par article, une colonne par audience ; masquer, valider, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                                                                                                                                               |
 | **Mise en avant** (Gestion Boutique)    | `/mise-en-avant` (`apps/lfd-backoffice-frontend/src/app/mise-en-avant/featured-page/`) | une ligne par article, une case par audience (« Pros », « Particuliers »), fermée avec sa raison quand l'audience n'est pas servie ou que l'article y est masqué ; en tête, le libellé de la pastille et le lien vers sa clé dans Textes de la boutique. Sous `lfc_catalog` |
-| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`)   | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage retiré le 2026-10-27, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi »                                                                                                             |
+| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`)   | plus rien à régler depuis le 2026-10-27 (lot R3) : la page dit où le prix pro se saisit, et n'appelle plus aucune route                                                                                                                                                     |
 
 L'**espace « E-commerce LFC »** du back-office est supprimé le 2026-10-17
 (Hugo) : il n'avait plus de vue. Ses anciennes adresses `/b2b/…` redirigent
@@ -739,7 +733,7 @@ texte est dans l'historique git :
 | « L'écran Catalogue B2B »                             | l'écran devenu « Catalogue publié » (§7)                                  |
 | Plan « l'audience par héritage »                      | D1, D3, D7 : héritage (§5), `servedTo` (§4), route unique et vue (§4, §7) |
 | Plan « la publication par faits versionnés »          | absorbé par le plan qui fait foi ; faits et séquence (§2)                 |
-| Plan « deux méthodes de remise professionnelle »      | le taux figé de `ratio_ttc` (§5)                                          |
+| Plan « deux méthodes de remise professionnelle »      | rien depuis le 2026-10-27 — `ratio_ttc` est retirée (lot R3)              |
 | « Audit catalogue boutique / B2B »                    | rien — photo du 2026-08-04, toute périmée                                 |
 | Plan « un seul canal, deux prix »                     | D6, D7, D9, D10, D12, D13 (§5) ; ses restes ouverts au plan qui fait foi  |
 | « Le cycle du catalogue — du référentiel à la vente » | rien — le chemin faits fermés est parti en X2 (§6)                        |

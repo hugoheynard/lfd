@@ -26,8 +26,13 @@ model VatRate {
   @@schema("pim")
 }
 
-/// **Les règles comptables** — ce que la maison décide une fois, pour tout le
-/// catalogue.
+/// **Les règles comptables** — ce que la maison décidait une fois, pour tout
+/// le catalogue.
+///
+/// 🔴 **Plus lue ni écrite depuis le 2026-10-27** (lot R3 de
+/// `documentation/pricing/plan-retirer-le-rapport-pro.md`) : sa seule règle,
+/// le rapport du prix pro, est retirée — le prix pro est toujours saisi. La
+/// table reste en base (CLAUDE.md § 0), le code qui l'écrivait est parti.
 ///
 /// Singleton (une constante fixe en `id` garantit l'unicité), comme
 /// `BookingPolicySettings`. Elle ne porte qu'une règle
@@ -53,33 +58,25 @@ model AccountingRules {
   id String @id
 
   /// Le rapport **prix pro TTC / prix public TTC**, en points de base entiers
-  /// (9 000 = 90 %, soit « le pro paie 10 % de moins »).
-  ///
-  /// En points de base et non en pourcentage flottant : `0.9` n'est pas
-  /// représentable en binaire, et un rapport qui dérive produit deux prix
-  /// différents pour le même article selon qui l'a calculé. C'est déjà l'unité
-  /// de `PriceRule.value`.
-  ///
-  /// Le RAPPORT, pas la remise : c'est ce qui multiplie. Stocker `-10 %`
-  /// imposerait une soustraction à chaque lecture, donc un endroit de plus où
-  /// se tromper de sens.
+  /// (9 000 = 90 %). 🔴 **Colonne morte depuis le 2026-10-27** (lot R3 de
+  /// `documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix pro est
+  /// toujours saisi, et plus aucun code ne lit ni n'écrit cette colonne. Elle
+  /// reste en base (CLAUDE.md § 0 : une colonne morte reste), avec sa
+  /// contrainte `accounting_rules_pro_ratio_bounds`.
   proPriceRatioBp Int @map("pro_price_ratio_bp")
 
-  /// **Comment** le rapport se transforme en prix professionnel.
-  ///
-  /// Deux valeurs (`PRO_PRICE_METHODS`) : `entered` — le prix pro HT saisi par
-  /// déclinaison, seule source (lots P et S de
-  /// `plan-catalogue-synchronise-par-audience.md`) — et `ratio_ttc`, le repli
-  /// d'origine par le rapport, gardé pour les bases qui n'ont pas basculé.
-  /// Une ligne neuve naît sur `entered` (`AccountingRules.open`) ; le défaut
-  /// SQL `ratio_ttc` ci-dessous n'est lu par personne — l'`upsert` écrit
-  /// toujours la méthode — et ne se change pas sans migration.
+  /// La méthode du prix professionnel — **une seule valeur depuis le
+  /// 2026-10-27** : `entered`, le prix pro HT saisi par déclinaison (lot R3 de
+  /// `documentation/pricing/plan-retirer-le-rapport-pro.md`). `ratio_ttc` est
+  /// retirée ; la migration `20261027110000_le_prix_pro_est_toujours_saisi`
+  /// refuse de passer sur une ligne qui la porte encore. Plus aucun code ne
+  /// lit ni n'écrit cette colonne.
   ///
   /// ⚠️ Une contrainte non exprimable ici la garde :
-  /// `accounting_rules_method_known` n'admet que les valeurs connues. Une
+  /// `accounting_rules_method_known` n'admet que `entered`. Une
   /// `migrate dev` proposera de la supprimer, comme
   /// `accounting_rules_pro_ratio_bounds` : refuser la ligne.
-  proPriceMethod String @default("ratio_ttc") @map("pro_price_method")
+  proPriceMethod String @default("entered") @map("pro_price_method")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

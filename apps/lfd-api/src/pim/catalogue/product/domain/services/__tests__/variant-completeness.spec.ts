@@ -1,5 +1,3 @@
-import { UNSET_PRO_PRICE_POLICY } from "@lfd/pim-contracts";
-
 import {
   requiredContexts,
   variantGaps,
@@ -15,12 +13,11 @@ import {
 
 const COMPLETE: CompletenessInput = {
   priceCents: 1_200,
-  proPriceMillicents: null,
+  proPriceMillicents: 1_023_697,
   allergenSheet: { declared: ["gluten"], mayContain: [] },
 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway", "eatIn"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 const ALL = { b2b: 5.5, takeaway: 5.5, eatIn: 10 };
 
@@ -56,30 +53,21 @@ describe("variantGaps", () => {
     );
   });
 
-  it("nomme le rapport pro non réglé sous ratio_ttc", () => {
-    const unset: CompletenessRules = { ...RULES, policy: { method: "ratio_ttc", ratioBp: null } };
-    expect(variantGaps(COMPLETE, ALL, unset)).toEqual(["pro_price_rule"]);
-    // La saisie prime : elle se suffit même sans rapport.
-    expect(variantGaps({ ...COMPLETE, proPriceMillicents: 1_000_000 }, ALL, unset)).toEqual([]);
+  /** Le prix pro HT saisi est sa seule source (lot R3, 2026-10-27). */
+  it("nomme le prix pro manquant sans saisie", () => {
+    expect(variantGaps({ ...COMPLETE, proPriceMillicents: null }, ALL, RULES)).toEqual([
+      "pro_price",
+    ]);
   });
 
   /**
-   * Régression (BLOQUANT `vitruve`, lot S) : sans règles, « Activer » refusait
-   * toute déclinaison (`pro_price_rule`), saisie comprise.
+   * Régression (lot R3) : `pro_price_rule` — « rapport pro non réglé » — ne
+   * sort plus jamais, même sans prix pro ni taux : il n'y a plus de rapport.
    */
-  it("base sans règles : la saisie suffit, son absence se nomme « prix pro »", () => {
-    const unset: CompletenessRules = { ...RULES, policy: UNSET_PRO_PRICE_POLICY };
+  it("ne nomme jamais le rapport pro", () => {
+    const empty = { priceCents: null, proPriceMillicents: null, allergenSheet: null };
 
-    expect(variantGaps({ ...COMPLETE, proPriceMillicents: 1_000_000 }, ALL, unset)).toEqual([]);
-    expect(variantGaps(COMPLETE, ALL, unset)).toEqual(["pro_price"]);
-  });
-
-  /** La saisie prime, quelle que soit la méthode (lot P). */
-  it("sous entered, sans saisie : prix pro manquant ; avec saisie : complète", () => {
-    const entered: CompletenessRules = { ...RULES, policy: { method: "entered", ratioBp: 9_000 } };
-
-    expect(variantGaps(COMPLETE, ALL, entered)).toEqual(["pro_price"]);
-    expect(variantGaps({ ...COMPLETE, proPriceMillicents: 1_000_000 }, ALL, entered)).toEqual([]);
+    expect(variantGaps(empty, {}, RULES)).not.toContain("pro_price_rule");
   });
 });
 

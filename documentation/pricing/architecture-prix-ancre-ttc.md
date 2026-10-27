@@ -98,14 +98,20 @@ sens, pas deux. Cf. **C.5**.
 
 ## B.1 Où ça vit
 
-| Quoi                           | Où                                                                                                                                                                 |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Le rapport pro                 | `pim.accounting_rules` — **singleton** (`id = "accounting"`), colonne `pro_price_ratio_bp`                                                                         |
-| Le VO et ses bornes            | `ProPriceRatio`, plus la contrainte `accounting_rules_pro_ratio_bounds` en base                                                                                    |
-| La traduction remise ↔ rapport | `pro-discount.ts` — un seul endroit, et il refuse plutôt que de corriger en silence                                                                                |
-| Le calcul partagé              | `proPriceFromPublic` dans `packages/pim-contracts/src/accounting-rules.ts` ; `htFromTtc` et `htMillicentsOf` dans `packages/money/src/tax.ts` depuis le 2026-09-21 |
-| La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                                                                                          |
-| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                                                                                             |
+> ⚠️ **Le rapport pro est retiré le 2026-10-27** (lot R3 de
+> [`plan-retirer-le-rapport-pro.md`](plan-retirer-le-rapport-pro.md)) : le prix
+> pro HT se saisit, `ProPriceRatio`, pro-discount.ts (retiré le 2026-10-27), `proPriceFromPublic` et
+> l'écran du rapport n'existent plus ; la colonne `pro_price_ratio_bp` reste en
+> base, plus lue. Le tableau ci-dessous est l'état d'avant.
+
+| Quoi                           | Où                                                                                                                                                                                      |
+| ------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Le rapport pro                 | `pim.accounting_rules` — **singleton** (`id = "accounting"`), colonne `pro_price_ratio_bp`                                                                                              |
+| Le VO et ses bornes            | `ProPriceRatio`, plus la contrainte `accounting_rules_pro_ratio_bounds` en base                                                                                                         |
+| La traduction remise ↔ rapport | pro-discount.ts (retiré le 2026-10-27) — un seul endroit, et il refuse plutôt que de corriger en silence                                                                                |
+| Le calcul partagé              | `proPriceFromPublic` dans packages/pim-contracts/src/accounting-rules.ts (retiré le 2026-10-27) ; `htFromTtc` et `htMillicentsOf` dans `packages/money/src/tax.ts` depuis le 2026-09-21 |
+| La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                                                                                                               |
+| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                                                                                                                  |
 
 ⚠️ **`tax.ts` a quitté `pim-contracts` le 2026-09-21** pour `@lfd/money` : la
 plateforme B2B a eu besoin de la même déduction, et deux sites qui arrondissent
@@ -238,7 +244,7 @@ elle, en change le SENS — voir C.6.
   mur (`tax:read` / `tax:write`) — la décision est comptable.
 - **On saisit une remise, on stocke un rapport.** « Le pro paie 10 % de moins »
   est le mot qu'on emploie ; `9 000` est ce qui multiplie un prix. La traduction
-  vit en un seul endroit (`pro-discount.ts`), et refuse plutôt que de corriger
+  vit en un seul endroit (pro-discount.ts (retiré le 2026-10-27)), et refuse plutôt que de corriger
   en silence — 100 % de remise donnerait un prix nul, que la base rejette.
 - **Le calcul a déménagé dans le contrat.** L'écran montre ce que le réglage
   produit sur un article à 10,00 € TTC ; il appelle `proPriceFromPublic`, la

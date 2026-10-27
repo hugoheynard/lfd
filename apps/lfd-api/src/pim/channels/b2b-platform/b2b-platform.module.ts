@@ -1,6 +1,5 @@
 import { Module } from "@nestjs/common";
 
-import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.module.js";
 import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
@@ -34,13 +33,7 @@ import { ReemissionRecoveryOnBoot } from "./infrastructure/reemission-recovery.o
  * contrôleurs ne déclarent que leur sous-chemin.
  */
 @Module({
-  imports: [
-    OrderTimeLimitationModule,
-    PimDatabaseModule,
-    CatalogueModule,
-    AccountingRulesModule,
-    AllergensModule,
-  ],
+  imports: [OrderTimeLimitationModule, PimDatabaseModule, CatalogueModule, AllergensModule],
   controllers: [B2bReemitController],
   providers: [
     { provide: ReemissionJobRepository, useClass: PrismaReemissionJobRepository },

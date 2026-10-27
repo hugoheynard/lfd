@@ -44,11 +44,11 @@
             @if (row.counterpart; as counterpart) {
               <strong>{{ counterpart.amount }}</strong>
               <!-- Cette ligne ne part PAS du prix public : le contexte
-                     professionnel vend au prix remisé. Sans la mention, un
-                     lecteur qui compare la ligne au prix affiché plus haut ne
-                     retrouverait pas ses comptes. -->
+                     professionnel vend au prix pro saisi (lot R3). Sans la
+                     mention, un lecteur qui compare la ligne au prix affiché
+                     plus haut ne retrouverait pas ses comptes. -->
               @if (row.discounted) {
-                <span class="inherit-discounted">remisé</span>
+                <span class="inherit-discounted">prix pro</span>
               }
               <!-- Le montant seul ne dit pas ce qu'il est : à côté d'un taux
                      et d'un prix saisi plus haut, « 12,00 € » peut se lire comme

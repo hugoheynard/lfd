@@ -202,11 +202,7 @@ type VariantOf = ProductRecord["variants"][number];
  */
 function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVariantFact {
   const vatRatePercent = vatOf(input.percents);
-  const { policy } = input.rules;
-  const proPrice =
-    variant.priceCents === null
-      ? null
-      : proPriceOf(variant.priceCents, policy, vatRatePercent, variant.proPriceMillicents);
+  const proPrice = proPriceOf(vatRatePercent, variant.proPriceMillicents);
   if (proPrice === null || variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }

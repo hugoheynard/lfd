@@ -1,6 +1,5 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
-import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
@@ -40,7 +39,6 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     private readonly products: ProductRepository,
     private readonly categories: CategoryRepository,
     private readonly catalogue: CatalogueReader,
-    private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
   ) {}
@@ -55,7 +53,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     const [products, categories, rules] = await Promise.all([
       this.products.listAll(),
       this.categories.listAll(),
-      readCompletenessRules(this.contexts, this.accounting),
+      readCompletenessRules(this.contexts),
     ]);
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),

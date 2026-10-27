@@ -1,145 +1,15 @@
 <fold-page-layout icon="tax" title="Règles comptables">
   <p description>
-    Ce que la maison décide <strong>une fois</strong>, pour tout le catalogue. Le prix pro
-    <strong>HT</strong> se <strong>saisit</strong> sur chaque déclinaison, sous le prix
-    public&nbsp;; le <strong>rapport suggéré</strong> ci-dessous ne fait que le proposer. Les
-    <strong>taux de TVA</strong>, eux, sont imposés de l'extérieur et vivent dans leur propre écran.
+    Le prix pro <strong>HT</strong> se <strong>saisit</strong> sur chaque déclinaison, sous le prix
+    public. Les <strong>taux de TVA</strong>, eux, sont imposés de l'extérieur et vivent dans leur
+    propre écran.
   </p>
 
-  @if (loadError() !== null) {
-    <!-- Distinct de « jamais réglé » : les deux affichent un blanc, mais l'un
-         invite à saisir et l'autre à réessayer. Proposer le formulaire ici
-         écraserait un réglage qu'on n'a pas su lire. -->
-    <fold-callout variant="alert">
-      <strong>Réglage illisible.</strong> Les règles comptables n'ont pas pu être chargées, donc on
-      ne sait pas ce qui est en place. Rien n'est proposé à la saisie tant que c'est le cas.
-      <button foldButton emphasis="outline" (click)="retry()">Réessayer</button>
-    </fold-callout>
-  } @else {
-    @if (savedMethod() === 'ratio_ttc') {
-      <!-- Lot S : la base est encore sur l'ancien repli. L'encart dit ce qui
-           reste à faire, et disparaît une fois en « prix saisi » — le retour
-           ne s'offre plus à l'écran (la route reste : le code n'est pas
-           effacé). -->
-      <fold-callout variant="warning" class="switch">
-        <strong>Le prix pro est encore déduit du prix public.</strong> Tant que c'est le cas, une
-        déclinaison sans prix pro saisi est vendue aux professionnels au prix public moins la
-        remise. Il reste un geste&nbsp;: <strong>passer au prix saisi</strong>.
-        @if (canWrite()) {
-          <button foldButton emphasis="outline" [disabled]="busy()" (click)="switchToEntered()">
-            Passer au prix saisi
-          </button>
-        }
-      </fold-callout>
-    }
-
-    <section class="rule">
-      <header class="rule-head">
-        <h2>Rapport suggéré</h2>
-        <span class="badge" [class.badge-unset]="savedRatioBp() === null">{{ savedLabel() }}</span>
-      </header>
-
-      <p class="rule-say">
-        Il <strong>ne change aucun prix vendu</strong>&nbsp;: il propose. Sur chaque fiche, sous le
-        prix pro HT, il suggère le prix public TTC moins ce pourcentage, ramené au hors taxe du taux
-        B2B — et «&nbsp;Reprendre&nbsp;» le recopie dans le champ.
-      </p>
-
-      @if (canWrite()) {
-        <div class="rule-form">
-          <div class="fields">
-            <fold-number-input
-              label="Remise (%)"
-              [min]="0"
-              [max]="99.99"
-              [step]="0.5"
-              [disabled]="isLoading()"
-              [value]="draftDiscount()"
-              (valueChange)="draftDiscount.set($event)"
-            />
-
-            <!-- Le prix du simulateur. Il ne s'enregistre pas : c'est une
-                 question posée à la règle, pas une décision. Le bouton d'à côté
-                 ne le concerne donc pas, et son libellé le dit. -->
-            <fold-number-input
-              label="Sur un article à (€ TTC)"
-              [min]="0.01"
-              [step]="0.1"
-              [value]="samplePublicEur()"
-              (valueChange)="samplePublicEur.set($event)"
-            />
-          </div>
-
-          <!-- L'aperçu est calculé par `proPriceFromPublic`, celui du serveur :
-               un aperçu qui arrondirait autrement que la facture serait pire
-               qu'aucun aperçu. -->
-          <p class="preview">
-            @if (samplePro(); as pro) {
-              Un article à <strong>{{ samplePublic() }}</strong> TTC public sera à
-              <strong>{{ pro }}</strong> TTC pour un professionnel.
-            } @else if (samplePublicCents() === null) {
-              Un prix d'article se saisit au-dessus de zéro.
-            } @else {
-              Une remise se saisit entre 0 et 99,99&nbsp;%.
-            }
-          </p>
-
-          <!-- Le simulateur, sous la phrase : elle donne les deux prix TTC, il
-               montre ce que chaque taux en déduit. Les colonnes TTC n'y sont
-               PAS répétées — elles ne bougent pas d'une ligne à l'autre, et les
-               afficher trois fois identiques ferait chercher une différence qui
-               n'existe pas. C'est justement ce que le tableau démontre. -->
-          @if (sampleRates(); as rates) {
-            <div class="sample">
-              <p class="sample-caption">
-                Le même article sous les trois taux&nbsp;: le prix d'étiquette ne bouge pas, sa part
-                hors taxe si.
-              </p>
-
-              <!-- Repli par DÉFAUT (`scroll`), et non `cards` comme le tableau des
-                   taux : une carte empile des paires libellé/valeur, ce qui
-                   détruit l'alignement en colonnes — or c'est cet alignement
-                   qui rend trois nombres comparables d'un coup d'œil. Une carte
-                   sert une ligne riche ; ici la ligne est trois montants. -->
-              <fold-data-table [columns]="sampleColumns" [rows]="rates" [rowKey]="rateKey">
-                <ng-template foldCell="rate" let-row>
-                  <strong>{{ row.label }}</strong>
-                </ng-template>
-                <ng-template foldCell="publicHt" let-row>{{ row.publicHt }}</ng-template>
-                <ng-template foldCell="proHt" let-row>{{ row.proHt }}</ng-template>
-              </fold-data-table>
-
-              <p class="sample-say">
-                La remise reste la même partout&nbsp;: elle porte sur le TTC, et la TVA est
-                proportionnelle. Le taux ne change donc pas ce que le professionnel gagne — il
-                change ce que la comptabilité inscrit.
-              </p>
-            </div>
-          }
-
-          <button
-            foldButton
-            emphasis="solid"
-            intent="primary"
-            [disabled]="!canSubmit()"
-            (click)="submit()"
-          >
-            Enregistrer le rapport suggéré
-          </button>
-        </div>
-      } @else {
-        <fold-callout appearance="inset" variant="info">
-          Poser le rapport suggéré demande le droit <strong>pim_tax:write</strong>, celui-là même
-          qui ouvre les taux de TVA — c'est une décision comptable.
-        </fold-callout>
-      }
-
-      @if (savedMethod() === 'ratio_ttc') {
-        <fold-callout appearance="inset" variant="warning">
-          <strong>Ce rapport tarife encore pour de vrai.</strong> Tant que la base n'est pas passée
-          au prix saisi, il fixe le prix pro de chaque déclinaison qui n'en a pas de saisi.
-        </fold-callout>
-      }
-    </section>
-  }
+  <fold-callout variant="info">
+    <strong>Plus rien à régler ici.</strong> Le prix pro n'est plus déduit du prix public par une
+    remise&nbsp;: il se saisit dans la section <strong>Tarif</strong> de chaque fiche produit (<a
+      routerLink="/pim/catalogue"
+      >Catalogue</a
+    >). Une déclinaison sans prix pro saisi n'est pas vendue aux professionnels.
+  </fold-callout>
 </fold-page-layout>

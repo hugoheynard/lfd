@@ -46,22 +46,3 @@ export function proPricePayloadOf(text: string): string | null {
   const trimmed = text.trim();
   return trimmed === '' ? null : trimmed;
 }
-
-/**
- * **L'écart constaté** entre le prix pro TTC et le prix public TTC — une
- * lecture, pas une règle : sous « Prix saisi », plus aucune remise ne produit
- * le prix pro, et afficher celle du ratio mentirait. « −10,3 % », « +2 % »,
- * « aucun écart ».
- */
-export function observedGapLabel(publicTtcCents: number, proTtcCents: number): string | null {
-  if (publicTtcCents <= 0) {
-    return null;
-  }
-  const tenthsOfPercent = Math.round(((proTtcCents - publicTtcCents) * 1_000) / publicTtcCents);
-  if (tenthsOfPercent === 0) {
-    return 'aucun écart';
-  }
-  const sign = tenthsOfPercent < 0 ? '−' : '+';
-  const magnitude = String(Math.abs(tenthsOfPercent) / 10).replace('.', ',');
-  return `${sign}${magnitude} %`;
-}

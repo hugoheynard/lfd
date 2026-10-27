@@ -1,7 +1,6 @@
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 import type { ProductComplianceFinding, ProductComplianceWarningView } from "@lfd/pim-contracts";
 
-import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { CatalogueReader } from "../../shared/domain/ports/catalogue-reader.js";
 import type { ComplianceFinding } from "../domain/services/product-compliance.js";
@@ -32,7 +31,6 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
   constructor(
     private readonly products: ProductRepository,
     private readonly catalogue: CatalogueReader,
-    private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
   ) {}
@@ -40,7 +38,7 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
   async execute(): Promise<ProductComplianceWarningView[]> {
     const [all, rules] = await Promise.all([
       this.products.listAll(),
-      readCompletenessRules(this.contexts, this.accounting),
+      readCompletenessRules(this.contexts),
     ]);
     const live = all.filter((product) => product.status !== "archived");
     const [vat, cited] = await Promise.all([

@@ -72,7 +72,14 @@ function fiche(
   return tarte({
     id,
     name: { fr: `Fiche ${id}` },
-    variants: [bareVariant({ id: `${id}_v1`, priceCents: 3_200, allergenSheet: sheet(declared) })],
+    variants: [
+      bareVariant({
+        id: `${id}_v1`,
+        priceCents: 3_200,
+        proPriceMillicents: 2_730_331,
+        allergenSheet: sheet(declared),
+      }),
+    ],
     ...over,
   });
 }
@@ -322,7 +329,6 @@ describe("ApplyIngredientAllergenPropagation", () => {
     const vat = { b2b: 20, takeaway: 5.5 };
     const rules: CompletenessRules = {
       activeContextKeys: ["takeaway"],
-      policy: { method: "ratio_ttc", ratioBp: 9_000 },
     };
     const blocked = await products.findById("p_none");
 

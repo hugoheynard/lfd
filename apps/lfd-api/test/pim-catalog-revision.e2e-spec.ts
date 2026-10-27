@@ -192,23 +192,16 @@ describe("Ancre de publication du catalogue", () => {
   });
 
   /**
-   * **Le cas qui a décidé de l'en-tête.** Le rapport pro est global : quand il
-   * bouge, aucune ligne d'article ne change et toutes les factures
-   * professionnelles changent. Une ancre qui ne le couvrirait pas dirait
-   * « rien n'a bougé ».
+   * Lot R3 (2026-10-27) : le prix pro est toujours saisi. L'en-tête garde ses
+   * deux champs, figés à `entered` sans rapport — y compris sur une base qui
+   * porte encore une ligne de règles comptables, que plus rien ne lit.
    */
-  it("pose une révision quand SEUL le rapport pro bouge", async () => {
+  it("fige l'en-tête à « prix saisi », sans rapport", async () => {
     await aProduct("Croissant");
-    const first = await take();
-    const contents = await ctx.prisma.catalogContent.count();
+    await take();
 
-    await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 8_800 }).expect(200);
-    const second = await take();
-
-    expect(second.created).toBe(true);
-    expect(second.hash).not.toBe(first.hash);
-    // Et les articles n'ont PAS changé : aucun contenu de plus.
-    expect(await ctx.prisma.catalogContent.count()).toBe(contents);
+    const revision = await ctx.prisma.catalogRevision.findFirst({ select: { header: true } });
+    expect(revision?.header).toEqual({ proRatioBp: null, proPriceMethod: "entered" });
   });
 
   it("liste les ancres, de la plus récente à la plus ancienne", async () => {
@@ -470,31 +463,18 @@ describe("Diff entre deux ancres", () => {
     expect(diff.changed).toEqual([]);
   });
 
-  /**
-   * Le rapport pro est global : il bouge, aucun article ne change, et toutes les
-   * factures professionnelles changent. Le diff doit le DIRE.
-   */
-  it("montre le rapport pro qui bouge, sans aucun article modifié", async () => {
+  /** Lot R3 : l'en-tête figé ne fait jamais un faux changement. */
+  it("ne montre aucun changement d'en-tête entre deux ancres", async () => {
     await aProduct("Croissant");
     await take();
-    await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 8_800 }).expect(200);
+    await aProduct("Pain au chocolat");
     await take();
 
     const [to, from] = await twoLatest();
-    const diff = jsonBody<{
-      header: { field: string; before: string; after: string }[];
-      changed: unknown[];
-    }>(await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200));
-
-    // La MÉTHODE bouge avec lui, et c'est juste : la première ancre est prise
-    // avant qu'aucune règle n'existe — elle ne porte donc pas de méthode, et le
-    // tiret dit « la question ne se posait pas ». Poser le rapport fait naître
-    // l'agrégat sur `entered` depuis le lot S — ce que la base valait déjà.
-    expect(diff.header).toEqual([
-      { field: "proRatioBp", before: "—", after: "8800" },
-      { field: "proPriceMethod", before: "—", after: "entered" },
-    ]);
-    expect(diff.changed).toEqual([]);
+    const diff = jsonBody<{ header: unknown[] }>(
+      await staff().get(`${REVISIONS}/${from}/diff/${to}`).expect(200),
+    );
+    expect(diff.header).toEqual([]);
   });
 
   /** Regarder en arrière est légitime : l'ordre demandé fait foi. */
@@ -522,18 +502,18 @@ describe("Diff entre deux ancres", () => {
 });
 
 /**
- * Un produit et le rapport pro. Il s'inscrivait aussi au canal B2B ; le lien
- * au canal est parti en X4 (`catalogue-synchronise.md` §6).
+ * Un produit. Il posait aussi le rapport pro (retiré au lot R3) et
+ * s'inscrivait au canal B2B ; le lien au canal est parti en X4
+ * (`catalogue-synchronise.md` §6).
  */
 async function aSoldProduct(): Promise<string> {
   const { id } = await aProduct("Croissant");
-  await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
   return id;
 }
 
 /**
- * Une fiche **complète pour le canal** : prix, taux B2B, déclaration
- * d'allergènes. (La matrice de sa famille et le lien au canal ne s'écrivent
+ * Une fiche **complète pour le canal** : prix, prix pro HT saisi, taux B2B,
+ * déclaration d'allergènes. (La matrice de sa famille et le lien au canal ne s'écrivent
  * plus depuis X4.)
  */
 async function aDeliverableProduct(): Promise<{ id: string; variantId: string; sku: string }> {
@@ -549,20 +529,13 @@ async function aDeliverableProduct(): Promise<{ id: string; variantId: string; s
   const { id, variantId } = await aProduct("Croissant");
   await staff()
     .put(`${PRODUCTS}/${id}/variants/${variantId}/pricing`)
-    .send({ priceCents: 200, weightGrams: null })
+    .send({ priceCents: 200, weightGrams: null, proPriceHt: "1.70616" })
     .expect(200);
   // « Aucun allergène », une déclaration : depuis le lot 2b, l'envoi écarte une
   // déclinaison sans déclaration (`variant_sans_allergenes`).
   await staff()
     .put(`${PRODUCTS}/${id}/variants/${variantId}/allergens`)
     .send({ allergens: [] })
-    .expect(200);
-  // Ce décor vend au RAPPORT (le repli d'origine) ; depuis le lot S, une ligne
-  // neuve naît sur « prix saisi », d'où la méthode posée explicitement.
-  await staff().put("/pim/accounting-rules/pro-price-ratio").send({ ratioBp: 9_000 }).expect(200);
-  await staff()
-    .put("/pim/accounting-rules/pro-price-method")
-    .send({ method: "ratio_ttc" })
     .expect(200);
 
   const detail = jsonBody<{ variants: { sku: string; isDefault: boolean }[] }>(

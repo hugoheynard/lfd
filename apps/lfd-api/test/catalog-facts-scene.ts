@@ -20,7 +20,8 @@ const PRODUCTS = "/pim/catalogue/products";
 const CATEGORIES = "/pim/catalogue/categories";
 const FOOD_PERCENT = 5.5;
 const PRICE_CENTS = 200;
-const PRO_RATIO_BP = 9_000;
+/** Le prix pro HT saisi — ce que le rapport d'origine donnait (cf. `pim-sellable.ts`). */
+const PRO_PRICE_HT = "1.70616";
 
 export interface Fiche {
   readonly id: string;
@@ -60,7 +61,7 @@ export async function aDraftFiche(staff: Staff, name: string): Promise<Fiche> {
  * Une fiche ACTIVE, vendue aux deux clientèles : déclaration d'allergènes,
  * prix, un taux pour chaque contexte en service — `b2b`, `takeaway`, `eatIn`
  * (le comptoir ouvert aux deux contextes de boutique pour que leurs taux s'y
- * posent, lot 2b) —, rapport pro réglé. `audience` déroge à celle de la
+ * posent, lot 2b) —, prix pro HT saisi. `audience` déroge à celle de la
  * famille avant l'activation ; `null` = elle hérite.
  */
 export async function anActiveFiche(
@@ -83,17 +84,7 @@ export async function anActiveFiche(
     .expect(200);
   await staff()
     .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/pricing`)
-    .send({ priceCents: PRICE_CENTS, weightGrams: null })
-    .expect(200);
-  await staff()
-    .put("/pim/accounting-rules/pro-price-ratio")
-    .send({ ratioBp: PRO_RATIO_BP })
-    .expect(200);
-  // Lot S : une ligne neuve naît sur « prix saisi ». Ce décor vend au RAPPORT
-  // (le repli d'origine) : la méthode est posée explicitement.
-  await staff()
-    .put("/pim/accounting-rules/pro-price-method")
-    .send({ method: "ratio_ttc" })
+    .send({ priceCents: PRICE_CENTS, weightGrams: null, proPriceHt: PRO_PRICE_HT })
     .expect(200);
   if (audience !== null) {
     // Posée AVANT l'activation : la première ligne en vente naît avec elle (lot 3).

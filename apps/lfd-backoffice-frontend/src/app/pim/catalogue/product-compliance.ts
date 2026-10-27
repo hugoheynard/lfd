@@ -85,6 +85,8 @@ const GAP_LABELS: Readonly<Record<string, string>> = {
   price: 'prix',
   allergens: 'allergènes',
   pro_price: 'prix pro',
+  // Plus calculé depuis le lot R3 (2026-10-27, le prix pro est toujours
+  // saisi) : gardé pour relire les manques publiés avant.
   pro_price_rule: 'rapport pro',
   allergen_contradiction: 'déclaration d’allergènes cohérente avec la composition',
 };

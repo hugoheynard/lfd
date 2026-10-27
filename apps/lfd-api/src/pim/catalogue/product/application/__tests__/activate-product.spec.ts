@@ -18,15 +18,14 @@ import {
   tarte,
 } from "./audience-doubles.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
-import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
 /**
  * **Activer** — l'ancien « publier » (1e du plan
  * `plan-catalogue-synchronise-par-audience.md`). Le handler montre à
- * l'agrégat ce qu'il ne voit pas — taux résolus, contextes en service, règle
- * du prix pro — et l'agrégat tranche (lot 2b : au moins une déclinaison
+ * l'agrégat ce qu'il ne voit pas — taux résolus, contextes en service — et
+ * l'agrégat tranche (lot 2b : au moins une déclinaison
  * complète).
  */
 
@@ -35,7 +34,6 @@ interface Setup {
   readonly contexts?: readonly string[];
   readonly percents?: CategoryVatPercents;
   readonly journal?: RecordingJournal;
-  readonly accounting?: FixedAccountingRules;
   readonly cited?: ReadonlyMap<string, readonly string[]>;
 }
 
@@ -46,7 +44,6 @@ function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
     setup.journal ?? new RecordingJournal(),
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
-    setup.accounting ?? FixedAccountingRules.with("ratio_ttc", 9_000),
     new FixedActiveContexts(setup.contexts ?? ["b2b", "takeaway"]),
     new FixedCitedAllergens(setup.cited),
   ).execute(new ActivateProductCommand(PRODUCT_ID));
@@ -128,48 +125,25 @@ describe("ActivateProductHandler — le prix et le taux", () => {
   });
 });
 
-/** Lot P (P4) : sous « Prix saisi », le prix pro HT est exigé pour activer. */
+/** Le prix pro HT saisi est exigé pour activer — seule source depuis le lot R3. */
 describe("ActivateProductHandler — le prix pro saisi", () => {
-  it("refuse sous entered une fiche sans prix pro HT, en le disant", async () => {
-    const products = new OneProduct(tarte());
+  it("refuse une fiche sans prix pro HT, en le disant", async () => {
+    const products = new OneProduct(
+      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
+    );
 
-    await expect(
-      activating(products, { accounting: FixedAccountingRules.with("entered", 9_000) }),
-    ).rejects.toThrow(/PAT-7-1.*prix pro HT/);
+    await expect(activating(products)).rejects.toThrow(/PAT-7-1.*prix pro HT/);
     expect(products.stored?.status).toBe("draft");
   });
 
-  it("active sous entered une fiche dont la déclinaison porte les deux prix", async () => {
+  it("active une fiche dont la déclinaison porte les deux prix", async () => {
     const products = new OneProduct(
       tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_730_000 }] }),
     );
 
-    await activating(products, { accounting: FixedAccountingRules.with("entered", 9_000) });
+    await activating(products);
 
     expect(products.stored?.status).toBe("published");
-  });
-
-  /**
-   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans règles
-   * comptables, « Activer » refusait (`pro_price_rule`) même une déclinaison
-   * qui portait son prix pro saisi. Une base sans règles vaut « prix saisi ».
-   */
-  it("active sans règles comptables une fiche dont la déclinaison porte son prix pro", async () => {
-    const products = new OneProduct(
-      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_730_000 }] }),
-    );
-
-    await activating(products, { accounting: new FixedAccountingRules(null) });
-
-    expect(products.stored?.status).toBe("published");
-  });
-
-  it("refuse sans règles comptables une fiche sans prix pro, en nommant le prix pro", async () => {
-    const products = new OneProduct(tarte());
-
-    await expect(
-      activating(products, { accounting: new FixedAccountingRules(null) }),
-    ).rejects.toThrow(/PAT-7-1.*prix pro HT/);
   });
 });
 
@@ -231,7 +205,11 @@ describe("ActivateProductHandler — la composition contredit la déclaration", 
     const products = new OneProduct(
       tarte({
         variants: [
-          bareVariant({ priceCents: 3_200, allergenSheet: { declared: [], mayContain: [] } }),
+          bareVariant({
+            priceCents: 3_200,
+            proPriceMillicents: 2_730_331,
+            allergenSheet: { declared: [], mayContain: [] },
+          }),
         ],
       }),
     );

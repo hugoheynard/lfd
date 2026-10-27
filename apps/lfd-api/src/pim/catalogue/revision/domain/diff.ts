@@ -13,6 +13,12 @@ import { canonical, type JsonObject, type JsonValue } from "./fingerprint.js";
  * lignes.
  */
 
+/**
+ * La seule méthode depuis le lot R3. Toute autre valeur — `ratio_ttc`, ou
+ * `null` sur une révision d'avant le 2026-09-13 — tarifait au rapport.
+ */
+const ENTERED_METHOD = "entered";
+
 /** Ce qu'une révision expose pour être comparée sans être lue. */
 export interface RevisionIndex {
   /** L'empreinte de chaque article, par SKU. */
@@ -58,7 +64,10 @@ export function planDiff(before: RevisionIndex, after: RevisionIndex): DiffPlan 
 /** Ce qui a bougé dans l'en-tête. Vide = rien. */
 export function headerDiff(before: RevisionIndex, after: RevisionIndex): readonly FieldDiffView[] {
   const fields: FieldDiffView[] = [];
-  if (before.proRatioBp !== after.proRatioBp) {
+  // Le rapport ne tarifait qu'hors `entered`. Sous `entered` des deux côtés, son
+  // écart n'a rien changé de servi — et depuis le lot R3 l'en-tête le fige à
+  // `null` (`ENTERED_PRO_PRICE_HEADER`) : le montrer ferait un faux changement.
+  if (ratioPriced(before, after) && before.proRatioBp !== after.proRatioBp) {
     fields.push({
       field: "proRatioBp",
       before: label(before.proRatioBp),
@@ -77,6 +86,10 @@ export function headerDiff(before: RevisionIndex, after: RevisionIndex): readonl
     });
   }
   return fields;
+}
+
+function ratioPriced(before: RevisionIndex, after: RevisionIndex): boolean {
+  return before.proPriceMethod !== ENTERED_METHOD || after.proPriceMethod !== ENTERED_METHOD;
 }
 
 /** Un article modifié, champ par champ. */

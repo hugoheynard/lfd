@@ -149,6 +149,10 @@ prix public TTC (product_variant.price_cents)        → le prix public
 prix pro HT saisi (par déclinaison), sinon dérivé    → le prix pro, par proPriceOf
 ```
 
+> ⚠️ **Depuis le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) : le prix pro
+> est toujours saisi — plus de rapport, plus de méthode, plus de repli. Le
+> paragraphe suivant est l'état d'avant.
+
 Le prix pro sort d'une seule porte, `proPriceOf` (projection.ts:228 (la projection du push, retirée en X4)) :
 la saisie prime ; le rapport ne dérive un prix que sous la méthode `ratio_ttc`,
 et n'est sinon qu'une suggestion à l'écran (lot S, 2026-10-16). Le push ne se
@@ -250,6 +254,9 @@ voir le § 9.** Le critère était mauvais.
 La décision laisse une question qu'il vaut mieux poser maintenant : capture-t-on
 l'état **canonique** (les lignes telles qu'elles sont écrites) ou l'état
 **résolu** (ce qu'un canal recevrait) ?
+
+(Ce trou est fermé depuis le 2026-10-27 : `ratio_ttc` est retirée, lot R3, et
+l'en-tête des révisions est figé à `entered` sans rapport.)
 
 Le canonique seul a un trou, et il est large. Sous la méthode `ratio_ttc`, le
 prix professionnel se dérive du prix public par `accounting_rules.ratio_bp` —
@@ -408,8 +415,11 @@ qui a changé entre deux.
   « posée » ferait croire à une version de plus.
 - **L'en-tête du diff vient en PREMIER.** Il porte la méthode et le rapport
   professionnels, qui bougent sans qu'aucun article ne change : plus bas, ils
-  se manqueraient sur un diff long. Sous `ratio_ttc`, le rapport touche toutes
-  les factures d'un coup ; sous `entered`, il n'est qu'une suggestion.
+  se manqueraient sur un diff long. Sous `ratio_ttc`, le rapport touchait
+  toutes les factures d'un coup. Depuis le 2026-10-27 (lot R3), l'en-tête est
+  figé à `entered` sans rapport, et le diff ne montre le rapport que si un côté
+  tarifait encore au rapport — sans quoi chaque révision d'avant paraîtrait
+  « changée ».
 - **Trois natures, trois blocs** — entré, retiré, modifié. Une liste unique
   obligerait le lecteur à trier lui-même deux questions qui ne se posent pas
   ensemble : « qu'est-ce qu'on vend en plus » n'est pas « qu'est-ce qui a changé

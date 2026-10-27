@@ -1,5 +1,3 @@
-import { proPriceOf, type ProPricePolicy } from "@lfd/pim-contracts";
-
 import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
@@ -8,14 +6,12 @@ import type { VariantSnapshot } from "../entities/variant.js";
 export const PRICE_GAP = "price";
 export const ALLERGENS_GAP = "allergens";
 /**
- * Sous `ratio_ttc`, le rapport n'est pas réglé et la déclinaison n'a pas de
- * saisie : aucun prix pro ne se calcule. Depuis le lot S, c'est le SEUL cas —
- * une base sans règles vaut `entered`, où le rapport n'est qu'une suggestion.
- */
-export const PRO_PRICE_RULE_GAP = "pro_price_rule";
-/**
- * Le prix pro ne se résout pas : sous `entered` sans saisie, la méthode
- * n'offre aucun repli (lot P, « la saisie prime »).
+ * Le prix pro HT n'est pas saisi — seule source depuis le lot R3
+ * (`plan-retirer-le-rapport-pro.md`, 2026-10-27).
+ *
+ * ⚠️ `pro_price_rule` (« rapport pro non réglé ») n'est plus calculé depuis le
+ * même lot : la clé n'existe plus que dans des manques publiés avant, et
+ * l'écran garde son libellé pour les relire.
  */
 export const PRO_PRICE_GAP = "pro_price";
 /** Un taux manque au contexte nommé — `vat:b2b`, `vat:eatIn`. */
@@ -23,16 +19,12 @@ export const VAT_GAP_PREFIX = "vat:";
 
 /**
  * Ce qu'une déclinaison ne voit pas d'elle-même, et qui décide de sa
- * complétude : les contextes de vente EN SERVICE et la règle du prix pro.
+ * complétude : les contextes de vente EN SERVICE. (La règle du prix pro en
+ * faisait partie jusqu'au lot R3 : le prix pro est désormais toujours saisi.)
  */
 export interface CompletenessRules {
   /** Les clés des contextes de vente en service (`SalesContext.active`). */
   readonly activeContextKeys: readonly string[];
-  /**
-   * La politique en vigueur — jamais `null` depuis le lot S : une base sans
-   * règles vaut `entered` sans rapport (`AccountingRules.effectivePolicy`).
-   */
-  readonly policy: ProPricePolicy;
 }
 
 /** Ce que la règle lit d'une déclinaison — RÉSOLUE (une alignée porte le défaut). */
@@ -66,8 +58,8 @@ export function requiredContexts(rules: CompletenessRules): string[] {
  * `plan-catalogue-synchronise-par-audience.md`).
  *
  * Complète = un prix public, ses allergènes déclarés (`[]` est une
- * déclaration), un prix pro que `proPriceOf` résout (la saisie, ou le repli de
- * la méthode), et un taux pour chaque contexte requis. Vide = complète.
+ * déclaration), un prix pro HT saisi, et un taux pour chaque contexte
+ * requis. Vide = complète.
  *
  * Pure : le taux arrive résolu (famille, dérogation, registre), comme la
  * projection le résout. Une déclinaison arrêtée n'est pas jugée ici — c'est
@@ -85,9 +77,11 @@ export function variantGaps(
   if (variant.allergenSheet === null) {
     missing.push(ALLERGENS_GAP);
   }
-  const proGap = proPriceGap(variant, percents, rules.policy);
-  if (proGap !== null) {
-    missing.push(proGap);
+  // Le prix pro HT saisi est sa seule source (lot R3) : sans saisie, c'est la
+  // section « Tarif » qu'il faut ouvrir. Le taux `b2b` qui le facture est
+  // jugé avec les autres taux, ci-dessous.
+  if (variant.proPriceMillicents === null) {
+    missing.push(PRO_PRICE_GAP);
   }
   for (const context of requiredContexts(rules)) {
     if (percents[context] === undefined) {
@@ -95,31 +89,4 @@ export function variantGaps(
     }
   }
   return missing;
-}
-
-/**
- * Le prix pro, jugé par la porte elle-même (`proPriceOf`) quand elle peut
- * l'être : un prix et le taux `b2b` présents. Sans eux, leur manque est déjà
- * nommé — sauf sous `entered` sans saisie, qui se nomme toujours : c'est la
- * section « Tarif » qu'il faut ouvrir, pas l'écran des taux.
- */
-function proPriceGap(
-  variant: CompletenessInput,
-  percents: CategoryVatPercents,
-  policy: ProPricePolicy,
-): string | null {
-  if (variant.proPriceMillicents === null) {
-    if (policy.method === "entered") {
-      return PRO_PRICE_GAP;
-    }
-    if (policy.ratioBp === null) {
-      return PRO_PRICE_RULE_GAP;
-    }
-  }
-  const b2bPercent = percents[ROOT_CONTEXT_KEY];
-  if (variant.priceCents === null || b2bPercent === undefined) {
-    return null;
-  }
-  const proPrice = proPriceOf(variant.priceCents, policy, b2bPercent, variant.proPriceMillicents);
-  return proPrice === null ? PRO_PRICE_GAP : null;
 }

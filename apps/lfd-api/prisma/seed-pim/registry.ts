@@ -3,8 +3,6 @@ import type { CommandBus } from "@nestjs/cqrs";
 import { CreateCategoryCommand } from "../../src/pim/catalogue/category/application/create-category.js";
 import { SetCategoryVatCommand } from "../../src/pim/catalogue/category/application/set-category-vat.js";
 import { CreateSalesContextCommand } from "../../src/pim/sales-contexts/application/create-sales-context.js";
-import { ChooseProPriceMethodCommand } from "../../src/pim/accounting-rules/application/choose-pro-price-method.js";
-import { SetProPriceRatioCommand } from "../../src/pim/accounting-rules/application/set-pro-price-ratio.js";
 import { CreateVatRateCommand } from "../../src/pim/vat-rates/application/create-vat-rate.js";
 import type { ContextVat } from "../../src/pim/catalogue/shared/domain/value-objects/context-vat.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
@@ -53,17 +51,8 @@ export async function seedRegistry(
   prisma: PrismaService,
   corpus: CatalogueCorpus,
 ): Promise<RegistryResult> {
-  // En premier : sans lui, la projection du miroir B2B refuse de tarifer, donc
-  // tout le reste ne produit rien de visible côté commerce.
-  await bus.execute<SetProPriceRatioCommand, void>(
-    new SetProPriceRatioCommand(corpus.proPriceRatioBp),
-  );
-  // Lot S (2026-10-16) : une ligne neuve naît sur « prix saisi ». Le corpus ne
-  // saisit aucun prix pro ; sans ce repli, rien ne se vendrait aux pros après
-  // un semis. Le semis garde donc le calcul d'origine, explicitement.
-  await bus.execute<ChooseProPriceMethodCommand, void>(
-    new ChooseProPriceMethodCommand("ratio_ttc"),
-  );
+  // Aucune règle comptable n'est posée (lot R3, 2026-10-27) : le prix pro
+  // est saisi par déclinaison (`CorpusProduct.proPriceHt`), seule source.
   const contextsCreated = await seedContexts(bus, prisma, corpus);
   const ratesCreated = await seedVatRates(bus, prisma, corpus);
 

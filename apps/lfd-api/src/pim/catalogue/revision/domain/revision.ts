@@ -55,6 +55,22 @@ export interface RevisionHeader {
   readonly proPriceMethod: string | null;
 }
 
+/**
+ * **L'en-tête que toute révision porte depuis le lot R3**
+ * (`plan-retirer-le-rapport-pro.md`, 2026-10-27) : le prix pro est toujours
+ * saisi, il n'y a plus ni rapport ni méthode à photographier.
+ *
+ * Les deux champs restent, figés à leur dernière valeur possible — `entered`,
+ * sans rapport — plutôt que retirés : les révisions d'avant les portent, et
+ * la forme de l'en-tête ne change pas sous elles. `headerDiff` ne montre pas
+ * le rapport quand les deux côtés sont en `entered`, pour qu'une révision
+ * d'avant (rapport à 90 % sous `entered`) ne paraisse pas « changée ».
+ */
+export const ENTERED_PRO_PRICE_HEADER: RevisionHeader = {
+  proRatioBp: null,
+  proPriceMethod: "entered",
+};
+
 /** Un visuel, tel qu'une révision le garde : son adresse, pas ses octets. */
 export interface RevisionMedia {
   readonly role: string;

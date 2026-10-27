@@ -7,7 +7,6 @@ import type { Product } from "../domain/entities/product.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
-import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "./completeness-support.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
@@ -42,7 +41,6 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
-    private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
   ) {}
@@ -74,7 +72,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     const record = product.snapshot();
     const [vat, rules, cited] = await Promise.all([
       this.catalogue.vatPercents([record]),
-      readCompletenessRules(this.contexts, this.accounting),
+      readCompletenessRules(this.contexts),
       this.cited.ofProducts([record.id]),
     ]);
     return product.activate(vat.get(record.id) ?? {}, rules, cited.get(record.id) ?? []);

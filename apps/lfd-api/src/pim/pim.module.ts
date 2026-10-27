@@ -1,7 +1,6 @@
 import { Module } from "@nestjs/common";
 import { RouterModule } from "@nestjs/core";
 
-import { AccountingRulesModule } from "./accounting-rules/accounting-rules.module.js";
 import { AllergensModule } from "./allergens/allergens.module.js";
 import { PimDocumentSpecimensModule } from "./catalogue/allergen-matrix/pim-document-specimens.module.js";
 import { CatalogueModule } from "./catalogue/catalogue.module.js";
@@ -39,7 +38,6 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
     CatalogueModule,
     AllergensModule,
     VatRatesModule,
-    AccountingRulesModule,
     SalesContextsModule,
     IngredientsModule,
     OrderTimeLimitationModule,
@@ -60,7 +58,6 @@ import { SalesContextsModule } from "./sales-contexts/sales-contexts.module.js";
           CatalogueModule,
           AllergensModule,
           VatRatesModule,
-          AccountingRulesModule,
           SalesContextsModule,
           IngredientsModule,
           OrderTimeLimitationModule,

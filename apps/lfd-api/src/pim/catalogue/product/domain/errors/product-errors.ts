@@ -8,7 +8,6 @@ import {
   ALLERGENS_GAP,
   PRICE_GAP,
   PRO_PRICE_GAP,
-  PRO_PRICE_RULE_GAP,
   VAT_GAP_PREFIX,
 } from "../services/variant-completeness.js";
 
@@ -89,7 +88,6 @@ const GAP_LABEL: Readonly<Record<string, string>> = {
   [ALLERGENS_GAP]:
     "déclaration d'allergènes (section « Allergènes » — « aucun allergène » est une réponse)",
   [PRO_PRICE_GAP]: "prix pro HT (section « Tarif »)",
-  [PRO_PRICE_RULE_GAP]: "rapport pro non réglé (écran « Règles comptables »)",
   [ALLERGEN_CONTRADICTION_GAP]:
     "la composition cite un allergène que la déclaration ne porte pas (section « Allergènes »)",
 };

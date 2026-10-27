@@ -76,16 +76,6 @@
   color: var(--fold-color-text-muted);
 }
 
-.pro-badge {
-  padding: 0 var(--fold-space-xs);
-  border-radius: var(--fold-radius-pill);
-  background: var(--fold-color-surface-raised);
-  border: 1px solid var(--fold-color-border);
-  font-size: var(--fold-text-2xs);
-  font-variant-numeric: tabular-nums;
-  color: var(--fold-color-text);
-}
-
 .pro-amount {
   margin: 0;
   display: flex;

@@ -16,14 +16,6 @@ import type { LocalizedText } from "@lfd/pim-contracts";
  * rend le rejeu **idempotent** — on retrouve une fiche par son SKU.
  */
 export interface CatalogueCorpus {
-  /**
-   * Le rapport prix pro / prix public, en points de base (9000 = le pro paie
-   * 90 % du public). Sans lui, la projection du miroir B2B lève
-   * `ProPriceRatioNotSetError` et **rien** ne part : un catalogue publié, vendu
-   * aux pros et tarifé reste invisible côté commerce. C'est le dernier réglage
-   * qui manquait pour que « catalogue valide » veuille dire quelque chose.
-   */
-  readonly proPriceRatioBp: number;
   readonly salesContexts: readonly CorpusSalesContext[];
   readonly vatRates: readonly CorpusVatRate[];
   readonly categories: readonly CorpusCategory[];
@@ -58,6 +50,17 @@ export interface CorpusProduct {
   readonly categoryName: string;
   readonly status: "draft" | "published" | "archived";
   readonly priceCents: number | null;
+  /**
+   * Le prix pro HT **saisi**, en euros tels qu'on les tape (cinq décimales au
+   * plus), ou `null` sans prix. Depuis le lot R3 de
+   * `documentation/pricing/plan-retirer-le-rapport-pro.md` (2026-10-27), c'est
+   * la seule source du prix pro : sans lui, rien ne se vend aux pros.
+   *
+   * Les montants du corpus sont ceux que le rapport d'origine (90 % du prix
+   * public, au taux b2b) donnait, figés une fois pour que le catalogue semé
+   * garde ses chiffres.
+   */
+  readonly proPriceHt: string | null;
   readonly weightGrams: number | null;
   readonly descriptionShort?: LocalizedText | undefined;
   readonly descriptionLong?: LocalizedText | undefined;

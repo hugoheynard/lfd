@@ -310,8 +310,8 @@ export class Product {
    *
    * Activer exige **au moins une déclinaison non arrêtée complète** (C1 et 2b3
    * de `plan-catalogue-synchronise-par-audience.md`) : un prix public, ses
-   * allergènes déclarés (`[]` est une réponse), un prix pro que `proPriceOf`
-   * résout, et un taux pour chaque contexte de vente en service. Les autres
+   * allergènes déclarés (`[]` est une réponse), un prix pro HT saisi (seule
+   * source depuis le lot R3), et un taux pour chaque contexte de vente en service. Les autres
    * déclinaisons n'empêchent rien : la projection des faits ET l'envoi actuel
    * (`variant_sans_allergenes`) les écartent de la vente — c'est ce qui rend
    * l'assouplissement sûr, et c'est pourquoi il n'a pas été fait avant.
@@ -326,8 +326,8 @@ export class Product {
    * « en ligne » d'un seul geste ferait sauter l'étape où quelqu'un regarde.
    *
    * Le jugement porte sur les déclinaisons RÉSOLUES : une alignée porte le prix
-   * et la déclaration du défaut qu'elle suit. Taux, contextes et règle du prix
-   * pro arrivent résolus : ils dépendent de registres que la fiche ne voit pas.
+   * et la déclaration du défaut qu'elle suit. Taux et contextes arrivent
+   * résolus : ils dépendent de registres que la fiche ne voit pas.
    */
   /**
    * **Ce qui manque pour activer**, sans rien muter — le même jugement que

@@ -181,3 +181,20 @@ describe("headerDiff sur la méthode de prix", () => {
     expect(headerDiff(index({}), index({}))).toEqual([]);
   });
 });
+
+/**
+ * Lot R3 (2026-10-27) : l'en-tête est figé à `entered` sans rapport
+ * (`ENTERED_PRO_PRICE_HEADER`). Une révision d'avant, posée sous `entered`
+ * avec un rapport à 90 %, ne doit pas paraître « changée ».
+ */
+describe("headerDiff après le retrait du rapport", () => {
+  it("ne montre pas le rapport quand les deux côtés sont en entered", () => {
+    expect(headerDiff(index({}, 9_000, "entered"), index({}, null, "entered"))).toEqual([]);
+  });
+
+  it("montre encore la bascule depuis ratio_ttc, rapport compris", () => {
+    const fields = headerDiff(index({}, 9_000, "ratio_ttc"), index({}, null, "entered"));
+
+    expect(fields.map((field) => field.field)).toEqual(["proRatioBp", "proPriceMethod"]);
+  });
+});

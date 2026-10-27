@@ -111,24 +111,8 @@ export type {
 export { vatRatePayloadSchema } from "./commerce.js";
 export type { VatRatePayload, VatRateView } from "./commerce.js";
 
-export {
-  proPriceRatioPayloadSchema,
-  MAX_RATIO_BP,
-  proPriceFromPublic,
-  proPriceOf,
-  proPriceMethodPayloadSchema,
-  PRO_PRICE_METHODS,
-  proHtFromPublic,
-  UNSET_PRO_PRICE_POLICY,
-} from "./accounting-rules.js";
-export type {
-  ProPriceRatioPayload,
-  ProPriceMethodPayload,
-  ProPriceMethod,
-  ProPricePolicy,
-  ProPrice,
-  AccountingRulesView,
-} from "./accounting-rules.js";
+export { proPriceOf } from "./pro-price.js";
+export type { ProPrice } from "./pro-price.js";
 
 /**
  * 🔴 **Réexport, plus une définition** (2026-09-21). `tax.ts` a rejoint

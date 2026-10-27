@@ -1,6 +1,5 @@
 import { Global, Module } from "@nestjs/common";
 
-import { AccountingRulesModule } from "../../accounting-rules/accounting-rules.module.js";
 import { AllergensModule } from "../../allergens/allergens.module.js";
 import { CatalogueModule } from "../../catalogue/catalogue.module.js";
 import { OrderTimeLimitationModule } from "../../order-time-limitation/order-time-limitation.module.js";
@@ -34,7 +33,6 @@ import { PublicationSequence } from "./products/publication-sequence.js";
   imports: [
     PimDatabaseModule,
     CatalogueModule,
-    AccountingRulesModule,
     AllergensModule,
     VatRatesModule,
     // Les contextes en service : la règle de complétude exige un taux pour

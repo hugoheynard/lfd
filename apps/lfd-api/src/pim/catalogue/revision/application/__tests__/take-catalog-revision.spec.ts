@@ -2,7 +2,6 @@ import { Test } from "@nestjs/testing";
 
 import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { Clock } from "../../../../../platform/time/clock.js";
-import { AccountingRulesRepository } from "../../../../accounting-rules/domain/ports/accounting-rules.repository.js";
 import { PimJournal, type PimJournalEntry } from "../../../../journal/pim-journal.js";
 import { RevisionHashAlreadyTakenError } from "../../domain/errors/revision-errors.js";
 import {
@@ -106,7 +105,6 @@ async function build(winner: RevisionRecord | null) {
       { provide: CatalogRevisionRepository, useValue: revisions },
       // Un catalogue VIDE : ces cas parlent de la course, pas du contenu.
       { provide: CatalogRevisionSource, useValue: { snapshotItems: () => Promise.resolve([]) } },
-      { provide: AccountingRulesRepository, useValue: { read: () => Promise.resolve(null) } },
       { provide: PimJournal, useValue: new SilentJournal() },
       { provide: Clock, useValue: { now: () => new Date("2026-01-02T09:00:00.000Z") } },
       { provide: UnitOfWork, useValue: { run: (work: () => Promise<unknown>) => work() } },

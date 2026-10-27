@@ -132,12 +132,9 @@ describe("Product.prefillProPrice — seulement là où rien n'est saisi", () =>
   });
 });
 
-describe("Product.activate — sous la méthode entered", () => {
+describe("Product.activate — le prix pro saisi, seule source (lot R3)", () => {
   const RATES = { b2b: 20, takeaway: 5.5 } as const;
-  const rules = (method: "entered" | "ratio_ttc"): CompletenessRules => ({
-    activeContextKeys: ["b2b", "takeaway"],
-    policy: { method, ratioBp: 9_000 },
-  });
+  const RULES: CompletenessRules = { activeContextKeys: ["b2b", "takeaway"] };
 
   function declaredAndPriced(proPrice: ProPriceHt | null): Product {
     const product = aProduct();
@@ -148,24 +145,14 @@ describe("Product.activate — sous la méthode entered", () => {
   }
 
   it("refuse sans prix pro HT, en nommant les deux prix", () => {
-    expect(() =>
-      declaredAndPriced(null).activate(RATES, rules("entered"), NO_CITED_ALLERGENS),
-    ).toThrow(/prix pro HT/);
+    expect(() => declaredAndPriced(null).activate(RATES, RULES, NO_CITED_ALLERGENS)).toThrow(
+      /prix pro HT/,
+    );
   });
 
   it("active avec les deux prix", () => {
     expect(
-      declaredAndPriced(ProPriceHt.fromEuros("9")).activate(
-        RATES,
-        rules("entered"),
-        NO_CITED_ALLERGENS,
-      ),
+      declaredAndPriced(ProPriceHt.fromEuros("9")).activate(RATES, RULES, NO_CITED_ALLERGENS),
     ).toBe(true);
-  });
-
-  it("n'exige rien de plus sous ratio_ttc", () => {
-    expect(declaredAndPriced(null).activate(RATES, rules("ratio_ttc"), NO_CITED_ALLERGENS)).toBe(
-      true,
-    );
   });
 });

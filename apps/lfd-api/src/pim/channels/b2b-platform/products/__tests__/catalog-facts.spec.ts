@@ -1,5 +1,3 @@
-import { UNSET_PRO_PRICE_POLICY, type ProPricePolicy } from "@lfd/pim-contracts";
-
 import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
 import {
   bareVariant,
@@ -17,9 +15,8 @@ import { projectFamilyFact, projectProductFact, type ProductFactInput } from "..
  * dans les vendables (C1).
  */
 
-const POLICY: ProPricePolicy = { method: "ratio_ttc", ratioBp: 10_000 };
 /** Le seul contexte b2b en service : la fiche par défaut est complète. */
-const B2B_ONLY: CompletenessRules = { activeContextKeys: ["b2b"], policy: POLICY };
+const B2B_ONLY: CompletenessRules = { activeContextKeys: ["b2b"] };
 const PRO_ONLY: CategoryVatPercents = { b2b: 5.5 };
 const BOTH_CONTEXTS: CategoryVatPercents = { b2b: 5.5, takeaway: 5.5 };
 const NO_ALLERGEN_REFERENCE = IncoProjector.from([], "fr");
@@ -52,42 +49,43 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
 }
 
 describe("projectProductFact", () => {
-  it("vend une déclinaison complète, au prix pro hors taxe que le push calculerait", () => {
+  it("vend une déclinaison complète, au prix pro hors taxe saisi", () => {
     const body = projectProductFact(input());
 
     expect(body.status).toBe("active");
     expect(body.audience).toBe("pro");
     expect(body.gaps).toEqual({});
     expect(body.variants).toHaveLength(1);
-    // 32,00 € TTC à 5,5 % = 30,331… € HT, en millicentimes.
     expect(body.variants[0]).toMatchObject({ sku: "PAT-7-1", publicTtcCents: 3_200 });
-    expect(body.variants[0]?.priceMillicents).toBe(3_033_175);
+    // Le HT saisi, au millicentime — seule source depuis le lot R3.
+    expect(body.variants[0]?.priceMillicents).toBe(2_730_331);
   });
 
   /** Régression du plan (C1) : une déclinaison sans déclaration ne se vend jamais. */
   it("range sans allergènes déclarés dans les manques, pas dans les vendables", () => {
     const body = projectProductFact(
-      input({ product: tarte({ variants: [bareVariant({ priceCents: 300 })] }) }),
+      input({
+        product: tarte({
+          variants: [bareVariant({ priceCents: 300, proPriceMillicents: 256_000 })],
+        }),
+      }),
     );
 
     expect(body.variants).toEqual([]);
     expect(body.gaps).toEqual({ "PAT-7-1": ["allergens"] });
   });
 
-  it("nomme chaque manque : prix, rapport pro, taux de chaque contexte en service", () => {
+  it("nomme chaque manque : prix, prix pro, taux de chaque contexte en service", () => {
     const body = projectProductFact(
       input({
         product: tarte({ audience: "both", variants: [bareVariant()] }),
         percents: {},
-        rules: {
-          activeContextKeys: ["b2b", "takeaway"],
-          policy: { method: "ratio_ttc", ratioBp: null },
-        },
+        rules: { activeContextKeys: ["b2b", "takeaway"] },
       }),
     );
 
     expect(body.gaps).toEqual({
-      "PAT-7-1": ["price", "allergens", "pro_price_rule", "vat:b2b", "vat:takeaway"],
+      "PAT-7-1": ["price", "allergens", "pro_price", "vat:b2b", "vat:takeaway"],
     });
   });
 
@@ -110,10 +108,7 @@ describe("projectProductFact", () => {
    * rendre une fiche invendable.
    */
   it("exige le taux de chaque contexte en service, même hors de l'audience", () => {
-    const allServed: CompletenessRules = {
-      activeContextKeys: ["b2b", "takeaway", "eatIn"],
-      policy: POLICY,
-    };
+    const allServed: CompletenessRules = { activeContextKeys: ["b2b", "takeaway", "eatIn"] };
 
     expect(projectProductFact(input({ rules: allServed })).gaps).toEqual({
       "PAT-7-1": ["vat:takeaway", "vat:eatIn"],
@@ -241,12 +236,21 @@ describe("projectFamilyFact", () => {
   });
 });
 
-/** Lot P (P4) : sous « Prix saisi », la saisie fait le prix, son absence fait un manque. */
-describe("projectProductFact — sous la méthode entered", () => {
-  const ENTERED: ProPricePolicy = { method: "entered", ratioBp: 10_000 };
-
-  it("range une déclinaison sans prix pro saisi dans les manques, sans lever", () => {
-    const body = projectProductFact(input({ rules: { ...B2B_ONLY, policy: ENTERED } }));
+/** Le prix pro HT saisi est sa seule source (lot R3, 2026-10-27). */
+describe("projectProductFact — le prix pro saisi", () => {
+  /**
+   * Régression (lot R3) : sans saisie, la déclinaison retombait sur le
+   * rapport sous `ratio_ttc` ; elle range désormais un manque, sans lever.
+   */
+  it("range une déclinaison sans prix pro saisi dans les manques, jamais « rapport pro »", () => {
+    const body = projectProductFact(
+      input({
+        product: tarte({
+          status: "published",
+          variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
+        }),
+      }),
+    );
 
     expect(body.variants).toEqual([]);
     expect(body.gaps).toEqual({ "PAT-7-1": ["pro_price"] });
@@ -255,7 +259,6 @@ describe("projectProductFact — sous la méthode entered", () => {
   it("vend au HT saisi, au millicentime", () => {
     const body = projectProductFact(
       input({
-        rules: { ...B2B_ONLY, policy: ENTERED },
         product: tarte({
           status: "published",
           variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_712_345 }],
@@ -265,32 +268,5 @@ describe("projectProductFact — sous la méthode entered", () => {
 
     expect(body.gaps).toEqual({});
     expect(body.variants[0]?.priceMillicents).toBe(2_712_345);
-  });
-});
-
-/**
- * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans ligne de règles,
- * la politique valait `null` et les faits ne vendaient rien, saisies comprises.
- */
-describe("projectProductFact — base sans règles comptables", () => {
-  const UNSET: CompletenessRules = { ...B2B_ONLY, policy: UNSET_PRO_PRICE_POLICY };
-
-  it("vend la saisie", () => {
-    const body = projectProductFact(
-      input({
-        rules: UNSET,
-        product: tarte({
-          status: "published",
-          variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: 2_712_345 }],
-        }),
-      }),
-    );
-
-    expect(body.gaps).toEqual({});
-    expect(body.variants[0]?.priceMillicents).toBe(2_712_345);
-  });
-
-  it("nomme « prix pro » sans saisie, jamais « rapport pro »", () => {
-    expect(projectProductFact(input({ rules: UNSET })).gaps).toEqual({ "PAT-7-1": ["pro_price"] });
   });
 });

@@ -310,6 +310,10 @@ export const PIM_EVENTS = {
    *
    * Sans `blast` : la portée est le catalogue entier, et un nombre le dirait
    * moins bien que la phrase.
+   *
+   * **Plus émis depuis le 2026-10-27** (lot R3 de
+   * `plan-retirer-le-rapport-pro.md`, rapport retiré) : gardé pour les faits
+   * passés, que le journal relit.
    */
   accountingRulesProRatioChanged: "accounting_rules.pro_ratio_changed",
   /**
@@ -320,6 +324,9 @@ export const PIM_EVENTS = {
    * de répondre à « d'où vient cet écart de prix ». Une bascule vers
    * `remise_apres_tva_max` déplace le prix de base d'environ 12 % sur un article
    * à 5,5 % — c'est le genre de fait qu'on relit sous pression.
+   *
+   * **Plus émis depuis le 2026-10-27** (lot R3, méthode unique) : gardé pour
+   * les faits passés.
    */
   accountingRulesMethodChanged: "accounting_rules.method_changed",
   salesContextCreated: "sales_context.created",

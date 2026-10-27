@@ -52,11 +52,12 @@ const orderTimeLimit = () =>
   });
 
 /**
- * Les méthodes de calcul du prix professionnel — recopiées de
- * `@lfd/pim-contracts` (`PRO_PRICE_METHODS`) plutôt qu'importées : ce paquet ne
- * dépend que de zod. Les deux listes ne peuvent pas diverger en silence : la
- * suite des handlers des règles comptables écrit chaque méthode du référentiel
- * contre ce catalogue (`accounting-rules.handlers.spec.ts`).
+ * Les méthodes de calcul du prix professionnel **telles que les faits passés
+ * les portent**. Depuis le lot R3 de `plan-retirer-le-rapport-pro.md`
+ * (2026-10-27), le prix pro est toujours saisi : plus aucun fait
+ * `accounting_rules.method_changed` n'est émis, et le référentiel ne connaît
+ * plus ces valeurs. La liste reste ICI, seule, pour que les faits écrits
+ * avant restent lisibles — une valeur n'est pas un nom (CLAUDE.md § 8).
  */
 const PRO_PRICE_METHODS = ["ratio_ttc", "entered"] as const;
 

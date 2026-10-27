@@ -59,8 +59,10 @@ function declared(
           variant.allergens === null ? null : { declared: variant.allergens, mayContain: [] },
         nutrition: variant.nutrition ?? null,
         // Un prix à chacune : ces cas parlent d'allergènes, et activer exige
-        // aussi un prix depuis le lot 1 du plan d'audience.
+        // aussi un prix depuis le lot 1 du plan d'audience — et un prix pro
+        // saisi depuis le lot R3.
         priceCents: 1_000,
+        proPriceMillicents: 853_081,
       })),
     ),
   );
@@ -75,7 +77,6 @@ const SELLABLE_RATES = { b2b: 20, takeaway: 5.5 } as const;
 /** Les contextes en service et la règle du prix pro (lot 2b) : un taux pour chacun. */
 const SELLING: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway"],
-  policy: { method: "ratio_ttc", ratioBp: 9_000 },
 };
 
 describe("l’agrégat Product", () => {

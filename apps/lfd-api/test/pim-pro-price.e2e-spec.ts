@@ -2,10 +2,11 @@
  * E2E — **le prix pro HT saisi**, sur un vrai Postgres.
  *
  * Lot P de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` :
- * la saisie (cinq décimales, colonne `pro_price_millicents`), l'activation
- * sous la méthode `entered`, la bascule de méthode journalisée (le `CHECK`
- * élargi). Le pré-remplissage depuis le ratio est retiré le 2026-10-27 (lot R2
- * de `documentation/pricing/plan-retirer-le-rapport-pro.md`).
+ * la saisie (cinq décimales, colonne `pro_price_millicents`) et l'activation
+ * qui l'exige. Le pré-remplissage depuis le rapport (lot R2) puis le rapport
+ * et sa méthode (lot R3) sont retirés le 2026-10-27
+ * (`documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix pro est
+ * toujours saisi.
  */
 import { type ProductListView } from "@lfd/pim-contracts";
 
@@ -22,7 +23,6 @@ const PRODUCTS = "/pim/catalogue/products";
 const CATEGORIES = "/pim/catalogue/categories";
 const RULES = "/pim/accounting-rules";
 const RETIRED_PREFILL = "/pim/accounting-rules/pro-price-prefill";
-const RATIO_BP = 9_000;
 
 let ctx: E2eContext;
 
@@ -104,10 +104,6 @@ async function declareNoAllergen(id: string, variantId: string): Promise<void> {
     .expect(200);
 }
 
-async function chooseMethod(method: string): Promise<void> {
-  await staff().put(`${RULES}/pro-price-method`).send({ method }).expect(200);
-}
-
 describe("la saisie du prix pro HT", () => {
   it("se saisit en euros à cinq décimales et se relit en millicentimes", async () => {
     const id = await aProduct("Tarte");
@@ -146,33 +142,7 @@ describe("la saisie du prix pro HT", () => {
   });
 });
 
-describe("la méthode « Prix saisi »", () => {
-  /** Lot S : une ligne neuve naît sur « prix saisi » ; « Passer au prix saisi » part d'une base en ratio. */
-  it("naît sur « prix saisi », et la bascule depuis ratio_ttc est au journal", async () => {
-    await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
-    expect(jsonBody<{ method: string }>(await staff().get(RULES).expect(200)).method).toBe(
-      "entered",
-    );
-
-    await chooseMethod("ratio_ttc");
-    await chooseMethod("entered");
-
-    const view = jsonBody<{ method: string }>(await staff().get(RULES).expect(200));
-    expect(view.method).toBe("entered");
-    await ctx.drain();
-    const facts = await ctx.prisma.activityEvent.findMany({
-      where: { type: "accounting_rules.method_changed" },
-      select: { payload: true },
-    });
-    expect(facts).toHaveLength(2);
-    expect(facts.map((fact) => fact.payload)).toEqual(
-      expect.arrayContaining([
-        expect.objectContaining({ from: "entered", to: "ratio_ttc" }),
-        expect.objectContaining({ from: "ratio_ttc", to: "entered" }),
-      ]),
-    );
-  });
-
+describe("le prix pro saisi, seule source", () => {
   /**
    * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans aucune règle
    * comptable, « Activer » refusait (`pro_price_rule`) même une déclinaison qui
@@ -180,12 +150,11 @@ describe("la méthode « Prix saisi »", () => {
    */
   it("active sans règles comptables une fiche dont le prix pro est saisi", async () => {
     const id = await aProduct("Éclair");
-    await makeActivatable(staff, id, { withRules: false });
+    await makeActivatable(staff, id);
     const variant = await defaultOf(id);
     await declareNoAllergen(id, variant.id);
-    expect(jsonBody<{ ratioBp: number | null }>(await staff().get(RULES).expect(200)).ratioBp).toBe(
-      null,
-    );
+    // Le décor saisit un prix pro (lot R3) : ce cas part d'une saisie effacée.
+    await priceVariant(id, variant.id, { priceCents: 200, proPriceHt: null }).expect(200);
 
     const refus = await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(409);
     expect(jsonBody<{ message: string }>(refus).message).toContain("prix pro HT");
@@ -200,8 +169,8 @@ describe("la méthode « Prix saisi »", () => {
     await makeActivatable(staff, id);
     const variant = await defaultOf(id);
     await declareNoAllergen(id, variant.id);
-    await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
-    await chooseMethod("entered");
+    // Le décor saisit un prix pro (lot R3) : ce cas part d'une saisie effacée.
+    await priceVariant(id, variant.id, { priceCents: 200, proPriceHt: null }).expect(200);
 
     // La liste dit « pas activable » avec le jugement même du refus (2026-10-26).
     const before = await listed(id);
@@ -229,5 +198,17 @@ describe("le pré-remplissage retiré", () => {
   it("ne sert plus ni l'aperçu ni l'écriture", async () => {
     await staff().get(RETIRED_PREFILL).expect(404);
     await staff().post(RETIRED_PREFILL).send({}).expect(404);
+  });
+});
+
+/**
+ * Le rapport et sa méthode sont retirés le 2026-10-27 (lot R3) : les règles
+ * comptables n'ont plus de route, ni en lecture ni en écriture.
+ */
+describe("les règles comptables retirées", () => {
+  it("ne servent plus ni la lecture, ni le rapport, ni la méthode", async () => {
+    await staff().get(RULES).expect(404);
+    await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: 9_000 }).expect(404);
+    await staff().put(`${RULES}/pro-price-method`).send({ method: "ratio_ttc" }).expect(404);
   });
 });

@@ -62,6 +62,12 @@ La méthode `remise_apres_tva_max` a été **retirée le jour même** de sa livr
 prémisse qu'elle reproduisait ces prix ; elle n'en reproduit que dix — ceux qui
 tombent sur `TTC × 0,75`.
 
+> ⚠️ **Retiré le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) : le
+> mécanisme de sélection est parti avec `ratio_ttc` — plus de méthode, plus de
+> route, plus de sélecteur ; le prix pro est toujours saisi, et `proPriceOf`
+> vit dans `packages/pim-contracts/src/pro-price.ts`. Le paragraphe suivant est
+> l'état d'avant.
+
 **Le mécanisme de sélection reste.** La colonne `pro_price_method`, son value
 object, sa route et son sélecteur d'écran survivent à la méthode qu'ils
 devaient offrir : le jour où le commerce fournit une vraie formule, ce sera une
@@ -73,7 +79,8 @@ membre est le prix — très bas — de cette option.
 
 **C'est une grille de prix, pas un calcul.** Depuis le lot P (2026-10-15), le
 référentiel porte un **prix pro HT saisi** par déclinaison, qui prime sur toute
-règle (`proPriceOf`, `packages/pim-contracts/src/accounting-rules.ts`), et la
+règle (`proPriceOf`, `packages/pim-contracts/src/pro-price.ts` depuis le
+2026-10-27, seule source), et la
 plateforme ne décide plus de prix (lot D). La voie est donc de **saisir les
 89 prix tels quels** dans les fiches du référentiel (section suivante).
 

@@ -1,8 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
-import { describe, expect, it, vi } from 'vitest';
+import { describe, expect, it } from 'vitest';
 
-import { AccountingRulesStore } from '../../../../accounting-rules/accounting-rules.store';
 import { ProductFormStore } from '../../product-form-store';
 import { provideTestSalesContexts } from '../../../../sales-contexts/sales-context-store.testing';
 import { PricingForm } from './pricing-form';
@@ -204,29 +203,15 @@ describe('PricingForm — ce qui n’y est PAS', () => {
 
 describe('PricingForm — le HT par canal', () => {
   /**
-   * Ces cas décrivent le repli d'ORIGINE (`ratio_ttc`, aucune remise réglée :
-   * la ligne B2B part du prix public). Depuis le lot S, une base sans règles
-   * vaut « prix saisi » ; la méthode d'origine est donc posée explicitement.
-   */
-  function withOriginalFallback(): void {
-    vi.spyOn(TestBed.inject(AccountingRulesStore), 'rules').mockReturnValue({
-      ratioBp: null,
-      method: 'ratio_ttc',
-      updatedAt: null,
-    });
-  }
-
-  /**
    * **Le cœur de l'ancrage.** Un seul prix d'étiquette, deux taux, deux hors
-   * taxe : 10,00 € TTC valent 9,48 € HT au comptoir (5,5 %) et 8,33 € HT en
-   * B2B (20 %). Sans cette colonne, il faut faire le calcul de tête pour savoir
-   * ce que la maison encaisse vraiment.
+   * taxe : 10,00 € TTC valent 9,48 € HT au comptoir (5,5 %). La ligne B2B, elle,
+   * montre le prix pro HT SAISI — seule source depuis le lot R3.
    */
-  it('déduit le HT de CHAQUE contexte du prix public et de son taux', () => {
+  it('déduit le HT de chaque contexte public, et montre le HT saisi en B2B', () => {
     const store = setup();
-    withOriginalFallback();
     withFamily(store);
     store.priceEur.set(10);
+    store.proPriceHtText.set('8,5');
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -239,10 +224,9 @@ describe('PricingForm — le HT par canal', () => {
         .trim() ?? '';
 
     expect(net('À emporter')).toBe('9,48 €');
-    // Aucune remise réglée dans ce cas-là : la ligne B2B part du prix public.
-    expect(net('B2B')).toBe('8,33 €');
+    expect(net('B2B')).toBe('8,50 €');
 
-    // Le montant est ÉTIQUETÉ : seul, « 8,33 € » se lirait aussi bien comme le
+    // Le montant est ÉTIQUETÉ : seul, « 8,50 € » se lirait aussi bien comme le
     // prix saisi plus haut.
     const rate = rows.find((row) => row.querySelector('dt')?.textContent?.includes('B2B'));
     expect(rate?.querySelector('.inherit-gross')?.textContent).toContain('HT');
@@ -250,14 +234,13 @@ describe('PricingForm — le HT par canal', () => {
 
   /**
    * La colonne dit toujours l'INVERSE de ce qu'on saisit, sinon elle n'apprend
-   * rien. On saisit un prix public TTC, elle montre donc des hors taxe — et
-   * c'est désormais son seul mode : le sens inverse a disparu avec l'assiette.
+   * rien. On saisit un prix public TTC, elle montre donc des hors taxe.
    */
   it('étiquette « HT » et jamais « TTC » : le sens de lecture est unique', () => {
     const store = setup();
-    withOriginalFallback();
     withFamily(store);
     store.priceEur.set(10);
+    store.proPriceHtText.set('8,5');
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
@@ -281,133 +264,9 @@ describe('PricingForm — le HT par canal', () => {
   });
 });
 
-describe('PricingForm — le prix professionnel', () => {
-  /** Le rapport tel que les règles comptables le rendent : −10 %. */
-  function withProRatio(store: ProductFormStore, ratioBp: number | null): void {
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({
-      ratioBp,
-      method: 'ratio_ttc',
-
-      updatedAt: null,
-    });
-    withFamily(store);
-    store.priceEur.set(12);
-  }
-
-  /**
-   * La chaîne entière, telle qu'on la lit à l'écran : 12,00 € public TTC,
-   * −10 % pour les pros, 20 % de TVA sur le contexte B2B.
-   */
-  it('dérive le prix pro TTC et son HT du prix public', () => {
-    const store = setup();
-    withProRatio(store, 9_000);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const pro = (fixture.nativeElement as HTMLElement).querySelector('.pro');
-    const text = pro?.textContent?.replace(/\u202f|\u00a0/g, ' ') ?? '';
-    // 12,00 € × 90 % = 10,80 € TTC ; ÷ 1,20 = 9,00 € HT.
-    expect(text).toContain('10,80 €');
-    expect(text).toContain('9,00 €');
-  });
-
-  /**
-   * La pastille dit d'où vient le montant. Sans elle, « 10,80 € » tombe de
-   * nulle part et personne ne sait où aller le changer.
-   */
-  it('porte la remise en pastille, et renvoie où elle se règle', () => {
-    const store = setup();
-    withProRatio(store, 9_000);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const text = (fixture.nativeElement as HTMLElement).textContent ?? '';
-    expect(text).toContain('−10 %');
-    expect(text).toContain('Règles comptables');
-  });
-
-  /**
-   * Aucun rapport réglé : on le DIT. Un blanc se lirait « ce produit n'a pas de
-   * prix pro », alors que c'est le réglage de la maison qui manque.
-   */
-  it('dit qu’aucune remise n’est réglée plutôt que de laisser un blanc', () => {
-    const store = setup();
-    withProRatio(store, null);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    expect(host.querySelector('.pro')).toBeNull();
-    expect(host.textContent).toContain('Aucune');
-  });
-});
-
-describe('PricingForm — la ligne B2B suit le prix remisé', () => {
-  /**
-   * **L'invariant de l'écran** : le hors taxe B2B du tableau est celui du bloc
-   * « Prix pro » juste au-dessus. Faire partir la ligne du prix PUBLIC
-   * afficherait deux montants différents pour la même facture, et rien ne
-   * dirait lequel sera encaissé.
-   */
-  it('déduit la ligne B2B du prix pro, pas du prix public', () => {
-    const store = setup();
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({
-      ratioBp: 9_000,
-      method: 'ratio_ttc' as const,
-
-      updatedAt: null,
-    });
-    withFamily(store);
-    store.priceEur.set(12);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const host = fixture.nativeElement as HTMLElement;
-    const b2b = [...host.querySelectorAll('.inherit-row')].find((row) =>
-      row.querySelector('dt')?.textContent?.includes('B2B'),
-    );
-    const amount = b2b
-      ?.querySelector('.inherit-gross strong')
-      ?.textContent?.replace(/\u202f|\u00a0/g, ' ');
-
-    // 12,00 € × 90 % = 10,80 € TTC ; ÷ 1,20 (taux B2B) = 9,00 € HT — le même
-    // nombre que le bloc « Prix pro ».
-    expect(amount).toBe('9,00 €');
-    expect(host.querySelector('.pro')?.textContent?.replace(/\u202f|\u00a0/g, ' ')).toContain(
-      '9,00 €',
-    );
-  });
-
-  /** Le montant seul ne dit pas qu'il est remisé. La ligne le dit. */
-  it('marque la ligne remisée, et elle seule', () => {
-    const store = setup();
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({
-      ratioBp: 9_000,
-      method: 'ratio_ttc' as const,
-
-      updatedAt: null,
-    });
-    withFamily(store);
-    store.priceEur.set(12);
-    const fixture = TestBed.createComponent(PricingForm);
-    fixture.detectChanges();
-
-    const rows = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.inherit-row')];
-    const marked = rows.filter((row) => row.querySelector('.inherit-discounted') !== null);
-
-    expect(marked).toHaveLength(1);
-    expect(marked[0]?.querySelector('dt')?.textContent).toContain('B2B');
-  });
-});
-
-/** Lot P : le prix pro HT saisi, sous le prix public. */
+/** Le prix pro HT saisi, sous le prix public — seule source depuis le lot R3. */
 describe('PricingForm — le prix pro HT saisi', () => {
-  function withMethod(store: ProductFormStore, method: 'ratio_ttc' | 'entered'): void {
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: 9_000, method, updatedAt: null });
+  function priced(store: ProductFormStore): void {
     withFamily(store);
     store.priceEur.set(12);
   }
@@ -423,7 +282,7 @@ describe('PricingForm — le prix pro HT saisi', () => {
 
   it('offre le champ « Prix pro HT », et la saisie remonte au store en texte', () => {
     const store = setup();
-    withMethod(store, 'ratio_ttc');
+    priced(store);
     const host = render();
 
     expect(host.textContent).toContain('Prix pro HT');
@@ -438,51 +297,41 @@ describe('PricingForm — le prix pro HT saisi', () => {
     expect(store.proPriceMillicents()).toBe(812_345);
   });
 
-  /**
-   * Régression de règle : sous ratio_ttc, une saisie était « pas encore
-   * appliquée » et la fiche montrait le prix tiré du ratio (Hugo, 2026-10-15 :
-   * « si un prix pro HT a été marqué, c'est lui qui doit nourrir le tableau »).
-   */
-  it('sous ratio_ttc, une saisie prime : TTC de la saisie, écart constaté, plus de remise', () => {
+  it('montre le TTC de la saisie et son HT', () => {
     const store = setup();
-    withMethod(store, 'ratio_ttc');
-    store.proPriceHtText.set('8,5');
-    const host = render();
-
-    const pro = flat(host.querySelector('.pro')?.textContent);
-    expect(pro).toContain('10,20 €');
-    expect(pro).toContain('écart constaté −15 %');
-    expect(pro).not.toContain('−10 %');
-    expect(host.textContent).not.toContain('suit la remise');
-  });
-
-  it('sous ratio_ttc, sans saisie, dit que le prix pro suit la remise', () => {
-    const store = setup();
-    withMethod(store, 'ratio_ttc');
-    const host = render();
-
-    expect(host.textContent).toContain('suit la remise');
-    expect(flat(host.querySelector('.pro')?.textContent)).toContain('−10 %');
-  });
-
-  /** « La fiche ne ment pas » : sous « Prix saisi », plus de remise tirée du ratio. */
-  it('sous entered, montre le TTC de la saisie et l’écart constaté, jamais la remise', () => {
-    const store = setup();
-    withMethod(store, 'entered');
-    // 8,50000 € HT × 1,20 = 10,20 € TTC, soit −15 % sous 12,00 €.
+    priced(store);
+    // 8,50000 € HT × 1,20 = 10,20 € TTC.
     store.proPriceHtText.set('8,5');
     const host = render();
 
     const pro = flat(host.querySelector('.pro')?.textContent);
     expect(pro).toContain('10,20 €');
     expect(pro).toContain('8,50 €');
-    expect(pro).toContain('écart constaté −15 %');
-    expect(pro).not.toContain('−10 %');
   });
 
-  it('sous entered, la ligne B2B du tableau montre le HT saisi, pas un HT redérivé', () => {
+  /**
+   * Régression (lot R3, 2026-10-27) : la fiche disait « Dérivé du prix public
+   * par la remise posée dans Règles comptables », portait la remise en
+   * pastille, et l'indice du champ disait « Vide : le prix pro suit la remise ».
+   * Il n'y a plus de remise : rien de tout ça ne doit reparaître.
+   */
+  it('ne parle plus ni de remise, ni de règles comptables, ni d’écart', () => {
     const store = setup();
-    withMethod(store, 'entered');
+    priced(store);
+    store.proPriceHtText.set('8,5');
+    const host = render();
+
+    const text = flat(host.textContent);
+    expect(text).not.toContain('Règles comptables');
+    expect(text).not.toContain('remise');
+    expect(text).not.toContain('écart');
+    expect(host.querySelector('.pro-badge')).toBeNull();
+  });
+
+  /** L'invariant de l'écran : le HT B2B du tableau est celui du bloc « Prix pro ». */
+  it('la ligne B2B du tableau montre le HT saisi, pas un HT redérivé', () => {
+    const store = setup();
+    priced(store);
     // 8,336 € HT s'affiche 8,34 € ; re-taxé à 20 % (10,00 € TTC) puis
     // redivisé, on tomberait sur 8,33 € — un centime que la facture dément.
     store.proPriceHtText.set('8,336');
@@ -492,33 +341,30 @@ describe('PricingForm — le prix pro HT saisi', () => {
       row.querySelector('dt')?.textContent?.includes('B2B'),
     );
     expect(flat(b2b?.querySelector('.inherit-gross strong')?.textContent)).toBe('8,34 €');
+    expect(flat(host.querySelector('.pro')?.textContent)).toContain('8,34 €');
   });
 
-  it('sous entered, sans saisie, dit que la déclinaison n’est pas vendue aux pros', () => {
+  /** Le montant seul ne dit pas qu'il n'est pas le prix public. La ligne le dit. */
+  it('marque la ligne B2B, et elle seule', () => {
     const store = setup();
-    withMethod(store, 'entered');
+    priced(store);
+    store.proPriceHtText.set('8,5');
+    const host = render();
+
+    const rows = [...host.querySelectorAll('.inherit-row')];
+    const marked = rows.filter((row) => row.querySelector('.inherit-discounted') !== null);
+
+    expect(marked).toHaveLength(1);
+    expect(marked[0]?.querySelector('dt')?.textContent).toContain('B2B');
+  });
+
+  it('sans saisie, dit que la déclinaison n’est pas vendue aux pros', () => {
+    const store = setup();
+    priced(store);
     const host = render();
 
     expect(host.querySelector('.pro')).toBeNull();
     expect(host.textContent).toContain('n’est pas vendue aux');
-  });
-
-  /**
-   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sans règles
-   * comptables (`ratioBp: null`), la fiche n'affichait pas le prix pro saisi.
-   */
-  it('sans règles comptables, montre la saisie', () => {
-    const store = setup();
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({ ratioBp: null, method: 'entered', updatedAt: null });
-    withFamily(store);
-    store.priceEur.set(12);
-    store.proPriceHtText.set('8,5');
-    const host = render();
-
-    expect(flat(host.querySelector('.pro')?.textContent)).toContain('10,20 €');
-    // Pas de rapport : pas de suggestion, et rien à en dire.
-    expect(host.querySelector('.pro-suggestion')).toBeNull();
   });
 });
 
@@ -529,27 +375,13 @@ describe('PricingForm — le prix pro HT saisi', () => {
  * 2026-10-27).
  */
 describe('PricingForm — aucune suggestion de prix pro', () => {
-  function withRatio(store: ProductFormStore): void {
-    const rules = TestBed.inject(AccountingRulesStore);
-    vi.spyOn(rules, 'rules').mockReturnValue({
-      ratioBp: 9_000,
-      method: 'entered',
-      updatedAt: null,
-    });
+  it('ne suggère aucun prix pro', () => {
+    const store = setup();
     withFamily(store);
     store.priceEur.set(12);
-  }
-
-  function render(): HTMLElement {
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
-    return fixture.nativeElement as HTMLElement;
-  }
-
-  it('ne suggère aucun prix pro, même avec un rapport posé', () => {
-    const store = setup();
-    withRatio(store);
-    const host = render();
+    const host = fixture.nativeElement as HTMLElement;
 
     expect(host.textContent).not.toContain('Suggéré');
     expect(
