@@ -211,10 +211,11 @@ leur application au particulier qui se fait en TTC.
   (`place-shop-order.handler.ts:144`, relu par `vitruve` le 2026-10-27) ;
   `Order.draft` lève une erreur nommée si une commande `exact_ht` en porte
   une.
-- **R6 — Registre de fidélité** : le registre garde **une seule unité**, la
-  sienne aujourd'hui (`appliedCents`, `loyalty-voucher-redemption.ts:8`). Le
-  bon imputé sur une commande `exact_ht` est figé en TTC sur la commande ; ce
-  qui est décompté au registre dépend de Q2 (§ 10), **à trancher avant C2**.
+- **R6 — Registre de fidélité** (`appliedCents`,
+  `loyalty-voucher-redemption.ts:8`) : il décompte la **valeur faciale** du
+  bon, dans l'unité de l'audience de la commande — TTC pour un particulier,
+  HT pour un pro (§ 10, Q2). Le bon imputé sur une commande `exact_ht` est
+  figé en TTC sur la commande.
 
 **Les gardes de l'agrégat** (`order-amount-guards.ts`) gardent leur logique
 — « l'ajustement figé reproduit le montant retenu » — mais, pour `exact_ht`,
