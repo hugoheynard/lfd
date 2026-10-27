@@ -1,5 +1,4 @@
 import type { ContentLocale, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
-import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
@@ -14,7 +13,11 @@ import { catalogueArticle } from "../domain/catalogue-article.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
-import { inShopLanguage, shopCatalogueOf } from "./shop-catalogue-view.js";
+import {
+  inShopLanguage,
+  shopCatalogueOf,
+  ttcCentsFromHtMillicentsFor,
+} from "./shop-catalogue-view.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**
@@ -153,7 +156,7 @@ export class ShopCataloguePricing {
     if (catalogue.items.length === 0) {
       return catalogue;
     }
-    const priced = await this.withPrices(catalogue, sellable, companyId);
+    const priced = await this.withPrices(catalogue, sellable, { companyId, audience });
     return inShopLanguage(priced, sellable, language);
   }
 
@@ -161,7 +164,7 @@ export class ShopCataloguePricing {
   private async withPrices(
     catalogue: ShopCatalogueView,
     sellable: readonly ResolvedCatalogItem[],
-    companyId: string | null,
+    { companyId, audience }: { readonly companyId: string | null; readonly audience: ShopAudience },
   ): Promise<ShopCatalogueView> {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
@@ -202,7 +205,7 @@ export class ShopCataloguePricing {
     const lot = await this.pricer.load({ articles, companyId, caller: "shelf" });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
     const prices = new Map(lot.all(lines).map((priced) => [priced.sku, priced.finalMillicents]));
-    return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices)) };
+    return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices, audience)) };
   }
 }
 
@@ -218,7 +221,11 @@ export class ShopCataloguePricing {
  * tarif est le seul repli qui ne mente pas. Un prix à zéro, lui, ferait croire à
  * un article offert.
  */
-function struck(item: ShopItemView, prices: ReadonlyMap<string, number>): ShopItemView {
+function struck(
+  item: ShopItemView,
+  prices: ReadonlyMap<string, number>,
+  audience: ShopAudience,
+): ShopItemView {
   const resolved = prices.get(item.sku);
   if (resolved === undefined) {
     return item;
@@ -237,7 +244,8 @@ function struck(item: ShopItemView, prices: ReadonlyMap<string, number>): ShopIt
   const priced = {
     ...item,
     unitPriceMillicents: resolved,
-    unitPriceTtcCents: ttcCentsOf(lineTotalCents(resolved, 1), item.vatRatePercent),
+    // Celle d'un particulier est la valeur saisie (`ttcCentsFromHtMillicentsFor`, plan du centime, § 4).
+    unitPriceTtcCents: ttcCentsFromHtMillicentsFor(resolved, item.vatRatePercent, audience),
   };
   if (resolved >= item.unitPriceMillicents) {
     return resolved === item.unitPriceMillicents ? item : priced;

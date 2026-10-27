@@ -40,6 +40,14 @@ export type TtcOrderAdjustment =
 export interface TtcOrderDeliveryFee {
   readonly adjustment: TtcOrderAdjustment;
   readonly vatMode: "standard" | "followsGoods";
+  /**
+   * Le TTC déjà figé d'un port en MONTANT FIXE — celui de la commande, que
+   * son bon de livraison partiel reprend sans reconversion (plan du centime,
+   * § 5, « Le bon de livraison partiel ») : convertir le barème sur le
+   * mélange de taux livré changerait le port d'un centime. Ignoré pour un
+   * pourcentage, qui se refait sur le TTC livré.
+   */
+  readonly frozenTtcCents?: number | undefined;
 }
 
 export interface TtcOrderInput {
@@ -135,6 +143,10 @@ function deliveryFeeParts(
   if (fee.adjustment.mode === "percent") {
     // R1 bis : le pourcentage s'applique au TTC des marchandises, sans conversion.
     return splitCents(percentOf(sum(gross), fee.adjustment.bp), weights);
+  }
+  if (fee.frozenTtcCents !== undefined) {
+    // Déjà TTC : découpé au prorata du TTC de chaque taux, sans conversion.
+    return splitCents(Math.max(0, Math.trunc(fee.frozenTtcCents)), weights);
   }
   const cents = Math.max(0, ttcOfHtAmount(fee.adjustment.cents, weights));
   return splitCents(cents, convertedWeights(weights));

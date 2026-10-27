@@ -1,6 +1,10 @@
 import { randomUUID } from "node:crypto";
 
-import type { PlacedOrderResponse, SetLoyaltySettingsPayload } from "@lfd/contracts";
+import type {
+  PlacedOrderResponse,
+  SetLoyaltySettingsPayload,
+  ShopCatalogueView,
+} from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 import { CommandBus } from "@nestjs/cqrs";
 
@@ -245,6 +249,24 @@ describe("un particulier paie la somme des étiquettes", () => {
       where: { parentVoucherId: voucherId },
     });
     expect(remainders.map((remainder) => remainder.valueCents)).toEqual([200]);
+  });
+});
+
+describe("l'étiquette de la boutique (lot C3)", () => {
+  it("une étiquette saisie 1,53 € à 20 % s'affiche 1,53 € au public, pas 1,54 €", async () => {
+    const htMillicents = htMillicentsOf(153, 20) ?? 0;
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: {
+        publicTtcCents: 153,
+        publicByContext: { takeaway: { vatRatePercent: 20, htMillicents } },
+      },
+    });
+
+    const view = jsonBody<ShopCatalogueView>(await ctx.http().get("/shop/catalogue").expect(200));
+
+    const item = view.items.find((candidate) => candidate.sku === "VIE-001");
+    expect(item?.unitPriceTtcCents).toBe(153);
   });
 });
 

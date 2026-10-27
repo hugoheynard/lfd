@@ -740,8 +740,8 @@ export { siteTableCountPayloadSchema } from "./site-tables.js";
 export type { SiteTableCountPayload, SiteTableView, SiteTablesView } from "./site-tables.js";
 export { orderLineAllergensSchema } from "./order.js";
 export { adminOrdersQuerySchema, adminOrderClienteleSchema } from "./admin-order-list.js";
-export { vatShareSchema, vatSharesSchema } from "./order.js";
-export type { PickupDiscountBaseView, VatShareView } from "./order.js";
+export { orderTtcTermsSchema, vatShareSchema, vatSharesSchema } from "./order.js";
+export type { OrderTtcTerms, PickupDiscountBaseView, VatShareView } from "./order.js";
 export type { AdminOrderRow, AdminOrdersPage, AdminOrdersQuery } from "./admin-order-list.js";
 export type {
   AdminCancelOrderPayload,

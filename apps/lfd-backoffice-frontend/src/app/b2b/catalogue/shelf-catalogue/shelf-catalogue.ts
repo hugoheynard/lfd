@@ -2,7 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input, output } from '@an
 import { RouterLink } from '@angular/router';
 import type { CatalogAdminItemView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
-import { htMillicentsOf, lineTotalCents, MILLICENTS_PER_CENT, ventilateVat } from '@lfd/money';
+import { htMillicentsOf, MILLICENTS_PER_CENT, ttcCentsFromHtMillicents } from '@lfd/money';
 import {
   FoldBadgeComponent,
   FoldDataTableCellDirective,
@@ -176,12 +176,14 @@ export class ShelfCatalogue {
   /**
    * **Ce que le rayon public affichera vraiment**, en euros TTC.
    *
-   * 🔴 **Ce n'est PAS l'étiquette, et c'est tout l'objet de cette méthode.**
    * L'étiquette est une ENTRÉE : elle est mise hors taxe, traverse la
-   * résolution, et le TTC qui en ressort peut valoir un centime de plus —
-   * l'aller-retour ne revient pas toujours sur lui-même, et jamais vers le bas
-   * à 10 % ou 20 % (mesuré, `dev-toolbox/analyses/ancrage-du-ttc-pose.mjs`).
-   * On assume l'écart (Hugo, 2026-09-21), donc on le DIT.
+   * résolution, puis le rayon public la rend par `ttcCentsFromHtMillicents`
+   * — la chaîne de la vignette d'un particulier depuis le lot C3 du plan
+   * `documentation/pricing/plan-centime-particuliers.md` (§ 4). Elle revient
+   * sur la valeur saisie ; l'écart d'un centime que cette colonne montrait
+   * (HT de ligne arrondi d'abord, Hugo, 2026-09-21) reste celui du pro, qui
+   * n'est pas affiché ici. La colonne reste : elle dit ce que la chaîne réelle
+   * rend, et c'est elle qui verrait un écart revenir.
    */
   protected chargedEuros(item: CatalogAdminItemView): string | null {
     const posed = item.publicTtcCents;
@@ -193,18 +195,7 @@ export class ShelfCatalogue {
     if (ht === null) {
       return null;
     }
-    // 🔴 **La chaîne RÉELLE, pas une approximation plus fine.** Le premier jet
-    // multipliait le hors taxe par le taux et arrondissait au millicentime : un
-    // chemin plus précis que la caisse, donc un nombre qui coïncidait presque
-    // toujours avec le prix posé — et qui taisait exactement les cas que cette
-    // colonne existe pour montrer. L'arrondi au CENTIME du total de ligne fait
-    // partie de l'écart ; le sauter, c'est ne pas le mesurer.
-    const cents = ventilateVat({
-      lines: [{ htCents: lineTotalCents(ht, 1), vatRate: rate }],
-      discountCents: 0,
-      extras: [],
-    }).totalCents;
-    return formatEuros(cents * MILLICENTS_PER_CENT);
+    return formatEuros(ttcCentsFromHtMillicents(ht, rate) * MILLICENTS_PER_CENT);
   }
 
   /**

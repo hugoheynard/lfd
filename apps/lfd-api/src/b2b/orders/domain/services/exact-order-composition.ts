@@ -29,6 +29,12 @@ export interface ExactOrderInput {
   readonly deliveryVatMode: DeliveryVatMode | null;
   /** La valeur faciale TTC du bon, `0` sans bon. Bornée par la composition. */
   readonly voucherFaceCents: number;
+  /**
+   * Le TTC du port en montant fixe déjà figé sur la commande — fourni par le
+   * bon de livraison partiel seul, qui le reprend sans reconversion (§ 5).
+   * Absent : le barème est converti.
+   */
+  readonly deliveryFeeFrozenTtcCents?: number | undefined;
 }
 
 export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
@@ -47,6 +53,7 @@ export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
         : {
             adjustment: input.deliveryFeeAdjustment,
             vatMode: input.deliveryVatMode === "follows_goods" ? "followsGoods" : "standard",
+            frozenTtcCents: input.deliveryFeeFrozenTtcCents,
           },
   });
 }

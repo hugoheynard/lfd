@@ -626,6 +626,24 @@ export const vatShareSchema = z.object({
   amountCents: z.number().int(),
 });
 export const vatSharesSchema = z.array(vatShareSchema);
+
+/**
+ * **Les TTC des termes d'une commande composée en TTC** — celle d'un
+ * particulier (`exact_ht`, plan `documentation/pricing/plan-centime-particuliers.md`,
+ * § 7) : la remise retrait, le bon imputé et le port, tels que le client les
+ * a payés. Absents d'une commande pro ou antérieure : ses documents lisent
+ * alors les HT.
+ */
+export const orderTtcTermsSchema = z.object({
+  discountCents: z.number().int(),
+  voucherCents: z.number().int(),
+  deliveryFeeCents: z.number().int(),
+});
+export interface OrderTtcTerms {
+  readonly discountCents: number;
+  readonly voucherCents: number;
+  readonly deliveryFeeCents: number;
+}
 export type VatShareView = z.infer<typeof vatShareSchema>;
 
 /**
@@ -701,6 +719,11 @@ export interface OrderView {
    * les distinguent. `0` sans bon, et pour toute commande antérieure.
    */
   readonly voucherDiscountCents: number;
+  /**
+   * Les TTC de la remise, du bon et du port d'une commande de particulier
+   * composée en TTC ({@link OrderTtcTerms}) — absent sinon.
+   */
+  readonly ttcTerms?: OrderTtcTerms;
   /**
    * **Ce qui a produit** `discountCents`, figé à la commande : le taux ou le
    * montant de la remise du point de retrait. Sans lui, une facture ne peut dire

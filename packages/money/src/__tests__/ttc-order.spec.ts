@@ -160,6 +160,35 @@ describe("composeTtcOrder — port (R1, R1 bis)", () => {
     ]);
   });
 
+  it("un TTC figé (BL partiel) se reprend tel quel, découpé au prorata du TTC livré", () => {
+    const result = compose({
+      lines: [labelled(1000, 5.5), labelled(3000, 20)],
+      deliveryFee: {
+        adjustment: { mode: "amount", cents: 500 },
+        vatMode: "followsGoods",
+        frozenTtcCents: 564,
+      },
+    });
+
+    // Converti sur ce mélange, le barème rendrait 5,88 € : le figé gagne.
+    expect(result.deliveryFee.ttcCents).toBe(564);
+    expect(result.deliveryFee.parts.map((part) => part.ttcCents)).toEqual([141, 423]);
+    expect(result.total.ttcCents).toBe(4564);
+  });
+
+  it("un TTC figé est ignoré pour un port en pourcentage", () => {
+    const result = compose({
+      lines: [labelled(2105, 5.5)],
+      deliveryFee: {
+        adjustment: { mode: "percent", bp: 1000 },
+        vatMode: "standard",
+        frozenTtcCents: 999,
+      },
+    });
+
+    expect(result.deliveryFee.ttcCents).toBe(211);
+  });
+
   it("en pourcentage : sur le TTC des marchandises, sans conversion", () => {
     const result = compose({
       lines: [labelled(2105, 5.5)],

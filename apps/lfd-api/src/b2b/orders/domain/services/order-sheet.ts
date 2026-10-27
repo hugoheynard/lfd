@@ -121,6 +121,7 @@ function moneyOf(order: OrderView): SheetMoney {
     settlement: order.settlement,
     // Recalculé depuis les lignes FIGÉES plutôt que recopié de la vue (lot C).
     ...frozenPickupDiscountBaseOf(order),
+    ...(order.ttcTerms === undefined ? {} : { ttcTerms: order.ttcTerms }),
   };
 }
 

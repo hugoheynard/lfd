@@ -27,7 +27,13 @@ function input(overrides: Partial<PartialTermsInput> = {}): PartialTermsInput {
   return {
     orderNumber: "ORD-7",
     lines: [line()],
-    adjustments: { discount: null, deliveryFee: null, lateFee: null, deliveryVatMode: null },
+    adjustments: {
+      discount: null,
+      deliveryFee: null,
+      lateFee: null,
+      deliveryVatMode: null,
+      exact: null,
+    },
     ...overrides,
   };
 }
@@ -45,6 +51,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
       vatShares: [{ rate: 20, amountCents: 200 }],
       vatCents: 200,
       totalCents: 1_200,
+      ttcTerms: null,
     });
   });
 
@@ -60,6 +67,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -77,6 +85,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -93,6 +102,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -109,6 +119,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -131,6 +142,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
           deliveryFee: { mode: "amount", cents: 700 },
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -142,6 +154,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
           deliveryFee: { mode: "percent", bp: 1_000 },
           lateFee: null,
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -160,13 +173,20 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
           deliveryFee: fee,
           lateFee: null,
           deliveryVatMode: "follows_goods",
+          exact: null,
         },
       }),
     );
     const standard = DeliveryNoteTerms.composePartial(
       input({
         lines: goods,
-        adjustments: { discount: null, deliveryFee: fee, lateFee: null, deliveryVatMode: null },
+        adjustments: {
+          discount: null,
+          deliveryFee: fee,
+          lateFee: null,
+          deliveryVatMode: null,
+          exact: null,
+        },
       }),
     );
     // (1 000 + 700) × 10 % contre 100 + 700 × 20 %.
@@ -187,6 +207,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
           deliveryFee: null,
           lateFee: { adjustment: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -211,6 +232,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
           deliveryFee: null,
           lateFee: { adjustment: { mode: "amount", cents: 0 }, vatRatePercent: 20 },
           deliveryVatMode: null,
+          exact: null,
         },
       }),
     );
@@ -223,7 +245,13 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
     const lateFee = { adjustment: { mode: "amount", cents: 50 }, vatRatePercent: 20 } as const;
     const terms = DeliveryNoteTerms.composePartial(
       input({
-        adjustments: { discount: null, deliveryFee: null, lateFee, deliveryVatMode: null },
+        adjustments: {
+          discount: null,
+          deliveryFee: null,
+          lateFee,
+          deliveryVatMode: null,
+          exact: null,
+        },
       }),
     );
     expect(terms.lateFeeAdjustment).not.toBe(lateFee);

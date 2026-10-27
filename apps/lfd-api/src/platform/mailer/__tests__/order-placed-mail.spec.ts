@@ -169,6 +169,25 @@ describe("le courriel de confirmation", () => {
     expect(render().subject).toContain("ORD-4812");
   });
 
+  it("une commande de particulier en TTC écrit sa remise et son bon TTC, pas leur HT", () => {
+    const base = sheet();
+    const html = render({
+      sheet: {
+        ...base,
+        money: {
+          ...base.money,
+          voucherDiscountCents: 190,
+          ttcTerms: { discountCents: 152, voucherCents: 200, deliveryFeeCents: 0 },
+        },
+      },
+    }).html;
+
+    expect(html).toContain("−1,52");
+    expect(html).toContain("−2,00");
+    expect(html).not.toContain("−1,44");
+    expect(html).not.toContain("−1,90");
+  });
+
   it("change de langue sans changer de structure", () => {
     const it = render({ locale: "it" });
 

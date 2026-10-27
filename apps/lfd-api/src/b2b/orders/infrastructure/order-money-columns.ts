@@ -8,7 +8,10 @@ import {
 import { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { BillableAmounts } from "../domain/entities/billable-amounts.js";
-import type { FrozenOrderAdjustments } from "../domain/ports/shortfall-decision.reader.js";
+import type {
+  FrozenExactTerms,
+  FrozenOrderAdjustments,
+} from "../domain/ports/shortfall-decision.reader.js";
 import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/order-vat-method.js";
 
 /**
@@ -35,6 +38,9 @@ export const FROZEN_ADJUSTMENT_SELECT = {
   deliveryFeeAdjustment: true,
   lateFeeAdjustment: true,
   deliveryVatMode: true,
+  vatMethod: true,
+  voucherTtcCents: true,
+  deliveryFeeTtcCents: true,
 } as const;
 
 interface FrozenAdjustmentRow {
@@ -42,6 +48,9 @@ interface FrozenAdjustmentRow {
   readonly deliveryFeeAdjustment: Prisma.JsonValue;
   readonly lateFeeAdjustment: Prisma.JsonValue;
   readonly deliveryVatMode: string | null;
+  readonly vatMethod: string;
+  readonly voucherTtcCents: number | null;
+  readonly deliveryFeeTtcCents: number | null;
 }
 
 function parsed<T>(
@@ -70,7 +79,26 @@ export function frozenAdjustmentsOf(
     deliveryFee: parsed(cartAdjustmentSchema, row.deliveryFeeAdjustment, orderId, "frais"),
     lateFee: parsed(lateFeeAdjustmentSchema, row.lateFeeAdjustment, orderId, "surtaxe"),
     deliveryVatMode: parsed(deliveryVatModeSchema, row.deliveryVatMode, orderId, "TVA du port"),
+    exact: frozenExactTermsOf(orderId, row),
   };
+}
+
+/**
+ * Les TTC figés d'une commande `exact_ht`. Le CHECK
+ * `orders_ttc_terms_iff_exact_ht` les garantit non nuls ensemble ; un nul ici
+ * est une colonne écrite hors de l'application.
+ *
+ * @throws {UnknownOrderVatMethodError}
+ * @throws {FrozenAdjustmentUnreadableError}
+ */
+function frozenExactTermsOf(orderId: string, row: FrozenAdjustmentRow): FrozenExactTerms | null {
+  if (vatMethodOf(orderId, row.vatMethod) === "line_ht") {
+    return null;
+  }
+  if (row.voucherTtcCents === null || row.deliveryFeeTtcCents === null) {
+    throw new FrozenAdjustmentUnreadableError(orderId, "montants taxe comprise");
+  }
+  return { voucherTtcCents: row.voucherTtcCents, deliveryFeeTtcCents: row.deliveryFeeTtcCents };
 }
 
 /** Les totaux de la commande. */

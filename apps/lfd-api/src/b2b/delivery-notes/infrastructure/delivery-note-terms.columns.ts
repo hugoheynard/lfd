@@ -1,5 +1,9 @@
 import { Prisma } from "../../../platform/database/client/client.js";
-import type { DeliveryNoteTerms, FrozenJson } from "../domain/value-objects/delivery-note-terms.js";
+import type {
+  DeliveryNoteTerms,
+  DeliveryNoteTtcTerms,
+  FrozenJson,
+} from "../domain/value-objects/delivery-note-terms.js";
 
 /** Les colonnes d'en-tête d'un BL, telles que Prisma les relit. */
 export interface DeliveryNoteTermsRow {
@@ -13,7 +17,14 @@ export interface DeliveryNoteTermsRow {
   readonly vatShares: Prisma.JsonValue;
   readonly vatCents: number | null;
   readonly totalCents: number | null;
+  readonly vatMethod: string;
+  readonly discountTtcCents: number | null;
+  readonly voucherTtcCents: number | null;
+  readonly deliveryFeeTtcCents: number | null;
 }
+
+const LINE_HT = "line_ht";
+const EXACT_HT = "exact_ht";
 
 /**
  * Ligne → en-tête. `total_cents` nul = BL d'avant E4a : le CHECK « tout ou
@@ -44,6 +55,7 @@ export function termsOf(row: DeliveryNoteTermsRow): DeliveryNoteTerms | null {
     vatShares: row.vatShares,
     vatCents,
     totalCents,
+    ttcTerms: ttcTermsOf(row),
   };
 }
 
@@ -52,7 +64,7 @@ function jsonColumn(value: FrozenJson | null): Prisma.InputJsonValue | typeof Pr
   return value === null ? Prisma.DbNull : value;
 }
 
-/** En-tête → colonnes ; un BL sans en-tête écrit dix `NULL`. */
+/** En-tête → colonnes ; un BL sans en-tête écrit dix `NULL`, et la méthode `line_ht`. */
 export function termsColumns(terms: DeliveryNoteTerms | null) {
   return {
     subtotalCents: terms?.subtotalCents ?? null,
@@ -65,14 +77,40 @@ export function termsColumns(terms: DeliveryNoteTerms | null) {
     vatShares: jsonColumn(terms?.vatShares ?? null),
     vatCents: terms?.vatCents ?? null,
     totalCents: terms?.totalCents ?? null,
+    ...vatMethodColumns(terms),
+  };
+}
+
+/** Les TTC relus d'un BL ; le CHECK `delivery_note_ttc_terms_iff_exact_ht` les tient ensemble. */
+function ttcTermsOf(row: DeliveryNoteTermsRow): DeliveryNoteTtcTerms | null {
+  const { vatMethod, discountTtcCents, voucherTtcCents, deliveryFeeTtcCents } = row;
+  if (
+    vatMethod !== EXACT_HT ||
+    discountTtcCents === null ||
+    voucherTtcCents === null ||
+    deliveryFeeTtcCents === null
+  ) {
+    return null;
+  }
+  return {
+    discountCents: discountTtcCents,
+    voucherCents: voucherTtcCents,
+    deliveryFeeCents: deliveryFeeTtcCents,
   };
 }
 
 /**
- * La méthode de composition d'un BL qu'on CRÉE (`delivery_note.vat_method`,
- * migration `20261027130000`) — `line_ht`, et des TTC nuls, jusqu'au lot C3
- * du plan `documentation/pricing/plan-centime-particuliers.md`, qui recompose
- * le BL d'une commande `exact_ht`. Écrite à la création seulement : une mise
- * à jour ne réécrit pas la méthode.
+ * La méthode et les TTC d'un BL (`delivery_note.vat_method`, migration
+ * `20261027130000`, plan `documentation/pricing/plan-centime-particuliers.md`,
+ * § 7) : `exact_ht` et ses trois TTC, ou `line_ht` et trois `NULL`. Un BL sans
+ * en-tête (d'avant E4a) est `line_ht` — la colonne est non nulle.
  */
-export const DELIVERY_NOTE_VAT_METHOD_UNTIL_C3 = { vatMethod: "line_ht" } as const;
+function vatMethodColumns(terms: DeliveryNoteTerms | null) {
+  const ttc = terms?.ttcTerms ?? null;
+  return {
+    vatMethod: ttc === null ? LINE_HT : EXACT_HT,
+    discountTtcCents: ttc?.discountCents ?? null,
+    voucherTtcCents: ttc?.voucherCents ?? null,
+    deliveryFeeTtcCents: ttc?.deliveryFeeCents ?? null,
+  };
+}

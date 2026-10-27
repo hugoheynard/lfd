@@ -12,6 +12,7 @@ import type { DeliveryNoteTerms } from "../delivery-note-terms.js";
  */
 export const ORDER_TERMS: DeliveryNoteTerms = {
   subtotalCents: 55_181,
+  ttcTerms: null,
   discountCents: 2_759,
   voucherDiscountCents: 500,
   deliveryFeeCents: 1_200,

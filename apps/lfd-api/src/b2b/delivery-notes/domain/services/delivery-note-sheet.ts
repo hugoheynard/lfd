@@ -143,6 +143,8 @@ function moneyFrom(terms: DeliveryNoteTerms, billing: DeliveryNoteOrderBilling):
     totalCents: terms.totalCents,
     ...meta,
     ...(pickupDiscountBase === undefined ? {} : { pickupDiscountBase }),
+    // Les TTC du BL lui-même — recomposés sur le livré (plan du centime, § 5).
+    ...(terms.ttcTerms === null ? {} : { ttcTerms: terms.ttcTerms }),
   };
 }
 

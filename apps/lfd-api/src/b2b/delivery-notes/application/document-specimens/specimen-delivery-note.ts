@@ -42,6 +42,7 @@ export function specimenDeliveryNote(now: Date): SpecimenDeliveryNote {
       })),
       terms: {
         subtotalCents: money.subtotalCents,
+        ttcTerms: null,
         discountCents: money.discountCents,
         voucherDiscountCents: money.voucherDiscountCents,
         deliveryFeeCents: money.deliveryFeeCents,

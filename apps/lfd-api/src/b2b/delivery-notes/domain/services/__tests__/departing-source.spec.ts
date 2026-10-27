@@ -27,7 +27,13 @@ const ORDER: DeliveryNoteSource = {
   terms: ORDER_TERMS,
 };
 
-const NO_RULES = { discount: null, deliveryFee: null, lateFee: null, deliveryVatMode: null };
+const NO_RULES = {
+  discount: null,
+  deliveryFee: null,
+  lateFee: null,
+  deliveryVatMode: null,
+  exact: null,
+};
 
 function decided(
   departing: DecidedDeparture["departing"],

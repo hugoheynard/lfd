@@ -175,6 +175,10 @@ function gesturesOf(sheet: PricedPaper, ttc: boolean): readonly Gesture[] {
  * honnête n'existe, ils restent en HT et le disent.
  */
 function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
+  const frozen = frozenTtcGestureRows(sheet);
+  if (frozen !== null) {
+    return frozen;
+  }
   const gestures = gesturesOf(sheet, sheetShowsTtc(sheet));
   const pretaxSum = gestures.reduce((sum, gesture) => sum + gesture.pretaxCents, 0);
   if (gestures.length === 0) {
@@ -196,6 +200,26 @@ function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
     allotted += taxed;
     return { label: gesture.label, value: money(taxed) };
   });
+}
+
+/**
+ * Les gestes d'une commande **composée en TTC** (`exact_ht`, plan
+ * `documentation/pricing/plan-centime-particuliers.md`, lot C3) : leurs TTC
+ * sont figés, on les écrit tels quels — aucune répartition, le format du
+ * ticket. `null` pour une autre commande, qui garde la répartition.
+ */
+function frozenTtcGestureRows(sheet: PricedPaper): readonly TotalRow[] | null {
+  const ttc = sheet.money.ttcTerms;
+  if (ttc === undefined) {
+    return null;
+  }
+  return [
+    { label: discountLabel(sheet, true), cents: -ttc.discountCents },
+    { label: "Bon de fidélité", cents: -ttc.voucherCents },
+    { label: "Livraison", cents: ttc.deliveryFeeCents },
+  ]
+    .filter((gesture) => gesture.cents !== 0)
+    .map((gesture) => ({ label: gesture.label, value: money(gesture.cents) }));
 }
 
 /**

@@ -67,6 +67,30 @@ describe("le pied du bon public", () => {
     columnAddsUp(rows);
   });
 
+  it("commande composée en TTC : les gestes figés écrits tels quels, sans répartition", () => {
+    // 124,91 − 2,10 − 5,00 + 6,00 = 123,81 : la colonne d'un ticket.
+    const rows = totalRows(
+      publicSheet({
+        discountCents: 199,
+        voucherDiscountCents: 474,
+        deliveryFeeCents: 500,
+        totalCents: 12_381,
+        ttcTerms: { discountCents: 210, voucherCents: 500, deliveryFeeCents: 600 },
+      }),
+    );
+
+    expect(rows.map((row) => row.label)).toEqual([
+      "Articles",
+      LABO,
+      "Bon de fidélité",
+      "Livraison",
+      "Total TTC",
+      "dont TVA",
+    ]);
+    expect(rows.map((row) => Math.abs(cents(row.value))).slice(1, 4)).toEqual([210, 500, 600]);
+    columnAddsUp(rows);
+  });
+
   it("sans geste : articles, Total TTC, TVA", () => {
     const rows = totalRows(publicSheet({ discountCents: 0, totalCents: 12_491 }));
 

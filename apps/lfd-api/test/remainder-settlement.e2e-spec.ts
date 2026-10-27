@@ -107,6 +107,7 @@ async function planRemainder(order: Drawn): Promise<void> {
         orderDay: SERVICE_DAY,
         terms: {
           subtotalCents: subtotal,
+          ttcTerms: null,
           discountCents: 0,
           voucherDiscountCents: 0,
           deliveryFeeCents: 0,

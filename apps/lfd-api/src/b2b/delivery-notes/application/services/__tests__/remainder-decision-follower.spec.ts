@@ -53,6 +53,7 @@ function terms(quantity: number, deliveryFeeCents: number) {
     ],
     vatCents: goodsVat + feeVat,
     totalCents: subtotalCents - discountCents + deliveryFeeCents + goodsVat + feeVat,
+    ttcTerms: null,
   };
 }
 
@@ -77,6 +78,7 @@ const DECISION: DecidedDeparture = {
     deliveryFee: { mode: "amount", cents: 800 },
     lateFee: null,
     deliveryVatMode: "standard",
+    exact: null,
   },
 };
 
