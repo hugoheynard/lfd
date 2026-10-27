@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1676 textes
+## Sommaire — 1675 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -35,7 +35,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
 | **Le reste de la boutique** | | |
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
-| [La navigation](#espace-nav) | `nav` | 25 |
+| [La navigation](#espace-nav) | `nav` | 24 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
 | [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 242 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1676** |
+| **Total** | | **1675** |
 
 ## Le parcours de commande
 
@@ -902,7 +902,7 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 
 ### La navigation — `nav`
 
-Source : `fr.ts · en.ts · it.ts` · 25 textes.
+Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -919,7 +919,6 @@ Source : `fr.ts · en.ts · it.ts` · 25 textes.
 | `nav.close` | Fermer le menu | Close the menu | Chiudi il menu |  |
 | `nav.newTab` | {name} (nouvel onglet) | {name} (new tab) | {name} (nuova scheda) | `{name}` |
 | `nav.newOrder` | Nouvelle commande | New order | Nuovo ordine |  |
-| `nav.newOrderSub` | Retrait ou coursier, vous choisissez | Pickup or courier, you choose | Ritiro o corriere, scegliete voi |  |
 | `nav.house` | La maison | The bakery | La casa |  |
 | `nav.houseLinks.0.0` | Nos rayons et nos méthodes | Our counters and our methods | I nostri banchi e i nostri metodi |  |
 | `nav.houseLinks.0.1` | 6 fiches | 6 notes | 6 schede |  |

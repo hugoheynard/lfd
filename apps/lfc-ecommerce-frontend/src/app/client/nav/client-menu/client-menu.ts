@@ -98,11 +98,6 @@ export class ClientMenu {
 
   /** Ce qui est en cours, pour le point beurre : l'URL, pas un état gardé à part. */
 
-  /** Le numéro d'ordre, `01`–`05` — la voix du menu pleine page. */
-  protected rank(index: number): string {
-    return `0${index + 1}`;
-  }
-
   protected go(route: string): void {
     this.closed.emit();
     void this.router.navigateByUrl(route);

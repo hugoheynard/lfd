@@ -4689,13 +4689,6 @@
           "variables": []
         },
         {
-          "key": "nav.newOrderSub",
-          "fr": "Retrait ou coursier, vous choisissez",
-          "en": "Pickup or courier, you choose",
-          "it": "Ritiro o corriere, scegliete voi",
-          "variables": []
-        },
-        {
           "key": "nav.house",
           "fr": "La maison",
           "en": "The bakery",

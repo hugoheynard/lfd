@@ -94,7 +94,6 @@ export const EN: ClientCopy = {
     close: 'Close the menu',
     newTab: '{name} (new tab)',
     newOrder: 'New order',
-    newOrderSub: 'Pickup or courier, you choose',
     house: 'The bakery',
     houseLinks: [
       ['Our counters and our methods', '6 notes'],

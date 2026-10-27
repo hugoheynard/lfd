@@ -44,16 +44,13 @@
     }
 
     <a class="new-order" routerLink="/bienvenue" (click)="closed.emit()">
-      <span class="new-order-tile" aria-hidden="true"><fold-icon name="plus" /></span>
-      <span class="new-order-titles">
-        <span class="new-order-title">{{ t().nav.newOrder }}</span>
-        <span class="new-order-sub">{{ t().nav.newOrderSub }}</span>
-      </span>
+      <fold-icon class="new-order-plus" name="plus" />
+      <span class="new-order-title">{{ t().nav.newOrder }}</span>
       <fold-icon class="new-order-caret" name="chevron-right" />
     </a>
 
     <nav class="dests" [attr.aria-label]="t().chrome.menu">
-      @for (item of nav.items(); track item.id; let i = $index) {
+      @for (item of nav.items(); track item.id) {
         <button
           class="dest"
           type="button"
@@ -62,7 +59,6 @@
           [attr.aria-current]="nav.current() === item.route ? 'page' : null"
           (click)="go(item.route)"
         >
-          <span class="dest-rank" aria-hidden="true">{{ rank(i) }}</span>
           <span class="dest-label">{{ item.label }}</span>
           @if (!item.ready) {
             <span class="dest-soon">{{ t().nav.soon }}</span>

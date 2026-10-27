@@ -88,7 +88,6 @@ export const FR: ClientCopy = {
     close: 'Fermer le menu',
     newTab: '{name} (nouvel onglet)',
     newOrder: 'Nouvelle commande',
-    newOrderSub: 'Retrait ou coursier, vous choisissez',
     house: 'La maison',
     houseLinks: [
       ['Nos rayons et nos méthodes', '6 fiches'],

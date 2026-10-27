@@ -96,7 +96,6 @@ export const IT: ClientCopy = {
     close: 'Chiudi il menu',
     newTab: '{name} (nuova scheda)',
     newOrder: 'Nuovo ordine',
-    newOrderSub: 'Ritiro o corriere, scegliete voi',
     house: 'La casa',
     houseLinks: [
       ['I nostri banchi e i nostri metodi', '6 schede'],

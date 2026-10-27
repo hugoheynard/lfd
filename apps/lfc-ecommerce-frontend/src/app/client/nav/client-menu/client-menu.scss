@@ -11,19 +11,10 @@
   margin: 0;
   border: 0;
   padding: 0;
-  /* Les deux bleus, mais pas en bandes : un RADIAL ancré juste au-dessus du
-     bouton qui vient d'ouvrir le menu. La surface s'éclaire d'où on l'a
-     touchée et s'enfonce vers le bas — le linéaire, lui, aurait redit la
-     descente de la barre, qui n'est pas ici et ne va pas dans ce sens.
-     L'ellipse déborde volontairement le cadre (120 % / 88 %, ancrée à −6 %) :
-     on n'en voit que le versant, jamais le centre, donc jamais de halo. */
-  background: radial-gradient(
-    120% 88% at 10% -6%,
-    var(--lfc-ink-800) 0%,
-    var(--lfc-ink-900) 46%,
-    var(--lfc-ink-950) 100%
-  );
-  color: var(--fold-color-on-primary);
+  /* BLANC, écrit en bleu (Hugo, 2026-10-27 : « plus lisible ») — la charte
+     de l'en-tête. Le dégradé bleu nuit d'avant est parti avec elle. */
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
   overflow-y: auto;
   overscroll-behavior: contain;
 }
@@ -31,16 +22,18 @@
 .menu::backdrop {
   /* Le voile prend l'encre la plus profonde : il n'est visible qu'aux marges
      que le dialogue ne couvre pas, et il doit y prolonger le BAS du dégradé. */
-  background: var(--lfc-ink-950);
+  background: var(--lfc-paper-0);
 }
 
-/* Le menu peint sa propre encre : ses enfants doivent lire les rôles du chrome,
-   pas ceux de la page crème. */
+/* Le menu peint son blanc : ses enfants lisent le bleu de la charte, y
+   compris ceux (le sélecteur de langue) qui vivent sous le registre chrome. */
 .menu {
-  --fold-color-text: var(--lfc-paper-50);
-  --fold-color-text-muted: var(--lfc-ink-300);
-  --fold-color-border: rgb(250 245 236 / 22%);
-  --fold-color-surface-hover: rgb(250 245 236 / 14%);
+  --fold-color-text: var(--lfc-brand-blue);
+  --fold-color-text-muted: rgb(18 56 183 / 72%);
+  --fold-color-border: var(--lfc-ink-100);
+  --fold-color-surface-hover: var(--lfc-ink-50);
+  --lfc-color-on-primary-muted: rgb(18 56 183 / 72%);
+  --lfc-color-on-primary-tile: var(--lfc-ink-50);
 }
 
 /* ── La rangée du haut : la croix et le mot ─────────────────────────────── */
@@ -121,48 +114,29 @@
 .new-order {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-lg);
+  gap: var(--fold-space-md);
   margin-top: var(--fold-space-xl);
-  padding: var(--fold-space-lg);
-  border-radius: var(--fold-radius-lg);
-  /* Le MÊME bouton que dans le bandeau — c'est la même action, elle doit se
-     reconnaître d'un écran à l'autre, et les deux sont sur le registre sombre. */
-  /* RGAA 3.2 (lot A5, 2026-10-26) : le blanc sur le beurre d'action ne
-     tenait que 2,99:1 (titre) et 2,61:1 (sous-titre). Le beurre INTENSE est le
-     rôle du thème fait pour porter du texte clair. */
-  background: var(--lfc-color-accent-deep);
-  color: var(--lfc-color-on-accent-deep);
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border-radius: var(--fold-radius-sm);
+  /* Le MÊME bouton que dans le bandeau (Hugo, 2026-10-27) : blanc, écrit en
+     bleu, casse normale — c'est la même action d'un écran à l'autre. */
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
   text-decoration: none;
 }
 
-.new-order-tile {
+.new-order-plus {
   flex: none;
-  display: grid;
-  place-items: center;
-  width: 44px;
-  height: 44px;
-  border-radius: var(--fold-radius-md);
-  background: color-mix(in srgb, var(--lfc-color-on-accent) 18%, transparent);
-}
-
-.new-order-titles {
-  min-width: 0;
-  flex: 1;
-  display: flex;
-  flex-direction: column;
+  width: 20px;
+  height: 20px;
 }
 
 .new-order-title {
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-heading);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-}
-
-.new-order-sub {
-  font-size: var(--fold-text-md);
-  color: var(--lfc-color-on-accent-deep-muted);
+  flex: 1;
+  min-width: 0;
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-lg);
+  font-weight: 700;
 }
 
 .new-order-caret {
@@ -194,20 +168,6 @@
 .dest:disabled {
   cursor: default;
   opacity: 0.55;
-}
-
-.dest-rank {
-  flex: none;
-  width: 22px;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-extrabold);
-  font-variant-numeric: tabular-nums;
-  color: var(--lfc-color-on-primary-muted);
-}
-
-.dest.is-on .dest-rank {
-  color: var(--lfc-color-accent);
 }
 
 .dest-label {
