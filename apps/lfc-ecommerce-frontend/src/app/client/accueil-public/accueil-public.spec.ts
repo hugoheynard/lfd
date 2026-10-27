@@ -430,11 +430,14 @@ describe('AccueilPublic — les trois états', () => {
    * échappe pas.
    */
   /** Une seule maison servie : la porte la nomme et mène à l'heure (Hugo, 2026-10-27). */
-  it('nomme la maison unique sur la porte du retrait', async () => {
+  /** Hugo, 2026-10-27 : « Retrait en boutique », « Je retire ma commande ». */
+  it('une maison unique : la porte dit le retrait en boutique, sans maison à choisir', async () => {
     const fixture = await mount([point({ id: 'a', label: 'Le Labo' })], 'pro');
 
     const door = fixture.nativeElement.querySelector('.door-pickup') as HTMLElement;
-    expect(door.textContent).toContain('Le Labo');
+    expect(door.textContent).toContain('Retrait en boutique');
+    expect(door.textContent).toContain('ma commande');
+    expect(door.textContent).toContain('À la date et l’heure de mon choix.');
     expect(door.querySelector('.door-cta')?.textContent?.trim()).toBe('Je commande');
   });
 

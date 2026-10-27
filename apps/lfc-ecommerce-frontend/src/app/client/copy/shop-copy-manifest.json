@@ -116,9 +116,9 @@
         },
         {
           "key": "accueilPublic.doors.courier.intro",
-          "fr": "Demain, au créneau que vous choisissez.",
-          "en": "Tomorrow, in the slot you choose.",
-          "it": "Domani, nella fascia che sceglie.",
+          "fr": "À l’adresse et au moment de votre choix.",
+          "en": "At the address and time of your choice.",
+          "it": "All’indirizzo e al momento che sceglie.",
           "variables": []
         },
         {
@@ -171,11 +171,25 @@
           "variables": ["value"]
         },
         {
-          "key": "accueilPublic.doors.pickupSingleIntro",
-          "fr": "Retrait : {place}, à l’heure de mon choix.",
-          "en": "Pickup at {place}, at the time I choose.",
-          "it": "Ritiro presso {place}, all’ora che scelgo.",
-          "variables": ["place"]
+          "key": "accueilPublic.doors.pickupSingle.tag",
+          "fr": "Retrait en boutique",
+          "en": "In-store pickup",
+          "it": "Ritiro in negozio",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.doors.pickupSingle.title",
+          "fr": "Je retire\nma commande",
+          "en": "I collect\nmy order",
+          "it": "Ritiro\nil mio ordine",
+          "variables": []
+        },
+        {
+          "key": "accueilPublic.doors.pickupSingle.intro",
+          "fr": "À la date et l’heure de mon choix.",
+          "en": "On the date and at the time I choose.",
+          "it": "Alla data e all’ora che scelgo.",
+          "variables": []
         },
         {
           "key": "accueilPublic.hero.tag",

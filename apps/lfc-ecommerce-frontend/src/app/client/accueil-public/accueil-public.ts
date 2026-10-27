@@ -207,12 +207,7 @@ export class AccueilPublic {
     // Une seule maison : la porte la nomme et mène à l'heure (Hugo, 2026-10-27).
     const served = this.points.pickups();
     const only = served.length === 1 ? served[0] : undefined;
-    return only === undefined
-      ? withNote
-      : {
-          ...withNote,
-          intro: fill(doors.pickupSingleIntro, { place: only.label || only.ville }),
-        };
+    return only === undefined ? withNote : { ...withNote, ...doors.pickupSingle };
   });
 
   /**

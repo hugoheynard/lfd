@@ -51,6 +51,7 @@
     "commandTerms.lateDelivery": null,
     "commandTerms.latePickup": null,
     "commandTerms.lateDeliveryAt": null,
-    "commandTerms.latePickupAt": null
+    "commandTerms.latePickupAt": null,
+    "accueilPublic.doors.pickupSingleIntro": null
   }
 }
