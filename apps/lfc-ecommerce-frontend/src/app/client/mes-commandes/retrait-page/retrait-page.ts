@@ -1,3 +1,4 @@
+import { Location } from '@angular/common';
 import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { ActivatedRoute, Router } from '@angular/router';
@@ -23,6 +24,7 @@ export class RetraitPage {
   private readonly route = inject(ActivatedRoute);
   private readonly router = inject(Router);
   private readonly chrome = inject(ClientChrome);
+  private readonly location = inject(Location);
   private readonly t = inject(ClientCopyService).t;
 
   protected readonly id = toSignal(
@@ -32,7 +34,13 @@ export class RetraitPage {
 
   constructor() {
     this.chrome.kicker.set(this.t().chrome.kickerQr);
+    // Retour là d'où l'on vient — l'accueil, la confirmation, la liste
+    // (Hugo, 2026-10-27) ; arrivé par l'adresse seule, la liste.
     this.chrome.back.set((): void => {
+      if (this.router.lastSuccessfulNavigation()?.previousNavigation) {
+        this.location.back();
+        return;
+      }
       void this.router.navigate(['/mes-commandes']);
     });
   }

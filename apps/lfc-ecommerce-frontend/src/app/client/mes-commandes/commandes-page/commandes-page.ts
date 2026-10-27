@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute } from '@angular/router';
 import {
   FoldButtonComponent,
   FoldElementTitleComponent,
@@ -18,8 +18,7 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
-import { NARROW_QUERY } from '../../panel-side';
-import { RetraitPanel } from '../retrait-panel/retrait-panel';
+import { RetraitOpener } from '../retrait-opener.service';
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
@@ -102,11 +101,11 @@ const ALL_SITES = '';
 export class CommandesPage {
   protected readonly t = inject(ClientCopyService).t;
   private readonly chrome = inject(ClientChrome);
-  private readonly router = inject(Router);
   private readonly sheets = inject(OrderSheetService);
   private readonly deliveryNotes = inject(DeliveryNoteService);
   private readonly notify = inject(NotifyService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly qr = inject(RetraitOpener);
 
   private readonly history_ = inject(ClientOrderHistory);
   private readonly auth = inject(AuthFacade);
@@ -298,12 +297,6 @@ export class CommandesPage {
    * L'écran existe depuis le lot 4 ; il lui manquait son appelant.
    */
   protected showQr(orderId: string): void {
-    // En pile, un panneau : on présente son écran sans quitter ses commandes
-    // (Hugo, 2026-10-27). Au bureau, la page, qui est aussi l'adresse partagée.
-    if (matchMedia(NARROW_QUERY).matches) {
-      RetraitPanel.open(this.panels, orderId);
-      return;
-    }
-    void this.router.navigate(['/mes-commandes/retrait', orderId]);
+    this.qr.show(orderId);
   }
 }

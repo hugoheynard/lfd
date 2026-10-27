@@ -11,6 +11,7 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
+import { RetraitOpener } from '../mes-commandes/retrait-opener.service';
 import { type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
@@ -131,6 +132,7 @@ export class AccueilPublic {
   private readonly points = inject(ServicePoints);
   private readonly doors = inject(OrderDoors);
   private readonly router = inject(Router);
+  private readonly qr = inject(RetraitOpener);
   private readonly locale = inject(ClientLocale);
 
   protected readonly t = inject(ClientCopyService).t;
@@ -800,7 +802,7 @@ export class AccueilPublic {
 
   /** Le QR de retrait — le MÊME écran que depuis « Mes commandes ». */
   protected showQr(orderId: string): void {
-    void this.router.navigate(['/mes-commandes/retrait', orderId]);
+    this.qr.show(orderId);
   }
 
   protected allOrders(): void {

@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, effect, inject } from '@angular/core';
 import { Router } from '@angular/router';
+import { RetraitOpener } from '../../mes-commandes/retrait-opener.service';
 import { FoldIconComponent } from 'fold-ng';
 
 import { AuthFacade } from '../../../auth/auth.facade';
@@ -38,6 +39,7 @@ const AFTER_SIGN_UP = '/mes-commandes';
 export class ConfirmationPage {
   private readonly chrome = inject(ClientChrome);
   private readonly router = inject(Router);
+  private readonly qr = inject(RetraitOpener);
   private readonly orders = inject(ClientOrders);
   /** Reconnu ou non : c'est ce qui décide si le QR est atteignable ici. */
   private readonly auth = inject(AuthFacade);
@@ -232,7 +234,7 @@ export class ConfirmationPage {
   protected showQr(): void {
     const order = this.order();
     if (order !== null) {
-      void this.router.navigate(['/mes-commandes/retrait', order.id]);
+      this.qr.show(order.id);
     }
   }
 
