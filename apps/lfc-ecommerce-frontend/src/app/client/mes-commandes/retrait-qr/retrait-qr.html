@@ -1,0 +1,53 @@
+@if (phase() === 'loading') {
+  <!-- L'état de chargement passe par fold (lot A5) : un paragraphe maison ne
+       s'annonçait pas. -->
+  <fold-loading [message]="t().qr.loading" />
+} @else {
+  <h1 class="title">{{ t().qr.title }}</h1>
+
+  @if (handoverUrl(); as url) {
+    <p class="lead">{{ t().qr.lead }}</p>
+    <div class="code">
+      <lfd-qr-code [value]="url" [label]="t().qr.codeLabel" />
+    </div>
+    <p class="ref">{{ reference() }}</p>
+    @if (whenLabel(); as when) {
+      <p class="when">{{ when }}</p>
+    }
+
+    <!-- L'avion en papier : envoyer le code à qui passera le prendre (Hugo,
+         2026-10-27). fold n'a pas d'avion ; le tracé est celui de Lucide « send ». -->
+    <button foldButton block type="button" class="send" (click)="send(url)">
+      <svg class="plane" viewBox="0 0 24 24" aria-hidden="true">
+        <path d="m22 2-7 20-4-9-9-4Z" />
+        <path d="M22 2 11 13" />
+      </svg>
+      {{ t().qr.send }}
+    </button>
+  } @else {
+    <!-- Pas de code : on dit POURQUOI. Un carré absent sans raison se lit
+         comme une panne, et le client rappelle. -->
+    <p class="none">{{ noCodeReason() }}</p>
+    @if (reference(); as ref) {
+      <p class="ref">{{ ref }}</p>
+    }
+    @if (due()) {
+      <a foldButton block size="sm" icon="credit-card" [routerLink]="['/reglement', orderId()]">
+        {{ t().orders.settle }}
+      </a>
+    }
+  }
+
+  @if (lines().length > 0) {
+    <fold-disclosure class="contents">
+      <span summary>{{ t().qr.contents }}</span>
+      <ul class="lines">
+        @for (line of lines(); track line.sku) {
+          <li>
+            <span class="qty">{{ line.quantity }} ×</span> {{ line.productName }}
+          </li>
+        }
+      </ul>
+    </fold-disclosure>
+  }
+}

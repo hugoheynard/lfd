@@ -4258,9 +4258,9 @@
         },
         {
           "key": "done.qr",
-          "fr": "Voir mon code de remise",
-          "en": "View my handover code",
-          "it": "Vedere il mio codice di consegna",
+          "fr": "Voir mon code de retrait",
+          "en": "View my pickup code",
+          "it": "Vedere il mio codice di ritiro",
           "variables": []
         },
         {
@@ -4279,6 +4279,28 @@
       "source": "fr.ts · en.ts · it.ts",
       "journey": true,
       "entries": [
+        { "key": "qr.close", "fr": "Fermer", "en": "Close", "it": "Chiudi", "variables": [] },
+        {
+          "key": "qr.send",
+          "fr": "Envoyer mon QR code",
+          "en": "Send my QR code",
+          "it": "Inviare il mio codice QR",
+          "variables": []
+        },
+        {
+          "key": "qr.shareTitle",
+          "fr": "QR de retrait — commande {ref}",
+          "en": "Pickup QR — order {ref}",
+          "it": "QR di ritiro — ordine {ref}",
+          "variables": ["ref"]
+        },
+        {
+          "key": "qr.contents",
+          "fr": "Voir le contenu de ma commande",
+          "en": "See what’s in my order",
+          "it": "Vedere il contenuto del mio ordine",
+          "variables": []
+        },
         {
           "key": "qr.title",
           "fr": "Votre QR code",
@@ -4316,9 +4338,9 @@
         },
         {
           "key": "qr.unavailable",
-          "fr": "Cette commande n’a pas de code : elle est antérieure au code de remise.",
-          "en": "This order has no code: it predates the handover code.",
-          "it": "Questo ordine non ha codice: è anteriore al codice di consegna.",
+          "fr": "Cette commande n’a pas de code : elle est antérieure au code de retrait.",
+          "en": "This order has no code: it predates the pickup code.",
+          "it": "Questo ordine non ha codice: è anteriore al codice di ritiro.",
           "variables": []
         },
         {
@@ -4330,9 +4352,9 @@
         },
         {
           "key": "qr.due",
-          "fr": "Cette commande n’est pas encore réglée. Son code de remise apparaît dès que le paiement est accepté.",
-          "en": "This order is not paid yet. Its handover code appears as soon as the payment goes through.",
-          "it": "Questo ordine non è ancora pagato. Il codice di consegna appare appena il pagamento è accettato.",
+          "fr": "Cette commande n’est pas encore réglée. Son code de retrait apparaît dès que le paiement est accepté.",
+          "en": "This order is not paid yet. Its pickup code appears as soon as the payment goes through.",
+          "it": "Questo ordine non è ancora pagato. Il codice di ritiro appare appena il pagamento è accettato.",
           "variables": []
         }
       ],

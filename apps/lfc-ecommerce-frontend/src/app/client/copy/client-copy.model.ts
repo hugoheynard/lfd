@@ -834,6 +834,14 @@ export interface ClientCopy {
   };
   /** L'écran du **QR de retrait** — celui que le client présente au comptoir. */
   readonly qr: {
+    /** Le nom de la croix du panneau, en pile. */
+    readonly close: string;
+    /** L'avion en papier : envoyer l'image du code. */
+    readonly send: string;
+    /** Le titre du partage ; `{ref}` le numéro de commande. */
+    readonly shareTitle: string;
+    /** Le dépliant des lignes de la commande. */
+    readonly contents: string;
     readonly title: string;
     readonly lead: string;
     readonly loading: string;

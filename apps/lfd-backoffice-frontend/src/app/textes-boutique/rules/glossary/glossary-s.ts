@@ -1,5 +1,6 @@
 /** Segments de clé `S` → ce que le texte est, dit comme la boutique le dit. */
 export const GLOSSARY_S: Readonly<Record<string, string>> = {
+  shareTitle: 'QR — titre du partage de l’image',
   salesTerms: 'Conditions générales de vente',
   salesTermsAccept: 'Panier — case « j’accepte les CGV »',
   salesTermsLink: 'Panier — lien vers les CGV',

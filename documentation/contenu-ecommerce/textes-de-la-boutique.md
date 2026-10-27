@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1699 textes
+## Sommaire — 1703 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -34,7 +34,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
-| [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
+| [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
 | **Le reste de la boutique** | | |
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 16 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1699** |
+| **Total** | | **1703** |
 
 ## Le parcours de commande
 
@@ -847,25 +847,29 @@ Source : `fr.ts · en.ts · it.ts` · 28 textes.
 | `done.onAccount` | Porté à votre compte | Charged to your account | Addebitato sul conto |  |
 | `done.onAccountPretax` | Porté à votre compte, HT | Charged to your account, excl. VAT | Addebitato sul conto, IVA escl. |  |
 | `done.settleAction` | Régler maintenant | Pay now | Paga adesso |  |
-| `done.qr` | Voir mon code de remise | View my handover code | Vedere il mio codice di consegna |  |
+| `done.qr` | Voir mon code de retrait | View my pickup code | Vedere il mio codice di ritiro |  |
 | `done.changeNote` | Un changement ? Appelez le fournil — une commande passée entre en fabrication. | Need a change? Call the bakery — a placed order goes into production. | Un cambiamento? Chiami il forno — un ordine inviato entra in produzione. |  |
 
 <a id="espace-qr"></a>
 
 ### Confirmation — le QR de retrait — `qr`
 
-Source : `fr.ts · en.ts · it.ts` · 8 textes.
+Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
+| `qr.close` | Fermer | Close | Chiudi |  |
+| `qr.send` | Envoyer mon QR code | Send my QR code | Inviare il mio codice QR |  |
+| `qr.shareTitle` | QR de retrait — commande {ref} | Pickup QR — order {ref} | QR di ritiro — ordine {ref} | `{ref}` |
+| `qr.contents` | Voir le contenu de ma commande | See what’s in my order | Vedere il contenuto del mio ordine |  |
 | `qr.title` | Votre QR code | Your QR code | Il suo codice QR |  |
 | `qr.lead` | Présentez ce code pour recevoir votre commande. | Show this code to receive your order. | Mostri questo codice per ricevere il suo ordine. |  |
 | `qr.loading` | Chargement… | Loading… | Caricamento… |  |
 | `qr.codeLabel` | QR code de retrait | Pickup QR code | Codice QR di ritiro |  |
 | `qr.when` | Pour le {day} | For {day} | Per il {day} | `{day}` |
-| `qr.unavailable` | Cette commande n’a pas de code : elle est antérieure au code de remise. | This order has no code: it predates the handover code. | Questo ordine non ha codice: è anteriore al codice di consegna. |  |
+| `qr.unavailable` | Cette commande n’a pas de code : elle est antérieure au code de retrait. | This order has no code: it predates the pickup code. | Questo ordine non ha codice: è anteriore al codice di ritiro. |  |
 | `qr.unknown` | Cette commande est introuvable. | That order cannot be found. | Ordine non trovato. |  |
-| `qr.due` | Cette commande n’est pas encore réglée. Son code de remise apparaît dès que le paiement est accepté. | This order is not paid yet. Its handover code appears as soon as the payment goes through. | Questo ordine non è ancora pagato. Il codice di consegna appare appena il pagamento è accettato. |  |
+| `qr.due` | Cette commande n’est pas encore réglée. Son code de retrait apparaît dès que le paiement est accepté. | This order is not paid yet. Its pickup code appears as soon as the payment goes through. | Questo ordine non è ancora pagato. Il codice di ritiro appare appena il pagamento è accettato. |  |
 
 ## Le reste de la boutique
 

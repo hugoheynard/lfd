@@ -1,32 +1,3 @@
 <div class="page">
-  @if (phase() === 'loading') {
-    <!-- L'état de chargement passe par fold (lot A5) : un paragraphe maison ne
-         s'annonçait pas. -->
-    <fold-loading [message]="t().qr.loading" />
-  } @else {
-    <h1 class="title">{{ t().qr.title }}</h1>
-
-    @if (handoverUrl(); as url) {
-      <p class="lead">{{ t().qr.lead }}</p>
-      <div class="code">
-        <lfd-qr-code [value]="url" [label]="t().qr.codeLabel" />
-      </div>
-      <p class="ref">{{ reference() }}</p>
-      @if (whenLabel(); as when) {
-        <p class="when">{{ when }}</p>
-      }
-    } @else {
-      <!-- Pas de code : on dit POURQUOI. Un carré absent sans raison se lit
-           comme une panne, et le client rappelle. -->
-      <p class="none">{{ noCodeReason() }}</p>
-      @if (reference(); as ref) {
-        <p class="ref">{{ ref }}</p>
-      }
-      @if (due()) {
-        <a foldButton block size="sm" icon="credit-card" [routerLink]="['/reglement', orderId()]">
-          {{ t().orders.settle }}
-        </a>
-      }
-    }
-  }
+  <app-retrait-qr [orderRef]="id()" />
 </div>

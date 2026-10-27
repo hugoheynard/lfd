@@ -18,6 +18,8 @@ import {
   FoldPanelHostService,
 } from 'fold-ng';
 
+import { NARROW_QUERY } from '../../panel-side';
+import { RetraitPanel } from '../retrait-panel/retrait-panel';
 import { FoldScrollIndicatorComponent, FoldWellComponent } from '../../../../shared';
 
 import { ClientBannerOutlet } from '../../nav/client-banner';
@@ -296,6 +298,12 @@ export class CommandesPage {
    * L'écran existe depuis le lot 4 ; il lui manquait son appelant.
    */
   protected showQr(orderId: string): void {
+    // En pile, un panneau : on présente son écran sans quitter ses commandes
+    // (Hugo, 2026-10-27). Au bureau, la page, qui est aussi l'adresse partagée.
+    if (matchMedia(NARROW_QUERY).matches) {
+      RetraitPanel.open(this.panels, orderId);
+      return;
+    }
     void this.router.navigate(['/mes-commandes/retrait', orderId]);
   }
 }

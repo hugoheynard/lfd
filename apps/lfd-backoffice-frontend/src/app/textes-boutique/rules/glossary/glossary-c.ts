@@ -31,6 +31,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   changeNote: 'Modifier une commande — note',
   changeService: 'Changer de mode de service',
   changeTime: 'Changer l’heure',
+  contents: 'QR — voir le contenu de la commande',
   changeDate: 'Modifier — changer la date',
   changePlace: 'Modifier — changer le point de retrait',
   charges: 'Frais (facture)',

@@ -1,0 +1,78 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--fold-space-md);
+  text-align: center;
+}
+
+.title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-screen-sm);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-display);
+  text-transform: uppercase;
+  line-height: var(--lfc-leading-display);
+  color: var(--fold-color-text);
+}
+
+.lead,
+.none,
+/* Le carré vit sur du BLANC, quel que soit le thème : un lecteur de code lit un
+   contraste, et un fond sombre derrière des modules sombres ne se scanne pas. */
+.code {
+  display: grid;
+  place-items: center;
+  width: min(280px, 80vw);
+  padding: var(--fold-space-md);
+  border-radius: var(--fold-radius-lg);
+  background: #fff;
+}
+
+.ref {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--lfc-text-cta);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-cta);
+  color: var(--fold-color-text);
+}
+
+.when {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
+}
+
+.send {
+  width: min(280px, 80vw);
+}
+
+.plane {
+  width: 1.1em;
+  height: 1.1em;
+  fill: none;
+  stroke: currentcolor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.contents {
+  width: 100%;
+  text-align: start;
+}
+
+.lines {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qty {
+  font-weight: var(--lfc-weight-black);
+}
