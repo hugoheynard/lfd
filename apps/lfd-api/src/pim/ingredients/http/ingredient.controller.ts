@@ -1,10 +1,15 @@
-import { Body, Controller, Delete, Get, Param, Post, Put } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import {
+  applyIngredientAllergenPropagationPayloadSchema,
   createIngredientPayloadSchema,
+  ingredientAllergenPropagationQuerySchema,
   setIngredientAllergensPayloadSchema,
   setProductIngredientsPayloadSchema,
   updateIngredientPayloadSchema,
+  type ApplyIngredientAllergenPropagationPayload,
+  type IngredientAllergenPropagationQuery,
+  type IngredientAllergenPropagationView,
   type IngredientView,
   type CreateIngredientPayload,
   type ProductIngredientAllergensView,
@@ -14,7 +19,9 @@ import {
 } from "@lfd/pim-contracts";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
-import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
+import { ApplyIngredientAllergenPropagationCommand } from "../../catalogue/product/application/apply-ingredient-allergen-propagation.js";
+import { PreviewIngredientAllergenPropagationQuery } from "../../catalogue/product/application/preview-ingredient-allergen-propagation.js";
 import { CreateIngredientCommand } from "../application/create-ingredient.js";
 import { RemoveIngredientCommand } from "../application/remove-ingredient.js";
 import { UpdateIngredientCommand } from "../application/update-ingredient.js";
@@ -98,6 +105,50 @@ export class IngredientController {
       new SetIngredientAllergensCommand(key, body.codes, body.none ?? false),
     );
     return { key };
+  }
+
+  /**
+   * **L'aperçu** de la propagation des allergènes de cette matière à ses
+   * fiches — lecture seule. `added` / `removed` : les codes changés au dernier
+   * enregistrement, séparés par des virgules. Calculé par le catalogue, servi
+   * ici à côté de l'écriture qu'il prolonge.
+   */
+  @Get("ingredients/:key/allergen-propagation")
+  previewAllergenPropagation(
+    @Param("key") key: string,
+    @Query(new ZodQuery(ingredientAllergenPropagationQuerySchema))
+    query: IngredientAllergenPropagationQuery,
+  ): Promise<IngredientAllergenPropagationView> {
+    return this.queries.execute<
+      PreviewIngredientAllergenPropagationQuery,
+      IngredientAllergenPropagationView
+    >(new PreviewIngredientAllergenPropagationQuery(key, query.added, query.removed));
+  }
+
+  /**
+   * **L'application** — recalcule l'aperçu et n'écrit que ce qu'il propose
+   * encore. Rend l'aperçu RELU : ce qui reste (cases décochées, fiches non
+   * renseignées) est ce que l'écran a encore à montrer.
+   */
+  @Post("ingredients/:key/allergen-propagation")
+  @HttpCode(200)
+  async applyAllergenPropagation(
+    @Param("key") key: string,
+    @Body(new ZodBody(applyIngredientAllergenPropagationPayloadSchema))
+    body: ApplyIngredientAllergenPropagationPayload,
+  ): Promise<IngredientAllergenPropagationView> {
+    await this.commands.execute<ApplyIngredientAllergenPropagationCommand, void>(
+      new ApplyIngredientAllergenPropagationCommand(
+        key,
+        body.added,
+        body.removed,
+        body.removalsKept ?? [],
+      ),
+    );
+    return this.queries.execute<
+      PreviewIngredientAllergenPropagationQuery,
+      IngredientAllergenPropagationView
+    >(new PreviewIngredientAllergenPropagationQuery(key, body.added, body.removed));
   }
 
   /** Ce que CETTE fiche cite, dans son ordre d'affichage. */

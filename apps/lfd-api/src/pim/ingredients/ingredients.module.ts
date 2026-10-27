@@ -20,6 +20,7 @@ import { IngredientController } from "./http/ingredient.controller.js";
 import { PrismaAppellationRepository } from "./infrastructure/prisma-appellation.repository.js";
 import { PrismaIngredientRepository } from "./infrastructure/prisma-ingredient.repository.js";
 import { PrismaCitedAllergensReader } from "./infrastructure/prisma-cited-allergens.reader.js";
+import { PrismaIngredientCitationsReader } from "./infrastructure/prisma-ingredient-citations.reader.js";
 
 /**
  * Contexte **ingredients** — la provenance de ce qu'on vend.
@@ -53,10 +54,12 @@ import { PrismaCitedAllergensReader } from "./infrastructure/prisma-cited-allerg
     { provide: AppellationRepository, useClass: PrismaAppellationRepository },
     { provide: IngredientRepository, useClass: PrismaIngredientRepository },
     PrismaCitedAllergensReader,
+    PrismaIngredientCitationsReader,
   ],
-  // L'adaptateur du port que le CATALOGUE déclare (`CitedAllergensReader`).
+  // Les adaptateurs des ports que le CATALOGUE déclare (`CitedAllergensReader`,
+  // `IngredientCitationsReader`).
   // Exporté, pas fourni sous son token : c'est la racine qui relie les deux
   // côtés (`appBootstrap/cited-allergens-feed.module.ts`).
-  exports: [PrismaCitedAllergensReader],
+  exports: [PrismaCitedAllergensReader, PrismaIngredientCitationsReader],
 })
 export class IngredientsModule {}

@@ -50,11 +50,14 @@ Les traces (« peut contenir ») ne sont ni lues ni touchées.
 
 ### Le message
 
-> Le gluten ajouté à _Farine T65_ touche **14 fiches** : 9 le déclarent déjà,
+> Le gluten ajouté à _Farine T65_ touche **15 fiches** : 9 le déclarent déjà,
 > **5 vont le recevoir** (dont 3 publiées), 1 n'a pas encore de déclaration.
 
-> Le lait retiré de _Beurre doux_ : **4 fiches** pourraient le perdre (dont
-> **2 publiées**) ; 2 le gardent, un autre ingrédient en contient.
+> Le lait retiré de _Beurre doux_ touche **6 fiches** : **4** pourraient le
+> perdre (dont **2 publiées**) ; 2 le gardent, un autre ingrédient en contient.
+
+Les comptes sont une **partition** des fiches touchées (décision 7 ci-dessous) :
+chaque nombre du message somme au total.
 
 ## 3. Côté serveur
 
@@ -75,6 +78,33 @@ removed, removalsKept)` — `removalsKept` : les déclinaisons décochées.
   appliqués.
 - Les deux routes sous `/pim`, même surface et même droit que l'écriture des
   allergènes d'un ingrédient.
+
+## 3 bis. Décisions au bâti (2026-10-27)
+
+Prises au bâti du lot P1, par délégation de Hugo.
+
+1. **Trace au journal par déclinaison**, et non par fiche : le fait existant
+   `product.allergens_saved` reçoit un champ optionnel `fromIngredient`
+   (l'ingrédient d'origine). Pas de nouveau type de fait.
+2. **La commande rend `void`** (CQRS) ; la route `POST` rend l'aperçu relu.
+3. **Un code ajouté qu'une déclinaison porte en trace est PROMU** : retiré de
+   « peut contenir », ajouté aux allergènes — si l'ingrédient le contient, ce
+   n'est plus une trace. L'aperçu le dit par déclinaison (`promotedFromTrace`).
+4. **Jamais d'échec global** : une déclinaison que la garde refuserait (code
+   archivé qu'elle ne portait pas, ou tout autre refus de la déclaration) est
+   exclue de l'application ; l'aperçu la liste avec sa raison (`blocked`), et
+   le reste s'applique. Un refus autre que le code archivé
+   (`refused_by_declaration`) ne se découvre qu'à l'application ; c'est sans
+   gravité : l'aperçu que la route relit ensuite montre encore la déclinaison
+   « à recevoir ».
+5. **Un retrait qui vide la liste écrit `[]`** (« aucun allergène ») : c'est le
+   geste explicite de la personne, mais l'aperçu le dit (`becomesNone`).
+6. **Les déclinaisons arrêtées sont incluses.**
+7. **Les comptes forment une partition** des fiches touchées, par priorité :
+   à perdre > à recevoir > **bloquée** > non renseignée > déjà conforme >
+   gardée par un autre ingrédient. Une fiche dont le seul changement est
+   bloqué n'est pas « déjà conforme ». « Publiées » est un sous-ensemble de « à recevoir » et de « à
+   perdre ».
 
 ## 4. Côté écran
 

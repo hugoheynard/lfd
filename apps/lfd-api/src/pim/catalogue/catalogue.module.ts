@@ -1,4 +1,6 @@
 import { ListProductComplianceWarningsHandler } from "./product/application/list-product-compliance-warnings.js";
+import { ApplyIngredientAllergenPropagationHandler } from "./product/application/apply-ingredient-allergen-propagation.js";
+import { PreviewIngredientAllergenPropagationHandler } from "./product/application/preview-ingredient-allergen-propagation.js";
 import { ReadProductIngredientAllergensHandler } from "./product/application/read-product-ingredient-allergens.js";
 import { Module } from "@nestjs/common";
 
@@ -167,6 +169,8 @@ import {
     ListProductsHandler,
     ListProductComplianceWarningsHandler,
     ReadProductIngredientAllergensHandler,
+    PreviewIngredientAllergenPropagationHandler,
+    ApplyIngredientAllergenPropagationHandler,
     DeclareProductReadyHandler,
     WithdrawProductReadinessHandler,
     GetProductReadinessHandler,

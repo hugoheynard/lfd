@@ -315,3 +315,16 @@ export type {
 
 export { OPERATION_AUDIENCES, operationAudienceSchema } from "./operation.js";
 export type { OperationAudience } from "./operation.js";
+
+export {
+  applyIngredientAllergenPropagationPayloadSchema,
+  ingredientAllergenPropagationQuerySchema,
+} from "./ingredient-allergen-propagation.js";
+export type {
+  ApplyIngredientAllergenPropagationPayload,
+  IngredientAllergenPropagationCounts,
+  IngredientAllergenPropagationQuery,
+  IngredientAllergenPropagationView,
+  ProductAllergenPropagationView,
+  VariantAllergenPropagationView,
+} from "./ingredient-allergen-propagation.js";

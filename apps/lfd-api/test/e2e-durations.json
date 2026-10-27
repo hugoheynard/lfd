@@ -321,6 +321,7 @@
   "test/pim-catalog-revision.e2e-spec.ts": 22451,
   "test/pim-categories.e2e-spec.ts": 9657,
   "test/pim-cold-requirement.e2e-spec.ts": 3445,
+  "test/pim-ingredient-allergen-propagation.e2e-spec.ts": 10232,
   "test/pim-ingredients.e2e-spec.ts": 8658,
   "test/pim-journal-atomicity.e2e-spec.ts": 3023,
   "test/pim-localized.e2e-spec.ts": 2953,

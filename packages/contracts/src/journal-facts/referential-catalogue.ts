@@ -385,6 +385,13 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
       subjectLabel: subjectLabel(),
       variant: named("variant"),
       changes: allergenChanges(),
+      /**
+       * L'ingrédient dont le changement a été PROPAGÉ à cette déclaration
+       * (2026-10-27, `plan-propager-allergenes-d-un-ingredient.md`). Absent =
+       * saisie à la main sur la fiche : c'est le seul fait qui distingue les
+       * deux gestes à la relecture.
+       */
+      fromIngredient: named("ingredient").optional(),
     }),
   ),
   /** **Les valeurs nutritionnelles d'une déclinaison** — jamais un allergène. */
