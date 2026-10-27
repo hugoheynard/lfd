@@ -37,6 +37,7 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   charges: 'Frais (facture)',
   choose: 'Bouton « choisir »',
   chooseAddress: 'Barre du parcours — choisir l’adresse',
+  chooseMode: 'Barre de commande — retrait ou livraison, rien de choisi',
   chooseDay: 'Barre du parcours — choisir le jour',
   chooseTime: 'Barre du parcours — choisir l’heure',
   choosePhoto: 'Choisir une photo',
