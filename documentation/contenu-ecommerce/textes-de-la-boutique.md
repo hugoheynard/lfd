@@ -85,7 +85,7 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 | `accueilPublic.doors.pickupUpTo` | Jusqu’à {value} | Up to {value} | Fino a {value} | `{value}` |
 | `accueilPublic.hero.tag` | Nouvelle commande | New order | Nuovo ordine |  |
 | `accueilPublic.hero.title` | Je passe la prendre | I’ll come and get it | Passo a prenderlo |  |
-| `accueilPublic.hero.intro` | Choisissez votre maison — l’heure se choisit juste après, et la remise du retrait s’applique toute seule. | Pick your bakery — the time comes right after, and the pickup discount applies on its own. | Scegliete la vostra bottega — l’orario si sceglie subito dopo, e lo sconto del ritiro si applica da sé. |  |
+| `accueilPublic.hero.intro` | Choisissez votre point et votre heure de retrait. | Choose your pickup point and time. | Scegliete il punto e l’orario di ritiro. |  |
 | `accueilPublic.proof.discount` | −{value} | −{value} | −{value} | `{value}` |
 | `accueilPublic.proof.discountLabel` | au retrait | on pickup | al ritiro |  |
 | `accueilPublic.proof.opensLabel` | Première ouverture | Doors open | Prima apertura |  |

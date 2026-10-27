@@ -321,8 +321,7 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
   hero: {
     tag: 'Nouvelle commande',
     title: 'Je passe la prendre',
-    intro:
-      'Choisissez votre maison — l’heure se choisit juste après, et la remise du retrait s’applique toute seule.',
+    intro: 'Choisissez votre point et votre heure de retrait.',
   },
   proof: {
     discount: '−{value}',
@@ -414,8 +413,7 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
   hero: {
     tag: 'New order',
     title: 'I’ll come and get it',
-    intro:
-      'Pick your bakery — the time comes right after, and the pickup discount applies on its own.',
+    intro: 'Choose your pickup point and time.',
   },
   proof: {
     discount: '−{value}',
@@ -507,8 +505,7 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
   hero: {
     tag: 'Nuovo ordine',
     title: 'Passo a prenderlo',
-    intro:
-      'Scegliete la vostra bottega — l’orario si sceglie subito dopo, e lo sconto del ritiro si applica da sé.',
+    intro: 'Scegliete il punto e l’orario di ritiro.',
   },
   proof: {
     discount: '−{value}',

@@ -186,9 +186,9 @@
         },
         {
           "key": "accueilPublic.hero.intro",
-          "fr": "Choisissez votre maison — l’heure se choisit juste après, et la remise du retrait s’applique toute seule.",
-          "en": "Pick your bakery — the time comes right after, and the pickup discount applies on its own.",
-          "it": "Scegliete la vostra bottega — l’orario si sceglie subito dopo, e lo sconto del ritiro si applica da sé.",
+          "fr": "Choisissez votre point et votre heure de retrait.",
+          "en": "Choose your pickup point and time.",
+          "it": "Scegliete il punto e l’orario di ritiro.",
           "variables": []
         },
         {
