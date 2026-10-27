@@ -119,6 +119,15 @@ Puis, **pour chaque taux** :
    - l'écart entre la TVA du taux et la somme de ces arrondis se distribue
      **un centime à la fois**, aux termes dont le reste est le plus fort dans
      le sens de l'écart ;
+   - **les arrondis sont commerciaux** : au plus proche, **la moitié
+     s'éloignant de zéro** (55,5 → 56 ; −5,5 → −6), la règle déjà tenue par
+     `@lfd/money` ;
+   - le **reste** d'un terme est sa TVA contenue moins son arrondi, signé ;
+     un écart positif va aux restes les plus **grands**, un écart négatif aux
+     plus **petits** ;
+   - **un terme dont le TTC est nul ne reçoit rien**, et aucun centime n'est
+     donné qui rendrait le HT d'un terme de signe contraire à son TTC (une
+     ligne offerte reste à 0 HT, 0 TVA) ;
    - **à égalité**, l'ordre est fixe : les lignes dans l'ordre de la commande,
      puis la remise retrait, le bon, le port. Devis, agrégat et BL appellent
      la même fonction et rendent les mêmes centimes.
@@ -175,6 +184,10 @@ leur application au particulier qui se fait en TTC.
 - **R1 bis — Frais de zone en pourcentage** (`feeMode: "percent"`,
   `prisma-delivery-zone.repository.ts:23`) : pour un particulier, le
   pourcentage s'applique au **TTC** des marchandises, sans conversion.
+- **Tout pourcentage appliqué à un TTC** (remise retrait, frais) s'arrondit
+  comme aujourd'hui : `cartAdjustmentCents`, au plus proche, la moitié vers le
+  haut — −10 % de 6,66 € = 0,67 €. Même fonction au devis, à la garde et au
+  BL.
 - **R2 — Remise retrait** : un **pourcentage** s'applique au TTC des lignes
   éligibles (−10 % de 21,00 = 2,10 € TTC) ; un **montant fixe** saisi HT est
   converti en TTC au prorata des taux des lignes éligibles. Bornée au TTC
@@ -229,9 +242,22 @@ Un BL partiel d'une commande `exact_ht` est **recomposé en entier** par la
 même fonction sur les lignes livrées : **toutes** ses lignes sont réécrites,
 y compris celles livrées en entier (`departing-source.ts:53-62` ne recopie
 plus une ligne figée pour `exact_ht`). Ses HT de ligne somment donc vers son
-en-tête. Un port en montant fixe garde le TTC de la commande (sa ventilation
-HT/TVA suit le mélange de taux livré) ; un port en pourcentage s'applique au
-TTC livré.
+en-tête. Ce que le BL refait et ce qu'il garde :
+
+- **port en montant fixe** : le TTC **figé sur la commande**, sans
+  reconversion ; la garde du BL le compare à ce TTC figé, pas à une
+  conversion du barème (qui dépendrait du mélange de taux livré) ;
+- **port en pourcentage** : refait sur le TTC livré ;
+- **remise retrait** : refaite sur le TTC éligible livré ;
+- **bon de fidélité** : le TTC imputé sur la commande, borné au TTC livré
+  après remise.
+
+### La bascule
+
+Au déploiement, un panier ouvert peut changer d'un centime (étiquette
+recalculée, § 4). **La passation fait foi** : elle recompose tout, et le
+montant prélevé est celui qu'elle calcule ; le panier et le devis se
+rechiffrent à leur prochaine lecture. Aucune commande déjà passée ne change.
 
 ## 6. Ce qui change, endroit par endroit
 
@@ -294,12 +320,12 @@ le calcul pro. Aucun chiffre ne bouge dans un espace société.
 
 ## 9. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                                                                  | Tests                                                                                                                                                                                                                                                               |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | `composeTtcOrder` et `ttcOfHtAmount` dans `@lfd/money`, en entiers, sans appelant ; retrait de `ventilateVatExact` ; **recensement** des lecteurs des colonnes de montant et de `lineTotalCents(prix, qté)` (journal, `growth`, exports, spécimens, `order-composition.service.ts`, `quote-order.handler.ts`) — **porte d'entrée de C2** | banana bread, 30 × 0,50, croissants, ticket U ; remise % et fixe sur deux taux ; bon qui solde, bon qui laisse 1 c ; port standard, qui suit, en % ; **TVA ≥ HT net × taux** et **Σ HT + TVA = total** sur un balayage ; 0–200 000 c par taux ; `ventilateVat` figé |
-| C2  | Migration (§ 7) ; `CartAdjustments` en TTC pour `public` ; `OrderLine.ofTtc` ; `Order.draft` et ses gardes ; devis ; bon                                                                                                                                                                                                                 | e2e : panier public = commande = montant Stripe ; remise retrait et bon en TTC ; **20 paniers pro figés**                                                                                                                                                           |
-| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; « Mes commandes », bon de commande, e-mail au format du ticket                                                                                                                                                                                                                | e2e BL partiel public ; captures des documents                                                                                                                                                                                                                      |
-| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état ; JSDoc de `ttcCentsOf`, `OrderLine`                                                                                                                                                                                                                                           | `pnpm test` racine                                                                                                                                                                                                                                                  |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                  | Tests                                                                                                                                                                                                                                                                                                                                                      |
+| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | `composeTtcOrder` et `ttcOfHtAmount` dans `@lfd/money`, en entiers, sans appelant ; retrait de `ventilateVatExact` ; **recensement** des lecteurs des colonnes de montant et de `lineTotalCents(prix, qté)` (journal, `growth`, exports, spécimens, `order-composition.service.ts`, `quote-order.handler.ts`) — **porte d'entrée de C2** | banana bread, 30 × 0,50, croissants, ticket U ; remise % et fixe sur deux taux, **dont le cas d'égalité au demi** (3,33 à 5,5 % + 3,33 à 20 %, −10 %) ; ligne offerte ; bon qui solde, bon qui laisse 1 c ; port standard, qui suit, en % ; **TVA ≥ HT net × taux** et **Σ HT + TVA = total** sur un balayage ; 0–200 000 c par taux ; `ventilateVat` figé |
+| C2  | Migration (§ 7) ; `CartAdjustments` en TTC pour `public` ; `OrderLine.ofTtc` ; `Order.draft` et ses gardes ; devis ; bon                                                                                                                                                                                                                 | e2e : panier public = commande = montant Stripe ; remise retrait et bon en TTC ; **20 paniers pro figés**                                                                                                                                                                                                                                                  |
+| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; « Mes commandes », bon de commande, e-mail au format du ticket                                                                                                                                                                                                                | e2e BL partiel public ; captures des documents                                                                                                                                                                                                                                                                                                             |
+| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état ; JSDoc de `ttcCentsOf`, `OrderLine`                                                                                                                                                                                                                                           | `pnpm test` racine                                                                                                                                                                                                                                                                                                                                         |
 
 ## 10. Décisions et questions
 
@@ -416,6 +442,11 @@ Sérieux : port en pourcentage (R1 bis), conversion nommée des montants fixes
 C2. Mineurs : noms des colonnes, contrainte conditionnelle, garde de la
 surtaxe. Aucun endroit trouvé où le pro changerait.
 
-### Révision 5
+### Révision 5 (2026-10-27)
 
-_À venir._
+B1 à B4 de la révision 4 confirmés réglés, calculs refaits (bon qui solde,
+bon qui laisse 1 c, promotion × 2). Deux bloquants nouveaux, traités dans le
+texte : la règle du demi-centime et du reste signé (§ 4), l'arrondi d'un
+pourcentage sur TTC (§ 5). Sérieux traités : port et bon au BL, terme nul ou
+offert, bascule des paniers ouverts. Mineur : l'exemple 30 × 0,50 se lit
+avec l'ordre de départage (10 centimes d'écart, aux dix premières lignes).
