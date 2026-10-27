@@ -1,24 +1,26 @@
 /**
  * La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste.
  *
- * **Deux rangées** (Hugo, 2026-10-27) : le nom et la quantité en haut — ce
- * qu'on vient régler —, le prix unitaire, le total et la corbeille en
- * dessous. Une seule rangée laissait trop peu au nom sur un téléphone.
+ * **Une ligne de ticket** (Hugo, 2026-10-27, option B) : au bureau, une seule
+ * rangée — le nom et son prix unitaire en dessous, puis la quantité, le total
+ * et la corbeille. Sur un téléphone, deux rangées : le nom et le total en
+ * haut, le prix unitaire et la quantité en dessous.
  */
 :host {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-columns: minmax(0, 1fr) auto auto auto;
   grid-template-areas:
-    'name qty qty'
-    'unit sum drop';
+    'name qty sum drop'
+    'unit qty sum drop';
+  column-gap: 13px;
+  row-gap: 1px;
   align-items: center;
-  gap: 9px 13px;
   padding: 13px 15px;
 }
 
 .qty {
   grid-area: qty;
-  justify-self: end;
+  justify-self: start;
   /* Deux boutons de part et d'autre d'un champ à trois chiffres : le nom
      garde le reste. */
   width: 148px;
@@ -56,6 +58,7 @@
 
 .name {
   grid-area: name;
+  align-self: end;
   min-width: 0;
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-md);
@@ -67,6 +70,7 @@
 
 .unit {
   grid-area: unit;
+  align-self: start;
   font-size: var(--fold-text-xs);
   color: var(--lfc-color-text-subtle);
   font-variant-numeric: tabular-nums;
@@ -107,4 +111,18 @@
   overflow: hidden;
   clip-path: inset(50%);
   white-space: nowrap;
+}
+
+@media (max-width: 599.98px) {
+  :host {
+    grid-template-columns: minmax(0, 1fr) auto auto;
+    grid-template-areas:
+      'name name sum'
+      'unit qty drop';
+    row-gap: 9px;
+  }
+
+  .qty {
+    justify-self: end;
+  }
 }
