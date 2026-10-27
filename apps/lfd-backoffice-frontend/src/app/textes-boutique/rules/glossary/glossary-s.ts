@@ -124,4 +124,7 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   signUp: 'Bouton « Créer un compte »',
   skipLink: 'Lien « aller au contenu » (clavier, lecteur d’écran)',
   storefrontTitle: 'Titre de la vitrine (lecteur d’écran)',
+  sessionExpired: 'Session expirée',
+  sessionExpiredRenew: 'Session expirée — se reconnecter',
+  see: 'Voir',
 };

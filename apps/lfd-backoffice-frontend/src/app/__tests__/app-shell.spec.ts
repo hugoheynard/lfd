@@ -38,6 +38,8 @@ describe('App — la coquille', () => {
           useValue: {
             can: (permission: string) => granted.includes(permission),
             loaded: signal(true),
+            expired: signal(false),
+            unavailable: signal(false),
             permissions: signal(['b2b_growth:read']),
             identity: signal(null),
             ensureLoaded: async () => undefined,

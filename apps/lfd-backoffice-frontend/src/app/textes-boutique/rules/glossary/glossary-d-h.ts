@@ -170,4 +170,6 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   guestOrder: 'Commande d’un invité',
   group: 'Nom du groupe de jours (lecteur d’écran)',
   dateToCome: 'Date encore à fixer',
+  directions: "Bouton d'itinéraire d'une maison",
+  filterAll: 'Filtre — tout',
 };

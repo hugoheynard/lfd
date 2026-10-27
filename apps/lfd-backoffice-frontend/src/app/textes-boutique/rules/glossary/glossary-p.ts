@@ -139,4 +139,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   proOpening: 'Ouverture de compte pro',
   profile: 'Mon profil',
   pickupQr: 'Mon QR de retrait',
+  payHintDelivery: 'Comment on règle — livraison',
+  payHintAccountPickup: 'Comment on règle — au compte, retrait',
+  payHintAccountDelivery: 'Comment on règle — au compte, livraison',
 };

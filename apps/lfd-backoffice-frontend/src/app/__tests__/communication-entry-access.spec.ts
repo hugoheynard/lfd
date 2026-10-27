@@ -68,6 +68,8 @@ function mount(granted: readonly StaffPermission[], mobile: boolean): HTMLElemen
         useValue: {
           can: (permission: StaffPermission) => granted.includes(permission),
           loaded: signal(true),
+          expired: signal(false),
+          unavailable: signal(false),
           permissions: signal(granted),
           identity: signal(null),
           ensureLoaded: async () => undefined,

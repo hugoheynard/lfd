@@ -757,16 +757,17 @@ describe('CataloguePage — le prix public encaissé', () => {
   });
 
   /**
-   * 🔴 **Et il s'affiche dès que les deux divergent.** 1,05 € à 5,5 % revient à
-   * 1,06 € — mesuré dans `ancrage-du-ttc-pose.mjs`, et c'est précisément le cas
-   * que cette colonne existe pour ne pas laisser découvrir en caisse.
+   * 🔴 **Le centime de trop a disparu** (plan du centime, lot C3, 2026-10-27) :
+   * 1,05 € à 5,5 % revenait à 1,06 € quand le TTC se refacturait depuis le HT.
+   * Un particulier paie désormais la somme des étiquettes, et l'aperçu du rayon
+   * rend la chaîne publique : plus d'écart, donc plus de ligne « encaissé ».
    */
-  it('🔴 annonce l’encaissé quand l’aller-retour ajoute un centime', async () => {
+  it('🔴 n’annonce plus d’encaissé là où l’aller-retour ajoutait un centime', async () => {
     const api = new FakeCatalogue();
     api.items = [item({ publicTtcCents: 105, publicVatRatePercent: 5.5 })];
     const fixture = await render(api);
 
-    expect(text(fixture)).toContain('encaissé');
-    expect(text(fixture)).toContain('1,06');
+    expect(text(fixture)).not.toContain('encaissé');
+    expect(text(fixture)).not.toContain('1,06');
   });
 });

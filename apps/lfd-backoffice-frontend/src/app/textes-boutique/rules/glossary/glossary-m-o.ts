@@ -137,4 +137,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   oven: 'Fournée',
   orderRevision: 'Modifier ma commande',
   orderConfirmed: 'Commande confirmée',
+  otherPickup: 'Panier — proposer le retrait',
+  otherPickupOffer: 'Panier — proposer le retrait, avec sa remise',
+  otherDelivery: 'Panier — proposer la livraison',
 };

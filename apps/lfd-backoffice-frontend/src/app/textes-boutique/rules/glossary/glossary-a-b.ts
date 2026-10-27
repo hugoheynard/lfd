@@ -111,4 +111,10 @@ export const GLOSSARY_A_B: Readonly<Record<string, string>> = {
   auditDone: 'Suivi d’accessibilité — audit réalisé',
   auditNotPlanned: 'Suivi d’accessibilité — audit non planifié',
   auditPlanned: 'Suivi d’accessibilité — audit prévu',
+  allergens: 'Allergènes',
+  allergensNone: 'Allergènes — aucun',
+  allergensMayContain: 'Allergènes — peut contenir',
+  allergensPrecautionary: 'Allergènes — information précise non disponible',
+  allergensTileContains: 'Allergènes en galerie — contient',
+  allergensTileMayContain: 'Allergènes en galerie — peut contenir',
 };
