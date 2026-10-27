@@ -350,7 +350,7 @@
   --fold-button-weight: var(--lfc-weight-black);
   --fold-button-tracking: var(--lfc-tracking-label);
   --fold-button-transform: uppercase;
-  --fold-button-radius: 12px;
+  --fold-button-radius: 6px;
   --fold-button-min-height: 44px;
 
   /* Resserrés pour Archivo (−0,03 et −0,015) ; Chunk est une face noire et
@@ -381,21 +381,22 @@
   --fold-space-xl: 1.375rem; /* 22px — padding de haut de feuille */
   --fold-space-2xl: 2rem; /* 32px */
 
-  /* ── Rayons : l'échelle de la réf, cran par cran ──
+  /* ── Rayons : l'échelle de la réf, cran par cran, DIVISÉE PAR DEUX le
+     2026-10-27 (Hugo : « diminuer le radius général de moitié ») ──
      Les quatre crans que fold porte (`sm` `md` `lg` `pill`) sont RECÂBLÉS aux
      valeurs de la réf ; ceux qu'il ne porte pas restent en `--lfc-*`. Même règle
      que pour les couleurs : on ne renomme pas le catalogue fold, on ne lui prête
      pas non plus des rôles qu'il n'a pas. `xs` n'est pas nommé par la réf : il
      garde la valeur de fold. */
-  --fold-radius-sm: 0.5625rem; /* 9px — pastille interne de stepper */
-  --fold-radius-md: 0.6875rem; /* 11px — bouton, tuile d'icône */
-  --fold-radius-lg: 0.875rem; /* 14px — encart, CTA plein hauteur 50-52px */
+  --fold-radius-sm: 0.28125rem; /* 4,5px — pastille interne de stepper */
+  --fold-radius-md: 0.34375rem; /* 5,5px — bouton, tuile d'icône */
+  --fold-radius-lg: 0.4375rem; /* 7px — encart, CTA plein hauteur 50-52px */
   --fold-radius-pill: 9999px;
-  --lfc-radius-xl: 1rem; /* 16px — carte de notification / produit */
-  --lfc-radius-2xl: 1.125rem; /* 18px — carte de contenu */
-  --lfc-radius-3xl: 1.25rem; /* 20px — carte de promo */
-  --lfc-radius-sheet: 1.625rem; /* 26px — coin haut de la feuille crème */
-  --lfc-radius-window: 1.25rem; /* 20px — angle concave sous la lèvre, celui de la carte */
+  --lfc-radius-xl: 0.5rem; /* 8px — carte de notification / produit */
+  --lfc-radius-2xl: 0.5625rem; /* 9px — carte de contenu */
+  --lfc-radius-3xl: 0.625rem; /* 10px — carte de promo */
+  --lfc-radius-sheet: 0.8125rem; /* 13px — coin haut de la feuille crème */
+  --lfc-radius-window: 0.625rem; /* 10px — angle concave sous la lèvre, celui de la carte */
 
   /* ── Ombres de l'app client ── */
   --lfc-shadow-card: 0 2px 10px -6px rgb(35 32 26 / 18%);

@@ -168,7 +168,7 @@
      à un point près), mais à un pixel et demi. J'avais foncé la teinte et
      gardé l'épaisseur — ce qui donne un bord sale plutôt qu'un bord franc. */
   border: 1.5px solid var(--fold-color-border);
-  border-radius: 14px;
+  border-radius: 7px;
   background: var(--lfc-paper-0);
   color: inherit;
   font: inherit;
@@ -203,7 +203,7 @@
   place-items: center;
   width: 34px;
   height: 34px;
-  border-radius: 11px;
+  border-radius: 5.5px;
   /* Claire, comme les jetons d'icône des destinations juste en dessous — même
      fond exactement, dans la maquette comme ici.
      ⚠️ Mais PAS la même encre : la maquette écrit les initiales d'un espace en
