@@ -11,7 +11,7 @@
 | Mention                     | Écran                                        | Source                                                    | Articles                    | PDF de référence                      |
 | --------------------------- | -------------------------------------------- | --------------------------------------------------------- | --------------------------- | ------------------------------------- |
 | Mentions légales            | `/reglages/legal/mentions-legales`           | `3_MENTIONS LEGALES_CRAZEATIVITY_LA FOLIE COFFEE.docx`    | 6                           | —                                     |
-| CGV particuliers            | `/reglages/legal/cgv`, onglet Particuliers   | `6_CGV_CRAZEATIVITY_LA_FOLIE_COFFEE.odt`, parties I et II | 20 + annexe de rétractation | `cgv-particuliers-2026-10-26.pdf`     |
+| CGV particuliers            | `/reglages/legal/cgv`, onglet Particuliers   | `6_CGV_CRAZEATIVITY_LA_FOLIE_COFFEE.odt`, parties I et II | 20 + annexe de rétractation | `cgv-particuliers-2026-10-27.pdf`     |
 | CGV professionnels          | `/reglages/legal/cgv`, onglet Professionnels | même document, parties I et III                           | 19                          | `cgv-professionnels-2026-10-26.pdf`   |
 | CGU                         | `/reglages/legal/cgu`                        | `4_CGU_CRAZEATIVITY_LA FOLIE COFFEE.pdf`                  | 11                          | — (le dépôt ne vaut que pour les CGV) |
 | Déclaration d'accessibilité | `/reglages/legal/accessibilite`              | pré-audit interne du 2026-10-26                           | 6                           | —                                     |
@@ -66,15 +66,15 @@ délai d'annulation montré au client est **figé à sa commande** (voir
 
 ### Particuliers — ce qui a été adapté
 
-| Sujet      | Le document                           | Publié                                                                                             | Pourquoi                                                                  |
-| ---------- | ------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------- |
-| Compte     | identification ou création de compte  | avec ou sans compte                                                                                | la commande invitée existe (`POST /shop/orders`)                          |
-| Livraison  | click & collect seul                  | retrait, ou livraison quand le Site la propose                                                     | réglage de livraison par clientèle                                        |
-| Paiement   | carte Stripe                          | carte Stripe à la commande, rien d'encaissé au retrait                                             | rien ne s'encaisse au comptoir par notre système                          |
-| Facture    | adressée par e-mail ou dans le compte | récapitulatif par e-mail, facture sur demande                                                      | le système n'émet pas de facture au public                                |
-| Retrait    | e-mail ou numéro de commande          | QR code ou numéro de commande                                                                      | l'écran de retrait                                                        |
-| Annulation | quotidien jamais, spéciales à 5 jours | sans frais jusqu'au délai indiqué, depuis le compte ou le lien du mail, remboursement sur la carte | le système ne distingue pas les commandes « spéciales »                   |
-| Médiateur  | `[Nom du médiateur…]`                 | **`[À COMPLÉTER]`**, dans les trois langues                                                        | **obligatoire** pour vendre aux particuliers — Hugo n'a pas encore choisi |
+| Sujet      | Le document                           | Publié                                                                                                                                                                                                      | Pourquoi                                                                     |
+| ---------- | ------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------- |
+| Compte     | identification ou création de compte  | avec ou sans compte                                                                                                                                                                                         | la commande invitée existe (`POST /shop/orders`)                             |
+| Livraison  | click & collect seul                  | retrait, ou livraison quand le Site la propose                                                                                                                                                              | réglage de livraison par clientèle                                           |
+| Paiement   | carte Stripe                          | carte Stripe à la commande, rien d'encaissé au retrait                                                                                                                                                      | rien ne s'encaisse au comptoir par notre système                             |
+| Facture    | adressée par e-mail ou dans le compte | récapitulatif par e-mail, facture sur demande                                                                                                                                                               | le système n'émet pas de facture au public                                   |
+| Retrait    | e-mail ou numéro de commande          | QR code ou numéro de commande                                                                                                                                                                               | l'écran de retrait                                                           |
+| Annulation | quotidien jamais, spéciales à 5 jours | sans frais jusqu'au délai indiqué, depuis le compte ou le lien du mail, remboursement sur la carte                                                                                                          | le système ne distingue pas les commandes « spéciales »                      |
+| Médiateur  | `[Nom du médiateur…]`                 | **AME Conso** (Association des Médiateurs Européens), 197 boulevard Saint-Germain, 75007 Paris, `www.mediationconso-ame.com` ; saisine dans l'année qui suit la réclamation écrite — dans les trois langues | **obligatoire** pour vendre aux particuliers — choisi par Hugo le 2026-10-27 |
 
 ### Professionnels — ce qui a été adapté
 
@@ -112,7 +112,7 @@ le jour où on en ajoutera, et donne la liste réelle des traceurs, tenue dans
 
 ## 8. Ce qui reste à faire
 
-- **Le médiateur de la consommation** (CGV particuliers, article 17).
+- ~~**Le médiateur de la consommation** (CGV particuliers, article 17)~~ — AME Conso, publié le 2026-10-27 dans les trois langues, PDF de référence redéposé (`cgv-particuliers-2026-10-27.pdf`).
 - **Vérifier l'adresse de Cloudflare** (mentions légales, article 1).
 - **Relecture juridique** des adaptations des tableaux ci-dessus.
 - Toute modification d'une CGV fait monter sa révision : les clients qui ont
