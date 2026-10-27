@@ -41,6 +41,11 @@ mode?, place? }`, posé par `OrderDoors` à chaque étape (jour choisi, mode
    voile. Elle dit le jour et le lieu, puis l'heure dès qu'un créneau est
    touché, et porte le geste qui valide (« Continuer » vers la boutique, ou
    « Régler » si le panier compte déjà).
+   **Un clic sur une heure avance** (Hugo, 2026-10-27, le bouton « Je prends à
+   … » retiré) : il ferme l'étape sur ce créneau, et la barre dit aussitôt le
+   jour, le lieu et l'heure avec « Modifier ». Pas de bouton de validation : se
+   tromper d'heure ne coûte rien et se répare en un geste ; le seul geste qui
+   engage reste « Régler ».
 4. **Ailleurs pendant le parcours** (panneau du jour, choix du lieu, adresse),
    la barre de la page reste dessous, sous le voile : elle n'a pas à y être
    lue, l'étape 2 la montre.
