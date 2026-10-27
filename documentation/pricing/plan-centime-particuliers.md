@@ -196,7 +196,8 @@ leur application au particulier qui se fait en TTC.
   arrondi), la seule qu'appellent devis, agrégat, révision et BL. La trace
   figée garde l'ajustement **tel que saisi** (HT) ; le montant appliqué TTC va
   dans sa colonne (§ 7) ; la garde rejoue la conversion puis compare des TTC.
-- **R3 — Bon de fidélité** (« Valeur d'un palier (€ HT) »,
+- **R3 — Bon de fidélité** (tranché, § 10 Q2 : valeur faciale TTC pour un
+  particulier, imputée sur le TTC restant, sans conversion). Texte d'origine : (« Valeur d'un palier (€ HT) »,
   `loyalty-settings.html:39`) : converti en TTC au taux des marchandises
   (prorata) et imputé sur le TTC restant. ⚠️ Un bon « de 5 € » qu'un
   particulier voit à 5,28 € TTC est étrange : **à trancher par Hugo** —
@@ -338,8 +339,15 @@ le calcul pro. Aucun chiffre ne bouge dans un espace société.
   particulier on y va » → TVA en dedans pour le particulier.
 - **Décidé par Hugo le 2026-10-27** : « B, je veux le système le mieux » —
   commande de particulier en TTC de bout en bout.
-- **Q2 — la valeur d'un palier de fidélité** pour un particulier : TTC, ou
-  HT converti (§ 5, R3) ?
+- **Q2 tranchée le 2026-10-27** (Hugo : « prends la meilleure décision
+  possible ») : **pour un particulier, la valeur d'un palier est un montant
+  TTC**. Un bon « de 5 € » retire 5,00 € de ce qu'il paie — c'est ce qu'il lit
+  et ce qu'il comprend ; le convertir (5,28 €) ferait d'un nombre rond un
+  nombre que personne n'a décidé. Pour un pro, la même valeur reste HT. Le
+  registre garde donc **la valeur faciale** du bon (`appliedCents` dans
+  l'unité de l'audience de la commande) : imputer 5 € sur un bon de 5 €
+  l'épuise, pour l'un comme pour l'autre. L'écran de réglage dira « € — HT
+  pour un pro, TTC pour un particulier ».
 - **Q1 — le cabinet** : la question se resserre. « Pour une vente à un
   particulier, peut-on extraire la TVA du TTC de chaque taux, arrondie au
   centime supérieur, le HT étant la différence — comme le fait un ticket de
