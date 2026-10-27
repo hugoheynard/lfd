@@ -23,6 +23,11 @@
 > **Relevé le 2026-10-18 (Hugo) à 1,40 Mo** (`cloudflare` et `capacitor`) : le
 > paquet initial était à 120 octets du plafond (1 299,88 ko), et chaque lot
 > devait renoncer à une fonction pour tenir. L'avertissement reste à 1,05 Mo.
+>
+> **Relevé le 2026-10-27 à 1,45 Mo**, sous le mandat de Hugo du jour (« fais
+> tout ce qu'on a dit ») : la fusion du TTC des particuliers (le ticket de
+> « Mes commandes » et ses textes) passait le plafond de 1,22 ko, après qu'on
+> avait déjà rogné l'accueil pour le tenir. Même raison que le 2026-10-18.
 
 ## Le problème
 

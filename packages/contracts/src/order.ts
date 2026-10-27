@@ -999,10 +999,12 @@ export interface CustomerOrderLineView {
   /**
    * L'étiquette et le TTC scellés d'une ligne de commande composée en TTC
    * (`exact_ht`) — absents sinon : « Mes commandes » les écrit au format du
-   * ticket, un pro garde son affichage.
+   * ticket, un pro garde son affichage. `null` vaut l'absence : la vue
+   * d'administration, qui porte ces champs en `number | null`, se rend dans le
+   * même composant (2026-10-27).
    */
-  readonly unitPriceTtcCents?: number;
-  readonly lineTotalTtcCents?: number;
+  readonly unitPriceTtcCents?: number | null;
+  readonly lineTotalTtcCents?: number | null;
 }
 
 /**

@@ -37,14 +37,16 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
   }
   const lines: OrderTicketLine[] = [];
   for (const line of order.lines) {
-    if (line.unitPriceTtcCents === undefined || line.lineTotalTtcCents === undefined) {
+    const unit = line.unitPriceTtcCents ?? null;
+    const total = line.lineTotalTtcCents ?? null;
+    if (unit === null || total === null) {
       return null;
     }
     lines.push({
       name: line.productName,
       quantity: line.quantity,
-      unitTtcCents: line.unitPriceTtcCents,
-      lineTtcCents: line.lineTotalTtcCents,
+      unitTtcCents: unit,
+      lineTtcCents: total,
     });
   }
   return {

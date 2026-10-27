@@ -60,7 +60,7 @@
 | **Planche v2**                                     | Q1, Q3, Q4 (documents B2B/B2C, ordre des ajouts, scénario mémorisé)                                             | Hugo                                          |
 | **Prélèvement d'essai**                            | exclure des vrais lots un mandat ponctuel déjà essayé, « Non déposé », conservation 10 ans                      | Hugo                                          |
 | **Avoirs (ZB)**                                    | mis de côté                                                                                                     | —                                             |
-| **Bundle de la boutique**                          | 1,37 Mo au premier chargement, refus du build à 1,40 Mo                                                         | à traiter avant le prochain gros lot boutique |
+| **Bundle de la boutique**                          | 1,40 Mo au premier chargement, refus du build à 1,45 Mo (relevé le 2026-10-27)                                  | à traiter avant le prochain gros lot boutique |
 
 ### Les gestes de Hugo qui restent dus
 
@@ -156,7 +156,7 @@ pastille « Format » sur une fiche.
 - **Demande de rappel** : aucun nom de contact n'est stocké ; le courriel à
   l'équipe prend celui de la société (`todos/todo-notifications.md`).
 - **Bandeau d'installation** : à vérifier sur de vrais téléphones ; la
-  boutique pèse 1,30 Mo pour un plafond relevé à 1,40 Mo (Hugo, 2026-10-18)
+  boutique pèse 1,40 Mo pour un plafond relevé à 1,45 Mo (2026-10-27)
   en configuration déployée (`todos/todo-installation-app-cliente.md`).
 - **Courriels internes** : partent seulement si `MAILER_STAFF_INBOX` est
   renseignée.
