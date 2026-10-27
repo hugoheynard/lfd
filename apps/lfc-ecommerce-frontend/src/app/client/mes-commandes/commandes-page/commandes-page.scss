@@ -80,7 +80,20 @@
 /* Le rythme de la section est un jeton : la tête et le corps se règlent d'ici,
    sans qu'un sélecteur aille chercher à l'intérieur du composant. */
 .history {
-  --fold-page-section-gap: var(--fold-space-md);
+  /* De l'air entre le titre, les filtres et le tableau (Hugo, 2026-10-27). */
+  --fold-page-section-gap: var(--fold-space-xl);
+}
+
+/* « Commandes passées » à la taille des titres de section de l'accueil : le
+   registre `caps` lit `--fold-text-base`. */
+.history fold-element-title[sectionHeader] {
+  --fold-text-base: var(--fold-text-xl);
+}
+
+.history-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xl);
 }
 
 /* Le filtre tient sa largeur naturelle ; il ne s'étire pas sur la section. */
