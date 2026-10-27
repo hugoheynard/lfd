@@ -94,9 +94,9 @@
         },
         {
           "key": "accueilPublic.doors.pickup.cta",
-          "fr": "Choisir un point de retrait",
-          "en": "Choose a pickup point",
-          "it": "Scegliere un punto di ritiro",
+          "fr": "Je commande",
+          "en": "Order",
+          "it": "Ordino",
           "variables": []
         },
         { "key": "accueilPublic.doors.pickup.note", "fr": "", "en": "", "it": "", "variables": [] },
@@ -123,9 +123,9 @@
         },
         {
           "key": "accueilPublic.doors.courier.cta",
-          "fr": "Choisir une adresse",
-          "en": "Choose an address",
-          "it": "Scegliere un indirizzo",
+          "fr": "Je commande",
+          "en": "Order",
+          "it": "Ordino",
           "variables": []
         },
         {
@@ -176,13 +176,6 @@
           "en": "Pickup at {place}, at the time I choose.",
           "it": "Ritiro presso {place}, all’ora che scelgo.",
           "variables": ["place"]
-        },
-        {
-          "key": "accueilPublic.doors.pickupSingleCta",
-          "fr": "Choisir mon heure",
-          "en": "Pick my time",
-          "it": "Scegliere l’orario",
-          "variables": []
         },
         {
           "key": "accueilPublic.hero.tag",

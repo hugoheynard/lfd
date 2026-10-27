@@ -43,6 +43,7 @@
     "product.oven": null,
     "dayPicker.dateLabel": null,
     "dayPicker.notServed": null,
-    "dayPicker.confirmDate": null
+    "dayPicker.confirmDate": null,
+    "accueilPublic.doors.pickupSingleCta": null
   }
 }

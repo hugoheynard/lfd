@@ -215,7 +215,6 @@ export class AccueilPublic {
       : {
           ...withNote,
           intro: fill(doors.pickupSingleIntro, { place: only.label || only.ville }),
-          cta: doors.pickupSingleCta,
         };
   });
 
@@ -780,7 +779,7 @@ export class AccueilPublic {
   }
 
   /**
-   * LA PORTE DU RETRAIT — « Choisir un point de retrait ».
+   * LA PORTE DU RETRAIT — « Je commande ».
    *
    * Elle rouvre le sélecteur de maisons qui existe déjà, puis retombe dans
    * `chooseHouse` : le choix voyage donc par le MÊME chemin que depuis le rail,
@@ -799,7 +798,7 @@ export class AccueilPublic {
   }
 
   /**
-   * LA PORTE DU COURSIER — « Choisir une adresse ».
+   * LA PORTE DU COURSIER — « Je commande ».
    *
    * 🔴 Elle OUVRE UN DIALOGUE depuis le 2026-09-20, là où elle menait à
    * `/nouvelle-commande` « qui porte déjà le carnet d'adresses, les zones et

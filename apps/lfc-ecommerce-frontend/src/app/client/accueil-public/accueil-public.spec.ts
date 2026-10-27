@@ -430,20 +430,22 @@ describe('AccueilPublic — les trois états', () => {
    * échappe pas.
    */
   /** Une seule maison servie : la porte la nomme et mène à l'heure (Hugo, 2026-10-27). */
-  it('nomme la maison unique sur la porte du retrait, et mène à l’heure', async () => {
+  it('nomme la maison unique sur la porte du retrait', async () => {
     const fixture = await mount([point({ id: 'a', label: 'Le Labo' })], 'pro');
 
     const door = fixture.nativeElement.querySelector('.door-pickup') as HTMLElement;
     expect(door.textContent).toContain('Le Labo');
-    expect(door.querySelector('.door-cta')?.textContent?.trim()).toBe('Choisir mon heure');
+    expect(door.querySelector('.door-cta')?.textContent?.trim()).toBe('Je commande');
   });
 
-  it('garde « Choisir un point de retrait » quand il y a plusieurs maisons', async () => {
+  /** « Je commande » sur les deux portes (Hugo, 2026-10-27). */
+  it('dit « Je commande » sur les deux portes', async () => {
     const fixture = await mount(POINTS, 'pro');
 
-    expect(fixture.nativeElement.querySelector('.door-pickup .door-cta')?.textContent?.trim()).toBe(
-      'Choisir un point de retrait',
-    );
+    const ctas = Array.from(
+      fixture.nativeElement.querySelectorAll('.door-cta') as NodeListOf<HTMLElement>,
+    ).map((cta) => cta.textContent?.trim());
+    expect(ctas).toEqual(['Je commande', 'Je commande']);
   });
 
   it('ne met AUCUNE mention sur la porte quand il n’y a pas de remise', async () => {

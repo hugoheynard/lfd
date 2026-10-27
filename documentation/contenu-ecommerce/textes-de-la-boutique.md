@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1694 textes
+## Sommaire — 1693 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 63 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 62 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1694** |
+| **Total** | | **1693** |
 
 ## Le parcours de commande
 
@@ -56,7 +56,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 63 textes.
+Source : `screens/accueil-public.copy.ts` · 62 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -72,12 +72,12 @@ Source : `screens/accueil-public.copy.ts` · 63 textes.
 | `accueilPublic.doors.pickup.tag` | Retrait | Pickup | Ritiro |  |
 | `accueilPublic.doors.pickup.title` | Je passe<br>la prendre | I’ll come<br>and get it | Passo<br>a prenderlo |  |
 | `accueilPublic.doors.pickup.intro` | Au Labo ou au village, demain à l’heure de mon choix. | At Le Labo or Le Village, tomorrow at the time I choose. | Al Labo o al village, domani all’ora che scelgo. |  |
-| `accueilPublic.doors.pickup.cta` | Choisir un point de retrait | Choose a pickup point | Scegliere un punto di ritiro |  |
+| `accueilPublic.doors.pickup.cta` | Je commande | Order | Ordino |  |
 | `accueilPublic.doors.pickup.note` | _(vide)_ | _(vide)_ | _(vide)_ |  |
 | `accueilPublic.doors.courier.tag` | Coursier | Courier | Corriere |  |
 | `accueilPublic.doors.courier.title` | On vous<br>l’apporte | We bring it<br>to you | Glielo<br>portiamo |  |
 | `accueilPublic.doors.courier.intro` | Demain, au créneau que vous choisissez. | Tomorrow, in the slot you choose. | Domani, nella fascia che sceglie. |  |
-| `accueilPublic.doors.courier.cta` | Choisir une adresse | Choose an address | Scegliere un indirizzo |  |
+| `accueilPublic.doors.courier.cta` | Je commande | Order | Ordino |  |
 | `accueilPublic.doors.courier.note` | Avant 18 h | Before 6 pm | Entro le 18 |  |
 | `accueilPublic.doors.courier.pending.tag` | Bientôt | Soon | Presto |  |
 | `accueilPublic.doors.courier.pending.hint` | Votre dossier est en cours de validation — votre commercial ouvre la livraison dès qu’il est complet. | Your file is being reviewed — your account manager opens delivery as soon as it is complete. | Il suo fascicolo è in corso di validazione — il suo commerciale apre la consegna appena è completo. |  |
@@ -85,7 +85,6 @@ Source : `screens/accueil-public.copy.ts` · 63 textes.
 | `accueilPublic.doors.courierNotOffered.hint` | La livraison n’est pas proposée pour le moment. | Delivery is not offered at the moment. | La consegna non è proposta al momento. |  |
 | `accueilPublic.doors.pickupUpTo` | Jusqu’à {value} | Up to {value} | Fino a {value} | `{value}` |
 | `accueilPublic.doors.pickupSingleIntro` | Retrait : {place}, à l’heure de mon choix. | Pickup at {place}, at the time I choose. | Ritiro presso {place}, all’ora che scelgo. | `{place}` |
-| `accueilPublic.doors.pickupSingleCta` | Choisir mon heure | Pick my time | Scegliere l’orario |  |
 | `accueilPublic.hero.tag` | Nouvelle commande | New order | Nuovo ordine |  |
 | `accueilPublic.hero.title` | Je passe la prendre | I’ll come and get it | Passo a prenderlo |  |
 | `accueilPublic.hero.intro` | Choisissez votre point et votre heure de retrait. | Choose your pickup point and time. | Scegliete il punto e l’orario di ritiro. |  |

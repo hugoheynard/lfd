@@ -133,10 +133,9 @@ export interface AccueilPublicCopy {
     readonly pickupUpTo: string;
     /**
      * La porte du retrait quand UNE seule maison est servie (Hugo,
-     * 2026-10-27) : elle la nomme — `{place}` —, et le geste mène à l'heure.
+     * 2026-10-27) : elle la nomme — `{place}`.
      */
     readonly pickupSingleIntro: string;
-    readonly pickupSingleCta: string;
   };
 
   readonly hero: {
@@ -304,14 +303,14 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
       tag: 'Retrait',
       title: 'Je passe\nla prendre',
       intro: 'Au Labo ou au village, demain à l’heure de mon choix.',
-      cta: 'Choisir un point de retrait',
+      cta: 'Je commande',
       note: '',
     },
     courier: {
       tag: 'Coursier',
       title: 'On vous\nl’apporte',
       intro: 'Demain, au créneau que vous choisissez.',
-      cta: 'Choisir une adresse',
+      cta: 'Je commande',
       note: 'Avant 18 h',
       pending: {
         tag: 'Bientôt',
@@ -324,7 +323,6 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     },
     pickupUpTo: 'Jusqu’à {value}',
     pickupSingleIntro: 'Retrait : {place}, à l’heure de mon choix.',
-    pickupSingleCta: 'Choisir mon heure',
   },
   hero: {
     tag: 'Nouvelle commande',
@@ -398,14 +396,14 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
       tag: 'Pickup',
       title: 'I’ll come\nand get it',
       intro: 'At Le Labo or Le Village, tomorrow at the time I choose.',
-      cta: 'Choose a pickup point',
+      cta: 'Order',
       note: '',
     },
     courier: {
       tag: 'Courier',
       title: 'We bring it\nto you',
       intro: 'Tomorrow, in the slot you choose.',
-      cta: 'Choose an address',
+      cta: 'Order',
       note: 'Before 6 pm',
       pending: {
         tag: 'Soon',
@@ -418,7 +416,6 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     },
     pickupUpTo: 'Up to {value}',
     pickupSingleIntro: 'Pickup at {place}, at the time I choose.',
-    pickupSingleCta: 'Pick my time',
   },
   hero: {
     tag: 'New order',
@@ -492,14 +489,14 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
       tag: 'Ritiro',
       title: 'Passo\na prenderlo',
       intro: 'Al Labo o al village, domani all’ora che scelgo.',
-      cta: 'Scegliere un punto di ritiro',
+      cta: 'Ordino',
       note: '',
     },
     courier: {
       tag: 'Corriere',
       title: 'Glielo\nportiamo',
       intro: 'Domani, nella fascia che sceglie.',
-      cta: 'Scegliere un indirizzo',
+      cta: 'Ordino',
       note: 'Entro le 18',
       pending: {
         tag: 'Presto',
@@ -512,7 +509,6 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     },
     pickupUpTo: 'Fino a {value}',
     pickupSingleIntro: 'Ritiro presso {place}, all’ora che scelgo.',
-    pickupSingleCta: 'Scegliere l’orario',
   },
   hero: {
     tag: 'Nuovo ordine',
