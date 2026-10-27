@@ -8,7 +8,7 @@ import { FoldPanelHostService } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { formatHour } from '../format-hour';
-import { OrderContextStore, type ServiceChoice } from '../order-context.store';
+import { type OrderDraft, OrderContextStore, type ServiceChoice } from '../order-context.store';
 import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
@@ -41,6 +41,9 @@ export class OrderDoors {
   private readonly panels = inject(FoldPanelHostService);
   private readonly points = inject(ServicePoints);
   private readonly order = inject(OrderContextStore);
+
+  /** Vrai pendant un parcours qui écrit : seul lui pose un brouillon. */
+  private tracking = false;
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly audience = inject(ClientAudience).shown;
@@ -120,18 +123,61 @@ export class OrderDoors {
     if (!this.serviceOffered()) {
       return false;
     }
+    // Un parcours laissé en route reprend où il en était : repartir de zéro
+    // redemandait « retrait ou livraison ? » à qui y avait déjà répondu (Hugo,
+    // 2026-10-27, depuis la barre et le « Régler » de la boutique).
+    if (this.order.draft() !== null) {
+      return this.resume();
+    }
     // Le JOUR d'abord (plan `plan-panneau-date.md`, 2026-10-27) : fermer le
     // panneau ne pose rien.
-    const day = await DayPickerDialog.open(this.panels).closed;
-    if (day === undefined) {
-      return false;
-    }
-    return this.write(await this.askChoice(day));
+    return this.track({}, async () => {
+      const day = await this.askDay();
+      return day === null ? null : this.askChoice(day);
+    });
   }
 
   /** Le jour, seul : `null` quand on ferme le panneau. */
   async askDay(): Promise<string | null> {
-    return (await DayPickerDialog.open(this.panels).closed) ?? null;
+    const day = (await DayPickerDialog.open(this.panels).closed) ?? null;
+    if (day !== null) {
+      this.note({ date: day });
+    }
+    return day;
+  }
+
+  /**
+   * **Reprendre le parcours là où on l'a laissé** — le geste de la barre du
+   * panier tant qu'un brouillon existe (plan `plan-barre-qui-accompagne.md`).
+   * Ce qui est déjà répondu ne se redemande pas ; sans brouillon, c'est
+   * {@link choose}.
+   */
+  async resume(): Promise<boolean> {
+    const draft = this.order.draft();
+    if (draft === null) {
+      return this.choose();
+    }
+    return this.track(draft, async () => {
+      const day = draft.date ?? (await this.askDay());
+      if (day === null) {
+        return null;
+      }
+      if (draft.mode === 'delivery') {
+        return this.askDelivery(null, day);
+      }
+      if (draft.mode === 'pickup') {
+        return draft.pickupAddressId === undefined
+          ? this.askPickup(null, day)
+          : this.pickTime(
+              draft.pickupAddressId,
+              draft.place ?? '',
+              draft.address ?? '',
+              this.order.choice(),
+              day,
+            );
+      }
+      return this.askChoice(day);
+    });
   }
 
   /**
@@ -140,13 +186,36 @@ export class OrderDoors {
    * passent par le même panneau que `choose()`, puis par leur porte sur ce jour.
    */
   async startPickup(): Promise<boolean> {
-    const day = await this.askDay();
-    return day === null ? false : this.write(await this.askPickup(null, day));
+    // La porte dit déjà le mode, et la maison quand il n'y en a qu'une : la
+    // barre du panneau du jour les montre dès la première étape.
+    const served = this.points.pickups();
+    const only = served.length === 1 ? served[0] : undefined;
+    const start: OrderDraft =
+      only === undefined ? { mode: 'pickup' } : { mode: 'pickup', ...this.houseOf(only) };
+    return this.track(start, async () => {
+      const day = await this.askDay();
+      return day === null ? null : this.askPickup(null, day);
+    });
   }
 
   async startDelivery(): Promise<boolean> {
-    const day = await this.askDay();
-    return day === null ? false : this.write(await this.askDelivery(null, day));
+    return this.track({ mode: 'delivery' }, async () => {
+      const day = await this.askDay();
+      return day === null ? null : this.askDelivery(null, day);
+    });
+  }
+
+  /**
+   * **Une maison déjà désignée** (la carte d'une maison, à l'accueil) : le
+   * jour, puis l'heure de cette maison.
+   */
+  async startAt(pickupAddressId: string, place: string, address: string): Promise<boolean> {
+    return this.track({ mode: 'pickup', place, pickupAddressId, address }, async () => {
+      const day = await this.askDay();
+      return day === null
+        ? null
+        : this.pickTime(pickupAddressId, place, address, this.order.choice(), day);
+    });
   }
 
   /**
@@ -166,6 +235,7 @@ export class OrderDoors {
     if (mode === undefined) {
       return null;
     }
+    this.note({ mode });
     return mode === 'delivery' ? this.askDelivery(null, day) : this.askPickup(null, day);
   }
 
@@ -183,7 +253,7 @@ export class OrderDoors {
    * l'enregistrer à moitié ferait croire la question répondue.
    */
   async pickup(currentId: string | null = null): Promise<boolean> {
-    return this.write(await this.askPickup(currentId));
+    return this.track({ mode: 'pickup' }, () => this.askPickup(currentId));
   }
 
   /** {@link pickup}, sans écrire la réponse. */
@@ -195,6 +265,7 @@ export class OrderDoors {
     if (!this.pickupOpen()) {
       return null;
     }
+    this.note({ mode: 'pickup' });
     // UNE seule maison servie : on ne demande pas de la choisir (Hugo,
     // 2026-10-27 : « le parcours doit faire date, heure ») — elle est prise.
     const served = this.points.pickups();
@@ -205,6 +276,7 @@ export class OrderDoors {
     if (point === undefined) {
       return null;
     }
+    this.note(this.houseOf(point));
     return this.pickTime(
       point.id,
       point.label || point.ville,
@@ -222,7 +294,13 @@ export class OrderDoors {
    * drapeau sur la même.
    */
   async time(pickupAddressId: string, place: string, address: string): Promise<boolean> {
-    return this.write(await this.pickTime(pickupAddressId, place, address, this.order.choice()));
+    const date = this.order.choice()?.date;
+    const start: OrderDraft = { mode: 'pickup', place, pickupAddressId, address };
+    return this.track(date === undefined ? start : { ...start, date }, () =>
+      // Le jour retenu : « Modifier » rouvre l'étape 2 sur lui, avec « Je
+      // change de date », et non les onglets de la semaine (Hugo, 2026-10-27).
+      this.pickTime(pickupAddressId, place, address, this.order.choice(), date ?? null),
+    );
   }
 
   /**
@@ -251,7 +329,7 @@ export class OrderDoors {
     currentId: string | null = null,
     currentDate: string | null = null,
   ): Promise<boolean> {
-    return this.write(await this.askDelivery(currentId, currentDate));
+    return this.track({ mode: 'delivery' }, () => this.askDelivery(currentId, currentDate));
   }
 
   /** {@link delivery}, sans écrire la réponse. */
@@ -262,6 +340,7 @@ export class OrderDoors {
     if (!this.deliveryOpen()) {
       return null;
     }
+    this.note({ mode: 'delivery' });
     const choice = await DeliveryAddressDialog.open(this.panels, {
       currentId,
       // Le jour déjà retenu se repropose (2026-10-13) : rouvrir pour changer
@@ -282,7 +361,59 @@ export class OrderDoors {
       return false;
     }
     this.order.choice.set(choice);
+    // Le choix complet remplace le brouillon : la barre dit le service retenu.
+    this.order.draft.set(null);
     return true;
+  }
+
+  /**
+   * Un parcours qui ÉCRIT : son brouillon se pose dans le store à chaque étape
+   * ({@link note}). Les `ask*` appelés seuls — la modification d'une commande
+   * passée — ne touchent pas au brouillon de la boutique.
+   *
+   * Fermé en route, le brouillon reste — sauf s'il ne dit rien, ou si un choix
+   * complet existe déjà : « Modifier » abandonné laisse le service tel quel, et
+   * c'est lui que la barre doit dire.
+   */
+  private async track(
+    start: OrderDraft,
+    run: () => Promise<ServiceChoice | null>,
+  ): Promise<boolean> {
+    this.order.draft.set(start);
+    this.tracking = true;
+    try {
+      const choice = await run();
+      if (choice === null) {
+        const draft = this.order.draft();
+        if (draft === null || Object.keys(draft).length === 0 || this.order.choice() !== null) {
+          this.order.draft.set(null);
+        }
+      }
+      return this.write(choice);
+    } finally {
+      this.tracking = false;
+    }
+  }
+
+  /** Complète le brouillon — seulement dans un parcours qui écrit ({@link track}). */
+  private note(step: OrderDraft): void {
+    if (this.tracking) {
+      this.order.draft.update((draft) => ({ ...draft, ...step }));
+    }
+  }
+
+  /** Ce que le brouillon retient d'une maison. */
+  private houseOf(point: {
+    readonly id: string;
+    readonly label: string;
+    readonly ligne1: string;
+    readonly ville: string;
+  }): OrderDraft {
+    return {
+      place: point.label || point.ville,
+      pickupAddressId: point.id,
+      address: `${point.ligne1}, ${point.ville}`,
+    };
   }
 
   /**

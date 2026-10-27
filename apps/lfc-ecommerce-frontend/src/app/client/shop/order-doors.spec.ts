@@ -304,3 +304,195 @@ describe('OrderDoors — à qui le retrait est ouvert', () => {
     await expect(doors([]).pickup(null)).resolves.toBe(false);
   });
 });
+
+/**
+ * **Le brouillon du parcours** (plan `plan-barre-qui-accompagne.md`) : posé à
+ * chaque étape, complété, effacé quand le choix s'écrit, gardé quand on ferme
+ * en route — la barre du panier le dit.
+ */
+describe('OrderDoors — le brouillon du parcours', () => {
+  const SLOT = { day: DAY, time: '07:30', endAt: `${DAY}T06:45:00.000Z` };
+
+  /** Les dialogues ouverts, avec le brouillon tel qu'il était à leur ouverture. */
+  function setup(replies: ReadonlyMap<unknown, unknown>, pickups = [LABO, VILLAGE]) {
+    const seen: { component: unknown; draft: unknown }[] = [];
+    vi.stubGlobal('matchMedia', matchMediaAt(false));
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: FoldPanelHostService,
+          useValue: {
+            open: (component: unknown) => {
+              seen.push({ component, draft: TestBed.inject(OrderContextStore).draft() });
+              return { closed: Promise.resolve(replies.get(component)) };
+            },
+          },
+        },
+        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        VISITOR_AUTH,
+      ],
+    });
+    TestBed.inject(ServicePoints).receive(
+      pickups,
+      [],
+      [{ pickupAddressId: LABO.id, date: DAY, orderUntil: null }],
+      { openToB2b: true, openToB2c: true },
+    );
+    return { doors: TestBed.inject(OrderDoors), store: TestBed.inject(OrderContextStore), seen };
+  }
+
+  it('🔴 se pose à chaque étape, puis s’efface quand le choix complet s’écrit', async () => {
+    const { doors, store, seen } = setup(
+      new Map<unknown, unknown>([
+        [DayPickerDialog, DAY],
+        [ServiceModeDialog, 'pickup'],
+        [PublicHousePickerDialog, LABO],
+        [SlotPickerDialog, SLOT],
+      ]),
+    );
+
+    expect(await doors.choose()).toBe(true);
+
+    expect(seen.map((step) => step.draft)).toEqual([
+      {},
+      { date: DAY },
+      { date: DAY, mode: 'pickup' },
+      {
+        date: DAY,
+        mode: 'pickup',
+        place: 'Le Labo',
+        pickupAddressId: LABO.id,
+        address: 'Route de la Balme, Val d’Isère',
+      },
+    ]);
+    expect(store.draft()).toBeNull();
+    expect(store.choice()).toMatchObject({ mode: 'pickup', date: DAY, place: 'Le Labo' });
+  });
+
+  it('🔴 est gardé quand on ferme l’heure en route', async () => {
+    const { doors, store } = setup(
+      new Map<unknown, unknown>([
+        [DayPickerDialog, DAY],
+        [ServiceModeDialog, 'pickup'],
+        [PublicHousePickerDialog, LABO],
+      ]),
+    );
+
+    expect(await doors.choose()).toBe(false);
+
+    expect(store.draft()).toMatchObject({ date: DAY, mode: 'pickup', place: 'Le Labo' });
+    expect(store.choice()).toBeNull();
+  });
+
+  it('ne garde rien quand on ferme le panneau du jour sans rien avoir dit', async () => {
+    const { doors, store } = setup(new Map());
+
+    await doors.choose();
+
+    expect(store.draft()).toBeNull();
+  });
+
+  it('la porte du retrait dit son mode, et la maison quand elle est seule, dès le jour', async () => {
+    const { doors, seen } = setup(new Map(), [LABO]);
+
+    await doors.startPickup();
+
+    expect(seen[0]?.draft).toMatchObject({ mode: 'pickup', place: 'Le Labo' });
+  });
+
+  it('🔴 la reprise rouvre l’heure de la maison retenue, sans redemander le jour', async () => {
+    const { doors, store, seen } = setup(
+      new Map<unknown, unknown>([
+        [DayPickerDialog, DAY],
+        [ServiceModeDialog, 'pickup'],
+        [PublicHousePickerDialog, LABO],
+      ]),
+    );
+    await doors.choose();
+    seen.length = 0;
+
+    // La seconde fois, l'heure se prend.
+    const resumed = setup(new Map<unknown, unknown>([[SlotPickerDialog, SLOT]]));
+    resumed.store.draft.set(store.draft());
+    expect(await resumed.doors.resume()).toBe(true);
+
+    expect(resumed.seen.map((step) => step.component)).toEqual([SlotPickerDialog]);
+    expect(resumed.store.draft()).toBeNull();
+    expect(resumed.store.choice()).toMatchObject({ date: DAY, pickupAddressId: LABO.id });
+  });
+
+  /**
+   * Régression (Hugo, 2026-10-27) : depuis la boutique, la barre et « Régler »
+   * passaient par `choose()`, qui repartait de zéro et redemandait « retrait
+   * ou livraison ? » à qui y avait répondu.
+   */
+  it('🔴 choose() reprend un brouillon au lieu de redemander le mode', async () => {
+    const { doors, store, seen } = setup(
+      new Map<unknown, unknown>([
+        [PublicHousePickerDialog, LABO],
+        [SlotPickerDialog, SLOT],
+      ]),
+    );
+    store.draft.set({ date: DAY, mode: 'pickup' });
+
+    expect(await doors.choose()).toBe(true);
+
+    expect(seen.map((step) => step.component)).toEqual([PublicHousePickerDialog, SlotPickerDialog]);
+  });
+
+  /** Régression (Hugo, 2026-10-27) : « Modifier » rouvrait l'heure sur les onglets de la semaine. */
+  it('🔴 « Modifier » rouvre l’heure sur le jour retenu', async () => {
+    const opened: unknown[] = [];
+    const { doors, store } = setup(new Map());
+    const panels = TestBed.inject(FoldPanelHostService);
+    const open = panels.open.bind(panels);
+    panels.open = ((component: unknown, config: { data?: unknown }) => {
+      opened.push(config.data);
+      return open(component as never, config as never);
+    }) as typeof panels.open;
+    store.choice.set({
+      mode: 'pickup',
+      place: 'Le Labo',
+      at: 'au Labo',
+      address: 'Route de la Balme, Val d’Isère',
+      pickupAddressId: LABO.id,
+      slot: '7 h 30',
+      window: { start: '07:30', end: '07:45' },
+      date: DAY,
+    });
+
+    await doors.time(LABO.id, 'Le Labo', 'Route de la Balme, Val d’Isère');
+
+    expect(opened[0]).toMatchObject({ openOn: DAY });
+  });
+
+  it('un « Modifier » abandonné laisse le service tel quel, sans brouillon', async () => {
+    const { doors, store } = setup(new Map());
+    store.choice.set({
+      mode: 'pickup',
+      place: 'Le Labo',
+      at: 'au Le Labo',
+      address: 'Route de la Balme, Val d’Isère',
+      pickupAddressId: LABO.id,
+      slot: '7 h 30',
+      window: null,
+      date: DAY,
+    });
+
+    expect(await doors.time(LABO.id, 'Le Labo', 'Route de la Balme, Val d’Isère')).toBe(false);
+
+    expect(store.draft()).toBeNull();
+    expect(store.choice()).not.toBeNull();
+  });
+
+  it('les questions posées seules (commande passée) ne touchent pas au brouillon', async () => {
+    const { doors, store } = setup(new Map<unknown, unknown>([[DayPickerDialog, DAY]]));
+
+    await doors.askDay();
+
+    expect(store.draft()).toBeNull();
+  });
+});

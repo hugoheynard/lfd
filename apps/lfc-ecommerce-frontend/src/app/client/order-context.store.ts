@@ -115,6 +115,27 @@ function parseWindow(raw: unknown): FulfillmentWindow | null {
 
 const KEY = 'order.choice';
 
+/**
+ * **Le parcours en cours**, avant que le choix soit complet (plan
+ * `documentation/commandes/passation/plan-barre-qui-accompagne.md`).
+ *
+ * Ce qui a déjà été répondu — le jour, le mode, la maison — et rien de plus :
+ * un brouillon n'est pas un mode de service, et rien ne le chiffre ni ne le
+ * commande. La barre du panier le dit, et son geste reprend à l'étape qui
+ * manque. Tous les champs sont facultatifs : partie d'une porte de l'accueil,
+ * la commande connaît son mode AVANT son jour.
+ *
+ * `pickupAddressId` et `address` voyagent avec `place` pour que la reprise
+ * rouvre l'heure de CETTE maison, sans redemander laquelle.
+ */
+export interface OrderDraft {
+  readonly date?: string;
+  readonly mode?: 'pickup' | 'delivery';
+  readonly place?: string;
+  readonly pickupAddressId?: string;
+  readonly address?: string;
+}
+
 /** Ce qui est relu du navigateur est du texte : on VALIDE avant de le croire. */
 export function parseChoice(raw: unknown): ServiceChoice | null {
   if (!isRecord(raw)) {
@@ -208,6 +229,14 @@ export class OrderContextStore {
 
   readonly choice = signal<ServiceChoice | null>(readLocal(KEY, parseChoice));
 
+  /**
+   * Le parcours en cours, ou `null`. Posé par `OrderDoors` à chaque étape,
+   * effacé quand le choix complet s'écrit ; GARDÉ quand on ferme un dialogue
+   * en route — la barre dit alors où l'on s'est arrêté. En mémoire seulement :
+   * un parcours interrompu ne survit pas à un rechargement, le choix si.
+   */
+  readonly draft = signal<OrderDraft | null>(null);
+
   /** Le dernier espace CONNU — `null` tant que `/me` n'a pas répondu. */
   private seen: string | null = null;
 
@@ -235,6 +264,7 @@ export class OrderContextStore {
       }
       if (this.seen !== null && this.seen !== current) {
         this.choice.set(null);
+        this.draft.set(null);
       }
       this.seen = current;
     });

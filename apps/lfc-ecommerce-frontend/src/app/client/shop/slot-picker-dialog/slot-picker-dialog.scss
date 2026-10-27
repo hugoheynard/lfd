@@ -231,53 +231,6 @@ fold-panel-body {
   line-height: var(--lfc-leading-note);
 }
 
-/* ── Le pied ─────────────────────────────────────────────────────────────── */
-
-/* 🔴 POGONIA AU PIED (Hugo, 2026-09-20). Les boutons du dépôt portent la face
-   de display par défaut (`--fold-button-font`) ; ici l'action nomme une HEURE
-   — « Je prends 7 h 15 » — et les chiffres de Chunk se referment. C'est la même
-   bascule que les dates juste au-dessus, et pour la même raison.
-   Le jeton est redéfini sur le PIED seul : une variable CSS traverse
-   l'encapsulation, là où un sélecteur écrit ici ne porterait sur rien. */
-fold-panel-footer {
-  --fold-button-font: var(--fold-font-sans);
-  /* La même respiration qu'en tête, par les mêmes alias et pour la même raison.
-     L'écart entre « Retour » et l'action tient à `--fold-space-sm` et ne bouge
-     donc pas (mesuré le 2026-09-20). */
-  --fold-space-md: var(--lfc-dialog-pad-y);
-  --fold-space-lg: var(--lfc-dialog-gutter);
-}
-
-/* « Retour », en texte nu — pas une seconde action. Il garde ce qu'un bouton
-   apporte et qu'on ne veut pas perdre : la hauteur tactile et l'anneau de
-   focus. */
-.back {
-  @include dlg.foot-link;
-}
-
-.back:hover {
-  color: var(--fold-color-text);
-}
-
-/* 🔴 L'ACTION S'ÉTEINT TANT QU'AUCUN CRÉNEAU N'EST PRIS (Hugo, 2026-09-20 :
-   « faded si pas de créneau selectionné », puis « muted en beige comme dans la
-   démo »). `disabled` la fermait déjà pour de bon, mais elle gardait l'aplat
-   d'encre plein : elle se lisait donc comme cliquable, et le refus n'arrivait
-   qu'au clic. Ici le refus PRÉCÈDE l'effort, comme partout ailleurs.
-
-   Le BEIGE plutôt qu'une opacité, et c'est mieux pour deux raisons : la démo
-   peint ses états muets en beige chaud (`#e6dcc6`, à un cheveu de
-   `--lfc-paper-300`) sur un texte sourd ; et une opacité aurait délavé le
-   texte lui-même, qui doit rester lisible — c'est même tout ce qu'il a à faire
-   tant qu'on n'a pas choisi.
-   `foldButton` est une DIRECTIVE posée sur notre propre `<button>` : ce
-   sélecteur porte, là où il ne porterait sur rien dans un composant fold. */
-.cta:disabled {
-  background: var(--lfc-paper-300);
-  color: var(--fold-color-text-muted);
-  cursor: not-allowed;
-}
-
 /* « Je change de date » : un lien discret SOUS le jour imposé, aligné sur lui
    (Hugo, 2026-10-27 : « en dessous »). */
 .change-day {

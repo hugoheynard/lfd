@@ -1,0 +1,14 @@
+/* Collée au bas du flux, comme dans la boutique (`CartBar` porte le sticky). */
+:host {
+  position: sticky;
+  bottom: 0;
+  z-index: 4;
+  display: block;
+}
+
+/* Au bureau, le parcours fini, la barre du haut de la boutique parle. */
+@media (min-width: 900px) {
+  :host(.settled) {
+    display: none;
+  }
+}

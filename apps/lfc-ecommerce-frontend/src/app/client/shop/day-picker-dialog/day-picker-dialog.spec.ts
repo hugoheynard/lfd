@@ -68,6 +68,13 @@ describe('DayPickerDialog', () => {
     expect(closed).toEqual([TODAY]);
   });
 
+  /** Plan `plan-barre-qui-accompagne.md` : plus de pied à lui, la barre du panier l'est. */
+  it('🔴 porte la barre du panier en pied, et pas de pied de dialogue', async () => {
+    const { el } = await boot([{ pickupAddressId: null, date: '2026-10-28', orderUntil: null }]);
+    expect(el.querySelector('app-cart-bar')).not.toBeNull();
+    expect(el.querySelector('fold-panel-footer')).toBeNull();
+  });
+
   it('🔴 n’offre pas « Aujourd’hui » quand le serveur ne le sert pas', async () => {
     const { el } = await boot([{ pickupAddressId: null, date: '2026-10-28', orderUntil: null }]);
     expect(button(el, 'today')).toBeNull();

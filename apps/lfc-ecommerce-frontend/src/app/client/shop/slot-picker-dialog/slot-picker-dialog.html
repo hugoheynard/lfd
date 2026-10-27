@@ -115,35 +115,7 @@
   }
 </fold-panel-body>
 
-<!-- `between` : « Retour » au bord gauche, l'action au droit — la répartition
-     de la référence.
-
-     🔴 « RETOUR » N'EST PAS UN BOUTON (Hugo, 2026-09-20). Il portait le cran le
-     plus discret de fold — `soft`/`neutral` —, faute de degré sans fond dans
-     son échelle, et cet écart était assumé « pour garder l'état de focus et la
-     hauteur tactile ». Les deux se gardent sans lui : le texte nu ci-dessous a
-     sa gouttière, sa hauteur de 44 px et son anneau de focus, écrits dans le
-     SCSS. Ce qu'on gagne, c'est qu'il ne se lit plus comme une seconde action —
-     un pied qui offre deux boutons demande de choisir entre eux, alors qu'il
-     n'y en a qu'un à faire. -->
-<fold-panel-footer align="between">
-  <button class="back" type="button" (click)="back()">{{ c().back }}</button>
-
-  <!-- L'action NOMME l'heure : « Je prends 6 h 30 ». Un bouton qui dirait
-       seulement « Continuer » obligerait à remonter pour vérifier. -->
-  <button
-    class="cta"
-    foldButton
-    emphasis="solid"
-    intent="primary"
-    size="lg"
-    type="button"
-    [disabled]="picked() === null"
-    (click)="confirm()"
-  >
-    {{ ctaLabel() }}
-    <!-- La flèche de la référence. Décorative : un lecteur d'écran qui lirait
-         « flèche vers la droite » après l'heure n'apprendrait rien de plus. -->
-    <span aria-hidden="true">→</span>
-  </button>
-</fold-panel-footer>
+<!-- LA BARRE DU PANIER EST LE PIED (plan `plan-barre-qui-accompagne.md`,
+     Hugo, 2026-10-27) : plus de « Retour » ni de bouton « Je prends … » — la
+     croix de l'en-tête ferme, et un clic sur une heure avance. -->
+<app-cart-bar docked />

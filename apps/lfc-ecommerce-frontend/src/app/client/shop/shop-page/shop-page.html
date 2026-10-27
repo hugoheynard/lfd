@@ -134,7 +134,12 @@
      maison. Renvoyer à l'accueil faisait re-choisir la maison pour changer
      d'heure — ce que la barre du bureau évite déjà avec ses deux liens. -->
 @if (!proVisit()) {
-  <app-cart-bar class="cartbar" (pay)="void pay()" (edit)="void changeTime()" />
+  <app-cart-bar
+    class="cartbar"
+    (pay)="void pay()"
+    (edit)="void changeTime()"
+    (resume)="void doors.resume()"
+  />
 }
 
 <app-product-sheet

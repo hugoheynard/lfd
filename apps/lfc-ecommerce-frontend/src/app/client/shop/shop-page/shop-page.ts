@@ -98,7 +98,7 @@ export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
   private readonly order = inject(OrderContextStore);
   private readonly panels = inject(FoldPanelHostService);
-  private readonly doors = inject(OrderDoors);
+  protected readonly doors = inject(OrderDoors);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly cart = inject(ClientCart);

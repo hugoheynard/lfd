@@ -20,14 +20,14 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 41 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 14 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
 | [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 38 |
-| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 21 |
+| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 18 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
 | [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
@@ -320,7 +320,7 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 | `shop.loadRetry` | Réessayer | Try again | Riprova |  |
 | `shop.pieceUnavailable` | Cet article n’est plus disponible | This item is no longer available | Questo articolo non è più disponibile |  |
 | `shop.pieceUnavailableBack` | Voir la boutique | See the shop | Vedi la bottega |  |
-| `shop.searchPlaceholder` | Chercher une baguette, un éclair… | Look for a baguette, an éclair… | Cerca una baguette, un éclair… |  |
+| `shop.searchPlaceholder` | Chercher un produit | Search for a product | Cerca un prodotto |  |
 | `shop.clearSearch` | Effacer la recherche | Clear the search | Cancella la ricerca |  |
 | `shop.allShelves` | Tout | Everything | Tutto |  |
 | `shop.allShelvesTitle` | Tout le rayon | The whole counter | Tutto il banco |  |
@@ -419,7 +419,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 38 textes.
+Source : `screens/command-terms.copy.ts` · 41 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -461,6 +461,9 @@ Source : `screens/command-terms.copy.ts` · 38 textes.
 | `commandTerms.emptyShort` | Panier vide | Empty basket | Carrello vuoto |  |
 | `commandTerms.unset` | Où et quand ? | Where and when? | Dove e quando? |  |
 | `commandTerms.choose` | Choisir la maison et l’heure | Choose the bakery and time | Scegli la bottega e l’ora |  |
+| `commandTerms.chooseDay` | Choisissez le jour | Choose the day | Scegliete il giorno |  |
+| `commandTerms.chooseTime` | Choisissez l’heure | Choose the time | Scegliete l’ora |  |
+| `commandTerms.chooseAddress` | Choisissez l’adresse | Choose the address | Scegliete l’indirizzo |  |
 
 <a id="espace-daypicker"></a>
 
@@ -616,7 +619,7 @@ Source : `screens/delivery-address.copy.ts` · 38 textes.
 
 ### Choix de l’heure — le sélecteur de créneau — `slotPicker`
 
-Source : `screens/slot-picker.copy.ts` · 21 textes.
+Source : `screens/slot-picker.copy.ts` · 18 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -636,9 +639,6 @@ Source : `screens/slot-picker.copy.ts` · 21 textes.
 | `slotPicker.full.noNext` | Complet — plus rien après cette heure-là. | Full — nothing left after this one. | Esaurito — non resta nulla dopo quest’ora. |  |
 | `slotPicker.empty.title` | Aucun créneau ce jour-là | No slot that day | Nessun orario quel giorno |  |
 | `slotPicker.empty.subtitle` | Cette maison ne propose pas de retrait ce jour. Essayez une autre journée. | This bakery offers no pickup that day. Try another one. | Questa bottega non propone il ritiro quel giorno. Provate un’altra giornata. |  |
-| `slotPicker.cta` | Je prends {time} | I’ll take {time} | Prendo le {time} | `{time}` |
-| `slotPicker.ctaIdle` | Choisissez un créneau | Pick a slot | Scegliete una fascia |  |
-| `slotPicker.back` | Retour | Back | Indietro |  |
 | `slotPicker.current` | Votre choix | Your choice | La vostra scelta |  |
 | `slotPicker.close` | Fermer | Close | Chiudi |  |
 
@@ -889,7 +889,7 @@ Source : `fr.ts · en.ts · it.ts` · 61 textes.
 | `chrome.brandLine` | Boulangerie · Val d’Isère | Bakery · Val d’Isère | Panetteria · Val d’Isère |  |
 | `chrome.accountMenu` | Mon compte personnel | My personal account | Il mio account personale |  |
 | `chrome.myProfile` | Mon profil | My profile | Il mio profilo |  |
-| `chrome.workspaceChoice` | Espace de travail | Workspace | Spazio di lavoro |  |
+| `chrome.workspaceChoice` | Espace de navigation | Browsing space | Spazio di navigazione |  |
 | `chrome.workspacePersonal` | Perso | Personal | Personale |  |
 | `chrome.workspaceCurrentPersonal` | Compte perso | Personal account | Account personale |  |
 | `chrome.workspaceCurrentFor` | Vous travaillez pour | Working for | Lavori per |  |

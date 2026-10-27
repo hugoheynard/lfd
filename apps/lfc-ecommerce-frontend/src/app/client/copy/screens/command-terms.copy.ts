@@ -126,6 +126,14 @@ export interface CommandTermsCopy {
   readonly unset: string;
   /** Le seul geste de la moitié gauche quand rien n'est choisi. */
   readonly choose: string;
+  /**
+   * La barre qui ACCOMPAGNE le parcours (plan `plan-barre-qui-accompagne.md`) :
+   * l'étape qui reste, à la place de « Régler ». Le jour, puis l'heure (ou
+   * l'adresse, en livraison).
+   */
+  readonly chooseDay: string;
+  readonly chooseTime: string;
+  readonly chooseAddress: string;
 }
 
 export const COMMAND_TERMS_FR: CommandTermsCopy = {
@@ -172,6 +180,9 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
   emptyShort: 'Panier vide',
   unset: 'Où et quand ?',
   choose: 'Choisir la maison et l’heure',
+  chooseDay: 'Choisissez le jour',
+  chooseTime: 'Choisissez l’heure',
+  chooseAddress: 'Choisissez l’adresse',
 };
 
 export const COMMAND_TERMS_EN: CommandTermsCopy = {
@@ -215,6 +226,9 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   emptyShort: 'Empty basket',
   unset: 'Where and when?',
   choose: 'Choose the bakery and time',
+  chooseDay: 'Choose the day',
+  chooseTime: 'Choose the time',
+  chooseAddress: 'Choose the address',
 };
 
 export const COMMAND_TERMS_IT: CommandTermsCopy = {
@@ -260,6 +274,9 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
   emptyShort: 'Carrello vuoto',
   unset: 'Dove e quando?',
   choose: 'Scegli la bottega e l’ora',
+  chooseDay: 'Scegliete il giorno',
+  chooseTime: 'Scegliete l’ora',
+  chooseAddress: 'Scegliete l’indirizzo',
 };
 
 const DICTIONARIES: Readonly<Record<LocaleCode, CommandTermsCopy>> = {

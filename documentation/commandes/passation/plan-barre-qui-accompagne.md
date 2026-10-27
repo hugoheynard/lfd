@@ -1,5 +1,36 @@
 # Plan — la barre du panier accompagne le parcours
 
+> ✅ **Bâti le 2026-10-27 (non commité).** `OrderContextStore.draft`,
+> `OrderDoors` (`track`/`note`, `resume()`, `startAt()`), `CartBar` (états du
+> brouillon, entrée `docked`), `client/cart/journey-bar/` montée en `@defer`
+> dans le shell, pieds retirés des dialogues du jour et de l'heure. Écarts :
+>
+> - **Le brouillon a tous ses champs facultatifs**, `date` compris : partie
+>   d'une porte, la commande connaît son mode avant son jour. Il porte aussi
+>   `pickupAddressId` et `address`, pour que la reprise rouvre l'heure de la
+>   maison retenue sans la redemander. En mémoire seulement.
+> - **Il n'est gardé à la fermeture que s'il dit quelque chose et qu'aucun
+>   choix complet n'existe** : un « Modifier » abandonné laisse la barre dire
+>   le service retenu, et fermer le panneau du jour sans rien avoir dit ne
+>   laisse pas de barre « Choisissez le jour ».
+> - **En livraison, l'étape après le jour se dit « Choisissez l'adresse »**
+>   (`commandTerms.chooseAddress`) — le plan ne nommait que le jour et l'heure.
+> - **La barre dit « Ma commande · Retrait » puis « Le Labo · jeu. 29 oct. »**,
+>   et l'étape sur le bouton : la mise en page de la barre existante, pas une
+>   ligne unique.
+> - **En pied de dialogue, l'étape est un état inactif**, et sans brouillon
+>   (modification d'une commande passée) la barre ne s'y montre pas.
+> - **Hors boutique, « Régler » mène à `/boutique`** ; la barre du shell n'est
+>   pas montée sur la boutique, qui garde la sienne. Au bureau, elle n'est
+>   visible que tant qu'un brouillon existe.
+> - **La croix existait déjà** : `fold-panel-header` rend toujours sa croix en
+>   haut à droite (`closeLabel` en est le nom accessible). Seul le pied est
+>   retiré ; le mixin `foot-link` de `_dialog.scss`, devenu sans lecteur, aussi.
+> - **La carte d'une maison de l'accueil** passe par `OrderDoors.startAt()` au
+>   lieu de recopier la séquence jour → heure : sans quoi ce parcours-là
+>   n'avait pas de brouillon.
+> - Textes retirés : `slotPicker.cta`, `ctaIdle`, `back` (renommés en `null`).
+
 > 📝 Plan du 2026-10-27, idée de Hugo : « à partir du moment où on a choisi la
 > date on devrait toujours avoir la barre de récap du bas qui se complète au
 > fur et à mesure des étapes », en réutilisant « la barre de panier qui sera

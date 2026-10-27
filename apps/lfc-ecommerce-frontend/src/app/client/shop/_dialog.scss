@@ -124,19 +124,3 @@
   padding-top: var(--fold-space-lg);
   border-top: 1px solid var(--fold-color-border);
 }
-
-/** Le bouton texte d'un pied — « Retour ». Pas une seconde action. */
-@mixin foot-link {
-  min-height: 44px;
-  padding: 0 var(--fold-space-sm);
-  border: 0;
-  border-radius: var(--fold-radius-md);
-  background: none;
-  color: var(--fold-color-text-secondary);
-  font-family: var(--fold-font-sans);
-  font-size: var(--fold-text-xs);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  cursor: pointer;
-}

@@ -115,7 +115,7 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   windowModeSlotLower: 'Créneau (en minuscule)',
   wordHead: 'Un mot — titre',
   wordPlaceholder: 'Un mot — exemple',
-  workspaceChoice: 'Espace de travail',
+  workspaceChoice: 'Espace de navigation',
   workspaceCurrentFor: 'Espace actuel — pour',
   workspaceCurrentPersonal: 'Espace actuel — perso',
   workspaceKindPersonal: 'Type d’espace — perso',

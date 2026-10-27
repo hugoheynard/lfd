@@ -11,6 +11,7 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
+import { CartBar } from '../../cart/cart-bar/cart-bar';
 import { ClientLocale } from '../../client-locale.service';
 import { fill } from '../../copy/client-copy.service';
 import { dayPickerCopy } from '../../copy/screens/day-picker.copy';
@@ -57,6 +58,7 @@ interface NextDay {
     FoldPanelBodyComponent,
     FoldPanelHeaderComponent,
     MonthPicker,
+    CartBar,
   ],
   templateUrl: './day-picker-dialog.html',
   styleUrl: './day-picker-dialog.scss',

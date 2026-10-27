@@ -36,6 +36,10 @@
    centrée — un panneau collé au bas d'un écran de bureau serait perdu. */
 :host([data-placement='sheet']) .dlg {
   width: min(600px, 100vw);
+  /* Le navigateur borne un `<dialog>` à `100% - 2em - 6px` : en pile, la
+     feuille restait une carte de 337 px flottant au milieu (Hugo,
+     2026-10-27 : « ça devrait ouvrir un panel »). Bord à bord, c'est un panneau. */
+  max-width: 100vw;
   /* Jusqu'à la barre du shell, pas au-delà : la feuille recouvre la page, la
      barre reste lisible au-dessus d'elle. */
   height: calc(100dvh - var(--lfc-header-height, 64px));

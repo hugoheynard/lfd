@@ -227,42 +227,40 @@ describe('SlotPickerDialog — les créneaux', () => {
     expect(text(fixture)).toContain('13 h 15');
   });
 
-  it('🔴 le bouton NOMME l’heure retenue', async () => {
-    const { fixture, slots } = await mount();
+  /**
+   * Un clic sur une heure AVANCE (plan `plan-barre-qui-accompagne.md`, Hugo,
+   * 2026-10-27) : plus de pied, plus de « Je prends … ».
+   */
+  it('🔴 un clic sur une heure ferme sur ce créneau, sans bouton de validation', async () => {
+    const { fixture, slots, closed } = await mount();
     slots.serve([slot({ time: '06:30' })]);
     await fixture.whenStable();
     fixture.detectChanges();
 
-    expect(fixture.componentInstance['ctaLabel']()).toBe('Choisissez un créneau');
+    const root = fixture.nativeElement as HTMLElement;
+    expect(root.querySelector('fold-panel-footer')).toBeNull();
+    expect(root.querySelector('button.slot')).not.toBeNull();
+    (root.querySelector('button.slot') as HTMLButtonElement).click();
 
-    fixture.componentInstance['pick'](slot({ time: '06:30' }));
-    fixture.detectChanges();
-
-    expect(plain(fixture.componentInstance['ctaLabel']())).toContain('6 h 30');
+    expect(closed).toHaveLength(1);
+    expect((closed[0] as PublicPickupSlot).time).toBe('06:30');
   });
 
   it('🔴 un créneau complet ne se prend pas, même appelé directement', async () => {
     // La garde est dans le composant et pas seulement dans l'attribut désactivé :
     // un gabarit qui oublierait `disabled` ne doit pas pouvoir vendre une heure
     // pleine.
-    const { fixture } = await mount();
+    const { fixture, closed } = await mount();
 
     fixture.componentInstance['pick'](slot({ time: '12:30', open: false }));
 
-    expect(fixture.componentInstance['picked']()).toBeNull();
+    expect(closed).toHaveLength(0);
   });
 
-  it('rend le créneau retenu en se fermant', async () => {
-    const { fixture, slots, closed } = await mount();
-    slots.serve([slot({ time: '06:30' })]);
-    await fixture.whenStable();
-    fixture.detectChanges();
+  it('porte la barre du panier en pied', async () => {
+    const { fixture } = await mount();
 
-    fixture.componentInstance['pick'](slot({ time: '06:30' }));
-    fixture.componentInstance['confirm']();
-
-    expect(closed).toHaveLength(1);
-    expect((closed[0] as PublicPickupSlot).time).toBe('06:30');
+    expect((fixture.nativeElement as HTMLElement).querySelector('app-cart-bar')).not.toBeNull();
   });
 
   it('relit en changeant de journée — les créneaux dépendent de l’heure qu’il est', async () => {

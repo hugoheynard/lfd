@@ -9,12 +9,10 @@ import {
 } from '@angular/core';
 import { addDays, instantToLocal, type PublicPickupSlot } from '@lfd/contracts';
 import {
-  FoldButtonComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
   FoldPanelBodyComponent,
   type FoldPanelDefaults,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelHostService,
   FoldPanelRef,
@@ -30,6 +28,7 @@ import { dialogSide } from '../../panel-side';
 import { ORDER_DIALOG } from '../order-dialog';
 import { PublicSlots } from '../public-slots.gateway';
 import { RovingRadioGroup } from '../../a11y/roving-radio-group';
+import { CartBar } from '../../cart/cart-bar/cart-bar';
 
 /**
  * Combien de journées le visiteur peut regarder d'un coup.
@@ -139,13 +138,12 @@ interface DayTab {
   selector: 'app-slot-picker-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    FoldButtonComponent,
     RovingRadioGroup,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
     FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    CartBar,
   ],
   templateUrl: './slot-picker-dialog.html',
   styleUrl: './slot-picker-dialog.scss',
@@ -264,12 +262,6 @@ export class SlotPickerDialog {
   /** Le sur-titre : où l'on en est, et dans quelle maison. */
   protected readonly kicker = computed(() => fill(this.c().kicker, { place: this.data().place }));
 
-  /** L'action NOMME l'heure — « Je prends 6 h 30 ». Sans choix, elle le demande. */
-  protected readonly ctaLabel = computed(() => {
-    const slot = this.picked();
-    return slot === null ? this.c().ctaIdle : fill(this.c().cta, { time: formatHour(slot.time) });
-  });
-
   constructor() {
     // La première journée ouvre le dialogue ; les suivantes s'atteignent par les
     // onglets. Rien n'est demandé tant que le serveur n'a accordé aucun jour.
@@ -316,10 +308,14 @@ export class SlotPickerDialog {
     this.day.set(day);
   }
 
-  /** Un créneau complet ne se prend pas : le refus précède l'effort. */
+  /**
+   * Un clic sur une heure AVANCE (Hugo, 2026-10-27) : pas de bouton de
+   * validation — se tromper d'heure se répare en un geste, et le seul geste
+   * qui engage reste « Régler ». Un créneau complet ne se prend pas.
+   */
   protected pick(slot: PublicPickupSlot): void {
     if (slot.open) {
-      this.picked.set(slot);
+      this.ref.close(slot);
     }
   }
 
@@ -349,20 +345,5 @@ export class SlotPickerDialog {
     return slot.nextOpenTime === null
       ? copy.noNext
       : fill(copy.nextOpen, { time: formatHour(slot.nextOpenTime) });
-  }
-
-  /**
-   * Repartir sans choisir. `undefined` et non le créneau survolé : fermer n'est
-   * pas choisir, et l'appelant fait la différence sur cette valeur exacte.
-   */
-  protected back(): void {
-    this.ref.close(undefined);
-  }
-
-  protected confirm(): void {
-    const slot = this.picked();
-    if (slot !== null) {
-      this.ref.close(slot);
-    }
   }
 }

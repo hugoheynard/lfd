@@ -6,7 +6,9 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { Router, RouterLink, RouterOutlet } from '@angular/router';
+import { toSignal } from '@angular/core/rxjs-interop';
+import { NavigationEnd, Router, RouterLink, RouterOutlet } from '@angular/router';
+import { filter, map } from 'rxjs';
 import {
   FoldAppShellComponent,
   FoldButtonComponent,
@@ -22,6 +24,8 @@ import { IdentityConflictNotice } from '../../auth/identity-conflict';
 import { InvitationExpiredNotice } from '../../auth/invitation-expired';
 import { SIGN_IN_FAILURE_PATH } from '../../auth/auth.providers';
 import { ClientChrome } from '../client-chrome.service';
+import { JourneyBar } from '../cart/journey-bar/journey-bar';
+import { OrderContextStore } from '../order-context.store';
 import { AfterAddHost } from '../suggestions/after-add-host/after-add-host';
 import { AccountMenu } from './account-menu/account-menu';
 import { ClientFoot } from '../foot/client-foot';
@@ -63,6 +67,7 @@ import { InstallBanner } from '../install-banner/install-banner';
     FoldIconComponent,
     FoldPanelHostComponent,
     InstallBanner,
+    JourneyBar,
     LangSwitch,
     NotificationsMenu,
     RouterLink,
@@ -171,4 +176,25 @@ export class ClientShell {
   protected openMenu(): void {
     this.menuOpen.set(true);
   }
+
+  private readonly order = inject(OrderContextStore);
+
+  private readonly url = toSignal(
+    this.router.events.pipe(
+      filter((event) => event instanceof NavigationEnd),
+      map((event) => event.urlAfterRedirects),
+    ),
+    { initialValue: this.router.url },
+  );
+
+  /**
+   * **La barre du panier suit le parcours** hors de la boutique (plan
+   * `plan-barre-qui-accompagne.md`) : dès qu'un brouillon ou un choix existe.
+   * La boutique monte la sienne, et deux barres se superposeraient.
+   */
+  protected readonly journeyBar = computed(
+    () =>
+      (this.order.draft() !== null || this.order.choice() !== null) &&
+      !this.url().startsWith('/boutique'),
+  );
 }

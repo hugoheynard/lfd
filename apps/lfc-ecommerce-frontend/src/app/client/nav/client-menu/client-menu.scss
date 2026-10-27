@@ -87,28 +87,6 @@
   color: var(--fold-color-text);
 }
 
-.who {
-  display: flex;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin: var(--fold-space-md) 0 0;
-  font-family: var(--fold-font-label);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--fold-weight-extrabold);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--fold-color-text-muted);
-}
-
-/* Le tiret de la réf : un trait beurre, pas une puce. */
-.who-rule {
-  flex: none;
-  width: 26px;
-  height: 3px;
-  border-radius: var(--fold-radius-pill);
-  background: var(--lfc-color-accent);
-}
-
 /* ── L'action, avant les destinations ───────────────────────────────────── */
 
 .new-order {

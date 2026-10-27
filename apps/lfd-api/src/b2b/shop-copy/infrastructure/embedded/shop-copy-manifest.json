@@ -1434,9 +1434,9 @@
         },
         {
           "key": "shop.searchPlaceholder",
-          "fr": "Chercher une baguette, un éclair…",
-          "en": "Look for a baguette, an éclair…",
-          "it": "Cerca una baguette, un éclair…",
+          "fr": "Chercher un produit",
+          "en": "Search for a product",
+          "it": "Cerca un prodotto",
           "variables": []
         },
         {
@@ -2292,6 +2292,27 @@
           "en": "Choose the bakery and time",
           "it": "Scegli la bottega e l’ora",
           "variables": []
+        },
+        {
+          "key": "commandTerms.chooseDay",
+          "fr": "Choisissez le jour",
+          "en": "Choose the day",
+          "it": "Scegliete il giorno",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.chooseTime",
+          "fr": "Choisissez l’heure",
+          "en": "Choose the time",
+          "it": "Scegliete l’ora",
+          "variables": []
+        },
+        {
+          "key": "commandTerms.chooseAddress",
+          "fr": "Choisissez l’adresse",
+          "en": "Choose the address",
+          "it": "Scegliete l’indirizzo",
+          "variables": []
         }
       ],
       "unrecorded": []
@@ -3120,27 +3141,6 @@
           "fr": "Cette maison ne propose pas de retrait ce jour. Essayez une autre journée.",
           "en": "This bakery offers no pickup that day. Try another one.",
           "it": "Questa bottega non propone il ritiro quel giorno. Provate un’altra giornata.",
-          "variables": []
-        },
-        {
-          "key": "slotPicker.cta",
-          "fr": "Je prends {time}",
-          "en": "I’ll take {time}",
-          "it": "Prendo le {time}",
-          "variables": ["time"]
-        },
-        {
-          "key": "slotPicker.ctaIdle",
-          "fr": "Choisissez un créneau",
-          "en": "Pick a slot",
-          "it": "Scegliete una fascia",
-          "variables": []
-        },
-        {
-          "key": "slotPicker.back",
-          "fr": "Retour",
-          "en": "Back",
-          "it": "Indietro",
           "variables": []
         },
         {
@@ -4473,9 +4473,9 @@
         },
         {
           "key": "chrome.workspaceChoice",
-          "fr": "Espace de travail",
-          "en": "Workspace",
-          "it": "Spazio di lavoro",
+          "fr": "Espace de navigation",
+          "en": "Browsing space",
+          "it": "Spazio di navigazione",
           "variables": []
         },
         {

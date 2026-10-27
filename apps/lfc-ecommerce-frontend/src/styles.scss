@@ -174,6 +174,9 @@ summary,
 
 /* 🔴 « FERMER » EN TOUTES LETTRES, PAS UNE CROIX (Hugo, 2026-09-20), sur les
    deux dialogues de commande — la maquette écrit le mot.
+   ⚠️ L'heure l'a quitté le 2026-10-27 (Hugo : « une croix à la place de fermer
+   en haut à droite », la barre du panier en pied) : seul le point de retrait
+   l'écrit encore.
 
    Ici et non dans les composants : le bouton de fermeture vit dans `.ph__close`,
    à l'intérieur de `fold-panel-header`, encapsulé. Trois routes ont été
@@ -190,7 +193,7 @@ summary,
 
    La portée est tenue par `:has()` — les autres panneaux de l'app gardent leur
    croix, qui est la bonne affordance là où l'en-tête porte un vrai titre. */
-.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close {
+.panel:has(app-public-house-picker-dialog) .ph__close {
   width: auto;
   height: 28px;
   padding: 0 2px;
@@ -202,11 +205,11 @@ summary,
   color: var(--fold-color-text-secondary);
 }
 
-.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close fold-icon {
+.panel:has(app-public-house-picker-dialog) .ph__close fold-icon {
   display: none;
 }
 
-.panel:has(app-slot-picker-dialog, app-public-house-picker-dialog) .ph__close::after {
+.panel:has(app-public-house-picker-dialog) .ph__close::after {
   content: attr(aria-label);
 }
 

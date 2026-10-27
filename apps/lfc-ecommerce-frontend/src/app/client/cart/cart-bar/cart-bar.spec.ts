@@ -7,7 +7,7 @@ import { describe, expect, it } from 'vitest';
 
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { formatCents } from '../../format-money';
-import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
+import { type OrderDraft, OrderContextStore, type ServiceChoice } from '../../order-context.store';
 import { ClientCart } from '../client-cart.service';
 import { CartBar } from './cart-bar';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
@@ -160,5 +160,87 @@ describe('CartBar — le pied collé', () => {
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('.edit')?.textContent?.trim()).toBe('Retoucher');
+  });
+});
+
+/** Le texte tel qu'on le lit : espaces de gabarit et insécables ramenés à un. */
+const said = (node: Element | null): string =>
+  (node?.textContent ?? '').replace(/\s+/gu, ' ').trim();
+
+/** Le même pied, un brouillon de parcours posé (plan `plan-barre-qui-accompagne.md`). */
+function bootDraft(draft: OrderDraft, docked = false): ComponentFixture<CartBar> {
+  const fixture = boot({ choice: null });
+  TestBed.inject(OrderContextStore).draft.set(draft);
+  fixture.componentRef.setInput('docked', docked);
+  fixture.detectChanges();
+  return fixture;
+}
+
+describe('CartBar — la barre qui accompagne le parcours', () => {
+  it('sans mode ni jour : « Choisissez le jour », seul', () => {
+    const fixture = bootDraft({});
+
+    expect(el(fixture).querySelector('.said')).toBeNull();
+    expect(said(pay(fixture))).toBe(COMMAND_TERMS_FR.chooseDay);
+  });
+
+  it('partie de la porte du retrait : le mode et la maison, puis le jour à choisir', () => {
+    const fixture = bootDraft({ mode: 'pickup', place: 'Le Labo' });
+
+    expect(said(el(fixture).querySelector('.kicker'))).toBe(
+      `${COMMAND_TERMS_FR.title} · ${COMMAND_TERMS_FR.pickup}`,
+    );
+    expect(said(el(fixture).querySelector('.promise'))).toBe('Le Labo');
+    expect(said(pay(fixture))).toBe(COMMAND_TERMS_FR.chooseDay);
+  });
+
+  it('🔴 jour et maison : les deux, puis l’heure à choisir', () => {
+    const fixture = bootDraft({
+      date: instantToLocal(new Date()).day,
+      mode: 'pickup',
+      place: 'Le Labo',
+    });
+
+    expect(said(el(fixture).querySelector('.promise'))).toBe(`Le Labo · ${COMMAND_TERMS_FR.today}`);
+    expect(said(pay(fixture))).toBe(COMMAND_TERMS_FR.chooseTime);
+  });
+
+  it('en livraison, le jour pris : l’adresse à choisir', () => {
+    const fixture = bootDraft({ date: instantToLocal(new Date()).day, mode: 'delivery' });
+
+    expect(said(pay(fixture))).toBe(COMMAND_TERMS_FR.chooseAddress);
+  });
+
+  it('le brouillon prime sur un choix déjà posé : on est en train de le refaire', () => {
+    const fixture = boot();
+    TestBed.inject(OrderContextStore).draft.set({ mode: 'pickup' });
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.edit')).toBeNull();
+    expect(said(pay(fixture))).toBe(COMMAND_TERMS_FR.chooseDay);
+  });
+
+  it('émet `resume` au clic sur l’étape qui manque', () => {
+    const fixture = bootDraft({ mode: 'pickup' });
+    let resumed = 0;
+    fixture.componentInstance.resume.subscribe(() => resumed++);
+
+    pay(fixture)?.click();
+
+    expect(resumed).toBe(1);
+  });
+
+  it('🔴 en pied de dialogue, l’étape n’est qu’un état : inactive', () => {
+    const fixture = bootDraft({ mode: 'pickup' }, true);
+
+    expect(pay(fixture)?.disabled).toBe(true);
+  });
+
+  it('🔴 en pied de dialogue sans brouillon, ne montre rien', () => {
+    const fixture = boot();
+    fixture.componentRef.setInput('docked', true);
+    fixture.detectChanges();
+
+    expect(el(fixture).querySelector('.foot')).toBeNull();
   });
 });

@@ -1,11 +1,19 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import {
+  booleanAttribute,
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  inject,
+  input,
+  output,
+} from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
 import { FoldButtonComponent } from 'fold-ng';
 
 import { ClientLocale } from '../../client-locale.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
-import { serviceWhenLabel } from '../../format-day';
+import { serviceDayLabel, serviceWhenLabel } from '../../format-day';
 import { shownCartTotalLabel } from '../shown-cart-total';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCart } from '../client-cart.service';
@@ -28,10 +36,22 @@ import { ClientCart } from '../client-cart.service';
  *
  * Il ne décide pas de ce que « régler » ou « modifier » veulent dire : il
  * émet, et l'écran tranche (service manquant, invité, passation).
+ *
+ * 🔴 **Il ACCOMPAGNE le parcours** (plan `documentation/commandes/passation/
+ * plan-barre-qui-accompagne.md`) : tant qu'un brouillon existe
+ * (`OrderContextStore.draft`), il dit ce qui est déjà répondu — mode, maison,
+ * jour — et son geste nomme l'étape qui manque (« Choisissez le jour »,
+ * « … l'heure », « … l'adresse ») au lieu de « Régler ». Le brouillon prime
+ * sur le choix : on est en train de le refaire.
+ *
+ * `docked` : monté dans le PIED d'un dialogue du parcours. L'étape se fait
+ * dans le dialogue même — un clic sur un jour ou une heure avance —, le geste
+ * n'y est donc qu'un état, inactif ; et sans brouillon, rien ne s'y montre.
  */
 @Component({
   selector: 'app-cart-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
+  host: { '[class.docked]': 'docked()' },
   imports: [FoldButtonComponent],
   templateUrl: './cart-bar.html',
   styleUrl: './cart-bar.scss',
@@ -43,12 +63,49 @@ export class CartBar {
   /** Revenir sur le service retenu (plan lot 3 : retour à l'accueil). */
   readonly edit = output<void>();
 
+  /** Reprendre le parcours à l'étape qui manque. */
+  readonly resume = output<void>();
+
+  /** Dans le pied d'un dialogue du parcours : le geste n'est qu'un état. */
+  readonly docked = input(false, { transform: booleanAttribute });
+
   private readonly cart = inject(ClientCart);
   private readonly locale = inject(ClientLocale);
 
   protected readonly c = screenCopy('commandTerms', commandTermsCopy);
 
-  protected readonly choice = inject(OrderContextStore).choice;
+  private readonly store = inject(OrderContextStore);
+
+  protected readonly choice = this.store.choice;
+
+  /**
+   * Le parcours en cours, tel que la barre le dit : `null` sans brouillon.
+   * `promise` vide = ni maison ni jour encore ; `mode` `null` = pas encore dit.
+   */
+  protected readonly step = computed(() => {
+    const draft = this.store.draft();
+    if (draft === null) {
+      return null;
+    }
+    const copy = this.c();
+    const day =
+      draft.date === undefined
+        ? null
+        : serviceDayLabel(draft.date, instantToLocal(new Date()).day, this.locale.current(), {
+            today: copy.today,
+            tomorrow: copy.tomorrow,
+          });
+    const promise = [draft.place ?? null, day].filter((part) => part !== null).join(' · ');
+    const mode =
+      draft.mode === undefined ? null : draft.mode === 'delivery' ? copy.delivery : copy.pickup;
+    const prompt =
+      draft.date === undefined
+        ? copy.chooseDay
+        : draft.mode === 'delivery'
+          ? copy.chooseAddress
+          : copy.chooseTime;
+    return { mode, promise, prompt };
+  });
 
   protected readonly count = this.cart.count;
 

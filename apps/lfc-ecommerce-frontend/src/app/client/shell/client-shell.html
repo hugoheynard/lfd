@@ -240,6 +240,15 @@
 
   <router-outlet />
 
+  <!-- LA BARRE QUI ACCOMPAGNE le parcours (plan `plan-barre-qui-accompagne.md`),
+       ailleurs que dans la boutique. Différée : elle tire les dialogues de la
+       commande, qui n'ont rien à faire dans le paquet initial. -->
+  @defer (when journeyBar()) {
+    @if (journeyBar()) {
+      <app-journey-bar />
+    }
+  }
+
   <!-- L'APRÈS-AJOUT (RS7) : « Ajouté ! » et la suggestion du panier, quand
        un article entre au panier. L'hôte ne charge le retour qu'à la première
        entrée : rien dans le paquet initial que lui, rien au rendu serveur. -->

@@ -25,6 +25,17 @@
   box-shadow: var(--lfc-shadow-sheet-up);
 }
 
+/* Dans le pied d'un dialogue : le panneau porte déjà son bord et son ombre. */
+:host(.docked) {
+  position: static;
+  flex: none;
+}
+
+:host(.docked) .foot {
+  border-radius: 0;
+  box-shadow: none;
+}
+
 .said {
   display: flex;
   align-items: flex-end;

@@ -11,8 +11,8 @@ import {
   viewChild,
 } from '@angular/core';
 import { Router } from '@angular/router';
-import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
-import { FoldButtonComponent, FoldCalloutComponent, FoldPanelHostService } from 'fold-ng';
+import { type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
+import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
 import { ClientIdentity } from '../client-identity.service';
@@ -28,7 +28,6 @@ import {
   type DoorCopy,
 } from '../copy/screens/accueil-public.copy';
 import { screenCopy } from '../copy/shop-copy-composer';
-import { OrderContextStore } from '../order-context.store';
 import { formatHour } from '../format-hour';
 import {
   bestPickupDiscount,
@@ -52,7 +51,6 @@ import { datedEventOf, featuredOperation, type DatedEvent } from '../shop/operat
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
 import { ServiceDoors } from '../shop/service-doors/service-doors';
-import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
 import { sizedMedia, SHEET_WIDTHS } from '../shop/media-source';
 import { objectPositionOf } from '../shop/shelf-display';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
@@ -133,10 +131,7 @@ export class AccueilPublic {
   private readonly points = inject(ServicePoints);
   private readonly doors = inject(OrderDoors);
   private readonly router = inject(Router);
-  /** Là où le choix VOYAGE : c'est le store que la boutique et le panier lisent. */
-  private readonly order = inject(OrderContextStore);
   private readonly locale = inject(ClientLocale);
-  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly c = screenCopy('accueilPublic', accueilPublicCopy);
@@ -735,45 +730,18 @@ export class AccueilPublic {
    * on revisitera plus tard » — il n'est simplement plus traversé.
    */
   protected async chooseHouse(house: House): Promise<void> {
-    // Le jour d'abord, même depuis la carte d'une maison (2026-10-27).
-    const day = await this.doors.askDay();
-    if (day === null) {
+    // Le jour d'abord, même depuis la carte d'une maison (2026-10-27) ; la
+    // séquence et l'écriture du choix vivent dans `OrderDoors`, qui tient
+    // aussi le brouillon que la barre du panier montre en route.
+    if (
+      !(await this.doors.startAt(
+        house.point.id,
+        house.name,
+        `${house.point.ligne1}, ${house.point.ville}`,
+      ))
+    ) {
       return;
     }
-    const ref = SlotPickerDialog.open(this.panels, {
-      openOn: day,
-      pickupAddressId: house.point.id,
-      place: house.name,
-      // La journée vient du SERVEUR, heure limite comprise. `null` = aucune
-      // journée demandable ici, et le dialogue le dit plutôt que d'en inventer.
-      firstDay: this.points.nextDayFor(house.point.id),
-      lastDay: this.points.lastDay(),
-    });
-    const slot = await ref.closed;
-    if (slot === undefined) {
-      return;
-    }
-
-    // 🔴 LE CHOIX VOYAGE ICI, et sa forme est celle que `pickup-dialog`
-    // fabrique déjà — mêmes champs, mêmes raisons : l'identité du point et
-    // JAMAIS un montant (le serveur chiffre), le libellé POUR L'ÉCRAN et la
-    // fenêtre POUR LE SERVEUR, la journée telle que le serveur l'a accordée.
-    this.order.choice.set({
-      mode: 'pickup',
-      place: house.name,
-      // Le complément (« au Labo ») n'a pas de source serveur : il se dérive du
-      // libellé. Juste pour un lieu masculin, faux pour un féminin — c'est une
-      // dette de contrat, et `pickup-dialog` la porte déjà à l'identique.
-      at: `au ${house.name}`,
-      address: `${house.point.ligne1}, ${house.point.ville}`,
-      pickupAddressId: house.point.id,
-      slot: formatHour(slot.time),
-      // La fin vient de l'instant UTC du créneau, pas d'une addition d'écran :
-      // le pas de découpe appartient à la règle du point, que la boutique ne
-      // connaît pas.
-      window: { start: slot.time, end: instantToLocal(new Date(slot.endAt)).time },
-      date: slot.day,
-    });
 
     void this.router.navigate([SHOP]);
   }
