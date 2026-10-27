@@ -15,6 +15,7 @@ import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 import { ClientCart } from '../client-cart.service';
 import { shownCartTotalCents } from '../shown-cart-total';
+import { ServicePoints } from '../../shop/pickup-points.store';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientWorkspace } from '../../client-workspace.service';
 import { ClientCompany } from '../../client-company.service';
@@ -62,6 +63,7 @@ export class CartSummary implements OnInit {
   protected readonly staffPick = inject(StaffCartSuggestion);
   private readonly destroyRef = inject(DestroyRef);
   private readonly order = inject(OrderContextStore);
+  private readonly points = inject(ServicePoints);
   private readonly locale = inject(ClientLocale);
   private readonly workspace = inject(ClientWorkspace);
   protected readonly voucher = inject(VoucherChoice);
@@ -193,9 +195,20 @@ export class CartSummary implements OnInit {
       this.linesShown() && this.lines().some((line) => this.excludedSkus().has(line.product.sku)),
   );
 
+  /**
+   * « Coursier (Val d'Isère centre) » : le port nomme la zone qu'il paie
+   * (Hugo, 2026-10-27), lue par le même préfixe que le serveur. Sans zone
+   * connue, le mot seul.
+   */
   protected readonly feeLabel = computed(() => {
     const fee = this.totals().deliveryFeeCents;
-    return fee === 0 ? null : this.t().cart.fee;
+    if (fee === 0) {
+      return null;
+    }
+    const choice = this.order.choice();
+    const zone = choice?.mode === 'delivery' ? this.points.zoneFor(choice.codePostal) : null;
+    const word = this.t().cart.fee;
+    return zone === null ? word : `${word} (${zone.label})`;
   });
 
   /** Le total montré : HT au compte (total moins TVA du devis), TTC sinon. */
