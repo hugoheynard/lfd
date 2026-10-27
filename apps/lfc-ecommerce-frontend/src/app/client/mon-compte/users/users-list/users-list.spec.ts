@@ -2,6 +2,7 @@ import { ComponentFixture, TestBed } from '@angular/core/testing';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, vi } from 'vitest';
 
+import { ClientIdentity } from '../../../client-identity.service';
 import { FR } from '../../../copy/fr';
 import {
   asRole,
@@ -39,6 +40,33 @@ describe('UsersList', () => {
       n.textContent?.trim(),
     );
     expect(tags).toEqual([FR.account.tagContact]);
+  });
+
+  /** « · vous » au seul détenteur (Hugo, 2026-10-27 : il s'affichait à tout membre). */
+  it('ne dit « vous » qu’au détenteur lui-même', () => {
+    const kicker = (): string | undefined =>
+      el().querySelector('.holder-kicker')?.textContent?.trim();
+    const identity = TestBed.inject(ClientIdentity);
+
+    identity.apply({
+      userId: 'u2',
+      firstName: 'Léa',
+      lastName: 'Martin',
+      email: 'lea@x.fr',
+      phone: '',
+    });
+    fixture.detectChanges();
+    expect(kicker()).toBe(FR.account.usersHolder);
+
+    identity.apply({
+      userId: 'u1',
+      firstName: 'Hugo',
+      lastName: 'Heynard',
+      email: 'HHeynard@gmail.com',
+      phone: '',
+    });
+    fixture.detectChanges();
+    expect(kicker()).toBe(FR.account.usersHolderYou);
   });
 
   it('dit la fonction ET le rôle sur la même ligne', () => {

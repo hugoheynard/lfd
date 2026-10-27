@@ -115,6 +115,38 @@ describe('UsualPicksRow', () => {
     ]);
   });
 
+  /** Une carte par rythme (Hugo, 2026-10-27) : le jour réunit, le reste va en « Souvent commandés ». */
+  it('regroupe les habituels par jour, et les autres en « Souvent commandés »', async () => {
+    const { http } = boot('pro');
+
+    const { root } = await mount(http, [
+      usual('PAI-001'),
+      usual('VIE-001', { source: 'data', kind: 'frequent', orderCount: 6 }),
+      usual('VIE-002'),
+    ]);
+
+    const groups = [...root.querySelectorAll('app-usual-group-card')];
+    expect(groups.map((g) => g.querySelector('.title')?.textContent?.trim())).toEqual([
+      'Tous les mardis',
+      FR.shop.usualOften,
+    ]);
+    expect(groups[0]?.querySelector('.count')?.textContent).toContain('2');
+    expect(groups[0]?.querySelectorAll('.tile')).toHaveLength(2);
+  });
+
+  it('le « + » d’une carte déplie sa liste, et le dit', async () => {
+    const { http } = boot('pro');
+    const { root } = await mount(http, [usual('PAI-001')]);
+
+    const toggle = root.querySelector<HTMLButtonElement>('app-usual-group-card .toggle');
+    expect(toggle?.getAttribute('aria-expanded')).toBe('false');
+    toggle?.click();
+    TestBed.tick();
+
+    expect(toggle?.getAttribute('aria-expanded')).toBe('true');
+    expect(root.querySelector('app-usual-group-card .list')?.hasAttribute('inert')).toBe(false);
+  });
+
   it('demande avec le panier courant, qui n’y sert qu’à exclure', async () => {
     const { cart, http } = boot('pro');
     cart.add('VIE-002');

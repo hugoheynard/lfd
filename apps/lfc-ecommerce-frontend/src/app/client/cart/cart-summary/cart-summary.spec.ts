@@ -35,6 +35,7 @@ import { Router } from '@angular/router';
 
 import { PieceRequest } from '../../shop/piece-request.service';
 import { OrderContextStore } from '../../order-context.store';
+import { ServicePoints } from '../../shop/pickup-points.store';
 import { CartSummary } from './cart-summary';
 
 describe('CartSummary', () => {
@@ -244,6 +245,44 @@ describe('CartSummary — les points à gagner', () => {
    * Le taux du port ne se dit plus sous la ligne de livraison (Hugo,
    * 2026-10-27).
    */
+  /** La ligne du coursier nomme sa zone (Hugo, 2026-10-27). */
+  it('nomme la zone de livraison à côté de « Coursier »', () => {
+    const fixture = quoted(null, workspaceDouble(), { deliveryFeeCents: 1200 });
+    TestBed.inject(ServicePoints).receive(
+      [],
+      [
+        {
+          id: 'z1',
+          postalPrefixes: ['73150'],
+          label: 'Val d’Isère',
+          fee: { mode: 'amount', cents: 1200 },
+        },
+      ],
+    );
+    TestBed.inject(OrderContextStore).choice.set({
+      mode: 'delivery',
+      place: 'La Folie Douce',
+      at: 'à La Folie Douce',
+      address: 'La Daille, 73150',
+      codePostal: '73150',
+      deliveryAddress: {
+        label: '',
+        ligne1: 'La Daille',
+        ligne2: '',
+        codePostal: '73150',
+        ville: 'Val d’Isère',
+        pays: 'FR',
+      },
+      deliveryAddressId: null,
+      slot: 'avant 7 h 30',
+      window: { start: '06:00', end: '07:30' },
+      date: new Date().toISOString().slice(0, 10),
+    });
+    fixture.detectChanges();
+
+    expect(el(fixture).textContent).toContain('Coursier (Val d’Isère)');
+  });
+
   it('ne dit pas la TVA de la livraison', () => {
     const fixture = quoted(null, workspaceDouble(), {
       deliveryFeeCents: 1200,
