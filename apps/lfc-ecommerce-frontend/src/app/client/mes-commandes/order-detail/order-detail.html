@@ -62,6 +62,23 @@
   </dl>
 </div>
 
+<!-- Le TICKET d'une commande de particulier composée en TTC : ses lignes,
+     ses gestes et son total en TTC, puis HT / TVA / TTC par taux, lus sur la
+     commande. Absent pour un pro. -->
+@if (ticketRows(); as rows) {
+  <div class="facts" data-ticket>
+    <p class="facts-head">{{ t().orders.ticketHead }}</p>
+    <dl class="facts-list">
+      @for (row of rows; track $index) {
+        <div class="fact">
+          <dt>{{ row.label }}</dt>
+          <dd>{{ row.value }}</dd>
+        </div>
+      }
+    </dl>
+  </div>
+}
+
 <!-- TROIS POIDS, et ils viennent du système : les documents — bon de commande,
      et bon de livraison d'une commande remise (plan E5a) — sont ce qu'on
      vient chercher (plein), recommander est la suite naturelle (teinté), le

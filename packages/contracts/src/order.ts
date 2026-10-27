@@ -996,6 +996,13 @@ export interface CustomerOrderLineView {
   readonly allergens: OrderLineAllergens | null;
   /** Cf. {@link OrderLineView.pickupDiscountEligible}. */
   readonly pickupDiscountEligible?: false;
+  /**
+   * L'étiquette et le TTC scellés d'une ligne de commande composée en TTC
+   * (`exact_ht`) — absents sinon : « Mes commandes » les écrit au format du
+   * ticket, un pro garde son affichage.
+   */
+  readonly unitPriceTtcCents?: number;
+  readonly lineTotalTtcCents?: number;
 }
 
 /**
@@ -1064,6 +1071,10 @@ export interface CustomerOrderView {
    * attente ou en échec ne lui dit rien d'utile.
    */
   readonly refundedCents: number;
+  /** Cf. {@link OrderView.ttcTerms} — présent sur une commande composée en TTC seulement. */
+  readonly ttcTerms?: OrderTtcTerms;
+  /** Cf. {@link OrderView.ttcByRate}. */
+  readonly ttcByRate?: readonly OrderRateAmounts[];
 }
 
 /**
@@ -1133,6 +1144,12 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
             },
       allergens: line.allergens,
       ...(line.pickupDiscountEligible === false ? { pickupDiscountEligible: false as const } : {}),
+      // Les TTC scellés ne sortent que pour une commande composée en TTC.
+      ...(view.ttcTerms === undefined ||
+      line.unitPriceTtcCents === null ||
+      line.lineTotalTtcCents === null
+        ? {}
+        : { unitPriceTtcCents: line.unitPriceTtcCents, lineTotalTtcCents: line.lineTotalTtcCents }),
     })),
     // Pas de QR tant que la commande n'est pas réglée — cf. `exposedHandoverToken`.
     handoverToken: exposedHandoverToken(view),
@@ -1140,6 +1157,8 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     readyAt: view.readyAt,
     handedOverAt: view.handedOverAt,
     refundedCents: view.refundedCents,
+    ...(view.ttcTerms === undefined ? {} : { ttcTerms: view.ttcTerms }),
+    ...(view.ttcByRate === undefined ? {} : { ttcByRate: view.ttcByRate }),
   };
 }
 

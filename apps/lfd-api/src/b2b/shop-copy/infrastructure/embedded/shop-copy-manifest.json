@@ -6113,6 +6113,63 @@
           "variables": []
         },
         {
+          "key": "orders.ticketHead",
+          "fr": "Votre ticket",
+          "en": "Your receipt",
+          "it": "Il tuo scontrino",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketArticles",
+          "fr": "Articles",
+          "en": "Items",
+          "it": "Articoli",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketVoucher",
+          "fr": "Bon de fidélité",
+          "en": "Loyalty voucher",
+          "it": "Buono fedeltà",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketDelivery",
+          "fr": "Livraison",
+          "en": "Delivery",
+          "it": "Consegna",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketTotal",
+          "fr": "Total TTC",
+          "en": "Total incl. VAT",
+          "it": "Totale IVA inclusa",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketRate",
+          "fr": "Taux",
+          "en": "Rate",
+          "it": "Aliquota",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketPretax",
+          "fr": "HT",
+          "en": "Excl. VAT",
+          "it": "Imponibile",
+          "variables": []
+        },
+        { "key": "orders.ticketVat", "fr": "TVA", "en": "VAT", "it": "IVA", "variables": [] },
+        {
+          "key": "orders.ticketTaxed",
+          "fr": "TTC",
+          "en": "Incl. VAT",
+          "it": "IVA inclusa",
+          "variables": []
+        },
+        {
           "key": "orders.detailSlot",
           "fr": "Créneau",
           "en": "Slot",

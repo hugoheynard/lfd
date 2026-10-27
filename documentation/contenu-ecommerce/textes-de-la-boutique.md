@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1671 textes
+## Sommaire — 1680 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -38,7 +38,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 59 |
 | [La navigation](#espace-nav) | `nav` | 25 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 239 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 248 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1671** |
+| **Total** | | **1680** |
 
 ## Le parcours de commande
 
@@ -957,7 +957,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 239 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 248 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1156,6 +1156,15 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.refundedFull` | Remboursée | Refunded | Rimborsato |  |
 | `orders.refundedPartial` | Remboursée en partie ({amount}) | Partly refunded ({amount}) | Rimborsato in parte ({amount}) | `{amount}` |
 | `orders.detailHead` | Le détail | The detail | Il dettaglio |  |
+| `orders.ticketHead` | Votre ticket | Your receipt | Il tuo scontrino |  |
+| `orders.ticketArticles` | Articles | Items | Articoli |  |
+| `orders.ticketVoucher` | Bon de fidélité | Loyalty voucher | Buono fedeltà |  |
+| `orders.ticketDelivery` | Livraison | Delivery | Consegna |  |
+| `orders.ticketTotal` | Total TTC | Total incl. VAT | Totale IVA inclusa |  |
+| `orders.ticketRate` | Taux | Rate | Aliquota |  |
+| `orders.ticketPretax` | HT | Excl. VAT | Imponibile |  |
+| `orders.ticketVat` | TVA | VAT | IVA |  |
+| `orders.ticketTaxed` | TTC | Incl. VAT | IVA inclusa |  |
 | `orders.detailSlot` | Créneau | Slot | Fascia oraria |  |
 | `orders.detailPayment` | Règlement | Settlement | Pagamento |  |
 | `orders.detailOrigin` | Origine | Origin | Origine |  |

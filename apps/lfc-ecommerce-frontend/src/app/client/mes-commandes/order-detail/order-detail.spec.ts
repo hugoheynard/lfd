@@ -38,6 +38,40 @@ describe('OrderDetail', () => {
     fixture.detectChanges();
   });
 
+  it('un pro garde son tiroir : aucun ticket, et les faits de toujours', () => {
+    // Figé : le tiroir d'une commande sans ticket ne change pas (plan du centime, C3).
+    expect(el().querySelector('[data-ticket]')).toBeNull();
+    expect(el().textContent).not.toContain(FR.orders.ticketHead);
+    expect(el().textContent).toContain(FR.orders.detailHead);
+  });
+
+  it('une commande de particulier en TTC montre son ticket : lignes, total, taux', () => {
+    fixture.componentRef.setInput('order', {
+      ...ROWS[0],
+      voucherDiscountCents: 474,
+      ticket: {
+        lines: [{ name: 'Banana bread', quantity: 1, unitTtcCents: 2_100, lineTtcCents: 2_100 }],
+        articlesCents: 2_100,
+        discountCents: 0,
+        voucherCents: 500,
+        deliveryFeeCents: 0,
+        totalCents: 1_600,
+        byRate: [{ rate: 5.5, htCents: 1_516, vatCents: 84, ttcCents: 1_600 }],
+      },
+    });
+    fixture.detectChanges();
+
+    const ticket = el().querySelector('[data-ticket]')?.textContent ?? '';
+    expect(ticket).toContain('Banana bread');
+    expect(ticket).toContain('21,00');
+    expect(ticket).toContain('−5,00');
+    expect(ticket).toContain('16,00');
+    expect(ticket).toContain('15,16');
+    expect(ticket).toContain('0,84');
+    // Le bon HT n'est plus dit à côté : le ticket le dit TTC.
+    expect(el().textContent).not.toContain(FR.cart.voucherHtLine);
+  });
+
   it('dit OÙ le règlement tombe, pas seulement son état', () => {
     // C'est le lien explicite avec le relevé.
     expect(el().textContent).toContain(FR.orders.payAccountNote);
