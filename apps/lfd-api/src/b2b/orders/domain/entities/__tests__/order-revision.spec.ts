@@ -92,6 +92,7 @@ function placed(
     orderId: "ord_1",
     orderNumber: "ORD-1",
     revision: 0,
+    vatMethod: state.vatMethod,
     companyId: state.companyId,
     billedCompanyId: state.billedCompanyId,
     principal: null,
@@ -281,6 +282,32 @@ describe("Order.revise — §9, le bon de fidélité imputé", () => {
       voucher: { id: "vch_1", valueCents: order.voucher?.appliedCents ?? 0 },
     });
 
+    // Composée en TTC (`exact_ht`) : le bon y vaut sa valeur faciale TTC, et
+    // sa part HT est ce que la composition lui laisse (plan du centime, § 10 Q2).
+    expect(revision.state.vatMethod).toBe("exact_ht");
+    expect(revision.state.voucherTtcCents).toBe(1_500);
+    expect(revision.state.voucherDiscountCents).toBeLessThan(1_500);
+  });
+
+  /**
+   * Plan du centime, § 5 : la méthode se lit sur la commande, jamais sur sa
+   * clientèle — un particulier passé avant la voie B (`line_ht`), révisé
+   * après, reste composé HT, bon compris.
+   */
+  it("une commande line_ht d'un particulier, révisée, reste line_ht", () => {
+    const { order, base } = personal();
+    const before = { ...order, vatMethod: "line_ht" as const };
+
+    const revision = Order.revise(before, {
+      ...base,
+      lines: [line("VIE-001", 20)],
+      voucher: { id: "vch_1", valueCents: 1_500 },
+    });
+
+    expect(revision.state.vatMethod).toBe("line_ht");
     expect(revision.state.voucherDiscountCents).toBe(1_500);
+    expect(revision.state.voucherTtcCents).toBeNull();
+    expect(revision.state.discountTtcCents).toBeNull();
+    expect(revision.state.deliveryFeeTtcCents).toBeNull();
   });
 });

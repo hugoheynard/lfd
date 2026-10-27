@@ -18,6 +18,7 @@ import type { VatShare } from "@lfd/money";
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
+import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 
 // Les formes d'entrée et de sortie de l'agrégat `Order` — sorties de `order.ts`
 // pour le garder lisible, réexportées par lui : on les importe d'où l'on veut.
@@ -44,7 +45,9 @@ export interface OrderFulfillmentInput {
 
 /**
  * Le bon de fidélité nommé à la commande, tel que la fidélité l'a lu : son
- * identifiant et sa valeur **hors taxe**. Ce qu'il impute se décide ici.
+ * identifiant et sa **valeur faciale** — HT pour une commande `line_ht`, TTC
+ * pour une commande `exact_ht` (plan du centime, § 10 Q2). Ce qu'il impute se
+ * décide ici.
  */
 export interface OrderVoucher {
   readonly id: string;
@@ -98,11 +101,15 @@ export interface DraftOrderInput {
    */
   readonly catalogVersionId: string | null;
   readonly lines: readonly OrderLineInput[];
-  /** Remise (retrait) déjà résolue, HT, en centimes. */
+  /**
+   * Remise (retrait) déjà résolue, en centimes, **dans l'unité de la méthode**
+   * de la commande : HT pour `line_ht`, TTC pour `exact_ht` (plan du centime,
+   * § 5) — l'agrégat rejoue l'ajustement dans cette unité et compare.
+   */
   readonly discountCents: number;
   /** L'ajustement qui l'a produite (taux ou montant), ou `null` si aucune. */
   readonly discountAdjustment: CartAdjustment | null;
-  /** Frais de livraison (zone) déjà résolu, HT, en centimes. */
+  /** Frais de livraison (zone) déjà résolus, dans l'unité de la méthode (cf. `discountCents`). */
   readonly deliveryFeeCents: number;
   /** Le barème de zone qui l'a produit, ou `null` en retrait. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
@@ -176,10 +183,16 @@ export interface OrderToPlace {
   readonly requestedDeliveryDate: Date | null;
   readonly note: string;
   readonly catalogVersionId: string | null;
+  /** Comment les montants ont été composés — décidé à la passation, relu ensuite. */
+  readonly vatMethod: OrderVatMethod;
+  /** HT, comme `discountCents`, `deliveryFeeCents` et `voucherDiscountCents`. */
   readonly subtotalCents: number;
   readonly discountCents: number;
+  /** Les TTC des termes d'une commande `exact_ht`, `null` pour `line_ht` (CHECK). */
+  readonly discountTtcCents: number | null;
   readonly discountAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
+  readonly deliveryFeeTtcCents: number | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly lateFeeCents: number;
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
@@ -187,6 +200,8 @@ export interface OrderToPlace {
   readonly deliveryVatMode: DeliveryVatMode;
   /** La part du bon réellement imputée, HT — `0` sans bon. */
   readonly voucherDiscountCents: number;
+  /** La valeur faciale TTC imputée d'une commande `exact_ht`, `null` pour `line_ht`. */
+  readonly voucherTtcCents: number | null;
   /** Le bon engagé, ou `null`. */
   readonly loyaltyVoucherId: string | null;
   readonly vatCents: number;

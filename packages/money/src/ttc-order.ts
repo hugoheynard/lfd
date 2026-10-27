@@ -143,8 +143,13 @@ function deliveryFeeParts(
 /**
  * Le pourcentage d'un TTC, au plus proche, la moitié vers le haut — la règle
  * de `cartAdjustmentCents` (`@lfd/contracts`), tenue ici en entiers.
+ *
+ * Exportée pour une seule raison : ce paquet ne dépend pas de
+ * `@lfd/contracts`, et le doublon est éprouvé là où les deux se voient — un
+ * test de l'API compare les deux règles sur un balayage (plan du centime,
+ * § 9 bis, lot C2).
  */
-function percentOf(baseCents: bigint, bp: number): number {
+export function percentOf(baseCents: bigint, bp: number): number {
   return Math.max(0, roundToCents(fractionByBasisPoints(fromCents(Number(baseCents)), bp)));
 }
 

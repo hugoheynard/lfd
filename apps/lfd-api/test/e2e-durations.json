@@ -262,6 +262,7 @@
   "test/order-cutoff-switch.e2e-spec.ts": 13063,
   "test/order-cutoffs.e2e-spec.ts": 12711,
   "test/order-delivery-vat.e2e-spec.ts": 3500,
+  "test/order-exact-ht.e2e-spec.ts": 9000,
   "test/order-guest-cancel.e2e-spec.ts": 10911,
   "test/order-handover-proof.e2e-spec.ts": 6126,
   "test/order-number.e2e-spec.ts": 17617,

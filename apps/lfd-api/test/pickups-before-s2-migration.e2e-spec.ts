@@ -70,6 +70,8 @@ async function seedPickup(seed: PickupSeed): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: `s2-${String(seq)}` });
   const order = await ctx.prisma.order.create({
     data: {
+      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
+      vatMethod: "line_ht",
       orderNumber: `ORD-${String(seq)}`,
       companyId: company.id,
       placedByUserId: user.id,

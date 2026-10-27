@@ -186,11 +186,22 @@ export function voucherDiscountOf(
   if (voucher === null) {
     return 0;
   }
+  ensureVoucherUsable(voucher, companyId);
+  return voucherImputationCents(voucher.valueCents, goodsAfterDiscountCents);
+}
+
+/**
+ * Le bon peut-il servir sur cette commande ? Commun aux deux méthodes — la
+ * commande `exact_ht` impute sa valeur faciale TTC (`order-exact-amounts.ts`).
+ *
+ * @throws {VoucherNotForCompanyOrderError} un bon sur une commande de société.
+ * @throws {InvalidOrderVoucherError} une valeur qui n'est pas un entier positif.
+ */
+export function ensureVoucherUsable(voucher: OrderVoucher, companyId: string | null): void {
   if (companyId !== null) {
     throw new VoucherNotForCompanyOrderError();
   }
   if (!Number.isInteger(voucher.valueCents) || voucher.valueCents <= 0) {
     throw new InvalidOrderVoucherError(voucher.valueCents);
   }
-  return voucherImputationCents(voucher.valueCents, goodsAfterDiscountCents);
 }
