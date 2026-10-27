@@ -278,9 +278,11 @@ fold-panel-footer {
   cursor: not-allowed;
 }
 
-/* « Je change de date » : un lien discret sous le jour imposé. */
+/* « Je change de date » : un lien discret SOUS le jour imposé, aligné sur lui
+   (Hugo, 2026-10-27 : « en dessous »). */
 .change-day {
-  align-self: flex-start;
+  /* Le corps du dialogue est une grille : `justify-self`, pas `align-self`. */
+  justify-self: start;
   padding: 0;
   border: 0;
   background: none;
