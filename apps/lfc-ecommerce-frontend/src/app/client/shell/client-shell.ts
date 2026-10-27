@@ -123,6 +123,14 @@ export class ClientShell {
   /** Reconnu = la barre sert son menu de personne ; sinon, elle sert l'entrée. */
   protected readonly recognised = computed(() => this.auth.isAuthenticated());
 
+  /**
+   * Le burger, en pile : TOUJOURS pour qui est connecté (Hugo, 2026-10-27 :
+   * « le menu burger disparaît au profit du logo sur certaines pages, ça ne
+   * doit jamais être le cas en mobile »). Les écrans qui ne levaient pas
+   * `chrome.menu` — la boutique, le règlement, le QR — le perdaient.
+   */
+  protected readonly menuShown = computed(() => this.chrome.menu() || this.recognised());
+
   /** La session a expiré : l'avis du shell, au-dessus de l'écran courant. */
   protected readonly sessionExpired = computed(() => this.auth.sessionExpired());
 

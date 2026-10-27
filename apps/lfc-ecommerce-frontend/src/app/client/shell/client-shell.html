@@ -20,7 +20,7 @@
            place de nommer ses destinations, et c'est la marque qui reprend le
            coin. Les deux vivent dans le DOM, le CSS choisit — le pli est une
            affaire de largeur, que le rendu serveur ne connaît pas. -->
-      @if (chrome.menu()) {
+      @if (menuShown()) {
         <button
           class="menu narrow-only"
           type="button"
@@ -43,7 +43,7 @@
            atteignable au clavier serait un piège. -->
       <a
         class="mark"
-        [class.wide-only]="!!chrome.menu()"
+        [class.wide-only]="menuShown()"
         routerLink="/bienvenue"
         aria-hidden="true"
         tabindex="-1"
@@ -144,7 +144,7 @@
          Là où il n'y en a pas, l'identité doit paraître à toutes les largeurs —
          sans quoi on aurait rendu la barre muette sur les petits écrans. -->
     @if (recognised()) {
-      <app-account-menu class="account" [class.wide-only]="!!chrome.menu()" />
+      <app-account-menu class="account" [class.wide-only]="menuShown()" />
     }
 
     <!-- 🔴 L'ENTRÉE DU VISITEUR, au bout de la barre — la place qu'elle occupe
