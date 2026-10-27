@@ -1,4 +1,4 @@
-import { ChangeDetectionStrategy, Component, computed, inject, output } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { instantToLocal } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
@@ -10,6 +10,7 @@ import { ClientAudience } from '../../client-audience.service';
 import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
+import { serviceChangeCopy } from '../../copy/screens/service-change.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
 import { serviceWhenLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
@@ -63,6 +64,17 @@ export class OrderBar {
   /** Rouvrir le sélecteur d'heure, sur la maison déjà retenue. */
   readonly timeRequested = output<void>();
 
+  /**
+   * Passer à l'autre mode, le jour gardé — « Me faire livrer » depuis un
+   * retrait, « La récupérer en boutique » depuis une livraison. Le geste que
+   * le mobile a déjà (Hugo, 2026-10-27 : « en desktop je n'ai pas de moyen de
+   * changer retrait livraison »).
+   */
+  readonly modeRequested = output<void>();
+
+  /** L'autre mode est-il ouvert à qui regarde ? Fermé, le lien ne s'affiche pas. */
+  readonly otherModeOpen = input(false);
+
   /** Régler — l'écran sait ce que ça demande encore (service, identité). */
   readonly pay = output<void>();
 
@@ -77,6 +89,8 @@ export class OrderBar {
   private readonly audience = inject(ClientAudience).shown;
 
   protected readonly c = screenCopy('commandTerms', commandTermsCopy);
+  /** Les mots de la bascule : ceux du panneau « Modifier mes choix ». */
+  protected readonly modeCopy = screenCopy('serviceChange', serviceChangeCopy);
 
   protected readonly choice = this.order.choice;
 

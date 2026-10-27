@@ -266,6 +266,16 @@ export class ShopPage {
     await this.openService(false);
   }
 
+  /** L'autre mode que celui retenu est-il ouvert ? La barre propose alors d'y passer. */
+  protected readonly otherModeOpen = computed(() => {
+    const mode = this.choice()?.mode;
+    return mode === 'pickup'
+      ? this.doors.deliveryOpen()
+      : mode === 'delivery'
+        ? this.doors.pickupOpen()
+        : false;
+  });
+
   /** Changer l'heure sans redemander la maison — ou poser le service s'il manque. */
   protected async changeTime(): Promise<void> {
     await this.openService(true);

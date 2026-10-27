@@ -49,6 +49,11 @@
           <button class="act" type="button" (click)="timeRequested.emit()" data-act-when>
             {{ service.mode === 'delivery' ? c().changeDay : c().changeTime }}
           </button>
+          @if (otherModeOpen()) {
+            <button class="act" type="button" (click)="modeRequested.emit()" data-act-mode>
+              {{ service.mode === 'delivery' ? modeCopy().toPickup : modeCopy().toDelivery }}
+            </button>
+          }
         </span>
       </div>
     } @else {

@@ -54,18 +54,18 @@ flowchart TD
   A -->|Je change de date| D3[Panneau du jour] --> A
 ```
 
-| Porte                                             | Appelée par                                                | Sans service choisi                    | Avec un service choisi                    |
-| ------------------------------------------------- | ---------------------------------------------------------- | -------------------------------------- | ----------------------------------------- |
-| `choose()`                                        | « Choisir », « Régler »                                    | jour → mode → …                        | reprend le brouillon                      |
-| `resume()`                                        | la barre du panier                                         | ce qui manque au brouillon             | —                                         |
-| `startPickup()` / `startDelivery()` / `startAt()` | les cartes de l'accueil                                    | jour → maison → heure / jour → adresse | —                                         |
-| `pickup(id)`                                      | « Changer de maison » (barre de la boutique)               | jour → maison → heure                  | maison → heure, **jour gardé**            |
-| `time(…)`                                         | « Changer l'heure »                                        | jour → heure                           | heure, **jour gardé**                     |
-| `delivery(id)`                                    | « Changer d'adresse »                                      | jour → adresse                         | adresse, **jour gardé**                   |
-| `switchMode()`                                    | « La récupérer en boutique », « Me faire livrer » (panier) | = `choose()`                           | l'autre mode, **jour gardé**              |
-| `changeDate()`                                    | l'encart « ce jour n'est plus possible »                   | = `choose()`                           | jour → heure de la même maison ou adresse |
-| `modify()`                                        | « Modifier » (barre, panier)                               | = `choose()`                           | « Modifier mes choix » → l'étape choisie  |
-| `askChoice()` / `askTime()`                       | la modification d'une commande passée                      | jour → mode → …                        | — (n'écrit pas le brouillon)              |
+| Porte                                             | Appelée par                                                                                | Sans service choisi                    | Avec un service choisi                    |
+| ------------------------------------------------- | ------------------------------------------------------------------------------------------ | -------------------------------------- | ----------------------------------------- |
+| `choose()`                                        | « Choisir », « Régler »                                                                    | jour → mode → …                        | reprend le brouillon                      |
+| `resume()`                                        | la barre du panier                                                                         | ce qui manque au brouillon             | —                                         |
+| `startPickup()` / `startDelivery()` / `startAt()` | les cartes de l'accueil                                                                    | jour → maison → heure / jour → adresse | —                                         |
+| `pickup(id)`                                      | « Changer de maison » (barre de la boutique)                                               | jour → maison → heure                  | maison → heure, **jour gardé**            |
+| `time(…)`                                         | « Changer l'heure »                                                                        | jour → heure                           | heure, **jour gardé**                     |
+| `delivery(id)`                                    | « Changer d'adresse »                                                                      | jour → adresse                         | adresse, **jour gardé**                   |
+| `switchMode()`                                    | « La récupérer en boutique », « Me faire livrer » (panier, barre de la boutique au bureau) | = `choose()`                           | l'autre mode, **jour gardé**              |
+| `changeDate()`                                    | l'encart « ce jour n'est plus possible »                                                   | = `choose()`                           | jour → heure de la même maison ou adresse |
+| `modify()`                                        | « Modifier » (barre, panier)                                                               | = `choose()`                           | « Modifier mes choix » → l'étape choisie  |
+| `askChoice()` / `askTime()`                       | la modification d'une commande passée                                                      | jour → mode → …                        | — (n'écrit pas le brouillon)              |
 
 `modify()`, `switchMode()` et `changeDate()` partagent une seule branche,
 `apply(change, choice)` : « mode » et « Changer la date » ne peuvent donc pas

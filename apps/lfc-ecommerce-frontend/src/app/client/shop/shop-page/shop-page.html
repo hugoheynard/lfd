@@ -30,6 +30,8 @@
       class="terms"
       (houseRequested)="changeHouse()"
       (timeRequested)="changeTime()"
+      (modeRequested)="void doors.switchMode()"
+      [otherModeOpen]="otherModeOpen()"
       (pay)="void pay()"
     />
   }

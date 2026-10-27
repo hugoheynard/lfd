@@ -11,6 +11,7 @@ import { formatCents } from '../../format-money';
 import { COMMAND_TERMS_FR } from '../../copy/screens/command-terms.copy';
 import { OrderContextStore, type ServiceChoice } from '../../order-context.store';
 import { ServicePoints } from '../pickup-points.store';
+import { SERVICE_CHANGE_FR } from '../../copy/screens/service-change.copy';
 import { OrderBar } from './order-bar';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
@@ -271,6 +272,25 @@ describe('OrderBar', () => {
 
     expect(textOf(fixture, '[data-act-place]')).toBe(COMMAND_TERMS_FR.changeHouse);
     expect(textOf(fixture, '[data-act-when]')).toBe(COMMAND_TERMS_FR.changeTime);
+  });
+
+  /**
+   * Au bureau aussi, la bascule de mode (Hugo, 2026-10-27 : « en desktop je
+   * n'ai pas de moyen de changer retrait livraison ») : en retrait « Me faire
+   * livrer », seulement si l'autre mode est ouvert.
+   */
+  it('propose « Me faire livrer » en retrait quand la livraison est ouverte, et l’émet', () => {
+    const fixture = boot();
+    expect(el(fixture).querySelector('[data-act-mode]')).toBeNull();
+
+    fixture.componentRef.setInput('otherModeOpen', true);
+    fixture.detectChanges();
+    let asked = 0;
+    fixture.componentInstance.modeRequested.subscribe(() => (asked += 1));
+
+    expect(textOf(fixture, '[data-act-mode]')).toBe(SERVICE_CHANGE_FR.toDelivery);
+    el(fixture).querySelector<HTMLButtonElement>('[data-act-mode]')?.click();
+    expect(asked).toBe(1);
   });
 
   /** Lot T4 des textes : un remplacement reçu redessine l'écran, sans rechargement. */
