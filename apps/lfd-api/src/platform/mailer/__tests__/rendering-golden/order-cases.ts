@@ -73,6 +73,19 @@ const DELIVERY = sheet({
 const ACCOUNT = sheet({ money: { ...PAID.money, settlement: "account" } });
 const FREE = sheet({ requestedFor: null, money: { ...PAID.money, settlement: "free" } });
 
+/**
+ * Une commande de particulier composée en TTC (`exact_ht`, plan du centime,
+ * lot C3) : le pied au format du ticket, « dont TVA » par taux lu sur la part figée.
+ */
+const EXACT_HT = sheet({
+  variant: "public",
+  money: {
+    ...PAID.money,
+    ttcTerms: { discountCents: 152, voucherCents: 0, deliveryFeeCents: 0 },
+    ttcByRate: [{ rate: 5.5, htCents: 1_296, vatCents: 71, ttcCents: 1_367 }],
+  },
+});
+
 const HANDOVER = "https://admin.lfc.test/retrait/tok_abc";
 const PDF = { fileName: "bon-ORD-4812.pdf", pdfBase64: "JVBERi0=" };
 
@@ -119,6 +132,14 @@ export const ORDER_CASES: Pick<
       orderUrl: "https://shop.lfc.test/c/1",
       manageUrl: "",
       handoverUrl: HANDOVER,
+      document: null,
+      locale: "fr",
+    },
+    exactHt: {
+      sheet: EXACT_HT,
+      handoverToken: null,
+      orderUrl: "https://shop.lfc.test/c/1",
+      handoverUrl: "",
       document: null,
       locale: "fr",
     },

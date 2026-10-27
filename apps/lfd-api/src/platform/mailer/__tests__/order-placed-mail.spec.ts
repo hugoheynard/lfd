@@ -188,6 +188,45 @@ describe("le courriel de confirmation", () => {
     expect(html).not.toContain("−1,90");
   });
 
+  it("une commande de particulier en TTC dit son total, puis « dont TVA » par taux, lus sur sa part figée", () => {
+    const base = sheet();
+    const html = render({
+      sheet: {
+        ...base,
+        variant: "public",
+        money: {
+          ...base.money,
+          vatCents: 999,
+          totalCents: 1_853,
+          ttcTerms: { discountCents: 0, voucherCents: 0, deliveryFeeCents: 0 },
+          ttcByRate: [
+            { rate: 5.5, htCents: 1_327, vatCents: 73, ttcCents: 1_400 },
+            { rate: 20, htCents: 377, vatCents: 76, ttcCents: 453 },
+          ],
+        },
+      },
+    }).html;
+    const order = ["Réglé en ligne", "dont TVA 5,5 %", "dont TVA 20 %"];
+    const positions = order.map((label) => html.indexOf(label));
+
+    expect(positions.every((at) => at >= 0)).toBe(true);
+    expect([...positions].sort((a, b) => a - b)).toEqual(positions);
+    expect(html).toContain("18,53");
+    expect(html).toContain("0,73");
+    expect(html).toContain("0,76");
+    // Les parts sont lues, jamais reconstituées : la TVA totale de la feuille n'y paraît pas.
+    expect(html).not.toContain("9,99");
+  });
+
+  it("une commande pro (line_ht) garde son pied : « dont TVA » total, puis le total", () => {
+    const html = render().html;
+
+    expect(html).toContain("dont TVA");
+    expect(html).not.toContain("dont TVA 5,5 %");
+    expect(html.indexOf("dont TVA")).toBeLessThan(html.indexOf("Réglé en ligne"));
+    expect(html).toContain("0,71");
+  });
+
   it("change de langue sans changer de structure", () => {
     const it = render({ locale: "it" });
 

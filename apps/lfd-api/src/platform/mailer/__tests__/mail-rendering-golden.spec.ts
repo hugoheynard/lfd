@@ -65,6 +65,11 @@ import {
  * `remainderDelivery` (« prête ») et `remainder` (« en route ») — « le reste
  * de votre commande ». Empreintes ajoutées, aucune existante touchée : le
  * premier envoi rend le même courriel qu'avant.
+ *
+ * 2026-10-27 (plan du centime, § 9 quinquies) : cas neuf `exactHt` de
+ * `customer.order-placed` — le pied au format du ticket, « dont TVA » par
+ * taux. Empreinte ajoutée, aucune existante touchée : une commande `line_ht`
+ * rend le même courriel qu'avant, à l'octet.
  */
 
 const REGISTRY = b2bMailTemplates({

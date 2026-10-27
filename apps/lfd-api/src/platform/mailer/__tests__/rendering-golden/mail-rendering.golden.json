@@ -1,5 +1,10 @@
 {
   "customer.order-placed": {
+    "exactHt": {
+      "subject": "Votre commande ORD-4812 — La Folie Coffee",
+      "htmlSha256": "ea3b5ba9356f4865b331b0c5224a6d6c099d7075091e8a370492b2df1924fe89",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
       "htmlSha256": "c36a252fa49ccf46b87b730c4f42331a6fc3a34a79c3bb655559826aff319913",

@@ -29,6 +29,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     recapDiscountBase: "sur {base} éligibles",
     recapVoucher: "Bon de fidélité",
     recapVat: "dont TVA",
+    recapVatRate: "dont TVA {rate} %",
     totalPretax: "Porté à votre compte, HT",
     recapTaxLater: "TVA et TTC",
     recapTaxLaterValue: "sur la facture du mois",

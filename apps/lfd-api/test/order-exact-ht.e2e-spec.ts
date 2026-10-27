@@ -22,6 +22,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
+import { Prisma } from "../src/platform/database/client/client.js";
 
 /**
  * E2E de la **commande d'un particulier composée en TTC** — lot C2 du plan
@@ -284,6 +285,9 @@ describe("une commande line_ht d'avant la voie B", () => {
         discountTtcCents: null,
         voucherTtcCents: null,
         deliveryFeeTtcCents: null,
+        // La part par taux (C3) n'existe que sur une commande composée en TTC :
+        // la contrainte `orders_ttc_by_rate_only_exact_ht` la refuse ailleurs.
+        ttcByRate: Prisma.DbNull,
         voucherDiscountCents: 1_991,
         subtotalCents: 1_991,
         vatCents: 0,

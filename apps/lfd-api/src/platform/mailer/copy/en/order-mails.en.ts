@@ -24,6 +24,7 @@ export const ORDER_MAILS_EN: OrderMailsCopy = {
     recapDiscountBase: "on {base} eligible",
     recapVoucher: "Loyalty voucher",
     recapVat: "incl. VAT",
+    recapVatRate: "incl. VAT {rate}%",
     totalPretax: "Charged to your account, excl. VAT",
     recapTaxLater: "VAT and total incl. VAT",
     recapTaxLaterValue: "on the monthly invoice",

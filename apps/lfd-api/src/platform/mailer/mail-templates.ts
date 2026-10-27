@@ -526,14 +526,40 @@ function recapRows(
       : [{ label: copy.recapVoucher, value: `−${money(voucherCents, locale)}` }]),
     ...(sheet.money.settlement === "account"
       ? pretaxTotalRows(sheet, locale)
-      : [
-          { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
-          {
-            label: copy.totalLabel[settlement],
-            value: money(sheet.money.totalCents, locale),
-            strong: true,
-          },
-        ]),
+      : sheet.money.ttcByRate === undefined
+        ? [
+            { label: copy.recapVat, value: money(sheet.money.vatCents, locale) },
+            {
+              label: copy.totalLabel[settlement],
+              value: money(sheet.money.totalCents, locale),
+              strong: true,
+            },
+          ]
+        : ticketTotalRows(sheet.money.totalCents, sheet.money.ttcByRate, locale, settlement)),
+  ];
+}
+
+/**
+ * **Le pied d'une commande composée en TTC** (`exact_ht`, plan
+ * `documentation/pricing/plan-centime-particuliers.md`, § 9 quinquies) : le total,
+ * puis « dont TVA » par taux — le format du ticket. Chaque montant est LU sur
+ * la part figée (`ttc_by_rate`), jamais reconstitué : un e-mail qui
+ * recalculerait pourrait différer d'un centime du bon et de la facture.
+ */
+function ticketTotalRows(
+  totalCents: number,
+  parts: NonNullable<ClientSheet["money"]["ttcByRate"]>,
+  locale: ContentLocale,
+  settlement: keyof OrderSettlementCopy,
+): readonly LayoutRow[] {
+  const copy = mailCopyOf(locale)["customer.order-placed"];
+  const rate = new Intl.NumberFormat(locale, { maximumFractionDigits: 2 });
+  return [
+    { label: copy.totalLabel[settlement], value: money(totalCents, locale), strong: true },
+    ...parts.map((part) => ({
+      label: fill(copy.recapVatRate, { rate: rate.format(part.rate) }),
+      value: money(part.vatCents, locale),
+    })),
   ];
 }
 

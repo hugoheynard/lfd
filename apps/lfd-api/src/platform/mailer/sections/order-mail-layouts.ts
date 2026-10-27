@@ -62,6 +62,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
             "recapDiscountBase",
             "recapVoucher",
             "recapVat",
+            "recapVatRate",
           ),
           ...variantsOf("totalLabel", SETTLEMENTS),
           ...variants({

@@ -28,6 +28,7 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     subject: ["ref"],
     recapPieces: ["count"],
     recapDiscountBase: ["base"],
+    recapVatRate: ["rate"],
     qrAlt: ["ref"],
   },
   "customer.order-ready": {

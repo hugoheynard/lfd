@@ -40,6 +40,8 @@ export interface OrderPlacedCopy {
   /** La ligne du bon de fidélité, distincte de la remise (plan des points, C7). */
   readonly recapVoucher: string;
   readonly recapVat: string;
+  /** « dont TVA 5,5 % » — une ligne par taux d'une commande composée en TTC. */
+  readonly recapVatRate: string;
   /**
    * Le total d'un pro **au compte**, hors taxe (F5, plan
    * `bons-et-facture-concordants`) : la TVA se calcule une fois sur le mois,

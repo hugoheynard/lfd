@@ -99,6 +99,15 @@
         "required": [],
         "fr": "dont TVA"
       },
+      "recapVatRate": {
+        "variables": [
+          "rate"
+        ],
+        "required": [
+          "rate"
+        ],
+        "fr": "dont TVA {rate} %"
+      },
       "totalPretax": {
         "variables": [],
         "required": [],

@@ -435,6 +435,21 @@ de C3 (§ 9 quinquies).
   (`exact-ht-partial-note.e2e-spec.ts`, étiquette dans `order-exact-ht`) : la
   base de test était partagée. Durée de la nouvelle suite estimée (12 s) dans
   `e2e-durations.json`, à remesurer.
+- **E-mail de commande — fait le 2026-10-27** (`mail-templates.ts`,
+  `ticketTotalRows`) : une commande `exact_ht` (feuille portant `ttcByRate`)
+  écrit le total, puis « dont TVA x % » par taux, LU sur la part figée —
+  texte neuf `recapVatRate` au dictionnaire (fr, en, it), manifeste régénéré.
+  Une commande `line_ht` garde son pied à l'octet : les empreintes existantes
+  de `mail-rendering.golden.json` sont inchangées, un cas neuf `exactHt` y est
+  ajouté, et `order-placed-mail.spec.ts` fige les deux pieds. Le courriel ne
+  liste pas les lignes (il dit le nombre de pièces ; le détail est dans le
+  bon PDF joint) — inchangé.
+- **E2E lancés le 2026-10-27** : `exact-ht-partial-note` et `order-exact-ht`
+  verts (7/7) après correction du **test** « révisée par l'équipe, elle reste
+  line_ht » : il ramenait la commande à `line_ht` sans vider `ttc_by_rate`,
+  ce que la contrainte `orders_ttc_by_rate_only_exact_ht` (C3) refuse à
+  juste titre. Durées remesurées (10,3 s et 10,9 s). Voisines (`order-*`,
+  `delivery-note*`, `shop-order*`) : 51 suites, 411 tests verts, `--runInBand` (1 119 s).
 
 ## 10. Décisions et questions
 

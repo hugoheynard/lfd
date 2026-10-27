@@ -24,6 +24,7 @@ export const ORDER_MAILS_IT: OrderMailsCopy = {
     recapDiscountBase: "su {base} idonei",
     recapVoucher: "Buono fedeltà",
     recapVat: "IVA inclusa",
+    recapVatRate: "di cui IVA {rate}%",
     totalPretax: "Addebitato sul suo conto, IVA esclusa",
     recapTaxLater: "IVA e totale IVA inclusa",
     recapTaxLaterValue: "sulla fattura del mese",
