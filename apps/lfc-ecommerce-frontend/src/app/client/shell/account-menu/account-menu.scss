@@ -35,8 +35,10 @@
   width: 32px;
   height: 32px;
   border-radius: var(--fold-radius-sm);
-  background: var(--lfc-paper-50);
-  color: var(--lfc-ink-800);
+  /* Plein bleu de marque, écrit en blanc (Hugo, 2026-10-27) : sur l'en-tête
+     blanc, le jeton crème ne se voyait plus. */
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
   font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-sm);
   font-weight: var(--lfc-weight-black);

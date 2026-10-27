@@ -98,6 +98,11 @@
   --fold-color-text-secondary: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
   --lfc-color-on-primary-muted: color-mix(in srgb, var(--lfc-brand-blue) 78%, var(--lfc-paper-0));
   --fold-color-border: color-mix(in srgb, var(--lfc-brand-blue) 22%, transparent);
+  /* Le sélecteur de langue lit ces trois-là : segment actif plein bleu de
+     marque écrit en blanc, boîtier en lavis bleu visible sur le blanc. */
+  --fold-color-primary: var(--lfc-brand-blue);
+  --fold-color-on-primary: var(--lfc-paper-0);
+  --fold-color-surface-hover: color-mix(in srgb, var(--lfc-brand-blue) 9%, var(--lfc-paper-0));
 }
 
 /* 🔴 La marque et le logo sont des LIENS vers `/bienvenue` depuis le
