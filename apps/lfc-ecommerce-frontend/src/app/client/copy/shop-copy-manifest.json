@@ -2405,9 +2405,9 @@
       "entries": [
         {
           "key": "housePicker.kicker",
-          "fr": "Étape 2 sur 3",
-          "en": "Step 2 of 3",
-          "it": "Passo 2 di 3",
+          "fr": "Le point de retrait",
+          "en": "The pickup point",
+          "it": "Il punto di ritiro",
           "variables": []
         },
         {
@@ -3012,9 +3012,9 @@
       "entries": [
         {
           "key": "slotPicker.kicker",
-          "fr": "Étape 3 sur 3 · {place}",
-          "en": "Step 3 of 3 · {place}",
-          "it": "Passo 3 di 3 · {place}",
+          "fr": "Étape 2 sur 3 · {place}",
+          "en": "Step 2 of 3 · {place}",
+          "it": "Passo 2 di 3 · {place}",
           "variables": ["place"]
         },
         {
@@ -3064,6 +3064,13 @@
           "fr": "Jour du retrait",
           "en": "Pickup day",
           "it": "Giorno del ritiro",
+          "variables": []
+        },
+        {
+          "key": "slotPicker.days.change",
+          "fr": "Je change de date",
+          "en": "Change the date",
+          "it": "Cambio data",
           "variables": []
         },
         {

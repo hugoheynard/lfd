@@ -33,6 +33,8 @@ export interface SlotPickerCopy {
     readonly none: string;
     /** Le nom du groupe des journées, lu par le lecteur d'écran (RGAA 7.1). */
     readonly group: string;
+    /** Le lien qui rouvre les jours quand le panneau en a imposé un (2026-10-27). */
+    readonly change: string;
   };
 
   /** Ce qu'un créneau dit de lui-même, sous son heure. */
@@ -66,7 +68,7 @@ export interface SlotPickerCopy {
 }
 
 export const SLOT_PICKER_FR: SlotPickerCopy = {
-  kicker: 'Étape 3 sur 3 · {place}',
+  kicker: 'Étape 2 sur 3 · {place}',
   title: 'À quelle heure ?',
   lead: 'Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud.',
   loading: 'Nous regardons les fournées…',
@@ -75,6 +77,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
     tomorrow: 'Demain',
     none: 'Aucune journée ouverte',
     group: 'Jour du retrait',
+    change: 'Je change de date',
   },
   state: {
     open: 'Ouvert',
@@ -97,7 +100,7 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
 };
 
 export const SLOT_PICKER_EN: SlotPickerCopy = {
-  kicker: 'Step 3 of 3 · {place}',
+  kicker: 'Step 2 of 3 · {place}',
   title: 'What time?',
   lead: 'Slots follow the bakes. The one you pick decides what will still be warm.',
   loading: 'Checking the bakes…',
@@ -106,6 +109,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
     tomorrow: 'Tomorrow',
     none: 'No day open',
     group: 'Pickup day',
+    change: 'Change the date',
   },
   state: {
     open: 'Open',
@@ -128,7 +132,7 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
 };
 
 export const SLOT_PICKER_IT: SlotPickerCopy = {
-  kicker: 'Passo 3 di 3 · {place}',
+  kicker: 'Passo 2 di 3 · {place}',
   title: 'A che ora?',
   lead: 'Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo.',
   loading: 'Controlliamo le infornate…',
@@ -137,6 +141,7 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
     tomorrow: 'Domani',
     none: 'Nessuna giornata aperta',
     group: 'Giorno del ritiro',
+    change: 'Cambio data',
   },
   state: {
     open: 'Aperto',

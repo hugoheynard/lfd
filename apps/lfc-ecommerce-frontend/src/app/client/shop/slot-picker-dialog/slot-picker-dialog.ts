@@ -201,6 +201,21 @@ export class SlotPickerDialog {
    * un LIBELLÉ, pas une décision de service, et le panier fait déjà exactement
    * ça. Seul un onglet laissé ouvert passé minuit le décalerait d'un mot.
    */
+  /** Le jour imposé par le panneau, tant qu'on ne demande pas à en changer. */
+  private readonly dayUnlocked = signal(false);
+  protected readonly dayLocked = computed(
+    () => !this.dayUnlocked() && (this.data().openOn ?? null) !== null,
+  );
+
+  /** Les jours montrés : le seul jour choisi tant qu'il est imposé. */
+  protected readonly shownDays = computed<readonly DayTab[]>(() =>
+    this.dayLocked() ? this.days().filter((tab) => tab.day === this.day()) : this.days(),
+  );
+
+  protected unlockDay(): void {
+    this.dayUnlocked.set(true);
+  }
+
   protected readonly days = computed<readonly DayTab[]>(() => {
     const first = this.data().firstDay;
     if (first === null) {

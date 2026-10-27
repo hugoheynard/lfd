@@ -121,4 +121,5 @@ export const GLOSSARY_C: Readonly<Record<string, string>> = {
   correctionDone: 'Correction — faite',
   correctionInProgress: 'Correction — en cours',
   correctionPlanned: 'Correction — prévue',
+  change: 'Changer',
 };

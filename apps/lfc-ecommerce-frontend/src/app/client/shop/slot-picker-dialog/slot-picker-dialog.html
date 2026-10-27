@@ -25,7 +25,9 @@
          panneaux que rien ne déclarait. Le jour est un groupe radio, au clavier
          du motif — un arrêt, les flèches (`appRovingRadioGroup`). -->
     <div class="days" role="radiogroup" appRovingRadioGroup [attr.aria-label]="c().days.group">
-      @for (tab of days(); track tab.day) {
+      <!-- Le jour vient du panneau : lui seul, et « Je change de date » rouvre
+           la liste (Hugo, 2026-10-27). -->
+      @for (tab of shownDays(); track tab.day) {
         <button
           class="day"
           type="button"
@@ -38,6 +40,11 @@
         </button>
       }
     </div>
+    @if (dayLocked()) {
+      <button class="change-day" type="button" (click)="unlockDay()">
+        {{ c().days.change }}
+      </button>
+    }
 
     @if (loading()) {
       <!-- Pendant la lecture, l'écran ne dit RIEN d'autre : annoncer « aucun

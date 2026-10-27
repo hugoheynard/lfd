@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1693 textes
+## Sommaire — 1694 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -27,7 +27,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
 | [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 38 |
-| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
+| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 21 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
 | [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1693** |
+| **Total** | | **1694** |
 
 ## Le parcours de commande
 
@@ -493,7 +493,7 @@ Source : `screens/house-picker.copy.ts` · 8 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `housePicker.kicker` | Étape 2 sur 3 | Step 2 of 3 | Passo 2 di 3 |  |
+| `housePicker.kicker` | Le point de retrait | The pickup point | Il punto di ritiro |  |
 | `housePicker.title` | Où je la prends ? | Where do I collect? | Dove lo ritiro? |  |
 | `housePicker.lead` | Changer de maison change les heures proposées — vous les choisirez juste après. | Changing bakery changes the times on offer — you will pick one right after. | Cambiare bottega cambia gli orari proposti — li sceglierete subito dopo. |  |
 | `housePicker.current` | Votre choix | Your choice | La vostra scelta |  |
@@ -616,11 +616,11 @@ Source : `screens/delivery-address.copy.ts` · 38 textes.
 
 ### Choix de l’heure — le sélecteur de créneau — `slotPicker`
 
-Source : `screens/slot-picker.copy.ts` · 20 textes.
+Source : `screens/slot-picker.copy.ts` · 21 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `slotPicker.kicker` | Étape 3 sur 3 · {place} | Step 3 of 3 · {place} | Passo 3 di 3 · {place} | `{place}` |
+| `slotPicker.kicker` | Étape 2 sur 3 · {place} | Step 2 of 3 · {place} | Passo 2 di 3 · {place} | `{place}` |
 | `slotPicker.title` | À quelle heure ? | What time? | A che ora? |  |
 | `slotPicker.lead` | Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud. | Slots follow the bakes. The one you pick decides what will still be warm. | Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo. |  |
 | `slotPicker.loading` | Nous regardons les fournées… | Checking the bakes… | Controlliamo le infornate… |  |
@@ -628,6 +628,7 @@ Source : `screens/slot-picker.copy.ts` · 20 textes.
 | `slotPicker.days.tomorrow` | Demain | Tomorrow | Domani |  |
 | `slotPicker.days.none` | Aucune journée ouverte | No day open | Nessuna giornata aperta |  |
 | `slotPicker.days.group` | Jour du retrait | Pickup day | Giorno del ritiro |  |
+| `slotPicker.days.change` | Je change de date | Change the date | Cambio data |  |
 | `slotPicker.state.open` | Ouvert | Open | Aperto |  |
 | `slotPicker.state.full` | Complet | Full | Esaurito |  |
 | `slotPicker.full.tag` | Complet | Full | Esaurito |  |

@@ -376,3 +376,28 @@ describe('SlotPickerDialog — le créneau déjà retenu', () => {
     );
   });
 });
+
+/** Le jour imposé par le panneau du jour (Hugo, 2026-10-27). */
+describe('SlotPickerDialog — un jour déjà choisi', () => {
+  it('ne montre que ce jour, et « Je change de date » rouvre les autres', async () => {
+    const { fixture } = await mount({ ...DATA, openOn: DATA.firstDay });
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelectorAll('.days .day')).toHaveLength(1);
+    expect(el.querySelector('.days .day')?.classList.contains('on')).toBe(true);
+
+    el.querySelector<HTMLButtonElement>('.change-day')?.click();
+    fixture.detectChanges();
+
+    expect(el.querySelectorAll('.days .day').length).toBeGreaterThan(1);
+    expect(el.querySelector('.change-day')).toBeNull();
+  });
+
+  it('sans jour imposé, montre tous les jours et pas de lien', async () => {
+    const { fixture } = await mount();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelectorAll('.days .day').length).toBeGreaterThan(1);
+    expect(el.querySelector('.change-day')).toBeNull();
+  });
+});

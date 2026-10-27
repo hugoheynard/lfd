@@ -50,7 +50,7 @@ export interface HousePickerCopy {
 }
 
 export const HOUSE_PICKER_FR: HousePickerCopy = {
-  kicker: 'Étape 2 sur 3',
+  kicker: 'Le point de retrait',
   title: 'Où je la prends ?',
   lead: 'Changer de maison change les heures proposées — vous les choisirez juste après.',
   current: 'Votre choix',
@@ -61,7 +61,7 @@ export const HOUSE_PICKER_FR: HousePickerCopy = {
 };
 
 export const HOUSE_PICKER_EN: HousePickerCopy = {
-  kicker: 'Step 2 of 3',
+  kicker: 'The pickup point',
   title: 'Where do I collect?',
   lead: 'Changing bakery changes the times on offer — you will pick one right after.',
   current: 'Your choice',
@@ -72,7 +72,7 @@ export const HOUSE_PICKER_EN: HousePickerCopy = {
 };
 
 export const HOUSE_PICKER_IT: HousePickerCopy = {
-  kicker: 'Passo 2 di 3',
+  kicker: 'Il punto di ritiro',
   title: 'Dove lo ritiro?',
   lead: 'Cambiare bottega cambia gli orari proposti — li sceglierete subito dopo.',
   current: 'La vostra scelta',
