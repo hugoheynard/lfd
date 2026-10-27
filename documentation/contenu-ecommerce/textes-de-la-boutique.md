@@ -472,7 +472,7 @@ Source : `screens/day-picker.copy.ts` · 14 textes.
 | --- | --- | --- | --- | --- |
 | `dayPicker.kicker` | Étape 1 sur 3 | Step 1 of 3 | Passo 1 di 3 |  |
 | `dayPicker.title` | Pour quel jour ? | For which day? | Per quale giorno? |  |
-| `dayPicker.lead` | Choisissez d’abord le jour : le lieu et l’heure viennent ensuite. | Pick the day first: the place and the time come next. | Scegliete prima il giorno: il luogo e l’ora vengono dopo. |  |
+| `dayPicker.lead` | Choisissez d’abord la date à laquelle vous souhaitez recevoir votre commande. | First choose the date on which you would like to receive your order. | Scegliete prima la data in cui desiderate ricevere il vostro ordine. |  |
 | `dayPicker.loading` | Nous regardons les jours ouverts… | Checking the open days… | Controlliamo i giorni aperti… |  |
 | `dayPicker.today` | Aujourd’hui | Today | Oggi |  |
 | `dayPicker.todayUntil` | Aujourd’hui · commandez avant {time} | Today · order before {time} | Oggi · ordinate prima delle {time} | `{time}` |

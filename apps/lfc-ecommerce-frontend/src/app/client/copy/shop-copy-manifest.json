@@ -2318,9 +2318,9 @@
         },
         {
           "key": "dayPicker.lead",
-          "fr": "Choisissez d’abord le jour : le lieu et l’heure viennent ensuite.",
-          "en": "Pick the day first: the place and the time come next.",
-          "it": "Scegliete prima il giorno: il luogo e l’ora vengono dopo.",
+          "fr": "Choisissez d’abord la date à laquelle vous souhaitez recevoir votre commande.",
+          "en": "First choose the date on which you would like to receive your order.",
+          "it": "Scegliete prima la data in cui desiderate ricevere il vostro ordine.",
           "variables": []
         },
         {

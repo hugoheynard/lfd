@@ -34,7 +34,7 @@ export interface DayPickerCopy {
 export const DAY_PICKER_FR: DayPickerCopy = {
   kicker: 'Étape 1 sur 3',
   title: 'Pour quel jour ?',
-  lead: 'Choisissez d’abord le jour : le lieu et l’heure viennent ensuite.',
+  lead: 'Choisissez d’abord la date à laquelle vous souhaitez recevoir votre commande.',
   loading: 'Nous regardons les jours ouverts…',
   today: 'Aujourd’hui',
   todayUntil: 'Aujourd’hui · commandez avant {time}',
@@ -53,7 +53,7 @@ export const DAY_PICKER_FR: DayPickerCopy = {
 export const DAY_PICKER_EN: DayPickerCopy = {
   kicker: 'Step 1 of 3',
   title: 'For which day?',
-  lead: 'Pick the day first: the place and the time come next.',
+  lead: 'First choose the date on which you would like to receive your order.',
   loading: 'Checking the open days…',
   today: 'Today',
   todayUntil: 'Today · order before {time}',
@@ -72,7 +72,7 @@ export const DAY_PICKER_EN: DayPickerCopy = {
 export const DAY_PICKER_IT: DayPickerCopy = {
   kicker: 'Passo 1 di 3',
   title: 'Per quale giorno?',
-  lead: 'Scegliete prima il giorno: il luogo e l’ora vengono dopo.',
+  lead: 'Scegliete prima la data in cui desiderate ricevere il vostro ordine.',
   loading: 'Controlliamo i giorni aperti…',
   today: 'Oggi',
   todayUntil: 'Oggi · ordinate prima delle {time}',
