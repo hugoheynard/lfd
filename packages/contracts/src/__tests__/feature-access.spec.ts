@@ -13,9 +13,17 @@ describe("le catalogue de l'accès aux fonctionnalités", () => {
    * `shop`, `orders`, `invoices`, `desktopMenu` et `publicDelivery` ont été
    * retirées le 2026-10-09 (Hugo) ; `facebookLogin` est entrée le même jour.
    */
-  it("porte le mandat client et la connexion par Facebook", () => {
-    expect(FEATURE_KEYS).toEqual(["customerMandate", "facebookLogin"]);
-    expect(Object.keys(FEATURE_CATALOGUE)).toEqual(["customerMandate", "facebookLogin"]);
+  it("porte le mandat client, la connexion par Facebook et le rappel de l'inscription pro", () => {
+    const keys = ["customerMandate", "facebookLogin", "proSignupCallback"];
+    expect(FEATURE_KEYS).toEqual(keys);
+    expect(Object.keys(FEATURE_CATALOGUE)).toEqual(keys);
+  });
+
+  /** Ajoutée le 2026-10-27 (Hugo) : l'encart de rappel, masqué tant qu'on ne l'ouvre pas. */
+  it("porte le rappel de l'inscription pro, masqué par défaut et non exemptible", () => {
+    expect(FEATURE_CATALOGUE.proSignupCallback.levels).toEqual(["hidden", "visible"]);
+    expect(FEATURE_CATALOGUE.proSignupCallback.defaultLevel).toBe("hidden");
+    expect(isExemptible("proSignupCallback")).toBe(false);
   });
 
   /** Ajoutée le 2026-10-09 : un bouton qu'on cache, masqué tant qu'Auth0 n'est pas prêt. */
