@@ -83,8 +83,10 @@ R1 ne dépend de rien et part seul. R2 et R3 attendent `vitruve`.
 
 ## 5. Questions
 
-- **Q1** — confirmer en production la méthode (back-office, Règles
-  comptables). La migration de R3 le vérifie de toute façon.
+- **Q1 — tranchée le 2026-10-27** : Hugo a constaté sur l'écran des règles
+  comptables de production la méthode **« prix saisi »** (`entered`). Le
+  pré-remplissage n'a donc plus rien à figer en production ; R2 peut partir.
+  La garde de la migration de R3 reste en dernier filet.
 
 ## 6. Relecture `vitruve` (2026-10-27)
 
