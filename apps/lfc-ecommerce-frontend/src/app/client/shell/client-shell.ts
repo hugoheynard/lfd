@@ -117,6 +117,13 @@ export class ClientShell {
 
   /** Reconnu = la barre sert son menu de personne ; sinon, elle sert l'entrée. */
   protected readonly recognised = computed(() => this.auth.isAuthenticated());
+
+  /** La session a expiré : l'avis du shell, au-dessus de l'écran courant. */
+  protected readonly sessionExpired = computed(() => this.auth.sessionExpired());
+
+  protected renewSession(): void {
+    this.auth.renewSession();
+  }
   /**
    * La cloche attend un fil RÉEL : `NotificationsFeed` ne lit encore que la
    * maquette (`notifications.fixture.ts`), qu'un vrai client prendrait pour

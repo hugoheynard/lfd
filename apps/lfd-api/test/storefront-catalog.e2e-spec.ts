@@ -73,6 +73,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
         allergenLabels: null,
         mayContain: null,
         allergensPrecautionary: false,
+        allergenTexts: null,
       },
     ],
     note: null,

@@ -691,3 +691,34 @@ describe("les traces et la précaution de l’article", () => {
     expect(syncVariantSchema.safeParse({ ...variant, mayContain: [""] }).success).toBe(false);
   });
 });
+
+/**
+ * Les libellés par langue (plan « la boutique affiche les allergènes »,
+ * 2026-10-27) — ajoutés sans changer de version, comme les traces.
+ */
+describe("les libellés d’allergènes par langue", () => {
+  it("lit un envoi d’avant le champ comme « on ne sait pas »", () => {
+    expect(syncVariantSchema.parse(variant).allergenTexts).toBeNull();
+  });
+
+  it("transporte les libellés des allergènes et des traces, langue par langue", () => {
+    const allergenTexts = {
+      fr: { contains: ["Gluten"], mayContain: ["Fruits à coque"] },
+      en: { contains: ["Gluten"], mayContain: ["Nuts"] },
+      it: { contains: ["Glutine"], mayContain: ["Frutta a guscio"] },
+    };
+
+    expect(syncVariantSchema.parse({ ...variant, allergenTexts }).allergenTexts).toEqual(
+      allergenTexts,
+    );
+  });
+
+  it("refuse un libellé vide", () => {
+    expect(
+      syncVariantSchema.safeParse({
+        ...variant,
+        allergenTexts: { fr: { contains: [""], mayContain: [] } },
+      }).success,
+    ).toBe(false);
+  });
+});

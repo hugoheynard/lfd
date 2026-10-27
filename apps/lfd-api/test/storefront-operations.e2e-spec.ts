@@ -255,7 +255,8 @@ describe("l'annonce liée, enregistrée", () => {
     const page = jsonBody<PublicStorefrontPageView>(
       await ctx.http().get("/shop/storefront/op:noel").expect(200),
     );
-    expect(page).toEqual({ rows: 1, objects: [] });
+    // `allergenDisplay` voyage sur toute page depuis le 2026-10-27.
+    expect(page).toEqual({ rows: 1, objects: [], allergenDisplay: "sheet" });
   });
 });
 

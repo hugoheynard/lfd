@@ -172,6 +172,20 @@ export const COMMERCE_FACTS = {
   ),
 
   /**
+   * **Où la boutique montre les allergènes, changé** (Hugo, 2026-10-27,
+   * `plan-allergenes-en-boutique.md`) : `sheet` (fiche ouverte seulement) ou
+   * `gallery` (aussi sur les cartes du rayon). Réglage global de la vitrine,
+   * tracé à côté de ses enregistrements, sur le même sujet.
+   */
+  "storefront.allergen_display_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      from: z.enum(["sheet", "gallery"]),
+      to: z.enum(["sheet", "gallery"]),
+    }),
+  ),
+
+  /**
    * **Les textes de la boutique publiés** (`plan-textes-de-la-boutique.md`,
    * §3, §10) : UN fait par « Publier », qui porte pour chaque texte la valeur
    * publiée AVANT et APRÈS — de quoi relire, et annuler à la main. `null` =

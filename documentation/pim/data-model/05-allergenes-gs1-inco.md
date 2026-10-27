@@ -525,9 +525,31 @@ c'est le drapeau qui interdit de lire « aucun allergène ». Le commerce les
 range dans `catalog_items.may_contain` / `allergens_precautionary`
 (migration `20261027120000_les_traces_atteignent_le_commerce`) ; l'écran
 catalogue du back-office et la ligne de commande figée lèvent `incomplete`
-sur une liste servie par précaution. ⚠️ **La boutique ne montre encore aucun
-allergène** — ni déclarés, ni traces : la vue `shop-catalogue` n'en porte pas
-(vérifié le 2026-10-27), et l'y ajouter est une décision ouverte.
+sur une liste servie par précaution.
+
+**La boutique montre les allergènes et les traces** (2026-10-27, plan
+[`../plan-allergenes-en-boutique.md`](../plan-allergenes-en-boutique.md),
+décisions (a)–(c) de Hugo). Le fil porte `allergenTexts` — les **libellés**
+des allergènes servis et des traces, par langue (`fr`, `en`, `it`), nommés
+par le référentiel (`AllergenNaming`, une `IncoProjector` par langue ; une
+trace dont la mention est déjà parmi les allergènes n'est pas répétée),
+ajouté sans changer de version (`null` = envoi d'avant). Le commerce les
+range dans `catalog_items.allergen_texts` (migration additive
+`20261027150000_les_libelles_d_allergenes_par_langue`) et la vue publique
+`ShopItemView` gagne `allergens?: { state: 'declared' | 'none' |
+'precautionary', contains, mayContain }`, dans la langue de la requête
+(`shopAllergensOf`, `b2b/catalog/domain/shop-allergens.ts`). La clé est
+**absente** quand le commerce ne sait pas : ligne d'avant le champ, aucune
+fiche, ou liste amputée d'un code innommable (`incomplete`) — jamais
+« aucun allergène » par défaut. La fiche boutique dit « Allergènes » (liste),
+« Aucun allergène » (seulement déclaré), puis « Peut contenir » (liste), ou
+« Information précise non disponible — peut contenir » sous précaution ; la
+boutique n'a aucun dictionnaire d'allergènes. La route pro (`/shop/catalogue/mine`,
+`?audience=pro`) partage la vue, donc la règle ; le flux de l'agence vitrine
+(`VitrineItemView`) n'en porte **pas** — non décidé. Les cartes du rayon n'en
+disent rien, sauf quand le réglage global de la vitrine (`storefront_settings`,
+page Vitrine du back-office) vaut « aussi dans la galerie » : une mention
+compacte en texte. Détail au §5 du plan.
 
 #### La maille du refus est le produit, celle du jugement la déclinaison
 

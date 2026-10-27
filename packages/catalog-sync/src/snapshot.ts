@@ -102,6 +102,26 @@ export const syncAllergenLabelsSchema = z.object({
 export type SyncAllergenLabels = z.infer<typeof syncAllergenLabelsSchema>;
 
 /**
+ * **Ce que le client lit des allergènes d'un article, dans UNE langue** — les
+ * libellés des allergènes servis, puis ceux des traces.
+ *
+ * Des libellés, pas des codes (décision (a) de Hugo, 2026-10-27,
+ * `documentation/pim/plan-allergenes-en-boutique.md`) : la vitrine montre ce
+ * texte tel quel. Projetés ici, par le référentiel, pour la raison que
+ * {@link syncAllergenLabelsSchema} donne déjà — le commerce n'a pas le
+ * référentiel des allergènes, et une vitrine qui recopierait un dictionnaire
+ * le laisserait dériver (décision (b), D6).
+ *
+ * `contains` suit `allergenLabels.labels` (mêmes mentions, même ordre) ;
+ * `mayContain` nomme les codes de `mayContain` de la même façon.
+ */
+export const syncAllergenTextsSchema = z.object({
+  contains: z.array(z.string().min(1)),
+  mayContain: z.array(z.string().min(1)),
+});
+export type SyncAllergenTexts = z.infer<typeof syncAllergenTextsSchema>;
+
+/**
  * **L'unité réellement vendue** — une déclinaison du PIM (R4), pas le produit.
  *
  * C'est la déclinaison qui porte un SKU propre et un prix : un carton de 50 et
@@ -285,6 +305,23 @@ export const syncVariantSchema = z.object({
    * allergène ». Absent d'un envoi d'avant le champ : `false`, le sens d'avant.
    */
   allergensPrecautionary: z.boolean().default(false),
+  /**
+   * **Les libellés que le client lit, par langue** (`fr`, `en`, `it`) — une
+   * entrée par langue ouverte au référentiel, le français toujours ; une
+   * langue non traduite y porte le français, comme `readLocalized` le rend.
+   *
+   * Une carte plutôt que des champs nommés, pour la raison de
+   * `publicByContext` : ouvrir une langue est une ligne de données, pas une
+   * version de fil.
+   *
+   * `null` = on ne sait pas : un envoi d'avant ce champ (2026-10-27), ou une
+   * déclinaison sans fiche (`allergens` à `null`). La vitrine ne montre alors
+   * rien — jamais « aucun allergène ».
+   *
+   * ⚠️ **Ajouté sans changer de version**, comme `mayContain` : un fait
+   * durable émis avant le champ se rejoue, et l'absence s'y lit `null`.
+   */
+  allergenTexts: z.record(z.string().min(1), syncAllergenTextsSchema).nullable().default(null),
 });
 
 export type SyncVariant = z.infer<typeof syncVariantSchema>;

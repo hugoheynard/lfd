@@ -12,8 +12,9 @@ import {
   testOperationItem,
 } from '../shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop-catalogue.store';
-import type { ShopOperationState } from '@lfd/contracts';
+import type { ShopItemView, ShopOperationState } from '@lfd/contracts';
 import { provideHttpClient } from '@angular/common/http';
+import { ShopAllergenDisplay } from '../storefront/allergen-display.service';
 import { ProductTile } from './product-tile';
 
 describe('ProductTile', () => {
@@ -360,5 +361,33 @@ describe('ProductTile', () => {
     fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], thumbnail: photo });
     fixture.detectChanges();
     expect(img()?.style.objectPosition).toBe('50% 50%');
+  });
+});
+
+/** Les allergènes en carte (Hugo, 2026-10-27) : seulement quand la vitrine le règle. */
+describe('ProductTile — les allergènes en galerie', () => {
+  const ALLERGIC: ShopItemView = {
+    ...(TEST_ITEMS[0] as ShopItemView),
+    allergens: { state: 'declared', contains: ['Gluten', 'Lait'], mayContain: ['Sésame'] },
+  };
+
+  function mount(display: 'sheet' | 'gallery'): HTMLElement {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({ imports: [ProductTile] });
+    TestBed.inject(ShopAllergenDisplay).served(display);
+    const tile = TestBed.createComponent(ProductTile);
+    tile.componentRef.setInput('product', ALLERGIC);
+    tile.detectChanges();
+    return tile.nativeElement as HTMLElement;
+  }
+
+  it('ne dit rien des allergènes par défaut — la fiche les donne', () => {
+    expect(mount('sheet').querySelector('[data-allergens]')).toBeNull();
+  });
+
+  it('dit les allergènes puis les traces, en texte, quand la vitrine les montre en galerie', () => {
+    expect(mount('gallery').querySelector('[data-allergens]')?.textContent?.trim()).toBe(
+      'Contient : Gluten, Lait · Peut contenir : Sésame',
+    );
   });
 });

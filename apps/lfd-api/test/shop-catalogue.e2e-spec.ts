@@ -130,7 +130,14 @@ describe("la vitrine publique", () => {
    * compte les clés l'attrape.
    */
   it("ne laisse passer que ce qu'une vitrine montre", async () => {
-    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+    await push([
+      {
+        sku: "VIE-001",
+        priceMillicents: 140_000,
+        allergenLabels: { labels: [{ category: "gluten", label: "Gluten" }], incomplete: false },
+        allergenTexts: { fr: { contains: ["Gluten"], mayContain: [] } },
+      },
+    ]);
 
     const body = await catalogue();
     // ⚠️ **Un élargissement ASSUMÉ** (2026-09-24, lot 3 des opérations datées) :
@@ -139,6 +146,12 @@ describe("la vitrine publique", () => {
     // jamais : hors fenêtre, la liste est vide.
     expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
+      // ⚠️ **Un élargissement ASSUMÉ** (2026-10-27, Hugo —
+      // `documentation/pim/plan-allergenes-en-boutique.md`) : l'état et les
+      // LIBELLÉS des allergènes et des traces, dus au client avant l'achat
+      // (règlement (UE) 1169/2011). Ni code, ni aveu d'incomplétude : la
+      // forme du bloc est énumérée juste en dessous.
+      "allergens",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-18, Hugo, option a de B1 —
       // `documentation/webhooks/vitrine.md` §4 décision 5) : à qui
       // l'article se vend, `public` ou `both` sur cette route — « aussi pour
@@ -163,6 +176,11 @@ describe("la vitrine publique", () => {
       // visible au lieu de la laisser passer.
       "unitPriceTtcCents",
       "vatRatePercent",
+    ]);
+    expect(Object.keys(body.items[0]?.allergens ?? {}).sort()).toEqual([
+      "contains",
+      "mayContain",
+      "state",
     ]);
     expect(Object.keys(body.shelves[0] ?? {}).sort()).toEqual(["id", "name", "position"]);
   });

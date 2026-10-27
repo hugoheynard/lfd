@@ -1,10 +1,9 @@
 import { Injectable } from "@nestjs/common";
-import { SOURCE_LOCALE } from "@lfd/pim-contracts";
 
 import { readCompletenessRules } from "../../../catalogue/product/application/completeness-support.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
-import { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
+import { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
 import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
 import { PublishedAllergensReader } from "../../../catalogue/product/domain/ports/published-allergens.reader.js";
 import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
@@ -70,7 +69,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
         this.published.union(),
       ]);
     const familyById = new Map(families.map((family) => [family.id, family]));
-    const inco = IncoProjector.from(catalogue, SOURCE_LOCALE);
+    const naming = AllergenNaming.from(catalogue);
     const showcase = showcaseOf(products, notes, medias);
     const bodies = new Map<string, CatalogProductFactBody>();
     for (const product of products) {
@@ -88,7 +87,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
           familyPercents: resolve(family.vatByContext, percentOf),
           percents: resolve(effectiveVat(family.vatByContext, product.vatByContext), percentOf),
           rules,
-          inco,
+          naming,
           showcase: showcase.get(product.id),
           cited: cited.get(product.id) ?? [],
           catalogueUnion,

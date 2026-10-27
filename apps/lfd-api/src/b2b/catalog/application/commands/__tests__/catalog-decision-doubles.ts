@@ -39,6 +39,7 @@ function article(placement: Placement, sku: string = SKU): CatalogItem {
     allergenLabels: null,
     mayContain: null,
     allergensPrecautionary: false,
+    allergenTexts: null,
     note: null,
     image: null,
     thumbnail: null,

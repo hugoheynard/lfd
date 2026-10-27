@@ -77,6 +77,7 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     allergenLabels: null,
     mayContain: null,
     allergensPrecautionary: false,
+    allergenTexts: null,
   }));
 }
 

@@ -162,6 +162,16 @@
 /* La limite propre de l'article : discrète mais lisible — le corps de la
    note, en gras. Deux lignes au plus sur une colonne étroite ; la rangée,
    étirée par la grille, garde ses prix alignés (`.body` pousse le pied). */
+.allergens {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+  overflow: hidden;
+  font-size: var(--lfc-text-note);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text-secondary);
+}
+
 .made-to-order {
   display: -webkit-box;
   -webkit-box-orient: vertical;

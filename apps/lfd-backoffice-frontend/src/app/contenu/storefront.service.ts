@@ -1,6 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { StorefrontCatalogView, StorefrontPayloadInput, StorefrontView } from '@lfd/contracts';
+import type {
+  StorefrontAllergenDisplay,
+  StorefrontCatalogView,
+  StorefrontPayloadInput,
+  StorefrontSettingsView,
+  StorefrontView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -38,5 +44,19 @@ export class StorefrontService {
    */
   async save(payload: StorefrontPayloadInput): Promise<void> {
     await firstValueFrom(this.http.put<void>(`${B2B_API_BASE}/admin/storefront`, payload));
+  }
+
+  /** Les réglages globaux de la vitrine — la place des allergènes (2026-10-27). */
+  settings(): Promise<StorefrontSettingsView> {
+    return firstValueFrom(
+      this.http.get<StorefrontSettingsView>(`${B2B_API_BASE}/admin/storefront/settings`),
+    );
+  }
+
+  /** Règle la place des allergènes, tout de suite : à part de la révision de la vitrine. */
+  async saveAllergenDisplay(allergenDisplay: StorefrontAllergenDisplay): Promise<void> {
+    await firstValueFrom(
+      this.http.put<void>(`${B2B_API_BASE}/admin/storefront/settings`, { allergenDisplay }),
+    );
   }
 }

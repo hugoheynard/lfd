@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1671 textes
+## Sommaire — 1682 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,7 +20,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 67 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 19 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 25 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -35,10 +35,10 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
 | **Le reste de la boutique** | | |
-| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 59 |
+| [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 25 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 239 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 242 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 523 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1671** |
+| **Total** | | **1682** |
 
 ## Le parcours de commande
 
@@ -403,7 +403,7 @@ Source : `fr.ts · en.ts · it.ts` · 67 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 19 textes.
+Source : `fr.ts · en.ts · it.ts` · 25 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -426,6 +426,12 @@ Source : `fr.ts · en.ts · it.ts` · 19 textes.
 | `product.madeToOrderShortDays` | Sur commande · {n} jours avant {time} | Made to order · {n} days ahead, by {time} | Su ordinazione · {n} giorni prima, entro le {time} | `{n}` `{time}` |
 | `product.madeToOrderShortEve` | Sur commande · la veille avant {time} | Made to order · day before, by {time} | Su ordinazione · il giorno prima, entro le {time} | `{time}` |
 | `product.madeToOrderShortSameDay` | Sur commande · le jour même avant {time} | Made to order · same day, by {time} | Su ordinazione · in giornata, entro le {time} | `{time}` |
+| `product.allergens` | Allergènes | Allergens | Allergeni |  |
+| `product.allergensNone` | Aucun allergène | No allergens | Nessun allergene |  |
+| `product.allergensMayContain` | Peut contenir | May contain | Può contenere |  |
+| `product.allergensPrecautionary` | Information précise non disponible | Precise information not available | Informazione precisa non disponibile |  |
+| `product.allergensTileContains` | Contient : {list} | Contains: {list} | Contiene: {list} | `{list}` |
+| `product.allergensTileMayContain` | Peut contenir : {list} | May contain: {list} | Può contenere: {list} | `{list}` |
 
 <a id="espace-commandterms"></a>
 
@@ -842,12 +848,14 @@ Source : `fr.ts · en.ts · it.ts` · 8 textes.
 
 ### Le cadre — bandeaux, installation, erreurs générales — `chrome`
 
-Source : `fr.ts · en.ts · it.ts` · 59 textes.
+Source : `fr.ts · en.ts · it.ts` · 61 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
 | `chrome.identityConflict` | Un compte existe déjà avec cette adresse, ouvert par un autre moyen de connexion. Reprenez ce chemin : code par e-mail, mot de passe ou Google. | An account already uses this address, opened with another sign-in method. Take that path again: email code, password or Google. | Esiste già un account con questo indirizzo, aperto con un altro metodo di accesso. Riprendi quella strada: codice via e-mail, password o Google. |  |
 | `chrome.identityConflictDismiss` | Compris | Got it | Ho capito |  |
+| `chrome.sessionExpired` | Votre session a expiré. Reconnectez-vous pour retrouver votre compte. | Your session has expired. Sign in again to get back to your account. | La sessione è scaduta. Accedi di nuovo per ritrovare il tuo account. |  |
+| `chrome.sessionExpiredRenew` | Se reconnecter | Sign in again | Accedi di nuovo |  |
 | `chrome.installIosSafari` | Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ». | To install the app: tap Share, then “Add to Home Screen”. | Per installare l'app: tocca Condividi, poi «Aggiungi alla schermata Home». |  |
 | `chrome.installIosOther` | Ouvrez cette page dans Safari pour installer l'app. | Open this page in Safari to install the app. | Apri questa pagina in Safari per installare l'app. |  |
 | `chrome.installPrompt` | Installer l'app | Install the app | Installa l'app |  |
@@ -957,7 +965,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 239 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 242 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -970,6 +978,9 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.wellAll` | Toutes mes commandes | All my orders | Tutti i miei ordini |  |
 | `orders.wellNone` | Rien en cours | Nothing in progress | Niente in corso |  |
 | `orders.wellNoneHint` | Vos commandes vivantes s’affichent ici, du panier à la remise. | Live orders show up here, from basket to handover. | Gli ordini in corso compaiono qui, dal carrello alla consegna. |  |
+| `orders.loadFailed` | Vos commandes n’ont pas pu être chargées | Your orders could not be loaded | Non è stato possibile caricare i tuoi ordini |  |
+| `orders.loadFailedHint` | Rien n’est perdu : réessayez dans un instant. | Nothing is lost: try again in a moment. | Non si è perso nulla: riprova tra un istante. |  |
+| `orders.loadRetry` | Réessayer | Try again | Riprova |  |
 | `orders.progress` | Avancement : {n} % | Progress: {n}% | Avanzamento: {n} % | `{n}` |
 | `orders.qr` | Mon QR | My QR | Il mio QR |  |
 | `orders.qrLong` | Mon QR de retrait | My pickup QR | Il mio QR di ritiro |  |

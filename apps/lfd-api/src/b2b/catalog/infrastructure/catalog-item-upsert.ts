@@ -64,6 +64,7 @@ const SQL_NAMES = {
   allergenLabels: "allergen_labels",
   mayContain: "may_contain",
   allergensPrecautionary: "allergens_precautionary",
+  allergenTexts: "allergen_texts",
   operationOnly: "operation_only",
   requiresCold: "requires_cold",
   receivedAt: "received_at",
@@ -82,12 +83,13 @@ const JSON_COLUMNS: ReadonlySet<ItemColumn> = new Set([
   "publicByContext",
   "allergenLabels",
   "mayContain",
+  "allergenTexts",
   "nameTranslations",
   "noteTranslations",
 ]);
 
 /**
- * Au plus tant de lignes par instruction : 43 colonnes × 1 000 restent loin
+ * Au plus tant de lignes par instruction : 44 colonnes × 1 000 restent loin
  * de la borne des 65 535 paramètres d'une requête Postgres.
  */
 export const UPSERT_CHUNK = 1_000;

@@ -35,7 +35,11 @@ describe('ClientShell — panier et entrée de la barre', () => {
         provideHttpClientTesting(),
         {
           provide: AuthFacade,
-          useValue: { isAuthenticated: signal(false), user: signal(null) },
+          useValue: {
+            isAuthenticated: signal(false),
+            user: signal(null),
+            sessionExpired: signal(false),
+          },
         },
         // Instanciés par le shell pour leurs effets de retour d'Auth0, hors sujet ici.
         { provide: ClientOnboarding, useValue: {} },

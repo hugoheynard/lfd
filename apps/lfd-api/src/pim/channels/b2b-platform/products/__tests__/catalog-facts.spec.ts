@@ -1,4 +1,4 @@
-import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
+import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
 import {
   bareVariant,
   SELLABLE_VARIANT,
@@ -19,7 +19,7 @@ import { projectFamilyFact, projectProductFact, type ProductFactInput } from "..
 const B2B_ONLY: CompletenessRules = { activeContextKeys: ["b2b"] };
 const PRO_ONLY: CategoryVatPercents = { b2b: 5.5 };
 const BOTH_CONTEXTS: CategoryVatPercents = { b2b: 5.5, takeaway: 5.5 };
-const NO_ALLERGEN_REFERENCE = IncoProjector.from([], "fr");
+const NO_ALLERGEN_REFERENCE = AllergenNaming.from([]);
 
 function family(over: Partial<CatalogFamilyRecord> = {}): CatalogFamilyRecord {
   return {
@@ -42,7 +42,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     familyPercents: PRO_ONLY,
     percents: PRO_ONLY,
     rules: B2B_ONLY,
-    inco: NO_ALLERGEN_REFERENCE,
+    naming: NO_ALLERGEN_REFERENCE,
     showcase: undefined,
     cited: [],
     catalogueUnion: [],

@@ -287,6 +287,31 @@ export interface PublicStorefrontPageView {
    * carte livraison reprend l'image de la porte retrait.
    */
   readonly deliveryDoorImage?: StorefrontImage | null;
+  /**
+   * **Où la boutique montre les allergènes** — réglage global de la vitrine
+   * (Hugo, 2026-10-27, `documentation/pim/plan-allergenes-en-boutique.md`) :
+   * `sheet`, sur la fiche ouverte seulement ; `gallery`, aussi en mention
+   * compacte sur les cartes du rayon. Servi sur TOUTE page, pour que la
+   * boutique le lise sans appel de plus. Absent d'un serveur d'avant : `sheet`.
+   */
+  readonly allergenDisplay?: StorefrontAllergenDisplay;
+}
+
+/** Les deux places des allergènes en boutique — cf. {@link PublicStorefrontPageView.allergenDisplay}. */
+export const storefrontAllergenDisplays = ["sheet", "gallery"] as const;
+export type StorefrontAllergenDisplay = (typeof storefrontAllergenDisplays)[number];
+
+/** `PUT /admin/storefront/settings` — les réglages globaux de la vitrine. */
+export const storefrontSettingsPayloadSchema = z.object({
+  allergenDisplay: z.enum(storefrontAllergenDisplays),
+});
+export type StorefrontSettingsPayload = z.infer<typeof storefrontSettingsPayloadSchema>;
+
+/** `GET /admin/storefront/settings` — ce que l'éditeur affiche du réglage. */
+export interface StorefrontSettingsView {
+  readonly allergenDisplay: StorefrontAllergenDisplay;
+  /** `null` : jamais réglé — le défaut `sheet` s'applique. */
+  readonly updatedAt: string | null;
 }
 
 /**

@@ -1,5 +1,5 @@
 import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
-import { IncoProjector } from "../../../../allergens/domain/services/inco-projector.js";
+import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
 import type { VariantRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
 import { projectVariant, vatOf, type AllergenContext } from "../projection.js";
 
@@ -41,14 +41,14 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
  */
 const INCO = incoProjector();
 
-function incoProjector(): IncoProjector {
+function incoProjector(): AllergenNaming {
   const store = new AllergenStore();
   store.seedOfficialCategory("alg_cat_gluten", "gluten", "gluten");
   store.seedOfficialEntry("alg_UW", "UW", "alg_cat_gluten");
   store.seedOfficialEntry("alg_NR", "NR", "alg_cat_gluten");
   store.seedOfficialCategory("alg_cat_non_eu", "non_eu", null);
   store.seedOfficialEntry("alg_SO", "SO", "alg_cat_non_eu");
-  return IncoProjector.from(catalogueOf(store), "fr");
+  return AllergenNaming.from(catalogueOf(store));
 }
 
 /** Le lecteur est asynchrone ; la projection, elle, reçoit un objet pur. */
@@ -212,5 +212,92 @@ describe("vatOf", () => {
   it("lit le taux du contexte b2b, et null quand il n'est pas réglé", () => {
     expect(vatOf({ takeaway: 10, b2b: 5.5 })).toBe(5.5);
     expect(vatOf({ takeaway: 10 })).toBeNull();
+  });
+});
+
+/**
+ * Les libellés que le client lit, langue par langue
+ * (`documentation/pim/plan-allergenes-en-boutique.md`, 2026-10-27) : le
+ * référentiel les nomme, la boutique ne recopie aucun dictionnaire.
+ */
+describe("projectVariant — les libellés par langue", () => {
+  const entry = (code: string, name: { fr: string; en?: string; it?: string }) => ({
+    id: `alg_${code}`,
+    code,
+    name,
+    official: true,
+    archivedAt: null,
+  });
+  const TRANSLATED = AllergenNaming.from([
+    {
+      id: "alg_cat_gluten",
+      key: "gluten",
+      name: { fr: "Gluten", en: "Gluten", it: "Glutine" },
+      incoCategory: "gluten",
+      official: true,
+      position: 1,
+      archivedAt: null,
+      entries: [entry("UW", { fr: "Blé" }), entry("NR", { fr: "Seigle" })],
+    },
+    {
+      id: "alg_cat_tree_nuts",
+      key: "tree_nuts",
+      name: { fr: "Fruits à coque", en: "Tree nuts" },
+      incoCategory: "tree_nuts",
+      official: true,
+      position: 2,
+      archivedAt: null,
+      entries: [entry("SA", { fr: "Amande" })],
+    },
+  ]);
+
+  it("nomme les allergènes et les traces en fr, en et it — le français quand rien n'est traduit", () => {
+    const v = projectVariant(
+      variant({ allergenSheet: { declared: ["UW"], mayContain: ["SA"] } }),
+      1,
+      5.5,
+      200,
+      { b2b: 5.5 },
+      TRANSLATED,
+      NOTHING_ELSE,
+    );
+
+    expect(v.allergenTexts).toEqual({
+      fr: { contains: ["Gluten"], mayContain: ["Fruits à coque"] },
+      en: { contains: ["Gluten"], mayContain: ["Tree nuts"] },
+      it: { contains: ["Glutine"], mayContain: ["Fruits à coque"] },
+    });
+  });
+
+  it("ne répète pas en trace une mention déjà parmi les allergènes", () => {
+    const v = projectVariant(
+      variant({ allergenSheet: { declared: ["UW"], mayContain: ["NR"] } }),
+      1,
+      5.5,
+      200,
+      { b2b: 5.5 },
+      TRANSLATED,
+      NOTHING_ELSE,
+    );
+
+    expect(v.allergenTexts?.["fr"]).toEqual({ contains: ["Gluten"], mayContain: [] });
+  });
+
+  it("nomme la précaution : la composition en allergènes, l'union du catalogue en traces", () => {
+    const v = projectVariant(
+      variant({ allergenSheet: null }),
+      1,
+      5.5,
+      200,
+      { b2b: 5.5 },
+      TRANSLATED,
+      {
+        cited: [],
+        catalogueUnion: ["UW", "SA"],
+      },
+    );
+
+    expect(v.allergensPrecautionary).toBe(true);
+    expect(v.allergenTexts?.["en"]).toEqual({ contains: [], mayContain: ["Gluten", "Tree nuts"] });
   });
 });

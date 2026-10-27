@@ -2053,6 +2053,48 @@
           "en": "Made to order · same day, by {time}",
           "it": "Su ordinazione · in giornata, entro le {time}",
           "variables": ["time"]
+        },
+        {
+          "key": "product.allergens",
+          "fr": "Allergènes",
+          "en": "Allergens",
+          "it": "Allergeni",
+          "variables": []
+        },
+        {
+          "key": "product.allergensNone",
+          "fr": "Aucun allergène",
+          "en": "No allergens",
+          "it": "Nessun allergene",
+          "variables": []
+        },
+        {
+          "key": "product.allergensMayContain",
+          "fr": "Peut contenir",
+          "en": "May contain",
+          "it": "Può contenere",
+          "variables": []
+        },
+        {
+          "key": "product.allergensPrecautionary",
+          "fr": "Information précise non disponible",
+          "en": "Precise information not available",
+          "it": "Informazione precisa non disponibile",
+          "variables": []
+        },
+        {
+          "key": "product.allergensTileContains",
+          "fr": "Contient : {list}",
+          "en": "Contains: {list}",
+          "it": "Contiene: {list}",
+          "variables": ["list"]
+        },
+        {
+          "key": "product.allergensTileMayContain",
+          "fr": "Peut contenir : {list}",
+          "en": "May contain: {list}",
+          "it": "Può contenere: {list}",
+          "variables": ["list"]
         }
       ],
       "unrecorded": []
@@ -4209,6 +4251,20 @@
           "variables": []
         },
         {
+          "key": "chrome.sessionExpired",
+          "fr": "Votre session a expiré. Reconnectez-vous pour retrouver votre compte.",
+          "en": "Your session has expired. Sign in again to get back to your account.",
+          "it": "La sessione è scaduta. Accedi di nuovo per ritrovare il tuo account.",
+          "variables": []
+        },
+        {
+          "key": "chrome.sessionExpiredRenew",
+          "fr": "Se reconnecter",
+          "en": "Sign in again",
+          "it": "Accedi di nuovo",
+          "variables": []
+        },
+        {
           "key": "chrome.installIosSafari",
           "fr": "Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ».",
           "en": "To install the app: tap Share, then “Add to Home Screen”.",
@@ -4874,6 +4930,27 @@
           "fr": "Vos commandes vivantes s’affichent ici, du panier à la remise.",
           "en": "Live orders show up here, from basket to handover.",
           "it": "Gli ordini in corso compaiono qui, dal carrello alla consegna.",
+          "variables": []
+        },
+        {
+          "key": "orders.loadFailed",
+          "fr": "Vos commandes n’ont pas pu être chargées",
+          "en": "Your orders could not be loaded",
+          "it": "Non è stato possibile caricare i tuoi ordini",
+          "variables": []
+        },
+        {
+          "key": "orders.loadFailedHint",
+          "fr": "Rien n’est perdu : réessayez dans un instant.",
+          "en": "Nothing is lost: try again in a moment.",
+          "it": "Non si è perso nulla: riprova tra un istante.",
+          "variables": []
+        },
+        {
+          "key": "orders.loadRetry",
+          "fr": "Réessayer",
+          "en": "Try again",
+          "it": "Riprova",
           "variables": []
         },
         {

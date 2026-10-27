@@ -1,13 +1,12 @@
 # Plan — les allergènes ne bloquent plus jamais une publication
 
-> 🟡 **Bâti en partie le 2026-10-27** — règle A, constat
+> ✅ **Bâti le 2026-10-27** — règle A, constat
 > `allergens_precautionary`, complétude, écran (commit `326d71e73`) ; puis la
 > règle B jusqu'au commerce (non commité au moment d'écrire) : union du
 > catalogue lue par projection, fil `mayContain` / `allergensPrecautionary`,
 > colonnes `catalog_items`, aveu `incomplete` au back-office et sur la ligne
-> de commande. **Reste** le §3 : la boutique ne montre aucun allergène (la vue
-> `shop-catalogue` n'en porte pas) — ni libellés traduits des traces, ni
-> mention de précaution. État décrit dans
+> de commande. Le §3 (ce que voit le client) est bâti le même jour par
+> [`plan-allergenes-en-boutique.md`](plan-allergenes-en-boutique.md). État décrit dans
 > [`data-model/05-allergenes-gs1-inco.md`](data-model/05-allergenes-gs1-inco.md).
 >
 > 📝 Plan d'origine (2026-10-27). Hugo : « je dois diminuer la

@@ -1,6 +1,7 @@
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../platform/journal/journal-fact.js";
+import type { AllergenDisplay } from "./allergen-display.js";
 import type { StorefrontChanges } from "./storefront-changes.js";
 
 /** Il n'y a qu'une vitrine : c'est son identifiant, en base comme au journal. */
@@ -8,6 +9,7 @@ export const STOREFRONT_ID = "main";
 
 export const STOREFRONT_FACTS = {
   saved: "storefront.saved",
+  allergenDisplayChanged: "storefront.allergen_display_changed",
 } as const satisfies Readonly<Record<string, JournalFactType>>;
 
 /**
@@ -42,6 +44,27 @@ export class StorefrontSavedEvent implements JournaledEvent {
         archived: [...this.changes.archived],
         shelves: [...this.changes.shelves],
       },
+    };
+  }
+}
+
+/**
+ * **La place des allergènes en boutique a changé** (Hugo, 2026-10-27) — tracé
+ * sur le sujet de la vitrine, comme ses enregistrements. Rien n'est tracé
+ * quand la valeur ne change pas.
+ */
+export class StorefrontAllergenDisplayChangedEvent implements JournaledEvent {
+  constructor(
+    readonly from: AllergenDisplay,
+    readonly to: AllergenDisplay,
+  ) {}
+
+  journalFact(): JournalFact {
+    return {
+      type: STOREFRONT_FACTS.allergenDisplayChanged,
+      subjectType: "storefront",
+      subjectId: STOREFRONT_ID,
+      payload: { subjectLabel: "Vitrine", from: this.from, to: this.to },
     };
   }
 }

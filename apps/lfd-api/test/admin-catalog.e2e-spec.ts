@@ -77,6 +77,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
           {
             mayContain: null,
             allergensPrecautionary: false,
+            allergenTexts: null,
             ...sheet,
             id: "var_1",
             sku: SKU,
@@ -679,6 +680,7 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
             ...NO_SHEET,
             mayContain: null,
             allergensPrecautionary: false,
+            allergenTexts: null,
             id: `var_${sku}`,
             sku: `${sku}-1`,
             name: sku,

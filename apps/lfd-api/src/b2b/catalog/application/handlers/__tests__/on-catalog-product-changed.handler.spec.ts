@@ -59,6 +59,7 @@ const VARIANT: CatalogVariantFact = {
   allergenLabels: { labels: [{ category: "gluten", label: "Gluten" }], incomplete: false },
   mayContain: null,
   allergensPrecautionary: false,
+  allergenTexts: null,
   nameTranslations: { en: "Butter croissant" },
 };
 
@@ -214,6 +215,19 @@ describe("OnCatalogProductChangedHandler", () => {
     });
   });
 
+  /** Les libellés par langue descendent sur l'article (`plan-allergenes-en-boutique.md`). */
+  it("porte les libellés d'allergènes par langue jusqu'à l'article", async () => {
+    const projection = new SpyingProduct(true);
+    const allergenTexts = {
+      fr: { contains: ["Gluten"], mayContain: [] },
+      en: { contains: ["Gluten"], mayContain: [] },
+    };
+
+    await deliver(projection, productFact("active", { variants: [{ ...VARIANT, allergenTexts }] }));
+
+    expect(projection.onSale[0]).toMatchObject({ allergenTexts });
+  });
+
   /** Un fait émis avant les deux champs se rejoue avec le sens d'avant. */
   it("lit un fait d'avant les traces comme « on ne sait pas », sans précaution", async () => {
     const projection = new SpyingProduct(true);
@@ -224,6 +238,7 @@ describe("OnCatalogProductChangedHandler", () => {
     for (const variant of payload.variants) {
       delete variant["mayContain"];
       delete variant["allergensPrecautionary"];
+      delete variant["allergenTexts"];
     }
 
     await new OnCatalogProductChangedHandler(projection, refresher()).handle({
@@ -232,7 +247,11 @@ describe("OnCatalogProductChangedHandler", () => {
       payload,
     });
 
-    expect(projection.onSale[0]).toMatchObject({ mayContain: null, allergensPrecautionary: false });
+    expect(projection.onSale[0]).toMatchObject({
+      mayContain: null,
+      allergensPrecautionary: false,
+      allergenTexts: null,
+    });
   });
 
   it("lève sur un fait illisible : la livraison se rejoue, rien n'est avalé", async () => {

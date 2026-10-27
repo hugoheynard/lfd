@@ -77,6 +77,17 @@ export function pimFactsColumns(facts: PimFacts) {
     // `DbNull` comme `allergens` : l'absence de la donnée, pas un `null` JSON.
     mayContain: facts.mayContain === null ? Prisma.DbNull : [...facts.mayContain],
     allergensPrecautionary: facts.allergensPrecautionary,
+    // `DbNull` : l'absence de la donnée. Recopié liste par liste, comme
+    // `publicByContext` : l'ORM refuse les `readonly` du domaine.
+    allergenTexts:
+      facts.allergenTexts === null
+        ? Prisma.DbNull
+        : Object.fromEntries(
+            Object.entries(facts.allergenTexts).map(([language, texts]) => [
+              language,
+              { contains: [...texts.contains], mayContain: [...texts.mayContain] },
+            ]),
+          ),
     operationOnly: facts.operationOnly,
     requiresCold: facts.requiresCold,
     receivedAt: facts.receivedAt,

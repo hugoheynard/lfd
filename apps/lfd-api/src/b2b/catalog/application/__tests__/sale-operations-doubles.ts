@@ -44,6 +44,7 @@ export function catalogItem(
     isDefault: true,
     isFeatured: false,
     allergens: null,
+    shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },
     note: null,
     image: null,
     thumbnail: null,

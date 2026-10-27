@@ -14,6 +14,7 @@ import { ClientFeatureAccess } from './client/feature-access/client-feature-acce
 import { SHOP_COPY_STARTUP_BUDGET_MS, ShopCopyLoader } from './client/copy/shop-copy-loader';
 import { InstallPrompt } from './client/install-prompt.service';
 import { workspaceInterceptor } from './client/client-workspace.interceptor';
+import { sessionExpiredInterceptor } from './auth/session-expired';
 import { identityConflictInterceptor } from './auth/identity-conflict';
 import { invitationExpiredInterceptor } from './auth/invitation-expired';
 import { ADDRESS_WRITER, LFD_NOTIFY } from '@lfd/b2b-ui/panel';
@@ -64,6 +65,7 @@ export const appConfig: ApplicationConfig = {
         workspaceInterceptor,
         identityConflictInterceptor,
         invitationExpiredInterceptor,
+        sessionExpiredInterceptor,
       ]),
     ),
     provideAuth(),

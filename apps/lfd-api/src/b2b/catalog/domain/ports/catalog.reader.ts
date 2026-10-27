@@ -2,6 +2,7 @@ import type { OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogFamily } from "../catalog-family.js";
 import type { CatalogTranslations } from "../catalog-translations.js";
+import type { ShopAllergenFacts } from "../shop-allergens.js";
 import type { CatalogAudience } from "../served-to.js";
 
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
@@ -82,6 +83,13 @@ export interface ResolvedCatalogItem {
    * qu'aucun défaut ne doit transformer en « aucun allergène ».
    */
   readonly allergens: OrderLineAllergens | null;
+  /**
+   * **Ce que la vitrine dit des allergènes** — l'état et les libellés par
+   * langue (`plan-allergenes-en-boutique.md`, 2026-10-27). À côté de
+   * {@link allergens}, pas à sa place : celui-là se fige dans une commande,
+   * celui-ci se montre avant l'achat.
+   */
+  readonly shopAllergens: ShopAllergenFacts;
   /**
    * **Ce que la vitrine montre** : la ligne sous le nom, le packshot, et la
    * vignette de rayon.

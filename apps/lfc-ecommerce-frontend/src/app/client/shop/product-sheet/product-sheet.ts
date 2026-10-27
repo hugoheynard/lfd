@@ -10,6 +10,8 @@ import {
   output,
   untracked,
 } from '@angular/core';
+import { NgTemplateOutlet } from '@angular/common';
+import { FoldCalloutComponent } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
@@ -50,14 +52,21 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
  * le bouton du pied l'écrit, par `quantitySet`. On compose un lot de douze sans
  * que le panier passe par un, deux, trois… sous les yeux.
  *
- * Ce que la maquette montre et que le serveur ne sert pas — pièce, allergènes,
- * clôture — n'a PAS de ligne ici : une ligne vide ou inventée mentirait
- * (plan `architecture-boutique-pro-cartes-et-fiche.md`).
+ * Ce que la maquette montre et que le serveur ne sert pas — pièce, clôture —
+ * n'a PAS de ligne ici : une ligne vide ou inventée mentirait (plan
+ * `architecture-boutique-pro-cartes-et-fiche.md`). Les allergènes, servis
+ * depuis le 2026-10-27, ont leur bloc (`plan-allergenes-en-boutique.md`).
  */
 @Component({
   selector: 'app-product-sheet',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ClientDialog, QuantityRail, StaffSuggestionCard],
+  imports: [
+    ClientDialog,
+    FoldCalloutComponent,
+    NgTemplateOutlet,
+    QuantityRail,
+    StaffSuggestionCard,
+  ],
   templateUrl: './product-sheet.html',
   styleUrl: './product-sheet.scss',
 })
@@ -175,8 +184,34 @@ export class ProductSheet {
   });
 
   /**
+   * **Les allergènes, puis les traces** (`plan-allergenes-en-boutique.md`,
+   * Hugo, 2026-10-27) — des libellés servis dans la langue de la requête ;
+   * cet écran n'en nomme aucun. Rien quand le serveur ne sait pas : jamais
+   * « aucun allergène » par défaut.
+   *
+   * 🔴 « Peut contenir » ne paraît jamais seul : la liste des allergènes (ou
+   * « Aucun allergène », déclaré) la précède toujours ; sous précaution, un
+   * encadré d'avertissement dit « Information précise non disponible » avant
+   * les traces complètes. Sur la fiche seulement — ni vignette, ni panier
+   * (Hugo, 2026-10-27).
+   */
+  protected readonly allergens = computed(() => {
+    const served = this.product()?.allergens;
+    if (served === undefined) {
+      return null;
+    }
+    const precautionary = served.state === 'precautionary';
+    return {
+      contains: served.contains,
+      none: served.state === 'none',
+      mayContain: served.mayContain,
+      precautionary,
+    };
+  });
+
+  /**
    * Les faits servis — la fournée, et les jours de retrait d'une opération
-   * ouverte ; pièce et allergènes ne traversent pas encore.
+   * ouverte ; la pièce ne traverse pas encore.
    */
   protected readonly facts = computed(() => {
     const product = this.product();

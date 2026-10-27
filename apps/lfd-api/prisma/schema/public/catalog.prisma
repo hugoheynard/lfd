@@ -234,6 +234,14 @@ model CatalogItem {
   /// `false` sur les lignes d'avant : le sens d'avant.
   allergensPrecautionary Boolean @default(false) @map("allergens_precautionary")
 
+  /// **Les libellés que le client lit, par langue** — `{ fr: { contains,
+  /// mayContain }, en: …, it: … }`, nommés par le référentiel
+  /// (`documentation/pim/plan-allergenes-en-boutique.md`, 2026-10-27). La
+  /// vitrine les sert tels quels : elle n'a aucun dictionnaire d'allergènes.
+  /// `NULL` = on ne sait pas — une ligne reçue avant le champ, tant qu'un fait
+  /// de sa fiche ne l'a pas réécrite ; la vitrine ne dit alors rien.
+  allergenTexts Json? @map("allergen_texts")
+
   /// **Jusqu'à quand on prend commande de cet article**, résolu par le PIM.
   ///
   /// Les trois vont ensemble ou pas du tout : `NULL` partout = aucune limite

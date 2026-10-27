@@ -9,6 +9,8 @@ export const FR: ClientCopy = {
     identityConflict:
       'Un compte existe déjà avec cette adresse, ouvert par un autre moyen de connexion. Reprenez ce chemin : code par e-mail, mot de passe ou Google.',
     identityConflictDismiss: 'Compris',
+    sessionExpired: 'Votre session a expiré. Reconnectez-vous pour retrouver votre compte.',
+    sessionExpiredRenew: 'Se reconnecter',
     installIosSafari: "Pour installer l'app : touchez Partager, puis « Sur l'écran d'accueil ».",
     installIosOther: "Ouvrez cette page dans Safari pour installer l'app.",
     installPrompt: "Installer l'app",
@@ -330,6 +332,12 @@ export const FR: ClientCopy = {
     madeToOrderShortDays: 'Sur commande · {n} jours avant {time}',
     madeToOrderShortEve: 'Sur commande · la veille avant {time}',
     madeToOrderShortSameDay: 'Sur commande · le jour même avant {time}',
+    allergens: 'Allergènes',
+    allergensNone: 'Aucun allergène',
+    allergensMayContain: 'Peut contenir',
+    allergensPrecautionary: 'Information précise non disponible',
+    allergensTileContains: 'Contient : {list}',
+    allergensTileMayContain: 'Peut contenir : {list}',
   },
   cart: {
     kicker: 'Le panier',

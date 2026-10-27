@@ -341,7 +341,13 @@ describe("la lecture publique", () => {
   });
 
   it("un rayon sans page rend une page vide — la boutique l'affiche en cartes", async () => {
-    expect(await publicPage("fam-sans-page")).toEqual({ rows: 0, objects: [] });
+    // `allergenDisplay` voyage sur toute page depuis le 2026-10-27 (réglage
+    // global de la vitrine, `plan-allergenes-en-boutique.md`).
+    expect(await publicPage("fam-sans-page")).toEqual({
+      rows: 0,
+      objects: [],
+      allergenDisplay: "sheet",
+    });
   });
 });
 

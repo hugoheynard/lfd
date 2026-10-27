@@ -8,6 +8,7 @@ import {
   type ResolvedCatalogItem,
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
+import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
@@ -41,6 +42,7 @@ interface ItemRow {
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
   readonly allergensPrecautionary: boolean;
+  readonly allergenTexts: unknown;
   readonly note: string | null;
   readonly nameTranslations: unknown;
   readonly noteTranslations: unknown;
@@ -372,6 +374,7 @@ function resolve(
     // « Incontournable » que de ce qu'on a mis en avant chez les pros.
     isFeatured: featuredFor(row, viewer),
     allergens: frozenAllergens(row),
+    shopAllergens: shopAllergenFactsOf(row),
     orderTimeLimit: orderTimeLimitOf(row),
     note: row.note,
     image: imageOf(row),

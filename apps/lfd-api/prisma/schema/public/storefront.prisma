@@ -32,6 +32,26 @@ model Storefront {
   @@schema("public")
 }
 
+/// **Les réglages globaux de la vitrine**, en une ligne : `id = 'main'`
+/// (Hugo, 2026-10-27, `documentation/pim/plan-allergenes-en-boutique.md`).
+///
+/// À part de `storefront` et de sa RÉVISION : régler ne recompose rien, et ne
+/// doit pas refuser un éditeur ouvert. Pas de ligne semée : absente, chaque
+/// réglage vaut son défaut.
+model StorefrontSettings {
+  /// Toujours `'main'` : il n'y a qu'une vitrine.
+  id               String   @id
+  /// Où la boutique montre les allergènes : `sheet` (fiche ouverte seulement,
+  /// le défaut) ou `gallery` (aussi sur les cartes du rayon).
+  allergenDisplay  String   @default("sheet") @map("allergen_display")
+  updatedAt        DateTime @map("updated_at")
+  /// L'identifiant INTERNE de la fiche staff — jamais un `sub` Auth0.
+  updatedByStaffId String   @map("updated_by_staff_id")
+
+  @@map("storefront_settings")
+  @@schema("public")
+}
+
 /// **La page d'un rayon** : combien de rangées sa composition occupe. Sous la
 /// dernière, le reste du rayon s'écoule en cartes.
 model StorefrontPage {

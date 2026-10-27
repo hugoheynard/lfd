@@ -24,6 +24,7 @@ import {
 import { DEV_BYPASS_AUTH } from './dev-flags';
 import { LoginMoment } from './login-moment';
 import { signInFailureOf } from './sign-in-failure';
+import { expiringOnFailure } from './token-failure';
 
 /**
  * Façade d'authentification **SSR-safe** — l'unique frontière entre l'app et le
@@ -404,7 +405,46 @@ export class AuthFacade {
     if (DEV_BYPASS_AUTH && this.isBrowser) {
       return this.devSignedOut() ? NEVER : of('dev-impersonation');
     }
-    return this.auth0?.getAccessTokenSilently() ?? NEVER;
+    if (this.auth0 === null) {
+      return NEVER;
+    }
+    // Un jeton qui ne se renouvelle plus (`login_required`, `invalid_grant`,
+    // `missing_refresh_token`…) REJETTE : le SDK complète en erreur, et l'on
+    // pose l'état `expired` avant de laisser l'erreur à l'appelant. Sans ça,
+    // la personne restait affichée connectée devant des écrans vides
+    // (production, 2026-10-27).
+    return expiringOnFailure(this.auth0.getAccessTokenSilently(), () => this.markSessionExpired());
+  }
+
+  private readonly expired = signal(false);
+
+  /**
+   * **La session a expiré** : Auth0 se croit encore connecté (`isAuthenticated`
+   * reste vrai, l'identité reste affichée), mais aucun jeton ne s'obtient plus,
+   * ou l'API refuse celui qu'on présente (401). Seul un nouvel aller-retour
+   * Auth0 en sort — {@link renewSession}, au geste de la personne, jamais
+   * d'office : une redirection automatique bouclerait sur un refus durable.
+   *
+   * Même mot que le back-office (`permissions.store.ts`, `expired`).
+   */
+  readonly sessionExpired = this.expired.asReadonly();
+
+  /** Posé par {@link accessToken$} et par l'intercepteur des 401. */
+  markSessionExpired(): void {
+    if (this.isBrowser) {
+      this.expired.set(true);
+    }
+  }
+
+  /** Se reconnecter, et revenir à la page où l'on était. */
+  renewSession(): void {
+    if (!this.isBrowser) {
+      return;
+    }
+    this.redirect(
+      { target: this.router.url },
+      { connection: readLastConnection() ?? CUSTOMER_CONNECTION },
+    );
   }
 }
 

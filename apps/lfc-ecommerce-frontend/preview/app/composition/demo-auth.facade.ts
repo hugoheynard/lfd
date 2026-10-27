@@ -40,6 +40,16 @@ export class DemoAuthFacade implements AuthFacadeSurface {
   readonly pendingProfile = signal<PendingProfile | null>(null);
   readonly pendingProRegistration = signal<ProRegistration | null>(null);
   readonly devSignup: AuthFacade['devSignup'] = signal(null);
+  /** L'aperçu n'a pas de session : elle n'expire jamais. */
+  readonly sessionExpired = signal(false).asReadonly();
+
+  markSessionExpired(): void {
+    // Aucune session à faire expirer.
+  }
+
+  renewSession(): void {
+    // L'aperçu ne part pas chez Auth0.
+  }
 
   completeDevSignup(): string | null {
     return null;

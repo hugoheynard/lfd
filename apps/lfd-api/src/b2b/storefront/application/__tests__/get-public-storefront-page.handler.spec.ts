@@ -5,7 +5,9 @@ import type {
 } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import type { AllergenDisplay } from "../../domain/allergen-display.js";
 import { PublicStorefrontReader } from "../../domain/public-storefront.reader.js";
+import { StorefrontSettingsReader } from "../../domain/storefront-settings.reader.js";
 import {
   StorefrontOperationsReader,
   type ShownOperation,
@@ -37,6 +39,17 @@ class ShownByAudience extends StorefrontOperationsReader {
     this.asked.push(audience);
     const shown = this.byAudience[audience] ?? [];
     return Promise.resolve(new Map(shown.map((operation) => [operation.key, operation])));
+  }
+}
+
+/** La place des allergènes, réglée à la main. */
+class FixedSettings extends StorefrontSettingsReader {
+  constructor(private readonly display: AllergenDisplay = "sheet") {
+    super();
+  }
+
+  allergenDisplay(): ReturnType<StorefrontSettingsReader["allergenDisplay"]> {
+    return Promise.resolve({ allergenDisplay: this.display, updatedAt: null });
   }
 }
 
@@ -102,6 +115,7 @@ async function read(
     new FixedPage({ rows: 2, objects: [object(contents)] }),
     operations,
     NOW,
+    new FixedSettings(),
   );
   const page = await handler.execute(new GetPublicStorefrontPageQuery(shelfKey, companyId));
   return page.objects[0]?.contents ?? [];
@@ -233,11 +247,27 @@ describe("GetPublicStorefrontPageHandler — l'accueil", () => {
       new FixedPage({ rows: 2, objects: [object([LINKED])], pickupDoorImage: door }),
       new ShownByAudience({ public: [NOEL] }),
       NOW,
+      new FixedSettings(),
     );
 
     const page = await handler.execute(new GetPublicStorefrontPageQuery("home", null));
 
     expect(page.pickupDoorImage).toEqual(door);
     expect(page.objects[0]?.contents).toHaveLength(1);
+  });
+});
+
+describe("GetPublicStorefrontPageHandler — la place des allergènes (2026-10-27)", () => {
+  it("la sert sur toute page, rayon compris, pour que la boutique n'ait rien à demander de plus", async () => {
+    const handler = new GetPublicStorefrontPageHandler(
+      new FixedPage({ rows: 0, objects: [] }),
+      new ShownByAudience({}),
+      NOW,
+      new FixedSettings("gallery"),
+    );
+
+    const page = await handler.execute(new GetPublicStorefrontPageQuery("fam_pains", null));
+
+    expect(page.allergenDisplay).toBe("gallery");
   });
 });

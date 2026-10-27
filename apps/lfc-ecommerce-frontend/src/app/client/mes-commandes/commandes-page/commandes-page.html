@@ -9,73 +9,95 @@
 </ng-template>
 
 <div class="page">
-  <!-- LE PUITS DES SUIVIS. Il dit qu'il y a autre chose à droite : sans lui, le
-       débordement passe pour un accident de mise en page. -->
-  <fold-well #rail class="well" scrollable [title]="t().orders.wellHead" [subtitle]="wellHint()">
-    <span wellLead class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
-
-    @if (tracked().length === 0) {
-      <div class="well-empty">
-        <p class="well-empty-title">{{ t().orders.wellNone }}</p>
-        <p class="well-empty-hint">{{ t().orders.wellNoneHint }}</p>
-      </div>
-    } @else {
-      @for (order of tracked(); track order.reference) {
-        <app-track-card class="rail-card" [order]="order" (qrAsked)="showQr(order.id)" />
+  @if (failed()) {
+    <!-- Un échec de lecture se DIT : la liste vide qu'il laissait passait pour
+         « aucune commande » (production, 2026-10-27). -->
+    <fold-empty-state
+      tone="alert"
+      [title]="t().orders.loadFailed"
+      [subtitle]="t().orders.loadFailedHint"
+    >
+      @if (sessionExpired()) {
+        <button foldButton type="button" (click)="renewSession()">
+          {{ t().chrome.sessionExpiredRenew }}
+        </button>
+      } @else {
+        <button foldButton type="button" (click)="reload()">{{ t().orders.loadRetry }}</button>
       }
-    }
+    </fold-empty-state>
+  } @else {
+    <!-- LE PUITS DES SUIVIS. Il dit qu'il y a autre chose à droite : sans lui, le
+       débordement passe pour un accident de mise en page. -->
+    <fold-well #rail class="well" scrollable [title]="t().orders.wellHead" [subtitle]="wellHint()">
+      <span wellLead class="well-glyph" aria-hidden="true"><fold-icon name="arrow-right" /></span>
 
-    <fold-scroll-indicator
-      wellFoot
-      class="dots"
-      variant="morse"
-      [count]="tracked().length"
-      [active]="rail.active()"
-      [markerLabel]="t().orders.wellDot"
-      (picked)="rail.goTo($event)"
-    />
-  </fold-well>
+      @if (tracked().length === 0) {
+        <div class="well-empty">
+          <p class="well-empty-title">{{ t().orders.wellNone }}</p>
+          <p class="well-empty-hint">{{ t().orders.wellNoneHint }}</p>
+        </div>
+      } @else {
+        @for (order of tracked(); track order.reference) {
+          <app-track-card class="rail-card" [order]="order" (qrAsked)="showQr(order.id)" />
+        }
+      }
 
-  <!-- Une vraie SECTION, nommée par son titre : la page se lit alors comme un
+      <fold-scroll-indicator
+        wellFoot
+        class="dots"
+        variant="morse"
+        [count]="tracked().length"
+        [active]="rail.active()"
+        [markerLabel]="t().orders.wellDot"
+        (picked)="rail.goTo($event)"
+      />
+    </fold-well>
+
+    <!-- Une vraie SECTION, nommée par son titre : la page se lit alors comme un
        plan pour un lecteur d'écran, et non comme une suite de `div`. La tête
        est un `fold-element-title` en registre `caps` — le titre de la maison
        est devenu une variante du système, il n'a plus à être réécrit ici. -->
-  <fold-page-section class="history">
-    <fold-element-title
-      sectionHeader
-      variant="caps"
-      [title]="t().orders.historyHead"
-      [subtitle]="t().orders.historyNote"
-    />
+    <fold-page-section class="history">
+      <fold-element-title
+        sectionHeader
+        variant="caps"
+        [title]="t().orders.historyHead"
+        [subtitle]="t().orders.historyNote"
+      />
 
-    @if (inCompany()) {
-      <div class="filters">
-        @if (withSites()) {
-          <fold-listbox
-            size="sm"
-            data-filter-site
-            [label]="t().orders.filterSite"
-            [options]="siteOptions()"
-            [value]="chosenSite()"
-            (selectionChange)="chooseSite($event)"
-          />
-        }
-        <app-order-day-filter [days]="days()" (daysChange)="chooseDays($event)" />
-      </div>
-    }
+      @if (inCompany()) {
+        <div class="filters">
+          @if (withSites()) {
+            <fold-listbox
+              size="sm"
+              data-filter-site
+              [label]="t().orders.filterSite"
+              [options]="siteOptions()"
+              [value]="chosenSite()"
+              (selectionChange)="chooseSite($event)"
+            />
+          }
+          <app-order-day-filter [days]="days()" (daysChange)="chooseDays($event)" />
+        </div>
+      }
 
-    <app-history-table
-      [orders]="history()"
-      [withSites]="withSites()"
-      [openOrderId]="openOrderId"
-      [selectable]="inCompany()"
-      [(selected)]="selected"
-      (problemRaised)="report($event)"
-      (orderCancelled)="reload()"
-      (purchaseOrderRequested)="downloadSheet($event)"
-      (deliveryNoteRequested)="downloadDeliveryNote($event)"
-    >
-      <app-order-selection-bar historyToolbar [count]="selectedCount()" (summarize)="summarize()" />
-    </app-history-table>
-  </fold-page-section>
+      <app-history-table
+        [orders]="history()"
+        [withSites]="withSites()"
+        [openOrderId]="openOrderId"
+        [selectable]="inCompany()"
+        [(selected)]="selected"
+        (problemRaised)="report($event)"
+        (orderCancelled)="reload()"
+        (purchaseOrderRequested)="downloadSheet($event)"
+        (deliveryNoteRequested)="downloadDeliveryNote($event)"
+      >
+        <app-order-selection-bar
+          historyToolbar
+          [count]="selectedCount()"
+          (summarize)="summarize()"
+        />
+      </app-history-table>
+    </fold-page-section>
+  }
 </div>

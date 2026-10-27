@@ -300,6 +300,10 @@ export interface OrdersCopy {
   readonly wellAll: string;
   readonly wellNone: string;
   readonly wellNoneHint: string;
+  /** La liste n'a pas pu être lue : l'état d'erreur, et son geste. */
+  readonly loadFailed: string;
+  readonly loadFailedHint: string;
+  readonly loadRetry: string;
   /** `{n}` est remplacé par l'avancement en pour-cent. */
   readonly progress: string;
   readonly qr: string;
@@ -493,6 +497,9 @@ export const ORDERS_FR: OrdersCopy = {
   wellAll: 'Toutes mes commandes',
   wellNone: 'Rien en cours',
   wellNoneHint: 'Vos commandes vivantes s’affichent ici, du panier à la remise.',
+  loadFailed: 'Vos commandes n’ont pas pu être chargées',
+  loadFailedHint: 'Rien n’est perdu : réessayez dans un instant.',
+  loadRetry: 'Réessayer',
   progress: 'Avancement : {n} %',
   qr: 'Mon QR',
   qrLong: 'Mon QR de retrait',
@@ -616,6 +623,9 @@ export const ORDERS_EN: OrdersCopy = {
   wellAll: 'All my orders',
   wellNone: 'Nothing in progress',
   wellNoneHint: 'Live orders show up here, from basket to handover.',
+  loadFailed: 'Your orders could not be loaded',
+  loadFailedHint: 'Nothing is lost: try again in a moment.',
+  loadRetry: 'Try again',
   progress: 'Progress: {n}%',
   qr: 'My QR',
   qrLong: 'My pickup QR',
@@ -739,6 +749,9 @@ export const ORDERS_IT: OrdersCopy = {
   wellAll: 'Tutti i miei ordini',
   wellNone: 'Niente in corso',
   wellNoneHint: 'Gli ordini in corso compaiono qui, dal carrello alla consegna.',
+  loadFailed: 'Non è stato possibile caricare i tuoi ordini',
+  loadFailedHint: 'Non si è perso nulla: riprova tra un istante.',
+  loadRetry: 'Riprova',
   progress: 'Avanzamento: {n} %',
   qr: 'Il mio QR',
   qrLong: 'Il mio QR di ritiro',

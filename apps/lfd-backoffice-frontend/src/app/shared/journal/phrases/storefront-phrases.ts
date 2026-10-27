@@ -1,6 +1,7 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
 import { strings } from '../payload-read';
+import { ALLERGEN_DISPLAY } from '../values/commerce-values';
 import { byActor, countOf, text, value, type Phrase, type Segment } from '../phrase';
 
 /**
@@ -52,6 +53,32 @@ const saved: Phrase = (fact) => {
         : [text(' : '), ...moves, ...(shelves === null ? [] : [text(', sur '), shelves])]),
     ],
     KEYS,
+  );
+};
+
+const ALLERGEN_DISPLAY_KEYS = ['subjectLabel', 'from', 'to'];
+
+/** Les places des allergènes, dans les mots du dictionnaire des valeurs. */
+const ALLERGEN_PLACES: Readonly<Record<string, string>> = ALLERGEN_DISPLAY.labels;
+
+/**
+ * **La place des allergènes en boutique** (`storefront.allergen_display_changed`,
+ * Hugo, 2026-10-27, `documentation/pim/plan-allergenes-en-boutique.md`).
+ *
+ * « Colette Martin a réglé les allergènes de la boutique : Aussi dans la
+ * galerie (avant : Sur la fiche ouverte seulement) ».
+ */
+const allergenDisplayChanged: Phrase = (fact) => {
+  const to = ALLERGEN_PLACES[String(fact.payload['to'])];
+  const from = ALLERGEN_PLACES[String(fact.payload['from'])];
+  return byActor(
+    fact,
+    [
+      text('a réglé les allergènes de la boutique'),
+      ...(to === undefined ? [] : [text(' : '), value(to)]),
+      ...(from === undefined ? [] : [text(' (avant : '), value(from), text(')')]),
+    ],
+    ALLERGEN_DISPLAY_KEYS,
   );
 };
 
@@ -164,6 +191,7 @@ const mailCopyTrialSent: Phrase = (fact) => {
 
 export const STOREFRONT_PHRASES = {
   'storefront.saved': saved,
+  'storefront.allergen_display_changed': allergenDisplayChanged,
   'shop_copy.published': shopCopyPublished,
   'mail_copy.published': mailCopyPublished,
   'mail_copy.trial_sent': mailCopyTrialSent,

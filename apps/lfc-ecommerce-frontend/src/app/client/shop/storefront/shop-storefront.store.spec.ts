@@ -8,6 +8,7 @@ import { vi } from 'vitest';
 
 import { AuthFacade } from '../../../auth/auth.facade';
 import { provideWorkspace, workspaceDouble } from '../../client-workspace.fixture';
+import { ShopAllergenDisplay } from './allergen-display.service';
 import { ShopStorefront } from './shop-storefront.store';
 import { storefrontObject } from './storefront.fixture';
 
@@ -43,6 +44,20 @@ describe('ShopStorefront', () => {
     await loading;
 
     expect(store.stateOf('all')).toEqual({ status: 'ready', page: PAGE });
+  });
+
+  /** La place des allergènes voyage avec la page (2026-10-27) : pas d'appel de plus. */
+  it('retient la place des allergènes servie avec la page', async () => {
+    const display = TestBed.inject(ShopAllergenDisplay);
+    expect(display.current()).toBe('sheet');
+
+    const loading = store.load('all');
+    http
+      .expectOne((request) => request.url.endsWith('/shop/storefront/all'))
+      .flush({ ...PAGE, allergenDisplay: 'gallery' });
+    await loading;
+
+    expect(display.current()).toBe('gallery');
   });
 
   it('ne redemande pas une page déjà chargée ou en cours', async () => {

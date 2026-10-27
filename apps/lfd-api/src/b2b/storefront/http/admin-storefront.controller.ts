@@ -2,6 +2,9 @@ import {
   type StorefrontCatalogView,
   type StorefrontPayload,
   storefrontPayloadSchema,
+  type StorefrontSettingsPayload,
+  storefrontSettingsPayloadSchema,
+  type StorefrontSettingsView,
   type StorefrontView,
 } from "@lfd/contracts";
 import { Body, Controller, Get, HttpCode, HttpStatus, Put } from "@nestjs/common";
@@ -13,6 +16,8 @@ import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetStorefrontCatalogQuery } from "../application/get-storefront-catalog.query.js";
 import { GetStorefrontQuery } from "../application/get-storefront.query.js";
 import { SaveStorefrontCommand } from "../application/save-storefront.command.js";
+import { GetStorefrontSettingsQuery } from "../application/get-storefront-settings.query.js";
+import { SetStorefrontAllergenDisplayCommand } from "../application/set-storefront-allergen-display.command.js";
 
 /**
  * **L'éditeur de la vitrine** — charger, enregistrer (plan
@@ -61,6 +66,29 @@ export class AdminStorefrontController {
   ): Promise<void> {
     await this.commands.execute<SaveStorefrontCommand, void>(
       new SaveStorefrontCommand(payload, staffUserId),
+    );
+  }
+
+  /** Les réglages globaux de la vitrine — la place des allergènes (2026-10-27). */
+  @Get("settings")
+  settings(): Promise<StorefrontSettingsView> {
+    return this.queries.execute<GetStorefrontSettingsQuery, StorefrontSettingsView>(
+      new GetStorefrontSettingsQuery(),
+    );
+  }
+
+  /**
+   * Règle la place des allergènes en boutique, tout de suite — à part de la
+   * révision de la vitrine : régler ne refuse pas un éditeur ouvert.
+   */
+  @Put("settings")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async saveSettings(
+    @Body(new ZodBody(storefrontSettingsPayloadSchema)) payload: StorefrontSettingsPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetStorefrontAllergenDisplayCommand, void>(
+      new SetStorefrontAllergenDisplayCommand(payload.allergenDisplay, staffUserId),
     );
   }
 }

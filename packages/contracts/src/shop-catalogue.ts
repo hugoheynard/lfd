@@ -226,7 +226,47 @@ export interface ShopItemView {
    * ⚠️ Un élargissement ASSUMÉ : ce que la fiche affiche, rien de plus.
    */
   readonly orderTimeLimit?: ShopItemOrderLimit;
+  /**
+   * **Les allergènes et les traces**, tels que le client les lit, dans la
+   * langue de la requête (`?lang=`) — plan
+   * `documentation/pim/plan-allergenes-en-boutique.md`, décisions de Hugo du
+   * 2026-10-27 : des LIBELLÉS, pas des codes (a) ; nommés par le référentiel,
+   * aucun dictionnaire dans la boutique (b) ; « peut contenir » jamais sans
+   * les allergènes (c).
+   *
+   * 🔴 **Un élargissement ASSUMÉ de la surface publique**, et le plus étroit
+   * possible : un état et deux listes de libellés. Ni code GS1, ni aveu
+   * d'incomplétude, ni provenance — l'information que le règlement (UE)
+   * 1169/2011 (art. 14, 44) doit au client avant l'achat, rien de plus.
+   *
+   * Optionnel, donc **absent du fil** quand le commerce ne sait pas : article
+   * reçu avant que le fil porte les libellés, sans fiche, ou dont la liste
+   * est amputée d'un code que le référentiel ne nomme pas. L'absence se lit
+   * « pas d'information », **jamais** « aucun allergène ».
+   */
+  readonly allergens?: ShopItemAllergensView;
 }
+
+/**
+ * Ce que le client sait des allergènes d'un article :
+ *
+ * - `declared` — `contains` porte les allergènes déclarés (jamais vide) ;
+ * - `none` — « Aucun allergène » est DÉCLARÉ : une affirmation, pas un silence ;
+ * - `precautionary` — personne ne s'est prononcé (règle B) : la vitrine dit
+ *   « Information précise non disponible », `contains` porte ce que la
+ *   composition cite (peut être vide) et `mayContain` les allergènes du
+ *   catalogue.
+ *
+ * `mayContain` (« peut contenir ») ne répète jamais une mention de `contains`.
+ */
+export interface ShopItemAllergensView {
+  readonly state: ShopAllergenState;
+  readonly contains: readonly string[];
+  readonly mayContain: readonly string[];
+}
+
+/** L'état d'une information allergènes servie — cf. {@link ShopItemAllergensView}. */
+export type ShopAllergenState = "declared" | "none" | "precautionary";
 
 /** À qui un article se vend — une VALEUR du référentiel, recopiée telle quelle. */
 export type ShopItemAudience = "public" | "pro" | "both";

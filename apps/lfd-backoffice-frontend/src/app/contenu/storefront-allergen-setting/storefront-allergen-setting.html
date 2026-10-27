@@ -1,0 +1,10 @@
+@if (value(); as current) {
+  <fold-listbox
+    size="sm"
+    label="Allergènes en boutique"
+    [options]="options"
+    [value]="current"
+    [disabled]="!canWrite() || saving()"
+    (selectionChange)="choose($event)"
+  />
+}

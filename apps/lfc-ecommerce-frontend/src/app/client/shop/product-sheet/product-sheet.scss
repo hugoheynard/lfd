@@ -84,6 +84,51 @@
   }
 }
 
+/* Les allergènes : un titre d'étiquette, puis des listes à puces. */
+.allergens {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.allergens-title {
+  margin: 0;
+  font-family: var(--fold-font-label);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--lfc-weight-black);
+  letter-spacing: var(--lfc-tracking-eyebrow);
+  text-transform: uppercase;
+  color: var(--lfc-color-text-subtle);
+}
+
+.allergen-line {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text);
+}
+
+/* « Peut contenir », plus discret que les allergènes (maquette, 2026-10-27). */
+.allergen-traces {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-secondary);
+
+  .allergen-line,
+  .allergen-list {
+    color: inherit;
+  }
+}
+
+.allergen-list {
+  margin: 0;
+  padding-inline-start: var(--fold-space-lg);
+  font-size: var(--fold-text-sm);
+  line-height: var(--lfc-leading-body);
+  color: var(--fold-color-text);
+}
+
 .pricing {
   display: flex;
   flex-wrap: wrap;

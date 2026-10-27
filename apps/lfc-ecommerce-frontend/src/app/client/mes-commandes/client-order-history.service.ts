@@ -34,9 +34,13 @@ import { listedOf, type ListedOrder, type RowSource } from './order-rows';
  *
  * ## Rien pour un visiteur anonyme
  *
- * Pas de compte, pas de commandes — et surtout pas celles d'un autre. Un échec
- * de lecture laisse la liste vide : l'écran montre alors qu'il n'a rien à
- * afficher, ce qui est vrai.
+ * Pas de compte, pas de commandes — et surtout pas celles d'un autre.
+ *
+ * ## Un échec se dit
+ *
+ * Un échec de lecture — jeton qui ne se renouvelle plus, 401, réseau — pose
+ * {@link failed}. La liste vide qu'il laissait passait pour « aucune
+ * commande », ce qui était faux (production, 2026-10-27).
  *
  * ## Les sites, vus du compte principal
  *
@@ -76,6 +80,11 @@ export class ClientOrderHistory {
 
   /** Toutes les commandes lues, **la plus récente en tête**. */
   readonly orders = this.rows.asReadonly();
+
+  private readonly loadFailed = signal(false);
+
+  /** La dernière lecture de la liste a échoué : l'écran le dit, au lieu d'une liste vide. */
+  readonly failed = this.loadFailed.asReadonly();
 
   private readonly siteFilter = signal<string | null>(null);
 
@@ -215,6 +224,7 @@ export class ClientOrderHistory {
       if (this.loadedFor !== workspace || this.siteFilter() !== site || this.dayFilter() !== days) {
         return;
       }
+      this.loadFailed.set(false);
       this.rows.set(sorted(orders));
       // Une liste bornée dans le temps tairait les sites sans commande ces jours-là.
       if (site === null && days === NO_DAYS) {
@@ -224,6 +234,7 @@ export class ClientOrderHistory {
       // Relisible : un échec ne doit pas condamner l'écran pour la session.
       if (this.loadedFor === workspace) {
         this.loadedFor = null;
+        this.loadFailed.set(true);
       }
     }
   }

@@ -808,10 +808,12 @@ export type {
 } from "./order-delivery-vat.js";
 export type { LateFeeAdjustment, OrderLateFeePayload, OrderLateFeeView } from "./order-late-fee.js";
 export type {
+  ShopAllergenState,
   ShopCatalogueView,
   ShopImageFocal,
   ShopImageView,
   ShopItemOperationView,
+  ShopItemAllergensView,
   ShopItemAudience,
   ShopItemView,
   ShopOperationState,
@@ -2313,6 +2315,8 @@ export {
   storefrontObjectPayloadSchema,
   storefrontPageSchema,
   storefrontPayloadSchema,
+  storefrontAllergenDisplays,
+  storefrontSettingsPayloadSchema,
   storefrontProductContentSchema,
   storefrontTemplatePayloadSchema,
   storefrontTextSchema,
@@ -2323,6 +2327,9 @@ export type {
   PublicStorefrontObjectView,
   PublicStorefrontOperationView,
   PublicStorefrontPageView,
+  StorefrontAllergenDisplay,
+  StorefrontSettingsPayload,
+  StorefrontSettingsView,
   StorefrontCarousel,
   StorefrontCatalogItem,
   StorefrontCatalogOperation,

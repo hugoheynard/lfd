@@ -87,3 +87,44 @@ describe("shopCatalogueOf — l'audience", () => {
     ]);
   });
 });
+
+/**
+ * Les allergènes de la vitrine (`plan-allergenes-en-boutique.md`,
+ * 2026-10-27) : des libellés, dans la langue de la requête, et rien quand le
+ * commerce ne sait pas.
+ */
+describe("la vitrine dit les allergènes dans la langue demandée", () => {
+  const DECLARED = catalogItem("VIE-002", {
+    name: "Brioche",
+    shopAllergens: {
+      codes: ["UW", "AM"],
+      incomplete: false,
+      precautionary: false,
+      texts: {
+        fr: { contains: ["Gluten", "Lait"], mayContain: ["Fruits à coque"] },
+        en: { contains: ["Gluten", "Milk"], mayContain: ["Tree nuts"] },
+        it: { contains: ["Glutine", "Latte"], mayContain: ["Frutta a guscio"] },
+      },
+    },
+  });
+  const ITEMS = [DECLARED, PAIN];
+
+  function allergensIn(language: "fr" | "en" | "it") {
+    return inShopLanguage(shopCatalogueOf(ITEMS, SALE), ITEMS, language).items;
+  }
+
+  it("sert les libellés dans chacune des trois langues", () => {
+    expect(allergensIn("fr")[0]?.allergens).toEqual({
+      state: "declared",
+      contains: ["Gluten", "Lait"],
+      mayContain: ["Fruits à coque"],
+    });
+    expect(allergensIn("en")[0]?.allergens?.contains).toEqual(["Gluten", "Milk"]);
+    expect(allergensIn("it")[0]?.allergens?.mayContain).toEqual(["Frutta a guscio"]);
+  });
+
+  it("laisse la clé hors de la carte quand le commerce ne sait pas", () => {
+    expect(allergensIn("en")[1]).not.toHaveProperty("allergens");
+    expect(allergensIn("fr")[1]).not.toHaveProperty("allergens");
+  });
+});

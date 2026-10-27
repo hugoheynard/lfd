@@ -1,6 +1,7 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import type {
+  StorefrontSettingsView,
   StorefrontContent,
   StaffPermission,
   StorefrontCatalogView,
@@ -140,6 +141,10 @@ class FakeStorefront {
     if (this.failure !== null) {
       throw this.failure;
     }
+  }
+  /** La place des allergènes (2026-10-27) — lue par le réglage posé dans la page. */
+  async settings(): Promise<StorefrontSettingsView> {
+    return { allergenDisplay: 'sheet', updatedAt: null };
   }
 }
 

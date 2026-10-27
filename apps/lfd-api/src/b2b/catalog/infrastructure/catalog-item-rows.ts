@@ -1,6 +1,7 @@
 import { CatalogItem } from "../domain/entities/catalog-item.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
+import { allergenTextsOf } from "./allergen-texts.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
 
@@ -23,6 +24,7 @@ export interface ItemRow {
   readonly allergenLabels: unknown;
   readonly mayContain: unknown;
   readonly allergensPrecautionary: boolean;
+  readonly allergenTexts: unknown;
   readonly note: string | null;
   readonly imageUrl: string | null;
   readonly thumbnailUrl: string | null;
@@ -135,6 +137,7 @@ export function toDomain(row: ItemRow): CatalogItem {
       allergenLabels: allergenLabelsOf(row.allergenLabels),
       mayContain: allergensOf(row.mayContain),
       allergensPrecautionary: row.allergensPrecautionary,
+      allergenTexts: allergenTextsOf(row.allergenTexts),
       orderTimeLimit: orderTimeLimitOf(row),
       note: row.note,
       image: imageOf(row),

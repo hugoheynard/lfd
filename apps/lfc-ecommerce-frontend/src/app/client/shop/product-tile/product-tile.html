@@ -58,6 +58,12 @@
       @if (madeToOrder(); as limit) {
         <span class="made-to-order" data-made-to-order>{{ limit }}</span>
       }
+      <!-- Les allergènes en court, quand la vitrine les montre aussi dans la
+           galerie (Hugo, 2026-10-27) : du texte, coupé à deux lignes — la
+           fiche les donne en liste. -->
+      @if (allergens().length > 0) {
+        <span class="allergens" data-allergens>{{ allergens().join(' · ') }}</span>
+      }
     </div>
 
     <div class="foot">

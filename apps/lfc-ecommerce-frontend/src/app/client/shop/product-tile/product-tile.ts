@@ -16,7 +16,9 @@ import {
 } from '@lfd/storefront-layout';
 
 import { ClientLocale } from '../../client-locale.service';
+import { allergenMention } from '../allergen-mention';
 import { madeToOrderShortLabel } from '../made-to-order';
+import { ShopAllergenDisplay } from '../storefront/allergen-display.service';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
@@ -133,6 +135,19 @@ export class ProductTile {
    * propre de l'article, en court — servie seulement quand elle est plus
    * stricte que la règle générale. La phrase longue est sur la fiche.
    */
+  private readonly allergenDisplay = inject(ShopAllergenDisplay).current;
+
+  /**
+   * La mention compacte des allergènes — seulement quand la vitrine les
+   * montre « aussi dans la galerie » (réglage global, Hugo, 2026-10-27) ; par
+   * défaut, la carte n'en dit rien et la fiche les donne.
+   */
+  protected readonly allergens = computed(() =>
+    this.allergenDisplay() === 'gallery'
+      ? allergenMention(this.product().allergens, this.t().product)
+      : [],
+  );
+
   protected readonly madeToOrder = computed(() =>
     madeToOrderShortLabel(this.product().orderTimeLimit, this.locale.current(), this.t().product),
   );

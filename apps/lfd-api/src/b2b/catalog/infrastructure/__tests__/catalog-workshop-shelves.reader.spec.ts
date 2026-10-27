@@ -25,6 +25,7 @@ function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
     isDefault: true,
     isFeatured: false,
     allergens: null,
+    shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },
     orderTimeLimit: null,
     note: null,
     image: null,

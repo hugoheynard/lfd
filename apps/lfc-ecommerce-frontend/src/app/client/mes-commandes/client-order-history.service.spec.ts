@@ -2,9 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { CompanyOrderListItemView } from '@lfd/contracts';
+import { throwError } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
-import { provideRecognised } from '../client-orders.fixture';
+import { AuthFacade } from '../../auth/auth.facade';
+
+import { provideRecognised, RECOGNISED } from '../client-orders.fixture';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { TOMMEUSES } from '../mon-compte/account.fixture';
 import { ClientOrderHistory } from './client-order-history.service';
@@ -147,5 +150,64 @@ describe('ClientOrderHistory — les jours de retrait (plan du récapitulatif, R
     history.chooseDays({ from: null, to: null });
     await settle();
     http.expectNone((r) => r.url.endsWith('/orders'));
+  });
+});
+
+describe('ClientOrderHistory — un échec se dit', () => {
+  /**
+   * Régression (production, 2026-10-27) : un jeton qui ne se renouvelle plus
+   * laissait « Mes commandes » vide, sans état — la personne croyait n'avoir
+   * aucune commande et a dû se déconnecter pour s'en sortir.
+   */
+  it('un jeton qui ne se renouvelle plus n’affiche plus une page Mes commandes vide', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        {
+          provide: AuthFacade,
+          useValue: {
+            ...RECOGNISED,
+            accessToken$: () => throwError(() => ({ error: 'invalid_grant' })),
+          },
+        },
+        provideWorkspace(workspaceDouble(TOMMEUSES.id, [TOMMEUSES])),
+      ],
+    });
+    const history = TestBed.inject(ClientOrderHistory);
+    TestBed.tick();
+    await settle();
+
+    expect(history.failed()).toBe(true);
+    TestBed.inject(HttpTestingController).verify();
+  });
+
+  it('un 401 de l’API pose l’échec, et une relecture réussie le lève', async () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideRecognised(),
+        provideWorkspace(workspaceDouble(TOMMEUSES.id, [TOMMEUSES])),
+      ],
+    });
+    const http = TestBed.inject(HttpTestingController);
+    const history = TestBed.inject(ClientOrderHistory);
+    TestBed.tick();
+    await settle();
+    const list = () => http.expectOne((r) => r.url.endsWith(`/companies/${TOMMEUSES.id}/orders`));
+
+    list().flush(null, { status: 401, statusText: 'Unauthorized' });
+    await settle();
+    expect(history.failed()).toBe(true);
+
+    history.reload();
+    await settle();
+    list().flush([OWN]);
+    await settle();
+    expect(history.failed()).toBe(false);
+    expect(history.orders().map((order) => order.id)).toEqual(['ord_own']);
   });
 });

@@ -8,7 +8,9 @@ import {
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import {
+  FoldButtonComponent,
   FoldElementTitleComponent,
+  FoldEmptyStateComponent,
   FoldIconComponent,
   FoldListboxComponent,
   FoldPageSectionComponent,
@@ -22,6 +24,7 @@ import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { NewOrderAction } from '../../nav/new-order-action/new-order-action';
 
+import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientChrome } from '../../client-chrome.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { ClientCompany } from '../../client-company.service';
@@ -77,7 +80,9 @@ const ALL_SITES = '';
   imports: [
     ClientBannerBlock,
     ClientBannerOutlet,
+    FoldButtonComponent,
     FoldElementTitleComponent,
+    FoldEmptyStateComponent,
     FoldIconComponent,
     FoldListboxComponent,
     FoldPageSectionComponent,
@@ -102,6 +107,13 @@ export class CommandesPage {
   private readonly panels = inject(FoldPanelHostService);
 
   private readonly history_ = inject(ClientOrderHistory);
+  private readonly auth = inject(AuthFacade);
+
+  /** La liste n'a pas pu être lue : l'état d'erreur, jamais un tableau sans lignes. */
+  protected readonly failed = this.history_.failed;
+
+  /** Une session expirée ne se relit pas : on propose de se reconnecter. */
+  protected readonly sessionExpired = this.auth.sessionExpired;
   private readonly client = inject(ClientCompany);
 
   /**
@@ -217,6 +229,10 @@ export class CommandesPage {
   }
 
   /** Une commande vient d'être annulée : la liste se relit, le suivi la quitte. */
+  protected renewSession(): void {
+    this.auth.renewSession();
+  }
+
   protected reload(): void {
     this.history_.reload();
   }

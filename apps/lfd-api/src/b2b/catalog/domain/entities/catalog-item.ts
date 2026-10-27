@@ -5,6 +5,7 @@ import {
 } from "../errors/catalog-errors.js";
 import type { ShopAudience } from "../ports/catalog.reader.js";
 import { audienceIncludes, type CatalogAudience } from "../served-to.js";
+import type { AllergenTextsByLanguage } from "../shop-allergens.js";
 
 /**
  * **L'article du catalogue B2B** — l'agrégat, et le seul chemin d'écriture.
@@ -138,6 +139,12 @@ export interface PimFacts {
    * liste vide ne se lit surtout pas « aucun allergène ».
    */
   readonly allergensPrecautionary: boolean;
+  /**
+   * **Les libellés que le client lit, par langue** — allergènes puis traces,
+   * nommés par le référentiel (`plan-allergenes-en-boutique.md`, 2026-10-27).
+   * `null` = reçu avant le champ : la vitrine ne dit rien, jamais « aucun ».
+   */
+  readonly allergenTexts: AllergenTextsByLanguage | null;
   /**
    * La limite de commande de cet article, ou `null` = **le référentiel n'en
    * déclare aucune**. Distinct d'un article d'avant le fil v6, qui porte lui

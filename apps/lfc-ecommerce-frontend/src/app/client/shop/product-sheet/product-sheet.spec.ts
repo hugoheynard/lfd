@@ -278,6 +278,58 @@ describe('ProductSheet', () => {
 
     expect(el().querySelector('[data-made-to-order]')).toBeNull();
   });
+
+  /** Les allergènes (`plan-allergenes-en-boutique.md`, Hugo, 2026-10-27). */
+  const withAllergens = (allergens: ShopItemView['allergens']): ShopItemView => ({
+    ...(TEST_ITEMS[0] as ShopItemView),
+    ...(allergens === undefined ? {} : { allergens }),
+  });
+  const lists = (): string[][] =>
+    [...el().querySelectorAll('[data-allergens] ul')].map((list) =>
+      [...list.querySelectorAll('li')].map((item) => item.textContent?.trim() ?? ''),
+    );
+
+  it('liste les allergènes, puis « Peut contenir » et ses traces', () => {
+    mount(
+      withAllergens({ state: 'declared', contains: ['Gluten', 'Lait'], mayContain: ['Sésame'] }),
+      0,
+      false,
+    );
+
+    expect(el().querySelector('[data-allergens] h3')?.textContent?.trim()).toBe('Allergènes');
+    expect(lists()).toEqual([['Gluten', 'Lait'], ['Sésame']]);
+    expect(el().querySelector('[data-may-contain]')?.textContent?.trim()).toBe('Peut contenir');
+  });
+
+  it('dit « Aucun allergène » quand c’est déclaré, et rien d’autre sans trace', () => {
+    mount(withAllergens({ state: 'none', contains: [], mayContain: [] }), 0, false);
+
+    expect(el().querySelector('[data-allergens-none]')?.textContent?.trim()).toBe(
+      'Aucun allergène',
+    );
+    expect(el().querySelector('[data-may-contain]')).toBeNull();
+    expect(lists()).toEqual([]);
+  });
+
+  it('sous précaution, encadre l’avertissement puis les traces complètes', () => {
+    mount(
+      withAllergens({ state: 'precautionary', contains: [], mayContain: ['Gluten', 'Lait'] }),
+      0,
+      false,
+    );
+
+    const callout = el().querySelector('[data-precautionary]');
+    expect(callout?.textContent).toContain('Information précise non disponible');
+    expect(callout?.querySelector('[data-may-contain]')?.textContent?.trim()).toBe('Peut contenir');
+    expect(el().querySelector('[data-allergens-none]')).toBeNull();
+    expect(lists()).toEqual([['Gluten', 'Lait']]);
+  });
+
+  it('ne dit rien des allergènes quand le serveur ne les sert pas', () => {
+    mount(withAllergens(undefined), 0, false);
+
+    expect(el().querySelector('[data-allergens]')).toBeNull();
+  });
 });
 
 describe('ProductSheet — la suggestion du staff (RS2, fiche)', () => {

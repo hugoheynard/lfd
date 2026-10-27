@@ -2,6 +2,7 @@ export {
   CATALOG_SNAPSHOT_VERSION,
   syncAllergenLabelSchema,
   syncAllergenLabelsSchema,
+  syncAllergenTextsSchema,
   syncCategorySchema,
   syncMediaSchema,
   syncOrderTimeLimitRuleSchema,
@@ -16,6 +17,7 @@ export {
 export type {
   SyncAllergenLabel,
   SyncAllergenLabels,
+  SyncAllergenTexts,
   SyncCategory,
   SyncMedia,
   SyncOrderTimeLimit,

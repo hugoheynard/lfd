@@ -3,6 +3,7 @@ import { lineTotalCents, ttcCentsOf } from "@lfd/money";
 
 import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
 import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import { shopAllergensOf } from "../domain/shop-allergens.js";
 import {
   itemOperationOf,
   shopAccessOf,
@@ -80,7 +81,19 @@ function toItem(item: ResolvedCatalogItem): ShopItemView {
     // professionnels » se lit `both`. La route publique ne rend jamais `pro` —
     // `servedTo` l'a écarté au lecteur.
     audience: item.audience,
+    // Absents quand le commerce ne sait pas — jamais « aucun allergène » par
+    // défaut, et la clé n'entre pas dans le fil pour rien.
+    ...allergensOf(item, CATALOG_SOURCE_LANGUAGE),
   };
+}
+
+/** Le bloc d'allergènes d'une carte, dans une langue — ou rien. */
+function allergensOf(
+  item: ResolvedCatalogItem,
+  language: ContentLocale,
+): Pick<ShopItemView, "allergens"> {
+  const allergens = shopAllergensOf(item.shopAllergens, language);
+  return allergens === null ? {} : { allergens };
 }
 
 /**
@@ -117,6 +130,7 @@ export function inShopLanguage(
             ...item,
             name: inLanguage(item.name, source.translations.name, language),
             note: inLanguage(item.note, source.translations.note, language),
+            ...allergensOf(source, language),
           };
     }),
     shelves: view.shelves.map((shelf) => {

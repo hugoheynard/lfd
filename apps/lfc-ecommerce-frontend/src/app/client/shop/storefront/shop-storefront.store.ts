@@ -6,6 +6,7 @@ import { firstValueFrom, type Observable, switchMap, timeout } from 'rxjs';
 import { AUTH_CONFIG } from '../../../auth/auth.config';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { ClientWorkspace } from '../../client-workspace.service';
+import { ShopAllergenDisplay } from './allergen-display.service';
 
 /** Le lecteur d'un visiteur non reconnu — la vitrine publique. */
 const VISITOR = 'visiteur';
@@ -53,6 +54,7 @@ export class ShopStorefront {
   private readonly http = inject(HttpClient);
   private readonly auth = inject(AuthFacade);
   private readonly workspace = inject(ClientWorkspace);
+  private readonly allergenDisplay = inject(ShopAllergenDisplay);
   private readonly pages = signal<ReadonlyMap<string, StorefrontPageState>>(new Map());
 
   /**
@@ -93,6 +95,7 @@ export class ShopStorefront {
         this.request(reader, shelfKey).pipe(timeout(PAGE_TIMEOUT_MS)),
       );
       this.put(key, { status: 'ready', page });
+      this.allergenDisplay.served(page.allergenDisplay);
     } catch {
       this.put(key, { status: 'failed' });
     }

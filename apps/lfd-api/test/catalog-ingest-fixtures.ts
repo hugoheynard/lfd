@@ -4,6 +4,7 @@ import {
   type SyncMedia,
   type SyncOperation,
   type SyncOrderTimeLimitRule,
+  type SyncVariant,
 } from "@lfd/catalog-sync";
 
 /**
@@ -80,6 +81,8 @@ export interface IngestedSku {
   readonly requiresCold?: boolean;
   /** La vignette de rayon (v10) — absente par défaut, comme la plupart des fiches. */
   readonly thumbnail?: SyncMedia | null;
+  /** Les libellés d'allergènes par langue (2026-10-27) — absents par défaut, comme d'un envoi d'avant. */
+  readonly allergenTexts?: SyncVariant["allergenTexts"];
 }
 
 /**
@@ -111,6 +114,7 @@ export function snapshotOf(
         publicPrice = PUBLIC_LABEL,
         operationOnly = false,
         requiresCold = false,
+        allergenTexts = null,
       }) => ({
         id: `prd_${sku}`,
         sku,
@@ -147,6 +151,7 @@ export function snapshotOf(
             allergenLabels,
             mayContain: null,
             allergensPrecautionary: false,
+            allergenTexts,
           },
         ],
       }),

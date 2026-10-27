@@ -29,6 +29,7 @@ const FACTS: PimFacts = {
   allergenLabels: null,
   mayContain: null,
   allergensPrecautionary: false,
+  allergenTexts: null,
   orderTimeLimit: null,
   note: null,
   image: null,

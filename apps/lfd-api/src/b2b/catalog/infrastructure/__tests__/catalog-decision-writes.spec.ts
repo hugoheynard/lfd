@@ -37,6 +37,7 @@ function factsOf(sku: string): PimFacts {
     allergenLabels: null,
     mayContain: null,
     allergensPrecautionary: false,
+    allergenTexts: null,
     note: null,
     image: null,
     thumbnail: null,

@@ -16,6 +16,7 @@ import { ClientOrders, type PlacedOrder } from './client-orders.service';
 export const RECOGNISED = {
   isAuthenticated: () => true,
   accessToken$: () => of('jeton-de-test'),
+  sessionExpired: () => false,
   /**
    * Aucune déclaration pro rapportée d'Auth0 — l'état de quelqu'un qui n'est
    * pas en train d'ouvrir un compte d'établissement.

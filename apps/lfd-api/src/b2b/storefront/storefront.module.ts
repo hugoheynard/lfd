@@ -8,6 +8,12 @@ import { GetStorefrontHandler } from "./application/get-storefront.handler.js";
 import { RefocusStorefrontImageHandler } from "./application/refocus-storefront-image.handler.js";
 import { RepointStorefrontImage } from "./application/repoint-storefront-image.js";
 import { SaveStorefrontHandler } from "./application/save-storefront.handler.js";
+import { GetStorefrontSettingsHandler } from "./application/get-storefront-settings.handler.js";
+import { SetStorefrontAllergenDisplayHandler } from "./application/set-storefront-allergen-display.handler.js";
+import { StorefrontSettingsReader } from "./domain/storefront-settings.reader.js";
+import { StorefrontSettingsRepository } from "./domain/storefront-settings.repository.js";
+import { PrismaStorefrontSettingsReader } from "./infrastructure/prisma-storefront-settings.reader.js";
+import { PrismaStorefrontSettingsRepository } from "./infrastructure/prisma-storefront-settings.repository.js";
 import { StorefrontImageRepointing } from "./channels/media/storefront-image-repointing.js";
 import { StorefrontMediaUsage } from "./channels/media/storefront-media-usage.js";
 import { PublicStorefrontReader } from "./domain/public-storefront.reader.js";
@@ -51,6 +57,10 @@ import { PrismaStorefrontRepository } from "./infrastructure/prisma-storefront.r
     { provide: StorefrontImageRepointing, useClass: RepointStorefrontImage },
     { provide: StorefrontCatalogReader, useClass: CatalogBackedStorefrontCatalogReader },
     { provide: StorefrontOperationsReader, useClass: CatalogBackedStorefrontOperationsReader },
+    { provide: StorefrontSettingsReader, useClass: PrismaStorefrontSettingsReader },
+    { provide: StorefrontSettingsRepository, useClass: PrismaStorefrontSettingsRepository },
+    SetStorefrontAllergenDisplayHandler,
+    GetStorefrontSettingsHandler,
     SaveStorefrontHandler,
     RefocusStorefrontImageHandler,
     GetStorefrontHandler,

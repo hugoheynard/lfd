@@ -59,7 +59,16 @@ export const DEMO_CATALOGUE: ShopCatalogueView = {
   shelves: SHELVES,
   items: [
     item(DEMO_CROISSANT, 'Croissant', 'Beurre AOP', 'croissant.svg', 120_000, SHELVES[0].id, true),
-    item('DEMO-BRIOCHE', 'Brioche', null, 'brioche.svg', 280_000, SHELVES[0].id),
+    {
+      ...item('DEMO-BRIOCHE', 'Brioche', null, 'brioche.svg', 280_000, SHELVES[0].id),
+      // La fiche que la porte axe ouvre (scène `product-sheet`) : elle porte
+      // des allergènes et des traces pour que leur bloc soit mesuré.
+      allergens: {
+        state: 'declared',
+        contains: ['Céréales contenant du gluten', 'Œufs', 'Lait'],
+        mayContain: ['Fruits à coque'],
+      },
+    },
     item('DEMO-CHAUSSON', 'Chausson aux pommes', null, 'chausson.svg', 160_000, SHELVES[0].id),
     item(
       DEMO_BAGUETTE,

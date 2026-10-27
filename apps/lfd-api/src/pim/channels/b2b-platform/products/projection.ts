@@ -1,11 +1,13 @@
 import type {
   SyncAllergenLabels,
+  SyncAllergenTexts,
   SyncContextPrice,
   SyncMedia,
   SyncVariant,
 } from "@lfd/catalog-sync";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
+import type { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
 import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
 import { effectiveAllergens } from "../../../catalogue/product/domain/services/effective-allergens.js";
 import type { CatalogTranslations } from "./translations.js";
@@ -74,7 +76,7 @@ export function projectVariant(
   vatRatePercent: number | null,
   publicTtcCents: number,
   percents: CategoryVatPercents,
-  inco: IncoProjector,
+  naming: AllergenNaming,
   context: AllergenContext,
 ): SyncVariant {
   const served = effectiveAllergens(variant.allergenSheet, context.cited, context.catalogueUnion);
@@ -92,9 +94,10 @@ export function projectVariant(
     position: variant.position,
     vatRatePercent,
     allergens: [...served.allergens],
-    allergenLabels: labelsOf(inco, served.allergens),
+    allergenLabels: labelsOf(naming.source, served.allergens),
     mayContain: [...served.mayContain],
     allergensPrecautionary: served.precautionary,
+    allergenTexts: allergenTextsOf(naming, served.allergens, served.mayContain),
   };
 }
 
@@ -171,6 +174,36 @@ function labelsOf(inco: IncoProjector, declared: readonly string[]): SyncAllerge
     ],
     incomplete: outside.unknown.length > 0,
   };
+}
+
+/**
+ * **Ce que le client lit, langue par langue** — les libellés des allergènes
+ * servis, puis ceux des traces (`documentation/pim/plan-allergenes-en-boutique.md`,
+ * décisions (a) et (b) de Hugo, 2026-10-27).
+ *
+ * Mêmes mentions que {@link labelsOf} : l'annexe II dédoublonnée (blé et seigle
+ * font un seul « gluten »), puis ce qu'on sait nommer hors d'elle. Une trace
+ * dont la mention est déjà parmi les allergènes n'est pas répétée — « Gluten »
+ * puis « peut contenir : Gluten » se contredirait sous les yeux du client.
+ */
+function allergenTextsOf(
+  naming: AllergenNaming,
+  allergens: readonly string[],
+  mayContain: readonly string[],
+): Record<string, SyncAllergenTexts> {
+  const texts: Record<string, SyncAllergenTexts> = {};
+  for (const locale of naming.locales) {
+    const inco = naming.in(locale);
+    const contains = labelsOf(inco, allergens).labels;
+    const shown = new Set(contains.map((entry) => entry.category));
+    texts[locale] = {
+      contains: contains.map((entry) => entry.label),
+      mayContain: labelsOf(inco, mayContain)
+        .labels.filter((entry) => !shown.has(entry.category))
+        .map((entry) => entry.label),
+    };
+  }
+  return texts;
 }
 
 /**

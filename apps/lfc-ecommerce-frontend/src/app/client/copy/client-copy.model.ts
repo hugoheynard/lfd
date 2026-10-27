@@ -43,6 +43,12 @@ export interface ClientCopy {
     /** L'avis après une connexion Google refusée : un compte porte déjà l'adresse. */
     readonly identityConflict: string;
     readonly identityConflictDismiss: string;
+    /**
+     * La session a expiré : Auth0 se croit connecté, mais aucun jeton ne
+     * s'obtient plus (ou l'API le refuse). Un avis, et le geste d'en sortir.
+     */
+    readonly sessionExpired: string;
+    readonly sessionExpiredRenew: string;
     /** Le bandeau d'installation : un message par contexte, puis ses deux gestes. */
     readonly installIosSafari: string;
     readonly installIosOther: string;
@@ -628,6 +634,26 @@ export interface ClientCopy {
     readonly madeToOrderShortEve: string;
     /** Le jour même, en court : `{time}`. */
     readonly madeToOrderShortSameDay: string;
+    /**
+     * Le bloc des allergènes de la fiche (`plan-allergenes-en-boutique.md`,
+     * Hugo, 2026-10-27). Les LIBELLÉS des allergènes viennent du serveur,
+     * dans la langue de la requête : la boutique n'a aucun dictionnaire
+     * d'allergènes, seulement ces quatre mots autour.
+     */
+    readonly allergens: string;
+    /** « Aucun allergène » — seulement quand c'est DÉCLARÉ. */
+    readonly allergensNone: string;
+    /** Le titre de la liste des traces. */
+    readonly allergensMayContain: string;
+    /** Une fiche sous précaution : l'encadré d'avertissement, suivi de « Peut contenir » et des traces. */
+    readonly allergensPrecautionary: string;
+    /**
+     * La mention compacte d'une carte du rayon, quand la vitrine montre les
+     * allergènes « aussi dans la galerie ». `{list}` = les libellés servis,
+     * séparés par des virgules.
+     */
+    readonly allergensTileContains: string;
+    readonly allergensTileMayContain: string;
   };
   readonly cart: {
     readonly kicker: string;

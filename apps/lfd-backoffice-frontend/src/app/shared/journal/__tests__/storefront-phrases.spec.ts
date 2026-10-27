@@ -194,3 +194,21 @@ describe('les textes des e-mails', () => {
     expect(rendered.detail).toEqual([]);
   });
 });
+
+describe('la place des allergènes en boutique (2026-10-27)', () => {
+  it('dit la nouvelle place, puis celle d’avant', () => {
+    const rendered = renderFact({
+      type: 'storefront.allergen_display_changed',
+      payload: { subjectLabel: 'Vitrine', from: 'sheet', to: 'gallery' },
+      subjectType: 'storefront',
+      subjectId: 'main',
+      actorName: 'Colette Martin',
+      actorType: 'staff',
+    });
+
+    expect(rendered.sentence).toBe(
+      'Colette Martin a réglé les allergènes de la boutique : Aussi dans la galerie (avant : Sur la fiche ouverte seulement)',
+    );
+    expect(rendered.detail).toEqual([]);
+  });
+});

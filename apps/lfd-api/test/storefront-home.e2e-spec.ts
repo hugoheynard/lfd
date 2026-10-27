@@ -162,8 +162,16 @@ describe("la page d'accueil", () => {
       await ctx.http().get("/shop/storefront/all").expect(200),
     );
 
-    expect(home).toEqual({ rows: 0, objects: [], pickupDoorImage: null, deliveryDoorImage: null });
-    expect(all).toEqual({ rows: 0, objects: [] });
+    // `allergenDisplay` voyage sur toute page depuis le 2026-10-27
+    // (`plan-allergenes-en-boutique.md`) ; les portes restent à l'accueil seul.
+    expect(home).toEqual({
+      rows: 0,
+      objects: [],
+      pickupDoorImage: null,
+      deliveryDoorImage: null,
+      allergenDisplay: "sheet",
+    });
+    expect(all).toEqual({ rows: 0, objects: [], allergenDisplay: "sheet" });
   });
 
   it("refuse une porte posée sur un rayon (400)", async () => {

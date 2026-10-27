@@ -3,6 +3,7 @@ import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { PublicStorefrontReader } from "../domain/public-storefront.reader.js";
+import { StorefrontSettingsReader } from "../domain/storefront-settings.reader.js";
 import { StorefrontOperationsReader } from "../domain/storefront-operations.reader.js";
 import { GetPublicStorefrontPageQuery } from "./get-public-storefront-page.query.js";
 import {
@@ -24,14 +25,23 @@ export class GetPublicStorefrontPageHandler implements IQueryHandler<
     private readonly reader: PublicStorefrontReader,
     private readonly operations: StorefrontOperationsReader,
     private readonly clock: Clock,
+    private readonly settings: StorefrontSettingsReader,
   ) {}
 
   async execute(query: GetPublicStorefrontPageQuery): Promise<PublicStorefrontPageView> {
-    const page = await this.reader.pageOf(query.shelfKey);
+    const [page, setting] = await Promise.all([
+      this.reader.pageOf(query.shelfKey),
+      this.settings.allergenDisplay(),
+    ]);
     const audience = query.companyId === null ? "public" : "pro";
     const shown = hasOperationAnnouncements(page)
       ? await this.operations.shownTo(audience, this.clock.now())
       : new Map();
-    return resolveOperationAnnouncements(page, shown, query.shelfKey);
+    // La place des allergènes voyage sur TOUTE page (Hugo, 2026-10-27) : la
+    // boutique la lit avec ce qu'elle charge déjà, sans appel de plus.
+    return {
+      ...resolveOperationAnnouncements(page, shown, query.shelfKey),
+      allergenDisplay: setting.allergenDisplay,
+    };
   }
 }

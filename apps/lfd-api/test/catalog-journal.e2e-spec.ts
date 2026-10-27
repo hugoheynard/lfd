@@ -92,6 +92,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
           allergenLabels: null,
           mayContain: null,
           allergensPrecautionary: false,
+          allergenTexts: null,
         },
       ],
       note: null,

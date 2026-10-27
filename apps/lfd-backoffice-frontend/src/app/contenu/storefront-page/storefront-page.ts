@@ -41,6 +41,7 @@ import type { HasPendingChanges } from '../../pim/catalogue/product-form/pending
 import { type EditorBlock, itemsOf, toneOf } from '../storefront-block';
 import { PointerDrag } from '../storefront-drag';
 import { HOME_LABEL, StorefrontEditorStore } from '../storefront-editor.store';
+import { StorefrontAllergenSetting } from '../storefront-allergen-setting/storefront-allergen-setting';
 import { StorefrontDoorPanel } from '../storefront-door-panel/storefront-door-panel';
 import { StorefrontMediaMock } from '../storefront-media-mock/storefront-media-mock';
 import { StorefrontMobilePreview } from '../storefront-mobile-preview/storefront-mobile-preview';
@@ -79,6 +80,7 @@ const ARROW_STEPS: Readonly<Record<string, Cell>> = {
 @Component({
   selector: 'app-storefront-page',
   imports: [
+    StorefrontAllergenSetting,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,

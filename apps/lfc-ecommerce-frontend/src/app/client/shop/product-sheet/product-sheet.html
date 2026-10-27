@@ -65,6 +65,44 @@
         }
       </div>
 
+      <!-- Les allergènes, SOUS le prix, sur la fiche seulement (Hugo,
+           2026-10-27) : des LISTES (RGAA 9.3), le texte seul porte
+           l'information — aucune couleur ne la dit. -->
+      @if (allergens(); as served) {
+        <section class="allergens" aria-labelledby="sheet-allergens" data-allergens>
+          <h3 class="allergens-title" id="sheet-allergens">{{ t().product.allergens }}</h3>
+          @if (served.contains.length > 0) {
+            <ul class="allergen-list" aria-labelledby="sheet-allergens">
+              @for (label of served.contains; track label) {
+                <li>{{ label }}</li>
+              }
+            </ul>
+          } @else if (served.none) {
+            <p class="allergen-line" data-allergens-none>{{ t().product.allergensNone }}</p>
+          }
+          @if (served.precautionary) {
+            <fold-callout variant="warning" data-precautionary>
+              <p class="allergen-line">{{ t().product.allergensPrecautionary }}</p>
+              <ng-container *ngTemplateOutlet="traces" />
+            </fold-callout>
+          } @else if (served.mayContain.length > 0) {
+            <div class="allergen-traces">
+              <ng-container *ngTemplateOutlet="traces" />
+            </div>
+          }
+          <ng-template #traces>
+            <p class="allergen-line" id="sheet-may-contain" data-may-contain>
+              {{ t().product.allergensMayContain }}
+            </p>
+            <ul class="allergen-list" aria-labelledby="sheet-may-contain">
+              @for (label of served.mayContain; track label) {
+                <li>{{ label }}</li>
+              }
+            </ul>
+          </ng-template>
+        </section>
+      }
+
       @if (staffPick.current(); as view) {
         @if (view.sku !== piece.sku) {
           <app-staff-suggestion-card

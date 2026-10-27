@@ -46,6 +46,15 @@ export const SHOP_COPY_LOCALE = domain('langue d’un texte de la boutique', {
   it: 'Italien',
 });
 
+/**
+ * La place des allergènes en boutique (`storefront.allergen_display_changed`,
+ * 2026-10-27) — les mots du réglage de la page Vitrine.
+ */
+export const ALLERGEN_DISPLAY = domain('place des allergènes en boutique', {
+  sheet: 'Sur la fiche ouverte seulement',
+  gallery: 'Aussi dans la galerie',
+});
+
 /** Les textes avec lesquels un essai d'e-mail est parti (`mail_copy.trial_sent`). */
 export const MAIL_COPY_SOURCE = domain('textes d’un essai d’e-mail', {
   draft: 'Brouillons',
@@ -79,6 +88,7 @@ export const COMMERCE_VALUES: ValueFamily = {
     APPOINTMENT_CHANNEL,
     PLAY,
     SHOP_COPY_LOCALE,
+    ALLERGEN_DISPLAY,
     MAIL_COPY_SOURCE,
     SUGGESTION_TRIGGER,
     SUGGESTION_PLACEMENT,

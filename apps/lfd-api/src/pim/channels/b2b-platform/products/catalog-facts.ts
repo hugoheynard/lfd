@@ -2,7 +2,7 @@ import type { SyncMedia, SyncVariant } from "@lfd/catalog-sync";
 import { proPriceOf } from "@lfd/pim-contracts";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
-import type { IncoProjector } from "../../../allergens/domain/services/inco-projector.js";
+import type { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
 import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import type { ProductStatus } from "../../../catalogue/product/domain/entities/product.js";
 import {
@@ -119,7 +119,8 @@ export interface ProductFactInput {
    * se vend.
    */
   readonly rules: CompletenessRules;
-  readonly inco: IncoProjector;
+  /** Le référentiel des allergènes, projeté dans chaque langue (le français fait foi). */
+  readonly naming: AllergenNaming;
   readonly showcase: Showcase | undefined;
   /**
    * Les allergènes que la composition de la fiche cite — ajoutés à ce que
@@ -224,7 +225,7 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVa
       vatRatePercent,
       variant.priceCents,
       input.percents,
-      input.inco,
+      input.naming,
       { cited: input.cited, catalogueUnion: input.catalogueUnion },
     ),
     nameTranslations: variantNameTranslationsOf(variant.name, input.product.name),
