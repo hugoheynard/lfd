@@ -214,14 +214,13 @@ describe('PublicHousePickerDialog', () => {
   });
 
   /**
-   * ⚠️ Sans remise, l'étiquette annonce un TARIF et non un gain : elle est
-   * alors rendue en sourdine (`is-plain`). La distinction est ce qui empêche
-   * « Prix boutique » de ressembler à un avantage.
+   * Au particulier, un point sans remise ne porte plus d'étiquette : « Prix
+   * boutique » ne lui apprenait rien (Hugo, 2026-10-27).
    */
-  it('distingue une vraie remise d’un simple tarif', () => {
+  it('ne montre au particulier que les vraies remises', () => {
     const rendered = houses(boot().fixture);
 
-    expect(rendered[0]?.querySelector('.offer')?.classList.contains('is-plain')).toBe(true);
+    expect(rendered[0]?.querySelector('.offer')).toBeNull();
     expect(rendered[1]?.querySelector('.offer')?.classList.contains('is-plain')).toBe(false);
   });
 

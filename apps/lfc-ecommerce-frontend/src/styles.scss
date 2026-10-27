@@ -172,46 +172,9 @@ summary,
   backdrop-filter: blur(4px);
 }
 
-/* 🔴 « FERMER » EN TOUTES LETTRES, PAS UNE CROIX (Hugo, 2026-09-20), sur les
-   deux dialogues de commande — la maquette écrit le mot.
-   ⚠️ L'heure l'a quitté le 2026-10-27 (Hugo : « une croix à la place de fermer
-   en haut à droite », la barre du panier en pied) : seul le point de retrait
-   l'écrit encore.
-
-   Ici et non dans les composants : le bouton de fermeture vit dans `.ph__close`,
-   à l'intérieur de `fold-panel-header`, encapsulé. Trois routes ont été
-   essayées et mesurées avant celle-ci (2026-09-20) :
-   — le slot `[actions]` de l'en-tête N'EST PAS RENDU en variante `eyebrow` :
-     ce qu'on y projette reste orphelin à côté de `.ph` ;
-   — `--fold-icon-size-sm` ne réduit pas la croix : le bouton garde ses 28 px ;
-   — se passer de `fold-panel-header` coûte le NOM ACCESSIBLE du dialogue —
-     `aria-labelledby` est posé par le panneau, reste en place quand l'en-tête
-     s'en va, et pointe alors vers un id qui n'existe plus.
-
-   Le mot vient de `attr(aria-label)`, que fold remplit déjà avec notre
-   traduction : rien à écrire en dur, et il suit la langue tout seul.
-
-   La portée est tenue par `:has()` — les autres panneaux de l'app gardent leur
-   croix, qui est la bonne affordance là où l'en-tête porte un vrai titre. */
-.panel:has(app-public-house-picker-dialog) .ph__close {
-  width: auto;
-  height: 28px;
-  padding: 0 2px;
-  font-family: var(--fold-font-sans);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
-  color: var(--fold-color-text-secondary);
-}
-
-.panel:has(app-public-house-picker-dialog) .ph__close fold-icon {
-  display: none;
-}
-
-.panel:has(app-public-house-picker-dialog) .ph__close::after {
-  content: attr(aria-label);
-}
+/* La croix partout (Hugo, 2026-10-27 : « tous les dialogs devraient avoir une
+   croix pour fermer, pas le mot fermer »). Le point de retrait écrivait
+   « FERMER » depuis le 2026-09-20 par une règle d'ici ; elle est retirée. */
 
 /* ── LE MOUVEMENT RÉDUIT, POUR TOUTE L'APP ───────────────────────────────────
    RGAA 13.8 (lot A4, 2026-10-26). Vingt-neuf feuilles de `client/` animent,

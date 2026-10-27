@@ -47,9 +47,11 @@
             }
           </span>
 
-          <span class="offer" [class.is-plain]="!house.offer.hasOffer">
-            {{ house.offer.label }}
-          </span>
+          @if (house.showsOffer) {
+            <span class="offer" [class.is-plain]="!house.offer.hasOffer">
+              {{ house.offer.label }}
+            </span>
+          }
         </button>
       </li>
     }

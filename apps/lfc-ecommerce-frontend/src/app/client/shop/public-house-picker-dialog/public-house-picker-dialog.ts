@@ -43,6 +43,12 @@ interface House {
   readonly place: string;
   readonly offer: { readonly label: string; readonly hasOffer: boolean };
   /**
+   * L'étiquette se montre-t-elle ? Toujours au pro (« Prix pro » est un tarif
+   * qui le distingue) ; au particulier, seulement s'il y a une remise —
+   * « Prix boutique » ne lui apprenait rien (Hugo, 2026-10-27).
+   */
+  readonly showsOffer: boolean;
+  /**
    * La maison d'où l'on VIENT — celle que le dialogue a reçue en entrant.
    *
    * ⚠️ Distincte de {@link selected}, et il faut les deux : la pastille
@@ -152,12 +158,14 @@ export class PublicHousePickerDialog {
     return this.points
       .pickups()
       .filter((point) => day === null || servesOn(this.points.nextDayFor(point.id), day))
-      .map((point) => ({
+      .map((point) => ({ point, offer: pickupOffer(point, audience, copy) }))
+      .map(({ point, offer }) => ({
         point,
         // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
-        offer: pickupOffer(point, audience, copy),
+        offer,
+        showsOffer: audience === 'b2b' || offer.hasOffer,
         current: point.id === currentId,
         selected: point.id === selectedId,
         ready: readyLabel(point, this.c().readyFrom),
