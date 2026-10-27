@@ -13,6 +13,22 @@
     "account.invoices.delivered": null,
     "account.invoices.notDelivered": null,
     "account.depositAllowedLabel": null,
-    "account.depositAllowedHint": null
+    "account.depositAllowedHint": null,
+    "steps.where.label": null,
+    "steps.where.hint": null,
+    "steps.when.label": null,
+    "steps.when.hint": null,
+    "steps.what.label": null,
+    "steps.what.hint": null,
+    "steps.doneLabel": null,
+    "steps.pro.where.label": null,
+    "steps.pro.where.hint": null,
+    "steps.pro.when.label": null,
+    "steps.pro.when.hint": null,
+    "steps.pro.what.label": null,
+    "steps.pro.what.hint": null,
+    "cart.feeVatStandard": null,
+    "cart.feeVatProrata": null,
+    "accueilPublic.hello.lede": null
   }
 }
