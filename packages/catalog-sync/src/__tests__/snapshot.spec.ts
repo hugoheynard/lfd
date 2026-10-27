@@ -123,6 +123,20 @@ describe("syncVariantSchema", () => {
     expect(syncVariantSchema.safeParse(priceless).success).toBe(false);
   });
 
+  it("accepte un prix pro `null` — pas vendable aux pros, jamais gratuit", () => {
+    expect(syncVariantSchema.safeParse({ ...variant, priceMillicents: null }).success).toBe(true);
+  });
+
+  it("accepte un prix public `null` avec une carte de contextes vide", () => {
+    const parsed = syncVariantSchema.safeParse({
+      ...variant,
+      publicTtcCents: null,
+      publicByContext: {},
+    });
+
+    expect(parsed.success).toBe(true);
+  });
+
   it("refuse un prix à virgule — l'argent est en centimes entiers", () => {
     expect(syncVariantSchema.safeParse({ ...variant, priceMillicents: 2.5 }).success).toBe(false);
   });

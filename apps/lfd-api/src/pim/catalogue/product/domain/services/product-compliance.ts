@@ -1,7 +1,13 @@
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
 import { effectiveAllergens } from "./effective-allergens.js";
-import { variantGaps, type CompletenessRules } from "./variant-completeness.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
+import {
+  missingAudiencePrices,
+  variantGaps,
+  type CompletenessRules,
+  type ServedAudience,
+} from "./variant-completeness.js";
 
 /** `blocking` refuse l'activation ; `warning` se signale sans rien refuser. */
 export type ComplianceSeverity = "blocking" | "warning";
@@ -38,8 +44,25 @@ export interface AllergensPrecautionaryFinding {
   readonly sku: string;
 }
 
+/**
+ * Une fiche « les deux » dont une déclinaison vivante n'a qu'UN des deux prix
+ * (`plan-prix-manquant-non-bloquant.md`, 2026-10-27) : elle se vend à
+ * l'audience dont elle a le prix, et à elle seule. `audience` nomme celle qui
+ * n'est pas servie. Toujours un avertissement — l'activation l'ignore.
+ */
+export interface PriceMissingForAudienceFinding {
+  readonly code: "price_missing_for_audience";
+  readonly severity: "warning";
+  readonly variantId: string;
+  readonly sku: string;
+  readonly audience: ServedAudience;
+}
+
 export type ComplianceFinding =
-  AllVariantsDiscontinuedFinding | VariantIncompleteFinding | AllergensPrecautionaryFinding;
+  | AllVariantsDiscontinuedFinding
+  | VariantIncompleteFinding
+  | PriceMissingForAudienceFinding
+  | AllergensPrecautionaryFinding;
 
 /**
  * **Le jugement UNIQUE d'une fiche** — activation, refus de `publish`, champ
@@ -53,6 +76,9 @@ export type ComplianceFinding =
  * Les allergènes ne refusent plus rien (2026-10-27) : la règle A corrige ce
  * que la composition cite, sans constat ; la règle B signale seulement.
  *
+ * `audience` : la clientèle EFFECTIVE de la fiche — un prix n'est exigé que
+ * pour les audiences visées (2026-10-27).
+ *
  * Une déclinaison arrêtée n'est jugée sur rien : elle ne se vend plus.
  */
 export function productCompliance(
@@ -60,6 +86,7 @@ export function productCompliance(
   vatPercents: CategoryVatPercents,
   rules: CompletenessRules,
   citedAllergens: readonly string[],
+  audience: Audience,
 ): ComplianceFinding[] {
   const live = variants.filter((variant) => !variant.isDiscontinued);
   if (live.length === 0) {
@@ -67,7 +94,7 @@ export function productCompliance(
   }
   const judged = live.map((variant) => ({
     variant,
-    missing: variantGaps(variant, vatPercents, rules),
+    missing: variantGaps(variant, vatPercents, rules, audience),
   }));
   const severity: ComplianceSeverity = judged.some((entry) => entry.missing.length === 0)
     ? "warning"
@@ -81,12 +108,40 @@ export function productCompliance(
       sku: variant.sku,
       missing,
     }));
-  return [...incomplete, ...precautionary(live, citedAllergens)];
+  return [...incomplete, ...halfPriced(live, audience), ...precautionary(live, citedAllergens)];
 }
 
 /** Aucun constat bloquant. */
 export function isCompliantForActivation(findings: readonly ComplianceFinding[]): boolean {
   return findings.every((finding) => finding.severity !== "blocking");
+}
+
+/**
+ * Les déclinaisons d'une fiche « les deux » à qui manque UN prix — sans aucun,
+ * c'est `variant_incomplete` qui le dit, pas une seconde ligne.
+ */
+function halfPriced(
+  live: readonly VariantSnapshot[],
+  audience: Audience,
+): PriceMissingForAudienceFinding[] {
+  if (audience !== "both") {
+    return [];
+  }
+  return live.flatMap((variant) => {
+    const unpriced = missingAudiencePrices(variant, audience);
+    const [missing] = unpriced;
+    return unpriced.length === 1 && missing !== undefined
+      ? [
+          {
+            code: "price_missing_for_audience" as const,
+            severity: "warning" as const,
+            variantId: variant.id,
+            sku: variant.sku,
+            audience: missing,
+          },
+        ]
+      : [];
+  });
 }
 
 /** Les déclinaisons servies par précaution — {@link effectiveAllergens}, règle B. */

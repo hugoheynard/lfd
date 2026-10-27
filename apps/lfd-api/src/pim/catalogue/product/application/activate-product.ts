@@ -10,6 +10,8 @@ import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "./completeness-support.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import { requireCategory } from "../../category/application/category-support.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -26,8 +28,11 @@ export class ActivateProductCommand {
  * effectif résolu comme la projection le résout (`CatalogueReader.vatPercents`,
  * la même lecture que `feed-projection.service.ts`), les contextes de vente en
  * service, la règle du prix pro (`readCompletenessRules`) et les allergènes
- * que sa composition cite (`CitedAllergensReader`, jugement unique). L'audience n'y
- * entre plus : une fiche complète sert tous les contextes en service.
+ * que sa composition cite (`CitedAllergensReader`, jugement unique). L'audience
+ * de la famille y entre de nouveau depuis le 2026-10-27, pour le seul prix :
+ * une fiche n'exige que le prix d'une audience qu'elle vise
+ * (`plan-prix-manquant-non-bloquant.md`) ; les taux, eux, restent exigés pour
+ * tous les contextes en service.
  *
  * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement
  * (UE) n° 1169/2011 les exempte dans les deux cas de vente de La Folie Coffee
@@ -43,6 +48,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     private readonly emitter: CatalogEmitter,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
+    private readonly categories: CategoryRepository,
   ) {}
 
   async execute(command: ActivateProductCommand): Promise<void> {
@@ -70,11 +76,17 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
   /** Résout ce que la fiche ne voit pas, puis la laisse juger. */
   private async activate(product: Product): Promise<boolean> {
     const record = product.snapshot();
-    const [vat, rules, cited] = await Promise.all([
+    const [vat, rules, cited, category] = await Promise.all([
       this.catalogue.vatPercents([record]),
       readCompletenessRules(this.contexts),
       this.cited.ofProducts([record.id]),
+      requireCategory(this.categories, record.categoryId),
     ]);
-    return product.activate(vat.get(record.id) ?? {}, rules, cited.get(record.id) ?? []);
+    return product.activate(
+      vat.get(record.id) ?? {},
+      rules,
+      cited.get(record.id) ?? [],
+      category.audience,
+    );
   }
 }

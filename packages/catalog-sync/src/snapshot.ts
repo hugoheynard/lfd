@@ -169,11 +169,18 @@ export const syncVariantSchema = z.object({
    * étages de la résolution de prix (mercuriale, volume, promo) viennent encore
    * au-dessus. Rien de tout cela ne remonte jamais ici.
    *
-   * Requis : une déclinaison sans prix n'est pas vendable, et l'émetteur doit
-   * l'exclure en le **disant**, pas la pousser avec un trou que le récepteur
-   * interpréterait en gratuit.
+   * **`null` = pas de prix pro : l'article n'est pas vendable aux
+   * professionnels**, jamais « gratuit ». Depuis le 2026-10-27
+   * (`documentation/pricing/plan-prix-manquant-non-bloquant.md`), une
+   * déclinaison se publie dès qu'elle a le prix d'au moins une audience de sa
+   * fiche ; le récepteur ne la sert qu'à l'audience dont elle a le prix.
+   * Une déclinaison sans AUCUN prix reste exclue par l'émetteur, qui le dit.
+   *
+   * ⚠️ Élargi sans changer de version : un fait déjà stocké porte un nombre et
+   * se relit tel quel ; un fait portant `null` n'est plus relisible par un code
+   * d'avant — le retour arrière de ce changement se fait en avant.
    */
-  priceMillicents: z.number().int().nonnegative(),
+  priceMillicents: z.number().int().nonnegative().nullable(),
   weightGrams: z.number().int().positive().nullable(),
   isDefault: z.boolean(),
   position: z.number().int().nonnegative(),
@@ -215,9 +222,12 @@ export const syncVariantSchema = z.object({
    * comptables. Elle arrivait jusqu'à la projection et s'y arrêtait ; depuis la
    * v9 elle traverse, parce qu'une boutique grand public doit AFFICHER un TTC.
    *
-   * `null` avant la v9 (cf. {@link storedCatalogSnapshotSchema}).
+   * **`null` = pas de prix public : l'article n'est pas vendable au public**,
+   * jamais « gratuit » (2026-10-27, même plan que `priceMillicents`).
+   * `publicByContext` est alors vide. Absent avant la v9 (cf.
+   * {@link storedCatalogSnapshotSchema}).
    */
-  publicTtcCents: z.number().int().nonnegative(),
+  publicTtcCents: z.number().int().nonnegative().nullable(),
   /**
    * **Le prix public, par contexte de vente** — une entrée par contexte RÉGLÉ
    * sur la famille, indexée par sa clé (`takeaway`, `eatIn`, …).
@@ -673,9 +683,11 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // lit donc « on ne sait pas ce qu'un particulier paierait », ce qui
             // est exact : elle ne le portait pas. ⚠️ Le repli n'est PAS un prix
             // à zéro et ne peut pas l'être : un prix manquant qui se lit
-            // « gratuit » est la faute que `priceMillicents` refuse déjà en
-            // étant requis.
-            publicTtcCents: z.number().int().nonnegative().optional(),
+            // « gratuit » est la faute que le fil refuse en le disant `null`
+            // (« pas vendable au public »). Cette ligne invoquait jusqu'au
+            // 2026-10-27 un `priceMillicents` requis ; il est nullable depuis
+            // (`plan-prix-manquant-non-bloquant.md`), vérifié ce jour-là.
+            publicTtcCents: z.number().int().nonnegative().nullable().optional(),
             publicByContext: z.record(z.string().min(1), syncContextPriceSchema).optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un

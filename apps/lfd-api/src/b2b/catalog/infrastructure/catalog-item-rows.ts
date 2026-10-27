@@ -13,7 +13,7 @@ export interface ItemRow {
   readonly name: string;
   readonly kind: string;
   readonly categoryId: string;
-  readonly priceMillicents: number;
+  readonly priceMillicents: number | null;
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;

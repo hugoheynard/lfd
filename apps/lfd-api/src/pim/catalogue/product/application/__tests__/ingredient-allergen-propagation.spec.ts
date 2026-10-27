@@ -338,8 +338,8 @@ describe("ApplyIngredientAllergenPropagation", () => {
     const written = run.sheets.calls[0]?.declaration;
     const after = fiche("p_none", written?.allergens ?? null);
 
-    expect(before?.isActivatableWith(vat, rules, ["GB"])).toBe(true);
+    expect(before?.isActivatableWith(vat, rules, ["GB"], "both")).toBe(true);
     expect(written?.allergens).toEqual(["GB"]);
-    expect(Product.reconstitute(after).isActivatableWith(vat, rules, ["GB"])).toBe(true);
+    expect(Product.reconstitute(after).isActivatableWith(vat, rules, ["GB"], "both")).toBe(true);
   });
 });

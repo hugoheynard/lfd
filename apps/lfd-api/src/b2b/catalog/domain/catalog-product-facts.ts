@@ -80,8 +80,8 @@ export interface EntryVariant {
   readonly sku: string;
   readonly name: string;
   readonly isDefault: boolean;
-  /** Le prix pro HT proposé, en millicentimes. */
-  readonly proHtMillicents: number;
+  /** Le prix pro HT proposé, en millicentimes — `null` : pas vendable aux pros (2026-10-27). */
+  readonly proHtMillicents: number | null;
   /** L'étiquette publique proposée, en centimes TTC — `null` si le fait n'en porte pas. */
   readonly publicTtcCents: number | null;
 }

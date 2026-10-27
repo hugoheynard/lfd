@@ -73,4 +73,14 @@ describe("itemUpsertStatements", () => {
   it("ne rend rien pour un lot vide", () => {
     expect(itemUpsertStatements([])).toEqual([]);
   });
+
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la colonne est nullable. */
+  it("écrit un prix pro absent en NULL, jamais en zéro", () => {
+    const [statement] = itemUpsertStatements([
+      row(1, { priceMillicents: null, publicByContext: {} }),
+    ]);
+
+    expect(statement?.sql).toContain("NULL");
+    expect(statement?.values).not.toContain(0);
+  });
 });

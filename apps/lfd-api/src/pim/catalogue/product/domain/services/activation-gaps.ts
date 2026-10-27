@@ -1,4 +1,5 @@
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { VariantSnapshot } from "../entities/variant.js";
 import { productCompliance, type ComplianceFinding } from "./product-compliance.js";
 import type { CompletenessRules } from "./variant-completeness.js";
@@ -36,8 +37,11 @@ export function activationGaps(
   vatPercents: CategoryVatPercents,
   rules: CompletenessRules,
   citedAllergens: readonly string[],
+  audience: Audience,
 ): ActivationGaps {
-  return activationGapsOf(productCompliance(variants, vatPercents, rules, citedAllergens));
+  return activationGapsOf(
+    productCompliance(variants, vatPercents, rules, citedAllergens, audience),
+  );
 }
 
 /** Les constats bloquants d'un jugement, sous la forme du refus. */

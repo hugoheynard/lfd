@@ -70,23 +70,32 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
       return {
         ...product.snapshot(),
         ...audienceView(product, categoryAudience),
-        ...activationView(product, vat.get(product.id) ?? {}, rules, cited.get(product.id) ?? []),
+        ...activationView(product, {
+          vat: vat.get(product.id) ?? {},
+          rules,
+          citedAllergens: cited.get(product.id) ?? [],
+          categoryAudience,
+        }),
       };
     });
   }
 }
 
-function activationView(
-  product: Product,
-  vat: CategoryVatPercents,
-  rules: CompletenessRules,
-  citedAllergens: readonly string[],
-): ActivationView {
+/** Ce que la fiche ne voit pas d'elle-même, résolu pour la liste. */
+interface Resolved {
+  readonly vat: CategoryVatPercents;
+  readonly rules: CompletenessRules;
+  readonly citedAllergens: readonly string[];
+  readonly categoryAudience: Audience;
+}
+
+function activationView(product: Product, resolved: Resolved): ActivationView {
   if (product.status !== "draft") {
     return { activatable: false, activationGaps: null };
   }
+  const { vat, rules, citedAllergens, categoryAudience } = resolved;
   return {
-    activatable: product.isActivatableWith(vat, rules, citedAllergens),
-    activationGaps: product.activationGapsWith(vat, rules, citedAllergens),
+    activatable: product.isActivatableWith(vat, rules, citedAllergens, categoryAudience),
+    activationGaps: product.activationGapsWith(vat, rules, citedAllergens, categoryAudience),
   };
 }

@@ -1,4 +1,5 @@
 import {
+  missingAudiencePrices,
   requiredContexts,
   variantGaps,
   type CompletenessInput,
@@ -22,11 +23,11 @@ const ALL = { b2b: 5.5, takeaway: 5.5, eatIn: 10 };
 
 describe("variantGaps", () => {
   it("ne manque rien à une déclinaison complète", () => {
-    expect(variantGaps(COMPLETE, ALL, RULES)).toEqual([]);
+    expect(variantGaps(COMPLETE, ALL, RULES, "both")).toEqual([]);
   });
 
   it("nomme tout ce qui manque, dans l'ordre de l'écran", () => {
-    expect(variantGaps({ ...COMPLETE, priceCents: null }, {}, RULES)).toEqual([
+    expect(variantGaps({ ...COMPLETE, priceCents: null }, {}, RULES, "public")).toEqual([
       "price",
       "vat:b2b",
       "vat:takeaway",
@@ -40,22 +41,24 @@ describe("variantGaps", () => {
    * l'absence se sert par précaution (`effective-allergens.ts`).
    */
   it("ne compte plus les allergènes parmi les manques", () => {
-    expect(variantGaps(COMPLETE, ALL, RULES)).not.toContain("allergens");
+    expect(variantGaps(COMPLETE, ALL, RULES, "both")).not.toContain("allergens");
   });
 
   it("ignore l'audience : un contexte en service manque même s'il ne sert personne aujourd'hui", () => {
-    expect(variantGaps(COMPLETE, { b2b: 5.5, takeaway: 5.5 }, RULES)).toEqual(["vat:eatIn"]);
+    expect(variantGaps(COMPLETE, { b2b: 5.5, takeaway: 5.5 }, RULES, "both")).toEqual([
+      "vat:eatIn",
+    ]);
   });
 
   it("ne demande rien pour un contexte hors service", () => {
-    expect(variantGaps(COMPLETE, { b2b: 5.5 }, { ...RULES, activeContextKeys: ["b2b"] })).toEqual(
-      [],
-    );
+    expect(
+      variantGaps(COMPLETE, { b2b: 5.5 }, { ...RULES, activeContextKeys: ["b2b"] }, "both"),
+    ).toEqual([]);
   });
 
   /** Le prix pro HT saisi est sa seule source (lot R3, 2026-10-27). */
-  it("nomme le prix pro manquant sans saisie", () => {
-    expect(variantGaps({ ...COMPLETE, proPriceMillicents: null }, ALL, RULES)).toEqual([
+  it("nomme le prix pro manquant sans saisie, sur une fiche « pro »", () => {
+    expect(variantGaps({ ...COMPLETE, proPriceMillicents: null }, ALL, RULES, "pro")).toEqual([
       "pro_price",
     ]);
   });
@@ -67,7 +70,44 @@ describe("variantGaps", () => {
   it("ne nomme jamais le rapport pro", () => {
     const empty = { priceCents: null, proPriceMillicents: null, allergenSheet: null };
 
-    expect(variantGaps(empty, {}, RULES)).not.toContain("pro_price_rule");
+    expect(variantGaps(empty, {}, RULES, "both")).not.toContain("pro_price_rule");
+  });
+});
+
+/**
+ * Les six lignes du §2 de `plan-prix-manquant-non-bloquant.md` (2026-10-27) :
+ * vendable dès qu'elle a le prix d'AU MOINS UNE audience visée.
+ */
+describe("variantGaps — le prix d'au moins une audience visée", () => {
+  const NO_PUBLIC = { ...COMPLETE, priceCents: null };
+  const NO_PRO = { ...COMPLETE, proPriceMillicents: null };
+  const NONE = { priceCents: null, proPriceMillicents: null };
+
+  it.each([
+    ["both", COMPLETE, []],
+    ["both", NO_PRO, []],
+    ["both", NO_PUBLIC, []],
+    ["public", NO_PUBLIC, ["price"]],
+    ["pro", NO_PRO, ["pro_price"]],
+    ["both", NONE, ["price", "pro_price"]],
+  ] as const)("fiche %s : %o → %o", (audience, variant, expected) => {
+    expect(variantGaps(variant, ALL, RULES, audience)).toEqual(expected);
+  });
+
+  it("n'exige jamais le prix d'une audience que la fiche ne vise pas", () => {
+    expect(variantGaps(NO_PRO, ALL, RULES, "public")).toEqual([]);
+    expect(variantGaps(NO_PUBLIC, ALL, RULES, "pro")).toEqual([]);
+  });
+});
+
+describe("missingAudiencePrices", () => {
+  it("rend les audiences visées sans prix, et elles seules", () => {
+    expect(missingAudiencePrices({ ...COMPLETE, proPriceMillicents: null }, "both")).toEqual([
+      "pro",
+    ]);
+    expect(missingAudiencePrices({ ...COMPLETE, priceCents: null }, "both")).toEqual(["public"]);
+    expect(missingAudiencePrices({ ...COMPLETE, priceCents: null }, "pro")).toEqual([]);
+    expect(missingAudiencePrices(COMPLETE, "both")).toEqual([]);
   });
 });
 

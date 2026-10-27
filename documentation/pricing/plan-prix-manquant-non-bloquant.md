@@ -1,5 +1,29 @@
 # Plan — un prix manquant ne retire plus la fiche
 
+> ✅ **Bâti le 2026-10-27 (non commité)** — lots P1 à P4. Ce qui a changé par
+> rapport au texte ci-dessous :
+>
+> - **L'audience de la famille entre dans le jugement de la fiche.**
+>   `productCompliance`, `activationGaps` et les méthodes de `Product`
+>   (`activate`, `complianceWith`, `activationGapsWith`, `isActivatableWith`)
+>   prennent `categoryAudience` ; la fiche en tire son audience effective
+>   (dérogation, sinon famille). `ActivateProductHandler` et
+>   `ListProductComplianceWarningsHandler` lisent donc désormais la famille
+>   (`CategoryRepository`). La migration se nomme
+>   `20261027170000_un_prix_pro_manquant_ne_retire_plus_l_article`.
+> - **Plus de lecteurs que la liste du §3 P3** : le contrat admin
+>   `CatalogAdminItemView.pimPriceMillicents` (`@lfd/contracts`) devient
+>   nullable, l'export CSV laisse la cellule vide et dit « Sans prix pro », la
+>   vue « Catalogue publié » met la cellule pro en `incomplet`, et le rayon du
+>   back-office (`shelf-catalogue.html`) montre un badge « sans prix pro ».
+>   L'upsert en SQL brut écrivait déjà `NULL` pour une valeur nulle ; un test
+>   le fige.
+> - **P4** : `findingText` vit dans `pim/catalogue/product-compliance.ts`, pas
+>   sous `products-page/`. Le libellé ajoute le geste de sortie (« Saisissez-le
+>   dans la section « Tarif » »).
+> - **E2E** : la suite « catalog-parity » nommée au §5 n'existe pas (2026-10-27) ; les cas
+>   à moitié tarifés sont dans `catalog-ingest.e2e-spec.ts`.
+
 > 📝 Plan du 2026-10-27, décision de Hugo du même jour : « prix pro manquant ne
 > devrait pas être bloquant en effet mais indiqué dans la table si audience les
 > deux et pas de prix public ou pro ». Touche l'argent et une migration :
@@ -112,7 +136,7 @@ flowchart LR
 ### Lot P4 — la table du référentiel le dit
 
 - Back-office PIM : un `case` pour `price_missing_for_audience` dans
-  `findingText` (`products-page/product-compliance.ts`), libellé « Prix pro
+  `findingText` (`pim/catalogue/product-compliance.ts` — repointé le 2026-10-27), libellé « Prix pro
   manquant — vendu au public seul » / « Prix public manquant — vendu aux pros
   seuls ». Le filtre des constats le retrouve comme les autres.
 

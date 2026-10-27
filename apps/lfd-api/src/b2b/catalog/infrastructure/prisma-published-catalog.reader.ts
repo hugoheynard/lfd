@@ -27,7 +27,7 @@ interface ItemRow {
   readonly audience: string | null;
   readonly publicReviewPending: boolean;
   readonly proReviewPending: boolean;
-  readonly priceMillicents: number;
+  readonly priceMillicents: number | null;
   readonly vatRatePercent: { toNumber(): number } | null;
   readonly publicTtcCents: number | null;
   readonly publicByContext: unknown;
@@ -140,10 +140,11 @@ function entryVariantsOf(raw: unknown): readonly EntryVariant[] {
       typeof sku !== "string" ||
       typeof name !== "string" ||
       typeof isDefault !== "boolean" ||
-      typeof proHtMillicents !== "number"
+      (typeof proHtMillicents !== "number" && proHtMillicents !== null)
     ) {
       return [];
     }
+    // `null` = pas de prix pro (2026-10-27) — lu tel quel, jamais zéro.
     const ttc = typeof publicTtcCents === "number" ? publicTtcCents : null;
     return [{ sku, name, isDefault, proHtMillicents, publicTtcCents: ttc }];
   });

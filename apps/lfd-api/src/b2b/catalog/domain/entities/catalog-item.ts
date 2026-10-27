@@ -59,7 +59,12 @@ export interface PimFacts {
   readonly name: string;
   readonly kind: string;
   readonly categoryId: string;
-  readonly priceMillicents: number;
+  /**
+   * Le prix pro HT du référentiel, en millicentimes. `null` = pas de prix pro :
+   * l'article n'est pas servi aux pros (`servedPriceOf`), jamais « gratuit »
+   * (2026-10-27, `plan-prix-manquant-non-bloquant.md`).
+   */
+  readonly priceMillicents: number | null;
   readonly weightGrams: number | null;
   readonly isDefault: boolean;
   readonly position: number;
@@ -393,8 +398,11 @@ export class CatalogItem {
     return this.facts.productId;
   }
 
-  /** Le prix pro HT du référentiel, en millicentimes — le seul prix de l'article. */
-  get pimPriceMillicents(): number {
+  /**
+   * Le prix pro HT du référentiel, en millicentimes — le seul prix pro de
+   * l'article. `null` : pas vendable aux pros (2026-10-27).
+   */
+  get pimPriceMillicents(): number | null {
     return this.facts.priceMillicents;
   }
 

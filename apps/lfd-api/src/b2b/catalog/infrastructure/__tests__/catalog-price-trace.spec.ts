@@ -3,7 +3,7 @@ import { priceTraceRows } from "../catalog-price-trace.js";
 /** L'instant d'écriture — comparé à rien d'autre qu'à lui-même. */
 const AT = new Date("2026-10-15T08:00:00.000Z");
 
-const line = (pimPriceMillicents: number, vatRatePercent: number | null = 5.5) => ({
+const line = (pimPriceMillicents: number | null, vatRatePercent: number | null = 5.5) => ({
   sku: "VIE-001-1",
   productSku: "VIE-001",
   pimPriceMillicents,
@@ -48,5 +48,16 @@ describe("priceTraceRows", () => {
 
   it("trace un article jamais tracé", () => {
     expect(priceTraceRows([line(210_000)], new Map(), () => "ph_1", AT)).toHaveLength(1);
+  });
+
+  /**
+   * `plan-prix-manquant-non-bloquant.md` (2026-10-27) : `catalog_price_history`
+   * garde son `NOT NULL` — un article sans prix pro n'y entre pas, jamais à zéro.
+   */
+  it("saute un article sans prix pro, même jamais tracé", () => {
+    const recorded = new Map([["VIE-001-1", { priceMillicents: 210_000, vatRatePercent: 5.5 }]]);
+
+    expect(priceTraceRows([line(null)], recorded, () => "ph_1", AT)).toEqual([]);
+    expect(priceTraceRows([line(null)], new Map(), () => "ph_1", AT)).toEqual([]);
   });
 });

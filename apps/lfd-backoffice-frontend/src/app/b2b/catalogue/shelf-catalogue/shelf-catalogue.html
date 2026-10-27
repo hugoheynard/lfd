@@ -77,7 +77,11 @@
         <div class="pim">
           <span class="pim-line">
             <span class="pim-audience">pro</span>
-            <span class="pim-amount">{{ euros(item.pimPriceMillicents) }} HT</span>
+            @if (item.pimPriceMillicents !== null) {
+              <span class="pim-amount">{{ euros(item.pimPriceMillicents) }} HT</span>
+            } @else {
+              <fold-badge content="sans prix pro" variant="warning" />
+            }
           </span>
           <span class="pim-line">
             <span class="pim-audience">public</span>

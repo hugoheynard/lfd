@@ -57,24 +57,25 @@ function frenchOf(text: { readonly fr: string }): string {
 }
 
 /**
- * Le prix est passé **à part**, déjà converti en hors taxe et vérifié non nul
- * par l'appelant.
+ * Les prix sont passés **à part**, déjà convertis et vérifiés par l'appelant.
  *
- * Le lire depuis `variant.priceCents` obligerait à un repli (`?? 0`) qui
+ * Les lire depuis `variant.priceCents` obligerait à un repli (`?? 0`) qui
  * transformerait un oubli de tarification en produit gratuit — précisément la
- * faute que le tri en amont existe pour empêcher. Une signature qui ne peut pas
- * mentir vaut mieux qu'un commentaire promettant qu'elle ne ment pas.
+ * faute que le tri en amont existe pour empêcher. Un prix absent traverse
+ * `null` — « pas vendable à cette audience », jamais zéro — et
+ * `publicByContext` est alors vide (2026-10-27,
+ * `plan-prix-manquant-non-bloquant.md`).
  *
- * Et il est **hors taxe**, quelle que soit l'assiette de la déclinaison : la
- * plateforme professionnelle facture en HT de bout en bout, et la frontière du
- * TTC s'arrête à ce fichier. Cf.
+ * Le prix pro est **hors taxe**, quelle que soit l'assiette de la déclinaison :
+ * la plateforme professionnelle facture en HT de bout en bout, et la frontière
+ * du TTC s'arrête à ce fichier. Cf.
  * `documentation/pricing/architecture-prix-ancre-ttc.md` § 4.
  */
 export function projectVariant(
   variant: VariantRecord,
-  htPriceMillicents: number,
+  htPriceMillicents: number | null,
   vatRatePercent: number | null,
-  publicTtcCents: number,
+  publicTtcCents: number | null,
   percents: CategoryVatPercents,
   naming: AllergenNaming,
   context: AllergenContext,
@@ -88,7 +89,7 @@ export function projectVariant(
     name: frenchOf(variant.name),
     priceMillicents: htPriceMillicents,
     publicTtcCents,
-    publicByContext: publicPricesOf(publicTtcCents, percents),
+    publicByContext: publicTtcCents === null ? {} : publicPricesOf(publicTtcCents, percents),
     weightGrams: variant.weightGrams,
     isDefault: variant.isDefault,
     position: variant.position,

@@ -23,7 +23,7 @@ import type { ContextVat } from "../../../shared/domain/value-objects/context-va
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
-import type { Audience } from "../../../shared/domain/value-objects/audience.js";
+import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
 import {
@@ -344,22 +344,33 @@ export class Product {
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
+    categoryAudience: Audience,
   ): ActivationGaps {
-    return activationGapsOf(this.complianceWith(vatPercents, rules, citedAllergens));
+    return activationGapsOf(
+      this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
+    );
   }
 
   /**
    * **Le jugement unique** de la fiche ({@link productCompliance}) — tous ses
    * constats, bloquants et avertissements, quel que soit son statut.
    * `citedAllergens` : ce que portent les ingrédients qu'elle cite, résolu par
-   * le handler.
+   * le handler ; `categoryAudience` : celle de sa famille, dont elle hérite si
+   * elle n'en pose pas — un prix n'est exigé que pour l'audience visée.
    */
   complianceWith(
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
+    categoryAudience: Audience,
   ): ComplianceFinding[] {
-    return productCompliance(this.resolvedVariants(), vatPercents, rules, citedAllergens);
+    return productCompliance(
+      this.resolvedVariants(),
+      vatPercents,
+      rules,
+      citedAllergens,
+      effectiveAudience(this.audienceValue, categoryAudience),
+    );
   }
 
   /**
@@ -382,10 +393,13 @@ export class Product {
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
+    categoryAudience: Audience,
   ): boolean {
     return (
       this.statusValue === "draft" &&
-      isCompliantForActivation(this.complianceWith(vatPercents, rules, citedAllergens))
+      isCompliantForActivation(
+        this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience),
+      )
     );
   }
 
@@ -393,6 +407,7 @@ export class Product {
     vatPercents: CategoryVatPercents,
     rules: CompletenessRules,
     citedAllergens: readonly string[],
+    categoryAudience: Audience,
   ): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
@@ -400,7 +415,7 @@ export class Product {
     if (this.statusValue === "published") {
       return false;
     }
-    const findings = this.complianceWith(vatPercents, rules, citedAllergens);
+    const findings = this.complianceWith(vatPercents, rules, citedAllergens, categoryAudience);
     if (!isCompliantForActivation(findings)) {
       throw refusalOf(this.identity, findings);
     }

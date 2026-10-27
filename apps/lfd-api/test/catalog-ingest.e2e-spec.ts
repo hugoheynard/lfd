@@ -14,6 +14,7 @@
 import { type CatalogSnapshot } from "@lfd/catalog-sync";
 
 import { CanonicalPriceHistoryReader } from "../src/b2b/catalog/domain/ports/canonical-price-history.reader.js";
+import { CatalogReader } from "../src/b2b/catalog/domain/ports/catalog.reader.js";
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
@@ -248,5 +249,49 @@ describe("l'historique du tarif canonique", () => {
 
     const before = new Date((startsAt?.getTime() ?? 0) - 1_000);
     expect((await history().pricingAt(before)).size).toBe(0);
+  });
+});
+
+/**
+ * **Un prix manquant ne retire plus l'article** (`plan-prix-manquant-non-bloquant.md`,
+ * 2026-10-27) : il se range, et ne se sert qu'à l'audience dont il a le prix.
+ * Ce que seul le vrai SQL prouve : la colonne accepte `NULL`, et la trace des
+ * prix (`NOT NULL`) saute la ligne.
+ */
+describe("un article à moitié tarifé", () => {
+  function reader() {
+    return ctx.app.get(CatalogReader);
+  }
+
+  it("sans prix pro : rangé à NULL, servi au public, absent pour un pro, jamais tracé", async () => {
+    await push(snapshotOf([{ sku: "VIE-002", priceMillicents: null }]));
+
+    const row = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: "VIE-002-1" } });
+    expect(row.priceMillicents).toBeNull();
+    expect(row.withdrawnAt).toBeNull();
+    expect(await ctx.prisma.catalogPriceHistory.count()).toBe(0);
+
+    const publicSkus = (await reader().listSellable("public")).map((item) => item.sku);
+    const proSkus = (await reader().listSellable("pro")).map((item) => item.sku);
+    expect(publicSkus).toContain("VIE-002-1");
+    expect(proSkus).not.toContain("VIE-002-1");
+    // La commande pro le refuse comme un SKU non servi : la porte ne le rend pas.
+    expect(await reader().findSku("VIE-002-1")).toBeNull();
+  });
+
+  it("sans prix public : servi aux pros, absent pour le public", async () => {
+    await push(snapshotOf([{ sku: "VIE-003", priceMillicents: 200_000, publicPrice: null }]));
+
+    const publicSkus = (await reader().listSellable("public")).map((item) => item.sku);
+    expect(publicSkus).not.toContain("VIE-003-1");
+    expect((await reader().findSku("VIE-003-1"))?.unitPriceMillicents).toBe(200_000);
+  });
+
+  it("le prix pro qui disparaît laisse la dernière trace, sans ligne gratuite", async () => {
+    await push(snapshotOf([{ sku: "VIE-004", priceMillicents: 200_000 }]));
+    await push(snapshotOf([{ sku: "VIE-004", priceMillicents: null }]));
+
+    const rows = await ctx.prisma.catalogPriceHistory.findMany({ where: { sku: "VIE-004-1" } });
+    expect(rows.map((trace) => trace.priceMillicents)).toEqual([200_000]);
   });
 });

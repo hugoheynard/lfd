@@ -67,17 +67,19 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
   it("active une fiche tarifée, déclarée, taxée pour chaque contexte en service", () => {
     const tarte = product();
 
-    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(true);
+    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
     expect(tarte.status).toBe("published");
   });
 
   it("refuse sans prix, et dit où le saisir", () => {
     const tarte = product({ variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toThrow(
+    expect(() => tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "public")).toThrow(
       ProductNotActivatableError,
     );
-    expect(() => tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toThrow(/PAT-1.*Tarif/);
+    expect(() => tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "public")).toThrow(
+      /PAT-1.*Tarif/,
+    );
     expect(tarte.status).toBe("draft");
   });
 
@@ -100,7 +102,7 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
       ],
     });
 
-    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(true);
+    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
   });
 
   /**
@@ -111,16 +113,21 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
   it("exige le taux d'un contexte en service même hors de l'audience, et le nomme", () => {
     const tarte = product({ audience: "pro" });
 
-    expect(() => tarte.activate({ b2b: 20, takeaway: 5.5 }, RULES, NO_CITED_ALLERGENS)).toThrow(
-      /eatIn/,
-    );
+    expect(() =>
+      tarte.activate({ b2b: 20, takeaway: 5.5 }, RULES, NO_CITED_ALLERGENS, "both"),
+    ).toThrow(/eatIn/);
   });
 
   it("n'exige pas le taux d'un contexte hors service", () => {
     const tarte = product();
 
     expect(
-      tarte.activate({ b2b: 20 }, { ...RULES, activeContextKeys: ["b2b"] }, NO_CITED_ALLERGENS),
+      tarte.activate(
+        { b2b: 20 },
+        { ...RULES, activeContextKeys: ["b2b"] },
+        NO_CITED_ALLERGENS,
+        "both",
+      ),
     ).toBe(true);
   });
 
@@ -129,7 +136,7 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
       variants: [variant({ priceCents: null, proPriceMillicents: null })],
     });
 
-    expect(() => tarte.activate({}, RULES, NO_CITED_ALLERGENS)).toThrow(
+    expect(() => tarte.activate({}, RULES, NO_CITED_ALLERGENS, "both")).toThrow(
       /PAT-1.*prix public.*prix pro.*takeaway/,
     );
   });
@@ -137,7 +144,7 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
   it("refuse toujours une fiche archivée, avant tout le reste", () => {
     const tarte = product({ status: "archived", variants: [variant({ priceCents: null })] });
 
-    expect(() => tarte.activate({}, RULES, NO_CITED_ALLERGENS)).toThrow(
+    expect(() => tarte.activate({}, RULES, NO_CITED_ALLERGENS, "both")).toThrow(
       ArchivedProductNotPublishableError,
     );
   });
@@ -145,7 +152,7 @@ describe("Product.activate — au moins une déclinaison complète (lot 2b)", ()
   it("une fiche déjà active ne re-vérifie rien", () => {
     const tarte = product({ status: "published", variants: [variant({ priceCents: null })] });
 
-    expect(tarte.activate({}, RULES, NO_CITED_ALLERGENS)).toBe(false);
+    expect(tarte.activate({}, RULES, NO_CITED_ALLERGENS, "both")).toBe(false);
   });
 });
 
@@ -187,14 +194,14 @@ describe("Product.activationGapsWith / isActivatableWith — le jugement sans ef
   it("rend les manques que le refus d'activation porte, sans muter la fiche", () => {
     const tarte = product({ variants: [variant({ priceCents: null })] });
 
-    const gaps = tarte.activationGapsWith(ALL_RATES, RULES, NO_CITED_ALLERGENS);
+    const gaps = tarte.activationGapsWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "public");
 
     expect(Object.keys(gaps.byVariant)).toEqual(["PAT-1"]);
-    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(false);
+    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "public")).toBe(false);
     expect(tarte.status).toBe("draft");
     let refusal: unknown = null;
     try {
-      tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS);
+      tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "public");
     } catch (error) {
       refusal = error;
     }
@@ -205,26 +212,26 @@ describe("Product.activationGapsWith / isActivatableWith — le jugement sans ef
   it("dit activable un brouillon complet, que l'activation accepte ensuite", () => {
     const tarte = product();
 
-    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(true);
+    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
     expect(tarte.status).toBe("draft");
-    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(true);
+    expect(tarte.activate(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
   });
 
   it("dit non activable une fiche dont toutes les déclinaisons sont arrêtées", () => {
     const tarte = product({ variants: [variant({ isDiscontinued: true })] });
 
-    expect(tarte.activationGapsWith(ALL_RATES, RULES, NO_CITED_ALLERGENS).allDiscontinued).toBe(
-      true,
-    );
-    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(false);
+    expect(
+      tarte.activationGapsWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both").allDiscontinued,
+    ).toBe(true);
+    expect(tarte.isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(false);
   });
 
   it.each(["published", "archived"] as const)(
     "dit non activable une fiche %s, même complète",
     (status) => {
-      expect(product({ status }).isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS)).toBe(
-        false,
-      );
+      expect(
+        product({ status }).isActivatableWith(ALL_RATES, RULES, NO_CITED_ALLERGENS, "both"),
+      ).toBe(false);
     },
   );
 });

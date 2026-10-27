@@ -19,7 +19,7 @@ interface AdminRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
-  readonly priceMillicents: number;
+  readonly priceMillicents: number | null;
   readonly publicTtcCents: number | null;
   readonly publicByContext: unknown;
   readonly vatRatePercent: { toNumber: () => number } | null;

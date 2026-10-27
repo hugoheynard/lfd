@@ -144,15 +144,32 @@ describe("Product.activate — le prix pro saisi, seule source (lot R3)", () => 
     return product;
   }
 
-  it("refuse sans prix pro HT, en nommant les deux prix", () => {
-    expect(() => declaredAndPriced(null).activate(RATES, RULES, NO_CITED_ALLERGENS)).toThrow(
+  it("refuse une fiche « pro » sans prix pro HT, en le nommant", () => {
+    expect(() => declaredAndPriced(null).activate(RATES, RULES, NO_CITED_ALLERGENS, "pro")).toThrow(
       /prix pro HT/,
     );
   });
 
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : vendue au public seul. */
+  it("active une fiche « les deux » sans prix pro HT", () => {
+    expect(declaredAndPriced(null).activate(RATES, RULES, NO_CITED_ALLERGENS, "both")).toBe(true);
+  });
+
+  it("une dérogation « pro » de la fiche l'emporte sur la famille « les deux »", () => {
+    const product = declaredAndPriced(null);
+    product.changeAudience("pro");
+
+    expect(() => product.activate(RATES, RULES, NO_CITED_ALLERGENS, "both")).toThrow(/prix pro HT/);
+  });
+
   it("active avec les deux prix", () => {
     expect(
-      declaredAndPriced(ProPriceHt.fromEuros("9")).activate(RATES, RULES, NO_CITED_ALLERGENS),
+      declaredAndPriced(ProPriceHt.fromEuros("9")).activate(
+        RATES,
+        RULES,
+        NO_CITED_ALLERGENS,
+        "both",
+      ),
     ).toBe(true);
   });
 });

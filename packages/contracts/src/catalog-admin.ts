@@ -33,8 +33,11 @@ export interface CatalogAdminItemView {
    * 2026-10-15). `b2bPriceMillicents`, `effectivePriceMillicents` et
    * `decidedPublicTtcCents` sont retirés : la plateforme ne décide plus de
    * prix, il se change dans la fiche du référentiel.
+   *
+   * `null` = pas de prix pro : l'article n'est pas vendu aux pros, jamais
+   * « gratuit » (2026-10-27, `plan-prix-manquant-non-bloquant.md`).
    */
-  readonly pimPriceMillicents: number;
+  readonly pimPriceMillicents: number | null;
 
   /**
    * **L'étiquette publique reçue du référentiel**, en centimes **TTC**.

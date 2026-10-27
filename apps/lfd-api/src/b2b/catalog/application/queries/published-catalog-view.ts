@@ -135,7 +135,11 @@ function onSaleViewOf(entry: PublishedEntryRow, item: PublishedItemRow): Publish
       isHidden: item.isHidden,
       isHiddenPublic: item.isHiddenPublic,
       reviewPending: reviewPendingOf(item),
-      billableTo: { pro: item.vatRatePercent !== null, public: item.publicTtcCents !== null },
+      // Sans prix pro (2026-10-27), l'article n'est pas servi aux pros, comme sans taux.
+      billableTo: {
+        pro: item.vatRatePercent !== null && item.proHtMillicents !== null,
+        public: item.publicTtcCents !== null,
+      },
     },
   };
   return {

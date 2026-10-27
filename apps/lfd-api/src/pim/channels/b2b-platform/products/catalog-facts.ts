@@ -93,7 +93,10 @@ export interface CatalogProductFactBody {
   readonly product: CatalogProductHead;
   /**
    * Les déclinaisons **complètes** au sens de `variantGaps` — non arrêtées,
-   * avec prix, prix pro résolu et un taux par contexte en service. Une
+   * avec le prix d'au moins une audience visée et un taux par contexte en
+   * service. Le prix d'une audience absente part `null` (`priceMillicents`,
+   * `publicTtcCents`), jamais zéro : le commerce ne la sert qu'à l'audience
+   * dont elle a le prix (2026-10-27, `plan-prix-manquant-non-bloquant.md`). Une
    * déclaration d'allergènes n'est plus exigée depuis le 2026-10-27 : sans
    * elle, la déclinaison part par précaution (`allergensPrecautionary`). Ce sont les seules qu'une fiche ACTIVE vend ; une
    * fiche inactive les porte aussi, et la plateforme ne les vend pas.
@@ -174,7 +177,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
     if (variant.isDiscontinued) {
       continue;
     }
-    const missing = variantGaps(variant, input.percents, input.rules);
+    const missing = variantGaps(variant, input.percents, input.rules, audience);
     if (missing.length > 0) {
       gaps[variant.sku] = missing;
       continue;
@@ -209,19 +212,22 @@ type VariantOf = ProductRecord["variants"][number];
 /**
  * Une déclinaison sans manque, convertie comme le push la convertit.
  *
- * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison
- *   incomplète — faute de cette projection, `variantGaps` devait l'avoir écartée.
+ * Un prix absent part `null` — et `publicByContext` vide sans prix public :
+ * la déclinaison ne se vend qu'à l'audience dont elle a le prix (2026-10-27).
+ *
+ * @throws {IncompleteVariantProjectedError} appelée sur une déclinaison sans
+ *   AUCUN prix — faute de cette projection, `variantGaps` devait l'avoir écartée.
  */
 function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVariantFact {
   const vatRatePercent = vatOf(input.percents);
   const proPrice = proPriceOf(vatRatePercent, variant.proPriceMillicents);
-  if (proPrice === null || variant.priceCents === null) {
+  if (proPrice === null && variant.priceCents === null) {
     throw new IncompleteVariantProjectedError(variant.sku);
   }
   return {
     ...projectVariant(
       variant,
-      proPrice.htMillicents,
+      proPrice?.htMillicents ?? null,
       vatRatePercent,
       variant.priceCents,
       input.percents,
@@ -232,12 +238,12 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVa
   };
 }
 
-/** Une déclinaison sans prix pro est arrivée jusqu'à la conversion : faute de la projection. */
+/** Une déclinaison sans aucun prix est arrivée jusqu'à la conversion : faute de la projection. */
 export class IncompleteVariantProjectedError extends TechnicalError {
   constructor(sku: string) {
     super(
       "catalog_facts.incomplete_variant_projected",
-      `La déclinaison ${sku} a été projetée comme vendable sans prix pro calculable. ` +
+      `La déclinaison ${sku} a été projetée comme vendable sans aucun prix (ni public, ni pro calculable). ` +
         "C'est une faute de la projection des faits du catalogue, pas de la fiche : " +
         "aucun fait n'est parti pour ce geste. Signaler l'erreur ; la fiche se réémet une fois corrigée.",
     );

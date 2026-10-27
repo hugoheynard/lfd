@@ -51,7 +51,8 @@ export const PUBLIC_LABEL = {
 /** Ce qu'une suite décrit d'un article — le reste a des défauts qui ne surprennent pas. */
 export interface IngestedSku {
   readonly sku: string;
-  readonly priceMillicents: number;
+  /** `null` = pas de prix pro : l'article n'est pas vendable aux pros (2026-10-27). */
+  readonly priceMillicents: number | null;
   readonly vatRatePercent?: number | null;
   readonly allergens?: readonly string[] | null;
   /** Les mentions déjà projetées par le PIM (v5 du fil). */
@@ -71,7 +72,7 @@ export interface IngestedSku {
     ttcCents: number;
     vatRatePercent: number;
     htMillicents: number;
-  };
+  } | null;
   /** La vitrine (v8) — absente par défaut, comme sur une fiche sans éditorial. */
   readonly note?: string | null;
   readonly image?: SyncMedia | null;
@@ -140,13 +141,17 @@ export function snapshotOf(
             // celui-ci est le prix PRO, celui-là l'étiquette publique. Une
             // fixture où les deux se déduiraient l'un de l'autre laisserait
             // passer une confusion entre les deux.
-            publicTtcCents: publicPrice.ttcCents,
-            publicByContext: {
-              [PUBLIC_LABEL.contextKey]: {
-                vatRatePercent: publicPrice.vatRatePercent,
-                htMillicents: publicPrice.htMillicents,
-              },
-            },
+            // `null` = pas de prix public : aucun prix par contexte (2026-10-27).
+            publicTtcCents: publicPrice === null ? null : publicPrice.ttcCents,
+            publicByContext:
+              publicPrice === null
+                ? {}
+                : {
+                    [PUBLIC_LABEL.contextKey]: {
+                      vatRatePercent: publicPrice.vatRatePercent,
+                      htMillicents: publicPrice.htMillicents,
+                    },
+                  },
             allergens: allergens === null ? null : [...allergens],
             allergenLabels,
             mayContain: null,

@@ -33,7 +33,7 @@ const RULES: CompletenessRules = {
 
 describe("activationGaps — au moins une déclinaison complète (lot 2b)", () => {
   it("ne manque rien : une déclinaison complète", () => {
-    const gaps = activationGaps([variant({})], ALL, RULES, NO_CITED_ALLERGENS);
+    const gaps = activationGaps([variant({})], ALL, RULES, NO_CITED_ALLERGENS, "both");
 
     expect(isActivatable(gaps)).toBe(true);
     expect(gaps).toEqual({ allDiscontinued: false, byVariant: {} });
@@ -46,6 +46,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       ALL,
       RULES,
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(isActivatable(gaps)).toBe(true);
@@ -54,17 +55,21 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
   it("nomme chaque déclinaison vivante et ses manques quand aucune n'est complète", () => {
     const gaps = activationGaps(
       [
-        variant({ priceCents: null }),
-        variant({ id: "var_2", sku: "PAT-2", proPriceMillicents: null }),
+        variant({ priceCents: null, proPriceMillicents: null }),
+        variant({ id: "var_2", sku: "PAT-2", priceCents: null, proPriceMillicents: null }),
         variant({ id: "var_3", sku: "PAT-3", isDiscontinued: true }),
       ],
       ALL,
       RULES,
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(isActivatable(gaps)).toBe(false);
-    expect(gaps.byVariant).toEqual({ "PAT-1": ["price"], "PAT-2": ["pro_price"] });
+    expect(gaps.byVariant).toEqual({
+      "PAT-1": ["price", "pro_price"],
+      "PAT-2": ["price", "pro_price"],
+    });
   });
 
   it("ne compte pas une déclinaison arrêtée, même complète", () => {
@@ -73,6 +78,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       ALL,
       RULES,
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(gaps).toEqual({ allDiscontinued: true, byVariant: {} });
@@ -86,6 +92,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       { b2b: 20, takeaway: 5.5 },
       RULES,
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["vat:eatIn"] });
@@ -97,6 +104,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       { takeaway: 5.5 },
       { ...RULES, activeContextKeys: ["takeaway"] },
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["vat:b2b"] });
@@ -112,20 +120,35 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
         activeContextKeys: ["b2b"],
       },
       NO_CITED_ALLERGENS,
+      "both",
     );
 
     expect(isActivatable(gaps)).toBe(true);
   });
 
   /** Le prix pro HT saisi est sa seule source (lot R3, 2026-10-27). */
-  it("exige le prix pro saisi, et le nomme", () => {
+  it("exige le prix pro saisi d'une fiche « pro », et le nomme", () => {
     const gaps = activationGaps(
       [variant({ proPriceMillicents: null })],
       ALL,
       RULES,
       NO_CITED_ALLERGENS,
+      "pro",
     );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price"] });
+  });
+
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : un seul prix suffit à « les deux ». */
+  it("n'empêche pas d'activer une fiche « les deux » à qui manque un seul prix", () => {
+    const gaps = activationGaps(
+      [variant({ proPriceMillicents: null })],
+      ALL,
+      RULES,
+      NO_CITED_ALLERGENS,
+      "both",
+    );
+
+    expect(isActivatable(gaps)).toBe(true);
   });
 });

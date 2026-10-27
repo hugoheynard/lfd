@@ -97,6 +97,10 @@ function state(item: CatalogAdminItemView): string {
   if (!servedTo(item, "pro")) {
     return "Masqué";
   }
+  // Sans prix pro (2026-10-27), l'article n'est pas servi aux pros.
+  if (item.pimPriceMillicents === null) {
+    return "Sans prix pro";
+  }
   return item.vatRatePercent === null ? "Sans taux de TVA" : "En vente";
 }
 
@@ -113,7 +117,11 @@ function state(item: CatalogAdminItemView): string {
  * prix qui en portent — et c'est exactement ce que la porte `lint:money-units`
  * existe pour empêcher.
  */
-function euros(millicents: number): string {
+function euros(millicents: number | null): string {
+  // Vide, jamais « 0,00 » : un prix absent n'est pas gratuit (2026-10-27).
+  if (millicents === null) {
+    return "";
+  }
   const negative = millicents < 0;
   const abs = Math.abs(millicents);
   const units = Math.trunc(abs / 100_000);

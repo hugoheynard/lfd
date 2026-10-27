@@ -248,6 +248,10 @@ export type ComplianceSeverity = z.infer<typeof complianceSeveritySchema>;
  * - `variant_incomplete` : ce qui manque à une déclinaison non arrêtée pour se
  *   vendre (`price`, `pro_price`, `vat:<ctx>`) —
  *   bloquant quand aucune n'est complète, avertissement sinon ;
+ * - `price_missing_for_audience` : une fiche « les deux » dont une déclinaison
+ *   n'a qu'un des deux prix — elle se vend à l'audience dont elle a le prix ;
+ *   `audience` nomme celle qui n'est pas servie (`pro` ou `public`). Toujours
+ *   un avertissement (2026-10-27, `plan-prix-manquant-non-bloquant.md`) ;
  * - `allergens_precautionary` : la déclinaison n'a pas de déclaration
  *   d'allergènes et se sert par précaution — allergènes de sa composition,
  *   traces de tout le catalogue publié. Toujours un avertissement.
@@ -265,6 +269,13 @@ export const productComplianceFindingSchema = z.discriminatedUnion("code", [
     variantId: z.string(),
     sku: z.string(),
     missing: z.array(z.string()),
+  }),
+  z.object({
+    code: z.literal("price_missing_for_audience"),
+    severity: z.literal("warning"),
+    variantId: z.string(),
+    sku: z.string(),
+    audience: z.enum(["pro", "public"]),
   }),
   z.object({
     code: z.literal("allergens_precautionary"),

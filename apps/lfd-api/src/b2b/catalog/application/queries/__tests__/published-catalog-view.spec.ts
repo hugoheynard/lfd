@@ -213,4 +213,18 @@ describe("publishedCatalogViewOf", () => {
     const skus = view.entries.flatMap((e) => e.variants.map((v) => v.sku));
     expect(new Set(skus).size).toBe(skus.length);
   });
+
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : vendue au public seul. */
+  it("dit incomplète côté pro une déclinaison sans prix pro, en vente côté public", () => {
+    const half = publishedCatalogViewOf({
+      ...SOURCE,
+      items: [item({ proHtMillicents: null })],
+    });
+    const variant = half.entries
+      .find((e) => e.productSku === "VIE-1")
+      ?.variants.find((v) => v.sku === "VIE-1-1");
+
+    expect(variant?.pro).toEqual({ state: "incomplet", htMillicents: null });
+    expect(variant?.public).toEqual({ state: "en_vente", ttcCents: 180 });
+  });
 });

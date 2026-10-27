@@ -34,7 +34,7 @@ interface ItemRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
-  readonly priceMillicents: number;
+  readonly priceMillicents: number | null;
   readonly publicByContext: unknown;
   readonly isDefault: boolean;
   readonly position: number;
@@ -280,13 +280,16 @@ interface ServedPrice {
  *
  * 🔴 **`null` = pas vendable à cette audience, et on n'invente rien.** Un
  * article sans taux ne se facture pas ; un article dont le référentiel n'a pas
- * encore poussé le prix public ne se vend pas au public.
+ * encore poussé le prix public ne se vend pas au public ; un article sans prix
+ * pro (`price_millicents` `NULL`, 2026-10-27,
+ * `plan-prix-manquant-non-bloquant.md`) ne se vend pas aux pros — même chemin
+ * qu'un taux absent.
  */
 function servedPriceOf(row: ItemRow, audience: ShopAudience): ServedPrice | null {
   const pimPriceMillicents = row.priceMillicents;
   if (audience === "pro") {
     const vatRate = billableRate(row);
-    return vatRate === null
+    return vatRate === null || pimPriceMillicents === null
       ? null
       : { unitPriceMillicents: pimPriceMillicents, pimPriceMillicents, vatRate };
   }

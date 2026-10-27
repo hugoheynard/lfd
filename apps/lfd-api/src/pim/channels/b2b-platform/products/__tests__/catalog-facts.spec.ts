@@ -50,6 +50,50 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
   };
 }
 
+/** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la déclinaison à moitié tarifée part. */
+describe("projectProductFact — un prix manquant ne retire plus la déclinaison", () => {
+  it("publie sans prix pro une déclinaison d'une fiche « les deux », prix pro `null`", () => {
+    const body = projectProductFact(
+      input({
+        product: tarte({
+          audience: "both",
+          variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
+        }),
+        percents: BOTH_CONTEXTS,
+      }),
+    );
+
+    expect(body.gaps).toEqual({});
+    expect(body.variants[0]).toMatchObject({ priceMillicents: null, publicTtcCents: 3_200 });
+    expect(Object.keys(body.variants[0]?.publicByContext ?? {})).toEqual(["b2b", "takeaway"]);
+  });
+
+  it("publie sans prix public, `publicTtcCents` nul et aucun prix par contexte", () => {
+    const body = projectProductFact(
+      input({
+        product: tarte({ audience: "both", variants: [{ ...SELLABLE_VARIANT, priceCents: null }] }),
+        percents: BOTH_CONTEXTS,
+      }),
+    );
+
+    expect(body.gaps).toEqual({});
+    expect(body.variants[0]).toMatchObject({
+      priceMillicents: 2_730_331,
+      publicTtcCents: null,
+      publicByContext: {},
+    });
+  });
+
+  it("écarte toujours une fiche « pro » sans prix pro", () => {
+    const body = projectProductFact(
+      input({ product: tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }) }),
+    );
+
+    expect(body.variants).toEqual([]);
+    expect(body.gaps).toEqual({ "PAT-7-1": ["pro_price"] });
+  });
+});
+
 describe("projectProductFact", () => {
   it("vend une déclinaison complète, au prix pro hors taxe saisi", () => {
     const body = projectProductFact(input());
@@ -142,8 +186,8 @@ describe("projectProductFact", () => {
   });
 
   /**
-   * Le taux `b2b` est exigé même d'une fiche « public » : la plateforme range
-   * un article vendable avec son prix pro, qui ne se calcule pas sans lui.
+   * Le taux `b2b` est exigé même d'une fiche « public » : c'est le taux de
+   * l'article sur le fil, et on n'en invente pas.
    */
   it("exige le taux b2b d'une fiche vendue au seul public", () => {
     const body = projectProductFact(

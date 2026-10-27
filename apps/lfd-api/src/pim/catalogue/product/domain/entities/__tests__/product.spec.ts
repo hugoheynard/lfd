@@ -143,7 +143,7 @@ describe("l’agrégat Product", () => {
      */
     it("REFUSE de restaurer ce qui n’est pas archivé — un produit en ligne y perdait sa vente", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
       expect(() => product.restore()).toThrow(NotArchivedProductNotRestorableError);
       expect(product.status).toBe("published");
     });
@@ -160,8 +160,8 @@ describe("l’agrégat Product", () => {
      */
     it("dit ce qu’il a fait : vrai quand l’état bouge, faux quand il y était déjà", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
-      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(false);
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toBe(true);
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toBe(false);
       expect(product.deactivate()).toBe(true);
       expect(product.deactivate()).toBe(false);
       expect(product.archive()).toBe(true);
@@ -171,8 +171,10 @@ describe("l’agrégat Product", () => {
 
     it("republier ne re-vérifie pas les fiches : rien ne change, donc rien ne peut échouer", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).not.toThrow();
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
+      expect(() =>
+        product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both"),
+      ).not.toThrow();
       expect(product.status).toBe("published");
     });
   });
@@ -180,20 +182,20 @@ describe("l’agrégat Product", () => {
   describe("invariant 7 : on ne met pas en vente ce qu’on ne peut pas étiqueter", () => {
     /** Le produit tel qu'il naît : aucune fiche renseignée. */
     it("refuse d’activer tant qu’aucune déclinaison n’est complète", () => {
-      expect(() => open().activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
+      expect(() => open().activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toThrow(
         ProductNotActivatableError,
       );
     });
 
     it("nomme les références en cause plutôt que de dire « non »", () => {
-      expect(() => open().activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
+      expect(() => open().activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toThrow(
         "PATI-TARTE-1",
       );
     });
 
     it("publie dès que chaque déclinaison active est étiquetée", () => {
       const product = declared([{ allergens: ["gluten"] }]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
       expect(product.status).toBe("published");
     });
 
@@ -204,7 +206,7 @@ describe("l’agrégat Product", () => {
      */
     it("traite « aucun allergène » comme une fiche déclarée", () => {
       const product = declared([{ allergens: [] }]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
       expect(product.status).toBe("published");
     });
 
@@ -214,14 +216,14 @@ describe("l’agrégat Product", () => {
         { allergens: ["gluten"] },
         { allergens: null, isDiscontinued: true },
       ]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
       expect(product.status).toBe("published");
     });
 
     it("refuse de publier un produit archivé — le restaurer d’abord", () => {
       const product = declared([{ allergens: ["gluten"] }]);
       product.archive();
-      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toThrow(
+      expect(() => product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toThrow(
         ArchivedProductNotPublishableError,
       );
     });
@@ -261,7 +263,7 @@ describe("l’agrégat Product", () => {
     it("publie une déclinaison qui déclare ses allergènes et AUCUNE valeur", () => {
       const product = declared([{ allergens: ["gluten"], nutrition: null }]);
 
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
 
       expect(product.status).toBe("published");
     });
@@ -270,7 +272,7 @@ describe("l’agrégat Product", () => {
     it("publie sur « aucun allergène » sans le moindre tableau nutritionnel", () => {
       const product = declared([{ allergens: [], nutrition: null }]);
 
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
 
       expect(product.status).toBe("published");
     });
@@ -286,9 +288,9 @@ describe("l’agrégat Product", () => {
         { allergens: null, nutrition: { ...NO_VALUES, energyKcal: 410, saltG: 2 } },
       ]);
 
-      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toBe(true);
       expect(product.snapshot().variants[0]?.allergenSheet).toBeNull();
-      expect(product.complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toEqual([
+      expect(product.complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toEqual([
         expect.objectContaining({ code: "allergens_precautionary", severity: "warning" }),
       ]);
     });
@@ -306,16 +308,18 @@ describe("l’agrégat Product", () => {
         { allergens: null, nutrition: { ...NO_VALUES, saltG: 2 } },
       ]);
 
-      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toBe(true);
       expect(product.status).toBe("published");
     });
 
     it("active même quand TOUTES sont muettes, et les signale toutes", () => {
       const product = declared([{ allergens: null }, { allergens: null }]);
 
-      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS)).toBe(true);
+      expect(product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")).toBe(true);
       expect(
-        product.complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS).map((f) => f.code),
+        product
+          .complianceWith(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both")
+          .map((f) => f.code),
       ).toEqual(["allergens_precautionary", "allergens_precautionary"]);
     });
   });
@@ -323,7 +327,7 @@ describe("l’agrégat Product", () => {
   describe("dépublier", () => {
     it("ramène en brouillon, pas aux archives", () => {
       const product = declared([{ allergens: [] }]);
-      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS);
+      product.activate(SELLABLE_RATES, SELLING, NO_CITED_ALLERGENS, "both");
       product.deactivate();
       expect(product.status).toBe("draft");
     });

@@ -7,6 +7,9 @@ import type { ComplianceFinding } from "../domain/services/product-compliance.js
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { readCompletenessRules } from "./completeness-support.js";
+import { CategoryNotFoundError } from "../../category/domain/errors/category-errors.js";
+import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
+import type { Audience } from "../../shared/domain/value-objects/audience.js";
 
 /** Les fiches non archivées qui portent au moins un constat de conformité. */
 export class ListProductComplianceWarningsQuery {}
@@ -17,7 +20,7 @@ export class ListProductComplianceWarningsQuery {}
  * toutes les fiches non archivées, quel que soit leur statut : une publiée ou
  * une activable peuvent porter un avertissement.
  *
- * Taux, contextes, règle du prix pro et allergènes cités sont lus UNE fois
+ * Taux, contextes, audiences des familles et allergènes cités sont lus UNE fois
  * pour toute la liste, jamais par fiche — comme `ListProductsHandler`.
  *
  * 🔴 Une fiche absente n'est PAS certifiée conforme (D5) : la composition est
@@ -33,23 +36,33 @@ export class ListProductComplianceWarningsHandler implements IQueryHandler<
     private readonly catalogue: CatalogueReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
+    private readonly categories: CategoryRepository,
   ) {}
 
   async execute(): Promise<ProductComplianceWarningView[]> {
-    const [all, rules] = await Promise.all([
+    const [all, rules, categories] = await Promise.all([
       this.products.listAll(),
       readCompletenessRules(this.contexts),
+      this.categories.listAll(),
     ]);
+    const audiences = new Map<string, Audience>(
+      categories.map((category) => [category.id, category.audience]),
+    );
     const live = all.filter((product) => product.status !== "archived");
     const [vat, cited] = await Promise.all([
       this.catalogue.vatPercents(live.map((product) => product.snapshot())),
       this.cited.ofProducts(live.map((product) => product.id)),
     ]);
     return live.flatMap((product) => {
+      const categoryAudience = audiences.get(product.categoryId);
+      if (categoryAudience === undefined) {
+        throw new CategoryNotFoundError(product.categoryId);
+      }
       const warnings = product.complianceWith(
         vat.get(product.id) ?? {},
         rules,
         cited.get(product.id) ?? [],
+        categoryAudience,
       );
       return warnings.length === 0
         ? []

@@ -7,20 +7,25 @@ import {
   FixedVatPercents,
   OneProduct,
   PRODUCT_ID,
+  OneCategory,
   SELLABLE_VARIANT,
   bareVariant,
+  family,
   tarte,
 } from "./audience-doubles.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 
 function listing(
   product: ProductSnapshot,
   cited: FixedCitedAllergens = new FixedCitedAllergens(),
+  audience: Audience = "both",
 ): ListProductComplianceWarningsHandler {
   return new ListProductComplianceWarningsHandler(
     new OneProduct(product),
     new FixedVatPercents(BOTH_RATES),
     new FixedActiveContexts(["b2b", "takeaway"]),
     cited,
+    new OneCategory(family(audience)),
   );
 }
 
@@ -88,5 +93,35 @@ describe("ListProductComplianceWarningsHandler — le jugement unique, sur la ta
 
     expect(await listing(tarte({ status: "archived" }), cited).execute()).toEqual([]);
     expect(cited.requests).toEqual([[]]);
+  });
+
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la table le dit. */
+  it("signale le prix pro manquant d'une fiche « les deux », sans la bloquer", async () => {
+    const product = tarte({
+      variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
+    });
+
+    expect(await listing(product).execute()).toEqual([
+      {
+        productId: PRODUCT_ID,
+        warnings: [
+          {
+            code: "price_missing_for_audience",
+            severity: "warning",
+            variantId: SELLABLE_VARIANT.id,
+            sku: SELLABLE_VARIANT.sku,
+            audience: "pro",
+          },
+        ],
+      },
+    ]);
+  });
+
+  it("lit l'audience de la famille : une fiche « public » n'exige pas le prix pro", async () => {
+    const product = tarte({
+      variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }],
+    });
+
+    expect(await listing(product, new FixedCitedAllergens(), "public").execute()).toEqual([]);
   });
 });

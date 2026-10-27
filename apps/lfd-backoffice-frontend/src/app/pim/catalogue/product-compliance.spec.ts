@@ -94,4 +94,27 @@ describe('product-compliance', () => {
     );
     expect(findingsText([BLOCKING], 'blocking')).toMatch(/^Déclinaison PAIN-1/u);
   });
+
+  // `plan-prix-manquant-non-bloquant.md` (2026-10-27) : la table le dit.
+  it('dit le prix manquant d’une fiche « les deux », et à qui elle se vend', () => {
+    const noPro: ProductComplianceFinding = {
+      code: 'price_missing_for_audience',
+      severity: 'warning',
+      variantId: 'v4',
+      sku: 'PAIN-4',
+      audience: 'pro',
+    };
+    const noPublic: ProductComplianceFinding = { ...noPro, audience: 'public' };
+
+    expect(findingText(noPro)).toBe(
+      'Déclinaison PAIN-4 — Prix pro manquant — vendu au public seul. ' +
+        'Saisissez-le dans la section « Tarif ».',
+    );
+    expect(findingText(noPublic)).toBe(
+      'Déclinaison PAIN-4 — Prix public manquant — vendu aux pros seuls. ' +
+        'Saisissez-le dans la section « Tarif ».',
+    );
+    // Un avertissement : le filtre « À vérifier » le retrouve, rien ne bloque.
+    expect(complianceStateOf('published', [noPro])).toBe('warning');
+  });
 });

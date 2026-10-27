@@ -155,4 +155,12 @@ describe("catalogCsv", () => {
     expect(bodyLines(csv)).toEqual([]);
     expect(csv).toContain("SKU;Article");
   });
+
+  /** `plan-prix-manquant-non-bloquant.md` (2026-10-27) : un prix absent n'est pas « 0,00 ». */
+  it("laisse vide le prix d'un article sans prix pro, et le dit dans l'état", () => {
+    const [line] = bodyLines(catalogCsv([item({ pimPriceMillicents: null })]));
+
+    expect(line?.split(";").slice(3, 5)).toEqual(["", ""]);
+    expect(line).toContain("Sans prix pro");
+  });
 });

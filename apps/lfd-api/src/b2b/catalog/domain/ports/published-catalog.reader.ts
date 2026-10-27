@@ -31,8 +31,8 @@ export interface PublishedItemRow {
   readonly proReviewPending: boolean;
   readonly isHidden: boolean;
   readonly isHiddenPublic: boolean;
-  /** Le HT pro servi, en millicentimes : la décision, sinon le prix reçu. */
-  readonly proHtMillicents: number;
+  /** Le HT pro servi, en millicentimes — `null` : aucun prix pro, pas vendable aux pros (2026-10-27). */
+  readonly proHtMillicents: number | null;
   /** Le taux pro de l'article — `null` = pas facturable aux pros. */
   readonly vatRatePercent: number | null;
   /** L'étiquette publique servie, en centimes TTC — `null` = aucune (contexte public absent). */

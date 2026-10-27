@@ -120,6 +120,16 @@ export function isPrecautionary(
   return (findings ?? []).some((finding) => finding.code === 'allergens_precautionary');
 }
 
+/**
+ * Une fiche « les deux » à qui manque UN prix : vendue à l'autre audience
+ * seule (`plan-prix-manquant-non-bloquant.md`, 2026-10-27). La clé est
+ * l'audience NON servie.
+ */
+const MISSING_PRICE_TEXT: Readonly<Record<'pro' | 'public', string>> = {
+  pro: 'Prix pro manquant — vendu au public seul. Saisissez-le dans la section « Tarif ».',
+  public: 'Prix public manquant — vendu aux pros seuls. Saisissez-le dans la section « Tarif ».',
+};
+
 /** Un constat, en une phrase qui dit le cas et le geste de sortie. */
 export function findingText(finding: ProductComplianceFinding): string {
   switch (finding.code) {
@@ -127,6 +137,8 @@ export function findingText(finding: ProductComplianceFinding): string {
       return 'Toutes les déclinaisons sont arrêtées : rien ne se vendrait — rouvrez-en une.';
     case 'variant_incomplete':
       return `Déclinaison ${finding.sku} — manque : ${finding.missing.map(gapLabel).join(', ')}.`;
+    case 'price_missing_for_audience':
+      return `Déclinaison ${finding.sku} — ${MISSING_PRICE_TEXT[finding.audience]}`;
     case 'allergens_precautionary':
       return `Déclinaison ${finding.sku} — ${PRECAUTIONARY_TEXT}`;
   }

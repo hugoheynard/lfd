@@ -1,6 +1,7 @@
 import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
+import { servedAudiences, type Audience } from "../../../shared/domain/value-objects/audience.js";
 
 /** Ce qui manque à une déclinaison pour se vendre — des clés, que l'écran traduit. */
 export const PRICE_GAP = "price";
@@ -45,13 +46,34 @@ export type CompletenessInput = Pick<VariantSnapshot, "priceCents" | "proPriceMi
  * contexte ») : l'audience dit à qui l'on vend aujourd'hui, et en changer ne
  * doit jamais rendre une fiche invendable.
  *
- * Le `b2b` toujours, même s'il était un jour mis hors service : la plateforme
- * range un article vendable avec son prix pro hors taxe
- * (`catalog_items.price_millicents`, `NOT NULL`), qui ne se calcule pas sans
- * lui. On ne fabrique pas un prix pro que personne n'a décidé.
+ * Le `b2b` toujours, même s'il était un jour mis hors service : le taux b2b
+ * est celui de l'article sur le fil (`vatRatePercent`), qui dit comment
+ * facturer ; on ne fabrique pas un taux que personne n'a décidé.
+ *
+ * ⚠️ Cette phrase justifiait le `b2b` par `catalog_items.price_millicents`
+ * `NOT NULL` jusqu'au 2026-10-27 : la colonne est nullable depuis
+ * (`plan-prix-manquant-non-bloquant.md`, P3 — vérifié ce jour-là), et le taux
+ * reste exigé pour la raison ci-dessus, que ce plan ne touche pas.
  */
 export function requiredContexts(rules: CompletenessRules): string[] {
   return [...new Set([ROOT_CONTEXT_KEY, ...rules.activeContextKeys])];
+}
+
+/** Une clientèle servie une par une — `both` n'en est pas une. */
+export type ServedAudience = Exclude<Audience, "both">;
+
+/**
+ * **Les audiences visées par la fiche qui n'ont pas leur prix** — vide quand
+ * chacune a le sien. Le prix d'une audience que la fiche ne vise pas n'est
+ * jamais exigé (`plan-prix-manquant-non-bloquant.md`, §2, 2026-10-27).
+ */
+export function missingAudiencePrices(
+  variant: CompletenessInput,
+  audience: Audience,
+): ServedAudience[] {
+  return servedAudiences(audience).filter((served) =>
+    served === "pro" ? variant.proPriceMillicents === null : variant.priceCents === null,
+  );
 }
 
 /**
@@ -60,8 +82,13 @@ export function requiredContexts(rules: CompletenessRules): string[] {
  * (`catalog-facts.ts`) appellent tous deux (lot 2b de
  * `plan-catalogue-synchronise-par-audience.md`).
  *
- * Complète = un prix public, un prix pro HT saisi, et un taux pour chaque contexte
- * requis. Vide = complète.
+ * Complète = le prix d'**au moins une** des audiences visées (`audience`, la
+ * clientèle EFFECTIVE de la fiche) et un taux pour chaque contexte requis.
+ * Vide = complète. Une fiche « les deux » à qui manque un seul des deux prix
+ * reste complète : elle se vend à l'audience dont elle a le prix, et le
+ * constat `price_missing_for_audience` le signale (2026-10-27,
+ * `plan-prix-manquant-non-bloquant.md`). Sans aucun prix visé, chaque prix
+ * visé manquant est nommé (`price`, `pro_price`).
  *
  * Pure : le taux arrive résolu (famille, dérogation, registre), comme la
  * projection le résout. Une déclinaison arrêtée n'est pas jugée ici — c'est
@@ -71,16 +98,19 @@ export function variantGaps(
   variant: CompletenessInput,
   percents: CategoryVatPercents,
   rules: CompletenessRules,
+  audience: Audience,
 ): string[] {
   const missing: string[] = [];
-  if (variant.priceCents === null) {
-    missing.push(PRICE_GAP);
-  }
-  // Le prix pro HT saisi est sa seule source (lot R3) : sans saisie, c'est la
-  // section « Tarif » qu'il faut ouvrir. Le taux `b2b` qui le facture est
-  // jugé avec les autres taux, ci-dessous.
-  if (variant.proPriceMillicents === null) {
-    missing.push(PRO_PRICE_GAP);
+  const unpriced = missingAudiencePrices(variant, audience);
+  if (unpriced.length === servedAudiences(audience).length) {
+    // Dans l'ordre de l'écran : le prix public, puis le prix pro HT — dont la
+    // saisie est la seule source (lot R3), dans la section « Tarif ».
+    if (unpriced.includes("public")) {
+      missing.push(PRICE_GAP);
+    }
+    if (unpriced.includes("pro")) {
+      missing.push(PRO_PRICE_GAP);
+    }
   }
   for (const context of requiredContexts(rules)) {
     if (percents[context] === undefined) {

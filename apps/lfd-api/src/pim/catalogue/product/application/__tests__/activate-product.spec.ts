@@ -12,10 +12,13 @@ import {
   FixedVatPercents,
   OneProduct,
   PRODUCT_ID,
+  OneCategory,
   SELLABLE_VARIANT,
   bareVariant,
+  family,
   tarte,
 } from "./audience-doubles.js";
+import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
@@ -34,6 +37,7 @@ interface Setup {
   readonly percents?: CategoryVatPercents;
   readonly journal?: RecordingJournal;
   readonly cited?: ReadonlyMap<string, readonly string[]>;
+  readonly audience?: Audience;
 }
 
 function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
@@ -45,6 +49,7 @@ function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
     new RecordingCatalogEmitter(),
     new FixedActiveContexts(setup.contexts ?? ["b2b", "takeaway"]),
     new FixedCitedAllergens(setup.cited),
+    new OneCategory(family(setup.audience ?? "both")),
   ).execute(new ActivateProductCommand(PRODUCT_ID));
 }
 
@@ -126,13 +131,35 @@ describe("ActivateProductHandler — le prix et le taux", () => {
 
 /** Le prix pro HT saisi est exigé pour activer — seule source depuis le lot R3. */
 describe("ActivateProductHandler — le prix pro saisi", () => {
-  it("refuse une fiche sans prix pro HT, en le disant", async () => {
+  it("refuse une fiche « pro » sans prix pro HT, en le disant", async () => {
     const products = new OneProduct(
       tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
     );
 
-    await expect(activating(products)).rejects.toThrow(/PAT-7-1.*prix pro HT/);
+    await expect(activating(products, { audience: "pro" })).rejects.toThrow(/PAT-7-1.*prix pro HT/);
     expect(products.stored?.status).toBe("draft");
+  });
+
+  /**
+   * `plan-prix-manquant-non-bloquant.md` (2026-10-27) : une fiche « les deux »
+   * sans prix pro se vend au public seul — elle ne se refuse plus.
+   */
+  it("active une fiche « les deux » sans prix pro : elle se vend au public seul", async () => {
+    const products = new OneProduct(
+      tarte({ variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
+    );
+
+    await activating(products);
+
+    expect(products.stored?.status).toBe("published");
+  });
+
+  it("lit l'audience de la DÉROGATION de la fiche, pas celle de la famille", async () => {
+    const products = new OneProduct(
+      tarte({ audience: "pro", variants: [{ ...SELLABLE_VARIANT, proPriceMillicents: null }] }),
+    );
+
+    await expect(activating(products, { audience: "both" })).rejects.toThrow(/prix pro HT/);
   });
 
   it("active une fiche dont la déclinaison porte les deux prix", async () => {

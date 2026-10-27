@@ -4,8 +4,11 @@ import type { PrismaService } from "../../../platform/database/prisma.service.js
 export interface PricedLine {
   readonly sku: string;
   readonly productSku: string;
-  /** Le prix du référentiel, hors taxe, en millicentimes. */
-  readonly pimPriceMillicents: number;
+  /**
+   * Le prix du référentiel, hors taxe, en millicentimes. `null` : pas de prix
+   * pro — la trace saute la ligne (2026-10-27).
+   */
+  readonly pimPriceMillicents: number | null;
   readonly vatRatePercent: number | null;
 }
 
@@ -39,6 +42,12 @@ type RecordedPrices = ReadonlyMap<
  * Le prix du RÉFÉRENTIEL est tracé — le seul prix depuis le lot D
  * (2026-10-15) —, et seulement si le COUPLE prix + taux a bougé : ne comparer
  * que le prix laisserait passer sans trace la bascule d'un taux légal.
+ *
+ * Un article **sans prix pro** n'est pas tracé : `catalog_price_history`
+ * garde son `NOT NULL`, et aucune ligne « gratuite » n'y entre
+ * (`plan-prix-manquant-non-bloquant.md`, P3, 2026-10-27). Une lecture datée y
+ * trouve la dernière valeur connue avant le trou ; l'article n'étant pas servi
+ * aux pros pendant le trou, aucune commande pro n'en résout le prix.
  */
 export function priceTraceRows(
   lines: readonly PricedLine[],
@@ -48,6 +57,9 @@ export function priceTraceRows(
 ): PriceTraceRow[] {
   return lines.flatMap((line) => {
     const price = line.pimPriceMillicents;
+    if (price === null) {
+      return [];
+    }
     const rate = line.vatRatePercent;
     const last = recorded.get(line.sku);
     if (last?.priceMillicents === price && last.vatRatePercent === rate) {

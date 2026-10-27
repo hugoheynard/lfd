@@ -149,7 +149,9 @@ model CatalogItem {
   /// Prix canonique HT en **millicentimes** (10⁻⁵ €), tel que le PIM le tarife.
   /// **Pré-altération** :
   /// le prix B2B, s'il existe, vit dans `CatalogItemOverride`.
-  priceMillicents Int     @map("price_millicents")
+  /// `null` = pas de prix pro : l'article n'est pas servi aux pros, jamais
+  /// « gratuit » (2026-10-27, `plan-prix-manquant-non-bloquant.md`).
+  priceMillicents Int?    @map("price_millicents")
   weightGrams     Int?    @map("weight_grams")
   isDefault       Boolean @default(false) @map("is_default")
   position        Int     @default(0)
