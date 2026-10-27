@@ -42,7 +42,7 @@
 }
 
 .door-pickup {
-  background: var(--lfc-ink-800);
+  background: var(--lfc-brand-blue);
   color: var(--lfc-paper-0);
 }
 
@@ -115,12 +115,10 @@
   align-items: center;
   height: 46px;
   padding: 0 20px;
-  border-radius: 6.5px;
-  font-family: var(--lfc-font-caps);
-  font-size: var(--fold-text-sm);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-cta);
-  text-transform: uppercase;
+  border-radius: var(--fold-radius-sm);
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-base);
+  font-weight: 600;
 }
 
 .door-pickup .door-cta {
@@ -248,24 +246,16 @@
    de la maquette (168°) — elle suit la lecture, du coin haut-droit vers le pied
    de la carte. */
 .door-pickup::after {
-  background: linear-gradient(
-    168deg,
-    color-mix(in srgb, var(--lfc-ink-900) 48%, transparent) 0%,
-    color-mix(in srgb, var(--lfc-ink-900) 88%, transparent) 52%,
-    color-mix(in srgb, var(--lfc-ink-950) 97%, transparent) 100%
-  );
+  /* Voile UNI de bleu de marque (charte vitrine, 2026-10-27 : plus de
+     dégradé) — dosé pour que le texte blanc se lise sur toute la photo. */
+  background: color-mix(in srgb, var(--lfc-brand-blue) 62%, transparent);
 }
 
 /* La porte du coursier garde SON registre : le voile est de beurre, pas
    d'encre. Les deux portes ne sont pas symétriques, et leur fond le dit avant
    leur texte. */
 .door-courier::after {
-  background: linear-gradient(
-    168deg,
-    color-mix(in srgb, var(--lfc-butter-100) 40%, transparent) 0%,
-    color-mix(in srgb, var(--lfc-butter-100) 90%, transparent) 48%,
-    color-mix(in srgb, var(--lfc-butter-200) 98%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--lfc-butter-100) 72%, transparent);
 }
 
 /* 🔴 EN ATTENTE, LA CARTE GARDE SA PHOTO ET SON VOILE (Hugo, 2026-09-20 : « on
@@ -287,12 +277,7 @@
 /* Le voile de l'attente : la suie, pas le beurre. Il est plus dense que celui
    d'une porte ouverte — c'est ce qui l'éteint d'un cran sans la vider. */
 .door.is-pending::after {
-  background: linear-gradient(
-    168deg,
-    color-mix(in srgb, var(--lfc-soot-900) 55%, transparent) 0%,
-    color-mix(in srgb, var(--lfc-soot-900) 88%, transparent) 52%,
-    color-mix(in srgb, var(--lfc-soot-900) 97%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--lfc-soot-900) 88%, transparent);
 }
 
 /* Sur ce fond sombre, la phrase d'attente reprend le papier — elle était en

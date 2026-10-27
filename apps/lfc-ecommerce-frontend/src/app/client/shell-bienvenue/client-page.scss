@@ -30,22 +30,13 @@
   color: var(--fold-color-text);
 }
 
-/* Le dégradé radial de la réf : un angle haut-gauche éclairé, un bas plus
-   sourd. Les trois arrêts sont ceux de la maquette ; leurs COULEURS viennent
-   de l'échelle d'encre du thème plutôt que des hexadécimaux de la maquette,
-   qui tombent entre deux crans (`#2b52ad` est entre `ink-700` et `ink-600`).
-   Une teinte recopiée à la main ne suivrait pas le thème le jour où il bouge. */
+/* Le voile est UNI (charte vitrine, 2026-10-27 : plus de dégradé). */
 .veil {
   position: absolute;
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background: radial-gradient(
-    130% 120% at 12% -8%,
-    color-mix(in srgb, var(--lfc-ink-700) 90%, transparent) 0%,
-    color-mix(in srgb, var(--lfc-ink-800) 40%, transparent) 42%,
-    color-mix(in srgb, var(--lfc-ink-900) 85%, transparent) 100%
-  );
+  background: color-mix(in srgb, var(--lfc-brand-blue) 70%, transparent);
 }
 
 /* Tout ce qui est écrit passe DEVANT le voile. */

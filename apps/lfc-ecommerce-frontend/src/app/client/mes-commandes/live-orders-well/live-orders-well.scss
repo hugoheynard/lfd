@@ -33,21 +33,19 @@
   background: var(--lfc-color-on-well-tile);
 }
 
-/* La sortie est CLAIRE sur le puits sombre : c'est la seule action de la tête,
-   et un bouton creux s'y serait lu comme un cadre vide. */
+/* La sortie est un bouton BLEU PLEIN sur le puits blanc (charte vitrine,
+   2026-10-27) : c'est la seule action de la tête. */
 .all {
   flex: none;
   height: 34px;
   padding: 0 14px;
   border: 0;
-  border-radius: var(--fold-radius-md);
+  border-radius: var(--fold-radius-sm);
   background: var(--lfc-color-on-well);
   color: var(--lfc-color-surface-well);
-  font-family: var(--lfc-font-caps);
-  font-size: var(--fold-text-2xs);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-eyebrow);
-  text-transform: uppercase;
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-sm);
+  font-weight: 600;
   white-space: nowrap;
   cursor: pointer;
 }

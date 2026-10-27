@@ -17,13 +17,26 @@
    dans `index.html`, rien d'autre. */
 
 [data-theme='lfc-app'] {
+  /* ── LA CHARTE DU SITE VITRINE (Hugo, 2026-10-27, lafoliecoffee.com) ──
+     Fond blanc pur, UN SEUL bleu (#1238b7) pour titres, texte, liens et icônes,
+     boutons bleus à petit rayon en casse normale, cartes à plat. Les rampes
+     ci-dessous gardent leurs NOMS (des dizaines d'écrans les lisent) mais plus
+     leurs valeurs : `ink-800/900/950` valent tous le bleu de marque, donc tout
+     dégradé qui les enchaîne devient un aplat ; `paper-*` est une rampe de
+     blancs bleutés (plus de crème) ; `soot-*` (le texte) est le bleu, atténué
+     par mélange avec le blanc pour les crans secondaires — 85 % (6,4:1), 80 %
+     (5,7:1), 62 % (3,4:1, texte non informatif et contours). Les ombres valent
+     `none` : la vitrine est à plat. */
   /* ── Primitives : encre bleue (la marque) ── */
   /* Le bleu de la marque, celui du site vitrine (Hugo, 2026-10-27). Il peint
      l'en-tête de la boutique, en aplat. Texte blanc dessus : 9,2:1. */
   --lfc-brand-blue: #1238b7;
-  --lfc-ink-950: #081842;
-  --lfc-ink-900: #0d2464;
-  --lfc-ink-800: #12307f;
+  /* Le survol d'un bouton plein : le même bleu, un cran plus dense (11,5:1 sous
+     texte blanc). Ce n'est PAS un bleu nuit — il n'y en a plus (2026-10-27). */
+  --lfc-brand-blue-strong: #0e2d94;
+  --lfc-ink-950: var(--lfc-brand-blue);
+  --lfc-ink-900: var(--lfc-brand-blue);
+  --lfc-ink-800: var(--lfc-brand-blue);
   /* Le cran qui manquait à la rampe, et il manquait pour une raison visible :
      la descente bleue commençait sur `ink-800`, c'est-à-dire sur la couleur que
      la barre porte déjà en aplat sur 96 px. Son « bleu le plus clair » n'était
@@ -33,37 +46,37 @@
      Valeur de la maquette du 2026-09-20, au chiffre près.
      ⚠️ À ne pas confondre avec `--lfc-ink-700-text`, qui est un rôle de TEXTE
      sur papier et n'a rien à faire dans un fond. */
-  --lfc-ink-700: #1b3f9e;
-  --lfc-ink-600: #1b4bc4;
+  --lfc-ink-700: var(--lfc-brand-blue);
+  --lfc-ink-600: var(--lfc-brand-blue);
   /* `#a9bfe8` jusqu'au 2026-10-26 (lot A4 d'accessibilité) : 4,40:1 sur la
      carte du registre sombre (`#2a4a9e`), sous le 4,5 d'un texte courant. Un
      cran plus clair, même teinte : 4,84:1 sur la carte, 7,08:1 sur `ink-800`. */
   --lfc-ink-300: #b4c8ee;
   --lfc-ink-100: #c3d0ee;
   --lfc-ink-50: #e5ecfb;
-  --lfc-ink-700-text: #33477a;
+  --lfc-ink-700-text: #1238b7;
 
   /* ── Primitives : papier chaud (la page) ── */
-  --lfc-paper-0: #fffdf8;
-  --lfc-paper-50: #fcf9f3; /* #faf5ec jusqu’au 2026-10-27 : fond de page éclairci (Hugo) */
-  --lfc-paper-100: #f2ece0;
-  --lfc-paper-200: #e8e0cf;
-  --lfc-paper-300: #e5dcc9;
-  --lfc-paper-400: #d8cdb6;
+  --lfc-paper-0: #ffffff;
+  --lfc-paper-50: #ffffff; /* #faf5ec jusqu’au 2026-10-27 : fond de page éclairci (Hugo) */
+  --lfc-paper-100: #f6f7fc;
+  --lfc-paper-200: #eef1fa;
+  --lfc-paper-300: #d0d7f1;
+  --lfc-paper-400: #b8c3e9;
 
   /* ── Primitives : encre chaude (le texte) ── */
   /* Le fond encre de la tuile d'opération (boutique pro, « Tuile Noël ») : plus
      profond que `soot-900`, pour qu'une photo de bûche y tienne sans voile. */
-  --lfc-soot-950: #1c1408;
-  --lfc-soot-900: #23201a;
-  --lfc-soot-700: #5c5548;
+  --lfc-soot-950: #1238b7;
+  --lfc-soot-900: #1238b7;
+  --lfc-soot-700: #3656c2;
   /* `#6f6858` jusqu'au 2026-10-26 (lot A4) : 4,21:1 sur le bandeau
      (`paper-200`), sous le 4,5 d'un texte courant. 4,82:1 sur le bandeau,
      5,38 sur `paper-100`, 5,83 sur la page, 6,23 sur la carte. */
-  --lfc-soot-600: #665f50;
-  --lfc-soot-550: #857c6c;
-  --lfc-soot-500: #8b8272;
-  --lfc-soot-400: #a49a86;
+  --lfc-soot-600: #4160c5;
+  --lfc-soot-550: #7188d4;
+  --lfc-soot-500: #7188d4;
+  --lfc-soot-400: #a0afe2;
 
   /* ── Primitives : beurre (l'argent, la signature, l'événement) ── */
   --lfc-butter-500: #d99a2b;
@@ -93,7 +106,7 @@
 
   /* ── Rôles fold : marque ── */
   --fold-color-primary: var(--lfc-ink-800);
-  --fold-color-primary-strong: var(--lfc-ink-900);
+  --fold-color-primary-strong: var(--lfc-brand-blue-strong);
   --fold-color-on-primary: var(--lfc-paper-50);
   --fold-color-primary-surface: var(--lfc-ink-50);
   --fold-color-primary-border: var(--lfc-ink-100);
@@ -113,7 +126,7 @@
 
   /* ── Rôles fold : bordures ── */
   --fold-color-border: var(--lfc-paper-300);
-  --fold-color-border-subtle: #ebe3d2;
+  --fold-color-border-subtle: #e3e7f6;
   /* Le contour d'un champ au repos (fold 0.34.0, WCAG 1.4.11, RGAA 3.3) : 3,79:1
      sur la page, 4,05:1 sur la carte, 3,14:1 sur le bandeau (paper-200) — soot-500
      n'y tenait que 2,89:1 (Hugo, 2026-10-26). Les deux filets au-dessus restent
@@ -161,9 +174,9 @@
   --fold-color-bg-rail-primary: var(--lfc-ink-800);
   --fold-color-bg-rail-secondary: var(--lfc-ink-900);
   --fold-color-bg-rail-tertiary: var(--lfc-ink-950);
-  --fold-color-glass: rgb(255 253 248 / 72%);
+  --fold-color-glass: rgb(255 255 255 / 72%);
   --fold-color-glass-border: var(--lfc-paper-300);
-  --fold-color-scrim: rgb(8 24 66 / 45%);
+  --fold-color-scrim: rgb(18 56 183 / 40%);
 
   /* ── Rôles hors catalogue fold (candidats à proposer) ── */
   --lfc-color-primary-vivid: var(--lfc-ink-600);
@@ -238,10 +251,12 @@
      crème au lieu de se poser dessus. La réf s'en sert pour le panneau
      « nouvelle commande » : ce qu'on y met est le sujet de l'écran, pas une
      option parmi d'autres. fold n'a pas ce rôle (candidat à proposer). */
-  --lfc-color-surface-well: var(--lfc-ink-950);
-  --lfc-color-on-well: var(--lfc-paper-50);
-  --lfc-color-on-well-muted: var(--lfc-ink-300);
-  --lfc-color-on-well-tile: rgb(250 245 236 / 18%);
+  --lfc-color-surface-well: var(--lfc-paper-0);
+  --lfc-color-on-well: var(--lfc-brand-blue);
+  --lfc-color-on-well-muted: var(--lfc-soot-700);
+  --lfc-color-on-well-tile: var(--lfc-paper-200);
+  /* Lu par l'indicateur du puits, et jamais déclaré avant le 2026-10-27. */
+  --lfc-color-on-well-faded: var(--lfc-soot-550);
   /* Le beurre INTENSE : un aplat chaud qui porte du texte clair. Distinct de
      `accent-surface`, qui est le beurre pâle porteur de texte sombre. */
   --lfc-color-accent-deep: var(--lfc-butter-800);
@@ -346,11 +361,11 @@
      crochets existent depuis fold 0.23.
      La TAILLE reste celle du préréglage : une voix est un registre, pas une
      échelle. */
-  --fold-button-font: var(--fold-font-label);
-  --fold-button-weight: var(--lfc-weight-black);
-  --fold-button-tracking: var(--lfc-tracking-label);
-  --fold-button-transform: uppercase;
-  --fold-button-radius: 6px;
+  --fold-button-font: var(--fold-font-sans);
+  --fold-button-weight: 600;
+  --fold-button-tracking: 0;
+  --fold-button-transform: none;
+  --fold-button-radius: 4px;
   --fold-button-min-height: 44px;
 
   /* Resserrés pour Archivo (−0,03 et −0,015) ; Chunk est une face noire et
@@ -398,19 +413,23 @@
   --lfc-radius-sheet: 0.8125rem; /* 13px — coin haut de la feuille crème */
   --lfc-radius-window: 0.625rem; /* 10px — angle concave sous la lèvre, celui de la carte */
 
+  /* ── Ombres : aucune (charte à plat, 2026-10-27) — celles de fold aussi ── */
+  --fold-shadow-sm: none;
+  --fold-shadow-md: none;
+  --fold-shadow-lg: none;
   /* ── Ombres de l'app client ── */
-  --lfc-shadow-card: 0 2px 10px -6px rgb(35 32 26 / 18%);
-  --lfc-shadow-promo: 0 10px 26px -14px rgb(35 32 26 / 50%);
+  --lfc-shadow-card: none;
+  --lfc-shadow-promo: none;
   /* L'ombre CHAUDE du best-seller : teintée d'or brun, elle le décolle sans le
      griser. */
-  --lfc-shadow-featured: 0 14px 30px -16px rgb(90 61 7 / 45%);
+  --lfc-shadow-featured: none;
   /* L'ombre LONGUE de la barre « Ma commande » : portée bleu nuit, elle la
      détache de l'encre du bandeau qu'elle chevauche (SPEC §2). */
-  --lfc-shadow-order-bar: 0 34px 64px -26px rgb(6 16 46 / 60%);
+  --lfc-shadow-order-bar: none;
   /* L'ombre VERS LE HAUT des bords de feuille en pile — le pied collé et la
      languette de la boutique (SPEC §8) : portée bleu nuit, elle les décolle de
      ce qui passe dessous. */
-  --lfc-shadow-sheet-up: 0 -16px 30px -20px rgb(6 16 46 / 55%);
+  --lfc-shadow-sheet-up: none;
   /* LE RELIEF DU BANDEAU — trois couches, et chacune fait un travail que les
      deux autres ne font pas (Hugo, 2026-09-20 : « améliorer l'effet relief de
      cette grande carte »).
@@ -428,17 +447,15 @@
      Teintée d'ENCRE (8 24 66) et non de suie : le bandeau chevauche la descente
      bleue autant que la feuille crème, et une ombre chaude y virerait au brun
      sur la moitié de sa course. */
-  --lfc-shadow-lifted:
-    0 1px 2px rgb(8 24 66 / 22%), 0 14px 28px -14px rgb(8 24 66 / 45%),
-    0 36px 64px -32px rgb(8 24 66 / 50%);
-  --lfc-shadow-logo: 0 2px 8px -4px rgb(10 20 50 / 40%);
+  --lfc-shadow-lifted: none;
+  --lfc-shadow-logo: none;
   /* L'ombre des POPOVERS de la barre (maquette du 2026-09-20). Deux couches, et
      les deux comptent : une portée large et profonde qui décolle le panneau de
      l'encre, et un filet d'un pixel qui lui rend un bord là où l'ombre seule
      laisserait la crème du panneau se confondre avec la crème de la page. Les
      trois autres ombres du thème tombent sur du papier ; celle-ci tombe sur du
      bleu foncé, et c'est pourquoi elle est la seule aussi dense. */
-  --lfc-shadow-popover: 0 26px 60px rgb(6 16 46 / 34%), 0 0 0 1px rgb(35 32 26 / 7%);
+  --lfc-shadow-popover: 0 0 0 1px var(--lfc-paper-300);
 
   /* ── Mouvement ── */
   --lfc-motion-tap: transform 130ms cubic-bezier(0.4, 0, 1, 1);

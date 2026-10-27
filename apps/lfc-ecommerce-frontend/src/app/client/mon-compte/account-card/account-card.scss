@@ -17,21 +17,10 @@
   min-height: 150px;
   padding: var(--fold-space-md) var(--fold-space-lg);
   border-radius: var(--lfc-radius-2xl);
-  background: linear-gradient(134deg, #0b1f52, var(--lfc-ink-800) 46%, var(--lfc-ink-900));
+  background: var(--lfc-brand-blue);
   color: var(--lfc-color-on-well);
-  box-shadow: 0 18px 40px -22px rgb(8 24 66 / 75%);
   isolation: isolate;
   overflow: clip;
-}
-
-.card::before {
-  content: '';
-  position: absolute;
-  inset: 0;
-  z-index: -1;
-  background:
-    radial-gradient(90% 120% at 88% 0%, rgb(217 154 43 / 30%), transparent 58%),
-    linear-gradient(118deg, transparent 42%, rgb(250 245 236 / 7%) 50%, transparent 58%);
 }
 
 .who {
