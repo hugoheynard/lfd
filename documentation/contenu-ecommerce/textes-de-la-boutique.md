@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1686 textes
+## Sommaire — 1684 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -30,7 +30,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 72 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 70 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1686** |
+| **Total** | | **1684** |
 
 ## Le parcours de commande
 
@@ -685,7 +685,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 72 textes.
+Source : `fr.ts · en.ts · it.ts` · 70 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -704,8 +704,6 @@ Source : `fr.ts · en.ts · it.ts` · 72 textes.
 | `cart.excludedNote` | * Non concerné par la remise retrait. | * Not covered by the collection discount. | * Non coperto dallo sconto ritiro. |  |
 | `cart.excludedLineAria` | {name}, non concerné par la remise retrait | {name}, not covered by the collection discount | {name}, non coperto dallo sconto ritiro | `{name}` |
 | `cart.fee` | Coursier | Courier | Corriere |  |
-| `cart.feeVatStandard` | TVA de la livraison : 20 % | Delivery VAT: 20% | IVA sulla consegna: 20 % |  |
-| `cart.feeVatProrata` | TVA de la livraison : au prorata des produits | Delivery VAT: in proportion to the products | IVA sulla consegna: in proporzione ai prodotti |  |
 | `cart.vat` | TVA {rate} | VAT {rate} | IVA {rate} | `{rate}` |
 | `cart.total` | Total TTC | Total incl. VAT | Totale IVA incl. |  |
 | `cart.totalPretax` | Total HT | Total excl. VAT | Totale IVA escl. |  |

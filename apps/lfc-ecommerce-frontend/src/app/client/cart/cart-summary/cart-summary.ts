@@ -198,21 +198,6 @@ export class CartSummary implements OnInit {
     return fee === 0 ? null : this.t().cart.fee;
   });
 
-  /** À quel taux le port est taxé — seulement quand il y a un port. */
-  protected readonly feeVatLabel = computed(() => {
-    const totals = this.totals();
-    if (totals.deliveryFeeCents === 0) {
-      return null;
-    }
-    const c = this.t().cart;
-    if (totals.deliveryVatMode !== 'follows_goods') {
-      return c.feeVatStandard;
-    }
-    // Au compte et au prorata, AUCUN taux : il n'y en a pas un seul, et le
-    // panier ne chiffre pas la TVA (F5) — la livraison s'y lit en HT, sans plus.
-    return this.onAccount() ? null : c.feeVatProrata;
-  });
-
   /** Le total montré : HT au compte (total moins TVA du devis), TTC sinon. */
   protected readonly shownTotalCents = computed(() =>
     shownCartTotalCents(this.totals(), this.onAccount()),

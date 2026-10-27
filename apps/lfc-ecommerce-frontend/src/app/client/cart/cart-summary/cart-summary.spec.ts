@@ -240,20 +240,16 @@ describe('CartSummary — les points à gagner', () => {
     expect(el(quoted(points)).querySelector('.points')).toBeNull();
   });
 
-  /** Plan TVA des frais de port, V5 : le port dit à quel taux il est taxé. */
-  it.each([
-    ['standard', 'TVA de la livraison : 20 %'],
-    ['follows_goods', 'TVA de la livraison : au prorata des produits'],
-  ] as const)('dit la TVA de la livraison en mode %s', (mode, label) => {
+  /**
+   * Le taux du port ne se dit plus sous la ligne de livraison (Hugo,
+   * 2026-10-27).
+   */
+  it('ne dit pas la TVA de la livraison', () => {
     const fixture = quoted(null, workspaceDouble(), {
       deliveryFeeCents: 1200,
-      deliveryVatMode: mode,
+      deliveryVatMode: 'standard',
     });
-    expect(el(fixture).querySelector('.fee-vat')?.textContent).toBe(label);
-  });
-
-  it('ne dit pas la TVA d’une livraison qui ne coûte rien', () => {
-    expect(el(quoted(null)).querySelector('.fee-vat')).toBeNull();
+    expect(el(fixture).textContent).not.toContain('TVA de la livraison');
   });
 
   /** « Pas de fidélité en pro » (Hugo, 2026-09-27) : le devis perso ne survit pas à la bascule. */
@@ -493,7 +489,7 @@ describe('CartSummary — un pro au compte (F5)', () => {
   const grand = (el: HTMLElement): string =>
     el.querySelector('.row.grand')?.textContent?.replace(/\s+/gu, ' ').trim() ?? '';
 
-  it('au compte : le total HT et la mention, sans ligne de TVA ni taux du port', () => {
+  it('au compte : le total HT et la mention, sans ligne de TVA', () => {
     const el = quotedIn(workspaceDouble(TOMMEUSES.id, [TOMMEUSES]));
 
     // 14,64 € TTC − 0,14 € de TVA = 14,50 € HT.
@@ -501,7 +497,6 @@ describe('CartSummary — un pro au compte (F5)', () => {
     expect(grand(el)).toContain(formatCents(1450));
     expect(el.textContent).toContain('TVA et TTC sur la facture du mois');
     expect(el.querySelectorAll('.row.vat')).toHaveLength(0);
-    expect(el.querySelector('.fee-vat')).toBeNull();
     expect(el.textContent).not.toContain(formatCents(1464));
   });
 

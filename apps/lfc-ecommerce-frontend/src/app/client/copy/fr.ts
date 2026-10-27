@@ -359,8 +359,6 @@ export const FR: ClientCopy = {
     excludedNote: '* Non concerné par la remise retrait.',
     excludedLineAria: '{name}, non concerné par la remise retrait',
     fee: 'Coursier',
-    feeVatStandard: 'TVA de la livraison : 20 %',
-    feeVatProrata: 'TVA de la livraison : au prorata des produits',
     vat: 'TVA {rate}',
     total: 'Total TTC',
     totalPretax: 'Total HT',

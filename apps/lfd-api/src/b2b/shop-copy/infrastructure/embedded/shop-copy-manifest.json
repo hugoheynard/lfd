@@ -3431,20 +3431,6 @@
         },
         { "key": "cart.fee", "fr": "Coursier", "en": "Courier", "it": "Corriere", "variables": [] },
         {
-          "key": "cart.feeVatStandard",
-          "fr": "TVA de la livraison : 20 %",
-          "en": "Delivery VAT: 20%",
-          "it": "IVA sulla consegna: 20 %",
-          "variables": []
-        },
-        {
-          "key": "cart.feeVatProrata",
-          "fr": "TVA de la livraison : au prorata des produits",
-          "en": "Delivery VAT: in proportion to the products",
-          "it": "IVA sulla consegna: in proporzione ai prodotti",
-          "variables": []
-        },
-        {
           "key": "cart.vat",
           "fr": "TVA {rate}",
           "en": "VAT {rate}",

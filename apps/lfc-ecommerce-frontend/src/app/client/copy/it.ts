@@ -365,8 +365,6 @@ export const IT: ClientCopy = {
     excludedNote: '* Non coperto dallo sconto ritiro.',
     excludedLineAria: '{name}, non coperto dallo sconto ritiro',
     fee: 'Corriere',
-    feeVatStandard: 'IVA sulla consegna: 20 %',
-    feeVatProrata: 'IVA sulla consegna: in proporzione ai prodotti',
     vat: 'IVA {rate}',
     total: 'Totale IVA incl.',
     totalPretax: 'Totale IVA escl.',

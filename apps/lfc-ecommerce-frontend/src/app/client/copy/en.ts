@@ -361,8 +361,6 @@ export const EN: ClientCopy = {
     excludedNote: '* Not covered by the collection discount.',
     excludedLineAria: '{name}, not covered by the collection discount',
     fee: 'Courier',
-    feeVatStandard: 'Delivery VAT: 20%',
-    feeVatProrata: 'Delivery VAT: in proportion to the products',
     vat: 'VAT {rate}',
     total: 'Total incl. VAT',
     totalPretax: 'Total excl. VAT',
