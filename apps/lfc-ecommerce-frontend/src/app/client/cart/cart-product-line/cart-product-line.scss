@@ -1,14 +1,16 @@
 /**
  * La ligne pose sa GRILLE ; l'écart entre deux lignes appartient à la liste.
  *
- * **Une seule rangée** (Hugo, 2026-10-27) : le nom et son prix unitaire en
- * dessous, puis la quantité, le total et la corbeille. Le nom prend ce qui
- * reste et passe à la ligne s'il le faut ; les contrôles gardent leur largeur.
+ * **Deux rangées** (Hugo, 2026-10-27) : le nom et la quantité en haut — ce
+ * qu'on vient régler —, le prix unitaire, le total et la corbeille en
+ * dessous. Une seule rangée laissait trop peu au nom sur un téléphone.
  */
 :host {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) auto auto auto;
-  grid-template-areas: 'what qty sum drop';
+  grid-template-columns: minmax(0, 1fr) auto auto;
+  grid-template-areas:
+    'name qty qty'
+    'unit sum drop';
   align-items: center;
   gap: 9px 13px;
   padding: 13px 15px;
@@ -16,7 +18,7 @@
 
 .qty {
   grid-area: qty;
-  justify-self: start;
+  justify-self: end;
   /* Deux boutons de part et d'autre d'un champ à trois chiffres : le nom
      garde le reste. */
   width: 148px;
@@ -48,14 +50,13 @@
 }
 
 .what {
-  grid-area: what;
-  display: flex;
-  flex-direction: column;
-  gap: 1px;
-  min-width: 0;
+  /* Ses trois enfants se rangent chacun dans la grille de la ligne. */
+  display: contents;
 }
 
 .name {
+  grid-area: name;
+  min-width: 0;
   font-family: var(--fold-font-label);
   font-size: var(--fold-text-md);
   font-weight: var(--fold-weight-extrabold);
@@ -65,6 +66,7 @@
 }
 
 .unit {
+  grid-area: unit;
   font-size: var(--fold-text-xs);
   color: var(--lfc-color-text-subtle);
   font-variant-numeric: tabular-nums;
@@ -78,6 +80,8 @@
 
 /* La limite propre de l'article, sous son prix. */
 .made-to-order {
+  /* Une troisième rangée, seulement quand la limite existe. */
+  grid-column: 1 / -1;
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-secondary);
 }
