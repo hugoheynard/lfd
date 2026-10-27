@@ -395,6 +395,41 @@ describe('ShopPage', () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  /**
+   * Régression (Hugo, 2026-10-27 : « en livraison, changer le jour ouvre le
+   * dialog livraison — on livre où, et pas le jour ») : en livraison, le lien
+   * du jour ouvre le PANNEAU DU JOUR (`changeDate`), pas l'adresse.
+   */
+  it('« Changer le jour » en livraison passe par le panneau du jour', async () => {
+    TestBed.inject(OrderContextStore).choice.set({
+      mode: 'delivery',
+      place: 'Chalet',
+      at: 'au Chalet',
+      address: '1 rue du Col, 73150',
+      codePostal: '73150',
+      slot: '8 h',
+      window: { start: '08:00', end: '09:00' },
+      date: '2026-11-03',
+      deliveryAddressId: 'addr_chalet',
+      deliveryAddress: {
+        label: 'Chalet',
+        ligne1: '1 rue du Col',
+        ligne2: '',
+        codePostal: '73150',
+        ville: 'Val d’Isère',
+        pays: 'France',
+      },
+    });
+    const doors = TestBed.inject(OrderDoors);
+    const changeDate = vi.spyOn(doors, 'changeDate').mockResolvedValue(false);
+    const delivery = vi.spyOn(doors, 'delivery').mockResolvedValue(false);
+
+    await fixture.componentInstance['changeTime']();
+
+    expect(changeDate).toHaveBeenCalled();
+    expect(delivery).not.toHaveBeenCalled();
+  });
+
   /** Le chevron est parti : le logo reprend le coin (Hugo, 2026-09-24). */
   it('ne pose plus de chevron de retour dans l’en-tête', () => {
     expect(TestBed.inject(ClientChrome).back()).toBeNull();

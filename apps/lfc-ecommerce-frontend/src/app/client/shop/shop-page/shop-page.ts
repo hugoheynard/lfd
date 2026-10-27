@@ -297,7 +297,12 @@ export class ShopPage {
       return this.doors.choose();
     }
     if (service.mode === 'delivery') {
-      return this.doors.delivery(service.deliveryAddressId ?? null);
+      // « Changer le jour » en livraison : le panneau du jour, PUIS la même
+      // adresse (Hugo, 2026-10-27 : « ça ouvre le dialog livraison, on livre
+      // où, et pas le jour »). « Changer d'adresse » garde le jour.
+      return timeOnly
+        ? this.doors.changeDate()
+        : this.doors.delivery(service.deliveryAddressId ?? null);
     }
     if (timeOnly && service.pickupAddressId !== null) {
       return this.doors.time(service.pickupAddressId, service.place, service.address);
