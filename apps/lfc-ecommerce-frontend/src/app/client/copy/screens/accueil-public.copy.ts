@@ -309,8 +309,8 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
     },
     courier: {
       tag: 'Coursier',
-      title: 'On vous\nl’apporte',
-      intro: 'À l’adresse et au moment de votre choix.',
+      title: 'On me\nl’apporte',
+      intro: 'À l’adresse et au créneau sélectionnés.',
       cta: 'Je commande',
       note: 'Avant 18 h',
       pending: {
@@ -406,8 +406,8 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
     },
     courier: {
       tag: 'Courier',
-      title: 'We bring it\nto you',
-      intro: 'At the address and time of your choice.',
+      title: 'Bring it\nto me',
+      intro: 'At the address and slot I selected.',
       cta: 'Order',
       note: 'Before 6 pm',
       pending: {
@@ -503,8 +503,8 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
     },
     courier: {
       tag: 'Corriere',
-      title: 'Glielo\nportiamo',
-      intro: 'All’indirizzo e al momento che sceglie.',
+      title: 'Me lo\nportano',
+      intro: 'All’indirizzo e nella fascia selezionati.',
       cta: 'Ordino',
       note: 'Entro le 18',
       pending: {

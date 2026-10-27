@@ -109,16 +109,16 @@
         },
         {
           "key": "accueilPublic.doors.courier.title",
-          "fr": "On vous\nl’apporte",
-          "en": "We bring it\nto you",
-          "it": "Glielo\nportiamo",
+          "fr": "On me\nl’apporte",
+          "en": "Bring it\nto me",
+          "it": "Me lo\nportano",
           "variables": []
         },
         {
           "key": "accueilPublic.doors.courier.intro",
-          "fr": "À l’adresse et au moment de votre choix.",
-          "en": "At the address and time of your choice.",
-          "it": "All’indirizzo e al momento che sceglie.",
+          "fr": "À l’adresse et au créneau sélectionnés.",
+          "en": "At the address and slot I selected.",
+          "it": "All’indirizzo e nella fascia selezionati.",
           "variables": []
         },
         {

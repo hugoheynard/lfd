@@ -76,8 +76,8 @@ Source : `screens/accueil-public.copy.ts` · 64 textes.
 | `accueilPublic.doors.pickup.cta` | Je commande | Order | Ordino |  |
 | `accueilPublic.doors.pickup.note` | _(vide)_ | _(vide)_ | _(vide)_ |  |
 | `accueilPublic.doors.courier.tag` | Coursier | Courier | Corriere |  |
-| `accueilPublic.doors.courier.title` | On vous<br>l’apporte | We bring it<br>to you | Glielo<br>portiamo |  |
-| `accueilPublic.doors.courier.intro` | À l’adresse et au moment de votre choix. | At the address and time of your choice. | All’indirizzo e al momento che sceglie. |  |
+| `accueilPublic.doors.courier.title` | On me<br>l’apporte | Bring it<br>to me | Me lo<br>portano |  |
+| `accueilPublic.doors.courier.intro` | À l’adresse et au créneau sélectionnés. | At the address and slot I selected. | All’indirizzo e nella fascia selezionati. |  |
 | `accueilPublic.doors.courier.cta` | Je commande | Order | Ordino |  |
 | `accueilPublic.doors.courier.note` | Avant 18 h | Before 6 pm | Entro le 18 |  |
 | `accueilPublic.doors.courier.pending.tag` | Bientôt | Soon | Presto |  |
