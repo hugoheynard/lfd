@@ -56,7 +56,11 @@ const ok = (body: unknown): DemoAnswer => ({ status: 200, body });
 /** L'identifiant de la commande que la passation simulée rend. */
 export const DEMO_ORDER_ID = 'demo-order';
 
-const FEATURE_LEVELS: FeatureLevelsView = { customerMandate: 'closed', facebookLogin: 'hidden' };
+const FEATURE_LEVELS: FeatureLevelsView = {
+  customerMandate: 'closed',
+  facebookLogin: 'hidden',
+  proSignupCallback: 'hidden',
+};
 const EMPTY_STOREFRONT: PublicStorefrontPageView = { rows: 0, objects: [] };
 const EMPTY_TEXT = { fr: '', en: '', it: '' } as const;
 const EMPTY_CARD = {

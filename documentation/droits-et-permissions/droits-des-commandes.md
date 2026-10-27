@@ -301,8 +301,8 @@ les anciennes adresses sous `/b2b/reglages/` redirigent. Voir
 [`../limites-de-commande/architecture-heure-limite-de-commande.md`](../limites-de-commande/architecture-heure-limite-de-commande.md).
 
 L'accès aux fonctionnalités (`b2b_feature_access`) n'ouvre **pas** la boutique :
-son catalogue ne porte que `customerMandate` et `facebookLogin`
-(`packages/contracts/src/feature-access.levels.ts`, vérifié le 2026-10-12).
+son catalogue ne porte que `customerMandate`, `facebookLogin` et `proSignupCallback`
+(`packages/contracts/src/feature-access.levels.ts`, vérifié le 2026-10-27).
 
 <a id="reglement"></a>
 

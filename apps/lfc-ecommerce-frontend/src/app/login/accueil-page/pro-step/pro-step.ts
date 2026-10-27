@@ -12,6 +12,7 @@ import { FoldButtonComponent, FoldCardComponent, FoldInputComponent } from 'fold
 import type { ProRegistration } from '../../../auth/auth.facade';
 import { CallbackBlock } from '../../../client/callback-block/callback-block';
 import { ClientCopyService } from '../../../client/copy/client-copy.service';
+import { ClientFeatureAccess } from '../../../client/feature-access/client-feature-access.service';
 import { proAccountCopy } from '../../../client/copy/screens/pro-account.copy';
 import { screenCopy } from '../../../client/copy/shop-copy-composer';
 
@@ -69,6 +70,8 @@ export class ProStep {
 
   protected readonly t = inject(ClientCopyService).t;
   protected readonly copy = screenCopy('proAccount', proAccountCopy);
+  /** L'encart de rappel, derrière `proSignupCallback` (Hugo, 2026-10-27). */
+  protected readonly callbackShown = inject(ClientFeatureAccess).proSignupCallbackShown;
 
   protected readonly firstName = signal('');
   protected readonly lastName = signal('');

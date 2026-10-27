@@ -100,6 +100,18 @@ export const FEATURE_CATALOGUE = {
     // se règle chez Auth0.
     exemptible: false,
   },
+  proSignupCallback: {
+    label: "Rappel depuis l'inscription pro",
+    description:
+      "L'encart « être rappelé » sous le formulaire de la porte pro de l'inscription. Masqué, le professionnel s'inscrit sans pouvoir demander qu'on le rappelle depuis cette page.",
+    levels: VISIBILITY_LEVELS,
+    // Masqué par défaut (Hugo, 2026-10-27) : on l'ouvre quand quelqu'un est
+    // là pour rappeler.
+    defaultLevel: "hidden",
+    // Non exemptible : la porte pro précède toute identité, comme le bouton
+    // Facebook — seul le niveau global a du sens.
+    exemptible: false,
+  },
 } as const satisfies Readonly<Record<string, FeatureDefinition<string>>>;
 
 export type FeatureKey = keyof typeof FEATURE_CATALOGUE;
@@ -108,7 +120,11 @@ export type FeatureLevel<Key extends FeatureKey = FeatureKey> =
   (typeof FEATURE_CATALOGUE)[Key]["levels"][number];
 
 /** Les clés, dans l'ordre du catalogue. */
-export const FEATURE_KEYS: readonly FeatureKey[] = ["customerMandate", "facebookLogin"];
+export const FEATURE_KEYS: readonly FeatureKey[] = [
+  "customerMandate",
+  "facebookLogin",
+  "proSignupCallback",
+];
 
 /**
  * Les clés qu'aucune exemption n'ouvre — calculées depuis le catalogue, pour

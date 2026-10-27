@@ -9,4 +9,5 @@
 export const DEFAULT_LEVELS = {
   customerMandate: 'closed',
   facebookLogin: 'hidden',
+  proSignupCallback: 'hidden',
 } as const;

@@ -22,10 +22,11 @@ export class GetFeatureLevelsHandler implements IQueryHandler<
   async execute(): Promise<FeatureLevelsView> {
     // `facebookLogin` n'est pas exemptible : le sujet n'y change rien, mais la
     // même résolution sert les deux routes.
-    const [customerMandate, facebookLogin] = await Promise.all([
+    const [customerMandate, facebookLogin, proSignupCallback] = await Promise.all([
       this.resolver.levelFor("customerMandate", null),
       this.resolver.levelFor("facebookLogin", null),
+      this.resolver.levelFor("proSignupCallback", null),
     ]);
-    return { customerMandate, facebookLogin };
+    return { customerMandate, facebookLogin, proSignupCallback };
   }
 }

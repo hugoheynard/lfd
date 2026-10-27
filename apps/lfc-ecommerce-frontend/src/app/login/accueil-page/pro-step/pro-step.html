@@ -83,16 +83,18 @@
      pas de le découvrir mais d'être aidé.
 
      ⚠️ Il ne conditionne rien : le formulaire s'envoie sans lui. -->
-<app-callback-block
-  [title]="copy().door.callbackTitle"
-  [pitch]="copy().door.callbackPitch"
-  [cta]="t().pro.cta"
-  [phone]="callbackPhone()"
-  [bookedSlot]="bookedSlot()"
-  [showPhone]="true"
-  (wantsCallback)="wantsCallback.emit()"
-  (cancelled)="cancelledCallback.emit()"
-/>
+@if (callbackShown()) {
+  <app-callback-block
+    [title]="copy().door.callbackTitle"
+    [pitch]="copy().door.callbackPitch"
+    [cta]="t().pro.cta"
+    [phone]="callbackPhone()"
+    [bookedSlot]="bookedSlot()"
+    [showPhone]="true"
+    (wantsCallback)="wantsCallback.emit()"
+    (cancelled)="cancelledCallback.emit()"
+  />
+}
 
 <!-- 🔴 EN PILE SEULEMENT (cf. le SCSS) : au-delà du pli, la colonne d'encre
      porte la porte de connexion, en bas. -->

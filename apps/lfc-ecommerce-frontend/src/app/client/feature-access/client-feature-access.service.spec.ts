@@ -69,7 +69,11 @@ describe('ClientFeatureAccess', () => {
       // Un serveur qui ne connaît pas la clé : fermé.
       expect(access.customerMandate()).toBe('closed');
 
-      access.receive({ customerMandate: 'open', facebookLogin: 'hidden' });
+      access.receive({
+        customerMandate: 'open',
+        facebookLogin: 'hidden',
+        proSignupCallback: 'hidden',
+      });
       expect(access.customerMandate()).toBe('open');
     });
 
@@ -82,7 +86,11 @@ describe('ClientFeatureAccess', () => {
       // Un serveur qui ne connaît pas la clé : masqué.
       expect(access.facebookLoginShown()).toBe(false);
 
-      access.receive({ customerMandate: 'closed', facebookLogin: 'visible' });
+      access.receive({
+        customerMandate: 'closed',
+        facebookLogin: 'visible',
+        proSignupCallback: 'hidden',
+      });
       expect(access.facebookLoginShown()).toBe(true);
     });
 

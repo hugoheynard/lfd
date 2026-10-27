@@ -89,6 +89,14 @@ export class ClientFeatureAccess {
     isAtLeast('facebookLogin', this.levels()?.facebookLogin ?? UNKNOWN_FACEBOOK_LEVEL, 'visible'),
   );
 
+  /**
+   * Vrai si l'encart « être rappelé » de la porte pro se montre
+   * (`proSignupCallback`). Faux tant qu'on ne sait pas : masqué est son défaut.
+   */
+  readonly proSignupCallbackShown = computed<boolean>(() =>
+    isAtLeast('proSignupCallback', this.levels()?.proSignupCallback ?? 'hidden', 'visible'),
+  );
+
   /** Résout quand l'état a quitté `loading` — succès ou échec. */
   settled(): Promise<void> {
     return this.settledPromise;

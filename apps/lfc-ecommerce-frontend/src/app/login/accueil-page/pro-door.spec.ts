@@ -7,6 +7,8 @@ import { AuthFacade, type ProRegistration } from '../../auth/auth.facade';
 import { ClientChrome } from '../../client/client-chrome.service';
 import { FR } from '../../client/copy/fr';
 import { PRO_ACCOUNT_FR } from '../../client/copy/screens/pro-account.copy';
+import { ClientFeatureAccess } from '../../client/feature-access/client-feature-access.service';
+import { DEFAULT_LEVELS } from '../../client/feature-access/feature-access.fixture';
 import { AccueilPage } from './accueil-page';
 
 /**
@@ -161,6 +163,12 @@ describe('AccueilPage · porte pro', () => {
       fragments.push(extras?.fragment ?? null);
       return Promise.resolve(true);
     };
+    // L'encart de rappel est derrière `proSignupCallback` : ouvert ici, ses
+    // tests l'éprouvent ; le test « cache » le referme.
+    TestBed.inject(ClientFeatureAccess).receive({
+      ...DEFAULT_LEVELS,
+      proSignupCallback: 'visible',
+    });
     fixture = TestBed.createComponent(AccueilPage);
     fixture.detectChanges();
   }
@@ -311,6 +319,14 @@ describe('AccueilPage · porte pro', () => {
     expect(el().querySelector('app-callback-block')).not.toBeNull();
     expect(shown).toContain(PRO_ACCOUNT_FR.door.callbackTitle);
     expect(shown).not.toContain(FR.pro.title);
+  });
+
+  /** Derrière `proSignupCallback`, masqué par défaut (Hugo, 2026-10-27). */
+  it('cache le rappel tant que la clé n’est pas visible', () => {
+    boot();
+    TestBed.inject(ClientFeatureAccess).receive(DEFAULT_LEVELS);
+    fixture.detectChanges();
+    expect(el().querySelector('app-callback-block')).toBeNull();
   });
 
   /** Et il ne conditionne rien (§4) : le formulaire part sans lui. */

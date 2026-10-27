@@ -70,7 +70,11 @@ async function board(): Promise<AdminFeatureAccessView> {
  * depuis le 2026-10-09 : `shop`, `orders`, `invoices`, `desktopMenu` et
  * `publicDelivery` sont retirées.
  */
-const DEFAULTS = { customerMandate: "closed", facebookLogin: "hidden" } as const;
+const DEFAULTS = {
+  customerMandate: "closed",
+  facebookLogin: "hidden",
+  proSignupCallback: "hidden",
+} as const;
 
 async function publicLevels(): Promise<FeatureLevelsView> {
   return jsonBody<FeatureLevelsView>(await ctx.http().get("/feature-access").expect(200));
@@ -90,6 +94,12 @@ describe("la dérogation — posée, puis retirée", () => {
       }),
       expect.objectContaining({
         key: "facebookLogin",
+        effectiveLevel: "hidden",
+        exemptible: false,
+        override: null,
+      }),
+      expect.objectContaining({
+        key: "proSignupCallback",
         effectiveLevel: "hidden",
         exemptible: false,
         override: null,
@@ -181,7 +191,11 @@ describe("la dérogation — posée, puis retirée", () => {
 
     const view = await board();
 
-    expect(view.features.map((feature) => feature.key)).toEqual([KEY, "facebookLogin"]);
+    expect(view.features.map((feature) => feature.key)).toEqual([
+      KEY,
+      "facebookLogin",
+      "proSignupCallback",
+    ]);
     expect(view.ignored).toEqual(
       expect.arrayContaining([
         ...removed.map((key) => ({
