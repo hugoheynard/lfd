@@ -5,11 +5,11 @@
 .usuals {
   display: grid;
   gap: var(--fold-space-sm);
-  /* 🔴 UNE BANDE BLEU CIEL PLEINE LARGEUR (Hugo, 2026-10-27), comme celles
-     des incontournables et du contact. Marge négative délibérée. */
+  /* 🔴 UNE BANDE BLEU PÂLE PLEINE LARGEUR (Hugo, 2026-10-27), le même bleu
+     que « Nous contacter ». Marge négative délibérée. */
   margin-inline: calc(50% - 50vw);
   padding: var(--fold-space-2xl) calc(50vw - 50%);
-  background: var(--lfc-sky);
+  background: var(--lfc-ink-50);
 }
 
 /* Le titre de la rangée : la voix des titres de l'accueil, à la taille d'une carte. */
