@@ -186,3 +186,12 @@
     display: none;
   }
 }
+
+/* L'heure limite se LIT (Hugo, 2026-10-27 : elle « est effacée ») : un aplat
+   blanc sur le beurre de la barre, le texte en gras. Le ton reste celui de
+   l'avertissement ; seul le fond change. */
+[data-late-day] {
+  background: var(--lfc-paper-0);
+  font-weight: 700;
+  font-size: var(--fold-text-md);
+}

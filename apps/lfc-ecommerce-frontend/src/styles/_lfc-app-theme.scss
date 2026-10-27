@@ -416,7 +416,11 @@
   /* ── Ombres : aucune (charte à plat, 2026-10-27) — celles de fold aussi ── */
   --fold-shadow-sm: none;
   --fold-shadow-md: none;
-  --fold-shadow-lg: none;
+  /* SAUF ce qui FLOTTE (Hugo, 2026-10-27 : le panier et le sélecteur
+     « passent au travers ») : un panneau blanc posé sur une page blanche n'a
+     plus de bord sans son ombre. Les cartes restent à plat ; les calques
+     — popovers, menus, feuilles — gardent une portée bleue douce. */
+  --fold-shadow-lg: 0 18px 44px -12px rgb(18 56 183 / 40%), 0 0 0 1px var(--lfc-ink-300);
   /* ── Ombres de l'app client ── */
   --lfc-shadow-card: none;
   --lfc-shadow-promo: none;
@@ -425,11 +429,11 @@
   --lfc-shadow-featured: none;
   /* L'ombre LONGUE de la barre « Ma commande » : portée bleu nuit, elle la
      détache de l'encre du bandeau qu'elle chevauche (SPEC §2). */
-  --lfc-shadow-order-bar: none;
+  --lfc-shadow-order-bar: 0 -6px 24px -10px rgb(18 56 183 / 30%);
   /* L'ombre VERS LE HAUT des bords de feuille en pile — le pied collé et la
      languette de la boutique (SPEC §8) : portée bleu nuit, elle les décolle de
      ce qui passe dessous. */
-  --lfc-shadow-sheet-up: none;
+  --lfc-shadow-sheet-up: 0 -6px 24px -10px rgb(18 56 183 / 30%);
   /* LE RELIEF DU BANDEAU — trois couches, et chacune fait un travail que les
      deux autres ne font pas (Hugo, 2026-09-20 : « améliorer l'effet relief de
      cette grande carte »).
@@ -449,13 +453,6 @@
      sur la moitié de sa course. */
   --lfc-shadow-lifted: none;
   --lfc-shadow-logo: none;
-  /* L'ombre des POPOVERS de la barre (maquette du 2026-09-20). Deux couches, et
-     les deux comptent : une portée large et profonde qui décolle le panneau de
-     l'encre, et un filet d'un pixel qui lui rend un bord là où l'ombre seule
-     laisserait la crème du panneau se confondre avec la crème de la page. Les
-     trois autres ombres du thème tombent sur du papier ; celle-ci tombe sur du
-     bleu foncé, et c'est pourquoi elle est la seule aussi dense. */
-  --lfc-shadow-popover: 0 0 0 1px var(--lfc-paper-300);
 
   /* ── Mouvement ── */
   --lfc-motion-tap: transform 130ms cubic-bezier(0.4, 0, 1, 1);
