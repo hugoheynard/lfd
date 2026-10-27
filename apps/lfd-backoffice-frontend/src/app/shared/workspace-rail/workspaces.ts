@@ -635,17 +635,6 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     needs: 'pim_tax:read',
     section: 'Général',
   },
-  // Même icône que les taux, et c'est voulu : les deux répondent à « ce
-  // qu'on facture ». Ce qui les sépare tient au libellé — l'un est imposé
-  // de l'extérieur, l'autre décidé par la maison.
-  {
-    key: 'accounting',
-    label: 'Règles comptables',
-    link: '/pim/regles-comptables',
-    icon: 'tax',
-    needs: 'pim_tax:read',
-    section: 'Général',
-  },
   // Juste après ce dont il raconte l'histoire. `tax:write`, comme la route
   // serveur : un `tax:read` montrerait l'entrée au commercial, pour un 403.
   {

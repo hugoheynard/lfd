@@ -48,23 +48,17 @@ export const pimRoutes: Routes = [
           import('./catalogue/vat-rates/vat-rates-page').then((m) => m.VatRatesPage),
       },
       {
-        // Même mur que les taux, et pour la même raison : décider ce que le
-        // professionnel paie par rapport au particulier est une décision
-        // comptable, pas une édition de catalogue. Écran à part du référentiel
-        // fiscal — un taux est imposé de l'extérieur, une remise est décidée
-        // par la maison.
+        // « Règles comptables », retirée le 2026-10-27 : le prix pro n'a plus
+        // qu'une source, la saisie sur la fiche (lot R3), et la page n'avait
+        // plus rien à régler. Un favori ne tombe pas en page blanche.
         path: 'regles-comptables',
-        canActivate: [permissionGuard('pim_tax:read')],
-        title: 'Règles comptables — LFC B2B admin',
-        loadComponent: () =>
-          import('./accounting-rules/accounting-rules-page/accounting-rules-page').then(
-            (m) => m.AccountingRulesPage,
-          ),
+        pathMatch: 'full',
+        redirectTo: '/pim/produits',
       },
       {
         // LE JOURNAL FISCAL — l'écran Journal de l'Admin, lu sur sa tranche
-        // fiscale (plan journal, lot 4). Rangé ici, à côté des taux et des
-        // règles comptables dont il raconte l'histoire : c'est là que la
+        // fiscale (plan journal, lot 4). Rangé ici, à côté des taux dont il
+        // raconte l'histoire : c'est là que la
         // comptabilité travaille, et l'Admin ne lui est pas ouvert.
         //
         // `tax:write` et non le `tax:read` de ses deux voisins : c'est le droit

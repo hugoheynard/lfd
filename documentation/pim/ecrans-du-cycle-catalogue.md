@@ -411,12 +411,12 @@ depuis laquelle elle attend. Tant que personne ne l'a validée, **rien de ce qui
 
 ## 10. Le rail qui en découle
 
-| Section                 | Entrées                                                                |
-| ----------------------- | ---------------------------------------------------------------------- |
-| **Catalogue**           | Vue d'ensemble · Produits · Catégories · Révisions                     |
-| **Diffusion**           | Publication · Collections                                              |
-| **Paramétrage produit** | Ingrédients · Appellations · Allergènes · Conditionnements             |
-| **Général**             | Taux de TVA · Règles comptables · Points de vente · Contextes de vente |
+| Section                 | Entrées                                                    |
+| ----------------------- | ---------------------------------------------------------- |
+| **Catalogue**           | Vue d'ensemble · Produits · Catégories · Révisions         |
+| **Diffusion**           | Publication · Collections                                  |
+| **Paramétrage produit** | Ingrédients · Appellations · Allergènes · Conditionnements |
+| **Général**             | Taux de TVA · Points de vente · Contextes de vente         |
 
 **Intégrations** disparaît : sa moitié « santé » remonte dans la Vue d'ensemble,
 qui portait déjà l'autre moitié. **Collections** reste, comme ressource du canal

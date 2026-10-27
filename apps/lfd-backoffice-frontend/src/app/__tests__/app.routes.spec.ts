@@ -265,9 +265,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // décision comptable, et `catalog:write` est réservé à l'admin. La ressource
   // `tax` existe pour ça — sans retirer de lecture à qui l'avait.
   'pim/tva': 'pim_tax:read',
-  // Même droit que les taux : décider ce que le professionnel paie par
-  // rapport au particulier est une décision comptable.
-  'pim/regles-comptables': 'pim_tax:read',
   // L'ÉCRITURE, pas la lecture de ses voisins : la tranche fiscale du journal
   // est servie sous `pim_tax:write` (plan journal, lot 4) — en `read`, le
   // commercial ouvrirait un écran dont chaque appel rendrait 403.
@@ -558,6 +555,15 @@ describe("l'arbre de routes du back-office", () => {
     const moved = routes.find((route) => route.path === 'webhook-vitrine');
     expect(moved?.redirectTo).toBe('/admin/webhook-vitrine');
     expect(moved?.pathMatch).toBe('full');
+  });
+
+  it('renvoie l’ancienne adresse des règles comptables vers les produits', () => {
+    // Page retirée le 2026-10-27 (lot R3 : plus rien à régler) — un favori ne
+    // tombe pas en page blanche.
+    const pim = routes.find((route) => route.path === 'pim');
+    const legacy = (pim?.children ?? []).find((child) => child.path === 'regles-comptables');
+    expect(legacy?.redirectTo).toBe('/pim/produits');
+    expect(legacy?.loadComponent).toBeUndefined();
   });
 
   it('renvoie l’ancienne boîte des demandes clients vers le Commercial', () => {

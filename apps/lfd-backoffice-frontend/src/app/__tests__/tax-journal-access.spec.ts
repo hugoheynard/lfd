@@ -90,9 +90,9 @@ describe('l’entrée « Journal fiscal » du référentiel', () => {
     expect(keys).not.toContain('tax-journal');
   });
 
-  it('apparaît pour la comptabilité, juste après les règles comptables', () => {
+  it('apparaît pour la comptabilité, juste après les taux', () => {
     const keys = pimViewKeys('comptabilite');
 
-    expect(keys.indexOf('tax-journal')).toBe(keys.indexOf('accounting') + 1);
+    expect(keys.indexOf('tax-journal')).toBe(keys.indexOf('vat') + 1);
   });
 });

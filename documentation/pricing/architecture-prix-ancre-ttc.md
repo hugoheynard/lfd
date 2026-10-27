@@ -111,7 +111,7 @@ sens, pas deux. Cf. **C.5**.
 | La traduction remise ↔ rapport | pro-discount.ts (retiré le 2026-10-27) — un seul endroit, et il refuse plutôt que de corriger en silence                                                                                |
 | Le calcul partagé              | `proPriceFromPublic` dans packages/pim-contracts/src/accounting-rules.ts (retiré le 2026-10-27) ; `htFromTtc` et `htMillicentsOf` dans `packages/money/src/tax.ts` depuis le 2026-09-21 |
 | La conversion vers le B2B      | `B2bCatalogFeedProjection` — le dernier endroit qui connaît encore un TTC                                                                                                               |
-| L'écran                        | `/pim/regles-comptables`, mur `tax:read` / `tax:write`                                                                                                                                  |
+| L'écran                        | `/pim/regles-comptables` (retiré le 2026-10-27, redirige vers `/pim/produits`)                                                                                                          |
 
 ⚠️ **`tax.ts` a quitté `pim-contracts` le 2026-09-21** pour `@lfd/money` : la
 plateforme B2B a eu besoin de la même déduction, et deux sites qui arrondissent

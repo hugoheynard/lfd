@@ -196,6 +196,6 @@ relancer sur une base existante en `ratio_ttc` n'en change pas la méthode. Le
 message nomme « Passer au prix saisi » avec la version précédente, ou une base
 vierge (`dev:infra:nuke` puis `seed:pim`).
 
-**Reste à décider** : la page « Règles comptables », sa route et son entrée du
-rail n'ont plus rien à régler — les retirer, ou y loger une future règle de
-la maison.
+**Décidé le 2026-10-27** (Hugo, moins de friction admin) : la page « Règles
+comptables », sa route et son entrée du menu sont retirées ; l'ancienne
+adresse redirige vers `/pim/produits`.
