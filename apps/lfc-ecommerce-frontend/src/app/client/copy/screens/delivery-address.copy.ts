@@ -113,7 +113,11 @@ export interface DeliveryAddressCopy {
     readonly noneRegistered: string;
   };
 
-  /** `{fee}` — le tarif de la zone retenue. L'action PORTE le montant. */
+  /**
+   * L'action, sans montant (Hugo, 2026-10-27 : « juste composer mon panier ») :
+   * les frais se lisent sur la ligne « Frais » du dialogue. `{fee}` y reste
+   * permis, pour qui voudrait le remettre.
+   */
   readonly cta: string;
   readonly ctaIdle: string;
   readonly close: string;
@@ -161,7 +165,7 @@ export const DELIVERY_ADDRESS_FR: DeliveryAddressCopy = {
     noneRegistered:
       'Aucune heure de livraison n’est inscrite sur cette adresse pour ce jour. Les heures se règlent avec votre commercial, dans « Mon compte » — le retrait, lui, reste ouvert.',
   },
-  cta: 'Composer mon panier · {fee} €',
+  cta: 'Composer mon panier',
   ctaIdle: 'Choisissez une adresse',
   close: 'Fermer',
 };
@@ -207,7 +211,7 @@ export const DELIVERY_ADDRESS_EN: DeliveryAddressCopy = {
     noneRegistered:
       'No delivery time is set on this address for that day. Times are agreed with your sales contact, in “My account” — pickup is still open.',
   },
-  cta: 'Fill my basket · {fee} €',
+  cta: 'Fill my basket',
   ctaIdle: 'Pick an address',
   close: 'Close',
 };
@@ -253,7 +257,7 @@ export const DELIVERY_ADDRESS_IT: DeliveryAddressCopy = {
     noneRegistered:
       'Nessun orario di consegna è registrato su questo indirizzo per quel giorno. Gli orari si concordano con il vostro commerciale, in « Il mio account » — il ritiro resta aperto.',
   },
-  cta: 'Comporre il carrello · {fee} €',
+  cta: 'Comporre il carrello',
   ctaIdle: 'Scegliete un indirizzo',
   close: 'Chiudi',
 };

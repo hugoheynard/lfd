@@ -584,7 +584,7 @@ Source : `screens/delivery-address.copy.ts` · 38 textes.
 | `deliveryAddress.when.missingSlot` | Une livraison se commande avec une heure : indiquez un créneau, début et fin. | A delivery needs a time: give a slot, start and end. | Una consegna si ordina con un orario: indicate una fascia, inizio e fine. |  |
 | `deliveryAddress.when.missingBookSlot` | Une livraison se commande avec une heure : choisissez un de vos créneaux. | A delivery needs a time: pick one of your slots. | Una consegna si ordina con un orario: scegliete una delle vostre fasce. |  |
 | `deliveryAddress.when.noneRegistered` | Aucune heure de livraison n’est inscrite sur cette adresse pour ce jour. Les heures se règlent avec votre commercial, dans « Mon compte » — le retrait, lui, reste ouvert. | No delivery time is set on this address for that day. Times are agreed with your sales contact, in “My account” — pickup is still open. | Nessun orario di consegna è registrato su questo indirizzo per quel giorno. Gli orari si concordano con il vostro commerciale, in « Il mio account » — il ritiro resta aperto. |  |
-| `deliveryAddress.cta` | Composer mon panier · {fee} € | Fill my basket · {fee} € | Comporre il carrello · {fee} € | `{fee}` |
+| `deliveryAddress.cta` | Composer mon panier | Fill my basket | Comporre il carrello |  |
 | `deliveryAddress.ctaIdle` | Choisissez une adresse | Pick an address | Scegliete un indirizzo |  |
 | `deliveryAddress.close` | Fermer | Close | Chiudi |  |
 

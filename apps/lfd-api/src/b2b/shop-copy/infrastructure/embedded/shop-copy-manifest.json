@@ -2881,10 +2881,10 @@
         },
         {
           "key": "deliveryAddress.cta",
-          "fr": "Composer mon panier · {fee} €",
-          "en": "Fill my basket · {fee} €",
-          "it": "Comporre il carrello · {fee} €",
-          "variables": ["fee"]
+          "fr": "Composer mon panier",
+          "en": "Fill my basket",
+          "it": "Comporre il carrello",
+          "variables": []
         },
         {
           "key": "deliveryAddress.ctaIdle",

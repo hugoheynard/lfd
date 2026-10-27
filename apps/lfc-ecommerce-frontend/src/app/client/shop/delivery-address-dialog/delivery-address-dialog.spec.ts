@@ -109,10 +109,12 @@ describe('DeliveryAddressDialog', () => {
    * L'action PORTE le montant : on sait ce qu'on paie avant d'avoir composé le
    * panier. Les frais viennent de la ZONE, jamais du contenu.
    */
-  it('met le tarif de la zone dans l’action', () => {
+  /** L'action dit le geste, sans montant (Hugo, 2026-10-27). */
+  it('l’action dit « Composer mon panier », sans le tarif', () => {
     const { fixture } = boot([address({ id: 'a', isDefault: true, specs: SLOTTED })]);
 
-    expect(cta(fixture)?.textContent).toContain('6,90');
+    expect(cta(fixture)?.textContent).toContain('Composer mon panier');
+    expect(cta(fixture)?.textContent).not.toContain('6,90');
   });
 
   /**
