@@ -83,22 +83,6 @@ export class InvalidProPriceError extends DomainError {
   }
 }
 
-/**
- * Le pré-remplissage du prix pro écrirait un HT différent de celui que le fil
- * sert aujourd'hui (lot P, P5). Un seul écart refuse tout : le pré-remplissage
- * promet qu'aucun prix servi ne change à la bascule.
- */
-export class ProPricePrefillMismatchError extends BusinessError {
-  constructor(readonly mismatches: number) {
-    super(
-      "catalogue.pro_price_prefill.mismatch",
-      `Pré-remplissage refusé : ${mismatches} déclinaison(s) recevraient un prix pro HT ` +
-        `différent de celui servi aujourd'hui. Relire l'aperçu dans « Règles comptables » ` +
-        `(la méthode est-elle encore « Ratio » ?) avant de recommencer.`,
-    );
-  }
-}
-
 /** Ce qu'un manque se dit à l'écran, avec le geste qui le répare. */
 const GAP_LABEL: Readonly<Record<string, string>> = {
   [PRICE_GAP]: "prix public (section « Tarif »)",

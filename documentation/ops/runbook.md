@@ -485,6 +485,15 @@ réémettre ne fait que republier l'état du référentiel, le plus récent gagn
 
 ## Passer au prix pro saisi (lot S) — l'ordre, et le retour
 
+> ⚠️ **Gestes (1) et (2) retirés le 2026-10-27** (lot R2 de
+> [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) :
+> la route `/pim/accounting-rules/pro-price-prefill` et son écran n'existent
+> plus, le prix pro est toujours saisi. La production était déjà en « prix
+> saisi » (constaté par Hugo le même jour). Une base encore en `ratio_ttc` qui
+> passe au prix saisi fait sortir du catalogue pro toute déclinaison sans
+> saisie : saisir ses prix pros d'abord. Le texte ci-dessous est l'état
+> d'avant, gardé pour lire les faits `product.pro_price_prefilled` passés.
+
 Lot S de [`plan-catalogue-synchronise-par-audience.md`](../catalogue/plan-catalogue-synchronise-par-audience.md).
 Le prix pro HT **saisi** par déclinaison devient la seule source ; le rapport
 pro / public n'est plus qu'une suggestion. Le code est déployé sans rien

@@ -100,18 +100,3 @@ h2 {
 .switch button {
   margin-block-start: var(--fold-space-sm);
 }
-
-/* Le pré-remplissage du prix pro saisi (lot P) : un sous-sujet de la règle,
-   séparé d'un filet comme les autres blocs. */
-.prefill {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  padding-block-start: var(--fold-space-md);
-  border-block-start: 1px solid var(--fold-color-border-subtle);
-
-  h3 {
-    margin: 0;
-    font-size: var(--fold-text-sm);
-  }
-}

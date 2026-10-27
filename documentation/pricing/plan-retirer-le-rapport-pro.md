@@ -22,8 +22,8 @@
   `pricing-form.html`, `pro-price-entry.ts`).
 - **Le pré-remplissage en masse** : aperçu et application d'un prix pro tiré
   du rapport sur les déclinaisons sans prix pro
-  (`preview-pro-price-prefill.ts`, `apply-pro-price-prefill.ts`,
-  `pro-price-prefill.controller.ts`, écran des règles comptables).
+  (aperçu, écriture et leur contrôleur dans `product/` du catalogue, écran
+  des règles comptables) — retiré le 2026-10-27 par R2.
 - **La complétude** porte une clé `pro_price_rule` : sous `ratio_ttc`, une
   déclinaison sans rapport réglé n'est pas vendable
   (`variant-completeness.ts`).
@@ -73,11 +73,11 @@ source, la saisie.
 
 ## 4. Lots
 
-| Lot | Contenu                                                                   | Garde                                                                                                                                               |
-| --- | ------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
-| R1  | Retrait de la suggestion dans la fiche                                    | tests de la fiche ; aucune route API touchée                                                                                                        |
-| R2  | Retrait du pré-remplissage (API + écran)                                  | recensement des appelants ; e2e `pim-pro-price`                                                                                                     |
-| R3  | Migration gardée, méthode unique, complétude sans `pro_price_rule`, écran | e2e de la migration sur une base en `ratio_ttc` (elle doit échouer) et en `entered` (passer) ; catalogue servi identique avant/après sous `entered` |
+| Lot | Contenu                                                                        | Garde                                                                                                                                               |
+| --- | ------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+| R1  | Retrait de la suggestion dans la fiche                                         | tests de la fiche ; aucune route API touchée                                                                                                        |
+| R2  | Retrait du pré-remplissage (API + écran) — **bâti le 2026-10-27, non commité** | recensement des appelants ; e2e `pim-pro-price`                                                                                                     |
+| R3  | Migration gardée, méthode unique, complétude sans `pro_price_rule`, écran      | e2e de la migration sur une base en `ratio_ttc` (elle doit échouer) et en `entered` (passer) ; catalogue servi identique avant/après sous `entered` |
 
 R1 ne dépend de rien et part seul. R2 et R3 attendent `vitruve`.
 

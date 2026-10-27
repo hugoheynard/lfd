@@ -24,9 +24,7 @@
       <fold-callout variant="warning" class="switch">
         <strong>Le prix pro est encore déduit du prix public.</strong> Tant que c'est le cas, une
         déclinaison sans prix pro saisi est vendue aux professionnels au prix public moins la
-        remise. Il reste deux gestes&nbsp;: <strong>pré-remplir</strong> le prix pro (plus bas),
-        puis <strong>passer au prix saisi</strong>. Après le pré-remplissage, monter un prix public
-        ne monte plus le prix pro.
+        remise. Il reste un geste&nbsp;: <strong>passer au prix saisi</strong>.
         @if (canWrite()) {
           <button foldButton emphasis="outline" [disabled]="busy()" (click)="switchToEntered()">
             Passer au prix saisi
@@ -44,8 +42,7 @@
       <p class="rule-say">
         Il <strong>ne change aucun prix vendu</strong>&nbsp;: il propose. Sur chaque fiche, sous le
         prix pro HT, il suggère le prix public TTC moins ce pourcentage, ramené au hors taxe du taux
-        B2B — et «&nbsp;Reprendre&nbsp;» le recopie dans le champ. Le pré-remplissage, plus bas,
-        fait la même chose pour tout le catalogue.
+        B2B — et «&nbsp;Reprendre&nbsp;» le recopie dans le champ.
       </p>
 
       @if (canWrite()) {
@@ -136,16 +133,6 @@
           qui ouvre les taux de TVA — c'est une décision comptable.
         </fold-callout>
       }
-
-      <!-- ⚠️ Ce bloc disait « Pas encore appliquée ». C'était vrai à l'écriture
-           et faux depuis le raccordement : la projection B2B refuse même de
-           partir sans ce réglage (`ProPriceRatioNotSetError`). Une consigne
-           fausse dans l'écran qui fait autorité coûte plus qu'une absence de
-           consigne — corrigé le 2026-09-13. -->
-      <section class="prefill">
-        <h3>Pré-remplir le prix pro saisi</h3>
-        <app-pro-price-prefill />
-      </section>
 
       @if (savedMethod() === 'ratio_ttc') {
         <fold-callout appearance="inset" variant="warning">

@@ -4,15 +4,10 @@
  * Lot P de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md` :
  * la saisie (cinq décimales, colonne `pro_price_millicents`), l'activation
  * sous la méthode `entered`, la bascule de méthode journalisée (le `CHECK`
- * élargi), et le pré-remplissage — aperçu exact, `apply` qui n'écrit que là
- * où rien n'est saisi, et jamais sur une déclinaison alignée.
+ * élargi). Le pré-remplissage depuis le ratio est retiré le 2026-10-27 (lot R2
+ * de `documentation/pricing/plan-retirer-le-rapport-pro.md`).
  */
-import { htMillicentsOf } from "@lfd/money";
-import {
-  proPriceFromPublic,
-  type ProductListView,
-  type ProPricePrefillPreviewView,
-} from "@lfd/pim-contracts";
+import { type ProductListView } from "@lfd/pim-contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
@@ -26,10 +21,8 @@ const stubAdminVerifier = {
 const PRODUCTS = "/pim/catalogue/products";
 const CATEGORIES = "/pim/catalogue/categories";
 const RULES = "/pim/accounting-rules";
-const PREFILL = "/pim/accounting-rules/pro-price-prefill";
+const RETIRED_PREFILL = "/pim/accounting-rules/pro-price-prefill";
 const RATIO_BP = 9_000;
-/** Le taux que `makeActivatable` pose au contexte `b2b`. */
-const FOOD_PERCENT = 5.5;
 
 let ctx: E2eContext;
 
@@ -227,122 +220,14 @@ describe("la méthode « Prix saisi »", () => {
   });
 });
 
-describe("le pré-remplissage depuis le ratio", () => {
-  /**
-   * Une fiche à trois déclinaisons : le défaut à tarif propre et sans saisie,
-   * une alignée sur son tarif, une à tarif propre déjà saisie.
-   */
-  async function aSeed(): Promise<{ id: string; own: string; aligned: string; entered: string }> {
-    const id = await aProduct("Florentin");
-    await makeActivatable(staff, id);
-    const own = (await defaultOf(id)).id;
-    await priceVariant(id, own, { priceCents: 1_990 }).expect(200);
-    const aligned = jsonBody<{ id: string }>(
-      await staff()
-        .post(`${PRODUCTS}/${id}/variants`)
-        .send({ name: { fr: "Boîte" } })
-        .expect(201),
-    ).id;
-    await staff()
-      .put(`${PRODUCTS}/${id}/variants/${aligned}/alignment`)
-      .send({ aspect: "pricing", aligned: true })
-      .expect(200);
-    const entered = jsonBody<{ id: string }>(
-      await staff()
-        .post(`${PRODUCTS}/${id}/variants`)
-        .send({ name: { fr: "Plateau" } })
-        .expect(201),
-    ).id;
-    await priceVariant(id, entered, { priceCents: 4_500, proPriceHt: "33.33333" }).expect(200);
-    await staff().put(`${RULES}/pro-price-ratio`).send({ ratioBp: RATIO_BP }).expect(200);
-    // Une base EXISTANTE, encore sur le repli d'origine — le cas du contrôle.
-    await chooseMethod("ratio_ttc");
-    return { id, own, aligned, entered };
-  }
-
-  async function preview(): Promise<ProPricePrefillPreviewView> {
-    return jsonBody<ProPricePrefillPreviewView>(await staff().get(PREFILL).expect(200));
-  }
-
-  it("rend, par déclinaison, le HT servi aujourd'hui et le HT pré-rempli, au millicentime", async () => {
-    const seed = await aSeed();
-    // La chaîne d'origine, rejouée hors du code testé.
-    const expected = htMillicentsOf(proPriceFromPublic(1_990, RATIO_BP), FOOD_PERCENT);
-
-    const view = await preview();
-
-    expect(view).toMatchObject({
-      method: "ratio_ttc",
-      ratioBp: RATIO_BP,
-      toPrefill: 1,
-      mismatches: 0,
-    });
-    const byId = new Map(view.rows.map((row) => [row.variantId, row]));
-    expect(byId.get(seed.own)).toMatchObject({
-      status: "to_prefill",
-      publicTtcCents: 1_990,
-      vatPercent: FOOD_PERCENT,
-      servedHtMillicents: expected,
-      prefilledHtMillicents: expected,
-      mismatch: false,
-    });
-    expect(byId.get(seed.aligned)?.status).toBe("aligned");
-    expect(byId.get(seed.entered)?.status).toBe("already_entered");
-  });
-
-  it("n'écrit ni sur l'alignée ni sur la colonne déjà remplie, et journalise ce qu'il écrit", async () => {
-    const seed = await aSeed();
-    const expected = htMillicentsOf(proPriceFromPublic(1_990, RATIO_BP), FOOD_PERCENT);
-
-    const after = jsonBody<ProPricePrefillPreviewView>(await staff().post(PREFILL).expect(200));
-
-    expect(after.toPrefill).toBe(0);
-    const columns = new Map(
-      (
-        await ctx.prisma.productVariant.findMany({
-          where: { productId: seed.id },
-          select: { id: true, proPriceMillicents: true },
-        })
-      ).map((row) => [row.id, row.proPriceMillicents]),
-    );
-    expect(columns.get(seed.own)).toBe(expected);
-    expect(columns.get(seed.aligned)).toBeNull();
-    expect(columns.get(seed.entered)).toBe(3_333_333);
-    await ctx.drain();
-    const facts = await ctx.prisma.activityEvent.findMany({
-      where: { type: "product.pro_price_prefilled" },
-      select: { payload: true },
-    });
-    expect(facts).toHaveLength(1);
-    expect(facts[0]?.payload).toMatchObject({ proPriceMillicents: expected, ratioBp: RATIO_BP });
-  });
-
-  /**
-   * Régression (BLOQUANT `vitruve`, lot S, 2026-10-16) : sous `entered`, le
-   * contrôle comptait un écart sur chaque ligne à pré-remplir (elle n'est pas
-   * servie) et l'`apply` refusait toujours. Il écrit désormais, et l'aperçu
-   * dit l'autre vérité : rien n'est servi, ce HT le sera.
-   */
-  it("sous « prix saisi », l'aperçu ne compte aucun écart et l'apply écrit", async () => {
-    const seed = await aSeed();
-    await chooseMethod("entered");
-    const expected = htMillicentsOf(proPriceFromPublic(1_990, RATIO_BP), FOOD_PERCENT);
-
-    const view = await preview();
-    expect(view).toMatchObject({ method: "entered", mismatches: 0, toPrefill: 1 });
-    expect(view.rows.find((row) => row.variantId === seed.own)).toMatchObject({
-      servedHtMillicents: null,
-      prefilledHtMillicents: expected,
-    });
-    expect(view.rows.find((row) => row.variantId === seed.aligned)).toMatchObject({
-      status: "aligned",
-      alignedCause: null,
-    });
-
-    await staff().post(PREFILL).expect(200);
-
-    expect(
-      (await detailOf(seed.id)).variants.find((v) => v.id === seed.own)?.proPriceMillicents,
-    ).toBe(expected);
+/**
+ * Le pré-remplissage en masse depuis le rapport est retiré le 2026-10-27
+ * (lot R2 de `documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix
+ * pro est toujours saisi. La route ne doit plus répondre.
+ */
+describe("le pré-remplissage retiré", () => {
+  it("ne sert plus ni l'aperçu ni l'écriture", async () => {
+    await staff().get(RETIRED_PREFILL).expect(404);
+    await staff().post(RETIRED_PREFILL).send({}).expect(404);
   });
 });

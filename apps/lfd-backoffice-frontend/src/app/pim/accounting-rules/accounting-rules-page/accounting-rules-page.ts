@@ -22,7 +22,6 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { AccountingRulesStore } from '../accounting-rules.store';
-import { ProPricePrefill } from '../pro-price-prefill/pro-price-prefill';
 import {
   discountToRatioBp,
   formatDiscount,
@@ -86,8 +85,9 @@ export interface SampleRateRow {
  *
  * Depuis le lot S (`plan-catalogue-synchronise-par-audience.md`, 2026-10-16),
  * le prix pro HT se SAISIT par déclinaison ; le rapport n'est plus qu'une
- * **suggestion** (« Rapport suggéré »), qui nourrit la fiche et le
- * pré-remplissage. Le choix de méthode a quitté l'écran : sur une base encore
+ * **suggestion** (« Rapport suggéré »). Le pré-remplissage en masse du prix
+ * pro est retiré le 2026-10-27 (lot R2 de `plan-retirer-le-rapport-pro.md`).
+ * Le choix de méthode a quitté l'écran : sur une base encore
  * en `ratio_ttc`, un encart dit ce qui reste à faire et offre « Passer au prix
  * saisi » ; une fois en `entered`, l'encart disparaît et le retour ne s'offre
  * plus (la route reste : le code n'est pas effacé).
@@ -107,7 +107,6 @@ export interface SampleRateRow {
     FoldCalloutComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
-    ProPricePrefill,
   ],
   templateUrl: './accounting-rules-page.html',
   styleUrl: './accounting-rules-page.scss',

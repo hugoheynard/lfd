@@ -214,7 +214,8 @@ export interface ProPrice {
  * méthode pendant que le fil en pousse une autre. Ses appelants, vérifié le
  * 2026-10-16 (lot S) : `projection.ts` et `catalog-facts.ts` (le fil),
  * `variant-completeness.ts` (la complétude), le pré-remplissage
- * (`pro-price-prefill.ts`, deux appels), l'écran des règles
+ * (`pro-price-prefill.ts`, deux appels — retiré le 2026-10-27, lot R2),
+ * l'écran des règles
  * (`accounting-rules-page.ts`, deux appels), la fiche (`product-form-store.ts`)
  * et la suggestion de la fiche (`pro-price-entry.ts`, `proPriceSuggestionOf`).
  *
@@ -280,75 +281,4 @@ function enteredProPrice(
     ttcCents: ttcCentsFromHtMillicents(enteredHtMillicents, articleVatPercent),
     htMillicents: enteredHtMillicents,
   };
-}
-
-// ── Le pré-remplissage du prix pro saisi (lot P, P5) ───────────────────────
-
-/**
- * Le sort d'une déclinaison dans le pré-remplissage.
- *
- * - `to_prefill` : tarif propre, prix public, taux `b2b`, aucune saisie —
- *   l'`apply` l'écrira ;
- * - `already_entered` : une saisie existe, elle ne s'écrase jamais ;
- * - `aligned` : elle suit le tarif du défaut, et donc son prix pro ;
- * - `no_price` : pas de prix public, rien à dériver ;
- * - `no_vat_b2b` : pas de taux au contexte `b2b`, listée à part — le HT ne se
- *   dérive pas sans lui.
- */
-export const PRO_PRICE_PREFILL_STATUSES = [
-  "to_prefill",
-  "already_entered",
-  "aligned",
-  "no_price",
-  "no_vat_b2b",
-] as const;
-export type ProPricePrefillStatus = (typeof PRO_PRICE_PREFILL_STATUSES)[number];
-
-/** Une déclinaison de l'aperçu — tout en entiers. */
-export interface ProPricePrefillRowView {
-  readonly productId: string;
-  readonly productName: string;
-  readonly variantId: string;
-  readonly sku: string;
-  readonly status: ProPricePrefillStatus;
-  readonly publicTtcCents: number | null;
-  /** Le taux `b2b` effectif de la fiche, celui que la projection lit. */
-  readonly vatPercent: number | null;
-  /** Le HT que le fil sert AUJOURD'HUI, sous la méthode en place (10⁻⁵ €). */
-  readonly servedHtMillicents: number | null;
-  /** Le HT que l'`apply` écrirait : le ratio rejoué par `proPriceOf` (10⁻⁵ €). */
-  readonly prefilledHtMillicents: number | null;
-  /**
-   * `to_prefill` dont le HT pré-rempli diffère du HT servi, au millicentime.
-   * Un seul suffit à refuser l'`apply`. **Sous `ratio_ttc` seulement** (lot S) :
-   * sous `entered`, une déclinaison sans saisie n'est pas servie, et l'écart
-   * n'y prouverait rien.
-   */
-  readonly mismatch: boolean;
-  /**
-   * Pour une alignée (`aligned`), le SKU du défaut qu'elle suit — l'aperçu la
-   * range dessous. `null` sinon.
-   */
-  readonly followsSku: string | null;
-  /**
-   * Pour une alignée, **la vraie cause** qui laisse son défaut sans prix pro
-   * après pré-remplissage : `no_price` ou `no_vat_b2b` (contradiction de
-   * `vitruve`, lot S). `null` si le défaut a, ou recevra, son prix pro.
-   */
-  readonly alignedCause: "no_price" | "no_vat_b2b" | null;
-}
-
-/**
- * L'aperçu (`dryRun`) — ce que l'`apply` ferait, et s'il le peut.
- *
- * Deux vérités selon `method` (lot S) : sous `ratio_ttc`, « rien de servi ne
- * change » (le contrôle au millicentime le prouve) ; sous `entered`, « ces
- * déclinaisons deviendront vendables aux pros à ce prix ».
- */
-export interface ProPricePrefillPreviewView {
-  readonly method: ProPriceMethod;
-  readonly ratioBp: number;
-  readonly rows: readonly ProPricePrefillRowView[];
-  readonly toPrefill: number;
-  readonly mismatches: number;
 }

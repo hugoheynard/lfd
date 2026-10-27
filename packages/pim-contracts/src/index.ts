@@ -118,7 +118,6 @@ export {
   proPriceOf,
   proPriceMethodPayloadSchema,
   PRO_PRICE_METHODS,
-  PRO_PRICE_PREFILL_STATUSES,
   proHtFromPublic,
   UNSET_PRO_PRICE_POLICY,
 } from "./accounting-rules.js";
@@ -129,9 +128,6 @@ export type {
   ProPricePolicy,
   ProPrice,
   AccountingRulesView,
-  ProPricePrefillStatus,
-  ProPricePrefillRowView,
-  ProPricePrefillPreviewView,
 } from "./accounting-rules.js";
 
 /**

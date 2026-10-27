@@ -303,8 +303,7 @@ describe('AccountingRulesPage — passer au prix saisi', () => {
     const chosen: ProPriceMethod[] = [];
     const fixture = await render({ view: IN_PLACE_RATIO, chosen });
 
-    expect(text(fixture)).toContain('pré-remplir');
-    expect(text(fixture)).toContain('ne monte plus le prix pro');
+    expect(text(fixture)).toContain('Il reste un geste');
     switchButton(fixture)?.click();
     await fixture.whenStable();
     fixture.detectChanges();
@@ -327,9 +326,12 @@ describe('AccountingRulesPage — passer au prix saisi', () => {
     expect(switchButton(fixture)).toBeUndefined();
   });
 
-  it('offre le pré-remplissage du prix pro', async () => {
+  // Le pré-remplissage en masse est retiré le 2026-10-27 (lot R2 de
+  // `plan-retirer-le-rapport-pro.md`) : l'écran ne l'offre plus.
+  it("n'offre plus le pré-remplissage du prix pro", async () => {
     const fixture = await render({ view: IN_PLACE_RATIO });
 
-    expect(text(fixture)).toContain('Pré-remplir le prix pro saisi');
+    expect(text(fixture)).not.toContain('Pré-remplir');
+    expect(text(fixture)).not.toContain('pré-rempli');
   });
 });

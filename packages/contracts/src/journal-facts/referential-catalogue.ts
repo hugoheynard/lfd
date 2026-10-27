@@ -495,6 +495,8 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
    * `plan-catalogue-synchronise-par-audience.md`) — une ligne par déclinaison,
    * écrite seulement là où rien n'était saisi. `ratioBp` et `vatPercent` sont
    * les matériaux du calcul, pour qu'on puisse le refaire en lisant la ligne.
+   * Plus émis depuis le 2026-10-27 (pré-remplissage retiré, lot R2 de
+   * `plan-retirer-le-rapport-pro.md`) : fait passé, lisible.
    */
   "product.pro_price_prefilled": fact(
     payload({

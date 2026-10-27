@@ -485,7 +485,9 @@ champ, calculée par la même porte que le pré-remplissage
 (`apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/pro-price-entry.ts:85-91`).
 `ratio_ttc` et son code restent pour une base qui y est encore (Hugo :
 « n'efface pas le code ») ; la bascule d'une telle base est un geste écrit
-au runbook (pré-remplir, relire, « Passer au prix saisi »).
+au runbook (pré-remplir, relire, « Passer au prix saisi ») — le
+pré-remplissage est retiré le 2026-10-27 (lot R2 de
+[`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)).
 
 Pourquoi `ratio_ttc` fige son plus haut taux **dans le réglage** plutôt que de
 le lire au référentiel des taux (décision du 2026-09-13, toujours en place) :
@@ -661,7 +663,7 @@ la TVA par contexte ne bougent pas.**
 | **La fiche** (référentiel)              | `apps/lfd-backoffice-frontend/src/app/pim/catalogue/product-form/`                     | audience (héritée ou propre), prix pro HT saisi et sa suggestion, « Activer » et ce qui manque                                                                                                                                                                              |
 | **Catalogue publié** (Gestion Boutique) | `/catalogue-publie` (`apps/lfd-backoffice-frontend/src/app/app.routes.ts:115-119`)     | une ligne par article, une colonne par audience ; masquer, valider, relire. `/b2b/catalogue` et `/b2b/reception` y redirigent                                                                                                                                               |
 | **Mise en avant** (Gestion Boutique)    | `/mise-en-avant` (`apps/lfd-backoffice-frontend/src/app/mise-en-avant/featured-page/`) | une ligne par article, une case par audience (« Pros », « Particuliers »), fermée avec sa raison quand l'audience n'est pas servie ou que l'article y est masqué ; en tête, le libellé de la pastille et le lien vers sa clé dans Textes de la boutique. Sous `lfc_catalog` |
-| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`)   | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage avec aperçu, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi »                                                                                                                      |
+| **Règles comptables** (référentiel)     | `regles-comptables` (`apps/lfd-backoffice-frontend/src/app/pim/pim.routes.ts:57-61`)   | « Rapport suggéré » (ne change aucun prix vendu), pré-remplissage retiré le 2026-10-27, et sur une base encore en `ratio_ttc` le geste « Passer au prix saisi »                                                                                                             |
 
 L'**espace « E-commerce LFC »** du back-office est supprimé le 2026-10-17
 (Hugo) : il n'avait plus de vue. Ses anciennes adresses `/b2b/…` redirigent

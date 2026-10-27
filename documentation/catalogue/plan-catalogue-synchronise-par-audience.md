@@ -545,7 +545,9 @@ ont été ajoutés, les afficher dans la boutique ».
 >   d'abord `variant.pro_price_prefilled` (lu ni par `attribution.ts` ni par
 >   `content-facts.ts`), est renommé `product.pro_price_prefilled` le
 >   2026-10-15 (Hugo) : il est attribué au champ `proPriceMillicents` et
->   périme la signature ;
+>   périme la signature — **P5 retiré le 2026-10-27** (lot R2 de
+>   [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)),
+>   le fait reste lisible ;
 > - la révision ne porte `proPriceMillicents` que lorsqu'il est saisi : une clé
 >   à `null` partout aurait rebasculé toutes les empreintes déjà posées.
 
@@ -696,7 +698,7 @@ Ouvert avant d'écrire (2026-10-16) :
   (`choose-pro-price-method.ts`) réémet **déjà** tout le catalogue par
   `CatalogReemission`. Le « rapport pro » de la ligne 4 du tableau des lots
   est donc déjà couvert ; ce qu'en disait l'état du 2026-10-16 était faux ;
-- le pré-remplissage existe (P5, `pro-price-prefill.ts`, aperçu puis
+- le pré-remplissage existe (P5, le service du pré-remplissage, retiré le 2026-10-27, aperçu puis
   écriture là où rien n'est saisi, contrôle au millicentime).
 
 | #   | Quoi                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
@@ -734,9 +736,9 @@ Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
   est réécrit : c'est vrai pour une base existante, et une base vierge n'a
   aucun prix à préserver.
 - **Le pré-remplissage sous `entered`** (BLOQUANT). Son contrôle compare le
-  HT servi au HT pré-rempli (`pro-price-prefill.ts:66`) ; sous `entered`,
+  HT servi au HT pré-rempli (le service du pré-remplissage, retiré le 2026-10-27) ; sous `entered`,
   une déclinaison sans saisie n'est pas servie, donc toute ligne serait en
-  écart et `apply` refuserait toujours (`apply-pro-price-prefill.ts:51-53`).
+  écart et `apply` refuserait toujours (l'écriture du pré-remplissage, retirée le 2026-10-27).
   **Correction** : le contrôle au millicentime ne vaut que sous
   `ratio_ttc`, où il prouve que rien de servi ne bouge. Sous `entered`,
   l'aperçu dit l'autre vérité : « ces déclinaisons deviendront vendables aux
@@ -763,7 +765,7 @@ Les trois BLOQUANT ont été rouverts dans le code avant d'être intégrés.
 - **La suggestion passe par la porte** (SÉRIEUX) : `ratioTtcProPrice` est
   privée (`accounting-rules.ts:241`). S3 appelle
   `proPriceOf(prix, { method: "ratio_ttc", ratioBp }, taux, null)`, comme
-  `pro-price-prefill.ts:53`. Un appelant de plus au JSDoc qui les compte.
+  le service du pré-remplissage, retiré le 2026-10-27. Un appelant de plus au JSDoc qui les compte.
 - **Les alignées** (SÉRIEUX) : une déclinaison qui suit le défaut sort du
   catalogue pro si le défaut n'a pas pu être pré-rempli (sans prix public ou
   sans taux `b2b`), sous le motif `variant_sans_prix_pro`

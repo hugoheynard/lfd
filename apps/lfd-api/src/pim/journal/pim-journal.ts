@@ -268,6 +268,10 @@ export const PIM_EVENTS = {
    * P5) — un fait par déclinaison écrite. Nommé `variant.*` comme le plan le
    * nomme : il échappe donc à `attribution.ts` et à `content-facts.ts`, qui ne
    * lisent que `product.*` (cf. le contrat de `product.allergens_saved`).
+   *
+   * **Plus émis depuis le 2026-10-27** (lot R2 de
+   * `plan-retirer-le-rapport-pro.md`, pré-remplissage retiré) : gardé pour
+   * les faits passés, que `attribution.ts` et `content-facts.ts` lisent encore.
    */
   productProPricePrefilled: "product.pro_price_prefilled",
   productArchived: "product.archived",

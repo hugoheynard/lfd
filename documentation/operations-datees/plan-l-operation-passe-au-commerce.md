@@ -183,7 +183,8 @@ puis restreinte par la surcharge existante (même calcul que
 `effective-operation.ts` : `LEAST` des fenêtres, sélection moins
 `hidden_skus`, intersection des audiences). Une clé présente au miroir et
 absente du PIM est listée, pas inventée. **Un aperçu rendu avant d'écrire**
-(route admin, comme le pré-remplissage du prix pro) compare champ par champ
+(route admin, comme le pré-remplissage du prix pro, retiré depuis le
+2026-10-27) compare champ par champ
 PIM, miroir et résultat, opération par opération ; un écart inexpliqué
 bloque. Le même relevé est rendu après, en production — un e2e ne prouve rien
 d'une migration qui ne joue qu'une fois.
