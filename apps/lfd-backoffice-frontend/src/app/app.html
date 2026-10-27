@@ -757,14 +757,29 @@
     <!-- Contenu routé. Connecté mais sans aucun droit, on le DIT : une coquille
          vide ressemblerait à une panne, et la personne appellerait au lieu de
          demander un accès. -->
-    @if (noAccess()) {
-      <div class="no-access">
-        <h1>Aucun accès</h1>
-        <p>
-          Votre compte est bien connecté, mais aucun périmètre ne lui est attribué dans le
-          back-office. Demandez à un administrateur de vous ouvrir un accès.
-        </p>
-      </div>
+    @if (sessionExpired()) {
+      <fold-empty-state
+        icon="clock"
+        title="Votre session a expiré"
+        subtitle="Reconnectez-vous pour reprendre là où vous étiez. Vos accès n'ont pas changé."
+      >
+        <button foldButton (click)="reconnect()">Se reconnecter</button>
+      </fold-empty-state>
+    } @else if (backofficeUnavailable()) {
+      <fold-empty-state
+        tone="alert"
+        icon="alert"
+        title="Le back-office ne répond pas"
+        subtitle="Vos droits n'ont pas pu être lus. Réessayez dans un instant."
+      >
+        <button foldButton (click)="retryPermissions()">Réessayer</button>
+      </fold-empty-state>
+    } @else if (noAccess()) {
+      <fold-empty-state
+        icon="shield"
+        title="Aucun accès"
+        subtitle="Votre compte est bien connecté, mais aucun périmètre ne lui est attribué dans le back-office. Demandez à un administrateur de vous ouvrir un accès."
+      />
     } @else {
       <!-- Une version neuve en ligne s'annonce sur tout écran, en bande fine
            sous l'en-tête : on finit son opération, puis on recharge. -->

@@ -23,7 +23,9 @@ import { headerNameOf, pageNameOf } from './page-name';
 import {
   FoldAppShellComponent,
   FoldAvatarDetailComponent,
+  FoldButtonComponent,
   FoldButtonIconComponent,
+  FoldEmptyStateComponent,
   FoldIconComponent,
   FoldMenuComponent,
   FoldMenuItemComponent,
@@ -74,7 +76,9 @@ import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/w
     RouterLinkActive,
     FoldAppShellComponent,
     FoldAvatarDetailComponent,
+    FoldButtonComponent,
     FoldButtonIconComponent,
+    FoldEmptyStateComponent,
     FoldIconComponent,
     FoldMenuComponent,
     FoldMenuItemComponent,
@@ -438,6 +442,26 @@ export class App {
 
   /** Les droits sont lus — la cloche les attend pour savoir quels fils interroger. */
   protected readonly permissionsLoaded = this.permissions.loaded;
+
+  /** `/admin/me` a rendu 401 : la session est à renouveler, les droits n'ont pas bougé. */
+  protected readonly sessionExpired = this.permissions.expired;
+
+  /** `/admin/me` n'a pas répondu (réseau, 5xx) : on ne sait rien, on le dit. */
+  protected readonly backofficeUnavailable = this.permissions.unavailable;
+
+  /**
+   * Repart vers Auth0 et revient sur la page en cours. Un geste de la
+   * personne, jamais automatique : une redirection sur `expired` bouclerait
+   * si Auth0 rendait encore un jeton refusé.
+   */
+  protected reconnect(): void {
+    this.auth.login(this.router.url);
+  }
+
+  /** Relit les droits après une panne du back-office. */
+  protected retryPermissions(): void {
+    void this.permissions.reload();
+  }
 
   /** Session en cours de résolution : on ne montre ni la porte ni l'app. */
   protected readonly resolving = this.auth.isLoading;

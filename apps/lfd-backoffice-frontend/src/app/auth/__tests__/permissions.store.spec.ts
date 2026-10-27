@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClient, withInterceptors } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
 import type { StaffMeView } from '@lfd/contracts';
@@ -6,6 +6,8 @@ import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
 import { B2B_API_BASE } from '../../api/api-config';
 import { PermissionsStore } from '../permissions.store';
+import { staffAuthInterceptor } from '../staff-auth.interceptor';
+import { StaffToken } from '../staff-token';
 
 /**
  * Le magasin de permissions n'est **pas** un mur — le serveur refuse de toute
@@ -154,5 +156,93 @@ describe('PermissionsStore — le refus du serveur', () => {
     await store.ensureLoaded();
 
     expect(store.denied()).toBe(true);
+  });
+});
+
+describe("PermissionsStore — l'échec n'est pas un refus", () => {
+  /**
+   * Régression : une session Auth0 non renouvelée rendait 401 sur `/admin/me`,
+   * classé `denied`, et l'écran affichait « Aucun accès » à une personne dont
+   * les droits n'avaient pas bougé (constaté en production le 2026-10-27).
+   */
+  it("un jeton expiré n'affiche plus Aucun accès", async () => {
+    const loading = store.ensureLoaded();
+    ctrl
+      .expectOne(`${B2B_API_BASE}/admin/me`)
+      .flush(null, { status: 401, statusText: 'Unauthorized' });
+    await loading;
+
+    expect(store.expired()).toBe(true);
+    expect(store.denied()).toBe(false);
+    expect(store.loaded()).toBe(false);
+    expect(store.can('b2b_orders:read')).toBe(false);
+  });
+
+  it('devient `unavailable` sur 500', async () => {
+    const loading = store.ensureLoaded();
+    ctrl
+      .expectOne(`${B2B_API_BASE}/admin/me`)
+      .flush(null, { status: 500, statusText: 'Internal Server Error' });
+    await loading;
+
+    expect(store.unavailable()).toBe(true);
+    expect(store.denied()).toBe(false);
+    expect(store.loaded()).toBe(false);
+  });
+
+  it('devient `unavailable` sur une erreur réseau (statut 0)', async () => {
+    const loading = store.ensureLoaded();
+    ctrl.expectOne(`${B2B_API_BASE}/admin/me`).error(new ProgressEvent('error'));
+    await loading;
+
+    expect(store.unavailable()).toBe(true);
+    expect(store.denied()).toBe(false);
+  });
+
+  it('relit au prochain appel après une panne, et retrouve les droits', async () => {
+    const first = store.ensureLoaded();
+    ctrl
+      .expectOne(`${B2B_API_BASE}/admin/me`)
+      .flush(null, { status: 503, statusText: 'Service Unavailable' });
+    await first;
+
+    const retry = store.reload();
+    answer(ME);
+    await retry;
+
+    expect(store.unavailable()).toBe(false);
+    expect(store.can('b2b_orders:read')).toBe(true);
+  });
+});
+
+describe('PermissionsStore — le jeton silencieux échoue', () => {
+  it('devient `expired` : la requête part sans en-tête et le serveur rend 401', async () => {
+    // `StaffAuth.token()` avale l'échec de `getAccessTokenSilently` et rend
+    // `null` ; l'intercepteur laisse alors partir l'appel nu.
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(withInterceptors([staffAuthInterceptor])),
+        provideHttpClientTesting(),
+        {
+          provide: StaffToken,
+          useValue: { bearer: (): Promise<string | null> => Promise.resolve(null) },
+        },
+      ],
+    });
+    const local = TestBed.inject(PermissionsStore);
+    const http = TestBed.inject(HttpTestingController);
+    ctrl = http;
+
+    const loading = local.ensureLoaded();
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = http.expectOne(`${B2B_API_BASE}/admin/me`);
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    request.flush(null, { status: 401, statusText: 'Unauthorized' });
+    await loading;
+
+    expect(local.expired()).toBe(true);
+    expect(local.denied()).toBe(false);
   });
 });
