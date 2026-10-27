@@ -3395,6 +3395,27 @@
           "variables": []
         },
         {
+          "key": "cart.otherPickup",
+          "fr": "Ou je retire ma commande",
+          "en": "Or I pick up my order",
+          "it": "Oppure ritiro il mio ordine",
+          "variables": []
+        },
+        {
+          "key": "cart.otherPickupOffer",
+          "fr": "Ou je retire ma commande — {offer}",
+          "en": "Or I pick up my order — {offer}",
+          "it": "Oppure ritiro il mio ordine — {offer}",
+          "variables": ["offer"]
+        },
+        {
+          "key": "cart.otherDelivery",
+          "fr": "Ou je me fais livrer — frais de livraison selon la zone",
+          "en": "Or I get it delivered — delivery fee by area",
+          "it": "Oppure me lo faccio consegnare — spese secondo la zona",
+          "variables": []
+        },
+        {
           "key": "cart.subtotal",
           "fr": "Sous-total HT",
           "en": "Subtotal excl. VAT",

@@ -74,6 +74,9 @@
           </button>
         </div>
       </section>
+      @if (otherWay(); as other) {
+        <button class="other-way" type="button" (click)="void takeOtherWay()">{{ other }}</button>
+      }
       <!-- Le même encadré que le popover du panier, « Modifier » compris. -->
       <app-service-day-callout />
     } @else if (serviceOffered()) {

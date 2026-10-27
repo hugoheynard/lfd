@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1684 textes
+## Sommaire — 1687 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -30,7 +30,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 20 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 70 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 73 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 8 |
@@ -48,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1684** |
+| **Total** | | **1687** |
 
 ## Le parcours de commande
 
@@ -685,7 +685,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 70 textes.
+Source : `fr.ts · en.ts · it.ts` · 73 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -698,6 +698,9 @@ Source : `fr.ts · en.ts · it.ts` · 70 textes.
 | `cart.dayToday` | aujourd’hui | today | oggi |  |
 | `cart.dayTomorrow` | demain | tomorrow | domani |  |
 | `cart.changeService` | Modifier | Change | Modifica |  |
+| `cart.otherPickup` | Ou je retire ma commande | Or I pick up my order | Oppure ritiro il mio ordine |  |
+| `cart.otherPickupOffer` | Ou je retire ma commande — {offer} | Or I pick up my order — {offer} | Oppure ritiro il mio ordine — {offer} | `{offer}` |
+| `cart.otherDelivery` | Ou je me fais livrer — frais de livraison selon la zone | Or I get it delivered — delivery fee by area | Oppure me lo faccio consegnare — spese secondo la zona |  |
 | `cart.subtotal` | Sous-total HT | Subtotal excl. VAT | Subtotale IVA escl. |  |
 | `cart.discount` | Remise retrait {at} −{value} | Collection discount {at} −{value} | Sconto ritiro {at} −{value} | `{at}` `{value}` |
 | `cart.discountOnBase` | Remise retrait {at} −{value} sur {base} éligibles | Collection discount {at} −{value} on {base} eligible | Sconto ritiro {at} −{value} su {base} idonei | `{at}` `{value}` `{base}` |

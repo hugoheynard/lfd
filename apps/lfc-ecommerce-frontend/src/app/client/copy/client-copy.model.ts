@@ -676,6 +676,14 @@ export interface ClientCopy {
     readonly dayTomorrow: string;
     /** Le lien du rappel de service : rouvre le mode ET l'heure, puis ramène au panier. */
     readonly changeService: string;
+    /**
+     * L'autre chemin, proposé sous la carte du service (Hugo, 2026-10-27) :
+     * depuis une livraison, le retrait et sa remise — `{offer}` —, depuis un
+     * retrait, la livraison.
+     */
+    readonly otherPickup: string;
+    readonly otherPickupOffer: string;
+    readonly otherDelivery: string;
     readonly subtotal: string;
     /** `{at}` porte le complément du lieu, `{pct}` la remise. */
     readonly discount: string;

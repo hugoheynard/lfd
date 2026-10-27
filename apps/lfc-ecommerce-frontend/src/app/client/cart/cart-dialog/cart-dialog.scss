@@ -126,6 +126,25 @@
   color: var(--lfc-color-on-accent);
 }
 
+/* L'autre chemin : un lien SECONDAIRE sous la carte du service. */
+.other-way {
+  align-self: flex-start;
+  padding: 0;
+  border: 0;
+  background: none;
+  color: var(--fold-color-text);
+  font: inherit;
+  font-size: var(--fold-text-sm);
+  text-decoration: underline;
+  text-underline-offset: 3px;
+  text-decoration-color: var(--lfc-ink-300);
+  cursor: pointer;
+
+  &:hover {
+    text-decoration-color: currentcolor;
+  }
+}
+
 /* Le rappel du service : à l'ENCRE, parce que c'est le cadre de la commande et
    pas une de ses lignes. */
 .service {

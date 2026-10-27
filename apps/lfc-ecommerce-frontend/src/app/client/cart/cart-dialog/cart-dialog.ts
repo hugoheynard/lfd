@@ -40,6 +40,9 @@ import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
 import { OrderDoors } from '../../shop/order-doors';
+import { pickupOffer } from '../../shop/pickup-discount';
+import { ServicePoints } from '../../shop/pickup-points.store';
+import { ClientAudience } from '../../client-audience.service';
 import { OrderAdmissionStore } from '../../shop/order-admission.store';
 import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { PieceRequest } from '../../shop/piece-request.service';
@@ -140,6 +143,8 @@ export class CartDialog {
 
   /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
   private readonly doors = inject(OrderDoors);
+  private readonly points = inject(ServicePoints);
+  private readonly audience = inject(ClientAudience).shown;
 
   /** « Trop tard pour demain : … » — le même avertissement que la barre du rayon. */
   private readonly dayNotice = inject(ServiceDayNotice);
@@ -414,6 +419,32 @@ export class CartDialog {
     }
     // Changer de maison périme l'heure : on rouvre les deux, dans l'ordre.
     await this.doors.pickup(service.pickupAddressId);
+  }
+
+  /**
+   * **L'autre chemin**, en lien discret sous la carte du service (Hugo,
+   * 2026-10-27) : en livraison, « Ou je retire ma commande — −20 % sur une
+   * sélection » ; au retrait, « Ou je me fais livrer — frais selon la zone ».
+   * `null` quand l'autre porte est fermée à cette clientèle.
+   */
+  protected readonly otherWay = computed(() => {
+    const service = this.choice();
+    const c = this.t().cart;
+    if (service?.mode === 'pickup') {
+      return this.doors.deliveryOpen() ? c.otherDelivery : null;
+    }
+    if (service?.mode !== 'delivery' || !this.doors.pickupOpen()) {
+      return null;
+    }
+    const offer = this.points
+      .pickups()
+      .map((point) => pickupOffer(point, this.audience(), this.t().pickupDialog))
+      .find((o) => o.hasOffer);
+    return offer === undefined ? c.otherPickup : fill(c.otherPickupOffer, { offer: offer.label });
+  });
+
+  protected async takeOtherWay(): Promise<void> {
+    await (this.choice()?.mode === 'pickup' ? this.doors.delivery(null) : this.doors.pickup(null));
   }
 
   /**

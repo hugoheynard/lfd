@@ -204,6 +204,8 @@ function boot({
         provide: OrderDoors,
         useValue: {
           serviceOffered: signal(!unservable),
+          pickupOpen: signal(!unservable),
+          deliveryOpen: signal(!unservable),
           choose: (): Promise<boolean> => {
             ouvertes.push('choose');
             return Promise.resolve(false);
@@ -421,6 +423,19 @@ describe('le panier pose la question du lieu SUR PLACE', () => {
     clic(fixture, '.ask');
 
     expect(ouvertes).toEqual(['choose']);
+    expect(visitees).toEqual([]);
+  });
+
+  /** L'autre chemin, en lien discret sous la carte (Hugo, 2026-10-27). */
+  it('propose la livraison depuis un retrait, et l’ouvre sans naviguer', () => {
+    const fixture = boot({ auth: RECONNU, service: AU_LABO });
+
+    expect(el(fixture).querySelector('.other-way')?.textContent?.trim()).toBe(
+      FR.cart.otherDelivery,
+    );
+    clic(fixture, '.other-way');
+
+    expect(ouvertes).toEqual(['delivery']);
     expect(visitees).toEqual([]);
   });
 
