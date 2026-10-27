@@ -2,34 +2,35 @@
   display: block;
 }
 
-/* Le beurre PLEIN et pas le beurre profond : sur le registre sombre, c'est le
-   seul aplat clair de l'écran, et c'est à ça qu'on doit le repérer avant tout
-   le reste. */
+/* Un bouton BLANC sur la bande bleue, comme ceux du site vitrine (Hugo,
+   2026-10-27 : l'aplat beurre « est laid ») : casse normale, petit arrondi,
+   pas de tuile ni d'ombre. Le blanc est le seul aplat clair de la bande :
+   c'est assez pour qu'on le repère. */
 .new-order {
   display: flex;
   align-items: center;
-  gap: var(--fold-space-lg);
-  min-height: 62px;
-  padding: var(--fold-space-md) var(--fold-space-lg);
-  border-radius: var(--fold-radius-lg);
-  /* RGAA 3.2 (lot A5, 2026-10-26) : le blanc sur le beurre d'action ne
-     tenait que 2,99:1 (titre) et 2,61:1 (sous-titre). Le beurre INTENSE est le
-     rôle du thème fait pour porter du texte clair. */
-  background: var(--lfc-color-accent-deep);
-  color: var(--lfc-color-on-accent-deep);
+  gap: var(--fold-space-md);
+  min-height: 52px;
+  padding: var(--fold-space-sm) var(--fold-space-lg);
+  border-radius: var(--fold-radius-sm);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
   text-decoration: none;
+  transition: background 160ms ease;
+
+  &:hover {
+    background: var(--lfc-ink-50);
+  }
+
+  fold-icon {
+    flex: none;
+    width: 20px;
+    height: 20px;
+  }
 }
 
 .new-order-tile {
-  flex: none;
-  display: grid;
-  place-items: center;
-  width: 36px;
-  height: 36px;
-  border-radius: var(--fold-radius-md);
-  /* La tuile se creuse DANS le beurre : un voile de sa propre encre, pas un
-     voile de papier — sur un aplat clair, le papier ne creuse rien. */
-  background: color-mix(in srgb, var(--lfc-color-on-accent) 18%, transparent);
+  display: contents;
 }
 
 .new-order-titles {
@@ -39,48 +40,26 @@
 }
 
 .new-order-title {
-  font-family: var(--fold-font-label);
-  font-size: var(--lfc-text-block);
-  font-weight: var(--lfc-weight-black);
-  letter-spacing: var(--lfc-tracking-label);
-  text-transform: uppercase;
+  font-family: var(--fold-font-sans);
+  font-size: var(--fold-text-lg);
+  font-weight: 700;
 }
 
 .new-order-sub {
-  font-size: var(--fold-text-md);
-  /* Le second niveau du blanc, pas une autre couleur : sur un aplat beurre, un
-     brun clair et un blanc voilé se ressemblent, mais seul le second dit qu'il
-     appartient à la même ligne que le titre.
-     ⚠️ Ne PAS revenir à `accent-text` : c'est l'un des rôles que le sous-bloc
-     `chrome` inverse, et le bandeau est dans le chrome — il y vaut un beurre
-     pâle, illisible sur du beurre. */
-  color: var(--lfc-color-on-accent-deep-muted);
+  font-size: var(--fold-text-sm);
+  opacity: 0.75;
 }
 
-/* 76 px : il faut ce poids pour tenir face à un titre de 38 px sur le registre
-   sombre — un bouton de 62 px y disparaît. */
+/* Au bureau, l'action est un item de la ligne du bandeau : elle garde sa
+   largeur au lieu de s'étirer avec le titre. */
 @media (min-width: 900px) {
-  /* Au bureau, l'action est un item de la ligne du bandeau : elle garde sa
-     largeur au lieu de s'étirer avec le titre. */
   :host {
     flex: none;
   }
+}
 
+@media (prefers-reduced-motion: reduce) {
   .new-order {
-    min-height: 76px;
-    padding: var(--fold-space-lg) var(--fold-space-xl);
-  }
-
-  .new-order-tile {
-    width: 40px;
-    height: 40px;
-  }
-
-  .new-order-title {
-    font-size: var(--lfc-text-banner-cta);
-  }
-
-  .new-order-sub {
-    font-size: var(--lfc-text-note);
+    transition: none;
   }
 }
