@@ -250,7 +250,10 @@
           <span class="browse-said">
             <span class="browse-mark" [attr.aria-label]="c().browse.helpLabel">?</span>
             <span class="browse-text">
-              {{ c().browse.lead }} <strong>{{ c().browse.strong }}</strong> {{ c().browse.tail }}
+              {{ c().browse.lead }}
+              <span class="browse-more"
+                ><strong>{{ c().browse.strong }}</strong> {{ c().browse.tail }}</span
+              >
             </span>
           </span>
           <button class="browse-cta" type="button" (click)="browse()">{{ c().browse.cta }}</button>

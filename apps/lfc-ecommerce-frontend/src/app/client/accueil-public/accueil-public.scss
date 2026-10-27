@@ -1019,3 +1019,35 @@ app-service-doors {
     margin-top: calc(-1 * var(--fold-space-2xl));
   }
 }
+
+/* Au téléphone, la sortie se résume à sa question et à un GROS bouton blanc
+   (Hugo, 2026-10-27) : « Pas encore décidé ? », puis « Je visite la
+   boutique » sur toute la largeur. */
+@media (max-width: 599.98px) {
+  .browse {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .browse-mark,
+  .browse-more {
+    display: none;
+  }
+
+  .browse-text {
+    font-family: var(--fold-font-label);
+    font-size: var(--fold-text-lg);
+    font-weight: var(--lfc-weight-black);
+    text-transform: uppercase;
+  }
+
+  .browse .browse-cta {
+    justify-content: center;
+    width: 100%;
+    min-height: 56px;
+    border: 0;
+    background: var(--lfc-paper-0);
+    color: var(--lfc-brand-blue);
+    font-size: var(--fold-text-md);
+  }
+}
