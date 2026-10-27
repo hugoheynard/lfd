@@ -1001,3 +1001,15 @@ app-service-doors {
     flex: none;
   }
 }
+
+/* 🔴 AU TÉLÉPHONE, LE BANDEAU DE RETRAIT N'EST PLUS UNE CARTE (Hugo,
+   2026-10-27 : « oublier l'aspect carte, pleine largeur et collé au
+   masthead ») : il sort de la gouttière et remonte jusqu'au bandeau de page.
+   Marges négatives délibérées — elles reprennent le rembourrage de la feuille. */
+@media (max-width: 599.98px) {
+  .sheet > .banner:first-child {
+    margin: calc(-1 * var(--fold-space-2xl)) calc(-1 * var(--lfc-inset)) 0;
+    border-radius: 0;
+    box-shadow: none;
+  }
+}
