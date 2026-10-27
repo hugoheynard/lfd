@@ -27,6 +27,13 @@ import { RovingRadioGroup } from '../../a11y/roving-radio-group';
 /** Ce qu'il faut pour ouvrir le sélecteur : la maison déjà retenue, s'il y en a une. */
 export interface HousePickerData {
   readonly currentId: string | null;
+  /**
+   * Le jour pris au panneau du jour, ou absent : seules les maisons qui le
+   * servent se proposent — celles dont la première journée servie
+   * (`ServicePoints.nextDayFor`) n'est pas plus tardive (plan
+   * `plan-panneau-date.md`, 2026-10-27).
+   */
+  readonly day?: string | null;
 }
 
 /** Une maison, telle que la liste l'affiche. */
@@ -141,16 +148,20 @@ export class PublicHousePickerDialog {
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
     const selectedId = this.picked() ?? currentId ?? this.preselectedId();
-    return this.points.pickups().map((point) => ({
-      point,
-      // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
-      name: point.label || point.ville,
-      place: `${point.ville} · ${point.ligne1}`,
-      offer: pickupOffer(point, audience, copy),
-      current: point.id === currentId,
-      selected: point.id === selectedId,
-      ready: readyLabel(point, this.c().readyFrom),
-    }));
+    const day = this.data().day ?? null;
+    return this.points
+      .pickups()
+      .filter((point) => day === null || servesOn(this.points.nextDayFor(point.id), day))
+      .map((point) => ({
+        point,
+        // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
+        name: point.label || point.ville,
+        place: `${point.ville} · ${point.ligne1}`,
+        offer: pickupOffer(point, audience, copy),
+        current: point.id === currentId,
+        selected: point.id === selectedId,
+        ready: readyLabel(point, this.c().readyFrom),
+      }));
   });
 
   /**
@@ -189,4 +200,9 @@ function readyLabel(point: PickupAddressView, gabarit: string): string {
   // veulent dire la même chose ici — on ne sait pas, donc on ne dit rien.
   const start = point.opening.publicOpening?.start ?? null;
   return start === null ? '' : fill(gabarit, { hour: formatHour(start) });
+}
+
+/** Une maison sert ce jour si sa première journée servie n'est pas plus tardive. */
+function servesOn(firstDay: string | null, day: string): boolean {
+  return firstDay !== null && firstDay <= day;
 }

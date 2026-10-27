@@ -4,14 +4,14 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1678 textes
+## Sommaire — 1695 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
 | Espace | Clé | Textes |
 | --- | --- | --- |
 | **Parcours de commande** | | |
-| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 61 |
+| [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 63 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
@@ -21,6 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
+| [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 15 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
@@ -47,7 +48,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1678** |
+| **Total** | | **1695** |
 
 ## Le parcours de commande
 
@@ -55,7 +56,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 
 ### Accueil public — le visiteur sans compte — `accueilPublic`
 
-Source : `screens/accueil-public.copy.ts` · 61 textes.
+Source : `screens/accueil-public.copy.ts` · 63 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -83,6 +84,8 @@ Source : `screens/accueil-public.copy.ts` · 61 textes.
 | `accueilPublic.doors.courierNotOffered.tag` | Indisponible | Unavailable | Non disponibile |  |
 | `accueilPublic.doors.courierNotOffered.hint` | La livraison n’est pas proposée pour le moment. | Delivery is not offered at the moment. | La consegna non è proposta al momento. |  |
 | `accueilPublic.doors.pickupUpTo` | Jusqu’à {value} | Up to {value} | Fino a {value} | `{value}` |
+| `accueilPublic.doors.pickupSingleIntro` | Retrait : {place}, à l’heure de mon choix. | Pickup at {place}, at the time I choose. | Ritiro presso {place}, all’ora che scelgo. | `{place}` |
+| `accueilPublic.doors.pickupSingleCta` | Choisir mon heure | Pick my time | Scegliere l’orario |  |
 | `accueilPublic.hero.tag` | Nouvelle commande | New order | Nuovo ordine |  |
 | `accueilPublic.hero.title` | Je passe la prendre | I’ll come and get it | Passo a prenderlo |  |
 | `accueilPublic.hero.intro` | Choisissez votre point et votre heure de retrait. | Choose your pickup point and time. | Scegliete il punto e l’orario di ritiro. |  |
@@ -460,6 +463,30 @@ Source : `screens/command-terms.copy.ts` · 38 textes.
 | `commandTerms.unset` | Où et quand ? | Where and when? | Dove e quando? |  |
 | `commandTerms.choose` | Choisir la maison et l’heure | Choose the bakery and time | Scegli la bottega e l’ora |  |
 
+<a id="espace-daypicker"></a>
+
+### Choix du jour — la première question d’une commande — `dayPicker`
+
+Source : `screens/day-picker.copy.ts` · 15 textes.
+
+| Clé | FR | EN | IT | Variables |
+| --- | --- | --- | --- | --- |
+| `dayPicker.kicker` | Étape 1 sur 3 | Step 1 of 3 | Passo 1 di 3 |  |
+| `dayPicker.title` | Pour quel jour ? | For which day? | Per quale giorno? |  |
+| `dayPicker.lead` | Choisissez d’abord le jour : le lieu et l’heure viennent ensuite. | Pick the day first: the place and the time come next. | Scegliete prima il giorno: il luogo e l’ora vengono dopo. |  |
+| `dayPicker.loading` | Nous regardons les jours ouverts… | Checking the open days… | Controlliamo i giorni aperti… |  |
+| `dayPicker.today` | Aujourd’hui | Today | Oggi |  |
+| `dayPicker.todayUntil` | Aujourd’hui · commandez avant {time} | Today · order before {time} | Oggi · ordinate prima delle {time} | `{time}` |
+| `dayPicker.nextGroup` | Les jours suivants | The following days | I giorni successivi |  |
+| `dayPicker.closed` | Non proposé | Not offered | Non disponibile |  |
+| `dayPicker.otherDate` | Autre date | Another date | Altra data |  |
+| `dayPicker.dateLabel` | Le jour | The day | Il giorno |  |
+| `dayPicker.notServed` | Ce jour-là n’est pas proposé à la commande. | That day is not open for orders. | Quel giorno non è aperto agli ordini. |  |
+| `dayPicker.confirmDate` | Prendre ce jour | Take this day | Prendo questo giorno |  |
+| `dayPicker.none.title` | Aucune journée ouverte | No day open | Nessuna giornata aperta |  |
+| `dayPicker.none.subtitle` | Aucun jour n’est proposé à la commande pour l’instant. | No day is open for orders right now. | Nessun giorno è aperto agli ordini per ora. |  |
+| `dayPicker.close` | Fermer | Close | Chiudi |  |
+
 <a id="espace-housepicker"></a>
 
 ### Choix du lieu — la maison — `housePicker`
@@ -468,7 +495,7 @@ Source : `screens/house-picker.copy.ts` · 8 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `housePicker.kicker` | Étape 1 sur 3 | Step 1 of 3 | Passo 1 di 3 |  |
+| `housePicker.kicker` | Étape 2 sur 3 | Step 2 of 3 | Passo 2 di 3 |  |
 | `housePicker.title` | Où je la prends ? | Where do I collect? | Dove lo ritiro? |  |
 | `housePicker.lead` | Changer de maison change les heures proposées — vous les choisirez juste après. | Changing bakery changes the times on offer — you will pick one right after. | Cambiare bottega cambia gli orari proposti — li sceglierete subito dopo. |  |
 | `housePicker.current` | Votre choix | Your choice | La vostra scelta |  |
@@ -595,7 +622,7 @@ Source : `screens/slot-picker.copy.ts` · 20 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
-| `slotPicker.kicker` | Étape 2 sur 3 · {place} | Step 2 of 3 · {place} | Passo 2 di 3 · {place} | `{place}` |
+| `slotPicker.kicker` | Étape 3 sur 3 · {place} | Step 3 of 3 · {place} | Passo 3 di 3 · {place} | `{place}` |
 | `slotPicker.title` | À quelle heure ? | What time? | A che ora? |  |
 | `slotPicker.lead` | Les créneaux suivent les fournées. Celui que vous prenez décide de ce qui sera encore chaud. | Slots follow the bakes. The one you pick decides what will still be warm. | Gli orari seguono le infornate. Quello che scegliete decide cosa sarà ancora caldo. |  |
 | `slotPicker.loading` | Nous regardons les fournées… | Checking the bakes… | Controlliamo le infornate… |  |

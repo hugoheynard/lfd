@@ -171,6 +171,20 @@
           "variables": ["value"]
         },
         {
+          "key": "accueilPublic.doors.pickupSingleIntro",
+          "fr": "Retrait : {place}, à l’heure de mon choix.",
+          "en": "Pickup at {place}, at the time I choose.",
+          "it": "Ritiro presso {place}, all’ora che scelgo.",
+          "variables": ["place"]
+        },
+        {
+          "key": "accueilPublic.doors.pickupSingleCta",
+          "fr": "Choisir mon heure",
+          "en": "Pick my time",
+          "it": "Scegliere l’orario",
+          "variables": []
+        },
+        {
           "key": "accueilPublic.hero.tag",
           "fr": "Nouvelle commande",
           "en": "New order",
@@ -2290,6 +2304,114 @@
       "unrecorded": []
     },
     {
+      "space": "dayPicker",
+      "title": "Choix du jour — la première question d’une commande",
+      "source": "screens/day-picker.copy.ts",
+      "journey": true,
+      "entries": [
+        {
+          "key": "dayPicker.kicker",
+          "fr": "Étape 1 sur 3",
+          "en": "Step 1 of 3",
+          "it": "Passo 1 di 3",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.title",
+          "fr": "Pour quel jour ?",
+          "en": "For which day?",
+          "it": "Per quale giorno?",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.lead",
+          "fr": "Choisissez d’abord le jour : le lieu et l’heure viennent ensuite.",
+          "en": "Pick the day first: the place and the time come next.",
+          "it": "Scegliete prima il giorno: il luogo e l’ora vengono dopo.",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.loading",
+          "fr": "Nous regardons les jours ouverts…",
+          "en": "Checking the open days…",
+          "it": "Controlliamo i giorni aperti…",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.today",
+          "fr": "Aujourd’hui",
+          "en": "Today",
+          "it": "Oggi",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.todayUntil",
+          "fr": "Aujourd’hui · commandez avant {time}",
+          "en": "Today · order before {time}",
+          "it": "Oggi · ordinate prima delle {time}",
+          "variables": ["time"]
+        },
+        {
+          "key": "dayPicker.nextGroup",
+          "fr": "Les jours suivants",
+          "en": "The following days",
+          "it": "I giorni successivi",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.closed",
+          "fr": "Non proposé",
+          "en": "Not offered",
+          "it": "Non disponibile",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.otherDate",
+          "fr": "Autre date",
+          "en": "Another date",
+          "it": "Altra data",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.dateLabel",
+          "fr": "Le jour",
+          "en": "The day",
+          "it": "Il giorno",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.notServed",
+          "fr": "Ce jour-là n’est pas proposé à la commande.",
+          "en": "That day is not open for orders.",
+          "it": "Quel giorno non è aperto agli ordini.",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.confirmDate",
+          "fr": "Prendre ce jour",
+          "en": "Take this day",
+          "it": "Prendo questo giorno",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.none.title",
+          "fr": "Aucune journée ouverte",
+          "en": "No day open",
+          "it": "Nessuna giornata aperta",
+          "variables": []
+        },
+        {
+          "key": "dayPicker.none.subtitle",
+          "fr": "Aucun jour n’est proposé à la commande pour l’instant.",
+          "en": "No day is open for orders right now.",
+          "it": "Nessun giorno è aperto agli ordini per ora.",
+          "variables": []
+        },
+        { "key": "dayPicker.close", "fr": "Fermer", "en": "Close", "it": "Chiudi", "variables": [] }
+      ],
+      "unrecorded": []
+    },
+    {
       "space": "housePicker",
       "title": "Choix du lieu — la maison",
       "source": "screens/house-picker.copy.ts",
@@ -2297,9 +2419,9 @@
       "entries": [
         {
           "key": "housePicker.kicker",
-          "fr": "Étape 1 sur 3",
-          "en": "Step 1 of 3",
-          "it": "Passo 1 di 3",
+          "fr": "Étape 2 sur 3",
+          "en": "Step 2 of 3",
+          "it": "Passo 2 di 3",
           "variables": []
         },
         {
@@ -2904,9 +3026,9 @@
       "entries": [
         {
           "key": "slotPicker.kicker",
-          "fr": "Étape 2 sur 3 · {place}",
-          "en": "Step 2 of 3 · {place}",
-          "it": "Passo 2 di 3 · {place}",
+          "fr": "Étape 3 sur 3 · {place}",
+          "en": "Step 3 of 3 · {place}",
+          "it": "Passo 3 di 3 · {place}",
           "variables": ["place"]
         },
         {

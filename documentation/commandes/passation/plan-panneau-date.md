@@ -1,5 +1,28 @@
 # Plan — le jour se choisit en premier
 
+> ✅ **Bâti le 2026-10-27 (non commité).** `client/shop/day-picker-dialog/`,
+> `client/shop/served-days.ts`, `OrderDoors.choose()` ouvre le panneau d'abord.
+> Écarts :
+>
+> - **« Jour servi » est une fenêtre, pas une liste.** `GET /fulfillment-days`
+>   ne rend que la PREMIÈRE journée par porte (le §1 parlait de `days`, qui
+>   n'était pas exposé — ajouté en lecture). Un jour est servi s'il est entre la
+>   plus tôt de ces journées et `lastDay` : la règle des onglets du sélecteur
+>   d'heure. Un jour de fermeture au-delà n'est donc pas grisé ; il le dit à
+>   l'étape suivante (« aucun créneau »). Le griser exigerait un contrat de
+>   jours ouverts.
+> - **« Autre date » est un `fold-date` borné**, pas le calendrier :
+>   `fold-calendar-month` n'a ni jour désactivable ni jour sélectionné. Sans
+>   `lastDay`, le champ n'a pas de borne haute. Le refus passe par le `hint` du
+>   champ.
+> - **« Aujourd'hui » affiche l'heure limite la plus tôt** des portes qui le
+>   servent.
+> - Une maison est « ouverte ce jour-là » si sa première journée servie n'est
+>   pas plus tardive. `SlotPickerDialog` reçoit `openOn` ; au-delà de sa
+>   semaine, les onglets partent de ce jour.
+> - `askChoice(day)` prend le jour en option ; la modification d'une commande
+>   passée ne l'utilise pas.
+
 > 📝 Plan du 2026-10-27, demande de Hugo : « il manque un panneau date en
 > première étape, qui serait divisé en 3 parties (aujourd'hui bouton pleine
 > largeur si activé en admin) en dessous les 6 jours suivants, en dessous autre

@@ -131,6 +131,12 @@ export interface AccueilPublicCopy {
      * −0 % ». C'est la règle des preuves de cet écran, et elle vaut ici.
      */
     readonly pickupUpTo: string;
+    /**
+     * La porte du retrait quand UNE seule maison est servie (Hugo,
+     * 2026-10-27) : elle la nomme — `{place}` —, et le geste mène à l'heure.
+     */
+    readonly pickupSingleIntro: string;
+    readonly pickupSingleCta: string;
   };
 
   readonly hero: {
@@ -317,6 +323,8 @@ export const ACCUEIL_PUBLIC_FR: AccueilPublicCopy = {
       hint: 'La livraison n’est pas proposée pour le moment.',
     },
     pickupUpTo: 'Jusqu’à {value}',
+    pickupSingleIntro: 'Retrait : {place}, à l’heure de mon choix.',
+    pickupSingleCta: 'Choisir mon heure',
   },
   hero: {
     tag: 'Nouvelle commande',
@@ -409,6 +417,8 @@ export const ACCUEIL_PUBLIC_EN: AccueilPublicCopy = {
       hint: 'Delivery is not offered at the moment.',
     },
     pickupUpTo: 'Up to {value}',
+    pickupSingleIntro: 'Pickup at {place}, at the time I choose.',
+    pickupSingleCta: 'Pick my time',
   },
   hero: {
     tag: 'New order',
@@ -501,6 +511,8 @@ export const ACCUEIL_PUBLIC_IT: AccueilPublicCopy = {
       hint: 'La consegna non è proposta al momento.',
     },
     pickupUpTo: 'Fino a {value}',
+    pickupSingleIntro: 'Ritiro presso {place}, all’ora che scelgo.',
+    pickupSingleCta: 'Scegliere l’orario',
   },
   hero: {
     tag: 'Nuovo ordine',

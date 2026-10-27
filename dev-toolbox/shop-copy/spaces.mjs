@@ -48,6 +48,13 @@ export const ORDER_JOURNEY = [
   },
   {
     kind: "screen",
+    space: "dayPicker",
+    title: "Choix du jour — la première question d’une commande",
+    file: "screens/day-picker.copy.ts",
+    fn: "dayPickerCopy",
+  },
+  {
+    kind: "screen",
     space: "housePicker",
     title: "Choix du lieu — la maison",
     file: "screens/house-picker.copy.ts",

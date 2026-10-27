@@ -1,0 +1,80 @@
+<fold-panel-header variant="eyebrow" [title]="c().kicker" [closeLabel]="c().close" />
+
+<fold-panel-body>
+  <div class="intro">
+    <h2 class="screen">{{ c().title }}</h2>
+    <p class="lead">{{ c().lead }}</p>
+  </div>
+
+  @if (loading()) {
+    <fold-loading [message]="c().loading" />
+  } @else if (noDay()) {
+    <fold-empty-state [title]="c().none.title" [subtitle]="c().none.subtitle" />
+  } @else {
+    <div class="choice">
+      @if (todayLabel(); as label) {
+        <button foldButton block size="lg" type="button" data-day="today" (click)="pickToday()">
+          {{ label }}
+        </button>
+      }
+
+      <!-- Un jour non servi reste VISIBLE et grisé : le client voit pourquoi il
+           ne peut pas le prendre. -->
+      <div class="next" role="group" [attr.aria-label]="c().nextGroup">
+        @for (next of nextDays(); track next.day) {
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            type="button"
+            [disabled]="!next.served"
+            [attr.data-day]="next.day"
+            (click)="pick(next.day)"
+          >
+            <span class="day">
+              <span>{{ next.weekday }}</span>
+              <span>{{ next.date }}</span>
+              @if (!next.served) {
+                <span class="closed">{{ c().closed }}</span>
+              }
+            </span>
+          </button>
+        }
+      </div>
+
+      <button
+        foldButton
+        emphasis="soft"
+        intent="neutral"
+        block
+        type="button"
+        data-day="other"
+        [attr.aria-expanded]="otherOpen()"
+        (click)="toggleOther()"
+      >
+        {{ c().otherDate }}
+      </button>
+
+      @if (otherOpen()) {
+        <div class="other">
+          <fold-date
+            [label]="c().dateLabel"
+            [min]="min()"
+            [max]="max()"
+            [hint]="refusal()"
+            [(value)]="typed"
+          />
+          <button
+            foldButton
+            type="button"
+            data-day="confirm"
+            [disabled]="!typedServed()"
+            (click)="confirmTyped()"
+          >
+            {{ c().confirmDate }}
+          </button>
+        </div>
+      }
+    </div>
+  }
+</fold-panel-body>

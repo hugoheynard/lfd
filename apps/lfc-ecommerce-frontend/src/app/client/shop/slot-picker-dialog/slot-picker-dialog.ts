@@ -73,6 +73,12 @@ export interface SlotPickerData {
    * de début, au format du créneau (`HH:MM`).
    */
   readonly current?: { readonly day: string; readonly time: string } | null;
+  /**
+   * Le jour pris au panneau du jour (`DayPickerDialog`) : le dialogue s'ouvre
+   * dessus, ses onglets restent pour changer d'avis. Au-delà de la semaine
+   * montrée, les onglets partent de lui.
+   */
+  readonly openOn?: string | null;
 }
 
 /**
@@ -204,9 +210,12 @@ export class SlotPickerDialog {
     const today = instantToLocal(new Date()).day;
     const locale = this.locale.current();
     const last = this.data().lastDay ?? null;
+    const openOn = this.data().openOn ?? null;
+    // Un jour pris au-delà de la semaine montrée : les onglets partent de lui.
+    const start = openOn !== null && openOn > addDays(first, DAYS_SHOWN - 1) ? openOn : first;
     // La première journée reste : c'est le serveur qui l'a accordée, bornes
     // d'opération comprises. Les suivantes s'arrêtent au dernier jour.
-    return Array.from({ length: DAYS_SHOWN }, (_unused, index) => addDays(first, index))
+    return Array.from({ length: DAYS_SHOWN }, (_unused, index) => addDays(start, index))
       .filter((day, index) => index === 0 || last === null || day <= last)
       .map((day) => ({
         day,
@@ -255,7 +264,9 @@ export class SlotPickerDialog {
         // Le jour déjà retenu, s'il est encore proposé ; sinon le premier.
         const kept = this.data().current?.day;
         const offered = kept !== undefined && this.days().some((tab) => tab.day === kept);
-        this.day.set(offered ? kept : first);
+        const openOn = this.data().openOn ?? null;
+        const opens = openOn !== null && this.days().some((tab) => tab.day === openOn);
+        this.day.set(offered ? kept : opens ? openOn : (this.days()[0]?.day ?? first));
       }
     });
 

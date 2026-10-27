@@ -429,6 +429,23 @@ describe('AccueilPublic — les trois états', () => {
    * « jusqu'à −0 % ». C'est la règle des preuves de cet écran, et la porte n'y
    * échappe pas.
    */
+  /** Une seule maison servie : la porte la nomme et mène à l'heure (Hugo, 2026-10-27). */
+  it('nomme la maison unique sur la porte du retrait, et mène à l’heure', async () => {
+    const fixture = await mount([point({ id: 'a', label: 'Le Labo' })], 'pro');
+
+    const door = fixture.nativeElement.querySelector('.door-pickup') as HTMLElement;
+    expect(door.textContent).toContain('Le Labo');
+    expect(door.querySelector('.door-cta')?.textContent?.trim()).toBe('Choisir mon heure');
+  });
+
+  it('garde « Choisir un point de retrait » quand il y a plusieurs maisons', async () => {
+    const fixture = await mount(POINTS, 'pro');
+
+    expect(fixture.nativeElement.querySelector('.door-pickup .door-cta')?.textContent?.trim()).toBe(
+      'Choisir un point de retrait',
+    );
+  });
+
   it('ne met AUCUNE mention sur la porte quand il n’y a pas de remise', async () => {
     const fixture = await mount(POINTS, 'pro');
 

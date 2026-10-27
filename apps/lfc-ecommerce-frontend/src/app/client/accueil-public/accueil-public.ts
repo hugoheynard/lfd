@@ -202,11 +202,22 @@ export class AccueilPublic {
    * porte n'y échappe pas.
    */
   protected readonly pickupDoor = computed<DoorCopy>(() => {
-    const door = this.c().doors.pickup;
+    const doors = this.c().doors;
     const best = this.bestLabel();
-    return best === null
-      ? door
-      : { ...door, note: fill(this.c().doors.pickupUpTo, { value: best }) };
+    const withNote =
+      best === null
+        ? doors.pickup
+        : { ...doors.pickup, note: fill(doors.pickupUpTo, { value: best }) };
+    // Une seule maison : la porte la nomme et mène à l'heure (Hugo, 2026-10-27).
+    const served = this.points.pickups();
+    const only = served.length === 1 ? served[0] : undefined;
+    return only === undefined
+      ? withNote
+      : {
+          ...withNote,
+          intro: fill(doors.pickupSingleIntro, { place: only.label || only.ville }),
+          cta: doors.pickupSingleCta,
+        };
   });
 
   /**

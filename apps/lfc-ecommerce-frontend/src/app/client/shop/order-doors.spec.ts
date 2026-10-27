@@ -17,6 +17,9 @@ import { OrderDoors } from './order-doors';
 import { ServicePoints } from './pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog/public-house-picker-dialog';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
+import { SlotPickerDialog } from './slot-picker-dialog/slot-picker-dialog';
+import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
+import { OrderContextStore } from '../order-context.store';
 
 /**
  * Un visiteur : la liste posée par `receive` vaut pour lui. Sans session
@@ -39,6 +42,11 @@ const LABO: PickupAddressView = {
   discounts: { b2b: null, b2c: null },
   opening: { proPickup: null, publicOpening: null },
 };
+
+/** Le jour pris au panneau, et un jour plus tardif. Comparés entre eux seulement. */
+const VILLAGE: PickupAddressView = { ...LABO, id: 'pick_village', label: 'Le Village' };
+const DAY = '2026-11-03';
+const LATER = '2026-11-05';
 
 /** Le réglage « Livraison » tel que l'admin le pose, sans le mode de fenêtre. */
 type Availability = Pick<PublicDeliveryAvailabilityView, 'openToB2b' | 'openToB2c'>;
@@ -121,9 +129,12 @@ describe('OrderDoors — à qui la livraison est ouverte', () => {
  * seulement quand le coursier est ouvert à la clientèle.
  */
 describe('OrderDoors.choose — rien de choisi', () => {
+  /** Les dialogues ouverts, et les données qu'ils ont reçues. */
   function opened(
     availability: Availability,
-    pickups: readonly PickupAddressView[] = [LABO],
+    pickups: readonly PickupAddressView[] = [LABO, VILLAGE],
+    replies: ReadonlyMap<unknown, unknown> = new Map<unknown, unknown>([[DayPickerDialog, DAY]]),
+    datas: unknown[] = [],
   ): Promise<readonly unknown[]> {
     const names: unknown[] = [];
     // `dialogSide()` lit `matchMedia` pour choisir le côté du panneau.
@@ -136,9 +147,10 @@ describe('OrderDoors.choose — rien de choisi', () => {
         {
           provide: FoldPanelHostService,
           useValue: {
-            open: (component: unknown) => {
+            open: (component: unknown, options?: { data?: unknown }) => {
               names.push(component);
-              return { closed: Promise.resolve(undefined) };
+              datas.push(options?.data);
+              return { closed: Promise.resolve(replies.get(component)) };
             },
           },
         },
@@ -146,23 +158,93 @@ describe('OrderDoors.choose — rien de choisi', () => {
         VISITOR_AUTH,
       ],
     });
-    TestBed.inject(ServicePoints).receive(pickups, [], [], availability);
+    TestBed.inject(ServicePoints).receive(
+      pickups,
+      [],
+      [
+        { pickupAddressId: LABO.id, date: DAY, orderUntil: null },
+        { pickupAddressId: 'pick_village', date: LATER, orderUntil: null },
+        { pickupAddressId: null, date: DAY, orderUntil: null },
+      ],
+      availability,
+    );
     return TestBed.inject(OrderDoors)
       .choose()
       .then(() => names);
   }
 
-  it('🔴 demande « retrait ou coursier ? » quand le coursier est ouvert', async () => {
-    expect(await opened({ openToB2b: true, openToB2c: true })).toEqual([ServiceModeDialog]);
+  it('🔴 demande « retrait ou coursier ? » après le jour quand le coursier est ouvert', async () => {
+    expect(await opened({ openToB2b: true, openToB2c: true })).toEqual([
+      DayPickerDialog,
+      ServiceModeDialog,
+    ]);
   });
 
-  it('va droit au retrait quand le coursier est fermé à la clientèle', async () => {
-    expect(await opened({ openToB2b: false, openToB2c: true })).toEqual([PublicHousePickerDialog]);
+  it('va droit au retrait après le jour quand le coursier est fermé à la clientèle', async () => {
+    expect(await opened({ openToB2b: false, openToB2c: true })).toEqual([
+      DayPickerDialog,
+      PublicHousePickerDialog,
+    ]);
   });
 
   /** 2026-10-16 : aucun site ouvert à la clientèle — droit au coursier. */
-  it('🔴 va droit au coursier quand la liste servie des points est vide', async () => {
-    expect(await opened({ openToB2b: true, openToB2c: true }, [])).toEqual([DeliveryAddressDialog]);
+  it('🔴 va droit au coursier après le jour quand la liste servie des points est vide', async () => {
+    expect(await opened({ openToB2b: true, openToB2c: true }, [])).toEqual([
+      DayPickerDialog,
+      DeliveryAddressDialog,
+    ]);
+  });
+
+  /** Plan `plan-panneau-date.md` : le jour est la PREMIÈRE question, et la fermer ne pose rien. */
+  it('🔴 fermer le panneau du jour n’ouvre rien d’autre et ne pose aucun choix', async () => {
+    const names = await opened({ openToB2b: true, openToB2c: true }, [LABO], new Map());
+    expect(names).toEqual([DayPickerDialog]);
+    expect(TestBed.inject(OrderContextStore).choice()).toBeNull();
+  });
+
+  it('passe le jour au choix de la maison, puis au sélecteur d’heure', async () => {
+    const datas: unknown[] = [];
+    const replies = new Map<unknown, unknown>([
+      [DayPickerDialog, DAY],
+      [ServiceModeDialog, 'pickup'],
+      [PublicHousePickerDialog, LABO],
+    ]);
+    const names = await opened(
+      { openToB2b: true, openToB2c: true },
+      [LABO, VILLAGE],
+      replies,
+      datas,
+    );
+    expect(names).toEqual([
+      DayPickerDialog,
+      ServiceModeDialog,
+      PublicHousePickerDialog,
+      SlotPickerDialog,
+    ]);
+    expect(datas[2]).toMatchObject({ day: DAY });
+    expect(datas[3]).toMatchObject({ openOn: DAY });
+  });
+
+  /** Une seule maison servie : le jour, puis l'heure (Hugo, 2026-10-27). */
+  it('🔴 avec une seule maison, ne demande pas de la choisir', async () => {
+    const datas: unknown[] = [];
+    const replies = new Map<unknown, unknown>([
+      [DayPickerDialog, DAY],
+      [ServiceModeDialog, 'pickup'],
+    ]);
+    const names = await opened({ openToB2b: true, openToB2c: true }, [LABO], replies, datas);
+    expect(names).toEqual([DayPickerDialog, ServiceModeDialog, SlotPickerDialog]);
+    expect(datas[2]).toMatchObject({ openOn: DAY });
+  });
+
+  it('passe le jour au coursier en `currentDate`', async () => {
+    const datas: unknown[] = [];
+    const replies = new Map<unknown, unknown>([
+      [DayPickerDialog, DAY],
+      [ServiceModeDialog, 'delivery'],
+    ]);
+    await opened({ openToB2b: true, openToB2c: true }, [LABO], replies, datas);
+    expect(datas[2]).toMatchObject({ currentDate: DAY });
   });
 
   it('🔴 n’ouvre rien quand ni le retrait ni le coursier ne sont proposés', async () => {

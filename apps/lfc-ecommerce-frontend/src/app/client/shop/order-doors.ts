@@ -9,6 +9,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { ClientAudience } from '../client-audience.service';
 import { formatHour } from '../format-hour';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
+import { DayPickerDialog } from './day-picker-dialog/day-picker-dialog';
 import { DeliveryAddressDialog } from './delivery-address-dialog/delivery-address-dialog';
 import { ServicePoints } from './pickup-points.store';
 import { ServiceModeDialog } from './service-mode-dialog/service-mode-dialog';
@@ -116,7 +117,16 @@ export class OrderDoors {
    * l'un ni l'autre, rien ne s'ouvre et l'on rend `false`.
    */
   async choose(): Promise<boolean> {
-    return this.write(await this.askChoice());
+    if (!this.serviceOffered()) {
+      return false;
+    }
+    // Le JOUR d'abord (plan `plan-panneau-date.md`, 2026-10-27) : fermer le
+    // panneau ne pose rien.
+    const day = await DayPickerDialog.open(this.panels).closed;
+    if (day === undefined) {
+      return false;
+    }
+    return this.write(await this.askChoice(day));
   }
 
   /**
@@ -125,18 +135,18 @@ export class OrderDoors {
    * `plan-modifier-une-commande.md`, M3) et ne doit pas toucher au choix de la
    * boutique. `null` : rien n'a été choisi.
    */
-  async askChoice(): Promise<ServiceChoice | null> {
+  async askChoice(day: string | null = null): Promise<ServiceChoice | null> {
     if (!this.pickupOpen()) {
-      return this.askDelivery(null);
+      return this.askDelivery(null, day);
     }
     if (!this.deliveryOpen()) {
-      return this.askPickup(null);
+      return this.askPickup(null, day);
     }
     const mode = await ServiceModeDialog.open(this.panels).closed;
     if (mode === undefined) {
       return null;
     }
-    return mode === 'delivery' ? this.askDelivery(null) : this.askPickup(null);
+    return mode === 'delivery' ? this.askDelivery(null, day) : this.askPickup(null, day);
   }
 
   /**
@@ -157,12 +167,21 @@ export class OrderDoors {
   }
 
   /** {@link pickup}, sans écrire la réponse. */
-  async askPickup(currentId: string | null): Promise<ServiceChoice | null> {
+  async askPickup(
+    currentId: string | null,
+    day: string | null = null,
+  ): Promise<ServiceChoice | null> {
     // Fermée, elle ne s'ouvre pas — comme celle du coursier.
     if (!this.pickupOpen()) {
       return null;
     }
-    const point = await PublicHousePickerDialog.open(this.panels, { currentId }).closed;
+    // UNE seule maison servie : on ne demande pas de la choisir (Hugo,
+    // 2026-10-27 : « le parcours doit faire date, heure ») — elle est prise.
+    const served = this.points.pickups();
+    const point =
+      served.length === 1
+        ? served[0]
+        : await PublicHousePickerDialog.open(this.panels, { currentId, day }).closed;
     if (point === undefined) {
       return null;
     }
@@ -171,6 +190,7 @@ export class OrderDoors {
       point.label || point.ville,
       `${point.ligne1}, ${point.ville}`,
       this.order.choice(),
+      day,
     );
   }
 
@@ -275,6 +295,7 @@ export class OrderDoors {
     place: string,
     address: string,
     current: ServiceChoice | null,
+    openOn: string | null = null,
   ): Promise<ServiceChoice | null> {
     const slot = await SlotPickerDialog.open(this.panels, {
       pickupAddressId,
@@ -284,6 +305,8 @@ export class OrderDoors {
       firstDay: this.points.nextDayFor(pickupAddressId),
       lastDay: this.points.lastDay(),
       current: this.currentAt(pickupAddressId, current),
+      // Le jour pris au panneau du jour : le dialogue s'ouvre dessus.
+      openOn,
     }).closed;
     if (slot === undefined) {
       return null;

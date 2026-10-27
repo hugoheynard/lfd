@@ -103,6 +103,9 @@ export class ServicePoints {
 
   readonly zones = this.zoneList.asReadonly();
 
+  /** Les journées servies, une par porte — telles que le serveur les rend. */
+  readonly days = this.dayList.asReadonly();
+
   /**
    * Le réglage de livraison, **ouvert aux deux** tant qu'il n'est pas lu ou que
    * sa lecture a échoué : c'est l'existant, et le serveur garde la porte.
