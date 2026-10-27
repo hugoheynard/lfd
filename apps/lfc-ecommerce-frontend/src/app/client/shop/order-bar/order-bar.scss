@@ -6,29 +6,20 @@
   display: block;
 }
 
-/* 🔴 CRÈME, et plus l'encre. Elle portait le registre sombre tant qu'elle ne
-   faisait que récapituler ; elle porte désormais le geste de régler, et c'est
-   l'objet le plus chaud de l'écran. L'ombre longue, bleu nuit, la décolle de
-   l'encre qu'elle chevauche. */
+/* 🔴 BLEU PLEIN, texte blanc (Hugo, 2026-10-27) : la barre prolonge la bande
+   bleue au lieu de s'y poser en beurre. Le seul aplat clair est « Régler ». */
 .bar {
   display: grid;
   grid-template-columns: minmax(0, 1fr) auto;
   align-items: center;
   gap: var(--fold-space-lg) var(--fold-space-2xl);
   padding: var(--fold-space-lg) var(--fold-space-xl);
-  border: 1.5px solid var(--lfc-butter-450);
   border-radius: var(--lfc-radius-2xl);
-  background: var(--lfc-butter-75);
-  color: var(--lfc-soot-900);
-  box-shadow: var(--lfc-shadow-order-bar);
+  background: var(--lfc-brand-blue);
+  color: var(--lfc-paper-0);
 
-  /* 🔴 La barre vit dans la DESCENTE, sous `data-surface="chrome"`, où le
-     « primaire » devient la crème — un bouton plein y serait crème sur crème.
-     La barre est une surface PAPIER posée sur l'encre : elle reprend donc les
-     rôles de marque du papier pour son seul contenu. */
-  --fold-color-primary: var(--lfc-ink-800);
-  --fold-color-primary-strong: var(--lfc-ink-900);
-  --fold-color-on-primary: var(--lfc-paper-50);
+  /* Sur le bleu, le bouton plein est BLANC écrit en bleu : les rôles du
+     registre sombre (`data-surface="chrome"`) le donnent déjà. */
 
   /* 🔴 Même raison pour l'avertissement : la descente le peint en VOILE sur
      l'encre, texte crème (`#f0dcae`) — crème sur crème ici, illisible
@@ -56,7 +47,7 @@
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-eyebrow);
   text-transform: uppercase;
-  color: var(--lfc-color-accent-deep);
+  color: var(--lfc-butter-300);
 }
 
 .dot {
@@ -94,7 +85,7 @@
 }
 
 .sep {
-  color: var(--lfc-butter-450);
+  opacity: 0.5;
 }
 
 /* La remise porte l'ENCRE plein : sur la crème, c'est elle qui se gagne. */
@@ -102,8 +93,8 @@
   flex: none;
   padding: 0.2rem 0.65rem;
   border-radius: var(--fold-radius-pill);
-  background: var(--lfc-ink-800);
-  color: var(--lfc-paper-0);
+  background: var(--lfc-paper-0);
+  color: var(--lfc-brand-blue);
   font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-xs);
   font-weight: var(--lfc-weight-black);
@@ -124,14 +115,14 @@
   padding: 0;
   border: 0;
   background: transparent;
-  color: var(--lfc-ink-800);
+  color: var(--lfc-paper-0);
   font-family: var(--lfc-font-caps);
   font-size: var(--fold-text-xs);
   font-weight: var(--lfc-weight-black);
   letter-spacing: var(--lfc-tracking-label);
   text-transform: uppercase;
   text-decoration: underline;
-  text-decoration-color: var(--lfc-butter-450);
+  text-decoration-color: rgb(255 255 255 / 45%);
   text-underline-offset: 4px;
   cursor: pointer;
 }
@@ -149,13 +140,13 @@
   gap: var(--fold-space-sm);
   min-block-size: 88px;
   padding-inline-start: var(--fold-space-2xl);
-  border-inline-start: 1px solid var(--lfc-butter-450);
+  border-inline-start: 1px solid rgb(255 255 255 / 30%);
 }
 
 .meta {
   font-size: var(--fold-text-md);
   font-variant-numeric: tabular-nums;
-  color: var(--lfc-color-accent-deep);
+  opacity: 0.85;
 }
 
 /* Le libellé à gauche, le total à droite — la forme du CTA de la fiche. */
@@ -171,7 +162,7 @@
 
 .empty {
   font-size: var(--fold-text-base);
-  color: var(--lfc-soot-600);
+  opacity: 0.8;
 }
 
 /* En pile, la barre se range : décidé en haut, réglé en bas. */
