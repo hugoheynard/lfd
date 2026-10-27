@@ -26,10 +26,10 @@ compilation. Tout écran neuf va dans l'app cliente.
 Ce paragraphe disait « la seule dépendance qui en sort », en nommait une, et se
 trompait sur les deux points. Il en sort **cinq**, toutes statiques :
 
-| depuis          | quoi                                                     |
-| --------------- | -------------------------------------------------------- |
-| `app.ts`        | `CartPanel`, `CartService`, `ContactPanel`, `SiteFooter` |
-| `app.config.ts` | `AddressesService`                                       |
+| depuis          | quoi                                                                                                                                   |
+| --------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| `app.ts`        | `CartPanel`, `CartService`, `ContactPanel` (`SiteFooter` retiré le 2026-10-27 : le shell lit le pied de page du contenu, `ClientFoot`) |
+| `app.config.ts` | `AddressesService`                                                                                                                     |
 
 Elles vivent dans la **racine de composition** et dans le composant
 **bootstrappé** : ce ne sont donc pas des imports paresseux, et le code hérité

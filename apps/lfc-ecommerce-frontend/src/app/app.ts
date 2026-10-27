@@ -28,7 +28,7 @@ import { ClientShell } from './client/shell/client-shell';
 import { AuthFacade } from './auth/auth.facade';
 import { ContactPanel } from './legacy/contact/contact-panel/contact-panel';
 import { FEATURE_DASHBOARD } from './feature-flags';
-import { SiteFooter } from './legacy/footer/site-footer';
+import { ClientFoot } from './client/foot/client-foot';
 
 /**
  * L'écran courant est-il servi par le shell CLIENT ?
@@ -61,7 +61,7 @@ export function servedByClientShell(route: ActivatedRouteSnapshot): boolean {
     FoldSpinnerComponent,
     FoldSurfaceDirective,
     FoldToastContainerComponent,
-    SiteFooter,
+    ClientFoot,
   ],
   templateUrl: './app.html',
   styleUrl: './app.scss',
