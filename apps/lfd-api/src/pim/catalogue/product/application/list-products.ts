@@ -15,6 +15,7 @@ import type { ActivationGaps } from "../domain/services/activation-gaps.js";
 import type { CompletenessRules } from "../domain/services/variant-completeness.js";
 import { audienceView, type AudienceView } from "./audience-view.js";
 import { readCompletenessRules } from "./completeness-support.js";
+import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 
 /**
  * Ce qu'une activation dirait de la fiche — jugé par l'agrégat, avec le code
@@ -41,6 +42,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     private readonly catalogue: CatalogueReader,
     private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
+    private readonly cited: CitedAllergensReader,
   ) {}
 
   /**
@@ -58,7 +60,10 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
     );
-    const vat = await this.catalogue.vatPercents(products.map((product) => product.snapshot()));
+    const [vat, cited] = await Promise.all([
+      this.catalogue.vatPercents(products.map((product) => product.snapshot())),
+      this.cited.ofProducts(products.map((product) => product.id)),
+    ]);
     return products.map((product) => {
       const categoryAudience = audiences.get(product.categoryId);
       if (categoryAudience === undefined) {
@@ -67,7 +72,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
       return {
         ...product.snapshot(),
         ...audienceView(product, categoryAudience),
-        ...activationView(product, vat.get(product.id) ?? {}, rules),
+        ...activationView(product, vat.get(product.id) ?? {}, rules, cited.get(product.id) ?? []),
       };
     });
   }
@@ -77,12 +82,13 @@ function activationView(
   product: Product,
   vat: CategoryVatPercents,
   rules: CompletenessRules,
+  citedAllergens: readonly string[],
 ): ActivationView {
   if (product.status !== "draft") {
     return { activatable: false, activationGaps: null };
   }
   return {
-    activatable: product.isActivatableWith(vat, rules),
-    activationGaps: product.activationGapsWith(vat, rules),
+    activatable: product.isActivatableWith(vat, rules, citedAllergens),
+    activationGaps: product.activationGapsWith(vat, rules, citedAllergens),
   };
 }

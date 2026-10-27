@@ -467,13 +467,34 @@ mayContain, certified)` rend la liste des contradictions, par déclinaison. Pas
   rendant les codes que cite la composition d'un produit. Son adaptateur vit dans
   `ingredients/infrastructure/` et le **liage se fait dans `appBootstrap/`** :
   aucun des deux modules n'importe l'autre, donc pas de cycle, et la frontière
-  reste visible. C'est délibérément l'inverse de
-  `prisma-variant-declaration.reader.ts`, qui lit aujourd'hui les tables d'un
-  autre sous-contexte en SQL direct — sous la granularité des portes, et à
-  rembourser de la même façon ;
+  reste visible (`apps/lfd-api/src/appBootstrap/cited-allergens-feed.module.ts`). La dette
+  qu'on opposait ici — le lecteur Prisma des déclarations de déclinaisons, qui lisait les
+  déclinaisons depuis `ingredients/` en SQL direct — est **remboursée le
+  2026-10-27** : le lecteur est supprimé, et l'encart de composition d'une
+  fiche est calculé par le catalogue
+  (`apps/lfd-api/src/pim/catalogue/product/application/read-product-ingredient-allergens.ts`), sur
+  `Product.resolvedVariants()` et ce même port ;
 - **le refus dans l'agrégat** — `publish()` prend les contradictions en
   argument et lève. Le handler charge, le service calcule, l'agrégat refuse ;
   aucun `if` de handler ne porte l'invariant.
+
+#### Ce qui est bâti : le jugement unique (2026-10-27)
+
+Bâti sous une forme plus large que les trois pièces ci-dessus :
+`productCompliance(variants résolues, taux, règles, allergènes cités)`
+(`apps/lfd-api/src/pim/catalogue/product/domain/services/product-compliance.ts`) rend **tous** les
+constats d'une fiche, chacun `blocking` ou `warning` : déclinaisons toutes
+arrêtées, déclinaison incomplète (les clés de `variantGaps` ; bloquante si
+aucune n'est complète), et contradiction composition ↔ déclaration
+(`allergens_cited_not_declared`, `allergens_contradict_none`). La contradiction
+est **bloquante** par décision de Hugo du 2026-10-27
+(`ALLERGEN_CONTRADICTION_SEVERITY`) — `may_contain` et les certifications n'y
+entrent pas encore. L'activation (`Product.activate`, refus
+`ProductAllergenContradictionError`), le champ `activatable` de la liste et la
+route `GET /pim/catalogue/products/compliance-warnings` (fiches non archivées
+portant au moins un constat) en dérivent tous. Une fiche déjà publiée et
+contradictoire n'est ni retirée ni modifiée : elle apparaît en constat
+bloquant.
 
 #### La maille du refus est le produit, celle du jugement la déclinaison
 

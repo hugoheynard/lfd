@@ -70,6 +70,12 @@ code {
   }
 }
 
+.status-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+}
+
 .row-actions {
   display: flex;
   gap: 0.4rem;

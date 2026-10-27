@@ -2,6 +2,9 @@ import type { VariantSnapshot } from "../../entities/variant.js";
 import { activationGaps, isActivatable } from "../activation-gaps.js";
 import type { CompletenessRules } from "../variant-completeness.js";
 
+/** La composition ne cite rien : seul le jugement de complétude parle. */
+const NO_CITED_ALLERGENS: readonly string[] = [];
+
 function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
   return {
     id: "var_1",
@@ -31,7 +34,7 @@ const RULES: CompletenessRules = {
 
 describe("activationGaps — au moins une déclinaison complète (lot 2b)", () => {
   it("ne manque rien : une déclinaison complète", () => {
-    const gaps = activationGaps([variant({})], ALL, RULES);
+    const gaps = activationGaps([variant({})], ALL, RULES, NO_CITED_ALLERGENS);
 
     expect(isActivatable(gaps)).toBe(true);
     expect(gaps).toEqual({ allDiscontinued: false, byVariant: {} });
@@ -43,6 +46,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       [variant({}), variant({ id: "var_2", sku: "PAT-2", priceCents: null, allergenSheet: null })],
       ALL,
       RULES,
+      NO_CITED_ALLERGENS,
     );
 
     expect(isActivatable(gaps)).toBe(true);
@@ -57,6 +61,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       ],
       ALL,
       RULES,
+      NO_CITED_ALLERGENS,
     );
 
     expect(isActivatable(gaps)).toBe(false);
@@ -64,7 +69,12 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
   });
 
   it("ne compte pas une déclinaison arrêtée, même complète", () => {
-    const gaps = activationGaps([variant({ isDiscontinued: true })], ALL, RULES);
+    const gaps = activationGaps(
+      [variant({ isDiscontinued: true })],
+      ALL,
+      RULES,
+      NO_CITED_ALLERGENS,
+    );
 
     expect(gaps).toEqual({ allDiscontinued: true, byVariant: {} });
     expect(isActivatable(gaps)).toBe(false);
@@ -72,7 +82,12 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
 
   /** La règle tranchée par Hugo : chaque contexte EN SERVICE, quelle que soit l'audience. */
   it("exige un taux pour chaque contexte en service", () => {
-    const gaps = activationGaps([variant({})], { b2b: 20, takeaway: 5.5 }, RULES);
+    const gaps = activationGaps(
+      [variant({})],
+      { b2b: 20, takeaway: 5.5 },
+      RULES,
+      NO_CITED_ALLERGENS,
+    );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["vat:eatIn"] });
   });
@@ -82,6 +97,7 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
       [variant({})],
       { takeaway: 5.5 },
       { ...RULES, activeContextKeys: ["takeaway"] },
+      NO_CITED_ALLERGENS,
     );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["vat:b2b"] });
@@ -96,16 +112,22 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
         ...RULES,
         activeContextKeys: ["b2b"],
       },
+      NO_CITED_ALLERGENS,
     );
 
     expect(isActivatable(gaps)).toBe(true);
   });
 
   it("refuse sous ratio_ttc tant que le rapport pro n'est pas réglé", () => {
-    const gaps = activationGaps([variant({})], ALL, {
-      ...RULES,
-      policy: { method: "ratio_ttc", ratioBp: null },
-    });
+    const gaps = activationGaps(
+      [variant({})],
+      ALL,
+      {
+        ...RULES,
+        policy: { method: "ratio_ttc", ratioBp: null },
+      },
+      NO_CITED_ALLERGENS,
+    );
 
     expect(gaps.byVariant).toEqual({ "PAT-1": ["pro_price_rule"] });
   });
@@ -115,19 +137,26 @@ describe("activationGaps — au moins une déclinaison complète (lot 2b)", () =
     const entered: CompletenessRules = { ...RULES, policy: { method: "entered", ratioBp: 9_000 } };
 
     it("sous entered, exige la saisie", () => {
-      expect(activationGaps([variant({})], ALL, entered).byVariant).toEqual({
+      expect(activationGaps([variant({})], ALL, entered, NO_CITED_ALLERGENS).byVariant).toEqual({
         "PAT-1": ["pro_price"],
       });
     });
 
     it("sous entered, accepte une déclinaison qui porte les deux prix", () => {
-      const gaps = activationGaps([variant({ proPriceMillicents: 812_345 })], ALL, entered);
+      const gaps = activationGaps(
+        [variant({ proPriceMillicents: 812_345 })],
+        ALL,
+        entered,
+        NO_CITED_ALLERGENS,
+      );
 
       expect(isActivatable(gaps)).toBe(true);
     });
 
     it("sous ratio_ttc, le repli suffit sans saisie", () => {
-      expect(isActivatable(activationGaps([variant({})], ALL, RULES))).toBe(true);
+      expect(isActivatable(activationGaps([variant({})], ALL, RULES, NO_CITED_ALLERGENS))).toBe(
+        true,
+      );
     });
   });
 });

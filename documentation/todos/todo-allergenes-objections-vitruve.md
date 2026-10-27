@@ -16,7 +16,7 @@ sur place (le bandeau d'état, et la justification de la porte).
 
 ### B1 — D5 est déjà bâti, sous un autre nom, dans un autre contexte
 
-`apps/lfd-api/src/pim/ingredients/application/read-product-ingredient-allergens.ts`
+`apps/lfd-api/src/pim/catalogue/product/application/read-product-ingredient-allergens.ts`
 est commité et son JSDoc dit « **L'ensemble dérivé** (D5) ». Il est servi par
 `GET /pim/products/:id/ingredient-allergens`, typé par
 `ProductIngredientAllergensView` dans un paquet **publié**

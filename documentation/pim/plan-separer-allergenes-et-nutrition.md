@@ -105,10 +105,10 @@ au vert.
 
 ## 3. Lire — deux sites, et c'est tout
 
-| Site                                                     | Pour qui               |
-| -------------------------------------------------------- | ---------------------- |
-| `prisma-product.repository.ts` → `toVariant`             | la fiche produit       |
-| `pim/ingredients/…/prisma-variant-declaration.reader.ts` | l'écran de composition |
+| Site                                                                                                                                                                                                                          | Pour qui               |
+| ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------- |
+| `prisma-product.repository.ts` → `toVariant`                                                                                                                                                                                  | la fiche produit       |
+| `apps/lfd-api/src/pim/catalogue/product/application/read-product-ingredient-allergens.ts` → `Product.resolvedVariants()` (depuis le 2026-10-27 ; l’ancien lecteur Prisma des déclarations, côté `ingredients/`, est supprimé) | l'écran de composition |
 
 La vue servie sépare les deux moitiés comme la base :
 

@@ -3,7 +3,6 @@ import {
   ArchivedProductNotWithdrawableError,
   InvalidProductVariantsError,
   NotArchivedProductNotRestorableError,
-  ProductNotActivatableError,
   ProductUnknownContextError,
   VariantNotFoundError,
   VariantNotInProductError,
@@ -26,7 +25,13 @@ import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
-import { activationGaps, isActivatable, type ActivationGaps } from "../services/activation-gaps.js";
+import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
+import {
+  isCompliantForActivation,
+  productCompliance,
+  type ComplianceFinding,
+} from "../services/product-compliance.js";
+import { refusalOf } from "./activation-refusal.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -332,9 +337,35 @@ export class Product {
    * Jugé sur les déclinaisons RÉSOLUES, quel que soit le statut : le statut
    * est l'affaire de {@link Product.isActivatableWith}.
    */
-  activationGapsWith(vatPercents: CategoryVatPercents, rules: CompletenessRules): ActivationGaps {
-    const resolved = this.variantList.map((variant) => this.resolvedSnapshot(variant));
-    return activationGaps(resolved, vatPercents, rules);
+  activationGapsWith(
+    vatPercents: CategoryVatPercents,
+    rules: CompletenessRules,
+    citedAllergens: readonly string[],
+  ): ActivationGaps {
+    return activationGapsOf(this.complianceWith(vatPercents, rules, citedAllergens));
+  }
+
+  /**
+   * **Le jugement unique** de la fiche ({@link productCompliance}) — tous ses
+   * constats, bloquants et avertissements, quel que soit son statut.
+   * `citedAllergens` : ce que portent les ingrédients qu'elle cite, résolu par
+   * le handler.
+   */
+  complianceWith(
+    vatPercents: CategoryVatPercents,
+    rules: CompletenessRules,
+    citedAllergens: readonly string[],
+  ): ComplianceFinding[] {
+    return productCompliance(this.resolvedVariants(), vatPercents, rules, citedAllergens);
+  }
+
+  /**
+   * Les déclinaisons **résolues** — une alignée porte la déclaration du défaut.
+   * La seule résolution du référentiel : le jugement et l'encart de
+   * composition la lisent tous deux, pour ne jamais diverger.
+   */
+  resolvedVariants(): VariantSnapshot[] {
+    return this.variantList.map((variant) => this.resolvedSnapshot(variant));
   }
 
   /**
@@ -344,22 +375,31 @@ export class Product {
    * elle se restaure d'abord). Choix du 2026-10-26 : le filtre « Activables »
    * de la liste ne montre que ce que « Activer » ferait passer en vente.
    */
-  isActivatableWith(vatPercents: CategoryVatPercents, rules: CompletenessRules): boolean {
+  isActivatableWith(
+    vatPercents: CategoryVatPercents,
+    rules: CompletenessRules,
+    citedAllergens: readonly string[],
+  ): boolean {
     return (
-      this.statusValue === "draft" && isActivatable(this.activationGapsWith(vatPercents, rules))
+      this.statusValue === "draft" &&
+      isCompliantForActivation(this.complianceWith(vatPercents, rules, citedAllergens))
     );
   }
 
-  activate(vatPercents: CategoryVatPercents, rules: CompletenessRules): StatusChanged {
+  activate(
+    vatPercents: CategoryVatPercents,
+    rules: CompletenessRules,
+    citedAllergens: readonly string[],
+  ): StatusChanged {
     if (this.statusValue === "archived") {
       throw new ArchivedProductNotPublishableError(this.identity);
     }
     if (this.statusValue === "published") {
       return false;
     }
-    const gaps = this.activationGapsWith(vatPercents, rules);
-    if (!isActivatable(gaps)) {
-      throw new ProductNotActivatableError(this.identity, gaps);
+    const findings = this.complianceWith(vatPercents, rules, citedAllergens);
+    if (!isCompliantForActivation(findings)) {
+      throw refusalOf(this.identity, findings);
     }
     this.statusValue = "published";
     return true;

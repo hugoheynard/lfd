@@ -512,3 +512,46 @@ describe("ce que la composition d'une fiche mentionne", () => {
     ]);
   });
 });
+
+/**
+ * **Le jugement unique sur la table** — la composition contredit la
+ * déclaration : bloquant depuis le 2026-10-27, et la fiche archivée sort.
+ */
+describe("les constats de conformité du catalogue", () => {
+  const WARNINGS = `${PRODUCTS}/compliance-warnings`;
+
+  // Régression : le pain sans blé — « aucun allergène » déclaré, la farine citée.
+  it("signale en bloquant « aucun allergène » contredit, et oublie l'archivée", async () => {
+    const farine = await anIngredient("farine");
+    await staff()
+      .put(`${INGREDIENTS}/${farine}/allergens`)
+      .send({ codes: ["UW"] })
+      .expect(200);
+    const productId = await aProduct();
+    const variantId = await defaultVariant(productId);
+    await staff()
+      .put(`/pim/products/${productId}/ingredients`)
+      .send({ keys: [farine] })
+      .expect(200);
+    await staff()
+      .put(`${PRODUCTS}/${productId}/variants/${variantId}/allergens`)
+      .send({ allergens: [] })
+      .expect(200);
+
+    const views = jsonBody<{ productId: string; warnings: { code: string }[] }[]>(
+      await staff().get(WARNINGS).expect(200),
+    );
+    expect(views.find((view) => view.productId === productId)?.warnings).toContainEqual(
+      expect.objectContaining({
+        code: "allergens_contradict_none",
+        severity: "blocking",
+        variantId,
+        allergenCodes: ["UW"],
+      }),
+    );
+
+    await staff().put(`${PRODUCTS}/${productId}/archive`).send({}).expect(200);
+
+    expect(jsonBody<unknown>(await staff().get(WARNINGS).expect(200))).toEqual([]);
+  });
+});

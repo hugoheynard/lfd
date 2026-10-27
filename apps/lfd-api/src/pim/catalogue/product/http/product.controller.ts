@@ -34,6 +34,8 @@ import {
   type SaveVariantNutritionPayload,
 } from "@lfd/pim-contracts";
 
+import type { ProductComplianceWarningView } from "@lfd/pim-contracts";
+import { ListProductComplianceWarningsQuery } from "../application/list-product-compliance-warnings.js";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { AddProductVariantCommand } from "../application/add-product-variant.js";
@@ -80,6 +82,18 @@ export class ProductController {
   @Get()
   listProducts(): Promise<ProductListView[]> {
     return this.queries.execute<ListProductsQuery, ProductListView[]>(new ListProductsQuery());
+  }
+
+  /**
+   * Les fiches non archivées qui portent au moins un constat du jugement
+   * unique (bloquant ou avertissement) — pour la table des produits. Déclarée
+   * AVANT `:id`, qui l'avalerait sinon. Une absence ne vaut pas conformité.
+   */
+  @Get("compliance-warnings")
+  complianceWarnings(): Promise<ProductComplianceWarningView[]> {
+    return this.queries.execute<ListProductComplianceWarningsQuery, ProductComplianceWarningView[]>(
+      new ListProductComplianceWarningsQuery(),
+    );
   }
 
   /** Détail complet d'un produit : le socle + sa couche éditoriale (pour l'édition). */

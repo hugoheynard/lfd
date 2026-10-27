@@ -3,7 +3,7 @@ import {
   DomainError,
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
-import type { ActivationGaps } from "../services/activation-gaps.js";
+import { ALLERGEN_CONTRADICTION_GAP, type ActivationGaps } from "../services/activation-gaps.js";
 import {
   ALLERGENS_GAP,
   PRICE_GAP,
@@ -106,6 +106,8 @@ const GAP_LABEL: Readonly<Record<string, string>> = {
     "déclaration d'allergènes (section « Allergènes » — « aucun allergène » est une réponse)",
   [PRO_PRICE_GAP]: "prix pro HT (section « Tarif »)",
   [PRO_PRICE_RULE_GAP]: "rapport pro non réglé (écran « Règles comptables »)",
+  [ALLERGEN_CONTRADICTION_GAP]:
+    "la composition cite un allergène que la déclaration ne porte pas (section « Allergènes »)",
 };
 
 function gapLabel(gap: string): string {
@@ -147,6 +149,43 @@ function describeGaps(gaps: ActivationGaps): string {
   return (
     `Activation refusée : aucune déclinaison n'est complète, et il en suffit d'une — ` +
     `${lines.join(" ; ")}.`
+  );
+}
+
+/** Ce qu'une déclinaison contredit : son SKU, et les codes cités non déclarés. */
+export interface AllergenContradiction {
+  readonly sku: string;
+  readonly declaresNone: boolean;
+  readonly allergenCodes: readonly string[];
+}
+
+/**
+ * `activate` refusée : la composition cite un allergène que la déclaration
+ * d'une déclinaison ne porte pas — ou qu'elle dit « aucun allergène » (le pain
+ * sans blé qui cite la farine). Décision de Hugo du 2026-10-27 : bloquant.
+ *
+ * Le message nomme chaque déclinaison, les codes, et les deux gestes de
+ * sortie : reprendre l'allergène dans la déclaration, ou retirer l'ingrédient.
+ */
+export class ProductAllergenContradictionError extends BusinessError {
+  constructor(
+    readonly productId: string,
+    readonly contradictions: readonly AllergenContradiction[],
+  ) {
+    super("catalogue.product.allergen_contradiction", describeContradictions(contradictions));
+  }
+}
+
+function describeContradictions(contradictions: readonly AllergenContradiction[]): string {
+  const lines = contradictions.map(
+    (entry) =>
+      `${entry.sku} ${entry.declaresNone ? "déclare « aucun allergène » mais" : "ne déclare pas"} ` +
+      `${entry.allergenCodes.join(", ")}${entry.declaresNone ? " est cité" : ""}`,
+  );
+  return (
+    `Activation refusée : la composition cite des allergènes que la déclaration contredit — ` +
+    `${lines.join(" ; ")}. Reprendre ces allergènes dans la section « Allergènes » de la ` +
+    `déclinaison, ou retirer l'ingrédient de la composition.`
   );
 }
 

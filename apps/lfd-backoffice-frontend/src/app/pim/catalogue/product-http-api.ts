@@ -6,6 +6,7 @@ import type {
   ProductReadinessView,
   ProductEditorialView,
   ProductListView,
+  ProductComplianceWarningView,
   ProductView,
   VariantNutritionView,
   VariantView,
@@ -226,6 +227,17 @@ export class ProductHttpApi {
     // `activatable` n'existe que sur la liste : le serveur le juge avec le code
     // même du refus d'activation, le front ne le recalcule pas.
     return rows.map((row) => ({ ...backendToProduct(row), activatable: row.activatable }));
+  }
+
+  /**
+   * Les constats de conformité des fiches qui en portent — le jugement UNIQUE
+   * du serveur, celui-là même qui refuse l'activation. Une fiche absente n'a
+   * aucun constat ; le front ne le recalcule pas.
+   */
+  async complianceWarnings(): Promise<readonly ProductComplianceWarningView[]> {
+    return firstValueFrom(
+      this.http.get<ProductComplianceWarningView[]>(this.url('products/compliance-warnings')),
+    );
   }
 
   async get(id: string): Promise<Product | null> {

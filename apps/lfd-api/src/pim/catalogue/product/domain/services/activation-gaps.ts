@@ -1,6 +1,7 @@
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import type { VariantSnapshot } from "../entities/variant.js";
-import { variantGaps, type CompletenessRules } from "./variant-completeness.js";
+import { productCompliance, type ComplianceFinding } from "./product-compliance.js";
+import type { CompletenessRules } from "./variant-completeness.js";
 
 /**
  * Ce qui empêche une fiche d'être activée.
@@ -15,41 +16,54 @@ export interface ActivationGaps {
   readonly allDiscontinued: boolean;
   /**
    * SKU → ce qui lui manque, pour chaque déclinaison non arrêtée — renseignée
-   * seulement quand AUCUNE n'est complète : une seule suffit à activer.
+   * seulement quand AUCUNE n'est complète : une seule suffit à activer. Porte
+   * aussi {@link ALLERGEN_CONTRADICTION_GAP} si cette sévérité devient bloquante.
    */
   readonly byVariant: Readonly<Record<string, readonly string[]>>;
 }
 
+/** Clé de manque d'une contradiction composition ↔ allergènes devenue bloquante. */
+export const ALLERGEN_CONTRADICTION_GAP = "allergen_contradiction";
+
 /**
- * **Ce qui manque pour vendre** — fonction pure, jugée sur les déclinaisons
- * RÉSOLUES (une déclinaison alignée porte le prix et les allergènes du
- * défaut), par la règle de complétude partagée avec les faits du catalogue
- * (`variantGaps`).
+ * **Ce qui manque pour vendre** — la vue « refus » du jugement unique
+ * ({@link productCompliance}) : ses seuls constats BLOQUANTS, rangés par SKU.
+ * Aucune règle ici ; elle se lit, elle ne juge pas.
  *
- * Pourquoi taux, contextes et règle du prix pro arrivent tout résolus : ils
- * dépendent de la famille et de registres que la fiche ne voit pas. Un objet
- * ne garantit que ce qu'il voit ; le handler lui montre le reste.
+ * Pourquoi taux, contextes, règle du prix pro et allergènes cités arrivent
+ * tout résolus : ils dépendent de la famille, de registres et d'un contexte
+ * que la fiche ne voit pas. Un objet ne garantit que ce qu'il voit ; le
+ * handler lui montre le reste.
  */
 export function activationGaps(
   variants: readonly VariantSnapshot[],
   vatPercents: CategoryVatPercents,
   rules: CompletenessRules,
+  citedAllergens: readonly string[],
 ): ActivationGaps {
-  const live = variants.filter((variant) => !variant.isDiscontinued);
-  const judged = live.map((variant) => ({
-    sku: variant.sku,
-    missing: variantGaps(variant, vatPercents, rules),
-  }));
-  const complete = judged.some((entry) => entry.missing.length === 0);
-  return {
-    allDiscontinued: live.length === 0,
-    byVariant: complete
-      ? {}
-      : Object.fromEntries(judged.map((entry) => [entry.sku, entry.missing])),
-  };
+  return activationGapsOf(productCompliance(variants, vatPercents, rules, citedAllergens));
 }
 
-/** Rien ne manque ? */
+/** Les constats bloquants d'un jugement, sous la forme du refus. */
+export function activationGapsOf(findings: readonly ComplianceFinding[]): ActivationGaps {
+  const byVariant: Record<string, string[]> = {};
+  let allDiscontinued = false;
+  for (const finding of findings) {
+    if (finding.severity !== "blocking") {
+      continue;
+    }
+    if (finding.code === "all_variants_discontinued") {
+      allDiscontinued = true;
+    } else if (finding.code === "variant_incomplete") {
+      (byVariant[finding.sku] ??= []).push(...finding.missing);
+    } else {
+      (byVariant[finding.sku] ??= []).push(ALLERGEN_CONTRADICTION_GAP);
+    }
+  }
+  return { allDiscontinued, byVariant };
+}
+
+/** Rien de bloquant ? Lu sur la vue — qui ne porte QUE les constats bloquants. */
 export function isActivatable(gaps: ActivationGaps): boolean {
   return !gaps.allDiscontinued && Object.keys(gaps.byVariant).length === 0;
 }

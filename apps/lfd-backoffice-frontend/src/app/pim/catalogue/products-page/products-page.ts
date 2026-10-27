@@ -14,6 +14,7 @@ import {
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldElementTitleComponent,
+  FoldInfoComponent,
   FoldLinkComponent,
   FoldPageLayoutComponent,
   FoldPaginatorComponent,
@@ -27,10 +28,21 @@ import {
 
 import { CatalogueApi, type Category, type Product, type VatRate } from '../catalogue-api';
 import { productStatusLabel, productStatusVariant } from '../product-status';
+import {
+  complianceBadge,
+  findingsByProduct,
+  findingsText,
+  worstSeverity,
+  type ComplianceBadge,
+} from '../product-compliance';
+import { ReferenceApi } from '../reference-api';
+import type { ProductComplianceFinding } from '@lfd/pim-contracts';
 import type { ProductStatus } from '../../data/models';
 import {
   ACTIVATABLE,
   ALL_STATUSES,
+  BLOCKING,
+  TO_REVIEW,
   familyOptions,
   filterFromParams,
   filterProducts,
@@ -60,6 +72,7 @@ import { nextSort, sortRows } from './products-sort';
     FoldDropdownItemComponent,
     FoldPopoverTriggerDirective,
     FoldElementTitleComponent,
+    FoldInfoComponent,
     FoldLinkComponent,
     FoldButtonIconComponent,
     FoldViewToggleComponent,
@@ -72,6 +85,7 @@ export class ProductsPage {
   private readonly api = inject(CatalogueApi);
   private readonly router = inject(Router);
   private readonly route = inject(ActivatedRoute);
+  private readonly reference = inject(ReferenceApi);
 
   protected readonly products = signal<Product[]>([]);
   protected readonly categories = signal<Category[]>([]);
@@ -79,6 +93,15 @@ export class ProductsPage {
   protected readonly busy = signal(false);
   protected readonly rates = signal<VatRate[]>([]);
   protected readonly query = signal('');
+
+  /** Les constats de conformité, par fiche — le jugement du serveur, lu tel quel. */
+  private readonly findings = signal<ReadonlyMap<string, readonly ProductComplianceFinding[]>>(
+    new Map(),
+  );
+  /** Échec PARTIEL : la liste reste, seuls les constats manquent. */
+  protected readonly complianceError = signal<string | null>(null);
+  /** Code allergène → libellé français ; un code inconnu s'affiche tel quel. */
+  private readonly allergenLabels = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly page = signal(1);
   protected readonly pageSize = signal(25);
 
@@ -99,6 +122,8 @@ export class ProductsPage {
     { value: 'published', label: 'Actives' },
     { value: 'draft', label: 'Inactives' },
     { value: ACTIVATABLE, label: 'Activables' },
+    { value: BLOCKING, label: 'Bloquants' },
+    { value: TO_REVIEW, label: 'À vérifier' },
     { value: 'archived', label: 'Archivées' },
   ];
   /** Le masque est sans effet hors de « Toutes » : la case se grise alors. */
@@ -118,7 +143,10 @@ export class ProductsPage {
    */
   protected readonly visibleProducts = computed<Product[]>(() => {
     const q = this.query().trim().toLowerCase();
-    const products = filterProducts(this.products(), this.filter());
+    const findings = this.findings();
+    const products = filterProducts(this.products(), this.filter(), (id) =>
+      worstSeverity(findings.get(id)),
+    );
     if (q === '') {
       return products;
     }
@@ -312,6 +340,18 @@ export class ProductsPage {
     return productStatusVariant(status);
   }
 
+  /** Le badge de conformité de la fiche, `null` quand le serveur n'a rien constaté. */
+  protected complianceBadge(product: Product): ComplianceBadge | null {
+    const severity = worstSeverity(this.findings().get(product.id));
+    return severity === null ? null : complianceBadge(severity);
+  }
+
+  /** Le détail des constats, en phrases que le staff lit sans le code. */
+  protected complianceText(product: Product): string {
+    const labels = this.allergenLabels();
+    return findingsText(this.findings().get(product.id) ?? [], (code) => labels.get(code) ?? code);
+  }
+
   /** Un produit précis — le bouton de la ligne. */
   protected categoryName(id: string): string {
     return this.byId().get(id)?.name.fr ?? '—';
@@ -421,6 +461,32 @@ export class ProductsPage {
       this.categories.set(categories.filter((category) => !category.isArchived));
     } catch (caught) {
       this.error.set(failureMessageOf(caught));
+    }
+    await Promise.all([this.reloadCompliance(), this.loadAllergenLabels()]);
+  }
+
+  /** Rien n'est appliqué en cas d'échec : les badges gardent ce qu'ils avaient. */
+  private async reloadCompliance(): Promise<void> {
+    try {
+      this.findings.set(findingsByProduct(await this.api.listComplianceWarnings()));
+      this.complianceError.set(null);
+    } catch (caught) {
+      this.complianceError.set(
+        `Les constats de conformité n'ont pas pu être lus : ${failureMessageOf(caught)}`,
+      );
+    }
+  }
+
+  /** Une fois : le référentiel ne bouge pas sous la liste. Sans lui, les codes restent lisibles. */
+  private async loadAllergenLabels(): Promise<void> {
+    if (this.allergenLabels().size > 0) {
+      return;
+    }
+    try {
+      const reference = await this.reference.allergens('world');
+      this.allergenLabels.set(new Map(reference.entries.map((e) => [e.code, e.label])));
+    } catch {
+      // Absorbé sciemment : le constat reste dit, avec le code au lieu du nom.
     }
   }
 }

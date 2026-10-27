@@ -18,6 +18,10 @@
     </fold-callout>
   }
 
+  @if (complianceError(); as message) {
+    <fold-callout appearance="inset" variant="alert">{{ message }}</fold-callout>
+  }
+
   @if (categories().length === 0) {
     <fold-callout appearance="inset" variant="warning">
       Créez d'abord une <a routerLink="/pim/categories">catégorie</a> : un produit s'y rattache.
@@ -124,7 +128,16 @@
          à tout ce qui n'est pas archivé : un brouillon s'affichait donc comme un
          produit en ligne. -->
     <ng-template foldCell="status" let-p>
-      <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
+      <span class="status-cell">
+        <fold-badge [content]="statusLabel(p.status)" [variant]="statusVariant(p.status)" />
+        @if (complianceBadge(p); as badge) {
+          <fold-badge data-products-compliance [content]="badge.label" [variant]="badge.variant" />
+          <!-- `fold-info` s'ouvre au clic : sans l'arrêt, le clic ouvrirait la fiche. -->
+          <span (click)="$event.stopPropagation()">
+            <fold-info label="Détail des constats de conformité" [text]="complianceText(p)" />
+          </span>
+        }
+      </span>
     </ng-template>
 
     <!-- 🔴 `stopPropagation` OBLIGATOIRE depuis que la ligne est cliquable. Le

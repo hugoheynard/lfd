@@ -187,22 +187,6 @@ export function audienceOrigin(inherited: boolean | null): string | null {
   return inherited ? 'famille' : 'fiche';
 }
 
-/** Ce qu'un manque se dit à l'écran. Les codes sont ceux du référentiel. */
-const GAP_LABELS: Readonly<Record<string, string>> = {
-  price: 'prix',
-  allergens: 'allergènes',
-  pro_price: 'prix pro',
-  pro_price_rule: 'rapport pro',
-};
-const VAT_GAP_PREFIX = 'vat:';
-
-export function gapLabel(gap: string): string {
-  if (gap.startsWith(VAT_GAP_PREFIX)) {
-    return `taux de TVA « ${gap.slice(VAT_GAP_PREFIX.length)} »`;
-  }
-  return GAP_LABELS[gap] ?? gap;
-}
-
 /**
  * Les comptes d'un rayon pour une audience, en une phrase courte : seuls les
  * états présents. « 12 en vente · 2 masqués · 1 en attente ».

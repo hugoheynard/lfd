@@ -477,7 +477,7 @@ describe('CataloguePage — les états de cellule', () => {
       ),
     );
 
-    expect(text(fixture)).toContain('manque : prix, taux de TVA « b2b »');
+    expect(text(fixture)).toContain('manque : prix, taux de TVA B2B');
     expect(() => button(fixture, 'Masquer Croissant au public')).toThrow();
   });
 

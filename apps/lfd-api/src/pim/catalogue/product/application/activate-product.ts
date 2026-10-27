@@ -10,6 +10,7 @@ import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 import { AccountingRulesReader } from "../../../accounting-rules/domain/ports/accounting-rules.reader.js";
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { readCompletenessRules } from "./completeness-support.js";
+import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
 
 export class ActivateProductCommand {
   constructor(readonly id: string) {}
@@ -25,7 +26,8 @@ export class ActivateProductCommand {
  * C1). Le handler ne fait que lui montrer ce qu'il ne voit pas : le taux
  * effectif résolu comme la projection le résout (`CatalogueReader.vatPercents`,
  * la même lecture que `feed-projection.service.ts`), les contextes de vente en
- * service et la règle du prix pro (`readCompletenessRules`). L'audience n'y
+ * service, la règle du prix pro (`readCompletenessRules`) et les allergènes
+ * que sa composition cite (`CitedAllergensReader`, jugement unique). L'audience n'y
  * entre plus : une fiche complète sert tous les contextes en service.
  *
  * ⚠️ Les valeurs nutritionnelles n'entrent pas dans ce refus : le règlement
@@ -42,6 +44,7 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
     private readonly emitter: CatalogEmitter,
     private readonly accounting: AccountingRulesReader,
     private readonly contexts: ActiveSalesContextsReader,
+    private readonly cited: CitedAllergensReader,
   ) {}
 
   async execute(command: ActivateProductCommand): Promise<void> {
@@ -69,10 +72,11 @@ export class ActivateProductHandler implements ICommandHandler<ActivateProductCo
   /** Résout ce que la fiche ne voit pas, puis la laisse juger. */
   private async activate(product: Product): Promise<boolean> {
     const record = product.snapshot();
-    const [vat, rules] = await Promise.all([
+    const [vat, rules, cited] = await Promise.all([
       this.catalogue.vatPercents([record]),
       readCompletenessRules(this.contexts, this.accounting),
+      this.cited.ofProducts([record.id]),
     ]);
-    return product.activate(vat.get(record.id) ?? {}, rules);
+    return product.activate(vat.get(record.id) ?? {}, rules, cited.get(record.id) ?? []);
   }
 }

@@ -3,6 +3,9 @@ import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 import type { CompletenessRules } from "../../services/variant-completeness.js";
 
+/** La composition ne cite rien : seul le jugement de complétude parle. */
+const NO_CITED_ALLERGENS: readonly string[] = [];
+
 /**
  * **Le prix pro HT saisi** (lot P de `plan-catalogue-synchronise-par-audience.md`)
  * — porté par la mutation de tarif, résolu comme le prix public, pré-rempli
@@ -145,16 +148,24 @@ describe("Product.activate — sous la méthode entered", () => {
   }
 
   it("refuse sans prix pro HT, en nommant les deux prix", () => {
-    expect(() => declaredAndPriced(null).activate(RATES, rules("entered"))).toThrow(/prix pro HT/);
+    expect(() =>
+      declaredAndPriced(null).activate(RATES, rules("entered"), NO_CITED_ALLERGENS),
+    ).toThrow(/prix pro HT/);
   });
 
   it("active avec les deux prix", () => {
-    expect(declaredAndPriced(ProPriceHt.fromEuros("9")).activate(RATES, rules("entered"))).toBe(
-      true,
-    );
+    expect(
+      declaredAndPriced(ProPriceHt.fromEuros("9")).activate(
+        RATES,
+        rules("entered"),
+        NO_CITED_ALLERGENS,
+      ),
+    ).toBe(true);
   });
 
   it("n'exige rien de plus sous ratio_ttc", () => {
-    expect(declaredAndPriced(null).activate(RATES, rules("ratio_ttc"))).toBe(true);
+    expect(declaredAndPriced(null).activate(RATES, rules("ratio_ttc"), NO_CITED_ALLERGENS)).toBe(
+      true,
+    );
   });
 });

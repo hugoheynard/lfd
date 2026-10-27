@@ -2,6 +2,7 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import {
+  ProductAllergenContradictionError,
   ProductNotActivatableError,
   ProductNotFoundError,
 } from "../../domain/errors/product-errors.js";
@@ -18,6 +19,7 @@ import {
 } from "./audience-doubles.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
+import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
 /**
@@ -34,6 +36,7 @@ interface Setup {
   readonly percents?: CategoryVatPercents;
   readonly journal?: RecordingJournal;
   readonly accounting?: FixedAccountingRules;
+  readonly cited?: ReadonlyMap<string, readonly string[]>;
 }
 
 function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
@@ -45,6 +48,7 @@ function activating(products: OneProduct, setup: Setup = {}): Promise<void> {
     new RecordingCatalogEmitter(),
     setup.accounting ?? FixedAccountingRules.with("ratio_ttc", 9_000),
     new FixedActiveContexts(setup.contexts ?? ["b2b", "takeaway"]),
+    new FixedCitedAllergens(setup.cited),
   ).execute(new ActivateProductCommand(PRODUCT_ID));
 }
 
@@ -213,6 +217,39 @@ describe("ActivateProductHandler — les allergènes", () => {
     );
 
     await activating(products);
+
+    expect(products.stored?.status).toBe("published");
+  });
+});
+
+describe("ActivateProductHandler — la composition contredit la déclaration", () => {
+  /**
+   * Régression : un « pain sans blé » déclaré « aucun allergène » dont la
+   * composition cite la farine s'activait (décision de Hugo, 2026-10-27).
+   */
+  it("refuse le pain sans blé qui déclare « aucun allergène » et cite le gluten", async () => {
+    const products = new OneProduct(
+      tarte({
+        variants: [
+          bareVariant({ priceCents: 3_200, allergenSheet: { declared: [], mayContain: [] } }),
+        ],
+      }),
+    );
+    const cited = new Map([[PRODUCT_ID, ["gluten"]]]);
+
+    await expect(activating(products, { cited })).rejects.toBeInstanceOf(
+      ProductAllergenContradictionError,
+    );
+    await expect(activating(products, { cited })).rejects.toThrow(
+      /PAT-7-1 déclare « aucun allergène ».*gluten.*retirer l'ingrédient/,
+    );
+    expect(products.stored?.status).toBe("draft");
+  });
+
+  it("active quand la déclaration couvre ce que la composition cite", async () => {
+    const products = new OneProduct(tarte());
+
+    await activating(products, { cited: new Map([[PRODUCT_ID, ["gluten"]]]) });
 
     expect(products.stored?.status).toBe("published");
   });

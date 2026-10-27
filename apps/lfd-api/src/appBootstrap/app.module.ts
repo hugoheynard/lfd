@@ -54,6 +54,7 @@ import { ProductionFeedModule } from "./production-feed.module.js";
 import { PackingModule } from "../packing/packing.module.js";
 import { PackingFeedModule } from "./packing-feed.module.js";
 import { PackingCommerceFeedModule } from "./packing-commerce-feed.module.js";
+import { CitedAllergensFeedModule } from "./cited-allergens-feed.module.js";
 import { ProductionDeskFeedModule } from "./production-desk-feed.module.js";
 import { PackingDeliveryFeedModule } from "./packing-delivery-feed.module.js";
 import { GeneralOrderCutoffModule } from "./general-order-cutoff.module.js";
@@ -199,6 +200,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     PackingFeedModule,
     PackingDeliveryFeedModule,
     PackingCommerceFeedModule,
+    CitedAllergensFeedModule,
     // La livraison : la flotte et le départ des tournées (lot 2 du plan de
     // tournée). Le fil relie les points de retrait du commerce à son port.
     DeliveryModule,

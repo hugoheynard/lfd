@@ -4,7 +4,8 @@ import type { PublishedCellState } from '@lfd/contracts';
 import { FoldBadgeComponent, FoldButtonComponent, FoldInlineConfirmComponent } from 'fold-ng';
 
 import type { ShopAudience } from '../catalogue.service';
-import { gapLabel } from '../published-catalogue';
+// Une seule table des manques pour le back-office (2026-10-27).
+import { gapLabel } from '../../../pim/catalogue/product-compliance';
 
 /** Les mots d'une audience, au datif et au nominatif. */
 const TO: Readonly<Record<ShopAudience, string>> = { pro: 'aux pros', public: 'au public' };

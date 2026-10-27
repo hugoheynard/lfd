@@ -19,7 +19,7 @@ import { CreateIngredientCommand } from "../application/create-ingredient.js";
 import { RemoveIngredientCommand } from "../application/remove-ingredient.js";
 import { UpdateIngredientCommand } from "../application/update-ingredient.js";
 import { ListIngredientsQuery } from "../application/list-ingredients.js";
-import { ReadProductIngredientAllergensQuery } from "../application/read-product-ingredient-allergens.js";
+import { ReadProductIngredientAllergensQuery } from "../../catalogue/product/application/read-product-ingredient-allergens.js";
 import { ReadProductIngredientsQuery } from "../application/read-product-ingredients.js";
 import { SetIngredientAllergensCommand } from "../application/set-ingredient-allergens.js";
 import { SetProductIngredientsCommand } from "../application/set-product-ingredients.js";

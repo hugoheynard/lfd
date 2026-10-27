@@ -1,6 +1,8 @@
 import type { ParamMap, Params } from '@angular/router';
 
 import type { Category, Product } from '../catalogue-api';
+import type { ComplianceSeverity } from '@lfd/pim-contracts';
+
 import type { ProductStatus } from '../../data/models';
 
 /** « Toutes les familles » — la puce de tête. Absente du contrat, propre à l'écran. */
@@ -15,8 +17,21 @@ export const ALL_STATUSES = '';
  */
 export const ACTIVATABLE = 'activatable';
 
-/** Ce que l'état peut valoir dans le filtre : un statut, les activables, ou tous. */
-export type StatusFilter = typeof ALL_STATUSES | typeof ACTIVATABLE | ProductStatus;
+/**
+ * « Bloquants » / « À vérifier » — le pire constat de conformité que le serveur
+ * porte sur la fiche (`compliance-warnings`). Même mécanique qu'« Activables ».
+ */
+export const BLOCKING = 'blocking';
+export const TO_REVIEW = 'to_review';
+
+/** Ce que l'état peut valoir dans le filtre : un statut, un jugement du serveur, ou tous. */
+export type StatusFilter =
+  typeof ALL_STATUSES | typeof ACTIVATABLE | typeof BLOCKING | typeof TO_REVIEW | ProductStatus;
+
+/** Le pire constat d'une fiche, `null` sans constat — lu, jamais jugé ici. */
+export type SeverityOf = (productId: string) => ComplianceSeverity | null;
+
+const NO_FINDING: SeverityOf = () => null;
 
 /** Les trois filtres de la liste, tels que l'URL les retient. */
 export interface ProductsFilter {
@@ -32,7 +47,14 @@ export const DEFAULT_FILTER: ProductsFilter = {
   hideArchived: true,
 };
 
-const STATUSES: readonly StatusFilter[] = ['draft', 'published', 'archived', ACTIVATABLE];
+const STATUSES: readonly StatusFilter[] = [
+  'draft',
+  'published',
+  'archived',
+  ACTIVATABLE,
+  BLOCKING,
+  TO_REVIEW,
+];
 
 /** Noms des paramètres d'URL. Seul ce qui s'écarte du défaut y est écrit. */
 const PARAM_FAMILY = 'famille';
@@ -50,12 +72,16 @@ export function maskApplies(filter: ProductsFilter): boolean {
 }
 
 /** Les lignes qui passent les trois filtres (la recherche est appliquée à part). */
-export function filterProducts(products: readonly Product[], filter: ProductsFilter): Product[] {
+export function filterProducts(
+  products: readonly Product[],
+  filter: ProductsFilter,
+  severityOf: SeverityOf = NO_FINDING,
+): Product[] {
   const hide = maskApplies(filter);
   return products.filter(
     (p) =>
       (filter.family === ALL_FAMILIES || p.categoryId === filter.family) &&
-      statusMatches(p, filter.status) &&
+      statusMatches(p, filter.status, severityOf) &&
       !(hide && p.status === 'archived'),
   );
 }
@@ -64,9 +90,15 @@ export function filterProducts(products: readonly Product[], filter: ProductsFil
  * « Activables » lit le jugement du serveur, jamais le statut : une fiche dont
  * la liste ne dit rien (`activatable` absent) n'est pas activable.
  */
-function statusMatches(product: Product, status: StatusFilter): boolean {
+function statusMatches(product: Product, status: StatusFilter, severityOf: SeverityOf): boolean {
   if (status === ACTIVATABLE) {
     return product.activatable === true;
+  }
+  if (status === BLOCKING) {
+    return severityOf(product.id) === 'blocking';
+  }
+  if (status === TO_REVIEW) {
+    return severityOf(product.id) === 'warning';
   }
   return status === ALL_STATUSES || product.status === status;
 }

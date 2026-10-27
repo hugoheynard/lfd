@@ -3,7 +3,10 @@ import { TestBed } from '@angular/core/testing';
 import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angular/router';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
+import type { ProductComplianceWarningView } from '@lfd/pim-contracts';
+
 import { CatalogueApi, type Category, type Product } from '../catalogue-api';
+import { ReferenceApi } from '../reference-api';
 import type { ProductStatus } from '../../data/models';
 import { ProductsPage } from './products-page';
 
@@ -29,6 +32,7 @@ async function render(
   queryParams: Readonly<Record<string, string>> = {},
   publishProduct: (id: string) => Promise<void> = () => Promise.resolve(),
   products: readonly Product[] = PRODUCTS,
+  compliance: () => Promise<readonly ProductComplianceWarningView[]> = () => Promise.resolve([]),
 ) {
   TestBed.configureTestingModule({
     imports: [ProductsPage],
@@ -41,6 +45,17 @@ async function render(
           listCategories: () => Promise.resolve(CATEGORIES),
           listVatRates: () => Promise.resolve([]),
           publishProduct,
+          listComplianceWarnings: compliance,
+        },
+      },
+      {
+        provide: ReferenceApi,
+        useValue: {
+          allergens: () =>
+            Promise.resolve({
+              scope: 'world',
+              entries: [{ code: 'AW', label: 'Gluten', incoCategory: 'gluten', incoLabel: null }],
+            }),
         },
       },
       {
@@ -97,6 +112,8 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       'Actives',
       'Inactives',
       'Activables',
+      'Bloquants',
+      'À vérifier',
       'Archivées',
     ]);
   });
@@ -239,5 +256,64 @@ describe('ProductsPage — « Activer la sélection »', () => {
     const callout = element.querySelector('fold-callout')?.textContent ?? '';
     expect(callout).toContain('1 fiche(s) activée(s)');
     expect(callout).toContain('P2 — P2-1 : prix pro absent');
+  });
+
+  /** Les constats viennent du serveur (`compliance-warnings`, 2026-10-27) : lus, jamais jugés ici. */
+  describe('constats de conformité', () => {
+    const FINDINGS: readonly ProductComplianceWarningView[] = [
+      {
+        productId: 'p1',
+        warnings: [
+          {
+            code: 'allergens_contradict_none',
+            severity: 'blocking',
+            variantId: 'x',
+            sku: 'P1-1',
+            allergenCodes: ['AW'],
+          },
+        ],
+      },
+      {
+        productId: 'p2',
+        warnings: [
+          {
+            code: 'variant_incomplete',
+            severity: 'warning',
+            variantId: 'y',
+            sku: 'P2-1',
+            missing: ['price'],
+          },
+        ],
+      },
+    ];
+    const badges = (element: HTMLElement): readonly string[] =>
+      [...element.querySelectorAll('[data-products-compliance]')].map(
+        (b) => b.textContent?.trim() ?? '',
+      );
+
+    it('pose « Bloquant » et « À vérifier » à côté du statut', async () => {
+      const { element } = await render({}, undefined, PRODUCTS, () => Promise.resolve(FINDINGS));
+      expect(badges(element)).toEqual(['Bloquant', 'À vérifier']);
+    });
+
+    it('filtre les bloquants et les fiches à vérifier', async () => {
+      const { element, chip } = await render({}, undefined, PRODUCTS, () =>
+        Promise.resolve(FINDINGS),
+      );
+      await chip('data-products-status', 'Bloquants');
+      expect(rows(element)).toEqual(['P1']);
+      await chip('data-products-status', 'À vérifier');
+      expect(rows(element)).toEqual(['P2']);
+    });
+
+    it('garde la liste quand les constats ne se lisent pas, et le dit', async () => {
+      const { element } = await render({}, undefined, PRODUCTS, () =>
+        Promise.reject(new Error('panne')),
+      );
+      expect(rows(element)).toEqual(['P1', 'P2', 'V1']);
+      expect(element.querySelector('fold-callout')?.textContent).toContain(
+        "Les constats de conformité n'ont pas pu être lus",
+      );
+    });
   });
 });

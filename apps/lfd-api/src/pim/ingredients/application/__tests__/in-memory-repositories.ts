@@ -14,10 +14,6 @@ import {
   IngredientRepository,
   type IngredientRecord,
 } from "../../domain/ports/ingredient.repository.js";
-import {
-  VariantDeclarationReader,
-  type VariantDeclaredAllergens,
-} from "../../domain/ports/variant-declaration.reader.js";
 
 /**
  * Ingrédients gardés en mémoire, **reconstitués à chaque lecture** — comme la
@@ -145,25 +141,5 @@ export class InMemoryAppellationRepository extends AppellationRepository {
       return null;
     }
     return [...this.byCode.values()].find((snapshot) => snapshot.id === id) ?? null;
-  }
-}
-
-/**
- * Ce que les déclinaisons déclarent, gardé en mémoire.
- *
- * Le double garde les trois états que la comparaison éprouve — pas de fiche
- * (`null`), fiche sans allergène (`[]`), fiche avec codes — parce que c'est
- * exactement ce qui décide si une reprise est offerte (D5).
- */
-export class InMemoryVariantDeclarationReader extends VariantDeclarationReader {
-  private readonly byProduct = new Map<string, readonly VariantDeclaredAllergens[]>();
-
-  /** Sème les déclinaisons d'un produit, dans leur ordre d'affichage. */
-  seed(productId: string, variants: readonly VariantDeclaredAllergens[]): void {
-    this.byProduct.set(productId, [...variants]);
-  }
-
-  ofProduct(productId: string): Promise<readonly VariantDeclaredAllergens[]> {
-    return Promise.resolve(this.byProduct.get(productId) ?? []);
   }
 }

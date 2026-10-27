@@ -253,6 +253,9 @@ export {
   updateIngredientPayloadSchema,
   setProductIngredientsPayloadSchema,
   setIngredientAllergensPayloadSchema,
+  complianceSeveritySchema,
+  productComplianceFindingSchema,
+  productComplianceWarningViewSchema,
 } from "./ingredient.js";
 export type {
   AppellationView,
@@ -265,6 +268,9 @@ export type {
   SetIngredientAllergensPayload,
   VariantAllergenGapView,
   ProductIngredientAllergensView,
+  ComplianceSeverity,
+  ProductComplianceFinding,
+  ProductComplianceWarningView,
 } from "./ingredient.js";
 
 export {

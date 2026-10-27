@@ -1,6 +1,10 @@
 import { Injectable, inject } from '@angular/core';
 
-import type { LocalizedText, ProductReadinessView } from '@lfd/pim-contracts';
+import type {
+  LocalizedText,
+  ProductComplianceWarningView,
+  ProductReadinessView,
+} from '@lfd/pim-contracts';
 
 import { CategoryStore } from './category-store';
 import { ProductHttpApi } from './product-http-api';
@@ -57,6 +61,10 @@ export class CatalogueApi {
 
   async listProducts(): Promise<Product[]> {
     return this.productsApi.list();
+  }
+
+  async listComplianceWarnings(): Promise<readonly ProductComplianceWarningView[]> {
+    return this.productsApi.complianceWarnings();
   }
 
   /** Détail enrichi (éditorial compris) — pour la page d'édition produit. */

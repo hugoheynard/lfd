@@ -17,7 +17,7 @@ export class ReadProductIngredientsQuery {
  *
  * ⚠️ Ce n'est pas la liste réglementaire au sens du règlement UE 1169/2011 :
  * rien ici ne garantit l'exhaustivité, et la fiche obligatoire appartient à la
- * déclinaison. La lecture voisine `ReadProductIngredientAllergensQuery` en tire
+ * déclinaison. La lecture `ReadProductIngredientAllergensQuery` (catalogue) en tire
  * une PROPOSITION, jamais une déclaration.
  */
 @QueryHandler(ReadProductIngredientsQuery)

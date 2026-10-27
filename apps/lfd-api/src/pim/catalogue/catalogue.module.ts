@@ -1,3 +1,5 @@
+import { ListProductComplianceWarningsHandler } from "./product/application/list-product-compliance-warnings.js";
+import { ReadProductIngredientAllergensHandler } from "./product/application/read-product-ingredient-allergens.js";
 import { Module } from "@nestjs/common";
 
 import { BrandModule } from "../../platform/brand/brand.module.js";
@@ -163,6 +165,8 @@ import {
     ArchiveProductHandler,
     RestoreProductHandler,
     ListProductsHandler,
+    ListProductComplianceWarningsHandler,
+    ReadProductIngredientAllergensHandler,
     DeclareProductReadyHandler,
     WithdrawProductReadinessHandler,
     GetProductReadinessHandler,

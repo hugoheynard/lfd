@@ -12,6 +12,7 @@ import {
   tarte,
 } from "./audience-doubles.js";
 import { FixedAccountingRules } from "../../../../accounting-rules/domain/ports/__tests__/fixed-accounting-rules.js";
+import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
 /** Le handler de liste, avec taux, contextes et règle du prix pro doublés. */
@@ -26,6 +27,7 @@ function listing(
     new FixedVatPercents(BOTH_RATES),
     accounting,
     new FixedActiveContexts(["b2b", "takeaway"]),
+    new FixedCitedAllergens(),
   );
 }
 

@@ -232,3 +232,51 @@ export interface ProductIngredientAllergensView {
   /** Une entrée par déclinaison, dans l'ordre d'affichage du produit. */
   readonly variants: readonly VariantAllergenGapView[];
 }
+
+/** `blocking` refuse l'activation ; `warning` se signale sans rien refuser. */
+export const complianceSeveritySchema = z.enum(["blocking", "warning"]);
+export type ComplianceSeverity = z.infer<typeof complianceSeveritySchema>;
+
+/**
+ * Un constat du jugement UNIQUE d'une fiche (`productCompliance` côté API) —
+ * l'union s'étend par un membre de plus, discriminé par `code`.
+ *
+ * - `all_variants_discontinued` : rien ne se vendrait (toujours bloquant) ;
+ * - `variant_incomplete` : ce qui manque à une déclinaison non arrêtée pour se
+ *   vendre (`price`, `allergens`, `pro_price`, `pro_price_rule`, `vat:<ctx>`) —
+ *   bloquant quand aucune n'est complète, avertissement sinon ;
+ * - `allergens_cited_not_declared` / `allergens_contradict_none` : la
+ *   composition cite un allergène que la déclaration ne porte pas, ou qu'elle
+ *   dit « aucun ». Une déclinaison sans déclaration n'est jamais comparée (D5).
+ */
+export const productComplianceFindingSchema = z.discriminatedUnion("code", [
+  z.object({ code: z.literal("all_variants_discontinued"), severity: complianceSeveritySchema }),
+  z.object({
+    code: z.literal("variant_incomplete"),
+    severity: complianceSeveritySchema,
+    variantId: z.string(),
+    sku: z.string(),
+    missing: z.array(z.string()),
+  }),
+  z.object({
+    code: z.enum(["allergens_cited_not_declared", "allergens_contradict_none"]),
+    severity: complianceSeveritySchema,
+    variantId: z.string(),
+    sku: z.string(),
+    allergenCodes: z.array(z.string()),
+  }),
+]);
+export type ProductComplianceFinding = z.infer<typeof productComplianceFindingSchema>;
+
+/**
+ * Les constats d'UNE fiche non archivée — quel que soit son statut, même
+ * activable. Seules les fiches qui en portent au moins un sont rendues.
+ *
+ * 🔴 Une absence ne vaut PAS conformité (D5) : la composition est éditoriale,
+ * seule une contradiction positive se signale.
+ */
+export const productComplianceWarningViewSchema = z.object({
+  productId: z.string(),
+  warnings: z.array(productComplianceFindingSchema).min(1),
+});
+export type ProductComplianceWarningView = z.infer<typeof productComplianceWarningViewSchema>;
