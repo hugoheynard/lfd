@@ -2,7 +2,7 @@ import { ventilateVat } from "../vat.js";
 
 /**
  * 🔴 Le calcul PRO est figé (plan-centime-particuliers, contrainte absolue) :
- * l'arrivée de `ventilateVatExact` ne change pas un centime de `ventilateVat`.
+ * l'arrivée de `composeTtcOrder` ne change pas un centime de `ventilateVat`.
  * Valeurs relevées le 2026-10-27, avant tout branchement.
  */
 describe("ventilateVat — figé pour le pro", () => {

@@ -5,8 +5,9 @@
 > veux le système le mieux ») : une commande de particulier est **construite
 > en TTC**, de la ligne au total, et la TVA s'extrait par taux à la fin, au
 > centime supérieur. Les révisions 1 à 3 (HT gardé, écart nommé, HT réparti)
-> sont abandonnées ; leurs relectures restent au § 11. **Rien n'est bâti**
-> au-delà de `ventilateVatExact` (lot C1, à remplacer).
+> sont abandonnées ; leurs relectures restent au § 11. **Lot C1 bâti le
+> 2026-10-27** (`composeTtcOrder`, `ttcOfHtAmount`, sans appelant ; § 9 bis) ;
+> rien n'est branché.
 >
 > 🔴 **Le pro n'est pas touché** : aucune fonction qu'un panier ou une
 > commande pro traverse ne change de résultat ; `vat-frozen.spec.ts` le fige.
@@ -322,12 +323,36 @@ le calcul pro. Aucun chiffre ne bouge dans un espace société.
 
 ## 9. Les lots
 
-| Lot | Contenu                                                                                                                                                                                                                                                                                                                                  | Tests                                                                                                                                                                                                                                                                                                                                                      |
-| --- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| C1  | `composeTtcOrder` et `ttcOfHtAmount` dans `@lfd/money`, en entiers, sans appelant ; retrait de `ventilateVatExact` ; **recensement** des lecteurs des colonnes de montant et de `lineTotalCents(prix, qté)` (journal, `growth`, exports, spécimens, `order-composition.service.ts`, `quote-order.handler.ts`) — **porte d'entrée de C2** | banana bread, 30 × 0,50, croissants, ticket U ; remise % et fixe sur deux taux, **dont le cas d'égalité au demi** (3,33 à 5,5 % + 3,33 à 20 %, −10 %) ; ligne offerte ; bon qui solde, bon qui laisse 1 c ; port standard, qui suit, en % ; **TVA ≥ HT net × taux** et **Σ HT + TVA = total** sur un balayage ; 0–200 000 c par taux ; `ventilateVat` figé |
-| C2  | Migration (§ 7) ; `CartAdjustments` en TTC pour `public` ; `OrderLine.ofTtc` ; `Order.draft` et ses gardes ; devis ; bon                                                                                                                                                                                                                 | e2e : panier public = commande = montant Stripe ; remise retrait et bon en TTC ; **20 paniers pro figés**                                                                                                                                                                                                                                                  |
-| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; « Mes commandes », bon de commande, e-mail au format du ticket                                                                                                                                                                                                                | e2e BL partiel public ; captures des documents                                                                                                                                                                                                                                                                                                             |
-| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état ; JSDoc de `ttcCentsOf`, `OrderLine`                                                                                                                                                                                                                                           | `pnpm test` racine                                                                                                                                                                                                                                                                                                                                         |
+| Lot | Contenu                                                                                                                                                                                                                                                                                                                                                                                       | Tests                                                                                                                                                                                                                                                                                                                                                      |
+| --- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| C1  | `composeTtcOrder` et `ttcOfHtAmount` dans `@lfd/money`, en entiers, sans appelant ; retrait de `ventilateVatExact` ; **recensement** des lecteurs des colonnes de montant et de `lineTotalCents(prix, qté)` (journal, `growth`, exports, spécimens, `order-composition.service.ts`, `quote-order.handler.ts`) — **porte d'entrée de C2** ([recensement](recensement-montants-de-commande.md)) | banana bread, 30 × 0,50, croissants, ticket U ; remise % et fixe sur deux taux, **dont le cas d'égalité au demi** (3,33 à 5,5 % + 3,33 à 20 %, −10 %) ; ligne offerte ; bon qui solde, bon qui laisse 1 c ; port standard, qui suit, en % ; **TVA ≥ HT net × taux** et **Σ HT + TVA = total** sur un balayage ; 0–200 000 c par taux ; `ventilateVat` figé |
+| C2  | Migration (§ 7) ; `CartAdjustments` en TTC pour `public` ; `OrderLine.ofTtc` ; `Order.draft` et ses gardes ; devis ; bon                                                                                                                                                                                                                                                                      | e2e : panier public = commande = montant Stripe ; remise retrait et bon en TTC ; **20 paniers pro figés**                                                                                                                                                                                                                                                  |
+| C3  | Vitrine, fiche, prix barré, aperçu du rayon ; BL partiel ; « Mes commandes », bon de commande, e-mail au format du ticket                                                                                                                                                                                                                                                                     | e2e BL partiel public ; captures des documents                                                                                                                                                                                                                                                                                                             |
+| C4  | Doc : `chemin-du-prix-public.md`, diagnostic → doc d'état ; JSDoc de `ttcCentsOf`, `OrderLine`                                                                                                                                                                                                                                                                                                | `pnpm test` racine                                                                                                                                                                                                                                                                                                                                         |
+
+## 9 bis. Lot C1 — bâti le 2026-10-27
+
+`packages/money/src/ttc-order.ts` (`composeTtcOrder`),
+`ttc-vat-allocation.ts` (étapes 2 et 3 du § 4), `ttc-of-ht-amount.ts` ;
+`ventilateVatExact` retirée (aucun appelant). 133 tests, dont 5 000 paniers
+à graine fixe et le balayage 0–200 000 c par taux. Recensement :
+[`recensement-montants-de-commande.md`](recensement-montants-de-commande.md).
+
+Choix faits au bâti, que le plan ne précisait pas :
+
+- **Conversion d'un montant fixe HT** (`ttcOfHtAmount`) : le HT est découpé
+  au prorata du TTC éligible (du TTC brut pour le port qui suit), chaque part
+  convertie à son taux, le TTC obtenu redécoupé par taux. Le bon se borne au
+  TTC net après remise ; le port en pourcentage prend pour assiette le TTC
+  brut des marchandises, comme le HT brut côté pro
+  (`cart-adjustments.service.ts:232`).
+- **L'arrondi d'un pourcentage** est récrit en entiers dans `@lfd/money`
+  (`percentOf`), qui ne dépend pas de `@lfd/contracts` où vit
+  `cartAdjustmentCents`. Doublon assumé ; **C2 ajoute un test, dans l'API qui
+  voit les deux, qui prouve qu'ils rendent la même chose.**
+- **Le « cas d'égalité au demi »** du § 9 n'est une égalité qu'en HT : en TTC,
+  les étiquettes valent 3,51 et 4,00 et la remise 0,75 se découpe 35 / 40. Le
+  comportement à égalité est éprouvé directement sur l'allocation.
 
 ## 10. Décisions et questions
 
@@ -386,7 +411,7 @@ quatre exemples recalculés justes. Mais :
   L'écart vaut jusqu'à ~0,5 c par ligne, pas « quelques centimes ».
 - **S2** le flottant casse l'inégalité (3063 c à 2,1 % → 64) : arithmétique
   entière imposée.
-- **S3** une part de TVA nulle disparaît (`vat-exact.ts:91`) avec sa base.
+- **S3** une part de TVA nulle disparaît avec sa base (dans `ventilateVatExact`, retirée au lot C1).
 - **S4** C1′ est une réécriture (type `VatVentilation` partagé, retour du
   total, tests 1,41 / 0,09).
 - **S5** le § 3 sur-affirme : un ticket ne prouve pas une méthode, NF 525
