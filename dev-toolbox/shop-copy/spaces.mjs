@@ -32,13 +32,6 @@ export const ORDER_JOURNEY = [
     file: "screens/pro-landing.copy.ts",
     fn: "proLandingCopy",
   },
-  {
-    kind: "screen",
-    space: "steps",
-    title: "Les trois étapes du parcours (où, quand, quoi)",
-    file: "screens/steps.copy.ts",
-    fn: "stepsCopy",
-  },
   { kind: "dictionary", space: "hero", title: "Accueil — l'en-tête de bienvenue" },
   { kind: "dictionary", space: "doors", title: "Accueil — les portes d'entrée" },
   { kind: "dictionary", space: "event", title: "Accueil — la carte d'événement" },

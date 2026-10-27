@@ -52,7 +52,6 @@ import { ShopWarmup } from '../shop/warmup/shop-warmup';
 import { datedEventOf, featuredOperation, type DatedEvent } from '../shop/operation-event';
 import { ShopShortcuts, type ShortcutCard } from '../shop/shop-shortcuts/shop-shortcuts';
 import { orderLinesSummary, orderPlaceLabel, orderWeekday } from '../shop/last-order-summary';
-import { PublicSteps } from '../shop/public-steps/public-steps';
 import { ServiceDoors } from '../shop/service-doors/service-doors';
 import { SlotPickerDialog } from '../shop/slot-picker-dialog/slot-picker-dialog';
 import { sizedMedia, SHEET_WIDTHS } from '../shop/media-source';
@@ -122,7 +121,6 @@ interface House {
     HomeFeatured,
     HomeStorefront,
     LiveOrdersWell,
-    PublicSteps,
     ServiceDoors,
     ShopShortcuts,
     StaffHomePicksRow,

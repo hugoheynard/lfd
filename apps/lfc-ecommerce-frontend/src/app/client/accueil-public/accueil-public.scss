@@ -28,8 +28,7 @@
    `cloudflare` est une ERREUR à 10 kB, et cet écran l'a franchie de dix octets
    le 2026-09-17. Groupée, la même règle en rend une centaine.
 
-   ⚠️ Le rail des étapes n'y est plus : il est parti dans `app-public-steps`,
-   que la boutique montre aussi. */
+   ⚠️ Le rail des trois étapes a été retiré (Hugo, 2026-10-27). */
 .page,
 .intro,
 .sheet,
@@ -84,9 +83,6 @@
   margin: 0;
   max-width: 36em;
   font-size: var(--lfc-text-lede);
-  /* Le token, et non le littéral `1.55` qu'il valait : le rail des étapes lit
-     le même, et deux phrases alignées sur la même taille doivent l'être aussi
-     sur la même densité. Voir `public-steps.scss`. */
   line-height: var(--lfc-leading-body);
   color: var(--lfc-color-on-primary-lede);
 }

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1689 textes
+## Sommaire — 1676 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -13,7 +13,6 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | **Parcours de commande** | | |
 | [Accueil public — le visiteur sans compte](#espace-accueilpublic) | `accueilPublic` | 60 |
 | [Accueil pro public — le professionnel sans compte (/pro)](#espace-prolanding) | `proLanding` | 30 |
-| [Les trois étapes du parcours (où, quand, quoi)](#espace-steps) | `steps` | 13 |
 | [Accueil — l'en-tête de bienvenue](#espace-hero) | `hero` | 4 |
 | [Accueil — les portes d'entrée](#espace-doors) | `doors` | 23 |
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
@@ -48,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1689** |
+| **Total** | | **1676** |
 
 ## Le parcours de commande
 
@@ -159,28 +158,6 @@ Source : `screens/pro-landing.copy.ts` · 30 textes.
 | `proLanding.featured.signInLabel` | Se connecter pour voir le tarif de {name} | Sign in to see the price of {name} | Accedi per vedere il prezzo di {name} | `{name}` |
 | `proLanding.browse` | Je visite la boutique | Browse the shop | Visito il negozio |  |
 | `proLanding.contact` | Nous contacter | Contact us | Contattaci |  |
-
-<a id="espace-steps"></a>
-
-### Les trois étapes du parcours (où, quand, quoi) — `steps`
-
-Source : `screens/steps.copy.ts` · 13 textes.
-
-| Clé | FR | EN | IT | Variables |
-| --- | --- | --- | --- | --- |
-| `steps.where.label` | Où je la prends | Where I collect | Dove lo ritiro |  |
-| `steps.where.hint` | La maison qui vous arrange | The bakery that suits you | La bottega che vi conviene |  |
-| `steps.when.label` | À quelle heure | What time | A che ora |  |
-| `steps.when.hint` | Les créneaux suivent les fournées | Slots follow the bakes | Gli orari seguono le infornate |  |
-| `steps.what.label` | Ce que j’emporte | What I take | Cosa porto via |  |
-| `steps.what.hint` | La boutique est ouverte | The shop is open | La bottega è aperta |  |
-| `steps.doneLabel` | Étape franchie | Step completed | Passo completato |  |
-| `steps.pro.where.label` | Je choisis mon acheminement | I choose how it travels | Scelgo il recapito |  |
-| `steps.pro.where.hint` | Retrait ou coursier, on organise tout | Pickup or courier, we handle it | Ritiro o corriere, organizziamo tutto |  |
-| `steps.pro.when.label` | Je choisis l’heure | I choose the time | Scelgo l’ora |  |
-| `steps.pro.when.hint` | Libre au retrait, vos créneaux en livraison | Free for pickup, your windows for delivery | Libera al ritiro, i vostri orari in consegna |  |
-| `steps.pro.what.label` | Je compose mon panier | I fill my basket | Compongo il carrello |  |
-| `steps.pro.what.hint` | Tous les articles à prix pro | Every item at trade prices | Tutti gli articoli a prezzo pro |  |
 
 <a id="espace-hero"></a>
 

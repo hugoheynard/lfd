@@ -28,3 +28,19 @@
   grid-template-columns: repeat(auto-fit, minmax(220px, 280px));
   gap: var(--fold-space-sm);
 }
+
+/* Au téléphone, un rail qui défile de côté, comme les incontournables. */
+@media (max-width: 599.98px) {
+  .usuals-cards {
+    grid-template-columns: none;
+    grid-auto-flow: column;
+    grid-auto-columns: 78%;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+
+    > * {
+      scroll-snap-align: start;
+    }
+  }
+}

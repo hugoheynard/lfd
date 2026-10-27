@@ -357,17 +357,11 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Aucune maison');
   });
 
-  it('🔴 ne coche AUCUNE étape à l’arrivée', async () => {
-    // Le visiteur qui arrive n'a rien choisi. Une étape marquée franchie
-    // annoncerait un choix qui n'a pas eu lieu ; la première est COURANTE, et
-    // les deux suivantes attendent des surfaces qui n'existent pas encore.
+  /** Le rail des trois étapes est retiré (Hugo, 2026-10-27). */
+  it('ne montre plus les trois étapes', async () => {
     const fixture = await mount([point({ id: 'a' })]);
 
-    const done = fixture.nativeElement.querySelectorAll('.step.is-done');
-    const current = fixture.nativeElement.querySelectorAll('.step.is-current');
-
-    expect(done).toHaveLength(0);
-    expect(current).toHaveLength(1);
+    expect(fixture.nativeElement.querySelectorAll('.step')).toHaveLength(0);
   });
 
   it('🔴 ne dit pas « faites défiler » quand tout tient à l’écran', async () => {
@@ -439,19 +433,6 @@ describe('AccueilPublic — les trois états', () => {
     const fixture = await mount(POINTS, 'pro');
 
     expect(fixture.nativeElement.querySelector('.door-pickup .door-note')).toBeNull();
-  });
-
-  it('dit les trois étapes dans la voix d’un PRO', async () => {
-    const fixture = await mount(POINTS, 'pro');
-    const labels = [...fixture.nativeElement.querySelectorAll('.step-label')].map((node: Element) =>
-      node.textContent?.trim(),
-    );
-
-    expect(labels).toEqual([
-      'Je choisis mon acheminement',
-      'Je choisis l’heure',
-      'Je compose mon panier',
-    ]);
   });
 
   it('donne ses deux portes à un PRO même non validé, à la place du bandeau', async () => {

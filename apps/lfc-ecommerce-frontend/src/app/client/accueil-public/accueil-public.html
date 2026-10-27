@@ -24,15 +24,13 @@
          maison, quelqu'un qui revient le sait, et la seule chose qu'on ait à
          lui demander est ce qu'il veut aujourd'hui. -->
     <p class="screen-kicker">{{ heroKicker() }}</p>
-    <!-- Les trois verbes vivent ICI et dans le rail, jamais en triptyque de
-         cartes à icônes : il a été essayé puis retiré. -->
+    <!-- Les trois verbes vivent ICI, jamais en triptyque de cartes à icônes :
+         il a été essayé puis retiré, comme le rail des trois étapes (Hugo,
+         2026-10-27). -->
     <h1 class="screen-title">{{ heroTitle() }}</h1>
 
-    <!-- LE CHAPÔ. Il vient APRÈS le titre et AVANT le rail, et l'ordre est le
-         sujet : le titre promet trois verbes, le chapô dit comment, le rail
-         montre où l'on en est. Inséré entre les deux, il répond à la question
-         que le titre vient de poser ; posé après le rail, il expliquerait une
-         mécanique déjà dessinée. -->
+    <!-- LE CHAPÔ, juste après le titre : il répond à la question que le titre
+         vient de poser. Le visiteur seul le lit. -->
     @if (heroLede(); as lede) {
       <p class="screen-lede">{{ lede }}</p>
     }
@@ -48,20 +46,6 @@
         }
       </ul>
     }
-
-    <!-- LE RAIL DES TROIS ÉTAPES, en ligne et pleine largeur sous le titre,
-         comme la référence. Il a été projeté un moment à côté du titre, pour
-         contourner le centrage automatique du bandeau de page : c'était
-         résoudre un problème de CSS au prix de la maquette.
-
-         🔴 Aucune étape n'est FRANCHIE : le visiteur qui arrive n'a encore rien
-         choisi. La première est COURANTE — pastille pleine, pas de coche. Une
-         coche sur un choix qui n'a pas eu lieu serait un mensonge, et les deux
-         étapes suivantes attendent des surfaces qui n'existent pas. -->
-    <!-- 🔴 `1` et RIEN de franchi : le visiteur qui arrive n'a encore rien
-         choisi. Une coche sur un choix qui n'a pas eu lieu serait un mensonge —
-         c'est l'écran qui déclare où l'on en est, jamais le composant. -->
-    <app-public-steps [current]="1" [pro]="pro()" />
   </header>
 
   <!-- LA FEUILLE crème. Le bandeau de retrait y remonte : le chevauchement est
