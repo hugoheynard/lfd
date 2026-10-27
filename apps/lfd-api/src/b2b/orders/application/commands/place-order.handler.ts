@@ -238,7 +238,8 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
           await this.vouchers.settleRemainder(
             {
               voucherId,
-              appliedCents: order.voucherDiscountCents,
+              // La valeur faciale servie — TTC pour un particulier (R6).
+              appliedCents: order.voucherFaceCents,
               order: { id: written.id, number: written.orderNumber },
             },
             this.clock.now(),

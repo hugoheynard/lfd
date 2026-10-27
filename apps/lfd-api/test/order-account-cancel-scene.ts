@@ -262,6 +262,8 @@ async function chosenIdOrder(
   chosenSeq += 1;
   return context().prisma.order.create({
     data: {
+      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
+      vatMethod: "line_ht",
       id,
       orderNumber: `ORD-${String(800_000 + chosenSeq)}`,
       companyId: who.companyId,

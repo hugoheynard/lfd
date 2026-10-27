@@ -56,6 +56,14 @@ model DeliveryNote {
   vatShares            Json?   @map("vat_shares")
   vatCents             Int?    @map("vat_cents")
   totalCents           Int?    @map("total_cents")
+  /// La méthode de composition (cf. `Order.vatMethod`), et les TTC des termes
+  /// d'un BL `exact_ht` — contrainte À PART du « tout ou rien » (migration
+  /// `20261027100000`). Écrits `line_ht` / `NULL` jusqu'au lot C3 du plan
+  /// `documentation/pricing/plan-centime-particuliers.md`.
+  vatMethod            String  @map("vat_method")
+  discountTtcCents     Int?    @map("discount_ttc_cents")
+  voucherTtcCents      Int?    @map("voucher_ttc_cents")
+  deliveryFeeTtcCents  Int?    @map("delivery_fee_ttc_cents")
 
   /// La version du CONTENU (plan E6, § 14) : +1 à chaque changement de ses
   /// lignes ou de ses montants — réécriture d'un BL prévu, départ décidé.

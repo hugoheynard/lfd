@@ -160,6 +160,8 @@ async function seedLateFeeOrder(
   const goodsVat = Math.round(goods * 0.055);
   const created = await ctx.prisma.order.create({
     data: {
+      // Écrite à la main, hors agrégat : la méthode du pro et d'avant la voie B.
+      vatMethod: "line_ht",
       orderNumber,
       companyId: buyer.companyId,
       placedByUserId: buyer.userId,

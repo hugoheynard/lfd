@@ -6,8 +6,8 @@
 > en TTC**, de la ligne au total, et la TVA s'extrait par taux à la fin, au
 > centime supérieur. Les révisions 1 à 3 (HT gardé, écart nommé, HT réparti)
 > sont abandonnées ; leurs relectures restent au § 11. **Lot C1 bâti le
-> 2026-10-27** (`composeTtcOrder`, `ttcOfHtAmount`, sans appelant ; § 9 bis) ;
-> rien n'est branché.
+> 2026-10-27** (`composeTtcOrder`, `ttcOfHtAmount`, sans appelant ; § 9 bis).
+> **Lot C2 bâti le 2026-10-27** (migration, agrégat, devis, bon ; § 9 ter).
 >
 > 🔴 **Le pro n'est pas touché** : aucune fonction qu'un panier ou une
 > commande pro traverse ne change de résultat ; `vat-frozen.spec.ts` le fige.
@@ -353,6 +353,34 @@ Choix faits au bâti, que le plan ne précisait pas :
 - **Le « cas d'égalité au demi »** du § 9 n'est une égalité qu'en HT : en TTC,
   les étiquettes valent 3,51 et 4,00 et la remise 0,75 se découpe 35 / 40. Le
   comportement à égalité est éprouvé directement sur l'allocation.
+
+## 9 ter. Lot C2 — bâti le 2026-10-27 (non commité à l'écriture)
+
+Migration `20261027100000_la_commande_d_un_particulier_en_ttc` : `vat_method`
+(ajoutée, remplie à `line_ht`, puis non nulle sans défaut) et les trois TTC de
+terme sur `orders` et `delivery_note`, sous un CHECK « TTC ⇔ `exact_ht` » à
+part. `Order.draft` décide la méthode (`placementVatMethodOf`, sur l'absence
+de société — jamais l'audience) ; `Order.recompose` la relit sur la commande.
+Une composition par méthode (`order-amounts.ts`, `order-exact-amounts.ts`),
+`OrderLine.ofTtc`, et une seule traduction vers `composeTtcOrder`
+(`exact-order-composition.ts`) pour l'agrégat, la composition de passation et
+de révision, le devis de la boutique et le devis du staff. Le registre de
+fidélité reçoit la valeur faciale (`Order.voucherFaceCents`). Vingt paniers
+pro figés (`order-pro-frozen.spec.ts`, `shop-cart-quoting-pro-frozen.spec.ts`).
+
+Choix faits au bâti, que le plan ne précisait pas :
+
+- **La conversion en TTC n'est pas dans `CartAdjustments`** : il rend toujours
+  la remise et le port HT et leur réglage ; la composition de passation
+  (`OrderComposition.draftOf`) et le devis les rejouent en TTC par
+  `composeExactOrder`. Le mode de TVA du port n'est connu qu'après l'heure
+  limite (`arrange`), et `CartAdjustments` reçoit l'audience, pas la méthode.
+- **Les vues de devis et de révision gardent le sens HT de leurs champs**
+  (contrats servis) ; elles restent additives (Σ HT + TVA = total). Exposer
+  les TTC des termes aux fronts est le lot C3.
+- **Le BL écrit `line_ht`** et des TTC nuls jusqu'au lot C3 ; un BL partiel
+  d'une commande `exact_ht` y est encore calculé HT : C2 ne part pas en
+  production sans C3.
 
 ## 10. Décisions et questions
 

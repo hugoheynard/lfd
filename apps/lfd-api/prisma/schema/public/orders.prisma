@@ -257,6 +257,19 @@ model Order {
   /// annulée garde la trace du bon, que la libération rend réutilisable.
   loyaltyVoucherId      String?         @map("loyalty_voucher_id")
   loyaltyVoucher        LoyaltyVoucher? @relation(fields: [loyaltyVoucherId], references: [id], onDelete: Restrict)
+  /// **Comment les montants ont été composés** (plan
+  /// `documentation/pricing/plan-centime-particuliers.md`, § 7) : `line_ht`
+  /// (le calcul pro, et toute commande d'avant le 2026-10-27) ou `exact_ht`
+  /// (particulier : composée en TTC, TVA extraite par taux). Décidée une fois
+  /// par l'agrégat, relue ensuite — une révision ne la change pas. Tenue par
+  /// un CHECK, sans défaut.
+  vatMethod             String          @map("vat_method")
+  /// Les TTC figés de la remise retrait, du bon et du port — d'une commande
+  /// `exact_ht` seulement, `NULL` sinon (CHECK `orders_ttc_terms_iff_exact_ht`).
+  /// Positifs, comme leurs HT ; le bon y est sa valeur faciale imputée.
+  discountTtcCents      Int?            @map("discount_ttc_cents")
+  voucherTtcCents       Int?            @map("voucher_ttc_cents")
+  deliveryFeeTtcCents   Int?            @map("delivery_fee_ttc_cents")
   deliveryFeeCents      Int             @default(0) @map("delivery_fee_cents")
   /// L'ajustement (%, ou € fixe) de la ZONE qui a produit `deliveryFeeCents`,
   /// figé comme la remise et la surtaxe. C'était le dernier terme du panier à
@@ -423,15 +436,15 @@ model Order {
   /// sans délai, commande sans date, ou commande d'avant la colonne — celle-ci
   /// garde le calcul au réglage du jour. Écrit par la passation, recalculé par
   /// une révision avec le délai figé ci-dessous.
-  customerCancellableUntil DateTime? @map("customer_cancellable_until") @db.Timestamptz(3)
+  customerCancellableUntil        DateTime? @map("customer_cancellable_until") @db.Timestamptz(3)
   /// **Le délai figé lui-même** (Hugo, 2026-10-26) : `true` dès la passation
   /// d'un particulier, avec ou sans délai — distingue « passée sans délai »
   /// (figée, heures NULL : seul l'arrêt du plan la limite, quel que soit le
   /// réglage du jour) de « d'avant les colonnes » (non figée, réglage du jour).
   /// Une révision du jour ou du créneau recalcule `customerCancellableUntil`
   /// avec `customerCancellationHoursBefore`, jamais avec le réglage du jour.
-  customerCancellationFixed       Boolean @default(false) @map("customer_cancellation_fixed")
-  customerCancellationHoursBefore Int?    @map("customer_cancellation_hours_before")
+  customerCancellationFixed       Boolean   @default(false) @map("customer_cancellation_fixed")
+  customerCancellationHoursBefore Int?      @map("customer_cancellation_hours_before")
 
   /// **La révision de la commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
   /// M1) : `0` à la passation, `+1` à chaque modification. Toute écriture d'une
