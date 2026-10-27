@@ -33,26 +33,6 @@ const SHELF_ART: Readonly<Record<string, string>> = {
   cat_choco: 'boite-choco',
 };
 
-/**
- * L'heure à laquelle un rayon sort du four.
- *
- * Un fait de PRODUCTION que le référentiel ne porte pas : il sait ce qu'on
- * vend, pas à quelle heure ça sort. Écrit ici en attendant, et lisiblement —
- * une valeur inventée qui se ferait passer pour une donnée serveur serait pire
- * que ce fichier.
- */
-const OVEN_HOURS: Readonly<Record<string, string>> = {
-  cat_vien: 'entre 6 h et 7 h',
-  cat_pains: 'toute la matinée',
-  cat_patis: 'en fin de matinée',
-  cat_sale: 'avant 11 h',
-  cat_choco: 'à la demande',
-};
-
-export function ovenHoursOf(shelfId: string): string {
-  return OVEN_HOURS[shelfId] ?? 'toute la matinée';
-}
-
 /** La vignette d'un rayon — pour la bannière et la feuille « En savoir plus ». */
 export function shelfArtOf(shelfId: string): string {
   return `products/${SHELF_ART[shelfId] ?? FALLBACK_ART}.svg`;

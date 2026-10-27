@@ -316,7 +316,6 @@ export const IT: ClientCopy = {
   },
   product: {
     bestSeller: 'Imperdibile',
-    oven: 'Sfornata',
     operationPickup: 'Ritiro',
     operationPickupSpan: 'dal {from} al {until}',
     operationPickupDay: 'il {day}',
@@ -334,7 +333,7 @@ export const IT: ClientCopy = {
     madeToOrderShortDays: 'Su ordinazione · {n} giorni prima, entro le {time}',
     madeToOrderShortEve: 'Su ordinazione · il giorno prima, entro le {time}',
     madeToOrderShortSameDay: 'Su ordinazione · in giornata, entro le {time}',
-    allergens: 'Allergeni',
+    allergens: 'Consulta gli allergeni',
     allergensNone: 'Nessun allergene',
     allergensMayContain: 'Può contenere',
     allergensPrecautionary: 'Informazione precisa non disponibile',

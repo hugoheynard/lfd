@@ -210,12 +210,11 @@ describe('ProductSheet', () => {
     expect(el().querySelector('.discount')).toBeNull();
   });
 
-  /** Ce que le serveur ne sert pas n'a pas de ligne : ni pièce, ni allergènes. */
-  it('ne montre que la fournée entre les filets', () => {
+  /** La fournée a cédé sa place aux allergènes (Hugo, 2026-10-27) : plus de ligne. */
+  it('ne montre plus la fournée entre les filets', () => {
     mount(TEST_ITEMS[0] as ShopItemView, 0, true);
 
-    const keys = Array.from(el().querySelectorAll('.fact dt')).map((dt) => dt.textContent?.trim());
-    expect(keys).toEqual([FR.product.oven]);
+    expect(el().querySelectorAll('.fact dt')).toHaveLength(0);
   });
 
   /** D8 : la fiche ne propose pas d'ajouter tant que l'opération n'est pas ouverte. */
@@ -296,7 +295,10 @@ describe('ProductSheet', () => {
       false,
     );
 
-    expect(el().querySelector('[data-allergens] h3')?.textContent?.trim()).toBe('Allergènes');
+    // Replié par défaut, derrière son titre (Hugo, 2026-10-27).
+    expect(el().querySelector('[data-allergens] .allergens-title')?.textContent?.trim()).toBe(
+      'Consulter les allergènes',
+    );
     expect(lists()).toEqual([['Gluten', 'Lait'], ['Sésame']]);
     expect(el().querySelector('[data-may-contain]')?.textContent?.trim()).toBe('Peut contenir');
   });

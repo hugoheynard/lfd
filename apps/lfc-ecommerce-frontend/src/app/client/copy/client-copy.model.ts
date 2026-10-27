@@ -593,8 +593,6 @@ export interface ClientCopy {
      * nom : une valeur n'est pas un nom.
      */
     readonly bestSeller: string;
-    /** La ligne de fiche qui dit quand la pièce sort du four. */
-    readonly oven: string;
     /** La ligne de fiche d'un article d'opération ouverte : ses jours de retrait. */
     readonly operationPickup: string;
     /** `{from}` et `{until}` = premier et dernier jours de retrait (« 20 », « 24 déc. »). */

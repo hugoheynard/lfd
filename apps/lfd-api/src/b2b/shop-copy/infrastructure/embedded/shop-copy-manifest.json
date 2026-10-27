@@ -1863,13 +1863,6 @@
           "variables": []
         },
         {
-          "key": "product.oven",
-          "fr": "Fournée",
-          "en": "Baked",
-          "it": "Sfornata",
-          "variables": []
-        },
-        {
           "key": "product.operationPickup",
           "fr": "Retrait",
           "en": "Collection",
@@ -1984,9 +1977,9 @@
         },
         {
           "key": "product.allergens",
-          "fr": "Allergènes",
-          "en": "Allergens",
-          "it": "Allergeni",
+          "fr": "Consulter les allergènes",
+          "en": "See the allergens",
+          "it": "Consulta gli allergeni",
           "variables": []
         },
         {

@@ -11,7 +11,7 @@ import {
   untracked,
 } from '@angular/core';
 import { NgTemplateOutlet } from '@angular/common';
-import { FoldCalloutComponent } from 'fold-ng';
+import { FoldCalloutComponent, FoldDisclosureComponent } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
@@ -22,7 +22,7 @@ import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from 
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
 import { operationGate, pickupSpan } from '../operations';
-import { artOf, objectPositionOf, ovenHoursOf } from '../shelf-display';
+import { artOf, objectPositionOf } from '../shelf-display';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
@@ -63,6 +63,7 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
   imports: [
     ClientDialog,
     FoldCalloutComponent,
+    FoldDisclosureComponent,
     NgTemplateOutlet,
     QuantityRail,
     StaffSuggestionCard,
@@ -210,17 +211,12 @@ export class ProductSheet {
   });
 
   /**
-   * Les faits servis — la fournée, et les jours de retrait d'une opération
-   * ouverte ; la pièce ne traverse pas encore.
+   * Les faits servis — les jours de retrait d'une opération ouverte. La
+   * fournée a cédé sa place aux allergènes (Hugo, 2026-10-27).
    */
   protected readonly facts = computed(() => {
     const product = this.product();
-    return product === null
-      ? []
-      : [
-          { key: this.t().product.oven, value: ovenHoursOf(product.shelfId) },
-          ...this.pickupFact(product),
-        ];
+    return product === null ? [] : this.pickupFact(product);
   });
 
   /**

@@ -36,41 +36,26 @@
         <p class="made-to-order" data-made-to-order>{{ limit }}</p>
       }
 
-      <dl class="facts">
-        @for (fact of facts(); track fact.key) {
-          <div class="fact">
-            <dt>{{ fact.key }}</dt>
-            <dd>{{ fact.value }}</dd>
-          </div>
-        }
-      </dl>
-
-      <div class="pricing">
-        <p class="price">
-          <!-- La rature ne s'entend pas (RGAA 3.1, lot A5) : une phrase lue
-               remplace les trois morceaux, cachés aux lecteurs d'écran. -->
-          @if (striked()) {
-            <span class="sr-only">{{ struckPhrase() }}</span>
+      @if (facts().length > 0) {
+        <dl class="facts">
+          @for (fact of facts(); track fact.key) {
+            <div class="fact">
+              <dt>{{ fact.key }}</dt>
+              <dd>{{ fact.value }}</dd>
+            </div>
           }
-          <span class="amount" [attr.aria-hidden]="striked() ? 'true' : null">{{ price() }}</span>
-          <span class="per" [attr.aria-hidden]="striked() ? 'true' : null"
-            >{{ basisSuffix() }} {{ t().product.perPiece }}</span
-          >
-          @if (striked(); as catalogue) {
-            <s class="price-was" aria-hidden="true">{{ catalogue }}</s>
-          }
-        </p>
-        @if (discountLabel(); as discount) {
-          <span class="discount">{{ discount }}</span>
-        }
-      </div>
+        </dl>
+      }
 
-      <!-- Les allergènes, SOUS le prix, sur la fiche seulement (Hugo,
+      <!-- Les allergènes, À LA PLACE DE LA FOURNÉE (Hugo, 2026-10-27), sur la fiche seulement (Hugo,
            2026-10-27) : des LISTES (RGAA 9.3), le texte seul porte
-           l'information — aucune couleur ne la dit. -->
+           l'information — aucune couleur ne la dit. REPLIÉS par défaut (Hugo,
+           le même jour) : on les déplie, ils ne prennent pas la fiche. -->
       @if (allergens(); as served) {
-        <section class="allergens" aria-labelledby="sheet-allergens" data-allergens>
-          <h3 class="allergens-title" id="sheet-allergens">{{ t().product.allergens }}</h3>
+        <fold-disclosure class="allergens" data-allergens>
+          <span summary class="allergens-title" id="sheet-allergens">{{
+            t().product.allergens
+          }}</span>
           @if (served.contains.length > 0) {
             <ul class="allergen-list" aria-labelledby="sheet-allergens">
               @for (label of served.contains; track label) {
@@ -100,8 +85,28 @@
               }
             </ul>
           </ng-template>
-        </section>
+        </fold-disclosure>
       }
+
+      <div class="pricing">
+        <p class="price">
+          <!-- La rature ne s'entend pas (RGAA 3.1, lot A5) : une phrase lue
+               remplace les trois morceaux, cachés aux lecteurs d'écran. -->
+          @if (striked()) {
+            <span class="sr-only">{{ struckPhrase() }}</span>
+          }
+          <span class="amount" [attr.aria-hidden]="striked() ? 'true' : null">{{ price() }}</span>
+          <span class="per" [attr.aria-hidden]="striked() ? 'true' : null"
+            >{{ basisSuffix() }} {{ t().product.perPiece }}</span
+          >
+          @if (striked(); as catalogue) {
+            <s class="price-was" aria-hidden="true">{{ catalogue }}</s>
+          }
+        </p>
+        @if (discountLabel(); as discount) {
+          <span class="discount">{{ discount }}</span>
+        }
+      </div>
 
       @if (staffPick.current(); as view) {
         @if (view.sku !== piece.sku) {

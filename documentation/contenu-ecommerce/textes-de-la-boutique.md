@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1679 textes
+## Sommaire — 1678 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 25 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 24 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 8 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -47,7 +47,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1679** |
+| **Total** | | **1678** |
 
 ## Le parcours de commande
 
@@ -384,12 +384,11 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 25 textes.
+Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
 | `product.bestSeller` | Incontournable | Must-have | Imperdibile |  |
-| `product.oven` | Fournée | Baked | Sfornata |  |
 | `product.operationPickup` | Retrait | Collection | Ritiro |  |
 | `product.operationPickupSpan` | du {from} au {until} | {from} to {until} | dal {from} al {until} | `{from}` `{until}` |
 | `product.operationPickupDay` | le {day} | on {day} | il {day} | `{day}` |
@@ -407,7 +406,7 @@ Source : `fr.ts · en.ts · it.ts` · 25 textes.
 | `product.madeToOrderShortDays` | Sur commande · {n} jours avant {time} | Made to order · {n} days ahead, by {time} | Su ordinazione · {n} giorni prima, entro le {time} | `{n}` `{time}` |
 | `product.madeToOrderShortEve` | Sur commande · la veille avant {time} | Made to order · day before, by {time} | Su ordinazione · il giorno prima, entro le {time} | `{time}` |
 | `product.madeToOrderShortSameDay` | Sur commande · le jour même avant {time} | Made to order · same day, by {time} | Su ordinazione · in giornata, entro le {time} | `{time}` |
-| `product.allergens` | Allergènes | Allergens | Allergeni |  |
+| `product.allergens` | Consulter les allergènes | See the allergens | Consulta gli allergeni |  |
 | `product.allergensNone` | Aucun allergène | No allergens | Nessun allergene |  |
 | `product.allergensMayContain` | Peut contenir | May contain | Può contenere |  |
 | `product.allergensPrecautionary` | Information précise non disponible | Precise information not available | Informazione precisa non disponibile |  |
