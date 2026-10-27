@@ -27,6 +27,7 @@ import {
 import { LangSwitch } from '../../../shared/lang-switch/lang-switch';
 import { localizedField } from '../../../shared/lang-switch/localized-field';
 import { NotifyService } from '../../../notify.service';
+import { allergenDiff, type IngredientAllergenChange } from '../allergen-propagation';
 import { ProvenanceStore } from '../provenance.store';
 
 /** Charge passée à `open()` : l'ingrédient à régler. Absente = déclaration. */
@@ -314,11 +315,18 @@ export class IngredientPanel {
     this.ref.close();
   }
 
-  private async run(action: () => Promise<void>): Promise<void> {
+  /**
+   * Se ferme sur le DIFF des codes quand un réglage a changé les allergènes —
+   * la page en tire l'aperçu de propagation (plan
+   * `pim/plan-propager-allergenes-d-un-ingredient.md`, § 4) ; sur `true` sinon.
+   */
+  private async run(
+    action: () => Promise<IngredientAllergenChange | undefined | void>,
+  ): Promise<void> {
     this.busy.set(true);
     try {
-      await action();
-      this.ref.close(true);
+      const change = await action();
+      this.ref.close(change ?? true);
     } catch (caught) {
       this.notify.refused(caught, 'Opération refusée.');
     } finally {
@@ -336,7 +344,7 @@ export class IngredientPanel {
    * vide ne provoque aucun appel — `[]` sur une matière n'affirme rien, il n'y a
    * donc rien à poser.
    */
-  private async persist(): Promise<void> {
+  private async persist(): Promise<IngredientAllergenChange | undefined> {
     const appellationCode =
       this.draftAppellation() === NO_APPELLATION ? null : this.draftAppellation();
     const description = this.description.filled() ? this.description.text() : null;
@@ -354,7 +362,8 @@ export class IngredientPanel {
       if (this.draftAllergens().length > 0 || this.draftNoAllergen()) {
         await this.store.setIngredientAllergens(key, this.draftAllergens(), this.draftNoAllergen());
       }
-      return;
+      // Un ingrédient neuf n'est cité par aucune fiche : rien à propager.
+      return undefined;
     }
     await this.store.updateIngredient(target.key, {
       name: this.name.text(),
@@ -368,6 +377,11 @@ export class IngredientPanel {
         this.draftAllergens(),
         this.draftNoAllergen(),
       );
+      const { added, removed } = allergenDiff(target.allergens, this.draftAllergens());
+      if (added.length > 0 || removed.length > 0) {
+        return { key: target.key, added, removed };
+      }
     }
+    return undefined;
   }
 }

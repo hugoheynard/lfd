@@ -1,0 +1,77 @@
+<fold-panel-header
+  [title]="heading()"
+  subtitle="Ce que la propagation changerait, déclinaison par déclinaison."
+/>
+
+<div class="body">
+  @if (error(); as message) {
+    <fold-callout appearance="inset" variant="alert" announce>
+      <strong>Rien n'a été appliqué.</strong> {{ message }}
+    </fold-callout>
+  }
+
+  @if (view(); as v) {
+    @for (product of v.products; track product.productId) {
+      <fold-card padding="md" [attr.data-propagation-product]="product.productId">
+        <fold-element-title variant="title" [title]="product.name">
+          <span titleAction class="product-head">
+            <fold-badge
+              [content]="statusLabel(product)"
+              [variant]="
+                losesRed(product) ? 'alert' : product.status === 'published' ? 'success' : 'neutral'
+              "
+            />
+            <a [routerLink]="['/pim/produits', product.productId]">Ouvrir la fiche</a>
+          </span>
+        </fold-element-title>
+
+        <div class="variants">
+          @if (losesRed(product)) {
+            <fold-callout appearance="inset" variant="alert" data-published-loses>
+              Fiche <strong>publiée</strong>&nbsp;: elle perdrait un allergène déclaré.
+            </fold-callout>
+          }
+
+          @for (variant of product.variants; track variant.variantId) {
+            <div class="variant">
+              <strong>{{ variant.sku }}</strong>
+              @if (variant.undeclared) {
+                <span class="muted">Non renseignée — à déclarer dans la fiche.</span>
+              }
+              @if (variant.toAdd.length > 0) {
+                <span>Sera ajouté&nbsp;: {{ labels(variant.toAdd) }}</span>
+              }
+              @for (code of variant.promotedFromTrace; track code) {
+                <span>{{ label(code) }}&nbsp;: passe de trace à allergène.</span>
+              }
+              @for (blocked of variant.blocked; track blocked.code) {
+                <span class="muted"
+                  >Bloquée pour {{ label(blocked.code) }}&nbsp;: {{ reason(blocked.reason) }}.</span
+                >
+              }
+              @if (variant.toRemove.length > 0) {
+                <fold-checkbox
+                  size="sm"
+                  [label]="'Retirer ' + labels(variant.toRemove)"
+                  hint="Décochez si l'allergène est voulu (contamination d'atelier déclarée à la main)."
+                  [checked]="!isKept(variant.variantId)"
+                  (checkedChange)="toggleRemoval(variant.variantId, $event)"
+                />
+                @if (variant.becomesNone && !isKept(variant.variantId)) {
+                  <span>Deviendra&nbsp;: aucun allergène.</span>
+                }
+              }
+            </div>
+          }
+        </div>
+      </fold-card>
+    }
+  }
+</div>
+
+<footer class="foot">
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton [disabled]="busy() || count() === 0" (click)="apply()">
+    {{ applyLabel() }}
+  </button>
+</footer>

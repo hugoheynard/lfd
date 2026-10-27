@@ -12,6 +12,10 @@
     </button>
   }
 
+  @if (propagation(); as change) {
+    <app-ingredient-propagation [change]="change" (settled)="propagation.set(null)" />
+  }
+
   @if (loadError(); as message) {
     <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
   }

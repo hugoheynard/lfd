@@ -1,0 +1,30 @@
+@if (loadError(); as message) {
+  <fold-callout appearance="inset" variant="alert" announce>
+    <strong>Les fiches qui citent cet ingrédient n'ont pas pu être relues.</strong> {{ message }}
+    Les allergènes de l'ingrédient sont enregistrés&nbsp;; aucune fiche n'a été modifiée.
+    <button actions foldButton emphasis="outline" size="sm" (click)="retry()">Réessayer</button>
+    <button actions foldButton emphasis="soft" intent="neutral" size="sm" (click)="dismiss()">
+      Ignorer
+    </button>
+  </fold-callout>
+} @else if (view(); as v) {
+  @if (v.counts.productsTouched > 0) {
+    <fold-callout appearance="inset" [variant]="count() > 0 ? 'warning' : 'info'" announce>
+      <span data-propagation-message>{{ message() }}</span>
+      @if (applyError(); as refused) {
+        <strong>Rien n'a été appliqué.</strong> {{ refused }}
+      }
+      <button actions foldButton emphasis="outline" size="sm" (click)="showProducts()">
+        Voir les fiches
+      </button>
+      @if (count() > 0) {
+        <button actions foldButton size="sm" [disabled]="busy()" (click)="applyAll()">
+          {{ applyLabel() }}
+        </button>
+      }
+      <button actions foldButton emphasis="soft" intent="neutral" size="sm" (click)="dismiss()">
+        Ignorer
+      </button>
+    </fold-callout>
+  }
+}

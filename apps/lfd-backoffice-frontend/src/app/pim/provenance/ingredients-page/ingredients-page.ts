@@ -21,7 +21,9 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
+import type { IngredientAllergenChange } from '../allergen-propagation';
 import { IngredientPanel } from '../ingredient-panel/ingredient-panel';
+import { IngredientPropagation } from '../ingredient-propagation/ingredient-propagation';
 import { ProvenanceStore } from '../provenance.store';
 import {
   ALLERGEN_STATE_OPTIONS,
@@ -55,6 +57,7 @@ import {
     FoldElementTitleComponent,
     FoldPaginatorComponent,
     FoldViewToggleComponent,
+    IngredientPropagation,
   ],
   templateUrl: './ingredients-page.html',
   styleUrl: './ingredients-page.scss',
@@ -71,6 +74,8 @@ export class IngredientsPage {
   protected readonly allergenState = signal<AllergenStateFilter>('all');
   protected readonly allergenStateOptions = ALLERGEN_STATE_OPTIONS;
   protected readonly page = signal(1);
+  /** Le dernier changement d'allergènes enregistré, tant que sa propagation est à trancher. */
+  protected readonly propagation = signal<IngredientAllergenChange | null>(null);
   protected readonly pageSize = signal(25);
 
   /** L'état d'allergènes puis la recherche, côté client — motif de `products-page`. */
@@ -184,9 +189,17 @@ export class IngredientsPage {
   }
 
   protected open(ingredient?: IngredientView): void {
-    this.panelHost.open<boolean>(IngredientPanel, {
+    const ref = this.panelHost.open<
+      { ingredient: IngredientView } | undefined,
+      IngredientAllergenChange | true
+    >(IngredientPanel, {
       side: 'right',
-      ...(ingredient === undefined ? {} : { data: { ingredient } }),
+      data: ingredient === undefined ? undefined : { ingredient },
+    });
+    void ref.closed.then((result) => {
+      if (result !== undefined && result !== true) {
+        this.propagation.set(result);
+      }
     });
   }
 

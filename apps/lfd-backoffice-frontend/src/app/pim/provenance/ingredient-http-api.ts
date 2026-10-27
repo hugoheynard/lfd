@@ -2,6 +2,8 @@ import { HttpClient } from '@angular/common/http';
 import { Injectable, inject } from '@angular/core';
 import type {
   AppellationView,
+  ApplyIngredientAllergenPropagationPayload,
+  IngredientAllergenPropagationView,
   CreateIngredientPayload,
   IngredientView,
   ProductIngredientAllergensView,
@@ -69,6 +71,39 @@ export class IngredientHttpApi {
   /** La liste ENTIÈRE de ce que la matière contient, pas un delta. */
   async setAllergens(key: string, payload: SetIngredientAllergensPayload): Promise<void> {
     await firstValueFrom(this.http.put(`${this.base}/ingredients/${key}/allergens`, payload));
+  }
+
+  /**
+   * Ce que l'ajout ou le retrait d'allergènes d'un ingrédient ferait à ses
+   * fiches — un aperçu, rien n'est écrit (D5 : la composition propose).
+   */
+  allergenPropagation(
+    key: string,
+    added: readonly string[],
+    removed: readonly string[],
+  ): Promise<IngredientAllergenPropagationView> {
+    return firstValueFrom(
+      this.http.get<IngredientAllergenPropagationView>(
+        `${this.base}/ingredients/${key}/allergen-propagation`,
+        { params: { added: added.join(','), removed: removed.join(',') } },
+      ),
+    );
+  }
+
+  /**
+   * Applique la propagation ; le serveur recalcule l'aperçu au moment
+   * d'appliquer et rend l'aperçu RELU — pas ce qui vient d'être appliqué.
+   */
+  applyAllergenPropagation(
+    key: string,
+    payload: ApplyIngredientAllergenPropagationPayload,
+  ): Promise<IngredientAllergenPropagationView> {
+    return firstValueFrom(
+      this.http.post<IngredientAllergenPropagationView>(
+        `${this.base}/ingredients/${key}/allergen-propagation`,
+        payload,
+      ),
+    );
   }
 
   /** La liste ENTIÈRE et ordonnée de ce que la fiche cite. */
