@@ -382,6 +382,17 @@ Choix faits au bâti, que le plan ne précisait pas :
   d'une commande `exact_ht` y est encore calculé HT : C2 ne part pas en
   production sans C3.
 
+## 9 quater. C2 retiré du déploiement du 2026-10-27
+
+Hugo : « on déploie sans C2 ». C2 (`4ef1316be`) est annulé par un `git
+revert` sur `dev` avant la mise en production ; C1 reste (aucun appelant).
+**Pour le faire revenir** : annuler ce revert, **et renommer sa migration**
+(`20261027100000_la_commande_d_un_particulier_en_ttc`) avec un horodatage
+postérieur à la dernière migration déployée — elle est aujourd'hui plus
+ancienne que `20261027110000_le_prix_pro_est_toujours_saisi`, appliquée en
+production avec R3 (relecture `lecteur-de-migrations`, 2026-10-27). C2 repart
+avec C3, et après la réponse du cabinet (§ 10, Q1).
+
 ## 10. Décisions et questions
 
 - **Décidé par Hugo le 2026-10-27** : « on sépare le calcul particulier » — le
