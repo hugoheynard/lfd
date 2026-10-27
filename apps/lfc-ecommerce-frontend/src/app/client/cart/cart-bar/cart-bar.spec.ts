@@ -126,7 +126,9 @@ describe('CartBar — le pied collé', () => {
     expect(pay(fixture)?.disabled).toBe(false);
     expect(el(fixture).querySelector('.count')?.textContent?.trim()).toBe('14');
     expect(pay(fixture)?.textContent).toContain(COMMAND_TERMS_FR.pay);
-    expect(el(fixture).querySelector('.total')?.textContent?.trim()).toBe(formatCents(2092));
+    expect(el(fixture).querySelector('.total')?.textContent?.trim()).toBe(
+      `${formatCents(2092)} TTC`,
+    );
   });
 
   it('émet `pay` au clic sur Régler', () => {

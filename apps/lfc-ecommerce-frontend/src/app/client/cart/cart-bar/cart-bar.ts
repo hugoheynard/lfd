@@ -6,7 +6,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
 import { serviceWhenLabel } from '../../format-day';
-import { formatCents } from '../../format-money';
+import { shownCartTotalLabel } from '../shown-cart-total';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCart } from '../client-cart.service';
 
@@ -53,7 +53,8 @@ export class CartBar {
   protected readonly count = this.cart.count;
 
   /** Le total du DEVIS, remise déduite — celui que la barre du bureau montre. */
-  protected readonly total = computed(() => formatCents(this.cart.totals().totalCents));
+  /** Le même total que « Régler » au bureau : HT au compte, TTC sinon, base écrite. */
+  protected readonly total = shownCartTotalLabel();
 
   /** « demain 7 h 15 » — même lecture que la barre « Ma commande ». */
   protected readonly when = computed(() => {
