@@ -937,3 +937,11 @@ app-service-doors {
     margin-top: -6rem;
   }
 }
+
+/* Les bandes pleine largeur, collées l'une à l'autre : aucun écart entre elles,
+   chacune sort elle-même de la colonne. */
+.bands {
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}

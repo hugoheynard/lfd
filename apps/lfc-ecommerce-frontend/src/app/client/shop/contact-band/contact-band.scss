@@ -1,4 +1,5 @@
-/* Les mesures de la maquette du 2026-09-20 : `padding:26px; border-radius:22px;
+/* (Historique — la bande n'est plus une carte depuis le 2026-10-27.)
+   Les mesures de la maquette du 2026-09-20 : `padding:26px; border-radius:22px;
    background:#eaeffb; border:1.5px solid #a9bde8`. Les trois valeurs de couleur
    ont leur token — `ink-50` et `ink-300` sont à un cheveu des siennes — et c'est
    par le token qu'elles passent : une pâle de plus dans la rampe bleue serait
@@ -12,11 +13,12 @@
   flex-wrap: wrap;
   align-items: center;
   gap: var(--fold-space-2xl);
-  padding: var(--fold-space-xl);
-  border: 1.5px solid var(--lfc-ink-300);
-  border-radius: var(--lfc-radius-3xl);
+  /* 🔴 UNE BANDE PLEINE LARGEUR, plus une carte (Hugo, 2026-10-27) : bleu
+     pâle, bord à bord, collée à celle des incontournables. Le contenu reste
+     aligné sur la colonne. Marge négative délibérée (débordement voulu). */
+  margin-inline: calc(50% - 50vw);
+  padding: var(--fold-space-2xl) calc(50vw - 50%);
   background: var(--lfc-ink-50);
-  box-shadow: var(--lfc-shadow-promo);
 }
 
 /* Les deux colonnes se replient TOUTES SEULES sous ~660 px : les bases sont

@@ -295,11 +295,12 @@
          Sa place est celle de la référence : après les portes (ou le bandeau),
          avant tout ce qui vend. Un numéro de téléphone posé après une promo se
          lirait comme un recours ; posé ici, il est une option de plus. -->
-    <app-contact-band [copy]="contact()" />
-
-    <!-- « NOS INCONTOURNABLES » AU-DESSUS DES SUIVIS (Hugo, lot A5,
-         2026-10-26) : ce qu'on vient choisir passe avant ce qu'on suit. -->
-    <app-home-featured />
+    <!-- LES DEUX BANDES COLLÉES (Hugo, 2026-10-27) : contact en bleu pâle,
+         puis incontournables en bleu de marque, bord à bord, sans écart. -->
+    <div class="bands">
+      <app-contact-band [copy]="contact()" />
+      <app-home-featured />
+    </div>
 
     <!-- MES SUIVIS — le puits des commandes vivantes, à la place que la
          maquette lui donne (`captures/12-suivis.png`), juste après la bande de
