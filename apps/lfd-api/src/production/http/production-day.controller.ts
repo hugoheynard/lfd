@@ -14,7 +14,11 @@ import { contentDispositionAttachment, sanitiseFileName } from "@lfd/storage";
 import type { Response } from "express";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface, RequirePermission } from "../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequireAnyPermission,
+  RequirePermission,
+} from "../../platform/auth/admin-surface.decorator.js";
 import { ZodParam, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CloseProductionDayCommand } from "../application/commands/close-production-day.command.js";
 import { ReopenProductionDayCommand } from "../application/commands/reopen-production-day.command.js";
@@ -170,10 +174,13 @@ export class ProductionDayController {
   /**
    * **Le compte à rebours d'une journée** — pour chaque produit, ce qui doit
    * être sorti avant chaque heure, cumulé (plan production par vagues, V0).
-   * Lecture seule, prévision calculée par le commerce ; même garde que le
-   * prévisionnel (`production_plan`).
+   * Lecture seule, prévision calculée par le commerce. Ouverte au prévisionnel
+   * (`production_plan`) ET à la fiche d'atelier (`production_worksheet`), qui
+   * montre les tranches au fournil : un rôle « fournil » n'a que la seconde, et
+   * sa fiche aurait dit les tranches illisibles (relevé le 2026-10-28).
    */
   @Get("batch/:date/due-thresholds")
+  @RequireAnyPermission("production_plan:read", "production_worksheet:read")
   async dueThresholds(@Param("date", DAY) date: string): Promise<ProductionDueThresholdsView> {
     return this.queries.execute<GetProductionDueThresholdsQuery, ProductionDueThresholdsView>(
       new GetProductionDueThresholdsQuery(date),

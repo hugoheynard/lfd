@@ -207,3 +207,47 @@ describe("les seuils du jour rangés en tranches (T2)", () => {
     ]);
   });
 });
+
+/**
+ * Régression : la fiche d'atelier lit les tranches, mais la route n'était
+ * ouverte qu'au prévisionnel — un rôle « fournil » n'ayant que la fiche voyait
+ * « tranches illisibles » (relevé le 2026-10-28).
+ */
+describe("qui lit les tranches", () => {
+  async function staffAllowedOnly(
+    sub: string,
+    resource: "production_worksheet" | "production_packing",
+  ): Promise<void> {
+    const row = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: sub,
+        email: `${sub}@lfc.test`,
+        role: "communication",
+        status: "active",
+        auth0Id: sub,
+      },
+    });
+    await ctx.prisma.staffPermissionOverride.create({
+      data: { staffUserId: row.id, resource, action: "read", effect: "allow" },
+    });
+  }
+
+  it("la fiche d'atelier seule les lit", async () => {
+    await staffAllowedOnly("staff-tranches-fournil", "production_worksheet");
+
+    await ctx
+      .asSub("staff-tranches-fournil")
+      .get(`/admin/production/batch/${DAY}/due-thresholds`)
+      .expect(200);
+  });
+
+  it("un droit sans rapport ne les lit pas", async () => {
+    await staffAllowedOnly("staff-tranches-colisage", "production_packing");
+
+    await ctx
+      .asSub("staff-tranches-colisage")
+      .get(`/admin/production/batch/${DAY}/due-thresholds`)
+      .expect(403);
+  });
+});
