@@ -30,8 +30,8 @@
 
 ## 2. Le modèle
 
-> 🔍 **Contredit par vitruve le 2026-10-28** : six BLOQUANTS, levés ci-dessous
-> par des propositions marquées **(à valider)** au §4.
+> 🔍 **Contredit par vitruve le 2026-10-28** : six BLOQUANTS, levés ci-dessous ;
+> les choix qu'ils demandaient ont été tranchés par Hugo le même jour (§4).
 
 - **Une unité de vente par déclinaison**, choisie dans **« Tarif & TVA »** par
   un sélecteur « Vendre à la pièce » / « Vendre au poids » (Hugo,
@@ -51,11 +51,12 @@
   le prix pro HT saisis sur la fiche s'entendent alors par kilogramme ; les
   deux prix au kilo informatifs n'ont plus d'objet sur cette déclinaison et
   ne s'affichent pas.
-- 🔴 **Les règles de prix ne mêlent pas les unités** **(à valider)** : une
-  règle, un barème, un plancher, une mercuriale ou un gabarit de portée
-  **globale ou de famille ne s'applique pas** à un article au poids ; seules
-  les décisions de portée **produit ou déclinaison** le visent, et elles se
-  lisent au kilo et en grammes (`minQuantity` en grammes, montants au kilo).
+- 🔴 **Les règles de prix ne mêlent pas les unités** (Hugo, 2026-10-28) : une
+  décision qui couvre **plusieurs articles à la fois** — règle, barème ou
+  plancher de portée **globale ou de famille** — **ne s'applique pas** à un
+  article au poids. Celles qui visent **un article** s'appliquent et se lisent
+  au kilo et en grammes : règle ou plancher de portée produit ou déclinaison,
+  **mercuriale** et gabarit (une ligne par SKU, ses paliers en grammes).
   Tenu par la résolution (le domaine écarte) ET par l'écriture (une décision
   de portée produit qui couvrirait des déclinaisons des deux unités est
   refusée). Les décisions existantes ne visent aucun article au poids
@@ -86,8 +87,12 @@
   **refusée** au serveur (le domaine), jamais corrigée en silence.
 - **Les paliers de volume** d'un article au poids se lisent en grammes ; les
   écrans les saisissent et les disent en kilogrammes.
-- **L'affichage** : « 1,250 kg » (trois décimales au plus, sans zéros
-  inutiles : « 1,25 kg », « 500 g » sous le kilo), « 12,40 € / kg ».
+- **L'affichage** (Hugo, 2026-10-28) : dans la boutique, le panier, les
+  e-mails et les fiches, **grammes sous le kilo, kilos au-delà** — « 20 g »,
+  « 500 g », « 1,25 kg », « 2 kg » (jamais « 0,02 kg ») ; « 12,40 € / kg ».
+  **Sur la facture et l'avoir, toujours en kilos à trois décimales**
+  (« 0,020 kg », « 1,250 kg ») : Factur-X porte une unité par ligne, `KGM`, et
+  le PDF dit la même chose que son XML.
 - **Production, colisage, livraison, retrait** : une ligne au poids se compte
   en grammes et se dit en kilogrammes. Au colisage, elle se met au bac comme
   **un lot** (pas une pièce par gramme) ; un manquant se déclare en grammes.
@@ -95,13 +100,14 @@
   `handover-counter-view.ts`, camembert `count-color-shares.ts`, médiane des
   recommandations, alertes d'écart) **comptent un article au poids pour une
   ligne**, jamais ses grammes.
-- **Hors de ce plan, refusés au domaine pour un article au poids**
-  **(à valider)** : les abonnements, les engagements de volume, le réassort
+- **Hors de ce plan, refusés au domaine pour un article au poids** (Hugo,
+  2026-10-28) : les abonnements, les engagements de volume, le réassort
   des boutiques. Chacun a ses quantités en `Int` sans unité ; les y faire
   entrer est un autre chantier.
 - **La borne d'une ligne** : `MAX_LINE_QUANTITY` (10 000) vaut pour les
-  pièces ; une ligne au poids a la sienne, `MAX_LINE_WEIGHT_GRAMS`
-  **(à valider : 50 kg)**, et le refus la dit en kilogrammes.
+  pièces ; une ligne au poids n'a **pas de limite métier** (Hugo,
+  2026-10-28), seulement une garde contre la faute de frappe,
+  `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (une tonne), dite en kilogrammes.
 - **Facture** : `KGM`, quantité = grammes (millièmes de kilogramme), prix
   unitaire au kilo ; `H87` inchangé pour les pièces. 🔴 Aujourd'hui
   `invoice-from-dossier.ts:36` passe la quantité par `InvoiceQuantity.units`,
@@ -125,16 +131,15 @@
 | P6  | Production, colisage, livraison, manquants : grammes comptés, kilogrammes dits, lot au bac.                                                                                                                                                                                                                                                                                         | api, back-office  |
 | P7  | Facture et avoir : `KGM` et la quantité en millièmes ; PDF « 1,250 kg » ; Factur-X validé contre le XSD et le schematron du dépôt pour une ligne au poids.                                                                                                                                                                                                                          | api               |
 
-## 4. À valider par Hugo avant P1
+## 4. Tranché par Hugo le 2026-10-28
 
-1. Les décisions de prix **globales et de famille ne s'appliquent pas** aux
-   articles au poids (seules celles de produit ou de déclinaison).
-2. ✅ Tranché le 2026-10-28 : un sélecteur dans « Tarif & TVA », modifiable
-   jusqu'à la première publication, puis figé ; pièce ET poids = deux
-   déclinaisons ; minimum facultatif.
-3. Abonnements, engagements de volume et réassort : **hors de ce plan**,
-   refusés pour un article au poids.
-4. La borne d'une ligne au poids : **50 kg** ?
+1. Les décisions qui couvrent plusieurs articles (globales, de famille) ne
+   s'appliquent pas au poids ; la mercuriale et les décisions d'un article, si.
+2. Un sélecteur dans « Tarif & TVA », modifiable jusqu'à la première
+   publication ; pièce ET poids = deux déclinaisons ; minimum facultatif.
+3. Abonnements, engagements de volume et réassort : hors de ce plan.
+4. Pas de limite métier ; une garde d'une tonne contre la faute de frappe.
+5. Grammes sous le kilo à l'écran ; kilos à trois décimales sur la facture.
 
 ## 5. Ce qui ne change pas
 
