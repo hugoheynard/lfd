@@ -2209,6 +2209,13 @@
           "variables": []
         },
         {
+          "key": "commandTerms.firstDayMoved",
+          "fr": "Les commandes ouvrent le {day} : votre commande a été déplacée à cette date.",
+          "en": "Orders open on {day}: your order has been moved to that date.",
+          "it": "Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data.",
+          "variables": ["day"]
+        },
+        {
           "key": "commandTerms.pickup",
           "fr": "Retrait",
           "en": "Pickup",

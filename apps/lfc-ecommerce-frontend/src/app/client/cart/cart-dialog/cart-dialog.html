@@ -79,6 +79,7 @@
       }
       <!-- Le même encadré que le popover du panier, « Modifier » compris. -->
       <app-service-day-callout />
+      <app-first-day-moved-callout />
     } @else if (serviceOffered()) {
       <button class="ask" type="button" (click)="pickService()">
         <span class="ask-title">{{ t().shop.pickService }}</span>

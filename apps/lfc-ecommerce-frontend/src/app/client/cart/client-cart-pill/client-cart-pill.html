@@ -42,6 +42,7 @@
            catalogue, et le popover est au démarrage (budget de 1 400 kB). -->
       @defer (when open()) {
         <app-service-day-callout (changing)="open.set(false)" />
+        <app-first-day-moved-callout />
       }
       <app-cart-summary />
     </div>

@@ -237,6 +237,16 @@ export class OrderContextStore {
    */
   readonly draft = signal<OrderDraft | null>(null);
 
+  /**
+   * La date d'ouverture à laquelle la journée retenue vient d'être RAMENÉE,
+   * ou `null`. Posée par l'effet du premier jour commandable, effacée quand
+   * le client ferme la notice (`FirstDayMovedCallout`) : sans elle, le
+   * déplacement se faisait en silence — la régression du 2026-10-13 (« je
+   * croyais commander pour demain… »). Elle ne revient que si la date bouge
+   * de nouveau : une journée déjà à la date ou après ne la pose pas.
+   */
+  readonly movedToFirstDay = signal<string | null>(null);
+
   /** Le dernier espace CONNU — `null` tant que `/me` n'a pas répondu. */
   private seen: string | null = null;
 
@@ -316,12 +326,18 @@ export class OrderContextStore {
         return;
       }
       const choice = this.choice();
+      let moved = false;
       if (choice !== null && choice.date < floor) {
         this.choice.set({ ...choice, date: floor });
+        moved = true;
       }
       const draft = this.draft();
       if (draft?.date !== undefined && draft.date < floor) {
         this.draft.set({ ...draft, date: floor });
+        moved = true;
+      }
+      if (moved) {
+        this.movedToFirstDay.set(floor);
       }
     });
 

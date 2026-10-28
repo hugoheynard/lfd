@@ -246,6 +246,8 @@ describe('OrderContextStore — le premier jour commandable', () => {
 
     expect(store.choice()).toEqual({ ...AU_LABO, date: '2026-09-10' });
     expect(store.draft()).toEqual({ date: '2026-09-10', mode: 'pickup' });
+    // Le déplacement se DIT : la notice lit cette date (régression 2026-10-13).
+    expect(store.movedToFirstDay()).toBe('2026-09-10');
   });
 
   it('garde un jour choisi à la date ou après', () => {
@@ -256,6 +258,7 @@ describe('OrderContextStore — le premier jour commandable', () => {
     TestBed.tick();
 
     expect(store.choice()?.date).toBe('2026-09-07');
+    expect(store.movedToFirstDay()).toBeNull();
   });
 });
 

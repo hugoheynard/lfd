@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1706 textes
+## Sommaire — 1707 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -20,7 +20,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
-| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
+| [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 18 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 6 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1706** |
+| **Total** | | **1707** |
 
 ## Le parcours de commande
 
@@ -422,7 +422,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 
 ### Barre de commande — la maison et l’heure retenues — `commandTerms`
 
-Source : `screens/command-terms.copy.ts` · 38 textes.
+Source : `screens/command-terms.copy.ts` · 39 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -449,6 +449,7 @@ Source : `screens/command-terms.copy.ts` · 38 textes.
 | `commandTerms.itemTooLateOthers` | {count} articles de votre panier : trop tard pour {day}, possible à partir de {next}. | {count} items in your basket: too late for {day}, available from {next}. | {count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}. | `{count}` `{day}` `{next}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
+| `commandTerms.firstDayMoved` | Les commandes ouvrent le {day} : votre commande a été déplacée à cette date. | Orders open on {day}: your order has been moved to that date. | Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data. | `{day}` |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |
 | `commandTerms.delivery` | Livraison | Delivery | Consegna |  |
 | `commandTerms.pieceOne` | {n} pièce | {n} piece | {n} pezzo | `{n}` |

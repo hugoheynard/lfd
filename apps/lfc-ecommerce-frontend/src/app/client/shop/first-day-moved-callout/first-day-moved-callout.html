@@ -1,0 +1,19 @@
+<!-- La journée retenue a été ramenée à la date d'ouverture : on le dit, sans
+     retenir le règlement (lot J4, 2026-10-28). -->
+@if (message(); as text) {
+  <fold-callout variant="warning" announce data-first-day-moved>
+    {{ text }}
+    <button
+      actions
+      foldButton
+      size="sm"
+      intent="warning"
+      emphasis="soft"
+      type="button"
+      data-first-day-moved-close
+      (click)="dismiss()"
+    >
+      {{ c().close }}
+    </button>
+  </fold-callout>
+}

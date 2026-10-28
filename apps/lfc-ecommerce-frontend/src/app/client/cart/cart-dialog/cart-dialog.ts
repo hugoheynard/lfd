@@ -48,6 +48,7 @@ import { OrderOpeningStore } from '../../shop/order-opening.store';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { ServiceDayNotice } from '../../shop/service-day-notice';
 import { ServiceDayCallout } from '../../shop/service-day-callout/service-day-callout';
+import { FirstDayMovedCallout } from '../../shop/first-day-moved-callout/first-day-moved-callout';
 import { commandTermsCopy } from '../../copy/screens/command-terms.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
 
@@ -85,6 +86,7 @@ const AFTER_SIGN_IN = '/boutique';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CartSummary,
+    FirstDayMovedCallout,
     FoldCalloutComponent,
     FoldCheckboxComponent,
     GuestIdentityForm,

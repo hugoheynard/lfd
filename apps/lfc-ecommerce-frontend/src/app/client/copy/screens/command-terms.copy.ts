@@ -34,6 +34,13 @@ export interface CommandTermsCopy {
    */
   readonly slipped: string;
   /**
+   * La journée retenue précédait le premier jour commandable : la boutique
+   * l'y a ramenée d'elle-même (plan `plan-premier-jour-commandable.md`, J4).
+   * `{day}` la date d'ouverture en toutes lettres. Une seule formule, comme
+   * {@link slipped} : elle vaut en retrait comme en livraison.
+   */
+  readonly firstDayMoved: string;
+  /**
    * Le nom complet du « Modifier » de l'encadré du jour (2026-10-26) : le
    * texte visible est {@link edit}, et le nom le contient (RGAA 6.1).
    */
@@ -152,6 +159,7 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
     '{count} articles de votre panier : trop tard pour {day}, possible à partir de {next}.',
   modeTitle: 'Retrait ou coursier ?',
   close: 'Fermer',
+  firstDayMoved: 'Les commandes ouvrent le {day} : votre commande a été déplacée à cette date.',
   pickup: 'Retrait',
   delivery: 'Livraison',
   pieceOne: '{n} pièce',
@@ -193,6 +201,7 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   itemTooLateOthers: '{count} items in your basket: too late for {day}, available from {next}.',
   modeTitle: 'Pickup or courier?',
   close: 'Close',
+  firstDayMoved: 'Orders open on {day}: your order has been moved to that date.',
   pickup: 'Pickup',
   delivery: 'Delivery',
   pieceOne: '{n} piece',
@@ -236,6 +245,7 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
     '{count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.',
   modeTitle: 'Ritiro o corriere?',
   close: 'Chiudi',
+  firstDayMoved: 'Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data.',
   pickup: 'Ritiro',
   delivery: 'Consegna',
   pieceOne: '{n} pezzo',

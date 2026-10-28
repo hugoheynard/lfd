@@ -17,6 +17,7 @@ import { OrderContextStore } from '../../order-context.store';
 import { pickupOffer } from '../pickup-discount';
 import { ServicePoints } from '../pickup-points.store';
 import { ServiceDayNotice } from '../service-day-notice';
+import { FirstDayMovedCallout } from '../first-day-moved-callout/first-day-moved-callout';
 
 /**
  * **La barre « Ma commande »** — la maison et l'heure retenues à gauche, le
@@ -53,7 +54,7 @@ import { ServiceDayNotice } from '../service-day-notice';
 @Component({
   selector: 'app-order-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent],
+  imports: [FoldButtonComponent, FoldCalloutComponent, FirstDayMovedCallout],
   templateUrl: './order-bar.html',
   styleUrl: './order-bar.scss',
 })

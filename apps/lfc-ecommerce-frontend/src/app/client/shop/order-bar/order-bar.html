@@ -38,6 +38,7 @@
             notice
           }}</fold-callout>
         }
+        <app-first-day-moved-callout />
 
         <!-- En LIVRAISON, ni maison ni heure de fournée : une adresse et un
            jour (Hugo, 2026-10-13). Les deux mènent au dialogue du coursier,
@@ -78,6 +79,7 @@
             notice
           }}</fold-callout>
         }
+        <app-first-day-moved-callout />
         <span class="acts">
           <button class="act" type="button" (click)="houseRequested.emit()">
             {{ bothModesOpen() ? c().chooseMode : c().choose }}
