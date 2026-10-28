@@ -98,6 +98,8 @@ class FakePoints {
    * liste vide ne ferme alors pas le retrait (2026-10-16).
    */
   readonly pickupsKnown = signal(false);
+  /** Le nombre de points est su (ou sa lecture a échoué) : vrai par défaut, les portes se peignent. */
+  readonly pickupsSettled = signal(true);
   hydrate(): Promise<void> {
     return Promise.resolve();
   }
@@ -203,6 +205,9 @@ let homeState: StorefrontPageState | null = null;
 /** Le réglage de contact servi au montage suivant ; le défaut est vide. */
 let contactSettings: PublicContactSettingsView = NO_CONTACT_SETTINGS;
 
+/** Le double des points du dernier montage, pour faire varier son état. */
+let lastPoints = new FakePoints();
+
 async function mount(
   points: readonly PickupAddressView[],
   who: Regard = 'visiteur',
@@ -211,6 +216,7 @@ async function mount(
 ): Promise<ComponentFixture<AccueilPublic>> {
   const store = new FakePoints();
   store.pickups.set(points);
+  lastPoints = store;
   const boutique = new FakeShop(sold);
   TestBed.configureTestingModule({
     imports: [AccueilPublic],
@@ -439,6 +445,25 @@ describe('AccueilPublic — les trois états', () => {
     expect(door.textContent).toContain('ma commande');
     expect(door.textContent).toContain('À la date et l’heure de mon choix.');
     expect(door.querySelector('.door-cta')?.textContent?.trim()).toBe('Je commande');
+  });
+
+  /**
+   * Régression : la porte peignait le texte général puis, la liste reçue, le
+   * texte « une seule maison » — Hugo voyait son texte une seconde (2026-10-28).
+   */
+  it('ne peint pas les portes avant de savoir combien de points servent', async () => {
+    const fixture = await mount([point({ id: 'a', label: 'Le Labo' })], 'pro');
+    const store = lastPoints;
+
+    store.pickupsSettled.set(false);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('app-service-doors')).toBeNull();
+
+    store.pickupsSettled.set(true);
+    fixture.detectChanges();
+    expect(fixture.nativeElement.querySelector('.door-pickup')?.textContent).toContain(
+      'Retrait en boutique',
+    );
   });
 
   /** « Je commande » sur les deux portes (Hugo, 2026-10-27). */

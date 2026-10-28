@@ -75,14 +75,19 @@
       @if (!serviceOffered()) {
         <fold-callout variant="alert">{{ t().shop.noService }}</fold-callout>
       }
-      <app-service-doors
-        [pickupCopy]="pickupDoor()"
-        [courierCopy]="courierDoor()"
-        [pickupOffered]="pickupOffered()"
-        [courierState]="courierState()"
-        (pickupChosen)="openPickupDoor()"
-        (courierChosen)="openCourierDoor()"
-      />
+      <!-- Les portes attendent de savoir combien de points servent : la porte du
+           retrait se nomme quand il n'y en a qu'un, et peindre l'autre texte
+           d'abord le faisait clignoter (2026-10-28). -->
+      @if (doorsReady()) {
+        <app-service-doors
+          [pickupCopy]="pickupDoor()"
+          [courierCopy]="courierDoor()"
+          [pickupOffered]="pickupOffered()"
+          [courierState]="courierState()"
+          (pickupChosen)="openPickupDoor()"
+          (courierChosen)="openCourierDoor()"
+        />
+      }
     }
 
     @if (!pro()) {

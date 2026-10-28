@@ -101,6 +101,18 @@ export class ServicePoints {
     return reader !== null && reader === this.readerKey();
   });
 
+  /** La dernière lecture des points a échoué : on ne saura pas mieux. */
+  private readonly pickupsFailed = signal(false);
+
+  /**
+   * La liste est servie, OU sa lecture a échoué (2026-10-28). Ce qui dépend du
+   * NOMBRE de points — la porte du retrait, qui se nomme quand il n'y en a
+   * qu'un — attend ce moment plutôt que de peindre une variante puis l'autre :
+   * Hugo voyait son texte une seconde avant que le texte « une seule maison »
+   * ne le remplace. Un échec ne la fait pas attendre pour toujours.
+   */
+  readonly pickupsSettled = computed(() => this.pickupsKnown() || this.pickupsFailed());
+
   readonly zones = this.zoneList.asReadonly();
 
   /** Les journées servies, une par porte — telles que le serveur les rend. */
@@ -227,12 +239,14 @@ export class ServicePoints {
         this.pickupList.set(pickups.map(servedPickup));
         this.pickupsReader = reader;
         this.servedFor.set(reader);
+        this.pickupsFailed.set(false);
       }
       this.zoneList.set(zones);
       this.dayList.set(days);
       this.settingsHeld.set(settings === null ? null : servedSettings(settings));
     } catch {
       this.asked = false;
+      this.pickupsFailed.set(true);
     }
   }
 
@@ -255,9 +269,11 @@ export class ServicePoints {
       if (this.pickupsReader === reader) {
         this.pickupList.set(pickups.map(servedPickup));
         this.servedFor.set(reader);
+        this.pickupsFailed.set(false);
       }
     } catch {
       // La liste connue reste : voir plus haut.
+      this.pickupsFailed.set(true);
     }
   }
 

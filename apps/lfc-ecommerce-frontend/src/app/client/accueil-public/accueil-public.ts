@@ -230,6 +230,9 @@ export class AccueilPublic {
    * n'est ouverte, l'écran le dit au lieu d'un parcours qui mène au refus.
    */
   protected readonly pickupOffered = computed(() => this.doors.pickupOpen());
+
+  /** Le nombre de points est connu (ou sa lecture a échoué) : les portes peuvent se peindre. */
+  protected readonly doorsReady = this.points.pickupsSettled;
   protected readonly deliveryOffered = computed(() => this.doors.deliveryOpen());
   protected readonly serviceOffered = computed(() => this.doors.serviceOffered());
 
