@@ -9,6 +9,7 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { ClientWorkspace } from '../client-workspace.service';
 import { OrderAdmissionStore } from './order-admission.store';
 import { OrderOpeningStore } from './order-opening.store';
+import { ShopClock } from './shop-clock';
 
 interface Monde {
   readonly authenticated: boolean;
@@ -32,6 +33,7 @@ function setUp({ authenticated, open, firstDay = null }: Monde): {
           accessToken$: () => of('jeton'),
         },
       },
+      { provide: ShopClock, useValue: { now: signal(new Date('2026-10-27T08:00:00.000Z')) } },
       { provide: ClientWorkspace, useValue: { current: signal('c1') } },
       {
         provide: OrderOpeningStore,
@@ -188,6 +190,56 @@ describe('OrderAdmissionStore', () => {
       await settle();
 
       expect(store.firstServiceDay()).toBe('2026-11-03');
+    });
+  });
+
+  describe('earlyAccess', () => {
+    async function answered(monde: Monde, answer: object): Promise<OrderAdmissionStore> {
+      const { store, http } = setUp(monde);
+      TestBed.tick();
+      await settle();
+      http.expectOne((r) => r.url.endsWith('/order-admission/mine')).flush(answer);
+      await settle();
+      return store;
+    }
+
+    it('exempté d’une date future : accès anticipé avant l’ouverture de ce jour', async () => {
+      const store = await answered(
+        { authenticated: true, open: true, firstDay: '2026-11-05' },
+        { ordersOpen: true, canOrder: true, firstServiceDay: null },
+      );
+      expect(store.earlyAccess()).toEqual({ kind: 'beforeOpening', day: '2026-11-05' });
+    });
+
+    it('non exempté : rien, sa date reste la sienne', async () => {
+      const store = await answered(
+        { authenticated: true, open: true, firstDay: '2026-11-05' },
+        { ordersOpen: true, canOrder: true, firstServiceDay: '2026-11-05' },
+      );
+      expect(store.earlyAccess()).toBeNull();
+    });
+
+    it('rien quand la date de la clientèle est déjà atteinte', async () => {
+      const store = await answered(
+        { authenticated: true, open: true, firstDay: '2026-10-27' },
+        { ordersOpen: true, canOrder: true, firstServiceDay: null },
+      );
+      expect(store.earlyAccess()).toBeNull();
+    });
+
+    it('fermée et admis : accès pendant la fermeture', async () => {
+      const store = await answered(
+        { authenticated: true, open: false },
+        { ordersOpen: false, canOrder: true },
+      );
+      expect(store.earlyAccess()).toEqual({ kind: 'duringClosure' });
+    });
+
+    it('ouverte et sans date : rien, et rien n’est demandé', () => {
+      const { store, http } = setUp({ authenticated: true, open: true });
+      TestBed.tick();
+      http.expectNone((r) => r.url.includes('/order-admission'));
+      expect(store.earlyAccess()).toBeNull();
     });
   });
 });

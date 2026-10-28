@@ -22,6 +22,7 @@ import { limitHourLabel } from '../cutoff-labels';
 import { MonthPicker } from '../month-picker/month-picker';
 import { OrderContextStore } from '../../order-context.store';
 import { ORDER_DIALOG } from '../order-dialog';
+import { OrderAdmissionStore } from '../order-admission.store';
 import { ServicePoints } from '../pickup-points.store';
 import { isServedDay, servedWindow, todayService } from '../served-days';
 import { ShopClock } from '../shop-clock';
@@ -88,6 +89,7 @@ export class DayPickerDialog {
   protected readonly c = screenCopy('dayPicker', dayPickerCopy);
 
   private readonly order = inject(OrderContextStore);
+  private readonly admission = inject(OrderAdmissionStore);
 
   /** Ce qui est déjà acquis — le mode, la maison —, jamais un numéro d'étape. */
   protected readonly kicker = computed(() => {
@@ -114,11 +116,22 @@ export class DayPickerDialog {
   private readonly window = computed(() => servedWindow(this.points.days(), this.points.lastDay()));
 
   /**
-   * « Commandes à partir du jeudi 30 octobre », ou `null` : aucune date pour
+   * « Retraits et livraisons à partir du jeudi 30 octobre », ou `null` : aucune date pour
    * qui regarde, ou elle est atteinte (lot J4 du plan
    * `plan-premier-jour-commandable.md`). Les jours d'avant restent grisés.
+   * Une personne exemptée lit à la place son accès anticipé
+   * ({@link OrderAdmissionStore.earlyAccess}).
    */
   protected readonly firstOrderableLine = computed<string | null>(() => {
+    const early = this.admission.earlyAccess();
+    if (early !== null) {
+      const copy = this.c();
+      return early.kind === 'duringClosure'
+        ? copy.earlyAccessDuringClosure
+        : fill(copy.earlyAccessBeforeOpening, {
+            day: fullDayLabel(early.day, this.locale.current()),
+          });
+    }
     const floor = this.points.firstOrderableDay();
     if (floor === null || floor <= this.today()) {
       return null;

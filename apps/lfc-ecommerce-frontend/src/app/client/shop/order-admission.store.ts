@@ -7,7 +7,9 @@ import { firstValueFrom, switchMap } from 'rxjs';
 import { AUTH_CONFIG } from '../../auth/auth.config';
 import { AuthFacade } from '../../auth/auth.facade';
 import { ClientWorkspace } from '../client-workspace.service';
+import { SHOP_TIME_ZONE } from '../shop-time-zone';
 import { OrderOpeningStore } from './order-opening.store';
+import { ShopClock } from './shop-clock';
 
 /** Ce que le serveur a répondu pour un espace (`ClientWorkspace.current`). */
 interface MineAnswer {
@@ -21,6 +23,22 @@ interface GuestAnswer {
   readonly canOrder: boolean;
   readonly firstServiceDay: string | null;
 }
+
+/**
+ * Pourquoi CETTE personne peut commander quand sa clientèle ne le peut pas
+ * encore : une date d'ouverture future la laisse passer avant (`day`), ou la
+ * boutique fermée l'admet quand même.
+ */
+export type EarlyAccess =
+  { readonly kind: 'beforeOpening'; readonly day: string } | { readonly kind: 'duringClosure' };
+
+/** Le jour de Paris (`AAAA-MM-JJ`) sans le baril `@lfd/contracts` : ce store est au démarrage. */
+const PARIS_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: SHOP_TIME_ZONE,
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
 
 const keyOf = (email: string): string => email.trim().toLowerCase();
 
@@ -52,6 +70,7 @@ export class OrderAdmissionStore {
   private readonly auth = inject(AuthFacade);
   private readonly workspace = inject(ClientWorkspace);
   private readonly opening = inject(OrderOpeningStore);
+  private readonly clock = inject(ShopClock);
 
   private readonly mine = signal<MineAnswer | null>(null);
   private readonly guestEmail = signal<string | null>(null);
@@ -77,6 +96,24 @@ export class OrderAdmissionStore {
   readonly firstServiceDay = computed<string | null>(() => {
     const own = this.ownAnswer();
     return own === null ? this.opening.firstServiceDay() : own.firstServiceDay;
+  });
+
+  /**
+   * **L'accès anticipé** de qui regarde, ou `null` : la boutique fermée à sa
+   * clientèle l'admet quand même, ou sa clientèle a une date d'ouverture
+   * FUTURE dont le serveur l'a dite exemptée. `null` tant que la réponse pour
+   * elle manque — on n'annonce pas une exemption qu'on n'a pas lue.
+   */
+  readonly earlyAccess = computed<EarlyAccess | null>(() => {
+    if (!this.opening.ordersOpen()) {
+      return this.admitted() ? { kind: 'duringClosure' } : null;
+    }
+    const day = this.opening.firstServiceDay();
+    const own = this.ownAnswer();
+    if (day === null || own === null || own.firstServiceDay !== null) {
+      return null;
+    }
+    return day > PARIS_DAY.format(this.clock.now()) ? { kind: 'beforeOpening', day } : null;
   });
 
   /** La réponse du serveur pour qui regarde maintenant, ou `null` tant qu'elle manque. */

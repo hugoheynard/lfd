@@ -34,6 +34,13 @@ export interface DayPickerCopy {
    * `plan-premier-jour-commandable.md`, lot J4) : `{day}` en toutes lettres.
    */
   readonly firstOrderableDay: string;
+  /**
+   * À la place de la ligne précédente, pour qui une exemption couvre : la
+   * clientèle ouvre plus tard (`{day}` en toutes lettres), ou la boutique lui
+   * est fermée.
+   */
+  readonly earlyAccessBeforeOpening: string;
+  readonly earlyAccessDuringClosure: string;
   /** Les noms des flèches du calendrier (lus, pas vus). */
   readonly previousMonth: string;
   readonly nextMonth: string;
@@ -58,7 +65,10 @@ export const DAY_PICKER_FR: DayPickerCopy = {
   nextGroup: 'Les jours suivants',
   closed: 'Non proposé',
   otherDate: 'Autre date',
-  firstOrderableDay: 'Commandes à partir du {day}',
+  firstOrderableDay: 'Retraits et livraisons à partir du {day}',
+  earlyAccessBeforeOpening: 'Accès anticipé : vous pouvez choisir un jour avant le {day}.',
+  earlyAccessDuringClosure:
+    'Accès anticipé : vous pouvez commander pendant la fermeture de la boutique.',
   previousMonth: 'Mois précédent',
   nextMonth: 'Mois suivant',
   none: {
@@ -81,7 +91,9 @@ export const DAY_PICKER_EN: DayPickerCopy = {
   nextGroup: 'The following days',
   closed: 'Not offered',
   otherDate: 'Another date',
-  firstOrderableDay: 'Orders open from {day}',
+  firstOrderableDay: 'Pickups and deliveries from {day}',
+  earlyAccessBeforeOpening: 'Early access: you can choose a day before {day}.',
+  earlyAccessDuringClosure: 'Early access: you can order while the shop is closed.',
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
   none: {
@@ -104,7 +116,9 @@ export const DAY_PICKER_IT: DayPickerCopy = {
   nextGroup: 'I giorni successivi',
   closed: 'Non disponibile',
   otherDate: 'Altra data',
-  firstOrderableDay: 'Ordini a partire da {day}',
+  firstOrderableDay: 'Ritiri e consegne a partire da {day}',
+  earlyAccessBeforeOpening: 'Accesso anticipato: potete scegliere un giorno prima di {day}.',
+  earlyAccessDuringClosure: 'Accesso anticipato: potete ordinare durante la chiusura del negozio.',
   previousMonth: 'Mese precedente',
   nextMonth: 'Mese successivo',
   none: {

@@ -75,6 +75,8 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   dropAria: 'Retirer du panier — lecteur d’écran',
   due: 'Commande à régler',
   dueOn: 'Échéance le',
+  earlyAccessBeforeOpening: 'Accès anticipé — avant l’ouverture',
+  earlyAccessDuringClosure: 'Accès anticipé — pendant la fermeture',
   earlyDiscount: 'Escompte',
   edit: 'Modifier',
   editDay: 'Modifier le jour — nom complet du bouton',

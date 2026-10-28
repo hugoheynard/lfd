@@ -2409,10 +2409,24 @@
         },
         {
           "key": "dayPicker.firstOrderableDay",
-          "fr": "Commandes à partir du {day}",
-          "en": "Orders open from {day}",
-          "it": "Ordini a partire da {day}",
+          "fr": "Retraits et livraisons à partir du {day}",
+          "en": "Pickups and deliveries from {day}",
+          "it": "Ritiri e consegne a partire da {day}",
           "variables": ["day"]
+        },
+        {
+          "key": "dayPicker.earlyAccessBeforeOpening",
+          "fr": "Accès anticipé : vous pouvez choisir un jour avant le {day}.",
+          "en": "Early access: you can choose a day before {day}.",
+          "it": "Accesso anticipato: potete scegliere un giorno prima di {day}.",
+          "variables": ["day"]
+        },
+        {
+          "key": "dayPicker.earlyAccessDuringClosure",
+          "fr": "Accès anticipé : vous pouvez commander pendant la fermeture de la boutique.",
+          "en": "Early access: you can order while the shop is closed.",
+          "it": "Accesso anticipato: potete ordinare durante la chiusura del negozio.",
+          "variables": []
         },
         {
           "key": "dayPicker.previousMonth",

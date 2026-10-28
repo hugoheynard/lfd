@@ -8,6 +8,7 @@ import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
 import { AuthFacade } from '../../../auth/auth.facade';
+import { type EarlyAccess, OrderAdmissionStore } from '../order-admission.store';
 import { ServicePoints } from '../pickup-points.store';
 import { ShopClock } from '../shop-clock';
 import { DayPickerDialog } from './day-picker-dialog';
@@ -20,6 +21,7 @@ async function boot(
   days: readonly FulfillmentDayView[],
   lastDay: string | null = null,
   firstOrderableDay: string | null = null,
+  earlyAccess: EarlyAccess | null = null,
 ): Promise<{
   readonly el: HTMLElement;
   readonly closed: (string | undefined)[];
@@ -34,6 +36,7 @@ async function boot(
       provideHttpClientTesting(),
       { provide: FoldPanelRef, useValue: { close: (v: string | undefined) => closed.push(v) } },
       { provide: ShopClock, useValue: { now: signal(NOW) } },
+      { provide: OrderAdmissionStore, useValue: { earlyAccess: signal(earlyAccess) } },
       {
         provide: AuthFacade,
         useValue: { isAuthenticated: signal(false), accessToken$: () => of('jeton') },
@@ -154,7 +157,7 @@ describe('DayPickerDialog', () => {
     expect(button(el, '2026-10-28')?.disabled).toBe(true);
     expect(button(el, '2026-10-29')?.disabled).toBe(false);
     expect(el.querySelector('[data-first-orderable-day]')?.textContent?.trim()).toBe(
-      'Commandes à partir du jeudi 29 octobre',
+      'Retraits et livraisons à partir du jeudi 29 octobre',
     );
   });
 
@@ -162,5 +165,31 @@ describe('DayPickerDialog', () => {
     const { el } = await boot([{ pickupAddressId: 'pick_labo', date: TODAY, orderUntil: null }]);
 
     expect(el.querySelector('[data-first-orderable-day]')).toBeNull();
+  });
+
+  it('exempté d’une date future : dit l’accès anticipé à la place de la date', async () => {
+    const { el } = await boot(
+      [{ pickupAddressId: 'pick_labo', date: TODAY, orderUntil: null }],
+      null,
+      null,
+      { kind: 'beforeOpening', day: '2026-10-29' },
+    );
+
+    expect(el.querySelector('[data-first-orderable-day]')?.textContent?.trim()).toBe(
+      'Accès anticipé : vous pouvez choisir un jour avant le jeudi 29 octobre.',
+    );
+  });
+
+  it('fermée et admis : dit l’accès pendant la fermeture', async () => {
+    const { el } = await boot(
+      [{ pickupAddressId: 'pick_labo', date: TODAY, orderUntil: null }],
+      null,
+      null,
+      { kind: 'duringClosure' },
+    );
+
+    expect(el.querySelector('[data-first-orderable-day]')?.textContent?.trim()).toBe(
+      'Accès anticipé : vous pouvez commander pendant la fermeture de la boutique.',
+    );
   });
 });
