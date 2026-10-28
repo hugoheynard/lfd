@@ -48,6 +48,7 @@ const KINDS: readonly FoldViewToggleOption[] = [
   { value: 'contact', label: REQUEST_KIND_LABELS.contact },
   { value: 'order_problem', label: REQUEST_KIND_LABELS.order_problem },
   { value: 'order_change', label: REQUEST_KIND_LABELS.order_change },
+  { value: 'email_reply', label: REQUEST_KIND_LABELS.email_reply },
 ];
 const PRIORITIES: readonly FoldViewToggleOption[] = [
   { value: 'all', label: 'Toutes' },
@@ -150,7 +151,13 @@ export class DemandesPage {
   }
 
   protected selectKind(value: string): void {
-    const kind = pick(value, ['all', 'contact', 'order_problem', 'order_change'] as const);
+    const kind = pick(value, [
+      'all',
+      'contact',
+      'order_problem',
+      'order_change',
+      'email_reply',
+    ] as const);
     if (kind === undefined) return;
     this.kind.set(kind);
     void this.load();

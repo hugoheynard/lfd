@@ -73,6 +73,35 @@ describe('CustomerRequestCard', () => {
     ).not.toBeNull();
   });
 
+  it('une réponse par e-mail rend son texte hostile en TEXTE, et présume compte et adresse', async () => {
+    const hostile = '<script>alert(1)</script>\n<a href="https://evil.example">clic</a>';
+    const fixture = await mount({
+      ...CONTACT,
+      kind: 'email_reply',
+      message: hostile,
+      companyId: 'co_1',
+      details: {
+        kind: 'email_reply',
+        subject: 'Re: commande',
+        attachments: [],
+        authentication: { spf: 'none', dkim: 'none', dmarc: 'none', dkimAligned: false },
+        senderVerified: false,
+        orderId: null,
+        orderNumber: null,
+      },
+    });
+    const text = host(fixture).querySelector('[data-text]');
+    expect(text?.textContent).toBe(hostile);
+    expect(text?.querySelector('script, a')).toBeNull();
+    expect(host(fixture).querySelector('script')).toBeNull();
+    expect(host(fixture).querySelector('a[href^="mailto:"]')).toBeNull();
+    expect(host(fixture).querySelector('a[href*="evil"]')).toBeNull();
+    expect(host(fixture).querySelector('a[data-company]')?.textContent).toContain('présumé');
+    expect(host(fixture).textContent).toContain('Société présumée');
+    expect(host(fixture).querySelector('app-email-reply-details [data-unverified]')).not.toBeNull();
+    expect(host(fixture).querySelector('button[data-handle]')).not.toBeNull();
+  });
+
   it('« Marquer traité » remonte à la boîte, sans rien écrire', async () => {
     const fixture = await mount(CONTACT);
     let asked = 0;

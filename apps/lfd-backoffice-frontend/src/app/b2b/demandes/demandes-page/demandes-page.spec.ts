@@ -58,6 +58,15 @@ const DETAILS_OF: Readonly<Record<RequestKind, CustomerRequestView['details']>> 
     change: null,
     decision: { kind: 'refused', reason: 'Trop tard.' },
   },
+  email_reply: {
+    kind: 'email_reply',
+    subject: 'Re: votre commande',
+    attachments: [],
+    authentication: { spf: 'pass', dkim: 'pass', dmarc: 'pass', dkimAligned: true },
+    senderVerified: true,
+    orderId: null,
+    orderNumber: null,
+  },
 };
 
 class FakeRequests {

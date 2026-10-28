@@ -1,0 +1,32 @@
+<div class="erd">
+  @if (!details().senderVerified) {
+    <div>
+      <fold-badge variant="warning" content="Expéditeur non vérifié" data-unverified />
+    </div>
+  }
+  <fold-field-list>
+    <fold-field label="Objet" placeholder="Sans objet" [empty]="details().subject === ''">
+      <span class="erd-text" data-subject>{{ details().subject }}</span>
+    </fold-field>
+    <fold-field
+      label="Commande présumée"
+      placeholder="Aucune commande citée"
+      [empty]="details().orderId === null"
+    >
+      @if (details().orderId; as orderId) {
+        <a [routerLink]="['/commandes', orderId]" data-order-link>
+          {{ details().orderNumber ?? 'Voir la commande' }}
+        </a>
+      }
+    </fold-field>
+    <fold-field label="Pièces jointes" placeholder="Aucune" [empty]="attachments().length === 0">
+      <ul class="erd-attachments">
+        @for (file of attachments(); track $index) {
+          <li class="erd-text" data-attachment>
+            {{ file.filename }} · {{ file.contentType }} · {{ file.size }}
+          </li>
+        }
+      </ul>
+    </fold-field>
+  </fold-field-list>
+</div>

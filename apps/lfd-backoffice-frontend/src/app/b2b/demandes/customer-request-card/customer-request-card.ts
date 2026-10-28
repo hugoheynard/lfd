@@ -51,6 +51,13 @@ export class CustomerRequestCard {
   readonly handling = input(false);
   readonly handle = output();
 
+  /**
+   * Une réponse par e-mail n'authentifie pas son expéditeur : son compte et sa
+   * société sont PRÉSUMÉS, et son adresse n'est pas rendue cliquable (plan
+   * `plan-reponses-par-e-mail.md`, §2).
+   */
+  protected readonly presumed = computed(() => this.request().kind === 'email_reply');
+
   protected readonly kindLabel = computed(() => REQUEST_KIND_LABELS[this.request().kind]);
   protected readonly priorityLabel = computed(
     () => REQUEST_PRIORITY_LABELS[this.request().priority],

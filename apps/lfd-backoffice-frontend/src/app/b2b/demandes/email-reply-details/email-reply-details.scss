@@ -1,0 +1,19 @@
+.erd {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+/* Un texte venu de l'extérieur : il casse plutôt que de déborder. */
+.erd-text {
+  overflow-wrap: anywhere;
+}
+
+.erd-attachments {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}

@@ -26,7 +26,11 @@
       }}</fold-field>
       <fold-field label="E-mail" placeholder="—" [empty]="request().authorEmail === ''">
         @if (request().authorEmail !== '') {
-          <a [href]="'mailto:' + request().authorEmail">{{ request().authorEmail }}</a>
+          @if (presumed()) {
+            {{ request().authorEmail }}
+          } @else {
+            <a [href]="'mailto:' + request().authorEmail">{{ request().authorEmail }}</a>
+          }
         }
       </fold-field>
       <fold-field
@@ -36,12 +40,14 @@
         >{{ request().authorPhone }}</fold-field
       >
       <fold-field
-        label="Société"
+        [label]="presumed() ? 'Société présumée' : 'Société'"
         placeholder="Visiteur ou particulier"
         [empty]="request().companyId === null"
       >
         @if (request().companyId; as companyId) {
-          <a [routerLink]="['/comptes-clients', companyId]" data-company>Voir le compte client</a>
+          <a [routerLink]="['/comptes-clients', companyId]" data-company>{{
+            presumed() ? 'Voir le compte client présumé' : 'Voir le compte client'
+          }}</a>
         }
       </fold-field>
     </fold-field-list>
