@@ -41,6 +41,17 @@ describe('OrderDayFilter — le filtre « du … au … » (plan du récapitulat
     expect(emitted).toEqual([]);
   });
 
+  /**
+   * Régression : taper l'année émettait `0020-12-10` en route vers 2020, et le
+   * serveur répondait 400 (relevé en production le 2026-10-28).
+   */
+  it('n’émet pas une année en cours de frappe, seulement l’année finie', () => {
+    for (const typing of ['0002-12-10', '0020-12-10', '0202-12-10', '2020-12-10']) {
+      field('data-day-from').value.set(typing);
+    }
+    expect(emitted).toEqual([{ from: '2020-12-10', to: null }]);
+  });
+
   it('un champ vidé retire sa borne', () => {
     boot({ from: '2026-10-01', to: '2026-10-15' });
     field('data-day-to').value.set('');

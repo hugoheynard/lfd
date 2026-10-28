@@ -15,6 +15,19 @@ import { NO_DAYS, type OrderDays } from '../client-order-history.service';
  * resterait sur l'ancienne réponse sans rien dire. Une borne posée, la phrase
  * dit ce qu'elle écarte : les commandes sans date.
  */
+/**
+ * La première année qu'un jour de commande peut porter. Le champ de date émet
+ * à CHAQUE chiffre de l'année : taper « 2020 » passe par `0002`, `0020`,
+ * `0202`. Relues au serveur, ces années en cours de frappe rendaient un 400
+ * dans la console (relevé en production le 2026-10-28).
+ */
+const FIRST_ORDER_YEAR = 2000;
+
+/** Un jour qu'on a fini de taper — vide compris, qui efface la borne. */
+function settled(value: string): boolean {
+  return value === '' || Number(value.slice(0, 4)) >= FIRST_ORDER_YEAR;
+}
+
 @Component({
   selector: 'app-order-day-filter',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -34,10 +47,16 @@ export class OrderDayFilter {
   protected readonly bounded = computed(() => this.days().from !== null || this.days().to !== null);
 
   protected chooseFrom(value: string): void {
+    if (!settled(value)) {
+      return;
+    }
     this.emit({ from: value === '' ? null : value, to: this.days().to });
   }
 
   protected chooseTo(value: string): void {
+    if (!settled(value)) {
+      return;
+    }
     this.emit({ from: this.days().from, to: value === '' ? null : value });
   }
 
