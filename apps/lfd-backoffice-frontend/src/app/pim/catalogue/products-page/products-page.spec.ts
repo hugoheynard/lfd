@@ -14,8 +14,17 @@ function category(id: string, name: string, position: number): Category {
   return { id, name: { fr: name }, position, isArchived: false } as Category;
 }
 
-function product(id: string, categoryId: string, status: ProductStatus, variantCount = 1): Product {
-  const variants = Array.from({ length: variantCount }, (_, i) => ({ id: `${id}-v${String(i)}` }));
+function product(
+  id: string,
+  categoryId: string,
+  status: ProductStatus,
+  variantCount = 1,
+  weightVariants = 0,
+): Product {
+  const variants = Array.from({ length: variantCount }, (_, i) => ({
+    id: `${id}-v${String(i)}`,
+    saleUnit: i < weightVariants ? 'weight' : 'piece',
+  }));
   return {
     id,
     sku: id.toUpperCase(),
@@ -133,6 +142,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
           archivees: null,
           images: null,
           declinaisons: null,
+          vente: null,
         },
         replaceUrl: true,
       }),
@@ -186,6 +196,23 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     expect(rows(element)).toEqual(['P2']);
   });
 
+  it('« Au poids » garde les fiches dont UNE déclinaison est au poids, et le retient dans l’URL', async () => {
+    const products = [product('p1', 'pain', 'published', 2, 1), product('p2', 'pain', 'draft', 1)];
+    const { element, chip, navigate } = await render({}, undefined, products);
+    await chip('data-products-sale', 'Au poids');
+    expect(rows(element)).toEqual(['P1']);
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: expect.objectContaining({ vente: 'poids' }) }),
+    );
+  });
+
+  it('lit « À la pièce » dans l’URL', async () => {
+    const products = [product('p1', 'pain', 'published', 2, 1), product('p2', 'pain', 'draft', 1)];
+    const { element } = await render({ vente: 'piece' }, undefined, products);
+    expect(rows(element)).toEqual(['P2']);
+  });
+
   it('lever le masque montre tout', async () => {
     const { element, mask, settle } = await render();
     mask()?.click();
@@ -235,6 +262,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
             archivees: null,
             images: null,
             declinaisons: null,
+            vente: null,
           },
         }),
       );

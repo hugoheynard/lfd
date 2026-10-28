@@ -53,6 +53,14 @@
       [value]="filter().variants"
       (valueChange)="chooseVariants($event)"
     />
+    <fold-view-toggle
+      data-products-sale
+      ariaLabel="Filtrer par unité de vente"
+      size="sm"
+      [options]="saleOptions"
+      [value]="filter().sale"
+      (valueChange)="chooseSale($event)"
+    />
     <!-- Hors de « Toutes », l'état choisit déjà : la case se grise et se lit
          décochée, parce qu'elle ne cache plus rien. -->
     <fold-checkbox

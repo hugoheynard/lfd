@@ -54,6 +54,7 @@ import {
   PRECAUTIONARY,
   type ProductsFilter,
   type StatusFilter,
+  type SaleFilter,
   type VariantsFilter,
 } from './products-filter';
 import { httpErrorMessage } from '@lfd/endpoints';
@@ -124,6 +125,12 @@ export class ProductsPage {
     { value: 'all', label: 'Toutes déclinaisons' },
     { value: 'single', label: 'Une déclinaison' },
     { value: 'multiple', label: 'Plusieurs déclinaisons' },
+  ];
+
+  protected readonly saleOptions: readonly { value: SaleFilter; label: string }[] = [
+    { value: 'all', label: 'Toutes' },
+    { value: 'piece', label: 'À la pièce' },
+    { value: 'poids', label: 'Au poids' },
   ];
 
   protected readonly statusOptions: readonly { value: StatusFilter; label: string }[] = [
@@ -312,6 +319,11 @@ export class ProductsPage {
 
   protected toggleMask(hideArchived: boolean): void {
     this.setFilter({ ...this.filter(), hideArchived });
+  }
+
+  protected chooseSale(value: string): void {
+    const sale = this.saleOptions.find((option) => option.value === value)?.value;
+    this.setFilter({ ...this.filter(), sale: sale ?? 'all' });
   }
 
   protected chooseVariants(value: string): void {

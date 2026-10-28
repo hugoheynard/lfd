@@ -10,6 +10,15 @@ export const ALL_FAMILIES = '';
 /** « Tous les états » — idem. */
 export const ALL_STATUSES = '';
 
+/** Au poids dès qu'une déclinaison l'est ; à la pièce sinon — `all` ne filtre rien. */
+function saleMatches(product: Product, sale: SaleFilter): boolean {
+  if (sale === 'all') {
+    return true;
+  }
+  const byWeight = product.variants.some((v) => v.saleUnit === 'weight');
+  return sale === 'poids' ? byWeight : !byWeight;
+}
+
 /**
  * « Activables » — les brouillons qu'une activation accepterait. Valeur
  * d'URL dans la langue des statuts (`etat=draft`), décidé le 2026-10-26.
@@ -34,6 +43,10 @@ export const PRECAUTIONARY = 'precautionary';
 /** Le filtre des déclinaisons : toutes les fiches, une seule déclinaison, ou plusieurs. */
 export type VariantsFilter = 'all' | 'single' | 'multiple';
 const VARIANTS_FILTERS: readonly VariantsFilter[] = ['all', 'single', 'multiple'];
+
+/** L'unité de vente : toutes, à la pièce, ou au poids (une déclinaison au poids suffit). */
+export type SaleFilter = 'all' | 'piece' | 'poids';
+const SALE_FILTERS: readonly SaleFilter[] = ['all', 'piece', 'poids'];
 
 /** Ce que l'état peut valoir dans le filtre : un statut, un jugement du serveur, ou tous. */
 export type StatusFilter =
@@ -65,6 +78,8 @@ export interface ProductsFilter {
   readonly withoutImages: boolean;
   /** Le nombre de déclinaisons (Hugo, 2026-10-28). */
   readonly variants: VariantsFilter;
+  /** L'unité de vente (Hugo, 2026-10-28) : une fiche est « au poids » si une déclinaison l'est. */
+  readonly sale: SaleFilter;
 }
 
 export const DEFAULT_FILTER: ProductsFilter = {
@@ -73,6 +88,7 @@ export const DEFAULT_FILTER: ProductsFilter = {
   hideArchived: true,
   withoutImages: false,
   variants: 'all',
+  sale: 'all',
 };
 
 const STATUSES: readonly StatusFilter[] = [
@@ -92,6 +108,7 @@ const PARAM_STATUS = 'etat';
 const PARAM_ARCHIVED = 'archivees';
 const PARAM_IMAGES = 'images';
 const PARAM_VARIANTS = 'declinaisons';
+const PARAM_SALE = 'vente';
 /** `images=sans` : seules les fiches sans image. */
 const IMAGES_NONE = 'sans';
 /** `archivees=visibles` : le masque est levé. */
@@ -122,7 +139,8 @@ export function filterProducts(
       !(hide && p.status === 'archived') &&
       // Une liste qui ne dit rien (`illustrated` absent) ne passe pas pour sans image.
       (!filter.withoutImages || p.illustrated === false) &&
-      variantsMatch(p, filter.variants),
+      variantsMatch(p, filter.variants) &&
+      saleMatches(p, filter.sale),
   );
 }
 
@@ -182,6 +200,7 @@ export function filterFromParams(params: ParamMap): ProductsFilter {
     hideArchived: params.get(PARAM_ARCHIVED) !== ARCHIVED_SHOWN,
     withoutImages: params.get(PARAM_IMAGES) === IMAGES_NONE,
     variants: VARIANTS_FILTERS.find((v) => v === params.get(PARAM_VARIANTS)) ?? 'all',
+    sale: SALE_FILTERS.find((v) => v === params.get(PARAM_SALE)) ?? 'all',
   };
 }
 
@@ -193,5 +212,6 @@ export function filterToParams(filter: ProductsFilter): Params {
     [PARAM_ARCHIVED]: filter.hideArchived ? null : ARCHIVED_SHOWN,
     [PARAM_IMAGES]: filter.withoutImages ? IMAGES_NONE : null,
     [PARAM_VARIANTS]: filter.variants === 'all' ? null : filter.variants,
+    [PARAM_SALE]: filter.sale === 'all' ? null : filter.sale,
   };
 }
