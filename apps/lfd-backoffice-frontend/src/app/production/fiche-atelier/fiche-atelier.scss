@@ -106,7 +106,10 @@
   gap: var(--fold-space-md);
 }
 
+/* En haut de la bande, à hauteur de l'horloge : sans titre sous elle, la
+   ligne du jour ne descend plus au pied des chiffres (Hugo, 2026-10-28). */
 .fa-said {
+  align-self: flex-start;
   min-width: 0;
 }
 
