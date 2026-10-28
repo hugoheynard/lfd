@@ -273,14 +273,10 @@ describe('une ligne, vue par produit', () => {
 });
 
 /** Régression : « 143 avant 7 h » se coupait, segment trop étroit à côté d'un gros (2026-10-28). */
-describe('rowsOf — un libellé jamais coupé', () => {
-  const seg = (max: number) => ({ value: 0, max, tone: 'muted' as const, label: String(max) });
+describe('rowsOf — deux paliers par rangée', () => {
+  const seg = (label: string) => ({ value: 0, max: 100, tone: 'muted' as const, label });
 
-  it('met deux paliers comparables sur la même rangée', () => {
-    expect(rowsOf([seg(100), seg(120), seg(90)]).map((row) => row.length)).toEqual([2, 1]);
-  });
-
-  it('met seul un palier trop petit à côté de son voisin', () => {
-    expect(rowsOf([seg(143), seg(2000)]).map((row) => row.length)).toEqual([1, 1]);
+  it('range par deux, la suite en dessous', () => {
+    expect(rowsOf([seg('a'), seg('b'), seg('c')]).map((row) => row.length)).toEqual([2, 1]);
   });
 });
