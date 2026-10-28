@@ -181,6 +181,7 @@
           @if (!compact()) {
             <fold-view-toggle
               class="fa-view"
+              activeStyle="raised"
               size="sm"
               ariaLabel="Lecture de la fiche"
               [options]="viewOptions"
@@ -203,6 +204,7 @@
           @if (compact()) {
             <fold-view-toggle
               class="fa-view"
+              activeStyle="raised"
               ariaLabel="Lecture de la fiche"
               [options]="viewOptions"
               [value]="view()"
