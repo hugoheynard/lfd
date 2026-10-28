@@ -1,3 +1,4 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 
 import { FoldLinkComponent, FoldPanelHostService } from 'fold-ng';
@@ -33,7 +34,7 @@ import { LEGAL_YEAR } from './legal-identity';
 @Component({
   selector: 'app-client-foot',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldLinkComponent],
+  imports: [FoldLinkComponent, NgTemplateOutlet],
   templateUrl: './client-foot.html',
   styleUrl: './client-foot.scss',
 })
@@ -48,6 +49,19 @@ export class ClientFoot {
   protected readonly legal = this.content.identity;
 
   protected readonly year = LEGAL_YEAR;
+
+  /** L'ordre des trois colonnes après la marque. */
+  protected readonly columns = this.content.footerColumns;
+
+  /** Une adresse hors de la boutique — elle s'ouvre à côté. */
+  protected isExternal(href: string): boolean {
+    return href.startsWith('http');
+  }
+
+  /** Le nom d'un lien qui ouvre un onglet : le mot, puis « nouvel onglet ». */
+  protected newTab(label: string): string {
+    return fill(this.t().nav.newTab, { name: label });
+  }
 
   /**
    * Les réseaux enregistrés, avec le mot qui les nomme.

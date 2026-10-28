@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
 import type {
+  FooterColumn,
   ContentLocale,
   FooterLocaleContent,
   LegalIdentity,
@@ -29,6 +30,8 @@ import { legalMentionLabels, legalMentionOrder } from '@lfd/contracts/content-va
 export class FooterPreview {
   readonly content = input.required<FooterLocaleContent>();
   readonly identity = input.required<LegalIdentity>();
+  /** L'ordre des trois colonnes après la marque. */
+  readonly columns = input.required<readonly FooterColumn[]>();
   /** La langue affichée : c'est elle qui choisit le mot de chaque mention. */
   readonly locale = input.required<ContentLocale>();
   /** Quelles mentions s'affichent — la même décision dans les trois langues. */

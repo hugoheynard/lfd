@@ -3,6 +3,7 @@ import {
   commercialContactSchema,
   DEFAULT_COMMERCIAL_CONTACT_EMAIL,
   footerContentSchema,
+  footerEntrySchema,
   legalIdentitySchema,
 } from "../platform-content.js";
 
@@ -189,5 +190,42 @@ describe("le contenu de départ", () => {
       expect(content.help.links.length).toBeGreaterThan(0);
       expect(content.legal.links.length).toBeGreaterThan(0);
     }
+  });
+});
+
+describe("les lignes à lien et l'ordre des colonnes (2026-10-28)", () => {
+  /** Régression possible : une ligne enregistrée avant le lien était une chaîne nue. */
+  it("relit une ligne d'avant, chaîne nue, comme un mot sans lien", () => {
+    const fr = DEFAULT_FOOTER_CONTENT.fr;
+    const saved = {
+      ...DEFAULT_FOOTER_CONTENT,
+      columns: undefined,
+      fr: { ...fr, order: { ...fr.order, links: ["Suivre ma commande"] } },
+    };
+
+    const parsed = footerContentSchema.parse(saved);
+
+    expect(parsed.fr.order.links).toEqual([{ label: "Suivre ma commande", href: "" }]);
+    expect(parsed.columns).toEqual(["houses", "order", "help"]);
+  });
+
+  it("garde un lien vers une page, l'extérieur, une messagerie", () => {
+    for (const href of ["/boutique", "https://exemple.fr", "mailto:a@b.fr", "tel:+33400000000"]) {
+      expect(footerEntrySchema.safeParse({ label: "Mot", href }).success).toBe(true);
+    }
+  });
+
+  it("refuse un lien qui ne mène nulle part de connu", () => {
+    expect(footerEntrySchema.safeParse({ label: "Mot", href: "javascript:alert(1)" }).success).toBe(
+      false,
+    );
+  });
+
+  it("refuse une colonne en double ou manquante", () => {
+    const twice = { ...DEFAULT_FOOTER_CONTENT, columns: ["houses", "houses", "help"] };
+    const short = { ...DEFAULT_FOOTER_CONTENT, columns: ["houses", "help"] };
+
+    expect(footerContentSchema.safeParse(twice).success).toBe(false);
+    expect(footerContentSchema.safeParse(short).success).toBe(false);
   });
 });

@@ -1,6 +1,11 @@
 import { z } from "zod";
 
-import { contentLocales, socialChannels, type LegalMention } from "./platform-content.defaults.js";
+import {
+  contentLocales,
+  footerColumns,
+  socialChannels,
+  type LegalMention,
+} from "./platform-content.defaults.js";
 
 /**
  * **Le contenu de plateforme** — les textes de la vitrine, tenus par le staff.
@@ -171,8 +176,38 @@ export const footerHouseSchema = z.object({
 });
 export type FooterHouse = z.infer<typeof footerHouseSchema>;
 
-/** Un lien du pied de page. Le libellé seul tant que les destinations n'existent pas. */
+/** Un libellé du pied de page, sans destination — celui du bandeau légal déprécié. */
 export const footerLinkSchema = z.string().trim().min(1).max(120);
+
+/**
+ * Une ligne des colonnes « Commander » et « Aide et contact » : un mot, et
+ * peut-être une destination.
+ *
+ * `href` vide = le mot reste du texte. Une adresse qui commence par `/` mène
+ * à une page de la boutique, `https://` vers l'extérieur, `mailto:` / `tel:`
+ * à une messagerie.
+ *
+ * 🔴 Aucune migration : une ligne enregistrée avant le 2026-10-28 est une
+ * chaîne nue, et le `preprocess` la relit comme un mot sans lien. Le parse de
+ * l'adaptateur échouerait sinon, et l'API servirait le contenu de départ à la
+ * place de ce que le staff a saisi.
+ */
+export const footerEntrySchema = z.preprocess(
+  (raw) => (typeof raw === "string" ? { label: raw, href: "" } : raw),
+  z.object({
+    label: z.string().trim().min(1).max(120),
+    href: z
+      .string()
+      .trim()
+      .max(300)
+      .refine(
+        (v) => v === "" || /^(\/|https?:\/\/|mailto:|tel:)/.test(v),
+        "lien invalide — « / », « https:// », « mailto: » ou « tel: »",
+      )
+      .default(""),
+  }),
+);
+export type FooterEntry = z.infer<typeof footerEntrySchema>;
 
 /**
  * Le pied de page dans UNE langue : quatre sections verticales, puis le bandeau
@@ -194,13 +229,13 @@ export const footerLocaleContentSchema = z.object({
   /** ③ Commander — la navigation par INTENTION, pas par rubrique. */
   order: z.object({
     head: z.string().trim().min(1).max(60),
-    links: z.array(footerLinkSchema).min(1).max(10),
+    links: z.array(footerEntrySchema).min(1).max(10),
   }),
   /** ④ Aide et contact. */
   help: z.object({
     head: z.string().trim().min(1).max(60),
     phoneHours: z.string().trim().min(1).max(120),
-    links: z.array(footerLinkSchema).min(1).max(10),
+    links: z.array(footerEntrySchema).min(1).max(10),
   }),
   /** Le bandeau légal — la barre qui ferme le pied. */
   legal: z.object({
@@ -283,6 +318,16 @@ export const footerContentSchema = z.object({
     accessibility: true,
     termsOfUse: true,
   }),
+  /**
+   * L'ordre des trois colonnes après la marque — un seul pour les trois
+   * langues : ranger n'est pas traduire (Hugo, 2026-10-28). Chacune y figure
+   * exactement une fois ; `.default` relit les lignes d'avant sans migration.
+   */
+  columns: z
+    .array(z.enum(footerColumns))
+    .length(footerColumns.length)
+    .refine((cols) => new Set(cols).size === cols.length, "une colonne ne figure qu'une fois")
+    .default([...footerColumns]),
   fr: footerLocaleContentSchema,
   en: footerLocaleContentSchema,
   it: footerLocaleContentSchema,

@@ -220,3 +220,57 @@ describe('AppFooterPage — le contact commercial de Mon compte', () => {
     expect(api.saved[0]?.identity).toEqual(DEFAULT_FOOTER_CONTENT.identity);
   });
 });
+
+/** Clique le premier bouton-icône portant cette infobulle, dans l'ordre du document. */
+function clickIcon(fixture: ComponentFixture<AppFooterPage>, tooltip: string, nth = 0): void {
+  const host = fixture.nativeElement.querySelectorAll(`fold-button-icon[tooltip="${tooltip}"]`)[
+    nth
+  ];
+  const button = host?.querySelector('button');
+  if (!(button instanceof HTMLButtonElement)) {
+    throw new Error(`Bouton « ${tooltip} » introuvable.`);
+  }
+  button.click();
+  fixture.detectChanges();
+}
+
+describe('AppFooterPage — ranger les colonnes et les lignes (2026-10-28)', () => {
+  it('recule une colonne, une fois pour les trois langues', async () => {
+    const { fixture, api } = await render();
+
+    // La première « Reculer » est celle des maisons, première colonne rangeable.
+    clickIcon(fixture, 'Reculer');
+    await save(fixture);
+
+    expect(api.saved[0]?.columns).toEqual(['order', 'houses', 'help']);
+  });
+
+  it('ajoute une ligne à Commander dans les trois langues, sans lien', async () => {
+    const { fixture, api } = await render();
+    const before = DEFAULT_FOOTER_CONTENT.fr.order.links.length;
+
+    const add = [...fixture.nativeElement.querySelectorAll('button')].find(
+      (node): node is HTMLButtonElement =>
+        node instanceof HTMLButtonElement && (node.textContent ?? '').includes('Ajouter une ligne'),
+    );
+    add?.click();
+    fixture.detectChanges();
+    await save(fixture);
+
+    for (const locale of ['fr', 'en', 'it'] as const) {
+      expect(api.saved[0]?.[locale].order.links).toHaveLength(before + 1);
+      expect(api.saved[0]?.[locale].order.links.at(-1)).toEqual({ label: '', href: '' });
+    }
+  });
+
+  it('descend une ligne dans les trois langues', async () => {
+    const { fixture, api } = await render();
+    const [first, second] = DEFAULT_FOOTER_CONTENT.en.order.links;
+
+    // « Descendre » : d'abord les maisons (2), puis la première ligne de Commander.
+    clickIcon(fixture, 'Descendre', DEFAULT_FOOTER_CONTENT.fr.houses.items.length);
+    await save(fixture);
+
+    expect(api.saved[0]?.en.order.links.slice(0, 2)).toEqual([second, first]);
+  });
+});

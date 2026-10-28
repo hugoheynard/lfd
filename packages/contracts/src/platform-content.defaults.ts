@@ -119,6 +119,24 @@ export const legalMentionLabels: Readonly<
   },
 };
 
+/**
+ * Les trois colonnes du pied de page qu'on range (Hugo, 2026-10-28) — la
+ * marque reste en tête, toujours. Ici et non à côté du schéma : les fronts
+ * lisent cette liste sans tirer zod.
+ */
+export const footerColumns = ["houses", "order", "help"] as const;
+export type FooterColumn = (typeof footerColumns)[number];
+
+/** Les mots des colonnes, pour l'écran qui les range. */
+export const footerColumnLabels: Readonly<Record<FooterColumn, string>> = {
+  houses: "Les maisons",
+  order: "Commander",
+  help: "Aide et contact",
+};
+
+/** Une ligne sans destination — le départ de toutes les lignes livrées. */
+const text = (label: string) => ({ label, href: "" });
+
 export const socialChannels = [
   "instagram",
   "facebook",
@@ -189,22 +207,22 @@ const FR: FooterLocaleContent = {
   order: {
     head: "Commander",
     links: [
-      "Retrait au Labo ou au Village",
-      "Coursier dans la station",
-      "Traiteur et événements",
-      "Ouvrir un compte pro",
-      "Nos rayons et nos méthodes",
-      "Opérations Pâques et Noël",
+      text("Retrait au Labo ou au Village"),
+      text("Coursier dans la station"),
+      text("Traiteur et événements"),
+      text("Ouvrir un compte pro"),
+      text("Nos rayons et nos méthodes"),
+      text("Opérations Pâques et Noël"),
     ],
   },
   help: {
     head: "Aide et contact",
     phoneHours: "7 h – 19 h · ajouts jusqu’à 18 h",
     links: [
-      "Prendre rendez-vous",
-      "Suivre ma commande",
-      "Questions fréquentes",
-      "Signaler un problème",
+      text("Prendre rendez-vous"),
+      text("Suivre ma commande"),
+      text("Questions fréquentes"),
+      text("Signaler un problème"),
     ],
   },
   legal: {
@@ -244,18 +262,23 @@ const EN: FooterLocaleContent = {
   order: {
     head: "Order",
     links: [
-      "Pickup at Le Labo or Le Village",
-      "Courier around the resort",
-      "Catering and events",
-      "Open a trade account",
-      "Our counters and our methods",
-      "Easter and Christmas operations",
+      text("Pickup at Le Labo or Le Village"),
+      text("Courier around the resort"),
+      text("Catering and events"),
+      text("Open a trade account"),
+      text("Our counters and our methods"),
+      text("Easter and Christmas operations"),
     ],
   },
   help: {
     head: "Help and contact",
     phoneHours: "7 am – 7 pm · additions until 6 pm",
-    links: ["Book an appointment", "Track my order", "Frequent questions", "Report a problem"],
+    links: [
+      text("Book an appointment"),
+      text("Track my order"),
+      text("Frequent questions"),
+      text("Report a problem"),
+    ],
   },
   legal: {
     pay: "Secure card and Apple Pay payment, bank transfer for trade accounts.",
@@ -290,22 +313,22 @@ const IT: FooterLocaleContent = {
   order: {
     head: "Ordinare",
     links: [
-      "Ritiro al Labo o al Village",
-      "Corriere in stazione",
-      "Catering ed eventi",
-      "Aprire un account pro",
-      "I nostri banchi e i nostri metodi",
-      "Operazioni Pasqua e Natale",
+      text("Ritiro al Labo o al Village"),
+      text("Corriere in stazione"),
+      text("Catering ed eventi"),
+      text("Aprire un account pro"),
+      text("I nostri banchi e i nostri metodi"),
+      text("Operazioni Pasqua e Natale"),
     ],
   },
   help: {
     head: "Aiuto e contatti",
     phoneHours: "7 – 19 · aggiunte fino alle 18",
     links: [
-      "Fissare un appuntamento",
-      "Seguire il mio ordine",
-      "Domande frequenti",
-      "Segnalare un problema",
+      text("Fissare un appuntamento"),
+      text("Seguire il mio ordine"),
+      text("Domande frequenti"),
+      text("Segnalare un problema"),
     ],
   },
   legal: {
@@ -316,6 +339,7 @@ const IT: FooterLocaleContent = {
 };
 
 export const DEFAULT_FOOTER_CONTENT: FooterContent = {
+  columns: [...footerColumns],
   // Toutes affichées : ce sont des obligations, et le repli d'une obligation
   // est de paraître. Les décocher est un geste que quelqu'un pose sciemment.
   legalMentions: {

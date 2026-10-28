@@ -240,3 +240,64 @@ describe('le pied de page — la barre légale', () => {
     }
   });
 });
+
+describe('le pied de page — lignes à lien et ordre des colonnes (2026-10-28)', () => {
+  const boot = (content: FooterContent): HTMLElement => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ClientFoot],
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: FoldPanelHostService, useValue: { open: () => ({ close: () => undefined }) } },
+      ],
+    });
+    const fixture = TestBed.createComponent(ClientFoot);
+    fixture.detectChanges();
+    const view: FooterContentView = {
+      content,
+      revision: 1,
+      updatedAt: new Date(0).toISOString(),
+      updatedBy: null,
+    };
+    TestBed.inject(HttpTestingController)
+      .expectOne((req) => req.url.includes('/content/footer'))
+      .flush(view);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  };
+
+  it('fait du mot un lien quand il en a un, et le laisse en texte sinon', () => {
+    const fr = DEFAULT_FOOTER_CONTENT.fr;
+    const root = boot({
+      ...DEFAULT_FOOTER_CONTENT,
+      fr: {
+        ...fr,
+        order: {
+          ...fr.order,
+          links: [
+            { label: 'La boutique', href: '/boutique' },
+            { label: 'Sans lien', href: '' },
+          ],
+        },
+      },
+    });
+
+    const link = [...root.querySelectorAll('a.link')].find(
+      (a) => a.textContent?.trim() === 'La boutique',
+    );
+    expect(link?.getAttribute('href')).toBe('/boutique');
+    const plain = [...root.querySelectorAll('span.link')].find(
+      (s) => s.textContent?.trim() === 'Sans lien',
+    );
+    expect(plain).toBeDefined();
+  });
+
+  it('range les colonnes dans l’ordre choisi, la marque en tête', () => {
+    const root = boot({ ...DEFAULT_FOOTER_CONTENT, columns: ['help', 'order', 'houses'] });
+
+    const heads = [...root.querySelectorAll('.col-head')].map((h) => h.textContent?.trim());
+    const fr = DEFAULT_FOOTER_CONTENT.fr;
+    expect(heads).toEqual([fr.help.head, fr.order.head, fr.houses.head]);
+  });
+});

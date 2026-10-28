@@ -44,6 +44,9 @@ export class ClientContent {
   private readonly content = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
 
   /** Le pied de page dans la langue courante. */
+  /** L'ordre des trois colonnes après la marque, choisi au back-office. */
+  readonly footerColumns = computed(() => this.content().columns);
+
   readonly footer = computed<FooterLocaleContent>(
     () => this.content()[this.localeService.current()],
   );

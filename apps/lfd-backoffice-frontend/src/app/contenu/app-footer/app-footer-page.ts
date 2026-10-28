@@ -1,7 +1,9 @@
+import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import type {
   CommercialContact,
   ContentLocale,
+  FooterColumn,
   FooterContent,
   FooterLocaleContent,
   LegalIdentity,
@@ -13,6 +15,7 @@ import type {
 import {
   contentLocales,
   DEFAULT_FOOTER_CONTENT,
+  footerColumnLabels,
   legalMentionLabels,
   legalMentionOrder,
   socialChannelLabels,
@@ -57,6 +60,26 @@ type IdentityTextField = Exclude<keyof LegalIdentity, 'socials'>;
 /** Gardes de type : évitent un `as` là où une vérification suffit. */
 function isLocale(value: string): value is ContentLocale {
   return (contentLocales as readonly string[]).includes(value);
+}
+
+/** Les colonnes dont on range les lignes. */
+type RowSection = FooterColumn;
+
+/** Les colonnes dont les lignes portent un mot et un lien. */
+type LinkSection = 'order' | 'help';
+
+/** Une maison neuve : vide, à remplir dans les trois langues avant d'enregistrer. */
+const EMPTY_HOUSE = { name: '', street: '', city: '', hours: '' };
+
+/** Échange deux cases d'une liste ; hors bornes, la liste ne bouge pas. */
+function swap<T>(list: readonly T[], index: number, delta: -1 | 1): readonly T[] {
+  const target = index + delta;
+  if (target < 0 || target >= list.length) {
+    return list;
+  }
+  const next = [...list];
+  [next[index], next[target]] = [next[target] as T, next[index] as T];
+  return next;
 }
 
 function isChannel(value: string): value is SocialChannel {
@@ -104,6 +127,7 @@ function isChannel(value: string): value is SocialChannel {
     FoldTextareaComponent,
     FoldViewToggleComponent,
     FooterPreview,
+    NgTemplateOutlet,
   ],
   templateUrl: './app-footer-page.html',
   styleUrl: './app-footer-page.scss',
@@ -129,7 +153,7 @@ export class AppFooterPage {
   protected readonly revision = signal(0);
 
   /** Le brouillon. Une seule copie mutable, dont tout le reste dérive. */
-  private readonly draft = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
+  protected readonly draft = signal<FooterContent>(DEFAULT_FOOTER_CONTENT);
 
   protected readonly identity = computed<LegalIdentity>(() => this.draft().identity);
   /** Le contact de la carte « service commercial » de Mon compte — à part de l'identité. */
@@ -292,14 +316,106 @@ export class AppFooterPage {
     }));
   }
 
-  protected setLink(section: 'order' | 'help', index: number, value: string): void {
+  /** Le MOT d'une ligne — dans la langue courante. */
+  protected setLinkLabel(section: LinkSection, index: number, value: string): void {
     this.patchLocale((content) => ({
       ...content,
       [section]: {
         ...content[section],
-        links: content[section].links.map((link, i) => (i === index ? value : link)),
+        links: content[section].links.map((link, i) =>
+          i === index ? { ...link, label: value } : link,
+        ),
       },
     }));
+  }
+
+  /**
+   * Le LIEN d'une ligne — dans les trois langues à la fois : une adresse ne se
+   * traduit pas, et la saisir trois fois inviterait à en oublier une.
+   */
+  protected setLinkHref(section: LinkSection, index: number, value: string): void {
+    this.patchAll((content) => ({
+      ...content,
+      [section]: {
+        ...content[section],
+        links: content[section].links.map((link, i) =>
+          i === index ? { ...link, href: value } : link,
+        ),
+      },
+    }));
+  }
+
+  /**
+   * Écrit dans les TROIS langues. Ajouter, retirer, déplacer une ligne sont
+   * des gestes de structure : les faire dans une seule langue décalerait les
+   * lignes d'une traduction à l'autre.
+   */
+  private patchAll(patch: (content: FooterLocaleContent) => FooterLocaleContent): void {
+    this.draft.update((draft) => ({
+      ...draft,
+      fr: patch(draft.fr),
+      en: patch(draft.en),
+      it: patch(draft.it),
+    }));
+  }
+
+  /** Les lignes d'une colonne, quelle qu'elle soit — pour les gestes de structure. */
+  private patchRows(
+    section: RowSection,
+    rows: <T>(list: readonly T[], blank: T) => readonly T[],
+  ): void {
+    this.patchAll((content) => {
+      switch (section) {
+        case 'houses':
+          return {
+            ...content,
+            houses: { ...content.houses, items: [...rows(content.houses.items, EMPTY_HOUSE)] },
+          };
+        case 'order':
+          return {
+            ...content,
+            order: {
+              ...content.order,
+              links: [...rows(content.order.links, { label: '', href: '' })],
+            },
+          };
+        case 'help':
+          return {
+            ...content,
+            help: {
+              ...content.help,
+              links: [...rows(content.help.links, { label: '', href: '' })],
+            },
+          };
+      }
+    });
+  }
+
+  /** Ajoute une ligne en bas, vide dans les trois langues. */
+  protected addRow(section: RowSection): void {
+    this.patchRows(section, (list, blank) => [...list, blank]);
+  }
+
+  protected removeRow(section: RowSection, index: number): void {
+    this.patchRows(section, (list) => list.filter((_, i) => i !== index));
+  }
+
+  protected moveRow(section: RowSection, index: number, delta: -1 | 1): void {
+    this.patchRows(section, (list) => swap(list, index, delta));
+  }
+
+  /** L'ordre des trois colonnes après la marque, avec leur mot. */
+  protected readonly columns = computed(() =>
+    this.draft().columns.map((key) => ({ key, label: footerColumnLabels[key] })),
+  );
+
+  protected moveColumn(index: number, delta: -1 | 1): void {
+    this.draft.update((draft) => ({ ...draft, columns: [...swap(draft.columns, index, delta)] }));
+  }
+
+  /** Le geste de déplacement d'UNE colonne, pour le gabarit partagé. */
+  protected moveColumnAt(column: FooterColumn): (delta: -1 | 1) => void {
+    return (delta) => this.moveColumn(this.draft().columns.indexOf(column), delta);
   }
 
   protected setPhoneHours(value: string): void {

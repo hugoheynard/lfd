@@ -137,3 +137,56 @@ describe("l'écriture staff", () => {
     await staff().put("/admin/content/footer").send(wrong).expect(400);
   });
 });
+
+describe("lignes à lien et ordre des colonnes (2026-10-28)", () => {
+  it("relit une ligne enregistrée AVANT le lien comme un mot sans lien", async () => {
+    // Écrit par Prisma et non par l'API : c'est précisément la forme que l'API
+    // n'écrit plus, et que la base garde depuis avant le 2026-10-28.
+    const { columns: _absent, ...beforeColumns } = DEFAULT_FOOTER_CONTENT;
+    const legacy = {
+      ...beforeColumns,
+      fr: {
+        ...DEFAULT_FOOTER_CONTENT.fr,
+        order: { head: "Commander", links: ["Suivre ma commande"] },
+      },
+    };
+    await ctx.prisma.platformContent.create({
+      data: { key: "footer", content: legacy, updatedBy: "Hugo" },
+    });
+
+    const view = jsonBody<FooterContentView>(await ctx.http().get("/content/footer").expect(200));
+
+    expect(view.content.fr.order.links).toEqual([{ label: "Suivre ma commande", href: "" }]);
+    expect(view.content.columns).toEqual(["houses", "order", "help"]);
+  });
+
+  it("garde le lien et l'ordre des colonnes à l'aller-retour", async () => {
+    const content = edited();
+    const sent: FooterContent = {
+      ...content,
+      columns: ["help", "houses", "order"],
+      fr: {
+        ...content.fr,
+        help: { ...content.fr.help, links: [{ label: "Questions", href: "/aide" }] },
+      },
+    };
+    await staff().put("/admin/content/footer").send(sent).expect(200);
+
+    const view = jsonBody<FooterContentView>(await ctx.http().get("/content/footer").expect(200));
+
+    expect(view.content.columns).toEqual(["help", "houses", "order"]);
+    expect(view.content.fr.help.links).toEqual([{ label: "Questions", href: "/aide" }]);
+  });
+
+  it("refuse en 400 un lien qui ne mène nulle part de connu", async () => {
+    const content = edited();
+    const wrong = {
+      ...content,
+      fr: {
+        ...content.fr,
+        help: { ...content.fr.help, links: [{ label: "Piège", href: "javascript:alert(1)" }] },
+      },
+    };
+    await staff().put("/admin/content/footer").send(wrong).expect(400);
+  });
+});

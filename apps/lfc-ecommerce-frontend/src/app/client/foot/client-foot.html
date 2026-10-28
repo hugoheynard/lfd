@@ -27,47 +27,65 @@
       }
     </section>
 
-    <section class="col">
-      <h2 class="col-head">{{ foot().houses.head }}</h2>
-      @for (house of foot().houses.items; track house.name) {
-        <!-- L'adresse COMPLÈTE, code postal compris : c'est ce qu'on copie dans
-             un GPS, et une adresse tronquée n'y sert à rien. -->
-        <address class="house">
-          <span class="house-name">{{ house.name }}</span>
-          <span class="house-line">{{ house.street }}</span>
-          <span class="house-line">{{ house.city }}</span>
-          <span class="house-line">{{ house.hours }}</span>
-        </address>
+    <!-- Les trois colonnes dans l'ordre choisi au back-office (2026-10-28) ;
+         la marque reste en tête. -->
+    @for (column of columns(); track column) {
+      @switch (column) {
+        @case ('houses') {
+          <section class="col">
+            <h2 class="col-head">{{ foot().houses.head }}</h2>
+            <!-- Par position : une maison ajoutée au back-office peut porter le
+                 nom d'une autre le temps d'être saisie. -->
+            @for (house of foot().houses.items; track $index) {
+              <!-- L'adresse COMPLÈTE, code postal compris : c'est ce qu'on copie
+                   dans un GPS, et une adresse tronquée n'y sert à rien. -->
+              <address class="house">
+                <span class="house-name">{{ house.name }}</span>
+                <span class="house-line">{{ house.street }}</span>
+                <span class="house-line">{{ house.city }}</span>
+                <span class="house-line">{{ house.hours }}</span>
+              </address>
+            }
+          </section>
+        }
+        @case ('order') {
+          <nav class="col" [attr.aria-label]="foot().order.head">
+            <h2 class="col-head">{{ foot().order.head }}</h2>
+            <!-- Suivies par POSITION, pas par valeur : ces textes arrivent de
+                 l'API après le contenu de départ, et suivis par valeur, chaque
+                 réponse détruisait puis recréait toute la liste (NG0956, relevé
+                 le 2026-09-14). -->
+            @for (link of foot().order.links; track $index) {
+              <ng-container
+                [ngTemplateOutlet]="entry"
+                [ngTemplateOutletContext]="{ $implicit: link }"
+              />
+            }
+          </nav>
+        }
+        @case ('help') {
+          <section class="col">
+            <h2 class="col-head">{{ foot().help.head }}</h2>
+            <!-- Le téléphone en premier et en grand : c'est l'information la
+                 plus demandée d'un pied de page de commerce. Aucun numéro
+                 inventé (Hugo, 2026-10-26) : sans numéro saisi, ni numéro ni
+                 horaires d'appel. -->
+            @if (legal().phone !== '' && legal().phoneHref !== '') {
+              <a class="phone" [href]="legal().phoneHref">{{ legal().phone }}</a>
+              <p class="phone-hours">{{ foot().help.phoneHours }}</p>
+            }
+            <!-- Par position, pour la même raison que la colonne « Commander ». -->
+            @for (link of foot().help.links; track $index) {
+              <ng-container
+                [ngTemplateOutlet]="entry"
+                [ngTemplateOutletContext]="{ $implicit: link }"
+              />
+            }
+            <a class="link email" [href]="'mailto:' + legal().email">{{ legal().email }}</a>
+          </section>
+        }
       }
-    </section>
-
-    <nav class="col" [attr.aria-label]="foot().order.head">
-      <h2 class="col-head">{{ foot().order.head }}</h2>
-      <!-- Suivies par POSITION, pas par valeur : ces textes arrivent de l'API après
-           le contenu de départ, et suivis par valeur, chaque réponse détruisait
-           puis recréait toute la liste (NG0956, relevé le 2026-09-14). Une
-           ligne de texte n'a pas d'état à préserver : seul son texte change. -->
-      @for (link of foot().order.links; track $index) {
-        <span class="link">{{ link }}</span>
-      }
-    </nav>
-
-    <section class="col">
-      <h2 class="col-head">{{ foot().help.head }}</h2>
-      <!-- Le téléphone en premier et en grand : c'est l'information la plus
-           demandée d'un pied de page de commerce. -->
-      <!-- Aucun numéro inventé (Hugo, 2026-10-26) : sans numéro saisi, ni
-           numéro ni horaires d'appel. -->
-      @if (legal().phone !== '' && legal().phoneHref !== '') {
-        <a class="phone" [href]="legal().phoneHref">{{ legal().phone }}</a>
-        <p class="phone-hours">{{ foot().help.phoneHours }}</p>
-      }
-      <!-- Par position, pour la même raison que la colonne « Commander ». -->
-      @for (link of foot().help.links; track $index) {
-        <span class="link">{{ link }}</span>
-      }
-      <a class="link email" [href]="'mailto:' + legal().email">{{ legal().email }}</a>
-    </section>
+    }
   </div>
 
   <!-- La barre légale. ⚠️ Elle ne porte PAS encore SIRET, RCS ni TVA
@@ -103,3 +121,24 @@
     </nav>
   </div>
 </div>
+
+<!-- Une ligne : le MOT devient le lien quand le back-office lui en donne un,
+     sans soulignement (Hugo, 2026-10-28) ; sinon il reste du texte. Une
+     adresse extérieure s'ouvre dans un nouvel onglet, et son nom le dit
+     (RGAA 13.2), comme les réseaux. -->
+<ng-template #entry let-link>
+  @if (link.href === '') {
+    <span class="link">{{ link.label }}</span>
+  } @else if (isExternal(link.href)) {
+    <a
+      class="link live"
+      [href]="link.href"
+      rel="noopener"
+      target="_blank"
+      [attr.aria-label]="newTab(link.label)"
+      >{{ link.label }}</a
+    >
+  } @else {
+    <a class="link live" [href]="link.href">{{ link.label }}</a>
+  }
+</ng-template>

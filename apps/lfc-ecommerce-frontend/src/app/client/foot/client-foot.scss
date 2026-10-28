@@ -171,6 +171,13 @@
   text-decoration: none;
 }
 
+/* Un mot qui mène quelque part : jamais souligné (Hugo, 2026-10-28), il se
+   distingue au survol et au focus par sa couleur. */
+.live:hover,
+.live:focus-visible {
+  color: var(--fold-color-on-primary);
+}
+
 .phone {
   font-size: var(--lfc-text-cta);
   font-weight: var(--fold-weight-semibold);

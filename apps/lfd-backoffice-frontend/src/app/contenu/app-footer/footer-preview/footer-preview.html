@@ -25,38 +25,46 @@
       }
     </section>
 
-    <section class="col">
-      <p class="head">{{ content().houses.head }}</p>
-      @for (house of content().houses.items; track house.name) {
-        <p class="line strong">{{ house.name }}</p>
-        <p class="line">{{ house.street }}</p>
-        <p class="line">{{ house.city }}</p>
-        <p class="line">{{ house.hours }}</p>
+    @for (column of columns(); track column) {
+      @switch (column) {
+        @case ('houses') {
+          <section class="col">
+            <p class="head">{{ content().houses.head }}</p>
+            @for (house of content().houses.items; track $index) {
+              <p class="line strong">{{ house.name }}</p>
+              <p class="line">{{ house.street }}</p>
+              <p class="line">{{ house.city }}</p>
+              <p class="line">{{ house.hours }}</p>
+            }
+          </section>
+        }
+        @case ('order') {
+          <section class="col">
+            <p class="head">{{ content().order.head }}</p>
+            @for (link of content().order.links; track $index) {
+              <p class="line">{{ link.label }}</p>
+            }
+          </section>
+        }
+        @case ('help') {
+          <section class="col">
+            <p class="head">{{ content().help.head }}</p>
+            <!-- Le téléphone en premier et en grand : l'information la plus
+                 demandée d'un pied de page de commerce. Vide, la ligne disparaît. -->
+            @if (identity().phone) {
+              <p class="line phone">{{ identity().phone }}</p>
+            }
+            <p class="line">{{ content().help.phoneHours }}</p>
+            @for (link of content().help.links; track $index) {
+              <p class="line">{{ link.label }}</p>
+            }
+            @if (identity().email) {
+              <p class="line">{{ identity().email }}</p>
+            }
+          </section>
+        }
       }
-    </section>
-
-    <section class="col">
-      <p class="head">{{ content().order.head }}</p>
-      @for (link of content().order.links; track link) {
-        <p class="line">{{ link }}</p>
-      }
-    </section>
-
-    <section class="col">
-      <p class="head">{{ content().help.head }}</p>
-      <!-- Le téléphone en premier et en grand : l'information la plus demandée
-           d'un pied de page de commerce. Vide, la ligne disparaît. -->
-      @if (identity().phone) {
-        <p class="line phone">{{ identity().phone }}</p>
-      }
-      <p class="line">{{ content().help.phoneHours }}</p>
-      @for (link of content().help.links; track link) {
-        <p class="line">{{ link }}</p>
-      }
-      @if (identity().email) {
-        <p class="line">{{ identity().email }}</p>
-      }
-    </section>
+    }
   </div>
 
   <div class="legal">

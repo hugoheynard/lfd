@@ -1891,6 +1891,7 @@ export {
   DEFAULT_COMMERCIAL_CONTACT_EMAIL,
   footerHouseSchema,
   footerLinkSchema,
+  footerEntrySchema,
   footerLocaleContentSchema,
   footerContentSchema,
   footerContentPayloadSchema,
@@ -1902,6 +1903,7 @@ export type {
   SocialChannel,
   LegalIdentity,
   FooterHouse,
+  FooterEntry,
   FooterLocaleContent,
   CommercialContact,
   FooterContent,
@@ -1972,11 +1974,14 @@ export {
   sectionAnchor,
 } from "./legal-document.sections.js";
 export type { LegalSectionKey } from "./legal-document.sections.js";
+export type { FooterColumn } from "./platform-content.defaults.js";
 
 export {
   contentLocales,
   socialChannels,
   socialChannelLabels,
+  footerColumns,
+  footerColumnLabels,
   legalMentionOrder,
   legalMentionLabels,
   legalDocumentKeys,
