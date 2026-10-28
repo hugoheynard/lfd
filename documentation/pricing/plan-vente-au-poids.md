@@ -33,12 +33,15 @@
 > 🔍 **Contredit par vitruve le 2026-10-28** : six BLOQUANTS, levés ci-dessous
 > par des propositions marquées **(à valider)** au §4.
 
-- **Une unité de vente par déclinaison** : `piece` (défaut, tout l'existant) ou
-  `weight`. **(à valider)** Elle est **choisie à la création et immuable** :
-  le référentiel ne peut pas savoir si une déclinaison a été commandée (la
-  matrice interdit `pim → b2b`), et une unité qui change ferait mentir les
-  lignes, les factures et les historiques. Pour vendre autrement, on crée
-  une autre déclinaison. Un même produit vendu en pièce ET au poids =
+- **Une unité de vente par déclinaison**, choisie dans **« Tarif & TVA »** par
+  un sélecteur « Vendre à la pièce » / « Vendre au poids » (Hugo,
+  2026-10-28) : `piece` (défaut, tout l'existant) ou `weight`. Le sélecteur
+  reste modifiable **tant que la déclinaison n'a jamais été publiée**, puis
+  l'unité est figée : le référentiel sait ce qu'il a publié, alors qu'il ne
+  peut pas savoir ce qui a été commandé (la matrice interdit `pim → b2b`), et
+  une unité qui change après la publication ferait mentir les lignes, les
+  factures et les historiques. Pour vendre autrement un article publié, on
+  crée une autre déclinaison ; un même produit vendu en pièce ET au poids =
   **deux déclinaisons**.
 - **La quantité reste un entier**, dans l'unité de la ligne : des **pièces**,
   ou des **grammes**. Jamais de décimale, jamais de flottant : 1,25 kg = 1250.
@@ -76,10 +79,11 @@
   arrondie au centime. Deux arrondis donc, mais le client paie ce qu'il lit :
   le prix au kilo affiché, au poids commandé. Écrit dans
   [`plan-centime-particuliers.md`](plan-centime-particuliers.md) §4 au bâti.
-- **Le pas et le minimum** se règlent par déclinaison au poids : `weightStepGrams`
-  (ex. 100) et `weightMinGrams` (ex. 200). Une quantité qui n'est pas un
-  multiple du pas, ou sous le minimum, est **refusée** au serveur (le
-  domaine), jamais corrigée en silence.
+- **Le minimum et le pas**, sous le sélecteur quand on vend au poids :
+  `weightMinGrams` **facultatif** (vide = pas de minimum, Hugo 2026-10-28) et
+  `weightStepGrams` (le pas de saisie, réglable par article, ex. 100 g). Une
+  quantité qui n'est pas un multiple du pas, ou sous le minimum, est
+  **refusée** au serveur (le domaine), jamais corrigée en silence.
 - **Les paliers de volume** d'un article au poids se lisent en grammes ; les
   écrans les saisissent et les disent en kilogrammes.
 - **L'affichage** : « 1,250 kg » (trois décimales au plus, sans zéros
@@ -125,8 +129,9 @@
 
 1. Les décisions de prix **globales et de famille ne s'appliquent pas** aux
    articles au poids (seules celles de produit ou de déclinaison).
-2. L'unité est **choisie à la création, immuable** ; pièce ET poids pour un
-   même produit = deux déclinaisons.
+2. ✅ Tranché le 2026-10-28 : un sélecteur dans « Tarif & TVA », modifiable
+   jusqu'à la première publication, puis figé ; pièce ET poids = deux
+   déclinaisons ; minimum facultatif.
 3. Abonnements, engagements de volume et réassort : **hors de ce plan**,
    refusés pour un article au poids.
 4. La borne d'une ligne au poids : **50 kg** ?
