@@ -1,5 +1,5 @@
 import type { PricingContext } from "./price-rule.js";
-import type { PricingParties } from "./loaded-pricer.js";
+import type { PricedItem, PricingParties } from "./loaded-pricer.js";
 
 /**
  * Ce que l'appelant sait du client au moment de résoudre.
@@ -35,9 +35,11 @@ export type { PricingParties } from "./loaded-pricer.js";
  * le jour de la bascule, il n'y a qu'un fichier à relire.
  */
 export function pricingContextFor(
-  sku: string,
-  /** La famille puis ses parentes ; vide = famille inconnue, aucune règle de famille. */
-  categoryPath: readonly string[],
+  /**
+   * L'article : son SKU, sa famille puis ses parentes (vide = famille inconnue,
+   * aucune règle de famille), et son unité de vente.
+   */
+  { sku, categoryPath, saleUnit }: Pick<PricedItem, "sku" | "categoryPath" | "saleUnit">,
   quantity: number,
   parties: PricingParties,
   at: Date,
@@ -54,6 +56,7 @@ export function pricingContextFor(
     variantSku: sku,
     productSku: sku,
     categoryPath,
+    saleUnit,
     companyId: parties.companyId,
     pricingCompanyId: parties.pricingCompanyId,
     segmentId: null,

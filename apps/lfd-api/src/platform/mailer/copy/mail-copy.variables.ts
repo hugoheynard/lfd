@@ -33,6 +33,7 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     windowBetween: ["start", "end"],
     windowBefore: ["end"],
     recapPieces: ["count"],
+    recapWeighed: ["name", "weight"],
     recapDiscountBase: ["base"],
     recapVatRate: ["rate"],
     qrAlt: ["ref"],
@@ -40,6 +41,7 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
   "customer.order-ready": {
     subject: ["ref"],
     piecesLabel: ["count"],
+    weighedLabel: ["name", "weight"],
     qrAlt: ["ref"],
     subjectReminder: ["ref"],
     introReminder: ["site"],

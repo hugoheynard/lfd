@@ -1,4 +1,5 @@
 import type { PriceScope, PricingContext } from "./price-rule.js";
+import { coversManyArticles } from "./specificity.js";
 
 /**
  * **La clé de portée** — ce par quoi un matériau de prix se range.
@@ -38,12 +39,23 @@ export function scopeKeyOf(scope: PriceScope): ScopeKey | null {
  * simplement stable, ce qui rend les tests lisibles et les traces comparables.
  */
 export function scopeKeysOf(context: PricingContext): readonly ScopeKey[] {
+  const own: readonly ScopeKey[] = [
+    `product:${context.productSku}`,
+    `variant:${context.variantSku}`,
+  ];
+  // 🔴 Un article au poids n'a QUE ses propres seaux : les décisions globales
+  // et de famille ne le visent pas (`coversManyArticles`, plan de la vente au
+  // poids §2). C'est ici que l'exclusion tient pour les règles, les barèmes et
+  // les planchers à la fois, puisque les trois passent par cet index.
+  if (!coversManyArticles(context)) {
+    return own;
+  }
   // Une famille inconnue (lignée vide) n'a pas de seau : fabriquer
   // `category:null` la ferait percuter une famille réellement nommée « null ».
   const category: readonly ScopeKey[] = [...context.categoryPath]
     .reverse()
     .map((id): ScopeKey => `category:${id}`);
-  return ["global", ...category, `product:${context.productSku}`, `variant:${context.variantSku}`];
+  return ["global", ...category, ...own];
 }
 
 /**

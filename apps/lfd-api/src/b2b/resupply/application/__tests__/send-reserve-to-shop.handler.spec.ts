@@ -35,8 +35,20 @@ const TODAY = "2026-01-02";
 const VILLAGE = "site_village";
 const KEY = "panel_key_1";
 const CATALOGUE = new Catalogue([
-  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
-  { sku: "BAG", name: "Baguette", categoryId: "fam_bread", categoryName: "Pains" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece",
+  },
+  {
+    sku: "BAG",
+    name: "Baguette",
+    categoryId: "fam_bread",
+    categoryName: "Pains",
+    saleUnit: "piece",
+  },
 ]);
 
 /** Le colisage doublé : retient chaque sortie, et combien de réassorts étaient écrits à cet instant. */

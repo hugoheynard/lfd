@@ -1,4 +1,5 @@
 import type { CommitmentDecisionView, VolumeTierPriceView } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import { decideFloor } from "./floor-policy.js";
 import { floorMillicentsFor, resolveScopedFloor } from "./resolve-floor.js";
@@ -55,8 +56,13 @@ export interface PricedItem {
    * règle de famille ne le vise.
    */
   readonly categoryPath: readonly string[];
-  /** Le tarif de liste, en millicentimes. */
+  /** Le tarif de liste, en millicentimes — AU KILO pour un article au poids. */
   readonly canonicalMillicents: number;
+  /**
+   * L'unité de vente : au poids, les quantités sont des grammes, et seules les
+   * décisions qui visent CET article s'appliquent (`scope-index.ts`).
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -308,6 +314,9 @@ export class LoadedPricer {
       // Aucune règle de famille n'est lue ici : la mercuriale vise l'article
       // nommément.
       categoryPath: [],
+      // La mercuriale vise l'article nommément, quelle que soit son unité ; le
+      // comparatif de marché ne la lit qu'à la pièce (ses paliers en pièces).
+      saleUnit: "piece",
       companyId,
       // Le comparatif lit chaque mercuriale chez SON client : la société servie
       // est celle qui la porte.
@@ -339,14 +348,7 @@ export class LoadedPricer {
     quantity: number,
     cumulativeQuantity: number | null,
   ): PricingContext {
-    return pricingContextFor(
-      item.sku,
-      item.categoryPath,
-      quantity,
-      this.parties,
-      this.at,
-      cumulativeQuantity,
-    );
+    return pricingContextFor(item, quantity, this.parties, this.at, cumulativeQuantity);
   }
 
   /** Le plancher qui **vise** l'article — une question de portée, pas de quantité. */
@@ -378,6 +380,12 @@ export class LoadedPricer {
    * relisible que si la trace dit que c'est la PROMESSE qui a ouvert ce palier.
    */
   private commitmentOf(item: PricedItem, quantity: number): CommitmentDecisionView | null {
+    // 🔴 Aucun engagement ne couvre un article au poids (`plan-vente-au-poids.md`,
+    // §2 « hors de ce plan ») : un cumul de pièces ne s'additionne pas à des
+    // grammes, et un engagement de produit n'a pas d'unité. Hors de son cumul.
+    if (item.saleUnit === "weight") {
+      return null;
+    }
     const commitment = commitmentFor(
       this.materials.commitments,
       { categoryPath: item.categoryPath, productSku: item.sku, variantSku: item.sku },

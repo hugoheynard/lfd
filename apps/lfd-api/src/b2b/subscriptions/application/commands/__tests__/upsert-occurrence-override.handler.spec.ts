@@ -1,3 +1,4 @@
+import { articleSaleUnitsOver } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
 import { OccurrenceOutsideWindowError } from "../../../domain/errors/subscription-errors.js";
@@ -15,6 +16,7 @@ function build() {
     events,
     new DirectUnitOfWork(),
     subscriptionGestures(repo).gestures,
+    articleSaleUnitsOver(),
   );
   return { repo, events, handler };
 }

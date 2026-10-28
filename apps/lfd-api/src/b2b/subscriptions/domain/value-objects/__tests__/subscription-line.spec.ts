@@ -1,4 +1,7 @@
-import { InvalidSubscriptionLineError } from "../../errors/subscription-errors.js";
+import {
+  InvalidSubscriptionLineError,
+  WeightArticleInSubscriptionError,
+} from "../../errors/subscription-errors.js";
 import { SubscriptionLine } from "../subscription-line.js";
 
 describe("SubscriptionLine", () => {
@@ -19,5 +22,21 @@ describe("SubscriptionLine", () => {
 
   it("refuse une quantité non entière", () => {
     expect(() => SubscriptionLine.create("SKU-1", 1.5)).toThrow(InvalidSubscriptionLineError);
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, §2) : hors des paniers récurrents. */
+describe("SubscriptionLine.requested", () => {
+  it("accepte un article à la pièce", () => {
+    expect(SubscriptionLine.requested("SKU-1", 3, "piece")).toMatchObject({
+      sku: "SKU-1",
+      quantity: 3,
+    });
+  });
+
+  it("refuse un article au poids, en le nommant", () => {
+    expect(() => SubscriptionLine.requested(" SAU-001 ", 500, "weight")).toThrow(
+      new WeightArticleInSubscriptionError("SAU-001"),
+    );
   });
 });

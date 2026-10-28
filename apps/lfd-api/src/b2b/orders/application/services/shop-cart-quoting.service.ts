@@ -6,7 +6,7 @@ import type {
 } from "@lfd/contracts";
 import {
   lineTotalCents,
-  pieces,
+  type SaleUnit,
   ttcCentsOf,
   type VatLine,
   type VatVentilationInput,
@@ -29,6 +29,7 @@ import type { PricedLine } from "../../domain/services/pickup-discount-eligibili
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
+import { quantityOf } from "../../domain/value-objects/order-line.js";
 import { exactShopQuoteOf } from "./exact-shop-quote.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
@@ -124,7 +125,8 @@ export class ShopCartQuoting {
    */
   async quote(query: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     const resolved = await this.pricing.resolve(
-      query.payload.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+      // L'unité voyage avec la quantité : elle se valide contre l'article.
+      query.payload.lines,
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
       // parcours par défaut de la boutique, et `applies` le sait déjà.
       { companyId: query.companyId },
@@ -268,6 +270,7 @@ export class ShopCartQuoting {
       lines: resolved.map(({ line }) => ({
         sku: line.sku,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
         unitPriceMillicents: line.unitPriceMillicents,
         vatRate: line.vatRate,
       })),
@@ -347,10 +350,11 @@ function toQuoteLine(resolved: { line: OrderLineOf }): ShopQuoteLineView {
   // L'arrondi au centime a lieu UNE fois, ici, et le taxe compris se dérive de
   // ce total-là — pas du prix unitaire remultiplié. C'est ce qui fait qu'une
   // ligne de douze pièces dit la même chose que la caisse.
-  const htCents = lineTotalCents(line.unitPriceMillicents, pieces(line.quantity));
+  const htCents = lineTotalCents(line.unitPriceMillicents, quantityOf(line));
   return {
     sku: line.sku,
     quantity: line.quantity,
+    saleUnit: line.saleUnit,
     unitPriceMillicents: line.unitPriceMillicents,
     lineTotalCents: htCents,
     lineTotalTtcCents: ttcCentsOf(htCents, line.vatRate),
@@ -362,6 +366,7 @@ function toQuoteLine(resolved: { line: OrderLineOf }): ShopQuoteLineView {
 interface OrderLineOf {
   readonly sku: string;
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
 }

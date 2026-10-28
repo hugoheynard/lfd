@@ -1,4 +1,5 @@
 import { NO_TRANSLATIONS } from "../../domain/catalog-translations.js";
+import { ArticleSaleUnits } from "../article-sale-units.service.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   CatalogOperationsReader,
@@ -42,6 +43,9 @@ export function catalogItem(
       path: ["fam-patisseries"],
     },
     isDefault: true,
+    saleUnit: "piece",
+    weightMinGrams: null,
+    weightStepGrams: null,
     isFeatured: false,
     allergens: null,
     shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },
@@ -130,4 +134,9 @@ export function saleOperationsOver(input: {
 /** Hors saison : aucun article n'est `operationOnly`, le service ne lit rien d'autre. */
 export function noSaleOperations(now: Date): SaleOperations {
   return saleOperationsOver({ now });
+}
+
+/** Les unités de vente, sur un catalogue en mémoire — vide : tout se vend à la pièce. */
+export function articleSaleUnitsOver(items: readonly ResolvedCatalogItem[] = []): ArticleSaleUnits {
+  return new ArticleSaleUnits(new DefaultsCatalog(items));
 }

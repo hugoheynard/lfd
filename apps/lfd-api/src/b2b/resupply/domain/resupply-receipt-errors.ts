@@ -69,6 +69,17 @@ export class ResupplyArticleUnknownError extends ResourceNotFoundError {
   }
 }
 
+/** L'article se vend au poids : un réassort ne compte que des pièces (`plan-vente-au-poids.md`). */
+export class WeightArticleInResupplyError extends BusinessError {
+  constructor(readonly sku: string) {
+    super(
+      "resupply.weight_article",
+      `L'article ${sku} se vend au poids, et un réassort ne se compte qu'en pièces. ` +
+        "Choisissez un autre article de la liste.",
+    );
+  }
+}
+
 /** Le point de retrait n'existe pas, ou est archivé. */
 export class ResupplySiteUnknownError extends ResourceNotFoundError {
   constructor(readonly siteId: string) {

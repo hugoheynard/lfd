@@ -4,7 +4,7 @@ import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
-import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
+import { ResupplyCatalogue, resuppliable } from "../domain/resupply-catalogue.js";
 import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import {
   ResupplyArticleUnknownError,
@@ -51,6 +51,7 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
     if (article === null) {
       throw new ResupplyArticleUnknownError(command.sku);
     }
+    resuppliable(article);
     const line = ResupplyReceiptLine.unordered({
       sku: article.sku,
       label: article.name,

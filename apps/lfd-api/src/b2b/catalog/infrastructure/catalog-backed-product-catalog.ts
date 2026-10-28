@@ -87,6 +87,9 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     allergens: item.allergens,
     orderTimeLimit: item.orderTimeLimit,
     family: item.family,
+    saleUnit: item.saleUnit,
+    weightMinGrams: item.weightMinGrams,
+    weightStepGrams: item.weightStepGrams,
     // 🔴 La frappe, ici et pas ailleurs : c'est l'endroit qui vient de LIRE le
     // catalogue. Le prix scellé ne peut donc pas venir d'un appelant.
     article: catalogueArticle({
@@ -94,6 +97,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
       name: item.name,
       categoryPath: item.family.path,
       unitPriceMillicents: item.unitPriceMillicents,
+      saleUnit: item.saleUnit,
     }),
   };
 }

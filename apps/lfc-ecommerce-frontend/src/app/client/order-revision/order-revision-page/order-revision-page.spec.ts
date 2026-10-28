@@ -45,6 +45,7 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
         sku: 'VIE-001',
         productName: 'Croissant',
         quantity: 2,
+        saleUnit: 'piece',
         unitPriceMillicents: 56_850,
         vatRate: 5.5,
         lineTotalCents: 1_137,

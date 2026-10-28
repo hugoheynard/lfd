@@ -50,6 +50,11 @@ export interface OrderPlacedCopy {
   /** `{count}` = le nombre de pièces. */
   readonly recapPieces: string;
   /**
+   * Une ligne au poids dans le contenu (`plan-vente-au-poids.md`, P3) :
+   * `{name}` = l'article, `{weight}` = « 500 g », « 1,25 kg ».
+   */
+  readonly recapWeighed: string;
+  /**
    * La tête du libellé de la remise de retrait ; le point et la règle figés la
    * suivent (« Remise retrait Le Labo (5 %) »).
    */
@@ -115,6 +120,8 @@ export interface OrderReadyCopy {
   readonly contentLabel: string;
   /** `{count}` = le nombre de pièces. */
   readonly piecesLabel: string;
+  /** Une ligne au poids : `{name}`, `{weight}` — cf. `recapWeighed`. */
+  readonly weighedLabel: string;
   /**
    * Le QR, **à nouveau**. Il était déjà dans la confirmation, et le répéter
    * n'est pas une redite : c'est MAINTENANT qu'on s'en sert, et personne ne

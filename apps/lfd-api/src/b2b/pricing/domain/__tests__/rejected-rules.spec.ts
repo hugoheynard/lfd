@@ -26,6 +26,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
     categoryPath: ["fam-vien"],
+    saleUnit: "piece",
     companyId: "cmp_dupont",
     pricingCompanyId: over.companyId === undefined ? "cmp_dupont" : over.companyId,
     segmentId: "seg_boulangerie",

@@ -9,6 +9,7 @@ import {
 } from "@lfd/contracts";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
+import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 // Sortis de `prisma-order.reader.ts` le 2026-10-23 : la révision d'une
 // commande relit ses lignes figées par les MÊMES parseurs (plan
@@ -22,6 +23,8 @@ export interface OrderLineRow {
   readonly unitPriceMillicents: number;
   readonly vatRate: { toNumber(): number };
   readonly quantity: number;
+  /** `TEXT` contraint (`order_lines_sale_unit_check`) — lu par {@link orderLineSaleUnitOf}. */
+  readonly saleUnit: string;
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;
@@ -96,4 +99,34 @@ export function parseTrace(line: OrderLineRow): OrderLinePricingTrace | null {
     // phrase qu'on ne doit pas fabriquer (R25).
     rejected: rejectedRulesSchema.safeParse(line.pricingRejected).data ?? null,
   };
+}
+
+/**
+ * Une unité de ligne stockée que ce code ne connaît pas — la contrainte
+ * `order_lines_sale_unit_check` l'interdit ; si elle arrive quand même, la
+ * colonne a été élargie sans que le lecteur suive.
+ */
+export class StoredOrderLineSaleUnitUnknownError extends TechnicalError {
+  constructor(sku: string, value: string) {
+    super(
+      "order_lines.sale_unit_unknown",
+      `Une ligne de commande de l'article ${sku} porte une unité inconnue (« ${value} »). ` +
+        "Seules « piece » et « weight » existent : la base a été modifiée hors du code — " +
+        "ne pas facturer cette commande, et prévenir l'équipe technique.",
+    );
+  }
+}
+
+/**
+ * Lit `order_lines.sale_unit` dans le vocabulaire du domaine. Refuse plutôt
+ * que de replier sur `piece` : une ligne en grammes relue en pièces se
+ * facturerait mille fois trop cher.
+ *
+ * @throws {StoredOrderLineSaleUnitUnknownError} valeur hors de la contrainte.
+ */
+export function orderLineSaleUnitOf(sku: string, value: string): "piece" | "weight" {
+  if (value === "piece" || value === "weight") {
+    return value;
+  }
+  throw new StoredOrderLineSaleUnitUnknownError(sku, value);
 }

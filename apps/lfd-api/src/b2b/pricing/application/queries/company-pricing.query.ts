@@ -112,7 +112,7 @@ export class CompanyPricingQuery {
       items: shelf.articles.map((article) =>
         itemView(
           article.article,
-          pricingContextFor(article.sku, article.article.categoryPath, 1, parties, at),
+          pricingContextFor({ ...article.article, sku: article.sku }, 1, parties, at),
           materials,
           { rules, floors },
         ),

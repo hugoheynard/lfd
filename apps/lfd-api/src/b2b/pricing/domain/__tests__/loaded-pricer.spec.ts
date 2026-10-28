@@ -50,6 +50,7 @@ const CROISSANT: PricedItem = {
   name: "Croissant au beurre",
   categoryPath: ["fam-vien"],
   canonicalMillicents: 200_000,
+  saleUnit: "piece",
 };
 
 const PAIN: PricedItem = {
@@ -57,6 +58,7 @@ const PAIN: PricedItem = {
   name: "Baguette",
   categoryPath: ["fam-pain"],
   canonicalMillicents: 100_000,
+  saleUnit: "piece",
 };
 
 // ── Les matériaux ─────────────────────────────────────────────────────────
@@ -529,5 +531,80 @@ describe("mercurialeAlone — ce que le marché paie", () => {
         AT,
       ),
     ).toBeNull();
+  });
+});
+
+/**
+ * **La vente au poids** (`plan-vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) :
+ * les décisions qui couvrent PLUSIEURS articles — globales, de famille — ne
+ * s'appliquent pas à un article au poids ; celles de l'article, la mercuriale
+ * et ses barèmes (en grammes), si. Aucun engagement ne le couvre.
+ */
+describe("price — un article au poids", () => {
+  /** Du saumon gravlax : 40,00 € HT le kilo, dans la famille des viennoiseries pour l'épreuve. */
+  const SALMON: PricedItem = {
+    sku: "VIE-001",
+    name: "Saumon gravlax",
+    categoryPath: ["fam-vien"],
+    canonicalMillicents: 4_000_000,
+    saleUnit: "weight",
+  };
+
+  it("écarte une règle globale et une règle de famille", () => {
+    const pricer = pricerOver({
+      rules: [
+        alteration("globale", 1_000),
+        alteration("famille", 2_000, { scope: { type: "category", id: "fam-vien" } }),
+      ],
+    });
+
+    const priced = pricer.price(SALMON, 1_250);
+
+    expect(priced.finalMillicents).toBe(4_000_000);
+    expect(priced.steps).toEqual([]);
+    // Le même article à la pièce prend la règle de famille (la plus spécifique
+    // de l'étage, −20 %) : seule l'unité change.
+    expect(pricer.price({ ...SALMON, saleUnit: "piece" }, 1).finalMillicents).toBe(3_200_000);
+  });
+
+  it("applique une règle de l'article, jugée en grammes", () => {
+    const pricer = pricerOver({
+      rules: [
+        alteration("produit", 1_000, {
+          scope: { type: "product", id: "VIE-001" },
+          minQuantity: 1_000,
+        }),
+      ],
+    });
+
+    expect(pricer.price(SALMON, 500).finalMillicents).toBe(4_000_000);
+    expect(pricer.price(SALMON, 1_000).finalMillicents).toBe(3_600_000);
+  });
+
+  it("écarte un plancher global, garde celui de l'article", () => {
+    const global = pricerOver({ rules: [alteration("promo", 5_000)], floors: [floor(HARD_90)] });
+    const own = pricerOver({
+      rules: [alteration("promo", 5_000, { scope: { type: "product", id: "VIE-001" } })],
+      floors: [{ ...floor(HARD_90), scope: { type: "product", id: "VIE-001" } }],
+    });
+
+    expect(global.price(SALMON, 500).floorMillicents).toBeNull();
+    expect(own.price(SALMON, 500)).toMatchObject({ floored: true, finalMillicents: 3_600_000 });
+  });
+
+  it("applique la mercuriale, ses paliers en grammes", () => {
+    const pricer = pricerOver({ mercuriale: mercurialeAt(3_500, 1_000) });
+
+    expect(pricer.price(SALMON, 500).finalMillicents).toBe(4_000_000);
+    expect(pricer.price(SALMON, 1_000)).toMatchObject({
+      finalMillicents: millicentsFromCents(3_500),
+      sealedByRuleId: "merc_1",
+    });
+  });
+
+  it("n'est couvert par aucun engagement, même de son produit", () => {
+    const pricer = pricerOver({ commitments: [PROMISE] });
+
+    expect(pricer.price(SALMON, 1_000).commitment).toBeNull();
   });
 });

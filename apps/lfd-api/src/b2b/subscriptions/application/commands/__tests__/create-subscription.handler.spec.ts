@@ -2,11 +2,15 @@ import { RecordingPublisher } from "../../../../../platform/events/__tests__/rec
 import type { CreateSubscriptionPayload } from "@lfd/contracts";
 
 import {
+  articleSaleUnitsOver,
   catalogItem,
   noSaleOperations,
   saleOperationsOver,
 } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
-import { OperationOnlyInSubscriptionError } from "../../../domain/errors/subscription-errors.js";
+import {
+  OperationOnlyInSubscriptionError,
+  WeightArticleInSubscriptionError,
+} from "../../../domain/errors/subscription-errors.js";
 import { SubscriptionCreatedEvent } from "../../../domain/events/subscription-created.event.js";
 import { CreateSubscriptionCommand } from "../create-subscription.command.js";
 import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
@@ -39,6 +43,7 @@ describe("CreateSubscriptionHandler", () => {
       noSaleOperations(NOW),
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      articleSaleUnitsOver(),
     );
 
     const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -59,6 +64,7 @@ describe("CreateSubscriptionHandler", () => {
       noSaleOperations(NOW),
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      articleSaleUnitsOver(),
     );
 
     await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -88,6 +94,7 @@ describe("CreateSubscriptionHandler", () => {
         sale,
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+        articleSaleUnitsOver(),
       );
 
       const refused = handler.execute(
@@ -118,11 +125,32 @@ describe("CreateSubscriptionHandler", () => {
         sale,
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+        articleSaleUnitsOver(),
       );
 
       await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
 
       expect(repo.created).toHaveLength(1);
     });
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, §2) : hors des paniers récurrents. */
+describe("CreateSubscriptionHandler — un article au poids", () => {
+  it("refuse le panier et n'écrit rien", async () => {
+    const repo = new FakeSubscriptionRepository();
+    const handler = new CreateSubscriptionHandler(
+      repo,
+      new RecordingPublisher(),
+      noSaleOperations(NOW),
+      new DirectUnitOfWork(),
+      subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      articleSaleUnitsOver([catalogItem("SKU-1", { saleUnit: "weight", weightStepGrams: 100 })]),
+    );
+
+    await expect(
+      handler.execute(new CreateSubscriptionCommand("user_1", payload, null)),
+    ).rejects.toThrow(WeightArticleInSubscriptionError);
+    expect(repo.created).toHaveLength(0);
   });
 });

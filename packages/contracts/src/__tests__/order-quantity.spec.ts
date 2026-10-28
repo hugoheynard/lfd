@@ -1,9 +1,11 @@
 import {
   MAX_LINE_QUANTITY,
+  MAX_LINE_WEIGHT_GRAMS,
   MAX_ORDER_LINES,
   orderLineInputSchema,
   orderQuotePayloadSchema,
   placeOrderPayloadSchema,
+  saleUnitOfLine,
 } from "../index.js";
 import { shopQuoteLineSchema } from "../shop-quote.js";
 
@@ -132,5 +134,48 @@ describe("la borne du nombre de lignes", () => {
 
   it("refuse toujours un panier vide", () => {
     expect(placeOrderPayloadSchema.safeParse({ ...PANIER, lines: [] }).success).toBe(false);
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, P3) : une ligne dit son unité. */
+describe("orderLineInputSchema — l'unité d'une ligne", () => {
+  it("garde la borne des pièces, unité dite ou non", () => {
+    expect(
+      orderLineInputSchema.safeParse({ sku: "VIE-001", quantity: MAX_LINE_QUANTITY + 1 }).success,
+    ).toBe(false);
+    expect(
+      orderLineInputSchema.safeParse({
+        sku: "VIE-001",
+        quantity: MAX_LINE_QUANTITY + 1,
+        saleUnit: "piece",
+      }).success,
+    ).toBe(false);
+  });
+
+  it("laisse passer des grammes au-delà de la borne des pièces, jusqu'à la garde d'une tonne", () => {
+    const line = { sku: "SAU-001", saleUnit: "weight" };
+
+    expect(orderLineInputSchema.safeParse({ ...line, quantity: 12_500 }).success).toBe(true);
+    expect(
+      orderLineInputSchema.safeParse({ ...line, quantity: MAX_LINE_WEIGHT_GRAMS }).success,
+    ).toBe(true);
+    expect(
+      orderLineInputSchema.safeParse({ ...line, quantity: MAX_LINE_WEIGHT_GRAMS + 1 }).success,
+    ).toBe(false);
+  });
+
+  it("refuse une unité inconnue et un poids décimal — 1,25 kg s'écrit 1250", () => {
+    expect(
+      orderLineInputSchema.safeParse({ sku: "SAU-001", quantity: 1, saleUnit: "kg" }).success,
+    ).toBe(false);
+    expect(
+      orderLineInputSchema.safeParse({ sku: "SAU-001", quantity: 1.25, saleUnit: "weight" })
+        .success,
+    ).toBe(false);
+  });
+
+  it("lit une ligne sans unité à la pièce", () => {
+    expect(saleUnitOfLine({})).toBe("piece");
+    expect(saleUnitOfLine({ saleUnit: "weight" })).toBe("weight");
   });
 });

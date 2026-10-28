@@ -34,8 +34,20 @@ import { FixedLaunches, FixedResupplyCutoff } from "./site-resupply-doubles.js";
 
 const SITE = "site_village";
 const ARTICLES = [
-  { sku: "CRO", name: "Croissant", categoryId: "fam", categoryName: "Viennoiseries" },
-  { sku: "PAC", name: "Pain au chocolat", categoryId: "fam", categoryName: "Viennoiseries" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece" as const,
+  },
+  {
+    sku: "PAC",
+    name: "Pain au chocolat",
+    categoryId: "fam",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece" as const,
+  },
 ];
 const CONTENT = {
   siteId: SITE,

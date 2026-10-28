@@ -4,6 +4,7 @@ import {
   ReversedValidityWindowError,
   ScopeIdMismatchError,
   ArchivedVolumeCommitmentIsSealedError,
+  WeightArticleCommitmentError,
 } from "../pricing-errors.js";
 import { VolumeCommitmentAggregate } from "../entities/volume-commitment.js";
 import type { VolumeCommitment } from "../volume-commitment.js";
@@ -197,5 +198,31 @@ describe("VolumeCommitmentAggregate.close", () => {
     expect(() => closed.close("auth0|hugo", DECEMBRE, null)).toThrow(
       ArchivedVolumeCommitmentIsSealedError,
     );
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, §2) : un engagement ne compte que des pièces. */
+describe("VolumeCommitmentAggregate.ensureCountedInPieces", () => {
+  const WEIGHED = new Set(["SAU-001"]);
+
+  it("refuse un engagement de produit ou de déclinaison sur un article au poids", () => {
+    expect(() =>
+      VolumeCommitmentAggregate.ensureCountedInPieces({ type: "product", id: "SAU-001" }, WEIGHED),
+    ).toThrow(WeightArticleCommitmentError);
+    expect(() =>
+      VolumeCommitmentAggregate.ensureCountedInPieces({ type: "variant", id: "SAU-001" }, WEIGHED),
+    ).toThrow(WeightArticleCommitmentError);
+  });
+
+  it("laisse passer un article à la pièce, une famille et le global", () => {
+    expect(() =>
+      VolumeCommitmentAggregate.ensureCountedInPieces({ type: "product", id: "VIE-001" }, WEIGHED),
+    ).not.toThrow();
+    expect(() =>
+      VolumeCommitmentAggregate.ensureCountedInPieces({ type: "category", id: "fam" }, WEIGHED),
+    ).not.toThrow();
+    expect(() =>
+      VolumeCommitmentAggregate.ensureCountedInPieces({ type: "global", id: null }, WEIGHED),
+    ).not.toThrow();
   });
 });

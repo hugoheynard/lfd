@@ -6,6 +6,7 @@ const base = {
   productName: "Croissant",
   unitPriceMillicents: 200_000,
   vatRate: 5.5,
+  saleUnit: "piece" as const,
 };
 
 describe("OrderLine", () => {
@@ -259,5 +260,64 @@ describe("OrderLine", () => {
     // 1,33333 € × 7 = 9,33331 € → 933 centimes HT → 1 120 centimes TTC.
     expect(line.lineTotalCents).toBe(933);
     expect(line.lineTotalTtcCents).toBe(1_120);
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, P3) : la quantité en grammes, le prix au kilo. */
+describe("OrderLine — une ligne au poids", () => {
+  const SALMON = {
+    sku: "SAU-001",
+    productName: "Saumon gravlax",
+    // 12,34567 € HT le kilo.
+    unitPriceMillicents: 1_234_567,
+    vatRate: 5.5,
+    saleUnit: "weight" as const,
+  };
+
+  it("vaut prix au kilo × grammes / 1000, arrondi une seule fois", () => {
+    const line = OrderLine.create({ ...SALMON, quantity: 1_250 }, "pro");
+
+    // 12,34567 × 1,25 = 15,4320875 € → 15,43 €.
+    expect(line.lineTotalCents).toBe(1_543);
+    expect(line.toSnapshot()).toMatchObject({ quantity: 1_250, saleUnit: "weight" });
+  });
+
+  it("scelle pour un particulier l'étiquette d'UN KILO, pas d'un gramme", () => {
+    const line = OrderLine.create(
+      { ...SALMON, unitPriceMillicents: 1_240_000, quantity: 500 },
+      "public",
+    );
+
+    // 12,40 € HT × 1,055 = 13,082 € → l'étiquette du kilo, 13,08 €.
+    expect(line.unitPriceTtcCents).toBe(1_308);
+    // Le HT de la ligne, 6,20 €, taxé : 6,541 → 6,54 €.
+    expect(line.lineTotalTtcCents).toBe(654);
+  });
+
+  it("accepte une composition TTC au poids : étiquette au kilo × grammes / 1000", () => {
+    const input = { ...SALMON, unitPriceMillicents: 1_240_000, quantity: 1_250 };
+    // 13,08 € × 1,25 = 16,35 €.
+    const line = OrderLine.ofTtc(input, {
+      vatRate: 5.5,
+      labelCents: 1_308,
+      ttcCents: 1_635,
+      htCents: 1_550,
+    });
+
+    expect(line.lineTotalTtcCents).toBe(1_635);
+    expect(line.saleUnit).toBe("weight");
+  });
+
+  it("refuse une composition TTC qui compterait les grammes comme des pièces", () => {
+    const input = { ...SALMON, unitPriceMillicents: 1_240_000, quantity: 1_250 };
+
+    expect(() =>
+      OrderLine.ofTtc(input, {
+        vatRate: 5.5,
+        labelCents: 1_308,
+        ttcCents: 1_308 * 1_250,
+        htCents: 1_550,
+      }),
+    ).toThrow(InvalidOrderLineError);
   });
 });

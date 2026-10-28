@@ -168,6 +168,7 @@ export function proDraftInput(basket: ProBasket): DraftOrderInput {
     unitPriceMillicents: price,
     vatRate,
     quantity,
+    saleUnit: "piece" as const,
     pickupDiscountEligible: eligible ?? true,
   }));
   const subtotal = lines.reduce(

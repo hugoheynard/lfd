@@ -421,4 +421,32 @@ describe("customer.order-placed — le lien de gestion (lot C6)", () => {
     expect(render({ manageUrl: "" }).html).not.toContain("Gérer ou annuler");
     expect(render().html).not.toContain("Gérer ou annuler");
   });
+
+  /** La vente au poids (`plan-vente-au-poids.md`, P3) : un poids n'est pas un compte de pièces. */
+  it("dit une ligne au poids par son poids dans le contenu, jamais en pièces", () => {
+    const base = sheet();
+    const html = render({
+      sheet: {
+        ...base,
+        lines: [
+          ...base.lines,
+          {
+            sku: "SAU-001",
+            productName: "Saumon gravlax",
+            quantity: 1250,
+            saleUnit: "weight",
+            unitPriceMillicents: 4_000_000,
+            vatRate: 5.5,
+            lineTotalCents: 5_000,
+            unitPriceTtcCents: null,
+            lineTotalTtcCents: null,
+            priceLabels: [],
+          },
+        ],
+      },
+    }).html;
+
+    expect(html).toContain("12 pièces · Saumon gravlax, 1,25 kg");
+    expect(html).not.toContain("1262 pièces");
+  });
 });

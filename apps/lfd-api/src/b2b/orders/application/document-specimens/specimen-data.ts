@@ -99,6 +99,7 @@ function line(
     unitPriceMillicents: millicentsFromCents(priceCents),
     vatRate,
     quantity,
+    saleUnit: "piece",
   };
 }
 

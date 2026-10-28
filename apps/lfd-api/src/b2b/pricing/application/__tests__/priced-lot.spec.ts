@@ -34,6 +34,7 @@ const CROISSANT = catalogueArticle({
   name: "Croissant au beurre",
   categoryPath: ["fam-vien"],
   unitPriceMillicents: 200_000,
+  saleUnit: "piece",
 });
 
 const PAIN = catalogueArticle({
@@ -41,6 +42,7 @@ const PAIN = catalogueArticle({
   name: "Baguette",
   categoryPath: ["fam-pain"],
   unitPriceMillicents: 100_000,
+  saleUnit: "piece",
 });
 
 /** Un barème qui s'ouvre à 10 pièces, sur tout le catalogue. */

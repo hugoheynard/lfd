@@ -19,6 +19,7 @@ export function quoteViewOf(
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       unitPriceMillicents: line.unitPriceMillicents,
       vatRate: line.vatRate,
       lineTotalCents: line.lineTotalCents,

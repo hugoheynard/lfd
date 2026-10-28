@@ -120,18 +120,79 @@ export const MAX_LINE_QUANTITY = 10_000;
  */
 export const MAX_ORDER_LINES = 100;
 
+/**
+ * **L'unité d'une ligne** (`documentation/pricing/plan-vente-au-poids.md`, §2) :
+ * `piece` — la quantité compte des pièces —, ou `weight` — elle compte des
+ * GRAMMES, et le prix s'entend au kilo. La quantité reste un entier dans les
+ * deux cas : 1,25 kg s'écrit `{ quantity: 1250, saleUnit: "weight" }`.
+ */
+export const orderSaleUnitSchema = z.enum(["piece", "weight"]);
+export type OrderSaleUnit = z.infer<typeof orderSaleUnitSchema>;
+
+/**
+ * **La garde d'une ligne au poids** : une tonne, en grammes.
+ *
+ * Ce n'est PAS une limite métier — Hugo, 2026-10-28 : « pas de limite » —, mais
+ * une garde contre la faute de frappe (un zéro de trop). Tenue par le domaine
+ * de la commande, qui la dit en kilogrammes ; écrite ici parce que la boutique
+ * et le back-office la lisent pour borner leur saisie.
+ */
+export const MAX_LINE_WEIGHT_GRAMS = 1_000_000;
+
+/**
+ * La quantité d'une ligne, **dans son unité** : un entier positif, borné à la
+ * plus large des deux gardes. La borne propre à l'unité se juge sur la ligne
+ * ({@link orderLineInputSchema}), le pas et le minimum d'un article au poids au
+ * domaine, contre l'article.
+ */
 export const orderQuantitySchema = z
   .number()
   .int()
   .positive("quantité ≥ 1")
-  .max(MAX_LINE_QUANTITY, `quantité ≤ ${String(MAX_LINE_QUANTITY)}`);
+  .max(MAX_LINE_WEIGHT_GRAMS, `quantité ≤ ${String(MAX_LINE_WEIGHT_GRAMS)}`);
 
-/** Une ligne demandée : un SKU et une quantité entière positive et bornée. */
-export const orderLineInputSchema = z.object({
-  sku: z.string().trim().min(1, "sku requis"),
-  quantity: orderQuantitySchema,
-});
+/**
+ * La borne d'une ligne à la pièce, {@link MAX_LINE_QUANTITY} — le message
+ * d'avant le poids, inchangé. Une ligne au poids passe : sa garde, son pas et
+ * son minimum se jugent au domaine contre l'article.
+ */
+function refinePieceBound(
+  line: { readonly quantity: number; readonly saleUnit?: OrderSaleUnit | undefined },
+  context: z.RefinementCtx,
+): void {
+  if ((line.saleUnit ?? "piece") === "piece" && line.quantity > MAX_LINE_QUANTITY) {
+    context.addIssue({
+      code: "custom",
+      path: ["quantity"],
+      message: `quantité ≤ ${String(MAX_LINE_QUANTITY)}`,
+    });
+  }
+}
+
+/**
+ * Une ligne demandée : un SKU, une quantité entière positive et bornée, et
+ * l'unité dans laquelle elle se compte.
+ *
+ * `saleUnit` absent = `piece`, ce que disait toute ligne avant la vente au
+ * poids. Ce n'est pas une correction : une ligne sans unité qui vise un
+ * article au poids est REFUSÉE au domaine (unité discordante), jamais relue
+ * en grammes.
+ */
+export const orderLineInputSchema = z
+  .object({
+    sku: z.string().trim().min(1, "sku requis"),
+    quantity: orderQuantitySchema,
+    saleUnit: orderSaleUnitSchema.optional(),
+  })
+  .superRefine(refinePieceBound);
 export type OrderLineInput = z.infer<typeof orderLineInputSchema>;
+
+/** L'unité d'une ligne reçue — `piece` quand elle ne la dit pas (cf. {@link orderLineInputSchema}). */
+export function saleUnitOfLine(line: {
+  readonly saleUnit?: OrderSaleUnit | undefined;
+}): OrderSaleUnit {
+  return line.saleUnit ?? "piece";
+}
 
 /**
  * **La quantité d'un DEVIS — sans borne commerciale.**
@@ -159,6 +220,8 @@ export const quoteQuantitySchema = z.number().int().positive("quantité ≥ 1").
 export const quoteLineInputSchema = z.object({
   sku: z.string().trim().min(1, "sku requis"),
   quantity: quoteQuantitySchema,
+  /** Absent = `piece` ; une unité discordante avec l'article est refusée au domaine. */
+  saleUnit: orderSaleUnitSchema.optional(),
 });
 export type QuoteLineInput = z.infer<typeof quoteLineInputSchema>;
 
@@ -476,9 +539,13 @@ export type RecurringDeltas = z.infer<typeof recurringDeltasSchema>;
 export interface OrderLineView {
   readonly sku: string;
   readonly productName: string;
+  /** HT en millicentimes : le prix d'une pièce, ou d'UN KILO si `saleUnit = weight`. */
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
+  /** L'unité de la quantité, figée à la passation (`plan-vente-au-poids.md`). */
+  readonly saleUnit: OrderSaleUnit;
   readonly lineTotalCents: number;
   /**
    * Le prix d'UNE pièce **taxe comprise**, en centimes — **scellé** à la
@@ -989,6 +1056,8 @@ export interface CustomerOrderLineView {
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly quantity: number;
+  /** Cf. {@link OrderLineView.saleUnit}. */
+  readonly saleUnit: OrderSaleUnit;
   readonly lineTotalCents: number;
   /** `null` sur une commande passée avant que la trace n'existe — cf. {@link OrderLineView.pricing}. */
   readonly pricing: CustomerOrderLinePricingTrace | null;
@@ -1135,6 +1204,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
       unitPriceMillicents: line.unitPriceMillicents,
       vatRate: line.vatRate,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       lineTotalCents: line.lineTotalCents,
       pricing:
         line.pricing === null
@@ -1263,6 +1333,8 @@ export interface OrderQuoteLineView {
   /** Le prix **réellement facturé** à cette quantité, pour ce client. */
   readonly unitPriceMillicents: number;
   readonly quantity: number;
+  /** L'unité de la quantité : au poids, des grammes, et des prix au kilo. */
+  readonly saleUnit: OrderSaleUnit;
   readonly vatRate: number;
   /** Les étages qui ont produit un effet. Vide = le tarif d'entrée s'applique tel quel. */
   readonly steps: readonly PriceStepView[];
@@ -1322,6 +1394,8 @@ export interface CustomerOrderQuoteLineView {
   /** Le prix **réellement facturé** à cette quantité, pour ce client. */
   readonly unitPriceMillicents: number;
   readonly quantity: number;
+  /** L'unité de la quantité : au poids, des grammes, et des prix au kilo. */
+  readonly saleUnit: OrderSaleUnit;
   readonly vatRate: number;
   /**
    * Le barème qui vise l'article, palier par palier, ou `null`.
@@ -1359,6 +1433,7 @@ export function toCustomerQuote(view: OrderQuoteView): CustomerOrderQuoteView {
       canonicalMillicents: line.canonicalMillicents,
       unitPriceMillicents: line.unitPriceMillicents,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       vatRate: line.vatRate,
       volumeTiers: line.volumeTiers,
     })),

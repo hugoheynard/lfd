@@ -38,7 +38,13 @@ const LAUNCHED_AT = new Date("2026-01-02T08:30:00Z");
 const TODAY = "2026-01-02";
 const VILLAGE = "site_village";
 const CATALOGUE = new Catalogue([
-  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece",
+  },
 ]);
 
 function setup() {

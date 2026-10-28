@@ -191,6 +191,7 @@ export class ShopCataloguePricing {
                 name: item.name,
                 categoryPath: source.family.path,
                 unitPriceMillicents: item.unitPriceMillicents,
+                saleUnit: source.saleUnit,
               }),
               // 🔴 **Quantité 1, et c'est une limite assumée.** `minQuantity`
               // existe à tous les étages : un palier « à partir de 50 » ne se

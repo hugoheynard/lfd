@@ -18,6 +18,7 @@ function line(overrides: Partial<OrderLineView> = {}): OrderLineView {
     productName: "Éclair",
     unitPriceMillicents: 210_000,
     vatRate: 0.055,
+    saleUnit: "piece",
     quantity: 4,
     lineTotalCents: 840,
     // Une commande PROFESSIONNELLE par défaut : rien de scellé côté taxe

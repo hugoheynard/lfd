@@ -21,7 +21,12 @@ import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
 import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { vatMethodOf } from "./order-money-columns.js";
-import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
+import {
+  orderLineSaleUnitOf,
+  parseAllergens,
+  parseTrace,
+  type OrderLineRow,
+} from "./order-line-row.js";
 
 /** La clé de ligne d'un texte de CGV → son document (cf. `PrismaOrderRepository`). */
 const DOCUMENT_OF_ROW_KEY: ReadonlyMap<string, SalesTermsDocument> = new Map([
@@ -35,6 +40,7 @@ const LINE_SELECT = {
   unitPriceMillicents: true,
   vatRate: true,
   quantity: true,
+  saleUnit: true,
   lineTotalCents: true,
   unitPriceTtcCents: true,
   lineTotalTtcCents: true,
@@ -214,6 +220,7 @@ function toLineSnapshot(line: RevisableLineRow): OrderLineSnapshot {
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate.toNumber(),
     quantity: line.quantity,
+    saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
     lineTotalCents: line.lineTotalCents,
     unitPriceTtcCents: line.unitPriceTtcCents,
     lineTotalTtcCents: line.lineTotalTtcCents,

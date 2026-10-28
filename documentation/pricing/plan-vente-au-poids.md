@@ -4,6 +4,19 @@
 > « l'unité de vente se saisit »). « Déjà publiée » est un drapeau de la
 > déclinaison, `has_been_published`, posé à l'activation et jamais remis à
 > faux (le statut, lui, repasse en brouillon au retrait).
+>
+> P3 bâti côté serveur et contrats le 2026-10-28 (non commité à l'écriture de
+> cette ligne) : `order_lines.sale_unit` (migration
+> `20261028234000_la_vente_au_poids_a_la_commande`), `saleUnit` facultatif sur
+> les lignes demandées (absent = `piece`, une discordance est refusée), la
+> validation au domaine (`apps/lfd-api/src/b2b/orders/domain/services/sale-quantity-rules.ts`).
+> **L'exclusion des décisions globales et de famille** est tenue à un seul
+> endroit, `coversManyArticles` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`), relu
+> par `matchesScope` et `scopeKeysOf` : règles, barèmes et planchers passent
+> tous par là ; les engagements par `LoadedPricer.commitmentOf`. Le refus à
+> l'écriture d'une décision de produit qui mêlerait les unités n'est pas bâti :
+> au commerce, une portée produit vise aujourd'hui un seul SKU
+> (`pricing-context.ts`), elle ne peut pas mêler deux unités.
 
 > 📝 Plan du 2026-10-28, doc-first. Demande de Hugo : « j'ai certains articles
 > qui se vendent au poids, fais-moi un plan qui va jusqu'à Factur-X, et le

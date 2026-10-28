@@ -71,6 +71,7 @@ export const LIVE_PICKUP: CustomerOrderView = {
       unitPriceMillicents: 56_850,
       vatRate: 5.5,
       quantity: 2,
+      saleUnit: 'piece',
       lineTotalCents: 1_137,
       pricing: null,
       allergens: null,

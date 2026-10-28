@@ -46,6 +46,11 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.order-placed|routingDeliveryWithoutCity",
   "customer.order-placed|windowBetween",
   "customer.order-placed|windowBefore",
+  // Une ligne au poids (`plan-vente-au-poids.md`, P3) : aucun cas de
+  // l'empreinte n'en porte — les empreintes à la pièce restent celles d'avant ;
+  // `order-mail-content.spec.ts` et `order-placed-mail.spec.ts` les parcourent.
+  "customer.order-placed|recapWeighed",
+  "customer.order-ready|weighedLabel",
   // La proposition d'« Écrire au client » (E6d) : elle rédige le texte que
   // l'équipe relit ; le courriel rend le texte relu, une donnée.
   "customer.order-shortfall|intro",

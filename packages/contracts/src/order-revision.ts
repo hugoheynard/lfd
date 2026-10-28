@@ -6,6 +6,7 @@ import {
   hasAddressWhenDelivered,
   hasPickupPointWhenPickedUp,
   orderContentShape,
+  type OrderSaleUnit,
   pickupPointIssue,
 } from "./order.js";
 
@@ -53,8 +54,11 @@ export type OrderRevisionPayload = z.infer<typeof orderRevisionPayloadSchema>;
 export interface OrderRevisionQuoteLineView {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** Prix unitaire HT, en millicentimes. */
+  /** L'unité de la quantité, figée avec le prix (`plan-vente-au-poids.md`). */
+  readonly saleUnit: OrderSaleUnit;
+  /** Prix unitaire HT, en millicentimes — au kilo pour une ligne au poids. */
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly lineTotalCents: number;

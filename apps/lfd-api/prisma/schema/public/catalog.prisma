@@ -189,8 +189,8 @@ model CatalogItem {
   /// **L'unité de vente** reçue du référentiel (fil v14,
   /// `documentation/pricing/plan-vente-au-poids.md`, P2) : `piece` ou `weight`.
   /// Au poids, la quantité se compte en grammes et le prix s'entend au kilo ;
-  /// le minimum et le pas sont en grammes, `NULL` à la pièce (CHECK). Stockés
-  /// seulement : ni la commande ni la vitrine ne les lisent avant P3/P4.
+  /// le minimum et le pas sont en grammes, `NULL` à la pièce (CHECK). La
+  /// commande les lit depuis P3 (2026-10-28) ; la vitrine pas encore (P4).
   saleUnit        String @default("piece") @map("sale_unit")
   weightMinGrams  Int?   @map("weight_min_grams")
   weightStepGrams Int?   @map("weight_step_grams")

@@ -100,7 +100,7 @@ export class PricingMaterialsLoader {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
       quantity,
-      scopeContext: pricingContextFor(item.sku, item.categoryPath, quantity, parties, at),
+      scopeContext: pricingContextFor(item, quantity, parties, at),
     }));
     const scopes = scopesOfAll(entries.map((entry) => entry.scopeContext));
     if (scopes === null) {

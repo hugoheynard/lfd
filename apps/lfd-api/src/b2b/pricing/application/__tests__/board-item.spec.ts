@@ -30,8 +30,7 @@ import { StaffAuthors } from "../../../../staff/directory/domain/staff-author-di
 
 const AT = new Date("2026-08-17T00:00:00.000Z");
 const CONTEXT = pricingContextFor(
-  "VIE-001",
-  ["fam-vien"],
+  { sku: "VIE-001", categoryPath: ["fam-vien"], saleUnit: "piece" },
   1,
   { companyId: null, pricingCompanyId: null },
   AT,
@@ -42,6 +41,7 @@ const ARTICLE = catalogueArticle({
   name: "Croissant",
   categoryPath: ["fam-vien"],
   unitPriceMillicents: 200_000,
+  saleUnit: "piece",
 });
 
 function ruleRow(

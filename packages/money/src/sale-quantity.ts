@@ -50,3 +50,13 @@ function wholeAmount(amount: number, unitLabel: string): number {
   }
   return amount;
 }
+
+/**
+ * Une quantité **dans l'unité d'une ligne** — le geste de tout lecteur d'une
+ * ligne figée, qui porte sa quantité et son unité côte à côte.
+ *
+ * @throws {RangeError} si `amount` n'est pas un entier positif ou nul.
+ */
+export function saleQuantity(amount: number, unit: SaleUnit): SaleQuantity {
+  return unit === "weight" ? grams(amount) : pieces(amount);
+}

@@ -31,6 +31,7 @@ const CROISSANT = catalogueArticle({
   name: "Croissant",
   categoryPath: ["fam-vien"],
   unitPriceMillicents: millicentsFromCents(100),
+  saleUnit: "piece",
 });
 
 const SITE: PricingParties = { companyId: "co_site", pricingCompanyId: "co_group" };

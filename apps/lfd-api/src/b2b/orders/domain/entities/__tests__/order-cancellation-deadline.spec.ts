@@ -46,6 +46,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
         productName: "Croissant",
         unitPriceMillicents: millicentsFromCents(200),
         vatRate: 5.5,
+        saleUnit: "piece",
         quantity: 1,
       },
     ],

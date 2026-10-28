@@ -54,6 +54,7 @@ const line = (over: Partial<OrderQuoteLineView>): OrderQuoteLineView => ({
   canonicalMillicents: 200,
   unitPriceMillicents: 200,
   quantity: 1,
+  saleUnit: 'piece',
   vatRate: 5.5,
   steps: [],
   floored: false,

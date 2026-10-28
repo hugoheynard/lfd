@@ -123,6 +123,7 @@ export function itemView(
     name: article.name,
     categoryPath: article.categoryPath,
     canonicalMillicents: article.canonicalMillicents,
+    saleUnit: article.saleUnit,
   };
   // 🔴 **L'écran ne calcule plus son prix : il le demande.** La même méthode que
   // la caisse, sur les mêmes matériaux — barèmes et mercuriale compris. C'est ce

@@ -148,6 +148,7 @@ describe("le devis de la vitrine", () => {
       {
         sku: "VIE-001",
         quantity: 12,
+        saleUnit: "piece",
         unitPriceMillicents: 100_000,
         // Voie B (2026-10-27, plan du centime § 4) : 12 × étiquette 1,06 € = 12,72 € TTC, HT 12,72 − 0,67.
         lineTotalCents: 1_205,
@@ -355,6 +356,10 @@ describe("le devis de la vitrine", () => {
         // règle de tri, et elle est la raison d'être de ce cas.
         "lineTotalTtcCents",
         "quantity",
+        // Ajouté le 2026-10-28 (vente au poids, P3) : l'unité de la quantité —
+        // des pièces ou des grammes. Elle dit ce que la ligne compte, rien de
+        // la façon dont le prix a été fabriqué.
+        "saleUnit",
         "sku",
         "unitPriceMillicents",
         "vatRatePercent",

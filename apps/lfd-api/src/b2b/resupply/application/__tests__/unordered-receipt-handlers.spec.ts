@@ -78,12 +78,19 @@ describe("le réassort sans commande", () => {
 
 it("liste les articles proposables avec leur famille, sans prix", async () => {
   await expect(new ListResupplyArticlesHandler(CATALOGUE).execute()).resolves.toEqual([
-    { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+    {
+      sku: "CRO",
+      name: "Croissant",
+      categoryId: "fam_morning",
+      categoryName: "Viennoiseries",
+      saleUnit: "piece",
+    },
     {
       sku: "PAC",
       name: "Pain au chocolat",
       categoryId: "fam_morning",
       categoryName: "Viennoiseries",
+      saleUnit: "piece",
     },
   ]);
 });

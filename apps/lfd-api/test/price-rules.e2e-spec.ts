@@ -820,6 +820,8 @@ describe("POST /orders/quote — la grille et le scellement", () => {
       "canonicalMillicents",
       "productName",
       "quantity",
+      // L'unité de la quantité (vente au poids, P3, 2026-10-28) : ni règle ni marge.
+      "saleUnit",
       "sku",
       "unitPriceMillicents",
       "vatRate",

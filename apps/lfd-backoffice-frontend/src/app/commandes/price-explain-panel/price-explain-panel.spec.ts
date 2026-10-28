@@ -31,6 +31,7 @@ const LINE: OrderLineView = {
   unitPriceMillicents: 180_000,
   vatRate: 5.5,
   quantity: 12,
+  saleUnit: 'piece',
   lineTotalCents: 2_160,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,

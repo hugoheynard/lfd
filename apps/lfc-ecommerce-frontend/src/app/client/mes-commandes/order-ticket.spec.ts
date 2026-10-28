@@ -16,6 +16,7 @@ const BANANA: CustomerOrderLineView = {
   unitPriceMillicents: 1_990_521,
   vatRate: 5.5,
   quantity: 1,
+  saleUnit: 'piece',
   lineTotalCents: 1_990,
   pricing: null,
   allergens: null,

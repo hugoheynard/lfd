@@ -39,6 +39,7 @@ const food = (qty: number, priceCents = 200, rate = 5.5): OrderLineInput => ({
   productName: "Croissant",
   unitPriceMillicents: millicentsFromCents(priceCents),
   vatRate: rate,
+  saleUnit: "piece",
   quantity: qty,
 });
 
@@ -111,6 +112,7 @@ describe("Order.draft — calcul monétaire", () => {
         productName: "Croissant",
         unitPriceMillicents: 200_000,
         vatRate: 5.5,
+        saleUnit: "piece",
         quantity: 3,
         lineTotalCents: 600,
         // 🔴 Le taxe compris est SCELLÉ parce que cette commande n'a pas de

@@ -44,6 +44,7 @@ const CROISSANT: LineToPrice = {
     name: "Croissant au beurre",
     categoryPath: ["fam-vien"],
     unitPriceMillicents: 200_000,
+    saleUnit: "piece",
   }),
 };
 

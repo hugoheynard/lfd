@@ -1,6 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
+import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { SubscriptionOccurrenceOverriddenEvent } from "../../domain/events/subscription-acts.events.js";
 import { SubscriptionRepository } from "../../domain/ports/subscription.repository.js";
@@ -28,6 +29,7 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
+    private readonly saleUnits: ArticleSaleUnits,
   ) {}
 
   async execute(command: UpsertOccurrenceOverrideCommand): Promise<void> {
@@ -38,13 +40,20 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
       command.actorUserId,
     );
     const { payload } = command;
+    const weightSold = await this.saleUnits.weightSoldAmong(payload.lines.map((line) => line.sku));
     const date = IsoDate.fromString(command.date);
     const before = subscription.overrideOn(date);
     const after = subscription.overrideOccurrence(date, {
       skipped: payload.skipped,
       lines: payload.skipped
         ? []
-        : payload.lines.map((line) => SubscriptionLine.create(line.sku, line.quantity)),
+        : payload.lines.map((line) =>
+            SubscriptionLine.requested(
+              line.sku,
+              line.quantity,
+              weightSold.has(line.sku) ? "weight" : "piece",
+            ),
+          ),
       note: payload.note,
     });
     await this.uow.run(async () => {

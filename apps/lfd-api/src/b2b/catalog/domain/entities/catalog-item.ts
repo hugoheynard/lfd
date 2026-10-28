@@ -3,6 +3,7 @@ import {
   FeaturingOutsideAudienceError,
   MaskingOutsideAudienceError,
 } from "../errors/catalog-errors.js";
+import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { ShopAudience } from "../ports/catalog.reader.js";
 import { audienceIncludes, type CatalogAudience } from "../served-to.js";
 import type { AllergenTextsByLanguage } from "../shop-allergens.js";
@@ -52,11 +53,7 @@ export interface OrderTimeLimitFacts {
   readonly graceMinutes: number;
 }
 
-/**
- * L'unité dans laquelle un article se vend : des pièces, ou des grammes
- * (`documentation/pricing/plan-vente-au-poids.md`).
- */
-export type CatalogSaleUnit = "piece" | "weight";
+export type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 
 export interface PimFacts {
   readonly sku: string;
@@ -101,9 +98,9 @@ export interface PimFacts {
   /**
    * **L'unité de vente** reçue du référentiel (`plan-vente-au-poids.md`, P2) :
    * `piece`, ou `weight` — la quantité se compte alors en grammes et le prix
-   * s'entend au kilo. Stockée et lue ici seulement : ni la commande ni la
-   * vitrine ne la lisent encore (P3, P4). `piece` pour un article reçu avant
-   * le fil v14.
+   * s'entend au kilo. La commande la lit depuis P3 (2026-10-28, par
+   * `ResolvedCatalogItem`) ; la vitrine pas encore (P4). `piece` pour un
+   * article reçu avant le fil v14.
    */
   readonly saleUnit: CatalogSaleUnit;
   /** Au poids, le minimum commandable en grammes ; `null` = aucun, ou à la pièce. */

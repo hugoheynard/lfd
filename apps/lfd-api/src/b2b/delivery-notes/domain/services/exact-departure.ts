@@ -53,7 +53,11 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
   }
   const fixedFee = adjustments.deliveryFee?.mode === "amount";
   const composition = composeExactOrder({
-    lines: input.lines,
+    // 🔴 Le bon de livraison ne porte pas encore l'unité de ses lignes : il
+    // compose en pièces, comme avant la vente au poids. Une commande au poids
+    // partant en livraison partielle relève des lots P5/P6 de
+    // `plan-vente-au-poids.md`, qui lui donneront `sale_unit` (2026-10-28).
+    lines: input.lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
     discountAdjustment: adjustments.discount,
     deliveryFeeAdjustment: adjustments.deliveryFee,
     deliveryVatMode: adjustments.deliveryVatMode,

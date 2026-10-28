@@ -1,6 +1,9 @@
 import type { CreateSubscriptionPayload } from "@lfd/contracts";
 
-import { noSaleOperations } from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
+import {
+  articleSaleUnitsOver,
+  noSaleOperations,
+} from "../../../../catalog/application/__tests__/sale-operations-doubles.js";
 import {
   SUBSCRIPTION_CREATED,
   SUBSCRIPTION_DELETED,
@@ -51,10 +54,17 @@ function build(options: { readonly member?: boolean } = {}) {
       noSaleOperations(new Date("2026-08-01T08:00:00.000Z")),
       uow,
       doubles.gestures,
+      articleSaleUnitsOver(),
     ),
     status: new SetSubscriptionStatusHandler(repo, events, uow, doubles.gestures),
     remove: new DeleteSubscriptionHandler(repo, events, uow, doubles.gestures),
-    override: new UpsertOccurrenceOverrideHandler(repo, events, uow, doubles.gestures),
+    override: new UpsertOccurrenceOverrideHandler(
+      repo,
+      events,
+      uow,
+      doubles.gestures,
+      articleSaleUnitsOver(),
+    ),
   };
 }
 

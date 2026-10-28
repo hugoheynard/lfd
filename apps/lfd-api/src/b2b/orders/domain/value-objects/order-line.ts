@@ -1,5 +1,15 @@
 import type { OrderClientele, OrderLineAllergens, OrderLinePricingTrace } from "@lfd/contracts";
-import { lineTotalCents, pieces, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
+import {
+  GRAMS_PER_KILOGRAM,
+  lineTotalCents,
+  pieces,
+  roundToCents,
+  saleQuantity,
+  ttcCentsFromHtMillicents,
+  ttcCentsOf,
+  type SaleQuantity,
+  type SaleUnit,
+} from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
@@ -16,7 +26,14 @@ export interface OrderLineInput {
   readonly unitPriceMillicents: number;
   /** Taux de TVA du produit en %, ex. 5.5 ou 20. */
   readonly vatRate: number;
+  /** Des pièces, ou des GRAMMES si `saleUnit = weight` — toujours un entier. */
   readonly quantity: number;
+  /**
+   * **L'unité de la quantité**, figée comme le prix (`plan-vente-au-poids.md`,
+   * P3). Au poids, `unitPriceMillicents` est un prix AU KILO. Obligatoire :
+   * une ligne sans unité ne doit plus pouvoir s'écrire.
+   */
+  readonly saleUnit: SaleUnit;
   /**
    * **Pourquoi** ce prix — la trace de résolution, figée avec lui.
    *
@@ -105,6 +122,7 @@ export class OrderLine {
     readonly unitPriceMillicents: number,
     readonly vatRate: number,
     readonly quantity: number,
+    readonly saleUnit: SaleUnit,
     readonly lineTotalCents: number,
     readonly unitPriceTtcCents: number | null,
     readonly lineTotalTtcCents: number | null,
@@ -127,11 +145,12 @@ export class OrderLine {
     ensureQuantityAndPrice(input);
     // **L'unique arrondi de la ligne**, nommé ici pour que le taxe compris s'en
     // dérive plutôt que de refaire sa propre multiplication.
-    const htCents = lineTotalCents(input.unitPriceMillicents, pieces(input.quantity));
+    const htCents = lineTotalCents(input.unitPriceMillicents, quantityOf(input));
     // Le prix d'une pièce passe par le MÊME chemin que la vitrine —
     // `ttcCentsOf(lineTotalCents(prix, pieces(1)), taux)` — et rend donc le nombre que
     // le client a lu sur la vignette, au centime près. Un second arrondi a lieu
-    // ici, sur la pièce, et c'est voulu : c'est celui de l'étiquette.
+    // ici, sur la pièce, et c'est voulu : c'est celui de l'étiquette. Au poids,
+    // l'étiquette est celle d'UN KILO.
     const seals = clientele === "public";
     return new OrderLine(
       input.sku,
@@ -139,13 +158,17 @@ export class OrderLine {
       input.unitPriceMillicents,
       input.vatRate,
       input.quantity,
+      input.saleUnit,
       // Il est calculé plus haut, et nulle part avant : arrondir le prix
       // unitaire d'abord revenait à multiplier l'erreur par la quantité — douze
       // articles à 9,00 € TTC facturaient 107,98 € au lieu de 108,00. Le prix
       // unitaire garde ses décimales jusqu'à ce point.
       htCents,
       seals
-        ? ttcCentsOf(lineTotalCents(input.unitPriceMillicents, pieces(1)), input.vatRate)
+        ? ttcCentsOf(
+            lineTotalCents(input.unitPriceMillicents, labelQuantityOf(input)),
+            input.vatRate,
+          )
         : null,
       seals ? ttcCentsOf(htCents, input.vatRate) : null,
       assertConsistent(input),
@@ -184,7 +207,7 @@ export class OrderLine {
     if (
       composed.vatRate !== input.vatRate ||
       composed.labelCents !== ttcCentsFromHtMillicents(input.unitPriceMillicents, input.vatRate) ||
-      composed.ttcCents !== composed.labelCents * input.quantity ||
+      composed.ttcCents !== labelTimesQuantity(composed.labelCents, input) ||
       composed.htCents < 0 ||
       composed.htCents > composed.ttcCents
     ) {
@@ -199,6 +222,7 @@ export class OrderLine {
       input.unitPriceMillicents,
       input.vatRate,
       input.quantity,
+      input.saleUnit,
       composed.htCents,
       composed.labelCents,
       composed.ttcCents,
@@ -217,6 +241,7 @@ export class OrderLine {
       unitPriceMillicents: this.unitPriceMillicents,
       vatRate: this.vatRate,
       quantity: this.quantity,
+      saleUnit: this.saleUnit,
       lineTotalCents: this.lineTotalCents,
       unitPriceTtcCents: this.unitPriceTtcCents,
       lineTotalTtcCents: this.lineTotalTtcCents,
@@ -237,8 +262,42 @@ export interface ComposedTtcLine {
   readonly htCents: number;
 }
 
+/**
+ * La quantité de la ligne **avec son unité** — le seul argument que les calculs
+ * de ligne acceptent (`@lfd/money`, `lineTotalCents`).
+ */
+export function quantityOf(line: Pick<OrderLineInput, "quantity" | "saleUnit">): SaleQuantity {
+  return saleQuantity(line.quantity, line.saleUnit);
+}
+
+/** Ce que dit l'étiquette : une pièce, ou un kilo. */
+function labelQuantityOf(line: Pick<OrderLineInput, "saleUnit">): SaleQuantity {
+  return line.saleUnit === "weight" ? saleQuantity(GRAMS_PER_KILOGRAM, "weight") : pieces(1);
+}
+
+/**
+ * L'étiquette × la quantité, en centimes — la règle de `composeTtcOrder` : à la
+ * pièce, un produit exact ; au poids, l'étiquette au kilo × grammes / 1000,
+ * arrondie une fois, la moitié vers le haut (`plan-centime-particuliers.md`, §4).
+ */
+function labelTimesQuantity(
+  labelCents: number,
+  line: Pick<OrderLineInput, "quantity" | "saleUnit">,
+): number {
+  if (line.saleUnit === "piece") {
+    return labelCents * line.quantity;
+  }
+  return roundToCents({
+    num: BigInt(labelCents) * BigInt(line.quantity),
+    den: BigInt(GRAMS_PER_KILOGRAM),
+  });
+}
+
 /** Les deux refus communs aux deux factories. */
 function ensureQuantityAndPrice(input: OrderLineInput): void {
+  if (input.saleUnit !== "piece" && input.saleUnit !== "weight") {
+    throw new InvalidOrderLineError(input.sku, "unité de vente « piece » ou « weight » attendue");
+  }
   if (!Number.isInteger(input.quantity) || input.quantity <= 0) {
     throw new InvalidOrderLineError(input.sku, "quantité entière strictement positive attendue");
   }

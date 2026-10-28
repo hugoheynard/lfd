@@ -157,7 +157,21 @@ function entryPriceOf(line: OrderLineView): number | null {
 }
 
 function atelierLineOf(line: OrderLineView): AtelierSheetLine {
-  return { sku: line.sku, productName: line.productName, quantity: line.quantity };
+  return {
+    sku: line.sku,
+    productName: line.productName,
+    quantity: line.quantity,
+    ...weightMarkOf(line),
+  };
+}
+
+/**
+ * La marque d'une ligne au poids, et RIEN pour une ligne à la pièce : une
+ * feuille à la pièce se rend au bit près comme avant la vente au poids
+ * (`plan-vente-au-poids.md`, P3).
+ */
+function weightMarkOf(line: Pick<OrderLineView, "saleUnit">): { readonly saleUnit?: "weight" } {
+  return line.saleUnit === "weight" ? { saleUnit: "weight" } : {};
 }
 
 function clientLineOf(line: OrderLineView): ClientSheetLine {
@@ -165,6 +179,7 @@ function clientLineOf(line: OrderLineView): ClientSheetLine {
     sku: line.sku,
     productName: line.productName,
     quantity: line.quantity,
+    ...weightMarkOf(line),
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate,
     lineTotalCents: line.lineTotalCents,

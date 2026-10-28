@@ -1,3 +1,5 @@
+import { weightLabel } from "@lfd/money";
+
 /**
  * **Les montants du bon de commande en PDF**, écrits à la main.
  *
@@ -57,4 +59,44 @@ export function unitPrice(millicents: number): string {
   const decimals = trimmed.length < 2 ? trimmed.padEnd(2, "0") : trimmed;
   const grouped = String(units).replace(/\B(?=(\d{3})+(?!\d))/gu, " ");
   return `${millicents < 0 ? `${MINUS} ` : ""}${grouped},${decimals} €`;
+}
+
+/**
+ * La quantité d'une ligne telle que le bon l'imprime : un nombre de pièces, ou
+ * un poids — « 500 g », « 1,25 kg » (`plan-vente-au-poids.md`, §2 : grammes
+ * sous le kilo, kilos au-delà).
+ */
+export function quantityText(line: {
+  readonly quantity: number;
+  readonly saleUnit?: "weight";
+}): string {
+  return line.saleUnit === "weight" ? weightLabel(line.quantity) : String(line.quantity);
+}
+
+/** Un prix unitaire au poids s'entend au kilo : « 12,40 € / kg ». */
+export function perUnitSuffix(line: { readonly saleUnit?: "weight" }): string {
+  return line.saleUnit === "weight" ? " / kg" : "";
+}
+
+/**
+ * L'annonce du tableau : « 3 lignes, 12 pièces » — les lignes au poids n'ont
+ * pas de pièces, elles se comptent à part (« 1 au poids »). Une commande à la
+ * pièce s'annonce exactement comme avant la vente au poids.
+ */
+export function articlesHeading(
+  lines: readonly { readonly quantity: number; readonly saleUnit?: "weight" }[],
+): string {
+  const count = lines.length;
+  const weighed = lines.filter((line) => line.saleUnit === "weight").length;
+  const pieces = lines
+    .filter((line) => line.saleUnit !== "weight")
+    .reduce((sum, line) => sum + line.quantity, 0);
+  const parts = [`${String(count)} ${count > 1 ? "lignes" : "ligne"}`];
+  if (weighed === 0 || pieces > 0) {
+    parts.push(`${String(pieces)} ${pieces > 1 ? "pièces" : "pièce"}`);
+  }
+  if (weighed > 0) {
+    parts.push(`${String(weighed)} au poids`);
+  }
+  return `ARTICLES — ${parts.join(", ")}`;
 }

@@ -11,6 +11,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 1990521,
           lineTotalCents: 1991,
           lineTotalTtcCents: 2101,
@@ -35,6 +36,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -43,6 +45,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -51,6 +54,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-2",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -59,6 +63,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-3",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -67,6 +72,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-4",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -75,6 +81,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-5",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -83,6 +90,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-6",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -91,6 +99,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-7",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -99,6 +108,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-8",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -107,6 +117,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-9",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -115,6 +126,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-10",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -123,6 +135,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-11",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -131,6 +144,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-12",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -139,6 +153,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-13",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -147,6 +162,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-14",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -155,6 +171,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-15",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -163,6 +180,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-16",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -171,6 +189,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-17",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -179,6 +198,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-18",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -187,6 +207,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-19",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -195,6 +216,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-20",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -203,6 +225,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-21",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -211,6 +234,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-22",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -219,6 +243,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-23",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -227,6 +252,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-24",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -235,6 +261,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-25",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -243,6 +270,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-26",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -251,6 +279,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-27",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -259,6 +288,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-28",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -267,6 +297,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-29",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 41667,
           lineTotalCents: 42,
           lineTotalTtcCents: 50,
@@ -291,6 +322,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 180095,
           lineTotalCents: 180,
           lineTotalTtcCents: 190,
@@ -299,6 +331,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 47393,
           lineTotalCents: 47,
           lineTotalTtcCents: 50,
@@ -323,6 +356,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 12,
+          saleUnit: "piece",
           unitPriceMillicents: 85308,
           lineTotalCents: 1024,
           lineTotalTtcCents: 1080,
@@ -347,6 +381,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 333000,
           lineTotalCents: 333,
           lineTotalTtcCents: 351,
@@ -355,6 +390,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 333000,
           lineTotalCents: 333,
           lineTotalTtcCents: 400,
@@ -382,6 +418,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 333000,
           lineTotalCents: 333,
           lineTotalTtcCents: 351,
@@ -390,6 +427,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 333000,
           lineTotalCents: 333,
           lineTotalTtcCents: 400,
@@ -417,6 +455,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 3,
+          saleUnit: "piece",
           unitPriceMillicents: 250000,
           lineTotalCents: 750,
           lineTotalTtcCents: 791,
@@ -425,6 +464,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 1000000,
           lineTotalCents: 1000,
           lineTotalTtcCents: 1200,
@@ -452,6 +492,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 150000,
           lineTotalCents: 150,
           lineTotalTtcCents: 158,
@@ -476,6 +517,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 10,
+          saleUnit: "piece",
           unitPriceMillicents: 120000,
           lineTotalCents: 1200,
           lineTotalTtcCents: 1266,
@@ -484,6 +526,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 1000000,
           lineTotalCents: 1000,
           lineTotalTtcCents: 1200,
@@ -516,6 +559,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 2,
+          saleUnit: "piece",
           unitPriceMillicents: 0,
           lineTotalCents: 0,
           lineTotalTtcCents: 0,
@@ -524,6 +568,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 4,
+          saleUnit: "piece",
           unitPriceMillicents: 310000,
           lineTotalCents: 1240,
           lineTotalTtcCents: 1308,
@@ -548,6 +593,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 5,
+          saleUnit: "piece",
           unitPriceMillicents: 420000,
           lineTotalCents: 2100,
           lineTotalTtcCents: 2216,
@@ -575,6 +621,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 5,
+          saleUnit: "piece",
           unitPriceMillicents: 420000,
           lineTotalCents: 2100,
           lineTotalTtcCents: 2216,
@@ -583,6 +630,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 2,
+          saleUnit: "piece",
           unitPriceMillicents: 890000,
           lineTotalCents: 1780,
           lineTotalTtcCents: 2136,
@@ -610,6 +658,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 7,
+          saleUnit: "piece",
           unitPriceMillicents: 655555,
           lineTotalCents: 4589,
           lineTotalTtcCents: 4841,
@@ -637,6 +686,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 7,
+          saleUnit: "piece",
           unitPriceMillicents: 655555,
           lineTotalCents: 4589,
           lineTotalTtcCents: 4841,
@@ -645,6 +695,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 9,
+          saleUnit: "piece",
           unitPriceMillicents: 123457,
           lineTotalCents: 1111,
           lineTotalTtcCents: 1222,
@@ -672,6 +723,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 6,
+          saleUnit: "piece",
           unitPriceMillicents: 500000,
           lineTotalCents: 3000,
           lineTotalTtcCents: 3165,
@@ -696,6 +748,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 3,
+          saleUnit: "piece",
           unitPriceMillicents: 777777,
           lineTotalCents: 2333,
           lineTotalTtcCents: 2461,
@@ -704,6 +757,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 11,
+          saleUnit: "piece",
           unitPriceMillicents: 99999,
           lineTotalCents: 1100,
           lineTotalTtcCents: 1320,
@@ -731,6 +785,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 3063000,
           lineTotalCents: 3063,
           lineTotalTtcCents: 3127,
@@ -739,6 +794,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 13,
+          saleUnit: "piece",
           unitPriceMillicents: 12345,
           lineTotalCents: 160,
           lineTotalTtcCents: 169,
@@ -766,6 +822,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 48,
+          saleUnit: "piece",
           unitPriceMillicents: 1234567,
           lineTotalCents: 59259,
           lineTotalTtcCents: 62518,
@@ -774,6 +831,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 24,
+          saleUnit: "piece",
           unitPriceMillicents: 2345678,
           lineTotalCents: 56296,
           lineTotalTtcCents: 67555,
@@ -782,6 +840,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-2",
           quantity: 120,
+          saleUnit: "piece",
           unitPriceMillicents: 98765,
           lineTotalCents: 11852,
           lineTotalTtcCents: 13037,
@@ -810,6 +869,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 333,
+          saleUnit: "piece",
           unitPriceMillicents: 1111,
           lineTotalCents: 370,
           lineTotalTtcCents: 390,
@@ -818,6 +878,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 7,
+          saleUnit: "piece",
           unitPriceMillicents: 222222,
           lineTotalCents: 1556,
           lineTotalTtcCents: 1867,
@@ -826,6 +887,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-2",
           quantity: 9,
+          saleUnit: "piece",
           unitPriceMillicents: 55555,
           lineTotalCents: 500,
           lineTotalTtcCents: 550,
@@ -854,6 +916,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-0",
           quantity: 1,
+          saleUnit: "piece",
           unitPriceMillicents: 1005,
           lineTotalCents: 1,
           lineTotalTtcCents: 1,
@@ -862,6 +925,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-1",
           quantity: 3,
+          saleUnit: "piece",
           unitPriceMillicents: 1015,
           lineTotalCents: 3,
           lineTotalTtcCents: 3,
@@ -870,6 +934,7 @@ export const FROZEN_PRO_QUOTES = [
         {
           sku: "SKU-2",
           quantity: 7,
+          saleUnit: "piece",
           unitPriceMillicents: 1025,
           lineTotalCents: 7,
           lineTotalTtcCents: 8,

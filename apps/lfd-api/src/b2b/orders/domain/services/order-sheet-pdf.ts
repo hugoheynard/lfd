@@ -21,7 +21,13 @@ import {
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { sheetShowsTtc } from "./order-sheet.js";
 import { header } from "./order-sheet-pdf-header.js";
-import { money, unitPrice } from "./order-sheet-pdf-format.js";
+import {
+  articlesHeading,
+  money,
+  perUnitSuffix,
+  quantityText,
+  unitPrice,
+} from "./order-sheet-pdf-format.js";
 import {
   PICKUP_DISCOUNT_EXCLUDED_NOTE,
   PRETAX_ONLY_NOTE,
@@ -189,16 +195,7 @@ function showsSku(sheet: ClientSheet): boolean {
 function tableHead(doc: Doc, sheet: ClientSheet, top: number, withHeading: boolean): number {
   let y = top + 5 * MM;
   if (withHeading) {
-    const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
-    const count = sheet.lines.length;
-    const lineWord = count > 1 ? "lignes" : "ligne";
-    const pieceWord = pieces > 1 ? "pièces" : "pièce";
-    putCaps(
-      doc,
-      `ARTICLES — ${String(count)} ${lineWord}, ${String(pieces)} ${pieceWord}`,
-      CONTENT_LEFT,
-      y,
-    );
+    putCaps(doc, articlesHeading(sheet.lines), CONTENT_LEFT, y);
     y += 5 * MM;
   }
   putCaps(doc, "Qté", CONTENT_LEFT, y);
@@ -225,7 +222,11 @@ function articleRow(
   const ttc = sheetShowsTtc(sheet);
   const labels = line.priceLabels.join(" · ");
   const y = top + 4.6 * MM;
-  put(doc, String(line.quantity), CONTENT_LEFT, y - 1.2 * MM, { size: 14, bold: true });
+  // Un poids (« 1,25 kg ») est plus large qu'un compte : il s'imprime plus petit.
+  put(doc, quantityText(line), CONTENT_LEFT, y - 1.2 * MM, {
+    size: line.saleUnit === "weight" ? 9 : 14,
+    bold: true,
+  });
   // Le nom est BORNÉ à sa colonne ; sans SKU, la colonne s'étend jusqu'au prix.
   const nameRight = showsSku(sheet) ? X_SKU_RIGHT - COL_SKU : X_SKU_RIGHT - 2 * MM;
   // L'astérisque d'une ligne hors remise de retrait, expliqué au pied (lot C).
@@ -238,9 +239,9 @@ function articleRow(
   // est en centimes : c'est un montant que la vitrine a déjà arrêté.
   putRight(
     doc,
-    ttc && line.unitPriceTtcCents !== null
+    (ttc && line.unitPriceTtcCents !== null
       ? money(line.unitPriceTtcCents)
-      : unitPrice(line.unitPriceMillicents),
+      : unitPrice(line.unitPriceMillicents)) + perUnitSuffix(line),
     X_UNIT_RIGHT,
     y,
     10.5,

@@ -278,6 +278,7 @@ describe("checkout → Order", () => {
         unitPriceMillicents: 200_000,
         vatRate: 5.5,
         quantity: 3,
+        saleUnit: "piece",
         lineTotalCents: 600,
         // Vue de commande : la trace remonte sous sa forme de contrat. Aucune
         // règle en base ici — elle dit donc qu'aucun étage n'a joué.

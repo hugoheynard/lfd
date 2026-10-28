@@ -812,6 +812,7 @@ describe("PlaceOrderHandler", () => {
         unitPriceMillicents: 200_000,
         vatRate: 0,
         quantity: 3,
+        saleUnit: "piece",
         lineTotalCents: 600,
         // 🔴 Rien de scellé : cette commande porte une SOCIÉTÉ (`"c1"`), donc
         // un professionnel — il récupère la taxe et ne lit que le hors taxe.

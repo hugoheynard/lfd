@@ -40,6 +40,7 @@ const line = (sku: string, qty: number, priceCents = 200): OrderLineInput => ({
   productName: sku,
   unitPriceMillicents: millicentsFromCents(priceCents),
   vatRate: 5.5,
+  saleUnit: "piece",
   quantity: qty,
 });
 

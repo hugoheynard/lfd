@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { PriceFloorPolicy } from "./floor-policy.js";
 
 /**
@@ -207,6 +209,14 @@ export interface PricingContext {
    * reçoit que les décisions d'article et de catalogue.
    */
   readonly categoryPath: readonly string[];
+  /**
+   * **L'unité de vente de l'article.** Au poids (`plan-vente-au-poids.md`, §2,
+   * Hugo 2026-10-28), `quantity` compte des grammes, et les décisions qui
+   * couvrent PLUSIEURS articles — portée `global` ou `category` — ne le visent
+   * pas : elles se lisent à la pièce, et ne mêlent pas les unités. Tenu par
+   * `matchesScope` et `scopeKeysOf`, qui doivent dire la même chose.
+   */
+  readonly saleUnit: SaleUnit;
   /** `null` pour une commande sans entreprise (parcours zéro friction). */
   readonly companyId: string | null;
   /**

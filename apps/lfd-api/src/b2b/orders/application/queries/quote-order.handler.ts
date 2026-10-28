@@ -6,10 +6,11 @@ import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
-import { lineTotalCents, pieces } from "@lfd/money";
+import { lineTotalCents, type SaleUnit } from "@lfd/money";
 
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
+import { quantityOf } from "../../domain/value-objects/order-line.js";
 
 /**
  * **Ce que la commande coûterait**, demandé avant de la passer.
@@ -67,6 +68,8 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
         unitPriceMillicents: 0,
         vatRate: 0,
         quantity: line.quantity,
+        // L'unité dite par la ligne, que la tarification valide contre l'article.
+        ...(line.saleUnit === undefined ? {} : { saleUnit: line.saleUnit }),
         pricing: null,
       })),
     );
@@ -110,6 +113,7 @@ function subtotalOf(
   lines: readonly {
     readonly unitPriceMillicents: number;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
     readonly vatRate: number;
   }[],
 ): number {
@@ -124,7 +128,7 @@ function subtotalOf(
     return composed.lines.reduce((sum, line) => sum + line.htCents, 0);
   }
   return lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
+    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, quantityOf(line)),
     0,
   );
 }
@@ -146,6 +150,7 @@ function toQuoteLine(resolved: ResolvedOrderLine): OrderQuoteLineView {
     canonicalMillicents: trace?.basePriceMillicents ?? line.unitPriceMillicents,
     unitPriceMillicents: line.unitPriceMillicents,
     quantity: line.quantity,
+    saleUnit: line.saleUnit,
     vatRate: line.vatRate,
     steps: trace?.steps ?? [],
     floored: trace?.floored ?? false,

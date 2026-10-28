@@ -21,6 +21,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
     variantSku: "VIE-001-1",
     productSku: "VIE-001",
     categoryPath: ["fam-vien"],
+    saleUnit: "piece",
     companyId: "cmp_dupont",
     pricingCompanyId: over.companyId === undefined ? "cmp_dupont" : over.companyId,
     segmentId: null,
@@ -263,5 +264,22 @@ describe("inForceFor", () => {
     ];
 
     expect(kept(items, { companyId: null })).toEqual(["publique"]);
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, §2) : un article au poids n'a que ses propres seaux. */
+describe("scopeKeysOf — un article au poids", () => {
+  const weighed = context({ saleUnit: "weight" });
+
+  it("ne porte ni la clé globale ni celles de sa famille", () => {
+    expect(scopeKeysOf(weighed)).toEqual(["product:VIE-001", "variant:VIE-001-1"]);
+  });
+
+  it("rend exactement ce que `matchesScope` retient, comme à la pièce", () => {
+    const index = indexByScope(EVERY_SCOPE, scopeOf);
+    const expected = EVERY_SCOPE.filter((item) => matchesScope(item.scope, weighed));
+
+    expect(namesOf(candidatesIn(index, weighed)).sort()).toEqual(namesOf(expected).sort());
+    expect(namesOf(expected).sort()).toEqual(["sa déclinaison", "son produit"]);
   });
 });

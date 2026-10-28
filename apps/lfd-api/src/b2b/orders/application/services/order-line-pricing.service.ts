@@ -1,5 +1,5 @@
 import { Injectable } from "@nestjs/common";
-import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
+import { saleUnitOfLine, type OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
 import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
 
@@ -7,7 +7,11 @@ import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
 type ServedCompany = Pick<PricingParties, "companyId">;
 import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
-import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import {
+  type CatalogItem,
+  ProductCatalogReader,
+} from "../../../catalog/domain/ports/product-catalog.reader.js";
+import { ensureSaleQuantity } from "../../domain/services/sale-quantity-rules.js";
 import {
   priceLine,
   type LineToPrice,
@@ -139,11 +143,18 @@ export class OrderLinePricing {
     const catalogue = await this.catalog.resolveMany([...quantities.keys()], audience);
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
+    //
+    // Et chaque ligne DEMANDÉE se valide contre son article avant la fusion :
+    // son unité, et au poids son pas, son minimum, sa garde
+    // (`plan-vente-au-poids.md`, P3). Refusée, jamais corrigée.
+    for (const line of input) {
+      ensureSaleQuantity(foundOrRefused(catalogue, line.sku), {
+        quantity: line.quantity,
+        saleUnit: saleUnitOfLine(line),
+      });
+    }
     const lines = [...quantities].map(([sku, quantity]) => {
-      const found = catalogue.get(sku);
-      if (found === undefined) {
-        throw new UnknownSkuError(sku);
-      }
+      const found = foundOrRefused(catalogue, sku);
       const item: LineToPrice = {
         sku: found.sku,
         name: found.name,
@@ -174,4 +185,13 @@ export class OrderLinePricing {
 
     return lines.map(({ item, quantity }) => priceLine({ item, quantity, withTiers }, lot));
   }
+}
+
+/** @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas. */
+function foundOrRefused(catalogue: ReadonlyMap<string, CatalogItem>, sku: string): CatalogItem {
+  const found = catalogue.get(sku);
+  if (found === undefined) {
+    throw new UnknownSkuError(sku);
+  }
+  return found;
 }

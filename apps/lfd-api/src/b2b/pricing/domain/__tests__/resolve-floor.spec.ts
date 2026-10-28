@@ -8,6 +8,7 @@ const CONTEXT: PricingContext = {
   variantSku: "VIE-001-U",
   productSku: "VIE-001",
   categoryPath: ["fam-vien"],
+  saleUnit: "piece",
   companyId: null,
   pricingCompanyId: null,
   segmentId: null,

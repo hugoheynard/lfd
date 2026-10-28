@@ -39,6 +39,7 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
         productName: "Banana bread",
         unitPriceMillicents: 1_990_521,
         vatRate: 5.5,
+        saleUnit: "piece",
         quantity: 1,
       },
     ],

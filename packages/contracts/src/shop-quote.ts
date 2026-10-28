@@ -2,7 +2,7 @@ import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
-import { orderQuantitySchema, type PickupDiscountBaseView } from "./order.js";
+import { orderLineInputSchema, type OrderSaleUnit, type PickupDiscountBaseView } from "./order.js";
 
 /**
  * **Ce que le panier de la boutique coûte**, demandé au serveur avant de
@@ -39,15 +39,13 @@ import { orderQuantitySchema, type PickupDiscountBaseView } from "./order.js";
 /**
  * Une ligne demandée : une référence du catalogue et sa quantité.
  *
- * La quantité vient de `orderQuantitySchema`, **la même que la commande** : une
+ * C'est **la ligne de la commande** (`orderLineInputSchema`) — sa quantité, son
+ * unité, sa borne — et non une jumelle : une
  * borne qui n'existerait qu'à la caisse laisserait chiffrer un panier qu'on
  * refuserait ensuite, et une borne qui n'existerait qu'au devis laisserait
  * entrer par la caisse ce qu'on avait interdit d'estimer.
  */
-export const shopQuoteLineSchema = z.object({
-  sku: z.string().min(1),
-  quantity: orderQuantitySchema,
-});
+export const shopQuoteLineSchema = orderLineInputSchema;
 
 /**
  * L'acheminement retenu, **ou son absence**.
@@ -101,7 +99,9 @@ export type ShopQuotePayload = z.infer<typeof shopQuotePayloadSchema>;
 /** Une ligne tarifée, telle que le décompte la porte. */
 export interface ShopQuoteLineView {
   readonly sku: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
   /** Le prix unitaire **HT en millicentimes**, résolu à CETTE quantité. */
   readonly unitPriceMillicents: number;
   /**

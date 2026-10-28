@@ -28,12 +28,19 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 const VILLAGE = "site_village";
 const LABO = "site_labo";
 const CATALOGUE = new Catalogue([
-  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece",
+  },
   {
     sku: "PAC",
     name: "Pain au chocolat",
     categoryId: "fam_morning",
     categoryName: "Viennoiseries",
+    saleUnit: "piece",
   },
 ]);
 

@@ -96,6 +96,22 @@ export class OperationOnlyInSubscriptionError extends BusinessError {
   }
 }
 
+/**
+ * Un panier récurrent ne porte pas d'article vendu au poids
+ * (`documentation/pricing/plan-vente-au-poids.md`, §2 « hors de ce plan »,
+ * Hugo 2026-10-28) : ses quantités sont des pièces, et un poids y serait
+ * compté mille fois.
+ */
+export class WeightArticleInSubscriptionError extends BusinessError {
+  constructor(readonly sku: string) {
+    super(
+      "subscriptions.weight_article",
+      `L'article ${sku} se vend au poids, et un panier récurrent ne se compte qu'en pièces. ` +
+        "Retirez-le de l'abonnement, et commandez-le dans une commande ordinaire.",
+    );
+  }
+}
+
 // ─── Le mur (N4e, 2026-10-20) ───────────────────────────────────────────────
 
 /**

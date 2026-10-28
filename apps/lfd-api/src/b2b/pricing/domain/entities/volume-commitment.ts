@@ -4,6 +4,7 @@ import {
   ScopeIdMismatchError,
   InvalidPromisedVolumeError,
 } from "../pricing-errors.js";
+import { WeightArticleCommitmentError } from "../errors/volume-commitment-errors.js";
 import type { PriceScope } from "../price-rule.js";
 import type { VolumeCommitment } from "../volume-commitment.js";
 import { closingWindowAt } from "../rule-lifecycle.js";
@@ -71,6 +72,20 @@ export class VolumeCommitmentAggregate {
       archivedBy: null,
       archiveReason: null,
     });
+  }
+
+  /**
+   * **L'article visé se compte-t-il en pièces ?** Un engagement de portée
+   * produit ou déclinaison sur un article au poids est refusé
+   * (`plan-vente-au-poids.md`, §2). `weightSold` : les SKU au poids parmi
+   * celui de la portée, lus au catalogue par l'appelant.
+   *
+   * @throws {WeightArticleCommitmentError} la portée vise un article au poids.
+   */
+  static ensureCountedInPieces(scope: PriceScope, weightSold: ReadonlySet<string>): void {
+    if (scope.id !== null && scope.type !== "category" && weightSold.has(scope.id)) {
+      throw new WeightArticleCommitmentError(scope.id);
+    }
   }
 
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */

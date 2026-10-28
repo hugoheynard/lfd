@@ -4,6 +4,7 @@ import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   ResupplyArticleUnknownError,
   ResupplySiteUnknownError,
+  WeightArticleInResupplyError,
 } from "../../domain/resupply-receipt-errors.js";
 import {
   EmptyResupplyError,
@@ -55,12 +56,27 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const clock = new FixedClock(NOW);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const catalogue = new Catalogue([
-    { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+    {
+      sku: "CRO",
+      name: "Croissant",
+      categoryId: "fam_morning",
+      categoryName: "Viennoiseries",
+      saleUnit: "piece",
+    },
     {
       sku: "PAC",
       name: "Pain au chocolat",
       categoryId: "fam_morning",
       categoryName: "Viennoiseries",
+      saleUnit: "piece",
+    },
+    // Au poids : hors du réassort (`plan-vente-au-poids.md`, §2).
+    {
+      sku: "SAU",
+      name: "Saumon gravlax",
+      categoryId: "fam_deli",
+      categoryName: "Épicerie",
+      saleUnit: "weight",
     },
   ]);
   const sites = new Sites([VILLAGE, LABO]);
@@ -186,7 +202,13 @@ describe("la demande en cours — ajouter", () => {
     const add = new AddSiteResupplyLineHandler(
       store,
       new Catalogue([
-        { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+        {
+          sku: "CRO",
+          name: "Croissant",
+          categoryId: "fam_morning",
+          categoryName: "Viennoiseries",
+          saleUnit: "piece",
+        },
       ]),
       new Sites([VILLAGE]),
       new FixedClock(NOW),
@@ -378,5 +400,16 @@ describe("le fournil envoie à part : la demande en cours du comptoir n'est jama
       bakehouse.execute(new SendBakehouseResupplyCommand(VILLAGE, "asap", [], "s")),
     ).rejects.toThrow(EmptyResupplyError);
     expect(store.saves).toBe(0);
+  });
+});
+
+describe("la demande en cours — un article au poids", () => {
+  it("est refusé : un réassort ne compte que des pièces", async () => {
+    const { add, store } = setup();
+
+    await expect(
+      add.execute(new AddSiteResupplyLineCommand(VILLAGE, "tomorrow", "SAU", 500)),
+    ).rejects.toThrow(WeightArticleInResupplyError);
+    expect(store.all()).toEqual([]);
   });
 });

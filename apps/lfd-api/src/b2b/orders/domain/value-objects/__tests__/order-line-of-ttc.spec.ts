@@ -11,6 +11,7 @@ const BANANA = {
   productName: "Banana bread",
   unitPriceMillicents: 1_990_521,
   vatRate: 5.5,
+  saleUnit: "piece" as const,
   quantity: 2,
 };
 

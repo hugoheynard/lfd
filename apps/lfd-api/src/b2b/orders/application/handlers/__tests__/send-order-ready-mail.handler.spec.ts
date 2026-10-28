@@ -88,6 +88,7 @@ function view(overrides: Partial<OrderView> = {}): OrderView {
         productName: "Tradition",
         unitPriceMillicents: 120_000,
         vatRate: 0.055,
+        saleUnit: "piece",
         quantity: 12,
         lineTotalCents: 1_440,
         unitPriceTtcCents: null,

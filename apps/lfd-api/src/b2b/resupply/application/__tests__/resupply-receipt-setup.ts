@@ -29,12 +29,19 @@ export const SITE = "site_village";
 export const OTHER = "site_labo";
 export const DAY = "2026-01-02";
 export const CATALOGUE = new Catalogue([
-  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece",
+  },
   {
     sku: "PAC",
     name: "Pain au chocolat",
     categoryId: "fam_morning",
     categoryName: "Viennoiseries",
+    saleUnit: "piece",
   },
 ]);
 export const AUTHOR = { staffUserId: "staff_lou", name: "Lou Martin", role: "counter" };

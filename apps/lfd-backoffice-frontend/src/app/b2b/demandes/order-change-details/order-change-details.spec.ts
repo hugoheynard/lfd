@@ -41,6 +41,7 @@ const QUOTE: OrderRevisionQuoteView = {
       sku: 'SKU-1',
       productName: 'Pain de campagne',
       quantity: 3,
+      saleUnit: 'piece',
       unitPriceMillicents: 400_000,
       vatRate: 5.5,
       lineTotalCents: 1200,

@@ -106,6 +106,9 @@ export function priceLine(input: LinePricingInput, lot: PricedLot): ResolvedOrde
       unitPriceMillicents: priced.finalMillicents,
       vatRate: item.vatRate,
       quantity,
+      // L'unité de l'article SCELLÉ : la quantité a été validée contre lui
+      // (`sale-quantity-rules.ts`), et au poids le prix résolu est au kilo.
+      saleUnit: item.article.saleUnit,
       // Figés avec le prix, et pour une raison du même ordre : dans six mois,
       // la déclaration aura pu être corrigée, et plus rien ne dirait sous
       // laquelle cette commande a été passée. La différence est que le prix se

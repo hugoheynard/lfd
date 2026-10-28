@@ -1,5 +1,5 @@
 import type { CartAdjustment, DeliveryVatMode } from "@lfd/contracts";
-import { composeTtcOrder, pieces, type TtcOrderComposition } from "@lfd/money";
+import { composeTtcOrder, saleQuantity, type SaleUnit, type TtcOrderComposition } from "@lfd/money";
 
 /**
  * **La composition d'une commande `exact_ht`** — l'unique traduction de la
@@ -18,7 +18,9 @@ import { composeTtcOrder, pieces, type TtcOrderComposition } from "@lfd/money";
 export interface ExactOrderInput {
   readonly lines: readonly {
     readonly unitPriceMillicents: number;
+    /** Des pièces, ou des grammes si `saleUnit = weight` (le prix est alors au kilo). */
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
     readonly vatRate: number;
     /** Absent = éligible, comme sur la ligne de commande. */
     readonly pickupDiscountEligible?: boolean | undefined;
@@ -41,7 +43,7 @@ export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
   return composeTtcOrder({
     lines: input.lines.map((line) => ({
       unitMillicents: line.unitPriceMillicents,
-      quantity: pieces(line.quantity),
+      quantity: saleQuantity(line.quantity, line.saleUnit),
       vatRate: line.vatRate,
       discountEligible: line.pickupDiscountEligible,
     })),

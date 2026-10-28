@@ -42,7 +42,13 @@ function setup() {
   const cutoff = new FixedResupplyCutoff(null);
   const staff = new Directory({ name: "Lou Martin", role: "counter" });
   const catalogue = new Catalogue([
-    { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+    {
+      sku: "CRO",
+      name: "Croissant",
+      categoryId: "fam_morning",
+      categoryName: "Viennoiseries",
+      saleUnit: "piece",
+    },
   ]);
   const sites = new Sites([VILLAGE, LABO]);
   const ids = new FixedIdGenerator("resupply");

@@ -132,6 +132,17 @@
         ],
         "fr": "{count} pièces"
       },
+      "recapWeighed": {
+        "variables": [
+          "name",
+          "weight"
+        ],
+        "required": [
+          "name",
+          "weight"
+        ],
+        "fr": "{name}, {weight}"
+      },
       "recapDiscount": {
         "variables": [],
         "required": [],
@@ -263,6 +274,17 @@
           "count"
         ],
         "fr": "{count} pièces"
+      },
+      "weighedLabel": {
+        "variables": [
+          "name",
+          "weight"
+        ],
+        "required": [
+          "name",
+          "weight"
+        ],
+        "fr": "{name}, {weight}"
       },
       "qrTitle": {
         "variables": [],

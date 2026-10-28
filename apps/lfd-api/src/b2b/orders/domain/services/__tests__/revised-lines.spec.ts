@@ -12,6 +12,7 @@ function snapshot(sku: string, unitPriceMillicents: number): OrderLineSnapshot {
     productName: `Article ${sku}`,
     unitPriceMillicents,
     vatRate: 5.5,
+    saleUnit: "piece",
     quantity: 3,
     lineTotalCents: 0,
     unitPriceTtcCents: null,
@@ -37,6 +38,7 @@ describe("revisedLineRequests", () => {
       productName: "Article VIE-001",
       unitPriceMillicents: 123_450,
       vatRate: 5.5,
+      saleUnit: "piece",
       quantity: 8,
       pricing: null,
       allergens: null,
@@ -56,7 +58,7 @@ describe("revisedLineRequests", () => {
   it("envoie une ligne nouvelle au prix du jour", () => {
     const split = revisedLineRequests([snapshot("VIE-001", 1)], [{ sku: "PAI-001", quantity: 2 }]);
 
-    expect(split.fresh).toEqual([{ sku: "PAI-001", quantity: 2 }]);
+    expect(split.fresh).toEqual([{ sku: "PAI-001", quantity: 2, saleUnit: "piece" }]);
     expect(split.frozen.size).toBe(0);
   });
 
@@ -71,6 +73,6 @@ describe("revisedLineRequests", () => {
     );
 
     expect(split.order).toEqual(["PAI-001", "VIE-001"]);
-    expect(split.fresh).toEqual([{ sku: "PAI-001", quantity: 4 }]);
+    expect(split.fresh).toEqual([{ sku: "PAI-001", quantity: 4, saleUnit: "piece" }]);
   });
 });

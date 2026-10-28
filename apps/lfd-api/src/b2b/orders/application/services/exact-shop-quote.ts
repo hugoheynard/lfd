@@ -1,4 +1,5 @@
 import type { CartAdjustment, DeliveryVatMode, ShopQuoteView } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
@@ -20,6 +21,7 @@ export interface ExactQuoteInput {
   readonly lines: readonly {
     readonly sku: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
     readonly unitPriceMillicents: number;
     readonly vatRate: number;
   }[];
@@ -48,6 +50,7 @@ export function exactShopQuoteOf(input: ExactQuoteInput): {
     return {
       sku: line.sku,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       unitPriceMillicents: line.unitPriceMillicents,
       lineTotalCents: composed?.htCents ?? 0,
       lineTotalTtcCents: composed?.ttcCents ?? 0,

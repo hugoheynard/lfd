@@ -1,6 +1,9 @@
 import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import type { CatalogFamily } from "../../../catalog/domain/catalog-family.js";
-import type { CatalogItem } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import {
+  PIECE_SALE_TERMS,
+  type CatalogItem,
+} from "../../../catalog/domain/ports/product-catalog.reader.js";
 import {
   family,
   PAINS,
@@ -32,6 +35,7 @@ function article(sku: string, of: CatalogFamily | null): CatalogItem {
     name: sku,
     unitPriceMillicents: 200_000,
     vatRate: 5.5,
+    ...PIECE_SALE_TERMS,
     family: of,
     allergens: null,
     orderTimeLimit: null,
@@ -40,6 +44,7 @@ function article(sku: string, of: CatalogFamily | null): CatalogItem {
       name: sku,
       categoryPath: of?.path ?? [],
       unitPriceMillicents: 200_000,
+      saleUnit: "piece",
     }),
   };
 }

@@ -74,3 +74,20 @@ export class VolumeCommitmentNotFoundError extends ResourceNotFoundError {
     super("pricing.commitment.not_found", `Aucun engagement de volume ${id}.`);
   }
 }
+
+/**
+ * Un engagement de volume ne vise pas un article vendu au poids
+ * (`documentation/pricing/plan-vente-au-poids.md`, §2 « hors de ce plan »,
+ * Hugo 2026-10-28) : un volume promis se compte en pièces, et un cumul de
+ * grammes l'atteindrait mille fois trop tôt. Les engagements globaux et de
+ * famille, eux, ne couvrent simplement pas un article au poids (`LoadedPricer`).
+ */
+export class WeightArticleCommitmentError extends BusinessError {
+  constructor(readonly sku: string) {
+    super(
+      "pricing.commitment.weight_article",
+      `L'article ${sku} se vend au poids : un engagement de volume ne se compte qu'en pièces. ` +
+        "Choisissez un article vendu à la pièce, ou une famille.",
+    );
+  }
+}

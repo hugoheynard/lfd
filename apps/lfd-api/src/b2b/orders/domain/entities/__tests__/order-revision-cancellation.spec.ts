@@ -48,6 +48,7 @@ function input(day: string, start: string): DraftOrderInput {
         productName: "Croissant",
         unitPriceMillicents: millicentsFromCents(0),
         vatRate: 5.5,
+        saleUnit: "piece",
         quantity: 1,
       },
     ],

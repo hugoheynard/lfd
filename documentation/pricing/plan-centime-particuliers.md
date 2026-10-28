@@ -116,6 +116,8 @@ au poids commandé. La quantité d'une ligne est une `SaleQuantity`
 (`pieces(n)` / `grams(g)`) : une ligne sans unité ne se compose plus. Aucun
 article n'est encore au poids — tant que le lot P3 n'existe pas, toutes les
 lignes passent `pieces(n)` et le calcul est inchangé.
+Depuis P3 (2026-10-28), chaque ligne porte son unité (`order_lines.sale_unit`)
+et la composition la lit (`exact-order-composition.ts`).
 
 Puis, **pour chaque taux** :
 

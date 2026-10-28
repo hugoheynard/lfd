@@ -29,7 +29,12 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { contactOf, pickupLabelOf, type HolderSide } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { siteIdOf } from "./pickup-site.parse.js";
-import { parseAllergens, parseTrace, type OrderLineRow } from "./order-line-row.js";
+import {
+  orderLineSaleUnitOf,
+  parseAllergens,
+  parseTrace,
+  type OrderLineRow,
+} from "./order-line-row.js";
 import { settlementWhere } from "./plan-filter.js";
 import {
   OrderReader,
@@ -144,6 +149,7 @@ export const ORDER_SELECT = {
       unitPriceMillicents: true,
       vatRate: true,
       quantity: true,
+      saleUnit: true,
       lineTotalCents: true,
       unitPriceTtcCents: true,
       lineTotalTtcCents: true,
@@ -592,6 +598,7 @@ function toLineView(line: OrderLineRow): OrderLineView {
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate.toNumber(),
     quantity: line.quantity,
+    saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
     lineTotalCents: line.lineTotalCents,
     unitPriceTtcCents: line.unitPriceTtcCents,
     lineTotalTtcCents: line.lineTotalTtcCents,

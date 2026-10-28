@@ -32,12 +32,19 @@ const TOMORROW = "2026-01-03";
 const VILLAGE = "site_village";
 const LABO = "site_labo";
 const ARTICLES = [
-  { sku: "CRO", name: "Croissant", categoryId: "fam_morning", categoryName: "Viennoiseries" },
+  {
+    sku: "CRO",
+    name: "Croissant",
+    categoryId: "fam_morning",
+    categoryName: "Viennoiseries",
+    saleUnit: "piece" as const,
+  },
   {
     sku: "PAC",
     name: "Pain au chocolat",
     categoryId: "fam_morning",
     categoryName: "Viennoiseries",
+    saleUnit: "piece" as const,
   },
 ];
 

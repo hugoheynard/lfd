@@ -2,6 +2,7 @@ import type { OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../catalogue-article.js";
 import type { CatalogFamily } from "../catalog-family.js";
+import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { ShopAudience } from "./catalog.reader.js";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
@@ -46,6 +47,15 @@ export interface CatalogItem extends PricedSku {
    */
   readonly orderTimeLimit: OrderLimitSpec | null;
   /**
+   * **Comment il se vend** (`plan-vente-au-poids.md`, P3) : à la pièce, ou au
+   * poids — la quantité commandée compte alors des grammes et se valide contre
+   * le pas et le minimum (`sale-quantity-rules.ts`, côté commande). `null` à
+   * la pièce.
+   */
+  readonly saleUnit: CatalogSaleUnit;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
+  /**
    * **Ce qu'il faut pour le tarifer, scellé par le catalogue.**
    *
    * Frappé par l'adaptateur, donc porteur de la preuve que son
@@ -65,8 +75,22 @@ export interface CatalogItem extends PricedSku {
  * Le sceau se pose au bord du contexte, jamais dans la fixture : un double qui
  * rendrait un article non scellé éprouverait un monde que la production ne peut
  * pas produire, et cesserait d'être substituable à la source.
+ *
+ * Ses conditions de vente sont facultatives et valent la pièce
+ * ({@link PIECE_SALE_TERMS}) : ce qu'est tout article qui ne dit pas le contraire.
  */
-export type UnsealedCatalogItem = Omit<CatalogItem, "article">;
+export type UnsealedCatalogItem = Omit<CatalogItem, "article" | keyof CatalogSaleTerms> &
+  Partial<CatalogSaleTerms>;
+
+/** Comment un article se vend : l'unité, et au poids le pas et le minimum en grammes. */
+export type CatalogSaleTerms = Pick<CatalogItem, "saleUnit" | "weightMinGrams" | "weightStepGrams">;
+
+/** Les conditions de vente d'un article à la pièce — sans pas ni minimum. */
+export const PIECE_SALE_TERMS: CatalogSaleTerms = {
+  saleUnit: "piece",
+  weightMinGrams: null,
+  weightStepGrams: null,
+};
 
 /**
  * Port de **lecture** du catalogue — l'autorité de prix au checkout.

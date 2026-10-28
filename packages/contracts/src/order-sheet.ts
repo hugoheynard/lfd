@@ -240,6 +240,8 @@ export interface SheetMoney {
 const lineCommonShape = {
   productName: z.string().min(1),
   quantity: z.number().int().positive(),
+  /** Cf. {@link AtelierSheetLine.saleUnit}. */
+  saleUnit: z.literal("weight").optional(),
 } as const;
 
 /** L'atelier : ce qu'on fabrique, et par quel SKU on le retrouve. Aucun prix. */
@@ -249,7 +251,16 @@ export const atelierSheetLineSchema = z.object({
 });
 export interface AtelierSheetLine {
   readonly productName: string;
+  /** Des pièces — ou des GRAMMES quand `saleUnit` vaut `weight`. */
   readonly quantity: number;
+  /**
+   * `weight` : la ligne se vend au poids, sa quantité compte des grammes, son
+   * prix unitaire est au kilo, et elle se dit « 500 g », « 1,25 kg »
+   * (`plan-vente-au-poids.md`, P3). **Absent = à la pièce** : la feuille ne
+   * l'écrit que pour une ligne au poids, si bien qu'une commande à la pièce se
+   * rend au bit près comme avant.
+   */
+  readonly saleUnit?: "weight";
   readonly sku: string;
 }
 
@@ -277,7 +288,10 @@ export const clientSheetLineSchema = z.object({
 });
 export interface ClientSheetLine {
   readonly productName: string;
+  /** Des pièces — ou des grammes, cf. {@link AtelierSheetLine.saleUnit}. */
   readonly quantity: number;
+  /** Cf. {@link AtelierSheetLine.saleUnit} — absent = à la pièce. */
+  readonly saleUnit?: "weight";
   /**
    * ⚠️ **Le SKU est passé côté client le 2026-09-07**, sur décision explicite.
    *

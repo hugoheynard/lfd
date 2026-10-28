@@ -1,3 +1,5 @@
+import type { CatalogSaleUnit } from "./catalog-sale-unit.js";
+
 /**
  * **Un article dont le prix d'entrée vient du CATALOGUE**, et pas de l'appelant.
  *
@@ -44,7 +46,7 @@ declare const FROM_CATALOGUE: unique symbol;
 /**
  * Ce qu'il faut savoir d'un article pour le tarifer — **et d'où ça vient**.
  *
- * Les quatre champs sont ceux de `PricedItem`, structurellement : un
+ * Les cinq champs sont ceux de `PricedItem`, structurellement : un
  * `CatalogArticle` est donc accepté partout où le moteur attend un article à
  * tarifer, sans conversion. C'est l'inverse qui est refusé, et c'est tout
  * l'objet du type.
@@ -60,6 +62,12 @@ export interface CatalogArticle {
   readonly categoryPath: readonly string[];
   /** Le tarif de liste, en millicentimes. **Lu du catalogue, jamais reçu.** */
   readonly canonicalMillicents: number;
+  /**
+   * **L'unité de vente**, scellée avec le prix : au poids, le tarif est AU KILO
+   * et les quantités sont des grammes — et seules les décisions qui visent cet
+   * article s'y appliquent (`plan-vente-au-poids.md`, §2 ; `scope-index.ts`).
+   */
+  readonly saleUnit: CatalogSaleUnit;
   readonly [FROM_CATALOGUE]: true;
 }
 
@@ -80,6 +88,7 @@ interface Unsealed {
   readonly name: string;
   readonly categoryPath: readonly string[];
   readonly unitPriceMillicents: number;
+  readonly saleUnit: CatalogSaleUnit;
 }
 
 /**
@@ -105,6 +114,7 @@ export function catalogueArticle(item: Unsealed): CatalogArticle {
     name: item.name,
     categoryPath: item.categoryPath,
     canonicalMillicents: item.unitPriceMillicents,
+    saleUnit: item.saleUnit,
   } as CatalogArticle;
 }
 
@@ -134,6 +144,7 @@ export function atCanonicalPrice<T extends { readonly article: CatalogArticle }>
       name: item.article.name,
       categoryPath: item.article.categoryPath,
       unitPriceMillicents,
+      saleUnit: item.article.saleUnit,
     }),
   };
 }

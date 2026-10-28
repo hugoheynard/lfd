@@ -118,16 +118,33 @@ export function compareSpecificity(
 export function matchesScope(scope: PriceScope, context: PricingContext): boolean {
   switch (scope.type) {
     case "global":
-      return true;
+      return coversManyArticles(context);
     case "category":
       // La famille OU l'une de ses parentes. Une famille inconnue (lignée vide)
       // n'est visée par AUCUNE portée — pas même une portée sans identifiant.
-      return scope.id !== null && context.categoryPath.includes(scope.id);
+      return (
+        coversManyArticles(context) && scope.id !== null && context.categoryPath.includes(scope.id)
+      );
     case "product":
       return scope.id === context.productSku;
     case "variant":
       return scope.id === context.variantSku;
   }
+}
+
+/**
+ * **Une décision qui couvre plusieurs articles vise-t-elle celui-ci ?** Pas un
+ * article au poids (`plan-vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) : une
+ * règle, un barème ou un plancher de portée globale ou de famille a été posé
+ * pour des pièces, et ses seuils comme ses montants ne se lisent pas en
+ * grammes. Seules les décisions qui visent l'article lui-même — produit,
+ * déclinaison — et la mercuriale (une ligne par SKU) s'y appliquent.
+ *
+ * Écrit une fois ici et relu par `scopeKeysOf` : l'index et le prédicat doivent
+ * rendre les mêmes candidats (`scope-index.spec.ts`).
+ */
+export function coversManyArticles(context: Pick<PricingContext, "saleUnit">): boolean {
+  return context.saleUnit === "piece";
 }
 
 /**

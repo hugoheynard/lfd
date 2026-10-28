@@ -1,6 +1,7 @@
 import type { OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogFamily } from "../catalog-family.js";
+import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { CatalogTranslations } from "../catalog-translations.js";
 import type { ShopAllergenFacts } from "../shop-allergens.js";
 import type { CatalogAudience } from "../served-to.js";
@@ -67,6 +68,15 @@ export interface ResolvedCatalogItem {
    * par produit, et le rapport annonce qu'un croissant coûte 60 €.
    */
   readonly isDefault: boolean;
+  /**
+   * **L'unité de vente** (`plan-vente-au-poids.md`, P3) : au poids, la quantité
+   * se compte en grammes et le prix s'entend AU KILO. Le pas et le minimum, en
+   * grammes, sont ce contre quoi une quantité commandée se valide ; `null` à
+   * la pièce (CHECK en base).
+   */
+  readonly saleUnit: CatalogSaleUnit;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
   /**
    * Mis en avant **pour le lecteur de cette lecture** (2026-10-18) : la
    * décision pro pour une lecture pro, la publique pour une lecture publique.

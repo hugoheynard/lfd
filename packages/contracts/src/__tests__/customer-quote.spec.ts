@@ -23,6 +23,7 @@ const STAFF_QUOTE: OrderQuoteView = {
       canonicalMillicents: 200_000,
       unitPriceMillicents: 180_000,
       quantity: 12,
+      saleUnit: "piece",
       vatRate: 5.5,
       steps: [
         {
@@ -51,6 +52,8 @@ describe("toCustomerQuote", () => {
       "canonicalMillicents",
       "productName",
       "quantity",
+      // L'unité de la quantité (vente au poids, P3, 2026-10-28) : ni règle ni marge.
+      "saleUnit",
       "sku",
       "unitPriceMillicents",
       "vatRate",

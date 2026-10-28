@@ -42,6 +42,7 @@ const BANANA = {
   productName: "Banana bread",
   unitPriceMillicents: 1_990_521,
   vatRate: 5.5,
+  saleUnit: "piece" as const,
   quantity: 1,
 };
 
@@ -101,6 +102,7 @@ describe("Order.draft — la part figée de chaque taux (ttc_by_rate)", () => {
     productName: "Jus",
     unitPriceMillicents: 250_000,
     vatRate: 20,
+    saleUnit: "piece" as const,
     quantity: 2,
   };
 

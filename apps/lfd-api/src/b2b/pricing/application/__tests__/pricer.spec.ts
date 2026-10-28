@@ -31,6 +31,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import type { Instant } from "../../../../platform/context/request-context.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
 import {
+  PIECE_SALE_TERMS,
   ProductCatalogReader,
   type CatalogItem,
 } from "../../../catalog/domain/ports/product-catalog.reader.js";
@@ -83,6 +84,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     name,
     unitPriceMillicents: millicentsFromCents(cents),
     vatRate: 5.5,
+    ...PIECE_SALE_TERMS,
     family: VIENNOISERIES,
     allergens: null satisfies OrderLineAllergens | null,
     orderTimeLimit: null satisfies OrderLimitSpec | null,
@@ -94,6 +96,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
       name,
       categoryPath: ["fam-vien"],
       unitPriceMillicents: millicentsFromCents(cents),
+      saleUnit: "piece",
     }),
   };
 }

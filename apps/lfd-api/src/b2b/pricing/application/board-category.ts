@@ -85,7 +85,7 @@ export function categoryView(
       itemView(
         // L'article scellé par le catalogue — plus de traduction ici.
         item.article,
-        pricingContextFor(item.sku, item.article.categoryPath, 1, NO_PARTIES, at),
+        pricingContextFor({ ...item.article, sku: item.sku }, 1, NO_PARTIES, at),
         materials,
         loaded,
       ),

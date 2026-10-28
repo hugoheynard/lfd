@@ -3,6 +3,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { SUBSCRIPTION_CREATED } from "../../../account/domain/events/site-gesture.fact.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
+import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 import { SaleOperations } from "../../../catalog/application/sale-operations.service.js";
 import { OperationOnlyInSubscriptionError } from "../../domain/errors/subscription-errors.js";
 import { Subscription } from "../../domain/entities/subscription.js";
@@ -48,10 +49,12 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     private readonly sale: SaleOperations,
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
+    private readonly saleUnits: ArticleSaleUnits,
   ) {}
 
   /**
    * @throws {OperationOnlyInSubscriptionError} une ligne ne se vend que pendant une opération.
+   * @throws {WeightArticleInSubscriptionError} une ligne se vend au poids.
    * @throws {SubscriptionSiteMembershipLostError} la société visée n'est pas celle de l'acteur.
    */
   async execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
@@ -62,6 +65,8 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     if (bound.length > 0) {
       throw new OperationOnlyInSubscriptionError(bound);
     }
+    // Les articles au poids, que la ligne refuse (`plan-vente-au-poids.md`, P3).
+    const weightSold = await this.saleUnits.weightSoldAmong(payload.lines.map((line) => line.sku));
     // Hors requête (semis), rien n'a confronté la société aux rattachements.
     await this.gestures.ensureMember(command.companyId, command.actorUserId);
     const subscription = Subscription.open({
@@ -77,7 +82,13 @@ export class CreateSubscriptionHandler implements ICommandHandler<
         pickupAddressId: payload.pickupAddressId,
       },
       note: payload.note,
-      lines: payload.lines.map((line) => SubscriptionLine.create(line.sku, line.quantity)),
+      lines: payload.lines.map((line) =>
+        SubscriptionLine.requested(
+          line.sku,
+          line.quantity,
+          weightSold.has(line.sku) ? "weight" : "piece",
+        ),
+      ),
     });
     const created = await this.uow.run(async () => {
       const written = await this.subscriptions.create(subscription);

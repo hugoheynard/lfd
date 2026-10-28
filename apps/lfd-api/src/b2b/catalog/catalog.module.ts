@@ -40,6 +40,7 @@ import { ShopFeaturedController } from "./http/shop-featured.controller.js";
 import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalogue.js";
 import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
+import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { ShopOrderCutoffsReader } from "./domain/ports/shop-order-cutoffs.reader.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
@@ -153,6 +154,9 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // Ce que les vendeurs par SKU produit appliquent (lot 3) : la caisse, le
     // devis, les jours proposés, les abonnements.
     SaleOperations,
+    // Les articles au poids, que les abonnements, les engagements et le
+    // réassort refusent (`plan-vente-au-poids.md`, P3).
+    ArticleSaleUnits,
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
@@ -181,6 +185,7 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // Les opérations datées, pour la caisse, le devis, les jours et les
     // abonnements (lot 3 du plan des opérations datées).
     SaleOperations,
+    ArticleSaleUnits,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider

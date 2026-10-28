@@ -1,5 +1,5 @@
 import { IdGenerator } from "../../../platform/id/id-generator.js";
-import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
+import { ResupplyCatalogue, resuppliable } from "../domain/resupply-catalogue.js";
 import { ResupplyArticleUnknownError } from "../domain/resupply-receipt-errors.js";
 import { type ResupplyTarget, serviceDayFor, SiteResupply } from "../domain/site-resupply.js";
 import { SiteResupplyNotFoundError } from "../domain/site-resupply-errors.js";
@@ -32,6 +32,7 @@ export async function catalogueLine(
   if (article === null) {
     throw new ResupplyArticleUnknownError(requested.sku);
   }
+  resuppliable(article);
   return SiteResupplyLine.of({
     sku: article.sku,
     label: article.name,

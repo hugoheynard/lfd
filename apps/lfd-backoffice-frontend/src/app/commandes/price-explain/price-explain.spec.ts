@@ -47,6 +47,7 @@ function line(pricing: OrderLinePricingTrace | null = TRACE): OrderLineView {
     unitPriceMillicents: 180_000,
     vatRate: 5.5,
     quantity: 12,
+    saleUnit: 'piece',
     lineTotalCents: 2_160,
     // L'écran du bureau garde le HORS TAXE (R3, décision de Hugo du
     // 2026-09-21) : il n'a aucun taxe compris à lire, et n'en affiche aucun.

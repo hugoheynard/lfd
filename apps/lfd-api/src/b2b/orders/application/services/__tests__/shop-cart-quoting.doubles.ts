@@ -24,6 +24,8 @@ import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pic
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
+import type { CompanyMercuriale } from "../../../../pricing/domain/entities/company-mercuriale.js";
+import type { PriceRule } from "../../../../pricing/domain/price-rule.js";
 import type { OrderVoucher } from "../../../domain/entities/order.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import {
@@ -145,18 +147,32 @@ class VoucherOf extends LoyaltyVoucherQuoteReader {
 
 const empty = () => Promise.resolve([]);
 
-function pricingOf(catalog: readonly UnsealedCatalogItem[]): OrderLinePricing {
+/**
+ * Les décisions de prix que le devis lit — aucune par défaut. Rendues telles
+ * quelles, sans filtre de portée : c'est le domaine qui juge qui vise quoi.
+ */
+export interface QuotingDecisions {
+  readonly rules?: readonly PriceRule[];
+  readonly mercuriale?: CompanyMercuriale | null;
+}
+
+function pricingOf(
+  catalog: readonly UnsealedCatalogItem[],
+  decisions: QuotingDecisions = {},
+): OrderLinePricing {
+  const rules = () => Promise.resolve([...(decisions.rules ?? [])]);
+  const mercuriale = () => Promise.resolve(decisions.mercuriale ?? null);
   const loader = new PricingMaterialsLoader(
     {
       listArchived: empty,
-      inScopes: empty,
-      inScopesAt: empty,
+      inScopes: rules,
+      inScopesAt: rules,
       candidatesFor: empty,
       listAll: empty,
     },
     {
-      liveFor: () => Promise.resolve(null),
-      liveAsOf: () => Promise.resolve(null),
+      liveFor: mercuriale,
+      liveAsOf: mercuriale,
       listFor: empty,
       liveEverywhere: empty,
     },
@@ -191,6 +207,7 @@ export interface QuotingSetup {
   readonly classified?: Readonly<Record<string, OrderLineClassification>>;
   readonly companyStatus?: OrderCompanyStatus | null;
   readonly voucherCents?: number | null;
+  readonly decisions?: QuotingDecisions;
 }
 
 export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
@@ -206,7 +223,7 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     opening: { publicOpening: null, proPickup: null },
   };
   return new ShopCartQuoting(
-    pricingOf(setup.catalog),
+    pricingOf(setup.catalog, setup.decisions),
     new CartAdjustments(
       new OnePoint(point),
       new OneZone(setup.zone ?? null),

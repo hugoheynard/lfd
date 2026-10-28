@@ -10,6 +10,7 @@ import { SELF_SERVICE_PASSWORD_TICKET_TTL_SECONDS } from "../identity/auth0-iden
 import { renderLayoutWithLogo, withMailLogo } from "./mail-logo.js";
 import { withRenderedMailKey } from "./sections/mail-layout-scope.js";
 import { DEFAULT_MAIL_LOCALE, fill, fillNamed, mailCopyOf } from "./copy/mail-copy.js";
+import { contentOf } from "./order-mail-content.js";
 import type { MailCopy, OrderSettlementCopy } from "./copy/mail-copy.model.js";
 import {
   renderCollectionNoticeMail,
@@ -502,7 +503,6 @@ function recapRows(
   settlement: keyof OrderSettlementCopy,
 ): readonly LayoutRow[] {
   const copy = mailCopyOf(locale)["customer.order-placed"];
-  const pieces = sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
   // Une commande de particulier composée en TTC écrit ses gestes tels qu'il
   // les a payés (plan du centime, lot C3) ; sinon, les montants HT figés.
   const ttc = sheet.money.ttcTerms;
@@ -513,7 +513,10 @@ function recapRows(
       label: sheet.fulfillment.method === "pickup" ? copy.recapPickup : copy.recapDelivery,
       value: sheet.fulfillment.address?.ville ?? "—",
     },
-    { label: copy.recapContent, value: fill(copy.recapPieces, { count: String(pieces) }) },
+    {
+      label: copy.recapContent,
+      value: contentOf(sheet.lines, { pieces: copy.recapPieces, weighed: copy.recapWeighed }),
+    },
     ...(discountCents === 0
       ? []
       : [
@@ -726,8 +729,10 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
     "customer.order-ready": (data) => {
       const copy = mailCopyOf(data.locale)["customer.order-ready"];
       const showQr = data.handoverToken !== null && data.handoverUrl !== "";
-      const pieces =
-        data.remainder?.pieces ?? data.sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+      const content =
+        data.remainder === undefined
+          ? contentOf(data.sheet.lines, { pieces: copy.piecesLabel, weighed: copy.weighedLabel })
+          : fill(copy.piecesLabel, { count: String(data.remainder.pieces) });
       const heading = orderReadyHeading(copy, data);
       return {
         subject: sanitiseSubject(fill(heading.subject, { ref: data.sheet.reference })),
@@ -743,7 +748,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
               value:
                 data.sheet.fulfillment.pickupLabel ?? data.sheet.fulfillment.address?.ville ?? "—",
             },
-            { label: copy.contentLabel, value: fill(copy.piecesLabel, { count: String(pieces) }) },
+            { label: copy.contentLabel, value: content },
           ],
           // Le QR, à NOUVEAU. Il était dans la confirmation, et le répéter n'est
           // pas une redite : c'est maintenant qu'on s'en sert, et personne ne

@@ -8,6 +8,7 @@ import {
   type ResolvedCatalogItem,
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
+import { saleUnitOf } from "./catalog-sale-unit.js";
 import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
@@ -67,6 +68,10 @@ interface ItemRow {
   readonly publicReviewPending: boolean;
   /** À valider pour les pros (Hugo, 2026-10-15) — cf. `servedTo`. */
   readonly proReviewPending: boolean;
+  /** L'unité de vente (`TEXT` contraint) et, au poids, le pas et le minimum en grammes. */
+  readonly saleUnit: string;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
   // là ».
@@ -373,6 +378,11 @@ function resolve(
       path: lineage(row.category.id),
     },
     isDefault: row.isDefault,
+    // Lue par la commande (P3) : l'unité dans laquelle la quantité se compte,
+    // et ce contre quoi une quantité au poids se valide.
+    saleUnit: saleUnitOf(row.sku, row.saleUnit),
+    weightMinGrams: row.weightMinGrams,
+    weightStepGrams: row.weightStepGrams,
     // Mis en avant POUR CE LECTEUR (2026-10-18) : la tuile d'un pro ne dit
     // « Incontournable » que de ce qu'on a mis en avant chez les pros.
     isFeatured: featuredFor(row, viewer),

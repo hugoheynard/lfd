@@ -71,6 +71,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
           ...texts(
             "recapContent",
             "recapPieces",
+            "recapWeighed",
             "recapDiscount",
             "recapDiscountBase",
             "recapVoucher",
@@ -117,7 +118,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
           introRemainderDelivery: `${REMAINDER}, livré`,
         }),
       },
-      { id: "summary", texts: texts("whereLabel", "contentLabel", "piecesLabel") },
+      { id: "summary", texts: texts("whereLabel", "contentLabel", "piecesLabel", "weighedLabel") },
       QR,
       ITINERARY,
       { id: "cta", texts: texts("cta") },

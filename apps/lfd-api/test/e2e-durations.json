@@ -293,6 +293,7 @@
   "test/order-unsettled-shop-expiry.e2e-spec.ts": 5000,
   "test/order-waivers-journal.e2e-spec.ts": 5340,
   "test/order-waivers-open-list.e2e-spec.ts": 5000,
+  "test/order-weight.e2e-spec.ts": 10400,
   "test/order-window-mode.e2e-spec.ts": 4975,
   "test/orders-idempotency.e2e-spec.ts": 6165,
   "test/orders-sales-terms.e2e-spec.ts": 13080,

@@ -10,6 +10,7 @@ import { VolumeCommitmentAggregate } from "../../domain/entities/volume-commitme
 import { VolumeCommitmentRepository } from "../../domain/ports/volume-commitment.repository.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { SignVolumeCommitmentCommand } from "./sign-volume-commitment.command.js";
+import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 
 @CommandHandler(SignVolumeCommitmentCommand)
 export class SignVolumeCommitmentHandler implements ICommandHandler<
@@ -23,6 +24,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly priced: PricedDecisionsReader,
     private readonly companies: PricedCompanyNamer,
+    private readonly saleUnits: ArticleSaleUnits,
   ) {}
 
   async execute(command: SignVolumeCommitmentCommand): Promise<string> {
@@ -47,6 +49,11 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     // ⚠️ Le refus vise « **a facturé** », pas « est passé ». Un engagement posé
     // puis rangé dix minutes plus tard n'a rien facturé : le reposer est le
     // geste ordinaire « je me suis trompé, je recommence ».
+    // Un article au poids ne se compte pas en volume promis (`plan-vente-au-poids.md`, P3).
+    VolumeCommitmentAggregate.ensureCountedInPieces(
+      payload.scope,
+      await this.saleUnits.weightSoldAmong(payload.scope.id === null ? [] : [payload.scope.id]),
+    );
     const sealed = await this.commitments.archivedOverlapping(commitment);
     if (sealed.length > 0 && (await this.priced.anyPriced(sealed))) {
       throw new PricedPeriodIsSealedError("engagement", commitment.toPersistence().validFrom);

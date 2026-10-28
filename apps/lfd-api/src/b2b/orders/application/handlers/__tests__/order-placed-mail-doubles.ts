@@ -71,6 +71,7 @@ export function view(overrides: Partial<OrderView> = {}): OrderView {
         unitPriceMillicents: 120_000,
         vatRate: 0.055,
         quantity: 12,
+        saleUnit: "piece",
         lineTotalCents: 1_440,
         unitPriceTtcCents: null,
         lineTotalTtcCents: null,

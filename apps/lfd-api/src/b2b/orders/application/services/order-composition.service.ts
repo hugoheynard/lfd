@@ -9,7 +9,7 @@ import type {
   PickupSnapshot,
   WindowMode,
 } from "@lfd/contracts";
-import { lineTotalCents, pieces } from "@lfd/money";
+import { lineTotalCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import type { DraftOrderInput } from "../../domain/entities/order.js";
@@ -32,7 +32,11 @@ import { composeExactOrder } from "../../domain/services/exact-order-composition
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
 import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
 import { revisedLineRequests } from "../../domain/services/revised-lines.js";
-import type { OrderLineInput, OrderLineSnapshot } from "../../domain/value-objects/order-line.js";
+import {
+  quantityOf,
+  type OrderLineInput,
+  type OrderLineSnapshot,
+} from "../../domain/value-objects/order-line.js";
 import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
@@ -140,7 +144,7 @@ export class OrderComposition {
     // feraient diverger le seuil de franco du total facturé.
     const priced: readonly PricedLine[] = lines.map((line) => ({
       sku: line.sku,
-      htCents: lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
+      htCents: lineTotalCents(line.unitPriceMillicents, quantityOf(line)),
     }));
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).

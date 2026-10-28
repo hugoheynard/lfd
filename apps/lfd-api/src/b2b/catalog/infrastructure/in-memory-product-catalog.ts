@@ -2,6 +2,7 @@ import { catalogueArticle } from "../domain/catalogue-article.js";
 import { familyPathOf } from "../domain/catalog-family.js";
 import {
   ProductCatalogReader,
+  PIECE_SALE_TERMS,
   type CatalogItem,
   type UnsealedCatalogItem,
 } from "../domain/ports/product-catalog.reader.js";
@@ -29,13 +30,16 @@ export class InMemoryProductCatalog extends ProductCatalogReader {
   constructor(items: readonly UnsealedCatalogItem[]) {
     super();
     this.bySku = new Map(
-      items.map((item) => [
-        item.sku,
-        {
-          ...item,
-          article: catalogueArticle({ ...item, categoryPath: familyPathOf(item.family) }),
-        },
-      ]),
+      items.map((declared) => {
+        const item = { ...PIECE_SALE_TERMS, ...declared };
+        return [
+          item.sku,
+          {
+            ...item,
+            article: catalogueArticle({ ...item, categoryPath: familyPathOf(item.family) }),
+          },
+        ];
+      }),
     );
   }
 

@@ -174,6 +174,7 @@ describe("vue comme une règle", () => {
     variantSku: "VIE-012",
     productSku: "VIE-012",
     categoryPath: ["fam-vien"],
+    saleUnit: "piece",
     companyId: "co_folie",
     pricingCompanyId: "co_folie",
     segmentId: null,

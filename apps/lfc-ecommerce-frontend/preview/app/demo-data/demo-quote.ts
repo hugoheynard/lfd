@@ -82,6 +82,8 @@ export function demoQuote(request: QuoteRequest): ShopQuoteView {
       {
         sku: item.sku,
         quantity: line.quantity,
+        // La démo ne vend qu'à la pièce.
+        saleUnit: 'piece' as const,
         unitPriceMillicents: item.unitPriceMillicents,
         lineTotalCents,
         lineTotalTtcCents: Math.round(lineTotalCents * (1 + DEMO_VAT_RATE_PERCENT / 100)),
