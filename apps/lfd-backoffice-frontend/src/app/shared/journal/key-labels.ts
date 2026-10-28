@@ -252,7 +252,10 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   promisedQuantity: 'Quantité promise',
   // Lot P : le prix pro HT saisi (`product.pricing_saved`, `product.pro_price_prefilled`).
   proPriceMillicents: 'Prix pro HT',
+  // Le prix au kilo saisi, informatif (`product.pricing_saved`, 2026-10-28).
+  proPricePerKgMillicents: 'Prix au kilo pro HT',
   proteinG: 'Protéines',
+  publicPricePerKgTtcCents: 'Prix au kilo public TTC',
   providerId: 'Identifiant d’envoi',
   ratioBp: 'Rapport prix pro / prix public',
   quantity: 'Quantité',
