@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import type { AdminOrderShortfall, ShortfallAwaitingDecision } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { OrderShortfallDecision } from '../../commandes/order-shortfall-decision/order-shortfall-decision';
@@ -37,14 +38,20 @@ export class PackingShortfall {
       .lines.filter((line) => line.packed < line.due)
       .map(
         (line) =>
-          `Manque : ${line.productName} — ${String(line.packed)} sur ${String(line.due)} au bac`,
+          `Manque : ${line.productName} — ${saleQuantityLabel(line.packed, line.saleUnit)} sur ` +
+          `${saleQuantityLabel(line.due, line.saleUnit)} au bac`,
       ),
   );
 
   /** La forme que lit le composant de la fiche : rien n'est décidé, puisqu'on attend. */
   protected readonly asOrderShortfall = computed<AdminOrderShortfall>(() => ({
     reportedAt: this.shortfall().reportedAt,
-    lines: this.shortfall().lines.map(({ sku, due, packed }) => ({ sku, due, packed })),
+    lines: this.shortfall().lines.map(({ sku, due, packed, saleUnit }) => ({
+      sku,
+      due,
+      packed,
+      saleUnit,
+    })),
     decision: null,
   }));
 

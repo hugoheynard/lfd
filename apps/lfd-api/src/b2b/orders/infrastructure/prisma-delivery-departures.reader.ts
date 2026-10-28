@@ -36,7 +36,12 @@ export class PrismaDeliveryDeparturesReader extends DeliveryDeparturesReader {
     return {
       lines: departure.lines
         .filter((line) => line.quantity > 0)
-        .map((line) => ({ sku: line.sku, name: line.productName, quantity: line.quantity })),
+        .map((line) => ({
+          sku: line.sku,
+          name: line.productName,
+          quantity: line.quantity,
+          saleUnit: line.saleUnit,
+        })),
       shortfall:
         departure.remainder === null
           ? null

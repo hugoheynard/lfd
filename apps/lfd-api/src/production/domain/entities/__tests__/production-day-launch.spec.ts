@@ -32,7 +32,7 @@ function order(orderId = "ord_1", quantity = 40): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 
@@ -45,6 +45,11 @@ function resupply(resupplyId: string, quantity: number, servedByTransfer = true)
     servedByTransfer,
     lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
   };
+}
+
+/** Un réassort tel que la journée le fige : à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2). */
+function frozen<T extends { readonly lines: readonly object[] }>(resupply: T): T {
+  return { ...resupply, lines: resupply.lines.map((line) => ({ ...line, saleUnit: "piece" })) };
 }
 
 function opened(): ProductionDay {
@@ -70,7 +75,7 @@ describe("ProductionDay.launchResupply — sur une journée arrêtée", () => {
     expect(opening).toBe(false);
     expect(day.resupplies.map((r) => r.resupplyId)).toEqual(["rs_evening"]);
     expect(day.launchedResupplies).toEqual([
-      { ...resupply("rs_asap", 8), launched: { at: MORNING, by: "s_max" } },
+      { ...frozen(resupply("rs_asap", 8)), launched: { at: MORNING, by: "s_max" } },
     ]);
     expect(day.plannedResupplies.map((r) => r.resupplyId)).toEqual(["rs_evening", "rs_asap"]);
     expect(quantities(day)).toEqual([["VIE-001", 60]]);

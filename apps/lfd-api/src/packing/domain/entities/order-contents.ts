@@ -1,3 +1,5 @@
+import { type SaleUnit, weightLabel } from "@lfd/money";
+
 import {
   InvalidContainerQuantityError,
   MoveToSameContainerError,
@@ -6,13 +8,17 @@ import {
   PackingContainerVoidedError,
   WithdrawBeyondContentError,
 } from "../errors/packing-container-errors.js";
+import { WeightLotSplitError } from "../errors/packing-sale-unit-errors.js";
 import { leftToPlace } from "../services/placement.js";
 
 /** La ligne due, vue des contenants : l'article, son nom, sa quantité. */
 export interface DueLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** `weight` : la ligne se met au bac en UN lot (P6 de `pricing/plan-vente-au-poids.md`). */
+  readonly saleUnit: SaleUnit;
 }
 
 /** `bin` : un bac de livraison, déclaré par la livraison. `bag` : un sac, né ici. */
@@ -131,6 +137,7 @@ export class OrderContents {
   allocate(containerId: string, line: DueLine, quantity: number): number {
     const pieces = piecesToMove(quantity);
     this.live(containerId);
+    this.assertSingleLot(containerId, line);
     const remaining = leftToPlace(line.quantity, this.allocatedOf(line.sku));
     if (pieces > remaining) {
       throw new OverAllocationError(line.productName, remaining);
@@ -148,6 +155,7 @@ export class OrderContents {
   withdraw(containerId: string, line: DueLine, quantity: number): number {
     const pieces = piecesToMove(quantity);
     const held = heldIn(this.live(containerId), line.sku);
+    assertWholeLot(line, held, pieces);
     if (pieces > held) {
       throw new WithdrawBeyondContentError(line.productName, held);
     }
@@ -170,12 +178,40 @@ export class OrderContents {
     const pieces = piecesToMove(quantity);
     this.live(toId);
     const held = heldIn(this.live(fromId), line.sku);
+    // Le lot part entier : après le geste, un seul contenant le porte encore.
+    assertWholeLot(line, held, pieces);
     if (pieces > held) {
       throw new WithdrawBeyondContentError(line.productName, held);
     }
     this.shift(fromId, line.sku, -pieces);
     this.shift(toId, line.sku, pieces);
     return pieces;
+  }
+
+  /**
+   * **Un article au poids tient dans UN contenant** (P6) : on complète le lot
+   * là où il est, on ne l'éparpille pas — un sac de 500 g et un bac de 750 g
+   * pour le même saumon ne se retrouvent pas au déballage.
+   *
+   * @throws {WeightLotSplitError}
+   */
+  private assertSingleLot(containerId: string, line: DueLine): void {
+    if (line.saleUnit !== "weight") {
+      return;
+    }
+    const elsewhere = this.containersValue.some(
+      (container) =>
+        container.voided === null &&
+        container.id !== containerId &&
+        heldIn(container, line.sku) > 0,
+    );
+    if (elsewhere) {
+      throw new WeightLotSplitError(
+        line.productName,
+        "le contenant qui porte déjà ce lot",
+        "un second contenant",
+      );
+    }
   }
 
   /** Les lignes dont une quantité n'est pas répartie. */
@@ -209,6 +245,18 @@ export class OrderContents {
     this.containersValue = this.containersValue.map((container) =>
       container.id === next.id ? next : container,
     );
+  }
+}
+
+/**
+ * Un lot au poids se retire ou se déplace ENTIER : rendre « 200 g » à la
+ * réserve supposerait de peser au colisage, ce que ce plan exclut (§ 5).
+ *
+ * @throws {WeightLotSplitError}
+ */
+function assertWholeLot(line: DueLine, held: number, requested: number): void {
+  if (line.saleUnit === "weight" && held > 0 && requested !== held) {
+    throw new WeightLotSplitError(line.productName, weightLabel(held), weightLabel(requested));
   }
 }
 

@@ -8,6 +8,7 @@ import type {
   DemandItem,
 } from "../domain/services/production-forecast.js";
 import type { ServiceRange } from "../domain/value-objects/service-range.value-object.js";
+import { productionSaleUnitOf } from "./sale-unit.column.js";
 
 /**
  * Les comptes à produire arrêtés, lus **dans le schéma de la production**.
@@ -38,10 +39,15 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
       this.ordersBetween(range),
     ]);
 
-    const byDay = new Map<string, { sku: string; productName: string; quantity: number }[]>();
+    const byDay = new Map<string, DemandItem[]>();
     for (const row of rows) {
       const items = byDay.get(row.serviceDay) ?? [];
-      items.push({ sku: row.sku, productName: row.productName, quantity: row.quantity });
+      items.push({
+        sku: row.sku,
+        productName: row.productName,
+        quantity: row.quantity,
+        saleUnit: productionSaleUnitOf(row.sku, row.saleUnit),
+      });
       byDay.set(row.serviceDay, items);
     }
     return [...byDay.entries()].map(([day, items]) => ({
@@ -67,10 +73,7 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
         resupply: { select: { serviceDay: true } },
       },
     });
-    const byDay = new Map<
-      string,
-      Map<string, { sku: string; productName: string; quantity: number }>
-    >();
+    const byDay = new Map<string, Map<string, DemandItem>>();
     for (const line of lines) {
       const items = byDay.get(line.resupply.serviceDay) ?? new Map<string, DemandItem>();
       const item = items.get(line.sku);
@@ -78,6 +81,8 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
         sku: line.sku,
         productName: item?.productName ?? line.productName,
         quantity: (item?.quantity ?? 0) + line.quantity,
+        // Un réassort est toujours à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2).
+        saleUnit: "piece",
       });
       byDay.set(line.resupply.serviceDay, items);
     }
@@ -92,7 +97,7 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
         day: { closedAt: { not: null } },
       },
       orderBy: [{ serviceDay: "asc" }, { sku: "asc" }],
-      select: { serviceDay: true, sku: true, productName: true, quantity: true },
+      select: { serviceDay: true, sku: true, productName: true, quantity: true, saleUnit: true },
     });
   }
 

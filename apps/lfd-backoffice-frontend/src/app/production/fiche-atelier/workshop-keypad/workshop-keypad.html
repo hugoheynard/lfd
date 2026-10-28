@@ -5,11 +5,13 @@
        téléphone (Hugo, 2026-10-28). -->
   <div class="wk-body">
     <div class="wk-entry">
-      <span class="wk-heading">Pièces sorties de cette fournée</span>
+      <span class="wk-heading">{{
+        byWeight() ? 'Grammes sortis de cette fournée' : 'Pièces sorties de cette fournée'
+      }}</span>
 
       <p class="wk-display" aria-live="polite">
         <span class="wk-value" data-keypad-value>{{ shown() || '0' }}</span>
-        <span class="wk-unit">pièces</span>
+        <span class="wk-unit">{{ byWeight() ? 'g' : 'pièces' }}</span>
         <span class="wk-after">{{ after() }}</span>
       </p>
 

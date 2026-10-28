@@ -32,7 +32,11 @@ function order(
     clientele: "pro",
     siteId: null,
     sheetDetails: null,
-    lines: lines.map((line) => ({ ...line, productName: `Article ${line.sku}` })),
+    lines: lines.map((line) => ({
+      ...line,
+      productName: `Article ${line.sku}`,
+      saleUnit: "piece",
+    })),
   };
 }
 

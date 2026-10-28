@@ -1,4 +1,4 @@
-import { weightLabel } from "../sale-quantity-label.js";
+import { quantityFigure, weightLabel } from "../sale-quantity-label.js";
 import { grams, pieces, saleQuantity } from "../sale-quantity.js";
 
 describe("weightLabel — grammes sous le kilo, kilos au-delà", () => {
@@ -29,5 +29,23 @@ describe("saleQuantity — la quantité dans l'unité de la ligne", () => {
   it("rend des pièces pour une ligne à la pièce, des grammes pour une ligne au poids", () => {
     expect(saleQuantity(3, "piece")).toEqual(pieces(3));
     expect(saleQuantity(1250, "weight")).toEqual(grams(1250));
+  });
+});
+
+describe("quantityFigure — la colonne de quantité d'un papier", () => {
+  it.each([
+    [pieces(12), "12"],
+    [pieces(0), "0"],
+    [grams(20), "20 g"],
+    [grams(999), "999 g"],
+    [grams(1000), "1 kg"],
+    [grams(1250), "1,25 kg"],
+    [grams(1_000_000), "1000 kg"],
+  ])("%j s'écrit « %s »", (quantity, figure) => {
+    expect(quantityFigure(quantity)).toBe(figure);
+  });
+
+  it("n'écrit jamais des grammes comme des pièces", () => {
+    expect(quantityFigure(grams(1250))).not.toBe("1250");
   });
 });

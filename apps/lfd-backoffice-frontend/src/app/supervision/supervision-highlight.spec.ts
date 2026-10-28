@@ -18,6 +18,7 @@ function sheet(reference: string, awaited: readonly string[]): PackingSheet {
       sku,
       productName: sku,
       quantity: 1,
+      saleUnit: 'piece',
       packed: false,
       initials: null,
       packedAt: null,

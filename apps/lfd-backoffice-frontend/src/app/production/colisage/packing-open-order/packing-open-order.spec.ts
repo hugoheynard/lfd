@@ -21,6 +21,7 @@ function line(over: Partial<PackingLine> = {}): PackingLine {
     sku: 'CRO',
     productName: 'Croissant',
     quantity: 12,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,

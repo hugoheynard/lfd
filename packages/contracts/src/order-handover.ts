@@ -13,7 +13,7 @@
  */
 
 import type { OrderTransferView, ResupplyTransferView } from "./delivery-transfers.js";
-import type { FulfillmentMethod, FulfillmentSource } from "./order.js";
+import type { FulfillmentMethod, FulfillmentSource, OrderSaleUnit } from "./order.js";
 import type { PackingAbandonedLine } from "./production-packing.js";
 
 /**
@@ -52,7 +52,9 @@ export type HandoverVia = "scan" | "manual" | "deposit";
 export interface OrderHandoverLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits « 1,25 kg » au comptoir (P6). */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

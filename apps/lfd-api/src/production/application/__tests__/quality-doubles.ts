@@ -32,7 +32,7 @@ export const ORDERS: readonly ProducibleOrder[] = [
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: CROISSANT, productName: "Croissant", quantity: 12 }],
+    lines: [{ sku: CROISSANT, productName: "Croissant", quantity: 12, saleUnit: "piece" }],
   },
   {
     orderId: "ord_2",
@@ -45,8 +45,8 @@ export const ORDERS: readonly ProducibleOrder[] = [
     siteId: null,
     sheetDetails: null,
     lines: [
-      { sku: CROISSANT, productName: "Croissant", quantity: 4 },
-      { sku: BAGUETTE, productName: "Baguette", quantity: 2 },
+      { sku: CROISSANT, productName: "Croissant", quantity: 4, saleUnit: "piece" },
+      { sku: BAGUETTE, productName: "Baguette", quantity: 2, saleUnit: "piece" },
     ],
   },
 ];

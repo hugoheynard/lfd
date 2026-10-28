@@ -1,10 +1,13 @@
+import type { SaleUnit } from "@lfd/money";
 import type { DeliveryOrderLine } from "./delivery-order-lines.reader.js";
 
 /** Les pièces d'un article qui ne partent pas. */
 export interface DeliveryAbandonedLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /** Un départ incomplet décidé : le sort du reste, et ce qui ne part pas. */

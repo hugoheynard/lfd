@@ -20,7 +20,7 @@ function resupply(servedByTransfer: boolean, quantity: number): ProductionResupp
     siteLabel: null,
     name: null,
     servedByTransfer,
-    lines: [{ sku: SKU, productName: "Croissant", quantity }],
+    lines: [{ sku: SKU, productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 
@@ -88,7 +88,15 @@ describe("la part servie sur place", () => {
 
   it("les fournées annulées sortent du calcul avec leur part", () => {
     const day = {
-      counts: [{ sku: SKU, productName: "Croissant", quantity: 14, done: null }],
+      counts: [
+        {
+          sku: SKU,
+          productName: "Croissant",
+          quantity: 14,
+          saleUnit: "piece" as const,
+          done: null,
+        },
+      ],
       resupplies: [resupply(false, 4)],
       batches: [batch("b0", 14, { cancelled: { at: AT, by: "staff-1" } })],
     };

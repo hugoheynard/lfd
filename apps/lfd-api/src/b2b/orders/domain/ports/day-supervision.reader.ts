@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import type { FulfillmentMethod, OrderStatus } from "@lfd/contracts";
 
 import type { HandoverQueueWindow } from "./order.reader.js";
@@ -30,8 +31,10 @@ export interface SupervisedOrder {
 export interface SupervisedShortfallLine {
   readonly sku: string;
   readonly productName: string;
+  /** `due` et `packed` sont des grammes si `saleUnit = "weight"` (P6). */
   readonly due: number;
   readonly packed: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /**

@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import type { ContainerMode } from "../entities/packing-sheet.js";
 
 /** Une commande à coliser, telle que l'ombre l'inscrit. */
@@ -26,6 +27,8 @@ export interface ShadowOrderToDraw {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    /** P6 de `pricing/plan-vente-au-poids.md` : `weight` = des grammes, mis au bac en un lot. */
+    readonly saleUnit: SaleUnit;
   }[];
 }
 

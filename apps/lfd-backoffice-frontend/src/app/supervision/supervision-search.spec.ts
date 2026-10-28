@@ -22,6 +22,7 @@ function line(sku: string): PackingLine {
     sku,
     productName: sku,
     quantity: 1,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,

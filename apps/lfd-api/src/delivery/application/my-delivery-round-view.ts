@@ -166,6 +166,7 @@ function stopView(
               sku: line.sku,
               productName: line.productName,
               quantity: line.quantity,
+              saleUnit: line.saleUnit,
             })),
           },
     packing: inputs.readyOrders.has(stop.orderId) ? "ready" : "in_progress",
@@ -189,6 +190,7 @@ function sheetLineView(line: MyDeliverySheetLineView): MyDeliverySheetLineView {
     sku: line.sku,
     name: line.name,
     quantity: line.quantity,
+    saleUnit: line.saleUnit,
     requiresCold: line.requiresCold,
   };
 }

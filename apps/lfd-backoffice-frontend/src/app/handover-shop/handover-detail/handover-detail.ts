@@ -34,6 +34,7 @@ import { allRanks, ShipmentChoice } from '../shipment-choice/shipment-choice';
 import { formatWindow, stillRemittable, type ScanProof } from '../handover-queue';
 import { transferBlockReason } from '../handover-transfer';
 import { bagReadiness, gestureCaution, readyVerdict } from './bag-readiness';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 type LoadState = 'idle' | 'loading' | 'ready' | 'error';
 
@@ -84,6 +85,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-handover-detail',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     MissingItems,
     ShipmentChoice,
     FoldButtonComponent,

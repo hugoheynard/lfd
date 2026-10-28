@@ -14,8 +14,8 @@ const DAY = "2030-03-12";
 const AT = new Date(0);
 
 const LINES = new Map([
-  ["o_1", [{ sku: "PAIN", name: "Pain", quantity: 2 }]],
-  ["o_2", [{ sku: "PAIN", name: "Pain", quantity: 3 }]],
+  ["o_1", [{ sku: "PAIN", name: "Pain", quantity: 2, saleUnit: "piece" as const }]],
+  ["o_2", [{ sku: "PAIN", name: "Pain", quantity: 3, saleUnit: "piece" as const }]],
 ]);
 
 function handlerOver(

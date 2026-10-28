@@ -79,8 +79,13 @@ model PackingLine {
 
   sku         String
   productName String @map("product_name")
-  /// La quantité DUE — celle de l'instantané du fournil.
+  /// La quantité DUE — celle de l'instantané du fournil. Des grammes si
+  /// `saleUnit = weight`.
   quantity    Int
+  /// `piece` ou `weight` (CHECK), recopiée de la liste à coliser (P6 de
+  /// `pricing/plan-vente-au-poids.md`). Une ligne au poids se met au bac EN
+  /// UN LOT : sa quantité ne se répartit pas.
+  saleUnit    String @default("piece") @map("sale_unit")
 
   /// Au bac (K2) : réversible tant que le bac est ouvert. `null` = pas au bac.
   packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)

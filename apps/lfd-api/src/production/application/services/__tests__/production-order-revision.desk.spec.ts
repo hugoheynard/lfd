@@ -110,7 +110,7 @@ function closedPlan(marked = false): ProductionDay {
         clientele: "pro",
         siteId: null,
         sheetDetails: null,
-        lines: [{ sku: "BAG", productName: "Baguette", quantity: 10 }],
+        lines: [{ sku: "BAG", productName: "Baguette", quantity: 10, saleUnit: "piece" }],
       },
     ],
     new Set<string>(),

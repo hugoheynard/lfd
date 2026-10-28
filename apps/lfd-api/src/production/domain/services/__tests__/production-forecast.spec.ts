@@ -8,7 +8,12 @@ const WEEK = ServiceRange.of("2026-09-03", "2026-09-09");
 function demand(day: string, items: readonly [string, string, number][], orders = 1): DayDemand {
   return {
     day,
-    items: items.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
+    items: items.map(([sku, productName, quantity]) => ({
+      sku,
+      productName,
+      quantity,
+      saleUnit: "piece",
+    })),
     orderCount: orders,
   };
 }
@@ -184,7 +189,7 @@ describe("forecastMatrix", () => {
   describe("les réassorts pour demain (lot R3d)", () => {
     const resupply = (day: string, quantity: number) => ({
       day,
-      items: [{ sku: "PAI-BAG", productName: "Baguette", quantity }],
+      items: [{ sku: "PAI-BAG", productName: "Baguette", quantity, saleUnit: "piece" as const }],
     });
 
     it("ajoute les réassorts envoyés d'une journée ouverte, et en marque la part", () => {

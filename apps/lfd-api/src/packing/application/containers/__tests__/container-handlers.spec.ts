@@ -50,7 +50,9 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
     reference: "ORD-0001",
     packed: null,
     containers: 0,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 20, packed: null }],
+    lines: [
+      { sku: "CRO", productName: "Croissant", quantity: 20, packed: null, saleUnit: "piece" },
+    ],
     containerMode: options.mode ?? "listed",
     containerList: [],
     fulfillmentMethod: "pickup",

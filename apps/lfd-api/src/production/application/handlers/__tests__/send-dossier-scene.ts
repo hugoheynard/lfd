@@ -81,7 +81,7 @@ export function order(orderId: string, quantity: number): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 

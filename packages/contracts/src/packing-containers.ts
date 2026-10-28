@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **La colonne Contenants du poste de colisage** (K2b, 2026-10-04,
  * `documentation/colisage/colisage.md` §5–§5.1).
@@ -73,7 +75,9 @@ export type TransferPackingPieces = z.infer<typeof transferPackingPiecesSchema>;
 export interface PackingContainerLineView {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes — le lot entier — si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

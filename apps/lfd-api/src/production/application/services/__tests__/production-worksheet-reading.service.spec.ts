@@ -47,7 +47,7 @@ function order(orderId: string, sku: string, quantity: number): ProducibleOrder 
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku, productName: sku, quantity }],
+    lines: [{ sku, productName: sku, quantity, saleUnit: "piece" }],
   };
 }
 

@@ -45,8 +45,8 @@ function drawn(
     clientele,
     siteId,
     lines: [
-      { sku: "CRO", productName: "Croissant", quantity: 2 },
-      { sku: "CRO", productName: "Croissant", quantity: 1 },
+      { sku: "CRO", productName: "Croissant", quantity: 2, saleUnit: "piece" },
+      { sku: "CRO", productName: "Croissant", quantity: 1, saleUnit: "piece" },
     ],
   }).durableFact();
 }
@@ -95,7 +95,7 @@ describe("OnPackingListDrawn", () => {
         drawnAt: AT,
         // K2b : toute commande inscrite désormais liste ses contenants.
         containerMode: "listed",
-        lines: [{ sku: "CRO", productName: "Croissant", quantity: 3 }],
+        lines: [{ sku: "CRO", productName: "Croissant", quantity: 3, saleUnit: "piece" }],
       },
     ]);
   });

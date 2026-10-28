@@ -89,7 +89,9 @@ describe("GetDaySupervisionHandler", () => {
             orderId: "o2",
             reference: "ORD-0002",
             shortfallReportedAt: NOW,
-            shortfallLines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1 }],
+            shortfallLines: [
+              { sku: "CRO", productName: "Croissant", due: 3, packed: 1, saleUnit: "piece" },
+            ],
           },
         ],
         0,
@@ -105,7 +107,7 @@ describe("GetDaySupervisionHandler", () => {
         customerName: "Boulangerie du Col",
         fulfillmentMethod: "pickup",
         reportedAt: NOW.toISOString(),
-        lines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1 }],
+        lines: [{ sku: "CRO", productName: "Croissant", due: 3, packed: 1, saleUnit: "piece" }],
       },
     ]);
   });

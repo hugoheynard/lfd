@@ -17,7 +17,7 @@ function order(orderId: string, croissants: number): ProductionOrderSnapshot {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: croissants }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: croissants, saleUnit: "piece" }],
   };
 }
 
@@ -27,7 +27,7 @@ const RESUPPLY: ProductionResupplySnapshot = {
   siteLabel: "Village",
   name: null,
   servedByTransfer: false,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 5 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 5, saleUnit: "piece" }],
 };
 
 describe("countColorSharesOf — la répartition du jour par couleur", () => {

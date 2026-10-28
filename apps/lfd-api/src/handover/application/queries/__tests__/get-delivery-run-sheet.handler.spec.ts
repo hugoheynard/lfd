@@ -244,7 +244,9 @@ describe("GetDeliveryRunSheetHandler", () => {
 describe("GetDeliveryRunSheetHandler — un départ incomplet décidé", () => {
   /** Régression : la feuille de route comptait les pièces commandées d'un départ incomplet, sans rien en dire (2026-10-25). */
   it("rend ce qui part, le reste et le sort décidé, pour que le livreur le voie", async () => {
-    const lines = [{ sku: "CRO-01", productName: "Croissant", quantity: 2 }];
+    const lines = [
+      { sku: "CRO-01", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
+    ];
     const { handler } = handlerOf([
       entry({ totalUnits: 1, shortfall: { remainder: "abandoned", lines } }),
     ]);

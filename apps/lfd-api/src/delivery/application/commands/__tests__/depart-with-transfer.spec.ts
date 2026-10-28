@@ -101,7 +101,9 @@ function setup(transferLoaded: boolean, receivedByHand = false, withBins = true)
     durable,
     new FixedStaffPermissionHolders(),
     transfers,
-    new FixedTransferContents(new Map([["o_v1", [{ sku: "PAIN", name: "Pain", quantity: 4 }]]])),
+    new FixedTransferContents(
+      new Map([["o_v1", [{ sku: "PAIN", name: "Pain", quantity: 4, saleUnit: "piece" as const }]]]),
+    ),
     resupplyContentsOver(),
   );
   return { handler, transfers, durable, departed };

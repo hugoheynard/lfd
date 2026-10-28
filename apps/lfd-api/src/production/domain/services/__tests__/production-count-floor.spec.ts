@@ -6,6 +6,7 @@ const item = (sku: string, quantity: number, productName = `Article ${sku}`) => 
   sku,
   productName,
   quantity,
+  saleUnit: "piece" as const,
   done: null,
 });
 

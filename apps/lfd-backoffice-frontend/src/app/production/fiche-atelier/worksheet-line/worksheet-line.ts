@@ -7,6 +7,7 @@ import {
 } from 'fold-ng';
 
 import type { WorkshopBatch, WorkshopLine, WorkshopShortcutView } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import { lineBadge } from '../../../supervision/quality-badges';
 import { BatchChips } from '../batch-chips/batch-chips';
@@ -170,6 +171,14 @@ export class WorksheetLine {
    * être coupé), chacun la moitié de la barre.
    */
   protected readonly segmentRows = computed(() => rowsOf(this.segments()));
+
+  /**
+   * « 48 » ou « 1,25 kg » : une quantité de la ligne dans l'unité de
+   * l'article (plan `pricing/plan-vente-au-poids.md`, P6).
+   */
+  protected figure(quantity: number): string {
+    return saleQuantityLabel(quantity, this.line().saleUnit);
+  }
 
   protected addContainer(): void {
     const container = this.line().container;

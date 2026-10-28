@@ -6,6 +6,7 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../entities/production-day.snapshot.js";
+import { MixedSaleUnitCountError } from "../errors/production-sale-unit-errors.js";
 import { FIRST_SHIPMENT_RANK } from "../value-objects/shipment-ref.value-object.js";
 
 /** Ce que le compte additionne : une commande ou un réassort — des lignes. */
@@ -48,6 +49,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
     })),
     sheetDetails: order.sheetDetails,
   };
@@ -65,6 +67,9 @@ export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnap
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
+      // Le commerce refuse un article au poids au réassort (plan
+      // `pricing/plan-vente-au-poids.md`, § 2) : un réassort compte des pièces.
+      saleUnit: "piece",
     })),
   };
 }
@@ -88,10 +93,17 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
   for (const order of orders) {
     for (const line of order.lines) {
       const known = bySku.get(line.sku);
+      if (known !== undefined && known.saleUnit !== line.saleUnit) {
+        // Additionner des pièces et des grammes d'un même article rendrait un
+        // nombre qui ne veut rien dire ; l'unité est figée à la publication,
+        // donc ce cas n'arrive que si le commerce a menti.
+        throw new MixedSaleUnitCountError(line.sku);
+      }
       bySku.set(line.sku, {
         sku: line.sku,
         productName: known?.productName ?? line.productName,
         quantity: (known?.quantity ?? 0) + line.quantity,
+        saleUnit: line.saleUnit,
         // 🔴 Plus aucune coche recopiée (plan des fournées, §5.4) : « sorti »
         // vit dans les fournées, qui ne dépendent pas du compte. Recopier une
         // coche ferait renaître « fait » sur une quantité qui a changé — 30

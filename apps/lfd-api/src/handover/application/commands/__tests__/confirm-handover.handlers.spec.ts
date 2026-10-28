@@ -95,13 +95,15 @@ function subject(withPackedRest: boolean): HandoverSubject {
     settled: true,
     fulfillmentMethod: "pickup",
     note: "",
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 10 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 10, saleUnit: "piece" }],
     laterShipments: withPackedRest
       ? [
           {
             rank: 2,
             prepared: true,
-            lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+            lines: [
+              { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
+            ],
           },
         ]
       : [],

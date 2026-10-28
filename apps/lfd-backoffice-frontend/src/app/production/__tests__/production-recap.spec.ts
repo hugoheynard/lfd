@@ -150,16 +150,59 @@ describe('le récapitulatif de production', () => {
 
     expect(recap[0]).toMatchObject({ label: 'Viennoiseries', quantity: 48, resupplyQuantity: 24 });
     expect(recap[0]?.lines).toEqual([
-      { sku: 'CRO', productName: 'Croissant', quantity: 42, orderCount: 1, resupplyQuantity: 18 },
+      {
+        sku: 'CRO',
+        productName: 'Croissant',
+        quantity: 42,
+        saleUnit: 'piece',
+        label: '42',
+        orderCount: 1,
+        resupplyQuantity: 18,
+      },
       {
         sku: 'PAC',
         productName: 'Pain au chocolat',
         quantity: 6,
+        saleUnit: 'piece',
+        label: '6',
         orderCount: 0,
         resupplyQuantity: 6,
       },
     ]);
     expect(totalPieces(recap)).toBe(48);
     expect(resupplyPieces(recap)).toBe(24);
+  });
+});
+
+/** P6 de `plan-vente-au-poids.md` : la fiche de poste écrit des kilos, et compte une pièce par commande. */
+describe('le récapitulatif de production, au poids', () => {
+  function weighed(reference: string, grams: number, croissants = 0): AtelierSheet {
+    const base = sheet(reference, croissants > 0 ? [['CRO', 'Croissant', croissants]] : []);
+    return {
+      ...base,
+      lines: [
+        ...base.lines,
+        { sku: 'SAU', productName: 'Saumon gravlax', quantity: grams, saleUnit: 'weight' },
+      ],
+    };
+  }
+
+  it('additionne les grammes et dit « 1,75 kg »', () => {
+    const recap = productionRecap([weighed('C-1', 1250, 12), weighed('C-2', 500)], CATALOGUE);
+    const salmon = recap.flatMap((group) => group.lines).find((line) => line.sku === 'SAU');
+
+    expect(salmon).toMatchObject({ quantity: 1750, saleUnit: 'weight', label: '1,75 kg' });
+  });
+
+  it('compte 12 croissants et deux commandes au poids : 14 pièces, jamais 1 762', () => {
+    const recap = productionRecap([weighed('C-1', 1250, 12), weighed('C-2', 500)], CATALOGUE);
+
+    expect(totalPieces(recap)).toBe(14);
+  });
+
+  it('une ligne sans unité reste une ligne à la pièce', () => {
+    const recap = productionRecap([sheet('C-1', [['CRO', 'Croissant', 40]])], CATALOGUE);
+
+    expect(recap[0]?.lines[0]).toMatchObject({ saleUnit: 'piece', label: '40' });
   });
 });

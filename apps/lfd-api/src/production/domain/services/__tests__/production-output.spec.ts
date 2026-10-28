@@ -40,7 +40,7 @@ function batch(
 }
 
 function count(quantity: number, done: DoneMark | null): ProducedItemSnapshot {
-  return { sku: "VIE-001", productName: "Croissant", quantity, done };
+  return { sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece", done };
 }
 
 describe("outputOf — l'état d'une ligne se DÉDUIT", () => {

@@ -10,7 +10,8 @@ export {
   unitPriceCents,
 } from "./millicents.js";
 export { GRAMS_PER_KILOGRAM, grams, pieces, saleQuantity } from "./sale-quantity.js";
-export { weightLabel } from "./sale-quantity-label.js";
+export { quantityFigure, weightLabel } from "./sale-quantity-label.js";
+export { pieceTally } from "./sale-quantity-tally.js";
 export type { SaleQuantity, SaleUnit } from "./sale-quantity.js";
 export {
   fromCents,

@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { PlanSigner } from "./plan-signer.js";
 import type { Clientele, OrderSheetDetails } from "../../channels/commerce/day-orders.reader.js";
 import type { PackingOwner } from "../value-objects/packing-owner.js";
@@ -22,7 +24,10 @@ import type { PackingOwner } from "../value-objects/packing-owner.js";
 export interface ProductionLineSnapshot {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** Recopiée de la commande (P6) ; un réassort est toujours à la pièce. */
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -98,7 +103,13 @@ export interface DoneMark {
 export interface ProducedItemSnapshot {
   readonly sku: string;
   readonly productName: string;
+  /**
+   * Le total à produire de l'article : des pièces, ou des GRAMMES si
+   * `saleUnit = "weight"` — l'unité est celle de l'article, une seule par SKU
+   * (figée à la publication), d'où une somme toujours homogène.
+   */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
   /**
    * **La coche de l'ANCIEN binaire**, telle que `done_*` la porte encore.
    *

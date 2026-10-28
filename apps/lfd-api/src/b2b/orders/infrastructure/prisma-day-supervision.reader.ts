@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
@@ -8,6 +9,7 @@ import {
   type SupervisedOrder,
   type SupervisedShortfallLine,
 } from "../domain/ports/day-supervision.reader.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
 import { settlementWhere } from "./plan-filter.js";
@@ -84,18 +86,21 @@ export class PrismaDaySupervisionReader extends DaySupervisionReader {
    */
   private async productNames(
     orderIds: readonly string[],
-  ): Promise<ReadonlyMap<string, ReadonlyMap<string, string>>> {
+  ): Promise<ReadonlyMap<string, ReadonlyMap<string, NamedArticle>>> {
     if (orderIds.length === 0) {
       return new Map();
     }
     const lines = await this.prisma.orderLine.findMany({
       where: { orderId: { in: [...orderIds] } },
-      select: { orderId: true, sku: true, productNameSnapshot: true },
+      select: { orderId: true, sku: true, productNameSnapshot: true, saleUnit: true },
     });
-    const byOrder = new Map<string, Map<string, string>>();
+    const byOrder = new Map<string, Map<string, NamedArticle>>();
     for (const line of lines) {
-      const names = byOrder.get(line.orderId) ?? new Map<string, string>();
-      names.set(line.sku, line.productNameSnapshot);
+      const names = byOrder.get(line.orderId) ?? new Map<string, NamedArticle>();
+      names.set(line.sku, {
+        name: line.productNameSnapshot,
+        saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
+      });
       byOrder.set(line.orderId, names);
     }
     return byOrder;
@@ -152,14 +157,22 @@ function pendingShortfallOf(
 }
 
 /** Le manque nommé ; un article absent des lignes garde son SKU plutôt qu'un nom inventé. */
+/** Un article d'une commande : son nom figé, et son unité (P6). */
+interface NamedArticle {
+  readonly name: string;
+  readonly saleUnit: SaleUnit;
+}
+
 function namedLines(
   lines: readonly { readonly sku: string; readonly due: number; readonly packed: number }[],
-  names: ReadonlyMap<string, string> | undefined,
+  names: ReadonlyMap<string, NamedArticle> | undefined,
 ): SupervisedShortfallLine[] {
   return lines.map((line) => ({
     sku: line.sku,
-    productName: names?.get(line.sku) ?? line.sku,
+    productName: names?.get(line.sku)?.name ?? line.sku,
     due: line.due,
     packed: line.packed,
+    // Un article inconnu des lignes se lit en pièces, comme tout l'existant.
+    saleUnit: names?.get(line.sku)?.saleUnit ?? "piece",
   }));
 }

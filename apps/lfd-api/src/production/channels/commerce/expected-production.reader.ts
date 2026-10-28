@@ -1,10 +1,14 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
 
 /** Ce qui est attendu d'un article, un jour donné, tous clients confondus. */
 export interface ExpectedItem {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /** Ce qui est attendu une journée. `AAAA-MM-JJ`, et rien d'autre. */

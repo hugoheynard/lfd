@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
 import type { PackingContainerView } from "./packing-containers.js";
 import type { WithdrawnPackingSheet } from "./production-packing-withdrawn.js";
 
@@ -51,6 +52,12 @@ export interface PackingLine {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
+  /**
+   * L'unité de la ligne (`plan-vente-au-poids.md`, P6) : `weight` = la
+   * quantité, `allocated` et `unallocated` sont des GRAMMES, et la ligne se met
+   * au bac en UN lot — l'écran propose le lot entier, jamais un pas de 1.
+   */
+  readonly saleUnit: OrderSaleUnit;
   readonly packed: boolean;
   /** Qui a mis la ligne dans le bac. Vide autorisé sur une ligne pourtant cochée. */
   readonly initials: string | null;
@@ -103,7 +110,9 @@ export type PackingDeliveryNotePrint = "to_reprint" | "reprinted";
 export interface PackingAbandonedLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

@@ -38,7 +38,7 @@
           @for (line of item.sheet; track line.sku) {
             <fold-field [label]="line.name" data-sheet-line>
               <span class="quantity">
-                × {{ line.quantity }}
+                × {{ line.quantity | saleQuantity: line.saleUnit }}
                 @if (line.requiresCold) {
                   <fold-badge variant="info" content="❄ froid" data-sheet-cold />
                 }

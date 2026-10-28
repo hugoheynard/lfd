@@ -32,7 +32,7 @@ function sheet(overrides: Partial<PackingSheetSnapshot> = {}): PackingSheetSnaps
     reference: "ORD-0001",
     packed: null,
     containers: 1,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, packed: null }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, packed: null, saleUnit: "piece" }],
     containerMode: "listed",
     containerList: [
       {
@@ -58,6 +58,7 @@ function filled(overrides: Partial<PackingSheetSnapshot> = {}): PackingSheetSnap
         productName: "Croissant",
         quantity: 4,
         packed: { at: FIRST, by: "s1", initials: "" },
+        saleUnit: "piece",
       },
     ],
     ...overrides,

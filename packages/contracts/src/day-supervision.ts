@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { fulfillmentMethodSchema, fulfillmentSourceSchema } from "./order.js";
+import { fulfillmentMethodSchema, fulfillmentSourceSchema, orderSaleUnitSchema } from "./order.js";
 
 /**
  * Contrat de fil de la **Supervision du jour** : où en est chaque commande d'une
@@ -116,6 +116,8 @@ export const shortfallAwaitingDecisionSchema = z.object({
       productName: z.string(),
       due: z.number().int().nonnegative(),
       packed: z.number().int().nonnegative(),
+      /** `due` et `packed` sont des grammes si `weight` (`plan-vente-au-poids.md`, P6). */
+      saleUnit: orderSaleUnitSchema,
     }),
   ),
 });

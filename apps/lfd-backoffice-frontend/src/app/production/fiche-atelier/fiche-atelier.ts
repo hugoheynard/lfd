@@ -32,6 +32,7 @@ import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
 import { type SlotEntry, WorksheetSlots } from './worksheet-slots/worksheet-slots';
 import { WorkshopWallClock } from './workshop-wall-clock/workshop-wall-clock';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * 🔴 **Le seuil du fournil — 1024 px, pas les 640 px du back-office.**
@@ -90,6 +91,7 @@ function presses(line: WorkshopLine): boolean {
   selector: 'app-fiche-atelier',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     WorkshopWallClock,
     DriftBanner,
     FoldButtonComponent,

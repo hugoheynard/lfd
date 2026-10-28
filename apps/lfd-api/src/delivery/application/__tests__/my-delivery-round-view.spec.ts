@@ -14,7 +14,13 @@ import {
 const AT = new Date(0);
 const CARNET = { lat: 45.1, lng: 6.1 };
 const FROZEN = { lat: 45.9, lng: 6.9 };
-const LINE = { sku: "TAR-001", name: "Tarte", quantity: 2, requiresCold: true };
+const LINE = {
+  sku: "TAR-001",
+  name: "Tarte",
+  quantity: 2,
+  requiresCold: true,
+  saleUnit: "piece" as const,
+};
 
 function stop(id: string, position: number, overrides: Partial<DriverStopRow> = {}): DriverStopRow {
   return {
@@ -198,7 +204,7 @@ describe("myDeliveryRoundView — la vue du livreur (MT-D5 v2)", () => {
     );
 
     expect(Object.keys(view.stops[0]?.sheet[0] ?? {}).sort()).toEqual(
-      ["name", "quantity", "requiresCold", "sku"].sort(),
+      ["name", "quantity", "requiresCold", "saleUnit", "sku"].sort(),
     );
     expect(Object.keys(view.stops[0] ?? {}).sort()).toEqual(
       [
@@ -443,7 +449,12 @@ describe("myDeliveryRoundView — « Ma tournée » suit le colisage (PL4)", () 
 describe("myDeliveryRoundView — un départ incomplet décidé", () => {
   /** Régression : « Ma tournée » disait les quantités commandées d'un départ incomplet, sans rien en dire (2026-10-25). */
   it("porte le reste qui ne part pas et son sort, champ par champ", () => {
-    const abandoned = { sku: "VIE-001", productName: "Croissant", quantity: 2 };
+    const abandoned = {
+      sku: "VIE-001",
+      productName: "Croissant",
+      quantity: 2,
+      saleUnit: "piece" as const,
+    };
     const view = myDeliveryRoundView(
       inputs({
         round: round([stop("a", 1), stop("b", 2)], null),

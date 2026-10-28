@@ -29,7 +29,9 @@ function setup(posed: PackingSettings | null) {
     reference: "ORD-0001",
     packed: null,
     containers: 0,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 20, packed: null }],
+    lines: [
+      { sku: "CRO", productName: "Croissant", quantity: 20, packed: null, saleUnit: "piece" },
+    ],
     containerMode: "listed",
     containerList: [],
     fulfillmentMethod: "delivery",

@@ -8,6 +8,7 @@ function line(quantity: number, packed: boolean): SheetLine {
     sku: "CRO",
     productName: "Croissant",
     quantity,
+    saleUnit: "piece",
     packed: packed ? { at: AT, by: "s1", initials: "" } : null,
   };
 }

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { OrderView } from "./order.js";
+import type { OrderSaleUnit, OrderView } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
 import type { AdminOrderRevisability } from "./order-revision.values.js";
 
@@ -126,8 +126,10 @@ export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisio
 
 export interface AdminOrderShortfallLine {
   readonly sku: string;
+  /** `due` et `packed` sont des grammes si `saleUnit = "weight"` (P6 de `plan-vente-au-poids.md`). */
   readonly due: number;
   readonly packed: number;
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

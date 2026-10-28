@@ -95,7 +95,7 @@
   <tbody>
     @for (line of sheet().lines; track line.sku) {
       <tr>
-        <td class="fp-qty">{{ line.quantity }}</td>
+        <td class="fp-qty">{{ figure(line.quantity, line.saleUnit) }}</td>
         <td>
           <span class="fp-product">{{ line.productName }}</span>
           <span class="fp-sku">{{ line.sku }}</span>

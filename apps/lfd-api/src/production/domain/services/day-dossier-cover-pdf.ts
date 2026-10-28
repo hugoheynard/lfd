@@ -4,6 +4,7 @@ import { resupplySheetTitleOf } from "./day-dossier.js";
 import { lotCount } from "./day-dossier-recap-pdf.js";
 import type { MakeRoom } from "./day-dossier-resupplies-pdf.js";
 import { fulfillmentLabelOf } from "./fulfillment-method-label.js";
+import { piecesOfLines, type TalliedLine } from "./line-tally.js";
 import { drawOrderSwatch } from "./order-color-swatch.js";
 import {
   LEFT,
@@ -39,8 +40,9 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
 }
 
-function pieces(lines: readonly { readonly quantity: number }[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity, 0);
+/** Un article au poids compte pour une ligne (P6 de `pricing/plan-vente-au-poids.md`). */
+function pieces(lines: readonly TalliedLine[]): number {
+  return piecesOfLines(lines);
 }
 
 /** Dessine la couverture à partir de `top` ; rend le `y` dessous. */

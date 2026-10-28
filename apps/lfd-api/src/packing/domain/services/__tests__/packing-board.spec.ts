@@ -16,6 +16,7 @@ function line(sku: string, quantity: number, packed = false, name = sku): SheetL
     sku,
     productName: name,
     quantity,
+    saleUnit: "piece",
     packed: packed ? { at: AT, by: "s1", initials: "" } : null,
   };
 }
@@ -220,7 +221,7 @@ describe("packingBoardOf — le poste servi par le colisage (K3a)", () => {
         binId: "bin_1",
         binCode: "AB12",
         binHalf: "left",
-        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
         pieces: 6,
       },
     ]);

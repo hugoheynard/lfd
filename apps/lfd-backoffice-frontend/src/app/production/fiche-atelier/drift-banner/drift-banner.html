@@ -71,9 +71,9 @@
         <li class="db-line" [class.is-done]="line.done">
           <span class="db-line-name">{{ line.productName }}</span>
           <span class="db-line-move">
-            <span class="db-line-from">{{ line.from }}</span>
+            <span class="db-line-from">{{ figure(line.from, line.saleUnit) }}</span>
             <span aria-hidden="true">→</span>
-            <span class="db-line-to">{{ line.to }}</span>
+            <span class="db-line-to">{{ figure(line.to, line.saleUnit) }}</span>
           </span>
           @if (line.done) {
             <span class="db-line-flag">déjà commencée</span>

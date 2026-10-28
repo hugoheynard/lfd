@@ -65,5 +65,12 @@ export function myRoundOf(overrides: Partial<MyDeliveryRoundView> = {}): MyDeliv
 export function mySheetLineOf(
   overrides: Partial<MyDeliverySheetLineView> = {},
 ): MyDeliverySheetLineView {
-  return { sku: 'CRO-01', name: 'Croissant', quantity: 12, requiresCold: false, ...overrides };
+  return {
+    sku: 'CRO-01',
+    name: 'Croissant',
+    quantity: 12,
+    saleUnit: 'piece',
+    requiresCold: false,
+    ...overrides,
+  };
 }

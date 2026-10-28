@@ -1,4 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, input } from '@angular/core';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { QrCode } from '@lfd/b2b-ui/order';
 import { ORDER_ORIGIN_LABELS, type AtelierSheet } from '@lfd/contracts';
 
@@ -45,6 +46,9 @@ export class FicheProduction {
   readonly dayLabel = input.required<string>();
 
   /** « RETRAIT » ou « LIVRAISON » — le premier mot que cherche celui qui prépare. */
+  /** « 12 », ou « 1,25 kg » pour une ligne au poids (`plan-vente-au-poids.md`, P6). */
+  protected readonly figure = saleQuantityLabel;
+
   protected readonly methodLabel = computed(() =>
     this.sheet().fulfillment.method === 'pickup' ? 'Retrait' : 'Livraison',
   );
@@ -124,7 +128,11 @@ export class FicheProduction {
   );
 
   /** Le nombre de pièces — de quoi recompter le colis sans additionner. */
+  // Un article au poids compte pour une ligne, jamais ses grammes (P6).
   protected readonly pieces = computed(() =>
-    this.sheet().lines.reduce((sum, line) => sum + line.quantity, 0),
+    this.sheet().lines.reduce(
+      (sum, line) => sum + (line.saleUnit === 'weight' ? 1 : line.quantity),
+      0,
+    ),
   );
 }

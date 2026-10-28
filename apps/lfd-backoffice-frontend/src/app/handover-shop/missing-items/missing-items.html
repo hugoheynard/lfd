@@ -13,7 +13,7 @@
     }
     <ul class="mi-lines">
       @for (line of lines(); track line.sku) {
-        <li>{{ line.quantity }} {{ line.productName }}</li>
+        <li>{{ line.quantity | saleQuantity: line.saleUnit }} {{ line.productName }}</li>
       }
     </ul>
   </fold-callout>

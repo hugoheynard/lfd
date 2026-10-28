@@ -1,8 +1,12 @@
+import type { SaleUnit } from "@lfd/money";
+
 /** Une ligne du reste abandonné, nommée par la commande. */
 export interface AbandonedLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /**

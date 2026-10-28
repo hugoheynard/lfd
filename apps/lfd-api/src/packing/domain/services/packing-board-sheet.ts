@@ -5,6 +5,7 @@ import type {
   PackingSheet,
   PackingShortfallDecision,
 } from "@lfd/contracts";
+import { pieceTally, saleQuantity, type SaleUnit } from "@lfd/money";
 
 import type { SheetLine } from "../entities/packing-sheet.snapshot.js";
 import type { BoardOrder } from "../ports/packing-board.reader.js";
@@ -42,6 +43,7 @@ export interface DecidedShortfall {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    readonly saleUnit: SaleUnit;
   }[];
   readonly deliveryNote: "to_print" | "printed" | null;
   readonly decision: {
@@ -186,8 +188,9 @@ export function sheetOf(order: BoardOrder, context: SheetContext): PackingSheet 
     remainingLines: order.lines.length - packed.length,
     pieces: sumOfQuantities(order.lines),
     // Les pièces POSÉES, lignes ouvertes comprises — 18 croissants dans un sac
-    // comptent avant que leur ligne soit cochée (bug du 2026-10-05).
-    packedPieces: order.lines.reduce((sum, line) => sum + allocatedOf(line), 0),
+    // comptent avant que leur ligne soit cochée (bug du 2026-10-05). Un lot au
+    // poids compte pour une pièce quand il est entier au bac (P6).
+    packedPieces: order.lines.reduce((sum, line) => sum + placedPieces(line, allocatedOf(line)), 0),
     canDeclareReady: canDeclareReady(order),
     canReportShortfall: canReportShortfall(order),
     shortfallReportedAt: order.shortfallReportedAt?.toISOString() ?? null,
@@ -227,6 +230,7 @@ function linesOf(
         sku: line.sku,
         productName: line.productName,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
         packed: line.packed !== null,
         // La chaîne vide n'est pas une signature : `null`, comme l'ancien poste.
         initials: line.packed === null || line.packed.initials === "" ? null : line.packed.initials,
@@ -243,6 +247,7 @@ function linesOf(
 
 function containersOf(order: BoardOrder): readonly PackingContainerView[] {
   const names = new Map(order.lines.map((line) => [line.sku, line.productName] as const));
+  const units = new Map(order.lines.map((line) => [line.sku, line.saleUnit] as const));
   return order.containerList.map((container) => ({
     id: container.id,
     nature: container.nature,
@@ -254,13 +259,33 @@ function containersOf(order: BoardOrder): readonly PackingContainerView[] {
       sku: line.sku,
       productName: names.get(line.sku) ?? line.sku,
       quantity: line.quantity,
+      saleUnit: units.get(line.sku) ?? "piece",
     })),
-    pieces: container.lines.reduce((sum, line) => sum + line.quantity, 0),
+    // Un lot au poids compte pour une pièce dans le contenant (P6).
+    pieces: container.lines.reduce(
+      (sum, line) => sum + pieceTally(saleQuantity(line.quantity, units.get(line.sku) ?? "piece")),
+      0,
+    ),
   }));
 }
 
-export function sumOfQuantities(lines: readonly { readonly quantity: number }[]): number {
-  return lines.reduce((total, line) => total + line.quantity, 0);
+/**
+ * Les pièces d'une fiche : une ligne au poids y compte pour une, jamais ses
+ * grammes (P6 de `pricing/plan-vente-au-poids.md`).
+ */
+export function sumOfQuantities(lines: readonly SheetLine[]): number {
+  return lines.reduce(
+    (total, line) => total + pieceTally(saleQuantity(line.quantity, line.saleUnit)),
+    0,
+  );
+}
+
+/** Ce qu'une ligne posée pèse en pièces : ses pièces, ou un lot au poids entier au bac. */
+function placedPieces(line: SheetLine, allocated: number): number {
+  if (line.saleUnit !== "weight") {
+    return allocated;
+  }
+  return allocated >= line.quantity ? pieceTally(saleQuantity(line.quantity, "weight")) : 0;
 }
 
 /** Le nom d'abord — c'est ce qu'on cherche des yeux ; le SKU départage. */

@@ -14,6 +14,7 @@ import { photoCardRevision } from "../../shared/photo-cards/domain/value-objects
 import {
   customerLabelOf,
   DEPARTURE_SELECT,
+  departingPieces,
   departureOf,
   tradeNameOf,
 } from "./handover-order.query.js";
@@ -115,7 +116,7 @@ export function toRunSheetEntry(
     signatureRequired: agreed.signatureRequired.value,
     orderNote: row.note,
     addressBook: addressBookOf(row, addresses, procedures),
-    totalUnits: departure.lines.reduce((sum, line) => sum + line.quantity, 0),
+    totalUnits: departingPieces(departure.lines),
     shortfall:
       departure.remainder === null
         ? null

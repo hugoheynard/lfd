@@ -19,7 +19,7 @@ function planned(rank: number): ProductionOrderSnapshot {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 2 }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
   };
 }
 

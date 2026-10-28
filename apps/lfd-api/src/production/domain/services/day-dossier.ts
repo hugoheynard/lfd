@@ -4,8 +4,10 @@ import {
   type CatalogFamilyView,
   resupplyTitleOf,
 } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import type {
+  ProductionLineSnapshot,
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../entities/production-day.js";
@@ -33,8 +35,12 @@ import { byPositionThenName } from "./production-worksheet-groups.js";
 export interface DossierRecapLine {
   readonly sku: string;
   readonly productName: string;
-  /** Le TOTAL que le poste enfourne : commandes + réassorts (R3d-bis). */
+  /**
+   * Le TOTAL que le poste enfourne : commandes + réassorts (R3d-bis). Des
+   * grammes si `saleUnit = "weight"` (P6) — un seul article, une seule unité.
+   */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
   /** Sur combien de commandes il se répartit : 240 en 3 fois n'est pas 240 en 40. */
   readonly orderCount: number;
   /** Dont réassort — un détail du total, jamais à part de lui. */
@@ -44,7 +50,7 @@ export interface DossierRecapLine {
 /** Un rayon du récapitulatif — la fiche de poste. */
 export interface DossierRecapGroup {
   readonly label: string;
-  /** Le total du rayon, réassorts compris. */
+  /** Le total du rayon en pièces, réassorts compris — un article au poids compte pour un. */
   readonly quantity: number;
   readonly resupplyQuantity: number;
   readonly lines: readonly DossierRecapLine[];
@@ -69,6 +75,7 @@ export interface DayDossier {
 
 interface Tally {
   readonly productName: string;
+  readonly saleUnit: SaleUnit;
   quantity: number;
   orderCount: number;
   resupplyQuantity: number;
@@ -110,9 +117,11 @@ function talliesOf(
   resupplies: readonly ProductionResupplySnapshot[],
 ): readonly DossierRecapLine[] {
   const bySku = new Map<string, Tally>();
-  const add = (sku: string, productName: string, quantity: number, fromOrder: boolean): void => {
+  const add = (line: ProductionLineSnapshot, fromOrder: boolean): void => {
+    const { sku, productName, quantity, saleUnit } = line;
     const tally = bySku.get(sku) ?? {
       productName,
+      saleUnit,
       quantity: 0,
       orderCount: 0,
       resupplyQuantity: 0,
@@ -127,12 +136,12 @@ function talliesOf(
   };
   for (const order of orders) {
     for (const line of order.lines) {
-      add(line.sku, line.productName, line.quantity, true);
+      add(line, true);
     }
   }
   for (const resupply of resupplies) {
     for (const line of resupply.lines) {
-      add(line.sku, line.productName, line.quantity, false);
+      add(line, false);
     }
   }
   return [...bySku].map(([sku, tally]) => ({ sku, ...tally }));
@@ -167,18 +176,33 @@ function recapOf(
   return [...groups, groupOf(label, unshelved)];
 }
 
-/** Le plus gros d'abord — c'est par lui que le fournil commence ; à égalité, par nom. */
+/**
+ * Le plus gros d'abord — c'est par lui que le fournil commence ; à égalité, par
+ * nom. Un article au poids pèse une ligne dans ce tri comme dans le total
+ * (P6) : ses grammes ne se comparent pas à des pièces.
+ */
 function groupOf(label: string, lines: readonly DossierRecapLine[]): DossierRecapGroup {
   const sorted = [...lines].sort(
     (left, right) =>
-      right.quantity - left.quantity || left.productName.localeCompare(right.productName, "fr"),
+      recapPieces(right) - recapPieces(left) ||
+      left.productName.localeCompare(right.productName, "fr"),
   );
   return {
     label,
-    quantity: sorted.reduce((sum, line) => sum + line.quantity, 0),
+    quantity: sorted.reduce((sum, line) => sum + recapPieces(line), 0),
     resupplyQuantity: sorted.reduce((sum, line) => sum + line.resupplyQuantity, 0),
     lines: sorted,
   };
+}
+
+/**
+ * Ce qu'un produit du récapitulatif pèse en pièces : ses pièces, ou — au
+ * poids — une par commande qui le porte (P6). C'est la règle ligne à ligne de
+ * `linePieces` sommée sur l'article, sans quoi l'en-tête du dossier et
+ * l'e-mail (`dossierCountsOf`, qui compte ligne à ligne) diraient deux totaux.
+ */
+export function recapPieces(line: DossierRecapLine): number {
+  return line.saleUnit === "weight" ? line.orderCount : line.quantity;
 }
 
 /** Ordre des codes, indépendant de la langue de l'hôte. */

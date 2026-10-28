@@ -256,7 +256,8 @@
           <div class="fa-undo">
             <fold-toast variant="success" [duration]="undoMs" (dismiss)="gestures.forgetLast()">
               <span class="fa-undo-said">
-                {{ last.line.productName }} + {{ last.quantity }} · fournée déclarée
+                {{ last.line.productName }} +
+                {{ last.quantity | saleQuantity: last.line.saleUnit }} · fournée déclarée
                 <button foldButton size="sm" emphasis="outline" (click)="gestures.undoLast()">
                   Annuler
                 </button>

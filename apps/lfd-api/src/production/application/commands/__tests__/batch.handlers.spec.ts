@@ -48,7 +48,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: SKU, productName: "Croissant", quantity: 24 }],
+    lines: [{ sku: SKU, productName: "Croissant", quantity: 24, saleUnit: "piece" }],
   },
   {
     orderId: "ord_2",
@@ -60,7 +60,7 @@ const ORDERS: readonly ProducibleOrder[] = [
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: SKU, productName: "Croissant", quantity: 6 }],
+    lines: [{ sku: SKU, productName: "Croissant", quantity: 6, saleUnit: "piece" }],
   },
 ];
 

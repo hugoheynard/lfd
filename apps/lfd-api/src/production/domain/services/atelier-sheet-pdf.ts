@@ -18,6 +18,7 @@ import {
   type Doc,
 } from "../../../platform/pdf/paper-pdf-kit.js";
 import { drawCountPie } from "./count-color-pie.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
 import type { CountColorShare } from "./count-color-shares.js";
 import { drawRouting } from "./order-routing-pdf.js";
 import { PaperPages } from "../../../platform/pdf/paper-pages.js";
@@ -121,7 +122,8 @@ function drawLines(
   top: number,
   room: (at: number, needed: number) => number,
 ): number {
-  const pieces = order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  // Un article au poids compte pour une ligne dans ce total (P6).
+  const pieces = piecesOfLines(order.lines);
   let y = top + 5 * MM;
   putCaps(doc, `À PRÉPARER — ${String(pieces)} pièces`, LEFT, y);
   y += 6 * MM;
@@ -129,7 +131,7 @@ function drawLines(
     y = room(y, 10 * MM);
     // La quantité en GROS, à gauche : c'est le seul chiffre qu'on lit à un
     // mètre, les mains prises. Le nom suit, le SKU ferme la ligne.
-    put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 18, bold: true });
+    put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 60 * MM });
     putRight(doc, line.sku, RIGHT, y + 1 * MM, 9);
     y += 6.4 * MM;
@@ -173,7 +175,7 @@ export function renderProductionCountPdf(
     (doc) => {
       const pages = new PaperPages(doc);
       let y = pages.open("Compte à produire");
-      const total = items.reduce((sum, item) => sum + item.quantity, 0);
+      const total = piecesOfLines(items);
       putCaps(doc, `${String(items.length)} articles, ${String(total)} pièces`, LEFT, y);
       if (shares.length > 0) {
         drawCountPie(doc, shares, { x: RIGHT - PIE, y: y + PIE - 1 * MM }, PIE);
@@ -182,7 +184,10 @@ export function renderProductionCountPdf(
       y += 7 * MM;
       for (const item of items) {
         y = pages.room(y, 11 * MM);
-        put(doc, String(item.quantity), LEFT, y - 1.5 * MM, { size: 20, bold: true });
+        put(doc, lineFigure(item), LEFT, y - 1.5 * MM, {
+          size: figureFontSize(item, 20),
+          bold: true,
+        });
         put(doc, item.productName, LEFT + 22 * MM, y, { size: 14, width: WIDTH - 64 * MM });
         putRight(doc, item.sku, RIGHT, y + 1.5 * MM, 9);
         y += 7 * MM;

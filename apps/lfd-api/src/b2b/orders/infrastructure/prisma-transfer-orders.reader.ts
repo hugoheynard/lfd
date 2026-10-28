@@ -8,6 +8,7 @@ import {
   TransferOrdersReader,
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 
 /** Ce qui n'est pas (ou plus) une commande : un brouillon, une annulée. */
@@ -81,11 +82,22 @@ export class PrismaTransferOrderContentsReader extends TransferOrderContentsRead
     const rows = await this.prisma.orderLine.findMany({
       where: { orderId: { in: [...orderIds] } },
       orderBy: [{ orderId: "asc" }, { id: "asc" }],
-      select: { orderId: true, sku: true, productNameSnapshot: true, quantity: true },
+      select: {
+        orderId: true,
+        sku: true,
+        productNameSnapshot: true,
+        quantity: true,
+        saleUnit: true,
+      },
     });
     const byOrder = new Map<string, DeliveryOrderLine[]>();
     for (const row of rows) {
-      const line = { sku: row.sku, name: row.productNameSnapshot, quantity: row.quantity };
+      const line: DeliveryOrderLine = {
+        sku: row.sku,
+        name: row.productNameSnapshot,
+        quantity: row.quantity,
+        saleUnit: orderLineSaleUnitOf(row.sku, row.saleUnit),
+      };
       byOrder.set(row.orderId, [...(byOrder.get(row.orderId) ?? []), line]);
     }
     return byOrder;

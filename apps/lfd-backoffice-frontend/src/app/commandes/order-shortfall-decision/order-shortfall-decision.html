@@ -20,7 +20,10 @@
       @if (open()) {
         <ul class="departing" data-shortfall-departing>
           @for (line of departing(); track line.sku) {
-            <li>{{ line.name }} : {{ line.packed }} sur {{ line.due }} part</li>
+            <li>
+              {{ line.name }} : {{ figure(line.packed, line.saleUnit) }} sur
+              {{ figure(line.due, line.saleUnit) }} part
+            </li>
           }
         </ul>
       }

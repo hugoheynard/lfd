@@ -15,6 +15,7 @@ function line(over: Partial<PackingLineView> = {}): PackingLineView {
     sku: 'CRO',
     productName: 'Croissant',
     quantity: 12,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,

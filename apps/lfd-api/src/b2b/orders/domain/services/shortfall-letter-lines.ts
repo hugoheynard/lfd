@@ -1,9 +1,14 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { ShortfallQuantity } from "../entities/order-shortfall.js";
 
 /** Un article de la lettre : son nom sur la commande, et combien. */
 export interface ShortfallLetterLine {
   readonly product: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** Présente pour un article au poids seulement : une lettre à la pièce reste ce qu'elle était. */
+  readonly saleUnit?: "weight";
 }
 
 /** Ce que la lettre au client dit : ce qui part, ce qui manque. */
@@ -22,10 +27,14 @@ export interface ShortfallLetterLines {
 export function shortfallLetterLines(
   lines: readonly ShortfallQuantity[],
   names: ReadonlyMap<string, string>,
+  units: ReadonlyMap<string, SaleUnit> = new Map(),
 ): ShortfallLetterLines {
+  // Au poids, « ce qui manque » est la différence de grammes entre le dû et
+  // le lot au bac (P6) : 1 000 g dus, 750 g au bac, 250 g manquent.
   const named = (sku: string, quantity: number): ShortfallLetterLine => ({
     product: names.get(sku) ?? sku,
     quantity,
+    ...(units.get(sku) === "weight" ? { saleUnit: "weight" as const } : {}),
   });
   return {
     departed: lines.filter((line) => line.packed > 0).map((line) => named(line.sku, line.packed)),

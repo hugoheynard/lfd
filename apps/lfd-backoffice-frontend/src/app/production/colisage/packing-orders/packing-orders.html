@@ -88,7 +88,9 @@
          servies — JAMAIS additionnées. On voit qui attend combien sans
          qu'aucune somme ait lieu ici. -->
         @for (found of hitLines().get(sheet.reference) ?? []; track found.sku) {
-          <span class="co-hit-chip">{{ found.quantity }} {{ found.productName }}</span>
+          <span class="co-hit-chip"
+            >{{ found.quantity | saleQuantity: found.saleUnit }} {{ found.productName }}</span
+          >
         }
       </span>
       <!-- L'acheminement : le mode et le lieu disent sur quelle pile la

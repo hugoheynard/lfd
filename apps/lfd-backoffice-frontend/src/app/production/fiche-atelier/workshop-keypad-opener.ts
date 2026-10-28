@@ -33,6 +33,7 @@ export class WorkshopKeypadOpener {
       remaining: line.remaining,
       container: line.container,
       shortcuts,
+      saleUnit: line.saleUnit,
     });
   }
 

@@ -50,7 +50,7 @@ function order(orderId: string, quantity: number): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity }],
+    lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity, saleUnit: "piece" }],
   };
 }
 
@@ -120,7 +120,7 @@ const SEIGLE_AU_PAIN = new Map<string, CatalogFamilyView>([["PAI-SEI", PAINS]]);
 function demandOfDay(quantity: number): ExpectedDayProduction {
   return {
     day: DAY,
-    items: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity }],
+    items: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity, saleUnit: "piece" }],
     orderCount: 1,
   };
 }

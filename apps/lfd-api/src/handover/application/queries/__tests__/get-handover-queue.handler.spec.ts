@@ -451,7 +451,9 @@ describe("GetHandoverQueueHandler — un transfert de réassort seul (R3c, R3e)"
 
 describe("GetHandoverQueueHandler — un départ incomplet décidé", () => {
   it("rend le reste abandonné sur la ligne, pour que le comptoir le voie avant de tendre le sac", async () => {
-    const abandoned = [{ sku: "CRO-01", productName: "Croissant", quantity: 2 }];
+    const abandoned = [
+      { sku: "CRO-01", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
+    ];
     const { handler } = handlerOf([entry({ totalUnits: 1, abandoned })], new Map());
 
     const view = await handler.execute(new GetHandoverQueueQuery("2026-09-10"));

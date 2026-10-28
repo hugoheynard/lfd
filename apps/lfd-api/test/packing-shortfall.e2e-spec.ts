@@ -177,7 +177,7 @@ describe("« Il manque » au colisage → la commande attend une décision", () 
     );
     expect(fiche.shortfall).toEqual({
       reportedAt,
-      lines: [{ sku: CROISSANT, due: 3, packed: 1 }],
+      lines: [{ sku: CROISSANT, due: 3, packed: 1, saleUnit: "piece" }],
       // Pas encore décidé (E6b).
       decision: null,
     });

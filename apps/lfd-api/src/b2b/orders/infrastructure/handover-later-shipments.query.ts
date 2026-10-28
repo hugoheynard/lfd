@@ -1,4 +1,5 @@
 import type { HandoverSubjectShipment } from "../../../handover/channels/commerce/index.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 
 /**
  * **Les restes d'une commande, pour le comptoir** (plan E7 reliquat, choix 13,
@@ -17,7 +18,7 @@ export const LATER_SHIPMENTS_SELECT = {
     status: true,
     lines: {
       orderBy: { id: "asc" },
-      select: { sku: true, productName: true, quantity: true },
+      select: { sku: true, productName: true, quantity: true, saleUnit: true },
     },
   },
 } as const;
@@ -30,6 +31,7 @@ interface LaterShipmentRow {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 
@@ -43,6 +45,12 @@ export function laterShipmentsOf(
   return rows.map((row) => ({
     rank: row.rank,
     prepared: PACKED_STATUSES.has(row.status),
-    lines: row.lines.map((line) => ({ ...line })),
+    lines: row.lines.map((line) => ({
+      sku: line.sku,
+      productName: line.productName,
+      quantity: line.quantity,
+      // Recopiée de la ligne de commande par le BL (P5) : le comptoir dit « 1,25 kg ».
+      saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
+    })),
   }));
 }

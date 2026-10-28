@@ -16,6 +16,7 @@ function line(sku: string, done: boolean, doneAt: string | null = null): Worksho
     sku,
     productName: sku,
     quantity: 10,
+    saleUnit: 'piece',
     containerLabel: null,
     done,
     initials: null,

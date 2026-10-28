@@ -17,6 +17,7 @@ function sealedListed(overrides: Partial<PackingSheetSnapshot> = {}): PackingShe
         productName: "Croissant",
         quantity: 4,
         packed: { at: AT, by: "s1", initials: "" },
+        saleUnit: "piece",
       },
     ],
     containerMode: "listed",

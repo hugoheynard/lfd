@@ -211,7 +211,7 @@ describe('PackingColumn', () => {
       customerName: null,
       fulfillmentMethod: 'pickup',
       reportedAt: '2030-01-10T05:30:00.000Z',
-      lines: [{ sku: 'ECL', productName: 'Éclair pistache', due: 4, packed: 1 }],
+      lines: [{ sku: 'ECL', productName: 'Éclair pistache', due: 4, packed: 1, saleUnit: 'piece' }],
     };
     const fixture = await mountFixture(BOARD, NO_MATCHES, {
       shortfalls: new Map([['CMD-2', shortfall]]),

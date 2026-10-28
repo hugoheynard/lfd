@@ -37,7 +37,7 @@ function subject(overrides: Partial<HandoverSubject> = {}): HandoverSubject {
     settled: true,
     fulfillmentMethod: "pickup",
     note: "",
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
     laterShipments: [],
     ...overrides,
   };
@@ -182,7 +182,11 @@ describe.each(READERS)("$name — la retenue qualité", ({ read }) => {
 function withRemainder(prepared: boolean): HandoverSubject {
   return subject({
     laterShipments: [
-      { rank: 2, prepared, lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1 }] },
+      {
+        rank: 2,
+        prepared,
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1, saleUnit: "piece" }],
+      },
     ],
   });
 }
@@ -197,6 +201,43 @@ function attestedAt(rank: number): OrderHandover {
     rank,
   );
 }
+
+/** P6 de `pricing/plan-vente-au-poids.md` : le comptoir recompte des pièces, pas des grammes. */
+describe.each(READERS)("$name — une commande mêlée pièce et poids", ({ read }) => {
+  it("compte 12 croissants et UN saumon : 13, et garde l'unité de chaque ligne", async () => {
+    const view = await read(
+      subject({
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" },
+          { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+        ],
+      }),
+      null,
+      new FixedQualityHolds(),
+    );
+
+    expect(view.totalUnits).toBe(13);
+    expect(view.lines).toEqual([
+      { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" },
+      { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+    ]);
+  });
+
+  it("une ligne au poids décidée à 0 g ne compte pour rien", async () => {
+    const view = await read(
+      subject({
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" },
+          { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 0, saleUnit: "weight" },
+        ],
+      }),
+      null,
+      new FixedQualityHolds(),
+    );
+
+    expect(view.totalUnits).toBe(2);
+  });
+});
 
 describe.each(READERS)("$name — les envois prêts (plan E7 reliquat, L4c)", ({ read }) => {
   it("un seul envoi : la commande, au rang 1, comme avant", async () => {
@@ -215,13 +256,17 @@ describe.each(READERS)("$name — les envois prêts (plan E7 reliquat, L4c)", ({
         rank: 1,
         reference: "ORD-ABCD-1234",
         totalUnits: 2,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
+        ],
       },
       {
         rank: 2,
         reference: "ORD-ABCD-1234-2",
         totalUnits: 1,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1 }],
+        lines: [
+          { sku: "VIE-001", productName: "Croissant", quantity: 1, saleUnit: "piece" as const },
+        ],
       },
     ]);
   });

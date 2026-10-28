@@ -55,7 +55,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
     ...overrides,
   };
 }
@@ -305,7 +305,7 @@ describe("clore une journée", () => {
       closedAt: NOW.toISOString(),
     });
     expect(days.saved?.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 80, done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 80, saleUnit: "piece", done: null },
     ]);
     expect(events.published).toEqual([new ProductionDayClosedJournalEvent(DAY, 2)]);
     // Puis la liste à coliser, une commande par fait (colisage, K1, §11 B1).
@@ -571,10 +571,16 @@ describe("le réassort au plan figé (lot R3a)", () => {
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(days.saved?.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
-    expect(days.saved?.resupplies).toEqual([VILLAGE_RESUPPLY]);
+    // Un réassort figé est à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2).
+    expect(days.saved?.resupplies).toEqual([
+      {
+        ...VILLAGE_RESUPPLY,
+        lines: VILLAGE_RESUPPLY.lines.map((line) => ({ ...line, saleUnit: "piece" })),
+      },
+    ]);
     expect(days.saved?.counts).toEqual([
-      { sku: "PAIN-001", productName: "Baguette", quantity: 5, done: null },
-      { sku: "VIE-001", productName: "Croissant", quantity: 52, done: null },
+      { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece", done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece", done: null },
     ]);
   });
 

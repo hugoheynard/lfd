@@ -222,6 +222,7 @@ function lineView(line: WorksheetLine): WorkshopLine {
     sku: line.sku,
     productName: line.productName,
     quantity: line.quantity,
+    saleUnit: line.saleUnit,
     containerLabel: line.containerLabel,
     done: line.done,
     initials: line.initials,

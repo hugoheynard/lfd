@@ -36,6 +36,7 @@ function line(over: Partial<PackingLine>): PackingLine {
     sku: 'CRO',
     productName: 'Croissant',
     quantity: 20,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,
@@ -293,7 +294,9 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     const { fixture } = await render(
       sheet({
         containerList: [
-          container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }] }),
+          container({
+            lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10, saleUnit: 'piece' }],
+          }),
           container({ id: 'c-2', label: 'B7Q', binId: 'b-2', binCode: 'B7Q' }),
         ],
       }),
@@ -314,7 +317,9 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     const { fixture, el } = await render(
       sheet({
         containerList: [
-          container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }] }),
+          container({
+            lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10, saleUnit: 'piece' }],
+          }),
         ],
       }),
     );
@@ -377,7 +382,7 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
       sheet({
         containerList: [
           container({
-            lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10 }],
+            lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 10, saleUnit: 'piece' }],
             pieces: 10,
           }),
         ],
@@ -557,7 +562,9 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
       sheet({
         packedAt: '2026-10-05T05:00:00.000Z',
         containerList: [
-          container({ lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 20 }] }),
+          container({
+            lines: [{ sku: 'CRO', productName: 'Croissant', quantity: 20, saleUnit: 'piece' }],
+          }),
         ],
       }),
     );

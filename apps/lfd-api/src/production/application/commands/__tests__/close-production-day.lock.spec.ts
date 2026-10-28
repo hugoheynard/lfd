@@ -40,7 +40,7 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
 };
 
 /** Rend, appel après appel, les journées qu'on lui donne ; note chaque lecture. */

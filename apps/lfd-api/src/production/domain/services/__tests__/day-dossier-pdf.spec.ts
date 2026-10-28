@@ -30,7 +30,7 @@ function order(reference: string, quantity: number): ProductionOrderSnapshot {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 
@@ -200,6 +200,7 @@ describe("renderDayDossierPdf", () => {
       sku: `SKU-${String(index).padStart(3, "0")}`,
       productName: `Produit ${String(index)}`,
       quantity: 1,
+      saleUnit: "piece" as const,
     }));
     const dossier = dayDossierOf([{ ...order("ORD-0001", 1), lines: many }], new Map());
     const pages = pdfPages(
@@ -296,7 +297,7 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18, saleUnit: "piece" }],
       },
     ]);
     const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));
@@ -323,7 +324,9 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+        lines: [
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
+        ],
       },
     ]);
     const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));
@@ -340,7 +343,9 @@ describe("dayDossierPdfKey", () => {
         siteLabel: "Village",
         name: "Vitrine du matin",
         servedByTransfer: true,
-        lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+        lines: [
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
+        ],
       },
     ]);
     const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));
@@ -405,7 +410,7 @@ describe("renderDayDossierPdf — la pastille du bon de réassort (Hugo, 2026-10
       siteLabel: "Village",
       name: null,
       servedByTransfer: true,
-      lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18 }],
+      lines: [{ sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" }],
     },
   ]);
 
@@ -450,8 +455,8 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
         destination: "Village",
         clientele: "pro",
         lines: [
-          { sku: "VIE-001", productName: "Croissant", quantity: 6 },
-          { sku: "PAI-001", productName: "Baguette", quantity: 10 },
+          { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+          { sku: "PAI-001", productName: "Baguette", quantity: 10, saleUnit: "piece" },
         ],
       },
       { ...order("ORD-0002", 4), clientele: "public" },
@@ -496,6 +501,7 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
       sku: "VIE-001",
       productName: `Produit ${String(index)}`,
       quantity: 1,
+      saleUnit: "piece" as const,
     }));
     const dossier = dayDossierOf([{ ...order("ORD-0001", 1), lines: many }], SHELVES);
     const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));

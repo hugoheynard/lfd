@@ -16,9 +16,9 @@ const SHORTFALL: ShortfallAwaitingDecision = {
   fulfillmentMethod: 'delivery',
   reportedAt: '2030-01-10T05:30:00.000Z',
   lines: [
-    { sku: 'CRO', productName: 'Croissant', due: 12, packed: 9 },
-    { sku: 'PAC', productName: 'Pain au chocolat', due: 6, packed: 0 },
-    { sku: 'CHA', productName: 'Chausson aux pommes', due: 4, packed: 4 },
+    { sku: 'CRO', productName: 'Croissant', due: 12, packed: 9, saleUnit: 'piece' },
+    { sku: 'PAC', productName: 'Pain au chocolat', due: 6, packed: 0, saleUnit: 'piece' },
+    { sku: 'CHA', productName: 'Chausson aux pommes', due: 4, packed: 4, saleUnit: 'piece' },
   ],
 };
 

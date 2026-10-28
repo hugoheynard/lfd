@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 /**
  * **Relire un champ de charge utile**, côté abonné — sans jamais inventer de
  * valeur. Chaque lecteur rend `null` quand le champ est hors forme ; c'est
@@ -15,6 +17,19 @@ export function textOf(value: unknown): string | null {
 /** Un entier strictement positif — une quantité de pièces —, ou `null`. */
 export function piecesOf(value: unknown): number | null {
   return typeof value === "number" && Number.isInteger(value) && value > 0 ? value : null;
+}
+
+/**
+ * L'unité d'une ligne (P6 de `pricing/plan-vente-au-poids.md`) : `piece` ou
+ * `weight`. **Absente = `piece`** — un fait écrit avant le champ ne portait
+ * que des pièces, aucun article au poids n'existait. Une valeur inconnue rend
+ * `null` : la relire en pièces ferait coliser des grammes un par un.
+ */
+export function saleUnitOf(value: unknown): SaleUnit | null {
+  if (value === undefined) {
+    return "piece";
+  }
+  return value === "piece" || value === "weight" ? value : null;
 }
 
 /** Un instant ISO lisible, ou `null`. */

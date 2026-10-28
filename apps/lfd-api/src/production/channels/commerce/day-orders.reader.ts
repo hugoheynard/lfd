@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /**
@@ -11,7 +13,15 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 export interface ProducibleLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = "weight"` — toujours un entier. */
   readonly quantity: number;
+  /**
+   * L'unité de la ligne, recopiée de la commande (plan
+   * `documentation/pricing/plan-vente-au-poids.md`, P6). Obligatoire : une
+   * quantité sans unité ne doit plus pouvoir traverser une frontière — 1 250
+   * grammes lus comme des pièces feraient cuire 1 250 articles.
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 /**

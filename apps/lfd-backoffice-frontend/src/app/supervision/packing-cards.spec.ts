@@ -23,6 +23,7 @@ function packingLine(overrides: Partial<PackingLine> = {}): PackingLine {
     sku: 'sku',
     productName: 'Croissant',
     quantity: 12,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,

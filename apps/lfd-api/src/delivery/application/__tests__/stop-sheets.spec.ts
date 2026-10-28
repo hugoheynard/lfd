@@ -30,9 +30,9 @@ describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {
           [
             "o1",
             [
-              { sku: "VIE-001", name: "Croissant", quantity: 6 },
-              { sku: "TAR-001", name: "Tarte", quantity: 2 },
-              { sku: "VIE-001", name: "Croissant", quantity: 4 },
+              { sku: "VIE-001", name: "Croissant", quantity: 6, saleUnit: "piece" as const },
+              { sku: "TAR-001", name: "Tarte", quantity: 2, saleUnit: "piece" as const },
+              { sku: "VIE-001", name: "Croissant", quantity: 4, saleUnit: "piece" as const },
             ],
           ],
         ]),
@@ -41,8 +41,20 @@ describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {
 
     expect(result.get("o1")).toEqual({
       lines: [
-        { sku: "VIE-001", name: "Croissant", quantity: 10, requiresCold: false },
-        { sku: "TAR-001", name: "Tarte", quantity: 2, requiresCold: true },
+        {
+          sku: "VIE-001",
+          name: "Croissant",
+          quantity: 10,
+          requiresCold: false,
+          saleUnit: "piece" as const,
+        },
+        {
+          sku: "TAR-001",
+          name: "Tarte",
+          quantity: 2,
+          requiresCold: true,
+          saleUnit: "piece" as const,
+        },
       ],
       shortfall: null,
       // Un bac sec pour les croissants, un isotherme pour les tartes.
@@ -52,11 +64,23 @@ describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {
 
   it("un produit sans contenance : la fiche le montre, les bacs prévus restent inconnus", async () => {
     const result = await sheets(
-      departingAll(new Map([["o1", [{ sku: "PAI-009", name: "Pain", quantity: 1 }]]])),
+      departingAll(
+        new Map([
+          ["o1", [{ sku: "PAI-009", name: "Pain", quantity: 1, saleUnit: "piece" as const }]],
+        ]),
+      ),
     ).of(["o1"]);
 
     expect(result.get("o1")).toEqual({
-      lines: [{ sku: "PAI-009", name: "Pain", quantity: 1, requiresCold: false }],
+      lines: [
+        {
+          sku: "PAI-009",
+          name: "Pain",
+          quantity: 1,
+          requiresCold: false,
+          saleUnit: "piece" as const,
+        },
+      ],
       shortfall: null,
       binsExpected: null,
     });
@@ -76,18 +100,36 @@ describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {
   it("un départ incomplet décidé : la fiche dit ce qui part, et porte le reste", async () => {
     const shortfall = {
       remainder: "abandoned" as const,
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 4 }],
+      lines: [
+        { sku: "VIE-001", productName: "Croissant", quantity: 4, saleUnit: "piece" as const },
+      ],
     };
     const result = await sheets(
       new FixedDepartures(
         new Map([
-          ["o1", { lines: [{ sku: "VIE-001", name: "Croissant", quantity: 6 }], shortfall }],
+          [
+            "o1",
+            {
+              lines: [
+                { sku: "VIE-001", name: "Croissant", quantity: 6, saleUnit: "piece" as const },
+              ],
+              shortfall,
+            },
+          ],
         ]),
       ),
     ).of(["o1"]);
 
     expect(result.get("o1")).toMatchObject({
-      lines: [{ sku: "VIE-001", name: "Croissant", quantity: 6, requiresCold: false }],
+      lines: [
+        {
+          sku: "VIE-001",
+          name: "Croissant",
+          quantity: 6,
+          requiresCold: false,
+          saleUnit: "piece" as const,
+        },
+      ],
       shortfall,
     });
   });

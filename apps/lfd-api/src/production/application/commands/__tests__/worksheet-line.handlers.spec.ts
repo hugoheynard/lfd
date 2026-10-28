@@ -41,7 +41,7 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: SKU, productName: "Pain de seigle", quantity: 30 }],
+  lines: [{ sku: SKU, productName: "Pain de seigle", quantity: 30, saleUnit: "piece" }],
 };
 
 /** Une journée déjà arrêtée, qui porte un seul article au compte. */

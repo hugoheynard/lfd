@@ -1,10 +1,14 @@
+import type { SaleUnit } from "@lfd/money";
+
 /** Une ligne d'une commande, telle que le colisage a besoin de la lire. */
 export interface DeliveryOrderLine {
   /** Le SKU PRODUIT porté par la ligne — celui de la grille des contenances. */
   readonly sku: string;
   /** Le nom figé à la passation. */
   readonly name: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `pricing/plan-vente-au-poids.md`). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /**

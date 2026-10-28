@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, input } from '@angular/co
 import { FoldCheckboxComponent } from 'fold-ng';
 
 import type { PackingLine as PackingLineView } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import { AwaitingBadge } from '../../../shared/awaiting-badge/awaiting-badge';
 
@@ -51,7 +52,10 @@ export class PackingLine {
    * Le nom accessible de la case. Sans lui, la case s'annonce « case à cocher »
    * et rien d'autre — huit fois de suite, elles sont indiscernables.
    */
-  protected readonly boxLabel = computed(
-    () => `${this.line().quantity} ${this.line().productName}`,
+  protected readonly boxLabel = computed(() => `${this.figure()} ${this.line().productName}`);
+
+  /** « 12 », ou « 1,25 kg » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+  protected readonly figure = computed(() =>
+    saleQuantityLabel(this.line().quantity, this.line().saleUnit),
   );
 }

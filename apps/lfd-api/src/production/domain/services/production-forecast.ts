@@ -1,3 +1,5 @@
+import { pieceTally, saleQuantity, type SaleUnit } from "@lfd/money";
+
 import type { ServiceRange } from "../value-objects/service-range.value-object.js";
 
 /**
@@ -14,7 +16,9 @@ import type { ServiceRange } from "../value-objects/service-range.value-object.j
 export interface DemandItem {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /**
@@ -63,6 +67,7 @@ const NO_RESUPPLIES: ForecastResupplies = { arrested: [], expected: [] };
 /** Une colonne de la matrice. */
 export interface ForecastColumn {
   readonly date: string;
+  /** Des pièces : un article au poids y compte pour un, jamais ses grammes (P6). */
   readonly totalUnits: number;
   /** La part des réassorts dans `totalUnits` — jamais en plus. */
   readonly resupplyUnits: number;
@@ -74,6 +79,11 @@ export interface ForecastColumn {
 export interface ForecastRow {
   readonly sku: string;
   readonly productName: string;
+  /**
+   * L'unité de l'article (P6) : ses `quantities` et son `totalUnits` sont des
+   * grammes si `weight` — une ligne n'a qu'un article, la somme est homogène.
+   */
+  readonly saleUnit: SaleUnit;
   /** Même longueur que les colonnes, dans le même ordre. */
   readonly quantities: readonly number[];
   /** La part des réassorts dans `quantities`, colonne par colonne. */
@@ -176,6 +186,7 @@ export function forecastMatrix(
       .map(([sku, row]) => ({
         sku,
         productName: row.productName,
+        saleUnit: row.saleUnit,
         quantities: row.quantities,
         resupplyQuantities: row.resupplyQuantities,
         totalUnits: row.quantities.reduce((sum, quantity) => sum + quantity, 0),
@@ -206,6 +217,7 @@ function resuppliesByDay(
 
 interface GridRow {
   readonly productName: string;
+  readonly saleUnit: SaleUnit;
   readonly quantities: number[];
   readonly resupplyQuantities: number[];
 }
@@ -229,16 +241,20 @@ class Grid {
   add(column: number, item: DemandItem, asResupply: boolean, counted = true): void {
     const row = this.rows.get(item.sku) ?? {
       productName: item.productName,
+      saleUnit: item.saleUnit,
       quantities: this.zeros(),
       resupplyQuantities: this.zeros(),
     };
+    // La colonne additionne des ARTICLES différents : un article au poids y
+    // pèse une pièce, ses grammes restent sur sa ligne (P6).
+    const tally = pieceTally(saleQuantity(item.quantity, item.saleUnit));
     if (counted) {
       row.quantities[column] = (row.quantities[column] ?? 0) + item.quantity;
-      this.totals[column] = (this.totals[column] ?? 0) + item.quantity;
+      this.totals[column] = (this.totals[column] ?? 0) + tally;
     }
     if (asResupply) {
       row.resupplyQuantities[column] = (row.resupplyQuantities[column] ?? 0) + item.quantity;
-      this.resupplyTotals[column] = (this.resupplyTotals[column] ?? 0) + item.quantity;
+      this.resupplyTotals[column] = (this.resupplyTotals[column] ?? 0) + tally;
     }
     this.rows.set(item.sku, row);
   }

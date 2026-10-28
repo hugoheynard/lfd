@@ -13,7 +13,7 @@ describe("renderProductionCountPdf", () => {
     const closedAt = new Date("2026-10-06T22:30:00.000Z");
     const pages = pdfPages(
       await renderProductionCountPdf(
-        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null }],
+        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null, saleUnit: "piece" }],
         { serviceDay: "2026-10-07", closedAt, logo: PAPER_LOGO },
         [],
       ),
@@ -38,7 +38,7 @@ describe("renderAtelierSheetPdf — la pastille de la commande", () => {
     clientele: "pro",
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
   };
 
   it("pose la pastille quand la commande a une couleur, sans changer un mot", async () => {
@@ -74,7 +74,7 @@ describe("renderAtelierSheetPdf — en-tête et acheminement", () => {
     clientele: "pro",
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
   };
 
   it("se titre « ORD-0001 // Fiche de préparation » et dit « Retrait Village · pro »", async () => {
@@ -102,6 +102,7 @@ describe("renderAtelierSheetPdf — en-tête et acheminement", () => {
       sku: `SKU-${String(index).padStart(3, "0")}`,
       productName: `Produit ${String(index)}`,
       quantity: 1,
+      saleUnit: "piece" as const,
     }));
     const pages = pdfPages(await renderAtelierSheetPdf({ ...ORDER, lines }, SHEET, "", null));
     expect(pages).toHaveLength(2);
@@ -116,8 +117,20 @@ describe("renderProductionCountPdf — la répartition du jour par couleur", () 
   const CLOSED = new Date("2026-10-06T16:00:00.000Z");
   const COUNT_SHEET = { serviceDay: "2026-10-07", closedAt: CLOSED, logo: PAPER_LOGO };
   const ITEMS = [
-    { sku: "VIE-001", productName: "Croissant", quantity: 10, done: null },
-    { sku: "VIE-002", productName: "Pain au chocolat", quantity: 4, done: null },
+    {
+      sku: "VIE-001",
+      productName: "Croissant",
+      quantity: 10,
+      saleUnit: "piece" as const,
+      done: null,
+    },
+    {
+      sku: "VIE-002",
+      productName: "Pain au chocolat",
+      quantity: 4,
+      saleUnit: "piece" as const,
+      done: null,
+    },
   ];
 
   it("dessine un camembert en haut sans changer un mot", async () => {
@@ -151,7 +164,7 @@ describe("renderProductionCountPdf — le cadre", () => {
   it("se titre « Compte à produire » et ne nomme plus « La Folie Coffee — Fournil »", async () => {
     const [page] = pdfPages(
       await renderProductionCountPdf(
-        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null }],
+        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null, saleUnit: "piece" }],
         SHEET,
         [],
       ),
@@ -166,6 +179,7 @@ describe("renderProductionCountPdf — le cadre", () => {
       sku: `SKU-${String(index).padStart(3, "0")}`,
       productName: `Produit ${String(index)}`,
       quantity: 1,
+      saleUnit: "piece" as const,
       done: null,
     }));
     const pages = pdfPages(await renderProductionCountPdf(items, SHEET, []));

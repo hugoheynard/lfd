@@ -18,8 +18,8 @@ function order(overrides: Partial<BoardOrder> = {}): BoardOrder {
     containers: 1,
     containerMode: "listed",
     lines: [
-      { sku: "FLAN", productName: "Flan pâtissier", quantity: 2, packed: null },
-      { sku: "PAIN", productName: "Pain", quantity: 4, packed: null },
+      { sku: "FLAN", productName: "Flan pâtissier", quantity: 2, packed: null, saleUnit: "piece" },
+      { sku: "PAIN", productName: "Pain", quantity: 4, packed: null, saleUnit: "piece" },
     ],
     containerList: [],
     shortfallReportedAt: null,

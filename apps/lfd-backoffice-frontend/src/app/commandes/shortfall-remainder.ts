@@ -1,4 +1,5 @@
 import type { AdminOrderShortfall, PackingAbandonedLine } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * **Le reste abandonné, ligne par ligne** (Hugo, 2026-10-25 : « dommage de
@@ -21,11 +22,13 @@ export function abandonedOfShortfall(
     .map((line) => ({
       sku: line.sku,
       productName: names.get(line.sku) ?? line.sku,
+      // Au poids, des grammes : le dû moins le lot qui était au bac (P6).
       quantity: line.due - line.packed,
+      saleUnit: line.saleUnit,
     }));
 }
 
-/** « Reste abandonné : 2 Croissant » — le mot de Hugo. */
+/** « Reste abandonné : 2 Croissant », « Reste abandonné : 250 g Saumon » — le mot de Hugo. */
 export function abandonedSentence(line: PackingAbandonedLine): string {
-  return `Reste abandonné : ${String(line.quantity)} ${line.productName}`;
+  return `Reste abandonné : ${saleQuantityLabel(line.quantity, line.saleUnit)} ${line.productName}`;
 }

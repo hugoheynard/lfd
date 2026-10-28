@@ -5,6 +5,7 @@ import {
   DeliveryOrderLinesReader,
 } from "../../../delivery/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 
 /**
  * **Les lignes d'une commande, relayées au colisage** — l'adaptateur de
@@ -24,12 +25,13 @@ export class PrismaDeliveryOrderLinesReader extends DeliveryOrderLinesReader {
     const rows = await this.prisma.orderLine.findMany({
       where: { orderId },
       orderBy: { id: "asc" },
-      select: { sku: true, productNameSnapshot: true, quantity: true },
+      select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true },
     });
     return rows.map((row) => ({
       sku: row.sku,
       name: row.productNameSnapshot,
       quantity: row.quantity,
+      saleUnit: orderLineSaleUnitOf(row.sku, row.saleUnit),
     }));
   }
 }

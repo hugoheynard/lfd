@@ -143,7 +143,12 @@ export class GetAdminOrderHandler implements IQueryHandler<GetAdminOrderQuery, A
 function shortfallViewOf(reading: OrderShortfallReading, staff: StaffAuthors): AdminOrderShortfall {
   return {
     reportedAt: reading.reportedAt.toISOString(),
-    lines: reading.lines.map((line) => ({ sku: line.sku, due: line.due, packed: line.packed })),
+    lines: reading.lines.map((line) => ({
+      sku: line.sku,
+      due: line.due,
+      packed: line.packed,
+      saleUnit: line.saleUnit,
+    })),
     decision:
       reading.decision === null
         ? null

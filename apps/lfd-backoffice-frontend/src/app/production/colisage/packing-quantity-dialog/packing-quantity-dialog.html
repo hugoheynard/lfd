@@ -12,12 +12,12 @@
       <fold-callout variant="alert" data-quantity-refusal>{{ refusal }}</fold-callout>
     }
     <fold-number-input
-      label="Combien ?"
+      [label]="data().saleUnit === 'weight' ? 'Combien de grammes ?' : 'Combien ?'"
       size="lg"
       align="center"
       spinner="plusminus"
       controls="outside"
-      [hint]="'Tout : ' + data().max"
+      [hint]="hint()"
       [min]="1"
       [max]="data().max"
       [integer]="true"

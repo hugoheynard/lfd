@@ -265,7 +265,7 @@ export class PrismaOrderReader extends OrderReader {
         placedByUserId: true,
         company: { select: { raisonSociale: true } },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
       },
     });
     if (row === null) {
@@ -284,6 +284,7 @@ export class PrismaOrderReader extends OrderReader {
         sku: line.sku,
         productName: line.productNameSnapshot,
         quantity: line.quantity,
+        saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
       })),
     };
   }
@@ -344,7 +345,7 @@ export class PrismaOrderReader extends OrderReader {
           },
         },
         placedBy: { select: { email: true, firstName: true, lastName: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
       },
     });
     return rows.map((row) => this.toSheet(row, date));
@@ -394,6 +395,10 @@ export class PrismaOrderReader extends OrderReader {
         sku: line.sku,
         productName: line.productNameSnapshot,
         quantity: line.quantity,
+        // Absent à la pièce : la feuille d'une commande à la pièce ne change pas (P3).
+        ...(orderLineSaleUnitOf(line.sku, line.saleUnit) === "weight"
+          ? { saleUnit: "weight" as const }
+          : {}),
       })),
     };
   }
@@ -424,6 +429,7 @@ interface ProductionRow {
     readonly sku: string;
     readonly productNameSnapshot: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 

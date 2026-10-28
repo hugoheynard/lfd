@@ -37,7 +37,7 @@ const ORDER: ProductionOrderSnapshot = {
   clientele: "pro",
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
 };
 
 class NoAdminOrigin extends AppConfig {

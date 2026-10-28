@@ -3,23 +3,27 @@
   @if (line().done) {
     <!-- Le total sorti, avec ce qu'on a fait en plus, à gauche du tick (Hugo, 2026-10-28). -->
     <span class="wl-left-big"
-      >{{ line().produced }}
+      >{{ figure(line().produced) }}
       @if (bonus() > 0) {
-        <span class="wl-left-of wl-left-bonus">+{{ bonus() }}</span>
+        <span class="wl-left-of wl-left-bonus">+{{ figure(bonus()) }}</span>
       }
       ✓</span
     >
     <span class="wl-left-when">fait</span>
-    <span class="wl-left-total">total {{ line().produced }} / {{ line().quantity }}</span>
+    <span class="wl-left-total"
+      >total {{ figure(line().produced) }} / {{ figure(line().quantity) }}</span
+    >
   } @else {
     <span class="wl-left-big"
-      >{{ stepLeft() }}
+      >{{ figure(stepLeft()) }}
       @if (stepOf(); as of) {
         <span class="wl-left-of">{{ of }}</span>
       }
     </span>
     <span class="wl-left-when">{{ stepBefore() }}</span>
-    <span class="wl-left-total">total : {{ line().remaining }} / {{ line().quantity }}</span>
+    <span class="wl-left-total"
+      >total : {{ figure(line().remaining) }} / {{ figure(line().quantity) }}</span
+    >
   }
 </span>
 
@@ -43,14 +47,16 @@
       />
     }
     @if (line().surplus > 0) {
-      <fold-badge class="wl-surplus" variant="warning" [content]="'+' + line().surplus" />
+      <fold-badge class="wl-surplus" variant="warning" [content]="'+' + figure(line().surplus)" />
     }
   </span>
 </span>
 
 <!-- La barre à paliers : « 180 / 240 sorties » dessus, l'heure sous chaque segment. -->
 <span class="wl-progress">
-  <span class="wl-figures">{{ line().produced }} / {{ line().quantity }} sorties</span>
+  <span class="wl-figures"
+    >{{ figure(line().produced) }} / {{ figure(line().quantity) }} sorties</span
+  >
   @for (row of segmentRows(); track $index) {
     <fold-meter
       class="wl-meter"
@@ -73,7 +79,10 @@
     >
       <span class="wl-quick-said">
         {{ quick }}
-        <span class="wl-quick-size">{{ line().container?.unitsPerContainer }} pièces</span>
+        <span class="wl-quick-size"
+          >{{ figure(line().container?.unitsPerContainer ?? 0)
+          }}{{ line().saleUnit === 'weight' ? '' : ' pièces' }}</span
+        >
       </span>
     </button>
   }
@@ -109,6 +118,7 @@
     <span class="wl-batches-title">Fournées</span>
     <app-batch-chips
       [batches]="line().batches"
+      [saleUnit]="line().saleUnit"
       [busy]="busy()"
       (cancelled)="cancelled.emit($event)"
     />

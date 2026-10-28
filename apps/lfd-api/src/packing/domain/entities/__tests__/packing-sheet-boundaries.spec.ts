@@ -25,8 +25,8 @@ function sheet(): PackingSheet {
     packed: null,
     containers: 0,
     lines: [
-      { sku: "CRO", productName: "Croissant", quantity: 12, packed: null },
-      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, packed: null },
+      { sku: "CRO", productName: "Croissant", quantity: 12, packed: null, saleUnit: "piece" },
+      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, packed: null, saleUnit: "piece" },
     ],
     containerMode: "listed",
     containerList: [],

@@ -11,8 +11,12 @@ import {
 
 /** Les envois d'une commande au comptoir (plan E7 reliquat, choix 13, lot L4c). */
 
-const ORDER_LINES = [{ sku: "VIE-001", productName: "Croissant", quantity: 10 }];
-const REST_LINES = [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }];
+const ORDER_LINES = [
+  { sku: "VIE-001", productName: "Croissant", quantity: 10, saleUnit: "piece" as const },
+];
+const REST_LINES = [
+  { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" as const },
+];
 
 function subject(laterShipments: HandoverSubject["laterShipments"] = []): HandoverSubject {
   return {

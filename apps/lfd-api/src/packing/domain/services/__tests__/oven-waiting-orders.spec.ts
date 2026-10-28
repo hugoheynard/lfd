@@ -17,6 +17,7 @@ function line(sku: string, quantity: number, packed = false): SheetLine {
     sku,
     productName: sku,
     quantity,
+    saleUnit: "piece",
     packed: packed ? { at: AT, by: "s1", initials: "" } : null,
   };
 }

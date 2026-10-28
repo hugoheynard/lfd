@@ -50,7 +50,7 @@ export class GetShortfallLetterDraftHandler implements IQueryHandler<
     if (subject.notified) {
       throw new ShortfallCustomerAlreadyNotifiedError(subject.reference);
     }
-    const lines = shortfallLetterLines(subject.lines, subject.names);
+    const lines = shortfallLetterLines(subject.lines, subject.names, subject.units);
     const overlay = await this.publishedTexts();
     const message = withMailCopyOverlay(overlay, () =>
       draftOrderShortfallMessage({

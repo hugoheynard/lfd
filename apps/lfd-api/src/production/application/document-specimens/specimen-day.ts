@@ -31,8 +31,8 @@ export const SPECIMEN_DAY_ORDERS: readonly ProductionOrderSnapshot[] = [
     destination: "EXEMPLE — Boutique du Village",
     dueAt: "08:30",
     lines: [
-      { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 12 },
-      { sku: "EXEMPLE-PAC", productName: "Pain au chocolat", quantity: 24 },
+      { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 12, saleUnit: "piece" },
+      { sku: "EXEMPLE-PAC", productName: "Pain au chocolat", quantity: 24, saleUnit: "piece" },
     ],
   },
   {
@@ -43,8 +43,8 @@ export const SPECIMEN_DAY_ORDERS: readonly ProductionOrderSnapshot[] = [
     destination: "EXEMPLE — 4 route du Fornet, 73150 Val d'Isère",
     dueAt: "10:00",
     lines: [
-      { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 18 },
-      { sku: "EXEMPLE-CAM", productName: "Pain de campagne", quantity: 6 },
+      { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 18, saleUnit: "piece" },
+      { sku: "EXEMPLE-CAM", productName: "Pain de campagne", quantity: 6, saleUnit: "piece" },
     ],
   },
 ];
@@ -58,8 +58,8 @@ export const SPECIMEN_DAY_RESUPPLIES: readonly ProductionResupplySnapshot[] = [
     name: "Vitrine du matin",
     servedByTransfer: false,
     lines: [
-      { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 20 },
-      { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 15 },
+      { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 20, saleUnit: "piece" },
+      { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 15, saleUnit: "piece" },
     ],
   },
 ];

@@ -35,6 +35,7 @@ function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
     sku: 'CROI-NAT',
     productName: 'Croissant nature',
     quantity: 12,
+    saleUnit: 'piece',
     ...over,
   };
 }
@@ -174,7 +175,7 @@ describe('SheetPanel', () => {
           ...base,
           lines: [...base.lines, { ...base.lines[0]!, sku: 'ABS-1', quantity: 0 }],
         },
-        abandoned: [{ sku: 'ABS-1', productName: 'Pain absent', quantity: 5 }],
+        abandoned: [{ sku: 'ABS-1', productName: 'Pain absent', quantity: 5, saleUnit: 'piece' }],
       }),
     );
 

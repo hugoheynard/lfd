@@ -34,7 +34,7 @@ function drawn(rank: number, sku: string, quantity: number) {
     dueAt: null,
     clientele: "pro",
     siteId: null,
-    lines: [{ sku, productName: sku, quantity }],
+    lines: [{ sku, productName: sku, quantity, saleUnit: "piece" }],
   }).durableFact();
 }
 
@@ -51,7 +51,7 @@ function planned(rank: number, quantity: number): ProductionOrderSnapshot {
     clientele: "pro",
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 

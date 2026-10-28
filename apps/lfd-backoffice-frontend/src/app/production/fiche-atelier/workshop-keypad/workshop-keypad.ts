@@ -8,7 +8,8 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
-import type { WorkshopLineContainer, WorkshopShortcutView } from '@lfd/contracts';
+import type { OrderSaleUnit, WorkshopLineContainer, WorkshopShortcutView } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /** Ce que le pavé reçoit de la ligne qui l'ouvre. */
 export interface KeypadData {
@@ -19,6 +20,11 @@ export interface KeypadData {
   readonly remaining: number;
   readonly container: WorkshopLineContainer | null;
   readonly shortcuts: readonly WorkshopShortcutView[];
+  /**
+   * L'unité de l'article (plan `pricing/plan-vente-au-poids.md`, P6) : au
+   * poids, la fournée se déclare en GRAMMES. Absente = des pièces.
+   */
+  readonly saleUnit?: OrderSaleUnit;
 }
 
 /** Une touche de raccourci : son mot, et la quantité qu'elle POSE. */
@@ -30,6 +36,9 @@ interface Preset {
 
 /** Quatre chiffres suffisent : personne ne sort 10 000 pièces d'une fournée. */
 const MAX_DIGITS = 4;
+
+/** Au poids, sept chiffres : la garde d'une tonne de la commande (P6). */
+const MAX_WEIGHT_DIGITS = 7;
 
 const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 
@@ -65,10 +74,18 @@ export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
   protected readonly value = computed(() => Number.parseInt(this.shown() || '0', 10));
   protected readonly valid = computed(() => this.value() >= 1);
 
+  /** Au poids, la fournée compte des grammes, dits « 1,25 kg ». */
+  protected readonly byWeight = computed(() => this.data().saleUnit === 'weight');
+
+  /** « 12 » ou « 1,25 kg » — une quantité dans l'unité de l'article. */
+  protected figure(quantity: number): string {
+    return saleQuantityLabel(quantity, this.data().saleUnit);
+  }
+
   protected readonly presets = computed<readonly Preset[]>(() => {
     const data = this.data();
     const all: Preset[] = [
-      { key: 'rest', label: `Le reste · ${String(data.remaining)}`, value: data.remaining },
+      { key: 'rest', label: `Le reste · ${this.figure(data.remaining)}`, value: data.remaining },
     ];
     if (data.container !== null) {
       const { singular, unitsPerContainer: units } = data.container;
@@ -98,22 +115,27 @@ export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
       return '';
     }
     if (value < remaining) {
-      return `il restera ${String(remaining - value)}`;
+      return `il restera ${this.figure(remaining - value)}`;
     }
     return value === remaining
       ? 'la ligne sera complète'
-      : `ligne complète, +${String(value - remaining)}`;
+      : `ligne complète, +${this.figure(value - remaining)}`;
   });
 
   protected readonly declareLabel = computed(() => {
     const value = this.value();
-    return this.valid() ? `Déclarer ${String(value)} pièce${value > 1 ? 's' : ''}` : 'Déclarer';
+    if (!this.valid()) {
+      return 'Déclarer';
+    }
+    return this.byWeight()
+      ? `Déclarer ${this.figure(value)}`
+      : `Déclarer ${String(value)} pièce${value > 1 ? 's' : ''}`;
   });
 
   protected press(digit: string): void {
     const base = this.typed() ?? '';
     const next = (base === '0' ? '' : base) + digit;
-    this.typed.set(next.slice(0, MAX_DIGITS));
+    this.typed.set(next.slice(0, this.byWeight() ? MAX_WEIGHT_DIGITS : MAX_DIGITS));
   }
 
   protected erase(): void {

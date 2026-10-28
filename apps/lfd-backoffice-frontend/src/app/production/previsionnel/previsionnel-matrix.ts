@@ -3,10 +3,11 @@ import {
   SHELF_LABEL_UNKNOWN,
   type CatalogFamilyView,
   type CatalogItemView,
+  type OrderSaleUnit,
   type ProductionForecastLine,
   type ProductionForecastView,
 } from '@lfd/contracts';
-import { catalogShelves } from '@lfd/b2b-ui/catalog';
+import { catalogShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
@@ -59,7 +60,12 @@ const EXCEPTIONAL_FACTOR = 2;
 
 /** Une case : sa quantité, et si elle sort de l'ordinaire pour ce produit-là. */
 export interface ForecastCell {
+  /** Des pièces, ou des grammes si le produit se vend au poids (P6). */
   readonly quantity: number;
+  /** « 48 », ou « 1,25 kg » au poids — ce que la case écrit. */
+  readonly label: string;
+  /** Ce que la case pèse dans un total de rayon : ses pièces, ou 1 au poids. */
+  readonly pieces: number;
   /** `true` = plus de deux fois la moyenne du produit sur ses jours actifs. */
   readonly exceptional: boolean;
   /** La part des réassorts dans `quantity` (lot R3d) — jamais en plus. */
@@ -70,6 +76,8 @@ export interface ForecastCell {
 export interface ForecastProduct {
   readonly sku: string;
   readonly productName: string;
+  /** L'unité du produit (`plan-vente-au-poids.md`, P6). */
+  readonly saleUnit: OrderSaleUnit;
   readonly cells: readonly ForecastCell[];
   readonly totalUnits: number;
 }
@@ -109,15 +117,18 @@ export function forecastRayons(
 
   return catalogShelves(products, (product) => familyOf.get(product.sku) ?? null).map((shelf) => {
     const lines = [...shelf.items].sort(
-      (a, b) => b.totalUnits - a.totalUnits || a.productName.localeCompare(b.productName, 'fr'),
+      (a, b) => piecesOf(b) - piecesOf(a) || a.productName.localeCompare(b.productName, 'fr'),
+    );
+    // Un rayon additionne des produits différents : un produit au poids y
+    // pèse une pièce par jour où il sort, jamais ses grammes (P6).
+    const quantities = Array.from({ length: width }, (_unused, column) =>
+      lines.reduce((sum, line) => sum + (line.cells[column]?.pieces ?? 0), 0),
     );
     return {
       family: shelf.family,
       label: labelOf(shelf.family, shelvesKnown),
-      quantities: Array.from({ length: width }, (_unused, column) =>
-        lines.reduce((sum, line) => sum + (line.cells[column]?.quantity ?? 0), 0),
-      ),
-      totalUnits: lines.reduce((sum, line) => sum + line.totalUnits, 0),
+      quantities,
+      totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
       lines,
     };
   });
@@ -155,10 +166,13 @@ function productOf(
   return {
     sku: line.sku,
     productName: line.productName,
+    saleUnit: line.saleUnit,
     cells: Array.from({ length: width }, (_unused, column) => {
       const quantity = line.quantities[column] ?? 0;
       return {
         quantity,
+        label: saleQuantityLabel(quantity, line.saleUnit),
+        pieces: line.saleUnit === 'weight' ? (quantity > 0 ? 1 : 0) : quantity,
         resupply: line.resupplyQuantities[column] ?? 0,
         // Deux silences, et le second a été trouvé en REGARDANT la grille :
         //
@@ -176,4 +190,9 @@ function productOf(
     }),
     totalUnits: line.totalUnits,
   };
+}
+
+/** Ce qu'un produit pèse en pièces sur la plage : ses pièces, ou ses jours au poids. */
+function piecesOf(product: ForecastProduct): number {
+  return product.cells.reduce((sum, cell) => sum + cell.pieces, 0);
 }

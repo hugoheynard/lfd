@@ -62,18 +62,20 @@ const RAYONS: readonly ForecastRayon[] = [
       {
         sku: 'VIE-001',
         productName: 'Croissant',
+        saleUnit: 'piece',
         cells: [
-          { quantity: 100, exceptional: false, resupply: 0 },
-          { quantity: 0, exceptional: false, resupply: 0 },
+          { quantity: 100, label: '100', pieces: 100, exceptional: false, resupply: 0 },
+          { quantity: 0, label: '0', pieces: 0, exceptional: false, resupply: 0 },
         ],
         totalUnits: 100,
       },
       {
         sku: 'VIE-002',
         productName: 'Pain au chocolat',
+        saleUnit: 'piece',
         cells: [
-          { quantity: 0, exceptional: false, resupply: 0 },
-          { quantity: 60, exceptional: false, resupply: 0 },
+          { quantity: 0, label: '0', pieces: 0, exceptional: false, resupply: 0 },
+          { quantity: 60, label: '60', pieces: 60, exceptional: false, resupply: 0 },
         ],
         totalUnits: 60,
       },

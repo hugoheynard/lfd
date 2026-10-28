@@ -373,6 +373,7 @@
   "test/production-settings.e2e-spec.ts": 9567,
   "test/production-shortcuts.e2e-spec.ts": 12000,
   "test/production-tranches.e2e-spec.ts": 27461,
+  "test/production-weight.e2e-spec.ts": 12000,
   "test/production-worksheet.e2e-spec.ts": 8049,
   "test/prospects.e2e-spec.ts": 3229,
   "test/public-pickup-slots-surface.e2e-spec.ts": 3930,

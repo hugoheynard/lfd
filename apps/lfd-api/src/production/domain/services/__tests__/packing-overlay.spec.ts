@@ -20,7 +20,7 @@ function order(
     siteId: null,
     sheetDetails: null,
     packed: null,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 12 }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
     ...over,
   };
 }

@@ -78,7 +78,7 @@
               [attr.data-tone]="headers()[column]?.tone"
             >
               @if (cell.quantity > 0) {
-                <span class="pv-qty-value">{{ cell.quantity }}</span>
+                <span class="pv-qty-value">{{ cell.label }}</span>
                 <!-- La part des réassorts, à part des commandes (lot R3d) : déjà
                      comptée dans le chiffre, jamais en plus. -->
                 @if (cell.resupply > 0) {

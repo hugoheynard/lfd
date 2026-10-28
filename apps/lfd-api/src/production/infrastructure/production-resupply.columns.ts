@@ -66,7 +66,9 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
       siteLabel: row.siteLabel,
       name: row.name,
       servedByTransfer: row.servedByTransfer,
-      lines: row.lines,
+      // Un réassort est toujours à la pièce : le commerce refuse un article au
+      // poids au réassort (plan `pricing/plan-vente-au-poids.md`, § 2).
+      lines: row.lines.map((line) => ({ ...line, saleUnit: "piece" })),
     };
     if (row.launchedAt === null || row.launchedBy === null) {
       resupplies.push(resupply);
@@ -92,6 +94,12 @@ export function resupplyRowOf(resupply: ProductionResupplySnapshot | LaunchedRes
     kind: launched === null ? EVENING_KIND : ASAP_KIND,
     launchedAt: launched?.at ?? null,
     launchedBy: launched?.by ?? null,
-    lines: { create: resupply.lines.map((line) => ({ ...line })) },
+    lines: {
+      create: resupply.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productName,
+        quantity: line.quantity,
+      })),
+    },
   };
 }

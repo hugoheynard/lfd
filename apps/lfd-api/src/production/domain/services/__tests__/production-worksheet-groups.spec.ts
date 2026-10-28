@@ -21,6 +21,7 @@ function line(sku: string, quantity: number, done = false): WorksheetLine {
     sku,
     productName: sku,
     quantity,
+    saleUnit: "piece",
     containerLabel: null,
     done,
     initials: done ? "MB" : null,

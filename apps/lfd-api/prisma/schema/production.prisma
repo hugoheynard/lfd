@@ -310,7 +310,12 @@ model ProductionOrderLine {
 
   sku         String
   productName String @map("product_name")
+  /// Des pièces, ou des GRAMMES si `saleUnit = weight` — toujours un entier.
   quantity    Int
+  /// `piece` ou `weight` (CHECK), recopiée de la ligne de commande à l'arrêt
+  /// (plan `pricing/plan-vente-au-poids.md`, P6). `piece` pour toute ligne
+  /// figée avant la colonne : aucun article au poids n'existait.
+  saleUnit    String @default("piece") @map("sale_unit")
 
   /// **La ligne est DANS le bac**, telle que le poste de colisage la constate.
   ///
@@ -347,7 +352,11 @@ model ProductionCount {
 
   sku         String
   productName String @map("product_name")
+  /// Des pièces, ou des GRAMMES si `saleUnit = weight` : l'unité est celle de
+  /// l'article, une seule par SKU, la somme reste donc homogène.
   quantity    Int
+  /// `piece` ou `weight` (CHECK), P6 de `pricing/plan-vente-au-poids.md`.
+  saleUnit    String @default("piece") @map("sale_unit")
 
   /// **La ligne est sortie du four**, telle que le fournil la constate.
   ///

@@ -39,7 +39,7 @@ function sourced(
       destination: "Le Labo",
       clientele: "pro",
       siteId,
-      lines: [{ sku: "BAG", productName: "Baguette", quantity: 2 }],
+      lines: [{ sku: "BAG", productName: "Baguette", quantity: 2, saleUnit: "piece" }],
       sheetDetails: null,
     },
     window,

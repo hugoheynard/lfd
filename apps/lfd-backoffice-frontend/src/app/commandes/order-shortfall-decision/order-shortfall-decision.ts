@@ -10,7 +10,8 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import type { AdminOrderShortfall, OrderLineView, StaffNote } from '@lfd/contracts';
+import type { AdminOrderShortfall, OrderLineView, OrderSaleUnit, StaffNote } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent, FoldInlineConfirmComponent } from 'fold-ng';
 
@@ -27,6 +28,8 @@ interface DepartingLine {
   readonly name: string;
   readonly packed: number;
   readonly due: number;
+  /** Au poids, `packed` et `due` sont des grammes (P6). */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**
@@ -56,6 +59,11 @@ export class OrderShortfallDecision {
   readonly orderId = input.required<string>();
   readonly shortfall = input.required<AdminOrderShortfall | null>();
   readonly lines = input.required<readonly Pick<OrderLineView, 'sku' | 'productName'>[]>();
+
+  /** « 3 » ou « 750 g » : une quantité dans l'unité de l'article. */
+  protected figure(quantity: number, unit: OrderSaleUnit): string {
+    return saleQuantityLabel(quantity, unit);
+  }
 
   /** La décision est enregistrée : au parent de relire le détail. */
   readonly decided = output<void>();

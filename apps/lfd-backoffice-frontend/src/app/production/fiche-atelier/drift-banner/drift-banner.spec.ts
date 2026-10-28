@@ -17,8 +17,15 @@ const DRIFT: WorkshopDrift = {
   orders: 14,
   addedUnits: 18,
   lines: [
-    { sku: 'SEI', productName: 'Pain de seigle', from: 30, to: 42, done: true },
-    { sku: 'BAG', productName: 'Baguette tradition', from: 160, to: 166, done: false },
+    { sku: 'SEI', productName: 'Pain de seigle', from: 30, to: 42, done: true, saleUnit: 'piece' },
+    {
+      sku: 'BAG',
+      productName: 'Baguette tradition',
+      from: 160,
+      to: 166,
+      done: false,
+      saleUnit: 'piece',
+    },
   ],
 };
 
@@ -50,7 +57,9 @@ describe('le bandeau de version périmée', () => {
   it('se tait sur le cas dangereux quand il n’y en a pas', () => {
     const el: HTMLElement = render({
       ...DRIFT,
-      lines: [{ sku: 'BAG', productName: 'Baguette', from: 160, to: 166, done: false }],
+      lines: [
+        { sku: 'BAG', productName: 'Baguette', from: 160, to: 166, done: false, saleUnit: 'piece' },
+      ],
     }).nativeElement;
 
     expect(el.textContent).not.toContain('déjà commencée');

@@ -30,7 +30,12 @@ function order(
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
+    lines: lines.map(([sku, productName, quantity]) => ({
+      sku,
+      productName,
+      quantity,
+      saleUnit: "piece",
+    })),
   };
 }
 
@@ -75,6 +80,7 @@ describe("dayDossierOf", () => {
         productName: "Croissant",
         quantity: 50,
         orderCount: 2,
+        saleUnit: "piece",
         resupplyQuantity: 0,
       },
       {
@@ -82,6 +88,7 @@ describe("dayDossierOf", () => {
         productName: "Pain au chocolat",
         quantity: 40,
         orderCount: 1,
+        saleUnit: "piece",
         resupplyQuantity: 0,
       },
     ]);
@@ -118,7 +125,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
       },
       {
         resupplyId: "r-1",
@@ -127,8 +134,8 @@ describe("dayDossierOf", () => {
         name: null,
         servedByTransfer: true,
         lines: [
-          { sku: "VIE-001", productName: "Croissant", quantity: 6 },
-          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10 },
+          { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 10, saleUnit: "piece" },
         ],
       },
       {
@@ -137,7 +144,7 @@ describe("dayDossierOf", () => {
         siteLabel: null,
         name: null,
         servedByTransfer: false,
-        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
+        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3, saleUnit: "piece" }],
       },
     ]);
     expect(dossier.recap[0]).toEqual({
@@ -150,6 +157,7 @@ describe("dayDossierOf", () => {
           productName: "Croissant",
           quantity: 62,
           orderCount: 2,
+          saleUnit: "piece",
           resupplyQuantity: 12,
         },
         {
@@ -157,6 +165,7 @@ describe("dayDossierOf", () => {
           productName: "Pain au chocolat",
           quantity: 50,
           orderCount: 1,
+          saleUnit: "piece",
           resupplyQuantity: 10,
         },
       ],
@@ -175,7 +184,7 @@ describe("dayDossierOf", () => {
         siteLabel: "Village",
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18 }],
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 18, saleUnit: "piece" }],
       },
     ]);
     expect(dossier.sheets).toEqual([]);

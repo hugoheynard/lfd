@@ -37,7 +37,7 @@
           <ul class="rt-list">
             @for (line of h.lines; track line.sku) {
               <li class="rt-line">
-                <span class="rt-qty">{{ line.quantity }}</span>
+                <span class="rt-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</span>
                 <span class="rt-name">{{ line.productName }}</span>
                 <span class="rt-sku">{{ line.sku }}</span>
               </li>

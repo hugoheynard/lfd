@@ -19,6 +19,7 @@ import { ClienteleBadge } from '../clientele-badge/clientele-badge';
 import { type PackingItem, packingList } from '../packing-frames';
 import { readyByLabel } from '../packing-ready-by';
 import { packingRoundTitle } from '../packing-rounds';
+import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * **La liste des commandes du poste** — la colonne de gauche : la bande, le
@@ -45,6 +46,7 @@ import { packingRoundTitle } from '../packing-rounds';
   selector: 'app-packing-orders',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     ClienteleBadge,
     FoldBadgeComponent,
     FoldIconComponent,

@@ -127,8 +127,8 @@ describe("la fiche de l'arrêt et l'avancement du colisage (PL4)", () => {
 
     // L'ordre suit l'identifiant des lignes : on compare l'ensemble.
     expect([...(mine.stops[0]?.sheet ?? [])].sort((a, b) => a.sku.localeCompare(b.sku))).toEqual([
-      { sku: "PAI-002", name: "Pain", quantity: 4, requiresCold: false },
-      { sku: "VIE-001", name: "Croissant", quantity: 6, requiresCold: false },
+      { sku: "PAI-002", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
+      { sku: "VIE-001", name: "Croissant", quantity: 6, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[1]?.sheet).toEqual([]);
     expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
@@ -208,17 +208,17 @@ describe("un départ incomplet décidé, dans « Ma tournée »", () => {
     const mine = await view(paul.agent, roundId);
 
     expect(mine.stops[0]?.sheet).toEqual([
-      { sku: "PAI-002", name: "Pain", quantity: 4, requiresCold: false },
+      { sku: "PAI-002", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[0]?.shortfall).toEqual({
       remainder: "abandoned",
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
     });
     expect(mine.stops[1]?.sheet).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 3, requiresCold: false },
+      { sku: "VIE-001", name: "Croissant", quantity: 3, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[1]?.shortfall?.lines).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 2 },
+      { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" },
     ]);
     expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
   });

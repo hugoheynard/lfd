@@ -1,4 +1,4 @@
-import { GRAMS_PER_KILOGRAM } from "./sale-quantity.js";
+import { GRAMS_PER_KILOGRAM, type SaleQuantity } from "./sale-quantity.js";
 
 /**
  * **Un poids tel qu'on le dit au client** — plan
@@ -28,4 +28,19 @@ export function weightLabel(weightGrams: number): string {
   }
   const decimals = String(rest).padStart(3, "0").replace(/0+$/u, "");
   return `${String(kilos)},${decimals} kg`;
+}
+
+/**
+ * **Une quantité de ligne telle qu'on l'écrit dans une colonne de quantité** —
+ * « 12 » pour des pièces, « 1,25 kg » pour des grammes (plan
+ * `documentation/pricing/plan-vente-au-poids.md`, P6 : la fiche d'atelier, le
+ * compte à produire, le dossier du jour, le colisage).
+ *
+ * Les pièces restent un nombre nu : c'est ce que ces colonnes disaient avant
+ * le poids, et ajouter « pièces » partout changerait des papiers que le
+ * fournil lit déjà. Le poids, lui, porte toujours son unité — sans elle,
+ * « 1250 » se lirait comme des pièces.
+ */
+export function quantityFigure(quantity: SaleQuantity): string {
+  return quantity.unit === "weight" ? weightLabel(quantity.amount) : String(quantity.amount);
 }

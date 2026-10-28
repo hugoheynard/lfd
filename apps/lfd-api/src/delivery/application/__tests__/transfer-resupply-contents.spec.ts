@@ -22,7 +22,7 @@ function transferWith(resupplyId: string) {
 }
 
 const ORDERS = new FixedTransferContents(
-  new Map([["o_1", [{ sku: "PAIN", name: "Pain", quantity: 2 }]]]),
+  new Map([["o_1", [{ sku: "PAIN", name: "Pain", quantity: 2, saleUnit: "piece" as const }]]]),
 );
 
 describe("le réassort au manifeste du transfert", () => {
@@ -52,7 +52,15 @@ describe("le réassort au manifeste du transfert", () => {
     const frozen = frozenResupply("res_vv", DAY, { quantity: 6 });
     const withTwo = {
       ...frozen,
-      lines: [...frozen.lines, { sku: "PAC-001", productName: "Pain au chocolat", quantity: 3 }],
+      lines: [
+        ...frozen.lines,
+        {
+          sku: "PAC-001",
+          productName: "Pain au chocolat",
+          quantity: 3,
+          saleUnit: "piece" as const,
+        },
+      ],
     };
     const packed = new Map([["res_vv", new Map([["CRO-001", 4]])]]);
 

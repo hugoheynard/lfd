@@ -1,9 +1,11 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { billingAddressPayloadSchema, isSettled, type BillingAddressPayload } from "@lfd/contracts";
+import { pieceTally, saleQuantity, type SaleUnit } from "@lfd/money";
 
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import type { HandoverQueueWindow } from "../domain/ports/order.reader.js";
 import { fulfillmentOf, windowOf } from "./order-fulfillment.parse.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import { abandonedOf, decisionMarkOf } from "./prisma-shortfall-aftermath.reader.js";
 import { departingOf } from "./prisma-shortfall-decision.reader.js";
@@ -129,7 +131,7 @@ export function expectedOnWhere(day: string): Prisma.OrderWhereInput {
  * comptoir et la feuille de route (2026-10-25).
  */
 export const DEPARTURE_SELECT = {
-  lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+  lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
   // Le manque de la commande — son rang 1 — et sa décision : les lignes de
   // la commande sont celles du rang 1 (plan E7 reliquat, LB). Ce qui part
   // d'un reste se lit sur son BL (L8).
@@ -197,11 +199,7 @@ export function toHandoverSubject(row: HandoverRow): {
   readonly settled: boolean;
   readonly fulfillmentMethod: HandoverRow["fulfillmentMethod"];
   readonly note: string;
-  readonly lines: readonly {
-    readonly sku: string;
-    readonly productName: string;
-    readonly quantity: number;
-  }[];
+  readonly lines: readonly DepartureLine[];
 } {
   return {
     orderId: row.id,
@@ -253,7 +251,7 @@ export function toQueueEntry(row: QueueRow): {
     siteId: siteIdOf(row.pickupAddress),
     fulfillmentMethod: row.fulfillmentMethod,
     window: windowOf(fulfillmentOf(row.fulfillment)),
-    totalUnits: departure.lines.reduce((sum, line) => sum + line.quantity, 0),
+    totalUnits: departingPieces(departure.lines),
     abandoned: departure.abandoned,
     status: row.status,
     settled: isSettled(row.paymentStatus),
@@ -266,7 +264,21 @@ export function toQueueEntry(row: QueueRow): {
 export interface DepartureLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
+}
+
+/**
+ * Les pièces qui partent, pour le comptoir et la feuille de route : un
+ * article au poids compte pour une ligne, jamais ses grammes (plan
+ * `pricing/plan-vente-au-poids.md`, § 2) — et pour rien s'il ne part pas.
+ */
+export function departingPieces(lines: readonly DepartureLine[]): number {
+  return lines.reduce(
+    (sum, line) => sum + pieceTally(saleQuantity(line.quantity, line.saleUnit)),
+    0,
+  );
 }
 
 /** Ce qu'il faut d'une commande pour dire ce qui part au comptoir. */
@@ -276,6 +288,7 @@ interface DepartingRow {
     readonly sku: string;
     readonly productNameSnapshot: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
   /** Le manque du rang 1, s'il en a un (au plus une ligne). */
   readonly shortfalls: readonly {
@@ -310,6 +323,7 @@ export function departureOf(row: DepartingRow): {
     sku: line.sku,
     productName: line.productNameSnapshot,
     quantity: line.quantity,
+    saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
   }));
   const shortfall = row.shortfalls[0];
   const decision = shortfall?.decision ?? null;
@@ -330,6 +344,7 @@ export function departureOf(row: DepartingRow): {
       : abandonedOf(
           shortfallLinesOf(shortfall.lines),
           new Map(named.map((line) => [line.sku, line.productName])),
+          new Map(named.map((line) => [line.sku, line.saleUnit])),
         );
   return { lines, abandoned, remainder: mark?.remainder ?? null };
 }

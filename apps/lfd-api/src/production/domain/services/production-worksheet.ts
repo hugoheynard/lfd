@@ -1,6 +1,10 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { ProducibleOrder } from "../../channels/commerce/day-orders.reader.js";
 import type { ProducedItemSnapshot, ProductionBatchSnapshot } from "../entities/production-day.js";
 import { activeBatchesOf, countedBatch, implicitBatchesOf, outputOf } from "./production-output.js";
+import { driftOf } from "./production-worksheet-drift.js";
+import { byWeightThenName } from "./worksheet-order.js";
 
 /**
  * **La fiche d'atelier** — le compte à produire d'une journée, rendu cochable,
@@ -27,7 +31,9 @@ export interface ContainerRule {
 export interface DemandedItem {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /** Ce que le handler pose sur la table. */
@@ -58,7 +64,13 @@ export interface WorksheetSources {
 export interface WorksheetLine {
   readonly sku: string;
   readonly productName: string;
+  /**
+   * Des pièces, ou des grammes si `saleUnit = "weight"` (P6) — et alors
+   * `produced`, `remaining`, `surplus` et les fournées sont des grammes aussi :
+   * un article n'a qu'une unité.
+   */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
   readonly containerLabel: string | null;
   /** Complète (D2 des fournées) — le nom de l'ancienne case, gardé au contrat. */
   readonly done: boolean;
@@ -82,6 +94,8 @@ export interface WorksheetLine {
 export interface WorksheetDriftLine {
   readonly sku: string;
   readonly productName: string;
+  /** `from` et `to` sont des grammes si `weight` (P6). */
+  readonly saleUnit: SaleUnit;
   readonly from: number;
   readonly to: number;
   readonly done: boolean;
@@ -172,6 +186,7 @@ function line(
     sku: item.sku,
     productName: item.productName,
     quantity: item.quantity,
+    saleUnit: item.saleUnit,
     containerLabel: containerLabelOf(item.quantity, rule),
     done: output.complete,
     // La chaîne vide n'est pas une signature : une ligne complétée sans
@@ -212,7 +227,11 @@ function outOfCount(
       .map((batch) => batch.sku),
   );
   return [...orphans].map((sku) =>
-    line({ sku, productName: sku, quantity: 0 }, containers, batches),
+    // Une fournée hors compte ne dit pas son unité : sans ligne de commande,
+    // on ne sait que des pièces (P6) — le cas ne naît que d'un article retiré
+    // du compte après une fournée, et un article au poids n'a pas de raccourci
+    // de fournée à part.
+    line({ sku, productName: sku, quantity: 0, saleUnit: "piece" }, containers, batches),
   );
 }
 
@@ -231,69 +250,4 @@ function containerLabelOf(quantity: number, rule: ContainerRule | undefined): st
   }
   const count = Math.ceil(quantity / rule.unitsPerContainer);
   return `${count} ${count === 1 ? rule.singular : rule.plural}`;
-}
-
-/**
- * **Ce que le retirage absorberait**, ligne par ligne.
- *
- * Il nomme les lignes au lieu de rendre un compteur, et dit lesquelles sont
- * **déjà commencées** : c'est le seul cas réellement dangereux du lot — quelqu'un a
- * déclaré avoir sorti 30 pièces d'un article qui en demande 42, et personne ne
- * s'en apercevra avant le colisage.
- *
- * `null` quand rien n'est arrivé : un bandeau qui s'affiche pour dire « rien »
- * apprend à ne plus le lire.
- */
-function driftOf(
-  sources: WorksheetSources,
-  batches: readonly ProductionBatchSnapshot[],
-): WorksheetDrift | null {
-  if (sources.arrivals.length === 0) {
-    return null;
-  }
-  const known = new Map(sources.counts.map((item) => [item.sku, item] as const));
-  const added = new Map<string, { productName: string; quantity: number }>();
-  for (const order of sources.arrivals) {
-    for (const item of order.lines) {
-      const seen = added.get(item.sku);
-      added.set(item.sku, {
-        productName: seen?.productName ?? item.productName,
-        quantity: (seen?.quantity ?? 0) + item.quantity,
-      });
-    }
-  }
-  const lines = [...added.entries()].map(([sku, item]) => {
-    const current = known.get(sku);
-    return {
-      sku,
-      // Le nom de la fiche l'emporte sur celui de la commande qui arrive : c'est
-      // celui que le fournil lit depuis 4 h. `0` en `from` dit un article
-      // entièrement neuf, et c'est une information à part entière.
-      productName: current?.productName ?? item.productName,
-      from: current?.quantity ?? 0,
-      to: (current?.quantity ?? 0) + item.quantity,
-      // « Déjà commencée » (D2 des fournées) : au moins une pièce sortie. Le cas
-      // dangereux qu'il nommait est celui-là, que la ligne soit complète ou non.
-      done: activeBatchesOf(batches, sku).length > 0,
-    };
-  });
-  return {
-    orders: sources.arrivals.length,
-    addedUnits: lines.reduce((total, entry) => total + (entry.to - entry.from), 0),
-    lines: lines.sort(byWeightThenName),
-  };
-}
-
-/** Le plus gros d'abord ; à égalité, le nom, puis le SKU — jamais l'ordre d'arrivée. */
-function byWeightThenName(
-  left: { quantity?: number; to?: number; productName: string; sku: string },
-  right: { quantity?: number; to?: number; productName: string; sku: string },
-): number {
-  const weight = (entry: { quantity?: number; to?: number }): number =>
-    entry.quantity ?? entry.to ?? 0;
-  return (
-    weight(right) - weight(left) ||
-    left.productName.localeCompare(right.productName) ||
-    left.sku.localeCompare(right.sku)
-  );
 }

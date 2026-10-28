@@ -147,8 +147,8 @@ describe("le prévisionnel lit les réassorts pour demain (R3d)", () => {
       {
         day: TOMORROW,
         items: [
-          { sku: "CRO", productName: "Croissant", quantity: 11 },
-          { sku: "PAC", productName: "Pain au chocolat", quantity: 6 },
+          { sku: "CRO", productName: "Croissant", quantity: 11, saleUnit: "piece" },
+          { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece" },
         ],
       },
     ]);

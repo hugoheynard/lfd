@@ -1,11 +1,16 @@
 import type { ShortfallRemainder } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import type { ShortfallQuantity } from "../entities/order-shortfall.js";
 
 /** Le manque signalé sur une commande, et sa décision quand elle est prise (E6b). */
 export interface OrderShortfallReading {
   readonly reportedAt: Date;
-  readonly lines: readonly ShortfallQuantity[];
+  /**
+   * Dû et au bac, par article — des grammes pour un article au poids, dont
+   * l'unité est celle de la ligne de commande (P6 de `pricing/plan-vente-au-poids.md`).
+   */
+  readonly lines: readonly (ShortfallQuantity & { readonly saleUnit: SaleUnit })[];
   readonly decision: {
     readonly decidedAt: Date;
     readonly remainder: ShortfallRemainder;

@@ -21,6 +21,9 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import type { OrderSaleUnit } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+
 /** Le geste demandé — il donne au dialogue ses `data-*` et son bouton. */
 export type PackingQuantityGesture = 'drop' | 'withdrawal';
 
@@ -36,10 +39,20 @@ export interface PackingQuantityDialogData {
   readonly confirmLabel: string;
   /** La borne haute, et le défaut : « tout ». */
   readonly max: number;
+  /**
+   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : au poids, la
+   * quantité se saisit en GRAMMES. Absente = des pièces.
+   */
+  readonly saleUnit?: OrderSaleUnit;
   readonly busy: Signal<boolean>;
   /** Le refus du dernier geste, tel que le serveur l'a dit. */
   readonly refusal: Signal<string | null>;
   readonly submit: (quantity: number) => Promise<boolean>;
+}
+
+/** « Tout : 24 », ou « Tout : 1,25 kg » au poids. */
+export function wholeHint(data: Pick<PackingQuantityDialogData, 'max' | 'saleUnit'>): string {
+  return `Tout : ${saleQuantityLabel(data.max, data.saleUnit)}`;
 }
 
 /**
@@ -76,6 +89,7 @@ export class PackingQuantityDialog implements FoldPanelContent<PackingQuantityDi
   private readonly typed = signal<number | null | undefined>(undefined);
   /** Le refus ne se lit qu'après un essai d'ici : celui d'avant appartient à un autre geste. */
   private readonly tried = signal(false);
+  protected readonly hint = computed(() => wholeHint(this.data()));
   protected readonly refusal = computed(() => (this.tried() ? this.data().refusal() : null));
   protected readonly quantity = computed(() => {
     const typed = this.typed();

@@ -30,6 +30,39 @@
 > disent « 1,25 kg » ; la page de modification de la boutique saisit un poids
 > au pas et au minimum de l'article. La facture lit encore les lignes de BL
 > sans leur unité : c'est P7.
+>
+> P6 bâti le 2026-10-28 (non commité à l'écriture de cette ligne) : l'unité
+> traverse le fournil, le colisage, la livraison et le comptoir.
+> `ProducibleLine.saleUnit` (le commerce la recopie de `order_lines`) est
+> figée à l'arrêt sur `production_order_line.sale_unit` et
+> `production_count.sale_unit`, et la liste à coliser la porte jusqu'à
+> `packing_line.sale_unit` (migration
+> `20261029010000_la_vente_au_poids_au_fournil` ; un fait écrit avant le
+> champ se relit `piece`). **Le fournil compte un article au poids en
+> grammes, par article** (son unité est une, figée à la publication : la
+> somme est homogène, et un même SKU vu dans les deux unités fait refuser
+> l'arrêt, `MixedSaleUnitCountError`) ; ses fournées se déclarent en grammes
+> (le pavé dit « g » et accepte sept chiffres). Les papiers et les écrans
+> disent « 1,25 kg » (`quantityFigure`, `weightLabel`). **Les totaux qui
+> additionnent des articles différents** — fiche d'atelier, compte à
+> produire, dossier du jour et son e-mail, camembert, prévisionnel, poste de
+> colisage, comptoir, feuille de route — **comptent une ligne au poids pour
+> une pièce** (`pieceTally`, `packages/money`), et pour rien si elle est
+> réduite à 0 g ; au récapitulatif par article, une pièce par commande qui
+> le porte. **Au colisage, un lot** : un seul contenant porte l'article
+> (on complète le lot là où il est), il se retire et se déplace entier
+> (`WeightLotSplitError`), mais il peut se poser en partie — la réserve peut
+> ne tenir qu'une partie du poids. **Un manquant au poids** est la différence
+> de grammes entre le dû et le lot au bac (1 250 g dus, 1 000 g au bac :
+> 250 g manquent) ; la quantité « décidée » d'un départ incomplet est le lot
+> au bac, en grammes, et un lot décidé à 0 g sort de la feuille. La lettre au
+> client, la fiche commande, la Supervision et le reste abandonné le disent
+> en grammes. **Pas bâti** : le manifeste du transfert interne
+> (`delivery_internal_transfer_manifest_line` n'a pas d'unité — une commande
+> au poids servie par transfert y dit « 1250 » sans unité), la proposition
+> automatique de bacs (`proposal-distribution.ts` peut couper un lot au poids
+> en deux bacs, que l'application refuse alors) et les raccourcis de fournée
+> (comptés en pièces).
 
 > 📝 Plan du 2026-10-28, doc-first. Demande de Hugo : « j'ai certains articles
 > qui se vendent au poids, fais-moi un plan qui va jusqu'à Factur-X, et le

@@ -28,7 +28,7 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
     ...overrides,
   };
 }
@@ -61,7 +61,7 @@ describe("arrêter une journée", () => {
     expect(day.counts).toEqual([
       // `done: null` : une journée qu'on vient d'arrêter n'a rien de sorti du
       // four. Écrit plutôt que laissé deviner — comme `packed` sur la commande.
-      { sku: "VIE-001", productName: "Croissant", quantity: 40, done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece", done: null },
     ]);
   });
 
@@ -75,11 +75,11 @@ describe("arrêter une journée", () => {
       [
         order({
           orderId: "ord_1",
-          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40 }],
+          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
         }),
         order({
           orderId: "ord_2",
-          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
+          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
         }),
       ],
       new Set<string>(),
@@ -88,7 +88,7 @@ describe("arrêter une journée", () => {
     );
 
     expect(day.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 52, done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 52, saleUnit: "piece", done: null },
     ]);
   });
 
@@ -99,10 +99,12 @@ describe("arrêter une journée", () => {
 
     day.close(
       [
-        order({ lines: [{ sku: "VIE-009", productName: "Pain au lait", quantity: 5 }] }),
+        order({
+          lines: [{ sku: "VIE-009", productName: "Pain au lait", quantity: 5, saleUnit: "piece" }],
+        }),
         order({
           orderId: "ord_2",
-          lines: [{ sku: "PAI-001", productName: "Tradition", quantity: 3 }],
+          lines: [{ sku: "PAI-001", productName: "Tradition", quantity: 3, saleUnit: "piece" }],
         }),
       ],
       new Set<string>(),
@@ -334,7 +336,7 @@ describe("ProductionDay — les commandes retirées par l'annulation staff", () 
 
     expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
     expect(day.counts).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 40, done: null },
+      { sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece", done: null },
     ]);
   });
 

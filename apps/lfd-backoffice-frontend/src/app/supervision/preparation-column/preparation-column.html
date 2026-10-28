@@ -122,8 +122,8 @@
                 [attr.aria-label]="progress.label"
                 [attr.data-line-figure]="line.sku"
               >
-                <span class="figure-done">{{ line.produced }}</span>
-                <span class="figure-of">/ {{ line.quantity }}</span>
+                <span class="figure-done">{{ line.produced | saleQuantity: line.saleUnit }}</span>
+                <span class="figure-of">/ {{ line.quantity | saleQuantity: line.saleUnit }}</span>
               </span>
               @if (canCheck()) {
                 <button

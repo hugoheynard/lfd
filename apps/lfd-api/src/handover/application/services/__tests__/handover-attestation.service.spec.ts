@@ -43,13 +43,13 @@ function subject(): HandoverSubject {
     settled: true,
     fulfillmentMethod: "pickup",
     note: "",
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2 }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" }],
     // Un reste colisé : le rang 2 est à tendre (plan E7 reliquat, L4c).
     laterShipments: [
       {
         rank: 2,
         prepared: true,
-        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1 }],
+        lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 1, saleUnit: "piece" }],
       },
     ],
   };

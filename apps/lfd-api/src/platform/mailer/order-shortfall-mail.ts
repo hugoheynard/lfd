@@ -1,5 +1,6 @@
 import type { ContentLocale } from "@lfd/contracts";
 import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/mailer";
+import { weightLabel } from "@lfd/money";
 
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
 
@@ -24,7 +25,9 @@ export interface OrderShortfallMailData {
 /** Un article de la proposition, nommé comme sur la commande. */
 export interface OrderShortfallDraftLine {
   readonly product: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits alors « 250 g ». */
   readonly quantity: number;
+  readonly saleUnit?: "weight";
 }
 
 /** Ce que la proposition dit : ce qui part, ce qui manque. */
@@ -65,7 +68,7 @@ export function draftOrderShortfallMessage(data: OrderShortfallDraftData): strin
   const copy = mailCopyOf(data.locale)["customer.order-shortfall"];
   const listOf = (lines: readonly OrderShortfallDraftLine[]): string =>
     lines
-      .map((line) => fill(copy.line, { quantity: String(line.quantity), product: line.product }))
+      .map((line) => fill(copy.line, { quantity: quantityOf(line), product: line.product }))
       .join("\n");
   return [
     fill(copy.intro, { ref: data.reference }),
@@ -74,4 +77,9 @@ export function draftOrderShortfallMessage(data: OrderShortfallDraftData): strin
     copy.contactSales,
     copy.closing,
   ].join("\n\n");
+}
+
+/** « 3 », ou « 250 g » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+function quantityOf(line: OrderShortfallDraftLine): string {
+  return line.saleUnit === "weight" ? weightLabel(line.quantity) : String(line.quantity);
 }

@@ -321,12 +321,16 @@ describe("GetAdminOrderHandler", () => {
       { kind: "free" },
       new RefundStore(),
       PLACED,
-      { reportedAt: NOW, lines: [{ sku: "CRO", due: 12, packed: 9 }], decision: null },
+      {
+        reportedAt: NOW,
+        lines: [{ sku: "CRO", due: 12, packed: 9, saleUnit: "piece" as const }],
+        decision: null,
+      },
     ).execute(new GetAdminOrderQuery("ord_1"));
 
     expect(view.shortfall).toEqual({
       reportedAt: NOW.toISOString(),
-      lines: [{ sku: "CRO", due: 12, packed: 9 }],
+      lines: [{ sku: "CRO", due: 12, packed: 9, saleUnit: "piece" as const }],
       decision: null,
     });
   });
@@ -346,7 +350,7 @@ describe("GetAdminOrderHandler", () => {
       PLACED,
       {
         reportedAt: NOW,
-        lines: [{ sku: "CRO", due: 12, packed: 9 }],
+        lines: [{ sku: "CRO", due: 12, packed: 9, saleUnit: "piece" as const }],
         decision: {
           decidedAt: NOW,
           remainder: "abandoned",

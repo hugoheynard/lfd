@@ -5,6 +5,7 @@ import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
 import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
+import { productionSaleUnitOf } from "./sale-unit.column.js";
 import { signerColumns, signerOf } from "./production-day-signer.columns.js";
 import { RESUPPLY_COLUMNS, resupplyRowOf, splitResupplies } from "./production-resupply.columns.js";
 import {
@@ -63,7 +64,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             clientele: true,
             siteId: true,
             ...SHEET_COLUMNS,
-            lines: { select: { sku: true, productName: true, quantity: true } },
+            lines: { select: { sku: true, productName: true, quantity: true, saleUnit: true } },
           },
         },
         // Les réassorts figés à l'arrêt (lot R3a) et les lancés (R4a) — à part des commandes.
@@ -73,6 +74,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             sku: true,
             productName: true,
             quantity: true,
+            saleUnit: true,
             doneAt: true,
             doneBy: true,
             doneInitials: true,
@@ -127,6 +129,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           sku: line.sku,
           productName: line.productName,
           quantity: line.quantity,
+          saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
         })),
         sheetDetails: sheetDetailsOf(order),
       })),
@@ -135,6 +138,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         sku: count.sku,
         productName: count.productName,
         quantity: count.quantity,
+        saleUnit: productionSaleUnitOf(count.sku, count.saleUnit),
         // `doneAt` seul décide : c'est la colonne nullable, et les initiales ont
         // un défaut vide. Une ligne faite sans signature reste une ligne faite.
         done:
@@ -231,6 +235,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
                 sku: line.sku,
                 productName: line.productName,
                 quantity: line.quantity,
+                saleUnit: line.saleUnit,
                 ...carried.lines.get(`${carriedKey(order.orderId, order.rank)}/${line.sku}`),
               })),
             },
@@ -250,6 +255,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             sku: count.sku,
             productName: count.productName,
             quantity: count.quantity,
+            saleUnit: count.saleUnit,
           })),
         });
       }

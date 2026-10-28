@@ -4,9 +4,10 @@ import {
   type CatalogFamilyView,
   type CatalogItemView,
   type AtelierSheet,
+  type OrderSaleUnit,
   type ProductionDayResupply,
 } from '@lfd/contracts';
-import { catalogShelves } from '@lfd/b2b-ui/catalog';
+import { catalogShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **récapitulation de production** : ce que le lot représente, rayon par
@@ -29,8 +30,14 @@ export interface ProductionRecapLine {
   readonly sku: string;
   /** Le nom **figé à la commande** — le seul dont on soit sûr qu'il a été vendu. */
   readonly productName: string;
-  /** Le TOTAL que le poste enfourne : commandes + réassorts (R3d-bis). */
+  /**
+   * Le TOTAL que le poste enfourne : commandes + réassorts (R3d-bis). Des
+   * grammes si `saleUnit = 'weight'` (P6) — un article, une unité.
+   */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
+  /** « 48 », ou « 1,25 kg » au poids — ce que la fiche de poste écrit. */
+  readonly label: string;
   /** Sur combien de commandes il se répartit : 240 en 3 fois n'est pas 240 en 40. */
   readonly orderCount: number;
   /** Dont réassort — un détail du total, jamais à part de lui. */
@@ -42,6 +49,7 @@ export interface ProductionRecapGroup {
   /** `null` = les SKU dont la famille n'est pas connue (retirés, ou catalogue illisible). */
   readonly family: CatalogFamilyView | null;
   readonly label: string;
+  /** Les pièces du rayon : un article au poids y compte une par commande (P6). */
   readonly quantity: number;
   readonly resupplyQuantity: number;
   readonly lines: readonly ProductionRecapLine[];
@@ -70,6 +78,7 @@ const UNKNOWN_SHELF_LABEL = SHELF_LABEL_UNKNOWN;
 
 interface Tally {
   productName: string;
+  saleUnit: OrderSaleUnit;
   quantity: number;
   orderCount: number;
   resupplyQuantity: number;
@@ -104,12 +113,12 @@ export function productionRecap(
   const tallied = talliesOf(sheets, resupplies);
   return catalogShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
     const lines = [...shelf.items].sort(
-      (a, b) => b.quantity - a.quantity || a.productName.localeCompare(b.productName, 'fr'),
+      (a, b) => recapPieces(b) - recapPieces(a) || a.productName.localeCompare(b.productName, 'fr'),
     );
     return {
       family: shelf.family,
       label: shelfLabel(shelf.family, shelvesKnown),
-      quantity: lines.reduce((sum, line) => sum + line.quantity, 0),
+      quantity: lines.reduce((sum, line) => sum + recapPieces(line), 0),
       resupplyQuantity: lines.reduce((sum, line) => sum + line.resupplyQuantity, 0),
       lines,
     };
@@ -122,9 +131,13 @@ function talliesOf(
   resupplies: readonly ProductionDayResupply[],
 ): ProductionRecapLine[] {
   const bySku = new Map<string, Tally>();
-  const add = (sku: string, productName: string, quantity: number, fromOrder: boolean): void => {
+  const add = (
+    { sku, productName, quantity, saleUnit }: TalliedInput,
+    fromOrder: boolean,
+  ): void => {
     const tally = bySku.get(sku) ?? {
       productName,
+      saleUnit,
       quantity: 0,
       orderCount: 0,
       resupplyQuantity: 0,
@@ -139,15 +152,37 @@ function talliesOf(
   };
   for (const sheet of sheets) {
     for (const line of sheet.lines) {
-      add(line.sku, line.productName, line.quantity, true);
+      add({ ...line, saleUnit: line.saleUnit ?? 'piece' }, true);
     }
   }
   for (const resupply of resupplies) {
     for (const line of resupply.lines) {
-      add(line.sku, line.productName, line.quantity, false);
+      // Un réassort est toujours à la pièce (`plan-vente-au-poids.md`, § 2).
+      add({ ...line, saleUnit: 'piece' }, false);
     }
   }
-  return [...bySku].map(([sku, tally]) => ({ sku, ...tally }));
+  return [...bySku].map(([sku, tally]) => ({
+    sku,
+    ...tally,
+    label: saleQuantityLabel(tally.quantity, tally.saleUnit),
+  }));
+}
+
+/** Une ligne à additionner, réduite à ce que le récapitulatif lit. */
+interface TalliedInput {
+  readonly sku: string;
+  readonly productName: string;
+  readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
+}
+
+/**
+ * Ce qu'un produit pèse en pièces : ses pièces, ou — au poids — une par
+ * commande qui le porte (P6). La même règle que le dossier du jour serveur
+ * (`recapPieces`, `day-dossier.ts`) : l'écran et le PDF disent le même total.
+ */
+export function recapPieces(line: ProductionRecapLine): number {
+  return line.saleUnit === 'weight' ? line.orderCount : line.quantity;
 }
 
 /**

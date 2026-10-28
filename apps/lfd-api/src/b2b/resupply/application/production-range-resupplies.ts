@@ -32,7 +32,13 @@ export class ProductionRangeResupplies extends ExpectedResuppliesReader {
       day,
       items: resupplyTotals(
         placed.filter((resupply) => resupply.serviceDay === day).map((r) => r.lines),
-      ).map((total) => ({ sku: total.sku, productName: total.label, quantity: total.quantity })),
+      ).map((total) => ({
+        sku: total.sku,
+        productName: total.label,
+        quantity: total.quantity,
+        // Le réassort refuse un article au poids (plan `pricing/plan-vente-au-poids.md`, § 2).
+        saleUnit: "piece" as const,
+      })),
     }));
   }
 }

@@ -5,6 +5,7 @@ import type {
   PackingAbandonedLine,
 } from '@lfd/contracts';
 import { FoldCalloutComponent } from 'fold-ng';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * **Ce qui n'est pas dans le sac** — le reste abandonné d'un départ incomplet
@@ -22,7 +23,7 @@ import { FoldCalloutComponent } from 'fold-ng';
 @Component({
   selector: 'app-missing-items',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent],
+  imports: [SaleQuantityPipe, FoldCalloutComponent],
   templateUrl: './missing-items.html',
   styleUrl: './missing-items.scss',
 })

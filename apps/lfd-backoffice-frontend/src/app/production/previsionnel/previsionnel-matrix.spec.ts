@@ -6,7 +6,12 @@ import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 const DAYS = ['2026-09-03', '2026-09-04', '2026-09-05'];
 
 function view(
-  lines: readonly { sku: string; productName: string; quantities: readonly number[] }[],
+  lines: readonly {
+    sku: string;
+    productName: string;
+    quantities: readonly number[];
+    saleUnit?: 'piece' | 'weight';
+  }[],
   peakDate: string | null = null,
 ): ProductionForecastView {
   return {
@@ -20,6 +25,7 @@ function view(
       closesAt: null,
     })),
     lines: lines.map((line) => ({
+      saleUnit: 'piece' as const,
       ...line,
       resupplyQuantities: line.quantities.map(() => 0),
       totalUnits: line.quantities.reduce((sum, quantity) => sum + quantity, 0),
@@ -179,5 +185,38 @@ describe('forecastRayons', () => {
   it('rend une liste vide plutôt que des rayons vides quand rien ne sort', () => {
     expect(forecastRayons(view([]), [])).toEqual([]);
     expect(totalOfRayons([])).toBe(0);
+  });
+});
+
+/** P6 de `plan-vente-au-poids.md` : une case dit « 1,25 kg », un rayon compte une pièce. */
+describe('forecastRayons — au poids', () => {
+  const catalogue = [item('VIE-1', VIENNOISERIES), item('VIE-SAU', VIENNOISERIES)];
+
+  it('écrit les grammes en kilos dans la case, et compte une pièce par jour au rayon', () => {
+    const [rayon] = forecastRayons(
+      view([
+        { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 4] },
+        { sku: 'VIE-SAU', productName: 'Saumon', quantities: [1250, 500, 0], saleUnit: 'weight' },
+      ]),
+      catalogue,
+    );
+
+    const salmon = rayon?.lines.find((line) => line.sku === 'VIE-SAU');
+    expect(salmon?.cells.map((cell) => cell.label)).toEqual(['1,25 kg', '500 g', '0 g']);
+    expect(rayon?.quantities).toEqual([11, 1, 4]);
+    expect(rayon?.totalUnits).toBe(16);
+    expect(totalOfRayons(rayon === undefined ? [] : [rayon])).toBe(16);
+  });
+
+  it('ne range pas un article au poids devant les croissants à cause de ses grammes', () => {
+    const [rayon] = forecastRayons(
+      view([
+        { sku: 'VIE-SAU', productName: 'Saumon', quantities: [9000, 0, 0], saleUnit: 'weight' },
+        { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] },
+      ]),
+      catalogue,
+    );
+
+    expect(rayon?.lines.map((line) => line.sku)).toEqual(['VIE-1', 'VIE-SAU']);
   });
 });

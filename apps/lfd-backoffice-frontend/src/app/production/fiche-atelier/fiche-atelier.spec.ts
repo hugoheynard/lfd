@@ -56,6 +56,7 @@ function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
     sku: 'BAG',
     productName: 'Baguette tradition',
     quantity: 160,
+    saleUnit: 'piece' as const,
     containerLabel: '4 tourneuses',
     done: false,
     initials: null,
@@ -579,8 +580,22 @@ describe('la fiche d’atelier', () => {
         orders: 14,
         addedUnits: 18,
         lines: [
-          { sku: 'SEI', productName: 'Pain de seigle', from: 30, to: 42, done: true },
-          { sku: 'BAG', productName: 'Baguette tradition', from: 160, to: 166, done: false },
+          {
+            sku: 'SEI',
+            productName: 'Pain de seigle',
+            from: 30,
+            to: 42,
+            done: true,
+            saleUnit: 'piece',
+          },
+          {
+            sku: 'BAG',
+            productName: 'Baguette tradition',
+            from: 160,
+            to: 166,
+            done: false,
+            saleUnit: 'piece',
+          },
         ],
       },
     });

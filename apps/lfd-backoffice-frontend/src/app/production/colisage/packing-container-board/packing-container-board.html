@@ -37,7 +37,8 @@
                la colonne de droite n'y est pas rendue (2026-10-05). -->
           <span class="cb-qty-stack">
             <span class="cb-qty" [attr.data-line-shares]="line.sku"
-              >{{ allocated(line) }}<span class="cb-of"> / {{ line.quantity }}</span></span
+              >{{ figure(allocated(line), line.saleUnit)
+              }}<span class="cb-of"> / {{ figure(line.quantity, line.saleUnit) }}</span></span
             >
             @if (stock().get(line.sku); as remaining) {
               <span
@@ -332,7 +333,7 @@
                     @if (editable() && containers().length > 1) {
                       <fold-icon name="grip" size="sm" />
                     }
-                    <span class="cb-qty">{{ share.quantity }}</span>
+                    <span class="cb-qty">{{ figure(share.quantity, share.saleUnit) }}</span>
                     <span class="cb-name">{{ share.productName }}</span>
                     @if (editable()) {
                       <button

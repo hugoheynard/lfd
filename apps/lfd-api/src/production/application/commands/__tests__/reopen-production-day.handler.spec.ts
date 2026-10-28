@@ -37,7 +37,7 @@ function order(orderId: string): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 8 }],
+    lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 8, saleUnit: "piece" }],
   };
 }
 

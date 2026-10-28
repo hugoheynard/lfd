@@ -25,10 +25,13 @@ export const SPECIMEN_ORDER: ProductionOrderSnapshot = {
   clientele: "pro",
   siteId: null,
   lines: [
-    { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 40 },
-    { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 60 },
-    { sku: "EXEMPLE-PAC", productName: "Pain au chocolat", quantity: 30 },
-    { sku: "EXEMPLE-TAS", productName: "Tasse La Folie Coffee", quantity: 2 },
+    { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 40, saleUnit: "piece" },
+    { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 60, saleUnit: "piece" },
+    { sku: "EXEMPLE-PAC", productName: "Pain au chocolat", quantity: 30, saleUnit: "piece" },
+    { sku: "EXEMPLE-TAS", productName: "Tasse La Folie Coffee", quantity: 2, saleUnit: "piece" },
+    // Un article au poids sur la planche (P6 de `pricing/plan-vente-au-poids.md`) :
+    // « 1,25 kg » doit se lire sur la fiche, le compte et le dossier.
+    { sku: "EXEMPLE-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
   ],
   sheetDetails: null,
 };

@@ -28,8 +28,8 @@ function sheet(overrides: Partial<PackingSheetSnapshot> = {}): PackingSheet {
     packed: null,
     containers: 0,
     lines: [
-      { sku: "BAG", productName: "Baguette", quantity: 10, packed: PACKED_LINE },
-      { sku: "CRO", productName: "Croissant", quantity: 6, packed: null },
+      { sku: "BAG", productName: "Baguette", quantity: 10, packed: PACKED_LINE, saleUnit: "piece" },
+      { sku: "CRO", productName: "Croissant", quantity: 6, packed: null, saleUnit: "piece" },
     ],
     containerMode: "listed",
     containerList: [
@@ -60,6 +60,7 @@ describe("PackingSheet.reviseDue", () => {
       sku: "BAG",
       productName: "Baguette",
       quantity: 12,
+      saleUnit: "piece",
       packed: null,
     });
   });
@@ -79,6 +80,7 @@ describe("PackingSheet.reviseDue", () => {
       sku: "CRO",
       productName: "Croissant",
       quantity: 2,
+      saleUnit: "piece",
       packed: { ...MARK, initials: "" },
     });
     expect(target.lines[0]?.packed).toEqual(PACKED_LINE);

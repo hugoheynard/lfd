@@ -101,7 +101,7 @@ function order(orderId: string, packedBy: string | null): BoardOrder {
     packed: packedBy === null ? null : { at: AT, by: packedBy },
     containers: 0,
     containerMode: "listed",
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 1, packed: null }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 1, packed: null, saleUnit: "piece" }],
     containerList: [],
     shortfallReportedAt: null,
   };
@@ -223,7 +223,7 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
     aftermath.decided.push({
       orderId: "1",
       rank: 1,
-      abandoned: [{ sku: "PAI", productName: "Baguette", quantity: 2 }],
+      abandoned: [{ sku: "PAI", productName: "Baguette", quantity: 2, saleUnit: "piece" as const }],
       deliveryNote: "to_print",
       decision: null,
     });
@@ -246,7 +246,11 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
         sheet.abandonedRemainder,
       ]),
     ).toEqual([
-      ["1", "to_reprint", [{ sku: "PAI", productName: "Baguette", quantity: 2 }]],
+      [
+        "1",
+        "to_reprint",
+        [{ sku: "PAI", productName: "Baguette", quantity: 2, saleUnit: "piece" as const }],
+      ],
       ["2", "reprinted", []],
       ["3", "to_reprint", []],
       ["4", null, []],
@@ -298,7 +302,9 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
     aftermath.decided.push({
       orderId: "1",
       rank: 2,
-      abandoned: [{ sku: "CRO", productName: "Croissant", quantity: 1 }],
+      abandoned: [
+        { sku: "CRO", productName: "Croissant", quantity: 1, saleUnit: "piece" as const },
+      ],
       deliveryNote: "to_print",
       decision: null,
     });
@@ -311,7 +317,10 @@ describe("GetPackingBoardHandler — le poste lu au colisage (K3a)", () => {
     expect(said).toEqual(
       expect.arrayContaining([
         [null, []],
-        ["to_reprint", [{ sku: "CRO", productName: "Croissant", quantity: 1 }]],
+        [
+          "to_reprint",
+          [{ sku: "CRO", productName: "Croissant", quantity: 1, saleUnit: "piece" as const }],
+        ],
       ]),
     );
   });

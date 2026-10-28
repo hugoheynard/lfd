@@ -1,4 +1,5 @@
 import type { OrderHandoverShipmentView, OrderHandoverView } from "@lfd/contracts";
+import { pieceTally, saleQuantity } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import { QualityHoldsReader, ShipmentRef } from "../../../production/channels/handover/index.js";
@@ -6,7 +7,10 @@ import {
   StaffAuthorDirectory,
   type StaffAuthors,
 } from "../../../staff/directory/domain/staff-author-directory.js";
-import type { HandoverSubject } from "../../channels/commerce/handover-subject.reader.js";
+import type {
+  HandoverSubject,
+  HandoverSubjectLine,
+} from "../../channels/commerce/handover-subject.reader.js";
 import type { OrderHandover } from "../../domain/entities/order-handover.js";
 import { HandedOverOrdersReader } from "../../domain/ports/handed-over-orders.reader.js";
 import { OrderHandoverRepository } from "../../domain/ports/order-handover.repository.js";
@@ -156,6 +160,13 @@ function toShipmentView(shipment: ShipmentToHandOver): OrderHandoverShipmentView
   };
 }
 
-function unitsOf(lines: readonly { readonly quantity: number }[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity, 0);
+/**
+ * Les pièces à recompter au comptoir : un article au poids compte pour une
+ * ligne, jamais ses grammes (plan `pricing/plan-vente-au-poids.md`, § 2).
+ */
+function unitsOf(lines: readonly HandoverSubjectLine[]): number {
+  return lines.reduce(
+    (sum, line) => sum + pieceTally(saleQuantity(line.quantity, line.saleUnit)),
+    0,
+  );
 }

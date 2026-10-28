@@ -1,3 +1,5 @@
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **Le colisage proposé d'une commande livrée**, et les moitiés de bac libres
  * autour d'elle (`documentation/livraisons/tournees/plan-preparation-de-tournee.md`,
@@ -36,7 +38,9 @@ export interface DeliveryPackingLineView {
   readonly sku: string;
   /** Le nom figé à la passation. */
   readonly name: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `plan-vente-au-poids.md`). */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
   /** Le froid de la fiche produit (relayé par le catalogue B2B) ; `false` = rien de déclaré. */
   readonly requiresCold: boolean;
 }

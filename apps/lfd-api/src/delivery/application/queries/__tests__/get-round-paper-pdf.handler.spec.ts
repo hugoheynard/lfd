@@ -144,8 +144,8 @@ const ROUND: RoundPaperRow = {
 };
 
 const TRANSFER_LINES = new Map([
-  ["o_vv1", [{ sku: "PAIN", name: "Pain de campagne", quantity: 4 }]],
-  ["o_vv2", [{ sku: "PAIN", name: "Pain de campagne", quantity: 2 }]],
+  ["o_vv1", [{ sku: "PAIN", name: "Pain de campagne", quantity: 4, saleUnit: "piece" as const }]],
+  ["o_vv2", [{ sku: "PAIN", name: "Pain de campagne", quantity: 2, saleUnit: "piece" as const }]],
 ]);
 
 const PROCEDURE: DeliveryOrderProcedure = {

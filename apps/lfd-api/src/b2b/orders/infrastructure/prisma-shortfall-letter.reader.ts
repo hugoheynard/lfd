@@ -6,6 +6,7 @@ import {
   ShortfallLetterReader,
   type ShortfallLetterSubject,
 } from "../domain/ports/shortfall-letter.reader.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { orderLocaleOf } from "./order-locale-column.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 
@@ -30,7 +31,7 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
           where: { rank: FIRST_SHIPMENT_RANK },
           select: { lines: true, decision: { select: { customerNotifiedAt: true } } },
         },
-        lines: { select: { sku: true, productNameSnapshot: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, saleUnit: true } },
       },
     });
     const shortfall = row?.shortfalls[0];
@@ -47,6 +48,9 @@ export class PrismaShortfallLetterReader extends ShortfallLetterReader {
       notified: decision.customerNotifiedAt !== null,
       lines: shortfallLinesOf(lines),
       names: new Map(row.lines.map((line) => [line.sku, line.productNameSnapshot])),
+      units: new Map(
+        row.lines.map((line) => [line.sku, orderLineSaleUnitOf(line.sku, line.saleUnit)]),
+      ),
     };
   }
 }

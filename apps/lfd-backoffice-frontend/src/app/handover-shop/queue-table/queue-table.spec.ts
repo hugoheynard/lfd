@@ -274,7 +274,9 @@ describe('QueueTable', () => {
   it('🔴 la ligne d’un départ incomplet décidé porte son reste abandonné', () => {
     const fixture = render([
       entry({
-        abandonedRemainder: [{ sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2 }],
+        abandonedRemainder: [
+          { sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2, saleUnit: 'piece' },
+        ],
       }),
       entry({ orderId: 'o2', reference: 'CMD-2' }),
     ]);

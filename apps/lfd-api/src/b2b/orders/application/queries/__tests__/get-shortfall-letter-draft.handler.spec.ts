@@ -24,6 +24,10 @@ const SUBJECT: ShortfallLetterSubject = {
     ["CRO", "Croissant"],
     ["PAC", "Pain au chocolat"],
   ]),
+  units: new Map([
+    ["CRO", "piece"],
+    ["PAC", "piece"],
+  ]),
 };
 
 class FixedLetters extends ShortfallLetterReader {
@@ -68,6 +72,40 @@ describe("la proposition « Écrire au client » (E6d)", () => {
     expect(message).toContain("Ce qui part :\n– 1 × Croissant\n– 2 × Pain au chocolat");
     expect(message).toContain("Ce qui manque :\n– 2 × Croissant");
     expect(message).toContain("Contactez le service commercial.");
+  });
+
+  /** P6 de `pricing/plan-vente-au-poids.md` : un manquant au poids se dit en grammes, pas en pièces. */
+  it("dit un manquant partiel au poids en grammes, et le lot parti en kilos", async () => {
+    const { message } = await draft({
+      ...SUBJECT,
+      lines: [
+        { sku: "SAU", due: 1250, packed: 1000 },
+        { sku: "CRO", due: 3, packed: 3 },
+      ],
+      names: new Map([
+        ["SAU", "Saumon gravlax"],
+        ["CRO", "Croissant"],
+      ]),
+      units: new Map([
+        ["SAU", "weight"],
+        ["CRO", "piece"],
+      ]),
+    });
+
+    expect(message).toContain("Ce qui part :\n– 1 kg × Saumon gravlax\n– 3 × Croissant");
+    expect(message).toContain("Ce qui manque :\n– 250 g × Saumon gravlax");
+    expect(message).not.toContain("250 × Saumon");
+  });
+
+  it("un article au poids entièrement absent manque de tout son poids", async () => {
+    const { message } = await draft({
+      ...SUBJECT,
+      lines: [{ sku: "SAU", due: 500, packed: 0 }],
+      names: new Map([["SAU", "Saumon gravlax"]]),
+      units: new Map([["SAU", "weight"]]),
+    });
+
+    expect(message).toContain("Ce qui manque :\n– 500 g × Saumon gravlax");
   });
 
   it("parle la langue de la commande", async () => {

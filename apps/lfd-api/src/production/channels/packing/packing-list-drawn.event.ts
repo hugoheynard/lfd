@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { DurableEvent, DurableFact } from "../../../platform/outbox/durable-event.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import {
@@ -5,7 +7,7 @@ import {
   shipmentRankOf,
 } from "../../domain/value-objects/shipment-ref.value-object.js";
 import type { Clientele } from "../commerce/day-orders.reader.js";
-import { instantOf, piecesOf, recordOf, textOf } from "./payload-fields.js";
+import { instantOf, piecesOf, recordOf, saleUnitOf, textOf } from "./payload-fields.js";
 
 /** Nom stable du fait, clé de routage vers `@DurableHandler`. */
 export const PRODUCTION_PACKING_LIST_DRAWN = "production.packing_list_drawn";
@@ -14,7 +16,13 @@ export const PRODUCTION_PACKING_LIST_DRAWN = "production.packing_list_drawn";
 export interface PackingListLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /**
+   * L'unité de la ligne (P6 de `pricing/plan-vente-au-poids.md`). Additive :
+   * un fait écrit avant le champ se relit `piece`.
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 /** Une commande à coliser, telle que le fournil l'a inscrite au plan. */
@@ -171,10 +179,11 @@ function linesOf(value: unknown): readonly PackingListLine[] | null {
     const sku = textOf(raw?.["sku"]);
     const productName = raw?.["productName"];
     const quantity = piecesOf(raw?.["quantity"]);
-    if (sku === null || typeof productName !== "string" || quantity === null) {
+    const saleUnit = saleUnitOf(raw?.["saleUnit"]);
+    if (sku === null || typeof productName !== "string" || quantity === null || saleUnit === null) {
       return null;
     }
-    lines.push({ sku, productName, quantity });
+    lines.push({ sku, productName, quantity, saleUnit });
   }
   return lines;
 }

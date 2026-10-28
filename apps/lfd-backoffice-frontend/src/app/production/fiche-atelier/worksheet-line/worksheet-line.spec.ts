@@ -30,6 +30,7 @@ function line(over: Partial<WorkshopLineView> = {}): WorkshopLineView {
     sku: 'CRO',
     productName: 'Croissant au beurre',
     quantity: 240,
+    saleUnit: 'piece',
     containerLabel: null,
     done: false,
     initials: null,

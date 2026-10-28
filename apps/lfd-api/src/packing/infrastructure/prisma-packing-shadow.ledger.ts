@@ -62,6 +62,7 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
         sku: line.sku,
         productName: line.productName,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
       })),
       skipDuplicates: true,
     });

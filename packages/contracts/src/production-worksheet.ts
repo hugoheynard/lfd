@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import type { OrderSaleUnit } from "./order.js";
 import type {
   WorkshopBatch,
   WorkshopDeadline,
@@ -66,6 +67,12 @@ export interface WorkshopLine {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
+  /**
+   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : `weight` = la
+   * quantité, ce qui est sorti, ce qui reste, le surplus et les fournées sont
+   * des GRAMMES, et l'écran les dit « 1,25 kg ».
+   */
+  readonly saleUnit: OrderSaleUnit;
   /**
    * « 4 tourneuses » — la seule traduction utile d'une quantité au fournil. Là
    * où un bon de commande met un montant, la fiche met un matériel.
@@ -202,6 +209,8 @@ export interface WorkshopGroup {
 export interface WorkshopDriftLine {
   readonly sku: string;
   readonly productName: string;
+  /** `weight` : `from` et `to` sont des grammes (P6). */
+  readonly saleUnit: OrderSaleUnit;
   /** Ce que la fiche affiche aujourd'hui. `0` = un article entièrement neuf. */
   readonly from: number;
   /** Ce qu'elle afficherait après retirage. */

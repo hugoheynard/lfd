@@ -1,4 +1,5 @@
 import type { ContentLocale } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import type { ShortfallQuantity } from "../entities/order-shortfall.js";
 
@@ -13,6 +14,8 @@ export interface ShortfallLetterSubject {
   readonly lines: readonly ShortfallQuantity[];
   /** Le nom de chaque article, tel que la commande l'a figé. */
   readonly names: ReadonlyMap<string, string>;
+  /** L'unité de chaque article, telle que la commande l'a figée (P6). */
+  readonly units: ReadonlyMap<string, SaleUnit>;
 }
 
 /**

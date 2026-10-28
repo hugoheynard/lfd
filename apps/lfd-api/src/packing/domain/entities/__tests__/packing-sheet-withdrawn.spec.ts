@@ -28,7 +28,7 @@ function sheet(
     reference: "ORD-0001",
     packed: overrides.packed ?? null,
     containers: 0,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, packed: null }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 4, packed: null, saleUnit: "piece" }],
     containerMode: "listed",
     containerList: overrides.containerList ?? [],
     fulfillmentMethod: "pickup",

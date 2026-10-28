@@ -4,7 +4,7 @@ import type { DeliveryIncidentView, DeliveryStopOrderState } from "./delivery-do
 import type { DeliveryRunSheetShortfallView } from "./delivery-run-sheet.js";
 import type { DeparturePointView } from "./delivery-settings.js";
 import type { StopDecisionView } from "./delivery-stop-decision.js";
-import type { FulfillmentSource } from "./order.js";
+import type { FulfillmentSource, OrderSaleUnit } from "./order.js";
 import type { OrderClientele } from "./order-handover.js";
 
 /**
@@ -124,7 +124,9 @@ export interface MyDeliverySheetLineView {
   readonly sku: string;
   /** Le nom figé à la commande. */
   readonly name: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits « 1,25 kg » (P6). */
   readonly quantity: number;
+  readonly saleUnit: OrderSaleUnit;
   /** Le produit demande le froid (fiche du référentiel) ; `false` : rien de déclaré. */
   readonly requiresCold: boolean;
 }

@@ -10,12 +10,15 @@ import {
 } from "./packing-container.mapper.js";
 import { PackingSheetRepository } from "../domain/ports/packing-sheet.repository.js";
 import { assertInsideUnitOfWork } from "./packing-lock.js";
+import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Une ligne de `packing_line`, telle qu'on la relit. */
 interface LineRow {
   readonly sku: string;
   readonly productName: string;
   readonly quantity: number;
+  /** `TEXT` contraint (`packing_line_sale_unit_check`). */
+  readonly saleUnit: string;
   readonly packedAt: Date | null;
   readonly packedBy: string | null;
   readonly packedInitials: string;
@@ -26,6 +29,7 @@ function lineOf(row: LineRow): SheetLine {
     sku: row.sku,
     productName: row.productName,
     quantity: row.quantity,
+    saleUnit: packingSaleUnitOf(row.sku, row.saleUnit),
     // Le CHECK de la table interdit l'un sans l'autre.
     packed:
       row.packedAt === null || row.packedBy === null
@@ -69,6 +73,7 @@ export class PrismaPackingSheetRepository extends PackingSheetRepository {
             sku: true,
             productName: true,
             quantity: true,
+            saleUnit: true,
             packedAt: true,
             packedBy: true,
             packedInitials: true,

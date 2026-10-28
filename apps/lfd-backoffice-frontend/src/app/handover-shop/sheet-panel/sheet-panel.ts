@@ -20,6 +20,7 @@ import { AdminOrdersService } from '../../commandes/orders.service';
 import { saveBlob } from '../../shared/download/save-blob';
 import { formatWindow } from '../handover-queue';
 import { MissingItems } from '../missing-items/missing-items';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * Ce que la file remet au bon : la commande déjà lue par le rail, **dans la vue
@@ -83,6 +84,7 @@ const PLACED_AT = new Intl.DateTimeFormat('fr-FR', {
   selector: 'app-sheet-panel',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     FoldButtonComponent,
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
@@ -148,8 +150,9 @@ export class SheetPanel implements FoldPanelContent<SheetPanelData> {
     () => this.data()?.abandoned ?? [],
   );
 
+  // Un article au poids compte pour une ligne, jamais ses grammes (P6).
   protected readonly totalUnits = computed<number>(() =>
-    this.lines().reduce((sum, line) => sum + line.quantity, 0),
+    this.lines().reduce((sum, line) => sum + (line.saleUnit === 'weight' ? 1 : line.quantity), 0),
   );
 
   /**

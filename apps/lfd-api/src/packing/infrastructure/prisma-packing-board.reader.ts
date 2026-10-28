@@ -15,6 +15,7 @@ import {
 import { reservedOf } from "../domain/services/stock-reservations.js";
 import { CONTAINER_SELECT, containerModeOf, containerOf } from "./packing-container.mapper.js";
 import { reservationsOn } from "./packing-stock-reservation.rows.js";
+import { packingSaleUnitOf } from "./sale-unit.column.js";
 
 /** Ce qu'on relit d'une commande pour le poste. */
 const ORDER_SELECT = {
@@ -40,6 +41,7 @@ const ORDER_SELECT = {
       sku: true,
       productName: true,
       quantity: true,
+      saleUnit: true,
       packedAt: true,
       packedBy: true,
       packedInitials: true,
@@ -118,6 +120,7 @@ interface OrderRow {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    readonly saleUnit: string;
     readonly packedAt: Date | null;
     readonly packedBy: string | null;
     readonly packedInitials: string;
@@ -151,6 +154,7 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
+      saleUnit: packingSaleUnitOf(line.sku, line.saleUnit),
       packed:
         line.packedAt === null || line.packedBy === null
           ? null

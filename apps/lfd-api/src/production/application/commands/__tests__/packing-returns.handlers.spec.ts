@@ -48,7 +48,7 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: SKU, productName: "Croissant", quantity: 30 }],
+  lines: [{ sku: SKU, productName: "Croissant", quantity: 30, saleUnit: "piece" }],
 };
 
 /** Arrêtée par le binaire de K2 : colisée au colisage. */

@@ -12,7 +12,7 @@ import { OrderShortfallDecision } from './order-shortfall-decision';
 /** Recopiées à l'écran, jamais comparées à l'horloge. */
 const AWAITING: AdminOrderShortfall = {
   reportedAt: '2030-01-10T05:30:00.000Z',
-  lines: [{ sku: 'CRO', due: 12, packed: 9 }],
+  lines: [{ sku: 'CRO', due: 12, packed: 9, saleUnit: 'piece' }],
   decision: null,
 };
 const DECIDED: AdminOrderShortfall = {

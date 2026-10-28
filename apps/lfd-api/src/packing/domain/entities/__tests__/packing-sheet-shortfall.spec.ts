@@ -23,8 +23,8 @@ function sheet(mode: ContainerMode = "listed", sealed = false): PackingSheet {
     packed: sealed ? MARK : null,
     containers: 0,
     lines: [
-      { sku: "CRO", productName: "Croissant", quantity: 12, packed: null },
-      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, packed: null },
+      { sku: "CRO", productName: "Croissant", quantity: 12, packed: null, saleUnit: "piece" },
+      { sku: "PAC", productName: "Pain au chocolat", quantity: 6, packed: null, saleUnit: "piece" },
     ],
     containerMode: mode,
     containerList: [],

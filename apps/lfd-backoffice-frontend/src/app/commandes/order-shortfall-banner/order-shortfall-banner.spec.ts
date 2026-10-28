@@ -8,8 +8,8 @@ import { OrderShortfallBanner } from './order-shortfall-banner';
 const SHORTFALL: AdminOrderShortfall = {
   reportedAt: '2030-01-10T05:30:00.000Z',
   lines: [
-    { sku: 'CRO', due: 12, packed: 9 },
-    { sku: 'PAC', due: 6, packed: 6 },
+    { sku: 'CRO', due: 12, packed: 9, saleUnit: 'piece' },
+    { sku: 'PAC', due: 6, packed: 6, saleUnit: 'piece' },
   ],
   decision: null,
 };

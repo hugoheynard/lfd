@@ -45,7 +45,7 @@
         <tbody>
           @for (line of lines(); track line.sku) {
             <tr>
-              <td class="sh-qty">{{ line.quantity }}</td>
+              <td class="sh-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</td>
               <td>{{ line.productName }}</td>
               <td class="sh-sku">{{ line.sku }}</td>
               <td class="sh-tick" aria-hidden="true"></td>

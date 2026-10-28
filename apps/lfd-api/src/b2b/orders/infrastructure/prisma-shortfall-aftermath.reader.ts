@@ -1,3 +1,4 @@
+import type { SaleUnit } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import {
@@ -9,6 +10,7 @@ import {
 } from "../../../packing/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { ShortfallQuantity } from "../domain/entities/order-shortfall.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { shortfallLinesOf } from "./prisma-order-shortfall.repository.js";
 
 /** Ce qu'il faut d'un BL vivant pour savoir s'il est imprimé à sa version courante. */
@@ -56,7 +58,7 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
     const [lines, notes] = await Promise.all([
       this.prisma.orderLine.findMany({
         where: { orderId: { in: ids } },
-        select: { orderId: true, sku: true, productNameSnapshot: true },
+        select: { orderId: true, sku: true, productNameSnapshot: true, saleUnit: true },
       }),
       this.prisma.deliveryNote.findMany({
         where: { orderId: { in: ids }, status: { not: "voided" } },
@@ -72,6 +74,11 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
           lines
             .filter((line) => line.orderId === row.orderId)
             .map((l) => [l.sku, l.productNameSnapshot]),
+        ),
+        new Map(
+          lines
+            .filter((line) => line.orderId === row.orderId)
+            .map((l) => [l.sku, orderLineSaleUnitOf(l.sku, l.saleUnit)]),
         ),
       ),
       deliveryNote: printStateOf(
@@ -90,13 +97,18 @@ export class PrismaShortfallAftermathReader extends ShortfallAftermathReader {
 export function abandonedOf(
   lines: readonly ShortfallQuantity[],
   names: ReadonlyMap<string, string>,
+  units: ReadonlyMap<string, SaleUnit>,
 ): readonly AbandonedLine[] {
   return lines
     .filter((line) => line.packed < line.due)
     .map((line) => ({
       sku: line.sku,
       productName: names.get(line.sku) ?? line.sku,
+      // Au poids, des grammes : le dû moins le lot qui était au bac (P6).
       quantity: line.due - line.packed,
+      // Un article absent des lignes n'a pas d'unité connue : des pièces,
+      // ce qu'était toute ligne d'avant la vente au poids.
+      saleUnit: units.get(line.sku) ?? "piece",
     }));
 }
 

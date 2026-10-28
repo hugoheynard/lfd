@@ -28,7 +28,7 @@ const ORDER: PackingListOrder = {
   dueAt: "07:30",
   clientele: null,
   siteId: null,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
 };
 
 describe("PackingListDrawnEvent", () => {

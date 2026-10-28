@@ -25,7 +25,7 @@ function order(orderId = "ord_1", quantity = 40): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 
@@ -40,6 +40,11 @@ const RESUPPLY: PlacedResupply = {
     { sku: "PAIN-001", productName: "Baguette", quantity: 5 },
   ],
 };
+
+/** Un réassort tel que la journée le fige : à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2). */
+function frozen<T extends { readonly lines: readonly object[] }>(resupply: T): T {
+  return { ...resupply, lines: resupply.lines.map((line) => ({ ...line, saleUnit: "piece" })) };
+}
 
 function opened(): ProductionDay {
   return ProductionDay.open(ServiceDay.of("2026-09-08"));
@@ -56,7 +61,7 @@ describe("ProductionDay — le réassort figé à l'arrêt (R3a)", () => {
     day.close([order()], NO_WITHDRAWAL, AT, null, [RESUPPLY]);
 
     expect(day.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
-    expect(day.resupplies).toEqual([RESUPPLY]);
+    expect(day.resupplies).toEqual([frozen(RESUPPLY)]);
     expect(quantities(day)).toEqual([
       ["PAIN-001", 5],
       ["VIE-001", 52],
@@ -94,7 +99,7 @@ describe("ProductionDay — le réassort figé à l'arrêt (R3a)", () => {
     const absorbed = day.retake([order(), order("ord_2", 10)], NO_WITHDRAWAL, LATER, "s1", null);
 
     expect(absorbed).toBe(1);
-    expect(day.resupplies).toEqual([RESUPPLY]);
+    expect(day.resupplies).toEqual([frozen(RESUPPLY)]);
     expect(quantities(day)).toEqual([
       ["PAIN-001", 5],
       ["VIE-001", 62],
@@ -119,7 +124,7 @@ describe("ProductionDay — le réassort figé à l'arrêt (R3a)", () => {
     const again = ProductionDay.fromSnapshot(day.toSnapshot());
     const { resupplies: _dropped, ...before } = day.toSnapshot();
 
-    expect(again.resupplies).toEqual([RESUPPLY]);
+    expect(again.resupplies).toEqual([frozen(RESUPPLY)]);
     expect(ProductionDay.fromSnapshot(before).resupplies).toEqual([]);
   });
 });

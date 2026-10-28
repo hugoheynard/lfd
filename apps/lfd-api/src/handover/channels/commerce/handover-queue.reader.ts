@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 /**
  * **Ce que le comptoir attend aujourd'hui** — la file, telle que le commerce la
  * connaît.
@@ -135,5 +137,7 @@ export interface HandoverWindow {
 export interface HandoverAbandonedLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }

@@ -142,7 +142,7 @@
             <ul class="hd-lines">
               @for (line of lines(); track line.sku) {
                 <li class="hd-line">
-                  <span class="hd-qty">{{ line.quantity }}</span>
+                  <span class="hd-qty">{{ line.quantity | saleQuantity: line.saleUnit }}</span>
                   <span class="hd-name">{{ line.productName }}</span>
                   <span class="hd-sku">{{ line.sku }}</span>
                 </li>

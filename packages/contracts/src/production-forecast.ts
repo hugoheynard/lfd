@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **Le prévisionnel du fournil** — la matrice `produits × jours`.
  *
@@ -115,6 +117,12 @@ export interface ProductionForecastLine {
   readonly sku: string;
   /** Le nom **figé à la commande** — le seul dont on soit sûr qu'il a été vendu. */
   readonly productName: string;
+  /**
+   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : `weight` = ses
+   * quantités sont des grammes. Les totaux de colonne, eux, comptent un
+   * article au poids pour une pièce.
+   */
+  readonly saleUnit: OrderSaleUnit;
   /** Même longueur que `days`, dans le même ordre. Un trou vaut `0`. */
   readonly quantities: readonly number[];
   /** La part des réassorts dans `quantities`, jour par jour (lot R3d). */

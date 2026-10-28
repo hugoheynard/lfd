@@ -29,6 +29,7 @@ import { contactNameOf, telHrefOf, windowLabel } from '../run-sheet';
 import { decisionBadgeOf } from '../stop-decisions';
 import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
 import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /**
  * **Un arrêt de « Ma tournée »** — ce qu'il faut savoir à la porte
@@ -64,6 +65,7 @@ import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/
   selector: 'app-my-round-stop',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldCardComponent,

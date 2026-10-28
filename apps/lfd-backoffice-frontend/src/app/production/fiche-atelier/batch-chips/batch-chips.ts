@@ -5,12 +5,15 @@ import {
   type FoldInlineConfirmLabels,
 } from 'fold-ng';
 
-import type { WorkshopBatch } from '@lfd/contracts';
+import type { OrderSaleUnit, WorkshopBatch } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 import { hourLabel } from '../../worksheet-day';
 
 /** Une fournée telle que la puce la dit : « 5 h 10 · CR · 60 ». */
 interface ShownBatch {
+  /** La quantité de la fournée, dans l'unité de la ligne : « 24 » ou « 1,25 kg ». */
+  readonly amount: string;
   readonly batch: WorkshopBatch;
   readonly said: string;
   /** « ↩ 24 en retour » : les pièces que le colisage doit encore rendre. */
@@ -41,17 +44,21 @@ interface ShownBatch {
 export class BatchChips {
   readonly batches = input.required<readonly WorkshopBatch[]>();
   readonly busy = input(false);
+  /** L'unité de la ligne (P6) : au poids, une fournée se dit « 1,25 kg ». */
+  readonly saleUnit = input<OrderSaleUnit>('piece');
   readonly cancelled = output<WorkshopBatch>();
 
   protected readonly shown = computed<readonly ShownBatch[]>(() =>
     this.batches().map((batch) => {
+      const unit = this.saleUnit();
       const hour = hourLabel(batch.recordedAt) ?? '';
       const pending = Math.min(batch.pendingReturn ?? 0, batch.quantity);
-      const qty = String(batch.quantity - pending);
+      const qty = saleQuantityLabel(batch.quantity - pending, unit);
       return {
         batch,
-        said: [hour, batch.initials ?? '—', String(batch.quantity)].join(' · '),
-        returning: pending > 0 ? `↩ ${String(pending)} en retour` : null,
+        amount: saleQuantityLabel(batch.quantity, unit),
+        said: [hour, batch.initials ?? '—', saleQuantityLabel(batch.quantity, unit)].join(' · '),
+        returning: pending > 0 ? `↩ ${saleQuantityLabel(pending, unit)} en retour` : null,
         settled: pending >= batch.quantity,
         labels: {
           confirm: `Annuler ${qty} ?`,

@@ -146,7 +146,7 @@
                 <tbody>
                   @for (line of group.lines; track line.sku) {
                     <tr>
-                      <td class="pr-qty">{{ line.quantity }}</td>
+                      <td class="pr-qty">{{ line.label }}</td>
                       <td>
                         <span class="pr-product">{{ line.productName }}</span>
                         @if (line.resupplyQuantity > 0) {

@@ -30,6 +30,7 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
         surplus: 0,
         batches: [],
         container: null,
+        saleUnit: 'piece',
       },
     ],
     done: [
@@ -46,6 +47,7 @@ function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
         surplus: 0,
         batches: [],
         container: null,
+        saleUnit: 'piece',
       },
     ],
     ...overrides,

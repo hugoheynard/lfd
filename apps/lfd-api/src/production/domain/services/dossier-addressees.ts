@@ -4,6 +4,7 @@ import type {
   ProductionResupplySnapshot,
 } from "../entities/production-day.js";
 import type { StoredDossierRecipient } from "../ports/dossier-recipients.reader.js";
+import { piecesOfLines, type TalliedLine } from "./line-tally.js";
 
 /**
  * **À qui le dossier part, ce jour-là** (plan
@@ -92,8 +93,9 @@ export interface DossierCounts {
   readonly pieces: number;
 }
 
-function piecesOf(lines: readonly { readonly quantity: number }[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity, 0);
+/** Un article au poids compte pour une ligne : l'e-mail annonce des pièces (P6). */
+function piecesOf(lines: readonly TalliedLine[]): number {
+  return piecesOfLines(lines);
 }
 
 /**

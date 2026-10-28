@@ -34,12 +34,13 @@ function count(
     sku,
     productName,
     quantity,
+    saleUnit: "piece",
     done: initials === null ? null : { at: SORTIE_DU_FOUR, by: "staff-1", initials },
   };
 }
 
 function demanded(sku: string, productName: string, quantity: number): DemandedItem {
-  return { sku, productName, quantity };
+  return { sku, productName, quantity, saleUnit: "piece" };
 }
 
 /** Une commande arrivée après le tirage — la matière de l'écart. */
@@ -54,7 +55,12 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: lines.map(([sku, productName, quantity]) => ({ sku, productName, quantity })),
+    lines: lines.map(([sku, productName, quantity]) => ({
+      sku,
+      productName,
+      quantity,
+      saleUnit: "piece",
+    })),
   };
 }
 

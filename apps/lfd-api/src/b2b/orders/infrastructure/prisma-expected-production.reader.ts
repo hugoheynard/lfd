@@ -6,7 +6,15 @@ import {
   type ExpectedDayProduction,
   type ServiceRange,
 } from "../../../production/channels/commerce/index.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { planWhere } from "./plan-filter.js";
+
+/** Ce qu'un article pèse une journée, en cours de pli. */
+interface ExpectedSum {
+  readonly productName: string;
+  readonly quantity: number;
+  readonly saleUnit: "piece" | "weight";
+}
 
 /**
  * **Ce que le commerce annonce au fournil pour les jours qui viennent.**
@@ -60,11 +68,11 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
       },
       select: {
         requestedDeliveryDate: true,
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
       },
     });
 
-    const byDay = new Map<string, Map<string, { productName: string; quantity: number }>>();
+    const byDay = new Map<string, Map<string, ExpectedSum>>();
     const orderCounts = new Map<string, number>();
     for (const row of rows) {
       if (row.requestedDeliveryDate === null) {
@@ -72,12 +80,15 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
       }
       const day = row.requestedDeliveryDate.toISOString().slice(0, 10);
       orderCounts.set(day, (orderCounts.get(day) ?? 0) + 1);
-      const items = byDay.get(day) ?? new Map<string, { productName: string; quantity: number }>();
+      const items = byDay.get(day) ?? new Map<string, ExpectedSum>();
       for (const line of row.lines) {
         const known = items.get(line.sku);
         items.set(line.sku, {
           productName: known?.productName ?? line.productNameSnapshot,
+          // Une somme par article : un article n'a qu'une unité (figée à la
+          // publication), ses grammes s'additionnent entre eux (P6).
           quantity: (known?.quantity ?? 0) + line.quantity,
+          saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
         });
       }
       byDay.set(day, items);
@@ -89,6 +100,7 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
         sku,
         productName: item.productName,
         quantity: item.quantity,
+        saleUnit: item.saleUnit,
       })),
       // Compté sur les LIGNES de commande lues, et non par une requête de plus :
       // une commande sans ligne ne pèse rien au fournil, et n'a rien à faire

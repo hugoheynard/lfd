@@ -63,7 +63,12 @@ describe("dossierAddresseesOf", () => {
 
 describe("dossierCountsOf", () => {
   it("compte les commandes, par mode, et toutes leurs pièces", () => {
-    const line = (quantity: number) => ({ sku: "VIE-001", productName: "Croissant", quantity });
+    const line = (quantity: number) => ({
+      sku: "VIE-001",
+      productName: "Croissant",
+      quantity,
+      saleUnit: "piece" as const,
+    });
     const order = (
       orderId: string,
       quantities: readonly number[],
@@ -109,8 +114,8 @@ describe("dossierCountsOf", () => {
       name: null,
       servedByTransfer: true,
       lines: [
-        { sku: "CRO", productName: "Croissant", quantity: 12 },
-        { sku: "PAC", productName: "Pain au chocolat", quantity: 6 },
+        { sku: "CRO", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
+        { sku: "PAC", productName: "Pain au chocolat", quantity: 6, saleUnit: "piece" as const },
       ],
     };
     expect(dossierCountsOf([], [resupply])).toEqual({

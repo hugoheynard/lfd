@@ -5,6 +5,7 @@ import {
   type CatalogFamilyView,
 } from "@lfd/contracts";
 
+import { linePieces } from "./line-tally.js";
 import type { WorksheetLine } from "./production-worksheet.js";
 
 /**
@@ -112,10 +113,7 @@ function groupOf(
   const totalUnits = unitsOf(lines);
   // Σ min(produced, quantity) (§4 des fournées) : une ligne commencée compte
   // ce qui est sorti, et le surplus ne gonfle pas l'avancement.
-  const doneUnits = lines.reduce(
-    (total, line) => total + Math.min(line.produced, line.quantity),
-    0,
-  );
+  const doneUnits = lines.reduce((total, line) => total + doneUnitsOf(line), 0);
   return {
     key,
     family,
@@ -132,6 +130,19 @@ function groupOf(
   };
 }
 
+/**
+ * Les compteurs d'une fiche additionnent des articles différents : une ligne
+ * au poids y pèse une pièce, jamais ses grammes (P6 de
+ * `pricing/plan-vente-au-poids.md`).
+ */
 function unitsOf(lines: readonly WorksheetLine[]): number {
-  return lines.reduce((total, line) => total + line.quantity, 0);
+  return lines.reduce((total, line) => total + linePieces(line), 0);
+}
+
+/** Au poids, la pièce que pèse la ligne n'est faite que quand tout son poids est sorti. */
+function doneUnitsOf(line: WorksheetLine): number {
+  if (line.saleUnit === "weight") {
+    return line.produced >= line.quantity ? linePieces(line) : 0;
+  }
+  return Math.min(line.produced, line.quantity);
 }

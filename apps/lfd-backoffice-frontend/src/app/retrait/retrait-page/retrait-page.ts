@@ -14,6 +14,7 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import { FoldButtonComponent, FoldCalloutComponent, FoldLoadingStateComponent } from 'fold-ng';
 
 import { HandoverService } from '../handover.service';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /** Où en est l'écran : on charge, on a échoué, ou on tient une commande. */
 type LoadState = 'loading' | 'ready' | 'error';
@@ -33,7 +34,13 @@ type LoadState = 'loading' | 'ready' | 'error';
 @Component({
   selector: 'app-retrait-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent, FoldLoadingStateComponent, RouterLink],
+  imports: [
+    SaleQuantityPipe,
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldLoadingStateComponent,
+    RouterLink,
+  ],
   templateUrl: './retrait-page.html',
   styleUrl: './retrait-page.scss',
 })

@@ -64,6 +64,7 @@ function line(over: Partial<OrderHandoverLine> = {}): OrderHandoverLine {
     sku: 'CROI-NAT',
     productName: 'Croissant nature',
     quantity: 12,
+    saleUnit: 'piece',
     ...over,
   };
 }
@@ -159,6 +160,7 @@ function packingLine(sku: string, overrides: Partial<PackingLine> = {}): Packing
     sku,
     productName: sku,
     quantity: 1,
+    saleUnit: 'piece',
     packed: false,
     initials: null,
     packedAt: null,
@@ -452,7 +454,9 @@ describe('HandoverDetail', () => {
   it('🔴 une commande incomplète est annoncée AVANT le sac, article par article', async () => {
     const fixture = await render(
       entry({
-        abandonedRemainder: [{ sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2 }],
+        abandonedRemainder: [
+          { sku: 'CROI-NAT', productName: 'Croissant nature', quantity: 2, saleUnit: 'piece' },
+        ],
       }),
     );
 

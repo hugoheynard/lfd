@@ -7,6 +7,7 @@ import type { DayDossier } from "./day-dossier.js";
 import { drawDossierCover } from "./day-dossier-cover-pdf.js";
 import { drawRecapGroup } from "./day-dossier-recap-pdf.js";
 import { dossierSheetHeadOf, type DossierSheetHead } from "./dossier-sheet-head.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
 import { drawResupplySheet } from "./day-dossier-resupplies-pdf.js";
 import {
   LEFT,
@@ -215,14 +216,15 @@ function drawSheet(
   const head = dossierSheetHeadOf(order);
   y = drawHead(doc, order, head, y + 6 * MM, color);
   rule(doc, y, 2);
-  const pieces = order.lines.reduce((sum, line) => sum + line.quantity, 0);
+  // Un article au poids compte pour une ligne dans ce total (P6).
+  const pieces = piecesOfLines(order.lines);
   y += 5 * MM;
   putCaps(doc, `À PRÉPARER — ${plural(pieces, "pièce")}`, LEFT, y);
   putCaps(doc, "FAIT", RIGHT - 8 * MM, y);
   y += 6 * MM;
   for (const line of order.lines) {
     y = place.room(y, 10 * MM);
-    put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 18, bold: true });
+    put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 70 * MM });
     putRight(doc, line.sku, RIGHT - 14 * MM, y + 1 * MM, 9);
     // La case à cocher au stylo : on coche en remplissant le bac.

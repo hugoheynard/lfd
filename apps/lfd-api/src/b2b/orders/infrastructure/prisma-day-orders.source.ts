@@ -6,6 +6,7 @@ import type { OrderSheetDetails, ServiceDay } from "../../../production/channels
 import { DayOrdersSource, type SourcedDayOrder } from "../domain/ports/day-orders.source.js";
 import { contactOf, pickupLabelOf } from "./atelier-sheet-parts.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import { siteIdOf } from "./pickup-site.parse.js";
 import { planWhere } from "./plan-filter.js";
 
@@ -80,7 +81,7 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
           },
         },
         placedBy: { select: { firstName: true, lastName: true, email: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true } },
+        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
       },
     });
 
@@ -104,6 +105,7 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
           sku: line.sku,
           productName: line.productNameSnapshot,
           quantity: line.quantity,
+          saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
         })),
         sheetDetails: sheetDetailsOf(row),
       },

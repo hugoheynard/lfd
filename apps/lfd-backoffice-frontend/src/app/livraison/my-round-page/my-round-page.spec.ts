@@ -747,7 +747,7 @@ describe('MyRoundPage — elle suit le colisage (PL4)', () => {
       sheet: [mySheetLineOf({ sku: 'CRO-01', name: 'Croissant', quantity: 3 })],
       shortfall: {
         remainder: 'abandoned',
-        lines: [{ sku: 'CRO-01', productName: 'Croissant', quantity: 2 }],
+        lines: [{ sku: 'CRO-01', productName: 'Croissant', quantity: 2, saleUnit: 'piece' }],
       },
     });
     const { element } = await boot({ round: myRoundOf({ stops: [stop, myStopOf()] }) });

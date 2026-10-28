@@ -30,6 +30,7 @@ function sheet(held: number, overrides: Partial<PackingSheetSnapshot> = {}): Pac
         productName: "Croissant",
         quantity: 4,
         packed: held >= 4 ? { at: FIRST, by: "s1", initials: "" } : null,
+        saleUnit: "piece",
       },
     ],
     containerMode: "listed",

@@ -95,6 +95,7 @@ const WORKSHEET: ProductionWorksheetView = {
           surplus: 0,
           batches: [],
           container: null,
+          saleUnit: 'piece',
         },
       ],
     },
@@ -141,6 +142,7 @@ function packingView(closedAt: string | null = 'x'): ProductionPackingView {
                   sku: 'e',
                   productName: 'Éclair',
                   quantity: 12,
+                  saleUnit: 'piece',
                   packed: false,
                   initials: null,
                   packedAt: null,
@@ -406,7 +408,9 @@ describe('SupervisionPage', () => {
       customerName: 'Hôtel du Parc',
       fulfillmentMethod: 'delivery' as const,
       reportedAt: '2026-09-25T06:00:00.000Z',
-      lines: [{ sku: 'CRO', productName: 'Croissant', due: 3, packed: 1 }],
+      lines: [
+        { sku: 'CRO', productName: 'Croissant', due: 3, packed: 1, saleUnit: 'piece' as const },
+      ],
     };
     const one = await mount({
       day: () => Promise.resolve({ ...DAY, awaitingDecision: [shortfall] }),

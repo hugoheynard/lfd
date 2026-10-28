@@ -16,6 +16,7 @@ function line(over: Partial<WorkshopLine> = {}): WorkshopLine {
     sku: 'CRO',
     productName: 'Croissant au beurre',
     quantity: 240,
+    saleUnit: 'piece',
     containerLabel: null,
     done: false,
     initials: null,

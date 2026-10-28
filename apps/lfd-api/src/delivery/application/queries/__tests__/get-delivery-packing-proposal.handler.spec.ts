@@ -43,10 +43,10 @@ const LINES = new FixedOrderLines(
     [
       "o2",
       [
-        { sku: "VIE-001", name: "Croissant", quantity: 6 },
-        { sku: "TAR-001", name: "Tarte", quantity: 2 },
-        { sku: "VIE-001", name: "Croissant", quantity: 4 },
-        { sku: "PAI-009", name: "Pain retiré", quantity: 1 },
+        { sku: "VIE-001", name: "Croissant", quantity: 6, saleUnit: "piece" as const },
+        { sku: "TAR-001", name: "Tarte", quantity: 2, saleUnit: "piece" as const },
+        { sku: "VIE-001", name: "Croissant", quantity: 4, saleUnit: "piece" as const },
+        { sku: "PAI-009", name: "Pain retiré", quantity: 1, saleUnit: "piece" as const },
       ],
     ],
   ]),
@@ -69,9 +69,27 @@ describe("GetDeliveryPackingProposalHandler", () => {
 
     expect(view.reference).toBe("ORD-2");
     expect(view.lines).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 10, requiresCold: false },
-      { sku: "TAR-001", name: "Tarte", quantity: 2, requiresCold: true },
-      { sku: "PAI-009", name: "Pain retiré", quantity: 1, requiresCold: false },
+      {
+        sku: "VIE-001",
+        name: "Croissant",
+        quantity: 10,
+        requiresCold: false,
+        saleUnit: "piece" as const,
+      },
+      {
+        sku: "TAR-001",
+        name: "Tarte",
+        quantity: 2,
+        requiresCold: true,
+        saleUnit: "piece" as const,
+      },
+      {
+        sku: "PAI-009",
+        name: "Pain retiré",
+        quantity: 1,
+        requiresCold: false,
+        saleUnit: "piece" as const,
+      },
     ]);
     expect(view.bins).toEqual([
       {

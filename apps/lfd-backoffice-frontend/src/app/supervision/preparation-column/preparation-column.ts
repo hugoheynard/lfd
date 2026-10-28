@@ -37,6 +37,7 @@ import {
 import { countLabel } from '../supervision-labels';
 import { NO_MATCHES } from '../supervision-search';
 import { SUPERVISION_LINKS } from '../supervision-links';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 
 /** Une ligne du détail, et la liste du serveur qui la porte. */
 interface ShelfLine {
@@ -59,6 +60,7 @@ interface ShelfLine {
   selector: 'app-preparation-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    SaleQuantityPipe,
     RouterLink,
     FoldBadgeComponent,
     FoldButtonComponent,

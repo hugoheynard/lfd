@@ -44,7 +44,9 @@ export class BreadForEveryOrder extends DeliveryOrderLinesReader {
       return Promise.resolve([]);
     }
     const quantity = this.quantities.get(orderId) ?? 1;
-    return Promise.resolve([{ sku: BREAD_SKU, name: "Pain", quantity }]);
+    return Promise.resolve([
+      { sku: BREAD_SKU, name: "Pain", quantity, saleUnit: "piece" as const },
+    ]);
   }
 }
 

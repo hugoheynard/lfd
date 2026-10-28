@@ -133,14 +133,14 @@ describe("GetProductionForecastHandler", () => {
     const plan = new PlanStub([
       {
         day: "2026-09-03",
-        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 186 }],
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 186, saleUnit: "piece" }],
         orderCount: 12,
       },
     ]);
     const expected = new ExpectedStub([
       {
         day: "2026-09-05",
-        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 410 }],
+        items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 410, saleUnit: "piece" }],
         orderCount: 47,
       },
     ]);
@@ -184,6 +184,7 @@ describe("GetProductionForecastHandler", () => {
       {
         sku: "PAI-BAG",
         productName: "Baguette",
+        saleUnit: "piece",
         quantities: [186, 0, 410],
         resupplyQuantities: [0, 0, 0],
         totalUnits: 596,
@@ -214,7 +215,9 @@ describe("GetProductionForecastHandler", () => {
   });
 
   it("compte les réassorts à part : figés d'une journée close, envoyés d'une journée ouverte", async () => {
-    const baguettes = (quantity: number) => [{ sku: "PAI-BAG", productName: "Baguette", quantity }];
+    const baguettes = (quantity: number) => [
+      { sku: "PAI-BAG", productName: "Baguette", quantity, saleUnit: "piece" as const },
+    ];
     // Le 3 est clos : ses 6 baguettes de réassort sont DÉJÀ dans les 186 du compte (R3a).
     const plan = new PlanStub(
       [{ day: "2026-09-03", items: baguettes(186), orderCount: 12 }],
@@ -247,7 +250,7 @@ describe("GetProductionForecastHandler", () => {
   describe("l'état de chaque journée, à l'heure de la maison (A3)", () => {
     const demand = (day: string, orderCount: number): ExpectedDayProduction => ({
       day,
-      items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 10 }],
+      items: [{ sku: "PAI-BAG", productName: "Baguette", quantity: 10, saleUnit: "piece" }],
       orderCount,
     });
 

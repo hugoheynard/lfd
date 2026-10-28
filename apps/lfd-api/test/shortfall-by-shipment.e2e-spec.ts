@@ -133,7 +133,9 @@ async function drawRemainderSheet(order: Drawn): Promise<void> {
     dueAt: null,
     clientele: "pro",
     siteId: null,
-    lines: [{ sku: CROISSANT, productName: "Croissant", quantity: REMAINDER_PIECES }],
+    lines: [
+      { sku: CROISSANT, productName: "Croissant", quantity: REMAINDER_PIECES, saleUnit: "piece" },
+    ],
   }).durableFact();
   await ctx.app
     .get(OnPackingListDrawn)

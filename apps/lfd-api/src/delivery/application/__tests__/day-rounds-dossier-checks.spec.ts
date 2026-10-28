@@ -86,7 +86,9 @@ function subject() {
           lines: [],
           shortfall: {
             remainder: "abandoned" as const,
-            lines: [{ sku: "SKU-1", productName: "Baguette", quantity: 2 }],
+            lines: [
+              { sku: "SKU-1", productName: "Baguette", quantity: 2, saleUnit: "piece" as const },
+            ],
           },
         },
       ],

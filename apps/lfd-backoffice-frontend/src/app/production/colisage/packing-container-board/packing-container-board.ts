@@ -18,6 +18,7 @@ import type {
   PackingLine,
   PackingSheet,
 } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -244,6 +245,9 @@ export class PackingContainerBoard {
   protected readonly pieces = piecesLabel;
   protected readonly unallocated = unallocatedOf;
   protected readonly allocated = allocatedOf;
+
+  /** « 12 », ou « 1,25 kg » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+  protected readonly figure = saleQuantityLabel;
   protected readonly done = isLineInContainers;
 
   /** Une ligne de produit, ou la répartition d'un autre contenant. */
@@ -367,14 +371,18 @@ export class PackingContainerBoard {
       return;
     }
     const orderId = this.sheet().orderId;
-    this.ask({
-      gesture: 'drop',
-      title: `Déplacer « ${portion.productName} » vers ${containerTitle(to)}`,
-      confirmLabel: 'Déplacer ici',
-      max: portion.quantity,
-      submit: (quantity) =>
-        this.gestures.transfer(orderId, share.containerId, share.sku, toContainerId, quantity),
-    });
+    this.ask(
+      {
+        gesture: 'drop',
+        title: `Déplacer « ${portion.productName} » vers ${containerTitle(to)}`,
+        confirmLabel: 'Déplacer ici',
+        max: portion.quantity,
+        saleUnit: portion.saleUnit,
+        submit: (quantity) =>
+          this.gestures.transfer(orderId, share.containerId, share.sku, toContainerId, quantity),
+      },
+      portion.saleUnit === 'weight',
+    );
   }
 
   /** Le dépôt, sans le glisser : utile au clavier et dans les tests. */
@@ -390,6 +398,7 @@ export class PackingContainerBoard {
       title: `Mettre « ${line.productName} » dans ${containerTitle(target)}`,
       confirmLabel: 'Mettre dedans',
       max: unallocatedOf(line),
+      saleUnit: line.saleUnit,
       submit: (quantity) => this.gestures.allocate(orderId, containerId, sku, quantity),
     });
   }
@@ -401,22 +410,40 @@ export class PackingContainerBoard {
       return;
     }
     const orderId = this.sheet().orderId;
-    this.ask({
-      gesture: 'withdrawal',
-      title: `Retirer « ${share.productName} » de ${containerTitle(container)}`,
-      confirmLabel: 'Retirer',
-      max: share.quantity,
-      submit: (quantity) => this.gestures.withdraw(orderId, container.id, sku, quantity),
-    });
+    this.ask(
+      {
+        gesture: 'withdrawal',
+        title: `Retirer « ${share.productName} » de ${containerTitle(container)}`,
+        confirmLabel: 'Retirer',
+        max: share.quantity,
+        saleUnit: share.saleUnit,
+        submit: (quantity) => this.gestures.withdraw(orderId, container.id, sku, quantity),
+      },
+      share.saleUnit === 'weight',
+    );
   }
 
   protected async voidContainer(container: PackingContainerView): Promise<void> {
     await this.gestures.void(this.sheet().orderId, container.id);
   }
 
-  /** Ouvre la question « combien ? » ; le geste serveur reste celui du tableau. */
-  private ask(question: Omit<PackingQuantityDialogData, 'busy' | 'refusal'>): void {
+  /**
+   * Ouvre la question « combien ? » ; le geste serveur reste celui du tableau.
+   *
+   * Un lot au poids qu'on RETIRE ou qu'on DÉPLACE ne se demande pas : il part
+   * entier (`plan-vente-au-poids.md`, P6), et le serveur refuserait une part.
+   * Au dépôt, on demande encore — la réserve peut ne tenir qu'une partie du
+   * poids, et ce manque-là se signale en grammes.
+   */
+  private ask(
+    question: Omit<PackingQuantityDialogData, 'busy' | 'refusal'>,
+    wholeLot = false,
+  ): void {
     this.closeDialog();
+    if (wholeLot) {
+      void question.submit(question.max);
+      return;
+    }
     const data: PackingQuantityDialogData = {
       ...question,
       busy: this.gestures.busy,
