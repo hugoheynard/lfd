@@ -49,6 +49,12 @@ export class QuantityRail {
    */
   readonly min = input(0);
 
+  /**
+   * La quantité DITE, quand le nombre seul ne suffit pas — « 500 g » pour un
+   * article au poids (P4 de `plan-vente-au-poids.md`). `null` = le nombre.
+   */
+  readonly label = input<string | null>(null);
+
   readonly addLabel = input.required<string>();
   readonly removeLabel = input.required<string>();
 

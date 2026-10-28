@@ -26,6 +26,7 @@ import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
+import { quantityLabel, saleUnitOf } from '../sale-unit';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -173,7 +174,14 @@ export class ProductTile {
 
   protected readonly showsTtc = this.basis.showsTtc;
 
-  protected readonly price = computed(() => shelfPriceLabel(this.product(), this.showsTtc()));
+  /** La pastille : « 3 » pièces, ou « 500 g » au poids. */
+  protected readonly quantityText = computed(() =>
+    quantityLabel(this.quantity(), saleUnitOf(this.product())),
+  );
+
+  protected readonly price = computed(() =>
+    shelfPriceLabel(this.product(), this.showsTtc(), this.t().product.perKilogram),
+  );
 
   /**
    * **Le tarif catalogue barré**, ou `null` quand il n'y a rien à barrer.

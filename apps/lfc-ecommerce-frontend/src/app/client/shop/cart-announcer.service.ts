@@ -3,6 +3,7 @@ import { inject, Injectable, signal } from '@angular/core';
 import { ClientCart } from '../cart/client-cart.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { ShopCatalogue } from './shop-catalogue.store';
+import { quantityLabel, saleUnitOf } from './sale-unit';
 
 /**
  * **Ce que le panier vient de devenir, dit à voix haute** (RGAA 7.5, lot A2).
@@ -28,15 +29,16 @@ export class CartAnnouncer {
 
   /** Dit la quantité de cet article au panier, telle qu'elle est maintenant. */
   announce(sku: string): void {
-    const name = this.catalogue.itemOf(sku)?.name;
-    if (name === undefined) {
+    const item = this.catalogue.itemOf(sku);
+    if (item === null) {
       return;
     }
+    const name = item.name;
     const count = this.cart.quantityOf(sku);
     const shop = this.t().shop;
     this.said.set(
       count > 0
-        ? fill(shop.cartStatusCount, { name, count: String(count) })
+        ? fill(shop.cartStatusCount, { name, count: quantityLabel(count, saleUnitOf(item)) })
         : fill(shop.cartStatusRemoved, { name }),
     );
   }

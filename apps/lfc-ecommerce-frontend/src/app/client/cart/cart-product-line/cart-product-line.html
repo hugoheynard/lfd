@@ -9,6 +9,9 @@
     <span class="name">{{ name() }}</span>
   }
   <span class="unit">{{ unit() }}</span>
+  @if (weight(); as shown) {
+    <span class="unit" data-weight>{{ shown }}</span>
+  }
   @if (madeToOrder(); as limit) {
     <span class="made-to-order" data-made-to-order>{{ limit }}</span>
   }
@@ -28,8 +31,8 @@
   spinner="plusminus"
   controls="outside"
   integer
-  [min]="1"
-  [step]="1"
+  [min]="minimum()"
+  [step]="step()"
   [value]="quantity()"
   (valueChange)="onQuantity($event)"
 />

@@ -30,11 +30,15 @@ import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { OrderAdmissionStore } from './shop/order-admission.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
+import { isSoldByWeight, requestedLine, type SaleTerms } from './shop/sale-unit';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {
   readonly name: string;
+  /** Des pièces, ou des grammes si {@link saleUnit} vaut `weight`. */
   readonly quantity: number;
+  /** Absent = à la pièce (toute commande gardée avant P4 de `plan-vente-au-poids.md`). */
+  readonly saleUnit?: 'weight';
   /** En **centimes HT**, figé : le prix payé ce jour-là, pas celui d'aujourd'hui. */
   readonly unitPriceCents: number;
 }
@@ -390,6 +394,7 @@ export class ClientOrders {
       lines: lines.map((line) => ({
         name: line.product.name,
         quantity: line.quantity,
+        ...(isSoldByWeight(line.product) ? { saleUnit: 'weight' as const } : {}),
         // FIGÉ à la passation, en centimes HORS TAXE : une commande passée doit
         // dire le prix qu'elle a coûté, pas celui que le catalogue affiche
         // aujourd'hui. C'est le même raisonnement — et la même unité — que le
@@ -503,7 +508,10 @@ export class ClientOrders {
   private rememberGuest(
     placed: PlacedOrderResponse,
     service: ServiceChoice,
-    lines: readonly { product: { name: string; unitPriceMillicents: number }; quantity: number }[],
+    lines: readonly {
+      product: { name: string; unitPriceMillicents: number } & SaleTerms;
+      quantity: number;
+    }[],
   ): PlacedOrder {
     const payment = placed.payment ?? null;
     const order: PlacedOrder = {
@@ -513,6 +521,7 @@ export class ClientOrders {
       lines: lines.map((line) => ({
         name: line.product.name,
         quantity: line.quantity,
+        ...(isSoldByWeight(line.product) ? { saleUnit: 'weight' as const } : {}),
         unitPriceCents: unitPriceCents(line.product.unitPriceMillicents),
       })),
       pieces: this.cart.count(),
@@ -664,7 +673,7 @@ export class ClientOrders {
    */
   private async send(
     service: ServiceChoice,
-    lines: readonly { product: { sku: string }; quantity: number }[],
+    lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
     settlement: OrderSettlement | null,
     workspace: string,
     voucherId: string | null,
@@ -774,7 +783,7 @@ export class ClientOrders {
  */
 function payloadOf(
   service: ServiceChoice,
-  lines: readonly { product: { sku: string }; quantity: number }[],
+  lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
   idempotencyKey: string,
   settlement: OrderSettlement | null,
   locale: LocaleCode,
@@ -801,7 +810,8 @@ function payloadOf(
     // séjour, en agrégé seulement.
     locale,
     note: '',
-    lines: lines.map((line) => ({ sku: line.product.sku, quantity: line.quantity })),
+    // Une ligne au poids dit son unité : sans elle, le serveur lirait des pièces.
+    lines: lines.map((line) => requestedLine(line.product.sku, line.quantity, line.product)),
     ...serviceContentOf(service),
   };
 }
@@ -854,7 +864,7 @@ export function serviceContentOf(service: ServiceChoice) {
  */
 function guestContentOf(
   service: ServiceChoice,
-  lines: readonly { product: { sku: string }; quantity: number }[],
+  lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
   idempotencyKey: string,
   locale: LocaleCode,
 ): Omit<PlaceOrderPayload, 'settlement' | 'salesTerms'> {

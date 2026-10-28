@@ -29,6 +29,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { requestedLine } from '../shop/sale-unit';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service';
 
 /**
@@ -86,6 +87,13 @@ const FULFILLMENT_REFUSALS: Readonly<Record<string, string>> = {
  * 2026-09-24) ; les recopier un à un en ferait une liste qui dérive.
  */
 const OPERATION_REFUSAL_PREFIX = 'orders.operation.';
+
+/**
+ * Le préfixe des refus d'une LIGNE (400/409) — un poids hors du pas, sous le
+ * minimum, au-delà de la garde (plan `plan-vente-au-poids.md`, P3). Le
+ * message du serveur nomme l'article et la règle : il se montre tel quel.
+ */
+const LINE_REFUSAL_PREFIX = 'orders.line.';
 
 /** Le repli d'un refus d'opération sans message lisible. */
 const OPERATION_REFUSAL_FALLBACK =
@@ -313,7 +321,10 @@ export class ShopQuote {
           void this.voucher.release();
           return of(null);
         }
-        if (code?.startsWith(OPERATION_REFUSAL_PREFIX) === true) {
+        if (
+          code?.startsWith(OPERATION_REFUSAL_PREFIX) === true ||
+          code?.startsWith(LINE_REFUSAL_PREFIX) === true
+        ) {
           // La commande refuserait ce panier tel quel : le décompte le dit
           // avant le règlement, avec le message du serveur (D6).
           this.view.set(EMPTY);
@@ -369,7 +380,7 @@ export class ShopQuote {
     return this.catalogue
       .items()
       .filter((item) => (quantities[item.sku] ?? 0) > 0)
-      .map((item) => ({ sku: item.sku, quantity: quantities[item.sku] ?? 0 }));
+      .map((item) => requestedLine(item.sku, quantities[item.sku] ?? 0, item));
   }
 
   /**

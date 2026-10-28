@@ -1911,6 +1911,7 @@
           "it": "/ pezzo",
           "variables": []
         },
+        { "key": "product.perKilogram", "fr": "/ kg", "en": "/ kg", "it": "/ kg", "variables": [] },
         {
           "key": "product.proDiscount",
           "fr": "Prix pro −{pct} %",
@@ -3669,6 +3670,13 @@
           "fr": "Quantité de {name}",
           "en": "Quantity of {name}",
           "it": "Quantità di {name}",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.weightAria",
+          "fr": "Poids de {name}, en grammes",
+          "en": "Weight of {name}, in grams",
+          "it": "Peso di {name}, in grammi",
           "variables": ["name"]
         },
         {
@@ -6303,6 +6311,13 @@
           "fr": "Articles",
           "en": "Items",
           "it": "Articoli",
+          "variables": []
+        },
+        {
+          "key": "orders.ticketPerKilogram",
+          "fr": "/ kg",
+          "en": "/ kg",
+          "it": "/ kg",
           "variables": []
         },
         {

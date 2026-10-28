@@ -4,6 +4,7 @@ import { TestBed } from '@angular/core/testing';
 import {
   DELIVERY_CLOSED_FOR_AUDIENCE,
   PICKUP_CLOSED_FOR_AUDIENCE,
+  type ShopItemView,
   type ShopQuoteView,
 } from '@lfd/contracts';
 import { of } from 'rxjs';
@@ -267,6 +268,58 @@ describe('ShopQuote', () => {
       .flush(
         { code: 'orders.operation.not_yet_open', message },
         { status: 409, statusText: 'Conflict' },
+      );
+
+    expect(quote.status()).toBe('refused');
+    expect(quote.refusal()).toBe(message);
+    http.verify();
+  });
+
+  /** P4 de `plan-vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
+  const SALMON = {
+    ...(TEST_ITEMS[0] as ShopItemView),
+    sku: 'SAU-001',
+    saleUnit: 'weight' as const,
+    weightStepGrams: 50,
+    weightMinGrams: 200,
+  };
+
+  function bootWithSalmon(): ReturnType<typeof boot> {
+    const booted = boot();
+    hydrateWith(TestBed.inject(ShopCatalogue), {
+      ...TEST_CATALOGUE,
+      items: [...TEST_CATALOGUE.items, SALMON],
+    });
+    return booted;
+  }
+
+  it('chiffre une ligne au poids avec son unité', () => {
+    const { cart, http } = bootWithSalmon();
+
+    cart.setQuantity('SAU-001', 500);
+    quiet();
+
+    const asked = http.expectOne(QUOTE);
+    expect((asked.request.body as { lines: unknown[] }).lines).toContainEqual({
+      sku: 'SAU-001',
+      quantity: 500,
+      saleUnit: 'weight',
+    });
+    asked.flush(ANSWER);
+    http.verify();
+  });
+
+  it('montre tel quel le refus d’un poids hors du pas', () => {
+    const { cart, quote, http } = bootWithSalmon();
+    const message = 'Saumon gravlax se commande par 50 g : 530 g n’en est pas un multiple.';
+
+    cart.setQuantity('SAU-001', 530);
+    quiet();
+    http
+      .expectOne(QUOTE)
+      .flush(
+        { code: 'orders.line.weight_off_step', message },
+        { status: 400, statusText: 'Bad Request' },
       );
 
     expect(quote.status()).toBe('refused');

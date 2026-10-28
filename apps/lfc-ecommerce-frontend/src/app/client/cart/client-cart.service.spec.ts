@@ -1,4 +1,5 @@
 import { TestBed } from '@angular/core/testing';
+import type { ShopItemView } from '@lfd/contracts';
 
 import { ClientCart } from './client-cart.service';
 import { OrderContextStore, type ServiceChoice } from '../order-context.store';
@@ -207,5 +208,78 @@ describe('Les règles du panier', () => {
     expect(await orders.place()).toBeNull();
 
     TestBed.inject(HttpTestingController).verify();
+  });
+});
+
+/** P4 de `plan-vente-au-poids.md` : un article au poids se compte en grammes, au pas. */
+describe('Le panier, au poids', () => {
+  const SALMON = {
+    ...(TEST_ITEMS[0] as ShopItemView),
+    sku: 'SAU-001',
+    name: 'Saumon gravlax',
+    unitPriceMillicents: 1_175_000,
+    unitPriceTtcCents: 1_240,
+    saleUnit: 'weight' as const,
+    weightStepGrams: 50,
+    weightMinGrams: 200,
+  };
+
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspaceDouble()),
+        provideRecognised(),
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), {
+      ...TEST_CATALOGUE,
+      items: [...TEST_CATALOGUE.items, SALMON],
+    });
+  });
+
+  it('ajoute le minimum, puis un pas ; et retire la ligne sous le minimum', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('SAU-001');
+    expect(cart.quantityOf('SAU-001')).toBe(200);
+    cart.add('SAU-001');
+    expect(cart.quantityOf('SAU-001')).toBe(250);
+
+    cart.remove('SAU-001');
+    cart.remove('SAU-001');
+    expect(cart.lines()).toEqual([]);
+  });
+
+  it('compte une ligne au poids pour UNE, jamais pour ses grammes', () => {
+    const cart = TestBed.inject(ClientCart);
+    cart.add('SAU-001');
+    cart.add('VIE-001');
+    cart.add('VIE-001');
+
+    expect(cart.count()).toBe(3);
+  });
+
+  it('envoie la ligne avec son unité à la passation, et la commande la garde', async () => {
+    const cart = TestBed.inject(ClientCart);
+    TestBed.inject(OrderContextStore).choice.set(AT_THE_LABO);
+    cart.setQuantity('SAU-001', 500);
+
+    const placing = TestBed.inject(ClientOrders).place();
+    await Promise.resolve();
+    await Promise.resolve();
+    const request = TestBed.inject(HttpTestingController).expectOne((r) =>
+      r.url.endsWith('/orders'),
+    );
+    expect((request.request.body as { lines: unknown }).lines).toEqual([
+      { sku: 'SAU-001', quantity: 500, saleUnit: 'weight' },
+    ]);
+    request.flush({ id: 'ord_1', orderNumber: 'CMD-0001' });
+
+    const placed = await placing;
+    expect(placed?.lines[0]).toMatchObject({ quantity: 500, saleUnit: 'weight' });
+    expect(placed?.pieces).toBe(1);
   });
 });

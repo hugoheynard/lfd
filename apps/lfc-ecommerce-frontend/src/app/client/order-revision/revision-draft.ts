@@ -14,6 +14,8 @@ export interface RevisionLine {
   readonly sku: string;
   readonly name: string;
   readonly quantity: number;
+  /** `weight` : la quantité est en grammes, et repart avec son unité (P4). Absent = pièce. */
+  readonly saleUnit?: 'weight';
 }
 
 /**
@@ -49,6 +51,7 @@ export function draftOf(
       sku: line.sku,
       name: line.productName,
       quantity: line.quantity,
+      ...(line.saleUnit === 'weight' ? { saleUnit: 'weight' as const } : {}),
     })),
     service: serviceOf(order, pickups),
   };
@@ -149,7 +152,12 @@ export function contentOf(
   return {
     ...serviceContentOf(service),
     note: order.note,
-    lines: draft.lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+    // Une ligne au poids repart avec son unité : sans elle, le serveur lirait des pièces.
+    lines: draft.lines.map((line) =>
+      line.saleUnit === 'weight'
+        ? { sku: line.sku, quantity: line.quantity, saleUnit: 'weight' as const }
+        : { sku: line.sku, quantity: line.quantity },
+    ),
     ...(keepsFulfillment
       ? {
           deliveryContact: order.fulfillment.contact.value,

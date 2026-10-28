@@ -123,7 +123,9 @@ describe('StaffSuggestionCard', () => {
     mount({ ...VIEW, reason: { ...VIEW.reason, phrase: null } }, 'Vous aimerez aussi');
 
     expect(card()?.textContent).toContain('Vous aimerez aussi');
-    expect(card()?.textContent).toContain(`${shelfPriceLabel(BAGUETTE, false)} HT`);
+    expect(card()?.textContent).toContain(
+      `${shelfPriceLabel(BAGUETTE, false, FR.product.perKilogram)} HT`,
+    );
   });
 
   it('R2 : une calculée dit « Souvent pris avec » l’article du panier, jamais le titre du staff', () => {

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1709 textes
+## Sommaire — 1712 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 24 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 25 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 77 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 250 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 251 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 526 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1709** |
+| **Total** | | **1712** |
 
 ## Le parcours de commande
 
@@ -389,7 +389,7 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 24 textes.
+Source : `fr.ts · en.ts · it.ts` · 25 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -398,6 +398,7 @@ Source : `fr.ts · en.ts · it.ts` · 24 textes.
 | `product.operationPickupSpan` | du {from} au {until} | {from} to {until} | dal {from} al {until} | `{from}` `{until}` |
 | `product.operationPickupDay` | le {day} | on {day} | il {day} | `{day}` |
 | `product.perPiece` | / pièce | / piece | / pezzo |  |
+| `product.perKilogram` | / kg | / kg | / kg |  |
 | `product.proDiscount` | Prix pro −{pct} % | Trade price −{pct}% | Prezzo pro −{pct} % | `{pct}` |
 | `product.batch` | × {n} | × {n} | × {n} | `{n}` |
 | `product.batchAria` | {n} pièces | {n} pieces | {n} pezzi | `{n}` |
@@ -708,7 +709,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 76 textes.
+Source : `fr.ts · en.ts · it.ts` · 77 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -748,6 +749,7 @@ Source : `fr.ts · en.ts · it.ts` · 76 textes.
 | `cart.accountSoon` | Le règlement au compte arrive au prochain lot — il attend votre condition de règlement. | Charging to account lands in the next batch — it is waiting on your payment term. | L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento. |  |
 | `cart.dropAria` | Retirer {name} du panier | Remove {name} from the basket | Rimuovi {name} dal carrello | `{name}` |
 | `cart.quantityAria` | Quantité de {name} | Quantity of {name} | Quantità di {name} | `{name}` |
+| `cart.weightAria` | Poids de {name}, en grammes | Weight of {name}, in grams | Peso di {name}, in grammi | `{name}` |
 | `cart.pay` | Régler ma commande · {total} | Pay for my order · {total} | Pago il mio ordine · {total} | `{total}` |
 | `cart.payHint` | Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place. | Paid online. You show your QR at the counter, nothing to settle there. | Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto. |  |
 | `cart.payHintDelivery` | Paiement en ligne. Le coursier vous remet la commande, rien à régler à la livraison. | Paid online. The courier hands you the order, nothing to settle on delivery. | Pagamento online. Il corriere le consegna l'ordine, nulla da saldare alla consegna. |  |
@@ -991,7 +993,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 250 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 251 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1194,6 +1196,7 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.detailHead` | Le détail | The detail | Il dettaglio |  |
 | `orders.ticketHead` | Votre ticket | Your receipt | Il tuo scontrino |  |
 | `orders.ticketArticles` | Articles | Items | Articoli |  |
+| `orders.ticketPerKilogram` | / kg | / kg | / kg |  |
 | `orders.ticketVoucher` | Bon de fidélité | Loyalty voucher | Buono fedeltà |  |
 | `orders.ticketDelivery` | Livraison | Delivery | Consegna |  |
 | `orders.ticketTotal` | Total TTC | Total incl. VAT | Totale IVA inclusa |  |

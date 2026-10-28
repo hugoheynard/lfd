@@ -8,6 +8,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../../shop/made-to-order';
 import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { type CartLine } from '../cart-total';
+import { firstQuantityOf, isSoldByWeight, quantityLabel, stepOf } from '../../shop/sale-unit';
 
 /**
  * **Une ligne du panier** : la quantité, ce que c'est, ce que ça fait.
@@ -87,8 +88,24 @@ export class CartProductLine {
    * (fold-ng, vérifié le 2026-10-26) ; il expose `inputId`, que vise un
    * `<label for>` masqué visuellement.
    */
+  /** Vendue au poids : le champ dit des grammes, au pas de l'article (P4). */
+  protected readonly byWeight = computed(() => isSoldByWeight(this.line().product));
+
   protected readonly quantityLabel = computed(() =>
-    fill(this.t().cart.quantityAria, { name: this.name() }),
+    fill(this.byWeight() ? this.t().cart.weightAria : this.t().cart.quantityAria, {
+      name: this.name(),
+    }),
+  );
+
+  /** Le plancher du champ : une pièce, ou la première quantité au poids. */
+  protected readonly minimum = computed(() => firstQuantityOf(this.line().product) ?? 1);
+
+  /** Le pas du champ : une pièce, ou le pas de l'article au poids. */
+  protected readonly step = computed(() => stepOf(this.line().product) ?? 1);
+
+  /** « 500 g » / « 1,25 kg » — `null` pour une pièce, dont le champ dit déjà tout. */
+  protected readonly weight = computed(() =>
+    this.byWeight() ? quantityLabel(this.line().quantity, 'weight') : null,
   );
 
   protected readonly quantity = computed(() => this.line().quantity);
@@ -111,11 +128,13 @@ export class CartProductLine {
    */
   protected readonly unit = computed(() => {
     const product = this.line().product;
-    return this.basis.showsTtc()
+    const label = this.basis.showsTtc()
       ? fill(this.t().shop.priceTtc, { price: formatCents(product.unitPriceTtcCents) })
       : fill(this.t().shop.priceHt, {
           price: formatCents(unitPriceCents(product.unitPriceMillicents)),
         });
+    // Au poids, l'étiquette est au kilo : « 12,40 € TTC / kg ».
+    return this.byWeight() ? `${label} ${this.t().product.perKilogram}` : label;
   });
 
   /**

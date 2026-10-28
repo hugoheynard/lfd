@@ -87,4 +87,26 @@ describe('ticketRowsOf', () => {
     expect(text).toContain(`${FR.orders.ticketTotal}=24,30`);
     expect(text).toMatch(/5,5 %=HT 17,91.*TVA 0,99.*TTC 18,90/u);
   });
+
+  /** P4 de `plan-vente-au-poids.md` : une ligne au poids dit ses grammes et son prix au kilo. */
+  it('dit « 500 g · Saumon (12,40 € / kg) » pour une ligne au poids', () => {
+    const ticket = ticketOf(
+      exact({
+        lines: [
+          {
+            ...BANANA,
+            productName: 'Saumon',
+            quantity: 500,
+            saleUnit: 'weight',
+            unitPriceTtcCents: 1_240,
+            lineTotalTtcCents: 620,
+          },
+        ],
+      }),
+    );
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders);
+
+    expect(rows[0]?.label).toBe('500 g · Saumon (12,40 € / kg)');
+    expect(rows[0]?.value).toBe('6,20 €');
+  });
 });

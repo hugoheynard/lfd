@@ -73,6 +73,24 @@ describe('ProductTile', () => {
     expect(priceText()).toBe('1,48 € TTC');
   });
 
+  /** P4 de `plan-vente-au-poids.md` : au poids, l'étiquette est au kilo et la pastille en grammes. */
+  it('dit le prix au kilo et la quantité en grammes pour un article au poids', () => {
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      unitPriceTtcCents: 1_240,
+      saleUnit: 'weight',
+      weightStepGrams: 50,
+      weightMinGrams: null,
+    });
+    fixture.componentRef.setInput('quantity', 500);
+    fixture.detectChanges();
+
+    expect(priceText()).toBe('12,40 € / kg TTC');
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('.count')?.textContent?.trim(),
+    ).toBe('500 g');
+  });
+
   it('porte la mention dans la langue affichée', () => {
     expect(priceText().endsWith(FR.shop.ttcSuffix)).toBe(true);
   });

@@ -320,6 +320,7 @@ export const IT: ClientCopy = {
     operationPickupSpan: 'dal {from} al {until}',
     operationPickupDay: 'il {day}',
     perPiece: '/ pezzo',
+    perKilogram: '/ kg',
     proDiscount: 'Prezzo pro −{pct} %',
     batch: '× {n}',
     batchAria: '{n} pezzi',
@@ -379,6 +380,7 @@ export const IT: ClientCopy = {
       'L’addebito sul conto arriva nel prossimo lotto — attende la vostra condizione di pagamento.',
     dropAria: 'Rimuovi {name} dal carrello',
     quantityAria: 'Quantità di {name}',
+    weightAria: 'Peso di {name}, in grammi',
     pay: 'Pago il mio ordine · {total}',
     payHint: 'Pagamento online. Mostri il QR al banco, non deve saldare nulla sul posto.',
     payHintDelivery:

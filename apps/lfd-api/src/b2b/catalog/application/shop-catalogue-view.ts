@@ -101,6 +101,11 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
       item.vatRate,
       audience,
     ),
+    // L'unité de vente (P4) : au poids, les deux prix ci-dessus sont au kilo,
+    // et la vitrine saisit des grammes au pas et au minimum de l'article.
+    saleUnit: item.saleUnit,
+    weightStepGrams: item.weightStepGrams,
+    weightMinGrams: item.weightMinGrams,
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,

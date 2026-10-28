@@ -174,3 +174,34 @@ describe("shopCatalogueOf — les opérations au commerce", () => {
     expect(off.operations[0]).toMatchObject({ showsOrderUntilTime: false });
   });
 });
+
+/** P4 de `documentation/pricing/plan-vente-au-poids.md` : la vitrine sait vendre au poids. */
+describe("shopCatalogueOf — l'unité de vente", () => {
+  const at = new Date("2026-10-01T00:00:00.000Z");
+
+  it("sert une pièce comme une pièce, sans pas ni minimum", () => {
+    const view = shopCatalogueOf([catalogItem("VIE-001")], sale(at));
+
+    expect(view.items[0]).toMatchObject({
+      saleUnit: "piece",
+      weightStepGrams: null,
+      weightMinGrams: null,
+    });
+  });
+
+  it("sert l'unité, le pas et le minimum d'un article au poids", () => {
+    const weighed = catalogItem("VIE-001", {
+      saleUnit: "weight",
+      weightStepGrams: 50,
+      weightMinGrams: 200,
+    });
+
+    const view = shopCatalogueOf([weighed], sale(at));
+
+    expect(view.items[0]).toMatchObject({
+      saleUnit: "weight",
+      weightStepGrams: 50,
+      weightMinGrams: 200,
+    });
+  });
+});

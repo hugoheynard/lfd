@@ -1,6 +1,7 @@
 import type { CustomerOrderLineView, CustomerOrderView } from '@lfd/contracts';
 
 import type { LocaleCode } from '../client-locale.service';
+import { quantityLabel } from './sale-unit';
 
 /**
  * **Ce que dit la carte « Ou reprenez »** de la dernière commande.
@@ -52,7 +53,7 @@ export function orderLinesSummary(
 ): string {
   const named = lines
     .slice(0, NAMED_LINES)
-    .map((line) => `${line.quantity} ${line.productName}`)
+    .map((line) => `${quantityLabel(line.quantity, line.saleUnit)} ${line.productName}`)
     .join(', ');
   const rest = lines.length - NAMED_LINES;
   return rest > 0 ? `${named} ${more(rest)}` : named;

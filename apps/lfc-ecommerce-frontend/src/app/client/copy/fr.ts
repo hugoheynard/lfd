@@ -314,6 +314,7 @@ export const FR: ClientCopy = {
     operationPickupSpan: 'du {from} au {until}',
     operationPickupDay: 'le {day}',
     perPiece: '/ pièce',
+    perKilogram: '/ kg',
     proDiscount: 'Prix pro −{pct} %',
     batch: '× {n}',
     batchAria: '{n} pièces',
@@ -372,6 +373,7 @@ export const FR: ClientCopy = {
       'Le règlement au compte arrive au prochain lot — il attend votre condition de règlement.',
     dropAria: 'Retirer {name} du panier',
     quantityAria: 'Quantité de {name}',
+    weightAria: 'Poids de {name}, en grammes',
     pay: 'Régler ma commande · {total}',
     payHint: 'Paiement en ligne. Vous présentez votre QR au comptoir, rien à régler sur place.',
     payHintDelivery:

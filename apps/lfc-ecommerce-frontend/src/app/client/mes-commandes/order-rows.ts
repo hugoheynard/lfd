@@ -572,9 +572,15 @@ function originOf(order: CustomerOrderView): OrderOrigin {
   return order.origin === 'back_office' ? 'phone' : '';
 }
 
-/** Le nombre de pièces : la somme des quantités, pas le nombre de lignes. */
+/**
+ * Le nombre de pièces : la somme des quantités, pas le nombre de lignes. Une
+ * ligne au poids compte pour une, jamais pour ses grammes (P4).
+ */
 function piecesOf(order: CustomerOrderView): number {
-  return order.lines.reduce((total, line) => total + line.quantity, 0);
+  return order.lines.reduce(
+    (total, line) => total + (line.saleUnit === 'weight' ? 1 : line.quantity),
+    0,
+  );
 }
 
 function modeLabel(order: CustomerOrderView, copy: RowCopy): string {

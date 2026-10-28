@@ -17,6 +17,8 @@ import { AuthFacade } from '../../auth/auth.facade';
 import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { ShopCartGateway } from './shop-cart.gateway';
+import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { requestedLine, type SaleTerms } from '../shop/sale-unit';
 
 /**
  * L'accalmie au bout de laquelle on met le panier de côté, en millisecondes.
@@ -101,6 +103,9 @@ export class ShopCartSync {
   private readonly workspace = inject(ClientWorkspace);
   private readonly gateway = inject(ShopCartGateway);
   private readonly store = inject(CartStore);
+  private readonly catalogue = inject(ShopCatalogue);
+  /** L'unité d'une référence, lue au catalogue — une ligne au poids part avec `saleUnit`. */
+  private readonly termsOf = (sku: string): SaleTerms | null => this.catalogue.itemOf(sku);
   // `takeUntilDestroyed` hors du constructeur : il lui faut la référence
   // explicite, sinon Angular lève (NG0203).
   private readonly destroyRef = inject(DestroyRef);
@@ -129,7 +134,7 @@ export class ShopCartSync {
   /** Le panier, trié pour être comparable, et l'espace dont il est la copie. */
   private readonly draft = computed<Draft>(() => ({
     workspace: this.store.scope(),
-    payload: payloadOf(this.store.quantities()),
+    payload: payloadOf(this.store.quantities(), this.termsOf),
   }));
 
   constructor() {
@@ -230,7 +235,7 @@ export class ShopCartSync {
       if (carried) {
         this.pushNow(workspace);
       } else {
-        this.lastSaved = keyOf(payloadOf(this.store.quantities()));
+        this.lastSaved = keyOf(payloadOf(this.store.quantities(), this.termsOf));
       }
       return;
     }
@@ -244,7 +249,7 @@ export class ShopCartSync {
 
   /** Écrit sans attendre l'accalmie : la reprise n'est pas une frappe. */
   private pushNow(workspace: string): void {
-    this.push(payloadOf(this.store.quantities()), workspace)
+    this.push(payloadOf(this.store.quantities(), this.termsOf), workspace)
       .pipe(takeUntilDestroyed(this.destroyRef))
       .subscribe();
   }
@@ -277,11 +282,14 @@ export class ShopCartSync {
 }
 
 /** Le panier sous la forme que le serveur attend, **trié** pour être comparable. */
-function payloadOf(quantities: Readonly<Record<string, number>>): ShopCartPayload {
+function payloadOf(
+  quantities: Readonly<Record<string, number>>,
+  termsOf: (sku: string) => SaleTerms | null,
+): ShopCartPayload {
   return {
     lines: Object.keys(quantities)
       .sort((a, b) => a.localeCompare(b))
-      .map((sku) => ({ sku, quantity: quantities[sku] ?? 0 })),
+      .map((sku) => requestedLine(sku, quantities[sku] ?? 0, termsOf(sku) ?? {})),
   };
 }
 

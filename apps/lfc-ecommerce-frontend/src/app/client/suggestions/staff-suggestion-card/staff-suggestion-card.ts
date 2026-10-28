@@ -73,7 +73,7 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
     return {
       title: this.titleOf(view.reason, shop),
       line: view.item.name,
-      price: shelfPriceLabel(view.item, ttc),
+      price: shelfPriceLabel(view.item, ttc, this.t().product.perKilogram),
       suffix: ttc ? shop.ttcSuffix : shop.htSuffix,
       // En visite pro, le « + » ouvre la connexion — et le dit.
       addLabel: fill(this.proVisit() ? shop.addAriaProVisit : shop.addAria, {

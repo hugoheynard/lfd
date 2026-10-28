@@ -98,7 +98,7 @@
           }
           <span class="amount" [attr.aria-hidden]="striked() ? 'true' : null">{{ price() }}</span>
           <span class="per" [attr.aria-hidden]="striked() ? 'true' : null"
-            >{{ basisSuffix() }} {{ t().product.perPiece }}</span
+            >{{ basisSuffix() }} {{ perUnit() }}</span
           >
           @if (striked(); as catalogue) {
             <s class="price-was" aria-hidden="true">{{ catalogue }}</s>
@@ -128,8 +128,9 @@
         <div class="picker">
           <app-quantity-rail
             size="lg"
-            [min]="1"
+            [min]="first()"
             [quantity]="draft()"
+            [label]="byWeight() ? draftLabel() : null"
             [addLabel]="addLabel()"
             [removeLabel]="removeLabel()"
             (added)="increment()"

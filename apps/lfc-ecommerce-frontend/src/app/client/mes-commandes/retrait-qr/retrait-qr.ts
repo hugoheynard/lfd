@@ -17,6 +17,7 @@ import { QrCode } from '@lfd/b2b-ui/order';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { ClientOrderHistory } from '../client-order-history.service';
 import { handoverUrlOf, shareOrderQr } from './qr-share';
+import { quantityLabel } from '../../shop/sale-unit';
 
 /** L'écran ne peut être que dans un de ces états, et il n'en montre qu'un. */
 type Phase = 'loading' | 'ready' | 'none';
@@ -129,7 +130,16 @@ export class RetraitQr {
   });
 
   /** Ce que la commande contient, pour « Voir le contenu de ma commande ». */
-  protected readonly lines = computed(() => this.order()?.lines ?? []);
+  protected readonly lines = computed(() =>
+    (this.order()?.lines ?? []).map((line) => ({
+      ...line,
+      // « 3 × », ou « 500 g » au poids (P4 de `plan-vente-au-poids.md`).
+      shownQuantity:
+        line.saleUnit === 'weight'
+          ? quantityLabel(line.quantity, 'weight')
+          : `${String(line.quantity)} ×`,
+    })),
+  );
 
   /** Envoie l'image du code — voir {@link shareQr}. */
   protected send(): void {

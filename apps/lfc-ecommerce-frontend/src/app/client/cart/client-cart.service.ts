@@ -7,6 +7,7 @@ import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ProVisit } from '../shop/pro-visit.service';
+import { nextQuantity, previousQuantity, isSoldByWeight } from '../shop/sale-unit';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 
 /** Où mène la connexion demandée par un geste d'achat en visite pro — la porte du repère. */
@@ -121,8 +122,14 @@ export class ClientCart {
       .map((product) => ({ product, quantity: quantities[product.sku] ?? 0 }));
   });
 
-  /** Le nombre de PIÈCES, pas de références : c'est ce que le comptoir prépare. */
-  readonly count = computed(() => this.lines().reduce((sum, l) => sum + l.quantity, 0));
+  /**
+   * Le nombre de PIÈCES, pas de références : c'est ce que le comptoir prépare.
+   * Un article au poids compte pour UNE ligne, jamais pour ses grammes (plan
+   * `plan-vente-au-poids.md` §2).
+   */
+  readonly count = computed(() =>
+    this.lines().reduce((sum, l) => sum + (isSoldByWeight(l.product) ? 1 : l.quantity), 0),
+  );
 
   readonly isEmpty = computed(() => this.count() === 0);
 
@@ -179,15 +186,25 @@ export class ClientCart {
     if (this.admit() === 'signInRequired') {
       return 'signInRequired';
     }
-    if (this.catalogue.itemOf(productId) !== null) {
-      this.store.setQuantity(productId, this.store.quantityOf(productId) + 1);
+    const item = this.catalogue.itemOf(productId);
+    if (item !== null) {
+      // Une pièce de plus ; au poids, un pas de plus — ou le minimum au premier geste.
+      this.store.setQuantity(productId, nextQuantity(item, this.store.quantityOf(productId)));
     }
     return 'applied';
   }
 
-  /** Retirer la dernière pièce retire la ligne : une ligne à zéro n'existe pas. */
+  /**
+   * Retirer la dernière pièce retire la ligne : une ligne à zéro n'existe pas.
+   * Au poids, un pas de moins — et la ligne part sous le minimum.
+   */
   remove(productId: string): void {
-    this.store.setQuantity(productId, this.store.quantityOf(productId) - 1);
+    const current = this.store.quantityOf(productId);
+    const item = this.catalogue.itemOf(productId);
+    this.store.setQuantity(
+      productId,
+      item === null ? current - 1 : previousQuantity(item, current),
+    );
   }
 
   /**

@@ -17,13 +17,7 @@ import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import {
-  discountBp,
-  lineTotalCents,
-  millicentsFromCents,
-  pieces,
-  unitPriceCents,
-} from '@lfd/money';
+import { discountBp, millicentsFromCents, unitPriceCents } from '@lfd/money';
 
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
@@ -35,6 +29,14 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
+import {
+  firstQuantityOf,
+  isSoldByWeight,
+  lineTotalOf,
+  nextQuantity,
+  previousQuantity,
+  quantityLabel,
+} from '../sale-unit';
 import { StaffProductSuggestion } from '../../suggestions/staff-product-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
 
@@ -141,15 +143,39 @@ export class ProductSheet {
    * Le brouillon : ce qui est au panier, ou une pièce. Il se réaligne quand la
    * fiche change de pièce ou que le panier bouge sous elle.
    */
-  protected readonly draft = linkedSignal(() => {
-    this.product();
-    return Math.max(this.quantity(), 1);
+  protected readonly draft = linkedSignal(() => Math.max(this.quantity(), this.first()));
+
+  /**
+   * La plus petite quantité de la fiche : une pièce ; au poids, le premier
+   * multiple du pas qui atteint le minimum (P4). Un article au poids sans pas
+   * garde 1 : le serveur le refusera, et le refus se lira au panier.
+   */
+  protected readonly first = computed(() => {
+    const product = this.product();
+    return product === null ? 1 : (firstQuantityOf(product) ?? 1);
   });
+
+  /** Vendu au poids : le sélecteur avance au pas, et dit des grammes. */
+  protected readonly byWeight = computed(() => {
+    const product = this.product();
+    return product !== null && isSoldByWeight(product);
+  });
+
+  /** Le brouillon dit : « 3 », ou « 500 g ». */
+  protected readonly draftLabel = computed(() =>
+    quantityLabel(this.draft(), this.byWeight() ? 'weight' : 'piece'),
+  );
+
+  /** « / pièce », ou « / kg » au poids. */
+  protected readonly perUnit = computed(() =>
+    this.byWeight() ? this.t().product.perKilogram : this.t().product.perPiece,
+  );
 
   /** Les raccourcis de lot : un geste de professionnel, absent pour un particulier. */
   protected readonly batches = computed(() => {
     const c = this.t().product;
-    return this.showsTtc()
+    // Les lots sont des pièces : un article au poids n'en propose pas.
+    return this.showsTtc() || this.byWeight()
       ? []
       : BATCHES.map((size) => ({
           size,
@@ -259,7 +285,7 @@ export class ProductSheet {
   protected readonly struckPhrase = computed(() =>
     fill(this.t().shop.priceStruck, {
       was: this.striked() ?? '',
-      now: `${this.price()} ${this.basisSuffix()} ${this.t().product.perPiece}`,
+      now: `${this.price()} ${this.basisSuffix()} ${this.perUnit()}`,
     }),
   );
 
@@ -301,7 +327,7 @@ export class ProductSheet {
     }
     switch (this.ctaState()) {
       case 'add':
-        return fill(c.addCount, { n: String(this.draft()) });
+        return fill(c.addCount, { n: this.draftLabel() });
       case 'update':
         return c.update;
       case 'inCart':
@@ -311,7 +337,9 @@ export class ProductSheet {
 
   /** Le total de ce qu'on emporte, dans la même assiette que le prix affiché. */
   protected readonly total = computed(() =>
-    formatCents(lineTotalCents(this.unitMillicents(), pieces(this.draft()))),
+    formatCents(
+      lineTotalOf(this.unitMillicents(), this.draft(), this.byWeight() ? 'weight' : 'piece'),
+    ),
   );
 
   protected readonly addLabel = computed(() =>
@@ -342,11 +370,16 @@ export class ProductSheet {
   }
 
   protected increment(): void {
-    this.draft.update((n) => n + 1);
+    const product = this.product();
+    this.draft.update((n) => (product === null ? n + 1 : nextQuantity(product, n)));
   }
 
+  /** Un pas de moins, jamais sous la première quantité : la fiche n'ajoute pas zéro. */
   protected decrement(): void {
-    this.draft.update((n) => Math.max(n - 1, 1));
+    const product = this.product();
+    this.draft.update((n) =>
+      Math.max(product === null ? n - 1 : previousQuantity(product, n), this.first()),
+    );
   }
 
   protected commit(): void {

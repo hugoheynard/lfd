@@ -44,7 +44,7 @@
       <ul class="lines">
         @for (line of lines(); track line.sku) {
           <li>
-            <span class="qty">{{ line.quantity }} ×</span> {{ line.productName }}
+            <span class="qty">{{ line.shownQuantity }}</span> {{ line.productName }}
           </li>
         }
       </ul>

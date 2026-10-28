@@ -92,6 +92,31 @@ describe("la vitrine publique", () => {
     });
   });
 
+  it("dit l'unité de vente d'une pièce : à la pièce, sans pas ni minimum", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+
+    expect((await catalogue()).items[0]).toMatchObject({
+      saleUnit: "piece",
+      weightStepGrams: null,
+      weightMinGrams: null,
+    });
+  });
+
+  it("dit l'unité, le pas et le minimum d'un article au poids (P4)", async () => {
+    await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
+    await ctx.prisma.catalogItem.update({
+      where: { sku: "VIE-001-1" },
+      data: { saleUnit: "weight", weightStepGrams: 50, weightMinGrams: 200 },
+    });
+
+    expect((await catalogue()).items[0]).toMatchObject({
+      sku: "VIE-001",
+      saleUnit: "weight",
+      weightStepGrams: 50,
+      weightMinGrams: 200,
+    });
+  });
+
   /**
    * Régression : le contrat de la médiathèque repliait une alternative absente
    * sur l'URL du fichier, et les copies `catalog_items` l'ont gardée. Un
@@ -168,6 +193,11 @@ describe("la vitrine publique", () => {
       // déjà public (`?audience=pro`, 2026-10-19).
       "proPricePerKgMillicents",
       "publicPricePerKgTtcCents",
+      // ⚠️ **Un élargissement ASSUMÉ** (2026-10-28, P4 de
+      // `documentation/pricing/plan-vente-au-poids.md`) : l'unité de vente,
+      // le pas et le minimum — ce que la fiche affiche et ce que la commande
+      // refuserait de toute façon. Toujours émis, `null` pour une pièce.
+      "saleUnit",
       "shelfId",
       "sku",
       // La VIGNETTE DE RAYON (v10, 2026-09-23). Ajoutée délibérément et non par
@@ -183,6 +213,8 @@ describe("la vitrine publique", () => {
       // visible au lieu de la laisser passer.
       "unitPriceTtcCents",
       "vatRatePercent",
+      "weightMinGrams",
+      "weightStepGrams",
     ]);
     expect(Object.keys(body.items[0]?.allergens ?? {}).sort()).toEqual([
       "contains",

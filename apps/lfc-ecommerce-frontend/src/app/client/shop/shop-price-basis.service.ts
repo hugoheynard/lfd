@@ -6,6 +6,7 @@ import { unitPriceCents } from '@lfd/money';
 import { ClientCompany } from '../client-company.service';
 import { formatCents } from '../format-money';
 import { ProVisit } from './pro-visit.service';
+import { isSoldByWeight } from './sale-unit';
 
 /**
  * **Dans quelle assiette le rayon affiche ses prix** — hors taxe ou taxe
@@ -49,8 +50,14 @@ export class ShopPriceBasis {
  * par la carte de suggestion du panier — une seule mise en forme, pour qu'un
  * même article ne s'affiche pas à deux prix.
  */
-export function shelfPriceLabel(item: ShopItemView, showsTtc: boolean): string {
-  return showsTtc
+export function shelfPriceLabel(
+  item: ShopItemView,
+  showsTtc: boolean,
+  perKilogram: string,
+): string {
+  const amount = showsTtc
     ? formatCents(item.unitPriceTtcCents)
     : formatCents(unitPriceCents(item.unitPriceMillicents));
+  // Au poids, le prix servi EST le prix au kilo (P4) : « 12,40 € / kg ».
+  return isSoldByWeight(item) ? `${amount} ${perKilogram}` : amount;
 }

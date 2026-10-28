@@ -1,4 +1,4 @@
-import type { CustomerOrderView, OrderRateAmounts } from '@lfd/contracts';
+import type { CustomerOrderView, OrderRateAmounts, OrderSaleUnit } from '@lfd/contracts';
 
 /**
  * **Le ticket d'une commande composée en TTC** — celle d'un particulier (plan
@@ -26,6 +26,8 @@ export interface OrderTicket {
 export interface OrderTicketLine {
   readonly name: string;
   readonly quantity: number;
+  /** `weight` : la quantité est en grammes et l'étiquette au kilo (P4). */
+  readonly saleUnit: OrderSaleUnit;
   readonly unitTtcCents: number;
   readonly lineTtcCents: number;
 }
@@ -45,6 +47,7 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
     lines.push({
       name: line.productName,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       unitTtcCents: unit,
       lineTtcCents: total,
     });

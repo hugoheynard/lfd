@@ -54,7 +54,7 @@ export class HomeFeatured {
       .filter((item) => item.isFeatured)
       .map((item) => {
         const art = artOfFeatured(item);
-        const price = `${shelfPriceLabel(item, ttc)} ${ttc ? shop.ttcSuffix : shop.htSuffix}`;
+        const price = `${shelfPriceLabel(item, ttc, this.t().product.perKilogram)} ${ttc ? shop.ttcSuffix : shop.htSuffix}`;
         return {
           price,
           card: {

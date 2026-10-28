@@ -1,4 +1,5 @@
 import type { ShopItemOrderLimit } from "./item-order-limit.js";
+import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Le catalogue tel qu'une boutique PUBLIQUE le montre.**
@@ -143,6 +144,24 @@ export interface ShopItemView {
    * parce que c'est lui qui sait devant qui il est.
    */
   readonly unitPriceTtcCents: number;
+  /**
+   * **L'unité de vente de l'article** (plan
+   * `documentation/pricing/plan-vente-au-poids.md`, P4) : `piece`, ou `weight`
+   * — et alors {@link unitPriceMillicents} et {@link unitPriceTtcCents} sont
+   * des prix **au kilo**, et la quantité d'une ligne se dit en grammes.
+   *
+   * ⚠️ Facultatif dans le TYPE pour ne pas casser les fixtures des fronts ;
+   * le serveur l'émet toujours. Absent = `piece`.
+   */
+  readonly saleUnit?: OrderSaleUnit;
+  /**
+   * Le pas de saisie d'un article au poids, en grammes — une quantité qui
+   * n'en est pas un multiple est refusée à la commande. `null` pour une
+   * pièce. Toujours émis par le serveur.
+   */
+  readonly weightStepGrams?: number | null;
+  /** Le minimum d'un article au poids, en grammes ; `null` = pas de minimum (ou une pièce). */
+  readonly weightMinGrams?: number | null;
   /**
    * **Le prix au kilo PRO, hors taxe, en millicentimes** — tel que saisi au
    * référentiel (`documentation/pricing/plan-prix-au-kilo.md`).

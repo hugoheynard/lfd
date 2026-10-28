@@ -1,3 +1,5 @@
+import { weightLabel } from '@lfd/money';
+
 import { formatCents, formatRate } from '../format-money';
 import type { OrderTicket } from './order-ticket';
 
@@ -10,6 +12,7 @@ export interface TicketRow {
 /** Les mots du ticket — décrits par leur forme, pas par le dictionnaire. */
 export interface TicketCopy {
   readonly ticketArticles: string;
+  readonly ticketPerKilogram: string;
   readonly detailPickupDiscount: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
@@ -33,7 +36,11 @@ export function ticketRowsOf(ticket: OrderTicket, copy: TicketCopy): readonly Ti
   ];
   return [
     ...ticket.lines.map((line) => ({
-      label: `${String(line.quantity)} × ${line.name} (${formatCents(line.unitTtcCents)})`,
+      // Au poids : « 500 g · Saumon (12,40 € / kg) » — l'étiquette est au kilo.
+      label:
+        line.saleUnit === 'weight'
+          ? `${weightLabel(line.quantity)} · ${line.name} (${formatCents(line.unitTtcCents)} ${copy.ticketPerKilogram})`
+          : `${String(line.quantity)} × ${line.name} (${formatCents(line.unitTtcCents)})`,
       value: formatCents(line.lineTtcCents),
     })),
     { label: copy.ticketArticles, value: formatCents(ticket.articlesCents) },

@@ -423,6 +423,8 @@ export interface OrdersCopy {
    */
   readonly ticketHead: string;
   readonly ticketArticles: string;
+  /** L'unité d'une étiquette au poids, sur le ticket (P4 de `plan-vente-au-poids.md`). */
+  readonly ticketPerKilogram: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;
   readonly ticketTotal: string;
@@ -577,6 +579,7 @@ export const ORDERS_FR: OrdersCopy = {
   detailHead: 'Le détail',
   ticketHead: 'Votre ticket',
   ticketArticles: 'Articles',
+  ticketPerKilogram: '/ kg',
   ticketVoucher: 'Bon de fidélité',
   ticketDelivery: 'Livraison',
   ticketTotal: 'Total TTC',
@@ -711,6 +714,7 @@ export const ORDERS_EN: OrdersCopy = {
   detailHead: 'The detail',
   ticketHead: 'Your receipt',
   ticketArticles: 'Items',
+  ticketPerKilogram: '/ kg',
   ticketVoucher: 'Loyalty voucher',
   ticketDelivery: 'Delivery',
   ticketTotal: 'Total incl. VAT',
@@ -845,6 +849,7 @@ export const ORDERS_IT: OrdersCopy = {
   detailHead: 'Il dettaglio',
   ticketHead: 'Il tuo scontrino',
   ticketArticles: 'Articoli',
+  ticketPerKilogram: '/ kg',
   ticketVoucher: 'Buono fedeltà',
   ticketDelivery: 'Consegna',
   ticketTotal: 'Totale IVA inclusa',

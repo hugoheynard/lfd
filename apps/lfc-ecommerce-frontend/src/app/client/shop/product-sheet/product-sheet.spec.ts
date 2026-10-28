@@ -209,6 +209,64 @@ describe('ProductSheet', () => {
     expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,48 € TTC');
   });
 
+  /** P4 de `plan-vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
+  describe('un article au poids', () => {
+    // 12,40 € TTC le kilo pour un particulier ; 11,75 € HT le kilo pour un pro.
+    const SALMON: ShopItemView = {
+      ...(TEST_ITEMS[0] as ShopItemView),
+      sku: 'SAU-001',
+      name: 'Saumon gravlax',
+      unitPriceMillicents: 1_175_000,
+      unitPriceTtcCents: 1_240,
+      saleUnit: 'weight',
+      weightStepGrams: 50,
+      weightMinGrams: 200,
+    };
+    const qty = (): string =>
+      el().querySelector('app-quantity-rail .qty')?.textContent?.trim() ?? '';
+
+    it('dit le prix au kilo, dans l’assiette du lecteur', () => {
+      mount(SALMON, 0, false);
+
+      expect(el().querySelector('.amount')?.textContent?.trim()).toBe('12,40 €');
+      expect(el().querySelector('.per')?.textContent?.trim()).toBe('TTC / kg');
+    });
+
+    it('part du minimum, et le bouton dit « Ajouter 200 g » avec le total au poids', () => {
+      mount(SALMON, 0, false);
+
+      expect(qty()).toBe('200 g');
+      expect(minus()?.disabled).toBe(true);
+      expect(cta()?.textContent).toContain('Ajouter 200 g');
+      // 12,40 € × 200 g / 1000
+      expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('2,48 € TTC');
+    });
+
+    it('avance au pas de l’article, et pose des grammes au panier', () => {
+      mount(SALMON, 0, false);
+
+      click(plus());
+      click(plus());
+      expect(qty()).toBe('300 g');
+
+      click(cta());
+      expect(set).toEqual([300]);
+    });
+
+    it('dit les kilos au-delà du kilo', () => {
+      mount(SALMON, 1250, false);
+
+      expect(qty()).toBe('1,25 kg');
+    });
+
+    it('ne propose aucun lot de pièces, même à un professionnel', () => {
+      mount(SALMON, 0, true);
+
+      expect(el().querySelector('.batch')).toBeNull();
+      expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('2,35 € HT');
+    });
+  });
+
   it('dérive « Prix pro −10 % » des deux montants servis', () => {
     mount(NEGOTIATED, 0, true);
 

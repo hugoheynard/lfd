@@ -1,3 +1,4 @@
+import { FR } from '../../copy/fr';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideHttpClient } from '@angular/common/http';
@@ -689,7 +690,9 @@ describe('CartSummary — la carte de suggestion (RS2)', () => {
     ]);
     fixture.detectChanges();
 
-    expect(card()?.textContent).toContain(`${shelfPriceLabel(baguette, false)} HT`);
+    expect(card()?.textContent).toContain(
+      `${shelfPriceLabel(baguette, false, FR.product.perKilogram)} HT`,
+    );
   });
 
   it('R2 : la calculée suit la décidée, et dit « Souvent pris avec » l’article du panier', () => {
