@@ -21,6 +21,15 @@ import {
 } from '../workshop-deadlines';
 import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
 
+/** Paliers par rangée de la barre, au plus. */
+const STEPS_PER_ROW = 2;
+
+/**
+ * Part minimale d'un palier dans sa rangée : en dessous, son segment (largeur
+ * proportionnelle, plancher de 96 px dans fold-meter) coupe son libellé.
+ */
+const MIN_ROW_SHARE = 1 / 3;
+
 /**
  * **Une ligne de la fiche, vue par produit** (plan
  * `documentation/fournil/plan-fournee-v3.md` §4.2–4.7).
@@ -36,9 +45,6 @@ import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
  * **La ligne ne décide rien.** Elle remonte une quantité ou une fournée à
  * annuler ; le parent envoie, et la barre avance à la relecture.
  */
-/** Paliers par rangée de la barre. */
-const STEPS_PER_ROW = 3;
-
 @Component({
   selector: 'app-worksheet-line',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -155,18 +161,11 @@ export class WorksheetLine {
   });
 
   /**
-   * Les paliers, trois par rangée au plus (Hugo, 2026-10-28) : au-delà, les
-   * libellés ne tiennent plus, au téléphone comme au poste. Une rangée de
-   * plus en dessous.
+   * Les paliers, deux par rangée au plus (Hugo, 2026-10-28 : un libellé ne doit
+   * jamais être coupé). Un palier trop petit à côté de son voisin passe seul
+   * sur sa rangée, pour que son segment garde la place de son libellé.
    */
-  protected readonly segmentRows = computed(() => {
-    const segments = this.segments();
-    const rows: (readonly FoldMeterSegment[])[] = [];
-    for (let at = 0; at < segments.length; at += STEPS_PER_ROW) {
-      rows.push(segments.slice(at, at + STEPS_PER_ROW));
-    }
-    return rows;
-  });
+  protected readonly segmentRows = computed(() => rowsOf(this.segments()));
 
   protected addContainer(): void {
     const container = this.line().container;
@@ -186,4 +185,23 @@ export class WorksheetLine {
       this.recorded.emit(quantity);
     }
   }
+}
+
+/** Range les segments en rangées : deux au plus, aucun sous sa part minimale. */
+export function rowsOf(segments: readonly FoldMeterSegment[]): (readonly FoldMeterSegment[])[] {
+  const rows: FoldMeterSegment[][] = [];
+  for (const segment of segments) {
+    const row = rows.at(-1);
+    if (row !== undefined && row.length < STEPS_PER_ROW && fits([...row, segment])) {
+      row.push(segment);
+    } else {
+      rows.push([segment]);
+    }
+  }
+  return rows;
+}
+
+function fits(row: readonly FoldMeterSegment[]): boolean {
+  const total = row.reduce((sum, segment) => sum + segment.max, 0);
+  return row.every((segment) => segment.max / total >= MIN_ROW_SHARE);
 }

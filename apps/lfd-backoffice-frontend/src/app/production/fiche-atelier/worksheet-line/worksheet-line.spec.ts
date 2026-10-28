@@ -7,7 +7,7 @@ import type {
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
-import { WorksheetLine } from './worksheet-line';
+import { rowsOf, WorksheetLine } from './worksheet-line';
 
 /**
  * Ce que ces cas tiennent, et que ni `tsc` ni le build AOT ne peuvent dire :
@@ -239,7 +239,7 @@ describe('une ligne, vue par produit', () => {
     );
   });
 
-  it('passe à la rangée suivante au-delà de trois paliers', () => {
+  it('passe à la rangée suivante au-delà de deux paliers', () => {
     const el: HTMLElement = render(
       line({
         quantity: 40,
@@ -269,5 +269,18 @@ describe('une ligne, vue par produit', () => {
     ).nativeElement;
 
     expect(buttons(el).every((node) => node.disabled)).toBe(true);
+  });
+});
+
+/** Régression : « 143 avant 7 h » se coupait, segment trop étroit à côté d'un gros (2026-10-28). */
+describe('rowsOf — un libellé jamais coupé', () => {
+  const seg = (max: number) => ({ value: 0, max, tone: 'muted' as const, label: String(max) });
+
+  it('met deux paliers comparables sur la même rangée', () => {
+    expect(rowsOf([seg(100), seg(120), seg(90)]).map((row) => row.length)).toEqual([2, 1]);
+  });
+
+  it('met seul un palier trop petit à côté de son voisin', () => {
+    expect(rowsOf([seg(143), seg(2000)]).map((row) => row.length)).toEqual([1, 1]);
   });
 });
