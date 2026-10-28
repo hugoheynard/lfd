@@ -21,6 +21,8 @@ import { OrderOpeningPage } from './order-opening-page';
 const OPEN: OrderOpeningView = {
   ordersOpenToB2b: true,
   ordersOpenToB2c: true,
+  firstServiceDayB2b: null,
+  firstServiceDayB2c: null,
   updatedAt: null,
   updatedBy: null,
 };
@@ -47,6 +49,14 @@ class FakeOpening {
     this.current = {
       ordersOpenToB2b: patch.ordersOpenToB2b ?? base.ordersOpenToB2b,
       ordersOpenToB2c: patch.ordersOpenToB2c ?? base.ordersOpenToB2c,
+      firstServiceDayB2b:
+        patch.firstServiceDayB2b === undefined
+          ? (base.firstServiceDayB2b ?? null)
+          : patch.firstServiceDayB2b,
+      firstServiceDayB2c:
+        patch.firstServiceDayB2c === undefined
+          ? (base.firstServiceDayB2c ?? null)
+          : patch.firstServiceDayB2c,
       updatedAt: '2026-10-09T08:00:00.000Z',
       updatedBy: 'Hugo',
     };
@@ -286,5 +296,72 @@ describe('OrderOpeningPage', () => {
     expect(host(fixture).querySelector('[data-exemption="ex_1"]')).not.toBeNull();
     expect(host(fixture).querySelector('fold-danger-zone')).toBeNull();
     expect(host(fixture).querySelector('[data-add-exemption]')).toBeNull();
+  });
+
+  describe('le premier jour commandable (J3)', () => {
+    const dateInput = (
+      fixture: ComponentFixture<OrderOpeningPage>,
+      audience: string,
+    ): HTMLInputElement => {
+      const input = row(fixture, audience).querySelector<HTMLInputElement>('fold-date input');
+      if (input === null) {
+        throw new Error('Pas de champ date.');
+      }
+      return input;
+    };
+
+    it('montre la date servie et dit ce qu’elle fait', async () => {
+      const fixture = await mount(new FakeOpening({ ...OPEN, firstServiceDayB2c: '2026-10-30' }));
+
+      expect(dateInput(fixture, 'b2c').value).toBe('2026-10-30');
+      expect(dateInput(fixture, 'b2b').value).toBe('');
+      expect(row(fixture, 'b2b').textContent).toContain('Commandes à partir du');
+      expect(row(fixture, 'b2b').textContent).toContain(
+        'Les commandes client pour une journée antérieure sont refusées, sauf exemption',
+      );
+    });
+
+    it('n’envoie rien à la saisie, puis envoie la date à « Enregistrer » et relit', async () => {
+      const api = new FakeOpening(OPEN);
+      const fixture = await mount(api);
+      const input = dateInput(fixture, 'b2b');
+
+      expect(buttonIn(row(fixture, 'b2b'), 'Enregistrer').disabled).toBe(true);
+      input.value = '2026-11-02';
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+      expect(api.patches).toEqual([]);
+
+      buttonIn(row(fixture, 'b2b'), 'Enregistrer').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.patches).toEqual([{ firstServiceDayB2b: '2026-11-02' }]);
+      expect(dateInput(fixture, 'b2b').value).toBe('2026-11-02');
+      expect(buttonIn(row(fixture, 'b2b'), 'Enregistrer').disabled).toBe(true);
+    });
+
+    it('vide la date par « Aucune »', async () => {
+      const api = new FakeOpening({ ...OPEN, firstServiceDayB2c: '2026-10-30' });
+      const fixture = await mount(api);
+
+      expect(buttonIn(row(fixture, 'b2b'), 'Aucune').disabled).toBe(true);
+      buttonIn(row(fixture, 'b2c'), 'Aucune').click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.patches).toEqual([{ firstServiceDayB2c: null }]);
+      expect(dateInput(fixture, 'b2c').value).toBe('');
+    });
+
+    it('sans le droit d’écrire, montre la date en lecture seule, sans geste', async () => {
+      const fixture = await mount(new FakeOpening({ ...OPEN, firstServiceDayB2b: '2026-10-30' }), [
+        'lfc_order_opening:read',
+      ]);
+
+      expect(dateInput(fixture, 'b2b').readOnly).toBe(true);
+      expect(host(fixture).querySelector('li button')).toBeNull();
+    });
   });
 });

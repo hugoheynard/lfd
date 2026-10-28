@@ -11,6 +11,7 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDateComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldInlineConfirmComponent,
@@ -57,7 +58,13 @@ interface AudienceRow {
   readonly audience: CustomerAudience;
   readonly words: AudienceWords;
   readonly open: boolean;
+  /** Le premier jour commandable servi (`AAAA-MM-JJ`) ; `null` = aucune date. */
+  readonly firstDay: string | null;
 }
+
+/** Ce que dit le champ date, sous chaque clientèle (plan-premier-jour-commandable.md, J3). */
+export const FIRST_DAY_HINT =
+  'Les commandes client pour une journée antérieure sont refusées, sauf exemption ; l’équipe n’y est pas soumise.';
 
 /**
  * **Ouverture du e-commerce** — Réglages › Commandes (Hugo, 2026-10-09 ;
@@ -85,6 +92,7 @@ interface AudienceRow {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldDateComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldInlineConfirmComponent,
@@ -107,6 +115,8 @@ export class OrderOpeningPage {
    */
   protected readonly canWrite = computed(() => this.permissions.can('lfc_order_opening:write'));
 
+  protected readonly firstDayHint = FIRST_DAY_HINT;
+
   protected readonly state = signal<LoadState>('loading');
   protected readonly settings = signal<OrderOpeningView | null>(null);
   protected readonly exemptions = signal<readonly OrderOpeningExemptionView[]>([]);
@@ -121,10 +131,26 @@ export class OrderOpeningPage {
       return [];
     }
     return [
-      { audience: 'b2b', words: WORDS.b2b, open: view.ordersOpenToB2b },
-      { audience: 'b2c', words: WORDS.b2c, open: view.ordersOpenToB2c },
+      {
+        audience: 'b2b',
+        words: WORDS.b2b,
+        open: view.ordersOpenToB2b,
+        firstDay: view.firstServiceDayB2b ?? null,
+      },
+      {
+        audience: 'b2c',
+        words: WORDS.b2c,
+        open: view.ordersOpenToB2c,
+        firstDay: view.firstServiceDayB2c ?? null,
+      },
     ];
   });
+
+  /**
+   * La date en cours de saisie, par clientèle ; absente = celle servie. Le
+   * champ n'écrit rien seul : « Enregistrer » l'envoie, comme une bascule.
+   */
+  protected readonly drafts = signal<Readonly<Partial<Record<CustomerAudience, string>>>>({});
 
   /** L'encadré d'en-tête ; `null` quand tout est ouvert. */
   protected readonly notice = computed<ClosureNotice | null>(() => {
@@ -169,6 +195,34 @@ export class OrderOpeningPage {
     return row.open ? row.words.closeEffect : row.words.openEffect;
   }
 
+  /** La valeur du champ : la saisie en cours, sinon la date servie (vide = aucune). */
+  protected draftOf(row: AudienceRow): string {
+    return this.drafts()[row.audience] ?? row.firstDay ?? '';
+  }
+
+  protected setDraft(row: AudienceRow, value: string): void {
+    this.drafts.update((drafts) => ({ ...drafts, [row.audience]: value }));
+  }
+
+  /** Une saisie complète et différente de la date servie. */
+  protected canSaveDay(row: AudienceRow): boolean {
+    const draft = this.draftOf(row);
+    return draft !== '' && draft !== row.firstDay;
+  }
+
+  /** Pose (ou vide, `null`) le premier jour commandable d'une clientèle, puis relit. */
+  protected async saveFirstDay(row: AudienceRow, day: string | null): Promise<void> {
+    const patch: OrderOpeningPatch =
+      row.audience === 'b2b' ? { firstServiceDayB2b: day } : { firstServiceDayB2c: day };
+    if (await this.send(row.audience, patch)) {
+      this.drafts.update((drafts) =>
+        Object.fromEntries(
+          Object.entries(drafts).filter(([audience]) => audience !== row.audience),
+        ),
+      );
+    }
+  }
+
   /** Bascule une clientèle, puis relit. Un refus laisse l'état servi, avec la raison. */
   protected async toggle(row: AudienceRow): Promise<void> {
     if (this.pending() !== null) {
@@ -176,15 +230,25 @@ export class OrderOpeningPage {
     }
     const patch: OrderOpeningPatch =
       row.audience === 'b2b' ? { ordersOpenToB2b: !row.open } : { ordersOpenToB2c: !row.open };
-    this.pending.set(row.audience);
+    await this.send(row.audience, patch);
+  }
+
+  /** Envoie un réglage puis relit ; `false` sur refus, la raison dite. */
+  private async send(audience: CustomerAudience, patch: OrderOpeningPatch): Promise<boolean> {
+    if (this.pending() !== null) {
+      return false;
+    }
+    this.pending.set(audience);
     this.failure.set(null);
     try {
       await this.service.update(patch);
       this.settings.set(await this.service.read());
+      return true;
     } catch (error) {
       this.failure.set(
         httpErrorMessage(error, "L'ouverture de la boutique n'a pas pu être enregistrée."),
       );
+      return false;
     } finally {
       this.pending.set(null);
     }

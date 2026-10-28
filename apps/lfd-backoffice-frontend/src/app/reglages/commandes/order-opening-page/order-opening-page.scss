@@ -8,6 +8,20 @@
   list-style: none;
 }
 
+// Une clientèle : sa ligne de bascule, puis son premier jour commandable.
+.audience {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.first-day {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
 .row {
   display: flex;
   align-items: center;

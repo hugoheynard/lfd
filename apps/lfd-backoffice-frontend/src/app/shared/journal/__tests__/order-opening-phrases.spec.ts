@@ -45,6 +45,26 @@ describe('l’ouverture de la boutique (order_opening.updated)', () => {
     );
   });
 
+  it('dit le premier jour commandable posé et celui retiré', () => {
+    const input = updated({
+      ordersOpenToB2b: true,
+      ordersOpenToB2c: true,
+      firstServiceDayB2b: null,
+      firstServiceDayB2c: '2026-10-30',
+      previous: {
+        ordersOpenToB2b: true,
+        ordersOpenToB2c: true,
+        firstServiceDayB2b: '2026-10-29',
+        firstServiceDayB2c: null,
+      },
+    });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a retiré la date de début des commandes des professionnels et a fixé le début des commandes des particuliers au 30 octobre 2026 ; elles restent ouvertes aux professionnels et aux particuliers',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
+
   it('retombe sur la phrase générale si la charge est incomplète', () => {
     expect(sentence(updated({ ordersOpenToB2b: true }))).toBe(
       'Colette Martin a réglé l’ouverture de la boutique',

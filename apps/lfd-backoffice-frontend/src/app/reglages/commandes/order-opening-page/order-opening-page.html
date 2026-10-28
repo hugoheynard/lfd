@@ -30,33 +30,64 @@
 
         <ul class="rows">
           @for (row of rows(); track row.audience) {
-            <li class="row" [attr.data-audience]="row.audience">
-              <div class="what">
-                <p class="title">{{ row.words.title }}</p>
-                <p class="sentence">{{ row.words.sentence }}</p>
+            <li class="audience" [attr.data-audience]="row.audience">
+              <div class="row">
+                <div class="what">
+                  <p class="title">{{ row.words.title }}</p>
+                  <p class="sentence">{{ row.words.sentence }}</p>
+                </div>
+                <fold-badge
+                  [variant]="row.open ? 'success' : 'warning'"
+                  [content]="row.open ? 'Ouverte' : 'Fermée'"
+                />
+                @if (canWrite()) {
+                  <fold-inline-confirm
+                    [intent]="row.open ? 'warning' : 'primary'"
+                    [message]="effect(row)"
+                    [loading]="pending() === row.audience"
+                    (confirmed)="toggle(row)"
+                  >
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      [intent]="row.open ? 'warning' : 'primary'"
+                      [disabled]="pending() !== null"
+                    >
+                      {{ row.open ? 'Fermer' : 'Rouvrir' }}
+                    </button>
+                  </fold-inline-confirm>
+                }
               </div>
-              <fold-badge
-                [variant]="row.open ? 'success' : 'warning'"
-                [content]="row.open ? 'Ouverte' : 'Fermée'"
-              />
-              @if (canWrite()) {
-                <fold-inline-confirm
-                  [intent]="row.open ? 'warning' : 'primary'"
-                  [message]="effect(row)"
-                  [loading]="pending() === row.audience"
-                  (confirmed)="toggle(row)"
-                >
+              <div class="first-day" data-first-day>
+                <fold-date
+                  label="Commandes à partir du"
+                  [hint]="firstDayHint"
+                  [value]="draftOf(row)"
+                  (valueChange)="setDraft(row, $event)"
+                  [readOnly]="!canWrite()"
+                />
+                @if (canWrite()) {
+                  <button
+                    foldButton
+                    size="sm"
+                    [disabled]="pending() !== null || !canSaveDay(row)"
+                    (click)="saveFirstDay(row, draftOf(row))"
+                  >
+                    Enregistrer
+                  </button>
                   <button
                     foldButton
                     size="sm"
                     emphasis="outline"
-                    [intent]="row.open ? 'warning' : 'primary'"
-                    [disabled]="pending() !== null"
+                    intent="neutral"
+                    [disabled]="pending() !== null || row.firstDay === null"
+                    (click)="saveFirstDay(row, null)"
                   >
-                    {{ row.open ? 'Fermer' : 'Rouvrir' }}
+                    Aucune
                   </button>
-                </fold-inline-confirm>
-              }
+                }
+              </div>
             </li>
           }
         </ul>

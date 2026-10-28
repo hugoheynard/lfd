@@ -142,6 +142,9 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   fields: 'Champs modifiés',
   fileName: 'Fichier',
   firstName: 'Prénom',
+  // Le premier jour commandable, par clientèle (plan-premier-jour-commandable.md, J3).
+  firstServiceDayB2b: 'Commandes des professionnels à partir du',
+  firstServiceDayB2c: 'Commandes des particuliers à partir du',
   focal: 'Point focal',
   formeJuridique: 'Forme juridique',
   fr: 'Français',

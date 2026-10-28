@@ -10,6 +10,7 @@ import {
   type PhraseFact,
   type Segment,
 } from '../phrase';
+import { factDay } from '../units';
 
 /**
  * **L'ouverture de la boutique à la commande** (Hugo, 2026-10-09) — le miroir
@@ -46,6 +47,39 @@ function openings(fact: PhraseFact): readonly Opening[] | null {
   return read;
 }
 
+const FIRST_DAYS = [
+  { key: 'firstServiceDayB2b', of: 'des professionnels' },
+  { key: 'firstServiceDayB2c', of: 'des particuliers' },
+] as const;
+
+/** Une journée `AAAA-MM-JJ`, `null` pour « aucune », `undefined` si la charge ne la porte pas. */
+function dayOf(value: unknown): string | null | undefined {
+  return typeof value === 'string' || value === null ? value : undefined;
+}
+
+/**
+ * **Le premier jour commandable** (plan-premier-jour-commandable.md, J3) :
+ * « a ouvert les commandes des particuliers à partir du 30 octobre 2026 ».
+ * Les faits antérieurs ne portent pas ces clés : rien n'est dit.
+ */
+function firstDayChanges(fact: PhraseFact): string[] {
+  const previous = recordOf(fact.payload['previous']);
+  const said: string[] = [];
+  for (const { key, of } of FIRST_DAYS) {
+    const after = dayOf(fact.payload[key]);
+    const before = dayOf(previous?.[key]);
+    if (after === undefined || after === (before ?? null)) {
+      continue;
+    }
+    said.push(
+      after === null
+        ? `a retiré la date de début des commandes ${of}`
+        : `a fixé le début des commandes ${of} au ${factDay(after)}`,
+    );
+  }
+  return said;
+}
+
 function joined(entries: readonly Opening[]): string {
   return entries.map((entry) => entry.to).join(' et ');
 }
@@ -62,6 +96,7 @@ function orderOpening(fact: PhraseFact): Segment[] {
   const changes = [
     ...(opened.length === 0 ? [] : [`a rouvert les commandes ${joined(opened)}`]),
     ...(closed.length === 0 ? [] : [`a fermé les commandes ${joined(closed)}`]),
+    ...firstDayChanges(fact),
   ];
   if (changes.length === 0) {
     return [text('a réglé l’ouverture de la boutique sans la changer')];
@@ -94,7 +129,15 @@ export const ORDER_OPENING_PHRASES = {
     byActor(
       fact,
       orderOpening(fact),
-      openings(fact) === null ? [] : ['ordersOpenToB2b', 'ordersOpenToB2c', 'previous'],
+      openings(fact) === null
+        ? []
+        : [
+            'ordersOpenToB2b',
+            'ordersOpenToB2c',
+            'firstServiceDayB2b',
+            'firstServiceDayB2c',
+            'previous',
+          ],
     ),
   'order_opening.exemption_granted': (fact) =>
     byActor(
