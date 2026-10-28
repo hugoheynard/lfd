@@ -119,7 +119,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { famille: 'vien', etat: null, archivees: null },
+        queryParams: { famille: 'vien', etat: null, archivees: null, images: null },
         replaceUrl: true,
       }),
     );
@@ -130,6 +130,24 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     await chip('data-products-status', 'Archivées');
     expect(rows(element)).toEqual(['P3', 'V2']);
     expect(mask()?.disabled).toBe(true);
+  });
+
+  it('« Sans image » ne garde que les fiches qui n’en portent aucune, et l’écrit dans l’URL', async () => {
+    const illustrated = PRODUCTS.map((p) => ({ ...p, illustrated: p.id !== 'p2' }));
+    const { element, navigate, settle } = await render({}, undefined, illustrated);
+    element.querySelector<HTMLInputElement>('[data-products-without-images] input')?.click();
+    await settle();
+    expect(rows(element)).toEqual(['P2']);
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({ queryParams: expect.objectContaining({ images: 'sans' }) }),
+    );
+  });
+
+  it('lit « Sans image » dans l’URL', async () => {
+    const illustrated = PRODUCTS.map((p) => ({ ...p, illustrated: p.id === 'p1' }));
+    const { element } = await render({ images: 'sans' }, undefined, illustrated);
+    expect(rows(element)).toEqual(['P2', 'V1']);
   });
 
   it('lever le masque montre tout', async () => {
@@ -175,7 +193,7 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       expect(navigate).toHaveBeenCalledWith(
         [],
         expect.objectContaining({
-          queryParams: { famille: null, etat: 'activatable', archivees: null },
+          queryParams: { famille: null, etat: 'activatable', archivees: null, images: null },
         }),
       );
     });

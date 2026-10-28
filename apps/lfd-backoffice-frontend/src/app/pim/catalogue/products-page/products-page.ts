@@ -304,6 +304,10 @@ export class ProductsPage {
     this.setFilter({ ...this.filter(), hideArchived });
   }
 
+  protected toggleWithoutImages(withoutImages: boolean): void {
+    this.setFilter({ ...this.filter(), withoutImages });
+  }
+
   /** Le filtre change, et l'URL le retient : un rechargement garde la vue. */
   private setFilter(filter: ProductsFilter): void {
     this.filter.set(filter);

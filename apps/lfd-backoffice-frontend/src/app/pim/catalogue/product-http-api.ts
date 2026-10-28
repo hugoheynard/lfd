@@ -226,7 +226,11 @@ export class ProductHttpApi {
     const rows = await firstValueFrom(this.http.get<ProductListView[]>(this.url('products')));
     // `activatable` n'existe que sur la liste : le serveur le juge avec le code
     // même du refus d'activation, le front ne le recalcule pas.
-    return rows.map((row) => ({ ...backendToProduct(row), activatable: row.activatable }));
+    return rows.map((row) => ({
+      ...backendToProduct(row),
+      activatable: row.activatable,
+      illustrated: row.illustrated,
+    }));
   }
 
   /**

@@ -49,6 +49,8 @@ import { RestoreProductHandler } from "./product/application/restore-product.js"
 import { SetProductMediaHandler } from "./product/application/set-product-media.js";
 import { OnMediaAssetDescribedHandler } from "./product/application/on-media-asset-described.js";
 import { ProductImageUsage } from "./product/domain/ports/product-image-usage.js";
+import { IllustratedProductsReader } from "./product/domain/ports/illustrated-products.reader.js";
+import { PrismaIllustratedProductsReader } from "./product/infrastructure/prisma-illustrated-products.reader.js";
 import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product-image-usage.js";
 import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/application/set-product-cold-requirement.js";
@@ -193,6 +195,7 @@ import {
     { provide: EditorialReader, useClass: PrismaEditorialReader },
     { provide: PublishedAllergensReader, useClass: PrismaPublishedAllergensReader },
     { provide: ProductImageUsage, useClass: PrismaProductImageUsage },
+    { provide: IllustratedProductsReader, useClass: PrismaIllustratedProductsReader },
     { provide: CatalogRevisionRepository, useClass: PrismaCatalogRevisionRepository },
     { provide: CatalogRevisionSource, useClass: PrismaCatalogRevisionSource },
     TakeCatalogRevisionHandler,

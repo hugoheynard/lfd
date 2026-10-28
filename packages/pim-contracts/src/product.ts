@@ -345,6 +345,8 @@ export interface ProductListView extends ProductView {
   readonly activatable: boolean;
   /** Les manques jugés pour un brouillon ; `null` pour une publiée ou une archivée. */
   readonly activationGaps: ProductActivationGapsView | null;
+  /** Elle porte au moins une image, quel que soit son rôle (filtre « Sans image », 2026-10-28). */
+  readonly illustrated: boolean;
 }
 
 /**

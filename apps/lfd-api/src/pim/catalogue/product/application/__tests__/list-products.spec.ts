@@ -13,18 +13,40 @@ import {
   tarte,
 } from "./audience-doubles.js";
 import { FixedCitedAllergens } from "../../domain/ports/__tests__/fixed-cited-allergens.js";
+import { FixedIllustratedProducts } from "../../domain/ports/__tests__/fixed-illustrated-products.js";
 import { FixedActiveContexts } from "../../../../sales-contexts/domain/ports/__tests__/fixed-active-contexts.js";
 
 /** Le handler de liste, avec taux et contextes doublés. */
-function listing(product: ProductSnapshot, category: Category | null): ListProductsHandler {
+function listing(
+  product: ProductSnapshot,
+  category: Category | null,
+  illustrated: readonly string[] = [],
+): ListProductsHandler {
   return new ListProductsHandler(
     new OneProduct(product),
     new OneCategory(category),
     new FixedVatPercents(BOTH_RATES),
     new FixedActiveContexts(["b2b", "takeaway"]),
     new FixedCitedAllergens(),
+    new FixedIllustratedProducts(illustrated),
   );
 }
+
+/** Le filtre « Sans image » du catalogue lit ce drapeau (2026-10-28). */
+describe("ListProductsHandler — les images", () => {
+  it("dit qu'une fiche sans image n'est pas illustrée", async () => {
+    const [item] = await listing(tarte(), family("pro")).execute();
+
+    expect(item?.illustrated).toBe(false);
+  });
+
+  it("dit qu'une fiche qui porte une image est illustrée", async () => {
+    const product = tarte();
+    const [item] = await listing(product, family("pro"), [product.id]).execute();
+
+    expect(item?.illustrated).toBe(true);
+  });
+});
 
 /** La liste rend l'audience effective et sa provenance (1d du plan d'audience). */
 describe("ListProductsHandler — l'audience", () => {

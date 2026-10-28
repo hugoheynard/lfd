@@ -55,6 +55,13 @@
       [disabled]="maskDisabled()"
       (checkedChange)="toggleMask($event)"
     />
+    <fold-checkbox
+      data-products-without-images
+      size="sm"
+      label="Sans image"
+      [checked]="filter().withoutImages"
+      (checkedChange)="toggleWithoutImages($event)"
+    />
   </div>
 
   <fold-data-table

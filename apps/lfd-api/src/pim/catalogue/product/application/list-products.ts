@@ -15,6 +15,7 @@ import type { CompletenessRules } from "../domain/services/variant-completeness.
 import { audienceView, type AudienceView } from "./audience-view.js";
 import { readCompletenessRules } from "./completeness-support.js";
 import { CitedAllergensReader } from "../domain/ports/cited-allergens.reader.js";
+import { IllustratedProductsReader } from "../domain/ports/illustrated-products.reader.js";
 
 /**
  * Ce qu'une activation dirait de la fiche — jugé par l'agrégat, avec le code
@@ -28,7 +29,12 @@ export interface ActivationView {
 }
 
 /** Une fiche telle que la liste la rend : son état, son audience résolue, son activabilité. */
-export type ProductListItem = ProductSnapshot & AudienceView & ActivationView;
+export type ProductListItem = ProductSnapshot &
+  AudienceView &
+  ActivationView & {
+    /** Elle porte au moins une image (filtre « Sans image », 2026-10-28). */
+    readonly illustrated: boolean;
+  };
 
 /** Lecture du catalogue — dispatchée par le `QueryBus`. Sans paramètre. */
 export class ListProductsQuery {}
@@ -41,6 +47,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     private readonly catalogue: CatalogueReader,
     private readonly contexts: ActiveSalesContextsReader,
     private readonly cited: CitedAllergensReader,
+    private readonly illustrated: IllustratedProductsReader,
   ) {}
 
   /**
@@ -58,9 +65,11 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
     const audiences = new Map<string, Audience>(
       categories.map((category) => [category.id, category.audience]),
     );
-    const [vat, cited] = await Promise.all([
+    const ids = products.map((product) => product.id);
+    const [vat, cited, illustrated] = await Promise.all([
       this.catalogue.vatPercents(products.map((product) => product.snapshot())),
-      this.cited.ofProducts(products.map((product) => product.id)),
+      this.cited.ofProducts(ids),
+      this.illustrated.amongst(ids),
     ]);
     return products.map((product) => {
       const categoryAudience = audiences.get(product.categoryId);
@@ -76,6 +85,7 @@ export class ListProductsHandler implements IQueryHandler<ListProductsQuery, Pro
           citedAllergens: cited.get(product.id) ?? [],
           categoryAudience,
         }),
+        illustrated: illustrated.has(product.id),
       };
     });
   }

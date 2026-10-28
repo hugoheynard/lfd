@@ -187,6 +187,8 @@ export interface Product {
    * jugé au serveur par le code du refus d'activation. Absent ailleurs.
    */
   activatable?: boolean;
+  /** Elle porte au moins une image — rendu par la LISTE seule (filtre « Sans image »). */
+  illustrated?: boolean;
   /** Étiquettes de workflow interne : `a-decrire`, `prix-a-verifier`,
    *  `titre-a-verifier`, `tva-a-valider` — ce qui reste à compléter. */
   workflowFlags?: string[];

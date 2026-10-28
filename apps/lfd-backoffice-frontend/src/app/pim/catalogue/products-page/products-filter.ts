@@ -51,18 +51,21 @@ export type PrecautionaryOf = (product: Product) => boolean;
 
 const NOT_PRECAUTIONARY: PrecautionaryOf = () => false;
 
-/** Les trois filtres de la liste, tels que l'URL les retient. */
+/** Les filtres de la liste, tels que l'URL les retient. */
 export interface ProductsFilter {
   readonly family: string;
   readonly status: StatusFilter;
   /** Cache les archivées quand l'état vaut « Toutes ». Activé par défaut. */
   readonly hideArchived: boolean;
+  /** Ne garde que les fiches sans aucune image (Hugo, 2026-10-28). */
+  readonly withoutImages: boolean;
 }
 
 export const DEFAULT_FILTER: ProductsFilter = {
   family: ALL_FAMILIES,
   status: ALL_STATUSES,
   hideArchived: true,
+  withoutImages: false,
 };
 
 const STATUSES: readonly StatusFilter[] = [
@@ -80,6 +83,9 @@ const STATUSES: readonly StatusFilter[] = [
 const PARAM_FAMILY = 'famille';
 const PARAM_STATUS = 'etat';
 const PARAM_ARCHIVED = 'archivees';
+const PARAM_IMAGES = 'images';
+/** `images=sans` : seules les fiches sans image. */
+const IMAGES_NONE = 'sans';
 /** `archivees=visibles` : le masque est levé. */
 const ARCHIVED_SHOWN = 'visibles';
 
@@ -105,7 +111,9 @@ export function filterProducts(
       (filter.status === PRECAUTIONARY
         ? precautionaryOf(p)
         : statusMatches(p, filter.status, stateOf)) &&
-      !(hide && p.status === 'archived'),
+      !(hide && p.status === 'archived') &&
+      // Une liste qui ne dit rien (`illustrated` absent) ne passe pas pour sans image.
+      (!filter.withoutImages || p.illustrated === false),
   );
 }
 
@@ -155,6 +163,7 @@ export function filterFromParams(params: ParamMap): ProductsFilter {
     family: params.get(PARAM_FAMILY) ?? ALL_FAMILIES,
     status: STATUSES.find((s) => s === status) ?? ALL_STATUSES,
     hideArchived: params.get(PARAM_ARCHIVED) !== ARCHIVED_SHOWN,
+    withoutImages: params.get(PARAM_IMAGES) === IMAGES_NONE,
   };
 }
 
@@ -164,5 +173,6 @@ export function filterToParams(filter: ProductsFilter): Params {
     [PARAM_FAMILY]: filter.family === ALL_FAMILIES ? null : filter.family,
     [PARAM_STATUS]: filter.status === ALL_STATUSES ? null : filter.status,
     [PARAM_ARCHIVED]: filter.hideArchived ? null : ARCHIVED_SHOWN,
+    [PARAM_IMAGES]: filter.withoutImages ? IMAGES_NONE : null,
   };
 }
