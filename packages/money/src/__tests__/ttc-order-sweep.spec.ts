@@ -1,4 +1,5 @@
 import { composeTtcOrder, type TtcOrderAdjustment, type TtcOrderInput } from "../ttc-order.js";
+import { pieces } from "../sale-quantity.js";
 import { rateVatCents } from "../ttc-vat-allocation.js";
 import { seeded, violations } from "./ttc-order-support.js";
 
@@ -14,7 +15,7 @@ function randomBasket(random: () => number): TtcOrderInput {
   return {
     lines: Array.from({ length: int(0, 8) }, () => ({
       unitMillicents: random() < 0.05 ? 0 : int(1, 3_000_000),
-      quantity: int(1, 40),
+      quantity: pieces(int(1, 40)),
       vatRate: pick(RATES),
       discountEligible: random() < 0.8,
     })),

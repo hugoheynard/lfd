@@ -6,10 +6,11 @@ import type {
 } from "@lfd/contracts";
 import {
   lineTotalCents,
+  pieces,
   ttcCentsOf,
-  ventilateVat,
   type VatLine,
   type VatVentilationInput,
+  ventilateVat,
 } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 import type { CartAdjustment } from "@lfd/contracts";
@@ -346,7 +347,7 @@ function toQuoteLine(resolved: { line: OrderLineOf }): ShopQuoteLineView {
   // L'arrondi au centime a lieu UNE fois, ici, et le taxe compris se dérive de
   // ce total-là — pas du prix unitaire remultiplié. C'est ce qui fait qu'une
   // ligne de douze pièces dit la même chose que la caisse.
-  const htCents = lineTotalCents(line.unitPriceMillicents, line.quantity);
+  const htCents = lineTotalCents(line.unitPriceMillicents, pieces(line.quantity));
   return {
     sku: line.sku,
     quantity: line.quantity,

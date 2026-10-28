@@ -3,13 +3,15 @@ import { splitCents } from "./order-vat-split.js";
 import { ttcCentsFromHtMillicents } from "./tax.js";
 import { taxMultiplierBp, ttcOfHtAmount } from "./ttc-of-ht-amount.js";
 import { allocateRateVat } from "./ttc-vat-allocation.js";
+import { GRAMS_PER_KILOGRAM, type SaleQuantity } from "./sale-quantity.js";
 import { DELIVERY_VAT_RATE } from "./vat.js";
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
  * `documentation/pricing/plan-centime-particuliers.md`, § 4 et § 5 (voie B).
  *
- * Chaque terme est d'abord un TTC : la ligne vaut quantité × étiquette, la
+ * Chaque terme est d'abord un TTC : la ligne vaut quantité × étiquette (au
+ * poids : étiquette au kilo × grammes / 1000, arrondie au centime), la
  * remise retrait et le bon se prennent sur du TTC, le port est converti. Le
  * total est Σ de ces TTC — ce que le client lit, ce que Stripe prélève. La TVA
  * s'extrait ensuite par taux, au centime supérieur, se répartit sur les termes,
@@ -19,10 +21,13 @@ import { DELIVERY_VAT_RATE } from "./vat.js";
  * `VatVentilation`) n'est ni lu ni touché.
  */
 
-/** Une marchandise : prix résolu HT en millicentimes, quantité, taux. */
+/**
+ * Une marchandise : prix résolu HT en millicentimes (au kilo pour une ligne au
+ * poids), quantité avec son unité, taux.
+ */
 export interface TtcOrderLine {
   readonly unitMillicents: number;
-  readonly quantity: number;
+  readonly quantity: SaleQuantity;
   readonly vatRate: number;
   /** Entre dans l'assiette de la remise retrait. Absent = éligible. */
   readonly discountEligible?: boolean | undefined;
@@ -105,7 +110,7 @@ export function composeTtcOrder(input: TtcOrderInput): TtcOrderComposition {
   const labels = input.lines.map((line) =>
     ttcCentsFromHtMillicents(line.unitMillicents, line.vatRate),
   );
-  const lineTtcs = input.lines.map((line, i) => (labels[i] ?? 0) * Math.trunc(line.quantity));
+  const lineTtcs = input.lines.map((line, i) => lineTtcCents(labels[i] ?? 0, line.quantity));
   const gross = weightsOf(input.lines, lineTtcs, () => true);
   const eligible = weightsOf(input.lines, lineTtcs, (line) => line.discountEligible !== false);
   const discount = pickupDiscountParts(input.pickupDiscount, eligible);
@@ -114,6 +119,22 @@ export function composeTtcOrder(input: TtcOrderInput): TtcOrderComposition {
   const voucher = splitCents(voucherCents, net);
   const fee = deliveryFeeParts(input.deliveryFee, gross);
   return assemble(input.lines, labels, lineTtcs, { discount, voucher, fee });
+}
+
+/**
+ * Le TTC d'une ligne depuis son étiquette — plan du centime, § 4. À la pièce,
+ * `étiquette × n`, exact. Au poids, l'étiquette est au kilo : `étiquette ×
+ * grammes / 1000`, arrondie au centime — le client paie le prix au kilo qu'il
+ * lit, au poids commandé.
+ */
+function lineTtcCents(labelCents: number, quantity: SaleQuantity): number {
+  if (quantity.unit === "piece") {
+    return labelCents * quantity.amount;
+  }
+  return roundToCents({
+    num: BigInt(labelCents) * BigInt(quantity.amount),
+    den: BigInt(GRAMS_PER_KILOGRAM),
+  });
 }
 
 function pickupDiscountParts(

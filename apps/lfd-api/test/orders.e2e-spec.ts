@@ -18,7 +18,7 @@ import type { BillingAddressPayload, CustomerOrderView, PlacedOrderResponse } fr
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 
 const ADMIN = "auth0|admin";
 const MEMBER = "auth0|member";
@@ -575,7 +575,7 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
           // Le total DÉRIVE du prix, il ne le recopie pas : ce sont deux unités.
           // La ligne est de toute façon refusée par la contrainte — mais une
           // donnée de test impossible en production ne prouve rien du schéma.
-          lineTotalCents: lineTotalCents(existing.unitPriceMillicents, 1),
+          lineTotalCents: lineTotalCents(existing.unitPriceMillicents, pieces(1)),
         },
       }),
     ).rejects.toThrow();
@@ -660,7 +660,7 @@ describe("POST /orders/quote", () => {
     // Le sous-total est un MONTANT, le prix unitaire un prix : la relation
     // entre les deux passe par l'arrondi unique, pas par une multiplication
     // nue. L'assertion épingle la frontière d'unité en même temps que le total.
-    expect(body.subtotalCents).toBe(lineTotalCents(body.lines[0]!.unitPriceMillicents, 6));
+    expect(body.subtotalCents).toBe(lineTotalCents(body.lines[0]!.unitPriceMillicents, pieces(6)));
   });
 
   /** Le parcours zéro friction : sans société, seules les règles ouvertes à tous jouent. */

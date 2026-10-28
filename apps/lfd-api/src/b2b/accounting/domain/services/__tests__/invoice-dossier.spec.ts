@@ -1,4 +1,4 @@
-import { DELIVERY_VAT_RATE, lineTotalCents, ventilateVat, type VatExtra } from "@lfd/money";
+import { DELIVERY_VAT_RATE, lineTotalCents, pieces, type VatExtra, ventilateVat } from "@lfd/money";
 
 import { InvoiceDossierLateFeeRateMissingError } from "../../errors/invoice-dossier-errors.js";
 import { simulateInvoiceDossier } from "../invoice-dossier.js";
@@ -44,7 +44,7 @@ function bon(spec: BonSpec): FrozenInvoiceOrder {
     unitPriceMillicents: line.price,
     vatRate: line.rate,
     quantity: line.qty,
-    lineTotalCents: lineTotalCents(line.price, line.qty),
+    lineTotalCents: lineTotalCents(line.price, pieces(line.qty)),
   }));
   const delivery = spec.delivery ?? 0;
   const mode = spec.mode ?? null;

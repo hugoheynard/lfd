@@ -107,6 +107,16 @@ un montant TTC**, et c'est le TTC qui se garde, se borne et se fige :
 | Frais de zone   | le barème converti en TTC à son taux (§ 5, R1)                                                                                                                                                                                                                                                                                             |
 | Total           | **Σ TTC des lignes − remises TTC + frais TTC** — rien d'autre ; c'est ce que Stripe prélève                                                                                                                                                                                                                                                |
 
+**Une ligne au poids** (plan [`plan-vente-au-poids.md`](plan-vente-au-poids.md)
+§ 2, bâti au lot P0 le 2026-10-28 dans `composeTtcOrder`) : l'étiquette est le
+TTC **au kilo**, dérivé du HT au kilo par la même fonction, et la ligne vaut
+`étiquette au kilo × grammes / 1000`, **arrondie au centime** (la moitié vers
+le haut). Deux arrondis donc, mais le client paie le prix au kilo qu'il lit,
+au poids commandé. La quantité d'une ligne est une `SaleQuantity`
+(`pieces(n)` / `grams(g)`) : une ligne sans unité ne se compose plus. Aucun
+article n'est encore au poids — tant que le lot P3 n'existe pas, toutes les
+lignes passent `pieces(n)` et le calcul est inchangé.
+
 Puis, **pour chaque taux** :
 
 1. **TTC net du taux** = Σ TTC des termes de ce taux (une remise ou un port

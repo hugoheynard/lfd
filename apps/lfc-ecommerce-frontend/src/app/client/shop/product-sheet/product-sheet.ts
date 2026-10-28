@@ -17,7 +17,13 @@ import { formatCents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { discountBp, lineTotalCents, millicentsFromCents, unitPriceCents } from '@lfd/money';
+import {
+  discountBp,
+  lineTotalCents,
+  millicentsFromCents,
+  pieces,
+  unitPriceCents,
+} from '@lfd/money';
 
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
@@ -303,7 +309,7 @@ export class ProductSheet {
 
   /** Le total de ce qu'on emporte, dans la même assiette que le prix affiché. */
   protected readonly total = computed(() =>
-    formatCents(lineTotalCents(this.unitMillicents(), this.draft())),
+    formatCents(lineTotalCents(this.unitMillicents(), pieces(this.draft()))),
   );
 
   protected readonly addLabel = computed(() =>

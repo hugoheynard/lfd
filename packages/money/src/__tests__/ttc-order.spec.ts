@@ -1,5 +1,7 @@
 import { composeTtcOrder, type TtcOrderInput } from "../ttc-order.js";
-import { labelled, violations } from "./ttc-order-support.js";
+import { pieces } from "../sale-quantity.js";
+import { grams } from "../sale-quantity.js";
+import { labelled, quantified, violations } from "./ttc-order-support.js";
 
 function compose(input: TtcOrderInput) {
   const result = composeTtcOrder(input);
@@ -51,8 +53,8 @@ describe("composeTtcOrder — le particulier paie la somme des étiquettes", () 
 describe("composeTtcOrder — remise retrait (R2)", () => {
   // 3,33 € HT à 5,5 % → étiquette 3,51 ; 3,33 € HT à 20 % → 4,00.
   const twoRates = [
-    { unitMillicents: 333_000, quantity: 1, vatRate: 5.5 },
-    { unitMillicents: 333_000, quantity: 1, vatRate: 20 },
+    { unitMillicents: 333_000, quantity: pieces(1), vatRate: 5.5 },
+    { unitMillicents: 333_000, quantity: pieces(1), vatRate: 20 },
   ];
 
   it("−10 % sur 7,51 € TTC éligible : 0,75 €, découpé 0,35 / 0,40 (égalité au demi du HT, 6,66 × 10 %)", () => {
@@ -197,5 +199,26 @@ describe("composeTtcOrder — port (R1, R1 bis)", () => {
 
     expect(result.deliveryFee.ttcCents).toBe(211);
     expect(result.total.ttcCents).toBe(2316);
+  });
+});
+
+describe("composeTtcOrder — une ligne au poids (plan de la vente au poids, § 2)", () => {
+  it("1 250 g à 12,40 € / kg TTC : 15,50 €, le prix au kilo lu, au poids commandé", () => {
+    const result = compose({ lines: [quantified(1240, 5.5, grams(1250))] });
+
+    expect(result.lines[0]).toMatchObject({ labelCents: 1240, ttcCents: 1550 });
+    expect(result.total.ttcCents).toBe(1550);
+  });
+
+  it("arrondit la ligne au centime : 333 g à 12,40 € / kg font 4,13 €", () => {
+    const result = compose({ lines: [quantified(1240, 5.5, grams(333))] });
+
+    expect(result.lines[0]?.ttcCents).toBe(413);
+  });
+
+  it("zéro gramme ne coûte rien", () => {
+    const result = compose({ lines: [quantified(1240, 5.5, grams(0))] });
+
+    expect(result.total).toEqual({ ttcCents: 0, vatCents: 0, htCents: 0 });
   });
 });

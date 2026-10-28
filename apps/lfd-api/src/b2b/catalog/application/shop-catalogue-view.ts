@@ -1,5 +1,5 @@
 import type { ContentLocale, ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
-import { lineTotalCents, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
+import { lineTotalCents, pieces, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
 
 import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
@@ -81,7 +81,7 @@ export function ttcCentsFromHtMillicentsFor(
 ): number {
   return audience === "public"
     ? ttcCentsFromHtMillicents(unitPriceMillicents, vatRate)
-    : ttcCentsOf(lineTotalCents(unitPriceMillicents, 1), vatRate);
+    : ttcCentsOf(lineTotalCents(unitPriceMillicents, pieces(1)), vatRate);
 }
 
 function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView {

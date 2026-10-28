@@ -1,4 +1,4 @@
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 
 import type { CollectableOrder } from "../../ports/collection-candidates.reader.js";
 import { assembleCollection, type AssemblyInput } from "../collection-assembly.js";
@@ -43,7 +43,7 @@ function input(orders: readonly CollectableOrder[]): AssemblyInput {
 /** Un bon cohérent dont la TVA arrondie par bon diffère de celle de l'agrégat. */
 function halfCentOrder(companyId: string): CollectableOrder {
   const base = order(companyId);
-  const goods = lineTotalCents(HALF_CENT_PRICE, 1);
+  const goods = lineTotalCents(HALF_CENT_PRICE, pieces(1));
   const vat = 1;
   const frozen: FrozenInvoiceOrder = {
     ...base.frozen,

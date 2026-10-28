@@ -9,7 +9,7 @@ import type {
   PickupSnapshot,
   WindowMode,
 } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import type { DraftOrderInput } from "../../domain/entities/order.js";
@@ -140,7 +140,7 @@ export class OrderComposition {
     // feraient diverger le seuil de franco du total facturé.
     const priced: readonly PricedLine[] = lines.map((line) => ({
       sku: line.sku,
-      htCents: lineTotalCents(line.unitPriceMillicents, line.quantity),
+      htCents: lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
     }));
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).

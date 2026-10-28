@@ -96,6 +96,12 @@ const WATCHED = [
  * `lineTotalCents` est la **bonne** réponse dans presque tous les cas : elle
  * multiplie et arrondit une fois, ce que le serveur fait sur la ligne de
  * commande. Les autres existent pour les cas où il n'y a pas de quantité.
+ *
+ * Depuis le lot P0 de la vente au poids (2026-10-28), sa quantité est une
+ * `SaleQuantity` (`pieces(n)` / `grams(g)`) : la conversion connaît l'unité,
+ * et un prix au kilo multiplié par des grammes passe par elle comme le reste.
+ * La porte n'a rien de plus à chercher — la fonction est toujours le seul
+ * passage, et c'est le compilateur qui refuse désormais une quantité nue.
  */
 const CONVERTERS = [
   "lineTotalCents",

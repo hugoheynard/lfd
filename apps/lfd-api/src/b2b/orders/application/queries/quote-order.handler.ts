@@ -6,7 +6,7 @@ import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
@@ -124,7 +124,7 @@ function subtotalOf(
     return composed.lines.reduce((sum, line) => sum + line.htCents, 0);
   }
   return lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
+    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
     0,
   );
 }

@@ -1,3 +1,4 @@
+import { pieces, type SaleQuantity } from "../sale-quantity.js";
 import { htMillicentsOf } from "../tax.js";
 import type { TtcOrderComposition, TtcOrderInput, TtcOrderLine } from "../ttc-order.js";
 
@@ -5,7 +6,17 @@ import type { TtcOrderComposition, TtcOrderInput, TtcOrderLine } from "../ttc-or
 export function labelled(
   labelCents: number,
   vatRate: number,
-  quantity = 1,
+  count = 1,
+  discountEligible?: boolean,
+): TtcOrderLine {
+  return quantified(labelCents, vatRate, pieces(count), discountEligible);
+}
+
+/** Une ligne dont l'étiquette vaut `labelCents` (au kilo pour du poids), à la quantité donnée. */
+export function quantified(
+  labelCents: number,
+  vatRate: number,
+  quantity: SaleQuantity,
   discountEligible?: boolean,
 ): TtcOrderLine {
   const unitMillicents = htMillicentsOf(labelCents, vatRate) ?? 0;
@@ -18,8 +29,8 @@ export function labelled(
 export function violations(input: TtcOrderInput, result: TtcOrderComposition): readonly string[] {
   const found: string[] = [];
   const goods = result.lines.reduce((sum, line, i) => {
-    const quantity = input.lines[i]?.quantity ?? 0;
-    if (line.ttcCents !== quantity * line.labelCents)
+    const quantity = input.lines[i]?.quantity ?? pieces(0);
+    if (line.ttcCents !== expectedLineTtc(line.labelCents, quantity))
       found.push(`ligne ${i} ≠ quantité × étiquette`);
     return sum + line.ttcCents;
   }, 0);
@@ -64,4 +75,17 @@ export function seeded(seed: number): () => number {
     t ^= t + Math.imul(t ^ (t >>> 7), t | 61);
     return ((t ^ (t >>> 14)) >>> 0) / 4_294_967_296;
   };
+}
+
+/**
+ * Le TTC attendu d'une ligne, recalculé indépendamment : pièces × étiquette,
+ * ou étiquette au kilo × grammes / 1000 au centime le plus proche (moitié
+ * vers le haut — les montants sont positifs).
+ */
+function expectedLineTtc(labelCents: number, quantity: SaleQuantity): number {
+  if (quantity.unit === "piece") {
+    return quantity.amount * labelCents;
+  }
+  const milli = BigInt(labelCents) * BigInt(quantity.amount);
+  return Number((milli + 500n) / 1000n);
 }

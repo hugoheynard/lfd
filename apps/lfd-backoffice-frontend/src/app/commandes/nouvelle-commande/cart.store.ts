@@ -1,7 +1,7 @@
 import { computed, signal, type Signal } from '@angular/core';
 
 import type { OrderLineInput, OrderQuoteView } from '@lfd/contracts';
-import { lineTotalCents } from '@lfd/money';
+import { lineTotalCents, pieces } from '@lfd/money';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
@@ -111,7 +111,7 @@ export class CartStore {
    */
   readonly subtotalCents = computed(() =>
     this.pricedLines().reduce(
-      (total, line) => total + lineTotalCents(line.unitPriceMillicents, line.quantity),
+      (total, line) => total + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
       0,
     ),
   );

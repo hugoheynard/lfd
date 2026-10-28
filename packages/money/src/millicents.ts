@@ -1,4 +1,5 @@
 import { fromCents, roundToCents, type Exact } from "./exact.js";
+import { GRAMS_PER_KILOGRAM, type SaleQuantity } from "./sale-quantity.js";
 
 /**
  * **Le millicentime** — un millième de centime, soit 10⁻⁵ euro.
@@ -66,17 +67,23 @@ export function centsFromMillicents(millicents: number): number {
 
 /**
  * Le **total d'une ligne**, en centimes : un prix unitaire en millicentimes,
- * une quantité, **un seul arrondi**.
+ * une quantité AVEC son unité, **un seul arrondi**.
  *
  * C'est la fonction qui répare l'écart, et elle tient en une ligne. Ce qui
  * comptait n'était pas de calculer autrement mais de n'arrondir qu'ici —
  * arrondir le prix unitaire d'abord, puis multiplier, c'est multiplier
  * l'erreur par la quantité.
+ *
+ * À la pièce : `prix × n`. Au poids, le prix est **au kilo** et la quantité en
+ * grammes : `prix × g / 1000`, dans la même fraction exacte, arrondie une
+ * seule fois. L'unité est obligatoire : des grammes passés comme des pièces
+ * rendraient un montant mille fois trop grand (plan de la vente au poids, § 2).
  */
-export function lineTotalCents(unitMillicents: number, quantity: number): number {
+export function lineTotalCents(unitMillicents: number, quantity: SaleQuantity): number {
+  const perUnit = quantity.unit === "weight" ? BigInt(GRAMS_PER_KILOGRAM) : 1n;
   return roundToCents({
-    num: BigInt(Math.trunc(unitMillicents)) * BigInt(Math.trunc(quantity)),
-    den: BigInt(MILLICENTS_PER_CENT),
+    num: BigInt(Math.trunc(unitMillicents)) * BigInt(quantity.amount),
+    den: BigInt(MILLICENTS_PER_CENT) * perUnit,
   });
 }
 

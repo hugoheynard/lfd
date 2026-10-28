@@ -1,4 +1,4 @@
-import { lineTotalCents, ventilateVat } from "@lfd/money";
+import { lineTotalCents, pieces, ventilateVat } from "@lfd/money";
 
 import { simulateInvoiceDossier } from "../invoice-dossier.js";
 import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
@@ -16,7 +16,7 @@ function bon(
     unitPriceMillicents: 33_333,
     vatRate: "5.50",
     quantity: qty,
-    lineTotalCents: lineTotalCents(33_333, qty),
+    lineTotalCents: lineTotalCents(33_333, pieces(qty)),
   };
   const applied = cappedTo ?? discount;
   const ventilation = ventilateVat({
@@ -58,7 +58,7 @@ describe("simulateInvoiceDossier — les bons incohérents", () => {
     // Depuis le découpage bon par bon (2026-10-22), la facture ne déduit d'un
     // bon que la remise bornée à sa marchandise — 67 c ici, pas les 500 figés —
     // et c'est ce montant-là que le quatrième terme recompose.
-    const goods = lineTotalCents(33_333, 2);
+    const goods = lineTotalCents(33_333, pieces(2));
     const recomposed = goods - Math.min(capped.discountCents, goods) + capped.vatCents;
     expect(dossier.inconsistentOrders).toEqual([
       {

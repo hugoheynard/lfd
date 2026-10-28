@@ -1,5 +1,5 @@
 import type { OrderClientele, OrderLineAllergens, OrderLinePricingTrace } from "@lfd/contracts";
-import { lineTotalCents, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
+import { lineTotalCents, pieces, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
 
 import { InvalidOrderLineError } from "../errors/order-errors.js";
 
@@ -127,9 +127,9 @@ export class OrderLine {
     ensureQuantityAndPrice(input);
     // **L'unique arrondi de la ligne**, nommé ici pour que le taxe compris s'en
     // dérive plutôt que de refaire sa propre multiplication.
-    const htCents = lineTotalCents(input.unitPriceMillicents, input.quantity);
+    const htCents = lineTotalCents(input.unitPriceMillicents, pieces(input.quantity));
     // Le prix d'une pièce passe par le MÊME chemin que la vitrine —
-    // `ttcCentsOf(lineTotalCents(prix, 1), taux)` — et rend donc le nombre que
+    // `ttcCentsOf(lineTotalCents(prix, pieces(1)), taux)` — et rend donc le nombre que
     // le client a lu sur la vignette, au centime près. Un second arrondi a lieu
     // ici, sur la pièce, et c'est voulu : c'est celui de l'étiquette.
     const seals = clientele === "public";
@@ -144,7 +144,9 @@ export class OrderLine {
       // articles à 9,00 € TTC facturaient 107,98 € au lieu de 108,00. Le prix
       // unitaire garde ses décimales jusqu'à ce point.
       htCents,
-      seals ? ttcCentsOf(lineTotalCents(input.unitPriceMillicents, 1), input.vatRate) : null,
+      seals
+        ? ttcCentsOf(lineTotalCents(input.unitPriceMillicents, pieces(1)), input.vatRate)
+        : null,
       seals ? ttcCentsOf(htCents, input.vatRate) : null,
       assertConsistent(input),
       // `?? null` et jamais `?? { codes: [] }` : l'absence de déclaration reste

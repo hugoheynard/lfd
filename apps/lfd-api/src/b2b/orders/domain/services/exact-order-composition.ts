@@ -1,5 +1,5 @@
 import type { CartAdjustment, DeliveryVatMode } from "@lfd/contracts";
-import { composeTtcOrder, type TtcOrderComposition } from "@lfd/money";
+import { composeTtcOrder, pieces, type TtcOrderComposition } from "@lfd/money";
 
 /**
  * **La composition d'une commande `exact_ht`** — l'unique traduction de la
@@ -41,7 +41,7 @@ export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
   return composeTtcOrder({
     lines: input.lines.map((line) => ({
       unitMillicents: line.unitPriceMillicents,
-      quantity: line.quantity,
+      quantity: pieces(line.quantity),
       vatRate: line.vatRate,
       discountEligible: line.pickupDiscountEligible,
     })),

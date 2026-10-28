@@ -4,7 +4,7 @@ import {
   type CartAdjustment,
   type DeliveryVatMode,
 } from "@lfd/contracts";
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 
 import type { DraftOrderInput } from "../order.js";
 
@@ -171,13 +171,13 @@ export function proDraftInput(basket: ProBasket): DraftOrderInput {
     pickupDiscountEligible: eligible ?? true,
   }));
   const subtotal = lines.reduce(
-    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, line.quantity),
+    (sum, line) => sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
     0,
   );
   const eligible = lines.reduce(
     (sum, line) =>
       line.pickupDiscountEligible
-        ? sum + lineTotalCents(line.unitPriceMillicents, line.quantity)
+        ? sum + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity))
         : sum,
     0,
   );

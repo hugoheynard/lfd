@@ -29,7 +29,7 @@
  * sienne — les deux derniers cas de cette suite le tiennent.
  */
 import type { CustomerOrderQuoteView } from "@lfd/contracts";
-import { lineTotalCents, ventilateVat } from "@lfd/money";
+import { lineTotalCents, pieces, ventilateVat } from "@lfd/money";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
@@ -133,7 +133,7 @@ describe("le devis du logiciel comptable, refait par le moteur", () => {
     const view = await quoted();
 
     expect(
-      view.lines.map((line) => lineTotalCents(line.unitPriceMillicents, line.quantity)),
+      view.lines.map((line) => lineTotalCents(line.unitPriceMillicents, pieces(line.quantity))),
     ).toEqual(DEVIS_COMPTABLE.map((ligne) => ligne.expectedLineCents));
   });
 
@@ -155,13 +155,15 @@ describe("le devis du logiciel comptable, refait par le moteur", () => {
 
     const divergentes = view.lines.filter((line, index) => {
       const ligne = DEVIS_COMPTABLE[index];
-      return lineTotalCents(line.unitPriceMillicents, line.quantity) !== ligne?.documentLineCents;
+      return (
+        lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)) !== ligne?.documentLineCents
+      );
     });
 
     expect(divergentes).toHaveLength(1);
     expect(divergentes[0]?.sku).toBe("VIE-008");
     // 118,13 € chez nous, 118,12 € sur le document.
-    expect(lineTotalCents(157_500, 75)).toBe(11_813);
+    expect(lineTotalCents(157_500, pieces(75))).toBe(11_813);
   });
 
   /**
@@ -179,7 +181,7 @@ describe("le devis du logiciel comptable, refait par le moteur", () => {
 
     const ventilation = ventilateVat({
       lines: view.lines.map((line) => ({
-        htCents: lineTotalCents(line.unitPriceMillicents, line.quantity),
+        htCents: lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
         vatRate: line.vatRate,
       })),
       discountCents: 0,

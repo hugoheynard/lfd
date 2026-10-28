@@ -1,4 +1,4 @@
-import { lineTotalCents } from "@lfd/money";
+import { lineTotalCents, pieces } from "@lfd/money";
 
 import { aggregateInvoiceLines } from "../invoice-lines.js";
 import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
@@ -11,7 +11,7 @@ const PRICE = 33_333;
 const QUANTITY = 1;
 
 function bonOf(reference: string, minute: number, date: string): FrozenInvoiceOrder {
-  const cents = lineTotalCents(PRICE, QUANTITY);
+  const cents = lineTotalCents(PRICE, pieces(QUANTITY));
   return {
     reference,
     createdAt: new Date(minute * 60_000),
@@ -56,7 +56,7 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
 
     expect(rest).toEqual([]);
     expect(ordersSum).toBe(99);
-    expect(lineTotalCents(PRICE, 3)).toBe(100);
+    expect(lineTotalCents(PRICE, pieces(3))).toBe(100);
     expect(line).toMatchObject({
       sku: "BAG-001",
       unitPriceMillicents: PRICE,

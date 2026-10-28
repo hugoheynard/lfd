@@ -5,6 +5,7 @@ import {
   roundToMillicents,
 } from "../millicents.js";
 import { divideByBasisPoints, fromCents } from "../exact.js";
+import { pieces } from "../sale-quantity.js";
 
 /** Le hors taxe d'un article à 9,00 € TTC à 10 %, en millicentimes : 818 182. */
 const PRO_HT_MILLICENTS = roundToMillicents(divideByBasisPoints(fromCents(900), 11_000));
@@ -30,7 +31,7 @@ describe("lineTotalCents", () => {
    * multiplié par douze. Un seul arrondi, au total, et l'écart disparaît.
    */
   it("n'arrondit qu'une fois, à la fin", () => {
-    expect(lineTotalCents(PRO_HT_MILLICENTS, 12)).toBe(9_818);
+    expect(lineTotalCents(PRO_HT_MILLICENTS, pieces(12))).toBe(9_818);
     // 9 818 HT + 982 de TVA à 10 % = 10 800, soit douze fois 9,00 €.
     expect(9_818 + Math.round((9_818 * 10) / 100)).toBe(12 * 900);
   });
@@ -38,14 +39,14 @@ describe("lineTotalCents", () => {
   it("échoue là où arrondir le prix unitaire d'abord échouait", () => {
     const naive = centsFromMillicents(PRO_HT_MILLICENTS) * 12;
     expect(naive).toBe(9_816);
-    expect(lineTotalCents(PRO_HT_MILLICENTS, 12)).not.toBe(naive);
+    expect(lineTotalCents(PRO_HT_MILLICENTS, pieces(12))).not.toBe(naive);
   });
 
   it("reste exact sur un prix posé en centimes ronds", () => {
-    expect(lineTotalCents(millicentsFromCents(210), 7)).toBe(1_470);
+    expect(lineTotalCents(millicentsFromCents(210), pieces(7))).toBe(1_470);
   });
 
   it("rend zéro pour une quantité nulle", () => {
-    expect(lineTotalCents(PRO_HT_MILLICENTS, 0)).toBe(0);
+    expect(lineTotalCents(PRO_HT_MILLICENTS, pieces(0))).toBe(0);
   });
 });

@@ -9,6 +9,8 @@ export {
   lineTotalCents,
   unitPriceCents,
 } from "./millicents.js";
+export { GRAMS_PER_KILOGRAM, grams, pieces } from "./sale-quantity.js";
+export type { SaleQuantity, SaleUnit } from "./sale-quantity.js";
 export {
   fromCents,
   scaleByBasisPoints,

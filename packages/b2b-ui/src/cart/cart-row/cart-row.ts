@@ -1,4 +1,4 @@
-import { lineTotalCents } from '@lfd/money';
+import { lineTotalCents, pieces } from '@lfd/money';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -82,7 +82,7 @@ export class CartRow {
     // Le total de ligne s'ARRONDIT, une seule fois, ici : c'est un montant.
     // Le prix unitaire, lui, garde ses décimales — les confondre afficherait un
     // total qui ne correspond pas à ce que la facture portera.
-    formatCents(lineTotalCents(this.unitPriceMillicents(), this.quantity())),
+    formatCents(lineTotalCents(this.unitPriceMillicents(), pieces(this.quantity()))),
   );
   protected readonly initial = computed(() => this.name().charAt(0));
 
