@@ -19,10 +19,10 @@
           <button
             foldButton
             type="button"
-            size="sm"
+            size="md"
             shape="pill"
             [emphasis]="isPicked(preset) ? 'solid' : 'outline'"
-            intent="neutral"
+            [intent]="isPicked(preset) ? 'primary' : 'neutral'"
             [attr.data-keypad-preset]="preset.key"
             [attr.aria-pressed]="isPicked(preset)"
             (click)="pick(preset)"
