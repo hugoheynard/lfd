@@ -16,6 +16,8 @@ export class PrismaOrderOpeningRepository extends OrderOpeningRepository {
     const row = {
       ordersOpenToB2b: settings.ordersOpenToB2b,
       ordersOpenToB2c: settings.ordersOpenToB2c,
+      firstServiceDayB2b: dateColumnOf(settings.firstServiceDayB2b),
+      firstServiceDayB2c: dateColumnOf(settings.firstServiceDayB2c),
       updatedAt: settings.at,
       updatedByStaffId: settings.author.staffUserId,
       updatedByName: settings.author.name,
@@ -27,4 +29,13 @@ export class PrismaOrderOpeningRepository extends OrderOpeningRepository {
       update: row,
     });
   }
+}
+
+/**
+ * Une journée vers une colonne `DATE` : Prisma attend un `Date`, dont il ne
+ * garde que le jour UTC — minuit UTC le rend donc à l'identique. Ce n'est pas
+ * un instant comparé à l'horloge.
+ */
+function dateColumnOf(day: string | null): Date | null {
+  return day === null ? null : new Date(`${day}T00:00:00.000Z`);
 }

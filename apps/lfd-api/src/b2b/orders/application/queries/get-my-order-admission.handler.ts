@@ -9,7 +9,8 @@ import { GetMyOrderAdmissionQuery } from "./get-my-order-admission.query.js";
  * ({@link OrderIntake}) lue sans refus, pour que la boutique ne cache pas le
  * bouton d'un client exempté (décision de Hugo du 2026-10-26, option A).
  *
- * Ne rend que deux booléens : ni la clientèle, ni la liste des exemptions, ni
+ * Ne rend que deux booléens et le premier jour que CETTE personne peut
+ * commander (2026-10-28) : ni la clientèle, ni la liste des exemptions, ni
  * laquelle couvre la personne. Lecture pure.
  */
 @QueryHandler(GetMyOrderAdmissionQuery)
@@ -21,6 +22,10 @@ export class GetMyOrderAdmissionHandler implements IQueryHandler<
 
   async execute(query: GetMyOrderAdmissionQuery): Promise<MyOrderAdmissionView> {
     const standing = await this.intake.standingFor(query.companyId, { userId: query.userId });
-    return { ordersOpen: standing.ordersOpen, canOrder: standing.canOrder };
+    return {
+      ordersOpen: standing.ordersOpen,
+      canOrder: standing.canOrder,
+      firstServiceDay: standing.firstServiceDay,
+    };
   }
 }

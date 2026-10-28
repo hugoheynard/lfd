@@ -32,6 +32,7 @@ import { CancellationRule } from "./cancellation-rule.js";
 import { OrderComposition, type ComposedDraft } from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
+import { OrderIntake } from "./order-intake.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
 
@@ -51,7 +52,8 @@ import { OrderPlanGate } from "./order-plan-gate.service.js";
  * - **R3** : les lignes déjà présentes à leur prix figé ;
  * - **R4** : la surtaxe d'origine, recalculée sur son ajustement figé ; le bon
  *   déjà imputé, borné par l'agrégat ;
- * - **R5** : la nouvelle journée ouverte.
+ * - **R5** : la nouvelle journée ouverte — et, pour le client, pas avant le
+ *   premier jour commandable de sa clientèle (2026-10-28).
  */
 @Injectable()
 export class OrderRevising {
@@ -60,6 +62,7 @@ export class OrderRevising {
     private readonly cutoffs: OrderCutoffGate,
     private readonly plans: OrderPlanGate,
     private readonly rule: CancellationRule,
+    private readonly intake: OrderIntake,
   ) {}
 
   /**
@@ -175,6 +178,7 @@ export class OrderRevising {
   ): Promise<OrderRevisionToSave> {
     const actor = options.rulesOf ?? author.kind;
     await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
+    await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
     const parties: OrderParties = {
       companyId: order.companyId,
       placedByUserId: order.placedByUserId,
@@ -243,6 +247,26 @@ export class OrderRevising {
     if (closed && actor === "customer") {
       throw new ProductionPlanClosedError(day ?? "");
     }
+  }
+
+  /**
+   * Le premier jour commandable (plan `plan-premier-jour-commandable.md`),
+   * pour le client et quand la date CHANGE seulement : une commande déjà
+   * passée pour une journée plus tôt n'est pas touchée, et l'équipe n'y est
+   * pas soumise. La porte est celle de la passation, exemptions comprises ;
+   * la clientèle est relue au statut de la société aujourd'hui.
+   *
+   * @throws {ServiceDayBeforeFirstOrderableDayError} la nouvelle journée précède le premier jour.
+   */
+  private async ensureFirstOrderableDay(
+    order: RevisableOrder,
+    day: string | null,
+    actor: RevisionActor["kind"],
+  ): Promise<void> {
+    if (actor === "staff" || day === order.serviceDay) {
+      return;
+    }
+    await this.intake.ensureServiceDayFor(order.companyId, { userId: order.placedByUserId }, day);
   }
 
   /**

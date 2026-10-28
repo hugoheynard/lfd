@@ -2276,6 +2276,7 @@ export {
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
+  SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY,
   ordersOpenTo,
   guestOrderAdmissionPayloadSchema,
   orderOpeningPatchSchema,

@@ -17,7 +17,7 @@ export const ORDER_OPENING_FACTS = {
 /** Le sujet du fait : il n'y a qu'un réglage. */
 export const ORDER_OPENING_SUBJECT = "orders";
 
-/** La charge dit l'état posé ET l'état remplacé : un geste ne bascule qu'une case. */
+/** La charge dit l'état posé ET l'état remplacé : un geste ne change qu'un champ. */
 export class OrderOpeningUpdatedEvent implements JournaledEvent {
   constructor(
     readonly settings: OrderOpening,
@@ -32,9 +32,13 @@ export class OrderOpeningUpdatedEvent implements JournaledEvent {
       payload: {
         ordersOpenToB2b: this.settings.ordersOpenToB2b,
         ordersOpenToB2c: this.settings.ordersOpenToB2c,
+        firstServiceDayB2b: this.settings.firstServiceDayB2b,
+        firstServiceDayB2c: this.settings.firstServiceDayB2c,
         previous: {
           ordersOpenToB2b: this.previous.ordersOpenToB2b,
           ordersOpenToB2c: this.previous.ordersOpenToB2c,
+          firstServiceDayB2b: this.previous.firstServiceDayB2b,
+          firstServiceDayB2c: this.previous.firstServiceDayB2c,
         },
       },
     };

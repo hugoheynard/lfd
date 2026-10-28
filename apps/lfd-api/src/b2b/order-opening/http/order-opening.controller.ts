@@ -19,7 +19,11 @@ import { GetOrderOpeningQuery } from "../application/queries/get-order-opening.q
 export class OrderOpeningController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Les deux clientèles, et rien d'autre : l'auteur et l'instant restent dans la vue admin. */
+  /**
+   * Les deux clientèles et leurs premiers jours commandables, et rien d'autre :
+   * l'auteur et l'instant restent dans la vue admin. Les dates sont celles de
+   * la clientèle ; celle d'une personne exemptée se lit à `/order-admission`.
+   */
   @Get()
   async read(): Promise<PublicOrderOpeningView> {
     const settings = await this.queries.execute<GetOrderOpeningQuery, OrderOpeningView>(
@@ -28,6 +32,8 @@ export class OrderOpeningController {
     return {
       ordersOpenToB2b: settings.ordersOpenToB2b,
       ordersOpenToB2c: settings.ordersOpenToB2c,
+      firstServiceDayB2b: settings.firstServiceDayB2b ?? null,
+      firstServiceDayB2c: settings.firstServiceDayB2c ?? null,
     };
   }
 }

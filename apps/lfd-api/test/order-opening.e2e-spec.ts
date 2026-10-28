@@ -40,6 +40,8 @@ const PERSO = "auth0|perso-ouverture";
 const ACTIVE = "auth0|pro-ouverture";
 const CLOSED = "orders.closed_for_audience";
 const LINES = [{ sku: "VIE-001", quantity: 3 }];
+const NO_FIRST_DAY = { firstServiceDayB2b: null, firstServiceDayB2c: null };
+const BEFORE_FIRST_DAY = "orders.service_day_before_first_orderable_day";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -107,12 +109,12 @@ beforeEach(async () => {
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-function clientOrder(): Record<string, unknown> {
+function clientOrder(day = SERVICE_DAY): Record<string, unknown> {
   return {
     idempotencyKey: randomUUID(),
     salesTerms: null,
     pickupAddressId: pickupId,
-    requestedDeliveryDate: SERVICE_DAY,
+    requestedDeliveryDate: day,
     fulfillmentMethod: "pickup",
     // Pas de commande sans créneau (2026-10-14).
     requestedWindow: { start: "07:00", end: "08:00" },
@@ -121,7 +123,7 @@ function clientOrder(): Record<string, unknown> {
   };
 }
 
-async function placeAsGuest(email = "camille@visiteur.fr"): Promise<unknown> {
+async function placeAsGuest(email = "camille@visiteur.fr", day = SERVICE_DAY): Promise<unknown> {
   const result = await ctx.app.get(PlaceShopOrderHandler).execute(
     new PlaceShopOrderCommand({
       idempotencyKey: randomUUID(),
@@ -133,7 +135,7 @@ async function placeAsGuest(email = "camille@visiteur.fr"): Promise<unknown> {
       deliveryAddress: null,
       deliveryAddressId: null,
       pickupAddressId: pickupId,
-      requestedDeliveryDate: SERVICE_DAY,
+      requestedDeliveryDate: day,
       note: "",
       lines: LINES,
     }),
@@ -142,14 +144,14 @@ async function placeAsGuest(email = "camille@visiteur.fr"): Promise<unknown> {
   return result;
 }
 
-async function staffOrderForPro(): Promise<void> {
+async function staffOrderForPro(day = SERVICE_DAY): Promise<void> {
   await staff()
     .post("/admin/orders")
     .send({
       companyId: pro.companyId,
       buyerUserId: pro.buyerId,
       settlement: "link",
-      requestedDeliveryDate: SERVICE_DAY,
+      requestedDeliveryDate: day,
       fulfillmentMethod: "pickup",
       pickupAddressId: pickupId,
       requestedWindow: { start: "07:00", end: "08:00" },
@@ -158,7 +160,7 @@ async function staffOrderForPro(): Promise<void> {
     .expect(201);
 }
 
-async function setOpening(patch: Record<string, boolean>): Promise<void> {
+async function setOpening(patch: Record<string, boolean | string | null>): Promise<void> {
   await staff().patch("/admin/order-opening").send(patch).expect(204);
 }
 
@@ -169,6 +171,8 @@ describe("le réglage", () => {
     expect(jsonBody<PublicOrderOpeningView>(response)).toEqual({
       ordersOpenToB2b: true,
       ordersOpenToB2c: true,
+      firstServiceDayB2b: null,
+      firstServiceDayB2c: null,
     });
   });
 
@@ -188,12 +192,14 @@ describe("le réglage", () => {
       {
         ordersOpenToB2b: true,
         ordersOpenToB2c: false,
-        previous: { ordersOpenToB2b: true, ordersOpenToB2c: true },
+        ...NO_FIRST_DAY,
+        previous: { ordersOpenToB2b: true, ordersOpenToB2c: true, ...NO_FIRST_DAY },
       },
       {
         ordersOpenToB2b: true,
         ordersOpenToB2c: true,
-        previous: { ordersOpenToB2b: true, ordersOpenToB2c: false },
+        ...NO_FIRST_DAY,
+        previous: { ordersOpenToB2b: true, ordersOpenToB2c: false, ...NO_FIRST_DAY },
       },
     ]);
   });
@@ -339,5 +345,83 @@ describe("les exemptions à la fermeture", () => {
       .post("/admin/order-opening/exemptions")
       .send({ kind: "email", email: "JEAN@folie.fr" })
       .expect(409);
+  });
+});
+
+/**
+ * Le premier jour commandable, par clientèle (plan
+ * `plan-premier-jour-commandable.md`, 2026-10-28) : le réglage, le refus 409
+ * qui nomme la date, l'admission par personne, l'exemption, et l'équipe libre.
+ */
+describe("le premier jour commandable", () => {
+  const FIRST = serviceDay(10);
+
+  it("se pose, se publie, et va au journal avec la valeur précédente", async () => {
+    await setOpening({ firstServiceDayB2c: FIRST });
+
+    const view = jsonBody<PublicOrderOpeningView>(
+      await ctx.http().get("/order-opening").expect(200),
+    );
+    expect(view).toMatchObject({ firstServiceDayB2b: null, firstServiceDayB2c: FIRST });
+    const fact = await ctx.prisma.activityEvent.findFirst({
+      where: { type: "order_opening.updated" },
+      select: { payload: true },
+    });
+    expect(fact?.payload).toMatchObject({
+      firstServiceDayB2c: FIRST,
+      previous: { firstServiceDayB2c: null },
+    });
+
+    await setOpening({ firstServiceDayB2c: null });
+    expect(
+      jsonBody<PublicOrderOpeningView>(await ctx.http().get("/order-opening").expect(200)),
+    ).toMatchObject({ firstServiceDayB2c: null });
+  });
+
+  it("refuse en 400 un jour qui n'existe pas", async () => {
+    await staff()
+      .patch("/admin/order-opening")
+      .send({ firstServiceDayB2b: "2026-02-30" })
+      .expect(400);
+  });
+
+  it("refuse en 409 le pro avant sa date, admet sa date, et laisse l'équipe libre", async () => {
+    await setOpening({ firstServiceDayB2b: FIRST });
+
+    const refused = await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(409);
+    expect((refused.body as { code?: string }).code).toBe(BEFORE_FIRST_DAY);
+    expect((refused.body as { message?: string }).message).toContain(
+      "Les commandes des pros sont ouvertes pour le",
+    );
+    expect(await ctx.prisma.order.count()).toBe(0);
+
+    // La date des pros ne touche pas les particuliers.
+    await ctx.asSub(PERSO).post("/orders").send(clientOrder()).expect(201);
+    await ctx.asSub(ACTIVE).post("/orders").send(clientOrder(FIRST)).expect(201);
+    await staffOrderForPro();
+    expect(await ctx.prisma.order.count()).toBe(3);
+  });
+
+  it("dit à chaque personne SA date, et null une fois exemptée", async () => {
+    await setOpening({ firstServiceDayB2b: FIRST, firstServiceDayB2c: serviceDay(12) });
+
+    const mine = await ctx.asSub(ACTIVE).get("/order-admission/mine").expect(200);
+    expect(mine.body).toEqual({ ordersOpen: true, canOrder: true, firstServiceDay: FIRST });
+    const guest = await ctx
+      .http()
+      .post("/order-admission/guest")
+      .send({ email: "camille@visiteur.fr" })
+      .expect(200);
+    expect(guest.body).toEqual({ canOrder: true, firstServiceDay: serviceDay(12) });
+    await expect(placeAsGuest()).rejects.toThrow("Les commandes des particuliers sont ouvertes");
+
+    await staff()
+      .post("/admin/order-opening/exemptions")
+      .send({ kind: "company", companyId: pro.companyId })
+      .expect(201);
+
+    const exempted = await ctx.asSub(ACTIVE).get("/order-admission/mine").expect(200);
+    expect(exempted.body).toEqual({ ordersOpen: true, canOrder: true, firstServiceDay: null });
+    await ctx.asSub(ACTIVE).post("/orders").send(clientOrder()).expect(201);
   });
 });

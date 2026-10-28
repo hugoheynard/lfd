@@ -66,6 +66,8 @@ import { RecordingDeliveryNoteFollowing } from "./delivery-note-following-double
 import { RecordingDurable } from "./durable-doubles.js";
 import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
+import type { OrderIntake } from "../../services/order-intake.service.js";
+import { intakeAt } from "./intake-doubles.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
@@ -212,6 +214,7 @@ export function revisingAt(
     readonly plans?: OrderPlanGate;
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
+    readonly intake?: OrderIntake;
   } = {},
 ): OrderRevising {
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
@@ -242,6 +245,7 @@ export function revisingAt(
     cutoffs,
     options.plans ?? openPlanGate(),
     new CancellationRule(options.engagements ?? new FixedEngagements()),
+    options.intake ?? intakeAt(undefined, "active", [], {}, undefined, clock),
   );
 }
 

@@ -130,11 +130,17 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
       const role = await this.guard.roleOf(command.actorUserId, companyId);
       ensureOrderMember(role, companyId);
     }
-    // La boutique fermée à la clientèle, ou des CGV cochées qui ne sont plus
+    // La boutique fermée à la clientèle, une journée avant son premier jour
+    // commandable (2026-10-28), ou des CGV cochées qui ne sont plus
     // en vigueur, refusent ici, avant tout calcul : la clé est rendue, et un
     // rejeu d'une commande déjà passée (plus haut) passe toujours — elle a été
     // prise quand la boutique était ouverte et ses CGV acceptées.
-    await this.intake.admit(companyId, { userId: command.actorUserId }, payload.salesTerms);
+    await this.intake.admit(
+      companyId,
+      { userId: command.actorUserId },
+      payload.salesTerms,
+      payload.requestedDeliveryDate,
+    );
 
     // Le bon se LIT ici, sans rien engager : sa valeur entre dans le total, donc
     // dans l'intention Stripe. C'est la réservation, plus bas, qui tranche une

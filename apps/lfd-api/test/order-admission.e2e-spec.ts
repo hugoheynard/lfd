@@ -72,26 +72,34 @@ async function guest(email: string): Promise<GuestOrderAdmissionView> {
 
 describe("GET /order-admission/mine", () => {
   it("ouverte : ouvert et commandable", async () => {
-    expect(await mine(PRO)).toEqual({ ordersOpen: true, canOrder: true });
+    expect(await mine(PRO)).toEqual({ ordersOpen: true, canOrder: true, firstServiceDay: null });
   });
 
   it("fermée aux pros : la société exemptée peut commander, l'autre non, sans rien apprendre", async () => {
     await setOpening({ ordersOpenToB2b: false });
-    expect(await mine(PRO)).toEqual({ ordersOpen: false, canOrder: false });
+    expect(await mine(PRO)).toEqual({ ordersOpen: false, canOrder: false, firstServiceDay: null });
 
     await exempt({ kind: "company", companyId });
 
-    expect(await mine(PRO)).toEqual({ ordersOpen: false, canOrder: true });
-    expect(await mine(OTHER_PRO)).toEqual({ ordersOpen: false, canOrder: false });
+    expect(await mine(PRO)).toEqual({ ordersOpen: false, canOrder: true, firstServiceDay: null });
+    expect(await mine(OTHER_PRO)).toEqual({
+      ordersOpen: false,
+      canOrder: false,
+      firstServiceDay: null,
+    });
   });
 
   it("fermée aux particuliers : la personne connectée passe par son adresse", async () => {
     await setOpening({ ordersOpenToB2c: false });
-    expect(await mine(PERSO)).toEqual({ ordersOpen: false, canOrder: false });
+    expect(await mine(PERSO)).toEqual({
+      ordersOpen: false,
+      canOrder: false,
+      firstServiceDay: null,
+    });
 
     await exempt({ kind: "email", email: `${PERSO}@test.fr` });
 
-    expect(await mine(PERSO)).toEqual({ ordersOpen: false, canOrder: true });
+    expect(await mine(PERSO)).toEqual({ ordersOpen: false, canOrder: true, firstServiceDay: null });
   });
 
   it("refuse sans jeton", async () => {
@@ -100,17 +108,17 @@ describe("GET /order-admission/mine", () => {
 });
 
 describe("POST /order-admission/guest", () => {
-  it("rend un booléen pour CETTE adresse, et rien d'autre", async () => {
-    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: true });
+  it("rend un booléen pour CETTE adresse, et sa date (aucune ici)", async () => {
+    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: true, firstServiceDay: null });
 
     await setOpening({ ordersOpenToB2c: false });
-    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: false });
+    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: false, firstServiceDay: null });
 
     await exempt({ kind: "email", email: "Camille@Visiteur.fr" });
     await exempt({ kind: "company", companyId });
 
-    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: true });
-    expect(await guest("autre@visiteur.fr")).toEqual({ canOrder: false });
+    expect(await guest("camille@visiteur.fr")).toEqual({ canOrder: true, firstServiceDay: null });
+    expect(await guest("autre@visiteur.fr")).toEqual({ canOrder: false, firstServiceDay: null });
   });
 
   it("refuse une adresse mal formée", async () => {

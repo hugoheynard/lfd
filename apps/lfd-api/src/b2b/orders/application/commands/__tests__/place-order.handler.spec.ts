@@ -6,12 +6,18 @@ import {
   OrderPayerNotActiveError,
 } from "../../../domain/errors/order-payer-errors.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
-import type {
-  BillingAddressPayload,
-  DeliveryZoneView,
-  PickupAddressView,
-  PlaceOrderPayload,
+import {
+  addDays,
+  type BillingAddressPayload,
+  type DeliveryZoneView,
+  type PickupAddressView,
+  type PlaceOrderPayload,
+  type PublicOrderOpeningView,
 } from "@lfd/contracts";
+import {
+  frenchServiceDayOf,
+  ServiceDayBeforeFirstOrderableDayError,
+} from "../../../domain/errors/service-day-before-first-orderable-day.error.js";
 
 import { DeliveryZoneRepository } from "../../../../delivery-zones/domain/delivery-zone.repository.js";
 import {
@@ -1990,7 +1996,7 @@ describe("PlaceOrderHandler — un site facturé à son principal", () => {
  */
 describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
   function closedTo(
-    opening: { readonly ordersOpenToB2b: boolean; readonly ordersOpenToB2c: boolean },
+    opening: Partial<PublicOrderOpeningView>,
     sink: { placed: OrderToPlace | null },
   ): PlaceOrderHandler {
     return new PlaceOrderHandler(
@@ -2007,10 +2013,49 @@ describe("PlaceOrderHandler — la boutique fermée à une clientèle", () => {
       new FixedVoucherQuotes(),
       new RecordingRedemption(),
       new RecordingDurable(),
-      intakeAt(opening, "active"),
+      intakeAt(opening, "active", [], {}, undefined, new FixedClock(PRICED_AT)),
       new CustomerCancellationDeadline(new FixedCancellationSettings()),
     );
   }
+
+  /** Plan « premier jour commandable » (2026-10-28) : la journée de service, pas l'instant. */
+  describe("le premier jour commandable", () => {
+    const DAY = payload().requestedDeliveryDate ?? "";
+
+    it("refuse en 409 une journée d'avant le premier jour des pros, en nommant la date", async () => {
+      const sink: { placed: OrderToPlace | null } = { placed: null };
+      const first = addDays(DAY, 1);
+      const handler = closedTo({ firstServiceDayB2b: first }, sink);
+
+      const refusal = handler.execute(new PlaceOrderCommand("u1", payload(), "c1"));
+
+      await expect(refusal).rejects.toBeInstanceOf(ServiceDayBeforeFirstOrderableDayError);
+      await expect(refusal).rejects.toThrow(
+        `Les commandes des pros sont ouvertes pour le ${frenchServiceDayOf(first)} et les jours suivants`,
+      );
+      expect(sink.placed).toBeNull();
+    });
+
+    it("admet le premier jour lui-même", async () => {
+      const sink: { placed: OrderToPlace | null } = { placed: null };
+
+      await closedTo({ firstServiceDayB2b: DAY }, sink).execute(
+        new PlaceOrderCommand("u1", payload(), "c1"),
+      );
+
+      expect(sink.placed).not.toBeNull();
+    });
+
+    it("n'applique pas la date des pros à un particulier connecté", async () => {
+      const sink: { placed: OrderToPlace | null } = { placed: null };
+
+      await closedTo({ firstServiceDayB2b: addDays(DAY, 1) }, sink).execute(
+        new PlaceOrderCommand("u1", payload(), null),
+      );
+
+      expect(sink.placed).not.toBeNull();
+    });
+  });
 
   it("refuse la commande d'un pro quand la boutique est fermée aux pros, sans rien écrire", async () => {
     const sink: { placed: OrderToPlace | null } = { placed: null };

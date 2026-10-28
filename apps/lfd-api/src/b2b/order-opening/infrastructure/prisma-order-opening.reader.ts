@@ -23,6 +23,8 @@ export class PrismaOrderOpeningReader extends OrderOpeningReader {
       select: {
         ordersOpenToB2b: true,
         ordersOpenToB2c: true,
+        firstServiceDayB2b: true,
+        firstServiceDayB2c: true,
         updatedAt: true,
         updatedByName: true,
       },
@@ -33,10 +35,17 @@ export class PrismaOrderOpeningReader extends OrderOpeningReader {
     return {
       ordersOpenToB2b: row.ordersOpenToB2b,
       ordersOpenToB2c: row.ordersOpenToB2c,
+      firstServiceDayB2b: dayOfColumn(row.firstServiceDayB2b),
+      firstServiceDayB2c: dayOfColumn(row.firstServiceDayB2c),
       updatedAt: row.updatedAt.toISOString(),
       // Un agent que l'annuaire ne connaissait pas a été figé sans nom : on ne
       // l'invente pas.
       updatedBy: row.updatedByName === "" ? null : row.updatedByName,
     };
   }
+}
+
+/** Une colonne `DATE` relue en journée `AAAA-MM-JJ` : Prisma la rend à minuit UTC. */
+function dayOfColumn(column: Date | null): string | null {
+  return column === null ? null : column.toISOString().slice(0, 10);
 }

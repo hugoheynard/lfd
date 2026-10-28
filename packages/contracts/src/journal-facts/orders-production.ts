@@ -640,7 +640,16 @@ export const ORDERS_PRODUCTION_FACTS = {
     payload({
       ordersOpenToB2b: z.boolean(),
       ordersOpenToB2c: z.boolean(),
-      previous: payload({ ordersOpenToB2b: z.boolean(), ordersOpenToB2c: z.boolean() }),
+      // Les premiers jours commandables (2026-10-28). Facultatifs : les faits
+      // écrits avant ne les portent pas, et un fait passé ne se réécrit pas.
+      firstServiceDayB2b: z.string().nullable().optional(),
+      firstServiceDayB2c: z.string().nullable().optional(),
+      previous: payload({
+        ordersOpenToB2b: z.boolean(),
+        ordersOpenToB2c: z.boolean(),
+        firstServiceDayB2b: z.string().nullable().optional(),
+        firstServiceDayB2c: z.string().nullable().optional(),
+      }),
     }),
   ),
   /**

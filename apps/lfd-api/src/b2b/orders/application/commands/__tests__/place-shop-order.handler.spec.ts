@@ -1,5 +1,6 @@
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import {
+  addDays,
   DEFAULT_DELIVERY_AVAILABILITY,
   type CatalogPricing,
   type DeliveryAvailabilityView,
@@ -12,6 +13,7 @@ import {
 import { ownPayers } from "./payer-doubles.js";
 import { intakeAt } from "./intake-doubles.js";
 import { OrdersClosedForAudienceError } from "../../../domain/errors/orders-closed-for-audience.error.js";
+import { ServiceDayBeforeFirstOrderableDayError } from "../../../domain/errors/service-day-before-first-orderable-day.error.js";
 import { SalesTermsOutdatedError } from "../../../domain/errors/sales-terms-outdated.error.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../../platform/events/__tests__/recording-publisher.js";
@@ -445,7 +447,7 @@ function scene(
   options: {
     readonly claim?: IdempotencyClaim;
     readonly delivery?: DeliveryAvailabilityView;
-    readonly opening?: PublicOrderOpeningView;
+    readonly opening?: Partial<PublicOrderOpeningView>;
     readonly points?: number | null;
     readonly welcomeBonus?: number | null;
     readonly plans?: OrderPlanGate;
@@ -471,7 +473,7 @@ function scene(
     noReader,
     new DirectUnitOfWork(),
     durable,
-    intakeAt(options.opening, "active", [], {}, options.salesTerms),
+    intakeAt(options.opening, "active", [], {}, options.salesTerms, new FixedClock(PRICED_AT)),
     earning,
     new FakeWelcome(options.welcomeBonus ?? null),
     new CustomerCancellationDeadline(new FixedCancellationSettings(options.cancellation)),
@@ -816,6 +818,42 @@ describe("PlaceShopOrderHandler — la boutique fermée aux particuliers", () =>
     await handler.execute(new PlaceShopOrderCommand(payload()));
 
     expect(sink.placed).not.toBeNull();
+  });
+});
+
+/** Plan « premier jour commandable » (2026-10-28) : sans compte = la date des particuliers. */
+describe("PlaceShopOrderHandler — le premier jour commandable", () => {
+  const DAY = payload().requestedDeliveryDate ?? "";
+
+  it("refuse une journée d'avant le premier jour, avant d'inscrire le porteur, et rend la clé", async () => {
+    const { handler, sink, buyers, keys } = scene({
+      opening: { firstServiceDayB2c: addDays(DAY, 2) },
+    });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toBeInstanceOf(
+      ServiceDayBeforeFirstOrderableDayError,
+    );
+    expect(buyers.registered).toEqual([]);
+    expect(sink.placed).toBeNull();
+    expect(keys.released).toEqual([KEY]);
+  });
+
+  it("admet une journée suivante", async () => {
+    const { handler, sink } = scene({ opening: { firstServiceDayB2c: addDays(DAY, -1) } });
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed).not.toBeNull();
+  });
+
+  it("la fermeture l'emporte sur la date", async () => {
+    const { handler } = scene({
+      opening: { ordersOpenToB2c: false, firstServiceDayB2c: addDays(DAY, 2) },
+    });
+
+    await expect(handler.execute(new PlaceShopOrderCommand(payload()))).rejects.toBeInstanceOf(
+      OrdersClosedForAudienceError,
+    );
   });
 });
 

@@ -3,7 +3,8 @@ import { OrderOpeningUpdatedEvent } from "../order-opening.events.js";
 
 const AT = new Date(0);
 const AUTHOR = { staffUserId: "staff_agent", name: "Camille Durand", role: "commercial" };
-const OPEN = { ordersOpenToB2b: true, ordersOpenToB2c: true } as const;
+const NO_FIRST_DAY = { firstServiceDayB2b: null, firstServiceDayB2c: null } as const;
+const OPEN = { ordersOpenToB2b: true, ordersOpenToB2c: true, ...NO_FIRST_DAY } as const;
 
 describe("OrderOpening.pose", () => {
   it("ne change que la clientèle nommée par le patch", () => {
@@ -31,13 +32,41 @@ describe("OrderOpening.pose", () => {
 
   it("permet de fermer aux deux — le staff saisit toujours", () => {
     const settings = OrderOpening.pose({
-      current: { ordersOpenToB2b: false, ordersOpenToB2c: true },
+      current: { ordersOpenToB2b: false, ordersOpenToB2c: true, ...NO_FIRST_DAY },
       patch: { ordersOpenToB2c: false },
       at: AT,
       author: AUTHOR,
     });
 
     expect([settings.ordersOpenToB2b, settings.ordersOpenToB2c]).toEqual([false, false]);
+  });
+});
+
+describe("OrderOpening.pose — premier jour commandable", () => {
+  it("pose une date sans toucher à l'autre clientèle ni aux cases", () => {
+    const settings = OrderOpening.pose({
+      current: { ...OPEN, firstServiceDayB2b: "2026-11-02" },
+      patch: { firstServiceDayB2c: "2026-11-05" },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect([settings.firstServiceDayB2b, settings.firstServiceDayB2c]).toEqual([
+      "2026-11-02",
+      "2026-11-05",
+    ]);
+    expect([settings.ordersOpenToB2b, settings.ordersOpenToB2c]).toEqual([true, true]);
+  });
+
+  it("retire une date par null", () => {
+    const settings = OrderOpening.pose({
+      current: { ...OPEN, firstServiceDayB2b: "2026-11-02" },
+      patch: { firstServiceDayB2b: null },
+      at: AT,
+      author: AUTHOR,
+    });
+
+    expect(settings.firstServiceDayB2b).toBeNull();
   });
 });
 
@@ -59,7 +88,8 @@ describe("OrderOpeningUpdatedEvent", () => {
     expect(fact.payload).toEqual({
       ordersOpenToB2b: true,
       ordersOpenToB2c: false,
-      previous: { ordersOpenToB2b: true, ordersOpenToB2c: true },
+      ...NO_FIRST_DAY,
+      previous: { ordersOpenToB2b: true, ordersOpenToB2c: true, ...NO_FIRST_DAY },
     });
   });
 });

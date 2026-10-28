@@ -1,10 +1,22 @@
-import { ordersOpenTo, type AcceptedSalesTerms, type CustomerAudience } from "@lfd/contracts";
+import {
+  instantToLocal,
+  ordersOpenTo,
+  type AcceptedSalesTerms,
+  type CustomerAudience,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { admitsOrder } from "../../../order-opening/domain/order-admission.js";
+import { Clock } from "../../../../platform/time/clock.js";
+import {
+  admitsOrder,
+  admitsServiceDay,
+  firstServiceDayFor,
+  firstServiceDayOfAudience,
+} from "../../../order-opening/domain/order-admission.js";
 import { ActiveOrderOpeningExemptions } from "../../../order-opening/domain/ports/active-order-opening-exemptions.reader.js";
 import { OrderOpeningReader } from "../../../order-opening/domain/ports/order-opening.reader.js";
 import { OrdersClosedForAudienceError } from "../../domain/errors/orders-closed-for-audience.error.js";
+import { ServiceDayBeforeFirstOrderableDayError } from "../../domain/errors/service-day-before-first-orderable-day.error.js";
 import { OrderRecipientReader } from "../../domain/ports/order-recipient.reader.js";
 import { OrderSalesTermsReader } from "../../domain/ports/order-sales-terms.reader.js";
 import { ensureSalesTermsAccepted } from "../../domain/services/sales-terms-acceptance.js";
@@ -25,6 +37,11 @@ export interface IntakeStanding {
   readonly audience: CustomerAudience;
   readonly ordersOpen: boolean;
   readonly canOrder: boolean;
+  /**
+   * Le premier jour de service qu'elle peut commander, ou `null` : pas de
+   * date pour sa clientèle, date atteinte, ou exemption (2026-10-28).
+   */
+  readonly firstServiceDay: string | null;
 }
 
 /**
@@ -41,6 +58,11 @@ export interface IntakeStanding {
  * La clientèle se déduit par {@link CustomerAudiences}, la même règle que la
  * remise et la livraison : B2B pour une société active seulement. La décision
  * elle-même est {@link admitsOrder}, pure ; ce service ne fait que lire.
+ *
+ * Depuis le 2026-10-28, la même porte tient le **premier jour commandable**
+ * de la clientèle (`plan-premier-jour-commandable.md`) : une journée plus tôt
+ * est refusée, sauf exemption — et l'équipe, qui n'appelle pas ce service, n'y
+ * est pas soumise non plus.
  */
 @Injectable()
 export class OrderIntake {
@@ -50,6 +72,7 @@ export class OrderIntake {
     private readonly exemptions: ActiveOrderOpeningExemptions,
     private readonly recipients: OrderRecipientReader,
     private readonly salesTerms: OrderSalesTermsReader,
+    private readonly clock: Clock,
   ) {}
 
   /**
@@ -62,16 +85,23 @@ export class OrderIntake {
    * La version figée sur la commande reste celle que `OrderDrafting` résout ;
    * elle est celle qu'on vient d'admettre, au délai d'une publication près.
    *
+   * Puis la journée demandée, qui ne précède pas le premier jour commandable
+   * de la clientèle (2026-10-28) — après l'ouverture : boutique fermée, c'est
+   * la fermeture qu'on dit.
+   *
    * @throws {OrdersClosedForAudienceError} cf. {@link ensureOpenFor}.
+   * @throws {ServiceDayBeforeFirstOrderableDayError} cf. {@link ensureServiceDayFor}.
    * @throws {SalesTermsOutdatedError} la case ne porte pas la version en vigueur.
    */
   async admit(
     companyId: string | null,
     buyer: IntakeBuyer,
     accepted: AcceptedSalesTerms | null,
+    serviceDay: string | null,
   ): Promise<void> {
-    const audience = await this.openAudienceOf(companyId, buyer);
-    const document = salesTermsOf(audience);
+    const standing = await this.openStandingOf(companyId, buyer);
+    ensureDayAdmitted(standing, serviceDay);
+    const document = salesTermsOf(standing.audience);
     const { revision } = await this.salesTerms.inForce(document);
     ensureSalesTermsAccepted(accepted, document, revision);
   }
@@ -83,19 +113,36 @@ export class OrderIntake {
    *   clientèle, et aucune exemption ne couvre ni la société ni l'adresse.
    */
   async ensureOpenFor(companyId: string | null, buyer: IntakeBuyer): Promise<void> {
-    await this.openAudienceOf(companyId, buyer);
+    await this.openStandingOf(companyId, buyer);
   }
 
-  /** La clientèle de qui commande, si la boutique la prend ; sinon le refus. */
-  private async openAudienceOf(
+  /**
+   * **La journée seule** — ce que la révision d'une commande par son client
+   * oppose quand la date change (2026-10-28). La fermeture n'y joue pas : une
+   * commande déjà passée se modifie boutique fermée, comme elle s'annule.
+   *
+   * @throws {ServiceDayBeforeFirstOrderableDayError} la journée précède le
+   *   premier jour commandable de la clientèle, et aucune exemption ne couvre
+   *   ni la société ni l'adresse.
+   */
+  async ensureServiceDayFor(
     companyId: string | null,
     buyer: IntakeBuyer,
-  ): Promise<CustomerAudience> {
+    serviceDay: string | null,
+  ): Promise<void> {
+    ensureDayAdmitted(await this.standingFor(companyId, buyer), serviceDay);
+  }
+
+  /** Ce que la porte sait de qui commande, si la boutique la prend ; sinon le refus. */
+  private async openStandingOf(
+    companyId: string | null,
+    buyer: IntakeBuyer,
+  ): Promise<IntakeStanding> {
     const standing = await this.standingFor(companyId, buyer);
     if (!standing.canOrder) {
       throw new OrdersClosedForAudienceError(standing.audience);
     }
-    return standing.audience;
+    return standing;
   }
 
   /**
@@ -103,21 +150,25 @@ export class OrderIntake {
    * un bouton de commande (2026-10-26). Une seule règle pour les deux, donc
    * l'écran ne peut pas promettre ce que la passation refuserait.
    *
-   * Ouverte : ni la liste ni l'adresse ne sont lues — c'est le cas de chaque
-   * passation tant que personne n'a rien fermé.
+   * Ouverte et sans premier jour à venir : ni la liste ni l'adresse ne sont
+   * lues — c'est le cas de chaque passation tant que personne n'a rien réglé.
    */
   async standingFor(companyId: string | null, buyer: IntakeBuyer): Promise<IntakeStanding> {
     const audience = await this.audiences.of(companyId);
     const opening = await this.opening.current();
-    if (ordersOpenTo(opening, audience)) {
-      return { audience, ordersOpen: true, canOrder: true };
+    const today = instantToLocal(this.clock.now()).day;
+    const ordersOpen = ordersOpenTo(opening, audience);
+    const first = firstServiceDayOfAudience(opening, audience);
+    if (ordersOpen && (first === null || first <= today)) {
+      return { audience, ordersOpen, canOrder: true, firstServiceDay: null };
     }
     const party = { companyId, email: await this.emailOf(buyer) };
     const exemptions = await this.exemptions.active();
     return {
       audience,
-      ordersOpen: false,
+      ordersOpen,
       canOrder: admitsOrder({ opening, audience, exemptions, party }),
+      firstServiceDay: firstServiceDayFor({ opening, audience, exemptions, party, today }),
     };
   }
 
@@ -126,5 +177,15 @@ export class OrderIntake {
       return buyer.email;
     }
     return (await this.recipients.findById(buyer.userId))?.email ?? null;
+  }
+}
+
+/** @throws {ServiceDayBeforeFirstOrderableDayError} la journée précède le premier jour de la personne. */
+function ensureDayAdmitted(standing: IntakeStanding, serviceDay: string | null): void {
+  if (
+    standing.firstServiceDay !== null &&
+    !admitsServiceDay(standing.firstServiceDay, serviceDay)
+  ) {
+    throw new ServiceDayBeforeFirstOrderableDayError(standing.audience, standing.firstServiceDay);
   }
 }

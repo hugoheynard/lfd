@@ -41,6 +41,7 @@ export { SALES_TERMS_OUTDATED, type AcceptedSalesTerms } from "./sales-terms-acc
 export {
   DEFAULT_ORDER_OPENING,
   ORDERS_CLOSED_FOR_AUDIENCE,
+  SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY,
   ordersOpenTo,
   type GuestOrderAdmissionView,
   type MyOrderAdmissionView,

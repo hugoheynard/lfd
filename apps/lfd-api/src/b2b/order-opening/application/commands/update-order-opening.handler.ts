@@ -30,7 +30,7 @@ export class UpdateOrderOpeningHandler implements ICommandHandler<UpdateOrderOpe
   async execute(command: UpdateOrderOpeningCommand): Promise<void> {
     const author = await authorOf(this.staff, command.staffUserId);
     await this.uow.run(async () => {
-      const previous = await this.reader.current();
+      const previous = OrderOpening.stateOf(await this.reader.current());
       const next = OrderOpening.pose({
         current: previous,
         patch: command.patch,

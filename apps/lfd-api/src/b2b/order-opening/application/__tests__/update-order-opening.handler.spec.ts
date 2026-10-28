@@ -80,6 +80,7 @@ describe("UpdateOrderOpeningHandler", () => {
 
     await handler(
       {
+        ...DEFAULT_ORDER_OPENING,
         ordersOpenToB2b: false,
         ordersOpenToB2c: false,
         updatedAt: AT.toISOString(),
@@ -103,8 +104,60 @@ describe("UpdateOrderOpeningHandler", () => {
     expect(events.traced[0]?.journalFact().payload).toEqual({
       ordersOpenToB2b: false,
       ordersOpenToB2c: true,
-      previous: { ordersOpenToB2b: true, ordersOpenToB2c: true },
+      firstServiceDayB2b: null,
+      firstServiceDayB2c: null,
+      previous: {
+        ordersOpenToB2b: true,
+        ordersOpenToB2c: true,
+        firstServiceDayB2b: null,
+        firstServiceDayB2c: null,
+      },
     });
+  });
+
+  /** Plan « premier jour commandable » (2026-10-28) : la date et celle qu'elle remplace. */
+  it("pose un premier jour pour une clientèle, et journalise les deux dates avec les précédentes", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(
+      { ...DEFAULT_ORDER_OPENING, firstServiceDayB2b: "2026-11-02" },
+      written,
+      events,
+    ).execute(new UpdateOrderOpeningCommand({ firstServiceDayB2c: "2026-11-05" }, "staff_agent"));
+
+    expect([written.last?.firstServiceDayB2b, written.last?.firstServiceDayB2c]).toEqual([
+      "2026-11-02",
+      "2026-11-05",
+    ]);
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      firstServiceDayB2b: "2026-11-02",
+      firstServiceDayB2c: "2026-11-05",
+      previous: { firstServiceDayB2b: "2026-11-02", firstServiceDayB2c: null },
+    });
+  });
+
+  it("« Aucune » retire la date : null dans le patch", async () => {
+    const written = new Written();
+
+    await handler(
+      { ...DEFAULT_ORDER_OPENING, firstServiceDayB2c: "2026-11-05" },
+      written,
+      new RecordingPublisher(),
+    ).execute(new UpdateOrderOpeningCommand({ firstServiceDayB2c: null }, "staff_agent"));
+
+    expect(written.last?.firstServiceDayB2c).toBeNull();
+  });
+
+  it("refuse un jour qui n'existe pas, sans rien écrire", async () => {
+    const written = new Written();
+
+    await expect(
+      handler(DEFAULT_ORDER_OPENING, written, new RecordingPublisher()).execute(
+        new UpdateOrderOpeningCommand({ firstServiceDayB2b: "2026-02-30" }, "staff_agent"),
+      ),
+    ).rejects.toThrow("n'est pas une date valide pour le premier jour commandable");
+    expect(written.last).toBeNull();
   });
 
   it("un agent inconnu de l'annuaire est figé sans nom inventé", async () => {
