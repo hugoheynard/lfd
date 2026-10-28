@@ -31,6 +31,10 @@ export const TO_REVIEW = 'to_review';
  */
 export const PRECAUTIONARY = 'precautionary';
 
+/** Le filtre des déclinaisons : toutes les fiches, une seule déclinaison, ou plusieurs. */
+export type VariantsFilter = 'all' | 'single' | 'multiple';
+const VARIANTS_FILTERS: readonly VariantsFilter[] = ['all', 'single', 'multiple'];
+
 /** Ce que l'état peut valoir dans le filtre : un statut, un jugement du serveur, ou tous. */
 export type StatusFilter =
   | typeof ALL_STATUSES
@@ -59,6 +63,8 @@ export interface ProductsFilter {
   readonly hideArchived: boolean;
   /** Ne garde que les fiches sans aucune image (Hugo, 2026-10-28). */
   readonly withoutImages: boolean;
+  /** Le nombre de déclinaisons (Hugo, 2026-10-28). */
+  readonly variants: VariantsFilter;
 }
 
 export const DEFAULT_FILTER: ProductsFilter = {
@@ -66,6 +72,7 @@ export const DEFAULT_FILTER: ProductsFilter = {
   status: ALL_STATUSES,
   hideArchived: true,
   withoutImages: false,
+  variants: 'all',
 };
 
 const STATUSES: readonly StatusFilter[] = [
@@ -84,6 +91,7 @@ const PARAM_FAMILY = 'famille';
 const PARAM_STATUS = 'etat';
 const PARAM_ARCHIVED = 'archivees';
 const PARAM_IMAGES = 'images';
+const PARAM_VARIANTS = 'declinaisons';
 /** `images=sans` : seules les fiches sans image. */
 const IMAGES_NONE = 'sans';
 /** `archivees=visibles` : le masque est levé. */
@@ -113,8 +121,17 @@ export function filterProducts(
         : statusMatches(p, filter.status, stateOf)) &&
       !(hide && p.status === 'archived') &&
       // Une liste qui ne dit rien (`illustrated` absent) ne passe pas pour sans image.
-      (!filter.withoutImages || p.illustrated === false),
+      (!filter.withoutImages || p.illustrated === false) &&
+      variantsMatch(p, filter.variants),
   );
+}
+
+/** Une déclinaison, ou plusieurs — `all` ne filtre rien. */
+function variantsMatch(product: Product, variants: VariantsFilter): boolean {
+  if (variants === 'all') {
+    return true;
+  }
+  return variants === 'single' ? product.variants.length <= 1 : product.variants.length > 1;
 }
 
 /**
@@ -164,6 +181,7 @@ export function filterFromParams(params: ParamMap): ProductsFilter {
     status: STATUSES.find((s) => s === status) ?? ALL_STATUSES,
     hideArchived: params.get(PARAM_ARCHIVED) !== ARCHIVED_SHOWN,
     withoutImages: params.get(PARAM_IMAGES) === IMAGES_NONE,
+    variants: VARIANTS_FILTERS.find((v) => v === params.get(PARAM_VARIANTS)) ?? 'all',
   };
 }
 
@@ -174,5 +192,6 @@ export function filterToParams(filter: ProductsFilter): Params {
     [PARAM_STATUS]: filter.status === ALL_STATUSES ? null : filter.status,
     [PARAM_ARCHIVED]: filter.hideArchived ? null : ARCHIVED_SHOWN,
     [PARAM_IMAGES]: filter.withoutImages ? IMAGES_NONE : null,
+    [PARAM_VARIANTS]: filter.variants === 'all' ? null : filter.variants,
   };
 }

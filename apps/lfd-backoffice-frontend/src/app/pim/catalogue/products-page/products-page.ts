@@ -54,6 +54,7 @@ import {
   PRECAUTIONARY,
   type ProductsFilter,
   type StatusFilter,
+  type VariantsFilter,
 } from './products-filter';
 import { httpErrorMessage } from '@lfd/endpoints';
 
@@ -119,6 +120,12 @@ export class ProductsPage {
   protected readonly familyOptions = computed(() =>
     familyOptions(this.categories(), this.products()),
   );
+  protected readonly variantsOptions: readonly { value: VariantsFilter; label: string }[] = [
+    { value: 'all', label: 'Toutes déclinaisons' },
+    { value: 'single', label: 'Une déclinaison' },
+    { value: 'multiple', label: 'Plusieurs déclinaisons' },
+  ];
+
   protected readonly statusOptions: readonly { value: StatusFilter; label: string }[] = [
     { value: ALL_STATUSES, label: 'Toutes' },
     { value: 'published', label: 'Actives' },
@@ -188,6 +195,8 @@ export class ProductsPage {
   private readonly sortValues: Readonly<Record<string, (product: Product) => string>> = {
     name: (product) => product.name.fr,
     category: (product) => this.categoryName(product.categoryId),
+    // Un nombre trié comme un libellé : complété de zéros, « 10 » ne passe pas avant « 2 ».
+    variants: (product) => String(product.variants.length).padStart(4, '0'),
   };
 
   /**
@@ -226,6 +235,7 @@ export class ProductsPage {
     { key: 'sku', label: 'Référence', width: '9rem' },
     { key: 'name', label: 'Nom', sortable: true },
     { key: 'category', label: 'Famille', sortable: true },
+    { key: 'variants', label: 'Déclinaisons', sortable: true, align: 'right', width: '8rem' },
     { key: 'status', label: 'État' },
     { key: 'actions', label: '', align: 'right', width: '8rem' },
   ];
@@ -302,6 +312,11 @@ export class ProductsPage {
 
   protected toggleMask(hideArchived: boolean): void {
     this.setFilter({ ...this.filter(), hideArchived });
+  }
+
+  protected chooseVariants(value: string): void {
+    const variants = this.variantsOptions.find((option) => option.value === value)?.value;
+    this.setFilter({ ...this.filter(), variants: variants ?? 'all' });
   }
 
   protected toggleWithoutImages(withoutImages: boolean): void {

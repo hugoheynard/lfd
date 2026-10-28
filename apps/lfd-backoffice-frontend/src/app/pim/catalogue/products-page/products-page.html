@@ -45,6 +45,14 @@
       [value]="filter().status"
       (valueChange)="chooseStatus($event)"
     />
+    <fold-view-toggle
+      data-products-variants
+      ariaLabel="Filtrer par nombre de déclinaisons"
+      size="sm"
+      [options]="variantsOptions"
+      [value]="filter().variants"
+      (valueChange)="chooseVariants($event)"
+    />
     <!-- Hors de « Toutes », l'état choisit déjà : la case se grise et se lit
          décochée, parce qu'elle ne cache plus rien. -->
     <fold-checkbox
@@ -124,6 +132,10 @@
       <fold-link (clicked)="openProduct(p)" (click)="$event.stopPropagation()">
         {{ p.name.fr }}
       </fold-link>
+    </ng-template>
+
+    <ng-template foldCell="variants" let-p>
+      <span class="variants-count">{{ p.variants.length }}</span>
     </ng-template>
 
     <ng-template foldCell="category" let-p>

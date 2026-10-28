@@ -14,8 +14,16 @@ function category(id: string, name: string, position: number): Category {
   return { id, name: { fr: name }, position, isArchived: false } as Category;
 }
 
-function product(id: string, categoryId: string, status: ProductStatus): Product {
-  return { id, sku: id.toUpperCase(), name: { fr: `Fiche ${id}` }, categoryId, status } as Product;
+function product(id: string, categoryId: string, status: ProductStatus, variantCount = 1): Product {
+  const variants = Array.from({ length: variantCount }, (_, i) => ({ id: `${id}-v${String(i)}` }));
+  return {
+    id,
+    sku: id.toUpperCase(),
+    name: { fr: `Fiche ${id}` },
+    categoryId,
+    status,
+    variants,
+  } as Product;
 }
 
 // Le pain est second au catalogue même s'il arrive premier : l'ordre est `position`.
@@ -119,7 +127,13 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     expect(navigate).toHaveBeenCalledWith(
       [],
       expect.objectContaining({
-        queryParams: { famille: 'vien', etat: null, archivees: null, images: null },
+        queryParams: {
+          famille: 'vien',
+          etat: null,
+          archivees: null,
+          images: null,
+          declinaisons: null,
+        },
         replaceUrl: true,
       }),
     );
@@ -148,6 +162,28 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
     const illustrated = PRODUCTS.map((p) => ({ ...p, illustrated: p.id === 'p1' }));
     const { element } = await render({ images: 'sans' }, undefined, illustrated);
     expect(rows(element)).toEqual(['P2', 'V1']);
+  });
+
+  it('la colonne Déclinaisons dit le nombre, et le filtre « Plusieurs » ne garde qu’elles', async () => {
+    const products = [product('p1', 'pain', 'published', 3), product('p2', 'pain', 'draft', 1)];
+    const { element, chip, navigate } = await render({}, undefined, products);
+    expect(
+      [...element.querySelectorAll('.variants-count')].map((c) => c.textContent?.trim()),
+    ).toEqual(['3', '1']);
+    await chip('data-products-variants', 'Plusieurs déclinaisons');
+    expect(rows(element)).toEqual(['P1']);
+    expect(navigate).toHaveBeenCalledWith(
+      [],
+      expect.objectContaining({
+        queryParams: expect.objectContaining({ declinaisons: 'multiple' }),
+      }),
+    );
+  });
+
+  it('lit « Une déclinaison » dans l’URL', async () => {
+    const products = [product('p1', 'pain', 'published', 3), product('p2', 'pain', 'draft', 1)];
+    const { element } = await render({ declinaisons: 'single' }, undefined, products);
+    expect(rows(element)).toEqual(['P2']);
   });
 
   it('lever le masque montre tout', async () => {
@@ -193,7 +229,13 @@ describe('ProductsPage — filtres famille, état et masque des archivées', () 
       expect(navigate).toHaveBeenCalledWith(
         [],
         expect.objectContaining({
-          queryParams: { famille: null, etat: 'activatable', archivees: null, images: null },
+          queryParams: {
+            famille: null,
+            etat: 'activatable',
+            archivees: null,
+            images: null,
+            declinaisons: null,
+          },
         }),
       );
     });
