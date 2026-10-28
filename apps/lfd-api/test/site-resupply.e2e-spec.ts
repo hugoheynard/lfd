@@ -361,8 +361,15 @@ describe("les droits", () => {
     await agent.post(`/admin/site-resupplies/sites/${village}/${id}/cancel`).expect(204);
 
     await agent.get("/admin/site-resupplies/to-produce").expect(403);
+    // Le droit des réassorts, à part depuis le 2026-10-28 (Hugo) : la fiche
+    // d'atelier seule ne lit plus les réassorts à produire.
+    const worksheetOnly = await holderOf("atelier", [
+      { resource: "production_worksheet", action: "write" },
+    ]);
+    await worksheetOnly.get("/admin/site-resupplies/to-produce").expect(403);
+    await worksheetOnly.get("/admin/site-stock-alerts/live").expect(403);
     const bakehouse = await holderOf("fournil", [
-      { resource: "production_worksheet", action: "read" },
+      { resource: "production_resupply", action: "read" },
     ]);
     const view = jsonBody<ResuppliesToProduceView>(
       await bakehouse.get("/admin/site-resupplies/to-produce").expect(200),

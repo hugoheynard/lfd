@@ -677,7 +677,7 @@ export const routes: Routes = [
         // L'ancien écran « Réassorts à produire » (lot R1), en table : la
         // fournée OU le prévisionnel, le droit de sa route serveur.
         path: 'reassorts',
-        canActivate: [anyPermissionGuard('production_worksheet:read', 'production_plan:read')],
+        canActivate: [permissionGuard('production_resupply:read')],
         title: 'Réassorts — Prod manager — LFC B2B admin',
         loadComponent: () =>
           import('./production/reassorts-a-produire/resupply-production-tab/resupply-production-tab').then(

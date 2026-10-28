@@ -32,7 +32,9 @@ export const PROD_MANAGER_VIEWS: readonly ProdManagerView[] = [
     label: 'Réassorts',
     link: '/prod-manager/reassorts',
     icon: 'store',
-    needsAnyOf: ['production_plan:read', 'production_worksheet:read'],
+    // Un droit à part (Hugo, 2026-10-28) : ni la fiche d'atelier ni le
+    // prévisionnel ne l'ouvrent.
+    needsAnyOf: ['production_resupply:read'],
   },
 ];
 

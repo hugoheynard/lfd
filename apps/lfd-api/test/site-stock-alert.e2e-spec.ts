@@ -247,7 +247,9 @@ describe("le mur par point et les droits", () => {
       .expect(204);
 
     await agent.get("/admin/site-stock-alerts/live").expect(403);
-    const bakehouse = await holderOf("fournil", [{ resource: "production_plan", action: "read" }]);
+    const bakehouse = await holderOf("fournil", [
+      { resource: "production_resupply", action: "read" },
+    ]);
     const view = jsonBody<LiveStockAlertsView>(
       await bakehouse.get("/admin/site-stock-alerts/live").expect(200),
     );

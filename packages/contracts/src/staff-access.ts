@@ -486,10 +486,12 @@ export const staffResourceSchema = z.enum([
    */
   "production_settings",
   /**
-   * **Le réassort envoyé par le fournil** — « je t'envoie ça » à un point, à
-   * part de la demande du comptoir (Hugo, 2026-10-21,
-   * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d).
-   * Ajoutée sans être accordée : elle s'accorde à l'écran.
+   * **Les réassorts au fournil** — la lecture ouvre l'onglet Réassorts de Prod
+   * manager (les réassorts demandés, les alertes des points) ; l'écriture
+   * envoie, lance et monte (Hugo, 2026-10-21,
+   * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d). Un
+   * droit à part depuis le 2026-10-28 : la fiche d'atelier n'ouvre plus
+   * l'onglet. Ajoutée sans être accordée : elle s'accorde à l'écran.
    */
   "production_resupply",
 
@@ -767,7 +769,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   production_packing: "Production — Colisage",
   production_count_stop: "Production — Arrêt du plan",
   production_settings: "Production — Réglages",
-  production_resupply: "Production — Envoi de réassort",
+  production_resupply: "Production — Réassorts",
   handover_counter: "Retrait au comptoir",
   b2b_companies: "Comptes clients",
   b2b_orders: "Commandes",

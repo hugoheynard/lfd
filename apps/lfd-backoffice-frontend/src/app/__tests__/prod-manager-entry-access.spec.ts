@@ -107,9 +107,14 @@ async function tileLabels(granted: readonly StaffPermission[]): Promise<(string 
 }
 
 describe("App — l'entrée Prod manager (R3d)", () => {
-  it('paraît au rail pour qui tient le prévisionnel, ou la seule fournée', () => {
+  it('paraît au rail pour qui tient le prévisionnel, ou les réassorts', () => {
     expect(railLabels(['production_plan:read'])).toContain('Prod manager');
-    expect(railLabels(['production_worksheet:read'])).toContain('Prod manager');
+    expect(railLabels(['production_resupply:read'])).toContain('Prod manager');
+  });
+
+  /** Les réassorts sont un droit à part (Hugo, 2026-10-28) : le fournil n'a que sa fiche. */
+  it('reste fermée à qui ne tient que la fiche d’atelier', () => {
+    expect(railLabels(['production_worksheet:write'])).not.toContain('Prod manager');
   });
 
   it("n'a plus d'entrée « Réassorts » à part", () => {
@@ -123,7 +128,7 @@ describe("App — l'entrée Prod manager (R3d)", () => {
   });
 
   it('paraît aussi aux tuiles du menu mobile, sous le même droit', async () => {
-    expect(await tileLabels(['production_worksheet:read'])).toEqual(['Prod manager']);
+    expect(await tileLabels(['production_resupply:read'])).toEqual(['Prod manager']);
     expect(await tileLabels(['handover_counter:write'])).toEqual([]);
   });
 });

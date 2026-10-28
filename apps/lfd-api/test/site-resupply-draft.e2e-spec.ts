@@ -164,7 +164,7 @@ describe("la demande en cours", () => {
 
     // Rien d'envoyé : le fournil ne voit rien.
     const bakehouse = await holderOf("fournil", [
-      { resource: "production_worksheet", action: "read" },
+      { resource: "production_resupply", action: "read" },
     ]);
     const before = jsonBody<ResuppliesToProduceView>(
       await bakehouse.get("/admin/site-resupplies/to-produce").expect(200),

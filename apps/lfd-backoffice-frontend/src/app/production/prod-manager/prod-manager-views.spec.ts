@@ -11,12 +11,21 @@ function keys(granted: readonly StaffPermission[]): string[] {
 }
 
 describe('les onglets de Prod manager', () => {
-  it('ouvre les deux au prévisionnel, le prévisionnel en tête', () => {
-    expect(keys(['production_plan:read'])).toEqual(['previsionnel', 'reassorts']);
+  it('ouvre le seul prévisionnel au prévisionnel', () => {
+    expect(keys(['production_plan:read'])).toEqual(['previsionnel']);
   });
 
-  it('ouvre les seuls réassorts à la seule fournée — le droit de l’ancienne entrée', () => {
-    expect(keys(['production_worksheet:read'])).toEqual(['reassorts']);
+  it('ouvre les deux à qui tient aussi les réassorts, le prévisionnel en tête', () => {
+    expect(keys(['production_plan:read', 'production_resupply:read'])).toEqual([
+      'previsionnel',
+      'reassorts',
+    ]);
+  });
+
+  /** Les réassorts sont un droit à part (Hugo, 2026-10-28). */
+  it('n’ouvre rien à la seule fiche d’atelier, les seuls réassorts à leur droit', () => {
+    expect(keys(['production_worksheet:read'])).toEqual([]);
+    expect(keys(['production_resupply:read'])).toEqual(['reassorts']);
   });
 
   it('n’ouvre rien au comptoir seul', () => {

@@ -6,10 +6,7 @@ import {
 import { Controller, Get, Param } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 
-import {
-  AdminSurface,
-  RequireAnyPermission,
-} from "../../../platform/auth/admin-surface.decorator.js";
+import { AdminSurface, RequirePermission } from "../../../platform/auth/admin-surface.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetResupplyProductionDayQuery } from "../application/get-resupply-production-day.query.js";
 import { ListResuppliesToProduceQuery } from "../application/list-resupplies-to-produce.query.js";
@@ -20,16 +17,17 @@ import { ListResuppliesToProduceQuery } from "../application/list-resupplies-to-
  * Servi par le commerce, qui possède le réassort, et lu par l'écran du
  * fournil côté navigateur : aucun bloc serveur ne traverse
  * (`production → b2b` reste interdit). Le canal du fournil viendra en R3,
- * quand le réassort entrera au plan figé. Sous les droits du fournil : la
- * fournée (`production_worksheet`) ou le prévisionnel (`production_plan`).
+ * quand le réassort entrera au plan figé. Sous le droit des réassorts
+ * (`production_resupply:read`), à part depuis le 2026-10-28 (Hugo) : ni la
+ * fiche d'atelier ni le prévisionnel ne l'ouvrent plus.
  */
 @Controller("admin/site-resupplies/to-produce")
-@AdminSurface("production_worksheet")
+@AdminSurface("production_resupply")
 export class AdminResuppliesToProduceController {
   constructor(private readonly queries: QueryBus) {}
 
   @Get()
-  @RequireAnyPermission("production_worksheet:read", "production_plan:read")
+  @RequirePermission("production_resupply:read")
   list(): Promise<ResuppliesToProduceView> {
     return this.queries.execute<ListResuppliesToProduceQuery, ResuppliesToProduceView>(
       new ListResuppliesToProduceQuery(),
@@ -38,10 +36,10 @@ export class AdminResuppliesToProduceController {
 
   /**
    * Une journée, réassorts figés compris : l'onglet « Réassorts » de Prod
-   * manager (lot R3d, 2026-10-21). Sous les mêmes droits.
+   * manager (lot R3d, 2026-10-21). Sous le même droit.
    */
   @Get(":day")
-  @RequireAnyPermission("production_worksheet:read", "production_plan:read")
+  @RequirePermission("production_resupply:read")
   day(
     @Param("day", new ZodQuery(resupplyServiceDaySchema)) day: string,
   ): Promise<ResupplyProductionDayView> {

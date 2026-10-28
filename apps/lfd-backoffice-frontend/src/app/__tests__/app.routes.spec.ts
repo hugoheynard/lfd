@@ -301,7 +301,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'prod-manager': OPEN,
   'prod-manager/previsionnel': 'production_plan:read',
   // Les réassorts (ancien « Réassorts à produire », lot R1) : la fournée OU le prévisionnel.
-  'prod-manager/reassorts': { anyOf: ['production_worksheet:read', 'production_plan:read'] },
+  'prod-manager/reassorts': 'production_resupply:read',
   'prod-manager/reassorts/nouveau': 'production_resupply:write',
   'prod-manager/reassorts/brouillon/:draftId': 'production_resupply:write',
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
