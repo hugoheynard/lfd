@@ -1,5 +1,10 @@
 # Plan — le premier jour commandable, par clientèle
 
+> ✅ **Bâti le 2026-10-28** : J1–J2 `6066a5e63`, J3 `0ca8080a0`, J4 `b62410a8b`.
+> Décrit à l'état réel dans [`ouverture-de-la-boutique.md`](ouverture-de-la-boutique.md).
+> Écart : une journée choisie avant la date est ramenée à la date **sans
+> notice** ; seule la barre du panier nomme le nouveau jour (à trancher).
+
 > 📝 Plan du 2026-10-28, doc-first. Demande de Hugo : « à partir de demain je
 > vais devoir ouvrir les commandes mais n'autoriser que seulement à partir de
 > certaines dates ». Tranché le même jour :

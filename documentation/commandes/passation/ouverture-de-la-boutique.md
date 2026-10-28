@@ -1,5 +1,18 @@
 # L'ouverture de la boutique à la commande
 
+> ✅ **2026-10-28 — le premier jour commandable, par clientèle** (Hugo ; plan
+> [`plan-premier-jour-commandable.md`](plan-premier-jour-commandable.md), bâti
+> J1–J4). Deux dates sur le même réglage, `first_service_day_b2b` et
+> `first_service_day_b2c` (migration `20261028220000_le_premier_jour_commandable`,
+> additive, `NULL` = pas de restriction). Une commande client pour une journée
+> antérieure est refusée en 409 (`orders.service_day_before_first_orderable_day`,
+> la date nommée), à la passation et quand un client change la date d'une
+> commande ; **une exemption passe outre**, **l'équipe n'y est pas soumise**. La
+> boutique lit la date qui vise la personne (`firstServiceDay` de
+> `/order-admission/*`, sinon celle de la clientèle par `GET /order-opening`), ne
+> propose aucun jour avant, et ramène à la date une journée déjà choisie plus
+> tôt. `/fulfillment-days` n'est pas touché.
+
 > ⚠️ **Relu le 2026-10-12.** `POST /shop/orders` est **servie** depuis le
 > 2026-10-11 (`shop-orders.controller.ts`, `orders.module.ts`). La migration
 > `20261009130000_la_boutique_reste_fermee` reprend `feature_access_overrides.shop`
