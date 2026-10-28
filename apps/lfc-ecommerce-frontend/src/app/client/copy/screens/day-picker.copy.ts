@@ -29,6 +29,11 @@ export interface DayPickerCopy {
   readonly closed: string;
   /** Le bouton qui déplie le calendrier. */
   readonly otherDate: string;
+  /**
+   * Le premier jour commandable de qui regarde (plan
+   * `plan-premier-jour-commandable.md`, lot J4) : `{day}` en toutes lettres.
+   */
+  readonly firstOrderableDay: string;
   /** Les noms des flèches du calendrier (lus, pas vus). */
   readonly previousMonth: string;
   readonly nextMonth: string;
@@ -53,6 +58,7 @@ export const DAY_PICKER_FR: DayPickerCopy = {
   nextGroup: 'Les jours suivants',
   closed: 'Non proposé',
   otherDate: 'Autre date',
+  firstOrderableDay: 'Commandes à partir du {day}',
   previousMonth: 'Mois précédent',
   nextMonth: 'Mois suivant',
   none: {
@@ -75,6 +81,7 @@ export const DAY_PICKER_EN: DayPickerCopy = {
   nextGroup: 'The following days',
   closed: 'Not offered',
   otherDate: 'Another date',
+  firstOrderableDay: 'Orders open from {day}',
   previousMonth: 'Previous month',
   nextMonth: 'Next month',
   none: {
@@ -97,6 +104,7 @@ export const DAY_PICKER_IT: DayPickerCopy = {
   nextGroup: 'I giorni successivi',
   closed: 'Non disponibile',
   otherDate: 'Altra data',
+  firstOrderableDay: 'Ordini a partire da {day}',
   previousMonth: 'Mese precedente',
   nextMonth: 'Mese successivo',
   none: {

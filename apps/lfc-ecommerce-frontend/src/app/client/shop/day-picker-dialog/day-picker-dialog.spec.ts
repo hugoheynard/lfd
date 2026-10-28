@@ -19,6 +19,7 @@ const TODAY = '2026-10-27';
 async function boot(
   days: readonly FulfillmentDayView[],
   lastDay: string | null = null,
+  firstOrderableDay: string | null = null,
 ): Promise<{
   readonly el: HTMLElement;
   readonly closed: (string | undefined)[];
@@ -42,6 +43,7 @@ async function boot(
   const points = TestBed.inject(ServicePoints);
   points.receive([], [], days);
   points.capDaysAt(lastDay);
+  points.floorDaysAt(firstOrderableDay);
   const fixture = TestBed.createComponent(DayPickerDialog);
   fixture.detectChanges();
   await fixture.whenStable();
@@ -138,5 +140,27 @@ describe('DayPickerDialog', () => {
   it('dit qu’aucun jour n’est ouvert quand le serveur n’en sert aucun', async () => {
     const { el } = await boot([{ pickupAddressId: null, date: null, orderUntil: null }]);
     expect(el.querySelector('fold-empty-state')).not.toBeNull();
+  });
+
+  /** Lot J4 : rien avant le premier jour commandable, et une ligne le dit. */
+  it('grise les jours avant le premier jour commandable et dit la date en toutes lettres', async () => {
+    const { el } = await boot(
+      [{ pickupAddressId: 'pick_labo', date: TODAY, orderUntil: null }],
+      null,
+      '2026-10-29',
+    );
+
+    expect(button(el, 'today')).toBeNull();
+    expect(button(el, '2026-10-28')?.disabled).toBe(true);
+    expect(button(el, '2026-10-29')?.disabled).toBe(false);
+    expect(el.querySelector('[data-first-orderable-day]')?.textContent?.trim()).toBe(
+      'Commandes à partir du jeudi 29 octobre',
+    );
+  });
+
+  it('ne dit rien sans date', async () => {
+    const { el } = await boot([{ pickupAddressId: 'pick_labo', date: TODAY, orderUntil: null }]);
+
+    expect(el.querySelector('[data-first-orderable-day]')).toBeNull();
   });
 });

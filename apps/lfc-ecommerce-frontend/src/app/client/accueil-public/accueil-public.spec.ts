@@ -83,6 +83,8 @@ const DIX = { mode: 'percent', bp: 1000 } as const;
 
 class FakePoints {
   readonly pickups = signal<readonly PickupAddressView[]>([]);
+  /** Aucun premier jour commandable : le choix gardé n'est pas le sujet (lot J4). */
+  readonly firstOrderableDay = signal<string | null>(null);
   /** La même règle que le vrai dépôt : on n'en double que la source. */
   pickupsFor(audience: CustomerAudience): readonly PickupAddressView[] {
     return this.pickups().filter((candidate) => pickupOpenTo(candidate, audience));

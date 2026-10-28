@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1705 textes
+## Sommaire — 1706 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -21,7 +21,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 24 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 38 |
-| [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 17 |
+| [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 18 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
 | [Choix du lieu — la maison](#espace-housepicker) | `housePicker` | 6 |
 | [Choix du lieu et de l’heure — le dialogue commun](#espace-dialog) | `dialog` | 1 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1705** |
+| **Total** | | **1706** |
 
 ## Le parcours de commande
 
@@ -469,7 +469,7 @@ Source : `screens/command-terms.copy.ts` · 38 textes.
 
 ### Choix du jour — la première question d’une commande — `dayPicker`
 
-Source : `screens/day-picker.copy.ts` · 17 textes.
+Source : `screens/day-picker.copy.ts` · 18 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -485,6 +485,7 @@ Source : `screens/day-picker.copy.ts` · 17 textes.
 | `dayPicker.nextGroup` | Les jours suivants | The following days | I giorni successivi |  |
 | `dayPicker.closed` | Non proposé | Not offered | Non disponibile |  |
 | `dayPicker.otherDate` | Autre date | Another date | Altra data |  |
+| `dayPicker.firstOrderableDay` | Commandes à partir du {day} | Orders open from {day} | Ordini a partire da {day} | `{day}` |
 | `dayPicker.previousMonth` | Mois précédent | Previous month | Mese precedente |  |
 | `dayPicker.nextMonth` | Mois suivant | Next month | Mese successivo |  |
 | `dayPicker.none.title` | Aucune journée ouverte | No day open | Nessuna giornata aperta |  |

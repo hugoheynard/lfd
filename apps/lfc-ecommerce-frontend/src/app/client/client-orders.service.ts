@@ -11,7 +11,10 @@ import {
   type ShopQuoteView,
 } from '@lfd/contracts';
 // Par le sous-chemin sans zod : ce service est chargé au démarrage.
-import { SALES_TERMS_OUTDATED } from '@lfd/contracts/shop-values';
+import {
+  SALES_TERMS_OUTDATED,
+  SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY,
+} from '@lfd/contracts/shop-values';
 import { httpErrorCode, httpErrorMessage } from '@lfd/endpoints';
 import { unitPriceCents } from '@lfd/money';
 import { firstValueFrom } from 'rxjs';
@@ -25,6 +28,7 @@ import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './cart/voucher-choice.ser
 import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
+import { OrderAdmissionStore } from './shop/order-admission.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
@@ -269,6 +273,7 @@ export class ClientOrders {
   /** La case des CGV du panier : sa version part avec la commande, son refus la renouvelle. */
   private readonly salesTerms = inject(SalesTermsConsent);
   private readonly locale = inject(ClientLocale);
+  private readonly admission = inject(OrderAdmissionStore);
 
   /**
    * **Le dernier refus de la passation**, dit DANS le panier (RGAA 11.10,
@@ -731,6 +736,12 @@ export class ClientOrders {
       console.error('[commande] passation refusée', error);
     }
     this.lastRefusal.set(httpErrorMessage(error, ''));
+    // La journée précède le premier jour commandable (lot J4) : le message du
+    // serveur nomme la date ; l'admission relue la pose, et le jour retenu y
+    // est ramené.
+    if (httpErrorCode(error) === SERVICE_DAY_BEFORE_FIRST_ORDERABLE_DAY) {
+      void this.admission.reload();
+    }
   }
 
   private salesTermsOutdated(error: unknown): boolean {

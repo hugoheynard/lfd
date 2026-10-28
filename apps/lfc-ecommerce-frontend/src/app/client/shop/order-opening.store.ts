@@ -37,6 +37,29 @@ export class OrderOpeningStore {
     return audience === null || ordersOpenTo(this.held() ?? DEFAULT_ORDER_OPENING, audience);
   });
 
+  /**
+   * Le premier jour de service (`AAAA-MM-JJ`) posé pour la clientèle de
+   * l'écran, ou `null` : aucun, réglage pas lu, ou clientèle inconnue (plan
+   * `plan-premier-jour-commandable.md`, lot J4). Une date passée est rendue
+   * telle quelle : le plus tard des deux avec le premier jour servi la
+   * neutralise d'elle-même. Les exemptions ne se voient pas ici —
+   * {@link OrderAdmissionStore} les demande au serveur.
+   */
+  readonly firstServiceDay = computed<string | null>(() => {
+    const audience = this.audience();
+    const held = this.held();
+    if (audience === null || held === null) {
+      return null;
+    }
+    return (audience === 'b2b' ? held.firstServiceDayB2b : held.firstServiceDayB2c) ?? null;
+  });
+
+  /** Relit le réglage : la passation vient de refuser une journée qu'il ne connaissait pas. */
+  async reload(): Promise<void> {
+    this.asked = false;
+    await this.hydrate();
+  }
+
   /** Lit le réglage, une fois. Un échec laisse le défaut ouvert, et permet de relire. */
   async hydrate(): Promise<void> {
     if (this.asked) {

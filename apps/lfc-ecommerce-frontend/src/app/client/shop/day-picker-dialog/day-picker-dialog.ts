@@ -16,6 +16,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { fill } from '../../copy/client-copy.service';
 import { dayPickerCopy } from '../../copy/screens/day-picker.copy';
 import { screenCopy } from '../../copy/shop-copy-composer';
+import { fullDayLabel } from '../../format-day';
 import { dialogSide } from '../../panel-side';
 import { limitHourLabel } from '../cutoff-labels';
 import { MonthPicker } from '../month-picker/month-picker';
@@ -111,6 +112,19 @@ export class DayPickerDialog {
   private readonly today = computed(() => instantToLocal(this.clock.now()).day);
 
   private readonly window = computed(() => servedWindow(this.points.days(), this.points.lastDay()));
+
+  /**
+   * « Commandes à partir du jeudi 30 octobre », ou `null` : aucune date pour
+   * qui regarde, ou elle est atteinte (lot J4 du plan
+   * `plan-premier-jour-commandable.md`). Les jours d'avant restent grisés.
+   */
+  protected readonly firstOrderableLine = computed<string | null>(() => {
+    const floor = this.points.firstOrderableDay();
+    if (floor === null || floor <= this.today()) {
+      return null;
+    }
+    return fill(this.c().firstOrderableDay, { day: fullDayLabel(floor, this.locale.current()) });
+  });
 
   /** Vrai quand aucun jour n'est servi : l'écran le dit. */
   protected readonly noDay = computed(() => this.window().first === null);

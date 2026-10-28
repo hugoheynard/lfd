@@ -51,6 +51,29 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     http = TestBed.inject(HttpTestingController);
   });
 
+  /** Lot J4 : rien ne se propose avant le premier jour commandable de qui regarde. */
+  it('relève le premier jour servi au premier jour commandable, sans heure limite', () => {
+    points.receive(
+      [],
+      [],
+      [
+        { pickupAddressId: 'pick_labo', date: '2026-10-28', orderUntil: '2026-10-27T16:00:00Z' },
+        { pickupAddressId: 'pick_village', date: '2026-11-02', orderUntil: null },
+      ],
+    );
+    points.floorDaysAt('2026-10-30');
+
+    expect(points.dayFor('pick_labo')).toMatchObject({
+      pickupAddressId: 'pick_labo',
+      date: '2026-10-30',
+      orderUntil: null,
+    });
+    expect(points.nextDayFor('pick_village')).toBe('2026-11-02');
+
+    points.floorDaysAt(null);
+    expect(points.nextDayFor('pick_labo')).toBe('2026-10-28');
+  });
+
   /** Plan §4 : un front servi avant l'API lit une vue sans les nouveaux champs. */
   it('n’annonce aucune remise pour un point servi sans `discounts`', () => {
     points.receive([OLD_POINT], []);
@@ -117,6 +140,8 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
     hydrateWith(TestBed.inject(ShopCatalogue), operationCatalogue('open'));
     const cart = TestBed.inject(CartStore);
     TestBed.inject(CartFulfillmentDays);
+    // Le réglage porte le premier jour commandable (lot J4) : aucun ici.
+    http.expectOne(url('/order-opening')).flush({ ordersOpenToB2b: true, ordersOpenToB2c: true });
     const hydrating = points.hydrate();
     http.expectOne(url('/pickup-addresses')).flush([OLD_POINT]);
     http.expectOne(url('/delivery-zones')).flush([]);

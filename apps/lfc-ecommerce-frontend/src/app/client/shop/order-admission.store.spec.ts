@@ -13,9 +13,10 @@ import { OrderOpeningStore } from './order-opening.store';
 interface Monde {
   readonly authenticated: boolean;
   readonly open: boolean;
+  readonly firstDay?: string | null;
 }
 
-function setUp({ authenticated, open }: Monde): {
+function setUp({ authenticated, open, firstDay = null }: Monde): {
   store: OrderAdmissionStore;
   http: HttpTestingController;
 } {
@@ -32,7 +33,14 @@ function setUp({ authenticated, open }: Monde): {
         },
       },
       { provide: ClientWorkspace, useValue: { current: signal('c1') } },
-      { provide: OrderOpeningStore, useValue: { ordersOpen: signal(open) } },
+      {
+        provide: OrderOpeningStore,
+        useValue: {
+          ordersOpen: signal(open),
+          firstServiceDay: signal(firstDay),
+          reload: () => Promise.resolve(),
+        },
+      },
     ],
   });
   return {
@@ -116,5 +124,70 @@ describe('OrderAdmissionStore', () => {
     await settle();
 
     expect(store.admitted()).toBe(false);
+  });
+
+  describe('le premier jour commandable (lot J4)', () => {
+    it('ouverte, date posée : demande pour la personne, et rend SA date', async () => {
+      const { store, http } = setUp({ authenticated: true, open: true, firstDay: '2026-10-30' });
+      TestBed.tick();
+      await settle();
+      expect(store.firstServiceDay()).toBe('2026-10-30');
+
+      http
+        .expectOne((r) => r.url.endsWith('/order-admission/mine'))
+        .flush({ ordersOpen: true, canOrder: true, firstServiceDay: '2026-11-02' });
+      await settle();
+
+      expect(store.firstServiceDay()).toBe('2026-11-02');
+    });
+
+    it('exemptée : aucune date, même si la clientèle en a une', async () => {
+      const { store, http } = setUp({ authenticated: true, open: true, firstDay: '2026-10-30' });
+      TestBed.tick();
+      await settle();
+
+      http
+        .expectOne((r) => r.url.endsWith('/order-admission/mine'))
+        .flush({ ordersOpen: true, canOrder: true, firstServiceDay: null });
+      await settle();
+
+      expect(store.firstServiceDay()).toBeNull();
+    });
+
+    it('invité : la date de la clientèle avant la saisie, celle de l’adresse ensuite', async () => {
+      const { store, http } = setUp({ authenticated: false, open: true, firstDay: '2026-10-30' });
+      TestBed.tick();
+      http.expectNone((r) => r.url.includes('/order-admission'));
+      expect(store.firstServiceDay()).toBe('2026-10-30');
+
+      store.guestTyped('camille@visiteur.fr');
+      TestBed.tick();
+      http
+        .expectOne((r) => r.url.endsWith('/order-admission/guest'))
+        .flush({ canOrder: true, firstServiceDay: null });
+      await settle();
+
+      expect(store.firstServiceDay()).toBeNull();
+    });
+
+    it('relire oublie la réponse et redemande', async () => {
+      const { store, http } = setUp({ authenticated: true, open: true, firstDay: '2026-10-30' });
+      TestBed.tick();
+      await settle();
+      http
+        .expectOne((r) => r.url.endsWith('/order-admission/mine'))
+        .flush({ ordersOpen: true, canOrder: true, firstServiceDay: null });
+      await settle();
+
+      await store.reload();
+      TestBed.tick();
+      await settle();
+      http
+        .expectOne((r) => r.url.endsWith('/order-admission/mine'))
+        .flush({ ordersOpen: true, canOrder: true, firstServiceDay: '2026-11-03' });
+      await settle();
+
+      expect(store.firstServiceDay()).toBe('2026-11-03');
+    });
   });
 });

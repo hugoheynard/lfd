@@ -4,6 +4,9 @@
   <div class="intro">
     <h2 class="screen">{{ c().title }}</h2>
     <p class="lead">{{ c().lead }}</p>
+    @if (firstOrderableLine(); as line) {
+      <p class="lead" data-first-orderable-day>{{ line }}</p>
+    }
   </div>
 
   @if (loading()) {

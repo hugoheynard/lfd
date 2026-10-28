@@ -115,8 +115,38 @@ export class ServicePoints {
 
   readonly zones = this.zoneList.asReadonly();
 
-  /** Les journées servies, une par porte — telles que le serveur les rend. */
-  readonly days = this.dayList.asReadonly();
+  /**
+   * Les journées servies, une par porte — telles que le serveur les rend,
+   * relevées au **premier jour commandable** de qui regarde ({@link floorDaysAt},
+   * plan `plan-premier-jour-commandable.md`, lot J4) : le premier jour proposé
+   * est le plus tard des deux. `/fulfillment-days` dit ce que la production
+   * permet ; la date dit ce que la clientèle a le droit de demander. Une
+   * journée relevée perd son heure limite : celle servie valait pour une
+   * autre journée.
+   */
+  readonly days = computed<readonly FulfillmentDayView[]>(() => {
+    const floor = this.floor();
+    return this.dayList().map((day) =>
+      floor === null || day.date === null || day.date >= floor
+        ? day
+        : { ...day, date: floor, orderUntil: null },
+    );
+  });
+
+  /** Le premier jour commandable de qui regarde, ou `null` (cf. {@link days}). */
+  private readonly floor = signal<string | null>(null);
+
+  /** La date retenue, telle que {@link floorDaysAt} l'a posée. */
+  readonly firstOrderableDay = this.floor.asReadonly();
+
+  /**
+   * Pose le premier jour commandable (`AAAA-MM-JJ`) ou `null`. Posé de
+   * l'extérieur par {@link CartFulfillmentDays}, pour la même raison que
+   * {@link scopeDaysTo} : ce dépôt ne lit pas l'admission.
+   */
+  floorDaysAt(day: string | null): void {
+    this.floor.set(day);
+  }
 
   /**
    * Le réglage de livraison, **ouvert aux deux** tant qu'il n'est pas lu ou que
@@ -331,7 +361,7 @@ export class ServicePoints {
 
   /** La journée servie pour ce point, avec sa limite annoncée — ou `null`. */
   dayFor(pickupAddressId: string | null): FulfillmentDayView | null {
-    return this.dayList().find((day) => day.pickupAddressId === pickupAddressId) ?? null;
+    return this.days().find((day) => day.pickupAddressId === pickupAddressId) ?? null;
   }
 
   /** La zone qui dessert ce code postal, par le MÊME préfixe que le serveur. */

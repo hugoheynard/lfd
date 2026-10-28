@@ -230,6 +230,35 @@ describe('OrderContextStore — le retrait et la liste servie', () => {
   });
 });
 
+/** Lot J4 : une journée d'avant le premier jour commandable y est ramenée. */
+describe('OrderContextStore — le premier jour commandable', () => {
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('ramène à la date un jour choisi avant elle, lieu et heure gardés', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([LABO_POINT], [], []);
+    store.choice.set(AU_LABO);
+    store.draft.set({ date: '2026-09-07', mode: 'pickup' });
+    TestBed.inject(ServicePoints).floorDaysAt('2026-09-10');
+    TestBed.tick();
+
+    expect(store.choice()).toEqual({ ...AU_LABO, date: '2026-09-10' });
+    expect(store.draft()).toEqual({ date: '2026-09-10', mode: 'pickup' });
+  });
+
+  it('garde un jour choisi à la date ou après', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([LABO_POINT], [], []);
+    store.choice.set(AU_LABO);
+    TestBed.inject(ServicePoints).floorDaysAt('2026-09-07');
+    TestBed.tick();
+
+    expect(store.choice()?.date).toBe('2026-09-07');
+  });
+});
+
 /** Un choix stocké avant le 2026-09-29 n'a pas `deliveryAddressId`. */
 describe('parseChoice — l’adresse du carnet', () => {
   it('relit un stockage ancien, sans l’id, en `null` et non en erreur', () => {

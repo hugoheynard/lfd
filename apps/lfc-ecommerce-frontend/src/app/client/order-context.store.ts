@@ -304,6 +304,28 @@ export class OrderContextStore {
     });
 
     /**
+     * **Une journée d'avant le premier jour commandable est ramenée à lui**
+     * (plan `plan-premier-jour-commandable.md`, lot J4). Le choix ou le
+     * parcours ont pu être posés avant que la date le soit — ou par une
+     * personne exemptée, dans un autre espace : la passation le refuserait.
+     * Seule la journée bouge ; le lieu et l'heure restent ceux choisis.
+     */
+    effect(() => {
+      const floor = this.points.firstOrderableDay();
+      if (floor === null) {
+        return;
+      }
+      const choice = this.choice();
+      if (choice !== null && choice.date < floor) {
+        this.choice.set({ ...choice, date: floor });
+      }
+      const draft = this.draft();
+      if (draft?.date !== undefined && draft.date < floor) {
+        this.draft.set({ ...draft, date: floor });
+      }
+    });
+
+    /**
      * 🔴 **Un retrait devenu impossible s'efface** (2026-10-16).
      *
      * Plus de site par défaut : le dernier site ouvert à une clientèle peut

@@ -53,6 +53,15 @@ export function serviceDayLabel(
   if (day === addDays(today, 1)) {
     return near.tomorrow;
   }
+  return fullDayLabel(day, locale);
+}
+
+/**
+ * « jeudi 30 octobre » — la journée en toutes lettres, jamais « demain ».
+ * Mise en forme à midi UTC, fuseau UTC : la journée ne traverse aucun minuit,
+ * aucun fuseau ne la fait changer de jour.
+ */
+export function fullDayLabel(day: string, locale: LocaleCode): string {
   const instant = new Date(`${day}T12:00:00.000Z`);
   if (Number.isNaN(instant.getTime())) {
     // Une date illisible se montre telle quelle plutôt qu'en « Invalid Date ».
