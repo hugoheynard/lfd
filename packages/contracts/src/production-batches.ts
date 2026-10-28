@@ -69,3 +69,19 @@ export interface WorkshopLineContainer {
   readonly unitsPerContainer: number;
   readonly singular: string;
 }
+
+/**
+ * **Un palier** d'une ligne — « 120 avant 7 h 00 » (plan
+ * `documentation/fournil/plan-fournee-v3.md`, §2). Les paliers d'une ligne
+ * sont ses tranches de production, rangées par le serveur selon le réglage de
+ * l'atelier, et **non cumulés** : la somme des `quantity` vaut la quantité de
+ * la ligne. L'écran les cumule lui-même.
+ */
+export interface WorkshopDeadline {
+  readonly quantity: number;
+  /**
+   * `HH:mm` — l'heure avant laquelle ces pièces doivent être sorties. `null` =
+   * « la journée » : aucune échéance connue, et aucune heure n'est inventée.
+   */
+  readonly before: string | null;
+}

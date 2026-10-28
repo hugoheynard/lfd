@@ -201,6 +201,23 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
     expect(lineOf(view, CROISSANT).quantity).toBe(12);
   });
 
+  it("porte les paliers de la ligne, de somme le compte ARRÊTÉ, et aucun verdict qualité", async () => {
+    // Plan fournée v3, §2 : une commande arrivée après l'arrêt grossit les
+    // besoins lus en direct, pas la fiche — l'écart est rogné au dernier palier.
+    await place(CROISSANT, 12);
+    await closePlan();
+    await placeLate(CROISSANT, 6);
+
+    const line = lineOf(await worksheet(), CROISSANT);
+
+    const deadlines = line.deadlines ?? [];
+    expect(deadlines.reduce((sum, step) => sum + step.quantity, 0)).toBe(12);
+    for (const step of deadlines) {
+      expect(step.before === null || /^\d{2}:\d{2}$/u.test(step.before)).toBe(true);
+    }
+    expect(line.quality).toBeNull();
+  });
+
   it("montre la coche, ses initiales et son heure après un geste du fournil", async () => {
     await place(CROISSANT, 12);
     await closePlan();

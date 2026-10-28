@@ -120,6 +120,7 @@ import { GetProductionWorksheetHandler } from "./application/queries/get-product
 import { ListProductionContainersHandler } from "./application/queries/list-production-containers.handler.js";
 import { ProductionPapers } from "./application/services/production-paper.service.js";
 import { ProductionWorksheetReading } from "./application/services/production-worksheet-reading.service.js";
+import { WorksheetDeadlinesReading } from "./application/services/worksheet-deadlines-reading.service.js";
 import { ProductionContainerReader } from "./domain/ports/production-container.reader.js";
 import { ProductionContainerRepository } from "./domain/ports/production-container.repository.js";
 import { ProductionDayRepository } from "./domain/ports/production-day.repository.js";
@@ -225,6 +226,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     // La lecture de la fiche, partagée par la route datée et la route « en
     // cours » : un handler n'en appelle pas un autre (§4).
     ProductionWorksheetReading,
+    WorksheetDeadlinesReading,
     { provide: ProductionDayRepository, useClass: PrismaProductionDayRepository },
     { provide: ProductionBatchRepository, useClass: PrismaProductionBatchRepository },
     { provide: ProductionDayLock, useClass: PrismaProductionDayLock },

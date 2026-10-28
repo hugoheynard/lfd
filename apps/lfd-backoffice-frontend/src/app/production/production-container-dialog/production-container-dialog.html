@@ -1,0 +1,64 @@
+<fold-panel-header title="Contenant principal" [subtitle]="data().productName" />
+
+<fold-panel-body>
+  <div class="fields">
+    <fold-input
+      data-container-singular
+      label="Au singulier"
+      hint="« plaque », « tourneuse », « moule » — ce que dit le bouton « + 1 plaque »."
+      [readOnly]="!canWrite()"
+      [(value)]="singular"
+    />
+    <fold-input
+      data-container-plural
+      label="Au pluriel"
+      hint="Écrit tel qu’on le dit : « 4 plaques »."
+      [readOnly]="!canWrite()"
+      [(value)]="plural"
+    />
+    <fold-number-input
+      data-container-units
+      label="Pièces"
+      hint="Combien de pièces tiennent dans un contenant."
+      integer
+      [min]="1"
+      [readOnly]="!canWrite()"
+      [(value)]="units"
+    />
+  </div>
+
+  @if (failure(); as message) {
+    <fold-callout variant="alert" announce data-container-refusal>{{ message }}</fold-callout>
+  }
+
+  @if (posed() && canWrite()) {
+    <fold-danger-zone
+      appearance="section"
+      title="Retirer ce contenant"
+      actionLabel="Retirer le contenant"
+      (confirmed)="remove()"
+    >
+      <p>
+        Le bouton « + 1 » disparaît de la fiche d’atelier, et la colonne du contenant reste vide.
+        Les fournées déjà déclarées ne changent pas.
+      </p>
+    </fold-danger-zone>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  @if (canWrite()) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button
+      foldButton
+      data-container-submit
+      [disabled]="!canSubmit()"
+      [loading]="saving()"
+      (click)="submit()"
+    >
+      Enregistrer
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+  }
+</fold-panel-footer>

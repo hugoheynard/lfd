@@ -222,3 +222,42 @@ describe("les droits", () => {
     expect(JSON.stringify(response.body)).toContain("rien à arrêter");
   });
 });
+
+/**
+ * Le contenant d'un article se règle sur la page des raccourcis depuis le
+ * 2026-10-28 (plan `documentation/fournil/plan-fournee-v3.md`, §5) : son
+ * écriture passe sous `production_settings:write`, sa lecture reste ouverte à
+ * la fiche d'atelier.
+ */
+describe("le droit du contenant", () => {
+  const CONTAINER = "/admin/production/containers/VIE-001";
+  const PLAQUE = { unitsPerContainer: 10, singular: "plaque", plural: "plaques" };
+
+  it("la fiche d'atelier le lit, ne le règle plus", async () => {
+    const baker = await holderOf("fiche-ecrite", [
+      { resource: "production_worksheet", action: "write" },
+    ]);
+
+    await baker.get("/admin/production/containers").expect(200);
+    await baker.put(CONTAINER).send(PLAQUE).expect(403);
+    await baker.delete(CONTAINER).expect(403);
+  });
+
+  it("`production_settings:read` le lit, ne le règle pas", async () => {
+    const reader = await holderOf("contenant-lu", [
+      { resource: "production_settings", action: "read" },
+    ]);
+
+    await reader.get("/admin/production/containers").expect(200);
+    await reader.put(CONTAINER).send(PLAQUE).expect(403);
+  });
+
+  it("`production_settings:write` le pose et le retire", async () => {
+    const settler = await holderOf("contenant-regle", [
+      { resource: "production_settings", action: "write" },
+    ]);
+
+    await settler.put(CONTAINER).send(PLAQUE).expect(204);
+    await settler.delete(CONTAINER).expect(204);
+  });
+});

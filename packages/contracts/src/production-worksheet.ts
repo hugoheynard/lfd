@@ -1,7 +1,12 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
-import type { WorkshopBatch, WorkshopLineContainer } from "./production-batches.js";
+import type {
+  WorkshopBatch,
+  WorkshopDeadline,
+  WorkshopLineContainer,
+} from "./production-batches.js";
+import type { QualityLineStatus } from "./production-quality.js";
 
 /**
  * **La fiche d'atelier** : ce que le fournil a à sortir aujourd'hui, et ce qui
@@ -100,6 +105,27 @@ export interface WorkshopLine {
    * Facultatif dans le TYPE seulement (cf. `WorkshopBatch.pendingReturn`).
    */
   readonly pendingReturn?: number;
+  /**
+   * **Les paliers** de la ligne (plan fournée v3, §2), dans l'ordre des heures :
+   * ses tranches de production, non cumulées, de somme `quantity`. L'écart
+   * entre la fiche et les besoins du jour va au **dernier** palier. Une ligne
+   * sans échéance a un seul palier `before: null` ; un besoin plus pressé que la
+   * première tranche garde l'heure de cette tranche. Vide sur une ligne de
+   * quantité 0.
+   *
+   * Facultatif dans le TYPE seulement (ajouté le 2026-10-28) : le serveur
+   * l'envoie toujours ; un double de test antérieur qui l'omet se lit `[]`.
+   */
+  readonly deadlines?: readonly WorkshopDeadline[];
+  /**
+   * **Le contrôle qualité** de la ligne — la pastille que la Supervision
+   * montre : le verdict courant du SKU, et s'il vaut encore. `null` = jamais
+   * contrôlé ce jour.
+   *
+   * Facultatif dans le TYPE seulement (ajouté le 2026-10-28) : le serveur
+   * l'envoie toujours ; un double qui l'omet se lit `null`.
+   */
+  readonly quality?: QualityLineStatus | null;
 }
 
 /** Le libellé du groupe des SKU que le catalogue ne connaît pas. */

@@ -1,4 +1,9 @@
-import type { CatalogFamilyView, ProductionWorksheetView, WorkshopLine } from "@lfd/contracts";
+import type {
+  CatalogFamilyView,
+  ProductionWorksheetView,
+  QualityLineStatus,
+  WorkshopLine,
+} from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -7,6 +12,9 @@ import { ExpectedProductionReader } from "../../channels/commerce/expected-produ
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
+import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
+import { deadlinesOf } from "../../domain/services/production-deadlines.js";
+import type { TrancheThreshold } from "../../domain/services/production-tranches.js";
 import {
   worksheetGroupsOf,
   type WorksheetGroup,
@@ -20,6 +28,8 @@ import {
 import { relativeDayOf } from "../../domain/services/relative-day.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { ServiceRange } from "../../domain/value-objects/service-range.value-object.js";
+import { qualityLinesOf } from "./quality-views.js";
+import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service.js";
 
 /**
  * **La lecture d'une fiche d'atelier**, partagée par ses deux routes.
@@ -28,7 +38,7 @@ import { ServiceRange } from "../../domain/value-objects/service-range.value-obj
  * façon de choisir le jour. Un handler n'en appelle pas un autre (§4) : ils se
  * partagent donc ce service, et chacun garde son cas d'usage nommé.
  *
- * ⚠️ **Les quatre premières lectures partent ENSEMBLE** : aucune ne conditionne
+ * ⚠️ **Les premières lectures partent ENSEMBLE** : aucune ne conditionne
  * les autres. Une journée ouverte n'utilise pas les arrivées, une journée
  * arrêtée n'utilise pas la demande — mais laquelle on jette ne se sait qu'après
  * avoir chargé la journée. Les rayons, eux, attendent : ils portent sur les SKU
@@ -40,6 +50,12 @@ import { ServiceRange } from "../../domain/value-objects/service-range.value-obj
  * panne est **journalisée**, `shelvesKnown` vaut `false`, et tout va dans
  * « Rayon inconnu » : le fournil sort ses pièces quand même, et l'écran le dit.
  * Refuser la fiche pour un rangement ferait d'un confort une panne de production.
+ *
+ * ## Paliers et pastilles (plan `documentation/fournil/plan-fournee-v3.md`, §3)
+ *
+ * Chaque ligne porte ses paliers — ses tranches, rangées par le réglage de
+ * l'atelier — et le verdict qualité courant de son SKU, le même que la
+ * Supervision. Des tranches illisibles laissent la fiche servie, sans paliers.
  *
  * Il n'écrit rien, pas même un compteur — §4.
  */
@@ -54,14 +70,18 @@ export class ProductionWorksheetReading {
     private readonly containers: ProductionContainerReader,
     private readonly shelves: WorkshopShelvesReader,
     private readonly clock: Clock,
+    private readonly deadlines: WorksheetDeadlinesReading,
+    private readonly checks: QualityCheckReader,
   ) {}
 
   async read(day: ServiceDay): Promise<ProductionWorksheetView> {
-    const [current, expected, producible, containers] = await Promise.all([
+    const [current, expected, producible, containers, tranches, checks] = await Promise.all([
       this.days.load(day),
       this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
       this.orders.producibleFor(day),
       this.containers.allBySku(),
+      this.deadlines.read(day),
+      this.checks.forDay(day),
     ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
@@ -81,13 +101,17 @@ export class ProductionWorksheetReading {
       containers,
     });
     const shelves = await this.shelvesOrNull(day, worksheet.lines);
+    const viewOf = lineViewOf({
+      tranches,
+      quality: new Map(qualityLinesOf(current, checks).map((status) => [status.sku, status])),
+    });
     return {
       date: day.value,
       generatedAt: worksheet.generatedAt?.toISOString() ?? null,
       retakenAt: worksheet.retakenAt?.toISOString() ?? null,
-      lines: worksheet.lines.map(lineView),
+      lines: worksheet.lines.map(viewOf),
       drift: worksheet.drift,
-      groups: worksheetGroupsOf(worksheet.lines, shelves).map(groupView),
+      groups: worksheetGroupsOf(worksheet.lines, shelves).map((group) => groupView(group, viewOf)),
       shelvesKnown: shelves !== null,
       relativeDay: relativeDayOf(day.value, this.clock.now()),
     };
@@ -124,7 +148,27 @@ function demandOf(
   return expected.find((entry) => entry.day === day.value)?.items ?? [];
 }
 
+/** Ce que la ligne lit hors de la journée : ses tranches, son verdict. */
+interface LineMarks {
+  /** `null` = tranches illisibles : la ligne part sans paliers. */
+  readonly tranches: ReadonlyMap<string, readonly TrancheThreshold[]> | null;
+  readonly quality: ReadonlyMap<string, QualityLineStatus>;
+}
+
 /** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
+function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopLine {
+  return (line) => ({
+    ...lineView(line),
+    deadlines:
+      marks.tranches === null
+        ? []
+        : deadlinesOf(line.quantity, marks.tranches.get(line.sku) ?? []).map((step) => ({
+            ...step,
+          })),
+    quality: marks.quality.get(line.sku) ?? null,
+  });
+}
+
 function lineView(line: WorksheetLine): WorkshopLine {
   return {
     sku: line.sku,
@@ -155,11 +199,14 @@ function lineView(line: WorksheetLine): WorkshopLine {
   };
 }
 
-function groupView(group: WorksheetGroup): ProductionWorksheetView["groups"][number] {
+function groupView(
+  group: WorksheetGroup,
+  viewOf: (line: WorksheetLine) => WorkshopLine,
+): ProductionWorksheetView["groups"][number] {
   return {
     ...group,
-    lines: group.lines.map(lineView),
-    pending: group.pending.map(lineView),
-    done: group.done.map(lineView),
+    lines: group.lines.map(viewOf),
+    pending: group.pending.map(viewOf),
+    done: group.done.map(viewOf),
   };
 }

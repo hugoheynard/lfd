@@ -1,0 +1,11 @@
+.fields {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+fold-callout,
+fold-danger-zone {
+  display: block;
+  margin-top: var(--fold-space-md);
+}

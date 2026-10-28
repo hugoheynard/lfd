@@ -17,6 +17,10 @@ import type { ContainerRule } from "../../../domain/services/production-workshee
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
 import { GetCurrentProductionWorksheetHandler } from "../get-current-production-worksheet.handler.js";
+import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
+import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
+import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 
 /**
  * **La fiche en cours** : demain si son plan est arrêté, aujourd'hui sinon.
@@ -101,6 +105,8 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new NoContainers(),
     new NoShelves(),
     clock,
+    new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),
+    new InMemoryCheckReader(new CheckTable()),
   );
   return new GetCurrentProductionWorksheetHandler(days, reading, clock);
 }

@@ -100,6 +100,23 @@ principal** : singulier, pluriel, pièces (les routes
 `production_worksheet` ; elles passent sous `production_settings`, le droit de
 la page, comme les raccourcis). Les raccourcis restent à côté.
 
+## 5 bis. Bâti le 2026-10-28 (F1, F2) — et ce qui reste ouvert
+
+- `WorkshopLine.deadlines` et `quality` sont servis (`deadlinesOf`,
+  `WorksheetDeadlinesReading`, `qualityLinesOf` partagé avec la Supervision).
+  Choix faits au bâti : une fiche arrêtée qui compte MOINS que les besoins lus
+  en direct **rogne les paliers en partant du dernier** (la somme reste la
+  quantité) ; des tranches illisibles donnent `deadlines: []` et une panne
+  journalisée, plutôt qu'un palier « la journée » qui affirmerait l'absence
+  d'échéance ; sans échéance, `before: null` (il n'existe pas d'heure de fin de
+  fiche).
+- Le contenant se règle sur la page des raccourcis ; ses routes d'écriture sont
+  sous `production_settings:write`, sa lecture sous la fiche OU les réglages.
+- ⚠️ **`waitingOrders` n'est pas bâti** : « attend le four » se calcule dans le
+  bloc `packing/` (`packing-board.ts`). Le fournil le lirait par un port qu'il
+  déclare et que le colisage implémente — la matrice l'autorise, mais ce serait
+  le premier sens « le fournil lit le colisage ». À trancher par Hugo.
+
 ## 6. Lots
 
 | Lot | Contenu                                                                                                         | Où            |

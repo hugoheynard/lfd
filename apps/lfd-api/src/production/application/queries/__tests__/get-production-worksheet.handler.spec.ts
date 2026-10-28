@@ -24,6 +24,10 @@ import { ServiceDay } from "../../../domain/value-objects/service-day.value-obje
 import { GetProductionWorksheetHandler } from "../get-production-worksheet.handler.js";
 import { GetProductionWorksheetQuery } from "../get-production-worksheet.query.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
+import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
+import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
+import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
+import { WorksheetDeadlinesReading } from "../../services/worksheet-deadlines-reading.service.js";
 
 /**
  * Le jour est DÉRIVÉ de maintenant : `relativeDay` le compare à l'horloge, et un
@@ -142,6 +146,11 @@ function handlerFor(
       new Containers(rules),
       shelves,
       new FixedClock(NOW),
+      new WorksheetDeadlinesReading(
+        new FixedDueThresholds(),
+        new InMemoryTrancheSettings().reader(),
+      ),
+      new InMemoryCheckReader(new CheckTable()),
     ),
   );
 }

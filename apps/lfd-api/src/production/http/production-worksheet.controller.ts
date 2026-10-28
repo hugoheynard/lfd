@@ -16,7 +16,11 @@ import {
 import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put, Query } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
-import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
+import {
+  AdminSurface,
+  RequireAnyPermission,
+  RequirePermission,
+} from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodParam, ZodQuery } from "../../platform/shared/http/zod-body.pipe.js";
 import { CancelBatchCommand } from "../application/commands/cancel-batch.command.js";
@@ -58,8 +62,11 @@ const NO_CONTENT = 204;
  * L'identité staff vient du guard, jamais de la charge utile — une coche sans
  * auteur ne se conteste pas, elle s'efface.
  *
- * `production_worksheet` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1),
- * contenants du four compris : c'est du matériel de four, pas d'expédition.
+ * `production_worksheet` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`, 5.1).
+ * Le contenant se LIT sous ce droit (la fiche en a besoin pour « + 1 plaque »),
+ * mais se RÈGLE sous `production_settings:write` depuis le 2026-10-28 (plan
+ * `documentation/fournil/plan-fournee-v3.md`, §5) : c'est la page des
+ * raccourcis qui le règle, et c'est son droit.
  */
 @Controller("admin/production")
 @AdminSurface("production_worksheet")
@@ -207,8 +214,12 @@ export class ProductionWorksheetController {
     );
   }
 
-  /** Les contenants réglés, tous — quelques dizaines de lignes au plus. */
+  /**
+   * Les contenants réglés, tous — quelques dizaines de lignes au plus. Lus par
+   * la fiche ET par la page des raccourcis, qui les règle (plan fournée v3, §5).
+   */
   @Get("containers")
+  @RequireAnyPermission("production_worksheet:read", "production_settings:read")
   async containers(): Promise<readonly ProductionContainerView[]> {
     return this.queries.execute<ListProductionContainersQuery, readonly ProductionContainerView[]>(
       new ListProductionContainersQuery(),
@@ -220,6 +231,7 @@ export class ProductionWorksheetController {
    * le poser deux fois de suite doit donner le même état.
    */
   @Put("containers/:sku")
+  @RequirePermission("production_settings:write")
   @HttpCode(NO_CONTENT)
   async setContainer(
     @Param("sku") sku: string,
@@ -233,6 +245,7 @@ export class ProductionWorksheetController {
 
   /** Retirer le réglage — la colonne de la fiche redevient vide. */
   @Delete("containers/:sku")
+  @RequirePermission("production_settings:write")
   @HttpCode(NO_CONTENT)
   async removeContainer(@Param("sku") sku: string): Promise<void> {
     await this.commands.execute<RemoveProductionContainerCommand, void>(

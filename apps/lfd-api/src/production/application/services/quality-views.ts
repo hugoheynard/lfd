@@ -24,14 +24,10 @@ export function qualityBoardOf(
   settings: QualityControlSettings,
 ): QualityBoardView {
   const current = [...currentChecks(checks).values()];
-  const quantities = new Map(day.counts.map((count) => [count.sku, count.quantity]));
   const references = new Map(day.orders.map((order) => [order.orderId, order.reference]));
-  const lines: QualityLineStatus[] = [];
   const orders: QualityOrderStatus[] = [];
   for (const check of current) {
-    if (check.target.kind === "line") {
-      lines.push(lineStatusOf(check, check.target, quantities.get(check.target.sku) ?? null));
-    } else {
+    if (check.target.kind === "order") {
       const reference = references.get(check.target.orderId) ?? null;
       orders.push({
         orderId: check.target.orderId,
@@ -43,11 +39,29 @@ export function qualityBoardOf(
   }
   return {
     date: day.day.value,
-    lines: lines.sort((left, right) => left.sku.localeCompare(right.sku)),
+    lines: qualityLinesOf(day, checks),
     orders: orders.sort((left, right) => left.orderId.localeCompare(right.orderId)),
     heldOrderIds: [...heldOrderIds(day.day, checks, plannedLinesOf(day))].sort(),
     enabled: { lineChecks: settings.lineChecks, orderChecks: settings.orderChecks },
   };
+}
+
+/**
+ * Les pastilles des LIGNES, triées par SKU — celles de la Supervision, que la
+ * fiche d'atelier porte aussi depuis le 2026-10-28 (plan fournée v3, §3).
+ */
+export function qualityLinesOf(
+  day: ProductionDay,
+  checks: readonly QualityCheck[],
+): readonly QualityLineStatus[] {
+  const quantities = new Map(day.counts.map((count) => [count.sku, count.quantity]));
+  const lines: QualityLineStatus[] = [];
+  for (const check of currentChecks(checks).values()) {
+    if (check.target.kind === "line") {
+      lines.push(lineStatusOf(check, check.target, quantities.get(check.target.sku) ?? null));
+    }
+  }
+  return lines.sort((left, right) => left.sku.localeCompare(right.sku));
 }
 
 /** Une ligne a quitté le compte (`null`) : son contrôle ne vaut plus pour lui. */

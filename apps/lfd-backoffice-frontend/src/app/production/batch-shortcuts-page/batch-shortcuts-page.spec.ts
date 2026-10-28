@@ -1,11 +1,13 @@
 import { TestBed } from '@angular/core/testing';
-import type { BatchShortcutsSettingsView } from '@lfd/contracts';
+import type { BatchShortcutsSettingsView, ProductionContainerView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import type { BatchShortcutDialogData } from '../batch-shortcut-dialog/batch-shortcut-dialog';
 import { BatchShortcutsService } from '../batch-shortcuts.service';
+import type { ProductionContainerDialogData } from '../production-container-dialog/production-container-dialog';
+import { ProductionContainersService } from '../production-containers.service';
 import { BatchShortcutsPage } from './batch-shortcuts-page';
 
 /** Réglages › Production › Raccourcis du fournil (plan des raccourcis, S1). */
@@ -30,13 +32,26 @@ class FakeShortcuts {
   }
 }
 
+class FakeContainers {
+  reads = 0;
+  list(): Promise<readonly ProductionContainerView[]> {
+    this.reads += 1;
+    return Promise.resolve([
+      { sku: 'VIE-001', unitsPerContainer: 24, singular: 'plaque', plural: 'plaques' },
+    ]);
+  }
+}
+
 /** Le dialogue doublé : il rend ce qu'on lui a fait répondre, et garde ce qu'on lui a ouvert. */
 class FakePanels {
   answer: boolean | undefined = true;
-  readonly asked: { data: BatchShortcutDialogData; side: string }[] = [];
+  readonly asked: {
+    data: BatchShortcutDialogData | ProductionContainerDialogData;
+    side: string;
+  }[] = [];
   open(
     _component: unknown,
-    config: { data: BatchShortcutDialogData; side: string },
+    config: { data: BatchShortcutDialogData | ProductionContainerDialogData; side: string },
   ): { closed: Promise<boolean | undefined> } {
     this.asked.push(config);
     return { closed: Promise.resolve(this.answer) };
@@ -51,12 +66,14 @@ async function mount(canWrite = true, phone = false) {
     removeEventListener: () => undefined,
   }));
   const api = new FakeShortcuts();
+  const containers = new FakeContainers();
   const panels = new FakePanels();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [BatchShortcutsPage],
     providers: [
       { provide: BatchShortcutsService, useValue: api },
+      { provide: ProductionContainersService, useValue: containers },
       { provide: FoldPanelHostService, useValue: panels },
       {
         provide: PermissionsStore,
@@ -75,7 +92,7 @@ async function mount(canWrite = true, phone = false) {
   };
   await settle();
   const root = fixture.nativeElement as HTMLElement;
-  return { api, panels, root, settle };
+  return { api, containers, panels, root, settle };
 }
 
 afterEach(() => {
@@ -139,5 +156,44 @@ describe('BatchShortcutsPage', () => {
     expect(root.querySelectorAll('[data-shortcut-add]')).toHaveLength(0);
     expect(root.querySelectorAll('button[data-shortcut-chip]')).toHaveLength(0);
     expect(root.querySelectorAll('[data-shortcut-chip]')).toHaveLength(2);
+  });
+
+  it('montre le contenant principal réglé, et propose de le régler ailleurs', async () => {
+    const { root } = await mount();
+
+    expect(
+      root
+        .querySelector('[data-container-row="VIE-001"] [data-container-chip]')
+        ?.textContent?.trim(),
+    ).toBe('1 plaque · 24');
+    expect(root.querySelectorAll('[data-container-set]')).toHaveLength(2);
+  });
+
+  it('le contenant ouvre son dialogue, puis relit raccourcis et contenants', async () => {
+    const { root, panels, api, containers, settle } = await mount();
+
+    root.querySelector<HTMLButtonElement>('[data-container-row="VIE-001"] button')?.click();
+    await settle();
+
+    expect(panels.asked[0]).toMatchObject({
+      side: 'center',
+      data: {
+        sku: 'VIE-001',
+        productName: 'Croissant',
+        container: { unitsPerContainer: 24, singular: 'plaque' },
+        canWrite: true,
+      },
+    });
+    expect(api.reads).toBe(2);
+    expect(containers.reads).toBe(2);
+  });
+
+  it('sans le droit d’écrire : le contenant se lit, sans bouton', async () => {
+    const { root } = await mount(false);
+
+    expect(root.querySelectorAll('[data-container-set]')).toHaveLength(0);
+    expect(root.querySelectorAll('button[data-container-chip]')).toHaveLength(0);
+    expect(root.querySelectorAll('[data-container-chip]')).toHaveLength(1);
+    expect(root.querySelectorAll('[data-container-none]')).toHaveLength(2);
   });
 });

@@ -1001,6 +1001,7 @@ export {
 export type {
   RecordWorkshopBatch,
   WorkshopBatch,
+  WorkshopDeadline,
   WorkshopLineContainer,
 } from "./production-batches.js";
 export {

@@ -15,7 +15,7 @@
           variant="title"
           title="Compter en plaques"
           [subtitle]="
-            'Sur la fiche d’atelier, chaque raccourci ajoute ses pièces au champ « Pièces sorties » : deux appuis sur « 1 plaque · 24 » font 48. Au plus ' +
+            'Sur la fiche d’atelier, le contenant principal fait le gros bouton « + 1 plaque » ; chaque raccourci ajoute ses pièces au champ « Pièces sorties » : deux appuis sur « 1 plaque · 24 » font 48. Au plus ' +
             max +
             ' par produit.'
           "
@@ -62,6 +62,52 @@
                 {{ article.name }}
                 <span class="muted">{{ article.sku }}</span>
               </span>
+            </ng-template>
+            <ng-template foldCell="container" let-article>
+              <div class="container" [attr.data-container-row]="article.sku">
+                @if (containerOf(article.sku); as container) {
+                  @if (canWrite()) {
+                    <button
+                      foldButton
+                      type="button"
+                      size="sm"
+                      emphasis="soft"
+                      intent="neutral"
+                      data-container-chip
+                      [attr.aria-label]="
+                        'Modifier le contenant principal : ' +
+                        container.singular +
+                        ', ' +
+                        container.unitsPerContainer +
+                        ' pièces'
+                      "
+                      (click)="editContainer(article)"
+                    >
+                      1 {{ container.singular }} · {{ container.unitsPerContainer }}
+                    </button>
+                  } @else {
+                    <fold-badge
+                      data-container-chip
+                      [content]="'1 ' + container.singular + ' · ' + container.unitsPerContainer"
+                    />
+                  }
+                } @else if (canWrite()) {
+                  <button
+                    foldButton
+                    type="button"
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    icon="plus"
+                    data-container-set
+                    (click)="editContainer(article)"
+                  >
+                    Régler le contenant
+                  </button>
+                } @else {
+                  <span class="muted" data-container-none>Aucun</span>
+                }
+              </div>
             </ng-template>
             <ng-template foldCell="shortcuts" let-article>
               <div class="shortcuts" [attr.data-shortcut-row]="article.sku">

@@ -4,6 +4,7 @@ import {
   type BatchShortcutArticleView,
   type BatchShortcutsSettingsView,
   type BatchShortcutView,
+  type ProductionContainerView,
 } from '@lfd/contracts';
 import {
   FoldBadgeComponent,
@@ -28,6 +29,11 @@ import {
   type BatchShortcutDialogData,
 } from '../batch-shortcut-dialog/batch-shortcut-dialog';
 import { BatchShortcutsService } from '../batch-shortcuts.service';
+import {
+  ProductionContainerDialog,
+  type ProductionContainerDialogData,
+} from '../production-container-dialog/production-container-dialog';
+import { ProductionContainersService } from '../production-containers.service';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './shortcut-filters';
 
 /** Le téléphone — le seuil de la table du réassort, dont celle-ci reprend la forme. */
@@ -37,13 +43,18 @@ const PHONE_QUERY = '(max-width: 768px)';
 const COLUMNS: readonly FoldTableColumn<BatchShortcutArticleView>[] = [
   { key: 'family', label: 'Famille' },
   { key: 'product', label: 'Produit' },
+  { key: 'container', label: 'Contenant principal' },
   { key: 'shortcuts', label: 'Raccourcis' },
 ];
 
 type LoadState =
   | { readonly status: 'loading' }
   | { readonly status: 'error' }
-  | { readonly status: 'ready'; readonly view: BatchShortcutsSettingsView };
+  | {
+      readonly status: 'ready';
+      readonly view: BatchShortcutsSettingsView;
+      readonly containers: ReadonlyMap<string, ProductionContainerView>;
+    };
 
 /**
  * **Réglages › Production › Raccourcis du fournil** (plan
@@ -53,6 +64,11 @@ type LoadState =
  * et par recherche sur une ligne au-dessus (la forme de la table du
  * réassort). Chaque ligne montre ses raccourcis en pastilles « 1 plaque · 24 »
  * et un bouton « Ajouter un raccourci » ; une pastille ouvre son dialogue.
+ *
+ * Elle règle aussi le **contenant principal** de chaque produit (plan
+ * `documentation/fournil/plan-fournee-v3.md`, §5) — celui du gros bouton « + 1
+ * plaque » de la fiche — par son propre dialogue. Les raccourcis restent des
+ * boutons en plus.
  *
  * Lue sous `production_settings:read` ; sans `:write`, la table se lit
  * seulement — pastilles muettes, aucun bouton. L'écran relit après chaque
@@ -79,6 +95,7 @@ type LoadState =
 })
 export class BatchShortcutsPage {
   private readonly api = inject(BatchShortcutsService);
+  private readonly containersApi = inject(ProductionContainersService);
   private readonly panels = inject(FoldPanelHostService);
   private readonly permissions = inject(PermissionsStore);
 
@@ -120,6 +137,33 @@ export class BatchShortcutsPage {
     void this.load();
   }
 
+  /** Le contenant réglé du produit, ou `null`. */
+  protected containerOf(sku: string): ProductionContainerView | null {
+    const state = this.state();
+    return state.status === 'ready' ? (state.containers.get(sku) ?? null) : null;
+  }
+
+  /** Le contenant touché : son dialogue, pour le régler, le remplacer ou le retirer. */
+  protected async editContainer(article: BatchShortcutArticleView): Promise<void> {
+    const changed = await this.panels.open<ProductionContainerDialogData, boolean>(
+      ProductionContainerDialog,
+      {
+        data: {
+          sku: article.sku,
+          productName: article.name,
+          container: this.containerOf(article.sku),
+          canWrite: this.canWrite(),
+        },
+        side: this.phone() ? 'bottom' : 'center',
+        width: 'sm',
+        surface: 'solid',
+      },
+    ).closed;
+    if (changed === true) {
+      await this.load();
+    }
+  }
+
   protected shortcutsOf(sku: string): readonly BatchShortcutView[] {
     return this.bySku().get(sku) ?? [];
   }
@@ -159,7 +203,15 @@ export class BatchShortcutsPage {
       this.state.set({ status: 'loading' });
     }
     try {
-      this.state.set({ status: 'ready', view: await this.api.settings() });
+      const [view, containers] = await Promise.all([
+        this.api.settings(),
+        this.containersApi.list(),
+      ]);
+      this.state.set({
+        status: 'ready',
+        view,
+        containers: new Map(containers.map((container) => [container.sku, container])),
+      });
     } catch {
       this.state.set({ status: 'error' });
     }
