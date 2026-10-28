@@ -104,6 +104,11 @@ export class WorksheetLine {
    * « + 1 plaque » le dit déjà (Hugo, 2026-10-28 — un doublon). Le pavé
    * dédoublonne de son côté.
    */
+  /** Les pièces sorties au-delà du besoin. */
+  protected readonly bonus = computed(() =>
+    Math.max(0, this.line().produced - this.line().quantity),
+  );
+
   protected readonly lineShortcuts = computed(() => {
     const units = this.line().container?.unitsPerContainer ?? null;
     return this.shortcuts().filter((shortcut) => shortcut.pieces !== units);

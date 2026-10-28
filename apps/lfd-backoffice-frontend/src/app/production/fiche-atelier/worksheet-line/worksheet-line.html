@@ -1,7 +1,14 @@
 <!-- À gauche : ce qui manque au palier en cours, son heure, puis la journée. -->
 <span class="wl-left">
   @if (line().done) {
-    <span class="wl-left-big">✓</span>
+    <!-- Le total sorti, avec ce qu'on a fait en plus, à gauche du tick (Hugo, 2026-10-28). -->
+    <span class="wl-left-big"
+      >{{ line().produced }}
+      @if (bonus() > 0) {
+        <span class="wl-left-of wl-left-bonus">+{{ bonus() }}</span>
+      }
+      ✓</span
+    >
     <span class="wl-left-when">fait</span>
     <span class="wl-left-total">total {{ line().produced }} / {{ line().quantity }}</span>
   } @else {

@@ -117,7 +117,7 @@ describe('une ligne, vue par produit', () => {
   it('dit « ✓ fait » sur une ligne complète', () => {
     const el: HTMLElement = render(line({ produced: 240, remaining: 0, done: true })).nativeElement;
 
-    expect(text(el, '.wl-left-big')).toBe('✓');
+    expect(text(el, '.wl-left-big')).toBe('240 ✓');
     expect(text(el, '.wl-left-when')).toBe('fait');
     expect(el.classList.contains('is-done')).toBe(true);
   });
@@ -227,6 +227,16 @@ describe('une ligne, vue par produit', () => {
 
     expect(el.querySelector('[data-worksheet-shortcut="bs-1"]')).toBeNull();
     expect(el.querySelector('[data-worksheet-shortcut="bs-2"]')).not.toBeNull();
+  });
+
+  it('faite, dit le total sorti et le bonus à gauche du tick', () => {
+    const el: HTMLElement = render(
+      line({ done: true, quantity: 24, produced: 30, remaining: 0 }),
+    ).nativeElement;
+
+    expect(el.querySelector('.wl-left-big')?.textContent?.replace(/\s+/g, ' ').trim()).toBe(
+      '30 +6 ✓',
+    );
   });
 
   it('montre ses fournées en puces', () => {
