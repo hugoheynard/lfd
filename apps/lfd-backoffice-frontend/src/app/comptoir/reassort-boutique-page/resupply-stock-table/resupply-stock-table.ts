@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   ElementRef,
   inject,
   input,
@@ -25,10 +26,15 @@ import {
   FoldDropdownItemComponent,
   FoldIconComponent,
   FoldNumberInputComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
+import {
+  QuantityDialog,
+  type QuantityDialogData,
+} from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 import { SiteResuppliesStore } from '../site-resupplies.store';
@@ -65,8 +71,15 @@ const TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = {
   tomorrow: 'Pour demain',
 };
 
-/** Les pas rapides à côté de chaque case de demande. */
-const STEPS = [1, 5, 10] as const;
+/**
+ * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
+ * retire à gauche, on ajoute à droite, du plus fin au plus large en
+ * s'éloignant de la case.
+ */
+const STEPS = [1, 10, 50, 100] as const;
+
+/** Le téléphone — le même seuil que la feuille de style. */
+const PHONE_QUERY = '(max-width: 768px)';
 
 /** Le rang de tri : ruptures et stocks faibles, puis les demandés, puis le reste. */
 function rankOf(row: StockRow): number {
@@ -125,6 +138,33 @@ export class ResupplyStockTable {
   private readonly resupplies = inject(SiteResuppliesStore);
   private readonly receipts = inject(ResupplyReceiptsService);
   private readonly host = inject<ElementRef<HTMLElement>>(ElementRef);
+  private readonly panels = inject(FoldPanelHostService);
+
+  /** En mobile, la case seule, en lecture : la toucher ouvre le dialogue (2026-10-28). */
+  protected readonly phone = signal(false);
+
+  constructor() {
+    const query = window.matchMedia(PHONE_QUERY);
+    this.phone.set(query.matches);
+    const follow = (event: MediaQueryListEvent): void => this.phone.set(event.matches);
+    query.addEventListener('change', follow);
+    inject(DestroyRef).onDestroy(() => query.removeEventListener('change', follow));
+  }
+
+  /** En mobile, la case ouvre le dialogue du chiffre et des raccourcis, puis écrit. */
+  protected async openQuantity(row: StockRow): Promise<void> {
+    if (!this.phone() || this.resuppliesPending()) {
+      return;
+    }
+    const target = this.target();
+    const quantity = await this.panels.open<QuantityDialogData, number>(QuantityDialog, {
+      data: { label: row.name, quantity: this.quantityOf(target, row) },
+    }).closed;
+    if (quantity !== undefined) {
+      this.setQuantity(target, row, quantity);
+      await this.commit(target, row);
+    }
+  }
 
   readonly siteId = input.required<string>();
   readonly day = input.required<string>();
@@ -142,6 +182,8 @@ export class ResupplyStockTable {
 
   protected readonly stateOptions = STATE_OPTIONS;
   protected readonly steps = STEPS;
+  /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
+  protected readonly downSteps = [...STEPS].reverse();
   /** La visée choisie d'un clic ; `null` tant que personne n'a cliqué. */
   private readonly chosenTarget = signal<ResupplyTarget | null>(null);
 
@@ -332,6 +374,19 @@ export class ResupplyStockTable {
   /** Un pas rapide s'ajoute à la demande : deux ajouts se cumulent, sans version. */
   protected async step(target: ResupplyTarget, row: StockRow, quantity: number): Promise<void> {
     await this.resupplies.addLine(target, row.sku, quantity);
+  }
+
+  /**
+   * Un pas retiré corrige la demande, sans descendre sous zéro ; à zéro,
+   * la ligne se retire. Il part de ce que la case montre, saisie comprise.
+   */
+  protected async stepDown(target: ResupplyTarget, row: StockRow, quantity: number): Promise<void> {
+    const shown = this.quantityOf(target, row) ?? 0;
+    if (shown === 0) {
+      return;
+    }
+    this.setQuantity(target, row, Math.max(0, shown - quantity));
+    await this.commit(target, row);
   }
 
   protected async send(target: ResupplyTarget): Promise<void> {

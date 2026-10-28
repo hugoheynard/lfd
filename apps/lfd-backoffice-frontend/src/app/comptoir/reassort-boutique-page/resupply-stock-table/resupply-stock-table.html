@@ -18,15 +18,15 @@
       [value]="target()"
       (valueChange)="chooseTarget($event)"
     />
+    <fold-search
+      placeholder="Chercher un produit"
+      ariaLabel="Chercher un produit"
+      [value]="query()"
+      (valueChange)="query.set($event)"
+      [resultCount]="visibleRows().length"
+      resultLabel="produits"
+    />
   </div>
-  <fold-search
-    placeholder="Chercher un produit"
-    ariaLabel="Chercher un produit"
-    [value]="query()"
-    (valueChange)="query.set($event)"
-    [resultCount]="visibleRows().length"
-    resultLabel="produits"
-  />
 
   @if (alertFailure(); as failure) {
     <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
@@ -86,16 +86,36 @@
                 (focusout)="commit(target(), row)"
                 (keydown.enter)="commit(target(), row)"
               >
-                <fold-number-input
-                  size="sm"
-                  [value]="quantityOf(target(), row)"
-                  (valueChange)="setQuantity(target(), row, $event)"
-                  [min]="0"
-                  integer
-                  [disabled]="resuppliesPending()"
-                />
+                @for (quantity of downSteps; track quantity) {
+                  <button
+                    class="shortcut"
+                    foldButton
+                    type="button"
+                    emphasis="soft"
+                    intent="neutral"
+                    size="sm"
+                    [disabled]="resuppliesPending() || !quantityOf(target(), row)"
+                    (click)="stepDown(target(), row, quantity)"
+                  >
+                    −{{ quantity }}
+                  </button>
+                }
+                <!-- En mobile, la case seule ouvre le dialogue des raccourcis. -->
+                <div class="cell" (click)="openQuantity(row)">
+                  <fold-number-input
+                    size="sm"
+                    align="center"
+                    [readOnly]="phone()"
+                    [value]="quantityOf(target(), row)"
+                    (valueChange)="setQuantity(target(), row, $event)"
+                    [min]="0"
+                    integer
+                    [disabled]="resuppliesPending()"
+                  />
+                </div>
                 @for (quantity of steps; track quantity) {
                   <button
+                    class="shortcut"
                     foldButton
                     type="button"
                     emphasis="soft"

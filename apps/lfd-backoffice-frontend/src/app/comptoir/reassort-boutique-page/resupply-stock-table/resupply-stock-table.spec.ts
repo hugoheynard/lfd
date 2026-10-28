@@ -9,7 +9,16 @@ import type {
   StockAlertView,
   UnorderedReceiptLineView,
 } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { beforeEach, describe, expect, it, vi } from 'vitest';
+
+// jsdom n'a pas `matchMedia` : la table le lit pour la saisie mobile (2026-10-28).
+beforeEach(() => {
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
+});
 
 import { parisToday } from '../../../shared/paris-today';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';

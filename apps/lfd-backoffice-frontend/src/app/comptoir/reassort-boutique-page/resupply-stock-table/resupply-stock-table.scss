@@ -43,15 +43,45 @@
 .selectors {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
+  align-items: center;
   gap: var(--fold-space-md);
+}
+
+/* La recherche dans le prolongement des filtres, comme au fournil. */
+.selectors fold-search {
+  flex: 1 1 16rem;
 }
 
 .quantity {
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: var(--fold-space-xs);
-  align-items: end;
+  align-items: center;
+}
+
+.cell fold-number-input {
+  width: 6rem;
+}
+
+/* En mobile, la case seule : les raccourcis vivent dans le dialogue. */
+@media (max-width: 768px) {
+  .shortcut {
+    display: none;
+  }
+
+  .selectors {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .selectors fold-view-toggle {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .cell fold-number-input {
+    width: 5rem;
+  }
 }
 
 .send {
