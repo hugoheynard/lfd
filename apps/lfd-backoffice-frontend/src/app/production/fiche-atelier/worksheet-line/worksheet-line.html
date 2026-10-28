@@ -51,7 +51,14 @@
 <!-- La barre à paliers : « 180 / 240 sorties » dessus, l'heure sous chaque segment. -->
 <span class="wl-progress">
   <span class="wl-figures">{{ line().produced }} / {{ line().quantity }} sorties</span>
-  <fold-meter class="wl-meter" [label]="meterLabel()" [value]="0" [segments]="segments()" />
+  @for (row of segmentRows(); track $index) {
+    <fold-meter
+      class="wl-meter"
+      [label]="$index === 0 ? meterLabel() : meterLabel() + ' (suite)'"
+      [value]="0"
+      [segments]="row"
+    />
+  }
 </span>
 
 <span class="wl-actions">

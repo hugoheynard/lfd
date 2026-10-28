@@ -239,6 +239,23 @@ describe('une ligne, vue par produit', () => {
     );
   });
 
+  it('passe à la rangée suivante au-delà de trois paliers', () => {
+    const el: HTMLElement = render(
+      line({
+        quantity: 40,
+        remaining: 40,
+        deadlines: [
+          { quantity: 10, before: '05:00' },
+          { quantity: 10, before: '06:00' },
+          { quantity: 10, before: '07:00' },
+          { quantity: 10, before: '09:00' },
+        ],
+      }),
+    ).nativeElement;
+
+    expect(el.querySelectorAll('fold-meter')).toHaveLength(2);
+  });
+
   it('montre ses fournées en puces', () => {
     const el: HTMLElement = render(line({ batches: [BATCH] })).nativeElement;
 

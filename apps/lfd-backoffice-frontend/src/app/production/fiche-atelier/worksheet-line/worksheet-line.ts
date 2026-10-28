@@ -36,6 +36,9 @@ import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
  * **La ligne ne décide rien.** Elle remonte une quantité ou une fournée à
  * annuler ; le parent envoie, et la barre avance à la relecture.
  */
+/** Paliers par rangée de la barre. */
+const STEPS_PER_ROW = 3;
+
 @Component({
   selector: 'app-worksheet-line',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -149,6 +152,20 @@ export class WorksheetLine {
         label: `${met ? '✓ ' : ''}${String(step.q)} ${beforeLabel(step.before)}`,
       };
     });
+  });
+
+  /**
+   * Les paliers, trois par rangée au plus (Hugo, 2026-10-28) : au-delà, les
+   * libellés ne tiennent plus, au téléphone comme au poste. Une rangée de
+   * plus en dessous.
+   */
+  protected readonly segmentRows = computed(() => {
+    const segments = this.segments();
+    const rows: (readonly FoldMeterSegment[])[] = [];
+    for (let at = 0; at < segments.length; at += STEPS_PER_ROW) {
+      rows.push(segments.slice(at, at + STEPS_PER_ROW));
+    }
+    return rows;
   });
 
   protected addContainer(): void {
