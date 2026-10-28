@@ -1,6 +1,6 @@
 /**
  * E2E du **tour de l'arrêt du plan** (plan
- * `documentation/production/arret-du-plan.md`, §3, §4, B2, S4, S7, S8,
+ * `documentation/fournil/arret-du-plan.md`, §3, §4, B2, S4, S7, S8,
  * lot A2) — la route machine que le cron du Worker appelle toutes les cinq
  * minutes. Depuis le 2026-10-21, l'heure limite générale déclenche tout
  * (`limites-de-commande/plan-une-seule-heure.md` §5) : plus de mode, plus

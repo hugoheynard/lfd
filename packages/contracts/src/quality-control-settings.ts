@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Où le contrôle qualité se rend** — Réglages › Commandes (décision de Hugo,
- * 2026-10-26, `documentation/production/plan-controle-qualite.md`, D10).
+ * 2026-10-26, `documentation/fournil/plan-controle-qualite.md`, D10).
  *
  * - `GET admin/production/quality-settings` → {@link QualityControlSettingsView},
  *   sous `lfc_order_settings:read` ;

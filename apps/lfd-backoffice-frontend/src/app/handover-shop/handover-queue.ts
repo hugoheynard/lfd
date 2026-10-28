@@ -441,7 +441,7 @@ export function stillRemittable(state: HandoverQueueState): boolean {
 
 /**
  * **Le contrôle qualité retient-il ce sac, ICI ?** (plan
- * `production/plan-controle-qualite.md`, D4 et §5.)
+ * `fournil/plan-controle-qualite.md`, D4 et §5.)
  *
  * 🔴 Jamais sur une commande retirée ou annulée : le serveur lit la retenue
  * APRÈS « déjà retirée » (D4), et l'écran dit la même chose dans le même

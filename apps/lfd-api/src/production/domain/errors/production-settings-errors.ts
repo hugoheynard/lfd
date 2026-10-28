@@ -2,7 +2,7 @@ import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus des **réglages du fournil** — les jours fermés, et la forme d'une
- * heure (plan `documentation/production/arret-du-plan.md`). Les refus du mode
+ * heure (plan `documentation/fournil/arret-du-plan.md`). Les refus du mode
  * et des heures d'arrêt sont partis avec eux le 2026-10-21.
  *
  * Lus par qui règle l'écran, sans le code sous les yeux : chacun nomme le cas

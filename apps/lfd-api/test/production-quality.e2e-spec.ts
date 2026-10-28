@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E : **le contrôle qualité du superviseur** (plan
- * `documentation/production/plan-controle-qualite.md`, lot QC2), sur le vrai
+ * `documentation/fournil/plan-controle-qualite.md`, lot QC2), sur le vrai
  * Postgres jetable et le vrai MinIO.
  *
  * Ce que seule cette suite prouve :

@@ -5,7 +5,7 @@ import type { ProductionDossierCopy } from "./copy/mail-copy.model.js";
 
 /**
  * Les données du courriel **« Dossier de production »** (doc
- * `documentation/production/dossier-prod-du-jour.md`, « L'envoi par e-mail »).
+ * `documentation/fournil/dossier-prod-du-jour.md`, « L'envoi par e-mail »).
  * Destinataire : une personne de la liste réglée dans Production › Réglages,
  * du personnel ou non.
  *

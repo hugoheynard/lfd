@@ -11,7 +11,7 @@ import { ProductionTrancheSettingsRepository } from "../../domain/ports/producti
 import { SetProductionTranchesCommand } from "./set-production-tranches.command.js";
 
 /**
- * Pose les tranches de production (plan `production/plan-tranches-de-production.md`,
+ * Pose les tranches de production (plan `fournil/plan-tranches-de-production.md`,
  * T1). L'agrégat juge la saisie AVANT toute lecture : un refus n'ouvre pas de
  * transaction. L'état remplacé est relu dans la transaction ; l'écriture et
  * son fait partent ensemble — un journal en panne annule le réglage.

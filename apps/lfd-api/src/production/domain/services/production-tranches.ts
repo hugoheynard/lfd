@@ -2,7 +2,7 @@ import type { TrancheMode } from "../entities/production-tranche-settings.js";
 
 /**
  * **Le rangement des besoins en tranches** (plan
- * `documentation/production/plan-tranches-de-production.md`, §2 et §3).
+ * `documentation/fournil/plan-tranches-de-production.md`, §2 et §3).
  *
  * Fonction pure, sans horloge ni base. Elle part des seuils que le commerce
  * calcule (une heure « prêt avant » par besoin) et les range selon le mode

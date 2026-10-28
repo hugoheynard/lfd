@@ -5,7 +5,7 @@ import type { ProductionTrancheSettingsState } from "../entities/production-tran
 
 /**
  * **Le fait des tranches de production** (Réglages › Production, plan
- * `production/plan-tranches-de-production.md`, T1). La ligne du réglage ne
+ * `fournil/plan-tranches-de-production.md`, T1). La ligne du réglage ne
  * garde que le dernier état ; le journal est la seule mémoire des repères
  * qu'a eus l'atelier, et de qui les a changés.
  */

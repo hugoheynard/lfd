@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * **Le compte à rebours du fournil** — pour une journée, ce qui doit être sorti
  * de chaque produit avant chaque heure, cumulé (plan
- * `documentation/production/plan-production-par-vagues.md`, V0 et §7.2 :
+ * `documentation/fournil/plan-production-par-vagues.md`, V0 et §7.2 :
  * « l'échéance mène »).
  *
  * Lecture seule, et **prévision** : servi par `GET
@@ -23,7 +23,7 @@ import { z } from "zod";
  * - `day` : les deux marges ne sont pas réglées — un seul seuil, la journée ;
  * - `before_first` : en tranches fixes, des besoins attendus AVANT la première
  *   tranche (`before` = la première tranche) — à SIGNALER à l'écran, avec
- *   `earliest`, l'heure du plus pressé (plan `production/plan-tranches-de-production.md`, §2.1).
+ *   `earliest`, l'heure du plus pressé (plan `fournil/plan-tranches-de-production.md`, §2.1).
  */
 export const dueThresholdKindSchema = z.enum(["deadline", "undated", "day", "before_first"]);
 export type DueThresholdKind = z.infer<typeof dueThresholdKindSchema>;
@@ -68,7 +68,7 @@ export const productionDueThresholdsViewSchema = z.object({
   deliveryMarginMinutes: z.number().int().nonnegative().nullable(),
   pickupMarginMinutes: z.number().int().nonnegative().nullable(),
   /**
-   * Le mode des tranches (plan `production/plan-tranches-de-production.md`) et,
+   * Le mode des tranches (plan `fournil/plan-tranches-de-production.md`) et,
    * en mode fixe, les heures réglées. Les `lines` sont DÉJÀ rangées selon lui.
    */
   trancheMode: z.enum(["fixed", "computed"]),

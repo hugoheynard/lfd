@@ -1,6 +1,6 @@
 /**
  * E2E : **où le contrôle qualité se rend** — Réglages › Commandes (décision de
- * Hugo, 2026-10-26, `documentation/production/plan-controle-qualite.md`, D10),
+ * Hugo, 2026-10-26, `documentation/fournil/plan-controle-qualite.md`, D10),
  * sur le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : les défauts quand la ligne n'existe pas

@@ -4,7 +4,7 @@ import { qualityTargetKey } from "../value-objects/quality-check-target.js";
 
 /**
  * **Lire les contrôles** — verdict courant, péremption, retenue
- * (`documentation/production/plan-controle-qualite.md`, D2, D4, D5, D6).
+ * (`documentation/fournil/plan-controle-qualite.md`, D2, D4, D5, D6).
  *
  * Des fonctions pures : le contrôle est append-only, donc tout ce qu'on en dit
  * se DÉRIVE de la liste des verdicts rendus. Rien n'est stocké qui pourrait

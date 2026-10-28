@@ -279,7 +279,7 @@ async function triggerSettlementReminders(env: Env): Promise<void> {
 
 /**
  * Réveille le container et déclenche le balayage des photos de contrôle qualité
- * déposées et jamais rattachées (plan `documentation/production/plan-controle-qualite.md`, D8),
+ * déposées et jamais rattachées (plan `documentation/fournil/plan-controle-qualite.md`, D8),
  * qui balaie aussi le journal des journées du fournil — puis celui de la
  * livraison (`documentation/livraisons/architecture/plan-schema-delivery.md`, SD-D3), par sa
  * propre route : le fournil ne connaît pas la livraison — et enfin la purge du
@@ -387,7 +387,7 @@ async function triggerOutboxSweep(env: Env): Promise<void> {
  * Réveille le container et passe le tour de l'arrêt du plan : en mode
  * automatique, arrêter le plan du lendemain passé l'heure réglée ; en manuel,
  * alerter passé l'heure d'alerte ; et prévenir si celui d'aujourd'hui n'est pas
- * arrêté (plan `documentation/production/arret-du-plan.md`, §3, lot A2).
+ * arrêté (plan `documentation/fournil/arret-du-plan.md`, §3, lot A2).
  *
  * Sur le cron de RAFRAÎCHISSEMENT : au plus cinq minutes de retard sur l'heure
  * réglée. Même porte et même jeton que le recompute ; idempotent — une seule

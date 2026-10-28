@@ -17,7 +17,7 @@ import { QUALITY_VERDICT } from '../values/orders-values';
 
 /**
  * **Le contrôle qualité du superviseur** (plan
- * `documentation/production/plan-controle-qualite.md`, D9) — un verdict rendu,
+ * `documentation/fournil/plan-controle-qualite.md`, D9) — un verdict rendu,
  * une retenue au retrait posée ou levée.
  *
  * La charge ne porte ni la note ni les photos : elles ne se lisent qu'en

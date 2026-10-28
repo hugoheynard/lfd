@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les réglages du fournil** — l'arrêt du plan, en lecture, et les jours
- * fermés (plan `documentation/production/arret-du-plan.md`). Les heures sont
+ * fermés (plan `documentation/fournil/arret-du-plan.md`). Les heures sont
  * des heures de pendule d'Europe/Paris, `HH:MM`.
  */
 
@@ -31,7 +31,7 @@ export interface ProductionSettingsView {
   readonly automaticClose: ProductionAutomaticCloseView | null;
   /** Les jours fermés d'aujourd'hui (compris) à plus tard, `AAAA-MM-JJ`, dans l'ordre. */
   readonly closedDays: readonly string[];
-  /** Les tranches de production (plan `production/plan-tranches-de-production.md`, T1). */
+  /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
   readonly tranches: ProductionTranchesView;
 }
 

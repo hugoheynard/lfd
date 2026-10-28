@@ -6,7 +6,7 @@ import type {
 /**
  * **Ce que le four a sorti d'un article** — des dérivés, jamais une colonne.
  *
- * Plan `documentation/production/plan-fournees-progressives.md`, D2 : l'état
+ * Plan `documentation/fournil/plan-fournees-progressives.md`, D2 : l'état
  * d'une ligne se DÉDUIT de ses fournées. Aucun « fait » n'est écrit à côté de la
  * somme — une seconde vérité à tenir en même temps finirait par la contredire.
  *

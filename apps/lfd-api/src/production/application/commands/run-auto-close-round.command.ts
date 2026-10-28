@@ -1,6 +1,6 @@
 /**
  * **Un tour de l'arrêt du plan** — le passage du cron du Worker (plan
- * `documentation/production/arret-du-plan.md`, §3, §4, lot A2). Sans
+ * `documentation/fournil/arret-du-plan.md`, §3, §4, lot A2). Sans
  * argument : l'heure est celle du `Clock`, l'instant d'arrêt celui de l'heure
  * limite générale (2026-10-21).
  */

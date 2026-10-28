@@ -4,7 +4,7 @@ import type { JournalFact, JournaledEvent } from "../../../platform/journal/jour
 
 /**
  * **Les faits des réglages du fournil** (plan
- * `documentation/production/arret-du-plan.md`, lot A1).
+ * `documentation/fournil/arret-du-plan.md`, lot A1).
  *
  * La ligne du réglage ne garde que le dernier état et son auteur ; le journal
  * est la seule mémoire de qui a changé quoi.

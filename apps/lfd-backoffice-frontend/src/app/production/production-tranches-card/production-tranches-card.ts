@@ -46,7 +46,7 @@ export function sortedTranches(times: readonly string[]): string[] {
 
 /**
  * **Les tranches de production** (plan
- * `documentation/production/plan-tranches-de-production.md`, §4, lot T1) —
+ * `documentation/fournil/plan-tranches-de-production.md`, §4, lot T1) —
  * fixes, réglées ici, ou calculées sur les échéances moins les marges du
  * commerce.
  *

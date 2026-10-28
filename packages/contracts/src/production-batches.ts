@@ -5,7 +5,7 @@ import { workshopInitialsSchema } from "./production-worksheet.js";
 /**
  * **Les fournées** — ce que le four a sorti d'une ligne de la fiche d'atelier,
  * déclaré au fil de l'eau plutôt que coché une fois (plan
- * `documentation/production/plan-fournees-progressives.md`, D1, D3).
+ * `documentation/fournil/plan-fournees-progressives.md`, D1, D3).
  */
 
 /** Un ULID : 26 caractères de l'alphabet de Crockford. */

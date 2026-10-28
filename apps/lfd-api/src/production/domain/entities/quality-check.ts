@@ -58,7 +58,7 @@ export interface RenderQualityCheck {
 
 /**
  * **Un contrôle qualité** — un verdict rendu par le superviseur, une fois pour
- * toutes (`documentation/production/plan-controle-qualite.md`, D2).
+ * toutes (`documentation/fournil/plan-controle-qualite.md`, D2).
  *
  * Il n'a **aucune méthode de mutation**, et c'est la règle : un contrôle est une
  * ligne jamais réécrite. Lever un blocage, c'est rendre un nouveau contrôle ;

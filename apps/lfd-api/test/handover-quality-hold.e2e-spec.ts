@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 /**
  * E2E : **la retenue qualité au retrait** (plan
- * `documentation/production/plan-controle-qualite.md`, lot QC3, D4 et D6), sur
+ * `documentation/fournil/plan-controle-qualite.md`, lot QC3, D4 et D6), sur
  * le vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : le port publié par la production

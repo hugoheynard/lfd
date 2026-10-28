@@ -1,7 +1,7 @@
 /**
  * E2E des **réglages du fournil** — l'arrêt du plan (lu de l'heure limite
  * générale depuis le 2026-10-21) et les jours fermés (plan
- * `documentation/production/arret-du-plan.md`), et le droit de l'arrêt
+ * `documentation/fournil/arret-du-plan.md`), et le droit de l'arrêt
  * (`production_count_stop`).
  *
  * Tout passe par les vraies routes, la vraie base et ses contraintes. Les

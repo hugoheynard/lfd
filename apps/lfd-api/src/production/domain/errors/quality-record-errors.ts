@@ -8,7 +8,7 @@ import {
 /**
  * Les refus de l'**enregistrement** d'un contrôle qualité — le dépôt des photos,
  * le rattachement, l'idempotence, la cible dans la journée (lot QC2 du plan
- * `documentation/production/plan-controle-qualite.md`).
+ * `documentation/fournil/plan-controle-qualite.md`).
  *
  * À part de `quality-check-errors.ts`, qui ne porte que des `DomainError` sur la
  * FORME d'un contrôle : ceux-ci disent surtout « l'état ne le permet pas » (409)

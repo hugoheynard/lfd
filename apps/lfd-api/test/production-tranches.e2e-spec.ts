@@ -1,6 +1,6 @@
 /**
  * E2E des **tranches de production** (plan
- * `documentation/production/plan-tranches-de-production.md`, T1 et T2), sur le
+ * `documentation/fournil/plan-tranches-de-production.md`, T1 et T2), sur le
  * vrai Postgres jetable.
  *
  * Ce que seule cette suite prouve : la ligne absente servie en défaut (fixe,

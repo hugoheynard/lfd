@@ -52,7 +52,7 @@ export function automaticCloseLabel(close: ProductionAutomaticCloseView): string
 }
 
 /**
- * **Production › Réglages** (plan `documentation/production/arret-du-plan.md`,
+ * **Production › Réglages** (plan `documentation/fournil/arret-du-plan.md`,
  * Q6 ; lot A1) — quand le plan du lendemain s'arrête, et les jours où le
  * fournil ne produit pas.
  *

@@ -135,7 +135,7 @@ describe("le retrait déposé — `deposit`, connu des lecteurs avant d'être é
   });
 });
 
-describe("l'arrêt automatique du plan — `automatic` (production/arret-du-plan.md)", () => {
+describe("l'arrêt automatique du plan — `automatic` (fournil/arret-du-plan.md)", () => {
   const closed = { subjectLabel: "2026-10-07", serviceDay: "2026-10-07", absorbed: 3 };
 
   it("écrit un arrêt du staff sans la clé, et un arrêt automatique avec `true`", () => {

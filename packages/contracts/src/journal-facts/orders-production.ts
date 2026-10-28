@@ -320,7 +320,7 @@ const qualityTarget = () =>
  * Le socle des trois faits du contrôle qualité : le libellé est le SKU d'une
  * ligne ou la référence d'une commande. ⚠️ Ni la note ni les photos n'y
  * entrent : elles ne se lisent qu'en `b2b_supervision:write` (plan
- * `documentation/production/plan-controle-qualite.md`, D3), et le journal a
+ * `documentation/fournil/plan-controle-qualite.md`, D3), et le journal a
  * d'autres lecteurs.
  */
 const qualityFact = <S extends Record<string, z.ZodType>>(extra: S) =>
@@ -716,7 +716,7 @@ export const ORDERS_PRODUCTION_FACTS = {
    */
   /**
    * `automatic` : posé (à `true`) seulement quand le tour de l'arrêt
-   * automatique a arrêté le plan (plan `production/arret-du-plan.md`, S7,
+   * automatique a arrêté le plan (plan `fournil/arret-du-plan.md`, S7,
    * lot A2). L'auteur est alors le système, sans nom.
    */
   "production_day.closed": fact(dayFact().extend({ automatic: z.literal(true).optional() }), [

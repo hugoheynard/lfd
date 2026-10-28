@@ -1,6 +1,6 @@
 /**
  * **Qui a arrêté le plan** (Hugo, 2026-10-06 — doc
- * `documentation/production/dossier-prod-du-jour.md`) : une personne du
+ * `documentation/fournil/dossier-prod-du-jour.md`) : une personne du
  * personnel, ou l'arrêt automatique.
  *
  * Le nom est FIGÉ à l'arrêt : le dossier imprimé ne bouge plus, même si la

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les destinataires du dossier du jour** (plan
- * `documentation/production/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
+ * `documentation/fournil/dossier-prod-du-jour.md`, décisions 3-4, lot E2).
  *
  * Réglés dans Production › Réglages, sous `production_settings`. Deux façons
  * d'ajouter : une personne du personnel, choisie dans l'annuaire — son nom et

@@ -118,7 +118,7 @@ export class ProductionService {
   /**
    * Le **compte à rebours** d'une journée (`AAAA-MM-JJ`) : par produit, ce qui
    * doit être sorti avant chaque échéance, cumulé. Lecture seule, une
-   * prévision — plan `production/plan-production-par-vagues.md`, V0.
+   * prévision — plan `fournil/plan-production-par-vagues.md`, V0.
    */
   async dueThresholds(date: string): Promise<ProductionDueThresholdsView> {
     return firstValueFrom(

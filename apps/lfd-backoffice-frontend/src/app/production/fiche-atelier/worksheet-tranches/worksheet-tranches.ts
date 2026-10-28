@@ -52,7 +52,7 @@ function deadlineOf(threshold: DueThresholdView): string {
 
 /**
  * Les tranches CUMULÉES d'un produit face au sorti (plan
- * `production/plan-tranches-de-production.md`, §5) : une tranche est couverte
+ * `fournil/plan-tranches-de-production.md`, §5) : une tranche est couverte
  * quand le sorti atteint son cumul ; la première qui ne l'est pas est mise en
  * avant, avec ce qui lui manque. Les seuils sont lus tels que servis.
  */

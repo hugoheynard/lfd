@@ -21,7 +21,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Production › Réglages** — l'arrêt automatique en lecture et les jours
- * fermés (plan `documentation/production/arret-du-plan.md`, Q6, lot A1).
+ * fermés (plan `documentation/fournil/arret-du-plan.md`, Q6, lot A1).
  *
  * Sous `production_settings` : lire en `GET`, régler sinon. `PUT close` (le
  * mode et ses heures) est retiré le 2026-10-21 : l'arrêt suit l'heure limite
@@ -46,7 +46,7 @@ export class ProductionSettingsController {
   }
 
   /**
-   * Pose les tranches de production (plan `production/plan-tranches-de-production.md`,
+   * Pose les tranches de production (plan `fournil/plan-tranches-de-production.md`,
    * T1). 400 sur une heure mal formée, un doublon ou plus de huit heures.
    */
   @Put("tranches")

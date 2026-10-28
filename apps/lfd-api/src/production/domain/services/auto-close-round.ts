@@ -4,7 +4,7 @@ import type { AutoCloseOutcome } from "../ports/auto-close-attempts.js";
 
 /**
  * **Le tour de l'arrêt du plan** — ce que le passage du cron (toutes les cinq
- * minutes) décide pour une journée (plan `documentation/production/arret-du-plan.md`).
+ * minutes) décide pour une journée (plan `documentation/fournil/arret-du-plan.md`).
  *
  * Depuis le 2026-10-21, il n'y a plus de mode : le plan d'une journée s'arrête
  * TOUJOURS seul, à la fin du rattrapage de l'heure limite générale pour elle

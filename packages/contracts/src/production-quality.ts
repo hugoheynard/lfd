@@ -4,7 +4,7 @@ import type { QualityControlSettingsPayload } from "./quality-control-settings.j
 
 /**
  * **Le contrôle qualité du superviseur** — le contrat des routes de la
- * Supervision (`documentation/production/plan-controle-qualite.md`, lot QC2).
+ * Supervision (`documentation/fournil/plan-controle-qualite.md`, lot QC2).
  *
  * Deux lectures, et c'est la règle D3 qui les sépare :
  *

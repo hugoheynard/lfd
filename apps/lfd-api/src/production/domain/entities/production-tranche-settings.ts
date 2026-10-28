@@ -23,7 +23,7 @@ export interface ProductionTrancheSettingsState {
 
 /**
  * **Les tranches de production** — Réglages › Production (plan
- * `documentation/production/plan-tranches-de-production.md`, T1).
+ * `documentation/fournil/plan-tranches-de-production.md`, T1).
  *
  * Un réglage, mais qui REFUSE une écriture (forme, doublon, borne) : la règle
  * vit donc ici. Les heures fixes sont gardées en mode calculé — repasser au

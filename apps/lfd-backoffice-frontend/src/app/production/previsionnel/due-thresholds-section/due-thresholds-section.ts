@@ -67,7 +67,7 @@ export function trancheModeLabel(view: ProductionDueThresholdsView): string {
 /**
  * Les lignes du serveur, dans l'ordre du nom — l'ordre d'affichage appartient
  * à l'écran. Les seuils, eux, sont lus tels que servis : déjà rangés selon le
- * mode (plan `production/plan-tranches-de-production.md`, §5).
+ * mode (plan `fournil/plan-tranches-de-production.md`, §5).
  */
 export function dueThresholdRows(view: ProductionDueThresholdsView): readonly DueThresholdRow[] {
   return [...view.lines]
@@ -90,7 +90,7 @@ export function dueThresholdRows(view: ProductionDueThresholdsView): readonly Du
 /**
  * **Le compte à rebours** d'une journée — ce qui doit être sorti de chaque
  * produit avant chaque échéance, cumulé (plan
- * `documentation/production/plan-production-par-vagues.md`, V0 et §7.2).
+ * `documentation/fournil/plan-production-par-vagues.md`, V0 et §7.2).
  *
  * Lecture seule, et une prévision : rien n'y est coché, le « sorti » vient
  * avec V1. Sans les deux marges réglées, le serveur ne rend qu'un seuil « la

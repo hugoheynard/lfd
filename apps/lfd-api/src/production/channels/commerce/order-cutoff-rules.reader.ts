@@ -2,7 +2,7 @@ import type { OrderCutoffRule } from "../../domain/services/latest-order-cutoff.
 
 /**
  * **Les heures limites de commande**, telles que le commerce les tient (plan
- * `documentation/production/arret-du-plan.md`).
+ * `documentation/fournil/arret-du-plan.md`).
  *
  * Depuis le 2026-10-21, l'heure limite générale DÉCLENCHE l'arrêt du plan :
  * le plan d'une journée s'arrête tout seul à la fin de son rattrapage, et un

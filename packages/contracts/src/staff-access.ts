@@ -460,7 +460,7 @@ export const staffResourceSchema = z.enum([
    *
    * ⚠️ Son `write` ne porte plus aucun geste depuis le 2026-10-06 : l'arrêt du
    * plan a son droit, `production_count_stop` (plan
-   * `documentation/production/arret-du-plan.md`, §6). La valeur reste,
+   * `documentation/fournil/arret-du-plan.md`, §6). La valeur reste,
    * une valeur d'enum ne se retire pas.
    */
   "production_plan",
@@ -482,7 +482,7 @@ export const staffResourceSchema = z.enum([
   /**
    * **Les réglages du fournil** — l'arrêt du plan automatique ou manuel, ses
    * heures, et le calendrier des jours fermés (plan
-   * `documentation/production/arret-du-plan.md`, §2 et §6).
+   * `documentation/fournil/arret-du-plan.md`, §2 et §6).
    */
   "production_settings",
   /**

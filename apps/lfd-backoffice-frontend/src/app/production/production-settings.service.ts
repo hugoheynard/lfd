@@ -16,7 +16,7 @@ const RECIPIENTS = `${SETTINGS}/dossier-recipients`;
 
 /**
  * **Les réglages du fournil** — l'arrêt du plan en lecture et les jours fermés
- * (plan `documentation/production/arret-du-plan.md`), sous
+ * (plan `documentation/fournil/arret-du-plan.md`), sous
  * `production_settings`. L'arrêt ne se règle plus ici depuis le 2026-10-21 :
  * il suit l'heure limite générale.
  *
@@ -39,7 +39,7 @@ export class ProductionSettingsService {
     await firstValueFrom(this.http.delete(`${SETTINGS}/closed-days/${encodeURIComponent(date)}`));
   }
 
-  /** Les tranches de production (plan `production/plan-tranches-de-production.md`, T1). */
+  /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
   async saveTranches(payload: ProductionTranchesPayload): Promise<void> {
     await firstValueFrom(this.http.put(`${SETTINGS}/tranches`, payload));
   }

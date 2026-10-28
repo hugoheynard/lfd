@@ -8,7 +8,7 @@ export const PRODUCTION_DAY_RETAKEN = "production.day_retaken";
 
 /**
  * **Le tirage d'une journée arrêtée vient d'être repris** — fait DURABLE
- * (plan `documentation/production/dossier-prod-du-jour.md`, décision 2,
+ * (plan `documentation/fournil/dossier-prod-du-jour.md`, décision 2,
  * lot E3).
  *
  * Publié par `RetakeProductionDayHandler` dans l'unité de travail du retirage,

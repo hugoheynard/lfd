@@ -1,7 +1,7 @@
 import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus du **contrôle qualité** (`documentation/production/plan-controle-qualite.md`).
+ * Les refus du **contrôle qualité** (`documentation/fournil/plan-controle-qualite.md`).
  *
  * Tous des `DomainError` : chacun dit « ce contrôle ne peut pas exister ». Aucun
  * ne dépend d'un état de la journée — un contrôle est facultatif (Q2), et rien

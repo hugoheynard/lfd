@@ -15,7 +15,7 @@ import { GetProductionDueThresholdsQuery } from "./get-production-due-thresholds
  * Les besoins viennent du commerce : la règle (échéance moins marge, cumul,
  * seuil des commandes sans échéance) lui appartient, lui seul connaissant
  * l'échéance d'une commande et ses marges. Le RANGEMENT en tranches est à la
- * production (plan `production/plan-tranches-de-production.md`, §3) : le
+ * production (plan `fournil/plan-tranches-de-production.md`, §3) : le
  * réglage de l'atelier, fixe ou calculé, est lu ici et appliqué par
  * {@link rangeInTranches}. Il n'écrit rien.
  *

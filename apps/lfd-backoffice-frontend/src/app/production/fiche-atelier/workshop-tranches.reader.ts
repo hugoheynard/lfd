@@ -6,7 +6,7 @@ import { ProductionService } from '../production.service';
 
 /**
  * **Les tranches de la journée**, lues pour la fiche d'atelier (plan
- * `documentation/production/plan-tranches-de-production.md`, §5, lot T3).
+ * `documentation/fournil/plan-tranches-de-production.md`, §5, lot T3).
  *
  * Les seuils viennent de `GET …/batch/:date/due-thresholds`, déjà rangés
  * selon le mode réglé : la fiche ne les recalcule pas. Une lecture qui échoue

@@ -25,7 +25,7 @@ import type {
 /**
  * **Les gardes des fournées** — ce qu'une journée refuse qu'on déclare, qu'on
  * annule ou qu'on décoche, **sans rien muter** (plan
- * `documentation/production/plan-fournees-progressives.md`, D3, D4).
+ * `documentation/fournil/plan-fournees-progressives.md`, D3, D4).
  *
  * Hors de `production-day.ts` parce que le fichier de l'agrégat dépasserait
  * trois cents lignes. La journée reste le seul

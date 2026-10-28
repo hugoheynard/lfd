@@ -8,7 +8,7 @@ import { DestroyRef, inject, PLATFORM_ID } from '@angular/core';
  * 2026-09-28 : ils passent par `day-version/day-version-watcher.ts`, qui ne
  * relit que si la version de la journée a changé. Restent ici la cloche et le
  * jour de la Supervision. Pourquoi une relecture et pas une websocket :
- * `documentation/production/relecture-des-postes.md`.
+ * `documentation/fournil/relecture-des-postes.md`.
  */
 
 /**

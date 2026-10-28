@@ -31,7 +31,7 @@ import { PaperPages } from "../../../platform/pdf/paper-pages.js";
  * **Le dossier du jour, en PDF** — une couverture, le récapitulatif (un rayon
  * par page), puis un bon par commande suivi de son BL de transport, et un bon
  * par réassort, en UN fichier : c'est le paquet qui part au fournil (plan
- * `documentation/production/dossier-prod-du-jour.md`, E1).
+ * `documentation/fournil/dossier-prod-du-jour.md`, E1).
  *
  * Même mise en page que la feuille d'atelier et le compte à produire, dont il
  * partage la trousse (`paper-pdf-kit.ts`). Comme l'écran : le lot est

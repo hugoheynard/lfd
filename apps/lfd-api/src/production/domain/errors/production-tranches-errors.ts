@@ -2,7 +2,7 @@ import { DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * Les refus des **tranches de production** (Réglages › Production, plan
- * `documentation/production/plan-tranches-de-production.md`, §4). Lus par qui
+ * `documentation/fournil/plan-tranches-de-production.md`, §4). Lus par qui
  * règle l'écran : chacun nomme le cas et ce qu'il faut faire.
  */
 
