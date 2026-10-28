@@ -16,6 +16,10 @@
   /* Aucun écart entre la bande et le corps : le corps PROLONGE la bande, il ne
      se pose pas dessous. */
   --fold-page-gap: 0;
+  /* L'onglet actif est un morceau du corps : son fond, et l'encre de la PAGE —
+     lue ici, hors de la bande chrome qui redéclare le texte en clair. */
+  --fold-tabs-folder-surface: var(--fold-color-surface-band);
+  --fold-tabs-folder-ink: var(--fold-color-text);
   --fold-page-pad-top: 0;
   --fold-page-pad-bottom: 0;
 

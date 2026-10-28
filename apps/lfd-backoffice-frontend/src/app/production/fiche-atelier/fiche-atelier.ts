@@ -8,10 +8,12 @@ import {
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSurfaceDirective,
+  FoldTabsComponent,
   FoldToastComponent,
   FoldViewToggleComponent,
   FoldLoadingStateComponent,
   type FoldSelectItem,
+  type FoldTabItem,
   type FoldViewToggleOption,
 } from 'fold-ng';
 
@@ -100,6 +102,7 @@ function presses(line: WorkshopLine): boolean {
     FoldPageSectionComponent,
     FoldSurfaceDirective,
     FoldToastComponent,
+    FoldTabsComponent,
     FoldViewToggleComponent,
     WorksheetLine,
     WorksheetSlots,
@@ -177,10 +180,11 @@ export class FicheAtelier {
   });
 
   /** Les onglets du poste fixe : le rayon et son avancement, tels que servis. */
-  protected readonly tabs = computed<readonly FoldViewToggleOption[]>(() =>
+  protected readonly tabs = computed<readonly FoldTabItem[]>(() =>
     this.day.groups().map((group) => ({
-      value: group.key,
-      label: `${group.label} ${group.doneCount}/${group.lineCount}`,
+      key: group.key,
+      label: group.label,
+      badge: `${group.doneCount}/${group.lineCount}`,
       // Ce qui presse : un point ambre, et les mots sur la ligne elle-même.
       ...(group.lines.some(presses)
         ? { dot: 'warning' as const, dotLabel: 'une commande attend le four' }

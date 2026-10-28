@@ -62,13 +62,16 @@
 
     <!-- Les onglets, au poste fixe seulement : un rayon, son avancement. -->
     @if (!compact() && current(); as fiche) {
-      <fold-view-toggle
+      <!-- Des onglets de classeur, comme la maquette : l'onglet actif prend le
+           fond du corps qu'il ouvre (Hugo, 2026-10-28). -->
+      <fold-tabs
         class="fa-tabs"
-        size="sm"
-        ariaLabel="Poste de la fiche d’atelier"
-        [options]="tabs()"
-        [value]="fiche.key"
-        (valueChange)="choose($event)"
+        activeStyle="folder"
+        background="transparent"
+        aria-label="Poste de la fiche d’atelier"
+        [tabs]="tabs()"
+        [activeKey]="fiche.key"
+        (activeKeyChange)="choose($event)"
       />
     }
 

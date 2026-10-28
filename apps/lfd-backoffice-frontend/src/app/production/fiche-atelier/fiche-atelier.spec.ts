@@ -377,7 +377,7 @@ describe('la fiche d’atelier', () => {
 
     expect(text(el, '.fa-figure-value--accent')).toContain('999');
     expect(text(el, '.fa-figures')).toContain('7 / 3');
-    expect(text(el, '.fa-tabs')).toContain('Pains 7/3');
+    expect(text(el, '.fa-tabs')).toContain('Pains7/3');
     expect(text(el, '.fa-band-sum')).toContain('7 lignes sur 3 faites');
     expect(text(el, '.fa-band-sum')).toContain('12345 pièces au total');
   });
