@@ -108,7 +108,7 @@
       [disabled]="busy()"
       (click)="openKeypad(shortcut.pieces)"
     >
-      {{ shortcut.label }} · {{ shortcut.pieces }}
+      {{ shortcut.label }} · {{ figure(shortcut.pieces) }}
     </button>
   }
 </span>

@@ -30,6 +30,7 @@ export async function itemContentsOf(
           sku: line.sku,
           productName: line.name,
           quantity: line.quantity,
+          saleUnit: line.saleUnit,
         }))
       : resupplyLines.get(item.resupplyId);
 }

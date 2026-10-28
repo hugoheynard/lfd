@@ -163,6 +163,107 @@ describe("ApplyPackingProposalHandler — « Proposer », appliqué d'un coup, b
   });
 });
 
+/**
+ * Régression (P6 de `pricing/plan-vente-au-poids.md`) : la proposition coupait
+ * un lot au poids entre deux bacs, et le colisage refusait alors la seconde
+ * part (`WeightLotSplitError`, 400) — « Proposer » échouait en entier.
+ * Un bac M tient 2 000 g de saumon et 30 croissants.
+ */
+describe("ApplyPackingProposalHandler — un lot au poids ne se coupe jamais", () => {
+  function weighed(sau: number, cro: number, whole: number) {
+    const ctx = setup();
+    const shadow = new InMemoryShadow();
+    shadow.stocks.set(`${DAY}/SAU`, { received: sau, returned: 0 });
+    shadow.stocks.set(`${DAY}/CRO`, { received: cro, returned: 0 });
+    const sheets = new InMemorySheets();
+    sheets.put({
+      serviceDay: DAY,
+      orderId: "ord_1",
+      reference: "ORD-0001",
+      packed: null,
+      containers: 0,
+      lines: [
+        ...(cro > 0
+          ? [
+              {
+                sku: "CRO",
+                productName: "Croissant",
+                quantity: cro,
+                packed: null,
+                saleUnit: "piece" as const,
+              },
+            ]
+          : []),
+        { sku: "SAU", productName: "Saumon", quantity: sau, packed: null, saleUnit: "weight" },
+      ],
+      containerMode: "listed",
+      containerList: [],
+      fulfillmentMethod: "delivery",
+    });
+    const stocks = new InMemoryStocks(shadow);
+    ctx.desk.proposedBins = [
+      {
+        ...ENTRY,
+        whole,
+        half: false,
+        content: [
+          ...(cro > 0 ? [{ sku: "CRO", quantity: cro }] : []),
+          { sku: "SAU", quantity: sau },
+        ],
+      },
+    ];
+    ctx.desk.grid = [
+      { binTypeId: "t_m", sku: "CRO", units: 30 },
+      { binTypeId: "t_m", sku: "SAU", units: 2000 },
+    ];
+    const apply = new ApplyPackingProposalHandler(
+      sheets,
+      stocks,
+      ctx.desk,
+      new FixedIdGenerator("ctn"),
+      new FixedClock(new Date(0)),
+      new RecordingPublisher(),
+      new DirectUnitOfWork(),
+    );
+    return { apply, sheets, stocks, desk: ctx.desk };
+  }
+
+  it("3 000 g pour des bacs de 2 000 g : rien n'est coupé, le lot reste à répartir, sans refus", async () => {
+    const { apply, sheets, stocks, desk } = weighed(3000, 0, 2);
+
+    await apply.execute(COMMAND);
+
+    expect(desk.declared).toHaveLength(2);
+    const sheet = sheets.of(DAY, "ord_1");
+    expect(sheet?.containerList.map((container) => container.lines)).toEqual([[], []]);
+    expect(stocks.packedOf(DAY, "SAU")).toBe(0);
+  });
+
+  it("un lot exactement à la capacité : un bac, le lot entier, la ligne posée", async () => {
+    const { apply, sheets, stocks } = weighed(2000, 0, 1);
+
+    await apply.execute(COMMAND);
+
+    const sheet = sheets.of(DAY, "ord_1");
+    expect(sheet?.containerList.map((container) => container.lines)).toEqual([
+      [{ sku: "SAU", quantity: 2000 }],
+    ]);
+    expect(sheet?.lines.find((line) => line.sku === "SAU")?.packed).not.toBeNull();
+    expect(stocks.packedOf(DAY, "SAU")).toBe(2000);
+  });
+
+  it("une commande mêlée : les croissants au premier bac, le lot ENTIER au second", async () => {
+    const { apply, sheets } = weighed(1250, 24, 2);
+
+    await apply.execute(COMMAND);
+
+    expect(sheets.of(DAY, "ord_1")?.containerList.map((container) => container.lines)).toEqual([
+      [{ sku: "CRO", quantity: 24 }],
+      [{ sku: "SAU", quantity: 1250 }],
+    ]);
+  });
+});
+
 describe("GetShareableHalvesHandler — les moitiés libres, vues du poste", () => {
   it("rend les moitiés que la livraison sert, sans rien écrire", async () => {
     const { desk } = setup();

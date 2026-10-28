@@ -78,6 +78,23 @@ describe('le pavé du fournil', () => {
     ).toEqual(['Le reste · 60', '1 plaque · 30', '1 chariot · 96']);
   });
 
+  it('au poids : contenant et raccourcis se disent en kilos, et posent des grammes (P6)', () => {
+    const el = render({
+      productName: 'Saumon gravlax',
+      preset: 3250,
+      remaining: 3250,
+      saleUnit: 'weight',
+      container: { unitsPerContainer: 1500, singular: 'plaque' },
+      shortcuts: [{ id: 'bs-1', label: '1 bac', pieces: 500 }],
+    });
+
+    expect(
+      [...el.querySelectorAll('[data-keypad-preset]')].map((node) => node.textContent?.trim()),
+    ).toEqual(['Le reste · 3,25 kg', '1 plaque · 1,5 kg', '2 plaques · 3 kg', '1 bac · 500 g']);
+    el.querySelector<HTMLButtonElement>('[data-keypad-preset="bs-1"]')?.click();
+    expect(shown(el)).toBe('500');
+  });
+
   it('un raccourci POSE sa valeur, il n’enregistre rien', () => {
     const el = render();
 

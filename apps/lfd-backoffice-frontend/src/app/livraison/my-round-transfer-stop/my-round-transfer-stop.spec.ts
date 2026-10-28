@@ -11,7 +11,12 @@ import { MyRoundTransferStop } from './my-round-transfer-stop';
  * route et sur un arrêt encore ouvert.
  */
 
-const LINE = { sku: 'PAIN-1', productName: 'Pain de campagne', quantity: 6 };
+const LINE = {
+  sku: 'PAIN-1',
+  productName: 'Pain de campagne',
+  quantity: 6,
+  saleUnit: 'piece' as const,
+};
 
 const STOP: DriverTransferStopView = {
   stopId: 'ts_1',

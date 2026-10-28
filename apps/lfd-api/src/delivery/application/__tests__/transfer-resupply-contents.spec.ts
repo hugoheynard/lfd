@@ -9,7 +9,8 @@ import { FixedTransferContents, plannedTransfer } from "./transfer-doubles.js";
  */
 const DAY = "2030-03-12";
 const AT = new Date(0);
-const CROISSANT = { sku: "CRO-001", productName: "Croissant" };
+/** Un réassort est toujours à la pièce : le poids en est exclu (P6, vente au poids). */
+const CROISSANT = { sku: "CRO-001", productName: "Croissant", saleUnit: "piece" as const };
 
 function transferWith(resupplyId: string) {
   const transfer = plannedTransfer("t_1", DAY, AT, ["o_1"]);
@@ -44,7 +45,9 @@ describe("le réassort au manifeste du transfert", () => {
         lines: [{ ...CROISSANT, quantity: 6 }],
       },
     ]);
-    expect(manifest.orders.totals).toEqual([{ sku: "PAIN", productName: "Pain", quantity: 2 }]);
+    expect(manifest.orders.totals).toEqual([
+      { sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+    ]);
   });
 
   it("fiche close : l'emballé fait foi, et une ligne emballée à zéro ne part pas", async () => {

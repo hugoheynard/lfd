@@ -229,8 +229,7 @@ function outOfCount(
   return [...orphans].map((sku) =>
     // Une fournée hors compte ne dit pas son unité : sans ligne de commande,
     // on ne sait que des pièces (P6) — le cas ne naît que d'un article retiré
-    // du compte après une fournée, et un article au poids n'a pas de raccourci
-    // de fournée à part.
+    // du compte après une fournée.
     line({ sku, productName: sku, quantity: 0, saleUnit: "piece" }, containers, batches),
   );
 }
@@ -243,6 +242,10 @@ function outOfCount(
  * On arrondit **au-dessus** : 41 baguettes pour 10 par tourneuse font 5
  * tourneuses, dont une presque vide. Arrondir en dessous en laisserait une
  * pleine sur le carreau.
+ *
+ * Un article au poids règle son contenant en GRAMMES, l'unité de sa ligne
+ * (P6 de `pricing/plan-vente-au-poids.md`) : 3 250 g pour une plaque de
+ * 1 500 g font 3 plaques — le même calcul, dans une seule unité.
  */
 function containerLabelOf(quantity: number, rule: ContainerRule | undefined): string | null {
   if (rule === undefined) {

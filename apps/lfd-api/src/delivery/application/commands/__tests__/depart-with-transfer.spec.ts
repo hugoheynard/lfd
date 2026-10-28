@@ -118,7 +118,7 @@ describe("Partir avec un arrêt de transfert (lot T1)", () => {
     const [transfer] = transfers.all();
     expect(transfer?.departedAt).toEqual(NOW);
     expect(transfer?.toSnapshot().manifest).toEqual([
-      { itemId: "t_1_i1", sku: "PAIN", productName: "Pain", quantity: 4 },
+      { itemId: "t_1_i1", sku: "PAIN", productName: "Pain", quantity: 4, saleUnit: "piece" },
     ]);
     const roundFacts = durable.facts.filter((fact) => fact.type === DELIVERY_ROUND_DEPARTED);
     expect(roundFacts.map((fact) => fact.payload["shipments"])).toEqual([

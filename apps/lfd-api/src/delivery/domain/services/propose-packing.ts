@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import {
   type BinSlot,
   capacityGrid,
@@ -21,13 +23,20 @@ import {
  *    de le laisser sans bac.
  *
  * Un produit sans contenance est SIGNALÉ, jamais deviné (L4b-C2).
+ *
+ * Un article au poids (P6 de `pricing/plan-vente-au-poids.md`) a sa contenance
+ * en grammes, et son lot ne se coupe pas entre deux bacs tant qu'il tient
+ * dans un bac entier : le colisage le met au bac en UN lot (`packGroup`).
  */
 
 /** Une ligne à placer (fusionnée par SKU). */
 export interface PackingLine {
   readonly sku: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
   readonly requiresCold: boolean;
+  /** Absente = à la pièce. */
+  readonly saleUnit?: SaleUnit;
 }
 
 /** Un type EN SERVICE, dans l'ordre du catalogue (qui départage les égalités). */
@@ -94,11 +103,14 @@ export function proposePacking(
   const isotherm = types.filter((type) => type.isotherm);
   const dry = types.filter((type) => !type.isotherm);
   const groups = sortIntoGroups(mergeLines(lines), { isotherm, dry }, grid);
+  const weighed = new Set(
+    lines.filter((line) => line.saleUnit === "weight").map((line) => line.sku),
+  );
   return {
     bins: [
-      ...binsOf(packGroup(groups.cold, isotherm, grid), true),
-      ...binsOf(packGroup(groups.dry, dry, grid), false),
-      ...binsOf(packGroup(groups.dryInIsotherm, isotherm, grid), false),
+      ...binsOf(packGroup(groups.cold, isotherm, grid, weighed), true),
+      ...binsOf(packGroup(groups.dry, dry, grid, weighed), false),
+      ...binsOf(packGroup(groups.dryInIsotherm, isotherm, grid, weighed), false),
     ],
     unplaced: groups.unplaced,
   };

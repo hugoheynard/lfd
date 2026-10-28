@@ -4,8 +4,10 @@ import {
   type BatchShortcutArticleView,
   type BatchShortcutsSettingsView,
   type BatchShortcutView,
+  type OrderSaleUnit,
   type ProductionContainerView,
 } from '@lfd/contracts';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -23,6 +25,7 @@ import {
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import {
   BatchShortcutDialog,
@@ -89,6 +92,7 @@ type LoadState =
     FoldPageLayoutComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
+    SaleQuantityPipe,
   ],
   templateUrl: './batch-shortcuts-page.html',
   styleUrl: './batch-shortcuts-page.scss',
@@ -137,6 +141,14 @@ export class BatchShortcutsPage {
     void this.load();
   }
 
+  /**
+   * « 24 pièces », ou « 1,5 kg » pour un article au poids, dont raccourcis et
+   * contenant se règlent en grammes (P6 de `plan-vente-au-poids.md`).
+   */
+  protected spoken(quantity: number, unit: OrderSaleUnit): string {
+    return unit === 'weight' ? saleQuantityLabel(quantity, unit) : `${String(quantity)} pièces`;
+  }
+
   /** Le contenant réglé du produit, ou `null`. */
   protected containerOf(sku: string): ProductionContainerView | null {
     const state = this.state();
@@ -151,6 +163,7 @@ export class BatchShortcutsPage {
         data: {
           sku: article.sku,
           productName: article.name,
+          saleUnit: article.saleUnit,
           container: this.containerOf(article.sku),
           canWrite: this.canWrite(),
         },
@@ -174,7 +187,12 @@ export class BatchShortcutsPage {
 
   /** « Ajouter un raccourci » — le nom proposé est « 1 plaque ». */
   protected async add(article: BatchShortcutArticleView): Promise<void> {
-    await this.open({ sku: article.sku, productName: article.name, shortcut: null });
+    await this.open({
+      sku: article.sku,
+      productName: article.name,
+      saleUnit: article.saleUnit,
+      shortcut: null,
+    });
   }
 
   /** Une pastille touchée : son dialogue, pour la modifier ou la supprimer. */
@@ -182,7 +200,12 @@ export class BatchShortcutsPage {
     article: BatchShortcutArticleView,
     shortcut: BatchShortcutView,
   ): Promise<void> {
-    await this.open({ sku: article.sku, productName: article.name, shortcut });
+    await this.open({
+      sku: article.sku,
+      productName: article.name,
+      saleUnit: article.saleUnit,
+      shortcut,
+    });
   }
 
   private async open(data: Omit<BatchShortcutDialogData, 'canWrite'>): Promise<void> {

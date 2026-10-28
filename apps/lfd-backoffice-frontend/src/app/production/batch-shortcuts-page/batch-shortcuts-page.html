@@ -78,17 +78,22 @@
                         'Modifier le contenant principal : ' +
                         container.singular +
                         ', ' +
-                        container.unitsPerContainer +
-                        ' pièces'
+                        spoken(container.unitsPerContainer, article.saleUnit)
                       "
                       (click)="editContainer(article)"
                     >
-                      1 {{ container.singular }} · {{ container.unitsPerContainer }}
+                      1 {{ container.singular }} ·
+                      {{ container.unitsPerContainer | saleQuantity: article.saleUnit }}
                     </button>
                   } @else {
                     <fold-badge
                       data-container-chip
-                      [content]="'1 ' + container.singular + ' · ' + container.unitsPerContainer"
+                      [content]="
+                        '1 ' +
+                        container.singular +
+                        ' · ' +
+                        (container.unitsPerContainer | saleQuantity: article.saleUnit)
+                      "
                     />
                   }
                 } @else if (canWrite()) {
@@ -124,17 +129,18 @@
                         'Modifier le raccourci ' +
                         shortcut.label +
                         ', ' +
-                        shortcut.pieces +
-                        ' pièces'
+                        spoken(shortcut.pieces, article.saleUnit)
                       "
                       (click)="edit(article, shortcut)"
                     >
-                      {{ shortcut.label }} · {{ shortcut.pieces }}
+                      {{ shortcut.label }} · {{ shortcut.pieces | saleQuantity: article.saleUnit }}
                     </button>
                   } @else {
                     <fold-badge
                       [attr.data-shortcut-chip]="shortcut.id"
-                      [content]="shortcut.label + ' · ' + shortcut.pieces"
+                      [content]="
+                        shortcut.label + ' · ' + (shortcut.pieces | saleQuantity: article.saleUnit)
+                      "
                     />
                   }
                 }

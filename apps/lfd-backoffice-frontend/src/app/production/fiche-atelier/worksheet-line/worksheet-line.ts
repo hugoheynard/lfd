@@ -104,7 +104,8 @@ export class WorksheetLine {
     const container = this.line().container;
     return container === null
       ? 'pas de contenant réglé'
-      : `${container.singular} de ${String(container.unitsPerContainer)}`;
+      : // « plaque de 1,5 kg » au poids : le contenant se règle en grammes (P6).
+        `${container.singular} de ${this.figure(container.unitsPerContainer)}`;
   });
 
   protected readonly quickLabel = computed(() => {

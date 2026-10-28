@@ -87,7 +87,7 @@ describe("le transfert du livreur, sous le mur de « Ma tournée »", () => {
     expect(stop?.siteAddress).toMatchObject({ ligne1: "Route du Village", codePostal: "73150" });
     expect(stop?.orders.items.map((item) => item.subjectId)).toEqual([orderId]);
     expect(stop?.orders.totals).toEqual([
-      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3 },
+      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3, saleUnit: "piece" },
     ]);
   });
 

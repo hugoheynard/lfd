@@ -43,7 +43,11 @@ function secondPassage(first: RoundPaper): RoundPaper {
         binCount: 2,
         orderCount: 1,
         orderColors: [SPECIMEN_TRANSFER_COLOR],
-        orderTotals: [{ productName: "EXEMPLE — Pain de campagne", quantity: 6 }],
+        orderTotals: [
+          { productName: "EXEMPLE — Pain de campagne", quantity: 6, saleUnit: "piece" },
+          // Un article au poids : le manifeste dit son poids (P6, vente au poids).
+          { productName: "EXEMPLE — Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+        ],
         resupplyCount: 0,
         resupplyTotals: [],
         resupplyNames: [],

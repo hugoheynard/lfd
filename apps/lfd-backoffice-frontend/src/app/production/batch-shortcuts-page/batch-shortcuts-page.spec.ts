@@ -14,9 +14,27 @@ import { BatchShortcutsPage } from './batch-shortcuts-page';
 
 const VIEW: BatchShortcutsSettingsView = {
   articles: [
-    { sku: 'VIE-001', name: 'Croissant', familyId: 'fam-vien', familyName: 'Viennoiseries' },
-    { sku: 'VIE-002', name: 'Pain au chocolat', familyId: 'fam-vien', familyName: 'Viennoiseries' },
-    { sku: 'PAI-001', name: 'Baguette', familyId: 'fam-pain', familyName: 'Pains' },
+    {
+      sku: 'VIE-001',
+      name: 'Croissant',
+      familyId: 'fam-vien',
+      familyName: 'Viennoiseries',
+      saleUnit: 'piece',
+    },
+    {
+      sku: 'VIE-002',
+      name: 'Pain au chocolat',
+      familyId: 'fam-vien',
+      familyName: 'Viennoiseries',
+      saleUnit: 'piece',
+    },
+    {
+      sku: 'PAI-001',
+      name: 'Baguette',
+      familyId: 'fam-pain',
+      familyName: 'Pains',
+      saleUnit: 'piece',
+    },
   ],
   shortcuts: [
     { id: 'bs-1', sku: 'VIE-001', label: '1 plaque', pieces: 24, position: 0 },
@@ -24,21 +42,25 @@ const VIEW: BatchShortcutsSettingsView = {
   ],
 };
 
+const POSED: readonly ProductionContainerView[] = [
+  { sku: 'VIE-001', unitsPerContainer: 24, singular: 'plaque', plural: 'plaques' },
+];
+
 class FakeShortcuts {
   reads = 0;
+  constructor(private readonly view: BatchShortcutsSettingsView) {}
   settings(): Promise<BatchShortcutsSettingsView> {
     this.reads += 1;
-    return Promise.resolve(VIEW);
+    return Promise.resolve(this.view);
   }
 }
 
 class FakeContainers {
   reads = 0;
+  constructor(private readonly posed: readonly ProductionContainerView[]) {}
   list(): Promise<readonly ProductionContainerView[]> {
     this.reads += 1;
-    return Promise.resolve([
-      { sku: 'VIE-001', unitsPerContainer: 24, singular: 'plaque', plural: 'plaques' },
-    ]);
+    return Promise.resolve(this.posed);
   }
 }
 
@@ -58,15 +80,15 @@ class FakePanels {
   }
 }
 
-async function mount(canWrite = true, phone = false) {
+async function mount(canWrite = true, phone = false, view = VIEW, posed = POSED) {
   // jsdom n'a pas `matchMedia` : chaque test dit s'il est au bureau ou au pouce.
   vi.stubGlobal('matchMedia', () => ({
     matches: phone,
     addEventListener: () => undefined,
     removeEventListener: () => undefined,
   }));
-  const api = new FakeShortcuts();
-  const containers = new FakeContainers();
+  const api = new FakeShortcuts(view);
+  const containers = new FakeContainers(posed);
   const panels = new FakePanels();
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
@@ -195,5 +217,57 @@ describe('BatchShortcutsPage', () => {
     expect(root.querySelectorAll('button[data-container-chip]')).toHaveLength(0);
     expect(root.querySelectorAll('[data-container-chip]')).toHaveLength(1);
     expect(root.querySelectorAll('[data-container-none]')).toHaveLength(2);
+  });
+
+  /** Un article au poids : raccourcis et contenant se règlent en grammes (P6, vente au poids). */
+  it('au poids : les pastilles disent des kilos, et les dialogues reçoivent l’unité', async () => {
+    const salmon = {
+      sku: 'SAU-001',
+      name: 'Saumon gravlax',
+      familyId: 'fam-epi',
+      familyName: 'Épicerie',
+      saleUnit: 'weight' as const,
+    };
+    const { root, panels, settle } = await mount(
+      true,
+      false,
+      {
+        articles: [...VIEW.articles, salmon],
+        shortcuts: [
+          ...VIEW.shortcuts,
+          { id: 'bs-9', sku: 'SAU-001', label: '1 bac', pieces: 500, position: 0 },
+        ],
+      },
+      [
+        ...POSED,
+        { sku: 'SAU-001', unitsPerContainer: 1500, singular: 'plaque', plural: 'plaques' },
+      ],
+    );
+
+    const chip = root.querySelector<HTMLButtonElement>('[data-shortcut-chip="bs-9"]');
+    expect(chip?.textContent?.trim()).toBe('1 bac · 500 g');
+    expect(chip?.getAttribute('aria-label')).toBe('Modifier le raccourci 1 bac, 500 g');
+    const container = root.querySelector<HTMLButtonElement>(
+      '[data-container-row="SAU-001"] [data-container-chip]',
+    );
+    expect(container?.textContent?.replace(/\s+/gu, ' ').trim()).toBe('1 plaque · 1,5 kg');
+    expect(root.textContent).not.toContain('1500');
+    // Un article à la pièce garde ses pièces.
+    expect(
+      root
+        .querySelector('[data-shortcut-row="VIE-001"] [data-shortcut-chip]')
+        ?.getAttribute('aria-label'),
+    ).toBe('Modifier le raccourci 1 plaque, 24 pièces');
+
+    chip?.click();
+    await settle();
+    container?.click();
+    await settle();
+    root
+      .querySelector<HTMLButtonElement>('[data-shortcut-row="SAU-001"] [data-shortcut-add]')
+      ?.click();
+    await settle();
+
+    expect(panels.asked.map((call) => call.data.saleUnit)).toEqual(['weight', 'weight', 'weight']);
   });
 });

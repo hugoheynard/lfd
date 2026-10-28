@@ -19,7 +19,7 @@ function transfer(overrides: Partial<RoundPaperTransferStop> = {}): RoundPaperTr
     binCount: 2,
     orderCount: 3,
     orderColors: [],
-    orderTotals: [{ productName: "Croissant", quantity: 12 }],
+    orderTotals: [{ productName: "Croissant", quantity: 12, saleUnit: "piece" }],
     resupplyCount: 0,
     resupplyTotals: [],
     resupplyNames: [],
@@ -58,6 +58,23 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     expect(text).not.toContain("RÉASSORT");
   });
 
+  it("une commande mêlée : les pièces en « × », le poids en kilos, jamais en pièces (P6)", async () => {
+    const text = await textOf(
+      transfer({
+        orderTotals: [
+          { productName: "Croissant", quantity: 12, saleUnit: "piece" },
+          { productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+          { productName: "Graines au chocolat", quantity: 500, saleUnit: "weight" },
+        ],
+      }),
+    );
+
+    expect(text).toContain("12 × Croissant");
+    expect(text).toContain("1,25 kg · Saumon gravlax");
+    expect(text).toContain("500 g · Graines au chocolat");
+    expect(text).not.toContain("1250");
+  });
+
   it("sans heure ni adresse ni bac : le dit, sans rien inventer", async () => {
     const text = await textOf(transfer({ arrivalBy: null, addressLines: [], binCount: 0 }));
 
@@ -70,7 +87,7 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     const text = await textOf(
       transfer({
         resupplyCount: 1,
-        resupplyTotals: [{ productName: "Baguette", quantity: 20 }],
+        resupplyTotals: [{ productName: "Baguette", quantity: 20, saleUnit: "piece" }],
       }),
     );
 
@@ -83,7 +100,7 @@ describe("la feuille de tournée — l'arrêt de transfert", () => {
     const text = await textOf(
       transfer({
         resupplyCount: 2,
-        resupplyTotals: [{ productName: "Baguette", quantity: 20 }],
+        resupplyTotals: [{ productName: "Baguette", quantity: 20, saleUnit: "piece" }],
         resupplyNames: ["Vitrine du matin", "Goûter"],
       }),
     );

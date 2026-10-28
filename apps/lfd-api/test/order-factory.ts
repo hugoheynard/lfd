@@ -49,7 +49,10 @@ import { E2E_STAFF_ID, serviceDay, type E2eContext } from "./e2e-harness.js";
 /** Une ligne de panier : le client n'envoie qu'un SKU et une quantité, le serveur tarife. */
 export interface OrderLineSeed {
   readonly sku: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /** Absente = `piece`, comme la boutique d'avant le poids. */
+  readonly saleUnit?: "piece" | "weight";
 }
 
 /** Retrait à un point, ou livraison à une adresse (du carnet ou dictée). */

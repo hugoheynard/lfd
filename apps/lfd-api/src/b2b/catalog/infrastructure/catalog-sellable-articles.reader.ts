@@ -47,6 +47,7 @@ export class CatalogSellableArticlesReader extends SellableArticlesReader {
         name: item.name,
         familyId: item.family.id,
         familyName: item.family.name,
+        saleUnit: item.saleUnit,
       }));
   }
 }

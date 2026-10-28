@@ -88,12 +88,46 @@ describe("la page des raccourcis", () => {
       name: "Croissant",
       familyId: "fam-vien",
       familyName: "Viennoiseries",
+      saleUnit: "piece",
     });
     const families = view.articles.map((article) => article.familyId);
     // Chaque famille d'un seul bloc : l'ordre du catalogue, pas celui des SKU.
     const blocks = families.filter((id, index) => index === 0 || families[index - 1] !== id);
     expect(blocks).toEqual([...new Set(families)]);
     expect(new Set(view.articles.map((article) => article.sku)).size).toBe(view.articles.length);
+  });
+});
+
+describe("un article au poids (P6 de `pricing/plan-vente-au-poids.md`)", () => {
+  /** Le pain au chocolat du semis devient un article au poids. */
+  const WEIGHED = "VIE-002";
+
+  it("la page dit son unité ; raccourci et contenant se règlent en grammes, servis tels quels", async () => {
+    await ctx.prisma.catalogItem.update({
+      where: { sku: `${WEIGHED}-1` },
+      data: { saleUnit: "weight", weightStepGrams: 50, weightMinGrams: null },
+    });
+
+    const view = await settings();
+    expect(view.articles.find((article) => article.sku === WEIGHED)?.saleUnit).toBe("weight");
+    expect(view.articles.find((article) => article.sku === SKU)?.saleUnit).toBe("piece");
+
+    const tray = await create("1 plaque", 1500, WEIGHED);
+    await admin()
+      .put(`/admin/production/containers/${WEIGHED}`)
+      .send({ unitsPerContainer: 2000, singular: "bac", plural: "bacs" })
+      .expect((response) => {
+        expect(response.status).toBeLessThan(300);
+      });
+
+    const workshop = jsonBody<WorkshopShortcutsView>(await admin().get(WORKSHOP).expect(200));
+    expect(workshop.bySku[WEIGHED]).toEqual([{ id: tray, label: "1 plaque", pieces: 1500 }]);
+    expect(
+      await ctx.prisma.productionContainer.findUniqueOrThrow({
+        where: { sku: WEIGHED },
+        select: { unitsPerContainer: true },
+      }),
+    ).toEqual({ unitsPerContainer: 2000 });
   });
 });
 

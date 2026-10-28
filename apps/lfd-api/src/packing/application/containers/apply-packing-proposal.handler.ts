@@ -69,7 +69,7 @@ export class ApplyPackingProposalHandler implements ICommandHandler<
       const containerIds = await this.openBins(sheet, empty, mark);
       const stocks = await this.lockStocks(command.serviceDay, entries);
       const units = await this.unitsOf();
-      const bins = distributeProposal(entries, units, availableOf(sheet, stocks));
+      const bins = distributeProposal(entries, units, availableOf(sheet, stocks), weighedOf(sheet));
       await this.fillBins(sheet, bins, containerIds, stocks, mark);
       for (const stock of stocks.values()) {
         await this.stocks.save(stock);
@@ -162,6 +162,11 @@ export class ApplyPackingProposalHandler implements ICommandHandler<
       }
     }
   }
+}
+
+/** Les SKU de la feuille vendus au poids : leur lot ne se coupe pas entre deux bacs (P6). */
+function weighedOf(sheet: PackingSheet): ReadonlySet<string> {
+  return new Set(sheet.lines.filter((line) => line.saleUnit === "weight").map((line) => line.sku));
 }
 
 /** Par SKU : ce qui reste de la ligne, borné par ce que la réserve a de libre. */

@@ -17,6 +17,15 @@
  *
  * Un bac proposé reste un bac, même vide : la proposition dit combien de bacs
  * la commande demande, et la marchandise qui sortira du four ira dedans.
+ *
+ * **Un article au poids ne se coupe jamais** (P6 de
+ * `documentation/pricing/plan-vente-au-poids.md`) : le colisage le met au bac
+ * en UN lot, et refuse un second contenant (`WeightLotSplitError`). Sa
+ * contenance se lit en grammes ; son lot DISPONIBLE va entier dans le premier
+ * bac qui a la place de le prendre tout, jamais en partie. S'il ne tient
+ * entier dans aucun bac proposé (plus lourd qu'un bac, ou bacs déjà pleins),
+ * il reste « à répartir » : le préparateur le pose à la main, en un geste,
+ * dans le contenant de son choix — plutôt qu'un bac débordé en silence.
  */
 
 /** Ce qu'offre une moitié de bac cloisonné — la règle de place de la livraison. */
@@ -53,11 +62,14 @@ export type UnitsOf = (binTypeId: string, sku: string) => number | null;
  * Les bacs de la proposition, remplis l'un après l'autre.
  *
  * @param available par SKU, ce qui peut encore être placé ; absent = rien.
+ * @param weighed les SKU vendus au poids (des grammes, un lot insécable) ;
+ *   absent = tout est à la pièce.
  */
 export function distributeProposal(
   entries: readonly ProposalEntry[],
   unitsOf: UnitsOf,
   available: ReadonlyMap<string, number>,
+  weighed: ReadonlySet<string> = new Set(),
 ): readonly ProposedBin[] {
   const left = new Map(available);
   return entries.flatMap((entry) => {
@@ -67,7 +79,10 @@ export function distributeProposal(
         .map((item) => [item.sku, Math.min(item.quantity, left.get(item.sku) ?? 0)]),
     );
     return slotsOf(entry).map((half) => {
-      const lines = fill(entry.binTypeId, half ? HALF_BIN : 1, due, unitsOf);
+      const lines = fill({ binTypeId: entry.binTypeId, room: half ? HALF_BIN : 1 }, due, {
+        unitsOf,
+        weighed,
+      });
       for (const line of lines) {
         left.set(line.sku, (left.get(line.sku) ?? 0) - line.quantity);
       }
@@ -82,22 +97,29 @@ function slotsOf(entry: ProposalEntry): readonly boolean[] {
   return entry.half ? [...whole, true] : whole;
 }
 
+/** Ce qui ne change pas d'un bac à l'autre : la grille et l'unité des articles. */
+interface FillRules {
+  readonly unitsOf: UnitsOf;
+  readonly weighed: ReadonlySet<string>;
+}
+
 /** Remplit UN bac de ce qui reste dû à l'entrée ; mute `due`. */
 function fill(
-  binTypeId: string,
-  room: number,
+  bin: { readonly binTypeId: string; readonly room: number },
   due: Map<string, number>,
-  unitsOf: UnitsOf,
+  rules: FillRules,
 ): readonly ProposedPieces[] {
-  let free = room;
+  let free = bin.room;
   const lines: ProposedPieces[] = [];
   for (const [sku, quantity] of due) {
-    const units = unitsOf(binTypeId, sku);
+    const units = rules.unitsOf(bin.binTypeId, sku);
     if (units === null || units <= 0 || quantity <= 0) {
       continue;
     }
     const fits = Math.floor(free * units + EPSILON);
-    const pieces = Math.min(quantity, fits);
+    const pieces = rules.weighed.has(sku)
+      ? wholeLotOrNothing(quantity, fits)
+      : Math.min(quantity, fits);
     if (pieces > 0) {
       lines.push({ sku, quantity: pieces });
       due.set(sku, quantity - pieces);
@@ -105,4 +127,9 @@ function fill(
     }
   }
   return lines;
+}
+
+/** Un lot au poids : tout, ou rien dans ce bac — jamais une part. */
+function wholeLotOrNothing(lot: number, fits: number): number {
+  return lot <= fits ? lot : 0;
 }

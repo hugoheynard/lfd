@@ -236,7 +236,12 @@ export class InternalTransfer {
         ? (contents(item) ?? [])
         : this.frozen
             .filter((line) => line.itemId === item.id)
-            .map(({ sku, productName, quantity }) => ({ sku, productName, quantity }));
+            .map(({ sku, productName, quantity, saleUnit }) => ({
+              sku,
+              productName,
+              quantity,
+              saleUnit,
+            }));
     return manifestOf(
       this.heldItems.map((item): ManifestItem => ({
         itemId: item.id,

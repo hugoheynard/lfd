@@ -1022,7 +1022,12 @@ model DeliveryInternalTransferManifestLine {
   itemId      String @map("item_id")
   sku         String
   productName String @map("product_name")
+  /// Des pièces, ou des grammes si `saleUnit = weight`.
   quantity    Int
+  /// `piece` ou `weight` (CHECK), recopiée de la ligne de commande au départ
+  /// (P6 de `pricing/plan-vente-au-poids.md`). Un manifeste figé avant la
+  /// colonne se relit `piece`, ce qu'il était.
+  saleUnit    String @default("piece") @map("sale_unit")
 
   transfer DeliveryInternalTransfer @relation(fields: [transferId], references: [id], onDelete: Restrict)
 

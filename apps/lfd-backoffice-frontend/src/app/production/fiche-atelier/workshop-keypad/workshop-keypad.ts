@@ -90,14 +90,15 @@ export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
     if (data.container !== null) {
       const { singular, unitsPerContainer: units } = data.container;
       all.push(
-        { key: 'one', label: `1 ${singular} · ${String(units)}`, value: units },
-        { key: 'two', label: `2 ${singular}s · ${String(units * 2)}`, value: units * 2 },
+        { key: 'one', label: `1 ${singular} · ${this.figure(units)}`, value: units },
+        { key: 'two', label: `2 ${singular}s · ${this.figure(units * 2)}`, value: units * 2 },
       );
     }
     for (const shortcut of data.shortcuts) {
       all.push({
         key: shortcut.id,
-        label: `${shortcut.label} · ${String(shortcut.pieces)}`,
+        // Au poids, un raccourci compte des grammes : « 1 plaque · 1,5 kg » (P6).
+        label: `${shortcut.label} · ${this.figure(shortcut.pieces)}`,
         value: shortcut.pieces,
       });
     }

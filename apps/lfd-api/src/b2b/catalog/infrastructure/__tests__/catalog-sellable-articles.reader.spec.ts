@@ -88,7 +88,22 @@ describe("CatalogSellableArticlesReader", () => {
       name: "Nom VIE-002",
       familyId: "fam-vien",
       familyName: "Viennoiseries",
+      saleUnit: "piece",
     });
+  });
+
+  it("dit l'unité de l'article : au poids, le fournil règle ses raccourcis en grammes (P6)", async () => {
+    const catalog = new Catalog({
+      pro: [item("SAU-001", VIENNOISERIES, { saleUnit: "weight", weightStepGrams: 50 })],
+      public: [item("VIE-001", VIENNOISERIES)],
+    });
+
+    const articles = await new CatalogSellableArticlesReader(catalog).sellableArticles();
+
+    expect(articles.map((article) => [article.sku, article.saleUnit])).toEqual([
+      ["SAU-001", "weight"],
+      ["VIE-001", "piece"],
+    ]);
   });
 
   it("ne garde que l'unité par défaut — le carton n'est pas une ligne de plus", async () => {

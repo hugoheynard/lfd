@@ -103,5 +103,9 @@ async function colorsOf(
 }
 
 function printedLines(lines: readonly ManifestLine[]): readonly RoundPaperTransferLine[] {
-  return lines.map((line) => ({ productName: line.productName, quantity: line.quantity }));
+  return lines.map((line) => ({
+    productName: line.productName,
+    quantity: line.quantity,
+    saleUnit: line.saleUnit,
+  }));
 }

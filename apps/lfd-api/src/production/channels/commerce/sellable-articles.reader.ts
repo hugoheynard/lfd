@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 /** Un article vendable, nommé et rangé — une ligne de la table des raccourcis. */
 export interface SellableArticle {
   /** Le SKU PRODUIT, celui des lignes de la fiche d'atelier. */
@@ -5,6 +7,11 @@ export interface SellableArticle {
   readonly name: string;
   readonly familyId: string;
   readonly familyName: string;
+  /**
+   * L'unité de l'article (P6 de `pricing/plan-vente-au-poids.md`) : au poids,
+   * ses raccourcis et son contenant se règlent en GRAMMES, comme ses fournées.
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 /**

@@ -1,3 +1,5 @@
+import { weightLabel } from "@lfd/money";
+
 import { type Doc, MM } from "../../../platform/pdf/paper-pdf-kit.js";
 import { fillBox, strokeBox } from "../../../platform/pdf/paper-pdf-shapes.js";
 import {
@@ -66,7 +68,18 @@ function swatchesRows(colors: readonly string[]): readonly Row[] {
   ];
 }
 
-/** Une section du manifeste : son titre compté, puis « 12 × Croissant » par article. */
+/**
+ * « 12 × Croissant » ; un article au poids, « 1,25 kg · Saumon gravlax » — sans
+ * l'unité, ses grammes se liraient en pièces au déchargement (P6 de
+ * `pricing/plan-vente-au-poids.md`).
+ */
+export function transferLineLabel(line: RoundPaperTransferLine): string {
+  return line.saleUnit === "weight"
+    ? `${weightLabel(line.quantity)} · ${line.productName}`
+    : `${String(line.quantity)} × ${line.productName}`;
+}
+
+/** Une section du manifeste : son titre compté, puis une ligne par article. */
 function sectionRows(
   doc: Doc,
   title: string,
@@ -82,7 +95,7 @@ function sectionRows(
       ? []
       : [textRow(doc, names.join(" · "), { size: SMALL_SIZE, color: LIVE.ink, indent: 3 * MM })]),
     ...lines.map((line) =>
-      textRow(doc, `${String(line.quantity)} × ${line.productName}`, {
+      textRow(doc, transferLineLabel(line), {
         size: BODY_SIZE,
         color: LIVE.ink,
         indent: 3 * MM,

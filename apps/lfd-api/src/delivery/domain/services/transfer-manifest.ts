@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 /**
  * **Le manifeste d'un transfert interne** — « on doit savoir ce qu'on
  * transporte » (décision de Hugo du 2026-10-13, plan du transfert interne,
@@ -14,7 +16,13 @@
 export interface ManifestLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  /**
+   * L'unité de la ligne de commande (P6 de `pricing/plan-vente-au-poids.md`) ;
+   * un réassort est toujours `piece` (le poids en est exclu, § 2).
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 export type TransferItemKind = "order" | "resupply";
@@ -44,7 +52,8 @@ export interface TransferManifest {
  * Le total par SKU, dans l'ordre de première apparition. Le libellé est le
  * premier rencontré : deux commandes figées à des dates différentes peuvent
  * porter deux noms pour un même SKU, et le manifeste n'en invente pas un
- * troisième.
+ * troisième. L'unité d'un SKU est une (figée à la publication) : ses
+ * grammes s'additionnent entre eux.
  */
 export function totalsBySku(lines: readonly ManifestLine[]): readonly ManifestLine[] {
   const totals = new Map<string, ManifestLine>();

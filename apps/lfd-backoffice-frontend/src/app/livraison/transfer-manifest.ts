@@ -3,6 +3,7 @@ import type {
   TransferManifestLineView,
   TransferManifestSectionView,
 } from '@lfd/contracts';
+import { pieceTally } from '@lfd/money';
 
 /**
  * **Le manifeste d'un transfert, mis en mots** (plan du transfert interne,
@@ -18,9 +19,17 @@ export interface ManifestSection {
   readonly totals: readonly TransferManifestLineView[];
 }
 
-/** Somme des quantités d'une liste de lignes. */
+/**
+ * Les pièces d'une liste de lignes. Un article au poids compte pour UNE
+ * pièce (pour rien à 0 g), jamais pour ses grammes : 1 250 g de saumon ne
+ * font pas 1 250 pièces au sous-titre (P6 de `plan-vente-au-poids.md`, la
+ * règle `pieceTally`).
+ */
 export function unitsOf(lines: readonly TransferManifestLineView[]): number {
-  return lines.reduce((sum, line) => sum + line.quantity, 0);
+  return lines.reduce(
+    (sum, line) => sum + pieceTally({ amount: line.quantity, unit: line.saleUnit }),
+    0,
+  );
 }
 
 /** « 3 commandes · 42 pièces ». */

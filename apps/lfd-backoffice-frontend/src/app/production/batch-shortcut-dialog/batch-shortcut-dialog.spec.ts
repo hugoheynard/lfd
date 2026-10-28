@@ -91,6 +91,18 @@ describe('BatchShortcutDialog', () => {
     expect(root.querySelector('fold-danger-zone')).toBeNull();
   });
 
+  it('au poids : le champ dit « Grammes », et crée en grammes (P6, vente au poids)', async () => {
+    const { api, root, settle, type } = await mount({ saleUnit: 'weight' });
+
+    expect(root.querySelector('[data-shortcut-pieces]')?.textContent).toContain('Grammes');
+    expect(root.querySelector('[data-shortcut-pieces]')?.textContent).not.toContain('Pièces');
+    type('[data-shortcut-pieces]', '1500');
+    root.querySelector<HTMLButtonElement>('[data-shortcut-submit]')?.click();
+    await settle();
+
+    expect(api.calls).toEqual(['create:{"sku":"VIE-001","label":"1 plaque","pieces":1500}']);
+  });
+
   it('dit le refus du serveur sur place, sans fermer', async () => {
     const { api, closed, root, settle, type } = await mount();
     api.refuse = 'Le produit VIE-001 a déjà un raccourci « 1 plaque ».';

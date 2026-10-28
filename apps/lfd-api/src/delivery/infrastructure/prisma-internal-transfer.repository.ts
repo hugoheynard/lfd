@@ -7,6 +7,7 @@ import {
   type TransferItem,
 } from "../domain/entities/internal-transfer.js";
 import { InternalTransferCorruptedError } from "../domain/errors/internal-transfer-errors.js";
+import { manifestSaleUnitOf } from "./manifest-sale-unit.column.js";
 import { receiptOfRow, receivedColumns, updateTransfer } from "./internal-transfer-receipt.rows.js";
 import { InternalTransferRepository } from "../domain/ports/internal-transfer.repository.js";
 import {
@@ -38,6 +39,7 @@ interface TransferRow {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 
@@ -240,6 +242,9 @@ function toDomain(row: TransferRow): InternalTransfer {
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
     items: row.items.map((item) => itemOf(row.id, item)),
-    manifest: row.manifest.map((line) => ({ ...line })),
+    manifest: row.manifest.map((line) => ({
+      ...line,
+      saleUnit: manifestSaleUnitOf(row.id, line.sku, line.saleUnit),
+    })),
   });
 }

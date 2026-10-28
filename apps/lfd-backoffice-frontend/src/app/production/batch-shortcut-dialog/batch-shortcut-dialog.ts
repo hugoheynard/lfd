@@ -11,6 +11,7 @@ import {
   BATCH_SHORTCUT_LABEL_MAX,
   DEFAULT_BATCH_SHORTCUT_LABEL,
   type BatchShortcutView,
+  type OrderSaleUnit,
 } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
@@ -34,6 +35,11 @@ import { BatchShortcutsService } from '../batch-shortcuts.service';
 export interface BatchShortcutDialogData {
   readonly sku: string;
   readonly productName: string;
+  /**
+   * `weight` : le nombre se règle en GRAMMES, l'unité des fournées de
+   * l'article (P6 de `plan-vente-au-poids.md`). Absente = des pièces.
+   */
+  readonly saleUnit?: OrderSaleUnit;
   /** `null` : un raccourci neuf, son nom prérempli de « 1 plaque ». */
   readonly shortcut: BatchShortcutView | null;
   /** `production_settings:write` ? Sans lui, le dialogue se lit et se ferme. */
@@ -75,6 +81,7 @@ export class BatchShortcutDialog {
   protected readonly labelMax = BATCH_SHORTCUT_LABEL_MAX;
   protected readonly editing = computed(() => this.data().shortcut !== null);
   protected readonly canWrite = computed(() => this.data().canWrite);
+  protected readonly byWeight = computed(() => this.data().saleUnit === 'weight');
   protected readonly title = computed(() =>
     this.editing() ? 'Raccourci' : 'Ajouter un raccourci',
   );

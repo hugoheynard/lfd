@@ -14,7 +14,7 @@ import { binTypeId, LOADING } from "./delivery-loading-scene.js";
 import { admin, addVehicle } from "./delivery-rounds-scene.js";
 import { MEASURED, seedDeparture } from "./delivery-routing-scene.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
-import { placeOrder } from "./order-factory.js";
+import { type OrderLineSeed, placeOrder } from "./order-factory.js";
 
 const VILLAGE_GPS = { lat: 45.45, lng: 6.98 };
 
@@ -51,7 +51,7 @@ export const VILLAGE_BREAD = { sku: "PAI-001", name: "Baguette tradition" } as c
 let villageOrderNumber = "";
 
 /**
- * Un retrait réglé au village pour le jour : trois baguettes, passées au
+ * Un retrait réglé au village pour le jour : trois baguettes par défaut, passées au
  * compte par un pro, par le vrai chemin (`placeOrder`, plan T). Un pro : le
  * village n'a pas d'ouverture publique, et la vraie passation refuse un
  * particulier (la fixture d'avant le plan T en semait un). Tranche 08:00–09:00,
@@ -61,6 +61,7 @@ export async function seedVillageOrder(
   ctx: E2eContext,
   day: string,
   siteId: string,
+  lines: readonly OrderLineSeed[] = [{ sku: VILLAGE_BREAD.sku, quantity: 3 }],
 ): Promise<string> {
   const user = await createUser(ctx.prisma, { auth0Sub: "auth0|client", email: "c@vv.fr" });
   const company = await createCompany(ctx.prisma, { enseigne: "Chalet du Village" });
@@ -76,7 +77,7 @@ export async function seedVillageOrder(
     forDay: day,
     window: { start: "08:00", end: "09:00" },
     fulfillment: { method: "pickup", pickupSiteId: siteId },
-    lines: [{ sku: VILLAGE_BREAD.sku, quantity: 3 }],
+    lines,
   });
   villageOrderNumber = order.orderNumber;
   return order.id;
@@ -103,13 +104,14 @@ export async function closePlan(ctx: E2eContext, day: string): Promise<void> {
 export async function composedTransfer(
   ctx: E2eContext,
   day: string,
+  lines?: readonly OrderLineSeed[],
 ): Promise<{
   readonly orderId: string;
   readonly transferId: string;
 }> {
   await seedDeparture(ctx);
   await addVehicle(ctx, "Kangoo", MEASURED);
-  const orderId = await seedVillageOrder(ctx, day, await seedVillage(ctx));
+  const orderId = await seedVillageOrder(ctx, day, await seedVillage(ctx), lines);
   await closePlan(ctx, day);
   const transfer = await ctx.prisma.deliveryInternalTransfer.findFirstOrThrow({
     where: { serviceDay: day },

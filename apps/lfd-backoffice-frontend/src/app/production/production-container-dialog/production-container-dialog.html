@@ -18,8 +18,12 @@
     />
     <fold-number-input
       data-container-units
-      label="Pièces"
-      hint="Combien de pièces tiennent dans un contenant."
+      [label]="byWeight() ? 'Grammes' : 'Pièces'"
+      [hint]="
+        byWeight()
+          ? 'Combien de grammes tiennent dans un contenant : 1500 pour 1,5 kg.'
+          : 'Combien de pièces tiennent dans un contenant.'
+      "
       integer
       [min]="1"
       [readOnly]="!canWrite()"

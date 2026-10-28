@@ -155,7 +155,7 @@ describe('transferBinsPayload', () => {
 });
 
 describe('le manifeste', () => {
-  const line = { sku: 'PAIN-1', productName: 'Pain', quantity: 4 };
+  const line = { sku: 'PAIN-1', productName: 'Pain', quantity: 4, saleUnit: 'piece' as const };
   const view: InternalTransferManifestView = {
     transferId: 'tr_1',
     day: '2026-09-10',
@@ -214,6 +214,22 @@ describe('le manifeste', () => {
     expect(manifestSections(named)[1]?.subtitle).toBe(
       '3 réassorts · 12 pièces · Vitrine du matin, Goûter',
     );
+  });
+
+  it('compte un article au poids pour UNE pièce, jamais pour ses grammes (P6)', () => {
+    const salmon = {
+      sku: 'SAU-1',
+      productName: 'Saumon',
+      quantity: 1250,
+      saleUnit: 'weight' as const,
+    };
+    const mixed = {
+      ...view,
+      orders: { ...view.orders, totals: [line, salmon] },
+    };
+    expect(manifestSections(mixed)[0]?.subtitle).toBe('1 commande · 5 pièces');
+    const zero = { ...view, orders: { ...view.orders, totals: [{ ...salmon, quantity: 0 }] } };
+    expect(manifestSections(zero)[0]?.subtitle).toBe('1 commande · 0 pièces');
   });
 
   it('dit s’il est figé', () => {

@@ -72,6 +72,45 @@ function arrival(lines: ProducibleOrder["lines"]): ProducibleOrder {
   };
 }
 
+describe("worksheetOf — le contenant d'un article au poids se compte en grammes", () => {
+  const TRAY = { unitsPerContainer: 1500, singular: "plaque", plural: "plaques" };
+
+  it.each([
+    [1500, "1 plaque"],
+    [1501, "2 plaques"],
+    [3000, "2 plaques"],
+    [3250, "3 plaques"],
+  ])("%i g pour une plaque de 1 500 g : « %s »", (grams, label) => {
+    const sheet = worksheetOf(
+      sources({
+        counts: [counted("SAU", grams, "weight")],
+        containers: new Map([["SAU", TRAY]]),
+      }),
+    );
+
+    expect(sheet.lines[0]).toMatchObject({ saleUnit: "weight", containerLabel: label });
+  });
+
+  it("une journée mêlée : chaque article se compte dans son unité, contre son propre contenant", () => {
+    const sheet = worksheetOf(
+      sources({
+        counts: [counted("CRO", 41, "piece"), counted("SAU", 1250, "weight")],
+        containers: new Map([
+          ["CRO", { unitsPerContainer: 10, singular: "tourneuse", plural: "tourneuses" }],
+          ["SAU", TRAY],
+        ]),
+      }),
+    );
+
+    expect(sheet.lines.map((line) => [line.sku, line.containerLabel])).toEqual(
+      expect.arrayContaining([
+        ["CRO", "5 tourneuses"],
+        ["SAU", "1 plaque"],
+      ]),
+    );
+  });
+});
+
 describe("worksheetOf — une ligne au poids", () => {
   it("garde l'unité, et compte sorti, reste et surplus en grammes", () => {
     const sheet = worksheetOf(

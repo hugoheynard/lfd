@@ -502,6 +502,8 @@ model ProductionContainer {
 
   /// Combien de pièces tiennent dans UN contenant. Toujours ≥ 1 : un contenant
   /// qui n'en porte aucune ne dirait rien, et une division par zéro non plus.
+  /// Des GRAMMES pour un article au poids, l'unité de ses fournées (P6 de
+  /// `pricing/plan-vente-au-poids.md`).
   unitsPerContainer Int @map("units_per_container")
 
   /// Le mot du fournil, aux deux nombres. Le pluriel est ÉCRIT et non dérivé :

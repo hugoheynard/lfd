@@ -21,6 +21,15 @@ import type { PackedItem, PackingBinType, PackingCapacity } from "./propose-pack
  *
  * Chaque tour place au moins une unité (une contenance vaut au moins 1) :
  * la boucle termine.
+ *
+ * **Un lot au poids ne se coupe pas** (P6 de `pricing/plan-vente-au-poids.md`) :
+ * s'il tient dans un bac ENTIER du type, il y va entier ou attend le bac
+ * suivant — le colisage refuse un second contenant pour le même article. Un
+ * lot plus lourd qu'un bac entier se coupe comme des pièces, faute de mieux :
+ * la proposition compte alors les bacs qu'il faut, et le colisage, qui ne le
+ * coupera pas, le laisse « à répartir » au préparateur. La boucle termine
+ * toujours : un bac commence vide, et un lot qui tient dans un bac vide y
+ * entre.
  */
 
 /** Ce qu'offre une moitié de bac cloisonné (v2-3). */
@@ -71,6 +80,7 @@ export function packGroup(
   items: readonly PackedItem[],
   types: readonly PackingBinType[],
   grid: CapacityGrid,
+  weighed: ReadonlySet<string> = new Set(),
 ): readonly BinSlot[] {
   let remaining: readonly PackedItem[] = items.filter((item) => item.quantity > 0);
   const slots: BinSlot[] = [];
@@ -78,7 +88,12 @@ export function packGroup(
     const last = lastBinFor(remaining, types, grid);
     if (last !== null) {
       slots.push({
-        ...fill(remaining, last.type.id, last.half ? HALF_BIN : 1, grid).slot,
+        ...fill(
+          remaining,
+          { binTypeId: last.type.id, room: last.half ? HALF_BIN : 1 },
+          grid,
+          weighed,
+        ).slot,
         half: last.half,
       });
       break;
@@ -87,7 +102,7 @@ export function packGroup(
     if (type === null) {
       break;
     }
-    const filled = fill(remaining, type.id, 1, grid);
+    const filled = fill(remaining, { binTypeId: type.id, room: 1 }, grid, weighed);
     slots.push(filled.slot);
     remaining = filled.remaining;
   }
@@ -163,17 +178,18 @@ function widestTypeFor(
 /** Remplit un bac offrant `room` (1 ou 0,5), produit par produit, dans l'ordre du reste. */
 function fill(
   items: readonly PackedItem[],
-  binTypeId: string,
-  room: number,
+  bin: { readonly binTypeId: string; readonly room: number },
   grid: CapacityGrid,
+  weighed: ReadonlySet<string>,
 ): { readonly slot: BinSlot; readonly remaining: readonly PackedItem[] } {
+  const { binTypeId, room } = bin;
   let free = room;
   const content: PackedItem[] = [];
   const remaining: PackedItem[] = [];
   for (const item of items) {
     const units = grid.unitsOf(binTypeId, item.sku);
     const taken =
-      units === null ? 0 : Math.min(item.quantity, Math.floor((free + EPSILON) * units));
+      units === null ? 0 : takenOf(item, Math.floor((free + EPSILON) * units), units, weighed);
     if (taken > 0 && units !== null) {
       content.push({ sku: item.sku, quantity: taken });
       free -= taken / units;
@@ -186,4 +202,21 @@ function fill(
     slot: { binTypeId, half: false, load: Math.max(0, room - free), content },
     remaining,
   };
+}
+
+/**
+ * Ce qu'un bac prend d'un article, `fits` étant ce que sa place restante
+ * contient. Un lot au poids qui tient dans un bac entier : tout, ou rien.
+ */
+function takenOf(
+  item: PackedItem,
+  fits: number,
+  units: number,
+  weighed: ReadonlySet<string>,
+): number {
+  const wholeLot = weighed.has(item.sku) && item.quantity <= units;
+  if (wholeLot) {
+    return item.quantity <= fits ? item.quantity : 0;
+  }
+  return Math.min(item.quantity, fits);
 }

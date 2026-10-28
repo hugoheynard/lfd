@@ -3,6 +3,7 @@ import { z } from "zod";
 import type { BillingAddressPayload, GpsPoint } from "./address.js";
 import { closeStopWithoutHandoverPayloadSchema } from "./delivery-doorstep.js";
 import type { OrderClientele } from "./order-handover.js";
+import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Le manifeste d'un transfert interne** (2026-10-13, plan du transfert
@@ -23,7 +24,10 @@ import type { OrderClientele } from "./order-handover.js";
 export interface TransferManifestLineView {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits « 1,25 kg » (P6 de `plan-vente-au-poids.md`). */
   readonly quantity: number;
+  /** Un manifeste figé avant l'unité se relit `piece`, ce qu'il était. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /** Ce que contient un élément du transfert. */

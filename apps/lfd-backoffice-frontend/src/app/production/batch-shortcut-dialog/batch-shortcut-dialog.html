@@ -11,8 +11,12 @@
     />
     <fold-number-input
       data-shortcut-pieces
-      label="Pièces"
-      hint="Ce qu’un appui ajoute au champ « Pièces sorties »."
+      [label]="byWeight() ? 'Grammes' : 'Pièces'"
+      [hint]="
+        byWeight()
+          ? 'Ce qu’un appui ajoute au poids sorti, en grammes : 1500 pour 1,5 kg.'
+          : 'Ce qu’un appui ajoute au champ « Pièces sorties ».'
+      "
       integer
       [min]="1"
       [readOnly]="!canWrite()"

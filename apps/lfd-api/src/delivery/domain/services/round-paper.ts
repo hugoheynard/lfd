@@ -1,4 +1,5 @@
 import { type DeliveryContact, instantToLocal } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import type { DepartureWindow } from "../entities/departure-sheet.js";
 import type { PlannedTiming } from "../value-objects/planned-timing.js";
@@ -53,7 +54,9 @@ export interface RoundPaperAbsentStop {
 /** Une ligne de manifeste imprimée : un article, une quantité. */
 export interface RoundPaperTransferLine {
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
+  readonly saleUnit: SaleUnit;
 }
 
 /**

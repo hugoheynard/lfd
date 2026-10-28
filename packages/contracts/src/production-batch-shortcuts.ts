@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * **Les raccourcis du fournil** — compter en plaques (plan
  * `documentation/fournil/plan-raccourcis-du-fournil.md`, 2026-10-28).
@@ -7,6 +9,10 @@ import { z } from "zod";
  * Un raccourci est, pour UN produit, un nom (« 1 plaque » par défaut) et un
  * nombre de pièces. Sur la fiche d'atelier, chaque appui AJOUTE ses pièces au
  * champ « Pièces sorties » ; ce qui s'enregistre reste un nombre de pièces.
+ *
+ * **Un article au poids** (P6 de `pricing/plan-vente-au-poids.md`) : `pieces`
+ * — comme le contenant principal — compte des GRAMMES, l'unité dans laquelle
+ * ses fournées se déclarent ; « 1 plaque · 1,5 kg ».
  */
 
 /** Au plus six raccourcis par produit (plan §2). */
@@ -56,6 +62,8 @@ export interface BatchShortcutArticleView {
   readonly name: string;
   readonly familyId: string;
   readonly familyName: string;
+  /** `weight` : ses raccourcis et son contenant se règlent en grammes. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

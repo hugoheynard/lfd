@@ -9,8 +9,28 @@ import { GetWorkshopShortcutsHandler } from "../get-workshop-shortcuts.handler.j
 /** Les deux lectures des raccourcis du fournil (plan des raccourcis, S1-S2). */
 
 const ARTICLES = [
-  { sku: "VIE-001", name: "Croissant", familyId: "fam-vien", familyName: "Viennoiseries" },
-  { sku: "PAI-001", name: "Baguette", familyId: "fam-pain", familyName: "Pains" },
+  {
+    sku: "VIE-001",
+    name: "Croissant",
+    familyId: "fam-vien",
+    familyName: "Viennoiseries",
+    saleUnit: "piece" as const,
+  },
+  {
+    sku: "PAI-001",
+    name: "Baguette",
+    familyId: "fam-pain",
+    familyName: "Pains",
+    saleUnit: "piece" as const,
+  },
+  // Un article au poids : l'écran règle ses raccourcis en grammes (P6).
+  {
+    sku: "SAU-001",
+    name: "Saumon gravlax",
+    familyId: "fam-epi",
+    familyName: "Épicerie",
+    saleUnit: "weight" as const,
+  },
 ];
 
 function table(): InMemoryBatchShortcuts {

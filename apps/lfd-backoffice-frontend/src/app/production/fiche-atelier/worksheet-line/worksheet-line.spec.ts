@@ -211,6 +211,40 @@ describe('une ligne, vue par produit', () => {
     expect(keypad.asked[0]?.preset).toBe(96);
   });
 
+  /** Un article au poids : contenant et raccourcis se règlent en grammes (P6, vente au poids). */
+  it('au poids, contenant et raccourcis se disent en kilos, et remontent des grammes', async () => {
+    const fixture = TestBed.createComponent(WorksheetLine);
+    fixture.componentRef.setInput(
+      'line',
+      line({
+        saleUnit: 'weight',
+        quantity: 3250,
+        remaining: 3250,
+        produced: 0,
+        deadlines: [{ quantity: 3250, before: null }],
+        container: { unitsPerContainer: 1500, singular: 'plaque' },
+      }),
+    );
+    fixture.componentRef.setInput('now', NOW);
+    fixture.componentRef.setInput('shortcuts', [{ id: 'bs-1', label: '1 bac', pieces: 500 }]);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    const asked: number[] = [];
+    fixture.componentInstance.recorded.subscribe((quantity) => asked.push(quantity));
+
+    expect(text(el, '.wl-container')).toBe('plaque de 1,5 kg');
+    expect(text(el, '.wl-quick-size')).toBe('1,5 kg');
+    expect(text(el, '[data-worksheet-shortcut="bs-1"]')).toBe('1 bac · 500 g');
+    expect(el.textContent).not.toContain('1500');
+
+    button(el, '+ 1 plaque')?.click();
+    el.querySelector<HTMLButtonElement>('[data-worksheet-shortcut="bs-1"]')?.click();
+    await tick();
+
+    expect(asked).toEqual([1500]);
+    expect(keypad.asked[0]?.preset).toBe(500);
+  });
+
   /** Régression : « 1 plaque · 30 » doublait « + 1 plaque » sur la ligne (2026-10-28). */
   it('ne montre pas le raccourci qui vaut un contenant', () => {
     const fixture = TestBed.createComponent(WorksheetLine);

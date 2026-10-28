@@ -140,7 +140,7 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     // La clientèle de chaque commande, lue au commerce (plan du tri et des couleurs, L1a).
     expect(before.orders.items.map((item) => item.clientele)).toEqual(["pro"]);
     expect(before.totals).toEqual([
-      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3 },
+      { sku: VILLAGE_BREAD.sku, productName: VILLAGE_BREAD.name, quantity: 3, saleUnit: "piece" },
     ]);
 
     const [binId] = await declareTransferBins(ctx, transferId, 1);
@@ -162,6 +162,66 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
     expect(
       await ctx.prisma.deliveryInternalTransferManifestLine.count({ where: { transferId } }),
     ).toBe(1);
+  });
+});
+
+describe("le manifeste d'une commande au poids (P6 de `pricing/plan-vente-au-poids.md`)", () => {
+  /** Le pain au chocolat du semis devient un article au poids, par 50 g. */
+  const WEIGHED = "VIE-002";
+
+  it("une commande mêlée part avec ses grammes ET leur unité ; un ancien manifeste se relit en pièces", async () => {
+    await ctx.prisma.catalogItem.update({
+      where: { sku: `${WEIGHED}-1` },
+      data: { saleUnit: "weight", weightStepGrams: 50, weightMinGrams: null },
+    });
+    const { transferId } = await composedTransfer(ctx, DAY, [
+      { sku: VILLAGE_BREAD.sku, quantity: 3 },
+      { sku: WEIGHED, quantity: 1250, saleUnit: "weight" },
+    ]);
+    const round = await ctx.prisma.deliveryRound.findFirstOrThrow({ select: { id: true } });
+    const manifestOf = async (): Promise<InternalTransferManifestView> =>
+      jsonBody<InternalTransferManifestView>(
+        await admin(ctx).get(`/admin/delivery/transfers/${transferId}/manifest`).expect(200),
+      );
+
+    const before = await manifestOf();
+    expect(before.totals).toEqual([
+      expect.objectContaining({ sku: VILLAGE_BREAD.sku, quantity: 3, saleUnit: "piece" }),
+      expect.objectContaining({ sku: WEIGHED, quantity: 1250, saleUnit: "weight" }),
+    ]);
+
+    const [binId] = await declareTransferBins(ctx, transferId, 1);
+    await loadBin(ctx, round.id, { binId: binId ?? "" }).expect(204);
+    expect((await depart(ctx, round.id)).status).toBe(204);
+
+    const frozen = await ctx.prisma.deliveryInternalTransferManifestLine.findMany({
+      where: { transferId },
+      orderBy: { sku: "asc" },
+      select: { sku: true, quantity: true, saleUnit: true, itemId: true },
+    });
+    expect(frozen.map(({ sku, quantity, saleUnit }) => ({ sku, quantity, saleUnit }))).toEqual([
+      { sku: VILLAGE_BREAD.sku, quantity: 3, saleUnit: "piece" },
+      { sku: WEIGHED, quantity: 1250, saleUnit: "weight" },
+    ]);
+    const after = await manifestOf();
+    expect(after.frozen).toBe(true);
+    expect(after.totals).toEqual(before.totals);
+
+    // Une ligne figée AVANT la colonne : écrite sans `sale_unit`, elle prend
+    // le défaut de la migration et se relit à la pièce, ce qu'elle était.
+    await ctx.prisma.$executeRaw`
+      INSERT INTO "delivery"."delivery_internal_transfer_manifest_line"
+        ("transfer_id", "item_id", "sku", "product_name", "quantity")
+      VALUES (${transferId}, ${frozen[0]?.itemId ?? ""}, 'ANC-001', 'Ancien article', 4)`;
+    expect((await manifestOf()).totals).toContainEqual(
+      expect.objectContaining({ sku: "ANC-001", quantity: 4, saleUnit: "piece" }),
+    );
+    // Et la base refuse une unité inconnue (CHECK).
+    await expect(
+      ctx.prisma.$executeRaw`
+        UPDATE "delivery"."delivery_internal_transfer_manifest_line"
+        SET "sale_unit" = 'kilo' WHERE "transfer_id" = ${transferId}`,
+    ).rejects.toThrow(/delivery_internal_transfer_manifest_line_sale_unit_check/u);
   });
 });
 

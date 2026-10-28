@@ -94,6 +94,21 @@ describe('ProductionContainerDialog', () => {
     expect(root.querySelector('fold-danger-zone')).toBeNull();
   });
 
+  it('au poids : le champ dit « Grammes », et règle en grammes (P6, vente au poids)', async () => {
+    const { api, root, settle, type, submit } = await mount({ saleUnit: 'weight' });
+
+    expect(root.querySelector('[data-container-units]')?.textContent).toContain('Grammes');
+    type('[data-container-singular]', 'plaque');
+    type('[data-container-plural]', 'plaques');
+    type('[data-container-units]', '1500');
+    submit()?.click();
+    await settle();
+
+    expect(api.calls).toEqual([
+      'set:VIE-001:{"unitsPerContainer":1500,"singular":"plaque","plural":"plaques"}',
+    ]);
+  });
+
   it('refuse de partir sans pluriel', async () => {
     const { type, submit } = await mount();
 

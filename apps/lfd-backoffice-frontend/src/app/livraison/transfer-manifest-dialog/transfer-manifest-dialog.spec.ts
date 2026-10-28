@@ -8,7 +8,18 @@ import { TransferManifestDialog } from './transfer-manifest-dialog';
 
 /** Le manifeste : ses sections lues ; un échec de lecture dit « illisible » et propose de réessayer. */
 
-const LINE = { sku: 'PAIN-1', productName: 'Pain de campagne', quantity: 4 };
+const LINE = {
+  sku: 'PAIN-1',
+  productName: 'Pain de campagne',
+  quantity: 4,
+  saleUnit: 'piece' as const,
+};
+const SALMON = {
+  sku: 'SAU-1',
+  productName: 'Saumon gravlax',
+  quantity: 1250,
+  saleUnit: 'weight' as const,
+};
 const VIEW: InternalTransferManifestView = {
   transferId: 'tr_1',
   day: '2026-09-10',
@@ -61,6 +72,21 @@ describe('TransferManifestDialog', () => {
     expect(host.textContent).not.toContain('Réapprovisionnement');
     expect(host.textContent).toContain('Pain de campagne');
     expect(host.textContent).not.toContain('ne porte encore rien');
+  });
+
+  it('une commande mêlée : « 4 » pour le pain, « 1,25 kg » pour le saumon, jamais « 1250 » (P6)', async () => {
+    const host = await render(() =>
+      Promise.resolve({
+        ...VIEW,
+        orders: { ...VIEW.orders, totals: [LINE, SALMON] },
+        totals: [LINE, SALMON],
+      }),
+    );
+    const quantities = [...host.querySelectorAll('.tl-qty')].map((el) => el.textContent.trim());
+    expect(quantities).toContain('4');
+    expect(quantities).toContain('1,25 kg');
+    expect(host.textContent).not.toContain('1250');
+    expect(host.textContent).toContain('5 pièces');
   });
 
   it('un échec de lecture est un état d’erreur', async () => {

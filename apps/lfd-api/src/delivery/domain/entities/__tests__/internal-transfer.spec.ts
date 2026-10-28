@@ -39,11 +39,11 @@ const CONTENTS: ItemContents = (item) =>
     ? undefined
     : item.orderId === "o_1"
       ? [
-          { sku: "PAIN", productName: "Pain", quantity: 2 },
-          { sku: "TARTE", productName: "Tarte", quantity: 1 },
+          { sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+          { sku: "TARTE", productName: "Tarte", quantity: 1, saleUnit: "piece" },
         ]
       : item.orderId === "o_2"
-        ? [{ sku: "PAIN", productName: "Pain", quantity: 3 }]
+        ? [{ sku: "PAIN", productName: "Pain", quantity: 3, saleUnit: "piece" }]
         : undefined;
 
 describe("InternalTransfer.plan", () => {
@@ -127,8 +127,8 @@ describe("InternalTransfer.depart et le manifeste", () => {
     const manifest = withOrders("o_1", "o_2").manifest(CONTENTS);
 
     expect(manifest.orders.totals).toEqual([
-      { sku: "PAIN", productName: "Pain", quantity: 5 },
-      { sku: "TARTE", productName: "Tarte", quantity: 1 },
+      { sku: "PAIN", productName: "Pain", quantity: 5, saleUnit: "piece" },
+      { sku: "TARTE", productName: "Tarte", quantity: 1, saleUnit: "piece" },
     ]);
     expect(manifest.resupplies.items).toEqual([]);
     expect(manifest.totals).toEqual(manifest.orders.totals);
@@ -138,12 +138,14 @@ describe("InternalTransfer.depart et le manifeste", () => {
     const transfer = withOrders("o_1");
 
     expect(transfer.depart(LATER, CONTENTS)).toBe(true);
-    const manifest = transfer.manifest(() => [{ sku: "AUTRE", productName: "Autre", quantity: 9 }]);
+    const manifest = transfer.manifest(() => [
+      { sku: "AUTRE", productName: "Autre", quantity: 9, saleUnit: "piece" },
+    ]);
 
     expect(transfer.departedAt).toEqual(LATER);
     expect(manifest.totals).toEqual([
-      { sku: "PAIN", productName: "Pain", quantity: 2 },
-      { sku: "TARTE", productName: "Tarte", quantity: 1 },
+      { sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+      { sku: "TARTE", productName: "Tarte", quantity: 1, saleUnit: "piece" },
     ]);
   });
 
@@ -165,13 +167,34 @@ describe("InternalTransfer.depart et le manifeste", () => {
     ]);
   });
 
+  it("fige l'unité d'une ligne au poids : 1 250 g restent 1 250 g après le départ (P6)", () => {
+    const transfer = withOrders("o_1");
+    transfer.depart(LATER, () => [
+      { sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+      { sku: "SAU", productName: "Saumon", quantity: 1250, saleUnit: "weight" },
+    ]);
+
+    const restored = InternalTransfer.restore(transfer.toSnapshot());
+
+    expect(restored.toSnapshot().manifest).toEqual([
+      { itemId: "i_1", sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+      { itemId: "i_1", sku: "SAU", productName: "Saumon", quantity: 1250, saleUnit: "weight" },
+    ]);
+    expect(restored.manifest(() => []).orders.totals).toEqual([
+      { sku: "PAIN", productName: "Pain", quantity: 2, saleUnit: "piece" },
+      { sku: "SAU", productName: "Saumon", quantity: 1250, saleUnit: "weight" },
+    ]);
+  });
+
   it("refuse de relire un manifeste figé sans départ", () => {
     const snapshot = withOrders("o_1").toSnapshot();
 
     expect(() =>
       InternalTransfer.restore({
         ...snapshot,
-        manifest: [{ itemId: "i_1", sku: "PAIN", productName: "Pain", quantity: 1 }],
+        manifest: [
+          { itemId: "i_1", sku: "PAIN", productName: "Pain", quantity: 1, saleUnit: "piece" },
+        ],
       }),
     ).toThrow(InternalTransferCorruptedError);
   });

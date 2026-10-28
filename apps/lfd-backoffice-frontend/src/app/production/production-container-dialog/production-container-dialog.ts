@@ -7,7 +7,7 @@ import {
   linkedSignal,
   signal,
 } from '@angular/core';
-import type { ProductionContainerView } from '@lfd/contracts';
+import type { OrderSaleUnit, ProductionContainerView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -30,6 +30,11 @@ const NAME_MAX = 40;
 export interface ProductionContainerDialogData {
   readonly sku: string;
   readonly productName: string;
+  /**
+   * `weight` : le nombre se règle en GRAMMES, l'unité des fournées de
+   * l'article (P6 de `plan-vente-au-poids.md`). Absente = des pièces.
+   */
+  readonly saleUnit?: OrderSaleUnit;
   /** `null` : aucun contenant réglé, les champs partent vides. */
   readonly container: ProductionContainerView | null;
   /** `production_settings:write` ? Sans lui, le dialogue se lit et se ferme. */
@@ -69,6 +74,7 @@ export class ProductionContainerDialog {
 
   protected readonly posed = computed(() => this.data().container !== null);
   protected readonly canWrite = computed(() => this.data().canWrite);
+  protected readonly byWeight = computed(() => this.data().saleUnit === 'weight');
 
   protected readonly singular = linkedSignal(() => this.data().container?.singular ?? '');
   protected readonly plural = linkedSignal(() => this.data().container?.plural ?? '');
