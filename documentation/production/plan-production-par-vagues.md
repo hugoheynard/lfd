@@ -4,7 +4,9 @@
 > compte de quelles quantités partielles d'un produit doivent être produites à
 > quelle heure. » État : **doc-first**, rien de bâti. Relie trois chantiers :
 > les échéances (CA3), la composition des tournées (CA2, CA6) et le colisage
-> (`colisage/colisage.md`, Q4). `vitruve` d'office : il touchera
+> (`colisage/colisage.md`, Q4). Le 2026-10-28, les tranches fixes et le choix
+> fixes/calculées dans Réglages › Production :
+> [`plan-tranches-de-production.md`](plan-tranches-de-production.md). `vitruve` d'office : il touchera
 > au compte à produire (migration) et à la frontière production ↔ livraison.
 
 ## 1. Ce qui existe (relu le 2026-10-04)
