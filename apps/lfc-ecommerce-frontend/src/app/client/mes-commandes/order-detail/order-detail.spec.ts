@@ -137,6 +137,15 @@ describe('OrderDetail', () => {
     expect(el().querySelector('.rate-label')?.textContent).toContain(FR.orders.rateHigh);
   });
 
+  it('ne propose pas de noter une commande qui n’a pas été reçue', () => {
+    // Hugo, 2026-10-28 : les étoiles s'offraient sur une commande à venir.
+    fixture.componentRef.setInput('order', { ...ROWS[0], status: 'ready' });
+    fixture.detectChanges();
+
+    expect(stars()).toHaveLength(0);
+    expect(el().querySelector('.rate')).toBeNull();
+  });
+
   it('remonte la demande de confirmation de commande — le bouton ne faisait RIEN', () => {
     // 🔴 Régression du 2026-09-07 : ce bouton portait `icon="download"` et aucun
     // `(click)`. Un attribut manquant sur un bouton ne lève rien, ne casse aucun

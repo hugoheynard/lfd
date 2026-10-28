@@ -148,21 +148,24 @@
 
 <!-- La note vit LÀ OÙ LA COMMANDE VIT, jamais dans une pop-up qui interrompt.
      Le glyphe change avec l'état — plein ou vide — pour que la lecture ne repose
-     pas sur la seule couleur. -->
-<div class="rate">
-  <p class="rate-label">{{ rateLabel() }}</p>
-  <div class="stars">
-    @for (star of stars; track star) {
-      <button
-        class="star"
-        type="button"
-        [class.on]="star <= rate()"
-        [attr.aria-label]="starLabel(star)"
-        [attr.aria-pressed]="star <= rate()"
-        (click)="rated.emit(star)"
-      >
-        {{ star <= rate() ? '★' : '☆' }}
-      </button>
-    }
+     pas sur la seule couleur. Seulement une commande reçue (retirée ou
+     livrée) : on ne note pas ce qu'on n'a pas eu (Hugo, 2026-10-28). -->
+@if (reportable()) {
+  <div class="rate">
+    <p class="rate-label">{{ rateLabel() }}</p>
+    <div class="stars">
+      @for (star of stars; track star) {
+        <button
+          class="star"
+          type="button"
+          [class.on]="star <= rate()"
+          [attr.aria-label]="starLabel(star)"
+          [attr.aria-pressed]="star <= rate()"
+          (click)="rated.emit(star)"
+        >
+          {{ star <= rate() ? '★' : '☆' }}
+        </button>
+      }
+    </div>
   </div>
-</div>
+}
