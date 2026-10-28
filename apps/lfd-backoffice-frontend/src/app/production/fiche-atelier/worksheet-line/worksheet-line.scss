@@ -20,7 +20,8 @@
 
 :host(.is-done) {
   border-color: var(--fold-color-border-subtle);
-  background: var(--fold-color-surface-sunken);
+  /* Le fond de la liste est déjà « sunken » : une ligne faite s'en distingue à peine. */
+  background: var(--fold-color-surface-subtle);
 }
 
 /* Ce qui presse : un liseré ambre (téléphone surtout — la pastille le dit en mots). */

@@ -182,7 +182,8 @@ fold-page-layout {
   flex-direction: column;
   flex: 1 1 auto;
   min-height: 0;
-  background: var(--fold-color-surface-card);
+  /* Plus sombre que les cartes, pour les faire ressortir (maquette, Hugo 2026-10-28). */
+  background: var(--fold-color-bg-page);
   border-top: 1px solid var(--fold-color-border);
 }
 
