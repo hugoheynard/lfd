@@ -1,32 +1,58 @@
+/* La saisie à gauche, le pavé à droite (312 px), comme la maquette v3 ; en
+   pile quand la feuille monte du bas, sur un téléphone. */
 .wk-body {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-lg);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 312px;
+  gap: var(--fold-space-xl);
 }
 
-/* Le chiffre se lit à un mètre du four : mono, gros, tabulaire. */
+@media (max-width: 1023px) {
+  .wk-body {
+    grid-template-columns: 1fr;
+    gap: var(--fold-space-lg);
+  }
+}
+
+.wk-entry {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.wk-heading {
+  font-size: var(--fold-text-sm);
+  font-weight: var(--fold-weight-bold);
+}
+
+/* Le chiffre se lit à un mètre du four : mono, gros, cadré d'accent. */
 .wk-display {
   display: flex;
   align-items: baseline;
-  justify-content: space-between;
-  gap: var(--fold-space-md);
+  gap: var(--fold-space-sm);
   margin: 0;
-  padding: var(--fold-space-md) var(--fold-space-lg);
-  border: 1px solid var(--fold-color-border);
+  padding: var(--fold-space-sm) var(--fold-space-md);
+  border: 2px solid var(--fold-color-primary);
   border-radius: var(--fold-radius-md);
-  background: var(--fold-color-surface-sunken);
+  background: var(--fold-color-surface-card);
 }
 
 .wk-value {
   font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xl);
+  font-size: calc(var(--fold-text-2xl) * 1.6);
   font-weight: var(--fold-weight-bold);
+  line-height: 1;
   font-variant-numeric: tabular-nums;
 }
 
-.wk-after {
+.wk-unit {
   font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
+}
+
+.wk-after {
+  margin-left: auto;
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-secondary);
 }
 
 .wk-presets {
@@ -35,20 +61,56 @@
   gap: var(--fold-space-sm);
 }
 
-.wk-keys {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
+.wk-actions {
+  display: flex;
   gap: var(--fold-space-sm);
+  margin-top: auto;
 }
 
-/* De grosses touches : 52 px, les doigts farinés visent mal. */
-.wk-key {
+.wk-close,
+.wk-declare {
   min-height: 52px;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xl);
 }
 
 .wk-declare {
   flex: 1;
+}
+
+.wk-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--fold-space-xs);
+}
+
+/* De grosses touches, mono : les doigts farinés visent mal. */
+.wk-key {
+  display: grid;
+  place-items: center;
   min-height: 52px;
+  padding: 0;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
+  color: var(--fold-color-text);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xl);
+  font-weight: var(--fold-weight-bold);
+  cursor: pointer;
+}
+
+.wk-key:hover {
+  background: var(--fold-color-surface-sunken);
+}
+
+.wk-key:focus-visible {
+  outline: 2px solid var(--fold-color-primary);
+  outline-offset: 2px;
+}
+
+/* C et ⌫ : grisées, elles corrigent, elles ne comptent pas. */
+.wk-key--soft {
+  border-color: transparent;
+  background: var(--fold-color-surface-sunken);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-md);
 }

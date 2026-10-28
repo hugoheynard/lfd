@@ -41,6 +41,7 @@
           />
         } @else {
           <div class="fa-figures">
+            <app-workshop-wall-clock class="fa-clock" />
             <p class="fa-figure">
               <span class="fa-figure-label">Complètes</span>
               <span class="fa-figure-value"
@@ -80,6 +81,15 @@
       <fold-callout variant="warning" class="fa-note">
         Les rayons n'ont pas pu être lus — les quantités sont justes, mais les fiches ne sont pas
         séparées par poste. Rechargez pour les retrouver.
+      </fold-callout>
+    }
+
+    <!-- La relecture a échoué : les chiffres affichés vieillissent. Seul reste
+         du pied retiré le 2026-10-28 (Hugo) — celui-là ne se tait pas. -->
+    @if (day.refreshFailed()) {
+      <fold-callout variant="warning" class="fa-note fa-stale">
+        Relecture impossible depuis {{ day.readLabel() }} : les chiffres affichés peuvent avoir
+        changé.
       </fold-callout>
     }
 
@@ -278,8 +288,6 @@
             }
           </div>
         }
-
-        <app-worksheet-foot />
       </section>
     } @else {
       <fold-empty-state

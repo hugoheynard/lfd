@@ -2,7 +2,6 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import {
   FoldButtonComponent,
   FoldPanelBodyComponent,
-  FoldPanelFooterComponent,
   FoldPanelHeaderComponent,
   FoldPanelRef,
   type FoldPanelContent,
@@ -46,17 +45,12 @@ const DIGITS = ['1', '2', '3', '4', '5', '6', '7', '8', '9'] as const;
 @Component({
   selector: 'app-workshop-keypad',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldButtonComponent,
-    FoldPanelBodyComponent,
-    FoldPanelFooterComponent,
-    FoldPanelHeaderComponent,
-  ],
+  imports: [FoldButtonComponent, FoldPanelBodyComponent, FoldPanelHeaderComponent],
   templateUrl: './workshop-keypad.html',
   styleUrl: './workshop-keypad.scss',
 })
 export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
-  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'sm', surface: 'solid' };
+  static readonly foldPanel: FoldPanelDefaults = { side: 'center', width: 'lg', surface: 'solid' };
 
   readonly data = input.required<KeypadData>();
 
@@ -136,6 +130,11 @@ export class WorkshopKeypad implements FoldPanelContent<KeypadData> {
 
   protected isPicked(preset: Preset): boolean {
     return this.value() === preset.value;
+  }
+
+  /** Fermer ne déclare rien. */
+  protected close(): void {
+    this.panel.close();
   }
 
   protected declare(): void {

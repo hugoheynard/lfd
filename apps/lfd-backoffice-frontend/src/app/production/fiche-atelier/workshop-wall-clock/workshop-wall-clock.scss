@@ -1,0 +1,18 @@
+.wc {
+  display: inline-flex;
+  align-items: baseline;
+  gap: var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-variant-numeric: tabular-nums;
+  line-height: 1;
+}
+
+.wc-main {
+  font-size: calc(var(--fold-text-2xl) * 1.7);
+  font-weight: var(--fold-weight-bold);
+}
+
+.wc-seconds {
+  font-size: var(--fold-text-sm);
+  opacity: 0.7;
+}

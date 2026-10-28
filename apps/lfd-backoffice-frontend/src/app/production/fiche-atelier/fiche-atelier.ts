@@ -27,9 +27,9 @@ import { WorkshopGestures } from './workshop-gestures';
 import { WorkshopClock } from './workshop-clock';
 import { WorkshopKeypadOpener } from './workshop-keypad-opener';
 import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
-import { WorksheetFoot } from './worksheet-foot/worksheet-foot';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
 import { type SlotEntry, WorksheetSlots } from './worksheet-slots/worksheet-slots';
+import { WorkshopWallClock } from './workshop-wall-clock/workshop-wall-clock';
 
 /**
  * 🔴 **Le seuil du fournil — 1024 px, pas les 640 px du back-office.**
@@ -88,6 +88,7 @@ function presses(line: WorkshopLine): boolean {
   selector: 'app-fiche-atelier',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    WorkshopWallClock,
     DriftBanner,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -100,7 +101,6 @@ function presses(line: WorkshopLine): boolean {
     FoldSurfaceDirective,
     FoldToastComponent,
     FoldViewToggleComponent,
-    WorksheetFoot,
     WorksheetLine,
     WorksheetSlots,
   ],

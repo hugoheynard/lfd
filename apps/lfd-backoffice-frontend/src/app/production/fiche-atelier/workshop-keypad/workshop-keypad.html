@@ -1,75 +1,80 @@
-<fold-panel-header [title]="data().productName" subtitle="Pièces sorties" closeLabel="Fermer" />
+<fold-panel-header [title]="data().productName" closeLabel="Fermer" />
 
 <fold-panel-body>
+  <!-- La maquette v3 : la saisie à gauche, le pavé à droite ; en pile sur un
+       téléphone (Hugo, 2026-10-28). -->
   <div class="wk-body">
-    <p class="wk-display" aria-live="polite">
-      <span class="wk-value" data-keypad-value>{{ shown() || '0' }}</span>
-      <span class="wk-after">{{ after() }}</span>
-    </p>
+    <div class="wk-entry">
+      <span class="wk-heading">Pièces sorties de cette fournée</span>
 
-    <!-- Les raccourcis POSENT une valeur ; seul « Déclarer » enregistre. -->
-    <div class="wk-presets" role="group" aria-label="Raccourcis">
-      @for (preset of presets(); track preset.key) {
+      <p class="wk-display" aria-live="polite">
+        <span class="wk-value" data-keypad-value>{{ shown() || '0' }}</span>
+        <span class="wk-unit">pièces</span>
+        <span class="wk-after">{{ after() }}</span>
+      </p>
+
+      <!-- Les raccourcis POSENT une valeur ; seul « Déclarer » enregistre. -->
+      <div class="wk-presets" role="group" aria-label="Raccourcis">
+        @for (preset of presets(); track preset.key) {
+          <button
+            foldButton
+            type="button"
+            size="sm"
+            shape="pill"
+            [emphasis]="isPicked(preset) ? 'solid' : 'outline'"
+            intent="neutral"
+            [attr.data-keypad-preset]="preset.key"
+            [attr.aria-pressed]="isPicked(preset)"
+            (click)="pick(preset)"
+          >
+            {{ preset.label }}
+          </button>
+        }
+      </div>
+
+      <div class="wk-actions">
         <button
           foldButton
+          class="wk-close"
           type="button"
-          size="sm"
-          [emphasis]="isPicked(preset) ? 'solid' : 'outline'"
-          [intent]="isPicked(preset) ? 'primary' : 'neutral'"
-          [attr.data-keypad-preset]="preset.key"
-          (click)="pick(preset)"
+          size="lg"
+          emphasis="outline"
+          intent="neutral"
+          (click)="close()"
         >
-          {{ preset.label }}
+          Fermer
         </button>
-      }
+        <button
+          foldButton
+          class="wk-declare"
+          type="button"
+          size="lg"
+          [disabled]="!valid()"
+          (click)="declare()"
+        >
+          {{ declareLabel() }}
+        </button>
+      </div>
     </div>
 
     <div class="wk-keys" role="group" aria-label="Pavé numérique">
       @for (digit of digits; track digit) {
         <button
-          foldButton
           class="wk-key"
           type="button"
-          size="lg"
-          emphasis="outline"
-          intent="neutral"
           [attr.data-keypad-digit]="digit"
           (click)="press(digit)"
         >
           {{ digit }}
         </button>
       }
-      <button
-        foldButton
-        class="wk-key"
-        type="button"
-        size="lg"
-        emphasis="soft"
-        intent="neutral"
-        aria-label="Effacer tout"
-        (click)="clear()"
-      >
+      <button class="wk-key wk-key--soft" type="button" aria-label="Effacer tout" (click)="clear()">
         C
       </button>
+      <button class="wk-key" type="button" data-keypad-digit="0" (click)="press('0')">0</button>
       <button
-        foldButton
-        class="wk-key"
+        class="wk-key wk-key--soft"
         type="button"
-        size="lg"
-        emphasis="outline"
-        intent="neutral"
-        data-keypad-digit="0"
-        (click)="press('0')"
-      >
-        0
-      </button>
-      <button
-        foldButton
-        class="wk-key"
-        type="button"
-        size="lg"
-        emphasis="soft"
-        intent="neutral"
         aria-label="Effacer un chiffre"
         (click)="erase()"
       >
@@ -78,16 +83,3 @@
     </div>
   </div>
 </fold-panel-body>
-
-<fold-panel-footer align="end">
-  <button
-    foldButton
-    class="wk-declare"
-    type="button"
-    size="lg"
-    [disabled]="!valid()"
-    (click)="declare()"
-  >
-    {{ declareLabel() }}
-  </button>
-</fold-panel-footer>

@@ -306,7 +306,7 @@ describe('la fiche d’atelier', () => {
           WorkshopDayReader,
           WorkshopGestures,
           WorkshopShortcutsReader,
-          { provide: WorkshopClock, useValue: { minutes: signal(NOW) } },
+          { provide: WorkshopClock, useValue: { minutes: signal(NOW), seconds: signal(NOW * 60) } },
           { provide: WorkshopKeypadOpener, useValue: keypad },
         ],
       },
@@ -549,30 +549,22 @@ describe('la fiche d’atelier', () => {
 
     it('dit que la relecture a échoué, sans vider la fiche', async () => {
       const { fixture, el } = await render();
-      expect(text(el, '.wf-origin')).toContain('relue à');
+      expect(el.querySelector('.fa-stale')).toBeNull();
 
       api.view = null;
       relancer();
       await settle(fixture);
 
       expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
-      expect(text(el, '.wf-origin')).toContain('relecture impossible');
+      expect(text(el, '.fa-stale')).toContain('Relecture impossible');
     });
   });
 
-  it('dit l’heure du tirage en pied', async () => {
+  /** Le pied « Ni prix… », le tirage et la relecture : retiré le 2026-10-28 (Hugo). */
+  it('n’a plus de pied', async () => {
     const { el } = await render();
 
-    expect(text(el, '.wf-origin')).toContain('Tirée à 4 h 05');
-  });
-
-  it('🔴 ne fabrique AUCUNE heure quand le plan n’est pas arrêté', async () => {
-    api.view = sheet({ generatedAt: null });
-    const { el } = await render();
-    const foot = text(el, '.wf-origin');
-
-    expect(foot).toContain('pas arrêté');
-    expect(foot).not.toContain('Tirée à');
+    expect(el.textContent).not.toContain('Ni prix');
   });
 
   it('n’affiche aucun bandeau quand rien n’a bougé depuis le tirage', async () => {
