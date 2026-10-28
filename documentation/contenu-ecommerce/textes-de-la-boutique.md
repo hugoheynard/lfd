@@ -449,7 +449,7 @@ Source : `screens/command-terms.copy.ts` · 39 textes.
 | `commandTerms.itemTooLateOthers` | {count} articles de votre panier : trop tard pour {day}, possible à partir de {next}. | {count} items in your basket: too late for {day}, available from {next}. | {count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}. | `{count}` `{day}` `{next}` |
 | `commandTerms.modeTitle` | Retrait ou coursier ? | Pickup or courier? | Ritiro o corriere? |  |
 | `commandTerms.close` | Fermer | Close | Chiudi |  |
-| `commandTerms.firstDayMoved` | Les commandes ouvrent le {day} : votre commande a été déplacée à cette date. | Orders open on {day}: your order has been moved to that date. | Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data. | `{day}` |
+| `commandTerms.firstDayMoved` | Les retraits et livraisons commencent le {day} : votre panier a été déplacé à cette date. | Pickups and deliveries start on {day}: your basket has been moved to that date. | Ritiri e consegne iniziano {day}: il vostro carrello è stato spostato a questa data. | `{day}` |
 | `commandTerms.pickup` | Retrait | Pickup | Ritiro |  |
 | `commandTerms.delivery` | Livraison | Delivery | Consegna |  |
 | `commandTerms.pieceOne` | {n} pièce | {n} piece | {n} pezzo | `{n}` |

@@ -159,7 +159,8 @@ export const COMMAND_TERMS_FR: CommandTermsCopy = {
     '{count} articles de votre panier : trop tard pour {day}, possible à partir de {next}.',
   modeTitle: 'Retrait ou coursier ?',
   close: 'Fermer',
-  firstDayMoved: 'Les commandes ouvrent le {day} : votre commande a été déplacée à cette date.',
+  firstDayMoved:
+    'Les retraits et livraisons commencent le {day} : votre panier a été déplacé à cette date.',
   pickup: 'Retrait',
   delivery: 'Livraison',
   pieceOne: '{n} pièce',
@@ -201,7 +202,7 @@ export const COMMAND_TERMS_EN: CommandTermsCopy = {
   itemTooLateOthers: '{count} items in your basket: too late for {day}, available from {next}.',
   modeTitle: 'Pickup or courier?',
   close: 'Close',
-  firstDayMoved: 'Orders open on {day}: your order has been moved to that date.',
+  firstDayMoved: 'Pickups and deliveries start on {day}: your basket has been moved to that date.',
   pickup: 'Pickup',
   delivery: 'Delivery',
   pieceOne: '{n} piece',
@@ -245,7 +246,8 @@ export const COMMAND_TERMS_IT: CommandTermsCopy = {
     '{count} articoli del vostro carrello: troppo tardi per {day}, possibile da {next}.',
   modeTitle: 'Ritiro o corriere?',
   close: 'Chiudi',
-  firstDayMoved: 'Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data.',
+  firstDayMoved:
+    'Ritiri e consegne iniziano {day}: il vostro carrello è stato spostato a questa data.',
   pickup: 'Ritiro',
   delivery: 'Consegna',
   pieceOne: '{n} pezzo',

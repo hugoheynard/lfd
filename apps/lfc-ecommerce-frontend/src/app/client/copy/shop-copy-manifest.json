@@ -2210,9 +2210,9 @@
         },
         {
           "key": "commandTerms.firstDayMoved",
-          "fr": "Les commandes ouvrent le {day} : votre commande a été déplacée à cette date.",
-          "en": "Orders open on {day}: your order has been moved to that date.",
-          "it": "Gli ordini aprono {day}: il vostro ordine è stato spostato a questa data.",
+          "fr": "Les retraits et livraisons commencent le {day} : votre panier a été déplacé à cette date.",
+          "en": "Pickups and deliveries start on {day}: your basket has been moved to that date.",
+          "it": "Ritiri e consegne iniziano {day}: il vostro carrello è stato spostato a questa data.",
           "variables": ["day"]
         },
         {

@@ -39,7 +39,7 @@ describe('FirstDayMovedCallout', () => {
   it('dit le déplacement, la date en toutes lettres', () => {
     const { host } = boot(AU_LABO, '2026-09-10');
     expect(host.querySelector('[data-first-day-moved]')?.textContent).toContain(
-      'Les commandes ouvrent le jeudi 10 septembre : votre commande a été déplacée à cette date.',
+      'Les retraits et livraisons commencent le jeudi 10 septembre : votre panier a été déplacé à cette date.',
     );
   });
 
