@@ -87,6 +87,8 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
           position: 0,
           vatRatePercent: 5.5,
           publicTtcCents: 250,
+          proPricePerKgMillicents: null,
+          publicPricePerKgTtcCents: null,
           publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
           allergens: null,
           allergenLabels: null,

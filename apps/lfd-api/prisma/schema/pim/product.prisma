@@ -213,6 +213,15 @@ model ProductVariant {
   /// (`pricingFollowsDefault`) suit aussi son prix pro. `CHECK (>= 0)`.
   proPriceMillicents Int? @map("pro_price_millicents")
 
+  /// **Le prix au kilo professionnel HORS TAXE saisi**, en millicentimes —
+  /// `documentation/pricing/plan-prix-au-kilo.md`. Donnée INFORMATIVE : rien
+  /// ne le lit pour tarifer. Saisi, jamais calculé depuis le prix et le poids.
+  /// `NULL` = non saisi ; suit le défaut avec le tarif. `CHECK (> 0)`.
+  proPricePerKgMillicents Int? @map("pro_price_per_kg_millicents")
+  /// **Le prix au kilo public TTC saisi**, en centimes. Même statut que le
+  /// précédent : informatif, saisi, `NULL` = non saisi. `CHECK (> 0)`.
+  publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

@@ -119,6 +119,8 @@ export function variant(id: string, over: Partial<VariantSnapshot> = {}): Varian
     priceCents: null,
     weightGrams: null,
     proPriceMillicents: null,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

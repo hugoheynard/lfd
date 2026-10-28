@@ -144,6 +144,28 @@ export interface ShopItemView {
    */
   readonly unitPriceTtcCents: number;
   /**
+   * **Le prix au kilo PRO, hors taxe, en millicentimes** — tel que saisi au
+   * référentiel (`documentation/pricing/plan-prix-au-kilo.md`).
+   *
+   * 🔴 **Informatif** : saisi, jamais calculé depuis le prix et le poids, et
+   * jamais facturé — ni le panier, ni le devis, ni la facture ne le lisent.
+   * `null` = non saisi : rien ne s'affiche.
+   *
+   * Les deux prix au kilo sont servis à toutes les audiences, chacun nommé par
+   * son unité : comme pour la pièce, **c'est l'écran qui choisit** l'assiette
+   * (`showsTtc()`), et il ne montre jamais l'autre en repli.
+   *
+   * ⚠️ Facultatif dans le TYPE pour ne pas casser les fixtures des fronts
+   * avant leur lot (K5) ; le serveur l'émet toujours, à `null` au besoin.
+   */
+  readonly proPricePerKgMillicents?: number | null;
+  /**
+   * **Le prix au kilo PUBLIC, taxe comprise, en centimes** — tel que saisi au
+   * référentiel. Même statut que {@link proPricePerKgMillicents} : informatif,
+   * `null` = non saisi, toujours émis par le serveur.
+   */
+  readonly publicPricePerKgTtcCents?: number | null;
+  /**
    * **Le tarif à barrer** — l'étiquette publique sur la route publique, le
    * tarif du canal pro sur la route reconnue et sur `?audience=pro` —
    * **absent** quand il n'y a rien à barrer.

@@ -177,6 +177,15 @@ model CatalogItem {
   /// particulier paierait », et un push complet le remplit.
   publicTtcCents Int? @map("public_ttc_cents")
 
+  /// **Les prix au kilo saisis au référentiel**, reçus tels quels (fil v13,
+  /// `documentation/pricing/plan-prix-au-kilo.md`). INFORMATIFS : ils ne
+  /// nourrissent ni la résolution, ni le panier, ni la facture — c'est
+  /// pourquoi `ResolvedCatalogItem` ne les porte pas. `NULL` = non saisi, ou
+  /// ligne d'avant la v13. Le pro HT en millicentimes, le public TTC en
+  /// centimes, chacun dans l'unité du prix qu'il accompagne.
+  proPricePerKgMillicents  Int? @map("pro_price_per_kg_millicents")
+  publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
+
   /// **Le prix public par contexte de vente**, résolu par le PIM :
   /// `{ "takeaway": { "vatRatePercent": 5.5, "htMillicents": 189573 }, … }`.
   ///

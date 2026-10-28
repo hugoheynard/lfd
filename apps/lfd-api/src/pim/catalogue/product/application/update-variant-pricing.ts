@@ -23,6 +23,13 @@ export interface UpdateVariantPricingInput {
   readonly priceCents: number | null;
   readonly weightGrams: number | null;
   readonly proPriceHt?: string | null | undefined;
+  /**
+   * Les prix au kilo SAISIS (`plan-prix-au-kilo.md`) : le pro HT en texte,
+   * lu par le même value object que le prix pro ; le public TTC en centimes,
+   * comme le prix public. Absent = inchangé, `null` = effacer.
+   */
+  readonly proPricePerKgHt?: string | null | undefined;
+  readonly publicPricePerKgTtcCents?: number | null | undefined;
 }
 
 export class UpdateVariantPricingCommand {
@@ -82,14 +89,19 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
 
 /** La saisie, lue par le domaine — le prix pro passe par son value object. */
 function pricingOfInput(input: UpdateVariantPricingInput): VariantPricing {
-  const base = { priceCents: input.priceCents, weightGrams: input.weightGrams };
-  if (input.proPriceHt === undefined) {
-    return base;
-  }
   return {
-    ...base,
-    proPrice: input.proPriceHt === null ? null : ProPriceHt.fromEuros(input.proPriceHt),
+    priceCents: input.priceCents,
+    weightGrams: input.weightGrams,
+    ...(input.proPriceHt === undefined ? {} : { proPrice: euros(input.proPriceHt) }),
+    ...(input.proPricePerKgHt === undefined ? {} : { proPricePerKg: euros(input.proPricePerKgHt) }),
+    ...(input.publicPricePerKgTtcCents === undefined
+      ? {}
+      : { publicPricePerKgTtcCents: input.publicPricePerKgTtcCents }),
   };
+}
+
+function euros(raw: string | null): ProPriceHt | null {
+  return raw === null ? null : ProPriceHt.fromEuros(raw);
 }
 
 /**
@@ -97,6 +109,8 @@ function pricingOfInput(input: UpdateVariantPricingInput): VariantPricing {
  *
  * Le prix pro y entre (lot P) : sa clé est celle de la révision et du contrat
  * du fait, `proPriceMillicents`, pour que `attribution.ts` le lise tel quel.
+ * Les prix au kilo aussi : sans eux, une saisie du seul kilo serait
+ * `untraced` (`plan-prix-au-kilo.md`, K1).
  */
 function pricingOf(
   variants: readonly {
@@ -104,6 +118,8 @@ function pricingOf(
     readonly priceCents: number | null;
     readonly weightGrams: number | null;
     readonly proPriceMillicents: number | null;
+    readonly proPricePerKgMillicents: number | null;
+    readonly publicPricePerKgTtcCents: number | null;
   }[],
   variantId: string,
 ): Record<string, unknown> {
@@ -112,5 +128,7 @@ function pricingOf(
     priceCents: variant?.priceCents ?? null,
     weightGrams: variant?.weightGrams ?? null,
     proPriceMillicents: variant?.proPriceMillicents ?? null,
+    proPricePerKgMillicents: variant?.proPricePerKgMillicents ?? null,
+    publicPricePerKgTtcCents: variant?.publicPricePerKgTtcCents ?? null,
   };
 }

@@ -63,6 +63,20 @@ export class InvalidVariantPricingError extends DomainError {
 }
 
 /**
+ * Un prix au kilo à zéro (`plan-prix-au-kilo.md`) : il s'afficherait
+ * « 0,00 € / kg ». Pour ne rien afficher, on laisse le champ vide.
+ */
+export class ZeroPricePerKgError extends DomainError {
+  constructor(field: string) {
+    super(
+      "catalogue.variant.zero_price_per_kg",
+      `Le prix au kilo « ${field} » ne peut pas valoir zéro : ` +
+        `saisissez un montant, ou laissez le champ vide pour ne rien afficher.`,
+    );
+  }
+}
+
+/**
  * Un prix pro HT saisi que la fiche ne peut pas ranger : plus de cinq
  * décimales, négatif, ou hors de la colonne (lot P du plan
  * `plan-catalogue-synchronise-par-audience.md`).

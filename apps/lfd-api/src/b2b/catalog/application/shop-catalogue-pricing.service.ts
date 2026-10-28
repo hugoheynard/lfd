@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { Pricer } from "../../pricing/application/pricer.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
+import { CatalogPricePerKgReader } from "../domain/ports/catalog-price-per-kg.reader.js";
 import {
   CatalogReader,
   type ResolvedCatalogItem,
@@ -13,6 +14,7 @@ import { catalogueArticle } from "../domain/catalogue-article.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
+import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import {
   inShopLanguage,
   shopCatalogueOf,
@@ -90,6 +92,7 @@ export class ShopCataloguePricing {
     private readonly operations: CatalogOperationsReader,
     private readonly clock: Clock,
     private readonly cutoffs: ShopOrderCutoffsReader,
+    private readonly pricesPerKg: CatalogPricePerKgReader,
   ) {}
 
   /**
@@ -156,8 +159,13 @@ export class ShopCataloguePricing {
     if (catalogue.items.length === 0) {
       return catalogue;
     }
-    const priced = await this.withPrices(catalogue, sellable, { companyId, audience });
-    return inShopLanguage(priced, sellable, language);
+    const [priced, perKg] = await Promise.all([
+      this.withPrices(catalogue, sellable, { companyId, audience }),
+      // Lus À CÔTÉ de la résolution, jamais par elle : informatifs
+      // (`plan-prix-au-kilo.md`, K3).
+      this.pricesPerKg.bySkus(shownVariantSkus(catalogue, sellable)),
+    ]);
+    return inShopLanguage(withPricesPerKg(priced, sellable, perKg), sellable, language);
   }
 
   /** La vitrine au prix résolu, tarif barré quand une résolution le baisse. */

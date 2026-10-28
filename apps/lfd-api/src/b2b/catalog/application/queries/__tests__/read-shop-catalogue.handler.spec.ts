@@ -25,6 +25,7 @@ import {
   type ShopAudience,
 } from "../../../domain/ports/catalog.reader.js";
 import { catalogItem, InMemoryCatalogOperations } from "../../__tests__/sale-operations-doubles.js";
+import { GivenPricesPerKg } from "../../__tests__/price-per-kg-doubles.js";
 import { ShopCataloguePricing } from "../../shop-catalogue-pricing.service.js";
 import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-catalogue.js";
 
@@ -201,6 +202,7 @@ function fixture(
     new InMemoryCatalogOperations(),
     new FixedClock(NOW),
     new GivenCutoffs(cutoffs),
+    new GivenPricesPerKg(),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }

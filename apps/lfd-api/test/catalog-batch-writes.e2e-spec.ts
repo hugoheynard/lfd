@@ -72,6 +72,8 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     position: index,
     vatRatePercent: 5.5,
     publicTtcCents: 250,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     allergens: ["UW"],
     allergenLabels: null,

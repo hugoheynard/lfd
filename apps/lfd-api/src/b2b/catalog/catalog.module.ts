@@ -53,9 +53,11 @@ import { ListCatalogHandler } from "./application/queries/list-catalog.handler.j
 import { CatalogOperationsReader } from "./domain/ports/catalog-operations.reader.js";
 import { ReceivedOperationsReader } from "./domain/ports/received-operations.reader.js";
 import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
+import { CatalogPricePerKgReader } from "./domain/ports/catalog-price-per-kg.reader.js";
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
 import { PrismaReceivedOperationsReader } from "./infrastructure/prisma-received-operations.reader.js";
 import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.reader.js";
+import { PrismaCatalogPricePerKgReader } from "./infrastructure/prisma-catalog-price-per-kg.reader.js";
 import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
 
@@ -154,6 +156,7 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.
     { provide: CatalogColdReader, useClass: PrismaCatalogColdReader },
+    { provide: CatalogPricePerKgReader, useClass: PrismaCatalogPricePerKgReader },
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
     { provide: OrderLineClassificationReader, useClass: PrismaOrderLineClassificationReader },

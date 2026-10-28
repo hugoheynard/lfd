@@ -35,7 +35,15 @@ const payloadSchema = z.object({
   product: syncProductSchema
     .omit({ variants: true })
     .extend({ noteTranslations: catalogTranslationsSchema }),
-  variants: z.array(syncVariantSchema.extend({ nameTranslations: catalogTranslationsSchema })),
+  // Les prix au kilo (fil v13, `plan-prix-au-kilo.md`) sont absents d'un
+  // fait émis avant eux, et lus `null` — « non saisi », ce qui était vrai.
+  variants: z.array(
+    syncVariantSchema.extend({
+      nameTranslations: catalogTranslationsSchema,
+      proPricePerKgMillicents: z.number().int().positive().nullable().default(null),
+      publicPricePerKgTtcCents: z.number().int().positive().nullable().default(null),
+    }),
+  ),
   gaps: z.record(z.string(), z.array(z.string().min(1))),
   family: catalogFamilyFactSchema,
 });

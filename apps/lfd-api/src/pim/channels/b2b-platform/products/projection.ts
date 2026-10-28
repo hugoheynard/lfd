@@ -91,6 +91,10 @@ export function projectVariant(
     publicTtcCents,
     publicByContext: publicTtcCents === null ? {} : publicPricesOf(publicTtcCents, percents),
     weightGrams: variant.weightGrams,
+    // Informatifs, recopiés tels que saisis (`plan-prix-au-kilo.md`) : rien
+    // ne les calcule ici, rien ne les lit pour tarifer de l'autre côté.
+    proPricePerKgMillicents: variant.proPricePerKgMillicents,
+    publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
     isDefault: variant.isDefault,
     position: variant.position,
     vatRatePercent,

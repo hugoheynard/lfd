@@ -105,6 +105,20 @@ export const updateVariantPricingPayloadSchema = z.object({
     .regex(/^\d+(?:[.,]\d+)?$/u)
     .nullable()
     .optional(),
+  /**
+   * Le prix au kilo **pro HT** saisi, en euros et en TEXTE, comme le prix pro
+   * (`plan-prix-au-kilo.md`). Informatif. Absent = inchangé, `null` = effacer.
+   */
+  proPricePerKgHt: z
+    .string()
+    .regex(/^\d+(?:[.,]\d+)?$/u)
+    .nullable()
+    .optional(),
+  /**
+   * Le prix au kilo **public TTC** saisi, en centimes. Le zéro est refusé par
+   * le domaine. Absent = inchangé, `null` = effacer.
+   */
+  publicPricePerKgTtcCents: z.number().int().min(0).nullable().optional(),
 });
 export type UpdateVariantPricingPayload = z.infer<typeof updateVariantPricingPayloadSchema>;
 
@@ -231,6 +245,13 @@ export interface VariantView {
    * `entered` seulement.
    */
   readonly proPriceMillicents: number | null;
+  /**
+   * Les prix au kilo **saisis** (`plan-prix-au-kilo.md`) : le pro HT en
+   * millicentimes, le public TTC en centimes ; `null` = non saisi. Résolus
+   * comme le tarif : une déclinaison alignée rend ceux du défaut.
+   */
+  readonly proPricePerKgMillicents: number | null;
+  readonly publicPricePerKgTtcCents: number | null;
   /**
    * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
    * comprises, puisqu'une trace est un allergène.

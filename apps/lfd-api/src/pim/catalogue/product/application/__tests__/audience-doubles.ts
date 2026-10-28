@@ -34,6 +34,8 @@ export function bareVariant(over: Partial<VariantSnapshot> = {}): VariantSnapsho
     priceCents: null,
     weightGrams: null,
     proPriceMillicents: null,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

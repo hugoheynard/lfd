@@ -49,6 +49,8 @@ interface VariantRow {
   priceCents: number | null;
   weightGrams: number | null;
   proPriceMillicents: number | null;
+  proPricePerKgMillicents: number | null;
+  publicPricePerKgTtcCents: number | null;
   regulatoryFollowsDefault: boolean;
   pricingFollowsDefault: boolean;
   nutritionFollowsDefault: boolean;
@@ -101,6 +103,8 @@ function toVariant(row: VariantRow): VariantSnapshot {
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
     proPriceMillicents: row.proPriceMillicents,
+    proPricePerKgMillicents: row.proPricePerKgMillicents,
+    publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
     nutritionFollowsDefault: row.nutritionFollowsDefault,
@@ -331,6 +335,8 @@ export class PrismaProductRepository extends ProductRepository {
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
             proPriceMillicents: variant.proPriceMillicents,
+            proPricePerKgMillicents: variant.proPricePerKgMillicents,
+            publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
@@ -343,6 +349,8 @@ export class PrismaProductRepository extends ProductRepository {
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
             proPriceMillicents: variant.proPriceMillicents,
+            proPricePerKgMillicents: variant.proPricePerKgMillicents,
+            publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,

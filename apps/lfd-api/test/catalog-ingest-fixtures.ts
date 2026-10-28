@@ -143,6 +143,8 @@ export function snapshotOf(
             // passer une confusion entre les deux.
             // `null` = pas de prix public : aucun prix par contexte (2026-10-27).
             publicTtcCents: publicPrice === null ? null : publicPrice.ttcCents,
+            proPricePerKgMillicents: null,
+            publicPricePerKgTtcCents: null,
             publicByContext:
               publicPrice === null
                 ? {}

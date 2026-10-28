@@ -19,6 +19,8 @@ export interface ItemRow {
   readonly position: number;
   readonly vatRatePercent: { toNumber(): number } | null;
   readonly publicTtcCents: number | null;
+  readonly proPricePerKgMillicents: number | null;
+  readonly publicPricePerKgTtcCents: number | null;
   readonly publicByContext: unknown;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -132,6 +134,8 @@ export function toDomain(row: ItemRow): CatalogItem {
       // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
       vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),
       publicTtcCents: row.publicTtcCents,
+      proPricePerKgMillicents: row.proPricePerKgMillicents,
+      publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
       publicByContext: publicByContextOf(row.publicByContext),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),

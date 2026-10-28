@@ -88,6 +88,8 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             position: 0,
             vatRatePercent: 5.5,
             publicTtcCents: 250,
+            proPricePerKgMillicents: null,
+            publicPricePerKgTtcCents: null,
             publicByContext: {
               takeaway: { vatRatePercent: 5.5, htMillicents: PUBLIC_HT_MILLICENTS },
             },
@@ -686,6 +688,8 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
             name: sku,
             priceMillicents: millicentsFromCents(200 + index),
             publicTtcCents: 250,
+            proPricePerKgMillicents: null,
+            publicPricePerKgTtcCents: null,
             publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
             weightGrams: null,
             isDefault: true,

@@ -34,6 +34,9 @@ const variant = {
   },
   allergens: ["AW"],
   allergenLabels: { labels: [{ category: "milk", label: "Lait" }], incomplete: false },
+  // Traversent depuis la v13, informatifs ; `null` = non saisi.
+  proPricePerKgMillicents: null,
+  publicPricePerKgTtcCents: null,
 };
 
 const snapshot = {

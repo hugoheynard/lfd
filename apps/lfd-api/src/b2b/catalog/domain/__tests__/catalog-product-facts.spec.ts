@@ -43,6 +43,8 @@ function fact(): ReceivedCatalogItem {
     position: 0,
     vatRatePercent: 5.5,
     publicTtcCents: 120,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     publicByContext: null,
     allergens: [],
     allergenLabels: null,

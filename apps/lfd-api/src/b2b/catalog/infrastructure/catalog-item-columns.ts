@@ -50,6 +50,8 @@ export function pimFactsColumns(facts: PimFacts) {
     orderLimitTime: facts.orderTimeLimit?.time ?? null,
     orderLimitGraceMinutes: facts.orderTimeLimit?.graceMinutes ?? null,
     publicTtcCents: facts.publicTtcCents,
+    proPricePerKgMillicents: facts.proPricePerKgMillicents,
+    publicPricePerKgTtcCents: facts.publicPricePerKgTtcCents,
     // `DbNull` et non `JsonNull` : c'est l'ABSENCE de la donnée, pas un `null`
     // JSON stocké — la même distinction que pour les mentions d'étiquette.
     publicByContext:

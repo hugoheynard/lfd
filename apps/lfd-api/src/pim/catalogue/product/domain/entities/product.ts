@@ -637,6 +637,8 @@ export class Product {
           priceCents: source.priceCents,
           weightGrams: source.weightGrams,
           proPriceMillicents: source.proPriceMillicents,
+          proPricePerKgMillicents: source.proPricePerKgMillicents,
+          publicPricePerKgTtcCents: source.publicPricePerKgTtcCents,
         }
       : {};
     return {

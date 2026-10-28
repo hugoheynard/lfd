@@ -74,10 +74,12 @@ export function vitrineItemOf(
   item: Omit<ShopItemView, "isFeatured" | "operation">,
   context: VitrineItemContext,
 ): Omit<VitrineItemView, "isFeatured" | "operation"> {
-  // Les allergènes de la boutique ne vont pas à l'agence : son flux n'a pas
-  // été élargi (cf. `VitrineItemView`).
-  const { allergens, ...shown } = item;
+  // Les allergènes et les prix au kilo de la boutique ne vont pas à
+  // l'agence : son flux n'a pas été élargi (cf. `VitrineItemView`).
+  const { allergens, proPricePerKgMillicents, publicPricePerKgTtcCents, ...shown } = item;
   void allergens;
+  void proPricePerKgMillicents;
+  void publicPricePerKgTtcCents;
   return {
     ...shown,
     image: imageFor(item.image, item.name),

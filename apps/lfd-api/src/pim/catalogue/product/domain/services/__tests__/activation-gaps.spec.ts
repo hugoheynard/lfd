@@ -17,6 +17,8 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
     priceCents: 1_000,
     weightGrams: null,
     proPriceMillicents: 812_345,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,

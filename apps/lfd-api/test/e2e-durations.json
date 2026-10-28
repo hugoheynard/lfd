@@ -400,6 +400,7 @@
   "test/shop-catalogue-allergens.e2e-spec.ts": 10895,
   "test/shop-catalogue-languages.e2e-spec.ts": 10435,
   "test/shop-catalogue-order-limits.e2e-spec.ts": 3000,
+  "test/shop-catalogue-price-per-kg.e2e-spec.ts": 6244,
   "test/shop-catalogue-pro.e2e-spec.ts": 6500,
   "test/shop-catalogue.e2e-spec.ts": 7754,
   "test/shop-copy.e2e-spec.ts": 8102,

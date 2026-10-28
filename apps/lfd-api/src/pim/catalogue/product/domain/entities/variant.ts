@@ -1,6 +1,7 @@
 import {
   DefaultVariantCannotFollowItselfError,
   InvalidVariantPricingError,
+  ZeroPricePerKgError,
 } from "../errors/product-errors.js";
 import type { LocalizedText } from "../../../shared/domain/value-objects/localized-text.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
@@ -147,6 +148,13 @@ export interface VariantSnapshot {
    */
   readonly proPriceMillicents: number | null;
   /**
+   * Le prix au kilo pro HT SAISI, en millicentimes ; `null` = non saisi.
+   * Informatif (`plan-prix-au-kilo.md`) : jamais calculé, jamais appliqué.
+   */
+  readonly proPricePerKgMillicents: number | null;
+  /** Le prix au kilo public TTC SAISI, en centimes ; `null` = non saisi. */
+  readonly publicPricePerKgTtcCents: number | null;
+  /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.
    */
@@ -181,6 +189,12 @@ export interface VariantPricing {
    * effacer une saisie. `null` = effacer.
    */
   readonly proPrice?: ProPriceHt | null;
+  /**
+   * Les prix au kilo saisis (`plan-prix-au-kilo.md`). Même règle que le prix
+   * pro : **absent = inchangé**, `null` = effacer.
+   */
+  readonly proPricePerKg?: ProPriceHt | null;
+  readonly publicPricePerKgTtcCents?: number | null;
 }
 
 export class Variant {
@@ -194,6 +208,8 @@ export class Variant {
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
   private proPriceMillicentsValue: number | null;
+  private proPricePerKgMillicentsValue: number | null;
+  private publicPricePerKgTtcCentsValue: number | null;
   private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
@@ -217,6 +233,8 @@ export class Variant {
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
     this.proPriceMillicentsValue = snapshot.proPriceMillicents;
+    this.proPricePerKgMillicentsValue = snapshot.proPricePerKgMillicents;
+    this.publicPricePerKgTtcCentsValue = snapshot.publicPricePerKgTtcCents;
     this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
@@ -245,6 +263,8 @@ export class Variant {
       priceCents: null,
       weightGrams: null,
       proPriceMillicents: null,
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: null,
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
@@ -286,6 +306,8 @@ export class Variant {
       priceCents: null,
       weightGrams: null,
       proPriceMillicents: null,
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: null,
       regulatoryFollowsDefault: true,
       // Les VALEURS naissent alignées pour la même raison que les allergènes :
       // née nue, la déclinaison afficherait un tableau vide là où celui du
@@ -469,6 +491,27 @@ export class Variant {
     if (input.proPrice !== undefined) {
       this.proPriceMillicentsValue = input.proPrice?.millicents ?? null;
     }
+    this.pricePerKg(input);
+  }
+
+  /**
+   * Les prix au kilo, chacun indépendant de tout autre : un poids changé n'y
+   * touche pas, rien ne les calcule. `> 0` : un kilo à zéro s'afficherait
+   * « 0,00 € / kg ».
+   */
+  private pricePerKg(input: VariantPricing): void {
+    if (input.proPricePerKg !== undefined) {
+      this.proPricePerKgMillicentsValue = requirePositiveOrNull(
+        "proPricePerKg",
+        input.proPricePerKg?.millicents ?? null,
+      );
+    }
+    if (input.publicPricePerKgTtcCents !== undefined) {
+      this.publicPricePerKgTtcCentsValue = requirePositiveOrNull(
+        "publicPricePerKgTtcCents",
+        input.publicPricePerKgTtcCents,
+      );
+    }
   }
 
   /** A-t-elle un prix pro HT À ELLE — sans regarder le défaut ? */
@@ -488,6 +531,8 @@ export class Variant {
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,
       proPriceMillicents: this.proPriceMillicentsValue,
+      proPricePerKgMillicents: this.proPricePerKgMillicentsValue,
+      publicPricePerKgTtcCents: this.publicPricePerKgTtcCentsValue,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,
@@ -506,6 +551,15 @@ function requireCountOrNull(field: string, value: number | null): number | null 
     throw new InvalidVariantPricingError(field, value);
   }
   return value;
+}
+
+/** Un prix au kilo est un entier STRICTEMENT positif — ou rien. */
+function requirePositiveOrNull(field: string, value: number | null): number | null {
+  const count = requireCountOrNull(field, value);
+  if (count === 0) {
+    throw new ZeroPricePerKgError(field);
+  }
+  return count;
 }
 
 /**

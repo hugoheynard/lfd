@@ -58,6 +58,8 @@ function snapshot(vatByContext: Readonly<Record<string, string>> = {}): ProductS
         priceCents: null,
         weightGrams: null,
         proPriceMillicents: null,
+        proPricePerKgMillicents: null,
+        publicPricePerKgTtcCents: null,
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,

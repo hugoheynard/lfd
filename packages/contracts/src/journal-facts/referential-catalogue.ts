@@ -121,6 +121,9 @@ const pricingChanges = () =>
     priceCents: cents().nullable(),
     weightGrams: grams().nullable(),
     proPriceMillicents: millicents().nullable(),
+    // Les prix au kilo saisis (`plan-prix-au-kilo.md`), chacun dans son unité.
+    proPricePerKgMillicents: millicents().nullable(),
+    publicPricePerKgTtcCents: cents().nullable(),
   });
 const productPricingV1 = payload({
   variantId: ref("variant"),

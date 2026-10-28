@@ -85,6 +85,14 @@ export interface PimFacts {
    */
   readonly publicTtcCents: number | null;
   /**
+   * **Les prix au kilo saisis au référentiel** (`plan-prix-au-kilo.md`) — le
+   * pro HT en millicentimes, le public TTC en centimes. INFORMATIFS : aucune
+   * résolution de prix ne les lit, et `ResolvedCatalogItem` ne les porte pas.
+   * `null` = non saisi, ou article reçu avant le fil v13.
+   */
+  readonly proPricePerKgMillicents: number | null;
+  readonly publicPricePerKgTtcCents: number | null;
+  /**
    * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
    * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
    *
@@ -467,6 +475,16 @@ export class CatalogItem {
 
   get weightGrams(): number | null {
     return this.facts.weightGrams;
+  }
+
+  /** Le prix au kilo pro HT saisi, informatif. `null` = non saisi. */
+  get proPricePerKgMillicents(): number | null {
+    return this.facts.proPricePerKgMillicents;
+  }
+
+  /** Le prix au kilo public TTC saisi, informatif. `null` = non saisi. */
+  get publicPricePerKgTtcCents(): number | null {
+    return this.facts.publicPricePerKgTtcCents;
   }
 
   /** Les codes GS1 déclarés — `null` (pas de fiche) ≠ `[]` (aucun allergène). */

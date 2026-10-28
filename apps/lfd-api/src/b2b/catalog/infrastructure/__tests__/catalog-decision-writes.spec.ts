@@ -32,6 +32,8 @@ function factsOf(sku: string): PimFacts {
     position: 0,
     vatRatePercent: 5.5,
     publicTtcCents: null,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     publicByContext: null,
     allergens: null,
     allergenLabels: null,

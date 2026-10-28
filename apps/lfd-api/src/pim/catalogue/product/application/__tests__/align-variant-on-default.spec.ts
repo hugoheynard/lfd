@@ -25,6 +25,8 @@ function aVariant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     priceCents: null,
     weightGrams: null,
     proPriceMillicents: null,
+    proPricePerKgMillicents: null,
+    publicPricePerKgTtcCents: null,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -261,6 +263,8 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
       priceCents: null,
       weightGrams: null,
       proPriceMillicents: null,
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: null,
       pricingFollowsDefault: true,
     });
   });

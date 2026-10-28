@@ -118,6 +118,14 @@ export interface RevisionItemInput {
    * `null` (`diffItem`) ; une saisie, elle, change l'empreinte de SON article.
    */
   readonly proPriceMillicents?: number;
+  /**
+   * Les prix au kilo **saisis** (`plan-prix-au-kilo.md`) — absents sans
+   * saisie, pour la même raison que le prix pro : une publication qui ne
+   * change que le kilo est un écart, et se lit comme tel, sans rebasculer les
+   * empreintes des articles qui n'en portent pas.
+   */
+  readonly proPricePerKgMillicents?: number;
+  readonly publicPricePerKgTtcCents?: number;
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
   /** `null` = aucune fiche réglementaire ; `[]` = fiche déclarée, sans allergène. */

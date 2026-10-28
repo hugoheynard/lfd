@@ -39,6 +39,8 @@ export function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
         priceCents: null,
         weightGrams: null,
         proPriceMillicents: null,
+        proPricePerKgMillicents: null,
+        publicPricePerKgTtcCents: null,
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,

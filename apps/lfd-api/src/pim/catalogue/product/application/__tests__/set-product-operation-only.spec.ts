@@ -59,6 +59,8 @@ function buche(operationOnly: boolean): OneProduct {
         priceCents: 3_200,
         weightGrams: null,
         proPriceMillicents: null,
+        proPricePerKgMillicents: null,
+        publicPricePerKgTtcCents: null,
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,

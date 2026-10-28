@@ -43,6 +43,8 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       position: variant.position,
       vatRatePercent: variant.vatRatePercent,
       publicTtcCents: variant.publicTtcCents ?? null,
+      proPricePerKgMillicents: variant.proPricePerKgMillicents,
+      publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
       publicByContext: variant.publicByContext ?? null,
       allergens: variant.allergens,
       allergenLabels: variant.allergenLabels,

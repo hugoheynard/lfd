@@ -50,6 +50,8 @@ const VARIANT: CatalogVariantFact = {
   name: "Croissant",
   priceMillicents: 100_000,
   publicTtcCents: 120,
+  proPricePerKgMillicents: null,
+  publicPricePerKgTtcCents: null,
   publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 113_744 } },
   weightGrams: 60,
   isDefault: true,

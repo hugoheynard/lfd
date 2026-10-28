@@ -70,6 +70,12 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         ...(variant.proPriceMillicents === null
           ? {}
           : { proPriceMillicents: variant.proPriceMillicents }),
+        ...(variant.proPricePerKgMillicents === null
+          ? {}
+          : { proPricePerKgMillicents: variant.proPricePerKgMillicents }),
+        ...(variant.publicPricePerKgTtcCents === null
+          ? {}
+          : { publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents }),
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,
         // La moitié « sécurité » est un objet depuis le lot 7 ; l'ancre, elle,

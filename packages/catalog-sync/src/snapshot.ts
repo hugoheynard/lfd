@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 12;
+export const CATALOG_SNAPSHOT_VERSION = 13;
 
 /**
  * Une famille de produits, **à plat**.
@@ -228,6 +228,22 @@ export const syncVariantSchema = z.object({
    * {@link storedCatalogSnapshotSchema}).
    */
   publicTtcCents: z.number().int().nonnegative().nullable(),
+  /**
+   * **Le prix au kilo pro HORS TAXE saisi au référentiel**, en millicentimes —
+   * l'unité du prix pro qu'il accompagne (`plan-prix-au-kilo.md`, v13).
+   *
+   * 🔴 **Informatif** : saisi, jamais calculé depuis le prix et le poids, et
+   * rien ne le lit pour tarifer. `null` = non saisi, et rien ne s'affiche.
+   * Obligatoire sur le fil (un émetteur qui l'oublie échoue) ; absent avant la
+   * v13 (cf. {@link storedCatalogSnapshotSchema}).
+   */
+  proPricePerKgMillicents: z.number().int().positive().nullable(),
+  /**
+   * **Le prix au kilo public TTC saisi**, en centimes — l'unité du prix public
+   * qu'il accompagne. Même statut que le précédent : informatif, `null` = non
+   * saisi, absent avant la v13.
+   */
+  publicPricePerKgTtcCents: z.number().int().positive().nullable(),
   /**
    * **Le prix public, par contexte de vente** — une entrée par contexte RÉGLÉ
    * sur la famille, indexée par sa clé (`takeaway`, `eatIn`, …).
@@ -651,6 +667,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(10),
     z.literal(11),
     z.literal(12),
+    z.literal(13),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -689,6 +706,10 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // (`plan-prix-manquant-non-bloquant.md`), vérifié ce jour-là.
             publicTtcCents: z.number().int().nonnegative().nullable().optional(),
             publicByContext: z.record(z.string().min(1), syncContextPriceSchema).optional(),
+            // Absents avant la v13 : les prix au kilo ne traversaient pas, et
+            // une arrivée d'avant se lit « non saisi » — ce qui est exact.
+            proPricePerKgMillicents: z.number().int().positive().nullable().optional(),
+            publicPricePerKgTtcCents: z.number().int().positive().nullable().optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.
