@@ -1,7 +1,7 @@
 <fold-page-layout icon="store" title="Ouverture du e-commerce">
   <p description>
     À quelle clientèle la boutique prend des commandes. Fermée, elle garde son catalogue et ses prix
-    ; seules les commandes sont refusées. L'équipe peut toujours saisir une commande.
+    ; seules les commandes sont refusées.
   </p>
 
   @switch (state()) {
@@ -25,7 +25,7 @@
           cardHeader
           variant="title"
           title="Prise de commandes"
-          subtitle="Chaque bascule s'applique dès sa confirmation."
+          subtitle="Chaque réglage s'applique dès sa confirmation. L’équipe peut toujours saisir une commande depuis le back-office."
         />
 
         <ul class="rows">
@@ -34,11 +34,11 @@
               <div class="row">
                 <div class="what">
                   <p class="title">{{ row.words.title }}</p>
-                  <p class="sentence">{{ row.words.sentence }}</p>
+                  <p class="sentence" data-rule>{{ row.rule.sentence }}</p>
                 </div>
                 <fold-badge
-                  [variant]="row.open ? 'success' : 'warning'"
-                  [content]="row.open ? 'Ouverte' : 'Fermée'"
+                  [variant]="badges[row.rule.state].variant"
+                  [content]="badges[row.rule.state].label"
                 />
                 @if (canWrite()) {
                   <fold-inline-confirm
@@ -61,31 +61,43 @@
               </div>
               <div class="first-day" data-first-day>
                 <fold-date
-                  label="Commandes à partir du"
+                  label="Retraits et livraisons à partir du"
                   [hint]="firstDayHint"
                   [value]="draftOf(row)"
                   (valueChange)="setDraft(row, $event)"
                   [readOnly]="!canWrite()"
                 />
                 @if (canWrite()) {
-                  <button
-                    foldButton
-                    size="sm"
-                    [disabled]="pending() !== null || !canSaveDay(row)"
-                    (click)="saveFirstDay(row, draftOf(row))"
+                  <fold-inline-confirm
+                    intent="primary"
+                    [message]="dayEffect(row, draftOf(row))"
+                    [loading]="pending() === row.audience"
+                    (confirmed)="saveFirstDay(row, draftOf(row))"
                   >
-                    Enregistrer
-                  </button>
-                  <button
-                    foldButton
-                    size="sm"
-                    emphasis="outline"
-                    intent="neutral"
-                    [disabled]="pending() !== null || row.firstDay === null"
-                    (click)="saveFirstDay(row, null)"
+                    <button
+                      foldButton
+                      size="sm"
+                      [disabled]="pending() !== null || !canSaveDay(row)"
+                    >
+                      Enregistrer
+                    </button>
+                  </fold-inline-confirm>
+                  <fold-inline-confirm
+                    intent="primary"
+                    [message]="dayEffect(row, null)"
+                    [loading]="pending() === row.audience"
+                    (confirmed)="saveFirstDay(row, null)"
                   >
-                    Aucune
-                  </button>
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="outline"
+                      intent="neutral"
+                      [disabled]="pending() !== null || row.firstDay === null"
+                    >
+                      Aucune
+                    </button>
+                  </fold-inline-confirm>
                 }
               </div>
             </li>

@@ -24,14 +24,15 @@ import { NotifyService } from '../../../notify.service';
 import { OrderOpeningExemptionsCard } from '../order-opening-exemptions-card/order-opening-exemptions-card';
 import { OrderOpeningExemptionsService } from '../order-opening-exemptions.service';
 import { OrderOpeningService } from '../order-opening.service';
+import { parisToday } from '../../../shared/paris-today';
 import { closureNotice, type ClosureNotice } from './closure-notice';
+import { firstDayEffect, openingRule, type OpeningRule, type OpeningState } from './opening-rule';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
 /** Ce que l'écran dit d'une clientèle : son nom, et l'effet de chaque bascule. */
 interface AudienceWords {
   readonly title: string;
-  readonly sentence: string;
   readonly closeEffect: string;
   readonly openEffect: string;
 }
@@ -39,14 +40,12 @@ interface AudienceWords {
 const WORDS: Readonly<Record<CustomerAudience, AudienceWords>> = {
   b2b: {
     title: 'Pros',
-    sentence: 'La boutique prend les commandes des pros',
     closeEffect:
       'Les pros ne pourront plus passer de commande : leur catalogue et leurs prix restent visibles, et la boutique leur dit que les commandes sont fermées. Les commandes déjà passées ne changent pas, et l’équipe peut toujours saisir une commande pour eux.',
     openEffect: 'Les pros pourront de nouveau passer commande depuis la boutique.',
   },
   b2c: {
     title: 'Particuliers',
-    sentence: 'La boutique prend les commandes des particuliers',
     closeEffect:
       'Les particuliers ne pourront plus passer de commande : le catalogue et les prix restent visibles, et la boutique leur dit que les commandes sont fermées. Les commandes déjà passées ne changent pas, et l’équipe peut toujours saisir une commande.',
     openEffect: 'Les particuliers pourront de nouveau passer commande depuis la boutique.',
@@ -60,7 +59,18 @@ interface AudienceRow {
   readonly open: boolean;
   /** Le premier jour commandable servi (`AAAA-MM-JJ`) ; `null` = aucune date. */
   readonly firstDay: string | null;
+  /** La règle en vigueur, en une phrase (`opening-rule.ts`). */
+  readonly rule: OpeningRule;
 }
+
+/** Le badge de chaque état : fermée en alerte, une date qui restreint en information. */
+const BADGES: Readonly<
+  Record<OpeningState, { readonly variant: 'warning' | 'info' | 'success'; readonly label: string }>
+> = {
+  closed: { variant: 'warning', label: 'Fermée' },
+  'from-date': { variant: 'info', label: 'Ouverte avec date' },
+  open: { variant: 'success', label: 'Ouverte' },
+};
 
 /** Ce que dit le champ date, sous chaque clientèle (plan-premier-jour-commandable.md, J3). */
 export const FIRST_DAY_HINT =
@@ -116,6 +126,9 @@ export class OrderOpeningPage {
   protected readonly canWrite = computed(() => this.permissions.can('lfc_order_opening:write'));
 
   protected readonly firstDayHint = FIRST_DAY_HINT;
+  protected readonly badges = BADGES;
+  /** Le jour à Paris : une date qui ne le dépasse pas ne restreint rien. */
+  protected readonly today = signal(parisToday());
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly settings = signal<OrderOpeningView | null>(null);
@@ -130,19 +143,21 @@ export class OrderOpeningPage {
     if (view === null) {
       return [];
     }
+    const exemptions = this.exemptions();
+    const today = this.today();
+    const row = (audience: CustomerAudience, open: boolean, day?: string | null): AudienceRow => {
+      const firstDay = day ?? null;
+      return {
+        audience,
+        words: WORDS[audience],
+        open,
+        firstDay,
+        rule: openingRule({ audience, open, firstDay, today, exemptions }),
+      };
+    };
     return [
-      {
-        audience: 'b2b',
-        words: WORDS.b2b,
-        open: view.ordersOpenToB2b,
-        firstDay: view.firstServiceDayB2b ?? null,
-      },
-      {
-        audience: 'b2c',
-        words: WORDS.b2c,
-        open: view.ordersOpenToB2c,
-        firstDay: view.firstServiceDayB2c ?? null,
-      },
+      row('b2b', view.ordersOpenToB2b, view.firstServiceDayB2b),
+      row('b2c', view.ordersOpenToB2c, view.firstServiceDayB2c),
     ];
   });
 
@@ -193,6 +208,11 @@ export class OrderOpeningPage {
   /** Ce que la confirmation annonce : l'effet de la bascule proposée. */
   protected effect(row: AudienceRow): string {
     return row.open ? row.words.closeEffect : row.words.openEffect;
+  }
+
+  /** Ce que la confirmation de la date annonce : poser la saisie, ou vider (`null`). */
+  protected dayEffect(row: AudienceRow, day: string | null): string {
+    return firstDayEffect(row.audience, day, this.today());
   }
 
   /** La valeur du champ : la saisie en cours, sinon la date servie (vide = aucune). */

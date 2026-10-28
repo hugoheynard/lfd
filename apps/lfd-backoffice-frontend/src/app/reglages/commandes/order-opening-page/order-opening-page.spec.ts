@@ -81,6 +81,9 @@ class FakeExemptions {
   }
 }
 
+/** « Aujourd'hui » pour la page ; les dates des fixtures ne se comparent qu'à lui. */
+const TODAY = '2026-10-28';
+
 const PAUL: OrderOpeningExemptionView = {
   id: 'ex_1',
   kind: 'company',
@@ -108,6 +111,8 @@ async function mount(
     ],
   });
   const fixture = TestBed.createComponent(OrderOpeningPage);
+  // Le jour est l'horloge des dates saisies : figé, aucune date de fixture ne vieillit.
+  fixture.componentInstance['today'].set(TODAY);
   fixture.detectChanges();
   await fixture.whenStable();
   // Deux lectures en parallèle : une macrotâche laisse leurs promesses se régler.
@@ -137,15 +142,28 @@ const buttonIn = (scope: HTMLElement, label: string): HTMLButtonElement => {
   return found;
 };
 
+/** Les deux boutons de la confirmation ouverte dans `scope` : confirmer, annuler. */
+const confirmButtons = (
+  scope: HTMLElement,
+): { readonly confirm: HTMLButtonElement; readonly cancel: HTMLButtonElement } => {
+  const buttons = Array.from(scope.querySelectorAll<HTMLButtonElement>('[role="group"] button'));
+  const [confirm, cancel] = buttons;
+  if (confirm === undefined || cancel === undefined) {
+    throw new Error('Pas de confirmation ouverte.');
+  }
+  return { confirm, cancel };
+};
+
 describe('OrderOpeningPage', () => {
   it('montre les deux clientèles, ouvertes, avec leur phrase', async () => {
     const fixture = await mount(new FakeOpening(OPEN));
     const text = host(fixture).textContent ?? '';
 
     expect(text).toContain('Pros');
-    expect(text).toContain('La boutique prend les commandes des pros');
+    expect(text).toContain('Ouverte : les pros commandent pour n’importe quel jour servi.');
     expect(text).toContain('Particuliers');
-    expect(text).toContain('La boutique prend les commandes des particuliers');
+    expect(text).toContain('Ouverte : les particuliers commandent pour n’importe quel jour servi.');
+    expect(text).toContain('L’équipe peut toujours saisir une commande depuis le back-office');
     expect(row(fixture, 'b2b').textContent).toContain('Ouverte');
     expect(row(fixture, 'b2c').textContent).toContain('Ouverte');
   });
@@ -315,7 +333,7 @@ describe('OrderOpeningPage', () => {
 
       expect(dateInput(fixture, 'b2c').value).toBe('2026-10-30');
       expect(dateInput(fixture, 'b2b').value).toBe('');
-      expect(row(fixture, 'b2b').textContent).toContain('Commandes à partir du');
+      expect(row(fixture, 'b2b').textContent).toContain('Retraits et livraisons à partir du');
       expect(row(fixture, 'b2b').textContent).toContain(
         'Les commandes client pour une journée antérieure sont refusées, sauf exemption',
       );
@@ -334,25 +352,92 @@ describe('OrderOpeningPage', () => {
       expect(api.patches).toEqual([]);
 
       buttonIn(row(fixture, 'b2b'), 'Enregistrer').click();
+      fixture.detectChanges();
+      // Le clic ouvre la confirmation, qui dit l'effet ; rien n'est encore parti.
+      expect(api.patches).toEqual([]);
+      expect(row(fixture, 'b2b').textContent).toContain(
+        'Les pros pourront commander dès maintenant, mais seulement pour un retrait ou une livraison à partir du lundi 2 novembre.',
+      );
+
+      confirmButtons(row(fixture, 'b2b')).confirm.click();
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(api.patches).toEqual([{ firstServiceDayB2b: '2026-11-02' }]);
       expect(dateInput(fixture, 'b2b').value).toBe('2026-11-02');
       expect(buttonIn(row(fixture, 'b2b'), 'Enregistrer').disabled).toBe(true);
+      expect(row(fixture, 'b2b').querySelector('[data-rule]')?.textContent).toContain(
+        'pour un retrait ou une livraison à partir du lundi 2 novembre',
+      );
     });
 
-    it('vide la date par « Aucune »', async () => {
+    it('annuler la confirmation de la date n’envoie rien', async () => {
+      const api = new FakeOpening(OPEN);
+      const fixture = await mount(api);
+      const input = dateInput(fixture, 'b2c');
+      input.value = '2026-11-02';
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      buttonIn(row(fixture, 'b2c'), 'Enregistrer').click();
+      fixture.detectChanges();
+      confirmButtons(row(fixture, 'b2c')).cancel.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.patches).toEqual([]);
+      expect(buttonIn(row(fixture, 'b2c'), 'Enregistrer').disabled).toBe(false);
+    });
+
+    it('prévient qu’une date passée ne restreindra rien', async () => {
+      const fixture = await mount(new FakeOpening(OPEN));
+      const input = dateInput(fixture, 'b2c');
+      input.value = '2026-10-01';
+      input.dispatchEvent(new Event('input'));
+      input.dispatchEvent(new Event('change'));
+      fixture.detectChanges();
+
+      buttonIn(row(fixture, 'b2c'), 'Enregistrer').click();
+      fixture.detectChanges();
+
+      expect(row(fixture, 'b2c').textContent).toContain(
+        'Cette date est passée : elle ne restreindra rien.',
+      );
+    });
+
+    it('vide la date par « Aucune », après confirmation', async () => {
       const api = new FakeOpening({ ...OPEN, firstServiceDayB2c: '2026-10-30' });
       const fixture = await mount(api);
 
       expect(buttonIn(row(fixture, 'b2b'), 'Aucune').disabled).toBe(true);
       buttonIn(row(fixture, 'b2c'), 'Aucune').click();
+      fixture.detectChanges();
+      expect(api.patches).toEqual([]);
+      expect(row(fixture, 'b2c').textContent).toContain(
+        'Les particuliers pourront commander pour n’importe quel jour servi.',
+      );
+
+      confirmButtons(row(fixture, 'b2c')).confirm.click();
       await fixture.whenStable();
       fixture.detectChanges();
 
       expect(api.patches).toEqual([{ firstServiceDayB2c: null }]);
       expect(dateInput(fixture, 'b2c').value).toBe('');
+    });
+
+    it('annuler « Aucune » n’envoie rien', async () => {
+      const api = new FakeOpening({ ...OPEN, firstServiceDayB2c: '2026-10-30' });
+      const fixture = await mount(api);
+
+      buttonIn(row(fixture, 'b2c'), 'Aucune').click();
+      fixture.detectChanges();
+      confirmButtons(row(fixture, 'b2c')).cancel.click();
+      await fixture.whenStable();
+      fixture.detectChanges();
+
+      expect(api.patches).toEqual([]);
+      expect(dateInput(fixture, 'b2c').value).toBe('2026-10-30');
     });
 
     it('sans le droit d’écrire, montre la date en lecture seule, sans geste', async () => {
