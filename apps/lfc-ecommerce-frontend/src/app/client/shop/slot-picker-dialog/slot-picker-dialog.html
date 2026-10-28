@@ -79,11 +79,12 @@
               @if (isCurrent(slot)) {
                 <span class="tag">{{ c().current }}</span>
               }
-              <span class="state">{{ stateOf(slot) }}</span>
-
-              <!-- Là où il n'y a plus de place, la carte ORIENTE : elle nomme
-                     la prochaine heure libre. -->
+              <!-- Un créneau ouvert ne dit rien de plus que son heure : seul
+                     « Complet » se signale (Hugo, 2026-10-28). Là où il n'y a
+                     plus de place, la carte ORIENTE : elle nomme la prochaine
+                     heure libre. -->
               @if (!slot.open) {
+                <span class="state">{{ c().state.full }}</span>
                 <span class="note">{{ fullNote(slot) }}</span>
               }
             </button>

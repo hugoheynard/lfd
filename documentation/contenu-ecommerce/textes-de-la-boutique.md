@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1706 textes
+## Sommaire — 1705 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -28,7 +28,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix du lieu — le retrait](#espace-pickupdialog) | `pickupDialog` | 11 |
 | [Choix du lieu — l’adresse de livraison](#espace-addressdialog) | `addressDialog` | 24 |
 | [Choix du lieu — la saisie d’une adresse de livraison](#espace-deliveryaddress) | `deliveryAddress` | 39 |
-| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 16 |
+| [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
 | [Panier, connexion et saisie invité](#espace-cart) | `cart` | 76 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1706** |
+| **Total** | | **1705** |
 
 ## Le parcours de commande
 
@@ -639,7 +639,7 @@ Source : `screens/delivery-address.copy.ts` · 39 textes.
 
 ### Choix de l’heure — le sélecteur de créneau — `slotPicker`
 
-Source : `screens/slot-picker.copy.ts` · 16 textes.
+Source : `screens/slot-picker.copy.ts` · 15 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -650,7 +650,6 @@ Source : `screens/slot-picker.copy.ts` · 16 textes.
 | `slotPicker.days.today` | Aujourd’hui | Today | Oggi |  |
 | `slotPicker.days.tomorrow` | Demain | Tomorrow | Domani |  |
 | `slotPicker.days.change` | Je change de date | Change the date | Cambio data |  |
-| `slotPicker.state.open` | Ouvert | Open | Aperto |  |
 | `slotPicker.state.full` | Complet | Full | Esaurito |  |
 | `slotPicker.full.tag` | Complet | Full | Esaurito |  |
 | `slotPicker.full.nextOpen` | Complet — il reste de la place à {time}. | Full — there is room at {time}. | Esaurito — c’è ancora posto alle {time}. | `{time}` |

@@ -249,12 +249,6 @@ export class SlotPickerDialog {
     return formatHour(slot.time);
   }
 
-  /** Ce que le créneau dit de lui-même, sous son heure. */
-  protected stateOf(slot: PublicPickupSlot): string {
-    const state = this.c().state;
-    return slot.open ? state.open : state.full;
-  }
-
   /**
    * Ce que dit un créneau complet : où il reste de la place, ou qu'il n'y en a
    * plus. Une absence serait un refus muet ; ceci est une orientation.

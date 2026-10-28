@@ -190,7 +190,7 @@ describe('SlotPickerDialog — les créneaux', () => {
     expect((fixture.nativeElement as HTMLElement).querySelectorAll('.slot')).toHaveLength(2);
   });
 
-  it('dit sous chaque heure ce qu’elle vaut', async () => {
+  it('ne signale que le créneau complet, jamais « Ouvert »', async () => {
     const { fixture, slots } = await mount();
     slots.serve([slot({ time: '07:00' }), slot({ time: '08:00', open: false })]);
     await fixture.whenStable();
@@ -200,7 +200,7 @@ describe('SlotPickerDialog — les créneaux', () => {
       (node) => node.textContent?.trim(),
     );
 
-    expect(etats).toEqual(['Ouvert', 'Complet']);
+    expect(etats).toEqual(['Complet']);
   });
 
   it('🔴 laisse un créneau COMPLET visible, fermé, et dit où il reste de la place', async () => {

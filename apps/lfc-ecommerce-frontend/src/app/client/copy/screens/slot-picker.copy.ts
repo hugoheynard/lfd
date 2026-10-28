@@ -33,9 +33,8 @@ export interface SlotPickerCopy {
     readonly change: string;
   };
 
-  /** Ce qu'un créneau dit de lui-même, sous son heure. */
+  /** Ce qu'un créneau fermé dit de lui-même, sous son heure ; un ouvert se tait. */
   readonly state: {
-    readonly open: string;
     readonly full: string;
   };
 
@@ -70,7 +69,6 @@ export const SLOT_PICKER_FR: SlotPickerCopy = {
     change: 'Je change de date',
   },
   state: {
-    open: 'Ouvert',
     full: 'Complet',
   },
   full: {
@@ -97,7 +95,6 @@ export const SLOT_PICKER_EN: SlotPickerCopy = {
     change: 'Change the date',
   },
   state: {
-    open: 'Open',
     full: 'Full',
   },
   full: {
@@ -124,7 +121,6 @@ export const SLOT_PICKER_IT: SlotPickerCopy = {
     change: 'Cambio data',
   },
   state: {
-    open: 'Aperto',
     full: 'Esaurito',
   },
   full: {

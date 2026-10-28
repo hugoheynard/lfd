@@ -3160,13 +3160,6 @@
           "variables": []
         },
         {
-          "key": "slotPicker.state.open",
-          "fr": "Ouvert",
-          "en": "Open",
-          "it": "Aperto",
-          "variables": []
-        },
-        {
           "key": "slotPicker.state.full",
           "fr": "Complet",
           "en": "Full",
