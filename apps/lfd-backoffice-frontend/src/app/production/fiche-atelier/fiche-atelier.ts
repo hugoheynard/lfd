@@ -1,11 +1,4 @@
-import {
-  ChangeDetectionStrategy,
-  Component,
-  computed,
-  effect,
-  inject,
-  signal,
-} from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -15,13 +8,14 @@ import {
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
   FoldSurfaceDirective,
+  FoldToastComponent,
   FoldViewToggleComponent,
   FoldLoadingStateComponent,
   type FoldSelectItem,
   type FoldViewToggleOption,
 } from 'fold-ng';
 
-import type { WorkshopGroup } from '@lfd/contracts';
+import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
@@ -30,9 +24,12 @@ import { isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
+import { WorkshopClock } from './workshop-clock';
+import { WorkshopKeypadOpener } from './workshop-keypad-opener';
 import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
-import { WorkshopTranchesReader } from './workshop-tranches.reader';
+import { WorksheetFoot } from './worksheet-foot/worksheet-foot';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
+import { type SlotEntry, WorksheetSlots } from './worksheet-slots/worksheet-slots';
 
 /**
  * 🔴 **Le seuil du fournil — 1024 px, pas les 640 px du back-office.**
@@ -46,6 +43,22 @@ import { WorksheetLine } from './worksheet-line/worksheet-line';
  * pas un `const`). Les deux bougent ensemble ou l'écran se coupe en deux.
  */
 const WORKSHOP_NARROW = '(max-width: 1023px)';
+
+/** Les deux lectures de la fiche (plan fournée v3, §4.1). */
+type WorkshopView = 'product' | 'slot';
+
+const VIEW_OPTIONS: readonly FoldViewToggleOption[] = [
+  { value: 'product', label: 'Par produit' },
+  { value: 'slot', label: 'Par tranche' },
+];
+
+/** Combien de temps « Annuler la dernière » reste offert (plan fournée v3, §4.5). */
+const UNDO_MS = 8000;
+
+/** La ligne attend-elle le four pour une commande ? (le point ambre de l'onglet) */
+function presses(line: WorkshopLine): boolean {
+  return !line.done && (line.waitingOrders ?? null) !== null;
+}
 
 /**
  * **La fiche d'atelier** — ce que le fournil a à sortir, et ce qui est sorti.
@@ -85,24 +98,40 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
     FoldSurfaceDirective,
+    FoldToastComponent,
     FoldViewToggleComponent,
+    WorksheetFoot,
     WorksheetLine,
+    WorksheetSlots,
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [WorkshopDayReader, WorkshopGestures, WorkshopTranchesReader, WorkshopShortcutsReader],
+  providers: [
+    WorkshopDayReader,
+    WorkshopGestures,
+    WorkshopShortcutsReader,
+    WorkshopClock,
+    WorkshopKeypadOpener,
+  ],
   templateUrl: './fiche-atelier.html',
   styleUrl: './fiche-atelier.scss',
 })
 export class FicheAtelier {
   protected readonly day = inject(WorkshopDayReader);
   protected readonly gestures = inject(WorkshopGestures);
-  protected readonly tranches = inject(WorkshopTranchesReader);
+  /** « Maintenant », en minutes, mis à jour chaque minute — les paliers en retard. */
+  protected readonly now = inject(WorkshopClock).minutes;
+  private readonly keypad = inject(WorkshopKeypadOpener);
   /** Les raccourcis « + 1 plaque (24) », lus une fois pour toute la fiche (S2). */
   protected readonly shortcuts = inject(WorkshopShortcutsReader);
   private readonly prefs = inject(StaffPrefsService);
 
   protected readonly compact = narrowViewport(WORKSHOP_NARROW);
+
+  /** Par produit, ou par tranche — dans le rayon courant. */
+  protected readonly view = signal<WorkshopView>('product');
+  protected readonly viewOptions = VIEW_OPTIONS;
+  protected readonly undoMs = UNDO_MS;
 
   /** Le bloc des lignes faites, sur téléphone. Replié : on vient voir ce qui reste. */
   protected readonly doneOpen = signal(false);
@@ -121,16 +150,9 @@ export class FicheAtelier {
     inject(DayVersionWatcher).watch({
       journals: ['production'],
       date: this.day.date,
-      // Le plan qui bouge bouge aussi les tranches.
-      reload: async () => {
-        await Promise.all([this.day.refresh(), this.tranches.reload()]);
-      },
+      // Les paliers arrivent avec la ligne : relire la fiche suffit.
+      reload: () => this.day.refresh(),
       clockDay: () => isoDay(new Date()),
-    });
-    // Les tranches suivent la journée LUE : une fiche qui bascule à demain
-    // lit les tranches de demain.
-    effect(() => {
-      void this.tranches.load(this.day.date());
     });
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.
@@ -159,6 +181,10 @@ export class FicheAtelier {
     this.day.groups().map((group) => ({
       value: group.key,
       label: `${group.label} ${group.doneCount}/${group.lineCount}`,
+      // Ce qui presse : un point ambre, et les mots sur la ligne elle-même.
+      ...(group.lines.some(presses)
+        ? { dot: 'warning' as const, dotLabel: 'une commande attend le four' }
+        : {}),
     })),
   );
 
@@ -178,6 +204,42 @@ export class FicheAtelier {
 
   /** Les lignes complètes, telles que servies — sur téléphone, dans le bloc replié du pied. */
   protected readonly done = computed(() => this.current()?.done ?? []);
+
+  /** Les SKU dont un geste est en vol — la vue par tranche les désarme. */
+  protected readonly busySkus = computed<ReadonlySet<string>>(
+    () =>
+      new Set(
+        this.lines()
+          .filter((line) => this.gestures.isBusy(line))
+          .map((l) => l.sku),
+      ),
+  );
+
+  /** La dernière fournée, en liste : une nouvelle remonte le bandeau et son compte à rebours. */
+  protected readonly lastBatch = computed(() => {
+    const last = this.gestures.last();
+    return last === null ? [] : [last];
+  });
+
+  protected chooseView(value: string): void {
+    this.view.set(value === 'slot' ? 'slot' : 'product');
+  }
+
+  /**
+   * « Saisir » depuis une tranche : la fiche bascule en vue produit, et le pavé
+   * s'ouvre sur la ligne, prérempli du manque du palier (SPEC v3 §4).
+   */
+  protected async enterFromSlot(entry: SlotEntry): Promise<void> {
+    this.view.set('product');
+    const quantity = await this.keypad.openFor(
+      entry.line,
+      entry.preset,
+      this.shortcuts.bySku().get(entry.line.sku) ?? [],
+    );
+    if (quantity !== null) {
+      await this.gestures.record(entry.line, quantity);
+    }
+  }
 
   /** Change de fiche, et le retient pour la personne. */
   protected choose(key: string): void {

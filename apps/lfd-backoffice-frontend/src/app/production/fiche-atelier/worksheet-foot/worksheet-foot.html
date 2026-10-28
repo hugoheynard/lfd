@@ -1,0 +1,41 @@
+<footer class="wf-foot">
+  <p class="wf-rule">
+    Ni prix, ni nom de client, ni total en euros sur cette fiche — par construction.
+  </p>
+  <p class="wf-origin">
+    @if (day.generatedLabel(); as tirage) {
+      Tirée à {{ tirage }}
+      @if (day.retakenLabel(); as retiree) {
+        · retirée à {{ retiree }}
+      }
+      @if (day.drift(); as changed) {
+        · {{ changed.orders }} commande{{ changed.orders > 1 ? 's' : '' }} arrivée{{
+          changed.orders > 1 ? 's' : ''
+        }}
+        depuis
+      }
+    } @else {
+      <!--
+        Pas d'heure de tirage : il n'y a rien d'arrêté. On le dit, plutôt
+        que d'écrire l'heure de la lecture, qui n'atteste de rien.
+
+        Et on dit OÙ le plan s'arrête : sans ça, quelqu'un lirait « pas
+        arrêté » toute la matinée sans savoir que c'est un geste, ni de
+        qui. Une phrase, pas un bouton — le geste appartient au
+        prévisionnel, pas à la fiche.
+      -->
+      Le plan n'est pas arrêté — ceci est la demande du commerce à cette heure-ci. Le plan du soir
+      s'arrête depuis le prévisionnel.
+    }
+    <!--
+      De quand date ce qu'on lit. Les autres postes déclarent aussi, et la
+      fiche se relit toutes les 15 s : si la relecture échoue, l'écran le
+      dit plutôt que d'avoir l'air à jour.
+    -->
+    @if (day.refreshFailed()) {
+      <strong class="wf-stale">· relecture impossible depuis {{ day.readLabel() }}</strong>
+    } @else if (day.readLabel(); as read) {
+      · relue à {{ read }}
+    }
+  </p>
+</footer>

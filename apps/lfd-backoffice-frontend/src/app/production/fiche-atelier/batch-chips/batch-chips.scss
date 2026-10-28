@@ -1,0 +1,25 @@
+.bc-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.bc-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  padding-inline: var(--fold-space-md) var(--fold-space-xs);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-pill);
+  background: var(--fold-color-surface-card);
+}
+
+.bc-said {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+}

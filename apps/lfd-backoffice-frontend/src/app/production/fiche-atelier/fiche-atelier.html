@@ -83,13 +83,6 @@
       </fold-callout>
     }
 
-    @if (tranches.failed() && day.state() === 'ready') {
-      <fold-callout variant="alert" class="fa-note" data-tranches-failed>
-        Les tranches de production n'ont pas pu être lues — les quantités sont justes, mais l'heure
-        de chaque tranche n'est pas affichée.
-      </fold-callout>
-    }
-
     @if (gestures.retakeFailed()) {
       <fold-callout variant="alert" class="fa-note">
         Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
@@ -173,6 +166,17 @@
             {{ fiche.lineCount }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
             {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
           </span>
+          <!-- La bascule, à droite du bandeau au poste fixe ; en tête de liste au pouce. -->
+          @if (!compact()) {
+            <fold-view-toggle
+              class="fa-view"
+              size="sm"
+              ariaLabel="Lecture de la fiche"
+              [options]="viewOptions"
+              [value]="view()"
+              (valueChange)="chooseView($event)"
+            />
+          }
         </div>
 
         <!--
@@ -185,28 +189,63 @@
           retirées le 2026-09-14 : on y perdait en ergonomie.
         -->
         <div class="fa-lines">
-          @for (line of compact() ? todo() : lines(); track line.sku) {
-            <app-worksheet-line
-              [line]="line"
-              [busy]="gestures.isBusy(line)"
-              [thresholds]="tranches.bySku().get(line.sku) ?? null"
-              [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
-              (recorded)="gestures.record(line, $event)"
-              (cancelled)="gestures.cancel(line, $event)"
+          @if (compact()) {
+            <fold-view-toggle
+              class="fa-view"
+              ariaLabel="Lecture de la fiche"
+              [options]="viewOptions"
+              [value]="view()"
+              (valueChange)="chooseView($event)"
             />
-          } @empty {
-            <fold-empty-state
-              title="Tout est sorti"
-              subtitle="Plus une ligne à sortir sur cette fiche."
-            >
-              <fold-icon empty-icon name="completed" size="lg" />
-            </fold-empty-state>
+          }
+          @if (view() === 'slot') {
+            <!-- La tranche se lit dans le rayon courant. -->
+            <app-worksheet-slots
+              [lines]="lines()"
+              [now]="now()"
+              [busy]="busySkus()"
+              [compact]="compact()"
+              (recorded)="gestures.record($event.line, $event.quantity)"
+              (entered)="enterFromSlot($event)"
+            />
+          } @else {
+            @for (line of compact() ? todo() : lines(); track line.sku) {
+              <app-worksheet-line
+                [line]="line"
+                [busy]="gestures.isBusy(line)"
+                [now]="now()"
+                [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
+                (recorded)="gestures.record(line, $event)"
+                (cancelled)="gestures.cancel(line, $event)"
+              />
+            } @empty {
+              <fold-empty-state
+                title="Tout est sorti"
+                subtitle="Plus une ligne à sortir sur cette fiche."
+              >
+                <fold-icon empty-icon name="completed" size="lg" />
+              </fold-empty-state>
+            }
           }
         </div>
 
+        <!-- « Annuler la dernière » : 8 s après chaque fournée ; ensuite, sa puce. -->
+        @for (last of lastBatch(); track last.id) {
+          <div class="fa-undo">
+            <fold-toast variant="success" [duration]="undoMs" (dismiss)="gestures.forgetLast()">
+              <span class="fa-undo-said">
+                {{ last.line.productName }} + {{ last.quantity }} · fournée déclarée
+                <button foldButton size="sm" emphasis="outline" (click)="gestures.undoLast()">
+                  Annuler
+                </button>
+              </span>
+            </fold-toast>
+          </div>
+        }
+
         <!-- Les lignes faites, épinglées au-dessus du pied — hors de la zone qui
              défile, donc toujours atteignables. -->
-        @if (compact() && fiche.doneCount > 0) {
+        @if (compact() && view() === 'product' && fiche.doneCount > 0) {
           <div class="fa-done">
             <button
               type="button"
@@ -229,7 +268,7 @@
                   <app-worksheet-line
                     [line]="line"
                     [busy]="gestures.isBusy(line)"
-                    [thresholds]="tranches.bySku().get(line.sku) ?? null"
+                    [now]="now()"
                     [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
                     (recorded)="gestures.record(line, $event)"
                     (cancelled)="gestures.cancel(line, $event)"
@@ -240,49 +279,7 @@
           </div>
         }
 
-        <footer class="fa-foot">
-          <p class="fa-foot-rule">
-            Ni prix, ni nom de client, ni total en euros sur cette fiche — par construction.
-          </p>
-          <p class="fa-foot-origin">
-            @if (day.generatedLabel(); as tirage) {
-              Tirée à {{ tirage }}
-              @if (day.retakenLabel(); as retiree) {
-                · retirée à {{ retiree }}
-              }
-              @if (day.drift(); as changed) {
-                · {{ changed.orders }} commande{{ changed.orders > 1 ? 's' : '' }} arrivée{{
-                  changed.orders > 1 ? 's' : ''
-                }}
-                depuis
-              }
-            } @else {
-              <!--
-                Pas d'heure de tirage : il n'y a rien d'arrêté. On le dit, plutôt
-                que d'écrire l'heure de la lecture, qui n'atteste de rien.
-
-                Et on dit OÙ le plan s'arrête : sans ça, quelqu'un lirait « pas
-                arrêté » toute la matinée sans savoir que c'est un geste, ni de
-                qui. Une phrase, pas un bouton — le geste appartient au
-                prévisionnel, pas à la fiche.
-              -->
-              Le plan n'est pas arrêté — ceci est la demande du commerce à cette heure-ci. Le plan
-              du soir s'arrête depuis le prévisionnel.
-            }
-            <!--
-              De quand date ce qu'on lit. Les autres postes déclarent aussi, et la
-              fiche se relit toutes les 15 s : si la relecture échoue, l'écran le
-              dit plutôt que d'avoir l'air à jour.
-            -->
-            @if (day.refreshFailed()) {
-              <strong class="fa-foot-stale"
-                >· relecture impossible depuis {{ day.readLabel() }}</strong
-              >
-            } @else if (day.readLabel(); as read) {
-              · relue à {{ read }}
-            }
-          </p>
-        </footer>
+        <app-worksheet-foot />
       </section>
     } @else {
       <fold-empty-state

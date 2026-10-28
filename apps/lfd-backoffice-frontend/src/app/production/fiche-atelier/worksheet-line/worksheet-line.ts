@@ -1,113 +1,141 @@
-import { ChangeDetectionStrategy, Component, computed, input, output, signal } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldMeterComponent,
-  FoldNumberInputComponent,
+  type FoldMeterSegment,
 } from 'fold-ng';
 
-import type {
-  DueThresholdView,
-  WorkshopBatch,
-  WorkshopLine,
-  WorkshopShortcutView,
-} from '@lfd/contracts';
+import type { WorkshopBatch, WorkshopLine, WorkshopShortcutView } from '@lfd/contracts';
 
-import { hourLabel } from '../../worksheet-day';
-import { WorksheetTranches } from '../worksheet-tranches/worksheet-tranches';
-
-/** Une fournée telle que la ligne la montre : l'heure dite comme au fournil. */
-interface ShownBatch {
-  readonly batch: WorkshopBatch;
-  readonly hour: string;
-}
+import { lineBadge } from '../../../supervision/quality-badges';
+import { BatchChips } from '../batch-chips/batch-chips';
+import {
+  beforeLabel,
+  clockLabel,
+  currentStep,
+  isLate,
+  lateMinutes,
+  stepRemaining,
+  steps,
+} from '../workshop-deadlines';
+import { WorkshopKeypadOpener } from '../workshop-keypad-opener';
 
 /**
- * **Une ligne de fiche d'atelier** — ce qui est à sortir, ce qui est sorti, et
- * les deux gestes pour le déclarer (`plan-fournees-progressives.md`, D5).
+ * **Une ligne de la fiche, vue par produit** (plan
+ * `documentation/fournil/plan-fournee-v3.md` §4.2–4.7).
  *
- * 🔴 **Un seul composant pour les deux supports, et un seul gabarit.** Le poste
- * fixe et le téléphone ne rangent pas les mêmes choses au même endroit, mais
- * c'est la **feuille de style** qui les range, jamais une branche du template :
- * c'est la ligne que le fournil répète neuf fois.
+ * À gauche, le **reste du palier en cours** en gros, son heure et le total ; au
+ * milieu, le nom, le contenant et les pastilles (retard, ce qui presse,
+ * contrôle) ; puis la barre à paliers ; à droite, « + 1 plaque » — le geste
+ * principal — et « Saisir », qui ouvre le pavé.
+ *
+ * 🔴 **Un seul gabarit pour les deux supports** : c'est la feuille de style du
+ * parent qui range (jetons `--fa-*`), jamais une branche du template.
  *
  * **La ligne ne décide rien.** Elle remonte une quantité ou une fournée à
- * annuler ; le parent envoie, et la barre avance à la relecture. Les chiffres
- * (`produced`, `remaining`, `surplus`) sont ceux du serveur.
- *
- * Pas de bouton « + 1 » à l'unité (Hugo, 2026-09-28), et pas de « + 1 plaque »
- * sans contenant réglé : on ne fabrique pas une plaque que personne n'a
- * déclarée.
+ * annuler ; le parent envoie, et la barre avance à la relecture.
  */
 @Component({
   selector: 'app-worksheet-line',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [
-    FoldBadgeComponent,
-    FoldButtonComponent,
-    FoldMeterComponent,
-    FoldNumberInputComponent,
-    WorksheetTranches,
-  ],
+  imports: [BatchChips, FoldBadgeComponent, FoldButtonComponent, FoldMeterComponent],
   templateUrl: './worksheet-line.html',
   styleUrl: './worksheet-line.scss',
   host: {
-    // La ligne complète se lit d'un coup d'œil : fond crème, encre passée, nom
-    // barré. C'est l'état, pas une décoration — d'où la classe sur l'hôte.
     '[class.is-done]': 'line().done',
+    '[class.is-late]': 'late()',
+    '[class.is-waiting]': 'waiting() !== null',
   },
 })
 export class WorksheetLine {
   readonly line = input.required<WorkshopLine>();
 
-  /**
-   * Les tranches du produit, telles que servies (plan
-   * `fournil/plan-tranches-de-production.md`, T3). `null` = rien à
-   * montrer : pas lues, ou produit absent des seuils.
-   */
-  readonly thresholds = input<readonly DueThresholdView[] | null>(null);
-
-  /**
-   * Les raccourcis du produit (plan `documentation/fournil/plan-raccourcis-du-fournil.md`,
-   * S2) : « + 1 plaque (24) » sous le champ « Pièces sorties ».
-   */
+  /** Les raccourcis du produit (S2) : discrets ici, en touches dans le pavé. */
   readonly shortcuts = input<readonly WorkshopShortcutView[]>([]);
 
   /** Un geste de cette ligne est en vol : tout est désarmé le temps de l'envoi. */
   readonly busy = input(false);
 
-  /** Une fournée à déclarer, en pièces. */
-  readonly recorded = output<number>();
+  /** « Maintenant », en minutes depuis minuit — l'horloge de la fiche. */
+  readonly now = input.required<number>();
 
-  /** Une fournée à annuler — celle de n'importe quel poste. */
+  readonly recorded = output<number>();
   readonly cancelled = output<WorkshopBatch>();
 
-  /** Le champ « Saisir » est-il ouvert ? */
-  protected readonly entering = signal(false);
+  private readonly keypad = inject(WorkshopKeypadOpener);
 
-  /** La quantité du champ. `null` = vidé. */
-  protected readonly draft = signal<number | null>(null);
+  private readonly steps = computed(() => steps(this.line()));
+  private readonly current = computed(() => currentStep(this.line(), this.line().produced));
 
-  /** Le nom de la barre : sans lui, neuf barres s'annoncent pareil. */
-  protected readonly meterLabel = computed(() => `${this.line().productName} — pièces sorties`);
+  protected readonly late = computed(
+    () => !this.line().done && isLate(this.current(), this.line().produced, this.now()),
+  );
 
-  /** « + 1 tourneuse » — le mot du réglage. `null` = pas de contenant, pas de bouton. */
+  protected readonly lateLabel = computed(
+    () => `En retard · ${String(lateMinutes(this.current(), this.now()))} min`,
+  );
+
+  /** Le chiffre en gros : le manque du palier en cours. */
+  protected readonly stepLeft = computed(() => stepRemaining(this.line(), this.line().produced));
+
+  /** « / 120 », seulement quand la ligne porte plusieurs paliers. */
+  protected readonly stepOf = computed(() => {
+    const current = this.current();
+    return current !== null && this.steps().length > 1 ? `/ ${String(current.q)}` : null;
+  });
+
+  protected readonly stepBefore = computed(() => beforeLabel(this.current()?.before ?? null));
+
+  protected readonly container = computed(() => {
+    const container = this.line().container;
+    return container === null
+      ? 'pas de contenant réglé'
+      : `${container.singular} de ${String(container.unitsPerContainer)}`;
+  });
+
   protected readonly quickLabel = computed(() => {
     const container = this.line().container;
     return container === null ? null : `+ 1 ${container.singular}`;
   });
 
-  /** Une saisie qui peut partir : un entier d'au moins une pièce. */
-  protected readonly draftValid = computed(() => {
-    const value = this.draft();
-    return value !== null && Number.isInteger(value) && value >= 1;
+  protected readonly waiting = computed(() => {
+    const waiting = this.line().waitingOrders ?? null;
+    if (waiting === null || this.line().done) {
+      return null;
+    }
+    const plural = waiting.count > 1;
+    const said = `${String(waiting.count)} commande${plural ? 's' : ''} attend${plural ? 'ent' : ''}`;
+    return waiting.earliestHandover === null
+      ? said
+      : `${said} · remise ${clockLabel(waiting.earliestHandover)}`;
   });
 
-  protected readonly batches = computed<readonly ShownBatch[]>(() =>
-    this.line().batches.map((batch) => ({ batch, hour: hourLabel(batch.recordedAt) ?? '' })),
-  );
+  protected readonly quality = computed(() => {
+    const status = this.line().quality ?? null;
+    return status === null ? null : lineBadge(status);
+  });
 
-  /** « + 1 plaque » : une fournée de la taille du contenant réglé. */
+  protected readonly meterLabel = computed(() => `${this.line().productName} — pièces sorties`);
+
+  /** La barre à paliers : un segment par palier, large de sa quantité (SPEC §3). */
+  protected readonly segments = computed<readonly FoldMeterSegment[]>(() => {
+    const produced = this.line().produced;
+    const current = this.current();
+    return this.steps().map((step) => {
+      const met = produced >= step.to;
+      const isCurrent = step === current;
+      const tone = met ? 'success' : isCurrent ? (this.late() ? 'alert' : 'accent') : 'muted';
+      return {
+        value: Math.max(0, Math.min(step.q, produced - step.from)),
+        max: step.q,
+        tone,
+        current: isCurrent,
+        label: `${met ? '✓ ' : ''}${String(step.q)} ${beforeLabel(step.before)}`,
+      };
+    });
+  });
+
   protected addContainer(): void {
     const container = this.line().container;
     if (container !== null) {
@@ -115,32 +143,15 @@ export class WorksheetLine {
     }
   }
 
-  /** Ouvre le champ, prérempli de ce qui reste — au moins une pièce. */
-  protected openEntry(): void {
-    this.draft.set(Math.max(1, this.line().remaining));
-    this.entering.set(true);
-  }
-
-  /**
-   * Un raccourci AJOUTE ses pièces au champ : deux appuis sur « 1 plaque »
-   * font 48. Rien ne part — « Déclarer » reste le seul geste qui enregistre.
-   */
-  protected addShortcut(shortcut: WorkshopShortcutView): void {
-    this.draft.update((current) => (current ?? 0) + shortcut.pieces);
-  }
-
-  protected closeEntry(): void {
-    this.entering.set(false);
-  }
-
-  /** Valide la saisie d'un geste — le bouton ou la touche Entrée. */
-  protected submit(event: Event): void {
-    event.preventDefault();
-    const value = this.draft();
-    if (this.busy() || value === null || !this.draftValid()) {
-      return;
+  /** Ouvre le pavé, prérempli du manque du palier (ou de `preset`, un raccourci). */
+  protected async openKeypad(preset?: number): Promise<void> {
+    const quantity = await this.keypad.openFor(
+      this.line(),
+      preset ?? this.stepLeft(),
+      this.shortcuts(),
+    );
+    if (quantity !== null && !this.busy()) {
+      this.recorded.emit(quantity);
     }
-    this.recorded.emit(value);
-    this.entering.set(false);
   }
 }

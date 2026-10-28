@@ -1,0 +1,69 @@
+<div class="ws-list">
+  @for (shown of shown(); track shown.slot.before) {
+    <fold-card
+      class="ws-slot"
+      padding="md"
+      [surface]="shown.slot.state === 'met' ? 'sunken' : 'card'"
+      [class.is-over]="shown.slot.state === 'over'"
+      [class.is-next]="shown.slot.state === 'next'"
+      [attr.data-slot-state]="shown.slot.state"
+    >
+      <fold-element-title cardHeader variant="title" [title]="shown.title">
+        <span titleAction class="ws-head">
+          <fold-badge radius="square" [variant]="shown.variant" [content]="shown.badge" />
+          <span class="ws-sum"
+            ><strong class="ws-sum-figure">{{ shown.slot.missing }}</strong> à sortir sur
+            {{ shown.slot.total }}</span
+          >
+        </span>
+      </fold-element-title>
+
+      <ul class="ws-rows">
+        @for (row of shown.slot.rows; track row.line.sku) {
+          <li class="ws-row" [class.is-met]="row.missing === 0" data-slot-row>
+            <span class="ws-miss">{{ row.missing === 0 ? '✓' : row.missing }}</span>
+            <span class="ws-what">
+              <span class="ws-name">{{ row.line.productName }}</span>
+              <span class="ws-sub">{{ sub(row) }}</span>
+            </span>
+            <span class="ws-progress">
+              <fold-meter
+                [label]="row.line.productName + ' — ' + shown.title"
+                [value]="row.got"
+                [max]="row.step.q"
+                [tone]="tone(shown.slot, row)"
+              />
+              <span class="ws-figures">{{ row.got }} / {{ row.step.q }}</span>
+            </span>
+            @if (row.missing > 0) {
+              <span class="ws-actions">
+                @if (row.line.container; as container) {
+                  <button
+                    foldButton
+                    class="ws-gesture"
+                    [disabled]="busy().has(row.line.sku)"
+                    (click)="record(row)"
+                  >
+                    + 1 {{ container.singular }}
+                  </button>
+                }
+                @if (!compact() || row.line.container === null) {
+                  <button
+                    foldButton
+                    class="ws-gesture"
+                    [emphasis]="row.line.container === null ? 'solid' : 'outline'"
+                    [intent]="row.line.container === null ? 'primary' : 'neutral'"
+                    [disabled]="busy().has(row.line.sku)"
+                    (click)="enter(row)"
+                  >
+                    Saisir
+                  </button>
+                }
+              </span>
+            }
+          </li>
+        }
+      </ul>
+    </fold-card>
+  }
+</div>

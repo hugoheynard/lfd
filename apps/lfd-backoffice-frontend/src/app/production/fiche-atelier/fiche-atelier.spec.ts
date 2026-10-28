@@ -1,9 +1,9 @@
 import { HttpErrorResponse } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
-  type ProductionDueThresholdsView,
   type ProductionWorksheetView,
   type StaffNavPreferencesPatch,
   type WorkshopGroup,
@@ -15,10 +15,14 @@ import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-v
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { dayLabelOf } from '../worksheet-day';
-import { ProductionService } from '../production.service';
 import { BatchShortcutsService } from '../batch-shortcuts.service';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
+import { WorkshopClock } from './workshop-clock';
+import { WorkshopDayReader } from './workshop-day.reader';
+import { WorkshopGestures } from './workshop-gestures';
+import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
+import { WorkshopKeypadOpener } from './workshop-keypad-opener';
 
 /**
  * Le veilleur de journée, doublé : il garde la relecture que l'écran lui
@@ -214,17 +218,17 @@ class FakePrefs {
 
 const ME = { firstName: 'Marie', lastName: 'Jost' };
 
-/** Les tranches servies ; `null` = la lecture échoue. */
-let tranches: ProductionDueThresholdsView | null;
-const tranchesReads: string[] = [];
+/** 7 h 56 — l'heure figée de la maquette. */
+const NOW = 7 * 60 + 56;
 
-const NO_TRANCHES: ProductionDueThresholdsView = {
-  date: DAY,
-  deliveryMarginMinutes: null,
-  pickupMarginMinutes: null,
-  trancheMode: 'fixed',
-  fixedTranches: [],
-  lines: [],
+/** Le pavé doublé : il retient le préremplissage, et rend `answer`. */
+const keypad = {
+  presets: [] as number[],
+  answer: null as number | null,
+  openFor(_line: WorkshopLine, preset: number): Promise<number | null> {
+    this.presets.push(preset);
+    return Promise.resolve(this.answer);
+  },
 };
 
 /** Les raccourcis servis, et le compte des lectures : une pour toute la fiche (S2). */
@@ -273,24 +277,13 @@ describe('la fiche d’atelier', () => {
   beforeEach(() => {
     api = new FakeWorksheetService();
     prefs = new FakePrefs();
-    tranches = { ...NO_TRANCHES };
-    tranchesReads.length = 0;
+    keypad.presets = [];
+    keypad.answer = null;
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: DayVersionWatcher, useValue: fakeWatcher },
         { provide: WorksheetService, useValue: api },
-        {
-          provide: ProductionService,
-          useValue: {
-            dueThresholds: (date: string) => {
-              tranchesReads.push(date);
-              return tranches === null
-                ? Promise.reject(new Error('panne'))
-                : Promise.resolve(tranches);
-            },
-          } satisfies Partial<Record<keyof ProductionService, unknown>>,
-        },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
         {
@@ -306,20 +299,28 @@ describe('la fiche d’atelier', () => {
         },
       ],
     });
+    // Fournis par l'écran lui-même : on les remplace à son niveau.
+    TestBed.overrideComponent(FicheAtelier, {
+      set: {
+        providers: [
+          WorkshopDayReader,
+          WorkshopGestures,
+          WorkshopShortcutsReader,
+          { provide: WorkshopClock, useValue: { minutes: signal(NOW) } },
+          { provide: WorkshopKeypadOpener, useValue: keypad },
+        ],
+      },
+    });
     shortcutReads = 0;
   });
 
   it('lit les raccourcis UNE fois pour toute la fiche, et les donne à leur ligne', async () => {
-    const { fixture, el } = await render();
-    [...(baguette(el)?.querySelectorAll('button') ?? [])]
-      .find((node) => (node.textContent ?? '').includes('Saisir'))
-      ?.click();
-    await settle(fixture);
+    const { el } = await render();
 
     expect(shortcutReads).toBe(1);
     expect(
       baguette(el)?.querySelector('[data-worksheet-shortcut="bs-1"]')?.textContent?.trim(),
-    ).toBe('+ 1 plaque (24)');
+    ).toBe('1 plaque · 24');
   });
 
   it('nomme la journée SERVIE, et son mot tel que le serveur le dit', async () => {
@@ -345,7 +346,7 @@ describe('la fiche d’atelier', () => {
 
     expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
     expect(el.textContent).toContain('Baguette tradition');
-    expect(el.textContent).toContain('4 tourneuses');
+    expect(el.textContent).toContain('tourneuse de 40');
   });
 
   it('ne montre ni prix, ni euro, ni nom de client — par construction', async () => {
@@ -479,8 +480,10 @@ describe('la fiche d’atelier', () => {
       },
     });
 
+    baguette(el)?.querySelector<HTMLButtonElement>('fold-button-icon button')?.click();
+    await settle(fixture);
     [...(baguette(el)?.querySelectorAll('button') ?? [])]
-      .find((node) => node.textContent?.trim() === 'Annuler')
+      .find((node) => node.textContent?.trim() === 'Annuler 160 ?')
       ?.click();
     await settle(fixture);
 
@@ -546,27 +549,27 @@ describe('la fiche d’atelier', () => {
 
     it('dit que la relecture a échoué, sans vider la fiche', async () => {
       const { fixture, el } = await render();
-      expect(text(el, '.fa-foot-origin')).toContain('relue à');
+      expect(text(el, '.wf-origin')).toContain('relue à');
 
       api.view = null;
       relancer();
       await settle(fixture);
 
       expect(el.querySelectorAll('app-worksheet-line')).toHaveLength(2);
-      expect(text(el, '.fa-foot-origin')).toContain('relecture impossible');
+      expect(text(el, '.wf-origin')).toContain('relecture impossible');
     });
   });
 
   it('dit l’heure du tirage en pied', async () => {
     const { el } = await render();
 
-    expect(text(el, '.fa-foot-origin')).toContain('Tirée à 4 h 05');
+    expect(text(el, '.wf-origin')).toContain('Tirée à 4 h 05');
   });
 
   it('🔴 ne fabrique AUCUNE heure quand le plan n’est pas arrêté', async () => {
     api.view = sheet({ generatedAt: null });
     const { el } = await render();
-    const foot = text(el, '.fa-foot-origin');
+    const foot = text(el, '.wf-origin');
 
     expect(foot).toContain('pas arrêté');
     expect(foot).not.toContain('Tirée à');
@@ -682,41 +685,85 @@ describe('la fiche d’atelier', () => {
     expect(text(el, '.fa-eyebrow')).toContain('fiche 1 sur 2');
   });
 
-  describe('les tranches de production (T3)', () => {
-    it('lit les tranches de la journée SERVIE et les montre sous la ligne', async () => {
-      tranches = {
-        ...NO_TRANCHES,
-        fixedTranches: ['05:00', '07:00'],
-        lines: [
-          {
-            sku: 'BAG',
-            productName: 'Baguette tradition',
-            total: 160,
-            thresholds: [
-              { kind: 'deadline', before: '05:00', quantity: 40, cumulative: 40 },
-              { kind: 'deadline', before: '07:00', quantity: 120, cumulative: 160 },
-            ],
-          },
+  describe('les paliers et la vue par tranche (fournée v3)', () => {
+    /** La baguette : 40 avant 7 h 00 (dépassé, rien de sorti), 120 avant 11 h 00. */
+    function withDeadlines(produced = 0): WorkshopGroup {
+      const baguette = line({
+        produced,
+        remaining: 160 - produced,
+        deadlines: [
+          { quantity: 40, before: '07:00' },
+          { quantity: 120, before: '11:00' },
         ],
-      };
+        waitingOrders: { count: 2, earliestHandover: '08:45' },
+      });
+      return { ...painTodo(), lines: [baguette, SEIGLE], pending: [baguette, SEIGLE] };
+    }
 
+    const toSlots = async (fixture: ComponentFixture<FicheAtelier>): Promise<void> => {
+      (fixture.nativeElement as HTMLElement)
+        .querySelectorAll<HTMLElement>('.fa-view [role="radio"]')[1]
+        ?.click();
+      await settle(fixture);
+    };
+
+    it('montre le retard du palier, et ce qui presse, sur la ligne et l’onglet', async () => {
+      api.view = sheet({ groups: [withDeadlines()] });
       const { el } = await render();
-      await new Promise<void>((resolve) => setTimeout(resolve, 0));
 
-      expect(tranchesReads).toEqual([DAY]);
-      const strip = baguette(el)?.querySelector('app-worksheet-tranches');
-      expect(strip?.textContent?.replace(/\s+/gu, ' ')).toContain('40 avant 05:00');
-      expect(strip?.textContent?.replace(/\s+/gu, ' ')).toContain('160 avant 07:00');
+      expect(text(baguette(el) as HTMLElement, '.wl-late')).toContain('En retard · 56 min');
+      expect(text(baguette(el) as HTMLElement, '.wl-waiting')).toContain('2 commandes attendent');
+      expect(el.querySelector('.fa-tabs')?.innerHTML).toContain('warning');
     });
 
-    it('dit l’échec de lecture des tranches sans retirer la fiche', async () => {
-      tranches = null;
-
+    it('« + 1 tourneuse » depuis une tranche met à jour la tranche ET la vue produit', async () => {
+      api.view = sheet({ groups: [withDeadlines()] });
       const { fixture, el } = await render();
+      await toSlots(fixture);
+      expect(el.querySelector('app-worksheet-slots')).not.toBeNull();
+
+      api.view = sheet({ groups: [withDeadlines(40)] });
+      [...el.querySelectorAll<HTMLButtonElement>('app-worksheet-slots button')]
+        .find((node) => node.textContent?.includes('+ 1 tourneuse'))
+        ?.click();
       await settle(fixture);
 
-      expect(el.querySelector('[data-tranches-failed]')).not.toBeNull();
-      expect(baguette(el)).toBeDefined();
+      expect(api.batches.map((batch) => batch.quantity)).toEqual([40]);
+      expect(el.querySelector('[data-slot-state]')?.getAttribute('data-slot-state')).toBe('met');
+
+      el.querySelectorAll<HTMLElement>('.fa-view [role="radio"]')[0]?.click();
+      await settle(fixture);
+      expect(text(baguette(el) as HTMLElement, '.wl-left-big')).toContain('120');
+    });
+
+    it('« Saisir » depuis une tranche bascule en vue produit, pavé prérempli du manque', async () => {
+      api.view = sheet({ groups: [withDeadlines()] });
+      const { fixture, el } = await render();
+      await toSlots(fixture);
+      keypad.answer = 12;
+
+      [...el.querySelectorAll<HTMLButtonElement>('app-worksheet-slots button')]
+        .find((node) => node.textContent?.trim() === 'Saisir')
+        ?.click();
+      await settle(fixture);
+
+      expect(keypad.presets).toEqual([40]);
+      expect(el.querySelector('app-worksheet-slots')).toBeNull();
+      expect(api.batches.map((batch) => batch.quantity)).toEqual([12]);
+    });
+
+    it('« Annuler » du bandeau annule la fournée qu’on vient de déclarer', async () => {
+      const { fixture, el } = await render();
+      plaque(el)?.click();
+      await settle(fixture);
+
+      [...el.querySelectorAll<HTMLButtonElement>('.fa-undo button')]
+        .find((node) => node.textContent?.trim() === 'Annuler')
+        ?.click();
+      await settle(fixture);
+
+      expect(api.cancels).toEqual([{ date: DAY, id: api.batches[0]?.id }]);
+      expect(el.querySelector('.fa-undo')).toBeNull();
     });
   });
 });

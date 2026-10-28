@@ -18,6 +18,17 @@ import { WorkshopDayReader } from './workshop-day.reader';
 const NO_ANSWER =
   'Le serveur n’a pas répondu — réessayez : la même fournée ne comptera pas deux fois.';
 
+/**
+ * La dernière fournée acceptée, pour « Annuler la dernière » (plan
+ * `documentation/fournil/plan-fournee-v3.md` §4.5) : son `id` est celui que
+ * l'écran a tiré, donc celui que le serveur a gardé.
+ */
+export interface LastBatch {
+  readonly line: WorkshopLine;
+  readonly id: string;
+  readonly quantity: number;
+}
+
 /** Une fournée partie sans réponse, gardée pour être rejouée sous le même `id`. */
 interface Unanswered {
   readonly id: string;
@@ -55,6 +66,10 @@ export class WorkshopGestures {
   private readonly retakeRefused = signal(false);
   readonly retakeFailed = this.retakeRefused.asReadonly();
 
+  private readonly lastAccepted = signal<LastBatch | null>(null);
+  /** La dernière fournée acceptée ; `null` une fois annulée ou oubliée. */
+  readonly last = this.lastAccepted.asReadonly();
+
   /** Par ligne, la fournée partie sans réponse. */
   private readonly unanswered = new Map<string, Unanswered>();
 
@@ -66,7 +81,9 @@ export class WorkshopGestures {
 
   /** Déclare une fournée de `quantity` pièces sur la ligne, puis relit. */
   async record(line: WorkshopLine, quantity: number): Promise<void> {
-    await this.send(
+    // Tiré dans l'envoi : une boîte, que la fermeture remplit.
+    const sent: { id: string | null } = { id: null };
+    const accepted = await this.send(
       line,
       async (date, key) => {
         const retried = this.unanswered.get(key);
@@ -74,6 +91,7 @@ export class WorkshopGestures {
         this.unanswered.delete(key);
         try {
           await this.api.recordBatch(date, line.sku, id, { quantity, initials: this.initials() });
+          sent.id = id;
         } catch (error) {
           if (error instanceof HttpErrorResponse && error.status === 0) {
             this.unanswered.set(key, { id, quantity });
@@ -83,10 +101,35 @@ export class WorkshopGestures {
       },
       'La fournée n’a pas été enregistrée',
     );
+    if (accepted && sent.id !== null) {
+      this.lastAccepted.set({ line, id: sent.id, quantity });
+    }
+  }
+
+  /** « Annuler » du bandeau : annule la dernière fournée acceptée, puis relit. */
+  async undoLast(): Promise<void> {
+    const last = this.lastAccepted();
+    if (last === null) {
+      return;
+    }
+    this.lastAccepted.set(null);
+    await this.send(
+      last.line,
+      (date) => this.api.cancelBatch(date, last.id),
+      'La fournée n’a pas été annulée',
+    );
+  }
+
+  /** Le bandeau s'est refermé : la dernière fournée ne s'annule plus que par sa puce. */
+  forgetLast(): void {
+    this.lastAccepted.set(null);
   }
 
   /** Annule une fournée de la ligne — n'importe quel poste le peut —, puis relit. */
   async cancel(line: WorkshopLine, batch: WorkshopBatch): Promise<void> {
+    if (this.lastAccepted()?.id === batch.id) {
+      this.lastAccepted.set(null);
+    }
     await this.send(
       line,
       (date) => this.api.cancelBatch(date, batch.id),
@@ -112,22 +155,23 @@ export class WorkshopGestures {
 
   /**
    * Le cadre commun des deux gestes : une ligne à la fois, désarmée le temps de
-   * l'envoi ; refusé, le geste est DIT ; accepté, la fiche est relue.
+   * l'envoi ; refusé, le geste est DIT ; accepté, la fiche est relue. Rend
+   * `true` quand le serveur a accepté.
    */
   private async send(
     line: WorkshopLine,
     write: (date: string, key: string) => Promise<void>,
     failure: string,
-  ): Promise<void> {
+  ): Promise<boolean> {
     // La date est prise UNE fois : la clé et l'envoi parlent de la même journée,
     // même si une relecture la change pendant l'envoi.
     const date = this.day.date();
     if (date === null) {
-      return;
+      return false;
     }
     const key = markKey(date, line.sku);
     if (this.day.busy().has(key)) {
-      return;
+      return false;
     }
     this.refusal.set(null);
     this.day.setBusy(key, true);
@@ -136,10 +180,11 @@ export class WorkshopGestures {
     } catch (error) {
       this.day.setBusy(key, false);
       this.refusal.set(`${failure} — ${line.productName} : ${this.reasonOf(error)}`);
-      return;
+      return false;
     }
     await this.day.rereadAfterWrite();
     this.day.setBusy(key, false);
+    return true;
   }
 
   private reasonOf(error: unknown): string {

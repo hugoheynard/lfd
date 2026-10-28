@@ -1,0 +1,19 @@
+<ul class="bc-list" aria-label="Fournées déclarées">
+  @for (shown of shown(); track shown.batch.id) {
+    <li class="bc-chip" data-batch-chip>
+      <span class="bc-said">{{ shown.said }}</span>
+      <fold-inline-confirm
+        cancelIcon="close"
+        [labels]="shown.labels"
+        (confirmed)="cancelled.emit(shown.batch)"
+      >
+        <fold-button-icon
+          icon="close"
+          size="xs"
+          [disabled]="busy()"
+          [tooltip]="'Annuler la fournée de ' + shown.batch.quantity"
+        />
+      </fold-inline-confirm>
+    </li>
+  }
+</ul>

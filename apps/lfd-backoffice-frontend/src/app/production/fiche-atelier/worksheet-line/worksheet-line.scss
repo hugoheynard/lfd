@@ -1,165 +1,182 @@
 /*
   Les `--fa-*` ne sont PAS déclarés ici : ils le sont une seule fois, sur l'hôte
-  de la fiche, et descendent par héritage. Une ligne qui les redéclarerait aurait
-  ses propres mesures le jour où celles de la fiche bougent.
-
-  Aucune media query dans ce fichier non plus : ce sont les VALEURS des jetons
-  qui changent de support, et elles changent chez le parent.
+  de la fiche, et descendent par héritage. Aucune media query non plus : ce
+  sont les VALEURS des jetons qui changent de support, et elles changent chez
+  le parent — y compris la grille (`--fa-line-columns`, `--fa-line-areas`).
 */
 
 :host {
-  display: flex;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: var(--fa-line-columns);
+  grid-template-areas: var(--fa-line-areas);
   align-items: center;
   gap: var(--fold-space-md) var(--fa-row-gap);
   padding: var(--fa-row-pad-y) var(--fa-row-pad-x);
-  border-bottom: 1px solid var(--fold-color-border-subtle);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-card);
   color: var(--fold-color-text);
 }
 
-/* La ligne complète : le fond s'enfonce, l'encre s'éteint, le nom se barre. */
 :host(.is-done) {
+  border-color: var(--fold-color-border-subtle);
   background: var(--fold-color-surface-sunken);
-  color: var(--fold-color-text-faded);
 }
 
-/* La quantité est le seul chiffre qui compte au fournil : mono, tabulaire,
-   alignée à droite sur une gouttière fixe. */
-.wl-qty {
-  flex: none;
-  width: var(--fa-qty-col);
+/* Ce qui presse : un liseré ambre (téléphone surtout — la pastille le dit en mots). */
+:host(.is-waiting) {
+  border-color: var(--fold-color-warning-border);
+  box-shadow: inset 3px 0 0 var(--fold-color-warning);
+}
+
+/* Le retard prime : liseré rouge, bord rouge clair. */
+:host(.is-late) {
+  border-color: var(--fold-color-alert-border);
+  box-shadow: inset 3px 0 0 var(--fold-color-alert);
+}
+
+.wl-left {
+  display: flex;
+  flex-direction: column;
+  grid-area: left;
+  align-items: flex-end;
+  gap: var(--fold-space-xs);
+  align-self: start;
   font-family: var(--fold-font-mono);
-  font-size: var(--fa-size-qty);
-  font-weight: var(--fold-weight-bold);
-  line-height: var(--fold-leading-none);
-  letter-spacing: var(--fold-tracking-tighter);
   font-variant-numeric: tabular-nums;
   text-align: right;
 }
 
-/* Le bloc « quoi » : en ligne au poste fixe, le nom sur le contenant au pouce. */
+.wl-left-big {
+  font-size: var(--fa-size-qty);
+  font-weight: var(--fold-weight-bold);
+  line-height: var(--fold-leading-none);
+  color: var(--fold-color-primary-text);
+  white-space: nowrap;
+}
+
+:host(.is-late) .wl-left-big,
+:host(.is-late) .wl-left-when {
+  color: var(--fold-color-alert-text);
+}
+
+:host(.is-done) .wl-left-big,
+:host(.is-done) .wl-left-when {
+  color: var(--fold-color-success-text);
+}
+
+.wl-left-of {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.wl-left-when {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  color: var(--fold-color-text-muted);
+  white-space: nowrap;
+}
+
+.wl-left-total {
+  padding-top: var(--fold-space-xs);
+  border-top: 1px solid var(--fold-color-border-subtle);
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-text-secondary);
+  white-space: nowrap;
+}
+
 .wl-what {
   display: flex;
-  flex: 1;
+  flex-direction: column;
+  grid-area: what;
+  gap: var(--fold-space-sm);
   min-width: 0;
-  flex-direction: var(--fa-what-direction);
-  align-items: var(--fa-what-align);
-  gap: var(--fa-what-gap);
 }
 
 .wl-name {
-  flex: 1;
-  min-width: 0;
   font-size: var(--fa-size-name);
-  font-weight: var(--fold-weight-semibold);
+  font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-tight);
 }
 
 :host(.is-done) .wl-name {
+  color: var(--fold-color-text-muted);
   text-decoration: line-through;
-  text-decoration-color: var(--fold-color-border);
+}
+
+.wl-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
 }
 
 .wl-container {
-  flex: none;
-  font-size: var(--fa-size-container);
+  font-size: var(--fold-text-sm);
   color: var(--fold-color-text-muted);
 }
 
-:host(.is-done) .wl-container {
-  color: var(--fold-color-text-faded);
-}
-
-/* Où on en est : la barre, « 96 / 200 », et le surplus s'il y en a. */
 .wl-progress {
   display: flex;
-  flex: none;
-  align-items: center;
-  gap: var(--fold-space-md);
-  width: var(--fa-progress-col);
-}
-
-.wl-meter {
-  flex: 1;
+  flex-direction: column;
+  grid-area: progress;
+  gap: var(--fold-space-xs);
   min-width: 0;
 }
 
 .wl-figures {
-  flex: none;
   font-family: var(--fold-font-mono);
-  font-size: var(--fa-size-container);
+  font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;
-}
-
-.wl-surplus {
-  flex: none;
+  white-space: nowrap;
 }
 
 .wl-actions {
   display: flex;
-  flex: none;
+  flex-wrap: wrap;
+  grid-area: actions;
+  align-items: center;
   gap: var(--fold-space-sm);
 }
 
-/* La seconde rangée : la saisie et les fournées, sous la ligne, alignées sur le nom. */
-.wl-tranches {
-  flex-basis: 100%;
-  padding-left: calc(var(--fa-qty-col) + var(--fa-row-gap));
+/* « + 1 plaque », le geste principal : la taille du contenant dessous. */
+.wl-quick,
+.wl-enter {
+  min-height: var(--fa-gesture-height);
 }
 
-.wl-more {
+.wl-quick {
+  flex: var(--fa-quick-flex);
+}
+
+.wl-quick-said {
   display: flex;
-  flex-basis: 100%;
   flex-direction: column;
-  gap: var(--fold-space-md);
-  padding-left: calc(var(--fa-qty-col) + var(--fa-row-gap));
+  align-items: center;
 }
 
-.wl-entry {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: flex-end;
-  gap: var(--fold-space-md);
+.wl-quick-size {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
 }
 
-/* Les raccourcis du produit, à côté de « Déclarer » : ils ajoutent au champ. */
-.wl-shortcuts {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-xs);
-}
-
-.wl-entry-field {
-  width: var(--fa-entry-width);
+.wl-shortcut {
+  flex: none;
 }
 
 .wl-batches {
   display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-sm);
-  padding: 0;
-  margin: 0;
-  list-style: none;
-}
-
-.wl-batch {
-  display: flex;
+  flex-wrap: wrap;
+  grid-area: batches;
   align-items: center;
-  gap: var(--fold-space-lg);
-  font-size: var(--fa-size-container);
-  color: var(--fold-color-text-muted);
+  gap: var(--fold-space-md);
 }
 
-.wl-batch-hour,
-.wl-batch-initials,
-.wl-batch-qty {
+.wl-batches-title {
   font-family: var(--fold-font-mono);
-  font-variant-numeric: tabular-nums;
-}
-
-.wl-batch-qty {
-  min-width: var(--fa-batch-qty-col);
+  font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
-  color: var(--fold-color-text);
-  text-align: right;
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
 }

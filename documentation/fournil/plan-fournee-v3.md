@@ -1,6 +1,13 @@
 # Plan — la fournée du jour v3 : des paliers, deux vues
 
-> 📝 **Plan** du 2026-10-28. Hugo : « voici le design définitif que doit avoir
+> ✅ **Bâti le 2026-10-28** (F0 à F5) : fold-ng 0.35.0 (`fold-meter` segmenté),
+> paliers, contrôle qualité et ce qui presse servis sur chaque ligne, contenant
+> réglé sur la page des raccourcis, fiche refaite (par produit, par tranche,
+> pavé, annuler la dernière). Écarts assumés : la tranche « Tenue » en surface
+> `sunken` (fold-card n'a pas de fond sable), le pavé en dialogue, les
+> raccourcis ouvrent le pavé posé sur leur valeur (seul « Déclarer » enregistre).
+>
+> 📝 Plan du 2026-10-28. Hugo : « voici le design définitif que doit avoir
 > l'app fournil » — dossier `handoff-fournee-v3/` (SPEC.md, maquette
 > `design/Fournée du jour v3.dc.html`, cinq captures). Il s'ajoute à
 > [`plan-fiche-atelier.md`](plan-fiche-atelier.md) (la fiche existante) et

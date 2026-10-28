@@ -1,0 +1,54 @@
+.wk-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+/* Le chiffre se lit à un mètre du four : mono, gros, tabulaire. */
+.wk-display {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  margin: 0;
+  padding: var(--fold-space-md) var(--fold-space-lg);
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-md);
+  background: var(--fold-color-surface-sunken);
+}
+
+.wk-value {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xl);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+}
+
+.wk-after {
+  font-size: var(--fold-text-sm);
+  color: var(--fold-color-text-muted);
+}
+
+.wk-presets {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.wk-keys {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--fold-space-sm);
+}
+
+/* De grosses touches : 52 px, les doigts farinés visent mal. */
+.wk-key {
+  min-height: 52px;
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xl);
+}
+
+.wk-declare {
+  flex: 1;
+  min-height: 52px;
+}

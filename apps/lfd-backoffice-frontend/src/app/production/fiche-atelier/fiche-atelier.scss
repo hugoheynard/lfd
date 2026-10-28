@@ -34,20 +34,18 @@
      24 px) : une quantité de 34 px n'est pas une décision de style, c'est la
      distance de lecture. Déclarées ici et nulle part ailleurs — la ligne et le
      bandeau les LISENT par héritage. */
-  --fa-qty-col: 96px;
-  --fa-progress-col: 280px;
-  --fa-batch-qty-col: 48px;
-  --fa-entry-width: 160px;
+  /* La ligne (plan fournée v3, §4.2) : le reste à gauche sur 112 px, la barre
+     à paliers sur 300 px, les gestes à droite ; les fournées dessous. */
+  --fa-line-columns: 112px minmax(0, 1fr) 300px auto;
+  --fa-line-areas: 'left what progress actions' 'left batches batches batches';
+  --fa-gesture-height: 52px;
+  --fa-quick-flex: none;
   --fa-row-gap: var(--fold-space-2xl);
-  --fa-row-pad-x: var(--fold-page-gutter);
+  --fa-row-pad-x: var(--fold-space-xl);
   --fa-row-pad-y: var(--fold-space-lg);
-  --fa-what-direction: row;
-  --fa-what-align: center;
-  --fa-what-gap: var(--fold-space-2xl);
 
-  --fa-size-qty: 34px;
-  --fa-size-name: 22px;
-  --fa-size-container: var(--fold-text-base);
+  --fa-size-qty: 30px;
+  --fa-size-name: 17px;
 }
 
 /*
@@ -58,18 +56,15 @@
 */
 @media (max-width: 1023px) {
   :host {
-    --fa-qty-col: 52px;
-    --fa-progress-col: 100%;
+    /* Une carte par ligne : le nom et le reste en tête, la barre, deux boutons
+       pleine largeur, les fournées au pied. */
+    --fa-line-columns: minmax(0, 1fr) auto;
+    --fa-line-areas: 'what left' 'progress progress' 'actions actions' 'batches batches';
+    --fa-gesture-height: 56px;
+    --fa-quick-flex: 1;
     --fa-row-gap: var(--fold-space-lg);
-    --fa-row-pad-x: var(--fold-space-xl);
+    --fa-row-pad-x: var(--fold-space-lg);
     --fa-row-pad-y: var(--fold-space-md);
-    --fa-what-direction: column;
-    --fa-what-align: stretch;
-    --fa-what-gap: 2px;
-
-    --fa-size-qty: 28px;
-    --fa-size-name: 17px;
-    --fa-size-container: var(--fold-text-md);
   }
 }
 
@@ -217,6 +212,10 @@ fold-page-layout {
   background: var(--fold-color-border);
 }
 
+.fa-view {
+  flex: none;
+}
+
 .fa-band-sum {
   font-size: var(--fold-text-md);
   font-weight: var(--fold-weight-semibold);
@@ -224,18 +223,37 @@ fold-page-layout {
   color: var(--fold-color-text-muted);
 }
 
-/* 🔴 La SEULE zone qui défile. Tout le reste tient. */
+/* 🔴 La SEULE zone qui défile. Tout le reste tient. Une carte par ligne. */
 .fa-lines {
   display: flex;
   flex-direction: column;
   flex: 1 1 auto;
+  gap: var(--fold-space-md);
   min-height: 0;
+  padding: var(--fold-space-lg) var(--fold-page-gutter);
   overflow-y: auto;
 }
 
-/* La dernière ligne n'a pas de filet : le pied ou le bloc replié fait la coupure. */
-.fa-lines app-worksheet-line:last-child {
-  border-bottom: 0;
+/* « Annuler la dernière » : au-dessus du pied, sans rien pousser. */
+.fa-undo {
+  position: fixed;
+  inset-inline: 0;
+  bottom: var(--fold-space-4xl);
+  z-index: 1;
+  display: flex;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.fa-undo fold-toast {
+  pointer-events: auto;
+}
+
+.fa-undo-said {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-md);
 }
 
 /* ── Le bloc des faites, épinglé au-dessus du pied ──────────────────────────
@@ -279,50 +297,10 @@ fold-page-layout {
 .fa-done-lines {
   display: flex;
   flex-direction: column;
+  gap: var(--fold-space-md);
   min-height: 0;
+  padding: var(--fold-space-md) var(--fold-page-gutter);
   overflow-y: auto;
-}
-
-/* ── Le pied ────────────────────────────────────────────────────────────────
-   Il ne défile jamais : il porte la règle de l'écran à gauche, et à droite d'où
-   vient ce qu'on lit — plus ce qui n'est pas encore parti. */
-.fa-foot {
-  display: flex;
-  flex: none;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: var(--fold-space-2xl);
-  padding: var(--fold-space-lg) var(--fa-row-pad-x);
-  background: var(--fold-color-bg-rail-secondary);
-  border-top: 1px solid var(--fold-color-border);
-}
-
-.fa-foot-rule,
-.fa-foot-origin {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  gap: var(--fold-space-sm);
-  margin: 0;
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-xs);
-  letter-spacing: var(--fold-tracking-wide);
-  color: var(--fold-color-text-muted);
-}
-
-/*
-  🔴 « relecture impossible » est la seule mention accentuée du pied : jamais un
-  écran figé qui a l'air à jour. La règle portait l'ancien nom de la file hors
-  ligne (`.fa-foot-flag`), et la mention restait sans style (corrigé le
-  2026-09-14).
-*/
-.fa-foot-stale {
-  display: inline-flex;
-  align-items: center;
-  gap: var(--fold-space-xs);
-  color: var(--fold-color-warning);
-  font-weight: var(--fold-weight-bold);
 }
 
 /* La distance au jour courant, à côté de la date. Discrète : c'est un repère,
