@@ -4,6 +4,7 @@ import {
   computed,
   DestroyRef,
   inject,
+  input,
   output,
   signal,
 } from '@angular/core';
@@ -39,7 +40,6 @@ import {
 } from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
-import { BakehouseDraftList } from '../bakehouse-draft-list/bakehouse-draft-list';
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 
@@ -100,7 +100,6 @@ interface SiteChoice {
     FoldNumberInputComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
-    BakehouseDraftList,
     NgTemplateOutlet,
     ResupplyNameField,
   ],
@@ -125,8 +124,15 @@ export class BakehouseResupplyCard {
    */
   protected readonly phone = signal(false);
 
-  /** Un réassort vient de partir : la page relit. */
+  /**
+   * Le brouillon à reprendre (`/prod-manager/reassorts/brouillon/:draftId`) ;
+   * `null` : un réassort neuf (`…/nouveau`).
+   */
+  readonly draftId = input<string | null>(null);
+  /** Un réassort vient de partir : la page revient à la liste. */
   readonly sent = output();
+  /** Le brouillon demandé n'est plus ouvert (envoyé, supprimé, ou inconnu). */
+  protected readonly draftMissing = signal(false);
 
   protected readonly loadFailed = signal(false);
   protected readonly sites = signal<readonly SiteChoice[]>([]);
@@ -204,6 +210,15 @@ export class BakehouseResupplyCard {
       this.loadFailed.set(true);
     }
     await this.draftsStore.reload();
+    const wanted = this.draftId();
+    if (wanted !== null) {
+      const draft = this.draftsStore.drafts().find((candidate) => candidate.id === wanted);
+      if (draft === undefined) {
+        this.draftMissing.set(true);
+      } else {
+        await this.resume(draft);
+      }
+    }
   }
 
   /** Choisit le point, puis lit ses noms déjà employés ; une lecture échouée ne propose rien. */
@@ -283,7 +298,7 @@ export class BakehouseResupplyCard {
   }
 
   /** Reprend un brouillon : la carte en recopie le point, la visée, le nom et les quantités. */
-  protected async resume(draft: BakehouseResupplyDraftView): Promise<void> {
+  private async resume(draft: BakehouseResupplyDraftView): Promise<void> {
     this.draftsStore.take(draft);
     this.target.set(draft.target);
     this.name.set(draft.name ?? '');
@@ -291,25 +306,6 @@ export class BakehouseResupplyCard {
     this.failure.set(null);
     this.done.set(null);
     await this.pickSite(draft.siteId);
-  }
-
-  protected async discard(draft: BakehouseResupplyDraftView): Promise<void> {
-    const inHand = this.draftsStore.currentId() === draft.id;
-    await this.gesture(async () => {
-      await this.draftsStore.discard(draft);
-      if (inHand) {
-        this.clear();
-      }
-      this.done.set('Brouillon supprimé.');
-    }, "Le brouillon n'a pas pu être supprimé.");
-  }
-
-  /** « Nouveau réassort » : la carte se vide, le brouillon repris reste à reprendre. */
-  protected startOver(): void {
-    this.draftsStore.release();
-    this.clear();
-    this.done.set(null);
-    this.failure.set(null);
   }
 
   protected async send(): Promise<void> {

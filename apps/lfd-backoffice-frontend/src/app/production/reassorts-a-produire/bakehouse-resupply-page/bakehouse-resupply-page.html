@@ -1,0 +1,4 @@
+<div class="page">
+  <fold-back-link icon="arrow-back" label="Réassorts" [routerLink]="list" />
+  <app-bakehouse-resupply-card [draftId]="draftId() ?? null" (sent)="back()" />
+</div>

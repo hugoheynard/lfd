@@ -684,6 +684,26 @@ export const routes: Routes = [
             (m) => m.ResupplyProductionTab,
           ),
       },
+      {
+        // Composer un réassort du fournil, sur sa propre page (Hugo,
+        // 2026-10-28) : neuf, ou un brouillon repris par son id.
+        path: 'reassorts/nouveau',
+        canActivate: [permissionGuard('production_resupply:write')],
+        title: 'Nouveau réassort — Prod manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/reassorts-a-produire/bakehouse-resupply-page/bakehouse-resupply-page').then(
+            (m) => m.BakehouseResupplyPage,
+          ),
+      },
+      {
+        path: 'reassorts/brouillon/:draftId',
+        canActivate: [permissionGuard('production_resupply:write')],
+        title: 'Brouillon de réassort — Prod manager — LFC B2B admin',
+        loadComponent: () =>
+          import('./production/reassorts-a-produire/bakehouse-resupply-page/bakehouse-resupply-page').then(
+            (m) => m.BakehouseResupplyPage,
+          ),
+      },
     ],
   },
   // TOUR MANAGER (Hugo, 2026-10-10) : l'organisation des tournées sort de la

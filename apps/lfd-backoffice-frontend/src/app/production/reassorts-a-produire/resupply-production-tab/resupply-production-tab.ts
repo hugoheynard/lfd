@@ -6,7 +6,7 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { ActivatedRoute, Router } from '@angular/router';
+import { ActivatedRoute, Router, RouterLink } from '@angular/router';
 import type { LiveStockAlertsView, ResupplyProductionDayView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -21,7 +21,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { resupplyDayLabel } from '../../../shared/resupply-labels';
 import { isoDay, shiftDay } from '../../previsionnel/previsionnel-range';
-import { BakehouseResupplyCard } from '../bakehouse-resupply-card/bakehouse-resupply-card';
+import { BakehouseDraftsSection } from '../bakehouse-drafts-section/bakehouse-drafts-section';
 import { LiveStockAlertsService } from '../live-stock-alerts.service';
 import { ResuppliesToProduceService } from '../resupplies-to-produce.service';
 import { ResupplyLaunchCard } from '../resupply-launch-card/resupply-launch-card';
@@ -73,7 +73,8 @@ function normalize(text: string): string {
   selector: 'app-resupply-production-tab',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
-    BakehouseResupplyCard,
+    BakehouseDraftsSection,
+    RouterLink,
     ResupplyLaunchCard,
     ResupplyMountCard,
     FoldButtonComponent,

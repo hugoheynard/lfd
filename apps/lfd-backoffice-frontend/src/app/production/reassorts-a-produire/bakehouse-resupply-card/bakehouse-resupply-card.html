@@ -2,7 +2,7 @@
   <fold-element-title
     cardHeader
     variant="title"
-    title="Envoyer un réassort"
+    [title]="draftId() === null ? 'Nouveau réassort' : 'Brouillon de réassort'"
     subtitle="« Je t'envoie ça » : un réassort à part, signé du fournil — par exemple quand un point le demande au téléphone. La demande en cours du comptoir n'est pas touchée."
   >
     <!-- En haut à droite au bureau (Hugo, 2026-10-28) ; en mobile, les gestes
@@ -26,20 +26,11 @@
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     } @else {
-      @if (draftsStore.unreadable()) {
-        <fold-callout variant="warning">
-          Les brouillons n'ont pas pu être lus : la saisie et l'envoi restent possibles.
+      @if (draftMissing()) {
+        <fold-callout variant="warning" data-bakehouse-draft-missing>
+          Ce brouillon n'est plus ouvert : il a été envoyé ou supprimé depuis un autre poste. La
+          carte repart d'un réassort neuf.
         </fold-callout>
-      }
-      @if (draftsStore.drafts().length > 0) {
-        <app-bakehouse-draft-list
-          [drafts]="draftsStore.drafts()"
-          [siteLabels]="siteLabels()"
-          [currentId]="draftsStore.currentId()"
-          [pending]="pending()"
-          (resumed)="resume($event)"
-          (discarded)="discard($event)"
-        />
       }
       <div class="row">
         <fold-listbox
@@ -181,11 +172,6 @@
 </fold-card>
 
 <ng-template #gestures>
-  @if (draftsStore.currentId() !== null) {
-    <button foldButton emphasis="soft" intent="neutral" data-bakehouse-new (click)="startOver()">
-      Nouveau réassort
-    </button>
-  }
   <button
     foldButton
     emphasis="outline"

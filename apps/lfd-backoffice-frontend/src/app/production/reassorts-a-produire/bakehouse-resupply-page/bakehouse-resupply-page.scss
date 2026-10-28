@@ -1,0 +1,10 @@
+.page {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+  align-items: flex-start;
+}
+
+.page app-bakehouse-resupply-card {
+  align-self: stretch;
+}

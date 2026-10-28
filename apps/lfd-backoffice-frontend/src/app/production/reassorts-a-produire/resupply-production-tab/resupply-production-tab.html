@@ -5,6 +5,17 @@
     <h2 class="rp-title" data-resupply-day>{{ dayLabel() }}</h2>
   </div>
   <div class="rp-nav">
+    @if (canSend()) {
+      <a
+        foldButton
+        size="sm"
+        icon="plus"
+        routerLink="/prod-manager/reassorts/nouveau"
+        data-resupply-create
+      >
+        Créer un réassort
+      </a>
+    }
     <button
       foldButton
       emphasis="outline"
@@ -29,9 +40,10 @@
   </div>
 </header>
 
-<!-- Hors du @switch : la relecture après un envoi ne doit pas effacer la carte. -->
+<!-- La composition a sa propre page (Hugo, 2026-10-28) : ici, ce qui est
+     demandé, et les brouillons ouverts à reprendre. -->
 @if (canSend()) {
-  <app-bakehouse-resupply-card (sent)="load()" />
+  <app-bakehouse-drafts-section />
 }
 
 @switch (state()) {

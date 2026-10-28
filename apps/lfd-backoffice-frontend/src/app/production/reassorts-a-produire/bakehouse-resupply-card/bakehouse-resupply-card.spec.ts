@@ -99,6 +99,7 @@ async function mount(
   pickups = new FakePickups(),
   bakehouse = new FakeBakehouse(),
   panels = new FakePanels(),
+  draftId: string | null = null,
 ) {
   // jsdom n'a pas `matchMedia` : le bureau par défaut, chaque test bascule `phone`.
   vi.stubGlobal('matchMedia', () => ({
@@ -116,6 +117,7 @@ async function mount(
     ],
   });
   const fixture = TestBed.createComponent(BakehouseResupplyCard);
+  fixture.componentRef.setInput('draftId', draftId);
   let sent = 0;
   fixture.componentInstance.sent.subscribe(() => (sent += 1));
   fixture.detectChanges();
@@ -343,13 +345,19 @@ describe('BakehouseResupplyCard', () => {
       );
     });
 
-    it('reprend un brouillon, puis envoie CE QUE L’ÉCRAN MONTRE depuis lui', async () => {
+    it('reprend le brouillon de son adresse, puis envoie CE QUE L’ÉCRAN MONTRE depuis lui', async () => {
       const bakehouse = new FakeBakehouse();
       bakehouse.stored = [DRAFT];
-      const { fixture, add, root, sentCount } = await mount(new FakePickups(), bakehouse);
-
-      click(root, '[data-bakehouse-draft="dr_1"] [data-bakehouse-draft-resume]');
+      const { fixture, card, add, sentCount } = await mount(
+        new FakePickups(),
+        bakehouse,
+        new FakePanels(),
+        'dr_1',
+      );
       await settle(fixture);
+
+      expect(card['siteId']()).toBe('site_l');
+      expect(card['name']()).toBe('Goûter');
       add('CRO', 1);
       await clickSend(fixture);
 
@@ -360,19 +368,17 @@ describe('BakehouseResupplyCard', () => {
       expect(sentCount()).toBe(1);
     });
 
-    it('supprime un brouillon, et vide la carte s’il était repris', async () => {
-      const bakehouse = new FakeBakehouse();
-      bakehouse.stored = [DRAFT];
-      const { fixture, card, root } = await mount(new FakePickups(), bakehouse);
-      click(root, '[data-bakehouse-draft="dr_1"] [data-bakehouse-draft-resume]');
+    it('dit qu’un brouillon demandé n’est plus ouvert, et part d’une carte vide', async () => {
+      const { fixture, card, root } = await mount(
+        new FakePickups(),
+        new FakeBakehouse(),
+        new FakePanels(),
+        'dr_gone',
+      );
       await settle(fixture);
 
-      await card['discard'](DRAFT);
-      await settle(fixture);
-
-      expect(bakehouse.draftCalls).toEqual(['discard:dr_1:v3']);
+      expect(root.querySelector('[data-bakehouse-draft-missing]')).not.toBeNull();
       expect(card['lines']()).toEqual([]);
-      expect(root.querySelector('[data-bakehouse-draft]')).toBeNull();
     });
   });
 

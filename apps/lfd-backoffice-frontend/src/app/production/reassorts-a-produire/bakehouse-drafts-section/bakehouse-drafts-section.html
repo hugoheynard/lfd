@@ -1,0 +1,15 @@
+@if (store.unreadable()) {
+  <fold-callout variant="warning">Les brouillons n'ont pas pu être lus.</fold-callout>
+}
+@if (failure(); as message) {
+  <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+}
+@if (store.drafts().length > 0) {
+  <app-bakehouse-draft-list
+    [drafts]="store.drafts()"
+    [siteLabels]="siteLabels()"
+    [pending]="pending()"
+    (resumed)="resume($event)"
+    (discarded)="discard($event)"
+  />
+}
