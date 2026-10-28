@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   inject,
   output,
   signal,
@@ -18,6 +19,7 @@ import {
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldViewToggleComponent,
   type FoldSelectOption,
@@ -25,6 +27,10 @@ import {
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
+import {
+  QuantityDialog,
+  type QuantityDialogData,
+} from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 
@@ -41,6 +47,9 @@ function normalize(text: string): string {
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase();
 }
+
+/** Le téléphone — le même seuil que la feuille de style. */
+const PHONE_QUERY = '(max-width: 768px)';
 
 /** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants. */
 const ALL_FAMILIES = '';
@@ -100,6 +109,14 @@ interface SiteChoice {
 export class BakehouseResupplyCard {
   private readonly service = inject(BakehouseResuppliesService);
   private readonly pickups = inject(PickupAddressesService);
+  private readonly panels = inject(FoldPanelHostService);
+
+  /**
+   * Le seuil du téléphone : la ligne n'y garde que sa case, en lecture seule,
+   * et la toucher ouvre le dialogue (Hugo, 2026-10-28). Le seuil des
+   * raccourcis masqués en CSS est le même.
+   */
+  protected readonly phone = signal(false);
 
   /** Un réassort vient de partir : la page relit. */
   readonly sent = output();
@@ -182,6 +199,11 @@ export class BakehouseResupplyCard {
   );
 
   constructor() {
+    const query = window.matchMedia(PHONE_QUERY);
+    this.phone.set(query.matches);
+    const follow = (event: MediaQueryListEvent): void => this.phone.set(event.matches);
+    query.addEventListener('change', follow);
+    inject(DestroyRef).onDestroy(() => query.removeEventListener('change', follow));
     void this.load();
   }
 
@@ -230,6 +252,19 @@ export class BakehouseResupplyCard {
       return next;
     });
     this.done.set(null);
+  }
+
+  /** En mobile, la case ouvre le dialogue du chiffre et des raccourcis. */
+  protected async openQuantity(article: ResupplyArticleView): Promise<void> {
+    if (!this.phone()) {
+      return;
+    }
+    const quantity = await this.panels.open<QuantityDialogData, number>(QuantityDialog, {
+      data: { label: article.name, quantity: this.quantityOf(article.sku) },
+    }).closed;
+    if (quantity !== undefined) {
+      this.setQuantity(article.sku, quantity);
+    }
   }
 
   /** Un pas rapide : positif ajoute, négatif retire, sans descendre sous zéro. */

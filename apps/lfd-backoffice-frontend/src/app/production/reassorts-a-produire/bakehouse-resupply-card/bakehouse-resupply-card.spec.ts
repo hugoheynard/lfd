@@ -1,6 +1,7 @@
 import { TestBed } from '@angular/core/testing';
+import { FoldPanelHostService } from 'fold-ng';
 import type { PlaceSiteResupplyPayload } from '@lfd/contracts';
-import { describe, expect, it } from 'vitest';
+import { describe, expect, it, vi } from 'vitest';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
@@ -52,13 +53,34 @@ class FakeBakehouse {
   }
 }
 
-async function mount(pickups = new FakePickups(), bakehouse = new FakeBakehouse()) {
+/** Le dialogue de quantité doublé : il rend ce qu'on lui a fait valider. */
+class FakePanels {
+  answer: number | undefined = undefined;
+  readonly asked: unknown[] = [];
+  open(_component: unknown, config: { data: unknown }): { closed: Promise<number | undefined> } {
+    this.asked.push(config.data);
+    return { closed: Promise.resolve(this.answer) };
+  }
+}
+
+async function mount(
+  pickups = new FakePickups(),
+  bakehouse = new FakeBakehouse(),
+  panels = new FakePanels(),
+) {
+  // jsdom n'a pas `matchMedia` : le bureau par défaut, chaque test bascule `phone`.
+  vi.stubGlobal('matchMedia', () => ({
+    matches: false,
+    addEventListener: () => undefined,
+    removeEventListener: () => undefined,
+  }));
   TestBed.resetTestingModule();
   TestBed.configureTestingModule({
     imports: [BakehouseResupplyCard],
     providers: [
       { provide: PickupAddressesService, useValue: pickups },
       { provide: BakehouseResuppliesService, useValue: bakehouse },
+      { provide: FoldPanelHostService, useValue: panels },
     ],
   });
   const fixture = TestBed.createComponent(BakehouseResupplyCard);
@@ -217,6 +239,37 @@ describe('BakehouseResupplyCard', () => {
     expect(sentCount()).toBe(0);
     expect(root.querySelector('fold-callout')?.textContent).toContain('pas pu être envoyé');
     expect(root.querySelector('.product.asked')?.textContent).toContain('Croissant');
+  });
+
+  it('en mobile, toucher la case ouvre le dialogue, et sa quantité est retenue', async () => {
+    const panels = new FakePanels();
+    panels.answer = 40;
+    const { fixture, card, bakehouse, root } = await mount(
+      new FakePickups(),
+      new FakeBakehouse(),
+      panels,
+    );
+    card['phone'].set(true);
+    card['siteId'].set('site_v');
+    fixture.detectChanges();
+
+    root.querySelector<HTMLElement>('[data-bakehouse-row="CRO"] .cell')?.click();
+    await fixture.whenStable();
+    fixture.detectChanges();
+    await clickSend(fixture);
+
+    expect(panels.asked).toEqual([{ label: 'Croissant', quantity: null }]);
+    expect(bakehouse.sent[0]?.payload.lines).toEqual([{ sku: 'CRO', quantity: 40 }]);
+  });
+
+  it('au bureau, la case se saisit sur place : aucun dialogue', async () => {
+    const panels = new FakePanels();
+    const { fixture, root } = await mount(new FakePickups(), new FakeBakehouse(), panels);
+
+    root.querySelector<HTMLElement>('[data-bakehouse-row="CRO"] .cell')?.click();
+    fixture.detectChanges();
+
+    expect(panels.asked).toEqual([]);
   });
 
   it('dit l’échec de lecture des points par un état fold', async () => {

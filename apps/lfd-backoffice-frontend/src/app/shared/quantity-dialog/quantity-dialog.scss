@@ -1,0 +1,18 @@
+.value {
+  display: flex;
+  justify-content: center;
+}
+
+/* Deux colonnes : retirer à gauche, ajouter à droite — des cibles assez
+   larges pour un pouce. */
+.steps {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fold-space-md);
+}
+
+.side {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--fold-space-xs);
+}

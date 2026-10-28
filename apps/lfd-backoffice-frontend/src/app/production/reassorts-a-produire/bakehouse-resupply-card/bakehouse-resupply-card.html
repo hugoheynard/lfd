@@ -118,6 +118,7 @@
           <div class="stepper" [attr.data-bakehouse-row]="article.sku">
             @for (quantity of downSteps; track quantity) {
               <button
+                class="shortcut"
                 foldButton
                 type="button"
                 emphasis="soft"
@@ -130,16 +131,22 @@
                 −{{ quantity }}
               </button>
             }
-            <fold-number-input
-              size="sm"
-              align="center"
-              [value]="quantityOf(article.sku)"
-              (valueChange)="setQuantity(article.sku, $event)"
-              [min]="0"
-              integer
-            />
+            <!-- En mobile, la case seule : la toucher ouvre le dialogue qui porte
+                 les raccourcis (Hugo, 2026-10-28). -->
+            <div class="cell" (click)="openQuantity(article)">
+              <fold-number-input
+                size="sm"
+                align="center"
+                [readOnly]="phone()"
+                [value]="quantityOf(article.sku)"
+                (valueChange)="setQuantity(article.sku, $event)"
+                [min]="0"
+                integer
+              />
+            </div>
             @for (quantity of steps; track quantity) {
               <button
+                class="shortcut"
                 foldButton
                 type="button"
                 emphasis="soft"

@@ -1,0 +1,53 @@
+<fold-panel-header [title]="data().label" subtitle="Quantité à envoyer" />
+
+<fold-panel-body>
+  <div class="value">
+    <fold-number-input
+      size="lg"
+      align="center"
+      label="Quantité"
+      [value]="draft()"
+      (valueChange)="draft.set($event)"
+      (keydown.enter)="submit()"
+      [min]="0"
+      integer
+    />
+  </div>
+  <!-- Retirer à gauche, ajouter à droite, comme sur la ligne au bureau. -->
+  <div class="steps">
+    <div class="side">
+      @for (quantity of downSteps; track quantity) {
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          intent="neutral"
+          [attr.data-quantity-step]="-quantity"
+          [disabled]="empty()"
+          (click)="step(-quantity)"
+        >
+          −{{ quantity }}
+        </button>
+      }
+    </div>
+    <div class="side">
+      @for (quantity of steps; track quantity) {
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          intent="neutral"
+          [attr.data-quantity-step]="quantity"
+          (click)="step(quantity)"
+        >
+          +{{ quantity }}
+        </button>
+      }
+    </div>
+  </div>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+  <button foldButton data-quantity-submit (click)="submit()">Valider</button>
+</fold-panel-footer>

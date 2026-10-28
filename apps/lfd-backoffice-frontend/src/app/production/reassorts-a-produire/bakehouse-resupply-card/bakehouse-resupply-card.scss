@@ -48,3 +48,10 @@
 .stepper fold-number-input {
   width: 6rem;
 }
+
+/* En mobile, la case seule : les raccourcis vivent dans le dialogue. */
+@media (max-width: 768px) {
+  .shortcut {
+    display: none;
+  }
+}
