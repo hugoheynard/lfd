@@ -102,6 +102,11 @@
 }
 
 /* La seconde rangée : la saisie et les fournées, sous la ligne, alignées sur le nom. */
+.wl-tranches {
+  flex-basis: 100%;
+  padding-left: calc(var(--fa-qty-col) + var(--fa-row-gap));
+}
+
 .wl-more {
   display: flex;
   flex-basis: 100%;

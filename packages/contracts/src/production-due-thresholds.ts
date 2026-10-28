@@ -20,9 +20,12 @@ import { z } from "zod";
  * - `deadline` : « `cumulative` avant `before` » ;
  * - `undated` : les commandes sans échéance — toujours le dernier seuil, à
  *   SIGNALER à l'écran ;
- * - `day` : les deux marges ne sont pas réglées — un seul seuil, la journée.
+ * - `day` : les deux marges ne sont pas réglées — un seul seuil, la journée ;
+ * - `before_first` : en tranches fixes, des besoins attendus AVANT la première
+ *   tranche (`before` = la première tranche) — à SIGNALER à l'écran, avec
+ *   `earliest`, l'heure du plus pressé (plan `production/plan-tranches-de-production.md`, §2.1).
  */
-export const dueThresholdKindSchema = z.enum(["deadline", "undated", "day"]);
+export const dueThresholdKindSchema = z.enum(["deadline", "undated", "day", "before_first"]);
 export type DueThresholdKind = z.infer<typeof dueThresholdKindSchema>;
 
 export const dueThresholdSchema = z.object({
@@ -36,6 +39,11 @@ export const dueThresholdSchema = z.object({
   quantity: z.number().int().nonnegative(),
   /** Ce qui doit être sorti avant ce seuil, tout compris. */
   cumulative: z.number().int().nonnegative(),
+  /** `before_first` seulement : l'heure du besoin le plus pressé, `HH:mm`. */
+  earliest: z
+    .string()
+    .regex(/^\d{2}:\d{2}$/u)
+    .optional(),
 });
 export type DueThresholdView = z.infer<typeof dueThresholdSchema>;
 
@@ -59,6 +67,12 @@ export const productionDueThresholdsViewSchema = z.object({
    */
   deliveryMarginMinutes: z.number().int().nonnegative().nullable(),
   pickupMarginMinutes: z.number().int().nonnegative().nullable(),
+  /**
+   * Le mode des tranches (plan `production/plan-tranches-de-production.md`) et,
+   * en mode fixe, les heures réglées. Les `lines` sont DÉJÀ rangées selon lui.
+   */
+  trancheMode: z.enum(["fixed", "computed"]),
+  fixedTranches: z.array(z.string()),
   /** Triées par SKU : un ordre stable. L'ordre d'affichage appartient à l'écran. */
   lines: z.array(productionDueThresholdLineSchema),
 });

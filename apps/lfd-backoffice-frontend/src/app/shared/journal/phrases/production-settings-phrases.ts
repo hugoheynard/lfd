@@ -89,7 +89,45 @@ const dossierSent: Phrase = (fact) => {
   };
 };
 
+/**
+ * « tranches fixes à 05:00, 07:00 », « tranches fixes, aucune heure »,
+ * « tranches calculées » (plan `production/plan-tranches-de-production.md`, T1).
+ */
+function trancheTerms(raw: unknown): Segment[] {
+  const settings = recordOf(raw);
+  if (settings === null) {
+    return [text('les valeurs par défaut')];
+  }
+  if (settings['mode'] === 'computed') {
+    return [text('tranches calculées')];
+  }
+  const hours = Array.isArray(settings['fixedTranches'])
+    ? settings['fixedTranches'].filter((hour): hour is string => typeof hour === 'string')
+    : [];
+  if (hours.length === 0) {
+    return [text('tranches fixes, aucune heure')];
+  }
+  return [
+    text('tranches fixes à '),
+    ...hours.flatMap((hour, index) => [
+      ...(index === 0 ? [] : [text(', ')]),
+      inUnit('clockTime', hour),
+    ]),
+  ];
+}
+
 export const PRODUCTION_SETTINGS_PHRASES = {
+  'production_tranche_settings.updated': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a réglé les tranches de production : '),
+        ...trancheTerms(fact.payload),
+        text(' ; c’était '),
+        ...trancheTerms(fact.payload['previous']),
+      ],
+      ['mode', 'fixedTranches', 'previous'],
+    ),
   'production_settings.close_changed': (fact) =>
     byActor(
       fact,

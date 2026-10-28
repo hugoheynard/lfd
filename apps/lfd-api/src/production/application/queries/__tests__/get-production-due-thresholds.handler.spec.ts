@@ -2,8 +2,10 @@ import {
   type DayDueThresholds,
   DueThresholdsReader,
 } from "../../../channels/commerce/due-thresholds.reader.js";
+import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
 import { InvalidServiceDayError } from "../../../domain/errors/production-errors.js";
 import type { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { GetProductionDueThresholdsHandler } from "../get-production-due-thresholds.handler.js";
 import { GetProductionDueThresholdsQuery } from "../get-production-due-thresholds.query.js";
 
@@ -35,11 +37,20 @@ const DUE: DayDueThresholds = {
   ],
 };
 
+function handlerOf(commerce: Commerce, posed: ProductionTrancheSettings | null) {
+  return new GetProductionDueThresholdsHandler(
+    commerce,
+    new InMemoryTrancheSettings(posed).reader(),
+  );
+}
+
+const COMPUTED = ProductionTrancheSettings.set("computed", ["05:00"]);
+
 describe("GetProductionDueThresholdsHandler", () => {
-  it("demande au commerce la journée nommée et rend ses seuils tels quels", async () => {
+  it("en mode calculé, demande au commerce la journée nommée et rend ses seuils tels quels", async () => {
     const commerce = new Commerce(DUE);
 
-    const view = await new GetProductionDueThresholdsHandler(commerce).execute(
+    const view = await handlerOf(commerce, COMPUTED).execute(
       new GetProductionDueThresholdsQuery("2030-01-15"),
     );
 
@@ -48,17 +59,43 @@ describe("GetProductionDueThresholdsHandler", () => {
       date: "2030-01-15",
       deliveryMarginMinutes: 50,
       pickupMarginMinutes: null,
+      trancheMode: "computed",
+      fixedTranches: [],
       lines: DUE.items,
     });
+  });
+
+  it("en mode fixe, range les besoins dans les heures réglées et les nomme", async () => {
+    const view = await handlerOf(
+      new Commerce(DUE),
+      ProductionTrancheSettings.set("fixed", ["05:00", "07:00"]),
+    ).execute(new GetProductionDueThresholdsQuery("2030-01-15"));
+
+    expect(view.trancheMode).toBe("fixed");
+    expect(view.fixedTranches).toEqual(["05:00", "07:00"]);
+    expect(view.lines[0]?.thresholds).toEqual([
+      { kind: "deadline", before: "05:00", quantity: 10, cumulative: 10 },
+      { kind: "undated", before: null, quantity: 5, cumulative: 15 },
+    ]);
+  });
+
+  it("sans réglage : mode fixe sans heure, une seule tranche, la journée", async () => {
+    const view = await handlerOf(new Commerce(DUE), null).execute(
+      new GetProductionDueThresholdsQuery("2030-01-15"),
+    );
+
+    expect(view.trancheMode).toBe("fixed");
+    expect(view.fixedTranches).toEqual([]);
+    expect(view.lines[0]?.thresholds).toEqual([
+      { kind: "day", before: null, quantity: 15, cumulative: 15 },
+    ]);
   });
 
   it("refuse un jour mal formé sans rien demander au commerce", async () => {
     const commerce = new Commerce(DUE);
 
     await expect(
-      new GetProductionDueThresholdsHandler(commerce).execute(
-        new GetProductionDueThresholdsQuery("15/01/2030"),
-      ),
+      handlerOf(commerce, null).execute(new GetProductionDueThresholdsQuery("15/01/2030")),
     ).rejects.toThrow(InvalidServiceDayError);
     expect(commerce.asked).toEqual([]);
   });

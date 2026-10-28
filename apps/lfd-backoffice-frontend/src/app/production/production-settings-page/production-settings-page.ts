@@ -19,6 +19,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { parisToday } from '../../shared/paris-today';
 import { DossierRecipientsCard } from '../dossier-recipients-card/dossier-recipients-card';
 import { ProductionSettingsService } from '../production-settings.service';
+import { ProductionTranchesCard } from '../production-tranches-card/production-tranches-card';
 import { dayLabelOf } from '../worksheet-day';
 
 type LoadState =
@@ -80,6 +81,7 @@ export function automaticCloseLabel(close: ProductionAutomaticCloseView): string
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    ProductionTranchesCard,
     RouterLink,
   ],
   templateUrl: './production-settings-page.html',
@@ -109,6 +111,8 @@ export class ProductionSettingsPage {
     const close = this.view()?.automaticClose ?? null;
     return close === null ? null : automaticCloseLabel(close);
   });
+
+  protected readonly tranches = computed(() => this.view()?.tranches ?? null);
 
   protected readonly closedDays = computed(() =>
     (this.view()?.closedDays ?? []).map((date) => ({ date, label: dayLabelOf(date) })),

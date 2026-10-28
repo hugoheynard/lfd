@@ -54,6 +54,22 @@ export const PRODUCTION_SETTINGS_FACTS = {
       previous: payload({ lineChecks: z.boolean(), orderChecks: z.boolean() }),
     }),
   ),
+  /**
+   * Les tranches de production (Réglages › Production, plan
+   * `production/plan-tranches-de-production.md`, T1, 2026-10-28) : l'état posé
+   * et celui qu'il remplace, défauts compris. Un réglage unique, sans
+   * `subjectLabel`.
+   */
+  "production_tranche_settings.updated": fact(
+    payload({
+      mode: z.enum(["fixed", "computed"]),
+      fixedTranches: z.array(clockTime()),
+      previous: payload({
+        mode: z.enum(["fixed", "computed"]),
+        fixedTranches: z.array(clockTime()),
+      }),
+    }),
+  ),
   /** Un jour où le fournil ne produit pas. */
   "production_closed_day.added": fact(closedDay()),
   /** Ce jour redevient un jour de production. */

@@ -1,6 +1,7 @@
 import { addDays } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
 import { todayOf } from "../../../domain/services/relative-day.js";
 import {
   ClosedDaysTable,
@@ -9,6 +10,7 @@ import {
   SettingsReader,
   stopRulesOf,
 } from "../../__tests__/settings-doubles.js";
+import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { GetProductionSettingsHandler } from "../get-production-settings.handler.js";
 
 const NOW = new Date();
@@ -18,19 +20,25 @@ function subject() {
   const closedDays = new ClosedDaysTable();
   const cutoffs = new CutoffRules();
   const resupplyTime = new ResupplyTime();
+  const tranches = new InMemoryTrancheSettings();
   const handler = new GetProductionSettingsHandler(
     new SettingsReader(closedDays),
     stopRulesOf(cutoffs, resupplyTime),
     new FixedClock(NOW),
+    tranches.reader(),
   );
-  return { closedDays, cutoffs, resupplyTime, handler };
+  return { closedDays, cutoffs, resupplyTime, tranches, handler };
 }
 
 describe("GetProductionSettingsHandler", () => {
   it("sans heure limite générale, rien n'arrête le plan tout seul", async () => {
     const { handler } = subject();
 
-    expect(await handler.execute()).toEqual({ automaticClose: null, closedDays: [] });
+    expect(await handler.execute()).toEqual({
+      automaticClose: null,
+      closedDays: [],
+      tranches: { mode: "fixed", fixedTranches: [] },
+    });
   });
 
   /**
@@ -48,6 +56,7 @@ describe("GetProductionSettingsHandler", () => {
     expect(await handler.execute()).toEqual({
       automaticClose: { daysBefore: 1, time: "23:15" },
       closedDays: [TODAY, addDays(TODAY, 5)],
+      tranches: { mode: "fixed", fixedTranches: [] },
     });
   });
 
@@ -73,5 +82,16 @@ describe("GetProductionSettingsHandler", () => {
     resupplyTime.current = "20:00";
 
     expect((await handler.execute()).automaticClose).toEqual({ daysBefore: 1, time: "21:30" });
+  });
+
+  /** Plan des tranches, T1 : la page lit aussi les tranches posées. */
+  it("rend les tranches posées", async () => {
+    const { handler, tranches } = subject();
+    tranches.posed = ProductionTrancheSettings.set("computed", ["07:00", "05:00"]);
+
+    expect((await handler.execute()).tranches).toEqual({
+      mode: "computed",
+      fixedTranches: ["05:00", "07:00"],
+    });
   });
 });

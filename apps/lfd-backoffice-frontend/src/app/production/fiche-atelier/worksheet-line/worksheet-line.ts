@@ -6,9 +6,10 @@ import {
   FoldNumberInputComponent,
 } from 'fold-ng';
 
-import type { WorkshopBatch, WorkshopLine } from '@lfd/contracts';
+import type { DueThresholdView, WorkshopBatch, WorkshopLine } from '@lfd/contracts';
 
 import { hourLabel } from '../../worksheet-day';
+import { WorksheetTranches } from '../worksheet-tranches/worksheet-tranches';
 
 /** Une fournée telle que la ligne la montre : l'heure dite comme au fournil. */
 interface ShownBatch {
@@ -36,7 +37,13 @@ interface ShownBatch {
 @Component({
   selector: 'app-worksheet-line',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldMeterComponent, FoldNumberInputComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldMeterComponent,
+    FoldNumberInputComponent,
+    WorksheetTranches,
+  ],
   templateUrl: './worksheet-line.html',
   styleUrl: './worksheet-line.scss',
   host: {
@@ -47,6 +54,13 @@ interface ShownBatch {
 })
 export class WorksheetLine {
   readonly line = input.required<WorkshopLine>();
+
+  /**
+   * Les tranches du produit, telles que servies (plan
+   * `production/plan-tranches-de-production.md`, T3). `null` = rien à
+   * montrer : pas lues, ou produit absent des seuils.
+   */
+  readonly thresholds = input<readonly DueThresholdView[] | null>(null);
 
   /** Un geste de cette ligne est en vol : tout est désarmé le temps de l'envoi. */
   readonly busy = input(false);

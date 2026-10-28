@@ -2,6 +2,9 @@ import type { ProductionDueThresholdsView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { DueThresholdsReader } from "../../channels/commerce/due-thresholds.reader.js";
+import { ProductionTrancheSettings } from "../../domain/entities/production-tranche-settings.js";
+import { ProductionTrancheSettingsReader } from "../../domain/ports/production-tranche-settings.reader.js";
+import { rangeInTranches } from "../../domain/services/production-tranches.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 import { GetProductionDueThresholdsQuery } from "./get-production-due-thresholds.query.js";
 
@@ -9,10 +12,12 @@ import { GetProductionDueThresholdsQuery } from "./get-production-due-thresholds
  * **Avant quelle heure sortir quoi**, pour une journée — l'aperçu en lecture
  * seule du lot V0 (plan production par vagues).
  *
- * Le handler ne calcule rien : la règle (échéance moins marge, cumul, seuil
- * des commandes sans échéance) appartient au commerce, qui seul connaît
- * l'échéance d'une commande et ses marges, et la sert par le port que la
- * production déclare. Ici, on traduit. Il n'écrit rien.
+ * Les besoins viennent du commerce : la règle (échéance moins marge, cumul,
+ * seuil des commandes sans échéance) lui appartient, lui seul connaissant
+ * l'échéance d'une commande et ses marges. Le RANGEMENT en tranches est à la
+ * production (plan `production/plan-tranches-de-production.md`, §3) : le
+ * réglage de l'atelier, fixe ou calculé, est lu ici et appliqué par
+ * {@link rangeInTranches}. Il n'écrit rien.
  *
  * @throws {InvalidServiceDayError} la date n'est pas un jour ISO.
  */
@@ -21,20 +26,28 @@ export class GetProductionDueThresholdsHandler implements IQueryHandler<
   GetProductionDueThresholdsQuery,
   ProductionDueThresholdsView
 > {
-  constructor(private readonly thresholds: DueThresholdsReader) {}
+  constructor(
+    private readonly thresholds: DueThresholdsReader,
+    private readonly tranches: ProductionTrancheSettingsReader,
+  ) {}
 
   async execute(query: GetProductionDueThresholdsQuery): Promise<ProductionDueThresholdsView> {
     const day = ServiceDay.of(query.date);
-    const due = await this.thresholds.dueThresholdsFor(day);
+    const [due, posed] = await Promise.all([
+      this.thresholds.dueThresholdsFor(day),
+      this.tranches.current(),
+    ]);
+    const settings = posed ?? ProductionTrancheSettings.defaults();
+    const fixedTranches = settings.mode === "fixed" ? [...settings.fixedTranches] : [];
     return {
       date: day.value,
       deliveryMarginMinutes: due.deliveryMarginMinutes,
       pickupMarginMinutes: due.pickupMarginMinutes,
-      lines: due.items.map((item) => ({
-        sku: item.sku,
-        productName: item.productName,
-        total: item.total,
-        thresholds: item.thresholds.map((threshold) => ({ ...threshold })),
+      trancheMode: settings.mode,
+      fixedTranches,
+      lines: rangeInTranches(due.items, settings.mode, fixedTranches).map((line) => ({
+        ...line,
+        thresholds: line.thresholds.map((threshold) => ({ ...threshold })),
       })),
     };
   }

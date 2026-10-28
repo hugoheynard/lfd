@@ -12,6 +12,8 @@ const SET: ProductionDueThresholdsView = {
   date: '2026-10-05',
   deliveryMarginMinutes: 90,
   pickupMarginMinutes: 30,
+  trancheMode: 'computed',
+  fixedTranches: [],
   lines: [
     {
       sku: 'PAIN-2',
@@ -36,6 +38,8 @@ const UNSET: ProductionDueThresholdsView = {
   date: '2026-10-05',
   deliveryMarginMinutes: null,
   pickupMarginMinutes: 30,
+  trancheMode: 'computed',
+  fixedTranches: [],
   lines: [
     {
       sku: 'BAG-1',
@@ -87,7 +91,64 @@ describe('dueThresholdRows', () => {
   });
 });
 
+const FIXED: ProductionDueThresholdsView = {
+  date: '2026-10-05',
+  deliveryMarginMinutes: 90,
+  pickupMarginMinutes: 30,
+  trancheMode: 'fixed',
+  fixedTranches: ['05:00', '07:00', '12:00'],
+  lines: [
+    {
+      sku: 'CRO',
+      productName: 'Croissant',
+      total: 2000,
+      thresholds: [
+        {
+          kind: 'before_first',
+          before: '05:00',
+          quantity: 120,
+          cumulative: 400,
+          earliest: '04:30',
+        },
+        { kind: 'deadline', before: '07:00', quantity: 800, cumulative: 1200 },
+        { kind: 'deadline', before: '12:00', quantity: 800, cumulative: 2000 },
+      ],
+    },
+  ],
+};
+
+describe('dueThresholdRows — tranches fixes', () => {
+  it('lit les seuils tels que servis et signale l’avant-première-tranche', () => {
+    expect(dueThresholdRows(FIXED)[0]).toMatchObject({
+      countdown: '400 avant 05:00 · 1200 avant 07:00 · 2000 avant 12:00',
+      beforeFirst: '120 attendus à 04:30, avant la première tranche',
+    });
+    expect(dueThresholdRows(SET)[0]?.beforeFirst).toBeNull();
+  });
+});
+
 describe('DueThresholdsSection', () => {
+  it('dit le mode dans le titre et signale l’avant-première-tranche', async () => {
+    const fixture = await mount(FIXED);
+
+    expect(text(fixture)).toContain('Tranches fixes');
+    expect(fixture.nativeElement.querySelector('[data-before-first]')?.textContent ?? '').toContain(
+      '120 attendus à 04:30, avant la première tranche',
+    );
+  });
+
+  it('dit les tranches calculées dans le titre', async () => {
+    const fixture = await mount(SET);
+
+    expect(text(fixture)).toContain('Tranches calculées');
+  });
+
+  it('dit la journée entière en tranches fixes sans heure', async () => {
+    const fixture = await mount({ ...UNSET, trancheMode: 'fixed', fixedTranches: [] });
+
+    expect(text(fixture)).toContain('une seule tranche, la journée');
+  });
+
   it('montre les seuils, signale le sans-échéance, et pas de bandeau quand les marges sont réglées', async () => {
     const fixture = await mount(SET);
 

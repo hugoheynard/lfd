@@ -3,6 +3,7 @@ import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import {
   SHELF_LABEL_UNKNOWN,
   UNSHELVED_WORKSHOP_GROUP_KEY,
+  type ProductionDueThresholdsView,
   type ProductionWorksheetView,
   type StaffNavPreferencesPatch,
   type WorkshopGroup,
@@ -14,6 +15,7 @@ import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-v
 import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { dayLabelOf } from '../worksheet-day';
+import { ProductionService } from '../production.service';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
 
@@ -211,6 +213,19 @@ class FakePrefs {
 
 const ME = { firstName: 'Marie', lastName: 'Jost' };
 
+/** Les tranches servies ; `null` = la lecture échoue. */
+let tranches: ProductionDueThresholdsView | null;
+const tranchesReads: string[] = [];
+
+const NO_TRANCHES: ProductionDueThresholdsView = {
+  date: DAY,
+  deliveryMarginMinutes: null,
+  pickupMarginMinutes: null,
+  trancheMode: 'fixed',
+  fixedTranches: [],
+  lines: [],
+};
+
 let api: FakeWorksheetService;
 let prefs: FakePrefs;
 
@@ -254,11 +269,24 @@ describe('la fiche d’atelier', () => {
   beforeEach(() => {
     api = new FakeWorksheetService();
     prefs = new FakePrefs();
+    tranches = { ...NO_TRANCHES };
+    tranchesReads.length = 0;
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [
         { provide: DayVersionWatcher, useValue: fakeWatcher },
         { provide: WorksheetService, useValue: api },
+        {
+          provide: ProductionService,
+          useValue: {
+            dueThresholds: (date: string) => {
+              tranchesReads.push(date);
+              return tranches === null
+                ? Promise.reject(new Error('panne'))
+                : Promise.resolve(tranches);
+            },
+          } satisfies Partial<Record<keyof ProductionService, unknown>>,
+        },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
       ],
@@ -623,5 +651,43 @@ describe('la fiche d’atelier', () => {
 
     expect(text(el, '.fa-title').trim()).toBe('Viennoiseries');
     expect(text(el, '.fa-eyebrow')).toContain('fiche 1 sur 2');
+  });
+
+  describe('les tranches de production (T3)', () => {
+    it('lit les tranches de la journée SERVIE et les montre sous la ligne', async () => {
+      tranches = {
+        ...NO_TRANCHES,
+        fixedTranches: ['05:00', '07:00'],
+        lines: [
+          {
+            sku: 'BAG',
+            productName: 'Baguette tradition',
+            total: 160,
+            thresholds: [
+              { kind: 'deadline', before: '05:00', quantity: 40, cumulative: 40 },
+              { kind: 'deadline', before: '07:00', quantity: 120, cumulative: 160 },
+            ],
+          },
+        ],
+      };
+
+      const { el } = await render();
+      await new Promise<void>((resolve) => setTimeout(resolve, 0));
+
+      expect(tranchesReads).toEqual([DAY]);
+      const strip = baguette(el)?.querySelector('app-worksheet-tranches');
+      expect(strip?.textContent?.replace(/\s+/gu, ' ')).toContain('40 avant 05:00');
+      expect(strip?.textContent?.replace(/\s+/gu, ' ')).toContain('160 avant 07:00');
+    });
+
+    it('dit l’échec de lecture des tranches sans retirer la fiche', async () => {
+      tranches = null;
+
+      const { fixture, el } = await render();
+      await settle(fixture);
+
+      expect(el.querySelector('[data-tranches-failed]')).not.toBeNull();
+      expect(baguette(el)).toBeDefined();
+    });
   });
 });

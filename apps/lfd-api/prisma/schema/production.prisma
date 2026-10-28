@@ -879,3 +879,27 @@ model ProductionQualitySettings {
   @@map("production_quality_settings")
   @@schema("production")
 }
+
+/// **Les tranches de production** — Réglages › Production (plan
+/// `production/plan-tranches-de-production.md`, T1, 2026-10-28) : UNE ligne,
+/// clé naturelle `house`. `fixed` range chaque besoin dans la dernière heure
+/// fixe au plus tard à son échéance ; `computed` garde les heures des besoins.
+/// Ligne absente : `fixed`, aucune heure — une seule tranche, la journée.
+///
+/// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
+model ProductionTrancheSettings {
+  /// Toujours `house` : il n'y a qu'un réglage.
+  key              String   @id
+  /// `fixed` | `computed` (CHECK en base).
+  mode             String
+  /// `HH:mm`, triées, sans doublon — gardées en mode calculé pour le retour au fixe.
+  fixedTranches    String[] @map("fixed_tranches")
+  updatedAt        DateTime @map("updated_at") @db.Timestamptz(6)
+  /// Qui l'a posé : l'id de fiche survit à tout, le nom est un instantané.
+  updatedByStaffId String   @map("updated_by_staff_id")
+  /// `null` : la fiche ne portait pas de nom au moment du geste — on n'en invente pas.
+  updatedByName    String?  @map("updated_by_name")
+
+  @@map("production_tranche_settings")
+  @@schema("production")
+}

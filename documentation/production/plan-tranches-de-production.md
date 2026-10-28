@@ -1,6 +1,11 @@
 # Plan — les tranches de production : fixes ou calculées
 
-> 📝 **Plan** du 2026-10-28. Demande de Hugo : « sur 2000 croissants, peut-être
+> ✅ **Bâti le 2026-10-28** (T1, T2, T3) : table `production.production_tranche_settings`,
+> migration `20261028180000_les_tranches_de_production`, rangement
+> `rangeInTranches`, carte de Réglages › Production, prévisionnel, dossier du
+> jour et fiche d'atelier.
+>
+> 📝 Plan du 2026-10-28. Demande de Hugo : « sur 2000 croissants, peut-être
 > que je dois en produire 400 avant 5 h, 800 de plus avant 7 h et 800 avant
 > midi ». Il veut que **toutes les commandes et leurs contraintes** fixent ces
 > quantités. Décisions du même jour :
@@ -10,7 +15,8 @@
 > - la **capacité du four plus tard**, hors de ce plan.
 >
 > Il prolonge [`plan-production-par-vagues.md`](plan-production-par-vagues.md),
-> dont il garde toutes les décisions (§7). Rien n'est bâti de ce plan-ci.
+> dont il garde toutes les décisions (§7). Rien n'est bâti de ce plan-ci. Même
+> page de réglage : [`plan-raccourcis-du-fournil.md`](plan-raccourcis-du-fournil.md).
 
 ## 1. Ce qui existe (relu le 2026-10-28)
 
@@ -112,10 +118,15 @@ Dans **Réglages › Production**, une carte « Tranches de production » :
 - en mode calculé, une phrase dit d'où viennent les heures, avec un lien vers
   les marges (réglages du commerce).
 
-Persistance : deux colonnes **additives** sur `production_settings`,
-`tranche_mode` (`fixed` | `computed`, défaut `fixed`) et `fixed_tranches`
-(`text[]`, défaut vide), avec leurs CHECK. Écrites par le même agrégat que
-l'arrêt du plan, qui valide la forme `HH:mm`, l'unicité, le tri et la borne de 8. Tracées au journal comme le reste de ce réglage.
+Persistance : une table **à part**, `production.production_tranche_settings`,
+une ligne `house`, comme `production_quality_settings`. Elle porte `mode`
+(`fixed` | `computed`), `fixed_tranches` (`text[]`), l'auteur et l'instant ;
+ligne absente = mode fixe sans heure. Ce n'est pas `production_settings` :
+cette table n'est plus lue par personne, l'arrêt du plan venant de l'heure
+limite générale (vérifié le 2026-10-28 : aucun lecteur hors du client Prisma).
+L'agrégat valide la forme `HH:mm`, l'unicité, le tri et la borne de 8. La route
+est `PUT /admin/production/settings/tranches`, sous `production_settings`, et
+`GET /admin/production/settings` rend aussi les tranches.
 
 ## 5. Ce que voit l'atelier
 
@@ -136,7 +147,7 @@ l'arrêt du plan, qui valide la forme `HH:mm`, l'unicité, le tri et la borne de
 
 | Lot | Contenu                                                                     | Migration |
 | --- | --------------------------------------------------------------------------- | --------- |
-| T1  | Le réglage : colonnes, agrégat, routes, carte de Réglages › Production      | additive  |
+| T1  | Le réglage : table, agrégat, routes, carte de Réglages › Production         | additive  |
 | T2  | Le rangement : fonction pure, vue enrichie, prévisionnel et dossier du jour | non       |
 | T3  | La fiche d'atelier : tranches cumulées, sorti, prochaine tranche à couvrir  | non       |
 

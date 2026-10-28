@@ -176,6 +176,8 @@ describe("le réglage de livraison", () => {
       date: "2030-01-15",
       deliveryMarginMinutes: 50,
       pickupMarginMinutes: 20,
+      trancheMode: "fixed",
+      fixedTranches: [],
       lines: [],
     });
   });

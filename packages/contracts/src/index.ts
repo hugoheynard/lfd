@@ -1003,11 +1003,19 @@ export type {
   WorkshopBatch,
   WorkshopLineContainer,
 } from "./production-batches.js";
-export { productionClosedDayPayloadSchema } from "./production-settings.js";
+export {
+  MAX_FIXED_TRANCHES,
+  PRODUCTION_TRANCHE_MODES,
+  productionClosedDayPayloadSchema,
+  productionTranchesPayloadSchema,
+} from "./production-settings.js";
 export type {
   ProductionAutomaticCloseView,
   ProductionClosedDayPayload,
   ProductionSettingsView,
+  ProductionTrancheMode,
+  ProductionTranchesPayload,
+  ProductionTranchesView,
 } from "./production-settings.js";
 export {
   dossierExternalRecipientPayloadSchema,

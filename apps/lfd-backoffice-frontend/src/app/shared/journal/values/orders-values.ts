@@ -243,6 +243,12 @@ export const PRODUCTION_CLOSE_MODE = domain('mode d’arrêt du plan', {
   manual: 'Manuel',
 });
 
+/** Le mode des tranches de production (`production_tranche_settings.updated`, T1). */
+export const PRODUCTION_TRANCHE_MODE = domain('mode des tranches de production', {
+  fixed: 'Fixes',
+  computed: 'Calculées',
+});
+
 /** La forme d'un destinataire du dossier du jour (plan `dossier-prod-du-jour.md`, E2). */
 /** La cible d'une exemption à la fermeture (`order_opening.exemption_*`, 2026-10-26). */
 export const ORDER_OPENING_EXEMPTION_KIND = domain('cible d’exemption', {
@@ -317,6 +323,7 @@ export const ORDERS_VALUES: ValueFamily = {
     SITE_COLOR_FIELD,
     CONTAINER_NATURE,
     PRODUCTION_CLOSE_MODE,
+    PRODUCTION_TRANCHE_MODE,
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,
     ORDER_OPENING_EXEMPTION_KIND,

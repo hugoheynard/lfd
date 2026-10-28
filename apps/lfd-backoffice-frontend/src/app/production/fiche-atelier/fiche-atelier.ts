@@ -1,4 +1,11 @@
-import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  effect,
+  inject,
+  signal,
+} from '@angular/core';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -23,6 +30,7 @@ import { isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
+import { WorkshopTranchesReader } from './workshop-tranches.reader';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
 
 /**
@@ -81,13 +89,14 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [WorkshopDayReader, WorkshopGestures],
+  providers: [WorkshopDayReader, WorkshopGestures, WorkshopTranchesReader],
   templateUrl: './fiche-atelier.html',
   styleUrl: './fiche-atelier.scss',
 })
 export class FicheAtelier {
   protected readonly day = inject(WorkshopDayReader);
   protected readonly gestures = inject(WorkshopGestures);
+  protected readonly tranches = inject(WorkshopTranchesReader);
   private readonly prefs = inject(StaffPrefsService);
 
   protected readonly compact = narrowViewport(WORKSHOP_NARROW);
@@ -108,8 +117,16 @@ export class FicheAtelier {
     inject(DayVersionWatcher).watch({
       journals: ['production'],
       date: this.day.date,
-      reload: () => this.day.refresh(),
+      // Le plan qui bouge bouge aussi les tranches.
+      reload: async () => {
+        await Promise.all([this.day.refresh(), this.tranches.reload()]);
+      },
       clockDay: () => isoDay(new Date()),
+    });
+    // Les tranches suivent la journée LUE : une fiche qui bascule à demain
+    // lit les tranches de demain.
+    effect(() => {
+      void this.tranches.load(this.day.date());
     });
     // La préférence n'arrive pas avant la personne : `GET /admin/me` est déjà en
     // vol pour les droits. Si elle n'arrive jamais, la première fiche suffit.

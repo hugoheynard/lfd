@@ -5,6 +5,7 @@ import type {
   DossierRecipientView,
   DossierStaffCandidateView,
   ProductionSettingsView,
+  ProductionTranchesPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -36,6 +37,11 @@ export class ProductionSettingsService {
 
   async removeClosedDay(date: string): Promise<void> {
     await firstValueFrom(this.http.delete(`${SETTINGS}/closed-days/${encodeURIComponent(date)}`));
+  }
+
+  /** Les tranches de production (plan `production/plan-tranches-de-production.md`, T1). */
+  async saveTranches(payload: ProductionTranchesPayload): Promise<void> {
+    await firstValueFrom(this.http.put(`${SETTINGS}/tranches`, payload));
   }
 
   /** Les destinataires du dossier du jour (plan `dossier-prod-du-jour.md`, lot E2). */

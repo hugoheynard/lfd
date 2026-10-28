@@ -106,6 +106,14 @@
           </div>
         </fold-card>
 
+        @if (tranches(); as tranches) {
+          <app-production-tranches-card
+            [tranches]="tranches"
+            [canWrite]="canWrite()"
+            (saved)="retry()"
+          />
+        }
+
         <app-dossier-recipients-card [canWrite]="canWrite()" />
       </div>
     }

@@ -1,0 +1,87 @@
+<fold-card data-tranches-settings>
+  <div class="stack">
+    <fold-element-title
+      variant="title"
+      title="Tranches de production"
+      subtitle="Les heures auxquelles l’atelier lit ce qui doit être sorti."
+    />
+
+    <fold-view-toggle
+      ariaLabel="Mode des tranches"
+      [options]="modeOptions"
+      [value]="mode()"
+      (valueChange)="setMode($event)"
+      data-tranche-mode
+    />
+
+    @if (refusal(); as message) {
+      <fold-callout variant="alert" announce data-tranches-refusal>{{ message }}</fold-callout>
+    }
+
+    @if (mode() === 'computed') {
+      <p class="note" data-computed-explained>
+        Les heures viennent des échéances des commandes, moins les marges de livraison et de
+        retrait, réglées dans
+        <a routerLink="/reglages/livraison/zones">Disponibilité de la livraison</a>.
+      </p>
+    } @else {
+      @if (times().length === 0) {
+        <p class="note" data-single-tranche>Aucune heure réglée : une seule tranche, la journée.</p>
+      } @else {
+        <ul class="times">
+          @for (time of times(); track time) {
+            <li class="time" data-fixed-tranche>
+              <span>avant {{ time }}</span>
+              @if (canWrite()) {
+                <fold-button-icon
+                  icon="close"
+                  size="sm"
+                  [tooltip]="'Retirer ' + time"
+                  [disabled]="busy()"
+                  (clicked)="removeTime(time)"
+                  data-remove-tranche
+                />
+              }
+            </li>
+          }
+        </ul>
+      }
+
+      @if (canWrite()) {
+        <div class="add">
+          <fold-time
+            label="Ajouter une heure"
+            [hint]="'Au plus ' + max + ' heures.'"
+            [value]="newTime()"
+            (valueChange)="newTime.set($event)"
+            data-new-tranche
+          />
+          <button
+            foldButton
+            emphasis="outline"
+            icon="plus"
+            [disabled]="!canAddTime()"
+            (click)="addTime()"
+            data-add-tranche
+          >
+            Ajouter
+          </button>
+        </div>
+      }
+    }
+
+    @if (canWrite()) {
+      <div class="actions">
+        <button
+          foldButton
+          [loading]="busy()"
+          [disabled]="!dirty()"
+          (click)="save()"
+          data-save-tranches
+        >
+          Enregistrer
+        </button>
+      </div>
+    }
+  </div>
+</fold-card>

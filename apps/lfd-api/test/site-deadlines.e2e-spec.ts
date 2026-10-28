@@ -175,6 +175,13 @@ async function seedDay(): Promise<SeededDay> {
     .patch("/admin/delivery-availability")
     .send({ deliveryMarginMinutes: 50, pickupMarginMinutes: 20 })
     .expect(204);
+  // Les heures du commerce telles quelles : sans réglage, le fournil range en
+  // une seule tranche (plan des tranches, §2.2), et cette suite éprouve l'échéance.
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .put("/admin/production/settings/tranches")
+    .send({ mode: "computed", fixedTranches: [] })
+    .expect(204);
   return {
     ...sites,
     skuOf: new Map([

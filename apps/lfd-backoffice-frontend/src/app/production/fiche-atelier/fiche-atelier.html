@@ -83,6 +83,13 @@
       </fold-callout>
     }
 
+    @if (tranches.failed() && day.state() === 'ready') {
+      <fold-callout variant="alert" class="fa-note" data-tranches-failed>
+        Les tranches de production n'ont pas pu être lues — les quantités sont justes, mais l'heure
+        de chaque tranche n'est pas affichée.
+      </fold-callout>
+    }
+
     @if (gestures.retakeFailed()) {
       <fold-callout variant="alert" class="fa-note">
         Le retirage n'a pas abouti — la fiche affichée est toujours celle du tirage lu. Réessayez.
@@ -182,6 +189,7 @@
             <app-worksheet-line
               [line]="line"
               [busy]="gestures.isBusy(line)"
+              [thresholds]="tranches.bySku().get(line.sku) ?? null"
               (recorded)="gestures.record(line, $event)"
               (cancelled)="gestures.cancel(line, $event)"
             />
@@ -220,6 +228,7 @@
                   <app-worksheet-line
                     [line]="line"
                     [busy]="gestures.isBusy(line)"
+                    [thresholds]="tranches.bySku().get(line.sku) ?? null"
                     (recorded)="gestures.record(line, $event)"
                     (cancelled)="gestures.cancel(line, $event)"
                   />

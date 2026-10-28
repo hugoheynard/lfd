@@ -62,6 +62,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // Ce qu'il permet — un verdict — s'écrit dans `production_quality_check`.
   "production.production_quality_settings":
     "les réglages du contrôle qualité, un réglage unique sans journée",
+  // Les tranches de production (Réglages › Production, 2026-10-28) : un réglage.
+  "production.production_tranche_settings":
+    "les tranches de production, un réglage unique sans journée",
   // Les destinataires du dossier du jour (plan d'envoi du dossier, E2, 2026-10-06).
   "production.production_dossier_recipient":
     "la liste des destinataires du dossier, un réglage sans journée — l'envoi d'une journée (E3) aura sa trace à lui",

@@ -82,7 +82,11 @@ async function setResupplyCutoff(time: string): Promise<void> {
 
 describe("l'arrêt automatique, lu de l'heure limite générale", () => {
   it("sans heure limite posée : rien n'arrête le plan seul, aucun jour fermé", async () => {
-    expect(await read()).toEqual({ automaticClose: null, closedDays: [] });
+    expect(await read()).toEqual({
+      automaticClose: null,
+      closedDays: [],
+      tranches: { mode: "fixed", fixedTranches: [] },
+    });
   });
 
   it("suit l'heure limite générale, rattrapage compris", async () => {

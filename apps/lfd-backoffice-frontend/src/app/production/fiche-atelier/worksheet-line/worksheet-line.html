@@ -49,6 +49,17 @@
   </button>
 </span>
 
+<!-- Les tranches cumulées face au sorti : on lit, on ne coche rien. -->
+@if (thresholds(); as tranches) {
+  @if (tranches.length > 0) {
+    <app-worksheet-tranches
+      class="wl-tranches"
+      [thresholds]="tranches"
+      [produced]="line().produced"
+    />
+  }
+}
+
 @if (entering() || batches().length > 0) {
   <div class="wl-more">
     @if (entering()) {

@@ -30,12 +30,18 @@ export interface DueThresholdRow {
   readonly countdown: string;
   /** Ce qui n'a pas d'échéance, à signaler ; `0` s'il n'y en a pas. */
   readonly undated: number;
+  /**
+   * En tranches fixes, les besoins d'avant la première tranche, à signaler :
+   * « 120 attendus à 04:30, avant la première tranche » ; `null` sinon.
+   */
+  readonly beforeFirst: string | null;
 }
 
 /** Le libellé d'un seuil daté ou de la journée ; `null` pour le seuil sans échéance. */
 export function thresholdLabel(threshold: DueThresholdView): string | null {
   switch (threshold.kind) {
     case 'deadline':
+    case 'before_first':
       return `${threshold.cumulative} avant ${threshold.before ?? '?'}`;
     case 'day':
       return `${threshold.cumulative} dans la journée`;
@@ -44,7 +50,25 @@ export function thresholdLabel(threshold: DueThresholdView): string | null {
   }
 }
 
-/** Les lignes du serveur, dans l'ordre du nom — l'ordre d'affichage appartient à l'écran. */
+/** « 120 attendus à 04:30, avant la première tranche », ou `null`. */
+export function beforeFirstLabel(thresholds: readonly DueThresholdView[]): string | null {
+  const early = thresholds.find((threshold) => threshold.kind === 'before_first');
+  if (early === undefined) {
+    return null;
+  }
+  return `${early.quantity} attendus à ${early.earliest ?? early.before ?? '?'}, avant la première tranche`;
+}
+
+/** Le mode des tranches, tel qu'il se lit dans un titre. */
+export function trancheModeLabel(view: ProductionDueThresholdsView): string {
+  return view.trancheMode === 'fixed' ? 'Tranches fixes' : 'Tranches calculées';
+}
+
+/**
+ * Les lignes du serveur, dans l'ordre du nom — l'ordre d'affichage appartient
+ * à l'écran. Les seuils, eux, sont lus tels que servis : déjà rangés selon le
+ * mode (plan `production/plan-tranches-de-production.md`, §5).
+ */
 export function dueThresholdRows(view: ProductionDueThresholdsView): readonly DueThresholdRow[] {
   return [...view.lines]
     .sort((a, b) => a.productName.localeCompare(b.productName, 'fr'))
@@ -59,6 +83,7 @@ export function dueThresholdRows(view: ProductionDueThresholdsView): readonly Du
       undated: line.thresholds
         .filter((threshold) => threshold.kind === 'undated')
         .reduce((sum, threshold) => sum + threshold.quantity, 0),
+      beforeFirst: beforeFirstLabel(line.thresholds),
     }));
 }
 
@@ -99,6 +124,14 @@ export class DueThresholdsSection {
     return view === null ? [] : dueThresholdRows(view);
   });
 
+  /** « Le compte à rebours · Tranches fixes » — le mode réglé dans le titre. */
+  protected readonly title = computed(() => {
+    const view = this.view();
+    return view === null
+      ? 'Le compte à rebours'
+      : `Le compte à rebours · ${trancheModeLabel(view)}`;
+  });
+
   /** Une marge manque : le serveur n'a rendu que « la journée ». */
   protected readonly marginsMissing = computed(() => {
     const view = this.view();
@@ -116,10 +149,15 @@ export class DueThresholdsSection {
     // Facultatives aux Réglages, et voulues telles : on le dit sans le
     // réclamer — un bandeau dans le dossier se lisait comme un oubli (Hugo,
     // 2026-10-21).
+    if (view.trancheMode === 'fixed' && view.fixedTranches.length === 0) {
+      return 'Tranches fixes sans heure réglée : une seule tranche, la journée (Réglages › Production).';
+    }
+    const tranches =
+      view.trancheMode === 'fixed' ? ` · tranches ${view.fixedTranches.join(', ')}` : '';
     if (this.marginsMissing()) {
       return 'Une seule échéance, « la journée » — marges de production facultatives, non réglées (Réglages › Zones de livraison).';
     }
-    return `Marges : livraison ${view.deliveryMarginMinutes} min · retrait ${view.pickupMarginMinutes} min`;
+    return `Marges : livraison ${view.deliveryMarginMinutes} min · retrait ${view.pickupMarginMinutes} min${tranches}`;
   });
 
   constructor() {

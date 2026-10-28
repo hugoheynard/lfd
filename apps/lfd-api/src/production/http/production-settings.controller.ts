@@ -1,15 +1,18 @@
 import {
   type ProductionClosedDayPayload,
   type ProductionSettingsView,
+  type ProductionTranchesPayload,
   productionClosedDayPayloadSchema,
+  productionTranchesPayloadSchema,
 } from "@lfd/contracts";
-import { Body, Controller, Delete, Get, HttpCode, Param, Post } from "@nestjs/common";
+import { Body, Controller, Delete, Get, HttpCode, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../platform/shared/http/zod-body.pipe.js";
 import { AddProductionClosedDayCommand } from "../application/commands/add-production-closed-day.command.js";
+import { SetProductionTranchesCommand } from "../application/commands/set-production-tranches.command.js";
 import { RemoveProductionClosedDayCommand } from "../application/commands/remove-production-closed-day.command.js";
 import { GetProductionSettingsQuery } from "../application/queries/get-production-settings.query.js";
 
@@ -39,6 +42,21 @@ export class ProductionSettingsController {
   settings(): Promise<ProductionSettingsView> {
     return this.queries.execute<GetProductionSettingsQuery, ProductionSettingsView>(
       new GetProductionSettingsQuery(),
+    );
+  }
+
+  /**
+   * Pose les tranches de production (plan `production/plan-tranches-de-production.md`,
+   * T1). 400 sur une heure mal formée, un doublon ou plus de huit heures.
+   */
+  @Put("tranches")
+  @HttpCode(NO_CONTENT)
+  async setTranches(
+    @Body(new ZodBody(productionTranchesPayloadSchema)) body: ProductionTranchesPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<SetProductionTranchesCommand, void>(
+      new SetProductionTranchesCommand(body.mode, body.fixedTranches, staffUserId),
     );
   }
 

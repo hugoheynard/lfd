@@ -1,10 +1,5 @@
 <fold-card>
-  <fold-element-title
-    cardHeader
-    variant="title"
-    title="Le compte à rebours"
-    [subtitle]="marginsLabel()"
-  />
+  <fold-element-title cardHeader variant="title" [title]="title()" [subtitle]="marginsLabel()" />
 
   <div class="dt-body">
     @switch (state()) {
@@ -28,6 +23,9 @@
               <li class="dt-line">
                 <span class="dt-product">{{ row.productName }}</span>
                 <span class="dt-countdown">{{ row.countdown }}</span>
+                @if (row.beforeFirst; as early) {
+                  <fold-badge variant="warning" [content]="early" data-before-first />
+                }
                 @if (row.undated > 0) {
                   <fold-badge variant="warning" [content]="row.undated + ' sans échéance'" />
                 }

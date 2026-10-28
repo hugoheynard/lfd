@@ -63,7 +63,12 @@ async function render(
           batch,
           dayResupplies,
           dossierPdf: doubles.dossierPdf,
-          dueThresholds: async () => ({ date: '', lines: [] }),
+          dueThresholds: async () => ({
+            date: '',
+            trancheMode: 'computed',
+            fixedTranches: [],
+            lines: [],
+          }),
         },
       },
       { provide: AdminCatalogService, useValue: { list: async () => [] } },

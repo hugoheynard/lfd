@@ -31,7 +31,41 @@ export interface ProductionSettingsView {
   readonly automaticClose: ProductionAutomaticCloseView | null;
   /** Les jours fermés d'aujourd'hui (compris) à plus tard, `AAAA-MM-JJ`, dans l'ordre. */
   readonly closedDays: readonly string[];
+  /** Les tranches de production (plan `production/plan-tranches-de-production.md`, T1). */
+  readonly tranches: ProductionTranchesView;
 }
+
+/**
+ * **Les tranches de production** (Hugo, 2026-10-28) : `fixed` — les heures
+ * réglées ici, où chaque besoin tombe dans la dernière tranche au plus tard à
+ * son heure ; `computed` — les heures des besoins eux-mêmes.
+ */
+export const PRODUCTION_TRANCHE_MODES = ["fixed", "computed"] as const;
+export type ProductionTrancheMode = (typeof PRODUCTION_TRANCHE_MODES)[number];
+
+/** Au plus huit heures fixes : au-delà, ce ne sont plus des repères d'atelier. */
+export const MAX_FIXED_TRANCHES = 8;
+
+/** Le réglage tel qu'il est servi. Sans réglage enregistré : `fixed`, aucune heure. */
+export interface ProductionTranchesView {
+  readonly mode: ProductionTrancheMode;
+  /** `HH:mm`, triées, sans doublon ; vides en mode fixe = une seule tranche, la journée. */
+  readonly fixedTranches: readonly string[];
+}
+
+/**
+ * `PUT /admin/production/settings/tranches` — la forme. Le tri, l'unicité et la
+ * borne sont jugés par le domaine, qui nomme le refus.
+ */
+export const productionTranchesPayloadSchema = z
+  .object({
+    mode: z.enum(PRODUCTION_TRANCHE_MODES),
+    fixedTranches: z.array(
+      z.string().regex(/^([01]\d|2[0-3]):[0-5]\d$/u, "heure attendue au format HH:mm"),
+    ),
+  })
+  .strict();
+export type ProductionTranchesPayload = z.infer<typeof productionTranchesPayloadSchema>;
 
 /** `POST /admin/production/settings/closed-days` — la forme ; la date est jugée par le domaine. */
 export const productionClosedDayPayloadSchema = z.object({

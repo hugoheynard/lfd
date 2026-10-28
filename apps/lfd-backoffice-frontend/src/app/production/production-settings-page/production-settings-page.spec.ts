@@ -29,6 +29,7 @@ async function boot(canWrite = true): Promise<ComponentFixture<ProductionSetting
     view: {
       automaticClose: { daysBefore: 1, time: '23:00' },
       closedDays: [FAR_DAY],
+      tranches: { mode: 'fixed', fixedTranches: [] },
     },
     added: [],
     removed: [],
