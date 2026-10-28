@@ -152,6 +152,8 @@ function toVariant(variant: VariantView): Variant {
     priceCents: variant.priceCents,
     weightGrams: variant.weightGrams,
     proPriceMillicents: variant.proPriceMillicents,
+    proPricePerKgMillicents: variant.proPricePerKgMillicents,
+    publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
     nutritionFollowsDefault: variant.nutritionFollowsDefault,
     pricingFollowsDefault: variant.pricingFollowsDefault,

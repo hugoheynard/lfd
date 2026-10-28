@@ -101,6 +101,10 @@ export interface Variant {
    * (lot P). **Résolu** comme le prix public sur une déclinaison alignée.
    */
   proPriceMillicents: number | null;
+  /** Le prix au kilo pro HT saisi, en millicentimes ; `null` = pas saisi. Informatif (K4). */
+  proPricePerKgMillicents: number | null;
+  /** Le prix au kilo public TTC saisi, en centimes ; `null` = pas saisi. Informatif (K4). */
+  publicPricePerKgTtcCents: number | null;
   /**
    * Elle **suit les ALLERGÈNES de celle par défaut** — traces comprises,
    * puisqu'une trace est un allergène.

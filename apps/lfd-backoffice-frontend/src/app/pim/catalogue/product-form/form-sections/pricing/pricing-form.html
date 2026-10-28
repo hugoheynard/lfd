@@ -28,6 +28,22 @@
       </span>
     </label>
 
+    <!-- Le prix au kilo public TTC (K4) : SAISI, jamais calculé — informatif. -->
+    <label class="field">
+      <span class="field-label">Prix au kilo public TTC</span>
+      <span class="field-money">
+        <input
+          class="native-input"
+          type="number"
+          step="0.01"
+          min="0"
+          [value]="store.publicPricePerKgEur() ?? ''"
+          (input)="store.publicPricePerKgEur.set(numberValue($event))"
+        />
+        <span class="field-unit" aria-hidden="true">€</span>
+      </span>
+    </label>
+
     <!-- Le prix PRO HORS TAXE saisi (lot P), sous le prix public. Un champ
          TEXTE et non nombre : cinq décimales tapées doivent partir telles
          quelles, et c'est le serveur qui refuse la sixième. -->
@@ -45,6 +61,23 @@
         <span class="field-unit" aria-hidden="true">€ HT</span>
       </span>
       <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non vendu aux pros.</span>
+    </label>
+
+    <!-- Le prix au kilo pro HT (K4) : SAISI comme le prix pro, en texte. -->
+    <label class="field">
+      <span class="field-label">Prix au kilo pro HT</span>
+      <span class="field-money field-money-ht">
+        <input
+          class="native-input"
+          type="text"
+          inputmode="decimal"
+          autocomplete="off"
+          [value]="store.proPricePerKgHtText()"
+          (input)="store.proPricePerKgHtText.set(textValue($event))"
+        />
+        <span class="field-unit" aria-hidden="true">€ HT</span>
+      </span>
+      <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non saisi.</span>
     </label>
 
     <!-- Le prix PROFESSIONNEL, sous le prix public. Toujours saisi depuis le

@@ -30,6 +30,8 @@ const LABELS: Readonly<Record<string, string>> = {
   priceCents: 'Prix public TTC',
   weightGrams: 'Poids',
   proPriceMillicents: 'Prix pro HT saisi',
+  proPricePerKgMillicents: 'Prix au kilo pro HT',
+  publicPricePerKgTtcCents: 'Prix au kilo public TTC',
   isDefault: 'Déclinaison par défaut',
   isDiscontinued: 'Article arrêté',
   allergens: 'Allergènes',

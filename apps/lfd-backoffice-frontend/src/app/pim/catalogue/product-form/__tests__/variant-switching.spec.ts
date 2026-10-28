@@ -40,6 +40,8 @@ function variant(over: Partial<Variant> = {}): Variant {
     priceCents: 250,
     weightGrams: 100,
     proPriceMillicents: 2_730_331,
+    proPricePerKgMillicents: 1_240_000,
+    publicPricePerKgTtcCents: 1_490,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -59,6 +61,8 @@ const SECOND = variant({
   priceCents: null,
   weightGrams: 220,
   proPriceMillicents: null,
+  proPricePerKgMillicents: null,
+  publicPricePerKgTtcCents: null,
   regulatoryFollowsDefault: true,
   nutritionFollowsDefault: true,
 });
@@ -414,5 +418,61 @@ describe('le prix pro HT saisi', () => {
     store.proPriceHtText.set('9');
 
     expect(store.isDirty('tarif')).toBe(true);
+  });
+});
+
+/** K4 (`plan-prix-au-kilo.md`) : les prix au kilo saisis voyagent comme le prix pro HT. */
+describe('les prix au kilo saisis', () => {
+  it('se relisent déclinaison par déclinaison — public en euros, pro en texte exact', async () => {
+    const { store } = await setup();
+
+    expect(store.publicPricePerKgEur()).toBe(14.9);
+    expect(store.proPricePerKgHtText()).toBe('12,4');
+    store.selectVariant('var_2');
+    expect(store.publicPricePerKgEur()).toBeNull();
+    expect(store.proPricePerKgHtText()).toBe('');
+  });
+
+  it('partent avec le tarif : centimes pour le public, texte pour le pro', async () => {
+    const { store, api } = await setup();
+    store.publicPricePerKgEur.set(18.5);
+    store.proPricePerKgHtText.set('15,12345');
+
+    await store.saveOne('tarif');
+
+    const call = api.calls.find((entry) => entry.name === 'savePricing');
+    expect(call?.args[2]).toMatchObject({
+      publicPricePerKgTtcCents: 1_850,
+      proPricePerKgHt: '15,12345',
+    });
+  });
+
+  it('vides, partent à `null` : non saisi', async () => {
+    const { store, api } = await setup();
+    store.publicPricePerKgEur.set(null);
+    store.proPricePerKgHtText.set('  ');
+
+    await store.saveOne('tarif');
+
+    const call = api.calls.find((entry) => entry.name === 'savePricing');
+    expect(call?.args[2]).toMatchObject({ publicPricePerKgTtcCents: null, proPricePerKgHt: null });
+  });
+
+  it('une saisie modifiée rend la section « tarif » modifiée', async () => {
+    const { store } = await setup();
+    store.publicPricePerKgEur.set(20);
+    expect(store.isDirty('tarif')).toBe(true);
+    store.publicPricePerKgEur.set(14.9);
+    expect(store.isDirty('tarif')).toBe(false);
+    store.proPricePerKgHtText.set('13');
+    expect(store.isDirty('tarif')).toBe(true);
+  });
+
+  it('un brouillon survit au changement de déclinaison', async () => {
+    const { store } = await setup();
+    store.proPricePerKgHtText.set('13');
+    store.selectVariant('var_2');
+    store.selectVariant('var_1');
+    expect(store.proPricePerKgHtText()).toBe('13');
   });
 });

@@ -390,3 +390,74 @@ describe('PricingForm — aucune suggestion de prix pro', () => {
     expect(store.proPriceHtText()).toBe('');
   });
 });
+
+/** K4 (`plan-prix-au-kilo.md`) : deux prix au kilo SAISIS, jamais calculés. */
+describe('PricingForm — les prix au kilo saisis', () => {
+  function render(): HTMLElement {
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  function inputUnder(host: HTMLElement, label: string): HTMLInputElement {
+    const field = [...host.querySelectorAll('label.field')].find(
+      (candidate) => candidate.querySelector('.field-label')?.textContent?.trim() === label,
+    );
+    const input = field?.querySelector('input');
+    if (input === null || input === undefined) {
+      throw new TypeError(`champ « ${label} » absent`);
+    }
+    return input;
+  }
+
+  it('offre les deux champs, chacun sous le prix qu’il accompagne', () => {
+    const store = setup();
+    withFamily(store);
+    const host = render();
+    const labels = [...host.querySelectorAll('.field-label')].map((l) => l.textContent?.trim());
+
+    expect(labels.indexOf('Prix au kilo public TTC')).toBe(labels.indexOf('Prix public TTC') + 1);
+    expect(labels.indexOf('Prix au kilo pro HT')).toBe(labels.indexOf('Prix pro HT') + 1);
+    expect(inputUnder(host, 'Prix au kilo pro HT').getAttribute('inputmode')).toBe('decimal');
+  });
+
+  it('la saisie remonte au store, sans rien calculer', () => {
+    const store = setup();
+    withFamily(store);
+    store.priceEur.set(12);
+    const host = render();
+
+    const pub = inputUnder(host, 'Prix au kilo public TTC');
+    pub.value = '24.8';
+    pub.dispatchEvent(new Event('input'));
+    const pro = inputUnder(host, 'Prix au kilo pro HT');
+    pro.value = '20,12345';
+    pro.dispatchEvent(new Event('input'));
+
+    expect(store.publicPricePerKgEur()).toBe(24.8);
+    expect(store.proPricePerKgHtText()).toBe('20,12345');
+    expect(store.priceEur()).toBe(12);
+    expect(store.proPriceHtText()).toBe('');
+  });
+
+  it('montre la valeur chargée, et vide reste vide', () => {
+    const store = setup();
+    withFamily(store);
+    store.publicPricePerKgEur.set(14.9);
+    const host = render();
+
+    expect(inputUnder(host, 'Prix au kilo public TTC').value).toBe('14.9');
+    expect(inputUnder(host, 'Prix au kilo pro HT').value).toBe('');
+  });
+
+  it('se grisent avec les prix quand le tarif est aligné', () => {
+    const store = setup();
+    withFamily(store);
+    store.pricingAligned.set(true);
+    const host = render();
+
+    const stack = host.querySelector('.stack.is-inherited');
+    expect(stack?.contains(inputUnder(host, 'Prix au kilo public TTC'))).toBe(true);
+    expect(stack?.contains(inputUnder(host, 'Prix au kilo pro HT'))).toBe(true);
+  });
+});

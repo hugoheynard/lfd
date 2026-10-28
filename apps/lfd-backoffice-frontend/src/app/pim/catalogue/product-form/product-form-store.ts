@@ -467,6 +467,10 @@ interface VariantDraft {
   readonly weightGrams: number | null;
   /** Le prix pro HT, en TEXTE tel que saisi : cinq décimales ne passent pas par un flottant. */
   readonly proPriceHtText: string;
+  /** Le prix au kilo public TTC saisi, en euros (`plan-prix-au-kilo.md`, K4). */
+  readonly publicPricePerKgEur: number | null;
+  /** Le prix au kilo pro HT saisi, en TEXTE comme le prix pro HT. */
+  readonly proPricePerKgHtText: string;
   /**
    * Allergènes **et** traces, en un seul état tri-étatique.
    *
@@ -591,6 +595,14 @@ export class ProductFormStore {
    * serveur telles quelles, et c'est lui qui refuse la sixième.
    */
   readonly proPriceHtText = signal('');
+
+  /**
+   * **Les prix au kilo saisis** (`plan-prix-au-kilo.md`, K4) — informatifs,
+   * jamais calculés : le public TTC en euros comme `priceEur`, le pro HT en
+   * TEXTE comme `proPriceHtText`. Vide = non saisi.
+   */
+  readonly publicPricePerKgEur = signal<number | null>(null);
+  readonly proPricePerKgHtText = signal('');
 
   /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
   readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
@@ -1101,6 +1113,8 @@ export class ProductFormStore {
         // `value[2]` portait la matrice des canaux, partie en X4 : la place
         // reste, pour qu'un brouillon d'avant se relise sans décalage.
         this.proPriceHtText.set(String(value[4] ?? ''));
+        this.publicPricePerKgEur.set((value[5] as number | null | undefined) ?? null);
+        this.proPricePerKgHtText.set(String(value[6] ?? ''));
         return;
       case 'allergenes':
         this.declaration.set({
@@ -1599,6 +1613,7 @@ export class ProductFormStore {
   private saveVariantFacts(): Promise<void> {
     const price = this.priceEur();
     const weight = this.weightGrams();
+    const perKg = this.publicPricePerKgEur();
     return this.products.savePricing(this.productId(), this.variantId(), {
       // Un prix public TTC — la seule assiette. Le hors taxe se déduit du taux
       // de chaque canal, il ne s'enregistre pas.
@@ -1607,6 +1622,10 @@ export class ProductFormStore {
       // Le prix pro HT part en TEXTE, tel que saisi : le serveur le lit et
       // refuse une sixième décimale (lot P).
       proPriceHt: proPricePayloadOf(this.proPriceHtText()),
+      // Les prix au kilo saisis (K4) : informatifs, sous la même forme que
+      // leurs voisins — centimes pour le public, texte pour le pro.
+      publicPricePerKgTtcCents: perKg === null ? null : Math.round(perKg * 100),
+      proPricePerKgHt: proPricePayloadOf(this.proPricePerKgHtText()),
     });
   }
 
@@ -2046,6 +2065,10 @@ export class ProductFormStore {
           // Le prix pro HT (lot P) : une saisie qui bouge EST une modification
           // de la section, sans quoi le bouton d'enregistrement n'apparaît pas.
           this.proPriceHtText(),
+          // Les prix au kilo saisis (K4), à la suite : les positions d'avant
+          // ne bougent pas.
+          this.publicPricePerKgEur(),
+          this.proPricePerKgHtText(),
         ]);
       case 'allergenes': {
         const declaration = this.declaration();
@@ -2080,6 +2103,8 @@ export class ProductFormStore {
       priceEur: this.priceEur(),
       weightGrams: this.weightGrams(),
       proPriceHtText: this.proPriceHtText(),
+      publicPricePerKgEur: this.publicPricePerKgEur(),
+      proPricePerKgHtText: this.proPricePerKgHtText(),
       declaration: this.declaration(),
       nutrition: this.nutrition(),
       allergensAligned: this.allergensAligned(),
@@ -2099,6 +2124,11 @@ export class ProductFormStore {
           : variant.priceCents / 100,
       weightGrams: variant?.weightGrams ?? null,
       proPriceHtText: proPriceTextOf(variant?.proPriceMillicents ?? null),
+      publicPricePerKgEur:
+        variant?.publicPricePerKgTtcCents === undefined || variant.publicPricePerKgTtcCents === null
+          ? null
+          : variant.publicPricePerKgTtcCents / 100,
+      proPricePerKgHtText: proPriceTextOf(variant?.proPricePerKgMillicents ?? null),
       // `[]` est une AFFIRMATION (« aucun allergène »), `null` une absence de
       // réponse. Les confondre transformerait un oubli de saisie en promesse —
       // et le serveur rend déjà les deux, c'est l'écran qui les aplatissait.
@@ -2117,6 +2147,8 @@ export class ProductFormStore {
     this.priceEur.set(draft.priceEur);
     this.weightGrams.set(draft.weightGrams);
     this.proPriceHtText.set(draft.proPriceHtText);
+    this.publicPricePerKgEur.set(draft.publicPricePerKgEur);
+    this.proPricePerKgHtText.set(draft.proPricePerKgHtText);
     this.declaration.set(draft.declaration);
     this.nutrition.set(draft.nutrition);
     this.allergensAligned.set(draft.allergensAligned);
