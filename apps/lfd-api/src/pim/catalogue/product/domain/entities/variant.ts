@@ -7,6 +7,13 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
+import {
+  PIECE_SALE_TERMS,
+  saleTerms,
+  type SaleTerms,
+  type SaleUnit,
+} from "../value-objects/sale-terms.js";
 
 /**
  * **La déclaration d'allergènes** — ce que la déclinaison contient, et ses
@@ -155,6 +162,20 @@ export interface VariantSnapshot {
   /** Le prix au kilo public TTC SAISI, en centimes ; `null` = non saisi. */
   readonly publicPricePerKgTtcCents: number | null;
   /**
+   * L'unité de vente, propre à CETTE déclinaison — jamais héritée du défaut,
+   * même quand elle en suit le tarif (`plan-vente-au-poids.md`). Le pas et le
+   * minimum, en grammes, suivent l'unité : `null` à la pièce.
+   */
+  readonly saleUnit: SaleUnit;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
+  /**
+   * **A-t-elle déjà été publiée ?** — vrai dès que son produit a été mis en
+   * vente avec elle, et pour toujours : une fiche retirée de la vente a pu
+   * être commandée. C'est ce qui fige l'unité de vente.
+   */
+  readonly hasBeenPublished: boolean;
+  /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.
    */
@@ -195,6 +216,14 @@ export interface VariantPricing {
    */
   readonly proPricePerKg?: ProPriceHt | null;
   readonly publicPricePerKgTtcCents?: number | null;
+  /**
+   * L'unité de vente et, au poids, le pas et le minimum
+   * (`plan-vente-au-poids.md`). Chaque champ : **absent = inchangé**. Passer à
+   * la pièce sans les nommer efface le pas et le minimum, qui suivent l'unité.
+   */
+  readonly saleUnit?: SaleUnit;
+  readonly weightMinGrams?: number | null;
+  readonly weightStepGrams?: number | null;
 }
 
 export class Variant {
@@ -210,6 +239,8 @@ export class Variant {
   private proPriceMillicentsValue: number | null;
   private proPricePerKgMillicentsValue: number | null;
   private publicPricePerKgTtcCentsValue: number | null;
+  private saleTermsValue: SaleTerms;
+  private publishedFlag: boolean;
   private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
@@ -235,6 +266,12 @@ export class Variant {
     this.proPriceMillicentsValue = snapshot.proPriceMillicents;
     this.proPricePerKgMillicentsValue = snapshot.proPricePerKgMillicents;
     this.publicPricePerKgTtcCentsValue = snapshot.publicPricePerKgTtcCents;
+    this.saleTermsValue = {
+      saleUnit: snapshot.saleUnit,
+      weightMinGrams: snapshot.weightMinGrams,
+      weightStepGrams: snapshot.weightStepGrams,
+    };
+    this.publishedFlag = snapshot.hasBeenPublished;
     this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
@@ -265,6 +302,8 @@ export class Variant {
       proPriceMillicents: null,
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
+      ...PIECE_SALE_TERMS,
+      hasBeenPublished: false,
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
@@ -308,6 +347,10 @@ export class Variant {
       proPriceMillicents: null,
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
+      // À la pièce, comme tout l'existant ; publiée seulement si son produit
+      // est déjà en vente — c'est l'agrégat qui le dit (`Product.addVariant`).
+      ...PIECE_SALE_TERMS,
+      hasBeenPublished: false,
       regulatoryFollowsDefault: true,
       // Les VALEURS naissent alignées pour la même raison que les allergènes :
       // née nue, la déclinaison afficherait un tableau vide là où celui du
@@ -492,6 +535,52 @@ export class Variant {
       this.proPriceMillicentsValue = input.proPrice?.millicents ?? null;
     }
     this.pricePerKg(input);
+    this.changeSaleTerms(input);
+  }
+
+  /**
+   * L'unité de vente, le pas et le minimum. L'unité se choisit librement tant
+   * que la déclinaison n'a jamais été publiée, puis elle est figée
+   * (`plan-vente-au-poids.md`, §4.2) ; le pas et le minimum, eux, restent
+   * réglables.
+   */
+  private changeSaleTerms(input: VariantPricing): void {
+    if (
+      input.saleUnit === undefined &&
+      input.weightMinGrams === undefined &&
+      input.weightStepGrams === undefined
+    ) {
+      return;
+    }
+    const current = this.saleTermsValue;
+    const saleUnit = input.saleUnit ?? current.saleUnit;
+    // Le pas et le minimum suivent l'unité : en changer sans les nommer
+    // repart de rien, plutôt que de traîner ceux de l'autre unité.
+    const carried = saleUnit === current.saleUnit ? current : PIECE_SALE_TERMS;
+    const next = saleTerms({
+      saleUnit,
+      weightMinGrams:
+        input.weightMinGrams === undefined ? carried.weightMinGrams : input.weightMinGrams,
+      weightStepGrams:
+        input.weightStepGrams === undefined ? carried.weightStepGrams : input.weightStepGrams,
+    });
+    if (next.saleUnit !== current.saleUnit && this.publishedFlag) {
+      throw new SaleUnitFrozenError(this.skuValue);
+    }
+    this.saleTermsValue = next;
+  }
+
+  /** L'unité dans laquelle elle se vend — la sienne, jamais celle du défaut. */
+  get saleUnit(): SaleUnit {
+    return this.saleTermsValue.saleUnit;
+  }
+
+  /**
+   * Inscrit qu'elle part à la vente. Irréversible : un retrait de la vente ne
+   * rend pas ce qui a pu être commandé entre-temps.
+   */
+  markPublished(): void {
+    this.publishedFlag = true;
   }
 
   /**
@@ -533,6 +622,8 @@ export class Variant {
       proPriceMillicents: this.proPriceMillicentsValue,
       proPricePerKgMillicents: this.proPricePerKgMillicentsValue,
       publicPricePerKgTtcCents: this.publicPricePerKgTtcCentsValue,
+      ...this.saleTermsValue,
+      hasBeenPublished: this.publishedFlag,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,

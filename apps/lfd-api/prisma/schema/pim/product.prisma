@@ -222,6 +222,20 @@ model ProductVariant {
   /// précédent : informatif, saisi, `NULL` = non saisi. `CHECK (> 0)`.
   publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
 
+  /// **L'unité de vente** — `piece` (défaut, tout l'existant) ou `weight`, la
+  /// quantité se comptant alors en grammes (`documentation/pricing/plan-vente-au-poids.md`).
+  /// Propre à la déclinaison, jamais héritée du défaut. `CHECK` sur les deux valeurs.
+  saleUnit String @default("piece") @map("sale_unit")
+  /// Au poids : le minimum commandable, en grammes. `NULL` = aucun minimum ;
+  /// toujours `NULL` à la pièce. `CHECK (> 0)`.
+  weightMinGrams Int? @map("weight_min_grams")
+  /// Au poids : le pas de saisie, en grammes. `NULL` à la pièce, ou au poids
+  /// tant qu'il n'est pas saisi (l'activation le réclame). `CHECK (> 0)`.
+  weightStepGrams Int? @map("weight_step_grams")
+  /// **Déjà publiée** : vrai dès que la fiche est mise en vente avec elle, pour
+  /// toujours. C'est ce qui fige `saleUnit` — une ligne de commande a pu la lire.
+  hasBeenPublished Boolean @default(false) @map("has_been_published")
+
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
   updatedBy String?  @map("updated_by")

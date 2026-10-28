@@ -337,6 +337,7 @@
   "test/pim-publication-allergens.e2e-spec.ts": 5069,
   "test/pim-readiness.e2e-spec.ts": 8847,
   "test/pim-regulatory-sheet.e2e-spec.ts": 5219,
+  "test/pim-sale-unit.e2e-spec.ts": 12377,
   "test/pim-sales-contexts.e2e-spec.ts": 9442,
   "test/pim-variant-rename.e2e-spec.ts": 3681,
   "test/pim-vat-rates.e2e-spec.ts": 6846,

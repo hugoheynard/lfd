@@ -1,5 +1,10 @@
 # Plan — la vente au poids, de la fiche à Factur-X
 
+> 🧱 **En cours de bâti** — P0 (`3ecc02cb1`), P1 côté serveur (voir le commit
+> « l'unité de vente se saisit »). « Déjà publiée » est un drapeau de la
+> déclinaison, `has_been_published`, posé à l'activation et jamais remis à
+> faux (le statut, lui, repasse en brouillon au retrait).
+
 > 📝 Plan du 2026-10-28, doc-first. Demande de Hugo : « j'ai certains articles
 > qui se vendent au poids, fais-moi un plan qui va jusqu'à Factur-X, et le
 > fait qu'on ait en unité pièce et kg ». Tranché le même jour :
@@ -123,7 +128,7 @@
 | Lot | Contenu                                                                                                                                                                                                                                                                                                                                                                             | Où                |
 | --- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- |
 | P0  | `packages/money` : `SaleQuantity` et `lineTotalCents(prix, SaleQuantity)` — l'ancienne signature retirée ; ses 75 appelants, `composeTtcOrder` et les simulateurs passent tous l'unité (des pièces partout tant que P1 n'existe pas : comportement inchangé, prouvé par les empreintes et les suites de prix). `lint:money-units`, `lint:price-pipeline`, `lint:price-door` relues. | money, partout    |
-| P1  | Référentiel : `saleUnit`, `weightStepGrams`, `weightMinGrams` sur la déclinaison (migration additive, `piece` par défaut), règle « figée après la première commande », journal, révision ; section « Tarif & TVA » : le choix de l'unité, le pas, le minimum, et les libellés « par kg ».                                                                                           | api, back-office  |
+| P1  | Référentiel : `saleUnit`, `weightStepGrams`, `weightMinGrams` sur la déclinaison (migration additive, `piece` par défaut), règle « figée après la première publication », journal, révision ; section « Tarif & TVA » : le choix de l'unité, le pas, le minimum, et les libellés « par kg ».                                                                                        | api, back-office  |
 | P2  | Le fil (v14, champs obligatoires) et `catalog_items` : l'unité, le pas, le minimum. **Le récepteur d'abord** : il accepte v13 et v14 avant que l'émetteur passe en v14 (`snapshot.ts:19-24` refuse une version inconnue).                                                                                                                                                           | api, catalog-sync |
 | P3  | Commande : `order_lines.sale_unit` (défaut `piece`), contrats de panier, devis et passation (une quantité + son unité, validée contre la déclinaison), révision et récapitulatifs, e-mails et suivi ; la résolution qui écarte les décisions globales et de famille pour le poids ; les refus abonnement / engagement / réassort.                                                   | api, contrats     |
 | P4  | Boutique : fiche, vignette, panier et récapitulatif disent « 500 g », « 12,40 € / kg » ; un sélecteur de poids au pas de l'article.                                                                                                                                                                                                                                                 | boutique          |

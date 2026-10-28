@@ -124,6 +124,11 @@ const pricingChanges = () =>
     // Les prix au kilo saisis (`plan-prix-au-kilo.md`), chacun dans son unité.
     proPricePerKgMillicents: millicents().nullable(),
     publicPricePerKgTtcCents: cents().nullable(),
+    // L'unité de vente et, au poids, son minimum et son pas en grammes
+    // (`plan-vente-au-poids.md`, lot P1).
+    saleUnit: z.enum(["piece", "weight"]),
+    weightMinGrams: grams().nullable(),
+    weightStepGrams: grams().nullable(),
   });
 const productPricingV1 = payload({
   variantId: ref("variant"),

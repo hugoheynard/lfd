@@ -15,6 +15,8 @@ import {
 const COMPLETE: CompletenessInput = {
   priceCents: 1_200,
   proPriceMillicents: 1_023_697,
+  saleUnit: "piece",
+  weightStepGrams: null,
 };
 const RULES: CompletenessRules = {
   activeContextKeys: ["b2b", "takeaway", "eatIn"],
@@ -68,9 +70,28 @@ describe("variantGaps", () => {
    * sort plus jamais, même sans prix pro ni taux : il n'y a plus de rapport.
    */
   it("ne nomme jamais le rapport pro", () => {
-    const empty = { priceCents: null, proPriceMillicents: null, allergenSheet: null };
+    const empty = { ...COMPLETE, priceCents: null, proPriceMillicents: null };
 
     expect(variantGaps(empty, {}, RULES, "both")).not.toContain("pro_price_rule");
+  });
+});
+
+/** La vente au poids (`plan-vente-au-poids.md`, lot P1) : le pas est exigé. */
+describe("variantGaps — la vente au poids", () => {
+  it("nomme le pas manquant d'une déclinaison au poids", () => {
+    expect(variantGaps({ ...COMPLETE, saleUnit: "weight" }, ALL, RULES, "both")).toEqual([
+      "weight_step",
+    ]);
+  });
+
+  it("ne demande rien de plus quand le pas est saisi", () => {
+    expect(
+      variantGaps({ ...COMPLETE, saleUnit: "weight", weightStepGrams: 100 }, ALL, RULES, "both"),
+    ).toEqual([]);
+  });
+
+  it("ne demande jamais de pas à la pièce", () => {
+    expect(variantGaps(COMPLETE, ALL, RULES, "both")).not.toContain("weight_step");
   });
 });
 
@@ -81,7 +102,7 @@ describe("variantGaps", () => {
 describe("variantGaps — le prix d'au moins une audience visée", () => {
   const NO_PUBLIC = { ...COMPLETE, priceCents: null };
   const NO_PRO = { ...COMPLETE, proPriceMillicents: null };
-  const NONE = { priceCents: null, proPriceMillicents: null };
+  const NONE = { ...COMPLETE, priceCents: null, proPriceMillicents: null };
 
   it.each([
     ["both", COMPLETE, []],

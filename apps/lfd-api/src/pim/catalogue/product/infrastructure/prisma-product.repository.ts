@@ -6,6 +6,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import { SkuAlreadyUsedError } from "../domain/errors/sku-errors.js";
 import { Product, type ProductSnapshot } from "../domain/entities/product.js";
 import type { VariantSnapshot } from "../domain/entities/variant.js";
+import { saleTermsColumns, saleTermsOf } from "./variant-sale-terms-columns.js";
 import {
   ProductRepository,
   type ProductKind,
@@ -51,6 +52,10 @@ interface VariantRow {
   proPriceMillicents: number | null;
   proPricePerKgMillicents: number | null;
   publicPricePerKgTtcCents: number | null;
+  saleUnit: string;
+  weightMinGrams: number | null;
+  weightStepGrams: number | null;
+  hasBeenPublished: boolean;
   regulatoryFollowsDefault: boolean;
   pricingFollowsDefault: boolean;
   nutritionFollowsDefault: boolean;
@@ -105,6 +110,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     proPriceMillicents: row.proPriceMillicents,
     proPricePerKgMillicents: row.proPricePerKgMillicents,
     publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
+    ...saleTermsOf(row),
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
     nutritionFollowsDefault: row.nutritionFollowsDefault,
@@ -337,6 +343,7 @@ export class PrismaProductRepository extends ProductRepository {
             proPriceMillicents: variant.proPriceMillicents,
             proPricePerKgMillicents: variant.proPricePerKgMillicents,
             publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
+            ...saleTermsColumns(variant),
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
@@ -351,6 +358,7 @@ export class PrismaProductRepository extends ProductRepository {
             proPriceMillicents: variant.proPriceMillicents,
             proPricePerKgMillicents: variant.proPricePerKgMillicents,
             publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
+            ...saleTermsColumns(variant),
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,

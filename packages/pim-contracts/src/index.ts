@@ -174,6 +174,7 @@ export {
   renameProductVariantPayloadSchema,
   alignVariantPayloadSchema,
   variantAspectSchema,
+  saleUnitSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -203,6 +204,7 @@ export type {
   RenameProductVariantPayload,
   AlignVariantPayload,
   VariantAspect,
+  SaleUnit,
 } from "./product.js";
 
 export type {

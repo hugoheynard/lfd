@@ -32,6 +32,7 @@ import {
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
+import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
 export type ProductKind = "daily" | "made_to_order" | "resale";
@@ -420,6 +421,10 @@ export class Product {
       throw refusalOf(this.identity, findings);
     }
     this.statusValue = "published";
+    // Toutes partent avec la fiche : c'est ce qui fige leur unité de vente.
+    for (const variant of this.variantList) {
+      variant.markPublished();
+    }
     return true;
   }
 
@@ -487,6 +492,22 @@ export class Product {
   /** Tarif et poids d'une déclinaison **du produit**. */
   priceVariant(variantId: string, pricing: VariantPricing): void {
     this.variant(variantId).price(pricing);
+    this.assertPricingUnitsAgree();
+  }
+
+  /**
+   * Une déclinaison qui suit le tarif du défaut se vend dans la même unité
+   * que lui : sinon le prix au kilo du défaut deviendrait le prix d'une de ses
+   * pièces. Tenu après chaque geste qui touche l'unité ou l'alignement.
+   */
+  private assertPricingUnitsAgree(): void {
+    const unit = this.defaultVariant.saleUnit;
+    const stray = this.variantList.find(
+      (variant) => variant.pricingFollowsDefault && variant.saleUnit !== unit,
+    );
+    if (stray !== undefined) {
+      throw new PricingAlignmentAcrossUnitsError(stray.sku);
+    }
   }
 
   /**
@@ -575,6 +596,10 @@ export class Product {
     options: Readonly<Record<string, string>>;
   }): Variant {
     const variant = Variant.open({ ...input, position: this.nextVariantPosition });
+    // Sur une fiche en vente, elle part au prochain envoi : déjà publiée.
+    if (this.statusValue === "published") {
+      variant.markPublished();
+    }
     this.variantList.push(variant);
     return variant;
   }
@@ -606,6 +631,7 @@ export class Product {
       throw new VariantNotInProductError(this.identity, variantId);
     }
     variant.alignOnDefault(aspect, aligned);
+    this.assertPricingUnitsAgree();
   }
 
   /**

@@ -4,7 +4,12 @@ import {
   ResourceNotFoundError,
 } from "../../../../../platform/shared/errors/app-error.js";
 import type { ActivationGaps } from "../services/activation-gaps.js";
-import { PRICE_GAP, PRO_PRICE_GAP, VAT_GAP_PREFIX } from "../services/variant-completeness.js";
+import {
+  PRICE_GAP,
+  PRO_PRICE_GAP,
+  VAT_GAP_PREFIX,
+  WEIGHT_STEP_GAP,
+} from "../services/variant-completeness.js";
 
 export class ProductNotFoundError extends ResourceNotFoundError {
   constructor(readonly productId: string) {
@@ -95,6 +100,7 @@ export class InvalidProPriceError extends DomainError {
 const GAP_LABEL: Readonly<Record<string, string>> = {
   [PRICE_GAP]: "prix public (section « Tarif »)",
   [PRO_PRICE_GAP]: "prix pro HT (section « Tarif »)",
+  [WEIGHT_STEP_GAP]: "pas de vente au poids, en grammes (section « Tarif »)",
 };
 
 function gapLabel(gap: string): string {

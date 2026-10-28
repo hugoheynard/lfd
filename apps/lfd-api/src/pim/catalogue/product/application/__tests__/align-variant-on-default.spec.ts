@@ -8,6 +8,7 @@ import {
   AlignVariantOnDefaultHandler,
 } from "../align-variant-on-default.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { PricingAlignmentAcrossUnitsError } from "../../domain/errors/sale-unit-errors.js";
 
 const PRODUCT_ID = "prd_1";
 const DEFAULT_ID = "prd_1_v1";
@@ -27,6 +28,10 @@ function aVariant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    saleUnit: "piece",
+    weightMinGrams: null,
+    weightStepGrams: null,
+    hasBeenPublished: false,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -265,7 +270,26 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
       proPriceMillicents: null,
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
+      saleUnit: "piece",
+      weightMinGrams: null,
+      weightStepGrams: null,
+      hasBeenPublished: false,
       pricingFollowsDefault: true,
     });
+  });
+});
+
+/**
+ * L'unité de vente ne s'hérite pas (`plan-vente-au-poids.md`, lot P1) : un
+ * tarif aligné sur un défaut vendu au poids ferait d'un prix au kilo le prix
+ * d'une pièce.
+ */
+describe("aligner le tarif entre deux unités de vente", () => {
+  it("refuse, sans rien écrire ni journaliser", async () => {
+    const { products, journal, align } = scene({ saleUnit: "weight", weightStepGrams: 100 });
+
+    await expect(align("pricing", true)).rejects.toBeInstanceOf(PricingAlignmentAcrossUnitsError);
+    expect(products.variant(SECOND_ID)?.pricingFollowsDefault).toBe(false);
+    expect(journal.types()).toEqual([]);
   });
 });

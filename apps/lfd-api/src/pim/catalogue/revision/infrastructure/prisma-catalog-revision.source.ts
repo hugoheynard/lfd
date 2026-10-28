@@ -8,6 +8,7 @@ import { PimPrismaService } from "../../../infra/database/pim-prisma.service.js"
 import type { VariantNutritionView } from "../../product/domain/ports/product.repository.js";
 import { CatalogRevisionSource } from "../domain/ports/catalog-revision.source.js";
 import type { RevisionItemInput, RevisionMedia } from "../domain/revision.js";
+import type { VariantSnapshot } from "../../product/domain/entities/variant.js";
 
 /**
  * La matière d'une révision, lue en LOT.
@@ -76,6 +77,7 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         ...(variant.publicPricePerKgTtcCents === null
           ? {}
           : { publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents }),
+        ...weightTermsOf(variant),
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,
         // La moitié « sécurité » est un objet depuis le lot 7 ; l'ancre, elle,
@@ -174,4 +176,26 @@ function nutritionOf(
     glycemicIndex: values.glycemicIndex,
   };
   return Object.values(declared).every((value) => value === null) ? null : declared;
+}
+
+/**
+ * La vente au poids, telle que l'ancre la photographie : rien à la pièce (les
+ * empreintes de l'existant ne bougent pas), l'unité et ce qui est saisi au
+ * poids. Voir `RevisionItemInput.saleUnit`.
+ */
+function weightTermsOf(
+  variant: Pick<VariantSnapshot, "saleUnit" | "weightMinGrams" | "weightStepGrams">,
+): {
+  saleUnit?: "weight";
+  weightMinGrams?: number;
+  weightStepGrams?: number;
+} {
+  if (variant.saleUnit !== "weight") {
+    return {};
+  }
+  return {
+    saleUnit: "weight",
+    ...(variant.weightMinGrams === null ? {} : { weightMinGrams: variant.weightMinGrams }),
+    ...(variant.weightStepGrams === null ? {} : { weightStepGrams: variant.weightStepGrams }),
+  };
 }

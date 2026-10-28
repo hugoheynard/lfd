@@ -86,6 +86,10 @@ export const updateProductIdentityPayloadSchema = z.object({
 });
 export type UpdateProductIdentityPayload = z.infer<typeof updateProductIdentityPayloadSchema>;
 
+/** Comment une déclinaison se vend : à la pièce, ou au poids (en grammes). */
+export const saleUnitSchema = z.enum(["piece", "weight"]);
+export type SaleUnit = z.infer<typeof saleUnitSchema>;
+
 /** Tarif & logistique d'une déclinaison. `null` = effacer. */
 export const updateVariantPricingPayloadSchema = z.object({
   /**
@@ -119,6 +123,18 @@ export const updateVariantPricingPayloadSchema = z.object({
    * le domaine. Absent = inchangé, `null` = effacer.
    */
   publicPricePerKgTtcCents: z.number().int().min(0).nullable().optional(),
+  /**
+   * L'unité de vente (`plan-vente-au-poids.md`) : `piece` ou `weight`. Absent
+   * = inchangée. Figée par le domaine après la première publication.
+   */
+  saleUnit: saleUnitSchema.optional(),
+  /**
+   * Au poids : le minimum et le pas de saisie, en grammes. Leur borne (> 0, et
+   * vides à la pièce) est tenue par le domaine. Absent = inchangé, `null` =
+   * effacer.
+   */
+  weightMinGrams: z.number().int().nullable().optional(),
+  weightStepGrams: z.number().int().nullable().optional(),
 });
 export type UpdateVariantPricingPayload = z.infer<typeof updateVariantPricingPayloadSchema>;
 
@@ -252,6 +268,19 @@ export interface VariantView {
    */
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
+  /**
+   * L'unité de vente, PROPRE à la déclinaison — jamais héritée du défaut
+   * (`plan-vente-au-poids.md`). Au poids, le minimum (`null` = aucun) et le pas
+   * de saisie, en grammes ; `null` tous deux à la pièce.
+   */
+  readonly saleUnit: SaleUnit;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
+  /**
+   * Déjà publiée : l'unité de vente ne peut plus changer, l'écran grise le
+   * sélecteur.
+   */
+  readonly hasBeenPublished: boolean;
   /**
    * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
    * comprises, puisqu'une trace est un allergène.

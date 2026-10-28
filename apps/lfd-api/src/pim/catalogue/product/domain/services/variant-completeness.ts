@@ -21,6 +21,11 @@ export const PRICE_GAP = "price";
  * l'écran garde son libellé pour les relire.
  */
 export const PRO_PRICE_GAP = "pro_price";
+/**
+ * Une déclinaison vendue au poids sans pas de saisie : personne ne saurait
+ * quelle quantité proposer (`plan-vente-au-poids.md`, §2).
+ */
+export const WEIGHT_STEP_GAP = "weight_step";
 /** Un taux manque au contexte nommé — `vat:b2b`, `vat:eatIn`. */
 export const VAT_GAP_PREFIX = "vat:";
 
@@ -35,7 +40,10 @@ export interface CompletenessRules {
 }
 
 /** Ce que la règle lit d'une déclinaison — RÉSOLUE (une alignée porte le défaut). */
-export type CompletenessInput = Pick<VariantSnapshot, "priceCents" | "proPriceMillicents">;
+export type CompletenessInput = Pick<
+  VariantSnapshot,
+  "priceCents" | "proPriceMillicents" | "saleUnit" | "weightStepGrams"
+>;
 
 /**
  * Les contextes dont le taux est exigé : tous ceux en service, et le contexte
@@ -111,6 +119,9 @@ export function variantGaps(
     if (unpriced.includes("pro")) {
       missing.push(PRO_PRICE_GAP);
     }
+  }
+  if (variant.saleUnit === "weight" && variant.weightStepGrams === null) {
+    missing.push(WEIGHT_STEP_GAP);
   }
   for (const context of requiredContexts(rules)) {
     if (percents[context] === undefined) {
