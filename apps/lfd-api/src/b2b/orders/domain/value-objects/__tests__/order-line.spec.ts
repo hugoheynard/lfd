@@ -263,7 +263,7 @@ describe("OrderLine", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, P3) : la quantité en grammes, le prix au kilo. */
+/** La vente au poids (`vente-au-poids.md`, P3) : la quantité en grammes, le prix au kilo. */
 describe("OrderLine — une ligne au poids", () => {
   const SALMON = {
     sku: "SAU-001",

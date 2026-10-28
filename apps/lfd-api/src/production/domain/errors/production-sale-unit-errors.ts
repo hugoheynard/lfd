@@ -2,7 +2,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 /**
  * **Un même article, deux unités, dans une même journée** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P6).
+ * `documentation/pricing/vente-au-poids.md`, P6).
  *
  * Le compte à produire additionne par SKU. L'unité d'une déclinaison est
  * figée dès sa première publication, et le commerce refuse une ligne dont

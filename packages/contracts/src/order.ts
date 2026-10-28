@@ -121,7 +121,7 @@ export const MAX_LINE_QUANTITY = 10_000;
 export const MAX_ORDER_LINES = 100;
 
 /**
- * **L'unité d'une ligne** (`documentation/pricing/plan-vente-au-poids.md`, §2) :
+ * **L'unité d'une ligne** (`documentation/pricing/vente-au-poids.md`, §2) :
  * `piece` — la quantité compte des pièces —, ou `weight` — elle compte des
  * GRAMMES, et le prix s'entend au kilo. La quantité reste un entier dans les
  * deux cas : 1,25 kg s'écrit `{ quantity: 1250, saleUnit: "weight" }`.
@@ -544,7 +544,7 @@ export interface OrderLineView {
   readonly vatRate: number;
   /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** L'unité de la quantité, figée à la passation (`plan-vente-au-poids.md`). */
+  /** L'unité de la quantité, figée à la passation (`vente-au-poids.md`). */
   readonly saleUnit: OrderSaleUnit;
   readonly lineTotalCents: number;
   /**

@@ -8,7 +8,7 @@ export interface DueLine {
   readonly productName: string;
   /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
-  /** P6 de `pricing/plan-vente-au-poids.md` ; un réassort est toujours à la pièce. */
+  /** P6 de `pricing/vente-au-poids.md` ; un réassort est toujours à la pièce. */
   readonly saleUnit: SaleUnit;
 }
 

@@ -164,7 +164,7 @@ describe("ApplyPackingProposalHandler — « Proposer », appliqué d'un coup, b
 });
 
 /**
- * Régression (P6 de `pricing/plan-vente-au-poids.md`) : la proposition coupait
+ * Régression (P6 de `pricing/vente-au-poids.md`) : la proposition coupait
  * un lot au poids entre deux bacs, et le colisage refusait alors la seconde
  * part (`WeightLotSplitError`, 400) — « Proposer » échouait en entier.
  * Un bac M tient 2 000 g de saumon et 30 croissants.

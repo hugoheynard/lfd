@@ -54,7 +54,7 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
   const fixedFee = adjustments.deliveryFee?.mode === "amount";
   const composition = composeExactOrder({
     // Chaque ligne recompose dans SON unité, recopiée de la commande
-    // (`plan-vente-au-poids.md`, P5) : au poids, prix au kilo × grammes.
+    // (`vente-au-poids.md`, P5) : au poids, prix au kilo × grammes.
     lines: input.lines,
     discountAdjustment: adjustments.discount,
     deliveryFeeAdjustment: adjustments.deliveryFee,

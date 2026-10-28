@@ -87,7 +87,7 @@ const GAP_LABELS: Readonly<Record<string, string>> = {
   // gardé pour relire les manques publiés avant.
   allergens: 'allergènes',
   pro_price: 'prix pro',
-  // Vente au poids sans pas de saisie (`plan-vente-au-poids.md`, P1).
+  // Vente au poids sans pas de saisie (`vente-au-poids.md`, P1).
   weight_step: 'pas de saisie',
   // Plus calculé depuis le lot R3 (2026-10-27, le prix pro est toujours
   // saisi) : gardé pour relire les manques publiés avant.

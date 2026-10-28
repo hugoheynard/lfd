@@ -56,7 +56,7 @@ export interface OrderRevisionQuoteLineView {
   readonly productName: string;
   /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** L'unité de la quantité, figée avec le prix (`plan-vente-au-poids.md`). */
+  /** L'unité de la quantité, figée avec le prix (`vente-au-poids.md`). */
   readonly saleUnit: OrderSaleUnit;
   /** Prix unitaire HT, en millicentimes — au kilo pour une ligne au poids. */
   readonly unitPriceMillicents: number;

@@ -125,7 +125,7 @@ export class ClientCart {
   /**
    * Le nombre de PIÈCES, pas de références : c'est ce que le comptoir prépare.
    * Un article au poids compte pour UNE ligne, jamais pour ses grammes (plan
-   * `plan-vente-au-poids.md` §2).
+   * `vente-au-poids.md` §2).
    */
   readonly count = computed(() =>
     this.lines().reduce((sum, l) => sum + (isSoldByWeight(l.product) ? 1 : l.quantity), 0),

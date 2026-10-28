@@ -33,7 +33,7 @@ export interface UpdateVariantPricingInput {
   readonly publicPricePerKgTtcCents?: number | null | undefined;
   /**
    * L'unité de vente, le minimum et le pas en grammes
-   * (`plan-vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine fige
+   * (`vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine fige
    * l'unité après la première publication.
    */
   readonly saleUnit?: SaleUnit | undefined;
@@ -145,7 +145,7 @@ function pricingOf(
     proPriceMillicents: variant?.proPriceMillicents ?? null,
     proPricePerKgMillicents: variant?.proPricePerKgMillicents ?? null,
     publicPricePerKgTtcCents: variant?.publicPricePerKgTtcCents ?? null,
-    // L'unité de vente et son pas (`plan-vente-au-poids.md`) : sans eux, un
+    // L'unité de vente et son pas (`vente-au-poids.md`) : sans eux, un
     // passage au poids serait `untraced`.
     saleUnit: variant?.saleUnit ?? "piece",
     weightMinGrams: variant?.weightMinGrams ?? null,

@@ -3,7 +3,7 @@ import { saleQuantity, weightLabel, type SaleQuantity } from '@lfd/money';
 
 /**
  * **Comment un article se compte à la saisie** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P5) — l'unité, et au poids
+ * `documentation/pricing/vente-au-poids.md`, P5) — l'unité, et au poids
  * le pas et le minimum en grammes, tels que le catalogue serveur les sert.
  *
  * Une quantité reste un entier : des PIÈCES, ou des GRAMMES. L'unité ne se

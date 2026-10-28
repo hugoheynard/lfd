@@ -19,7 +19,7 @@ export interface CountColorShare {
  * chaque réassort, les mêmes que `countOf` additionne — si bien que la somme
  * des parts est le total de pièces du compte. Une commande sans couleur tombe
  * dans la part neutre `null`. Une ligne au poids y pèse une pièce, jamais ses
- * grammes (P6 de `pricing/plan-vente-au-poids.md`) : 1 250 g de saumon
+ * grammes (P6 de `pricing/vente-au-poids.md`) : 1 250 g de saumon
  * n'écrasent pas la part d'une commande de croissants. Un réassort prend la teinte de réassort du site
  * qui le reçoit (`resupplyColors`, par `siteId` — décision du soir de Hugo,
  * 2026-10-22), et la part neutre si ce site n'en a pas.

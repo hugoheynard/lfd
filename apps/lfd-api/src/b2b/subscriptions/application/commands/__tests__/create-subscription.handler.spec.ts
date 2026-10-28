@@ -135,7 +135,7 @@ describe("CreateSubscriptionHandler", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, §2) : hors des paniers récurrents. */
+/** La vente au poids (`vente-au-poids.md`, §2) : hors des paniers récurrents. */
 describe("CreateSubscriptionHandler — un article au poids", () => {
   it("refuse le panier et n'écrit rien", async () => {
     const repo = new FakeSubscriptionRepository();

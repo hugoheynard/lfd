@@ -10,7 +10,7 @@ export interface DeliveryNoteOrderLine {
   readonly vatRate: number;
   /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** L'unité figée à la passation, que le BL recopie (`plan-vente-au-poids.md`, P5). */
+  /** L'unité figée à la passation, que le BL recopie (`vente-au-poids.md`, P5). */
   readonly saleUnit: SaleUnit;
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;

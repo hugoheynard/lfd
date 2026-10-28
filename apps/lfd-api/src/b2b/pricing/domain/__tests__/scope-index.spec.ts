@@ -267,7 +267,7 @@ describe("inForceFor", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, §2) : un article au poids n'a que ses propres seaux. */
+/** La vente au poids (`vente-au-poids.md`, §2) : un article au poids n'a que ses propres seaux. */
 describe("scopeKeysOf — un article au poids", () => {
   const weighed = context({ saleUnit: "weight" });
 

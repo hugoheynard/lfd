@@ -261,7 +261,7 @@ export class OrderDetail {
   protected readonly priceStepLabels = priceStepLabels;
   protected readonly wasFloored = wasFloored;
 
-  /** La quantité dite : « 12 », ou « 1,25 kg » au poids (`plan-vente-au-poids.md`, P5). */
+  /** La quantité dite : « 12 », ou « 1,25 kg » au poids (`vente-au-poids.md`, P5). */
   protected quantityOf(line: CustomerOrderLineView): string {
     return saleQuantityLabel(line.quantity, line.saleUnit);
   }

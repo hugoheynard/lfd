@@ -88,7 +88,7 @@ export interface CarrierNoteLine {
   readonly quantity: number;
   /**
    * `weight` : la ligne se vend au poids et se dit « 500 g », « 1,25 kg »
-   * (`plan-vente-au-poids.md`, P5). **Absent = à la pièce**, comme sur le bon
+   * (`vente-au-poids.md`, P5). **Absent = à la pièce**, comme sur le bon
    * de commande (`AtelierSheetLine.saleUnit`) : un BL à la pièce se rend au bit
    * près comme avant.
    */

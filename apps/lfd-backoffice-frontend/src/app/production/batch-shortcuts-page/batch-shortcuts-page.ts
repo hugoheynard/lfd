@@ -143,7 +143,7 @@ export class BatchShortcutsPage {
 
   /**
    * « 24 pièces », ou « 1,5 kg » pour un article au poids, dont raccourcis et
-   * contenant se règlent en grammes (P6 de `plan-vente-au-poids.md`).
+   * contenant se règlent en grammes (P6 de `vente-au-poids.md`).
    */
   protected spoken(quantity: number, unit: OrderSaleUnit): string {
     return unit === 'weight' ? saleQuantityLabel(quantity, unit) : `${String(quantity)} pièces`;

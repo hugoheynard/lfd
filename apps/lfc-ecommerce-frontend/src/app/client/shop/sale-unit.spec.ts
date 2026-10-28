@@ -9,7 +9,7 @@ import {
   type SaleTerms,
 } from './sale-unit';
 
-/** P4 de `plan-vente-au-poids.md` : la boutique compte en grammes, au pas de l'article. */
+/** P4 de `vente-au-poids.md` : la boutique compte en grammes, au pas de l'article. */
 describe('sale-unit', () => {
   const piece: SaleTerms = {};
   const byWeight = (step: number | null, min: number | null): SaleTerms => ({

@@ -90,7 +90,7 @@ const OPERATION_REFUSAL_PREFIX = 'orders.operation.';
 
 /**
  * Le préfixe des refus d'une LIGNE (400/409) — un poids hors du pas, sous le
- * minimum, au-delà de la garde (plan `plan-vente-au-poids.md`, P3). Le
+ * minimum, au-delà de la garde (plan `vente-au-poids.md`, P3). Le
  * message du serveur nomme l'article et la règle : il se montre tel quel.
  */
 const LINE_REFUSAL_PREFIX = 'orders.line.';

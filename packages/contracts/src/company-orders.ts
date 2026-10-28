@@ -89,7 +89,7 @@ export interface OrderSummaryProductView {
   /** Des pièces, ou des GRAMMES si `saleUnit = weight` — sommés dans la même unité. */
   readonly quantity: number;
   /**
-   * L'unité de la quantité (`plan-vente-au-poids.md`, P5). Un SKU n'a qu'une
+   * L'unité de la quantité (`vente-au-poids.md`, P5). Un SKU n'a qu'une
    * unité — elle est figée à sa première publication —, si bien que ses
    * lignes se somment toujours dans la même.
    */

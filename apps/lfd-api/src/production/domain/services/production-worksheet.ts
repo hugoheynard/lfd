@@ -244,7 +244,7 @@ function outOfCount(
  * pleine sur le carreau.
  *
  * Un article au poids règle son contenant en GRAMMES, l'unité de sa ligne
- * (P6 de `pricing/plan-vente-au-poids.md`) : 3 250 g pour une plaque de
+ * (P6 de `pricing/vente-au-poids.md`) : 3 250 g pour une plaque de
  * 1 500 g font 3 plaques — le même calcul, dans une seule unité.
  */
 function containerLabelOf(quantity: number, rule: ContainerRule | undefined): string | null {

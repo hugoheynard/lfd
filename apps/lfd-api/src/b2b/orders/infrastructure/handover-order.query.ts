@@ -272,7 +272,7 @@ export interface DepartureLine {
 /**
  * Les pièces qui partent, pour le comptoir et la feuille de route : un
  * article au poids compte pour une ligne, jamais ses grammes (plan
- * `pricing/plan-vente-au-poids.md`, § 2) — et pour rien s'il ne part pas.
+ * `pricing/vente-au-poids.md`, § 2) — et pour rien s'il ne part pas.
  */
 export function departingPieces(lines: readonly DepartureLine[]): number {
   return lines.reduce(

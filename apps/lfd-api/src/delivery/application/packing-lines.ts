@@ -23,7 +23,7 @@ export function packingLinesOf(
       sku: line.sku,
       name: known?.name ?? line.name,
       // Un article n'a qu'une unité (figée à la publication) : ses grammes
-      // s'additionnent entre eux (P6 de `pricing/plan-vente-au-poids.md`).
+      // s'additionnent entre eux (P6 de `pricing/vente-au-poids.md`).
       quantity: (known?.quantity ?? 0) + line.quantity,
       saleUnit: line.saleUnit,
       requiresCold: cold.has(line.sku),

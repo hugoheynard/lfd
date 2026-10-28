@@ -45,7 +45,7 @@ describe("ListCatalogHandler", () => {
     expect(views.map((view) => view.family?.id ?? null)).toEqual(["fam-vien", null]);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : la saisie du back-office doit savoir qu'un prix est au kilo. */
+  /** P5 (`vente-au-poids.md`) : la saisie du back-office doit savoir qu'un prix est au kilo. */
   it("sert l'unité de vente, le pas et le minimum — une pièce n'en a pas", async () => {
     const handler = new ListCatalogHandler(
       new InMemoryProductCatalog([

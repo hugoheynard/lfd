@@ -162,7 +162,7 @@ function toShipmentView(shipment: ShipmentToHandOver): OrderHandoverShipmentView
 
 /**
  * Les pièces à recompter au comptoir : un article au poids compte pour une
- * ligne, jamais ses grammes (plan `pricing/plan-vente-au-poids.md`, § 2).
+ * ligne, jamais ses grammes (plan `pricing/vente-au-poids.md`, § 2).
  */
 function unitsOf(lines: readonly HandoverSubjectLine[]): number {
   return lines.reduce(

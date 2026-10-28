@@ -155,7 +155,7 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // devis, les jours proposés, les abonnements.
     SaleOperations,
     // Les articles au poids, que les abonnements, les engagements et le
-    // réassort refusent (`plan-vente-au-poids.md`, P3).
+    // réassort refusent (`vente-au-poids.md`, P3).
     ArticleSaleUnits,
     // Le froid des produits (fil v12, lot 4 bis) : un lecteur à lui, que seul
     // le relais vers la livraison lit.

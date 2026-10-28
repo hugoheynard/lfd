@@ -9,7 +9,7 @@ import {
 
 /**
  * **L'écart BT-131 contre BT-129 × BT-146, mesuré** — plan
- * `plan-vente-au-poids.md`, § 3 bis, point 5 : les deux cas que vitruve a
+ * `vente-au-poids.md`, § 3 bis, point 5 : les deux cas que vitruve a
  * demandé de chiffrer, et la tolérance PEPPOL-EN16931-R120 (0,02 €).
  */
 

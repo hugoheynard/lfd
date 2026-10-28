@@ -9,9 +9,14 @@ import {
 import {
   BatchShortcutNotFoundError,
   DuplicateBatchShortcutLabelError,
+  InvalidBatchShortcutPiecesError,
   TooManyBatchShortcutsError,
 } from "../../../domain/errors/batch-shortcut-errors.js";
-import { InMemoryBatchShortcuts, shortcutRow } from "../../__tests__/batch-shortcut-doubles.js";
+import {
+  FixedSellableArticles,
+  InMemoryBatchShortcuts,
+  shortcutRow,
+} from "../../__tests__/batch-shortcut-doubles.js";
 import { CreateBatchShortcutCommand } from "../create-batch-shortcut.command.js";
 import { CreateBatchShortcutHandler } from "../create-batch-shortcut.handler.js";
 import { RemoveBatchShortcutCommand } from "../remove-batch-shortcut.command.js";
@@ -28,6 +33,22 @@ function subject() {
   const authors = new FixedStaffAuthorDirectory(
     authorsKnownAs({ firstName: "Marie", lastName: "Dupont" }, "staff-1"),
   );
+  const articles = new FixedSellableArticles([
+    {
+      sku: "VIE-001",
+      name: "Pain au chocolat",
+      familyId: "f-1",
+      familyName: "Viennoiserie",
+      saleUnit: "piece",
+    },
+    {
+      sku: "VRAC-001",
+      name: "Graines au chocolat",
+      familyId: "f-2",
+      familyName: "Vrac",
+      saleUnit: "weight",
+    },
+  ]);
   return {
     clock,
     table,
@@ -39,8 +60,9 @@ function subject() {
       new FixedIdGenerator("bs"),
       clock,
       uow,
+      articles,
     ),
-    update: new UpdateBatchShortcutHandler(table, events, clock, uow),
+    update: new UpdateBatchShortcutHandler(table, events, clock, uow, articles),
     remove: new RemoveBatchShortcutHandler(table, events, clock, uow),
   };
 }
@@ -109,6 +131,46 @@ describe("CreateBatchShortcutHandler", () => {
     await expect(
       create.execute(new CreateBatchShortcutCommand("PAI-001", "1 chariot", 96, "staff-1")),
     ).resolves.toBe("bs_000002");
+  });
+});
+
+/** Régression : un article au poids se voyait refuser des « pièces » (2026-10-29). */
+describe("le refus d'une quantité nomme l'unité de l'article", () => {
+  async function refusal(sku: string): Promise<string> {
+    const { create, table, events } = subject();
+    const error = await create
+      .execute(new CreateBatchShortcutCommand(sku, "1 bac", 0, "staff-1"))
+      .catch((caught: unknown) => caught);
+    expect(error).toBeInstanceOf(InvalidBatchShortcutPiecesError);
+    expect(table.rows.size).toBe(0);
+    expect(events.factTypes()).toEqual([]);
+    return error instanceof Error ? error.message : "";
+  }
+
+  it("au poids, des grammes", async () => {
+    const message = await refusal("VRAC-001");
+    expect(message).toContain("grammes");
+    expect(message).not.toContain("pièces");
+  });
+
+  it("à la pièce, des pièces", async () => {
+    expect(await refusal("VIE-001")).toContain("pièces");
+  });
+
+  it("un article qui n'est plus vendable : le refus, sans unité inventée", async () => {
+    const message = await refusal("GONE-001");
+    expect(message).not.toContain("pièces");
+    expect(message).not.toContain("grammes");
+  });
+
+  it("à la modification aussi", async () => {
+    const { update, table } = subject();
+    table.seed(shortcutRow({ id: "a", sku: "VRAC-001" }));
+
+    await expect(update.execute(new UpdateBatchShortcutCommand("a", "1 bac", 2.5))).rejects.toThrow(
+      /grammes/,
+    );
+    expect(table.rows.get("a")?.pieces).not.toBe(2.5);
   });
 });
 

@@ -211,7 +211,7 @@ describe('Les règles du panier', () => {
   });
 });
 
-/** P4 de `plan-vente-au-poids.md` : un article au poids se compte en grammes, au pas. */
+/** P4 de `vente-au-poids.md` : un article au poids se compte en grammes, au pas. */
 describe('Le panier, au poids', () => {
   const SALMON = {
     ...(TEST_ITEMS[0] as ShopItemView),

@@ -23,7 +23,7 @@ export const PRICE_GAP = "price";
 export const PRO_PRICE_GAP = "pro_price";
 /**
  * Une déclinaison vendue au poids sans pas de saisie : personne ne saurait
- * quelle quantité proposer (`plan-vente-au-poids.md`, §2).
+ * quelle quantité proposer (`vente-au-poids.md`, §2).
  */
 export const WEIGHT_STEP_GAP = "weight_step";
 /** Un taux manque au contexte nommé — `vat:b2b`, `vat:eatIn`. */

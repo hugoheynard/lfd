@@ -7,7 +7,7 @@ import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe'
  * **Des lignes de manifeste** — quantité, article, SKU — telles qu'on les
  * recompte en chargeant ou en déchargeant. Présentationnel : le manifeste des
  * tournées et l'arrêt de « Ma tournée » les écrivent pareil. Un article au
- * poids dit « 1,25 kg » (P6 de `plan-vente-au-poids.md`).
+ * poids dit « 1,25 kg » (P6 de `vente-au-poids.md`).
  */
 @Component({
   selector: 'app-transfer-lines',

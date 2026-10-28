@@ -5,7 +5,7 @@ import { aggregateInvoiceLines } from "../invoice-lines.js";
 import type { FrozenInvoiceLine, FrozenInvoiceOrder } from "../invoice-dossier.types.js";
 
 /**
- * L'agrégation d'une facture au poids (plan `plan-vente-au-poids.md`, § 3 bis,
+ * L'agrégation d'une facture au poids (plan `vente-au-poids.md`, § 3 bis,
  * point 2) : les grammes deviennent des millièmes de kilogramme (`KGM`), les
  * pièces des millièmes de pièce (`H87`), une fois, ici. Aucune horloge lue.
  */

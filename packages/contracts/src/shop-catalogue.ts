@@ -146,7 +146,7 @@ export interface ShopItemView {
   readonly unitPriceTtcCents: number;
   /**
    * **L'unité de vente de l'article** (plan
-   * `documentation/pricing/plan-vente-au-poids.md`, P4) : `piece`, ou `weight`
+   * `documentation/pricing/vente-au-poids.md`, P4) : `piece`, ou `weight`
    * — et alors {@link unitPriceMillicents} et {@link unitPriceTtcCents} sont
    * des prix **au kilo**, et la quantité d'une ligne se dit en grammes.
    *

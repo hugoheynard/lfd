@@ -1025,7 +1025,7 @@ model DeliveryInternalTransferManifestLine {
   /// Des pièces, ou des grammes si `saleUnit = weight`.
   quantity    Int
   /// `piece` ou `weight` (CHECK), recopiée de la ligne de commande au départ
-  /// (P6 de `pricing/plan-vente-au-poids.md`). Un manifeste figé avant la
+  /// (P6 de `pricing/vente-au-poids.md`). Un manifeste figé avant la
   /// colonne se relit `piece`, ce qu'il était.
   saleUnit    String @default("piece") @map("sale_unit")
 

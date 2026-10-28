@@ -13,7 +13,7 @@ import { PAPER_LOGO } from "./paper-logo.fixture.js";
 
 /**
  * **Les papiers et les comptes du fournil, au poids** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P6) : une ligne au poids
+ * `documentation/pricing/vente-au-poids.md`, P6) : une ligne au poids
  * se compte en grammes, se dit en kilos, et pèse UNE pièce dans les totaux
  * qui additionnent des articles différents.
  *

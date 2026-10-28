@@ -535,7 +535,7 @@ describe("mercurialeAlone — ce que le marché paie", () => {
 });
 
 /**
- * **La vente au poids** (`plan-vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) :
+ * **La vente au poids** (`vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) :
  * les décisions qui couvrent PLUSIEURS articles — globales, de famille — ne
  * s'appliquent pas à un article au poids ; celles de l'article, la mercuriale
  * et ses barèmes (en grammes), si. Aucun engagement ne le couvre.

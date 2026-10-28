@@ -194,7 +194,7 @@ describe("la vitrine publique", () => {
       "proPricePerKgMillicents",
       "publicPricePerKgTtcCents",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-28, P4 de
-      // `documentation/pricing/plan-vente-au-poids.md`) : l'unité de vente,
+      // `documentation/pricing/vente-au-poids.md`) : l'unité de vente,
       // le pas et le minimum — ce que la fiche affiche et ce que la commande
       // refuserait de toute façon. Toujours émis, `null` pour une pièce.
       "saleUnit",

@@ -175,7 +175,7 @@ describe("shopCatalogueOf — les opérations au commerce", () => {
   });
 });
 
-/** P4 de `documentation/pricing/plan-vente-au-poids.md` : la vitrine sait vendre au poids. */
+/** P4 de `documentation/pricing/vente-au-poids.md` : la vitrine sait vendre au poids. */
 describe("shopCatalogueOf — l'unité de vente", () => {
   const at = new Date("2026-10-01T00:00:00.000Z");
 

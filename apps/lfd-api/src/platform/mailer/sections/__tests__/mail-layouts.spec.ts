@@ -46,7 +46,7 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.order-placed|routingDeliveryWithoutCity",
   "customer.order-placed|windowBetween",
   "customer.order-placed|windowBefore",
-  // Une ligne au poids (`plan-vente-au-poids.md`, P3) : aucun cas de
+  // Une ligne au poids (`vente-au-poids.md`, P3) : aucun cas de
   // l'empreinte n'en porte — les empreintes à la pièce restent celles d'avant ;
   // `order-mail-content.spec.ts` et `order-placed-mail.spec.ts` les parcourent.
   "customer.order-placed|recapWeighed",

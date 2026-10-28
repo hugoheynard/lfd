@@ -24,7 +24,7 @@ export interface DeliveryNoteLineState {
    */
   readonly quantity: number;
   /**
-   * Recopiée de la ligne de commande (`plan-vente-au-poids.md`, P5) : au poids,
+   * Recopiée de la ligne de commande (`vente-au-poids.md`, P5) : au poids,
    * le prix unitaire est au kilo et un départ partiel se recompose en grammes.
    */
   readonly saleUnit: SaleUnit;

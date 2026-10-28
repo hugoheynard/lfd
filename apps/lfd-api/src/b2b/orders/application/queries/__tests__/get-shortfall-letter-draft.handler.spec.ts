@@ -74,7 +74,7 @@ describe("la proposition « Écrire au client » (E6d)", () => {
     expect(message).toContain("Contactez le service commercial.");
   });
 
-  /** P6 de `pricing/plan-vente-au-poids.md` : un manquant au poids se dit en grammes, pas en pièces. */
+  /** P6 de `pricing/vente-au-poids.md` : un manquant au poids se dit en grammes, pas en pièces. */
   it("dit un manquant partiel au poids en grammes, et le lot parti en kilos", async () => {
     const { message } = await draft({
       ...SUBJECT,

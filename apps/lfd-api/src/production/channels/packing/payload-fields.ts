@@ -20,7 +20,7 @@ export function piecesOf(value: unknown): number | null {
 }
 
 /**
- * L'unité d'une ligne (P6 de `pricing/plan-vente-au-poids.md`) : `piece` ou
+ * L'unité d'une ligne (P6 de `pricing/vente-au-poids.md`) : `piece` ou
  * `weight`. **Absente = `piece`** — un fait écrit avant le champ ne portait
  * que des pièces, aucun article au poids n'existait. Une valeur inconnue rend
  * `null` : la relire en pièces ferait coliser des grammes un par un.

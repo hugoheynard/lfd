@@ -137,7 +137,7 @@ describe("la borne du nombre de lignes", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, P3) : une ligne dit son unité. */
+/** La vente au poids (`vente-au-poids.md`, P3) : une ligne dit son unité. */
 describe("orderLineInputSchema — l'unité d'une ligne", () => {
   it("garde la borne des pièces, unité dite ou non", () => {
     expect(

@@ -46,7 +46,7 @@ import { ticketSections } from './order-sheet-ticket-text';
 
 /**
  * Quantité cadrée à droite sur 3 caractères, pour que la colonne s'aligne —
- * « 12 », ou un poids dit « 1,25 kg » (`plan-vente-au-poids.md`, P5).
+ * « 12 », ou un poids dit « 1,25 kg » (`vente-au-poids.md`, P5).
  */
 function pad(line: { readonly quantity: number; readonly saleUnit?: 'weight' }): string {
   return saleQuantityLabel(line.quantity, line.saleUnit).padStart(3, ' ');

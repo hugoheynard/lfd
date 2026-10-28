@@ -101,7 +101,7 @@ export const OPERATION_AUDIENCE = domain('clientèle d’une opération', {
   both: 'Professionnels et particuliers',
 });
 
-/** L'unité de vente d'une déclinaison (`plan-vente-au-poids.md`, P1) — les mots du sélecteur. */
+/** L'unité de vente d'une déclinaison (`vente-au-poids.md`, P1) — les mots du sélecteur. */
 export const SALE_UNIT = domain('unité de vente', {
   piece: 'À la pièce',
   weight: 'Au poids',

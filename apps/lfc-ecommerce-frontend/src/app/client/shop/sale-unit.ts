@@ -3,7 +3,7 @@ import { lineTotalCents, saleQuantity, weightLabel, type SaleQuantity } from '@l
 
 /**
  * **L'unité de vente d'un article, telle que la boutique la manie** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P4).
+ * `documentation/pricing/vente-au-poids.md`, P4).
  *
  * Le panier retient un entier par référence, comme toujours : des PIÈCES pour
  * un article à la pièce, des GRAMMES pour un article au poids. L'unité ne se

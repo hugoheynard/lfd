@@ -35,7 +35,7 @@ export interface RevisedLineRequests {
  * Les quantités d'un même SKU s'additionnent, comme `OrderLinePricing` le fait
  * à la passation : une commande ne porte qu'une ligne par SKU.
  *
- * **L'unité est figée avec le prix** (`plan-vente-au-poids.md`, P3) : une ligne
+ * **L'unité est figée avec le prix** (`vente-au-poids.md`, P3) : une ligne
  * gardée se redemande dans l'unité de la précédente, et au poids sous la garde
  * d'une tonne. Son pas et son minimum ne se relisent pas — le catalogue n'est
  * pas relu pour une ligne gardée (R3) ; une ligne nouvelle, elle, se valide

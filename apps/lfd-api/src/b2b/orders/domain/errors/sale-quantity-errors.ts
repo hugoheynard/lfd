@@ -4,7 +4,7 @@ import { BusinessError, DomainError } from "../../../../platform/shared/errors/a
 
 /**
  * Les refus d'une quantité qui ne se lit pas dans l'unité de l'article
- * (`documentation/pricing/plan-vente-au-poids.md`, P3). Lus par du personnel et
+ * (`documentation/pricing/vente-au-poids.md`, P3). Lus par du personnel et
  * par des clients : chacun nomme l'article, la quantité dite en grammes ou en
  * kilogrammes, et ce qu'il faut demander à la place. Jamais de correction
  * silencieuse — un poids arrondi au pas serait un autre prix que celui lu.

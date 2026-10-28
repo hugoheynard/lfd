@@ -1,6 +1,6 @@
 /**
  * E2E — **l'unité de vente, de la saisie au référentiel jusqu'au miroir du
- * commerce** (`documentation/pricing/plan-vente-au-poids.md`, P2).
+ * commerce** (`documentation/pricing/vente-au-poids.md`, P2).
  *
  * Ce que seul ce niveau prouve : qu'une déclinaison saisie au poids dans
  * « Tarif & TVA » traverse le fil v14 par les faits du catalogue et se range

@@ -26,7 +26,7 @@ export interface SheetLine {
   readonly productName: string;
   readonly quantity: number;
   /**
-   * L'unité de la ligne (P6 de `pricing/plan-vente-au-poids.md`) : `weight` =
+   * L'unité de la ligne (P6 de `pricing/vente-au-poids.md`) : `weight` =
    * `quantity` compte des grammes, et la ligne se met au bac en UN lot.
    */
   readonly saleUnit: SaleUnit;

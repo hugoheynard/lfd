@@ -38,7 +38,7 @@ const REVISED_COLUMNS = {
       vatRate: true,
       quantity: true,
       // L'unité de la quantité : une composition au poids archivée sans elle
-      // se relirait en pièces (`plan-vente-au-poids.md`, P3).
+      // se relirait en pièces (`vente-au-poids.md`, P3).
       saleUnit: true,
       lineTotalCents: true,
       unitPriceTtcCents: true,

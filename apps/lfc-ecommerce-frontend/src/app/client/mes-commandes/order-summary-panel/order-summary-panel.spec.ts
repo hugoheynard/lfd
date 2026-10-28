@@ -130,7 +130,7 @@ describe('OrderSummaryPanel — le récapitulatif à l’écran (plan du récapi
     expect(host.querySelector('[data-summary-block="total"] fold-data-table')).not.toBeNull();
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : « 1250 » dans la colonne se lisait en pièces. */
+  /** P5 (`vente-au-poids.md`) : « 1250 » dans la colonne se lisait en pièces. */
   it('dit la quantité d’un article au poids en kilos', async () => {
     const [company] = SUMMARY.companies;
     const weighed = {

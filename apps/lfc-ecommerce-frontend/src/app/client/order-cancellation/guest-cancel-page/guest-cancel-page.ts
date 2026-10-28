@@ -128,7 +128,7 @@ export class GuestCancelPage {
       : fill(copy.guestDelivery, { city: fulfillment.city });
   });
 
-  /** « 6 », ou un poids dit « 500 g » / « 1,25 kg » (`plan-vente-au-poids.md`, P5). */
+  /** « 6 », ou un poids dit « 500 g » / « 1,25 kg » (`vente-au-poids.md`, P5). */
   protected quantityOf(line: GuestOrderCancellationView['lines'][number]): string {
     return quantityLabel(line.quantity, line.saleUnit);
   }

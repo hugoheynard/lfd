@@ -19,7 +19,7 @@ export const orderPreflightLineSchema = z.object({
   /** Des pièces, ou des grammes si `saleUnit = weight`. */
   quantity: z.number().int().positive(),
   /**
-   * L'unité de la quantité (`plan-vente-au-poids.md`, P5) — absente = `piece`,
+   * L'unité de la quantité (`vente-au-poids.md`, P5) — absente = `piece`,
    * comme une ligne de panier. Elle ne sert qu'à DIRE la quantité dans
    * l'avertissement (« 500 g ») : la comparaison se fait dans l'unité du SKU,
    * qui n'en a qu'une.

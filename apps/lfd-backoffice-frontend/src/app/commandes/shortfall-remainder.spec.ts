@@ -45,7 +45,7 @@ describe('abandonedSentence', () => {
   });
 });
 
-/** P6 de `plan-vente-au-poids.md` : le reste d'un lot au poids se dit en grammes. */
+/** P6 de `vente-au-poids.md` : le reste d'un lot au poids se dit en grammes. */
 describe('le reste abandonné, au poids', () => {
   it('dit « 250 g », jamais « 250 »', () => {
     expect(

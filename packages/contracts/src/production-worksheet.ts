@@ -68,7 +68,7 @@ export interface WorkshopLine {
   readonly productName: string;
   readonly quantity: number;
   /**
-   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : `weight` = la
+   * L'unité de l'article (`vente-au-poids.md`, P6) : `weight` = la
    * quantité, ce qui est sorti, ce qui reste, le surplus et les fournées sont
    * des GRAMMES, et l'écran les dit « 1,25 kg ».
    */

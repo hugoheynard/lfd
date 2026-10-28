@@ -83,7 +83,7 @@ model PackingLine {
   /// `saleUnit = weight`.
   quantity    Int
   /// `piece` ou `weight` (CHECK), recopiée de la liste à coliser (P6 de
-  /// `pricing/plan-vente-au-poids.md`). Une ligne au poids se met au bac EN
+  /// `pricing/vente-au-poids.md`). Une ligne au poids se met au bac EN
   /// UN LOT : sa quantité ne se répartit pas.
   saleUnit    String @default("piece") @map("sale_unit")
 

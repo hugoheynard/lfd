@@ -76,7 +76,7 @@ describe("variantGaps", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, lot P1) : le pas est exigé. */
+/** La vente au poids (`vente-au-poids.md`, lot P1) : le pas est exigé. */
 describe("variantGaps — la vente au poids", () => {
   it("nomme le pas manquant d'une déclinaison au poids", () => {
     expect(variantGaps({ ...COMPLETE, saleUnit: "weight" }, ALL, RULES, "both")).toEqual([

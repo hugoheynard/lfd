@@ -1,6 +1,6 @@
 /**
  * E2E — **« Proposer » une commande au poids** (P6 de
- * `documentation/pricing/plan-vente-au-poids.md`, reliquat de la proposition
+ * `documentation/pricing/vente-au-poids.md`, reliquat de la proposition
  * de bacs).
  *
  * Ce que seul le vrai chemin prouve : la proposition de la livraison
@@ -11,13 +11,13 @@
  */
 import { randomUUID } from "node:crypto";
 
-import type { PackingSheet as PackingSheetView } from "@lfd/contracts";
+import type { DeliveryPackingProposalView, PackingSheet as PackingSheetView } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
 import { settleCardPayments } from "./card-payments.js";
 import { LOADING, binTypeId } from "./delivery-loading-scene.js";
 import { admin } from "./delivery-rounds-scene.js";
-import { type E2eContext } from "./e2e-harness.js";
+import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
 import {
   CROISSANT,
@@ -85,7 +85,7 @@ async function capacity(typeId: string, units: number): Promise<void> {
 }
 
 /**
- * Régression (P6 de `pricing/plan-vente-au-poids.md`) : la proposition coupait
+ * Régression (P6 de `pricing/vente-au-poids.md`) : la proposition coupait
  * un lot au poids entre deux bacs, et « Proposer » tombait en 400
  * (`packing.container.weight_lot_split`) sur la seconde part.
  */
@@ -181,6 +181,13 @@ describe("« Proposer » une commande mêlée, pièces et poids", () => {
     await staff()
       .post(`${base(orderId)}/proposal/apply`)
       .expect(204);
+
+    const proposal = jsonBody<DeliveryPackingProposalView>(
+      await staff()
+        .get(`${base(orderId)}/proposal`)
+        .expect(200),
+    );
+    expect(proposal.unplaced).toMatchObject([{ sku: WEIGHED, reason: "weight_lot_over_bin" }]);
 
     const after = await sheetOf(orderId);
     const holding = (after?.containerList ?? []).filter((container) =>

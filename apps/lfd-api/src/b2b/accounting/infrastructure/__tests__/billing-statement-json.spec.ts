@@ -4,7 +4,7 @@ import { bodyJson } from "../billing-statement-json.js";
 import { statementBodySchemaOf } from "../billing-statement-json.schema.js";
 
 /**
- * Le corps d'un relevé arrêté, écrit puis relu (plan `plan-vente-au-poids.md`,
+ * Le corps d'un relevé arrêté, écrit puis relu (plan `vente-au-poids.md`,
  * § 3 bis, point 3) : la v2 porte l'unité et les millièmes, la v1 — sans
  * unité — se relit en pièces. Aucune date n'est comparée à une horloge.
  */

@@ -51,7 +51,7 @@ export class QuantityRail {
 
   /**
    * La quantité DITE, quand le nombre seul ne suffit pas — « 500 g » pour un
-   * article au poids (P4 de `plan-vente-au-poids.md`). `null` = le nombre.
+   * article au poids (P4 de `vente-au-poids.md`). `null` = le nombre.
    */
   readonly label = input<string | null>(null);
 

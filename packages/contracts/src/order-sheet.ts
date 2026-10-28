@@ -256,7 +256,7 @@ export interface AtelierSheetLine {
   /**
    * `weight` : la ligne se vend au poids, sa quantité compte des grammes, son
    * prix unitaire est au kilo, et elle se dit « 500 g », « 1,25 kg »
-   * (`plan-vente-au-poids.md`, P3). **Absent = à la pièce** : la feuille ne
+   * (`vente-au-poids.md`, P3). **Absent = à la pièce** : la feuille ne
    * l'écrit que pour une ligne au poids, si bien qu'une commande à la pièce se
    * rend au bit près comme avant.
    */

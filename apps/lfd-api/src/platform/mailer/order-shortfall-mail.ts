@@ -79,7 +79,7 @@ export function draftOrderShortfallMessage(data: OrderShortfallDraftData): strin
   ].join("\n\n");
 }
 
-/** « 3 », ou « 250 g » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+/** « 3 », ou « 250 g » pour un article au poids (`vente-au-poids.md`, P6). */
 function quantityOf(line: OrderShortfallDraftLine): string {
   return line.saleUnit === "weight" ? weightLabel(line.quantity) : String(line.quantity);
 }

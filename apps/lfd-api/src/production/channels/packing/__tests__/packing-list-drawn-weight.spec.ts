@@ -6,7 +6,7 @@ import {
 
 /**
  * **La liste à coliser porte l'unité de chaque ligne** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P6). Additive : un fait
+ * `documentation/pricing/vente-au-poids.md`, P6). Additive : un fait
  * écrit avant le champ se relit à la pièce ; une unité inconnue est refusée
  * plutôt que lue en pièces.
  *

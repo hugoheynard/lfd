@@ -168,7 +168,7 @@ function atelierLineOf(line: OrderLineView): AtelierSheetLine {
 /**
  * La marque d'une ligne au poids, et RIEN pour une ligne à la pièce : une
  * feuille à la pièce se rend au bit près comme avant la vente au poids
- * (`plan-vente-au-poids.md`, P3).
+ * (`vente-au-poids.md`, P3).
  */
 function weightMarkOf(line: Pick<OrderLineView, "saleUnit">): { readonly saleUnit?: "weight" } {
   return line.saleUnit === "weight" ? { saleUnit: "weight" } : {};

@@ -7,7 +7,7 @@ import {
 
 /**
  * **Le colisage proposé d'un article au poids** (P6 de
- * `documentation/pricing/plan-vente-au-poids.md`) : sa contenance se lit en
+ * `documentation/pricing/vente-au-poids.md`) : sa contenance se lit en
  * grammes, et un lot qui tient dans un bac entier n'est jamais coupé — le
  * colisage refuserait la seconde part (`WeightLotSplitError`).
  *
@@ -79,10 +79,34 @@ describe("proposePacking — un lot au poids tient dans UN bac", () => {
     ]);
   });
 
-  it("un lot plus lourd qu'un bac entier se compte en bacs, faute de mieux — et la boucle termine", () => {
-    expect(shape([salmon(3000)])).toMatchObject([
-      { whole: 1, half: true, content: [{ sku: "SAU", quantity: 3000 }] },
+  /** Régression : un lot plus lourd qu'un bac restait non posé sans motif (2026-10-29). */
+  it("un lot plus lourd qu'un bac entier n'est pas posé : motif « lot trop lourd pour un bac »", () => {
+    const proposal = proposePacking([croissants(6), salmon(3000)], [M], CAPACITIES);
+
+    expect(proposal.unplaced).toEqual([
+      { sku: "SAU", quantity: 3000, reason: "weight_lot_over_bin" },
     ]);
+    expect(proposal.bins).toMatchObject([
+      { whole: 0, half: true, content: [{ sku: "CRO", quantity: 6 }] },
+    ]);
+  });
+
+  it("le même poids à la pièce, lui, se répartit sans motif", () => {
+    const proposal = proposePacking([{ ...salmon(3000), saleUnit: "piece" }], [M], CAPACITIES);
+
+    expect(proposal.unplaced).toEqual([]);
+  });
+
+  it("un type plus grand qui prend le lot entier suffit", () => {
+    const L: PackingBinType = { id: "bin_l", volume: 80, isotherm: false, divisible: false };
+    const proposal = proposePacking(
+      [salmon(3000)],
+      [M, L],
+      [...CAPACITIES, { binTypeId: "bin_l", sku: "SAU", units: 4000 }],
+    );
+
+    expect(proposal.unplaced).toEqual([]);
+    expect(proposal.bins).toMatchObject([{ binTypeId: "bin_l", whole: 1 }]);
   });
 
   it("deux commandes d'un même lot fusionnées restent un lot", () => {

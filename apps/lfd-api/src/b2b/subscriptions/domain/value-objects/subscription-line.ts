@@ -31,7 +31,7 @@ export class SubscriptionLine {
   /**
    * **Une ligne qu'on demande d'ajouter**, avec l'unité dans laquelle
    * l'article se vend : un article au poids est refusé — un panier récurrent
-   * ne compte que des pièces (`plan-vente-au-poids.md`, §2). La relecture
+   * ne compte que des pièces (`vente-au-poids.md`, §2). La relecture
    * passe par {@link create} : ce qui est écrit a déjà été jugé.
    *
    * @throws {WeightArticleInSubscriptionError} l'article se vend au poids.

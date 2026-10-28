@@ -67,7 +67,7 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
       name: row.name,
       servedByTransfer: row.servedByTransfer,
       // Un réassort est toujours à la pièce : le commerce refuse un article au
-      // poids au réassort (plan `pricing/plan-vente-au-poids.md`, § 2).
+      // poids au réassort (plan `pricing/vente-au-poids.md`, § 2).
       lines: row.lines.map((line) => ({ ...line, saleUnit: "piece" })),
     };
     if (row.launchedAt === null || row.launchedBy === null) {

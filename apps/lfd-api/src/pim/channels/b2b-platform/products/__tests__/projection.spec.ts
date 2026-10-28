@@ -81,7 +81,7 @@ function catalogueOf(store: AllergenStore) {
 describe("projectVariant", () => {
   const percents = { takeaway: 5.5, eatIn: 10, b2b: 5.5 };
 
-  /** Fil v14 (`plan-vente-au-poids.md`, P2) : l'unité traverse telle que saisie. */
+  /** Fil v14 (`vente-au-poids.md`, P2) : l'unité traverse telle que saisie. */
   it("porte l'unité de vente, le pas et le minimum d'une déclinaison au poids", () => {
     const weighed = variant({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 });
 

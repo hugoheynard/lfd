@@ -22,7 +22,7 @@ export interface ManifestSection {
 /**
  * Les pièces d'une liste de lignes. Un article au poids compte pour UNE
  * pièce (pour rien à 0 g), jamais pour ses grammes : 1 250 g de saumon ne
- * font pas 1 250 pièces au sous-titre (P6 de `plan-vente-au-poids.md`, la
+ * font pas 1 250 pièces au sous-titre (P6 de `vente-au-poids.md`, la
  * règle `pieceTally`).
  */
 export function unitsOf(lines: readonly TransferManifestLineView[]): number {

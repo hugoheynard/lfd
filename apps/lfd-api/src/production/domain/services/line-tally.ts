@@ -9,7 +9,7 @@ export interface TalliedLine {
 /**
  * **Ce qu'une ligne pèse dans un total de pièces** — un article au poids
  * compte pour une ligne, jamais ses grammes (plan
- * `documentation/pricing/plan-vente-au-poids.md`, § 2). La règle est celle de
+ * `documentation/pricing/vente-au-poids.md`, § 2). La règle est celle de
  * `pieceTally` ; ce fichier n'en est que l'entrée pour les lignes du fournil.
  */
 export function linePieces(line: TalliedLine): number {

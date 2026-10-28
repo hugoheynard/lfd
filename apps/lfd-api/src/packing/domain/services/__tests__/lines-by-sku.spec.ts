@@ -19,7 +19,7 @@ describe("linesBySku", () => {
   });
 });
 
-/** P6 de `pricing/plan-vente-au-poids.md` : la ligne garde son unité. */
+/** P6 de `pricing/vente-au-poids.md` : la ligne garde son unité. */
 describe("linesBySku — au poids", () => {
   it("additionne les grammes d'un même article au poids, et garde l'unité", () => {
     expect(

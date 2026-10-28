@@ -19,7 +19,7 @@ export interface PackingListLine {
   /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
   /**
-   * L'unité de la ligne (P6 de `pricing/plan-vente-au-poids.md`). Additive :
+   * L'unité de la ligne (P6 de `pricing/vente-au-poids.md`). Additive :
    * un fait écrit avant le champ se relit `piece`.
    */
   readonly saleUnit: SaleUnit;

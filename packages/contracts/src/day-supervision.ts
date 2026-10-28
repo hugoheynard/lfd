@@ -116,7 +116,7 @@ export const shortfallAwaitingDecisionSchema = z.object({
       productName: z.string(),
       due: z.number().int().nonnegative(),
       packed: z.number().int().nonnegative(),
-      /** `due` et `packed` sont des grammes si `weight` (`plan-vente-au-poids.md`, P6). */
+      /** `due` et `packed` sont des grammes si `weight` (`vente-au-poids.md`, P6). */
       saleUnit: orderSaleUnitSchema,
     }),
   ),

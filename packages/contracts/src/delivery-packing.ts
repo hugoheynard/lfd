@@ -38,7 +38,7 @@ export interface DeliveryPackingLineView {
   readonly sku: string;
   /** Le nom figé à la passation. */
   readonly name: string;
-  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `plan-vente-au-poids.md`). */
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `vente-au-poids.md`). */
   readonly quantity: number;
   readonly saleUnit: OrderSaleUnit;
   /** Le froid de la fiche produit (relayé par le catalogue B2B) ; `false` = rien de déclaré. */
@@ -72,9 +72,13 @@ export interface DeliveryPackingBinView {
  * Pourquoi une ligne n'est pas placée — jamais devinée :
  * - `no_capacity` : aucun type en service n'a de contenance pour ce produit ;
  * - `cold_without_isotherm` : le produit demande le froid, et aucun type
- *   isotherme en service n'a de contenance pour lui.
+ *   isotherme en service n'a de contenance pour lui ;
+ * - `weight_lot_over_bin` : un article au poids dont le lot est plus lourd
+ *   qu'un bac entier de chacun des types qui le prennent. Un lot ne se coupe
+ *   pas : le préparateur le pose à la main, en un geste.
  */
-export type DeliveryPackingUnplacedReason = "no_capacity" | "cold_without_isotherm";
+export type DeliveryPackingUnplacedReason =
+  "no_capacity" | "cold_without_isotherm" | "weight_lot_over_bin";
 
 /** Une ligne (ou ce qu'il en reste) que la proposition ne sait pas placer. */
 export interface DeliveryPackingUnplacedView {

@@ -10,7 +10,7 @@ import type { OrderSaleUnit } from "./order.js";
  * nombre de pièces. Sur la fiche d'atelier, chaque appui AJOUTE ses pièces au
  * champ « Pièces sorties » ; ce qui s'enregistre reste un nombre de pièces.
  *
- * **Un article au poids** (P6 de `pricing/plan-vente-au-poids.md`) : `pieces`
+ * **Un article au poids** (P6 de `pricing/vente-au-poids.md`) : `pieces`
  * — comme le contenant principal — compte des GRAMMES, l'unité dans laquelle
  * ses fournées se déclarent ; « 1 plaque · 1,5 kg ».
  */

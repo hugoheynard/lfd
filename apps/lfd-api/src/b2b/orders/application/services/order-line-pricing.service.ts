@@ -146,7 +146,7 @@ export class OrderLinePricing {
     //
     // Et chaque ligne DEMANDÉE se valide contre son article avant la fusion :
     // son unité, et au poids son pas, son minimum, sa garde
-    // (`plan-vente-au-poids.md`, P3). Refusée, jamais corrigée.
+    // (`vente-au-poids.md`, P3). Refusée, jamais corrigée.
     for (const line of input) {
       ensureSaleQuantity(foundOrRefused(catalogue, line.sku), {
         quantity: line.quantity,

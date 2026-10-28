@@ -2,7 +2,7 @@ import type { SaleQuantity } from "./sale-quantity.js";
 
 /**
  * **Ce qu'une ligne pèse dans un compte cumulé de PIÈCES** — plan
- * `documentation/pricing/plan-vente-au-poids.md`, § 2 : les comptes qui
+ * `documentation/pricing/vente-au-poids.md`, § 2 : les comptes qui
  * additionnent des pièces de plusieurs articles (le camembert du compte à
  * produire, les pièces annoncées par le dossier du jour, le comptoir de
  * retrait) comptent un article au poids **pour une ligne**, jamais ses

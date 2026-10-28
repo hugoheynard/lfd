@@ -188,7 +188,7 @@ describe('forecastRayons', () => {
   });
 });
 
-/** P6 de `plan-vente-au-poids.md` : une case dit « 1,25 kg », un rayon compte une pièce. */
+/** P6 de `vente-au-poids.md` : une case dit « 1,25 kg », un rayon compte une pièce. */
 describe('forecastRayons — au poids', () => {
   const catalogue = [item('VIE-1', VIENNOISERIES), item('VIE-SAU', VIENNOISERIES)];
 

@@ -26,7 +26,7 @@ export class ListCatalogHandler implements IQueryHandler<
       family: item.family === null ? null : familyView(item.family),
       // Déprécié, servi à `null` tant qu'un front déployé le lit.
       category: null,
-      // L'unité de vente (`plan-vente-au-poids.md`, P5) : au poids, le prix
+      // L'unité de vente (`vente-au-poids.md`, P5) : au poids, le prix
       // ci-dessus est au kilo, et la saisie se fait en grammes au pas de l'article.
       saleUnit: item.saleUnit,
       weightStepGrams: item.weightStepGrams,

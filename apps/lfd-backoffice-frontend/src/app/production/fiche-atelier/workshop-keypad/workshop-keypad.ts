@@ -21,7 +21,7 @@ export interface KeypadData {
   readonly container: WorkshopLineContainer | null;
   readonly shortcuts: readonly WorkshopShortcutView[];
   /**
-   * L'unité de l'article (plan `pricing/plan-vente-au-poids.md`, P6) : au
+   * L'unité de l'article (plan `pricing/vente-au-poids.md`, P6) : au
    * poids, la fournée se déclare en GRAMMES. Absente = des pièces.
    */
   readonly saleUnit?: OrderSaleUnit;

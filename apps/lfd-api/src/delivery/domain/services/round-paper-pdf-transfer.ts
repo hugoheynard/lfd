@@ -71,7 +71,7 @@ function swatchesRows(colors: readonly string[]): readonly Row[] {
 /**
  * « 12 × Croissant » ; un article au poids, « 1,25 kg · Saumon gravlax » — sans
  * l'unité, ses grammes se liraient en pièces au déchargement (P6 de
- * `pricing/plan-vente-au-poids.md`).
+ * `pricing/vente-au-poids.md`).
  */
 export function transferLineLabel(line: RoundPaperTransferLine): string {
   return line.saleUnit === "weight"

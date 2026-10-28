@@ -47,7 +47,7 @@ function resupply(resupplyId: string, quantity: number, servedByTransfer = true)
   };
 }
 
-/** Un réassort tel que la journée le fige : à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2). */
+/** Un réassort tel que la journée le fige : à la pièce (plan `pricing/vente-au-poids.md`, § 2). */
 function frozen<T extends { readonly lines: readonly object[] }>(resupply: T): T {
   return { ...resupply, lines: resupply.lines.map((line) => ({ ...line, saleUnit: "piece" })) };
 }

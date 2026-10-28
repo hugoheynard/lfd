@@ -65,7 +65,7 @@ export interface CatalogArticle {
   /**
    * **L'unité de vente**, scellée avec le prix : au poids, le tarif est AU KILO
    * et les quantités sont des grammes — et seules les décisions qui visent cet
-   * article s'y appliquent (`plan-vente-au-poids.md`, §2 ; `scope-index.ts`).
+   * article s'y appliquent (`vente-au-poids.md`, §2 ; `scope-index.ts`).
    */
   readonly saleUnit: CatalogSaleUnit;
   readonly [FROM_CATALOGUE]: true;

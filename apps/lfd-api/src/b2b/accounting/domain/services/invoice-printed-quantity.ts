@@ -2,7 +2,7 @@ import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
 
 /**
  * **La quantité d'une ligne de facture, telle qu'on l'imprime** — PDF, CSV du
- * dossier (plan `plan-vente-au-poids.md`, § 3 bis, point 6).
+ * dossier (plan `vente-au-poids.md`, § 3 bis, point 6).
  *
  * Une pièce s'imprime entière ; un kilogramme **toujours à trois décimales**
  * (« 1.250 », « 2.000 ») : le gramme se lit sur la pièce comme dans son XML.

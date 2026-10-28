@@ -105,7 +105,7 @@ export interface GuestOrderCancellationView {
   readonly fulfillment:
     | { readonly method: "pickup"; readonly pickupLabel: string | null }
     | { readonly method: "delivery"; readonly city: string | null };
-  /** `quantity` : des pièces, ou des grammes si `saleUnit = weight` (`plan-vente-au-poids.md`). */
+  /** `quantity` : des pièces, ou des grammes si `saleUnit = weight` (`vente-au-poids.md`). */
   readonly lines: readonly {
     readonly name: string;
     readonly quantity: number;

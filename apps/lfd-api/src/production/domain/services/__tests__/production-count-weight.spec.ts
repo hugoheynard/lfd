@@ -2,7 +2,7 @@ import type { ProducibleOrder } from "../../../channels/commerce/day-orders.read
 import { countOf, floorCounts, freezeOrder, freezeResupply } from "../production-count.js";
 
 /**
- * **Le compte à produire au poids** (plan `documentation/pricing/plan-vente-au-poids.md`,
+ * **Le compte à produire au poids** (plan `documentation/pricing/vente-au-poids.md`,
  * P6) — pur, sans Nest. Une ligne au poids se compte en grammes, par article :
  * l'unité est celle de l'article, une seule par SKU.
  */

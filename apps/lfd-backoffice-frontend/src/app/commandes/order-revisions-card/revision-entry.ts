@@ -83,7 +83,7 @@ function replacedRowsOf(replaced: ReplacedCompositionView): ReplacedRows {
       name: line.productName,
       quantity: line.quantity,
       quantityLabel: saleQuantityLabel(line.quantity, line.saleUnit),
-      // Au poids, le prix figé est au kilo (`plan-vente-au-poids.md`, P5).
+      // Au poids, le prix figé est au kilo (`vente-au-poids.md`, P5).
       unitPrice: `${formatMillicents(line.unitPriceMillicents)} HT${line.saleUnit === 'weight' ? ' / kg' : ''}`,
       vat: formatVatRate(line.vatRate),
       total: `${formatCents(line.lineTotalCents)} HT`,

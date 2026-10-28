@@ -28,7 +28,7 @@ const lineSchema = z.object({
   productNameSnapshot: z.string(),
   quantity: z.number().int(),
   // Absente d'une composition archivée avant la vente au poids : toutes ses
-  // lignes étaient alors à la pièce (`plan-vente-au-poids.md`, P5).
+  // lignes étaient alors à la pièce (`vente-au-poids.md`, P5).
   saleUnit: orderSaleUnitSchema.default("piece"),
   unitPriceMillicents: z.number().int(),
   vatRate: z.number(),

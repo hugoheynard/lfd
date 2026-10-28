@@ -37,7 +37,7 @@ export interface BatchShortcutDialogData {
   readonly productName: string;
   /**
    * `weight` : le nombre se règle en GRAMMES, l'unité des fournées de
-   * l'article (P6 de `plan-vente-au-poids.md`). Absente = des pièces.
+   * l'article (P6 de `vente-au-poids.md`). Absente = des pièces.
    */
   readonly saleUnit?: OrderSaleUnit;
   /** `null` : un raccourci neuf, son nom prérempli de « 1 plaque ». */

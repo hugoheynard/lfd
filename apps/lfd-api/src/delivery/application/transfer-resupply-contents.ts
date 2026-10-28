@@ -88,7 +88,7 @@ function linesOf(
   return resupply.lines.flatMap((line) => {
     const quantity = packed === null ? line.quantity : (packed.get(line.sku) ?? 0);
     // Un réassort est toujours à la pièce : le poids en est exclu (§ 2 de
-    // `pricing/plan-vente-au-poids.md`).
+    // `pricing/vente-au-poids.md`).
     return quantity > 0
       ? [{ sku: line.sku, productName: line.productName, quantity, saleUnit: "piece" as const }]
       : [];

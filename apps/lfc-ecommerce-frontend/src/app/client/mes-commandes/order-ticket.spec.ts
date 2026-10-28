@@ -88,7 +88,7 @@ describe('ticketRowsOf', () => {
     expect(text).toMatch(/5,5 %=HT 17,91.*TVA 0,99.*TTC 18,90/u);
   });
 
-  /** P4 de `plan-vente-au-poids.md` : une ligne au poids dit ses grammes et son prix au kilo. */
+  /** P4 de `vente-au-poids.md` : une ligne au poids dit ses grammes et son prix au kilo. */
   it('dit « 500 g · Saumon (12,40 € / kg) » pour une ligne au poids', () => {
     const ticket = ticketOf(
       exact({

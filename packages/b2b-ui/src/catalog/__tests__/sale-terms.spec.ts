@@ -9,7 +9,7 @@ import {
 } from '../sale-terms';
 import { toCatalogProduct } from '../to-catalog-product';
 
-/** Un saumon à 42,00 € HT le kilo, au pas de 100 g, 250 g au moins (`plan-vente-au-poids.md`, P5). */
+/** Un saumon à 42,00 € HT le kilo, au pas de 100 g, 250 g au moins (`vente-au-poids.md`, P5). */
 const GRAVLAX: CatalogItemView = {
   sku: 'SAU-001',
   name: 'Saumon gravlax',

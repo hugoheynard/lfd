@@ -5,7 +5,7 @@ import type { BoardOrder, PackingBoardDay } from "../../ports/packing-board.read
 import { packingBoardOf, type BoardSources } from "../packing-board.js";
 
 /**
- * **Le poste de colisage, au poids** (plan `documentation/pricing/plan-vente-au-poids.md`,
+ * **Le poste de colisage, au poids** (plan `documentation/pricing/vente-au-poids.md`,
  * P6) : une ligne au poids garde son unité jusqu'à l'écran, et pèse UNE pièce
  * dans les compteurs du bac.
  *

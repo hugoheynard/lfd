@@ -28,7 +28,7 @@ import {
 
 /**
  * E2E — **la vente au poids au fournil et au colisage**
- * (`documentation/pricing/plan-vente-au-poids.md`, P6).
+ * (`documentation/pricing/vente-au-poids.md`, P6).
  *
  * Ce que seul le vrai Postgres prouve : l'unité de la ligne de commande
  * traverse l'arrêt du plan (`production_order_line.sale_unit`,

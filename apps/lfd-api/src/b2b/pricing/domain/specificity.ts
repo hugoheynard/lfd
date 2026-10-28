@@ -134,7 +134,7 @@ export function matchesScope(scope: PriceScope, context: PricingContext): boolea
 
 /**
  * **Une décision qui couvre plusieurs articles vise-t-elle celui-ci ?** Pas un
- * article au poids (`plan-vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) : une
+ * article au poids (`vente-au-poids.md`, §2 et §4.1, Hugo 2026-10-28) : une
  * règle, un barème ou un plancher de portée globale ou de famille a été posé
  * pour des pièces, et ses seuils comme ses montants ne se lisent pas en
  * grammes. Seules les décisions qui visent l'article lui-même — produit,

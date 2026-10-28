@@ -3,9 +3,11 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../platform/events/domain-event-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { SellableArticlesReader } from "../../channels/commerce/sellable-articles.reader.js";
 import { BatchShortcutNotFoundError } from "../../domain/errors/batch-shortcut-errors.js";
 import { BatchShortcutUpdatedEvent } from "../../domain/events/batch-shortcut.events.js";
 import { BatchShortcutRepository } from "../../domain/ports/batch-shortcut.repository.js";
+import { saleUnitOfSku } from "./batch-shortcut-sale-unit.js";
 import { UpdateBatchShortcutCommand } from "./update-batch-shortcut.command.js";
 
 /**
@@ -23,6 +25,7 @@ export class UpdateBatchShortcutHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly articles: SellableArticlesReader,
   ) {}
 
   async execute(command: UpdateBatchShortcutCommand): Promise<void> {
@@ -36,6 +39,7 @@ export class UpdateBatchShortcutHandler implements ICommandHandler<
         command.shortcutId,
         { label: command.label, pieces: command.pieces },
         at,
+        await saleUnitOfSku(this.articles, product.sku),
       );
       if (change === null) {
         return;

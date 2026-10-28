@@ -23,7 +23,7 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
   async articles(): Promise<readonly ResupplyArticle[]> {
     const items = await this.catalog.listSellable(SHOP_AUDIENCE);
     // Un article au poids n'est pas proposé : un réassort ne compte que des
-    // pièces (`plan-vente-au-poids.md`, §2) — et le demander est refusé.
+    // pièces (`vente-au-poids.md`, §2) — et le demander est refusé.
     return items.filter((item) => item.isDefault && item.saleUnit === "piece").map(toArticle);
   }
 

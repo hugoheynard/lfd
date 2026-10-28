@@ -9,7 +9,7 @@ const THOUSANDTHS_PER_UNIT = 1_000;
  * **La quantité d'une ligne de facture**, décimale — en millièmes entiers.
  *
  * Une pièce (`H87`) se compte en entiers ; un article vendu au poids (`KGM`,
- * plan `plan-vente-au-poids.md`, P7) en grammes, c'est-à-dire en millièmes
+ * plan `vente-au-poids.md`, P7) en grammes, c'est-à-dire en millièmes
  * de kilogramme. Des millièmes ENTIERS et non un flottant : 1,250 kg = 1250,
  * et aucune somme ne dérive.
  *

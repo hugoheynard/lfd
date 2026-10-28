@@ -163,7 +163,7 @@ export interface VariantSnapshot {
   readonly publicPricePerKgTtcCents: number | null;
   /**
    * L'unité de vente, propre à CETTE déclinaison — jamais héritée du défaut,
-   * même quand elle en suit le tarif (`plan-vente-au-poids.md`). Le pas et le
+   * même quand elle en suit le tarif (`vente-au-poids.md`). Le pas et le
    * minimum, en grammes, suivent l'unité : `null` à la pièce.
    */
   readonly saleUnit: SaleUnit;
@@ -218,7 +218,7 @@ export interface VariantPricing {
   readonly publicPricePerKgTtcCents?: number | null;
   /**
    * L'unité de vente et, au poids, le pas et le minimum
-   * (`plan-vente-au-poids.md`). Chaque champ : **absent = inchangé**. Passer à
+   * (`vente-au-poids.md`). Chaque champ : **absent = inchangé**. Passer à
    * la pièce sans les nommer efface le pas et le minimum, qui suivent l'unité.
    */
   readonly saleUnit?: SaleUnit;
@@ -541,7 +541,7 @@ export class Variant {
   /**
    * L'unité de vente, le pas et le minimum. L'unité se choisit librement tant
    * que la déclinaison n'a jamais été publiée, puis elle est figée
-   * (`plan-vente-au-poids.md`, §4.2) ; le pas et le minimum, eux, restent
+   * (`vente-au-poids.md`, §4.2) ; le pas et le minimum, eux, restent
    * réglables.
    */
   private changeSaleTerms(input: VariantPricing): void {

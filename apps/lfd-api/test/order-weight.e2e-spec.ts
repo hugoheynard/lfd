@@ -15,7 +15,7 @@ import { pickupSite } from "./order-factory.js";
 
 /**
  * E2E — **passer une commande au poids, et la relire**
- * (`documentation/pricing/plan-vente-au-poids.md`, P3).
+ * (`documentation/pricing/vente-au-poids.md`, P3).
  *
  * Ce que seul ce niveau prouve : la ligne s'écrit avec son unité sous le CHECK
  * de `order_lines.sale_unit`, se relit avec elle, et le montant que l'intention

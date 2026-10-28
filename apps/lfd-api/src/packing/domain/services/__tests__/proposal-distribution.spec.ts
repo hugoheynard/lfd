@@ -125,7 +125,7 @@ describe("distributeProposal — un contenu par type × N bacs, coupé bac par b
 });
 
 /**
- * **Un lot au poids ne se coupe jamais** (P6 de `pricing/plan-vente-au-poids.md`) :
+ * **Un lot au poids ne se coupe jamais** (P6 de `pricing/vente-au-poids.md`) :
  * le colisage refuse un second contenant pour le même article
  * (`WeightLotSplitError`), la proposition ne doit donc pas en proposer.
  * Un bac M tient 2 000 g de saumon (SAU) ; 30 croissants ; 10 pains.

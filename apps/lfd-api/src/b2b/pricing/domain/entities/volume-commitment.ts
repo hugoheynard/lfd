@@ -77,7 +77,7 @@ export class VolumeCommitmentAggregate {
   /**
    * **L'article visé se compte-t-il en pièces ?** Un engagement de portée
    * produit ou déclinaison sur un article au poids est refusé
-   * (`plan-vente-au-poids.md`, §2). `weightSold` : les SKU au poids parmi
+   * (`vente-au-poids.md`, §2). `weightSold` : les SKU au poids parmi
    * celui de la portée, lus au catalogue par l'appelant.
    *
    * @throws {WeightArticleCommitmentError} la portée vise un article au poids.

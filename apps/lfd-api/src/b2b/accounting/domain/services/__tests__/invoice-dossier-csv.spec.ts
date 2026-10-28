@@ -5,7 +5,7 @@ import { invoiceCsv } from "../invoice-dossier-csv.js";
 import { frozenOrder } from "./collection-fixtures.js";
 
 /**
- * Le CSV de la facture simulée dit le poids (plan `plan-vente-au-poids.md`,
+ * Le CSV de la facture simulée dit le poids (plan `vente-au-poids.md`,
  * § 3 bis, point 6) : une colonne « Unité », et le kilo à trois décimales.
  */
 const PLACED = new Date(0);

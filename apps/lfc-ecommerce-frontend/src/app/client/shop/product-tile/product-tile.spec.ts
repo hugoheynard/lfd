@@ -73,7 +73,7 @@ describe('ProductTile', () => {
     expect(priceText()).toBe('1,48 € TTC');
   });
 
-  /** P4 de `plan-vente-au-poids.md` : au poids, l'étiquette est au kilo et la pastille en grammes. */
+  /** P4 de `vente-au-poids.md` : au poids, l'étiquette est au kilo et la pastille en grammes. */
   it('dit le prix au kilo et la quantité en grammes pour un article au poids', () => {
     fixture.componentRef.setInput('product', {
       ...TEST_ITEMS[0],

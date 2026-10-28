@@ -40,7 +40,7 @@ function plural(count: number, word: string): string {
   return `${String(count)} ${word}${count > 1 ? "s" : ""}`;
 }
 
-/** Un article au poids compte pour une ligne (P6 de `pricing/plan-vente-au-poids.md`). */
+/** Un article au poids compte pour une ligne (P6 de `pricing/vente-au-poids.md`). */
 function pieces(lines: readonly TalliedLine[]): number {
   return piecesOfLines(lines);
 }

@@ -1,6 +1,6 @@
 /**
  * E2E — **la facture carte d'une commande au poids**
- * (`documentation/pricing/plan-vente-au-poids.md`, § 3 bis, P7).
+ * (`documentation/pricing/vente-au-poids.md`, § 3 bis, P7).
  *
  * Ce que seul le vrai SQL prouve : `order_lines.sale_unit` est relu par le
  * lecteur des bons (`frozen-invoice-order.mapper.ts`), la facture émise par le

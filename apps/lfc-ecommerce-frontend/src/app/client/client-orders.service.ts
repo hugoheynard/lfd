@@ -37,7 +37,7 @@ export interface PlacedLine {
   readonly name: string;
   /** Des pièces, ou des grammes si {@link saleUnit} vaut `weight`. */
   readonly quantity: number;
-  /** Absent = à la pièce (toute commande gardée avant P4 de `plan-vente-au-poids.md`). */
+  /** Absent = à la pièce (toute commande gardée avant P4 de `vente-au-poids.md`). */
   readonly saleUnit?: 'weight';
   /** En **centimes HT**, figé : le prix payé ce jour-là, pas celui d'aujourd'hui. */
   readonly unitPriceCents: number;

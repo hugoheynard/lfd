@@ -95,7 +95,7 @@ export function projectVariant(
     // ne les calcule ici, rien ne les lit pour tarifer de l'autre côté.
     proPricePerKgMillicents: variant.proPricePerKgMillicents,
     publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
-    // L'unité de vente et ses termes (v14, `plan-vente-au-poids.md`) :
+    // L'unité de vente et ses termes (v14, `vente-au-poids.md`) :
     // recopiés tels que saisis, déjà validés par la déclinaison.
     saleUnit: variant.saleUnit,
     weightMinGrams: variant.weightMinGrams,

@@ -29,7 +29,7 @@ export interface OrderLineInput {
   /** Des pièces, ou des GRAMMES si `saleUnit = weight` — toujours un entier. */
   readonly quantity: number;
   /**
-   * **L'unité de la quantité**, figée comme le prix (`plan-vente-au-poids.md`,
+   * **L'unité de la quantité**, figée comme le prix (`vente-au-poids.md`,
    * P3). Au poids, `unitPriceMillicents` est un prix AU KILO. Obligatoire :
    * une ligne sans unité ne doit plus pouvoir s'écrire.
    */

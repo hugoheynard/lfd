@@ -27,7 +27,7 @@ export interface ShadowOrderToDraw {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
-    /** P6 de `pricing/plan-vente-au-poids.md` : `weight` = des grammes, mis au bac en un lot. */
+    /** P6 de `pricing/vente-au-poids.md` : `weight` = des grammes, mis au bac en un lot. */
     readonly saleUnit: SaleUnit;
   }[];
 }

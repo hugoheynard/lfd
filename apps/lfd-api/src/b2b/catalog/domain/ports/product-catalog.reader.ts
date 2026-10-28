@@ -47,7 +47,7 @@ export interface CatalogItem extends PricedSku {
    */
   readonly orderTimeLimit: OrderLimitSpec | null;
   /**
-   * **Comment il se vend** (`plan-vente-au-poids.md`, P3) : à la pièce, ou au
+   * **Comment il se vend** (`vente-au-poids.md`, P3) : à la pièce, ou au
    * poids — la quantité commandée compte alors des grammes et se valide contre
    * le pas et le minimum (`sale-quantity-rules.ts`, côté commande). `null` à
    * la pièce.

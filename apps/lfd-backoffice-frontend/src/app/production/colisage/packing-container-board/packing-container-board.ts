@@ -246,7 +246,7 @@ export class PackingContainerBoard {
   protected readonly unallocated = unallocatedOf;
   protected readonly allocated = allocatedOf;
 
-  /** « 12 », ou « 1,25 kg » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+  /** « 12 », ou « 1,25 kg » pour un article au poids (`vente-au-poids.md`, P6). */
   protected readonly figure = saleQuantityLabel;
   protected readonly done = isLineInContainers;
 
@@ -431,7 +431,7 @@ export class PackingContainerBoard {
    * Ouvre la question « combien ? » ; le geste serveur reste celui du tableau.
    *
    * Un lot au poids qu'on RETIRE ou qu'on DÉPLACE ne se demande pas : il part
-   * entier (`plan-vente-au-poids.md`, P6), et le serveur refuserait une part.
+   * entier (`vente-au-poids.md`, P6), et le serveur refuserait une part.
    * Au dépôt, on demande encore — la réserve peut ne tenir qu'une partie du
    * poids, et ce manque-là se signale en grammes.
    */

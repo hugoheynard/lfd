@@ -96,7 +96,7 @@ export interface PimFacts {
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
   /**
-   * **L'unité de vente** reçue du référentiel (`plan-vente-au-poids.md`, P2) :
+   * **L'unité de vente** reçue du référentiel (`vente-au-poids.md`, P2) :
    * `piece`, ou `weight` — la quantité se compte alors en grammes et le prix
    * s'entend au kilo. La commande la lit depuis P3 (2026-10-28, par
    * `ResolvedCatalogItem`) ; la vitrine pas encore (P4). `piece` pour un

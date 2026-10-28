@@ -76,7 +76,7 @@ export function vitrineItemOf(
 ): Omit<VitrineItemView, "isFeatured" | "operation"> {
   // Les allergènes et les prix au kilo de la boutique ne vont pas à
   // l'agence : son flux n'a pas été élargi (cf. `VitrineItemView`).
-  // L'unité de vente non plus (P4 de `plan-vente-au-poids.md`, 2026-10-28).
+  // L'unité de vente non plus (P4 de `vente-au-poids.md`, 2026-10-28).
   const {
     allergens,
     proPricePerKgMillicents,

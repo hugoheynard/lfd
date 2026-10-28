@@ -126,7 +126,7 @@ export type AdminShortfallDecisionPayload = z.infer<typeof adminShortfallDecisio
 
 export interface AdminOrderShortfallLine {
   readonly sku: string;
-  /** `due` et `packed` sont des grammes si `saleUnit = "weight"` (P6 de `plan-vente-au-poids.md`). */
+  /** `due` et `packed` sont des grammes si `saleUnit = "weight"` (P6 de `vente-au-poids.md`). */
   readonly due: number;
   readonly packed: number;
   readonly saleUnit: OrderSaleUnit;

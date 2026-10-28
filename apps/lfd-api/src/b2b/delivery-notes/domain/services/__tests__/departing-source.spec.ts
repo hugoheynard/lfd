@@ -209,7 +209,7 @@ describe("departingSourceOf — frontières", () => {
   });
 
   /**
-   * P5 (`plan-vente-au-poids.md`) : le BL recomposait toute ligne en pièces —
+   * P5 (`vente-au-poids.md`) : le BL recomposait toute ligne en pièces —
    * 1 250 g d'un article à 20 €/kg auraient valu 25 000 € au lieu de 25 €.
    */
   it("une ligne au poids réduite se chiffre au kilo, en grammes", () => {

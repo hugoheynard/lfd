@@ -98,7 +98,7 @@ export class OperationOnlyInSubscriptionError extends BusinessError {
 
 /**
  * Un panier récurrent ne porte pas d'article vendu au poids
- * (`documentation/pricing/plan-vente-au-poids.md`, §2 « hors de ce plan »,
+ * (`documentation/pricing/vente-au-poids.md`, §2 « hors de ce plan »,
  * Hugo 2026-10-28) : ses quantités sont des pièces, et un poids y serait
  * compté mille fois.
  */

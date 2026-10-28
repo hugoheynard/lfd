@@ -210,7 +210,7 @@ export interface PricingContext {
    */
   readonly categoryPath: readonly string[];
   /**
-   * **L'unité de vente de l'article.** Au poids (`plan-vente-au-poids.md`, §2,
+   * **L'unité de vente de l'article.** Au poids (`vente-au-poids.md`, §2,
    * Hugo 2026-10-28), `quantity` compte des grammes, et les décisions qui
    * couvrent PLUSIEURS articles — portée `global` ou `category` — ne le visent
    * pas : elles se lisent à la pièce, et ne mêlent pas les unités. Tenu par

@@ -10,7 +10,7 @@ import {
 import { catalogItem, quotingOf, type QuotingSetup } from "./shop-cart-quoting.doubles.js";
 
 /**
- * **Le devis d'une ligne au poids** — plan `documentation/pricing/plan-vente-au-poids.md`,
+ * **Le devis d'une ligne au poids** — plan `documentation/pricing/vente-au-poids.md`,
  * P3 : la quantité en grammes, le prix au kilo, le total = prix au kilo ×
  * grammes / 1000 arrondi une fois ; les décisions globales et de famille
  * écartées, la mercuriale appliquée. Les dates ne sont comparées qu'entre

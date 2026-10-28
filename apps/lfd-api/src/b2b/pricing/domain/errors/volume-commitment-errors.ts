@@ -77,7 +77,7 @@ export class VolumeCommitmentNotFoundError extends ResourceNotFoundError {
 
 /**
  * Un engagement de volume ne vise pas un article vendu au poids
- * (`documentation/pricing/plan-vente-au-poids.md`, §2 « hors de ce plan »,
+ * (`documentation/pricing/vente-au-poids.md`, §2 « hors de ce plan »,
  * Hugo 2026-10-28) : un volume promis se compte en pièces, et un cumul de
  * grammes l'atteindrait mille fois trop tôt. Les engagements globaux et de
  * famille, eux, ne couvrent simplement pas un article au poids (`LoadedPricer`).

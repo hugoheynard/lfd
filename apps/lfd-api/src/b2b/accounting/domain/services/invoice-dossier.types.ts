@@ -24,7 +24,7 @@ export interface FrozenInvoiceLine {
   /**
    * L'unité figée sur la ligne (`order_lines` / `delivery_note_line.sale_unit`).
    * Obligatoire : une ligne lue sans unité se facturerait à la pièce, et des
-   * grammes partiraient en pièces (plan `plan-vente-au-poids.md`, § 3 bis).
+   * grammes partiraient en pièces (plan `vente-au-poids.md`, § 3 bis).
    * Prix au kilo quand elle vaut `weight`.
    */
   readonly saleUnit: SaleUnit;

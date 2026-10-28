@@ -77,7 +77,7 @@ describe("summarizeOrders — par produit", () => {
     ]);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : la quantité sommée d'un article au poids est en grammes. */
+  /** P5 (`vente-au-poids.md`) : la quantité sommée d'un article au poids est en grammes. */
   it("un article au poids somme ses grammes, et le dit", () => {
     const salmon = { sku: "SAU-001", name: "Gravlax", saleUnit: "weight" as const };
     const summary = summarizeOrders(PRINCIPAL, [

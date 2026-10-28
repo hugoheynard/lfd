@@ -71,7 +71,7 @@ export class CartRow {
   readonly min = input(1, { transform: numberAttribute });
 
   /**
-   * L'unité de la quantité (`plan-vente-au-poids.md`, P5) : au poids, la
+   * L'unité de la quantité (`vente-au-poids.md`, P5) : au poids, la
    * quantité compte des GRAMMES, le prix unitaire est au kilo, et la ligne
    * dit « 1,25 kg » à côté du champ.
    */

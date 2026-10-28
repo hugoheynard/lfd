@@ -70,7 +70,7 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       categoryName: "Viennoiseries",
       saleUnit: "piece",
     },
-    // Au poids : hors du réassort (`plan-vente-au-poids.md`, §2).
+    // Au poids : hors du réassort (`vente-au-poids.md`, §2).
     {
       sku: "SAU",
       name: "Saumon gravlax",

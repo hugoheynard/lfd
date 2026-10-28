@@ -280,7 +280,7 @@ describe("une écriture ne recopie pas le défaut dans les colonnes propres", ()
 });
 
 /**
- * L'unité de vente ne s'hérite pas (`plan-vente-au-poids.md`, lot P1) : un
+ * L'unité de vente ne s'hérite pas (`vente-au-poids.md`, lot P1) : un
  * tarif aligné sur un défaut vendu au poids ferait d'un prix au kilo le prix
  * d'une pièce.
  */

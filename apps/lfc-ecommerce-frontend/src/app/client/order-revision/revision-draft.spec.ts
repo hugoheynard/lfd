@@ -73,7 +73,7 @@ describe('revision-draft', () => {
     expect(withoutLine(lines, 'A')).toEqual([]);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : ajouter un article au poids ajoutait « 1 » gramme. */
+  /** P5 (`vente-au-poids.md`) : ajouter un article au poids ajoutait « 1 » gramme. */
   it('ajoute un article au poids à sa première quantité, puis d’un pas', () => {
     const gravlax = {
       sku: 'G',

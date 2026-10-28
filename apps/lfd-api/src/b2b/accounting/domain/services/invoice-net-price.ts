@@ -1,6 +1,6 @@
 /**
  * **Le prix net d'une ligne de facture (BT-146)** — plan
- * `documentation/pricing/plan-vente-au-poids.md`, § 3 bis, point 5.
+ * `documentation/pricing/vente-au-poids.md`, § 3 bis, point 5.
  *
  * Le montant de la ligne (BT-131) est Σ des `lineTotalCents` des bons (F6) :
  * ce que le client a payé fait foi. Mais chaque bon a arrondi au centime, et

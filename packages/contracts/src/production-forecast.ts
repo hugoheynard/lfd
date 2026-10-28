@@ -118,7 +118,7 @@ export interface ProductionForecastLine {
   /** Le nom **figé à la commande** — le seul dont on soit sûr qu'il a été vendu. */
   readonly productName: string;
   /**
-   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : `weight` = ses
+   * L'unité de l'article (`vente-au-poids.md`, P6) : `weight` = ses
    * quantités sont des grammes. Les totaux de colonne, eux, comptent un
    * article au poids pour une pièce.
    */

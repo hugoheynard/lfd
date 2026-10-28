@@ -19,7 +19,7 @@
  * la commande demande, et la marchandise qui sortira du four ira dedans.
  *
  * **Un article au poids ne se coupe jamais** (P6 de
- * `documentation/pricing/plan-vente-au-poids.md`) : le colisage le met au bac
+ * `documentation/pricing/vente-au-poids.md`) : le colisage le met au bac
  * en UN lot, et refuse un second contenant (`WeightLotSplitError`). Sa
  * contenance se lit en grammes ; son lot DISPONIBLE va entier dans le premier
  * bac qui a la place de le prendre tout, jamais en partie. S'il ne tient

@@ -36,7 +36,7 @@ export class ProductionRangeResupplies extends ExpectedResuppliesReader {
         sku: total.sku,
         productName: total.label,
         quantity: total.quantity,
-        // Le réassort refuse un article au poids (plan `pricing/plan-vente-au-poids.md`, § 2).
+        // Le réassort refuse un article au poids (plan `pricing/vente-au-poids.md`, § 2).
         saleUnit: "piece" as const,
       })),
     }));

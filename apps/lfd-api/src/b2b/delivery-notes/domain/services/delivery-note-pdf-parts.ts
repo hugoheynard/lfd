@@ -86,7 +86,7 @@ export function noteParties(doc: Doc, note: PrintableNote, top: number): number 
 /**
  * « ARTICLES — 3 lignes, 172 pièces » — la phrase du bon de commande : une
  * ligne au poids se compte à part (« 1 au poids »), jamais par ses grammes
- * (`plan-vente-au-poids.md`, P5). Un BL à la pièce s'annonce comme avant.
+ * (`vente-au-poids.md`, P5). Un BL à la pièce s'annonce comme avant.
  */
 export function articlesHeading(note: PrintableNote): string {
   return linesHeading(note.lines);

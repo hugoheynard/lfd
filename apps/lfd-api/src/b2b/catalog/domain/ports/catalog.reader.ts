@@ -69,7 +69,7 @@ export interface ResolvedCatalogItem {
    */
   readonly isDefault: boolean;
   /**
-   * **L'unité de vente** (`plan-vente-au-poids.md`, P3) : au poids, la quantité
+   * **L'unité de vente** (`vente-au-poids.md`, P3) : au poids, la quantité
    * se compte en grammes et le prix s'entend AU KILO. Le pas et le minimum, en
    * grammes, sont ce contre quoi une quantité commandée se valide ; `null` à
    * la pièce (CHECK en base).

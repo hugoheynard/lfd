@@ -35,7 +35,7 @@ function product(...rows: readonly BatchShortcutState[]): ProductBatchShortcuts 
 }
 
 function add(target: ProductBatchShortcuts, id: string, label: string, pieces = 24): BatchShortcut {
-  return target.add({ id, terms: { label, pieces }, author: AUTHOR, at: AT });
+  return target.add({ id, terms: { label, pieces }, saleUnit: "piece", author: AUTHOR, at: AT });
 }
 
 describe("ProductBatchShortcuts — ajouter", () => {
@@ -85,7 +85,7 @@ describe("ProductBatchShortcuts — modifier", () => {
   it("change le nom et les pièces, et rend ce qu'ils étaient", () => {
     const shortcuts = product(row("a", "1 plaque", 0));
 
-    const change = shortcuts.update("a", { label: "1 grande plaque", pieces: 30 }, AT);
+    const change = shortcuts.update("a", { label: "1 grande plaque", pieces: 30 }, AT, "piece");
 
     expect(change?.previous).toEqual({ label: "1 plaque", pieces: 24 });
     expect(change?.shortcut.terms()).toEqual({ label: "1 grande plaque", pieces: 30 });
@@ -95,21 +95,21 @@ describe("ProductBatchShortcuts — modifier", () => {
   it("ne retient rien quand rien ne change", () => {
     const shortcuts = product(row("a", "1 plaque", 0));
 
-    expect(shortcuts.update("a", { label: " 1 plaque ", pieces: 24 }, AT)).toBeNull();
+    expect(shortcuts.update("a", { label: " 1 plaque ", pieces: 24 }, AT, "piece")).toBeNull();
     expect(shortcuts.changed).toEqual([]);
   });
 
   it("admet de changer la casse de son propre nom, mais pas de prendre celui d'un autre", () => {
     const shortcuts = product(row("a", "1 plaque", 0), row("b", "1 chariot", 1));
 
-    expect(shortcuts.update("a", { label: "1 Plaque", pieces: 24 }, AT)).not.toBeNull();
-    expect(() => shortcuts.update("a", { label: "1 CHARIOT", pieces: 24 }, AT)).toThrow(
+    expect(shortcuts.update("a", { label: "1 Plaque", pieces: 24 }, AT, "piece")).not.toBeNull();
+    expect(() => shortcuts.update("a", { label: "1 CHARIOT", pieces: 24 }, AT, "piece")).toThrow(
       DuplicateBatchShortcutLabelError,
     );
   });
 
   it("refuse un raccourci qui n'est pas au produit", () => {
-    expect(() => product().update("x", { label: "1 plaque", pieces: 1 }, AT)).toThrow(
+    expect(() => product().update("x", { label: "1 plaque", pieces: 1 }, AT, "piece")).toThrow(
       BatchShortcutNotFoundError,
     );
   });

@@ -127,7 +127,7 @@ export interface RevisionItemInput {
   readonly proPricePerKgMillicents?: number;
   readonly publicPricePerKgTtcCents?: number;
   /**
-   * La vente au poids (`plan-vente-au-poids.md`) — **absente à la pièce**, ce
+   * La vente au poids (`vente-au-poids.md`) — **absente à la pièce**, ce
    * qu'est tout l'existant, pour la même raison que le prix pro : les
    * empreintes des articles vendus à la pièce ne bougent pas. Au poids, l'unité
    * et le pas ou le minimum saisis entrent dans l'empreinte de l'article.

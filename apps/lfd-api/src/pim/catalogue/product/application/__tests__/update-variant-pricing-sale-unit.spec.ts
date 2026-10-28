@@ -9,7 +9,7 @@ import {
 } from "../update-variant-pricing.js";
 import { OneProduct, PRODUCT_ID, SELLABLE_VARIANT, tarte } from "./audience-doubles.js";
 
-/** L'unité de vente dans la section « Tarif » (`plan-vente-au-poids.md`, lot P1). */
+/** L'unité de vente dans la section « Tarif » (`vente-au-poids.md`, lot P1). */
 
 function pricing(
   products: OneProduct,

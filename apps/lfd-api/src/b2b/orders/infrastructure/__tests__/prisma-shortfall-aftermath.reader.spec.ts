@@ -69,7 +69,7 @@ describe("decisionMarkOf — la décision dite au poste", () => {
     expect(decisionMarkOf(null)).toBeNull();
   });
 
-  /** P6 de `pricing/plan-vente-au-poids.md` : le reste d'un lot au poids est des grammes. */
+  /** P6 de `pricing/vente-au-poids.md` : le reste d'un lot au poids est des grammes. */
   it("dit le reste d'un article au poids en grammes, avec son unité", () => {
     expect(
       abandonedOf(

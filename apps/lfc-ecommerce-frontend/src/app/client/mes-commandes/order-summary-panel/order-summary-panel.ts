@@ -180,7 +180,7 @@ export class OrderSummaryPanel {
         key: 'quantity',
         label: copy.colQuantity,
         numeric: true,
-        // Au poids, des grammes dits « 1,25 kg » (`plan-vente-au-poids.md`, P5).
+        // Au poids, des grammes dits « 1,25 kg » (`vente-au-poids.md`, P5).
         value: (product) => quantityLabel(product.quantity, product.saleUnit),
       },
       {

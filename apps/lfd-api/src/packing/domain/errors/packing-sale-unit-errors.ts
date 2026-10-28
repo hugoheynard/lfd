@@ -2,7 +2,7 @@ import { DomainError, TechnicalError } from "../../../platform/shared/errors/app
 
 /**
  * **Un même article à la pièce et au poids sur une même feuille** (P6 de
- * `documentation/pricing/plan-vente-au-poids.md`). L'unité d'un article est
+ * `documentation/pricing/vente-au-poids.md`). L'unité d'un article est
  * figée dès sa publication ; ce refus ne se produit donc que si le fait du
  * fournil est hors contrat. Technique : le personnel n'a pas de geste pour
  * le corriger.

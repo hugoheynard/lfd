@@ -380,7 +380,7 @@ export class LoadedPricer {
    * relisible que si la trace dit que c'est la PROMESSE qui a ouvert ce palier.
    */
   private commitmentOf(item: PricedItem, quantity: number): CommitmentDecisionView | null {
-    // 🔴 Aucun engagement ne couvre un article au poids (`plan-vente-au-poids.md`,
+    // 🔴 Aucun engagement ne couvre un article au poids (`vente-au-poids.md`,
     // §2 « hors de ce plan ») : un cumul de pièces ne s'additionne pas à des
     // grammes, et un engagement de produit n'a pas d'unité. Hors de son cumul.
     if (item.saleUnit === "weight") {

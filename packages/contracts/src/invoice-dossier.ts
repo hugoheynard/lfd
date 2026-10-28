@@ -55,7 +55,7 @@ export interface InvoiceDossierLineView {
   readonly unitCode: InvoiceUnitCodeView;
   /**
    * La quantité en millièmes de l'unité : pièces × 1 000, ou des grammes en
-   * `KGM` — un seul sens (plan `plan-vente-au-poids.md`, § 3 bis). Remplace
+   * `KGM` — un seul sens (plan `vente-au-poids.md`, § 3 bis). Remplace
    * `quantity` (des pièces), retiré le 2026-10-29.
    */
   readonly quantityThousandths: number;

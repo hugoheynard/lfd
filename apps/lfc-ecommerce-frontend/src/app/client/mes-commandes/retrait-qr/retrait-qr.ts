@@ -133,7 +133,7 @@ export class RetraitQr {
   protected readonly lines = computed(() =>
     (this.order()?.lines ?? []).map((line) => ({
       ...line,
-      // « 3 × », ou « 500 g » au poids (P4 de `plan-vente-au-poids.md`).
+      // « 3 × », ou « 500 g » au poids (P4 de `vente-au-poids.md`).
       shownQuantity:
         line.saleUnit === 'weight'
           ? quantityLabel(line.quantity, 'weight')

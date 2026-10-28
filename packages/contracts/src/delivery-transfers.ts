@@ -24,7 +24,7 @@ import type { OrderSaleUnit } from "./order.js";
 export interface TransferManifestLineView {
   readonly sku: string;
   readonly productName: string;
-  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits « 1,25 kg » (P6 de `plan-vente-au-poids.md`). */
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` — dits « 1,25 kg » (P6 de `vente-au-poids.md`). */
   readonly quantity: number;
   /** Un manifeste figé avant l'unité se relit `piece`, ce qu'il était. */
   readonly saleUnit: OrderSaleUnit;

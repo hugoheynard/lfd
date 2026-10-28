@@ -98,7 +98,7 @@ describe("la page des raccourcis", () => {
   });
 });
 
-describe("un article au poids (P6 de `pricing/plan-vente-au-poids.md`)", () => {
+describe("un article au poids (P6 de `pricing/vente-au-poids.md`)", () => {
   /** Le pain au chocolat du semis devient un article au poids. */
   const WEIGHED = "VIE-002";
 

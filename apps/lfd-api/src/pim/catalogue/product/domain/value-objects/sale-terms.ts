@@ -3,7 +3,7 @@ import { InvalidSaleTermsError } from "../errors/sale-unit-errors.js";
 /**
  * L'unité dans laquelle une déclinaison se vend — et donc dans laquelle se
  * compte une quantité commandée : des pièces, ou des grammes
- * (`documentation/pricing/plan-vente-au-poids.md`, §2).
+ * (`documentation/pricing/vente-au-poids.md`, §2).
  */
 export type SaleUnit = "piece" | "weight";
 

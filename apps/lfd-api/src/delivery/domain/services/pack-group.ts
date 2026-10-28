@@ -22,14 +22,13 @@ import type { PackedItem, PackingBinType, PackingCapacity } from "./propose-pack
  * Chaque tour place au moins une unité (une contenance vaut au moins 1) :
  * la boucle termine.
  *
- * **Un lot au poids ne se coupe pas** (P6 de `pricing/plan-vente-au-poids.md`) :
+ * **Un lot au poids ne se coupe pas** (`documentation/pricing/vente-au-poids.md`) :
  * s'il tient dans un bac ENTIER du type, il y va entier ou attend le bac
  * suivant — le colisage refuse un second contenant pour le même article. Un
- * lot plus lourd qu'un bac entier se coupe comme des pièces, faute de mieux :
- * la proposition compte alors les bacs qu'il faut, et le colisage, qui ne le
- * coupera pas, le laisse « à répartir » au préparateur. La boucle termine
- * toujours : un bac commence vide, et un lot qui tient dans un bac vide y
- * entre.
+ * lot plus lourd qu'un bac entier n'arrive pas ici : `proposePacking` l'a
+ * déjà sorti en `weight_lot_over_bin`. S'il arrivait quand même (un appelant
+ * direct), il se couperait comme des pièces : la boucle termine toujours, un
+ * bac commence vide, et un lot qui tient dans un bac vide y entre.
  */
 
 /** Ce qu'offre une moitié de bac cloisonné (v2-3). */

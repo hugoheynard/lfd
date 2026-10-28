@@ -423,7 +423,7 @@ export interface OrdersCopy {
    */
   readonly ticketHead: string;
   readonly ticketArticles: string;
-  /** L'unité d'une étiquette au poids, sur le ticket (P4 de `plan-vente-au-poids.md`). */
+  /** L'unité d'une étiquette au poids, sur le ticket (P4 de `vente-au-poids.md`). */
   readonly ticketPerKilogram: string;
   readonly ticketVoucher: string;
   readonly ticketDelivery: string;

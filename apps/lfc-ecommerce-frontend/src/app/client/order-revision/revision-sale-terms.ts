@@ -5,7 +5,7 @@ import type { AddedArticle, RevisionLine } from './revision-draft';
 
 /**
  * **Comment une ligne de la modification se saisit** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P5) : une pièce au pas d'un,
+ * `documentation/pricing/vente-au-poids.md`, P5) : une pièce au pas d'un,
  * ou au poids les grammes au pas et au minimum de l'article, lus au catalogue
  * de la boutique. Le serveur reste juge : rien n'est corrigé ici.
  */

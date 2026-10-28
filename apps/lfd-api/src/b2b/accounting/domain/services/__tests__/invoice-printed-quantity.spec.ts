@@ -3,7 +3,7 @@ import { quantityLabel } from "../invoice-pdf-wording.js";
 import { printedQuantity } from "../invoice-printed-quantity.js";
 
 /**
- * La quantité imprimée (plan `plan-vente-au-poids.md`, § 3 bis, point 6) :
+ * La quantité imprimée (plan `vente-au-poids.md`, § 3 bis, point 6) :
  * toujours trois décimales au kilo, la pièce entière ; BT-129 inchangé.
  */
 describe("printedQuantity", () => {

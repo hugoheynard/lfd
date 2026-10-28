@@ -62,7 +62,7 @@ export interface CatalogItemView {
    */
   readonly category: null;
   /**
-   * **L'unité de vente** (plan `documentation/pricing/plan-vente-au-poids.md`,
+   * **L'unité de vente** (plan `documentation/pricing/vente-au-poids.md`,
    * P5) : `piece`, ou `weight` — et alors {@link unitPriceMillicents} est un
    * prix **au kilo**, et la quantité d'une ligne se saisit en grammes.
    *

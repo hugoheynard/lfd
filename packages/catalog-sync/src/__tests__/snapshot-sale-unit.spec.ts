@@ -7,7 +7,7 @@ import {
 
 /**
  * **L'unité de vente sur le fil, depuis la v14**
- * (`documentation/pricing/plan-vente-au-poids.md`, P2) : obligatoire pour
+ * (`documentation/pricing/vente-au-poids.md`, P2) : obligatoire pour
  * l'émetteur, tolérée absente pour une arrivée stockée d'avant — qui se lit
  * alors à la pièce, ce qu'elle était.
  */

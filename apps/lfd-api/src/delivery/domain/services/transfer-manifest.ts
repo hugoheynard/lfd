@@ -19,7 +19,7 @@ export interface ManifestLine {
   /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
   /**
-   * L'unité de la ligne de commande (P6 de `pricing/plan-vente-au-poids.md`) ;
+   * L'unité de la ligne de commande (P6 de `pricing/vente-au-poids.md`) ;
    * un réassort est toujours `piece` (le poids en est exclu, § 2).
    */
   readonly saleUnit: SaleUnit;

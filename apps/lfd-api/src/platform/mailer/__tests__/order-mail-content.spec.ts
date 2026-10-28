@@ -1,7 +1,7 @@
 import { contentOf } from "../order-mail-content.js";
 
 /**
- * Le contenu d'une commande dans les e-mails (`plan-vente-au-poids.md`, P3) :
+ * Le contenu d'une commande dans les e-mails (`vente-au-poids.md`, P3) :
  * une ligne au poids dit son poids — jamais « 1250 pièces ».
  */
 const TEXTS = { pieces: "{count} pièces", weighed: "{name}, {weight}" };

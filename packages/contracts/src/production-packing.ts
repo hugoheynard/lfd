@@ -53,7 +53,7 @@ export interface PackingLine {
   readonly productName: string;
   readonly quantity: number;
   /**
-   * L'unité de la ligne (`plan-vente-au-poids.md`, P6) : `weight` = la
+   * L'unité de la ligne (`vente-au-poids.md`, P6) : `weight` = la
    * quantité, `allocated` et `unallocated` sont des GRAMMES, et la ligne se met
    * au bac en UN lot — l'écran propose le lot entier, jamais un pas de 1.
    */

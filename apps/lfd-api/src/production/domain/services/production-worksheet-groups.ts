@@ -133,7 +133,7 @@ function groupOf(
 /**
  * Les compteurs d'une fiche additionnent des articles différents : une ligne
  * au poids y pèse une pièce, jamais ses grammes (P6 de
- * `pricing/plan-vente-au-poids.md`).
+ * `pricing/vente-au-poids.md`).
  */
 function unitsOf(lines: readonly WorksheetLine[]): number {
   return lines.reduce((total, line) => total + linePieces(line), 0);

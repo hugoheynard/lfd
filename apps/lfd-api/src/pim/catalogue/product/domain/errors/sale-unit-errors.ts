@@ -3,7 +3,7 @@ import { BusinessError, DomainError } from "../../../../../platform/shared/error
 /**
  * Le pas ou le minimum d'une vente au poids n'a pas de sens : zéro, négatif,
  * fractionnaire — ou posé sur une déclinaison vendue à la pièce, où personne
- * ne le lirait (`plan-vente-au-poids.md`, §2).
+ * ne le lirait (`vente-au-poids.md`, §2).
  */
 export class InvalidSaleTermsError extends DomainError {
   constructor(detail: string) {
@@ -13,7 +13,7 @@ export class InvalidSaleTermsError extends DomainError {
 
 /**
  * L'unité de vente d'une déclinaison déjà publiée ne change plus
- * (`plan-vente-au-poids.md`, §2 et §4.2) : des lignes de commande, des
+ * (`vente-au-poids.md`, §2 et §4.2) : des lignes de commande, des
  * factures et des historiques la lisent déjà, et le référentiel ne peut pas
  * savoir lesquels. Le geste de sortie est une autre déclinaison.
  */

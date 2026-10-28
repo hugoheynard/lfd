@@ -69,7 +69,7 @@ export interface HandoverSubjectShipment {
 export interface HandoverSubjectLine {
   readonly sku: string;
   readonly productName: string;
-  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `pricing/plan-vente-au-poids.md`). */
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `pricing/vente-au-poids.md`). */
   readonly quantity: number;
   readonly saleUnit: SaleUnit;
 }

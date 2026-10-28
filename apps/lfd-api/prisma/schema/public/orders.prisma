@@ -601,7 +601,7 @@ model OrderLine {
   quantity       Int
   lineTotalCents Int @map("line_total_cents")
   /// **L'unité de la quantité**, figée à la passation comme le prix
-  /// (`plan-vente-au-poids.md`, P3) : `piece`, ou `weight` — la quantité compte
+  /// (`vente-au-poids.md`, P3) : `piece`, ou `weight` — la quantité compte
   /// alors des grammes et `unit_price_millicents` est un prix AU KILO. CHECK en
   /// base ; `piece` pour toute ligne d'avant ce lot.
   saleUnit       String @default("piece") @map("sale_unit")

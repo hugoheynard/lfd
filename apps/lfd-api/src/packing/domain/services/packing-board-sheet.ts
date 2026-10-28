@@ -271,7 +271,7 @@ function containersOf(order: BoardOrder): readonly PackingContainerView[] {
 
 /**
  * Les pièces d'une fiche : une ligne au poids y compte pour une, jamais ses
- * grammes (P6 de `pricing/plan-vente-au-poids.md`).
+ * grammes (P6 de `pricing/vente-au-poids.md`).
  */
 export function sumOfQuantities(lines: readonly SheetLine[]): number {
   return lines.reduce(

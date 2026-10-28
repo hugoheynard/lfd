@@ -10,7 +10,7 @@ import { ServiceRange } from "../../value-objects/service-range.value-object.js"
 
 /**
  * **La fiche d'atelier et le prévisionnel, au poids** (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P6) : le fournil sort des
+ * `documentation/pricing/vente-au-poids.md`, P6) : le fournil sort des
  * GRAMMES d'un article au poids, ses fournées en grammes ; les totaux qui
  * additionnent des articles différents le comptent pour une pièce.
  *

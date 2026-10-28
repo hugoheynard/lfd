@@ -275,7 +275,7 @@ describe('ShopQuote', () => {
     http.verify();
   });
 
-  /** P4 de `plan-vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
+  /** P4 de `vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
   const SALMON = {
     ...(TEST_ITEMS[0] as ShopItemView),
     sku: 'SAU-001',

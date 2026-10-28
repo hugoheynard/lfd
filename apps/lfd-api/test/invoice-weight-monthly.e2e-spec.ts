@@ -1,6 +1,6 @@
 /**
  * E2E — **la facture du mois d'un BL au poids partiel**
- * (`documentation/pricing/plan-vente-au-poids.md`, § 3 bis, P7).
+ * (`documentation/pricing/vente-au-poids.md`, § 3 bis, P7).
  *
  * Ce que seul le vrai SQL prouve : par les vrais gestes — 1 250 g commandés au
  * compte, 1 000 g mis au sac, le manque signalé, le reste abandonné, le

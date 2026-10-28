@@ -54,7 +54,7 @@ export class PackingLine {
    */
   protected readonly boxLabel = computed(() => `${this.figure()} ${this.line().productName}`);
 
-  /** « 12 », ou « 1,25 kg » pour un article au poids (`plan-vente-au-poids.md`, P6). */
+  /** « 12 », ou « 1,25 kg » pour un article au poids (`vente-au-poids.md`, P6). */
   protected readonly figure = computed(() =>
     saleQuantityLabel(this.line().quantity, this.line().saleUnit),
   );

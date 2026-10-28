@@ -472,7 +472,7 @@ interface VariantDraft {
   readonly publicPricePerKgEur: number | null;
   /** Le prix au kilo pro HT saisi, en TEXTE comme le prix pro HT. */
   readonly proPricePerKgHtText: string;
-  /** L'unité de vente, son pas et son minimum (`plan-vente-au-poids.md`, P1). */
+  /** L'unité de vente, son pas et son minimum (`vente-au-poids.md`, P1). */
   readonly saleUnit: SaleUnit;
   readonly weightStepGrams: number | null;
   readonly weightMinGrams: number | null;
@@ -610,7 +610,7 @@ export class ProductFormStore {
   readonly proPricePerKgHtText = signal('');
 
   /**
-   * **L'unité de vente** (`plan-vente-au-poids.md`, P1) — à la pièce ou au
+   * **L'unité de vente** (`vente-au-poids.md`, P1) — à la pièce ou au
    * poids. Au poids, les prix saisis sont AU KILO, et le pas de saisie (requis
    * pour activer) et le minimum (facultatif) se règlent en grammes.
    */

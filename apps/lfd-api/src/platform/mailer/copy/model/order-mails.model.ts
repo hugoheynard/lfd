@@ -50,7 +50,7 @@ export interface OrderPlacedCopy {
   /** `{count}` = le nombre de pièces. */
   readonly recapPieces: string;
   /**
-   * Une ligne au poids dans le contenu (`plan-vente-au-poids.md`, P3) :
+   * Une ligne au poids dans le contenu (`vente-au-poids.md`, P3) :
    * `{name}` = l'article, `{weight}` = « 500 g », « 1,25 kg ».
    */
   readonly recapWeighed: string;

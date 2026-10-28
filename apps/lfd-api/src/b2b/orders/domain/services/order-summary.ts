@@ -28,7 +28,7 @@ export interface OrderSummaryLine {
   readonly name: string;
   /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** L'unité figée à la passation (`plan-vente-au-poids.md`). */
+  /** L'unité figée à la passation (`vente-au-poids.md`). */
   readonly saleUnit: SaleUnit;
   /** `line_total_cents` — HT, en centimes. */
   readonly lineTotalCents: number;

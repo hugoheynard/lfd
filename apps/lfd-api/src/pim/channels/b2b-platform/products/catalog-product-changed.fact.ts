@@ -42,7 +42,7 @@ const payloadSchema = z.object({
       nameTranslations: catalogTranslationsSchema,
       proPricePerKgMillicents: z.number().int().positive().nullable().default(null),
       publicPricePerKgTtcCents: z.number().int().positive().nullable().default(null),
-      // L'unité de vente (fil v14, `plan-vente-au-poids.md`) : absente d'un
+      // L'unité de vente (fil v14, `vente-au-poids.md`) : absente d'un
       // fait émis avant elle, et lue « à la pièce, sans pas ni minimum » —
       // ce qu'était tout article.
       saleUnit: syncSaleUnitSchema.default("piece"),

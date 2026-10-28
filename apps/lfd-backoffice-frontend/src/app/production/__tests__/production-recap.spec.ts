@@ -174,7 +174,7 @@ describe('le récapitulatif de production', () => {
   });
 });
 
-/** P6 de `plan-vente-au-poids.md` : la fiche de poste écrit des kilos, et compte une pièce par commande. */
+/** P6 de `vente-au-poids.md` : la fiche de poste écrit des kilos, et compte une pièce par commande. */
 describe('le récapitulatif de production, au poids', () => {
   function weighed(reference: string, grams: number, croissants = 0): AtelierSheet {
     const base = sheet(reference, croissants > 0 ? [['CRO', 'Croissant', croissants]] : []);

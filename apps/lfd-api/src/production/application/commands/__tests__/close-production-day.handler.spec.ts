@@ -571,7 +571,7 @@ describe("le réassort au plan figé (lot R3a)", () => {
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(days.saved?.orders.map((frozen) => frozen.orderId)).toEqual(["ord_1"]);
-    // Un réassort figé est à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2).
+    // Un réassort figé est à la pièce (plan `pricing/vente-au-poids.md`, § 2).
     expect(days.saved?.resupplies).toEqual([
       {
         ...VILLAGE_RESUPPLY,

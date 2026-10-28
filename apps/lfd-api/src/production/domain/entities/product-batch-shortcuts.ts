@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import {
   BatchShortcutNotFoundError,
   DuplicateBatchShortcutLabelError,
@@ -67,10 +69,12 @@ export class ProductBatchShortcuts {
   add(input: {
     readonly id: string;
     readonly terms: BatchShortcutTerms;
+    /** L'unité de l'article, pour nommer un refus ; `null` si elle n'a pas pu être lue. */
+    readonly saleUnit: SaleUnit | null;
     readonly author: BatchShortcutAuthor;
     readonly at: Date;
   }): BatchShortcut {
-    const terms = termsOf(input.terms);
+    const terms = termsOf(input.terms, input.saleUnit);
     if (this.live.length >= MAX_BATCH_SHORTCUTS_PER_PRODUCT) {
       throw new TooManyBatchShortcutsError(this.sku, MAX_BATCH_SHORTCUTS_PER_PRODUCT);
     }
@@ -95,9 +99,14 @@ export class ProductBatchShortcuts {
    * @throws {BatchShortcutNotFoundError} l'id n'est pas un raccourci vivant du produit.
    * @throws {DuplicateBatchShortcutLabelError} le nouveau nom est celui d'un autre.
    */
-  update(id: string, raw: BatchShortcutTerms, at: Date): BatchShortcutChange | null {
+  update(
+    id: string,
+    raw: BatchShortcutTerms,
+    at: Date,
+    saleUnit: SaleUnit | null,
+  ): BatchShortcutChange | null {
     const shortcut = this.find(id);
-    const terms = termsOf(raw);
+    const terms = termsOf(raw, saleUnit);
     const previous = shortcut.terms();
     if (previous.label === terms.label && previous.pieces === terms.pieces) {
       return null;
@@ -141,6 +150,9 @@ export class ProductBatchShortcuts {
   }
 }
 
-function termsOf(raw: BatchShortcutTerms): BatchShortcutTerms {
-  return { label: batchShortcutLabelOf(raw.label), pieces: batchShortcutPiecesOf(raw.pieces) };
+function termsOf(raw: BatchShortcutTerms, saleUnit: SaleUnit | null): BatchShortcutTerms {
+  return {
+    label: batchShortcutLabelOf(raw.label),
+    pieces: batchShortcutPiecesOf(raw.pieces, saleUnit),
+  };
 }

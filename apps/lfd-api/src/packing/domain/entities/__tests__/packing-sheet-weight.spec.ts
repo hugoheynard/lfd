@@ -4,7 +4,7 @@ import type { PackingContainerState } from "../order-contents.js";
 import { PackingSheet } from "../packing-sheet.js";
 
 /**
- * **Un article au poids au colisage** (plan `documentation/pricing/plan-vente-au-poids.md`,
+ * **Un article au poids au colisage** (plan `documentation/pricing/vente-au-poids.md`,
  * P6) : il se met au bac en UN lot — un seul contenant le porte, il se retire
  * et se déplace entier — et un manque se dit en grammes.
  *

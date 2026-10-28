@@ -63,7 +63,7 @@ export function unitPrice(millicents: number): string {
 
 /**
  * La quantité d'une ligne telle que le bon l'imprime : un nombre de pièces, ou
- * un poids — « 500 g », « 1,25 kg » (`plan-vente-au-poids.md`, §2 : grammes
+ * un poids — « 500 g », « 1,25 kg » (`vente-au-poids.md`, §2 : grammes
  * sous le kilo, kilos au-delà).
  */
 export function quantityText(line: {

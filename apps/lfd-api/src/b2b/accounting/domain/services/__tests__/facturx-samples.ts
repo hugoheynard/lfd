@@ -181,7 +181,7 @@ function weighedBon(index: number): FrozenInvoiceOrder {
 }
 
 /**
- * La facture du mois d'un dossier au poids (plan `plan-vente-au-poids.md`,
+ * La facture du mois d'un dossier au poids (plan `vente-au-poids.md`,
  * § 3 bis, point 7) : trente bons, une ligne KGM au prix net dérivé (BT-146)
  * et une ligne H87 à côté — par le chemin d'émission réel.
  */

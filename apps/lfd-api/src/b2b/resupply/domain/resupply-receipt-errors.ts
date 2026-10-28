@@ -69,7 +69,7 @@ export class ResupplyArticleUnknownError extends ResourceNotFoundError {
   }
 }
 
-/** L'article se vend au poids : un réassort ne compte que des pièces (`plan-vente-au-poids.md`). */
+/** L'article se vend au poids : un réassort ne compte que des pièces (`vente-au-poids.md`). */
 export class WeightArticleInResupplyError extends BusinessError {
   constructor(readonly sku: string) {
     super(

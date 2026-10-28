@@ -463,7 +463,7 @@ describe('PricingForm — les prix au kilo saisis', () => {
   });
 });
 
-/** P1 (`plan-vente-au-poids.md`) : l'unité de vente, son pas et son minimum. */
+/** P1 (`vente-au-poids.md`) : l'unité de vente, son pas et son minimum. */
 describe('PricingForm — vendre à la pièce ou au poids', () => {
   function render(): { host: HTMLElement; refresh: () => void } {
     const fixture = TestBed.createComponent(PricingForm);

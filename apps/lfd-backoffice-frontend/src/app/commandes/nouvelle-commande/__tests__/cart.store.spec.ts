@@ -116,7 +116,7 @@ describe('CartStore', () => {
   });
 
   /**
-   * P5 (`plan-vente-au-poids.md`) : une ligne au poids compte des grammes. Lus
+   * P5 (`vente-au-poids.md`) : une ligne au poids compte des grammes. Lus
    * en pièces, 1 250 g d'un saumon à 42 €/kg auraient affiché 52 500 €.
    */
   describe('une ligne au poids', () => {

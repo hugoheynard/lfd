@@ -4,7 +4,7 @@ import { CatalogReader } from "../domain/ports/catalog.reader.js";
 
 /**
  * **Quels articles se vendent au poids**, parmi ceux d'un panier qui n'en
- * accepte pas (`documentation/pricing/plan-vente-au-poids.md`, §2 « hors de ce
+ * accepte pas (`documentation/pricing/vente-au-poids.md`, §2 « hors de ce
  * plan ») : abonnements, engagements de volume, réassort. Leurs quantités sont
  * des pièces sans unité ; un article au poids y serait compté mille fois.
  *

@@ -202,7 +202,7 @@ function attestedAt(rank: number): OrderHandover {
   );
 }
 
-/** P6 de `pricing/plan-vente-au-poids.md` : le comptoir recompte des pièces, pas des grammes. */
+/** P6 de `pricing/vente-au-poids.md` : le comptoir recompte des pièces, pas des grammes. */
 describe.each(READERS)("$name — une commande mêlée pièce et poids", ({ read }) => {
   it("compte 12 croissants et UN saumon : 13, et garde l'unité de chaque ligne", async () => {
     const view = await read(

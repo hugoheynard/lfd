@@ -17,7 +17,7 @@ export interface ProducibleLine {
   readonly quantity: number;
   /**
    * L'unité de la ligne, recopiée de la commande (plan
-   * `documentation/pricing/plan-vente-au-poids.md`, P6). Obligatoire : une
+   * `documentation/pricing/vente-au-poids.md`, P6). Obligatoire : une
    * quantité sans unité ne doit plus pouvoir traverser une frontière — 1 250
    * grammes lus comme des pièces feraient cuire 1 250 articles.
    */

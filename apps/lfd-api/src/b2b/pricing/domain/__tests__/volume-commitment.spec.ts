@@ -201,7 +201,7 @@ describe("VolumeCommitmentAggregate.close", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, §2) : un engagement ne compte que des pièces. */
+/** La vente au poids (`vente-au-poids.md`, §2) : un engagement ne compte que des pièces. */
 describe("VolumeCommitmentAggregate.ensureCountedInPieces", () => {
   const WEIGHED = new Set(["SAU-001"]);
 

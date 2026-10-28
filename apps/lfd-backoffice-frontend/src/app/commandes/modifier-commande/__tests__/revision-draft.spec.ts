@@ -57,7 +57,7 @@ describe('la commande passée, remise dans la forme de la saisie', () => {
     ]);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : sans l'unité, le serveur refusait la ligne comme discordante. */
+  /** P5 (`vente-au-poids.md`) : sans l'unité, le serveur refusait la ligne comme discordante. */
   it('garde l’unité figée d’une ligne au poids, avec le pas et le minimum du catalogue', () => {
     const lines = revisionCartOf(
       {

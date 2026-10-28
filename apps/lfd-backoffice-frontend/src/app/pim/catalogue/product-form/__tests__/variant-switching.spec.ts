@@ -481,7 +481,7 @@ describe('les prix au kilo saisis', () => {
   });
 });
 
-/** P1 (`plan-vente-au-poids.md`) : l'unité de vente voyage comme les prix au kilo. */
+/** P1 (`vente-au-poids.md`) : l'unité de vente voyage comme les prix au kilo. */
 describe('l’unité de vente', () => {
   function weighed(): FakeApi {
     const api = new FakeApi();

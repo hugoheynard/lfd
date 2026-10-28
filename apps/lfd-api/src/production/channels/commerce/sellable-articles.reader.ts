@@ -8,7 +8,7 @@ export interface SellableArticle {
   readonly familyId: string;
   readonly familyName: string;
   /**
-   * L'unité de l'article (P6 de `pricing/plan-vente-au-poids.md`) : au poids,
+   * L'unité de l'article (P6 de `pricing/vente-au-poids.md`) : au poids,
    * ses raccourcis et son contenant se règlent en GRAMMES, comme ses fournées.
    */
   readonly saleUnit: SaleUnit;

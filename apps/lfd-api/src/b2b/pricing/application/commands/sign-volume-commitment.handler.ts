@@ -49,7 +49,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     // ⚠️ Le refus vise « **a facturé** », pas « est passé ». Un engagement posé
     // puis rangé dix minutes plus tard n'a rien facturé : le reposer est le
     // geste ordinaire « je me suis trompé, je recommence ».
-    // Un article au poids ne se compte pas en volume promis (`plan-vente-au-poids.md`, P3).
+    // Un article au poids ne se compte pas en volume promis (`vente-au-poids.md`, P3).
     VolumeCommitmentAggregate.ensureCountedInPieces(
       payload.scope,
       await this.saleUnits.weightSoldAmong(payload.scope.id === null ? [] : [payload.scope.id]),

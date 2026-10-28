@@ -11,7 +11,7 @@ export interface ResupplyArticle {
   readonly categoryName: string;
   /**
    * L'unité de vente. Un article au poids ne se réassortit pas : les quantités
-   * d'un réassort sont des pièces (`plan-vente-au-poids.md`, §2 « hors de ce
+   * d'un réassort sont des pièces (`vente-au-poids.md`, §2 « hors de ce
    * plan ») — cf. {@link resuppliable}.
    */
   readonly saleUnit: "piece" | "weight";
@@ -33,7 +33,7 @@ export abstract class ResupplyCatalogue {
 /**
  * **L'article, s'il se réassortit** — refuse un article vendu au poids : un
  * réassort compte des pièces, et un poids y serait compté mille fois
- * (`documentation/pricing/plan-vente-au-poids.md`, §2, Hugo 2026-10-28).
+ * (`documentation/pricing/vente-au-poids.md`, §2, Hugo 2026-10-28).
  *
  * @throws {WeightArticleInResupplyError} l'article se vend au poids.
  */

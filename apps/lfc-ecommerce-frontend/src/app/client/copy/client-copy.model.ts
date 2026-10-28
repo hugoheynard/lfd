@@ -601,7 +601,7 @@ export interface ClientCopy {
     readonly operationPickupDay: string;
     readonly perPiece: string;
     /**
-     * L'unité d'un prix au poids (plan `plan-vente-au-poids.md`, P4) : la
+     * L'unité d'un prix au poids (plan `vente-au-poids.md`, P4) : la
      * vignette et la fiche disent « 12,40 € / kg ».
      */
     readonly perKilogram: string;
@@ -734,7 +734,7 @@ export interface ClientCopy {
     readonly dropAria: string;
     /** `{name}` est remplacé par la pièce. Le nom, lu seulement, du champ de quantité d'une ligne. */
     readonly quantityAria: string;
-    /** Le champ d'une ligne au poids, en grammes (P4 de `plan-vente-au-poids.md`). */
+    /** Le champ d'une ligne au poids, en grammes (P4 de `vente-au-poids.md`). */
     readonly weightAria: string;
     /** `{total}` est remplacé par le montant dû. */
     readonly pay: string;

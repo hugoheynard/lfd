@@ -70,7 +70,7 @@ const THOUSANDTHS_PER_PIECE = 1_000;
 /**
  * Une ligne v1 : `quantity` en pièces, aucune unité. Toutes les lignes d'un
  * arrêté v1 étaient des pièces — rien ne se vendait au poids avant P7
- * (plan `plan-vente-au-poids.md`, § 3 bis) —, d'où leur relecture en `H87`,
+ * (plan `vente-au-poids.md`, § 3 bis) —, d'où leur relecture en `H87`,
  * pièces × 1 000. **Le seul repli d'unité de la chaîne de facturation** : les
  * colonnes `sale_unit` des bons et des BL ont un défaut en base, aucun
  * lecteur ne replie sur la pièce.

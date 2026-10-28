@@ -124,7 +124,7 @@ export const updateVariantPricingPayloadSchema = z.object({
    */
   publicPricePerKgTtcCents: z.number().int().min(0).nullable().optional(),
   /**
-   * L'unité de vente (`plan-vente-au-poids.md`) : `piece` ou `weight`. Absent
+   * L'unité de vente (`vente-au-poids.md`) : `piece` ou `weight`. Absent
    * = inchangée. Figée par le domaine après la première publication.
    */
   saleUnit: saleUnitSchema.optional(),
@@ -270,7 +270,7 @@ export interface VariantView {
   readonly publicPricePerKgTtcCents: number | null;
   /**
    * L'unité de vente, PROPRE à la déclinaison — jamais héritée du défaut
-   * (`plan-vente-au-poids.md`). Au poids, le minimum (`null` = aucun) et le pas
+   * (`vente-au-poids.md`). Au poids, le minimum (`null` = aucun) et le pas
    * de saisie, en grammes ; `null` tous deux à la pièce.
    */
   readonly saleUnit: SaleUnit;

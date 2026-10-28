@@ -65,7 +65,7 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     if (bound.length > 0) {
       throw new OperationOnlyInSubscriptionError(bound);
     }
-    // Les articles au poids, que la ligne refuse (`plan-vente-au-poids.md`, P3).
+    // Les articles au poids, que la ligne refuse (`vente-au-poids.md`, P3).
     const weightSold = await this.saleUnits.weightSoldAmong(payload.lines.map((line) => line.sku));
     // Hors requête (semis), rien n'a confronté la société aux rattachements.
     await this.gestures.ensureMember(command.companyId, command.actorUserId);

@@ -422,7 +422,7 @@ describe("customer.order-placed — le lien de gestion (lot C6)", () => {
     expect(render().html).not.toContain("Gérer ou annuler");
   });
 
-  /** La vente au poids (`plan-vente-au-poids.md`, P3) : un poids n'est pas un compte de pièces. */
+  /** La vente au poids (`vente-au-poids.md`, P3) : un poids n'est pas un compte de pièces. */
   it("dit une ligne au poids par son poids dans le contenu, jamais en pièces", () => {
     const base = sheet();
     const html = render({

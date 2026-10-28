@@ -81,7 +81,7 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
         sku: line.sku,
         productName: item?.productName ?? line.productName,
         quantity: (item?.quantity ?? 0) + line.quantity,
-        // Un réassort est toujours à la pièce (plan `pricing/plan-vente-au-poids.md`, § 2).
+        // Un réassort est toujours à la pièce (plan `pricing/vente-au-poids.md`, § 2).
         saleUnit: "piece",
       });
       byDay.set(line.resupply.serviceDay, items);

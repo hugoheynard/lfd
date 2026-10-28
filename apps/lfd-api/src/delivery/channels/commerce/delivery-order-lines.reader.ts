@@ -6,7 +6,7 @@ export interface DeliveryOrderLine {
   readonly sku: string;
   /** Le nom figé à la passation. */
   readonly name: string;
-  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `pricing/plan-vente-au-poids.md`). */
+  /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6 de `pricing/vente-au-poids.md`). */
   readonly quantity: number;
   readonly saleUnit: SaleUnit;
 }

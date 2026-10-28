@@ -9,7 +9,7 @@ import { Product } from "../product.js";
 import type { VariantSnapshot } from "../variant.js";
 
 /**
- * **L'unité de vente d'une déclinaison** (`documentation/pricing/plan-vente-au-poids.md`,
+ * **L'unité de vente d'une déclinaison** (`documentation/pricing/vente-au-poids.md`,
  * lot P1) — pièce par défaut ; au poids, un pas et un minimum en grammes ;
  * libre jusqu'à la première publication, figée ensuite.
  */

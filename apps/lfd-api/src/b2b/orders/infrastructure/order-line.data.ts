@@ -15,7 +15,7 @@ export function orderLineDataOf(line: OrderLineSnapshot): Prisma.OrderLineCreate
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate,
     quantity: line.quantity,
-    // L'unité de la quantité, figée avec le prix (`plan-vente-au-poids.md`, P3).
+    // L'unité de la quantité, figée avec le prix (`vente-au-poids.md`, P3).
     saleUnit: line.saleUnit,
     lineTotalCents: line.lineTotalCents,
     // 🔴 Écrits tels que l'agrégat les a scellés, `null` compris : c'est

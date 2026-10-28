@@ -13,7 +13,7 @@ export interface CartLine {
   /** Des pièces, ou des GRAMMES si `saleUnit = weight`. */
   readonly quantity: number;
   /**
-   * L'unité de l'article (`plan-vente-au-poids.md`, P5) ; absente = à la
+   * L'unité de l'article (`vente-au-poids.md`, P5) ; absente = à la
    * pièce. Elle part avec la ligne : le serveur refuse une unité discordante.
    */
   readonly saleUnit?: OrderSaleUnit;

@@ -54,7 +54,7 @@ describe("carrierNoteOf — le BL de transport", () => {
     expect(carrierNoteOf(withoutTerms(), HEAD).lines).toHaveLength(2);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : sans l'unité, « 1250 » se lisait en pièces. */
+  /** P5 (`vente-au-poids.md`) : sans l'unité, « 1250 » se lisait en pièces. */
   it("dit l'unité d'une ligne au poids, et seulement d'elle", () => {
     const state = handedOverNote();
     const lines = state.lines.map((line, index) =>

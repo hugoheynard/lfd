@@ -252,7 +252,7 @@ export const syncVariantSchema = z.object({
    */
   publicPricePerKgTtcCents: z.number().int().positive().nullable(),
   /**
-   * **L'unité de vente de la déclinaison** (`plan-vente-au-poids.md`, v14) :
+   * **L'unité de vente de la déclinaison** (`vente-au-poids.md`, v14) :
    * `piece`, ou `weight` — la quantité commandée se compte alors en grammes et
    * le prix s'entend au kilo. Obligatoire sur le fil ; absente avant la v14,
    * et lue `piece` (cf. {@link storedCatalogSnapshotSchema}) : c'est ce

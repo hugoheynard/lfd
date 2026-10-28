@@ -17,7 +17,7 @@ export interface DueLine {
   readonly productName: string;
   /** Des pièces, ou des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
-  /** `weight` : la ligne se met au bac en UN lot (P6 de `pricing/plan-vente-au-poids.md`). */
+  /** `weight` : la ligne se met au bac en UN lot (P6 de `pricing/vente-au-poids.md`). */
   readonly saleUnit: SaleUnit;
 }
 

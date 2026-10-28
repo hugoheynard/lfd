@@ -223,7 +223,7 @@ model ProductVariant {
   publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
 
   /// **L'unité de vente** — `piece` (défaut, tout l'existant) ou `weight`, la
-  /// quantité se comptant alors en grammes (`documentation/pricing/plan-vente-au-poids.md`).
+  /// quantité se comptant alors en grammes (`documentation/pricing/vente-au-poids.md`).
   /// Propre à la déclinaison, jamais héritée du défaut. `CHECK` sur les deux valeurs.
   saleUnit String @default("piece") @map("sale_unit")
   /// Au poids : le minimum commandable, en grammes. `NULL` = aucun minimum ;

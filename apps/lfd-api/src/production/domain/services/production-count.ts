@@ -68,7 +68,7 @@ export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnap
       productName: line.productName,
       quantity: line.quantity,
       // Le commerce refuse un article au poids au réassort (plan
-      // `pricing/plan-vente-au-poids.md`, § 2) : un réassort compte des pièces.
+      // `pricing/vente-au-poids.md`, § 2) : un réassort compte des pièces.
       saleUnit: "piece",
     })),
   };

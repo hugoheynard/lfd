@@ -1,6 +1,6 @@
 /**
  * **La quantité d'une ligne, avec son unité** — plan
- * `documentation/pricing/plan-vente-au-poids.md`, § 2 : « une quantité sans
+ * `documentation/pricing/vente-au-poids.md`, § 2 : « une quantité sans
  * unité ne doit plus pouvoir s'écrire ».
  *
  * Des pièces et des grammes sont tous deux des entiers. Un prix au kilo

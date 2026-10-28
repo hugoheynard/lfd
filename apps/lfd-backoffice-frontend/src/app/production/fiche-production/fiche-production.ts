@@ -46,7 +46,7 @@ export class FicheProduction {
   readonly dayLabel = input.required<string>();
 
   /** « RETRAIT » ou « LIVRAISON » — le premier mot que cherche celui qui prépare. */
-  /** « 12 », ou « 1,25 kg » pour une ligne au poids (`plan-vente-au-poids.md`, P6). */
+  /** « 12 », ou « 1,25 kg » pour une ligne au poids (`vente-au-poids.md`, P6). */
   protected readonly figure = saleQuantityLabel;
 
   protected readonly methodLabel = computed(() =>

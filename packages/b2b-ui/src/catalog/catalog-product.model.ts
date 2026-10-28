@@ -32,7 +32,7 @@ export interface CatalogProduct {
   /** En rupture : la rangée propose « me prévenir » au lieu d'ajouter. */
   outOfStock?: boolean;
   /**
-   * `weight` : l'article se vend au poids (`plan-vente-au-poids.md`, P5) — la
+   * `weight` : l'article se vend au poids (`vente-au-poids.md`, P5) — la
    * quantité compte des GRAMMES, `step` est le pas de l'article et non un
    * colisage, et la rangée dit « 500 g ». Absent ⇒ à la pièce.
    */

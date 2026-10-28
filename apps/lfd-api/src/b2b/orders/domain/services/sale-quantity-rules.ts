@@ -26,7 +26,7 @@ export interface RequestedQuantity {
 
 /**
  * **Une quantité se lit-elle dans l'unité de l'article ?**
- * (`documentation/pricing/plan-vente-au-poids.md`, §2, P3)
+ * (`documentation/pricing/vente-au-poids.md`, §2, P3)
  *
  * - l'unité de la ligne est celle de l'article — jamais de conversion ;
  * - au poids : un multiple du pas, au moins le minimum s'il existe, au plus

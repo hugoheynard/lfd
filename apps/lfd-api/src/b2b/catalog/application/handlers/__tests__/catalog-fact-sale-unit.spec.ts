@@ -4,7 +4,7 @@ import { CatalogFactPayloadError } from "../../../../../pim/channels/b2b-platfor
 
 /**
  * **L'unité de vente dans le fait d'une fiche, côté commerce** (fil v14,
- * `documentation/pricing/plan-vente-au-poids.md`, P2).
+ * `documentation/pricing/vente-au-poids.md`, P2).
  *
  * Payloads écrits À LA MAIN, tels qu'ils dorment en boîte d'envoi : un fait
  * émis avant le lot ne porte pas l'unité, et il doit rester lisible — à la

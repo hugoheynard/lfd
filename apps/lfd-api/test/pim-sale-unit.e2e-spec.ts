@@ -1,7 +1,7 @@
 /**
  * E2E — **l'unité de vente d'une déclinaison**, sur un vrai Postgres.
  *
- * Lot P1 de `documentation/pricing/plan-vente-au-poids.md` : la saisie (pièce
+ * Lot P1 de `documentation/pricing/vente-au-poids.md` : la saisie (pièce
  * ou poids, le pas et le minimum en grammes) se relit sur la fiche ; une
  * déclinaison au poids sans pas n'active pas ; une fois la fiche mise en
  * vente, l'unité est figée — retrait de la vente compris.

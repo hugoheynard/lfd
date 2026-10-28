@@ -5,7 +5,7 @@ import { fill } from "./copy/mail-copy.js";
 /**
  * **Le contenu d'une commande en une phrase** : le nombre de pièces, puis
  * chaque ligne au poids avec son poids (« Saumon gravlax, 500 g ») — un poids
- * n'est pas un nombre de pièces (`plan-vente-au-poids.md`, P3). Une commande
+ * n'est pas un nombre de pièces (`vente-au-poids.md`, P3). Une commande
  * à la pièce se dit exactement comme avant.
  */
 export function contentOf(

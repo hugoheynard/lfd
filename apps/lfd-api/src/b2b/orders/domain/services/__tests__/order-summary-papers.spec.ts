@@ -213,7 +213,7 @@ describe("le récapitulatif au tableur", () => {
     expect(csv).not.toContain(`"=Site Est"`);
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : « 1250 » dans le tableur se lisait en pièces. */
+  /** P5 (`vente-au-poids.md`) : « 1250 » dans le tableur se lisait en pièces. */
   it("écrit la quantité d'un article au poids en grammes ou en kilos", () => {
     const weighed = company("co_3", "Traiteur", 1);
     const products = weighed.products.map((product) => ({

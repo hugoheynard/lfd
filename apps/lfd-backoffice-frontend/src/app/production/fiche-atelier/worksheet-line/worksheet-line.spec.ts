@@ -245,6 +245,22 @@ describe('une ligne, vue par produit', () => {
     expect(keypad.asked[0]?.preset).toBe(500);
   });
 
+  /** Régression : la barre d'un article au poids disait « 1250 avant 7 h » (2026-10-29). */
+  it('au poids, les paliers de la barre se disent en kilos', () => {
+    const el: HTMLElement = render(
+      line({
+        saleUnit: 'weight',
+        quantity: 1250,
+        remaining: 1250,
+        produced: 0,
+        deadlines: [{ quantity: 1250, before: '07:00' }],
+      }),
+    ).nativeElement;
+
+    expect(el.textContent).toContain('1,25 kg avant 7 h');
+    expect(el.textContent).not.toContain('1250 avant');
+  });
+
   /** Régression : « 1 plaque · 30 » doublait « + 1 plaque » sur la ligne (2026-10-28). */
   it('ne montre pas le raccourci qui vaut un contenant', () => {
     const fixture = TestBed.createComponent(WorksheetLine);

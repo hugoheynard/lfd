@@ -24,9 +24,11 @@ import {
  *
  * Un produit sans contenance est SIGNALÉ, jamais deviné (L4b-C2).
  *
- * Un article au poids (P6 de `pricing/plan-vente-au-poids.md`) a sa contenance
- * en grammes, et son lot ne se coupe pas entre deux bacs tant qu'il tient
- * dans un bac entier : le colisage le met au bac en UN lot (`packGroup`).
+ * Un article au poids (`documentation/pricing/vente-au-poids.md`) a sa
+ * contenance en grammes, et son lot ne se coupe jamais : le colisage le met au
+ * bac en UN lot (`packGroup`). Un lot plus lourd qu'un bac entier de chacun
+ * des types de son groupe n'est pas posé : il sort en `weight_lot_over_bin`,
+ * et le préparateur le pose à la main, en un geste.
  */
 
 /** Une ligne à placer (fusionnée par SKU). */
@@ -74,7 +76,7 @@ export interface PackedBins {
   readonly content: readonly PackedItem[];
 }
 
-export type UnplacedReason = "no_capacity" | "cold_without_isotherm";
+export type UnplacedReason = "no_capacity" | "cold_without_isotherm" | "weight_lot_over_bin";
 
 export interface UnplacedItem extends PackedItem {
   readonly reason: UnplacedReason;
@@ -102,10 +104,10 @@ export function proposePacking(
   const grid = capacityGrid(capacities);
   const isotherm = types.filter((type) => type.isotherm);
   const dry = types.filter((type) => !type.isotherm);
-  const groups = sortIntoGroups(mergeLines(lines), { isotherm, dry }, grid);
   const weighed = new Set(
     lines.filter((line) => line.saleUnit === "weight").map((line) => line.sku),
   );
+  const groups = sortIntoGroups(mergeLines(lines), { isotherm, dry }, grid, weighed);
   return {
     bins: [
       ...binsOf(packGroup(groups.cold, isotherm, grid, weighed), true),
@@ -137,25 +139,54 @@ function sortIntoGroups(
   lines: readonly PackingLine[],
   types: { readonly isotherm: readonly PackingBinType[]; readonly dry: readonly PackingBinType[] },
   grid: CapacityGrid,
+  weighed: ReadonlySet<string>,
 ): Groups {
   const groups: Groups = { cold: [], dry: [], dryInIsotherm: [], unplaced: [] };
   const fits = (sku: string, among: readonly PackingBinType[]): boolean =>
     among.some((type) => grid.unitsOf(type.id, sku) !== null);
   for (const { sku, quantity, requiresCold } of lines) {
     const item = { sku, quantity };
+    const lotFits = (among: readonly PackingBinType[]): boolean =>
+      !weighed.has(sku) || lotFitsOneBin(item, among, grid);
     if (requiresCold && fits(sku, types.isotherm)) {
-      groups.cold.push(item);
+      pushOrRefuse(groups.cold, groups.unplaced, item, lotFits(types.isotherm));
     } else if (requiresCold) {
       groups.unplaced.push({ ...item, reason: "cold_without_isotherm" });
     } else if (fits(sku, types.dry)) {
-      groups.dry.push(item);
+      pushOrRefuse(groups.dry, groups.unplaced, item, lotFits(types.dry));
     } else if (fits(sku, types.isotherm)) {
-      groups.dryInIsotherm.push(item);
+      pushOrRefuse(groups.dryInIsotherm, groups.unplaced, item, lotFits(types.isotherm));
     } else {
       groups.unplaced.push({ ...item, reason: "no_capacity" });
     }
   }
   return groups;
+}
+
+/** Un lot au poids tient-il ENTIER dans un bac entier d'au moins un de ces types ? */
+function lotFitsOneBin(
+  item: PackedItem,
+  among: readonly PackingBinType[],
+  grid: CapacityGrid,
+): boolean {
+  return among.some((type) => {
+    const units = grid.unitsOf(type.id, item.sku);
+    return units !== null && item.quantity <= units;
+  });
+}
+
+/** Range l'article dans son groupe, ou le sort en « lot trop lourd pour un bac ». */
+function pushOrRefuse(
+  group: PackedItem[],
+  unplaced: UnplacedItem[],
+  item: PackedItem,
+  lotFits: boolean,
+): void {
+  if (lotFits) {
+    group.push(item);
+  } else {
+    unplaced.push({ ...item, reason: "weight_lot_over_bin" });
+  }
 }
 
 /** Regroupe les bacs d'un groupe par type, dans l'ordre d'apparition des types. */

@@ -55,7 +55,7 @@ describe("departureOf — ce que le comptoir tend", () => {
   });
 });
 
-/** P6 de `pricing/plan-vente-au-poids.md` : une commande mêlée, et un manquant partiel au poids. */
+/** P6 de `pricing/vente-au-poids.md` : une commande mêlée, et un manquant partiel au poids. */
 describe("departureOf — au poids", () => {
   function mixed(departingSalmon: number) {
     return {

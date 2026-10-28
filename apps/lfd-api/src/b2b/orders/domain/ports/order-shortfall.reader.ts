@@ -8,7 +8,7 @@ export interface OrderShortfallReading {
   readonly reportedAt: Date;
   /**
    * Dû et au bac, par article — des grammes pour un article au poids, dont
-   * l'unité est celle de la ligne de commande (P6 de `pricing/plan-vente-au-poids.md`).
+   * l'unité est celle de la ligne de commande (P6 de `pricing/vente-au-poids.md`).
    */
   readonly lines: readonly (ShortfallQuantity & { readonly saleUnit: SaleUnit })[];
   readonly decision: {

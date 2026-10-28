@@ -25,7 +25,7 @@ describe("SubscriptionLine", () => {
   });
 });
 
-/** La vente au poids (`plan-vente-au-poids.md`, §2) : hors des paniers récurrents. */
+/** La vente au poids (`vente-au-poids.md`, §2) : hors des paniers récurrents. */
 describe("SubscriptionLine.requested", () => {
   it("accepte un article à la pièce", () => {
     expect(SubscriptionLine.requested("SKU-1", 3, "piece")).toMatchObject({

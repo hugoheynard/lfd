@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import {
   InvalidBatchShortcutLabelError,
   InvalidBatchShortcutPiecesError,
@@ -50,10 +52,13 @@ export function batchShortcutLabelOf(raw: string): string {
   return label;
 }
 
-/** @throws {InvalidBatchShortcutPiecesError} pas un entier d'au moins une pièce. */
-export function batchShortcutPiecesOf(raw: number): number {
+/**
+ * @throws {InvalidBatchShortcutPiecesError} pas un entier d'au moins 1 ; le
+ * message nomme l'unité de l'article quand elle est connue.
+ */
+export function batchShortcutPiecesOf(raw: number, saleUnit: SaleUnit | null): number {
   if (!Number.isInteger(raw) || raw < 1 || raw > STORABLE_PIECES_MAX) {
-    throw new InvalidBatchShortcutPiecesError(raw);
+    throw new InvalidBatchShortcutPiecesError(raw, saleUnit);
   }
   return raw;
 }
@@ -78,7 +83,7 @@ export class BatchShortcut {
     return new BatchShortcut({
       ...state,
       label: batchShortcutLabelOf(state.label),
-      pieces: batchShortcutPiecesOf(state.pieces),
+      pieces: batchShortcutPiecesOf(state.pieces, null),
     });
   }
 

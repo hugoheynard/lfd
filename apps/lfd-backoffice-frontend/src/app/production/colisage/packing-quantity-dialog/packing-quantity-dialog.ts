@@ -40,7 +40,7 @@ export interface PackingQuantityDialogData {
   /** La borne haute, et le défaut : « tout ». */
   readonly max: number;
   /**
-   * L'unité de l'article (`plan-vente-au-poids.md`, P6) : au poids, la
+   * L'unité de l'article (`vente-au-poids.md`, P6) : au poids, la
    * quantité se saisit en GRAMMES. Absente = des pièces.
    */
   readonly saleUnit?: OrderSaleUnit;

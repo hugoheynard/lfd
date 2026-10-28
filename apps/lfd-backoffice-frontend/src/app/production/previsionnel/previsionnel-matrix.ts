@@ -76,7 +76,7 @@ export interface ForecastCell {
 export interface ForecastProduct {
   readonly sku: string;
   readonly productName: string;
-  /** L'unité du produit (`plan-vente-au-poids.md`, P6). */
+  /** L'unité du produit (`vente-au-poids.md`, P6). */
   readonly saleUnit: OrderSaleUnit;
   readonly cells: readonly ForecastCell[];
   readonly totalUnits: number;

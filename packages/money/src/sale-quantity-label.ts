@@ -2,7 +2,7 @@ import { GRAMS_PER_KILOGRAM, type SaleQuantity } from "./sale-quantity.js";
 
 /**
  * **Un poids tel qu'on le dit au client** — plan
- * `documentation/pricing/plan-vente-au-poids.md`, § 2 (Hugo, 2026-10-28) :
+ * `documentation/pricing/vente-au-poids.md`, § 2 (Hugo, 2026-10-28) :
  * grammes sous le kilo, kilos au-delà — « 20 g », « 500 g », « 1,25 kg »,
  * « 2 kg », jamais « 0,02 kg ». Les zéros de queue tombent ; au plus trois
  * décimales, puisque la quantité est un nombre entier de grammes.
@@ -33,7 +33,7 @@ export function weightLabel(weightGrams: number): string {
 /**
  * **Une quantité de ligne telle qu'on l'écrit dans une colonne de quantité** —
  * « 12 » pour des pièces, « 1,25 kg » pour des grammes (plan
- * `documentation/pricing/plan-vente-au-poids.md`, P6 : la fiche d'atelier, le
+ * `documentation/pricing/vente-au-poids.md`, P6 : la fiche d'atelier, le
  * compte à produire, le dossier du jour, le colisage).
  *
  * Les pièces restent un nombre nu : c'est ce que ces colonnes disaient avant

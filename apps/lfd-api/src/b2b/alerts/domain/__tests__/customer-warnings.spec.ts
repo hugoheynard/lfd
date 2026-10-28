@@ -35,7 +35,7 @@ describe("customerWarnings", () => {
     expect(warnings[0]?.message).not.toContain("%");
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : des grammes nus (« 1250 ») ne se lisent pas. */
+  /** P5 (`vente-au-poids.md`) : des grammes nus (« 1250 ») ne se lisent pas. */
   it("dit un article au poids en grammes ou en kilos, la moyenne arrondie au gramme", () => {
     const weighed: AlertFinding = { ...FINDING, quantity: 1_250, baseline: 500.4 };
     const warnings = customerWarnings(

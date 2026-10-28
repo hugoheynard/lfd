@@ -86,7 +86,7 @@ describe('GuestCancelPage', () => {
     expect(el.querySelector('[data-money]')?.textContent).toContain('7,80');
   });
 
-  /** P5 (`plan-vente-au-poids.md`) : « × 1250 » se lisait en pièces. */
+  /** P5 (`vente-au-poids.md`) : « × 1250 » se lisait en pièces. */
   it('dit une ligne au poids en grammes ou en kilos', async () => {
     const weighed = {
       ...VIEW,

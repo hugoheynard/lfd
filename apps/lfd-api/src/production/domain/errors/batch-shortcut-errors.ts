@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import {
   BusinessError,
   DomainError,
@@ -22,14 +24,29 @@ export class InvalidBatchShortcutLabelError extends DomainError {
   }
 }
 
-/** Un nombre de pièces qui n'est pas un entier d'au moins une pièce. */
+/**
+ * Une quantité qui n'est pas un entier d'au moins 1. Le nombre est dans
+ * l'unité de l'article : des pièces, ou des GRAMMES pour un article au poids
+ * (`documentation/pricing/vente-au-poids.md`) — le message le dit, le refus
+ * est le même. `null` : l'unité n'a pas pu être lue, le message ne la nomme pas.
+ */
 export class InvalidBatchShortcutPiecesError extends DomainError {
-  constructor(raw: number) {
+  constructor(raw: number, saleUnit: SaleUnit | null) {
     super(
       "production.batch_shortcut.invalid_pieces",
-      `« ${String(raw)} » pièces ne fait pas un raccourci : saisissez un nombre entier de pièces, au moins 1.`,
+      invalidQuantityMessage(String(raw), saleUnit),
     );
   }
+}
+
+function invalidQuantityMessage(raw: string, saleUnit: SaleUnit | null): string {
+  if (saleUnit === "weight") {
+    return `« ${raw} » grammes ne fait pas un raccourci : cet article se vend au poids, saisissez un nombre entier de grammes, au moins 1.`;
+  }
+  if (saleUnit === "piece") {
+    return `« ${raw} » pièces ne fait pas un raccourci : saisissez un nombre entier de pièces, au moins 1.`;
+  }
+  return `« ${raw} » ne fait pas un raccourci : saisissez un nombre entier, au moins 1.`;
 }
 
 /** Le produit a déjà son plafond de raccourcis. */

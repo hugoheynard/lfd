@@ -157,7 +157,7 @@ function talliesOf(
   }
   for (const resupply of resupplies) {
     for (const line of resupply.lines) {
-      // Un réassort est toujours à la pièce (`plan-vente-au-poids.md`, § 2).
+      // Un réassort est toujours à la pièce (`vente-au-poids.md`, § 2).
       add({ ...line, saleUnit: 'piece' }, false);
     }
   }

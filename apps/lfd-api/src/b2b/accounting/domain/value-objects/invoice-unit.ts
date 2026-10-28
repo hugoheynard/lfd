@@ -8,7 +8,7 @@ import { UnknownInvoiceUnitError } from "../errors/invoice-issuance-errors.js";
  *
  * Deux seulement, et c'est une liste d'ACCEPTATION : `H87` (pièce) — « une
  * boîte de 6 est une pièce » (Q5, Hugo, 2026-10-08) —, `KGM` (kilogramme)
- * pour un article vendu au poids (plan `plan-vente-au-poids.md`, P7). Le
+ * pour un article vendu au poids (plan `vente-au-poids.md`, P7). Le
  * prix net s'entend alors par 1 KGM : aucun `BasisQuantity` n'est émis.
  */
 export const INVOICE_UNIT_CODES = ["H87", "KGM"] as const;

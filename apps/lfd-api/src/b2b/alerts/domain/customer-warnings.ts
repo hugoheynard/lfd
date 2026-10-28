@@ -70,7 +70,7 @@ function customerMessage(finding: AlertFinding, unit: SaleUnit): string | null {
 
 /**
  * Une quantité au poids, dite comme le panier la dit (« 500 g », « 1,25 kg »,
- * `plan-vente-au-poids.md`, P5). Une moyenne n'est pas un nombre entier de
+ * `vente-au-poids.md`, P5). Une moyenne n'est pas un nombre entier de
  * grammes : elle s'arrondit au gramme, l'unité dans laquelle on saisit.
  */
 function weighed(grams: number): string {

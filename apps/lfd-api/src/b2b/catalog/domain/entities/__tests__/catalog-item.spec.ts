@@ -83,7 +83,7 @@ describe("CatalogItem — le prix", () => {
   });
 });
 
-/** Fil v14 (`plan-vente-au-poids.md`, P2) : stockée et lue, rien ne la tarife encore. */
+/** Fil v14 (`vente-au-poids.md`, P2) : stockée et lue, rien ne la tarife encore. */
 describe("CatalogItem — l'unité de vente", () => {
   it("lit l'unité, le pas et le minimum reçus du référentiel", () => {
     const item = CatalogItem.receive(

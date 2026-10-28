@@ -162,7 +162,7 @@ export class WorksheetLine {
         max: SEGMENT_SCALE,
         tone,
         current: isCurrent,
-        label: `${met ? '✓ ' : ''}${String(step.q)} ${beforeLabel(step.before)}`,
+        label: `${met ? '✓ ' : ''}${this.figure(step.q)} ${beforeLabel(step.before)}`,
       };
     });
   });
@@ -175,7 +175,7 @@ export class WorksheetLine {
 
   /**
    * « 48 » ou « 1,25 kg » : une quantité de la ligne dans l'unité de
-   * l'article (plan `pricing/plan-vente-au-poids.md`, P6).
+   * l'article (plan `pricing/vente-au-poids.md`, P6).
    */
   protected figure(quantity: number): string {
     return saleQuantityLabel(quantity, this.line().saleUnit);

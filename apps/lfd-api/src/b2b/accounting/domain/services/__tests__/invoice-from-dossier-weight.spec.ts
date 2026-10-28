@@ -8,7 +8,7 @@ import { renderFacturXml } from "../facturx-xml.js";
 import { frozenOrder } from "./collection-fixtures.js";
 
 /**
- * L'émission d'une facture au poids (plan `plan-vente-au-poids.md`, § 3 bis) :
+ * L'émission d'une facture au poids (plan `vente-au-poids.md`, § 3 bis) :
  * les grammes passent en millièmes de KGM sans être multipliés par mille, et
  * le prix net est rattrapé quand les arrondis des bons l'écartent du montant.
  * Les dates ne sont comparées qu'entre elles.

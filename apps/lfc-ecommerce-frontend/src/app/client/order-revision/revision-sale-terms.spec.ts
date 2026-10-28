@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { TEST_ITEMS } from '../shop/shop-catalogue.fixture';
 import { addedArticleOf, weightFieldOf } from './revision-sale-terms';
 
-/** P5 de `plan-vente-au-poids.md` : la page de modification saisit un poids au pas de l'article. */
+/** P5 de `vente-au-poids.md` : la page de modification saisit un poids au pas de l'article. */
 describe('revision-sale-terms', () => {
   const [base] = TEST_ITEMS;
   if (base === undefined) {

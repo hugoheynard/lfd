@@ -40,7 +40,7 @@ export class InvoiceDossierUnreadableVatRateError extends BusinessError {
 
 /**
  * Un même article arrive dans le dossier à la pièce ET au poids. Son unité
- * est figée à la publication (plan `plan-vente-au-poids.md`, P1) : deux
+ * est figée à la publication (plan `vente-au-poids.md`, P1) : deux
  * unités disent une ligne de bon fausse, et additionner des pièces et des
  * grammes ferait une quantité qui ne veut rien dire.
  */
