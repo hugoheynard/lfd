@@ -3,12 +3,17 @@ import type {
   ProductionWorksheetView,
   QualityLineStatus,
   WorkshopLine,
+  WorkshopWaitingOrders,
 } from "@lfd/contracts";
 import { Injectable, Logger } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
 import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { ExpectedProductionReader } from "../../channels/commerce/expected-production.reader.js";
+import {
+  OvenWaitingOrdersReader,
+  type OvenWaitingOrders,
+} from "../../channels/packing/oven-waiting-orders.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
@@ -57,6 +62,13 @@ import { WorksheetDeadlinesReading } from "./worksheet-deadlines-reading.service
  * l'atelier — et le verdict qualité courant de son SKU, le même que la
  * Supervision. Des tranches illisibles laissent la fiche servie, sans paliers.
  *
+ * ## Ce qui attend le four (§3, Hugo, 2026-10-28)
+ *
+ * Le colisage dit, par SKU, combien de commandes du jour attendent le four et
+ * la plus proche heure « prête pour » — la règle de la Supervision, par le
+ * port que le fournil déclare. Sans nom de client. Une panne du colisage est
+ * **journalisée** et met `waitingOrders: null` partout : la fiche reste servie.
+ *
  * Il n'écrit rien, pas même un compteur — §4.
  */
 @Injectable()
@@ -72,17 +84,20 @@ export class ProductionWorksheetReading {
     private readonly clock: Clock,
     private readonly deadlines: WorksheetDeadlinesReading,
     private readonly checks: QualityCheckReader,
+    private readonly waiting: OvenWaitingOrdersReader,
   ) {}
 
   async read(day: ServiceDay): Promise<ProductionWorksheetView> {
-    const [current, expected, producible, containers, tranches, checks] = await Promise.all([
-      this.days.load(day),
-      this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
-      this.orders.producibleFor(day),
-      this.containers.allBySku(),
-      this.deadlines.read(day),
-      this.checks.forDay(day),
-    ]);
+    const [current, expected, producible, containers, tranches, checks, waiting] =
+      await Promise.all([
+        this.days.load(day),
+        this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
+        this.orders.producibleFor(day),
+        this.containers.allBySku(),
+        this.deadlines.read(day),
+        this.checks.forDay(day),
+        this.waitingOrNull(day),
+      ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
     // événement en processus, ni persisté ni rejoué : un abonné en échec laisse
@@ -104,6 +119,7 @@ export class ProductionWorksheetReading {
     const viewOf = lineViewOf({
       tranches,
       quality: new Map(qualityLinesOf(current, checks).map((status) => [status.sku, status])),
+      waiting,
     });
     return {
       date: day.value,
@@ -115,6 +131,24 @@ export class ProductionWorksheetReading {
       shelvesKnown: shelves !== null,
       relativeDay: relativeDayOf(day.value, this.clock.now()),
     };
+  }
+
+  /**
+   * Ce qui attend le four, ou `null` si le colisage n'a pas répondu — la panne
+   * part au journal avec le jour et sa cause, jamais en silence.
+   */
+  private async waitingOrNull(
+    day: ServiceDay,
+  ): Promise<ReadonlyMap<string, OvenWaitingOrders> | null> {
+    try {
+      return await this.waiting.waitingOn(day.value);
+    } catch (error) {
+      this.logger.error(
+        `Fiche d'atelier du ${day.value} : commandes en attente du four illisibles, servie sans.`,
+        error instanceof Error ? error.stack : String(error),
+      );
+      return null;
+    }
   }
 
   /**
@@ -153,6 +187,8 @@ interface LineMarks {
   /** `null` = tranches illisibles : la ligne part sans paliers. */
   readonly tranches: ReadonlyMap<string, readonly TrancheThreshold[]> | null;
   readonly quality: ReadonlyMap<string, QualityLineStatus>;
+  /** `null` = le colisage n'a pas répondu : aucune ligne n'affirme rien. */
+  readonly waiting: ReadonlyMap<string, OvenWaitingOrders> | null;
 }
 
 /** Le domaine parle en `Date`, le contrat en ISO. La traduction vit ici. */
@@ -166,7 +202,19 @@ function lineViewOf(marks: LineMarks): (line: WorksheetLine) => WorkshopLine {
             ...step,
           })),
     quality: marks.quality.get(line.sku) ?? null,
+    waitingOrders: waitingOf(marks.waiting, line.sku),
   });
+}
+
+/** Une copie au contrat ; `null` = aucune commande, ou colisage muet. */
+function waitingOf(
+  waiting: ReadonlyMap<string, OvenWaitingOrders> | null,
+  sku: string,
+): WorkshopWaitingOrders | null {
+  const found = waiting?.get(sku);
+  return found === undefined
+    ? null
+    : { count: found.count, earliestHandover: found.earliestHandover };
 }
 
 function lineView(line: WorksheetLine): WorkshopLine {

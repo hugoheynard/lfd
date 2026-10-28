@@ -16,6 +16,7 @@ import {
   addDays,
   localToInstant,
   type ProductionContainerView,
+  type ProductionPackingView,
   type ProductionWorksheetRetake,
   type ProductionWorksheetView,
 } from "@lfd/contracts";
@@ -216,6 +217,26 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
       expect(step.before === null || /^\d{2}:\d{2}$/u.test(step.before)).toBe(true);
     }
     expect(line.quality).toBeNull();
+  });
+
+  it("dit la commande qui attend le four et son heure — celles du poste de colisage", async () => {
+    // Plan fournée v3, §3 (Hugo, 2026-10-28) : le fournil lit le colisage par
+    // le port qu'il déclare ; rien d'autre que la base ne relie les deux blocs.
+    await place(CROISSANT, 12);
+    await closePlan();
+    for (let round = 0; round < 4; round += 1) {
+      await ctx.drain();
+    }
+    const board = jsonBody<ProductionPackingView>(
+      await ctx.asSub(STAFF).get(`/admin/packing/${SERVICE_DAY}/board`).expect(200),
+    );
+    const [sheet] = board.sheets;
+    expect(sheet?.lines[0]?.awaitingProduction).toBe(true);
+
+    const line = lineOf(await worksheet(), CROISSANT);
+
+    expect(line.waitingOrders).toEqual({ count: 1, earliestHandover: sheet?.readyBy ?? null });
+    expect(line.waitingOrders?.earliestHandover).toMatch(/^\d{2}:\d{2}$/u);
   });
 
   it("montre la coche, ses initiales et son heure après un geste du fournil", async () => {

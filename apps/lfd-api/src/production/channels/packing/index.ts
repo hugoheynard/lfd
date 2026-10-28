@@ -14,6 +14,7 @@
  * | `QualityHeldOrdersReader` | port publié (K3a) | les commandes retenues au contrôle, pour le poste |
  * | `PlannedDestinationsReader` | port publié (K3a) | la destination figée au plan, pour le poste |
  * | `PackedOrdersReader`    | port (K3a)       | « cette commande est-elle colisée ? »         |
+ * | `OvenWaitingOrdersReader` | port (2026-10-28) | les commandes qui attendent le four, par SKU — pour la fiche |
  * | `InscribedOrderHeaderReader` | port publié (A1) | l'en-tête figé d'une commande, pour la pierre tombale |
  * | `OrderLabelHeadReader`  | port publié      | l'acheminement et le créneau, pour l'étiquette d'un sac |
  *
@@ -57,6 +58,7 @@ export {
 } from "./packing-returned.event.js";
 export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
+export { OvenWaitingOrdersReader, type OvenWaitingOrders } from "./oven-waiting-orders.reader.js";
 export { PlannedDestinationsReader } from "./planned-destinations.reader.js";
 export { QualityHeldOrdersReader } from "./quality-held-orders.reader.js";
 export {

@@ -2,6 +2,7 @@ import { Global, Module } from "@nestjs/common";
 
 import { PrismaPackingDayVersionReader } from "../packing/infrastructure/prisma-packing-day-version.reader.js";
 import { PrismaDayPackingProgressReader } from "../packing/infrastructure/prisma-day-packing-progress.reader.js";
+import { BoardOvenWaitingOrdersReader } from "../packing/application/board/board-oven-waiting-orders.reader.js";
 import { PrismaPackedOrdersReader } from "../packing/infrastructure/prisma-packed-orders.reader.js";
 import {
   OrderPackingStateReader,
@@ -22,6 +23,7 @@ import {
   DayPackingProgressReader,
   InscribedOrderHeaderReader,
   OrderLabelHeadReader,
+  OvenWaitingOrdersReader,
   PackedOrdersReader,
   PackingDayVersionReader,
   PlannedDestinationsReader,
@@ -48,6 +50,9 @@ import { ProductionModule } from "../production/production.module.js";
  * - `PackedOrdersReader` (K3a) — la production DÉCLARE, le colisage
  *   implémente : « cette commande est-elle colisée ? », pour l'état du jour et
  *   le contrôle qualité.
+ * - `OvenWaitingOrdersReader` (2026-10-28) — la production DÉCLARE, le
+ *   colisage implémente : les commandes qui attendent le four, par SKU, pour
+ *   la ligne de la fiche d'atelier (`fournil/plan-fournee-v3.md`, §3).
  *
  * - `PackedResuppliesReader` (réassort R3b, 2026-10-21) — le colisage
  *   DÉCLARE ET IMPLÉMENTE, le commerce lit : l'emballé d'un réassort, pour
@@ -67,6 +72,7 @@ import { ProductionModule } from "../production/production.module.js";
     { provide: QualityHeldOrdersReader, useExisting: ChannelQualityHeldOrdersReader },
     { provide: PlannedDestinationsReader, useExisting: DayPlannedDestinationsReader },
     { provide: PackedOrdersReader, useExisting: PrismaPackedOrdersReader },
+    { provide: OvenWaitingOrdersReader, useExisting: BoardOvenWaitingOrdersReader },
     // La réouverture d'une journée (2026-10-14) : « le colisage a-t-il
     // commencé ? » — la production déclare, le colisage implémente.
     { provide: DayPackingProgressReader, useClass: PrismaDayPackingProgressReader },
@@ -95,6 +101,7 @@ import { ProductionModule } from "../production/production.module.js";
     QualityHeldOrdersReader,
     PlannedDestinationsReader,
     PackedOrdersReader,
+    OvenWaitingOrdersReader,
     DayPackingProgressReader,
     PackedResuppliesReader,
     ShortfallDesk,

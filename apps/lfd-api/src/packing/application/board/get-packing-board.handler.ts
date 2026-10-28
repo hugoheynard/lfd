@@ -1,9 +1,5 @@
-import {
-  BinDesk,
-  type OrderDeparture,
-  OrderDeparturesReader,
-} from "../../channels/delivery/index.js";
-import { instantToLocal, type ProductionPackingView } from "@lfd/contracts";
+import { BinDesk, OrderDeparturesReader } from "../../channels/delivery/index.js";
+import type { ProductionPackingView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -18,8 +14,8 @@ import {
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import { PackingBoardReader } from "../../domain/ports/packing-board.reader.js";
 import { packingBoardOf } from "../../domain/services/packing-board.js";
-import type { LocalDeparture } from "../../domain/services/ready-by.js";
 import { GetPackingBoardQuery } from "./get-packing-board.query.js";
+import { localDepartures } from "./local-departures.js";
 
 /**
  * **Le poste de colisage, servi par le colisage** (plan
@@ -105,16 +101,4 @@ export class GetPackingBoardHandler implements IQueryHandler<
       aftermath,
     });
   }
-}
-
-/** Les départs lus à l'heure de Paris — celle du poste et des créneaux. */
-function localDepartures(
-  departures: readonly OrderDeparture[],
-): ReadonlyMap<string, LocalDeparture> {
-  return new Map(
-    departures.map((departure) => {
-      const local = instantToLocal(departure.at);
-      return [departure.orderId, { day: local.day, time: local.time, via: departure.via }];
-    }),
-  );
 }

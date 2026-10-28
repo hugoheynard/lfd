@@ -24,6 +24,7 @@ import { ServiceDay } from "../../../domain/value-objects/service-day.value-obje
 import { GetProductionWorksheetHandler } from "../get-production-worksheet.handler.js";
 import { GetProductionWorksheetQuery } from "../get-production-worksheet.query.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
+import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
@@ -151,6 +152,7 @@ function handlerFor(
         new InMemoryTrancheSettings().reader(),
       ),
       new InMemoryCheckReader(new CheckTable()),
+      new FixedOvenWaitingOrders(),
     ),
   );
 }

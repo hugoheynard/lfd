@@ -112,10 +112,11 @@ la page, comme les raccourcis). Les raccourcis restent à côté.
   fiche).
 - Le contenant se règle sur la page des raccourcis ; ses routes d'écriture sont
   sous `production_settings:write`, sa lecture sous la fiche OU les réglages.
-- ⚠️ **`waitingOrders` n'est pas bâti** : « attend le four » se calcule dans le
-  bloc `packing/` (`packing-board.ts`). Le fournil le lirait par un port qu'il
-  déclare et que le colisage implémente — la matrice l'autorise, mais ce serait
-  le premier sens « le fournil lit le colisage ». À trancher par Hugo.
+- `waitingOrders` est servi (2026-10-28, Hugo : un port de lecture) : le
+  fournil déclare `OvenWaitingOrdersReader` (`production/channels/packing/`),
+  le colisage l'implémente avec `ovenWaitingOrdersOf` — la règle de
+  `awaitingProduction`, l'heure « prête pour » du poste. Colisage muet :
+  `null` sur toutes les lignes, panne journalisée.
 
 ## 6. Lots
 

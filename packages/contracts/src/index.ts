@@ -968,6 +968,7 @@ export type {
   ProductionPackingQuery,
   ProductionPackingView,
 } from "./production-packing.js";
+export type { WorkshopWaitingOrders } from "./production-worksheet.js";
 export type {
   ReleasedToReserveLine,
   WithdrawnPackingSheet,

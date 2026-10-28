@@ -155,7 +155,7 @@ function firstDrawnAt(day: PackingBoardDay): Date | null {
  * d'autant. Rien à poser n'attend rien. Les pièces qu'un réassort lancé
  * réserve (R4b) n'y sont pas : `PackingStock.free` les retire aussi.
  */
-function awaitingOf(day: PackingBoardDay): Awaiting {
+export function awaitingOf(day: PackingBoardDay): Awaiting {
   const free = freeBySku(day);
   return (sku, quantity) => shortfall(free.get(sku) ?? 0, quantity) > 0;
 }

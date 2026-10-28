@@ -414,6 +414,16 @@ K3c (2026-10-05), l'ancien poste du fournil, l'ombre et sa route de contrôle
 sont retirés : le colisage est le seul poste. `production_day.packing_owner`
 reste en base et nomme encore `legacy` les journées colisées avant la bascule.
 
+🔴 **Le fournil lit ce qui attend le four au colisage** (2026-10-28, Hugo ;
+[`documentation/fournil/plan-fournee-v3.md`](documentation/fournil/plan-fournee-v3.md) §3).
+La production DÉCLARE `OvenWaitingOrdersReader` dans `production/channels/packing/`
+et le colisage l'IMPLÉMENTE (`BoardOvenWaitingOrdersReader`), avec la règle
+même de la Supervision (`awaitingProduction`) ; `appBootstrap/packing-feed.module.ts`
+les relie. C'est la figure de `PackedOrdersReader` (K3a), le premier port de
+ce sens : le fournil ne lit aucune table du colisage, il lit une réponse.
+`production → packing` reste interdit. Une panne du colisage ne retient pas la
+fiche d'atelier : `waitingOrders` vaut `null` et la panne est journalisée.
+
 🔴 **`delivery` implémente ce que le colisage déclare** (2026-10-04, K2b ; référence
 [`documentation/colisage/colisage.md`](documentation/colisage/colisage.md) §2, §4.2). Le colisage tient le CONTENU des contenants ; la livraison garde le
 BAC (code court, QR, chargement, « Partir »). Le colisage déclare

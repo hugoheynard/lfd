@@ -126,6 +126,24 @@ export interface WorkshopLine {
    * l'envoie toujours ; un double qui l'omet se lit `null`.
    */
   readonly quality?: QualityLineStatus | null;
+  /**
+   * **Ce qui presse** — les commandes du jour dont une ligne de ce SKU attend
+   * le four, telles que le colisage les compte (« 1 commande attend · remise
+   * 8 h 45 »), sans nom de client. `null` = aucune n'attend.
+   *
+   * Lu au colisage par un port que le fournil déclare (Hugo, 2026-10-28,
+   * `documentation/fournil/plan-fournee-v3.md` §3). Facultatif dans le TYPE
+   * seulement : le serveur l'envoie toujours.
+   */
+  readonly waitingOrders?: WorkshopWaitingOrders | null;
+}
+
+/** Les commandes qui attendent le four pour un SKU. */
+export interface WorkshopWaitingOrders {
+  /** Combien de commandes, ≥ 1. */
+  readonly count: number;
+  /** La plus proche heure de remise, `HH:mm` ; `null` = aucune heure connue. */
+  readonly earliestHandover: string | null;
 }
 
 /** Le libellé du groupe des SKU que le catalogue ne connaît pas. */

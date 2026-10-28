@@ -33,6 +33,7 @@ import {
 } from "./infrastructure/prisma-packing-return.ledger.js";
 import { PrismaPackingSheetRepository } from "./infrastructure/prisma-packing-sheet.repository.js";
 import { PrismaPackingStockRepository } from "./infrastructure/prisma-packing-stock.repository.js";
+import { BoardOvenWaitingOrdersReader } from "./application/board/board-oven-waiting-orders.reader.js";
 import { GetPackingBoardHandler } from "./application/board/get-packing-board.handler.js";
 import { ClosePackingOrderHandler } from "./application/station/close-packing-order.handler.js";
 import { ReportPackingShortfallHandler } from "./application/station/report-packing-shortfall.handler.js";
@@ -166,6 +167,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
     ReopenPackingOrderHandler,
     { provide: PackingBoardReader, useClass: PrismaPackingBoardReader },
     PrismaPackedOrdersReader,
+    BoardOvenWaitingOrdersReader,
     // La fiche de réassort (R3b).
     OnResupplyListDrawn,
     OnResupplyLaunched,
@@ -187,6 +189,7 @@ import { PrismaPackingSettingsRepository } from "./infrastructure/prisma-packing
   exports: [
     PrismaContainerManagedOrders,
     PrismaPackedOrdersReader,
+    BoardOvenWaitingOrdersReader,
     PrismaPackedResuppliesReader,
     PrismaOrderPackingStateReader,
     PackingShortfallDesk,

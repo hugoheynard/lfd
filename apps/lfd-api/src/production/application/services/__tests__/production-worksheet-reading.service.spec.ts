@@ -18,6 +18,7 @@ import { ProductionContainerReader } from "../../../domain/ports/production-cont
 import { ProductionDayRepository } from "../../../domain/ports/production-day.repository.js";
 import type { ContainerRule } from "../../../domain/services/production-worksheet.js";
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
+import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
@@ -118,6 +119,7 @@ const DUE: DayDueThresholds = {
 function readingWith(
   due: DayDueThresholds | "down",
   checks: CheckTable,
+  waiting: FixedOvenWaitingOrders = new FixedOvenWaitingOrders(),
 ): ProductionWorksheetReading {
   const settings = new InMemoryTrancheSettings(
     ProductionTrancheSettings.set("fixed", ["05:00", "07:00"]),
@@ -131,6 +133,7 @@ function readingWith(
     new FixedClock(NOW),
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),
     new InMemoryCheckReader(checks),
+    waiting,
   );
 }
 
@@ -206,5 +209,33 @@ describe("ProductionWorksheetReading — paliers et contrôle qualité", () => {
     const view = await readingWith(DUE, checks).read(DAY);
 
     expect(view.lines.find((line) => line.sku === SEIGLE)?.quality?.stale).toBe(true);
+  });
+});
+
+describe("ProductionWorksheetReading — ce qui attend le four (§3)", () => {
+  it("pose sur la ligne les commandes qui attendent le four, et rien ailleurs", async () => {
+    const waiting = new FixedOvenWaitingOrders(
+      new Map([[SEIGLE, { count: 2, earliestHandover: "08:45" }]]),
+    );
+
+    const view = await readingWith(DUE, new CheckTable(), waiting).read(DAY);
+
+    expect(view.lines.find((line) => line.sku === SEIGLE)?.waitingOrders).toEqual({
+      count: 2,
+      earliestHandover: "08:45",
+    });
+    expect(view.lines.find((line) => line.sku === BAGUETTE)?.waitingOrders).toBeNull();
+    const grouped = view.groups.flatMap((group) => group.lines);
+    expect(grouped.find((line) => line.sku === SEIGLE)?.waitingOrders?.count).toBe(2);
+  });
+
+  it("🔴 SERT la fiche quand le colisage ne répond pas — `null` partout", async () => {
+    const view = await readingWith(DUE, new CheckTable(), new FixedOvenWaitingOrders("down")).read(
+      DAY,
+    );
+
+    expect(view.lines).toHaveLength(2);
+    expect(view.lines.every((line) => line.waitingOrders === null)).toBe(true);
+    expect(view.lines.find((line) => line.sku === SEIGLE)?.deadlines).toHaveLength(2);
   });
 });

@@ -17,6 +17,7 @@ import type { ContainerRule } from "../../../domain/services/production-workshee
 import { ServiceDay } from "../../../domain/value-objects/service-day.value-object.js";
 import { ProductionWorksheetReading } from "../../services/production-worksheet-reading.service.js";
 import { GetCurrentProductionWorksheetHandler } from "../get-current-production-worksheet.handler.js";
+import { FixedOvenWaitingOrders } from "../../__tests__/oven-waiting-doubles.js";
 import { FixedDueThresholds } from "../../__tests__/due-thresholds-doubles.js";
 import { InMemoryTrancheSettings } from "../../__tests__/production-tranche-settings-doubles.js";
 import { CheckTable, InMemoryCheckReader } from "../../__tests__/quality-doubles.js";
@@ -107,6 +108,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     clock,
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),
     new InMemoryCheckReader(new CheckTable()),
+    new FixedOvenWaitingOrders(),
   );
   return new GetCurrentProductionWorksheetHandler(days, reading, clock);
 }
