@@ -322,7 +322,7 @@ describe('ReassortBoutiquePage', () => {
     await api.receiveResupply('site_v', 'r1');
     const { fixture } = await mount(['handover_counter:read'], api);
 
-    const row = root(fixture).querySelector('[data-resupply-row="CRO"]');
+    const row = root(fixture).querySelector('[data-resupply-row="CRO"]')?.closest('tr');
     expect(row?.textContent).toContain('Croissant');
     expect(row?.querySelector('[data-resupply-stock]')?.textContent?.trim()).toBe('14');
     expect(root(fixture).querySelector('thead')?.textContent).not.toContain('ommandé');
@@ -339,9 +339,7 @@ describe('ReassortBoutiquePage', () => {
     await settle(fixture);
 
     expect(api.calls.filter((c) => !c.startsWith('read'))).toEqual(['receive-resupply r1']);
-    expect(
-      root(fixture).querySelector('[data-resupply-row="CRO"] [data-resupply-stock]')?.textContent,
-    ).toContain('12');
+    expect(root(fixture).querySelector('[data-resupply-stock="CRO"]')?.textContent).toContain('12');
   });
 
   it('en lecture seule, ni « Réceptionner » ni geste sur la table', async () => {

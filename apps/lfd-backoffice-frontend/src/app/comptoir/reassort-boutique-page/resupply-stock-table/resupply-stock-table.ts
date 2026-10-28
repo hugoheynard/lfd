@@ -22,6 +22,8 @@ import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldDropdownComponent,
   FoldDropdownItemComponent,
   FoldIconComponent,
@@ -29,6 +31,8 @@ import {
   FoldPanelHostService,
   FoldSearchComponent,
   FoldViewToggleComponent,
+  type FoldTableColumn,
+  type FoldTableTone,
 } from 'fold-ng';
 
 import {
@@ -122,6 +126,8 @@ function normalize(text: string): string {
   imports: [
     FoldButtonComponent,
     FoldCalloutComponent,
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
     FoldDropdownComponent,
     FoldDropdownItemComponent,
     FoldIconComponent,
@@ -181,6 +187,19 @@ export class ResupplyStockTable {
   readonly changed = output();
 
   protected readonly stateOptions = STATE_OPTIONS;
+
+  /** Les colonnes ; « Autres gestes » seulement pour qui écrit. */
+  protected readonly columns = computed<readonly FoldTableColumn<StockRow>[]>(() => [
+    { key: 'product', label: 'Produit' },
+    { key: 'stock', label: 'Stock du jour', numeric: true },
+    { key: 'state', label: 'État' },
+    { key: 'quantity', label: this.targetLabel() },
+    ...(this.canWrite() ? [{ key: 'actions', label: 'Actions', align: 'right' as const }] : []),
+  ]);
+  protected readonly skuOf = (row: StockRow): string => row.sku;
+  /** La rupture en alerte, le stock faible en avertissement. */
+  protected readonly toneOf = (row: StockRow): FoldTableTone =>
+    row.state === 'out_of_stock' ? 'alert' : row.state === 'low' ? 'warning' : null;
   protected readonly steps = STEPS;
   /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
   protected readonly downSteps = [...STEPS].reverse();

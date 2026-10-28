@@ -256,9 +256,7 @@ describe('ResupplyStockTable', () => {
 
     expect(order(fixture)).toEqual(['BAG', 'CRO', 'PAC', 'OLD']);
     const stockOf = (sku: string): string | undefined =>
-      root(fixture)
-        .querySelector(`[data-resupply-row="${sku}"] [data-resupply-stock]`)
-        ?.textContent?.trim();
+      root(fixture).querySelector(`[data-resupply-stock="${sku}"]`)?.textContent?.trim();
     expect(stockOf('CRO')).toBe('14');
     expect(stockOf('BAG')).toBe('0');
   });
@@ -347,7 +345,7 @@ describe('ResupplyStockTable', () => {
   it('une seule colonne de quantité ; l’autre visée se signale par son compte', async () => {
     const { fixture, table } = await mount();
     expect(
-      root(fixture).querySelectorAll('[data-resupply-row="CRO"] fold-number-input').length,
+      root(fixture).querySelectorAll('[data-resupply-quantity="CRO"] fold-number-input').length,
     ).toBe(1);
 
     await table['step']('tomorrow', rowOf(table, 'CRO'), 3);

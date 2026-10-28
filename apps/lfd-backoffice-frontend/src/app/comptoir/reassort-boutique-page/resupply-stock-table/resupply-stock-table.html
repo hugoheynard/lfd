@@ -38,159 +38,153 @@
     <fold-callout variant="alert" announce>{{ failure }}</fold-callout>
   }
 
-  <table class="lines" data-resupply-stock-table>
-    <caption class="sr">
-      Stock du jour et réassort, par produit
-    </caption>
-    <thead>
-      <tr>
-        <th scope="col">Produit</th>
-        <th scope="col" class="num">Stock du jour</th>
-        <th scope="col">État</th>
-        <th scope="col">{{ targetLabel() }}</th>
-        @if (canWrite()) {
-          <th scope="col"><span class="sr">Actions</span></th>
-        }
-      </tr>
-    </thead>
-    <tbody>
-      @for (row of visibleRows(); track row.sku) {
-        <tr
-          [attr.data-resupply-row]="row.sku"
-          [class.out]="row.state === 'out_of_stock'"
-          [class.low]="row.state === 'low'"
-        >
-          <td>
-            {{ row.name }}
-            <span class="muted">{{ row.sku }}</span>
-          </td>
-          <td class="num" data-resupply-stock>{{ row.stock }}</td>
-          <td>
-            @if (canWrite()) {
-              <fold-view-toggle
-                [attr.data-resupply-state]="row.sku"
-                [ariaLabel]="'État de ' + row.name"
-                [options]="stateOptions"
-                [value]="row.state"
-                (valueChange)="setState(row, $event)"
-              />
-            } @else {
-              {{ row.state === 'ok' ? 'OK' : row.state === 'low' ? 'Faible' : 'Rupture' }}
-            }
-          </td>
-          <td>
-            @if (canWrite()) {
-              <div
-                class="quantity"
-                [attr.data-resupply-quantity]="row.sku"
-                (focusout)="commit(target(), row)"
-                (keydown.enter)="commit(target(), row)"
-              >
-                @for (quantity of downSteps; track quantity) {
-                  <button
-                    class="shortcut"
-                    foldButton
-                    type="button"
-                    emphasis="soft"
-                    intent="neutral"
-                    size="sm"
-                    [disabled]="resuppliesPending() || !quantityOf(target(), row)"
-                    (click)="stepDown(target(), row, quantity)"
-                  >
-                    −{{ quantity }}
-                  </button>
-                }
-                <!-- En mobile, la case seule ouvre le dialogue des raccourcis. -->
-                <div class="cell" (click)="openQuantity(row)">
-                  <fold-number-input
-                    size="sm"
-                    align="center"
-                    [readOnly]="phone()"
-                    [value]="quantityOf(target(), row)"
-                    (valueChange)="setQuantity(target(), row, $event)"
-                    [min]="0"
-                    integer
-                    [disabled]="resuppliesPending()"
-                  />
-                </div>
-                @for (quantity of steps; track quantity) {
-                  <button
-                    class="shortcut"
-                    foldButton
-                    type="button"
-                    emphasis="soft"
-                    intent="neutral"
-                    size="sm"
-                    [disabled]="resuppliesPending()"
-                    (click)="step(target(), row, quantity)"
-                  >
-                    +{{ quantity }}
-                  </button>
-                }
-              </div>
-            } @else {
-              {{ target() === 'asap' ? row.asap : row.tomorrow }}
-            }
-          </td>
-          @if (canWrite()) {
-            <td class="num">
-              <fold-dropdown placement="bottom-end" ariaLabel="Autres gestes">
-                <button
-                  foldPopoverTrigger="menu"
-                  foldButton
-                  type="button"
-                  emphasis="soft"
-                  intent="neutral"
-                  size="sm"
-                  aria-label="Autres gestes"
-                >
-                  <fold-icon name="more-vertical" [size]="16" />
-                </button>
-                <fold-dropdown-item icon="plus" (selected)="openUnordered(row)">
-                  {{
-                    row.unordered === null
-                      ? '+ reçu sans commande'
-                      : 'Reçu sans commande (' + row.unordered + ')'
-                  }}
-                </fold-dropdown-item>
-              </fold-dropdown>
-              @if (unorderedSku() === row.sku) {
-                <div class="quantity" data-resupply-unordered-editor>
-                  <fold-number-input
-                    size="sm"
-                    label="Reçu sans commande"
-                    [value]="unorderedQuantity()"
-                    (valueChange)="unorderedQuantity.set($event)"
-                    [min]="1"
-                    integer
-                  />
-                  <button
-                    foldButton
-                    type="button"
-                    size="sm"
-                    [disabled]="unorderedPending()"
-                    (click)="saveUnordered(row)"
-                  >
-                    Enregistrer
-                  </button>
-                  <button
-                    foldButton
-                    type="button"
-                    emphasis="soft"
-                    intent="neutral"
-                    size="sm"
-                    (click)="closeUnordered()"
-                  >
-                    Annuler
-                  </button>
-                </div>
-              }
-            </td>
-          }
-        </tr>
+  <!-- La table fold du fournil (Hugo, 2026-10-28) : une ligne par produit, sa
+       teinte dit la rupture ou le stock faible. -->
+  <fold-data-table
+    data-resupply-stock-table
+    density="compact"
+    hover
+    caption="Stock du jour et réassort, par produit"
+    [columns]="columns()"
+    [rows]="visibleRows()"
+    [rowKey]="skuOf"
+    [rowTone]="toneOf"
+  >
+    <ng-template foldCell="product" let-row>
+      <span
+        class="product"
+        [attr.data-resupply-row]="row.sku"
+        [class.out]="row.state === 'out_of_stock'"
+        [class.low]="row.state === 'low'"
+      >
+        {{ row.name }}
+        <span class="muted">{{ row.sku }}</span>
+      </span>
+    </ng-template>
+    <ng-template foldCell="stock" let-row>
+      <span [attr.data-resupply-stock]="row.sku">{{ row.stock }}</span>
+    </ng-template>
+    <ng-template foldCell="state" let-row>
+      @if (canWrite()) {
+        <fold-view-toggle
+          [attr.data-resupply-state]="row.sku"
+          [ariaLabel]="'État de ' + row.name"
+          [options]="stateOptions"
+          [value]="row.state"
+          (valueChange)="setState(row, $event)"
+        />
+      } @else {
+        {{ row.state === 'ok' ? 'OK' : row.state === 'low' ? 'Faible' : 'Rupture' }}
       }
-    </tbody>
-  </table>
+    </ng-template>
+    <ng-template foldCell="quantity" let-row>
+      @if (canWrite()) {
+        <div
+          class="quantity"
+          [attr.data-resupply-quantity]="row.sku"
+          (focusout)="commit(target(), row)"
+          (keydown.enter)="commit(target(), row)"
+        >
+          @for (quantity of downSteps; track quantity) {
+            <button
+              class="shortcut"
+              foldButton
+              type="button"
+              emphasis="soft"
+              intent="neutral"
+              size="sm"
+              [disabled]="resuppliesPending() || !quantityOf(target(), row)"
+              (click)="stepDown(target(), row, quantity)"
+            >
+              −{{ quantity }}
+            </button>
+          }
+          <!-- En mobile, la case seule ouvre le dialogue des raccourcis. -->
+          <div class="cell" (click)="openQuantity(row)">
+            <fold-number-input
+              size="sm"
+              align="center"
+              [readOnly]="phone()"
+              [value]="quantityOf(target(), row)"
+              (valueChange)="setQuantity(target(), row, $event)"
+              [min]="0"
+              integer
+              [disabled]="resuppliesPending()"
+            />
+          </div>
+          @for (quantity of steps; track quantity) {
+            <button
+              class="shortcut"
+              foldButton
+              type="button"
+              emphasis="soft"
+              intent="neutral"
+              size="sm"
+              [disabled]="resuppliesPending()"
+              (click)="step(target(), row, quantity)"
+            >
+              +{{ quantity }}
+            </button>
+          }
+        </div>
+      } @else {
+        {{ target() === 'asap' ? row.asap : row.tomorrow }}
+      }
+    </ng-template>
+    <ng-template foldCell="actions" let-row>
+      <fold-dropdown placement="bottom-end" ariaLabel="Autres gestes">
+        <button
+          foldPopoverTrigger="menu"
+          foldButton
+          type="button"
+          emphasis="soft"
+          intent="neutral"
+          size="sm"
+          aria-label="Autres gestes"
+        >
+          <fold-icon name="more-vertical" [size]="16" />
+        </button>
+        <fold-dropdown-item icon="plus" (selected)="openUnordered(row)">
+          {{
+            row.unordered === null
+              ? '+ reçu sans commande'
+              : 'Reçu sans commande (' + row.unordered + ')'
+          }}
+        </fold-dropdown-item>
+      </fold-dropdown>
+      @if (unorderedSku() === row.sku) {
+        <div class="quantity" data-resupply-unordered-editor>
+          <fold-number-input
+            size="sm"
+            label="Reçu sans commande"
+            [value]="unorderedQuantity()"
+            (valueChange)="unorderedQuantity.set($event)"
+            [min]="1"
+            integer
+          />
+          <button
+            foldButton
+            type="button"
+            size="sm"
+            [disabled]="unorderedPending()"
+            (click)="saveUnordered(row)"
+          >
+            Enregistrer
+          </button>
+          <button
+            foldButton
+            type="button"
+            emphasis="soft"
+            intent="neutral"
+            size="sm"
+            (click)="closeUnordered()"
+          >
+            Annuler
+          </button>
+        </div>
+      }
+    </ng-template>
+  </fold-data-table>
 
   @if (canWrite()) {
     <div class="send">
