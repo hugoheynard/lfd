@@ -12,12 +12,16 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldDataTableCellDirective,
+  FoldDataTableComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
   FoldSearchComponent,
+  FoldViewToggleComponent,
   type FoldSelectOption,
+  type FoldTableColumn,
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
@@ -31,19 +35,22 @@ import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
  */
 const STEPS = [1, 10, 50, 100] as const;
 
-/** Une famille et ses articles, dans l'ordre du catalogue. */
-interface ArticleGroup {
-  readonly key: string;
-  readonly label: string;
-  readonly articles: readonly ResupplyArticleView[];
-}
-
 function normalize(text: string): string {
   return text
     .normalize('NFD')
     .replace(/\p{Diacritic}/gu, '')
     .toLowerCase();
 }
+
+/** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants. */
+const ALL_FAMILIES = '';
+
+/** Les colonnes ; leurs cellules sont des gabarits (`foldCell`). */
+const COLUMNS: readonly FoldTableColumn<ResupplyArticleView>[] = [
+  { key: 'family', label: 'Famille' },
+  { key: 'product', label: 'Produit' },
+  { key: 'quantity', label: 'Quantité', align: 'right' },
+];
 
 /** Un point proposé. */
 interface SiteChoice {
@@ -77,11 +84,14 @@ interface SiteChoice {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldDataTableCellDirective,
+    FoldDataTableComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
     FoldSearchComponent,
+    FoldViewToggleComponent,
     ResupplyNameField,
   ],
   templateUrl: './bakehouse-resupply-card.html',
@@ -102,7 +112,35 @@ export class BakehouseResupplyCard {
   /** La quantité saisie par article ; un article absent n'est pas demandé. */
   protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());
   protected readonly query = signal('');
+  /** La famille retenue par le filtre ; `ALL_FAMILIES` par défaut. */
+  protected readonly family = signal<string>(ALL_FAMILIES);
+
+  /**
+   * « Tout », puis une puce par famille dans l'ordre du catalogue (Hugo,
+   * 2026-10-28). Une famille qui a déjà des quantités le dit : on voit, sans
+   * la rouvrir, où l'on a déjà saisi.
+   */
+  protected readonly familyOptions = computed(() => {
+    const quantities = this.quantities();
+    const families = new Map<string, { label: string; asked: number }>();
+    for (const article of this.articles()) {
+      const family = families.get(article.categoryId) ?? { label: article.categoryName, asked: 0 };
+      if ((quantities.get(article.sku) ?? 0) > 0) {
+        family.asked += 1;
+      }
+      families.set(article.categoryId, family);
+    }
+    return [
+      { value: ALL_FAMILIES, label: 'Tout' },
+      ...[...families].map(([value, family]) => ({
+        value,
+        label: family.asked > 0 ? `${family.label} (${String(family.asked)})` : family.label,
+      })),
+    ];
+  });
   protected readonly steps = STEPS;
+  protected readonly columns = COLUMNS;
+  protected readonly skuOf = (article: ResupplyArticleView): string => article.sku;
   /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
   protected readonly downSteps = [...STEPS].reverse();
   /** Le nom du réassort (R1g), envoyé avec lui ; vide : sans nom. */
@@ -127,23 +165,17 @@ export class BakehouseResupplyCard {
     this.lines().reduce((total, line) => total + line.quantity, 0),
   );
 
-  /** Les familles du catalogue, dans son ordre ; la recherche filtre les articles. */
-  protected readonly groups = computed<readonly ArticleGroup[]>(() => {
+  /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
+  protected readonly visibleArticles = computed(() => {
     const query = normalize(this.query().trim());
-    const groups = new Map<string, { label: string; articles: ResupplyArticleView[] }>();
-    for (const article of this.articles()) {
-      if (query !== '' && !normalize(`${article.name} ${article.sku}`).includes(query)) {
-        continue;
-      }
-      const group = groups.get(article.categoryId) ?? { label: article.categoryName, articles: [] };
-      group.articles.push(article);
-      groups.set(article.categoryId, group);
-    }
-    return [...groups].map(([key, group]) => ({ key, ...group }));
+    const family = this.family();
+    return this.articles().filter(
+      (article) =>
+        (family === ALL_FAMILIES || article.categoryId === family) &&
+        (query === '' || normalize(`${article.name} ${article.sku}`).includes(query)),
+    );
   });
-  protected readonly visibleCount = computed(() =>
-    this.groups().reduce((total, group) => total + group.articles.length, 0),
-  );
+  protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
   protected readonly canSend = computed(
     () => this.siteId() !== null && this.lines().length > 0 && !this.pending(),

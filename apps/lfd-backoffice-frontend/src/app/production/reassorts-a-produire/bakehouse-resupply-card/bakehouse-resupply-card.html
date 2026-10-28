@@ -4,9 +4,28 @@
     variant="title"
     title="Envoyer un réassort"
     subtitle="« Je t'envoie ça » : un réassort à part, signé du fournil — par exemple quand un point le demande au téléphone. La demande en cours du comptoir n'est pas touchée."
-  />
+  >
+    <!-- En haut à droite (Hugo, 2026-10-28) : le geste se voit sans
+         descendre au bout de la table. -->
+    <button
+      titleAction
+      foldButton
+      data-bakehouse-send
+      [disabled]="!canSend()"
+      [loading]="pending()"
+      (click)="send()"
+    >
+      Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
+    </button>
+  </fold-element-title>
 
   <div class="body">
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+    }
+    @if (done(); as message) {
+      <fold-callout variant="success" announce data-bakehouse-done>{{ message }}</fold-callout>
+    }
     @if (loadFailed()) {
       <fold-empty-state tone="alert" title="Impossible de lire les points et le catalogue">
         <button foldButton (click)="load()">Réessayer</button>
@@ -42,84 +61,8 @@
         </div>
       </div>
 
-      <fold-search
-        placeholder="Chercher un produit"
-        ariaLabel="Chercher un produit"
-        [value]="query()"
-        (valueChange)="query.set($event)"
-        [resultCount]="visibleCount()"
-        resultLabel="produits"
-      />
-
-      <!-- PAR FAMILLE, une case par article et ses pas de part et d'autre
-           (Hugo, 2026-10-28) : on retire à gauche, on ajoute à droite. -->
-      <div class="scroll">
-        <table class="articles" data-bakehouse-table>
-          <caption class="sr">
-            Quantités à envoyer, par famille et par article
-          </caption>
-          <thead>
-            <tr>
-              <th scope="col">Produit</th>
-              <th scope="col" class="qty">Quantité</th>
-            </tr>
-          </thead>
-          @for (group of groups(); track group.key) {
-            <tbody [attr.data-bakehouse-group]="group.key">
-              <tr class="group">
-                <th scope="colgroup" colspan="2">{{ group.label }}</th>
-              </tr>
-              @for (article of group.articles; track article.sku) {
-                <tr [attr.data-bakehouse-row]="article.sku" [class.asked]="quantityOf(article.sku)">
-                  <td>
-                    {{ article.name }}
-                    <span class="muted">{{ article.sku }}</span>
-                  </td>
-                  <td class="qty">
-                    <div class="stepper">
-                      @for (quantity of downSteps; track quantity) {
-                        <button
-                          foldButton
-                          type="button"
-                          emphasis="soft"
-                          intent="neutral"
-                          size="sm"
-                          [attr.data-bakehouse-step]="-quantity"
-                          [disabled]="!quantityOf(article.sku)"
-                          (click)="step(article.sku, -quantity)"
-                        >
-                          −{{ quantity }}
-                        </button>
-                      }
-                      <fold-number-input
-                        size="sm"
-                        [value]="quantityOf(article.sku)"
-                        (valueChange)="setQuantity(article.sku, $event)"
-                        [min]="0"
-                        integer
-                      />
-                      @for (quantity of steps; track quantity) {
-                        <button
-                          foldButton
-                          type="button"
-                          emphasis="soft"
-                          intent="neutral"
-                          size="sm"
-                          [attr.data-bakehouse-step]="quantity"
-                          (click)="step(article.sku, quantity)"
-                        >
-                          +{{ quantity }}
-                        </button>
-                      }
-                    </div>
-                  </td>
-                </tr>
-              }
-            </tbody>
-          }
-        </table>
-      </div>
-
+      <!-- Le nom en haut, avec le point et la visée (Hugo, 2026-10-28) : il
+           dit QUEL réassort on compose, avant d'en saisir les quantités. -->
       <app-resupply-name-field
         [usedNames]="usedNames()"
         [disabled]="pending()"
@@ -127,24 +70,90 @@
         (textChange)="name.set($event)"
       />
 
-      <div class="submit">
-        <button
-          foldButton
-          data-bakehouse-send
-          [disabled]="!canSend()"
-          [loading]="pending()"
-          (click)="send()"
-        >
-          Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
-        </button>
+      <!-- Le filtre et la recherche sur UNE ligne : ils règlent la même table. -->
+      <div class="filters">
+        @if (familyOptions().length > 2) {
+          <fold-view-toggle
+            data-bakehouse-families
+            ariaLabel="Filtrer par famille"
+            size="sm"
+            [options]="familyOptions()"
+            [value]="family()"
+            (valueChange)="family.set($event)"
+          />
+        }
+        <fold-search
+          placeholder="Chercher un produit"
+          ariaLabel="Chercher un produit"
+          [value]="query()"
+          (valueChange)="query.set($event)"
+          [resultCount]="visibleArticles().length"
+          resultLabel="produits"
+        />
       </div>
-    }
 
-    @if (failure(); as message) {
-      <fold-callout variant="alert" announce>{{ message }}</fold-callout>
-    }
-    @if (done(); as message) {
-      <fold-callout variant="success" announce data-bakehouse-done>{{ message }}</fold-callout>
+      <!-- UNE table fold, filtrée par famille au-dessus (Hugo, 2026-10-28), une
+           case par article et ses pas de part et d'autre : on retire à gauche,
+           on ajoute à droite. -->
+      <fold-data-table
+        data-bakehouse-table
+        density="compact"
+        hover
+        caption="Quantités à envoyer, par article"
+        [columns]="columns"
+        [rows]="visibleArticles()"
+        [rowKey]="skuOf"
+        [empty]="nothingFound"
+      >
+        <ng-template foldCell="family" let-article>
+          <span class="muted">{{ article.categoryName }}</span>
+        </ng-template>
+        <ng-template foldCell="product" let-article>
+          <span class="product" [class.asked]="quantityOf(article.sku)">
+            {{ article.name }}
+            <span class="muted">{{ article.sku }}</span>
+          </span>
+        </ng-template>
+        <ng-template foldCell="quantity" let-article>
+          <div class="stepper" [attr.data-bakehouse-row]="article.sku">
+            @for (quantity of downSteps; track quantity) {
+              <button
+                foldButton
+                type="button"
+                emphasis="soft"
+                intent="neutral"
+                size="sm"
+                [attr.data-bakehouse-step]="-quantity"
+                [disabled]="!quantityOf(article.sku)"
+                (click)="step(article.sku, -quantity)"
+              >
+                −{{ quantity }}
+              </button>
+            }
+            <fold-number-input
+              size="sm"
+              align="center"
+              [value]="quantityOf(article.sku)"
+              (valueChange)="setQuantity(article.sku, $event)"
+              [min]="0"
+              integer
+            />
+            @for (quantity of steps; track quantity) {
+              <button
+                foldButton
+                type="button"
+                emphasis="soft"
+                intent="neutral"
+                size="sm"
+                [attr.data-bakehouse-step]="quantity"
+                (click)="step(article.sku, quantity)"
+              >
+                +{{ quantity }}
+              </button>
+            }
+          </div>
+        </ng-template>
+      </fold-data-table>
     }
   </div>
 </fold-card>

@@ -135,7 +135,7 @@ describe('BakehouseResupplyCard', () => {
     expect(root.querySelector('[data-bakehouse-done]')?.textContent).toContain(
       'Réassort envoyé à Val Village',
     );
-    expect(root.querySelector('tr.asked')).toBeNull();
+    expect(root.querySelector('.product.asked')).toBeNull();
   });
 
   it('vise « au plus tôt » par défaut ; sans point ni ligne, rien ne part', async () => {
@@ -174,13 +174,22 @@ describe('BakehouseResupplyCard', () => {
     expect(card['name']()).toBe('');
   });
 
-  it('range les articles par famille, dans l’ordre du catalogue (2026-10-28)', async () => {
-    const { root } = await mount();
+  it('filtre par famille au-dessus de la table, et dit où l’on a déjà saisi', async () => {
+    const { fixture, card, add, root } = await mount();
+    add('BAG', 2);
 
-    const groups = [...root.querySelectorAll('[data-bakehouse-group]')].map((group) =>
-      group.querySelector('th')?.textContent?.trim(),
+    expect(card['familyOptions']().map((option) => option.label)).toEqual([
+      'Tout',
+      'Viennoiseries',
+      'Pains (1)',
+    ]);
+    card['family'].set('fam_bread');
+    fixture.detectChanges();
+
+    const rows = [...root.querySelectorAll('[data-bakehouse-row]')].map((row) =>
+      row.getAttribute('data-bakehouse-row'),
     );
-    expect(groups).toEqual(['Viennoiseries', 'Pains']);
+    expect(rows).toEqual(['BAG']);
   });
 
   it('retire par les pas « − », sans descendre sous zéro', async () => {
@@ -207,7 +216,7 @@ describe('BakehouseResupplyCard', () => {
 
     expect(sentCount()).toBe(0);
     expect(root.querySelector('fold-callout')?.textContent).toContain('pas pu être envoyé');
-    expect(root.querySelector('tr.asked')?.getAttribute('data-bakehouse-row')).toBe('CRO');
+    expect(root.querySelector('.product.asked')?.textContent).toContain('Croissant');
   });
 
   it('dit l’échec de lecture des points par un état fold', async () => {
