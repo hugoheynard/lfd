@@ -88,6 +88,16 @@
   padding-block-end: 0;
 }
 
+/* Caché à l'œil, lu par les lecteurs d'écran. */
+.fa-title--unseen {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
 .fa-masthead-bar {
   display: flex;
   flex-wrap: wrap;

@@ -23,7 +23,11 @@
             · fiche {{ rank() }} sur {{ day.groups().length }}
           }
         </p>
-        <h1 class="fa-title">{{ current()?.label ?? 'Fiche d’atelier' }}</h1>
+        <!-- Au téléphone, le sélecteur de poste dit le rayon : le titre reste pour les
+             lecteurs d'écran, pas pour l'œil (maquette, Hugo 2026-10-28). -->
+        <h1 class="fa-title" [class.fa-title--unseen]="compact()">
+          {{ current()?.label ?? 'Fiche d’atelier' }}
+        </h1>
       </div>
 
       @if (current(); as fiche) {
@@ -174,16 +178,18 @@
   @default {
     @if (current(); as fiche) {
       <section class="fa-body" aria-label="Lignes à sortir">
-        <div class="fa-band">
-          <span class="fa-band-title">{{ fiche.label }}</span>
-          <span class="fa-band-rule" aria-hidden="true"></span>
-          <span class="fa-band-sum">
-            {{ fiche.doneCount }} ligne{{ fiche.doneCount > 1 ? 's' : '' }} sur
-            {{ fiche.lineCount }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
-            {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
-          </span>
-          <!-- La bascule, à droite du bandeau au poste fixe ; en tête de liste au pouce. -->
-          @if (!compact()) {
+        <!-- Au poste fixe seulement : au téléphone, la bande répète ce que le
+             sélecteur du masthead dit déjà (maquette, Hugo 2026-10-28). -->
+        @if (!compact()) {
+          <div class="fa-band">
+            <span class="fa-band-title">{{ fiche.label }}</span>
+            <span class="fa-band-rule" aria-hidden="true"></span>
+            <span class="fa-band-sum">
+              {{ fiche.doneCount }} ligne{{ fiche.doneCount > 1 ? 's' : '' }} sur
+              {{ fiche.lineCount }} faite{{ fiche.doneCount > 1 ? 's' : '' }} ·
+              {{ fiche.totalUnits }} pièce{{ fiche.totalUnits > 1 ? 's' : '' }} au total
+            </span>
+            <!-- La bascule, à droite du bandeau au poste fixe ; en tête de liste au pouce. -->
             <fold-view-toggle
               class="fa-view"
               ariaLabel="Lecture de la fiche"
@@ -191,8 +197,8 @@
               [value]="view()"
               (valueChange)="chooseView($event)"
             />
-          }
-        </div>
+          </div>
+        }
 
         <!--
           UNE seule liste, UN seul composant de ligne. Le poste fixe montre tout

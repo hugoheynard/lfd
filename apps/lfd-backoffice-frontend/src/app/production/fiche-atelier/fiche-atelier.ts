@@ -196,7 +196,7 @@ export class FicheAtelier {
   protected readonly tabOptions = computed<readonly FoldSelectItem<string>[]>(() =>
     this.day.groups().map((group) => ({
       value: group.key,
-      label: `${group.label} · ${group.doneCount}/${group.lineCount}`,
+      label: `${group.label} · ${String(group.remainingUnits)} à sortir`,
     })),
   );
 
