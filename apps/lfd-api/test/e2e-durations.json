@@ -176,6 +176,7 @@
   "test/devis-comptable.e2e-spec.ts": 4320,
   "test/direct-debit-blocks.e2e-spec.ts": 6182,
   "test/document-specimens.e2e-spec.ts": 10805,
+  "test/email-reply.e2e-spec.ts": 3300,
   "test/exact-ht-partial-note.e2e-spec.ts": 10300,
   "test/families-in-data-migration.e2e-spec.ts": 4921,
   "test/feature-access.e2e-spec.ts": 6862,

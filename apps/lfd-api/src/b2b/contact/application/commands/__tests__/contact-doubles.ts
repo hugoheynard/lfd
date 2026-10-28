@@ -73,6 +73,23 @@ export class MemoryRequests extends CustomerRequestRepository {
     this.log.push(`save ${request.id}`);
     return Promise.resolve();
   }
+
+  /** Insérer-ou-ignorer sur l'identifiant du message d'une réponse par e-mail, comme l'index unique. */
+  receiveOnce(request: CustomerRequest): Promise<boolean> {
+    const key = messageIdOf(request);
+    const taken = [...this.byId.values()].some(
+      (known) => key !== null && messageIdOf(known) === key,
+    );
+    if (taken || this.byId.has(request.id)) {
+      return Promise.resolve(false);
+    }
+    return this.save(request).then(() => true);
+  }
+}
+
+function messageIdOf(request: CustomerRequest): string | null {
+  const { details } = request;
+  return details.kind === "email_reply" ? details.messageId : null;
 }
 
 /** Le stockage des photos, en mémoire ; `log` reçoit chaque geste dans l'ordre. */

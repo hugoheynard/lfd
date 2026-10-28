@@ -488,6 +488,9 @@ import {
     SubAccountNoticeSwitchReader,
     SubAccountNoticeSwitchWriter,
     DeliveryPostalCodesReader,
+    // Les réponses par e-mail (plan `plan-reponses-par-e-mail.md`, R2) :
+    // le compte d'une adresse, par la règle des comptes (`findAccountByEmail`).
+    CompanyMemberRepository,
   ],
 })
 export class AccountModule {}

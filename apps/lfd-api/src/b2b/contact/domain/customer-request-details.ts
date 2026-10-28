@@ -58,6 +58,41 @@ export interface OrderChangeDetails {
   readonly decision: OrderChangeDecision | null;
 }
 
+/** Une pièce jointe d'une réponse par e-mail : ce qu'on en LISTE, jamais son contenu. */
+export interface EmailReplyAttachment {
+  readonly filename: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+}
+
+/**
+ * Le verdict d'authentification de l'expéditeur tel que le message reçu le
+ * rend (`Authentication-Results`) ; `unknown` pour ce qu'il ne dit pas.
+ */
+export interface EmailAuthentication {
+  readonly spf: string;
+  readonly dkim: string;
+  readonly dmarc: string;
+  /** Une signature DKIM valide du domaine de l'adresse d'expédition. */
+  readonly dkimAligned: boolean;
+}
+
+/**
+ * « Réponse à un e-mail » (plan `plan-reponses-par-e-mail.md`, §2) :
+ * l'identifiant Resend du message reçu — il rend la réception idempotente et
+ * reste après l'anonymisation —, l'objet, les pièces jointes LISTÉES, le
+ * verdict d'authentification, et la commande PRÉSUMÉE (citée par l'objet,
+ * visible par le compte présumé).
+ */
+export interface EmailReplyDetails {
+  readonly kind: "email_reply";
+  readonly messageId: string;
+  readonly subject: string;
+  readonly attachments: readonly EmailReplyAttachment[];
+  readonly authentication: EmailAuthentication;
+  readonly order: ReportedOrderRef | null;
+}
+
 /**
  * **Les détails PROPRES au type d'une demande**, en union discriminée
  * (`demandes-clients.md`, précision du 2026-10-09). L'enveloppe
@@ -65,7 +100,8 @@ export interface OrderChangeDetails {
  * neuf (`QuoteDetails`, `AppointmentDetails`) est une variante de plus et une
  * entrée de plus dans {@link DETAIL_RULES} — que le compilateur exige.
  */
-export type CustomerRequestDetails = ContactDetails | OrderProblemDetails | OrderChangeDetails;
+export type CustomerRequestDetails =
+  ContactDetails | OrderProblemDetails | OrderChangeDetails | EmailReplyDetails;
 
 /** Un détail qui admet des photos : il porte une liste `photos`. */
 export type PhotoBearingDetails = Extract<CustomerRequestDetails, { readonly photos: unknown }>;
@@ -97,6 +133,15 @@ const DETAIL_RULES: { readonly [K in RequestKind]: DetailRule<DetailsOf<K>> } = 
         decision:
           details.decision?.kind === "refused" ? { kind: "refused", reason: "" } : details.decision,
       },
+      purge: [],
+    }),
+  },
+  // L'objet et les noms de pièces jointes peuvent nommer quelqu'un ; la
+  // commande relie à la personne. L'identifiant Resend reste : il porte
+  // l'idempotence et ne dit rien de la personne. Le verdict non plus.
+  email_reply: {
+    anonymize: (details) => ({
+      details: { ...details, subject: "", attachments: [], order: null },
       purge: [],
     }),
   },

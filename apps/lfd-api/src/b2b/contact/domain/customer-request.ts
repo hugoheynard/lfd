@@ -9,6 +9,7 @@ import {
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import { EmailAddress } from "../../account/domain/value-objects/email-address.js";
 import { boundedText } from "./contact-text.js";
+import { emailReplyState, type EmailReplyReception } from "./email-reply.js";
 import {
   anonymizeDetails,
   bearsPhotos,
@@ -139,6 +140,15 @@ export class CustomerRequest {
       },
       false,
     );
+  }
+
+  /**
+   * Une réponse d'un client à un de nos e-mails (plan
+   * `plan-reponses-par-e-mail.md`, §2) : jamais refusée pour sa longueur —
+   * l'historique cité est coupé, puis le texte tronqué. Cf. `emailReplyState`.
+   */
+  static emailReply(input: EmailReplyReception): CustomerRequest {
+    return new CustomerRequest(emailReplyState(input));
   }
 
   /** Réhydrate depuis la base. Une demande anonymisée a ses champs vides : pas de revalidation. */

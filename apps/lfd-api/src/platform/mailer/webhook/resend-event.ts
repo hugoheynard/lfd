@@ -1,3 +1,4 @@
+import type { InboundMailNotice } from "../inbound/inbound-mail.sink.js";
 import type { MailStatus } from "../journal/mail-journal.port.js";
 
 /**
@@ -47,6 +48,29 @@ export function readResendEvent(payload: unknown): ResendEvent | null {
     return null;
   }
   return { status, providerId, detail: reasonOf(data) };
+}
+
+/** Le type d'un e-mail REÇU (plan `plan-reponses-par-e-mail.md`, R2). */
+export const EMAIL_RECEIVED = "email.received";
+
+/**
+ * Un e-mail reçu (`email.received`) : son identifiant Resend, ou `null` si
+ * l'événement est d'un autre type ou ne se lit pas. Le reste (expéditeur,
+ * objet, texte) est relu chez Resend par le contexte qui le range.
+ */
+export function readReceivedEmail(payload: unknown): InboundMailNotice | null {
+  if (typeof payload !== "object" || payload === null) {
+    return null;
+  }
+  if (readString(payload, "type") !== EMAIL_RECEIVED) {
+    return null;
+  }
+  const data: unknown = "data" in payload ? payload.data : null;
+  if (typeof data !== "object" || data === null) {
+    return null;
+  }
+  const emailId = readString(data, "email_id");
+  return emailId === null ? null : { emailId };
 }
 
 /** La raison d'un rejet, quand le fournisseur en donne une. */

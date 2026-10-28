@@ -32,6 +32,15 @@ import { MailOrderChangeApplied } from "./application/handlers/mail-order-change
 import { MailOrderChangeRefused } from "./application/handlers/mail-order-change-refused.handler.js";
 import { MailCustomerRequest } from "./application/handlers/mail-customer-request.handler.js";
 import { RingCustomerRequestReceived } from "./application/handlers/ring-customer-request-received.handler.js";
+import { RingCustomerEmailReplyReceived } from "./application/handlers/ring-customer-email-reply-received.handler.js";
+import { ReceiveEmailReplyHandler } from "./application/commands/receive-email-reply.handler.js";
+import { EmailSenderAccountReader } from "./domain/ports/email-sender-account.reader.js";
+import { PresumedOrderReader } from "./domain/ports/presumed-order.reader.js";
+import { RecentEmailRepliesReader } from "./domain/ports/recent-email-replies.reader.js";
+import { ContactInboundMailSink } from "./infrastructure/contact-inbound-mail.sink.js";
+import { MemberEmailSenderAccountReader } from "./infrastructure/member-email-sender-account.reader.js";
+import { OrderPresumedOrderReader } from "./infrastructure/order-presumed-order.reader.js";
+import { PrismaRecentEmailRepliesReader } from "./infrastructure/prisma-recent-email-replies.reader.js";
 import { GetContactSettingsHandler } from "./application/queries/get-contact-settings.handler.js";
 import { GetCustomerRequestPhotoHandler } from "./application/queries/get-customer-request-photo.handler.js";
 import { GetPublicContactSettingsHandler } from "./application/queries/get-public-contact-settings.handler.js";
@@ -88,8 +97,10 @@ import {
  *
  * Importe `AccountModule` pour le `StaffDirectory` (l'auteur figé d'un geste),
  * et `OrdersModule` pour LIRE la commande signalée par ses ports et sa règle
- * d'accès. Le mailer et la cloche viennent de modules globaux. N'exporte
- * rien : aucun autre contexte ne lit ni n'écrit ces tables.
+ * d'accès. Le mailer et la cloche viennent de modules globaux. N'exporte que
+ * `ContactInboundMailSink`, l'implémentation du port de la plateforme pour un
+ * e-mail reçu, que `appBootstrap` relie : aucun autre contexte ne lit ni
+ * n'écrit ces tables.
  */
 @Module({
   imports: [AccountModule, OrdersModule],
@@ -153,6 +164,14 @@ import {
     MailOrderChangeApplied,
     MailOrderChangeRefused,
     RingCustomerRequestReceived,
+    // Les réponses par e-mail (plan `plan-reponses-par-e-mail.md`, R2).
+    { provide: RecentEmailRepliesReader, useClass: PrismaRecentEmailRepliesReader },
+    { provide: EmailSenderAccountReader, useClass: MemberEmailSenderAccountReader },
+    { provide: PresumedOrderReader, useClass: OrderPresumedOrderReader },
+    ReceiveEmailReplyHandler,
+    RingCustomerEmailReplyReceived,
+    ContactInboundMailSink,
   ],
+  exports: [ContactInboundMailSink],
 })
 export class ContactModule {}

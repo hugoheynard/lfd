@@ -85,3 +85,14 @@ export class MailerInvalidReplyToError extends MailerError {
     );
   }
 }
+
+/**
+ * La lecture d'un e-mail REÇU a échoué chez le fournisseur (réseau, message
+ * introuvable, clé refusée). **Retryable** : le webhook qui l'a annoncé sera
+ * rejoué par Resend, et la lecture retentée avec lui.
+ */
+export class MailerReceiveError extends MailerError {
+  constructor(message: string, cause?: unknown) {
+    super("mailer.receive_failed", "technical", message, { retryable: true, cause });
+  }
+}

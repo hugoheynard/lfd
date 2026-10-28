@@ -17,9 +17,11 @@ export {
   CONTACT_BOUNDS,
   CONTACT_CARD_DEFAULTS,
   DEFAULT_CONTACT_SETTINGS,
+  EMAIL_REPLY_BOUNDS,
   REQUEST_KINDS,
   REQUEST_PHOTO_BOUNDS,
   REQUEST_PRIORITIES,
+  SYSTEM_REQUEST_KINDS,
   type ContactAudience,
   type ContactCardFallback,
   type ContactCardText,
@@ -31,6 +33,9 @@ export {
   type CustomerRequestPhotoView,
   type CustomerRequestStatus,
   type CustomerRequestView,
+  type EmailAuthenticationView,
+  type EmailReplyAttachmentView,
+  type EmailReplyDetailsView,
   type OrderChangeAppliedResponse,
   type OrderChangeDecisionView,
   type OrderChangeDetailsView,
@@ -50,7 +55,7 @@ const bounded = (max: number) => z.string().max(max);
 const localized = (max: number) =>
   z.object({ fr: bounded(max), en: bounded(max), it: bounded(max) }).strict();
 
-const requestKindSchema = z.enum(["contact", "order_problem", "order_change"]);
+const requestKindSchema = z.enum(["contact", "order_problem", "order_change", "email_reply"]);
 
 /**
  * `POST /admin/request-reasons` et `PUT /admin/request-reasons/:id` — le motif

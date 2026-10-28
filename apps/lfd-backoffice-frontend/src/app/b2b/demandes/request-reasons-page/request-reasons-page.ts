@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, signal } from '@angular/core';
-import { REQUEST_KINDS, type RequestKind } from '@lfd/contracts';
+import { REQUEST_KINDS, SYSTEM_REQUEST_KINDS, type RequestKind } from '@lfd/contracts';
 import {
   FoldNavLayoutComponent,
   FoldPageLayoutComponent,
@@ -11,8 +11,14 @@ import {
 import { REQUEST_KIND_GESTURES } from '../request-kinds';
 import { RequestReasonsList } from '../request-reasons-list/request-reasons-list';
 
-/** Un onglet par type de demande, dans l'ordre du contrat : un type de plus = un onglet de plus. */
-const TABS: readonly FoldTabItem<RequestKind>[] = REQUEST_KINDS.map((kind) => ({
+/**
+ * Un onglet par type de demande, dans l'ordre du contrat : un type de plus = un
+ * onglet de plus. Sauf un type dont le motif est posé par le système
+ * (`email_reply`, plan `plan-reponses-par-e-mail.md`) : rien ne s'y règle.
+ */
+const TABS: readonly FoldTabItem<RequestKind>[] = REQUEST_KINDS.filter(
+  (kind) => !SYSTEM_REQUEST_KINDS.includes(kind),
+).map((kind) => ({
   key: kind,
   label: REQUEST_KIND_GESTURES[kind],
 }));

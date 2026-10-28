@@ -11,4 +11,12 @@ export abstract class CustomerRequestRepository {
   abstract lockForAnswer(id: string): Promise<CustomerRequest | null>;
   /** Crée la demande reçue, ou enregistre son traitement ou son anonymisation. */
   abstract save(request: CustomerRequest): Promise<void>;
+  /**
+   * Range une demande NEUVE, ou rien si une demande porte déjà la même clé
+   * d'unicité — l'identifiant du message reçu, pour une réponse par e-mail
+   * (plan `plan-reponses-par-e-mail.md`, §3). Insérer-ou-ignorer : c'est ce
+   * qui rend un rejeu de Resend sans effet, sans verrou ni lecture préalable.
+   * Rend `true` si elle a été rangée, `false` si elle l'était déjà.
+   */
+  abstract receiveOnce(request: CustomerRequest): Promise<boolean>;
 }

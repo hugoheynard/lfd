@@ -83,6 +83,7 @@ import { LoggingModule } from "../platform/logging/logging.module.js";
 import { StartupModule } from "../platform/startup/startup.module.js";
 import { MailerModule } from "../platform/mailer/mailer.module.js";
 import { MailCopySourceModule } from "./mail-copy-source.module.js";
+import { InboundMailSinkModule } from "./inbound-mail-sink.module.js";
 import { DatabaseModule } from "../platform/database/database.module.js";
 import { SecurityModule } from "../platform/security/security.module.js";
 import { APP_GUARD } from "@nestjs/core";
@@ -152,6 +153,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // des e-mails, E2) : le port est au mailer, le cache au contexte.
     MailCopyModule,
     MailCopySourceModule,
+    InboundMailSinkModule,
     VitrineModule,
     // Annuaire back-office (isolé, source de vérité locale).
     StaffUsersModule,

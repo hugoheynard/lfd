@@ -31,6 +31,11 @@ const PRESENTATIONS: {
     orderNumber: details.order?.number ?? "",
     photoCount: 0,
   }),
+  email_reply: (details) => ({
+    formLabel: "Réponse à un e-mail",
+    orderNumber: details.order?.number ?? "",
+    photoCount: 0,
+  }),
 };
 
 /** La présentation de ces détails. */

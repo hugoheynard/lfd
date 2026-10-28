@@ -1,6 +1,7 @@
 import {
   CONTACT_BOUNDS,
   REQUEST_KINDS,
+  SYSTEM_REQUEST_KINDS,
   type ContactAudience,
   type ContactLocalizedText,
   type CustomerAudience,
@@ -16,6 +17,7 @@ import {
   RequestReasonKindUnknownError,
   RequestReasonLabelMissingError,
 } from "./errors/contact-errors.js";
+import { SystemRequestReasonLockedError } from "./errors/email-reply-errors.js";
 
 /** Ce que le staff règle d'un motif : tout, d'un bloc — `kind` compris, qu'il ne peut que répéter. */
 export interface RequestReasonSettings {
@@ -51,10 +53,14 @@ export interface RequestReasonState extends Omit<RequestReasonSettings, "recipie
 export class RequestReason {
   private constructor(private state: RequestReasonState) {}
 
-  /** @throws {RequestReasonKindUnknownError} {RequestReasonLabelMissingError} {ContactPositionInvalidError} */
+  /**
+   * @throws {RequestReasonKindUnknownError} {RequestReasonLabelMissingError} {ContactPositionInvalidError}
+   * @throws {SystemRequestReasonLockedError} un type dont le motif est posé par le système.
+   */
   static create(
     input: RequestReasonSettings & { readonly id: string; readonly at: Date },
   ): RequestReason {
+    ensureNotSystem(input.kind);
     return new RequestReason({
       ...validated(input),
       id: input.id,
@@ -79,16 +85,22 @@ export class RequestReason {
    * Remplace le réglage entier ; un motif archivé se révise encore (rien ne le montre).
    *
    * @throws {RequestReasonKindImmutableError} le réglage le range sous un autre formulaire.
+   * @throws {SystemRequestReasonLockedError} un motif posé par le système.
    */
   revise(settings: RequestReasonSettings, at: Date): void {
+    ensureNotSystem(this.state.kind);
     if (settings.kind !== this.state.kind) {
       throw new RequestReasonKindImmutableError(this.state.id);
     }
     this.state = { ...this.state, ...validated(settings), updatedAt: at };
   }
 
-  /** Idempotent : archiver un motif archivé ne change pas sa date. */
+  /**
+   * Idempotent : archiver un motif archivé ne change pas sa date.
+   * @throws {SystemRequestReasonLockedError} un motif posé par le système.
+   */
   archive(at: Date): void {
+    ensureNotSystem(this.state.kind);
     if (this.state.archivedAt !== null) {
       return;
     }
@@ -124,6 +136,13 @@ export class RequestReason {
 
   toPersistence(): RequestReasonState {
     return this.state;
+  }
+}
+
+/** Le motif d'un type système est posé par la migration, jamais à l'écran. */
+function ensureNotSystem(kind: RequestKind): void {
+  if (SYSTEM_REQUEST_KINDS.includes(kind)) {
+    throw new SystemRequestReasonLockedError();
   }
 }
 

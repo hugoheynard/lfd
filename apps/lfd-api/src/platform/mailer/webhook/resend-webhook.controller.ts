@@ -28,7 +28,9 @@ import {
  * Le code de retour dit à Resend quoi faire, et c'est une décision, pas un
  * détail : un `2xx` arrête les reprises, un `5xx` les relance. On ne rend donc
  * `5xx` **jamais** — même un événement illisible est acquitté, parce qu'aucune
- * reprise ne le rendra lisible. La preuve et le traitement vivent dans
+ * reprise ne le rendra lisible. Seule exception, voulue : un e-mail REÇU dont
+ * le rangement échoue (plan `plan-reponses-par-e-mail.md`, §3) — l'erreur
+ * remonte pour que Resend le rejoue, plutôt que de perdre la réponse. La preuve et le traitement vivent dans
  * `ReceiveResendEventHandler` ; ce contrôleur ne traduit que le verdict.
  */
 @Controller("webhooks/resend")

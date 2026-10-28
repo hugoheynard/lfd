@@ -98,3 +98,27 @@ export function orderChange(overrides: Partial<RequestReception> = {}): Customer
     change: CHANGE,
   });
 }
+
+/** Une réponse par e-mail, telle que la réception la compose. */
+export const EMAIL_REPLY: Parameters<typeof CustomerRequest.emailReply>[0] = {
+  id: "q_mail",
+  reason: { id: "system_email_reply", labelFr: "Réponse à un e-mail", priority: "medium" },
+  audience: "b2c",
+  sender: { name: "Jean Martin", email: "jean@exemple.fr" },
+  text: "Merci, parfait.\n\n> Votre commande est prête",
+  html: null,
+  userId: "u1",
+  companyId: null,
+  at: AT,
+  messageId: "in_1",
+  subject: "Re: Votre commande ORD-0001",
+  attachments: [{ filename: "photo.jpg", contentType: "image/jpeg", sizeBytes: 2048 }],
+  authentication: { spf: "pass", dkim: "pass", dmarc: "pass", dkimAligned: true },
+  order: ORDER,
+};
+
+export function emailReply(
+  overrides: Partial<Parameters<typeof CustomerRequest.emailReply>[0]> = {},
+): CustomerRequest {
+  return CustomerRequest.emailReply({ ...EMAIL_REPLY, ...overrides });
+}

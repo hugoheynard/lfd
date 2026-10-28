@@ -5,6 +5,7 @@ export const REQUEST_KIND_LABELS: Readonly<Record<RequestKind, string>> = {
   contact: 'Contact',
   order_problem: 'Problème de commande',
   order_change: 'Modification de commande',
+  email_reply: 'Réponse à un e-mail',
 };
 
 /** Le nom du geste côté boutique, qui titre l'onglet des motifs (`demandes-clients.md`, §3.4). */
@@ -12,6 +13,7 @@ export const REQUEST_KIND_GESTURES: Readonly<Record<RequestKind, string>> = {
   contact: 'Nous écrire',
   order_problem: 'Signaler un problème',
   order_change: 'Demander une modification',
+  email_reply: 'Répondre à un e-mail',
 };
 
 /**
@@ -24,4 +26,5 @@ export const REQUEST_KIND_MARKED_HANDLED: Readonly<Record<RequestKind, boolean>>
   contact: true,
   order_problem: true,
   order_change: false,
+  email_reply: true,
 };

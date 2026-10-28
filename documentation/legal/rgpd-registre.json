@@ -2234,6 +2234,37 @@
       "information": false
     },
     {
+      "colonne": "public.customer_request.email_subject",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "L'objet d'une réponse d'un client à un de nos e-mails, reçue par Resend (plan `documentation/demandes-client/plan-reponses-par-e-mail.md`, R1, 2026-10-28) ; il peut nommer la personne ou citer sa commande. Vidé 12 mois après le traitement, ou après la réception d'une réponse jamais traitée, comme le reste de la demande.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.email_attachments",
+      "personne": "contact",
+      "categorie": "contenu",
+      "finalite": "La LISTE des pièces jointes d'une réponse par e-mail — nom, type, taille, jamais leur contenu, qui n'est ni téléchargé ni rangé (plan des réponses par e-mail, §5.2). Un nom de fichier peut nommer la personne. Vidée 12 mois après le traitement, ou après la réception d'une réponse jamais traitée.",
+      "conservation": {
+        "jours": 365
+      },
+      "purge": "apps/lfd-api/src/b2b/contact/application/commands/anonymize-customer-requests.handler.ts",
+      "information": false
+    },
+    {
+      "colonne": "public.customer_request.email_message_id",
+      "personne": "contact",
+      "categorie": "rattachement",
+      "finalite": "L'identifiant chez Resend du message reçu : il rend la réception idempotente (unique) et RESTE après l'anonymisation — il ne dit rien de la personne, mais désigne chez Resend un message qui, lui, la contient. Resend est le sous-traitant de la RÉCEPTION (MX du sous-domaine de réponse) et conserve le message reçu selon SA propre durée de rétention, non relue pour ce document [À VÉRIFIER : durée, région, DPA].",
+      "conservation": "a-decider",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.customer_request_photo.storage_key",
       "personne": "contact",
       "categorie": "contenu",
@@ -2483,6 +2514,10 @@
     {
       "colonne": "public.customer_request.change_applied_revision",
       "raison": "Le numéro de révision qu'une demande appliquée a produit : voir `change_base_revision`."
+    },
+    {
+      "colonne": "public.customer_request.email_authentication",
+      "raison": "Le verdict SPF / DKIM / DMARC de l'expéditeur d'une réponse par e-mail (`pass`, `fail`, `unknown`…) et l'alignement DKIM : un résultat de contrôle technique, sans identité ni coordonnée — l'adresse vérifiée est dans `author_email`, déjà au registre (plan `plan-reponses-par-e-mail.md`, R1)."
     }
   ]
 }

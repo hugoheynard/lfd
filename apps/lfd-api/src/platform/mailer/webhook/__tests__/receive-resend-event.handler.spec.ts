@@ -2,6 +2,8 @@ import { createHmac } from "node:crypto";
 
 import type { MailerConfig } from "../../../config/app-config.js";
 import { FixedClock } from "../../../time/fixed-clock.js";
+import { InboundMailSink, type InboundMailNotice } from "../../inbound/inbound-mail.sink.js";
+import { InboundSinkMissingError } from "../../inbound/inbound-sink-missing.error.js";
 import {
   MailJournal,
   type MailOutcome,
@@ -56,12 +58,30 @@ class JournalDouble extends MailJournal {
   }
 }
 
+/** Le rangement des e-mails reçus : il note, ou refuse tant que `failures` > 0. */
+class SinkDouble extends InboundMailSink {
+  readonly accepted: InboundMailNotice[] = [];
+  failures = 0;
+
+  accept(notice: InboundMailNotice): Promise<void> {
+    if (this.failures > 0) {
+      this.failures -= 1;
+      return Promise.reject(new RangeError("base indisponible"));
+    }
+    this.accepted.push(notice);
+    return Promise.resolve();
+  }
+}
+
 function handler(
   journal: JournalDouble,
   secret: string | null = SECRET,
+  sink: InboundMailSink | null = null,
 ): ReceiveResendEventHandler {
-  return new ReceiveResendEventHandler(config(secret), journal, new FixedClock(NOW));
+  return new ReceiveResendEventHandler(config(secret), journal, new FixedClock(NOW), sink);
 }
+
+const RECEIVED = '{"type":"email.received","data":{"email_id":"in_1","from":"x@y.fr"}}';
 
 describe("ReceiveResendEventHandler", () => {
   it("note ce qu'est devenu l'e-mail quand la signature est prouvée", async () => {
@@ -116,5 +136,56 @@ describe("ReceiveResendEventHandler", () => {
 
     expect(receipt).toBe("accepted");
     expect(journal.outcomes).toEqual([]);
+  });
+
+  describe("un e-mail REÇU (`email.received`)", () => {
+    it("est remis au rangement, SANS consommer le `svix-id`", async () => {
+      const journal = new JournalDouble();
+      const sink = new SinkDouble();
+
+      const receipt = await handler(journal, SECRET, sink).execute(
+        new ReceiveResendEventCommand(signed(RECEIVED), RECEIVED),
+      );
+
+      expect(receipt).toBe("accepted");
+      expect(sink.accepted).toEqual([{ emailId: "in_1" }]);
+      expect(journal.seen.size).toBe(0);
+    });
+
+    /**
+     * Régression prévenue (vitruve, 2026-10-28) : le `svix-id` consommé AVANT le
+     * rangement faisait ignorer le rejeu d'un rangement échoué — la réponse du
+     * client était perdue.
+     */
+    it("un rangement qui échoue remonte, et le rejeu de Resend range le message", async () => {
+      const journal = new JournalDouble();
+      const sink = new SinkDouble();
+      sink.failures = 1;
+      const receive = handler(journal, SECRET, sink);
+      const command = new ReceiveResendEventCommand(signed(RECEIVED), RECEIVED);
+
+      await expect(receive.execute(command)).rejects.toThrow("base indisponible");
+      await receive.execute(command);
+
+      expect(sink.accepted).toEqual([{ emailId: "in_1" }]);
+    });
+
+    it("sans rangement relié, il échoue plutôt que d'être acquitté et perdu", async () => {
+      const command = new ReceiveResendEventCommand(signed(RECEIVED), RECEIVED);
+
+      await expect(handler(new JournalDouble()).execute(command)).rejects.toBeInstanceOf(
+        InboundSinkMissingError,
+      );
+    });
+
+    it("les événements d'envoi gardent leur idempotence par `svix-id`", async () => {
+      const journal = new JournalDouble();
+      const sink = new SinkDouble();
+
+      await handler(journal, SECRET, sink).execute(new ReceiveResendEventCommand(signed(), BODY));
+
+      expect(journal.seen.size).toBe(1);
+      expect(sink.accepted).toEqual([]);
+    });
   });
 });

@@ -14,6 +14,7 @@ import type {
   RequestPhotoRef,
 } from "../domain/customer-request-details.js";
 import { ContactAudienceUnreadableError } from "./contact-audience-unreadable.error.js";
+import { attachmentsOf, authenticationOf } from "./email-reply.columns.js";
 
 /** Une ligne de photo, telle que Prisma la rend. */
 export interface PhotoRow {
@@ -47,6 +48,11 @@ export interface RequestRow {
   readonly changeContent: unknown;
   readonly changeAppliedRevision: number | null;
   readonly changeRefusal: string | null;
+  readonly emailMessageId: string | null;
+  readonly emailSubject: string | null;
+  /** Du JSON, relu défensivement : jamais casté. */
+  readonly emailAttachments: unknown;
+  readonly emailAuthentication: unknown;
   readonly receivedAt: Date;
   readonly handledAt: Date | null;
   readonly handledByStaffId: string | null;
@@ -78,6 +84,14 @@ const DETAILS_FROM_ROW: { readonly [K in RequestKind]: (row: RequestRow) => Deta
     change: changeOf(row.changeContent),
     decision: decisionOf(row),
   }),
+  email_reply: (row) => ({
+    kind: "email_reply",
+    messageId: row.emailMessageId ?? "",
+    subject: row.emailSubject ?? "",
+    attachments: attachmentsOf(row.emailAttachments),
+    authentication: authenticationOf(row.emailAuthentication),
+    order: orderRefOf(row),
+  }),
 };
 
 /** Les détails → leur vue, sans clé de stockage (le front passe par la route gardée). */
@@ -100,6 +114,15 @@ const DETAILS_VIEW: {
     baseRevision: details.baseRevision,
     change: details.change,
     decision: details.decision,
+  }),
+  email_reply: (details) => ({
+    kind: "email_reply",
+    subject: details.subject,
+    attachments: details.attachments,
+    authentication: details.authentication,
+    senderVerified: details.authentication.dkimAligned,
+    orderId: details.order?.id ?? null,
+    orderNumber: details.order?.number ?? null,
   }),
 };
 

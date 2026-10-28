@@ -24,6 +24,7 @@ export {
   MailerError,
   MailerInvalidReplyToError,
   MailerRateLimitedError,
+  MailerReceiveError,
   MailerSendError,
 } from "./errors.js";
 export type { MailerErrorCategory } from "./errors.js";
@@ -43,6 +44,8 @@ export type {
   LayoutSectionId,
   MailCta,
 } from "./html.js";
+export { createResendInboundReader, ResendInboundReader } from "./inbound-reader.js";
+export type { ReceivedAttachment, ReceivedMail, ResendReceivingLike } from "./inbound-reader.js";
 export { isValidReplyTo, validReplyTo } from "./reply-to.js";
 export { createResendMailer, ResendMailer } from "./resend-mailer.js";
 export type { ResendLike, ResendMailerDeps } from "./resend-mailer.js";

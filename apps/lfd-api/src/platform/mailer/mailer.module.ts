@@ -1,4 +1,4 @@
-import { createMailer, type MailerLogger } from "@lfd/mailer";
+import { createMailer, createResendInboundReader, type MailerLogger } from "@lfd/mailer";
 import { Global, Logger, Module } from "@nestjs/common";
 
 import { AppConfig } from "../config/app-config.js";
@@ -6,6 +6,8 @@ import { AfterCommit } from "../database/after-commit.js";
 import { BackgroundWork } from "../events/background-work.js";
 import { Clock } from "../time/clock.js";
 import { AdminMailCheckController } from "./admin-mail-check.controller.js";
+import { InboundMailReader } from "./inbound/inbound-mail.reader.js";
+import { ResendInboundMailReader } from "./inbound/resend-inbound-mail.reader.js";
 import { JournalingMailer } from "./journal/journaling-mailer.js";
 import { MailJournal } from "./journal/mail-journal.port.js";
 import { PrismaMailJournal } from "./journal/prisma-mail-journal.js";
@@ -42,6 +44,18 @@ export type { B2bMailer };
     { provide: MailJournal, useClass: PrismaMailJournal },
     ResendWebhookChecker,
     ReceiveResendEventHandler,
+    {
+      // La lecture des e-mails REÇUS (plan `plan-reponses-par-e-mail.md`, R2) :
+      // sans clé, rien ne se lit — et rien n'arrive, la réception se règle chez Resend.
+      provide: InboundMailReader,
+      inject: [AppConfig],
+      useFactory: (config: AppConfig): InboundMailReader => {
+        const { apiKey } = config.mailerConfig();
+        return new ResendInboundMailReader(
+          apiKey === null ? null : createResendInboundReader(apiKey),
+        );
+      },
+    },
     {
       provide: MAIL_TRANSPORT,
       inject: [AppConfig],
@@ -96,7 +110,7 @@ export type { B2bMailer };
       },
     },
   ],
-  exports: [MAILER, MailJournal, ResendWebhookChecker],
+  exports: [MAILER, MailJournal, ResendWebhookChecker, InboundMailReader],
 })
 export class MailerModule {}
 

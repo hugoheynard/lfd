@@ -18,13 +18,18 @@ export interface DeclaredWebhook {
   readonly events: readonly string[];
 }
 
-/** Ce qu'on attend d'être prévenu. Sans `bounced`, le canal ment par omission. */
+/**
+ * Ce qu'on attend d'être prévenu. Sans `bounced`, le canal ment par omission ;
+ * sans `email.received` (plan `plan-reponses-par-e-mail.md`, R2), les réponses
+ * des clients n'arrivent jamais dans la boîte des demandes.
+ */
 export const EXPECTED_EVENTS: readonly string[] = [
   "email.sent",
   "email.delivery_delayed",
   "email.delivered",
   "email.bounced",
   "email.complained",
+  "email.received",
 ];
 
 /**

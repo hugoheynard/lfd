@@ -22,9 +22,22 @@ export const CONTACT_AUDIENCES: readonly ContactAudience[] = ["b2b", "b2c", "bot
  * devis) est une valeur de plus, un onglet de motifs de plus, et une variante
  * de plus de {@link CustomerRequestDetailsView}.
  */
-export type RequestKind = "contact" | "order_problem" | "order_change";
+export type RequestKind = "contact" | "order_problem" | "order_change" | "email_reply";
 
-export const REQUEST_KINDS: readonly RequestKind[] = ["contact", "order_problem", "order_change"];
+export const REQUEST_KINDS: readonly RequestKind[] = [
+  "contact",
+  "order_problem",
+  "order_change",
+  "email_reply",
+];
+
+/**
+ * **Les types dont le motif est posé par le système**, jamais à l'écran
+ * (plan `documentation/demandes-client/plan-reponses-par-e-mail.md`, §2) :
+ * aucun formulaire ne propose de motif `email_reply`, la migration pose le
+ * seul qui existe, et le domaine refuse d'en créer, réviser ou archiver un.
+ */
+export const SYSTEM_REQUEST_KINDS: readonly RequestKind[] = ["email_reply"];
 
 /**
  * **La priorité d'un motif**, à usage interne (Hugo, 2026-10-09) : elle trie
@@ -61,6 +74,25 @@ export const CONTACT_BOUNDS = {
   phoneLabel: 80,
   /** Le mot du commerce qui refuse une demande de modification de commande. */
   changeRefusal: 1000,
+} as const;
+
+/**
+ * **Les bornes d'une réponse reçue par e-mail** (plan
+ * `plan-reponses-par-e-mail.md`, §2). Un message ne se refuse JAMAIS pour sa
+ * longueur : au-delà, il est TRONQUÉ (« (tronqué) »). Le texte est plus large
+ * que les 4 000 caractères du formulaire : un client qui répond à un e-mail
+ * n'a pas de compteur sous les yeux.
+ */
+export const EMAIL_REPLY_BOUNDS = {
+  body: 20_000,
+  subject: 300,
+  /** Le nom affiché de l'expéditeur, comme celui d'un auteur de formulaire. */
+  senderName: 120,
+  /** Les pièces jointes LISTÉES au-delà sont tues : la liste garde son rang. */
+  attachments: 30,
+  attachmentName: 255,
+  /** Au-delà, pour une même adresse et dans l'heure glissante, les messages sont écartés. */
+  maxPerSenderPerHour: 10,
 } as const;
 
 /**
@@ -244,9 +276,50 @@ export interface OrderChangeDetailsView {
   readonly decision: OrderChangeDecisionView | null;
 }
 
+/** Une pièce jointe d'une réponse par e-mail : LISTÉE, jamais téléchargeable (§5.2 du plan). */
+export interface EmailReplyAttachmentView {
+  readonly filename: string;
+  readonly contentType: string;
+  readonly sizeBytes: number;
+}
+
+/**
+ * Le verdict d'authentification de l'expéditeur, tel que l'en-tête
+ * `Authentication-Results` du message reçu le rend : `pass`, `fail`, `none`…,
+ * et `unknown` quand il ne dit rien.
+ */
+export interface EmailAuthenticationView {
+  readonly spf: string;
+  readonly dkim: string;
+  readonly dmarc: string;
+  /** Une signature DKIM valide, du domaine de l'adresse d'expédition. */
+  readonly dkimAligned: boolean;
+}
+
+/**
+ * Les détails d'une **réponse d'un client à un e-mail** (plan
+ * `plan-reponses-par-e-mail.md`). L'expéditeur n'est PAS authentifié : le
+ * compte, la société (enveloppe) et la commande sont PRÉSUMÉS, et
+ * `senderVerified` est faux tant que le verdict n'est pas un DKIM aligné.
+ * Anonymisée : objet vide, pièces jointes vides, commande à `null`.
+ */
+export interface EmailReplyDetailsView {
+  readonly kind: "email_reply";
+  readonly subject: string;
+  readonly attachments: readonly EmailReplyAttachmentView[];
+  readonly authentication: EmailAuthenticationView;
+  readonly senderVerified: boolean;
+  /** La commande citée par l'objet (`ORD-…`), visible par le compte présumé. */
+  readonly orderId: string | null;
+  readonly orderNumber: string | null;
+}
+
 /** Les détails PROPRES au type, discriminés par `kind`. Un type neuf = une variante de plus. */
 export type CustomerRequestDetailsView =
-  ContactRequestDetailsView | OrderProblemDetailsView | OrderChangeDetailsView;
+  | ContactRequestDetailsView
+  | OrderProblemDetailsView
+  | OrderChangeDetailsView
+  | EmailReplyDetailsView;
 
 /**
  * **Où en est la demande de modification d'une commande**, côté client

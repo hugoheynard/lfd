@@ -35,6 +35,9 @@ enum RequestKind {
   /// Une demande de modification de commande après l'heure limite (plan
   /// `documentation/commandes/modification/plan-modifier-une-commande.md`, M4).
   order_change
+  /// Une réponse d'un client à un de nos e-mails, reçue par Resend (plan
+  /// `documentation/demandes-client/plan-reponses-par-e-mail.md`, R1).
+  email_reply
 
   @@schema("public")
 }
@@ -130,6 +133,19 @@ model CustomerRequest {
   /// `order_change` refusée : le mot adressé au client. NULL sinon.
   changeRefusal         String? @map("change_refusal")
 
+  /// `email_reply` (R1) : l'identifiant Resend du message reçu. UNIQUE : c'est
+  /// lui qui rend la réception idempotente (insérer-ou-ignorer). Reste après
+  /// l'anonymisation — il ne dit rien de la personne. NULL pour les autres types.
+  emailMessageId      String? @unique @map("email_message_id")
+  /// `email_reply` : l'objet du message, borné ; vidé à l'anonymisation.
+  emailSubject        String? @map("email_subject")
+  /// `email_reply` : les pièces jointes LISTÉES — `[{ filename, contentType,
+  /// sizeBytes }]`, jamais leur contenu ; vidées à l'anonymisation.
+  emailAttachments    Json?   @map("email_attachments")
+  /// `email_reply` : le verdict d'authentification de l'expéditeur —
+  /// `{ spf, dkim, dmarc, dkimAligned }`, `unknown` pour ce qui n'est pas dit.
+  emailAuthentication Json?   @map("email_authentication")
+
   receivedAt DateTime @map("received_at")
 
   handledAt        DateTime? @map("handled_at")
@@ -145,6 +161,8 @@ model CustomerRequest {
   @@index([handledAt, priority, receivedAt])
   @@index([kind, handledAt])
   @@index([reasonId])
+  /// Le plafond de réception (10 par heure et par adresse) et la cloche bornée.
+  @@index([kind, authorEmail, receivedAt])
   @@map("customer_request")
   @@schema("public")
 }
