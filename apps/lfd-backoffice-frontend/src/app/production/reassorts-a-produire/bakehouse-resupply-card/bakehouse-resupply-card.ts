@@ -6,23 +6,44 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { ResupplyArticleView, ResupplyTarget, SiteResupplyLineView } from '@lfd/contracts';
+import type { ResupplyArticleView, ResupplyTarget } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
-  FoldComboboxComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldListboxComponent,
   FoldNumberInputComponent,
+  FoldSearchComponent,
   type FoldSelectOption,
 } from 'fold-ng';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
+
+/**
+ * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
+ * retire à gauche, on ajoute à droite, du plus fin au plus large en
+ * s'éloignant de la case.
+ */
+const STEPS = [1, 10, 50, 100] as const;
+
+/** Une famille et ses articles, dans l'ordre du catalogue. */
+interface ArticleGroup {
+  readonly key: string;
+  readonly label: string;
+  readonly articles: readonly ResupplyArticleView[];
+}
+
+function normalize(text: string): string {
+  return text
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
+}
 
 /** Un point proposé. */
 interface SiteChoice {
@@ -36,7 +57,11 @@ interface SiteChoice {
  * 2026-10-21 : « si le comptoir demande au téléphone, le fournil peut entrer
  * la demande »). Choisir le point, la visée (aujourd'hui au plus tôt, ou
  * pour demain — sous l'heure limite du comptoir si le réassort y est
- * soumis), composer les articles au catalogue, puis « Envoyer ».
+ * soumis), saisir les quantités dans la table du catalogue, puis « Envoyer ».
+ *
+ * La table range les articles PAR FAMILLE, une case par article et des pas
+ * rapides de part et d'autre (Hugo, 2026-10-28) : elle a remplacé un champ
+ * « Article » qui faisait chercher les produits un par un.
  *
  * La liste se compose À L'ÉCRAN, sans brouillon partagé : le réassort ne
  * naît qu'à l'envoi, à part de la demande en cours du comptoir, qu'il ne
@@ -52,11 +77,11 @@ interface SiteChoice {
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
-    FoldComboboxComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldListboxComponent,
     FoldNumberInputComponent,
+    FoldSearchComponent,
     ResupplyNameField,
   ],
   templateUrl: './bakehouse-resupply-card.html',
@@ -74,9 +99,12 @@ export class BakehouseResupplyCard {
   protected readonly articles = signal<readonly ResupplyArticleView[]>([]);
   protected readonly siteId = signal<string | null>(null);
   protected readonly target = signal<ResupplyTarget>('asap');
-  protected readonly pickedSku = signal<string | null>(null);
-  protected readonly pickedQuantity = signal<number | null>(null);
-  protected readonly lines = signal<readonly SiteResupplyLineView[]>([]);
+  /** La quantité saisie par article ; un article absent n'est pas demandé. */
+  protected readonly quantities = signal<ReadonlyMap<string, number>>(new Map());
+  protected readonly query = signal('');
+  protected readonly steps = STEPS;
+  /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
+  protected readonly downSteps = [...STEPS].reverse();
   /** Le nom du réassort (R1g), envoyé avec lui ; vide : sans nom. */
   protected readonly name = signal('');
   /** Les noms déjà employés au point choisi ; vides tant qu'aucun n'est choisi. */
@@ -88,15 +116,35 @@ export class BakehouseResupplyCard {
   protected readonly siteOptions = computed<FoldSelectOption<string>[]>(() =>
     this.sites().map((site) => ({ value: site.id, label: site.label })),
   );
-  protected readonly articleOptions = computed<FoldSelectOption<string>[]>(() =>
-    this.articles().map((article) => ({
-      value: article.sku,
-      label: `${article.name} · ${article.sku}`,
-    })),
+  /** Les lignes envoyées : les articles à quantité positive, dans l'ordre du catalogue. */
+  protected readonly lines = computed(() => {
+    const quantities = this.quantities();
+    return this.articles()
+      .filter((article) => (quantities.get(article.sku) ?? 0) > 0)
+      .map((article) => ({ sku: article.sku, quantity: quantities.get(article.sku) ?? 0 }));
+  });
+  protected readonly pieces = computed(() =>
+    this.lines().reduce((total, line) => total + line.quantity, 0),
   );
-  protected readonly canAdd = computed(
-    () => this.pickedSku() !== null && (this.pickedQuantity() ?? 0) >= 1,
+
+  /** Les familles du catalogue, dans son ordre ; la recherche filtre les articles. */
+  protected readonly groups = computed<readonly ArticleGroup[]>(() => {
+    const query = normalize(this.query().trim());
+    const groups = new Map<string, { label: string; articles: ResupplyArticleView[] }>();
+    for (const article of this.articles()) {
+      if (query !== '' && !normalize(`${article.name} ${article.sku}`).includes(query)) {
+        continue;
+      }
+      const group = groups.get(article.categoryId) ?? { label: article.categoryName, articles: [] };
+      group.articles.push(article);
+      groups.set(article.categoryId, group);
+    }
+    return [...groups].map(([key, group]) => ({ key, ...group }));
+  });
+  protected readonly visibleCount = computed(() =>
+    this.groups().reduce((total, group) => total + group.articles.length, 0),
   );
+
   protected readonly canSend = computed(
     () => this.siteId() !== null && this.lines().length > 0 && !this.pending(),
   );
@@ -134,28 +182,27 @@ export class BakehouseResupplyCard {
     this.target.set(target);
   }
 
-  /** Ajoute à la liste ; un article déjà présent voit sa quantité s'additionner, comme au serveur. */
-  protected addLine(): void {
-    const sku = this.pickedSku();
-    const quantity = this.pickedQuantity();
-    const article = this.articles().find((candidate) => candidate.sku === sku);
-    if (article === undefined || quantity === null || quantity < 1) {
-      return;
-    }
-    this.lines.update((lines) =>
-      lines.some((line) => line.sku === article.sku)
-        ? lines.map((line) =>
-            line.sku === article.sku ? { ...line, quantity: line.quantity + quantity } : line,
-          )
-        : [...lines, { sku: article.sku, label: article.name, quantity }],
-    );
-    this.pickedSku.set(null);
-    this.pickedQuantity.set(null);
+  protected quantityOf(sku: string): number | null {
+    return this.quantities().get(sku) ?? null;
+  }
+
+  /** La case réécrite : vidée ou à zéro, l'article n'est plus demandé. */
+  protected setQuantity(sku: string, quantity: number | null): void {
+    this.quantities.update((current) => {
+      const next = new Map(current);
+      if (quantity === null || quantity <= 0) {
+        next.delete(sku);
+      } else {
+        next.set(sku, quantity);
+      }
+      return next;
+    });
     this.done.set(null);
   }
 
-  protected withdraw(sku: string): void {
-    this.lines.update((lines) => lines.filter((line) => line.sku !== sku));
+  /** Un pas rapide : positif ajoute, négatif retire, sans descendre sous zéro. */
+  protected step(sku: string, delta: number): void {
+    this.setQuantity(sku, Math.max(0, (this.quantityOf(sku) ?? 0) + delta));
   }
 
   protected async send(): Promise<void> {
@@ -169,10 +216,10 @@ export class BakehouseResupplyCard {
       await this.service.send(siteId, {
         target: this.target(),
         name: this.name().trim() === '' ? null : this.name(),
-        lines: this.lines().map((line) => ({ sku: line.sku, quantity: line.quantity })),
+        lines: this.lines(),
       });
       const label = this.sites().find((site) => site.id === siteId)?.label ?? 'le point';
-      this.lines.set([]);
+      this.quantities.set(new Map());
       this.name.set('');
       this.done.set(`Réassort envoyé à ${label}.`);
       this.sent.emit();

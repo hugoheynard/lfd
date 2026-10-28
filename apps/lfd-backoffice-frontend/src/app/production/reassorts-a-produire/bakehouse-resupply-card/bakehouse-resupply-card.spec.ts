@@ -8,7 +8,7 @@ import { BakehouseResupplyCard } from './bakehouse-resupply-card';
 
 /**
  * « Envoyer un réassort » (lot R1d, 2026-10-21) : le fournil compose à
- * l'écran un réassort pour un point, puis l'envoie d'un geste — à part de la
+ * l'écran un réassort pour un point, dans une table par famille, puis l'envoie d'un geste — à part de la
  * demande en cours du comptoir, qu'aucun appel ne touche.
  */
 class FakePickups {
@@ -35,6 +35,7 @@ class FakeBakehouse {
         categoryId: 'fam_morning',
         categoryName: 'Viennoiseries',
       },
+      { sku: 'BAG', name: 'Baguette', categoryId: 'fam_bread', categoryName: 'Pains' },
     ]);
   }
   readonly namesAsked: string[] = [];
@@ -68,21 +69,30 @@ async function mount(pickups = new FakePickups(), bakehouse = new FakeBakehouse(
   await fixture.whenStable();
   fixture.detectChanges();
   const card = fixture.componentInstance;
-  /** Choisit un article et sa quantité, puis « Ajouter ». */
+  /** Clique un pas rapide de la ligne d'un article (négatif : retire). */
+  const press = (sku: string, step: number): void => {
+    const row = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('[data-bakehouse-row]'),
+    ].find((node) => node.getAttribute('data-bakehouse-row') === sku);
+    row?.querySelector<HTMLButtonElement>(`[data-bakehouse-step="${String(step)}"]`)?.click();
+    fixture.detectChanges();
+  };
+  /** Ajoute une quantité par les pas « + », du plus large au plus fin. */
   const add = (sku: string, quantity: number): void => {
-    card['pickedSku'].set(sku);
-    card['pickedQuantity'].set(quantity);
-    fixture.detectChanges();
-    (fixture.nativeElement as HTMLElement)
-      .querySelector<HTMLButtonElement>('[data-bakehouse-add]')
-      ?.click();
-    fixture.detectChanges();
+    let rest = quantity;
+    for (const step of [100, 50, 10, 1]) {
+      while (rest >= step) {
+        press(sku, step);
+        rest -= step;
+      }
+    }
   };
   return {
     fixture,
     card,
     bakehouse,
     add,
+    press,
     root: fixture.nativeElement as HTMLElement,
     sentCount: () => sent,
   };
@@ -106,9 +116,6 @@ describe('BakehouseResupplyCard', () => {
     add('PAC', 4);
     add('CRO', 2);
 
-    expect(root.querySelector('[data-bakehouse-line="CRO"]')?.textContent).toContain(
-      '12 × Croissant',
-    );
     await clickSend(fixture);
 
     expect(bakehouse.sent).toEqual([
@@ -128,7 +135,7 @@ describe('BakehouseResupplyCard', () => {
     expect(root.querySelector('[data-bakehouse-done]')?.textContent).toContain(
       'Réassort envoyé à Val Village',
     );
-    expect(root.querySelector('[data-bakehouse-line]')).toBeNull();
+    expect(root.querySelector('tr.asked')).toBeNull();
   });
 
   it('vise « au plus tôt » par défaut ; sans point ni ligne, rien ne part', async () => {
@@ -167,19 +174,26 @@ describe('BakehouseResupplyCard', () => {
     expect(card['name']()).toBe('');
   });
 
-  it('retire une ligne avant l’envoi', async () => {
-    const { fixture, add, root } = await mount();
-    add('CRO', 3);
+  it('range les articles par famille, dans l’ordre du catalogue (2026-10-28)', async () => {
+    const { root } = await mount();
+
+    const groups = [...root.querySelectorAll('[data-bakehouse-group]')].map((group) =>
+      group.querySelector('th')?.textContent?.trim(),
+    );
+    expect(groups).toEqual(['Viennoiseries', 'Pains']);
+  });
+
+  it('retire par les pas « − », sans descendre sous zéro', async () => {
+    const { fixture, card, bakehouse, add, press } = await mount();
+    card['siteId'].set('site_v');
+    add('CRO', 60);
     add('PAC', 1);
 
-    root
-      .querySelector('[data-bakehouse-line="CRO"]')
-      ?.querySelector<HTMLButtonElement>('[data-bakehouse-withdraw]')
-      ?.click();
-    fixture.detectChanges();
+    press('CRO', -50);
+    press('PAC', -10);
+    await clickSend(fixture);
 
-    expect(root.querySelector('[data-bakehouse-line="CRO"]')).toBeNull();
-    expect(root.querySelector('[data-bakehouse-line="PAC"]')).not.toBeNull();
+    expect(bakehouse.sent[0]?.payload.lines).toEqual([{ sku: 'CRO', quantity: 10 }]);
   });
 
   it('dit le refus du serveur, garde la liste, et ne prévient pas la page', async () => {
@@ -193,7 +207,7 @@ describe('BakehouseResupplyCard', () => {
 
     expect(sentCount()).toBe(0);
     expect(root.querySelector('fold-callout')?.textContent).toContain('pas pu être envoyé');
-    expect(root.querySelector('[data-bakehouse-line="CRO"]')).not.toBeNull();
+    expect(root.querySelector('tr.asked')?.getAttribute('data-bakehouse-row')).toBe('CRO');
   });
 
   it('dit l’échec de lecture des points par un état fold', async () => {

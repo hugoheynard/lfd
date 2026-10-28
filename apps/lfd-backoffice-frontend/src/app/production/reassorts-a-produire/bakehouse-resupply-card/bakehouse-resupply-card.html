@@ -42,32 +42,82 @@
         </div>
       </div>
 
-      <div class="row">
-        <fold-combobox
-          label="Article"
-          placeholder="Nom ou référence d'un article du catalogue"
-          emptyText="Aucun article ne correspond."
-          resultLabel="articles"
-          [options]="articleOptions()"
-          [value]="pickedSku()"
-          (valueChange)="pickedSku.set($event)"
-        />
-        <fold-number-input
-          label="Quantité"
-          [value]="pickedQuantity()"
-          (valueChange)="pickedQuantity.set($event)"
-          [min]="1"
-          integer
-        />
-        <button
-          foldButton
-          emphasis="outline"
-          data-bakehouse-add
-          [disabled]="!canAdd()"
-          (click)="addLine()"
-        >
-          Ajouter
-        </button>
+      <fold-search
+        placeholder="Chercher un produit"
+        ariaLabel="Chercher un produit"
+        [value]="query()"
+        (valueChange)="query.set($event)"
+        [resultCount]="visibleCount()"
+        resultLabel="produits"
+      />
+
+      <!-- PAR FAMILLE, une case par article et ses pas de part et d'autre
+           (Hugo, 2026-10-28) : on retire à gauche, on ajoute à droite. -->
+      <div class="scroll">
+        <table class="articles" data-bakehouse-table>
+          <caption class="sr">
+            Quantités à envoyer, par famille et par article
+          </caption>
+          <thead>
+            <tr>
+              <th scope="col">Produit</th>
+              <th scope="col" class="qty">Quantité</th>
+            </tr>
+          </thead>
+          @for (group of groups(); track group.key) {
+            <tbody [attr.data-bakehouse-group]="group.key">
+              <tr class="group">
+                <th scope="colgroup" colspan="2">{{ group.label }}</th>
+              </tr>
+              @for (article of group.articles; track article.sku) {
+                <tr [attr.data-bakehouse-row]="article.sku" [class.asked]="quantityOf(article.sku)">
+                  <td>
+                    {{ article.name }}
+                    <span class="muted">{{ article.sku }}</span>
+                  </td>
+                  <td class="qty">
+                    <div class="stepper">
+                      @for (quantity of downSteps; track quantity) {
+                        <button
+                          foldButton
+                          type="button"
+                          emphasis="soft"
+                          intent="neutral"
+                          size="sm"
+                          [attr.data-bakehouse-step]="-quantity"
+                          [disabled]="!quantityOf(article.sku)"
+                          (click)="step(article.sku, -quantity)"
+                        >
+                          −{{ quantity }}
+                        </button>
+                      }
+                      <fold-number-input
+                        size="sm"
+                        [value]="quantityOf(article.sku)"
+                        (valueChange)="setQuantity(article.sku, $event)"
+                        [min]="0"
+                        integer
+                      />
+                      @for (quantity of steps; track quantity) {
+                        <button
+                          foldButton
+                          type="button"
+                          emphasis="soft"
+                          intent="neutral"
+                          size="sm"
+                          [attr.data-bakehouse-step]="quantity"
+                          (click)="step(article.sku, quantity)"
+                        >
+                          +{{ quantity }}
+                        </button>
+                      }
+                    </div>
+                  </td>
+                </tr>
+              }
+            </tbody>
+          }
+        </table>
       </div>
 
       <app-resupply-name-field
@@ -77,26 +127,6 @@
         (textChange)="name.set($event)"
       />
 
-      @if (lines().length > 0) {
-        <ul class="lines">
-          @for (line of lines(); track line.sku) {
-            <li [attr.data-bakehouse-line]="line.sku">
-              <span class="line-label">{{ line.quantity }} × {{ line.label }}</span>
-              <button
-                foldButton
-                size="sm"
-                emphasis="outline"
-                intent="danger"
-                data-bakehouse-withdraw
-                (click)="withdraw(line.sku)"
-              >
-                Retirer
-              </button>
-            </li>
-          }
-        </ul>
-      }
-
       <div class="submit">
         <button
           foldButton
@@ -105,7 +135,7 @@
           [loading]="pending()"
           (click)="send()"
         >
-          Envoyer
+          Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
         </button>
       </div>
     }
