@@ -1,16 +1,29 @@
 import {
+  type BakehouseResupplyDraftView,
+  type DiscardBakehouseResupplyDraftPayload,
+  discardBakehouseResupplyDraftSchema,
+  type SaveBakehouseResupplyDraftPayload,
+  saveBakehouseResupplyDraftSchema,
+  type SavedBakehouseResupplyDraftResponse,
+  type UpdateBakehouseResupplyDraftPayload,
+  updateBakehouseResupplyDraftSchema,
   type PlacedSiteResupplyResponse,
   type PlaceSiteResupplyPayload,
   placeSiteResupplySchema,
   type ResupplyArticleView,
   type ResupplyUsedNamesView,
 } from "@lfd/contracts";
-import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post } from "@nestjs/common";
+import { Body, Controller, Get, HttpCode, HttpStatus, Param, Post, Put } from "@nestjs/common";
 import { CommandBus, QueryBus } from "@nestjs/cqrs";
 
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { CreateBakehouseResupplyDraftCommand } from "../application/create-bakehouse-resupply-draft.command.js";
+import { DiscardBakehouseResupplyDraftCommand } from "../application/discard-bakehouse-resupply-draft.command.js";
+import { ListBakehouseResupplyDraftsQuery } from "../application/list-bakehouse-resupply-drafts.query.js";
+import { SaveBakehouseResupplyDraftCommand } from "../application/save-bakehouse-resupply-draft.command.js";
+import { SendBakehouseResupplyDraftCommand } from "../application/send-bakehouse-resupply-draft.command.js";
 import { ListResupplyUsedNamesQuery } from "../application/list-resupply-used-names.query.js";
 import { ListResupplyArticlesQuery } from "../application/list-resupply-articles.query.js";
 import { MarkResupplyMountedCommand } from "../application/mark-resupply-mounted.command.js";
@@ -85,4 +98,72 @@ export class AdminBakehouseResuppliesController {
       new MarkResupplyMountedCommand(siteId, resupplyId, staffUserId),
     );
   }
+
+  /** Les brouillons ouverts du fournil, le dernier enregistré d'abord. */
+  @Get("drafts")
+  drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
+    return this.queries.execute<
+      ListBakehouseResupplyDraftsQuery,
+      readonly BakehouseResupplyDraftView[]
+    >(new ListBakehouseResupplyDraftsQuery());
+  }
+
+  /** « Enregistrer comme brouillon », la première fois. */
+  @Post("drafts")
+  createDraft(
+    @Body(new ZodBody(saveBakehouseResupplyDraftSchema)) body: SaveBakehouseResupplyDraftPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<SavedBakehouseResupplyDraftResponse> {
+    return this.commands.execute<
+      CreateBakehouseResupplyDraftCommand,
+      SavedBakehouseResupplyDraftResponse
+    >(new CreateBakehouseResupplyDraftCommand(contentOf(body), staffUserId));
+  }
+
+  /** Réécrire un brouillon repris, sous la version lue (409 si périmée). */
+  @Put("drafts/:draftId")
+  saveDraft(
+    @Param("draftId") draftId: string,
+    @Body(new ZodBody(updateBakehouseResupplyDraftSchema))
+    body: UpdateBakehouseResupplyDraftPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<SavedBakehouseResupplyDraftResponse> {
+    return this.commands.execute<
+      SaveBakehouseResupplyDraftCommand,
+      SavedBakehouseResupplyDraftResponse
+    >(new SaveBakehouseResupplyDraftCommand(draftId, contentOf(body), body.version, staffUserId));
+  }
+
+  /** « Supprimer le brouillon » : il passe `discarded`, la ligne reste. */
+  @Post("drafts/:draftId/discard")
+  @HttpCode(HttpStatus.NO_CONTENT)
+  async discardDraft(
+    @Param("draftId") draftId: string,
+    @Body(new ZodBody(discardBakehouseResupplyDraftSchema))
+    body: DiscardBakehouseResupplyDraftPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<void> {
+    await this.commands.execute<DiscardBakehouseResupplyDraftCommand, void>(
+      new DiscardBakehouseResupplyDraftCommand(draftId, body.version, staffUserId),
+    );
+  }
+
+  /** Envoyer un brouillon : le contenu de l'écran part, le brouillon passe `sent`. */
+  @Post("drafts/:draftId/send")
+  async sendDraft(
+    @Param("draftId") draftId: string,
+    @Body(new ZodBody(updateBakehouseResupplyDraftSchema))
+    body: UpdateBakehouseResupplyDraftPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<PlacedSiteResupplyResponse> {
+    const id = await this.commands.execute<SendBakehouseResupplyDraftCommand, string>(
+      new SendBakehouseResupplyDraftCommand(draftId, contentOf(body), body.version, staffUserId),
+    );
+    return { id };
+  }
+}
+
+/** Le contenu du brouillon tel que l'écran l'envoie. */
+function contentOf(body: SaveBakehouseResupplyDraftPayload) {
+  return { siteId: body.siteId, target: body.target, name: body.name, lines: body.lines };
 }

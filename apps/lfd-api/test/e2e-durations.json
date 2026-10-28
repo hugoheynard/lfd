@@ -32,6 +32,7 @@
   "test/b2b-legal-documents.e2e-spec.ts": 6637,
   "test/b2b-legal-sales-terms.e2e-spec.ts": 14128,
   "test/b2b-legal-sections.e2e-spec.ts": 5507,
+  "test/bakehouse-resupply-drafts.e2e-spec.ts": 9086,
   "test/bank-collection-limits.e2e-spec.ts": 6000,
   "test/billable-amounts.e2e-spec.ts": 6000,
   "test/billing-mode-calendar.e2e-spec.ts": 8354,

@@ -6,15 +6,12 @@ import { Clock } from "../../../platform/time/clock.js";
 import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { ResupplyCatalogue } from "../domain/resupply-catalogue.js";
 import { ResupplyCutoff } from "../domain/resupply-cutoff.js";
-import { ResupplySiteUnknownError } from "../domain/resupply-receipt-errors.js";
 import { ResupplySites } from "../domain/resupply-sites.js";
-import { serviceDayFor, SiteResupply } from "../domain/site-resupply.js";
-import type { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 import { SendBakehouseResupplyCommand } from "./send-bakehouse-resupply.command.js";
 import { ResupplyPlanGate } from "./resupply-plan-gate.js";
-import { catalogueLine } from "./site-resupply-draft.js";
+import { prepareBakehouseResupply, writeBakehouseResupply } from "./bakehouse-resupply-sending.js";
 
 /**
  * **« Je t'envoie ça »** — le fournil envoie un réassort à un point (lot
@@ -45,30 +42,16 @@ export class SendBakehouseResupplyHandler implements ICommandHandler<
   ) {}
 
   async execute(command: SendBakehouseResupplyCommand): Promise<string> {
-    if (!(await this.sites.exists(command.siteId))) {
-      throw new ResupplySiteUnknownError(command.siteId);
-    }
+    const ports = {
+      resupplies: this.resupplies,
+      catalogue: this.catalogue,
+      sites: this.sites,
+      cutoff: this.cutoff,
+      ids: this.ids,
+      gate: this.gate,
+    };
     const trace = await traceOf(this.staff, this.clock, command.staffUserId);
-    const lines: SiteResupplyLine[] = [];
-    for (const requested of command.lines) {
-      lines.push(await catalogueLine(this.catalogue, requested));
-    }
-    const serviceDay = serviceDayFor(command.target, trace.at);
-    const deadline = await this.cutoff.deadlineFor(serviceDay);
-    const id = this.ids.next();
-    await this.uow.run(async () => {
-      const resupply = SiteResupply.sentByBakehouse({
-        id,
-        siteId: command.siteId,
-        target: command.target,
-        name: command.name,
-        lines,
-        trace,
-        deadline,
-        planStopped: await this.gate.hold(command.target, serviceDay),
-      });
-      await this.resupplies.save(resupply);
-    });
-    return id;
+    const prepared = await prepareBakehouseResupply(ports, command, trace);
+    return this.uow.run(() => writeBakehouseResupply(ports, prepared));
   }
 }

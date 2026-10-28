@@ -1359,6 +1359,60 @@
       "information": false
     },
     {
+      "colonne": "public.bakehouse_resupply_drafts.created_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de qui a créé le brouillon d'un réassort du fournil (`bakehouse_resupply_drafts`), lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.created_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a créé le brouillon d'un réassort du fournil (`created_by_staff_id`) sur `bakehouse_resupply_drafts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.updated_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de qui a enregistré en dernier le brouillon d'un réassort du fournil (`bakehouse_resupply_drafts`), lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.updated_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a enregistré en dernier le brouillon d'un réassort du fournil (`updated_by_staff_id`) sur `bakehouse_resupply_drafts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.closed_by_name",
+      "personne": "staff",
+      "categorie": "identite",
+      "finalite": "Nom figé de qui a envoyé ou supprimé le brouillon d'un réassort du fournil (`bakehouse_resupply_drafts`), lisible même si la fiche staff change.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.bakehouse_resupply_drafts.closed_by_staff_id",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a envoyé ou supprimé le brouillon d'un réassort du fournil (`closed_by_staff_id`) sur `bakehouse_resupply_drafts`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.site_stock_alert.declared_by_name",
       "personne": "staff",
       "categorie": "identite",

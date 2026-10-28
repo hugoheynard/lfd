@@ -205,3 +205,53 @@ model SiteStockAlert {
   @@map("site_stock_alert")
   @@schema("public")
 }
+
+/// **Le brouillon d'un réassort du fournil** (plan
+/// `documentation/reassort-boutiques/plan-brouillons-du-fournil.md`, Hugo
+/// 2026-10-28) — une composition gardée au serveur, À PART de
+/// `site_resupply` : sans journée (elle se calcule à l'envoi), elle
+/// n'occupe jamais la place de la demande en cours du comptoir. Elle ne
+/// devient un réassort qu'à l'envoi. Jamais supprimée : `discarded`.
+model BakehouseResupplyDraft {
+  id String @id
+
+  /// Le point de retrait (`pickup_addresses.id`), sans clé étrangère.
+  siteId String  @map("site_id")
+  /// `tomorrow` | `asap`.
+  target String
+  /// Son nom libre et facultatif, rogné, 1 à 60 caractères (CHECK
+  /// `bakehouse_resupply_draft_name_trimmed`), `null` : sans nom.
+  name   String? @db.VarChar(60)
+  /// Les lignes `[{ sku, quantity }]` : remplacées ensemble, jamais lues une à une.
+  lines  Json
+
+  /// `open` → `sent` | `discarded` (CHECK `bakehouse_resupply_draft_status_known`).
+  status         String  @default("open")
+  /// Le réassort né de l'envoi : non nul si et seulement si `sent`.
+  sentResupplyId String? @map("sent_resupply_id")
+
+  /// Verrou optimiste : deux postes qui reprennent le même brouillon ne s'écrasent pas.
+  version Int @default(1)
+
+  /// La création : instant du `Clock`, auteur figé.
+  createdAt        DateTime @map("created_at")
+  createdByStaffId String   @map("created_by_staff_id")
+  createdByName    String   @map("created_by_name")
+  createdByRole    String   @map("created_by_role")
+
+  /// Le dernier enregistrement (la création comprise).
+  updatedAt        DateTime @map("updated_at")
+  updatedByStaffId String   @map("updated_by_staff_id")
+  updatedByName    String   @map("updated_by_name")
+  updatedByRole    String   @map("updated_by_role")
+
+  /// L'envoi ou la suppression ; tous `null` tant qu'il est ouvert.
+  closedAt        DateTime? @map("closed_at")
+  closedByStaffId String?   @map("closed_by_staff_id")
+  closedByName    String?   @map("closed_by_name")
+  closedByRole    String?   @map("closed_by_role")
+
+  @@index([status, updatedAt])
+  @@map("bakehouse_resupply_drafts")
+  @@schema("public")
+}

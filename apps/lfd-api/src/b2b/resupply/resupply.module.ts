@@ -29,6 +29,15 @@ import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
 import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
+import { CreateBakehouseResupplyDraftHandler } from "./application/create-bakehouse-resupply-draft.handler.js";
+import { SaveBakehouseResupplyDraftHandler } from "./application/save-bakehouse-resupply-draft.handler.js";
+import { DiscardBakehouseResupplyDraftHandler } from "./application/discard-bakehouse-resupply-draft.handler.js";
+import { SendBakehouseResupplyDraftHandler } from "./application/send-bakehouse-resupply-draft.handler.js";
+import { ListBakehouseResupplyDraftsHandler } from "./application/list-bakehouse-resupply-drafts.handler.js";
+import { BakehouseResupplyDraftRepository } from "./domain/bakehouse-resupply-draft.repository.js";
+import { BakehouseResupplyDraftReader } from "./domain/bakehouse-resupply-draft.reader.js";
+import { PrismaBakehouseResupplyDraftRepository } from "./infrastructure/prisma-bakehouse-resupply-draft.repository.js";
+import { PrismaBakehouseResupplyDraftReader } from "./infrastructure/prisma-bakehouse-resupply-draft.reader.js";
 import { SendReserveToShopHandler } from "./application/send-reserve-to-shop.handler.js";
 import { AdminReserveShopReleasesController } from "./http/admin-reserve-shop-releases.controller.js";
 import { SendSiteResupplyHandler } from "./application/send-site-resupply.handler.js";
@@ -138,6 +147,14 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     GetDayStockOverviewHandler,
     ListResupplyArticlesHandler,
     SendBakehouseResupplyHandler,
+    // Les brouillons du fournil (plan-brouillons-du-fournil.md, 2026-10-28).
+    { provide: BakehouseResupplyDraftRepository, useClass: PrismaBakehouseResupplyDraftRepository },
+    { provide: BakehouseResupplyDraftReader, useClass: PrismaBakehouseResupplyDraftReader },
+    CreateBakehouseResupplyDraftHandler,
+    SaveBakehouseResupplyDraftHandler,
+    DiscardBakehouseResupplyDraftHandler,
+    SendBakehouseResupplyDraftHandler,
+    ListBakehouseResupplyDraftsHandler,
     // « Envoyer en boutique » depuis la réserve du colisage (plan A1, lot A1.4).
     SendReserveToShopHandler,
     CancelSiteResupplyHandler,

@@ -418,6 +418,9 @@ stock du jour additionne les reçus.
 
 ### R1d ✅ — Le fournil envoie un réassort, à part de la demande du comptoir (Hugo, 2026-10-21 ; bâti le 2026-10-21, non commité)
 
+> Le 2026-10-28, la composition peut s'enregistrer comme brouillon et se
+> reprendre ailleurs : [`plan-brouillons-du-fournil.md`](plan-brouillons-du-fournil.md).
+
 « Pourquoi le fournil lancerait le réassort [du comptoir] ? Après, je trouve
 intéressant la capacité du fournil à dire "je t'envoie ça" — typiquement si le
 comptoir demande au téléphone, le fournil peut entrer la demande. C'est une

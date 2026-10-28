@@ -2808,3 +2808,18 @@ export type {
   CustomerNudgesView,
   OrderCustomerNudgesView,
 } from "./customer-nudges.js";
+
+export {
+  bakehouseResupplyDraftLineSchema,
+  saveBakehouseResupplyDraftSchema,
+  updateBakehouseResupplyDraftSchema,
+  discardBakehouseResupplyDraftSchema,
+} from "./bakehouse-resupply-draft.js";
+export type {
+  BakehouseResupplyDraftLine,
+  SaveBakehouseResupplyDraftPayload,
+  UpdateBakehouseResupplyDraftPayload,
+  DiscardBakehouseResupplyDraftPayload,
+  BakehouseResupplyDraftView,
+  SavedBakehouseResupplyDraftResponse,
+} from "./bakehouse-resupply-draft.js";
