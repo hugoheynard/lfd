@@ -31,6 +31,14 @@ export interface CatalogProduct {
   packLabel?: string;
   /** En rupture : la rangée propose « me prévenir » au lieu d'ajouter. */
   outOfStock?: boolean;
+  /**
+   * `weight` : l'article se vend au poids (`plan-vente-au-poids.md`, P5) — la
+   * quantité compte des GRAMMES, `step` est le pas de l'article et non un
+   * colisage, et la rangée dit « 500 g ». Absent ⇒ à la pièce.
+   */
+  saleUnit?: 'piece' | 'weight';
+  /** Le plancher de la quantité, quand il n'est pas le pas (le minimum d'un article au poids). */
+  minimum?: number;
 }
 
 /**

@@ -84,6 +84,7 @@ function sourceOf(state: OrderToPlace, selection: SpecimenSelection): OrderSumma
       sku: line.sku,
       name: line.productName,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       lineTotalCents: line.lineTotalCents,
     })),
   };

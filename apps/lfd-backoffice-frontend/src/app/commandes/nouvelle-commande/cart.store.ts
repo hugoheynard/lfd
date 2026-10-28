@@ -1,15 +1,52 @@
 import { computed, signal, type Signal } from '@angular/core';
 
-import type { OrderLineInput, OrderQuoteView } from '@lfd/contracts';
-import { lineTotalCents, pieces } from '@lfd/money';
+import type { OrderLineInput, OrderQuoteView, OrderSaleUnit } from '@lfd/contracts';
+import { lineSaleQuantity } from '@lfd/b2b-ui/catalog';
+import { lineTotalCents } from '@lfd/money';
 
 /** Une ligne du panier en cours de saisie. Le prix n'est là que pour l'écran. */
 export interface CartLine {
   readonly sku: string;
   readonly name: string;
-  /** Prix unitaire **HT** en **millicentimes**, tel que le catalogue le donne. */
+  /** Prix unitaire **HT** en **millicentimes**, tel que le catalogue le donne — au kilo au poids. */
   readonly unitPriceMillicents: number;
+  /** Des pièces, ou des GRAMMES si `saleUnit = weight`. */
   readonly quantity: number;
+  /**
+   * L'unité de l'article (`plan-vente-au-poids.md`, P5) ; absente = à la
+   * pièce. Elle part avec la ligne : le serveur refuse une unité discordante.
+   */
+  readonly saleUnit?: OrderSaleUnit;
+  /** Le pas du stepper : le pas de l'article au poids ; absent = 1. */
+  readonly step?: number;
+  /** Le plancher du stepper : le minimum de l'article au poids ; absent = 1. */
+  readonly minimum?: number;
+}
+
+/**
+ * L'unité, le pas et le minimum d'un article au poids, tels que la ligne du
+ * panier les garde ; rien pour une pièce (P5).
+ */
+export function weightLineOf(product: {
+  readonly saleUnit?: OrderSaleUnit | undefined;
+  readonly step?: number | undefined;
+  readonly minimum?: number | undefined;
+}): Pick<CartLine, 'saleUnit' | 'step' | 'minimum'> {
+  if (product.saleUnit !== 'weight') {
+    return {};
+  }
+  return {
+    saleUnit: 'weight',
+    ...(product.step === undefined ? {} : { step: product.step }),
+    ...(product.minimum === undefined ? {} : { minimum: product.minimum }),
+  };
+}
+
+/** La ligne telle qu'elle part : `saleUnit` n'est écrit que pour le poids. */
+export function requestedLineOf(line: CartLine): OrderLineInput {
+  return line.saleUnit === 'weight'
+    ? { sku: line.sku, quantity: line.quantity, saleUnit: 'weight' }
+    : { sku: line.sku, quantity: line.quantity };
 }
 
 /**
@@ -95,9 +132,15 @@ export class CartStore {
 
   readonly isEmpty = computed(() => this.lines$().length === 0);
 
-  /** Nombre d'articles, toutes lignes confondues — pas le nombre de lignes. */
+  /**
+   * Nombre d'articles, toutes lignes confondues — pas le nombre de lignes. Une
+   * ligne au poids compte pour UN article, jamais pour ses grammes (P5).
+   */
   readonly itemCount = computed(() =>
-    this.lines$().reduce((total, line) => total + line.quantity, 0),
+    this.lines$().reduce(
+      (total, line) => total + (line.saleUnit === 'weight' ? 1 : line.quantity),
+      0,
+    ),
   );
 
   /**
@@ -111,7 +154,9 @@ export class CartStore {
    */
   readonly subtotalCents = computed(() =>
     this.pricedLines().reduce(
-      (total, line) => total + lineTotalCents(line.unitPriceMillicents, pieces(line.quantity)),
+      (total, line) =>
+        total +
+        lineTotalCents(line.unitPriceMillicents, lineSaleQuantity(line.quantity, line.saleUnit)),
       0,
     ),
   );
@@ -169,6 +214,6 @@ export class CartStore {
    * serveur qui fait foi à la passation.
    */
   toPayloadLines(): readonly OrderLineInput[] {
-    return this.lines$().map((line) => ({ sku: line.sku, quantity: line.quantity }));
+    return this.lines$().map(requestedLineOf);
   }
 }

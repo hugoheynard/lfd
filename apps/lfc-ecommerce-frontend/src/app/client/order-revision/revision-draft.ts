@@ -115,16 +115,31 @@ export function withoutLine(lines: readonly RevisionLine[], sku: string): readon
   return lines.filter((line) => line.sku !== sku);
 }
 
-/** Ajouter un article : une pièce de plus s'il y est déjà, sinon une ligne neuve. */
+/** Un article qu'on ajoute : au poids, il dit son pas et sa première quantité (P5). */
+export interface AddedArticle {
+  readonly sku: string;
+  readonly name: string;
+  readonly saleUnit?: 'weight';
+  /** Le pas d'un geste : 1 pièce, ou le pas de l'article au poids, en grammes. */
+  readonly step?: number;
+  /** La première quantité : 1 pièce, ou le minimum au pas de l'article au poids. */
+  readonly first?: number;
+}
+
+/**
+ * Ajouter un article : un pas de plus s'il y est déjà — une pièce, ou le pas
+ * de l'article au poids —, sinon une ligne neuve à sa première quantité.
+ */
 export function withAdded(
   lines: readonly RevisionLine[],
-  added: { readonly sku: string; readonly name: string },
+  added: AddedArticle,
 ): readonly RevisionLine[] {
   const present = lines.find((line) => line.sku === added.sku);
   if (present !== undefined) {
-    return withQuantity(lines, added.sku, present.quantity + 1);
+    return withQuantity(lines, added.sku, present.quantity + (added.step ?? 1));
   }
-  return [...lines, { sku: added.sku, name: added.name, quantity: 1 }];
+  const line = { sku: added.sku, name: added.name, quantity: added.first ?? 1 };
+  return [...lines, added.saleUnit === 'weight' ? { ...line, saleUnit: 'weight' } : line];
 }
 
 /**

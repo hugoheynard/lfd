@@ -78,11 +78,21 @@ export const carrierNoteLineSchema = z.object({
   sku: z.string().min(1),
   productName: z.string().min(1),
   quantity: z.number().int().nonnegative(),
+  /** Cf. {@link CarrierNoteLine.saleUnit}. */
+  saleUnit: z.literal("weight").optional(),
 });
 export interface CarrierNoteLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces — ou des GRAMMES quand `saleUnit` vaut `weight`. */
   readonly quantity: number;
+  /**
+   * `weight` : la ligne se vend au poids et se dit « 500 g », « 1,25 kg »
+   * (`plan-vente-au-poids.md`, P5). **Absent = à la pièce**, comme sur le bon
+   * de commande (`AtelierSheetLine.saleUnit`) : un BL à la pièce se rend au bit
+   * près comme avant.
+   */
+  readonly saleUnit?: "weight";
 }
 
 /** Une ligne chiffrée, recopiée de la commande. */

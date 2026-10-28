@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import { InvalidDeliveryNoteLineError } from "../errors/delivery-note-errors.js";
 
 /**
@@ -16,8 +18,16 @@ export interface DeliveryNoteLineState {
   readonly unitPriceMillicents: number;
   /** Taux de TVA en pourcent (`5.5`). */
   readonly vatRate: number;
-  /** ≥ 0 : une ligne à zéro est recopiée, pour que « livré = Σ des BL » n'en perde aucune. */
+  /**
+   * ≥ 0 : une ligne à zéro est recopiée, pour que « livré = Σ des BL » n'en
+   * perde aucune. Des pièces, ou des GRAMMES si `saleUnit = weight`.
+   */
   readonly quantity: number;
+  /**
+   * Recopiée de la ligne de commande (`plan-vente-au-poids.md`, P5) : au poids,
+   * le prix unitaire est au kilo et un départ partiel se recompose en grammes.
+   */
+  readonly saleUnit: SaleUnit;
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;
@@ -56,6 +66,7 @@ export class DeliveryNoteLine {
     const same =
       source !== undefined &&
       source.sku === state.sku &&
+      source.saleUnit === state.saleUnit &&
       source.quantity === state.quantity &&
       source.lineTotalCents === state.lineTotalCents;
     if (state.pickupDiscountEligible !== null || !same) {
@@ -66,6 +77,23 @@ export class DeliveryNoteLine {
       pickupDiscountEligible: source.pickupDiscountEligible,
     });
   }
+}
+
+/**
+ * L'unité lue en base, dans le vocabulaire du domaine. Refuse plutôt que de
+ * replier sur `piece` : une ligne en grammes relue en pièces se chiffrerait
+ * mille fois trop cher au premier départ partiel.
+ *
+ * @throws {InvalidDeliveryNoteLineError} une valeur hors de `piece` / `weight`.
+ */
+export function deliveryNoteSaleUnitOf(sku: string, value: string): SaleUnit {
+  if (value === "piece" || value === "weight") {
+    return value;
+  }
+  throw new InvalidDeliveryNoteLineError(
+    sku,
+    `unité « ${value} » inconnue (« piece » ou « weight » attendue)`,
+  );
 }
 
 function refusalOf(line: DeliveryNoteLineState): string | null {

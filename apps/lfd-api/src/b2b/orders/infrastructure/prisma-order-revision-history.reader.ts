@@ -3,6 +3,7 @@ import {
   fulfillmentMethodSchema,
   ORDER_REVISION_CHANGES,
   orderFulfillmentSchema,
+  orderSaleUnitSchema,
   type OrderRevisionChange,
   type ReplacedCompositionView,
 } from "@lfd/contracts";
@@ -26,6 +27,9 @@ const lineSchema = z.object({
   sku: z.string(),
   productNameSnapshot: z.string(),
   quantity: z.number().int(),
+  // Absente d'une composition archivée avant la vente au poids : toutes ses
+  // lignes étaient alors à la pièce (`plan-vente-au-poids.md`, P5).
+  saleUnit: orderSaleUnitSchema.default("piece"),
   unitPriceMillicents: z.number().int(),
   vatRate: z.number(),
   lineTotalCents: z.number().int(),
@@ -128,6 +132,7 @@ function compositionOf(value: Prisma.JsonValue): ReplacedCompositionView | null 
       sku: line.sku,
       productName: line.productNameSnapshot,
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       unitPriceMillicents: line.unitPriceMillicents,
       vatRate: line.vatRate,
       lineTotalCents: line.lineTotalCents,

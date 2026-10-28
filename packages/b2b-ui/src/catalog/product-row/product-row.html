@@ -21,8 +21,8 @@
   <div class="pr-main">
     <div class="pr-line1">
       <span class="pr-name">{{ p.name }}</span>
-      @if (inCart(); as n) {
-        <span class="pr-incart">✓ {{ n }}</span>
+      @if (inCart() > 0) {
+        <span class="pr-incart">✓ {{ inCartText() }}</span>
       }
     </div>
     <div class="pr-line2">
@@ -83,7 +83,7 @@
         size="sm"
         align="center"
         snapToStep
-        aria-label="Quantité"
+        [attr.aria-label]="byWeight() ? 'Poids en grammes' : 'Quantité'"
         [min]="minQty()"
         [step]="step()"
         [(value)]="quantity"

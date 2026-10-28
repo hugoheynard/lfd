@@ -37,6 +37,7 @@ const LINE = {
   unitPriceMillicents: 100_000,
   vatRate: 5.5,
   quantity: 2,
+  saleUnit: "piece" as const,
   lineTotalCents: 200,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,

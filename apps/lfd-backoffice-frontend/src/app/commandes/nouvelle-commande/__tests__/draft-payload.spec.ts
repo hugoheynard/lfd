@@ -115,6 +115,37 @@ describe('la traduction écran ↔ brouillon', () => {
     expect(restored.dropped).toEqual([]);
   });
 
+  /** P5 : un brouillon au poids se rouvre en grammes, au pas du catalogue du jour. */
+  it('rouvre une ligne au poids avec son unité, son pas et son minimum', () => {
+    const gravlax: CatalogItemView = {
+      sku: 'SAU-001',
+      name: 'Gravlax',
+      unitPriceMillicents: 4_200_000,
+      vatRate: 5.5,
+      family: null,
+      category: null,
+      saleUnit: 'weight',
+      weightStepGrams: 100,
+      weightMinGrams: null,
+    };
+    const restored = restoreLines(
+      viewOf({ lines: [{ sku: 'SAU-001', quantity: 500, saleUnit: 'weight' }] }),
+      [gravlax],
+    );
+
+    expect(restored.lines).toEqual([
+      {
+        sku: 'SAU-001',
+        name: 'Gravlax',
+        unitPriceMillicents: 4_200_000,
+        quantity: 500,
+        saleUnit: 'weight',
+        step: 100,
+        minimum: 100,
+      },
+    ]);
+  });
+
   it('retire — et signale — un SKU que le catalogue ne connaît plus', () => {
     const restored = restoreLines(viewOf({ lines: [{ sku: 'PAT-002', quantity: 6 }] }), CATALOGUE);
 

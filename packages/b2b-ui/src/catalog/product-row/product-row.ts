@@ -9,6 +9,7 @@ import {
 import { FoldButtonComponent, FoldNumberInputComponent, FoldToggleIconComponent } from 'fold-ng';
 
 import type { CatalogOrder, CatalogProduct } from '../catalog-product.model';
+import { saleQuantityLabel } from '../sale-terms';
 
 /**
  * `lfd-product-row` — **rangée order-pad compacte**, pensée pour le réappro
@@ -53,19 +54,33 @@ export class ProductRow<T extends CatalogProduct = CatalogProduct> {
   readonly isOut = computed(() => this.product().outOfStock === true);
   readonly initial = computed(() => this.product().name.charAt(0).toUpperCase());
 
+  /**
+   * Vendu au poids (P5) : la quantité compte des grammes, `step` est le pas
+   * de l'article — pas un colisage, donc aucun choix unité/colis.
+   */
+  readonly byWeight = computed(() => this.product().saleUnit === 'weight');
+
   readonly packSize = computed(() => this.product().step ?? 1);
-  readonly hasPack = computed(() => this.packSize() > 1);
+  readonly hasPack = computed(() => !this.byWeight() && this.packSize() > 1);
 
   readonly byPack = linkedSignal<T, boolean>({
     source: this.product,
-    computation: () => (this.product().step ?? 1) > 1,
+    computation: () => this.product().saleUnit !== 'weight' && (this.product().step ?? 1) > 1,
   });
 
-  readonly step = computed(() => (this.byPack() ? this.packSize() : 1));
-  readonly minQty = computed(() => this.step());
+  readonly step = computed(() => (this.byWeight() || this.byPack() ? this.packSize() : 1));
+  readonly minQty = computed(() =>
+    this.byWeight() ? (this.product().minimum ?? this.step()) : this.step(),
+  );
   readonly packOptionLabel = computed(() => this.product().packLabel ?? `× ${this.packSize()}`);
   readonly quantity = linkedSignal(() => this.minQty());
-  readonly addText = computed(() => `Ajouter ${this.quantity()}`);
+  readonly addText = computed(() => `Ajouter ${this.said(this.quantity())}`);
+  /** Ce qui est déjà au panier, dit dans l'unité : « 3 », ou « 1,25 kg ». */
+  readonly inCartText = computed(() => this.said(this.inCart()));
+
+  private said(quantity: number): string {
+    return saleQuantityLabel(quantity, this.product().saleUnit);
+  }
 
   onAction(): void {
     this.action.emit({ product: this.product(), quantity: this.quantity() });

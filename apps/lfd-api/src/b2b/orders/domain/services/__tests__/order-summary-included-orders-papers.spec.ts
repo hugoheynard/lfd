@@ -34,7 +34,9 @@ function order(over: Partial<OrderSummarySource> & { readonly id: string }): Ord
     vatCents: 55,
     vatShares: [{ rate: 5.5, amountCents: 55 }],
     totalCents: 1_055,
-    lines: [{ sku: "VIE-001", name: "Croissant", quantity: 10, lineTotalCents: 1_000 }],
+    lines: [
+      { sku: "VIE-001", name: "Croissant", quantity: 10, saleUnit: "piece", lineTotalCents: 1_000 },
+    ],
     ...over,
   };
 }

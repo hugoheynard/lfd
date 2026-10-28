@@ -27,6 +27,9 @@
                   @if (line.price !== '') {
                     <span class="price">{{ line.price }}</span>
                   }
+                  @if (line.weight; as shown) {
+                    <span class="price" data-weight>{{ shown }}</span>
+                  }
                 </span>
                 <span class="sum">{{ line.total }}</span>
                 <fold-number-input
@@ -35,8 +38,8 @@
                   spinner="plusminus"
                   controls="inside"
                   integer
-                  [min]="1"
-                  [step]="1"
+                  [min]="line.minimum"
+                  [step]="line.step"
                   [value]="line.quantity"
                   (valueChange)="setQuantity(line.sku, $event)"
                 />

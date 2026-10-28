@@ -34,7 +34,9 @@ export const SUMMARY: CompanyOrderSummaryView = {
       companyId: 'co_1',
       name: 'Maison mère',
       orderCount: 2,
-      products: [{ sku: 'VIE-001', name: 'Croissant', quantity: 12, htCents: 12_000 }],
+      products: [
+        { sku: 'VIE-001', name: 'Croissant', quantity: 12, saleUnit: 'piece', htCents: 12_000 },
+      ],
       bottom: BOTTOM,
       ordersPretax: ORDERS_PRETAX,
       orders: [
@@ -59,7 +61,9 @@ export const SUMMARY: CompanyOrderSummaryView = {
   ],
   total: {
     orderCount: 2,
-    products: [{ sku: 'VIE-001', name: 'Croissant', quantity: 12, htCents: 12_000 }],
+    products: [
+      { sku: 'VIE-001', name: 'Croissant', quantity: 12, saleUnit: 'piece', htCents: 12_000 },
+    ],
     bottom: BOTTOM,
     ordersPretax: ORDERS_PRETAX,
   },

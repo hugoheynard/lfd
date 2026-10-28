@@ -22,6 +22,7 @@ import {
   ORDERS_SECTION_TITLE,
   ordersGapLabel,
 } from "./order-summary-orders.js";
+import { saleQuantityText } from "./order-sheet-pdf-format.js";
 import { periodSentence } from "./order-summary-period.js";
 
 /**
@@ -75,7 +76,7 @@ function tableRows(owner: string, table: OrderSummaryTableView): readonly string
         csvQuoted(owner),
         csvQuoted(product.name),
         csvQuoted(product.sku),
-        String(product.quantity),
+        quantityCell(product),
         csvEuros(product.htCents),
       ]),
     ),
@@ -83,6 +84,17 @@ function tableRows(owner: string, table: OrderSummaryTableView): readonly string
       line([csvQuoted(owner), csvQuoted(row.label), csvQuoted(""), "", csvEuros(row.cents)]),
     ),
   ];
+}
+
+/**
+ * La quantité d'un produit : un nombre de pièces, tel quel — un tableur le
+ * somme —, ou un poids dit « 1,25 kg », entre guillemets parce que la virgule
+ * décimale en fait un texte (P5).
+ */
+function quantityCell(product: OrderSummaryTableView["products"][number]): string {
+  return product.saleUnit === "weight"
+    ? csvQuoted(saleQuantityText(product.quantity, product.saleUnit))
+    : String(product.quantity);
 }
 
 function excludedRows(paper: OrderSummaryPaper): readonly string[] {

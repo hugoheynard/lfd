@@ -76,7 +76,7 @@ import type { OrderEntryBuyer, OrderEntryCustomer } from './order-entry-customer
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
-import { CartStore, type CartLine } from './cart.store';
+import { CartStore, requestedLineOf, weightLineOf, type CartLine } from './cart.store';
 import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
@@ -357,7 +357,7 @@ export class NouvelleCommandePage {
     try {
       const quote = await this.orders.quote({
         companyId,
-        lines: lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+        lines: lines.map(requestedLineOf),
       });
       // Le panier a pu changer pendant l'aller-retour : on ne pose un devis que
       // s'il parle encore du panier courant.
@@ -518,6 +518,8 @@ export class NouvelleCommandePage {
         sku: line.product.id,
         name: line.product.name,
         unitPriceMillicents: line.unitPriceMillicents,
+        // Au poids (P5) : la quantité est en grammes, au pas et au minimum de l'article.
+        ...weightLineOf(line.product),
       },
       line.quantity,
     );

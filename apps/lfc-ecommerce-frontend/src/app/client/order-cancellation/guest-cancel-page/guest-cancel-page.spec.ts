@@ -18,7 +18,7 @@ const VIEW: GuestOrderCancellationView = {
   firstName: 'Léa',
   requestedFor: '2026-10-20',
   fulfillment: { method: 'pickup', pickupLabel: 'Le Village' },
-  lines: [{ name: 'Croissant', quantity: 6 }],
+  lines: [{ name: 'Croissant', quantity: 6, saleUnit: 'piece' }],
   totalCents: 780,
   status: 'placed',
   cancellability: {
@@ -84,6 +84,16 @@ describe('GuestCancelPage', () => {
     expect(el.textContent).toContain('LFC-0042');
     expect(el.textContent).toContain('Croissant');
     expect(el.querySelector('[data-money]')?.textContent).toContain('7,80');
+  });
+
+  /** P5 (`plan-vente-au-poids.md`) : « × 1250 » se lisait en pièces. */
+  it('dit une ligne au poids en grammes ou en kilos', async () => {
+    const weighed = {
+      ...VIEW,
+      lines: [{ name: 'Gravlax', quantity: 1_250, saleUnit: 'weight' as const }],
+    };
+    const { el } = await mount('01JORDER.jeton', [{ kind: 'ready', view: weighed }]);
+    expect(el.textContent).toContain('× 1,25 kg');
   });
 
   it('dit « lien introuvable » sur un 404, sans rien de la commande', async () => {

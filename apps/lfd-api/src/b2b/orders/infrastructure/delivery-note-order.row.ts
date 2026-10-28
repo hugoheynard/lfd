@@ -7,6 +7,7 @@ import {
   ttcByRateOf,
   vatMethodOf,
 } from "./order-money-columns.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
@@ -22,6 +23,7 @@ export const DELIVERY_NOTE_LINE_SELECT = {
     unitPriceMillicents: true,
     vatRate: true,
     quantity: true,
+    saleUnit: true,
     lineTotalCents: true,
     unitPriceTtcCents: true,
     lineTotalTtcCents: true,
@@ -74,6 +76,7 @@ export interface DeliveryNoteOrderRow {
     readonly unitPriceMillicents: number;
     readonly vatRate: { toNumber(): number };
     readonly quantity: number;
+    readonly saleUnit: string;
     readonly lineTotalCents: number;
     readonly unitPriceTtcCents: number | null;
     readonly lineTotalTtcCents: number | null;
@@ -90,6 +93,7 @@ export function toDeliveryNoteOrder(row: DeliveryNoteOrderRow): DeliveryNoteOrde
       ...line,
       productName: productNameSnapshot,
       vatRate: vatRate.toNumber(),
+      saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
     })),
     terms: {
       subtotalCents: row.subtotalCents,

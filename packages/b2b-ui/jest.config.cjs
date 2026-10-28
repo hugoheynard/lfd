@@ -32,6 +32,9 @@ module.exports = {
     // Même raison pour la table des formes de la vitrine, que le contrat lit
     // depuis le 2026-09-24 (`boutique-rayon-layout.md`, D8).
     '^@lfd/storefront-layout$': '<rootDir>/../storefront-layout/src/index.ts',
+    // Et pour l'argent, que la lib lit depuis la vente au poids (`sale-terms.ts`,
+    // `plan-vente-au-poids.md`, P5) : le calcul d'une ligne est celui du serveur.
+    '^@lfd/money$': '<rootDir>/../money/src/index.ts',
     // Ses imports relatifs portent l'extension `.js` (NodeNext) : on la retire
     // pour que le résolveur retombe sur la source TS.
     '^(\\.{1,2}/.*)\\.js$': '$1',

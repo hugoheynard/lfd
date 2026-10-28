@@ -274,6 +274,7 @@ export class DeliveryNote {
         return (
           other !== undefined &&
           other.sku === line.state.sku &&
+          other.saleUnit === line.state.saleUnit &&
           other.quantity === line.state.quantity &&
           other.lineTotalCents === line.state.lineTotalCents
         );

@@ -1,4 +1,4 @@
-import { lineTotalCents, pieces, ttcCentsOf } from "@lfd/money";
+import { lineTotalCents, saleQuantity, ttcCentsOf } from "@lfd/money";
 
 import type { DecidedDeparture } from "../../../orders/domain/ports/shortfall-decision.reader.js";
 import type { DeliveryNoteSource } from "../entities/delivery-note.js";
@@ -70,7 +70,7 @@ function reducedLine(line: DeliveryNoteSourceLine, quantity: number): DeliveryNo
   if (quantity === line.quantity) {
     return line;
   }
-  const htCents = lineTotalCents(line.unitPriceMillicents, pieces(quantity));
+  const htCents = lineTotalCents(line.unitPriceMillicents, saleQuantity(quantity, line.saleUnit));
   return {
     ...line,
     quantity,

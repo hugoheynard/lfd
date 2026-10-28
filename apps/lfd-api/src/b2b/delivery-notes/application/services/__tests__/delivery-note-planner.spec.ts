@@ -24,6 +24,7 @@ const BREAD: DeliveryNoteOrderLine = {
   unitPriceMillicents: 412_345,
   vatRate: 5.5,
   quantity: 12,
+  saleUnit: "piece" as const,
   lineTotalCents: 49_481,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,

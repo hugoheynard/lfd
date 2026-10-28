@@ -114,4 +114,45 @@ describe('CartStore', () => {
 
     expect(cart.quantityOf('VIE-001')).toBe(2);
   });
+
+  /**
+   * P5 (`plan-vente-au-poids.md`) : une ligne au poids compte des grammes. Lus
+   * en pièces, 1 250 g d'un saumon à 42 €/kg auraient affiché 52 500 €.
+   */
+  describe('une ligne au poids', () => {
+    const GRAVLAX = {
+      sku: 'SAU-001',
+      name: 'Saumon gravlax',
+      unitPriceMillicents: 4_200_000, // 42,00 € HT le kilo
+      saleUnit: 'weight' as const,
+      step: 100,
+      minimum: 300,
+    };
+
+    it('se chiffre au kilo, en grammes', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 1_250);
+
+      expect(cart.subtotalCents()).toBe(5_250);
+    });
+
+    it('compte pour UN article, jamais pour ses grammes', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 1_250);
+      cart.add(CROISSANT, 3);
+
+      expect(cart.itemCount()).toBe(4);
+    });
+
+    it('part avec son unité ; une pièce part comme avant', () => {
+      const cart = new CartStore();
+      cart.add(GRAVLAX, 500);
+      cart.add(CROISSANT, 3);
+
+      expect(cart.toPayloadLines()).toEqual([
+        { sku: 'SAU-001', quantity: 500, saleUnit: 'weight' },
+        { sku: 'VIE-001', quantity: 3 },
+      ]);
+    });
+  });
 });

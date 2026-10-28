@@ -15,6 +15,7 @@ const SOURCE: DeliveryNoteSource = {
       unitPriceMillicents: 100_000,
       vatRate: 5.5,
       quantity: 10,
+      saleUnit: "piece" as const,
       lineTotalCents: 1_000,
       unitPriceTtcCents: null,
       lineTotalTtcCents: null,

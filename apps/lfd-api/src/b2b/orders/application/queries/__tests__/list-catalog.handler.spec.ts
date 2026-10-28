@@ -44,4 +44,28 @@ describe("ListCatalogHandler", () => {
     expect(views.map((view) => view.category)).toEqual([null, null]);
     expect(views.map((view) => view.family?.id ?? null)).toEqual(["fam-vien", null]);
   });
+
+  /** P5 (`plan-vente-au-poids.md`) : la saisie du back-office doit savoir qu'un prix est au kilo. */
+  it("sert l'unité de vente, le pas et le minimum — une pièce n'en a pas", async () => {
+    const handler = new ListCatalogHandler(
+      new InMemoryProductCatalog([
+        item("VIE-001", VIENNOISERIES),
+        { ...item("SAU-001", null), saleUnit: "weight", weightStepGrams: 100, weightMinGrams: 200 },
+      ]),
+    );
+
+    const views = await handler.execute();
+
+    expect(
+      views.map(({ sku, saleUnit, weightStepGrams, weightMinGrams }) => ({
+        sku,
+        saleUnit,
+        weightStepGrams,
+        weightMinGrams,
+      })),
+    ).toEqual([
+      { sku: "VIE-001", saleUnit: "piece", weightStepGrams: null, weightMinGrams: null },
+      { sku: "SAU-001", saleUnit: "weight", weightStepGrams: 100, weightMinGrams: 200 },
+    ]);
+  });
 });

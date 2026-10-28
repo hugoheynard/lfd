@@ -2,6 +2,7 @@ import type { CatalogItemView } from '@lfd/contracts';
 
 import { formatMillicents } from '../order/order-format';
 import type { CatalogProduct } from './catalog-product.model';
+import { firstSaleQuantityOf, saleStepOf, saleUnitOf } from './sale-terms';
 
 /**
  * Un article du **catalogue serveur** en produit affichable.
@@ -18,9 +19,20 @@ import type { CatalogProduct } from './catalog-product.model';
  * et ses illustrations) enrichit le produit après coup.
  */
 export function toCatalogProduct(item: CatalogItemView): CatalogProduct {
-  return {
+  const base = {
     id: item.sku,
     name: item.name,
     price: formatMillicents(item.unitPriceMillicents),
   };
+  if (saleUnitOf(item) === 'piece') {
+    return base;
+  }
+  // Au poids (P5) : le prix est au kilo, la quantité en grammes, au pas et au
+  // minimum de l'article. Sans pas, le serveur refuse toute quantité : la
+  // rangée ne propose pas l'ajout plutôt que d'inventer un pas.
+  const step = saleStepOf(item);
+  const minimum = firstSaleQuantityOf(item);
+  return step === null || minimum === null
+    ? { ...base, unit: '/ kg', saleUnit: 'weight', outOfStock: true }
+    : { ...base, unit: '/ kg', saleUnit: 'weight', step, minimum };
 }

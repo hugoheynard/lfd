@@ -1,3 +1,5 @@
+import type { OrderSaleUnit } from "./order.js";
+
 /**
  * Le **catalogue**, tel qu'un écran le parcourt.
  *
@@ -59,4 +61,17 @@ export interface CatalogItemView {
    * retire dans une livraison suivante, quand plus aucun front ne le lit.
    */
   readonly category: null;
+  /**
+   * **L'unité de vente** (plan `documentation/pricing/plan-vente-au-poids.md`,
+   * P5) : `piece`, ou `weight` — et alors {@link unitPriceMillicents} est un
+   * prix **au kilo**, et la quantité d'une ligne se saisit en grammes.
+   *
+   * ⚠️ Facultatif dans le TYPE, comme sur `ShopItemView`, pour ne pas casser
+   * les fixtures des fronts ; le serveur l'émet toujours. Absent = `piece`.
+   */
+  readonly saleUnit?: OrderSaleUnit;
+  /** Le pas de saisie d'un article au poids, en grammes ; `null` pour une pièce. */
+  readonly weightStepGrams?: number | null;
+  /** Le minimum d'un article au poids, en grammes ; `null` = pas de minimum (ou une pièce). */
+  readonly weightMinGrams?: number | null;
 }

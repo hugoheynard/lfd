@@ -51,7 +51,7 @@
               @for (line of order.lines; track $index) {
                 <div class="fact">
                   <dt>{{ line.name }}</dt>
-                  <dd>× {{ line.quantity }}</dd>
+                  <dd>× {{ quantityOf(line) }}</dd>
                 </div>
               }
               <div class="fact total">

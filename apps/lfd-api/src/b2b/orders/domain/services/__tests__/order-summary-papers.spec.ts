@@ -40,6 +40,7 @@ function company(id: string, name: string, products: number): OrderSummaryCompan
       sku: `VIE-${String(index).padStart(3, "0")}`,
       name: `Produit ${String(index)}`,
       quantity: index + 1,
+      saleUnit: "piece" as const,
       htCents: 1_000 + index,
     })),
     bottom,
@@ -210,6 +211,19 @@ describe("le récapitulatif au tableur", () => {
 
     expect(csv).toContain(`"'=Site Est";"Produit 0"`);
     expect(csv).not.toContain(`"=Site Est"`);
+  });
+
+  /** P5 (`plan-vente-au-poids.md`) : « 1250 » dans le tableur se lisait en pièces. */
+  it("écrit la quantité d'un article au poids en grammes ou en kilos", () => {
+    const weighed = company("co_3", "Traiteur", 1);
+    const products = weighed.products.map((product) => ({
+      ...product,
+      quantity: 1_250,
+      saleUnit: "weight" as const,
+    }));
+    const csv = renderOrderSummaryCsv(paper({ companies: [{ ...weighed, products }] }));
+
+    expect(csv).toContain('"Traiteur";"Produit 0";"VIE-000";"1,25 kg";10,00');
   });
 
   it("garde toutes les lignes du bas, même à zéro", () => {

@@ -70,7 +70,9 @@ const source = (id: string): OrderSummarySource => ({
   vatCents: 55,
   vatShares: [{ rate: 5.5, amountCents: 55 }],
   totalCents: 1_055,
-  lines: [{ sku: "VIE-001", name: "Croissant", quantity: 1, lineTotalCents: 1_000 }],
+  lines: [
+    { sku: "VIE-001", name: "Croissant", quantity: 1, saleUnit: "piece", lineTotalCents: 1_000 },
+  ],
 });
 
 const query = (ids: readonly string[]) =>

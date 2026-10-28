@@ -50,6 +50,10 @@
                         [unitPriceMillicents]="line.unitPriceMillicents"
                         [canonicalPriceMillicents]="line.canonicalPriceMillicents"
                         [quantity]="line.quantity"
+                        [saleUnit]="line.saleUnit ?? 'piece'"
+                        [unit]="line.saleUnit === 'weight' ? '/ kg' : ''"
+                        [step]="line.step ?? 1"
+                        [min]="line.minimum ?? 1"
                         (quantityChange)="cart.setQuantity(line.sku, $event)"
                         (remove)="cart.remove(line.sku)"
                       />

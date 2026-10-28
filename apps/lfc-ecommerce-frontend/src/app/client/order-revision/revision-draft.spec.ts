@@ -72,4 +72,20 @@ describe('revision-draft', () => {
     expect(withQuantity(lines, 'A', 0)).toEqual([{ sku: 'A', name: 'A', quantity: 1 }]);
     expect(withoutLine(lines, 'A')).toEqual([]);
   });
+
+  /** P5 (`plan-vente-au-poids.md`) : ajouter un article au poids ajoutait « 1 » gramme. */
+  it('ajoute un article au poids à sa première quantité, puis d’un pas', () => {
+    const gravlax = {
+      sku: 'G',
+      name: 'Gravlax',
+      saleUnit: 'weight' as const,
+      step: 100,
+      first: 300,
+    };
+    const added = withAdded([], gravlax);
+    expect(added).toEqual([{ sku: 'G', name: 'Gravlax', quantity: 300, saleUnit: 'weight' }]);
+    expect(withAdded(added, gravlax)).toEqual([
+      { sku: 'G', name: 'Gravlax', quantity: 400, saleUnit: 'weight' },
+    ]);
+  });
 });

@@ -207,7 +207,13 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
     const sum = (pick: (a: (typeof amounts)[number]) => number) =>
       amounts.reduce((total, a) => total + pick(a), 0);
     expect(summary.total.products).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 3, htCents: sum((a) => a.linesHt) },
+      {
+        sku: "VIE-001",
+        name: "Croissant",
+        quantity: 3,
+        saleUnit: "piece",
+        htCents: sum((a) => a.linesHt),
+      },
     ]);
     expect(summary.total.bottom).toMatchObject({
       subtotalCents: sum((a) => a.subtotalCents),

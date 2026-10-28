@@ -19,7 +19,12 @@ import {
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { strokeBox } from "../../../../platform/pdf/paper-pdf-shapes.js";
 import { sheetShowsTtc } from "../../../orders/domain/services/order-sheet.js";
-import { money, unitPrice } from "../../../orders/domain/services/order-sheet-pdf-format.js";
+import {
+  money,
+  perUnitSuffix,
+  quantityText,
+  unitPrice,
+} from "../../../orders/domain/services/order-sheet-pdf-format.js";
 import {
   PICKUP_DISCOUNT_EXCLUDED_NOTE,
   PRETAX_ONLY_NOTE,
@@ -102,7 +107,7 @@ function articleRow(
   if (line === undefined) {
     return top;
   }
-  put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 14, bold: true });
+  put(doc, quantityText(line), LEFT, y - 1.2 * MM, { size: 14, bold: true });
   const nameRight = columns.skuRight === null ? RIGHT - 2 * MM : columns.skuRight - COL_SKU;
   // L'astérisque d'une ligne hors remise de retrait, expliqué au pied.
   const excluded = "pickupDiscountEligible" in line && line.pickupDiscountEligible === false;
@@ -186,8 +191,8 @@ function pricedColumns(note: ClientNote): Columns {
       }
       const unit =
         ttc && line.unitPriceTtcCents !== null
-          ? money(line.unitPriceTtcCents)
-          : unitPrice(line.unitPriceMillicents);
+          ? money(line.unitPriceTtcCents) + perUnitSuffix(line)
+          : unitPrice(line.unitPriceMillicents) + perUnitSuffix(line);
       const total =
         ttc && line.lineTotalTtcCents !== null ? line.lineTotalTtcCents : line.lineTotalCents;
       putRight(doc, unit, X_UNIT_RIGHT, y, 10.5);

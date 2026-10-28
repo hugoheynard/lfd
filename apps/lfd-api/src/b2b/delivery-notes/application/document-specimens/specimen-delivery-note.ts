@@ -35,6 +35,7 @@ export function specimenDeliveryNote(now: Date): SpecimenDeliveryNote {
         unitPriceMillicents: line.unitPriceMillicents,
         vatRate: line.vatRate,
         quantity: line.quantity,
+        saleUnit: line.saleUnit ?? "piece",
         lineTotalCents: line.lineTotalCents,
         unitPriceTtcCents: line.unitPriceTtcCents,
         lineTotalTtcCents: line.lineTotalTtcCents,

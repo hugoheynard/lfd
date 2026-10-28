@@ -17,6 +17,19 @@
 > l'écriture d'une décision de produit qui mêlerait les unités n'est pas bâti :
 > au commerce, une portée produit vise aujourd'hui un seul SKU
 > (`pricing-context.ts`), elle ne peut pas mêler deux unités.
+>
+> P5 bâti le 2026-10-28 (non commité à l'écriture de cette ligne) : le
+> catalogue du back-office sert l'unité, le pas et le minimum
+> (`CatalogItemView`) ; la nouvelle commande pro, la saisie comptoir et la
+> modification par l'équipe saisissent des grammes au pas de l'article et
+> envoient l'unité ; le bon de livraison recopie l'unité de la ligne
+> (`delivery_note_line.sale_unit`, migration
+> `20261029001000_la_vente_au_poids_au_bon_de_livraison`) et recompose un départ
+> partiel au kilo ; le récapitulatif des commandes, l'historique des
+> révisions, l'avertissement de saisie et la page d'annulation de l'invité
+> disent « 1,25 kg » ; la page de modification de la boutique saisit un poids
+> au pas et au minimum de l'article. La facture lit encore les lignes de BL
+> sans leur unité : c'est P7.
 
 > 📝 Plan du 2026-10-28, doc-first. Demande de Hugo : « j'ai certains articles
 > qui se vendent au poids, fais-moi un plan qui va jusqu'à Factur-X, et le

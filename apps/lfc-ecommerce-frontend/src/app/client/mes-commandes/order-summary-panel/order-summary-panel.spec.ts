@@ -110,7 +110,15 @@ describe('OrderSummaryPanel — le récapitulatif à l’écran (plan du récapi
       companyId: 'co_2',
       name: 'Site Est',
       orderCount: 1,
-      products: [{ sku: 'VIE-002', name: 'Pain au chocolat', quantity: 6, htCents: 600 }],
+      products: [
+        {
+          sku: 'VIE-002',
+          name: 'Pain au chocolat',
+          quantity: 6,
+          saleUnit: 'piece' as const,
+          htCents: 600,
+        },
+      ],
       bottom: BOTTOM,
       ordersPretax: ORDERS_PRETAX,
       orders: [],
@@ -120,6 +128,33 @@ describe('OrderSummaryPanel — le récapitulatif à l’écran (plan du récapi
     );
     expect(host.querySelector('[data-summary-block="co_2"]')).not.toBeNull();
     expect(host.querySelector('[data-summary-block="total"] fold-data-table')).not.toBeNull();
+  });
+
+  /** P5 (`plan-vente-au-poids.md`) : « 1250 » dans la colonne se lisait en pièces. */
+  it('dit la quantité d’un article au poids en kilos', async () => {
+    const [company] = SUMMARY.companies;
+    const weighed = {
+      ...SUMMARY,
+      companies:
+        company === undefined
+          ? []
+          : [
+              {
+                ...company,
+                products: [
+                  {
+                    sku: 'SAU-001',
+                    name: 'Gravlax',
+                    quantity: 1_250,
+                    saleUnit: 'weight' as const,
+                    htCents: 5_250,
+                  },
+                ],
+              },
+            ],
+    };
+    const host = await boot(() => Promise.resolve(weighed));
+    expect(host.querySelector('[data-summary-block="co_1"]')?.textContent).toContain('1,25 kg');
   });
 
   it('les confirmations de commande incluses suivent, repliés (§10)', async () => {

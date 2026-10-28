@@ -14,6 +14,7 @@ import {
   type PaymentStatus,
   type VatShareView,
 } from "@lfd/contracts";
+import type { SaleUnit } from "@lfd/money";
 
 import {
   OrderSummaryOrdersNotFoundError,
@@ -25,7 +26,10 @@ import { orderPretaxCents } from "./order-pretax.js";
 export interface OrderSummaryLine {
   readonly sku: string;
   readonly name: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
+  /** L'unité figée à la passation (`plan-vente-au-poids.md`). */
+  readonly saleUnit: SaleUnit;
   /** `line_total_cents` — HT, en centimes. */
   readonly lineTotalCents: number;
 }
@@ -236,7 +240,10 @@ function productsOf(orders: readonly OrderSummarySource[]): readonly OrderSummar
     bySku.set(line.sku, {
       sku: line.sku,
       name: known?.name ?? line.name,
+      // Un SKU n'a qu'une unité, figée à sa première publication : ses
+      // quantités se somment donc toujours dans la même (P5).
       quantity: (known?.quantity ?? 0) + line.quantity,
+      saleUnit: known?.saleUnit ?? line.saleUnit,
       htCents: (known?.htCents ?? 0) + line.lineTotalCents,
     });
   }

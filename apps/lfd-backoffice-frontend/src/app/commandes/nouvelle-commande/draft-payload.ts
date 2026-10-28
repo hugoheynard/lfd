@@ -6,7 +6,9 @@ import type {
   OrderDraftView,
 } from '@lfd/contracts';
 
-import type { CartLine } from './cart.store';
+import { firstSaleQuantityOf, saleStepOf } from '@lfd/b2b-ui/catalog';
+
+import { requestedLineOf, type CartLine } from './cart.store';
 import { NEW_ADDRESS, type DraftSnapshot } from './draft.store';
 
 /**
@@ -60,7 +62,7 @@ export function draftPayloadOf(
     settlement: draft.settlement,
     // Des SKU et des quantités, **jamais de prix** : c'est le catalogue serveur
     // qui fera foi à la reprise comme à la passation.
-    lines: lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+    lines: lines.map(requestedLineOf),
   };
 }
 
@@ -142,7 +144,27 @@ export function restoreLines(
       name: item.name,
       unitPriceMillicents: item.unitPriceMillicents,
       quantity: line.quantity,
+      ...weightTermsOf(item),
     });
   }
   return { lines, dropped };
+}
+
+/**
+ * L'unité, le pas et le minimum d'un article au poids, lus au catalogue du
+ * jour (P5) ; rien pour une pièce — la ligne reste alors celle d'avant.
+ */
+export function weightTermsOf(
+  item: CatalogItemView,
+): Pick<CartLine, 'saleUnit' | 'step' | 'minimum'> {
+  const step = saleStepOf(item);
+  const minimum = firstSaleQuantityOf(item);
+  if (item.saleUnit !== 'weight') {
+    return {};
+  }
+  return {
+    saleUnit: 'weight',
+    ...(step === null ? {} : { step }),
+    ...(minimum === null ? {} : { minimum }),
+  };
 }

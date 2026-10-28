@@ -14,6 +14,7 @@ import {
 } from "../domain/ports/company-order-summary.reader.js";
 import type { OrderSummarySource } from "../domain/services/order-summary.js";
 import { companyOrderWallOf } from "./company-order-wall.js";
+import { orderLineSaleUnitOf } from "./order-line-row.js";
 
 const SUMMARY_SELECT = {
   id: true,
@@ -35,7 +36,13 @@ const SUMMARY_SELECT = {
   totalCents: true,
   company: { select: { raisonSociale: true, enseigne: true } },
   lines: {
-    select: { sku: true, productNameSnapshot: true, quantity: true, lineTotalCents: true },
+    select: {
+      sku: true,
+      productNameSnapshot: true,
+      quantity: true,
+      saleUnit: true,
+      lineTotalCents: true,
+    },
   },
 } as const;
 
@@ -94,6 +101,7 @@ function sourceOf(row: SummaryRow): readonly OrderSummarySource[] {
         sku: line.sku,
         name: line.productNameSnapshot,
         quantity: line.quantity,
+        saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
         lineTotalCents: line.lineTotalCents,
       })),
     },

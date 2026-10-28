@@ -12,6 +12,7 @@ const LINE: DeliveryNoteSourceLine = {
   unitPriceMillicents: 100_000,
   vatRate: 5.5,
   quantity: 1,
+  saleUnit: "piece" as const,
   lineTotalCents: 100,
   unitPriceTtcCents: null,
   lineTotalTtcCents: null,

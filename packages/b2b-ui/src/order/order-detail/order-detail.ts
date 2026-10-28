@@ -40,6 +40,7 @@ import {
   type TimelineStep,
 } from '../order-timeline';
 import { QrCode } from '../qr-code/qr-code';
+import { saleQuantityLabel } from '../../catalog/sale-terms';
 
 /**
  * Un document rattaché à une commande (bon de livraison, facture…).
@@ -259,6 +260,11 @@ export class OrderDetail {
   protected readonly entryPriceOf = entryPriceOf;
   protected readonly priceStepLabels = priceStepLabels;
   protected readonly wasFloored = wasFloored;
+
+  /** La quantité dite : « 12 », ou « 1,25 kg » au poids (`plan-vente-au-poids.md`, P5). */
+  protected quantityOf(line: CustomerOrderLineView): string {
+    return saleQuantityLabel(line.quantity, line.saleUnit);
+  }
 
   protected isAdded(line: CustomerOrderLineView): boolean {
     return this.addedSkus().has(line.sku);

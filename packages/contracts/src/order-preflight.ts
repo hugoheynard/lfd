@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { orderSaleUnitSchema } from "./order.js";
+
 /**
  * Le **garde-fou de saisie** du panier : ce qu'on dit au client **avant** qu'il
  * commande, ligne par ligne.
@@ -14,7 +16,15 @@ import { z } from "zod";
 /** Une ligne de panier soumise au contrôle. Ni prix ni nom : le serveur ne les croit pas. */
 export const orderPreflightLineSchema = z.object({
   sku: z.string().min(1),
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   quantity: z.number().int().positive(),
+  /**
+   * L'unité de la quantité (`plan-vente-au-poids.md`, P5) — absente = `piece`,
+   * comme une ligne de panier. Elle ne sert qu'à DIRE la quantité dans
+   * l'avertissement (« 500 g ») : la comparaison se fait dans l'unité du SKU,
+   * qui n'en a qu'une.
+   */
+  saleUnit: orderSaleUnitSchema.optional(),
 });
 
 /**

@@ -53,6 +53,20 @@ describe("carrierNoteOf — le BL de transport", () => {
   it("s'imprime même sur un BL d'avant E4a, qui n'a pas de totaux", () => {
     expect(carrierNoteOf(withoutTerms(), HEAD).lines).toHaveLength(2);
   });
+
+  /** P5 (`plan-vente-au-poids.md`) : sans l'unité, « 1250 » se lisait en pièces. */
+  it("dit l'unité d'une ligne au poids, et seulement d'elle", () => {
+    const state = handedOverNote();
+    const lines = state.lines.map((line, index) =>
+      index === 0 ? { ...line, quantity: 1_250, saleUnit: "weight" as const } : line,
+    );
+    const note = carrierNoteOf({ ...state, lines }, HEAD);
+
+    expect(note.lines).toEqual([
+      { sku: "PAIN-001", productName: "Pain de campagne", quantity: 1_250, saleUnit: "weight" },
+      { sku: "VIEN-002", productName: "Croissant", quantity: 6 },
+    ]);
+  });
 });
 
 describe("clientNoteOf — le BL chiffré", () => {

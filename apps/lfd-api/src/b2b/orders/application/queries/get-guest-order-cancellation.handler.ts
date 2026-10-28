@@ -72,7 +72,11 @@ function guestViewOf(
       view.fulfillmentMethod === "pickup"
         ? { method: "pickup", pickupLabel: nonEmpty(view.pickupAddress?.label) }
         : { method: "delivery", city: nonEmpty(view.deliveryAddress?.ville) },
-    lines: view.lines.map((line) => ({ name: line.productName, quantity: line.quantity })),
+    lines: view.lines.map((line) => ({
+      name: line.productName,
+      quantity: line.quantity,
+      saleUnit: line.saleUnit,
+    })),
     totalCents: view.totalCents,
     status: view.status,
     cancellability,

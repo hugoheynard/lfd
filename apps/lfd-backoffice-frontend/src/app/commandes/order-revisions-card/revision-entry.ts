@@ -5,6 +5,7 @@ import {
   formatOrderInstant,
   formatVatRate,
 } from '@lfd/b2b-ui/order';
+import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import type { OrderRevisionEntryView, ReplacedCompositionView } from '@lfd/contracts';
 
 import { ORDER_REVISION_CHANGE } from '../../shared/journal/values/orders-values';
@@ -13,7 +14,10 @@ import { ORDER_REVISION_CHANGE } from '../../shared/journal/values/orders-values
 export interface ReplacedLineRow {
   readonly sku: string;
   readonly name: string;
+  /** Des pièces, ou des grammes au poids. */
   readonly quantity: number;
+  /** La quantité dite : « 10 », ou « 1,25 kg » au poids (P5). */
+  readonly quantityLabel: string;
   readonly unitPrice: string;
   readonly vat: string;
   readonly total: string;
@@ -78,7 +82,9 @@ function replacedRowsOf(replaced: ReplacedCompositionView): ReplacedRows {
       sku: line.sku,
       name: line.productName,
       quantity: line.quantity,
-      unitPrice: `${formatMillicents(line.unitPriceMillicents)} HT`,
+      quantityLabel: saleQuantityLabel(line.quantity, line.saleUnit),
+      // Au poids, le prix figé est au kilo (`plan-vente-au-poids.md`, P5).
+      unitPrice: `${formatMillicents(line.unitPriceMillicents)} HT${line.saleUnit === 'weight' ? ' / kg' : ''}`,
       vat: formatVatRate(line.vatRate),
       total: `${formatCents(line.lineTotalCents)} HT`,
     })),

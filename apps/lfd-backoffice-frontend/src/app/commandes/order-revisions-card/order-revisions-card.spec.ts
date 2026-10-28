@@ -38,6 +38,7 @@ const BY_CUSTOMER: OrderRevisionEntryView = {
         sku: 'VIE-001',
         productName: 'Croissant',
         quantity: 10,
+        saleUnit: 'piece',
         unitPriceMillicents: 200_000,
         vatRate: 5.5,
         lineTotalCents: 2_000,
@@ -83,6 +84,33 @@ describe('revisionRowOf', () => {
     expect(row.replaced?.route).toBe("Retrait : Labo — 5 rue du Four, 73150 Val d'Isère");
     expect(row.replaced?.when).toContain('07:00 – 08:00');
     expect(row.replaced?.lines[0]).toMatchObject({ name: 'Croissant', quantity: 10 });
+  });
+
+  /** P5 : « 1250 × Gravlax » se lisait en pièces. */
+  it('dit une ligne au poids en kilos, et son prix au kilo', () => {
+    const replaced = BY_CUSTOMER.replaced;
+    const row = revisionRowOf({
+      ...BY_CUSTOMER,
+      replaced:
+        replaced === null
+          ? null
+          : {
+              ...replaced,
+              lines: [
+                {
+                  sku: 'SAU',
+                  productName: 'Gravlax',
+                  quantity: 1_250,
+                  saleUnit: 'weight',
+                  unitPriceMillicents: 4_200_000,
+                  vatRate: 5.5,
+                  lineTotalCents: 5_250,
+                },
+              ],
+            },
+    });
+    expect(row.replaced?.lines[0]).toMatchObject({ quantityLabel: '1,25 kg' });
+    expect(row.replaced?.lines[0]?.unitPrice).toContain('/ kg');
   });
 
   it('un auteur que l’annuaire ne connaît plus reste anonyme, et un total égal le dit', () => {

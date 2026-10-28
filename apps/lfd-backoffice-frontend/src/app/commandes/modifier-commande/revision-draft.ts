@@ -1,5 +1,6 @@
 import type {
   BillingAddressPayload,
+  CatalogItemView,
   DeliveryAddressView,
   OrderRevisionQuotePayload,
   OrderView,
@@ -7,7 +8,8 @@ import type {
 } from '@lfd/contracts';
 
 import type { FulfillmentChoice } from '../nouvelle-commande/acheminement-commande/acheminement-commande';
-import type { CartLine } from '../nouvelle-commande/cart.store';
+import { requestedLineOf, type CartLine } from '../nouvelle-commande/cart.store';
+import { weightTermsOf } from '../nouvelle-commande/draft-payload';
 import { NEW_ADDRESS, type DraftSnapshot } from '../nouvelle-commande/draft.store';
 
 /**
@@ -33,19 +35,34 @@ function sameStreet(
  * Les lignes de la commande, **à leur prix figé** : c'est celui qu'une ligne
  * déjà présente garde (R3). Les lignes ajoutées prendront le prix du jour, que
  * seul le devis dit.
+ *
+ * L'unité est celle FIGÉE sur la ligne (P5) ; le pas et le minimum d'un
+ * article au poids viennent du catalogue du jour — sans lui, le stepper
+ * avance au gramme et le serveur juge.
  */
-export function revisionCartOf(order: {
-  readonly lines: readonly Pick<
-    OrderView['lines'][number],
-    'sku' | 'productName' | 'unitPriceMillicents' | 'quantity'
-  >[];
-}): readonly CartLine[] {
-  return order.lines.map((line) => ({
-    sku: line.sku,
-    name: line.productName,
-    unitPriceMillicents: line.unitPriceMillicents,
-    quantity: line.quantity,
-  }));
+export function revisionCartOf(
+  order: {
+    readonly lines: readonly Pick<
+      OrderView['lines'][number],
+      'sku' | 'productName' | 'unitPriceMillicents' | 'quantity' | 'saleUnit'
+    >[];
+  },
+  catalogue: readonly CatalogItemView[] = [],
+): readonly CartLine[] {
+  const bySku = new Map(catalogue.map((item) => [item.sku, item] as const));
+  return order.lines.map((line) => {
+    const item = bySku.get(line.sku);
+    const base = {
+      sku: line.sku,
+      name: line.productName,
+      unitPriceMillicents: line.unitPriceMillicents,
+      quantity: line.quantity,
+    };
+    if (line.saleUnit !== 'weight') {
+      return base;
+    }
+    return { ...base, ...(item === undefined ? {} : weightTermsOf(item)), saleUnit: 'weight' };
+  });
 }
 
 /**
@@ -135,7 +152,7 @@ export function revisionContentOf(
       ? { signatureRequired: signatureRequired.value }
       : {}),
     note: decisions.note,
-    lines: lines.map((line) => ({ sku: line.sku, quantity: line.quantity })),
+    lines: lines.map(requestedLineOf),
   };
 }
 

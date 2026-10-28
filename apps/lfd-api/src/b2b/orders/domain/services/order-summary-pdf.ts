@@ -15,7 +15,7 @@ import {
   ROW_GRAY,
   rule,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
-import { money } from "./order-sheet-pdf-format.js";
+import { money, saleQuantityText } from "./order-sheet-pdf-format.js";
 import {
   exclusionLabel,
   type OrderSummaryPaper,
@@ -85,7 +85,7 @@ function productRow(
   put(doc, product.name, LEFT, y, { size: 10.5, width: NAME_WIDTH });
   const nameBottom = doc.y;
   putRight(doc, product.sku, X_SKU_RIGHT, y + 0.5, 8.5);
-  putRight(doc, String(product.quantity), X_QTY_RIGHT, y, 10.5, true);
+  putRight(doc, saleQuantityText(product.quantity, product.saleUnit), X_QTY_RIGHT, y, 10.5, true);
   putRight(doc, money(product.htCents), RIGHT, y, 10.5);
   const bottom = Math.max(y + ROW_HEIGHT - 1.5 * MM, nameBottom) + 0.5 * MM;
   rule(doc, bottom, 0.5, ROW_GRAY);

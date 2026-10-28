@@ -1,4 +1,4 @@
-import { weightLabel } from "@lfd/money";
+import { type SaleUnit, weightLabel } from "@lfd/money";
 
 /**
  * **Les montants du bon de commande en PDF**, écrits à la main.
@@ -70,7 +70,16 @@ export function quantityText(line: {
   readonly quantity: number;
   readonly saleUnit?: "weight";
 }): string {
-  return line.saleUnit === "weight" ? weightLabel(line.quantity) : String(line.quantity);
+  return saleQuantityText(line.quantity, line.saleUnit ?? "piece");
+}
+
+/**
+ * Une quantité dans son unité, telle qu'un document l'imprime — le même texte
+ * que {@link quantityText}, pour un lecteur qui porte l'unité en toutes lettres
+ * (récapitulatif, P5).
+ */
+export function saleQuantityText(quantity: number, unit: SaleUnit): string {
+  return unit === "weight" ? weightLabel(quantity) : String(quantity);
 }
 
 /** Un prix unitaire au poids s'entend au kilo : « 12,40 € / kg ». */

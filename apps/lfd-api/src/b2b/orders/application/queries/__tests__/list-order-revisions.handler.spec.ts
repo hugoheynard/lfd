@@ -44,6 +44,7 @@ const REPLACED: ReplacedCompositionView = {
       sku: "VIE-001",
       productName: "Croissant",
       quantity: 10,
+      saleUnit: "piece" as const,
       unitPriceMillicents: 200_000,
       vatRate: 5.5,
       lineTotalCents: 2_000,

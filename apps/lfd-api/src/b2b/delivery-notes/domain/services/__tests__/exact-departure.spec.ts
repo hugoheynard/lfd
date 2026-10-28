@@ -23,6 +23,7 @@ function bananaBread(quantity: number, eligible = true): DeliveryNoteSourceLine 
     unitPriceMillicents: 1_990_521,
     vatRate: 5.5,
     quantity,
+    saleUnit: "piece" as const,
     // Une valeur FIGÉE volontairement fausse : le BL ne doit jamais la recopier.
     lineTotalCents: 1,
     unitPriceTtcCents: 2_100,
@@ -39,6 +40,7 @@ function juice(quantity: number): DeliveryNoteSourceLine {
     unitPriceMillicents: 250_000,
     vatRate: 20,
     quantity,
+    saleUnit: "piece" as const,
     lineTotalCents: 1,
     unitPriceTtcCents: 300,
     lineTotalTtcCents: 300 * quantity,
@@ -209,5 +211,23 @@ describe("termsDifferences — les TTC d'un BL en TTC", () => {
       }),
     ).toEqual(["ttcTerms"]);
     expect(termsDifferences(exact, { ...exact })).toEqual([]);
+  });
+
+  /** P5 : la recomposition TTC suit l'unité recopiée — étiquette au kilo × grammes. */
+  it("une ligne au poids se recompose au kilo : 500 g à 21,00 €/kg font 10,50 €", () => {
+    const granola: DeliveryNoteSourceLine = {
+      ...bananaBread(500),
+      sku: "GRA",
+      saleUnit: "weight",
+      lineTotalTtcCents: 1_050,
+    };
+
+    const { lines } = depart([granola]);
+
+    expect(lines[0]).toMatchObject({
+      saleUnit: "weight",
+      unitPriceTtcCents: 2_100,
+      lineTotalTtcCents: 1_050,
+    });
   });
 });

@@ -104,6 +104,10 @@ model DeliveryNoteLine {
   vatRate                Decimal  @map("vat_rate") @db.Decimal(5, 2)
   /// CHECK `quantity >= 0` : une ligne à zéro est recopiée (plan E1, § 6).
   quantity               Int
+  /// `piece`, ou `weight` : la quantité compte alors des GRAMMES, et le prix
+  /// unitaire s'entend au kilo. Recopiée de la ligne de commande ; CHECK
+  /// `delivery_note_line_sale_unit_check` (`plan-vente-au-poids.md`, P5).
+  saleUnit               String   @default("piece") @map("sale_unit")
   lineTotalCents         Int      @map("line_total_cents")
   unitPriceTtcCents      Int?     @map("unit_price_ttc_cents")
   lineTotalTtcCents      Int?     @map("line_total_ttc_cents")

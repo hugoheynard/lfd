@@ -14,6 +14,9 @@
       <s class="line-was">{{ striked }}</s>
     }
     <span class="line-now">{{ unitPrice() }}</span> {{ unit() }}
+    @if (weight(); as shown) {
+      · <span data-weight>{{ shown }}</span>
+    }
   </p>
 </div>
 
@@ -22,7 +25,7 @@
   size="sm"
   [value]="quantity()"
   [min]="min()"
-  [step]="1"
+  [step]="step()"
   [integer]="true"
   (valueChange)="onQuantity($event)"
 />

@@ -75,6 +75,7 @@ async function planNote(order: { readonly id: string; readonly reference: string
         unitPriceMillicents: 95_000,
         vatRate: 5.5,
         quantity: 5,
+        saleUnit: "piece" as const,
         lineTotalCents: 4_750,
         unitPriceTtcCents: null,
         lineTotalTtcCents: null,

@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import type { CustomerOrderView, FulfillmentMethod, VatShareView } from "./order.js";
+import type { CustomerOrderView, FulfillmentMethod, OrderSaleUnit, VatShareView } from "./order.js";
 
 /** Un jour `AAAA-MM-JJ` ; l'existence au calendrier se vérifie au serveur. */
 const orderDaySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, "jour attendu au format AAAA-MM-JJ");
@@ -86,7 +86,14 @@ export interface OrderSummaryProductView {
   readonly sku: string;
   /** Le nom figé de la commande la plus récente qui le porte. */
   readonly name: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = weight` — sommés dans la même unité. */
   readonly quantity: number;
+  /**
+   * L'unité de la quantité (`plan-vente-au-poids.md`, P5). Un SKU n'a qu'une
+   * unité — elle est figée à sa première publication —, si bien que ses
+   * lignes se somment toujours dans la même.
+   */
+  readonly saleUnit: OrderSaleUnit;
   /** Somme des `line_total_cents` — hors taxe, en centimes. */
   readonly htCents: number;
 }

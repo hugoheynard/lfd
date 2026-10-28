@@ -31,6 +31,7 @@ import { formatCents } from '../../format-money';
 import { ClientBannerOutlet } from '../../nav/client-banner';
 import { ClientBannerBlock } from '../../nav/client-banner-block/client-banner-block';
 import { ContactDialog } from '../../shop/contact-dialog/contact-dialog';
+import { quantityLabel } from '../../shop/sale-unit';
 import { CancelOrderForm } from '../cancel-order-form/cancel-order-form';
 import {
   type CancelReason,
@@ -126,6 +127,11 @@ export class GuestCancelPage {
       ? copy.guestDeliveryNoCity
       : fill(copy.guestDelivery, { city: fulfillment.city });
   });
+
+  /** « 6 », ou un poids dit « 500 g » / « 1,25 kg » (`plan-vente-au-poids.md`, P5). */
+  protected quantityOf(line: GuestOrderCancellationView['lines'][number]): string {
+    return quantityLabel(line.quantity, line.saleUnit);
+  }
 
   protected readonly day = computed(() => {
     const day = this.view()?.requestedFor ?? null;

@@ -35,6 +35,20 @@ describe("customerWarnings", () => {
     expect(warnings[0]?.message).not.toContain("%");
   });
 
+  /** P5 (`plan-vente-au-poids.md`) : des grammes nus (« 1250 ») ne se lisent pas. */
+  it("dit un article au poids en grammes ou en kilos, la moyenne arrondie au gramme", () => {
+    const weighed: AlertFinding = { ...FINDING, quantity: 1_250, baseline: 500.4 };
+    const warnings = customerWarnings(
+      [draft("product.quantity_drift", [weighed])],
+      rules("product.quantity_drift", true),
+      () => "weight",
+    );
+
+    expect(warnings).toEqual([
+      { sku: "VIE-001", message: "Habituellement 500 g — cette commande en porte 1,25 kg." },
+    ]);
+  });
+
   it("se tait quand la règle ne coche pas l'affichage client", () => {
     // Le type est montrable, mais personne ne l'a coché : c'est un signal interne.
     const warnings = customerWarnings(

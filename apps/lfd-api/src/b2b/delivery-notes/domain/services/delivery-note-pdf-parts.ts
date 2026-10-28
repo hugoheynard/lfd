@@ -13,6 +13,7 @@ import {
   WIDTH,
 } from "../../../../platform/pdf/paper-pdf-kit.js";
 import { fulfillmentLines, methodLabel } from "../../../orders/domain/services/order-sheet-pdf.js";
+import { articlesHeading as linesHeading } from "../../../orders/domain/services/order-sheet-pdf-format.js";
 import { paperHeader } from "../../../orders/domain/services/order-sheet-pdf-header.js";
 
 /**
@@ -82,13 +83,13 @@ export function noteParties(doc: Doc, note: PrintableNote, top: number): number 
   return bottom + 1;
 }
 
-/** « ARTICLES — 3 lignes, 172 pièces ». */
+/**
+ * « ARTICLES — 3 lignes, 172 pièces » — la phrase du bon de commande : une
+ * ligne au poids se compte à part (« 1 au poids »), jamais par ses grammes
+ * (`plan-vente-au-poids.md`, P5). Un BL à la pièce s'annonce comme avant.
+ */
 export function articlesHeading(note: PrintableNote): string {
-  const pieces = note.lines.reduce((sum, line) => sum + line.quantity, 0);
-  const count = note.lines.length;
-  return `ARTICLES — ${String(count)} ${count > 1 ? "lignes" : "ligne"}, ${String(pieces)} ${
-    pieces > 1 ? "pièces" : "pièce"
-  }`;
+  return linesHeading(note.lines);
 }
 
 /** La note de la commande, si elle existe. */

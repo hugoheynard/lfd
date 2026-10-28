@@ -6,6 +6,7 @@ import type {
   StaffSheetLine,
 } from '@lfd/contracts';
 
+import { saleQuantityLabel } from '../catalog/sale-terms';
 import { formatCents, formatVatPercent } from './order-format';
 
 /**
@@ -70,7 +71,8 @@ export function ticketSections(
 
 function ticketArticle({ line, unitTtcCents, totalTtcCents }: TicketLine): string {
   const label = `${line.productName} (${line.sku})`;
-  return `  ${String(line.quantity).padStart(3, ' ')} × ${label.padEnd(34, ' ')}${amount(
+  const quantity = saleQuantityLabel(line.quantity, line.saleUnit).padStart(3, ' ');
+  return `  ${quantity} × ${label.padEnd(34, ' ')}${amount(
     formatCents(unitTtcCents),
   )}${amount(formatCents(totalTtcCents))}`;
 }

@@ -1,4 +1,4 @@
-import { lineTotalCents, pieces } from '@lfd/money';
+import { lineTotalCents } from '@lfd/money';
 import {
   ChangeDetectionStrategy,
   Component,
@@ -9,6 +9,7 @@ import {
 } from '@angular/core';
 import { FoldButtonIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
+import { lineSaleQuantity, saleQuantityLabel } from '../../catalog/sale-terms';
 import { formatCents, formatMillicents } from '../../order/order-format';
 import { strikedPriceOf } from './striked-price';
 
@@ -69,6 +70,15 @@ export class CartRow {
   /** Plancher du stepper. 1 par défaut : descendre à zéro passe par la corbeille. */
   readonly min = input(1, { transform: numberAttribute });
 
+  /**
+   * L'unité de la quantité (`plan-vente-au-poids.md`, P5) : au poids, la
+   * quantité compte des GRAMMES, le prix unitaire est au kilo, et la ligne
+   * dit « 1,25 kg » à côté du champ.
+   */
+  readonly saleUnit = input<'piece' | 'weight'>('piece');
+  /** Le pas du stepper : une pièce, ou le pas de l'article au poids. */
+  readonly step = input(1, { transform: numberAttribute });
+
   readonly quantityChange = output<number>();
   readonly remove = output<void>();
 
@@ -82,7 +92,16 @@ export class CartRow {
     // Le total de ligne s'ARRONDIT, une seule fois, ici : c'est un montant.
     // Le prix unitaire, lui, garde ses décimales — les confondre afficherait un
     // total qui ne correspond pas à ce que la facture portera.
-    formatCents(lineTotalCents(this.unitPriceMillicents(), pieces(this.quantity()))),
+    formatCents(
+      lineTotalCents(
+        this.unitPriceMillicents(),
+        lineSaleQuantity(this.quantity(), this.saleUnit()),
+      ),
+    ),
+  );
+  /** « 500 g » / « 1,25 kg » — `null` pour une pièce, dont le champ dit déjà tout. */
+  protected readonly weight = computed(() =>
+    this.saleUnit() === 'weight' ? saleQuantityLabel(this.quantity(), 'weight') : null,
   );
   protected readonly initial = computed(() => this.name().charAt(0));
 

@@ -13,6 +13,7 @@ function line(sku: string, quantity: number, eligible = true): DeliveryNoteSourc
     unitPriceMillicents: 100_000,
     vatRate: 5.5,
     quantity,
+    saleUnit: "piece" as const,
     lineTotalCents: quantity * 100,
     unitPriceTtcCents: null,
     lineTotalTtcCents: null,
@@ -205,5 +206,28 @@ describe("departingSourceOf — frontières", () => {
     expect(reduced?.lineTotalCents).toBe(573);
     expect(reduced?.lineTotalTtcCents).toBe(630);
     expect(other?.lineTotalTtcCents).toBeNull();
+  });
+
+  /**
+   * P5 (`plan-vente-au-poids.md`) : le BL recomposait toute ligne en pièces —
+   * 1 250 g d'un article à 20 €/kg auraient valu 25 000 € au lieu de 25 €.
+   */
+  it("une ligne au poids réduite se chiffre au kilo, en grammes", () => {
+    const salmon: DeliveryNoteSourceLine = {
+      ...line("SAU", 1_500),
+      saleUnit: "weight",
+      unitPriceMillicents: 2_000_000,
+      lineTotalCents: 3_000,
+    };
+    const source = departingSourceOf(
+      { ...ORDER, lines: [salmon] },
+      decided([{ sku: "SAU", quantity: 1_250 }]),
+    );
+
+    expect(source.lines[0]).toMatchObject({
+      quantity: 1_250,
+      saleUnit: "weight",
+      lineTotalCents: 2_500,
+    });
   });
 });

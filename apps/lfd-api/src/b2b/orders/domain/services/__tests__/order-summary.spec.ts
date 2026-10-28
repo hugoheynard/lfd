@@ -36,7 +36,9 @@ function order(over: Partial<OrderSummarySource> & { readonly id: string }): Ord
     vatCents: 55,
     vatShares: [{ rate: 5.5, amountCents: 55 }],
     totalCents: 1_055,
-    lines: [{ sku: "VIE-001", name: "Croissant", quantity: 10, lineTotalCents: 1_000 }],
+    lines: [
+      { sku: "VIE-001", name: "Croissant", quantity: 10, saleUnit: "piece", lineTotalCents: 1_000 },
+    ],
     ...over,
   };
 }
@@ -46,16 +48,45 @@ describe("summarizeOrders — par produit", () => {
     const summary = summarizeOrders(PRINCIPAL, [
       order({
         id: "o1",
-        lines: [{ sku: "VIE-001", name: "Croissant beurre", quantity: 10, lineTotalCents: 1_000 }],
+        lines: [
+          {
+            sku: "VIE-001",
+            name: "Croissant beurre",
+            quantity: 10,
+            saleUnit: "piece",
+            lineTotalCents: 1_000,
+          },
+        ],
       }),
       order({
         id: "o2",
-        lines: [{ sku: "VIE-001", name: "Croissant", quantity: 4, lineTotalCents: 480 }],
+        lines: [
+          {
+            sku: "VIE-001",
+            name: "Croissant",
+            quantity: 4,
+            saleUnit: "piece",
+            lineTotalCents: 480,
+          },
+        ],
       }),
     ]);
 
     expect(summary.total.products).toEqual([
-      { sku: "VIE-001", name: "Croissant beurre", quantity: 14, htCents: 1_480 },
+      { sku: "VIE-001", name: "Croissant beurre", quantity: 14, saleUnit: "piece", htCents: 1_480 },
+    ]);
+  });
+
+  /** P5 (`plan-vente-au-poids.md`) : la quantité sommée d'un article au poids est en grammes. */
+  it("un article au poids somme ses grammes, et le dit", () => {
+    const salmon = { sku: "SAU-001", name: "Gravlax", saleUnit: "weight" as const };
+    const summary = summarizeOrders(PRINCIPAL, [
+      order({ id: "o1", lines: [{ ...salmon, quantity: 500, lineTotalCents: 1_000 }] }),
+      order({ id: "o2", lines: [{ ...salmon, quantity: 750, lineTotalCents: 1_500 }] }),
+    ]);
+
+    expect(summary.total.products).toEqual([
+      { sku: "SAU-001", name: "Gravlax", quantity: 1_250, saleUnit: "weight", htCents: 2_500 },
     ]);
   });
 
@@ -64,8 +95,14 @@ describe("summarizeOrders — par produit", () => {
       order({
         id: "o1",
         lines: [
-          { sku: "PAI-002", name: "Pain de mie", quantity: 1, lineTotalCents: 300 },
-          { sku: "BAG-001", name: "Baguette", quantity: 2, lineTotalCents: 200 },
+          {
+            sku: "PAI-002",
+            name: "Pain de mie",
+            quantity: 1,
+            saleUnit: "piece",
+            lineTotalCents: 300,
+          },
+          { sku: "BAG-001", name: "Baguette", quantity: 2, saleUnit: "piece", lineTotalCents: 200 },
         ],
       }),
     ]);
@@ -165,7 +202,7 @@ describe("summarizeOrders — une table par société (§6.2)", () => {
     expect(summary.total.orderCount).toBe(4);
     expect(summary.total.bottom.totalCents).toBe(1_000);
     expect(summary.total.products).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 40, htCents: 4_000 },
+      { sku: "VIE-001", name: "Croissant", quantity: 40, saleUnit: "piece", htCents: 4_000 },
     ]);
   });
 });

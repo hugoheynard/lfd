@@ -1,3 +1,5 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 
 /** Une ligne de commande figée, telle que le bon de livraison la recopie. */
@@ -6,7 +8,10 @@ export interface DeliveryNoteOrderLine {
   readonly productName: string;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
+  /** L'unité figée à la passation, que le BL recopie (`plan-vente-au-poids.md`, P5). */
+  readonly saleUnit: SaleUnit;
   readonly lineTotalCents: number;
   readonly unitPriceTtcCents: number | null;
   readonly lineTotalTtcCents: number | null;

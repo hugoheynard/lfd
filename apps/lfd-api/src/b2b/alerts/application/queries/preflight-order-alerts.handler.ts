@@ -1,4 +1,4 @@
-import type { OrderPreflightView } from "@lfd/contracts";
+import { type OrderPreflightView, saleUnitOfLine } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
@@ -54,7 +54,12 @@ export class PreflightOrderAlertsHandler implements IQueryHandler<
       evaluatedOrder: null,
       now: this.clock.now(),
     });
-    return { warnings: customerWarnings(drafts, rules) };
+    // L'unité ne sert qu'à DIRE la quantité : un SKU n'en a qu'une, la
+    // comparaison à l'historique se fait donc dans la même.
+    const units = new Map(lines.map((line) => [line.sku, saleUnitOfLine(line)]));
+    return {
+      warnings: customerWarnings(drafts, rules, (sku) => units.get(sku) ?? "piece"),
+    };
   }
 }
 

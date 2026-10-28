@@ -44,7 +44,7 @@
                   <ul class="or-lines">
                     @for (line of replaced.lines; track line.sku) {
                       <li class="or-line" data-order-revision-line>
-                        <span class="or-qty">{{ line.quantity }} ×</span>
+                        <span class="or-qty">{{ line.quantityLabel }} ×</span>
                         <span class="or-name">{{ line.name }}</span>
                         <span class="or-price">{{ line.unitPrice }} · TVA {{ line.vat }}</span>
                         <span class="or-total">{{ line.total }}</span>

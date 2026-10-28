@@ -106,6 +106,7 @@ async function planRemainder(order: Drawn): Promise<void> {
             unitPriceMillicents: line.unitPriceMillicents,
             vatRate: 5.5,
             quantity: REMAINDER_PIECES,
+            saleUnit: "piece" as const,
             lineTotalCents: subtotal,
             unitPriceTtcCents: null,
             lineTotalTtcCents: null,

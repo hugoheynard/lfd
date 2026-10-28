@@ -80,7 +80,14 @@ function commonOf(note: DeliveryNoteState, head: DeliveryNoteOrderHead) {
 }
 
 function carrierLineOf(line: DeliveryNoteLineState): CarrierNoteLine {
-  return { sku: line.sku, productName: line.productName, quantity: line.quantity };
+  return {
+    sku: line.sku,
+    productName: line.productName,
+    quantity: line.quantity,
+    // Écrite pour le poids seul, comme sur le bon de commande : un BL à la
+    // pièce se rend au bit près comme avant (P5).
+    ...(line.saleUnit === "weight" ? { saleUnit: "weight" as const } : {}),
+  };
 }
 
 function clientLineOf(line: DeliveryNoteLineState): ClientNoteLine {

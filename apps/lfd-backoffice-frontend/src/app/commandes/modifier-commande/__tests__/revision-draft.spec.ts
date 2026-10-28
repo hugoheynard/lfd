@@ -48,11 +48,53 @@ describe('la commande passée, remise dans la forme de la saisie', () => {
           productName: 'Baguette',
           unitPriceMillicents: 95_000,
           quantity: 12,
+          saleUnit: 'piece',
         },
       ],
     });
     expect(lines).toEqual([
       { sku: 'BAG', name: 'Baguette', unitPriceMillicents: 95_000, quantity: 12 },
+    ]);
+  });
+
+  /** P5 (`plan-vente-au-poids.md`) : sans l'unité, le serveur refusait la ligne comme discordante. */
+  it('garde l’unité figée d’une ligne au poids, avec le pas et le minimum du catalogue', () => {
+    const lines = revisionCartOf(
+      {
+        lines: [
+          {
+            sku: 'SAU',
+            productName: 'Gravlax',
+            unitPriceMillicents: 4_200_000,
+            quantity: 1_250,
+            saleUnit: 'weight',
+          },
+        ],
+      },
+      [
+        {
+          sku: 'SAU',
+          name: 'Gravlax',
+          unitPriceMillicents: 4_200_000,
+          vatRate: 5.5,
+          family: null,
+          category: null,
+          saleUnit: 'weight',
+          weightStepGrams: 50,
+          weightMinGrams: 200,
+        },
+      ],
+    );
+    expect(lines).toEqual([
+      {
+        sku: 'SAU',
+        name: 'Gravlax',
+        unitPriceMillicents: 4_200_000,
+        quantity: 1_250,
+        saleUnit: 'weight',
+        step: 50,
+        minimum: 200,
+      },
     ]);
   });
 

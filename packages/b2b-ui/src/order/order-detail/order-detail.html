@@ -81,7 +81,7 @@
             @for (line of o.lines; track line.sku) {
               <tr>
                 <td class="od-col-sku">{{ line.sku }}</td>
-                <td class="od-col-qty">{{ line.quantity }}</td>
+                <td class="od-col-qty">{{ quantityOf(line) }}</td>
                 <td>
                   <span class="od-line-name">{{ line.productName }}</span>
                   @if (isAdded(line)) {
@@ -118,6 +118,9 @@
                     <s class="od-was">{{ fmtMillicents(entry) }}</s>
                   }
                   {{ fmtMillicents(line.unitPriceMillicents) }}
+                  @if (line.saleUnit === 'weight') {
+                    <span class="od-muted">/ kg</span>
+                  }
                 </td>
                 <td class="od-col-num od-col-vat od-muted">{{ fmtVat(line.vatRate) }}</td>
                 <td class="od-col-num">{{ fmtCents(line.lineTotalCents) }}</td>

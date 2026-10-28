@@ -1,4 +1,4 @@
-import type { CustomerOrderView, OrderStatus } from "./order.js";
+import type { CustomerOrderView, OrderSaleUnit, OrderStatus } from "./order.js";
 import type { OrderRevisability } from "./order-revision.values.js";
 
 /**
@@ -105,7 +105,12 @@ export interface GuestOrderCancellationView {
   readonly fulfillment:
     | { readonly method: "pickup"; readonly pickupLabel: string | null }
     | { readonly method: "delivery"; readonly city: string | null };
-  readonly lines: readonly { readonly name: string; readonly quantity: number }[];
+  /** `quantity` : des pièces, ou des grammes si `saleUnit = weight` (`plan-vente-au-poids.md`). */
+  readonly lines: readonly {
+    readonly name: string;
+    readonly quantity: number;
+    readonly saleUnit: OrderSaleUnit;
+  }[];
   readonly totalCents: number;
   readonly status: OrderStatus;
   readonly cancellability: OrderCancellability;

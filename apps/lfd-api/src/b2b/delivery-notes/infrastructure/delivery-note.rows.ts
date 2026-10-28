@@ -1,5 +1,6 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
 import type { DeliveryNoteState } from "../domain/entities/delivery-note.js";
+import { deliveryNoteSaleUnitOf } from "../domain/value-objects/delivery-note-line.js";
 import { termsOf } from "./delivery-note-terms.columns.js";
 
 /**
@@ -14,6 +15,7 @@ const LINE_COLUMNS = {
   unitPriceMillicents: true,
   vatRate: true,
   quantity: true,
+  saleUnit: true,
   lineTotalCents: true,
   unitPriceTtcCents: true,
   lineTotalTtcCents: true,
@@ -57,6 +59,10 @@ export function stateOf(row: NoteRow): DeliveryNoteState {
       row.printedVersion === null || row.printedAt === null || row.printedBy === null
         ? null
         : { version: row.printedVersion, at: row.printedAt, by: row.printedBy },
-    lines: row.lines.map((line) => ({ ...line, vatRate: line.vatRate.toNumber() })),
+    lines: row.lines.map((line) => ({
+      ...line,
+      vatRate: line.vatRate.toNumber(),
+      saleUnit: deliveryNoteSaleUnitOf(line.sku, line.saleUnit),
+    })),
   };
 }

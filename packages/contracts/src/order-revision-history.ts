@@ -1,5 +1,5 @@
 import type { BillingAddressPayload, FulfillmentWindow } from "./address.js";
-import type { FulfillmentMethod } from "./order.js";
+import type { FulfillmentMethod, OrderSaleUnit } from "./order.js";
 import type { OrderRevisionChange } from "./order-revision.values.js";
 
 /**
@@ -39,8 +39,14 @@ export interface OrderRevisionAuthorView {
 export interface ReplacedLineView {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
-  /** Prix unitaire HT, en millicentimes. */
+  /**
+   * L'unité de la quantité. Une composition archivée avant la vente au poids
+   * ne la porte pas, et se relit `piece` — ce qu'étaient toutes ses lignes.
+   */
+  readonly saleUnit: OrderSaleUnit;
+  /** Prix unitaire HT, en millicentimes — au kilo pour une ligne au poids. */
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   /** Total HT de la ligne, en centimes. */

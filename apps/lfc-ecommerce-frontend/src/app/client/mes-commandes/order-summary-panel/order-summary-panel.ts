@@ -31,6 +31,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { formatCents } from '../../format-money';
 import { panelSide } from '../../panel-side';
+import { quantityLabel } from '../../shop/sale-unit';
 import { downloadBlob } from '../download-blob';
 import { OrderSummaryOrders } from '../order-summary-orders/order-summary-orders';
 import {
@@ -179,7 +180,8 @@ export class OrderSummaryPanel {
         key: 'quantity',
         label: copy.colQuantity,
         numeric: true,
-        value: (product) => product.quantity,
+        // Au poids, des grammes dits « 1,25 kg » (`plan-vente-au-poids.md`, P5).
+        value: (product) => quantityLabel(product.quantity, product.saleUnit),
       },
       {
         key: 'htCents',

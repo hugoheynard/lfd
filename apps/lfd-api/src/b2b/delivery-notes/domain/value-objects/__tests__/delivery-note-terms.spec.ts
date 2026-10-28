@@ -15,6 +15,7 @@ function line(overrides: Partial<DeliveryNoteSourceLine> = {}): DeliveryNoteSour
     unitPriceMillicents: 100_000,
     vatRate: 20,
     quantity: 1,
+    saleUnit: "piece" as const,
     lineTotalCents: 1_000,
     unitPriceTtcCents: null,
     lineTotalTtcCents: null,

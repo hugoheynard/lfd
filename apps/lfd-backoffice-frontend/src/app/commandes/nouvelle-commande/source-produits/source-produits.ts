@@ -20,7 +20,10 @@ import {
 import type { AdminOrderRow, CatalogItemView, CustomerSkuStat, OrderView } from '@lfd/contracts';
 import {
   catalogShelves,
+  firstSaleQuantityOf,
   ProductRow,
+  saleQuantityLabel,
+  saleStepOf,
   toCatalogProduct,
   type CatalogOrder,
   type CatalogProduct,
@@ -149,17 +152,27 @@ export class SourceProduits {
     }));
   });
 
+  /**
+   * Le catalogue par SKU : l'unité de vente, le pas et le minimum d'un article
+   * se lisent là (P5) — une habitude ou une vieille commande ne les portent pas.
+   */
+  private readonly bySku = computed(
+    () => new Map(this.catalogue().map((item) => [item.sku, item] as const)),
+  );
+
   /** Ce que ce client reprend, filtré par la même recherche. */
   protected readonly habitLines = computed<readonly ProposedLine[]>(() =>
     this.habits()
       .filter((stat) => normalise(stat.productName + stat.sku).includes(normalise(this.search())))
-      .map(fromHabit),
+      .map((stat) => fromHabit(stat, this.bySku().get(stat.sku))),
   );
 
   /** Les lignes de la commande choisie — avec LEURS quantités, c'est tout l'intérêt. */
   protected readonly orderLines = computed<readonly ProposedLine[]>(() => {
     const order = this.order();
-    return order === null ? [] : order.lines.map(fromOrderLine);
+    return order === null
+      ? []
+      : order.lines.map((line) => fromOrderLine(line, this.bySku().get(line.sku)));
   });
 
   protected readonly orderDate = computed(() => {
@@ -220,17 +233,58 @@ function matches(item: CatalogItemView, needle: string): boolean {
 }
 
 function fromCatalog(item: CatalogItemView): ProposedLine {
+  const product = toCatalogProduct(item);
   return {
-    product: toCatalogProduct(item),
+    product,
     unitPriceMillicents: item.unitPriceMillicents,
     hint: item.sku,
-    quantity: 1,
+    quantity: product.minimum ?? 1,
     available: true,
   };
 }
 
-function fromHabit(stat: CustomerSkuStat): ProposedLine {
+/**
+ * Ce que la rangée doit savoir d'un article au poids — l'unité, le pas, le
+ * minimum, « / kg » —, repris du catalogue (P5). Rien pour une pièce, ni pour
+ * un SKU que le catalogue ne connaît plus.
+ */
+function weightTermsOf(item: CatalogItemView | undefined): Partial<CatalogProduct> {
+  if (item === undefined) {
+    return {};
+  }
+  const { saleUnit, step, minimum, unit, outOfStock } = toCatalogProduct(item);
+  if (saleUnit !== 'weight') {
+    return {};
+  }
+  return {
+    saleUnit,
+    unit: unit ?? '/ kg',
+    ...(step === undefined ? {} : { step }),
+    ...(minimum === undefined ? {} : { minimum }),
+    ...(outOfStock === undefined ? {} : { outOfStock }),
+  };
+}
+
+/**
+ * La quantité moyenne par commande, ramenée sur ce que l'article accepte :
+ * une pièce au moins, ou au poids un multiple du pas qui atteint le minimum —
+ * le serveur refuserait une moyenne de 437 g sur un pas de 100 g.
+ */
+function averageQuantityOf(stat: CustomerSkuStat, item: CatalogItemView | undefined): number {
+  const average = stat.totalQuantity / Math.max(1, stat.orderCount);
+  const step = item === undefined ? 1 : (saleStepOf(item) ?? 1);
+  const first = item === undefined ? 1 : (firstSaleQuantityOf(item) ?? step);
+  return Math.max(first, Math.round(average / step) * step);
+}
+
+function fromHabit(stat: CustomerSkuStat, item: CatalogItemView | undefined): ProposedLine {
   const orders = stat.orderCount > 1 ? `${stat.orderCount} commandes` : '1 commande';
+  const terms = weightTermsOf(item);
+  // Une ligne au poids se cumule en grammes : « 3,5 kg », pas « 3500 pcs ».
+  const total =
+    terms.saleUnit === 'weight'
+      ? saleQuantityLabel(stat.totalQuantity, 'weight')
+      : `${stat.totalQuantity} pcs`;
   return {
     product: {
       id: stat.sku,
@@ -240,25 +294,32 @@ function fromHabit(stat: CustomerSkuStat): ProposedLine {
       // rangée son état « indisponible » plutôt qu'un bouton d'ajout.
       ...(stat.stillAvailable ? { price: formatMillicents(stat.unitPriceMillicents) } : {}),
       outOfStock: !stat.stillAvailable,
+      ...terms,
     },
     unitPriceMillicents: stat.unitPriceMillicents,
-    hint: `${orders} · ${stat.totalQuantity} pcs · ${formatCents(stat.totalCents)}`,
+    hint: `${orders} · ${total} · ${formatCents(stat.totalCents)}`,
     // La quantité MOYENNE par commande, arrondie : reprendre le cumul de l'année
     // remplirait le panier de 480 croissants.
-    quantity: Math.max(1, Math.round(stat.totalQuantity / Math.max(1, stat.orderCount))),
+    quantity: averageQuantityOf(stat, item),
     available: stat.stillAvailable,
   };
 }
 
-function fromOrderLine(line: OrderView['lines'][number]): ProposedLine {
+function fromOrderLine(
+  line: OrderView['lines'][number],
+  item: CatalogItemView | undefined,
+): ProposedLine {
   return {
     product: {
       id: line.sku,
       name: line.productName,
       price: formatMillicents(line.unitPriceMillicents),
+      ...weightTermsOf(item),
+      // L'unité figée sur la ligne fait foi, même si l'article a quitté le catalogue.
+      ...(line.saleUnit === 'weight' ? { saleUnit: 'weight' as const, unit: '/ kg' } : {}),
     },
     unitPriceMillicents: line.unitPriceMillicents,
-    hint: `×${line.quantity}`,
+    hint: `×${saleQuantityLabel(line.quantity, line.saleUnit)}`,
     quantity: line.quantity,
     available: true,
   };

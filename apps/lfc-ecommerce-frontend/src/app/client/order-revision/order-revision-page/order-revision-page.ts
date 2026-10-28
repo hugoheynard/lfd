@@ -38,6 +38,7 @@ import { ServicePoints } from '../../shop/pickup-points.store';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { STALE_REVISION, OrderRevisionGateway } from '../order-revision.gateway';
 import {
+  type AddedArticle,
   contentOf,
   draftOf,
   type RevisionDraft,
@@ -45,6 +46,7 @@ import {
   withoutLine,
   withQuantity,
 } from '../revision-draft';
+import { addedArticleOf, weightFieldOf } from '../revision-sale-terms';
 import { ChangeRequestCard } from '../change-request-card/change-request-card';
 import { RevisionQuote, type QuoteState } from '../revision-quote/revision-quote';
 
@@ -167,13 +169,17 @@ export class OrderRevisionPage {
     return state.kind === 'ready' ? contentOf(this.draft(), state.order) : null;
   });
 
-  /** Les articles de la boutique, à ajouter. */
-  protected readonly addable = computed<readonly FoldSelectOption<{ sku: string; name: string }>[]>(
-    () =>
-      this.catalogue.items().map((item) => ({
-        value: { sku: item.sku, name: item.name },
-        label: item.name,
-      })),
+  /** Les articles de la boutique, à ajouter — au poids, avec leur pas et leur minimum (P5). */
+  protected readonly addable = computed<readonly FoldSelectOption<AddedArticle>[]>(() =>
+    this.catalogue.items().map((item) => ({
+      value: addedArticleOf(item),
+      label: item.name,
+    })),
+  );
+
+  /** Le catalogue par SKU : le pas et le minimum d'une ligne au poids se lisent là. */
+  private readonly itemsBySku = computed(
+    () => new Map(this.catalogue.items().map((item) => [item.sku, item] as const)),
   );
 
   /** Le devis rendu, par SKU : le prix et le total de chaque ligne. */
@@ -187,6 +193,7 @@ export class OrderRevisionPage {
       const quoted = this.quotedLines().get(line.sku);
       return {
         ...line,
+        ...weightFieldOf(line, this.itemsBySku().get(line.sku)),
         total: quoted === undefined ? '—' : formatCents(quoted.lineTotalCents),
         price:
           quoted === undefined ? '' : quoted.priceFrozen ? this.c().priceKept : this.c().priceToday,
@@ -290,7 +297,7 @@ export class OrderRevisionPage {
     this.draft.update((draft) => ({ ...draft, lines: withoutLine(draft.lines, sku) }));
   }
 
-  protected add(item: { readonly sku: string; readonly name: string }): void {
+  protected add(item: AddedArticle): void {
     this.draft.update((draft) => ({ ...draft, lines: withAdded(draft.lines, item) }));
   }
 

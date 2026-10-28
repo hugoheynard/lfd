@@ -123,6 +123,7 @@ function source(order: {
         unitPriceMillicents: 95_000,
         vatRate: 5.5,
         quantity: 2,
+        saleUnit: "piece" as const,
         lineTotalCents: 1_900,
         unitPriceTtcCents: null,
         lineTotalTtcCents: null,

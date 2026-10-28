@@ -6,6 +6,7 @@ import type {
   StaffSheetLine,
 } from '@lfd/contracts';
 
+import { saleQuantityLabel } from '../catalog/sale-terms';
 import {
   formatCents,
   formatMillicents,
@@ -43,9 +44,12 @@ import { ticketSections } from './order-sheet-ticket-text';
  * feuille, et ce papier voyage dans le carton.
  */
 
-/** Quantité cadrée à droite sur 3 caractères, pour que la colonne s'aligne. */
-function pad(quantity: number): string {
-  return `${quantity}`.padStart(3, ' ');
+/**
+ * Quantité cadrée à droite sur 3 caractères, pour que la colonne s'aligne —
+ * « 12 », ou un poids dit « 1,25 kg » (`plan-vente-au-poids.md`, P5).
+ */
+function pad(line: { readonly quantity: number; readonly saleUnit?: 'weight' }): string {
+  return saleQuantityLabel(line.quantity, line.saleUnit).padStart(3, ' ');
 }
 
 /** Un montant cadré à droite, pour que la colonne des totaux tombe juste. */
@@ -83,7 +87,7 @@ function headerLines(sheet: OrderSheet): readonly string[] {
 
 /** Une ligne d'atelier ou de staff : le SKU l'ouvre, c'est par lui qu'on la retrouve. */
 function skuLine(line: AtelierSheetLine | StaffSheetLine): string {
-  return `  ${pad(line.quantity)} × ${line.productName} (${line.sku})`;
+  return `  ${pad(line)} × ${line.productName} (${line.sku})`;
 }
 
 /**
@@ -100,7 +104,7 @@ function pricedLine(line: ClientSheetLine | StaffSheetLine): string {
   // n'a plus de branche fausse : le compilateur l'a dit en rendant l'autre
   // chemin `never`. Une condition qui ne peut plus être fausse se supprime.
   const label = `${line.productName} (${line.sku})`;
-  return `  ${pad(line.quantity)} × ${label.padEnd(34, ' ')}${amount(
+  return `  ${pad(line)} × ${label.padEnd(34, ' ')}${amount(
     formatMillicents(line.unitPriceMillicents),
   )}${amount(formatCents(line.lineTotalCents))}`;
 }
@@ -151,9 +155,15 @@ function taxedLines(money: SheetMoney): readonly string[] {
   ];
 }
 
-/** Nombre d'unités toutes lignes confondues — ce qu'on compte à la réception. */
+/**
+ * Nombre d'unités toutes lignes confondues — ce qu'on compte à la réception.
+ * Une ligne au poids compte pour une, jamais pour ses grammes (P5).
+ */
 function totalUnits(sheet: OrderSheet): number {
-  return sheet.lines.reduce((sum, line) => sum + line.quantity, 0);
+  return sheet.lines.reduce(
+    (sum, line) => sum + (line.saleUnit === 'weight' ? 1 : line.quantity),
+    0,
+  );
 }
 
 /**
