@@ -23,9 +23,9 @@
             · fiche {{ rank() }} sur {{ day.groups().length }}
           }
         </p>
-        <!-- Au téléphone, le sélecteur de poste dit le rayon : le titre reste pour les
-             lecteurs d'écran, pas pour l'œil (maquette, Hugo 2026-10-28). -->
-        <h1 class="fa-title" [class.fa-title--unseen]="compact()">
+        <!-- Le rayon se lit dans les onglets (poste fixe) ou le sélecteur (téléphone) :
+             le titre reste pour les lecteurs d'écran, pas pour l'œil (Hugo, 2026-10-28). -->
+        <h1 class="fa-title fa-title--unseen">
           {{ current()?.label ?? 'Fiche d’atelier' }}
         </h1>
       </div>
@@ -136,6 +136,7 @@
         class="fa-tabs"
         activeStyle="folder"
         direction="horizontal"
+        size="comfortable"
         background="transparent"
         aria-label="Poste de la fiche d’atelier"
         [tabs]="tabs()"
