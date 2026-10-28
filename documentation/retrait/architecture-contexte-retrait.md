@@ -8,10 +8,9 @@
 > sont dans [`plan-contexte-retrait.md`](plan-contexte-retrait.md) ; ce qu'on a
 > trouvé en le parcourant est dans [`journal-du-contexte-retrait.md`](journal-du-contexte-retrait.md).
 >
-> ⚠️ **Ces trois documents vivent dans `documentation/production/`** alors que la
-> retrait n'est plus la production. C'est une incohérence assumée le temps du
-> chantier : les déplacer casserait les références croisées pour un gain de
-> rangement. À trancher quand la migration sera passée.
+> Ces trois documents ont vécu dans `documentation/production/` jusqu'au
+> 2026-10-28, alors que le retrait n'est plus la production. Ils ont alors
+> rejoint `documentation/retrait/`, et les docs du fournil `documentation/fournil/`.
 
 ## 1. Ce que le retrait est
 

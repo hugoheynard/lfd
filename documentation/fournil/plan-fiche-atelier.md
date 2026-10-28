@@ -191,7 +191,7 @@ abstraction. Celle-ci est faite pour être reprise, pas pour être générale.
 | E   | L'écran : onglets, lignes, bandeau, téléphone    | `production/fiche-atelier/`                   | A         |
 | F   | Le hors ligne + la file des coches               | l'écran, côté admin                           | E         |
 | G   | Le contenant : réglage et écran                  | `production`, `reglages/`                     | A         |
-| H   | Docs + ledger                                    | `documentation/production/`                   | tous      |
+| H   | Docs + ledger                                    | `documentation/fournil/`                      | tous      |
 
 **Ce qui NE bouge pas** : `fiche-production/` (les bons de commande), la vue
 Récapitulatif, `renderDeliveryNote`. La fiche d'atelier **ouvre** l'écran de la

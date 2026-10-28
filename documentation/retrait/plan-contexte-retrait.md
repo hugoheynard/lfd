@@ -132,7 +132,7 @@ instantanés d'un jour.
 
 Le retrait est **en forme de commande, et sans jour**. Elle est identifiée par
 `order_id`, elle n'a ni date de service ni clôture, et
-[`architecture-contexte-production.md`](architecture-contexte-production.md) dit
+[`../fournil/architecture-contexte-production.md`](../fournil/architecture-contexte-production.md) dit
 déjà pourquoi, en toutes lettres :
 
 > « Une commande passée **après** la clôture de sa journée n'est donc dans aucun
