@@ -166,7 +166,7 @@ describe('DueThresholdsSection', () => {
     const fixture = await mount(UNSET);
 
     expect(fixture.nativeElement.querySelector('fold-callout')).toBeNull();
-    expect(text(fixture)).toContain('marges de production facultatives, non réglées');
+    expect(text(fixture)).toContain('Marges non réglées, comptées à zéro');
   });
 
   it('dit l’échec de lecture', async () => {

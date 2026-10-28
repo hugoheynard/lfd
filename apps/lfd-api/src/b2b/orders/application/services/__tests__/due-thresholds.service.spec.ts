@@ -80,7 +80,7 @@ describe("DueThresholds — le commerce répond au fournil", () => {
     });
   });
 
-  it("une vue qui ne porte pas les marges vaut « non réglées » : un seul seuil, la journée", async () => {
+  it("une vue qui ne porte pas les marges vaut « non réglées », et elles comptent pour zéro", async () => {
     const {
       deliveryMarginMinutes: _d,
       pickupMarginMinutes: _p,
@@ -95,7 +95,8 @@ describe("DueThresholds — le commerce répond au fournil", () => {
 
     expect([due.deliveryMarginMinutes, due.pickupMarginMinutes]).toEqual([null, null]);
     expect(due.items[0]?.thresholds).toEqual([
-      { kind: "day", before: null, quantity: 14, cumulative: 14 },
+      { kind: "deadline", before: "06:00", quantity: 10, cumulative: 10 },
+      { kind: "deadline", before: "08:00", quantity: 4, cumulative: 14 },
     ]);
   });
 });

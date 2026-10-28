@@ -155,7 +155,7 @@ export class DueThresholdsSection {
     const tranches =
       view.trancheMode === 'fixed' ? ` · tranches ${view.fixedTranches.join(', ')}` : '';
     if (this.marginsMissing()) {
-      return 'Une seule échéance, « la journée » — marges de production facultatives, non réglées (Réglages › Zones de livraison).';
+      return `Marges non réglées, comptées à zéro : l’heure promise au client (Réglages › Zones de livraison)${tranches}`;
     }
     return `Marges : livraison ${view.deliveryMarginMinutes} min · retrait ${view.pickupMarginMinutes} min${tranches}`;
   });

@@ -158,19 +158,21 @@ describe("deadlineThresholds — le compte à rebours par échéance", () => {
     ]);
   });
 
-  describe("sans marge réglée — un seul seuil, la journée", () => {
-    it.each<[string, ProductionMargins]>([
-      ["aucune", { deliveryMinutes: null, pickupMinutes: null }],
-      ["seule la livraison", { deliveryMinutes: 50, pickupMinutes: null }],
-      ["seul le retrait", { deliveryMinutes: null, pickupMinutes: 20 }],
-    ])("%s", (_label, margins) => {
+  /** Une marge non réglée compte pour zéro (Hugo, 2026-10-28) : plus de seuil « la journée ». */
+  describe("une marge non réglée compte pour zéro", () => {
+    it.each<[string, ProductionMargins, string]>([
+      ["aucune", { deliveryMinutes: null, pickupMinutes: null }, "05:30"],
+      ["seule la livraison", { deliveryMinutes: 50, pickupMinutes: null }, "04:40"],
+      ["seul le retrait", { deliveryMinutes: null, pickupMinutes: 20 }, "05:30"],
+    ])("%s", (_label, margins, deliveryBefore) => {
       const [bag] = deadlineThresholds(
         [order("delivery", before("05:30"), { BAG: 120 }), order("pickup", null, { BAG: 5 })],
         margins,
       );
 
       expect(bag?.thresholds).toEqual([
-        { kind: "day", before: null, quantity: 125, cumulative: 125 },
+        { kind: "deadline", before: deliveryBefore, quantity: 120, cumulative: 120 },
+        { kind: "undated", before: null, quantity: 5, cumulative: 125 },
       ]);
     });
   });
@@ -232,7 +234,7 @@ describe("deadlineThresholds — le site qui remet (plan des sites, T0)", () => 
     ).toBe("undated");
   });
 
-  it("l'interrupteur des vagues tient : une marge non réglée rend la journée, transfert compris", () => {
+  it("une marge de retrait non réglée ne retient pas le transfert : sa marge de livraison s'applique", () => {
     const threshold = firstBefore(
       [pickupAt({ supply: "transfer", requiredBy: "06:20", arrivalBy: "07:20" })],
       {
@@ -240,7 +242,7 @@ describe("deadlineThresholds — le site qui remet (plan des sites, T0)", () => 
         pickupMinutes: null,
       },
     );
-    expect(threshold).toMatchObject({ kind: "day", before: null });
+    expect(threshold).toMatchObject({ kind: "deadline", before: "05:30" });
   });
 });
 

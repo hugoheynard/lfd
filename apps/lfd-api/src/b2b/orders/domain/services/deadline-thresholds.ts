@@ -69,8 +69,9 @@ export interface ProductionMargins {
 /**
  * - `deadline` : « avant `before` » ;
  * - `undated` : les commandes sans échéance, toujours le DERNIER seuil, signalé ;
- * - `day` : aucune marge réglée — un seul seuil, la journée (§7, comportement
- *   d'avant les vagues).
+ * - `day` : un seul seuil, la journée. Le commerce ne le rend plus depuis que
+ *   la marge absente compte pour zéro (2026-10-28) ; la production le garde
+ *   pour les tranches fixes sans heure réglée.
  */
 export type DeadlineThresholdKind = "deadline" | "undated" | "day";
 
@@ -99,10 +100,11 @@ const UNDATED = Number.POSITIVE_INFINITY;
 /**
  * Les seuils cumulés de chaque SKU, triés par SKU.
  *
- * Les deux marges doivent être réglées pour qu'une heure soit calculée : avec
- * une seule, une moitié des commandes aurait une heure et l'autre non, et le
- * fournil lirait un compte à rebours faux sans pouvoir le savoir. Sans les
- * deux, un seul seuil `day` — ce que la journée était avant les vagues.
+ * Une marge non réglée compte pour **zéro minute** (Hugo, 2026-10-28 : « mets
+ * la marge à zéro si pas réglée ») : l'heure « prêt avant » est alors
+ * l'échéance elle-même. Jusque-là, il fallait les deux marges, et sans elles
+ * tout tombait en un seul seuil `day` — les tranches fixes réglées n'avaient
+ * rien à découper.
  *
  * Une échéance moins sa marge qui tombe avant minuit est ramenée à `00:00` :
  * rien ne part la veille (plan composition automatique, Q1).
@@ -112,14 +114,10 @@ export function deadlineThresholds(
   margins: ProductionMargins,
 ): readonly SkuDeadlineThresholds[] {
   const { deliveryMinutes, pickupMinutes } = margins;
-  const set =
-    deliveryMinutes !== null && pickupMinutes !== null
-      ? { delivery: deliveryMinutes, pickup: pickupMinutes }
-      : null;
-  const timed = set !== null;
+  const set = { delivery: deliveryMinutes ?? 0, pickup: pickupMinutes ?? 0 };
   const bySku = new Map<string, { productName: string; byMinute: Map<number, number> }>();
   for (const order of orders) {
-    const minute = set === null ? UNDATED : dueMinute(order, set);
+    const minute = dueMinute(order, set);
     for (const line of order.lines) {
       const entry = bySku.get(line.sku) ?? {
         productName: line.productName,
@@ -134,7 +132,7 @@ export function deadlineThresholds(
     .map(([sku, entry]) => ({
       sku,
       productName: entry.productName,
-      ...cumulate(entry.byMinute, timed),
+      ...cumulate(entry.byMinute),
     }));
 }
 
@@ -200,10 +198,10 @@ export function destinationDueAt(order: DeadlineOrder): string | null {
   return setup === 0 ? clock : clockOf(Math.max(0, minuteOf(clock) - setup));
 }
 
-function cumulate(
-  byMinute: ReadonlyMap<number, number>,
-  timed: boolean,
-): { readonly total: number; readonly thresholds: readonly DeadlineThreshold[] } {
+function cumulate(byMinute: ReadonlyMap<number, number>): {
+  readonly total: number;
+  readonly thresholds: readonly DeadlineThreshold[];
+} {
   let cumulative = 0;
   const thresholds = [...byMinute.entries()]
     .sort(([a], [b]) => a - b)
@@ -212,7 +210,7 @@ function cumulate(
       if (minute !== UNDATED) {
         return { kind: "deadline", before: clockOf(minute), quantity, cumulative };
       }
-      return { kind: timed ? "undated" : "day", before: null, quantity, cumulative };
+      return { kind: "undated", before: null, quantity, cumulative };
     });
   return { total: cumulative, thresholds };
 }

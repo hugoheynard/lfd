@@ -40,8 +40,8 @@
     **La fiche d'atelier ne l'affiche pas.**
 - **Les marges** (livraison, retrait) sont des réglages du **commerce**, page
   « Disponibilité de la livraison »
-  (`b2b/reglages/delivery-availability-page/`). Sans les deux marges, un seul
-  seuil : la journée.
+  (`b2b/reglages/delivery-availability-page/`). Depuis le 2026-10-28,
+  une marge non réglée compte pour zéro (Hugo, 2026-10-28) : l'échéance du client sert telle quelle.
 - **Chaque commande figée au plan porte son échéance** (`production_order.due_at`,
   `HH:mm`). Le colisage l'utilise déjà pour servir d'abord l'échéance la plus
   proche.
@@ -88,8 +88,7 @@ Conséquence voulue : en mode fixe, une tranche porte ce qui doit être prêt
 
 - Mode fixe **sans aucune heure réglée** : une seule tranche, la journée.
   L'écran le dit et mène au réglage. Aucune heure par défaut n'est inventée.
-- Sans les deux marges du commerce : un seul seuil, comme aujourd'hui, quel que
-  soit le mode.
+- Sans marge réglée, une marge non réglée compte pour zéro (Hugo, 2026-10-28) : les tranches coupent quand même.
 
 ## 3. Où vit le rangement
 
@@ -180,8 +179,8 @@ après l'arrêt n'aurait pas eu de vague.
 → **La tranche est une fonction pure de la commande** : son échéance moins une
 marge. Le commerce la calcule (`deadline-thresholds.ts`) et la met dans ce que
 la production lit déjà ; la production ne parle pas à la livraison pour ça.
-Une commande sans échéance va dans la dernière tranche, signalée. Sans les deux
-marges, une seule tranche : la journée, et l'arrêt du plan ne refuse jamais.
+Une commande sans échéance va dans la dernière tranche, signalée. Une marge
+non réglée compte pour zéro (2026-10-28), et l'arrêt du plan ne refuse jamais.
 
 ### 7.1 Sortir, c'est remettre ; la marge sera mesurée
 

@@ -20,7 +20,8 @@ import { z } from "zod";
  * - `deadline` : « `cumulative` avant `before` » ;
  * - `undated` : les commandes sans échéance — toujours le dernier seuil, à
  *   SIGNALER à l'écran ;
- * - `day` : les deux marges ne sont pas réglées — un seul seuil, la journée ;
+ * - `day` : tranches fixes sans heure réglée — un seul seuil, la journée (une
+ *   marge non réglée compte pour zéro depuis le 2026-10-28, elle ne le rend plus) ;
  * - `before_first` : en tranches fixes, des besoins attendus AVANT la première
  *   tranche (`before` = la première tranche) — à SIGNALER à l'écran, avec
  *   `earliest`, l'heure du plus pressé (plan `fournil/plan-tranches-de-production.md`, §2.1).
