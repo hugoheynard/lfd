@@ -129,8 +129,12 @@ sequenceDiagram
 1. Resend → **Receiving** : activer la réception sur `reponses.lafoliecoffee.info`.
 2. DNS (Cloudflare, zone `lafoliecoffee.info`) : l'enregistrement **MX** que
    Resend donne pour ce sous-domaine. L'apex n'est pas touché.
-3. Resend → **Webhooks** : ajouter l'événement `email.received` au webhook
-   existant (même adresse, même secret) — **après** le déploiement de R2 :
+3. Resend → **Webhooks** : ⚠️ au 2026-10-28, le secret GitHub
+   `RESEND_WEBHOOK_SECRET` **n'existe pas** — sans lui, le récepteur refuse
+   tout webhook (accusés d'envoi compris). Créer le webhook vers
+   `…/api/lfd/webhooks/resend` s'il n'existe pas, copier son secret `whsec_…`
+   dans ce secret GitHub, redéployer l'API, puis ajouter l'événement
+   `email.received` au webhook (même adresse, même secret) — **après** le déploiement de R2 :
    avant, l'événement serait reçu et ignoré.
 4. GitHub → variable `MAILER_REPLY_TO` = `reponses@reponses.lafoliecoffee.info`,
    puis redéployer l'API. ⚠️ **Irréversible en pratique** : chaque e-mail
