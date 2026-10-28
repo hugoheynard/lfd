@@ -119,6 +119,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   fields: 'Champs',
   fine: 'Petites lignes',
   fineInline: 'Petites lignes — en ligne',
+  firstOrderableDay: 'Premier jour commandable',
   firstName: 'Prénom',
   firstNamePlaceholder: 'Prénom — exemple',
   firstSub: 'Première visite — sous-titre',
