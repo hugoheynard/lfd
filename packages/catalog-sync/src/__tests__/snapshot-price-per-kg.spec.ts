@@ -26,6 +26,9 @@ const variant = {
   allergenLabels: null,
   proPricePerKgMillicents: 3_333_333,
   publicPricePerKgTtcCents: 4_160,
+  saleUnit: "piece",
+  weightMinGrams: null,
+  weightStepGrams: null,
 };
 
 function snapshotOf(version: number, variants: readonly Record<string, unknown>[]) {
@@ -58,8 +61,8 @@ function without(key: string): Record<string, unknown> {
 }
 
 describe("syncVariantSchema — les prix au kilo", () => {
-  it("le fil est en v13", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBe(13);
+  it("traversent depuis la v13", () => {
+    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(13);
   });
 
   it("accepte les deux montants, et les deux à `null` — non saisis", () => {

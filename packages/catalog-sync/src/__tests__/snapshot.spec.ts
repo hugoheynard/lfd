@@ -37,6 +37,10 @@ const variant = {
   // Traversent depuis la v13, informatifs ; `null` = non saisi.
   proPricePerKgMillicents: null,
   publicPricePerKgTtcCents: null,
+  // L'unité de vente, depuis la v14 : à la pièce, sans pas ni minimum.
+  saleUnit: "piece",
+  weightMinGrams: null,
+  weightStepGrams: null,
 };
 
 const snapshot = {

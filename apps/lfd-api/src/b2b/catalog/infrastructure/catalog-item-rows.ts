@@ -3,6 +3,7 @@ import { catalogAudienceOf } from "../domain/served-to.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
 import { allergenTextsOf } from "./allergen-texts.js";
 import { publicByContextOf } from "./public-by-context.js";
+import { saleUnitOf } from "./catalog-sale-unit.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
 
 /** La ligne telle que Prisma la rend, décision jointe. Aucun type `Prisma.*` exporté. */
@@ -21,6 +22,9 @@ export interface ItemRow {
   readonly publicTtcCents: number | null;
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
+  readonly saleUnit: string;
+  readonly weightMinGrams: number | null;
+  readonly weightStepGrams: number | null;
   readonly publicByContext: unknown;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -136,6 +140,9 @@ export function toDomain(row: ItemRow): CatalogItem {
       publicTtcCents: row.publicTtcCents,
       proPricePerKgMillicents: row.proPricePerKgMillicents,
       publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
+      saleUnit: saleUnitOf(row.sku, row.saleUnit),
+      weightMinGrams: row.weightMinGrams,
+      weightStepGrams: row.weightStepGrams,
       publicByContext: publicByContextOf(row.publicByContext),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),

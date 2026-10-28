@@ -33,6 +33,9 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     publicTtcCents: 250,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    saleUnit: "piece",
+    weightMinGrams: null,
+    weightStepGrams: null,
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     receivedAt: new Date("2026-08-17T08:00:00.000Z"),
     ...over,
@@ -77,6 +80,38 @@ describe("CatalogItem — le prix", () => {
       "isHidden",
       "isHiddenPublic",
     ]);
+  });
+});
+
+/** Fil v14 (`plan-vente-au-poids.md`, P2) : stockée et lue, rien ne la tarife encore. */
+describe("CatalogItem — l'unité de vente", () => {
+  it("lit l'unité, le pas et le minimum reçus du référentiel", () => {
+    const item = CatalogItem.receive(
+      facts({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 }),
+    );
+
+    expect(item.saleUnit).toBe("weight");
+    expect(item.weightMinGrams).toBe(200);
+    expect(item.weightStepGrams).toBe(100);
+  });
+
+  it("un article reçu à la pièce n'a ni pas ni minimum", () => {
+    const item = CatalogItem.receive(facts());
+
+    expect(item.saleUnit).toBe("piece");
+    expect(item.weightMinGrams).toBeNull();
+    expect(item.weightStepGrams).toBeNull();
+  });
+
+  it("suit le référentiel au push", () => {
+    const item = CatalogItem.receive(facts());
+
+    const refreshed = item.refreshFromPim(
+      facts({ saleUnit: "weight", weightMinGrams: null, weightStepGrams: 50 }),
+    );
+
+    expect(refreshed.saleUnit).toBe("weight");
+    expect(refreshed.weightStepGrams).toBe(50);
   });
 });
 

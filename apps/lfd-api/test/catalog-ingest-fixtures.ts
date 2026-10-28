@@ -145,6 +145,9 @@ export function snapshotOf(
             publicTtcCents: publicPrice === null ? null : publicPrice.ttcCents,
             proPricePerKgMillicents: null,
             publicPricePerKgTtcCents: null,
+            saleUnit: "piece",
+            weightMinGrams: null,
+            weightStepGrams: null,
             publicByContext:
               publicPrice === null
                 ? {}

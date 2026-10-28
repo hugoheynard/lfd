@@ -52,6 +52,12 @@ export interface OrderTimeLimitFacts {
   readonly graceMinutes: number;
 }
 
+/**
+ * L'unité dans laquelle un article se vend : des pièces, ou des grammes
+ * (`documentation/pricing/plan-vente-au-poids.md`).
+ */
+export type CatalogSaleUnit = "piece" | "weight";
+
 export interface PimFacts {
   readonly sku: string;
   readonly productId: string;
@@ -92,6 +98,18 @@ export interface PimFacts {
    */
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
+  /**
+   * **L'unité de vente** reçue du référentiel (`plan-vente-au-poids.md`, P2) :
+   * `piece`, ou `weight` — la quantité se compte alors en grammes et le prix
+   * s'entend au kilo. Stockée et lue ici seulement : ni la commande ni la
+   * vitrine ne la lisent encore (P3, P4). `piece` pour un article reçu avant
+   * le fil v14.
+   */
+  readonly saleUnit: CatalogSaleUnit;
+  /** Au poids, le minimum commandable en grammes ; `null` = aucun, ou à la pièce. */
+  readonly weightMinGrams: number | null;
+  /** Au poids, le pas de saisie en grammes ; `null` = à la pièce, ou non saisi. */
+  readonly weightStepGrams: number | null;
   /**
    * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
    * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
@@ -475,6 +493,21 @@ export class CatalogItem {
 
   get weightGrams(): number | null {
     return this.facts.weightGrams;
+  }
+
+  /** L'unité dans laquelle l'article se vend — pièces, ou grammes. */
+  get saleUnit(): CatalogSaleUnit {
+    return this.facts.saleUnit;
+  }
+
+  /** Au poids, le minimum en grammes ; `null` = aucun, ou à la pièce. */
+  get weightMinGrams(): number | null {
+    return this.facts.weightMinGrams;
+  }
+
+  /** Au poids, le pas de saisie en grammes ; `null` = à la pièce, ou non saisi. */
+  get weightStepGrams(): number | null {
+    return this.facts.weightStepGrams;
   }
 
   /** Le prix au kilo pro HT saisi, informatif. `null` = non saisi. */

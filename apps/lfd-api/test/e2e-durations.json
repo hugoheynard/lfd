@@ -51,6 +51,7 @@
   "test/catalog-ingest.e2e-spec.ts": 5616,
   "test/catalog-journal.e2e-spec.ts": 8103,
   "test/catalog-public-review.e2e-spec.ts": 15291,
+  "test/catalog-sale-unit.e2e-spec.ts": 5000,
   "test/catalog-unknown-family.e2e-spec.ts": 4837,
   "test/client-notes-wall.e2e-spec.ts": 4369,
   "test/client-notes.e2e-spec.ts": 8535,

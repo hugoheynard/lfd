@@ -81,6 +81,21 @@ function catalogueOf(store: AllergenStore) {
 describe("projectVariant", () => {
   const percents = { takeaway: 5.5, eatIn: 10, b2b: 5.5 };
 
+  /** Fil v14 (`plan-vente-au-poids.md`, P2) : l'unité traverse telle que saisie. */
+  it("porte l'unité de vente, le pas et le minimum d'une déclinaison au poids", () => {
+    const weighed = variant({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 });
+
+    const v = projectVariant(weighed, 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
+
+    expect(v).toMatchObject({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 });
+  });
+
+  it("porte une pièce à la pièce, sans pas ni minimum", () => {
+    const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
+
+    expect(v).toMatchObject({ saleUnit: "piece", weightMinGrams: null, weightStepGrams: null });
+  });
+
   it("porte l'ÉTIQUETTE en centimes et une entrée par contexte réglé", () => {
     const v = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 

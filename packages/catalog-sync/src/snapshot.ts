@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 13;
+export const CATALOG_SNAPSHOT_VERSION = 14;
 
 /**
  * Une famille de produits, **à plat**.
@@ -148,6 +148,13 @@ export const syncContextPriceSchema = z.object({
 });
 export type SyncContextPrice = z.infer<typeof syncContextPriceSchema>;
 
+/**
+ * L'unité dans laquelle une déclinaison se vend, et donc dans laquelle se
+ * compte une quantité : des pièces, ou des grammes (v14).
+ */
+export const syncSaleUnitSchema = z.enum(["piece", "weight"]);
+export type SyncSaleUnit = z.infer<typeof syncSaleUnitSchema>;
+
 export const syncVariantSchema = z.object({
   /**
    * L'identifiant de la déclinaison **chez l'émetteur**.
@@ -244,6 +251,25 @@ export const syncVariantSchema = z.object({
    * saisi, absent avant la v13.
    */
   publicPricePerKgTtcCents: z.number().int().positive().nullable(),
+  /**
+   * **L'unité de vente de la déclinaison** (`plan-vente-au-poids.md`, v14) :
+   * `piece`, ou `weight` — la quantité commandée se compte alors en grammes et
+   * le prix s'entend au kilo. Obligatoire sur le fil ; absente avant la v14,
+   * et lue `piece` (cf. {@link storedCatalogSnapshotSchema}) : c'est ce
+   * qu'était tout article.
+   */
+  saleUnit: syncSaleUnitSchema,
+  /**
+   * Au poids, **le minimum commandable** en grammes ; `null` = pas de minimum,
+   * ou vente à la pièce. Absent avant la v14.
+   */
+  weightMinGrams: z.number().int().positive().nullable(),
+  /**
+   * Au poids, **le pas de saisie** en grammes ; `null` = vente à la pièce, ou
+   * pas encore saisi (l'activation le réclame au référentiel). Absent avant la
+   * v14.
+   */
+  weightStepGrams: z.number().int().positive().nullable(),
   /**
    * **Le prix public, par contexte de vente** — une entrée par contexte RÉGLÉ
    * sur la famille, indexée par sa clé (`takeaway`, `eatIn`, …).
@@ -668,6 +694,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(11),
     z.literal(12),
     z.literal(13),
+    z.literal(14),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -710,6 +737,12 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             // une arrivée d'avant se lit « non saisi » — ce qui est exact.
             proPricePerKgMillicents: z.number().int().positive().nullable().optional(),
             publicPricePerKgTtcCents: z.number().int().positive().nullable().optional(),
+            // Absents avant la v14 : la vente au poids n'existait pas, et une
+            // arrivée d'avant se lit « à la pièce, sans pas ni minimum » — ce
+            // qui est exact. C'est la VERSION qui dit comment lire.
+            saleUnit: syncSaleUnitSchema.optional(),
+            weightMinGrams: z.number().int().positive().nullable().optional(),
+            weightStepGrams: z.number().int().positive().nullable().optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.

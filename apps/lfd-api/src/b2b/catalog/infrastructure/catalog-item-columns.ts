@@ -52,6 +52,9 @@ export function pimFactsColumns(facts: PimFacts) {
     publicTtcCents: facts.publicTtcCents,
     proPricePerKgMillicents: facts.proPricePerKgMillicents,
     publicPricePerKgTtcCents: facts.publicPricePerKgTtcCents,
+    saleUnit: facts.saleUnit,
+    weightMinGrams: facts.weightMinGrams,
+    weightStepGrams: facts.weightStepGrams,
     // `DbNull` et non `JsonNull` : c'est l'ABSENCE de la donnée, pas un `null`
     // JSON stocké — la même distinction que pour les mentions d'étiquette.
     publicByContext:
