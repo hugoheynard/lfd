@@ -740,9 +740,9 @@
       </p>
 
       <div class="app-header-actions">
-        @if (email(); as who) {
-          <span class="app-user" [title]="who">{{ who }}</span>
-        }
+        <!-- La bulle de la personne : ses initiales, qui ouvrent son adresse,
+             son rôle et la déconnexion (Hugo, 2026-10-28) — à la place de
+             l'adresse écrite en clair. -->
         <!-- La cloche est celle de TOUT staff connecté (a-la-porte.md, B5) :
              elle lit « mes notifications », adressées par droit, et le fil
              partagé seulement avec `staff_notifications:read` — le magasin
@@ -751,6 +751,12 @@
         @if (permissionsLoaded() && !noAccess()) {
           <app-notification-bell />
         }
+        <app-user-menu
+          [name]="whoPrimary()"
+          [email]="whoEmail()"
+          [roleLabel]="whoSecondary()"
+          (loggedOut)="logout()"
+        />
       </div>
     </div>
 

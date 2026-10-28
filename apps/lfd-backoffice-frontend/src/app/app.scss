@@ -72,32 +72,15 @@ fold-app-shell {
   margin-inline-start: auto;
 }
 
-/* L'adresse du staff connecté. Tronquée : elle cède la place à la cloche. */
-.app-user {
-  max-width: 16rem;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  font-size: var(--fold-text-sm, 0.9rem);
-  opacity: 0.85;
-}
-
 fold-app-shell.is-mobile .app-hamburger {
   display: inline-flex;
 }
 
-/* Compaction de l'en-tête : une affaire de LARGEUR, pas de navigation — sur
-   iPad la place existe, l'adresse reste. */
+/* Compaction de l'en-tête : une affaire de LARGEUR, pas de navigation. */
 @media (max-width: 768px) {
   .app-header {
     gap: var(--fold-space-sm, 0.5rem);
     padding-inline: var(--fold-space-sm, 0.6rem);
-  }
-
-  /* L'adresse s'efface avant tout le reste : c'est le seul élément de l'en-tête
-     qu'on ne clique jamais. */
-  .app-user {
-    display: none;
   }
 }
 

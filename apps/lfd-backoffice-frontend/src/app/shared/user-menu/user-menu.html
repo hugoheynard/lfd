@@ -1,0 +1,30 @@
+<fold-popover placement="bottom-end" [(open)]="open">
+  <button
+    type="button"
+    class="trigger"
+    foldPopoverTrigger
+    data-user-menu
+    [attr.aria-label]="'Compte de ' + name()"
+  >
+    <fold-avatar size="sm" [name]="name()" />
+  </button>
+
+  <div foldPopoverPanel class="panel" role="dialog" aria-label="Mon compte" data-user-menu-panel>
+    <fold-avatar-detail size="md" [primary]="name()" [secondary]="email() ?? ''" />
+    @if (roleLabel()) {
+      <p class="role">{{ roleLabel() }}</p>
+    }
+    <button
+      foldButton
+      emphasis="outline"
+      intent="neutral"
+      size="sm"
+      icon="logout"
+      block
+      data-user-menu-logout
+      (click)="logout()"
+    >
+      Déconnexion
+    </button>
+  </div>
+</fold-popover>

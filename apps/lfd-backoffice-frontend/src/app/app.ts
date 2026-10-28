@@ -52,6 +52,7 @@ import { NotificationBell } from './shared/notifications/notification-bell/notif
 import { BRAND_PINK_TINT } from './shared/menu-tints';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
 import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/workspaces';
+import { UserMenu } from './shared/user-menu/user-menu';
 
 /**
  * Racine de l'app **B2B admin** (staff) : un rail de navigation + le contenu
@@ -71,6 +72,7 @@ import { WorkspaceCatalogue, isExploitationUrl } from './shared/workspace-rail/w
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    UserMenu,
     RouterOutlet,
     RouterLink,
     RouterLinkActive,
@@ -485,6 +487,9 @@ export class App {
     const me = this.permissions.identity();
     return me ? `${me.firstName} ${me.lastName}`.trim() : (this.email() ?? 'Session');
   });
+
+  /** L'adresse de la fiche staff, lue en base ; celle d'Auth0 à défaut (le jeton ne la porte pas toujours). */
+  protected readonly whoEmail = computed(() => this.permissions.identity()?.email ?? this.email());
 
   protected readonly whoSecondary = computed(() => {
     const me = this.permissions.identity();
