@@ -25,6 +25,7 @@ export const GLOSSARY_P: Readonly<Record<string, string>> = {
   pdfPending: 'PDF en préparation',
   pdfReference: 'Le PDF fait foi — mention',
   pending: 'Bientôt',
+  perKilogram: 'Mention « / kg » — prix au kilo',
   perPiece: 'Mention « par pièce »',
   period: 'Période facturée',
   persoLabel: 'Particulier',
