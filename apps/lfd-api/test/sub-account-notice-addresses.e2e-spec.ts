@@ -125,8 +125,14 @@ describe("le carnet de livraison d'un site", () => {
     const id = await addAsSite(s);
     const site = ctx.asSub(s.housekeeper);
 
+    // Régression : les avis partent en tâche de fond ; vidés une seule fois à la
+    // fin, ils arrivaient parfois dans le désordre (CI du 2026-10-28). Chaque
+    // geste attend son avis : l'ordre attendu est celui des gestes.
+    await ctx.drain();
     await site.patch(`/companies/${s.site}/delivery-addresses/${id}`).send(ADDRESS).expect(204);
+    await ctx.drain();
     await site.patch(`/companies/${s.site}/delivery-addresses/${id}/default`).expect(204);
+    await ctx.drain();
     await site.delete(`/companies/${s.site}/delivery-addresses/${id}`).expect(204);
     await ctx.drain();
 
