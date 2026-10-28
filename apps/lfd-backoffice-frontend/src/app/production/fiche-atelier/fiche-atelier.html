@@ -190,6 +190,7 @@
               [line]="line"
               [busy]="gestures.isBusy(line)"
               [thresholds]="tranches.bySku().get(line.sku) ?? null"
+              [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
               (recorded)="gestures.record(line, $event)"
               (cancelled)="gestures.cancel(line, $event)"
             />
@@ -229,6 +230,7 @@
                     [line]="line"
                     [busy]="gestures.isBusy(line)"
                     [thresholds]="tranches.bySku().get(line.sku) ?? null"
+                    [shortcuts]="shortcuts.bySku().get(line.sku) ?? []"
                     (recorded)="gestures.record(line, $event)"
                     (cancelled)="gestures.cancel(line, $event)"
                   />

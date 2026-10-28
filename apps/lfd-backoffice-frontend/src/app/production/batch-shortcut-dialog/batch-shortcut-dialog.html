@@ -1,0 +1,57 @@
+<fold-panel-header [title]="title()" [subtitle]="data().productName" />
+
+<fold-panel-body>
+  <div class="fields">
+    <fold-input
+      data-shortcut-label
+      label="Nom"
+      [hint]="'Ce que dit le bouton sur la fiche d’atelier, ' + labelMax + ' caractères au plus.'"
+      [readOnly]="!canWrite()"
+      [(value)]="label"
+    />
+    <fold-number-input
+      data-shortcut-pieces
+      label="Pièces"
+      hint="Ce qu’un appui ajoute au champ « Pièces sorties »."
+      integer
+      [min]="1"
+      [readOnly]="!canWrite()"
+      [(value)]="pieces"
+    />
+  </div>
+
+  @if (failure(); as message) {
+    <fold-callout variant="alert" announce data-shortcut-refusal>{{ message }}</fold-callout>
+  }
+
+  @if (editing() && canWrite()) {
+    <fold-danger-zone
+      appearance="section"
+      title="Supprimer ce raccourci"
+      actionLabel="Supprimer le raccourci"
+      (confirmed)="remove()"
+    >
+      <p>
+        Le bouton disparaît de la fiche d’atelier. Les fournées déjà déclarées ne changent pas, et
+        le journal garde qui l’a supprimé.
+      </p>
+    </fold-danger-zone>
+  }
+</fold-panel-body>
+
+<fold-panel-footer>
+  @if (canWrite()) {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+    <button
+      foldButton
+      data-shortcut-submit
+      [disabled]="!canSubmit()"
+      [loading]="saving()"
+      (click)="submit()"
+    >
+      {{ editing() ? 'Enregistrer' : 'Ajouter' }}
+    </button>
+  } @else {
+    <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+  }
+</fold-panel-footer>

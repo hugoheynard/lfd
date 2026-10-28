@@ -30,6 +30,7 @@ import { isoDay } from '../worksheet-day';
 import { DriftBanner } from './drift-banner/drift-banner';
 import { WorkshopDayReader } from './workshop-day.reader';
 import { WorkshopGestures } from './workshop-gestures';
+import { WorkshopShortcutsReader } from './workshop-shortcuts.reader';
 import { WorkshopTranchesReader } from './workshop-tranches.reader';
 import { WorksheetLine } from './worksheet-line/worksheet-line';
 
@@ -54,7 +55,7 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
  * TYPE plutôt qu'en consigne — il n'y a pas de champ à laisser vide.
  *
  * 🔴 **L'écran ne calcule rien** (décidé le 2026-09-14,
- * `documentation/production/plan-fiche-atelier.md` §10). La journée, les rayons,
+ * `documentation/fournil/plan-fiche-atelier.md` §10). La journée, les rayons,
  * les deux listes et tous les comptes viennent du serveur ; l'écran relit après
  * chaque fournée acceptée.
  *
@@ -89,7 +90,7 @@ const WORKSHOP_NARROW = '(max-width: 1023px)';
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [WorkshopDayReader, WorkshopGestures, WorkshopTranchesReader],
+  providers: [WorkshopDayReader, WorkshopGestures, WorkshopTranchesReader, WorkshopShortcutsReader],
   templateUrl: './fiche-atelier.html',
   styleUrl: './fiche-atelier.scss',
 })
@@ -97,6 +98,8 @@ export class FicheAtelier {
   protected readonly day = inject(WorkshopDayReader);
   protected readonly gestures = inject(WorkshopGestures);
   protected readonly tranches = inject(WorkshopTranchesReader);
+  /** Les raccourcis « + 1 plaque (24) », lus une fois pour toute la fiche (S2). */
+  protected readonly shortcuts = inject(WorkshopShortcutsReader);
   private readonly prefs = inject(StaffPrefsService);
 
   protected readonly compact = narrowViewport(WORKSHOP_NARROW);
@@ -111,6 +114,7 @@ export class FicheAtelier {
     // 🔴 Une lecture UNIQUE, et pas un `effect` : la journée est choisie au
     // serveur, rien à l'écran ne la fait changer.
     void this.day.load();
+    void this.shortcuts.load();
     // Les autres postes déclarent aussi : sans relecture, une ligne sortie du four
     // par le voisin resterait « à faire » ici, et on la fabriquerait deux fois.
     // Elle ne relit que si la journée du fournil a bougé (`plan-version-par-journee.md`).

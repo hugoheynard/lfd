@@ -1,6 +1,11 @@
 # Plan — les raccourcis du fournil : compter en plaques
 
-> 📝 **Plan** du 2026-10-28. Demande de Hugo : « en réglage production, un
+> ✅ **Bâti le 2026-10-28** (S1, S2) : table `production.production_batch_shortcut`,
+> migration `20261028200000_les_raccourcis_du_fournil`, page
+> `/reglages/production/raccourcis`, boutons sur la fiche d'atelier. Les
+> articles listés sont l'union pro et public.
+>
+> 📝 Plan du 2026-10-28. Demande de Hugo : « en réglage production, un
 > raccourci du fournil, une page avec une table, qui donne pour chaque produit
 > la possibilité d'ajouter un bouton `<nom, par défaut “1 plaque”>` — nombre de
 > pièces, ce qui permettrait de compter en plaques ». Rien n'est bâti.

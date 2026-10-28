@@ -1,0 +1,51 @@
+.body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-md);
+  align-items: center;
+}
+
+.filters fold-search {
+  flex: 1 1 16rem;
+}
+
+.product {
+  display: flex;
+  flex-direction: column;
+}
+
+.muted {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+  color: var(--fold-color-text-muted);
+}
+
+.shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  align-items: center;
+}
+
+@media (max-width: 768px) {
+  /* Le filtre des familles défile au lieu de pousser la carte. */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters fold-view-toggle {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .filters fold-search {
+    flex: none;
+  }
+}

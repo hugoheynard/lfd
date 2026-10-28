@@ -175,3 +175,76 @@ describe('une ligne de fiche d’atelier', () => {
     expect(buttons(el).every((node) => node.disabled)).toBe(true);
   });
 });
+
+describe('les raccourcis du fournil sous « Pièces sorties » (S2)', () => {
+  const SHORTCUTS = [
+    { id: 'bs-1', label: '1 plaque', pieces: 24 },
+    { id: 'bs-2', label: '1 chariot', pieces: 96 },
+  ];
+
+  function open(): { fixture: ComponentFixture<WorksheetLine>; el: HTMLElement } {
+    const fixture = TestBed.createComponent(WorksheetLine);
+    fixture.componentRef.setInput('line', line());
+    fixture.componentRef.setInput('shortcuts', SHORTCUTS);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    button(el, 'Saisir')?.click();
+    fixture.detectChanges();
+    return { fixture, el };
+  }
+
+  const press = (fixture: ComponentFixture<WorksheetLine>, id: string): void => {
+    (fixture.nativeElement as HTMLElement)
+      .querySelector<HTMLButtonElement>(`[data-worksheet-shortcut="${id}"]`)
+      ?.click();
+    fixture.detectChanges();
+  };
+
+  it('montre un bouton par raccourci, avec son nom et ses pièces', () => {
+    const { el } = open();
+
+    expect(
+      [...el.querySelectorAll('[data-worksheet-shortcut]')].map((node) => node.textContent?.trim()),
+    ).toEqual(['+ 1 plaque (24)', '+ 1 chariot (96)']);
+  });
+
+  it('AJOUTE ses pièces au champ : deux appuis sur « 1 plaque » font 48', () => {
+    const { fixture, el } = open();
+    const field = el.querySelector<HTMLInputElement>('.wl-entry-field input');
+    if (field !== null) {
+      field.value = '';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    }
+
+    press(fixture, 'bs-1');
+    press(fixture, 'bs-1');
+
+    expect(el.querySelector<HTMLInputElement>('.wl-entry-field input')?.value).toBe('48');
+  });
+
+  it('n’enregistre rien : seul « Déclarer » émet la fournée', () => {
+    const { fixture, el } = open();
+    const emitted: number[] = [];
+    fixture.componentInstance.recorded.subscribe((value) => emitted.push(value));
+
+    press(fixture, 'bs-2');
+    expect(emitted).toEqual([]);
+    button(el, 'Déclarer')?.click();
+    fixture.detectChanges();
+
+    // Prérempli de ce qui reste (104), plus un chariot.
+    expect(emitted).toEqual([200]);
+  });
+
+  it('sans raccourci, aucun bouton', () => {
+    const fixture = TestBed.createComponent(WorksheetLine);
+    fixture.componentRef.setInput('line', line());
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+    button(el, 'Saisir')?.click();
+    fixture.detectChanges();
+
+    expect(el.querySelector('[data-worksheet-shortcut]')).toBeNull();
+  });
+});

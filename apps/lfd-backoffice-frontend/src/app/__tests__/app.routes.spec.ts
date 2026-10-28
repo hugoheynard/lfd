@@ -306,6 +306,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'prod-manager/reassorts/brouillon/:draftId': 'production_resupply:write',
   // Partis en Réglages › Production le 2026-10-13 (Hugo).
   'reglages/production/fournil': 'production_settings:read',
+  // Les raccourcis du fournil (plan des raccourcis, S1, 2026-10-28).
+  'reglages/production/raccourcis': 'production_settings:read',
   // LE COMPTOIR non plus : la file de retrait (`handover_counter`) et la
   // commande pro (`b2b_place_order`) sont deux droits. Attester un retrait
   // passe par `retrait/:token`, qui exige l'écriture.

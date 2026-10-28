@@ -167,6 +167,18 @@ export const reglagesRoutes: Routes = [
             (m) => m.ProductionSettingsPage,
           ),
       },
+      {
+        // Les raccourcis du fournil — compter en plaques (plan
+        // `fournil/plan-raccourcis-du-fournil.md`, S1, 2026-10-28). Même
+        // droit que le fournil ; la page se fige sans `:write`.
+        path: 'production/raccourcis',
+        canActivate: [permissionGuard('production_settings:read')],
+        title: 'Raccourcis du fournil — LFC B2B admin',
+        loadComponent: () =>
+          import('../production/batch-shortcuts-page/batch-shortcuts-page').then(
+            (m) => m.BatchShortcutsPage,
+          ),
+      },
 
       // RÉGLAGES › LIVRAISON (Hugo, 2026-10-13) — ce qui SE RÈGLE de la
       // livraison, venu de `/livraison/` ; les écrans du jour y restent.

@@ -85,3 +85,37 @@ describe('le dossier envoyé (production_day.dossier_sent)', () => {
     );
   });
 });
+
+describe('les raccourcis du fournil (production_batch_shortcut.*)', () => {
+  const payload = {
+    subjectLabel: '1 plaque (VIE-001)',
+    sku: 'VIE-001',
+    label: '1 plaque',
+    pieces: 24,
+  };
+
+  it('dit le raccourci et ses pièces, ajouté puis supprimé, sans rien laisser au détail', () => {
+    const created = fact('production_batch_shortcut.created', payload);
+    expect(sentence(created)).toBe(
+      'Colette Martin a ajouté le raccourci du fournil 1 plaque (VIE-001), 24 pièces',
+    );
+    expect(renderFact(created).detail).toEqual([]);
+    expect(sentence(fact('production_batch_shortcut.removed', payload))).toBe(
+      'Colette Martin a supprimé le raccourci du fournil 1 plaque (VIE-001), 24 pièces',
+    );
+  });
+
+  it('dit ce que le raccourci était avant d’être modifié', () => {
+    const updated = fact('production_batch_shortcut.updated', {
+      ...payload,
+      subjectLabel: '1 grande plaque (VIE-001)',
+      label: '1 grande plaque',
+      pieces: 30,
+      previous: { label: '1 plaque', pieces: 24 },
+    });
+    expect(sentence(updated)).toBe(
+      'Colette Martin a modifié le raccourci du fournil 1 grande plaque (VIE-001) : 30 pièces ; c’était « 1 plaque », 24 pièces',
+    );
+    expect(renderFact(updated).detail).toEqual([]);
+  });
+});

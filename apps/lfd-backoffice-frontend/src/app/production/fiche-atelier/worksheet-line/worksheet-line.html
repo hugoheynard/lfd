@@ -75,6 +75,25 @@
         <button foldButton size="sm" type="submit" [disabled]="busy() || !draftValid()">
           Déclarer
         </button>
+        <!-- Les raccourcis AJOUTENT au champ ; seul « Déclarer » enregistre (S2). -->
+        @if (shortcuts().length > 0) {
+          <span class="wl-shortcuts" role="group" aria-label="Ajouter au champ">
+            @for (shortcut of shortcuts(); track shortcut.id) {
+              <button
+                foldButton
+                size="sm"
+                type="button"
+                emphasis="soft"
+                intent="neutral"
+                [attr.data-worksheet-shortcut]="shortcut.id"
+                [disabled]="busy()"
+                (click)="addShortcut(shortcut)"
+              >
+                + {{ shortcut.label }} ({{ shortcut.pieces }})
+              </button>
+            }
+          </span>
+        }
       </form>
     }
 

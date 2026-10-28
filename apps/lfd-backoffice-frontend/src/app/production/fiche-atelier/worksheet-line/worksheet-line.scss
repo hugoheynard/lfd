@@ -117,8 +117,16 @@
 
 .wl-entry {
   display: flex;
+  flex-wrap: wrap;
   align-items: flex-end;
   gap: var(--fold-space-md);
+}
+
+/* Les raccourcis du produit, à côté de « Déclarer » : ils ajoutent au champ. */
+.wl-shortcuts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
 }
 
 .wl-entry-field {

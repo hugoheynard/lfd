@@ -43,6 +43,7 @@ import { GetProductionSettingsHandler } from "./application/queries/get-producti
 import { ProductionClosedDayRepository } from "./domain/ports/production-closed-day.repository.js";
 import { ProductionSettingsReader } from "./domain/ports/production-settings.reader.js";
 import { ProductionSettingsController } from "./http/production-settings.controller.js";
+import { ProductionBatchShortcutsModule } from "./production-batch-shortcuts.module.js";
 import { PrismaProductionClosedDayRepository } from "./infrastructure/prisma-production-closed-day.repository.js";
 import { PrismaProductionSettingsReader } from "./infrastructure/prisma-production-settings.reader.js";
 import { AddExternalDossierRecipientHandler } from "./application/commands/add-external-dossier-recipient.handler.js";
@@ -169,7 +170,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
  */
 @Module({
   // Le logo de l'en-tête des papiers du fournil (Hugo, 2026-10-25).
-  imports: [BrandModule],
+  // Les raccourcis du fournil (plan des raccourcis, S1) : leur propre module.
+  imports: [BrandModule, ProductionBatchShortcutsModule],
   controllers: [
     ProductionDayController,
     ProductionWorksheetController,

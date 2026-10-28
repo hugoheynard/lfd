@@ -179,6 +179,15 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
     icon: 'sliders',
     needs: 'production_settings:read',
   },
+  {
+    // Les raccourcis du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
+    // S1, 2026-10-28) : compter en plaques sur la fiche d'atelier.
+    key: 'reglages-raccourcis',
+    label: 'Raccourcis du fournil',
+    link: '/reglages/production/raccourcis',
+    icon: 'grid',
+    needs: 'production_settings:read',
+  },
 ];
 
 /**

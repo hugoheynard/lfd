@@ -1018,6 +1018,22 @@ export type {
   ProductionTranchesView,
 } from "./production-settings.js";
 export {
+  BATCH_SHORTCUT_LABEL_MAX,
+  createBatchShortcutPayloadSchema,
+  DEFAULT_BATCH_SHORTCUT_LABEL,
+  MAX_BATCH_SHORTCUTS_PER_PRODUCT,
+  updateBatchShortcutPayloadSchema,
+} from "./production-batch-shortcuts.js";
+export type {
+  BatchShortcutArticleView,
+  BatchShortcutsSettingsView,
+  BatchShortcutView,
+  CreateBatchShortcutPayload,
+  UpdateBatchShortcutPayload,
+  WorkshopShortcutsView,
+  WorkshopShortcutView,
+} from "./production-batch-shortcuts.js";
+export {
   dossierExternalRecipientPayloadSchema,
   dossierRecipientPayloadSchema,
   dossierStaffRecipientPayloadSchema,

@@ -6,7 +6,12 @@ import {
   FoldNumberInputComponent,
 } from 'fold-ng';
 
-import type { DueThresholdView, WorkshopBatch, WorkshopLine } from '@lfd/contracts';
+import type {
+  DueThresholdView,
+  WorkshopBatch,
+  WorkshopLine,
+  WorkshopShortcutView,
+} from '@lfd/contracts';
 
 import { hourLabel } from '../../worksheet-day';
 import { WorksheetTranches } from '../worksheet-tranches/worksheet-tranches';
@@ -57,10 +62,16 @@ export class WorksheetLine {
 
   /**
    * Les tranches du produit, telles que servies (plan
-   * `production/plan-tranches-de-production.md`, T3). `null` = rien à
+   * `fournil/plan-tranches-de-production.md`, T3). `null` = rien à
    * montrer : pas lues, ou produit absent des seuils.
    */
   readonly thresholds = input<readonly DueThresholdView[] | null>(null);
+
+  /**
+   * Les raccourcis du produit (plan `documentation/fournil/plan-raccourcis-du-fournil.md`,
+   * S2) : « + 1 plaque (24) » sous le champ « Pièces sorties ».
+   */
+  readonly shortcuts = input<readonly WorkshopShortcutView[]>([]);
 
   /** Un geste de cette ligne est en vol : tout est désarmé le temps de l'envoi. */
   readonly busy = input(false);
@@ -108,6 +119,14 @@ export class WorksheetLine {
   protected openEntry(): void {
     this.draft.set(Math.max(1, this.line().remaining));
     this.entering.set(true);
+  }
+
+  /**
+   * Un raccourci AJOUTE ses pièces au champ : deux appuis sur « 1 plaque »
+   * font 48. Rien ne part — « Déclarer » reste le seul geste qui enregistre.
+   */
+  protected addShortcut(shortcut: WorkshopShortcutView): void {
+    this.draft.update((current) => (current ?? 0) + shortcut.pieces);
   }
 
   protected closeEntry(): void {

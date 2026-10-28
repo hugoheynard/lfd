@@ -1,0 +1,116 @@
+<fold-page-layout title="Raccourcis du fournil" icon="sliders">
+  @switch (state().status) {
+    @case ('loading') {
+      <fold-loading message="Lecture des raccourcis du fournil…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Les raccourcis du fournil n’ont pas pu être lus.">
+        <button foldButton emphasis="outline" (click)="retry()" data-retry>Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      <fold-card data-batch-shortcuts>
+        <fold-element-title
+          cardHeader
+          variant="title"
+          title="Compter en plaques"
+          [subtitle]="
+            'Sur la fiche d’atelier, chaque raccourci ajoute ses pièces au champ « Pièces sorties » : deux appuis sur « 1 plaque · 24 » font 48. Au plus ' +
+            max +
+            ' par produit.'
+          "
+        />
+
+        <div class="body">
+          <!-- Le filtre et la recherche sur UNE ligne : ils règlent la même table. -->
+          <div class="filters">
+            @if (familyOptions().length > 2) {
+              <fold-view-toggle
+                data-shortcut-families
+                ariaLabel="Filtrer par famille"
+                size="sm"
+                [options]="familyOptions()"
+                [value]="family()"
+                (valueChange)="family.set($event)"
+              />
+            }
+            <fold-search
+              placeholder="Chercher un produit"
+              ariaLabel="Chercher un produit"
+              [value]="query()"
+              (valueChange)="query.set($event)"
+              [resultCount]="visibleArticles().length"
+              resultLabel="produits"
+            />
+          </div>
+
+          <fold-data-table
+            data-shortcut-table
+            density="compact"
+            hover
+            caption="Les raccourcis du fournil, par produit"
+            [columns]="columns()"
+            [rows]="visibleArticles()"
+            [rowKey]="skuOf"
+            [empty]="nothingFound"
+          >
+            <ng-template foldCell="family" let-article>
+              <span class="muted">{{ article.familyName }}</span>
+            </ng-template>
+            <ng-template foldCell="product" let-article>
+              <span class="product">
+                {{ article.name }}
+                <span class="muted">{{ article.sku }}</span>
+              </span>
+            </ng-template>
+            <ng-template foldCell="shortcuts" let-article>
+              <div class="shortcuts" [attr.data-shortcut-row]="article.sku">
+                @for (shortcut of shortcutsOf(article.sku); track shortcut.id) {
+                  @if (canWrite()) {
+                    <button
+                      foldButton
+                      type="button"
+                      size="sm"
+                      emphasis="soft"
+                      intent="neutral"
+                      [attr.data-shortcut-chip]="shortcut.id"
+                      [attr.aria-label]="
+                        'Modifier le raccourci ' +
+                        shortcut.label +
+                        ', ' +
+                        shortcut.pieces +
+                        ' pièces'
+                      "
+                      (click)="edit(article, shortcut)"
+                    >
+                      {{ shortcut.label }} · {{ shortcut.pieces }}
+                    </button>
+                  } @else {
+                    <fold-badge
+                      [attr.data-shortcut-chip]="shortcut.id"
+                      [content]="shortcut.label + ' · ' + shortcut.pieces"
+                    />
+                  }
+                }
+                @if (canWrite() && shortcutsOf(article.sku).length < max) {
+                  <button
+                    foldButton
+                    type="button"
+                    size="sm"
+                    emphasis="outline"
+                    intent="neutral"
+                    icon="plus"
+                    data-shortcut-add
+                    (click)="add(article)"
+                  >
+                    Ajouter un raccourci
+                  </button>
+                }
+              </div>
+            </ng-template>
+          </fold-data-table>
+        </div>
+      </fold-card>
+    }
+  }
+</fold-page-layout>

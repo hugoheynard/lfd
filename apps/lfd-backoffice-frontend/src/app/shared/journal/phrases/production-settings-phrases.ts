@@ -16,7 +16,7 @@ import {
 import { PRODUCTION_CLOSE_MODE } from '../values/orders-values';
 
 /**
- * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
+ * **Les réglages du fournil** (plan `documentation/fournil/arret-du-plan.md`,
  * lot A1) — le miroir de `PRODUCTION_SETTINGS_FACTS` dans `@lfd/contracts`.
  *
  * Le réglage d'arrêt se dit en entier, avant et après : un mode et l'heure qui
@@ -91,7 +91,7 @@ const dossierSent: Phrase = (fact) => {
 
 /**
  * « tranches fixes à 05:00, 07:00 », « tranches fixes, aucune heure »,
- * « tranches calculées » (plan `production/plan-tranches-de-production.md`, T1).
+ * « tranches calculées » (plan `fournil/plan-tranches-de-production.md`, T1).
  */
 function trancheTerms(raw: unknown): Segment[] {
   const settings = recordOf(raw);
@@ -116,7 +116,49 @@ function trancheTerms(raw: unknown): Segment[] {
   ];
 }
 
+/**
+ * « a ajouté le raccourci du fournil 1 plaque (VIE-001), 24 pièces » (plan
+ * `fournil/plan-raccourcis-du-fournil.md`, S1). Le nom et le produit sont
+ * le sujet ; les pièces se disent.
+ */
+const batchShortcut =
+  (verb: string): Phrase =>
+  (fact) => {
+    const pieces = countOf(fact.payload['pieces'], 'pièce', 'pièces');
+    return byActor(
+      fact,
+      [
+        text(verb),
+        subject(fact, subjectLabelOf(fact) ?? 'un raccourci'),
+        ...(pieces === null ? [] : [text(', '), pieces]),
+      ],
+      ['subjectLabel', 'sku', 'label', 'pieces'],
+    );
+  };
+
+/** « a modifié le raccourci … : 30 pièces ; c’était « 1 plaque », 24 pièces ». */
+const batchShortcutUpdated: Phrase = (fact) => {
+  const pieces = countOf(fact.payload['pieces'], 'pièce', 'pièces');
+  const previous = recordOf(fact.payload['previous']);
+  const before = countOf(previous?.['pieces'], 'pièce', 'pièces');
+  const beforeLabel = typeof previous?.['label'] === 'string' ? previous['label'] : null;
+  return byActor(
+    fact,
+    [
+      text('a modifié le raccourci du fournil '),
+      subject(fact, subjectLabelOf(fact) ?? 'un raccourci'),
+      ...(pieces === null ? [] : [text(' : '), pieces]),
+      ...(beforeLabel === null ? [] : [text(` ; c’était « ${beforeLabel} »`)]),
+      ...(before === null ? [] : [text(', '), before]),
+    ],
+    ['subjectLabel', 'sku', 'label', 'pieces', 'previous'],
+  );
+};
+
 export const PRODUCTION_SETTINGS_PHRASES = {
+  'production_batch_shortcut.created': batchShortcut('a ajouté le raccourci du fournil '),
+  'production_batch_shortcut.updated': batchShortcutUpdated,
+  'production_batch_shortcut.removed': batchShortcut('a supprimé le raccourci du fournil '),
   'production_tranche_settings.updated': (fact) =>
     byActor(
       fact,

@@ -16,6 +16,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
 import { dayLabelOf } from '../worksheet-day';
 import { ProductionService } from '../production.service';
+import { BatchShortcutsService } from '../batch-shortcuts.service';
 import { WorksheetService } from '../worksheet.service';
 import { FicheAtelier } from './fiche-atelier';
 
@@ -226,6 +227,9 @@ const NO_TRANCHES: ProductionDueThresholdsView = {
   lines: [],
 };
 
+/** Les raccourcis servis, et le compte des lectures : une pour toute la fiche (S2). */
+let shortcutReads = 0;
+
 let api: FakeWorksheetService;
 let prefs: FakePrefs;
 
@@ -289,8 +293,33 @@ describe('la fiche d’atelier', () => {
         },
         { provide: StaffPrefsService, useValue: prefs },
         { provide: PermissionsStore, useValue: { identity: () => ME } },
+        {
+          provide: BatchShortcutsService,
+          useValue: {
+            workshop: () => {
+              shortcutReads += 1;
+              return Promise.resolve({
+                bySku: { BAG: [{ id: 'bs-1', label: '1 plaque', pieces: 24 }] },
+              });
+            },
+          } satisfies Partial<Record<keyof BatchShortcutsService, unknown>>,
+        },
       ],
     });
+    shortcutReads = 0;
+  });
+
+  it('lit les raccourcis UNE fois pour toute la fiche, et les donne à leur ligne', async () => {
+    const { fixture, el } = await render();
+    [...(baguette(el)?.querySelectorAll('button') ?? [])]
+      .find((node) => (node.textContent ?? '').includes('Saisir'))
+      ?.click();
+    await settle(fixture);
+
+    expect(shortcutReads).toBe(1);
+    expect(
+      baguette(el)?.querySelector('[data-worksheet-shortcut="bs-1"]')?.textContent?.trim(),
+    ).toBe('+ 1 plaque (24)');
   });
 
   it('nomme la journée SERVIE, et son mot tel que le serveur le dit', async () => {

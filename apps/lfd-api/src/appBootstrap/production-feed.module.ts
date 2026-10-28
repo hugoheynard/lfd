@@ -7,6 +7,7 @@ import {
 } from "../b2b/delivery-notes/infrastructure/production-planned-delivery-notes.reader.js";
 import { DeliveryNotesModule } from "../b2b/delivery-notes/delivery-notes.module.js";
 import { CatalogWorkshopShelvesReader } from "../b2b/catalog/infrastructure/catalog-workshop-shelves.reader.js";
+import { CatalogSellableArticlesReader } from "../b2b/catalog/infrastructure/catalog-sellable-articles.reader.js";
 import { ProductionOrderCutoffRulesReader } from "../b2b/order-cutoffs/infrastructure/production-order-cutoff-rules.reader.js";
 import { ProductionResupplyCutoffTimeReader } from "../b2b/order-cutoffs/infrastructure/production-resupply-cutoff-time.reader.js";
 import { OrderCutoffsModule } from "../b2b/order-cutoffs/order-cutoffs.module.js";
@@ -35,6 +36,7 @@ import {
   PlannedDeliveryNotesReader,
   ResupplyCutoffTimeReader,
   ResupplyPrintColorsReader,
+  SellableArticlesReader,
   SpecimenDeliveryNoteReader,
   WorkshopShelvesReader,
 } from "../production/channels/commerce/index.js";
@@ -90,6 +92,9 @@ import {
     // chez `catalog/` et non chez `orders/` : c'est là que sont le miroir du
     // catalogue et la seule table famille → rayon.
     { provide: WorkshopShelvesReader, useClass: CatalogWorkshopShelvesReader },
+    // Les articles vendables, pour la page des raccourcis du fournil (plan
+    // `fournil/plan-raccourcis-du-fournil.md`, S1) : même miroir, même lieu.
+    { provide: SellableArticlesReader, useClass: CatalogSellableArticlesReader },
     // Le seul port du canal qui ÉCRIT chez le commerce : la clôture lui demande
     // de trancher les règlements en vol avant de compter (plan d'abandon, B1).
     // `useExisting` : l'instance est celle d'`OrdersModule`, qui a ses ports.
@@ -131,6 +136,7 @@ import {
     PlannedDeliveryNotesReader,
     ResupplyCutoffTimeReader,
     ResupplyPrintColorsReader,
+    SellableArticlesReader,
     SpecimenDeliveryNoteReader,
     WorkshopShelvesReader,
   ],

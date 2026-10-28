@@ -65,6 +65,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // Les tranches de production (Réglages › Production, 2026-10-28) : un réglage.
   "production.production_tranche_settings":
     "les tranches de production, un réglage unique sans journée",
+  // Les raccourcis du fournil (Réglages › Production, 2026-10-28) : un réglage par produit.
+  "production.production_batch_shortcut":
+    "les raccourcis du fournil, un réglage par produit sans journée",
   // Les destinataires du dossier du jour (plan d'envoi du dossier, E2, 2026-10-06).
   "production.production_dossier_recipient":
     "la liste des destinataires du dossier, un réglage sans journée — l'envoi d'une journée (E3) aura sa trace à lui",

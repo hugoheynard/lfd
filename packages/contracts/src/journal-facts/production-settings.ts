@@ -3,7 +3,7 @@ import { z } from "zod";
 import { clockTime, count, day, fact, payload, retired, subjectLabel } from "./fact.js";
 
 /**
- * **Les réglages du fournil** (plan `documentation/production/arret-du-plan.md`,
+ * **Les réglages du fournil** (plan `documentation/fournil/arret-du-plan.md`,
  * lot A1, 2026-10-06) — l'arrêt du plan automatique ou manuel, et les jours
  * fermés.
  *
@@ -32,6 +32,16 @@ const dossierRecipient = () =>
     staffUserId: z.string().nullable(),
   });
 
+/** Un raccourci du fournil : son nom, son produit, ses pièces. */
+const batchShortcutFields = () => ({
+  subjectLabel: subjectLabel(),
+  sku: z.string().min(1),
+  label: z.string().min(1),
+  pieces: count(),
+});
+
+const batchShortcut = () => payload(batchShortcutFields());
+
 export const PRODUCTION_SETTINGS_FACTS = {
   /**
    * Le mode ou une heure a changé. `before` est le réglage en vigueur, défaut compris.
@@ -56,7 +66,7 @@ export const PRODUCTION_SETTINGS_FACTS = {
   ),
   /**
    * Les tranches de production (Réglages › Production, plan
-   * `production/plan-tranches-de-production.md`, T1, 2026-10-28) : l'état posé
+   * `fournil/plan-tranches-de-production.md`, T1, 2026-10-28) : l'état posé
    * et celui qu'il remplace, défauts compris. Un réglage unique, sans
    * `subjectLabel`.
    */
@@ -70,6 +80,21 @@ export const PRODUCTION_SETTINGS_FACTS = {
       }),
     }),
   ),
+  /**
+   * Un raccourci du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
+   * S1, 2026-10-28) : pour un produit, un nom et un nombre de pièces. Nommé
+   * « 1 plaque (VIE-001) » — le nom et le SKU produit.
+   */
+  "production_batch_shortcut.created": fact(batchShortcut()),
+  /** Son nom ou ses pièces ont changé ; `previous` dit ce qu'ils étaient. */
+  "production_batch_shortcut.updated": fact(
+    payload({
+      ...batchShortcutFields(),
+      previous: payload({ label: z.string(), pieces: count() }),
+    }),
+  ),
+  /** Il est retiré — la ligne s'archive, elle ne s'efface pas. */
+  "production_batch_shortcut.removed": fact(batchShortcut()),
   /** Un jour où le fournil ne produit pas. */
   "production_closed_day.added": fact(closedDay()),
   /** Ce jour redevient un jour de production. */
