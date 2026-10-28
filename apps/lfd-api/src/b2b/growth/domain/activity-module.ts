@@ -183,6 +183,11 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les réglages du fournil — l'arrêt du plan, les jours fermés (A1, 2026-10-06).
     "production_settings.",
     "production_closed_day.",
+    // Les tranches de production (Réglages › Production, 2026-10-28) — ⚠️
+    // `production_tranche_settings.` ne tombe PAS sous `production_settings.`.
+    "production_tranche_settings.",
+    // Les raccourcis du fournil, « 1 plaque · 24 » (Réglages › Production, 2026-10-28).
+    "production_batch_shortcut.",
     // Les destinataires du dossier du jour par e-mail (E1, 2026-10-06).
     "production_dossier_recipient.",
   ],

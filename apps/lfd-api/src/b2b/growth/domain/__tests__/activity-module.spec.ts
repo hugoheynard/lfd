@@ -76,12 +76,13 @@ describe("moduleOf — le fournil", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses dix préfixes", () => {
+  it("le filtre du module production ne ramène que ses douze préfixes", () => {
     // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
     // La feuille retirée après l'arrêt (plan A1, lot A1.3, 2026-10-25).
     // La sortie de réserve vers une boutique (plan A1, lot A1.4, 2026-10-25).
     // Les réglages du fournil (A1, 2026-10-06) : l'arrêt du plan, les jours fermés.
     // Où le contrôle qualité se rend (Réglages › Commandes, 2026-10-26).
+    // Les tranches de production et les raccourcis du fournil (2026-10-28).
     expect(prefixesOf("production")).toEqual([
       "production_day.",
       "production_container.",
@@ -92,6 +93,8 @@ describe("moduleOf — le fournil", () => {
       "packing_stock.",
       "production_settings.",
       "production_closed_day.",
+      "production_tranche_settings.",
+      "production_batch_shortcut.",
       "production_dossier_recipient.",
     ]);
   });
