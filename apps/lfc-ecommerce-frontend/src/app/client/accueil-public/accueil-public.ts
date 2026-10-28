@@ -59,6 +59,7 @@ import { HOME_PAGE } from '@lfd/storefront-layout';
 import { StaffHomePicksRow } from '../suggestions/staff-home-picks/staff-home-picks';
 import { UsualPicksRow } from '../suggestions/usual-picks/usual-picks';
 import { HomeFeatured } from './home-featured/home-featured';
+import { PieceSheetHost } from '../shop/piece-sheet-host/piece-sheet-host';
 import { HomeStorefront } from './home-storefront/home-storefront';
 import { isMeaningfulAlt } from '../shop/image-alt';
 
@@ -113,6 +114,7 @@ interface House {
   selector: 'app-accueil-public',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    PieceSheetHost,
     ContactBand,
     CurrentEvents,
     FoldButtonComponent,

@@ -16,7 +16,6 @@ import {
 } from 'fold-ng';
 
 import { formatCents } from '../../../client/format-money';
-import { CartEntries } from '../../cart/cart-entries';
 import { ClientCart } from '../../cart/client-cart.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { OrderContextStore } from '../../../client/order-context.store';
@@ -41,7 +40,7 @@ import { ProVisit } from '../pro-visit.service';
 import { PieceRequest } from '../piece-request.service';
 import { OperationNotice } from '../operation-notice/operation-notice';
 import { CartAnnouncement } from '../cart-announcement/cart-announcement';
-import { CartAnnouncer } from '../cart-announcer.service';
+import { PieceQuantity } from '../piece-quantity.service';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
 
@@ -111,8 +110,7 @@ export class ShopPage {
 
   private readonly storefront = inject(ShopStorefront);
   private readonly audience = inject(ProductAudience);
-  private readonly entries = inject(CartEntries);
-  private readonly announcer = inject(CartAnnouncer);
+  private readonly quantities = inject(PieceQuantity);
 
   /**
    * L'état de la page de vitrine du rayon affiché — `null` pendant une
@@ -176,22 +174,9 @@ export class ShopPage {
    */
   protected setPieceQuantity(quantity: number): void {
     const id = this.openPiece();
-    if (id === null) {
-      return;
+    if (id !== null && this.quantities.set(id, quantity)) {
+      this.pieceAddress.close();
     }
-    const entering = this.cart.quantityOf(id) === 0 && quantity > 0;
-    // La visite pro détourne le geste vers la connexion : la fiche reste ouverte.
-    if (this.cart.setQuantity(id, quantity) === 'signInRequired') {
-      return;
-    }
-    if (entering) {
-      this.audience.record(id, 'added_to_cart');
-    }
-    if (entering && this.cart.quantityOf(id) > 0) {
-      this.entries.entered(id);
-    }
-    this.announcer.announce(id);
-    this.pieceAddress.close();
   }
 
   constructor() {

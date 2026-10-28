@@ -27,6 +27,8 @@ export class PieceRequest {
   private readonly asked = signal<PieceAsk | null>(null);
   private count = 0;
   private taken = 0;
+  /** Les fiches posées hors de la boutique (l'accueil) : là, demander n'emmène nulle part. */
+  private hosts = 0;
 
   /** La dernière demande, consommée ou non — ce que les panneaux à refermer écoutent. */
   readonly latest = this.asked.asReadonly();
@@ -36,9 +38,23 @@ export class PieceRequest {
     return this.count;
   }
 
+  /**
+   * Une page porte sa propre fiche (`PieceSheetHost`) : tant qu'elle est
+   * là, une demande s'ouvre sur place. Rend le geste qui la détache.
+   */
+  attach(): () => void {
+    this.hosts += 1;
+    return () => {
+      this.hosts -= 1;
+    };
+  }
+
   open(sku: string): void {
     this.count += 1;
     this.asked.set({ id: this.count, sku });
+    if (this.hosts > 0) {
+      return;
+    }
     // `#pro` compris : une fiche demandée depuis la boutique en visite pro ne
     // renavigue pas — ce qui effacerait le fragment, et la visite avec lui.
     // Une fiche déjà ouverte (`/boutique/<slug>/<sku>`) est encore la boutique.
