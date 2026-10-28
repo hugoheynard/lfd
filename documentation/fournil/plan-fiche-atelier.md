@@ -1,7 +1,8 @@
 # La fiche d'atelier — plan
 
 > Dossier de reprise : `handoff-fiche-atelier/` (SPEC.md, maquette trois vues).
-> Écrit le 2026-09-13, avant la première ligne.
+> Écrit le 2026-09-13, avant la première ligne. La v3 (paliers, deux vues) :
+> [`plan-fournee-v3.md`](plan-fournee-v3.md).
 
 **Ce qu'on livre** : une fiche par catégorie, sur **deux supports** — poste fixe
 et téléphone. Pas de feuille A4 : les bons de commande existants tiennent déjà
