@@ -35,3 +35,33 @@ describe('les puces des fournées', () => {
     expect(cancelled).toEqual([BATCH]);
   });
 });
+
+/** Régression : une annulation sur une journée du colisage semblait ne rien faire (2026-10-28). */
+describe('les puces des fournées — retour au colisage', () => {
+  function mount(batch: WorkshopBatch) {
+    const fixture = TestBed.createComponent(BatchChips);
+    fixture.componentRef.setInput('batches', [batch]);
+    fixture.detectChanges();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('dit les pièces en retour, et garde la croix pour le reste', () => {
+    const el = mount({ ...BATCH, pendingReturn: 24 });
+
+    expect(el.querySelector('[data-batch-returning]')?.textContent?.trim()).toBe('↩ 24 en retour');
+    expect(el.querySelector('fold-button-icon')).not.toBeNull();
+  });
+
+  it('retire la croix quand toute la fournée est déjà en retour', () => {
+    const el = mount({ ...BATCH, pendingReturn: 48 });
+
+    expect(el.querySelector('[data-batch-returning]')?.textContent?.trim()).toBe('↩ 48 en retour');
+    expect(el.querySelector('fold-button-icon')).toBeNull();
+  });
+
+  it('ne dit rien sans retour en attente', () => {
+    expect(
+      mount({ ...BATCH, pendingReturn: 0 }).querySelector('[data-batch-returning]'),
+    ).toBeNull();
+  });
+});

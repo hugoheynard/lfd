@@ -23,3 +23,19 @@
   font-variant-numeric: tabular-nums;
   white-space: nowrap;
 }
+
+/* Un retour demandé au colisage : la puce le dit, en ambre, jusqu'à sa réponse. */
+.bc-chip.is-returning {
+  border-color: var(--fold-color-warning-border);
+}
+
+.bc-returning {
+  font-size: var(--fold-text-xs);
+  color: var(--fold-color-warning-text);
+  white-space: nowrap;
+}
+
+/* Sans croix (tout est déjà en retour), la puce garde son bord droit. */
+.bc-chip:not(:has(fold-inline-confirm)) {
+  padding-inline-end: var(--fold-space-md);
+}

@@ -13,6 +13,10 @@ import { hourLabel } from '../../worksheet-day';
 interface ShownBatch {
   readonly batch: WorkshopBatch;
   readonly said: string;
+  /** « ↩ 24 en retour » : les pièces que le colisage doit encore rendre. */
+  readonly returning: string | null;
+  /** Tout est déjà demandé au colisage : plus rien à annuler ici. */
+  readonly settled: boolean;
   readonly labels: Partial<FoldInlineConfirmLabels>;
 }
 
@@ -20,6 +24,12 @@ interface ShownBatch {
  * **Les fournées d'une ligne**, en puces — chacune s'annule en deux temps :
  * ✕, puis « Annuler 24 ? » (plan `documentation/fournil/plan-fournee-v3.md`
  * §4.5). N'importe quel poste annule celle d'un autre : le serveur trace qui.
+ *
+ * 🔴 Sur une journée tenue par le colisage, annuler une fournée déjà remise
+ * n'annule rien : c'est une DEMANDE de retour, et les pièces comptent encore
+ * jusqu'à la réponse (`cancel-batch.handler.ts`, vérifié le 2026-10-28). La
+ * puce dit donc ce qui compte vraiment, et ce qui est en retour : sans ça,
+ * l'annulation avait l'air de ne rien faire (Hugo, 2026-10-28).
  */
 @Component({
   selector: 'app-batch-chips',
@@ -36,10 +46,13 @@ export class BatchChips {
   protected readonly shown = computed<readonly ShownBatch[]>(() =>
     this.batches().map((batch) => {
       const hour = hourLabel(batch.recordedAt) ?? '';
-      const qty = String(batch.quantity);
+      const pending = Math.min(batch.pendingReturn ?? 0, batch.quantity);
+      const qty = String(batch.quantity - pending);
       return {
         batch,
-        said: [hour, batch.initials ?? '—', qty].join(' · '),
+        said: [hour, batch.initials ?? '—', String(batch.quantity)].join(' · '),
+        returning: pending > 0 ? `↩ ${String(pending)} en retour` : null,
+        settled: pending >= batch.quantity,
         labels: {
           confirm: `Annuler ${qty} ?`,
           cancel: 'Garder',
