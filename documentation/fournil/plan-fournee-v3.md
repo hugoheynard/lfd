@@ -28,7 +28,7 @@
 
 | La maquette demande                            | Aujourd'hui                                                                                                                       |
 | ---------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------- |
-| Les paliers d'une ligne (« 120 avant 7 h 00 ») | Les **tranches** : `GET …/due-thresholds`, rangées selon le mode, lues par la fiche à côté (`workshop-tranches.reader.ts`)        |
+| Les paliers d'une ligne (« 120 avant 7 h 00 ») | Les **tranches** : `GET …/due-thresholds`, rangées selon le mode, lues par la fiche à côté (un lecteur à part, retiré par la v3)  |
 | « + 1 plaque » (contenant de la ligne)         | `WorkshopLine.container` et `quickLabel` existent ; **aucun écran ne règle le contenant** (seules les routes `…/containers/:sku`) |
 | Les raccourcis                                 | Bâtis le 2026-10-28, boutons sous « Pièces sorties »                                                                              |
 | « 1 commande attend · remise 8 h 45 »          | Lu par la Supervision (`awaitingProduction` des feuilles du colisage) ; **pas sur la fiche**                                      |
@@ -51,7 +51,7 @@
 - Les fonctions du SPEC §1 (`steps`, `currentStep`, `stepRemaining`, `isLate`,
   `slots`) vivent côté écran, pures, dans un fichier neuf de la fiche (`workshop-deadlines`) ; « maintenant »
   vient de l'horloge de la fiche, pas d'un `new Date()` au rendu.
-- La lecture à part des tranches par la fiche (`workshop-tranches.reader.ts`,
+- La lecture à part des tranches par la fiche (le lecteur de tranches de la fiche,
   `worksheet-tranches/`) est **remplacée** : les paliers arrivent avec la ligne.
 
 ## 3. Les données ajoutées à la ligne
