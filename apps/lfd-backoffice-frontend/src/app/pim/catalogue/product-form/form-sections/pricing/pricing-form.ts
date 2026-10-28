@@ -1,4 +1,5 @@
-import { ChangeDetectionStrategy, Component, inject } from '@angular/core';
+import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
+import { FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 
 import { ChannelsForm } from '../channels/channels-form';
 import { ProductFormStore } from '../../product-form-store';
@@ -25,7 +26,7 @@ import { numberValue, textValue } from '../dom';
 @Component({
   selector: 'app-pricing-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChannelsForm],
+  imports: [ChannelsForm, FoldViewToggleComponent],
   templateUrl: './pricing-form.html',
   styleUrls: ['../form-section.scss', './pricing-form.scss'],
 })
@@ -33,4 +34,23 @@ export class PricingForm {
   protected readonly store = inject(ProductFormStore);
   protected readonly numberValue = numberValue;
   protected readonly textValue = textValue;
+
+  /** Au poids, les prix sont au kilo et le pas et le minimum s'affichent (P1). */
+  protected readonly byWeight = computed(() => this.store.saleUnit() === 'weight');
+
+  /** Les deux segments, tous deux éteints une fois la déclinaison publiée. */
+  protected readonly saleUnitOptions = computed((): readonly FoldViewToggleOption[] => {
+    const disabled = this.store.saleUnitLocked();
+    return [
+      { value: 'piece', label: 'Vendre à la pièce', disabled },
+      { value: 'weight', label: 'Vendre au poids', disabled },
+    ];
+  });
+
+  protected setSaleUnit(value: string): void {
+    if (this.store.saleUnitLocked()) {
+      return;
+    }
+    this.store.saleUnit.set(value === 'weight' ? 'weight' : 'piece');
+  }
 }

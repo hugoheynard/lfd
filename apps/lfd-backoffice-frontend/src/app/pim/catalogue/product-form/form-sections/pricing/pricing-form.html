@@ -8,13 +8,35 @@
      et se lisent pareil sur toutes ses déclinaisons. -->
 <div class="tarif">
   <div class="stack" [class.is-inherited]="store.pricingAligned()">
+    <!-- L'unité de vente (P1, `plan-vente-au-poids.md`) : en tête, parce
+         qu'elle change le sens de chaque prix dessous. Figée après la première
+         publication — le serveur refuserait, l'écran ne le propose pas. -->
+    <div class="field">
+      <span class="field-label">Unité de vente</span>
+      <fold-view-toggle
+        ariaLabel="Unité de vente"
+        size="sm"
+        [options]="saleUnitOptions()"
+        [value]="store.saleUnit()"
+        (valueChange)="setSaleUnit($event)"
+      />
+      @if (store.saleUnitLocked()) {
+        <span class="field-hint">
+          Déjà publiée&nbsp;: l’unité ne change plus. Pour vendre autrement, créez une autre
+          déclinaison.
+        </span>
+      }
+    </div>
+
     <label class="field">
       <!-- L'étiquette ne se calcule plus : il n'y a qu'une assiette. Elle a été
            une expression ternaire tant qu'une fiche pouvait porter un montant
            hors taxe — l'appeler « Prix public TTC » aurait menti sur le nombre
            affiché, et c'est le seul mensonge qu'un écran de tarif ne peut pas
            se permettre. -->
-      <span class="field-label">Prix public TTC</span>
+      <span class="field-label">{{
+        byWeight() ? 'Prix public TTC au kg' : 'Prix public TTC'
+      }}</span>
       <span class="field-money">
         <input
           class="native-input"
@@ -28,27 +50,30 @@
       </span>
     </label>
 
-    <!-- Le prix au kilo public TTC (K4) : SAISI, jamais calculé — informatif. -->
-    <label class="field">
-      <span class="field-label">Prix au kilo public TTC</span>
-      <span class="field-money">
-        <input
-          class="native-input"
-          type="number"
-          step="0.01"
-          min="0"
-          [value]="store.publicPricePerKgEur() ?? ''"
-          (input)="store.publicPricePerKgEur.set(numberValue($event))"
-        />
-        <span class="field-unit" aria-hidden="true">€</span>
-      </span>
-    </label>
+    <!-- Le prix au kilo public TTC (K4) : SAISI, jamais calculé — informatif.
+         Au poids, le prix public EST au kilo : ce champ n'a plus d'objet. -->
+    @if (!byWeight()) {
+      <label class="field">
+        <span class="field-label">Prix au kilo public TTC</span>
+        <span class="field-money">
+          <input
+            class="native-input"
+            type="number"
+            step="0.01"
+            min="0"
+            [value]="store.publicPricePerKgEur() ?? ''"
+            (input)="store.publicPricePerKgEur.set(numberValue($event))"
+          />
+          <span class="field-unit" aria-hidden="true">€</span>
+        </span>
+      </label>
+    }
 
     <!-- Le prix PRO HORS TAXE saisi (lot P), sous le prix public. Un champ
          TEXTE et non nombre : cinq décimales tapées doivent partir telles
          quelles, et c'est le serveur qui refuse la sixième. -->
     <label class="field">
-      <span class="field-label">Prix pro HT</span>
+      <span class="field-label">{{ byWeight() ? 'Prix pro HT au kg' : 'Prix pro HT' }}</span>
       <span class="field-money field-money-ht">
         <input
           class="native-input"
@@ -63,22 +88,58 @@
       <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non vendu aux pros.</span>
     </label>
 
-    <!-- Le prix au kilo pro HT (K4) : SAISI comme le prix pro, en texte. -->
-    <label class="field">
-      <span class="field-label">Prix au kilo pro HT</span>
-      <span class="field-money field-money-ht">
-        <input
-          class="native-input"
-          type="text"
-          inputmode="decimal"
-          autocomplete="off"
-          [value]="store.proPricePerKgHtText()"
-          (input)="store.proPricePerKgHtText.set(textValue($event))"
-        />
-        <span class="field-unit" aria-hidden="true">€ HT</span>
-      </span>
-      <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non saisi.</span>
-    </label>
+    <!-- Le prix au kilo pro HT (K4) : SAISI comme le prix pro, en texte.
+         Masqué au poids, pour la même raison que le public. -->
+    @if (!byWeight()) {
+      <label class="field">
+        <span class="field-label">Prix au kilo pro HT</span>
+        <span class="field-money field-money-ht">
+          <input
+            class="native-input"
+            type="text"
+            inputmode="decimal"
+            autocomplete="off"
+            [value]="store.proPricePerKgHtText()"
+            (input)="store.proPricePerKgHtText.set(textValue($event))"
+          />
+          <span class="field-unit" aria-hidden="true">€ HT</span>
+        </span>
+        <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non saisi.</span>
+      </label>
+    } @else {
+      <!-- Au poids : le pas de saisie (requis pour activer) et le minimum. -->
+      <label class="field">
+        <span class="field-label">Pas de saisie</span>
+        <span class="field-money">
+          <input
+            class="native-input"
+            type="number"
+            step="1"
+            min="1"
+            [value]="store.weightStepGrams() ?? ''"
+            (input)="store.weightStepGrams.set(numberValue($event))"
+          />
+          <span class="field-unit" aria-hidden="true">g</span>
+        </span>
+        <span class="field-hint">Requis pour activer la déclinaison.</span>
+      </label>
+
+      <label class="field">
+        <span class="field-label">Minimum</span>
+        <span class="field-money">
+          <input
+            class="native-input"
+            type="number"
+            step="1"
+            min="1"
+            [value]="store.weightMinGrams() ?? ''"
+            (input)="store.weightMinGrams.set(numberValue($event))"
+          />
+          <span class="field-unit" aria-hidden="true">g</span>
+        </span>
+        <span class="field-hint">Facultatif. Vide&nbsp;: pas de minimum.</span>
+      </label>
+    }
 
     <!-- Le prix PROFESSIONNEL, sous le prix public. Toujours saisi depuis le
          lot R3 (2026-10-27) : plus de remise des règles comptables, plus de

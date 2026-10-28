@@ -1,4 +1,5 @@
 import { provideHttpClient } from '@angular/common/http';
+import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
@@ -459,5 +460,111 @@ describe('PricingForm — les prix au kilo saisis', () => {
     const stack = host.querySelector('.stack.is-inherited');
     expect(stack?.contains(inputUnder(host, 'Prix au kilo public TTC'))).toBe(true);
     expect(stack?.contains(inputUnder(host, 'Prix au kilo pro HT'))).toBe(true);
+  });
+});
+
+/** P1 (`plan-vente-au-poids.md`) : l'unité de vente, son pas et son minimum. */
+describe('PricingForm — vendre à la pièce ou au poids', () => {
+  function render(): { host: HTMLElement; refresh: () => void } {
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    return { host: fixture.nativeElement as HTMLElement, refresh: () => fixture.detectChanges() };
+  }
+
+  function labels(host: HTMLElement): string[] {
+    return [...host.querySelectorAll('.field-label')].map((l) => l.textContent?.trim() ?? '');
+  }
+
+  function segment(host: HTMLElement, text: string): HTMLButtonElement {
+    const button = [...host.querySelectorAll('fold-view-toggle button')].find((candidate) =>
+      candidate.textContent?.includes(text),
+    );
+    if (!(button instanceof HTMLButtonElement)) {
+      throw new TypeError(`segment « ${text} » absent`);
+    }
+    return button;
+  }
+
+  function inputUnder(host: HTMLElement, label: string): HTMLInputElement {
+    const field = [...host.querySelectorAll('label.field')].find(
+      (candidate) => candidate.querySelector('.field-label')?.textContent?.trim() === label,
+    );
+    const input = field?.querySelector('input');
+    if (input === null || input === undefined) {
+      throw new TypeError(`champ « ${label} » absent`);
+    }
+    return input;
+  }
+
+  it('à la pièce, rien ne change : prix unitaires et prix au kilo informatifs', () => {
+    const store = setup();
+    withFamily(store);
+    const { host } = render();
+
+    expect(labels(host)[0]).toBe('Unité de vente');
+    expect(labels(host)).toContain('Prix public TTC');
+    expect(labels(host)).toContain('Prix au kilo public TTC');
+    expect(labels(host)).not.toContain('Pas de saisie');
+  });
+
+  it('la bascule au poids passe les prix au kg, montre le pas et le minimum, masque les prix au kilo', () => {
+    const store = setup();
+    withFamily(store);
+    const { host, refresh } = render();
+
+    segment(host, 'Vendre au poids').click();
+    refresh();
+
+    expect(store.saleUnit()).toBe('weight');
+    const seen = labels(host);
+    expect(seen).toContain('Prix public TTC au kg');
+    expect(seen).toContain('Prix pro HT au kg');
+    expect(seen).toContain('Pas de saisie');
+    expect(seen).toContain('Minimum');
+    expect(seen).not.toContain('Prix au kilo public TTC');
+    expect(seen).not.toContain('Prix au kilo pro HT');
+    expect(host.textContent).toContain('Requis pour activer');
+    expect(host.textContent).toContain('pas de minimum');
+  });
+
+  it('le pas et le minimum remontent au store', () => {
+    const store = setup();
+    withFamily(store);
+    store.saleUnit.set('weight');
+    const { host } = render();
+
+    const step = inputUnder(host, 'Pas de saisie');
+    step.value = '100';
+    step.dispatchEvent(new Event('input'));
+    const min = inputUnder(host, 'Minimum');
+    min.value = '250';
+    min.dispatchEvent(new Event('input'));
+
+    expect(store.weightStepGrams()).toBe(100);
+    expect(store.weightMinGrams()).toBe(250);
+  });
+
+  it('déjà publiée : le sélecteur est éteint, et la phrase dit quoi faire', () => {
+    const store = setup();
+    withFamily(store);
+    Object.defineProperty(store, 'saleUnitLocked', { value: signal(true) });
+    const { host, refresh } = render();
+
+    expect(segment(host, 'Vendre au poids').disabled).toBe(true);
+    expect(segment(host, 'Vendre à la pièce').disabled).toBe(true);
+    expect(host.textContent).toContain('Déjà publiée');
+    expect(host.textContent).toContain('créez une autre');
+    segment(host, 'Vendre au poids').click();
+    refresh();
+    expect(store.saleUnit()).toBe('piece');
+  });
+
+  it('se grise avec les prix quand le tarif est aligné', () => {
+    const store = setup();
+    withFamily(store);
+    store.pricingAligned.set(true);
+    const { host } = render();
+
+    expect(host.querySelector('.stack.is-inherited fold-view-toggle')).not.toBeNull();
   });
 });

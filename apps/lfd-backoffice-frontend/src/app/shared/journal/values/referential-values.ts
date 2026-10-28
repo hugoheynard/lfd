@@ -101,6 +101,12 @@ export const OPERATION_AUDIENCE = domain('clientèle d’une opération', {
   both: 'Professionnels et particuliers',
 });
 
+/** L'unité de vente d'une déclinaison (`plan-vente-au-poids.md`, P1) — les mots du sélecteur. */
+export const SALE_UNIT = domain('unité de vente', {
+  piece: 'À la pièce',
+  weight: 'Au poids',
+});
+
 export const REFERENTIAL_VALUES: ValueFamily = {
   enums: [
     PRODUCT_KIND,
@@ -110,6 +116,7 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     PUSH_CHANNEL,
     PRO_PRICE_METHOD_WRITTEN,
     OPERATION_AUDIENCE,
+    SALE_UNIT,
   ],
   literals: {
     // Une fiche qui n'a pas sa propre matrice de canaux suit celle de sa famille.

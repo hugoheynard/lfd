@@ -1,4 +1,4 @@
-import { provideHttpClient } from '@angular/common/http';
+import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
@@ -42,6 +42,10 @@ function variant(over: Partial<Variant> = {}): Variant {
     proPriceMillicents: 2_730_331,
     proPricePerKgMillicents: 1_240_000,
     publicPricePerKgTtcCents: 1_490,
+    saleUnit: 'piece',
+    weightMinGrams: null,
+    weightStepGrams: null,
+    hasBeenPublished: false,
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
@@ -474,5 +478,99 @@ describe('les prix au kilo saisis', () => {
     store.selectVariant('var_2');
     store.selectVariant('var_1');
     expect(store.proPricePerKgHtText()).toBe('13');
+  });
+});
+
+/** P1 (`plan-vente-au-poids.md`) : l'unité de vente voyage comme les prix au kilo. */
+describe('l’unité de vente', () => {
+  function weighed(): FakeApi {
+    const api = new FakeApi();
+    api.variants = [
+      variant({
+        saleUnit: 'weight',
+        weightStepGrams: 100,
+        weightMinGrams: 250,
+        hasBeenPublished: true,
+      }),
+      SECOND,
+    ];
+    return api;
+  }
+
+  it('se relit déclinaison par déclinaison, verrou compris', async () => {
+    const { store } = await setup(weighed());
+
+    expect(store.saleUnit()).toBe('weight');
+    expect(store.weightStepGrams()).toBe(100);
+    expect(store.weightMinGrams()).toBe(250);
+    expect(store.saleUnitLocked()).toBe(true);
+    store.selectVariant('var_2');
+    expect(store.saleUnit()).toBe('piece');
+    expect(store.weightStepGrams()).toBeNull();
+    expect(store.saleUnitLocked()).toBe(false);
+  });
+
+  it('part avec le tarif : l’unité, le pas et le minimum en grammes', async () => {
+    const { store, api } = await setup();
+    store.saleUnit.set('weight');
+    store.weightStepGrams.set(100);
+    store.weightMinGrams.set(null);
+
+    await store.saveOne('tarif');
+
+    const call = api.calls.find((entry) => entry.name === 'savePricing');
+    expect(call?.args[2]).toMatchObject({
+      saleUnit: 'weight',
+      weightStepGrams: 100,
+      weightMinGrams: null,
+    });
+  });
+
+  it('à la pièce, le pas et le minimum partent vides', async () => {
+    const { store, api } = await setup(weighed());
+    store.selectVariant('var_2');
+    store.weightStepGrams.set(50);
+
+    await store.saveOne('tarif');
+
+    const call = api.calls.find((entry) => entry.name === 'savePricing');
+    expect(call?.args[2]).toMatchObject({
+      saleUnit: 'piece',
+      weightStepGrams: null,
+      weightMinGrams: null,
+    });
+  });
+
+  it('un changement d’unité rend la section « tarif » modifiée', async () => {
+    const { store } = await setup();
+    store.saleUnit.set('weight');
+    expect(store.isDirty('tarif')).toBe(true);
+    store.saleUnit.set('piece');
+    expect(store.isDirty('tarif')).toBe(false);
+  });
+
+  it('un brouillon survit au changement de déclinaison', async () => {
+    const { store } = await setup();
+    store.saleUnit.set('weight');
+    store.weightStepGrams.set(100);
+    store.selectVariant('var_2');
+    expect(store.saleUnit()).toBe('piece');
+    store.selectVariant('var_1');
+    expect(store.saleUnit()).toBe('weight');
+    expect(store.weightStepGrams()).toBe(100);
+  });
+
+  it('le refus 409 du serveur s’affiche avec son message', async () => {
+    const api = new FakeApi();
+    const refusal =
+      'L’unité de vente ne change plus après la première publication : créez une autre déclinaison.';
+    api.savePricing = () =>
+      Promise.reject(new HttpErrorResponse({ status: 409, error: { message: refusal } }));
+    const { store } = await setup(api);
+    store.saleUnit.set('weight');
+
+    await store.saveOne('tarif');
+
+    expect(store.error()).toBe(refusal);
   });
 });

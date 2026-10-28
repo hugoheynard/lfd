@@ -18,7 +18,7 @@
  * utilise — `@lfd/pim-contracts` tire zod, qui n'a rien à faire dans le bundle
  * initial.
  */
-import type { LocalizedText, OperationAudience } from '@lfd/pim-contracts';
+import type { LocalizedText, OperationAudience, SaleUnit } from '@lfd/pim-contracts';
 
 export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
@@ -105,6 +105,14 @@ export interface Variant {
   proPricePerKgMillicents: number | null;
   /** Le prix au kilo public TTC saisi, en centimes ; `null` = pas saisi. Informatif (K4). */
   publicPricePerKgTtcCents: number | null;
+  /** À la pièce ou au poids (`plan-vente-au-poids.md`, P1) — prix au kg si `weight`. */
+  saleUnit: SaleUnit;
+  /** Le minimum d'une ligne au poids, en grammes ; `null` = pas de minimum. */
+  weightMinGrams: number | null;
+  /** Le pas de saisie au poids, en grammes ; requis pour activer une déclinaison au poids. */
+  weightStepGrams: number | null;
+  /** Déjà publiée une fois : l'unité de vente est figée, même si elle est repassée en brouillon. */
+  hasBeenPublished: boolean;
   /**
    * Elle **suit les ALLERGÈNES de celle par défaut** — traces comprises,
    * puisqu'une trace est un allergène.

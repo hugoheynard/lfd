@@ -19,6 +19,7 @@ import {
   type OperationAudience,
   type ProductReadinessView,
   type ProPrice,
+  type SaleUnit,
   type VariantAspect,
 } from '@lfd/pim-contracts';
 
@@ -471,6 +472,10 @@ interface VariantDraft {
   readonly publicPricePerKgEur: number | null;
   /** Le prix au kilo pro HT saisi, en TEXTE comme le prix pro HT. */
   readonly proPricePerKgHtText: string;
+  /** L'unité de vente, son pas et son minimum (`plan-vente-au-poids.md`, P1). */
+  readonly saleUnit: SaleUnit;
+  readonly weightStepGrams: number | null;
+  readonly weightMinGrams: number | null;
   /**
    * Allergènes **et** traces, en un seul état tri-étatique.
    *
@@ -603,6 +608,25 @@ export class ProductFormStore {
    */
   readonly publicPricePerKgEur = signal<number | null>(null);
   readonly proPricePerKgHtText = signal('');
+
+  /**
+   * **L'unité de vente** (`plan-vente-au-poids.md`, P1) — à la pièce ou au
+   * poids. Au poids, les prix saisis sont AU KILO, et le pas de saisie (requis
+   * pour activer) et le minimum (facultatif) se règlent en grammes.
+   */
+  readonly saleUnit = signal<SaleUnit>('piece');
+  readonly weightStepGrams = signal<number | null>(null);
+  readonly weightMinGrams = signal<number | null>(null);
+
+  /**
+   * L'unité est figée dès la première publication : le serveur refuserait le
+   * changement (409), l'écran ne le propose donc pas.
+   */
+  readonly saleUnitLocked = computed(
+    () =>
+      this.variantsValue().find((variant) => variant.id === this.variantId())?.hasBeenPublished ??
+      false,
+  );
 
   /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
   readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
@@ -1115,6 +1139,9 @@ export class ProductFormStore {
         this.proPriceHtText.set(String(value[4] ?? ''));
         this.publicPricePerKgEur.set((value[5] as number | null | undefined) ?? null);
         this.proPricePerKgHtText.set(String(value[6] ?? ''));
+        this.saleUnit.set(value[7] === 'weight' ? 'weight' : 'piece');
+        this.weightStepGrams.set((value[8] as number | null | undefined) ?? null);
+        this.weightMinGrams.set((value[9] as number | null | undefined) ?? null);
         return;
       case 'allergenes':
         this.declaration.set({
@@ -1614,6 +1641,7 @@ export class ProductFormStore {
     const price = this.priceEur();
     const weight = this.weightGrams();
     const perKg = this.publicPricePerKgEur();
+    const unit = this.saleUnit();
     return this.products.savePricing(this.productId(), this.variantId(), {
       // Un prix public TTC — la seule assiette. Le hors taxe se déduit du taux
       // de chaque canal, il ne s'enregistre pas.
@@ -1626,6 +1654,12 @@ export class ProductFormStore {
       // leurs voisins — centimes pour le public, texte pour le pro.
       publicPricePerKgTtcCents: perKg === null ? null : Math.round(perKg * 100),
       proPricePerKgHt: proPricePayloadOf(this.proPricePerKgHtText()),
+      // L'unité et ses grammes (P1) partent toujours : le serveur refuse un
+      // changement d'unité sur une déclinaison déjà publiée, pas sa répétition.
+      // À la pièce, le pas et le minimum n'ont pas d'objet.
+      saleUnit: unit,
+      weightStepGrams: unit === 'weight' ? gramsOf(this.weightStepGrams()) : null,
+      weightMinGrams: unit === 'weight' ? gramsOf(this.weightMinGrams()) : null,
     });
   }
 
@@ -2069,6 +2103,10 @@ export class ProductFormStore {
           // ne bougent pas.
           this.publicPricePerKgEur(),
           this.proPricePerKgHtText(),
+          // L'unité de vente et ses grammes (P1), à la suite.
+          this.saleUnit(),
+          this.weightStepGrams(),
+          this.weightMinGrams(),
         ]);
       case 'allergenes': {
         const declaration = this.declaration();
@@ -2105,6 +2143,9 @@ export class ProductFormStore {
       proPriceHtText: this.proPriceHtText(),
       publicPricePerKgEur: this.publicPricePerKgEur(),
       proPricePerKgHtText: this.proPricePerKgHtText(),
+      saleUnit: this.saleUnit(),
+      weightStepGrams: this.weightStepGrams(),
+      weightMinGrams: this.weightMinGrams(),
       declaration: this.declaration(),
       nutrition: this.nutrition(),
       allergensAligned: this.allergensAligned(),
@@ -2129,6 +2170,9 @@ export class ProductFormStore {
           ? null
           : variant.publicPricePerKgTtcCents / 100,
       proPricePerKgHtText: proPriceTextOf(variant?.proPricePerKgMillicents ?? null),
+      saleUnit: variant?.saleUnit ?? 'piece',
+      weightStepGrams: variant?.weightStepGrams ?? null,
+      weightMinGrams: variant?.weightMinGrams ?? null,
       // `[]` est une AFFIRMATION (« aucun allergène »), `null` une absence de
       // réponse. Les confondre transformerait un oubli de saisie en promesse —
       // et le serveur rend déjà les deux, c'est l'écran qui les aplatissait.
@@ -2149,6 +2193,9 @@ export class ProductFormStore {
     this.proPriceHtText.set(draft.proPriceHtText);
     this.publicPricePerKgEur.set(draft.publicPricePerKgEur);
     this.proPricePerKgHtText.set(draft.proPricePerKgHtText);
+    this.saleUnit.set(draft.saleUnit);
+    this.weightStepGrams.set(draft.weightStepGrams);
+    this.weightMinGrams.set(draft.weightMinGrams);
     this.declaration.set(draft.declaration);
     this.nutrition.set(draft.nutrition);
     this.allergensAligned.set(draft.allergensAligned);
@@ -2297,6 +2344,11 @@ export class ProductFormStore {
  * `httpErrorMessage` (@lfd/endpoints) sait lire cette enveloppe, et c'est déjà
  * ce qu'emploient les toasts et la liste des emplacements.
  */
+/** Des grammes saisis, en entier — vide reste vide. */
+function gramsOf(value: number | null): number | null {
+  return value === null ? null : Math.round(value);
+}
+
 function messageOf(caught: unknown): string {
   return httpErrorMessage(caught, 'Erreur inattendue.');
 }
