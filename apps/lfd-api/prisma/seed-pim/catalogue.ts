@@ -84,8 +84,12 @@ export const CATALOGUE: CatalogueCorpus = {
         fr: "Pains",
       },
       parentName: null,
+      // Le sur place comme les Viennoiseries (2026-10-28) : sans lui, la
+      // boutique ne met pas leurs articles en vente (manque `vat:eatIn`), et le
+      // scénario de commandes, qui sert des pains, s'arrête au départ.
       vat: {
         takeaway: "Réduit",
+        eatIn: "Intermédiaire",
         b2b: "Réduit",
       },
     },
@@ -104,8 +108,12 @@ export const CATALOGUE: CatalogueCorpus = {
       // vitrine publique ne montrait donc que 37 des 92 articles du corpus,
       // sans que rien ne le dise non plus. Une famille de pâtisseries qu'une
       // boulangerie ne vendrait pas à son comptoir n'existe pas.
+      // Le sur place comme les Viennoiseries (2026-10-28) : sans lui, la
+      // boutique ne met pas leurs articles en vente (manque `vat:eatIn`), et le
+      // scénario de commandes, qui sert des pains, s'arrête au départ.
       vat: {
         takeaway: "Réduit",
+        eatIn: "Intermédiaire",
         b2b: "Réduit",
       },
     },
@@ -116,8 +124,12 @@ export const CATALOGUE: CatalogueCorpus = {
       parentName: null,
       // Ouverte aux pros le 2026-09-13, au comptoir le 2026-09-21 — même geste
       // que « Pâtisseries », et pour la même raison.
+      // Le sur place comme les Viennoiseries (2026-10-28) : sans lui, la
+      // boutique ne met pas leurs articles en vente (manque `vat:eatIn`), et le
+      // scénario de commandes, qui sert des pains, s'arrête au départ.
       vat: {
         takeaway: "Réduit",
+        eatIn: "Intermédiaire",
         b2b: "Réduit",
       },
     },
@@ -139,6 +151,7 @@ export const CATALOGUE: CatalogueCorpus = {
         // Poser un taux réduit ici parce que « c'est à emporter » aurait
         // contredit en silence la note qu'on vient de lire.
         takeaway: "Normal",
+        eatIn: "Normal",
         b2b: "Normal",
       },
     },
