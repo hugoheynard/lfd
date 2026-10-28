@@ -1,7 +1,7 @@
 # TODO — des ressources en lecture seule dans le modèle des droits
 
 **Ouvert le 2026-10-06** (Hugo, chantier de l'arrêt du plan :
-[`production/arret-du-plan.md`](../production/arret-du-plan.md), « Les droits »).
+[`fournil/arret-du-plan.md`](../fournil/arret-du-plan.md), « Les droits »).
 
 ## L'incohérence, assumée en attendant
 

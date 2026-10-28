@@ -173,7 +173,7 @@ l'équipe est reçue, marquée `placed_off_plan`. Depuis le 2026-10-21, le plan
 s'arrête tout seul à la **plus tardive** de la fin du rattrapage de la règle
 générale et de l'heure du réassort (lot R3a, même jour) — l'écran de
 l'heure limite le dit (« Heure limite générale — arrêt du plan de production
-pour le lendemain »). Voir [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
+pour le lendemain »). Voir [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md).
 
 ## 6. `/fulfillment-days` et ce que la boutique en dit
 

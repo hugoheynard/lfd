@@ -16,7 +16,7 @@ comment elles se combinent, où chacune se règle, et ce que la boutique en dit.
 | **Interrupteur** de la règle générale | activée / désactivée — désactivée, la règle n'est plus servie                             | même écran · `lfc_order_settings`                                                               | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
 | **Jour même**                         | une commande peut-elle viser aujourd'hui ? (non par défaut)                               | même écran · `lfc_order_settings`                                                               | [`reglages-generaux.md`](reglages-generaux.md)                                                                     |
 | **Limite d'article** (référentiel)    | « 2 jours avant, 12 h » pour un produit (2026-10-21 : produit seulement, sans rattrapage) | Référentiel › Limites de commande (`/pim/limites-de-commande`) et fiche produit · `pim_catalog` | [`limites-produit.md`](limites-produit.md)                                                                         |
-| **Arrêt du plan** (fournil)           | une journée dont le plan est arrêté ne prend plus de commande client                      | Production · voir la doc du fournil                                                             | [`../production/arret-du-plan.md`](../production/arret-du-plan.md)                                                 |
+| **Arrêt du plan** (fournil)           | une journée dont le plan est arrêté ne prend plus de commande client                      | Production · voir la doc du fournil                                                             | [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md)                                                       |
 | **Fenêtre d'une opération datée**     | `orderFrom` / `orderUntil` d'une opération (bûches, galettes…)                            | Opérations · voir leur doc                                                                      | [`../operations-datees/architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md) |
 
 La **dérogation** (`order_cutoff_waiver`, droit `b2b_order_waivers`) n'est pas
@@ -164,5 +164,5 @@ flowchart LR
 Hors du dossier, et cités plutôt que déplacés :
 [`../commandes/passation/plan-reglages-commandes.md`](../commandes/passation/plan-reglages-commandes.md)
 (l'écran Réglages › Commandes, ses droits, l'interrupteur — lot O3, §8),
-[`../production/arret-du-plan.md`](../production/arret-du-plan.md),
+[`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md),
 [`../operations-datees/architecture-operations-datees.md`](../operations-datees/architecture-operations-datees.md).

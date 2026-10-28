@@ -64,7 +64,7 @@ flowchart LR
   par le guichet d'admission du plan sous le verrou de la journée
   (`ResupplyPlanGate`) ; l'arrêt du fournil fige les réassorts envoyés
   (`DayResuppliesReader`, implémenté par `ProductionDayResupplies`) et les
-  compte au total. Détail : [`../production/arret-du-plan.md`](../production/arret-du-plan.md).
+  compte au total. Détail : [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md).
 - **Annuler** : un réassort passé s'annule, une fois — sauf réceptionné (R1d)
   ou, pour demain, figé dans un plan arrêté (R3a, 409 « réceptionnez avec un
   écart »). Une annulation est un état, jamais une suppression.

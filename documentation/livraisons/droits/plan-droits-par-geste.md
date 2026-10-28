@@ -95,7 +95,7 @@ ne changent pas de forme. On **ajoute des ressources**, une par geste :
 `production_count_stop:write` le 2026-10-06
 (`production-day.controller.ts`, l. 205-206) : `production_plan:write`
 n'ouvre plus rien (`staff-resource-scopes.ts:161`, plan
-`documentation/production/arret-du-plan.md`). Reprendre une journée
+`documentation/fournil/arret-du-plan.md`). Reprendre une journée
 (`POST worksheet/:date/retake`) est sous `production_worksheet` depuis le
 bâti (5.1).
 

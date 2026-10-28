@@ -13,7 +13,7 @@
 
 > **Bâti le 2026-10-21 (lot 2 : serveur, back-office, docs), non commité à
 > l'écriture de ce bandeau.** L'état vit dans
-> [`../production/arret-du-plan.md`](../production/arret-du-plan.md) et
+> [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md) et
 > [`reglages-generaux.md`](reglages-generaux.md) ; ce plan garde les décisions
 > (§4–§6), que le code cite. Aucune migration : les colonnes `close_mode`,
 > `close_at`, `alert_at` et `order_cutoff_settings.enabled` restent en base,
@@ -31,7 +31,7 @@
   `public.order_cutoffs`, « N jours avant, HH:MM » + rattrapage, et
   l'interrupteur `order_cutoff_settings` — doc
   [`reglages-generaux.md`](reglages-generaux.md).
-- **L'arrêt du plan** ([`../production/arret-du-plan.md`](../production/arret-du-plan.md)) :
+- **L'arrêt du plan** ([`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md)) :
   `production.production_settings` (`close_mode` `auto` | `manual`, `close_at`
   pour l'automatique, `alert_at` pour l'alerte du manuel), le tour
   `admin/production/auto-close` toutes les cinq minutes, l'arrêt manuel à

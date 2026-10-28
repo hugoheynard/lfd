@@ -316,7 +316,7 @@ pas un retour en arrière du statut.
 
 ## 9. Documents voisins périmés (constaté le 2026-09-17)
 
-- [`../../production/architecture-contexte-production.md`](../../production/architecture-contexte-production.md)
+- [`../../fournil/architecture-contexte-production.md`](../../fournil/architecture-contexte-production.md)
   s'ouvre sur « ⛔ non implémenté » et « `src/` ne porte pas de dossier
   `production` ». Le bloc et le schéma `production` existent.
 - [`architecture-flux-commande-prod.md`](architecture-flux-commande-prod.md)

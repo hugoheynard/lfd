@@ -102,7 +102,7 @@ posées`) · **Attend le four** (au moins une ligne `awaitingProduction`, **lu t
 - **Mobile** : une colonne à la fois, trois onglets, le rôle choisit l'onglet
   d'arrivée (`supervision-tabs.ts`), une pastille remonte les blocages voisins.
 - **Contrôler** : le panneau de contrôle qualité (`quality-panel`, voir
-  [`../production/plan-controle-qualite.md`](../production/plan-controle-qualite.md))
+  [`../fournil/plan-controle-qualite.md`](../fournil/plan-controle-qualite.md))
   est la seule partie qui écrit (verdicts append-only) ; le reste est en lecture.
 - Le design suit la maquette (Hugo : « je veux le même design »), **par les
   tokens fold, jamais en hexadécimal** ; l'état est toujours porté aussi par un

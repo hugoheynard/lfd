@@ -407,7 +407,7 @@ Pour ne pas les confondre :
 - **`MailJournal`** (`platform/mailer/`) — ce qui est parti par e-mail, pour le
   délivrable ; pas un acte métier.
 - **`StatusJournal`** (`ops/`) — l'état de santé de la plateforme.
-- **Les « journaux de chantier »** de `documentation/production/` et
+- **Les « journaux de chantier »** de `documentation/fournil/`, `documentation/retrait/` et
   `documentation/pricing/journal-de-remediation.md` — des carnets de travail,
   pas du code.
 

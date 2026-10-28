@@ -113,8 +113,8 @@ flowchart TD
 
 ## 2. L'arrêt du plan et le fournil
 
-Documents d'état : [`../production/arret-du-plan.md`](../production/arret-du-plan.md),
-[`../production/architecture-contexte-production.md`](../production/architecture-contexte-production.md),
+Documents d'état : [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md),
+[`../fournil/architecture-contexte-production.md`](../fournil/architecture-contexte-production.md),
 [`reglement/architecture-reglement-et-compte-de-production.md`](reglement/architecture-reglement-et-compte-de-production.md),
 [`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md).
 
@@ -159,7 +159,7 @@ flowchart TD
 Documents d'état : [`../colisage/colisage.md`](../colisage/colisage.md),
 [`../colisage/parcours-du-coliseur.md`](../colisage/parcours-du-coliseur.md),
 [`../colisage/chargement-les-bacs.md`](../colisage/chargement-les-bacs.md),
-[`../production/plan-controle-qualite.md`](../production/plan-controle-qualite.md).
+[`../fournil/plan-controle-qualite.md`](../fournil/plan-controle-qualite.md).
 
 ```mermaid
 flowchart TD
@@ -199,7 +199,7 @@ flowchart TD
 ## 4. Le départ : comptoir ou tournée
 
 Documents d'état : [`la-commande/vie-du-qr-d-une-commande.md`](la-commande/vie-du-qr-d-une-commande.md),
-[`../production/architecture-contexte-retrait.md`](../production/architecture-contexte-retrait.md),
+[`../retrait/architecture-contexte-retrait.md`](../retrait/architecture-contexte-retrait.md),
 [`../livraisons/tournees/composition-automatique.md`](../livraisons/tournees/composition-automatique.md),
 [`../livraisons/livreur/a-la-porte.md`](../livraisons/livreur/a-la-porte.md),
 [`../livraisons/livreur/parcours-du-livreur.md`](../livraisons/livreur/parcours-du-livreur.md),

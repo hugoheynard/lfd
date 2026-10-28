@@ -314,7 +314,7 @@ Ce qui s'ajoute :
   reste : dans `production_order.due_at` (`production.prisma`, l. 103),
   recopié du snapshot `ProducibleOrder` (« arrêter le plan d'une journée,
   c'est figer ce que le fournil va produire »,
-  [`arret-du-plan.md`](../../production/arret-du-plan.md)). Avant la
+  [`arret-du-plan.md`](../../fournil/arret-du-plan.md)). Avant la
   clôture, la fiche d'atelier montre l'heure du moment — elle peut bouger,
   et c'est vrai.
 - **La reprise du tirage** (`retake-production-day.handler.ts`, l. 86 :
