@@ -90,7 +90,7 @@ export function dueThresholdRows(view: ProductionDueThresholdsView): readonly Du
 /**
  * **Le compte à rebours** d'une journée — ce qui doit être sorti de chaque
  * produit avant chaque échéance, cumulé (plan
- * `documentation/fournil/plan-production-par-vagues.md`, V0 et §7.2).
+ * `documentation/fournil/plan-tranches-de-production.md`, V0 et §7.2).
  *
  * Lecture seule, et une prévision : rien n'y est coché, le « sorti » vient
  * avec V1. Sans les deux marges réglées, le serveur ne rend qu'un seuil « la

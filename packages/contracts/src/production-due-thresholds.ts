@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * **Le compte à rebours du fournil** — pour une journée, ce qui doit être sorti
  * de chaque produit avant chaque heure, cumulé (plan
- * `documentation/fournil/plan-production-par-vagues.md`, V0 et §7.2 :
+ * `documentation/fournil/plan-tranches-de-production.md`, V0 et §7.2 :
  * « l'échéance mène »).
  *
  * Lecture seule, et **prévision** : servi par `GET

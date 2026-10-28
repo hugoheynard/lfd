@@ -1,4 +1,4 @@
-# Plan — les tranches de production : fixes ou calculées
+# Les tranches de production — quelles quantités, pour quelle heure
 
 > ✅ **Bâti le 2026-10-28** (T1, T2, T3) : table `production.production_tranche_settings`,
 > migration `20261028180000_les_tranches_de_production`, rangement
@@ -14,14 +14,16 @@
 > - un **interrupteur** au même endroit pour passer aux **tranches calculées** ;
 > - la **capacité du four plus tard**, hors de ce plan.
 >
-> Il prolonge [`plan-production-par-vagues.md`](plan-production-par-vagues.md),
-> dont il garde toutes les décisions (§7). Rien n'est bâti de ce plan-ci. Même
-> page de réglage : [`plan-raccourcis-du-fournil.md`](plan-raccourcis-du-fournil.md).
+> 🔗 **Il absorbe le plan « produire par vagues »** du 2026-10-04 (fusionné le
+> 2026-10-28, Hugo : « tranches étant à mon avis la plus complète » ; l'ancien
+> fichier reste dans l'historique git). Ses décisions sont au §7, sous leur
+> numérotation d'origine ; ses lots restants au §6. Même page de réglage :
+> [`plan-raccourcis-du-fournil.md`](plan-raccourcis-du-fournil.md).
 
 ## 1. Ce qui existe (relu le 2026-10-28)
 
-- **Les tranches calculées existent déjà, en prévision** (lot V0 du plan des
-  vagues, commit `5047c33b1`).
+- **Les tranches calculées existent déjà, en prévision** (lot V0, commit
+  `5047c33b1`, §7).
   - La fonction pure `apps/lfd-api/src/b2b/orders/domain/services/deadline-thresholds.ts`
     calcule, pour chaque commande, son échéance : le début du créneau s'il y en
     a un, sinon sa fin. Elle retire ensuite la marge de livraison ou de retrait.
@@ -66,7 +68,7 @@ Ils ne diffèrent que par la façon de **ranger** ces heures.
 
 🔴 **Un besoin va dans la DERNIÈRE tranche fixe qui tombe au plus tard à son
 heure « prêt avant ».** On arrondit toujours vers **plus tôt**, jamais vers
-plus tard : produire trop tard est le seul vrai défaut (plan des vagues, §7.4).
+plus tard : produire trop tard est le seul vrai défaut (§7.4).
 
 Exemple, avec des tranches réglées à 05:00, 07:00 et 12:00 :
 
@@ -140,7 +142,7 @@ est `PUT /admin/production/settings/tranches`, sous `production_settings`, et
   et le sorti en face : « Croissant — 400 avant 05:00 · 1 200 avant 07:00 ·
   2 000 avant 12:00 — sorti 650 ». La prochaine tranche non couverte est mise
   en avant, avec ce qui lui manque. Le sorti est déjà connu ; rien ne se coche
-  par tranche (plan des vagues, §7.2 : une fournée ne se déclare pas « pour
+  par tranche (§7.2 : une fournée ne se déclare pas « pour
   une vague »).
 
 ## 6. Lots
@@ -151,20 +153,75 @@ est `PUT /admin/production/settings/tranches`, sous `production_settings`, et
 | T2  | Le rangement : fonction pure, vue enrichie, prévisionnel et dossier du jour | non       |
 | T3  | La fiche d'atelier : tranches cumulées, sorti, prochaine tranche à couvrir  | non       |
 
-**Hors de ce plan** :
+**Ce qui reste, hérité du plan des vagues** (2026-10-04) :
 
-- la capacité du four (décidé « plus tard ») ;
-- le figeage des seuils à l'arrêt du plan (V1 du plan des vagues) ;
-- l'alerte d'écart après la composition des tournées (V3).
+| Lot | Contenu                                                                                  | Migration             |
+| --- | ---------------------------------------------------------------------------------------- | --------------------- |
+| V1  | Les tranches **figées à l'arrêt du plan** : une journée close garde ce qu'elle a produit | données (trois temps) |
+| V3  | L'écart après la composition des tournées, alerté au fournil (via le commerce)           | non                   |
+| V4  | Les marges **mesurées** : sortie du four → bac fermé, un quantile par mode               | non                   |
+| —   | La capacité du four (Hugo, 2026-10-28 : « plus tard »)                                   | à voir                |
 
-Ces trois-là restent chez le plan des vagues.
+V2 (« les fournées par vague ») est **abandonné** : une fournée ne se déclare
+pas pour une tranche (§7.2).
 
-## 7. Questions ouvertes
+## 7. Ce que le plan des vagues a tranché (2026-10-04)
 
-- **Q1** — Les marges vivent chez le commerce (« Disponibilité de la
-  livraison »). Faut-il les **déplacer** dans Réglages › Production, à côté des
-  tranches ? Proposé : non dans ce plan, mais un lien depuis la carte. Les
-  déplacer touche à une frontière, puisque le commerce en a besoin pour calculer.
-- **Q2** — Les tranches fixes sont-elles **les mêmes tous les jours**, ou par
-  jour de la semaine (le dimanche n'a pas les mêmes tournées) ? Proposé : les
-  mêmes tous les jours dans T1. Un réglage par jour s'ajouterait sans casser.
+Repris de l'ancien plan, sous sa numérotation : le code y renvoie
+(« §7.2 »).
+
+### 7.0 La tranche ne dépend pas des tournées
+
+Contredit par `vitruve` le 2026-10-04 : figer les vagues sur « l'instantané
+des tournées » était impossible (rien n'est stocké avant « Appliquer », et la
+matrice interdisait alors `production ↔ delivery`), et une commande arrivée
+après l'arrêt n'aurait pas eu de vague.
+
+→ **La tranche est une fonction pure de la commande** : son échéance moins une
+marge. Le commerce la calcule (`deadline-thresholds.ts`) et la met dans ce que
+la production lit déjà ; la production ne parle pas à la livraison pour ça.
+Une commande sans échéance va dans la dernière tranche, signalée. Sans les deux
+marges, une seule tranche : la journée, et l'arrêt du plan ne refuse jamais.
+
+### 7.1 Sortir, c'est remettre ; la marge sera mesurée
+
+- **Q1 — oui** : sortir une fournée, c'est la remettre au colisage. Pas de
+  geste « envoyer au colisage » à part.
+- **Q2** : la marge est un réglage, arbitraire pour l'instant, qui devra être
+  **mesuré** (lot V4) : l'écart entre la dernière sortie des SKU d'une commande
+  (`production_batch.recorded_at`) et la fermeture de son bac (`packed_at`).
+  L'écran montrera la marge réglée **à côté** de la mesure avant d'automatiser.
+
+### 7.2 L'échéance mène
+
+> Hugo : « on doit voir les vagues à l'envers : l'échéance mène, tout doit être
+> fait pour satisfaire l'échéance. »
+
+- **Q3 — une pièce sert toujours l'échéance la plus proche.** Il n'y a pas de
+  stock par tranche : au colisage, la réserve reste par `(jour, SKU)`, et ce
+  qui sort du four va **d'abord à la commande dont l'échéance est la plus
+  proche**.
+- **La fiche d'atelier se lit comme un compte à rebours** : par SKU, ce qui doit
+  être sorti avant chaque heure, cumulé, face au sorti (§5).
+- **Une fournée ne se déclare pas pour une tranche** : elle s'ajoute au sorti du
+  SKU, et la répartition se calcule.
+
+### 7.3 Deux marges
+
+Une pour la **livraison** (colisage et chargement), une pour le **retrait**
+(colisage seul). Réglages du commerce (« Disponibilité de la livraison »), sans
+valeur par défaut inventée.
+
+### 7.4 L'heure de l'échéance
+
+En **créneau**, le seuil se calcule sur le **début** : le client attend dès le
+début. En **échéance** (`start: null`), sur la fin. Même règle en retrait et en
+livraison (`deadline-thresholds.ts`).
+
+## 8. Tranché le 2026-10-28
+
+- **Q1 — les marges restent chez le commerce**, avec un lien depuis la carte
+  des tranches. Les déplacer touchait une frontière : le commerce en a besoin
+  pour calculer.
+- **Q2 — les mêmes heures tous les jours.** Un réglage par jour de la semaine
+  s'ajoutera sans casser.
