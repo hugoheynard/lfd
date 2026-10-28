@@ -24,6 +24,7 @@ import {
   type CustomerAccessOpenedMailData,
 } from "./customer-access-opened-mail.js";
 import { renderInvoiceIssuedMail, type InvoiceIssuedMailData } from "./invoice-issued-mail.js";
+import { orderPlacedIntro } from "./order-placed-intro.js";
 import { renderOrderCancelledMail, type OrderCancelledMailData } from "./order-cancelled-mail.js";
 import {
   renderOrderChangeAppliedMail,
@@ -791,7 +792,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         html: customerMail({
           kicker: copy.kicker,
           title: copy.title[settlement],
-          body: `${copy.intro}\n\n${data.sheet.reference}`,
+          body: orderPlacedIntro(data.sheet, copy, data.locale),
           rows: recapRows(data.sheet, data.locale, settlement),
           // Le QR est DANS le corps, jamais en pièce jointe à ouvrir : c'est la
           // seule chose qu'on vient chercher debout devant un comptoir, et un

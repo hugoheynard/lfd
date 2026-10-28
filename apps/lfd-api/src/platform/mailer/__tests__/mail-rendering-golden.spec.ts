@@ -70,6 +70,13 @@ import {
  * `customer.order-placed` — le pied au format du ticket, « dont TVA » par
  * taux. Empreinte ajoutée, aucune existante touchée : une commande `line_ht`
  * rend le même courriel qu'avant, à l'octet.
+ *
+ * **Régénérées le 2026-10-28 pour les CINQ cas de `customer.order-placed`** :
+ * l'ouverture dit la référence, le jour de service et l'acheminement (« Votre
+ * commande … pour le …, en retrait au Labo, a bien été prise en compte… ») au
+ * lieu de « la fournée de demain matin », et la ligne de référence seule
+ * disparaît du corps. Vérifié avant de régénérer : objet et pièces jointes
+ * identiques, seul le HTML change. Aucun autre e-mail n'a bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

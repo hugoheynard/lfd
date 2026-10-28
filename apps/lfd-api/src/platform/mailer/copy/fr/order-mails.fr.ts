@@ -15,7 +15,16 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
       due: "Commande enregistrée.",
       account: "Commande enregistrée.",
     },
-    intro: "Votre commande entre dans la fournée de demain matin.",
+    intro:
+      "Votre commande {ref} pour le {day}, {routing}, a bien été prise en compte par nos services.",
+    introWithoutDay:
+      "Votre commande {ref}, {routing}, a bien été prise en compte par nos services.",
+    routingPickup: "en retrait à {place}",
+    routingPickupWithoutPlace: "en retrait",
+    routingDelivery: "en livraison à {city}",
+    routingDeliveryWithoutCity: "en livraison",
+    windowBetween: "entre {start} et {end}",
+    windowBefore: "avant {end}",
     totalLabel: {
       paid: "Réglé en ligne",
       due: "Reste à régler",

@@ -26,6 +26,12 @@ export type MailCopyVariables = { readonly [K in keyof MailCopy]: MailSectionVar
 export const MAIL_COPY_VARIABLES: MailCopyVariables = {
   "customer.order-placed": {
     subject: ["ref"],
+    intro: ["ref", "day", "routing"],
+    introWithoutDay: ["ref", "routing"],
+    routingPickup: ["place"],
+    routingDelivery: ["city"],
+    windowBetween: ["start", "end"],
+    windowBefore: ["end"],
     recapPieces: ["count"],
     recapDiscountBase: ["base"],
     recapVatRate: ["rate"],

@@ -32,9 +32,76 @@
         "fr": "Commande enregistrée."
       },
       "intro": {
+        "variables": [
+          "ref",
+          "day",
+          "routing"
+        ],
+        "required": [
+          "ref",
+          "day",
+          "routing"
+        ],
+        "fr": "Votre commande {ref} pour le {day}, {routing}, a bien été prise en compte par nos services."
+      },
+      "introWithoutDay": {
+        "variables": [
+          "ref",
+          "routing"
+        ],
+        "required": [
+          "ref",
+          "routing"
+        ],
+        "fr": "Votre commande {ref}, {routing}, a bien été prise en compte par nos services."
+      },
+      "routingPickup": {
+        "variables": [
+          "place"
+        ],
+        "required": [
+          "place"
+        ],
+        "fr": "en retrait à {place}"
+      },
+      "routingPickupWithoutPlace": {
         "variables": [],
         "required": [],
-        "fr": "Votre commande entre dans la fournée de demain matin."
+        "fr": "en retrait"
+      },
+      "routingDelivery": {
+        "variables": [
+          "city"
+        ],
+        "required": [
+          "city"
+        ],
+        "fr": "en livraison à {city}"
+      },
+      "routingDeliveryWithoutCity": {
+        "variables": [],
+        "required": [],
+        "fr": "en livraison"
+      },
+      "windowBetween": {
+        "variables": [
+          "start",
+          "end"
+        ],
+        "required": [
+          "start",
+          "end"
+        ],
+        "fr": "entre {start} et {end}"
+      },
+      "windowBefore": {
+        "variables": [
+          "end"
+        ],
+        "required": [
+          "end"
+        ],
+        "fr": "avant {end}"
       },
       "totalLabel.paid": {
         "variables": [],

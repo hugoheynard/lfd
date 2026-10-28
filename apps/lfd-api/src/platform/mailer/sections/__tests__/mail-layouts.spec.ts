@@ -40,6 +40,12 @@ const NOT_SHOWN_AS_TEXT = new Set([
   "customer.sub-account-gesture|bodyByTeam",
   "staff.production-dossier|arrestedWithoutAuthor",
   "customer.order-placed|recapDiscountBase",
+  // Les replis de l'ouverture (sans lieu, sans ville) et le créneau :
+  // `order-placed-intro.spec.ts` les parcourt, aucun cas de l'empreinte.
+  "customer.order-placed|routingPickupWithoutPlace",
+  "customer.order-placed|routingDeliveryWithoutCity",
+  "customer.order-placed|windowBetween",
+  "customer.order-placed|windowBefore",
   // La proposition d'« Écrire au client » (E6d) : elle rédige le texte que
   // l'équipe relit ; le courriel rend le texte relu, une donnée.
   "customer.order-shortfall|intro",

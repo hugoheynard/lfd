@@ -3,6 +3,7 @@ import { sanitiseSubject, type LayoutInput, type RenderedMail } from "@lfd/maile
 
 import type { OrderCancelledCopy } from "./copy/mail-copy.model.js";
 import { fill, mailCopyOf } from "./copy/mail-copy.js";
+import { dayInWords } from "./service-day-in-words.js";
 
 /**
  * Les données de l'e-mail **« Votre commande a été annulée par notre
@@ -151,25 +152,4 @@ function voucherSentenceOf(data: OrderCancelledMailData, copy: OrderCancelledCop
 
 function euros(cents: number, locale: ContentLocale): string {
   return new Intl.NumberFormat(locale, { style: "currency", currency: "EUR" }).format(cents / 100);
-}
-
-/**
- * « mardi 13 octobre » — le jour de service, qui n'a ni heure ni fuseau : il
- * est lu et écrit en UTC, sans quoi un serveur à l'ouest le reculerait d'un
- * jour. `null` sur une commande sans jour, ou d'un jour illisible.
- */
-function dayInWords(requestedFor: string | null, locale: ContentLocale): string | null {
-  if (requestedFor === null) {
-    return null;
-  }
-  const date = new Date(`${requestedFor.slice(0, 10)}T00:00:00.000Z`);
-  if (Number.isNaN(date.getTime())) {
-    return null;
-  }
-  return new Intl.DateTimeFormat(locale, {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  }).format(date);
 }

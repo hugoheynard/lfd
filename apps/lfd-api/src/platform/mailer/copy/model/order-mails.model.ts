@@ -22,7 +22,23 @@ export interface OrderPlacedCopy {
   readonly kicker: string;
   /** Titre, selon ce que la commande doit encore. */
   readonly title: OrderSettlementCopy;
+  /**
+   * La phrase d'ouverture. `{ref}` = le numéro, `{day}` = le jour de service
+   * en toutes lettres, `{routing}` = l'acheminement (`routing*`).
+   */
   readonly intro: string;
+  /** La même, pour une commande sans jour de service. */
+  readonly introWithoutDay: string;
+  /** `{place}` = le point de retrait, sinon sa ville. */
+  readonly routingPickup: string;
+  readonly routingPickupWithoutPlace: string;
+  /** `{city}` = la ville de livraison. */
+  readonly routingDelivery: string;
+  readonly routingDeliveryWithoutCity: string;
+  /** Le créneau, accolé à l'acheminement. `{start}`, `{end}` en HH:mm. */
+  readonly windowBetween: string;
+  /** Le créneau sans borne basse. */
+  readonly windowBefore: string;
   /** Libellé de la ligne de total, selon le même régime. */
   readonly totalLabel: OrderSettlementCopy;
   readonly recapPickup: string;

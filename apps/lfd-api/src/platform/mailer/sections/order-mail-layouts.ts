@@ -50,7 +50,20 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     header: KICKER,
     sections: [
       { id: "title", texts: variantsOf("title", SETTLEMENTS) },
-      { id: "body", texts: texts("intro") },
+      {
+        id: "body",
+        texts: [
+          ...variants({ intro: "Jour de service connu", introWithoutDay: "Sans jour de service" }),
+          ...variants({
+            routingPickup: "En retrait",
+            routingPickupWithoutPlace: "En retrait, sans lieu",
+            routingDelivery: "En livraison",
+            routingDeliveryWithoutCity: "En livraison, sans ville",
+            windowBetween: "Créneau borné",
+            windowBefore: "Créneau « avant »",
+          }),
+        ],
+      },
       {
         id: "summary",
         texts: [
