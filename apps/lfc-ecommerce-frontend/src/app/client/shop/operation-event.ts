@@ -9,6 +9,7 @@ import { objectPositionOf } from './shelf-display';
 import { SHELF_PARAM } from './shelves';
 import { operationShelfId, operationText, pickupSpan, shortDate } from './operations';
 import { DECORATIVE_ALT, imageAlt } from './image-alt';
+import { HOUSE_MARK } from './house-mark/house-mark';
 
 /**
  * **L'opération datée mise en avant sur l'accueil** — Pâques, Noël, ce que le
@@ -30,7 +31,7 @@ export interface DatedEvent {
   readonly dates: string;
   /** L'accroche de l'opération, vide quand le référentiel n'en a pas. */
   readonly teaser: string;
-  /** La photo redimensionnée, ou `null` : la bannière garde alors son aplat de la palette. */
+  /** La photo redimensionnée ; sans photo, le logo de la maison (Hugo, 2026-10-28). `null` reste lisible : la bannière garde alors son aplat. */
   readonly image: DatedEventImage | null;
   /** Où mène la carte : la boutique… */
   readonly route: string;
@@ -144,9 +145,10 @@ function badgeOf(
   }
 }
 
-function imageOf(operation: ShopOperationView): DatedEventImage | null {
+function imageOf(operation: ShopOperationView): DatedEventImage {
   if (operation.image === null) {
-    return null;
+    // Sans photo, le logo de la maison, comme un article (Hugo, 2026-10-28).
+    return { src: HOUSE_MARK, srcset: '', alt: '', position: 'center' };
   }
   const { url, alt } = operation.image;
   return {

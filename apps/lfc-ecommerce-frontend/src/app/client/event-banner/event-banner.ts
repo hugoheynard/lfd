@@ -1,5 +1,6 @@
 import { ChangeDetectionStrategy, Component, input } from '@angular/core';
 import { RouterLink } from '@angular/router';
+import { HouseMark } from '../shop/house-mark/house-mark';
 
 import { type DatedEvent } from '../shop/operation-event';
 
@@ -20,7 +21,7 @@ import { type DatedEvent } from '../shop/operation-event';
 @Component({
   selector: 'app-event-banner',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [RouterLink],
+  imports: [RouterLink, HouseMark],
   templateUrl: './event-banner.html',
   styleUrl: './event-banner.scss',
 })

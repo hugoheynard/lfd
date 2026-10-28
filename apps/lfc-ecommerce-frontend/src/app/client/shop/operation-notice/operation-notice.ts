@@ -9,6 +9,7 @@ import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../media-source';
 import { operationText, pickupSpan, shortDate, shortTime } from '../operations';
 import { objectPositionOf } from '../shelf-display';
 import { DECORATIVE_ALT, imageAlt } from '../image-alt';
+import { HOUSE_MARK, HouseMark } from '../house-mark/house-mark';
 
 /**
  * **L'encart qui ouvre le rayon d'une opération** — image, nom, chapeau, et
@@ -24,7 +25,7 @@ import { DECORATIVE_ALT, imageAlt } from '../image-alt';
 @Component({
   selector: 'app-operation-notice',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent, FoldCardComponent, FoldElementTitleComponent],
+  imports: [FoldCalloutComponent, FoldCardComponent, FoldElementTitleComponent, HouseMark],
   templateUrl: './operation-notice.html',
   styleUrl: './operation-notice.scss',
 })
@@ -67,7 +68,8 @@ export class OperationNotice {
   protected readonly image = computed(() => {
     const image = this.operation().image;
     if (image === null) {
-      return null;
+      // Sans photo, le logo de la maison, comme un article (Hugo, 2026-10-28).
+      return { src: HOUSE_MARK, srcset: '', alt: '', position: 'center' };
     }
     return {
       src: sizedMedia(image.url, SHEET_WIDTHS[0]),

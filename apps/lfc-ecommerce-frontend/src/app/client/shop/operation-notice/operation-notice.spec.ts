@@ -31,6 +31,13 @@ describe("OperationNotice — l'encart d'un rayon d'opération", () => {
     expect(root.querySelector('img')?.getAttribute('alt')).toBe('Une bûche');
   });
 
+  it('sans photo : le logo de la maison, cadré entier', () => {
+    const img = render({ ...testOperation('announced'), image: null }).querySelector('img');
+    expect(img?.getAttribute('src')).toBe('brand/lfc-mark.png');
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(img?.hasAttribute('data-house-mark')).toBe(true);
+  });
+
   it('ouverte : l’ouverture ne se dit plus', () => {
     const root = render({ ...testOperation('open'), announceFrom: '2026-11-01T08:00:00.000Z' });
     expect(root.textContent).not.toContain('Commandes à partir du');

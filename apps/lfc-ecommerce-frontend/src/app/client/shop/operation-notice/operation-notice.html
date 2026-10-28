@@ -2,6 +2,7 @@
   <div class="notice">
     @if (image(); as image) {
       <img
+        [appHouseMark]="image.src"
         class="picture"
         [src]="image.src"
         [attr.srcset]="image.srcset === '' ? null : image.srcset"

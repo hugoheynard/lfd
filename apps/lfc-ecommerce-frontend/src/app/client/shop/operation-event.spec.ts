@@ -80,6 +80,11 @@ describe('datedEventOf — la carte', () => {
     expect(event.countdown).toBeNull();
   });
 
+  it('sans photo, la bannière montre le logo de la maison', () => {
+    const image = datedEventOf({ ...op(), image: null }, NOW, 'fr', fr).image;
+    expect(image).toEqual({ src: 'brand/lfc-mark.png', srcset: '', alt: '', position: 'center' });
+  });
+
   it('l’image du fonds est servie redimensionnée, avec son jeu de largeurs', () => {
     const image = datedEventOf(op(), NOW, 'fr', fr).image;
     expect(image?.src).toContain('/cdn-cgi/image/width=900');
@@ -97,9 +102,9 @@ describe('datedEventOf — la carte', () => {
     expect(datedEventOf(op({ image }), NOW, 'fr', fr).image?.position).toBe('10% 90%');
   });
 
-  it('sans image ni accroche : rien d’inventé', () => {
+  it('sans image ni accroche : le logo de la maison, et aucune accroche inventée', () => {
     const event = datedEventOf(op({ image: null, lede: null }), NOW, 'fr', fr);
-    expect(event.image).toBeNull();
+    expect(event.image?.src).toBe('brand/lfc-mark.png');
     expect(event.teaser).toBe('');
   });
 
