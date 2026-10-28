@@ -1,4 +1,4 @@
-import type { InvoiceVatBreakdown } from "@lfd/money";
+import type { InvoiceVatBreakdown, SaleUnit } from "@lfd/money";
 
 import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
 
@@ -19,7 +19,15 @@ export interface FrozenInvoiceLine {
   readonly unitPriceMillicents: number;
   /** Le `Decimal(5,2)` lu tel quel (« 5.50 ») : normalisé par le calcul, jamais par l'appelant. */
   readonly vatRate: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight` — un entier dans l'unité de la ligne. */
   readonly quantity: number;
+  /**
+   * L'unité figée sur la ligne (`order_lines` / `delivery_note_line.sale_unit`).
+   * Obligatoire : une ligne lue sans unité se facturerait à la pièce, et des
+   * grammes partiraient en pièces (plan `plan-vente-au-poids.md`, § 3 bis).
+   * Prix au kilo quand elle vaut `weight`.
+   */
+  readonly saleUnit: SaleUnit;
   readonly lineTotalCents: number;
   /**
    * La ligne entrait-elle dans l'assiette de la remise de retrait, figé à la
@@ -71,9 +79,13 @@ export interface InvoiceLine {
   readonly label: string;
   /** Les autres noms portés par les bons de la clé — « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
-  /** L'unité de la quantité (UN/ECE Rec 20) — `H87`, la pièce, pour toute ligne d'aujourd'hui. */
+  /** L'unité de la quantité (UN/ECE Rec 20) — `H87` (pièce) ou `KGM` (vente au poids). */
   readonly unitCode: InvoiceUnitCode;
-  readonly quantity: number;
+  /**
+   * La quantité en millièmes de l'unité : pièces × 1 000, ou des grammes pour
+   * `KGM`. Un seul sens, quelle que soit l'unité (plan vente au poids, § 3 bis).
+   */
+  readonly quantityThousandths: number;
   /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6). */
   readonly amountCents: number;
   /**

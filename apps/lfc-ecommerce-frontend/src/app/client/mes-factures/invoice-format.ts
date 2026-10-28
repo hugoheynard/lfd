@@ -135,14 +135,17 @@ export function invoiceMeta(
   return parts.join(' · ');
 }
 
-/** `2000` → « 2 » ; `1250` en kilos → « 1,250 kg ». */
+/** `2000` → « 2 » ; en kilos, toujours trois décimales : « 1,250 kg », « 2,000 kg ». */
 export function invoiceQuantity(
   line: Pick<IssuedInvoiceLineView, 'quantityThousandths' | 'unitCode'>,
 ): string {
   const whole = Math.trunc(line.quantityThousandths / THOUSANDTHS);
-  const rest = line.quantityThousandths % THOUSANDTHS;
-  const number = rest === 0 ? String(whole) : `${String(whole)},${String(rest).padStart(3, '0')}`;
-  return line.unitCode === 'KGM' ? `${number} kg` : number;
+  const rest = String(line.quantityThousandths % THOUSANDTHS).padStart(3, '0');
+  if (line.unitCode === 'KGM') {
+    // Toujours trois décimales au kilo, comme le PDF : « 2,000 kg », jamais « 2 kg ».
+    return `${String(whole)},${rest} kg`;
+  }
+  return rest === '000' ? String(whole) : `${String(whole)},${rest}`;
 }
 
 /** `1415` → « 14,15 % ». */

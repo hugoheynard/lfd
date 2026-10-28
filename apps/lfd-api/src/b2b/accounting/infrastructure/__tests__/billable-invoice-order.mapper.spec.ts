@@ -1,4 +1,6 @@
 import { Prisma } from "../../../../platform/database/client/client.js";
+import { toFrozenInvoiceOrder } from "../frozen-invoice-order.mapper.js";
+import { InvoiceLineSaleUnitUnknownError } from "../invoice-sale-unit.column.js";
 import {
   handedOverNoteNumbersOf,
   toBillableInvoiceOrder,
@@ -22,17 +24,19 @@ const ORDER_LINE = {
   unitPriceMillicents: 100_000,
   vatRate: new Prisma.Decimal("5.50"),
   quantity: 3,
+  saleUnit: "piece",
   lineTotalCents: 300,
   pickupDiscountEligible: true,
 };
 
-function noteLine(sku: string, quantity: number) {
+function noteLine(sku: string, quantity: number, saleUnit = "piece") {
   return {
     sku,
     productName: sku === "CRO" ? "Croissant" : "Pain",
     unitPriceMillicents: 100_000,
     vatRate: new Prisma.Decimal("5.50"),
     quantity,
+    saleUnit,
     lineTotalCents: quantity * 100,
     pickupDiscountEligible: null,
   };
@@ -151,6 +155,7 @@ describe("toBillableInvoiceOrder", () => {
         unitPriceMillicents: 100_000,
         vatRate: "5.5",
         quantity: 3,
+        saleUnit: "piece",
         lineTotalCents: 300,
         pickupDiscountEligible: true,
       },
@@ -166,6 +171,57 @@ describe("toBillableInvoiceOrder", () => {
     expect(() => toBillableInvoiceOrder(row({ shortfallDecisions: [{ id: "dec_1" }] }))).toThrow(
       UnsettledPartialOrderError,
     );
+  });
+});
+
+describe("l'unité de vente des lignes (plan vente au poids, P7)", () => {
+  it("la commande (facture carte, BL unique) : une ligne au poids garde ses grammes et son unité", () => {
+    const frozen = toFrozenInvoiceOrder(
+      row({ lines: [{ ...ORDER_LINE, quantity: 1_250, saleUnit: "weight" }] }),
+    );
+
+    expect(frozen.lines.map((line) => [line.quantity, line.saleUnit])).toEqual([[1_250, "weight"]]);
+  });
+
+  it("un départ incomplet : la ligne au poids du BL remis porte les grammes remis, en `weight`", () => {
+    const frozen = toBillableInvoiceOrder(
+      row({
+        ...PARTIAL_BILLABLE,
+        shortfallDecisions: [{ id: "dec_1" }],
+        deliveryNotes: [
+          {
+            number: "BL-1042-1",
+            serviceDay: null,
+            lines: [noteLine("CRO", 1), noteLine("PAI", 750, "weight")],
+          },
+        ],
+      }),
+    );
+
+    expect(frozen.lines.map((line) => [line.sku, line.quantity, line.saleUnit])).toEqual([
+      ["CRO", 1, "piece"],
+      ["PAI", 750, "weight"],
+    ]);
+  });
+
+  it("une unité inconnue sur la commande arrête la lecture au lieu de compter en pièces", () => {
+    expect(() =>
+      toFrozenInvoiceOrder(row({ lines: [{ ...ORDER_LINE, saleUnit: "litre" }] })),
+    ).toThrow(InvoiceLineSaleUnitUnknownError);
+  });
+
+  it("une unité inconnue sur un BL remis arrête la lecture, en nommant le bon", () => {
+    expect(() =>
+      toBillableInvoiceOrder(
+        row({
+          ...PARTIAL_BILLABLE,
+          shortfallDecisions: [{ id: "dec_1" }],
+          deliveryNotes: [
+            { number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 1, "")] },
+          ],
+        }),
+      ),
+    ).toThrow(/ORD-1042.*CRO/u);
   });
 });
 

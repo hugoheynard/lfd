@@ -37,6 +37,7 @@ export function goodsLine(
     unitPriceMillicents: UNIT_PRICE_MILLICENTS,
     vatRate: vatRate.toFixed(2),
     quantity: 1,
+    saleUnit: "piece",
     lineTotalCents,
     ...(excluded ? { pickupDiscountEligible: false } : {}),
   };

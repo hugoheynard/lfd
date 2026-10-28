@@ -16,6 +16,7 @@ import {
   ratePercent,
   unitPrice,
 } from '../../invoice-dossier-format';
+import { quantityLabel } from '../../issued-invoice-format';
 
 /**
  * **La facture, calculée en une fois** (plan, § 3.1) : une ligne par produit
@@ -52,10 +53,12 @@ export class DossierInvoice {
   ];
 
   protected readonly rowKey = (line: InvoiceDossierLineView): string =>
-    `${line.sku}|${String(line.unitPriceMillicents)}|${String(line.vatRate)}`;
+    `${line.sku}|${line.unitCode}|${String(line.unitPriceMillicents)}|${String(line.vatRate)}`;
 
   protected readonly euros = euros;
   protected readonly unitPrice = unitPrice;
+  /** « 3 », « 1,250 kg » — la règle de la facture émise (plan vente au poids, § 3 bis). */
+  protected readonly quantity = quantityLabel;
   protected readonly rate = ratePercent;
   protected readonly period = linePeriod;
   protected readonly part = partLabel;

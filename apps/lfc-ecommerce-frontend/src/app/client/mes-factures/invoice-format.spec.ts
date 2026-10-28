@@ -68,6 +68,9 @@ describe('les mises en forme de « Mes factures »', () => {
   it('écrit quantités, prix et taux en entiers, sans flottant', () => {
     expect(invoiceQuantity({ quantityThousandths: 2_000, unitCode: 'H87' })).toBe('2');
     expect(invoiceQuantity({ quantityThousandths: 1_250, unitCode: 'KGM' })).toBe('1,250 kg');
+    expect(invoiceQuantity({ quantityThousandths: 2_000, unitCode: 'KGM' })).toBe('2,000 kg');
+    expect(invoiceQuantity({ quantityThousandths: 20, unitCode: 'KGM' })).toBe('0,020 kg');
+    expect(invoiceQuantity({ quantityThousandths: 1, unitCode: 'KGM' })).toBe('0,001 kg');
     expect(unitPriceLabel(500_000)).toBe('5,00 €');
     expect(unitPriceLabel(123_450)).toBe('1,2345 €');
     expect(basisPoints(1_415)).toBe('14,15 %');

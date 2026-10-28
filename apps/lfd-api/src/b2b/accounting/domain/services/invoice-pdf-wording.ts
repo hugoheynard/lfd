@@ -1,12 +1,7 @@
 import type { InvoiceLineInput, InvoiceState } from "../entities/invoice.types.js";
-import { INVOICE_UNIT_LABELS } from "../value-objects/invoice-unit.js";
-import {
-  centsAmount,
-  millicentsPrice,
-  ratePercent,
-  thousandthsQuantity,
-} from "./facturx-format.js";
+import { centsAmount, millicentsPrice, ratePercent } from "./facturx-format.js";
 import { frenchDate } from "./facturx-mentions.js";
+import { PRINTED_UNIT_SYMBOLS, printedQuantity } from "./invoice-printed-quantity.js";
 
 /**
  * Les **mises en forme françaises** du PDF de la facture (E3b), toutes tirées
@@ -43,11 +38,16 @@ export function vatRateLabel(rate: number): string {
   return `${frenchDecimal(ratePercent(rate))}${NBSP}%`;
 }
 
-/** La quantité en millièmes et son unité : « 12 pièce(s) », « 1,25 kilogramme(s) ». */
+/**
+ * La quantité et son unité : « 12 pièce(s) », « 1,250 kg », « 2,000 kg » —
+ * toujours trois décimales au kilo (plan vente au poids, § 3 bis). Propre au
+ * PDF : BT-129 garde sa forme sans zéro superflu (`thousandthsQuantity`).
+ */
 export function quantityLabel(
   line: Pick<InvoiceLineInput, "quantityThousandths" | "unitCode">,
 ): string {
-  return `${frenchDecimal(thousandthsQuantity(line.quantityThousandths))} ${INVOICE_UNIT_LABELS[line.unitCode]}(s)`;
+  const figure = frenchDecimal(printedQuantity(line.quantityThousandths, line.unitCode));
+  return `${figure} ${PRINTED_UNIT_SYMBOLS[line.unitCode]}`;
 }
 
 /** `AAAA-MM-JJ` → `JJ/MM/AAAA`. */

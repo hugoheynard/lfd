@@ -1,5 +1,5 @@
 import type { StatementCycleView } from "./cycle-statement.js";
-import type { VatShareView } from "./order.js";
+import type { OrderSaleUnit, VatShareView } from "./order.js";
 
 /**
  * **Le dossier de facturation simulé** — la facture calculée en une fois sur
@@ -18,7 +18,6 @@ import type { VatShareView } from "./order.js";
 /** Le mode de TVA du port : taux normal, ou au prorata des marchandises. */
 export type InvoiceDeliveryVatModeView = "standard" | "follows_goods";
 
-/** Une ligne de facture : un produit, à un prix, à un taux. */
 /** Les unités admises sur une ligne de facture (UN/ECE Rec 20). */
 export type InvoiceUnitCodeView = "H87" | "KGM";
 
@@ -42,6 +41,7 @@ export interface InvoiceIssuanceBlockerView {
   readonly message: string;
 }
 
+/** Une ligne de facture : un produit, dans une unité, à un prix, à un taux. */
 export interface InvoiceDossierLineView {
   readonly sku: string;
   /** Prix unitaire HT en millicentimes (10⁻⁵ €), figé sur les bons. */
@@ -51,9 +51,14 @@ export interface InvoiceDossierLineView {
   readonly label: string;
   /** « vendu aussi sous… ». */
   readonly otherLabels: readonly string[];
-  /** L'unité de la quantité (UN/ECE Rec 20) : `H87` (pièce) aujourd'hui, `KGM` plus tard. */
+  /** L'unité de la quantité (UN/ECE Rec 20) : `H87` (pièce) ou `KGM` (vente au poids). */
   readonly unitCode: InvoiceUnitCodeView;
-  readonly quantity: number;
+  /**
+   * La quantité en millièmes de l'unité : pièces × 1 000, ou des grammes en
+   * `KGM` — un seul sens (plan `plan-vente-au-poids.md`, § 3 bis). Remplace
+   * `quantity` (des pièces), retiré le 2026-10-29.
+   */
+  readonly quantityThousandths: number;
   /** Σ `lineTotalCents` des bons de la clé — repris, pas recalculé (F6, 2026-10-08). */
   readonly amountCents: number;
   /** Σ `lineTotalCents` des bons de la clé — égal à `amountCents` depuis F6. */
@@ -111,7 +116,10 @@ export interface InvoiceDossierOrderLineView {
   readonly unitPriceMillicents: number;
   /** Le `Decimal(5,2)` du bon, tel quel. */
   readonly vatRate: string;
+  /** Des pièces, ou des grammes si `saleUnit = weight`. */
   readonly quantity: number;
+  /** L'unité figée sur la ligne de bon ou de BL. */
+  readonly saleUnit: OrderSaleUnit;
   readonly lineTotalCents: number;
 }
 

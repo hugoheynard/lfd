@@ -8,8 +8,11 @@ import type { FrozenInvoiceOrder, Invoice } from "../services/invoice-dossier.ty
 /**
  * La forme de `body` que cet arrêté écrit. Elle change quand le JSON change de
  * forme — une clé ajoutée, renommée, retirée — jamais quand le calcul change.
+ *
+ * - 1 : la quantité d'une ligne en pièces (`quantity`), sans unité ;
+ * - 2 (plan vente au poids, P7, 2026-10-29) : `unitCode` et `quantityThousandths`.
  */
-export const STATEMENT_BODY_VERSION = 1;
+export const STATEMENT_BODY_VERSION = 2;
 
 /**
  * Le calcul qui a produit `body` et les totaux : le simulateur du dossier de

@@ -92,6 +92,7 @@ function frozenOf(state: OrderToPlace, reference: string, createdAt: Date): Froz
       // Le `Decimal(5,2)` de la colonne, tel que l'adaptateur le lit.
       vatRate: line.vatRate.toFixed(2),
       quantity: line.quantity,
+      saleUnit: line.saleUnit,
       lineTotalCents: line.lineTotalCents,
     })),
     discountCents: state.discountCents,

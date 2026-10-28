@@ -16,6 +16,7 @@ function bon(
     unitPriceMillicents: 33_333,
     vatRate: "5.50",
     quantity: qty,
+    saleUnit: "piece" as const,
     lineTotalCents: lineTotalCents(33_333, pieces(qty)),
   };
   const applied = cappedTo ?? discount;

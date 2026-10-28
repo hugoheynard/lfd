@@ -48,7 +48,7 @@ export function dossier(overrides: Partial<InvoiceDossierView> = {}): InvoiceDos
           label: 'Pain de campagne',
           otherLabels: [],
           unitCode: 'H87',
-          quantity: 3,
+          quantityThousandths: 3_000,
           amountCents: 371,
           ordersLineTotalCents: 371,
           firstDeliveryDate: '2026-10-03',

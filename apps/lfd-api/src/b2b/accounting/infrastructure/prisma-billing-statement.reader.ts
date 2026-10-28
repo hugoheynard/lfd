@@ -5,8 +5,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UnreadableStatementBodyError } from "../domain/errors/billing-statement-errors.js";
 import { BillingStatementReader } from "../domain/ports/billing-statement.reader.js";
 import {
-  READABLE_BODY_VERSION,
-  statementBodyV1Schema,
+  statementBodySchemaOf,
   statementBuyerSchema,
   statementSellerSchema,
 } from "./billing-statement-json.schema.js";
@@ -34,13 +33,8 @@ export class PrismaBillingStatementReader extends BillingStatementReader {
     }
     const seller = statementSellerSchema.safeParse(row.seller);
     const buyer = statementBuyerSchema.safeParse(row.buyer);
-    const body = statementBodyV1Schema.safeParse(row.body);
-    if (
-      row.bodyVersion !== READABLE_BODY_VERSION ||
-      !seller.success ||
-      !buyer.success ||
-      !body.success
-    ) {
+    const body = statementBodySchemaOf(row.bodyVersion)?.safeParse(row.body);
+    if (!seller.success || !buyer.success || body === undefined || !body.success) {
       throw new UnreadableStatementBodyError(row.id, row.bodyVersion);
     }
     return {

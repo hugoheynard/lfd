@@ -44,6 +44,7 @@ function bon(spec: BonSpec): FrozenInvoiceOrder {
     unitPriceMillicents: line.price,
     vatRate: line.rate,
     quantity: line.qty,
+    saleUnit: "piece" as const,
     lineTotalCents: lineTotalCents(line.price, pieces(line.qty)),
   }));
   const delivery = spec.delivery ?? 0;
@@ -107,14 +108,14 @@ describe("simulateInvoiceDossier — les lignes", () => {
     expect(
       dossier.invoice.lines.map((l) => [
         l.unitPriceMillicents,
-        l.quantity,
+        l.quantityThousandths,
         l.amountCents,
         l.firstDeliveryDate,
         l.lastDeliveryDate,
       ]),
     ).toEqual([
-      [120_000, 15, 1800, "2026-10-02", "2026-10-05"],
-      [130_000, 4, 520, "2026-10-20", "2026-10-20"],
+      [120_000, 15_000, 1800, "2026-10-02", "2026-10-05"],
+      [130_000, 4_000, 520, "2026-10-20", "2026-10-20"],
     ]);
     expectGapsExplainDifference(dossier);
   });
@@ -126,9 +127,9 @@ describe("simulateInvoiceDossier — les lignes", () => {
       bon({ lines: [{ sku: "BAG-001", rate: "10.00", price: 100_000, qty: 3 }] }),
     ]);
 
-    expect(dossier.invoice.lines.map((l) => [l.vatRate, l.quantity])).toEqual([
-      [5.5, 3],
-      [10, 3],
+    expect(dossier.invoice.lines.map((l) => [l.vatRate, l.quantityThousandths])).toEqual([
+      [5.5, 3_000],
+      [10, 3_000],
     ]);
     expect(
       dossier.invoice.vat.categories.map((c) => [c.rate, c.taxableBaseCents, c.vatCents]),
@@ -236,7 +237,9 @@ describe("simulateInvoiceDossier — les écarts", () => {
     const orders = [bon({ lines: [line] }), bon({ lines: [line] }), bon({ lines: [line] })];
     const dossier = simulateInvoiceDossier(orders);
 
-    expect(dossier.invoice.lines.map((l) => [l.quantity, l.amountCents])).toEqual([[3, 99]]);
+    expect(dossier.invoice.lines.map((l) => [l.quantityThousandths, l.amountCents])).toEqual([
+      [3_000, 99],
+    ]);
     expect(dossier.invoice.vat.goodsHtCents).toBe(99);
     expect(dossier.gaps).not.toHaveProperty("lineRounding");
     expectGapsExplainDifference(dossier);

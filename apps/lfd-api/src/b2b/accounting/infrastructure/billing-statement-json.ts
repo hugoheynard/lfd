@@ -42,7 +42,11 @@ export function buyerJson(buyer: StatementBuyer): Prisma.InputJsonValue {
   };
 }
 
-/** `body_version` 1 : la facture de `simulateInvoiceDossier`, telle quelle. */
+/**
+ * `body_version` 2 : la facture de `simulateInvoiceDossier`, telle quelle. La
+ * v1 n'écrivait ni l'unité ni les millièmes d'une ligne (plan vente au poids,
+ * § 3 bis) ; elle se relit encore (`billing-statement-json.schema.ts`).
+ */
 export function bodyJson(invoice: Invoice): Prisma.InputJsonValue {
   return {
     lines: invoice.lines.map(lineJson),
@@ -58,13 +62,14 @@ export function bodyJson(invoice: Invoice): Prisma.InputJsonValue {
   };
 }
 
-/** Quantité, prix net unitaire (millicentimes), montant, taux, période de livraison. */
+/** Unité, quantité en millièmes, prix net unitaire (millicentimes), montant, taux, période. */
 function lineJson(line: InvoiceLine): Prisma.InputJsonValue {
   return {
     sku: line.sku,
     label: line.label,
     otherLabels: [...line.otherLabels],
-    quantity: line.quantity,
+    unitCode: line.unitCode,
+    quantityThousandths: line.quantityThousandths,
     unitPriceMillicents: line.unitPriceMillicents,
     amountCents: line.amountCents,
     vatRate: line.vatRate,

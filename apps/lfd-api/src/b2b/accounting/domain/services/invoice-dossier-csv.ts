@@ -4,6 +4,7 @@ import type { DossierCalendarNotes } from "./invoice-dossier-calendar.js";
 import { historyCell, placeCell } from "./invoice-dossier-history-cells.js";
 import { neverHandedOver, type DossierOrderRecord } from "./invoice-dossier-history.js";
 import type { FrozenInvoiceOrder, InvoiceDossier } from "./invoice-dossier.types.js";
+import { PRINTED_UNIT_SYMBOLS, printedQuantity } from "./invoice-printed-quantity.js";
 
 /** Ce que l'en-tête de chaque fichier dit de lui-même. */
 export interface InvoiceDossierCsvHeading {
@@ -28,6 +29,7 @@ export function invoiceCsv(dossier: InvoiceDossier, heading: InvoiceDossierCsvHe
       "Prix unitaire HT (€)",
       "Taux",
       "Quantité",
+      "Unité",
       "Montant HT (€)",
       "Du",
       "Au",
@@ -38,7 +40,8 @@ export function invoiceCsv(dossier: InvoiceDossier, heading: InvoiceDossierCsvHe
         csvQuoted(line.label),
         csvQuoted(millicentsAsEuros(line.unitPriceMillicents)),
         csvQuoted(rateLabel(line.vatRate)),
-        String(line.quantity),
+        printedQuantity(line.quantityThousandths, line.unitCode).replace(".", ","),
+        csvQuoted(PRINTED_UNIT_SYMBOLS[line.unitCode]),
         csvEuros(line.amountCents),
         csvQuoted(line.firstDeliveryDate ?? ""),
         csvQuoted(line.lastDeliveryDate ?? ""),

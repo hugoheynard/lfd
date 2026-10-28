@@ -255,7 +255,8 @@ describe("le dossier de facturation d'un cycle", () => {
       expect.objectContaining({
         sku: line.sku,
         vatRate: 5.5,
-        quantity: 3,
+        unitCode: "H87",
+        quantityThousandths: 3_000,
         amountCents: line.lineTotalCents,
       }),
     ]);
@@ -427,7 +428,7 @@ describe("les CSV du dossier", () => {
     expect(invoice.headers["content-type"]).toContain("text/csv");
     expect(invoice.headers["content-disposition"]).toContain("DOSSIER-FACTURE-SIMULEE");
     expect(invoice.text).toContain(
-      `"${line.sku}";"${line.productNameSnapshot}";"${unitEuros}";"5,5 %";2;${amountEuros}`,
+      `"${line.sku}";"${line.productNameSnapshot}";"${unitEuros}";"5,5 %";2;"pièce(s)";${amountEuros}`,
     );
 
     const orders = await staff().get(`${BASE}/companies/${port.companyId}/orders.csv`).expect(200);

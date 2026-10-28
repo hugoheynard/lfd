@@ -26,15 +26,19 @@ export function periodLabel(month: string): string {
 
 /**
  * La quantité, en entiers jusqu'au bout : `2000` pièces-millièmes → « 2 »,
- * `1250` kg-millièmes → « 1,250 kg ». Une pièce reste entière (`H87`).
+ * `1250` kg-millièmes → « 1,250 kg », `2000` → « 2,000 kg » (trois décimales au
+ * kilo, comme le PDF). Une pièce reste entière (`H87`).
  */
 export function quantityLabel(
   line: Pick<IssuedInvoiceLineView, 'quantityThousandths' | 'unitCode'>,
 ): string {
   const whole = Math.trunc(line.quantityThousandths / THOUSANDTHS);
-  const rest = line.quantityThousandths % THOUSANDTHS;
-  const number = rest === 0 ? String(whole) : `${String(whole)},${String(rest).padStart(3, '0')}`;
-  return line.unitCode === 'KGM' ? `${number} kg` : number;
+  const rest = String(line.quantityThousandths % THOUSANDTHS).padStart(3, '0');
+  if (line.unitCode === 'KGM') {
+    // Toujours trois décimales au kilo, comme le PDF : « 2,000 kg », jamais « 2 kg ».
+    return `${String(whole)},${rest} kg`;
+  }
+  return rest === '000' ? String(whole) : `${String(whole)},${rest}`;
 }
 
 /** `1415` points de base → « 14,15 % ». */

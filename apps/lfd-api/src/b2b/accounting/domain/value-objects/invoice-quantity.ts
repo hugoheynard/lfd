@@ -8,12 +8,10 @@ const THOUSANDTHS_PER_UNIT = 1_000;
 /**
  * **La quantité d'une ligne de facture**, décimale — en millièmes entiers.
  *
- * Toutes les quantités d'aujourd'hui sont entières (Q5 : « une boîte de 6 est
- * une pièce », `order_lines.quantity` est un entier). La forme admet pourtant
- * des décimales dès E1, pour qu'une ligne au kilogramme (`KGM`, vente au
- * poids, « mais pas tout de suite ») ne change pas la forme d'une facture
- * déjà émise. Des millièmes ENTIERS et non un flottant : 1,250 kg = 1250, et
- * aucune somme ne dérive.
+ * Une pièce (`H87`) se compte en entiers ; un article vendu au poids (`KGM`,
+ * plan `plan-vente-au-poids.md`, P7) en grammes, c'est-à-dire en millièmes
+ * de kilogramme. Des millièmes ENTIERS et non un flottant : 1,250 kg = 1250,
+ * et aucune somme ne dérive.
  *
  * Une pièce (`H87`) reste entière : une demi-pièce n'est pas une vente, c'est
  * une faute de calcul.
@@ -21,7 +19,7 @@ const THOUSANDTHS_PER_UNIT = 1_000;
 export class InvoiceQuantity {
   private constructor(readonly thousandths: number) {}
 
-  /** Une quantité entière d'unités — tout ce que les bons portent aujourd'hui. */
+  /** Une quantité entière d'unités (des pièces, des kilogrammes ronds). */
   static units(count: number, unit: InvoiceUnitCode): InvoiceQuantity {
     if (!Number.isInteger(count)) {
       throw new InvalidInvoiceQuantityError(String(count), "nombre entier d'unités attendu");

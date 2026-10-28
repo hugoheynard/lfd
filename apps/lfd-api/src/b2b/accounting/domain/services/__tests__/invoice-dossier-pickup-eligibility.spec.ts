@@ -14,6 +14,7 @@ const PAIN: FrozenInvoiceLine = {
   unitPriceMillicents: 100_000,
   vatRate: "5.50",
   quantity: 10,
+  saleUnit: "piece",
   lineTotalCents: 1_000,
 };
 const JUS: FrozenInvoiceLine = {
@@ -22,6 +23,7 @@ const JUS: FrozenInvoiceLine = {
   unitPriceMillicents: 100_000,
   vatRate: "20.00",
   quantity: 10,
+  saleUnit: "piece",
   lineTotalCents: 1_000,
   pickupDiscountEligible: false,
 };

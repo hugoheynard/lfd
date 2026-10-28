@@ -6,6 +6,7 @@ import type {
   FrozenInvoiceOrder,
   FrozenOrderVatShare,
 } from "../domain/services/invoice-dossier.types.js";
+import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le jour `AAAA-MM-JJ` d'une colonne `@db.Date`, lue à minuit UTC. */
 const ISO_DAY_LENGTH = 10;
@@ -36,6 +37,7 @@ export const FROZEN_INVOICE_ORDER_SELECT = {
       unitPriceMillicents: true,
       vatRate: true,
       quantity: true,
+      saleUnit: true,
       lineTotalCents: true,
       pickupDiscountEligible: true,
     },
@@ -60,6 +62,7 @@ export function toFrozenInvoiceOrder(row: FrozenInvoiceOrderRow): FrozenInvoiceO
       // Lu tel quel (« 5.50 ») : le domaine normalise, jamais l'adaptateur.
       vatRate: line.vatRate.toString(),
       quantity: line.quantity,
+      saleUnit: invoiceLineSaleUnitOf(row.orderNumber, line.sku, line.saleUnit),
       lineTotalCents: line.lineTotalCents,
       pickupDiscountEligible: line.pickupDiscountEligible,
     })),

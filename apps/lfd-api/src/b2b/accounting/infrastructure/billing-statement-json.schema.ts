@@ -9,9 +9,6 @@ import { z } from "zod";
  * plutôt qu'affichée à moitié — un montant prélevé ne se devine pas.
  */
 
-/** Les `body_version` que cette lecture sait lire. */
-export const READABLE_BODY_VERSION = 1;
-
 export const statementSellerSchema = z.object({
   name: z.string(),
   legalForm: z.string(),
@@ -56,32 +53,66 @@ export const vatBreakdownSchema = z.object({
   totalCents: cents,
 });
 
-/** `body_version` 1 : la facture de `simulateInvoiceDossier`, telle que figée. */
-export const statementBodyV1Schema = z.object({
-  lines: z.array(
-    z.object({
-      sku: z.string(),
-      label: z.string(),
-      otherLabels: z.array(z.string()),
-      // Absent des arrêtés figés : la v1 ne l'écrit pas (`lineJson`). Toutes
-      // leurs lignes étaient des pièces — le catalogue ne vend rien d'autre
-      // (Q5, 2026-10-08) —, d'où une relecture en `H87`, jamais une invention.
-      unitCode: z.enum(["H87", "KGM"]).default("H87"),
-      quantity: z.number(),
-      unitPriceMillicents: z.number().int(),
-      amountCents: cents,
-      vatRate: z.number(),
-      ordersLineTotalCents: cents,
-      firstDeliveryDate: z.string().nullable(),
-      lastDeliveryDate: z.string().nullable(),
-    }),
-  ),
-  companyDiscountCents: cents,
-  voucherDiscountCents: cents,
-  lateFeeCents: cents,
-  deliveries: z.array(
-    z.object({ mode: z.enum(["standard", "follows_goods"]), amountCents: cents }),
-  ),
-  vat: vatBreakdownSchema,
-  totalCents: cents,
+const statementLineFields = {
+  sku: z.string(),
+  label: z.string(),
+  otherLabels: z.array(z.string()),
+  unitPriceMillicents: z.number().int(),
+  amountCents: cents,
+  vatRate: z.number(),
+  ordersLineTotalCents: cents,
+  firstDeliveryDate: z.string().nullable(),
+  lastDeliveryDate: z.string().nullable(),
+};
+
+const THOUSANDTHS_PER_PIECE = 1_000;
+
+/**
+ * Une ligne v1 : `quantity` en pièces, aucune unité. Toutes les lignes d'un
+ * arrêté v1 étaient des pièces — rien ne se vendait au poids avant P7
+ * (plan `plan-vente-au-poids.md`, § 3 bis) —, d'où leur relecture en `H87`,
+ * pièces × 1 000. **Le seul repli d'unité de la chaîne de facturation** : les
+ * colonnes `sale_unit` des bons et des BL ont un défaut en base, aucun
+ * lecteur ne replie sur la pièce.
+ */
+const statementLineV1Schema = z
+  .object({ ...statementLineFields, quantity: z.number().int() })
+  .transform(({ quantity, ...line }) => ({
+    ...line,
+    unitCode: "H87" as const,
+    quantityThousandths: quantity * THOUSANDTHS_PER_PIECE,
+  }));
+
+/** Une ligne v2 : l'unité et la quantité en millièmes, écrites telles quelles. */
+const statementLineV2Schema = z.object({
+  ...statementLineFields,
+  unitCode: z.enum(["H87", "KGM"]),
+  quantityThousandths: z.number().int(),
 });
+
+function statementBodySchema<Line extends z.ZodType>(line: Line) {
+  return z.object({
+    lines: z.array(line),
+    companyDiscountCents: cents,
+    voucherDiscountCents: cents,
+    lateFeeCents: cents,
+    deliveries: z.array(
+      z.object({ mode: z.enum(["standard", "follows_goods"]), amountCents: cents }),
+    ),
+    vat: vatBreakdownSchema,
+    totalCents: cents,
+  });
+}
+
+/** `body_version` → sa relecture. Une version absente d'ici est illisible. */
+export const STATEMENT_BODY_SCHEMAS = {
+  1: statementBodySchema(statementLineV1Schema),
+  2: statementBodySchema(statementLineV2Schema),
+} as const;
+
+/** La relecture du `body` d'une version, ou `null` si la version est inconnue. */
+export function statementBodySchemaOf(
+  bodyVersion: number,
+): (typeof STATEMENT_BODY_SCHEMAS)[keyof typeof STATEMENT_BODY_SCHEMAS] | null {
+  return bodyVersion === 1 || bodyVersion === 2 ? STATEMENT_BODY_SCHEMAS[bodyVersion] : null;
+}

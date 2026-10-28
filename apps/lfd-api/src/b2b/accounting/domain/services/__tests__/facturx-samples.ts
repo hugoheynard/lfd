@@ -1,4 +1,4 @@
-import { invoiceVatBreakdown, splitOrderByRate } from "@lfd/money";
+import { grams, invoiceVatBreakdown, lineTotalCents, splitOrderByRate } from "@lfd/money";
 
 import {
   BUYER,
@@ -19,6 +19,8 @@ import { InvoiceNumber } from "../../value-objects/invoice-number.js";
 import { simulateInvoiceDossier } from "../invoice-dossier.js";
 import { invoiceFromDossier } from "../invoice-from-dossier.js";
 import { refundCreditNote } from "../refund-credit-note.js";
+import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
+import { frozenOrder } from "./collection-fixtures.js";
 import { frozenBon, goodsLine } from "./per-order-cycle-fixtures.js";
 
 /**
@@ -160,6 +162,37 @@ function perOrderCycle(): Invoice {
   return invoiceFromDossier({ ...issue, computed });
 }
 
+/** 12,34567 € HT le kilo : un prix au millicentime, que trente arrondis écartent. */
+const GRAVLAX_PER_KILO = 1_234_567;
+
+/** Un bon pro : le pain du fixture partagé, et 1 001 g de gravlax. */
+function weighedBon(index: number): FrozenInvoiceOrder {
+  const base = frozenOrder(`ORD-W${String(index)}`, new Date(index * 60_000));
+  const gravlax = {
+    sku: "GRAVLAX",
+    productNameSnapshot: "Saumon gravlax",
+    unitPriceMillicents: GRAVLAX_PER_KILO,
+    vatRate: "5.50",
+    quantity: 1_001,
+    saleUnit: "weight" as const,
+    lineTotalCents: lineTotalCents(GRAVLAX_PER_KILO, grams(1_001)),
+  };
+  return { ...base, lines: [...base.lines, gravlax], vatShares: null };
+}
+
+/**
+ * La facture du mois d'un dossier au poids (plan `plan-vente-au-poids.md`,
+ * § 3 bis, point 7) : trente bons, une ligne KGM au prix net dérivé (BT-146)
+ * et une ligne H87 à côté — par le chemin d'émission réel.
+ */
+function weighedDossier(): Invoice {
+  const computed = simulateInvoiceDossier(
+    Array.from({ length: 30 }, (_, index) => weighedBon(index)),
+  ).invoice;
+  const { lines: _lines, vat: _vat, ...issue } = realisticInput({ id: "inv_weighed_dossier" });
+  return invoiceFromDossier({ ...issue, computed });
+}
+
 export function facturXSamples(): readonly FacturXSample[] {
   return [
     { name: "facture-du-mois", invoice: Invoice.issue(realisticInput({})) },
@@ -169,5 +202,6 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "avoir-partiel", invoice: partialCreditNote() },
     { name: "quantites-au-kilo", invoice: weighed() },
     { name: "remises-bon-par-bon", invoice: perOrderCycle() },
+    { name: "dossier-au-poids", invoice: weighedDossier() },
   ];
 }

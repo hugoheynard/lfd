@@ -32,7 +32,7 @@
       </ng-template>
       <ng-template foldCell="period" let-row>{{ period(row) }}</ng-template>
       <ng-template foldCell="rate" let-row>{{ rate(row.vatRate) }}</ng-template>
-      <ng-template foldCell="quantity" let-row>{{ row.quantity }}</ng-template>
+      <ng-template foldCell="quantity" let-row>{{ quantity(row) }}</ng-template>
       <ng-template foldCell="unit" let-row>{{ unitPrice(row.unitPriceMillicents) }}</ng-template>
       <ng-template foldCell="amount" let-row>{{ euros(row.amountCents) }}</ng-template>
     </fold-data-table>

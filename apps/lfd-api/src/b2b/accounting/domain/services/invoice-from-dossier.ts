@@ -1,6 +1,6 @@
 import { Invoice, type IssueInvoiceInput } from "../entities/invoice.js";
 import type { InvoiceLineInput } from "../entities/invoice.types.js";
-import { InvoiceQuantity } from "../value-objects/invoice-quantity.js";
+import { billedUnitPriceMillicents } from "./invoice-net-price.js";
 import type { Invoice as ComputedInvoice, InvoiceLine } from "./invoice-dossier.types.js";
 
 /** Tout ce que l'émission ajoute à la facture calculée — sauf les lignes et la ventilation. */
@@ -16,6 +16,8 @@ export type InvoiceFromDossierInput = Omit<IssueInvoiceInput, "lines" | "vat"> &
  * Aucun recalcul : les lignes (D2, HT repris des bons — F6) et la ventilation
  * (`invoiceVatBreakdown`) sont reprises telles que le simulateur les a
  * rendues ; l'agrégat vérifie qu'elles se recomposent, il ne les refait pas.
+ * Seul le prix net (BT-146) peut s'écarter de celui des bons, quand il ne
+ * recomposerait plus le montant de la ligne (`invoice-net-price.ts`).
  * Les dates demandées des lignes du dossier ne passent PAS : la facture porte
  * les dates de livraison réelles des bons (`orders[].receivedOn`), ou rien.
  */
@@ -33,8 +35,9 @@ function issuedLineOf(line: InvoiceLine): InvoiceLineInput {
     sku: line.sku,
     label: line.label,
     unitCode: line.unitCode,
-    quantityThousandths: InvoiceQuantity.units(line.quantity, line.unitCode).thousandths,
-    unitPriceMillicents: line.unitPriceMillicents,
+    // Déjà en millièmes de son unité (`invoice-lines.ts`) : recopiés, revalidés par l'agrégat.
+    quantityThousandths: line.quantityThousandths,
+    unitPriceMillicents: billedUnitPriceMillicents(line),
     vatRate: line.vatRate,
     amountCents: line.amountCents,
   };

@@ -37,3 +37,23 @@ export class InvoiceDossierUnreadableVatRateError extends BusinessError {
     );
   }
 }
+
+/**
+ * Un même article arrive dans le dossier à la pièce ET au poids. Son unité
+ * est figée à la publication (plan `plan-vente-au-poids.md`, P1) : deux
+ * unités disent une ligne de bon fausse, et additionner des pièces et des
+ * grammes ferait une quantité qui ne veut rien dire.
+ */
+export class InvoiceDossierMixedSaleUnitError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly orderReference: string,
+  ) {
+    super(
+      "accounting.invoice_dossier.mixed_sale_unit",
+      `L'article ${sku} figure dans ce dossier à la fois à la pièce et au poids (bon ` +
+        `${orderReference}) : la facture ne peut pas additionner des pièces et des grammes. ` +
+        `Rien n'a été facturé ; signalez ce bon à l'équipe technique, qui corrigera la ligne en cause.`,
+    );
+  }
+}

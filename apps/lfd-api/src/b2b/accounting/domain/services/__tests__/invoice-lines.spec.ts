@@ -23,6 +23,7 @@ function bonOf(reference: string, minute: number, date: string): FrozenInvoiceOr
         unitPriceMillicents: PRICE,
         vatRate: "5.50",
         quantity: QUANTITY,
+        saleUnit: "piece",
         lineTotalCents: cents,
       },
     ],
@@ -63,7 +64,7 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
       vatRate: 5.5,
       label: "Baguette",
       unitCode: "H87",
-      quantity: 3,
+      quantityThousandths: 3_000,
       amountCents: ordersSum,
       ordersLineTotalCents: ordersSum,
       firstDeliveryDate: "2026-10-02",
@@ -84,7 +85,7 @@ describe("aggregateInvoiceLines — un reste livré à un autre jour (plan E7 re
     const [line] = aggregateInvoiceLines([twoShipments]);
 
     expect(line).toMatchObject({
-      quantity: 2,
+      quantityThousandths: 2_000,
       firstDeliveryDate: "2026-10-02",
       lastDeliveryDate: "2026-10-04",
     });

@@ -195,6 +195,7 @@ function bon(
         unitPriceMillicents: 100_000,
         vatRate: "5.50",
         quantity: 1,
+        saleUnit: "piece",
         lineTotalCents: 100,
       },
     ],
@@ -274,7 +275,12 @@ describe("GetInvoiceDossierHandler", () => {
     });
     expect(view.orders.map((order) => order.reference)).toEqual(["ORD-1", "ORD-2"]);
     expect(view.invoice.lines).toEqual([
-      expect.objectContaining({ sku: "BAG-001", quantity: 2, amountCents: 200 }),
+      expect.objectContaining({
+        sku: "BAG-001",
+        unitCode: "H87",
+        quantityThousandths: 2_000,
+        amountCents: 200,
+      }),
     ]);
     expect(view.ordersTotalCents).toBe(212);
     expect(view.differenceCents).toBe(view.gaps.totalCents);
@@ -492,7 +498,7 @@ describe("ExportInvoiceDossierHandler", () => {
 
     expect(file.fileName).toBe("DOSSIER-FACTURE-SIMULEE-Maison mère-20260930.csv");
     expect(file.csv.startsWith("﻿")).toBe(true);
-    expect(file.csv).toContain('"BAG-001";"Baguette";"1,00000";"5,5 %";2;2,00');
+    expect(file.csv).toContain('"BAG-001";"Baguette";"1,00000";"5,5 %";2;"pièce(s)";2,00');
   });
 
   it("rend les bons, et dit celui qui n'a pas de date", async () => {

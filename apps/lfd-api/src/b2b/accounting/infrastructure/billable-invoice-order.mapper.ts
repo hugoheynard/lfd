@@ -11,6 +11,7 @@ import {
   FROZEN_INVOICE_ORDER_SELECT,
   toFrozenInvoiceOrder,
 } from "./frozen-invoice-order.mapper.js";
+import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le statut d'un bon de livraison remis (`delivery_note.status`). */
 const HANDED_OVER = "handed_over";
@@ -66,6 +67,7 @@ export const BILLABLE_INVOICE_ORDER_SELECT = {
           unitPriceMillicents: true,
           vatRate: true,
           quantity: true,
+          saleUnit: true,
           lineTotalCents: true,
           pickupDiscountEligible: true,
         },
@@ -114,7 +116,9 @@ export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvo
   // les six autres ; le repli ne sert qu'au typage.
   return {
     ...ordered,
-    lines: fromNotes ? row.deliveryNotes.flatMap(noteLinesOf) : ordered.lines,
+    lines: fromNotes
+      ? row.deliveryNotes.flatMap((note) => noteLinesOf(row.orderNumber, note))
+      : ordered.lines,
     discountCents: row.billableDiscountCents ?? ordered.discountCents,
     voucherDiscountCents: row.billableVoucherDiscountCents ?? ordered.voucherDiscountCents,
     deliveryFeeCents: row.billableDeliveryFeeCents ?? ordered.deliveryFeeCents,
@@ -133,22 +137,24 @@ export function handedOverNoteNumbersOf(row: {
 }
 
 /** Les lignes d'un BL remis ; celles d'un reste portent son jour (`service_day`, nul au rang 1). */
-function noteLinesOf(note: NoteRow): readonly FrozenInvoiceLine[] {
+function noteLinesOf(orderReference: string, note: NoteRow): readonly FrozenInvoiceLine[] {
   const day = note.serviceDay?.toISOString().slice(0, DAY_LENGTH);
   return note.lines.map((line) => ({
-    ...noteLineOf(line),
+    ...noteLineOf(orderReference, line),
     ...(day === undefined ? {} : { deliveryDate: day }),
   }));
 }
 
-function noteLineOf(line: NoteLineRow): FrozenInvoiceLine {
+function noteLineOf(orderReference: string, line: NoteLineRow): FrozenInvoiceLine {
   return {
     sku: line.sku,
     productNameSnapshot: line.productName,
     unitPriceMillicents: line.unitPriceMillicents,
     // Lu tel quel (« 5.50 ») : le domaine normalise, jamais l'adaptateur.
     vatRate: line.vatRate.toString(),
+    // Des grammes si la ligne est au poids (P5) : l'unité du BL, recopiée de la commande.
     quantity: line.quantity,
+    saleUnit: invoiceLineSaleUnitOf(orderReference, line.sku, line.saleUnit),
     lineTotalCents: line.lineTotalCents,
     // `NULL` sur un BL d'avant E4a : absent, c'est-à-dire éligible.
     ...(line.pickupDiscountEligible === null

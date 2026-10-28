@@ -73,6 +73,7 @@ export function frozenOrder(reference: string, createdAt: Date): FrozenInvoiceOr
         unitPriceMillicents: 948_000,
         vatRate: "5.50",
         quantity: 1,
+        saleUnit: "piece",
         lineTotalCents: 948,
       },
     ],

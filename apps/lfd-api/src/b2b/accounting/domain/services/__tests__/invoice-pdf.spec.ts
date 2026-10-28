@@ -223,3 +223,31 @@ describe("invoiceDocumentKey", () => {
     );
   });
 });
+
+describe("renderInvoicePdf — une ligne au poids (plan vente au poids, P7)", () => {
+  it("imprime « 1,250 kg » et « 2,000 kg », trois décimales toujours, et le prix au kilo", async () => {
+    const lines = [
+      {
+        ...line("GRAV", 5.5, 1_543),
+        unitCode: "KGM" as const,
+        quantityThousandths: 1_250,
+        unitPriceMillicents: 1_234_567,
+      },
+      {
+        ...line("FARINE", 5.5, 248),
+        unitCode: "KGM" as const,
+        quantityThousandths: 2_000,
+        unitPriceMillicents: 124_000,
+      },
+      line("PAIN", 5.5, 1_000, 2),
+    ];
+    const invoice = Invoice.issue(issueInput({ lines, vat: breakdownOf(lines) }));
+
+    const printed = drawnUnicodeText(await render(invoice));
+
+    for (const expected of ["1,250 kg", "2,000 kg", "2 pièce(s)", "12,34567 €"]) {
+      expect(printed).toContain(expected);
+    }
+    expect(printed).not.toContain("kilogramme");
+  });
+});
