@@ -60,21 +60,6 @@
       }
     </div>
 
-    <!-- Les onglets, au poste fixe seulement : un rayon, son avancement. -->
-    @if (!compact() && current(); as fiche) {
-      <!-- Des onglets de classeur, comme la maquette : l'onglet actif prend le
-           fond du corps qu'il ouvre (Hugo, 2026-10-28). -->
-      <fold-tabs
-        class="fa-tabs"
-        activeStyle="folder"
-        background="transparent"
-        aria-label="Poste de la fiche d’atelier"
-        [tabs]="tabs()"
-        [activeKey]="fiche.key"
-        (activeKeyChange)="choose($event)"
-      />
-    }
-
     <!--
       🔴 Le serveur n'a pas pu lire les rayons (`shelvesKnown: false`) : les
       quantités restent justes, mais tout est sous « Rayon inconnu » — et sans
@@ -136,6 +121,23 @@
           (retake)="gestures.retake()"
         />
       }
+    }
+
+    <!-- Les onglets, au poste fixe seulement : un rayon, son avancement. EN
+         DERNIER dans la bande : l'onglet actif se raccorde au corps. -->
+    @if (!compact() && current(); as fiche) {
+      <!-- Des onglets de classeur, comme la maquette : l'onglet actif prend le
+           fond du corps qu'il ouvre (Hugo, 2026-10-28). -->
+      <fold-tabs
+        class="fa-tabs"
+        activeStyle="folder"
+        direction="horizontal"
+        background="transparent"
+        aria-label="Poste de la fiche d’atelier"
+        [tabs]="tabs()"
+        [activeKey]="fiche.key"
+        (activeKeyChange)="choose($event)"
+      />
     }
   </fold-page-section>
 </fold-page-layout>

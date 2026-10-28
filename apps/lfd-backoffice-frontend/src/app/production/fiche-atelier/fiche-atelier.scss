@@ -83,6 +83,11 @@
   background: var(--fold-color-bg-rail-secondary);
 }
 
+/* Des onglets de classeur : la bande s'arrête sur eux, sans jour sous l'onglet actif. */
+.fa-masthead:has(.fa-tabs) {
+  padding-block-end: 0;
+}
+
 .fa-masthead-bar {
   display: flex;
   flex-wrap: wrap;
