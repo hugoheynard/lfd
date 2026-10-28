@@ -1,7 +1,7 @@
 import { declareExperimentalWebMcpTool, inject } from '@angular/core';
 import type { CatalogReemissionView } from '@lfd/pim-contracts';
 
-import { ReemissionHttpApi } from '../pim/integration/reemission/reemission-http-api';
+import { ReemissionHttpApi } from '../pim/catalogue-overview/reemission/reemission-http-api';
 
 import { said } from './agent-tool-text';
 

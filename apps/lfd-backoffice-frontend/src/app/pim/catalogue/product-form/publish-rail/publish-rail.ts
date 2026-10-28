@@ -14,7 +14,7 @@ import {
 } from 'fold-ng';
 
 import { staffAuthor } from '../../../../shared/staff-author';
-import { ReemissionPanel } from '../../../integration/reemission/reemission-panel/reemission-panel';
+import { ReemissionPanel } from '../../../catalogue-overview/reemission/reemission-panel/reemission-panel';
 import { persistedMedia } from '../../media-usages';
 import { ProductFormStore } from '../product-form-store';
 import { completenessOf, measure, type CompletenessCheck } from './completeness';

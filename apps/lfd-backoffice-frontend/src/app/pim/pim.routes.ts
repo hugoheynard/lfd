@@ -144,7 +144,7 @@ export const pimRoutes: Routes = [
       // L'écran « Publication » (le push) est parti en X2 (2026-10-17) : les
       // faits du catalogue partent d'eux-mêmes. L'adresse vit dans des
       // favoris ; elle mène aux Intégrations, où se réémet le catalogue.
-      { path: 'publication', pathMatch: 'full', redirectTo: '/pim/integration' },
+      { path: 'publication', pathMatch: 'full', redirectTo: '/pim/catalogue' },
       // `nouveau` AVANT `:id`, sinon le paramètre l'avale et la création
       // ouvrirait une famille dont l'identifiant serait « nouveau ».
       {
@@ -165,12 +165,9 @@ export const pimRoutes: Routes = [
         loadComponent: () =>
           import('./catalogue/categories-page/categories-page').then((m) => m.CategoriesPage),
       },
-      {
-        path: 'integration',
-        title: 'Intégrations — LFC B2B admin',
-        loadComponent: () =>
-          import('./integration/integration-page/integration-page').then((m) => m.IntegrationPage),
-      },
+      // La page « Intégrations » est retirée le 2026-10-28 (Hugo) : sa
+      // réémission vit dans la vue d'ensemble, où ses anciennes adresses mènent.
+      { path: 'integration', pathMatch: 'full', redirectTo: '/pim/catalogue' },
       {
         path: 'produits/nouveau',
         title: 'Nouveau produit — LFC B2B admin',

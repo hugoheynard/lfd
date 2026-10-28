@@ -527,8 +527,9 @@ export const COMPTOIR_VIEWS: readonly WorkspaceView[] = [
  */
 export const PIM_VIEWS: readonly WorkspaceView[] = [
   // CATALOGUE — ce qu'on vend, et ce qu'on en a figé. Les révisions y sont
-  // parce qu'une ancre photographie ce catalogue-là ; les ranger sous
-  // « Diffusion » laisserait croire qu'elles publient quelque chose.
+  // parce qu'une ancre photographie ce catalogue-là. La section « Diffusion »
+  // et sa page « Intégrations » sont retirées le 2026-10-28 (Hugo) : la
+  // réémission vit dans la vue d'ensemble.
   //
   // La synthèse ouvre la section : elle répond à « où on en est », les autres à
   // « lequel ».
@@ -566,24 +567,12 @@ export const PIM_VIEWS: readonly WorkspaceView[] = [
     section: 'Catalogue',
   },
 
-  // DIFFUSION — ce qui sort d'ici, et par où. Ces vues-là n'avaient pas été
-  // citées dans le regroupement demandé ; les laisser sans section les aurait
-  // fait flotter sous des groupes titrés, ce qui se lit comme un oubli.
-  {
-    key: 'integration',
-    label: 'Intégrations',
-    link: '/pim/integration',
-    icon: 'integrations',
-    section: 'Diffusion',
-  },
-
   // PARAMÉTRAGE PRODUIT — le vocabulaire dans lequel une FICHE se remplit :
   // ce qu'elle contient, ce qui la conditionne, ce qu'elle déclare. On y
   // revient en saisissant, ce qui le sépare du paramétrage général plus bas —
   // celui-là se règle trois fois par an.
   //
-  // C'est la même distinction que le rail fait déjà entre Catalogue et
-  // Diffusion : par NATURE de ce qu'on y fait, pas par ordre d'arrivée.
+  // Le rail range par NATURE de ce qu'on y fait, pas par ordre d'arrivée.
   {
     key: 'ingredients',
     label: 'Ingrédients',

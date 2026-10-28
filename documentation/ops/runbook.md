@@ -437,7 +437,8 @@ ce droit, les boutons ne s'affichent pas.
 
 - **une fiche** : la fiche du référentiel, rail « Publication », carte
   « Réémettre vers la plateforme », bouton **Réémettre** ;
-- **tout** : Référentiel › **Intégrations** (`/pim/integration`), carte
+- **tout** : Référentiel › **Vue d’ensemble** (`/pim/catalogue`, depuis le
+  2026-10-28 ; l’ancienne adresse `/pim/integration` y mène), carte
   « Réémettre le catalogue », bouton **Tout réémettre** — familles, puis
   fiches (une transaction chacune), puis les règles. Le 2026-10-17, 293
   articles en ~73 s.

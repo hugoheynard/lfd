@@ -53,7 +53,7 @@ réaligner toutes les copies d'un coup, la réémission du catalogue réécrit c
 article sans comparer d'empreinte (vérifié le 2026-10-26 : aucun saut des
 lignes inchangées, ni à l'émission ni à l'ingestion) :
 
-- back-office, page `/pim/integration` → « Tout réémettre » (ou « Réémettre » depuis une fiche) ;
+- back-office, Référentiel › Vue d’ensemble (`/pim/catalogue`, la page « Intégrations » est retirée le 2026-10-28) → « Tout réémettre » (ou « Réémettre » depuis une fiche) ;
 - ou `POST /pim/channels/b2b/reemit` avec `{}` (une fiche : `{ "productId": "…" }`),
   droit `pim_channels:write`.
 

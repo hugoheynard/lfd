@@ -5,6 +5,10 @@
 > retiré le push, l'écran « Publication », la réception, la parité et la
 > santé. Ce que ce document prescrit de ces écrans-là n'a plus d'objet ; le
 > reste n'a pas été relu. La refonte est l'objet de X5.
+>
+> ⚠️ **2026-10-28** : la page `/pim/integration` est retirée (Hugo) ; la
+> réémission vit dans la vue d'ensemble (`/pim/catalogue`). Les mentions de
+> `/pim/integration` ci-dessous décrivent un écran qui n'existe plus.
 
 **Prescriptif.** Ce document dit ce que chaque écran du cycle **doit** montrer et
 offrir. Il ne décrit pas l'état du code : le descriptif est
@@ -383,7 +387,7 @@ Elle répond à **« qu'est-ce qui part »**. C'est le seul écran qui envoie.
   compteurs.
   ⚠️ Deux surfaces d'autorisation : le push est `@AdminSurface("pim_channels")`, la
   parité `@AdminSurface("b2b_catalog")`. Un refus ne doit pas être avalé en
-  `catch {}` comme aujourd'hui (`b2b-integration.ts`) — l'écran le plus
+  `catch {}` comme le faisait l'ancienne page « Intégrations » (retirée le 2026-10-28) — l'écran le plus
   dangereux du cycle afficherait « rien en vente » sans dire pourquoi.
 - Les **collections de taxe** avant le tableau des produits : une fiche ne peut
   pas se rattacher à une collection qui n'existe pas encore.

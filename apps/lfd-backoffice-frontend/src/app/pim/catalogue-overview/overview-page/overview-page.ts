@@ -12,6 +12,7 @@ import {
 } from 'fold-ng';
 
 import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
+import { ReemissionPanel } from '../reemission/reemission-panel/reemission-panel';
 
 /**
  * **Où en est le catalogue** — l'accueil du référentiel.
@@ -36,6 +37,7 @@ import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
     FoldPageSectionComponent,
+    ReemissionPanel,
     RouterLink,
   ],
   templateUrl: './overview-page.html',

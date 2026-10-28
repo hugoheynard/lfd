@@ -3,8 +3,8 @@ import { TestBed } from '@angular/core/testing';
 import type { CatalogReemissionView } from '@lfd/pim-contracts';
 import { afterEach, beforeEach, describe, expect, it } from 'vitest';
 
-import { ReemissionHttpApi } from '../pim/integration/reemission/reemission-http-api';
-import { aJob } from '../pim/integration/reemission/__tests__/reemission-fixtures';
+import { ReemissionHttpApi } from '../pim/catalogue-overview/reemission/reemission-http-api';
+import { aJob } from '../pim/catalogue-overview/reemission/__tests__/reemission-fixtures';
 
 import { declarePimReemissionAgentTools } from './pim-agent-reemission-tools';
 

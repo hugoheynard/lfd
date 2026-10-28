@@ -237,13 +237,14 @@ sequenceDiagram
   prochain « tout ».
 - `started_by` est l'id de la fiche staff, au registre RGPD.
 
-**Les écrans** : « Tout réémettre » sur la page **Intégrations** du
-référentiel (`/pim/integration`) — c'est le canal que le filet répare, et
-l'ancienne adresse « Publication » y redirige déjà ; « Réémettre » dans le
+**Les écrans** : « Tout réémettre » sur la **Vue d'ensemble** du référentiel
+(`/pim/catalogue`) depuis le 2026-10-28 — la page « Intégrations », qui ne
+portait plus qu'un canal interne et ce panneau, est retirée, et ses anciennes
+adresses (`/pim/integration`, « Publication ») y mènent ; « Réémettre » dans le
 rail « Publication » de **la fiche**. Les deux suivent le travail jusqu'à son
 issue et affichent tentées, réussies, échecs nommés (chacun mène à sa fiche).
 Visibles seulement avec `pim_channels:write`
-(`apps/lfd-backoffice-frontend/src/app/pim/integration/reemission/`). C'est
+(`apps/lfd-backoffice-frontend/src/app/pim/catalogue-overview/reemission/`). C'est
 le **filet** : un fait perdu laisse une fiche en retard, « Catalogue publié »
 le montre, la réémission le répare.
 
