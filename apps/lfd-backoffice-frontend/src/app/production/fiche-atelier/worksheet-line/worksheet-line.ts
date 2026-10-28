@@ -99,6 +99,16 @@ export class WorksheetLine {
     return container === null ? null : `+ 1 ${container.singular}`;
   });
 
+  /**
+   * Les raccourcis montrés sur la ligne, sans celui qui vaut un contenant :
+   * « + 1 plaque » le dit déjà (Hugo, 2026-10-28 — un doublon). Le pavé
+   * dédoublonne de son côté.
+   */
+  protected readonly lineShortcuts = computed(() => {
+    const units = this.line().container?.unitsPerContainer ?? null;
+    return this.shortcuts().filter((shortcut) => shortcut.pieces !== units);
+  });
+
   protected readonly waiting = computed(() => {
     const waiting = this.line().waitingOrders ?? null;
     if (waiting === null || this.line().done) {

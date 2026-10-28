@@ -210,6 +210,25 @@ describe('une ligne, vue par produit', () => {
     expect(keypad.asked[0]?.preset).toBe(96);
   });
 
+  /** Régression : « 1 plaque · 30 » doublait « + 1 plaque » sur la ligne (2026-10-28). */
+  it('ne montre pas le raccourci qui vaut un contenant', () => {
+    const fixture = TestBed.createComponent(WorksheetLine);
+    fixture.componentRef.setInput(
+      'line',
+      line({ container: { unitsPerContainer: 30, singular: 'plaque' } }),
+    );
+    fixture.componentRef.setInput('now', NOW);
+    fixture.componentRef.setInput('shortcuts', [
+      { id: 'bs-1', label: '1 plaque', pieces: 30 },
+      { id: 'bs-2', label: '1 chariot', pieces: 96 },
+    ]);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelector('[data-worksheet-shortcut="bs-1"]')).toBeNull();
+    expect(el.querySelector('[data-worksheet-shortcut="bs-2"]')).not.toBeNull();
+  });
+
   it('montre ses fournées en puces', () => {
     const el: HTMLElement = render(line({ batches: [BATCH] })).nativeElement;
 
