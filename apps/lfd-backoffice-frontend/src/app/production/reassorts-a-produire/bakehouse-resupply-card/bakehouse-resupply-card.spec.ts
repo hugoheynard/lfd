@@ -1,6 +1,11 @@
 import { TestBed } from '@angular/core/testing';
 import { FoldPanelHostService } from 'fold-ng';
-import type { PlaceSiteResupplyPayload } from '@lfd/contracts';
+import type {
+  BakehouseResupplyDraftView,
+  PlaceSiteResupplyPayload,
+  SaveBakehouseResupplyDraftPayload,
+  UpdateBakehouseResupplyDraftPayload,
+} from '@lfd/contracts';
 import { describe, expect, it, vi } from 'vitest';
 
 import { PickupAddressesService } from '../../../b2b/reglages/pickup-addresses.service';
@@ -43,6 +48,33 @@ class FakeBakehouse {
   usedNames(siteId: string): Promise<readonly string[]> {
     this.namesAsked.push(siteId);
     return Promise.resolve(siteId === 'site_v' ? ['Vitrine du matin', 'Goûter'] : []);
+  }
+  stored: BakehouseResupplyDraftView[] = [];
+  readonly draftCalls: string[] = [];
+  drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
+    return Promise.resolve(this.stored);
+  }
+  createDraft(
+    payload: SaveBakehouseResupplyDraftPayload,
+  ): Promise<{ id: string; version: number }> {
+    this.draftCalls.push(`create:${JSON.stringify(payload.lines)}`);
+    return Promise.resolve({ id: 'dr_new', version: 1 });
+  }
+  saveDraft(
+    id: string,
+    payload: UpdateBakehouseResupplyDraftPayload,
+  ): Promise<{ id: string; version: number }> {
+    this.draftCalls.push(`save:${id}:v${String(payload.version)}`);
+    return Promise.resolve({ id, version: payload.version + 1 });
+  }
+  sendDraft(id: string, payload: UpdateBakehouseResupplyDraftPayload): Promise<{ id: string }> {
+    this.draftCalls.push(`send:${id}:v${String(payload.version)}:${JSON.stringify(payload.lines)}`);
+    return Promise.resolve({ id: 'rs_from_draft' });
+  }
+  discardDraft(id: string, version: number): Promise<void> {
+    this.draftCalls.push(`discard:${id}:v${String(version)}`);
+    this.stored = this.stored.filter((draft) => draft.id !== id);
+    return Promise.resolve();
   }
   send(siteId: string, payload: PlaceSiteResupplyPayload): Promise<{ id: string }> {
     if (this.refuse) {
@@ -270,6 +302,78 @@ describe('BakehouseResupplyCard', () => {
     fixture.detectChanges();
 
     expect(panels.asked).toEqual([]);
+  });
+
+  describe('les brouillons (2026-10-28)', () => {
+    const DRAFT: BakehouseResupplyDraftView = {
+      id: 'dr_1',
+      version: 3,
+      siteId: 'site_l',
+      target: 'tomorrow',
+      name: 'Goûter',
+      lines: [{ sku: 'PAC', quantity: 12 }],
+      savedByName: 'Hugo',
+      savedAt: '2026-10-28T10:00:00.000Z',
+    };
+    const click = (root: HTMLElement, selector: string): void =>
+      root.querySelector<HTMLButtonElement>(selector)?.click();
+    const settle = async (fixture: Awaited<ReturnType<typeof mount>>['fixture']) => {
+      await new Promise((resolve) => setTimeout(resolve));
+      await fixture.whenStable();
+      fixture.detectChanges();
+    };
+
+    it('enregistre la carte comme brouillon, puis le réécrit à la version rendue', async () => {
+      const { fixture, card, bakehouse, add, root } = await mount();
+      card['siteId'].set('site_v');
+      add('CRO', 2);
+
+      click(root, '[data-bakehouse-save-draft]');
+      await settle(fixture);
+      add('CRO', 1);
+      click(root, '[data-bakehouse-save-draft]');
+      await settle(fixture);
+
+      expect(bakehouse.draftCalls).toEqual([
+        'create:[{"sku":"CRO","quantity":2}]',
+        'save:dr_new:v1',
+      ]);
+      expect(root.querySelector('[data-bakehouse-done]')?.textContent).toContain(
+        'Brouillon enregistré',
+      );
+    });
+
+    it('reprend un brouillon, puis envoie CE QUE L’ÉCRAN MONTRE depuis lui', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT];
+      const { fixture, add, root, sentCount } = await mount(new FakePickups(), bakehouse);
+
+      click(root, '[data-bakehouse-draft="dr_1"] [data-bakehouse-draft-resume]');
+      await settle(fixture);
+      add('CRO', 1);
+      await clickSend(fixture);
+
+      expect(bakehouse.draftCalls).toEqual([
+        'send:dr_1:v3:[{"sku":"CRO","quantity":1},{"sku":"PAC","quantity":12}]',
+      ]);
+      expect(bakehouse.sent).toEqual([]);
+      expect(sentCount()).toBe(1);
+    });
+
+    it('supprime un brouillon, et vide la carte s’il était repris', async () => {
+      const bakehouse = new FakeBakehouse();
+      bakehouse.stored = [DRAFT];
+      const { fixture, card, root } = await mount(new FakePickups(), bakehouse);
+      click(root, '[data-bakehouse-draft="dr_1"] [data-bakehouse-draft-resume]');
+      await settle(fixture);
+
+      await card['discard'](DRAFT);
+      await settle(fixture);
+
+      expect(bakehouse.draftCalls).toEqual(['discard:dr_1:v3']);
+      expect(card['lines']()).toEqual([]);
+      expect(root.querySelector('[data-bakehouse-draft]')).toBeNull();
+    });
   });
 
   it('dit l’échec de lecture des points par un état fold', async () => {

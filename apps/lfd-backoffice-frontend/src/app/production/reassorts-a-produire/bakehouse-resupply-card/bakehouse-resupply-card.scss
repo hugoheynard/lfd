@@ -4,6 +4,13 @@
   gap: var(--fold-space-md);
 }
 
+.header-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  justify-content: flex-end;
+}
+
 .row,
 .targets {
   display: flex;
@@ -49,9 +56,63 @@
   width: 6rem;
 }
 
+/* La barre des gestes en mobile : collée au bas de l'écran, au-dessus de la
+   table qu'on fait défiler. */
+.mobile-bar {
+  position: sticky;
+  bottom: 0;
+  z-index: 1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs);
+  padding: var(--fold-space-sm);
+  background: var(--fold-color-surface-card);
+  border-top: 1px solid var(--fold-color-border-subtle);
+}
+
+/* Les gestes secondaires se partagent une ligne ; « Envoyer » prend la
+   suivante entière : c'est le geste qui compte. */
+.mobile-bar > * {
+  flex: 1 1 0;
+}
+
+.mobile-bar [data-bakehouse-send] {
+  flex-basis: 100%;
+}
+
 /* En mobile, la case seule : les raccourcis vivent dans le dialogue. */
 @media (max-width: 768px) {
   .shortcut {
     display: none;
+  }
+
+  .row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .targets {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--fold-space-xs);
+  }
+
+  /* Le filtre des familles défile au lieu de pousser la carte. */
+  .filters {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filters fold-view-toggle {
+    max-width: 100%;
+    overflow-x: auto;
+  }
+
+  .filters fold-search {
+    flex: none;
+  }
+
+  .stepper fold-number-input {
+    width: 5rem;
   }
 }

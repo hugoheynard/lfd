@@ -1,0 +1,47 @@
+<section class="drafts" aria-labelledby="bakehouse-drafts-head">
+  <h3 class="head" id="bakehouse-drafts-head">Brouillons</h3>
+  <ul class="list">
+    @for (draft of drafts(); track draft.id) {
+      <li
+        class="draft"
+        [class.current]="draft.id === currentId()"
+        [attr.data-bakehouse-draft]="draft.id"
+      >
+        <span class="text">
+          <span class="title">{{ titleOf(draft) }}</span>
+          <span class="meta">{{ metaOf(draft) }}</span>
+        </span>
+        <span class="actions">
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            intent="neutral"
+            data-bakehouse-draft-resume
+            [disabled]="pending() || draft.id === currentId()"
+            (click)="resumed.emit(draft)"
+          >
+            {{ draft.id === currentId() ? 'Repris' : 'Reprendre' }}
+          </button>
+          <fold-inline-confirm
+            intent="danger"
+            message="Supprimer ce brouillon ? Il ne pourra plus être repris."
+            [labels]="{ confirm: 'Supprimer' }"
+            (confirmed)="discarded.emit(draft)"
+          >
+            <button
+              foldButton
+              size="sm"
+              emphasis="soft"
+              intent="danger"
+              data-bakehouse-draft-discard
+              [disabled]="pending()"
+            >
+              Supprimer
+            </button>
+          </fold-inline-confirm>
+        </span>
+      </li>
+    }
+  </ul>
+</section>

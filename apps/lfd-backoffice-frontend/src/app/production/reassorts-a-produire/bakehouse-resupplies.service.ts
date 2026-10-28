@@ -1,10 +1,14 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
+  BakehouseResupplyDraftView,
   PlacedSiteResupplyResponse,
   PlaceSiteResupplyPayload,
   ResupplyArticleView,
   ResupplyUsedNamesView,
+  SaveBakehouseResupplyDraftPayload,
+  SavedBakehouseResupplyDraftResponse,
+  UpdateBakehouseResupplyDraftPayload,
 } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
@@ -39,6 +43,55 @@ export class BakehouseResuppliesService {
     return firstValueFrom(
       this.http.post<PlacedSiteResupplyResponse>(
         `${this.base()}/sites/${encodeURIComponent(siteId)}`,
+        payload,
+      ),
+    );
+  }
+
+  /** Les brouillons ouverts, le plus récent d'abord (`plan-brouillons-du-fournil.md`). */
+  drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
+    return firstValueFrom(
+      this.http.get<readonly BakehouseResupplyDraftView[]>(`${this.base()}/drafts`),
+    );
+  }
+
+  createDraft(
+    payload: SaveBakehouseResupplyDraftPayload,
+  ): Promise<SavedBakehouseResupplyDraftResponse> {
+    return firstValueFrom(
+      this.http.post<SavedBakehouseResupplyDraftResponse>(`${this.base()}/drafts`, payload),
+    );
+  }
+
+  /** Réécrit le brouillon repris, à la version lue : un autre poste passé avant rend 409. */
+  saveDraft(
+    draftId: string,
+    payload: UpdateBakehouseResupplyDraftPayload,
+  ): Promise<SavedBakehouseResupplyDraftResponse> {
+    return firstValueFrom(
+      this.http.put<SavedBakehouseResupplyDraftResponse>(
+        `${this.base()}/drafts/${encodeURIComponent(draftId)}`,
+        payload,
+      ),
+    );
+  }
+
+  async discardDraft(draftId: string, version: number): Promise<void> {
+    await firstValueFrom(
+      this.http.post<void>(`${this.base()}/drafts/${encodeURIComponent(draftId)}/discard`, {
+        version,
+      }),
+    );
+  }
+
+  /** Envoie CE QUE L'ÉCRAN MONTRE, depuis le brouillon repris, qui se clôt avec l'envoi. */
+  sendDraft(
+    draftId: string,
+    payload: UpdateBakehouseResupplyDraftPayload,
+  ): Promise<PlacedSiteResupplyResponse> {
+    return firstValueFrom(
+      this.http.post<PlacedSiteResupplyResponse>(
+        `${this.base()}/drafts/${encodeURIComponent(draftId)}/send`,
         payload,
       ),
     );

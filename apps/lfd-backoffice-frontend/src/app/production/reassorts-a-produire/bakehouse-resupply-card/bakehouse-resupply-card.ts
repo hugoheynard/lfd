@@ -7,7 +7,13 @@ import {
   output,
   signal,
 } from '@angular/core';
-import type { ResupplyArticleView, ResupplyTarget } from '@lfd/contracts';
+import type {
+  BakehouseResupplyDraftView,
+  ResupplyArticleView,
+  ResupplyTarget,
+  SaveBakehouseResupplyDraftPayload,
+} from '@lfd/contracts';
+import { NgTemplateOutlet } from '@angular/common';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -32,6 +38,9 @@ import {
   type QuantityDialogData,
 } from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
+import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
+import { BakehouseDraftList } from '../bakehouse-draft-list/bakehouse-draft-list';
+import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
 
 /**
@@ -41,18 +50,8 @@ import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
  */
 const STEPS = [1, 10, 50, 100] as const;
 
-function normalize(text: string): string {
-  return text
-    .normalize('NFD')
-    .replace(/\p{Diacritic}/gu, '')
-    .toLowerCase();
-}
-
 /** Le téléphone — le même seuil que la feuille de style. */
 const PHONE_QUERY = '(max-width: 768px)';
-
-/** La puce « Tout » : aucun filtre de famille. Hors de l'espace des identifiants. */
-const ALL_FAMILIES = '';
 
 /** Les colonnes ; leurs cellules sont des gabarits (`foldCell`). */
 const COLUMNS: readonly FoldTableColumn<ResupplyArticleView>[] = [
@@ -101,8 +100,11 @@ interface SiteChoice {
     FoldNumberInputComponent,
     FoldSearchComponent,
     FoldViewToggleComponent,
+    BakehouseDraftList,
+    NgTemplateOutlet,
     ResupplyNameField,
   ],
+  providers: [BakehouseDraftsStore],
   templateUrl: './bakehouse-resupply-card.html',
   styleUrl: './bakehouse-resupply-card.scss',
 })
@@ -110,6 +112,11 @@ export class BakehouseResupplyCard {
   private readonly service = inject(BakehouseResuppliesService);
   private readonly pickups = inject(PickupAddressesService);
   private readonly panels = inject(FoldPanelHostService);
+  protected readonly draftsStore = inject(BakehouseDraftsStore);
+  /** Le libellé de chaque point, pour la liste des brouillons. */
+  protected readonly siteLabels = computed(
+    () => new Map(this.sites().map((site) => [site.id, site.label] as const)),
+  );
 
   /**
    * Le seuil du téléphone : la ligne n'y garde que sa case, en lecture seule,
@@ -132,31 +139,15 @@ export class BakehouseResupplyCard {
   /** La famille retenue par le filtre ; `ALL_FAMILIES` par défaut. */
   protected readonly family = signal<string>(ALL_FAMILIES);
 
-  /**
-   * « Tout », puis une puce par famille dans l'ordre du catalogue (Hugo,
-   * 2026-10-28). Une famille qui a déjà des quantités le dit : on voit, sans
-   * la rouvrir, où l'on a déjà saisi.
-   */
-  protected readonly familyOptions = computed(() => {
-    const quantities = this.quantities();
-    const families = new Map<string, { label: string; asked: number }>();
-    for (const article of this.articles()) {
-      const family = families.get(article.categoryId) ?? { label: article.categoryName, asked: 0 };
-      if ((quantities.get(article.sku) ?? 0) > 0) {
-        family.asked += 1;
-      }
-      families.set(article.categoryId, family);
-    }
-    return [
-      { value: ALL_FAMILIES, label: 'Tout' },
-      ...[...families].map(([value, family]) => ({
-        value,
-        label: family.asked > 0 ? `${family.label} (${String(family.asked)})` : family.label,
-      })),
-    ];
-  });
+  /** « Tout », puis une puce par famille, avec ce qui y est déjà saisi. */
+  protected readonly familyOptions = computed(() =>
+    familyOptionsOf(this.articles(), this.quantities()),
+  );
   protected readonly steps = STEPS;
-  protected readonly columns = COLUMNS;
+  /** En mobile, la famille est dans le filtre : la table garde produit et quantité. */
+  protected readonly columns = computed(() =>
+    this.phone() ? COLUMNS.filter((column) => column.key !== 'family') : COLUMNS,
+  );
   protected readonly skuOf = (article: ResupplyArticleView): string => article.sku;
   /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
   protected readonly downSteps = [...STEPS].reverse();
@@ -183,20 +174,16 @@ export class BakehouseResupplyCard {
   );
 
   /** Les articles de la famille retenue et de la recherche, dans l'ordre du catalogue. */
-  protected readonly visibleArticles = computed(() => {
-    const query = normalize(this.query().trim());
-    const family = this.family();
-    return this.articles().filter(
-      (article) =>
-        (family === ALL_FAMILIES || article.categoryId === family) &&
-        (query === '' || normalize(`${article.name} ${article.sku}`).includes(query)),
-    );
-  });
+  protected readonly visibleArticles = computed(() =>
+    articlesMatching(this.articles(), this.family(), this.query()),
+  );
   protected readonly nothingFound = { title: 'Aucun produit ne correspond.' };
 
   protected readonly canSend = computed(
     () => this.siteId() !== null && this.lines().length > 0 && !this.pending(),
   );
+  /** Enregistrer demande ce qu'envoyer demande : un point et une ligne. */
+  protected readonly canSaveDraft = this.canSend;
 
   constructor() {
     const query = window.matchMedia(PHONE_QUERY);
@@ -216,6 +203,7 @@ export class BakehouseResupplyCard {
     } catch {
       this.loadFailed.set(true);
     }
+    await this.draftsStore.reload();
   }
 
   /** Choisit le point, puis lit ses noms déjà employés ; une lecture échouée ne propose rien. */
@@ -272,26 +260,86 @@ export class BakehouseResupplyCard {
     this.setQuantity(sku, Math.max(0, (this.quantityOf(sku) ?? 0) + delta));
   }
 
-  protected async send(): Promise<void> {
+  /** Le contenu de la carte, tel qu'il s'enregistre ou s'envoie ; `null` sans point. */
+  private content(): SaveBakehouseResupplyDraftPayload | null {
     const siteId = this.siteId();
-    if (siteId === null || !this.canSend()) {
+    if (siteId === null) {
+      return null;
+    }
+    const name = this.name().trim();
+    return { siteId, target: this.target(), name: name === '' ? null : name, lines: this.lines() };
+  }
+
+  /** « Enregistrer comme brouillon » : crée, ou réécrit le brouillon repris. */
+  protected async saveDraft(): Promise<void> {
+    const content = this.content();
+    if (content === null || !this.canSaveDraft()) {
       return;
     }
-    this.pending.set(true);
+    await this.gesture(async () => {
+      await this.draftsStore.save(content);
+      this.done.set('Brouillon enregistré. Il se reprend depuis n’importe quel poste.');
+    }, "Le brouillon n'a pas pu être enregistré.");
+  }
+
+  /** Reprend un brouillon : la carte en recopie le point, la visée, le nom et les quantités. */
+  protected async resume(draft: BakehouseResupplyDraftView): Promise<void> {
+    this.draftsStore.take(draft);
+    this.target.set(draft.target);
+    this.name.set(draft.name ?? '');
+    this.quantities.set(new Map(draft.lines.map((line) => [line.sku, line.quantity] as const)));
     this.failure.set(null);
-    try {
-      await this.service.send(siteId, {
-        target: this.target(),
-        name: this.name().trim() === '' ? null : this.name(),
-        lines: this.lines(),
-      });
-      const label = this.sites().find((site) => site.id === siteId)?.label ?? 'le point';
-      this.quantities.set(new Map());
-      this.name.set('');
+    this.done.set(null);
+    await this.pickSite(draft.siteId);
+  }
+
+  protected async discard(draft: BakehouseResupplyDraftView): Promise<void> {
+    const inHand = this.draftsStore.currentId() === draft.id;
+    await this.gesture(async () => {
+      await this.draftsStore.discard(draft);
+      if (inHand) {
+        this.clear();
+      }
+      this.done.set('Brouillon supprimé.');
+    }, "Le brouillon n'a pas pu être supprimé.");
+  }
+
+  /** « Nouveau réassort » : la carte se vide, le brouillon repris reste à reprendre. */
+  protected startOver(): void {
+    this.draftsStore.release();
+    this.clear();
+    this.done.set(null);
+    this.failure.set(null);
+  }
+
+  protected async send(): Promise<void> {
+    const content = this.content();
+    if (content === null || !this.canSend()) {
+      return;
+    }
+    await this.gesture(async () => {
+      await this.draftsStore.send(content);
+      const label = this.siteLabels().get(content.siteId) ?? 'le point';
+      this.clear();
       this.done.set(`Réassort envoyé à ${label}.`);
       this.sent.emit();
+    }, "Le réassort n'a pas pu être envoyé.");
+  }
+
+  private clear(): void {
+    this.quantities.set(new Map());
+    this.name.set('');
+  }
+
+  /** Un geste vers le serveur : un à la fois, et son refus dit dans la carte. */
+  private async gesture(run: () => Promise<void>, fallback: string): Promise<void> {
+    this.pending.set(true);
+    this.failure.set(null);
+    this.done.set(null);
+    try {
+      await run();
     } catch (error) {
-      this.failure.set(httpErrorMessage(error, "Le réassort n'a pas pu être envoyé."));
+      this.failure.set(httpErrorMessage(error, fallback));
     } finally {
       this.pending.set(false);
     }

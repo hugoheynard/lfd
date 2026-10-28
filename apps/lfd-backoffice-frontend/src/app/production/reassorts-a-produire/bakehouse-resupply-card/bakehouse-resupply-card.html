@@ -5,18 +5,13 @@
     title="Envoyer un réassort"
     subtitle="« Je t'envoie ça » : un réassort à part, signé du fournil — par exemple quand un point le demande au téléphone. La demande en cours du comptoir n'est pas touchée."
   >
-    <!-- En haut à droite (Hugo, 2026-10-28) : le geste se voit sans
-         descendre au bout de la table. -->
-    <button
-      titleAction
-      foldButton
-      data-bakehouse-send
-      [disabled]="!canSend()"
-      [loading]="pending()"
-      (click)="send()"
-    >
-      Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
-    </button>
+    <!-- En haut à droite au bureau (Hugo, 2026-10-28) ; en mobile, les gestes
+         descendent dans la barre collée au bas de l'écran. -->
+    @if (!phone()) {
+      <span titleAction class="header-actions">
+        <ng-container [ngTemplateOutlet]="gestures" />
+      </span>
+    }
   </fold-element-title>
 
   <div class="body">
@@ -31,6 +26,21 @@
         <button foldButton (click)="load()">Réessayer</button>
       </fold-empty-state>
     } @else {
+      @if (draftsStore.unreadable()) {
+        <fold-callout variant="warning">
+          Les brouillons n'ont pas pu être lus : la saisie et l'envoi restent possibles.
+        </fold-callout>
+      }
+      @if (draftsStore.drafts().length > 0) {
+        <app-bakehouse-draft-list
+          [drafts]="draftsStore.drafts()"
+          [siteLabels]="siteLabels()"
+          [currentId]="draftsStore.currentId()"
+          [pending]="pending()"
+          (resumed)="resume($event)"
+          (discarded)="discard($event)"
+        />
+      }
       <div class="row">
         <fold-listbox
           label="Point"
@@ -100,7 +110,7 @@
         density="compact"
         hover
         caption="Quantités à envoyer, par article"
-        [columns]="columns"
+        [columns]="columns()"
         [rows]="visibleArticles()"
         [rowKey]="skuOf"
         [empty]="nothingFound"
@@ -163,4 +173,36 @@
       </fold-data-table>
     }
   </div>
+  @if (phone()) {
+    <div class="mobile-bar" data-bakehouse-mobile-bar>
+      <ng-container [ngTemplateOutlet]="gestures" />
+    </div>
+  }
 </fold-card>
+
+<ng-template #gestures>
+  @if (draftsStore.currentId() !== null) {
+    <button foldButton emphasis="soft" intent="neutral" data-bakehouse-new (click)="startOver()">
+      Nouveau réassort
+    </button>
+  }
+  <button
+    foldButton
+    emphasis="outline"
+    intent="neutral"
+    data-bakehouse-save-draft
+    [disabled]="!canSaveDraft()"
+    (click)="saveDraft()"
+  >
+    Enregistrer comme brouillon
+  </button>
+  <button
+    foldButton
+    data-bakehouse-send
+    [disabled]="!canSend()"
+    [loading]="pending()"
+    (click)="send()"
+  >
+    Envoyer — {{ lines().length }} article(s), {{ pieces() }} pièce(s)
+  </button>
+</ng-template>
