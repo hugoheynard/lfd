@@ -23,6 +23,16 @@
 Le compteur du menu « Demandes clients » et la cloche disent les demandes à
 traiter, tous types.
 
+**Depuis le 2026-10-28, un quatrième type : `email_reply`** — la réponse d'un
+client à l'un de nos e-mails, reçue par Resend sur un sous-domaine (plan
+[`plan-reponses-par-e-mail.md`](plan-reponses-par-e-mail.md)). Texte seul,
+historique cité coupé, pièces jointes listées sans lien, expéditeur « non
+vérifié » sans DKIM aligné, société et commande **présumées** ; motif système
+`system_email_reply` (posé par la migration, non modifiable) ; aucun courriel
+relayé, la cloche au plus une fois par heure et par expéditeur ; réponses
+automatiques et rafales (plus de 10 / heure / adresse) écartées. Pas encore
+ouvert : il faut les gestes du §6 du plan.
+
 **Depuis le 2026-10-23, un troisième type : `order_change`** — la demande de
 modification d'une commande après l'heure limite (plan
 [`plan-modifier-une-commande.md`](../commandes/modification/plan-modifier-une-commande.md),

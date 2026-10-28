@@ -1,5 +1,8 @@
 # Plan — les réponses des clients à nos e-mails, lues dans l'admin
 
+> ✅ **R1–R3 bâtis le 2026-10-28** (`a5d0e08a0`, `6c3e6b22d`), R4 écrit (doc).
+> **Non déployé, non ouvert** : restent les gestes de Hugo (§6), dans l'ordre.
+
 > 🔍 **Contredit par vitruve le 2026-10-28** : trois BLOQUANTS levés (le
 > `svix-id` consommé avant le traitement perdait un rangement échoué ; un
 > message long ou cité était refusé ; l'événement des demandes relayait chaque

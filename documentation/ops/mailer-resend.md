@@ -154,6 +154,16 @@ c'est un ajout, pas une migration.
 
 ### 2.5 — La réception, volontairement PAS ouverte
 
+> 🔁 **2026-10-28 — la réception des RÉPONSES est bâtie, pas encore ouverte.**
+> Hugo veut lire les réponses des clients dans l'admin : plan
+> [`../demandes-client/plan-reponses-par-e-mail.md`](../demandes-client/plan-reponses-par-e-mail.md)
+> (R1–R3 bâtis, `a5d0e08a0`, `6c3e6b22d`). Elle passe par la **réception de
+> Resend sur un sous-domaine** (`reponses.lafoliecoffee.info`), pas par Email
+> Routing sur l'apex : le courrier du domaine principal ne bouge pas. Ce qui
+> suit reste vrai tant que les gestes du §6 du plan ne sont pas faits ;
+> `MAILER_REPLY_TO` se pose **au dernier geste**, et c'est irréversible en
+> pratique.
+
 **Décision du 2026-08-16 : on n'ouvre aucune adresse de réception pour l'instant.**
 Ni `contact@`, ni `commercial@`, ni le `MX` d'Email Routing sur l'apex.
 
@@ -185,12 +195,12 @@ La valeur se copie **du tableau de bord Resend vers GitHub, directement** :
 jamais par un terminal, jamais dans une conversation, jamais dans un fichier du
 dépôt (cf. [`secrets-et-variables.md §5`](secrets-et-variables.md)).
 
-| Nom                         | Où              | Valeur                                          |
-| --------------------------- | --------------- | ----------------------------------------------- |
-| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4                            |
-| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@lafoliecoffee.info`                   |
-| `MAILER_REPLY_TO`           | —               | **à ne PAS poser** tant que §2.5 n'est pas fait |
-| `MAILER_STAFF_INBOX`        | —               | idem                                            |
+| Nom                         | Où              | Valeur                                               |
+| --------------------------- | --------------- | ---------------------------------------------------- |
+| `RESEND_MAILER_B2B_API_KEY` | 🔒 **Secret**   | la clé créée en §2.4                                 |
+| `MAILER_FROM_ADDRESS`       | 📢 **Variable** | `no-reply@lafoliecoffee.info`                        |
+| `MAILER_REPLY_TO`           | —               | à poser au dernier geste du plan des réponses (§2.5) |
+| `MAILER_STAFF_INBOX`        | —               | idem                                                 |
 
 - 🔴 **`MAILER_FROM_ADDRESS` est OBLIGATOIRE tant que le correctif du défaut
   n'est pas sur `main`.** Le défaut du code
@@ -315,7 +325,8 @@ dit — elle ne se saute pas en silence.
    une adresse Outlook, et regarder l'en-tête d'authentification (`spf=pass`,
    `dkim=pass`, `dmarc=pass`).
 
-4. **Répondre à l'e-mail reçu** — le jour où §2.5 sera fait. C'est le seul moyen
+4. **Répondre à l'e-mail reçu** — une fois les gestes du plan des réponses
+   faits (§2.5), la réponse doit apparaître dans Demandes clients. C'est le seul moyen
    de constater que `MAILER_REPLY_TO` est juste ; un `no-reply` qui rebondit ne
    se voit pas autrement. Aujourd'hui, la réponse se perd, et c'est assumé.
 
