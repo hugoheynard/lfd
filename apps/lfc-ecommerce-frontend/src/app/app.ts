@@ -44,6 +44,17 @@ export function servedByClientShell(route: ActivatedRouteSnapshot): boolean {
   return route.component === ClientShell || route.children.some(servedByClientShell);
 }
 
+/**
+ * Le chrome pro reste-t-il éteint ? Avant la PREMIÈRE navigation, l'arbre des
+ * routes est vide : {@link servedByClientShell} y répondait « non », et une
+ * session Auth0 déjà connue peignait le chrome pro (rail à gauche) le temps
+ * d'un éclair avant la boutique (relevé en production le 2026-10-28). Rien
+ * n'est encore routé : on ne peint aucun chrome.
+ */
+export function clientChrome(router: Pick<Router, 'navigated' | 'routerState'>): boolean {
+  return !router.navigated || servedByClientShell(router.routerState.snapshot.root);
+}
+
 @Component({
   selector: 'app-root',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -87,9 +98,12 @@ export class App {
   private readonly url = toSignal(
     this.router.events.pipe(
       filter((e): e is NavigationEnd => e instanceof NavigationEnd),
-      map((e) => e.urlAfterRedirects),
+      // L'identifiant de la navigation et non son adresse : la première mène
+      // souvent à `/`, que `router.url` vaut déjà avant elle — un signal égal
+      // ne relancerait pas `clientRoute`, qui resterait sur « rien de routé ».
+      map((e) => e.id),
     ),
-    { initialValue: this.router.url },
+    { initialValue: 0 },
   );
 
   /**
@@ -106,7 +120,7 @@ export class App {
    */
   protected readonly clientRoute = computed(() => {
     this.url();
-    return servedByClientShell(this.router.routerState.snapshot.root);
+    return clientChrome(this.router);
   });
 
   private readonly panelHost = inject(FoldPanelHostService);

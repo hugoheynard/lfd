@@ -1,7 +1,7 @@
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router, type Route } from '@angular/router';
 
-import { servedByClientShell } from './app';
+import { clientChrome, servedByClientShell } from './app';
 import { routes } from './app.routes';
 import { companyWorkspaceGuard } from './client/client-workspace.guard';
 import { ClientFeatureAccess } from './client/feature-access/client-feature-access.service';
@@ -126,6 +126,14 @@ describe('Le chrome de l’app', () => {
     expect(route?.redirectTo).toBeUndefined();
     expect(route?.loadComponent).toBeDefined();
     expect(route?.canActivate).toContain(companyWorkspaceGuard);
+  });
+
+  /** Régression : le chrome pro paraissait un éclair au chargement (2026-10-28). */
+  it('ne peint pas le chrome pro avant la première navigation', () => {
+    const router = TestBed.inject(Router);
+
+    expect(router.navigated).toBe(false);
+    expect(clientChrome(router)).toBe(true);
   });
 
   it('une adresse inconnue retombe côté client, pas dans l’ancien chrome', async () => {
