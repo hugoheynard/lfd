@@ -8,13 +8,13 @@ describe("le périmètre de remplacement des textes d'e-mails (C2)", () => {
 
   it("dans un périmètre, le texte remplacé — et lui seul", () => {
     const overlay = {
-      fr: { "customer.order-placed": { subject: "Merci {ref}", "title.paid": "Payé." } },
+      fr: { "customer.order-placed": { subject: "Merci {ref}", "totalLabel.paid": "Payé." } },
     };
     withMailCopyOverlay(overlay, () => {
       const copy = mailCopyOf("fr")["customer.order-placed"];
       expect(copy.subject).toBe("Merci {ref}");
-      expect(copy.title.paid).toBe("Payé.");
-      expect(copy.title.due).toBe(MAIL_COPY.fr["customer.order-placed"].title.due);
+      expect(copy.totalLabel.paid).toBe("Payé.");
+      expect(copy.totalLabel.due).toBe(MAIL_COPY.fr["customer.order-placed"].totalLabel.due);
       expect(mailCopyOf("en")).toBe(MAIL_COPY.en);
     });
     expect(MAIL_COPY.fr["customer.order-placed"].subject).not.toBe("Merci {ref}");
@@ -33,14 +33,14 @@ describe("le périmètre de remplacement des textes d'e-mails (C2)", () => {
       MAIL_COPY.fr,
       {
         fr: {
-          "customer.order-placed": { inconnu: "x", title: "pas un texte" },
+          "customer.order-placed": { inconnu: "x", totalLabel: "pas un texte" },
           "pas.un.mail": { a: "b" },
         },
       },
       "fr",
     );
-    expect(copy["customer.order-placed"].title).toEqual(
-      MAIL_COPY.fr["customer.order-placed"].title,
+    expect(copy["customer.order-placed"].totalLabel).toEqual(
+      MAIL_COPY.fr["customer.order-placed"].totalLabel,
     );
     expect(Object.hasOwn(copy["customer.order-placed"], "inconnu")).toBe(false);
     expect(Object.hasOwn(copy, "pas.un.mail")).toBe(false);

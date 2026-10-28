@@ -67,7 +67,7 @@ describe("la proposition « Écrire au client » (E6d)", () => {
     expect(message).toContain("ORD-0001");
     expect(message).toContain("Ce qui part :\n– 1 × Croissant\n– 2 × Pain au chocolat");
     expect(message).toContain("Ce qui manque :\n– 2 × Croissant");
-    expect(message).toContain("Le reste ne sera pas livré");
+    expect(message).toContain("Contactez le service commercial.");
   });
 
   it("parle la langue de la commande", async () => {

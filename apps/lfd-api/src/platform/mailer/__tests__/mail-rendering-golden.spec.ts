@@ -77,6 +77,27 @@ import {
  * lieu de « la fournée de demain matin », et la ligne de référence seule
  * disparaît du corps. Vérifié avant de régénérer : objet et pièces jointes
  * identiques, seul le HTML change. Aucun autre e-mail n'a bougé.
+ *
+ * **Régénérées le 2026-10-28 pour TOUS les cas des e-mails CLIENTS** (Hugo :
+ * « moins on en dit, mieux c'est ») — vérifié avant de régénérer, en
+ * comparant le texte rendu de chaque cas avant et après : aucun objet ne
+ * change, et seuls bougent :
+ * - le recours « Un problème… Contactez votre administrateur » et son
+ *   adresse, retirés de tous les e-mails clients (l'équipe le garde) ;
+ * - le pied « Le Labo · route de la Balme… » retiré (`order-placed`,
+ *   `order-ready`, `delivery-en-route`, `order-delayed`), avec « Un
+ *   changement ? Appelez le fournil… » (`order-placed`) ; le pied « Un doute
+ *   ou une erreur ? Appelez le fournil » perd l'adresse (`order-cancelled`,
+ *   `order-change-applied`, `order-shortfall`, `payment-failed`,
+ *   `payment-expired`) ;
+ * - les titres : « Commande confirmée » (`order-placed`, tous règlements),
+ *   « Commande prête » (`order-ready`, premier envoi) ;
+ * - `delivery-en-route` : « Il arrive bientôt. » au lieu de « il arrive dans
+ *   la journée » ; deux cas neufs, `windowBetween` et `windowBefore`, disent
+ *   le créneau à la suite de l'adresse ;
+ * - `order-change-refused` : « Contactez notre service commercial. » remplace
+ *   « Votre commande reste telle… » et le pied.
+ * Les e-mails de l'équipe n'ont pas bougé.
  */
 
 const REGISTRY = b2bMailTemplates({

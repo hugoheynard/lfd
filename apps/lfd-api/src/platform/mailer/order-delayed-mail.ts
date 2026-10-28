@@ -42,7 +42,6 @@ export function renderOrderDelayedMail(
         ...(data.pickupLabel === null ? [] : [{ label: copy.whereLabel, value: data.pickupLabel }]),
       ],
       ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
-      footer: copy.footer,
     }),
   };
 }

@@ -68,7 +68,7 @@ describe("customer.order-change-applied / -refused", () => {
     expect(mail.html).toContain("€42.50");
   });
 
-  it("refusée : le mot de l'équipe, échappé, et la commande inchangée", () => {
+  it("refusée : le mot de l'équipe, échappé, et le service commercial pour suite", () => {
     const mail = REGISTRY["customer.order-change-refused"]({
       reference: "ORD-0042",
       reason: "La fournée <b>est</b> lancée.",
@@ -76,7 +76,8 @@ describe("customer.order-change-applied / -refused", () => {
     });
     expect(mail.subject).toBe("Commande ORD-0042 : modification impossible");
     expect(mail.html).toContain("La fournée &lt;b&gt;est&lt;/b&gt; lancée.");
-    expect(mail.html).toContain("Votre commande reste telle que vous");
+    expect(mail.html).toContain("Contactez notre service commercial.");
+    expect(mail.html).not.toContain("Appelez le fournil");
   });
 
   it("parle la langue du client", () => {

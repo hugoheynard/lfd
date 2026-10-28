@@ -12,7 +12,7 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
       "Riprenda il pagamento qui sotto per rilanciarlo.",
     amountLabel: "Importo da saldare",
     cta: "Riprendere il pagamento",
-    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un dubbio o un errore? Ci chiami.",
   },
   "customer.payment-expired": {
     subject: "Ordine {ref} annullato — pagamento non riuscito",
@@ -23,7 +23,7 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
       "Il suo ordine è quindi annullato e nulla è stato addebitato. " +
       "Se ne ha ancora bisogno, effettui un nuovo ordine.",
     amountLabel: "Importo non addebitato",
-    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un dubbio o un errore? Ci chiami.",
   },
   "customer.order-payment-link": {
     kicker: "Pagamento in attesa",
@@ -61,6 +61,6 @@ export const PAYMENT_MAILS_IT: PaymentMailsCopy = {
       "Il suo buono fedeltà di {value} le è stato restituito: potrà usarlo per un prossimo ordine fino al {day}.",
     voucherMerged:
       "Il suo buono fedeltà ritrova il suo valore di {value}, valido fino al {day}. Il buono di {remainder} che le era stato dato come residuo è sostituito da questo.",
-    footer: "Un dubbio o un errore? Ci chiami — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un dubbio o un errore? Ci chiami.",
   },
 };

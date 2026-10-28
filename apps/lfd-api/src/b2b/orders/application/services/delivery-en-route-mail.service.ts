@@ -68,6 +68,7 @@ export class DeliveryEnRouteMail {
           address === null
             ? []
             : [address.ligne1, address.ligne2, `${address.codePostal} ${address.ville}`],
+        window: sheet.fulfillment.window,
         orderUrl: client === null ? "" : `${client}/mes-commandes`,
         locale: DEFAULT_MAIL_LOCALE,
         ...(shipment.rank === FIRST_SHIPMENT_RANK ? {} : { remainder: true }),

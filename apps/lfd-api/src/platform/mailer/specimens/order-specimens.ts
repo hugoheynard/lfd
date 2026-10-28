@@ -115,6 +115,7 @@ export const ORDER_SPECIMENS: Pick<
     data: (locale) => ({
       reference: REFERENCE,
       addressLines: [`${SPECIMEN_MARK} — 1 rue du Col`, "73150 Val d'Isère"],
+      window: { start: "07:00", end: "09:00" },
       orderUrl: ORDER_URL,
       locale,
     }),

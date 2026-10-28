@@ -11,8 +11,8 @@ export const ORDER_SHORTFALL_MAILS_EN: OrderShortfallMailsCopy = {
     departedHeading: "What leaves:",
     missingHeading: "What is missing:",
     line: "– {quantity} × {product}",
-    remainderAbandoned: "The rest will not be delivered, and will not be invoiced.",
+    contactSales: "Contact our sales team.",
     closing: "We apologise for the missing items.",
-    footer: "Any doubt or mistake? Call the bakery — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Any doubt or mistake? Call the bakery.",
   },
 };

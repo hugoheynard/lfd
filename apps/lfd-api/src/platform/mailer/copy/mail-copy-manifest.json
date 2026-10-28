@@ -16,20 +16,10 @@
         "required": [],
         "fr": "Confirmée"
       },
-      "title.paid": {
+      "title": {
         "variables": [],
         "required": [],
-        "fr": "C'est réglé."
-      },
-      "title.due": {
-        "variables": [],
-        "required": [],
-        "fr": "Commande enregistrée."
-      },
-      "title.account": {
-        "variables": [],
-        "required": [],
-        "fr": "Commande enregistrée."
+        "fr": "Commande confirmée"
       },
       "intro": {
         "variables": [
@@ -205,20 +195,10 @@
         "required": [],
         "fr": "Voir ma commande"
       },
-      "changeNote": {
-        "variables": [],
-        "required": [],
-        "fr": "Un changement ? Appelez le fournil — une commande passée entre en fabrication."
-      },
       "manageLink": {
         "variables": [],
         "required": [],
         "fr": "Gérer ou annuler ma commande"
-      },
-      "footer": {
-        "variables": [],
-        "required": [],
-        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
       },
       "qrAlt": {
         "variables": [
@@ -250,15 +230,10 @@
         "required": [],
         "fr": "Prête"
       },
-      "titlePickup": {
+      "title": {
         "variables": [],
         "required": [],
-        "fr": "C'est prêt."
-      },
-      "titleDelivery": {
-        "variables": [],
-        "required": [],
-        "fr": "C'est prêt à partir."
+        "fr": "Commande prête"
       },
       "introPickup": {
         "variables": [],
@@ -303,11 +278,6 @@
         "variables": [],
         "required": [],
         "fr": "Voir ma commande"
-      },
-      "footer": {
-        "variables": [],
-        "required": [],
-        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
       },
       "qrAlt": {
         "variables": [
@@ -410,7 +380,7 @@
       "intro": {
         "variables": [],
         "required": [],
-        "fr": "Votre livreur est parti, il arrive dans la journée."
+        "fr": "Votre livreur est parti. Il arrive bientôt."
       },
       "referenceLabel": {
         "variables": [],
@@ -422,15 +392,30 @@
         "required": [],
         "fr": "Livrée à"
       },
+      "windowBetween": {
+        "variables": [
+          "start",
+          "end"
+        ],
+        "required": [
+          "start",
+          "end"
+        ],
+        "fr": "entre {start} et {end}"
+      },
+      "windowBefore": {
+        "variables": [
+          "end"
+        ],
+        "required": [
+          "end"
+        ],
+        "fr": "avant {end}"
+      },
       "cta": {
         "variables": [],
         "required": [],
         "fr": "Voir ma commande"
-      },
-      "footer": {
-        "variables": [],
-        "required": [],
-        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
       },
       "subjectRemainder": {
         "variables": [],
@@ -445,7 +430,7 @@
       "introRemainder": {
         "variables": [],
         "required": [],
-        "fr": "Votre livreur est parti avec le reste de votre commande, il arrive dans la journée."
+        "fr": "Votre livreur est parti avec le reste de votre commande. Il arrive bientôt."
       }
     },
     "customer.order-delayed": {
@@ -492,11 +477,6 @@
         "variables": [],
         "required": [],
         "fr": "Voir ma commande"
-      },
-      "footer": {
-        "variables": [],
-        "required": [],
-        "fr": "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h"
       }
     },
     "customer.order-placed-with-your-email": {
@@ -583,7 +563,7 @@
       "footer": {
         "variables": [],
         "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
     },
     "customer.payment-expired": {
@@ -624,7 +604,7 @@
       "footer": {
         "variables": [],
         "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
     },
     "customer.order-payment-link": {
@@ -849,7 +829,7 @@
       "footer": {
         "variables": [],
         "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
     },
     "customer.invoice-issued": {
@@ -2615,7 +2595,7 @@
       "footer": {
         "variables": [],
         "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
     },
     "customer.order-change-refused": {
@@ -2652,15 +2632,10 @@
         "required": [],
         "fr": "Le mot de notre équipe"
       },
-      "unchanged": {
+      "contactSales": {
         "variables": [],
         "required": [],
-        "fr": "Votre commande reste telle que vous l'aviez passée."
-      },
-      "footer": {
-        "variables": [],
-        "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Contactez notre service commercial."
       }
     },
     "customer.order-shortfall": {
@@ -2713,10 +2688,10 @@
         ],
         "fr": "– {quantity} × {product}"
       },
-      "remainderAbandoned": {
+      "contactSales": {
         "variables": [],
         "required": [],
-        "fr": "Le reste ne sera pas livré, et ne vous sera pas facturé."
+        "fr": "Contactez le service commercial."
       },
       "closing": {
         "variables": [],
@@ -2726,7 +2701,7 @@
       "footer": {
         "variables": [],
         "required": [],
-        "fr": "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère."
+        "fr": "Un doute ou une erreur ? Appelez le fournil."
       }
     }
   }

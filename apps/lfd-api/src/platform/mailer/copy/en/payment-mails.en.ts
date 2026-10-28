@@ -12,8 +12,7 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
       "Resume the payment below to bring it back.",
     amountLabel: "Amount due",
     cta: "Resume payment",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Unsure, or think this is a mistake? Call us.",
   },
   "customer.payment-expired": {
     subject: "Order {ref} cancelled — payment not completed",
@@ -24,8 +23,7 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
       "Your order has therefore been cancelled, and nothing has been charged. " +
       "If you still need it, please place a new order.",
     amountLabel: "Amount not charged",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Unsure, or think this is a mistake? Call us.",
   },
   "customer.order-payment-link": {
     kicker: "Payment due",
@@ -63,7 +61,6 @@ export const PAYMENT_MAILS_EN: PaymentMailsCopy = {
       "Your loyalty voucher of {value} has been returned to you: you can use it on a future order until {day}.",
     voucherMerged:
       "Your loyalty voucher is back to its value of {value}, valid until {day}. The {remainder} voucher you were given as the remainder is replaced by this one.",
-    footer:
-      "Unsure, or think this is a mistake? Call us — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Unsure, or think this is a mistake? Call us.",
   },
 };

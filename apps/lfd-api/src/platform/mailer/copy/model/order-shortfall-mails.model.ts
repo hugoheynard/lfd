@@ -26,8 +26,8 @@ export interface OrderShortfallCopy {
   readonly missingHeading: string;
   /** Proposition — un article. `{quantity}`, `{product}`. */
   readonly line: string;
-  /** Proposition — la suite, quand le reste est abandonné. */
-  readonly remainderAbandoned: string;
+  /** Proposition — la suite : le service commercial (Hugo, 2026-10-28). */
+  readonly contactSales: string;
   /** Proposition — la fin. */
   readonly closing: string;
   readonly footer: string;

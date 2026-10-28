@@ -12,8 +12,7 @@ export const ORDER_CHANGE_MAILS_IT: OrderChangeMailsCopy = {
     lessToPay: "Cioè {amount} in meno di prima: il totale era {previous}.",
     sameTotal: "Il totale resta lo stesso di prima.",
     where: "L'ordine aggiornato si legge nel tuo spazio, alla voce I miei ordini.",
-    footer:
-      "Un dubbio o un errore? Chiama il laboratorio — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un dubbio o un errore? Chiama il laboratorio.",
   },
   "customer.order-change-refused": {
     kicker: "Richiesta di modifica",
@@ -21,8 +20,6 @@ export const ORDER_CHANGE_MAILS_IT: OrderChangeMailsCopy = {
     title: "Non abbiamo potuto modificare il tuo ordine.",
     intro: "Ci hai chiesto di modificare il tuo ordine {ref}: non è possibile.",
     reasonLabel: "Una parola dal nostro team",
-    unchanged: "Il tuo ordine resta come l'avevi effettuato.",
-    footer:
-      "Un dubbio o un errore? Chiama il laboratorio — Le Labo · route de la Balme, Val d'Isère.",
+    contactSales: "Contatta il nostro servizio commerciale.",
   },
 };

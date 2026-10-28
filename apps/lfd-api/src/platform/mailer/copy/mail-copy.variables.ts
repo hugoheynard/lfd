@@ -45,7 +45,7 @@ export const MAIL_COPY_VARIABLES: MailCopyVariables = {
     introReminder: ["site"],
     subjectRemainder: ["ref"],
   },
-  "customer.delivery-en-route": {},
+  "customer.delivery-en-route": { windowBetween: ["start", "end"], windowBefore: ["end"] },
   "customer.order-delayed": { subject: ["ref"] },
   "customer.order-placed-with-your-email": { title: ["firstName"] },
   "customer.payment-failed": { subject: ["ref"] },

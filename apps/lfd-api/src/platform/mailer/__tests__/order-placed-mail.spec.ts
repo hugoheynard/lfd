@@ -263,6 +263,22 @@ describe("le régime de règlement du courriel de confirmation", () => {
     expect(html).toContain("Porté à votre compte");
   });
 
+  // Hugo, 2026-10-28 : un seul titre, quel que soit le règlement.
+  it.each(["paid", "due", "account"] as const)(
+    "titre « Commande confirmée » — %s",
+    (settlement) => {
+      expect(render({ sheet: withSettlement(settlement) }).html).toContain("Commande confirmée");
+    },
+  );
+
+  it("ne dit ni le Labo, ni « Un changement ? », ni le recours de l'administrateur", () => {
+    const { html } = render({ sheet: withSettlement("paid") });
+
+    expect(html).not.toContain("Le Labo · route de la Balme");
+    expect(html).not.toContain("Un changement ?");
+    expect(html).not.toContain("Contactez votre administrateur");
+  });
+
   it("une commande payée par carte se dit réglée", () => {
     expect(render({ sheet: withSettlement("paid") }).html).toContain("Réglé en ligne");
   });

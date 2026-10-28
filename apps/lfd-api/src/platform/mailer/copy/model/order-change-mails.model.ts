@@ -38,9 +38,8 @@ export interface OrderChangeRefusedCopy {
   readonly intro: string;
   /** Le libellé du mot de l'équipe, au-dessus de lui. */
   readonly reasonLabel: string;
-  /** Ce que devient la commande : inchangée. */
-  readonly unchanged: string;
-  readonly footer: string;
+  /** Le seul recours dit : le service commercial (Hugo, 2026-10-28). */
+  readonly contactSales: string;
 }
 
 /** La famille « demande de modification », une section par clé du registre. */

@@ -14,8 +14,7 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
       "Reprenez le règlement ci-dessous pour la relancer.",
     amountLabel: "Montant à régler",
     cta: "Reprendre le règlement",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
   },
   "customer.payment-expired": {
     subject: "Commande {ref} annulée — paiement non abouti",
@@ -26,8 +25,7 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
       "Votre commande est donc annulée, et rien n'a été débité. " +
       "Si vous en avez toujours besoin, passez une nouvelle commande.",
     amountLabel: "Montant non débité",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
   },
   "customer.order-payment-link": {
     kicker: "Règlement attendu",
@@ -65,7 +63,6 @@ export const PAYMENT_MAILS_FR: PaymentMailsCopy = {
       "Votre bon de fidélité de {value} vous est rendu : vous pourrez l'utiliser sur une prochaine commande jusqu'au {day}.",
     voucherMerged:
       "Votre bon de fidélité retrouve sa valeur de {value}, valable jusqu'au {day}. Le bon de {remainder} qui vous avait été remis en reliquat est remplacé par celui-ci.",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
   },
 };

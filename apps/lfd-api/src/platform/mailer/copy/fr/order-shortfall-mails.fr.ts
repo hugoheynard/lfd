@@ -11,9 +11,8 @@ export const ORDER_SHORTFALL_MAILS_FR: OrderShortfallMailsCopy = {
     departedHeading: "Ce qui part :",
     missingHeading: "Ce qui manque :",
     line: "– {quantity} × {product}",
-    remainderAbandoned: "Le reste ne sera pas livré, et ne vous sera pas facturé.",
+    contactSales: "Contactez le service commercial.",
     closing: "Toutes nos excuses pour ce manque.",
-    footer:
-      "Un doute ou une erreur ? Appelez le fournil — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un doute ou une erreur ? Appelez le fournil.",
   },
 };

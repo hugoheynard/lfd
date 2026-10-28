@@ -47,27 +47,19 @@ describe("l'aperçu repéré (E4, S4)", () => {
     expect(preview.html).toContain('<div data-mail-section="image">');
     expect(preview.html).toContain('<div data-mail-section="itinerary">');
     expect(preview.html).toContain(
-      '<span data-mail-text="title.paid" data-mail-text-of="customer.order-placed">',
+      '<span data-mail-text="title" data-mail-text-of="customer.order-placed">',
     );
     expect(preview.html).toContain('<span data-mail-text="kicker"');
     expect(preview.html).not.toMatch(/[-]/u);
     expect(preview.subject).toBe("Votre commande EXEMPLE-0001 — La Folie Coffee");
   });
 
+  // Un e-mail de l'ÉQUIPE : les e-mails clients n'ont plus de recours (2026-10-28).
   it("rend les sections dans l'ordre donné, l'en-tête et le recours à leur place", () => {
-    const preview = renderer.render("customer.order-placed", "fr", {}, [
-      "footer",
-      "cta",
-      "secondaryLink",
-      "image",
-      "itinerary",
-      "summary",
-      "body",
-      "title",
-    ]);
+    const preview = renderer.render("staff.invited", "fr", {}, ["footer", "cta", "body", "title"]);
     const at = (id: string): number => preview.html.indexOf(`data-mail-section="${id}"`);
     expect(at("footer")).toBeLessThan(at("cta"));
-    expect(at("summary")).toBeLessThan(at("title"));
+    expect(at("body")).toBeLessThan(at("title"));
     expect(preview.html.indexOf('data-mail-text="kicker"')).toBeLessThan(at("footer"));
     expect(at("title")).toBeLessThan(preview.html.indexOf("admin@lfc.test"));
   });

@@ -16,6 +16,7 @@ function render(overrides: Partial<Parameters<typeof enRoute>[0]> = {}) {
   return enRoute({
     reference: "ORD-4812",
     addressLines: ["12 rue des Lilas", "", "73150 Val d'Isère"],
+    window: null,
     orderUrl: "https://app.lfc.test/mes-commandes",
     locale: "fr",
     ...overrides,
@@ -23,17 +24,35 @@ function render(overrides: Partial<Parameters<typeof enRoute>[0]> = {}) {
 }
 
 describe("le courriel « votre livraison est en route »", () => {
-  it("porte le sujet du plan, la référence, l'adresse et « dans la journée »", () => {
+  it("porte le sujet du plan, la référence, l'adresse et « Il arrive bientôt. »", () => {
     const rendered = render();
 
     expect(rendered.subject).toBe("Votre livraison est en route");
     expect(rendered.html).toContain("ORD-4812");
     expect(rendered.html).toContain("12 rue des Lilas, 73150 Val d&#39;Isère");
-    expect(rendered.html).toContain("il arrive dans la journée");
+    expect(rendered.html).toContain("Il arrive bientôt.");
+    expect(rendered.html).not.toContain("dans la journée");
     expect(rendered.html).toContain("https://app.lfc.test/mes-commandes");
   });
 
-  it("ne promet aucune heure et ne joint rien", () => {
+  // Hugo, 2026-10-28 : « Livrée à » dit le créneau choisi à la commande, quand il y en a un.
+  it("dit le créneau de la commande à la suite de l'adresse", () => {
+    expect(render({ window: { start: "07:00", end: "09:00" } }).html).toContain(
+      "12 rue des Lilas, 73150 Val d&#39;Isère, entre 07:00 et 09:00",
+    );
+    expect(render({ window: { start: null, end: "08:00" } }).html).toContain(
+      "73150 Val d&#39;Isère, avant 08:00",
+    );
+  });
+
+  it("ne dit ni le Labo, ni le recours de l'administrateur", () => {
+    const { html } = render();
+
+    expect(html).not.toContain("route de la Balme");
+    expect(html).not.toContain("admin@lfc.test");
+  });
+
+  it("sans créneau, ne promet aucune heure et ne joint rien", () => {
     const rendered = render();
 
     expect(rendered.html).not.toMatch(/\d{1,2} ?h ?\d{2}/u);

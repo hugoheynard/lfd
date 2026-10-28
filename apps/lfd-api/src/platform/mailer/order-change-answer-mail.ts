@@ -84,9 +84,8 @@ export function renderOrderChangeRefusedMail(
     html: shell({
       kicker: copy.kicker,
       title: copy.title,
-      body: `${fill(copy.intro, { ref })}\n\n${copy.unchanged}`,
+      body: `${fill(copy.intro, { ref })}\n\n${copy.contactSales}`,
       rows: [{ label: copy.reasonLabel, value: data.reason }],
-      footer: copy.footer,
     }),
   };
 }

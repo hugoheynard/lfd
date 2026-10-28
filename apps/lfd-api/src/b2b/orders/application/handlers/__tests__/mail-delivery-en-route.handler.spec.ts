@@ -212,6 +212,23 @@ describe("MailDeliveryEnRoute — abonné durable « en route »", () => {
     });
   });
 
+  // 2026-10-28 : « Livrée à » dit le créneau de la commande — il part avec les données.
+  it("passe le créneau de la commande au courriel, et `null` sans créneau", async () => {
+    const window = { start: "07:00", end: "09:00" };
+    const base = delivered("o_1");
+    const { subject, mailer } = subscriber([
+      delivered("o_1", {
+        fulfillment: { ...base.fulfillment, window: { value: window, source: "override" } },
+      }),
+      delivered("o_2"),
+    ]);
+
+    await subject.handle(departed("r_1", ["o_1", "o_2"]));
+
+    expect(mailer.sent[0]).toMatchObject({ data: { window } });
+    expect(mailer.sent[1]).toMatchObject({ data: { window: null } });
+  });
+
   it("rejoué, il redemande la même clé : Resend absorbe, pas de second courriel", async () => {
     const { subject, mailer } = subscriber([delivered("o_1")]);
 

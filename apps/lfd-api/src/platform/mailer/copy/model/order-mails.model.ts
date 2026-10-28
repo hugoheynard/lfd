@@ -20,8 +20,11 @@ export interface OrderPlacedCopy {
   readonly subject: string;
   /** Sur-titre de l'en-tête, en capitales. */
   readonly kicker: string;
-  /** Titre, selon ce que la commande doit encore. */
-  readonly title: OrderSettlementCopy;
+  /**
+   * Titre — le même quel que soit le règlement (Hugo, 2026-10-28 : « moins
+   * on en dit, mieux c'est ») ; le montant dit déjà ce qui reste dû.
+   */
+  readonly title: string;
   /**
    * La phrase d'ouverture. `{ref}` = le numéro, `{day}` = le jour de service
    * en toutes lettres, `{routing}` = l'acheminement (`routing*`).
@@ -83,11 +86,8 @@ export interface OrderPlacedCopy {
    */
   readonly itinerary: string;
   readonly cta: string;
-  /** Ce que le client fait s'il veut changer quelque chose. */
-  readonly changeNote: string;
   /** Lot C6 : le lien « gérer ou annuler ma commande » (invité : la page d'annulation). */
   readonly manageLink: string;
-  readonly footer: string;
 }
 
 /**
@@ -106,8 +106,8 @@ export interface OrderReadyCopy {
   /** Objet du message. `{ref}` = le numéro de commande. */
   readonly subject: string;
   readonly kicker: string;
-  readonly titlePickup: string;
-  readonly titleDelivery: string;
+  /** Le même titre en retrait et en livraison (2026-10-28). */
+  readonly title: string;
   readonly introPickup: string;
   readonly introDelivery: string;
   /** Le point de retrait, ou l'adresse servie. */
@@ -131,7 +131,6 @@ export interface OrderReadyCopy {
    */
   readonly itinerary: string;
   readonly cta: string;
-  readonly footer: string;
   /**
    * Le **rappel** au client qui n'est pas venu (« Rappel au client », depuis
    * la Supervision, Hugo 2026-10-25) : le même courriel, QR compris, mais il
@@ -179,27 +178,30 @@ export interface OrderDelayedCopy {
   readonly whereLabel: string;
   readonly apology: string;
   readonly cta: string;
-  readonly footer: string;
 }
 
 /**
  * Ce que dit le courriel de **départ en livraison** — celui qui part quand la
  * tournée quitte le dépôt (`documentation/livraisons/livreur/en-route.md`, PL3-D4).
  *
- * 🔴 **Aucune heure.** On n'a pas d'estimation fiable par arrêt : une heure
- * fausse coûte plus qu'aucune heure. Ni nom ni téléphone du livreur.
+ * 🔴 **Aucune heure estimée.** On n'a pas d'estimation fiable par arrêt : une
+ * heure fausse coûte plus qu'aucune heure. Le seul horaire dit est le CRÉNEAU
+ * choisi à la commande, quand elle en a un. Ni nom ni téléphone du livreur.
  */
 export interface DeliveryEnRouteCopy {
   /** Le sous-titre du bandeau d'en-tête, sous l'enseigne — rendu en capitales. */
   readonly kicker: string;
   readonly subject: string;
   readonly title: string;
-  /** « Votre livreur est parti, il arrive dans la journée. » */
+  /** « Votre livreur est parti. Il arrive bientôt. » */
   readonly intro: string;
   readonly referenceLabel: string;
   readonly addressLabel: string;
+  /** Le créneau de la commande, à la suite de l'adresse. `{start}`, `{end}`. */
+  readonly windowBetween: string;
+  /** Le créneau « avant ». `{end}`. */
+  readonly windowBefore: string;
   readonly cta: string;
-  readonly footer: string;
   /** Le départ d'un envoi de rang > 1 — « le reste de votre commande » (plan E7 reliquat, choix 17). */
   readonly subjectRemainder: string;
   readonly titleRemainder: string;

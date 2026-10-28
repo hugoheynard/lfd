@@ -679,7 +679,7 @@ function orderReadyHeading(
   return {
     subject: copy.subject,
     kicker: copy.kicker,
-    title: pickup ? copy.titlePickup : copy.titleDelivery,
+    title: copy.title,
     intro: pickup ? copy.introPickup : copy.introDelivery,
   };
 }
@@ -689,13 +689,17 @@ function framedRegistry(registry: TemplateRegistry<B2bMails>): TemplateRegistry<
 }
 
 export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails> {
-  /** La coquille d'un courriel adressé à un CLIENT — l'enseigne qu'il connaît. */
+  /**
+   * La coquille d'un courriel adressé à un CLIENT — l'enseigne qu'il connaît.
+   * Sans le recours « contactez votre administrateur » : il nomme l'adresse
+   * de l'administrateur de la plateforme, qui n'est pas celle qu'un client
+   * doit écrire (Hugo, 2026-10-28). L'équipe, elle, le garde.
+   */
   const customerMail = (input: Omit<LayoutInput, "brand" | "supportEmail">): string =>
     renderLayoutWithLogo({
       ...input,
       ...fontOf(brand),
       brand: CUSTOMER_BRAND,
-      supportEmail: brand.supportEmail,
     });
 
   /** La coquille d'un courriel adressé à l'ÉQUIPE — la maison. */
@@ -757,7 +761,6 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
             : {}),
           ...pickupItinerary(data.sheet, data.pickupPoint, copy.itinerary),
           ...(data.orderUrl === "" ? {} : { cta: { label: copy.cta, url: data.orderUrl } }),
-          footer: copy.footer,
         }),
         ...(showQr
           ? {
@@ -791,7 +794,7 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
         subject: sanitiseSubject(fill(copy.subject, { ref: data.sheet.reference })),
         html: customerMail({
           kicker: copy.kicker,
-          title: copy.title[settlement],
+          title: copy.title,
           body: orderPlacedIntro(data.sheet, copy, data.locale),
           rows: recapRows(data.sheet, data.locale, settlement),
           // Le QR est DANS le corps, jamais en pièce jointe à ouvrir : c'est la
@@ -818,7 +821,6 @@ export function b2bMailTemplates(brand: MailBranding): TemplateRegistry<B2bMails
           ...(data.manageUrl === undefined || data.manageUrl === ""
             ? {}
             : { secondaryLink: { label: copy.manageLink, url: data.manageUrl } }),
-          footer: `${copy.changeNote}\n${copy.footer}`,
         }),
         ...withAttachments([
           ...(showQr

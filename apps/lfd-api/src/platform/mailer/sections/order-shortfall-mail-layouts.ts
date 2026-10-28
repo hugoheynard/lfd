@@ -21,7 +21,7 @@ export const ORDER_SHORTFALL_MAIL_LAYOUTS: Readonly<Pick<MailLayouts, "customer.
             "departedHeading",
             "missingHeading",
             "line",
-            "remainderAbandoned",
+            "contactSales",
             "closing",
           ),
         },

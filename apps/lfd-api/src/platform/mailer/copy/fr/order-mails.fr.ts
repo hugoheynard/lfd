@@ -10,11 +10,7 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
   "customer.order-placed": {
     subject: "Votre commande {ref} — La Folie Coffee",
     kicker: "Confirmée",
-    title: {
-      paid: "C'est réglé.",
-      due: "Commande enregistrée.",
-      account: "Commande enregistrée.",
-    },
+    title: "Commande confirmée",
     intro:
       "Votre commande {ref} pour le {day}, {routing}, a bien été prise en compte par nos services.",
     introWithoutDay:
@@ -45,17 +41,14 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     qrTitle: "Votre code de retrait",
     qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise.",
     cta: "Voir ma commande",
-    changeNote: "Un changement ? Appelez le fournil — une commande passée entre en fabrication.",
     manageLink: "Gérer ou annuler ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
     qrAlt: "Votre code de retrait — {ref}",
     itinerary: "Itinéraire vers la boutique",
   },
   "customer.order-ready": {
     subject: "Votre commande {ref} est prête",
     kicker: "Prête",
-    titlePickup: "C'est prêt.",
-    titleDelivery: "C'est prêt à partir.",
+    title: "Commande prête",
     introPickup: "Votre commande vous attend au comptoir.",
     introDelivery: "Votre commande part vers vous.",
     whereLabel: "À retirer",
@@ -64,7 +57,6 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     qrTitle: "Votre code de retrait",
     qrLine: "Présentez ce code au comptoir. C'est le scan de l'équipe qui atteste la remise.",
     cta: "Voir ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
     qrAlt: "Votre code de retrait — {ref}",
     itinerary: "Itinéraire vers la boutique",
     subjectReminder: "Votre commande {ref} vous attend",
@@ -83,15 +75,15 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     kicker: "Livraison en route",
     subject: "Votre livraison est en route",
     title: "Votre livraison est en route.",
-    intro: "Votre livreur est parti, il arrive dans la journée.",
+    intro: "Votre livreur est parti. Il arrive bientôt.",
     referenceLabel: "Commande",
     addressLabel: "Livrée à",
+    windowBetween: "entre {start} et {end}",
+    windowBefore: "avant {end}",
     cta: "Voir ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
     subjectRemainder: "Le reste de votre commande est en route",
     titleRemainder: "Le reste de votre commande est en route.",
-    introRemainder:
-      "Votre livreur est parti avec le reste de votre commande, il arrive dans la journée.",
+    introRemainder: "Votre livreur est parti avec le reste de votre commande. Il arrive bientôt.",
   },
   "customer.order-delayed": {
     kicker: "Retard",
@@ -103,7 +95,6 @@ export const ORDER_MAILS_FR: OrderMailsCopy = {
     whereLabel: "À retirer",
     apology: "Toutes nos excuses pour l'attente.",
     cta: "Voir ma commande",
-    footer: "Le Labo · route de la Balme, Val d'Isère — 7 h – 19 h",
   },
   "customer.order-placed-with-your-email": {
     kicker: "Commande passée",

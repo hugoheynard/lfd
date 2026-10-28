@@ -29,7 +29,8 @@ describe("la proposition d'« Écrire au client »", () => {
     expect(draft).toContain("ORD-0042");
     expect(draft).toContain("Ce qui part :\n– 1 × Croissant");
     expect(draft).toContain("Ce qui manque :\n– 2 × Croissant\n– 6 × Pain au chocolat");
-    expect(draft).toContain("Le reste ne sera pas livré");
+    expect(draft).toContain("Contactez le service commercial.");
+    expect(draft).not.toContain("Le reste ne sera pas livré");
   });
 
   it("parle la langue demandée", () => {

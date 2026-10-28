@@ -11,8 +11,8 @@ export const ORDER_SHORTFALL_MAILS_IT: OrderShortfallMailsCopy = {
     departedHeading: "Ciò che parte:",
     missingHeading: "Ciò che manca:",
     line: "– {quantity} × {product}",
-    remainderAbandoned: "Il resto non sarà consegnato, e non ti sarà fatturato.",
+    contactSales: "Contatta il servizio commerciale.",
     closing: "Ci scusiamo per gli articoli mancanti.",
-    footer: "Un dubbio o un errore? Chiama il forno — Le Labo · route de la Balme, Val d'Isère.",
+    footer: "Un dubbio o un errore? Chiama il forno.",
   },
 };

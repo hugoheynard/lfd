@@ -57,9 +57,9 @@ export function renderOrderShortfallMail(
 
 /**
  * **La proposition** que l'équipe relit avant d'envoyer : ce qui part, ce qui
- * manque, la suite (« le reste ne sera pas livré » — seul sort qui existe
- * avant E7). Textes EFFECTIFS du dictionnaire : un texte publié à l'écran des
- * textes s'y applique quand l'appelant a ouvert son périmètre.
+ * manque, la suite (« contactez le service commercial », Hugo, 2026-10-28).
+ * Textes EFFECTIFS du dictionnaire : un texte publié à l'écran des textes s'y
+ * applique quand l'appelant a ouvert son périmètre.
  */
 export function draftOrderShortfallMessage(data: OrderShortfallDraftData): string {
   const copy = mailCopyOf(data.locale)["customer.order-shortfall"];
@@ -71,7 +71,7 @@ export function draftOrderShortfallMessage(data: OrderShortfallDraftData): strin
     fill(copy.intro, { ref: data.reference }),
     `${copy.departedHeading}\n${listOf(data.departed)}`,
     `${copy.missingHeading}\n${listOf(data.missing)}`,
-    copy.remainderAbandoned,
+    copy.contactSales,
     copy.closing,
   ].join("\n\n");
 }

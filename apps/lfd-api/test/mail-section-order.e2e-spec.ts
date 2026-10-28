@@ -39,12 +39,8 @@ describe("l'ordre des sections, en brouillon", () => {
       ["itinerary", "system"],
       ["cta", "system"],
       ["secondaryLink", "system"],
-      ["footer", "text"],
     ]);
-    expect(placed?.sections[0]?.texts).toContainEqual({
-      path: "title.paid",
-      variant: "Commande payée par carte",
-    });
+    expect(placed?.sections[0]?.texts).toContainEqual({ path: "title" });
     expect(placed?.sectionOrder).toMatchObject({ draftState: "unchanged", revision: 0 });
   });
 
@@ -109,7 +105,7 @@ describe("l'aperçu repéré et l'itinéraire", () => {
   it("l'aperçu porte un repère par section et par texte, et le bouton d'itinéraire du retrait", async () => {
     const shown = await preview("draft");
     expect(shown.html).toContain('<div data-mail-section="title">');
-    expect(shown.html).toContain('data-mail-text="title.paid"');
+    expect(shown.html).toContain('data-mail-text="title"');
     expect(shown.html).toContain("https://www.google.com/maps/dir/?api=1&amp;destination=");
     expect(shown.html).toContain('data-mail-text="itinerary"');
   });

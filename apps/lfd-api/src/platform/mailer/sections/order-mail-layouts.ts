@@ -49,7 +49,7 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     subject: SUBJECT,
     header: KICKER,
     sections: [
-      { id: "title", texts: variantsOf("title", SETTLEMENTS) },
+      { id: "title", texts: texts("title") },
       {
         id: "body",
         texts: [
@@ -89,7 +89,6 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       ITINERARY,
       { id: "cta", texts: texts("cta") },
       { id: "secondaryLink", label: "Gérer ou annuler", texts: texts("manageLink") },
-      { id: "footer", texts: texts("changeNote", "footer") },
     ],
   },
   "customer.order-ready": {
@@ -98,13 +97,14 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     sections: [
       {
         id: "title",
-        texts: variants({
-          titlePickup: "Commande en retrait",
-          titleDelivery: "Commande livrée",
-          titleReminder: REMINDER,
-          titleRemainderPickup: `${REMAINDER}, en retrait`,
-          titleRemainderDelivery: `${REMAINDER}, livré`,
-        }),
+        texts: [
+          ...texts("title"),
+          ...variants({
+            titleReminder: REMINDER,
+            titleRemainderPickup: `${REMAINDER}, en retrait`,
+            titleRemainderDelivery: `${REMAINDER}, livré`,
+          }),
+        ],
       },
       {
         id: "body",
@@ -121,7 +121,6 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       QR,
       ITINERARY,
       { id: "cta", texts: texts("cta") },
-      { id: "footer", texts: texts("footer") },
     ],
   },
   "customer.delivery-en-route": {
@@ -130,9 +129,14 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
     sections: [
       { id: "title", texts: [...texts("title"), ...variants({ titleRemainder: REMAINDER })] },
       { id: "body", texts: [...texts("intro"), ...variants({ introRemainder: REMAINDER })] },
-      { id: "summary", texts: texts("referenceLabel", "addressLabel") },
+      {
+        id: "summary",
+        texts: [
+          ...texts("referenceLabel", "addressLabel"),
+          ...variants({ windowBetween: "Créneau borné", windowBefore: "Créneau « avant »" }),
+        ],
+      },
       { id: "cta", texts: texts("cta") },
-      { id: "footer", texts: texts("footer") },
     ],
   },
   "customer.order-delayed": {
@@ -143,7 +147,6 @@ export const ORDER_MAIL_LAYOUTS: Readonly<
       { id: "body", texts: texts("intro", "apology") },
       { id: "summary", texts: texts("referenceLabel", "whereLabel") },
       { id: "cta", texts: texts("cta") },
-      { id: "footer", texts: texts("footer") },
     ],
   },
   "customer.order-placed-with-your-email": {

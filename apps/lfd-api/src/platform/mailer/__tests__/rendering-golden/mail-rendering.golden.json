@@ -2,354 +2,364 @@
   "customer.order-placed": {
     "exactHt": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "cd065b0000abda77c6793e3be272a63ce3ed1974a54de4f16e6fc40fb3f83b14",
+      "htmlSha256": "1df1669cdbdbb688aed5afdd097fe9577adebbfbe10e3447a4525fb288fc8a3f",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "paidPickup": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "e3838e311f84c02ae7b79c84462b40fe9828f3e4558558338f6b40207554149d",
+      "htmlSha256": "a1528dcfe145f65585b6046b2c53834736c79ec4eba21b8630e4a543484b6da9",
       "attachmentsSha256": "ea20c3e64d47c52ba8964f390c3b82184978177c98c44687d80dc79ef37b724d"
     },
     "dueDelivery": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "98c53c444c10b41e2900a15415d8dc07cd739e3241c23d353e0f1d7b2ca08c20",
+      "htmlSha256": "2450a373c5693712b657c72d91048cef6a75f6a0b0739d3469fab974e8fc8339",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "account": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "41649a5338927e8ef3ee4a313b2ad7351ee7c7d25736232e527761732b100100",
+      "htmlSha256": "43af3b047c257fc4a71e15dd148d07061a9855e4e223ed99907f36b2739950b1",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "free": {
       "subject": "Votre commande ORD-4812 — La Folie Coffee",
-      "htmlSha256": "91cb59918999ac2c4bbc8f69def87c979e8ac1244b12cf2f2bf442a0ae2bcda2",
+      "htmlSha256": "c28d89126c45d3db8bb6acbc2a20b72f4d8b64b00b9cf29772fe4887e47d4357",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-ready": {
     "pickup": {
       "subject": "Votre commande ORD-4812 est prête",
-      "htmlSha256": "3ab76ea606b0094c358ec51cdd40a8e32b278b07f1a970ec8e44e56ac03327cc",
+      "htmlSha256": "054c99a3f18ed6592ca0decc90ea9f195babc80e158e81b1095c03ba2495fe9b",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "delivery": {
       "subject": "Votre commande ORD-4812 est prête",
-      "htmlSha256": "f1cb958a612f685e44836a86c624ea7114fb9d432ef0bcc120e4f44e697b98eb",
+      "htmlSha256": "c6dc541a55ce02737bf832cd7d82db238b48a095b20fe83e110504303cf93ec3",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "reminder": {
       "subject": "Votre commande ORD-4812 vous attend",
-      "htmlSha256": "8d456933580c088b5343b293deaff12b78593bf75f1e8f164c5436b5d8c77c48",
+      "htmlSha256": "96b064fd9915baeaa5150f89935949fd54572303eff936b68fa8f233f7bf9000",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "reminderWithoutSite": {
       "subject": "Votre commande ORD-4812 vous attend",
-      "htmlSha256": "09ffc3a0c26a48dc02c1203b18b88721d733f32c2eed34d1955041afddb8caf6",
+      "htmlSha256": "e0a3434becd37e35f32f80fc896fc6c8e78b790c5a46e822046b73ac5c77a146",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "remainderPickup": {
       "subject": "Le reste de votre commande ORD-4812 est prêt",
-      "htmlSha256": "da8510b8b146bca2a928caf209e1e7776c85d9c5ee14af1639d6f1769a239e68",
+      "htmlSha256": "9ef83f564d93f0ba60463540add489fba0ba3244e2cc5903930dc29006d41658",
       "attachmentsSha256": "4ed8d0c0f72da35145b273e7ed226c309e4b3eb021722537cdc72fef82d2207f"
     },
     "remainderDelivery": {
       "subject": "Le reste de votre commande ORD-4812 est prêt",
-      "htmlSha256": "c21479c99678ec044f0e4d2fa2031ed6da4371337220f2b199bc5dd2987696fb",
+      "htmlSha256": "20d079d60ea75a63ee3380b1f22fef89aaab2b1bdff08901402a9eed7682183c",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.delivery-en-route": {
     "full": {
       "subject": "Votre livraison est en route",
-      "htmlSha256": "71b015259871af9cbba427d5812cdd7e203bf957f59ab0e332a68186800b6449",
+      "htmlSha256": "ddb6b88229434712d24b15163f49abf946c1c6b9f1584a75493bc20a55b229c1",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "bare": {
       "subject": "Votre livraison est en route",
-      "htmlSha256": "73f2011dd9ca2ff3ce29620dc69876f4c3e0c9957e578f4aae20d360c3cc1b24",
+      "htmlSha256": "a6e1e17f3c4f9f338981b596dd31e0b4c91b72fb0de2ae4a134b1891d99824e7",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "remainder": {
       "subject": "Le reste de votre commande est en route",
-      "htmlSha256": "36e5da14b4549a23557d898f3b4260f0590a4cb0a83605c5ca8e32ab564183c5",
+      "htmlSha256": "e05ee45cbad0bc0df1c42853b4a5ebdf6688ebff3d209817324b4e47b9a5bb86",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "windowBetween": {
+      "subject": "Votre livraison est en route",
+      "htmlSha256": "0401cfc4af0228aae98bb240815a0e70417f925c63e7e1a81a04ff073de335e9",
+      "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
+    },
+    "windowBefore": {
+      "subject": "Votre livraison est en route",
+      "htmlSha256": "0b91e2f795790d694fe2b831c00032244ea64cb6d34a03f6740d97c8516217f0",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.payment-failed": {
     "withLink": {
       "subject": "Paiement refusé — votre commande ORD-4812",
-      "htmlSha256": "13fa50a4da6eed8cca5d7f6dbfe809a3807de0a106500b0ec87f48603e7a6763",
+      "htmlSha256": "09dda857bf709a2a8b8de923f60b97e0069ae57359134c45bc467f01cb95de41",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "withoutLink": {
       "subject": "Paiement refusé — votre commande ORD-4812",
-      "htmlSha256": "b5f81d91802f4f047759d60334a9e1a0ce3ff152709b1f987939eb3e63712ff7",
+      "htmlSha256": "f7e70f115b5cbaf8dc19a4e1528b007ac1577940256ea07160de5ee2f8983a5a",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.payment-expired": {
     "only": {
       "subject": "Commande ORD-4812 annulée — paiement non abouti",
-      "htmlSha256": "f3a1803e7c8d96428934d813f2ec77e8848715723e6f1fb89813db5b8f7be329",
+      "htmlSha256": "6a68a6a350bc0eed76da784094639e74bc1a990fcb259d7ce25c9a6be60710d0",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-cancelled": {
     "teamPaid": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "148070f5d10f1c8f1a8dcb2bd0cb536be0a0676c66e436c29a6f79150dcfa808",
+      "htmlSha256": "a0462ba455a2977bf478e7ac66c863e80d306abad0719b51dea4fc96621a861e",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "teamAlreadyRefunded": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "469f38191c5ec97c3ab8aa0c61e140384d1e1709785315e10e42a66bc1e5f5ba",
+      "htmlSha256": "0c6faed2b0f0f0446871496bf1a0acac121c00a292e9d0733e16d09be69a9bbc",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "selfFree": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "b24497573f350decbc40996196f2981533adc0defe415111a0b33e2ce6794347",
+      "htmlSha256": "6131d22b3bda506d92518049c7d7f7bbd377d9adc02edd5fbfe46e1cabc84247",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "selfDueNoDay": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "aa7df0b8454f997f2ab2aa24743347fa1adf9e8707d51df70497b0d0bf8294f1",
+      "htmlSha256": "5a2af0a5aef6747e322bf999ef1b7760218586e50d4e3c04658fee11d16002c8",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "memberAccount": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "03d7c1c756f092a0953a4ecae4f57102e2842b724216d648a53190303dc2c2b5",
+      "htmlSha256": "9cedb5440824c4ba30977cde8da37a49797967eac7f8f464617f7763da3aa8bc",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "memberNoDay": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "82ed8b1c801e63890d7053ec6f3852aa0d701e12c15883ba57992f18727afd4f",
+      "htmlSha256": "401b9ec71438aff9b903a66caa9712ad39cd221e4be61f86644297dfad4a3a94",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "principalMerged": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "2be9a9bbda3189002c14aafe8a97258b348ba703734d98c63cfb9a2ce01d4c36",
+      "htmlSha256": "271d07d1e5f42b3ca970078d0f12480d7e93acb6b894984a806cb142311de450",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "principalNoDayLapsed": {
       "subject": "Commande ORD-4812 annulée",
-      "htmlSha256": "a8cdc52152fffdafb20574e1c6905954e21a07d60da878ac49881bdde53392c9",
+      "htmlSha256": "9ef4c05d83032639d011d7cc8056dce6ef775081ec6a2bc95be36878e31e9400",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-payment-link": {
     "only": {
       "subject": "Votre commande ORD-4812 reste à régler",
-      "htmlSha256": "380762bbe84a33fc2349300c59240632e79d12369cb58501555faa22b6f25adc",
+      "htmlSha256": "50ada04707ee0a0d03dff9a82e1b9df5de3fa3c7fa27a50b2a00d42825759154",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.collection-notice": {
     "statement": {
       "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "d4443c503665ae5870cd6590b85e701124b93f36476a955837a7e702957066e4",
+      "htmlSha256": "e2208ddee06bed22025380d6833235eea46c2a22cf2d4af6b89bd3ff9c40628c",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "oneInvoice": {
       "subject": "Avis de prélèvement — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "7fcefb76f991238ae8ce46b4d3e52f251de24541612d099c08a5769198397001",
+      "htmlSha256": "5da09af3d35b1f40485a4ee19f07c7d1d3ac14cf18eec743f8ab0003cffac0df",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "correctionRepresented": {
       "subject": "Avis de prélèvement rectifié — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "32e8cf1ce94889be7c681872cdfb3bbfa74ed9c00f9807811e03754e48b51dcc",
+      "htmlSha256": "3da83b9d8ca7e1532ab3cba99dea7ca9db76a0bf5ee1270cc5e9b52f661652c4",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "cancellation": {
       "subject": "Prélèvement annulé — CRAZEATIVITY · jeudi 15 octobre 2026",
-      "htmlSha256": "9ca1f2cd6e6759adc807add749343b5f967163ca325678b619afb7967b5cdc62",
+      "htmlSha256": "4e00e08560fe2ac6e3d9e5749f8fef277117901840b6d8eae604c522fe0157df",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.invoice-issued": {
     "full": {
       "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
-      "htmlSha256": "c5ed3815df57a3710f4b5480965069d790a14906652044dd55549125dc0c564c",
+      "htmlSha256": "7339ae5627e6bee14b6a0503025659b22e97b26e7c22442275427a46d790e405",
       "attachmentsSha256": "1acc23c2ee05f869cce7dc3ca27107216c38c6e574509a03a31673e3174a0867"
     },
     "bare": {
       "subject": "Votre facture FA-LFD-2026-000001 — CRAZEATIVITY",
-      "htmlSha256": "b1fc39880210a57c9657a0b47089b1d3d641025c2a5a7f0df41c8f37d0a76578",
+      "htmlSha256": "de02fae506a10ae21e3fd7d4ea12069e651b7f8b9687716767293fb4da8ddc81",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.mandate-to-sign": {
     "core": {
       "subject": "Votre mandat de prélèvement SEPA — RUM-1",
-      "htmlSha256": "2c049ada41616315ef7042fd72915f367d84e485ef26413dcd8f735c3505ba1a",
+      "htmlSha256": "d28bd8c4f5870e50a83f6a3e8894cae2772053e916adbf512b17be1226944d28",
       "attachmentsSha256": "61cb198b06580d34ea3e3a2dcf5dafb5e6580a601618ebb29598d042972dd73c"
     },
     "b2b": {
       "subject": "Votre mandat de prélèvement SEPA interentreprises — RUM-1",
-      "htmlSha256": "74f56c60f36ef5d952a570ae5d14583dc1243e6d884ee97b24e6bb2ba9285875",
+      "htmlSha256": "6589d809f9d755a68888158c98ec966898cd0e23f8695f953cd5b8098b53691d",
       "attachmentsSha256": "61cb198b06580d34ea3e3a2dcf5dafb5e6580a601618ebb29598d042972dd73c"
     }
   },
   "customer.sub-account-activity": {
     "placed": {
       "subject": "Chalet Gentiane — Commande passée par un de vos sites (ORD-1)",
-      "htmlSha256": "65e7e2dc301fdca973e9e006032d249c129990c2c7b7782dac4f39885dec132e",
+      "htmlSha256": "c7bff023aa88ee39fbb293c27c281ff0229d0f34fe1d228c656cd0ea0fce8688",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "cancelledByTeam": {
       "subject": "Chalet Gentiane — Commande annulée sur un de vos sites (ORD-1)",
-      "htmlSha256": "74beffecf824b21aa7a72a1e66b17332f23e0208eb93e3d06bfafe908caaa06a",
+      "htmlSha256": "5cb7e22e2780afdc80ad687b5639493569d7c4879616a00f165a08d806caf82a",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "abandoned": {
       "subject": "Chalet — Règlement abandonné sur un de vos sites (ORD-2)",
-      "htmlSha256": "8976ad995f4dc3f22c2c9a7ca214c957f29aa2c73ef1843d8f60897c10cf9d6e",
+      "htmlSha256": "0f9754cb7d1175e453ac7130b4f1fead732f3b65de4290730210f843771572f7",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "paymentFailed": {
       "subject": "Chalet — Paiement échoué sur un de vos sites (ORD-3)",
-      "htmlSha256": "66d08e81c85ed956c2dcb2f3c3e54c57246301eac42c736bf2b6b7f40a7c0adc",
+      "htmlSha256": "583ed5c76003b76d1cbb1abf34a1c6b2e7a8c5de4ca7a0ff5fb47b0825662c8c",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.sub-account-gesture": {
     "problem": {
       "subject": "Chalet — Problème signalé par un de vos sites (ORD-1)",
-      "htmlSha256": "a7fcc00f94a76c114c1b5d32f003ea179d0092ef6ec733d5a23f96de53fa6bc4",
+      "htmlSha256": "960112fc0fe159c80c3b6ca4babfdfcd4b1af70e5408f20e00f78bb4a7469092",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "problemByTeam": {
       "subject": "Chalet — Problème signalé par un de vos sites (ORD-1)",
-      "htmlSha256": "240e716b76b8cc9c8fb214ddd39bdeab7ac1eefb6c51507fd436ec3dd6302dc9",
+      "htmlSha256": "7f95ec8eb6c865b0f4af03cbddd047fcde34c6baa583cac325a5e5faacfcd99b",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "contactWithReference": {
       "subject": "Chalet — Contact ajouté sur un de vos sites (X-9)",
-      "htmlSha256": "5f3d70d7a81ab65883f6521e3025644149aa9bb64ad582fa9817ae57dd70bad8",
+      "htmlSha256": "c72938f47d88bd517da17f9bd36701beb6cf5e6c019057dcd2072d8fc6365131",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "delivery_address_added": {
       "subject": "Chalet — Adresse de livraison ajoutée sur un de vos sites",
-      "htmlSha256": "8ec29989941ae49b3e84c20866c87aaf4a339481053795194d33a1773269618a",
+      "htmlSha256": "38998732b6c9166154cfe797448d3ef7c3cc939e04125d3cfa0e2d29f994ba93",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "delivery_address_updated": {
       "subject": "Chalet — Adresse de livraison modifiée sur un de vos sites",
-      "htmlSha256": "12882f97ca5aeb946065cbc28814e3769185f09f5cda3394881af2865894ca67",
+      "htmlSha256": "e1f1027fae15c935bce7a3c65b695736c7aaa47d2d2a65d106246c267d282903",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "delivery_address_removed": {
       "subject": "Chalet — Adresse de livraison retirée sur un de vos sites",
-      "htmlSha256": "9f41625c00731ebe2e628362e5f8c7ab03b3c9f10cabe95e8c0e7bcf34f13e6e",
+      "htmlSha256": "e60f9c23dec83564dbbc2f1df6912f23ce74f0181d46b4c9fdc45a93e7c0eb81",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "default_delivery_set": {
       "subject": "Chalet — Adresse de livraison par défaut changée sur un de vos sites",
-      "htmlSha256": "1a98af9f5ba19c5cf8c5bead691151d32770a556275a168f6cf6d341c8628db0",
+      "htmlSha256": "0d5331b2e17161b05a13871c694247fcacbfdf6b9448ab729503700236d5be88",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "contact_added": {
       "subject": "Chalet — Contact ajouté sur un de vos sites",
-      "htmlSha256": "e255e15a6285b5a4a59f972001835e76e2c3a28edbff4ebdf97258184b7d96c2",
+      "htmlSha256": "41e2bbf4f388725f4c29e16143dda6bc17568fb77a88994e3cba0838611efbef",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "contact_updated": {
       "subject": "Chalet — Contact modifié sur un de vos sites",
-      "htmlSha256": "992ca12436c8f22753e5da546ed5e40f1de74071a97ddce57356de070213dc26",
+      "htmlSha256": "d5a763ff621a95f59d5c03b311fcf7d2803ceb22f18c5ae055281ae29c0a76c7",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "contact_removed": {
       "subject": "Chalet — Contact retiré sur un de vos sites",
-      "htmlSha256": "5bba30e7ced607f0d4d3b0f5ae77eb5e3797e0217779aacce23a835b2920a708",
+      "htmlSha256": "6bcfa6cd48efcb8ccfa9e1820bf567db65087e692a39d51977c0dd11f5f91e93",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "primary_contact_changed": {
       "subject": "Chalet — Contact principal changé sur un de vos sites",
-      "htmlSha256": "223ba615e7cabd5ae1cbc187fc3dc7bc5c0fabd147f69647ca5aa8f59d34cb77",
+      "htmlSha256": "57d8df47c97a5613cef3d24923840f5b50dc1663ae5a0921ade5ca426cb57f8e",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "bank_account_changed": {
       "subject": "Chalet — Nouveau RIB sur un de vos sites",
-      "htmlSha256": "5367d23c43e2ec85524a9fa3966d2874f91c0ba70b794ee84c38ffd488a4e6d9",
+      "htmlSha256": "85db89b100e19f419f11c5ece017cb663ffd994da023a2674b76ed6bdf8cce25",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "mandate_proof_attached": {
       "subject": "Chalet — Preuve de mandat déposée sur un de vos sites",
-      "htmlSha256": "c8593be46bf920b26a09e7890d77525d0d3fb7875eecd0e18532b46c9e76db8f",
+      "htmlSha256": "1556ea60c203973524efd554522b0d26dcc21620950b1ea144590932687659b5",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "subscription_created": {
       "subject": "Chalet — Panier récurrent créé sur un de vos sites",
-      "htmlSha256": "e62931581f571111cd5e5aef8de61b71aa93c88b867e55be62345b0aca95de74",
+      "htmlSha256": "b68e8aa4156c8eae26b69ed67b07b08d2e91a6801e7ed725bd9cb28a17d70a91",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "subscription_paused": {
       "subject": "Chalet — Panier récurrent mis en pause sur un de vos sites",
-      "htmlSha256": "9ffc2d17c96ad745c6c40974f043f881c7b04ee727504c6cebecc069dd3be8b5",
+      "htmlSha256": "a853bf1203eb9a977fa14e3ae67e2e02c2552ac5a71b5be4ab80464cb3851ee4",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "subscription_resumed": {
       "subject": "Chalet — Panier récurrent repris sur un de vos sites",
-      "htmlSha256": "896892c9766355155684243396af2f1570b50b42d0bb373d194b475b25877118",
+      "htmlSha256": "9ac855c063fb30bf7de9d654cdb89a6fc2eb24b4ca4f4e5b01ebb1a7884922e5",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "subscription_stopped": {
       "subject": "Chalet — Panier récurrent arrêté sur un de vos sites",
-      "htmlSha256": "fb0e87a3a3a9259ba778d7ef45988551757c032ae8a0e57f67e6869e70c4c8ef",
+      "htmlSha256": "62159faf80be2d7e9087e6df9ec3d7ab3d510063ef9be341443f83ab48ed4021",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.access-opened": {
     "code": {
       "subject": "Votre accès à l'espace pro Hôtel des Trois Ponts",
-      "htmlSha256": "b2c2a30d4fdc9e8efd6e9cdaba17230db70750bc2540ea375f7363b10bbf2127",
+      "htmlSha256": "1447f6ff368f43f64176f1d598323200741a2d2f2c549b5e550a1da98969dd40",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "passwordOnly": {
       "subject": "Votre accès à l'espace pro Hôtel des Trois Ponts",
-      "htmlSha256": "e263ee137358473d707c37b82ff810b598944215d46c3dba471fdc120e7f4372",
+      "htmlSha256": "398a5a7151a98ce23ff2e3b3e340f327b0a57f14e1e5f9bed2cc1a8a50f05fc8",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.company-attached": {
     "named": {
       "subject": "Refuge du Col a été ajoutée à votre espace pro",
-      "htmlSha256": "f512b27cb529ac7d893892e1f9773ef5eafe338f15077fb5122c8741e5ed7e25",
+      "htmlSha256": "334a7041ca8253bde0b41fa21bef0c3307498d0392ac745ef7669a23f3a08d67",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "anonymous": {
       "subject": "Refuge du Col a été ajoutée à votre espace pro",
-      "htmlSha256": "747e458d6634984e13cbba159be97f87c1587846e1898d40584684f68f7074c4",
+      "htmlSha256": "fecd9481c97135fe3edeb47f84340d34fb4bab0b56b93e4ccedb7fdde253f746",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-placed-with-your-email": {
     "named": {
       "subject": "Une commande vient d'être passée avec votre adresse",
-      "htmlSha256": "2ac5f4d52a3a95d439bccb927fdefb731017614aac9b1a112c9210aca6572492",
+      "htmlSha256": "0560325937c28db50818764fcdb0bdb4c4ef284f0785d7c9807b324010aac316",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "anonymous": {
       "subject": "Une commande vient d'être passée avec votre adresse",
-      "htmlSha256": "fa180cda3fb7f1fee9dd4d218d15c434a0f4e89504df8388c8ff77514d67a1d9",
+      "htmlSha256": "364932b20c8cfc0c0bb2bc93daec2a677684e89a2adeaddd9f931bcd8fc29812",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.login-method-linked": {
     "named": {
       "subject": "Une connexion Google a été ajoutée à votre compte",
-      "htmlSha256": "52a241efeefd678b37435cf7e998cd6fe6f97aaf0dba237038f1a0bcc01b81b5",
+      "htmlSha256": "8ba2b3f90524933f52d88e1b2d824ff0d344b33ad4591d0d9becaf67ac65a09a",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "anonymous": {
       "subject": "Une connexion Facebook a été ajoutée à votre compte",
-      "htmlSha256": "ec3847ecb5e811c9575c5ed7ae237c752040d7a812caaf9e7e40600c6aba8162",
+      "htmlSha256": "e12c80a7ebb6bb9c6e26f9bccb1db00a8a1f355f484ae7c028c80811226e39f2",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.password-reset": {
     "only": {
       "subject": "Votre lien pour changer de mot de passe",
-      "htmlSha256": "d773646dd20031089763ae107d48f06cec82dbff3f4fbb7d08e66764b479beea",
+      "htmlSha256": "6fe30f8f339081ce5888641b16c95535adc081660af89161f3e5515327ac4f49",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
@@ -488,43 +498,43 @@
   "customer.order-change-applied": {
     "only": {
       "subject": "Commande ORD-4812 modifiée à votre demande",
-      "htmlSha256": "0b7a12f4bd4ccd142a9b25632424b02b03073980e725bdb8f993a27a4ff79ea6",
+      "htmlSha256": "57073a77b562172f626af0c6038b2a5c6ff5cb42eba3f020252abc0bf9b88b67",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "lower": {
       "subject": "Commande ORD-4812 modifiée à votre demande",
-      "htmlSha256": "662e1f586e34516fa022f23a0bb977b2930d6b1433a36575006a6907bdc4beab",
+      "htmlSha256": "f4c3c28b03c36836977e023e6d4e6c02793043931b7835065e01c0afc6be9bd0",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "unchanged": {
       "subject": "Commande ORD-4812 modifiée à votre demande",
-      "htmlSha256": "36020b81b6ca7e7e5752c2574f399e35cd6fdd396067fceb1166a57775515a03",
+      "htmlSha256": "68bbbfa2d050403bb3b3af435a1d85534d1674ce24a8054bea04380c5c39dba1",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-change-refused": {
     "withReason": {
       "subject": "Commande ORD-4812 : modification impossible",
-      "htmlSha256": "682acb41f8f6308cc640ba7ea61f98de6498cbf2c5115b7a7fea319255e5f22f",
+      "htmlSha256": "06ad8d7645d346d4825cd9b43b2e8c15787192a144931bc70d960f5ab4d53998",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-shortfall": {
     "withMessage": {
       "subject": "Commande ORD-4812 : elle part incomplète",
-      "htmlSha256": "c5e80c35ff86451ede6b261ba860be8a9c95c2b8322d3fb8067bc8250e4e3e06",
+      "htmlSha256": "0f67cbff39547a5a09f4d39f84e24fc3e58cb1ee6985ce8d08634270919600af",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   },
   "customer.order-delayed": {
     "full": {
       "subject": "Votre commande ORD-4812 prend du retard",
-      "htmlSha256": "e94bde4be9a9072be72c4a19d6cb965d4e8dc6e699ad116a9daa6da51f014aa1",
+      "htmlSha256": "6e5c90e916e4290707f38f06c970fabd59055325b5f5ad5af5f2e2768121cb97",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     },
     "bare": {
       "subject": "Votre commande ORD-4812 prend du retard",
-      "htmlSha256": "46b1ca78022203737420f88c3ec7e27b01f87d4aae64a26e0ff9713b49c56abe",
+      "htmlSha256": "d8534050d0fa81ec80b7199f67264475248aeaf263e1994eb7a37f235d9b8c1a",
       "attachmentsSha256": "d9fd8a13837ada8c57c1476624a60e085272932d2196e572a7b9d2b3d83e71f7"
     }
   }

@@ -1,7 +1,8 @@
-import type { ClientSheet, ContentLocale, FulfillmentWindow } from "@lfd/contracts";
+import type { ClientSheet, ContentLocale } from "@lfd/contracts";
 
 import type { OrderPlacedCopy } from "./copy/mail-copy.model.js";
 import { fill } from "./copy/mail-copy.js";
+import { windowInWords } from "./fulfillment-window-in-words.js";
 import { dayInWords } from "./service-day-in-words.js";
 
 /**
@@ -34,7 +35,7 @@ function routingOf(sheet: ClientSheet, copy: OrderPlacedCopy, locale: ContentLoc
           nonBlank(pickupLabel) ?? city,
         )
       : placeOrBare(copy.routingDelivery, copy.routingDeliveryWithoutCity, "city", city);
-  const slot = windowOf(window, copy);
+  const slot = windowInWords(window, copy);
   const routing = slot === null ? where : `${where} ${slot}`;
   return locale === "fr" ? contractFrenchAt(routing) : routing;
 }
@@ -46,15 +47,6 @@ function placeOrBare(
   value: string | null,
 ): string {
   return value === null ? bare : fill(withPlace, { [key]: value });
-}
-
-function windowOf(window: FulfillmentWindow | null, copy: OrderPlacedCopy): string | null {
-  if (window === null) {
-    return null;
-  }
-  return window.start === null
-    ? fill(copy.windowBefore, { end: window.end })
-    : fill(copy.windowBetween, { start: window.start, end: window.end });
 }
 
 function nonBlank(value: string | null | undefined): string | null {
