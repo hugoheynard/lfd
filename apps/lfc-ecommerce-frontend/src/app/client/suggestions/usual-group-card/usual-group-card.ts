@@ -4,7 +4,7 @@ import { FoldIconComponent } from 'fold-ng';
 
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { sizedMedia } from '../../shop/media-source';
-import { shelfArtOf } from '../../shop/shelf-display';
+import { HOUSE_MARK, HouseMark } from '../../shop/house-mark/house-mark';
 import { StaffSuggestionCard } from '../staff-suggestion-card/staff-suggestion-card';
 import { UsualPicks } from '../usual-picks.service';
 
@@ -27,7 +27,7 @@ const TILE_WIDTH = 280;
 @Component({
   selector: 'app-usual-group-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent, StaffSuggestionCard],
+  imports: [FoldIconComponent, HouseMark, StaffSuggestionCard],
   templateUrl: './usual-group-card.html',
   styleUrl: './usual-group-card.scss',
 })
@@ -43,10 +43,7 @@ export class UsualGroupCard {
       .views.slice(0, MOSAIC_SIZE)
       .map((view) => ({
         sku: view.sku,
-        src: sizedMedia(
-          (view.item.image ?? view.item.thumbnail)?.url ?? shelfArtOf(view.item.shelfId),
-          TILE_WIDTH,
-        ),
+        src: sizedMedia((view.item.image ?? view.item.thumbnail)?.url ?? HOUSE_MARK, TILE_WIDTH),
       })),
   );
 

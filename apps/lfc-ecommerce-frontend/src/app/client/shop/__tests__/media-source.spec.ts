@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import type { ShopItemView } from '@lfd/contracts';
 
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS, TILE_WIDTHS } from '../media-source';
+import { HOUSE_MARK } from '../house-mark/house-mark';
 import { artOf, tileArtOf } from '../shelf-display';
 
 const PHOTO = 'https://media.lafoliecoffee.info/products/abc123.jpg';
@@ -32,7 +33,7 @@ describe('sizedMedia — ce qu’il ne touche PAS', () => {
    * quelque chose de visible s'il saute, et aucun ne se verrait en dev.
    */
   it("laisse un chemin RELATIF intact — c'est une ressource de l'application", () => {
-    // L'illustration de secours d'un rayon (`shelfArtOf`) en est une. La faire
+    // Le logo de repli d'un article sans photo en est une. La faire
     // passer par un serveur d'images la casserait, et la vitrine afficherait
     // un cadre vide là où elle montre une pièce dessinée.
     expect(sizedMedia('products/croissant.svg', 720)).toBe('products/croissant.svg');
@@ -143,15 +144,15 @@ describe('le visuel EN RAYON', () => {
     expect(tileArtOf(piece({ image: HERO })).url).toBe(HERO.url);
   });
 
-  it("retombe sur l'illustration du rayon quand la fiche n'a aucune photo", () => {
-    expect(tileArtOf(piece()).url).toContain('croissant.svg');
+  it("retombe sur le logo de la maison quand la fiche n'a aucune photo", () => {
+    expect(tileArtOf(piece()).url).toBe(HOUSE_MARK);
   });
 
   it('ne remonte JAMAIS la vignette en ouverture de fiche', () => {
     // Le repli va de la vignette VERS l'ouverture, jamais l'inverse : une
     // vignette cadrée serré étirée en 3/2 montrerait un gros plan là où on
     // attend la pièce entière.
-    expect(artOf(piece({ thumbnail: VIGNETTE })).url).toContain('croissant.svg');
+    expect(artOf(piece({ thumbnail: VIGNETTE })).url).toBe(HOUSE_MARK);
     expect(artOf(piece({ image: HERO, thumbnail: VIGNETTE })).url).toBe(HERO.url);
   });
 });

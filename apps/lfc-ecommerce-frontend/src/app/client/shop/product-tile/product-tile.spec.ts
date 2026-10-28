@@ -32,6 +32,25 @@ describe('ProductTile', () => {
     fixture.detectChanges();
   });
 
+  // Sans photo, le logo de la maison (Hugo, 2026-10-28) ; une photo n'est jamais remplacée.
+  it('montre le logo de la maison quand l’article n’a pas de photo', () => {
+    const img = (fixture.nativeElement as HTMLElement).querySelector('.photo img');
+    expect(img?.getAttribute('src')).toBe('brand/lfc-mark.png');
+    expect(img?.hasAttribute('data-house-mark')).toBe(true);
+  });
+
+  it('garde la photo quand l’article en a une', () => {
+    const url = 'https://media.example/products/croissant.jpg';
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      image: { url, alt: 'Un croissant', width: null, height: null },
+    });
+    fixture.detectChanges();
+    const img = (fixture.nativeElement as HTMLElement).querySelector('.photo img');
+    expect(img?.getAttribute('src')).toContain('croissant.jpg');
+    expect(img?.hasAttribute('data-house-mark')).toBe(false);
+  });
+
   /**
    * 🔴 **Le rayon d'un PARTICULIER est en TTC, et il le DIT** (D13,
    * 2026-09-21).

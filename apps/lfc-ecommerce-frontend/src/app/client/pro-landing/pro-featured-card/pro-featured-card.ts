@@ -1,6 +1,7 @@
 import { ChangeDetectionStrategy, Component, input, output } from '@angular/core';
 import { FoldCardComponent } from 'fold-ng';
 
+import { HouseMark } from '../../shop/house-mark/house-mark';
 import type { FeaturedCard } from '../pro-landing';
 
 /**
@@ -12,7 +13,7 @@ import type { FeaturedCard } from '../pro-landing';
 @Component({
   selector: 'app-pro-featured-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCardComponent],
+  imports: [FoldCardComponent, HouseMark],
   templateUrl: './pro-featured-card.html',
   styleUrl: './pro-featured-card.scss',
 })

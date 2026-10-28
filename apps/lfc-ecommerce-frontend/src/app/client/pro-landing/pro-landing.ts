@@ -38,7 +38,7 @@ import { mediaSrcset, SHEET_WIDTHS, sizedMedia } from '../shop/media-source';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
 import { ProFeaturedGateway } from '../shop/pro-featured.gateway';
 import { ProPickupListGateway } from '../shop/pro-pickup-list.gateway';
-import { named, objectPositionOf, shelfArtOf } from '../shop/shelf-display';
+import { houseMarkArt, named, objectPositionOf } from '../shop/shelf-display';
 
 /**
  * Un incontournable tel que la carte éditoriale le pose : l'ouverture (la
@@ -54,18 +54,10 @@ export interface FeaturedCard {
   readonly position: string;
 }
 
-/** L’image d’un incontournable : l’ouverture, sinon la vignette, sinon le rayon. */
+/** L’image d’un incontournable : l’ouverture, sinon la vignette, sinon le logo de la maison. */
 export function artOfFeatured(item: ShopFeaturedItemView): ShopImageView {
-  return named(
-    item.image ??
-      item.thumbnail ?? {
-        url: shelfArtOf(item.shelfId),
-        alt: item.name,
-        width: null,
-        height: null,
-      },
-    item.name,
-  );
+  const photo = item.image ?? item.thumbnail;
+  return photo ? named(photo, item.name) : houseMarkArt();
 }
 
 /** Une photo de porte en valeur CSS, à la largeur d'une fiche ; `null` sans photo. */

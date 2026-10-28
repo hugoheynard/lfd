@@ -195,8 +195,8 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     // La carte est un bouton nommé : l'image est décorative (RGAA 1.2).
     expect(img?.getAttribute('alt')).toBe('');
     expect(img?.getAttribute('src')).toContain('baguette');
-    // Sans photo : l'illustration du rayon, pas un cadre vide.
-    expect(second?.querySelector('img')?.getAttribute('src')).toContain('products/');
+    // Sans photo : le logo de la maison, pas un cadre vide (Hugo, 2026-10-28).
+    expect(second?.querySelector('img')?.getAttribute('src')).toBe('brand/lfc-mark.png');
     expect(maybe('pro-featured')?.textContent).not.toMatch(/€|HT|TTC/);
   });
 

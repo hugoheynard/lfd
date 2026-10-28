@@ -49,6 +49,12 @@ describe('artOf / tileArtOf — jamais une URL en alternative', () => {
     expect(tileArtOf(piece).alt).toBe(item.name);
   });
 
+  it('sans photo, le logo de la maison, en image décorative', () => {
+    const bare = { ...item, image: null, thumbnail: null };
+    expect(artOf(bare)).toMatchObject({ url: 'brand/lfc-mark.png', alt: '' });
+    expect(tileArtOf(bare)).toMatchObject({ url: 'brand/lfc-mark.png', alt: '' });
+  });
+
   it('garde une alternative rédigée', () => {
     expect(artOf({ ...item, image: PHOTO }).alt).toBe('Un croissant');
   });

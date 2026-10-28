@@ -1,7 +1,7 @@
 <div class="card" [class.is-open]="open()">
   <div class="mosaic" [attr.data-tiles]="tiles().length" aria-hidden="true">
     @for (tile of tiles(); track tile.sku) {
-      <img class="tile" [src]="tile.src" alt="" loading="lazy" />
+      <img class="tile" [src]="tile.src" [appHouseMark]="tile.src" alt="" loading="lazy" />
     }
   </div>
   <div class="head">

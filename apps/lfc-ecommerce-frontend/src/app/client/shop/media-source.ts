@@ -55,7 +55,7 @@ export const SHEET_WIDTHS = [900, 1800] as const;
  * 🔴 Trois refus, et aucun n'est décoratif :
  *
  * - **un chemin RELATIF** est une ressource de l'application, pas du fonds —
- *   l'illustration de secours d'un rayon (`products/croissant.svg`) en est
+ *   le logo de repli d'un article sans photo (`brand/lfc-mark.png`) en est
  *   une, et la faire passer par un serveur d'images la casserait ;
  * - **un SVG** n'a pas de pixels à réduire. Le redimensionner ne gagne rien et
  *   peut le rasteriser, donc le dégrader ;

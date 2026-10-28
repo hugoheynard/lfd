@@ -102,6 +102,30 @@ describe('ProductSheet', () => {
     fixture.detectChanges();
   };
 
+  // Sans photo, le logo de la maison, décoratif (Hugo, 2026-10-28).
+  it('montre le logo de la maison, sans alternative, quand la pièce n’a pas de photo', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), image: null }, 0, false);
+    const img = el().querySelector('.photo img');
+    expect(img?.getAttribute('src')).toBe('brand/lfc-mark.png');
+    expect(img?.getAttribute('alt')).toBe('');
+    expect(img?.hasAttribute('data-house-mark')).toBe(true);
+  });
+
+  it('garde la photo quand la pièce en a une', () => {
+    const url = 'https://media.example/products/croissant.jpg';
+    mount(
+      {
+        ...(TEST_ITEMS[0] as ShopItemView),
+        image: { url, alt: 'Un croissant', width: null, height: null },
+      },
+      0,
+      false,
+    );
+    const img = el().querySelector('.photo img');
+    expect(img?.getAttribute('src')).toContain('croissant.jpg');
+    expect(img?.hasAttribute('data-house-mark')).toBe(false);
+  });
+
   it('part d’une pièce quand rien n’est au panier', () => {
     mount(TEST_ITEMS[0] as ShopItemView, 0, true);
 

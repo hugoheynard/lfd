@@ -29,6 +29,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
 import { operationGate, pickupSpan } from '../operations';
 import { artOf, objectPositionOf } from '../shelf-display';
+import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { ShopPriceBasis } from '../shop-price-basis.service';
@@ -70,6 +71,7 @@ export type SheetCtaState = 'add' | 'update' | 'inCart';
     ClientDialog,
     FoldCalloutComponent,
     FoldDisclosureComponent,
+    HouseMark,
     NgTemplateOutlet,
     QuantityRail,
     StaffSuggestionCard,

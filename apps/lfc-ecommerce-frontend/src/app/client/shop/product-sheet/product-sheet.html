@@ -14,6 +14,7 @@
              suppose la pleine largeur de la fenêtre et prend la plus grande. -->
         <img
           [src]="artSrc()"
+          [appHouseMark]="artSrc()"
           [attr.srcset]="artSrcset() || null"
           sizes="(min-width: 900px) 450px, 100vw"
           [attr.alt]="visual.alt"

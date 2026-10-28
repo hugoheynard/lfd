@@ -22,6 +22,7 @@ import { ShopAllergenDisplay } from '../storefront/allergen-display.service';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
+import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
@@ -53,7 +54,7 @@ import { ProVisit } from '../pro-visit.service';
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldIconComponent],
+  imports: [FoldBadgeComponent, FoldIconComponent, HouseMark],
   templateUrl: './product-tile.html',
   styleUrl: './product-tile.scss',
 })

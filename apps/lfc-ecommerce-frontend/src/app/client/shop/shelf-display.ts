@@ -1,6 +1,7 @@
 import type { ShopImageFocal, ShopImageView, ShopItemView } from '@lfd/contracts';
 
-import { imageAlt } from './image-alt';
+import { HOUSE_MARK } from './house-mark/house-mark';
+import { DECORATIVE_ALT, imageAlt } from './image-alt';
 
 /**
  * **Ce que la vitrine ajoute au catalogue**, et que le référentiel ne dit pas
@@ -9,48 +10,28 @@ import { imageAlt } from './image-alt';
  * ⚠️ Contenu de MAISON, pas donnée de démonstration. Ce fichier ne remplace
  * aucun fait du serveur : les noms, les prix, les taux, les rayons, la ligne de
  * vitrine et le packshot arrivent tous du catalogue hydraté. Ce qui reste ici,
- * ce sont deux choses que le référentiel ne porte pas encore — l'heure de
- * fournée d'un rayon, et l'illustration de secours d'une pièce sans photo.
- *
- * Elles partiront le jour où le référentiel les portera : les heures de fournée
- * sont un fait de production, l'illustration une photo qui manque.
+ * c'est le repli d'une pièce sans photo : le logo de la maison.
  */
-
-/** Le repli quand une fiche n'a pas de photo — une pièce dessinée, jamais un vide. */
-const FALLBACK_ART = 'boule';
 
 /**
- * L'illustration de secours d'un rayon.
- *
- * Une pièce représentative par famille, dessinée. Elle ne s'affiche que si le
- * référentiel n'a pas de photo : dès qu'il en a une, c'est elle qu'on voit.
+ * Le repli d'un article sans photo : le logo de la maison, décoratif (le nom
+ * de l'article est écrit à côté). Il remplace depuis le 2026-10-28 (Hugo)
+ * l'illustration dessinée du rayon ; c'est `HouseMark` qui le cadre.
  */
-const SHELF_ART: Readonly<Record<string, string>> = {
-  cat_vien: 'croissant',
-  cat_pains: 'baguette',
-  cat_patis: 'eclair',
-  cat_sale: 'quiche',
-  cat_choco: 'boite-choco',
-};
-
-/** La vignette d'un rayon — pour la bannière et la feuille « En savoir plus ». */
-export function shelfArtOf(shelfId: string): string {
-  return `products/${SHELF_ART[shelfId] ?? FALLBACK_ART}.svg`;
+export function houseMarkArt(): ShopImageView {
+  return { url: HOUSE_MARK, alt: DECORATIVE_ALT, width: null, height: null };
 }
 
 /**
  * Le visuel d'un article **en ouverture de fiche** : celui du référentiel,
- * sinon l'illustration de son rayon.
+ * sinon le logo de la maison.
  *
- * Le repli est nommé et non silencieux : une vitrine sans photo doit montrer
- * une pièce dessinée plutôt qu'un cadre vide, et l'alternative doit dire ce
- * qu'on voit — pas mentir sur une photo qui n'existe pas.
+ * Le repli est nommé et non silencieux : une vitrine sans photo montre la
+ * marque plutôt qu'un cadre vide, en image décorative — pas d'alternative qui
+ * mentirait sur une photo qui n'existe pas.
  */
 export function artOf(item: ShopItemView): ShopImageView {
-  return named(
-    item.image ?? { url: shelfArtOf(item.shelfId), alt: item.name, width: null, height: null },
-    item.name,
-  );
+  return item.image ? named(item.image, item.name) : houseMarkArt();
 }
 
 /**
@@ -64,7 +45,7 @@ export function named(image: ShopImageView, name: string): ShopImageView {
 
 /**
  * Le visuel d'un article **en rayon** : sa vignette, sinon son ouverture,
- * sinon l'illustration de son rayon.
+ * sinon le logo de la maison.
  *
  * 🔴 Le repli en cascade est le point. Avant le 2026-09-23, la vignette ne
  * traversait pas le fil : le rôle existait à l'écran d'administration, on
