@@ -141,10 +141,10 @@ export interface Variant {
    */
   pricingFollowsDefault: boolean;
   /**
-   * La quantité minimale d'achat, en pièces, par audience et par clé de
-   * contexte (`plan-quantite-minimale.md`). **Résolue** : une déclinaison qui
-   * suit le défaut porte la grille du défaut, une déclinaison au poids une
-   * grille vide.
+   * La quantité minimale d'achat, en pièces, par audience — `null` = aucun
+   * minimum (`plan-quantite-minimale.md`). **Résolue** : une déclinaison qui
+   * suit le défaut porte les minimums du défaut, une déclinaison au poids
+   * aucun.
    */
   minQuantities: VariantMinQuantities;
   /** Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut. */

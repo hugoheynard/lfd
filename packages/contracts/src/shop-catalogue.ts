@@ -164,10 +164,10 @@ export interface ShopItemView {
   readonly weightMinGrams?: number | null;
   /**
    * **La quantité minimale d'achat, en pièces**, déjà résolue pour la
-   * clientèle et le contexte de qui regarde — le public dans le contexte de la
-   * boutique publique, le pro dans `b2b`
+   * clientèle de qui regarde — le minimum public pour la boutique publique, le
+   * minimum pro pour le pro
    * (`documentation/catalogue/plan-quantite-minimale.md`, M2). `null` = aucun
-   * minimum, ou article reçu avant que le référentiel ne la publie. Absent
+   * minimum. Absent
    * d'un serveur d'avant. Ni la vitrine ni le devis ne l'appliquent encore (M4).
    */
   readonly minQuantity?: number | null;

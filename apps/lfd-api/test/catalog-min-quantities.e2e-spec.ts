@@ -2,11 +2,12 @@
  * E2E — **la quantité minimale, de la saisie au référentiel jusqu'au rayon**
  * (`documentation/catalogue/plan-quantite-minimale.md`, M1 et M2).
  *
- * Ce que seul ce niveau prouve : que la route écrit la grille sous les `CHECK`
- * et les clés étrangères de la migration, que le détail la relit avec son
- * drapeau, que le journal porte le fait, et que la grille EFFECTIVE traverse
- * le fil v15 jusqu'à `catalog_items.min_quantities` puis à la vitrine, résolue
- * pour qui regarde. Rien ne l'applique encore (M4).
+ * Ce que seul ce niveau prouve : que la route écrit les minimums sous les
+ * `CHECK` de la migration, que le détail les relit avec leur drapeau, que le
+ * journal porte le fait, et que les minimums EFFECTIFS traversent le fil v15
+ * jusqu'à `catalog_items.pro_min_quantity` / `public_min_quantity` puis à la
+ * vitrine, celui de qui regarde. Par audience seulement (Q2). Rien ne
+ * l'applique encore (M4).
  */
 import type { ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 
@@ -28,7 +29,7 @@ const stubAdminVerifier = {
 };
 
 const PRODUCTS = "/pim/catalogue/products";
-const GRID = { pro: { b2b: 6 }, public: { takeaway: 2 } };
+const GRID = { pro: 6, public: 2 };
 
 let ctx: E2eContext;
 
@@ -54,7 +55,7 @@ const staff = (): ReturnType<E2eContext["http"]> => ctx.asSub(E2E_STAFF_SUB);
 interface VariantDetail {
   readonly id: string;
   readonly isDefault: boolean;
-  readonly minQuantities: { readonly pro: object; readonly public: object };
+  readonly minQuantities: { readonly pro: number | null; readonly public: number | null };
   readonly minQuantityFollowsDefault: boolean;
 }
 
@@ -110,7 +111,7 @@ describe("la quantité minimale au référentiel", () => {
     });
   });
 
-  it("une seconde déclinaison suit la grille du défaut, et la sert résolue", async () => {
+  it("une seconde déclinaison suit les minimums du défaut, et la sert résolue", async () => {
     const fiche = await aDraftFiche(staff, "Macarons");
     const defaultId = await defaultVariantId(fiche);
     const added = jsonBody<{ id: string }>(
@@ -129,20 +130,19 @@ describe("la quantité minimale au référentiel", () => {
     });
   });
 
-  it("refuse 1 (400), un contexte inconnu (409), et le défaut qui se suivrait (400)", async () => {
+  it("refuse 1 (400), l'ancienne forme par contexte (400), et le défaut qui se suivrait (400)", async () => {
     const fiche = await aDraftFiche(staff, "Financiers");
     const variantId = await defaultVariantId(fiche);
 
-    await setGrid(fiche, variantId, { pro: {}, public: { takeaway: 1 } }).expect(400);
-    await setGrid(fiche, variantId, { pro: {}, public: { marche: 2 } }).expect(409);
-    // Un pro n'achète pas « à emporter » : la paire croisée est refusée.
-    await setGrid(fiche, variantId, { pro: { takeaway: 6 }, public: {} }).expect(400);
+    await setGrid(fiche, variantId, { pro: null, public: 1 }).expect(400);
+    // Plus de contexte de vente (Q2, 2026-10-29) : une case par contexte n'a plus de forme.
+    await setGrid(fiche, variantId, { pro: { b2b: 6 }, public: null }).expect(400);
     await setGrid(fiche, variantId, "follow").expect(400);
 
-    expect((await variants(fiche))[0]?.minQuantities).toEqual({ pro: {}, public: {} });
+    expect((await variants(fiche))[0]?.minQuantities).toEqual({ pro: null, public: null });
   });
 
-  it("refuse une grille sur une déclinaison vendue au poids (409)", async () => {
+  it("refuse un minimum sur une déclinaison vendue au poids (409)", async () => {
     const fiche = await aDraftFiche(staff, "Granola");
     const variantId = await defaultVariantId(fiche);
     await staff()
@@ -165,14 +165,14 @@ describe("la quantité minimale au commerce", () => {
 
     const mirrored = await ctx.prisma.catalogItem.findUnique({
       where: { sku: fiche.variantSku },
-      select: { minQuantities: true },
+      select: { proMinQuantity: true, publicMinQuantity: true },
     });
-    expect(mirrored?.minQuantities).toEqual(GRID);
+    expect(mirrored).toEqual({ proMinQuantity: 6, publicMinQuantity: 2 });
     expect((await shopItem(fiche))?.minQuantity).toBe(2);
     expect((await shopItem(fiche, "?audience=pro"))?.minQuantity).toBe(6);
   });
 
-  it("une fiche sans minimum arrive avec une grille vide, et le rayon dit `null`", async () => {
+  it("une fiche sans minimum arrive sans minimum, et le rayon dit `null`", async () => {
     const fiche = await anActiveFiche(staff, "Croissant", "both");
 
     await relayAll(ctx);
@@ -180,9 +180,9 @@ describe("la quantité minimale au commerce", () => {
 
     const mirrored = await ctx.prisma.catalogItem.findUnique({
       where: { sku: fiche.variantSku },
-      select: { minQuantities: true },
+      select: { proMinQuantity: true, publicMinQuantity: true },
     });
-    expect(mirrored?.minQuantities).toEqual({ pro: {}, public: {} });
+    expect(mirrored).toEqual({ proMinQuantity: null, publicMinQuantity: null });
     expect((await shopItem(fiche))?.minQuantity).toBeNull();
   });
 });

@@ -554,7 +554,7 @@ export class ProductHttpApi {
   }
 
   /**
-   * Pose la quantité minimale d'une déclinaison — sa grille, ou `"follow"`
+   * Pose la quantité minimale d'une déclinaison — ses minimums, ou `"follow"`
    * pour suivre le défaut. Sur sa route, hors de « Tout enregistrer ».
    */
   async setVariantMinQuantities(

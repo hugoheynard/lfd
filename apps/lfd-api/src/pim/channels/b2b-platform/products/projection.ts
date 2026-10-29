@@ -102,11 +102,8 @@ export function projectVariant(
     weightStepGrams: variant.weightStepGrams,
     // La quantité minimale EFFECTIVE (v15, `plan-quantite-minimale.md`) :
     // l'instantané de l'agrégat a déjà résolu l'héritage du défaut et vidé
-    // celle d'une déclinaison au poids. Copiée : le fil ne partage rien.
-    minQuantities: {
-      pro: { ...variant.minQuantities.pro },
-      public: { ...variant.minQuantities.public },
-    },
+    // celle d'une déclinaison au poids.
+    minQuantities: { pro: variant.minQuantities.pro, public: variant.minQuantities.public },
     isDefault: variant.isDefault,
     position: variant.position,
     vatRatePercent,

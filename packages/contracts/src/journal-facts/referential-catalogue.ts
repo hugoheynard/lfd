@@ -258,12 +258,12 @@ const variantAligned = payload({
   aspect: z.enum(["regulatory", "allergens", "pricing", "nutrition"]),
   aligned: z.boolean(),
 });
-/** La quantité minimale d'une déclinaison : elle suit le défaut, ou porte sa grille. */
+/** La quantité minimale d'une déclinaison : elle suit le défaut, ou porte ses minimums. */
 const minQuantityState = () =>
   z.strictObject({
     followsDefault: z.boolean(),
-    pro: z.record(z.string(), z.number().int()),
-    public: z.record(z.string(), z.number().int()),
+    pro: z.number().int().nullable(),
+    public: z.number().int().nullable(),
   });
 const variantRenameChanges = () => changes({ name: localizedText().nullable() });
 const variantRenamedV1 = payload({ variantId: ref("variant"), changes: variantRenameChanges() });
@@ -469,17 +469,15 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), audience: fromTo(audience().nullable()) }),
   ),
   /**
-   * **La quantité minimale d'une déclinaison** — sa grille audience × contexte
-   * en pièces, ou « suit le défaut » (`plan-quantite-minimale.md`, M1). Avant
-   * et après en entier : une grille est petite, et le diff case par case se
-   * relit mal. Les contextes par leur clé, nommés dans `contextLabels`.
+   * **La quantité minimale d'une déclinaison** — son minimum pro et son
+   * minimum public en pièces, ou « suit le défaut » (`plan-quantite-minimale.md`,
+   * M1). Avant et après en entier. Par audience seulement : aucun contexte.
    */
   "product.min_quantities_changed": fact(
     payload({
       subjectLabel: subjectLabel(),
       variant: named("variant"),
       minQuantities: fromTo(minQuantityState()),
-      contextLabels: contextLabels(),
     }),
   ),
   "product.vat_changed": fact(vatChanged(), [vatByContextV1(), vatChangedLotB()]),

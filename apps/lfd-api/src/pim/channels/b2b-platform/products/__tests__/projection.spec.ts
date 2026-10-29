@@ -32,7 +32,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    minQuantities: { pro: {}, public: {} },
+    minQuantities: { pro: null, public: null },
     minQuantityFollowsDefault: false,
     // « Aucun allergène », une déclaration : depuis le lot 2b, une déclinaison
     // sans déclaration ne part plus (`variant_sans_allergenes`), et ces cas
@@ -97,9 +97,9 @@ describe("projectVariant", () => {
     expect(v).toMatchObject({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 });
   });
 
-  /** Fil v15 (`plan-quantite-minimale.md`, M2) : la grille de l'instantané, recopiée. */
-  it("porte la quantité minimale de la déclinaison, grille vide comprise", () => {
-    const grid = { pro: { b2b: 6 }, public: { takeaway: 2 } };
+  /** Fil v15 (`plan-quantite-minimale.md`, M2) : les minimums de l'instantané. */
+  it("porte la quantité minimale de la déclinaison, aucun minimum compris", () => {
+    const grid = { pro: 6, public: 2 };
 
     const v = projectVariant(
       variant({ minQuantities: grid }),
@@ -113,16 +113,15 @@ describe("projectVariant", () => {
     const none = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
     expect(v.minQuantities).toEqual(grid);
-    expect(v.minQuantities).not.toBe(grid);
-    expect(none.minQuantities).toEqual({ pro: {}, public: {} });
+    expect(none.minQuantities).toEqual({ pro: null, public: null });
   });
 
-  /** L'héritage est résolu par l'agrégat AVANT le fil : la grille EFFECTIVE part. */
-  it("porte la grille du défaut pour une déclinaison qui le suit", () => {
+  /** L'héritage est résolu par l'agrégat AVANT le fil : les minimums EFFECTIFS partent. */
+  it("porte les minimums du défaut pour une déclinaison qui le suit", () => {
     const product = Product.reconstitute(
       tarte({
         variants: [
-          bareVariant({ minQuantities: { pro: { b2b: 6 }, public: {} } }),
+          bareVariant({ minQuantities: { pro: 6, public: null } }),
           bareVariant({
             id: "prd_tarte_v2",
             sku: "PAT-7-2",
@@ -140,7 +139,7 @@ describe("projectVariant", () => {
 
     const v = projectVariant(second, 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
-    expect(v.minQuantities).toEqual({ pro: { b2b: 6 }, public: {} });
+    expect(v.minQuantities).toEqual({ pro: 6, public: null });
   });
 
   it("porte une pièce à la pièce, sans pas ni minimum", () => {

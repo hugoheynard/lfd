@@ -110,12 +110,11 @@ export interface PimFacts {
   /** Au poids, le pas de saisie en grammes ; `null` = à la pièce, ou non saisi. */
   readonly weightStepGrams: number | null;
   /**
-   * **La quantité minimale d'achat**, en pièces, par clientèle et par clé de
-   * contexte (`plan-quantite-minimale.md`, M2) — effective, telle que le
-   * référentiel la publie. `null` = article reçu avant le fil v15 : on ne sait
-   * pas, ce qui n'est pas « aucun minimum ».
+   * **La quantité minimale d'achat**, en pièces, par clientèle
+   * (`plan-quantite-minimale.md`, M2) — effective, telle que le référentiel la
+   * publie. Un article reçu avant le fil v15 n'en porte aucune.
    */
-  readonly minQuantities: CatalogMinQuantities | null;
+  readonly minQuantities: CatalogMinQuantities;
   /**
    * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
    * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
@@ -516,8 +515,8 @@ export class CatalogItem {
     return this.facts.weightStepGrams;
   }
 
-  /** La quantité minimale publiée ; `null` = reçu avant le fil v15. */
-  get minQuantities(): CatalogMinQuantities | null {
+  /** La quantité minimale publiée, par clientèle. */
+  get minQuantities(): CatalogMinQuantities {
     return this.facts.minQuantities;
   }
 

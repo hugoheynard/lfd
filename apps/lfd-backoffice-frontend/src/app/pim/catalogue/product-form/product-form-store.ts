@@ -177,7 +177,7 @@ export interface ProPricing {
  * plutôt qu'une chaîne au fil du code — le jour où elle ne désigne plus rien,
  * il n'y a qu'un endroit à corriger.
  */
-export const PRO_CONTEXT_KEY = 'b2b';
+const PRO_CONTEXT_KEY = 'b2b';
 
 /**
  * Une ligne de l'héritage : un contexte de vente, ce qu'il dessert, son taux.

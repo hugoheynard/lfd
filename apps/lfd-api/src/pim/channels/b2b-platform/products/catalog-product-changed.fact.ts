@@ -54,8 +54,8 @@ const payloadSchema = z.object({
       weightMinGrams: z.number().int().positive().nullable().default(null),
       weightStepGrams: z.number().int().positive().nullable().default(null),
       // La quantité minimale (fil v15, `plan-quantite-minimale.md`) : absente
-      // d'un fait émis avant elle, et lue `null` — « on ne sait pas », que le
-      // commerce range tel quel plutôt que d'inventer « aucun minimum ».
+      // d'un fait émis avant elle, et lue `null` : aucun minimum n'existait,
+      // et le commerce la range sans minimum.
       minQuantities: syncMinQuantitiesSchema.nullable().default(null),
     }),
   ),

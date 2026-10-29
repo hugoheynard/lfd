@@ -1,22 +1,15 @@
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { SalesContextView, SetVariantMinQuantitiesPayload } from '@lfd/pim-contracts';
+import type { SetVariantMinQuantitiesPayload } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
 import { NotifyService } from '../../../../../notify.service';
 import { EMPTY_NUTRITION, type Variant } from '../../../../data/models';
-import { SalesContextStore } from '../../../../sales-contexts/sales-context-store';
 import { ProductHttpApi } from '../../../product-http-api';
 import { ProductFormStore } from '../../product-form-store';
 import { MinQuantitiesForm } from './min-quantities-form';
 
 type Sent = SetVariantMinQuantitiesPayload['minQuantities'];
-
-const CONTEXTS: readonly SalesContextView[] = [
-  { key: 'takeaway', label: 'À emporter', position: 0 },
-  { key: 'eatIn', label: 'Sur place', position: 1 },
-  { key: 'b2b', label: 'B2B', position: 2 },
-];
 
 function variant(id: string, overrides: Partial<Variant> = {}): Variant {
   return {
@@ -38,7 +31,7 @@ function variant(id: string, overrides: Partial<Variant> = {}): Variant {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    minQuantities: { pro: {}, public: {} },
+    minQuantities: { pro: null, public: null },
     minQuantityFollowsDefault: false,
     allergens: null,
     mayContain: [],
@@ -67,7 +60,6 @@ function setup(
           },
         },
       },
-      { provide: SalesContextStore, useValue: { items: signal(CONTEXTS) } },
       {
         provide: ProductHttpApi,
         useValue: {
@@ -91,36 +83,32 @@ function setup(
 
 const DEFAULT = variant('v1', {
   isDefault: true,
-  minQuantities: { pro: { b2b: 6 }, public: {} },
+  minQuantities: { pro: 6, public: null },
 });
 
 describe('MinQuantitiesForm — la quantité minimale d’une déclinaison', () => {
   it('part de l’état chargé et n’offre rien à enregistrer tant que rien ne change', () => {
     const { form } = setup(async () => undefined, [DEFAULT], 'v1');
-    expect(form['cell']('pro', 'b2b')).toBe(6);
-    expect(form['cell']('public', 'takeaway')).toBeNull();
+    expect(form['valueOf']('pro')).toBe(6);
+    expect(form['valueOf']('public')).toBeNull();
     expect(form['canSave']()).toBe(false);
   });
 
-  it('range chaque contexte sous sa clientèle : trois champs, aucune paire croisée', () => {
+  /** Q2 réécrite (Hugo, 2026-10-29) : par audience seulement, aucun contexte de vente. */
+  it('montre deux champs, Particuliers puis Professionnels', () => {
     const { form, fixture } = setup(async () => undefined, [DEFAULT], 'v1');
-    expect(
-      form['groups']().map((group) => [group.label, group.fields.map((field) => field.label)]),
-    ).toEqual([
-      ['Particuliers (B2C)', ['À emporter', 'Sur place']],
-      ['Professionnels (B2B)', ['Retrait et livraison']],
-    ]);
-    expect(fixture.nativeElement.querySelectorAll('fold-number-input')).toHaveLength(3);
+    expect(form['fields'].map((field) => field.label)).toEqual(['Particuliers', 'Professionnels']);
+    expect(fixture.nativeElement.querySelectorAll('fold-number-input')).toHaveLength(2);
   });
 
   it('refuse localement un minimum sous 2', () => {
     const { form } = setup(async () => undefined, [DEFAULT], 'v1');
-    form['setCell']('public', 'takeaway', 1);
+    form['setValue']('public', 1);
     expect(form['invalid']()).toBe(true);
     expect(form['canSave']()).toBe(false);
   });
 
-  it('envoie la grille sans ses cases vides, puis relit la fiche', async () => {
+  it('envoie les deux minimums, `null` pour un champ vide, puis relit la fiche', async () => {
     const sent: Sent[] = [];
     const { form, said, reloads } = setup(
       async (payload) => {
@@ -129,15 +117,15 @@ describe('MinQuantitiesForm — la quantité minimale d’une déclinaison', () 
       [DEFAULT],
       'v1',
     );
-    form['setCell']('public', 'takeaway', 3);
-    form['setCell']('pro', 'b2b', null);
+    form['setValue']('public', 3);
+    form['setValue']('pro', null);
     await form['save']();
-    expect(sent).toEqual([{ pro: {}, public: { takeaway: 3 } }]);
+    expect(sent).toEqual([{ pro: null, public: 3 }]);
     expect(said).toEqual(['ok:Quantité minimale enregistrée.']);
     expect(reloads).toHaveLength(1);
   });
 
-  it('sur une autre déclinaison, « suit le défaut » envoie `follow` et montre la grille du défaut', async () => {
+  it('sur une autre déclinaison, « suit le défaut » envoie `follow` et montre les minimums du défaut', async () => {
     const sent: Sent[] = [];
     const { form } = setup(
       async (payload) => {
@@ -148,12 +136,12 @@ describe('MinQuantitiesForm — la quantité minimale d’une déclinaison', () 
     );
     expect(form['isDefault']()).toBe(false);
     form['follows'].set(true);
-    expect(form['cell']('pro', 'b2b')).toBe(6);
+    expect(form['valueOf']('pro')).toBe(6);
     await form['save']();
     expect(sent).toEqual(['follow']);
   });
 
-  it('un refus remet la grille dans l’état chargé', async () => {
+  it('un refus remet les champs dans l’état chargé', async () => {
     const { form, said } = setup(
       async () => {
         throw new Error('refus');
@@ -161,14 +149,14 @@ describe('MinQuantitiesForm — la quantité minimale d’une déclinaison', () 
       [DEFAULT],
       'v1',
     );
-    form['setCell']('public', 'takeaway', 4);
+    form['setValue']('public', 4);
     await form['save']();
-    expect(form['cell']('public', 'takeaway')).toBeNull();
+    expect(form['valueOf']('public')).toBeNull();
     expect(form['busy']()).toBe(false);
     expect(said).toEqual(["ko:La quantité minimale n'a pas pu être enregistrée."]);
   });
 
-  it('une déclinaison au poids n’a pas de grille', () => {
+  it('une déclinaison au poids n’a pas de minimum en pièces', () => {
     const { form, fixture } = setup(
       async () => undefined,
       [variant('v1', { isDefault: true, saleUnit: 'weight' })],

@@ -16,7 +16,7 @@ function variant(overrides: Partial<Variant>): Variant {
     weightGrams: null,
     regulatoryFollowsDefault: true,
     pricingFollowsDefault: true,
-    minQuantities: { pro: {}, public: {} },
+    minQuantities: { pro: null, public: null },
     minQuantityFollowsDefault: false,
     allergens: null,
     nutrition: null,

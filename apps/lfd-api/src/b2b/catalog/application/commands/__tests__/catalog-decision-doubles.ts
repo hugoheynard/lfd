@@ -39,7 +39,7 @@ function article(placement: Placement, sku: string = SKU): CatalogItem {
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
-    minQuantities: null,
+    minQuantities: { pro: null, public: null },
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     allergens: null,
     allergenLabels: null,

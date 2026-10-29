@@ -1,7 +1,6 @@
 import type { JournalFactType } from '@lfd/contracts/journal-facts';
 
-import { contextWord } from '../context-word';
-import { nameOf, recordOf, type Payload } from '../payload-read';
+import { nameOf, recordOf } from '../payload-read';
 import {
   byActor,
   fromTo,
@@ -17,9 +16,8 @@ import { theSubject } from './referential-support';
 
 /**
  * **La quantité minimale d'une déclinaison** (`product.min_quantities_changed`,
- * `documentation/catalogue/plan-quantite-minimale.md`, M1). La grille entière
- * est dite dans la phrase, avant et après : elle tient en quelques cases, et
- * un détail clé par clé la rendrait illisible.
+ * `documentation/catalogue/plan-quantite-minimale.md`, M1). Les deux minimums
+ * sont dits dans la phrase, avant et après : ils tiennent en deux mots.
  */
 
 const OF_PRODUCT: Noun = { the: 'de', a: 'd’une fiche' };
@@ -28,8 +26,8 @@ const AUDIENCE_WORDS: Readonly<Record<string, string>> = {
   public: 'particuliers',
 };
 
-/** « pros à emporter : 6, particuliers à emporter : 2 », « suit la déclinaison par défaut ». */
-function gridWords(payload: Payload, raw: unknown): Segment[] {
+/** « pros : 6, particuliers : 2 », « suit la déclinaison par défaut ». */
+function minimumWords(raw: unknown): Segment[] {
   const state = recordOf(raw);
   if (state === null) {
     return [text('—')];
@@ -37,18 +35,16 @@ function gridWords(payload: Payload, raw: unknown): Segment[] {
   if (state['followsDefault'] === true) {
     return [text('suit la déclinaison par défaut')];
   }
-  const cells = Object.entries(AUDIENCE_WORDS).flatMap(([audience, word]) =>
-    Object.entries(recordOf(state[audience]) ?? {}).map(
-      ([key, quantity]) =>
-        `${word} ${contextWord(payload, key)?.toLowerCase() ?? key} : ${String(quantity)}`,
-    ),
-  );
+  const cells = Object.entries(AUDIENCE_WORDS).flatMap(([audience, word]) => {
+    const quantity = state[audience];
+    return typeof quantity === 'number' ? [`${word} : ${String(quantity)}`] : [];
+  });
   return [value(cells.length === 0 ? 'aucun minimum' : cells.join(', '))];
 }
 
 /**
  * « a passé la quantité minimale de la déclinaison « Boîte de 6 » de « Tarte
- * citron » de « aucun minimum » à « particuliers à emporter : 2 » ».
+ * citron » de « aucun minimum » à « particuliers : 2 » ».
  */
 const minQuantitiesChanged: Phrase = (fact) => {
   const p = fact.payload;
@@ -63,9 +59,9 @@ const minQuantitiesChanged: Phrase = (fact) => {
       ...theSubject(fact, OF_PRODUCT),
       ...(change === null
         ? []
-        : [text(' '), ...fromTo(gridWords(p, change['from']), gridWords(p, change['to']))]),
+        : [text(' '), ...fromTo(minimumWords(change['from']), minimumWords(change['to']))]),
     ],
-    ['subjectLabel', 'variant', 'contextLabels', ...(change === null ? [] : ['minQuantities'])],
+    ['subjectLabel', 'variant', ...(change === null ? [] : ['minQuantities'])],
   );
 };
 

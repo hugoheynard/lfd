@@ -7,31 +7,29 @@
     @if (!isDefault()) {
       <fold-checkbox
         label="Suit le minimum de la déclinaison par défaut"
-        hint="La grille se lit alors sur le défaut. La corriger là-bas la corrige ici."
+        hint="Les minimums se lisent alors sur le défaut. La corriger là-bas la corrige ici."
         [checked]="follows()"
         [disabled]="busy()"
         (checkedChange)="follows.set($event)"
       />
     }
-    @for (group of groups(); track group.key) {
-      <fold-fieldset [legend]="group.label" direction="horizontal">
-        @for (field of group.fields; track field.key) {
-          <fold-number-input
-            [label]="field.label"
-            placeholder="Aucun"
-            integer
-            [min]="2"
-            [value]="cell(group.key, field.key)"
-            [readOnly]="follows()"
-            [disabled]="busy()"
-            (valueChange)="setCell(group.key, field.key, $event)"
-          />
-        }
-      </fold-fieldset>
-    }
+    <fold-fieldset legend="Minimum d'achat, en pièces" direction="horizontal">
+      @for (field of fields; track field.key) {
+        <fold-number-input
+          [label]="field.label"
+          placeholder="Aucun"
+          integer
+          [min]="2"
+          [value]="valueOf(field.key)"
+          [readOnly]="follows()"
+          [disabled]="busy()"
+          (valueChange)="setValue(field.key, $event)"
+        />
+      }
+    </fold-fieldset>
     @if (invalid()) {
       <fold-callout variant="alert">
-        Un minimum compte au moins 2 pièces, en nombre entier. Laissez la case vide pour ne poser
+        Un minimum compte au moins 2 pièces, en nombre entier. Laissez le champ vide pour ne poser
         aucun minimum.
       </fold-callout>
     }

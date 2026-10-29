@@ -68,7 +68,7 @@ function tarte(requiresCold: boolean): OneProduct {
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
-        minQuantities: { pro: {}, public: {} },
+        minQuantities: { pro: null, public: null },
         minQuantityFollowsDefault: false,
         allergenSheet: null,
         nutrition: null,

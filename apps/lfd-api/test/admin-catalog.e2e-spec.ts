@@ -93,7 +93,7 @@ function snapshot(priceMillicents: number, sheet: SheetOnWire = NO_SHEET): Catal
             saleUnit: "piece",
             weightMinGrams: null,
             weightStepGrams: null,
-            minQuantities: { pro: {}, public: {} },
+            minQuantities: { pro: null, public: null },
             publicByContext: {
               takeaway: { vatRatePercent: 5.5, htMillicents: PUBLIC_HT_MILLICENTS },
             },
@@ -697,7 +697,7 @@ describe("GET /admin/catalog — l'ordre du rayon", () => {
             saleUnit: "piece",
             weightMinGrams: null,
             weightStepGrams: null,
-            minQuantities: { pro: {}, public: {} },
+            minQuantities: { pro: null, public: null },
             publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
             weightGrams: null,
             isDefault: true,

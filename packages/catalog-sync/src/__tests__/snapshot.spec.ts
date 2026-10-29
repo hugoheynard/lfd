@@ -41,7 +41,7 @@ const variant = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
-  minQuantities: { pro: {}, public: {} },
+  minQuantities: { pro: null, public: null },
 };
 
 const snapshot = {

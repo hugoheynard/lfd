@@ -65,7 +65,8 @@ const SQL_NAMES = {
   saleUnit: "sale_unit",
   weightMinGrams: "weight_min_grams",
   weightStepGrams: "weight_step_grams",
-  minQuantities: "min_quantities",
+  proMinQuantity: "pro_min_quantity",
+  publicMinQuantity: "public_min_quantity",
   publicByContext: "public_by_context",
   allergenLabels: "allergen_labels",
   mayContain: "may_contain",
@@ -87,7 +88,6 @@ const SQL_NAMES = {
 const JSON_COLUMNS: ReadonlySet<ItemColumn> = new Set([
   "allergens",
   "publicByContext",
-  "minQuantities",
   "allergenLabels",
   "mayContain",
   "allergenTexts",

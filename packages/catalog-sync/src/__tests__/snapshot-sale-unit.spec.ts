@@ -30,7 +30,7 @@ const piece = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
-  minQuantities: { pro: {}, public: {} },
+  minQuantities: { pro: null, public: null },
 };
 
 const byWeight = {

@@ -315,11 +315,11 @@ export interface VariantView {
    */
   readonly pricingFollowsDefault: boolean;
   /**
-   * **La quantité minimale d'achat**, en pièces, par audience et par clé de
-   * contexte (`plan-quantite-minimale.md`). Case absente = aucun minimum.
+   * **La quantité minimale d'achat**, en pièces, par audience
+   * (`plan-quantite-minimale.md`). `null` = aucun minimum.
    *
    * ⚠️ **Résolue** comme le tarif : une déclinaison qui suit le défaut rend ici
-   * la grille du défaut, et une déclinaison au poids une grille vide.
+   * les minimums du défaut, et une déclinaison au poids aucun.
    */
   readonly minQuantities: VariantMinQuantities;
   /** Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut. */
@@ -558,19 +558,19 @@ export const setProductAudiencePayloadSchema = z.strictObject({
 export type SetProductAudiencePayload = z.infer<typeof setProductAudiencePayloadSchema>;
 
 /**
- * **La quantité minimale d'une déclinaison**, en pièces : une ligne par
- * clientèle, une case par clé de contexte de vente (`plan-quantite-minimale.md`).
+ * **La quantité minimale d'une déclinaison**, en pièces : un minimum pro,
+ * un minimum public, `null` = aucun — sans contexte (`plan-quantite-minimale.md`, Q2).
  */
 export const variantMinQuantitiesSchema = z.strictObject({
-  pro: z.record(z.string().min(1), z.number().int()),
-  public: z.record(z.string().min(1), z.number().int()),
+  pro: z.number().int().nullable(),
+  public: z.number().int().nullable(),
 });
 export type VariantMinQuantities = z.infer<typeof variantMinQuantitiesSchema>;
 
 /**
- * **Poser la quantité minimale d'une déclinaison** — sa grille, ou `"follow"`
+ * **Poser la quantité minimale d'une déclinaison** — ses minimums, ou `"follow"`
  * pour suivre le défaut (`PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`).
- * La forme seule : le minimum de 2, le contexte connu et l'unité de vente sont
+ * La forme seule : le minimum de 2 et l'unité de vente sont
  * jugés par le référentiel.
  */
 export const setVariantMinQuantitiesPayloadSchema = z.strictObject({

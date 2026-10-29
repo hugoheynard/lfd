@@ -225,7 +225,7 @@
                boucle qui les range, pas une famille recopiée. -->
           @if (section.key === 'tarif') {
             <!-- OPTIONS DU COMMERCE — la quantité minimale de la déclinaison
-             ouverte, par clientèle et par contexte (plan-quantite-minimale.md,
+             ouverte, par clientèle seulement (plan-quantite-minimale.md,
              M3). Juste après le tarif : on dit à quel prix, puis à partir de
              combien. Seule, sur sa route, hors de « Tout enregistrer ». -->
             @if (store.isEdit()) {
@@ -238,8 +238,8 @@
                   (openChange)="setSectionOpen('options-commerce', $event)"
                 >
                   <span sectionSubtitle>
-                    La quantité minimale d'achat de cette déclinaison, en pièces, par clientèle et
-                    par contexte de vente. Une case vide ne pose aucun minimum.
+                    La quantité minimale d'achat de cette déclinaison, en pièces, par clientèle. Un
+                    champ vide ne pose aucun minimum.
                   </span>
                   <app-min-quantities-form />
                 </fold-page-section>

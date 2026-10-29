@@ -1,19 +1,19 @@
-import { minQuantityFor } from "../catalog-min-quantities.js";
+import { NO_CATALOG_MIN_QUANTITIES, minQuantityFor } from "../catalog-min-quantities.js";
 
-/** Le minimum de qui regarde (`plan-quantite-minimale.md`, M2, Q7). */
+/** Le minimum de qui regarde (`plan-quantite-minimale.md`, M2) : par audience seulement. */
 describe("minQuantityFor", () => {
-  const grid = { pro: { b2b: 6, takeaway: 9 }, public: { takeaway: 2, b2b: 7 } };
+  const minimums = { pro: 6, public: 2 };
 
-  it("lit la case du public dans le contexte de la boutique publique", () => {
-    expect(minQuantityFor(grid, "public")).toBe(2);
+  it("lit le minimum du public", () => {
+    expect(minQuantityFor(minimums, "public")).toBe(2);
   });
 
-  it("lit la case du pro dans le contexte b2b", () => {
-    expect(minQuantityFor(grid, "pro")).toBe(6);
+  it("lit le minimum du pro", () => {
+    expect(minQuantityFor(minimums, "pro")).toBe(6);
   });
 
-  it("rend `null` sans case, et pour un article reçu avant le fil v15", () => {
-    expect(minQuantityFor({ pro: {}, public: { eatIn: 4 } }, "public")).toBeNull();
-    expect(minQuantityFor(null, "pro")).toBeNull();
+  it("rend `null` quand la clientèle n'a pas de minimum", () => {
+    expect(minQuantityFor({ pro: null, public: 4 }, "pro")).toBeNull();
+    expect(minQuantityFor(NO_CATALOG_MIN_QUANTITIES, "public")).toBeNull();
   });
 });

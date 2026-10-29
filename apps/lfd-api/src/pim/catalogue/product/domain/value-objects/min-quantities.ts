@@ -1,11 +1,7 @@
-import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
-import {
-  InvalidMinQuantityError,
-  MinQuantityContextOutsideAudienceError,
-} from "../errors/min-quantity-errors.js";
+import { InvalidMinQuantityError } from "../errors/min-quantity-errors.js";
 
 /**
- * Les deux lignes de la matrice : à qui la fiche vend
+ * Les deux clientèles d'un minimum : à qui la fiche vend
  * (`documentation/catalogue/plan-quantite-minimale.md`, Q2). `both` n'en est
  * pas une — une fiche « les deux » règle chacune de ses deux clientèles.
  */
@@ -17,72 +13,44 @@ export const MIN_QUANTITY_AUDIENCES: readonly MinQuantityAudience[] = ["pro", "p
 export const MIN_QUANTITY_FLOOR = 2;
 
 /**
- * **La quantité minimale d'achat d'une déclinaison**, en pièces — une matrice
- * audience × contexte de vente, chaque contexte désigné par sa CLÉ (`takeaway`,
- * `b2b`) : c'est elle qui voyage sur le fil, comme `publicByContext`.
+ * **La quantité minimale d'achat d'une déclinaison**, en pièces, par AUDIENCE
+ * seulement : un minimum pro, un minimum public.
  *
- * Une case absente = pas de minimum pour cette clientèle dans ce contexte.
- *
- * 🔴 **Un contexte appartient à une clientèle** (Hugo, 2026-10-29) : le B2B
- * (`ROOT_CONTEXT_KEY`, retrait comme livraison) est celui des pros, à emporter
- * et sur place ceux des particuliers. La matrice n'a donc que trois cases
- * vivantes ; les paires croisées sont refusées.
+ * 🔴 Pas de contexte de vente (Hugo, 2026-10-29) : le catalogue ne sait pas
+ * distinguer d'office, côté particuliers, à emporter et sur place. `null` =
+ * pas de minimum pour cette clientèle.
  */
 export interface MinQuantities {
-  readonly pro: Readonly<Record<string, number>>;
-  readonly public: Readonly<Record<string, number>>;
+  readonly pro: number | null;
+  readonly public: number | null;
 }
 
 /** Ce que naît toute déclinaison, et ce qu'est tout l'existant : aucun minimum. */
-export const NO_MIN_QUANTITIES: MinQuantities = { pro: {}, public: {} };
+export const NO_MIN_QUANTITIES: MinQuantities = { pro: null, public: null };
 
 /**
- * Lit une matrice — valide ou rien : des entiers ≥ {@link MIN_QUANTITY_FLOOR}.
+ * Lit une paire de minimums — valide ou rien : des entiers ≥
+ * {@link MIN_QUANTITY_FLOOR}, ou `null`.
  *
- * Le contexte, lui, se vérifie contre le registre, que seul l'agrégat voit
- * (`Product.changeMinQuantities`) : la forme ne sait pas quels contextes
- * existent.
- *
- * @throws {InvalidMinQuantityError} une case n'est pas un entier ≥ 2.
+ * @throws {InvalidMinQuantityError} un minimum n'est pas un entier ≥ 2.
  */
 export function minQuantities(input: MinQuantities): MinQuantities {
-  return { pro: rowOf("pro", input.pro), public: rowOf("public", input.public) };
+  return { pro: quantityOf("pro", input.pro), public: quantityOf("public", input.public) };
 }
 
-function rowOf(
-  audience: MinQuantityAudience,
-  row: Readonly<Record<string, number>>,
-): Readonly<Record<string, number>> {
-  for (const [contextKey, quantity] of Object.entries(row)) {
-    if ((contextKey === ROOT_CONTEXT_KEY) !== (audience === "pro")) {
-      throw new MinQuantityContextOutsideAudienceError(audience, contextKey);
-    }
-    if (!Number.isSafeInteger(quantity) || quantity < MIN_QUANTITY_FLOOR) {
-      throw new InvalidMinQuantityError(audience, contextKey, quantity);
-    }
+function quantityOf(audience: MinQuantityAudience, quantity: number | null): number | null {
+  if (quantity !== null && (!Number.isSafeInteger(quantity) || quantity < MIN_QUANTITY_FLOOR)) {
+    throw new InvalidMinQuantityError(audience, quantity);
   }
-  return { ...row };
+  return quantity;
 }
 
-/** Les clés de contexte qu'une matrice nomme, toutes lignes confondues. */
-export function contextKeysOf(matrix: MinQuantities): readonly string[] {
-  return [...new Set([...Object.keys(matrix.pro), ...Object.keys(matrix.public)])];
-}
-
-/** Deux matrices disent-elles la même chose ? L'ordre des clés n'y compte pas. */
+/** Deux paires disent-elles la même chose ? */
 export function sameMinQuantities(left: MinQuantities, right: MinQuantities): boolean {
-  return MIN_QUANTITY_AUDIENCES.every((audience) => sameRow(left[audience], right[audience]));
+  return left.pro === right.pro && left.public === right.public;
 }
 
-function sameRow(
-  left: Readonly<Record<string, number>>,
-  right: Readonly<Record<string, number>>,
-): boolean {
-  const keys = Object.keys(left);
-  return keys.length === Object.keys(right).length && keys.every((key) => left[key] === right[key]);
-}
-
-/** Une matrice vide ne règle rien. */
-export function isEmptyMinQuantities(matrix: MinQuantities): boolean {
-  return contextKeysOf(matrix).length === 0;
+/** Une paire vide ne règle rien. */
+export function isEmptyMinQuantities(pair: MinQuantities): boolean {
+  return pair.pro === null && pair.public === null;
 }

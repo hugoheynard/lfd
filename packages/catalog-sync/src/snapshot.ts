@@ -157,14 +157,13 @@ export type SyncSaleUnit = z.infer<typeof syncSaleUnitSchema>;
 
 /**
  * **La quantité minimale d'achat d'une déclinaison**, en pièces (v15,
- * `documentation/catalogue/plan-quantite-minimale.md`) : une ligne par
- * clientèle, une case par CLÉ de contexte de vente — comme `publicByContext`.
- * Case absente = aucun minimum. EFFECTIVE : l'émetteur a déjà résolu
+ * `documentation/catalogue/plan-quantite-minimale.md`) : un minimum par
+ * clientèle, sans contexte de vente (Q2). `null` = aucun minimum. EFFECTIVE : l'émetteur a déjà résolu
  * l'héritage du défaut, et une déclinaison au poids n'en porte jamais.
  */
 export const syncMinQuantitiesSchema = z.strictObject({
-  pro: z.record(z.string().min(1), z.number().int().min(2)),
-  public: z.record(z.string().min(1), z.number().int().min(2)),
+  pro: z.number().int().min(2).nullable(),
+  public: z.number().int().min(2).nullable(),
 });
 export type SyncMinQuantities = z.infer<typeof syncMinQuantitiesSchema>;
 
@@ -284,7 +283,7 @@ export const syncVariantSchema = z.object({
    */
   weightStepGrams: z.number().int().positive().nullable(),
   /**
-   * **La quantité minimale d'achat**, par clientèle et par contexte (v15).
+   * **La quantité minimale d'achat**, par clientèle (v15).
    * Obligatoire sur le fil ; absente avant la v15 (cf.
    * {@link storedCatalogSnapshotSchema}).
    */

@@ -9,7 +9,6 @@ import {
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
 import { saleUnitOf } from "./catalog-sale-unit.js";
-import { minQuantitiesOf } from "./catalog-min-quantities-column.js";
 import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
 import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
@@ -73,8 +72,9 @@ interface ItemRow {
   readonly saleUnit: string;
   readonly weightMinGrams: number | null;
   readonly weightStepGrams: number | null;
-  /** La quantité minimale publiée (`jsonb`, fil v15) ; `NULL` = reçue avant. */
-  readonly minQuantities: unknown;
+  /** La quantité minimale publiée, par clientèle (fil v15) ; `NULL` = aucune. */
+  readonly proMinQuantity: number | null;
+  readonly publicMinQuantity: number | null;
   // Le taux de la FAMILLE n'y figure plus : plus rien ici ne le lit. Le laisser
   // dans la forme suffirait à ce qu'un jour quelqu'un le relise « puisqu'il est
   // là ».
@@ -386,7 +386,7 @@ function resolve(
     saleUnit: saleUnitOf(row.sku, row.saleUnit),
     weightMinGrams: row.weightMinGrams,
     weightStepGrams: row.weightStepGrams,
-    minQuantities: minQuantitiesOf(row.minQuantities),
+    minQuantities: { pro: row.proMinQuantity, public: row.publicMinQuantity },
     // Mis en avant POUR CE LECTEUR (2026-10-18) : la tuile d'un pro ne dit
     // « Incontournable » que de ce qu'on a mis en avant chez les pros.
     isFeatured: featuredFor(row, viewer),

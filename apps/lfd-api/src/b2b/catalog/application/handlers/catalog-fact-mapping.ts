@@ -2,6 +2,7 @@ import type { CatalogFamilyFactBody } from "../../../../pim/channels/b2b-platfor
 import type { CatalogProductChangedFact } from "../../../../pim/channels/b2b-platform/products/catalog-product-changed.fact.js";
 import type { ReceivedCatalogProduct } from "../../domain/catalog-product-facts.js";
 import type { ReceivedCatalogFamily } from "../../domain/ports/catalog-family-facts.projection.js";
+import { NO_CATALOG_MIN_QUANTITIES } from "../../domain/catalog-min-quantities.js";
 import { pimImageOf } from "../pim-image.js";
 
 /**
@@ -48,7 +49,7 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       saleUnit: variant.saleUnit,
       weightMinGrams: variant.weightMinGrams,
       weightStepGrams: variant.weightStepGrams,
-      minQuantities: variant.minQuantities,
+      minQuantities: variant.minQuantities ?? NO_CATALOG_MIN_QUANTITIES,
       publicByContext: variant.publicByContext ?? null,
       allergens: variant.allergens,
       allergenLabels: variant.allergenLabels,

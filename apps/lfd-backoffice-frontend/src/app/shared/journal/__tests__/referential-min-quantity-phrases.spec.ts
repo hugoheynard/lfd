@@ -5,7 +5,7 @@ import { renderFact, type FactInput, type RenderedFact } from '../render-fact';
 
 /**
  * **La quantité minimale d'une déclinaison** (`product.min_quantities_changed`,
- * `plan-quantite-minimale.md`, M1) : la grille dite en entier, avant et après.
+ * `plan-quantite-minimale.md`, M1) : les deux minimums dits en entier, avant et après.
  */
 
 function on(payload: Record<string, unknown>): FactInput {
@@ -27,19 +27,18 @@ function render(input: FactInput): RenderedFact {
   return renderFact(input);
 }
 
-const NONE = { followsDefault: false, pro: {}, public: {} };
+const NONE = { followsDefault: false, pro: null, public: null };
 
 describe('la quantité minimale d’une déclinaison', () => {
-  it('dit la grille posée, chaque case sous le nom figé de son contexte', () => {
+  it('dit les minimums posés, par clientèle', () => {
     const fact = on({
       subjectLabel: 'Tarte citron',
       variant: { id: 'var_2', name: 'Boîte de 6' },
-      minQuantities: { from: NONE, to: { followsDefault: false, pro: { b2b: 6 }, public: {} } },
-      contextLabels: { b2b: 'B2B' },
+      minQuantities: { from: NONE, to: { followsDefault: false, pro: 6, public: 2 } },
     });
 
     expect(render(fact).sentence).toBe(
-      'Colette Martin a passé la quantité minimale de la déclinaison Boîte de 6 de « Tarte citron » de aucun minimum à pros b2b : 6',
+      'Colette Martin a passé la quantité minimale de la déclinaison Boîte de 6 de « Tarte citron » de aucun minimum à pros : 6, particuliers : 2',
     );
     expect(render(fact).detail).toEqual([]);
   });
@@ -49,7 +48,6 @@ describe('la quantité minimale d’une déclinaison', () => {
       subjectLabel: 'Tarte citron',
       variant: { id: 'var_2', name: 'Boîte de 6' },
       minQuantities: { from: NONE, to: { ...NONE, followsDefault: true } },
-      contextLabels: {},
     });
 
     expect(render(fact).sentence).toContain('à suit la déclinaison par défaut');

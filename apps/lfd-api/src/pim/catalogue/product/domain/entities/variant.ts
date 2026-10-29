@@ -186,8 +186,8 @@ export interface VariantSnapshot {
    */
   readonly hasBeenPublished: boolean;
   /**
-   * La quantité minimale d'achat, en pièces, par audience et par contexte
-   * (`plan-quantite-minimale.md`). Vide = aucun minimum. **Résolue** dans
+   * La quantité minimale d'achat, en pièces, par audience
+   * (`plan-quantite-minimale.md`). `null` = aucun minimum pour l'audience. **Résolue** dans
    * l'instantané de l'agrégat : une déclinaison qui suit le défaut rend ici
    * celle du défaut, et une déclinaison au poids n'en rend jamais.
    */
@@ -609,17 +609,16 @@ export class Variant {
   }
 
   /**
-   * **Pose sa quantité minimale** — une matrice, ou `"follow"` pour suivre
+   * **Pose sa quantité minimale** — une paire pro/public, ou `"follow"` pour suivre
    * celle du défaut (`plan-quantite-minimale.md`, Q1).
    *
-   * Poser une matrice cesse de suivre ; suivre garde la matrice propre, qui
+   * Poser une paire cesse de suivre ; suivre garde la paire propre, qui
    * dort — même promesse que {@link alignOnDefault} : se désaligner rend ce
-   * qu'on avait écrit. Au poids, seule la matrice vide passe : son minimum
+   * qu'on avait écrit. Au poids, seule la paire vide passe : son minimum
    * est en grammes (Q3), et suivre celui d'un défaut à la pièce l'en
    * doterait en douce.
    *
-   * La matrice arrive déjà lue (`minQuantities`) et ses contextes vérifiés
-   * par l'agrégat.
+   * La paire arrive déjà lue (`minQuantities`).
    *
    * @returns `false` quand elle le disait déjà.
    */

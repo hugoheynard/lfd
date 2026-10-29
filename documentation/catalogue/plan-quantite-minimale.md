@@ -1,10 +1,11 @@
-# Plan — la quantité minimale, par audience et par contexte de vente
+# Plan — la quantité minimale, par audience
 
 > 📐 **Doc-first**, écrit le 2026-10-29. Rien n'est bâti au moment de l'écriture.
 > Demande de Hugo, le 2026-10-29 : « dans commerce d'une fiche produit, la carte
 > audience doit être la première carte, ensuite tarifs et TVA et ensuite nouvelle
 > carte options du commerce avec qté minimale par audience », précisé « par
-> audience et par contexte de vente ».
+> audience et par contexte de vente », puis ramené **à l'audience seule** le
+> même jour (Q2) : M1, M2 et M3 ont été réécrits avant tout envoi.
 
 ## 1. Ce qui existe (ouvert le 2026-10-29)
 
@@ -28,52 +29,52 @@
 
 ## 2. Décisions
 
-| #   | Question                         | Décision                                                                                                                                                                                                                                                                                                                                                                                 |
-| --- | -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Q1  | Niveau                           | **La déclinaison**, avec l'option de recopie (Hugo, 2026-10-29 : « par déclinaison avec l'option de recopie ») : une déclinaison autre que le défaut peut **suivre** le minimum du défaut (`minQuantityFollowsDefault`, même idiome que `pricingFollowsDefault`), ou porter le sien.                                                                                                     |
-| Q2  | Forme                            | **Trois cases, pas six** (Hugo, 2026-10-29) : un contexte appartient à une clientèle — « À emporter » et « Sur place » sont le B2C (`public`), « B2B » est le contexte pro général, retrait comme livraison (`pro`). Les paires croisées sont refusées (`MinQuantityContextOutsideAudienceError`). Une case vide = pas de minimum. Clé de contexte, pas son id : elle voyage sur le fil. |
-| Q3  | Unité                            | **Des pièces**, entier ≥ 2 (1 ne dit rien). Un article au poids garde `weightMinGrams` et la carte n'écrit rien pour lui.                                                                                                                                                                                                                                                                |
-| Q4  | Effet à l'écran                  | **Tranché (Hugo, 2026-10-29)** : le sélecteur part du minimum, et le « − » ne descend jamais dessous — « on ne doit pas pouvoir faire − ». La vignette pose le minimum au premier « + », et son « − » retire la ligne entière.                                                                                                                                                           |
-| Q5  | Effet au serveur                 | **Tranché** : le devis et la passation refusent une ligne sous le minimum de l'audience et du contexte de la commande (`BusinessError`, 409, qui nomme l'article et le minimum).                                                                                                                                                                                                         |
-| Q6  | Commandes du staff               | **Tranché (Hugo : « oui »)** : la règle vaut **partout**, comptoir et nouvelle commande pro du back-office compris — même sélecteur, même refus.                                                                                                                                                                                                                                         |
-| Q7  | Contexte d'une commande en ligne | Le public commande dans `PUBLIC_SALES_CONTEXT` ; le pro commande dans `b2b`. Le jour où le sur place arrive, il arrive par sa propre porte (cf. `public-context.ts`).                                                                                                                                                                                                                    |
+| #   | Question                         | Décision                                                                                                                                                                                                                                                                                                                                                                         |
+| --- | -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Q1  | Niveau                           | **La déclinaison**, avec l'option de recopie (Hugo, 2026-10-29 : « par déclinaison avec l'option de recopie ») : une déclinaison autre que le défaut peut **suivre** le minimum du défaut (`minQuantityFollowsDefault`, même idiome que `pricingFollowsDefault`), ou porter le sien.                                                                                             |
+| Q2  | Forme                            | **Par audience seulement (Hugo, 2026-10-29, remplace la décision « trois cases » du même jour)** : « on ne sait pas distinguer d'office, au catalogue, le mode de consommation B2C (à emporter / sur place) ». Un minimum pro, un minimum public, par déclinaison, avec toujours « suit le défaut ». Plus aucun contexte de vente dans ce sujet. Vide (`null`) = pas de minimum. |
+| Q3  | Unité                            | **Des pièces**, entier ≥ 2 (1 ne dit rien). Un article au poids garde `weightMinGrams` et la carte n'écrit rien pour lui.                                                                                                                                                                                                                                                        |
+| Q4  | Effet à l'écran                  | **Tranché (Hugo, 2026-10-29)** : le sélecteur part du minimum, et le « − » ne descend jamais dessous — « on ne doit pas pouvoir faire − ». La vignette pose le minimum au premier « + », et son « − » retire la ligne entière.                                                                                                                                                   |
+| Q5  | Effet au serveur                 | **Tranché** : le devis et la passation refusent une ligne sous le minimum de l'audience de la commande (`BusinessError`, 409, qui nomme l'article et le minimum).                                                                                                                                                                                                                |
+| Q6  | Commandes du staff               | **Tranché (Hugo : « oui »)** : la règle vaut **partout**, comptoir et nouvelle commande pro du back-office compris — même sélecteur, même refus.                                                                                                                                                                                                                                 |
+| Q7  | Contexte d'une commande en ligne | **Sans objet depuis Q2 réécrite** : le minimum ne dépend que de l'audience de qui commande.                                                                                                                                                                                                                                                                                      |
 
 ## 3. Les lots
 
 ### M1 — le référentiel (backend PIM) — ✅ bâti le 2026-10-29
 
 Route réelle : `PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`.
-Trois points tranchés au bâti : « suivre » est refusé sur une déclinaison au
-poids ; une grille posée puis passée au poids reste en base mais n'est plus
-servie ; un contexte hors service est refusé, comme pour la TVA.
+Deux points tranchés au bâti : « suivre » est refusé sur une déclinaison au
+poids ; un minimum posé puis passé au poids reste en base mais n'est plus servi.
 
-- Table `pim.variant_min_quantity (variant_id, audience, context_id, quantity)`,
-  clé `(variant_id, audience, context_id)`, et `product_variant.min_quantity_follows_default
-BOOLEAN NOT NULL DEFAULT false`, `CHECK (quantity >= 2)`,
-  `audience IN ('pro','public')`, FK contexte en `Restrict`. Migration additive.
-- Agrégat `Product`, par déclinaison : `minQuantities` + `changeMinQuantities(variantId, next | 'follow')`, refusé pour « suivre » sur le défaut, qui refuse un
-  contexte inconnu ou une quantité < 2.
-- Commande `SetProductMinQuantitiesCommand` (fichier colocalisé), route
-  `PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`, fait de journal
-  `product.min_quantities_changed` (avant/après), émission au catalogue comme
-  l'audience.
-- Le détail de la fiche sert la matrice de chaque déclinaison, et la matrice EFFECTIVE (résolue par l'héritage) part sur le fil.
+- Sur `pim.product_variant` : `pro_min_quantity INTEGER NULL` et
+  `public_min_quantity INTEGER NULL` (`CHECK (>= 2)` chacun), et
+  `min_quantity_follows_default BOOLEAN NOT NULL DEFAULT false` (`CHECK` : le
+  défaut ne se suit pas). Migration additive `20261029030000`.
+- Agrégat `Product`, par déclinaison : `minQuantities: { pro, public }`
+  (entier ≥ 2 ou `null`) + `changeMinQuantities(variantId, next | 'follow')`,
+  qui refuse une quantité < 2, « suivre » sur le défaut, et tout minimum au poids.
+- Commande `SetProductMinQuantitiesCommand` (fichier colocalisé), fait de
+  journal `product.min_quantities_changed` (avant/après : `followsDefault`,
+  `pro`, `public`), émission au catalogue comme l'audience.
+- Le détail de la fiche sert les minimums de chaque déclinaison, et les
+  minimums EFFECTIFS (résolus par l'héritage) partent sur le fil.
 
 ### M2 — le fil vers le commerce — ✅ bâti le 2026-10-29 (fil v15)
 
-- Le fait catalogue porte `minQuantities: { pro: Record<ctxKey, n>, public: Record<ctxKey, n> }`.
-- `catalog_items.min_quantities jsonb NULL` (null = avant le fil), projeté.
-- `ShopItemView.minQuantity?: number | null` : le minimum **déjà résolu** pour
-  l'audience et le contexte de qui regarde.
+- Le fait catalogue porte `minQuantities: { pro: number | null, public: number | null }`.
+- `catalog_items.pro_min_quantity` et `public_min_quantity`, `INTEGER NULL`,
+  projetés (migration additive `20261029030100`). Un fait d'avant la v15 se
+  range sans minimum.
+- `ShopItemView.minQuantity?: number | null` : le minimum de l'audience de qui
+  regarde (`minQuantityFor(audience)`).
 
 ### M3 — la carte « Options du commerce » (back-office) — ✅ bâti le 2026-10-29
 
-Trois champs en deux groupes, Particuliers (À emporter, Sur place) et
-Professionnels (retrait et livraison) ; le contexte B2B se reconnaît à sa clé
-(`PRO_CONTEXT_KEY`, déjà l'exception du prix pro) faute d'audience sur le contexte.
-
-- Troisième carte du commerce, après Tarif & TVA : une grille audience ×
-  contexte par déclinaison (celle de la barre de déclinaisons), avec la case « suit le défaut » sur les autres ; enregistrement immédiat sur sa route.
+- Troisième carte du commerce, après Tarif & TVA : deux champs, « Particuliers »
+  et « Professionnels », pour la déclinaison de la barre de déclinaisons, avec
+  la case « suit le défaut » sur les autres ; enregistrement immédiat sur sa
+  route. Aucun contexte de vente lu.
 
 ### M4 — l'effet (boutique + serveur)
 

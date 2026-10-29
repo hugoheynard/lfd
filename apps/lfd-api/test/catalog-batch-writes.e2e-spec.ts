@@ -77,7 +77,7 @@ function variantsOf(productIndex: number, count: number): SyncProduct["variants"
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
-    minQuantities: { pro: {}, public: {} },
+    minQuantities: { pro: null, public: null },
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     allergens: ["UW"],
     allergenLabels: null,

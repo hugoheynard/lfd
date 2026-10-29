@@ -1,17 +1,17 @@
 -- LA QUANTITÉ MINIMALE AU COMMERCE — lot M2 de `documentation/catalogue/plan-quantite-minimale.md`.
 --
 -- Le miroir du catalogue reçoit la quantité minimale EFFECTIVE de chaque
--- déclinaison (fil v15) : `{ "pro": { <contexte>: n }, "public": { … } }`, en
--- pièces. Stockée et servie à la vitrine ; ni le devis ni la passation ne la
--- lisent encore (M4).
+-- déclinaison (fil v15), par audience, en pièces. Stockée et servie à la
+-- vitrine ; ni le devis ni la passation ne la lisent encore (M4).
 --
--- ADDITIF : une colonne `jsonb` nullable. `NULL` = article reçu avant le fil
--- v15 — « on ne sait pas », pas « aucun minimum » ; la prochaine émission de
--- la fiche la remplit.
+-- ADDITIF : deux colonnes nullables. `NULL` = pas de minimum pour cette
+-- audience — y compris pour un article reçu avant le fil v15, que la prochaine
+-- émission de la fiche remplit.
 --
--- Retour arrière : supprimer la colonne (seul ce plan la lit).
+-- Retour arrière : supprimer les deux colonnes (seul ce plan les lit).
 
 SET lock_timeout = '5s';
 
 ALTER TABLE "public"."catalog_items"
-  ADD COLUMN "min_quantities" JSONB;
+  ADD COLUMN "pro_min_quantity" INTEGER,
+  ADD COLUMN "public_min_quantity" INTEGER;

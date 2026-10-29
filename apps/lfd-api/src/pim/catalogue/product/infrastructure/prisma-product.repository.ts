@@ -8,10 +8,9 @@ import { Product, type ProductSnapshot } from "../domain/entities/product.js";
 import type { VariantSnapshot } from "../domain/entities/variant.js";
 import { saleTermsColumns, saleTermsOf } from "./variant-sale-terms-columns.js";
 import {
-  MIN_QUANTITIES_INCLUDE,
   minQuantitiesOf,
-  minQuantityRows,
-  type MinQuantityRow,
+  minQuantityColumns,
+  type MinQuantityColumns,
 } from "./variant-min-quantities-columns.js";
 import {
   ProductRepository,
@@ -45,7 +44,7 @@ interface NutritionRow {
   glycemicIndex: number | null;
 }
 
-interface VariantRow {
+interface VariantRow extends MinQuantityColumns {
   id: string;
   sku: string;
   name: unknown;
@@ -66,7 +65,6 @@ interface VariantRow {
   pricingFollowsDefault: boolean;
   nutritionFollowsDefault: boolean;
   minQuantityFollowsDefault: boolean;
-  minQuantities: readonly MinQuantityRow[];
   allergenSheet: AllergensRow | null;
   nutritionValues: NutritionRow | null;
 }
@@ -99,7 +97,7 @@ const PRODUCT_INCLUDE = {
   // Leur absence est une information : personne ne s'est prononcé.
   variants: {
     orderBy: { position: "asc" },
-    include: { allergenSheet: true, nutritionValues: true, minQuantities: MIN_QUANTITIES_INCLUDE },
+    include: { allergenSheet: true, nutritionValues: true },
   },
   contextVat: { select: { vatRateId: true, context: { select: { key: true } } } },
 } as const;
@@ -122,7 +120,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
     nutritionFollowsDefault: row.nutritionFollowsDefault,
-    minQuantities: minQuantitiesOf(row.sku, row.minQuantities),
+    minQuantities: minQuantitiesOf(row),
     minQuantityFollowsDefault: row.minQuantityFollowsDefault,
     // 🔴 Pas de ligne = personne n'a déclaré (`null`) ; une ligne, même à
     // tableau vide, est une AFFIRMATION (« aucun allergène »). C'est tout
@@ -358,6 +356,7 @@ export class PrismaProductRepository extends ProductRepository {
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
             minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
+            ...minQuantityColumns(variant.minQuantities),
           },
           update: {
             name: localizedColumn(variant.name),
@@ -374,26 +373,9 @@ export class PrismaProductRepository extends ProductRepository {
             pricingFollowsDefault: variant.pricingFollowsDefault,
             nutritionFollowsDefault: variant.nutritionFollowsDefault,
             minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
+            ...minQuantityColumns(variant.minQuantities),
           },
         }),
-      ),
-      // La matrice se REMPLACE d'un bloc, comme les dérogations de taux : une
-      // case vidée doit disparaître, pas survivre à un `upsert`. APRÈS les
-      // déclinaisons, qu'une déclinaison neuve existe avant ses lignes.
-      this.prisma.variantMinQuantity.deleteMany({
-        where: { variantId: { in: snapshot.variants.map((variant) => variant.id) } },
-      }),
-      ...snapshot.variants.flatMap((variant) =>
-        minQuantityRows(variant.minQuantities).map((line) =>
-          this.prisma.variantMinQuantity.create({
-            data: {
-              variant: { connect: { id: variant.id } },
-              audience: line.audience,
-              context: { connect: { key: line.contextKey } },
-              quantity: line.quantity,
-            },
-          }),
-        ),
       ),
     ]);
   }

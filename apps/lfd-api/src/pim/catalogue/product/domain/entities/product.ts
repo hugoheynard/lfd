@@ -23,11 +23,7 @@ import type { ContextVat } from "../../../shared/domain/value-objects/context-va
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
-import {
-  NO_MIN_QUANTITIES,
-  contextKeysOf,
-  type MinQuantities,
-} from "../value-objects/min-quantities.js";
+import { NO_MIN_QUANTITIES, type MinQuantities } from "../value-objects/min-quantities.js";
 import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
@@ -295,29 +291,15 @@ export class Product {
   }
 
   /**
-   * **La quantité minimale d'une déclinaison** — sa matrice, ou `"follow"`
-   * pour suivre le défaut (`plan-quantite-minimale.md`, M1).
-   *
-   * Le contexte se vérifie ici, contre le registre que l'appelant passe —
-   * comme pour {@link setVat} : un minimum dans un contexte que personne ne
-   * vend serait une case que personne ne lit.
+   * **La quantité minimale d'une déclinaison** — son minimum pro et son
+   * minimum public, ou `"follow"` pour suivre le défaut
+   * (`plan-quantite-minimale.md`, M1). Par audience seulement (Q2) : aucun
+   * contexte de vente à vérifier.
    *
    * @returns `false` quand la déclinaison le disait déjà.
    */
-  changeMinQuantities(
-    variantId: string,
-    next: MinQuantities | "follow",
-    contexts: readonly SalesContext[],
-  ): boolean {
-    const variant = this.variant(variantId);
-    if (next !== "follow") {
-      const known = new Set(contexts.map((context) => context.key));
-      const unknown = contextKeysOf(next).find((key) => !known.has(key));
-      if (unknown !== undefined) {
-        throw new ProductUnknownContextError(unknown);
-      }
-    }
-    return variant.changeMinQuantities(next);
+  changeMinQuantities(variantId: string, next: MinQuantities | "follow"): boolean {
+    return this.variant(variantId).changeMinQuantities(next);
   }
 
   /** Renomme — et re-dérive le slug. */

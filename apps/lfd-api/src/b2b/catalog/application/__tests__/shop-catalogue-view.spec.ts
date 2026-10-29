@@ -206,18 +206,18 @@ describe("shopCatalogueOf — l'unité de vente", () => {
   });
 });
 
-/** M2 de `plan-quantite-minimale.md` : le minimum de qui regarde, déjà résolu (Q7). */
+/** M2 de `plan-quantite-minimale.md` : le minimum de qui regarde, déjà résolu. */
 describe("shopCatalogueOf — la quantité minimale", () => {
   const at = new Date("2026-10-01T00:00:00.000Z");
-  const grid = { pro: { b2b: 6 }, public: { takeaway: 2, eatIn: 4 } };
+  const grid = { pro: 6, public: 2 };
 
-  it("sert au public la case de la boutique publique", () => {
+  it("sert au public le minimum public", () => {
     const view = shopCatalogueOf([catalogItem("VIE-001", { minQuantities: grid })], sale(at));
 
     expect(view.items[0]?.minQuantity).toBe(2);
   });
 
-  it("sert au pro la case b2b", () => {
+  it("sert au pro le minimum pro", () => {
     const view = shopCatalogueOf([catalogItem("VIE-001", { minQuantities: grid })], {
       ...sale(at),
       audience: "pro",
@@ -226,9 +226,9 @@ describe("shopCatalogueOf — la quantité minimale", () => {
     expect(view.items[0]?.minQuantity).toBe(6);
   });
 
-  it("sert `null` sans case, et pour un article reçu avant le fil", () => {
+  it("sert `null` sans minimum, et pour un article reçu avant le fil", () => {
     const none = shopCatalogueOf(
-      [catalogItem("VIE-001", { minQuantities: { pro: {}, public: {} } })],
+      [catalogItem("VIE-001", { minQuantities: { pro: null, public: null } })],
       sale(at),
     );
     const before = shopCatalogueOf([catalogItem("VIE-001")], sale(at));

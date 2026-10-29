@@ -29,7 +29,7 @@ const variant = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
-  minQuantities: { pro: { b2b: 6 }, public: { takeaway: 2 } },
+  minQuantities: { pro: 6, public: 2 },
 };
 
 describe("syncMinQuantitiesSchema", () => {
@@ -37,23 +37,28 @@ describe("syncMinQuantitiesSchema", () => {
     expect(CATALOG_SNAPSHOT_VERSION).toBe(15);
   });
 
-  it("accepte une grille, et la grille vide — aucun minimum", () => {
+  it("accepte un minimum par audience, et `null` — aucun minimum", () => {
     expect(syncMinQuantitiesSchema.safeParse(variant.minQuantities).success).toBe(true);
-    expect(syncMinQuantitiesSchema.safeParse({ pro: {}, public: {} }).success).toBe(true);
+    expect(syncMinQuantitiesSchema.safeParse({ pro: null, public: null }).success).toBe(true);
   });
 
   it("refuse 1, zéro, une fraction : 1 ne dit rien", () => {
     for (const bad of [1, 0, -2, 2.5]) {
-      expect(syncMinQuantitiesSchema.safeParse({ pro: { b2b: bad }, public: {} }).success).toBe(
-        false,
-      );
+      expect(syncMinQuantitiesSchema.safeParse({ pro: bad, public: null }).success).toBe(false);
     }
   });
 
   it("refuse une audience inconnue", () => {
-    expect(
-      syncMinQuantitiesSchema.safeParse({ pro: {}, public: {}, both: { b2b: 2 } }).success,
-    ).toBe(false);
+    expect(syncMinQuantitiesSchema.safeParse({ pro: null, public: null, both: 2 }).success).toBe(
+      false,
+    );
+  });
+
+  /** Q2 réécrite (2026-10-29) : plus de contexte de vente — une case par contexte n'a plus de forme. */
+  it("refuse l'ancienne forme par contexte", () => {
+    expect(syncMinQuantitiesSchema.safeParse({ pro: { b2b: 6 }, public: null }).success).toBe(
+      false,
+    );
   });
 
   it("l'émetteur qui l'oublie échoue", () => {

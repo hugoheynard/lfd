@@ -107,8 +107,7 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     saleUnit: item.saleUnit,
     weightStepGrams: item.weightStepGrams,
     weightMinGrams: item.weightMinGrams,
-    // Le minimum de qui regarde, résolu ici (M2) : sa clientèle, dans le
-    // contexte où elle commande en ligne (Q7).
+    // Le minimum de qui regarde, résolu ici (M2) : celui de sa clientèle.
     minQuantity: minQuantityFor(item.minQuantities, audience),
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,

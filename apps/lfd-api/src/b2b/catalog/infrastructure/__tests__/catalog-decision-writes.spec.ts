@@ -37,7 +37,7 @@ function factsOf(sku: string): PimFacts {
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
-    minQuantities: null,
+    minQuantities: { pro: null, public: null },
     publicByContext: null,
     allergens: null,
     allergenLabels: null,

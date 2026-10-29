@@ -79,12 +79,11 @@ export interface ResolvedCatalogItem {
   readonly weightMinGrams: number | null;
   readonly weightStepGrams: number | null;
   /**
-   * **La quantité minimale d'achat**, en pièces, par clientèle et par contexte
-   * (`plan-quantite-minimale.md`, M2) — effective, telle que publiée. `null` =
-   * article reçu avant le fil v15. La vitrine en sert la case de qui regarde ;
-   * la commande ne la lit pas encore (M4).
+   * **La quantité minimale d'achat**, en pièces, par clientèle
+   * (`plan-quantite-minimale.md`, M2) — effective, telle que publiée. La
+   * vitrine en sert celle de qui regarde ; la commande ne la lit pas encore (M4).
    */
-  readonly minQuantities: CatalogMinQuantities | null;
+  readonly minQuantities: CatalogMinQuantities;
   /**
    * Mis en avant **pour le lecteur de cette lecture** (2026-10-18) : la
    * décision pro pour une lecture pro, la publique pour une lecture publique.

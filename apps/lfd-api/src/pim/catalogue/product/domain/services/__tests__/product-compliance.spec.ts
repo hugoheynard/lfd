@@ -24,7 +24,7 @@ function variant(over: Partial<VariantSnapshot>): VariantSnapshot {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
-    minQuantities: { pro: {}, public: {} },
+    minQuantities: { pro: null, public: null },
     minQuantityFollowsDefault: false,
     allergenSheet: { declared: [], mayContain: [] },
     nutrition: null,

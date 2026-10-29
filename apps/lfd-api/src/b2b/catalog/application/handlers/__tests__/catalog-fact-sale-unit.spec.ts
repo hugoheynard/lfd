@@ -115,10 +115,10 @@ describe("receivedProductOf — l'unité de vente", () => {
   });
 });
 
-/** Fil v15 (`plan-quantite-minimale.md`, M2) : la grille effective, rangée telle quelle. */
+/** Fil v15 (`plan-quantite-minimale.md`, M2) : les minimums effectifs, rangés tels quels. */
 describe("receivedProductOf — la quantité minimale", () => {
-  it("range la grille reçue sur l'article", () => {
-    const grid = { pro: { b2b: 6 }, public: { takeaway: 2 } };
+  it("range les minimums reçus sur l'article", () => {
+    const grid = { pro: 6, public: 2 };
     const fact = CatalogProductChangedFact.fromPayload(
       payload({ variant: { minQuantities: grid } }),
     );
@@ -126,17 +126,17 @@ describe("receivedProductOf — la quantité minimale", () => {
     expect(receivedProductOf(fact).items[0]?.minQuantities).toEqual(grid);
   });
 
-  /** Un fait d'avant la v15 : « on ne sait pas », jamais « aucun minimum ». */
-  it("lit `null` sur un fait émis avant la quantité minimale", () => {
+  /** Un fait d'avant la v15 : aucun minimum n'existait alors. */
+  it("lit « aucun minimum » sur un fait émis avant la quantité minimale", () => {
     const fact = CatalogProductChangedFact.fromPayload(payload({}));
 
-    expect(receivedProductOf(fact).items[0]?.minQuantities).toBeNull();
+    expect(receivedProductOf(fact).items[0]?.minQuantities).toEqual({ pro: null, public: null });
   });
 
   it("refuse un minimum à 1 plutôt que de le ranger", () => {
     expect(() =>
       CatalogProductChangedFact.fromPayload(
-        payload({ variant: { minQuantities: { pro: { b2b: 1 }, public: {} } } }),
+        payload({ variant: { minQuantities: { pro: 1, public: null } } }),
       ),
     ).toThrow(CatalogFactPayloadError);
   });

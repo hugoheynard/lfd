@@ -74,7 +74,7 @@ export interface CatalogProductHead {
  * déclinaison. `null` sur un fait d'avant le lot des langues.
  *
  * `minQuantities` est `null` sur un fait d'avant le fil v15 — relu, jamais
- * émis : l'émission porte toujours la grille effective, vide comprise.
+ * émis : l'émission porte toujours les minimums effectifs, `null` compris.
  */
 export type CatalogVariantFact = Omit<SyncVariant, "minQuantities"> & {
   readonly nameTranslations: CatalogTranslations | null;

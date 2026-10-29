@@ -1,65 +1,33 @@
-import {
-  InvalidMinQuantityError,
-  MinQuantityContextOutsideAudienceError,
-} from "../../errors/min-quantity-errors.js";
+import { InvalidMinQuantityError } from "../../errors/min-quantity-errors.js";
 import {
   NO_MIN_QUANTITIES,
-  contextKeysOf,
   isEmptyMinQuantities,
   minQuantities,
   sameMinQuantities,
 } from "../min-quantities.js";
 
-describe("minQuantities — la grille audience × contexte, en pièces", () => {
-  it("lit une grille d'entiers ≥ 2", () => {
-    expect(minQuantities({ pro: { b2b: 6 }, public: { takeaway: 2 } })).toEqual({
-      pro: { b2b: 6 },
-      public: { takeaway: 2 },
-    });
+describe("minQuantities — un minimum par audience, en pièces", () => {
+  it("lit des entiers ≥ 2, et `null` pour « aucun minimum »", () => {
+    expect(minQuantities({ pro: 6, public: 2 })).toEqual({ pro: 6, public: 2 });
+    expect(minQuantities({ pro: null, public: 3 })).toEqual({ pro: null, public: 3 });
   });
 
-  it("refuse 1, zéro, négatif et fractionnaire — en nommant la case", () => {
-    for (const bad of [1, 0, -3, 2.5]) {
-      expect(() => minQuantities({ pro: {}, public: { takeaway: bad } })).toThrow(
-        InvalidMinQuantityError,
-      );
+  it("refuse 1, zéro, négatif et fractionnaire — en nommant la clientèle", () => {
+    for (const bad of [1, 0, -3, 2.5, Number.NaN]) {
+      expect(() => minQuantities({ pro: null, public: bad })).toThrow(InvalidMinQuantityError);
     }
-    expect(() => minQuantities({ pro: { b2b: 1 }, public: {} })).toThrow(/b2b/u);
+    expect(() => minQuantities({ pro: 1, public: null })).toThrow(/professionnels/u);
+    expect(() => minQuantities({ pro: null, public: 1 })).toThrow(/particuliers/u);
   });
 
-  it("compare sans regarder l'ordre des clés", () => {
-    expect(
-      sameMinQuantities(
-        { pro: { b2b: 6, eatIn: 3 }, public: {} },
-        { pro: { eatIn: 3, b2b: 6 }, public: {} },
-      ),
-    ).toBe(true);
-    expect(sameMinQuantities({ pro: { b2b: 6 }, public: {} }, NO_MIN_QUANTITIES)).toBe(false);
+  it("compare les deux minimums", () => {
+    expect(sameMinQuantities({ pro: 6, public: null }, { pro: 6, public: null })).toBe(true);
+    expect(sameMinQuantities({ pro: 6, public: null }, NO_MIN_QUANTITIES)).toBe(false);
+    expect(sameMinQuantities({ pro: null, public: 6 }, { pro: 6, public: null })).toBe(false);
   });
 
-  it("nomme les contextes cités, une fois chacun", () => {
-    expect(contextKeysOf({ pro: { b2b: 6 }, public: { b2b: 2, takeaway: 2 } })).toEqual([
-      "b2b",
-      "takeaway",
-    ]);
+  it("dit vide la paire qui ne règle rien", () => {
     expect(isEmptyMinQuantities(NO_MIN_QUANTITIES)).toBe(true);
-  });
-
-  /** Correction de Hugo (2026-10-29) : le B2B est aux pros, à emporter et sur place aux particuliers. */
-  it("refuse une clientèle croisée avec un contexte qui n'est pas le sien", () => {
-    expect(() => minQuantities({ pro: { takeaway: 6 }, public: {} })).toThrow(
-      MinQuantityContextOutsideAudienceError,
-    );
-    expect(() => minQuantities({ pro: { eatIn: 6 }, public: {} })).toThrow(
-      MinQuantityContextOutsideAudienceError,
-    );
-    expect(() => minQuantities({ pro: {}, public: { b2b: 2 } })).toThrow(
-      MinQuantityContextOutsideAudienceError,
-    );
-  });
-
-  it("garde les trois cases vivantes", () => {
-    const grid = { pro: { b2b: 6 }, public: { takeaway: 2, eatIn: 3 } };
-    expect(minQuantities(grid)).toEqual(grid);
+    expect(isEmptyMinQuantities({ pro: null, public: 2 })).toBe(false);
   });
 });

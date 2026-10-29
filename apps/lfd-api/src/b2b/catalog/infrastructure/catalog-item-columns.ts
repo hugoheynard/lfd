@@ -55,12 +55,9 @@ export function pimFactsColumns(facts: PimFacts) {
     saleUnit: facts.saleUnit,
     weightMinGrams: facts.weightMinGrams,
     weightStepGrams: facts.weightStepGrams,
-    // La quantité minimale (fil v15) : `DbNull` pour « reçu avant le fil »,
-    // recopiée ligne par ligne comme le prix par contexte.
-    minQuantities:
-      facts.minQuantities === null
-        ? Prisma.DbNull
-        : { pro: { ...facts.minQuantities.pro }, public: { ...facts.minQuantities.public } },
+    // La quantité minimale (fil v15), une colonne par clientèle.
+    proMinQuantity: facts.minQuantities.pro,
+    publicMinQuantity: facts.minQuantities.public,
     // `DbNull` et non `JsonNull` : c'est l'ABSENCE de la donnée, pas un `null`
     // JSON stocké — la même distinction que pour les mentions d'étiquette.
     publicByContext:
