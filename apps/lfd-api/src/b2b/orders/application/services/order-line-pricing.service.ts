@@ -103,6 +103,30 @@ export class OrderLinePricing {
     return this.priceAll(input, parties, { withTiers: true, caller }, at);
   }
 
+  /**
+   * **Le minimum en pièces de chaque SKU, pour la clientèle servie** — une
+   * lecture du catalogue par lot, sans tarifer. Sert les lignes GARDÉES d'une
+   * révision dont la quantité change (dérogation à R3, Hugo, 2026-10-29) :
+   * leur prix reste figé, seul le minimum se relit.
+   *
+   * Même déduction d'audience que {@link priceAll}, pour que la ligne gardée
+   * soit tenue au minimum même qu'une ligne nouvelle. Un SKU sorti du
+   * catalogue est ABSENT de la table rendue, jamais présent à `null`.
+   */
+  async minimumsOf(
+    skus: readonly string[],
+    parties: ServedCompany,
+  ): Promise<ReadonlyMap<string, number | null>> {
+    if (skus.length === 0) {
+      return new Map();
+    }
+    const audience = parties.companyId === null ? "public" : "pro";
+    const catalogue = await this.catalog.resolveMany(skus, audience);
+    return new Map(
+      [...catalogue].map(([sku, item]) => [sku, minQuantityFor(item.minQuantities, audience)]),
+    );
+  }
+
   private async priceAll(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,

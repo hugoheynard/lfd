@@ -1,6 +1,7 @@
 import { MAX_LINE_WEIGHT_GRAMS } from "@lfd/contracts";
 
 import { SaleUnitMismatchError, WeightAboveGuardError } from "../errors/sale-quantity-errors.js";
+import { ensureMinimumQuantity } from "./sale-quantity-rules.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 
 /** Une ligne demandée : un SKU, sa quantité et son unité, comme la passation les reçoit. */
@@ -39,7 +40,8 @@ export interface RevisedLineRequests {
  * gardée se redemande dans l'unité de la précédente, et au poids sous la garde
  * d'une tonne. Son pas et son minimum ne se relisent pas — le catalogue n'est
  * pas relu pour une ligne gardée (R3) ; une ligne nouvelle, elle, se valide
- * contre l'article à la tarification.
+ * contre l'article à la tarification. Seule dérogation : le minimum en pièces
+ * d'une ligne gardée dont la quantité CHANGE ({@link ensureKeptMinimums}).
  *
  * @throws {SaleUnitMismatchError} la ligne redemandée change d'unité.
  * @throws {WeightAboveGuardError} une ligne gardée au poids dépasse une tonne.
@@ -92,4 +94,67 @@ function frozenLineOf(line: OrderLineSnapshot, quantity: number): OrderLineInput
     pricing: line.pricing,
     allergens: line.allergens,
   };
+}
+
+/** Une ligne gardée dont la révision change la quantité — la seule que le minimum relit. */
+export interface KeptQuantityChange {
+  readonly sku: string;
+  readonly productName: string;
+  readonly saleUnit: "piece" | "weight";
+  readonly quantity: number;
+}
+
+/**
+ * Les lignes gardées dont la quantité diffère de la révision précédente. Une
+ * ligne inchangée n'y figure pas : une commande passée avant qu'un minimum soit
+ * posé doit rester révisable sur ses AUTRES lignes.
+ */
+export function keptQuantityChanges(
+  previous: readonly OrderLineSnapshot[],
+  split: RevisedLineRequests,
+): readonly KeptQuantityChange[] {
+  return previous.flatMap((line) => {
+    const kept = split.frozen.get(line.sku);
+    if (kept === undefined || kept.quantity === line.quantity) {
+      return [];
+    }
+    const change: KeptQuantityChange = {
+      sku: line.sku,
+      productName: line.productName,
+      saleUnit: line.saleUnit,
+      quantity: kept.quantity,
+    };
+    return [change];
+  });
+}
+
+/**
+ * **Dérogation à R3, décidée par Hugo le 2026-10-29**
+ * (`documentation/catalogue/plan-quantite-minimale.md`, M4) : une ligne gardée
+ * qu'on CHANGE de quantité ne descend pas sous le minimum que le catalogue
+ * publie aujourd'hui pour la clientèle de la commande. Son prix, lui, reste
+ * figé — seul le minimum est relu.
+ *
+ * `minimums` : le minimum de chaque SKU encore au catalogue. Un SKU absent est
+ * un article sorti du catalogue depuis la commande : aucun minimum connu, la
+ * ligne passe (décidé le 2026-10-29 — refuser au nom d'une règle qu'on ne peut
+ * plus lire bloquerait la commande sans geste de sortie). Un article au poids
+ * n'a pas de minimum en pièces ({@link ensureMinimumQuantity}).
+ *
+ * @throws {QuantityBelowMinimumError} une ligne gardée baissée sous le minimum.
+ */
+export function ensureKeptMinimums(
+  changes: readonly KeptQuantityChange[],
+  minimums: ReadonlyMap<string, number | null>,
+): void {
+  for (const change of changes) {
+    const minQuantity = minimums.get(change.sku);
+    if (minQuantity === undefined) {
+      continue;
+    }
+    ensureMinimumQuantity(
+      { sku: change.sku, name: change.productName, saleUnit: change.saleUnit, minQuantity },
+      change.quantity,
+    );
+  }
 }

@@ -94,6 +94,15 @@ le lot ZB de la facturation, pas une modification de commande.
   révision ultérieure est une ligne nouvelle : prix du jour. _(Raison : la
   règle de Hugo s'applique à « déjà présente » ; le plus simple vérifiable
   est la révision précédente.)_
+  **Dérogation, tranchée par Hugo le 2026-10-29** : une ligne gardée dont la
+  quantité CHANGE se tient au **minimum d'achat** que le catalogue publie
+  aujourd'hui pour la clientèle de la commande (une lecture par lot,
+  `OrderLinePricing.minimumsOf` → `ensureKeptMinimums`, 409
+  `QuantityBelowMinimumError`). Son prix reste figé. Une ligne inchangée n'est
+  pas relue — une commande passée avant le minimum reste révisable sur ses
+  autres lignes ; un article sorti du catalogue depuis n'a plus de minimum
+  connu et passe ; un article au poids n'a pas de minimum en pièces
+  (`documentation/catalogue/plan-quantite-minimale.md`, M4).
 - **R4 — Tout le reste se recalcule** comme à la passation, sur la nouvelle
   composition : remise de retrait (point, clientèle, exclusions), frais de
   livraison (zone), TVA, éligibilité figée par ligne. La **surtaxe tardive**

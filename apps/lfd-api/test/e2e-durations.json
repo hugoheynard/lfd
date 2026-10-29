@@ -283,6 +283,7 @@
   "test/order-registered-deadline.e2e-spec.ts": 9286,
   "test/order-revise-after-plan-races.e2e-spec.ts": 12000,
   "test/order-revise-after-plan.e2e-spec.ts": 14000,
+  "test/order-revision-min-quantity.e2e-spec.ts": 16443,
   "test/order-revision-views.e2e-spec.ts": 15998,
   "test/order-revision.e2e-spec.ts": 11959,
   "test/order-settlement-reminders.e2e-spec.ts": 3100,
@@ -346,6 +347,7 @@
   "test/pim-regulatory-sheet.e2e-spec.ts": 5219,
   "test/pim-sale-unit.e2e-spec.ts": 12377,
   "test/pim-sales-contexts.e2e-spec.ts": 9442,
+  "test/pim-variant-lifecycle.e2e-spec.ts": 21004,
   "test/pim-variant-rename.e2e-spec.ts": 3681,
   "test/pim-vat-rates.e2e-spec.ts": 6846,
   "test/pim-wall.e2e-spec.ts": 5544,
@@ -479,6 +481,5 @@
   "test/vitrine-read-only.e2e-spec.ts": 6536,
   "test/vitrine-webhook.e2e-spec.ts": 12223,
   "test/vitrine-webhooks-right.e2e-spec.ts": 3400,
-  "test/vitrine-xml.e2e-spec.ts": 6000,
-  "test/pim-variant-lifecycle.e2e-spec.ts": 21004
+  "test/vitrine-xml.e2e-spec.ts": 6000
 }

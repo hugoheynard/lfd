@@ -81,9 +81,11 @@ poids ; un minimum posé puis passé au poids reste en base mais n'est plus serv
 Le refus vit dans `OrderLinePricing.priceAll`, seul passage du devis (boutique
 et staff), de la passation (en ligne, staff, comptoir) et des lignes NOUVELLES
 d'une révision : `ensureMinimumQuantity` sur le total d'un SKU,
-`QuantityBelowMinimumError` (409). ⚠️ Une ligne GARDÉE qu'on baisse en révision
-n'est pas contrôlée (règle R3 du plan de modification : on ne relit pas le
-catalogue) — à trancher par Hugo.
+`QuantityBelowMinimumError` (409). Une ligne GARDÉE dont la révision change la
+quantité est tenue elle aussi au minimum du jour de sa clientèle — dérogation à
+R3 du plan de modification, tranchée par Hugo le 2026-10-29
+(`revised-lines.ts`, `ensureKeptMinimums`) : son prix reste figé, une ligne
+inchangée n'est pas relue, un article sorti du catalogue depuis passe.
 
 - Boutique : `firstQuantityOf` part du minimum ; le « − » s'arrête au minimum.
 - Serveur : refus au devis et à la passation (Q5), routes staff comprises (Q6).

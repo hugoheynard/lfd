@@ -88,7 +88,7 @@ export const DAY = "2026-11-10";
 export const NEXT_DAY = "2026-11-11";
 
 /** 2,00 € HT le croissant, 3,50 € le pain — limite d'article la veille à 18 h. */
-const CATALOG: readonly UnsealedCatalogItem[] = [
+export const CATALOG: readonly UnsealedCatalogItem[] = [
   {
     family: PAINS,
     allergens: null,
@@ -488,6 +488,7 @@ export function reviseScene(
     readonly role?: OrderRole | null;
     readonly plans?: OrderPlanGate;
     readonly engagements?: AccountOrderEngagementReader;
+    readonly catalogItems?: readonly UnsealedCatalogItem[];
   } = {},
 ) {
   const trace: string[] = [];
@@ -509,6 +510,7 @@ export function reviseScene(
     revisingAt(clock, {
       ...(options.plans === undefined ? {} : { plans: options.plans }),
       ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
+      ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
     }),
     revisions,
     new OrderWorkshopRevision(desk, packing),

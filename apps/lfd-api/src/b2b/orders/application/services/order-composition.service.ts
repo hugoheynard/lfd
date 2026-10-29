@@ -31,7 +31,11 @@ import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
 import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
-import { revisedLineRequests } from "../../domain/services/revised-lines.js";
+import {
+  ensureKeptMinimums,
+  keptQuantityChanges,
+  revisedLineRequests,
+} from "../../domain/services/revised-lines.js";
 import {
   quantityOf,
   type OrderLineInput,
@@ -244,7 +248,10 @@ export class OrderComposition {
    * Les lignes tarifées. À la passation, toutes passent par la résolution qui
    * facture ; en révision, seules les NOUVELLES y passent — les autres
    * reprennent leur prix figé (R3), et un SKU retiré du catalogue depuis ne
-   * fait donc pas refuser la quantité qu'on change.
+   * fait donc pas refuser la quantité qu'on change. Seul le minimum en pièces
+   * d'une ligne gardée dont la quantité CHANGE se relit au catalogue
+   * (dérogation à R3, Hugo, 2026-10-29) — une lecture par lot, avant de
+   * tarifer les nouvelles.
    */
   private async priceLines(
     requested: readonly OrderLineRequest[],
@@ -256,6 +263,12 @@ export class OrderComposition {
       return resolved.map((entry) => entry.line);
     }
     const split = revisedLineRequests(frozen, requested);
+    const changes = keptQuantityChanges(frozen, split);
+    const minimums = await this.linePricing.minimumsOf(
+      changes.map((change) => change.sku),
+      parties,
+    );
+    ensureKeptMinimums(changes, minimums);
     const fresh =
       split.fresh.length === 0
         ? []
