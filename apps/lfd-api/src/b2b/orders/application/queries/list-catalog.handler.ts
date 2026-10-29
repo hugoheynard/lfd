@@ -2,6 +2,7 @@ import type { CatalogItemView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { familyView } from "../../../catalog/domain/catalog-family.js";
+import { minQuantityFor } from "../../../catalog/domain/catalog-min-quantities.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCatalogQuery } from "./list-catalog.query.js";
 
@@ -31,6 +32,9 @@ export class ListCatalogHandler implements IQueryHandler<
       saleUnit: item.saleUnit,
       weightStepGrams: item.weightStepGrams,
       weightMinGrams: item.weightMinGrams,
+      // Le minimum PRO (Q6) : ce catalogue compose une commande pour une
+      // société — le même que la passation staff refusera en dessous.
+      minQuantity: minQuantityFor(item.minQuantities, "pro"),
     }));
   }
 }

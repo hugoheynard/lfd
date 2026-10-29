@@ -74,4 +74,12 @@ export interface CatalogItemView {
   readonly weightStepGrams?: number | null;
   /** Le minimum d'un article au poids, en grammes ; `null` = pas de minimum (ou une pièce). */
   readonly weightMinGrams?: number | null;
+  /**
+   * **Le minimum d'achat en pièces** pour la clientèle PRO
+   * (`documentation/catalogue/plan-quantite-minimale.md`, Q6) : ce catalogue
+   * compose les commandes que l'équipe saisit pour une société, toujours pro.
+   * `null` = aucun minimum (et toujours pour un article au poids). Facultatif
+   * dans le type comme `saleUnit` ; le serveur l'émet toujours.
+   */
+  readonly minQuantity?: number | null;
 }

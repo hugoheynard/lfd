@@ -11,7 +11,11 @@ import {
   type CatalogItem,
   ProductCatalogReader,
 } from "../../../catalog/domain/ports/product-catalog.reader.js";
-import { ensureSaleQuantity } from "../../domain/services/sale-quantity-rules.js";
+import { minQuantityFor } from "../../../catalog/domain/catalog-min-quantities.js";
+import {
+  ensureMinimumQuantity,
+  ensureSaleQuantity,
+} from "../../domain/services/sale-quantity-rules.js";
 import {
   priceLine,
   type LineToPrice,
@@ -70,6 +74,7 @@ export class OrderLinePricing {
    * résolu par la porte du prix, à l'instant de la résolution.
    *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
+   * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
    */
   async resolve(
     input: readonly OrderLineRequest[],
@@ -152,6 +157,16 @@ export class OrderLinePricing {
         quantity: line.quantity,
         saleUnit: saleUnitOfLine(line),
       });
+    }
+    // Puis le TOTAL de chaque SKU contre le minimum de SA clientèle
+    // (`plan-quantite-minimale.md`, Q5) — la même audience que le prix, donc
+    // le même minimum que le rayon a annoncé. Devis et passation passent ici.
+    for (const [sku, quantity] of quantities) {
+      const found = foundOrRefused(catalogue, sku);
+      ensureMinimumQuantity(
+        { ...found, minQuantity: minQuantityFor(found.minQuantities, audience) },
+        quantity,
+      );
     }
     const lines = [...quantities].map(([sku, quantity]) => {
       const found = foundOrRefused(catalogue, sku);

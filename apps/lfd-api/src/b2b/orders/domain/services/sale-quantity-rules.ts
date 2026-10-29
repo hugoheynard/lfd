@@ -1,6 +1,7 @@
 import { MAX_LINE_WEIGHT_GRAMS } from "@lfd/contracts";
 
 import {
+  QuantityBelowMinimumError,
   SaleUnitMismatchError,
   WeightAboveGuardError,
   WeightArticleWithoutStepError,
@@ -63,5 +64,42 @@ function ensureWeight(article: ArticleSaleTerms, weightGrams: number): void {
   }
   if (article.weightMinGrams !== null && weightGrams < article.weightMinGrams) {
     throw new WeightBelowMinimumError(article.sku, weightGrams, article.weightMinGrams);
+  }
+}
+
+/** Ce contre quoi le total d'un SKU se compare : son minimum en pièces pour la clientèle servie. */
+export interface ArticleMinimumTerms {
+  readonly sku: string;
+  readonly name: string;
+  readonly saleUnit: "piece" | "weight";
+  /** Le minimum de la clientèle de la commande, déjà choisi ; `null` = aucun. */
+  readonly minQuantity: number | null;
+}
+
+/**
+ * **Le total d'un SKU atteint-il le minimum d'achat ?**
+ * (`documentation/catalogue/plan-quantite-minimale.md`, Q3, Q5)
+ *
+ * Se lit sur la quantité FUSIONNÉE — une commande ne porte qu'une ligne par
+ * SKU, et deux lignes de 3 font bien les 6 d'un minimum de 6. Un article au
+ * poids n'a pas de minimum en pièces : le sien est `weightMinGrams`
+ * ({@link ensureSaleQuantity}). Une ligne retirée n'arrive pas jusqu'ici.
+ *
+ * Refuse, ne relève jamais : une quantité remontée en silence serait un autre
+ * montant que celui que le client a lu.
+ *
+ * @throws {QuantityBelowMinimumError} moins de pièces que le minimum.
+ */
+export function ensureMinimumQuantity(article: ArticleMinimumTerms, totalQuantity: number): void {
+  if (article.saleUnit !== "piece" || article.minQuantity === null) {
+    return;
+  }
+  if (totalQuantity < article.minQuantity) {
+    throw new QuantityBelowMinimumError(
+      article.sku,
+      article.name,
+      totalQuantity,
+      article.minQuantity,
+    );
   }
 }

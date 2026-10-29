@@ -2,6 +2,7 @@ import type { OrderLimitSpec, OrderLineAllergens } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../catalogue-article.js";
 import type { CatalogFamily } from "../catalog-family.js";
+import { NO_CATALOG_MIN_QUANTITIES, type CatalogMinQuantities } from "../catalog-min-quantities.js";
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
 import type { ShopAudience } from "./catalog.reader.js";
 
@@ -56,6 +57,13 @@ export interface CatalogItem extends PricedSku {
   readonly weightMinGrams: number | null;
   readonly weightStepGrams: number | null;
   /**
+   * **La quantité minimale d'achat, par clientèle** (`plan-quantite-minimale.md`,
+   * Q2), en pièces. Les DEUX sont portés, pas celui de l'audience lue : la
+   * commande choisit le sien par sa propre clientèle (`minQuantityFor`), et un
+   * double qui ignore l'audience reste ainsi substituable à la source.
+   */
+  readonly minQuantities: CatalogMinQuantities;
+  /**
    * **Ce qu'il faut pour le tarifer, scellé par le catalogue.**
    *
    * Frappé par l'adaptateur, donc porteur de la preuve que son
@@ -82,14 +90,18 @@ export interface CatalogItem extends PricedSku {
 export type UnsealedCatalogItem = Omit<CatalogItem, "article" | keyof CatalogSaleTerms> &
   Partial<CatalogSaleTerms>;
 
-/** Comment un article se vend : l'unité, et au poids le pas et le minimum en grammes. */
-export type CatalogSaleTerms = Pick<CatalogItem, "saleUnit" | "weightMinGrams" | "weightStepGrams">;
+/** Comment un article se vend : l'unité, au poids le pas et le minimum en grammes, et ses minimums en pièces. */
+export type CatalogSaleTerms = Pick<
+  CatalogItem,
+  "saleUnit" | "weightMinGrams" | "weightStepGrams" | "minQuantities"
+>;
 
-/** Les conditions de vente d'un article à la pièce — sans pas ni minimum. */
+/** Les conditions de vente d'un article à la pièce — sans pas ni minimum, ni minimum de pièces. */
 export const PIECE_SALE_TERMS: CatalogSaleTerms = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
+  minQuantities: NO_CATALOG_MIN_QUANTITIES,
 };
 
 /**

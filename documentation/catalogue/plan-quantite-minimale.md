@@ -76,7 +76,14 @@ poids ; un minimum posé puis passé au poids reste en base mais n'est plus serv
   la case « suit le défaut » sur les autres ; enregistrement immédiat sur sa
   route. Aucun contexte de vente lu.
 
-### M4 — l'effet (boutique + serveur)
+### M4 — l'effet (boutique + serveur) — serveur ✅ bâti le 2026-10-29, écrans à faire
+
+Le refus vit dans `OrderLinePricing.priceAll`, seul passage du devis (boutique
+et staff), de la passation (en ligne, staff, comptoir) et des lignes NOUVELLES
+d'une révision : `ensureMinimumQuantity` sur le total d'un SKU,
+`QuantityBelowMinimumError` (409). ⚠️ Une ligne GARDÉE qu'on baisse en révision
+n'est pas contrôlée (règle R3 du plan de modification : on ne relit pas le
+catalogue) — à trancher par Hugo.
 
 - Boutique : `firstQuantityOf` part du minimum ; le « − » s'arrête au minimum.
 - Serveur : refus au devis et à la passation (Q5), routes staff comprises (Q6).

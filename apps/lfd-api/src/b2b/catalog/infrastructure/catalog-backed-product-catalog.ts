@@ -90,6 +90,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     saleUnit: item.saleUnit,
     weightMinGrams: item.weightMinGrams,
     weightStepGrams: item.weightStepGrams,
+    minQuantities: item.minQuantities,
     // 🔴 La frappe, ici et pas ailleurs : c'est l'endroit qui vient de LIRE le
     // catalogue. Le prix scellé ne peut donc pas venir d'un appelant.
     article: catalogueArticle({

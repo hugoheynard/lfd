@@ -92,3 +92,24 @@ export class WeightArticleWithoutStepError extends BusinessError {
     );
   }
 }
+
+/**
+ * Moins de pièces que le minimum d'achat de l'article pour la clientèle de la
+ * commande (`documentation/catalogue/plan-quantite-minimale.md`, Q5). Un 409 :
+ * la quantité est bien formée, c'est la règle de vente de l'article qui la
+ * refuse — et elle vaut au comptoir comme en ligne (Q6).
+ */
+export class QuantityBelowMinimumError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly articleName: string,
+    readonly quantity: number,
+    readonly minimum: number,
+  ) {
+    super(
+      "orders.line.quantity_below_minimum",
+      `${articleName} (${sku}) se commande par ${minimum} pièces au moins, et la commande en demande ` +
+        `${quantity}. Commandez au moins ${minimum} pièces, ou retirez la ligne.`,
+    );
+  }
+}

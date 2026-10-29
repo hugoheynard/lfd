@@ -1,13 +1,19 @@
 import { MAX_LINE_WEIGHT_GRAMS } from "@lfd/contracts";
 
 import {
+  QuantityBelowMinimumError,
   SaleUnitMismatchError,
   WeightAboveGuardError,
   WeightArticleWithoutStepError,
   WeightBelowMinimumError,
   WeightOffStepError,
 } from "../../errors/sale-quantity-errors.js";
-import { type ArticleSaleTerms, ensureSaleQuantity } from "../sale-quantity-rules.js";
+import {
+  type ArticleMinimumTerms,
+  type ArticleSaleTerms,
+  ensureMinimumQuantity,
+  ensureSaleQuantity,
+} from "../sale-quantity-rules.js";
 
 /** Du saumon gravlax : au poids, par 100 g, à partir de 200 g. */
 const SALMON: ArticleSaleTerms = {
@@ -85,5 +91,47 @@ describe("ensureSaleQuantity — une quantité dans l'unité de l'article", () =
     expect(() => ensureSaleQuantity(noStep, { quantity: 500, saleUnit: "weight" })).toThrow(
       WeightArticleWithoutStepError,
     );
+  });
+});
+
+/** Le croissant, par 6 au moins pour la clientèle servie. */
+const CROISSANT_BY_SIX: ArticleMinimumTerms = {
+  sku: "VIE-001",
+  name: "Croissant",
+  saleUnit: "piece",
+  minQuantity: 6,
+};
+
+describe("ensureMinimumQuantity — le minimum d'achat en pièces", () => {
+  it("accepte le minimum et au-delà", () => {
+    expect(() => ensureMinimumQuantity(CROISSANT_BY_SIX, 6)).not.toThrow();
+    expect(() => ensureMinimumQuantity(CROISSANT_BY_SIX, 40)).not.toThrow();
+  });
+
+  it("refuse en dessous, en nommant l'article, le minimum et le geste", () => {
+    const refusal = () => ensureMinimumQuantity(CROISSANT_BY_SIX, 5);
+
+    expect(refusal).toThrow(QuantityBelowMinimumError);
+    expect(refusal).toThrow(/Croissant \(VIE-001\).*6 pièces au moins.*en demande 5/);
+    expect(refusal).toThrow(/Commandez au moins 6 pièces, ou retirez la ligne/);
+  });
+
+  it("le refus est un 409 : la quantité est bien formée, la règle de vente la refuse", () => {
+    expect(new QuantityBelowMinimumError("VIE-001", "Croissant", 5, 6)).toMatchObject({
+      code: "orders.line.quantity_below_minimum",
+      category: "business",
+    });
+  });
+
+  it("ne dit rien sans minimum", () => {
+    expect(() =>
+      ensureMinimumQuantity({ ...CROISSANT_BY_SIX, minQuantity: null }, 1),
+    ).not.toThrow();
+  });
+
+  it("ne s'applique jamais à un article au poids, dont le minimum est en grammes", () => {
+    expect(() =>
+      ensureMinimumQuantity({ ...CROISSANT_BY_SIX, saleUnit: "weight" }, 1),
+    ).not.toThrow();
   });
 });
