@@ -316,3 +316,10 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
 **Non vérifié** : ce que coûte un engagement de volume devenu orphelin à sa
 clôture ; le schéma des habitudes client et des suggestions ; les chiffres en
 base.
+
+> **Validé par Hugo le 2026-10-29** (refus « pas en vente aux pros », L5 révisé) :
+> compter les audiences `segment` et `company` d'une règle comme pro, et `all`
+> comme toutes clientèles. Hugo : « ça ressemble à un vestige d'avant, ça ne
+> l'invalide pas, mais maintenant qu'on parle déjà en audience pour tout, c'est
+> un bon premier filtre ». Le typage `all | segment | company` des règles reste
+> à repenser en audience (pro / particuliers) un jour — noté, non lancé.
