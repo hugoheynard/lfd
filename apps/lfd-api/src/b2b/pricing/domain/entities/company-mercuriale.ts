@@ -1,49 +1,29 @@
-import {
-  ArchivedMercurialeIsSealedError,
-  DuplicateMercurialeSkuError,
-  EmptyMercurialeError,
-  NonDecreasingMercurialeTiersError,
-  ReversedValidityWindowError,
-} from "../pricing-errors.js";
-import {
-  normalizeGrid,
-  type GridRefusals,
-  type PricingGridLine,
-  type PricingTier,
-} from "../pricing-grid.js";
+import { ArchivedMercurialeIsSealedError, ReversedValidityWindowError } from "../pricing-errors.js";
+import { normalizeGrid, type PricingGridLine } from "../pricing-grid.js";
 import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
-import { volumeQuantityOf } from "../price-rule.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
-import { describeDay } from "../pricing-act-summary.js";
+import type {
+  LineSegment,
+  MercurialeAmendment,
+  MercurialeAmendmentDraft,
+} from "./mercuriale-amendment.js";
 import {
-  allSegments,
+  MERCURIALE_REFUSALS,
   assertNoDoubleNegotiation,
   checkedAmendment,
-  linesAt,
-  segmentAt,
-  type LineSegment,
-  type MercurialeAmendment,
-  type MercurialeAmendmentDraft,
-} from "./mercuriale-amendment.js";
+} from "./mercuriale-amendment-checks.js";
+import { carryOverDraft, type CarryOver } from "./mercuriale-carry-over.js";
+import { mercurialeMissesTier, mercurialeRuleFor, segmentFor } from "./mercuriale-rule.js";
+import { allSegments, linesAt } from "./mercuriale-segments.js";
 
+export type { CarryOver } from "./mercuriale-carry-over.js";
 export type {
   AmendmentOrigin,
   LineSegment,
   MercurialeAmendment,
   MercurialeAmendmentDraft,
 } from "./mercuriale-amendment.js";
-
-/**
- * Les trois refus d'une grille, **dits en mercuriale**. Le contrôle est partagé
- * (`pricing-grid.ts`) ; les phrases ne le sont pas — un commercial sur la fiche
- * d'un client ne doit pas lire un message qui parle de gabarit.
- */
-const REFUSALS: GridRefusals = {
-  empty: () => new EmptyMercurialeError(),
-  duplicateSku: (sku) => new DuplicateMercurialeSkuError(sku),
-  nonDecreasing: (sku, minQuantity) => new NonDecreasingMercurialeTiersError(sku, minQuantity),
-};
 
 /** Une ligne accordée : un article, ses paliers. Pas de `plannedVolume` — cf. la classe. */
 export type MercurialeLine = PricingGridLine;
@@ -108,23 +88,14 @@ export interface CompanyMercurialeState extends CompanyMercurialeDraft {
  * L'**audience** : une mercuriale vise une société nommée par construction —
  * `companyId` est un champ, pas un choix.
  *
- * ## Elle se prend en bloc
+ * ## La grille ne se réécrit pas — elle s'amende
  *
- * Décision du 2026-09-08 : on la pose entière, on la clôt entière. Une ligne n'a
- * pas de cycle de vie propre — pas de palier qu'on suspend, pas d'article qu'on
- * retire. Si un prix est faux, on clôt et on repose, ce qui laisse les deux
- * décisions visibles côte à côte au lieu de réécrire l'explication d'une facture
- * déjà payée.
- *
- * La seule exception est le **libellé** (cf. {@link rename}).
- *
- * ## …mais elle s'amende (2026-10-29)
- *
- * Un **avenant** daté ajoute une ligne, ou arrête une ligne à une date, sans
- * réécrire la grille (cf. {@link amend} et `mercuriale-amendment.ts`). C'est
- * la réponse à « un article de plus en cours d'accord » qui ne coûte ni la
- * clôture ni la copie de toute la grille — et qui laisse intact ce qu'une
- * facture passée explique.
+ * Décision du 2026-09-08 : on la pose entière, on la clôt entière, et la
+ * grille posée n'est jamais réécrite — seul le **libellé** se corrige
+ * (cf. {@link rename}). Depuis le 2026-10-29, un **avenant** daté ajoute une
+ * ligne, ou en arrête une à une date (changer un prix = arrêter puis ouvrir),
+ * sans toucher la grille (cf. {@link amend}, `mercuriale-amendment.ts`) : ce
+ * qu'une facture passée explique reste intact.
  *
  * ## Pas de `plannedVolume`
  *
@@ -150,7 +121,7 @@ export class CompanyMercuriale {
     }
     return new CompanyMercuriale({
       ...draft,
-      lines: normalizeGrid(draft.lines, REFUSALS),
+      lines: normalizeGrid(draft.lines, MERCURIALE_REFUSALS),
       id,
       createdBy,
       lifecycle: IN_FORCE,
@@ -193,15 +164,9 @@ export class CompanyMercuriale {
   }
 
   /**
-   * **Renommer** — la seule modification qu'une mercuriale accepte.
-   *
-   * Le libellé ne participe à aucun calcul : il n'a qu'un rôle, être lu.
-   * Corriger une faute de frappe ne devrait pas coûter une décision close.
-   *
-   * Tout le reste — un prix, un article, une borne — se change en **closant et
-   * reposant**. Retoucher une grille qui a déjà facturé réécrirait
-   * l'explication de factures payées : la trace figée sur la commande garderait
-   * l'ancien montant, et le journal raconterait autre chose.
+   * **Renommer** — la seule retouche du document lui-même : le libellé ne
+   * participe à aucun calcul. Un prix, un article ou une borne se changent par
+   * un avenant ou en closant et reposant, jamais en réécrivant la grille.
    *
    * @throws {ArchivedMercurialeIsSealedError} elle est close.
    */
@@ -238,6 +203,17 @@ export class CompanyMercuriale {
   }
 
   /**
+   * **Reporter** sur la référence née d'un détachement le prix que l'ancienne
+   * porte ici — un avenant dont l'origine est dite (cf. {@link carryOverDraft}).
+   *
+   * @throws {NoNegotiatedLineToCarryError} l'ancienne référence n'a plus de prix ici.
+   * @throws les refus de {@link amend}, dont le doublon.
+   */
+  carryOver(id: string, carry: CarryOver, by: string, now: Date): CompanyMercuriale {
+    return this.amend(id, carryOverDraft(this.state, carry, now), by, now);
+  }
+
+  /**
    * **Clore.** Terminal : elle cesse d'agir et **rend sa place**.
    *
    * Rendre sa place est le point : c'est la condition pour en reposer une sur la
@@ -247,15 +223,10 @@ export class CompanyMercuriale {
    * Rien n'est effacé — une lecture datée d'avant la clôture la retrouve, et ce
    * qu'elle a facturé est figé sur les commandes.
    *
-   * ## 🔴 Cette dernière phrase était FAUSSE jusqu'au 2026-09-09
-   *
-   * Une lecture datée ne la retrouvait pas : tous les lecteurs filtrent
-   * `archived_at IS NULL`, donc clore la faisait **disparaître** du passé
-   * — alors que quatre affirmations du dépôt promettaient l'inverse (R17).
-   *
-   * Clore écrit désormais **aussi** la fin dans la fenêtre, qui est l'endroit où
-   * le domaine la lit déjà. `archived_at` garde son rôle : rendre sa place dans
-   * la contrainte d'exclusion, pour qu'on puisse reposer.
+   * 🔴 Fausse jusqu'au 2026-09-09 (R17) : les lecteurs filtrent
+   * `archived_at IS NULL`, et clore la faisait disparaître du passé. Clore
+   * écrit donc **aussi** la fin dans la fenêtre, où le domaine la lit ;
+   * `archived_at` garde son rôle — rendre sa place pour qu'on puisse reposer.
    *
    * {@link closingWindowAt} porte les quatre cas — dont les **trois** où ne rien
    * borner est la bonne réponse.
@@ -287,113 +258,16 @@ export class CompanyMercuriale {
 
   /**
    * **La mercuriale vue comme la règle de son étage**, pour CET article et à la
-   * mesure de CE contexte. `null` quand elle ne porte pas l'article, ou quand la
-   * mesure n'atteint aucun palier — l'étage est alors transparent, exactement
-   * comme lorsqu'aucune règle ne s'applique.
-   *
-   * ## Pourquoi ici, et pas dans le lecteur
-   *
-   * Parce qu'il faut la **mesure**, et qu'un lecteur ne l'a pas : il charge une
-   * fois pour tout un panier, dont chaque ligne a sa propre quantité. C'est la
-   * décision qu'a prise le barème de volume avant nous : `ladderAsRule` n'est
-   * appelé par **aucun** lecteur, ses quatre appelants convertissent chacun au
-   * moment où ils connaissent la quantité (vérifié le 2026-09-08).
-   *
-   * Et ce n'est pas une préférence : convertir trop tôt ne casse pas, ça
-   * **ment**. La projection charge ses candidats une fois puis résout à N
-   * quantités ; une mercuriale figée au premier palier y rendrait une courbe
-   * plate, et une courbe plate se lit comme une réponse.
-   *
-   * ## 🔴 Au plus UNE règle
-   *
-   * Toutes les règles issues d'une mercuriale portent `id = mercuriale.id`. En
-   * rendre deux — deux paliers du même article — recréerait l'ambiguïté qui a
-   * déjà coûté un 400 sur une commande de 20 à l'étage volume. Le palier est
-   * donc choisi ici, pas laissé à la résolution.
-   *
-   * ## La mesure est le CUMUL, pas la commande
-   *
-   * `volumeQuantityOf` rend `cumulativeQuantity ?? quantity`, et c'est ce que
-   * `applies` mesure pour cet étage. Un client sous engagement obtient donc le
-   * palier qu'il a négocié dès sa première commande — c'est tout l'objet de
-   * l'engagement.
-   *
-   * ## Le compte de tarif, pas la société servie
-   *
-   * Un sous-compte qui suit le tarif de son principal paie la mercuriale du
-   * principal (`sous-comptes.md`, §2.2). Elle ne vaut donc que pour le
-   * compte de tarif du contexte (`pricingCompanyId`), et la règle rendue vise
-   * la société servie : c'est à elle que la résolution confronte l'audience.
-   * Une mercuriale d'un autre compte ne rend rien.
+   * mesure de CE contexte — `null` quand elle ne porte pas l'article ou qu'aucun
+   * palier n'est atteint. Le pourquoi est sur {@link mercurialeRuleFor}.
    */
   asRuleFor(context: PricingContext): PriceRule | null {
-    if (context.pricingCompanyId !== this.state.companyId || context.companyId === null) {
-      return null;
-    }
-    const segment = this.segmentFor(context);
-    if (segment === null) {
-      return null;
-    }
-    const { line } = segment;
-    const measured = volumeQuantityOf(context);
-    // Le PLUS HAUT palier atteint gagne — les paliers sont triés croissants par
-    // l'agrégat, donc le dernier qui passe est le bon.
-    let tier: PricingTier | null = null;
-    for (const candidate of line.tiers) {
-      if (measured >= candidate.minQuantity) {
-        tier = candidate;
-      }
-    }
-    if (tier === null) {
-      return null;
-    }
-    return {
-      id: this.state.id,
-      stage: "mercuriale",
-      scope: { type: "product", id: line.sku },
-      audience: { type: "company", id: context.companyId },
-      minQuantity: tier.minQuantity,
-      // La fenêtre de la LIGNE : celle du document pour la grille, celle de
-      // l'avenant coupée par le document, et l'une ou l'autre coupée par un
-      // arrêt. L'id reste celui du document (seconde contradiction, B1) : le
-      // scellement « a facturé » cherche des ids de documents.
-      validFrom: segment.from,
-      validTo: segment.to,
-      // Une pause du document suspend ses avenants (Q3).
-      suspendedFrom: suspendedFromOf(this.state.lifecycle),
-      label: this.labelOf(segment),
-      // Une mercuriale ne franchit pas son propre scellement — l'agrégat des
-      // règles le refuse, et le dire ici évite qu'on se demande.
-      stacksOverMercuriale: false,
-      nature: "replace",
-      amountMillicents: tier.unitPriceMillicents,
-    };
+    return mercurialeRuleFor(this.state, context);
   }
 
-  /**
-   * La grille **porte cet article** mais aucun palier n'est atteint à cette
-   * mesure — le seul `null` de {@link asRuleFor} qui soit une décision.
-   *
-   * 🔴 Il existe parce que `asRuleFor` rend `null` pour **deux** raisons, et que
-   * les confondre écrirait « palier non atteint » sur chaque ligne de chaque
-   * commande d'un client sous mercuriale, pour tout article hors grille — un
-   * motif faux, en volume non borné, sur l'écran fait pour le litige (R25).
-   *
-   * L'article hors grille n'est pas une règle écartée : la mercuriale n'avait
-   * rien à en dire.
-   */
+  /** L'article est négocié mais aucun palier n'est atteint (cf. {@link mercurialeMissesTier}). */
   missesTierFor(context: PricingContext): boolean {
-    // Une mercuriale d'un autre compte n'a rien à dire, même pas « palier non
-    // atteint » (cf. `asRuleFor`).
-    if (context.pricingCompanyId !== this.state.companyId) {
-      return false;
-    }
-    const segment = this.segmentFor(context);
-    if (segment === null) {
-      return false;
-    }
-    const measured = volumeQuantityOf(context);
-    return !segment.line.tiers.some((tier) => measured >= tier.minQuantity);
+    return mercurialeMissesTier(this.state, context);
   }
 
   toPersistence(): CompanyMercurialeState {
@@ -420,25 +294,7 @@ export class CompanyMercuriale {
    * seuils de la projection —, sans recopier la recherche.
    */
   lineFor(context: PricingContext): MercurialeLine | null {
-    return this.segmentFor(context)?.line ?? null;
-  }
-
-  /**
-   * **La ligne qui parle pour cet article à cet instant** — grille ou avenant,
-   * arrêts compris. Partagée par {@link asRuleFor} et {@link missesTierFor},
-   * pour qu'ils ne divergent pas. La portée d'une mercuriale est l'ARTICLE :
-   * `pricingContextFor` renseigne `productSku` et `variantSku` avec le même
-   * sku, lire l'un des deux suffit et dit lequel fait foi.
-   */
-  private segmentFor(context: PricingContext): LineSegment | null {
-    return segmentAt(this.state, context.productSku, context.at);
-  }
-
-  /** « Mercuriale 2027 — avenant du 1er novembre 2026 » : la pièce d'où vient le prix. */
-  private labelOf(segment: LineSegment): string {
-    return segment.amendment === null
-      ? this.state.label
-      : `${this.state.label} — avenant du ${describeDay(segment.amendment.validFrom)}`;
+    return segmentFor(this.state, context)?.line ?? null;
   }
 
   private assertNotArchived(): void {

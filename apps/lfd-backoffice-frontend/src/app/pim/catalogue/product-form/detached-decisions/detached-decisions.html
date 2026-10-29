@@ -11,7 +11,19 @@
       </p>
       <ul>
         @for (line of lines(); track line.id) {
-          <li>{{ line.text }}</li>
+          <li>
+            {{ line.text }}
+            @if (line.carried) {
+              — reportée sur {{ newSku() }}
+            } @else if (line.carriable && newSku(); as target) {
+              <app-mercuriale-carry-over
+                [mercurialeId]="line.id"
+                [fromSku]="sku"
+                [toSku]="target"
+                (carried)="reload()"
+              />
+            }
+          </li>
         }
       </ul>
     </fold-callout>

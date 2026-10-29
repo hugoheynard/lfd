@@ -8,13 +8,10 @@
  */
 import type { AmendCompanyMercurialePayload } from "@lfd/contracts";
 
-import { UnitOfWork } from "../../../../../platform/database/unit-of-work.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CompanyMercuriale } from "../../../domain/entities/company-mercuriale.js";
-import { CompanyMercurialeRepository } from "../../../domain/ports/company-mercuriale.repository.js";
 import { PricedCompanyReader } from "../../../domain/ports/priced-company.reader.js";
-import type { PricingAct } from "../../../domain/pricing-act.js";
 import {
   AmendedMercurialeNotFoundError,
   PricedCompanyNotFoundError,
@@ -24,29 +21,14 @@ import {
 import { InMemorySaleReferences } from "../../../infrastructure/in-memory-sale-references.js";
 import { AmendCompanyMercurialeCommand } from "../amend-company-mercuriale.command.js";
 import { AmendCompanyMercurialeHandler } from "../amend-company-mercuriale.handler.js";
+import {
+  LockingMercuriales,
+  TracingUnitOfWork,
+  type Trace,
+} from "./mercuriale-amendment.doubles.js";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
 const REFERENCES = new InMemorySaleReferences(["VIE-012", "PAI-001-1"], ["PAI-009"]);
-
-/** Ce qui s'est passé, dans l'ordre, et si c'était dans la transaction. */
-type Trace = string[];
-
-class TracingUnitOfWork extends UnitOfWork {
-  open = false;
-  constructor(private readonly trace: Trace) {
-    super();
-  }
-  async run<T>(work: () => Promise<T>): Promise<T> {
-    this.trace.push("begin");
-    this.open = true;
-    try {
-      return await work();
-    } finally {
-      this.open = false;
-      this.trace.push("end");
-    }
-  }
-}
 
 class Companies extends PricedCompanyReader {
   constructor(private readonly known: boolean) {
@@ -54,44 +36,6 @@ class Companies extends PricedCompanyReader {
   }
   exists(): Promise<boolean> {
     return Promise.resolve(this.known);
-  }
-}
-
-class LockingMercuriales extends CompanyMercurialeRepository {
-  readonly written: { mercuriale: CompanyMercuriale; amendmentId: string; act: PricingAct }[] = [];
-  constructor(
-    private readonly trace: Trace,
-    private readonly uow: TracingUnitOfWork,
-    private readonly stored: CompanyMercuriale | null,
-  ) {
-    super();
-  }
-  lockForAmendment(): Promise<CompanyMercuriale | null> {
-    this.trace.push(this.uow.open ? "lock+load (in tx)" : "lock+load (OUTSIDE tx)");
-    return Promise.resolve(this.stored);
-  }
-  addAmendment(mercuriale: CompanyMercuriale, amendmentId: string, act: PricingAct): Promise<void> {
-    this.trace.push(this.uow.open ? "write (in tx)" : "write (OUTSIDE tx)");
-    this.written.push({ mercuriale, amendmentId, act });
-    return Promise.resolve();
-  }
-  save(): Promise<void> {
-    return Promise.resolve();
-  }
-  update(): Promise<void> {
-    return Promise.resolve();
-  }
-  rename(): Promise<void> {
-    return Promise.resolve();
-  }
-  load(): Promise<CompanyMercuriale | null> {
-    return Promise.resolve(null);
-  }
-  archivedOverlapping(): Promise<readonly string[]> {
-    return Promise.resolve([]);
-  }
-  runningFor(): Promise<CompanyMercuriale | null> {
-    return Promise.resolve(null);
   }
 }
 

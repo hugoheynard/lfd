@@ -1,0 +1,114 @@
+<div class="amendments">
+  @if (amendments().length > 0) {
+    <fold-element-title variant="eyebrow" title="Avenants" />
+    <ul class="amendments-list" data-amendments>
+      @for (amendment of amendments(); track amendment.id) {
+        <li>{{ lineOf(amendment) }}</li>
+      }
+    </ul>
+  }
+
+  @if (amendable()) {
+    @switch (gesture()) {
+      @case (null) {
+        <div class="amendments-actions">
+          <button foldButton size="sm" emphasis="outline" (click)="open('price')" data-amend-price>
+            Ajouter ou changer un prix
+          </button>
+          @if (running().length > 0) {
+            <button foldButton size="sm" emphasis="outline" (click)="open('end')" data-amend-end>
+              Arrêter une ligne
+            </button>
+          }
+        </div>
+      }
+      @default {
+        <section
+          class="amendments-form"
+          [attr.aria-label]="
+            gesture() === 'end' ? 'Arrêter une ligne' : 'Ajouter ou changer un prix'
+          "
+        >
+          @if (gesture() === 'end') {
+            <fold-combobox
+              label="Ligne à arrêter"
+              placeholder="Nom ou référence"
+              emptyText="Aucune ligne en cours ne correspond."
+              resultLabel="lignes"
+              required
+              [options]="running()"
+              [value]="sku()"
+              (valueChange)="sku.set($event)"
+            />
+            <fold-date
+              label="Arrêtée à partir du"
+              optional
+              optionalLabel="vide : dès maintenant"
+              [(value)]="fromDay"
+            />
+          } @else {
+            <fold-combobox
+              label="Article"
+              placeholder="Nom ou référence d'un article du catalogue pro"
+              emptyText="Aucun article ne correspond."
+              resultLabel="articles"
+              required
+              [options]="catalogue()"
+              [value]="sku()"
+              (valueChange)="sku.set($event)"
+              [hint]="
+                changesPrice()
+                  ? 'Cet article a déjà un prix en cours : l’avenant l’arrête et ouvre le nouveau à la même date.'
+                  : 'Un article hors de la grille : l’avenant l’ajoute.'
+              "
+            />
+            <fold-number-input
+              label="Prix HT, en euros"
+              required
+              [min]="0"
+              [step]="0.1"
+              [decimals]="5"
+              [value]="euros()"
+              (valueChange)="euros.set($event)"
+            />
+            <fold-date
+              label="À partir du"
+              optional
+              optionalLabel="vide : dès maintenant"
+              [(value)]="fromDay"
+            />
+            <fold-date
+              label="Jusqu'au"
+              optional
+              optionalLabel="vide : fin de la mercuriale"
+              [(value)]="toDay"
+            />
+          }
+          <fold-textarea
+            label="Motif"
+            required
+            [rows]="2"
+            [hint]="
+              tooLong()
+                ? 'Au plus ' + maxLength + ' caractères.'
+                : 'Gardé au journal de l’accord. Au plus ' + maxLength + ' caractères.'
+            "
+            [(value)]="reason"
+            data-amend-reason
+          />
+          @if (refusal(); as message) {
+            <fold-callout appearance="inset" variant="alert" announce data-amend-refusal>{{
+              message
+            }}</fold-callout>
+          }
+          <div class="amendments-actions">
+            <button foldButton size="sm" [disabled]="saving()" (click)="submit()" data-amend-submit>
+              {{ saving() ? 'Enregistrement…' : 'Enregistrer l’avenant' }}
+            </button>
+            <button foldButton size="sm" emphasis="outline" (click)="cancel()">Annuler</button>
+          </div>
+        </section>
+      }
+    }
+  }
+</div>

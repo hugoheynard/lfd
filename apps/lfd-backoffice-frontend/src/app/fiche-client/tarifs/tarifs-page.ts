@@ -54,7 +54,8 @@ import {
 import { CompanyPricingService } from './company-pricing.service';
 import { liveEffort } from './live-effort';
 import { mercurialeCsv, mercurialeFileName } from './mercuriale-csv';
-import { mercurialeRows, type MercurialeRowView } from './mercuriale-rows';
+import { MercurialeAmendments } from './mercuriale-amendments/mercuriale-amendments';
+import { mercurialeRowKey, mercurialeRows, type MercurialeRowView } from './mercuriale-rows';
 import { openRoomMillicents } from './negotiation-room';
 import { businessDayStart } from '../../shared/business-day';
 import { staffAuthor } from '../../shared/staff-author';
@@ -154,6 +155,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
     FoldElementTitleComponent,
     VolumeEffort,
     PricingFollow,
+    MercurialeAmendments,
   ],
   templateUrl: './tarifs-page.html',
   styleUrl: './tarifs-page.scss',
@@ -291,8 +293,7 @@ export class ClientTarifsPage {
     { key: 'gap', label: 'Écart', width: '8rem' },
   ];
 
-  protected readonly readRowKey = (row: MercurialeRowView): string =>
-    `${row.sku}-${String(row.minQuantity)}`;
+  protected readonly readRowKey = mercurialeRowKey;
 
   protected readonly readEmpty: FoldTableEmpty = {
     title: 'Cette mercuriale ne porte aucune ligne',
@@ -483,6 +484,14 @@ export class ClientTarifsPage {
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * Un avenant vient d'être écrit : la vue est relue — c'est elle qui fait foi.
+   * La saisie en cours survit, comme après une clôture (cf. `reload`).
+   */
+  protected onAmended(): void {
+    void this.reload(this.id(), false);
   }
 
   /**

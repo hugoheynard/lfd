@@ -92,6 +92,10 @@ const ALLOWED = new Set([
   // La tuile de la vitrine sous la référence du défaut (bascule L3,
   // 2026-10-29) : elle PORTE le filtre (`...STILL_SOLD`).
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-default-sale-reference.reader.ts",
+  // La filiation d'un article né d'un détachement, que le report d'un prix
+  // négocié vérifie (`plan-tarif-date-sur-une-reference.md`, § 6, 2026-10-30) :
+  // elle PORTE le filtre (`...STILL_SOLD`) — on ne reporte pas sur un retiré.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-detachment-origin.reader.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.

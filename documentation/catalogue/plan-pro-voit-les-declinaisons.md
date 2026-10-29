@@ -298,7 +298,16 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
     référentiel (`lineage.origin.variantSku`) et non dans
     `detached_from_sku` : la fiche naît inactive, et la liste doit se lire
     avant qu'elle se vende.
-- **L7c** (lot suivant, non bâti — choix fait sous mandat, il est gros) : le
+- **L7c, pour la mercuriale : bâti le 2026-10-30** (non commité à l'écriture
+  de cette ligne) — Hugo a tranché la question ouverte ci-dessous par
+  l'**avenant daté** : reporter une mercuriale, c'est lui ajouter un avenant
+  sur la nouvelle référence, jamais en poser une seconde ni réécrire la grille
+  ([`../pricing/plan-tarif-date-sur-une-reference.md`](../pricing/plan-tarif-date-sur-une-reference.md),
+  § 6, T5). Garde `detached_from_sku`, bouton « Reporter sur … » et
+  `fold-inline-confirm` sur la liste du (d). Les cinq autres familles (règles,
+  planchers, barèmes, engagements, gabarits) restent à reposer par leur propre
+  écran — non bâti.
+- **L7c** (texte d'origine — choix fait sous mandat, il est gros) : le
   geste staff qui REPOSE sur la nouvelle référence les décisions choisies —
   une nouvelle décision par famille, par l'agrégat et l'écriture de chacune
   (six chemins de pose, chacun avec ses recouvrements et son contrôle « en

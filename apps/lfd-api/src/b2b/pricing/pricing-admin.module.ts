@@ -67,6 +67,9 @@ import { CloseCompanyMercurialeHandler } from "./application/commands/close-comp
 import { RenameCompanyMercurialeHandler } from "./application/commands/rename-company-mercuriale.handler.js";
 import { PoseCompanyMercurialeHandler } from "./application/commands/pose-company-mercuriale.handler.js";
 import { AmendCompanyMercurialeHandler } from "./application/commands/amend-company-mercuriale.handler.js";
+import { CarryOverMercurialeLineHandler } from "./application/commands/carry-over-mercuriale-line.handler.js";
+import { SaleReferenceLineageReader } from "./domain/ports/sale-reference-lineage.reader.js";
+import { CatalogSaleReferenceLineageReader } from "./infrastructure/catalog-sale-reference-lineage.reader.js";
 import { CloseVolumeCommitmentHandler } from "./application/commands/close-volume-commitment.handler.js";
 import { SignVolumeCommitmentHandler } from "./application/commands/sign-volume-commitment.handler.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
@@ -175,6 +178,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     { provide: PricedDecisionsReader, useClass: PrismaPricedDecisionsReader },
     PoseCompanyMercurialeHandler,
     AmendCompanyMercurialeHandler,
+    CarryOverMercurialeLineHandler,
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,
     SavePriceTemplateHandler,
@@ -200,6 +204,9 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // « Cette référence est-elle en vente ? » — les éditeurs de décisions la
     // posent avant d'écrire (L5 de `plan-pro-voit-les-declinaisons.md`).
     { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },
+    // « De quelle ancienne référence est-elle née ? » — le report d'une
+    // mercuriale sur la référence détachée (`plan-tarif-date-sur-une-reference.md`, § 6).
+    { provide: SaleReferenceLineageReader, useClass: CatalogSaleReferenceLineageReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
     // Les décisions debout sur une référence — la fiche née d'un détachement
     // les liste pour son ancienne référence (L7 de `plan-pro-voit-les-declinaisons.md`).

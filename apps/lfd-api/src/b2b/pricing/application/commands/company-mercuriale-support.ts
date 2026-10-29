@@ -141,3 +141,17 @@ export function describeAmendment(
   }
   return `Avenant — ${parts.join(" ; ")}`;
 }
+
+/**
+ * La phrase figée d'un report (§ 6) : « Avenant — + CHO-001 reporté depuis
+ * CHO-000-2, du 1er novembre 2026 au 31 décembre 2026 ».
+ */
+export function describeCarryOver(
+  mercuriale: CompanyMercuriale,
+  fromSku: string,
+  toSku: string,
+  from: Date,
+): string {
+  const window = describeWindowOf(from, mercuriale.toPersistence().validTo);
+  return `Avenant — + ${toSku} reporté depuis ${fromSku}, ${window}`;
+}

@@ -5,7 +5,7 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { gapBp, mercurialeRows } from '../mercuriale-rows';
+import { gapBp, mercurialeRowKey, mercurialeRows } from '../mercuriale-rows';
 
 /**
  * **La jointure entre ce qu'on a accordé et ce que ça vaut au catalogue.**
@@ -121,5 +121,50 @@ describe('la jointure', () => {
     );
 
     expect(rows.map((row) => row.sku)).toEqual(['B', 'A']);
+  });
+});
+
+describe('les lignes datées à part (avenants, 2026-10-29)', () => {
+  it('dit l’avenant, sa fin et son état — et garde une clé par pièce', () => {
+    const [grid, amended] = mercurialeRows(
+      mercuriale([
+        {
+          sku: 'VIE-012',
+          productName: 'Abricotin',
+          unitPriceMillicents: 173_270,
+          minQuantity: 1,
+          validTo: '2026-11-01T00:00:00.000Z',
+          status: 'expired',
+        },
+        {
+          sku: 'VIE-012',
+          productName: 'Abricotin',
+          unitPriceMillicents: 160_000,
+          minQuantity: 1,
+          validFrom: '2026-11-01T00:00:00.000Z',
+          validTo: null,
+          status: 'active',
+          amendmentId: 'amd_1',
+          amendmentReason: 'Prix revu',
+        },
+      ]),
+      CATEGORIES,
+    );
+
+    expect(grid?.lineNote).toBe('jusqu’au 01/11/2026 · Terminée');
+    expect(amended?.lineNote).toBe('Avenant du 01/11/2026 · En vigueur');
+    expect(grid && amended && mercurialeRowKey(grid) !== mercurialeRowKey(amended)).toBe(true);
+  });
+
+  it('se tait sur une ligne qui suit la mercuriale', () => {
+    const [row] = mercurialeRows(
+      mercuriale([
+        { sku: 'VIE-012', productName: 'Abricotin', unitPriceMillicents: 1, minQuantity: 1 },
+      ]),
+      CATEGORIES,
+    );
+
+    expect(row?.lineNote).toBeNull();
+    expect(row?.amendmentId).toBeNull();
   });
 });

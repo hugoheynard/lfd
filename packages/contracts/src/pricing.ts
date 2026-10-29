@@ -2021,6 +2021,23 @@ export interface AmendedMercurialeResponse {
   readonly amendmentId: string;
 }
 
+/**
+ * **Reporter** sur la référence née d'un détachement le prix négocié que
+ * l'ancienne porte dans une mercuriale — `POST admin/pricing/sale-references/
+ * :sku/decisions/mercuriales/:mercurialeId/carry-over`, où `:sku` est
+ * l'ANCIENNE référence (`plan-tarif-date-sur-une-reference.md`, § 6).
+ *
+ * Un avenant comme un autre, dont l'origine est dite : mêmes paliers, dès
+ * maintenant, jusqu'à la fin de la mercuriale. Le motif est obligatoire ;
+ * l'écran le préremplit. Répond `AmendedMercurialeResponse`.
+ */
+export const carryOverMercurialeLinePayloadSchema = z.object({
+  /** La NOUVELLE référence, qui doit être née de l'ancienne. */
+  toSku: z.string().min(1),
+  reason: z.string().min(1).max(500),
+});
+export type CarryOverMercurialeLinePayload = z.infer<typeof carryOverMercurialeLinePayloadSchema>;
+
 /** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
 export interface AffectedRulesResponse {
   readonly affectedRules: number;

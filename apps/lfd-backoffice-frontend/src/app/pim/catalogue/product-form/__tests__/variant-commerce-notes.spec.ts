@@ -223,10 +223,14 @@ class StubCatalogue {
 
 class StubDecisions {
   readonly asked: string[] = [];
-  constructor(private readonly views: readonly SaleReferenceDecisionView[]) {}
+  /** `bySku` : ce qu'une référence précise porte ; les autres rendent `views`. */
+  constructor(
+    private readonly views: readonly SaleReferenceDecisionView[],
+    private readonly bySku: Readonly<Record<string, readonly SaleReferenceDecisionView[]>> = {},
+  ) {}
   standingOn(sku: string): Promise<readonly SaleReferenceDecisionView[]> {
     this.asked.push(sku);
-    return Promise.resolve(this.views);
+    return Promise.resolve(this.bySku[sku] ?? this.views);
   }
 }
 
@@ -251,6 +255,9 @@ async function render<T>(
   const fixture = TestBed.createComponent(component);
   fixture.detectChanges();
   await fixture.whenStable();
+  // Les lectures en parallèle (ancienne et nouvelle référence) se règlent
+  // après plus d'un tour de micro-tâches : on laisse la file se vider.
+  await new Promise((resolve) => setTimeout(resolve));
   fixture.detectChanges();
   return fixture.nativeElement as HTMLElement;
 }
@@ -320,9 +327,56 @@ describe('<app-detached-decisions>', () => {
 
     const host = await render(DetachedDecisions, { api, decisions });
 
-    expect(decisions.asked).toEqual(['CHO-000-2']);
+    // L'ancienne référence, et la nouvelle — le défaut de la fiche — pour
+    // savoir si le report est déjà fait.
+    expect(decisions.asked).toEqual(['CHO-000-2', 'CHO-001-1']);
     expect(host.textContent).toContain('ancienne référence CHO-000-2');
     expect(host.textContent).toContain('Mercuriale « Mercuriale Hôtel » — Hôtel du Col');
+  });
+
+  const MERCURIALE: SaleReferenceDecisionView = {
+    kind: 'mercuriale',
+    id: 'mer_1',
+    label: 'Mercuriale Hôtel',
+    companyId: 'cmp_1',
+    companyName: 'Hôtel du Col',
+    validFrom: null,
+    validTo: null,
+    paused: false,
+  };
+
+  it('propose de reporter une mercuriale sur la nouvelle référence (T5)', async () => {
+    const api = new FakeApi();
+    api.lineage = ORIGIN;
+    const decisions = new StubDecisions([MERCURIALE], { 'CHO-001-1': [] });
+
+    const host = await render(DetachedDecisions, { api, decisions });
+
+    expect(host.querySelector('app-mercuriale-carry-over')).not.toBeNull();
+    expect(host.textContent).not.toContain('reportée sur');
+  });
+
+  it('dit « reportée » quand la mercuriale est déjà debout sur la nouvelle référence', async () => {
+    const api = new FakeApi();
+    api.lineage = ORIGIN;
+    const decisions = new StubDecisions([MERCURIALE], { 'CHO-001-1': [MERCURIALE] });
+
+    const host = await render(DetachedDecisions, { api, decisions });
+
+    expect(host.querySelector('app-mercuriale-carry-over')).toBeNull();
+    expect(host.textContent).toContain('reportée sur CHO-001-1');
+  });
+
+  it('ne propose pas de reporter une autre famille que la mercuriale', async () => {
+    const api = new FakeApi();
+    api.lineage = ORIGIN;
+    const decisions = new StubDecisions([{ ...MERCURIALE, kind: 'price_rule' }], {
+      'CHO-001-1': [],
+    });
+
+    const host = await render(DetachedDecisions, { api, decisions });
+
+    expect(host.querySelector('app-mercuriale-carry-over')).toBeNull();
   });
 
   it('ne demande rien sur une fiche qui n’est pas née d’un détachement', async () => {

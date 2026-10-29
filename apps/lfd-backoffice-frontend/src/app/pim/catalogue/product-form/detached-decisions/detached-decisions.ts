@@ -10,8 +10,9 @@ import type { SaleReferenceDecisionView } from '@lfd/contracts';
 import { FoldCalloutComponent } from 'fold-ng';
 
 import { SaleReferenceDecisionsService } from '../../../../b2b/tarification/sale-reference-decisions.service';
+import { MercurialeCarryOver } from '../mercuriale-carry-over/mercuriale-carry-over';
 import { ProductFormStore } from '../product-form-store';
-import { decisionLine } from './detached-decisions-lines';
+import { detachedDecisionLines } from './detached-decisions-lines';
 
 type LoadState = 'idle' | 'ready' | 'error';
 
@@ -22,9 +23,15 @@ type LoadState = 'idle' | 'ready' | 'error';
  *
  * Le tarif est à plat : une mercuriale, une règle, un plancher posés sur
  * l’ancienne référence ne valent que pour elle, et le détachement ne les
- * déplace pas (D2 de `plan-gestes-de-declinaison.md`). L’écran les liste, en
- * lecture seule ; les reposer sur la nouvelle référence est un geste staff
- * explicite qui n’existe pas encore (lot suivant du plan).
+ * déplace pas (D2 de `plan-gestes-de-declinaison.md`). L’écran les liste ;
+ * une MERCURIALE se reporte sur la nouvelle référence par un avenant daté
+ * (`plan-tarif-date-sur-une-reference.md`, § 6). Les autres familles gardent
+ * leur geste propre, sur leur écran.
+ *
+ * La nouvelle référence est le défaut de cette fiche : la déclinaison
+ * détachée en est devenue le défaut. Une mercuriale déjà reportée se lit
+ * aussi sur elle — sa ligne le dit au lieu de proposer un second report,
+ * que le serveur refuserait.
  *
  * L’ancienne référence vient de la filiation du référentiel
  * (`lineage.origin.variantSku`) : la fiche née inactive n’a pas encore
@@ -34,7 +41,7 @@ type LoadState = 'idle' | 'ready' | 'error';
   selector: 'app-detached-decisions',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldCalloutComponent],
+  imports: [FoldCalloutComponent, MercurialeCarryOver],
   templateUrl: './detached-decisions.html',
   styleUrl: './detached-decisions.scss',
 })
@@ -44,24 +51,41 @@ export class DetachedDecisions {
 
   protected readonly state = signal<LoadState>('idle');
   private readonly views = signal<readonly SaleReferenceDecisionView[]>([]);
+  /** Les décisions déjà debout sur la NOUVELLE référence — un report fait s'y lit. */
+  private readonly onNewSku = signal<readonly SaleReferenceDecisionView[]>([]);
 
   protected readonly originSku = computed(() => this.store.lineage().origin?.variantSku ?? null);
-  protected readonly lines = computed(() =>
-    this.views().map((view) => ({ id: view.id, text: decisionLine(view) })),
+  protected readonly newSku = computed(
+    () => this.store.variantTabs().find((variant) => variant.isDefault)?.sku ?? null,
   );
+  protected readonly lines = computed(() => detachedDecisionLines(this.views(), this.onNewSku()));
 
   constructor() {
     effect(() => {
       const sku = this.originSku();
+      const newSku = this.newSku();
       if (sku !== null) {
-        void this.load(sku);
+        void this.load(sku, newSku);
       }
     });
   }
 
-  private async load(sku: string): Promise<void> {
+  /** Après un report : relire les deux listes. */
+  protected reload(): void {
+    const sku = this.originSku();
+    if (sku !== null) {
+      void this.load(sku, this.newSku());
+    }
+  }
+
+  private async load(sku: string, newSku: string | null): Promise<void> {
     try {
-      this.views.set(await this.decisions.standingOn(sku));
+      const [views, onNewSku] = await Promise.all([
+        this.decisions.standingOn(sku),
+        newSku === null ? Promise.resolve([]) : this.decisions.standingOn(newSku),
+      ]);
+      this.views.set(views);
+      this.onNewSku.set(onNewSku);
       this.state.set('ready');
     } catch {
       this.state.set('error');

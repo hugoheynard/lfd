@@ -36,6 +36,8 @@ function row(overrides: Partial<MercurialeRowView> = {}): MercurialeRowView {
     negotiatedMillicents,
     gapBp: gapBp(catalogMillicents, negotiatedMillicents),
     minQuantity: 1,
+    amendmentId: null,
+    lineNote: null,
     ...overrides,
   };
 }

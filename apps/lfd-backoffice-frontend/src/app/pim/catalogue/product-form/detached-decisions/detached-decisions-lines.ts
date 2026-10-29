@@ -41,3 +41,32 @@ export function decisionLine(view: SaleReferenceDecisionView): string {
   }
   return parts.join(' — ');
 }
+
+/** Une ligne de la liste, et ce que l'écran peut en faire. */
+export interface DetachedDecisionLine {
+  readonly id: string;
+  readonly text: string;
+  /** Une mercuriale, qui se reporte sur la nouvelle référence (§ 6 du plan). */
+  readonly carriable: boolean;
+  /** Elle est déjà debout sur la nouvelle référence : le report est fait. */
+  readonly carried: boolean;
+}
+
+/**
+ * Les lignes de l'ancienne référence, chacune marquée : une mercuriale se
+ * reporte, sauf si elle est déjà debout sur la nouvelle (même identifiant).
+ */
+export function detachedDecisionLines(
+  views: readonly SaleReferenceDecisionView[],
+  onNewSku: readonly SaleReferenceDecisionView[],
+): readonly DetachedDecisionLine[] {
+  const carriedIds = new Set(
+    onNewSku.filter((view) => view.kind === 'mercuriale').map((view) => view.id),
+  );
+  return views.map((view) => ({
+    id: view.id,
+    text: decisionLine(view),
+    carriable: view.kind === 'mercuriale',
+    carried: view.kind === 'mercuriale' && carriedIds.has(view.id),
+  }));
+}

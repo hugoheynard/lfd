@@ -332,7 +332,34 @@ couverte).
 - ~~**T4** lecteurs~~ — bâti le 2026-10-30, non commité : vue du dossier
   (lignes datées + liste des avenants), décisions L7c, comparatif de marché,
   `SaleReferenceUsage`, seuils de la projection, résumé et compte de `close`.
-- **T5–T7** : non commencés.
+- T1–T4 commités le 2026-10-30 (`c75c30272`).
+- ~~**T5** le report L7c~~ — bâti le 2026-10-30, non commité :
+  `CompanyMercuriale.carryOver` (`apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-carry-over.ts`),
+  `CarryOverMercurialeLineHandler` (garde `detached_from_sku` lue par
+  `DetachmentOriginReader` au catalogue, vente aux pros, verrou dans
+  l'unité de travail), route
+  `POST admin/pricing/sale-references/:sku/decisions/mercuriales/:mercurialeId/carry-over`,
+  bouton « Reporter sur … » de la fiche née d'un détachement
+  (`product-form/mercuriale-carry-over/`), e2e
+  `apps/lfd-api/test/mercuriale-carry-over.e2e-spec.ts`. Deux écarts au § 6, sous mandat :
+  `validFrom` = max(maintenant, **début de la ligne reportée**) et non la
+  date du détachement (le catalogue ne la porte pas, et elle est passée par
+  construction) ; `validTo` = `null` comme écrit, même quand la ligne de
+  l'ancienne référence est arrêtée plus tôt — à trancher (cf. rapport).
+- ~~**T6** l'écran~~ — bâti le 2026-10-30, non commité :
+  `fiche-client/tarifs/mercuriale-amendments/` (liste des avenants sous la
+  grille, « Ajouter ou changer un prix » — l'article déjà en cours est arrêté
+  dans le même avenant —, « Arrêter une ligne », motif obligatoire) et la note
+  de chaque ligne datée à part dans la grille.
+- ~~**T7** la doc~~ — 2026-10-30 : § 7 bis de
+  `mercuriales/comprendre-une-mercuriale.md`, commentaire du gabarit dans
+  `pricing.prisma` (remis au-dessus de `model PriceTemplate`, dont il s'était
+  détaché sur `MercurialeDraft`), L7c de
+  `catalogue/plan-pro-voit-les-declinaisons.md`.
+- Découpe sous ~300 lignes : `company-mercuriale.ts` (305) délègue la lecture
+  comme règle à `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-rule.ts` ; `mercuriale-amendment.ts` ne garde que
+  les formes, la composition passe dans `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-segments.ts` et les refus
+  dans `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-amendment-checks.ts`.
 
 **Q1, telle que T1 la modélise — à confirmer par Hugo.** Un avenant porte
 `endedSkus` : chaque article cité voit sa ligne en cours s'arrêter à la

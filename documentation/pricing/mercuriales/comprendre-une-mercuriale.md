@@ -5,8 +5,8 @@
 > Le document de **définition**. Ce qu'une mercuriale est, ce qu'elle n'est pas,
 > ce qu'elle refuse, et ce qu'elle ne sait pas encore faire.
 >
-> Pour le geste (poser, clore, renommer), voir l'onglet Tarifs d'une fiche
-> client. Pour l'état du chantier, voir
+> Pour le geste (poser, amender, clore, renommer), voir l'onglet Tarifs d'une
+> fiche client. Pour l'état du chantier, voir
 > [`./etat-des-lieux-mercuriale-client.md`](./etat-des-lieux-mercuriale-client.md).
 > Pour ce qui va changer, voir
 > [`./plan-la-mercuriale-devient-un-objet.md`](./plan-la-mercuriale-devient-un-objet.md).
@@ -157,9 +157,10 @@ Deux conséquences pratiques :
 - le journal garde le résumé de chaque acte **tel qu'il était au moment de
   l'acte**, jamais recalculé.
 
-C'est aussi pourquoi une mercuriale posée est **en lecture seule** à l'écran :
-modifier passe par clore + reposer, ce qui laisse les deux décisions visibles
-côte à côte au lieu de réécrire l'explication d'une facture déjà payée.
+C'est aussi pourquoi la **grille** d'une mercuriale posée est **en lecture
+seule** à l'écran : elle n'est jamais réécrite. Ajouter, changer ou arrêter un
+prix passe par un **avenant daté** (§ 7 bis) ; tout refaire passe par clore +
+reposer. Dans les deux cas, ce qui a été facturé garde son explication.
 
 **La seule exception est le libellé** : il ne participe à aucun calcul, il n'a
 qu'un rôle, être lu. Corriger une faute de frappe ne devrait pas coûter une
@@ -246,6 +247,82 @@ appartient au gabarit, pas au client**. Un gabarit posé chez trois clients port
 une seule hypothèse de saison, si bien que toute la simulation décrit le gabarit
 et jamais le client qu'on a en face — alors que la base connaît ses volumes
 réels. Suivi au registre (**R11**).
+
+## 7 bis. L'avenant daté — ajouter, changer ou arrêter un prix
+
+**Bâti le 2026-10-30** (plan
+[`../plan-tarif-date-sur-une-reference.md`](../plan-tarif-date-sur-une-reference.md),
+décisions de Hugo du 2026-10-29). ✅ Décrit le code qui tourne.
+
+Un **avenant** est un bloc immuable rattaché à **sa** mercuriale
+(`company_mercuriale_amendments`, une clé étrangère vers le document). Il
+porte une fenêtre, un **motif obligatoire**, et deux choses :
+
+- des **lignes ouvertes** — un article et ses paliers, avec les mêmes refus
+  que la grille ;
+- des **lignes arrêtées** — les articles dont le prix en cours **cesse** à la
+  date d'effet de l'avenant, qu'il vienne de la grille ou d'un avenant
+  antérieur.
+
+Changer un prix = un avenant qui arrête l'ancienne ligne et ouvre la nouvelle à
+la même date. Rien n'est réécrit : ni la grille, ni l'avenant d'origine. La
+composition se fait **à la lecture**, à l'instant demandé — c'est ce qui laisse
+une relecture datée rendre exactement ce qui s'appliquait à l'époque.
+
+```mermaid
+flowchart LR
+  G["Grille du document<br/>VIE-001 à 0,90 €"] -->|"arrêtée le 01/11"| X(( ))
+  A["Avenant du 01/11<br/>arrête VIE-001<br/>ouvre VIE-001 à 0,85 €<br/>ouvre VIE-002 à 1,80 €"]
+  X --> R["Au 15/11 : VIE-001 à 0,85 €, VIE-002 à 1,80 €"]
+  A --> R
+```
+
+Ce que l'agrégat refuse (`CompanyMercuriale.amend`) :
+
+| Refus                                                        | Erreur                                                           |
+| ------------------------------------------------------------ | ---------------------------------------------------------------- |
+| une mercuriale close                                         | `ArchivedMercurialeIsSealedError`                                |
+| un motif vide                                                | `MissingAmendmentReasonError`                                    |
+| un avenant qui n'ouvre ni n'arrête rien                      | `EmptyAmendmentError`                                            |
+| une fenêtre inversée, ou qui déborde du document             | `ReversedValidityWindowError`, `AmendmentOutsideMercurialeError` |
+| un début **passé** — jamais rétroactif ; absent = maintenant | `RetroactiveAmendmentError`                                      |
+| arrêter une ligne qui ne court pas à cette date              | `NoNegotiatedLineToEndError`                                     |
+| un article déjà négocié sur la période (grille ou avenant)   | `SkuAlreadyNegotiatedError`                                      |
+
+Ce qu'il faut savoir en le lisant :
+
+- **une seule règle par article et par instant** : le refus de doublon le
+  garantit, et la règle rendue garde l'**identifiant du document** — c'est ce
+  que cherche le scellement « a facturé » (une période facturée par le seul
+  avenant ne se repose pas). La pièce d'où vient le prix se lit dans le
+  libellé : « Mercuriale 2027 — avenant du 1er novembre 2026 » ;
+- **un sous-compte** qui suit le tarif de son principal paie le prix de
+  l'avenant, comme celui de la grille ;
+- **une pause** de la mercuriale suspend ses avenants ; **la clôture** les range
+  avec elle, au même instant et pour le même motif ;
+- **deux commerciaux** qui écrivent au même instant : le document est
+  verrouillé (`FOR UPDATE`), relu et amendé dans la même transaction — le
+  second voit le premier ;
+- **au journal**, un avenant est un acte `amended` sur le fil du document, daté
+  de sa prise d'effet, avec son motif.
+
+À l'écran, sur l'onglet Tarifs d'une fiche client : la grille montre, pour
+chaque ligne datée à part, « Avenant du … » ou sa fin ; les avenants sont listés
+sous la grille ; deux gestes — **ajouter ou changer un prix** (l'article déjà
+en cours est arrêté dans le même avenant) et **arrêter une ligne**.
+
+### Le report sur une référence détachée
+
+Quand une déclinaison est détachée en fiche à elle, la mercuriale reste sur
+l'**ancienne** référence : le tarif est à plat, rien ne la déplace. La fiche
+née du détachement liste ces décisions, et propose pour chaque mercuriale de
+la **reporter** : un avenant dont l'origine est écrite
+(`{ kind: "detached", fromSku, fromMercurialeId }`), aux mêmes paliers que la
+ligne en cours de l'ancienne référence, dès maintenant (jamais avant le début de
+cette ligne) et jusqu'à la fin de la mercuriale. La garde est la **filiation**
+lue au commerce (`catalog_items.detached_from_sku`) : on ne reporte que sur une
+référence née de l'ancienne, et vendue aux pros. Route :
+`POST admin/pricing/sale-references/:ancienSku/decisions/mercuriales/:id/carry-over`.
 
 ## 8. Les mots voisins, pour ne pas les confondre
 

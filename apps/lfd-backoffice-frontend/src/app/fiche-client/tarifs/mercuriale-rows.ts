@@ -1,5 +1,10 @@
 import { gapBp } from '@lfd/money';
-import type { CompanyPricingCategoryView, PosedMercurialeView } from '@lfd/contracts';
+import {
+  POSED_MERCURIALE_STATUS_LABELS,
+  type CompanyPricingCategoryView,
+  type PosedMercurialeLineView,
+  type PosedMercurialeView,
+} from '@lfd/contracts';
 
 /**
  * **Une ligne de la mercuriale telle qu'on la relit** — l'article, ce qu'il
@@ -33,6 +38,37 @@ export interface MercurialeRowView {
   readonly gapBp: number | null;
   /** Le seuil, quand il dépasse 1 : la mercuriale vient alors d'un gabarit. */
   readonly minQuantity: number;
+  /** L'avenant qui a ouvert la ligne, `null` pour la grille. */
+  readonly amendmentId: string | null;
+  /**
+   * Ce que la ligne a de propre quand elle ne suit pas la mercuriale — « Avenant
+   * du 01/11/2026 · À venir », « Terminée le 15/11/2026 ». `null` : elle la suit.
+   * Un même article peut paraître deux fois (prix arrêté, puis rouvert) : la
+   * note dit laquelle vaut quand.
+   */
+  readonly lineNote: string | null;
+}
+
+/** La clé d'une ligne lue : un article peut paraître une fois par pièce (grille, avenants). */
+export function mercurialeRowKey(row: MercurialeRowView): string {
+  return `${row.sku}-${String(row.minQuantity)}-${row.amendmentId ?? 'grille'}`;
+}
+
+const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });
+
+/** La note d'une ligne datée à part (2026-10-29 : avenants et arrêts). */
+export function lineNoteOf(line: PosedMercurialeLineView): string | null {
+  const parts: string[] = [];
+  if (line.amendmentId !== undefined && line.validFrom !== undefined) {
+    parts.push(`Avenant du ${DAY.format(new Date(line.validFrom))}`);
+  }
+  if (line.validTo !== undefined && line.validTo !== null) {
+    parts.push(`jusqu’au ${DAY.format(new Date(line.validTo))}`);
+  }
+  if (line.status !== undefined) {
+    parts.push(POSED_MERCURIALE_STATUS_LABELS[line.status]);
+  }
+  return parts.length === 0 ? null : parts.join(' · ');
 }
 
 /**
@@ -70,6 +106,8 @@ export function mercurialeRows(
       negotiatedMillicents: line.unitPriceMillicents,
       gapBp: gapBp(catalogMillicents, line.unitPriceMillicents),
       minQuantity: line.minQuantity,
+      amendmentId: line.amendmentId ?? null,
+      lineNote: lineNoteOf(line),
     };
   });
 }

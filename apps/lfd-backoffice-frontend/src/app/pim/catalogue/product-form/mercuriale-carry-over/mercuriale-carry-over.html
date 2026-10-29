@@ -1,0 +1,45 @@
+@if (allowed()) {
+  <div class="carry-over">
+    @if (open()) {
+      <fold-textarea
+        label="Motif du report"
+        required
+        [rows]="2"
+        [hint]="
+          missing()
+            ? 'Le motif est obligatoire.'
+            : tooLong()
+              ? 'Au plus ' + maxLength + ' caractères.'
+              : 'Gardé au journal tarifaire. Au plus ' + maxLength + ' caractères.'
+        "
+        [(value)]="reason"
+        data-carry-over-reason
+      />
+    }
+    <fold-inline-confirm
+      intent="primary"
+      [message]="
+        'Le prix négocié de ' +
+        fromSku() +
+        ' vaudra pour ' +
+        toSku() +
+        ' dès maintenant, jusqu’à la fin de la mercuriale.'
+      "
+      [labels]="{ confirm: 'Reporter', cancel: 'Annuler' }"
+      keepOpenOnConfirm
+      [loading]="saving()"
+      [open]="open()"
+      (openChange)="onOpenChange($event)"
+      (confirmed)="confirm()"
+    >
+      <button foldButton size="sm" emphasis="outline" data-carry-over-trigger>
+        Reporter sur {{ toSku() }}
+      </button>
+    </fold-inline-confirm>
+    @if (error(); as message) {
+      <fold-callout appearance="inset" variant="alert" announce data-carry-over-error>{{
+        message
+      }}</fold-callout>
+    }
+  </div>
+}

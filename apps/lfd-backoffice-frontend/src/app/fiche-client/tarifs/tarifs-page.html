@@ -145,10 +145,10 @@
               </div>
             </header>
 
-            <!-- 🔴 En LECTURE. Modifier passe par « clore » puis reposer — la
-                 règle du serveur, et ce qui garde l'histoire de ce qui a été
-                 facturé. Une colonne éditable ici ferait croire qu'on retouche
-                 un tarif, alors qu'enregistrer en poserait un second. -->
+            <!-- 🔴 En LECTURE. Modifier passe par un AVENANT daté (sous la
+                 table) ou par « clore » puis reposer — jamais par une retouche
+                 de la grille, qui réécrirait l'explication de ce qui a été
+                 facturé. Une colonne éditable ici ferait croire l'inverse. -->
             <fold-data-table
               [caption]="'Mercuriale — ' + mercuriale.label"
               hover
@@ -169,6 +169,10 @@
                   <!-- Un palier : la mercuriale vient d'un gabarit. Le taire
                        ferait lire le prix du gros volume comme celui de tous. -->
                   <span class="tf-note">à partir de {{ row.minQuantity }}</span>
+                }
+                @if (row.lineNote; as note) {
+                  <!-- Une ligne datée à part : ajoutée par avenant, ou arrêtée. -->
+                  <span class="tf-note">{{ note }}</span>
                 }
               </ng-template>
 
@@ -196,6 +200,13 @@
                 }
               </ng-template>
             </fold-data-table>
+
+            <app-mercuriale-amendments
+              [companyId]="id()"
+              [mercuriale]="mercuriale"
+              [categories]="categories()"
+              (amended)="onAmended()"
+            />
           </section>
         }
       }

@@ -382,17 +382,6 @@ model CompanyMercurialeAmendment {
   @@schema("public")
 }
 
-/// **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
-/// repose chez plusieurs clients.
-///
-/// Une seule forme : une liste de paliers portant des PRIX en euros. Le « prix
-/// fixe » n'est pas une seconde forme, c'est le gabarit à un seul palier, à
-/// partir de 1. Les deux façons de saisir ne changent que la manière d'arriver
-/// au prix, jamais ce qui est stocké.
-///
-/// Posé chez un client, un gabarit devient N règles de l'étage mercuriale à des
-/// seuils différents — une forme que le moteur résout déjà, et dont l'unicité
-/// est déjà garantie (la contrainte d'exclusion porte sur `min_quantity`).
 /// **Le brouillon de mercuriale d'un client** — une négociation en cours.
 ///
 /// ## Pourquoi une table, et pas un gabarit
@@ -441,6 +430,24 @@ model MercurialeDraft {
   @@schema("public")
 }
 
+/// **Un gabarit tarifaire** — la grille qu'un commercial prépare une fois et
+/// repose chez plusieurs clients.
+///
+/// Une seule forme : une liste de paliers portant des PRIX en euros. Le « prix
+/// fixe » n'est pas une seconde forme, c'est le gabarit à un seul palier, à
+/// partir de 1. Les deux façons de saisir ne changent que la manière d'arriver
+/// au prix, jamais ce qui est stocké.
+///
+/// Posé chez un client, un gabarit devient UNE mercuriale (`CompanyMercuriale.pose`,
+/// dans `apply-price-template.handler.ts`), ses paliers recopiés tels quels
+/// dans la grille du document (vérifié le 2026-10-30). Il a été N règles de
+/// l'étage mercuriale jusqu'à la migration `20260908160000_mercuriale_objet`,
+/// et cette phrase l'a dit jusqu'au 2026-10-30.
+///
+/// ⚠️ Cette pose ne refait ni le pré-contrôle « une mercuriale court déjà »,
+/// ni le refus « une mercuriale close a facturé sur la période » de la pose
+/// à l'écran : seule la contrainte d'exclusion la retient (dette notée au
+/// § 11 de `documentation/pricing/plan-tarif-date-sur-une-reference.md`).
 model PriceTemplate {
   id String @id
 

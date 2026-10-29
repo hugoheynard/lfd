@@ -3,6 +3,8 @@ import { inject, Injectable } from '@angular/core';
 import { firstValueFrom } from 'rxjs';
 import type {
   AffectedRulesResponse,
+  AmendCompanyMercurialePayload,
+  AmendedMercurialeResponse,
   CloseCompanyMercurialePayload,
   CompanyPricingView,
   MercurialeDraftResponse,
@@ -57,6 +59,23 @@ export class CompanyPricingService {
   ): Promise<AffectedRulesResponse> {
     return firstValueFrom(
       this.http.post<AffectedRulesResponse>(this.path(companyId, '/mercuriale/close'), payload),
+    );
+  }
+
+  /**
+   * **Amender une mercuriale** : un avenant daté qui ajoute un prix ou arrête
+   * une ligne, sans réécrire la grille (`plan-tarif-date-sur-une-reference.md`).
+   */
+  async amend(
+    companyId: string,
+    mercurialeId: string,
+    payload: AmendCompanyMercurialePayload,
+  ): Promise<AmendedMercurialeResponse> {
+    return firstValueFrom(
+      this.http.post<AmendedMercurialeResponse>(
+        this.path(companyId, `/mercuriale/${encodeURIComponent(mercurialeId)}/amendments`),
+        payload,
+      ),
     );
   }
 
