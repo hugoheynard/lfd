@@ -264,3 +264,37 @@ _(Texte d'origine conservé.)_
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/prisma/schema/public/pricing.prisma
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/pricing/application/posed-mercuriale-view.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/pricing/infrastructure/prisma-sale-reference-decisions.reader.ts
+
+## 11. Seconde contradiction (vitruve, 2026-10-29) — à intégrer avant de bâtir
+
+**BLOQUANTS** et leur réponse retenue (Claude, sous mandat — à confirmer) :
+
+1. **`id = amendment.id` aveugle le scellement « a facturé »**
+   (`prisma-priced-decisions.reader.ts:55-66` cherche `pricingSteps[].ruleId`
+   parmi les ids de DOCUMENTS) ➜ **la règle rendue garde `id = mercuriale.id`** ;
+   l'avenant d'origine se lit dans le `label` (« … — avenant du JJ/MM ») et au
+   journal. Test : clore puis reposer sur une période facturée seulement par
+   un avenant ⇒ refusé.
+2. **Le verrou ne ferme pas la course** : verrou `FOR UPDATE`, rechargement des
+   avenants et `amend` dans la MÊME `uow.run`, ouverte par le handler.
+3. **La clôture ne persiste pas `validTo`** — défaut EXISTANT :
+   `PrismaCompanyMercurialeRepository.update` n'écrit que `paused*`/`archived*`
+   (`prisma-company-mercuriale.repository.ts:79-93`), donc R17 n'est pas tenu
+   pour les mercuriales (une mercuriale ouverte, close après avoir facturé,
+   bloque toute nouvelle pose chez ce client). **Corrigé à part, tout de suite**
+   (`fix(tarifs)`), avec son test de non-régression.
+4. **L'ordre avec la bascule** : l'avenant se livre APRÈS la bascule
+   `bascule-defaut` (qui réécrit les références produit), sinon une ligne
+   d'avenant sur `PAI-001` échapperait à sa réécriture.
+
+**SÉRIEUX à intégrer** : `SaleReferenceUsage` (`prisma-sale-reference-usage.ts:72`)
+doit compter les avenants ; `volume-tier-prices.ts:160` et
+`mercuriale-benchmark.query.ts:51` ET `:80` lisent `lines` en direct ➜ `lineFor` ;
+`assertOnSale(..., "pro")` et `assertCompanyExists` à l'avenant ; `validFrom`
+absent = « maintenant » (sinon tout avenant saisi « aujourd'hui » est refusé) ;
+`amended` dans `pricingActSchema`, `PRICING_ACT_LABELS`, le registre des faits
+(`company_mercuriale.amended`) et le front du journal ; la porte
+`lint:dated-decisions` ne voit pas le type imbriqué — le dire ; table, FK et
+faits `amended` sont irréversibles après merge ; `apply-price-template` ne fait
+ni `runningFor` ni le contrôle « a facturé » (dette existante, ne pas la dire
+couverte).
