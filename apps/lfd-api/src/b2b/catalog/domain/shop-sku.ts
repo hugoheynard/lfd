@@ -29,31 +29,17 @@ export function isShownAsTile(item: {
   return item.isDefault || item.variantsAsTiles;
 }
 
-/** Ce qui sépare le nom de la fiche de celui de la déclinaison. */
-const NAME_SEPARATOR = " — ";
-
 /**
- * **Le nom d'un article en vente** (V5) : celui de la déclinaison pour le
- * défaut, comme avant ; « fiche — déclinaison » pour une autre, que la vitrine,
- * le devis et la ligne de commande portent alors tous trois.
+ * **Le nom d'un article en vente** : celui de la déclinaison, seul, pour le
+ * défaut comme pour les autres.
  *
- * 🔴 Le nom de la fiche manque (`null`) sur tout article reçu avant le fil
- * v16, jusqu'à la réémission de sa fiche : le nom de la déclinaison est alors
- * servi SEUL — jamais « null — 220 g », et jamais un nom inventé. Il manque
- * aussi quand la déclinaison porte déjà le nom de la fiche : pas de doublon.
+ * 🔴 Il composait « fiche — déclinaison » jusqu'au 2026-10-29 au soir. Hugo, le
+ * même jour, devant « Ancolie framboise — Ancolie framboise part » en
+ * production : « pour les déclinaisons au-delà de -1, il faut afficher le nom
+ * de la déclinaison seul ». Le nom d'une déclinaison se saisit pour être lu
+ * seul. Le nom de la fiche (`productName`, fil v16) reste reçu et rangé : il
+ * n'entre plus dans ce qui se lit.
  */
-export function shopItemName(
-  variantName: string,
-  productName: string | null,
-  isDefault: boolean,
-): string {
-  if (
-    isDefault ||
-    productName === null ||
-    productName.trim() === "" ||
-    productName === variantName
-  ) {
-    return variantName;
-  }
-  return `${productName}${NAME_SEPARATOR}${variantName}`;
+export function shopItemName(variantName: string): string {
+  return variantName;
 }

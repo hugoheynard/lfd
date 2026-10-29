@@ -368,7 +368,7 @@ function resolve(
     productSku: row.productSku,
     // « fiche — déclinaison » hors défaut (V5) — le nom que la vitrine, le
     // devis et la ligne de commande portent tous trois.
-    name: shopItemName(row.name, row.productName, row.isDefault),
+    name: shopItemName(row.name),
     unitPriceMillicents: served.unitPriceMillicents,
     pimPriceMillicents: served.pimPriceMillicents,
     vatRate: served.vatRate,
@@ -416,10 +416,7 @@ function resolve(
 function nameTranslationsOf(row: ItemRow): CatalogTranslations {
   const translations = translationsColumnOf(row.nameTranslations);
   return Object.fromEntries(
-    Object.entries(translations).map(([language, name]) => [
-      language,
-      shopItemName(name, row.productName, row.isDefault),
-    ]),
+    Object.entries(translations).map(([language, name]) => [language, shopItemName(name)]),
   );
 }
 

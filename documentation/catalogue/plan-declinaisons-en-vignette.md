@@ -108,9 +108,10 @@ réponses PAR DÉFAUT du § 4, et ces questions restent ouvertes :
    probable antérieur : `PrismaCanonicalPriceHistoryReader` garde une ligne par
    `productSku`, donc le prix rejoué d'une fiche à plusieurs déclinaisons peut
    être celui d'une autre déclinaison. À vérifier puis corriger.
-3. **Le nom d'une déclinaison devient public** (« Florentin — Boîte de 220 g »),
-   contre la décision du 2026-09-13 (`plan-vendre-le-variant.md` § 10) ; et il
-   n'est pas traduit (la fiche arrive en français sur la boutique anglaise).
+3. **Le nom d'une déclinaison devient public** — ✅ tranché le 2026-10-29 au
+   soir : la vignette porte **le nom de la déclinaison seul** (Hugo, devant
+   « Ancolie framboise — Ancolie framboise part »). Reste : il n'est pas
+   traduit hors de ce que la déclinaison porte.
 4. **Le bon de commande pro** (`ProductCatalogReader.all()`,
    `catalog-sellable-articles.reader.ts`) ne propose que la déclinaison par
    défaut.

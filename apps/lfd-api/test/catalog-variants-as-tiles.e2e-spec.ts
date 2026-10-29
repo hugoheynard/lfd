@@ -103,7 +103,7 @@ describe("chaque déclinaison en vignette", () => {
 
     expect(items.map((item) => item.sku).sort()).toEqual([boxSku, fiche.sku].sort());
     expect(items.some((item) => item.sku === lotSku)).toBe(false);
-    expect(items.find((item) => item.sku === boxSku)?.name).toBe("Florentin — Boîte de 220 g");
+    expect(items.find((item) => item.sku === boxSku)?.name).toBe("Boîte de 220 g");
     expect(items.find((item) => item.sku === fiche.sku)?.name).toBe("Florentin");
   });
 

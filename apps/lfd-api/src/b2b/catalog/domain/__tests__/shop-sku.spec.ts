@@ -25,24 +25,8 @@ describe("isShownAsTile", () => {
 });
 
 describe("shopItemName", () => {
-  it("« fiche — déclinaison » pour une déclinaison non défaut", () => {
-    expect(shopItemName("Boîte de 220 g", "Florentin", false)).toBe("Florentin — Boîte de 220 g");
-  });
-
-  it("le défaut garde son nom d'aujourd'hui", () => {
-    expect(shopItemName("Croissant", "Croissant pur beurre", true)).toBe("Croissant");
-  });
-
-  /**
-   * `product_name` reste `NULL` en production jusqu'à la réémission de chaque
-   * fiche (fil v16) : jamais « null — 220 g », le nom de la déclinaison seul.
-   */
-  it("sans nom de fiche reçu, sert le nom de la déclinaison seul", () => {
-    expect(shopItemName("Boîte de 220 g", null, false)).toBe("Boîte de 220 g");
-    expect(shopItemName("Boîte de 220 g", "  ", false)).toBe("Boîte de 220 g");
-  });
-
-  it("ne double pas un nom de déclinaison déjà égal à celui de la fiche", () => {
-    expect(shopItemName("Florentin", "Florentin", false)).toBe("Florentin");
+  /** Régression : « Ancolie framboise — Ancolie framboise part » au rayon (2026-10-29). */
+  it("sert le nom de la déclinaison seul, sans celui de la fiche devant", () => {
+    expect(shopItemName("Ancolie framboise part")).toBe("Ancolie framboise part");
   });
 });
