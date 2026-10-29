@@ -4,7 +4,11 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
 import { CloseCompanyMercurialeCommand } from "./close-company-mercuriale.command.js";
-import { describeMercuriale, designated } from "./company-mercuriale-support.js";
+import {
+  describeMercuriale,
+  designated,
+  negotiatedSkuCount,
+} from "./company-mercuriale-support.js";
 
 @CommandHandler(CloseCompanyMercurialeCommand)
 export class CloseCompanyMercurialeHandler implements ICommandHandler<
@@ -18,7 +22,8 @@ export class CloseCompanyMercurialeHandler implements ICommandHandler<
   ) {}
 
   /**
-   * Archive la mercuriale, et rend le nombre d'articles qu'elle portait.
+   * Archive la mercuriale et ses avenants, et rend le nombre d'articles
+   * qu'elle portait.
    *
    * **Archiver et non borner.** Les deux se défendent ; archiver est celui qui
    * rend sa place dans la contrainte d'exclusion, donc le seul qui permette de
@@ -47,6 +52,7 @@ export class CloseCompanyMercurialeHandler implements ICommandHandler<
       summary: describeMercuriale(mercuriale),
       subjectLabel: mercuriale.label,
     });
-    return mercuriale.lines.length;
+    // Grille ET avenants : un article ajouté par avenant a été clos lui aussi.
+    return negotiatedSkuCount(mercuriale);
   }
 }

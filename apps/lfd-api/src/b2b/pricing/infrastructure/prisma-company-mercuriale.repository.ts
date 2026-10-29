@@ -5,9 +5,12 @@ import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js
 import { CompanyMercurialeRepository } from "../domain/ports/company-mercuriale.repository.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 import { RunningMercurialeError } from "../domain/pricing-errors.js";
+import { MissingAmendmentInAggregateError } from "./mercuriale-lock-errors.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import { isExclusionViolation } from "./exclusion-violation.js";
-import { mercurialeFromRow } from "./mercuriale-rows.js";
+import { LIVE_AMENDMENTS, mercurialeFromRow } from "./mercuriale-rows.js";
+import { currentTransaction } from "../../../platform/database/transaction.store.js";
+import { MercurialeLockOutsideTransactionError } from "./mercuriale-lock-errors.js";
 
 /** Le nom de la contrainte, tel que la migration l'écrit. Cf. `isExclusionViolation`. */
 const OVERLAP_CONSTRAINT = "company_mercuriales_no_overlap";
@@ -77,8 +80,9 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
   /** Une transition — clore, suspendre, reprendre. Le cycle de vie, et la fin que la clôture pose. */
   async update(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void> {
     const { id, lifecycle, validTo } = mercuriale.toPersistence();
-    await this.acts.around(act, () =>
-      this.prisma.companyMercuriale.update({
+    await this.acts.around(act, async () => {
+      await this.archiveAmendmentsOf(mercuriale);
+      await this.prisma.companyMercuriale.update({
         where: { id },
         data: {
           // Clore BORNE la fenêtre (`closingWindowAt`, R17) : sans cette
@@ -91,6 +95,89 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
           archivedAt: lifecycle.archivedAt,
           archivedBy: lifecycle.archivedBy,
           archiveReason: lifecycle.archiveReason,
+        },
+      });
+    });
+  }
+
+  /**
+   * La clôture range les avenants avec le document : on écrit ce que
+   * l'agrégat dit des avenants que la base tient encore pour non rangés.
+   */
+  private async archiveAmendmentsOf(mercuriale: CompanyMercuriale): Promise<void> {
+    const { id, lifecycle } = mercuriale.toPersistence();
+    if (lifecycle.archivedAt === null) {
+      return;
+    }
+    await this.prisma.companyMercurialeAmendment.updateMany({
+      where: { mercurialeId: id, archivedAt: null },
+      data: {
+        archivedAt: lifecycle.archivedAt,
+        archivedBy: lifecycle.archivedBy,
+        archiveReason: lifecycle.archiveReason,
+      },
+    });
+  }
+
+  /**
+   * **Verrouille le document (`SELECT … FOR UPDATE`) et le relit avec ses
+   * avenants**, sous la transaction de l'appelant.
+   *
+   * C'est ce qui ferme la course entre deux commerciaux (seconde
+   * contradiction, B2) : l'agrégat ne voit que les avenants qu'il a chargés, et
+   * les skus vivent dans du jsonb, hors de portée d'une contrainte
+   * d'exclusion. Verrouiller PUIS relire dans la même transaction garantit que
+   * le second voit l'avenant du premier.
+   *
+   * @throws {MercurialeLockOutsideTransactionError} appelé hors `UnitOfWork.run`.
+   */
+  async lockForAmendment(id: string): Promise<CompanyMercuriale | null> {
+    if (currentTransaction() === undefined) {
+      throw new MercurialeLockOutsideTransactionError();
+    }
+    await this.prisma.$queryRaw`
+      SELECT "id" FROM "public"."company_mercuriales" WHERE "id" = ${id} FOR UPDATE`;
+    return this.load(id);
+  }
+
+  /** Insère l'avenant que l'agrégat vient d'accepter, et son acte. */
+  async addAmendment(
+    mercuriale: CompanyMercuriale,
+    amendmentId: string,
+    act: PricingAct,
+  ): Promise<void> {
+    const amendment = mercuriale.amendments.find((candidate) => candidate.id === amendmentId);
+    if (amendment === undefined) {
+      throw new MissingAmendmentInAggregateError(amendmentId);
+    }
+    await this.acts.around(act, () =>
+      this.prisma.companyMercurialeAmendment.create({
+        data: {
+          id: amendment.id,
+          mercurialeId: mercuriale.id,
+          // Réécrits champ par champ, pour la raison dite sur `save`.
+          lines: amendment.lines.map((line) => ({
+            sku: line.sku,
+            tiers: line.tiers.map((tier) => ({
+              minQuantity: tier.minQuantity,
+              unitPriceMillicents: tier.unitPriceMillicents,
+            })),
+          })),
+          endedSkus: [...amendment.endedSkus],
+          validFrom: amendment.validFrom,
+          validTo: amendment.validTo,
+          reason: amendment.reason,
+          ...(amendment.origin === null
+            ? {}
+            : {
+                origin: {
+                  kind: amendment.origin.kind,
+                  fromSku: amendment.origin.fromSku,
+                  fromMercurialeId: amendment.origin.fromMercurialeId,
+                },
+              }),
+          createdBy: amendment.createdBy,
+          createdAt: amendment.createdAt,
         },
       }),
     );
@@ -112,7 +199,10 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
   }
 
   async load(id: string): Promise<CompanyMercuriale | null> {
-    const row = await this.prisma.companyMercuriale.findUnique({ where: { id } });
+    const row = await this.prisma.companyMercuriale.findUnique({
+      where: { id },
+      include: LIVE_AMENDMENTS,
+    });
     return row === null ? null : mercurialeFromRow(row);
   }
 
@@ -162,6 +252,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
         ...(validTo === null ? {} : { validFrom: { lt: validTo } }),
         OR: [{ validTo: null }, { validTo: { gt: validFrom } }],
       },
+      include: LIVE_AMENDMENTS,
     });
     return row === null ? null : mercurialeFromRow(row);
   }

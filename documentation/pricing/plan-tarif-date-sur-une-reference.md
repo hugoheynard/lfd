@@ -311,3 +311,34 @@ couverte).
 - **Q2 — oui** : jamais rétroactif (`validFrom` absent = maintenant, § 11).
 - **Q3 — oui** : un avenant est suspendu avec sa mercuriale en pause.
 - Ordre : livré **après** la bascule `bascule-defaut` (§ 11).
+
+## 13. Avancement (rayé au fil de l'eau)
+
+- ~~**T1** domaine~~ — bâti le 2026-10-30, non commité :
+  `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-amendment.ts`
+  (composition pure : lignes effectives, arrêts, refus) et
+  `company-mercuriale.ts` (`amend`, `lineFor`, `linesAt`, `segments`, cascade
+  dans `close`). La règle rendue garde `id = mercuriale.id` (§ 11, B1).
+- ~~**T2** persistance et commande~~ — bâti le 2026-10-30, non commité :
+  migration `20261029190000_les_avenants_de_mercuriale`, `lockForAmendment`
+  (`FOR UPDATE` puis relecture) et `addAmendment` appelés dans la MÊME
+  `uow.run` ouverte par
+  `apps/lfd-api/src/b2b/pricing/application/commands/amend-company-mercuriale.handler.ts`
+  (§ 11, B2) ;
+  acte `amended` (contrat, registre des faits, phrase du journal staff).
+- ~~**T3** HTTP admin~~ — bâti le 2026-10-30, non commité :
+  `POST admin/pricing/companies/:companyId/mercuriale/:mercurialeId/amendments`
+  (le préfixe du contrôleur voisin, et non celui écrit au § 7).
+- ~~**T4** lecteurs~~ — bâti le 2026-10-30, non commité : vue du dossier
+  (lignes datées + liste des avenants), décisions L7c, comparatif de marché,
+  `SaleReferenceUsage`, seuils de la projection, résumé et compte de `close`.
+- **T5–T7** : non commencés.
+
+**Q1, telle que T1 la modélise — à confirmer par Hugo.** Un avenant porte
+`endedSkus` : chaque article cité voit sa ligne en cours s'arrêter à la
+`validFrom` de l'avenant, définitivement (la `validTo` de l'avenant ne borne
+que ses lignes ouvertes). Un arrêt ne touche que la grille et les avenants
+**antérieurs** dans l'ordre d'écriture, ce qui permet de rouvrir un article
+plus tard ; arrêter une ligne qui ne court pas à cette date est refusé. Une
+ligne de grille arrêtée garde sa fenêtre coupée dans la règle rendue, pour
+que la trace dise « expirée » au lieu de se taire.

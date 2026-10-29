@@ -66,6 +66,7 @@ import { PrismaVolumeCommitmentsReader } from "./infrastructure/prisma-volume-co
 import { CloseCompanyMercurialeHandler } from "./application/commands/close-company-mercuriale.handler.js";
 import { RenameCompanyMercurialeHandler } from "./application/commands/rename-company-mercuriale.handler.js";
 import { PoseCompanyMercurialeHandler } from "./application/commands/pose-company-mercuriale.handler.js";
+import { AmendCompanyMercurialeHandler } from "./application/commands/amend-company-mercuriale.handler.js";
 import { CloseVolumeCommitmentHandler } from "./application/commands/close-volume-commitment.handler.js";
 import { SignVolumeCommitmentHandler } from "./application/commands/sign-volume-commitment.handler.js";
 import { AdminVolumeCommitmentsController } from "./http/admin-volume-commitments.controller.js";
@@ -173,6 +174,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // `pricing` n'a pas le droit de lire ces tables.
     { provide: PricedDecisionsReader, useClass: PrismaPricedDecisionsReader },
     PoseCompanyMercurialeHandler,
+    AmendCompanyMercurialeHandler,
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,
     SavePriceTemplateHandler,

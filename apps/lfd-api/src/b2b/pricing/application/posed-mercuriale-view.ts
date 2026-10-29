@@ -1,4 +1,5 @@
 import type {
+  PosedMercurialeAmendmentView,
   PosedMercurialeLineView,
   PosedMercurialeStatus,
   PosedMercurialeView,
@@ -6,7 +7,7 @@ import type {
 
 import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
 
-import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
+import type { CompanyMercuriale, LineSegment } from "../domain/entities/company-mercuriale.js";
 
 /**
  * **La mercuriale d'un client, telle que son dossier la montre.**
@@ -37,11 +38,23 @@ export type ProductNamer = (sku: string) => string;
  * pause n'agit pas, même si sa fenêtre est ouverte.
  */
 function statusOf(mercuriale: CompanyMercuriale, at: Date): PosedMercurialeStatus {
+  return windowStatusOf(mercuriale, mercuriale.toPersistence(), at);
+}
+
+/**
+ * La même logique sur une fenêtre quelconque — celle d'une ligne d'avenant, ou
+ * d'une ligne arrêtée. La pause est toujours celle du DOCUMENT (Q3).
+ */
+function windowStatusOf(
+  mercuriale: CompanyMercuriale,
+  window: { readonly validFrom: Date; readonly validTo: Date | null },
+  at: Date,
+): PosedMercurialeStatus {
   const suspendedFrom = mercuriale.suspendedFrom;
   if (suspendedFrom !== null && suspendedFrom.getTime() <= at.getTime()) {
     return "suspended";
   }
-  const { validFrom, validTo } = mercuriale.toPersistence();
+  const { validFrom, validTo } = window;
   if (validFrom.getTime() > at.getTime()) {
     return "scheduled";
   }
@@ -64,18 +77,62 @@ function statusOf(mercuriale: CompanyMercuriale, at: Date): PosedMercurialeStatu
  */
 function linesOf(
   mercuriale: CompanyMercuriale,
+  at: Date,
   nameOf: ProductNamer,
 ): readonly PosedMercurialeLineView[] {
-  return mercuriale.lines
-    .flatMap((line) =>
-      line.tiers.map((tier) => ({
-        sku: line.sku,
-        productName: nameOf(line.sku),
+  return mercuriale.segments
+    .flatMap((segment) =>
+      segment.line.tiers.map((tier) => ({
+        sku: segment.line.sku,
+        productName: nameOf(segment.line.sku),
         unitPriceMillicents: tier.unitPriceMillicents,
         minQuantity: tier.minQuantity,
+        ...ownWindowOf(mercuriale, segment, at),
       })),
     )
     .sort((left, right) => left.unitPriceMillicents - right.unitPriceMillicents);
+}
+
+/**
+ * Ce qu'une ligne dit d'elle-même quand elle ne suit pas le document : sa
+ * fenêtre, son état, et l'avenant qui l'a ouverte. Rien pour une ligne de la
+ * grille qu'aucun avenant n'arrête — la forme d'avant les avenants.
+ */
+function ownWindowOf(mercuriale: CompanyMercuriale, segment: LineSegment, at: Date) {
+  const document = mercuriale.toPersistence();
+  const sameWindow =
+    segment.from.getTime() === document.validFrom.getTime() &&
+    (segment.to?.getTime() ?? null) === (document.validTo?.getTime() ?? null);
+  if (segment.amendment === null && sameWindow) {
+    return {};
+  }
+  return {
+    validFrom: segment.from.toISOString(),
+    validTo: segment.to?.toISOString() ?? null,
+    status: windowStatusOf(mercuriale, { validFrom: segment.from, validTo: segment.to }, at),
+    ...(segment.amendment === null
+      ? {}
+      : { amendmentId: segment.amendment.id, amendmentReason: segment.amendment.reason }),
+  };
+}
+
+/** Ses avenants non rangés, dans l'ordre d'écriture. */
+function amendmentsOf(
+  mercuriale: CompanyMercuriale,
+  authors: StaffAuthors,
+): readonly PosedMercurialeAmendmentView[] {
+  return mercuriale.amendments
+    .filter((amendment) => amendment.archivedAt === null)
+    .map((amendment) => ({
+      id: amendment.id,
+      validFrom: amendment.validFrom.toISOString(),
+      validTo: amendment.validTo?.toISOString() ?? null,
+      reason: amendment.reason,
+      openedSkus: amendment.lines.map((line) => line.sku),
+      endedSkus: [...amendment.endedSkus],
+      createdBy: amendment.createdBy,
+      createdByName: authors.nameOf(amendment.createdBy),
+    }));
 }
 
 /**
@@ -92,7 +149,7 @@ export function posedMercurialeView(
   authors: StaffAuthors,
 ): PosedMercurialeView {
   const state = mercuriale.toPersistence();
-  const lines = linesOf(mercuriale, nameOf);
+  const lines = linesOf(mercuriale, at, nameOf);
   return {
     id: state.id,
     label: state.label,
@@ -105,9 +162,10 @@ export function posedMercurialeView(
     // Les articles DISTINCTS : une grille à trois paliers sur vingt articles
     // pèse soixante lignes et vingt articles. Annoncer soixante ferait passer le
     // nombre de paliers pour l'étendue de la négociation.
-    skuCount: state.lines.length,
+    skuCount: new Set(lines.map((line) => line.sku)).size,
     createdBy: state.createdBy,
     createdByName: authors.nameOf(state.createdBy),
     lines,
+    amendments: amendmentsOf(mercuriale, authors),
   };
 }

@@ -1170,6 +1170,24 @@
       "information": false
     },
     {
+      "colonne": "public.company_mercuriale_amendments.archived_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`archived_by`) sur `company_mercuriale_amendments`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
+      "colonne": "public.company_mercuriale_amendments.created_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a fait le geste (`created_by`) sur `company_mercuriale_amendments`.",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.company_mercuriales.archived_by",
       "personne": "staff",
       "categorie": "auteur-geste",

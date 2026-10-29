@@ -111,6 +111,8 @@ export const PRICING_FACTS = {
   "company_mercuriale.posed": act(),
   "company_mercuriale.archived": act(),
   "company_mercuriale.renamed": act(),
+  /** Un avenant daté : le motif est toujours renseigné. */
+  "company_mercuriale.amended": act(),
 
   /** Le sujet est le SOUS-COMPTE : il suit la mercuriale de `parent`. */
   "pricing_follow.started": followAct("parent", false),

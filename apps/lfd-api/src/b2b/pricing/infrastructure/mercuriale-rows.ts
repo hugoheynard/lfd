@@ -1,6 +1,8 @@
 import { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import type {
+  AmendmentOrigin,
   CompanyMercurialeState,
+  MercurialeAmendment,
   MercurialeLine,
 } from "../domain/entities/company-mercuriale.js";
 import { CorruptedMercurialeError } from "../domain/pricing-errors.js";
@@ -31,6 +33,7 @@ export function mercurialeFromRow(row: {
   readonly archivedAt: Date | null;
   readonly archivedBy: string | null;
   readonly archiveReason: string | null;
+  readonly amendments: readonly AmendmentRow[];
 }): CompanyMercuriale {
   const state: CompanyMercurialeState = {
     id: row.id,
@@ -47,8 +50,69 @@ export function mercurialeFromRow(row: {
       archivedBy: row.archivedBy,
       archiveReason: row.archiveReason,
     },
+    amendments: row.amendments.map((amendment) => amendmentFromRow(row.id, amendment)),
   };
   return CompanyMercuriale.reconstitute(state);
+}
+
+/** Une ligne de `company_mercuriale_amendments`, telle que Prisma la rend. */
+export interface AmendmentRow {
+  readonly id: string;
+  readonly lines: unknown;
+  readonly endedSkus: readonly string[];
+  readonly validFrom: Date;
+  readonly validTo: Date | null;
+  readonly reason: string;
+  readonly origin: unknown;
+  readonly createdBy: string;
+  readonly createdAt: Date;
+  readonly archivedAt: Date | null;
+  readonly archivedBy: string | null;
+  readonly archiveReason: string | null;
+}
+
+/**
+ * **L'ordre d'écriture**, que la requête doit demander : il décide de ce
+ * qu'un arrêt touche (`mercuriale-amendment.ts`). Écrit une fois, partagé par
+ * chaque lecture qui charge les avenants.
+ */
+export const AMENDMENT_ORDER = [{ createdAt: "asc" as const }, { id: "asc" as const }];
+
+/** Les avenants non rangés, dans l'ordre d'écriture — l'`include` des lectures au présent. */
+export const LIVE_AMENDMENTS = {
+  amendments: { where: { archivedAt: null }, orderBy: AMENDMENT_ORDER },
+};
+
+function amendmentFromRow(mercurialeId: string, row: AmendmentRow): MercurialeAmendment {
+  return {
+    id: row.id,
+    lines: linesFromJson(mercurialeId, row.lines),
+    endedSkus: [...row.endedSkus],
+    validFrom: row.validFrom,
+    validTo: row.validTo,
+    reason: row.reason,
+    origin: originFromJson(mercurialeId, row.origin),
+    createdBy: row.createdBy,
+    createdAt: row.createdAt,
+    archivedAt: row.archivedAt,
+    archivedBy: row.archivedBy,
+    archiveReason: row.archiveReason,
+  };
+}
+
+function originFromJson(id: string, value: unknown): AmendmentOrigin | null {
+  if (value === null) {
+    return null;
+  }
+  if (typeof value !== "object") {
+    throw new CorruptedMercurialeError(id, "l'origine d'un avenant n'est pas un objet");
+  }
+  const origin: Record<string, unknown> = { ...value };
+  const { kind, fromSku, fromMercurialeId } = origin;
+  if (kind !== "detached" || typeof fromSku !== "string" || typeof fromMercurialeId !== "string") {
+    throw new CorruptedMercurialeError(id, "l'origine d'un avenant n'a pas la forme attendue");
+  }
+  return { kind, fromSku, fromMercurialeId };
 }
 
 /** La grille du `jsonb`, vérifiée forme par forme. */

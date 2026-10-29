@@ -48,7 +48,11 @@ export class MercurialeBenchmarkQuery {
     const mercuriales = await this.mercuriales.liveEverywhere(at);
 
     const skus = [
-      ...new Set(mercuriales.flatMap((mercuriale) => mercuriale.lines.map((line) => line.sku))),
+      // Les lignes EN VIGUEUR, avenants compris (plan, § 5) : un article
+      // ajouté par avenant est un prix du marché comme un autre.
+      ...new Set(
+        mercuriales.flatMap((mercuriale) => mercuriale.linesAt(at).map((line) => line.sku)),
+      ),
     ];
     // `pro` : une mercuriale est un tarif négocié — elle n'existe pas au public.
     const catalogue = await this.catalog.resolveMany(skus, "pro");
@@ -77,7 +81,7 @@ export class MercurialeBenchmarkQuery {
     at: Date,
   ): NegotiatedPrice[] {
     const { companyId } = mercuriale.toPersistence();
-    return mercuriale.lines.flatMap((line) => {
+    return mercuriale.linesAt(at).flatMap((line) => {
       const canonicalMillicents = catalogue.get(line.sku)?.unitPriceMillicents;
       if (canonicalMillicents === undefined) {
         return [];

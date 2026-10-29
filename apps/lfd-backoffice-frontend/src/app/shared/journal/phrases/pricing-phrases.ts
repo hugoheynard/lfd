@@ -321,4 +321,5 @@ export const PRICING_PHRASES = {
   'company_mercuriale.posed': act('a posé', MERCURIALE),
   'company_mercuriale.archived': act('a archivé', MERCURIALE),
   'company_mercuriale.renamed': renamed(MERCURIALE),
+  'company_mercuriale.amended': act('a amendé', MERCURIALE),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

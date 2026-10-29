@@ -22,8 +22,29 @@ export abstract class CompanyMercurialeRepository {
    */
   abstract save(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void>;
 
-  /** Une transition — clore, suspendre, reprendre. Seul le cycle de vie bouge. */
+  /**
+   * Une transition — clore, suspendre, reprendre. Le cycle de vie bouge, et la
+   * clôture range aussi les avenants avec le document.
+   */
   abstract update(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void>;
+
+  /**
+   * **Verrouille le document et le relit avec ses avenants**, sous la
+   * transaction ouverte par l'appelant (`UnitOfWork.run`). Deux avenants
+   * écrits au même instant s'attendent : le second voit le premier, et
+   * l'agrégat refuse le doublon. `null` = aucune mercuriale de cet id.
+   */
+  abstract lockForAmendment(id: string): Promise<CompanyMercuriale | null>;
+
+  /**
+   * Écrit l'avenant `amendmentId` que l'agrégat porte désormais, **et son
+   * acte**. Le document lui-même n'est pas réécrit.
+   */
+  abstract addAmendment(
+    mercuriale: CompanyMercuriale,
+    amendmentId: string,
+    act: PricingAct,
+  ): Promise<void>;
 
   /** Le renommage : **une seule colonne**, plus l'acte. */
   abstract rename(mercuriale: CompanyMercuriale, act: PricingAct): Promise<void>;

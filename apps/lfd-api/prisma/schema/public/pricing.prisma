@@ -330,9 +330,55 @@ model CompanyMercuriale {
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
 
+  /// Ses avenants datés (`plan-tarif-date-sur-une-reference.md`).
+  amendments CompanyMercurialeAmendment[]
+
   /// La lecture qui facture : « la mercuriale vivante de ce client ».
   @@index([companyId, archivedAt])
   @@map("company_mercuriales")
+  @@schema("public")
+}
+
+/// **Un avenant daté à une mercuriale** — un bloc immuable rattaché à SON
+/// document : des lignes ouvertes sur une fenêtre, et des lignes arrêtées à sa
+/// date d'effet (Hugo, 2026-10-29). Le document n'est jamais réécrit.
+///
+/// Une table et non des versions du document : l'accord garde son identité
+/// (journal, trace, `id` de la règle rendue), et rien n'est recopié.
+model CompanyMercurialeAmendment {
+  id           String            @id
+  mercurialeId String            @map("mercuriale_id")
+  mercuriale   CompanyMercuriale @relation(fields: [mercurialeId], references: [id], onDelete: Restrict)
+
+  /// Les lignes ouvertes, même forme que `CompanyMercuriale.lines`, écrites
+  /// ENTIÈRES. Peut être vide quand l'avenant ne fait qu'arrêter.
+  lines Json
+
+  /// Les articles dont la ligne en cours s'arrête à `valid_from`.
+  endedSkus String[] @default([]) @map("ended_skus")
+
+  /// Borne basse incluse (et date d'effet des arrêts), haute exclue ; `null` =
+  /// jusqu'à la fin du document.
+  validFrom DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo   DateTime? @map("valid_to") @db.Timestamptz(3)
+
+  /// Le motif, obligatoire : un invariant du domaine, tenu aussi en base.
+  reason String
+  /// D'où vient l'avenant quand ce n'est pas une saisie libre (report L7c).
+  origin Json?
+
+  createdBy String   @map("created_by")
+  /// Écrit par le domaine (horloge du handler) : l'ordre d'écriture décide de
+  /// ce qu'un arrêt touche.
+  createdAt DateTime @map("created_at") @db.Timestamptz(3)
+
+  /// Rangé seulement par la clôture du document.
+  archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
+  archivedBy    String?   @map("archived_by")
+  archiveReason String?   @map("archive_reason")
+
+  @@index([mercurialeId, archivedAt])
+  @@map("company_mercuriale_amendments")
   @@schema("public")
 }
 

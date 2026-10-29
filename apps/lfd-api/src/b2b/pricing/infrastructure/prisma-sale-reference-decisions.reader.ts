@@ -46,7 +46,21 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
 
   private async mercuriales(sku: string, at: Date): Promise<StandingDecision[]> {
     const rows = await this.prisma.companyMercuriale.findMany({
-      where: { ...standingAt(at), lines: { array_contains: [{ sku }] } },
+      // La grille, OU un avenant non rangé qui porte la référence : un
+      // article ajouté par avenant se reporte comme une ligne de la grille.
+      // `AND` et non un étalement : `standingAt` porte déjà son propre `OR`,
+      // qu'un second écraserait sans que TypeScript ne bronche.
+      where: {
+        AND: [
+          standingAt(at),
+          {
+            OR: [
+              { lines: { array_contains: [{ sku }] } },
+              { amendments: { some: { archivedAt: null, lines: { array_contains: [{ sku }] } } } },
+            ],
+          },
+        ],
+      },
       orderBy: { validFrom: "asc" },
     });
     return rows.map((row) => ({

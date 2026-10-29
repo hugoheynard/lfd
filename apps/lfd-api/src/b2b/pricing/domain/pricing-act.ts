@@ -49,6 +49,12 @@ export const PRICING_ACTS = [
    */
   "renamed",
   /**
+   * **Amendée** — une mercuriale a reçu un avenant daté : un prix ajouté, ou
+   * une ligne arrêtée à une date. Le sujet reste le DOCUMENT, pour que le
+   * journal de l'accord soit un seul fil.
+   */
+  "amended",
+  /**
    * **Le suivi d'une mercuriale** entre comptes (`sous-comptes.md`, S3),
    * sur le sujet `company` seulement : le sous-compte commence / cesse de
    * suivre (`started` / `ended`), le principal gagne / perd un sous-compte qui
@@ -179,6 +185,7 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: "price_rule.renamed",
+    amended: null,
     started: null,
     ended: null,
     joined: null,
@@ -192,6 +199,7 @@ const FACT_TYPES: {
     confirmed: "price_floor.confirmed",
     replaced: "price_floor.replaced",
     renamed: null,
+    amended: null,
     started: null,
     ended: null,
     joined: null,
@@ -205,6 +213,7 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: null,
+    amended: null,
     started: null,
     ended: null,
     joined: null,
@@ -222,6 +231,7 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: "company_mercuriale.renamed",
+    amended: "company_mercuriale.amended",
     started: null,
     ended: null,
     joined: null,
@@ -238,6 +248,7 @@ const FACT_TYPES: {
     confirmed: null,
     replaced: null,
     renamed: null,
+    amended: null,
     started: "pricing_follow.started",
     ended: "pricing_follow.ended",
     joined: "pricing_follower.joined",

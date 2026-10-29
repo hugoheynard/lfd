@@ -246,6 +246,7 @@
   "test/media-replace.e2e-spec.ts": 9445,
   "test/media-series.e2e-spec.ts": 26508,
   "test/media-tags.e2e-spec.ts": 7300,
+  "test/mercuriale-amendments.e2e-spec.ts": 10968,
   "test/monthly-invoices.e2e-spec.ts": 9000,
   "test/my-invoices-archive.e2e-spec.ts": 10319,
   "test/my-invoices.e2e-spec.ts": 10091,

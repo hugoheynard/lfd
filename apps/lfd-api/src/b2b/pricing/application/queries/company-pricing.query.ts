@@ -142,7 +142,11 @@ export class CompanyPricingQuery {
     );
 
     const mercurialeAuthors = await this.staffAuthors.identify(
-      mercuriales.map((mercuriale) => mercuriale.toPersistence().createdBy),
+      // Les auteurs des avenants aussi : le dossier les nomme sous la grille.
+      mercuriales.flatMap((mercuriale) => [
+        mercuriale.toPersistence().createdBy,
+        ...mercuriale.amendments.map((amendment) => amendment.createdBy),
+      ]),
     );
     const sealed = measured.flatMap((category) =>
       category.items.filter((item) => item.sealedByRuleId !== null),

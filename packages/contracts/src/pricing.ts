@@ -436,6 +436,8 @@ export const pricingActSchema = z.enum([
   "replaced",
   /** Le libellé a changé, **et rien d'autre** — aucun prix n'a bougé. */
   "renamed",
+  /** Une mercuriale a reçu un avenant daté : un prix ajouté ou une ligne arrêtée. */
+  "amended",
   /**
    * Sur le compte tarifaire d'un sous-compte (sujet `company`) : il commence /
    * cesse de suivre la mercuriale de son principal (`sous-comptes.md`, S3).
@@ -472,6 +474,7 @@ export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
   confirmed: "Confirmée",
   replaced: "Remplacée",
   renamed: "Renommée",
+  amended: "Amendée",
   started: "Alignement",
   ended: "Fin d'alignement",
   joined: "Sous-compte aligné",
@@ -1767,6 +1770,33 @@ export interface PosedMercurialeLineView {
   /** Le prix accordé, HT en millicentimes. */
   readonly unitPriceMillicents: number;
   readonly minQuantity: number;
+  /**
+   * **La fenêtre et l'état de la LIGNE**, présents seulement quand ils
+   * diffèrent de ceux de la mercuriale : une ligne ajoutée par avenant, ou une
+   * ligne de la grille qu'un avenant arrête (2026-10-29). Absents, la ligne
+   * suit la mercuriale.
+   */
+  readonly validFrom?: string;
+  readonly validTo?: string | null;
+  readonly status?: PosedMercurialeStatus;
+  /** L'avenant qui a ouvert cette ligne, et son motif. Absents = la grille. */
+  readonly amendmentId?: string;
+  readonly amendmentReason?: string;
+}
+
+/** **Un avenant daté**, tel que le dossier staff le liste sous la grille. */
+export interface PosedMercurialeAmendmentView {
+  readonly id: string;
+  readonly validFrom: string;
+  /** `null` = jusqu'à la fin de la mercuriale. */
+  readonly validTo: string | null;
+  readonly reason: string;
+  /** Les articles dont il ouvre un prix. */
+  readonly openedSkus: readonly string[];
+  /** Les articles dont il arrête la ligne en cours, à `validFrom`. */
+  readonly endedSkus: readonly string[];
+  readonly createdBy: string;
+  readonly createdByName: string | null;
 }
 
 export interface PosedMercurialeView {
@@ -1825,6 +1855,11 @@ export interface PosedMercurialeView {
    * grille de saisie, elle, ne montre que ce qui est scellé aujourd'hui.
    */
   readonly lines: readonly PosedMercurialeLineView[];
+  /**
+   * Ses avenants non rangés, dans l'ordre d'écriture. Optionnel le temps
+   * qu'un front en ligne ne le lise pas encore.
+   */
+  readonly amendments?: readonly PosedMercurialeAmendmentView[];
 }
 
 export interface CompanyPricingView {
@@ -1956,6 +1991,35 @@ export const renameCompanyMercurialePayloadSchema = z.object({
   newLabel: z.string().min(1).max(120),
 });
 export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercurialePayloadSchema>;
+
+/**
+ * **Amender une mercuriale posée** : un avenant daté
+ * (`documentation/pricing/plan-tarif-date-sur-une-reference.md`).
+ *
+ * Il ouvre des lignes (`lines`) et/ou arrête, à sa date d'effet, des lignes
+ * qui couraient (`endedSkus`) — de la grille ou d'un avenant antérieur. Changer
+ * un prix = arrêter l'article et le rouvrir dans le même avenant.
+ *
+ * Le motif est OBLIGATOIRE : c'est un invariant du domaine, et le schéma le
+ * dit pour que l'écran le sache. Jamais rétroactif : `validFrom` absent vaut
+ * « maintenant », et une date passée est refusée.
+ */
+export const amendCompanyMercurialePayloadSchema = z.object({
+  /** Date d'effet, incluse. Absente = maintenant. */
+  validFrom: z.string().datetime().optional(),
+  /** Borne haute exclue des lignes ouvertes. `null` = jusqu'à la fin de la mercuriale. */
+  validTo: z.string().datetime().nullable().default(null),
+  reason: z.string().min(1).max(500),
+  lines: z.array(companyMercurialeLineSchema).max(300).default([]),
+  /** Les articles dont la ligne en cours s'arrête à `validFrom`. */
+  endedSkus: z.array(z.string().min(1)).max(300).default([]),
+});
+export type AmendCompanyMercurialePayload = z.infer<typeof amendCompanyMercurialePayloadSchema>;
+
+/** L'avenant écrit : son identifiant, que l'écran relit ensuite. */
+export interface AmendedMercurialeResponse {
+  readonly amendmentId: string;
+}
 
 /** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
 export interface AffectedRulesResponse {

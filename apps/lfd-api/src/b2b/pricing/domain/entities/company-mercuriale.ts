@@ -15,6 +15,24 @@ import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-li
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import { volumeQuantityOf } from "../price-rule.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
+import { describeDay } from "../pricing-act-summary.js";
+import {
+  allSegments,
+  assertNoDoubleNegotiation,
+  checkedAmendment,
+  linesAt,
+  segmentAt,
+  type LineSegment,
+  type MercurialeAmendment,
+  type MercurialeAmendmentDraft,
+} from "./mercuriale-amendment.js";
+
+export type {
+  AmendmentOrigin,
+  LineSegment,
+  MercurialeAmendment,
+  MercurialeAmendmentDraft,
+} from "./mercuriale-amendment.js";
 
 /**
  * Les trois refus d'une grille, **dits en mercuriale**. Le contrôle est partagé
@@ -46,6 +64,11 @@ export interface CompanyMercurialeState extends CompanyMercurialeDraft {
   readonly id: string;
   readonly createdBy: string;
   readonly lifecycle: RuleLifecycle;
+  /**
+   * Les avenants datés, **dans l'ordre d'écriture** — chargés dans l'agrégat,
+   * parce que c'est lui qui refuse un doublon entre la grille et un avenant.
+   */
+  readonly amendments: readonly MercurialeAmendment[];
 }
 
 /**
@@ -95,6 +118,14 @@ export interface CompanyMercurialeState extends CompanyMercurialeDraft {
  *
  * La seule exception est le **libellé** (cf. {@link rename}).
  *
+ * ## …mais elle s'amende (2026-10-29)
+ *
+ * Un **avenant** daté ajoute une ligne, ou arrête une ligne à une date, sans
+ * réécrire la grille (cf. {@link amend} et `mercuriale-amendment.ts`). C'est
+ * la réponse à « un article de plus en cours d'accord » qui ne coûte ni la
+ * clôture ni la copie de toute la grille — et qui laisse intact ce qu'une
+ * facture passée explique.
+ *
  * ## Pas de `plannedVolume`
  *
  * Un gabarit le porte comme hypothèse de négociation. Une mercuriale posée est
@@ -123,6 +154,7 @@ export class CompanyMercuriale {
       id,
       createdBy,
       lifecycle: IN_FORCE,
+      amendments: [],
     });
   }
 
@@ -145,6 +177,10 @@ export class CompanyMercuriale {
 
   get lines(): readonly MercurialeLine[] {
     return this.state.lines;
+  }
+
+  get amendments(): readonly MercurialeAmendment[] {
+    return this.state.amendments;
   }
 
   get status(): RuleStatus {
@@ -172,6 +208,33 @@ export class CompanyMercuriale {
   rename(label: string): CompanyMercuriale {
     this.assertNotArchived();
     return new CompanyMercuriale({ ...this.state, label });
+  }
+
+  /**
+   * **Amender** : ajouter un avenant daté (`plan-tarif-date-sur-une-reference.md`).
+   *
+   * Jamais rétroactif (Q2) : `now` est l'horloge du handler, et un avenant qui
+   * part avant ne changerait pas ce qui a été payé mais ce qu'une relecture en
+   * rend. Une mercuriale en pause s'amende ; ses avenants sont suspendus avec
+   * elle (Q3), puisque la règle rendue porte la pause du document.
+   *
+   * @throws {ArchivedMercurialeIsSealedError} elle est close.
+   * @throws les refus de `checkedAmendment` et `assertNoDoubleNegotiation`.
+   */
+  amend(id: string, draft: MercurialeAmendmentDraft, by: string, now: Date): CompanyMercuriale {
+    this.assertNotArchived();
+    const amendment: MercurialeAmendment = {
+      ...checkedAmendment(this.state, draft, now),
+      id,
+      createdBy: by,
+      createdAt: now,
+      archivedAt: null,
+      archivedBy: null,
+      archiveReason: null,
+    };
+    const amended = { ...this.state, amendments: [...this.state.amendments, amendment] };
+    assertNoDoubleNegotiation(amended, amendment);
+    return new CompanyMercuriale(amended);
   }
 
   /**
@@ -205,6 +268,14 @@ export class CompanyMercuriale {
     return new CompanyMercuriale({
       ...this.state,
       ...(closedAt === null ? {} : { validTo: closedAt }),
+      // Ses avenants sont rangés avec elle, au même instant et pour le même
+      // motif. Leur fenêtre n'est pas réécrite : elle est coupée à la lecture
+      // par celle du document, que `closedAt` vient de borner.
+      amendments: this.state.amendments.map((amendment) =>
+        amendment.archivedAt === null
+          ? { ...amendment, archivedAt: at, archivedBy: by, archiveReason: reason }
+          : amendment,
+      ),
       lifecycle: {
         ...this.state.lifecycle,
         archivedAt: at,
@@ -259,13 +330,11 @@ export class CompanyMercuriale {
     if (context.pricingCompanyId !== this.state.companyId || context.companyId === null) {
       return null;
     }
-    // La portée d'une mercuriale est l'ARTICLE, comme `templateToRules` l'écrit.
-    // `pricingContextFor` renseigne `productSku` et `variantSku` avec le même
-    // sku ; lire l'un des deux suffit et dit lequel fait foi.
-    const line = this.state.lines.find((candidate) => candidate.sku === context.productSku);
-    if (line === undefined) {
+    const segment = this.segmentFor(context);
+    if (segment === null) {
       return null;
     }
+    const { line } = segment;
     const measured = volumeQuantityOf(context);
     // Le PLUS HAUT palier atteint gagne — les paliers sont triés croissants par
     // l'agrégat, donc le dernier qui passe est le bon.
@@ -284,10 +353,15 @@ export class CompanyMercuriale {
       scope: { type: "product", id: line.sku },
       audience: { type: "company", id: context.companyId },
       minQuantity: tier.minQuantity,
-      validFrom: this.state.validFrom,
-      validTo: this.state.validTo,
+      // La fenêtre de la LIGNE : celle du document pour la grille, celle de
+      // l'avenant coupée par le document, et l'une ou l'autre coupée par un
+      // arrêt. L'id reste celui du document (seconde contradiction, B1) : le
+      // scellement « a facturé » cherche des ids de documents.
+      validFrom: segment.from,
+      validTo: segment.to,
+      // Une pause du document suspend ses avenants (Q3).
       suspendedFrom: suspendedFromOf(this.state.lifecycle),
-      label: this.state.label,
+      label: this.labelOf(segment),
       // Une mercuriale ne franchit pas son propre scellement — l'agrégat des
       // règles le refuse, et le dire ici évite qu'on se demande.
       stacksOverMercuriale: false,
@@ -314,16 +388,57 @@ export class CompanyMercuriale {
     if (context.pricingCompanyId !== this.state.companyId) {
       return false;
     }
-    const line = this.state.lines.find((candidate) => candidate.sku === context.productSku);
-    if (line === undefined) {
+    const segment = this.segmentFor(context);
+    if (segment === null) {
       return false;
     }
     const measured = volumeQuantityOf(context);
-    return !line.tiers.some((tier) => measured >= tier.minQuantity);
+    return !segment.line.tiers.some((tier) => measured >= tier.minQuantity);
   }
 
   toPersistence(): CompanyMercurialeState {
     return this.state;
+  }
+
+  /**
+   * Chaque ligne négociée sur sa fenêtre réelle — grille et avenants non
+   * rangés, arrêts compris. Pour le dossier staff, qui montre aussi ce qui
+   * est à venir ou terminé.
+   */
+  get segments(): readonly LineSegment[] {
+    return allSegments(this.state);
+  }
+
+  /** Les lignes qui font un prix à cet instant — grille et avenants, arrêts compris. */
+  linesAt(at: Date): readonly MercurialeLine[] {
+    return linesAt(this.state, at);
+  }
+
+  /**
+   * La ligne (grille ou avenant) qui parle pour l'article du contexte à son
+   * instant, ou `null`. Pour les lecteurs qui ont besoin des PALIERS — les
+   * seuils de la projection —, sans recopier la recherche.
+   */
+  lineFor(context: PricingContext): MercurialeLine | null {
+    return this.segmentFor(context)?.line ?? null;
+  }
+
+  /**
+   * **La ligne qui parle pour cet article à cet instant** — grille ou avenant,
+   * arrêts compris. Partagée par {@link asRuleFor} et {@link missesTierFor},
+   * pour qu'ils ne divergent pas. La portée d'une mercuriale est l'ARTICLE :
+   * `pricingContextFor` renseigne `productSku` et `variantSku` avec le même
+   * sku, lire l'un des deux suffit et dit lequel fait foi.
+   */
+  private segmentFor(context: PricingContext): LineSegment | null {
+    return segmentAt(this.state, context.productSku, context.at);
+  }
+
+  /** « Mercuriale 2027 — avenant du 1er novembre 2026 » : la pièce d'où vient le prix. */
+  private labelOf(segment: LineSegment): string {
+    return segment.amendment === null
+      ? this.state.label
+      : `${this.state.label} — avenant du ${describeDay(segment.amendment.validFrom)}`;
   }
 
   private assertNotArchived(): void {

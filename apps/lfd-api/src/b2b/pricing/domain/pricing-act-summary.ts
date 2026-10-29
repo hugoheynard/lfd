@@ -271,3 +271,11 @@ function day(date: Date): string {
   const dayOfMonth = part("day");
   return `${dayOfMonth === FIRST_OF_MONTH ? "1er" : dayOfMonth} ${part("month")} ${part("year")}`;
 }
+
+/**
+ * Le jour civil à Paris, en toutes lettres — la même écriture que les phrases
+ * du journal, pour le libellé d'un avenant (« … — avenant du 1er novembre 2026 »).
+ */
+export function describeDay(date: Date): string {
+  return day(date);
+}

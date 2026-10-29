@@ -1,6 +1,8 @@
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
+import type { MercurialeAmendmentDraft } from "../../domain/entities/company-mercuriale.js";
 import { describeArticleCount, describeWindowOf } from "../../domain/pricing-act.js";
+import { describeDay } from "../../domain/pricing-act-summary.js";
 import { PosedMercurialeNotFoundError } from "../../domain/pricing-errors.js";
 
 /**
@@ -98,5 +100,44 @@ export function describeMercuriale(mercuriale: CompanyMercuriale): string {
   // Elle écrivait « du 2026-09-01 au sans terme » : les dates en ISO, et une
   // fenêtre ouverte qui cassait la phrase. Les mots de la fenêtre sont ceux
   // des règles et des barèmes (plan des phrases du journal, lot D).
-  return `Mercuriale « ${state.label} » — ${describeArticleCount(state.lines.length)}, ${describeWindowOf(state.validFrom, state.validTo)}`;
+  return `Mercuriale « ${state.label} » — ${describeArticleCount(negotiatedSkuCount(mercuriale))}, ${describeWindowOf(state.validFrom, state.validTo)}`;
+}
+
+/**
+ * **Les articles que la mercuriale a négociés**, grille et avenants non
+ * rangés confondus, chacun compté une fois. Sans les avenants, « N articles »
+ * mentirait dès le premier ajout (plan, § 4).
+ */
+export function negotiatedSkuCount(mercuriale: CompanyMercuriale): number {
+  const skus = new Set(mercuriale.lines.map((line) => line.sku));
+  for (const amendment of mercuriale.amendments) {
+    if (amendment.archivedAt === null) {
+      amendment.lines.forEach((line) => skus.add(line.sku));
+    }
+  }
+  return skus.size;
+}
+
+/**
+ * La phrase figée d'un avenant : ce qu'il ouvre et ce qu'il arrête, et quand.
+ * « Avenant — + 2 articles du 1er novembre 2026 au 31 décembre 2026 ; arrêt
+ * de 1 article le 1er novembre 2026 ».
+ */
+export function describeAmendment(
+  mercuriale: CompanyMercuriale,
+  draft: MercurialeAmendmentDraft,
+): string {
+  const parts: string[] = [];
+  if (draft.lines.length > 0) {
+    const to = draft.validTo ?? mercuriale.toPersistence().validTo;
+    parts.push(
+      `+ ${describeArticleCount(draft.lines.length)} ${describeWindowOf(draft.validFrom, to)}`,
+    );
+  }
+  if (draft.endedSkus.length > 0) {
+    parts.push(
+      `arrêt de ${describeArticleCount(draft.endedSkus.length)} le ${describeDay(draft.validFrom)}`,
+    );
+  }
+  return `Avenant — ${parts.join(" ; ")}`;
 }

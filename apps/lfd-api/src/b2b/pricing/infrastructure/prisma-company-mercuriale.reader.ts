@@ -4,7 +4,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { CompanyMercurialeReader } from "../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import { unarchivedAt } from "./archived-at.js";
-import { mercurialeFromRow } from "./mercuriale-rows.js";
+import { AMENDMENT_ORDER, LIVE_AMENDMENTS, mercurialeFromRow } from "./mercuriale-rows.js";
 
 /**
  * **La mercuriale vivante d'un client**, lue en une requête.
@@ -37,6 +37,7 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
         validFrom: { lte: at },
         OR: [{ validTo: null }, { validTo: { gt: at } }],
       },
+      include: LIVE_AMENDMENTS,
     });
     return row === null ? null : mercurialeFromRow(row);
   }
@@ -75,6 +76,11 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
         ],
       },
       orderBy: [{ archivedAt: { sort: "desc", nulls: "first" } }, { validFrom: "desc" }],
+      // Les avenants au même instant que le document : rangés APRÈS `at`, ils
+      // comptent encore. Leur propre fenêtre n'est PAS filtrée ici — c'est
+      // `asRuleFor` qui juge à `context.at`, la projection résolvant plusieurs
+      // instants sur un seul chargement.
+      include: { amendments: { where: unarchivedAt(at), orderBy: AMENDMENT_ORDER } },
     });
     return row === null ? null : mercurialeFromRow(row);
   }
@@ -85,6 +91,7 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
       // ont facturé reste, lui, figé sur les commandes.
       where: { companyId, archivedAt: null },
       orderBy: { validFrom: "desc" },
+      include: LIVE_AMENDMENTS,
     });
     return rows.map((row) => mercurialeFromRow(row));
   }
@@ -99,6 +106,7 @@ export class PrismaCompanyMercurialeReader extends CompanyMercurialeReader {
         validFrom: { lte: at },
         OR: [{ validTo: null }, { validTo: { gt: at } }],
       },
+      include: LIVE_AMENDMENTS,
     });
     return rows.map((row) => mercurialeFromRow(row));
   }

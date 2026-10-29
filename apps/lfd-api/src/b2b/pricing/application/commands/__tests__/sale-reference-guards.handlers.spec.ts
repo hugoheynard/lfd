@@ -84,6 +84,12 @@ class RecordingMercuriales extends CompanyMercurialeRepository {
   runningFor(): Promise<CompanyMercuriale | null> {
     return Promise.resolve(null);
   }
+  lockForAmendment(): Promise<CompanyMercuriale | null> {
+    return Promise.resolve(null);
+  }
+  addAmendment(): Promise<void> {
+    return Promise.resolve();
+  }
 }
 
 class NoDrafts extends MercurialeDraftStore {

@@ -59,7 +59,7 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
       ["price_rule", (skus) => this.scoped(this.prisma.priceRule, skus)],
       ["price_floor", (skus) => this.scoped(this.prisma.priceFloor, skus)],
       ["volume_ladder", (skus) => this.scoped(this.prisma.volumeLadder, skus)],
-      ["mercuriale", (skus) => this.inLines(this.prisma.companyMercuriale, skus)],
+      ["mercuriale", (skus) => this.mercuriales(skus)],
       ["volume_commitment", (skus) => this.scoped(this.prisma.volumeCommitment, skus)],
     ];
   }
@@ -100,6 +100,18 @@ export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
       distinct: ["scopeId"],
     });
     return new Set(rows.flatMap((row) => (row.scopeId === null ? [] : [row.scopeId])));
+  }
+
+  /**
+   * Une mercuriale : sa grille, ou l'un de ses avenants datés — un article
+   * ajouté par avenant a été négocié dans l'unité d'alors, comme la grille.
+   */
+  private async mercuriales(skus: readonly string[]): Promise<ReadonlySet<string>> {
+    const [grids, amendments] = await Promise.all([
+      this.inLines(this.prisma.companyMercuriale, skus),
+      this.inLines(this.prisma.companyMercurialeAmendment, skus),
+    ]);
+    return new Set([...grids, ...amendments]);
   }
 
   /** Les réassorts : demandés, reçus, ou en brouillon au fournil. */

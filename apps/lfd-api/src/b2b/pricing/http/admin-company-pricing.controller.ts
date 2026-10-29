@@ -1,9 +1,12 @@
 import {
+  amendCompanyMercurialePayloadSchema,
   closeCompanyMercurialePayloadSchema,
   poseCompanyMercurialePayloadSchema,
   renameCompanyMercurialePayloadSchema,
   saveMercurialeDraftPayloadSchema,
   type AffectedRulesResponse,
+  type AmendCompanyMercurialePayload,
+  type AmendedMercurialeResponse,
   type CloseCompanyMercurialePayload,
   type CompanyPricingView,
   type MercurialeDraftResponse,
@@ -28,6 +31,7 @@ import { CommandBus, QueryBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../platform/auth/admin-surface.decorator.js";
 import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
+import { AmendCompanyMercurialeCommand } from "../application/commands/amend-company-mercuriale.command.js";
 import { CloseCompanyMercurialeCommand } from "../application/commands/close-company-mercuriale.command.js";
 import { PoseCompanyMercurialeCommand } from "../application/commands/pose-company-mercuriale.command.js";
 import { RenameCompanyMercurialeCommand } from "../application/commands/rename-company-mercuriale.command.js";
@@ -110,6 +114,25 @@ export class AdminCompanyPricingController {
       new CloseCompanyMercurialeCommand(companyId, payload, staffUserId),
     );
     return { affectedRules };
+  }
+
+  /**
+   * **Amender une mercuriale** : un avenant daté, qui ajoute des prix et/ou
+   * arrête des lignes à sa date d'effet, sans réécrire la grille. Rend
+   * l'identifiant de l'avenant ; l'écran relit la fiche ensuite.
+   */
+  @Post("mercuriale/:mercurialeId/amendments")
+  @HttpCode(HttpStatus.CREATED)
+  async amend(
+    @Param("companyId") companyId: string,
+    @Param("mercurialeId") mercurialeId: string,
+    @Body(new ZodBody(amendCompanyMercurialePayloadSchema)) payload: AmendCompanyMercurialePayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<AmendedMercurialeResponse> {
+    const amendmentId = await this.commands.execute<AmendCompanyMercurialeCommand, string>(
+      new AmendCompanyMercurialeCommand(companyId, mercurialeId, payload, staffUserId),
+    );
+    return { amendmentId };
   }
 
   /**

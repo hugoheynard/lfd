@@ -157,7 +157,7 @@ function allThresholds(
   const fromMercuriale =
     mercuriale === null
       ? []
-      : (mercuriale.lines.find((line) => line.sku === context.productSku)?.tiers ?? [])
+      : (mercuriale.lineFor(context)?.tiers ?? [])
           .filter((tier) => mercuriale.asRuleFor(atQuantity(context, tier.minQuantity)) !== null)
           .map((tier) => tier.minQuantity);
   return [...new Set([...fromLadder, ...fromRules, ...fromMercuriale])].sort(
