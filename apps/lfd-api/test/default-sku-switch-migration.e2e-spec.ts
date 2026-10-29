@@ -1,29 +1,33 @@
 /**
- * E2E de la **migration de bascule** — `20261029100000_le_defaut_se_vend_sous_sa_reference`,
- * rejouée (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 1, § 2, L3).
+ * E2E de la **migration de bascule** — `20261029180000_le_defaut_se_vend_sous_sa_reference`,
+ * rejouée (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, révision 3 :
+ * sans alias, décision de Hugo du 2026-10-29).
  *
  * Ce que seul ce niveau prouve : le garde-fou compte dans les VRAIES tables,
- * sous le vrai schéma, et un refus n'écrit RIEN — la transaction explicite du
- * fichier s'annule entière. Puis, sans refus : l'alias de chaque défaut, la
- * réécriture des magasins de configuration, et le rejeu sans effet.
+ * un refus n'écrit RIEN (la transaction explicite du fichier s'annule
+ * entière) ; sans refus, toute référence produit stockée passe sous la
+ * référence du défaut — colonnes, listes, jsonb —, les collisions sont
+ * refusées nommément, et le rejeu ne change rien.
  *
  * Le fichier est lu tel quel et joué par un client `pg` à part, en mode
  * `strict` (`SET LOCAL lfd.default_sku_switch_guard`) : la base de test est
- * l'une de celles où le garde-fou s'éteint, pour que `db:test:setup` passe sur
- * des restes de suites. Les lignes sont semées par Prisma : ce qui est éprouvé
- * est la migration, pas les gestes qui les poseraient.
+ * l'une de celles où le garde-fou s'éteint. Les lignes d'AVANT la bascule
+ * sont semées par Prisma, sous la référence produit : depuis la bascule,
+ * aucune route n'en écrit plus.
  */
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 
 import { Client } from "pg";
 
+import { LATEST_DELIVERY_FULFILLMENT } from "./delivery-deadline-fixture.js";
 import { bootstrapE2e, daysAgo, type E2eContext } from "./e2e-harness.js";
+import { createCompany, createUser } from "./factories.js";
 import { testDatabaseUrl } from "./setup-env.js";
 
 const MIGRATION = join(
   process.cwd(),
-  "prisma/migrations/20261029100000_le_defaut_se_vend_sous_sa_reference/migration.sql",
+  "prisma/migrations/20261029180000_le_defaut_se_vend_sous_sa_reference/migration.sql",
 );
 
 let ctx: E2eContext;
@@ -38,16 +42,19 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
-  // Avant la bascule : la table d'alias est vide (le semis joue l'après).
-  await ctx.prisma.saleSkuAlias.deleteMany({});
   await ctx.prisma.productionContainer.create({
     data: { sku: "PAI-001", unitsPerContainer: 25, singular: "manne", plural: "mannes" },
   });
 });
 
+const ROLLBACK = join(
+  process.cwd(),
+  "prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql",
+);
+
 /** Joue le fichier, garde-fou forcé ; rend l'erreur levée, ou `null`. */
-async function runMigration(): Promise<Error | null> {
-  const sql = readFileSync(MIGRATION, "utf8").replace(
+async function runMigration(file = MIGRATION): Promise<Error | null> {
+  const sql = readFileSync(file, "utf8").replace(
     /^BEGIN;$/mu,
     "BEGIN;\nSET LOCAL lfd.default_sku_switch_guard = 'strict';",
   );
@@ -64,14 +71,43 @@ async function runMigration(): Promise<Error | null> {
   }
 }
 
-/** Ce que la migration écrirait : rien de tout ça ne doit bouger sur un refus. */
-async function written(): Promise<{ aliases: number; container: string | null }> {
-  const aliases = await ctx.prisma.saleSkuAlias.count();
+/** Le contenant semé : il doit garder `PAI-001` sur un refus. */
+async function containerSku(): Promise<string | null> {
   const container = await ctx.prisma.productionContainer.findFirst({ select: { sku: true } });
-  return { aliases, container: container?.sku ?? null };
+  return container?.sku ?? null;
 }
 
-const UNTOUCHED = { aliases: 0, container: "PAI-001" };
+/** Une commande d'avant la bascule, ses lignes sous ces références. */
+async function seedOrder(orderNumber: string, skus: readonly string[]): Promise<string> {
+  const company = await createCompany(ctx.prisma);
+  const user = await createUser(ctx.prisma, { auth0Sub: `u_${orderNumber}` });
+  const order = await ctx.prisma.order.create({
+    data: {
+      vatMethod: "line_ht",
+      orderNumber,
+      companyId: company.id,
+      placedByUserId: user.id,
+      status: "placed",
+      fulfillment: LATEST_DELIVERY_FULFILLMENT,
+      requestedDeliveryDate: new Date(`${daysAgo(-2).slice(0, 10)}T00:00:00.000Z`),
+      subtotalCents: 2_400 * skus.length,
+      totalCents: 2_400 * skus.length,
+      shortfallLines: [{ sku: "PAI-001", missing: 1 }],
+      shortfallReportedAt: new Date(daysAgo(0)),
+      lines: {
+        create: skus.map((sku) => ({
+          sku,
+          productNameSnapshot: "Baguette",
+          unitPriceMillicents: 120_000,
+          quantity: 2,
+          lineTotalCents: 2_400,
+        })),
+      },
+    },
+    select: { id: true },
+  });
+  return order.id;
+}
 
 describe("le garde-fou de la bascule — il compte, nomme, et n'écrit rien", () => {
   it("refuse une règle tarifaire posée sur une référence produit", async () => {
@@ -96,7 +132,7 @@ describe("le garde-fou de la bascule — il compte, nomme, et n'écrit rien", ()
 
     expect(refusal?.message).toContain("bascule-defaut refusée, rien n'a été écrit");
     expect(refusal?.message).toContain("1 × PriceRule (product:PAI-001 (rule_paillasse))");
-    expect(await written()).toEqual(UNTOUCHED);
+    expect(await containerSku()).toBe("PAI-001");
   });
 
   it("refuse une ligne de mercuriale sur une référence produit, archivée comprise", async () => {
@@ -115,7 +151,7 @@ describe("le garde-fou de la bascule — il compte, nomme, et n'écrit rien", ()
     const refusal = await runMigration();
 
     expect(refusal?.message).toContain("1 × CompanyMercuriale (mc_paillasse ligne PAI-001)");
-    expect(await written()).toEqual(UNTOUCHED);
+    expect(await containerSku()).toBe("PAI-001");
   });
 
   it("refuse un changement de déclinaison par défaut déjà joué, en nommant le produit et le jour", async () => {
@@ -139,40 +175,33 @@ describe("le garde-fou de la bascule — il compte, nomme, et n'écrit rien", ()
     expect(refusal?.message).toContain(
       `1 × product.default_variant_changed (PAI-001-1 → PAI-001-2 le ${occurredAt.toISOString().slice(0, 10)})`,
     );
-    expect(await written()).toEqual(UNTOUCHED);
+    expect(await containerSku()).toBe("PAI-001");
   });
 
-  it("refuse une journée de fournil ouverte qui porte une référence produit (D-a)", async () => {
-    const day = daysAgo(-1).slice(0, 10);
-    await ctx.prisma.productionDay.create({ data: { serviceDay: day } });
-    await ctx.prisma.productionCount.create({
-      data: { serviceDay: day, sku: "PAI-001", productName: "Baguette", quantity: 12 },
-    });
+  it("refuse une commande qui porte les deux références, en la nommant, et n'écrit rien", async () => {
+    const orderId = await seedOrder("ORD-910001", ["PAI-001", "PAI-001-1"]);
 
     const refusal = await runMigration();
 
-    expect(refusal?.message).toContain(`1 × journée de fournil ouverte (${day} PAI-001)`);
-    expect(refusal).toBeInstanceOf(Error);
-    expect(await written()).toEqual(UNTOUCHED);
-  });
-
-  it("laisse passer une journée CLOSE, qui garde sa référence", async () => {
-    const day = daysAgo(1).slice(0, 10);
-    await ctx.prisma.productionDay.create({
-      data: { serviceDay: day, closedAt: new Date(daysAgo(0)) },
+    expect(refusal?.message).toContain(`1 × collision : commande (${orderId} PAI-001)`);
+    const lines = await ctx.prisma.orderLine.findMany({
+      where: { orderId },
+      select: { sku: true },
+      orderBy: { sku: "asc" },
     });
-    await ctx.prisma.productionCount.create({
-      data: { serviceDay: day, sku: "PAI-001", productName: "Baguette", quantity: 12 },
-    });
-
-    expect(await runMigration()).toBeNull();
-    const counts = await ctx.prisma.productionCount.findMany({ select: { sku: true } });
-    expect(counts).toEqual([{ sku: "PAI-001" }]);
+    expect(lines).toEqual([{ sku: "PAI-001" }, { sku: "PAI-001-1" }]);
+    expect(await containerSku()).toBe("PAI-001");
   });
 });
 
 describe("la bascule, sans refus", () => {
-  it("écrit l'alias de chaque défaut et réécrit les magasins clés par référence de vente", async () => {
+  it("réécrit la commande, son jsonb, le fournil et les réglages sous la référence du défaut", async () => {
+    const orderId = await seedOrder("ORD-910002", ["PAI-001"]);
+    const day = daysAgo(1).slice(0, 10);
+    await ctx.prisma.productionDay.create({ data: { serviceDay: day } });
+    await ctx.prisma.productionCount.create({
+      data: { serviceDay: day, sku: "PAI-001", productName: "Baguette", quantity: 12 },
+    });
     await ctx.prisma.productNorm.create({
       data: {
         sku: "VIE-001",
@@ -185,27 +214,58 @@ describe("la bascule, sans refus", () => {
 
     expect(await runMigration()).toBeNull();
 
-    const items = await ctx.prisma.catalogItem.count({ where: { isDefault: true } });
-    expect(await ctx.prisma.saleSkuAlias.count()).toBe(items);
-    expect(
-      await ctx.prisma.saleSkuAlias.findUnique({
-        where: { aliasSku: "PAI-001" },
-        select: { targetSku: true },
-      }),
-    ).toEqual({ targetSku: "PAI-001-1" });
-    expect(await written()).toEqual({ aliases: items, container: "PAI-001-1" });
+    const order = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { shortfallLines: true, lines: { select: { sku: true } } },
+    });
+    expect(order.lines).toEqual([{ sku: "PAI-001-1" }]);
+    expect(order.shortfallLines).toEqual([{ sku: "PAI-001-1", missing: 1 }]);
+    expect(await ctx.prisma.productionCount.findMany({ select: { sku: true } })).toEqual([
+      { sku: "PAI-001-1" },
+    ]);
+    expect(await containerSku()).toBe("PAI-001-1");
     expect(await ctx.prisma.productNorm.findMany({ select: { sku: true } })).toEqual([
       { sku: "VIE-001-1" },
     ]);
   });
 
-  it("se rejoue sans rien changer ni doubler", async () => {
-    expect(await runMigration()).toBeNull();
-    const first = await ctx.prisma.saleSkuAlias.findMany({ orderBy: { aliasSku: "asc" } });
+  it("garde une valeur égale à une référence produit sous une autre clé que `sku`", async () => {
+    const orderId = await seedOrder("ORD-910003", ["PAI-001"]);
+    await ctx.prisma.order.update({
+      where: { id: orderId },
+      data: { shortfallLines: [{ sku: "PAI-001", productSku: "PAI-001", missing: 1 }] },
+    });
 
     expect(await runMigration()).toBeNull();
 
-    expect(await ctx.prisma.saleSkuAlias.findMany({ orderBy: { aliasSku: "asc" } })).toEqual(first);
-    expect((await written()).container).toBe("PAI-001-1");
+    const { shortfallLines } = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: orderId },
+      select: { shortfallLines: true },
+    });
+    expect(shortfallLines).toEqual([{ sku: "PAI-001-1", productSku: "PAI-001", missing: 1 }]);
+  });
+
+  it("se rejoue sans rien changer", async () => {
+    const orderId = await seedOrder("ORD-910004", ["PAI-001"]);
+    expect(await runMigration()).toBeNull();
+
+    expect(await runMigration()).toBeNull();
+
+    expect(
+      await ctx.prisma.orderLine.findMany({ where: { orderId }, select: { sku: true } }),
+    ).toEqual([{ sku: "PAI-001-1" }]);
+    expect(await containerSku()).toBe("PAI-001-1");
+  });
+
+  it("se défait par le retour arrière écrit, qui rend la référence produit", async () => {
+    const orderId = await seedOrder("ORD-910005", ["PAI-001"]);
+    expect(await runMigration()).toBeNull();
+
+    expect(await runMigration(ROLLBACK)).toBeNull();
+
+    expect(
+      await ctx.prisma.orderLine.findMany({ where: { orderId }, select: { sku: true } }),
+    ).toEqual([{ sku: "PAI-001" }]);
+    expect(await containerSku()).toBe("PAI-001");
   });
 });

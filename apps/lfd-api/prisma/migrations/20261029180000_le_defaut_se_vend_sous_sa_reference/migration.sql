@@ -1,76 +1,82 @@
--- LE DÉFAUT SE VEND SOUS SA PROPRE RÉFÉRENCE — la bascule, lot L3 de
--- documentation/catalogue/plan-defaut-sous-sa-reference.md (§ 1 à § 4, § 10).
+-- LE DÉFAUT SE VEND SOUS SA PROPRE RÉFÉRENCE — la bascule, SANS ALIAS
+-- (documentation/catalogue/plan-defaut-sous-sa-reference.md, révision 3 :
+-- décision de Hugo du 2026-10-29).
 --
--- Une migration de DONNÉES, partie avec le code où `shopSkuOf(item) = item.sku` :
--- la référence produit (`PAI-001`) cesse d'être une référence de vente, et ne
--- reste qu'une ancienne clé d'entrée, résolue par `sale_sku_alias`.
+-- Une migration de DONNÉES, partie avec le code où `shopSkuOf(item) = item.sku`.
+-- La référence produit d'une fiche (`PAI-001`) cesse d'être une référence de
+-- vente, et elle est RÉÉCRITE PARTOUT où elle était stockée vers la référence
+-- de la déclinaison par défaut de sa fiche (`PAI-001-1`). Aucune table de
+-- traduction ne reste : en pré-release, toutes les commandes existantes sont
+-- des essais de Hugo, qui accepte qu'elles soient réécrites (commandes, bons,
+-- factures et instantanés figés compris).
 --
--- 1. LE GARDE-FOU (§ 1, § 2, D-a) compte AVANT toute écriture et lève une
---    exception nommée s'il trouve :
+-- 1. LE GARDE-FOU compte AVANT toute écriture et refuse, sans rien écrire :
 --    - une décision tarifaire posée sur une référence produit (règle,
 --      plancher, palier, engagement en portée product/variant ; ligne de
 --      mercuriale, de brouillon de mercuriale, de modèle de prix) — archivées
 --      comprises : une lecture datée les relit ;
---    - un changement de déclinaison par défaut (G4) déjà joué : la table
---      d'alias, sans dates, suppose que `PAI-001` a toujours désigné le défaut
---      d'aujourd'hui ;
---    - une journée de fournil non close, ou une journée de colisage dont la
---      journée de fournil n'est pas close, qui porte une référence produit
---      (D-a : le fournil et le colisage ne savent pas lire un alias) ;
---    - une fiche à deux déclinaisons par défaut (l'alias serait ambigu).
---    Une « référence produit » est une valeur de `catalog_items.product_sku`
---    absente de `catalog_items.sku`.
+--    - un changement de déclinaison par défaut (G4) déjà joué : réécrire vers
+--      le défaut d'AUJOURD'HUI ferait mentir le passé d'avant ce changement ;
+--    - une fiche à deux déclinaisons par défaut (la cible serait ambiguë) ;
+--    - une COLLISION : une ligne sous `PAI-001` et une sous `PAI-001-1` dans
+--      une table où la référence fait partie d'une clé (une commande qui porte
+--      les deux, une journée de colisage qui stocke les deux…). Fusionner deux
+--      lignes de commande ou deux stocks n'est pas une réécriture : c'est une
+--      décision, et elle se prend à la main.
+--    Le garde-fou ne s'éteint que sur les bases locales connues (`lfc_b2b_dev`,
+--    `lfc_b2b_test*`) ou par le réglage `lfd.default_sku_switch_guard = 'off'` ;
+--    `'strict'` le force. La production n'a ni l'un ni l'autre.
+--    Les refus « journée ouverte » et « commande à venir » de la révision 2
+--    sont RETIRÉS : ils protégeaient la lecture par alias ; tout étant
+--    réécrit dans la même transaction, fournil, colisage et commerce lisent
+--    la même référence.
 --
--- 2. L'ALIAS : pour chaque déclinaison par défaut, `product_sku → sku`
---    (retirées comprises : le passé les porte aussi).
+-- 2. LA RÉÉCRITURE, pour chaque défaut `product_sku → sku` (retirés compris) :
+--    colonnes `sku` du commerce, du fournil, du colisage, de la livraison, de
+--    `growth` (compteurs) ; listes de SKU (`suggested_skus`, `hidden_skus`) ;
+--    déclencheurs de suggestion ; empreintes de la vitrine ; et toute valeur
+--    sous une clé `sku` (ou dans une liste `*skus` / `items`) des jsonb
+--    inventoriés au plan (§ 16). Là où une clé ne tolère pas deux lignes :
+--    COLLISION refusée plus haut, sauf pour des réglages et des comptes où
+--    la règle est écrite ici — la ligne de la cible l'emporte (contenants,
+--    contenances, choix de lot, normes, empreintes), ou les comptes
+--    s'additionnent (compteurs d'audience).
+--    Les décisions tarifaires sont réécrites aussi, sans collision : en
+--    production le garde-fou a établi qu'il n'y en a aucune ; sur une base de
+--    développement, une décision qui heurterait celle de la cible reste où
+--    elle est.
+--    NON RÉÉCRITS : le journal `growth.activity_events` (des faits datés, lus
+--    tels qu'écrits) et les tables du référentiel (`pim.*`), qui ne
+--    connaissent la référence produit que comme identité de la FICHE.
 --
--- 3. LES MAGASINS DE CONFIGURATION clés par référence de vente (§ 3, § 10) :
---    contenants et raccourcis du fournil, capacités des bacs, suggestions du
---    staff (articles proposés ET déclencheur sur un article), abonnements et
---    échéances à venir, choix des lots, normes, alertes de stock vivantes,
---    réassorts pas encore remis au fournil, brouillons de réassort ouverts,
---    empreintes des articles du flux vitrine. Chaque réécriture est
---    conditionnée à l'absence de la cible là où une clé l'exige : sans
---    collision, et rejouable.
---    NE SONT PAS RÉÉCRITS (vérifié le 2026-10-29) : `catalog_operation_overrides
---    .hidden_skus` et `catalog_operation_items` (SKU de déclinaison, pas de
---    vente) ; `resupply_receipt_line` (une réception enregistrée est toujours
---    « reçue », donc du passé) ; `production_count` (D-a : aucune journée
---    ouverte ne porte de référence produit) ; lignes de commande, bons,
---    colisages, historique des prix, compteurs `growth`, constats d'alerte —
---    figés, lus par l'alias.
+-- 3. LE CONTRÔLE DE FIN, dans la même transaction : plus AUCUNE référence
+--    produit dans aucune colonne réécrite ; sinon tout est annulé.
 --
--- 🔴 Une transaction EXPLICITE : Prisma Migrate n'en ouvre pas
--- (précédent : 20261024150000_la_reception_suit_la_remise). Un refus du
--- garde-fou n'écrit rien, mais inscrit la migration en échec : tout
--- déploiement suivant s'arrête sur P3009 jusqu'à
--- `prisma migrate resolve --rolled-back 20261029100000_le_defaut_se_vend_sous_sa_reference`
+-- 🔴 Une transaction EXPLICITE : Prisma Migrate n'en ouvre pas. Un refus
+-- n'écrit rien, mais inscrit la migration en échec : tout déploiement suivant
+-- s'arrête sur P3009 jusqu'à
+-- `prisma migrate resolve --rolled-back 20261029180000_le_defaut_se_vend_sous_sa_reference`
 -- (documentation/ops/runbook.md, « Avant de déployer la bascule du défaut »).
 --
--- EN DÉVELOPPEMENT : le garde-fou ne compte que hors des bases locales
--- connues (`lfc_b2b_dev`, et `lfc_b2b_test*` — une par ouvrier jest), où des
--- décisions tarifaires de semis et des changements de défaut essayés existent
--- et ne protègent rien. Ailleurs (production, base fantôme de `migrate dev`),
--- il compte. Le
--- réglage de session ou de base `lfd.default_sku_switch_guard` le force
--- (`strict`, ce que fait le test d'intégration) ou l'éteint (`off`, pour une
--- base de dev sous un autre nom). La production n'a ni l'un ni l'autre : le
--- garde-fou y compte.
---
--- Retour arrière : apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql
--- (NON appliqué, Prisma ne lit pas ce dossier), puis redéployer le code d'avant.
+-- Retour arrière : apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql
+-- (NON appliqué ; possible seulement tant qu'aucune commande n'a été passée
+-- sous `-1` après la bascule).
 
 BEGIN;
 
+CREATE TEMP TABLE switch_map ON COMMIT DROP AS
+  SELECT i.product_sku AS ref, i.sku AS target
+    FROM public.catalog_items i
+   WHERE i.is_default
+     AND i.product_sku <> i.sku
+     AND NOT EXISTS (SELECT 1 FROM public.catalog_items s WHERE s.sku = i.product_sku);
+
+-- Une référence produit sans défaut se compte aussi au contrôle de fin.
 CREATE TEMP TABLE switch_product_refs ON COMMIT DROP AS
   SELECT DISTINCT i.product_sku AS ref
     FROM public.catalog_items i
    WHERE NOT EXISTS (SELECT 1 FROM public.catalog_items s WHERE s.sku = i.product_sku);
 
-CREATE TEMP TABLE switch_findings (label text NOT NULL, total bigint NOT NULL, sample text NOT NULL)
-  ON COMMIT DROP;
-
--- Chaque contrôle : combien, et au plus cinq exemples.
 CREATE TEMP TABLE switch_hits (label text NOT NULL, item text NOT NULL) ON COMMIT DROP;
 
 -- 1.a Décisions à portée (règles, planchers, paliers, engagements).
@@ -127,49 +133,35 @@ SELECT 'deux déclinaisons par défaut', i.product_sku
  GROUP BY i.product_sku
 HAVING count(*) > 1;
 
--- 1.e D-a : une journée ouverte du fournil qui porte une référence produit.
-CREATE TEMP TABLE switch_open_days ON COMMIT DROP AS
-  SELECT d.service_day FROM production.production_day d WHERE d.closed_at IS NULL;
+-- 1.e Les collisions : `ref` et `target` sous la même clé. Toujours comptées,
+-- base locale comprise : la réécriture lèverait sinon une violation de clé
+-- sans nom.
+CREATE FUNCTION pg_temp.switch_collisions(tbl text, keys text, label text) RETURNS void
+LANGUAGE plpgsql AS $$
+BEGIN
+  EXECUTE format(
+    'INSERT INTO switch_hits
+     SELECT %L, concat_ws('' '', %s, m.ref)
+       FROM %s a JOIN switch_map m ON a.sku = m.ref
+      WHERE EXISTS (SELECT 1 FROM %s b WHERE b.sku = m.target AND %s)',
+    label,
+    (SELECT string_agg(format('a.%I', k), ', ') FROM unnest(string_to_array(keys, ',')) k),
+    tbl, tbl,
+    (SELECT string_agg(format('b.%I = a.%I', k, k), ' AND ') FROM unnest(string_to_array(keys, ',')) k));
+END
+$$;
 
-INSERT INTO switch_hits
-SELECT 'journée de fournil ouverte', format('%s %s', o.service_day, l.sku)
-  FROM production.production_order_line l
-  JOIN production.production_order o ON o.id = l.production_order_id
-  JOIN switch_open_days d ON d.service_day = o.service_day
-  JOIN switch_product_refs p ON p.ref = l.sku;
-INSERT INTO switch_hits
-SELECT 'journée de fournil ouverte', format('%s %s', x.service_day, x.sku)
-  FROM (SELECT service_day, sku FROM production.production_count
-        UNION SELECT service_day, sku FROM production.production_batch
-        UNION SELECT service_day, sku FROM production.production_handoff
-        UNION SELECT service_day, sku FROM production.production_return_request
-        UNION SELECT service_day, sku FROM production.production_quality_check WHERE sku IS NOT NULL
-        UNION SELECT r.service_day, rl.sku
-                FROM production.production_resupply_line rl
-                JOIN production.production_resupply r ON r.id = rl.production_resupply_id) x
-  JOIN switch_open_days d ON d.service_day = x.service_day
-  JOIN switch_product_refs p ON p.ref = x.sku;
-
--- … et le colisage d'une journée dont le fournil n'est pas clos (ou absent).
-INSERT INTO switch_hits
-SELECT 'journée de colisage ouverte', format('%s %s', x.service_day, x.sku)
-  FROM (SELECT service_day, sku FROM packing.packing_line
-        UNION SELECT service_day, sku FROM packing.packing_stock
-        UNION SELECT service_day, sku FROM packing.packing_receipt
-        UNION SELECT service_day, sku FROM packing.packing_return
-        UNION SELECT service_day, sku FROM packing.container_line
-        UNION SELECT service_day, sku FROM packing.packing_resupply_line
-        UNION SELECT service_day, sku FROM packing.packing_stock_reservation) x
-  JOIN switch_product_refs p ON p.ref = x.sku
- WHERE NOT EXISTS (SELECT 1 FROM production.production_day d
-                    WHERE d.service_day = x.service_day AND d.closed_at IS NOT NULL);
-
-INSERT INTO switch_findings
-SELECT h.label, count(*),
-       string_agg(h.item, ', ' ORDER BY h.item) FILTER (WHERE h.rank <= 5)
-  FROM (SELECT label, item, row_number() OVER (PARTITION BY label ORDER BY item) AS rank
-          FROM switch_hits) h
- GROUP BY h.label;
+SELECT pg_temp.switch_collisions('public.order_lines', 'order_id', 'collision : commande');
+SELECT pg_temp.switch_collisions('public.site_resupply_line', 'resupply_id', 'collision : réassort');
+SELECT pg_temp.switch_collisions('public.resupply_receipt_line', 'receipt_id', 'collision : réception');
+SELECT pg_temp.switch_collisions('public.catalog_operation_items', 'operation_key', 'collision : opération');
+SELECT pg_temp.switch_collisions('production.production_count', 'service_day', 'collision : compte du fournil');
+SELECT pg_temp.switch_collisions('packing.packing_line', 'service_day,order_id,rank', 'collision : ligne de colisage');
+SELECT pg_temp.switch_collisions('packing.packing_stock', 'service_day', 'collision : stock du colisage');
+SELECT pg_temp.switch_collisions('packing.container_line', 'container_id', 'collision : contenant');
+SELECT pg_temp.switch_collisions('packing.packing_resupply_line', 'service_day,resupply_id', 'collision : réassort au colisage');
+SELECT pg_temp.switch_collisions('packing.packing_stock_reservation', 'service_day,resupply_id', 'collision : réservation de stock');
+SELECT pg_temp.switch_collisions('delivery.delivery_internal_transfer_manifest_line', 'transfer_id,item_id', 'collision : transfert');
 
 DO $$
 DECLARE
@@ -183,139 +175,309 @@ BEGIN
               ELSE NOT (current_database() = 'lfc_b2b_dev'
                         OR current_database() LIKE 'lfc\_b2b\_test%')
             END;
-  IF NOT counts THEN
-    RAISE NOTICE 'bascule-defaut : garde-fou éteint sur la base locale % (réglage « % »).',
-      current_database(), setting;
-    RETURN;
-  END IF;
   SELECT string_agg(format('%s × %s (%s)', f.total, f.label, f.sample), ' ; ' ORDER BY f.label)
     INTO report
-    FROM switch_findings f;
+    FROM (SELECT h.label, count(*) AS total,
+                 string_agg(h.item, ', ' ORDER BY h.item) FILTER (WHERE h.rank <= 5) AS sample
+            FROM (SELECT label, item, row_number() OVER (PARTITION BY label ORDER BY item) AS rank
+                    FROM switch_hits) h
+           WHERE counts OR h.label LIKE 'collision : %'
+           GROUP BY h.label) f;
   IF report IS NOT NULL THEN
     RAISE EXCEPTION USING
       MESSAGE = 'bascule-defaut refusée, rien n''a été écrit : ' || report,
       HINT = 'Décision tarifaire : l''archiver maintenant, la reposer sur la référence de la '
           || 'déclinaison (PAI-001-1) après la bascule. Changement de défaut déjà joué : ne pas '
-          || 'déployer, la question Q2 du plan est à trancher par Hugo. Journée ouverte : la '
-          || 'clore, ou déployer un jour sans service ouvert (D-a). Puis, sur la production : '
-          || 'prisma migrate resolve --rolled-back 20261029100000_le_defaut_se_vend_sous_sa_reference, '
-          || 'et redéployer (documentation/ops/runbook.md, « Avant de déployer la bascule du défaut »).';
+          || 'déployer, la question Q2 du plan est à trancher par Hugo. Collision : corriger la '
+          || 'commande, le réassort ou la journée nommés pour qu''ils ne portent plus qu''une des '
+          || 'deux références. Puis, sur la production : prisma migrate resolve --rolled-back '
+          || '20261029180000_le_defaut_se_vend_sous_sa_reference, et redéployer '
+          || '(documentation/ops/runbook.md, « Avant de déployer la bascule du défaut »).';
+  END IF;
+  IF NOT counts THEN
+    RAISE NOTICE 'bascule-defaut : garde-fou des décisions éteint sur la base locale % (réglage « % »).',
+      current_database(), setting;
   END IF;
 END
 $$;
 
--- 2. L'alias : l'ancienne référence désigne la déclinaison par défaut d'aujourd'hui.
-INSERT INTO public.sale_sku_alias (alias_sku, target_sku, written_at)
-SELECT i.product_sku, i.sku, now()
-  FROM public.catalog_items i
-  JOIN switch_product_refs p ON p.ref = i.product_sku
- WHERE i.is_default
-ON CONFLICT (alias_sku) DO NOTHING;
+-- 2. LA RÉÉCRITURE.
 
--- 3. Les magasins de configuration.
-UPDATE production.production_container c
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE c.sku = a.alias_sku
-   AND NOT EXISTS (SELECT 1 FROM production.production_container t WHERE t.sku = a.target_sku);
+-- 2.a jsonb : toute valeur sous une clé `sku`, et toute chaîne d'une liste
+-- sous une clé `…skus` ou `items`.
+CREATE FUNCTION pg_temp.switch_json(j jsonb) RETURNS jsonb
+LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  k text;
+  v jsonb;
+  out jsonb;
+BEGIN
+  IF j IS NULL THEN
+    RETURN NULL;
+  ELSIF jsonb_typeof(j) = 'object' THEN
+    out := '{}'::jsonb;
+    FOR k, v IN SELECT * FROM jsonb_each(j) LOOP
+      IF lower(k) = 'sku' AND jsonb_typeof(v) = 'string' THEN
+        v := COALESCE((SELECT to_jsonb(m.target) FROM switch_map m WHERE m.ref = v #>> '{}'), v);
+      ELSIF (lower(k) LIKE '%skus' OR k = 'items') AND jsonb_typeof(v) = 'array' THEN
+        v := (SELECT COALESCE(jsonb_agg(
+                 CASE WHEN jsonb_typeof(e) = 'string'
+                      THEN COALESCE((SELECT to_jsonb(m.target) FROM switch_map m WHERE m.ref = e #>> '{}'), e)
+                      ELSE pg_temp.switch_json(e) END ORDER BY n), '[]'::jsonb)
+                FROM jsonb_array_elements(v) WITH ORDINALITY AS t(e, n));
+      ELSE
+        v := pg_temp.switch_json(v);
+      END IF;
+      out := out || jsonb_build_object(k, v);
+    END LOOP;
+    RETURN out;
+  ELSIF jsonb_typeof(j) = 'array' THEN
+    RETURN (SELECT COALESCE(jsonb_agg(pg_temp.switch_json(e) ORDER BY n), '[]'::jsonb)
+              FROM jsonb_array_elements(j) WITH ORDINALITY AS t(e, n));
+  END IF;
+  RETURN j;
+END
+$$;
 
-UPDATE production.production_batch_shortcut s
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE s.sku = a.alias_sku AND s.removed_at IS NULL;
+-- Le jumeau qui COMPTE, aux mêmes positions, les références produit qui
+-- restent (contrôle de fin) : une valeur égale à une référence produit sous
+-- une autre clé (`productSku`, un nom) n'est pas une référence de vente.
+CREATE FUNCTION pg_temp.switch_json_refs(j jsonb) RETURNS bigint
+LANGUAGE plpgsql STABLE AS $$
+DECLARE
+  k text;
+  v jsonb;
+  total bigint := 0;
+BEGIN
+  IF j IS NULL THEN
+    RETURN 0;
+  ELSIF jsonb_typeof(j) = 'object' THEN
+    FOR k, v IN SELECT * FROM jsonb_each(j) LOOP
+      IF lower(k) = 'sku' AND jsonb_typeof(v) = 'string' THEN
+        total := total + (SELECT count(*) FROM switch_product_refs p WHERE p.ref = v #>> '{}');
+      ELSIF (lower(k) LIKE '%skus' OR k = 'items') AND jsonb_typeof(v) = 'array' THEN
+        total := total + (SELECT COALESCE(sum(
+                   CASE WHEN jsonb_typeof(e) = 'string'
+                        THEN (SELECT count(*) FROM switch_product_refs p WHERE p.ref = e #>> '{}')
+                        ELSE pg_temp.switch_json_refs(e) END), 0)
+                   FROM jsonb_array_elements(v) AS t(e));
+      ELSE
+        total := total + pg_temp.switch_json_refs(v);
+      END IF;
+    END LOOP;
+  ELSIF jsonb_typeof(j) = 'array' THEN
+    total := (SELECT COALESCE(sum(pg_temp.switch_json_refs(e)), 0) FROM jsonb_array_elements(j) AS t(e));
+  END IF;
+  RETURN total;
+END
+$$;
 
-UPDATE delivery.delivery_bin_capacity c
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE c.sku = a.alias_sku
-   AND NOT EXISTS (SELECT 1 FROM delivery.delivery_bin_capacity t
-                    WHERE t.bin_type_id = c.bin_type_id AND t.sku = a.target_sku);
+-- Les colonnes jsonb inventoriées (plan, § 16). Une colonne qui EST une liste
+-- de SKU (`excluded_skus`) se lit comme la valeur d'une clé `skus`. Une ligne n'est écrite que si
+-- la réécriture la change.
+CREATE TEMP TABLE switch_json_columns (tbl text NOT NULL, col text NOT NULL, expr text) ON COMMIT DROP;
+INSERT INTO switch_json_columns (tbl, col) VALUES
+  ('public.orders', 'shortfall_lines'),
+  ('public.orders', 'recurring_deltas'),
+  ('public.order_shortfall', 'lines'),
+  ('public.order_shortfall_decision', 'departing'),
+  ('public.order_revision', 'composition'),
+  ('public.order_drafts', 'payload'),
+  ('public.shop_carts', 'payload'),
+  ('public.invoice', 'lines'),
+  ('public.billing_statement', 'body'),
+  ('public.subscription_occurrences', 'lines'),
+  ('public.bakehouse_resupply_drafts', 'lines'),
+  ('public.account_alerts', 'findings'),
+  ('public.customer_request', 'change_content'),
+  ('public.catalog_versions', 'items'),
+  ('public.catalog_versions', 'excluded_skus'),
+  ('public.vitrine_deliveries', 'changes'),
+  ('delivery.delivery_purchase_scenario', 'content'),
+  ('delivery.delivery_simulation_scenario', 'scenario');
+UPDATE switch_json_columns
+   SET expr = format('jsonb_build_object(''skus'', %I)', col)
+ WHERE col = 'excluded_skus';
+UPDATE switch_json_columns SET expr = format('%I', col) WHERE expr IS NULL;
 
+DO $$
+DECLARE
+  c record;
+BEGIN
+  FOR c IN SELECT * FROM switch_json_columns LOOP
+    EXECUTE format(
+      'UPDATE %s SET %I = %s
+        WHERE %I IS NOT NULL AND pg_temp.switch_json_refs(%s) > 0',
+      c.tbl, c.col,
+      CASE WHEN c.col = 'excluded_skus'
+           THEN format('pg_temp.switch_json(%s) -> ''skus''', c.expr)
+           ELSE format('pg_temp.switch_json(%s)', c.expr) END,
+      c.col, c.expr);
+  END LOOP;
+END
+$$;
+
+-- 2.b Colonnes `sku` sans clé qui les contienne, et clés sans collision
+-- (refusées plus haut). Les FK `ON UPDATE CASCADE` du colisage suivent.
+DO $$
+DECLARE
+  t text;
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'public.order_lines', 'public.delivery_note_line', 'public.subscription_lines',
+    'public.site_resupply_line', 'public.resupply_receipt_line', 'public.site_stock_alert',
+    'public.catalog_operation_items',
+    'production.production_order_line', 'production.production_count',
+    'production.production_batch', 'production.production_handoff',
+    'production.production_return_request', 'production.production_quality_check',
+    'production.production_resupply_line', 'production.production_batch_shortcut',
+    'packing.packing_line', 'packing.packing_stock', 'packing.packing_receipt',
+    'packing.packing_return', 'packing.container_line', 'packing.packing_resupply_line',
+    'packing.packing_stock_reservation',
+    'delivery.delivery_internal_transfer_manifest_line'
+  ] LOOP
+    EXECUTE format('UPDATE %s a SET sku = m.target FROM switch_map m WHERE a.sku = m.ref', t);
+  END LOOP;
+END
+$$;
+
+-- 2.c Réglages où la ligne de la cible l'emporte.
+DELETE FROM production.production_container c USING switch_map m
+ WHERE c.sku = m.ref AND EXISTS (SELECT 1 FROM production.production_container t WHERE t.sku = m.target);
+UPDATE production.production_container c SET sku = m.target FROM switch_map m WHERE c.sku = m.ref;
+
+DELETE FROM delivery.delivery_bin_capacity c USING switch_map m
+ WHERE c.sku = m.ref AND EXISTS (SELECT 1 FROM delivery.delivery_bin_capacity t
+                                  WHERE t.bin_type_id = c.bin_type_id AND t.sku = m.target);
+UPDATE delivery.delivery_bin_capacity c SET sku = m.target FROM switch_map m WHERE c.sku = m.ref;
+
+DELETE FROM public.bundle_choices c USING switch_map m
+ WHERE c.sku = m.ref AND EXISTS (SELECT 1 FROM public.bundle_choices t
+                                  WHERE t.bundle_id = c.bundle_id AND t.sku = m.target);
+UPDATE public.bundle_choices c SET sku = m.target FROM switch_map m WHERE c.sku = m.ref;
+
+DELETE FROM public.product_norms n USING switch_map m
+ WHERE n.sku = m.ref AND EXISTS (SELECT 1 FROM public.product_norms t WHERE t.sku = m.target);
+UPDATE public.product_norms n SET sku = m.target FROM switch_map m WHERE n.sku = m.ref;
+
+DELETE FROM public.vitrine_fingerprints f USING switch_map m
+ WHERE f.kind = 'item' AND f.element_key = m.ref
+   AND EXISTS (SELECT 1 FROM public.vitrine_fingerprints t
+                WHERE t.subscriber_id = f.subscriber_id AND t.kind = 'item'
+                  AND t.element_key = m.target);
+UPDATE public.vitrine_fingerprints f SET element_key = m.target FROM switch_map m
+ WHERE f.kind = 'item' AND f.element_key = m.ref;
+
+-- 2.d Les compteurs d'audience s'additionnent.
+INSERT INTO growth.product_audience_counters (day, sku, event, placement, source, count)
+SELECT c.day, m.target, c.event, c.placement, c.source, c.count
+  FROM growth.product_audience_counters c JOIN switch_map m ON m.ref = c.sku
+ON CONFLICT (day, sku, event, placement, source)
+DO UPDATE SET count = growth.product_audience_counters.count + EXCLUDED.count;
+DELETE FROM growth.product_audience_counters c USING switch_map m WHERE c.sku = m.ref;
+
+-- 2.e Listes et déclencheurs.
 UPDATE public.staff_suggestion_rules r
    SET suggested_skus = ARRAY(
          SELECT q.sku FROM (
-           SELECT COALESCE(a.target_sku, u.sku) AS sku, min(u.rank) AS rank
+           SELECT COALESCE(m.target, u.sku) AS sku, min(u.rank) AS rank
              FROM unnest(r.suggested_skus) WITH ORDINALITY AS u(sku, rank)
-             LEFT JOIN public.sale_sku_alias a ON a.alias_sku = u.sku
+             LEFT JOIN switch_map m ON m.ref = u.sku
             GROUP BY 1) q
           ORDER BY q.rank)
- WHERE r.archived_at IS NULL
-   AND r.suggested_skus && ARRAY(SELECT alias_sku FROM public.sale_sku_alias);
-
+ WHERE r.suggested_skus && ARRAY(SELECT ref FROM switch_map);
 UPDATE public.staff_suggestion_rules r
-   SET trigger_ref = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE r.trigger_ref = a.alias_sku
-   AND r.trigger_kind IN ('product_in_cart', 'product_viewed')
-   AND r.archived_at IS NULL;
+   SET trigger_ref = m.target
+  FROM switch_map m
+ WHERE r.trigger_ref = m.ref AND r.trigger_kind IN ('product_in_cart', 'product_viewed');
+UPDATE public.catalog_operation_overrides o
+   SET hidden_skus = ARRAY(SELECT DISTINCT COALESCE(m.target, u) FROM unnest(o.hidden_skus) u
+                             LEFT JOIN switch_map m ON m.ref = u)
+ WHERE o.hidden_skus && ARRAY(SELECT ref FROM switch_map);
 
-UPDATE public.subscription_lines l
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE l.sku = a.alias_sku;
+-- 2.f Les décisions tarifaires (aucune en production, garde-fou ci-dessus).
+UPDATE public.price_rules x SET scope_id = m.target FROM switch_map m
+ WHERE x.scope_type IN ('product', 'variant') AND x.scope_id = m.ref
+   AND NOT EXISTS (SELECT 1 FROM public.price_rules y WHERE y.scope_id = m.target
+                    AND y.scope_type = x.scope_type);
+UPDATE public.price_floors x SET scope_id = m.target FROM switch_map m
+ WHERE x.scope_type IN ('product', 'variant') AND x.scope_id = m.ref
+   AND NOT EXISTS (SELECT 1 FROM public.price_floors y WHERE y.scope_id = m.target
+                    AND y.scope_type = x.scope_type);
+UPDATE public.volume_ladders x SET scope_id = m.target FROM switch_map m
+ WHERE x.scope_type IN ('product', 'variant') AND x.scope_id = m.ref
+   AND NOT EXISTS (SELECT 1 FROM public.volume_ladders y WHERE y.scope_id = m.target
+                    AND y.scope_type = x.scope_type);
+UPDATE public.volume_commitments x SET scope_id = m.target FROM switch_map m
+ WHERE x.scope_type IN ('product', 'variant') AND x.scope_id = m.ref
+   AND NOT EXISTS (SELECT 1 FROM public.volume_commitments y WHERE y.scope_id = m.target
+                    AND y.scope_type = x.scope_type);
+UPDATE public.company_mercuriales SET lines = pg_temp.switch_json(lines)
+ WHERE pg_temp.switch_json_refs(lines) > 0;
+UPDATE public.mercuriale_drafts SET lines = pg_temp.switch_json(lines)
+ WHERE pg_temp.switch_json_refs(lines) > 0;
+UPDATE public.price_templates SET lines = pg_temp.switch_json(lines)
+ WHERE pg_temp.switch_json_refs(lines) > 0;
 
-UPDATE public.subscription_occurrences o
-   SET lines = (
-         SELECT jsonb_agg(CASE WHEN a.target_sku IS NULL THEN e.line
-                               ELSE jsonb_set(e.line, '{sku}', to_jsonb(a.target_sku)) END
-                          ORDER BY e.rank)
-           FROM jsonb_array_elements(o.lines) WITH ORDINALITY AS e(line, rank)
-           LEFT JOIN public.sale_sku_alias a ON a.alias_sku = e.line ->> 'sku')
- WHERE jsonb_typeof(o.lines) = 'array'
-   AND o.occurrence_date >= (now() AT TIME ZONE 'Europe/Paris')::date
-   AND EXISTS (SELECT 1 FROM jsonb_array_elements(o.lines) e
-                 JOIN public.sale_sku_alias a ON a.alias_sku = e ->> 'sku');
-
-UPDATE public.bundle_choices c
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE c.sku = a.alias_sku
-   AND NOT EXISTS (SELECT 1 FROM public.bundle_choices t
-                    WHERE t.bundle_id = c.bundle_id AND t.sku = a.target_sku);
-
-UPDATE public.product_norms n
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE n.sku = a.alias_sku
-   AND NOT EXISTS (SELECT 1 FROM public.product_norms t WHERE t.sku = a.target_sku);
-
-UPDATE public.site_stock_alert s
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE s.sku = a.alias_sku AND s.lifted_at IS NULL;
-
--- Un réassort déjà remis au fournil garde sa référence : le fournil et le
--- colisage l'ont copiée, et la réception se pré-remplit de ce qui a été emballé.
-UPDATE public.site_resupply_line l
-   SET sku = a.target_sku
-  FROM public.sale_sku_alias a, public.site_resupply r
- WHERE l.sku = a.alias_sku
-   AND r.id = l.resupply_id
-   AND r.cancelled_at IS NULL
-   AND r.arrived_at IS NULL
-   AND NOT EXISTS (SELECT 1 FROM production.production_resupply p WHERE p.resupply_id = r.id)
-   AND NOT EXISTS (SELECT 1 FROM public.site_resupply_line t
-                    WHERE t.resupply_id = l.resupply_id AND t.sku = a.target_sku);
-
-UPDATE public.bakehouse_resupply_drafts d
-   SET lines = (
-         SELECT jsonb_agg(CASE WHEN a.target_sku IS NULL THEN e.line
-                               ELSE jsonb_set(e.line, '{sku}', to_jsonb(a.target_sku)) END
-                          ORDER BY e.rank)
-           FROM jsonb_array_elements(d.lines) WITH ORDINALITY AS e(line, rank)
-           LEFT JOIN public.sale_sku_alias a ON a.alias_sku = e.line ->> 'sku')
- WHERE d.status = 'open'
-   AND jsonb_typeof(d.lines) = 'array'
-   AND EXISTS (SELECT 1 FROM jsonb_array_elements(d.lines) e
-                 JOIN public.sale_sku_alias a ON a.alias_sku = e ->> 'sku');
-
-UPDATE public.vitrine_fingerprints f
-   SET element_key = a.target_sku
-  FROM public.sale_sku_alias a
- WHERE f.kind = 'item'
-   AND f.element_key = a.alias_sku
-   AND NOT EXISTS (SELECT 1 FROM public.vitrine_fingerprints t
-                    WHERE t.subscriber_id = f.subscriber_id AND t.kind = 'item'
-                      AND t.element_key = a.target_sku);
+-- 3. LE CONTRÔLE DE FIN : aucune référence produit ne reste.
+DO $$
+DECLARE
+  t text;
+  c record;
+  found bigint;
+  report text := '';
+BEGIN
+  FOREACH t IN ARRAY ARRAY[
+    'public.order_lines', 'public.delivery_note_line', 'public.subscription_lines',
+    'public.site_resupply_line', 'public.resupply_receipt_line', 'public.site_stock_alert',
+    'public.catalog_operation_items', 'public.bundle_choices', 'public.product_norms',
+    'production.production_order_line', 'production.production_count',
+    'production.production_batch', 'production.production_handoff',
+    'production.production_return_request', 'production.production_quality_check',
+    'production.production_resupply_line', 'production.production_batch_shortcut',
+    'production.production_container',
+    'packing.packing_line', 'packing.packing_stock', 'packing.packing_receipt',
+    'packing.packing_return', 'packing.container_line', 'packing.packing_resupply_line',
+    'packing.packing_stock_reservation',
+    'delivery.delivery_internal_transfer_manifest_line', 'delivery.delivery_bin_capacity',
+    'growth.product_audience_counters'
+  ] LOOP
+    EXECUTE format('SELECT count(*) FROM %s a JOIN switch_product_refs p ON p.ref = a.sku', t)
+      INTO found;
+    IF found > 0 THEN
+      report := report || format('%s × %s ; ', found, t);
+    END IF;
+  END LOOP;
+  FOR c IN SELECT * FROM switch_json_columns LOOP
+    EXECUTE format('SELECT COALESCE(sum(pg_temp.switch_json_refs(%s)), 0) FROM %s', c.expr, c.tbl)
+      INTO found;
+    IF found > 0 THEN
+      report := report || format('%s × %s.%s ; ', found, c.tbl, c.col);
+    END IF;
+  END LOOP;
+  SELECT count(*) INTO found
+    FROM public.vitrine_fingerprints f JOIN switch_product_refs p ON p.ref = f.element_key
+   WHERE f.kind = 'item';
+  IF found > 0 THEN
+    report := report || format('%s × public.vitrine_fingerprints ; ', found);
+  END IF;
+  SELECT count(*) INTO found
+    FROM public.staff_suggestion_rules r
+   WHERE r.suggested_skus && ARRAY(SELECT ref FROM switch_product_refs)
+      OR (r.trigger_kind IN ('product_in_cart', 'product_viewed')
+          AND r.trigger_ref IN (SELECT ref FROM switch_product_refs));
+  IF found > 0 THEN
+    report := report || format('%s × public.staff_suggestion_rules ; ', found);
+  END IF;
+  IF report <> '' THEN
+    RAISE EXCEPTION USING
+      MESSAGE = 'bascule-defaut annulée au contrôle de fin, rien n''a été écrit : des références '
+             || 'produit restent après la réécriture — ' || report,
+      HINT = 'Une fiche sans déclinaison par défaut, ou une colonne absente de l''inventaire du '
+          || 'plan (§ 16) : la compléter, puis prisma migrate resolve --rolled-back '
+          || '20261029180000_le_defaut_se_vend_sous_sa_reference.';
+  END IF;
+END
+$$;
 
 COMMIT;

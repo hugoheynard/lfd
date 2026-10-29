@@ -4,6 +4,15 @@
 >
 > La décision ne change pas : « B pour de bon ». Désormais `shopSkuOf(item) = item.sku` pour toute déclinaison, et le modèle reste à plat. Ce plan fait suite à [`plan-pro-voit-les-declinaisons.md`](plan-pro-voit-les-declinaisons.md) et à [`plan-declinaisons-en-vignette.md`](plan-declinaisons-en-vignette.md). **Rien n'est bâti.** Le chantier touche encore à l'argent : le garde-fou et la portée `product:` sont en jeu. Il passe donc par `vitruve` (CLAUDE.md § 9 bis), puis par `lecteur-de-migrations` pour chaque migration. Le code a été ouvert le 2026-10-29.
 
+> 🔴 **Révision 3 du 2026-10-29 au soir — SANS ALIAS (décision de Hugo).** Les
+> § 2 à § 15 décrivent une bascule qui gardait l'ancienne référence comme clé
+> d'entrée, traduite par `sale_sku_alias`. Hugo l'a écartée : il ne veut pas
+> commencer sa release avec une couche d'alias, et en pré-release toutes les
+> commandes existantes sont ses essais. La migration RÉÉCRIT donc partout la
+> référence produit d'un défaut, et la couche d'alias (L1, L2, la
+> normalisation du § 6) est retirée du code. Ce qui vaut aujourd'hui : **§ 16**.
+> Les sections précédentes restent pour la trace de la décision.
+
 ## 0. Le problème
 
 `shopSkuOf` rend `item.isDefault ? item.productSku : item.sku` (`apps/lfd-api/src/b2b/catalog/domain/shop-sku.ts:13-19`). La référence produit veut donc dire « le défaut du moment ». Depuis le geste G4, tout ce qui est posé sur `PAI-001` glisse vers la nouvelle déclinaison. Et tout ce qui visait la déclinaison promue devient orphelin.
@@ -276,11 +285,11 @@ Hugo) la bascule.
 - La table `public.sale_sku_alias(alias_sku PK, target_sku, written_at)`, index
   sur `target_sku`, migration de schéma additive
   `20261029080000_les_alias_de_reference_de_vente` (`lock_timeout 5s`), VIDE.
-- La canonicalisation unique : `SaleSkuAliases` (`b2b/catalog/domain/sale-sku-aliases.ts`,
+- La canonicalisation unique : `SaleSkuAliases` (retiré par la révision 3 ;
   `canonical`, `spellingsOf`) et son port de lecture `SaleSkuAliasReader`
   (implémentation `PrismaSaleSkuAliasReader`), exporté par `CatalogModule`.
 - Les regroupements par article : prévisionnel du fournil
-  (`prisma-expected-production.reader.ts` → `expected-production-fold.ts`),
+  (`prisma-expected-production.reader.ts` → le pli du prévisionnel (retiré par la révision 3)),
   classement des lignes (remise retrait, au recalcul — D-d), historique et
   norme des alertes (lecture et recalcul de `ProductNorm`), habitudes du
   client (`PrismaPurchaseHistoryReader`) et du back-office
@@ -357,7 +366,7 @@ Hugo) la bascule.
 
 **Fait.**
 
-- Une seule porte : `SaleReferenceIntake` (`b2b/catalog/application/sale-reference-intake.service.ts`),
+- Une seule porte : `SaleReferenceIntake` (retirée par la révision 3),
   qui lit `SaleSkuAliasReader.around` et remplace chaque ancienne référence par
   la cible de la table. Appelée en tête de `OrderDrafting.draft` (les trois
   passations : client, saisie staff, boutique — APRÈS la clé d'idempotence, qui
@@ -400,14 +409,15 @@ Hugo) la bascule.
 
 **Fait.**
 
-- La migration de données `20261029100000_le_defaut_se_vend_sous_sa_reference`,
+- La migration de données `20261029180000_le_defaut_se_vend_sous_sa_reference`,
   dans une transaction explicite : un garde-fou qui compte avant toute
   écriture et lève un refus nommé (au plus cinq exemples par cas) — décisions
   à portée `product`/`variant` sur une référence produit (archivées
   comprises), lignes jsonb de mercuriale, brouillon et modèle,
   `product.default_variant_changed`, journée de fournil non close ou de
   colisage dont le fournil n'est pas clos portant une référence produit
-  (D-a), fiche à deux défauts — puis l'alias de chaque défaut (retirés
+  (D-a), fiche à deux défauts, commande à venir portant une référence
+  produit (§ 15, voie a) — puis l'alias de chaque défaut (retirés
   compris) et la réécriture des magasins : contenants et raccourcis vivants
   du fournil, capacités des bacs, suggestions vivantes (articles ET
   déclencheur sur un article), lignes d'abonnement, échéances à venir, choix
@@ -424,7 +434,7 @@ Hugo) la bascule.
   traduit ses références produit vers le défaut
   (`apps/lfd-api/src/dev/seeding/sale-references.seed.ts`).
 - Le retour arrière écrit, non appliqué :
-  `apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql`
+  `apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql`
   (avec son propre garde-fou), et la section « Avant de déployer la bascule
   du défaut » du runbook.
 - `shopSkuOf(item) = item.sku` ; ses jumelles en requête (`soldUnderShopSkus`,
@@ -462,6 +472,24 @@ fournil (§ 12) n'est pas canonicalisé, et c'est un point à trancher (§ 15).
   en a pas) ; (b) canonicaliser `SitedDayOrders` ET chaque chemin de retour
   vers le commerce (manques, révisions, retrait), qui retrouvent une ligne par
   sa référence.
+
+  ✅ **Tranché par Hugo le 2026-10-29 : voie (a)** — puis **dépassé le même
+  soir par la révision 3** (§ 16) : tout étant réécrit, ce refus ne protège
+  plus rien et il est retiré. Ce qui suit décrit ce qui avait été bâti. Le garde-fou refuse aussi
+  tant qu'une commande à venir — jour de service (`requested_delivery_date`)
+  aujourd'hui ou plus tard, ou non daté ; statut de `draft` à
+  `partially_handed_over` — porte une ligne sous une référence produit. Le
+  refus nomme au plus cinq commandes avec leur jour ; geste de sortie :
+  « attendez qu'elles soient remises ou annulées ». Le retour arrière porte le
+  miroir (une commande à venir sous `PAI-001-1` le fait refuser). Bâti le
+  2026-10-29 : migration, rollback, runbook (SQL de constat avant
+  déploiement), e2e `default-sku-switch-migration` (refus, rien d'écrit ; une
+  commande d'un jour passé, remise ou annulée passe et garde `PAI-001`).
+  ⚠️ Conséquence : tant que l'ancien code est en ligne, toute commande d'un
+  article par défaut prise pour un jour à venir porte la référence produit ;
+  la bascule n'est possible qu'un jour où aucune commande à venir n'en porte.
+  La voie (b) n'est pas bâtie.
+
 - **La fenêtre de déploiement** (§ 4) : entre `migrate deploy` et l'image
   neuve, l'ancien code traduit `PAI-001` en `PAI-001-1` à l'entrée et ne sait
   pas vendre `PAI-001-1` : une commande d'un article par défaut est refusée
@@ -470,3 +498,81 @@ fournil (§ 12) n'est pas canonicalisé, et c'est un point à trancher (§ 15).
 - **Un changement de défaut déjà joué en production** fait refuser le
   garde-fou pour toujours (le journal ne s'efface pas) : Q2 (b) — remettre le
   défaut d'origine — ne suffit pas à le faire passer.
+
+## 16. Révision 3 : sans alias, décision de Hugo du 2026-10-29 — bâtie, NON déployée
+
+**La décision.** La bascule se fait sans table de traduction. Hugo a constaté
+en production : 0 tarif sur une référence produit, 0 changement de défaut,
+0 journée ouverte, 0 commande à venir ; et il accepte que ses commandes, bons
+et factures **de test** soient réécrits.
+
+**La migration** `20261029180000_le_defaut_se_vend_sous_sa_reference`, une
+transaction explicite :
+
+1. **Le garde-fou**, conservé : décision tarifaire sur une référence produit
+   (archivées comprises), `product.default_variant_changed` déjà joué, fiche à
+   deux défauts — éteint sur `lfc_b2b_dev` / `lfc_b2b_test*`, forcé par
+   `lfd.default_sku_switch_guard = 'strict'`. **Nouveau : les collisions**,
+   toujours comptées (base locale comprise) — une ligne sous `PAI-001` et une
+   sous `PAI-001-1` là où la référence fait partie d'une clé. Fusionner deux
+   lignes de commande, deux stocks ou deux comptes du fournil serait une
+   décision, pas une réécriture : refus nommé (au plus cinq exemples).
+   **Retirés** : « journée ouverte » (D-a) et « commande à venir » (§ 15) — ils
+   protégeaient la lecture par alias ; tout étant réécrit dans la même
+   transaction, fournil, colisage et commerce lisent la même référence.
+2. **La réécriture** `product_sku → sku` du défaut (retirés compris), par
+   l'inventaire ci-dessous.
+3. **Le contrôle de fin**, dans la même transaction : plus aucune référence
+   produit dans aucune colonne inventoriée, sinon tout est annulé.
+
+Puis `20261029180100_la_table_des_anciennes_references_part` : `DROP TABLE
+sale_sku_alias`. **C'est la seule suppression du chantier** ; la table n'a
+jamais été écrite en production.
+
+**L'inventaire** (relevé le 2026-10-29 dans `apps/lfd-api/prisma/schema/**`, par
+les colonnes `sku`, `*_sku(s)` et les jsonb qui portent des lignes) :
+
+| Comment                                                                                   | Tables                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
+| ----------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| colonne `sku`, réécrite                                                                   | `order_lines`, `delivery_note_line`, `subscription_lines`, `site_resupply_line`, `resupply_receipt_line`, `site_stock_alert`, `catalog_operation_items` ; `production.production_order_line`, `production_count`, `production_batch`, `production_handoff`, `production_return_request`, `production_quality_check`, `production_resupply_line`, `production_batch_shortcut` ; `packing.packing_line`, `packing_stock`, `packing_receipt`, `packing_return`, `container_line`, `packing_resupply_line`, `packing_stock_reservation` (suit son FK `ON UPDATE CASCADE`) ; `delivery.delivery_internal_transfer_manifest_line` |
+| clé composite : collision **refusée**                                                     | `order_lines (order_id)`, `site_resupply_line (resupply_id)`, `resupply_receipt_line (receipt_id)`, `catalog_operation_items (operation_key)`, `production_count (service_day)`, `packing_line (service_day, order_id, rank)`, `packing_stock (service_day)`, `container_line (container_id)`, `packing_resupply_line` et `packing_stock_reservation (service_day, resupply_id)`, `delivery_internal_transfer_manifest_line (transfer_id, item_id)`                                                                                                                                                                         |
+| réglage : la ligne de la cible **l'emporte**                                              | `production_container`, `delivery_bin_capacity (bin_type_id)`, `bundle_choices (bundle_id)`, `product_norms` (recalculées chaque nuit), `vitrine_fingerprints (subscriber_id, kind)`                                                                                                                                                                                                                                                                                                                                                                                                                                        |
+| compteurs : **additionnés**                                                               | `growth.product_audience_counters`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                          |
+| listes et déclencheurs                                                                    | `staff_suggestion_rules.suggested_skus` et `trigger_ref`, `catalog_operation_overrides.hidden_skus`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         |
+| jsonb — toute valeur sous une clé `sku`, toute chaîne d'une liste sous `…skus` ou `items` | `orders.shortfall_lines`, `orders.recurring_deltas`, `order_shortfall.lines`, `order_shortfall_decision.departing`, `order_revision.composition`, `order_drafts.payload`, `shop_carts.payload`, `invoice.lines`, `billing_statement.body`, `subscription_occurrences.lines`, `bakehouse_resupply_drafts.lines`, `account_alerts.findings`, `customer_request.change_content`, `catalog_versions.items` et `excluded_skus`, `vitrine_deliveries.changes`, `delivery.delivery_purchase_scenario.content`, `delivery.delivery_simulation_scenario.scenario`                                                                    |
+| décisions tarifaires (aucune en production : garde-fou)                                   | `price_rules`, `price_floors`, `volume_ladders`, `volume_commitments` (`scope_id`, sans collision) ; `company_mercuriales`, `mercuriale_drafts`, `price_templates` (`lines`)                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| **non réécrits**, et pourquoi                                                             | `growth.activity_events` (le journal : des faits datés, lus tels qu'écrits) ; `pim.*` (le référentiel ne connaît la référence produit que comme identité de la FICHE) ; `catalog_items`, `catalog_item_overrides`, `catalog_price_history` (déjà clés par déclinaison) ; `catalog_entries.product_sku`, `storefront_content.product_sku` (désignent la fiche) ; `catalog_items.detached_from_sku` (la filiation, une ancienne référence de DÉCLINAISON)                                                                                                                                                                     |
+
+Une valeur égale à une référence produit sous une autre clé (`productSku`, un
+nom) n'est pas touchée, et le contrôle de fin ne la compte pas.
+
+**Le code retiré** (2026-10-29) : `SaleSkuAliasReader`, `SaleSkuAliases`
+(`canonical`, `spellingsOf`), `SaleReferenceIntake` et son journal de
+résolutions, `SaleSkuAliasTableReader`, `RevisionAliasNormalizing` et
+`canonicalPreviousLines` ; les regroupements par alias du L1 (prévisionnel du
+fournil, classement des lignes, historique et norme des alertes, habitudes du
+client et du back-office, compteurs `growth`, `SaleReferenceUsage`, articles
+retirés) reviennent à leur lecture par SKU ; côté boutique, la normalisation
+du panier, `saleSkuAliases` du contrat et le remplacement d'adresse d'une
+fiche ouverte sous un alias. Le devis à froid repasse à **7** opérations
+(`test/pricing-budget.e2e-spec.ts`). Restent du L3 : `shopSkuOf = item.sku`,
+ses jumelles en requête, la cause « non servi » par article, les tuiles de la
+vitrine éditoriale servies sous la référence du défaut de leur fiche, la porte
+G4 ouverte, le semis de dev qui traduit ses références produit
+(`sale-references.seed.ts`).
+
+**Le retour arrière** écrit, non appliqué :
+`apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql`
+— la même réécriture, carte inversée (`PAI-001-1 → PAI-001`), avec son garde-fou
+(G4 joué depuis, décision posée sur `-1`, collision). Sans table de
+traduction, une commande passée APRÈS la bascule sous `-1` repasse elle aussi
+sous `PAI-001` : c'est ce que le code d'avant attend, mais le retour n'est sans
+surprise qu'avant la première commande sous `-1` qui croiserait une décision
+ou un réglage posés depuis. Au-delà, c'est une nouvelle bascule.
+
+**Ce qui n'est pas vérifié** : la fenêtre de déploiement (§ 15) reste — entre
+`migrate deploy` et l'image neuve, l'ancien code peut écrire une ligne sous
+`PAI-001` APRÈS le contrôle de fin, et plus rien ne la traduira. D'où : un jour
+sans service ouvert, boutique au calme. Le contenu réel des jsonb de
+production n'a été lu par personne : l'inventaire vient du schéma, et le
+contrôle de fin est le filet.
