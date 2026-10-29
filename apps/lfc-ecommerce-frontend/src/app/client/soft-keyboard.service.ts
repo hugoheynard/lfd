@@ -58,7 +58,12 @@ export class SoftKeyboard {
     }
     const document = inject(DOCUMENT);
     const view = document.defaultView;
-    if (view === null || !view.matchMedia(TOUCH_QUERY).matches) {
+    // `matchMedia` manque à jsdom et à quelques webviews : sans lui, pas de clavier à suivre.
+    if (
+      view === null ||
+      typeof view.matchMedia !== 'function' ||
+      !view.matchMedia(TOUCH_QUERY).matches
+    ) {
       return;
     }
     const onFocusIn = (event: FocusEvent): void => this.typing.set(opensSoftKeyboard(event.target));
