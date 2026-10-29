@@ -7,7 +7,11 @@ import type { LocalizedText } from "../../../shared/domain/value-objects/localiz
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
-import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
+import {
+  SaleReferenceInUseError,
+  SaleReferenceUsageUnknownError,
+} from "../errors/sale-unit-errors.js";
+import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
 import { BlankVariantInternalLabelError } from "../errors/variant-label-errors.js";
 import {
   DetachedVariantNotRestorableError,
@@ -641,23 +645,26 @@ export class Variant {
    * le dire, parce qu'il n'y a plus qu'une assiette. Le hors taxe se déduit du
    * taux de chaque canal, au moment de la projection.
    */
-  price(input: VariantPricing): void {
+  price(input: VariantPricing, clearance?: SaleUnitClearance): void {
     this.priceCentsValue = requireCountOrNull("priceCents", input.priceCents);
     this.weightGramsValue = requireCountOrNull("weightGrams", input.weightGrams);
     if (input.proPrice !== undefined) {
       this.proPriceMillicentsValue = input.proPrice?.millicents ?? null;
     }
     this.pricePerKg(input);
-    this.changeSaleTerms(input);
+    this.changeSaleTerms(input, clearance);
   }
 
   /**
-   * L'unité de vente, le pas et le minimum. L'unité se choisit librement tant
-   * que la déclinaison n'a jamais été publiée, puis elle est figée
-   * (`vente-au-poids.md`, §4.2) ; le pas et le minimum, eux, restent
-   * réglables.
+   * L'unité de vente, le pas et le minimum. L'unité change librement tant que
+   * sa référence de vente n'a servi nulle part — même publiée
+   * (`plan-changer-l-unite-de-vente.md`, § 8, Hugo, 2026-10-29) ; le pas et le
+   * minimum, eux, restent réglables.
+   *
+   * `clearance` est la réponse du commerce, lue par le handler AVANT l'appel :
+   * absente ou sans réponse, un changement d'unité est refusé.
    */
-  private changeSaleTerms(input: VariantPricing): void {
+  private changeSaleTerms(input: VariantPricing, clearance: SaleUnitClearance | undefined): void {
     if (
       input.saleUnit === undefined &&
       input.weightMinGrams === undefined &&
@@ -677,10 +684,26 @@ export class Variant {
       weightStepGrams:
         input.weightStepGrams === undefined ? carried.weightStepGrams : input.weightStepGrams,
     });
-    if (next.saleUnit !== current.saleUnit && this.publishedFlag) {
-      throw new SaleUnitFrozenError(this.skuValue);
+    if (next.saleUnit !== current.saleUnit) {
+      this.ensureUnused(clearance);
     }
     this.saleTermsValue = next;
+  }
+
+  /**
+   * @throws {SaleReferenceUsageUnknownError} le commerce n'a pas répondu.
+   * @throws {SaleReferenceInUseError} la référence a déjà servi.
+   */
+  private ensureUnused(clearance: SaleUnitClearance | undefined): void {
+    if (clearance === undefined || !clearance.answered) {
+      throw new SaleReferenceUsageUnknownError(
+        this.skuValue,
+        clearance === undefined ? undefined : clearance.cause,
+      );
+    }
+    if (clearance.uses.length > 0) {
+      throw new SaleReferenceInUseError(this.skuValue, clearance.uses);
+    }
   }
 
   /** Suit-elle la quantité minimale du défaut plutôt que la sienne ? */

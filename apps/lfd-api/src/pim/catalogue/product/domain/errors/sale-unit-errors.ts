@@ -1,4 +1,9 @@
-import { BusinessError, DomainError } from "../../../../../platform/shared/errors/app-error.js";
+import {
+  BusinessError,
+  DomainError,
+  TechnicalError,
+} from "../../../../../platform/shared/errors/app-error.js";
+import { orderedUses, type SaleReferenceUse } from "../value-objects/sale-reference-usage.js";
 
 /**
  * Le pas ou le minimum d'une vente au poids n'a pas de sens : zéro, négatif,
@@ -11,18 +16,60 @@ export class InvalidSaleTermsError extends DomainError {
   }
 }
 
+/** Ce que dit le refus, catégorie par catégorie — lu par du personnel, pas par du code. */
+const USE_LABELS: Readonly<Record<SaleReferenceUse, string>> = {
+  order: "déjà commandée",
+  order_draft: "dans un brouillon de commande",
+  shop_cart: "dans un panier de la boutique",
+  subscription: "dans un abonnement",
+  resupply: "dans un réassort",
+  bundle: "dans un lot",
+  price_template: "dans un gabarit tarifaire",
+  price_rule: "visée par une règle de prix",
+  price_floor: "visée par un plancher",
+  volume_ladder: "visée par un barème de volume",
+  mercuriale: "porte une mercuriale",
+  volume_commitment: "visée par un engagement de volume",
+};
+
+/** Le libellé d'une catégorie d'usage — partagé par le refus et l'écran. */
+export function saleReferenceUseLabel(use: SaleReferenceUse): string {
+  return USE_LABELS[use];
+}
+
 /**
- * L'unité de vente d'une déclinaison déjà publiée ne change plus
- * (`vente-au-poids.md`, §2 et §4.2) : des lignes de commande, des
- * factures et des historiques la lisent déjà, et le référentiel ne peut pas
- * savoir lesquels. Le geste de sortie est une autre déclinaison.
+ * L'unité de vente d'une déclinaison dont la référence a déjà servi ne change
+ * plus (`plan-changer-l-unite-de-vente.md`, § 8, Hugo, 2026-10-29) : des
+ * commandes, des décisions tarifaires ou des paniers la lisent dans son unité
+ * actuelle, et aucune conversion n'existe entre un prix à la pièce et un prix
+ * au kilo. Le geste de sortie est une autre déclinaison.
+ *
+ * Remplace `SaleUnitFrozenError`, qui figeait l'unité dès la première
+ * publication, même sans aucune vente.
  */
-export class SaleUnitFrozenError extends BusinessError {
-  constructor(sku: string) {
+export class SaleReferenceInUseError extends BusinessError {
+  constructor(sku: string, uses: readonly SaleReferenceUse[]) {
     super(
-      "catalogue.variant.sale_unit_frozen",
-      `La déclinaison « ${sku} » a déjà été publiée : son unité de vente (pièce ou poids) ` +
-        `ne peut plus changer. Pour la vendre autrement, créez une autre déclinaison.`,
+      "catalogue.variant.sale_unit_in_use",
+      `La déclinaison « ${sku} » a déjà servi (${orderedUses(uses).map(saleReferenceUseLabel).join(", ")}) : ` +
+        `son unité de vente (pièce ou poids) ne peut plus changer. ` +
+        `Créez une autre déclinaison pour la vendre autrement.`,
+    );
+  }
+}
+
+/**
+ * Le commerce n'a pas pu dire si la référence a servi. Le changement d'unité
+ * est refusé : « personne n'a dit non » ne vaut pas accord.
+ */
+export class SaleReferenceUsageUnknownError extends TechnicalError {
+  constructor(sku: string, cause: unknown) {
+    super(
+      "catalogue.variant.sale_unit_usage_unknown",
+      `Impossible de vérifier si la déclinaison « ${sku} » a déjà servi (commandes, tarifs, paniers) : ` +
+        `son unité de vente n'a pas été changée. Réessayez dans un instant ; si le refus persiste, ` +
+        `signalez-le à l'équipe technique.`,
+      cause,
     );
   }
 }

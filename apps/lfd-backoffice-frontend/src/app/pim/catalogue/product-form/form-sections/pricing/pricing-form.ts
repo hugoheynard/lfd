@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
+import { FoldCalloutComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
 
 import { ChannelsForm } from '../channels/channels-form';
 import { ProductFormStore } from '../../product-form-store';
@@ -26,7 +26,7 @@ import { numberValue, textValue } from '../dom';
 @Component({
   selector: 'app-pricing-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChannelsForm, FoldViewToggleComponent],
+  imports: [ChannelsForm, FoldCalloutComponent, FoldViewToggleComponent],
   templateUrl: './pricing-form.html',
   styleUrls: ['../form-section.scss', './pricing-form.scss'],
 })
@@ -38,7 +38,21 @@ export class PricingForm {
   /** Au poids, les prix sont au kilo et le pas et le minimum s'affichent (P1). */
   protected readonly byWeight = computed(() => this.store.saleUnit() === 'weight');
 
-  /** Les deux segments, tous deux éteints une fois la déclinaison publiée. */
+  /** Où la référence a servi, dit comme le refus du serveur. */
+  protected readonly usedLabels = computed(() => {
+    const usage = this.store.saleUnitUsage();
+    return usage.state === 'used' ? usage.labels.join(', ') : '';
+  });
+
+  /**
+   * Le refus du serveur, montré DANS la carte quand l'enregistrement du tarif
+   * a échoué — la course où la référence a servi entre la lecture et le geste.
+   */
+  protected readonly saleUnitRefusal = computed(() =>
+    this.store.hasFailed('tarif') ? this.store.error() : null,
+  );
+
+  /** Les deux segments, éteints tant que la référence n'est pas connue libre. */
   protected readonly saleUnitOptions = computed((): readonly FoldViewToggleOption[] => {
     const disabled = this.store.saleUnitLocked();
     return [

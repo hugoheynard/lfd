@@ -320,3 +320,4 @@ export type {
   ProductAllergenPropagationView,
   VariantAllergenPropagationView,
 } from "./ingredient-allergen-propagation.js";
+export type { ProductSaleUnitUsageView, VariantSaleUnitUsageView } from "./sale-unit-usage.js";

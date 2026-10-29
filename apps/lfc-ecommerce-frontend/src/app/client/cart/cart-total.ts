@@ -1,4 +1,4 @@
-import type { ShopItemView } from '@lfd/contracts';
+import type { OrderSaleUnit, ShopItemView } from '@lfd/contracts';
 
 /**
  * **Ce qu'une ligne de panier EST** — et plus rien de ce qu'elle coûte.
@@ -25,4 +25,9 @@ import type { ShopItemView } from '@lfd/contracts';
 export interface CartLine {
   readonly product: ShopItemView;
   readonly quantity: number;
+  /**
+   * L'unité figée à l'ajout (`plan-changer-l-unite-de-vente.md`, § 8) ;
+   * absente : un panier d'avant, lu à l'unité du catalogue.
+   */
+  readonly saleUnit?: OrderSaleUnit;
 }

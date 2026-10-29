@@ -41,6 +41,7 @@ import { ReadShopCatalogueHandler } from "./application/queries/read-shop-catalo
 import { ReadShopFeaturedHandler } from "./application/queries/read-shop-featured.handler.js";
 import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
+import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { ShopOrderCutoffsReader } from "./domain/ports/shop-order-cutoffs.reader.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
@@ -169,6 +170,9 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
     { provide: OrderLineClassificationReader, useClass: PrismaOrderLineClassificationReader },
+    // Ce qui fige l'unité de vente d'une déclinaison : le port est au
+    // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
+    PrismaSaleReferenceUsage,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -193,6 +197,7 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // abonnements (lot 3 du plan des opérations datées).
     SaleOperations,
     ArticleSaleUnits,
+    PrismaSaleReferenceUsage,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider

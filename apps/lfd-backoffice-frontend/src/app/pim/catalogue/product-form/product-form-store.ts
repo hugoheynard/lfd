@@ -19,6 +19,7 @@ import {
   type OperationAudience,
   type ProductLineageView,
   type ProductReadinessView,
+  type ProductSaleUnitUsageView,
   type ProPrice,
   type SaleUnit,
   type VariantAspect,
@@ -620,14 +621,39 @@ export class ProductFormStore {
   readonly weightMinGrams = signal<number | null>(null);
 
   /**
-   * L'unité est figée dès la première publication : le serveur refuserait le
-   * changement (409), l'écran ne le propose donc pas.
+   * **Où la référence de la déclinaison ouverte a déjà servi**, lu au commerce
+   * par le référentiel (`plan-changer-l-unite-de-vente.md`, § 8). `null` tant
+   * que la lecture n'a pas répondu ; `'unverified'` si elle a échoué.
    */
-  readonly saleUnitLocked = computed(
-    () =>
-      this.variantsValue().find((variant) => variant.id === this.variantId())?.hasBeenPublished ??
-      false,
+  private readonly saleUnitUsageValue = signal<ProductSaleUnitUsageView | 'unverified' | null>(
+    null,
   );
+
+  /**
+   * Ce que la carte « Tarif » dit de l'unité AVANT qu'on essaie. L'écran
+   * informe, le serveur tranche : `Variant.changeSaleTerms` refuse quand même.
+   * Une fiche en création n'a servi nulle part.
+   */
+  readonly saleUnitUsage = computed((): SaleUnitUsageState => {
+    if (!this.isEdit()) {
+      return { state: 'free' };
+    }
+    const usage = this.saleUnitUsageValue();
+    if (usage === null) {
+      return { state: 'checking' };
+    }
+    const own =
+      usage === 'unverified'
+        ? undefined
+        : usage.variants.find((entry) => entry.variantId === this.variantId());
+    if (own === undefined || !own.verified) {
+      return { state: 'unverified' };
+    }
+    return own.labels.length === 0 ? { state: 'free' } : { state: 'used', labels: own.labels };
+  });
+
+  /** Le sélecteur d'unité est fermé tant que la référence n'est pas connue libre. */
+  readonly saleUnitLocked = computed(() => this.saleUnitUsage().state !== 'free');
 
   /** La saisie, lue — `null` si vide ou si elle ne fait pas un prix. */
   readonly proPriceMillicents = computed(() => proPriceMillicentsOf(this.proPriceHtText()));
@@ -1179,6 +1205,11 @@ export class ProductFormStore {
       .join(', '),
   );
 
+  /** L'enregistrement de cette section a-t-il échoué ? Le message est {@link error}. */
+  hasFailed(section: FormSection): boolean {
+    return this.statusMap()[section] === 'error';
+  }
+
   statusText(section: FormSection): string {
     switch (this.statusMap()[section]) {
       case 'saving':
@@ -1645,6 +1676,19 @@ export class ProductFormStore {
     const detail = await this.products.getDetail(this.productId());
     if (detail !== null) {
       this.variantsValue.set(detail.product.variants);
+    }
+    await this.loadSaleUnitUsage(this.productId());
+  }
+
+  /**
+   * Relit où les déclinaisons ont servi — un lot pour toute la fiche. Un échec
+   * n'est pas « libre » : il ferme le sélecteur et l'écran le dit.
+   */
+  private async loadSaleUnitUsage(id: string): Promise<void> {
+    try {
+      this.saleUnitUsageValue.set(await this.products.saleUnitUsage(id));
+    } catch {
+      this.saleUnitUsageValue.set('unverified');
     }
   }
 
@@ -2375,7 +2419,7 @@ export class ProductFormStore {
     // §13). Cette panne-là n'est plus exprimable : la déclaration est UN champ.
     this.applyDraft(this.draftOf(this.variantId()));
     this.captureBaseline();
-    await this.loadCitedAllergens(id);
+    await Promise.all([this.loadCitedAllergens(id), this.loadSaleUnitUsage(id)]);
   }
 
   /**
@@ -2457,3 +2501,10 @@ function gramsOf(value: number | null): number | null {
 function messageOf(caught: unknown): string {
   return httpErrorMessage(caught, 'Erreur inattendue.');
 }
+
+/** Ce que la carte « Tarif » sait de l'unité de vente de la déclinaison ouverte. */
+export type SaleUnitUsageState =
+  | { readonly state: 'free' }
+  | { readonly state: 'checking' }
+  | { readonly state: 'unverified' }
+  | { readonly state: 'used'; readonly labels: readonly string[] };

@@ -125,3 +125,14 @@ export function requestedLine(
 ): { readonly sku: string; readonly quantity: number; readonly saleUnit?: 'weight' } {
   return isSoldByWeight(item) ? { sku, quantity, saleUnit: 'weight' } : { sku, quantity };
 }
+
+/**
+ * **Les termes d'une ligne au panier** : l'unité FIGÉE à l'ajout quand le
+ * panier la garde, sinon celle du catalogue (un panier d'avant, qui ne la
+ * gardait pas). Le devis retire une ligne dont l'unité n'est plus celle de
+ * l'article (`plan-changer-l-unite-de-vente.md`, § 8) — on ne la recalcule
+ * jamais ici, sans quoi « 3 » pièces partiraient en 3 g.
+ */
+export function lineTermsOf(frozen: OrderSaleUnit | undefined, item: SaleTerms | null): SaleTerms {
+  return frozen === undefined ? (item ?? {}) : { saleUnit: frozen };
+}

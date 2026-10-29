@@ -1,7 +1,15 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
-import { SaleUnitFrozenError } from "../../domain/errors/sale-unit-errors.js";
+import {
+  SaleReferenceInUseError,
+  SaleReferenceUsageUnknownError,
+} from "../../domain/errors/sale-unit-errors.js";
+import {
+  FailingSaleReferenceUsage,
+  FixedSaleReferenceUsage,
+} from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
+import type { SaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
 import {
   UpdateVariantPricingCommand,
   UpdateVariantPricingHandler,
@@ -15,12 +23,14 @@ function pricing(
   products: OneProduct,
   input: UpdateVariantPricingInput,
   journal = new RecordingJournal(),
+  usage: SaleReferenceUsage = new FixedSaleReferenceUsage(),
 ) {
   return new UpdateVariantPricingHandler(
     products,
     journal,
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
+    usage,
   ).execute(new UpdateVariantPricingCommand(PRODUCT_ID, SELLABLE_VARIANT.id, input));
 }
 
@@ -62,15 +72,64 @@ describe("UpdateVariantPricingHandler — l'unité de vente", () => {
     expect(journal.types()).toEqual([]);
   });
 
-  it("refuse de changer l'unité d'une déclinaison déjà publiée, sans rien écrire ni journaliser", async () => {
+  it("change l'unité d'une déclinaison publiée dont la référence n'a jamais servi", async () => {
     const products = new OneProduct(
       tarte({ variants: [{ ...SELLABLE_VARIANT, hasBeenPublished: true }] }),
     );
+    const usage = new FixedSaleReferenceUsage();
+
+    await pricing(
+      products,
+      { ...UNCHANGED, saleUnit: "weight", weightStepGrams: 100 },
+      new RecordingJournal(),
+      usage,
+    );
+
+    expect(products.stored?.variants[0]?.saleUnit).toBe("weight");
+    // Le défaut se vend sous le SKU de sa fiche : c'est le commerce qui le
+    // déduit, le référentiel ne lui passe que la déclinaison.
+    expect(usage.asked).toEqual([[{ sku: "PAT-7-1", productSku: "PAT-7", isDefault: true }]]);
+  });
+
+  it("ne demande rien au commerce quand l'unité ne change pas", async () => {
+    const products = new OneProduct(tarte());
+    const usage = new FixedSaleReferenceUsage();
+
+    await pricing(products, { ...UNCHANGED, saleUnit: "piece" }, new RecordingJournal(), usage);
+
+    expect(usage.asked).toEqual([]);
+  });
+
+  it("refuse le changement d'une référence déjà commandée, sans rien écrire ni journaliser", async () => {
+    const products = new OneProduct(tarte());
+    const journal = new RecordingJournal();
+    const usage = new FixedSaleReferenceUsage({ "PAT-7-1": ["order", "mercuriale"] });
+
+    const attempt = pricing(
+      products,
+      { ...UNCHANGED, saleUnit: "weight", weightStepGrams: 100 },
+      journal,
+      usage,
+    );
+
+    await expect(attempt).rejects.toBeInstanceOf(SaleReferenceInUseError);
+    await expect(attempt).rejects.toThrow(/déjà commandée, porte une mercuriale/u);
+    expect(products.stored?.variants[0]?.saleUnit).toBe("piece");
+    expect(journal.types()).toEqual([]);
+  });
+
+  it("refuse le changement quand le commerce ne répond pas : personne n'a dit non n'est pas un accord", async () => {
+    const products = new OneProduct(tarte());
     const journal = new RecordingJournal();
 
-    await expect(
-      pricing(products, { ...UNCHANGED, saleUnit: "weight", weightStepGrams: 100 }, journal),
-    ).rejects.toBeInstanceOf(SaleUnitFrozenError);
+    const attempt = pricing(
+      products,
+      { ...UNCHANGED, saleUnit: "weight", weightStepGrams: 100 },
+      journal,
+      new FailingSaleReferenceUsage(),
+    );
+
+    await expect(attempt).rejects.toBeInstanceOf(SaleReferenceUsageUnknownError);
     expect(products.stored?.variants[0]?.saleUnit).toBe("piece");
     expect(journal.types()).toEqual([]);
   });

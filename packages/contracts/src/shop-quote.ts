@@ -182,6 +182,25 @@ export interface ShopQuoteView {
   readonly vat: readonly ShopQuoteVatShare[];
   /** Le total **TTC** — ce qui sera débité. */
   readonly totalCents: number;
+  /**
+   * Les lignes **retirées** du décompte parce que l'article ne se vend plus
+   * dans l'unité du panier (pièce ↔ poids) — jamais converties
+   * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8).
+   * **Absente** quand rien n'est retiré, comme `pickupDiscountBase`. La
+   * boutique dit au client de l'ajouter de nouveau.
+   */
+  readonly removedLines?: readonly ShopQuoteRemovedLineView[];
+}
+
+/** Une ligne que le devis a retirée, et ce que l'article est devenu. */
+export interface ShopQuoteRemovedLineView {
+  readonly sku: string;
+  /** Le nom de l'article, tel que le rayon le montre. */
+  readonly name: string;
+  /** `sale_unit_changed` : l'article se vend désormais dans une autre unité. */
+  readonly reason: "sale_unit_changed";
+  /** L'unité dans laquelle il se vend désormais. */
+  readonly saleUnit: OrderSaleUnit;
 }
 
 /**

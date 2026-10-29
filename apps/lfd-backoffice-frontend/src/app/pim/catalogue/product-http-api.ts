@@ -16,7 +16,11 @@ import type {
   SetVariantMinQuantitiesPayload,
   SetProductAudiencePayload,
 } from '@lfd/pim-contracts';
-import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
+import {
+  SOURCE_LOCALE,
+  type ProductSaleUnitUsageView,
+  type VariantAspect,
+} from '@lfd/pim-contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { API_BASE_URL } from '../data/api';
@@ -348,6 +352,13 @@ export class ProductHttpApi {
     input: { name: LocalizedText; kind: ProductKind; categoryId: string },
   ): Promise<void> {
     return this.put(`products/${id}/identity`, input);
+  }
+
+  /** Où chaque déclinaison de la fiche a déjà servi (`plan-changer-l-unite-de-vente.md`, § 8). */
+  saleUnitUsage(id: string): Promise<ProductSaleUnitUsageView> {
+    return firstValueFrom(
+      this.http.get<ProductSaleUnitUsageView>(this.url(`products/${id}/sale-unit-usage`)),
+    );
   }
 
   /** Section Tarif & logistique — prix + poids de la déclinaison en une requête. */

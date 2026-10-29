@@ -193,3 +193,30 @@ describe('Le panier par espace', () => {
     expect(localStorage.getItem('lfc.cart.savedAt')).toBeNull();
   });
 });
+
+/** L'unité d'une ligne se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8). */
+describe('L’unité figée d’une ligne', () => {
+  beforeEach(() => {
+    localStorage.clear();
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({});
+  });
+
+  it('se pose au premier ajout, ne se réécrit pas, et survit à un rechargement', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('VRC-001', 3, undefined, 'piece');
+    store.setQuantity('VRC-001', 4, undefined, 'weight');
+
+    expect(store.units()).toEqual({ 'VRC-001': 'piece' });
+    expect(reload().units()).toEqual({ 'VRC-001': 'piece' });
+  });
+
+  it('part avec la ligne, et se repose au nouvel ajout', () => {
+    const store = TestBed.inject(CartStore);
+    store.setQuantity('VRC-001', 3, undefined, 'piece');
+    store.setQuantity('VRC-001', 0);
+    store.setQuantity('VRC-001', 200, undefined, 'weight');
+
+    expect(store.units()).toEqual({ 'VRC-001': 'weight' });
+  });
+});

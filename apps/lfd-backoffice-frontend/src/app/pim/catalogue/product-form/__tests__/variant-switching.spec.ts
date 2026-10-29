@@ -138,6 +138,22 @@ class FakeApi {
   citedAllergens() {
     return Promise.resolve([]);
   }
+  /** Où chaque déclinaison a servi ; `null` = le commerce ne répond pas. */
+  usedAs: Readonly<Record<string, readonly string[]>> | null = {};
+  saleUnitUsage() {
+    const used = this.usedAs;
+    if (used === null) {
+      return Promise.reject(new Error('commerce injoignable'));
+    }
+    return Promise.resolve({
+      variants: this.variants.map((entry) => ({
+        variantId: entry.id,
+        verified: true,
+        uses: [],
+        labels: used[entry.id] ?? [],
+      })),
+    });
+  }
 }
 
 async function setup(api = new FakeApi()) {
@@ -501,17 +517,47 @@ describe('l’unité de vente', () => {
     return api;
   }
 
-  it('se relit déclinaison par déclinaison, verrou compris', async () => {
+  it('se relit déclinaison par déclinaison', async () => {
     const { store } = await setup(weighed());
 
     expect(store.saleUnit()).toBe('weight');
     expect(store.weightStepGrams()).toBe(100);
     expect(store.weightMinGrams()).toBe(250);
-    expect(store.saleUnitLocked()).toBe(true);
     store.selectVariant('var_2');
     expect(store.saleUnit()).toBe('piece');
     expect(store.weightStepGrams()).toBeNull();
+  });
+
+  // Le verrou suivait `hasBeenPublished` jusqu'au 2026-10-29 ; il suit
+  // désormais l'usage de la référence au commerce (`plan-changer-l-unite-de-vente.md`, § 8).
+  it('publiée mais jamais utilisée : le sélecteur reste ouvert', async () => {
+    const { store } = await setup(weighed());
+
+    expect(store.saleUnitUsage()).toEqual({ state: 'free' });
     expect(store.saleUnitLocked()).toBe(false);
+  });
+
+  it('déjà utilisée : verrou et lieux, déclinaison par déclinaison', async () => {
+    const api = weighed();
+    api.usedAs = { var_1: ['déjà commandée', 'porte une mercuriale'] };
+    const { store } = await setup(api);
+
+    expect(store.saleUnitUsage()).toEqual({
+      state: 'used',
+      labels: ['déjà commandée', 'porte une mercuriale'],
+    });
+    expect(store.saleUnitLocked()).toBe(true);
+    store.selectVariant('var_2');
+    expect(store.saleUnitLocked()).toBe(false);
+  });
+
+  it('le commerce ne répond pas : « non vérifié », et le sélecteur reste fermé', async () => {
+    const api = weighed();
+    api.usedAs = null;
+    const { store } = await setup(api);
+
+    expect(store.saleUnitUsage()).toEqual({ state: 'unverified' });
+    expect(store.saleUnitLocked()).toBe(true);
   });
 
   it('part avec le tarif : l’unité, le pas et le minimum en grammes', async () => {

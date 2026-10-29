@@ -9,8 +9,9 @@
 <div class="tarif">
   <div class="stack" [class.is-inherited]="store.pricingAligned()">
     <!-- L'unité de vente (P1, `vente-au-poids.md`) : en tête, parce
-         qu'elle change le sens de chaque prix dessous. Figée après la première
-         publication — le serveur refuserait, l'écran ne le propose pas. -->
+         qu'elle change le sens de chaque prix dessous. Elle change tant que la
+         référence n'a servi nulle part (`plan-changer-l-unite-de-vente.md`,
+         § 8) : l'écran le dit avant qu'on essaie, le serveur tranche. -->
     <div class="field">
       <span class="field-label">Unité de vente</span>
       <fold-view-toggle
@@ -20,11 +21,22 @@
         [value]="store.saleUnit()"
         (valueChange)="setSaleUnit($event)"
       />
-      @if (store.saleUnitLocked()) {
-        <span class="field-hint">
-          Déjà publiée&nbsp;: l’unité ne change plus. Pour vendre autrement, créez une autre
-          déclinaison.
-        </span>
+      @switch (store.saleUnitUsage().state) {
+        @case ('used') {
+          <fold-callout variant="info" appearance="flat">
+            Déjà utilisée ({{ usedLabels() }})&nbsp;: l’unité de vente ne change plus. Créez une
+            autre déclinaison pour la vendre autrement.
+          </fold-callout>
+        }
+        @case ('unverified') {
+          <fold-callout variant="warning" appearance="flat">
+            Impossible de vérifier si cette déclinaison a déjà servi&nbsp;: l’unité de vente reste
+            fermée. Rechargez la fiche dans un instant.
+          </fold-callout>
+        }
+      }
+      @if (saleUnitRefusal(); as message) {
+        <fold-callout variant="alert" appearance="flat" announce>{{ message }}</fold-callout>
       }
     </div>
 

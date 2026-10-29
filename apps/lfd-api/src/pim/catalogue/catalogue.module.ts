@@ -89,6 +89,8 @@ import { VariantAllergensRepository } from "./product/domain/ports/variant-aller
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
+import { ProductSaleUnitUsageController } from "./product/http/product-sale-unit-usage.controller.js";
+import { GetProductSaleUnitUsageHandler } from "./product/application/get-product-sale-unit-usage.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
 import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
@@ -139,6 +141,7 @@ import {
     CatalogRevisionController,
     CategoryController,
     ProductController,
+    ProductSaleUnitUsageController,
     ProductMinQuantitiesController,
     ProductVariantsAsTilesController,
     ProductVariantLifecycleController,
@@ -197,6 +200,7 @@ import {
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,
+    GetProductSaleUnitUsageHandler,
     // L'onglet « Historique » : la lignée ici, le journal par le port global.
     GetProductHistoryHandler,
     { provide: ProductLineageReader, useClass: PrismaProductLineageReader },

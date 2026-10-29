@@ -5,6 +5,7 @@ import type {
   MyShopQuoteView,
   ShopQuoteFulfillment,
   ShopQuotePayload,
+  ShopQuoteRemovedLineView,
   ShopQuoteView,
 } from '@lfd/contracts';
 // Valeur par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
@@ -29,7 +30,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
-import { requestedLine } from '../shop/sale-unit';
+import { lineTermsOf, requestedLine } from '../shop/sale-unit';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service';
 
 /**
@@ -157,6 +158,7 @@ export class ShopQuote {
   private readonly refused = signal<string | null>(null);
   private readonly points = signal<number | null>(null);
   private readonly voucherEffect = signal(0);
+  private readonly removed = signal<readonly ShopQuoteRemovedLineView[]>([]);
   /** Le lecteur du dernier décompte demandé — cf. la remise à zéro des points. */
   private lastReader: string | null = null;
 
@@ -189,6 +191,16 @@ export class ShopQuote {
    * de la valeur HT du bon : ce serait une seconde règle d'arrondi.
    */
   readonly voucherTotalEffectCents = this.voucherEffect.asReadonly();
+
+  /**
+   * Les lignes que le serveur a RETIRÉES parce que l'article ne se vend plus
+   * dans l'unité du panier (`plan-changer-l-unite-de-vente.md`, § 8) — à dire
+   * au client, qui l'ajoutera de nouveau. Une ligne rajoutée n'est plus citée.
+   */
+  readonly removedLines = computed(() => {
+    const quantities = this.store.quantities();
+    return this.removed().filter((line) => (quantities[line.sku] ?? 0) === 0);
+  });
 
   /**
    * Ce dont le décompte dépend, et **rien d'autre**.
@@ -291,6 +303,7 @@ export class ShopQuote {
     };
     return this.quoted(body).pipe(
       tap((view) => {
+        this.dropRemoved(view.removedLines ?? []);
         this.view.set(view);
         // Le devis anonyme n'a pas la clé (absente, pas nulle).
         this.points.set('loyaltyPointsToEarn' in view ? view.loyaltyPointsToEarn : null);
@@ -341,6 +354,22 @@ export class ShopQuote {
   }
 
   /**
+   * Retire du panier les lignes que le serveur a écartées, et garde de quoi le
+   * dire : sans cela, elles repartiraient à chaque devis, et le panier
+   * afficherait une quantité dans une unité que l'article n'a plus.
+   */
+  private dropRemoved(lines: readonly ShopQuoteRemovedLineView[]): void {
+    if (lines.length === 0) {
+      return;
+    }
+    const known = new Set(lines.map((line) => line.sku));
+    this.removed.update((current) => [...current.filter((line) => !known.has(line.sku)), ...lines]);
+    for (const line of lines) {
+      this.store.setQuantity(line.sku, 0);
+    }
+  }
+
+  /**
    * **Le décompte, à la route qui correspond au lecteur.**
    *
    * Reconnu, on demande `POST /shop/quote/mine` : le serveur y résout la société
@@ -377,10 +406,15 @@ export class ShopQuote {
    */
   private payloadLines(): ShopQuotePayload['lines'] {
     const quantities = this.store.quantities();
+    const units = this.store.units();
+    // L'unité FIGÉE à l'ajout, jamais celle du catalogue d'aujourd'hui : c'est
+    // le serveur qui dit qu'elle a changé, et retire la ligne.
     return this.catalogue
       .items()
       .filter((item) => (quantities[item.sku] ?? 0) > 0)
-      .map((item) => requestedLine(item.sku, quantities[item.sku] ?? 0, item));
+      .map((item) =>
+        requestedLine(item.sku, quantities[item.sku] ?? 0, lineTermsOf(units[item.sku], item)),
+      );
   }
 
   /**

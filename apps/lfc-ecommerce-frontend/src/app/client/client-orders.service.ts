@@ -4,6 +4,7 @@ import {
   WORKSPACE_HEADER,
   type GuestBuyerPayload,
   type OrderPaymentIntent,
+  type OrderSaleUnit,
   type OrderSettlement,
   type PlaceOrderPayload,
   type PlaceShopOrderPayload,
@@ -30,7 +31,7 @@ import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { OrderAdmissionStore } from './shop/order-admission.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
-import { isSoldByWeight, requestedLine, type SaleTerms } from './shop/sale-unit';
+import { isSoldByWeight, lineTermsOf, requestedLine, type SaleTerms } from './shop/sale-unit';
 
 /** Une ligne figée : le nom et le prix du jour, pas une référence au catalogue. */
 export interface PlacedLine {
@@ -673,7 +674,11 @@ export class ClientOrders {
    */
   private async send(
     service: ServiceChoice,
-    lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
+    lines: readonly {
+      product: { sku: string } & SaleTerms;
+      quantity: number;
+      saleUnit?: OrderSaleUnit;
+    }[],
     settlement: OrderSettlement | null,
     workspace: string,
     voucherId: string | null,
@@ -783,7 +788,11 @@ export class ClientOrders {
  */
 function payloadOf(
   service: ServiceChoice,
-  lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
+  lines: readonly {
+    product: { sku: string } & SaleTerms;
+    quantity: number;
+    saleUnit?: OrderSaleUnit;
+  }[],
   idempotencyKey: string,
   settlement: OrderSettlement | null,
   locale: LocaleCode,
@@ -811,7 +820,10 @@ function payloadOf(
     locale,
     note: '',
     // Une ligne au poids dit son unité : sans elle, le serveur lirait des pièces.
-    lines: lines.map((line) => requestedLine(line.product.sku, line.quantity, line.product)),
+    // Et c'est l'unité FIGÉE à l'ajout qui part (`plan-changer-l-unite-de-vente.md`, § 8).
+    lines: lines.map((line) =>
+      requestedLine(line.product.sku, line.quantity, lineTermsOf(line.saleUnit, line.product)),
+    ),
     ...serviceContentOf(service),
   };
 }
@@ -864,7 +876,11 @@ export function serviceContentOf(service: ServiceChoice) {
  */
 function guestContentOf(
   service: ServiceChoice,
-  lines: readonly { product: { sku: string } & SaleTerms; quantity: number }[],
+  lines: readonly {
+    product: { sku: string } & SaleTerms;
+    quantity: number;
+    saleUnit?: OrderSaleUnit;
+  }[],
   idempotencyKey: string,
   locale: LocaleCode,
 ): Omit<PlaceOrderPayload, 'settlement' | 'salesTerms'> {

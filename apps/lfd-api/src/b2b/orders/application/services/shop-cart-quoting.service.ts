@@ -123,7 +123,28 @@ export class ShopCartQuoting {
    * résolu. Un seul handler, parce que le décompte est le même — c'est le PRIX
    * qui change, pas la façon de compter.
    */
-  async quote(query: ShopCartQuoteRequest): Promise<ShopCartQuote> {
+  async quote(request: ShopCartQuoteRequest): Promise<ShopCartQuote> {
+    // Une ligne dont l'article a changé d'unité est RETIRÉE, jamais convertie
+    // (`plan-changer-l-unite-de-vente.md`, § 8) ; le client la rajoute.
+    const { kept, removed } = await this.pricing.withoutStaleUnits(request.payload.lines, {
+      companyId: request.companyId,
+    });
+    const quoted = await this.quoteKept({
+      ...request,
+      payload: { ...request.payload, lines: [...kept] },
+    });
+    return removed.length === 0
+      ? quoted
+      : {
+          ...quoted,
+          view: {
+            ...quoted.view,
+            removedLines: removed.map((line) => ({ ...line, reason: "sale_unit_changed" })),
+          },
+        };
+  }
+
+  private async quoteKept(query: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     const resolved = await this.pricing.resolve(
       // L'unité voyage avec la quantité : elle se valide contre l'article.
       query.payload.lines,

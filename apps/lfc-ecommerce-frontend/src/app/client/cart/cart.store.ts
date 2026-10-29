@@ -1,4 +1,5 @@
 import { Injectable, signal, type Signal } from '@angular/core';
+import type { OrderSaleUnit } from '@lfd/contracts';
 
 import {
   clearLocal,
@@ -35,10 +36,40 @@ const SAVED_AT_KEY = 'cart.savedAt';
  * de travail, D9). `ws.` sépare l'espace du suffixe : un identifiant de société
  * ne peut pas valoir `savedAt`, mais la clé ne doit pas avoir à le savoir.
  */
-function keysOf(workspace: string | null): { readonly cart: string; readonly savedAt: string } {
+function keysOf(workspace: string | null): {
+  readonly cart: string;
+  readonly savedAt: string;
+  readonly units: string;
+} {
   return workspace === null
-    ? { cart: KEY, savedAt: SAVED_AT_KEY }
-    : { cart: `cart.ws.${workspace}`, savedAt: `cart.ws.${workspace}.savedAt` };
+    ? { cart: KEY, savedAt: SAVED_AT_KEY, units: UNITS_KEY }
+    : {
+        cart: `cart.ws.${workspace}`,
+        savedAt: `cart.ws.${workspace}.savedAt`,
+        units: `cart.ws.${workspace}.units`,
+      };
+}
+
+/**
+ * L'unité de chaque ligne, **figée à l'ajout**, dans une clé à part pour la
+ * même raison que la date : la forme de `cart` est déjà écrite chez les
+ * clients (`plan-changer-l-unite-de-vente.md`, § 8). Une ligne sans unité
+ * gardée — un panier d'avant — se lit à l'unité du catalogue.
+ */
+const UNITS_KEY = 'cart.units';
+
+/** Les unités relues : `piece` ou `weight`, rien d'autre. */
+function parseUnits(raw: unknown): Readonly<Record<string, OrderSaleUnit>> | null {
+  if (!isRecord(raw)) {
+    return null;
+  }
+  const clean: Record<string, OrderSaleUnit> = {};
+  for (const [id, value] of Object.entries(raw)) {
+    if (value === 'piece' || value === 'weight') {
+      clean[id] = value;
+    }
+  }
+  return clean;
 }
 
 /**
@@ -131,6 +162,17 @@ export class CartStore {
 
   private readonly savedAt$ = signal<string | null>(readLocal(SAVED_AT_KEY, readString));
 
+  private readonly units$ = signal<Readonly<Record<string, OrderSaleUnit>>>(
+    readLocal(UNITS_KEY, parseUnits) ?? {},
+  );
+
+  /**
+   * L'unité de chaque ligne, telle qu'elle était À L'AJOUT. Le catalogue peut
+   * changer d'unité ensuite : la ligne garde la sienne, et c'est le devis qui
+   * la retire — « 3 » pièces ne deviennent jamais 3 g.
+   */
+  readonly units: Signal<Readonly<Record<string, OrderSaleUnit>>> = this.units$.asReadonly();
+
   /**
    * Quand ce panier a été TOUCHÉ pour la dernière fois, en ISO — `null` tant
    * qu'il ne l'a jamais été.
@@ -152,8 +194,9 @@ export class CartStore {
    * disparaît au lieu de rester à zéro, sans quoi le stockage garderait une
    * trace de tout ce qui a un jour été au panier.
    */
-  setQuantity(productId: string, quantity: number, at: string = now()): void {
+  setQuantity(productId: string, quantity: number, at: string = now(), unit?: OrderSaleUnit): void {
     this.savedAt$.set(at);
+    const isNew = this.quantityOf(productId) === 0;
     this.quantities$.update((current) => {
       const next = { ...current };
       if (quantity > 0) {
@@ -163,12 +206,23 @@ export class CartStore {
       }
       return next;
     });
+    this.units$.update((current) => {
+      const next = { ...current };
+      if (quantity <= 0) {
+        delete next[productId];
+      } else if (unit !== undefined && (isNew || next[productId] === undefined)) {
+        // Posée au PREMIER ajout, jamais réécrite ensuite.
+        next[productId] = unit;
+      }
+      return next;
+    });
     this.persist();
   }
 
   clear(at: string = now()): void {
     this.savedAt$.set(at);
     this.quantities$.set({});
+    this.units$.set({});
     this.persist();
   }
 
@@ -181,9 +235,14 @@ export class CartStore {
    * de la copie relue la plus récente à chaque chargement de page, et le
    * panier composé ailleurs entre-temps ne gagnerait plus jamais.
    */
-  replaceAll(quantities: Readonly<Record<string, number>>, at: string | null): void {
+  replaceAll(
+    quantities: Readonly<Record<string, number>>,
+    at: string | null,
+    units: Readonly<Record<string, OrderSaleUnit>> = {},
+  ): void {
     this.savedAt$.set(at);
     this.quantities$.set(parseCart(quantities) ?? {});
+    this.units$.set(parseUnits(units) ?? {});
     this.persist();
   }
 
@@ -205,11 +264,13 @@ export class CartStore {
     if (from === null) {
       clearLocal(KEY);
       clearLocal(SAVED_AT_KEY);
+      clearLocal(UNITS_KEY);
     }
     const keys = keysOf(workspace);
     this.scope$.set(workspace);
     this.quantities$.set(readLocal(keys.cart, parseCart) ?? {});
     this.savedAt$.set(readLocal(keys.savedAt, readString));
+    this.units$.set(readLocal(keys.units, parseUnits) ?? {});
   }
 
   /**
@@ -227,6 +288,9 @@ export class CartStore {
     this.quantities$.update((current) =>
       Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
     );
+    this.units$.update((current) =>
+      Object.fromEntries(Object.entries(current).filter(([sku]) => known.has(sku))),
+    );
     this.persist();
   }
 
@@ -235,6 +299,7 @@ export class CartStore {
     const keys = keysOf(this.scope$());
     writeLocal(keys.cart, this.quantities$());
     writeLocal(keys.savedAt, this.savedAt$());
+    writeLocal(keys.units, this.units$());
   }
 }
 

@@ -854,6 +854,7 @@ export type {
   MyShopQuoteView,
   ShopQuoteVatShare,
   ShopQuoteView,
+  ShopQuoteRemovedLineView,
 } from "./shop-quote.js";
 export type {
   CreatedOrderCutoffWaiverResponse,

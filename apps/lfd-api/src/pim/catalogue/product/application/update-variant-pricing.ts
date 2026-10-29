@@ -10,6 +10,10 @@ import type { SaleUnit } from "../domain/value-objects/sale-terms.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { namedVariant, requireProduct } from "./product-support.js";
 import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
+import { SaleReferenceUsage } from "../../../channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
+import type { Product } from "../domain/entities/product.js";
+import type { SaleUnitClearance } from "../domain/value-objects/sale-reference-usage.js";
+import { clearancesOf } from "./sale-unit-clearance-support.js";
 
 /**
  * Ce que la section « Tarif & TVA » envoie. L'assiette voyage AVEC le prix :
@@ -33,8 +37,9 @@ export interface UpdateVariantPricingInput {
   readonly publicPricePerKgTtcCents?: number | null | undefined;
   /**
    * L'unité de vente, le minimum et le pas en grammes
-   * (`vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine fige
-   * l'unité après la première publication.
+   * (`vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine refuse
+   * de changer l'unité d'une référence qui a déjà servi
+   * (`plan-changer-l-unite-de-vente.md`, § 8).
    */
   readonly saleUnit?: SaleUnit | undefined;
   readonly weightMinGrams?: number | null | undefined;
@@ -64,13 +69,15 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
+    private readonly usage: SaleReferenceUsage,
   ) {}
 
   async execute(command: UpdateVariantPricingCommand): Promise<void> {
     const { productId, variantId, input } = command;
     const product = await requireProduct(this.products, productId);
     const before = pricingOf(product.snapshot().variants, variantId);
-    product.priceVariant(variantId, pricingOfInput(input));
+    const clearance = await clearanceOf(this.usage, product, variantId, input.saleUnit);
+    product.priceVariant(variantId, pricingOfInput(input), clearance);
     const changes = changesBetween(before, pricingOf(product.snapshot().variants, variantId));
 
     await this.uow.run(async () => {
@@ -94,6 +101,26 @@ export class UpdateVariantPricingHandler implements ICommandHandler<
       await this.emitter.emitProducts([productId]);
     });
   }
+}
+
+/**
+ * La réponse du commerce, lue SEULEMENT quand l'unité demandée change : régler
+ * un prix ou un pas ne demande rien à personne. Le domaine juge la réponse
+ * (option « le handler lit, le domaine décide » du plan, § 5).
+ */
+async function clearanceOf(
+  usage: SaleReferenceUsage,
+  product: Product,
+  variantId: string,
+  saleUnit: SaleUnit | undefined,
+): Promise<SaleUnitClearance | undefined> {
+  const snapshot = product.snapshot();
+  const variant = snapshot.variants.find((candidate) => candidate.id === variantId);
+  if (saleUnit === undefined || variant === undefined || variant.saleUnit === saleUnit) {
+    return undefined;
+  }
+  const reference = { sku: variant.sku, productSku: snapshot.sku, isDefault: variant.isDefault };
+  return (await clearancesOf(usage, [reference])).get(variant.sku);
 }
 
 /** La saisie, lue par le domaine — le prix pro passe par son value object. */

@@ -3574,6 +3574,20 @@
           "variables": ["at", "value", "base"]
         },
         {
+          "key": "cart.unitChangedToWeight",
+          "fr": "L’article {name} se vend désormais au poids : ajoutez-le de nouveau.",
+          "en": "{name} is now sold by weight: please add it again.",
+          "it": "L’articolo {name} ora si vende a peso: aggiungilo di nuovo.",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.unitChangedToPiece",
+          "fr": "L’article {name} se vend désormais à la pièce : ajoutez-le de nouveau.",
+          "en": "{name} is now sold by the piece: please add it again.",
+          "it": "L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo.",
+          "variables": ["name"]
+        },
+        {
           "key": "cart.excludedNote",
           "fr": "* Non concerné par la remise retrait.",
           "en": "* Not covered by the collection discount.",

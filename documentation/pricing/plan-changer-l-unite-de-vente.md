@@ -123,7 +123,20 @@ doit refuser si le commerce ne répond pas.
 l'unité partout (décisions, historique, facturation) — un chantier lourd et
 irréversible. Voir la proposition du § 8.
 
-## 8. Proposition révisée (à confirmer par Hugo)
+## 8. Proposition révisée — ✅ bâtie le 2026-10-29 (non commitée)
+
+> Confirmée par Hugo le 2026-10-29 (« oui, déjà utilisé, c'est mieux ») ; le
+> geste de sortie reste une autre déclinaison. Bâtie le même jour : le port
+> `SaleReferenceUsage` (`pim/channels/b2b-platform/sale-reference-usage/`),
+> implémenté par le commerce (`PrismaSaleReferenceUsage`, douze catégories,
+> par `shopSkuOf`), relié par `SaleReferenceUsageModule` (`appBootstrap`) ;
+> option du § 5 retenue : **le handler lit le port et passe la réponse au
+> domaine**, qui refuse (`SaleReferenceInUseError`, 409 ;
+> `SaleReferenceUsageUnknownError`, 500, si le commerce ne répond pas) ; la
+> lecture `GET /pim/catalogue/products/:id/sale-unit-usage` sert la carte
+> « Tarif » avant qu'on essaie ; le devis retire la ligne périmée
+> (`removedLines`) et la boutique fige l'unité à l'ajout. État :
+> [`vente-au-poids.md`](vente-au-poids.md) §1, §2.
 
 **Le verrou ne porte plus sur « publié », mais sur « déjà utilisé ».**
 L'unité d'une déclinaison change librement **tant qu'aucune commande (même
@@ -138,3 +151,14 @@ tombent, faute de passé à réécrire. Restent : la course (une première comma
 pendant le geste — refuser au commerce une commande dont l'unité diffère de
 celle du miroir, ce que `ensureSaleQuantity` fait déjà) et les paniers (ligne
 retirée au devis, jamais convertie).
+
+## 9. Trou connu, fermé par la bascule du défaut (noté le 2026-10-29)
+
+Une déclinaison passée librement au poids (son propre SKU jamais utilisé) qui
+devient ENSUITE le défaut se vend sous le SKU de la fiche, déjà commandé à la
+pièce : deux unités sous une même référence, et les BLOQUANTS du § 7
+reviennent. Le trou préexistait. Il se ferme avec
+[`plan-defaut-sous-sa-reference.md`](../catalogue/plan-defaut-sous-sa-reference.md) :
+quand le défaut se vend sous son propre SKU, une référence ne change plus
+jamais d'article. D'ici là, ne pas faire d'une déclinaison au poids le défaut
+d'une fiche déjà vendue à la pièce.

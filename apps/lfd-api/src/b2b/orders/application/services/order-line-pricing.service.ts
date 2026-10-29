@@ -22,6 +22,7 @@ import {
   type ResolvedOrderLine,
 } from "../../domain/services/price-line.js";
 import { Clock } from "../../../../platform/time/clock.js";
+import { splitStaleUnitLines, type StaleUnitLine } from "../../domain/services/stale-unit-lines.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 
 export type { ResolvedOrderLine };
@@ -125,6 +126,33 @@ export class OrderLinePricing {
     return new Map(
       [...catalogue].map(([sku, item]) => [sku, minQuantityFor(item.minQuantities, audience)]),
     );
+  }
+
+  /**
+   * **Le panier sans ses lignes d'une unité périmée** — pour le devis de la
+   * boutique (`plan-changer-l-unite-de-vente.md`, § 8). Une lecture du
+   * catalogue par lot, dans l'audience du prix.
+   */
+  async withoutStaleUnits(
+    input: readonly OrderLineRequest[],
+    parties: ServedCompany,
+  ): Promise<{
+    readonly kept: readonly OrderLineRequest[];
+    readonly removed: readonly StaleUnitLine[];
+  }> {
+    if (input.length === 0) {
+      return { kept: input, removed: [] };
+    }
+    const audience = parties.companyId === null ? "public" : "pro";
+    const catalogue = await this.catalog.resolveMany(
+      [...new Set(input.map((line) => line.sku))],
+      audience,
+    );
+    const split = splitStaleUnitLines(
+      input.map((line) => ({ line, sku: line.sku, saleUnit: saleUnitOfLine(line) })),
+      catalogue,
+    );
+    return { kept: split.kept.map(({ line }) => line), removed: split.removed };
   }
 
   private async priceAll(

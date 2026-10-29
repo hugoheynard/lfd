@@ -39,10 +39,11 @@ export class InvoiceDossierUnreadableVatRateError extends BusinessError {
 }
 
 /**
- * Un même article arrive dans le dossier à la pièce ET au poids. Son unité
- * est figée à la publication (plan `vente-au-poids.md`, P1) : deux
- * unités disent une ligne de bon fausse, et additionner des pièces et des
- * grammes ferait une quantité qui ne veut rien dire.
+ * Un même article arrive dans le dossier à la pièce ET au poids. Son unité ne
+ * change plus dès qu'une commande l'a portée (`Variant.changeSaleTerms`,
+ * `plan-changer-l-unite-de-vente.md` § 8, vérifié le 2026-10-29) : deux unités
+ * disent une ligne de bon fausse, et additionner des pièces et des grammes
+ * ferait une quantité qui ne veut rien dire.
  */
 export class InvoiceDossierMixedSaleUnitError extends BusinessError {
   constructor(

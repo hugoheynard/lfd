@@ -410,6 +410,8 @@
   "test/resupply-transfer-reception.e2e-spec.ts": 8010,
   "test/resupply-transfer.e2e-spec.ts": 6806,
   "test/resupply-village-flow.e2e-spec.ts": 7114,
+  "test/sale-reference-usage.e2e-spec.ts": 5548,
+  "test/sale-unit-change.e2e-spec.ts": 8929,
   "test/schema.e2e-spec.ts": 3429,
   "test/shipment-rank-handover.e2e-spec.ts": 7140,
   "test/shipment-rank-sheets.e2e-spec.ts": 8043,

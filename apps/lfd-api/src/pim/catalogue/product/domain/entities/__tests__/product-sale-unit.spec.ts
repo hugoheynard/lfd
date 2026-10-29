@@ -1,8 +1,10 @@
 import {
   InvalidSaleTermsError,
   PricingAlignmentAcrossUnitsError,
-  SaleUnitFrozenError,
+  SaleReferenceInUseError,
+  SaleReferenceUsageUnknownError,
 } from "../../errors/sale-unit-errors.js";
+import type { SaleUnitClearance } from "../../value-objects/sale-reference-usage.js";
 import { ProductNotActivatableError } from "../../errors/product-errors.js";
 import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
@@ -11,7 +13,8 @@ import type { VariantSnapshot } from "../variant.js";
 /**
  * **L'unité de vente d'une déclinaison** (`documentation/pricing/vente-au-poids.md`,
  * lot P1) — pièce par défaut ; au poids, un pas et un minimum en grammes ;
- * libre jusqu'à la première publication, figée ensuite.
+ * libre tant que sa référence n'a servi nulle part, même publiée
+ * (`plan-changer-l-unite-de-vente.md`, § 8), figée ensuite.
  */
 
 const RATES = { b2b: 5.5 };
@@ -41,6 +44,9 @@ function variantOf(product: Product, id: string): VariantSnapshot | undefined {
 
 const PRICED = { priceCents: 1_240, weightGrams: null } as const;
 
+/** Le commerce a répondu : la référence n'a servi nulle part. */
+const FREE: SaleUnitClearance = { answered: true, uses: [] };
+
 /** Une fiche vendable, mise en vente : toutes ses déclinaisons partent avec. */
 function aPublishedProduct(): Product {
   const product = aProduct();
@@ -62,12 +68,16 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
   it("passe au poids avec son pas et son minimum, en grammes", () => {
     const product = aProduct();
 
-    product.priceVariant("var_2", {
-      ...PRICED,
-      saleUnit: "weight",
-      weightStepGrams: 100,
-      weightMinGrams: 200,
-    });
+    product.priceVariant(
+      "var_2",
+      {
+        ...PRICED,
+        saleUnit: "weight",
+        weightStepGrams: 100,
+        weightMinGrams: 200,
+      },
+      FREE,
+    );
 
     expect(variantOf(product, "var_2")).toMatchObject({
       saleUnit: "weight",
@@ -79,7 +89,7 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
   it("accepte le poids sans minimum : il est facultatif", () => {
     const product = aProduct();
 
-    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 50 });
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 50 }, FREE);
 
     expect(variantOf(product, "var_2")?.weightMinGrams).toBeNull();
   });
@@ -87,7 +97,7 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
   it("enregistre le poids sans pas : c'est l'activation qui le réclame", () => {
     const product = aProduct();
 
-    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" });
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" }, FREE);
 
     expect(variantOf(product, "var_2")).toMatchObject({
       saleUnit: "weight",
@@ -97,9 +107,9 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
 
   it("change d'unité librement tant qu'elle n'a jamais été publiée", () => {
     const product = aProduct();
-    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 });
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
 
-    product.priceVariant("var_2", { ...PRICED, saleUnit: "piece" });
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "piece" }, FREE);
 
     // Le pas et le minimum suivent l'unité : revenus à la pièce, ils s'effacent.
     expect(variantOf(product, "var_2")).toMatchObject({
@@ -111,7 +121,7 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
 
   it("laisse l'unité inchangée quand la saisie ne la nomme pas", () => {
     const product = aProduct();
-    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 });
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
 
     product.priceVariant("var_2", { priceCents: 1_500, weightGrams: null });
 
@@ -127,7 +137,7 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
     const product = aProduct();
 
     expect(() =>
-      product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", ...terms }),
+      product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", ...terms }, FREE),
     ).toThrow(InvalidSaleTermsError);
     expect(variantOf(product, "var_2")?.saleUnit).toBe("piece");
   });
@@ -144,7 +154,7 @@ describe("Product — l'unité de vente d'une déclinaison", () => {
 describe("Product — activer une fiche au poids", () => {
   it("refuse une déclinaison au poids sans pas, en nommant ce qui manque", () => {
     const product = aProduct();
-    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight" });
+    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight" }, FREE);
 
     expect(() => product.activate(RATES, RULES, [], "public")).toThrow(ProductNotActivatableError);
     expect(() => product.activate(RATES, RULES, [], "public")).toThrow(/pas de vente au poids/u);
@@ -152,13 +162,13 @@ describe("Product — activer une fiche au poids", () => {
 
   it("active une déclinaison au poids dont le pas est saisi", () => {
     const product = aProduct();
-    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 });
+    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
 
     expect(product.activate(RATES, RULES, [], "public")).toBe(true);
   });
 });
 
-describe("Product — l'unité figée après la première publication", () => {
+describe("Product — l'unité figée dès que la référence a servi", () => {
   it("marque publiées toutes les déclinaisons à la mise en vente", () => {
     const product = aPublishedProduct();
 
@@ -168,29 +178,46 @@ describe("Product — l'unité figée après la première publication", () => {
     ]);
   });
 
-  it("refuse de changer l'unité d'une déclinaison déjà publiée, en nommant le geste de sortie", () => {
+  it("change l'unité d'une déclinaison publiée dont la référence n'a jamais servi", () => {
     const product = aPublishedProduct();
 
-    expect(() => product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" })).toThrow(
-      SaleUnitFrozenError,
-    );
-    expect(() => product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" })).toThrow(
-      /créez une autre déclinaison/u,
+    product.priceVariant("var_2", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
+
+    expect(variantOf(product, "var_2")).toMatchObject({ saleUnit: "weight", weightStepGrams: 100 });
+  });
+
+  it("refuse de changer l'unité d'une référence déjà utilisée, en disant où et le geste de sortie", () => {
+    const product = aPublishedProduct();
+    const used: SaleUnitClearance = { answered: true, uses: ["mercuriale", "order"] };
+    const attempt = () => product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" }, used);
+
+    expect(attempt).toThrow(SaleReferenceInUseError);
+    // Dans l'ordre du refus, pas dans celui de la réponse.
+    expect(attempt).toThrow(/déjà commandée, porte une mercuriale/u);
+    expect(attempt).toThrow(/Créez une autre déclinaison pour la vendre autrement/u);
+    expect(variantOf(product, "var_2")?.saleUnit).toBe("piece");
+  });
+
+  it("refuse le changement quand le commerce n'a pas répondu", () => {
+    const product = aProduct();
+    const silent: SaleUnitClearance = { answered: false, cause: new Error("panne") };
+
+    expect(() => product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" }, silent)).toThrow(
+      SaleReferenceUsageUnknownError,
     );
   });
 
-  it("reste figée après un retrait de la vente : elle a pu être commandée", () => {
-    const product = aPublishedProduct();
-    product.deactivate();
+  it("refuse le changement quand personne n'a interrogé le commerce", () => {
+    const product = aProduct();
 
     expect(() => product.priceVariant("var_2", { ...PRICED, saleUnit: "weight" })).toThrow(
-      SaleUnitFrozenError,
+      SaleReferenceUsageUnknownError,
     );
   });
 
   it("laisse régler le pas et le minimum d'une déclinaison publiée au poids", () => {
     const product = aProduct();
-    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 });
+    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
     product.activate(RATES, RULES, [], "public");
 
     product.priceVariant("var_1", { ...PRICED, weightStepGrams: 50, weightMinGrams: 250 });
@@ -205,7 +232,9 @@ describe("Product — l'unité figée après la première publication", () => {
   it("accepte de renvoyer la même unité sur une déclinaison publiée", () => {
     const product = aPublishedProduct();
 
-    expect(() => product.priceVariant("var_2", { ...PRICED, saleUnit: "piece" })).not.toThrow();
+    expect(() =>
+      product.priceVariant("var_2", { ...PRICED, saleUnit: "piece" }, FREE),
+    ).not.toThrow();
   });
 
   it("publie d'office la déclinaison ajoutée à une fiche en vente", () => {
@@ -234,7 +263,7 @@ describe("Product — l'unité ne s'hérite pas du défaut", () => {
 
   it("refuse d'aligner le tarif sur un défaut vendu dans une autre unité", () => {
     const product = aProduct();
-    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 });
+    product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE);
 
     expect(() => product.alignVariant("var_2", "pricing", true)).toThrow(
       PricingAlignmentAcrossUnitsError,
@@ -246,7 +275,7 @@ describe("Product — l'unité ne s'hérite pas du défaut", () => {
     product.alignVariant("var_2", "pricing", true);
 
     expect(() =>
-      product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }),
+      product.priceVariant("var_1", { ...PRICED, saleUnit: "weight", weightStepGrams: 100 }, FREE),
     ).toThrow(PricingAlignmentAcrossUnitsError);
   });
 });

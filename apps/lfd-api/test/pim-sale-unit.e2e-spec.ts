@@ -3,8 +3,10 @@
  *
  * Lot P1 de `documentation/pricing/vente-au-poids.md` : la saisie (pièce
  * ou poids, le pas et le minimum en grammes) se relit sur la fiche ; une
- * déclinaison au poids sans pas n'active pas ; une fois la fiche mise en
- * vente, l'unité est figée — retrait de la vente compris.
+ * déclinaison au poids sans pas n'active pas ; l'unité change même après
+ * la mise en vente tant que la référence n'a servi nulle part
+ * (`plan-changer-l-unite-de-vente.md`, § 8 — le refus d'une référence
+ * utilisée est éprouvé par `sale-unit-change.e2e-spec.ts`).
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { makeActivatable } from "./pim-sellable.js";
@@ -125,20 +127,15 @@ describe("l'unité de vente d'une déclinaison", () => {
     expect((await defaultOf(id)).hasBeenPublished).toBe(true);
   });
 
-  it("fige l'unité après la mise en vente, même retirée de la vente", async () => {
+  it("change l'unité d'une fiche mise en vente puis retirée, tant que sa référence n'a servi nulle part", async () => {
     const id = await aProduct("Pain de mie");
     await makeActivatable(staff, id);
     const variant = await defaultOf(id);
     await staff().put(`${PRODUCTS}/${id}/publish`).send({}).expect(200);
     await staff().put(`${PRODUCTS}/${id}/unpublish`).send({}).expect(200);
 
-    const refus = await priceVariant(id, variant.id, {
-      saleUnit: "weight",
-      weightStepGrams: 100,
-    }).expect(409);
+    await priceVariant(id, variant.id, { saleUnit: "weight", weightStepGrams: 100 }).expect(200);
 
-    expect(jsonBody<{ code: string }>(refus).code).toBe("catalogue.variant.sale_unit_frozen");
-    expect(jsonBody<{ message: string }>(refus).message).toContain("créez une autre déclinaison");
-    expect((await defaultOf(id)).saleUnit).toBe("piece");
+    expect(await defaultOf(id)).toMatchObject({ saleUnit: "weight", hasBeenPublished: true });
   });
 });

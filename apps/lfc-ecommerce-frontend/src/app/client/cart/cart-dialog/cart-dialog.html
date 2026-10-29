@@ -91,6 +91,8 @@
       <fold-callout variant="alert" data-no-service>{{ t().shop.noService }}</fold-callout>
     }
 
+    <app-removed-lines-callout />
+
     <app-cart-summary>
       @if (!ordersClosed() && !payNoteIsReason()) {
         <p summaryNote class="pay-hint">{{ payNote() }}</p>

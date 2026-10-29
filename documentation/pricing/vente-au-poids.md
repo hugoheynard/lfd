@@ -18,10 +18,15 @@ prix de vente.
 
 - **Une unité de vente par déclinaison** : `piece` (défaut) ou `weight`,
   choisie dans « Tarif & TVA » (« Vendre à la pièce » / « Vendre au poids »).
-  Elle est **figée à la première publication** (`has_been_published`, posé à
-  l'activation, jamais remis à faux) : le référentiel sait ce qu'il a publié,
-  pas ce qui a été commandé. Vendre le même produit à la pièce ET au poids,
-  c'est **deux déclinaisons**.
+  Elle change librement, même publiée, **tant que sa référence de vente n'a
+  servi nulle part** — commande de tout statut, brouillon, panier gardé,
+  abonnement, réassort, lot, gabarit, décision tarifaire en vigueur ou close
+  ([`plan-changer-l-unite-de-vente.md`](plan-changer-l-unite-de-vente.md) § 8,
+  Hugo, 2026-10-29). Le référentiel le demande au commerce par
+  `SaleReferenceUsage` (`pim/channels/b2b-platform/sale-reference-usage/`).
+  Jusqu'à cette date, elle était figée à la première publication
+  (`has_been_published`, qui reste en base et n'est plus lu pour ça). Vendre le
+  même produit à la pièce ET au poids, c'est **deux déclinaisons**.
 - **La quantité est un entier dans l'unité de la ligne** : des pièces, ou des
   **grammes** (1,25 kg = 1250). Jamais de décimale. Chaque ligne porte son
   unité (`order_lines.sale_unit`), figée à la passation comme son prix.
@@ -35,16 +40,16 @@ prix de vente.
 
 ## 2. Les règles
 
-| Règle                         | Ce qui la tient                                                                                                                                                                                                                                                                                                      |
-| ----------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Le pas**                    | `weightStepGrams`, réglable par article (ex. 100 g) : une quantité qui n'en est pas un multiple est refusée au domaine (`apps/lfd-api/src/b2b/orders/domain/services/sale-quantity-rules.ts`), jamais arrondie en silence.                                                                                           |
-| **Le minimum**                | `weightMinGrams`, facultatif (vide = aucun) : en dessous, refus.                                                                                                                                                                                                                                                     |
-| **La garde d'une tonne**      | Pas de limite métier ; `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (`packages/contracts/src/order.ts`) arrête la faute de frappe. Les pièces gardent `MAX_LINE_QUANTITY` (10 000).                                                                                                                                           |
-| **L'unité figée**             | Le sélecteur n'est modifiable que tant que la déclinaison n'a jamais été publiée.                                                                                                                                                                                                                                    |
-| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`plan-centime-particuliers.md`](plan-centime-particuliers.md) §4).                                                                                                                    |
-| **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes. |
-| **L'affichage**               | Grammes sous le kilo, kilos au-delà : « 500 g », « 1,25 kg », « 12,40 € / kg » (`packages/money/src/sale-quantity-label.ts`). Sur la facture et l'avoir, toujours des kilos à trois décimales.                                                                                                                       |
-| **Les totaux multi-articles** | Fiche d'atelier, compte à produire, dossier du jour, camembert, prévisionnel, colisage, comptoir, feuille de route : une ligne au poids compte pour **une pièce** (`pieceTally`, `packages/money/src/sale-quantity-tally.ts`), et pour rien à 0 g.                                                                   |
+| Règle                         | Ce qui la tient                                                                                                                                                                                                                                                                                                                                                                                            |
+| ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Le pas**                    | `weightStepGrams`, réglable par article (ex. 100 g) : une quantité qui n'en est pas un multiple est refusée au domaine (`apps/lfd-api/src/b2b/orders/domain/services/sale-quantity-rules.ts`), jamais arrondie en silence.                                                                                                                                                                                 |
+| **Le minimum**                | `weightMinGrams`, facultatif (vide = aucun) : en dessous, refus.                                                                                                                                                                                                                                                                                                                                           |
+| **La garde d'une tonne**      | Pas de limite métier ; `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (`packages/contracts/src/order.ts`) arrête la faute de frappe. Les pièces gardent `MAX_LINE_QUANTITY` (10 000).                                                                                                                                                                                                                                 |
+| **L'unité figée**             | Le sélecteur est modifiable tant que la référence n'a servi nulle part ; l'écran dit où elle a servi avant qu'on essaie (`GET /pim/catalogue/products/:id/sale-unit-usage`), et `Variant.changeSaleTerms` refuse (`SaleReferenceInUseError`, 409 ; `SaleReferenceUsageUnknownError` si le commerce ne répond pas). Un panier à l'ancienne unité perd la ligne au devis (`removedLines`), jamais convertie. |
+| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`plan-centime-particuliers.md`](plan-centime-particuliers.md) §4).                                                                                                                                                                                                          |
+| **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes.                                                                                       |
+| **L'affichage**               | Grammes sous le kilo, kilos au-delà : « 500 g », « 1,25 kg », « 12,40 € / kg » (`packages/money/src/sale-quantity-label.ts`). Sur la facture et l'avoir, toujours des kilos à trois décimales.                                                                                                                                                                                                             |
+| **Les totaux multi-articles** | Fiche d'atelier, compte à produire, dossier du jour, camembert, prévisionnel, colisage, comptoir, feuille de route : une ligne au poids compte pour **une pièce** (`pieceTally`, `packages/money/src/sale-quantity-tally.ts`), et pour rien à 0 g.                                                                                                                                                         |
 
 ## 3. Du panier à la facture
 
@@ -133,6 +138,10 @@ entiers de pièces sans unité ; les ouvrir est un autre chantier, inscrit à la
 [carte des chantiers](../carte-des-chantiers.md).
 
 Aucune pesée réelle, aucun ajustement après la commande.
+
+Changer l'unité d'un article **déjà vendu** : hors champ, il faudrait dater
+l'unité partout (décisions, historique, facturation) — le geste reste une autre
+déclinaison ([`plan-changer-l-unite-de-vente.md`](plan-changer-l-unite-de-vente.md) § 7).
 
 ## 5. À confirmer par Hugo
 

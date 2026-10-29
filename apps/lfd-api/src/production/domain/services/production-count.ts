@@ -95,8 +95,10 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
       const known = bySku.get(line.sku);
       if (known !== undefined && known.saleUnit !== line.saleUnit) {
         // Additionner des pièces et des grammes d'un même article rendrait un
-        // nombre qui ne veut rien dire ; l'unité est figée à la publication,
-        // donc ce cas n'arrive que si le commerce a menti.
+        // nombre qui ne veut rien dire. Le référentiel refuse de changer l'unité
+        // d'une référence déjà commandée (`Variant.changeSaleTerms`, vérifié le
+        // 2026-10-29) : ce cas ne naît que d'une course entre le geste et une
+        // première commande, ou d'un commerce qui a menti.
         throw new MixedSaleUnitCountError(line.sku);
       }
       bySku.set(line.sku, {

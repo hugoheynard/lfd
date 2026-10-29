@@ -1,5 +1,6 @@
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
+import { FixedSaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { InvalidProPriceError } from "../../domain/errors/product-errors.js";
 import {
@@ -21,6 +22,7 @@ function pricing(
     journal,
     new DirectUnitOfWork(),
     new RecordingCatalogEmitter(),
+    new FixedSaleReferenceUsage(),
   ).execute(new UpdateVariantPricingCommand(PRODUCT_ID, SELLABLE_VARIANT.id, input));
 }
 

@@ -49,6 +49,7 @@ import { UpdateProductIdentityCommand } from "../update-product-identity.js";
 import { UpdateVariantPricingHandler } from "../update-variant-pricing.js";
 import { UpdateVariantPricingCommand } from "../update-variant-pricing.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
+import { FixedSaleReferenceUsage } from "../../../../channels/b2b-platform/sale-reference-usage/__tests__/sale-reference-usage-doubles.js";
 
 const PRODUCT_ID = "prd_1";
 const VARIANT_ID = "prd_1_v1";
@@ -329,6 +330,7 @@ describe("l’historique d’une fiche", () => {
       journal,
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
+      new FixedSaleReferenceUsage(),
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 260,
@@ -434,6 +436,7 @@ describe("UpdateVariantPricingHandler", () => {
       new RecordingJournal(),
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
+      new FixedSaleReferenceUsage(),
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: 500,
@@ -459,6 +462,7 @@ describe("UpdateVariantPricingHandler", () => {
       new RecordingJournal(),
       new DirectUnitOfWork(),
       new RecordingCatalogEmitter(),
+      new FixedSaleReferenceUsage(),
     ).execute(
       new UpdateVariantPricingCommand(PRODUCT_ID, VARIANT_ID, {
         priceCents: null,
@@ -476,6 +480,7 @@ describe("UpdateVariantPricingHandler", () => {
         new RecordingJournal(),
         new DirectUnitOfWork(),
         new RecordingCatalogEmitter(),
+        new FixedSaleReferenceUsage(),
       ).execute(
         new UpdateVariantPricingCommand(PRODUCT_ID, "variant_etranger", {
           priceCents: 100,

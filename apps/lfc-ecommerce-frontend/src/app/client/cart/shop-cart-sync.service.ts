@@ -18,7 +18,8 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { ShopCartGateway } from './shop-cart.gateway';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
-import { requestedLine, type SaleTerms } from '../shop/sale-unit';
+import { lineTermsOf, requestedLine, type SaleTerms } from '../shop/sale-unit';
+import type { OrderSaleUnit } from '@lfd/contracts';
 
 /**
  * L'accalmie au bout de laquelle on met le panier de côté, en millisecondes.
@@ -104,8 +105,14 @@ export class ShopCartSync {
   private readonly gateway = inject(ShopCartGateway);
   private readonly store = inject(CartStore);
   private readonly catalogue = inject(ShopCatalogue);
-  /** L'unité d'une référence, lue au catalogue — une ligne au poids part avec `saleUnit`. */
-  private readonly termsOf = (sku: string): SaleTerms | null => this.catalogue.itemOf(sku);
+  /**
+   * Les termes d'une ligne : l'unité FIGÉE à l'ajout, sinon celle du catalogue
+   * (un panier d'avant). Elle était recalculée depuis le catalogue jusqu'au
+   * 2026-10-29 : un article passé au poids aurait fait de « 3 » pièces 3 g
+   * (`plan-changer-l-unite-de-vente.md`, § 8).
+   */
+  private readonly termsOf = (sku: string): SaleTerms =>
+    lineTermsOf(this.store.units()[sku], this.catalogue.itemOf(sku));
   // `takeUntilDestroyed` hors du constructeur : il lui faut la référence
   // explicite, sinon Angular lève (NG0203).
   private readonly destroyRef = inject(DestroyRef);
@@ -244,7 +251,7 @@ export class ShopCartSync {
       return;
     }
     this.lastSaved = keyOf({ lines: remote.lines });
-    this.store.replaceAll(quantitiesOf(remote), remote.savedAt);
+    this.store.replaceAll(quantitiesOf(remote), remote.savedAt, unitsOf(remote));
   }
 
   /** Écrit sans attendre l'accalmie : la reprise n'est pas une frappe. */
@@ -284,13 +291,18 @@ export class ShopCartSync {
 /** Le panier sous la forme que le serveur attend, **trié** pour être comparable. */
 function payloadOf(
   quantities: Readonly<Record<string, number>>,
-  termsOf: (sku: string) => SaleTerms | null,
+  termsOf: (sku: string) => SaleTerms,
 ): ShopCartPayload {
   return {
     lines: Object.keys(quantities)
       .sort((a, b) => a.localeCompare(b))
-      .map((sku) => requestedLine(sku, quantities[sku] ?? 0, termsOf(sku) ?? {})),
+      .map((sku) => requestedLine(sku, quantities[sku] ?? 0, termsOf(sku))),
   };
+}
+
+/** L'unité de chaque ligne relue — absente, la ligne est à la pièce (le contrat le dit). */
+function unitsOf(view: ShopCartView): Record<string, OrderSaleUnit> {
+  return Object.fromEntries(view.lines.map((line) => [line.sku, line.saleUnit ?? 'piece']));
 }
 
 /** La forme comparable d'un panier — deux paniers égaux ont la même clé. */

@@ -544,19 +544,43 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     expect(store.weightMinGrams()).toBe(250);
   });
 
-  it('déjà publiée : le sélecteur est éteint, et la phrase dit quoi faire', () => {
+  it('déjà utilisée : le sélecteur est éteint, et l’encadré dit où et quoi faire', () => {
     const store = setup();
     withFamily(store);
+    Object.defineProperty(store, 'saleUnitUsage', {
+      value: signal({ state: 'used', labels: ['déjà commandée', 'porte une mercuriale'] }),
+    });
     Object.defineProperty(store, 'saleUnitLocked', { value: signal(true) });
     const { host, refresh } = render();
 
     expect(segment(host, 'Vendre au poids').disabled).toBe(true);
     expect(segment(host, 'Vendre à la pièce').disabled).toBe(true);
-    expect(host.textContent).toContain('Déjà publiée');
-    expect(host.textContent).toContain('créez une autre');
+    const callout = host.querySelector('fold-callout');
+    expect(callout?.textContent).toContain('déjà commandée, porte une mercuriale');
+    expect(callout?.textContent).toContain('Créez une autre déclinaison pour la vendre autrement');
     segment(host, 'Vendre au poids').click();
     refresh();
     expect(store.saleUnit()).toBe('piece');
+  });
+
+  it('le commerce ne répond pas : l’encadré le dit, et le sélecteur reste éteint', () => {
+    const store = setup();
+    withFamily(store);
+    Object.defineProperty(store, 'saleUnitUsage', { value: signal({ state: 'unverified' }) });
+    Object.defineProperty(store, 'saleUnitLocked', { value: signal(true) });
+    const { host } = render();
+
+    expect(segment(host, 'Vendre au poids').disabled).toBe(true);
+    expect(host.textContent).toContain('Impossible de vérifier si cette déclinaison a déjà servi');
+  });
+
+  it('publiée, jamais utilisée : le sélecteur est ouvert et rien ne s’affiche', () => {
+    const store = setup();
+    withFamily(store);
+    const { host } = render();
+
+    expect(segment(host, 'Vendre au poids').disabled).toBe(false);
+    expect(host.querySelector('fold-callout')).toBeNull();
   });
 
   it('se grise avec les prix quand le tarif est aligné', () => {

@@ -3,7 +3,6 @@ import { millicentsFromCents } from "@lfd/money";
 import { CompanyMercuriale } from "../../../../pricing/domain/entities/company-mercuriale.js";
 import type { PriceRule } from "../../../../pricing/domain/price-rule.js";
 import {
-  SaleUnitMismatchError,
   WeightBelowMinimumError,
   WeightOffStepError,
 } from "../../../domain/errors/sale-quantity-errors.js";
@@ -130,13 +129,21 @@ describe("ShopCartQuoting — une ligne au poids", () => {
     expect(view.lines[0]).toMatchObject({ unitPriceMillicents: 1_000_000, lineTotalCents: 1_500 });
   });
 
-  it("refuse une ligne sans unité sur un article au poids — jamais relue en grammes", async () => {
-    await expect(
-      quoting().quote({
-        ...PRO,
-        payload: { lines: [{ sku: "SAU-001", quantity: 1_250 }], fulfillment: null },
-      }),
-    ).rejects.toThrow(SaleUnitMismatchError);
+  // Le devis refusait tout le panier pour ces lignes (`SaleUnitMismatchError`)
+  // jusqu'au 2026-10-29 ; il les retire désormais seules, avec leur motif
+  // (`plan-changer-l-unite-de-vente.md`, § 8). Jamais converties : la passation
+  // refuse toujours (`ensureSaleQuantity`).
+  it("retire une ligne sans unité sur un article au poids — jamais relue en grammes", async () => {
+    const { view } = await quoting().quote({
+      ...PRO,
+      payload: { lines: [{ sku: "SAU-001", quantity: 1_250 }], fulfillment: null },
+    });
+
+    expect(view.lines).toEqual([]);
+    expect(view.removedLines).toEqual([
+      { sku: "SAU-001", name: "Saumon gravlax", reason: "sale_unit_changed", saleUnit: "weight" },
+    ]);
+    expect(view.totalCents).toBe(0);
   });
 
   it("refuse un poids hors du pas, ou sous le minimum, plutôt que de le corriger", async () => {
@@ -148,15 +155,18 @@ describe("ShopCartQuoting — une ligne au poids", () => {
     ).rejects.toThrow(WeightBelowMinimumError);
   });
 
-  it("refuse des grammes sur un article à la pièce", async () => {
-    await expect(
-      quoting().quote({
-        ...PRO,
-        payload: {
-          lines: [{ sku: "VIE-001", quantity: 500, saleUnit: "weight" }],
-          fulfillment: null,
-        },
-      }),
-    ).rejects.toThrow(SaleUnitMismatchError);
+  it("retire des grammes sur un article à la pièce, et chiffre le reste du panier", async () => {
+    const { view } = await quoting().quote({
+      ...PRO,
+      payload: {
+        lines: [{ sku: "VIE-001", quantity: 500, saleUnit: "weight" }, weighed(1_500)],
+        fulfillment: null,
+      },
+    });
+
+    expect(view.lines.map((line) => line.sku)).toEqual(["SAU-001"]);
+    expect(view.removedLines).toEqual([
+      { sku: "VIE-001", name: "Croissant", reason: "sale_unit_changed", saleUnit: "piece" },
+    ]);
   });
 });

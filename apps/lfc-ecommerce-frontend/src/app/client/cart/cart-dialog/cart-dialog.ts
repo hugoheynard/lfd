@@ -36,6 +36,7 @@ import { serviceDayLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { RemovedLinesCallout } from '../removed-lines-callout/removed-lines-callout';
 import { dialogSide } from '../../panel-side';
 import { CartSummary } from '../cart-summary/cart-summary';
 import { SalesTermsConsent } from '../sales-terms-consent.service';
@@ -85,6 +86,7 @@ const AFTER_SIGN_IN = '/boutique';
   selector: 'app-cart-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    RemovedLinesCallout,
     CartSummary,
     FirstDayMovedCallout,
     FoldCalloutComponent,

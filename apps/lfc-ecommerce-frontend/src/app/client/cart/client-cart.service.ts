@@ -7,7 +7,7 @@ import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ProVisit } from '../shop/pro-visit.service';
-import { nextQuantity, previousQuantity, isSoldByWeight } from '../shop/sale-unit';
+import { nextQuantity, previousQuantity, isSoldByWeight, saleUnitOf } from '../shop/sale-unit';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 
 /** Où mène la connexion demandée par un geste d'achat en visite pro — la porte du repère. */
@@ -116,10 +116,15 @@ export class ClientCart {
       return [];
     }
     const quantities = this.store.quantities();
+    const units = this.store.units();
     return this.catalogue
       .items()
       .filter((item) => (quantities[item.sku] ?? 0) > 0)
-      .map((product) => ({ product, quantity: quantities[product.sku] ?? 0 }));
+      .map((product): CartLine => {
+        const saleUnit = units[product.sku];
+        const quantity = quantities[product.sku] ?? 0;
+        return saleUnit === undefined ? { product, quantity } : { product, quantity, saleUnit };
+      });
   });
 
   /**
@@ -149,6 +154,9 @@ export class ClientCart {
    * demande un autre, et l'écran doit pouvoir le dire.
    */
   readonly pricing = this.quote.status;
+
+  /** Les lignes retirées au devis faute d'être encore vendues dans leur unité — cf. {@link ShopQuote.removedLines}. */
+  readonly removedLines = this.quote.removedLines;
 
   /** Le refus du serveur que le décompte doit montrer à la place de ses montants. */
   readonly refusal = this.quote.refusal;
@@ -189,7 +197,13 @@ export class ClientCart {
     const item = this.catalogue.itemOf(productId);
     if (item !== null) {
       // Une pièce de plus ; au poids, un pas de plus — ou le minimum au premier geste.
-      this.store.setQuantity(productId, nextQuantity(item, this.store.quantityOf(productId)));
+      // L'unité se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8).
+      this.store.setQuantity(
+        productId,
+        nextQuantity(item, this.store.quantityOf(productId)),
+        undefined,
+        saleUnitOf(item),
+      );
     }
     return 'applied';
   }
@@ -218,8 +232,9 @@ export class ClientCart {
     if (this.admit() === 'signInRequired') {
       return 'signInRequired';
     }
-    if (this.catalogue.itemOf(productId) !== null) {
-      this.store.setQuantity(productId, quantity);
+    const item = this.catalogue.itemOf(productId);
+    if (item !== null) {
+      this.store.setQuantity(productId, quantity, undefined, saleUnitOf(item));
     }
     return 'applied';
   }

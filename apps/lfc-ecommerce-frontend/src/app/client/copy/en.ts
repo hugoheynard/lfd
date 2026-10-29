@@ -359,6 +359,8 @@ export const EN: ClientCopy = {
     subtotal: 'Subtotal excl. VAT',
     discount: 'Collection discount {at} −{value}',
     discountOnBase: 'Collection discount {at} −{value} on {base} eligible',
+    unitChangedToWeight: '{name} is now sold by weight: please add it again.',
+    unitChangedToPiece: '{name} is now sold by the piece: please add it again.',
     excludedNote: '* Not covered by the collection discount.',
     excludedLineAria: '{name}, not covered by the collection discount',
     fee: 'Courier',

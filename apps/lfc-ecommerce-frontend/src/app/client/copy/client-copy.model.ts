@@ -698,6 +698,12 @@ export interface ClientCopy {
     readonly discount: string;
     /** La remise quand une ligne en est exclue : `{at}`, `{value}`, `{base}` (assiette, mention comprise). */
     readonly discountOnBase: string;
+    /**
+     * Une ligne retirée au devis : l'article se vend désormais au poids, ou à
+     * la pièce (`plan-changer-l-unite-de-vente.md`, § 8). `{name}` = l'article.
+     */
+    readonly unitChangedToWeight: string;
+    readonly unitChangedToPiece: string;
     /** Le renvoi de la marque `*` posée sur une ligne exclue de la remise. */
     readonly excludedNote: string;
     /** Le nom accessible d'une ligne exclue : `{name}`. */

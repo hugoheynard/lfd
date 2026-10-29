@@ -357,6 +357,8 @@ export const FR: ClientCopy = {
     subtotal: 'Sous-total HT',
     discount: 'Remise retrait {at} −{value}',
     discountOnBase: 'Remise retrait {at} −{value} sur {base} éligibles',
+    unitChangedToWeight: 'L’article {name} se vend désormais au poids : ajoutez-le de nouveau.',
+    unitChangedToPiece: 'L’article {name} se vend désormais à la pièce : ajoutez-le de nouveau.',
     excludedNote: '* Non concerné par la remise retrait.',
     excludedLineAria: '{name}, non concerné par la remise retrait',
     fee: 'Coursier',

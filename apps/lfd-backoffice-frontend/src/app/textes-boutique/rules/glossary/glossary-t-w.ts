@@ -47,6 +47,8 @@ export const GLOSSARY_T_W: Readonly<Record<string, string>> = {
   ttcSuffix: 'Mention TTC',
   tue: 'Mardi',
   unavailable: 'Indisponible',
+  unitChangedToPiece: 'Panier — article repassé à la pièce, ligne retirée',
+  unitChangedToWeight: 'Panier — article passé au poids, ligne retirée',
   unitPrice: 'Prix unitaire HT',
   unknown: 'Introuvable',
   unset: 'Où et quand ? (non choisi)',

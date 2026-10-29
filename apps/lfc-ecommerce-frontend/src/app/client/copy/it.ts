@@ -363,6 +363,8 @@ export const IT: ClientCopy = {
     subtotal: 'Subtotale IVA escl.',
     discount: 'Sconto ritiro {at} −{value}',
     discountOnBase: 'Sconto ritiro {at} −{value} su {base} idonei',
+    unitChangedToWeight: 'L’articolo {name} ora si vende a peso: aggiungilo di nuovo.',
+    unitChangedToPiece: 'L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo.',
     excludedNote: '* Non coperto dallo sconto ritiro.',
     excludedLineAria: '{name}, non coperto dallo sconto ritiro',
     fee: 'Corriere',

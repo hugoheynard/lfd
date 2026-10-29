@@ -22,6 +22,7 @@ import type { SalesContext } from "../../../../sales-contexts/domain/value-objec
 import type { ContextVat } from "../../../shared/domain/value-objects/context-vat.js";
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
+import type { SaleUnitClearance } from "../value-objects/sale-reference-usage.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import { NO_MIN_QUANTITIES, type MinQuantities } from "../value-objects/min-quantities.js";
 import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
@@ -564,8 +565,8 @@ export class Product {
   }
 
   /** Tarif et poids d'une déclinaison **du produit**. */
-  priceVariant(variantId: string, pricing: VariantPricing): void {
-    this.variant(variantId).price(pricing);
+  priceVariant(variantId: string, pricing: VariantPricing, clearance?: SaleUnitClearance): void {
+    this.variant(variantId).price(pricing, clearance);
     this.assertPricingUnitsAgree();
   }
 
