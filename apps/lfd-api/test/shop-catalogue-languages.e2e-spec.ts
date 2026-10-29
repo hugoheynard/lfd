@@ -83,7 +83,7 @@ async function aTranslatedFiche(): Promise<Fiche> {
   const fiche = await anActiveFiche(staff, "Croissant");
   const variantId = await defaultVariantId(fiche);
   await staff()
-    .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/name`)
+    .put(`${PRODUCTS}/${fiche.id}/variants/${variantId}/shop-name`)
     .send({ name: { fr: "Croissant", en: "Butter croissant" } })
     .expect(200);
   await staff()
