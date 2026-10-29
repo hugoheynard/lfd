@@ -4,6 +4,8 @@ import { readCompletenessRules } from "../../../catalogue/product/application/co
 import { ActiveSalesContextsReader } from "../../../sales-contexts/domain/ports/active-sales-contexts.reader.js";
 import { AllergenCatalogueReader } from "../../../allergens/domain/ports/allergen-catalogue.reader.js";
 import { AllergenNaming } from "../../../allergens/domain/services/allergen-naming.js";
+import { DetachmentLineageReader } from "../../../catalogue/product/domain/ports/detachment-lineage.reader.js";
+import type { ProductRecord } from "../../../catalogue/product/domain/ports/product.repository.js";
 import { CitedAllergensReader } from "../../../catalogue/product/domain/ports/cited-allergens.reader.js";
 import { PublishedAllergensReader } from "../../../catalogue/product/domain/ports/published-allergens.reader.js";
 import { EditorialReader } from "../../../catalogue/product/domain/ports/editorial-reader.js";
@@ -46,6 +48,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
     private readonly editorials: EditorialReader,
     private readonly cited: CitedAllergensReader,
     private readonly published: PublishedAllergensReader,
+    private readonly lineage: DetachmentLineageReader,
   ) {
     super();
   }
@@ -57,7 +60,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
       return new Map();
     }
     const familyIds = [...new Set(products.map((product) => product.categoryId))];
-    const [families, percentOf, rules, catalogue, notes, medias, cited, catalogueUnion] =
+    const [families, percentOf, rules, catalogue, notes, medias, cited, catalogueUnion, origins] =
       await Promise.all([
         this.facts.families(familyIds),
         this.percentIndex(),
@@ -67,6 +70,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
         this.editorials.mediaOfProducts(ids),
         this.cited.ofProducts(ids),
         this.published.union(),
+        this.originSkus(products),
       ]);
     const familyById = new Map(families.map((family) => [family.id, family]));
     const naming = AllergenNaming.from(catalogue);
@@ -91,6 +95,7 @@ export class CatalogFactsSource extends CatalogSnapshots {
           showcase: showcase.get(product.id),
           cited: cited.get(product.id) ?? [],
           catalogueUnion,
+          detachedFromSku: origins.get(product.id) ?? null,
         }),
       );
     }
@@ -109,6 +114,26 @@ export class CatalogFactsSource extends CatalogSnapshots {
         projectFamilyFact(family, resolve(family.vatByContext, percentOf)),
       ]),
     );
+  }
+
+  /**
+   * L'ancienne référence de vente de chaque fiche née d'un détachement : le
+   * SKU de sa déclinaison d'origine, qui se vendait sous son propre SKU (on
+   * ne détache jamais le défaut, G2). Une lecture par fiche détachée — rares.
+   */
+  private async originSkus(
+    products: readonly ProductRecord[],
+  ): Promise<ReadonlyMap<string, string>> {
+    const detached = products.flatMap((product) =>
+      product.originVariantId == null ? [] : [[product.id, product.originVariantId] as const],
+    );
+    const found = await Promise.all(
+      detached.map(async ([productId, variantId]) => {
+        const origin = await this.lineage.originOf(variantId);
+        return origin === null ? [] : [[productId, origin.variantSku] as const];
+      }),
+    );
+    return new Map(found.flat());
   }
 
   private async percentIndex(): Promise<ReadonlyMap<string, number>> {

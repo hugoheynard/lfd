@@ -129,19 +129,25 @@ export class OrderLinePricing {
   }
 
   /**
-   * **Le panier sans ses lignes d'une unité périmée** — pour le devis de la
-   * boutique (`plan-changer-l-unite-de-vente.md`, § 8). Une lecture du
-   * catalogue par lot, dans l'audience du prix.
+   * **Le panier sans ses lignes d'une unité périmée, puis son prix** — pour
+   * le devis de la boutique (`plan-changer-l-unite-de-vente.md`, § 8).
+   *
+   * UNE lecture du catalogue pour les deux : le tri des lignes périmées et la
+   * tarification des lignes gardées lisent la même résolution. Les faire
+   * séparément coûtait une lecture de plus à chaque devis
+   * (`test/pricing-budget.e2e-spec.ts`, régression du 2026-10-29).
    */
-  async withoutStaleUnits(
+  async resolveWithoutStaleUnits(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,
+    caller: PricingCaller,
   ): Promise<{
+    readonly resolved: ResolvedOrderLine[];
     readonly kept: readonly OrderLineRequest[];
     readonly removed: readonly StaleUnitLine[];
   }> {
     if (input.length === 0) {
-      return { kept: input, removed: [] };
+      return { resolved: [], kept: input, removed: [] };
     }
     const audience = parties.companyId === null ? "public" : "pro";
     const catalogue = await this.catalog.resolveMany(
@@ -152,7 +158,15 @@ export class OrderLinePricing {
       input.map((line) => ({ line, sku: line.sku, saleUnit: saleUnitOfLine(line) })),
       catalogue,
     );
-    return { kept: split.kept.map(({ line }) => line), removed: split.removed };
+    const kept = split.kept.map(({ line }) => line);
+    const resolved = await this.priceAll(
+      kept,
+      parties,
+      { withTiers: false, caller },
+      undefined,
+      catalogue,
+    );
+    return { resolved, kept, removed: split.removed };
   }
 
   private async priceAll(
@@ -169,6 +183,8 @@ export class OrderLinePricing {
      * n'écrit rien.
      */
     requestedAt: Date | undefined,
+    /** Le catalogue déjà lu par l'appelant pour CES lignes, s'il l'a lu. */
+    loaded?: ReadonlyMap<string, CatalogItem>,
   ): Promise<ResolvedOrderLine[]> {
     const quantities = new Map<string, number>();
     for (const line of input) {
@@ -197,7 +213,7 @@ export class OrderLinePricing {
     // l'exigence que les deux s'accordent — `quote-order-parity` le tient, et
     // un e2e du rayon vérifie qu'il annonce ce que le devis chiffre.
     const audience = parties.companyId === null ? "public" : "pro";
-    const catalogue = await this.catalog.resolveMany([...quantities.keys()], audience);
+    const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], audience));
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
     //

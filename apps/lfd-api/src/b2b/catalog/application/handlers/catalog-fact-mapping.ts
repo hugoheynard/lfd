@@ -69,6 +69,8 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       // qui précède celui de la déclinaison sur sa vignette.
       variantsAsTiles: product.variantsAsTiles,
       productName: product.name,
+      // L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement.
+      detachedFromSku: product.detachedFromSku,
       receivedAt,
     })),
   };

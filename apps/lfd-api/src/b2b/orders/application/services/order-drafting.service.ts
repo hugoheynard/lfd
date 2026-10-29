@@ -26,6 +26,7 @@ import { salesTermsOf } from "../../domain/services/sales-terms-of.js";
 import { orderPayerOf } from "../../domain/services/order-payer.js";
 import { orderPrincipalOf } from "../../domain/services/order-principal.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
+import { SaleReferenceIntake } from "../../../catalog/application/sale-reference-intake.service.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { OrderComposition } from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
@@ -94,6 +95,7 @@ export class OrderDrafting {
     private readonly plans: OrderPlanGate,
     private readonly salesTerms: OrderSalesTermsReader,
     classifications: OrderLineClassificationReader,
+    private readonly intake: SaleReferenceIntake,
   ) {
     this.composition = new OrderComposition(
       linePricing,
@@ -123,12 +125,20 @@ export class OrderDrafting {
    */
   async draft(
     parties: OrderParties,
-    content: OrderContent,
+    received: OrderContent,
     voucher: OrderVoucher | null,
     // La langue du CLIENT à la passation (lot A3) ; `null` pour la saisie du
     // staff et pour une boutique qui ne l'a pas envoyée.
     locale: OrderLocale | null,
   ): Promise<DraftedOrder> {
+    // Les anciennes références d'abord : tout ce qui suit — heure limite,
+    // opérations, prix, ligne écrite — ne voit que l'article désigné
+    // (`plan-defaut-sous-sa-reference.md`, § 5). Après la clé d'idempotence,
+    // qui reste prise sur ce que le client a envoyé : un rejeu se reconnaît.
+    const content: OrderContent = {
+      ...received,
+      lines: await this.intake.normalized(received.lines, "order"),
+    };
     // 🔴 Le payeur se décide ICI, et en premier : c'est le seul chemin que les
     // trois portes de passation partagent (client, saisie staff, boutique), et
     // un refus — payeur suspendu, compte de groupe — ne doit rien coûter de

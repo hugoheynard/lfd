@@ -53,6 +53,7 @@ export interface ItemRow {
   readonly requiresCold: boolean;
   readonly variantsAsTiles: boolean;
   readonly productName: string | null;
+  readonly detachedFromSku: string | null;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly audience: string | null;
@@ -162,6 +163,7 @@ export function toDomain(row: ItemRow): CatalogItem {
       requiresCold: row.requiresCold,
       variantsAsTiles: row.variantsAsTiles,
       productName: row.productName,
+      detachedFromSku: row.detachedFromSku,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,

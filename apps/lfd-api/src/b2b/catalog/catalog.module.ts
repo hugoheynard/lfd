@@ -66,6 +66,11 @@ import { OrderLineClassificationReader } from "../orders/domain/ports/order-line
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
 import { SaleSkuAliasReader } from "./domain/ports/sale-sku-alias.reader.js";
 import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias.reader.js";
+import { SaleSkuAliasTableReader } from "./domain/ports/sale-sku-alias-table.reader.js";
+import { PrismaSaleSkuAliasTableReader } from "./infrastructure/prisma-sale-sku-alias-table.reader.js";
+import { SaleSkuAliasResolutionLog } from "./domain/ports/sale-sku-alias-resolution.log.js";
+import { LoggedSaleSkuAliasResolutionLog } from "./infrastructure/logged-sale-sku-alias-resolution.log.js";
+import { SaleReferenceIntake } from "./application/sale-reference-intake.service.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -178,6 +183,10 @@ import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias
     // Les anciennes références de vente (`plan-defaut-sous-sa-reference.md`,
     // L1) : tout regroupement par article les lit, table vide jusqu'au L3.
     { provide: SaleSkuAliasReader, useClass: PrismaSaleSkuAliasReader },
+    // L'alias à l'entrée et la table publiée à la boutique (§ 5, L2).
+    { provide: SaleSkuAliasTableReader, useClass: PrismaSaleSkuAliasTableReader },
+    { provide: SaleSkuAliasResolutionLog, useClass: LoggedSaleSkuAliasResolutionLog },
+    SaleReferenceIntake,
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -206,6 +215,9 @@ import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias
     // Pour les regroupements par article de la commande, des alertes et des
     // recommandations : une ancienne référence se lit comme sa cible.
     SaleSkuAliasReader,
+    // Pour la passation, les devis, le panier gardé et le brouillon : une
+    // référence reçue est canonicalisée avant la résolution (§ 5).
+    SaleReferenceIntake,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider

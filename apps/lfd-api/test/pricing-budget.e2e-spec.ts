@@ -155,11 +155,20 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * 🔴 **De 8 à 7 le 2026-10-09** : la lecture du flag boutique (celle du
  * 2026-09-14, plus haut) a disparu avec la clé `shop` et sa garde.
  *
+ * 🔴 **De 7 à 8 le 2026-10-29** : le devis lit `sale_sku_alias` UNE fois,
+ * avant le catalogue — l'alias à l'entrée
+ * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5). Une
+ * lecture par devis, sur la clé primaire et l'index de la cible, quelle que
+ * soit la taille du panier ; elle part avec l'alias d'entrée (L4). Le même
+ * jour, la lecture de plus qu'avait ajoutée le tri des lignes d'unité périmée
+ * (`withoutStaleUnits`, commit d0b359c27) est RETIRÉE : le tri et le prix
+ * lisent désormais la même résolution du catalogue.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité
  * qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 7;
+const COLD_QUOTE_OPS = 8;
 
 /**
  * Sème `count` règles de promotion **distinctes**.

@@ -169,7 +169,11 @@ describe("la vitrine publique", () => {
     // les opérations MONTRÉES — nom, dates, articles —, c'est-à-dire ce que
     // l'annonce affiche déjà en vitrine. Une opération en préparation n'y est
     // jamais : hors fenêtre, la liste est vide.
-    expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
+    // ⚠️ **Un élargissement ASSUMÉ** (2026-10-29 —
+    // `documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5, L2) :
+    // la table d'alias, pour que la boutique normalise son panier avant
+    // d'élaguer. Des références, aucun prix ni réglage.
+    expect(Object.keys(body).sort()).toEqual(["items", "operations", "saleSkuAliases", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-27, Hugo —
       // `documentation/pim/plan-allergenes-en-boutique.md`) : l'état et les
@@ -336,7 +340,12 @@ describe("la vitrine publique", () => {
     const { status } = await shop();
 
     expect(status).toBe(200);
-    expect(await catalogue()).toEqual({ shelves: [], items: [], operations: [] });
+    expect(await catalogue()).toEqual({
+      shelves: [],
+      items: [],
+      operations: [],
+      saleSkuAliases: [],
+    });
   });
 });
 

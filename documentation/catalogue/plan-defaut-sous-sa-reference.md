@@ -161,7 +161,7 @@ Table vide : aucun effet visible. Tests :
 - avec une table de test `P-X → P-X-1`, le fournil d'une journée mixte sort une seule ligne par article ;
 - une portée `product:` est refusée à la saisie.
 
-**L2 `feat(lfc-ecommerce)` : le front normalise.**
+**L2 `feat(lfc-ecommerce)` : le front normalise.** 🟩 **Bâti le 2026-10-29** (non commité à l'écriture de cette ligne), avec l'alias en entrée laissé par le L1 — § 13.
 
 - panier navigateur avant `keepOnly` ;
 - panier serveur et brouillon staff par la référence renvoyée ;
@@ -332,9 +332,9 @@ Hugo) la bascule.
 - `catalog-not-served-cause.reader.ts` filtre toutes les déclinaisons d'une
   fiche par `productSku` : passer par `shopSkuOf` change son résultat
   aujourd'hui (le défaut seul au lieu de la fiche). Il bascule au L3.
-- L'alias en entrée (§ 5 : `POST /orders`, devis, compteur de résolutions) et
-  l'exposition de la table au front ne sont pas bâtis : hors de la commande de
-  ce lot.
+- ~~L'alias en entrée (§ 5 : `POST /orders`, devis, compteur de résolutions) et
+  l'exposition de la table au front ne sont pas bâtis~~ — bâtis le 2026-10-29
+  avec le L2, § 13.
 - Les messages `DefaultVariantNotDiscontinuableError` et
   `DefaultVariantNotDetachableError` désignent comme geste de sortie « Faire de
   cette déclinaison la déclinaison par défaut », fermé jusqu'au L3.
@@ -352,3 +352,46 @@ Hugo) la bascule.
   hors journée ouverte) en tient lieu ; à revoir avec le L3.
 - **Les deux refus du défaut** (« ne s'archive pas », « ne se détache pas »)
   ne renvoient plus vers le changement de défaut, suspendu : ils le disent.
+
+## 13. L'alias en entrée et le L2, tels que bâtis (2026-10-29)
+
+**Fait.**
+
+- Une seule porte : `SaleReferenceIntake` (`b2b/catalog/application/sale-reference-intake.service.ts`),
+  qui lit `SaleSkuAliasReader.around` et remplace chaque ancienne référence par
+  la cible de la table. Appelée en tête de `OrderDrafting.draft` (les trois
+  passations : client, saisie staff, boutique — APRÈS la clé d'idempotence, qui
+  reste prise sur ce que le client a envoyé, donc un rejeu se reconnaît), du
+  devis staff/client (`QuoteOrderHandler`), du devis boutique
+  (`ShopCartQuoting.quote`), du panier gardé (écriture et relecture) et du
+  brouillon staff (écriture et relecture). Les réponses portent la référence
+  normalisée (lignes du devis, lignes écrites) : aucun champ de contrat de plus
+  n'a été nécessaire de ce côté.
+- Deux graphies d'un même article fusionnent par la fusion existante de la
+  tarification (par référence).
+- Le compte : port `SaleSkuAliasResolutionLog`, adaptateur en `warn` marqué
+  `sale_sku_alias.resolved entry=<porte>` (gardé dans le tampon de la carte de
+  santé). Un journal plutôt qu'une écriture : la moitié des portes sont des
+  lectures.
+- **Où se fera la coupure (L4, Q1 : 90 jours)** : retirer les appels à
+  `SaleReferenceIntake` des portes panier, brouillon, passation et devis quand
+  le compte est à zéro depuis trente jours. Les liens de fiche et les lecteurs
+  de l'historique gardent l'alias à vie.
+- La table publiée : `ShopCatalogueView.saleSkuAliases` (additif, optionnel à
+  la lecture), lue par `SaleSkuAliasTableReader` dans `ShopCataloguePricing`.
+- La boutique : `CartStore.normalize` avant `keepOnly` (quantités additionnées,
+  unités figées suivant la référence, celle de la cible l'emporte),
+  `ShopCatalogue.canonicalSku`, et `PieceAddress` qui remplace l'adresse d'une
+  fiche ouverte sous un alias (`replaceUrl`).
+- Budget du devis à froid (`test/pricing-budget.e2e-spec.ts`) : 8 opérations
+  au lieu de 7, la lecture d'alias, comptée et datée dans le test. Le même
+  jour, la lecture de plus du tri des unités périmées (commit d0b359c27) est
+  retirée : le tri et le prix lisent une seule résolution du catalogue
+  (`OrderLinePricing.resolveWithoutStaleUnits`).
+
+**Pas fait.**
+
+- La révision d'une commande et la demande de changement ne passent pas par la
+  porte : c'est la normalisation à l'édition du § 6, au L3.
+- La vitrine ne publie que la table entière ; aucune pagination (quelques
+  centaines de lignes au plus après la bascule).

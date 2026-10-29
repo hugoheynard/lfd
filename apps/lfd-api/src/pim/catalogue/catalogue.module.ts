@@ -259,6 +259,9 @@ import {
     CatalogFactsReader,
     EditorialReader,
     PublishedAllergensReader,
+    // L7 de `plan-pro-voit-les-declinaisons.md` : le fait d'une fiche née
+    // d'un détachement porte l'ancienne référence de vente. Lecture seule.
+    DetachmentLineageReader,
   ],
 })
 export class CatalogueModule {}

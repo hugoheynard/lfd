@@ -90,6 +90,7 @@ function productFact(
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
+      detachedFromSku: null,
     },
     variants: [VARIANT],
     gaps: {},
@@ -259,6 +260,36 @@ describe("OnCatalogProductChangedHandler", () => {
       allergensPrecautionary: false,
       allergenTexts: null,
     });
+  });
+
+  /** L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement descend sur l'article. */
+  it("porte l'ancienne référence de vente d'une fiche née d'un détachement", async () => {
+    const projection = new SpyingProduct(true);
+    const base = productFact("active");
+
+    await deliver(
+      projection,
+      productFact("active", { product: { ...base.body.product, detachedFromSku: "TAR-001-2" } }),
+    );
+
+    expect(projection.onSale[0]).toMatchObject({ detachedFromSku: "TAR-001-2" });
+  });
+
+  it("lit un fait d'avant la filiation comme « pas né d'un détachement »", async () => {
+    const projection = new SpyingProduct(true);
+    const durable = productFact("active").durableFact();
+    const payload = JSON.parse(JSON.stringify(durable.payload)) as {
+      product: Record<string, unknown>;
+    };
+    delete payload.product["detachedFromSku"];
+
+    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+      eventId: "evt_1",
+      type: durable.type,
+      payload,
+    });
+
+    expect(projection.onSale[0]).toMatchObject({ detachedFromSku: null });
   });
 
   it("lève sur un fait illisible : la livraison se rejoue, rien n'est avalé", async () => {

@@ -3,6 +3,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { TestBed } from '@angular/core/testing';
 import { Title } from '@angular/platform-browser';
 import { provideRouter, Router, type Routes } from '@angular/router';
+import type { ShopCatalogueView } from '@lfd/contracts';
 import { vi } from 'vitest';
 
 import { PieceAddress } from './piece-address';
@@ -32,12 +33,12 @@ describe('PieceAddress — la fiche d’un article a une adresse', () => {
   let router: Router;
   let address: PieceAddress;
 
-  async function arrive(url: string): Promise<void> {
+  async function arrive(url: string, view: ShopCatalogueView = TEST_CATALOGUE): Promise<void> {
     TestBed.resetTestingModule();
     TestBed.configureTestingModule({
       providers: [provideRouter(ROUTES), provideHttpClient(), PieceAddress, PieceHead],
     });
-    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    hydrateWith(TestBed.inject(ShopCatalogue), view);
     router = TestBed.inject(Router);
     await router.navigateByUrl('/accueil');
     await router.navigateByUrl(url);
@@ -106,6 +107,21 @@ describe('PieceAddress — la fiche d’un article a une adresse', () => {
     await router.navigateByUrl('/boutique');
     await settle();
     expect(address.open()).toBeNull();
+  });
+
+  /** L'alias de fiche (`plan-defaut-sous-sa-reference.md`, § 5) : à vie, sans entrée d'historique. */
+  it('une ancienne référence ouvre l’article qu’elle désigne, adresse remplacée', async () => {
+    const navigate = vi.spyOn(Router.prototype, 'navigateByUrl');
+    await arrive('/boutique/article/OLD-001', {
+      ...TEST_CATALOGUE,
+      saleSkuAliases: [{ aliasSku: 'OLD-001', targetSku: ITEM.sku }],
+    });
+    expect(router.url).toBe(CANONICAL);
+    expect(address.open()).toBe(ITEM.sku);
+
+    const redirect = navigate.mock.calls.find(([target]) => String(target) === CANONICAL);
+    expect(redirect?.[1]?.replaceUrl).toBe(true);
+    navigate.mockRestore();
   });
 
   it('un article inconnu ou hors audience rend « absent », sans fiche, non indexé', async () => {

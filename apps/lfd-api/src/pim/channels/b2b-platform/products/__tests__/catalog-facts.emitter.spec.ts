@@ -81,6 +81,7 @@ function body(id: string): CatalogProductFactBody {
       operationOnly: false,
       requiresCold: false,
       variantsAsTiles: true,
+      detachedFromSku: null,
     },
     variants: [],
     gaps: { [`SKU-${id}-1`]: ["price"] },

@@ -114,6 +114,23 @@ export class ShopCatalogue {
     return this.byOperation().get(key) ?? null;
   }
 
+  /**
+   * Les anciennes références et l'article qu'elles désignent
+   * (`plan-defaut-sous-sa-reference.md`, § 5) — vide jusqu'à la bascule, et
+   * pour un serveur d'avant ce champ.
+   */
+  readonly saleSkuAliases = computed<ReadonlyMap<string, string>>(
+    () =>
+      new Map(
+        (this.catalogue().saleSkuAliases ?? []).map((pair) => [pair.aliasSku, pair.targetSku]),
+      ),
+  );
+
+  /** La référence de l'article que celle-ci désigne — elle-même sans alias. */
+  canonicalSku(sku: string): string {
+    return this.saleSkuAliases().get(sku) ?? sku;
+  }
+
   /** Les articles par SKU — ce que le panier interroge à chaque ligne. */
   private readonly bySku = computed(
     () => new Map(this.catalogue().items.map((item) => [item.sku, item])),

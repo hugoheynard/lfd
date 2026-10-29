@@ -429,4 +429,23 @@ export interface ShopCatalogueView {
    * boutique en fait ses rayons `op:<key>` au lot 4.
    */
   readonly operations: readonly ShopOperationView[];
+  /**
+   * **Les anciennes références de vente et l'article qu'elles désignent**
+   * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5, L2).
+   *
+   * La boutique s'en sert pour normaliser ce qu'elle a gardé — panier du
+   * navigateur, lien de fiche — AVANT d'oublier une référence que le
+   * catalogue ne porte plus. Toujours vers la cible de la table, jamais vers
+   * le défaut courant.
+   *
+   * Vide jusqu'à la bascule (L3). Optionnel pour lire une réponse d'avant :
+   * absent se lit vide.
+   */
+  readonly saleSkuAliases?: readonly ShopSaleSkuAliasView[];
+}
+
+/** Une ancienne référence de vente (`aliasSku`) et l'article qu'elle désigne. */
+export interface ShopSaleSkuAliasView {
+  readonly aliasSku: string;
+  readonly targetSku: string;
 }

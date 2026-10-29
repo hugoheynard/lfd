@@ -41,6 +41,8 @@ import { CustomerAudiences } from "../customer-audiences.service.js";
 import { OrderLinePricing } from "../order-line-pricing.service.js";
 import { OrderOperations } from "../order-operations.service.js";
 import { ShopCartQuoting } from "../shop-cart-quoting.service.js";
+import { intakeOver } from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
+import type { SaleReferenceIntake } from "../../../../catalog/application/sale-reference-intake.service.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -208,6 +210,8 @@ export interface QuotingSetup {
   readonly companyStatus?: OrderCompanyStatus | null;
   readonly voucherCents?: number | null;
   readonly decisions?: QuotingDecisions;
+  /** La porte d'entrée des références — table vide par défaut. */
+  readonly intake?: SaleReferenceIntake;
 }
 
 export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
@@ -236,5 +240,6 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     new VoucherOf(setup.voucherCents ?? null),
     new FixedClock(PRICED_AT),
     new FixedDeliveryVat(setup.deliveryVatMode ?? "standard"),
+    setup.intake ?? intakeOver(),
   );
 }

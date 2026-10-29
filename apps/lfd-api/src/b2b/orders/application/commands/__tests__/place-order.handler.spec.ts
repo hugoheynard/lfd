@@ -160,6 +160,11 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
+import {
+  intakeOver,
+  RecordingAliasResolutions,
+} from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
+import type { SaleReferenceIntake } from "../../../../catalog/application/sale-reference-intake.service.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -446,6 +451,7 @@ function drafting(
     readonly cutoffs?: OrderCutoffReader;
     readonly limits?: InMemoryProductCatalog;
     readonly classifications?: FixedLineClassifications;
+    readonly intake?: SaleReferenceIntake;
   } = {},
 ): OrderDrafting {
   const classifications = audience.classifications ?? new FixedLineClassifications();
@@ -493,6 +499,7 @@ function drafting(
     audience.plans ?? openPlanGate(),
     audience.salesTerms ?? new FixedSalesTerms(),
     classifications,
+    audience.intake ?? intakeOver(),
   );
 }
 
@@ -893,6 +900,53 @@ describe("PlaceOrderHandler", () => {
     expect(croissant?.quantity).toBe(5);
     expect(croissant?.lineTotalCents).toBe(1000);
     expect(sink.placed?.subtotalCents).toBe(1000 + 220);
+  });
+
+  /**
+   * L'alias à l'entrée (`plan-defaut-sous-sa-reference.md`, § 5) : un panier
+   * gardé sous une ancienne référence se commande encore, sous l'article que
+   * la TABLE désigne, et fusionne avec la ligne qui le nomme déjà.
+   */
+  it("une ancienne référence passe sous l'article de la table, et fusionne avec lui", async () => {
+    const sink = { placed: null as OrderToPlace | null };
+    const resolutions = new RecordingAliasResolutions();
+    const handler = new PlaceOrderHandler(
+      guard("orders", "active"),
+      drafting(pickups(LABO_POINT), zones(), {
+        intake: intakeOver([{ aliasSku: "VIE-000", targetSku: "VIE-001" }], resolutions),
+      }),
+      capturingRepo(sink),
+      payments(),
+      events(),
+      noWaivers,
+      new FixedClock(PRICED_AT),
+      freeKeys,
+      noReader,
+      directWork,
+      new FixedVoucherQuotes(),
+      new RecordingRedemption(),
+      new RecordingDurable(),
+      intakeAt(),
+      new CustomerCancellationDeadline(new FixedCancellationSettings()),
+    );
+
+    await handler.execute(
+      new PlaceOrderCommand(
+        "u1",
+        payload({
+          lines: [
+            { sku: "VIE-000", quantity: 2 },
+            { sku: "VIE-001", quantity: 3 },
+          ],
+        }),
+        "c1",
+      ),
+    );
+
+    expect(sink.placed?.lines.map((line) => [line.sku, line.quantity])).toEqual([["VIE-001", 5]]);
+    expect(resolutions.recorded).toEqual([
+      { entry: "order", resolved: [{ aliasSku: "VIE-000", targetSku: "VIE-001" }] },
+    ]);
   });
 
   it("refuse un SKU inconnu du catalogue (400), sans rien écrire", async () => {

@@ -240,13 +240,62 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   `pricing.sale_reference.withdrawn`. Le brouillon de mercuriale n'est pas
   jugé (il n'est pas une décision). Les décisions déjà posées ne sont pas
   touchées. E2E : `apps/lfd-api/test/pricing-sale-references.e2e-spec.ts`.
-- **L6** `feat(backoffice)` : dire pourquoi une déclinaison n'est pas proposée
-  aux pros.
-- **L7**, à part : la filiation du détachement au commerce — le canal porte
+- ~~**L6** `feat(backoffice)` : dire pourquoi une déclinaison n'est pas proposée
+  aux pros.~~ — **bâti le 2026-10-29** (non commité à l'écriture de cette
+  ligne). Sous la barre des déclinaisons, `VariantProOffer` lit la vue
+  « Catalogue publié » (`GET admin/catalog/published`, le chemin de l'écran du
+  même nom — c'est l'écran qui lit le commerce, jamais le référentiel) et
+  mentionne chaque déclinaison MONTRÉE (le défaut, et les autres si la fiche
+  est en vignette) que la cellule pro ne dit pas `en_vente`. La cause est
+  l'état de la cellule, départagé par ce que la vue porte déjà
+  (`proOfferCauseOf`) : pas de prix pro, pas de taux, incomplète, réservée aux
+  particuliers, validation pro en attente, masquée, fiche inactive, absente du
+  commerce (pas reçue ou retirée). Attente et masquage renvoient à « Catalogue
+  publié », où ils se lèvent. Choix faits sous mandat : aucune donnée de
+  contrat ajoutée (la vue suffisait) ; une lecture en échec (droit
+  `b2b_settings:read` absent, réseau) le dit au lieu de se taire ; la vue
+  entière est relue à chaque changement des déclinaisons de la fiche, et
+  peut avoir le retard du relais des faits. E2E :
+  `apps/lfd-api/test/catalog-detached-lineage.e2e-spec.ts` (la forme que l'écran lit
+  « pas de prix pro »).
+- ~~**L7**, à part : la filiation du détachement au commerce — le canal porte
   `detached_from_sku` ; une requête liste les décisions en vigueur de l'ancien
-  SKU ; le report est un geste staff qui POSE de nouvelles décisions (jamais de
-  réécriture, jamais automatique) ; les rapports par article regroupent par
-  lignée, en lecture seule.
+  SKU~~ — **(a), (b) et la liste de (d) bâtis le 2026-10-29** (non commités à
+  l'écriture de cette ligne) :
+  - (a) le fait `pim.catalog_product_changed` porte `product.detachedFromSku`
+    (le SKU de la déclinaison d'origine, lu par `DetachmentLineageReader`,
+    désormais exporté du catalogue). Fait seul : l'instantané du push reste en
+    v16, il ne la demande pas ; un fait d'avant la lit `null`. Le commerce la
+    range sur chaque article de la fiche, colonne additive
+    `catalog_items.detached_from_sku` (migration
+    `20261029090000_la_filiation_du_detachement_au_commerce`). Une fiche
+    détachée avant ce lot la reçoit à sa prochaine émission ; une fiche née
+    inactive n'a pas d'article, donc pas encore de ligne qui la porte.
+  - (b) `GET admin/pricing/sale-references/:sku/decisions`
+    (`ListSaleReferenceDecisionsQuery`, port `SaleReferenceDecisionsReader`) :
+    mercuriales, règles et barèmes à portée `product:`/`variant:`, planchers,
+    engagements, gabarits non archivés. « Debout » = non archivée et fenêtre
+    non close maintenant — une décision en pause ou programmée en est, une
+    close non. Lu hors du mur tenant (question du staff sur un article), sans
+    montant.
+  - (d) sur la fiche née d'un détachement, `DetachedDecisions` liste ces
+    décisions pour l'ANCIENNE référence, prise dans la filiation du
+    référentiel (`lineage.origin.variantSku`) et non dans
+    `detached_from_sku` : la fiche naît inactive, et la liste doit se lire
+    avant qu'elle se vende.
+- **L7c** (lot suivant, non bâti — choix fait sous mandat, il est gros) : le
+  geste staff qui REPOSE sur la nouvelle référence les décisions choisies —
+  une nouvelle décision par famille, par l'agrégat et l'écriture de chacune
+  (six chemins de pose, chacun avec ses recouvrements et son contrôle « en
+  vente » du L5), jamais de réécriture de l'ancienne, tracé au journal
+  tarifaire ; `fold-inline-confirm` sur la liste du (d). Le garde naturel :
+  la nouvelle référence doit porter `detached_from_sku` = l'ancienne. Ouvert :
+  une mercuriale est un document de lignes par société — la reposer, c'est en
+  poser une seconde (recouvrement à vérifier) ou étendre l'existante (ce qui
+  la réécrit) : à trancher par Hugo avant de bâtir.
+- **L7d-bis** (non bâti) : les rapports par article (habitudes) regroupant
+  ancienne et nouvelle référence, en lecture seule — le schéma des habitudes
+  n'a pas été ouvert (§ 7, « non vérifié »).
 - **L8** `docs(catalogue)`.
 
 **Non vérifié** : ce que coûte un engagement de volume devenu orphelin à sa

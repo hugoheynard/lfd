@@ -97,6 +97,17 @@ export class PieceAddress {
       return;
     }
     this.lastSku = wanted;
+    // Une ancienne référence (lien partagé avant la bascule) ouvre l'article
+    // qu'elle désigne, et l'adresse est remplacée sans entrée d'historique
+    // (`plan-defaut-sous-sa-reference.md`, § 5 — à vie).
+    const canonical = wanted === null ? null : this.catalogue.canonicalSku(wanted);
+    if (wanted !== null && canonical !== null && canonical !== wanted) {
+      if (this.pushed === wanted) {
+        this.pushed = canonical;
+      }
+      this.go(productPath(canonical), true);
+      return;
+    }
     if (wanted === null) {
       this.pushed = null;
       this.opened.set(null);

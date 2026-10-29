@@ -46,6 +46,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     showcase: undefined,
     cited: [],
     catalogueUnion: [],
+    detachedFromSku: null,
     ...over,
   };
 }
@@ -246,6 +247,14 @@ describe("projectProductFact", () => {
       projectProductFact(input({ product: tarte({ variantsAsTiles: false }) })).product
         .variantsAsTiles,
     ).toBe(false);
+  });
+
+  /** L7 de `plan-pro-voit-les-declinaisons.md` : la filiation du détachement voyage. */
+  it("porte l'ancienne référence de vente d'une fiche née d'un détachement", () => {
+    expect(projectProductFact(input()).product.detachedFromSku).toBeNull();
+    expect(
+      projectProductFact(input({ detachedFromSku: "TAR-001-2" })).product.detachedFromSku,
+    ).toBe("TAR-001-2");
   });
 
   /** Une fiche inactive porte ses déclinaisons complètes : c'est la plateforme qui ne les vend pas. */

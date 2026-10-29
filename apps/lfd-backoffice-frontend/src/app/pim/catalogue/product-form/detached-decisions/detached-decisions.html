@@ -1,0 +1,19 @@
+@if (originSku(); as sku) {
+  @if (state() === 'error') {
+    <fold-callout variant="warning">
+      Les décisions tarifaires de l’ancienne référence {{ sku }} n’ont pas pu être lues.
+    </fold-callout>
+  } @else if (state() === 'ready' && lines().length > 0) {
+    <fold-callout variant="warning">
+      <p>
+        Décisions tarifaires encore posées sur l’ancienne référence {{ sku }} — elles ne valent pas
+        pour cette fiche, et rien ne les reporte tout seul :
+      </p>
+      <ul>
+        @for (line of lines(); track line.id) {
+          <li>{{ line.text }}</li>
+        }
+      </ul>
+    </fold-callout>
+  }
+}

@@ -13,6 +13,7 @@ import {
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
+import { SaleSkuAliasTableReader } from "../domain/ports/sale-sku-alias-table.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import {
@@ -94,6 +95,7 @@ export class ShopCataloguePricing {
     private readonly clock: Clock,
     private readonly cutoffs: ShopOrderCutoffsReader,
     private readonly pricesPerKg: CatalogPricePerKgReader,
+    private readonly aliases: SaleSkuAliasTableReader,
   ) {}
 
   /**
@@ -144,11 +146,15 @@ export class ShopCataloguePricing {
     // en quelques lignes, et une clôture doit s'appliquer à la minute.
     // Les heures limites en vigueur : une lecture de plus, pour ne montrer la
     // limite d'un article que si elle est plus stricte que la générale (§9).
-    const [sellable, operations, operationOnlySkus, cutoffs] = await Promise.all([
+    // La table d'alias voyage avec la vitrine (`plan-defaut-sous-sa-reference.md`,
+    // § 5, L2) : le navigateur normalise son panier AVANT d'oublier une
+    // référence que le catalogue ne porte plus. Une lecture, vide jusqu'au L3.
+    const [sellable, operations, operationOnlySkus, cutoffs, saleSkuAliases] = await Promise.all([
       this.catalog.listSellable(audience),
       this.operations.sellableOperations(),
       this.operations.operationOnlySkus(),
       this.cutoffs.list(),
+      this.aliases.all(),
     ]);
     const shown = shopCatalogueOf(sellable, {
       operations,
@@ -156,7 +162,7 @@ export class ShopCataloguePricing {
       audience,
       now: this.clock.now(),
     });
-    const catalogue = withOrderLimits(shown, sellable, cutoffs);
+    const catalogue = { ...withOrderLimits(shown, sellable, cutoffs), saleSkuAliases };
     if (catalogue.items.length === 0) {
       return catalogue;
     }

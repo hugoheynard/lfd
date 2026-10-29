@@ -35,7 +35,8 @@ import { exactShopQuoteOf } from "./exact-shop-quote.js";
 import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { OrderOperations } from "./order-operations.service.js";
-import { OrderLinePricing } from "./order-line-pricing.service.js";
+import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
+import { SaleReferenceIntake } from "../../../catalog/application/sale-reference-intake.service.js";
 
 /**
  * Ce que demande un décompte : le panier, la société pour laquelle on chiffre
@@ -93,6 +94,7 @@ export class ShopCartQuoting {
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly clock: Clock,
     private readonly deliveryVat: OrderDeliveryVatReader,
+    private readonly intake: SaleReferenceIntake,
   ) {}
 
   /**
@@ -126,13 +128,20 @@ export class ShopCartQuoting {
   async quote(request: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     // Une ligne dont l'article a changé d'unité est RETIRÉE, jamais convertie
     // (`plan-changer-l-unite-de-vente.md`, § 8) ; le client la rajoute.
-    const { kept, removed } = await this.pricing.withoutStaleUnits(request.payload.lines, {
-      companyId: request.companyId,
-    });
-    const quoted = await this.quoteKept({
-      ...request,
-      payload: { ...request.payload, lines: [...kept] },
-    });
+    // Une ancienne référence se chiffre sous l'article qu'elle désigne, et les
+    // lignes du devis rendent cette référence-là (`plan-defaut-sous-sa-reference.md`, § 5).
+    const lines = await this.intake.normalized(request.payload.lines, "shop_quote");
+    const { resolved, kept, removed } = await this.pricing.resolveWithoutStaleUnits(
+      lines,
+      // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
+      // parcours par défaut de la boutique, et `applies` le sait déjà.
+      { companyId: request.companyId },
+      "cart",
+    );
+    const quoted = await this.quoteKept(
+      { ...request, payload: { ...request.payload, lines: [...kept] } },
+      resolved,
+    );
     return removed.length === 0
       ? quoted
       : {
@@ -144,15 +153,11 @@ export class ShopCartQuoting {
         };
   }
 
-  private async quoteKept(query: ShopCartQuoteRequest): Promise<ShopCartQuote> {
-    const resolved = await this.pricing.resolve(
-      // L'unité voyage avec la quantité : elle se valide contre l'article.
-      query.payload.lines,
-      // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
-      // parcours par défaut de la boutique, et `applies` le sait déjà.
-      { companyId: query.companyId },
-      "cart",
-    );
+  private async quoteKept(
+    query: ShopCartQuoteRequest,
+    // Tarifées par la même lecture du catalogue que le tri des unités.
+    resolved: readonly ResolvedOrderLine[],
+  ): Promise<ShopCartQuote> {
     // Sans jour — le devis de la boutique n'en porte pas —, mais une bûche
     // pas encore ouverte, close ou introuvable le dit ici, au panier, plutôt
     // qu'au paiement ; et une ligne qui ne passera plus nomme son cas au lieu

@@ -100,6 +100,7 @@ export function pimFactsColumns(facts: PimFacts) {
     requiresCold: facts.requiresCold,
     variantsAsTiles: facts.variantsAsTiles,
     productName: facts.productName,
+    detachedFromSku: facts.detachedFromSku ?? null,
     receivedAt: facts.receivedAt,
   };
 }

@@ -248,6 +248,14 @@ export interface PimFacts {
    * reçu avant ce lot.
    */
   readonly productName: string | null;
+  /**
+   * **L'ancienne référence de vente** d'un article né d'un détachement
+   * (`plan-pro-voit-les-declinaisons.md`, L7) — un fait de la fiche, descendu
+   * sur chaque article. Absente ou `null` : l'article n'est pas né d'un
+   * détachement, ou a été reçu avant ce lot. Optionnelle pour que les
+   * articles construits avant elle restent valides sans la nommer.
+   */
+  readonly detachedFromSku?: string | null | undefined;
   readonly receivedAt: Date;
 }
 
@@ -504,6 +512,10 @@ export class CatalogItem {
 
   get productName(): string | null {
     return this.facts.productName;
+  }
+
+  get detachedFromSku(): string | null {
+    return this.facts.detachedFromSku ?? null;
   }
 
   get vatRatePercent(): number | null {

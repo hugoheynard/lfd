@@ -43,6 +43,10 @@ const payloadSchema = z.object({
     // avant elle, et lue `true` — la valeur que la colonne du référentiel a
     // donnée à toute fiche existante.
     variantsAsTiles: z.boolean().default(true),
+    // L7 de `plan-pro-voit-les-declinaisons.md` (fait seul, sans version
+    // d'instantané) : absente d'un fait émis avant elle, et lue `null`. Une
+    // fiche détachée avant ce lot la reçoit à sa prochaine émission.
+    detachedFromSku: z.string().min(1).nullable().default(null),
   }),
   // Les prix au kilo (fil v13, `plan-prix-au-kilo.md`) sont absents d'un
   // fait émis avant eux, et lus `null` — « non saisi », ce qui était vrai.

@@ -8,7 +8,9 @@ import {
 } from 'fold-ng';
 
 import { ProductFormStore } from '../product-form-store';
+import { DetachedDecisions } from '../detached-decisions/detached-decisions';
 import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
+import { VariantProOffer } from '../variant-pro-offer/variant-pro-offer';
 
 /**
  * **La barre des déclinaisons**, sous l'en-tête de la fiche.
@@ -40,6 +42,8 @@ import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
     FoldCalloutComponent,
     FoldInputComponent,
     VariantLifecycle,
+    VariantProOffer,
+    DetachedDecisions,
   ],
   templateUrl: './variant-bar.html',
   styleUrl: './variant-bar.scss',

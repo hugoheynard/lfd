@@ -1,0 +1,20 @@
+@if (state() === 'error') {
+  <fold-callout variant="warning">
+    L’état de la fiche au canal pro n’a pas pu être lu : on ne sait pas ici si ses déclinaisons sont
+    proposées aux pros.
+  </fold-callout>
+} @else if (notes().length > 0) {
+  <fold-callout variant="info">
+    <p>Non proposée aux pros :</p>
+    <ul>
+      @for (note of notes(); track note.id) {
+        <li>
+          « {{ note.label }} » ({{ note.sku }}) — {{ sentence(note.cause) }}
+          @if (linksToCommerce(note.cause)) {
+            — <fold-link (clicked)="openPublished()">à lever dans Catalogue publié</fold-link>
+          }
+        </li>
+      }
+    </ul>
+  </fold-callout>
+}

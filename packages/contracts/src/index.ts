@@ -830,6 +830,7 @@ export type {
   ShopOperationState,
   ShopOperationText,
   ShopOperationView,
+  ShopSaleSkuAliasView,
   ShopShelfView,
 } from "./shop-catalogue.js";
 export type {
@@ -2860,3 +2861,7 @@ export type {
   BakehouseResupplyDraftView,
   SavedBakehouseResupplyDraftResponse,
 } from "./bakehouse-resupply-draft.js";
+export type {
+  SaleReferenceDecisionKind,
+  SaleReferenceDecisionView,
+} from "./sale-reference-decisions.js";

@@ -35,6 +35,10 @@ import { PricedCompanyReader } from "./domain/ports/priced-company.reader.js";
 import { SaleReferenceReader } from "./domain/ports/sale-reference.reader.js";
 import { CatalogSaleReferenceReader } from "./infrastructure/catalog-sale-reference.reader.js";
 import { PricedCompanyNamer } from "./domain/ports/priced-company-namer.js";
+import { SaleReferenceDecisionsReader } from "./domain/ports/sale-reference-decisions.reader.js";
+import { PrismaSaleReferenceDecisionsReader } from "./infrastructure/prisma-sale-reference-decisions.reader.js";
+import { ListSaleReferenceDecisionsHandler } from "./application/queries/list-sale-reference-decisions.handler.js";
+import { AdminSaleReferenceDecisionsController } from "./http/admin-sale-reference-decisions.controller.js";
 import { PrismaPricedCompanyNamer } from "./infrastructure/prisma-priced-company-namer.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
 import { PrismaPricingJournalReader } from "./infrastructure/prisma-pricing-journal.reader.js";
@@ -114,6 +118,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     AdminVolumeCommitmentsController,
     AdminPriceTemplatesController,
     AdminCompanyPricingController,
+    AdminSaleReferenceDecisionsController,
   ],
   providers: [
     BoardElasticityService,
@@ -194,6 +199,10 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // posent avant d'écrire (L5 de `plan-pro-voit-les-declinaisons.md`).
     { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
+    // Les décisions debout sur une référence — la fiche née d'un détachement
+    // les liste pour son ancienne référence (L7 de `plan-pro-voit-les-declinaisons.md`).
+    { provide: SaleReferenceDecisionsReader, useClass: PrismaSaleReferenceDecisionsReader },
+    ListSaleReferenceDecisionsHandler,
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],
   /**

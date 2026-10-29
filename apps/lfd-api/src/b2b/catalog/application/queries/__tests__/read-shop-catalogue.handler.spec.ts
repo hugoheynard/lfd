@@ -28,6 +28,9 @@ import { catalogItem, InMemoryCatalogOperations } from "../../__tests__/sale-ope
 import { GivenPricesPerKg } from "../../__tests__/price-per-kg-doubles.js";
 import { ShopCataloguePricing } from "../../shop-catalogue-pricing.service.js";
 import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-catalogue.js";
+import { GivenSaleSkuAliasTable } from "../../__tests__/sale-reference-intake.doubles.js";
+import { P_X_ALIASED } from "../../../domain/__tests__/sale-sku-alias.doubles.js";
+import type { SaleSkuAliasPair } from "../../../domain/sale-sku-aliases.js";
 
 /**
  * La vitrine sans jeton, publique ou pro (2026-10-19) — montée sur la VRAIE
@@ -170,6 +173,7 @@ function fixture(
     catalogItem(BAGUETTE, { unitPriceMillicents: PUBLIC_MILLICENTS }),
   ],
   cutoffs: readonly OrderCutoffView[] = [GENERAL_EVE_23],
+  aliases: readonly SaleSkuAliasPair[] = [],
 ) {
   const catalog = new SellableCatalog({
     pro: [
@@ -203,6 +207,7 @@ function fixture(
     new FixedClock(NOW),
     new GivenCutoffs(cutoffs),
     new GivenPricesPerKg(),
+    new GivenSaleSkuAliasTable(aliases),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }
@@ -292,6 +297,24 @@ describe("ReadShopCatalogueHandler", () => {
 
       expect(limitsOf(view)[3]).toEqual([BAGUETTE, null]);
       expect(limitsOf(view)[1]).toEqual([EVE_18, { daysBefore: 1, time: "18:00" }]);
+    });
+  });
+
+  describe("la table d'alias (plan-defaut-sous-sa-reference.md, § 5, L2)", () => {
+    it("voyage avec la vitrine : la boutique normalise son panier avant d'élaguer", async () => {
+      const { handler } = fixture(undefined, undefined, P_X_ALIASED);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(view.saleSkuAliases).toEqual([{ aliasSku: "P-X", targetSku: "P-X-1" }]);
+    });
+
+    it("est vide tant que la bascule n'a pas eu lieu", async () => {
+      const { handler } = fixture();
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr", "pro"));
+
+      expect(view.saleSkuAliases).toEqual([]);
     });
   });
 });

@@ -274,6 +274,43 @@ export class CartStore {
   }
 
   /**
+   * **Réécrit les anciennes références sous l'article qu'elles désignent**
+   * (`plan-defaut-sous-sa-reference.md`, § 5, L2) — à appeler AVANT
+   * {@link keepOnly}, qui sinon jetterait en silence une référence que le
+   * catalogue ne porte plus.
+   *
+   * Deux graphies d'un même article s'additionnent ; l'unité figée suit la
+   * référence, celle déjà gardée sous la cible l'emporte. Sans dater, comme
+   * l'élagage : ce n'est pas un geste du client.
+   */
+  normalize(aliases: ReadonlyMap<string, string>): void {
+    if (aliases.size === 0) {
+      return;
+    }
+    const target = (sku: string): string => aliases.get(sku) ?? sku;
+    const current = this.quantities$();
+    if (!Object.keys(current).some((sku) => aliases.has(sku))) {
+      return;
+    }
+    const quantities: Record<string, number> = {};
+    for (const [sku, quantity] of Object.entries(current)) {
+      quantities[target(sku)] = (quantities[target(sku)] ?? 0) + quantity;
+    }
+    const units: Record<string, OrderSaleUnit> = {};
+    for (const [sku, unit] of Object.entries(this.units$())) {
+      if (!aliases.has(sku)) {
+        units[sku] = unit;
+      }
+    }
+    for (const [sku, unit] of Object.entries(this.units$())) {
+      units[target(sku)] ??= unit;
+    }
+    this.quantities$.set(quantities);
+    this.units$.set(units);
+    this.persist();
+  }
+
+  /**
    * Oublie les références que le catalogue ne connaît plus.
    *
    * Appelé quand le catalogue arrive, et pas avant : c'est ce qui remplace la

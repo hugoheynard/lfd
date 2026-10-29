@@ -75,7 +75,16 @@ export class ClientCart {
     // sait ce qui est encore en vente. Cf. `CartStore.keepOnly`.
     effect(() => {
       if (this.catalogue.status() === 'ready') {
-        this.store.keepOnly(new Set(this.catalogue.items().map((item) => item.sku)));
+        const aliases = this.catalogue.saleSkuAliases();
+        const known = new Set(this.catalogue.items().map((item) => item.sku));
+        // Normaliser D'ABORD : `keepOnly` jetterait en silence une ancienne
+        // référence (`plan-defaut-sous-sa-reference.md`, § 5). `untracked` :
+        // `normalize` LIT les quantités, et cet effet ne doit suivre que le
+        // catalogue — sans quoi il se relancerait sur sa propre écriture.
+        untracked(() => {
+          this.store.normalize(aliases);
+          this.store.keepOnly(known);
+        });
       }
     });
   }

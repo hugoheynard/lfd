@@ -393,6 +393,12 @@ model CatalogItem {
   /// reçue avant ce lot : la vignette porte alors le nom de la déclinaison seul.
   productName String? @map("product_name")
 
+  /// **L'ancienne référence de vente** d'un article né d'un détachement — le
+  /// SKU de la déclinaison d'origine, fait de sa fiche descendu sur chaque
+  /// article (`plan-pro-voit-les-declinaisons.md`, L7). `NULL` pour tout autre
+  /// article, et pour un article reçu avant ce lot.
+  detachedFromSku String? @map("detached_from_sku")
+
   /// **Le geste du référentiel qui a posé les visuels** (UUID v7, ordonné
   /// dans le temps) — `null` tant qu'aucun fait de visuels n'a été projeté.
   /// Les visuels sont figés dans le fait : un fait ancien rejoué APRÈS un plus

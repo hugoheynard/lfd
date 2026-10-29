@@ -68,6 +68,15 @@ export interface CatalogProductHead {
   readonly requiresCold: boolean;
   /** Chaque déclinaison en vignette au rayon (fil v16, `plan-declinaisons-en-vignette.md`). */
   readonly variantsAsTiles: boolean;
+  /**
+   * **L'ancienne référence de vente** d'une fiche née d'un détachement — le SKU
+   * de la déclinaison d'origine (`plan-pro-voit-les-declinaisons.md`, L7).
+   * Porté par le fait seul : l'instantané du push reste en v16, il ne la
+   * demande pas. `null` pour toute autre fiche.
+   * Le commerce s'en sert pour lister les décisions tarifaires restées sur
+   * l'ancienne référence ; il ne les déplace jamais tout seul.
+   */
+  readonly detachedFromSku: string | null;
 }
 
 /**
@@ -141,6 +150,8 @@ export interface ProductFactInput {
    * déclinaison sans déclaration (règle B). Lue une fois par projection.
    */
   readonly catalogueUnion: readonly string[];
+  /** Le SKU de la déclinaison d'origine, si la fiche est née d'un détachement. */
+  readonly detachedFromSku: string | null;
 }
 
 /** La famille projetée — pure, le taux part tel quel, `null` compris. */
@@ -207,6 +218,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
       variantsAsTiles: product.variantsAsTiles ?? true,
+      detachedFromSku: input.detachedFromSku,
     },
     variants,
     gaps,
