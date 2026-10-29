@@ -9,7 +9,6 @@ import { OrderComposition } from "./application/services/order-composition.servi
 import { OrderCutoffGate } from "./application/services/order-cutoff-gate.service.js";
 import { OrderRevisabilityReading } from "./application/services/order-revisability-reading.js";
 import { OrderRevising } from "./application/services/order-revising.service.js";
-import { RevisionAliasNormalizing } from "./application/services/revision-alias-normalizing.js";
 import { RevisionWall } from "./application/services/revision-wall.js";
 import { OrderRevisionHistoryReader } from "./domain/ports/order-revision-history.reader.js";
 import { OrderRevisionRepository } from "./domain/ports/order-revision.repository.js";
@@ -34,7 +33,6 @@ export const ORDER_REVISION_PROVIDERS: readonly Provider[] = [
   OrderComposition,
   OrderCutoffGate,
   OrderRevising,
-  RevisionAliasNormalizing,
   RevisionWall,
   ReviseOrderHandler,
   QuoteOrderRevisionHandler,

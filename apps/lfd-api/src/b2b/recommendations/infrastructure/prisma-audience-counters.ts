@@ -8,13 +8,11 @@ import { Injectable, Logger } from "@nestjs/common";
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { SaleSkuAliasReader } from "../../catalog/domain/ports/sale-sku-alias.reader.js";
 import type { AudienceIncrement } from "../domain/audience-event-batch.js";
 import { AudienceCounterReader } from "../domain/ports/audience-counter.reader.js";
 import { AudienceCounterWriter } from "../domain/ports/audience-counter.writer.js";
 import { ComputedSuggestionCounterReader } from "../domain/ports/computed-suggestion-counter.reader.js";
 import { StaffSuggestionCounterReader } from "../domain/ports/staff-suggestion-counter.reader.js";
-import { foldCountersByArticle } from "./audience-counters-by-article.js";
 
 /**
  * L'écrivain des compteurs : **une** instruction pour tout le lot.
@@ -63,13 +61,10 @@ interface CounterRow {
   readonly count: number;
 }
 
-/** Le lecteur des compteurs, par jour puis article (`byArticle`). */
+/** Le lecteur des compteurs, par jour puis SKU. */
 @Injectable()
 export class PrismaAudienceCounterReader extends AudienceCounterReader {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly aliasReader: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
@@ -79,7 +74,7 @@ export class PrismaAudienceCounterReader extends AudienceCounterReader {
       FROM "growth"."product_audience_counters"
       WHERE "day" BETWEEN ${from}::date AND ${to}::date
       ORDER BY "day", "sku", "event", "placement", "source"`;
-    return byArticle(rows.flatMap(toView), this.aliasReader);
+    return rows.flatMap(toView);
   }
 }
 
@@ -92,15 +87,12 @@ const STAFF_SOURCE: ProductAudienceSource = "staff";
  */
 @Injectable()
 export class PrismaStaffSuggestionCounterReader extends StaffSuggestionCounterReader {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly aliasReader: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
   between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
-    return countersOfSource(this.prisma, from, to, STAFF_SOURCE, this.aliasReader);
+    return countersOfSource(this.prisma, from, to, STAFF_SOURCE);
   }
 }
 
@@ -113,15 +105,12 @@ const DATA_SOURCE: ProductAudienceSource = "data";
  */
 @Injectable()
 export class PrismaComputedSuggestionCounterReader extends ComputedSuggestionCounterReader {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly aliasReader: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
   between(from: string, to: string): Promise<readonly ProductAudienceCounterView[]> {
-    return countersOfSource(this.prisma, from, to, DATA_SOURCE, this.aliasReader);
+    return countersOfSource(this.prisma, from, to, DATA_SOURCE);
   }
 }
 
@@ -130,29 +119,13 @@ async function countersOfSource(
   from: string,
   to: string,
   source: ProductAudienceSource,
-  aliasReader: SaleSkuAliasReader,
 ): Promise<readonly ProductAudienceCounterView[]> {
   const rows = await prisma.$queryRaw<CounterRow[]>`
     SELECT to_char("day", 'YYYY-MM-DD') AS "day", "sku", "event", "placement", "source", "count"
     FROM "growth"."product_audience_counters"
     WHERE "day" BETWEEN ${from}::date AND ${to}::date AND "source" = ${source}
     ORDER BY "day", "sku", "event", "placement"`;
-  return byArticle(rows.flatMap(toView), aliasReader);
-}
-
-/**
- * **Les compteurs par ARTICLE** : un compteur posé sous une ancienne
- * référence (`PAI-001`) s'additionne à celui de sa cible
- * (`plan-defaut-sous-sa-reference.md`, § 2 a). Le pli se fait ici et non en
- * SQL : `growth` et `public` ne se joignent pas (`lint:cross-schema-join`).
- * Sans alias, rien ne fusionne et l'ordre de la requête tient.
- */
-async function byArticle(
-  views: readonly ProductAudienceCounterView[],
-  aliasReader: SaleSkuAliasReader,
-): Promise<readonly ProductAudienceCounterView[]> {
-  const aliases = await aliasReader.around([...new Set(views.map((view) => view.sku))]);
-  return foldCountersByArticle(views, aliases);
+  return rows.flatMap(toView);
 }
 
 /** Les CHECK en base tiennent les énumérations ; une valeur inconnue ne se rend pas. */

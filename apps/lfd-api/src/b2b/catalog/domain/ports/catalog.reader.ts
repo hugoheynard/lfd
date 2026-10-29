@@ -193,11 +193,10 @@ export abstract class CatalogReader {
    *
    * 🔴 **Un SKU produit ne rend plus rien** depuis la bascule du 2026-10-29
    * (`plan-defaut-sous-sa-reference.md`, L3). Il rendait le défaut, parce que
-   * la boutique l'avait toujours vendu sous lui ; il reste écrit dans les
-   * commandes passées, les paniers et les brouillons, et c'est
-   * `sale_sku_alias` qui le traduit — à l'entrée (`SaleReferenceIntake`) et à
-   * la lecture du passé (`SaleSkuAliases`), jamais ici. Le passé n'est pas
-   * réécrit ; la caisse ne connaît que des références canoniques.
+   * la boutique l'avait toujours vendu sous lui. La migration de bascule a
+   * réécrit toute référence produit stockée (commandes, paniers, brouillons,
+   * fournil, colisage…) vers celle du défaut : il n'en reste nulle part, et
+   * il n'y a pas de table de traduction (décision de Hugo, 2026-10-29).
    *
    * `null` si le produit est inconnu, masqué, ou sans taux de TVA — un article
    * qu'on ne sait pas facturer ne se vend pas.

@@ -64,15 +64,8 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
 import { PrismaCatalogPricePerKgReader } from "./infrastructure/prisma-catalog-price-per-kg.reader.js";
 import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
-import { SaleSkuAliasReader } from "./domain/ports/sale-sku-alias.reader.js";
 import { DefaultSaleReferenceReader } from "./domain/ports/default-sale-reference.reader.js";
 import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-default-sale-reference.reader.js";
-import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias.reader.js";
-import { SaleSkuAliasTableReader } from "./domain/ports/sale-sku-alias-table.reader.js";
-import { PrismaSaleSkuAliasTableReader } from "./infrastructure/prisma-sale-sku-alias-table.reader.js";
-import { SaleSkuAliasResolutionLog } from "./domain/ports/sale-sku-alias-resolution.log.js";
-import { LoggedSaleSkuAliasResolutionLog } from "./infrastructure/logged-sale-sku-alias-resolution.log.js";
-import { SaleReferenceIntake } from "./application/sale-reference-intake.service.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -184,11 +177,6 @@ import { SaleReferenceIntake } from "./application/sale-reference-intake.service
     PrismaSaleReferenceUsage,
     // Les anciennes références de vente (`plan-defaut-sous-sa-reference.md`,
     // L1) : tout regroupement par article les lit ; remplie par la bascule (L3).
-    { provide: SaleSkuAliasReader, useClass: PrismaSaleSkuAliasReader },
-    // L'alias à l'entrée et la table publiée à la boutique (§ 5, L2).
-    { provide: SaleSkuAliasTableReader, useClass: PrismaSaleSkuAliasTableReader },
-    { provide: SaleSkuAliasResolutionLog, useClass: LoggedSaleSkuAliasResolutionLog },
-    SaleReferenceIntake,
     // Une fiche montrée sous la référence de vente de son défaut (L3).
     { provide: DefaultSaleReferenceReader, useClass: PrismaDefaultSaleReferenceReader },
   ],
@@ -216,12 +204,6 @@ import { SaleReferenceIntake } from "./application/sale-reference-intake.service
     SaleOperations,
     ArticleSaleUnits,
     PrismaSaleReferenceUsage,
-    // Pour les regroupements par article de la commande, des alertes et des
-    // recommandations : une ancienne référence se lit comme sa cible.
-    SaleSkuAliasReader,
-    // Pour la passation, les devis, le panier gardé et le brouillon : une
-    // référence reçue est canonicalisée avant la résolution (§ 5).
-    SaleReferenceIntake,
     // Pour la vitrine éditoriale : ses tuiles désignent une fiche (L3).
     DefaultSaleReferenceReader,
     CatalogItemRepository,

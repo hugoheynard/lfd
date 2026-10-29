@@ -13,7 +13,6 @@ import {
 } from "../../../domain/ports/order-guard.reader.js";
 import { SaveOrderDraftCommand } from "../save-order-draft.command.js";
 import { SaveOrderDraftHandler } from "../save-order-draft.handler.js";
-import { intakeOver } from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
 
 /** Un brouillon **vide** : aucune ligne, aucun acheteur — l'état le plus courant. */
 const EMPTY: OrderDraftPayload = orderDraftPayloadSchema.parse({});
@@ -49,7 +48,7 @@ describe("SaveOrderDraftHandler", () => {
     // reviendrait à interdire d'interrompre un appel au milieu, ce que cette
     // fonctionnalité existe précisément pour permettre.
     const drafts = repository();
-    const handler = new SaveOrderDraftHandler(drafts, guard("active"), intakeOver());
+    const handler = new SaveOrderDraftHandler(drafts, guard("active"));
 
     const view = await handler.execute(new SaveOrderDraftCommand("cmp_1", "staff_1", EMPTY));
 
@@ -62,7 +61,7 @@ describe("SaveOrderDraftHandler", () => {
     // Le statut ne conditionne PAS la mise de côté : un dossier qu'on est en
     // train d'ouvrir est exactement celui pour lequel on prépare une commande.
     const drafts = repository();
-    const handler = new SaveOrderDraftHandler(drafts, guard("pending"), intakeOver());
+    const handler = new SaveOrderDraftHandler(drafts, guard("pending"));
 
     await handler.execute(new SaveOrderDraftCommand("cmp_1", "staff_1", EMPTY));
 
@@ -70,7 +69,7 @@ describe("SaveOrderDraftHandler", () => {
   });
 
   it("refuse une société inconnue", async () => {
-    const handler = new SaveOrderDraftHandler(repository(), guard(null), intakeOver());
+    const handler = new SaveOrderDraftHandler(repository(), guard(null));
 
     await expect(
       handler.execute(new SaveOrderDraftCommand("cmp_absent", "staff_1", EMPTY)),

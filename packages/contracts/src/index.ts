@@ -830,7 +830,6 @@ export type {
   ShopOperationState,
   ShopOperationText,
   ShopOperationView,
-  ShopSaleSkuAliasView,
   ShopShelfView,
 } from "./shop-catalogue.js";
 export type {

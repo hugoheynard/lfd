@@ -7,9 +7,9 @@
  * la bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3). Le défaut
  * se vendait jusque-là sous le SKU de son produit (`PAI-001`), qui voulait
  * donc dire « le défaut du moment » : un changement de défaut faisait glisser
- * tout ce qui était posé dessus. La référence produit ne vend plus rien ; elle
- * reste une ancienne clé, que `sale_sku_alias` traduit à l'entrée
- * (`SaleReferenceIntake`) et à la lecture du passé (`SaleSkuAliases`).
+ * tout ce qui était posé dessus. La référence produit ne vend plus rien, et
+ * la migration de bascule l'a réécrite partout où elle était stockée — sans
+ * table de traduction (décision de Hugo, 2026-10-29).
  *
  * Gardée en fonction plutôt qu'inlinée : les jumelles en requête
  * (`soldUnderShopSkus`, `PrismaWithdrawnShopSkusReader`) et tous les lecteurs

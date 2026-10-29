@@ -2,7 +2,6 @@ import type { CatalogAdminItemView, StaffSuggestionReader } from "@lfd/contracts
 import { Injectable } from "@nestjs/common";
 
 import { CatalogAdminReader } from "../../catalog/domain/ports/catalog-admin.reader.js";
-import { SaleSkuAliasReader } from "../../catalog/domain/ports/sale-sku-alias.reader.js";
 import { audienceIncludes } from "../../catalog/domain/served-to.js";
 import { NotServedCauseReader } from "../domain/ports/not-served-cause.reader.js";
 import type { NotServedCause } from "../domain/services/suggestion-alerts.js";
@@ -17,17 +16,13 @@ import type { NotServedCause } from "../domain/services/suggestion-alerts.js";
  * Le paramétrage est lu entier, une fois par appel — l'alerte ne l'appelle
  * qu'avec des SKU déjà refusés, rarement plus d'une poignée.
  *
- * Par SKU de VENTE, après l'alias (`plan-defaut-sous-sa-reference.md`, L3) :
- * il filtrait par référence produit, donc toutes les déclinaisons d'une fiche,
- * tant que le défaut se vendait sous elle. Une ancienne référence se juge
- * comme sa cible, et la clé rendue reste celle demandée.
+ * Par SKU de VENTE (`plan-defaut-sous-sa-reference.md`, L3) : il filtrait par
+ * référence produit, donc toutes les déclinaisons d'une fiche, tant que le
+ * défaut se vendait sous elle.
  */
 @Injectable()
 export class CatalogNotServedCauseReader extends NotServedCauseReader {
-  constructor(
-    private readonly admin: CatalogAdminReader,
-    private readonly aliases: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly admin: CatalogAdminReader) {
     super();
   }
 
@@ -38,12 +33,12 @@ export class CatalogNotServedCauseReader extends NotServedCauseReader {
     if (shopSkus.length === 0) {
       return new Map();
     }
-    const [items, aliases] = await Promise.all([this.admin.list(), this.aliases.around(shopSkus)]);
+    const items = await this.admin.list();
     return new Map(
       shopSkus.map((sku) => [
         sku,
         causeOf(
-          items.filter((item) => item.sku === aliases.canonical(sku)),
+          items.filter((item) => item.sku === sku),
           audience,
         ),
       ]),

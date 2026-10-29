@@ -79,7 +79,6 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
-import { intakeOver } from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -375,7 +374,6 @@ function handler(
       options.plans ?? openPlanGate(),
       options.salesTerms ?? new FixedSalesTerms(),
       new FixedLineClassifications(),
-      intakeOver(),
     ),
     repo(sink),
     options.payments ?? payments(),
@@ -739,7 +737,6 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
         openPlanGate(),
         new FixedSalesTerms(),
         new FixedLineClassifications(),
-        intakeOver(),
       ),
       repo(sink),
       payments(intents),

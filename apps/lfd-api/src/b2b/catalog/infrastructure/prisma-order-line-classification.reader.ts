@@ -2,7 +2,6 @@ import { categoryPathOf } from "@lfd/catalog-sync";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
-import { SaleSkuAliasReader } from "../domain/ports/sale-sku-alias.reader.js";
 import {
   type OrderLineClassification,
   OrderLineClassificationReader,
@@ -25,18 +24,10 @@ import { shopSkuOf } from "../domain/shop-sku.js";
  *
  * La lignée ne coûte une lecture de plus que si une famille lue a une parente
  * — la même économie que `PrismaCatalogReader.lineage`.
- *
- * Une ancienne référence (`PAI-001`) se range comme sa cible : la remise de
- * retrait se RECALCULE sur les commandes ouvertes, qui la portent encore
- * après la bascule (`plan-defaut-sous-sa-reference.md`, § 10, D-d). La clé
- * rendue reste la référence demandée — c'est elle que la ligne porte.
  */
 @Injectable()
 export class PrismaOrderLineClassificationReader extends OrderLineClassificationReader {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly aliasReader: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
@@ -44,10 +35,8 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
     if (skus.length === 0) {
       return new Map();
     }
-    const aliases = await this.aliasReader.around(skus);
-    const canonicals = [...new Set(skus.map((sku) => aliases.canonical(sku)))];
     const rows = await this.prisma.catalogItem.findMany({
-      where: { ...soldUnderShopSkus(canonicals), ...STILL_SOLD },
+      where: { ...soldUnderShopSkus(skus), ...STILL_SOLD },
       select: {
         sku: true,
         productSku: true,
@@ -59,20 +48,15 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
       orderBy: [{ sku: "asc" }],
     });
     const lineage = await this.lineage(rows.some((row) => row.category.parentId !== null));
-    const byShopSku = new Map<string, OrderLineClassification>();
+    const found = new Map<string, OrderLineClassification>();
     for (const row of rows) {
-      byShopSku.set(shopSkuOf(row), {
+      found.set(shopSkuOf(row), {
         productId: row.productId,
         categoryId: row.categoryId,
         categoryPath: lineage(row.categoryId),
       });
     }
-    return new Map(
-      skus.flatMap((sku) => {
-        const found = byShopSku.get(aliases.canonical(sku));
-        return found === undefined ? [] : [[sku, found] as const];
-      }),
-    );
+    return found;
   }
 
   private async lineage(nested: boolean): Promise<(familyId: string) => readonly string[]> {

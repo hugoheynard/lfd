@@ -6,9 +6,7 @@ import {
   type SaleReferenceQuery,
   type SaleReferenceUse,
 } from "../../../pim/channels/b2b-platform/sale-reference-usage/sale-reference-usage.js";
-import { SaleSkuAliasReader } from "../domain/ports/sale-sku-alias.reader.js";
 import { shopSkuOf } from "../domain/shop-sku.js";
-import { usesBySpelling } from "./sale-reference-uses.js";
 
 /** Les portées tarifaires qui nomment une référence (`saleReferenceOf`, pricing). */
 const REFERENCE_SCOPES = ["product", "variant"];
@@ -27,34 +25,26 @@ type Lookup = (skus: readonly string[]) => Promise<ReadonlySet<string>>;
  *
  * Tout statut compte : une commande annulée ou un brouillon, une décision
  * close, un gabarit archivé ont été lus dans l'unité d'alors.
- *
- * Toutes les graphies comptent : la référence de vente ET ses anciennes
- * références (`sale_sku_alias`). Après la bascule, `PAI-001-1` a été vendue
- * dès qu'une ligne `PAI-001` existe — sans cela, son unité redeviendrait
- * modifiable (`plan-defaut-sous-sa-reference.md`, § 10, D-c).
  */
 @Injectable()
 export class PrismaSaleReferenceUsage extends SaleReferenceUsage {
-  constructor(
-    private readonly prisma: PrismaService,
-    private readonly aliasReader: SaleSkuAliasReader,
-  ) {
+  constructor(private readonly prisma: PrismaService) {
     super();
   }
 
   async usesOf(
     references: readonly SaleReferenceQuery[],
   ): Promise<ReadonlyMap<string, readonly SaleReferenceUse[]>> {
-    const shopSkus = references.map((reference) => ({
-      sku: reference.sku,
-      shopSku: shopSkuOf(reference),
-    }));
-    const aliases = await this.aliasReader.around(shopSkus.map(({ shopSku }) => shopSku));
-    const spellings = [...aliases.spellingsOfAll(shopSkus.map(({ shopSku }) => shopSku))];
+    const shopSkus = [...new Set(references.map(shopSkuOf))];
     const found = await Promise.all(
-      this.lookups().map(async ([use, lookup]) => [use, await lookup(spellings)] as const),
+      this.lookups().map(async ([use, lookup]) => [use, await lookup(shopSkus)] as const),
     );
-    return usesBySpelling(shopSkus, found, aliases);
+    return new Map(
+      references.map((reference) => {
+        const shopSku = shopSkuOf(reference);
+        return [reference.sku, found.filter(([, skus]) => skus.has(shopSku)).map(([use]) => use)];
+      }),
+    );
   }
 
   private lookups(): readonly (readonly [SaleReferenceUse, Lookup])[] {

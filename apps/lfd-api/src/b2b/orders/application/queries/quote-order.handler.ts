@@ -3,7 +3,6 @@ import type { OrderQuoteLineView, OrderQuotePayload, OrderQuoteView } from "@lfd
 
 import { OrderCutoffNotice } from "../services/order-cutoff-notice.service.js";
 import { OrderDrafting } from "../services/order-drafting.service.js";
-import { SaleReferenceIntake } from "../../../catalog/application/sale-reference-intake.service.js";
 import { OrderGuardReader } from "../../domain/ports/order-guard.reader.js";
 import { ensureOrderMember } from "../../domain/services/order-access.js";
 import type { ResolvedOrderLine } from "../services/order-line-pricing.service.js";
@@ -44,7 +43,6 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
     private readonly drafting: OrderDrafting,
     private readonly guard: OrderGuardReader,
     private readonly cutoffNotice: OrderCutoffNotice,
-    private readonly intake: SaleReferenceIntake,
   ) {}
 
   async execute(query: QuoteOrderQuery): Promise<OrderQuoteView> {
@@ -55,9 +53,6 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
       // du côté de la lecture que la fuite serait silencieuse.
       ensureOrderMember(await this.guard.roleOf(query.actorUserId, companyId), companyId);
     }
-    // Une ancienne référence se chiffre sous l'article qu'elle désigne, et la
-    // ligne du devis rend cette référence-là (`plan-defaut-sous-sa-reference.md`, § 5).
-    const requested = await this.intake.normalized(query.payload.lines, "quote");
 
     const lines = await this.drafting.quote(
       {
@@ -67,7 +62,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
         placedByUserId: query.actorUserId,
         placedByStaffId: query.asStaff ? query.actorUserId : null,
       },
-      requested.map((line) => ({
+      query.payload.lines.map((line) => ({
         sku: line.sku,
         productName: "",
         unitPriceMillicents: 0,
@@ -89,7 +84,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
         requestedDeliveryDate === undefined
           ? null
           : await this.cutoffNotice.forDay(
-              requested.map((line) => line.sku),
+              query.payload.lines.map((line) => line.sku),
               requestedDeliveryDate,
             ),
       // Le sous-total est un MONTANT : il s'arrondit au centime, une fois par

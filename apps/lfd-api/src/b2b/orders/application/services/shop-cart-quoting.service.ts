@@ -36,7 +36,6 @@ import { CartAdjustments } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
-import { SaleReferenceIntake } from "../../../catalog/application/sale-reference-intake.service.js";
 
 /**
  * Ce que demande un décompte : le panier, la société pour laquelle on chiffre
@@ -94,7 +93,6 @@ export class ShopCartQuoting {
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly clock: Clock,
     private readonly deliveryVat: OrderDeliveryVatReader,
-    private readonly intake: SaleReferenceIntake,
   ) {}
 
   /**
@@ -128,11 +126,8 @@ export class ShopCartQuoting {
   async quote(request: ShopCartQuoteRequest): Promise<ShopCartQuote> {
     // Une ligne dont l'article a changé d'unité est RETIRÉE, jamais convertie
     // (`plan-changer-l-unite-de-vente.md`, § 8) ; le client la rajoute.
-    // Une ancienne référence se chiffre sous l'article qu'elle désigne, et les
-    // lignes du devis rendent cette référence-là (`plan-defaut-sous-sa-reference.md`, § 5).
-    const lines = await this.intake.normalized(request.payload.lines, "shop_quote");
     const { resolved, kept, removed } = await this.pricing.resolveWithoutStaleUnits(
-      lines,
+      request.payload.lines,
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
       // parcours par défaut de la boutique, et `applies` le sait déjà.
       { companyId: request.companyId },

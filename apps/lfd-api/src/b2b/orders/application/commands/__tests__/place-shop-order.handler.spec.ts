@@ -98,7 +98,6 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
-import { intakeOver } from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -297,7 +296,6 @@ function drafting(
     plans,
     salesTerms,
     new FixedLineClassifications(),
-    intakeOver(),
   );
 }
 
