@@ -7,9 +7,9 @@ import type {
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import {
+  DeliveryColdSkusReader,
   DeliveryOrderLinesReader,
   DeliveryOrdersReader,
-  DeliveryProductsReader,
 } from "../../channels/commerce/index.js";
 import { BinCatalogReader } from "../../domain/ports/bin-catalog.reader.js";
 import { DeliveryLoadingReader } from "../../domain/ports/delivery-loading.reader.js";
@@ -48,7 +48,7 @@ export class GetDeliveryPackingProposalHandler implements IQueryHandler<
   constructor(
     private readonly orders: DeliveryOrdersReader,
     private readonly lines: DeliveryOrderLinesReader,
-    private readonly products: DeliveryProductsReader,
+    private readonly cold: DeliveryColdSkusReader,
     private readonly catalog: BinCatalogReader,
     private readonly loading: DeliveryLoadingReader,
     private readonly transferred: TransferredOrdersReader,
@@ -76,8 +76,11 @@ export class GetDeliveryPackingProposalHandler implements IQueryHandler<
 
   /** Les lignes fusionnées par SKU, avec le froid de la fiche produit. */
   private async orderLines(orderId: string): Promise<readonly DeliveryPackingLineView[]> {
-    const [lines, sold] = await Promise.all([this.lines.linesOf(orderId), this.products.sold()]);
-    return packingLinesOf(lines, sold);
+    const [lines, coldSkus] = await Promise.all([
+      this.lines.linesOf(orderId),
+      this.cold.coldSkus(),
+    ]);
+    return packingLinesOf(lines, coldSkus);
   }
 
   /** Le partage en dernier recours, ou `null` (v2-4). */

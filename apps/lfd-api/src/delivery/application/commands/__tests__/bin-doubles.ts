@@ -1,4 +1,8 @@
-import { DeliveryProductsReader, type DeliveryProduct } from "../../../channels/commerce/index.js";
+import {
+  DeliveryColdSkusReader,
+  DeliveryProductsReader,
+  type DeliveryProduct,
+} from "../../../channels/commerce/index.js";
 import type { BinCapacityView, BinTypeView } from "@lfd/contracts";
 
 import type { BinCapacity } from "../../../domain/entities/bin-capacity.js";
@@ -125,5 +129,16 @@ export class FixedDeliveryProducts extends DeliveryProductsReader {
 
   sold(): Promise<readonly DeliveryProduct[]> {
     return Promise.resolve(this.products);
+  }
+}
+
+/** Les SKU de vente froids, figés. */
+export class FixedColdSkus extends DeliveryColdSkusReader {
+  constructor(private readonly skus: readonly string[]) {
+    super();
+  }
+
+  coldSkus(): Promise<ReadonlySet<string>> {
+    return Promise.resolve(new Set(this.skus));
   }
 }

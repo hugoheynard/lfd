@@ -45,6 +45,7 @@
   "test/card-invoices.e2e-spec.ts": 9150,
   "test/cart-suggestions.e2e-spec.ts": 7409,
   "test/catalog-batch-writes.e2e-spec.ts": 9500,
+  "test/catalog-cold-shop-skus.e2e-spec.ts": 13236,
   "test/catalog-facts-rules.e2e-spec.ts": 9000,
   "test/catalog-facts.e2e-spec.ts": 13869,
   "test/catalog-ingest-facts.e2e-spec.ts": 5356,

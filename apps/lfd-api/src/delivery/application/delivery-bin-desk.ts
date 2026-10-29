@@ -1,4 +1,4 @@
-import { DeliveryProductsReader } from "../channels/commerce/index.js";
+import { DeliveryColdSkusReader } from "../channels/commerce/index.js";
 import { DeclaredBinsReader } from "../domain/ports/declared-bins.reader.js";
 import type { DeliveryBinFreeHalvesView, DeliveryPackingProposalView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -65,7 +65,7 @@ export class DeliveryBinDesk extends BinDesk {
     private readonly freeHalvesQuery: GetDeliveryBinFreeHalvesHandler,
     private readonly catalog: BinCatalogReader,
     private readonly declared: DeclaredBinsReader,
-    private readonly products: DeliveryProductsReader,
+    private readonly cold: DeliveryColdSkusReader,
   ) {
     super();
   }
@@ -122,14 +122,14 @@ export class DeliveryBinDesk extends BinDesk {
     if (orderIds.length === 0) {
       return { coldSkus: new Set(), isothermBinIds: new Set() };
     }
-    const [sold, types, bins] = await Promise.all([
-      this.products.sold(),
+    const [coldSkus, types, bins] = await Promise.all([
+      this.cold.coldSkus(),
       this.catalog.listTypes(),
       this.declared.liveAmong(orderIds),
     ]);
     const isotherm = new Set(types.filter((type) => type.isotherm).map((type) => type.id));
     return {
-      coldSkus: new Set(sold.filter((product) => product.requiresCold).map((p) => p.sku)),
+      coldSkus,
       isothermBinIds: new Set(
         bins.filter((bin) => isotherm.has(bin.binTypeId)).map((bin) => bin.id),
       ),

@@ -1,7 +1,7 @@
 import type { BinTypeView, VehicleView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { DeliveryOrderLinesReader, DeliveryProductsReader } from "../channels/commerce/index.js";
+import { DeliveryColdSkusReader, DeliveryOrderLinesReader } from "../channels/commerce/index.js";
 import { BinCatalogReader } from "../domain/ports/bin-catalog.reader.js";
 import { type DeclaredBinRow, DeclaredBinsReader } from "../domain/ports/declared-bins.reader.js";
 import { FleetReader } from "../domain/ports/fleet.reader.js";
@@ -55,7 +55,7 @@ export class ProposalCapacity {
     private readonly catalog: BinCatalogReader,
     private readonly declared: DeclaredBinsReader,
     private readonly lines: DeliveryOrderLinesReader,
-    private readonly products: DeliveryProductsReader,
+    private readonly cold: DeliveryColdSkusReader,
   ) {}
 
   async of(
@@ -72,12 +72,15 @@ export class ProposalCapacity {
     ]);
     const byOrder = groupByOrder(declared);
     const toEstimate = unique.filter((orderId) => !byOrder.has(orderId));
-    const [sold, perOrder] = await Promise.all([
-      toEstimate.length === 0 ? Promise.resolve([]) : this.products.sold(),
+    const [coldSkus, perOrder] = await Promise.all([
+      toEstimate.length === 0 ? Promise.resolve(new Set<string>()) : this.cold.coldSkus(),
       Promise.all(toEstimate.map((orderId) => this.lines.linesOf(orderId))),
     ]);
     const linesOf = new Map(
-      toEstimate.map((orderId, index) => [orderId, packingLinesOf(perOrder[index] ?? [], sold)]),
+      toEstimate.map((orderId, index) => [
+        orderId,
+        packingLinesOf(perOrder[index] ?? [], coldSkus),
+      ]),
     );
     const inService = types.filter((type) => type.archivedAt === null).map(packingTypeOf);
     const binTypes = new Map(types.map((type) => [type.id, planBinTypeOf(type)]));

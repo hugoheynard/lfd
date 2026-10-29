@@ -37,6 +37,8 @@ export {
   type DeliveryShipmentNoteNumber,
 } from "./delivery-note-numbers.reader.js";
 export { DeliveryProductsReader, type DeliveryProduct } from "./delivery-products.reader.js";
+// Le froid par SKU de vente, toutes audiences (plan pro-voit-les-déclinaisons, L0, 2026-10-29).
+export { DeliveryColdSkusReader } from "./delivery-cold-skus.reader.js";
 export {
   DeliveryProceduresReader,
   type DeliveryOrderProcedure,

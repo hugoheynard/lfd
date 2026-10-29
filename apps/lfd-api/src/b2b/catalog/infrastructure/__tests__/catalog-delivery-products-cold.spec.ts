@@ -13,7 +13,7 @@ class FixedColdSkus extends CatalogColdReader {
   constructor(private readonly skus: readonly string[]) {
     super();
   }
-  coldProductSkus(): Promise<ReadonlySet<string>> {
+  coldShopSkus(): Promise<ReadonlySet<string>> {
     return Promise.resolve(new Set(this.skus));
   }
 }

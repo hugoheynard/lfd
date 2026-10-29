@@ -1,4 +1,4 @@
-import { FixedBinCatalog, FixedDeliveryProducts } from "../commands/__tests__/bin-doubles.js";
+import { FixedBinCatalog, FixedColdSkus } from "../commands/__tests__/bin-doubles.js";
 import {
   binTypeView,
   departingAll,
@@ -13,13 +13,10 @@ const CATALOG = new FixedBinCatalog(
     { binTypeId: "bin_s", sku: "TAR-001", units: 4 },
   ],
 );
-const PRODUCTS = new FixedDeliveryProducts([
-  { sku: "VIE-001", name: "Croissant", requiresCold: false },
-  { sku: "TAR-001", name: "Tarte", requiresCold: true },
-]);
+const COLD = new FixedColdSkus(["TAR-001"]);
 
 function sheets(departures: FixedDepartures): StopSheets {
-  return new StopSheets(departures, PRODUCTS, CATALOG);
+  return new StopSheets(departures, COLD, CATALOG);
 }
 
 describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {

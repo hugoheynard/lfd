@@ -10,7 +10,7 @@ import {
 } from "../../../domain/ports/declared-bins.reader.js";
 import type { FleetReader } from "../../../domain/ports/fleet.reader.js";
 import { ProposalCapacity } from "../../proposal-capacity.js";
-import { FixedBinCatalog, FixedDeliveryProducts } from "../../commands/__tests__/bin-doubles.js";
+import { FixedBinCatalog, FixedColdSkus } from "../../commands/__tests__/bin-doubles.js";
 import { vehicleView } from "../../commands/__tests__/routing-doubles.js";
 import { binTypeView } from "./packing-doubles.js";
 
@@ -82,6 +82,6 @@ export function proposalCapacity(
     new FixedBinCatalog([binTypeView(BIN_M)], [{ binTypeId: BIN_M, sku: BREAD_SKU, units: 10 }]),
     new FixedDeclaredBins(options.declared ?? []),
     options.lines ?? new BreadForEveryOrder(),
-    new FixedDeliveryProducts([]),
+    new FixedColdSkus([]),
   );
 }

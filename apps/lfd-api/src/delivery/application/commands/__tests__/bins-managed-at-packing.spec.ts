@@ -24,7 +24,7 @@ import {
 } from "../../queries/__tests__/packing-doubles.js";
 import { GetDeliveryBinFreeHalvesHandler } from "../../queries/get-delivery-bin-free-halves.handler.js";
 import { GetDeliveryPackingProposalHandler } from "../../queries/get-delivery-packing-proposal.handler.js";
-import { FixedBinCatalog, FixedDeliveryProducts } from "./bin-doubles.js";
+import { FixedBinCatalog, FixedColdSkus } from "./bin-doubles.js";
 import { FixedManagedOrders } from "./managed-orders-double.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
 import {
@@ -90,7 +90,7 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
         new GetDeliveryPackingProposalHandler(
           new FixedDeliveryOrders([deliveryOn("o_listed", DAY)]),
           new FixedOrderLines(new Map()),
-          new FixedDeliveryProducts([]),
+          new FixedColdSkus([]),
           new FixedBinCatalog([], []),
           new FixedLoading([]),
           new FixedTransferredOrders(),
@@ -109,10 +109,7 @@ describe("DeliveryBinDesk — la porte du colisage, aux règles de la livraison"
           { orderId: "o_listed", id: "b_dry", binTypeId: "t_dry", half: null, physicalBinId: null },
           { orderId: "o_other", id: "b_far", binTypeId: "t_iso", half: null, physicalBinId: null },
         ]),
-        new FixedDeliveryProducts([
-          { sku: "FLAN", name: "Flan", requiresCold: true },
-          { sku: "PAIN", name: "Pain", requiresCold: false },
-        ]),
+        new FixedColdSkus(["FLAN"]),
       ),
     };
   }

@@ -1,5 +1,5 @@
 import { BinsNotDeclarableError } from "../../../domain/errors/delivery-loading-errors.js";
-import { FixedBinCatalog, FixedDeliveryProducts } from "../../commands/__tests__/bin-doubles.js";
+import { FixedBinCatalog, FixedColdSkus } from "../../commands/__tests__/bin-doubles.js";
 import { FixedDeliveryOrders } from "../../commands/__tests__/round-doubles.js";
 import { GetDeliveryBinFreeHalvesHandler } from "../get-delivery-bin-free-halves.handler.js";
 import { GetDeliveryBinFreeHalvesQuery } from "../get-delivery-bin-free-halves.query.js";
@@ -33,10 +33,7 @@ const CATALOG = new FixedBinCatalog(
   ],
 );
 
-const PRODUCTS = new FixedDeliveryProducts([
-  { sku: "VIE-001", name: "Croissant", requiresCold: false },
-  { sku: "TAR-001", name: "Tarte", requiresCold: true },
-]);
+const COLD = new FixedColdSkus(["TAR-001"]);
 
 const LINES = new FixedOrderLines(
   new Map([
@@ -56,7 +53,7 @@ function proposalHandler(loading = new FixedLoading([])) {
   return new GetDeliveryPackingProposalHandler(
     new FixedDeliveryOrders(ORDERS),
     LINES,
-    PRODUCTS,
+    COLD,
     CATALOG,
     loading,
     new FixedTransferredOrders(),

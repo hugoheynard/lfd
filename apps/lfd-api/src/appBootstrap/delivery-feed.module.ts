@@ -3,6 +3,7 @@ import { Global, Module } from "@nestjs/common";
 import { AccountModule } from "../b2b/account/account.module.js";
 import { CommerceDeliveryAddressPointCorrector } from "../b2b/account/application/services/commerce-delivery-address-point-corrector.js";
 import { CatalogModule } from "../b2b/catalog/catalog.module.js";
+import { CatalogDeliveryColdSkusReader } from "../b2b/catalog/infrastructure/catalog-delivery-cold-skus.reader.js";
 import { CatalogDeliveryProductsReader } from "../b2b/catalog/infrastructure/catalog-delivery-products.reader.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PrismaCommerceDayVersionReader } from "../b2b/orders/infrastructure/prisma-commerce-day-version.reader.js";
@@ -41,6 +42,7 @@ import {
   DeliveryOrdersReader,
   DeliveryOrderStatesReader,
   DeliveryProceduresReader,
+  DeliveryColdSkusReader,
   DeliveryProductsReader,
   DeliveryStepPhotosReader,
   DepartureCandidatesReader,
@@ -119,6 +121,8 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     { provide: DepartureCandidatesReader, useClass: PickupDepartureCandidatesReader },
     { provide: DeliveryOrdersReader, useClass: PrismaDeliveryOrdersReader },
     { provide: DeliveryProductsReader, useClass: CatalogDeliveryProductsReader },
+    // Le froid par SKU de vente, toutes audiences (L0, 2026-10-29).
+    { provide: DeliveryColdSkusReader, useClass: CatalogDeliveryColdSkusReader },
     { provide: DeliveryOrderLinesReader, useClass: PrismaDeliveryOrderLinesReader },
     { provide: DeliveryDeparturesReader, useClass: PrismaDeliveryDeparturesReader },
     // Le numéro du BL de chaque envoi, sur les papiers de tournée (2026-10-26).
@@ -151,6 +155,7 @@ import { ResolvedDepartureSiteReader } from "../delivery/infrastructure/resolved
     DepartureCandidatesReader,
     DeliveryOrdersReader,
     DeliveryProductsReader,
+    DeliveryColdSkusReader,
     DeliveryOrderLinesReader,
     DeliveryDeparturesReader,
     DeliveryNoteNumbersReader,

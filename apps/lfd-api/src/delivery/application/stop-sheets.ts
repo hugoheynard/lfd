@@ -3,7 +3,7 @@ import { Injectable } from "@nestjs/common";
 
 import {
   DeliveryDeparturesReader,
-  DeliveryProductsReader,
+  DeliveryColdSkusReader,
   type DeliveryShortfall,
 } from "../channels/commerce/index.js";
 import { BinCatalogReader } from "../domain/ports/bin-catalog.reader.js";
@@ -40,7 +40,7 @@ export interface StopSheet {
 export class StopSheets {
   constructor(
     private readonly departures: DeliveryDeparturesReader,
-    private readonly products: DeliveryProductsReader,
+    private readonly cold: DeliveryColdSkusReader,
     private readonly catalog: BinCatalogReader,
   ) {}
 
@@ -49,8 +49,8 @@ export class StopSheets {
     if (unique.length === 0) {
       return new Map();
     }
-    const [sold, types, capacities, perOrder] = await Promise.all([
-      this.products.sold(),
+    const [coldSkus, types, capacities, perOrder] = await Promise.all([
+      this.cold.coldSkus(),
       this.catalog.listTypes(),
       this.catalog.activeCapacities(),
       Promise.all(unique.map((orderId) => this.departures.departureOf(orderId))),
@@ -59,7 +59,7 @@ export class StopSheets {
     return new Map(
       unique.map((orderId, index): [string, StopSheet] => {
         const departure = perOrder[index];
-        const lines = packingLinesOf(departure?.lines ?? [], sold);
+        const lines = packingLinesOf(departure?.lines ?? [], coldSkus);
         const binsExpected =
           lines.length === 0
             ? null
