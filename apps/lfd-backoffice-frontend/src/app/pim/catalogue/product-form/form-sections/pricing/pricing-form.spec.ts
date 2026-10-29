@@ -614,7 +614,7 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     expect(blockTitles(host)[0]).toBe('Unité de vente');
     expect(labels(host)).toContain('Prix public TTC');
     expect(labels(host)).toContain('Prix au kilo public TTC');
-    expect(labels(host)).not.toContain('Pas de vente');
+    expect(labels(host)).not.toContain('Palier de poids');
   });
 
   it('la bascule au poids passe les prix au kg, montre le pas et le minimum, masque les prix au kilo', () => {
@@ -629,7 +629,7 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     const seen = labels(host);
     expect(seen).toContain('Prix public TTC au kg');
     expect(seen).toContain('Prix pro HT au kg');
-    expect(seen).toContain('Pas de vente');
+    expect(seen).toContain('Palier de poids');
     expect(seen).toContain('Minimum');
     expect(seen).not.toContain('Prix au kilo public TTC');
     expect(seen).not.toContain('Prix au kilo pro HT');
@@ -643,7 +643,7 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     store.saleUnit.set('weight');
     const { host } = render();
 
-    const step = inputUnder(host, 'Pas de vente');
+    const step = inputUnder(host, 'Palier de poids');
     step.value = '100';
     step.dispatchEvent(new Event('input'));
     const min = inputUnder(host, 'Minimum');

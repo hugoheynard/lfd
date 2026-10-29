@@ -90,7 +90,7 @@ const GAP_LABELS: Readonly<Record<string, string>> = {
   // Vente au poids sans pas (`vente-au-poids.md`, P1). « pas de saisie » se
   // lisait « aucune saisie » (Hugo, 2026-10-29, devant son gravelax) : le
   // libellé dit désormais ce qu'il faut saisir, et où.
-  weight_step: 'pas de vente au poids, en grammes (carte Tarif & TVA)',
+  weight_step: 'palier de poids, en grammes (carte Tarif & TVA)',
   // Plus calculé depuis le lot R3 (2026-10-27, le prix pro est toujours
   // saisi) : gardé pour relire les manques publiés avant.
   pro_price_rule: 'rapport pro',
