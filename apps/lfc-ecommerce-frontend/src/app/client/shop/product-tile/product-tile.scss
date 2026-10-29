@@ -1,6 +1,10 @@
 :host {
   display: block;
   min-width: 0;
+  /* Une vignette se touche, elle ne se sélectionne pas : un appui long ou un
+     double-clic sur « + » surlignait le nom et le prix (Hugo, 2026-10-29). */
+  user-select: none;
+  -webkit-user-select: none;
   /* La vignette se met en page d'après la place de SA case (container
      queries), pas d'après l'écran : une tuile de vitrine et un best-seller
      hors vitrine n'ont pas la même largeur à la même taille d'écran. */

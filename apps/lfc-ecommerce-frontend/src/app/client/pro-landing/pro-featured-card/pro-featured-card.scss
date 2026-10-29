@@ -1,4 +1,7 @@
 :host {
+  /* Comme les vignettes du rayon : une carte se touche, elle ne se sélectionne pas. */
+  user-select: none;
+  -webkit-user-select: none;
   display: block;
 }
 
