@@ -1,4 +1,5 @@
 import type { CorpusProduct } from "./corpus.js";
+import { rootFamilyOf } from "./family-roots.js";
 
 /** Le rayon dont chaque pièce porte un prix au kilo au semis. */
 const PRICED_PER_KG_CATEGORY = "Pains";
@@ -29,7 +30,7 @@ export interface SeedPricePerKg {
  * un sous son prix. Rien hors du rayon Pains, rien sans prix ni poids.
  */
 export function seedPricePerKg(product: CorpusProduct): SeedPricePerKg {
-  if (product.categoryName !== PRICED_PER_KG_CATEGORY) {
+  if (rootFamilyOf(product.categoryName) !== PRICED_PER_KG_CATEGORY) {
     return {};
   }
   const grams = product.weightGrams ?? ASSUMED_WEIGHT_GRAMS[product.sku] ?? null;

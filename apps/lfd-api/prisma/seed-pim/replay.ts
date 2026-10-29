@@ -10,12 +10,17 @@ import { ProductNotActivatableError } from "../../src/pim/catalogue/product/doma
 import { SetProductVatCommand } from "../../src/pim/catalogue/product/application/set-product-vat.js";
 import { UpdateProductEditorialCommand } from "../../src/pim/catalogue/product/application/update-product-editorial.js";
 import { UpdateVariantPricingCommand } from "../../src/pim/catalogue/product/application/update-variant-pricing.js";
+import { UpdateProductIdentityCommand } from "../../src/pim/catalogue/product/application/update-product-identity.js";
 import type { NutritionValues } from "../../src/pim/catalogue/product/domain/value-objects/nutrition-declaration.js";
 import type { PrismaService } from "../../src/platform/database/prisma.service.js";
 import type { CorpusNutrition, CorpusProduct } from "./corpus.js";
 import { declarationFor } from "./declarations.js";
 import { toContextVat, type Registry } from "./registry.js";
 import { seedPricePerKg } from "./price-per-kg.js";
+import {
+  localizedText,
+  type LocalizedText,
+} from "../../src/pim/catalogue/shared/domain/value-objects/localized-text.js";
 
 /**
  * Le rejeu d'une fiche — **le cycle complet, dans l'ordre où un humain le
@@ -109,6 +114,18 @@ async function openOrFind(
   const existing = await prisma.product.findUnique({ where: { sku: product.sku } });
   if (existing !== null) {
     report.updated += 1;
+    // Les familles du semis s'imbriquent depuis le 2026-10-29 : une fiche semée
+    // avant reste dans sa famille de tête tant qu'on ne la RANGE pas — par le
+    // vrai geste d'identité, nom et nature inchangés.
+    if (existing.categoryId !== categoryId) {
+      await bus.execute<UpdateProductIdentityCommand, void>(
+        new UpdateProductIdentityCommand(existing.id, {
+          name: storedNameOf(existing.name, product.name),
+          kind: product.kind,
+          categoryId,
+        }),
+      );
+    }
     return existing.id;
   }
   const id = await bus.execute<CreateProductCommand, string>(
@@ -312,4 +329,15 @@ function nutritionValues(nutrition: CorpusNutrition): NutritionValues {
 /** Un refus du domaine porte son message ; le reste n'a que sa forme. */
 function describe(error: unknown): string {
   return error instanceof Error ? error.message : String(error);
+}
+
+/** Le nom tel que la base le garde — un renommage fait en dev n'est pas défait par le rangement. */
+function storedNameOf(raw: unknown, fallback: LocalizedText): LocalizedText {
+  if (typeof raw !== "object" || raw === null || Array.isArray(raw)) {
+    return fallback;
+  }
+  const values = Object.fromEntries(
+    Object.entries(raw).filter((entry): entry is [string, string] => typeof entry[1] === "string"),
+  );
+  return localizedText("nom", values);
 }

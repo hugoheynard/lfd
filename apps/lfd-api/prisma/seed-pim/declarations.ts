@@ -1,4 +1,5 @@
 import type { CorpusDeclaration, CorpusProduct } from "./corpus.js";
+import { rootFamilyOf } from "./family-roots.js";
 
 /**
  * Fiches réglementaires **synthétiques** — de la donnée inventée, et il faut le
@@ -159,7 +160,7 @@ export function declarationFor(product: CorpusProduct): CorpusDeclaration | null
   if (!syntheticSheetsEnabled()) {
     return null;
   }
-  const source = BY_FAMILY.get(product.categoryName) ?? FALLBACK;
+  const source = BY_FAMILY.get(rootFamilyOf(product.categoryName)) ?? FALLBACK;
   return {
     allergens: source.allergens,
     mayContain: source.mayContain,
