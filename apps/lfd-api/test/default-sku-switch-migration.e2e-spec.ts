@@ -194,6 +194,70 @@ describe("le garde-fou de la bascule — il compte, nomme, et n'écrit rien", ()
   });
 });
 
+describe("le garde-fou de la bascule — l'alerte de stock vivante (index partiel)", () => {
+  async function alert(siteId: string, sku: string, liftedAt: Date | null): Promise<void> {
+    await ctx.prisma.siteStockAlert.create({
+      data: {
+        id: `alert_${sku}_${String(liftedAt !== null)}`,
+        siteId,
+        sku,
+        label: "Baguette",
+        level: "low",
+        declaredAt: new Date(daysAgo(1)),
+        declaredByStaffId: "staff",
+        declaredByName: "Camille",
+        declaredByRole: "vendeuse",
+        ...(liftedAt === null
+          ? {}
+          : {
+              liftedAt,
+              liftedByStaffId: "staff",
+              liftedByName: "Camille",
+              liftedByRole: "vendeuse",
+              liftReason: "manual",
+            }),
+      },
+    });
+  }
+
+  async function site(): Promise<string> {
+    const created = await ctx.prisma.site.create({
+      data: {
+        label: "Boutique",
+        ligne1: "12 rue du Test",
+        ligne2: "",
+        codePostal: "73150",
+        ville: "Val d'Isère",
+        pays: "France",
+      },
+      select: { id: true },
+    });
+    return created.id;
+  }
+
+  it("refuse deux alertes VIVANTES d'un site sous les deux références, en le nommant", async () => {
+    const siteId = await site();
+    await alert(siteId, "PAI-001", null);
+    await alert(siteId, "PAI-001-1", null);
+
+    const refusal = await runMigration();
+
+    expect(refusal?.message).toContain(`1 × collision : alerte de stock (${siteId} PAI-001)`);
+    expect(await containerSku()).toBe("PAI-001");
+  });
+
+  it("laisse passer une alerte levée à côté d'une vivante, et la réécrit", async () => {
+    const siteId = await site();
+    await alert(siteId, "PAI-001", new Date(daysAgo(2)));
+    await alert(siteId, "PAI-001-1", null);
+
+    expect(await runMigration()).toBeNull();
+
+    const skus = await ctx.prisma.siteStockAlert.findMany({ select: { sku: true } });
+    expect(skus).toEqual([{ sku: "PAI-001-1" }, { sku: "PAI-001-1" }]);
+  });
+});
+
 describe("la bascule, sans refus", () => {
   it("réécrit la commande, son jsonb, le fournil et les réglages sous la référence du défaut", async () => {
     const orderId = await seedOrder("ORD-910002", ["PAI-001"]);

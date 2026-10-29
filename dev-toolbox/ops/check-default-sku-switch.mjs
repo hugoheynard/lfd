@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * **Constater, en lecture seule, ce que le garde-fou de la bascule du défaut
- * comptera** (`20261029100000_le_defaut_se_vend_sous_sa_reference`, plan
+ * comptera** (`20261029180000_le_defaut_se_vend_sous_sa_reference`, plan
  * `documentation/catalogue/plan-defaut-sous-sa-reference.md`, runbook
  * « Avant de déployer la bascule du défaut »).
  *
@@ -11,7 +11,10 @@
  *
  *   DATABASE_LFD_URL='<URL directe de production>' node dev-toolbox/ops/check-default-sku-switch.mjs
  *
- * Il faut 0 partout pour que le garde-fou laisse passer.
+ * Il faut 0 sur chaque ligne BLOQUANTE pour que le garde-fou laisse passer.
+ * Les journées ouvertes et les commandes à venir sont INFORMATIVES depuis la
+ * révision 3 (2026-10-29) : la bascule les réécrit dans la même transaction.
+ * Les factures et arrêtés émis bloquent : un document émis ne se réécrit pas.
  */
 import { createRequire } from "node:module";
 
@@ -45,7 +48,13 @@ UNION ALL SELECT 'commandes_a_venir', count(*)::int FROM public.orders o JOIN pu
    WHERE o.status IN ('draft','placed','confirmed','in_production','ready','partially_handed_over')
      AND (o.requested_delivery_date IS NULL OR o.requested_delivery_date >= current_date)
 UNION ALL SELECT 'fiches_a_deux_defauts', count(*)::int FROM (SELECT product_sku FROM public.catalog_items WHERE is_default GROUP BY 1 HAVING count(*) > 1) d
+UNION ALL SELECT 'factures_emises', count(DISTINCT i.id)::int FROM public.invoice i CROSS JOIN LATERAL jsonb_path_query(i.lines, 'lax $.**.sku') v JOIN refs ON jsonb_typeof(v) = 'string' AND ref = v #>> '{}'
+UNION ALL SELECT 'arretes_emis', count(DISTINCT b.id)::int FROM public.billing_statement b CROSS JOIN LATERAL jsonb_path_query(b.body, 'lax $.**.sku') v JOIN refs ON jsonb_typeof(v) = 'string' AND ref = v #>> '{}'
+UNION ALL SELECT 'commandes_aux_deux_references', count(DISTINCT a.order_id)::int FROM public.order_lines a JOIN public.catalog_items i ON i.product_sku = a.sku AND i.is_default JOIN public.order_lines b ON b.order_id = a.order_id AND b.sku = i.sku
 `;
+
+/** Constatées, mais réécrites par la bascule (révision 3) : elles ne bloquent pas. */
+const INFORMATIVE = new Set(["journees_fournil_ouvertes", "commandes_a_venir"]);
 
 const client = new Client({ connectionString: url });
 await client.connect();
@@ -54,10 +63,10 @@ try {
   const { rows } = await client.query(QUERY);
   await client.query("ROLLBACK");
   console.table(rows);
-  const blocking = rows.filter((row) => row.n > 0);
+  const blocking = rows.filter((row) => row.n > 0 && !INFORMATIVE.has(row.quoi));
   console.log(
     blocking.length === 0
-      ? "✓ 0 partout : le garde-fou laissera passer."
+      ? "✓ 0 sur chaque ligne bloquante : le garde-fou laissera passer."
       : `✗ À traiter avant la bascule : ${blocking.map((row) => row.quoi).join(", ")}.`,
   );
 } finally {

@@ -27,7 +27,17 @@
 -- sous `-1` qui croiserait une décision ou un réglage posés depuis : au-delà,
 -- c'est une nouvelle bascule qu'il faut écrire, pas un retour.
 -- La migration reste inscrite « appliquée » : ne pas la résoudre. La table
--- `sale_sku_alias` n'a rien à voir ici (supprimée par 20261029180100).
+-- `sale_sku_alias` n'a rien à voir ici : la bascule ne l'écrit pas, et elle
+-- reste en base, vide, jusqu'à un déploiement ultérieur qui la supprimera.
+--
+-- 🔴 CE QUE LE RETOUR NE DÉFAIT PAS : les réglages supprimés parce que la
+-- ligne de la cible l'emportait (contenants, contenances, choix de lot,
+-- normes, empreintes de vitrine — 2.c de la bascule) ne reviennent pas, et
+-- les compteurs d'audience additionnés (2.d) restent sous `PAI-001` en un
+-- seul compte. Les factures et arrêtés émis n'ont jamais été réécrits : il
+-- n'y a rien à défaire chez eux, et le garde-fou ci-dessous refuse s'il en
+-- trouve un sous `PAI-001-1` (un document émis après la bascule ne se
+-- réécrit pas plus qu'avant).
 
 BEGIN;
 
@@ -90,6 +100,19 @@ SELECT 'product.default_variant_changed',
   FROM growth.activity_events e
  WHERE e.type = 'product.default_variant_changed';
 
+-- 1.c bis Les documents émis, figés : une facture ou un arrêté qui porte une
+-- référence produit sous une clé `sku`.
+INSERT INTO switch_hits
+SELECT DISTINCT 'facture émise', i.number
+  FROM public.invoice i
+ CROSS JOIN LATERAL jsonb_path_query(i.lines, 'lax $.**.sku') v
+  JOIN switch_product_refs p ON jsonb_typeof(v) = 'string' AND p.ref = v #>> '{}';
+INSERT INTO switch_hits
+SELECT DISTINCT 'arrêté émis', b.id
+  FROM public.billing_statement b
+ CROSS JOIN LATERAL jsonb_path_query(b.body, 'lax $.**.sku') v
+  JOIN switch_product_refs p ON jsonb_typeof(v) = 'string' AND p.ref = v #>> '{}';
+
 -- 1.d Deux défauts pour une même fiche (la carte serait ambiguë).
 INSERT INTO switch_hits
 SELECT 'deux déclinaisons par défaut', i.product_sku
@@ -127,6 +150,13 @@ SELECT pg_temp.switch_collisions('packing.container_line', 'container_id', 'coll
 SELECT pg_temp.switch_collisions('packing.packing_resupply_line', 'service_day,resupply_id', 'collision : réassort au colisage');
 SELECT pg_temp.switch_collisions('packing.packing_stock_reservation', 'service_day,resupply_id', 'collision : réservation de stock');
 SELECT pg_temp.switch_collisions('delivery.delivery_internal_transfer_manifest_line', 'transfer_id,item_id', 'collision : transfert');
+-- L'index unique des alertes est PARTIEL : seules les alertes vivantes se heurtent.
+INSERT INTO switch_hits
+SELECT 'collision : alerte de stock', concat_ws(' ', a.site_id, m.ref)
+  FROM public.site_stock_alert a JOIN switch_map m ON a.sku = m.ref
+ WHERE a.lifted_at IS NULL
+   AND EXISTS (SELECT 1 FROM public.site_stock_alert b
+                WHERE b.sku = m.target AND b.site_id = a.site_id AND b.lifted_at IS NULL);
 
 DO $$
 DECLARE
@@ -240,8 +270,6 @@ INSERT INTO switch_json_columns (tbl, col) VALUES
   ('public.order_revision', 'composition'),
   ('public.order_drafts', 'payload'),
   ('public.shop_carts', 'payload'),
-  ('public.invoice', 'lines'),
-  ('public.billing_statement', 'body'),
   ('public.subscription_occurrences', 'lines'),
   ('public.bakehouse_resupply_drafts', 'lines'),
   ('public.account_alerts', 'findings'),

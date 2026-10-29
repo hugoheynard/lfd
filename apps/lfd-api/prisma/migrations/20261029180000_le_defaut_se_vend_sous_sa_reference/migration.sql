@@ -6,9 +6,10 @@
 -- La référence produit d'une fiche (`PAI-001`) cesse d'être une référence de
 -- vente, et elle est RÉÉCRITE PARTOUT où elle était stockée vers la référence
 -- de la déclinaison par défaut de sa fiche (`PAI-001-1`). Aucune table de
--- traduction ne reste : en pré-release, toutes les commandes existantes sont
--- des essais de Hugo, qui accepte qu'elles soient réécrites (commandes, bons,
--- factures et instantanés figés compris).
+-- traduction n'est écrite (`sale_sku_alias` reste vide) : en pré-release,
+-- toutes les commandes existantes sont des essais de Hugo, qui accepte
+-- qu'elles soient réécrites (commandes, bons, instantanés figés compris). Les
+-- documents ÉMIS — factures, arrêtés — ne le sont pas : ils sont figés.
 --
 -- 1. LE GARDE-FOU compte AVANT toute écriture et refuse, sans rien écrire :
 --    - une décision tarifaire posée sur une référence produit (règle,
@@ -18,6 +19,10 @@
 --    - un changement de déclinaison par défaut (G4) déjà joué : réécrire vers
 --      le défaut d'AUJOURD'HUI ferait mentir le passé d'avant ce changement ;
 --    - une fiche à deux déclinaisons par défaut (la cible serait ambiguë) ;
+--    - une FACTURE ou un ARRÊTÉ émis qui porte une référence produit : un
+--      document émis est figé (déclencheurs `invoice_immutable`,
+--      `billing_statement_immutable`), il ne se réécrit pas — en production il
+--      ne doit pas y en avoir ; sur une base locale, ils gardent `PAI-001` ;
 --    - une COLLISION : une ligne sous `PAI-001` et une sous `PAI-001-1` dans
 --      une table où la référence fait partie d'une clé (une commande qui porte
 --      les deux, une journée de colisage qui stocke les deux…). Fusionner deux
@@ -46,8 +51,18 @@
 --    développement, une décision qui heurterait celle de la cible reste où
 --    elle est.
 --    NON RÉÉCRITS : le journal `growth.activity_events` (des faits datés, lus
---    tels qu'écrits) et les tables du référentiel (`pim.*`), qui ne
---    connaissent la référence produit que comme identité de la FICHE.
+--    tels qu'écrits) ; les documents émis, `invoice.lines` et
+--    `billing_statement.body` (figés, comme le journal) ; les tables du
+--    référentiel (`pim.*`) — `pim.operation_items` ne porte que des SKU de
+--    déclinaison, validés contre `catalog_items.sku` à l'écriture
+--    (`PrismaOperationSkuCatalogue`, vérifié le 2026-10-29) : une republication
+--    ne réinjecte pas de référence produit.
+--    🔴 IRRÉVERSIBLE : la suppression des réglages où la cible l'emporte (2.c)
+--    et l'addition des compteurs d'audience (2.d) ne se défont pas — le retour
+--    arrière ne retrouve ni la ligne supprimée ni le partage des comptes.
+--    `public.day_change` et `production.day_change` reçoivent une version de
+--    plus pour chaque journée touchée, passées comprises (déclencheurs par
+--    instruction) : un écran ouvert sur ces journées relit une fois.
 --
 -- 3. LE CONTRÔLE DE FIN, dans la même transaction : plus AUCUNE référence
 --    produit dans aucune colonne réécrite ; sinon tout est annulé.
@@ -61,6 +76,10 @@
 -- Retour arrière : apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql
 -- (NON appliqué ; possible seulement tant qu'aucune commande n'a été passée
 -- sous `-1` après la bascule).
+
+-- Les tables réécrites sont écrites par les passations : mieux vaut un
+-- déploiement qui échoue proprement en 5 s qu'une file de commandes bloquées.
+SET lock_timeout = '5s';
 
 BEGIN;
 
@@ -125,6 +144,19 @@ SELECT 'product.default_variant_changed',
   FROM growth.activity_events e
  WHERE e.type = 'product.default_variant_changed';
 
+-- 1.c bis Les documents émis, figés : une facture ou un arrêté qui porte une
+-- référence produit sous une clé `sku`.
+INSERT INTO switch_hits
+SELECT DISTINCT 'facture émise', i.number
+  FROM public.invoice i
+ CROSS JOIN LATERAL jsonb_path_query(i.lines, 'lax $.**.sku') v
+  JOIN switch_product_refs p ON jsonb_typeof(v) = 'string' AND p.ref = v #>> '{}';
+INSERT INTO switch_hits
+SELECT DISTINCT 'arrêté émis', b.id
+  FROM public.billing_statement b
+ CROSS JOIN LATERAL jsonb_path_query(b.body, 'lax $.**.sku') v
+  JOIN switch_product_refs p ON jsonb_typeof(v) = 'string' AND p.ref = v #>> '{}';
+
 -- 1.d Deux défauts pour une même fiche.
 INSERT INTO switch_hits
 SELECT 'deux déclinaisons par défaut', i.product_sku
@@ -162,6 +194,13 @@ SELECT pg_temp.switch_collisions('packing.container_line', 'container_id', 'coll
 SELECT pg_temp.switch_collisions('packing.packing_resupply_line', 'service_day,resupply_id', 'collision : réassort au colisage');
 SELECT pg_temp.switch_collisions('packing.packing_stock_reservation', 'service_day,resupply_id', 'collision : réservation de stock');
 SELECT pg_temp.switch_collisions('delivery.delivery_internal_transfer_manifest_line', 'transfer_id,item_id', 'collision : transfert');
+-- L'index unique des alertes est PARTIEL : seules les alertes vivantes se heurtent.
+INSERT INTO switch_hits
+SELECT 'collision : alerte de stock', concat_ws(' ', a.site_id, m.ref)
+  FROM public.site_stock_alert a JOIN switch_map m ON a.sku = m.ref
+ WHERE a.lifted_at IS NULL
+   AND EXISTS (SELECT 1 FROM public.site_stock_alert b
+                WHERE b.sku = m.target AND b.site_id = a.site_id AND b.lifted_at IS NULL);
 
 DO $$
 DECLARE
@@ -187,7 +226,8 @@ BEGIN
     RAISE EXCEPTION USING
       MESSAGE = 'bascule-defaut refusée, rien n''a été écrit : ' || report,
       HINT = 'Décision tarifaire : l''archiver maintenant, la reposer sur la référence de la '
-          || 'déclinaison (PAI-001-1) après la bascule. Changement de défaut déjà joué : ne pas '
+          || 'déclinaison (PAI-001-1) après la bascule. Facture ou arrêté émis : un document émis '
+          || 'ne se réécrit pas, la question est à trancher par Hugo. Changement de défaut déjà joué : ne pas '
           || 'déployer, la question Q2 du plan est à trancher par Hugo. Collision : corriger la '
           || 'commande, le réassort ou la journée nommés pour qu''ils ne portent plus qu''une des '
           || 'deux références. Puis, sur la production : prisma migrate resolve --rolled-back '
@@ -284,8 +324,6 @@ INSERT INTO switch_json_columns (tbl, col) VALUES
   ('public.order_revision', 'composition'),
   ('public.order_drafts', 'payload'),
   ('public.shop_carts', 'payload'),
-  ('public.invoice', 'lines'),
-  ('public.billing_statement', 'body'),
   ('public.subscription_occurrences', 'lines'),
   ('public.bakehouse_resupply_drafts', 'lines'),
   ('public.account_alerts', 'findings'),

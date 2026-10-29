@@ -598,16 +598,18 @@ Plan : [`plan-defaut-sous-sa-reference.md`](../catalogue/plan-defaut-sous-sa-ref
 (révision 3, **sans alias** — décision de Hugo du 2026-10-29 ; bâtie, **non
 déployée**). La migration réécrit PARTOUT la référence produit d'un défaut
 (`PAI-001`) vers celle de sa déclinaison (`PAI-001-1`) : commandes, bons,
-factures, paniers, brouillons, fournil, colisage, livraison, compteurs,
-réglages — l'inventaire est au § 16. Elle ouvre par un **garde-fou** qui
+paniers, brouillons, fournil, colisage, livraison, compteurs, réglages —
+l'inventaire est au § 16. Les **documents émis** (factures, arrêtés) ne sont
+PAS réécrits : ils sont figés. Elle ouvre par un **garde-fou** qui
 refuse, sans rien écrire, s'il trouve : une décision tarifaire sur une
 référence produit, un changement de défaut déjà joué
-(`product.default_variant_changed`), une fiche à deux défauts, ou une
-**collision** (une commande, un réassort, une journée qui porte les deux
-références). Elle finit par un **contrôle** : s'il reste une référence produit
-dans une colonne inventoriée, tout est annulé. La migration suivante,
-`20261029180100_la_table_des_anciennes_references_part`, supprime la table
-`sale_sku_alias` (vide en production).
+(`product.default_variant_changed`), une fiche à deux défauts, une **facture
+ou un arrêté émis** qui porte une référence produit, ou une **collision** (une
+commande, un réassort, une journée, une alerte de stock vivante qui porte les
+deux références). Elle finit par un **contrôle** : s'il reste une référence produit
+dans une colonne inventoriée, tout est annulé. La table
+`sale_sku_alias` reste, vide : sa suppression part dans un déploiement
+ultérieur.
 
 **Quand** : sur un « pousse main » de Hugo, **un jour sans service ouvert, la
 boutique au calme**. Entre `migrate deploy` et l'image neuve (une à deux
@@ -617,7 +619,15 @@ les données réécrites : il vend encore sous `PAI-001` et ne connaît pas
 pendant cette fenêtre — et une ligne qu'il écrirait sous `PAI-001` après le
 contrôle de fin ne serait plus jamais traduite (il n'y a pas d'alias).
 
-**Avant de pousser, constater** sur la production, en lecture seule :
+**Avant de pousser, constater** sur la production, en lecture seule — le
+script compte tout ce que le garde-fou comptera, dans une transaction
+`READ ONLY` annulée :
+
+```bash
+DATABASE_LFD_URL='<URL directe de production>' node dev-toolbox/ops/check-default-sku-switch.mjs
+```
+
+Il faut 0 sur chaque ligne bloquante. Les mêmes constats, à la main :
 
 ```sql
 SELECT count(*) FROM growth.activity_events WHERE type = 'product.default_variant_changed';
@@ -676,10 +686,13 @@ psql '<URL directe de production>' -v ON_ERROR_STOP=1 \
 
 C'est la même réécriture, carte inversée (`PAI-001-1 → PAI-001`) ; il refuse,
 sans rien écrire, si un changement de défaut a été joué, si une décision est
-posée sur `PAI-001-1`, ou sur une collision. Sans table de traduction, une
+posée sur `PAI-001-1`, si une facture ou un arrêté émis depuis porte
+`PAI-001-1`, ou sur une collision. **Il ne défait pas tout** : les réglages
+supprimés parce que la cible l'emportait et les compteurs d'audience
+additionnés ne reviennent pas. Sans table de traduction, une
 commande passée sous `-1` après la bascule repasse elle aussi sous `PAI-001` :
 le retour n'est sans surprise qu'**avant la première commande passée sous
-`-1`**. La table `sale_sku_alias` ne revient pas (elle ne servait plus). La
+`-1`**. La table `sale_sku_alias` n'est pas concernée (la bascule ne l'écrit pas). La
 migration reste inscrite « appliquée » : ne pas la résoudre ; rebasculer plus
 tard demandera une **nouvelle** migration, et un `revert` du commit de la
 bascule avant tout autre déploiement de l'API.
