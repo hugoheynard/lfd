@@ -25,6 +25,12 @@
   box-shadow: var(--lfc-shadow-sheet-up);
 }
 
+/* Pendant une saisie au clavier de l'appareil, la barre se retire et ne prend
+   plus de place : elle couvrait le champ qu'on remplit (2026-10-29). */
+:host(.typing) {
+  display: none;
+}
+
 /* Dans le pied d'un dialogue : le panneau porte déjà son bord et son ombre. */
 :host(.docked) {
   position: static;

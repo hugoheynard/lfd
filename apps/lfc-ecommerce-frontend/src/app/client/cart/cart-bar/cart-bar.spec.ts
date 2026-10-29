@@ -11,6 +11,7 @@ import { type OrderDraft, OrderContextStore, type ServiceChoice } from '../../or
 import { ClientCart } from '../client-cart.service';
 import { CartBar } from './cart-bar';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
+import { SoftKeyboard } from '../../soft-keyboard.service';
 
 /** Le choix tel que l'accueil l'écrit, sur la journée du jour. */
 function choiceToday(): ServiceChoice {
@@ -30,6 +31,7 @@ interface Monde {
   readonly choice?: ServiceChoice | null;
   readonly count?: number;
   readonly totalCents?: number;
+  readonly typing?: boolean;
 }
 
 /**
@@ -40,6 +42,7 @@ function boot({
   choice = choiceToday(),
   count = 0,
   totalCents = 0,
+  typing = false,
 }: Monde = {}): ComponentFixture<CartBar> {
   localStorage.clear();
   TestBed.resetTestingModule();
@@ -52,6 +55,7 @@ function boot({
         provide: ClientCart,
         useValue: { count: signal(count), totals: signal({ discountCents: 0, totalCents }) },
       },
+      { provide: SoftKeyboard, useValue: { open: signal(typing) } },
     ],
   });
   TestBed.inject(OrderContextStore).choice.set(choice);
@@ -242,5 +246,14 @@ describe('CartBar — la barre qui accompagne le parcours', () => {
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('.foot')).toBeNull();
+  });
+
+  /** Hugo, 2026-10-29 : sur un téléphone, la barre couvrait le champ qu'on remplit. */
+  it('se retire pendant une saisie au clavier de l’appareil', () => {
+    expect(el(boot({ typing: true })).classList).toContain('typing');
+  });
+
+  it('reste là quand aucun champ n’a le clavier', () => {
+    expect(el(boot()).classList).not.toContain('typing');
   });
 });

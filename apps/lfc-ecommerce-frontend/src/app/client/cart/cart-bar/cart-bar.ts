@@ -17,6 +17,7 @@ import { serviceDayLabel, serviceWhenLabel } from '../../format-day';
 import { shownCartTotalLabel } from '../shown-cart-total';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientCart } from '../client-cart.service';
+import { SoftKeyboard } from '../../soft-keyboard.service';
 
 /**
  * **Le pied collé** de la boutique (handoff boutique, SPEC §8 ; plan
@@ -51,7 +52,7 @@ import { ClientCart } from '../client-cart.service';
 @Component({
   selector: 'app-cart-bar',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  host: { '[class.docked]': 'docked()' },
+  host: { '[class.docked]': 'docked()', '[class.typing]': 'hidesForKeyboard()' },
   imports: [FoldButtonComponent],
   templateUrl: './cart-bar.html',
   styleUrl: './cart-bar.scss',
@@ -70,6 +71,14 @@ export class CartBar {
   readonly docked = input(false, { transform: booleanAttribute });
 
   private readonly cart = inject(ClientCart);
+  private readonly keyboard = inject(SoftKeyboard);
+
+  /**
+   * S'efface pendant une saisie au clavier de l'appareil, et revient ensuite
+   * (Hugo, 2026-10-29) — sauf dans le pied d'un dialogue, qui suit le clavier
+   * avec son panneau.
+   */
+  protected readonly hidesForKeyboard = computed(() => !this.docked() && this.keyboard.open());
   private readonly locale = inject(ClientLocale);
 
   protected readonly c = screenCopy('commandTerms', commandTermsCopy);
