@@ -1,4 +1,8 @@
-import { InvalidMinQuantityError } from "../errors/min-quantity-errors.js";
+import { ROOT_CONTEXT_KEY } from "../../../../sales-contexts/domain/value-objects/bootstrap-contexts.js";
+import {
+  InvalidMinQuantityError,
+  MinQuantityContextOutsideAudienceError,
+} from "../errors/min-quantity-errors.js";
 
 /**
  * Les deux lignes de la matrice : à qui la fiche vend
@@ -18,6 +22,11 @@ export const MIN_QUANTITY_FLOOR = 2;
  * `b2b`) : c'est elle qui voyage sur le fil, comme `publicByContext`.
  *
  * Une case absente = pas de minimum pour cette clientèle dans ce contexte.
+ *
+ * 🔴 **Un contexte appartient à une clientèle** (Hugo, 2026-10-29) : le B2B
+ * (`ROOT_CONTEXT_KEY`, retrait comme livraison) est celui des pros, à emporter
+ * et sur place ceux des particuliers. La matrice n'a donc que trois cases
+ * vivantes ; les paires croisées sont refusées.
  */
 export interface MinQuantities {
   readonly pro: Readonly<Record<string, number>>;
@@ -45,6 +54,9 @@ function rowOf(
   row: Readonly<Record<string, number>>,
 ): Readonly<Record<string, number>> {
   for (const [contextKey, quantity] of Object.entries(row)) {
+    if ((contextKey === ROOT_CONTEXT_KEY) !== (audience === "pro")) {
+      throw new MinQuantityContextOutsideAudienceError(audience, contextKey);
+    }
     if (!Number.isSafeInteger(quantity) || quantity < MIN_QUANTITY_FLOOR) {
       throw new InvalidMinQuantityError(audience, contextKey, quantity);
     }

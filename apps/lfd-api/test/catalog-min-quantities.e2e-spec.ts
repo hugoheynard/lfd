@@ -135,6 +135,8 @@ describe("la quantité minimale au référentiel", () => {
 
     await setGrid(fiche, variantId, { pro: {}, public: { takeaway: 1 } }).expect(400);
     await setGrid(fiche, variantId, { pro: {}, public: { marche: 2 } }).expect(409);
+    // Un pro n'achète pas « à emporter » : la paire croisée est refusée.
+    await setGrid(fiche, variantId, { pro: { takeaway: 6 }, public: {} }).expect(400);
     await setGrid(fiche, variantId, "follow").expect(400);
 
     expect((await variants(fiche))[0]?.minQuantities).toEqual({ pro: {}, public: {} });

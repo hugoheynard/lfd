@@ -39,3 +39,19 @@ export class DefaultVariantCannotFollowMinQuantityError extends DomainError {
     );
   }
 }
+
+/**
+ * Une case qui croise une clientèle avec un contexte qui n'est pas le sien :
+ * le contexte B2B est celui des professionnels (retrait comme livraison), les
+ * autres — à emporter, sur place — sont ceux des particuliers (Hugo, 2026-10-29).
+ */
+export class MinQuantityContextOutsideAudienceError extends DomainError {
+  constructor(audience: string, contextKey: string) {
+    super(
+      "catalogue.variant.min_quantity_context_outside_audience",
+      `Quantité minimale impossible : le contexte « ${contextKey} » ne se vend pas ` +
+        `${audience === "pro" ? "aux professionnels" : "aux particuliers"}. ` +
+        `Les professionnels achètent dans le contexte B2B, les particuliers à emporter ou sur place.`,
+    );
+  }
+}

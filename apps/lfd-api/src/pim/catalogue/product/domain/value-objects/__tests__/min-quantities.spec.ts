@@ -1,4 +1,7 @@
-import { InvalidMinQuantityError } from "../../errors/min-quantity-errors.js";
+import {
+  InvalidMinQuantityError,
+  MinQuantityContextOutsideAudienceError,
+} from "../../errors/min-quantity-errors.js";
 import {
   NO_MIN_QUANTITIES,
   contextKeysOf,
@@ -40,5 +43,23 @@ describe("minQuantities — la grille audience × contexte, en pièces", () => {
       "takeaway",
     ]);
     expect(isEmptyMinQuantities(NO_MIN_QUANTITIES)).toBe(true);
+  });
+
+  /** Correction de Hugo (2026-10-29) : le B2B est aux pros, à emporter et sur place aux particuliers. */
+  it("refuse une clientèle croisée avec un contexte qui n'est pas le sien", () => {
+    expect(() => minQuantities({ pro: { takeaway: 6 }, public: {} })).toThrow(
+      MinQuantityContextOutsideAudienceError,
+    );
+    expect(() => minQuantities({ pro: { eatIn: 6 }, public: {} })).toThrow(
+      MinQuantityContextOutsideAudienceError,
+    );
+    expect(() => minQuantities({ pro: {}, public: { b2b: 2 } })).toThrow(
+      MinQuantityContextOutsideAudienceError,
+    );
+  });
+
+  it("garde les trois cases vivantes", () => {
+    const grid = { pro: { b2b: 6 }, public: { takeaway: 2, eatIn: 3 } };
+    expect(minQuantities(grid)).toEqual(grid);
   });
 });
