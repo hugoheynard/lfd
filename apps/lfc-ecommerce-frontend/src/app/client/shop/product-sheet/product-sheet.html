@@ -107,6 +107,9 @@
         @if (discountLabel(); as discount) {
           <span class="discount">{{ discount }}</span>
         }
+        @if (perKiloHint(); as hint) {
+          <span class="per-kilo">{{ hint }}</span>
+        }
       </div>
 
       @if (staffPick.current(); as view) {

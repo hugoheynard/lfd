@@ -30,5 +30,8 @@
     @if (price(); as label) {
       <p class="price" data-test="featured-price">{{ label }}</p>
     }
+    @if (perKilo(); as hint) {
+      <p class="per-kilo" data-test="featured-per-kilo">{{ hint }}</p>
+    }
   </div>
 </fold-card>

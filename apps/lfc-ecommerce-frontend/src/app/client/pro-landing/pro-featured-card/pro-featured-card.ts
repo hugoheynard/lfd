@@ -25,6 +25,9 @@ export class ProFeaturedCard {
    * connaît le tarif de son lecteur.
    */
   readonly price = input<string | null>(null);
+
+  /** Le prix au kilo d'une pièce, écrit finement sous le prix ; `null` = rien à dire. */
+  readonly perKilo = input<string | null>(null);
   /** Clic ou clavier sur la carte : la page ouvre la connexion. */
   readonly activated = output();
 }

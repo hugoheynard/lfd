@@ -24,7 +24,7 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
-import { shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
+import { perKiloHintLabel, shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { quantityLabel, saleUnitOf } from '../sale-unit';
 
@@ -182,6 +182,17 @@ export class ProductTile {
   protected readonly price = computed(() =>
     shelfPriceLabel(this.product(), this.showsTtc(), this.t().product.perKilogram),
   );
+
+  /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  protected readonly perKiloHint = computed(() => {
+    const shop = this.t().shop;
+    return perKiloHintLabel(
+      this.product(),
+      this.showsTtc(),
+      this.showsTtc() ? shop.ttcSuffix : shop.htSuffix,
+      this.t().product.perKilogram,
+    );
+  });
 
   /**
    * **Le tarif catalogue barré**, ou `null` quand il n'y a rien à barrer.

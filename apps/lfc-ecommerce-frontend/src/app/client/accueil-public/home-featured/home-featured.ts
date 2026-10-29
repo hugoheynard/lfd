@@ -8,7 +8,11 @@ import { mediaSrcset, sizedMedia } from '../../shop/media-source';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { objectPositionOf } from '../../shop/shelf-display';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
-import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
+import {
+  perKiloHintLabel,
+  shelfPriceLabel,
+  ShopPriceBasis,
+} from '../../shop/shop-price-basis.service';
 import { ProFeaturedCard } from '../../pro-landing/pro-featured-card/pro-featured-card';
 import { artOfFeatured, FEATURED_WIDTHS, type FeaturedCard } from '../../pro-landing/pro-landing';
 
@@ -16,6 +20,7 @@ import { artOfFeatured, FEATURED_WIDTHS, type FeaturedCard } from '../../pro-lan
 interface HomeFeaturedCard {
   readonly card: FeaturedCard;
   readonly price: string;
+  readonly perKilo: string | null;
 }
 
 /**
@@ -55,8 +60,10 @@ export class HomeFeatured {
       .map((item) => {
         const art = artOfFeatured(item);
         const price = `${shelfPriceLabel(item, ttc, this.t().product.perKilogram)} ${ttc ? shop.ttcSuffix : shop.htSuffix}`;
+        const basisSuffix = ttc ? shop.ttcSuffix : shop.htSuffix;
         return {
           price,
+          perKilo: perKiloHintLabel(item, ttc, basisSuffix, this.t().product.perKilogram),
           card: {
             sku: item.sku,
             name: item.name,

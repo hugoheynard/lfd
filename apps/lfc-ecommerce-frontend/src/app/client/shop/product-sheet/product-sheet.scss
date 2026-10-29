@@ -162,6 +162,14 @@
   color: var(--fold-color-text);
 }
 
+/* Le prix au kilo d'une pièce, sous le prix : une mention, pas un second prix. */
+.per-kilo {
+  flex-basis: 100%;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
 .price-was {
   font-size: var(--lfc-text-block);
   color: var(--fold-color-text-muted);

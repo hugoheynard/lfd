@@ -26,7 +26,7 @@ import { artOf, objectPositionOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
-import { ShopPriceBasis } from '../shop-price-basis.service';
+import { perKiloHintLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 import {
@@ -274,6 +274,19 @@ export class ProductSheet {
   protected readonly basisSuffix = computed(() =>
     this.showsTtc() ? this.t().shop.ttcSuffix : this.t().shop.htSuffix,
   );
+
+  /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  protected readonly perKiloHint = computed(() => {
+    const product = this.product();
+    return product === null
+      ? null
+      : perKiloHintLabel(
+          product,
+          this.showsTtc(),
+          this.basisSuffix(),
+          this.t().product.perKilogram,
+        );
+  });
 
   /** Le tarif boutique barré — même règle que la vignette : l'absence EST la réponse. */
   protected readonly striked = computed(() => {

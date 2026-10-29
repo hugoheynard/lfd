@@ -191,6 +191,21 @@
   padding: 10px 12px 12px;
 }
 
+.price-block {
+  flex: none;
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+/* Le prix au kilo d'une pièce : une mention, pas un second prix. */
+.per-kilo {
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+  color: var(--lfc-color-text-subtle);
+  white-space: nowrap;
+}
+
 .price {
   flex: none;
   display: inline-flex;

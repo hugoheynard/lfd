@@ -6,6 +6,7 @@
         <app-pro-featured-card
           [card]="entry.card"
           [price]="entry.price"
+          [perKilo]="entry.perKilo"
           (activated)="open(entry.card.sku)"
         />
       }

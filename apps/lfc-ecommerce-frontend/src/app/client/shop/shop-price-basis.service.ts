@@ -61,3 +61,29 @@ export function shelfPriceLabel(
   // Au poids, le prix servi EST le prix au kilo (P4) : « 12,40 € / kg ».
   return isSoldByWeight(item) ? `${amount} ${perKilogram}` : amount;
 }
+
+/**
+ * **Le prix au kilo d'un article vendu à la pièce**, en mention fine sous le
+ * prix (« 12,40 € / kg TTC », dans l'ordre de l'étiquette au poids), ou `null` quand il n'y a rien à dire.
+ *
+ * Rien pour un article au poids : son prix servi EST déjà le prix au kilo, le
+ * redire doublerait la ligne. Rien non plus quand l'assiette affichée n'a pas
+ * de prix au kilo saisi — on ne montre jamais l'autre en repli (le contrat le
+ * dit à `proPricePerKgMillicents`). Informatif : rien ne le facture.
+ */
+export function perKiloHintLabel(
+  item: ShopItemView,
+  showsTtc: boolean,
+  basisSuffix: string,
+  perKilogram: string,
+): string | null {
+  if (isSoldByWeight(item)) {
+    return null;
+  }
+  const cents = showsTtc
+    ? (item.publicPricePerKgTtcCents ?? null)
+    : item.proPricePerKgMillicents == null
+      ? null
+      : unitPriceCents(item.proPricePerKgMillicents);
+  return cents === null ? null : `${formatCents(cents)} ${perKilogram} ${basisSuffix}`;
+}

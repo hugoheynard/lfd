@@ -73,6 +73,19 @@ describe('ProductTile', () => {
     expect(priceText()).toBe('1,48 € TTC');
   });
 
+  it('écrit finement le prix au kilo sous le prix d’une pièce qui en a un', () => {
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], publicPricePerKgTtcCents: 1_590 });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(priceText()).toBe('1,48 € TTC');
+    expect(el.querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
+  });
+
+  it('ne dit aucun prix au kilo quand le référentiel n’en a pas saisi', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('.per-kilo')).toBeNull();
+  });
+
   /** P4 de `vente-au-poids.md` : au poids, l'étiquette est au kilo et la pastille en grammes. */
   it('dit le prix au kilo et la quantité en grammes pour un article au poids', () => {
     fixture.componentRef.setInput('product', {

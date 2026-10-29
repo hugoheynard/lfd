@@ -209,6 +209,29 @@ describe('ProductSheet', () => {
     expect(cta()?.querySelector('.cta-total')?.textContent?.trim()).toBe('1,48 € TTC');
   });
 
+  it('écrit finement le prix au kilo sous le prix d’une pièce, dans l’assiette du lecteur', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), publicPricePerKgTtcCents: 1_590 }, 0, false);
+
+    expect(el().querySelector('.amount')?.textContent?.trim()).toBe('1,48 €');
+    expect(el().querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
+  });
+
+  it('ne redit pas le prix au kilo d’un article au poids', () => {
+    mount(
+      {
+        ...(TEST_ITEMS[0] as ShopItemView),
+        saleUnit: 'weight',
+        weightStepGrams: 50,
+        weightMinGrams: null,
+        publicPricePerKgTtcCents: 1_590,
+      },
+      0,
+      false,
+    );
+
+    expect(el().querySelector('.per-kilo')).toBeNull();
+  });
+
   /** P4 de `vente-au-poids.md` : le saumon se vend au poids, par 50 g, dès 200 g. */
   describe('un article au poids', () => {
     // 12,40 € TTC le kilo pour un particulier ; 11,75 € HT le kilo pour un pro.

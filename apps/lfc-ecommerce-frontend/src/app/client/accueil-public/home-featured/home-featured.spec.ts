@@ -15,7 +15,10 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
   let asked: string[];
   const showsTtc = signal(true);
 
-  async function mount(featured: boolean): Promise<HTMLElement> {
+  async function mount(
+    featured: boolean,
+    perKg: { readonly pro: number | null; readonly ttc: number | null } = { pro: null, ttc: null },
+  ): Promise<HTMLElement> {
     asked = [];
     TestBed.configureTestingModule({
       providers: [
@@ -26,7 +29,11 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
     });
     hydrateWith(TestBed.inject(ShopCatalogue), {
       ...TEST_CATALOGUE,
-      items: TEST_CATALOGUE.items.map((item) => (featured ? item : { ...item, isFeatured: false })),
+      items: TEST_CATALOGUE.items.map((item) => ({
+        ...(featured ? item : { ...item, isFeatured: false }),
+        proPricePerKgMillicents: perKg.pro,
+        publicPricePerKgTtcCents: perKg.ttc,
+      })),
     });
     fixture = TestBed.createComponent(HomeFeatured);
     fixture.detectChanges();
@@ -55,6 +62,26 @@ describe('HomeFeatured — les incontournables de l’accueil', () => {
     expect(host.querySelector('[data-test="featured-price"]')?.textContent?.trim()).toBe(
       `${formatCents(350)} ${FR.shop.htSuffix}`,
     );
+  });
+
+  it('écrit finement le prix au kilo d’une pièce, dans l’assiette du lecteur', async () => {
+    const host = await mount(true, { pro: 1_500_000, ttc: 1_590 });
+    expect(host.querySelector('[data-test="featured-per-kilo"]')?.textContent?.trim()).toBe(
+      `${formatCents(1_590)} / kg ${FR.shop.ttcSuffix}`,
+    );
+  });
+
+  it('le prix au kilo d’un pro est le hors taxe', async () => {
+    showsTtc.set(false);
+    const host = await mount(true, { pro: 1_500_000, ttc: 1_590 });
+    expect(host.querySelector('[data-test="featured-per-kilo"]')?.textContent?.trim()).toBe(
+      `${formatCents(1_500)} / kg ${FR.shop.htSuffix}`,
+    );
+  });
+
+  it('sans prix au kilo saisi, la carte ne dit rien de plus', async () => {
+    const host = await mount(true);
+    expect(host.querySelector('[data-test="featured-per-kilo"]')).toBeNull();
   });
 
   it('le clic ouvre la fiche de l’article', async () => {

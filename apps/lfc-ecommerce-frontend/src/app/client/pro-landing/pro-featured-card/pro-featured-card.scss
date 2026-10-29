@@ -80,6 +80,14 @@
   font-weight: var(--lfc-weight-black);
 }
 
+/* Le prix au kilo d'une pièce : une mention, pas un second prix. */
+.per-kilo {
+  margin: 0;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-muted);
+}
+
 @media (prefers-reduced-motion: reduce) {
   .card,
   .art-image {
