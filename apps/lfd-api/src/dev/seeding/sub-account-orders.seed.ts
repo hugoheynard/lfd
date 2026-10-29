@@ -2,6 +2,8 @@ import { handOverAtCounter, isPastServiceDay } from "./invoice-handovers.seed.js
 import {
   atHour,
   isoDay,
+  monthDay,
+  parisAt,
   place,
   type SeedContext,
   type SeedLine,
@@ -161,11 +163,7 @@ function pick(days: readonly Date[], slot: number): Date {
 
 /** Le jour `day` du mois décalé de `offset`, à l'heure des commandes. */
 function dayOfMonth(now: Date, offset: number, day: number): Date {
-  const date = atHour(now, ORDER_HOUR);
-  date.setDate(1);
-  date.setMonth(date.getMonth() + offset);
-  date.setDate(day);
-  return date;
+  return parisAt(monthDay(isoDay(now), offset, day), ORDER_HOUR);
 }
 
 /**
@@ -176,12 +174,14 @@ function dayOfMonth(now: Date, offset: number, day: number): Date {
 export function currentMonthDays(now: Date): readonly Date[] {
   const today = atHour(now, ORDER_HOUR);
   const past: Date[] = [];
-  for (let day = 2; day <= today.getDate() - 2; day += 1) {
+  const todayDay = isoDay(today);
+  for (let day = 2; day <= Number(todayDay.slice(-2)) - 2; day += 1) {
     past.push(dayOfMonth(now, 0, day));
   }
   if (past.length >= 2) {
     return past;
   }
   const ahead = [3, 4].map((offset) => shiftDays(today, offset));
-  return [...past, ...ahead.filter((day) => day.getMonth() === today.getMonth())];
+  const month = todayDay.slice(0, "AAAA-MM".length);
+  return [...past, ...ahead.filter((day) => isoDay(day).startsWith(month))];
 }

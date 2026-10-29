@@ -5,21 +5,18 @@ import { handoverInstantOf, isPastServiceDay } from "../invoice-handovers.seed.j
  * SUJET, comparé à lui-même : aucune horloge n'est lue.
  */
 describe("handoverInstantOf", () => {
-  it("retire le jour demandé, à 6 h locales — dans le créneau pro du Labo", () => {
-    const at = handoverInstantOf("2026-09-11");
-    expect([at.getFullYear(), at.getMonth() + 1, at.getDate()]).toEqual([2026, 9, 11]);
-    expect([at.getHours(), at.getMinutes()]).toEqual([6, 0]);
+  it("retire le jour demandé, à 6 h à Paris — dans le créneau pro du Labo", () => {
+    expect(handoverInstantOf("2026-09-11").toISOString()).toBe("2026-09-11T04:00:00.000Z");
   });
 
   it("garde le jour au passage à l'heure d'hiver", () => {
-    const at = handoverInstantOf("2026-10-25");
-    expect([at.getMonth() + 1, at.getDate(), at.getHours()]).toEqual([10, 25, 6]);
+    expect(handoverInstantOf("2026-10-25").toISOString()).toBe("2026-10-25T05:00:00.000Z");
   });
 });
 
 /** Le jour est comparé à `now`, qui est un paramètre : relatif, jamais l'horloge. */
 describe("isPastServiceDay", () => {
-  const now = new Date(2030, 0, 15, 9);
+  const now = new Date("2030-01-15T08:00:00.000Z");
 
   it("retire la veille", () => {
     expect(isPastServiceDay("2030-01-14", now)).toBe(true);
@@ -30,7 +27,8 @@ describe("isPastServiceDay", () => {
     expect(isPastServiceDay("2030-01-16", now)).toBe(false);
   });
 
-  it("compare le jour local, même juste après minuit", () => {
-    expect(isPastServiceDay("2030-01-15", new Date(2030, 0, 15, 0, 30))).toBe(false);
+  it("compare le jour de Paris, même juste après minuit", () => {
+    // 00:30 à Paris le 15, encore le 14 en UTC.
+    expect(isPastServiceDay("2030-01-15", new Date("2030-01-14T23:30:00.000Z"))).toBe(false);
   });
 });

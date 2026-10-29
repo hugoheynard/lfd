@@ -3,12 +3,14 @@ import type {
   OpenPackingContainer,
   PlaceOrderPayload,
 } from "@lfd/contracts";
+import { addDays, addMinutes, instantToLocal, localToInstant } from "@lfd/contracts";
 import type { CommandBus } from "@nestjs/cqrs";
 import { randomUUID } from "node:crypto";
 
 import { PlaceOrderCommand } from "../../b2b/orders/application/commands/place-order.command.js";
 import { runWithRequestContext } from "../../platform/context/request-context.store.js";
 import { newTraceId } from "../../platform/context/trace-context.js";
+import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
 import { AllocateToContainerCommand } from "../../packing/application/containers/allocate-to-container.command.js";
@@ -29,7 +31,7 @@ import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
  * chose.
  */
 
-const DAY_MS = 24 * 60 * 60 * 1000;
+const MINUTES_PER_HOUR = 60;
 
 /**
  * Qui a colisé, qui a remis — au journal comme sur l'attestation.
@@ -461,28 +463,65 @@ async function packIntoContainers(
 }
 
 /**
- * Le même jour, à l'heure dite.
+ * Le même jour **à Paris**, à l'heure de Paris dite — été comme hiver, quel que
+ * soit le fuseau de la machine.
  *
- * ⚠️ **`setHours` et non une soustraction de millisecondes.** Retrancher des
- * multiples de 24 h traverse un changement d'heure, et la journée obtenue glisse
- * alors d'une heure — c'est ce glissement qui avait produit dix doublons dans le
- * seed témoin.
+ * ⚠️ **Jamais l'heure locale de la machine.** La plateforme juge la journée en
+ * heure de Paris ; la CI tourne en UTC. Entre minuit et 1 h ou 2 h à Paris, un
+ * `setHours` prenait la veille, et le scénario composait un jour déjà passé
+ * (`PastServiceDayCompositionError`, CI du 2026-10-28 à 23:44 UTC).
+ *
+ * Une heure qui n'existe pas (passage à l'heure d'été) se compte depuis minuit.
  */
 export function atHour(date: Date, hour: number, minute = 0): Date {
-  const copy = new Date(date);
-  copy.setHours(hour, minute, 0, 0);
-  return copy;
+  return parisAt(instantToLocal(date).day, hour, minute);
 }
 
-/** Le jour décalé, l'heure reposée — cf. {@link atHour}. */
+/**
+ * Le jour de Paris décalé de `days` jours CALENDAIRES, l'heure de Paris reposée
+ * — jamais une soustraction de multiples de 24 h, qui glisse d'une heure à
+ * travers un changement d'heure (dix doublons dans le seed témoin).
+ */
 export function shiftDays(from: Date, days: number): Date {
-  return atHour(new Date(from.getTime() + days * DAY_MS), from.getHours());
+  const local = instantToLocal(from);
+  return parisAt(addDays(local.day, days), Number(local.time.slice(0, 2)));
 }
 
+/** Le jour de Paris (`AAAA-MM-JJ`) d'un instant. */
 export function isoDay(date: Date): string {
-  // Composé à la main : `toISOString` bascule en UTC et rend la veille pour
-  // toute heure locale avant 02 h en été.
-  const month = String(date.getMonth() + 1).padStart(2, "0");
-  const day = String(date.getDate()).padStart(2, "0");
-  return `${date.getFullYear()}-${month}-${day}`;
+  return instantToLocal(date).day;
+}
+
+/**
+ * Le jour `dayOfMonth` du mois décalé de `months` par rapport au jour `day`
+ * (`AAAA-MM-JJ`), en calendrier pur — aucun fuseau n'y entre.
+ */
+export function monthDay(day: string, months: number, dayOfMonth: number): string {
+  const [year = 0, month = 1] = day.split("-").map(Number);
+  const first = new Date(Date.UTC(year, month - 1 + months, 1));
+  return addDays(first.toISOString().slice(0, "AAAA-MM-JJ".length), dayOfMonth - 1);
+}
+
+/** L'instant du jour de Paris `day` à l'heure de Paris dite. */
+export function parisAt(day: string, hour: number, minute = 0): Date {
+  const time = `${String(hour).padStart(2, "0")}:${String(minute).padStart(2, "0")}`;
+  const exact = localToInstant(day, time);
+  if (exact !== null) {
+    return exact;
+  }
+  const midnight = localToInstant(day, "00:00");
+  if (midnight === null) {
+    throw new SeedDayUnreadableError(day);
+  }
+  return addMinutes(midnight, hour * MINUTES_PER_HOUR + minute);
+}
+
+/** Un jour de semis qui ne se relit pas en heure de Paris : le calendrier fourni est faux. */
+class SeedDayUnreadableError extends TechnicalError {
+  constructor(readonly day: string) {
+    super(
+      "dev_seed.day_unreadable",
+      `Le jour de semis « ${day} » ne se lit pas en heure de Paris : le semis s'arrête. Vérifier la date passée au scénario.`,
+    );
+  }
 }

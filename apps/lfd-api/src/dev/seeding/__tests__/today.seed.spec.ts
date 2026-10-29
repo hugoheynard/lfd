@@ -17,7 +17,8 @@ import {
  */
 
 /** Un instant quelconque : les étapes ne le comparent jamais à l'horloge, elles en dérivent. */
-const NOW = new Date(2026, 9, 5, 14, 30);
+// 14 h 30 à Paris (heure d'été), écrit en instant : le test ne dépend pas du fuseau de la machine.
+const NOW = new Date("2026-10-05T12:30:00.000Z");
 const DAY = scenarioDayOf(NOW);
 
 /** Les réglages d'arrêt : `resupply` l'heure du réassort, `null` = ligne absente. */
@@ -85,9 +86,38 @@ function recorder(settings: PlanStopSettings = stopSettings()) {
 describe("scenarioDayOf", () => {
   it("cale la journée sur l'instant, commandée la veille à la même heure", () => {
     expect(DAY.forDay).toBe("2026-10-05");
-    expect(DAY.today.getHours()).toBe(9);
-    expect(DAY.orderedAt.getDate()).toBe(4);
-    expect(DAY.orderedAt.getHours()).toBe(9);
+    expect(DAY.today.toISOString()).toBe("2026-10-05T07:00:00.000Z");
+    expect(DAY.orderedAt.toISOString()).toBe("2026-10-04T07:00:00.000Z");
+  });
+
+  /**
+   * Régression : la CI (UTC) lancée le 2026-10-28 à 23:44 UTC — 00:44 à Paris
+   * le 29 — prenait la journée du 28, déjà passée pour la plateforme, et la
+   * composition des tournées levait `PastServiceDayCompositionError`.
+   */
+  it("prend la journée de Paris, pas celle de la machine, juste après minuit à Paris", () => {
+    const day = scenarioDayOf(new Date("2026-10-28T23:44:00.000Z"));
+
+    expect(day.forDay).toBe("2026-10-29");
+    expect(day.today.toISOString()).toBe("2026-10-29T08:00:00.000Z");
+    expect(day.orderedAt.toISOString()).toBe("2026-10-28T08:00:00.000Z");
+  });
+
+  it("prend la journée de Paris en heure d'été, entre minuit et 2 h", () => {
+    const day = scenarioDayOf(new Date("2026-07-14T22:30:00.000Z"));
+
+    expect(day.forDay).toBe("2026-07-15");
+    expect(day.today.toISOString()).toBe("2026-07-15T07:00:00.000Z");
+    expect(day.orderedAt.toISOString()).toBe("2026-07-14T07:00:00.000Z");
+  });
+
+  it("garde 9 h à Paris des deux côtés de la nuit du changement d'heure", () => {
+    // 2026-10-25 à 02:30 Paris, heure d'hiver déjà : la veille était en heure d'été.
+    const day = scenarioDayOf(new Date("2026-10-25T01:30:00.000Z"));
+
+    expect(day.forDay).toBe("2026-10-25");
+    expect(day.today.toISOString()).toBe("2026-10-25T08:00:00.000Z");
+    expect(day.orderedAt.toISOString()).toBe("2026-10-24T07:00:00.000Z");
   });
 });
 
@@ -106,8 +136,7 @@ describe("closeTodayPlan — étape 1", () => {
       "clear stops 2026-10-05",
       "clear rounds 2026-10-05",
     ]);
-    expect(instants[0]?.getDate()).toBe(4);
-    expect(instants[0]?.getHours()).toBe(20);
+    expect(instants[0]?.toISOString()).toBe("2026-10-04T18:00:00.000Z");
   });
 
   /**
@@ -116,7 +145,7 @@ describe("closeTodayPlan — étape 1", () => {
    * de la base de dev était réglée à 23:00, et le semis arrêtait à 20 h.
    */
   it("arrête à l'heure du réassort quand elle est plus tardive que le soir", async () => {
-    const day = scenarioDayOf(new Date(2026, 9, 25, 15, 0));
+    const day = scenarioDayOf(new Date("2026-10-25T14:00:00.000Z"));
     const { instants, context } = recorder(stopSettings("23:00"));
 
     await closeTodayPlan(context, day);

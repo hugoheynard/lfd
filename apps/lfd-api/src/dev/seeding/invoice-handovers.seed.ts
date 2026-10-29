@@ -1,6 +1,12 @@
 import { ConfirmManualHandoverCommand } from "../../handover/application/commands/confirm-manual-handover.command.js";
 import { OrderStatus } from "../../platform/database/client/client.js";
-import { asStaff, atHour, isoDay, SEED_STAFF_SUB, type SeedContext } from "./order-placing.seed.js";
+import {
+  asStaff,
+  isoDay,
+  parisAt,
+  SEED_STAFF_SUB,
+  type SeedContext,
+} from "./order-placing.seed.js";
 
 /**
  * **Les commandes du semis des factures, retirées** — une commande facturée
@@ -24,10 +30,9 @@ import { asStaff, atHour, isoDay, SEED_STAFF_SUB, type SeedContext } from "./ord
 /** L'heure du retrait : dans le créneau pro du Labo (05:30–06:30). */
 const HANDOVER_HOUR = 6;
 
-/** L'instant du retrait d'une commande pour le jour `YYYY-MM-DD` (heure locale). */
+/** L'instant du retrait d'une commande pour le jour `YYYY-MM-DD` (heure de Paris). */
 export function handoverInstantOf(forDay: string): Date {
-  const [year, month, day] = forDay.split("-").map(Number);
-  return atHour(new Date(year ?? 0, (month ?? 1) - 1, day ?? 1), HANDOVER_HOUR);
+  return parisAt(forDay, HANDOVER_HOUR);
 }
 
 /** Retire une commande au comptoir, à l'heure de son jour. */

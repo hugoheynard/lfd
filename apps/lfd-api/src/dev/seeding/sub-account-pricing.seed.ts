@@ -2,7 +2,7 @@ import { PoseCompanyMercurialeCommand } from "../../b2b/pricing/application/comm
 import { SetVolumeLadderCommand } from "../../b2b/pricing/application/commands/set-volume-ladder.command.js";
 import { SignVolumeCommitmentCommand } from "../../b2b/pricing/application/commands/sign-volume-commitment.command.js";
 import type { ClientContext } from "./client.seed.js";
-import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
+import { asStaff, isoDay, monthDay, parisAt, SEED_STAFF_SUB } from "./order-placing.seed.js";
 
 /**
  * **Les décisions tarifaires des deux cas** — par les commandes de la
@@ -136,17 +136,13 @@ async function setHotelLadder(
   );
 }
 
-/** Le premier jour du mois précédent, à minuit local. */
+/** Le premier jour du mois précédent, à minuit à Paris. */
 export function startOfPreviousMonth(now: Date): Date {
-  const start = new Date(now);
-  start.setDate(1);
-  start.setHours(0, 0, 0, 0);
-  start.setMonth(start.getMonth() - 1);
-  return start;
+  return parisAt(monthDay(isoDay(now), -1, 1), 0);
 }
 
+/** Le même jour du mois, `months` mois plus tard, à minuit à Paris. */
 function monthsAfter(from: Date, months: number): Date {
-  const end = new Date(from);
-  end.setMonth(end.getMonth() + months);
-  return end;
+  const day = isoDay(from);
+  return parisAt(monthDay(day, months, Number(day.slice(-2))), 0);
 }
