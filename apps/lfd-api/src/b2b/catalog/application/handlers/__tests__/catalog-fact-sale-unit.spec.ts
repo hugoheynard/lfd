@@ -114,3 +114,30 @@ describe("receivedProductOf — l'unité de vente", () => {
     ).toThrow(CatalogFactPayloadError);
   });
 });
+
+/** Fil v15 (`plan-quantite-minimale.md`, M2) : la grille effective, rangée telle quelle. */
+describe("receivedProductOf — la quantité minimale", () => {
+  it("range la grille reçue sur l'article", () => {
+    const grid = { pro: { b2b: 6 }, public: { takeaway: 2 } };
+    const fact = CatalogProductChangedFact.fromPayload(
+      payload({ variant: { minQuantities: grid } }),
+    );
+
+    expect(receivedProductOf(fact).items[0]?.minQuantities).toEqual(grid);
+  });
+
+  /** Un fait d'avant la v15 : « on ne sait pas », jamais « aucun minimum ». */
+  it("lit `null` sur un fait émis avant la quantité minimale", () => {
+    const fact = CatalogProductChangedFact.fromPayload(payload({}));
+
+    expect(receivedProductOf(fact).items[0]?.minQuantities).toBeNull();
+  });
+
+  it("refuse un minimum à 1 plutôt que de le ranger", () => {
+    expect(() =>
+      CatalogProductChangedFact.fromPayload(
+        payload({ variant: { minQuantities: { pro: { b2b: 1 }, public: {} } } }),
+      ),
+    ).toThrow(CatalogFactPayloadError);
+  });
+});

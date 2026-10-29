@@ -48,6 +48,8 @@ export function snapshot(status: ProductSnapshot["status"]): ProductSnapshot {
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
+        minQuantities: { pro: {}, public: {} },
+        minQuantityFollowsDefault: false,
         allergenSheet: null,
         nutrition: null,
       },

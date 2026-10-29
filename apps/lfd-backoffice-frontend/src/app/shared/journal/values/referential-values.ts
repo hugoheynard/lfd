@@ -132,5 +132,9 @@ export const REFERENTIAL_VALUES: ValueFamily = {
     contextLabels: 'free',
     // Le nom d'une option de déclinaison (« Taille ») : saisi à l'écran.
     options: 'free',
+    // Les deux lignes de la quantité minimale d'une déclinaison
+    // (`product.min_quantities_changed`) : une case par contexte de vente.
+    pro: SALES_CONTEXT,
+    public: SALES_CONTEXT,
   },
 };

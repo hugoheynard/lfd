@@ -195,6 +195,12 @@ model CatalogItem {
   weightMinGrams  Int?   @map("weight_min_grams")
   weightStepGrams Int?   @map("weight_step_grams")
 
+  /// **La quantité minimale d'achat** reçue du référentiel (fil v15,
+  /// `documentation/catalogue/plan-quantite-minimale.md`, M2), effective, en
+  /// pièces : `{ pro: { <contexte>: n }, public: { … } }`. `NULL` = reçu avant
+  /// le fil v15 — on ne sait pas, ce n'est pas « aucun minimum ».
+  minQuantities Json? @map("min_quantities")
+
   /// **Le prix public par contexte de vente**, résolu par le PIM :
   /// `{ "takeaway": { "vatRatePercent": 5.5, "htMillicents": 189573 }, … }`.
   ///

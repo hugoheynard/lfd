@@ -163,6 +163,15 @@ export interface ShopItemView {
   /** Le minimum d'un article au poids, en grammes ; `null` = pas de minimum (ou une pièce). */
   readonly weightMinGrams?: number | null;
   /**
+   * **La quantité minimale d'achat, en pièces**, déjà résolue pour la
+   * clientèle et le contexte de qui regarde — le public dans le contexte de la
+   * boutique publique, le pro dans `b2b`
+   * (`documentation/catalogue/plan-quantite-minimale.md`, M2). `null` = aucun
+   * minimum, ou article reçu avant que le référentiel ne la publie. Absent
+   * d'un serveur d'avant. Ni la vitrine ni le devis ne l'appliquent encore (M4).
+   */
+  readonly minQuantity?: number | null;
+  /**
    * **Le prix au kilo PRO, hors taxe, en millicentimes** — tel que saisi au
    * référentiel (`documentation/pricing/plan-prix-au-kilo.md`).
    *

@@ -48,6 +48,7 @@ export function receivedProductOf(fact: CatalogProductChangedFact): ReceivedCata
       saleUnit: variant.saleUnit,
       weightMinGrams: variant.weightMinGrams,
       weightStepGrams: variant.weightStepGrams,
+      minQuantities: variant.minQuantities,
       publicByContext: variant.publicByContext ?? null,
       allergens: variant.allergens,
       allergenLabels: variant.allergenLabels,

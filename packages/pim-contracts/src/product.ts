@@ -315,6 +315,16 @@ export interface VariantView {
    */
   readonly pricingFollowsDefault: boolean;
   /**
+   * **La quantité minimale d'achat**, en pièces, par audience et par clé de
+   * contexte (`plan-quantite-minimale.md`). Case absente = aucun minimum.
+   *
+   * ⚠️ **Résolue** comme le tarif : une déclinaison qui suit le défaut rend ici
+   * la grille du défaut, et une déclinaison au poids une grille vide.
+   */
+  readonly minQuantities: VariantMinQuantities;
+  /** Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut. */
+  readonly minQuantityFollowsDefault: boolean;
+  /**
    * La déclaration d'allergènes, traces comprises ; `null` = non renseignée.
    *
    * ⚠️ **Résolue.** Une déclinaison alignée rend ici la déclaration du défaut,
@@ -546,6 +556,27 @@ export const setProductAudiencePayloadSchema = z.strictObject({
   audience: operationAudienceSchema.nullable(),
 });
 export type SetProductAudiencePayload = z.infer<typeof setProductAudiencePayloadSchema>;
+
+/**
+ * **La quantité minimale d'une déclinaison**, en pièces : une ligne par
+ * clientèle, une case par clé de contexte de vente (`plan-quantite-minimale.md`).
+ */
+export const variantMinQuantitiesSchema = z.strictObject({
+  pro: z.record(z.string().min(1), z.number().int()),
+  public: z.record(z.string().min(1), z.number().int()),
+});
+export type VariantMinQuantities = z.infer<typeof variantMinQuantitiesSchema>;
+
+/**
+ * **Poser la quantité minimale d'une déclinaison** — sa grille, ou `"follow"`
+ * pour suivre le défaut (`PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`).
+ * La forme seule : le minimum de 2, le contexte connu et l'unité de vente sont
+ * jugés par le référentiel.
+ */
+export const setVariantMinQuantitiesPayloadSchema = z.strictObject({
+  minQuantities: z.union([z.literal("follow"), variantMinQuantitiesSchema]),
+});
+export type SetVariantMinQuantitiesPayload = z.infer<typeof setVariantMinQuantitiesPayloadSchema>;
 
 export const setProductVatPayloadSchema = z.object({
   vatByContext: z.record(z.string(), z.string()),

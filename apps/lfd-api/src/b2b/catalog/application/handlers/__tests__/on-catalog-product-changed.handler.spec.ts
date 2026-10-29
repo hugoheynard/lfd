@@ -55,6 +55,7 @@ const VARIANT: CatalogVariantFact = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
+  minQuantities: { pro: {}, public: {} },
   publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 113_744 } },
   weightGrams: 60,
   isDefault: true,

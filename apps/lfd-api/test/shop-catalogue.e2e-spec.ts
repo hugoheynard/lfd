@@ -184,6 +184,12 @@ describe("la vitrine publique", () => {
       "audience",
       "image",
       "isFeatured",
+      // ⚠️ **Un élargissement ASSUMÉ** (2026-10-29, Hugo — M2 de
+      // `documentation/catalogue/plan-quantite-minimale.md`) : la quantité
+      // minimale en pièces, déjà résolue pour qui regarde — ce que le
+      // sélecteur affichera et ce que la commande refusera (M4). Toujours
+      // émise, `null` sans minimum.
+      "minQuantity",
       "name",
       "note",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-28, Hugo —

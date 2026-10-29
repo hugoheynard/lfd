@@ -40,7 +40,12 @@
 
 ## 3. Les lots
 
-### M1 — le référentiel (backend PIM)
+### M1 — le référentiel (backend PIM) — ✅ bâti le 2026-10-29
+
+Route réelle : `PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`.
+Trois points tranchés au bâti : « suivre » est refusé sur une déclinaison au
+poids ; une grille posée puis passée au poids reste en base mais n'est plus
+servie ; un contexte hors service est refusé, comme pour la TVA.
 
 - Table `pim.variant_min_quantity (variant_id, audience, context_id, quantity)`,
   clé `(variant_id, audience, context_id)`, et `product_variant.min_quantity_follows_default
@@ -49,12 +54,12 @@ BOOLEAN NOT NULL DEFAULT false`, `CHECK (quantity >= 2)`,
 - Agrégat `Product`, par déclinaison : `minQuantities` + `changeMinQuantities(variantId, next | 'follow')`, refusé pour « suivre » sur le défaut, qui refuse un
   contexte inconnu ou une quantité < 2.
 - Commande `SetProductMinQuantitiesCommand` (fichier colocalisé), route
-  `PUT /pim/products/:id/variants/:variantId/min-quantities`, fait de journal
+  `PUT /pim/catalogue/products/:id/variants/:variantId/min-quantities`, fait de journal
   `product.min_quantities_changed` (avant/après), émission au catalogue comme
   l'audience.
 - Le détail de la fiche sert la matrice de chaque déclinaison, et la matrice EFFECTIVE (résolue par l'héritage) part sur le fil.
 
-### M2 — le fil vers le commerce
+### M2 — le fil vers le commerce — ✅ bâti le 2026-10-29 (fil v15)
 
 - Le fait catalogue porte `minQuantities: { pro: Record<ctxKey, n>, public: Record<ctxKey, n> }`.
 - `catalog_items.min_quantities jsonb NULL` (null = avant le fil), projeté.

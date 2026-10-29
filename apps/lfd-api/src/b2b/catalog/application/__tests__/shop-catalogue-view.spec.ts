@@ -205,3 +205,35 @@ describe("shopCatalogueOf — l'unité de vente", () => {
     });
   });
 });
+
+/** M2 de `plan-quantite-minimale.md` : le minimum de qui regarde, déjà résolu (Q7). */
+describe("shopCatalogueOf — la quantité minimale", () => {
+  const at = new Date("2026-10-01T00:00:00.000Z");
+  const grid = { pro: { b2b: 6 }, public: { takeaway: 2, eatIn: 4 } };
+
+  it("sert au public la case de la boutique publique", () => {
+    const view = shopCatalogueOf([catalogItem("VIE-001", { minQuantities: grid })], sale(at));
+
+    expect(view.items[0]?.minQuantity).toBe(2);
+  });
+
+  it("sert au pro la case b2b", () => {
+    const view = shopCatalogueOf([catalogItem("VIE-001", { minQuantities: grid })], {
+      ...sale(at),
+      audience: "pro",
+    });
+
+    expect(view.items[0]?.minQuantity).toBe(6);
+  });
+
+  it("sert `null` sans case, et pour un article reçu avant le fil", () => {
+    const none = shopCatalogueOf(
+      [catalogItem("VIE-001", { minQuantities: { pro: {}, public: {} } })],
+      sale(at),
+    );
+    const before = shopCatalogueOf([catalogItem("VIE-001")], sale(at));
+
+    expect(none.items[0]?.minQuantity).toBeNull();
+    expect(before.items[0]?.minQuantity).toBeNull();
+  });
+});

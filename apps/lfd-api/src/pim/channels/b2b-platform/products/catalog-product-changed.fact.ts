@@ -1,4 +1,9 @@
-import { syncProductSchema, syncSaleUnitSchema, syncVariantSchema } from "@lfd/catalog-sync";
+import {
+  syncMinQuantitiesSchema,
+  syncProductSchema,
+  syncSaleUnitSchema,
+  syncVariantSchema,
+} from "@lfd/catalog-sync";
 import { operationAudienceSchema } from "@lfd/pim-contracts";
 import { z } from "zod";
 
@@ -48,6 +53,10 @@ const payloadSchema = z.object({
       saleUnit: syncSaleUnitSchema.default("piece"),
       weightMinGrams: z.number().int().positive().nullable().default(null),
       weightStepGrams: z.number().int().positive().nullable().default(null),
+      // La quantité minimale (fil v15, `plan-quantite-minimale.md`) : absente
+      // d'un fait émis avant elle, et lue `null` — « on ne sait pas », que le
+      // commerce range tel quel plutôt que d'inventer « aucun minimum ».
+      minQuantities: syncMinQuantitiesSchema.nullable().default(null),
     }),
   ),
   gaps: z.record(z.string(), z.array(z.string().min(1))),

@@ -41,6 +41,7 @@ export abstract class PimPrismaService {
   abstract readonly productContextVat: PrismaService["productContextVat"];
   abstract readonly product: PrismaService["product"];
   abstract readonly productVariant: PrismaService["productVariant"];
+  abstract readonly variantMinQuantity: PrismaService["variantMinQuantity"];
   /**
    * Les deux moitiés de la fiche réglementaire. Elles ont remplacé
    * `nutrition_declaration` le 2026-09-22 — laquelle n'est plus atteignable

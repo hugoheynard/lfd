@@ -9,6 +9,16 @@ import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
 import {
+  DefaultVariantCannotFollowMinQuantityError,
+  MinQuantityOnWeightSaleError,
+} from "../errors/min-quantity-errors.js";
+import {
+  NO_MIN_QUANTITIES,
+  isEmptyMinQuantities,
+  sameMinQuantities,
+  type MinQuantities,
+} from "../value-objects/min-quantities.js";
+import {
   PIECE_SALE_TERMS,
   saleTerms,
   type SaleTerms,
@@ -176,6 +186,19 @@ export interface VariantSnapshot {
    */
   readonly hasBeenPublished: boolean;
   /**
+   * La quantité minimale d'achat, en pièces, par audience et par contexte
+   * (`plan-quantite-minimale.md`). Vide = aucun minimum. **Résolue** dans
+   * l'instantané de l'agrégat : une déclinaison qui suit le défaut rend ici
+   * celle du défaut, et une déclinaison au poids n'en rend jamais.
+   */
+  readonly minQuantities: MinQuantities;
+  /**
+   * Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut.
+   * Le même idiome que {@link VariantSnapshot.pricingFollowsDefault}, hors de
+   * {@link VariantAspect} : elle a sa propre route, pas la case d'alignement.
+   */
+  readonly minQuantityFollowsDefault: boolean;
+  /**
    * La déclaration d'allergènes, traces comprises. `null` = **non
    * renseignée** ; `declared: []` = « aucun allergène » déclaré.
    */
@@ -241,6 +264,8 @@ export class Variant {
   private publicPricePerKgTtcCentsValue: number | null;
   private saleTermsValue: SaleTerms;
   private publishedFlag: boolean;
+  private minQuantitiesValue: MinQuantities;
+  private minQuantityFollowsDefaultFlag: boolean;
   private allergenSheetValue: VariantAllergenSheetSnapshot | null;
   private nutritionValue: VariantNutritionSnapshot | null;
   private readonly followsDefault: Record<VariantFlag, boolean>;
@@ -272,6 +297,8 @@ export class Variant {
       weightStepGrams: snapshot.weightStepGrams,
     };
     this.publishedFlag = snapshot.hasBeenPublished;
+    this.minQuantitiesValue = snapshot.minQuantities;
+    this.minQuantityFollowsDefaultFlag = snapshot.minQuantityFollowsDefault;
     this.allergenSheetValue = snapshot.allergenSheet;
     this.nutritionValue = snapshot.nutrition;
     this.followsDefault = {
@@ -304,6 +331,8 @@ export class Variant {
       publicPricePerKgTtcCents: null,
       ...PIECE_SALE_TERMS,
       hasBeenPublished: false,
+      minQuantities: NO_MIN_QUANTITIES,
+      minQuantityFollowsDefault: false,
       // Elle ne peut pas se suivre elle-même : c'est ELLE, le défaut.
       regulatoryFollowsDefault: false,
       pricingFollowsDefault: false,
@@ -351,6 +380,10 @@ export class Variant {
       // est déjà en vente — c'est l'agrégat qui le dit (`Product.addVariant`).
       ...PIECE_SALE_TERMS,
       hasBeenPublished: false,
+      // Aucun minimum, et ne suit pas : un minimum hérité d'office
+      // refuserait des commandes que personne n'a décidé de refuser.
+      minQuantities: NO_MIN_QUANTITIES,
+      minQuantityFollowsDefault: false,
       regulatoryFollowsDefault: true,
       // Les VALEURS naissent alignées pour la même raison que les allergènes :
       // née nue, la déclinaison afficherait un tableau vide là où celui du
@@ -570,6 +603,50 @@ export class Variant {
     this.saleTermsValue = next;
   }
 
+  /** Suit-elle la quantité minimale du défaut plutôt que la sienne ? */
+  get minQuantityFollowsDefault(): boolean {
+    return this.minQuantityFollowsDefaultFlag;
+  }
+
+  /**
+   * **Pose sa quantité minimale** — une matrice, ou `"follow"` pour suivre
+   * celle du défaut (`plan-quantite-minimale.md`, Q1).
+   *
+   * Poser une matrice cesse de suivre ; suivre garde la matrice propre, qui
+   * dort — même promesse que {@link alignOnDefault} : se désaligner rend ce
+   * qu'on avait écrit. Au poids, seule la matrice vide passe : son minimum
+   * est en grammes (Q3), et suivre celui d'un défaut à la pièce l'en
+   * doterait en douce.
+   *
+   * La matrice arrive déjà lue (`minQuantities`) et ses contextes vérifiés
+   * par l'agrégat.
+   *
+   * @returns `false` quand elle le disait déjà.
+   */
+  changeMinQuantities(next: MinQuantities | "follow"): boolean {
+    if (next === "follow") {
+      if (this.defaultFlag) {
+        throw new DefaultVariantCannotFollowMinQuantityError(this.skuValue);
+      }
+      this.refuseOnWeight(true);
+      const changed = !this.minQuantityFollowsDefaultFlag;
+      this.minQuantityFollowsDefaultFlag = true;
+      return changed;
+    }
+    this.refuseOnWeight(!isEmptyMinQuantities(next));
+    const changed =
+      this.minQuantityFollowsDefaultFlag || !sameMinQuantities(this.minQuantitiesValue, next);
+    this.minQuantitiesValue = next;
+    this.minQuantityFollowsDefaultFlag = false;
+    return changed;
+  }
+
+  private refuseOnWeight(setsSomething: boolean): void {
+    if (setsSomething && this.saleTermsValue.saleUnit === "weight") {
+      throw new MinQuantityOnWeightSaleError(this.skuValue);
+    }
+  }
+
   /** L'unité dans laquelle elle se vend — la sienne, jamais celle du défaut. */
   get saleUnit(): SaleUnit {
     return this.saleTermsValue.saleUnit;
@@ -624,6 +701,8 @@ export class Variant {
       publicPricePerKgTtcCents: this.publicPricePerKgTtcCentsValue,
       ...this.saleTermsValue,
       hasBeenPublished: this.publishedFlag,
+      minQuantities: this.minQuantitiesValue,
+      minQuantityFollowsDefault: this.minQuantityFollowsDefaultFlag,
       regulatoryFollowsDefault: this.followsDefault.regulatory,
       pricingFollowsDefault: this.followsDefault.pricing,
       nutritionFollowsDefault: this.followsDefault.nutrition,

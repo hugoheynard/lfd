@@ -100,6 +100,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // un signataire qui l'a relue pour les pros voudrait la revoir ouverte au
   // public (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
   [PIM_EVENTS.productAudienceChanged]: true,
+  // La quantité minimale change ce qu'un client doit prendre : un signataire
+  // qui a relu la fiche sans minimum voudrait la revoir avec
+  // (`plan-quantite-minimale.md`, M1).
+  [PIM_EVENTS.productMinQuantitiesChanged]: true,
   // Changer de famille change les taux et les canaux hérités. Le même geste
   // écrit aussi `identity_saved`, déjà compté : ce fait-ci ne périme donc
   // rien de plus, mais la table est exhaustive et il y a sa place.

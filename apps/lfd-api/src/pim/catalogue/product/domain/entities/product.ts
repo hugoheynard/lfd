@@ -23,6 +23,11 @@ import type { ContextVat } from "../../../shared/domain/value-objects/context-va
 import type { AllergenDeclaration } from "../value-objects/nutrition-declaration.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
+import {
+  NO_MIN_QUANTITIES,
+  contextKeysOf,
+  type MinQuantities,
+} from "../value-objects/min-quantities.js";
 import { effectiveAudience, type Audience } from "../../../shared/domain/value-objects/audience.js";
 import type { CategoryVatPercents } from "../../../shared/domain/ports/catalogue-reader.js";
 import { activationGapsOf, type ActivationGaps } from "../services/activation-gaps.js";
@@ -287,6 +292,32 @@ export class Product {
     }
     this.audienceValue = audience;
     return true;
+  }
+
+  /**
+   * **La quantité minimale d'une déclinaison** — sa matrice, ou `"follow"`
+   * pour suivre le défaut (`plan-quantite-minimale.md`, M1).
+   *
+   * Le contexte se vérifie ici, contre le registre que l'appelant passe —
+   * comme pour {@link setVat} : un minimum dans un contexte que personne ne
+   * vend serait une case que personne ne lit.
+   *
+   * @returns `false` quand la déclinaison le disait déjà.
+   */
+  changeMinQuantities(
+    variantId: string,
+    next: MinQuantities | "follow",
+    contexts: readonly SalesContext[],
+  ): boolean {
+    const variant = this.variant(variantId);
+    if (next !== "follow") {
+      const known = new Set(contexts.map((context) => context.key));
+      const unknown = contextKeysOf(next).find((key) => !known.has(key));
+      if (unknown !== undefined) {
+        throw new ProductUnknownContextError(unknown);
+      }
+    }
+    return variant.changeMinQuantities(next);
   }
 
   /** Renomme — et re-dérive le slug. */
@@ -672,6 +703,7 @@ export class Product {
       allergenSheet: allergensFrom.allergenSheet,
       nutrition: valuesFrom.nutrition,
       ...pricing,
+      minQuantities: effectiveMinQuantities(own, source),
     };
   }
 
@@ -736,6 +768,19 @@ function assertVariants(snapshot: ProductSnapshot): void {
       `${String(defaults)} déclinaison(s) par défaut au lieu d’une`,
     );
   }
+}
+
+/**
+ * La quantité minimale **effective** d'une déclinaison : la sienne, ou celle
+ * du défaut si elle le suit — et jamais aucune au poids, dont le minimum est en
+ * grammes (`plan-quantite-minimale.md`, Q3). Le poids se juge sur ELLE : une
+ * déclinaison passée au poids après avoir posé une grille ne la sert plus.
+ */
+function effectiveMinQuantities(own: VariantSnapshot, source: VariantSnapshot): MinQuantities {
+  if (own.saleUnit === "weight") {
+    return NO_MIN_QUANTITIES;
+  }
+  return own.minQuantityFollowsDefault ? source.minQuantities : own.minQuantities;
 }
 
 /** Le slug d'un produit — dérivé du nom, jamais saisi. */

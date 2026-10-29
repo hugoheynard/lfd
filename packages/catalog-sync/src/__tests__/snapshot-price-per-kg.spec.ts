@@ -29,6 +29,7 @@ const variant = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
+  minQuantities: { pro: {}, public: {} },
 };
 
 function snapshotOf(version: number, variants: readonly Record<string, unknown>[]) {

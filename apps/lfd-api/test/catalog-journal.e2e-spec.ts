@@ -92,6 +92,7 @@ function snapshot(skus: readonly string[]): CatalogSnapshot {
           saleUnit: "piece",
           weightMinGrams: null,
           weightStepGrams: null,
+          minQuantities: { pro: {}, public: {} },
           publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
           allergens: null,
           allergenLabels: null,

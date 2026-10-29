@@ -73,6 +73,7 @@ function product(id: string, sku: string, name: string): CatalogSnapshot["produc
         saleUnit: "piece",
         weightMinGrams: null,
         weightStepGrams: null,
+        minQuantities: { pro: {}, public: {} },
         publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
         allergens: null,
         allergenLabels: null,

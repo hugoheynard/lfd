@@ -92,8 +92,10 @@ model SalesContext {
 
   /// Les taux réglés dans ce contexte. Le `Restrict` (côté taux) protège la
   /// clé : un contexte qui porte un taux ne se supprime pas sous lui.
-  categoryVat CategoryContextVat[]
-  productVat  ProductContextVat[]
+  categoryVat   CategoryContextVat[]
+  productVat    ProductContextVat[]
+  /// Les quantités minimales réglées dans ce contexte (`Restrict`).
+  minQuantities VariantMinQuantity[]
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")

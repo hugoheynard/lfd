@@ -1,6 +1,11 @@
 import { AllergenStore } from "../../../../allergens/application/__tests__/in-memory-allergens.js";
 import { AllergenNaming } from "../../../../allergens/domain/services/allergen-naming.js";
 import type { VariantRecord } from "../../../../catalogue/product/domain/ports/product.repository.js";
+import { Product } from "../../../../catalogue/product/domain/entities/product.js";
+import {
+  bareVariant,
+  tarte,
+} from "../../../../catalogue/product/application/__tests__/audience-doubles.js";
 import { projectVariant, vatOf, type AllergenContext } from "../projection.js";
 
 /** Ni composition citée, ni catalogue publié : la déclinaison parle seule. */
@@ -27,6 +32,8 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     // « Aucun allergène », une déclaration : depuis le lot 2b, une déclinaison
     // sans déclaration ne part plus (`variant_sans_allergenes`), et ces cas
     // parlent d'autre chose.
@@ -88,6 +95,52 @@ describe("projectVariant", () => {
     const v = projectVariant(weighed, 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
 
     expect(v).toMatchObject({ saleUnit: "weight", weightMinGrams: 200, weightStepGrams: 100 });
+  });
+
+  /** Fil v15 (`plan-quantite-minimale.md`, M2) : la grille de l'instantané, recopiée. */
+  it("porte la quantité minimale de la déclinaison, grille vide comprise", () => {
+    const grid = { pro: { b2b: 6 }, public: { takeaway: 2 } };
+
+    const v = projectVariant(
+      variant({ minQuantities: grid }),
+      151_659,
+      5.5,
+      200,
+      percents,
+      INCO,
+      NOTHING_ELSE,
+    );
+    const none = projectVariant(variant(), 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
+
+    expect(v.minQuantities).toEqual(grid);
+    expect(v.minQuantities).not.toBe(grid);
+    expect(none.minQuantities).toEqual({ pro: {}, public: {} });
+  });
+
+  /** L'héritage est résolu par l'agrégat AVANT le fil : la grille EFFECTIVE part. */
+  it("porte la grille du défaut pour une déclinaison qui le suit", () => {
+    const product = Product.reconstitute(
+      tarte({
+        variants: [
+          bareVariant({ minQuantities: { pro: { b2b: 6 }, public: {} } }),
+          bareVariant({
+            id: "prd_tarte_v2",
+            sku: "PAT-7-2",
+            isDefault: false,
+            position: 1,
+            minQuantityFollowsDefault: true,
+          }),
+        ],
+      }),
+    );
+    const second = product.snapshot().variants[1];
+    if (second === undefined) {
+      throw new Error("la seconde déclinaison manque à la fixture");
+    }
+
+    const v = projectVariant(second, 151_659, 5.5, 200, percents, INCO, NOTHING_ELSE);
+
+    expect(v.minQuantities).toEqual({ pro: { b2b: 6 }, public: {} });
   });
 
   it("porte une pièce à la pièce, sans pas ni minimum", () => {

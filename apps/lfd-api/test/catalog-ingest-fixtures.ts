@@ -148,6 +148,7 @@ export function snapshotOf(
             saleUnit: "piece",
             weightMinGrams: null,
             weightStepGrams: null,
+            minQuantities: { pro: {}, public: {} },
             publicByContext:
               publicPrice === null
                 ? {}

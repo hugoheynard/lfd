@@ -67,7 +67,8 @@ export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
  * de les servir à l'agence. Élargir ce flux public est une décision à part.
  * Les prix au kilo non plus (2026-10-28) : `plan-prix-au-kilo.md` laisse le
  * flux de la vitrine hors de son périmètre. L'unité de vente non plus
- * (2026-10-28, P4 de `vente-au-poids.md`).
+ * (2026-10-28, P4 de `vente-au-poids.md`). La quantité minimale non plus
+ * (2026-10-29, M2 de `plan-quantite-minimale.md`).
  */
 export type VitrineItemView = Omit<
   ShopItemView,
@@ -80,6 +81,7 @@ export type VitrineItemView = Omit<
   | "saleUnit"
   | "weightStepGrams"
   | "weightMinGrams"
+  | "minQuantity"
 > & {
   readonly isFeatured?: boolean;
   readonly operation?: ShopItemView["operation"];

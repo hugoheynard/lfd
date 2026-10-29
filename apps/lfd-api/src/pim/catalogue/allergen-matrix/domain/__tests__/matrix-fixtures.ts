@@ -128,6 +128,8 @@ export function variant(id: string, over: Partial<VariantSnapshot> = {}): Varian
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     allergenSheet: null,
     nutrition: null,
     ...over,

@@ -26,6 +26,7 @@ const FACTS: PimFacts = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
+  minQuantities: null,
   publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
   allergens: [],
   allergenLabels: null,

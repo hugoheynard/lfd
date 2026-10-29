@@ -1,4 +1,4 @@
-import type { SyncMedia, SyncVariant } from "@lfd/catalog-sync";
+import type { SyncMedia, SyncMinQuantities, SyncVariant } from "@lfd/catalog-sync";
 import { proPriceOf } from "@lfd/pim-contracts";
 
 import { TechnicalError } from "../../../../platform/shared/errors/app-error.js";
@@ -72,9 +72,13 @@ export interface CatalogProductHead {
  * Une déclinaison telle qu'un fait la porte : celle du fil, plus les
  * traductions de son nom — le nom d'un article en boutique est celui de sa
  * déclinaison. `null` sur un fait d'avant le lot des langues.
+ *
+ * `minQuantities` est `null` sur un fait d'avant le fil v15 — relu, jamais
+ * émis : l'émission porte toujours la grille effective, vide comprise.
  */
-export type CatalogVariantFact = SyncVariant & {
+export type CatalogVariantFact = Omit<SyncVariant, "minQuantities"> & {
   readonly nameTranslations: CatalogTranslations | null;
+  readonly minQuantities: SyncMinQuantities | null;
 };
 
 /**

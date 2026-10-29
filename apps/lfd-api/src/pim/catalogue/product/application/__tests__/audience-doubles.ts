@@ -43,6 +43,8 @@ export function bareVariant(over: Partial<VariantSnapshot> = {}): VariantSnapsho
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     allergenSheet: null,
     nutrition: null,
     ...over,

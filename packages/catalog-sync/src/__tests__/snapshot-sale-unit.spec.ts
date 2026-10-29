@@ -30,6 +30,7 @@ const piece = {
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
+  minQuantities: { pro: {}, public: {} },
 };
 
 const byWeight = {
@@ -74,8 +75,8 @@ function withoutSaleTerms(): Record<string, unknown> {
 }
 
 describe("syncVariantSchema — l'unité de vente", () => {
-  it("le fil est en v14", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBe(14);
+  it("traverse depuis la v14", () => {
+    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(14);
   });
 
   it("accepte une pièce, et un article au poids avec son pas et son minimum", () => {
@@ -130,7 +131,12 @@ describe("storedCatalogSnapshotSchema — une arrivée d'avant la v14", () => {
     });
   });
 
-  it("une v14 est acceptée par le fil", () => {
-    expect(catalogSnapshotSchema.safeParse(snapshotOf(14, [piece, byWeight])).success).toBe(true);
+  // Le fil n'accepte que SA version : depuis la v15, c'est elle qui porte
+  // l'unité de vente (et la quantité minimale) au fil.
+  it("la version courante est acceptée par le fil, unité comprise", () => {
+    expect(
+      catalogSnapshotSchema.safeParse(snapshotOf(CATALOG_SNAPSHOT_VERSION, [piece, byWeight]))
+        .success,
+    ).toBe(true);
   });
 });

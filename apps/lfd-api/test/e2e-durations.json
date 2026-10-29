@@ -50,6 +50,7 @@
   "test/catalog-ingest-facts.e2e-spec.ts": 5356,
   "test/catalog-ingest.e2e-spec.ts": 5616,
   "test/catalog-journal.e2e-spec.ts": 8103,
+  "test/catalog-min-quantities.e2e-spec.ts": 7000,
   "test/catalog-public-review.e2e-spec.ts": 15291,
   "test/catalog-sale-unit.e2e-spec.ts": 5000,
   "test/catalog-unknown-family.e2e-spec.ts": 4837,

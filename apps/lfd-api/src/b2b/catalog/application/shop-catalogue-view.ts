@@ -1,5 +1,6 @@
 import type { ContentLocale, ShopCatalogueView, ShopItemView, ShopShelfView } from "@lfd/contracts";
 import { lineTotalCents, pieces, ttcCentsFromHtMillicents, ttcCentsOf } from "@lfd/money";
+import { minQuantityFor } from "../domain/catalog-min-quantities.js";
 
 import { CATALOG_SOURCE_LANGUAGE, inLanguage } from "../domain/catalog-translations.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
@@ -106,6 +107,9 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     saleUnit: item.saleUnit,
     weightStepGrams: item.weightStepGrams,
     weightMinGrams: item.weightMinGrams,
+    // Le minimum de qui regarde, résolu ici (M2) : sa clientèle, dans le
+    // contexte où elle commande en ligne (Q7).
+    minQuantity: minQuantityFor(item.minQuantities, audience),
     vatRatePercent: item.vatRate,
     shelfId: item.categoryId,
     isFeatured: item.isFeatured,

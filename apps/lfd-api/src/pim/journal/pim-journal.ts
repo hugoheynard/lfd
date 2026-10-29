@@ -120,6 +120,12 @@ export const PIM_EVENTS = {
    */
   productAudienceChanged: "product.audience_changed",
   /**
+   * La quantité minimale d'achat d'une déclinaison change, ou se met à suivre
+   * le défaut (`plan-quantite-minimale.md`, M1). Un fait à part, sur sa
+   * propre route : il change COMBIEN on doit en prendre.
+   */
+  productMinQuantitiesChanged: "product.min_quantities_changed",
+  /**
    * **Quelqu'un affirme que la fiche est juste.** Distinct de `published` :
    * l'un est une signature sur un contenu, l'autre une mise en vente. Un
    * historique qui les confondrait ne saurait plus répondre à « qui a validé ce

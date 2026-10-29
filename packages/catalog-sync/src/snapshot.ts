@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 14;
+export const CATALOG_SNAPSHOT_VERSION = 15;
 
 /**
  * Une famille de produits, **à plat**.
@@ -155,6 +155,19 @@ export type SyncContextPrice = z.infer<typeof syncContextPriceSchema>;
 export const syncSaleUnitSchema = z.enum(["piece", "weight"]);
 export type SyncSaleUnit = z.infer<typeof syncSaleUnitSchema>;
 
+/**
+ * **La quantité minimale d'achat d'une déclinaison**, en pièces (v15,
+ * `documentation/catalogue/plan-quantite-minimale.md`) : une ligne par
+ * clientèle, une case par CLÉ de contexte de vente — comme `publicByContext`.
+ * Case absente = aucun minimum. EFFECTIVE : l'émetteur a déjà résolu
+ * l'héritage du défaut, et une déclinaison au poids n'en porte jamais.
+ */
+export const syncMinQuantitiesSchema = z.strictObject({
+  pro: z.record(z.string().min(1), z.number().int().min(2)),
+  public: z.record(z.string().min(1), z.number().int().min(2)),
+});
+export type SyncMinQuantities = z.infer<typeof syncMinQuantitiesSchema>;
+
 export const syncVariantSchema = z.object({
   /**
    * L'identifiant de la déclinaison **chez l'émetteur**.
@@ -270,6 +283,12 @@ export const syncVariantSchema = z.object({
    * v14.
    */
   weightStepGrams: z.number().int().positive().nullable(),
+  /**
+   * **La quantité minimale d'achat**, par clientèle et par contexte (v15).
+   * Obligatoire sur le fil ; absente avant la v15 (cf.
+   * {@link storedCatalogSnapshotSchema}).
+   */
+  minQuantities: syncMinQuantitiesSchema,
   /**
    * **Le prix public, par contexte de vente** — une entrée par contexte RÉGLÉ
    * sur la famille, indexée par sa clé (`takeaway`, `eatIn`, …).
@@ -695,6 +714,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(12),
     z.literal(13),
     z.literal(14),
+    z.literal(15),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -743,6 +763,8 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
             saleUnit: syncSaleUnitSchema.optional(),
             weightMinGrams: z.number().int().positive().nullable().optional(),
             weightStepGrams: z.number().int().positive().nullable().optional(),
+            // Absente avant la v15 : aucune quantité minimale n'existait.
+            minQuantities: syncMinQuantitiesSchema.optional(),
             // La limite RÉSOLUE, telle que la v6 la portait sur l'article. Elle
             // n'est plus émise, et reste lisible : une arrivée mise en file un
             // mardi peut être relue le jeudi, sur un code qui a changé.

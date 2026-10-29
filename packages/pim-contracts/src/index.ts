@@ -175,6 +175,8 @@ export {
   alignVariantPayloadSchema,
   variantAspectSchema,
   saleUnitSchema,
+  variantMinQuantitiesSchema,
+  setVariantMinQuantitiesPayloadSchema,
 } from "./product.js";
 export type {
   ProductKind,
@@ -205,6 +207,8 @@ export type {
   AlignVariantPayload,
   VariantAspect,
   SaleUnit,
+  VariantMinQuantities,
+  SetVariantMinQuantitiesPayload,
 } from "./product.js";
 
 export type {

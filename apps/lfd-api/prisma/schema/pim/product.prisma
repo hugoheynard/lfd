@@ -204,6 +204,12 @@ model ProductVariant {
   /// articles qui portaient le leur.
   pricingFollowsDefault Boolean @default(false) @map("pricing_follows_default")
 
+  /// Cette déclinaison **suit la quantité minimale de celle par défaut**
+  /// (`documentation/catalogue/plan-quantite-minimale.md`, Q1). `false` par
+  /// défaut ; sa matrice propre, si elle en a une, dort tant qu'elle suit.
+  /// `CHECK` : le défaut ne se suit pas lui-même.
+  minQuantityFollowsDefault Boolean @default(false) @map("min_quantity_follows_default")
+
   /// **Le prix professionnel HORS TAXE saisi**, en millicentimes (10⁻⁵ €) —
   /// lot P de `documentation/catalogue/plan-catalogue-synchronise-par-audience.md`.
   ///
@@ -217,7 +223,7 @@ model ProductVariant {
   /// `documentation/pricing/plan-prix-au-kilo.md`. Donnée INFORMATIVE : rien
   /// ne le lit pour tarifer. Saisi, jamais calculé depuis le prix et le poids.
   /// `NULL` = non saisi ; suit le défaut avec le tarif. `CHECK (> 0)`.
-  proPricePerKgMillicents Int? @map("pro_price_per_kg_millicents")
+  proPricePerKgMillicents  Int? @map("pro_price_per_kg_millicents")
   /// **Le prix au kilo public TTC saisi**, en centimes. Même statut que le
   /// précédent : informatif, saisi, `NULL` = non saisi. `CHECK (> 0)`.
   publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
@@ -225,13 +231,13 @@ model ProductVariant {
   /// **L'unité de vente** — `piece` (défaut, tout l'existant) ou `weight`, la
   /// quantité se comptant alors en grammes (`documentation/pricing/vente-au-poids.md`).
   /// Propre à la déclinaison, jamais héritée du défaut. `CHECK` sur les deux valeurs.
-  saleUnit String @default("piece") @map("sale_unit")
+  saleUnit         String  @default("piece") @map("sale_unit")
   /// Au poids : le minimum commandable, en grammes. `NULL` = aucun minimum ;
   /// toujours `NULL` à la pièce. `CHECK (> 0)`.
-  weightMinGrams Int? @map("weight_min_grams")
+  weightMinGrams   Int?    @map("weight_min_grams")
   /// Au poids : le pas de saisie, en grammes. `NULL` à la pièce, ou au poids
   /// tant qu'il n'est pas saisi (l'activation le réclame). `CHECK (> 0)`.
-  weightStepGrams Int? @map("weight_step_grams")
+  weightStepGrams  Int?    @map("weight_step_grams")
   /// **Déjà publiée** : vrai dès que la fiche est mise en vente avec elle, pour
   /// toujours. C'est ce qui fige `saleUnit` — une ligne de commande a pu la lire.
   hasBeenPublished Boolean @default(false) @map("has_been_published")
@@ -258,6 +264,8 @@ model ProductVariant {
   /// de ligne est un état — personne ne s'est prononcé.
   allergenSheet   VariantAllergens?
   nutritionValues NutritionValues?
+  /// La quantité minimale d'achat, case par case (audience × contexte).
+  minQuantities   VariantMinQuantity[]
 
   @@index([productId])
   @@map("product_variant")
@@ -345,5 +353,28 @@ model ProductReadiness {
   readyBy String   @map("ready_by")
 
   @@map("product_readiness")
+  @@schema("pim")
+}
+
+/// **La quantité minimale d'achat d'une déclinaison**, une ligne par case de la
+/// matrice audience × contexte (`documentation/catalogue/plan-quantite-minimale.md`).
+///
+/// En pièces, `CHECK (quantity >= 2)` : 1 ne dit rien. L'absence de ligne est
+/// la donnée — pas de minimum pour cette audience dans ce contexte.
+model VariantMinQuantity {
+  variantId String         @map("variant_id")
+  variant   ProductVariant @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  /// `pro` | `public` — `CHECK` en base.
+  audience  String
+  contextId String         @map("context_id")
+  /// `Restrict` : un contexte qui porte un minimum ne se supprime pas sous lui.
+  context   SalesContext   @relation(fields: [contextId], references: [id], onDelete: Restrict)
+  quantity  Int
+
+  createdAt DateTime @default(now()) @map("created_at")
+
+  @@id([variantId, audience, contextId])
+  @@index([contextId])
+  @@map("variant_min_quantity")
   @@schema("pim")
 }

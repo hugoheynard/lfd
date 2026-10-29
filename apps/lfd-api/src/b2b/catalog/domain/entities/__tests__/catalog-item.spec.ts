@@ -36,6 +36,7 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
+    minQuantities: null,
     publicByContext: { takeaway: { vatRatePercent: 5.5, htMillicents: 236_967 } },
     receivedAt: new Date("2026-08-17T08:00:00.000Z"),
     ...over,

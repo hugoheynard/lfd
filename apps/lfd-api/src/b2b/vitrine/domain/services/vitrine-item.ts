@@ -76,7 +76,8 @@ export function vitrineItemOf(
 ): Omit<VitrineItemView, "isFeatured" | "operation"> {
   // Les allergènes et les prix au kilo de la boutique ne vont pas à
   // l'agence : son flux n'a pas été élargi (cf. `VitrineItemView`).
-  // L'unité de vente non plus (P4 de `vente-au-poids.md`, 2026-10-28).
+  // L'unité de vente non plus (P4 de `vente-au-poids.md`, 2026-10-28), ni la
+  // quantité minimale (M2 de `plan-quantite-minimale.md`, 2026-10-29).
   const {
     allergens,
     proPricePerKgMillicents,
@@ -84,6 +85,7 @@ export function vitrineItemOf(
     saleUnit,
     weightStepGrams,
     weightMinGrams,
+    minQuantity,
     ...shown
   } = item;
   void allergens;
@@ -92,6 +94,7 @@ export function vitrineItemOf(
   void saleUnit;
   void weightStepGrams;
   void weightMinGrams;
+  void minQuantity;
   return {
     ...shown,
     image: imageFor(item.image, item.name),

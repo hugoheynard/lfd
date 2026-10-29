@@ -26,6 +26,7 @@ function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
+    minQuantities: null,
     isFeatured: false,
     allergens: null,
     shopAllergens: { codes: null, incomplete: false, precautionary: false, texts: null },

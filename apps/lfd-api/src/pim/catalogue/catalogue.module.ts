@@ -43,6 +43,7 @@ import { WithdrawProductReadinessHandler } from "./product/application/withdraw-
 import { GetProductReadinessHandler } from "./product/application/get-product-readiness.js";
 import { ActivateProductHandler } from "./product/application/activate-product.js";
 import { SetProductAudienceHandler } from "./product/application/set-product-audience.js";
+import { SetProductMinQuantitiesHandler } from "./product/application/set-product-min-quantities.js";
 import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
 import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -82,6 +83,7 @@ import { VariantAllergensRepository } from "./product/domain/ports/variant-aller
 import { ProductRepository } from "./product/domain/ports/product.repository.js";
 import { CategoryController } from "./category/http/category.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
+import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
@@ -127,6 +129,7 @@ import {
     CatalogRevisionController,
     CategoryController,
     ProductController,
+    ProductMinQuantitiesController,
     ProductHistoryController,
     ReferenceController,
   ],
@@ -172,6 +175,7 @@ import {
     GetProductReadinessHandler,
     ActivateProductHandler,
     SetProductAudienceHandler,
+    SetProductMinQuantitiesHandler,
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,

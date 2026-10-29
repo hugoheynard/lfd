@@ -67,6 +67,8 @@ function snapshot(vatByContext: Readonly<Record<string, string>> = {}): ProductS
         regulatoryFollowsDefault: false,
         nutritionFollowsDefault: false,
         pricingFollowsDefault: false,
+        minQuantities: { pro: {}, public: {} },
+        minQuantityFollowsDefault: false,
         allergenSheet: null,
         nutrition: null,
       },

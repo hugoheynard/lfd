@@ -39,6 +39,8 @@ function variant(over: Partial<VariantSnapshot> = {}): VariantSnapshot {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     allergenSheet: SHEET,
     nutrition: null,
     ...over,

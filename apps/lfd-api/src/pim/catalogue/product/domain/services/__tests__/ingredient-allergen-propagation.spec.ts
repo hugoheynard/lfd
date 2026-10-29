@@ -29,6 +29,8 @@ function variant(declared: readonly string[] | null, over: Partial<VariantSnapsh
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     allergenSheet: declared === null ? null : { declared, mayContain: ["NUT"] },
     nutrition: null,
     ...over,

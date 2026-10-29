@@ -4,6 +4,7 @@ import {
   MaskingOutsideAudienceError,
 } from "../errors/catalog-errors.js";
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
+import type { CatalogMinQuantities } from "../catalog-min-quantities.js";
 import type { ShopAudience } from "../ports/catalog.reader.js";
 import { audienceIncludes, type CatalogAudience } from "../served-to.js";
 import type { AllergenTextsByLanguage } from "../shop-allergens.js";
@@ -54,6 +55,7 @@ export interface OrderTimeLimitFacts {
 }
 
 export type { CatalogSaleUnit } from "../catalog-sale-unit.js";
+export type { CatalogMinQuantities } from "../catalog-min-quantities.js";
 
 export interface PimFacts {
   readonly sku: string;
@@ -107,6 +109,13 @@ export interface PimFacts {
   readonly weightMinGrams: number | null;
   /** Au poids, le pas de saisie en grammes ; `null` = à la pièce, ou non saisi. */
   readonly weightStepGrams: number | null;
+  /**
+   * **La quantité minimale d'achat**, en pièces, par clientèle et par clé de
+   * contexte (`plan-quantite-minimale.md`, M2) — effective, telle que le
+   * référentiel la publie. `null` = article reçu avant le fil v15 : on ne sait
+   * pas, ce qui n'est pas « aucun minimum ».
+   */
+  readonly minQuantities: CatalogMinQuantities | null;
   /**
    * **Le prix public par contexte de vente**, tel que le PIM l'a résolu — une
    * entrée par contexte réglé, indexée par sa clé (`takeaway`, `eatIn`, `b2b`).
@@ -505,6 +514,11 @@ export class CatalogItem {
   /** Au poids, le pas de saisie en grammes ; `null` = à la pièce, ou non saisi. */
   get weightStepGrams(): number | null {
     return this.facts.weightStepGrams;
+  }
+
+  /** La quantité minimale publiée ; `null` = reçu avant le fil v15. */
+  get minQuantities(): CatalogMinQuantities | null {
+    return this.facts.minQuantities;
   }
 
   /** Le prix au kilo pro HT saisi, informatif. `null` = non saisi. */

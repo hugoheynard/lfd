@@ -3,6 +3,7 @@ import { catalogAudienceOf } from "../domain/served-to.js";
 import { allergenLabelsOf } from "./allergen-labels.js";
 import { allergenTextsOf } from "./allergen-texts.js";
 import { publicByContextOf } from "./public-by-context.js";
+import { minQuantitiesOf } from "./catalog-min-quantities-column.js";
 import { saleUnitOf } from "./catalog-sale-unit.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
 
@@ -25,6 +26,7 @@ export interface ItemRow {
   readonly saleUnit: string;
   readonly weightMinGrams: number | null;
   readonly weightStepGrams: number | null;
+  readonly minQuantities: unknown;
   readonly publicByContext: unknown;
   readonly allergens: unknown;
   readonly allergenLabels: unknown;
@@ -143,6 +145,7 @@ export function toDomain(row: ItemRow): CatalogItem {
       saleUnit: saleUnitOf(row.sku, row.saleUnit),
       weightMinGrams: row.weightMinGrams,
       weightStepGrams: row.weightStepGrams,
+      minQuantities: minQuantitiesOf(row.minQuantities),
       publicByContext: publicByContextOf(row.publicByContext),
       allergens: allergensOf(row.allergens),
       allergenLabels: allergenLabelsOf(row.allergenLabels),
