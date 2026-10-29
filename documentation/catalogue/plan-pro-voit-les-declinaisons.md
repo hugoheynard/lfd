@@ -190,3 +190,52 @@ premier ; (b) plus tard. _Recommandation : (a)_ — défaut d'argent existant.
   compare avant la portée : « variant l'emporte » ne vaut qu'à audience égale.
 - `pricingAt` n'a que deux lecteurs (`pricer.ts:188`, époque `replay` ; le
   tableau des prix) : aucun avoir, facture ni révision.
+
+## 7. Seconde contradiction, modèle à plat (vitruve, 2026-10-29 au soir)
+
+Le moteur de prix est DÉJÀ à plat : `pricingContextFor` pose
+`variantSku = productSku = SKU de vente` (`pricing-context.ts:53-57`) ; aucun
+code de prix ne change — seuls ses commentaires (l. 20-24, et
+`floor-reference.ts`) annoncent encore un héritage, à réécrire.
+
+**BLOQUANT — la clé du défaut bouge.** Le défaut se vend sous le SKU PRODUIT
+(`shopSkuOf`, `shop-sku.ts:13-19`) : au geste « faire de cette déclinaison la
+déclinaison par défaut » (G4, livré le 2026-10-29), toute décision posée sur
+`P-X` passe en silence au nouveau défaut, et celles posées sur `P-X-2`
+deviennent orphelines. À trancher par Hugo avant le lot 4 : G4 refuse (ou
+liste) tant que des décisions visent `P-X` ou la déclinaison promue — ou le
+défaut se vend sous son propre SKU de déclinaison (contrat irréversible).
+
+**Défaut existant, en production** : la chaîne du froid de la livraison
+indexe par SKU produit (`coldProductSkus()`), et `packingLinesOf` compare au
+SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
+`requiresCold: false` en tournée.
+
+**Lots révisés** (un lot = un commit) :
+
+- **L0** `fix(catalog)` : le froid par SKU de vente, toutes audiences (test :
+  une ligne `P-X-2` froide). Indépendant, à faire d'abord.
+- **L1** `fix(catalog)` : lecture datée — colonne `shop_sku` nullable dans
+  `catalog_price_history`, écrite à chaque trace ; reprise par migration
+  seulement pour les produits sans `default_variant_changed` ; les autres lus
+  par repli sur `productSku` (comportement actuel), compte affiché. Migration
+  de données : `lecteur-de-migrations`.
+- **L2** : diagnostic `proReviewPending` de `P-ADQBEM-2`, lecture seule.
+- **L3** `feat(catalog)` : G4 refuse ou liste (BLOQUANT ci-dessus).
+- **L4** `feat(catalog)` : `all()` passe à `isShownAsTile` ; le commit chiffre
+  le saut de dérive des planchers de famille (médiane recalculée).
+- **L5** `feat(pricing)` : les éditeurs de mercuriale et d'engagement refusent
+  un SKU absent du catalogue (aujourd'hui une faute de frappe crée une
+  décision qui ne mord jamais).
+- **L6** `feat(backoffice)` : dire pourquoi une déclinaison n'est pas proposée
+  aux pros.
+- **L7**, à part : la filiation du détachement au commerce — le canal porte
+  `detached_from_sku` ; une requête liste les décisions en vigueur de l'ancien
+  SKU ; le report est un geste staff qui POSE de nouvelles décisions (jamais de
+  réécriture, jamais automatique) ; les rapports par article regroupent par
+  lignée, en lecture seule.
+- **L8** `docs(catalogue)`.
+
+**Non vérifié** : ce que coûte un engagement de volume devenu orphelin à sa
+clôture ; le schéma des habitudes client et des suggestions ; les chiffres en
+base.
