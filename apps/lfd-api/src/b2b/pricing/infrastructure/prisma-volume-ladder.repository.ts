@@ -91,13 +91,18 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
     return row === null ? null : VolumeLadderAggregate.reconstitute(ladderStateFromRow(row));
   }
 
-  /** Une transition — suspendre, reprendre, archiver. Seul le cycle de vie bouge. */
+  /** Une transition — suspendre, reprendre, archiver. Le cycle de vie, et la fin que la clôture pose. */
   async update(ladder: VolumeLadderAggregate, act: PricingAct): Promise<void> {
-    const { id, lifecycle } = ladder.toPersistence();
+    const { id, lifecycle, validTo } = ladder.toPersistence();
     await this.acts.around(act, () =>
       this.prisma.volumeLadder.update({
         where: { id },
         data: {
+          // Clore BORNE la fenêtre (`closingWindowAt`, R17) : sans cette
+          // colonne, la fin calculée par l'agrégat se perdait ici, et une
+          // décision close restait ouverte pour toute lecture datée
+          // (régression R17, corrigée le 2026-10-29).
+          validTo,
           pausedAt: lifecycle.pausedAt,
           pausedBy: lifecycle.pausedBy,
           archivedAt: lifecycle.archivedAt,

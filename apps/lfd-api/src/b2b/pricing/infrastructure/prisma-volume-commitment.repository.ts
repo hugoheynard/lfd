@@ -77,12 +77,14 @@ export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository
       : VolumeCommitmentAggregate.reconstitute(commitmentStateFromRow(row));
   }
 
-  /** Seul le cycle de vie bouge : la période et le volume visé sont scellés. */
+  /** Le cycle de vie, et la fin que la clôture pose. Le début et le volume visé sont scellés. */
   async save(commitment: VolumeCommitmentAggregate): Promise<void> {
     const state = commitment.toPersistence();
     await this.prisma.volumeCommitment.update({
       where: { id: state.id },
       data: {
+        // Clore borne la fenêtre (`closingWindowAt`) — régression R17, 2026-10-29.
+        validTo: state.validTo,
         archivedAt: state.archivedAt,
         archivedBy: state.archivedBy,
         archiveReason: state.archiveReason,

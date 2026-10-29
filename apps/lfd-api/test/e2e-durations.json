@@ -363,6 +363,7 @@
   "test/price-rules.e2e-spec.ts": 18689,
   "test/pricer.e2e-spec.ts": 7270,
   "test/pricing-budget.e2e-spec.ts": 5036,
+  "test/pricing-close-bounds.e2e-spec.ts": 5000,
   "test/pricing-journal-pages.e2e-spec.ts": 10080,
   "test/pricing-sale-references.e2e-spec.ts": 10800,
   "test/prisma-connection-release.e2e-spec.ts": 13624,
