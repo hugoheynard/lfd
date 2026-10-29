@@ -102,7 +102,8 @@ describe('ProductFormPage — en-tête', () => {
     );
 
     expect(actions).toContain('Activer');
-    expect(actions).toContain('Archiver');
+    // L'archivage a quitté le rail pour l'onglet « Danger » (2026-10-29).
+    expect(actions).not.toContain('Archiver');
     expect(actions).not.toContain('Désactiver');
   });
 

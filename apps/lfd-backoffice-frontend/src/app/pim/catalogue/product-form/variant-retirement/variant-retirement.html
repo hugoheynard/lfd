@@ -1,0 +1,76 @@
+@if (shown()) {
+  <fold-danger-zone appearance="section" title="Déclinaisons">
+    @if (retirable(); as tab) {
+      <p>
+        Archivée, « {{ tab.label }} » quitte la fiche et la boutique ; elle reste en base, et les
+        commandes, factures et tarifs qui la citent gardent leur sens. Sa référence
+        {{ tab.sku }} n'est jamais réattribuée.
+      </p>
+      <p>
+        En faire un produit crée une fiche neuve, inactive, qui reprend tout ce que cette
+        déclinaison voyait. Les tarifs négociés posés sur {{ tab.sku }} ne suivent pas.
+      </p>
+      <div class="gestures">
+        <fold-inline-confirm
+          message="Archiver cette déclinaison ? Elle ne sera plus en vente."
+          [labels]="{ confirm: 'Archiver' }"
+          [loading]="store.busy()"
+          (confirmed)="discontinue(tab.id)"
+        >
+          <button foldButton emphasis="outline" intent="danger" [disabled]="store.busy()">
+            Archiver la déclinaison
+          </button>
+        </fold-inline-confirm>
+        <fold-inline-confirm
+          message="Faire de cette déclinaison un produit ? Elle sera archivée ici, et une fiche neuve s'ouvrira."
+          [labels]="{ confirm: 'Faire un produit' }"
+          [loading]="store.busy()"
+          (confirmed)="detach(tab.id)"
+        >
+          <button foldButton emphasis="outline" intent="danger" [disabled]="store.busy()">
+            Faire de cette déclinaison un produit
+          </button>
+        </fold-inline-confirm>
+      </div>
+    } @else {
+      <p>
+        La déclinaison par défaut ne s'archive pas. Ouvrez une autre déclinaison pour l'archiver ou
+        en faire un produit.
+      </p>
+    }
+
+    @if (store.archivedVariants().length > 0) {
+      <fold-disclosure>
+        <span summary>Déclinaisons archivées ({{ store.archivedVariants().length }})</span>
+        <ul class="archived-list">
+          @for (variant of store.archivedVariants(); track variant.id) {
+            <li>
+              <span class="archived-name">{{ variant.label }}</span>
+              <span class="archived-sku">{{ variant.sku }}</span>
+              @if (variant.detachedTo; as born) {
+                <span>
+                  Devenue le produit
+                  <fold-link (clicked)="open(born.productId)">
+                    « {{ born.productName.fr }} » ({{ born.productSku }})
+                  </fold-link>
+                </span>
+              } @else {
+                <fold-inline-confirm
+                  intent="primary"
+                  message="Désarchiver cette déclinaison ? Elle revient sur la fiche, à son rang."
+                  [labels]="{ confirm: 'Désarchiver' }"
+                  [loading]="store.busy()"
+                  (confirmed)="restore(variant.id)"
+                >
+                  <button foldButton size="sm" emphasis="soft" [disabled]="store.busy()">
+                    Désarchiver
+                  </button>
+                </fold-inline-confirm>
+              }
+            </li>
+          }
+        </ul>
+      </fold-disclosure>
+    }
+  </fold-danger-zone>
+}

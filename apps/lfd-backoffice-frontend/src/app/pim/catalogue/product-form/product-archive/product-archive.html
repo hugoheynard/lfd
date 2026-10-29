@@ -1,0 +1,27 @@
+<fold-danger-zone appearance="section" title="Archiver la fiche">
+  @if (store.status() === 'archived') {
+    <p>
+      Cette fiche est <strong>archivée</strong>&nbsp;: elle n'est vendue nulle part. « Restaurer »,
+      dans la colonne Publication, la rend inactive — jamais directement en vente.
+    </p>
+  } @else {
+    <p>
+      Archivée, la fiche quitte le catalogue et n'est plus vendue nulle part. Elle reste en base :
+      les commandes et factures qui la citent gardent leur sens, et elle se restaure depuis la
+      colonne Publication.
+    </p>
+    <div class="gestures">
+      <fold-inline-confirm
+        intent="danger"
+        message="Archiver cette fiche ? Elle ne sera plus en vente."
+        [labels]="{ confirm: 'Archiver' }"
+        [loading]="store.busy()"
+        (confirmed)="archive.emit()"
+      >
+        <button foldButton emphasis="outline" intent="danger" [disabled]="store.busy()">
+          Archiver la fiche
+        </button>
+      </fold-inline-confirm>
+    </div>
+  }
+</fold-danger-zone>

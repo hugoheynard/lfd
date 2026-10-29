@@ -60,6 +60,9 @@ const DEFAULT_VARIANT: Variant = {
 };
 
 class FakeApi {
+  /** Le statut que rend le serveur — « draft » sauf dans le cas archivé. */
+  static status: 'draft' | 'archived' = 'draft';
+
   getDetail() {
     return Promise.resolve({
       product: {
@@ -69,7 +72,7 @@ class FakeApi {
         slug: { fr: 'gros-florentin-lait' },
         kind: 'daily',
         categoryId: 'cat_1',
-        status: 'draft',
+        status: FakeApi.status,
         variants: [DEFAULT_VARIANT],
         vatByContext: {},
         priceEur: 2.5,
@@ -186,14 +189,66 @@ function familyBadge(root: HTMLElement, title: string): HTMLElement | null {
 }
 
 describe('le filtre par famille de la fiche produit', () => {
-  it('propose « Tout » et les quatre familles, dans cet ordre', async () => {
+  it('propose « Tout », les quatre familles, puis « Danger », dans cet ordre', async () => {
     const { root } = await render();
 
     const items = [...root.querySelectorAll('fold-view-nav button')].map((item) =>
       item.textContent?.trim(),
     );
 
-    expect(items).toEqual(['Tout', 'Identité', 'Commerce', 'Réglementaire', 'Communication']);
+    expect(items).toEqual([
+      'Tout',
+      'Identité',
+      'Commerce',
+      'Réglementaire',
+      'Communication',
+      'Danger',
+    ]);
+  });
+
+  /** Demande de Hugo (2026-10-29) : tout ce qui sort quelque chose du catalogue, à part. */
+  it('« Danger » vient après « Communication » et ne montre que l’archivage', async () => {
+    const rendered = await render();
+
+    filterOn(rendered, 'Danger');
+
+    expect(titles(rendered.root)).toEqual([]);
+    const archive = rendered.root.querySelector('app-product-archive fold-danger-zone');
+    expect(archive?.textContent).toContain('Archiver la fiche');
+    expect(rendered.root.querySelector('app-publish-rail')?.textContent).not.toContain('Archiver');
+  });
+
+  it('sur « Tout », pose les cartes « Danger » en dernier', async () => {
+    const { root } = await render();
+
+    const sections = root.querySelector('.sections');
+    expect(sections?.lastElementChild?.tagName.toLowerCase()).toMatch(
+      /^app-(product-archive|variant-retirement)$/,
+    );
+  });
+
+  it('ne retient pas « Danger » d’une fiche à l’autre', async () => {
+    const first = await render();
+    filterOn(first, 'Danger');
+
+    const second = await mount();
+
+    expect(titles(second.root)).toContain('Allergènes');
+  });
+
+  it('sur une fiche archivée, « Danger » ne dit que l’état', async () => {
+    FakeApi.status = 'archived';
+    try {
+      const rendered = await render();
+      filterOn(rendered, 'Danger');
+
+      const archive = rendered.root.querySelector('app-product-archive');
+      expect(archive?.textContent).toContain('archivée');
+      expect(archive?.querySelector('fold-inline-confirm')).toBeNull();
+      expect(rendered.root.querySelector('app-variant-retirement')).toBeNull();
+    } finally {
+      FakeApi.status = 'draft';
+    }
   });
 
   it('sur « Tout », montre tout et dit la famille de chaque section', async () => {

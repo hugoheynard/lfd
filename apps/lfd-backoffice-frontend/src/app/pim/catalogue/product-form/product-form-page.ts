@@ -51,6 +51,8 @@ import { SectionFamilyFilterStore, type SectionFilter } from '../section-family-
 import { ProductHistory } from './product-history/product-history';
 import { PublishRail } from './publish-rail/publish-rail';
 import { SECTION_EDITING } from '../section-state/section-editing';
+import { ProductArchive } from './product-archive/product-archive';
+import { VariantRetirement } from './variant-retirement/variant-retirement';
 import { SectionAlignment } from './section-alignment/section-alignment';
 import { VariantBar } from './variant-bar/variant-bar';
 import { SectionState } from '../section-state/section-state';
@@ -78,13 +80,25 @@ const FAMILY_LABELS: Readonly<Record<SectionFamily, string>> = {
 
 /** L'ordre de la barre : « Tout » d'abord, puis les familles dans l'ordre de
  *  lecture de la fiche. */
-const FILTER_ORDER: readonly SectionFilter[] = [
+const FILTER_ORDER: readonly SheetFilter[] = [
   'all',
   'identite',
   'commerce',
   'reglementaire',
   'communication',
+  'danger',
 ];
+
+/**
+ * Ce que la barre peut valoir : un filtre de familles, ou « Danger » — tout ce
+ * qui sort quelque chose du catalogue (demande de Hugo, 2026-10-29).
+ *
+ * « Danger » n'est PAS une famille : aucune section enregistrable n'y vit, et
+ * il ne se retient pas d'une fiche à l'autre — le réglage mémorisé
+ * (`productSectionFamily`) ne connaît que les familles, et rouvrir chaque
+ * fiche sur ses gestes destructeurs serait un mauvais défaut.
+ */
+type SheetFilter = SectionFilter | 'danger';
 
 interface PageSection {
   readonly key: FormSection;
@@ -126,6 +140,8 @@ interface PageSection {
     SectionState,
     SectionAlignment,
     VariantBar,
+    ProductArchive,
+    VariantRetirement,
     PublishRail,
     IdentityForm,
     PricingForm,
@@ -278,7 +294,13 @@ export class ProductFormPage implements HasPendingChanges {
    * rechargement — est dit dans son propre fichier.
    */
   private readonly filterStore = inject(SectionFamilyFilterStore);
-  protected readonly familyFilter = this.filterStore.family;
+  /** L'onglet « Danger » est-il choisi ? Local à la page, cf. {@link SheetFilter}. */
+  private readonly dangerChosen = signal(false);
+
+  /** La clé active de la barre. */
+  protected readonly familyFilter = computed<SheetFilter>(() =>
+    this.dangerChosen() ? 'danger' : this.filterStore.family(),
+  );
 
   /**
    * La famille de chaque section, lue sur le magasin.
@@ -311,6 +333,9 @@ export class ProductFormPage implements HasPendingChanges {
       if (key === 'all') {
         return { key, label: 'Tout' };
       }
+      if (key === 'danger') {
+        return { key, label: 'Danger' };
+      }
       const count = dirty.filter((section) => section.family === key).length;
       return { key, label: FAMILY_LABELS[key], badge: count === 0 ? null : count };
     });
@@ -337,9 +362,19 @@ export class ProductFormPage implements HasPendingChanges {
    * barre n'y est pas, donc un réglage rapporté d'une autre fiche cacherait des
    * champs qu'on demande de saisir, sans rien pour le défaire.
    */
-  protected readonly activeFilter = computed<SectionFilter>(() =>
+  protected readonly activeFilter = computed<SheetFilter>(() =>
     this.store.isEdit() ? this.familyFilter() : 'all',
   );
+
+  /**
+   * Les cartes « Danger » (archiver la fiche, les déclinaisons) : sur leur
+   * onglet, et sur « Tout » EN DERNIER — qu'on ne les perde pas, sans qu'elles
+   * passent devant ce qu'on vient éditer.
+   */
+  protected readonly showsDanger = computed(() => {
+    const filter = this.activeFilter();
+    return this.store.isEdit() && (filter === 'all' || filter === 'danger');
+  });
 
   private isVisible(key: FormSection): boolean {
     const filter = this.activeFilter();
@@ -364,7 +399,11 @@ export class ProductFormPage implements HasPendingChanges {
   /** Le filtre de `fold-view-nav` revient en `string` : on le referme ici. */
   protected setFamily(key: string): void {
     const known = FILTER_ORDER.find((candidate) => candidate === key);
-    if (known !== undefined) {
+    if (known === undefined) {
+      return;
+    }
+    this.dangerChosen.set(known === 'danger');
+    if (known !== 'danger') {
       this.filterStore.choose(known);
     }
   }

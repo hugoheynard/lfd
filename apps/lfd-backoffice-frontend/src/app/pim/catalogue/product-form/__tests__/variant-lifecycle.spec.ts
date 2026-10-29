@@ -11,6 +11,7 @@ import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-
 import type { Variant } from '../../../data/models';
 import { ProductFormStore } from '../product-form-store';
 import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
+import { VariantRetirement } from '../variant-retirement/variant-retirement';
 
 /**
  * **Archiver, détacher, désarchiver une déclinaison**
@@ -240,22 +241,16 @@ describe('<app-variant-lifecycle>', () => {
     return fixture.nativeElement as HTMLElement;
   }
 
-  it('n’offre aucun geste sur le défaut', async () => {
-    const host = await render();
-
-    expect(host.querySelector('fold-danger-zone')).toBeNull();
-    expect(host.textContent).toContain('Déclinaisons archivées (1)');
-  });
-
-  it('offre les deux gestes sur une autre déclinaison, en confirmation en ligne', async () => {
+  /** Le 2026-10-29, archiver, détacher et désarchiver sont partis dans l'onglet « Danger ». */
+  it('ne garde plus aucun geste qui retire, ni la liste des archivées', async () => {
     const host = await render('var_2');
 
-    expect(host.querySelector('fold-danger-zone')).not.toBeNull();
-    expect(host.querySelectorAll('fold-danger-zone fold-inline-confirm')).toHaveLength(2);
-    expect(host.textContent).toContain('Faire de cette déclinaison un produit');
+    expect(host.querySelector('fold-danger-zone')).toBeNull();
+    expect(host.textContent).not.toContain('Archiver la déclinaison');
+    expect(host.textContent).not.toContain('Déclinaisons archivées');
   });
 
-  it('fait de la déclinaison ouverte le défaut, hors de la zone de danger', async () => {
+  it('fait de la déclinaison ouverte le défaut', async () => {
     const api = new FakeApi();
     const host = await render('var_2', api);
     const store = TestBed.inject(ProductFormStore);
@@ -268,6 +263,42 @@ describe('<app-variant-lifecycle>', () => {
 
     expect(api.calls.at(-1)).toEqual({ name: 'makeVariantDefault', args: ['prd_1', 'var_2'] });
     expect(store.variantTabs().find((tab) => tab.isDefault)?.id).toBe('var_2');
+  });
+});
+
+describe('<app-variant-retirement>', () => {
+  async function render(select: string | null = null, api = new FakeApi()) {
+    const { store } = await setup(api);
+    if (select !== null) {
+      store.selectVariant(select);
+    }
+    const fixture = TestBed.createComponent(VariantRetirement);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('n’offre aucun geste sur le défaut, mais liste les archivées', async () => {
+    const host = await render();
+
+    expect(host.querySelector('fold-danger-zone')).not.toBeNull();
+    expect(host.textContent).not.toContain('Archiver la déclinaison');
+    expect(host.textContent).toContain('Déclinaisons archivées (1)');
+  });
+
+  it('se tait sur le défaut quand rien n’est archivé', async () => {
+    const api = new FakeApi();
+    api.variants = [variant(), SECOND];
+    const host = await render(null, api);
+
+    expect(host.querySelector('fold-danger-zone')).toBeNull();
+  });
+
+  it('offre les deux gestes sur une autre déclinaison, en confirmation en ligne', async () => {
+    const host = await render('var_2');
+
+    expect(host.textContent).toContain('Archiver la déclinaison');
+    expect(host.textContent).toContain('Faire de cette déclinaison un produit');
   });
 
   it('ouvre la nouvelle fiche après un détachement confirmé', async () => {

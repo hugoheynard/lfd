@@ -16,34 +16,3 @@
     color: var(--fold-color-text-muted);
   }
 }
-
-.gestures {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--fold-space-sm);
-}
-
-.archived-list {
-  display: flex;
-  flex-direction: column;
-  gap: var(--fold-space-xs);
-  margin: 0;
-  padding: 0;
-  list-style: none;
-
-  li {
-    display: flex;
-    align-items: center;
-    gap: var(--fold-space-sm);
-  }
-}
-
-.archived-name {
-  font-size: var(--fold-text-sm);
-}
-
-.archived-sku {
-  font-family: var(--fold-font-mono);
-  font-size: var(--fold-text-2xs);
-  color: var(--fold-color-text-muted);
-}

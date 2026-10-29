@@ -347,6 +347,16 @@
             </fold-card>
           }
         }
+        <!-- L'ONGLET « DANGER » (demande de Hugo, 2026-10-29) : tout ce qui
+             sort quelque chose du catalogue, regroupé. Sur « Tout », en
+             dernier. Une fiche archivée ne montre que son état — « Restaurer »
+             reste dans le rail. -->
+        @if (showsDanger()) {
+          <app-product-archive (archive)="archive()" />
+          @if (store.status() !== 'archived') {
+            <app-variant-retirement />
+          }
+        }
       </div>
 
       <app-publish-rail
@@ -354,7 +364,6 @@
         (saveAll)="saveAll()"
         (publish)="publish()"
         (unpublish)="unpublish()"
-        (archive)="archive()"
         (restore)="restore()"
       />
     </fold-aside-layout>

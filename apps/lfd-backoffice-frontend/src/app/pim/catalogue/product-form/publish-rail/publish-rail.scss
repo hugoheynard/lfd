@@ -102,12 +102,6 @@
 
 /* Le geste destructeur se détache : un filet, de l'air, et il est en bas. Sans
    ça, « Archiver » aurait le même poids visuel que « Mettre en vente ». */
-.pr-danger {
-  margin-top: var(--fold-space-md);
-  padding-top: var(--fold-space-md);
-  border-top: 1px solid var(--fold-color-border);
-}
-
 /* Le refus d'activer : la phrase, puis une déclinaison par ligne. */
 .pr-refusal {
   margin: 0;

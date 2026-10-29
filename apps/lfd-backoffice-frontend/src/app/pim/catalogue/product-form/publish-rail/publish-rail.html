@@ -165,17 +165,6 @@
           Activer
         </button>
       }
-
-      <!-- Archiver est d'une autre nature : ça sort la fiche du catalogue. D'où
-           la confirmation en place, et non un item de menu qu'on choisit par
-           erreur en visant celui d'à côté. -->
-      <div class="pr-danger">
-        <fold-inline-confirm intent="danger" (confirmed)="archive.emit()">
-          <button foldButton emphasis="soft" intent="danger" [disabled]="store.busy()">
-            Archiver
-          </button>
-        </fold-inline-confirm>
-      </div>
     }
   </fold-card>
 </section>
