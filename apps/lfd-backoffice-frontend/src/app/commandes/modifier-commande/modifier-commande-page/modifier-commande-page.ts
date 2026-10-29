@@ -52,7 +52,7 @@ import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../../nouvelle-commande/acheminement-commande/acheminement-commande';
-import { CartStore, saleLineOf } from '../../nouvelle-commande/cart.store';
+import { CartStore, saleLineOf, type CartLine } from '../../nouvelle-commande/cart.store';
 import { DraftStore } from '../../nouvelle-commande/draft.store';
 import type { OrderEntryCustomer } from '../../nouvelle-commande/order-entry-customer';
 import {
@@ -62,7 +62,9 @@ import {
 } from '../../nouvelle-commande/source-produits/source-produits';
 import {
   bookAddressIdOf,
+  revisedQuantityOf,
   revisionCartOf,
+  revisionFloorOf,
   revisionContentOf,
   revisionDraftOf,
 } from '../revision-draft';
@@ -143,6 +145,14 @@ export class ModifierCommandePage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly order = signal<AdminOrderView | null>(null);
   protected readonly customer = signal<OrderEntryCustomer | null>(null);
+  /** Le plancher d'une ligne — cf. `revisionFloorOf`. */
+  protected readonly floorOf = revisionFloorOf;
+
+  /** Le champ d'une ligne, borné par le minimum du jour — cf. `revisedQuantityOf`. */
+  protected onQuantity(line: CartLine, requested: number): void {
+    this.cart.setQuantity(line.sku, revisedQuantityOf(line, requested));
+  }
+
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
   protected readonly habits = signal<readonly CustomerSkuStat[]>([]);
   protected readonly pickups = signal<readonly PickupAddressView[]>([]);

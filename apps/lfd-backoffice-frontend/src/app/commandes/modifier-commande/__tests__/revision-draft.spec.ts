@@ -4,7 +4,9 @@ import { describe, expect, it } from 'vitest';
 import { NEW_ADDRESS } from '../../nouvelle-commande/draft.store';
 import {
   bookAddressIdOf,
+  revisedQuantityOf,
   revisionCartOf,
+  revisionFloorOf,
   revisionContentOf,
   revisionDraftOf,
 } from '../revision-draft';
@@ -213,5 +215,58 @@ describe('la commande voulue, telle que le serveur la reçoit', () => {
     expect(bookAddressIdOf('', book())).toBe('adr_1');
     expect(bookAddressIdOf('', [])).toBeNull();
     expect(bookAddressIdOf(NEW_ADDRESS, book())).toBeNull();
+  });
+});
+
+/** Hugo, 2026-10-29 : une ligne gardée ne se CHANGE pas sous le minimum du jour. */
+describe('le minimum d’une ligne en révision', () => {
+  it('porte le minimum de pièces du catalogue du jour sur une ligne gardée', () => {
+    const [line] = revisionCartOf(
+      {
+        lines: [
+          {
+            sku: 'VIE-001',
+            productName: 'Croissant',
+            unitPriceMillicents: 120_000,
+            quantity: 8,
+            saleUnit: 'piece',
+          },
+        ],
+      },
+      [
+        {
+          sku: 'VIE-001',
+          name: 'Croissant',
+          unitPriceMillicents: 120_000,
+          vatRate: 5.5,
+          family: null,
+          category: null,
+          minQuantity: 6,
+        },
+      ],
+    );
+    expect(line?.minimum).toBe(6);
+  });
+
+  it('au-dessus du minimum : le « − » s’arrête au minimum', () => {
+    const line = { quantity: 6, minimum: 6 };
+    expect(revisionFloorOf(line)).toBe(6);
+    expect(revisedQuantityOf({ quantity: 8, minimum: 6 }, 7)).toBe(7);
+    expect(revisedQuantityOf(line, 5)).toBe(6);
+    expect(revisedQuantityOf(line, 0)).toBe(0);
+  });
+
+  it('déjà sous le minimum : gardée telle quelle, aucune baisse, une hausse va au minimum', () => {
+    const line = { quantity: 3, minimum: 6 };
+    expect(revisionFloorOf(line)).toBe(3);
+    expect(revisedQuantityOf(line, 3)).toBe(3);
+    expect(revisedQuantityOf(line, 2)).toBe(3);
+    expect(revisedQuantityOf(line, 4)).toBe(6);
+    expect(revisedQuantityOf(line, 9)).toBe(9);
+  });
+
+  it('sans minimum, rien ne change', () => {
+    expect(revisionFloorOf({ quantity: 3 })).toBe(1);
+    expect(revisedQuantityOf({ quantity: 3 }, 1)).toBe(1);
   });
 });

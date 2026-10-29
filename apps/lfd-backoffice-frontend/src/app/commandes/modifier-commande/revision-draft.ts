@@ -59,10 +59,42 @@ export function revisionCartOf(
       quantity: line.quantity,
     };
     if (line.saleUnit !== 'weight') {
-      return base;
+      // Le minimum de pièces d'AUJOURD'HUI (plan quantité minimale, révision) :
+      // il borne ce qu'on change, pas ce qu'on garde tel quel.
+      return { ...base, ...(item === undefined ? {} : saleTermsOf(item)) };
     }
     return { ...base, ...(item === undefined ? {} : saleTermsOf(item)), saleUnit: 'weight' };
   });
+}
+
+/**
+ * Le plancher du stepper d'une ligne en révision : le minimum de l'article,
+ * ou la quantité de la ligne quand elle est DÉJÀ dessous — une ligne gardée
+ * telle quelle passe (Hugo, 2026-10-29), et le « − » ne la baisse pas.
+ */
+export function revisionFloorOf(line: Pick<CartLine, 'quantity' | 'minimum'>): number {
+  return Math.min(line.minimum ?? 1, line.quantity);
+}
+
+/**
+ * La quantité qu'on pose quand le champ d'une ligne en révision demande
+ * `requested` (Hugo, 2026-10-29) : le serveur refuse une ligne CHANGÉE sous le
+ * minimum, et laisse passer une ligne inchangée.
+ *
+ * - zéro ou moins retire la ligne ;
+ * - au minimum ou au-dessus, la demande passe ;
+ * - sous le minimum, une baisse est refusée (la ligne garde sa quantité) et
+ *   une hausse va jusqu'au minimum.
+ */
+export function revisedQuantityOf(
+  line: Pick<CartLine, 'quantity' | 'minimum'>,
+  requested: number,
+): number {
+  const minimum = line.minimum ?? 1;
+  if (requested <= 0 || requested >= minimum) {
+    return requested;
+  }
+  return requested <= line.quantity ? line.quantity : minimum;
 }
 
 /**
