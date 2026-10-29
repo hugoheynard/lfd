@@ -76,7 +76,7 @@ async function productionDay() {
 
 describe("rouvrir une journée arrêtée", () => {
   it("arrêter → rouvrir → commander → arrêter retrouve un état cohérent partout", async () => {
-    await place(ctx, issued, [{ sku: "VIE-001", quantity: 2 }]);
+    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 2 }]);
     await closePlan(ctx);
     const [first] = await ordersOfDay();
     expect(first?.status).toBe("confirmed");
@@ -103,7 +103,7 @@ describe("rouvrir une journée arrêtée", () => {
     expect(journal.subjectId).toBe(SERVICE_DAY);
 
     // Le client commande de nouveau pour ce jour : la journée est ouverte.
-    await place(ctx, issued, [{ sku: "VIE-001", quantity: 1 }]);
+    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 1 }]);
     await closePlan(ctx);
 
     const after = await ordersOfDay();
@@ -118,7 +118,7 @@ describe("rouvrir une journée arrêtée", () => {
   });
 
   it("refuse une journée ouverte", async () => {
-    await place(ctx, issued, [{ sku: "VIE-001", quantity: 1 }]);
+    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 1 }]);
 
     const response = await reopen();
 
@@ -126,7 +126,7 @@ describe("rouvrir une journée arrêtée", () => {
   });
 
   it("refuse dès qu'une fournée est déclarée, et la journée reste arrêtée", async () => {
-    await place(ctx, issued, [{ sku: "VIE-001", quantity: 2 }]);
+    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 2 }]);
     await closePlan(ctx);
     expect(await recordBatch(ctx, BATCH, 1)).toBe(204);
 
@@ -139,7 +139,7 @@ describe("rouvrir une journée arrêtée", () => {
   });
 
   it("refuse quand le colisage a commencé", async () => {
-    await place(ctx, issued, [{ sku: "VIE-001", quantity: 2 }]);
+    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 2 }]);
     await closePlan(ctx);
     const [order] = await ordersOfDay();
     // Un sac ouvert suffit : le colisage a commencé, rien n'est encore dedans.

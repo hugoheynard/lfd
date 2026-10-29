@@ -43,8 +43,8 @@ beforeEach(async () => {
 /** « Sur la fiche de la baguette → le pain au chocolat », de aujourd'hui à dans une semaine. */
 function onBaguette(over: Partial<StaffSuggestionRulePayload> = {}): StaffSuggestionRulePayload {
   return {
-    trigger: { kind: "product_viewed", ref: "PAI-001" },
-    suggestedSkus: ["PAT-001"],
+    trigger: { kind: "product_viewed", ref: "PAI-001-1" },
+    suggestedSkus: ["PAT-001-1"],
     placement: "product",
     audience: "both",
     startsOn: serviceDay(0),
@@ -80,24 +80,24 @@ describe("les suggestions de la fiche", () => {
       await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
     );
 
-    expect(await suggestions("PAI-001")).toEqual([
+    expect(await suggestions("PAI-001-1")).toEqual([
       {
-        sku: "PAT-001",
-        item: shelf.items.find((item) => item.sku === "PAT-001"),
+        sku: "PAT-001-1",
+        item: shelf.items.find((item) => item.sku === "PAT-001-1"),
         reason: { source: "staff", ruleId: id.toLowerCase(), phrase: null },
       },
     ]);
-    expect(await suggestions("CHO-001")).toEqual([]);
+    expect(await suggestions("CHO-001-1")).toEqual([]);
   });
 
   it("une règle du panier ne s'affiche pas sur la fiche, ni l'article déjà au panier", async () => {
     await create(
-      onBaguette({ trigger: { kind: "product_in_cart", ref: "PAI-001" }, placement: "cart" }),
+      onBaguette({ trigger: { kind: "product_in_cart", ref: "PAI-001-1" }, placement: "cart" }),
     );
-    expect(await suggestions("PAI-001", ["PAI-001"])).toEqual([]);
+    expect(await suggestions("PAI-001-1", ["PAI-001-1"])).toEqual([]);
 
     await create(onBaguette());
-    expect(await suggestions("PAI-001", ["PAT-001"])).toEqual([]);
+    expect(await suggestions("PAI-001-1", ["PAT-001-1"])).toEqual([]);
   });
 
   it("refuse une fiche sans SKU, sans rien lire", async () => {

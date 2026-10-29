@@ -32,6 +32,7 @@ beforeEach(async () => {
   await ctx.prisma.orderCutoff.deleteMany();
 });
 
+// Des références PRODUIT : la vitrine vend leur défaut sous `-1` depuis la bascule (2026-10-29).
 const BUCHE = "BUC-001";
 const TART = "TAR-001";
 const BREAD = "PAI-001";
@@ -90,9 +91,9 @@ describe("la limite propre d'un article sur la vitrine", () => {
 
     const shown = await limits();
 
-    expect(shown.get(BUCHE)).toEqual({ daysBefore: 2, time: "12:00" });
-    expect(shown.get(TART)).toEqual({ daysBefore: 1, time: "18:00" });
-    expect(shown.get(BREAD)).toBeNull();
+    expect(shown.get(`${BUCHE}-1`)).toEqual({ daysBefore: 2, time: "12:00" });
+    expect(shown.get(`${TART}-1`)).toEqual({ daysBefore: 1, time: "18:00" });
+    expect(shown.get(`${BREAD}-1`)).toBeNull();
   });
 
   it("🔴 la clé reste ABSENTE du fil pour un article qui suit la règle générale", async () => {
@@ -108,6 +109,6 @@ describe("la limite propre d'un article sur la vitrine", () => {
   it("aucune règle générale : toute limite d'article se montre", async () => {
     await pushWithLimits();
 
-    expect((await limits()).get(BREAD)).toEqual({ daysBefore: 0, time: "09:00" });
+    expect((await limits()).get(`${BREAD}-1`)).toEqual({ daysBefore: 0, time: "09:00" });
   });
 });

@@ -53,8 +53,8 @@ function halvesPath(orderId: string): string {
 }
 
 /** Deux produits du semis du catalogue : un sec, un qu'on déclare froid. */
-const CROISSANT = "VIE-001";
-const TARTE = "VIE-011";
+const CROISSANT = "VIE-001-1";
+const TARTE = "VIE-011-1";
 
 let ctx: E2eContext;
 
@@ -120,7 +120,7 @@ describe("GET …/proposal", () => {
       lines: [
         { sku: CROISSANT, quantity: 30 },
         { sku: TARTE, quantity: 2 },
-        { sku: "PAI-001", quantity: 5 },
+        { sku: "PAI-001-1", quantity: 5 },
       ],
     });
     const bacM = await binTypeId(ctx);
@@ -129,7 +129,7 @@ describe("GET …/proposal", () => {
     await setCapacity(bacS, TARTE, 4);
     // Le froid est un fait de la fiche, relayé par le miroir du catalogue.
     await ctx.prisma.catalogItem.updateMany({
-      where: { productSku: TARTE },
+      where: { sku: TARTE },
       data: { requiresCold: true },
     });
 
@@ -145,11 +145,11 @@ describe("GET …/proposal", () => {
       { type: bacM, whole: 1, half: true, cold: false },
     ]);
     const bread = await ctx.prisma.orderLine.findFirstOrThrow({
-      where: { orderId: order.id, sku: "PAI-001" },
+      where: { orderId: order.id, sku: "PAI-001-1" },
       select: { productNameSnapshot: true },
     });
     expect(view.unplaced).toEqual([
-      { sku: "PAI-001", name: bread.productNameSnapshot, quantity: 5, reason: "no_capacity" },
+      { sku: "PAI-001-1", name: bread.productNameSnapshot, quantity: 5, reason: "no_capacity" },
     ]);
     expect(view.shareCandidate).toBeNull();
     // Une lecture : rien de déclaré.

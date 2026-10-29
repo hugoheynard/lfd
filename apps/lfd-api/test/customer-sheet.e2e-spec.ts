@@ -79,7 +79,7 @@ async function placeOrder(
     settlement: "account",
     placedAt: new Date(Date.now() - daysAgo * 24 * 60 * 60 * 1000),
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: units }],
+    lines: [{ sku: "VIE-001-1", quantity: units }],
   });
   if (outcome === "cancelled") {
     await ctx.app

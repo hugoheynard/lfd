@@ -144,12 +144,12 @@ async function seedTwoOrders(): Promise<{ companyId: string }> {
   await ctx
     .asSub(MEMBER)
     .post("/orders")
-    .send({ ...pickupContent(), companyId: company.id, lines: [{ sku: "VIE-001", quantity: 2 }] })
+    .send({ ...pickupContent(), companyId: company.id, lines: [{ sku: "VIE-001-1", quantity: 2 }] })
     .expect(201);
   await ctx
     .asSub(SOLO)
     .post("/orders")
-    .send({ ...pickupContent(), lines: [{ sku: "VIE-002", quantity: 3 }] })
+    .send({ ...pickupContent(), lines: [{ sku: "VIE-002-1", quantity: 3 }] })
     .expect(201);
 
   return { companyId: company.id };
@@ -201,7 +201,7 @@ describe("GET /admin/orders", () => {
     await ctx
       .asSub(SITE_MEMBER)
       .post("/orders")
-      .send({ ...pickupContent(), companyId: site.id, lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .send({ ...pickupContent(), companyId: site.id, lines: [{ sku: "VIE-001-1", quantity: 1 }] })
       .expect(201);
 
     const alone = jsonBody<AdminOrdersPage>(
@@ -269,7 +269,7 @@ describe("GET /admin/orders/:id", () => {
         .send({
           ...pickupContent(),
           companyId: company.id,
-          lines: [{ sku: "VIE-001", quantity: 2 }],
+          lines: [{ sku: "VIE-001-1", quantity: 2 }],
         })
         .expect(201),
     );
@@ -302,7 +302,7 @@ describe("GET /admin/orders/:id", () => {
         .send({
           ...pickupContent(),
           companyId: company.id,
-          lines: [{ sku: "VIE-001", quantity: 2 }],
+          lines: [{ sku: "VIE-001-1", quantity: 2 }],
         })
         .expect(201),
     );
@@ -346,7 +346,7 @@ describe("GET /admin/orders/:id", () => {
       await ctx
         .asSub(SOLO)
         .post("/orders")
-        .send({ ...pickupContent(), lines: [{ sku: "VIE-002", quantity: 1 }] })
+        .send({ ...pickupContent(), lines: [{ sku: "VIE-002-1", quantity: 1 }] })
         .expect(201),
     );
 
@@ -407,7 +407,7 @@ describe("GET /admin/orders/:id", () => {
         .send({
           ...pickupContent(),
           companyId: company.id,
-          lines: [{ sku: "VIE-001", quantity: 2 }],
+          lines: [{ sku: "VIE-001-1", quantity: 2 }],
         })
         .expect(201),
     );

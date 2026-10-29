@@ -43,8 +43,8 @@ const MEMBER = "auth0|member-quality";
 const READER = "staff-supervision-lecture";
 const REFUSAL = "e2e_journal_qualite_en_panne";
 const DAY = serviceDay();
-const CROISSANT = "VIE-001";
-const BAGUETTE = "PAI-001";
+const CROISSANT = "VIE-001-1";
+const BAGUETTE = "PAI-001-1";
 const PHOTO = jpegOf(40, 30);
 const BASE = "/admin/supervision/quality";
 

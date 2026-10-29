@@ -205,7 +205,7 @@ async function placeOrder(g: Group, settlement: "account" | "card"): Promise<str
       pickupAddressId: pickupId,
       settlement,
       note: "",
-      lines: [{ sku: "VIE-001", quantity: 2 }],
+      lines: [{ sku: "VIE-001-1", quantity: 2 }],
     })
     .expect(201);
   await ctx.drain();
@@ -391,7 +391,7 @@ describe("une commande saisie par l'équipe pour un site", () => {
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         requestedWindow: { start: "07:00", end: "08:00" },
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
     await ctx.drain();

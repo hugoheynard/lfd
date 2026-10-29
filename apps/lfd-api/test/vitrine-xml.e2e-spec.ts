@@ -130,8 +130,8 @@ describe("la vitrine en XML", () => {
   it("sert un article et les textes par ?format=xml", async () => {
     const key = await aSubscriberWithACatalogue();
 
-    const item = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
-    expect(item).toContain("<item>\n  <sku>VIE-001</sku>");
+    const item = bodyText(await read("/vitrine/articles/VIE-001-1?format=xml", key).expect(200));
+    expect(item).toContain("<item>\n  <sku>VIE-001-1</sku>");
     await expectDeclaredBySchema(item);
 
     const json = jsonBody<VitrineTextsView>(
@@ -163,7 +163,7 @@ describe("la vitrine en XML", () => {
     const json = jsonBody<VitrineCatalogueView>(
       await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", key).expect(200),
     );
-    const served = json.items.find((entry) => entry.sku === "VIE-003");
+    const served = json.items.find((entry) => entry.sku === "VIE-003-1");
     const shelf = json.shelves.find((entry) => entry.id === served?.shelfId);
     expect(served).toMatchObject({
       unitPriceTtcCents: 1300,
@@ -173,7 +173,7 @@ describe("la vitrine en XML", () => {
       thumbnail: { alt: "Produit VIE-003", focale: "0.50,0.30" },
     });
 
-    const xml = bodyText(await read("/vitrine/articles/VIE-003?format=xml", key).expect(200));
+    const xml = bodyText(await read("/vitrine/articles/VIE-003-1?format=xml", key).expect(200));
     expect(xml).toContain("<alt>Produit VIE-003</alt>");
     expect(xml).not.toContain(`<alt>${url}</alt>`);
     expect(xml).toContain("<focale>0.50,0.30</focale>");
@@ -182,7 +182,7 @@ describe("la vitrine en XML", () => {
     expect(xml).toContain(`<shelfName>${shelf?.name ?? ""}</shelfName>`);
     await expectDeclaredBySchema(xml);
 
-    const plain = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    const plain = bodyText(await read("/vitrine/articles/VIE-001-1?format=xml", key).expect(200));
     expect(plain).toContain("<shelfName>");
     expect(plain).not.toContain("<thumbnail>");
   });
@@ -193,18 +193,18 @@ describe("la vitrine en XML", () => {
    */
   it("sert URLProduct, l'adresse absolue de la fiche, vide sans origine", async () => {
     const key = await aSubscriberWithACatalogue();
-    const expected = `${SHOP_ORIGIN}/boutique/article/VIE-001`;
+    const expected = `${SHOP_ORIGIN}/boutique/article/VIE-001-1`;
     const json = jsonBody<VitrineCatalogueView>(
       await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", key).expect(200),
     );
-    expect(json.items.find((entry) => entry.sku === "VIE-001")?.URLProduct).toBe(expected);
+    expect(json.items.find((entry) => entry.sku === "VIE-001-1")?.URLProduct).toBe(expected);
 
-    const xml = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    const xml = bodyText(await read("/vitrine/articles/VIE-001-1?format=xml", key).expect(200));
     expect(xml).toContain(`<URLProduct>${expected}</URLProduct>`);
     await expectDeclaredBySchema(xml);
 
     shopOrigin = null;
-    const bare = bodyText(await read("/vitrine/articles/VIE-001?format=xml", key).expect(200));
+    const bare = bodyText(await read("/vitrine/articles/VIE-001-1?format=xml", key).expect(200));
     expect(bare).toContain("<URLProduct></URLProduct>");
   });
 

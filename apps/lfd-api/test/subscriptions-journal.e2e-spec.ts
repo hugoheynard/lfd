@@ -59,7 +59,7 @@ function weeklyDelivery(): Record<string, unknown> {
       pays: "France",
     },
     pickupAddressId: null,
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
     note: `Sonner au ${NOTE_PHONE}`,
   };
 }
@@ -134,7 +134,7 @@ describe("les gestes du client sur son panier", () => {
     await ctx
       .asSub(OWNER)
       .put(put)
-      .send({ skipped: false, lines: [{ sku: "VIE-001", quantity: 5 }], note: NOTE_PHONE })
+      .send({ skipped: false, lines: [{ sku: "VIE-001-1", quantity: 5 }], note: NOTE_PHONE })
       .expect(204);
 
     const written = await facts("subscription.occurrence_overridden");
@@ -143,7 +143,7 @@ describe("les gestes du client sur son panier", () => {
       {
         date: OCCURRENCE,
         before: { skipped: true, lines: [] },
-        after: { skipped: false, lines: [{ sku: "VIE-001", quantity: 5 }] },
+        after: { skipped: false, lines: [{ sku: "VIE-001-1", quantity: 5 }] },
       },
     ]);
     expect(written[0]).toMatchObject({ subjectId: id, actorId: ownerId });
@@ -168,7 +168,7 @@ describe("les gestes du client sur son panier", () => {
           endDate: END,
           fulfillmentMethod: "delivery",
           pickupAddressId: null,
-          lines: [{ sku: "VIE-001", quantity: 3 }],
+          lines: [{ sku: "VIE-001-1", quantity: 3 }],
         },
       },
     ]);
@@ -184,7 +184,7 @@ describe("les gestes du client sur son panier", () => {
     await ctx
       .asSub(OWNER)
       .put(`/subscriptions/${id}/occurrences/${OCCURRENCE}`)
-      .send({ skipped: false, lines: [{ sku: "VIE-001", quantity: 1 }], note: NOTE_PHONE })
+      .send({ skipped: false, lines: [{ sku: "VIE-001-1", quantity: 1 }], note: NOTE_PHONE })
       .expect(204);
     await ctx.asSub(OWNER).delete(`/subscriptions/${id}`).expect(204);
     await ctx.drain();

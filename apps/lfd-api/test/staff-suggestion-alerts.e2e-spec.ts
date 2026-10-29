@@ -47,7 +47,7 @@ beforeEach(async () => {
 function baguetteRule(): StaffSuggestionRulePayload {
   return {
     trigger: { kind: "everywhere", ref: null },
-    suggestedSkus: ["PAI-001"],
+    suggestedSkus: ["PAI-001-1"],
     placement: "home",
     audience: "public",
     startsOn: serviceDay(0),
@@ -99,7 +99,7 @@ describe("les alertes des suggestions décidées", () => {
         severity: "empty",
         triggerWithdrawn: false,
         conditions: [],
-        items: [{ sku: "PAI-001", audience: "public", reason: "hidden_for_audience" }],
+        items: [{ sku: "PAI-001-1", audience: "public", reason: "hidden_for_audience" }],
         window: { from: serviceDay(0), to: serviceDay(7), capped: false },
       },
     ]);

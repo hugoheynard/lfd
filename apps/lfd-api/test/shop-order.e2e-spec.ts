@@ -117,7 +117,7 @@ function payload(over: Partial<PlaceShopOrderPayload> = {}): PlaceShopOrderPaylo
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
     ...over,
   };
 }
@@ -341,7 +341,7 @@ describe("la commande sans compte — l'idempotence, arbitrée par Postgres", ()
     await place({ idempotencyKey: key });
 
     await expect(
-      place({ idempotencyKey: key, lines: [{ sku: "VIE-001", quantity: 8 }] }),
+      place({ idempotencyKey: key, lines: [{ sku: "VIE-001-1", quantity: 8 }] }),
     ).rejects.toThrow();
     expect(await ctx.prisma.order.count()).toBe(1);
   });

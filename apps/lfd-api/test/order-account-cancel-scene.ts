@@ -277,7 +277,7 @@ async function chosenIdOrder(
       vatShares: [{ rate: 5.5, amountCents: 550 }],
       lines: {
         create: {
-          sku: "VIE-001",
+          sku: "VIE-001-1",
           productNameSnapshot: "Croissant",
           unitPriceMillicents: 10_000_000,
           vatRate: 5.5,

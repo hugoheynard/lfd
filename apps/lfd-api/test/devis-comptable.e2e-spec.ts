@@ -161,7 +161,7 @@ describe("le devis du logiciel comptable, refait par le moteur", () => {
     });
 
     expect(divergentes).toHaveLength(1);
-    expect(divergentes[0]?.sku).toBe("VIE-008");
+    expect(divergentes[0]?.sku).toBe("VIE-008-1");
     // 118,13 € chez nous, 118,12 € sur le document.
     expect(lineTotalCents(157_500, pieces(75))).toBe(11_813);
   });
@@ -205,7 +205,7 @@ describe("la borne de quantité, séparée le jour où un vrai devis l'a franchi
   it("chiffre une ligne de 101 380 pièces, que l'ancienne borne refusait", async () => {
     const view = await quoted();
 
-    expect(view.lines[0]).toMatchObject({ sku: "VIE-001", quantity: 101_380 });
+    expect(view.lines[0]).toMatchObject({ sku: "VIE-001-1", quantity: 101_380 });
     expect(view.lines.filter((line) => line.quantity > 10_000)).toHaveLength(4);
   });
 
@@ -226,7 +226,7 @@ describe("la borne de quantité, séparée le jour où un vrai devis l'a franchi
         requestedDeliveryDate: relativeDay(7).slice(0, 10),
         note: "",
         fulfillmentMethod: "pickup",
-        lines: [{ sku: "VIE-001", quantity: 101_380 }],
+        lines: [{ sku: "VIE-001-1", quantity: 101_380 }],
       })
       .expect(400);
   });

@@ -133,80 +133,80 @@ const shownOf = async (skus: readonly string[]) =>
 
 describe("souvent pris avec (R2)", () => {
   it("cinq clients distincts qui prennent croissant et baguette : la baguette est proposée avec le croissant", async () => {
-    await people(5, ["VIE-001", "PAI-001"]);
+    await people(5, ["VIE-001-1", "PAI-001-1"]);
 
     const shelf = jsonBody<ShopCatalogueView>(
       await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
     );
     const name = (sku: string) => shelf.items.find((item) => item.sku === sku)?.name;
 
-    expect(await suggestions(["VIE-001"])).toEqual([
+    expect(await suggestions(["VIE-001-1"])).toEqual([
       {
-        sku: "PAI-001",
-        item: shelf.items.find((item) => item.sku === "PAI-001"),
+        sku: "PAI-001-1",
+        item: shelf.items.find((item) => item.sku === "PAI-001-1"),
         reason: {
           source: "data",
           kind: "bought_with",
-          withSku: "VIE-001",
-          withName: name("VIE-001"),
+          withSku: "VIE-001-1",
+          withName: name("VIE-001-1"),
         },
       },
     ]);
   });
 
   it("quatre clients distincts : rien — le seuil d'anonymat tient en base", async () => {
-    await people(4, ["VIE-001", "PAI-001"]);
+    await people(4, ["VIE-001-1", "PAI-001-1"]);
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("une personne qui commande cinq fois reste UN client", async () => {
     const userId = await person();
     for (let index = 0; index < 5; index += 1) {
-      await seedOrder({ userId, skus: ["VIE-001", "PAI-001"] });
+      await seedOrder({ userId, skus: ["VIE-001-1", "PAI-001-1"] });
     }
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("ni l'annulée, ni l'abonnement, ni la commande de plus de 90 jours ne comptent", async () => {
-    await people(4, ["VIE-001", "PAI-001"]);
+    await people(4, ["VIE-001-1", "PAI-001-1"]);
     await seedOrder({
       userId: await person(),
-      skus: ["VIE-001", "PAI-001"],
+      skus: ["VIE-001-1", "PAI-001-1"],
       cancelled: true,
     });
     await seedOrder({
       userId: await person(),
-      skus: ["VIE-001", "PAI-001"],
+      skus: ["VIE-001-1", "PAI-001-1"],
       fromSubscription: true,
     });
-    await seedOrder({ userId: await person(), skus: ["VIE-001", "PAI-001"], daysAgo: 91 });
+    await seedOrder({ userId: await person(), skus: ["VIE-001-1", "PAI-001-1"], daysAgo: 91 });
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
 
-    await seedOrder({ userId: await person(), skus: ["VIE-001", "PAI-001"], daysAgo: 88 });
+    await seedOrder({ userId: await person(), skus: ["VIE-001-1", "PAI-001-1"], daysAgo: 88 });
 
-    expect(await shownOf(["VIE-001"])).toEqual([["PAI-001", "data"]]);
+    expect(await shownOf(["VIE-001-1"])).toEqual([["PAI-001-1", "data"]]);
   });
 
   it("les paniers des pros ne parlent pas aux particuliers", async () => {
-    await people(4, ["VIE-001", "PAI-001"]);
+    await people(4, ["VIE-001-1", "PAI-001-1"]);
     const company = await createCompany(ctx.prisma);
     await seedOrder({
       userId: await person(),
       companyId: company.id,
-      skus: ["VIE-001", "PAI-001"],
+      skus: ["VIE-001-1", "PAI-001-1"],
     });
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("le staff passe avant, et le calculé prend la place suivante sans doublon", async () => {
-    await people(6, ["VIE-001", "PAI-001", "CHO-001"]);
+    await people(6, ["VIE-001-1", "PAI-001-1", "CHO-001-1"]);
     const rule: StaffSuggestionRulePayload = {
-      trigger: { kind: "product_in_cart", ref: "VIE-001" },
-      suggestedSkus: ["PAI-001"],
+      trigger: { kind: "product_in_cart", ref: "VIE-001-1" },
+      suggestedSkus: ["PAI-001-1"],
       placement: "cart",
       audience: "both",
       startsOn: serviceDay(0),
@@ -216,9 +216,9 @@ describe("souvent pris avec (R2)", () => {
     };
     await ctx.asSub(E2E_STAFF_SUB).post("/admin/suggestions").send(rule).expect(201);
 
-    expect(await shownOf(["VIE-001"])).toEqual([
-      ["PAI-001", "staff"],
-      ["CHO-001", "data"],
+    expect(await shownOf(["VIE-001-1"])).toEqual([
+      ["PAI-001-1", "staff"],
+      ["CHO-001-1", "data"],
     ]);
   });
 });

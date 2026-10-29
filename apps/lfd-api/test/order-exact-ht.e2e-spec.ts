@@ -151,7 +151,7 @@ function basket(quantity: number, voucherId?: string): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: DAY_OF_SERVICE,
     note: "",
-    lines: [{ sku: "VIE-001", quantity }],
+    lines: [{ sku: "VIE-001-1", quantity }],
     ...(voucherId === undefined ? {} : { voucherId }),
   };
 }
@@ -171,7 +171,7 @@ describe("un particulier paie la somme des étiquettes", () => {
       await ctx
         .http()
         .post("/shop/quote")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     );
 
@@ -266,7 +266,7 @@ describe("l'étiquette de la boutique (lot C3)", () => {
 
     const view = jsonBody<ShopCatalogueView>(await ctx.http().get("/shop/catalogue").expect(200));
 
-    const item = view.items.find((candidate) => candidate.sku === "VIE-001");
+    const item = view.items.find((candidate) => candidate.sku === "VIE-001-1");
     expect(item?.unitPriceTtcCents).toBe(153);
   });
 });
@@ -309,7 +309,7 @@ describe("une commande line_ht d'avant la voie B", () => {
         pickupAddressId: pickupId,
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "Sans sucre glace",
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
       })
       .expect(200);
 

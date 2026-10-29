@@ -80,7 +80,7 @@ async function place(pickupAddressId: string): Promise<string> {
       idempotencyKey: randomUUID(),
       salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
-      lines: [{ sku: "VIE-001", quantity: 1 }],
+      lines: [{ sku: "VIE-001-1", quantity: 1 }],
       companyId: null,
       fulfillmentMethod: "pickup",
       // Pas de commande sans créneau (2026-10-14).

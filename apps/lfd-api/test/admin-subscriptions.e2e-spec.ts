@@ -76,9 +76,9 @@ describe("GET /admin/companies/:companyId/subscriptions", () => {
     // Un client hors du compte : son panier ne doit pas entrer dans la liste.
     await createUser(ctx.prisma, { auth0Sub: OUTSIDER, email: "solo@exemple.fr" });
 
-    await ctx.asSub(MEMBER).post("/subscriptions").send(weeklyPickup("VIE-001")).expect(201);
-    await ctx.asSub(COLLEAGUE).post("/subscriptions").send(weeklyPickup("VIE-002")).expect(201);
-    await ctx.asSub(OUTSIDER).post("/subscriptions").send(weeklyPickup("PAI-001")).expect(201);
+    await ctx.asSub(MEMBER).post("/subscriptions").send(weeklyPickup("VIE-001-1")).expect(201);
+    await ctx.asSub(COLLEAGUE).post("/subscriptions").send(weeklyPickup("VIE-002-1")).expect(201);
+    await ctx.asSub(OUTSIDER).post("/subscriptions").send(weeklyPickup("PAI-001-1")).expect(201);
 
     const rows = jsonBody<readonly AdminSubscriptionRow[]>(
       await ctx.asSub("staff-e2e").get(`/admin/companies/${company.id}/subscriptions`).expect(200),
@@ -87,8 +87,8 @@ describe("GET /admin/companies/:companyId/subscriptions", () => {
     expect(rows).toHaveLength(2);
     expect(rows.map((row) => row.placedByName).sort()).toEqual(["Léa Martin", "Paul Durand"]);
     expect(rows.flatMap((row) => row.lines.map((line) => line.sku)).sort()).toEqual([
-      "VIE-001",
-      "VIE-002",
+      "VIE-001-1",
+      "VIE-002-1",
     ]);
   });
 

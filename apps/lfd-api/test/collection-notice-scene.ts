@@ -164,7 +164,7 @@ export async function orderOf(companyId: string): Promise<{ id: string; totalCen
     placedAt: new Date(servedAt.getTime() - 3 * DAY_MS),
     forDay: instantToLocal(servedAt).day,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: 50 }],
+    lines: [{ sku: "VIE-001-1", quantity: 50 }],
   });
   // Les courriels de la passation (confirmation) ne sont pas des avis : les
   // suites ne comptent que ceux du prélèvement.

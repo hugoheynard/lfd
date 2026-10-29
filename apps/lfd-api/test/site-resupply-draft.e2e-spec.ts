@@ -320,7 +320,7 @@ describe("le mur par point", () => {
     const reader = await holderOf("comptoir-lecture", [
       { resource: "handover_counter", action: "read" },
     ]);
-    await add(reader, siteId, "asap", "VIE-001", 1).expect(403);
-    await add(reader, siteId, "hier", "VIE-001", 1).expect(403);
+    await add(reader, siteId, "asap", "VIE-001-1", 1).expect(403);
+    await add(reader, siteId, "hier", "VIE-001-1", 1).expect(403);
   });
 });

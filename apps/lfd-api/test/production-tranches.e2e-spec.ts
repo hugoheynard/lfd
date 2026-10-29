@@ -27,7 +27,7 @@ import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-fa
 const SETTINGS = "/admin/production/settings";
 const TRANCHES = `${SETTINGS}/tranches`;
 const DAY = serviceDay();
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>

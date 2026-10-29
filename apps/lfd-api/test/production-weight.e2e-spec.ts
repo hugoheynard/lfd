@@ -40,7 +40,7 @@ import {
  */
 
 /** Le pain au chocolat du semis devient un article au poids, par 50 g. */
-const WEIGHED = "VIE-002";
+const WEIGHED = "VIE-002-1";
 /** 42,20 € TTC le kilo, à 5,5 % : de quoi régler par carte. */
 const PUBLIC_LABEL_PER_KG_CENTS = 4_220;
 
@@ -67,7 +67,7 @@ async function sellByWeight(): Promise<void> {
     throw new Error("Étiquette sans hors taxe.");
   }
   await ctx.prisma.catalogItem.update({
-    where: { sku: `${WEIGHED}-1` },
+    where: { sku: `${WEIGHED}` },
     data: {
       saleUnit: "weight",
       weightStepGrams: 50,

@@ -46,8 +46,8 @@ beforeEach(async () => {
 /** « Croissant au panier → baguette », de aujourd'hui à dans une semaine. */
 function croissantRule(): StaffSuggestionRulePayload {
   return {
-    trigger: { kind: "product_in_cart", ref: "VIE-001" },
-    suggestedSkus: ["PAI-001"],
+    trigger: { kind: "product_in_cart", ref: "VIE-001-1" },
+    suggestedSkus: ["PAI-001-1"],
     placement: "cart",
     audience: "both",
     startsOn: serviceDay(0),
@@ -63,7 +63,7 @@ async function create(body: StaffSuggestionRulePayload): Promise<string> {
 }
 
 function cartPreview(day: string | null): StaffSuggestionPreviewPayload {
-  return { placement: "cart", skus: ["VIE-001"], audience: "public", day, pickupAddressId: null };
+  return { placement: "cart", skus: ["VIE-001-1"], audience: "public", day, pickupAddressId: null };
 }
 
 async function preview(body: StaffSuggestionPreviewPayload): Promise<StaffSuggestionPreviewView> {
@@ -77,20 +77,20 @@ describe("l'aperçu des suggestions décidées", () => {
     const shop = jsonBody<CartSuggestionView[]>(
       await request(ctx.app.getHttpServer())
         .post("/shop/suggestions/cart")
-        .send({ skus: ["VIE-001"], target: { date: serviceDay(1), pickupAddressId: null } })
+        .send({ skus: ["VIE-001-1"], target: { date: serviceDay(1), pickupAddressId: null } })
         .expect(200),
     );
 
     const view = await preview(cartPreview(serviceDay(1)));
 
     expect(view.shown).toEqual(shop);
-    expect(view.shown.map(({ sku }) => sku)).toEqual(["PAI-001"]);
+    expect(view.shown.map(({ sku }) => sku)).toEqual(["PAI-001-1"]);
     expect(view.rules).toEqual([
       {
         ruleId: id,
         status: "shown",
         outrankedBy: null,
-        items: [{ sku: "PAI-001", status: "shown", outrankedBy: null }],
+        items: [{ sku: "PAI-001-1", status: "shown", outrankedBy: null }],
       },
     ]);
   });

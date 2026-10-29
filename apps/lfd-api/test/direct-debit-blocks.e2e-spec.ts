@@ -127,7 +127,7 @@ function clientOrder(companyId: string): Record<string, unknown> {
     requestedDeliveryDate: serviceDay(),
     note: "",
     settlement: "account",
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
   };
 }
 
@@ -140,7 +140,7 @@ function staffOrder(companyId: string, buyerUserId: string): Record<string, unkn
     fulfillmentMethod: "pickup",
     pickupAddressId: pickupId,
     requestedWindow: { start: "07:00", end: "08:00" },
-    lines: [{ sku: "VIE-001", quantity: 12 }],
+    lines: [{ sku: "VIE-001-1", quantity: 12 }],
   };
 }
 

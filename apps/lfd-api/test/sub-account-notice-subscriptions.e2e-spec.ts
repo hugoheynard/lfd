@@ -72,7 +72,7 @@ const PANIER = {
   fulfillmentMethod: "pickup",
   deliveryAddress: null,
   pickupAddressId: null,
-  lines: [{ sku: "VIE-001", quantity: 3 }],
+  lines: [{ sku: "VIE-001-1", quantity: 3 }],
   note: "Le lundi, sonner chez Mme Durand",
 };
 
@@ -110,7 +110,7 @@ describe("un panier récurrent créé dans l'espace d'un site", () => {
       byTeam: false,
     });
     const written = JSON.stringify(notices());
-    expect(written).not.toContain("VIE-001");
+    expect(written).not.toContain("VIE-001-1");
     expect(written).not.toContain("Durand");
   });
 

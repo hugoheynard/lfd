@@ -91,7 +91,7 @@ async function placeOnAccount(
     companyId: buyer.companyId,
     settlement: "account",
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: options.units ?? 10 }],
+    lines: [{ sku: "VIE-001-1", quantity: options.units ?? 10 }],
     ...(options.placedAt === undefined ? {} : { placedAt: options.placedAt }),
   });
   await markDelivered(ctx.prisma, order.id, options.placedAt ?? new Date());

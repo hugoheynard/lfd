@@ -43,7 +43,7 @@ const SERVICE_DAY = serviceDay();
 let pickupId = "pickup_absent";
 
 const CLIENT = "auth0|client";
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 
 /** Le vérificateur staff, doublé : un e2e n'a pas à joindre le tenant Auth0. */
 const stubAdminVerifier = {
@@ -198,7 +198,7 @@ describe("une commande déclenche l'évaluation", () => {
     await order(companyId, 3);
 
     // Un produit INÉDIT sur la deuxième commande : c'est le cas qui doit parler.
-    await orderSku(companyId, "VIE-002", 2);
+    await orderSku(companyId, "VIE-002-1", 2);
 
     const alerts = await eventually(
       () => alertsOf(companyId),
@@ -206,10 +206,10 @@ describe("une commande déclenche l'évaluation", () => {
     );
     expect(alerts[0]?.kind).toBe("product.first_order");
     // Le contenu EXACT, depuis le 2026-10-10 : l'historique s'arrête avant la
-    // commande évaluée. Jusque-là, `findings[0]` rendait parfois "VIE-001" —
+    // commande évaluée. Jusque-là, `findings[0]` rendait parfois "VIE-001-1" —
     // l'évaluation de la première commande, en retard sur le bus, voyait déjà
     // la seconde (course du 2026-09-07).
-    expect(alerts[0]?.findings.map((finding) => finding.sku)).toEqual(["VIE-002"]);
+    expect(alerts[0]?.findings.map((finding) => finding.sku)).toEqual(["VIE-002-1"]);
   });
 
   /**
@@ -220,8 +220,8 @@ describe("une commande déclenche l'évaluation", () => {
    */
   it("n'inclut pas dans l'historique d'une commande celles passées APRÈS elle", async () => {
     const companyId = await seed();
-    await orderSku(companyId, "VIE-001", 3);
-    await orderSku(companyId, "VIE-002", 2);
+    await orderSku(companyId, "VIE-001-1", 3);
+    await orderSku(companyId, "VIE-002-1", 2);
     const [first] = await ctx.prisma.order.findMany({
       where: { companyId },
       orderBy: [{ createdAt: "asc" }, { id: "asc" }],
@@ -234,7 +234,7 @@ describe("une commande déclenche l'évaluation", () => {
     const history = await ctx.app.get(AccountOrderHistoryReader).read({
       companyId,
       evaluatedOrder: { id: first.id, placedAt: first.createdAt },
-      skus: ["VIE-001", "VIE-002"],
+      skus: ["VIE-001-1", "VIE-002-1"],
       windowDays: 365,
       maxOrdersPerSku: 10,
       now: new Date(),
@@ -442,7 +442,7 @@ describe("la cloche du back-office", () => {
     const companyId = await seed();
     await order(companyId, 3);
     // Deuxième commande, produit inédit : une alerte, donc une notification.
-    await orderSku(companyId, "VIE-002", 2);
+    await orderSku(companyId, "VIE-002-1", 2);
 
     const before = await eventually(
       async () =>
@@ -582,7 +582,7 @@ describe("la pastille de la liste des comptes", () => {
   it("compte les alertes en attente par société", async () => {
     const companyId = await seed();
     await order(companyId, 3);
-    await orderSku(companyId, "VIE-002", 2);
+    await orderSku(companyId, "VIE-002-1", 2);
     await eventually(
       () => alertsOf(companyId),
       (found) => found.length > 0,
@@ -604,7 +604,7 @@ describe("la pastille de la liste des comptes", () => {
   it("retombe à zéro dès que l'alerte est acquittée", async () => {
     const companyId = await seed();
     await order(companyId, 3);
-    await orderSku(companyId, "VIE-002", 2);
+    await orderSku(companyId, "VIE-002-1", 2);
     const alerts = await eventually(
       () => alertsOf(companyId),
       (found) => found.length > 0,

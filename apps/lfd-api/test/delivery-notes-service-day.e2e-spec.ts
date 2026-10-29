@@ -96,7 +96,7 @@ async function placeOnAccount(): Promise<{ readonly id: string; readonly number:
       pickupAddressId: point.id,
       requestedWindow: { start: "07:00", end: "08:00" },
       note: "",
-      lines: [{ sku: "VIE-001", quantity: 4 }],
+      lines: [{ sku: "VIE-001-1", quantity: 4 }],
     })
     .expect(201);
   const { id } = jsonBody<AdminPlacedOrderResponse>(response);
@@ -118,7 +118,7 @@ function source(order: {
     terms: ORDER_TERMS,
     lines: [
       {
-        sku: "VIE-001",
+        sku: "VIE-001-1",
         productName: "Croissant",
         unitPriceMillicents: 95_000,
         vatRate: 5.5,

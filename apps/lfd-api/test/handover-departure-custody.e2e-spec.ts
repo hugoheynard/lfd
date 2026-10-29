@@ -36,7 +36,7 @@ import { coliseOrder } from "./production-day-fixture.js";
 
 const MEMBER = "auth0|member-custody";
 const DAY = serviceDay();
-const CROISSANT = "VIE-001";
+const CROISSANT = "VIE-001-1";
 const DEPARTED = "La commande est partie : le produit n'est plus là.";
 
 const SITE = {

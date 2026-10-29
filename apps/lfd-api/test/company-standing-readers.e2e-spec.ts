@@ -60,7 +60,7 @@ const PROBES: readonly Probe[] = [
       ctx
         .asSub(who.sub)
         .post("/orders/quote")
-        .send({ companyId: id, lines: [{ sku: "VIE-001", quantity: 6 }] }),
+        .send({ companyId: id, lines: [{ sku: "VIE-001-1", quantity: 6 }] }),
   },
   {
     reader: "company-order-wall (« Mes commandes »)",

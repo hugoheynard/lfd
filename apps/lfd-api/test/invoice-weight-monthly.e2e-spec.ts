@@ -45,7 +45,7 @@ import {
 } from "./shortfall-decision-scene.js";
 
 /** Le pain au chocolat du semis, vendu au poids, par 50 g. */
-const WEIGHED = "VIE-002";
+const WEIGHED = "VIE-002-1";
 const ORDERED_GRAMS = 1_250;
 const PACKED_GRAMS = 1_000;
 const PUBLIC_LABEL_PER_KG_CENTS = 4_220;
@@ -67,7 +67,7 @@ beforeEach(async () => {
     throw new Error("Étiquette sans hors taxe.");
   }
   await ctx.prisma.catalogItem.update({
-    where: { sku: `${WEIGHED}-1` },
+    where: { sku: `${WEIGHED}` },
     data: {
       saleUnit: "weight",
       weightStepGrams: 50,
@@ -109,7 +109,7 @@ describe("la facture du mois d'un BL au poids partiel (P7)", () => {
       await ctx.app.get(MonthlyInvoicingReader, { strict: false }).uninvoicedOrders(from, to)
     ).find((one) => one.orderId === order.id);
     expect(billable?.frozen.lines.map((l) => [l.sku, l.quantity, l.saleUnit])).toEqual([
-      ["VIE-001", 3, "piece"],
+      ["VIE-001-1", 3, "piece"],
       [WEIGHED, PACKED_GRAMS, "weight"],
     ]);
 
@@ -120,7 +120,7 @@ describe("la facture du mois d'un BL au poids partiel (P7)", () => {
     const invoice = invoiceFromDossier({ ...issue, computed });
     const lines = invoice.toState().lines;
     expect(lines.map((l) => [l.sku, l.unitCode, l.quantityThousandths])).toEqual([
-      ["VIE-001", "H87", 3_000],
+      ["VIE-001-1", "H87", 3_000],
       [WEIGHED, "KGM", PACKED_GRAMS],
     ]);
     expect(lines[1]?.amountCents).toBe(noteLine.lineTotalCents);

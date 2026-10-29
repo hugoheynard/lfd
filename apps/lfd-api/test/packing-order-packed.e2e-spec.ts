@@ -171,14 +171,14 @@ async function placeAndClose(): Promise<{ readonly reference: string; readonly o
         requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
       })
       .expect(201),
   );
   await settleCardPayments(ctx, issuedIntents);
   await ctx.asSub(STAFF).post(`/admin/production/batch/${SERVICE_DAY}/close`).expect(201);
   await ctx.drain();
-  expect(await markLine(ctx, "VIE-001")).toBe(204);
+  expect(await markLine(ctx, "VIE-001-1")).toBe(204);
   await ctx.drain();
   const sheet = await sheetOf(ctx, placed.orderNumber);
   expect(await bagLines(ctx, sheet)).toBe(204);

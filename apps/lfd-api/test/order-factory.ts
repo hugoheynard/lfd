@@ -103,7 +103,7 @@ export interface PlacedTestOrder {
   readonly paymentIntentId: string | null;
 }
 
-const DEFAULT_LINES: readonly OrderLineSeed[] = [{ sku: "VIE-001", quantity: 3 }];
+const DEFAULT_LINES: readonly OrderLineSeed[] = [{ sku: "VIE-001-1", quantity: 3 }];
 const DEFAULT_WINDOW = { start: "07:00", end: "08:00" } as const;
 const DEFAULT_LEAD_DAYS = 7;
 

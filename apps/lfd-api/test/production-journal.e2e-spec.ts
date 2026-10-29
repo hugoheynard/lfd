@@ -34,7 +34,7 @@ const MEMBER = "auth0|member-production-journal";
 const REFUSAL = "e2e_journal_production_en_panne";
 /** Une journée à venir, calculée UNE fois : fixture et assertion visent la même. */
 const DAY = serviceDay();
-const CROISSANT = "VIE-001";
+const CROISSANT = "VIE-001-1";
 
 const SITE = {
   label: "Boutique",

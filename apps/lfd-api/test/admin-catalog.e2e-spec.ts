@@ -315,7 +315,7 @@ describe("lot D — le prix vient du référentiel", () => {
       await ctx
         .http()
         .post("/shop/quote")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     );
     const shop = jsonBody<{ items: { sku: string; unitPriceMillicents: number }[] }>(
@@ -438,7 +438,7 @@ describe("masquage par audience", () => {
     const shop = jsonBody<{ items: { sku: string }[] }>(
       await ctx.http().get("/shop/catalogue").expect(200),
     );
-    expect(shop.items.map((entry) => entry.sku)).toContain("VIE-001");
+    expect(shop.items.map((entry) => entry.sku)).toContain("VIE-001-1");
   });
 
   it("🔴 masquer au PUBLIC le retire de la vitrine, sans toucher au pro", async () => {
@@ -454,7 +454,7 @@ describe("masquage par audience", () => {
     const shop = jsonBody<{ items: { sku: string }[] }>(
       await ctx.http().get("/shop/catalogue").expect(200),
     );
-    expect(shop.items.map((entry) => entry.sku)).not.toContain("VIE-001");
+    expect(shop.items.map((entry) => entry.sku)).not.toContain("VIE-001-1");
   });
 
   /**
@@ -471,7 +471,7 @@ describe("masquage par audience", () => {
     const response = await ctx
       .http()
       .post("/shop/quote")
-      .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null });
+      .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null });
 
     expect(response.status).toBe(400);
   });
@@ -647,7 +647,7 @@ function croissantIn(board: {
 }): number | undefined {
   return board.categories
     .flatMap((category) => category.items)
-    .find((item) => item.sku === "VIE-001")?.canonicalMillicents;
+    .find((item) => item.sku === "VIE-001-1")?.canonicalMillicents;
 }
 
 describe("GET /admin/catalog — l'ordre du rayon", () => {

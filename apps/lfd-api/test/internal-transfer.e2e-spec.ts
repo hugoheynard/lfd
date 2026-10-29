@@ -167,11 +167,11 @@ describe("le transfert interne, de la clôture au départ (lot T1)", () => {
 
 describe("le manifeste d'une commande au poids (P6 de `pricing/vente-au-poids.md`)", () => {
   /** Le pain au chocolat du semis devient un article au poids, par 50 g. */
-  const WEIGHED = "VIE-002";
+  const WEIGHED = "VIE-002-1";
 
   it("une commande mêlée part avec ses grammes ET leur unité ; un ancien manifeste se relit en pièces", async () => {
     await ctx.prisma.catalogItem.update({
-      where: { sku: `${WEIGHED}-1` },
+      where: { sku: `${WEIGHED}` },
       data: { saleUnit: "weight", weightStepGrams: 50, weightMinGrams: null },
     });
     const { transferId } = await composedTransfer(ctx, DAY, [

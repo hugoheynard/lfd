@@ -52,7 +52,7 @@ async function shop(lang?: string): Promise<ShopCatalogueView> {
 }
 
 function itemOf(view: ShopCatalogueView, fiche: Fiche): ShopItemView | undefined {
-  return view.items.find((item) => item.sku === fiche.sku);
+  return view.items.find((item) => item.sku === fiche.variantSku);
 }
 
 function shelfNameOf(view: ShopCatalogueView, fiche: Fiche): string | undefined {

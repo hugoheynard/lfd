@@ -277,7 +277,7 @@ describe("POST me/loyalty/conversions", () => {
 });
 
 describe("le devis connecté : « vous gagnerez N points »", () => {
-  const CART = { lines: [{ sku: "VIE-001", quantity: 10 }], fulfillment: null };
+  const CART = { lines: [{ sku: "VIE-001-1", quantity: 10 }], fulfillment: null };
 
   it("annonce le HT des marchandises, par la règle du crédit", async () => {
     await openProgram();

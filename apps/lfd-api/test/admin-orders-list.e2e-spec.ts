@@ -113,7 +113,7 @@ async function place(sub: string, body: Record<string, unknown>): Promise<string
       idempotencyKey: randomUUID(),
       salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
-      lines: [{ sku: "VIE-001", quantity: 1 }],
+      lines: [{ sku: "VIE-001-1", quantity: 1 }],
       ...body,
     })
     .expect(201);

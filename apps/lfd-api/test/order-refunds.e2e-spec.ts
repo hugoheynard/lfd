@@ -69,7 +69,7 @@ async function seedPaidOrder(intent: string): Promise<string> {
     buyerUserId: buyer.id,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
     // Dix croissants : le total dépasse le premier remboursement partiel (10 €).
-    lines: [{ sku: "VIE-001", quantity: 10 }],
+    lines: [{ sku: "VIE-001-1", quantity: 10 }],
   });
   await ctx.app.get(CommandBus).execute(new ConfirmOrderPaymentCommand(intent, "succeeded"));
   await ctx.drain();

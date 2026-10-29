@@ -132,12 +132,13 @@ describe("DeliveryColdSkusReader — le froid par SKU de vente", () => {
     expect((await coldSkus()).has(`${COLD_PRODUCT}-3`)).toBe(true);
   });
 
-  it("le défaut reste froid sous le SKU de son produit, et le sec reste sec", async () => {
+  it("le défaut est froid sous SA référence, et le sec reste sec", async () => {
     const cold = await coldSkus();
 
-    expect(cold.has(COLD_PRODUCT)).toBe(true);
-    // Le défaut se vend sous le SKU produit (`shopSkuOf`) : pas sous le sien.
-    expect(cold.has(`${COLD_PRODUCT}-1`)).toBe(false);
-    expect(cold.has(DRY_PRODUCT)).toBe(false);
+    // Depuis la bascule du 2026-10-29, le défaut se vend sous son SKU
+    // (`shopSkuOf`), plus sous celui du produit : l'attente s'est inversée.
+    expect(cold.has(`${COLD_PRODUCT}-1`)).toBe(true);
+    expect(cold.has(COLD_PRODUCT)).toBe(false);
+    expect(cold.has(`${DRY_PRODUCT}-1`)).toBe(false);
   });
 });

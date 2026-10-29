@@ -134,7 +134,7 @@ const order = (
   fulfillmentMethod: "pickup",
   requestedWindow: { start: "07:00", end: "08:00" },
   note: "",
-  lines: [{ sku: "VIE-001", quantity: 3 }],
+  lines: [{ sku: "VIE-001-1", quantity: 3 }],
 });
 
 async function salesTermsOf(orderId: string): Promise<OrderSalesTermsResponse> {
@@ -233,7 +233,7 @@ describe("la boutique sans compte (place-shop-order)", () => {
       pickupAddressId: pickupId,
       requestedDeliveryDate: SERVICE_DAY,
       note: "",
-      lines: [{ sku: "VIE-001", quantity: 3 }],
+      lines: [{ sku: "VIE-001-1", quantity: 3 }],
     };
     const handler = ctx.app.get(PlaceShopOrderHandler);
 

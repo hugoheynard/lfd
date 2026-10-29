@@ -94,7 +94,7 @@ function order(over: Record<string, unknown> = {}): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: serviceDay(),
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 2 }],
+    lines: [{ sku: "VIE-001-1", quantity: 2 }],
     ...over,
   };
 }
@@ -145,7 +145,7 @@ describe("une clé de passation ne sert qu'une fois", () => {
     await place(order({ idempotencyKey: key })).expect(201);
 
     const response = await place(
-      order({ idempotencyKey: key, lines: [{ sku: "VIE-001", quantity: 9 }] }),
+      order({ idempotencyKey: key, lines: [{ sku: "VIE-001-1", quantity: 9 }] }),
     ).expect(409);
 
     expect(jsonBody<{ code: string }>(response).code).toBe("orders.idempotency.reused");

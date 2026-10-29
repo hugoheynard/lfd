@@ -106,8 +106,8 @@ describe("changer l'unité de vente d'une déclinaison publiée", () => {
     await placeOrder(ctx, {
       buyerUserId: buyer.id,
       fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-      // Le défaut se vend sous le SKU de sa fiche.
-      lines: [{ sku: fiche.sku, quantity: 2 }],
+      // Le défaut se vend sous SA référence depuis la bascule du 2026-10-29.
+      lines: [{ sku: fiche.variantSku, quantity: 2 }],
     });
     const variantId = await defaultVariantId(fiche);
     expect((await usageOf(fiche)).variants).toEqual([
@@ -136,18 +136,18 @@ describe("changer l'unité de vente d'une déclinaison publiée", () => {
         .post("/shop/quote")
         .send({
           lines: [
-            { sku: fiche.sku, quantity: 3 },
-            { sku: "VIE-001", quantity: 2 },
+            { sku: fiche.variantSku, quantity: 3 },
+            { sku: "VIE-001-1", quantity: 2 },
           ],
           fulfillment: null,
         })
         .expect(200),
     );
 
-    expect(quote.lines.map((line) => line.sku)).toEqual(["VIE-001"]);
+    expect(quote.lines.map((line) => line.sku)).toEqual(["VIE-001-1"]);
     expect(quote.removedLines).toHaveLength(1);
     expect(quote.removedLines?.[0]).toMatchObject({
-      sku: fiche.sku,
+      sku: fiche.variantSku,
       reason: "sale_unit_changed",
       saleUnit: "weight",
     });

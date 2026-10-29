@@ -138,7 +138,7 @@ describe("Réglages › Commandes › Contrôle qualité", () => {
 
 describe("un verdict à un niveau désactivé", () => {
   it("par défaut, refuse une ligne (409) en nommant le réglage, sans rien écrire", async () => {
-    const refused = await verdict({ kind: "line", sku: "VIE-001" }).expect(409);
+    const refused = await verdict({ kind: "line", sku: "VIE-001-1" }).expect(409);
 
     const body = jsonBody<{ code: string; message: string }>(refused);
     expect(body.code).toBe("production.quality.disabled");

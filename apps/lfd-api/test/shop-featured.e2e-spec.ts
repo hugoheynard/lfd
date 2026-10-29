@@ -73,7 +73,7 @@ describe("GET /shop/featured?audience=pro", () => {
 
     const view = await featured("?audience=pro&lang=en");
 
-    expect(view.map((item) => item.sku)).toEqual([pro.sku]);
+    expect(view.map((item) => item.sku)).toEqual([pro.variantSku]);
   });
 
   it("ne sort pas un article mis en avant puis dépublié au référentiel", async () => {
@@ -85,7 +85,7 @@ describe("GET /shop/featured?audience=pro", () => {
     await staff().put(`${PRODUCTS}/${unpublished.id}/unpublish`).send({}).expect(200);
     await relayAll(ctx);
 
-    expect((await featured()).map((item) => item.sku)).toEqual([kept.sku]);
+    expect((await featured()).map((item) => item.sku)).toEqual([kept.variantSku]);
   });
 
   it("🔴 ne porte aucun prix : seulement le nom, la ligne, les images et le rayon", async () => {
@@ -102,7 +102,7 @@ describe("GET /shop/featured?audience=pro", () => {
       "sku",
       "thumbnail",
     ]);
-    expect(item).toMatchObject({ sku: pro.sku, name: "Brioche", shelfId: pro.categoryId });
+    expect(item).toMatchObject({ sku: pro.variantSku, name: "Brioche", shelfId: pro.categoryId });
   });
 
   it("refuse une audience autre que pro, et une audience absente, d'un 400", async () => {

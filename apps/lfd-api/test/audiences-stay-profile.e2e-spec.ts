@@ -19,7 +19,7 @@ import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-fa
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { stubAdminVerifier } from "./operations-at-commerce-scene.js";
 
-const BAGUETTES = [{ sku: "PAI-001", quantity: 2 }] as const;
+const BAGUETTES = [{ sku: "PAI-001-1", quantity: 2 }] as const;
 
 let ctx: E2eContext;
 let seq = 0;

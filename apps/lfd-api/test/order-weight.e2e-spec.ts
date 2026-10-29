@@ -103,7 +103,7 @@ function basket(line: Record<string, unknown>, company: string | null): Record<s
   };
 }
 
-const WEIGHED = { sku: "VIE-001", quantity: 1_250, saleUnit: "weight" };
+const WEIGHED = { sku: "VIE-001-1", quantity: 1_250, saleUnit: "weight" };
 
 describe("une commande au poids", () => {
   it("un pro : la ligne s'écrit en grammes au prix du kilo, et se relit avec son unité", async () => {
@@ -121,7 +121,7 @@ describe("une commande au poids", () => {
     });
     const view = jsonBody<OrderView>(await ctx.asSub(PRO).get(`/orders/${placed.id}`).expect(200));
     expect(view.lines).toEqual([
-      expect.objectContaining({ sku: "VIE-001", quantity: 1_250, saleUnit: "weight" }),
+      expect.objectContaining({ sku: "VIE-001-1", quantity: 1_250, saleUnit: "weight" }),
     ]);
   });
 
@@ -147,7 +147,7 @@ describe("une commande au poids", () => {
     const response = await ctx
       .asSub(PRO)
       .post("/orders")
-      .send(basket({ sku: "VIE-001", quantity: 1_250 }, companyId))
+      .send(basket({ sku: "VIE-001-1", quantity: 1_250 }, companyId))
       .expect(400);
 
     expect(jsonBody<{ code: string }>(response).code).toBe("orders.line.sale_unit_mismatch");

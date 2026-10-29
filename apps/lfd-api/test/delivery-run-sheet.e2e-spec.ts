@@ -167,7 +167,7 @@ async function place(
         fulfillmentMethod: fulfillment,
         ...where,
         note: "par la cour",
-        lines: [{ sku: "VIE-001", quantity: 4 }],
+        lines: [{ sku: "VIE-001-1", quantity: 4 }],
       })
       .expect(201),
   );
@@ -273,7 +273,7 @@ describe("la feuille de route du jour", () => {
         deliveryAddressId: other.addressId,
         requestedWindow: { start: null, end: "10:00" },
         note: "par la cour",
-        lines: [{ sku: "VIE-001", quantity: 4 }],
+        lines: [{ sku: "VIE-001-1", quantity: 4 }],
       })
       .expect(409);
 
@@ -325,7 +325,7 @@ describe("la feuille de route du jour", () => {
           deliveryAddressId: addressId,
           requestedWindow: { start: null, end: "10:00" },
           note: "par la cour",
-          lines: [{ sku: "VIE-001", quantity: 4 }],
+          lines: [{ sku: "VIE-001-1", quantity: 4 }],
         },
         { companyId, buyerUserId: owner.id },
       )

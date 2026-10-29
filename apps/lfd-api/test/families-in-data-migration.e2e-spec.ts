@@ -87,7 +87,7 @@ async function scopeIdOf(table: string, id: string): Promise<string | null> {
 /** Une décision de chaque table, en code de rayon — une archivée comprise. */
 async function seedCodes(companyId: string): Promise<void> {
   await insertRule("rule_vien", "category", "viennoiserie");
-  await insertRule("rule_prod", "product", "VIE-001");
+  await insertRule("rule_prod", "product", "VIE-001-1");
   await insertRule("rule_archived", "category", "chocolat");
   await ctx.prisma.priceRule.update({
     where: { id: "rule_archived" },
@@ -159,7 +159,7 @@ describe("la migration sur une base semée de codes de rayon", () => {
     expect(await scopeIdOf("volume_ladders", "ladder_patis")).toBe(E2E_FAMILIES.PAT.id);
     expect(await scopeIdOf("volume_commitments", "commit_sale")).toBe(E2E_FAMILIES.SAL.id);
     // Une portée d'article n'est pas une famille : elle ne bouge pas.
-    expect(await scopeIdOf("price_rules", "rule_prod")).toBe("VIE-001");
+    expect(await scopeIdOf("price_rules", "rule_prod")).toBe("VIE-001-1");
   });
 
   /**
@@ -170,14 +170,14 @@ describe("la migration sur une base semée de codes de rayon", () => {
   it("rend le prix identique à celui de la même décision posée sur la famille", async () => {
     const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
     await insertRule("rule_direct", "category", E2E_FAMILIES.VIE.id);
-    const expected = await unitPriceOf(company.id, "VIE-001");
+    const expected = await unitPriceOf(company.id, "VIE-001-1");
     await ctx.prisma.priceRule.delete({ where: { id: "rule_direct" } });
 
     await insertRule("rule_code", "category", "viennoiserie");
     await replay();
 
-    expect(await unitPriceOf(company.id, "VIE-001")).toBe(expected);
-    expect(expected).toBeLessThan(await unitPriceOf(company.id, "PAI-001"));
+    expect(await unitPriceOf(company.id, "VIE-001-1")).toBe(expected);
+    expect(expected).toBeLessThan(await unitPriceOf(company.id, "PAI-001-1"));
   });
 
   it("préfère l'id réel au `cat_*` orphelin qui porte le même slug", async () => {

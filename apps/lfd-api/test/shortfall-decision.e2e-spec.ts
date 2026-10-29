@@ -44,7 +44,7 @@ import {
 } from "./shortfall-decision-scene.js";
 
 /** Une seconde ligne au catalogue des e2e, que la scène ne met jamais au bac. */
-const BAGUETTE = "PAI-001";
+const BAGUETTE = "PAI-001-1";
 
 let ctx: E2eContext;
 let issued: string[];

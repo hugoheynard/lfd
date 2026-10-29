@@ -159,7 +159,7 @@ function basket(quantity: number, voucherId?: string): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: DAY_OF_SERVICE,
     note: "",
-    lines: [{ sku: "VIE-001", quantity }],
+    lines: [{ sku: "VIE-001-1", quantity }],
     ...(voucherId === undefined ? {} : { voucherId }),
   };
 }
@@ -427,8 +427,8 @@ async function myQuote(
 
 describe("l'effet du bon sur le total (lot E2)", () => {
   const TWO_RATES = [
-    { sku: "VIE-001", quantity: 5 },
-    { sku: "VIE-002", quantity: 5 },
+    { sku: "VIE-001-1", quantity: 5 },
+    { sku: "VIE-002-1", quantity: 5 },
   ];
 
   it("dit la baisse TTC exacte d'un panier à deux taux, pas le HT du bon", async () => {
@@ -450,7 +450,7 @@ describe("l'effet du bon sur le total (lot E2)", () => {
     await painAuChocolatAtTwentyPercent();
     const { voucherId } = await holderWithVoucher();
 
-    const quote = await myQuote([{ sku: "VIE-002", quantity: 1 }], voucherId);
+    const quote = await myQuote([{ sku: "VIE-002-1", quantity: 1 }], voucherId);
 
     // Prix public 2,75 € HT à 20 % : le bon de 5,00 € est plafonné à 2,75 €, et
     // la baisse est tout le TTC, 3,30 €.
@@ -483,7 +483,7 @@ describe("le devis et l'assiette", () => {
         .asSub(CLIENT)
         .post("/shop/quote/mine")
         .send({
-          lines: [{ sku: "VIE-001", quantity: 10 }],
+          lines: [{ sku: "VIE-001-1", quantity: 10 }],
           fulfillment: { method: "pickup", pickupAddressId: pickupId },
           voucherId,
         })
@@ -504,7 +504,7 @@ describe("le devis et l'assiette", () => {
 
     const response = await request(ctx.app.getHttpServer())
       .post("/shop/quote")
-      .send({ lines: [{ sku: "VIE-001", quantity: 2 }], fulfillment: null, voucherId })
+      .send({ lines: [{ sku: "VIE-001-1", quantity: 2 }], fulfillment: null, voucherId })
       .expect(400);
 
     expect(jsonBody<{ code: string }>(response).code).toBe("orders.voucher_requires_sign_in");

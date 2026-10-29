@@ -8,6 +8,7 @@ import type { DevSeedReport } from "@lfd/contracts";
 
 import { CLIENT_RAISON_SOCIALE } from "../src/dev/seeding/client.seed.js";
 import { FEATURED_SKUS } from "../src/dev/seeding/featured.seed.js";
+import { saleSkusOf } from "../src/dev/seeding/sale-references.seed.js";
 import { bootstrapE2e, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
@@ -141,7 +142,10 @@ describe("le semis, à la norme des sites", () => {
       .map((item) => item.sku)
       .sort();
 
-    expect(featured).toEqual([...FEATURED_SKUS.public].sort());
+    // La boutique vend sous la référence de la déclinaison depuis la bascule
+    // (2026-10-29) ; le semis nomme ses articles par leur référence produit.
+    const sale = await saleSkusOf(ctx.prisma, FEATURED_SKUS.public);
+    expect(featured).toEqual(FEATURED_SKUS.public.map((sku) => sale.get(sku)).sort());
   });
 
   it("la mise en avant pro est posée sur ses articles", async () => {

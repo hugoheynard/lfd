@@ -135,7 +135,7 @@ function reserve(siteId: string, pickupAudiences: PickupDiscountAudiences) {
   });
 }
 
-const LINES = [{ sku: "VIE-001", quantity: 10 }];
+const LINES = [{ sku: "VIE-001-1", quantity: 10 }];
 const WINDOW = { start: "07:00", end: "08:00" };
 
 function quote(siteId: string): Record<string, unknown> {

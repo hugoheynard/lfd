@@ -36,7 +36,7 @@ const UNKNOWN_FAMILY = "01a031ff-146f-756f-a21b-4a2759a35e85";
 /** Une famille orpheline du miroir : reçue un jour, plus aucun article vivant. */
 const ORPHAN_FAMILY = "fam-orpheline";
 /** Rangé dans la famille nouvelle par `seedOrphan`. */
-const ORPHAN = "VIE-002";
+const ORPHAN = "VIE-002-1";
 const BUYER = "auth0|acheteur-orphelin";
 
 const stubAdminVerifier = {
@@ -112,7 +112,7 @@ async function seedOrphan(): Promise<void> {
     ],
   });
   await ctx.prisma.catalogItem.update({
-    where: { sku: `${ORPHAN}-1` },
+    where: { sku: `${ORPHAN}` },
     data: { categoryId: UNKNOWN_FAMILY },
   });
 }
@@ -180,7 +180,7 @@ describe("une famille livrée par le référentiel — la panne du 2026-09-26", 
       name: "Viennoiseries du matin",
       position: 5,
     });
-    expect(items.find((item) => item.sku === "VIE-001")?.family?.id).toBe(E2E_FAMILIES.VIE.id);
+    expect(items.find((item) => item.sku === "VIE-001-1")?.family?.id).toBe(E2E_FAMILIES.VIE.id);
     // Le champ déprécié reste servi, et toujours à `null`.
     expect(items.every((item) => item.category === null)).toBe(true);
   });
@@ -225,7 +225,7 @@ describe("elle se tarife et se limite par son id", () => {
     await postRule({ type: "category", id: UNKNOWN_FAMILY }, 5_000);
 
     const orphan = await quoteOf(companyId, ORPHAN);
-    const known = await quoteOf(companyId, "VIE-001");
+    const known = await quoteOf(companyId, "VIE-001-1");
 
     expect(orphan.unitPriceMillicents).toBe(orphan.canonicalMillicents / 2);
     expect(known.unitPriceMillicents).toBe(known.canonicalMillicents);
@@ -275,7 +275,7 @@ describe("une sous-famille suit son chemin", () => {
     await seedTartes();
     await postRule({ type: "category", id: E2E_FAMILIES.PAT.id }, 5_000);
 
-    const line = await quoteOf(companyId, "PAT-001");
+    const line = await quoteOf(companyId, "PAT-001-1");
 
     expect(line.unitPriceMillicents).toBe(line.canonicalMillicents / 2);
   });
@@ -286,7 +286,7 @@ describe("une sous-famille suit son chemin", () => {
     await postRule({ type: "category", id: E2E_FAMILIES.PAT.id }, 5_000);
     await postRule({ type: "category", id: tartes }, 2_500);
 
-    const line = await quoteOf(companyId, "PAT-001");
+    const line = await quoteOf(companyId, "PAT-001-1");
 
     expect(line.unitPriceMillicents).toBe((line.canonicalMillicents * 3) / 4);
   });

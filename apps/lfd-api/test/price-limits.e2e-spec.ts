@@ -22,8 +22,8 @@ const stubAdminVerifier = {
     Promise.resolve({ subject: token, scopes: [] }),
 };
 
-/** VIE-001 vaut 200 c dans le catalogue qui facture. */
-const SKU = "VIE-001";
+/** VIE-001-1 vaut 200 c dans le catalogue qui facture. */
+const SKU = "VIE-001-1";
 const FAMILY = E2E_FAMILIES.VIE.id;
 const CANONICAL_MILLICENTS = millicentsFromCents(200);
 const GLOBAL = { type: "global", id: null } as const;

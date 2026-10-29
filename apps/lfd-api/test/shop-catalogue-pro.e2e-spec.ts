@@ -34,8 +34,8 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-/** Suit `seedE2eCatalog` : VIE-001 à 2,00 € HT pro, 250 237 millicentimes HT d'étiquette publique. */
-const SKU = "VIE-001";
+/** Suit `seedE2eCatalog` : VIE-001-1 à 2,00 € HT pro, 250 237 millicentimes HT d'étiquette publique. */
+const SKU = "VIE-001-1";
 const PRO_MILLICENTS = 200_000;
 const PUBLIC_MILLICENTS = 250_237;
 const NEGOTIATED_MILLICENTS = 150_000;
@@ -100,7 +100,7 @@ describe("GET /shop/catalogue?audience=pro", () => {
   it("isFeatured y est la mise en avant PRO", async () => {
     await ctx
       .asSub("staff-e2e")
-      .put(`/admin/catalog/${SKU}-1/featured`)
+      .put(`/admin/catalog/${SKU}/featured`)
       .send({ audience: "pro", featured: true })
       .expect(204);
 

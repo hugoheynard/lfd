@@ -178,19 +178,19 @@ describe("hors de toute fenêtre", () => {
 
   it("la bûche est absente du rayon, et aucune opération n'est montrée", async () => {
     const view = await publicShelf();
-    expect(skusOf(view)).toEqual(["VIE-001"]);
+    expect(skusOf(view)).toEqual(["VIE-001-1"]);
     expect(view.operations).toEqual([]);
   });
 
   it("la commande la refuse sans la dire inconnue", async () => {
-    const response = await order("PAT-002", serviceDay(41)).expect(409);
+    const response = await order("PAT-002-1", serviceDay(41)).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.absent" });
   });
 
   it("la fiche atelier et la tarification la voient toujours (D5)", async () => {
-    const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(["PAT-002"]);
-    expect(shelves.has("PAT-002")).toBe(true);
-    expect(await ctx.app.get(ProductCatalogReader).resolve("PAT-002", "pro")).not.toBeNull();
+    const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(["PAT-002-1"]);
+    expect(shelves.has("PAT-002-1")).toBe(true);
+    expect(await ctx.app.get(ProductCatalogReader).resolve("PAT-002-1", "pro")).not.toBeNull();
   });
 });
 
@@ -199,31 +199,31 @@ describe("pendant la fenêtre", () => {
     await receive([noel()]);
 
     const view = await publicShelf();
-    expect(skusOf(view).sort()).toEqual(["PAT-002", "VIE-001"]);
-    expect(view.items.find((item) => item.sku === "PAT-002")?.operation).toEqual({
+    expect(skusOf(view).sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
+    expect(view.items.find((item) => item.sku === "PAT-002-1")?.operation).toEqual({
       key: "noel",
       state: "open",
     });
     expect(view.operations).toMatchObject([
-      { key: "noel", state: "open", pickupFrom: PICKUP_FROM, skus: ["PAT-002", "VIE-001"] },
+      { key: "noel", state: "open", pickupFrom: PICKUP_FROM, skus: ["PAT-002-1", "VIE-001-1"] },
     ]);
   });
 
   it("se commande pour un jour de retrait de l'opération", async () => {
     await receive([noel()]);
-    await order("PAT-002", PICKUP_FROM).expect(201);
+    await order("PAT-002-1", PICKUP_FROM).expect(201);
   });
 
   it("refuse un jour hors des jours de retrait", async () => {
     await receive([noel()]);
-    const response = await order("PAT-002", serviceDay(12)).expect(409);
+    const response = await order("PAT-002-1", serviceDay(12)).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.day_outside" });
   });
 
   it("refuse une commande sans jour de retrait", async () => {
     await receive([noel()]);
     await expect(
-      ctx.app.get(OrderOperations).ensure([{ sku: "PAT-002" }], companyId, null),
+      ctx.app.get(OrderOperations).ensure([{ sku: "PAT-002-1" }], companyId, null),
     ).rejects.toBeInstanceOf(OperationDayRequiredError);
   });
 
@@ -231,7 +231,7 @@ describe("pendant la fenêtre", () => {
     await receive([noel()]);
     const days = jsonBody<FulfillmentDayView[]>(
       await request(ctx.app.getHttpServer())
-        .get("/fulfillment-days?skus=VIE-001,PAT-002")
+        .get("/fulfillment-days?skus=VIE-001-1,PAT-002-1")
         .expect(200),
     );
     expect(days.map((day) => day.date)).toEqual(days.map(() => PICKUP_FROM));
@@ -242,9 +242,9 @@ describe("la clientèle de l'opération (D7)", () => {
   it("réservée aux pros : absente de la vitrine publique, présente pour une société", async () => {
     await receive([noel({ audience: "pro" })]);
 
-    expect(skusOf(await publicShelf())).toEqual(["VIE-001"]);
-    expect(skusOf(await proShelf()).sort()).toEqual(["PAT-002", "VIE-001"]);
-    await order("PAT-002", PICKUP_FROM).expect(201);
+    expect(skusOf(await publicShelf())).toEqual(["VIE-001-1"]);
+    expect(skusOf(await proShelf()).sort()).toEqual(["PAT-002-1", "VIE-001-1"]);
+    await order("PAT-002-1", PICKUP_FROM).expect(201);
   });
 });
 
@@ -252,11 +252,13 @@ describe("avant l'ouverture, après la clôture", () => {
   it("refuse avant orderFrom", async () => {
     await receive([noel({ announceFrom: daysAgo(2), orderFrom: daysAgo(-3) })]);
 
-    expect((await publicShelf()).items.find((item) => item.sku === "PAT-002")?.operation).toEqual({
-      key: "noel",
-      state: "announced",
-    });
-    const response = await order("PAT-002", PICKUP_FROM).expect(409);
+    expect((await publicShelf()).items.find((item) => item.sku === "PAT-002-1")?.operation).toEqual(
+      {
+        key: "noel",
+        state: "announced",
+      },
+    );
+    const response = await order("PAT-002-1", PICKUP_FROM).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.not_yet_open" });
   });
 
@@ -265,11 +267,11 @@ describe("avant l'ouverture, après la clôture", () => {
       noel({ orderUntil: daysAgo(1), pickupFrom: serviceDay(3), pickupUntil: serviceDay(5) }),
     ]);
 
-    const response = await order("PAT-002", serviceDay(3)).expect(409);
+    const response = await order("PAT-002-1", serviceDay(3)).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.closed" });
     const quote = await request(ctx.app.getHttpServer())
       .post("/shop/quote")
-      .send({ lines: [{ sku: "PAT-002", quantity: 1 }], fulfillment: null })
+      .send({ lines: [{ sku: "PAT-002-1", quantity: 1 }], fulfillment: null })
       .expect(409);
     expect(quote.body).toMatchObject({ code: "orders.operation.closed" });
   });
@@ -278,7 +280,7 @@ describe("avant l'ouverture, après la clôture", () => {
     await receive([
       noel({ orderUntil: daysAgo(1), pickupFrom: serviceDay(3), pickupUntil: serviceDay(5) }),
     ]);
-    await order("VIE-001", serviceDay(6)).expect(201);
+    await order("VIE-001-1", serviceDay(6)).expect(201);
   });
 });
 
@@ -286,16 +288,16 @@ describe("ce que le commerce décide de l'opération", () => {
   it("une opération masquée rend la bûche absente — jamais libre", async () => {
     await receive([noel()], { hidden: true });
 
-    expect(skusOf(await publicShelf())).toEqual(["VIE-001"]);
-    const response = await order("PAT-002", PICKUP_FROM).expect(409);
+    expect(skusOf(await publicShelf())).toEqual(["VIE-001-1"]);
+    const response = await order("PAT-002-1", PICKUP_FROM).expect(409);
     expect(response.body).toMatchObject({ code: "orders.operation.absent" });
   });
 
   it("un article hors de la sélection est absent", async () => {
     await receive([noel({ skus: ["VIE-001-1"] })]);
 
-    expect(skusOf(await publicShelf())).toEqual(["VIE-001"]);
-    await order("PAT-002", PICKUP_FROM).expect(409);
+    expect(skusOf(await publicShelf())).toEqual(["VIE-001-1"]);
+    await order("PAT-002-1", PICKUP_FROM).expect(409);
   });
 });
 
@@ -316,7 +318,7 @@ describe("les abonnements (D6)", () => {
         requestedWindow: { start: "07:00", end: "08:00" },
         deliveryAddress: null,
         pickupAddressId: null,
-        lines: [{ sku: "PAT-002", quantity: 1 }],
+        lines: [{ sku: "PAT-002-1", quantity: 1 }],
         note: "",
       })
       .expect(409);

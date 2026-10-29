@@ -71,7 +71,7 @@ describe("/admin/order-drafts", () => {
         note: "sans sucre",
         requestedDeliveryDate: "2026-08-20",
         settlement: "account",
-        lines: [{ sku: "VIE-001", quantity: 40 }],
+        lines: [{ sku: "VIE-001-1", quantity: 40 }],
       })
       .expect(200);
 
@@ -81,7 +81,7 @@ describe("/admin/order-drafts", () => {
     expect(draft?.note).toBe("sans sucre");
     expect(draft?.requestedDeliveryDate).toBe("2026-08-20");
     expect(draft?.settlement).toBe("account");
-    expect(draft?.lines).toEqual([{ sku: "VIE-001", quantity: 40 }]);
+    expect(draft?.lines).toEqual([{ sku: "VIE-001-1", quantity: 40 }]);
     // La trace vient de la porte, pas du corps.
     expect(draft?.savedByStaffId).not.toBeNull();
     expect(draft?.savedAt).not.toBe("");

@@ -359,18 +359,18 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
       .send({ skus: [fiche.variantSku], audiences: ["pro", "public"] })
       .expect(204);
     const buyer = await aBuyer();
-    await order(buyer, fiche.sku).expect(201);
+    await order(buyer, fiche.variantSku).expect(201);
 
     await staff().put(`${PRODUCTS}/${fiche.id}/audience`).send({ audience: "public" }).expect(200);
     await relayAll(ctx);
 
     expect((await itemOf(fiche.variantSku))?.audience).toBe("public");
-    const refusal = await order(buyer, fiche.sku).expect(400);
+    const refusal = await order(buyer, fiche.variantSku).expect(400);
     expect(jsonBody<{ code: string }>(refusal).code).toBe("orders.sku.unknown");
     const shop = jsonBody<{ items: { sku: string }[] }>(
       await ctx.http().get("/shop/catalogue").expect(200),
     );
-    expect(shop.items.map((entry) => entry.sku)).toContain(fiche.sku);
+    expect(shop.items.map((entry) => entry.sku)).toContain(fiche.variantSku);
   });
 });
 

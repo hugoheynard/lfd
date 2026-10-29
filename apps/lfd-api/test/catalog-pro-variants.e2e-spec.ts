@@ -180,11 +180,11 @@ describe("le canal pro voit les déclinaisons montrées", () => {
     const { fiche, partSku } = await ancolie();
 
     await approveAllBut(partSku);
-    expect(await proShelf()).toContain(fiche.sku);
+    expect(await proShelf()).toContain(fiche.variantSku);
     expect(await proShelf()).not.toContain(partSku);
 
     await approveAllBut();
-    expect(await proShelf()).toEqual(expect.arrayContaining([fiche.sku, partSku]));
+    expect(await proShelf()).toEqual(expect.arrayContaining([fiche.variantSku, partSku]));
   });
 
   it("la saisie staff propose la part sous son SKU, à son prix pro et sous son nom", async () => {
@@ -195,9 +195,9 @@ describe("le canal pro voit les déclinaisons montrées", () => {
 
     const part = items.find((item) => item.sku === partSku);
     expect(part?.name).toBe("Ancolie part");
-    expect(items.some((item) => item.sku === fiche.sku)).toBe(true);
+    expect(items.some((item) => item.sku === fiche.variantSku)).toBe(true);
     expect(part?.unitPriceMillicents).not.toBe(
-      items.find((item) => item.sku === fiche.sku)?.unitPriceMillicents,
+      items.find((item) => item.sku === fiche.variantSku)?.unitPriceMillicents,
     );
   });
 
@@ -243,7 +243,7 @@ describe("le canal pro voit les déclinaisons montrées", () => {
     const { fiche, partSku } = await ancolie();
     await approveAllBut();
     const buyer = await aCompany();
-    await poseMercuriale(buyer.companyId, fiche.sku, DEFAULT_MERCURIALE_MILLICENTS);
+    await poseMercuriale(buyer.companyId, fiche.variantSku, DEFAULT_MERCURIALE_MILLICENTS);
     const partBase = (await sellable()).find((item) => item.sku === partSku)?.unitPriceMillicents;
 
     const paid = await orderOnePart(buyer, partSku);

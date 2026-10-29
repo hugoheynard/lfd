@@ -311,7 +311,7 @@ describe("commander pour un site, depuis le principal (S6, R5)", () => {
     await ctx
       .asSub(boss.sub)
       .post("/orders/quote")
-      .send({ companyId: g.site, lines: [{ sku: "VIE-001", quantity: 6 }] })
+      .send({ companyId: g.site, lines: [{ sku: "VIE-001-1", quantity: 6 }] })
       .expect(200);
   });
 
@@ -349,7 +349,7 @@ describe("commander pour un site, depuis le principal (S6, R5)", () => {
         fulfillmentMethod: "pickup",
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 3 }],
+        lines: [{ sku: "VIE-001-1", quantity: 3 }],
       })
       .expect(201);
 

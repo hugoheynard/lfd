@@ -58,7 +58,7 @@ async function shop(lang: Language): Promise<ShopCatalogueView> {
 }
 
 async function itemIn(lang: Language, fiche: Fiche): Promise<ShopItemView | undefined> {
-  return (await shop(lang)).items.find((item) => item.sku === fiche.sku);
+  return (await shop(lang)).items.find((item) => item.sku === fiche.variantSku);
 }
 
 /** Le geste « valider » du staff : un article neuf attend sa relecture (lot 3). */

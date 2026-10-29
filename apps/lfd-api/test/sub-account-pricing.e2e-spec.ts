@@ -54,7 +54,7 @@ beforeEach(async () => {
 
 const staff = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 const DAY_MS = 24 * 60 * 60 * 1000;
 
 const DELIVERY = {

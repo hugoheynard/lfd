@@ -217,7 +217,7 @@ describe("de la création à la notification signée", () => {
     expect(body).toMatchObject({
       subscriber: credentials.id,
       sequence: 1,
-      changed: { items: ["VIE-001", "VIE-002"] },
+      changed: { items: ["VIE-001-1", "VIE-002-1"] },
     });
     const header = sent?.headers["vitrine-signature"];
     const signature = typeof header === "string" ? header : undefined;
@@ -305,7 +305,7 @@ describe("une agence en panne", () => {
     const deliveries = await journal(id);
     expect(deliveries).toHaveLength(1);
     expect(deliveries[0]).toMatchObject({ state: "failed", attempts: MAX_DELIVERY_ATTEMPTS });
-    expect(deliveries[0]?.changed.items).toEqual(["VIE-001", "VIE-002"]);
+    expect(deliveries[0]?.changed.items).toEqual(["VIE-001-1", "VIE-002-1"]);
     expect(agency.received).toHaveLength(MAX_DELIVERY_ATTEMPTS);
     expect((await subscriberView(id))?.state).toBe("failing");
 
@@ -319,7 +319,7 @@ describe("une agence en panne", () => {
     expect(agency.received).toHaveLength(MAX_DELIVERY_ATTEMPTS + 1);
     expect(JSON.parse(agency.received.at(-1)?.body ?? "{}")).toMatchObject({
       sequence: 2,
-      changed: { items: ["VIE-001", "VIE-002"] },
+      changed: { items: ["VIE-001-1", "VIE-002-1"] },
     });
     expect((await subscriberView(id))?.state).toBe("active");
   });
@@ -359,19 +359,23 @@ describe("GET /vitrine — ce qui sort, sur la route elle-même", () => {
     for (const lang of ["fr", "en", "it"]) {
       const view = await readCatalogue(readKey, lang);
       expect(view.language).toBe(lang);
-      expect(view.items.map((item) => item.sku).sort()).toEqual(["FEA-001", "FPR-001", "PUB-001"]);
-      expect(view.items.find((item) => item.sku === "FEA-001")?.isFeatured).toBe(true);
-      expect(view.items.find((item) => item.sku === "FPR-001")?.isFeatured).toBe(false);
+      expect(view.items.map((item) => item.sku).sort()).toEqual([
+        "FEA-001-1",
+        "FPR-001-1",
+        "PUB-001-1",
+      ]);
+      expect(view.items.find((item) => item.sku === "FEA-001-1")?.isFeatured).toBe(true);
+      expect(view.items.find((item) => item.sku === "FPR-001-1")?.isFeatured).toBe(false);
       expect(view.items.every((item) => item.audience !== "pro")).toBe(true);
-      expect(view.items.find((item) => item.sku === "PUB-001")?.unitPriceMillicents).toBe(
+      expect(view.items.find((item) => item.sku === "PUB-001-1")?.unitPriceMillicents).toBe(
         PUBLIC_LABEL.htMillicents,
       );
       const raw = JSON.stringify(view);
       expect(raw).not.toContain("120000");
       expect(raw).not.toContain("140000");
     }
-    await ctx.http().get("/vitrine/articles/PRO-001").set("x-vitrine-key", readKey).expect(404);
-    await ctx.http().get("/vitrine/articles/HID-001").set("x-vitrine-key", readKey).expect(404);
+    await ctx.http().get("/vitrine/articles/PRO-001-1").set("x-vitrine-key", readKey).expect(404);
+    await ctx.http().get("/vitrine/articles/HID-001-1").set("x-vitrine-key", readKey).expect(404);
   });
 
   it("sans « incontournables », isFeatured ne sort pas", async () => {
@@ -392,7 +396,7 @@ describe("GET /vitrine — ce qui sort, sur la route elle-même", () => {
       await ctx.http().get("/vitrine/textes?lang=en").set("x-vitrine-key", readKey).expect(200),
     );
     expect(texts.texts["product.bestSeller"]).toBeTruthy();
-    await ctx.http().get("/vitrine/articles/PUB-001").set("x-vitrine-key", readKey).expect(404);
+    await ctx.http().get("/vitrine/articles/PUB-001-1").set("x-vitrine-key", readKey).expect(404);
   });
 
   it("un abonné coupé ne lit plus, comme une clé inconnue ; rallumé, il relit", async () => {
@@ -495,7 +499,7 @@ describe("le nom, la description et le contact d'un abonné", () => {
     const served = [
       (await ctx.http().get("/vitrine/catalogue").set("x-vitrine-key", readKey).expect(200)).text,
       (await ctx.http().get("/vitrine/textes").set("x-vitrine-key", readKey).expect(200)).text,
-      (await ctx.http().get("/vitrine/articles/VIE-001").set("x-vitrine-key", readKey)).text,
+      (await ctx.http().get("/vitrine/articles/VIE-001-1").set("x-vitrine-key", readKey)).text,
       ...agency.received.map((sent) => sent.body),
     ];
     expect(agency.received.length).toBeGreaterThan(0);

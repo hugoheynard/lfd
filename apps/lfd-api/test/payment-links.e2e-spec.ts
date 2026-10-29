@@ -180,7 +180,7 @@ async function placeCardOrder(companyId: string): Promise<string> {
       requestedWindow: { start: "07:00", end: "08:00" },
       requestedDeliveryDate: serviceDay(),
       note: "",
-      lines: [{ sku: "VIE-001", quantity: 3 }],
+      lines: [{ sku: "VIE-001-1", quantity: 3 }],
     })
     .expect(201);
   await ctx.drain();

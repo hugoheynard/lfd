@@ -86,7 +86,7 @@ async function shopItem(fiche: Fiche, query = ""): Promise<ShopItemView | undefi
   const view = jsonBody<ShopCatalogueView>(
     await ctx.http().get(`/shop/catalogue${query}`).expect(200),
   );
-  return view.items.find((item) => item.sku === fiche.sku);
+  return view.items.find((item) => item.sku === fiche.variantSku);
 }
 
 describe("la quantité minimale au référentiel", () => {

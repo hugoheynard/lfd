@@ -100,7 +100,7 @@ async function placeUnpaid(): Promise<{ readonly id: string; readonly number: st
         requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201),
   );

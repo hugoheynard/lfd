@@ -33,7 +33,7 @@ import {
 const AUDIENCES = "/admin/audiences";
 
 /** Deux baguettes par commande : une famille, les Pains. */
-const BAGUETTES = [{ sku: "PAI-001", quantity: 2 }] as const;
+const BAGUETTES = [{ sku: "PAI-001-1", quantity: 2 }] as const;
 
 const COURIER_ADDRESS = {
   label: "",

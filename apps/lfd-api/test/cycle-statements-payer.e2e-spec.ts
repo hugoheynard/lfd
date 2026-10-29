@@ -112,7 +112,7 @@ async function seedOrder(companyId: string, placedAt: Date, units: number): Prom
     placedAt,
     settlement: "account",
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: units }],
+    lines: [{ sku: "VIE-001-1", quantity: units }],
   });
   // Aucune route ne remet une commande dans le passé : la remise est posée à
   // l'instant de passation, pour que le bon tombe dans le cycle clos (plan T,

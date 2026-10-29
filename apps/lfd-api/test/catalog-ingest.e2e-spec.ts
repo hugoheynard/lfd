@@ -198,7 +198,7 @@ describe("l'historique du tarif canonique", () => {
 
     const pricing = await history().pricingAt(AFTER);
 
-    expect(pricing.get("VIE-001")?.unitPriceMillicents).toBe(200_000);
+    expect(pricing.get("VIE-001-1")?.unitPriceMillicents).toBe(200_000);
     // La trace porte bien le SKU d'article, elle : c'est le groupement qui
     // remonte au produit, pas l'écriture qui perd l'information.
     const rows = await ctx.prisma.catalogPriceHistory.findMany({ where: { sku: "VIE-001-1" } });
@@ -208,8 +208,8 @@ describe("l'historique du tarif canonique", () => {
   it("historise le taux AVEC le prix — sans lui, la ligne n'est pas facturable", async () => {
     await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 5.5 }]));
 
-    expect((await history().pricingAt(AFTER)).get("VIE-001")).toEqual({
-      sku: "VIE-001",
+    expect((await history().pricingAt(AFTER)).get("VIE-001-1")).toEqual({
+      sku: "VIE-001-1",
       unitPriceMillicents: 200_000,
       vatRatePercent: 5.5,
     });
@@ -225,7 +225,7 @@ describe("l'historique du tarif canonique", () => {
     await push(snapshotOf([{ sku: "VIE-001", priceMillicents: 200_000, vatRatePercent: 10 }]));
 
     expect(await ctx.prisma.catalogPriceHistory.count()).toBe(2);
-    expect((await history().pricingAt(AFTER)).get("VIE-001")?.vatRatePercent).toBe(10);
+    expect((await history().pricingAt(AFTER)).get("VIE-001-1")?.vatRatePercent).toBe(10);
   });
 
   /**

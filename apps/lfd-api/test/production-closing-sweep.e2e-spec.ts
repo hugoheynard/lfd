@@ -135,7 +135,7 @@ async function seedOrder(seed: Seed = {}): Promise<{ orderId: string; intent: st
     buyerUserId: author.id,
     forDay: DAY,
     fulfillment: { method: "pickup" as const, pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: 1 }],
+    lines: [{ sku: "VIE-001-1", quantity: 1 }],
   };
   const order =
     seed.byStaff === true && companyId !== null

@@ -68,7 +68,7 @@ async function discount(who: Person, point: string, declared?: string): Promise<
   const view = jsonBody<ShopQuoteView>(
     await withHeader
       .send({
-        lines: [{ sku: "VIE-001", quantity: 10 }],
+        lines: [{ sku: "VIE-001-1", quantity: 10 }],
         fulfillment: { method: "pickup", pickupAddressId: point },
       })
       .expect(200),

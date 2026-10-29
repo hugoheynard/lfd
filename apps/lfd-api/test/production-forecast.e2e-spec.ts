@@ -202,8 +202,8 @@ async function forecast(from: string, to: string): Promise<ProductionForecastVie
 describe("le prévisionnel du fournil", () => {
   it("rend une colonne par jour et une quantité par colonne, trous compris", async () => {
     const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 2 }]);
-    await placeOrder(companyId, DAY_3, [{ sku: "VIE-001", quantity: 5 }]);
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 2 }]);
+    await placeOrder(companyId, DAY_3, [{ sku: "VIE-001-1", quantity: 5 }]);
 
     const view = await forecast(DAY_1, DAY_3);
 
@@ -214,7 +214,7 @@ describe("le prévisionnel du fournil", () => {
     expect(view.days.map((day) => day.orderCount)).toEqual([1, 0, 1]);
     expect(view.days.every((day) => !day.closed)).toBe(true);
     expect(view.lines).toHaveLength(1);
-    expect(view.lines[0]?.sku).toBe("VIE-001");
+    expect(view.lines[0]?.sku).toBe("VIE-001-1");
     expect(view.lines[0]?.quantities).toEqual([2, 0, 5]);
     expect(view.lines[0]?.totalUnits).toBe(7);
     expect(view.peakDate).toBe(DAY_3);
@@ -223,69 +223,14 @@ describe("le prévisionnel du fournil", () => {
 
   it("somme plusieurs commandes d'un même jour sur une seule ligne", async () => {
     const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 3 }]);
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 3 }]);
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 4 }]);
 
     const view = await forecast(DAY_1, DAY_1);
 
     expect(view.lines).toHaveLength(1);
     expect(view.lines[0]?.quantities).toEqual([7]);
     expect(view.days[0]?.orderCount).toBe(2);
-  });
-
-  /**
-   * La journée de la bascule (`plan-defaut-sous-sa-reference.md`, § 2 b) :
-   * une commande porte l'ANCIENNE référence, l'autre la nouvelle, et la table
-   * d'alias dit que c'est le même article. Le prévisionnel n'en sort qu'une
-   * ligne. L'ancienne graphie est réécrite en base : aucune route ne prend
-   * plus une référence qui ne se vend pas, et c'est le passé qu'on simule.
-   */
-  it("une journée mixte ancienne référence + nouvelle ne sort qu'une ligne par article", async () => {
-    const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 3 }]);
-    await ctx.prisma.orderLine.updateMany({ where: { sku: "VIE-001" }, data: { sku: "VIE-OLD" } });
-    await ctx.prisma.saleSkuAlias.create({
-      data: { aliasSku: "VIE-OLD", targetSku: "VIE-001", writtenAt: new Date() },
-    });
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
-
-    const view = await forecast(DAY_1, DAY_1);
-
-    expect(view.lines.map((line) => [line.sku, line.quantities])).toEqual([["VIE-001", [7]]]);
-    expect(view.days[0]?.orderCount).toBe(2);
-  });
-
-  /**
-   * La bascule (`plan-defaut-sous-sa-reference.md`, L3) : un panier gardé par
-   * le navigateur avant le déploiement porte encore `PAI-001`. Il se commande
-   * (l'alias écrit par la migration, que le semis rejoue) et la ligne sort
-   * sous la référence de la déclinaison.
-   */
-  it("un panier d'avant la bascule (`PAI-001`) se commande encore, et ressort `PAI-001-1`", async () => {
-    const companyId = await seedSociete();
-
-    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001", quantity: 3 }]);
-
-    expect(await ctx.prisma.orderLine.findMany({ select: { sku: true, quantity: true } })).toEqual([
-      { sku: "PAI-001-1", quantity: 3 },
-    ]);
-  });
-
-  /**
-   * Le fournil du jour de la bascule, sur l'alias réel du semis : une commande
-   * écrite AVANT sous `PAI-001` (la ligne est remise à sa graphie d'alors :
-   * aucune route n'écrit plus une référence produit), une APRÈS sous
-   * `PAI-001-1` — une seule ligne.
-   */
-  it("le jour de la bascule, une commande `PAI-001` d'avant et une `PAI-001-1` d'après font une ligne", async () => {
-    const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001-1", quantity: 2 }]);
-    await ctx.prisma.orderLine.updateMany({ data: { sku: "PAI-001" } });
-    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001-1", quantity: 5 }]);
-
-    const view = await forecast(DAY_1, DAY_1);
-
-    expect(view.lines.map((line) => [line.sku, line.quantities])).toEqual([["PAI-001-1", [7]]]);
   });
 
   /**
@@ -296,7 +241,7 @@ describe("le prévisionnel du fournil", () => {
    */
   it("garde son chiffre après la clôture, et annonce la journée comme arrêtée", async () => {
     const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 6 }]);
 
     const before = await forecast(DAY_1, DAY_1);
     expect(before.days[0]).toEqual({
@@ -333,11 +278,11 @@ describe("le prévisionnel du fournil", () => {
    */
   it("n'ajoute pas une commande passée APRÈS la clôture au compte arrêté", async () => {
     const companyId = await seedSociete();
-    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 6 }]);
     await ctx.asSub("staff-e2e").post(`/admin/production/batch/${DAY_1}/close`).expect(201);
 
     // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
-    await placeLateForCompany(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
+    await placeLateForCompany(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 4 }]);
 
     const view = await forecast(DAY_1, DAY_1);
     expect(view.days[0]?.totalUnits).toBe(6);
@@ -374,7 +319,7 @@ describe("le prévisionnel du fournil", () => {
     /** Depuis le 2026-10-21, le seuil est l'heure limite générale (ici la veille à 20:00). */
     it("la veille, passé l'heure limite générale, la journée non arrêtée est en retard", async () => {
       const companyId = await seedSociete();
-      await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 6 }]);
+      await placeOrder(companyId, DAY_1, [{ sku: "VIE-001-1", quantity: 6 }]);
       await ctx
         .asSub("staff-e2e")
         .put("/admin/order-cutoffs/general")

@@ -101,7 +101,7 @@ function orderWithin(
     deliveryAddress: POSTAL,
     deliveryAddressId: addressId,
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 2 }],
+    lines: [{ sku: "VIE-001-1", quantity: 2 }],
     requestedWindow: window,
   };
 }

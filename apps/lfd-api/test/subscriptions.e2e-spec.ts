@@ -40,7 +40,7 @@ function weeklyPickup(): Record<string, unknown> {
     fulfillmentMethod: "pickup",
     deliveryAddress: null,
     pickupAddressId: null,
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
     note: "Le lundi",
   };
 }
@@ -61,7 +61,7 @@ describe("création + lecture", () => {
     expect(row.placedByUserId).not.toBe("");
     expect(row.status).toBe("active");
     expect(row.fulfillmentMethod).toBe("pickup");
-    expect(row.lines).toEqual([expect.objectContaining({ sku: "VIE-001", quantity: 3 })]);
+    expect(row.lines).toEqual([expect.objectContaining({ sku: "VIE-001-1", quantity: 3 })]);
 
     const mine = jsonBody<readonly SubscriptionView[]>(
       await ctx.asSub(OWNER).get("/subscriptions/mine").expect(200),
@@ -115,13 +115,13 @@ describe("dérogations d'échéance (save réconcilie)", () => {
     await ctx
       .asSub(OWNER)
       .put(`/subscriptions/${id}/occurrences/2026-09-01`)
-      .send({ skipped: false, lines: [{ sku: "VIE-001", quantity: 5 }] })
+      .send({ skipped: false, lines: [{ sku: "VIE-001-1", quantity: 5 }] })
       .expect(204);
 
     occ = await ctx.prisma.subscriptionOccurrence.findMany({ where: { subscriptionId: id } });
     expect(occ).toHaveLength(1);
     expect(occ[0]?.skipped).toBe(false);
-    expect(occ[0]?.lines).toEqual([{ sku: "VIE-001", quantity: 5 }]);
+    expect(occ[0]?.lines).toEqual([{ sku: "VIE-001-1", quantity: 5 }]);
   });
 
   it("refuse (409) une échéance hors de la fenêtre, rien n'est écrit", async () => {

@@ -138,7 +138,7 @@ function staffOrder(day: string) {
       fulfillmentMethod: "pickup",
       pickupAddressId: pickupId,
       requestedWindow: { start: "07:00", end: "08:00" },
-      lines: [{ sku: "VIE-001", quantity: 2 }],
+      lines: [{ sku: "VIE-001-1", quantity: 2 }],
     });
 }
 
@@ -155,7 +155,7 @@ function order(day: string): Record<string, unknown> {
     // Au compte : le fournil compte une commande réglée, pas un paiement en vol.
     settlement: "account",
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
   };
 }
 

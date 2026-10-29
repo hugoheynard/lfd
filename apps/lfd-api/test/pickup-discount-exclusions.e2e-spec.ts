@@ -83,7 +83,7 @@ interface Article {
  * sans limite ni opération qui pourrait refuser la commande.
  */
 async function twoFamilies(): Promise<readonly [Article, Article]> {
-  const select = { productSku: true, productId: true, categoryId: true } as const;
+  const select = { sku: true, productSku: true, productId: true, categoryId: true } as const;
   const sellable = {
     isDefault: true,
     withdrawnAt: null,
@@ -102,7 +102,7 @@ async function twoFamilies(): Promise<readonly [Article, Article]> {
     select,
   });
   const article = (row: typeof croissant): Article => ({
-    sku: row.productSku,
+    sku: row.sku,
     productId: row.productId,
     categoryId: row.categoryId,
   });

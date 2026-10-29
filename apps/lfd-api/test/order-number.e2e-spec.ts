@@ -79,7 +79,7 @@ async function place(): Promise<{ id: string; orderNumber: string }> {
       idempotencyKey: randomUUID(),
       salesTerms: null,
       requestedDeliveryDate: SERVICE_DAY,
-      lines: [{ sku: "VIE-001", quantity: 1 }],
+      lines: [{ sku: "VIE-001-1", quantity: 1 }],
       companyId: null,
       fulfillmentMethod: "pickup",
       requestedWindow: { start: "07:00", end: "08:00" },

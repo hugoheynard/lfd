@@ -96,8 +96,8 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub("staff-e2e");
 
-/** VIE-001 vaut 200 c dans le catalogue qui facture. */
-const SKU = "VIE-001";
+/** VIE-001-1 vaut 200 c dans le catalogue qui facture. */
+const SKU = "VIE-001-1";
 const CANONICAL = 200;
 const FAMILY = E2E_FAMILIES.VIE.id;
 
@@ -159,7 +159,7 @@ async function familyOverlaps(): Promise<PricingBoardView["categories"][number][
   return view.categories.find((category) => category.id === FAMILY)?.overlaps ?? [];
 }
 
-/** L'article VIE-001, tel que l'écran le rend. */
+/** L'article VIE-001-1, tel que l'écran le rend. */
 async function croissant(): Promise<PricingBoardView["categories"][number]["items"][number]> {
   const view = await board();
   const family = view.categories.find((category) => category.id === FAMILY);
@@ -170,7 +170,7 @@ async function croissant(): Promise<PricingBoardView["categories"][number]["item
   return item;
 }
 
-/** Le prix que l'écran annonce pour VIE-001 — donc celui que la caisse ferait. */
+/** Le prix que l'écran annonce pour VIE-001-1 — donc celui que la caisse ferait. */
 const priceOf = async (sku: string): Promise<number> => {
   if (sku !== SKU) {
     throw new Error(`Ce test ne connaît que ${SKU}.`);
@@ -774,7 +774,7 @@ describe("suspendre, reprendre, archiver", () => {
   /**
    * La grille que le commercial lit au téléphone : chaque ligne est une
    * résolution complète à la quantité du palier, pas un « canonique moins la
-   * remise » — VIE-001 vaut 200 c, donc 100+ à −10 % font 180 c.
+   * remise » — VIE-001-1 vaut 200 c, donc 100+ à −10 % font 180 c.
    */
   it("rend le prix de CHAQUE palier sur l'écran", async () => {
     await putLadder([
@@ -1269,7 +1269,7 @@ describe("le signal de dérive de la limite", () => {
   it("fige le tarif de référence en posant la limite", async () => {
     await putFloor("amount", 150);
 
-    // VIE-001 vaut 200 c : la limite ne vise que lui, donc c'est sa référence.
+    // VIE-001-1 vaut 200 c : la limite ne vise que lui, donc c'est sa référence.
     expect((await floorOf())?.drift?.referenceCanonicalMillicents).toBe(
       millicentsFromCents(CANONICAL),
     );
@@ -1526,7 +1526,7 @@ describe("l’écran daté et la comparaison", () => {
  * éprouve, et c'est celui qui coûtait le plus cher.
  */
 describe("suspendre, reprendre, archiver un barème", () => {
-  const SKU_L = "VIE-002";
+  const SKU_L = "VIE-002-1";
 
   const poseLadder = (over: Record<string, unknown> = {}) =>
     staff()

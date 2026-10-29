@@ -265,7 +265,7 @@ async function billedOrder(site: string, payer: string): Promise<string> {
     placedAt: new Date(servedAt.getTime() - 3 * DAY_MS),
     forDay: instantToLocal(servedAt).day,
     fulfillment: { method: "pickup", pickupSiteId: pickupId },
-    lines: [{ sku: "VIE-001", quantity: 50 }],
+    lines: [{ sku: "VIE-001-1", quantity: 50 }],
   });
   await markDelivered(ctx.prisma, order.id, servedAt);
   const { billedCompanyId } = await ctx.prisma.order.findUniqueOrThrow({
@@ -304,7 +304,7 @@ function placeOrder(sub: string, settlement: "account" | "card" | null) {
       pickupAddressId: pickupId,
       settlement,
       note: "",
-      lines: [{ sku: "VIE-001", quantity: 2 }],
+      lines: [{ sku: "VIE-001-1", quantity: 2 }],
     });
 }
 

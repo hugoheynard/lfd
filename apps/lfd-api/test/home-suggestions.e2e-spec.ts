@@ -45,7 +45,7 @@ beforeEach(async () => {
 function atHome(over: Partial<StaffSuggestionRulePayload> = {}): StaffSuggestionRulePayload {
   return {
     trigger: { kind: "everywhere", ref: null },
-    suggestedSkus: ["PAT-001", "PAI-001", "CHO-001"],
+    suggestedSkus: ["PAT-001-1", "PAI-001-1", "CHO-001-1"],
     placement: "home",
     audience: "both",
     startsOn: serviceDay(0),
@@ -79,13 +79,16 @@ describe("les suggestions de l'accueil", () => {
     );
 
     expect(await suggestions()).toEqual(
-      ["PAT-001", "PAI-001"].map((sku) => ({
+      ["PAT-001-1", "PAI-001-1"].map((sku) => ({
         sku,
         item: shelf.items.find((item) => item.sku === sku),
         reason: { source: "staff", ruleId: id.toLowerCase(), phrase: null },
       })),
     );
-    expect((await suggestions(["PAT-001"])).map(({ sku }) => sku)).toEqual(["PAI-001", "CHO-001"]);
+    expect((await suggestions(["PAT-001-1"])).map(({ sku }) => sku)).toEqual([
+      "PAI-001-1",
+      "CHO-001-1",
+    ]);
   });
 
   it("rien hors de la période, ni d'une règle du panier", async () => {
@@ -105,7 +108,7 @@ describe("les suggestions de l'accueil", () => {
       .expect(200);
     const view = jsonBody<StaffSuggestionPreviewView>(response);
 
-    expect(view.shown.map(({ sku }) => sku)).toEqual(["PAT-001", "PAI-001"]);
+    expect(view.shown.map(({ sku }) => sku)).toEqual(["PAT-001-1", "PAI-001-1"]);
     expect(view.rules.map(({ ruleId, status }) => [ruleId, status])).toEqual([[id, "shown"]]);
   });
 });

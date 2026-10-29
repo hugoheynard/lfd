@@ -44,7 +44,7 @@ beforeEach(async () => {
  * c'est exactement ce qui est arrivé jusqu'au 2026-09-21, où un seul prix
  * circulait et où cette suite chiffrait le tarif professionnel sans le savoir.
  *
- * ⚠️ L'étiquette TTC de VIE-001 (1,06 €) ne redonne pas exactement 1,00 € HT :
+ * ⚠️ L'étiquette TTC de VIE-001-1 (1,06 €) ne redonne pas exactement 1,00 € HT :
  * 1,055 € n'existe pas en centimes. C'est la vraie vie d'un prix posé en TTC, et
  * c'est `htMillicents` — ce que le fil transporte — qui fait foi.
  */
@@ -102,8 +102,8 @@ const quote = (payload: ShopQuotePayload) =>
   request(ctx.app.getHttpServer()).post("/shop/quote").send(payload);
 
 const PANIER: ShopQuotePayload["lines"] = [
-  { sku: "VIE-001", quantity: 12 },
-  { sku: "TRA-001", quantity: 4 },
+  { sku: "VIE-001-1", quantity: 12 },
+  { sku: "TRA-001-1", quantity: 4 },
 ];
 
 describe("le devis de la vitrine", () => {
@@ -141,12 +141,12 @@ describe("le devis de la vitrine", () => {
     await seedCatalogue();
 
     const view = jsonBody<ShopQuoteView>(
-      await quote({ lines: [{ sku: "VIE-001", quantity: 12 }], fulfillment: null }).expect(200),
+      await quote({ lines: [{ sku: "VIE-001-1", quantity: 12 }], fulfillment: null }).expect(200),
     );
 
     expect(view.lines).toEqual([
       {
-        sku: "VIE-001",
+        sku: "VIE-001-1",
         quantity: 12,
         saleUnit: "piece",
         unitPriceMillicents: 100_000,
@@ -175,12 +175,12 @@ describe("le devis de la vitrine", () => {
     await seedCatalogue();
 
     const view = jsonBody<ShopQuoteView>(
-      await quote({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null }).expect(200),
+      await quote({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null }).expect(200),
     );
     const shelf = jsonBody<ShopCatalogueView>(
       await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
     );
-    const piece = shelf.items.find((item) => item.sku === "VIE-001");
+    const piece = shelf.items.find((item) => item.sku === "VIE-001-1");
 
     expect(view.lines[0]?.lineTotalTtcCents).toBe(piece?.unitPriceTtcCents);
   });
@@ -248,7 +248,7 @@ describe("le devis de la vitrine", () => {
 
     const view = jsonBody<ShopQuoteView>(
       await quote({
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
         fulfillment: { method: "pickup", pickupAddressId: point },
       }).expect(200),
     );
@@ -388,7 +388,7 @@ describe("le devis de la vitrine", () => {
     await seedCatalogue();
 
     await quote({
-      lines: Array.from({ length: 101 }, () => ({ sku: "VIE-001", quantity: 1 })),
+      lines: Array.from({ length: 101 }, () => ({ sku: "VIE-001-1", quantity: 1 })),
       fulfillment: null,
     }).expect(400);
   });

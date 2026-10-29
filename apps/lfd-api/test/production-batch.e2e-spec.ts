@@ -162,7 +162,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         deliveryAddress: SITE,
         deliveryAddressId: addressId,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
     await settleCardPayments(ctx, issuedIntents);
@@ -212,7 +212,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         requestedWindow: { start: null, end: "10:00" },
         deliveryAddress: SITE,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
     await settleCardPayments(ctx, issuedIntents);
@@ -280,7 +280,7 @@ describe("la fiche de production lit ce qui a été convenu", () => {
         deliveryAddress: SITE,
         deliveryAddressId: foreign.id,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       // Depuis le 2026-10-12, l'adresse d'une autre maison n'apporte aucune
       // heure inscrite : la commande est refusée, et rien n'est importé. Jusque-
@@ -380,7 +380,7 @@ describe("le colisage", () => {
         requestedWindow: { start: null, end: "10:00" },
         deliveryAddress: SITE,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
     await settleCardPayments(ctx, issuedIntents);
@@ -605,7 +605,7 @@ describe("les courriels d'une commande", () => {
         requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: point.id,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
     await settleCardPayments(ctx, issuedIntents);
@@ -690,7 +690,7 @@ describe("le journal d'une commande", () => {
           requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: point.id,
           note: "",
-          lines: [{ sku: "VIE-001", quantity: 2 }],
+          lines: [{ sku: "VIE-001-1", quantity: 2 }],
         })
         .expect(201),
     );
@@ -793,7 +793,7 @@ describe("le plan du soir", () => {
           requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId: id,
           note: "",
-          lines: [{ sku: "VIE-001", quantity: 1 }],
+          lines: [{ sku: "VIE-001-1", quantity: 1 }],
         })
         .expect(201),
     );
@@ -1080,7 +1080,7 @@ describe("la remise en livraison", () => {
           requestedWindow: { start: null, end: "10:00" },
           deliveryAddress: SITE,
           note: "",
-          lines: [{ sku: "VIE-001", quantity: 2 }],
+          lines: [{ sku: "VIE-001-1", quantity: 2 }],
         })
         .expect(201),
     );
@@ -1201,7 +1201,7 @@ describe("la file de remise", () => {
           requestedWindow: { start: "07:00", end: "08:00" },
           pickupAddressId,
           note: "",
-          lines: [{ sku: "VIE-001", quantity }],
+          lines: [{ sku: "VIE-001-1", quantity }],
         })
         .expect(201),
     );
@@ -1362,7 +1362,7 @@ describe("la file de remise", () => {
 
     expect(bag.orderNumber).toBe(reference);
     expect(bag.totalUnits).toBe(3);
-    expect(bag.lines.map((line) => line.sku)).toEqual(["VIE-001"]);
+    expect(bag.lines.map((line) => line.sku)).toEqual(["VIE-001-1"]);
 
     // Jest n'a pas le second argument de message de Vitest : on nomme le champ
     // fautif dans l'assertion elle-même, sinon un échec dirait seulement

@@ -101,10 +101,10 @@ describe("chaque déclinaison en vignette", () => {
 
     const items = await shelf(fiche);
 
-    expect(items.map((item) => item.sku).sort()).toEqual([boxSku, fiche.sku].sort());
+    expect(items.map((item) => item.sku).sort()).toEqual([boxSku, fiche.variantSku].sort());
     expect(items.some((item) => item.sku === lotSku)).toBe(false);
     expect(items.find((item) => item.sku === boxSku)?.name).toBe("Boîte de 220 g");
-    expect(items.find((item) => item.sku === fiche.sku)?.name).toBe("Florentin");
+    expect(items.find((item) => item.sku === fiche.variantSku)?.name).toBe("Florentin");
   });
 
   it("le devis vend la déclinaison de la vignette, à son prix et sous son SKU", async () => {
@@ -118,7 +118,7 @@ describe("chaque déclinaison en vignette", () => {
         .send({
           lines: [
             { sku: boxSku, quantity: 1 },
-            { sku: fiche.sku, quantity: 1 },
+            { sku: fiche.variantSku, quantity: 1 },
           ],
           fulfillment: null,
         })
@@ -130,7 +130,7 @@ describe("chaque déclinaison en vignette", () => {
       items.find((item) => item.sku === boxSku)?.unitPriceMillicents,
     );
     expect(box?.unitPriceMillicents).not.toBe(
-      quote.lines.find((line) => line.sku === fiche.sku)?.unitPriceMillicents,
+      quote.lines.find((line) => line.sku === fiche.variantSku)?.unitPriceMillicents,
     );
   });
 
@@ -154,7 +154,7 @@ describe("chaque déclinaison en vignette", () => {
       select: { payload: true },
     });
     expect(facts[0]?.payload).toMatchObject({ from: true, to: false });
-    expect((await shelf(fiche)).map((item) => item.sku)).toEqual([fiche.sku]);
+    expect((await shelf(fiche)).map((item) => item.sku)).toEqual([fiche.variantSku]);
     // La caisse vend ce que la vitrine montre : la boîte n'est plus commandable.
     const quote = await ctx
       .http()

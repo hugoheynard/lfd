@@ -68,16 +68,16 @@ const staff = () => ctx.asSub(E2E_STAFF_SUB);
 
 /** Des SKU réels du catalogue e2e — 93 articles y sont semés. */
 const SKUS = [
-  "VIE-001",
-  "VIE-002",
-  "VIE-003",
-  "VIE-004",
-  "VIE-005",
-  "PAI-001",
-  "PAI-002",
-  "PAI-003",
-  "PAI-004",
-  "PAI-005",
+  "VIE-001-1",
+  "VIE-002-1",
+  "VIE-003-1",
+  "VIE-004-1",
+  "VIE-005-1",
+  "PAI-001-1",
+  "PAI-002-1",
+  "PAI-003-1",
+  "PAI-004-1",
+  "PAI-005-1",
 ] as const;
 
 /**
@@ -155,20 +155,19 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * 🔴 **De 8 à 7 le 2026-10-09** : la lecture du flag boutique (celle du
  * 2026-09-14, plus haut) a disparu avec la clé `shop` et sa garde.
  *
- * 🔴 **De 7 à 8 le 2026-10-29** : le devis lit `sale_sku_alias` UNE fois,
- * avant le catalogue — l'alias à l'entrée
- * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5). Une
- * lecture par devis, sur la clé primaire et l'index de la cible, quelle que
- * soit la taille du panier ; elle part avec l'alias d'entrée (L4). Le même
- * jour, la lecture de plus qu'avait ajoutée le tri des lignes d'unité périmée
- * (`withoutStaleUnits`, commit d0b359c27) est RETIRÉE : le tri et le prix
- * lisent désormais la même résolution du catalogue.
+ * 🔴 **De 7 à 8, puis de nouveau 7, le 2026-10-29** : le devis a lu
+ * `sale_sku_alias` une fois, le temps que la bascule du défaut garde une table
+ * de traduction ; elle est partie sans alias (décision de Hugo,
+ * `documentation/catalogue/plan-defaut-sous-sa-reference.md`, révision 3), et
+ * la lecture avec elle. Le même jour, la lecture de plus qu'avait ajoutée le
+ * tri des lignes d'unité périmée (`withoutStaleUnits`, commit d0b359c27) est
+ * RETIRÉE : le tri et le prix lisent la même résolution du catalogue.
  *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
- * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est l'égalité
- * qui attrape un N+1, pas la valeur absolue.
+ * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
+ * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 8;
+const COLD_QUOTE_OPS = 7;
 
 /**
  * Sème `count` règles de promotion **distinctes**.
@@ -183,18 +182,18 @@ const COLD_QUOTE_OPS = 8;
  */
 async function seedRules(count: number): Promise<void> {
   const catalogue = await ctx.prisma.catalogItem.findMany({
-    select: { productSku: true },
-    distinct: ["productSku"],
-    orderBy: { productSku: "asc" },
+    select: { sku: true },
+    distinct: ["sku"],
+    orderBy: { sku: "asc" },
   });
-  const skus = catalogue.map((item) => item.productSku);
+  const skus = catalogue.map((item) => item.sku);
   await ctx.prisma.priceRule.createMany({
     data: Array.from({ length: count }, (_unused, index) => ({
       id: `rule_budget_${String(index)}`,
       stage: "promotion",
       nature: "alter",
       scopeType: "product",
-      scopeId: skus[index % skus.length] ?? "VIE-001",
+      scopeId: skus[index % skus.length] ?? "VIE-001-1",
       audienceType: "all",
       audienceId: null,
       // Le seuil départage : une règle par article ET par palier.
@@ -232,7 +231,9 @@ describe("le devis d'un panier", () => {
   it("coûte le budget à froid pour une seule ligne", async () => {
     await seedRules(40);
 
-    const cost = await coldOperationsOf(() => quote([{ sku: "VIE-001", quantity: 2 }]).expect(200));
+    const cost = await coldOperationsOf(() =>
+      quote([{ sku: "VIE-001-1", quantity: 2 }]).expect(200),
+    );
 
     expect(cost).toBe(COLD_QUOTE_OPS);
   });
@@ -410,7 +411,7 @@ describe("l'écran et la caisse", () => {
       data: {
         id: "ladder_accord",
         scopeType: "product",
-        scopeId: "VIE-001",
+        scopeId: "VIE-001-1",
         audienceType: "all",
         audienceId: null,
         unit: "percent",
@@ -427,7 +428,7 @@ describe("l'écran et la caisse", () => {
     }>(await staff().get("/admin/pricing").expect(200));
     const shown = board.categories
       .flatMap((category) => category.items)
-      .find((item) => item.sku === "VIE-001")?.finalMillicents;
+      .find((item) => item.sku === "VIE-001-1")?.finalMillicents;
 
     // 🔴 **Le devis est passé PAR UN PRO**, et depuis le 2026-09-21 il faut le
     // dire. `/admin/pricing` est l'écran du canal professionnel ; la caisse d'un
@@ -442,7 +443,7 @@ describe("l'écran et la caisse", () => {
       await ctx
         .asSub("auth0|parite")
         .post("/shop/quote/mine")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     ).lines[0]?.unitPriceMillicents;
 
@@ -473,7 +474,7 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
       await ctx
         .http()
         .post("/shop/quote")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     ).lines[0]?.unitPriceMillicents;
 
@@ -516,7 +517,7 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
       await ctx
         .http()
         .post("/shop/quote")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     ).lines[0]?.unitPriceMillicents;
 

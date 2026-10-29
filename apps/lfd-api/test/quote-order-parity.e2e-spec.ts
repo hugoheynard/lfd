@@ -63,7 +63,7 @@ const SERVICE_DAY = serviceDay();
 const BUYER = "auth0|parite";
 
 /**
- * **Le prix catalogue de la vitrine publique** pour VIE-001 — l'étiquette du
+ * **Le prix catalogue de la vitrine publique** pour VIE-001-1 — l'étiquette du
  * semis (2,64 € TTC) mise hors taxe à 5,5 %.
  *
  * Il n'est utilisé que comme REPÈRE : ce fichier éprouve un accord entre deux
@@ -80,8 +80,8 @@ const PUBLIC_CATALOGUE_MILLICENTS = 250_237;
  * deux quantités différentes exercent l'arrondi de ligne.
  */
 const PANIER = [
-  { sku: "VIE-001", quantity: 12 },
-  { sku: "PAI-001", quantity: 7 },
+  { sku: "VIE-001-1", quantity: 12 },
+  { sku: "PAI-001-1", quantity: 7 },
 ] as const;
 
 /** Un point de retrait qui **remet 10 %** — la remise doit se retrouver des deux côtés. */
@@ -246,7 +246,7 @@ describe("le devis de la vitrine et la facture", () => {
       data: {
         id: "ladder_parite",
         scopeType: "product",
-        scopeId: "VIE-001",
+        scopeId: "VIE-001-1",
         audienceType: "all",
         audienceId: null,
         unit: "percent",
@@ -267,11 +267,11 @@ describe("le devis de la vitrine et la facture", () => {
     // Le barème a bien mordu : sans lui, le devis rendrait le prix catalogue.
     //
     // 🔴 Le prix catalogue de CETTE audience. La vitrine se visite sans jeton,
-    // donc elle sert l'étiquette publique — 2,50237 € hors taxe pour VIE-001,
+    // donc elle sert l'étiquette publique — 2,50237 € hors taxe pour VIE-001-1,
     // et non les 2,00 € du canal professionnel que ce cas citait jusqu'au
     // 2026-09-21. La référence était fausse, pas le barème : le comparatif
     // passait par chance, les deux audiences lisant alors le même prix.
-    const croissant = view.lines.find((line) => line.sku === "VIE-001");
+    const croissant = view.lines.find((line) => line.sku === "VIE-001-1");
     expect(croissant?.unitPriceMillicents).toBeLessThan(PUBLIC_CATALOGUE_MILLICENTS);
 
     await expectParity(

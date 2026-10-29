@@ -150,7 +150,7 @@ function order(over: Record<string, unknown> = {}): Record<string, unknown> {
     // Pas de commande sans créneau (2026-10-14).
     requestedWindow: { start: "07:00", end: "08:00" },
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
     ...over,
   };
 }
@@ -231,7 +231,7 @@ describe("l'heure limite est opposée au client", () => {
         pickupAddressId: pickupId,
         requestedDeliveryDate: serviceDay(0),
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 3 }],
+        lines: [{ sku: "VIE-001-1", quantity: 3 }],
       })
       .expect(409);
 
@@ -309,18 +309,18 @@ describe("le rattrapage, quand il est réglé", () => {
  * (`catalog-ingest-facts.e2e-spec.ts`), et la couture entre les deux moitiés
  * l'est ci-dessous, par le seul cas qui parte vraiment d'une règle.
  *
- * ⚠️ Le miroir stocke le SKU de la **déclinaison** (`VIE-001-1`), que le PIM
- * dérive de celui du produit ; c'est sous le SKU **produit** que l'adaptateur la
- * présente au checkout. Le paramètre est donc celui qu'une commande porte, et la
- * dérivation se fait ici — l'écrire à l'envers ferait chercher une ligne qui
- * n'existe pas, ce qui est exactement ce qui est arrivé en écrivant ce test.
+ * Le miroir stocke le SKU de la **déclinaison** (`VIE-001-1`), et c'est sous
+ * lui que le checkout vend depuis la bascule du 2026-10-29
+ * (`plan-defaut-sous-sa-reference.md`, L3) — il vendait jusque-là sous le SKU
+ * produit, et ce semis en dérivait la déclinaison. Le paramètre est celui
+ * qu'une commande porte.
  */
 async function seedArticleLimit(
   orderSku: string,
   limit: { daysBefore: number; time: string; graceMinutes: number } | null,
 ): Promise<void> {
   await ctx.prisma.catalogItem.update({
-    where: { sku: `${orderSku}-1` },
+    where: { sku: orderSku },
     data: {
       orderLimitDaysBefore: limit?.daysBefore ?? null,
       orderLimitTime: limit?.time ?? null,
@@ -365,7 +365,10 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
       .asSub(MEMBER)
       .post("/orders")
       .send(
-        order({ requestedDeliveryDate: serviceDay(10), lines: [{ sku: fiche.sku, quantity: 1 }] }),
+        order({
+          requestedDeliveryDate: serviceDay(10),
+          lines: [{ sku: fiche.variantSku, quantity: 1 }],
+        }),
       )
       .expect(409);
 
@@ -382,7 +385,7 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
     // Le commerce ferme la veille à 00:01 : pour une remise dans 30 jours, il
     // reste 29 jours. L'article, lui, demande 60 jours de préavis.
     await seedCutoff({ daysBefore: 1, time: "00:01" });
-    await seedArticleLimit("VIE-001", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
+    await seedArticleLimit("VIE-001-1", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
 
     const response = await ctx
       .asSub(MEMBER)
@@ -403,7 +406,7 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
   it("une limite d'article plus tardive ne relâche pas l'heure limite générale", async () => {
     // Le commerce a fermé (limite hier) ; l'article, lui, ferme ce soir.
     await seedCutoff({ daysBefore: 1, time: "00:01" });
-    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+    await seedArticleLimit("VIE-001-1", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
 
     const response = await ctx
       .asSub(MEMBER)
@@ -422,7 +425,7 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
 
   it("retombe sur la règle du commerce quand l'article ne déclare rien", async () => {
     await seedCutoff({ daysBefore: 1, time: "00:01" });
-    await seedArticleLimit("VIE-001", null);
+    await seedArticleLimit("VIE-001-1", null);
 
     const response = await ctx
       .asSub(MEMBER)
@@ -438,8 +441,8 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
    * ouverte ne sauve pas les autres : un panier ne se découpe pas.
    */
   it("prend la ligne la plus fermée d'un panier mixte", async () => {
-    await seedArticleLimit("VIE-001", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
-    await seedArticleLimit("VIE-002", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
+    await seedArticleLimit("VIE-001-1", { daysBefore: 0, time: "23:59", graceMinutes: 0 });
+    await seedArticleLimit("VIE-002-1", { daysBefore: 60, time: "23:59", graceMinutes: 0 });
 
     const response = await ctx
       .asSub(MEMBER)
@@ -448,8 +451,8 @@ describe("la limite portée par l'ARTICLE, reçue du référentiel", () => {
         order({
           requestedDeliveryDate: serviceDay(30),
           lines: [
-            { sku: "VIE-001", quantity: 1 },
-            { sku: "VIE-002", quantity: 1 },
+            { sku: "VIE-001-1", quantity: 1 },
+            { sku: "VIE-002-1", quantity: 1 },
           ],
         }),
       )
@@ -494,7 +497,7 @@ describe("la surtaxe de commande tardive", () => {
     const response = await ctx
       .asSub(MEMBER)
       .post("/orders")
-      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001", quantity: 3 }] }))
+      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001-1", quantity: 3 }] }))
       .expect(201);
 
     const placed = await ctx.prisma.order.findUniqueOrThrow({
@@ -528,7 +531,7 @@ describe("la surtaxe de commande tardive", () => {
     const created = await ctx
       .asSub(MEMBER)
       .post("/orders")
-      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001", quantity: 3 }] }))
+      .send(order({ requestedDeliveryDate: day, lines: [{ sku: "VIE-001-1", quantity: 3 }] }))
       .expect(201);
 
     const view = await ctx
@@ -644,7 +647,7 @@ describe("la dérogation, seul chemin de sortie", () => {
         // prouverait la VALIDATION au lieu de l'heure limite — un test qui passe
         // en ayant changé de sujet est pire qu'un test rouge.
         requestedWindow: { start: "07:00", end: "08:00" },
-        lines: [{ sku: "VIE-001", quantity: 12 }],
+        lines: [{ sku: "VIE-001-1", quantity: 12 }],
       })
       .expect(409);
 

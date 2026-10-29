@@ -134,7 +134,7 @@ describe("le point focal voyage jusqu'à la vitrine", () => {
 
     const items = (await catalogue()).items;
     const focalOf = (sku: string) => items.find((item) => item.sku === sku)?.image?.focal;
-    expect(focalOf("VIE-001")).toEqual({ x: 0.1, y: 0.9 });
-    expect(focalOf("VIE-002")).toBeNull();
+    expect(focalOf("VIE-001-1")).toEqual({ x: 0.1, y: 0.9 });
+    expect(focalOf("VIE-002-1")).toBeNull();
   });
 });

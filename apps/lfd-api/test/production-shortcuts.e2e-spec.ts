@@ -29,7 +29,7 @@ import {
 
 const SETTINGS = "/admin/production/settings/shortcuts";
 const WORKSHOP = "/admin/production/shortcuts";
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 
 let ctx: E2eContext;
 
@@ -100,11 +100,11 @@ describe("la page des raccourcis", () => {
 
 describe("un article au poids (P6 de `pricing/vente-au-poids.md`)", () => {
   /** Le pain au chocolat du semis devient un article au poids. */
-  const WEIGHED = "VIE-002";
+  const WEIGHED = "VIE-002-1";
 
   it("la page dit son unité ; raccourci et contenant se règlent en grammes, servis tels quels", async () => {
     await ctx.prisma.catalogItem.update({
-      where: { sku: `${WEIGHED}-1` },
+      where: { sku: `${WEIGHED}` },
       data: { saleUnit: "weight", weightStepGrams: 50, weightMinGrams: null },
     });
 
@@ -144,7 +144,7 @@ describe("ajouter, modifier, supprimer", () => {
       where: { type: "production_batch_shortcut.created" },
     });
     expect(facts.map((fact) => fact.payload)).toEqual([
-      { subjectLabel: "1 plaque (VIE-001)", sku: SKU, label: "1 plaque", pieces: 24 },
+      { subjectLabel: "1 plaque (VIE-001-1)", sku: SKU, label: "1 plaque", pieces: 24 },
     ]);
   });
 

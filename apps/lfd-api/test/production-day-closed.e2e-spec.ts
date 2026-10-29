@@ -163,7 +163,7 @@ async function place(): Promise<string> {
         requestedWindow: { start: "07:00", end: "08:00" },
         pickupAddressId: id,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
       })
       .expect(201),
   );
@@ -248,7 +248,7 @@ describe("la clôture de journée passe par la boîte d'envoi", () => {
     const counted = await place();
     await closePlan();
     // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
-    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001", quantity: 1 }]))
+    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001-1", quantity: 1 }]))
       .orderNumber;
 
     await closePlan();
@@ -264,7 +264,7 @@ describe("la clôture de journée passe par la boîte d'envoi", () => {
     await place();
     await closePlan();
     // Un client ne passe plus après l'arrêt (O3, §8.3) : la retardataire est saisie par l'équipe.
-    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001", quantity: 1 }]))
+    const late = (await placeLateByStaff(ctx, SERVICE_DAY, [{ sku: "VIE-001-1", quantity: 1 }]))
       .orderNumber;
     await ctx.asSub(STAFF).post(`/admin/production/worksheet/${SERVICE_DAY}/retake`).expect(201);
 

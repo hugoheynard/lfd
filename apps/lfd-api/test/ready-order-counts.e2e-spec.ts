@@ -27,7 +27,7 @@ import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-har
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { pickupSite, placeOrder } from "./order-factory.js";
 
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 const UNITS = 7;
 const DAY_MS = 24 * 60 * 60 * 1000;
 

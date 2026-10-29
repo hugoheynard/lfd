@@ -28,7 +28,7 @@ const DAY_MS = 24 * 60 * 60 * 1000;
 /** Trois jours avant le jour de service : l'heure limite est loin. */
 const LEAD_DAYS = 3;
 /** Cinquante croissants au tarif du catalogue. */
-const DEFAULT_LINES: readonly OrderLineSeed[] = [{ sku: "VIE-001", quantity: 50 }];
+const DEFAULT_LINES: readonly OrderLineSeed[] = [{ sku: "VIE-001-1", quantity: 50 }];
 
 export interface ServedOrderSeed {
   readonly buyerUserId: string;

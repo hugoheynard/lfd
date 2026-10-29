@@ -164,7 +164,7 @@ export async function seedDelivery(
       address: COURIER_ADDRESS,
       addressId: buyer.addressId,
     },
-    lines: options.lines ?? [{ sku: "VIE-001", quantity: 5 }],
+    lines: options.lines ?? [{ sku: "VIE-001-1", quantity: 5 }],
   };
   const order =
     options.byStaff === true

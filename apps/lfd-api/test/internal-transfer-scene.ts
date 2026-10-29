@@ -45,7 +45,7 @@ export async function seedVillage(ctx: E2eContext): Promise<string> {
 }
 
 /** Le pain des commandes du village, au catalogue de test. */
-export const VILLAGE_BREAD = { sku: "PAI-001", name: "Baguette tradition" } as const;
+export const VILLAGE_BREAD = { sku: "PAI-001-1", name: "Baguette tradition" } as const;
 
 /** Le numéro de la dernière commande du village — celui que le comptoir scanne. */
 let villageOrderNumber = "";

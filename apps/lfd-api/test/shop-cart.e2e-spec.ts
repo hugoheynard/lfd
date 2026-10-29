@@ -46,8 +46,8 @@ async function seedPerson(sub: string): Promise<string> {
 
 const DEUX_CROISSANTS: ShopCartPayload = {
   lines: [
-    { sku: "VIE-001", quantity: 2 },
-    { sku: "SAL-001", quantity: 1 },
+    { sku: "VIE-001-1", quantity: 2 },
+    { sku: "SAL-001-1", quantity: 1 },
   ],
 };
 
@@ -95,14 +95,14 @@ describe("Le panier du client, gardé chez nous", () => {
     await ctx
       .asSub("client-unique")
       .put("/shop/cart")
-      .send({ lines: [{ sku: "PAT-001", quantity: 5 }] })
+      .send({ lines: [{ sku: "PAT-001-1", quantity: 5 }] })
       .expect(200);
 
     expect(await ctx.prisma.shopCart.count({ where: { userId } })).toBe(1);
     const read = jsonBody<ShopCartResponse>(
       await ctx.asSub("client-unique").get("/shop/cart").expect(200),
     );
-    expect(read.cart?.lines).toEqual([{ sku: "PAT-001", quantity: 5 }]);
+    expect(read.cart?.lines).toEqual([{ sku: "PAT-001-1", quantity: 5 }]);
   });
 
   it("répond `{ cart: null }` à qui n'a jamais rien composé — pas un 404", async () => {
@@ -159,7 +159,7 @@ describe("Le panier du client, gardé chez nous", () => {
     await ctx
       .asSub("client-zero")
       .put("/shop/cart")
-      .send({ lines: [{ sku: "VIE-001", quantity: 0 }] })
+      .send({ lines: [{ sku: "VIE-001-1", quantity: 0 }] })
       .expect(400);
   });
 
@@ -189,7 +189,7 @@ describe("Le panier du client, gardé chez nous", () => {
       await ctx
         .asSub("client-date")
         .put("/shop/cart")
-        .send({ lines: [{ sku: "VIE-001", quantity: 3 }] })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 3 }] })
         .expect(200),
     );
 
@@ -226,13 +226,13 @@ describe("Un panier par espace de travail", () => {
   it("garde un panier distinct par société et un pour le perso", async () => {
     const { userId, first, second } = await seedTwoCompanies();
 
-    await inSpace(first).put(lines("VIE-001")).expect(200);
-    await inSpace(second).put(lines("SAL-001")).expect(200);
-    await inSpace(PERSONAL_WORKSPACE).put(lines("PAT-001")).expect(200);
+    await inSpace(first).put(lines("VIE-001-1")).expect(200);
+    await inSpace(second).put(lines("SAL-001-1")).expect(200);
+    await inSpace(PERSONAL_WORKSPACE).put(lines("PAT-001-1")).expect(200);
 
-    expect((await inSpace(first).get())?.lines).toEqual(lines("VIE-001").lines);
-    expect((await inSpace(second).get())?.lines).toEqual(lines("SAL-001").lines);
-    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("PAT-001").lines);
+    expect((await inSpace(first).get())?.lines).toEqual(lines("VIE-001-1").lines);
+    expect((await inSpace(second).get())?.lines).toEqual(lines("SAL-001-1").lines);
+    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("PAT-001-1").lines);
     expect(await ctx.prisma.shopCart.count({ where: { userId } })).toBe(3);
   });
 
@@ -241,12 +241,12 @@ describe("Un panier par espace de travail", () => {
     // enregistrement perso empilerait une ligne au lieu de remplacer.
     const { userId } = await seedTwoCompanies();
 
-    await inSpace(PERSONAL_WORKSPACE).put(lines("VIE-001")).expect(200);
+    await inSpace(PERSONAL_WORKSPACE).put(lines("VIE-001-1")).expect(200);
     // Sans en-tête, à deux sociétés : la même société agissante `null`.
-    await ctx.asSub(SUB).put("/shop/cart").send(lines("SAL-001")).expect(200);
+    await ctx.asSub(SUB).put("/shop/cart").send(lines("SAL-001-1")).expect(200);
 
     expect(await ctx.prisma.shopCart.count({ where: { userId, companyId: null } })).toBe(1);
-    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("SAL-001").lines);
+    expect((await inSpace(PERSONAL_WORKSPACE).get())?.lines).toEqual(lines("SAL-001-1").lines);
   });
 
   it("🔴 deux écritures simultanées du même espace ne lèvent rien", async () => {
@@ -256,7 +256,7 @@ describe("Un panier par espace de travail", () => {
 
     for (const space of [PERSONAL_WORKSPACE, first]) {
       const statuses = await Promise.all(
-        ["VIE-001", "SAL-001", "PAT-001"].map(
+        ["VIE-001-1", "SAL-001-1", "PAT-001-1"].map(
           async (sku) => (await inSpace(space).put(lines(sku))).status,
         ),
       );
@@ -268,7 +268,7 @@ describe("Un panier par espace de travail", () => {
   it("ne sert pas le panier d'une société à qui déclare une maison étrangère", async () => {
     // L'en-tête qui ment est ignoré : à deux sociétés, il retombe sur le perso.
     const { first } = await seedTwoCompanies();
-    await inSpace(first).put(lines("VIE-001")).expect(200);
+    await inSpace(first).put(lines("VIE-001-1")).expect(200);
     const stranger = await createCompany(ctx.prisma, {
       raisonSociale: "Concurrent SAS",
       siret: "11122233300044",

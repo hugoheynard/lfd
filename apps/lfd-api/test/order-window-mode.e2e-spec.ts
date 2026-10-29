@@ -122,7 +122,7 @@ function deliveryOrder(addressId: string | null, window?: unknown): Record<strin
     deliveryAddress: POSTAL,
     deliveryAddressId: addressId,
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 2 }],
+    lines: [{ sku: "VIE-001-1", quantity: 2 }],
     ...(window === undefined ? {} : { requestedWindow: window }),
   };
 }
@@ -263,7 +263,7 @@ describe("pas de commande sans créneau CHOISI (2026-10-14)", () => {
         pickupAddressId: site.id,
         deliveryAddress: null,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(400);
 

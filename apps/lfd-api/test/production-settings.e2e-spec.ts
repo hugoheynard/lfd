@@ -230,7 +230,7 @@ describe("les droits", () => {
  * la fiche d'atelier.
  */
 describe("le droit du contenant", () => {
-  const CONTAINER = "/admin/production/containers/VIE-001";
+  const CONTAINER = "/admin/production/containers/VIE-001-1";
   const PLAQUE = { unitsPerContainer: 10, singular: "plaque", plural: "plaques" };
 
   it("la fiche d'atelier le lit, ne le règle plus", async () => {

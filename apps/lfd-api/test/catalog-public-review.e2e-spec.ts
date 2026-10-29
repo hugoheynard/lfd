@@ -139,8 +139,8 @@ describe("la validation avant la boutique publique", () => {
     await relayAll(ctx);
 
     expect(await pendingOf(fiche.variantSku)).toEqual({ pro: true, public: true });
-    expect(await publicShopSkus()).not.toContain(fiche.sku);
-    const refusal = await proOrder(await aBuyer(), fiche.sku).expect(400);
+    expect(await publicShopSkus()).not.toContain(fiche.variantSku);
+    const refusal = await proOrder(await aBuyer(), fiche.variantSku).expect(400);
     expect(jsonBody<{ code: string }>(refusal).code).toBe("orders.sku.unknown");
   });
 
@@ -151,8 +151,8 @@ describe("la validation avant la boutique publique", () => {
     await approve([fiche.variantSku], ["pro"]).expect(204);
 
     expect(await pendingOf(fiche.variantSku)).toEqual({ pro: false, public: true });
-    await proOrder(await aBuyer(), fiche.sku).expect(201);
-    expect(await publicShopSkus()).not.toContain(fiche.sku);
+    await proOrder(await aBuyer(), fiche.variantSku).expect(201);
+    expect(await publicShopSkus()).not.toContain(fiche.variantSku);
   });
 
   it("valider pour le public le rend public, et le journal le dit par audience", async () => {
@@ -162,7 +162,7 @@ describe("la validation avant la boutique publique", () => {
     await approve([fiche.variantSku]).expect(204);
 
     expect(await pendingOf(fiche.variantSku)).toEqual(NONE);
-    expect(await publicShopSkus()).toContain(fiche.sku);
+    expect(await publicShopSkus()).toContain(fiche.variantSku);
     const journal = await ctx.prisma.activityEvent.findMany({
       where: { subjectId: fiche.variantSku, type: { endsWith: "_review_approved" } },
       orderBy: { type: "asc" },
@@ -186,7 +186,7 @@ describe("la validation avant la boutique publique", () => {
     await relayAll(ctx);
 
     expect(await pendingOf(fiche.variantSku)).toEqual(NONE);
-    expect(await publicShopSkus()).toContain(fiche.sku);
+    expect(await publicShopSkus()).toContain(fiche.variantSku);
   });
 
   it("un SKU déjà connu, réémis, n'est pas remis en attente", async () => {
@@ -210,7 +210,7 @@ describe("la validation avant la boutique publique", () => {
     await relayAll(ctx);
 
     expect(await pendingOf(active.variantSku)).toEqual(NONE);
-    expect(await publicShopSkus()).toContain(active.sku);
+    expect(await publicShopSkus()).toContain(active.variantSku);
   });
 
   it("refuse tout le lot si un SKU n'est plus en vente, en le nommant", async () => {

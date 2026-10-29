@@ -130,7 +130,7 @@ function content(pickupId: string, quantity: number): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedWindow: { start: "07:00", end: "08:00" },
     note: "",
-    lines: [{ sku: "VIE-001", quantity }],
+    lines: [{ sku: "VIE-001-1", quantity }],
   };
 }
 
@@ -181,7 +181,7 @@ async function planRemainder(orderId: string): Promise<void> {
         terms: ORDER_TERMS,
         lines: [
           {
-            sku: "VIE-001",
+            sku: "VIE-001-1",
             productName: "Croissant",
             unitPriceMillicents: 95_000,
             vatRate: 5.5,

@@ -389,7 +389,7 @@ describe("le réassort sans commande", () => {
     await reader.post(`/admin/resupply-receipts/${siteId}/resupplies/any/receive`).expect(403);
     await reader
       .post(`/admin/resupply-receipts/${siteId}/${ANY_DAY}/lines`)
-      .send({ sku: "VIE-001", quantity: 1 })
+      .send({ sku: "VIE-001-1", quantity: 1 })
       .expect(403);
   });
 });

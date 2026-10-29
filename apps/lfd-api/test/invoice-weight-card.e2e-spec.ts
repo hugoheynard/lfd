@@ -35,7 +35,7 @@ import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
 const ENTITIES = "/admin/accounting/legal-entities";
 const STAFF = "staff-e2e";
 /** Le pain au chocolat du semis, vendu au poids, au gramme. */
-const WEIGHED = "VIE-002";
+const WEIGHED = "VIE-002-1";
 /** 12,34567 € HT le kilo : un prix au millicentime. */
 const PRO_PRICE_PER_KG_MILLICENTS = 1_234_567;
 const WEIGHT_GRAMS = 1_001;
@@ -61,7 +61,7 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   await ctx.prisma.catalogItem.update({
-    where: { sku: `${WEIGHED}-1` },
+    where: { sku: `${WEIGHED}` },
     data: {
       saleUnit: "weight",
       weightStepGrams: 1,
@@ -154,7 +154,7 @@ async function weighedCardOrder(): Promise<{
     placedAt: new Date(daysAgo(1)),
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
     lines: [
-      { sku: "VIE-001", quantity: 3 },
+      { sku: "VIE-001-1", quantity: 3 },
       { sku: WEIGHED, quantity: WEIGHT_GRAMS, saleUnit: "weight" },
     ],
   });
@@ -203,7 +203,7 @@ describe("la facture carte d'une commande au poids (P7)", () => {
     const invoice = await ctx.app.get(InvoiceReader).byId(row.id);
     const lines = invoice?.toState().lines ?? [];
     expect(lines.map((l) => [l.sku, l.unitCode, l.quantityThousandths])).toEqual([
-      ["VIE-001", "H87", 3_000],
+      ["VIE-001-1", "H87", 3_000],
       [WEIGHED, "KGM", WEIGHT_GRAMS],
     ]);
     expect(lines[1]).toMatchObject({

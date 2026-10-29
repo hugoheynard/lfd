@@ -62,8 +62,8 @@ afterAll(async () => {
 const MEMBER = "auth0|membre";
 const STRANGER = "auth0|etranger";
 
-/** VIE-001 vaut 2,00 € dans le catalogue qui facture. */
-const SKU = "VIE-001";
+/** VIE-001-1 vaut 2,00 € dans le catalogue qui facture. */
+const SKU = "VIE-001-1";
 const CANONICAL_MILLICENTS = 200_000;
 const NEGOTIATED_MILLICENTS = 150_000;
 /**
@@ -78,7 +78,7 @@ const NEGOTIATED_MILLICENTS = 150_000;
  * qui change, c'est le prix auquel il retombe : l'étiquette du rayon, pas le
  * tarif d'un client pro sans remise.
  *
- * La valeur suit `seedE2eCatalog` : VIE-001 à 2,00 € pro, donc 2,64 € TTC
+ * La valeur suit `seedE2eCatalog` : VIE-001-1 à 2,00 € pro, donc 2,64 € TTC
  * d'étiquette, donc 250 237 millicentimes hors taxe à 5,5 %.
  */
 const PUBLIC_MILLICENTS = 250_237;
@@ -266,7 +266,7 @@ describe("la mise en avant par audience", () => {
    */
   it("mis en avant chez les pros seulement : vu par le pro, pas par le public", async () => {
     await staff()
-      .put(`/admin/catalog/${SKU}-1/featured`)
+      .put(`/admin/catalog/${SKU}/featured`)
       .send({ audience: "pro", featured: true })
       .expect(204);
 
@@ -280,7 +280,7 @@ describe("la mise en avant par audience", () => {
 
   it("mis en avant au public seulement : vu par le public, pas par le pro", async () => {
     await staff()
-      .put(`/admin/catalog/${SKU}-1/featured`)
+      .put(`/admin/catalog/${SKU}/featured`)
       .send({ audience: "public", featured: true })
       .expect(204);
 

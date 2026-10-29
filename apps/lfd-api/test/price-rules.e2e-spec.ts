@@ -113,8 +113,8 @@ const pickupContent = (): Record<string, unknown> => ({
   requestedDeliveryDate: SERVICE_DAY,
 });
 
-/** VIE-001 vaut 200 c dans le catalogue semé — l'autorité de prix actuelle. */
-const SKU = "VIE-001";
+/** VIE-001-1 vaut 200 c dans le catalogue semé — l'autorité de prix actuelle. */
+const SKU = "VIE-001-1";
 const CANONICAL = 200;
 
 interface RuleSeed {

@@ -91,7 +91,7 @@ async function capacity(typeId: string, units: number): Promise<void> {
  */
 describe("« Proposer » une commande mêlée, pièces et poids", () => {
   /** Le pain au chocolat du semis devient un article au poids, par 50 g. */
-  const WEIGHED = "VIE-002";
+  const WEIGHED = "VIE-002-1";
   const WEIGHED_BATCH = "01K6A0000000000000000000P2";
 
   async function mixedDelivery(croissants: number, grams: number): Promise<string> {
@@ -100,7 +100,7 @@ describe("« Proposer » une commande mêlée, pièces et poids", () => {
       throw new Error("Étiquette sans hors taxe.");
     }
     await ctx.prisma.catalogItem.update({
-      where: { sku: `${WEIGHED}-1` },
+      where: { sku: `${WEIGHED}` },
       data: {
         saleUnit: "weight",
         weightStepGrams: 50,

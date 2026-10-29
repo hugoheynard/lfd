@@ -183,7 +183,7 @@ describe("sous le rôle `comptoir`, l'écran de commande entier", () => {
 
     await agent
       .post("/admin/orders/quote")
-      .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+      .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 12 }] })
       .expect(200);
     await agent
       .post("/admin/orders")
@@ -195,7 +195,7 @@ describe("sous le rôle `comptoir`, l'écran de commande entier", () => {
         fulfillmentMethod: "pickup",
         pickupAddressId: pickupId,
         requestedWindow: { start: "07:00", end: "08:00" },
-        lines: [{ sku: "VIE-001", quantity: 12 }],
+        lines: [{ sku: "VIE-001-1", quantity: 12 }],
       })
       .expect(201);
 

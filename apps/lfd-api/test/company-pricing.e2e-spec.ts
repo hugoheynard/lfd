@@ -66,9 +66,9 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub("staff-e2e");
 
-/** VIE-001 vaut 200 c dans le catalogue qui facture. */
-const SKU = "VIE-001";
-const OTHER_SKU = "VIE-002";
+/** VIE-001-1 vaut 200 c dans le catalogue qui facture. */
+const SKU = "VIE-001-1";
+const OTHER_SKU = "VIE-002-1";
 const CANONICAL_MILLICENTS = 200_000;
 /** Le prix négocié de référence de cette suite. */
 const NEGOTIATED_MILLICENTS = 150_000;

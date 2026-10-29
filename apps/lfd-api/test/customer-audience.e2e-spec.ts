@@ -131,7 +131,7 @@ async function seedZone(): Promise<void> {
     .expect(201);
 }
 
-const LINES = [{ sku: "VIE-001", quantity: 10 }];
+const LINES = [{ sku: "VIE-001-1", quantity: 10 }];
 const COURIER_ADDR = {
   label: "",
   ligne1: "12 rue du Test",

@@ -70,19 +70,19 @@ const staff = () => ctx.asSub(E2E_STAFF_SUB);
 
 /** Des SKU réels du catalogue e2e — 93 articles y sont semés. */
 const SKUS = [
-  "VIE-001",
-  "VIE-002",
-  "VIE-003",
-  "VIE-004",
-  "VIE-005",
-  "PAI-001",
-  "PAI-002",
-  "PAI-003",
-  "PAI-004",
-  "PAI-005",
+  "VIE-001-1",
+  "VIE-002-1",
+  "VIE-003-1",
+  "VIE-004-1",
+  "VIE-005-1",
+  "PAI-001-1",
+  "PAI-002-1",
+  "PAI-003-1",
+  "PAI-004-1",
+  "PAI-005-1",
 ] as const;
 
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 
 /**
  * Charge un lot pour ces SKU, **articles résolus au catalogue d'abord**.

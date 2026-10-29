@@ -85,7 +85,7 @@ export async function seedOrder(seed: OrderSeed = {}): Promise<SeededOrder> {
     buyerUserId: author.userId,
     forDay: DAY,
     fulfillment: { method: "pickup" as const, pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: 1 }],
+    lines: [{ sku: "VIE-001-1", quantity: 1 }],
   };
   const order =
     seed.byStaff === true && author.companyId !== null
@@ -182,7 +182,7 @@ export async function seedFreeOrder(): Promise<SeededOrder> {
     forDay: DAY,
     voucherId,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: 1 }],
+    lines: [{ sku: "VIE-001-1", quantity: 1 }],
   });
   scene.mails.splice(mailsBefore);
   return { orderId: order.id, orderNumber: order.orderNumber, intent: null, totalCents: 0 };

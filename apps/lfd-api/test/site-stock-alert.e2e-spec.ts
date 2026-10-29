@@ -133,7 +133,7 @@ describe("déclarer et lever", () => {
     const siteId = await seedSite("Val Village");
     const route = `/admin/site-stock-alerts/sites/${siteId}`;
 
-    await agent.post(route).send({ sku: "VIE-001", level: "vide" }).expect(400);
+    await agent.post(route).send({ sku: "VIE-001-1", level: "vide" }).expect(400);
     await agent.post(route).send({ sku: "INCONNU-9", level: "low" }).expect(404);
     expect(await ctx.prisma.siteStockAlert.count()).toBe(0);
   });
@@ -229,7 +229,7 @@ describe("le mur par point et les droits", () => {
     await reader.get(`/admin/site-stock-alerts/sites/${siteId}`).expect(200);
     await reader
       .post(`/admin/site-stock-alerts/sites/${siteId}`)
-      .send({ sku: "VIE-001", level: "low" })
+      .send({ sku: "VIE-001-1", level: "low" })
       .expect(403);
 
     const other = await holderOf("commandes-seules", [{ resource: "b2b_orders", action: "read" }]);

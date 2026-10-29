@@ -299,7 +299,7 @@ describe("le bon de fidélité", () => {
         pickupAddressId: pickupId,
         requestedDeliveryDate: DAY,
         note: "",
-        lines: [{ sku: "VIE-001", quantity }],
+        lines: [{ sku: "VIE-001-1", quantity }],
         voucherId,
       })
       .expect(201);

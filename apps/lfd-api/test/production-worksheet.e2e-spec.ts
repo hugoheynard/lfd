@@ -35,10 +35,10 @@ const MEMBER = "auth0|member";
 const STAFF = "staff-e2e";
 const SERVICE_DAY = serviceDay();
 
-/** Le croissant du catalogue de test — `VIE-001`, « Croissant ». */
-const CROISSANT = "VIE-001";
+/** Le croissant du catalogue de test — `VIE-001-1`, « Croissant ». */
+const CROISSANT = "VIE-001-1";
 /** La baguette — le second article, celui que l'écart fait apparaître. */
-const BAGUETTE = "PAI-001";
+const BAGUETTE = "PAI-001-1";
 
 const SITE = {
   label: "Boutique",
@@ -280,7 +280,7 @@ describe("la fiche d'une journée ARRÊTÉE", () => {
     await place(CROISSANT, 12);
     await closePlan();
 
-    await mark("PAI-999", "MB", 404);
+    await mark("PAI-999-1", "MB", 404);
   });
 });
 

@@ -120,15 +120,15 @@ describe("la fiche de l'arrêt et l'avancement du colisage (PL4)", () => {
   it("porte les produits, SANS un champ d'argent alors que la base en a", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orders } = await myRoundOfTwo(paul.id);
-    await addLine(orders[0], "VIE-001", "Croissant", 6);
-    await addLine(orders[0], "PAI-002", "Pain", 4);
+    await addLine(orders[0], "VIE-001-1", "Croissant", 6);
+    await addLine(orders[0], "PAI-002-1", "Pain", 4);
 
     const mine = await view(paul.agent, roundId);
 
     // L'ordre suit l'identifiant des lignes : on compare l'ensemble.
     expect([...(mine.stops[0]?.sheet ?? [])].sort((a, b) => a.sku.localeCompare(b.sku))).toEqual([
-      { sku: "PAI-002", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
-      { sku: "VIE-001", name: "Croissant", quantity: 6, saleUnit: "piece", requiresCold: false },
+      { sku: "PAI-002-1", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
+      { sku: "VIE-001-1", name: "Croissant", quantity: 6, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[1]?.sheet).toEqual([]);
     expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
@@ -197,28 +197,28 @@ describe("un départ incomplet décidé, dans « Ma tournée »", () => {
   it("la fiche dit ce qui part, et l'arrêt porte le reste abandonné", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orders } = await myRoundOfTwo(paul.id);
-    await addLine(orders[0], "VIE-001", "Croissant", 6);
-    await addLine(orders[0], "PAI-002", "Pain", 4);
-    await decideShortfall(orders[0], { sku: "VIE-001", due: 6, packed: 0 }, [
-      { sku: "PAI-002", quantity: 4 },
+    await addLine(orders[0], "VIE-001-1", "Croissant", 6);
+    await addLine(orders[0], "PAI-002-1", "Pain", 4);
+    await decideShortfall(orders[0], { sku: "VIE-001-1", due: 6, packed: 0 }, [
+      { sku: "PAI-002-1", quantity: 4 },
     ]);
-    await addLine(orders[1], "VIE-001", "Croissant", 5);
-    await decideShortfall(orders[1], { sku: "VIE-001", due: 5, packed: 3 });
+    await addLine(orders[1], "VIE-001-1", "Croissant", 5);
+    await decideShortfall(orders[1], { sku: "VIE-001-1", due: 5, packed: 3 });
 
     const mine = await view(paul.agent, roundId);
 
     expect(mine.stops[0]?.sheet).toEqual([
-      { sku: "PAI-002", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
+      { sku: "PAI-002-1", name: "Pain", quantity: 4, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[0]?.shortfall).toEqual({
       remainder: "abandoned",
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
+      lines: [{ sku: "VIE-001-1", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
     });
     expect(mine.stops[1]?.sheet).toEqual([
-      { sku: "VIE-001", name: "Croissant", quantity: 3, saleUnit: "piece", requiresCold: false },
+      { sku: "VIE-001-1", name: "Croissant", quantity: 3, saleUnit: "piece", requiresCold: false },
     ]);
     expect(mine.stops[1]?.shortfall?.lines).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 2, saleUnit: "piece" },
+      { sku: "VIE-001-1", productName: "Croissant", quantity: 2, saleUnit: "piece" },
     ]);
     expect(keysOf(mine).filter((key) => MONEY.test(key))).toEqual([]);
   });
@@ -226,7 +226,7 @@ describe("un départ incomplet décidé, dans « Ma tournée »", () => {
   it("sans décision, aucun départ incomplet", async () => {
     const paul = await staffWithRole(ctx, "livreur-paul");
     const { roundId, orders } = await myRoundOfTwo(paul.id);
-    await addLine(orders[0], "VIE-001", "Croissant", 6);
+    await addLine(orders[0], "VIE-001-1", "Croissant", 6);
 
     expect((await view(paul.agent, roundId)).stops[0]?.shortfall).toBeNull();
   });

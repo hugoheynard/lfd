@@ -33,8 +33,8 @@ import { openQualityControl } from "./quality-control-settings.js";
 const MEMBER = "auth0|member-day-version";
 const DAY = serviceDay();
 const OTHER_DAY = serviceDay(8);
-const CROISSANT = "VIE-001";
-const BAGUETTE = "PAI-001";
+const CROISSANT = "VIE-001-1";
+const BAGUETTE = "PAI-001-1";
 
 const SITE = {
   label: "Boutique",

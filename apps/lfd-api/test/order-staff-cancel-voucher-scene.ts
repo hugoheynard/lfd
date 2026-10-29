@@ -94,7 +94,7 @@ export function place(voucherId: string, quantity: number): request.Test {
       pickupAddressId: pickupId,
       requestedDeliveryDate: DAY,
       note: "",
-      lines: [{ sku: "VIE-001", quantity }],
+      lines: [{ sku: "VIE-001-1", quantity }],
       voucherId,
     });
 }

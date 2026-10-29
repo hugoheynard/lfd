@@ -114,7 +114,7 @@ async function seedOrder(buyer: Client, seed: OrderSeed): Promise<PlacedTestOrde
     ...(day > TODAY ? {} : { placedAt: new Date(`${addDays(day, -LEAD_DAYS)}T08:00:00.000Z`) }),
     forDay: day,
     fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-    lines: [{ sku: "VIE-001", quantity: seed.quantity }],
+    lines: [{ sku: "VIE-001-1", quantity: seed.quantity }],
   });
   if (seed.settlement === "card") {
     await payByCard(ctx, order);

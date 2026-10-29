@@ -134,7 +134,7 @@ function pickupOrder(companyId: string | null): Record<string, unknown> {
     // Pas de commande sans créneau (2026-10-14).
     requestedWindow: { start: "07:00", end: "08:00" },
     note: "Livrer avant 8h",
-    lines: [{ sku: "VIE-001", quantity: 3 }],
+    lines: [{ sku: "VIE-001-1", quantity: 3 }],
   };
 }
 
@@ -273,7 +273,7 @@ describe("checkout → Order", () => {
     // Croissant = 200c au catalogue serveur × 3.
     expect(stored?.lines).toEqual([
       {
-        sku: "VIE-001",
+        sku: "VIE-001-1",
         productName: "Croissant",
         unitPriceMillicents: 200_000,
         vatRate: 5.5,
@@ -327,7 +327,7 @@ describe("checkout → Order", () => {
 
     await ctx.asSub(MEMBER).post(`/orders`).send(pickupOrder(companyId)).expect(201);
 
-    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001-1" } });
     expect(line?.allergens).toEqual({
       codes: ["AW"],
       labels: [{ category: "gluten", label: "gluten" }],
@@ -354,7 +354,7 @@ describe("checkout → Order", () => {
       data: { allergens: ["AW", "AN"] },
     });
 
-    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001-1" } });
     expect(line?.allergens).toMatchObject({ codes: ["AW"] });
   });
 
@@ -386,7 +386,7 @@ describe("checkout → Order", () => {
         requestedWindow: { start: null, end: "10:00" },
         deliveryAddress: COURIER_ADDR,
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
 
@@ -424,7 +424,7 @@ describe("checkout → Order", () => {
         requestedWindow: { start: null, end: "10:00" },
         deliveryAddress: { ...COURIER_ADDR, codePostal: "75002", ville: "Paris" },
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(409);
 
@@ -450,7 +450,7 @@ describe("retrait", () => {
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 2 }],
+        lines: [{ sku: "VIE-001-1", quantity: 2 }],
       })
       .expect(201);
 
@@ -480,7 +480,7 @@ describe("retrait", () => {
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
       })
       .expect(409);
     expect(await ctx.prisma.order.count({ where: { companyId } })).toBe(0);
@@ -542,8 +542,8 @@ describe("un SKU n'apparaît qu'une fois par commande", () => {
       .send({
         ...pickupOrder(companyId),
         lines: [
-          { sku: "VIE-001", quantity: 2 },
-          { sku: "VIE-001", quantity: 5 },
+          { sku: "VIE-001-1", quantity: 2 },
+          { sku: "VIE-001-1", quantity: 5 },
         ],
       })
       .expect(201);
@@ -639,7 +639,7 @@ describe("POST /orders/quote", () => {
     await ctx
       .asSub(STRANGER)
       .post("/orders/quote")
-      .send({ companyId, lines: [{ sku: "VIE-001", quantity: 6 }] })
+      .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 6 }] })
       .expect(404);
   });
 
@@ -653,11 +653,11 @@ describe("POST /orders/quote", () => {
       await ctx
         .asSub(MEMBER)
         .post("/orders/quote")
-        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 6 }] })
+        .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 6 }] })
         .expect(200),
     );
 
-    expect(body.lines[0]?.sku).toBe("VIE-001");
+    expect(body.lines[0]?.sku).toBe("VIE-001-1");
     // Le sous-total est un MONTANT, le prix unitaire un prix : la relation
     // entre les deux passe par l'arrondi unique, pas par une multiplication
     // nue. L'assertion épingle la frontière d'unité en même temps que le total.
@@ -671,7 +671,7 @@ describe("POST /orders/quote", () => {
       await ctx
         .asSub(WALKIN)
         .post("/orders/quote")
-        .send({ companyId: null, lines: [{ sku: "VIE-001", quantity: 2 }] })
+        .send({ companyId: null, lines: [{ sku: "VIE-001-1", quantity: 2 }] })
         .expect(200),
     );
 
@@ -727,7 +727,7 @@ describe("le bon de commande", () => {
     // que le réseau ne doit pas transporter est la **grille**. Un prix d'entrée
     // et un plancher disent comment un prix a été fabriqué ; les masquer au
     // rendu les y aurait laissés, et trois commandes empilées la reconstituent.
-    expect(JSON.stringify(sheet)).toContain("VIE-001");
+    expect(JSON.stringify(sheet)).toContain("VIE-001-1");
     expect(JSON.stringify(sheet)).not.toContain("entryPriceMillicents");
     expect(JSON.stringify(sheet)).not.toContain("floored");
   });

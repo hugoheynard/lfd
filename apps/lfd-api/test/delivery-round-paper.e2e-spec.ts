@@ -70,7 +70,7 @@ async function planNote(order: { readonly id: string; readonly reference: string
     terms: ORDER_TERMS,
     lines: [
       {
-        sku: "VIE-001",
+        sku: "VIE-001-1",
         productName: "Croissant",
         unitPriceMillicents: 95_000,
         vatRate: 5.5,

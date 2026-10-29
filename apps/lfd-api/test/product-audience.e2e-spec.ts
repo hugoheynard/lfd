@@ -61,23 +61,37 @@ describe("les compteurs d'audience", () => {
   it("agrège un lot de gestes par article, geste, emplacement et source, sur le jour métier", async () => {
     await send({
       events: [
-        { sku: "VIE-001", event: "product_viewed" },
-        { sku: "VIE-001", event: "product_viewed" },
-        { sku: "VIE-001", event: "added_to_cart" },
-        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "data" },
-        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "staff" },
-        { sku: "VIE-002", event: "suggestion_shown", placement: "cart", source: "staff" },
+        { sku: "VIE-001-1", event: "product_viewed" },
+        { sku: "VIE-001-1", event: "product_viewed" },
+        { sku: "VIE-001-1", event: "added_to_cart" },
+        { sku: "VIE-002-1", event: "suggestion_shown", placement: "cart", source: "data" },
+        { sku: "VIE-002-1", event: "suggestion_shown", placement: "cart", source: "staff" },
+        { sku: "VIE-002-1", event: "suggestion_shown", placement: "cart", source: "staff" },
       ],
     }).expect(204);
-    await send({ events: [{ sku: "VIE-001", event: "product_viewed" }] }).expect(204);
+    await send({ events: [{ sku: "VIE-001-1", event: "product_viewed" }] }).expect(204);
 
     const day = today();
     expect(await counters()).toEqual([
-      { day, sku: "VIE-001", event: "added_to_cart", placement: "none", source: "none", count: 1 },
-      { day, sku: "VIE-001", event: "product_viewed", placement: "none", source: "none", count: 3 },
       {
         day,
-        sku: "VIE-002",
+        sku: "VIE-001-1",
+        event: "added_to_cart",
+        placement: "none",
+        source: "none",
+        count: 1,
+      },
+      {
+        day,
+        sku: "VIE-001-1",
+        event: "product_viewed",
+        placement: "none",
+        source: "none",
+        count: 3,
+      },
+      {
+        day,
+        sku: "VIE-002-1",
         event: "suggestion_shown",
         placement: "cart",
         source: "data",
@@ -85,7 +99,7 @@ describe("les compteurs d'audience", () => {
       },
       {
         day,
-        sku: "VIE-002",
+        sku: "VIE-002-1",
         event: "suggestion_shown",
         placement: "cart",
         source: "staff",
@@ -98,7 +112,7 @@ describe("les compteurs d'audience", () => {
     await request(ctx.app.getHttpServer())
       .post("/shop/audience")
       .set("Content-Type", "text/plain")
-      .send(JSON.stringify({ events: [{ sku: "VIE-001", event: "product_viewed" }] }))
+      .send(JSON.stringify({ events: [{ sku: "VIE-001-1", event: "product_viewed" }] }))
       .expect(204);
 
     expect((await counters()).map((row) => row.count)).toEqual([1]);
@@ -107,7 +121,7 @@ describe("les compteurs d'audience", () => {
   it("refuse un lot qui porte un SKU inconnu du catalogue, sans rien compter", async () => {
     const response = await send({
       events: [
-        { sku: "VIE-001", event: "product_viewed" },
+        { sku: "VIE-001-1", event: "product_viewed" },
         { sku: "GHOST-999", event: "product_viewed" },
       ],
     });
@@ -117,7 +131,10 @@ describe("les compteurs d'audience", () => {
   });
 
   it("refuse un lot trop gros, sans rien compter", async () => {
-    const events = Array.from({ length: 51 }, () => ({ sku: "VIE-001", event: "product_viewed" }));
+    const events = Array.from({ length: 51 }, () => ({
+      sku: "VIE-001-1",
+      event: "product_viewed",
+    }));
 
     expect((await send({ events })).status).toBe(400);
     expect(await counters()).toEqual([]);
@@ -125,7 +142,7 @@ describe("les compteurs d'audience", () => {
 
   it("refuse une suggestion sans source, sans rien compter", async () => {
     const response = await send({
-      events: [{ sku: "VIE-002", event: "suggestion_shown", placement: "cart" }],
+      events: [{ sku: "VIE-002-1", event: "suggestion_shown", placement: "cart" }],
     });
 
     expect(response.status).toBe(400);
@@ -133,7 +150,9 @@ describe("les compteurs d'audience", () => {
   });
 
   it("refuse un geste hors de l'énumération", async () => {
-    expect((await send({ events: [{ sku: "VIE-001", event: "order_placed" }] })).status).toBe(400);
+    expect((await send({ events: [{ sku: "VIE-001-1", event: "order_placed" }] })).status).toBe(
+      400,
+    );
   });
 
   it("ne perd aucun incrément quand des lots arrivent en même temps", async () => {
@@ -142,8 +161,8 @@ describe("les compteurs d'audience", () => {
       Array.from({ length: parallel }, () =>
         send({
           events: [
-            { sku: "VIE-001", event: "product_viewed" },
-            { sku: "VIE-001", event: "product_viewed" },
+            { sku: "VIE-001-1", event: "product_viewed" },
+            { sku: "VIE-001-1", event: "product_viewed" },
           ],
         }).then((response) => response.status),
       ),

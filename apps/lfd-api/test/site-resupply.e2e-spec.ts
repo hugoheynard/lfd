@@ -167,7 +167,7 @@ describe("commander un réassort", () => {
 
     await agent
       .post(`/admin/site-resupplies/sites/${siteId}`)
-      .send({ target: "asap", lines: [{ sku: "VIE-001", quantity: 1 }] })
+      .send({ target: "asap", lines: [{ sku: "VIE-001-1", quantity: 1 }] })
       .expect(404);
   });
 });
@@ -242,7 +242,7 @@ describe("le fournil envoie un réassort (R1d)", () => {
 
   it("son droit à lui : ni le comptoir ni la fournée n'envoient ; la lecture voit points et articles", async () => {
     const siteId = await seedSite("Val Village");
-    const body = { target: "asap", lines: [{ sku: "VIE-001", quantity: 1 }] };
+    const body = { target: "asap", lines: [{ sku: "VIE-001-1", quantity: 1 }] };
     const route = `/admin/bakehouse-resupplies/sites/${siteId}`;
 
     await (await counter()).post(route).send(body).expect(403);
@@ -344,7 +344,7 @@ describe("les droits", () => {
     await reader.get(`/admin/site-resupplies/sites/${siteId}`).expect(200);
     await reader
       .post(`/admin/site-resupplies/sites/${siteId}/drafts/asap/lines`)
-      .send({ sku: "VIE-001", quantity: 1 })
+      .send({ sku: "VIE-001-1", quantity: 1 })
       .expect(403);
 
     const other = await holderOf("commandes-seules", [{ resource: "b2b_orders", action: "read" }]);

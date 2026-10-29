@@ -95,7 +95,7 @@ function content(pickupId: string, over: Record<string, unknown> = {}): Record<s
     pickupAddressId: pickupId,
     requestedWindow: { start: "07:00", end: "08:00" },
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 10 }],
+    lines: [{ sku: "VIE-001-1", quantity: 10 }],
     ...over,
   };
 }
@@ -239,14 +239,14 @@ describe("GET /admin/orders/:id/revisions — les versions précédentes", () =>
       .post(`/orders/${orderId}/revisions`)
       .send({
         expectedRevision: 0,
-        ...content(pickupId, { lines: [{ sku: "VIE-001", quantity: 20 }] }),
+        ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 20 }] }),
       })
       .expect(200);
     await staff()
       .post(`/admin/orders/${orderId}/revisions`)
       .send({
         expectedRevision: 1,
-        ...content(pickupId, { lines: [{ sku: "VIE-001", quantity: 20 }], note: "Équipe" }),
+        ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 20 }], note: "Équipe" }),
       })
       .expect(200);
 
@@ -270,7 +270,7 @@ describe("GET /admin/orders/:id/revisions — les versions précédentes", () =>
       pickupAddress: { label: "Labo", ligne1: "1 rue du Four" },
       window: { start: "07:00", end: "08:00" },
       totalCents: before.totalCents,
-      lines: [{ sku: "VIE-001", quantity: 10, unitPriceMillicents: 200_000 }],
+      lines: [{ sku: "VIE-001-1", quantity: 10, unitPriceMillicents: 200_000 }],
     });
   });
 

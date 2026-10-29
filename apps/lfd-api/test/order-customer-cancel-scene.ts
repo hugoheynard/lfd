@@ -151,7 +151,7 @@ export async function seedCustomerOrder(seed: CustomerOrderSeed): Promise<Seeded
     // minuit du jour, la borne la plus tôt — un `too_late` à J+1 ne dépend pas
     // de l'heure à laquelle la suite tourne.
     window: { start: null, end: "12:00" },
-    lines: [{ sku: "VIE-001", quantity: 1 }],
+    lines: [{ sku: "VIE-001-1", quantity: 1 }],
   });
   await settle(order, seed.payment);
   await reachStatus(order, seed);

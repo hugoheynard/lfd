@@ -102,9 +102,9 @@ async function seedSites(): Promise<{ village: string; fournil: string; counter:
 }
 
 /** Les SKU du catalogue de test, un par commande : la vue se lit par ligne. */
-const VIL = "VIE-001";
-const CPT = "VIE-002";
-const OLD = "VIE-003";
+const VIL = "VIE-001-1";
+const CPT = "VIE-002-1";
+const OLD = "VIE-003-1";
 
 /**
  * Un retrait pro réglé, pour le jour, avec un créneau 08:00–09:00 et une

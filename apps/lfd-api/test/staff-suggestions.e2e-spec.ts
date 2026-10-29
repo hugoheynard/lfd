@@ -70,8 +70,8 @@ beforeEach(async () => {
 /** « Croissant au panier → baguette », de aujourd'hui à dans une semaine — relatif à maintenant. */
 function croissantRule(over: Partial<StaffSuggestionRulePayload> = {}): StaffSuggestionRulePayload {
   return {
-    trigger: { kind: "product_in_cart", ref: "VIE-001" },
-    suggestedSkus: ["PAI-001"],
+    trigger: { kind: "product_in_cart", ref: "VIE-001-1" },
+    suggestedSkus: ["PAI-001-1"],
     placement: "cart",
     audience: "both",
     startsOn: serviceDay(0),
@@ -180,8 +180,8 @@ describe("les suggestions décidées", () => {
       expect.objectContaining({
         id,
         audienceKey: id.toLowerCase(),
-        trigger: { kind: "product_in_cart", ref: "VIE-001" },
-        suggestedSkus: ["PAI-001"],
+        trigger: { kind: "product_in_cart", ref: "VIE-001-1" },
+        suggestedSkus: ["PAI-001-1"],
         startsOn: serviceDay(0),
         endsOn: serviceDay(7),
         phrase: { fr: "Avec un croissant, la baguette", it: "Con un cornetto" },
@@ -206,7 +206,7 @@ describe("les suggestions décidées", () => {
       "suggestions.catalogue_unknown",
     );
     await refused(
-      croissantRule({ suggestedSkus: ["VIE-001"] }),
+      croissantRule({ suggestedSkus: ["VIE-001-1"] }),
       "suggestions.suggested_is_trigger",
     );
     await refused(
@@ -214,7 +214,7 @@ describe("les suggestions décidées", () => {
       "suggestions.period_over",
     );
     await refused(
-      croissantRule({ trigger: { kind: "product_viewed", ref: "VIE-001" } }),
+      croissantRule({ trigger: { kind: "product_viewed", ref: "VIE-001-1" } }),
       "suggestions.placement_mismatch",
     );
     expect(await list()).toEqual([]);
@@ -271,14 +271,14 @@ describe("les suggestions décidées", () => {
 
   it("estime les commandées au plafond des ajouts, et le CA au prix HT moyen du jour (RS6)", async () => {
     const id = await create(croissantRule());
-    await beacon(id, "PAI-001", "suggestion_shown", 4);
-    await beacon(id, "PAI-001", "suggestion_clicked", 2);
-    await beacon(id, "PAI-001", "suggestion_added", 2);
+    await beacon(id, "PAI-001-1", "suggestion_shown", 4);
+    await beacon(id, "PAI-001-1", "suggestion_clicked", 2);
+    await beacon(id, "PAI-001-1", "suggestion_added", 2);
     // 3 baguettes au prix HT du catalogue. Ni l'annulée, ni la saisie du staff ne comptent.
-    const threeBaguettesHt = await seedSale("PAI-001", 3);
-    await seedSale("PAI-001", 10, "cancelled");
-    await seedSale("PAI-001", 10, "byStaff");
-    await seedSale("VIE-001", 5);
+    const threeBaguettesHt = await seedSale("PAI-001-1", 3);
+    await seedSale("PAI-001-1", 10, "cancelled");
+    await seedSale("PAI-001-1", 10, "byStaff");
+    await seedSale("VIE-001-1", 5);
 
     const response = await admin().get(`${SUGGESTIONS}/results?days=7`).expect(200);
     const view = jsonBody<StaffSuggestionResultsView>(response);
@@ -305,11 +305,11 @@ describe("les suggestions décidées", () => {
   it("partage une pièce entre une règle et « souvent pris avec » le même jour : 1 pièce, pas 2", async () => {
     const id = await create(croissantRule());
     const boughtWith = { source: "data", placement: "bought_with" } as const;
-    await beacon(id, "PAI-001", "suggestion_shown", 1);
-    await beacon(id, "PAI-001", "suggestion_added", 1);
-    await beacon(id, "PAI-001", "suggestion_shown", 2, boughtWith);
-    await beacon(id, "PAI-001", "suggestion_added", 1, boughtWith);
-    const oneBaguetteHt = await seedSale("PAI-001", 1);
+    await beacon(id, "PAI-001-1", "suggestion_shown", 1);
+    await beacon(id, "PAI-001-1", "suggestion_added", 1);
+    await beacon(id, "PAI-001-1", "suggestion_shown", 2, boughtWith);
+    await beacon(id, "PAI-001-1", "suggestion_added", 1, boughtWith);
+    const oneBaguetteHt = await seedSale("PAI-001-1", 1);
 
     const view = jsonBody<StaffSuggestionResultsView>(
       await admin().get(`${SUGGESTIONS}/results?days=7`).expect(200),
@@ -359,7 +359,7 @@ describe("les conditions d'une règle (RS8)", () => {
 
   it("s'écrivent, se relisent telles quelles, et une règle d'avant n'en a aucune", async () => {
     const posed = await create(croissantRule({ conditions }));
-    const bare = await create(croissantRule({ suggestedSkus: ["PAT-001"] }));
+    const bare = await create(croissantRule({ suggestedSkus: ["PAT-001-1"] }));
 
     const rules = await list();
 

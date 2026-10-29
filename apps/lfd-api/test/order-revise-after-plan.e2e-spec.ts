@@ -125,7 +125,7 @@ describe("les refus nommés", () => {
     const response = await reviseQuantity(ctx, order.id, 3, {
       lines: [
         { sku: CROISSANT, quantity: 3 },
-        { sku: "VIE-002", quantity: 1 },
+        { sku: "VIE-002-1", quantity: 1 },
       ],
     });
 

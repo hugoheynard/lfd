@@ -48,8 +48,8 @@ beforeEach(async () => {
 /** « Croissant au panier → baguette », de aujourd'hui à dans une semaine. */
 function croissantRule(over: Partial<StaffSuggestionRulePayload> = {}): StaffSuggestionRulePayload {
   return {
-    trigger: { kind: "product_in_cart", ref: "VIE-001" },
-    suggestedSkus: ["PAI-001"],
+    trigger: { kind: "product_in_cart", ref: "VIE-001-1" },
+    suggestedSkus: ["PAI-001-1"],
     placement: "cart",
     audience: "both",
     startsOn: serviceDay(0),
@@ -82,12 +82,12 @@ describe("les suggestions du panier", () => {
       await request(ctx.app.getHttpServer()).get("/shop/catalogue").expect(200),
     );
 
-    const shown = await suggestions(["VIE-001"]);
+    const shown = await suggestions(["VIE-001-1"]);
 
     expect(shown).toEqual([
       {
-        sku: "PAI-001",
-        item: shelf.items.find((item) => item.sku === "PAI-001"),
+        sku: "PAI-001-1",
+        item: shelf.items.find((item) => item.sku === "PAI-001-1"),
         reason: {
           source: "staff",
           ruleId: id.toLowerCase(),
@@ -100,8 +100,8 @@ describe("les suggestions du panier", () => {
   it("rien pour un panier qui ne déclenche pas, ni si l'article suggéré y est déjà", async () => {
     await create(croissantRule());
 
-    expect(await suggestions(["CHO-001"])).toEqual([]);
-    expect(await suggestions(["VIE-001", "PAI-001"])).toEqual([]);
+    expect(await suggestions(["CHO-001-1"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1", "PAI-001-1"])).toEqual([]);
   });
 
   it("une famille au panier déclenche par le catalogue servi", async () => {
@@ -109,21 +109,21 @@ describe("les suggestions du panier", () => {
       croissantRule({ trigger: { kind: "category_in_cart", ref: E2E_FAMILIES.VIE.id } }),
     );
 
-    expect((await suggestions(["VIE-001"])).map(({ sku }) => sku)).toEqual(["PAI-001"]);
-    expect(await suggestions(["CHO-001"])).toEqual([]);
+    expect((await suggestions(["VIE-001-1"])).map(({ sku }) => sku)).toEqual(["PAI-001-1"]);
+    expect(await suggestions(["CHO-001-1"])).toEqual([]);
   });
 
   it("rien hors période, ni pour la mauvaise audience", async () => {
     await create(croissantRule({ startsOn: serviceDay(1), endsOn: serviceDay(7) }));
-    await create(croissantRule({ audience: "pro", suggestedSkus: ["PAT-001"] }));
+    await create(croissantRule({ audience: "pro", suggestedSkus: ["PAT-001-1"] }));
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("refuse un panier mal formé, sans rien lire", async () => {
     await request(ctx.app.getHttpServer())
       .post("/shop/suggestions/cart")
-      .send({ skus: "VIE-001", target: null })
+      .send({ skus: "VIE-001-1", target: null })
       .expect(400);
   });
 });
@@ -139,7 +139,7 @@ async function suggestionsFor(
   cartTotalCents?: number,
 ): Promise<readonly string[]> {
   const payload: CartSuggestionsPayload = {
-    skus: ["VIE-001"],
+    skus: ["VIE-001-1"],
     target,
     ...(cartTotalCents === undefined ? {} : { cartTotalCents }),
   };
@@ -180,7 +180,7 @@ describe("les suggestions du panier — les conditions (RS8)", () => {
   it("une règle hors de sa plage horaire ne s'affiche pas", async () => {
     await create(withConditions({ hours: hoursAwayFromNow() }));
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("le seuil : atteint par le total lu, jamais sans total", async () => {
@@ -188,13 +188,13 @@ describe("les suggestions du panier — les conditions (RS8)", () => {
 
     expect(await suggestionsFor(null)).toEqual([]);
     expect(await suggestionsFor(null, 1_999)).toEqual([]);
-    expect(await suggestionsFor(null, 2_000)).toEqual(["PAI-001"]);
+    expect(await suggestionsFor(null, 2_000)).toEqual(["PAI-001-1"]);
   });
 
   it("sans cette famille : un croissant au panier écarte la règle « sans viennoiserie »", async () => {
     await create(withConditions({ cartWithoutFamilyId: E2E_FAMILIES.VIE.id }));
 
-    expect(await suggestions(["VIE-001"])).toEqual([]);
+    expect(await suggestions(["VIE-001-1"])).toEqual([]);
   });
 
   it("le point de retrait : ni avant le choix, ni en livraison, ni à un autre point", async () => {
@@ -206,6 +206,6 @@ describe("les suggestions du panier — les conditions (RS8)", () => {
     expect(await suggestionsFor(null)).toEqual([]);
     expect(await suggestionsFor({ date: day, pickupAddressId: null })).toEqual([]);
     expect(await suggestionsFor({ date: day, pickupAddressId: gare })).toEqual([]);
-    expect(await suggestionsFor({ date: day, pickupAddressId: centre })).toEqual(["PAI-001"]);
+    expect(await suggestionsFor({ date: day, pickupAddressId: centre })).toEqual(["PAI-001-1"]);
   });
 });

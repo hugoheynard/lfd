@@ -90,7 +90,7 @@ async function placeOrder(): Promise<PlacedOrderResponse> {
         // Pas de commande sans créneau (2026-10-14).
         requestedWindow: { start: "07:00", end: "08:00" },
         note: "",
-        lines: [{ sku: "VIE-001", quantity: 3 }],
+        lines: [{ sku: "VIE-001-1", quantity: 3 }],
       })
       .expect(201),
   );

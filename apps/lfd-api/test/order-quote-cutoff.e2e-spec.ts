@@ -66,7 +66,7 @@ async function quote(requestedDeliveryDate?: string): Promise<OrderQuoteView> {
     .post("/admin/orders/quote")
     .send({
       companyId: null,
-      lines: [{ sku: "VIE-001", quantity: 3 }],
+      lines: [{ sku: "VIE-001-1", quantity: 3 }],
       ...(requestedDeliveryDate === undefined ? {} : { requestedDeliveryDate }),
     })
     .expect(200);
@@ -106,7 +106,7 @@ describe("le devis signale l'heure limite du jour visé, sans refuser", () => {
       .post("/admin/orders/quote")
       .send({
         companyId: null,
-        lines: [{ sku: "VIE-001", quantity: 1 }],
+        lines: [{ sku: "VIE-001-1", quantity: 1 }],
         requestedDeliveryDate: "demain",
       })
       .expect(400);

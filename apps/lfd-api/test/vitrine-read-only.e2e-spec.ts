@@ -111,7 +111,7 @@ describe("un abonné vitrine en lecture seule", () => {
         response.on("end", () => done(null, text));
       })
       .expect(200);
-    expect(String(xml.body)).toContain("<sku>VIE-001</sku>");
+    expect(String(xml.body)).toContain("<sku>VIE-001-1</sku>");
 
     await staff()
       .put(`/admin/vitrine/subscribers/${id}/active`)

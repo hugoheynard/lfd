@@ -32,8 +32,8 @@ import { settleCardPayments } from "./card-payments.js";
 
 export const MEMBER = "auth0|member";
 export const STAFF = "staff-e2e";
-/** Le croissant du catalogue de test — `VIE-001`, « Croissant ». */
-export const CROISSANT = "VIE-001";
+/** Le croissant du catalogue de test — `VIE-001-1`, « Croissant ». */
+export const CROISSANT = "VIE-001-1";
 
 const SITE = {
   label: "Boutique",

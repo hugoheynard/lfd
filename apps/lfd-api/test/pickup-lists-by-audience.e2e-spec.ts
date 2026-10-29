@@ -119,7 +119,7 @@ async function listed(agent: ReturnType<E2eContext["asSub"]>, url: string) {
 
 /** Un devis en retrait SANS point choisi — le seul chemin où le serveur présélectionne. */
 const UNCHOSEN = {
-  lines: [{ sku: "VIE-001", quantity: 10 }],
+  lines: [{ sku: "VIE-001-1", quantity: 10 }],
   fulfillment: { method: "pickup", pickupAddressId: null },
 };
 

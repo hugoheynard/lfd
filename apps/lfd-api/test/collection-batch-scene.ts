@@ -175,14 +175,18 @@ export interface BonSpec {
 }
 
 /** Cinquante croissants au tarif du catalogue : un bon facturable, sans écart d'arrondi. */
-export const PLAIN_BON: BonSpec = { sku: "VIE-001", quantity: 50 };
+export const PLAIN_BON: BonSpec = { sku: "VIE-001-1", quantity: 50 };
 /**
  * Une baguette négociée à 10 500 millicentimes HT (10,5 c) : le bon arrondit à 11 c et porte 1 c de
  * TVA. La facture de deux bons reprend 22 c de HT (F6) et taxe 22 c une fois :
  * 1 c — 23 c contre 24. Le demi-centime est un vrai tarif, pas une ligne
  * inventée : la passation le résout depuis la mercuriale.
  */
-export const HALF_CENT_BON: BonSpec = { sku: "PAI-001", quantity: 1, mercurialeMillicents: 10_500 };
+export const HALF_CENT_BON: BonSpec = {
+  sku: "PAI-001-1",
+  quantity: 1,
+  mercurialeMillicents: 10_500,
+};
 
 /** Trois jours avant le jour de service : l'heure limite est loin. */
 const LEAD_DAYS = 3;

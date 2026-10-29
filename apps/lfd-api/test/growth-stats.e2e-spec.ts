@@ -141,7 +141,7 @@ describe("l'état du portefeuille", () => {
       placedAt: new Date(Date.now() - input.daysAgo * DAY_MS),
       settlement: "card",
       fulfillment: { method: "pickup", pickupSiteId: await pickupSite(ctx.prisma) },
-      lines: [{ sku: "VIE-001", quantity: input.units }],
+      lines: [{ sku: "VIE-001-1", quantity: input.units }],
     });
     if (input.paymentStatus === "failed") {
       await ctx.app

@@ -33,7 +33,8 @@ const BAC_M = {
   divisible: true,
 };
 
-const CROISSANT = CATALOG_SEED[0]?.sku ?? "";
+// La référence de VENTE du défaut, telle que `seedE2eCatalog` la dérive (bascule du 2026-10-29).
+const CROISSANT = `${CATALOG_SEED[0]?.sku ?? ""}-1`;
 
 let ctx: E2eContext;
 

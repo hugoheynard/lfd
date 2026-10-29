@@ -39,7 +39,7 @@ const SERVICE_DAY = serviceDay();
 const PERSO = "auth0|perso-ouverture";
 const ACTIVE = "auth0|pro-ouverture";
 const CLOSED = "orders.closed_for_audience";
-const LINES = [{ sku: "VIE-001", quantity: 3 }];
+const LINES = [{ sku: "VIE-001-1", quantity: 3 }];
 const NO_FIRST_DAY = { firstServiceDayB2b: null, firstServiceDayB2c: null };
 const BEFORE_FIRST_DAY = "orders.service_day_before_first_orderable_day";
 

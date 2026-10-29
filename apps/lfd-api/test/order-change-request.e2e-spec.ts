@@ -126,7 +126,7 @@ function content(pickupId: string, over: Record<string, unknown> = {}): Record<s
     pickupAddressId: pickupId,
     requestedWindow: { start: "07:00", end: "08:00" },
     note: "",
-    lines: [{ sku: "VIE-001", quantity: 10 }],
+    lines: [{ sku: "VIE-001-1", quantity: 10 }],
     ...over,
   };
 }
@@ -183,7 +183,7 @@ function ask(sub: string, scene: Scene, quantity = 12, revision = 0) {
     .send({
       change: {
         expectedRevision: revision,
-        ...content(scene.pickupId, { lines: [{ sku: "VIE-001", quantity }] }),
+        ...content(scene.pickupId, { lines: [{ sku: "VIE-001-1", quantity }] }),
       },
       message: "Deux de plus, s'il vous plaît.",
     });
@@ -224,10 +224,10 @@ describe("POST /me/orders/:id/change-request — le client demande", () => {
       kind: "order_change",
       orderId: s.orderId,
       baseRevision: 0,
-      change: { lines: [{ sku: "VIE-001", quantity: 12 }] },
+      change: { lines: [{ sku: "VIE-001-1", quantity: 12 }] },
       decision: null,
     });
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 10 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 10 }]);
 
     const status = jsonBody<OrderChangeRequestStatusResponse>(
       await buyer().get(`/me/orders/${s.orderId}/change-request`).expect(200),
@@ -264,7 +264,7 @@ describe("POST /orders/:id/revisions/change-request-quote — le devis indicatif
     ctx
       .asSub(sub)
       .post(`/orders/${s.orderId}/revisions/change-request-quote`)
-      .send(content(s.pickupId, { lines: [{ sku: "VIE-001", quantity }] }));
+      .send(content(s.pickupId, { lines: [{ sku: "VIE-001-1", quantity }] }));
 
   it("après l'heure limite : le nouveau total et l'écart, sans rien écrire", async () => {
     const s = await scene();
@@ -273,8 +273,8 @@ describe("POST /orders/:id/revisions/change-request-quote — le devis indicatif
     expect(quote).toMatchObject({ revision: 0, changes: ["lines"] });
     expect(quote.differenceCents).toBe(quote.totalCents - quote.previousTotalCents);
     expect(quote.differenceCents).toBeGreaterThan(0);
-    expect(quote.lines[0]).toMatchObject({ sku: "VIE-001", quantity: 12, priceFrozen: true });
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 10 }]);
+    expect(quote.lines[0]).toMatchObject({ sku: "VIE-001-1", quantity: 12, priceFrozen: true });
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 10 }]);
     expect(await ctx.prisma.customerRequest.count()).toBe(0);
   });
 
@@ -312,7 +312,7 @@ describe("la boîte des demandes — l'équipe répond", () => {
       .expect(200);
     expect(jsonBody<{ revision: number }>(applied).revision).toBe(1);
 
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 12 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 12 }]);
     const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: s.orderId } });
     expect(order.revision).toBe(1);
     expect(await ctx.prisma.orderRevisionEntry.count({ where: { orderId: s.orderId } })).toBe(1);
@@ -352,7 +352,7 @@ describe("la boîte des demandes — l'équipe répond", () => {
       .send({ reason: "La fournée est déjà lancée." })
       .expect(204);
 
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 10 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 10 }]);
     const status = jsonBody<OrderChangeRequestStatusResponse>(
       await buyer().get(`/me/orders/${s.orderId}/change-request`).expect(200),
     );
@@ -387,7 +387,7 @@ describe("la boîte des demandes — l'équipe répond", () => {
     await staff().get(`/admin/customer-requests/${id}/order-change/quote`).expect(200);
     await staff().post(`/admin/customer-requests/${id}/order-change/apply`).expect(200);
 
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 12 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 12 }]);
     const row = await ctx.prisma.customerRequest.findUniqueOrThrow({ where: { id } });
     expect(row.handledAt).not.toBeNull();
   });
@@ -409,6 +409,6 @@ describe("la boîte des demandes — l'équipe répond", () => {
       .post(`/admin/customer-requests/${id}/order-change/refuse`)
       .send({ reason: "Non." })
       .expect(403);
-    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001", quantity: 10 }]);
+    expect(await quantities(s.orderId)).toEqual([{ sku: "VIE-001-1", quantity: 10 }]);
   });
 });

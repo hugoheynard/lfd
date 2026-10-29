@@ -22,9 +22,9 @@ const stubAdminVerifier = {
 };
 
 /** Vendu dans le catalogue semé. */
-const SKU = "VIE-001";
+const SKU = "VIE-001-1";
 /** Une faute de frappe plausible : un zéro devenu « O ». */
-const TYPO = "VIE-0O1";
+const TYPO = "VIE-0O1-1";
 /**
  * Fenêtres absolues : l'exception écrite du dépôt — aucun cas ne les compare à
  * l'horloge, le refus tombe avant toute lecture de fenêtre.
@@ -59,7 +59,7 @@ async function aWithdrawnSku(): Promise<string> {
   await relayAll(ctx);
   await staff().put(`/pim/catalogue/products/${fiche.id}/unpublish`).send({}).expect(200);
   await relayAll(ctx);
-  return fiche.sku;
+  return fiche.variantSku;
 }
 
 /** Une fiche vendue aux seuls particuliers (Hugo, 2026-10-29). */

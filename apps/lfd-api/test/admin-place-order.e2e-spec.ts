@@ -147,7 +147,7 @@ function payload(over: Record<string, unknown> = {}): Record<string, unknown> {
     // les heures d'un point sont une contrainte d'ouverture partagée, pas la
     // préférence d'un client.
     requestedWindow: { start: "07:00", end: "08:00" },
-    lines: [{ sku: "VIE-001", quantity: 12 }],
+    lines: [{ sku: "VIE-001-1", quantity: 12 }],
     ...over,
   };
 }
@@ -433,7 +433,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
     }>(
       await staff()
         .post("/admin/orders/quote")
-        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 12 }] })
         .expect(200),
     );
 
@@ -468,7 +468,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
     }>(
       await staff()
         .post("/admin/orders/quote")
-        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 12 }] })
         .expect(200),
     );
 
@@ -502,7 +502,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
     const quote = jsonBody<{ lines: { unitPriceMillicents: number }[] }>(
       await staff()
         .post("/admin/orders/quote")
-        .send({ companyId, lines: [{ sku: "VIE-001", quantity: 12 }] })
+        .send({ companyId, lines: [{ sku: "VIE-001-1", quantity: 12 }] })
         .expect(200),
     );
 
@@ -511,7 +511,7 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
       .send(payload({ companyId, buyerUserId: buyerId, settlement: "account" }))
       .expect(201);
 
-    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001" } });
+    const line = await ctx.prisma.orderLine.findFirst({ where: { sku: "VIE-001-1" } });
 
     expect(quote.lines[0]?.unitPriceMillicents).toBe(line?.unitPriceMillicents);
   });

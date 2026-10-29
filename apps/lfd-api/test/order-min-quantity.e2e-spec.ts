@@ -82,7 +82,7 @@ function content(quantity: number): Record<string, unknown> {
     pickupAddressId: pickupId,
     requestedDeliveryDate: SERVICE_DAY,
     note: "",
-    lines: [{ sku: "VIE-001", quantity }],
+    lines: [{ sku: "VIE-001-1", quantity }],
   };
 }
 
@@ -137,7 +137,7 @@ describe("le devis de la boutique refuse avant la passation", () => {
   const quote = (quantity: number) =>
     request(ctx.app.getHttpServer())
       .post("/shop/quote")
-      .send({ lines: [{ sku: "VIE-001", quantity }], fulfillment: null });
+      .send({ lines: [{ sku: "VIE-001-1", quantity }], fulfillment: null });
 
   it("sous le minimum public : 409", async () => {
     await expectRefused(await quote(PUBLIC_MINIMUM - 1));
@@ -156,7 +156,7 @@ describe("la commande saisie par l'équipe (nouvelle commande pro, comptoir)", (
       await staff().get("/admin/catalog/sellable").expect(200),
     );
 
-    expect(items.find((item) => item.sku === "VIE-001")?.minQuantity).toBe(PRO_MINIMUM);
+    expect(items.find((item) => item.sku === "VIE-001-1")?.minQuantity).toBe(PRO_MINIMUM);
   });
 
   it("sous le minimum pro : 409, l'équipe n'y échappe pas", async () => {

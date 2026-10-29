@@ -177,7 +177,7 @@ async function deliveredAccountOrder(companyId: string, author: Person): Promise
       address: COURIER_ADDRESS,
       addressId: jsonBody<{ id: string }>(booked).id,
     },
-    lines: [{ sku: "VIE-001", quantity: 1 }],
+    lines: [{ sku: "VIE-001-1", quantity: 1 }],
   });
   return order.id;
 }
@@ -208,7 +208,7 @@ describe("le récapitulatif sous le mur de la liste (§6.5)", () => {
       amounts.reduce((total, a) => total + pick(a), 0);
     expect(summary.total.products).toEqual([
       {
-        sku: "VIE-001",
+        sku: "VIE-001-1",
         name: "Croissant",
         quantity: 3,
         saleUnit: "piece",
@@ -380,7 +380,7 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
     const csv = bytesOf(response.body).toString("utf8");
     expect(csv.startsWith("\uFEFF")).toBe(true);
     const amounts = await amountsOf(own);
-    expect(csv).toContain(`"Croissant";"VIE-001";1;${euros(amounts.linesHt)}`);
+    expect(csv).toContain(`"Croissant";"VIE-001-1";1;${euros(amounts.linesHt)}`);
     expect(csv).toContain(`"Total général";"Total TTC";"";;${euros(amounts.totalCents)}`);
   });
 
@@ -399,7 +399,7 @@ describe("le récapitulatif en PDF et au tableur (lot R2) — même mur, mêmes 
 
     expect(response.text).toContain("Retraits et livraisons du 1er au 15 janvier 2020");
     expect(response.text).toContain(
-      `"Croissant";"VIE-001";1;${euros((await amountsOf(own)).linesHt)}`,
+      `"Croissant";"VIE-001-1";1;${euros((await amountsOf(own)).linesHt)}`,
     );
   });
 

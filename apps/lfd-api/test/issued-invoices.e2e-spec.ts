@@ -332,7 +332,7 @@ describe("« Mes factures » — le mur client (E6)", () => {
         .expect(200),
     );
     expect(detail.totalTtcCents).toBe(ported.totalCents);
-    expect(detail.lines.map((line) => line.sku)).toEqual(["VIE-001"]);
+    expect(detail.lines.map((line) => line.sku)).toEqual(["VIE-001-1"]);
     expect(JSON.stringify(detail)).not.toContain("FR1420041010050500013M02606");
 
     await ctx.asSub(commis).get(base).expect(403);

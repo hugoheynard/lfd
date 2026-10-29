@@ -78,7 +78,7 @@ async function placed(): Promise<{ readonly orderId: string; readonly pickupId: 
         companyId: company.id,
         buyerUserId: user.id,
         settlement: "account",
-        ...content(pickupId, [{ sku: "VIE-001", quantity: ORDERED }]),
+        ...content(pickupId, [{ sku: "VIE-001-1", quantity: ORDERED }]),
       })
       .expect(201),
   );
@@ -101,7 +101,7 @@ function revise(orderId: string, pickupId: string, lines: readonly object[]) {
 
 async function croissants(orderId: string): Promise<number | undefined> {
   const line = await ctx.prisma.orderLine.findFirst({
-    where: { orderId, sku: "VIE-001" },
+    where: { orderId, sku: "VIE-001-1" },
     select: { quantity: true },
   });
   return line?.quantity;
@@ -113,7 +113,7 @@ describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", 
     await setCroissant({ proMinQuantity: PRO_MINIMUM });
 
     const response = await revise(orderId, pickupId, [
-      { sku: "VIE-001", quantity: PRO_MINIMUM - 1 },
+      { sku: "VIE-001-1", quantity: PRO_MINIMUM - 1 },
     ]);
 
     expect(response.status).toBe(409);
@@ -125,7 +125,7 @@ describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", 
     const { orderId, pickupId } = await placed();
     await setCroissant({ proMinQuantity: PRO_MINIMUM });
 
-    await revise(orderId, pickupId, [{ sku: "VIE-001", quantity: PRO_MINIMUM }]).expect(200);
+    await revise(orderId, pickupId, [{ sku: "VIE-001-1", quantity: PRO_MINIMUM }]).expect(200);
 
     expect(await croissants(orderId)).toBe(PRO_MINIMUM);
   });
@@ -135,8 +135,8 @@ describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", 
     await setCroissant({ proMinQuantity: ORDERED + 2 });
 
     await revise(orderId, pickupId, [
-      { sku: "VIE-001", quantity: ORDERED },
-      { sku: "VIE-002", quantity: 1 },
+      { sku: "VIE-001-1", quantity: ORDERED },
+      { sku: "VIE-002-1", quantity: 1 },
     ]).expect(200);
 
     expect(await croissants(orderId)).toBe(ORDERED);
@@ -146,7 +146,7 @@ describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", 
     const { orderId, pickupId } = await placed();
     await setCroissant({ proMinQuantity: PRO_MINIMUM, withdrawnAt: daysAgo(1) });
 
-    await revise(orderId, pickupId, [{ sku: "VIE-001", quantity: 1 }]).expect(200);
+    await revise(orderId, pickupId, [{ sku: "VIE-001-1", quantity: 1 }]).expect(200);
 
     expect(await croissants(orderId)).toBe(1);
   });

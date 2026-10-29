@@ -110,7 +110,7 @@ describe("la vitrine publique", () => {
     });
 
     expect((await catalogue()).items[0]).toMatchObject({
-      sku: "VIE-001",
+      sku: "VIE-001-1",
       saleUnit: "weight",
       weightStepGrams: 50,
       weightMinGrams: 200,
@@ -141,7 +141,7 @@ describe("la vitrine publique", () => {
   it("expose le SKU du PRODUIT, celui que la caisse accepte", async () => {
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    expect((await catalogue()).items[0]?.sku).toBe("VIE-001");
+    expect((await catalogue()).items[0]?.sku).toBe("VIE-001-1");
   });
 
   /**
@@ -169,11 +169,7 @@ describe("la vitrine publique", () => {
     // les opérations MONTRÉES — nom, dates, articles —, c'est-à-dire ce que
     // l'annonce affiche déjà en vitrine. Une opération en préparation n'y est
     // jamais : hors fenêtre, la liste est vide.
-    // ⚠️ **Un élargissement ASSUMÉ** (2026-10-29 —
-    // `documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5, L2) :
-    // la table d'alias, pour que la boutique normalise son panier avant
-    // d'élaguer. Des références, aucun prix ni réglage.
-    expect(Object.keys(body).sort()).toEqual(["items", "operations", "saleSkuAliases", "shelves"]);
+    expect(Object.keys(body).sort()).toEqual(["items", "operations", "shelves"]);
     expect(Object.keys(body.items[0] ?? {}).sort()).toEqual([
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-27, Hugo —
       // `documentation/pim/plan-allergenes-en-boutique.md`) : l'état et les
@@ -269,7 +265,7 @@ describe("la vitrine publique", () => {
       data: { sku: "VIE-002-1", isHiddenPublic: true },
     });
 
-    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   /**
@@ -290,7 +286,7 @@ describe("la vitrine publique", () => {
       data: { sku: "VIE-002-1", isHidden: true },
     });
 
-    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001", "VIE-002"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001-1", "VIE-002-1"]);
   });
 
   /**
@@ -322,7 +318,7 @@ describe("la vitrine publique", () => {
     ]);
     await push([{ sku: "VIE-001", priceMillicents: 140_000 }]);
 
-    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalogue()).items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   /**
@@ -344,7 +340,6 @@ describe("la vitrine publique", () => {
       shelves: [],
       items: [],
       operations: [],
-      saleSkuAliases: [],
     });
   });
 });
@@ -447,7 +442,7 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
     const devis = jsonBody<ShopQuoteView>(
       await request(ctx.app.getHttpServer())
         .post("/shop/quote")
-        .send({ lines: [{ sku: "VIE-001", quantity: 1 }], fulfillment: null })
+        .send({ lines: [{ sku: "VIE-001-1", quantity: 1 }], fulfillment: null })
         .expect(200),
     );
 

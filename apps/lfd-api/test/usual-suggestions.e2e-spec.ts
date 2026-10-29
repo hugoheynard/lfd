@@ -154,7 +154,7 @@ async function usualsOf(sub: string, company?: string): Promise<readonly UsualSu
 
 describe("vos habituels (R1)", () => {
   it("trois commandes du mardi : « tous les mardis », au prix de la vitrine de la société", async () => {
-    await tuesdays(3, companyA, ["VIE-001"]);
+    await tuesdays(3, companyA, ["VIE-001-1"]);
 
     const shelf = jsonBody<ShopCatalogueView>(
       await ctx.asSub(MEMBER_A).get("/shop/catalogue/mine").expect(200),
@@ -162,15 +162,15 @@ describe("vos habituels (R1)", () => {
 
     expect(await usualsOf(MEMBER_A)).toEqual([
       {
-        sku: "VIE-001",
-        item: shelf.items.find((item) => item.sku === "VIE-001"),
+        sku: "VIE-001-1",
+        item: shelf.items.find((item) => item.sku === "VIE-001-1"),
         reason: { source: "data", kind: "weekly_rhythm", weekday: "tue" },
       },
     ]);
   });
 
   it("deux commandes : rien — une habitude commence à trois", async () => {
-    await tuesdays(2, companyA, ["VIE-001"]);
+    await tuesdays(2, companyA, ["VIE-001-1"]);
 
     expect(await usualsOf(MEMBER_A)).toEqual([]);
   });
@@ -178,18 +178,18 @@ describe("vos habituels (R1)", () => {
   it("trois commandes sans jour qui revient : « commandé 3 fois »", async () => {
     const first = lastTuesdayBack();
     for (const back of [first, first + 1, first + 2]) {
-      await seedOrder({ userId: userA, companyId: companyA, skus: ["PAI-001"], back });
+      await seedOrder({ userId: userA, companyId: companyA, skus: ["PAI-001-1"], back });
     }
 
     expect((await usualsOf(MEMBER_A)).map(({ sku, reason }) => [sku, reason])).toEqual([
-      ["PAI-001", { source: "data", kind: "frequent", orderCount: 3 }],
+      ["PAI-001-1", { source: "data", kind: "frequent", orderCount: 3 }],
     ]);
   });
 
   it("ni l'annulée, ni l'abonnement, ni la commande de plus de douze mois ne comptent", async () => {
-    await tuesdays(2, companyA, ["VIE-001"]);
+    await tuesdays(2, companyA, ["VIE-001-1"]);
     const first = lastTuesdayBack();
-    const base = { userId: userA, companyId: companyA, skus: ["VIE-001"] };
+    const base = { userId: userA, companyId: companyA, skus: ["VIE-001-1"] };
     await seedOrder({ ...base, back: first + 14, cancelled: true });
     await seedOrder({ ...base, back: first + 21, fromSubscription: true });
     await seedOrder({ ...base, back: first + 7 * 54 });
@@ -198,15 +198,15 @@ describe("vos habituels (R1)", () => {
   });
 
   it("🔴 le mur : la société B ne voit rien des habitudes de A, même par un en-tête qui ment", async () => {
-    await tuesdays(4, companyA, ["VIE-001", "PAI-001"]);
+    await tuesdays(4, companyA, ["VIE-001-1", "PAI-001-1"]);
 
     expect(await usualsOf(MEMBER_B)).toEqual([]);
     expect(await usualsOf(MEMBER_B, companyA)).toEqual([]);
   });
 
   it("🔴 le mur dans l'agrégat : deux commandes de A et deux de B ne font pas une habitude de B", async () => {
-    await tuesdays(2, companyA, ["VIE-001"]);
-    await tuesdays(2, companyB, ["VIE-001"]);
+    await tuesdays(2, companyA, ["VIE-001-1"]);
+    await tuesdays(2, companyB, ["VIE-001-1"]);
 
     expect(await usualsOf(MEMBER_B)).toEqual([]);
   });
@@ -217,7 +217,7 @@ describe("vos habituels (R1)", () => {
       await seedOrder({
         userId: userPerson,
         companyId: null,
-        skus: ["VIE-001"],
+        skus: ["VIE-001-1"],
         back: first + 7 * week,
       });
     }
@@ -237,12 +237,12 @@ describe("vos habituels (R1)", () => {
   });
 
   it("le panier exclut : un habituel déjà au panier n'est pas proposé", async () => {
-    await tuesdays(3, companyA, ["VIE-001"]);
+    await tuesdays(3, companyA, ["VIE-001-1"]);
     const response = await ctx
       .asSub(MEMBER_A)
       .post("/shop/suggestions/usuals/mine")
       .send({
-        skus: ["VIE-001"],
+        skus: ["VIE-001-1"],
         target: { date: addDays(serviceDay(0), 7), pickupAddressId: null },
       })
       .expect(200);

@@ -47,10 +47,10 @@ const SUPERVISOR = "staff-supervision-seule";
 const WITHOUT_RIGHT = "staff-sans-supervision";
 const SERVICE_DAY = serviceDay();
 
-/** Le croissant du catalogue de test — `VIE-001`. */
-const CROISSANT = "VIE-001";
+/** Le croissant du catalogue de test — `VIE-001-1`. */
+const CROISSANT = "VIE-001-1";
 /** La baguette — laissée au four, pour qu'une ligne attende. */
-const BAGUETTE = "PAI-001";
+const BAGUETTE = "PAI-001-1";
 
 const SITE = {
   label: "Boutique",
