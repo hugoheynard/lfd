@@ -68,33 +68,41 @@ export function revisionCartOf(
 }
 
 /**
- * Le plancher du stepper d'une ligne en révision : le minimum de l'article,
- * ou la quantité de la ligne quand elle est DÉJÀ dessous — une ligne gardée
- * telle quelle passe (Hugo, 2026-10-29), et le « − » ne la baisse pas.
+ * Le plancher du stepper d'une ligne en révision : le minimum de l'article, ou
+ * la quantité D'ORIGINE de la ligne quand elle était déjà dessous — une ligne
+ * gardée telle quelle passe (Hugo, 2026-10-29). Le plancher se lit sur la
+ * commande et non sur le panier : montée au minimum par erreur, la ligne peut
+ * revenir à sa quantité d'origine (correctif demandé par Hugo le même jour).
+ *
+ * `original` = la quantité de la ligne dans la commande, `null` pour une ligne
+ * ajoutée pendant la révision.
  */
-export function revisionFloorOf(line: Pick<CartLine, 'quantity' | 'minimum'>): number {
-  return Math.min(line.minimum ?? 1, line.quantity);
+export function revisionFloorOf(line: Pick<CartLine, 'minimum'>, original: number | null): number {
+  const minimum = line.minimum ?? 1;
+  return original !== null && original < minimum ? original : minimum;
 }
 
 /**
  * La quantité qu'on pose quand le champ d'une ligne en révision demande
- * `requested` (Hugo, 2026-10-29) : le serveur refuse une ligne CHANGÉE sous le
- * minimum, et laisse passer une ligne inchangée.
+ * `requested` : le serveur refuse une ligne CHANGÉE sous le minimum, et laisse
+ * passer une ligne revenue à sa quantité d'origine.
  *
  * - zéro ou moins retire la ligne ;
- * - au minimum ou au-dessus, la demande passe ;
- * - sous le minimum, une baisse est refusée (la ligne garde sa quantité) et
- *   une hausse va jusqu'au minimum.
+ * - au minimum ou au-dessus, ou à la quantité d'origine, la demande passe ;
+ * - sous le minimum, une baisse revient à la quantité d'origine quand elle
+ *   était dessous, et une hausse va jusqu'au minimum.
  */
 export function revisedQuantityOf(
   line: Pick<CartLine, 'quantity' | 'minimum'>,
+  original: number | null,
   requested: number,
 ): number {
   const minimum = line.minimum ?? 1;
-  if (requested <= 0 || requested >= minimum) {
+  if (requested <= 0 || requested >= minimum || requested === original) {
     return requested;
   }
-  return requested <= line.quantity ? line.quantity : minimum;
+  const belowFromTheStart = original !== null && original < minimum;
+  return belowFromTheStart && requested < line.quantity ? original : minimum;
 }
 
 /**

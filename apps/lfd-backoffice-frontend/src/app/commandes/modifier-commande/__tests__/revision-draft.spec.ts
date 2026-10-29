@@ -250,23 +250,37 @@ describe('le minimum d’une ligne en révision', () => {
 
   it('au-dessus du minimum : le « − » s’arrête au minimum', () => {
     const line = { quantity: 6, minimum: 6 };
-    expect(revisionFloorOf(line)).toBe(6);
-    expect(revisedQuantityOf({ quantity: 8, minimum: 6 }, 7)).toBe(7);
-    expect(revisedQuantityOf(line, 5)).toBe(6);
-    expect(revisedQuantityOf(line, 0)).toBe(0);
+    expect(revisionFloorOf(line, 8)).toBe(6);
+    expect(revisedQuantityOf({ quantity: 8, minimum: 6 }, 8, 7)).toBe(7);
+    expect(revisedQuantityOf(line, 8, 5)).toBe(6);
+    expect(revisedQuantityOf(line, 8, 0)).toBe(0);
   });
 
   it('déjà sous le minimum : gardée telle quelle, aucune baisse, une hausse va au minimum', () => {
     const line = { quantity: 3, minimum: 6 };
-    expect(revisionFloorOf(line)).toBe(3);
-    expect(revisedQuantityOf(line, 3)).toBe(3);
-    expect(revisedQuantityOf(line, 2)).toBe(3);
-    expect(revisedQuantityOf(line, 4)).toBe(6);
-    expect(revisedQuantityOf(line, 9)).toBe(9);
+    expect(revisionFloorOf(line, 3)).toBe(3);
+    expect(revisedQuantityOf(line, 3, 3)).toBe(3);
+    expect(revisedQuantityOf(line, 3, 2)).toBe(3);
+    expect(revisedQuantityOf(line, 3, 4)).toBe(6);
+    expect(revisedQuantityOf(line, 3, 9)).toBe(9);
+  });
+
+  /** Régression : montée au minimum par erreur, une ligne d'origine sous le minimum ne pouvait plus revenir. */
+  it('montée au minimum, la ligne peut revenir à sa quantité d’origine, pas plus bas', () => {
+    const raised = { quantity: 6, minimum: 6 };
+    expect(revisionFloorOf(raised, 3)).toBe(3);
+    expect(revisedQuantityOf(raised, 3, 5)).toBe(3);
+    expect(revisedQuantityOf(raised, 3, 3)).toBe(3);
+    expect(revisedQuantityOf({ quantity: 3, minimum: 6 }, 3, 2)).toBe(3);
+  });
+
+  it('une ligne ajoutée en révision part du minimum, sans repère d’origine', () => {
+    expect(revisionFloorOf({ minimum: 6 }, null)).toBe(6);
+    expect(revisedQuantityOf({ quantity: 6, minimum: 6 }, null, 5)).toBe(6);
   });
 
   it('sans minimum, rien ne change', () => {
-    expect(revisionFloorOf({ quantity: 3 })).toBe(1);
-    expect(revisedQuantityOf({ quantity: 3 }, 1)).toBe(1);
+    expect(revisionFloorOf({}, 3)).toBe(1);
+    expect(revisedQuantityOf({ quantity: 3 }, 3, 1)).toBe(1);
   });
 });

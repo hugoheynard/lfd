@@ -145,12 +145,27 @@ export class ModifierCommandePage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly order = signal<AdminOrderView | null>(null);
   protected readonly customer = signal<OrderEntryCustomer | null>(null);
+  /** La quantité de chaque article dans la commande d'origine — le repère des planchers. */
+  private readonly originalQuantities = computed(() => {
+    const totals = new Map<string, number>();
+    for (const line of this.order()?.lines ?? []) {
+      totals.set(line.sku, (totals.get(line.sku) ?? 0) + line.quantity);
+    }
+    return totals;
+  });
+
+  private originalOf(sku: string): number | null {
+    return this.originalQuantities().get(sku) ?? null;
+  }
+
   /** Le plancher d'une ligne — cf. `revisionFloorOf`. */
-  protected readonly floorOf = revisionFloorOf;
+  protected floorOf(line: CartLine): number {
+    return revisionFloorOf(line, this.originalOf(line.sku));
+  }
 
   /** Le champ d'une ligne, borné par le minimum du jour — cf. `revisedQuantityOf`. */
   protected onQuantity(line: CartLine, requested: number): void {
-    this.cart.setQuantity(line.sku, revisedQuantityOf(line, requested));
+    this.cart.setQuantity(line.sku, revisedQuantityOf(line, this.originalOf(line.sku), requested));
   }
 
   protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
