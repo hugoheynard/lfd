@@ -232,6 +232,22 @@ export interface PimFacts {
    * `false` pour tout article reçu avant la v12 : aucun n'était déclaré froid.
    */
   readonly requiresCold: boolean;
+  /**
+   * **La fiche montre chaque déclinaison en vignette** (fil v16,
+   * `plan-declinaisons-en-vignette.md`) — un fait de la fiche, descendu sur
+   * chaque article. Vrai : un article non défaut paraît au rayon et se vend
+   * sous son propre SKU.
+   *
+   * `true` pour tout article reçu avant la v16 : c'est la valeur que le
+   * référentiel a donnée à toute fiche existante.
+   */
+  readonly variantsAsTiles: boolean;
+  /**
+   * **Le nom de la fiche** (fil v16) — ce qui précède le nom de la
+   * déclinaison sur la vignette d'un article non défaut. `null` = article
+   * reçu avant ce lot.
+   */
+  readonly productName: string | null;
   readonly receivedAt: Date;
 }
 
@@ -480,6 +496,14 @@ export class CatalogItem {
 
   get requiresCold(): boolean {
     return this.facts.requiresCold;
+  }
+
+  get variantsAsTiles(): boolean {
+    return this.facts.variantsAsTiles;
+  }
+
+  get productName(): string | null {
+    return this.facts.productName;
   }
 
   get vatRatePercent(): number | null {

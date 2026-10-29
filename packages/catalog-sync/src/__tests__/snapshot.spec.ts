@@ -79,6 +79,7 @@ const snapshot = {
       operationOnly: false,
       // Traverse depuis la v12 : le croissant se conserve au sec.
       requiresCold: false,
+      variantsAsTiles: true,
     },
   ],
   // L'échelle traverse depuis la v7 — vide est le cas courant, et il est net.

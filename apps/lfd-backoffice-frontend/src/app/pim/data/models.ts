@@ -198,6 +198,11 @@ export interface Product {
    * livraison ne le charge qu'en bac isotherme. `false` = rien de déclaré.
    */
   requiresCold: boolean;
+  /**
+   * **Montrer chaque déclinaison en vignette** au rayon de la boutique ;
+   * `false` = seule la déclinaison par défaut (`plan-declinaisons-en-vignette.md`).
+   */
+  variantsAsTiles: boolean;
   /** À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite. */
   audience: OperationAudience | null;
   /** Pilote l'URL publique — jamais changé après création (SEO). */

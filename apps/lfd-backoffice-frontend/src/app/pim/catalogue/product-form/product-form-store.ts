@@ -657,6 +657,8 @@ export class ProductFormStore {
   readonly operationOnly = signal(false);
   /** Demande le froid (lot 4 bis). Hors des sections, comme la réservation. */
   readonly requiresCold = signal(false);
+  /** Chaque déclinaison en vignette au rayon. Hors des sections, comme le froid. */
+  readonly variantsAsTiles = signal(true);
   /**
    * À qui la fiche vend quand elle déroge à sa famille ; `null` = elle hérite.
    * Une écriture à part (`PUT …/audience`), hors des sections.
@@ -2331,6 +2333,7 @@ export class ProductFormStore {
     this.vatOverride.set(product.vatByContext);
     this.operationOnly.set(product.operationOnly);
     this.requiresCold.set(product.requiresCold);
+    this.variantsAsTiles.set(product.variantsAsTiles);
     this.audience.set(product.audience);
 
     this.editorial.set(detail.editorial);

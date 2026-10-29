@@ -379,6 +379,20 @@ model CatalogItem {
   /// alors : un produit n'est pas froid tant que personne ne l'a déclaré.
   requiresCold Boolean @default(false) @map("requires_cold")
 
+  /// **La fiche montre-t-elle chaque déclinaison en vignette ?** (fil v16,
+  /// `documentation/catalogue/plan-declinaisons-en-vignette.md`) — un fait de
+  /// la fiche, descendu sur chaque article comme le froid. Vrai : une
+  /// déclinaison non défaut paraît au rayon et se vend sous son propre SKU.
+  ///
+  /// `true` sur une ligne d'avant la v16 : c'est la valeur de la colonne du
+  /// référentiel pour toute fiche existante.
+  variantsAsTiles Boolean @default(true) @map("variants_as_tiles")
+
+  /// **Le nom de la fiche** (fil v16) — ce qui précède le nom de la
+  /// déclinaison sur la vignette d'une déclinaison non défaut. `NULL` = ligne
+  /// reçue avant ce lot : la vignette porte alors le nom de la déclinaison seul.
+  productName String? @map("product_name")
+
   /// **Le geste du référentiel qui a posé les visuels** (UUID v7, ordonné
   /// dans le temps) — `null` tant qu'aucun fait de visuels n'a été projeté.
   /// Les visuels sont figés dans le fait : un fait ancien rejoué APRÈS un plus

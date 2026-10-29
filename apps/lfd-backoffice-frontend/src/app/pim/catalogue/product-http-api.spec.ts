@@ -54,6 +54,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     vatByContext: {},
     operationOnly: false,
     requiresCold: false,
+    variantsAsTiles: true,
     audience: null,
     effectiveAudience: 'both' as const,
     audienceInherited: true,

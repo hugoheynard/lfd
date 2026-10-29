@@ -98,6 +98,8 @@ export function pimFactsColumns(facts: PimFacts) {
           ),
     operationOnly: facts.operationOnly,
     requiresCold: facts.requiresCold,
+    variantsAsTiles: facts.variantsAsTiles,
+    productName: facts.productName,
     receivedAt: facts.receivedAt,
   };
 }

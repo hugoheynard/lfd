@@ -74,12 +74,15 @@ export interface ShopImageFocal {
 /** Une référence en vente. */
 export interface ShopItemView {
   /**
-   * Le SKU du **PRODUIT**, jamais celui de la déclinaison.
+   * Le **SKU de vente** — opaque pour la boutique, qui le renvoie tel quel au
+   * panier, au devis et à `POST /orders`.
    *
-   * C'est celui que la boutique vend depuis l'ouverture commerciale, celui
-   * qu'acceptent `POST /orders` et le devis, et celui qui est écrit dans les
-   * commandes passées. Exposer le SKU du référentiel ici donnerait un panier
-   * que la caisse refuse.
+   * Pour la déclinaison par défaut, le SKU du **PRODUIT** : celui que la
+   * boutique vend depuis l'ouverture commerciale et qui est écrit dans les
+   * commandes passées. Pour une autre déclinaison, montrée en vignette quand sa
+   * fiche le demande, le SKU de **cette déclinaison** (2026-10-29,
+   * `documentation/catalogue/plan-declinaisons-en-vignette.md`, V4) ; la
+   * caisse les résout tous deux.
    */
   readonly sku: string;
   /** Dans la langue demandée (`?lang=`), en français quand le référentiel ne l'a pas traduit. */
@@ -371,7 +374,7 @@ export interface ShopOperationView {
   readonly pickupFrom: string;
   readonly pickupUntil: string;
   /**
-   * Les SKU **produit** du rayon, dans l'ordre du référentiel, restreints aux
+   * Les SKU **de vente** du rayon, dans l'ordre du référentiel, restreints aux
    * articles que {@link ShopCatalogueView.items} porte — donc jamais un SKU
    * que la vitrine ne saurait pas afficher.
    *

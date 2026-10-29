@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { shopSkuOf } from "../../catalog/domain/shop-sku.js";
 
 import {
   CatalogReader,
@@ -28,14 +29,14 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
   }
 
   async article(sku: string): Promise<ResupplyArticle | null> {
-    const item = await this.catalog.findDefaultByProductSku(sku, SHOP_AUDIENCE);
+    const item = await this.catalog.findByShopSku(sku, SHOP_AUDIENCE);
     return item === null ? null : toArticle(item);
   }
 }
 
 function toArticle(item: ResolvedCatalogItem): ResupplyArticle {
   return {
-    sku: item.productSku,
+    sku: shopSkuOf(item),
     name: item.name,
     categoryId: item.categoryId,
     categoryName: item.categoryName,

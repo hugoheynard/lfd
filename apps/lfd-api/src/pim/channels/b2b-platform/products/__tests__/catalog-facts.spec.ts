@@ -239,6 +239,15 @@ describe("projectProductFact", () => {
     );
   });
 
+  /** Fil v16 (`plan-declinaisons-en-vignette.md`, V2) : l'option voyage telle que la fiche la dit. */
+  it("porte l'option « chaque déclinaison en vignette » de la fiche", () => {
+    expect(projectProductFact(input()).product.variantsAsTiles).toBe(true);
+    expect(
+      projectProductFact(input({ product: tarte({ variantsAsTiles: false }) })).product
+        .variantsAsTiles,
+    ).toBe(false);
+  });
+
   /** Une fiche inactive porte ses déclinaisons complètes : c'est la plateforme qui ne les vend pas. */
   it("projette les déclinaisons complètes d'une fiche inactive", () => {
     const body = projectProductFact(input({ product: tarte({ status: "draft" }) }));

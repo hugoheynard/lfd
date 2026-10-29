@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { shopSkuOf } from "../domain/shop-sku.js";
 
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
 
@@ -23,13 +24,13 @@ export class ArticleSaleUnits {
       return new Set();
     }
     const [pro, open] = await Promise.all([
-      this.catalog.listDefaultsByProductSkus(skus, "pro"),
-      this.catalog.listDefaultsByProductSkus(skus, "public"),
+      this.catalog.listByShopSkus(skus, "pro"),
+      this.catalog.listByShopSkus(skus, "public"),
     ]);
     return new Set(
       [...pro.values(), ...open.values()]
         .filter((item) => item.saleUnit === "weight")
-        .map((item) => item.productSku),
+        .map((item) => shopSkuOf(item)),
     );
   }
 }

@@ -59,6 +59,7 @@ import { PrismaIllustratedProductsReader } from "./product/infrastructure/prisma
 import { PrismaProductImageUsage } from "./product/infrastructure/prisma-product-image-usage.js";
 import { SetProductOperationOnlyHandler } from "./product/application/set-product-operation-only.js";
 import { SetProductColdRequirementHandler } from "./product/application/set-product-cold-requirement.js";
+import { SetProductVariantsAsTilesHandler } from "./product/application/set-product-variants-as-tiles.js";
 import { SetProductVatHandler } from "./product/application/set-product-vat.js";
 import { UpdateProductEditorialHandler } from "./product/application/update-product-editorial.js";
 import { UpdateProductIdentityHandler } from "./product/application/update-product-identity.js";
@@ -88,6 +89,7 @@ import { ProductRepository } from "./product/domain/ports/product.repository.js"
 import { CategoryController } from "./category/http/category.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
+import { ProductVariantsAsTilesController } from "./product/http/product-variants-as-tiles.controller.js";
 import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
@@ -137,6 +139,7 @@ import {
     CategoryController,
     ProductController,
     ProductMinQuantitiesController,
+    ProductVariantsAsTilesController,
     ProductVariantLifecycleController,
     ProductHistoryController,
     ReferenceController,
@@ -167,6 +170,7 @@ import {
     OnMediaAssetDescribedHandler,
     SetProductOperationOnlyHandler,
     SetProductColdRequirementHandler,
+    SetProductVariantsAsTilesHandler,
     SetProductVatHandler,
     UpdateProductEditorialHandler,
     SaveVariantAllergensHandler,

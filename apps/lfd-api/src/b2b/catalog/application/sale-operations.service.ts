@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { shopSkuOf } from "../domain/shop-sku.js";
 
 import { Clock } from "../../../platform/time/clock.js";
 import {
@@ -68,7 +69,7 @@ export class SaleOperations {
     const operations = await this.operations.sellableOperations();
     const now = this.clock.now();
     for (const item of bound) {
-      found.set(item.productSku, {
+      found.set(shopSkuOf(item), {
         productName: item.name,
         access: operationAccess(
           { sku: item.sku, operationOnly: true },
@@ -116,7 +117,7 @@ export class SaleOperations {
       this.boundItems(skus, "pro"),
       this.boundItems(skus, "public"),
     ]);
-    const names = new Map([...pro, ...open].map((item) => [item.productSku, item.name]));
+    const names = new Map([...pro, ...open].map((item) => [shopSkuOf(item), item.name]));
     return skus.flatMap((sku) => {
       const name = names.get(sku);
       return name === undefined ? [] : [name];
@@ -135,7 +136,7 @@ export class SaleOperations {
     if (only.size === 0) {
       return [];
     }
-    const items = await this.catalog.listDefaultsByProductSkus(productSkus, audience);
+    const items = await this.catalog.listByShopSkus(productSkus, audience);
     return [...items.values()].filter((item) => only.has(item.sku));
   }
 }

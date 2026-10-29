@@ -64,6 +64,15 @@ model Product {
   /// n'est pas froide tant que personne ne l'a dit sur la fiche.
   requiresCold Boolean @default(false) @map("requires_cold")
 
+  /// **Montrer chaque déclinaison en vignette** (Hugo, 2026-10-29,
+  /// `documentation/catalogue/plan-declinaisons-en-vignette.md`) : cochée,
+  /// chaque déclinaison vivante a sa vignette au rayon de la boutique ;
+  /// décochée, seule la déclinaison par défaut.
+  ///
+  /// `true` par défaut, existant compris : c'est le comportement de base
+  /// voulu, et il s'affine après le déploiement.
+  variantsAsTiles Boolean @default(true) @map("variants_as_tiles")
+
   /// **À qui la fiche vend, quand elle ne suit pas sa famille** — `pro` |
   /// `public` | `both`, ou `NULL` : elle hérite de `category.audience` (C2 du
   /// plan `plan-catalogue-synchronise-par-audience.md`). `CHECK` en base.

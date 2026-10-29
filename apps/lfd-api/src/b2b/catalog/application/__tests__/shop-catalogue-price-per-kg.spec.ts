@@ -16,7 +16,7 @@ const SALE = {
 };
 const SELLABLE = [
   catalogItem("PAI-001"),
-  catalogItem("PAI-001", { sku: "PAI-001-2", isDefault: false }),
+  catalogItem("PAI-001", { sku: "PAI-001-2", isDefault: false, variantsAsTiles: false }),
   catalogItem("VIE-001"),
 ];
 

@@ -104,6 +104,13 @@ export interface ProductSnapshot {
    * comme `VariantSnapshot.detachedToProductId` : l'agrégat le rend toujours.
    */
   readonly originVariantId?: string | null | undefined;
+  /**
+   * **Montrer chaque déclinaison en vignette** au rayon de la boutique
+   * (`plan-declinaisons-en-vignette.md`, V1) ; `false` = seule la déclinaison
+   * par défaut. Facultatif à la LECTURE (absent = `true`, la valeur de toute
+   * fiche) : l'agrégat le rend toujours.
+   */
+  readonly variantsAsTiles?: boolean | undefined;
 }
 
 /**
@@ -154,6 +161,9 @@ export class Product {
     private requiresColdValue: boolean,
     private audienceValue: Audience | null,
     private readonly originVariantIdValue: string | null = null,
+    // Une fiche naît en montrant chaque déclinaison (Hugo, 2026-10-29) : le
+    // comportement de base, qu'on décoche fiche par fiche.
+    private variantsAsTilesValue = true,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -196,6 +206,7 @@ export class Product {
       snapshot.requiresCold,
       snapshot.audience,
       snapshot.originVariantId ?? null,
+      snapshot.variantsAsTiles ?? true,
     );
   }
 
@@ -283,6 +294,29 @@ export class Product {
       return false;
     }
     this.requiresColdValue = requiresCold;
+    return true;
+  }
+
+  /** Montre-t-il chaque déclinaison en vignette ? */
+  get variantsAsTiles(): boolean {
+    return this.variantsAsTilesValue;
+  }
+
+  /**
+   * **Montre chaque déclinaison en vignette** au rayon — ou seulement la
+   * déclinaison par défaut (`plan-declinaisons-en-vignette.md`, V1).
+   *
+   * Aucune règle ne refuse le geste : une fiche à une seule déclinaison le
+   * porte sans effet, et le prend dès qu'on lui en ajoute une. Ce que l'option
+   * change se juge chez ceux qui VENDENT (la vitrine), pas ici.
+   *
+   * @returns `false` quand la fiche le disait déjà ({@link StatusChanged}).
+   */
+  showVariantsAsTiles(variantsAsTiles: boolean): boolean {
+    if (this.variantsAsTilesValue === variantsAsTiles) {
+      return false;
+    }
+    this.variantsAsTilesValue = variantsAsTiles;
     return true;
   }
 
@@ -881,6 +915,7 @@ export class Product {
       requiresCold: this.requiresColdValue,
       audience: this.audienceValue,
       originVariantId: this.originVariantIdValue,
+      variantsAsTiles: this.variantsAsTilesValue,
     };
   }
 }

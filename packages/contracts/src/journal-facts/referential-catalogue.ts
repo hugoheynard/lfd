@@ -469,6 +469,14 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     payload({ subjectLabel: subjectLabel(), audience: fromTo(audience().nullable()) }),
   ),
   /**
+   * La fiche montre chaque déclinaison en vignette au rayon (`to: true`), ou
+   * seulement la déclinaison par défaut (`to: false`) —
+   * `plan-declinaisons-en-vignette.md`, V1.
+   */
+  "product.variants_as_tiles_changed": fact(
+    payload({ subjectLabel: subjectLabel(), from: z.boolean(), to: z.boolean() }),
+  ),
+  /**
    * **La quantité minimale d'une déclinaison** — son minimum pro et son
    * minimum public en pièces, ou « suit le défaut » (`plan-quantite-minimale.md`,
    * M1). Avant et après en entier. Par audience seulement : aucun contexte.

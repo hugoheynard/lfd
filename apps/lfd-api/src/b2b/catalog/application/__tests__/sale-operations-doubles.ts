@@ -43,6 +43,7 @@ export function catalogItem(
       path: ["fam-patisseries"],
     },
     isDefault: true,
+    variantsAsTiles: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
@@ -96,11 +97,11 @@ export class DefaultsCatalog extends CatalogReader {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  findDefaultByProductSku(): Promise<ResolvedCatalogItem | null> {
+  findByShopSku(): Promise<ResolvedCatalogItem | null> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  listDefaultsByProductSkus(
+  listByShopSkus(
     productSkus: readonly string[],
     audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {

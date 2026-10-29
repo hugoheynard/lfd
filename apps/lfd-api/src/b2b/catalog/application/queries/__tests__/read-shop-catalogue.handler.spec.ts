@@ -59,11 +59,11 @@ class SellableCatalog extends CatalogReader {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  findDefaultByProductSku(): Promise<ResolvedCatalogItem | null> {
+  findByShopSku(): Promise<ResolvedCatalogItem | null> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  listDefaultsByProductSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
+  listByShopSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 }

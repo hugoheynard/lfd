@@ -1,0 +1,7 @@
+<fold-checkbox
+  label="Montrer chaque déclinaison en vignette"
+  hint="Chaque déclinaison en vente a sa propre vignette au rayon de la boutique. Décochée, seule la déclinaison par défaut paraît."
+  [checked]="store.variantsAsTiles()"
+  [disabled]="busy()"
+  (checkedChange)="onChange($event)"
+/>

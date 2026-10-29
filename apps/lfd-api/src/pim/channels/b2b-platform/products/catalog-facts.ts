@@ -66,6 +66,8 @@ export interface CatalogProductHead {
   readonly thumbnail: SyncMedia | null;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
+  /** Chaque déclinaison en vignette au rayon (fil v16, `plan-declinaisons-en-vignette.md`). */
+  readonly variantsAsTiles: boolean;
 }
 
 /**
@@ -204,6 +206,7 @@ export function projectProductFact(input: ProductFactInput): CatalogProductFactB
       thumbnail: showcase?.thumbnail ?? null,
       operationOnly: product.operationOnly,
       requiresCold: product.requiresCold,
+      variantsAsTiles: product.variantsAsTiles ?? true,
     },
     variants,
     gaps,

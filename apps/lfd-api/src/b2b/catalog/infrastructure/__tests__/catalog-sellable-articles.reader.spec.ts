@@ -31,6 +31,7 @@ function item(
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: of,
     isDefault: true,
+    variantsAsTiles: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
@@ -60,11 +61,11 @@ class Catalog extends CatalogReader {
     return Promise.resolve(this.byAudience[audience]);
   }
 
-  findDefaultByProductSku(): Promise<ResolvedCatalogItem | null> {
+  findByShopSku(): Promise<ResolvedCatalogItem | null> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  listDefaultsByProductSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
+  listByShopSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 }

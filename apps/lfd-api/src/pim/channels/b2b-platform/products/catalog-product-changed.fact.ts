@@ -37,9 +37,13 @@ const payloadSchema = z.object({
   audienceInherited: z.boolean().nullable().default(null),
   // Lot des langues (2026-10-18) : les traductions sont absentes d'un fait
   // émis avant lui, et lues `null` — le récepteur sert alors le français.
-  product: syncProductSchema
-    .omit({ variants: true })
-    .extend({ noteTranslations: catalogTranslationsSchema }),
+  product: syncProductSchema.omit({ variants: true }).extend({
+    noteTranslations: catalogTranslationsSchema,
+    // Fil v16 (`plan-declinaisons-en-vignette.md`) : absente d'un fait émis
+    // avant elle, et lue `true` — la valeur que la colonne du référentiel a
+    // donnée à toute fiche existante.
+    variantsAsTiles: z.boolean().default(true),
+  }),
   // Les prix au kilo (fil v13, `plan-prix-au-kilo.md`) sont absents d'un
   // fait émis avant eux, et lus `null` — « non saisi », ce qui était vrai.
   variants: z.array(

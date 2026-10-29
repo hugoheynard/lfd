@@ -23,6 +23,7 @@ function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: of,
     isDefault: true,
+    variantsAsTiles: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,
@@ -53,11 +54,11 @@ class Catalog extends CatalogReader {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  findDefaultByProductSku(): Promise<ResolvedCatalogItem | null> {
+  findByShopSku(): Promise<ResolvedCatalogItem | null> {
     return Promise.reject(new Error("lecture inattendue"));
   }
 
-  listDefaultsByProductSkus(
+  listByShopSkus(
     productSkus: readonly string[],
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     this.asked = productSkus;
@@ -72,7 +73,7 @@ class Catalog extends CatalogReader {
 }
 
 class BrokenCatalog extends Catalog {
-  override listDefaultsByProductSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
+  override listByShopSkus(): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     return Promise.reject(new Error("base injoignable"));
   }
 }

@@ -10,7 +10,7 @@ import { CatalogReader } from "../domain/ports/catalog.reader.js";
  *
  * ## Pourquoi sur `CatalogReader` et non sur `ProductCatalogReader.resolveMany`
  *
- * On lit la même source que `resolveMany` (`listDefaultsByProductSkus`, même
+ * On lit la même source que `resolveMany` (`listByShopSkus`, même
  * SKU produit, mêmes filtres), en une requête, sans sceller de prix dont la
  * fiche n'a que faire. Le rayon est la famille du référentiel telle que le
  * miroir la porte : plus de table de traduction, donc plus d'article orphelin
@@ -22,7 +22,7 @@ import { CatalogReader } from "../domain/ports/catalog.reader.js";
  * fiche de la journaliser et de servir « Rayon inconnu ». Avaler une panne ici
  * la déguiserait en « hors catalogue », ce qui affirmerait un fait faux.
  *
- * ⚠️ `listDefaultsByProductSkus` écarte les articles **masqués** et sans taux de
+ * ⚠️ `listByShopSkus` écarte les articles **masqués** et sans taux de
  * TVA (vérifié le 2026-09-14 dans `PrismaCatalogReader`) : un article fabriqué
  * mais masqué à la vente tombe donc dans « Hors catalogue ».
  */
@@ -33,10 +33,10 @@ export class CatalogWorkshopShelvesReader extends WorkshopShelvesReader {
   }
 
   async shelvesOf(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    const items = await this.catalog.listDefaultsByProductSkus(skus, "pro");
+    const items = await this.catalog.listByShopSkus(skus, "pro");
     const shelves = new Map<string, CatalogFamilyView>();
-    for (const [productSku, item] of items) {
-      shelves.set(productSku, familyView(item.family));
+    for (const [shopSku, item] of items) {
+      shelves.set(shopSku, familyView(item.family));
     }
     return shelves;
   }

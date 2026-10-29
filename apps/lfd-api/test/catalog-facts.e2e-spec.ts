@@ -346,7 +346,7 @@ describe("l'audience décide à qui l'article se vend (servedTo)", () => {
 
   /**
    * Chemin tracé le 2026-10-15 : `POST /orders` → `OrderLinePricing` →
-   * `ProductCatalogReader.resolveMany` → `CatalogReader.listDefaultsByProductSkus`
+   * `ProductCatalogReader.resolveMany` → `CatalogReader.listByShopSkus`
    * → `servedTo`. Le témoin (audience `both`) passe ; le même article rendu
    * `public` est refusé à la commande pro, et reste en vitrine publique.
    */

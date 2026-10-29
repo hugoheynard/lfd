@@ -51,6 +51,8 @@ export interface ItemRow {
   readonly orderLimitGraceMinutes: number | null;
   readonly operationOnly: boolean;
   readonly requiresCold: boolean;
+  readonly variantsAsTiles: boolean;
+  readonly productName: string | null;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly audience: string | null;
@@ -158,6 +160,8 @@ export function toDomain(row: ItemRow): CatalogItem {
       thumbnail: thumbnailOf(row),
       operationOnly: row.operationOnly,
       requiresCold: row.requiresCold,
+      variantsAsTiles: row.variantsAsTiles,
+      productName: row.productName,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,

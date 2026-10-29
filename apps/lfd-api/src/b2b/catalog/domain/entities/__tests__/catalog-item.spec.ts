@@ -19,6 +19,8 @@ function facts(over: Partial<PimFacts> = {}): PimFacts {
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
+    variantsAsTiles: true,
+    productName: null,
     orderTimeLimit: null,
     productId: "prd_1",
     productSku: "VIE-001",

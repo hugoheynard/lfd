@@ -9,6 +9,7 @@ import {
 } from "../domain/operation-access.js";
 import type { SellableOperation } from "../domain/ports/catalog-operations.reader.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
+import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
  * **Ce que la vitrine sait des opérations datées, à l'instant de la requête**
@@ -68,8 +69,8 @@ export function itemOperationOf(
 
 /**
  * Les opérations que la vitrine montre : à cette clientèle, dans leur fenêtre.
- * Leurs SKU passent de la déclinaison au produit — l'identifiant que la
- * boutique vend.
+ * Leurs SKU passent de la déclinaison au SKU de vente (`shopSkuOf`) —
+ * l'identifiant que la boutique vend.
  *
  * Le rayon d'une opération s'ouvre sur son ENCART, et c'est lui l'annonce
  * (plan « Une opération sans article ») — montré sans article pendant
@@ -80,7 +81,7 @@ export function shopOperationsOf(
   sale: ShopSale,
   shown: readonly ResolvedCatalogItem[],
 ): ShopOperationView[] {
-  const productOf = new Map(shown.map((item) => [item.sku, item.productSku]));
+  const productOf = new Map(shown.map((item) => [item.sku, shopSkuOf(item)]));
   return sale.operations.flatMap((operation) => {
     const state = operationStateAt(operation, sale.now);
     if (state === null || !reachesAudience(operation, sale.audience)) {

@@ -100,6 +100,10 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // un signataire qui l'a relue pour les pros voudrait la revoir ouverte au
   // public (lot 1 de `plan-catalogue-synchronise-par-audience.md`).
   [PIM_EVENTS.productAudienceChanged]: true,
+  // Montrer chaque déclinaison change ce que le client voit au rayon : un
+  // signataire qui a relu la fiche sous une seule vignette voudrait la revoir
+  // sous plusieurs (`plan-declinaisons-en-vignette.md`, V1).
+  [PIM_EVENTS.productVariantsAsTilesChanged]: true,
   // La quantité minimale change ce qu'un client doit prendre : un signataire
   // qui a relu la fiche sans minimum voudrait la revoir avec
   // (`plan-quantite-minimale.md`, M1).

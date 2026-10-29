@@ -11,6 +11,7 @@ import {
   shopOperationsOf,
   type ShopSale,
 } from "./shop-catalogue-operations.js";
+import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
 
 /**
  * **Ce qu'une vitrine montre, et comment ça se range** — sans un seul prix
@@ -44,7 +45,9 @@ export function shopCatalogueOf(
   const shown: ResolvedCatalogItem[] = [];
   const items: ShopItemView[] = [];
   for (const item of sellable) {
-    if (!item.isDefault) {
+    // Le défaut toujours ; une autre déclinaison quand sa fiche montre chaque
+    // déclinaison en vignette (`plan-declinaisons-en-vignette.md`, V1).
+    if (!isShownAsTile(item)) {
       continue;
     }
     const access = shopAccessOf(item, sale);
@@ -87,7 +90,9 @@ export function ttcCentsFromHtMillicentsFor(
 
 function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView {
   return {
-    sku: item.productSku,
+    // Le SKU de VENTE (V4) : celui du produit pour le défaut, le sien pour une
+    // autre déclinaison — celui que le panier renverra.
+    sku: shopSkuOf(item),
     name: item.name,
     note: item.note,
     image: item.image,
@@ -151,14 +156,12 @@ export function inShopLanguage(
   if (language === CATALOG_SOURCE_LANGUAGE) {
     return view;
   }
-  const byProductSku = new Map(
-    sellable.filter((item) => item.isDefault).map((item) => [item.productSku, item]),
-  );
+  const byShopSku = shownByShopSku(sellable);
   const byFamily = new Map(sellable.map((item) => [item.categoryId, item]));
   return {
     ...view,
     items: view.items.map((item) => {
-      const source = byProductSku.get(item.sku);
+      const source = byShopSku.get(item.sku);
       return source === undefined
         ? item
         : {
@@ -175,6 +178,18 @@ export function inShopLanguage(
         : { ...shelf, name: inLanguage(shelf.name, source.translations.categoryName, language) };
     }),
   };
+}
+
+/**
+ * **Les articles montrés, par SKU de vente** — la clé de la vue
+ * (`plan-declinaisons-en-vignette.md`, V4). Partagée par les décorations
+ * posées après la composition (langue, limites, prix au kilo, tarification) :
+ * une seule définition de « quel article est derrière cette vignette ».
+ */
+export function shownByShopSku(
+  sellable: readonly ResolvedCatalogItem[],
+): ReadonlyMap<string, ResolvedCatalogItem> {
+  return new Map(sellable.filter(isShownAsTile).map((item) => [shopSkuOf(item), item]));
 }
 
 /**

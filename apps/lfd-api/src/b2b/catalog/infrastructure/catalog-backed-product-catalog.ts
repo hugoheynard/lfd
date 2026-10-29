@@ -7,6 +7,7 @@ import {
 } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { compareFamilies } from "../domain/catalog-family.js";
+import { shopSkuOf } from "../domain/shop-sku.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
 
 /**
@@ -25,9 +26,10 @@ import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-
  * rendu illisibles toutes les commandes déjà passées, tous les paniers
  * récurrents et tous les brouillons — pour un gain nul.
  *
- * Les autres déclinaisons (un carton, un futur conditionnement) restent
- * invisibles ici : la boutique n'a jamais su les vendre. Elles s'ouvriront avec
- * le front client, à la slice C7.
+ * Les autres déclinaisons se résolvent sous LEUR SKU quand leur fiche montre
+ * chaque déclinaison en vignette (`plan-declinaisons-en-vignette.md`, V4,
+ * 2026-10-29) : la caisse vend ce que la vitrine montre. `all()`, lui, reste
+ * aux défauts — le canal pro ne les liste pas encore.
  */
 @Injectable()
 export class CatalogBackedProductCatalog extends ProductCatalogReader {
@@ -36,7 +38,7 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
   }
 
   async resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null> {
-    const item = await this.catalog.findDefaultByProductSku(sku, audience);
+    const item = await this.catalog.findByShopSku(sku, audience);
     return item === null ? null : toCatalogItem(item);
   }
 
@@ -44,10 +46,10 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
     skus: readonly string[],
     audience: ShopAudience,
   ): Promise<ReadonlyMap<string, CatalogItem>> {
-    const items = await this.catalog.listDefaultsByProductSkus(skus, audience);
+    const items = await this.catalog.listByShopSkus(skus, audience);
     const found = new Map<string, CatalogItem>();
-    for (const [productSku, item] of items) {
-      found.set(productSku, toCatalogItem(item));
+    for (const [shopSku, item] of items) {
+      found.set(shopSku, toCatalogItem(item));
     }
     return found;
   }
@@ -77,8 +79,9 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
  */
 function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
   return {
-    // Le SKU du PRODUIT : c'est l'identifiant que la boutique porte déjà.
-    sku: item.productSku,
+    // Le SKU de VENTE : celui du produit pour le défaut — l'identifiant que la
+    // boutique porte déjà —, le sien pour une autre déclinaison.
+    sku: shopSkuOf(item),
     name: item.name,
     unitPriceMillicents: item.unitPriceMillicents,
     vatRate: item.vatRate,
@@ -94,7 +97,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     // 🔴 La frappe, ici et pas ailleurs : c'est l'endroit qui vient de LIRE le
     // catalogue. Le prix scellé ne peut donc pas venir d'un appelant.
     article: catalogueArticle({
-      sku: item.productSku,
+      sku: shopSkuOf(item),
       name: item.name,
       categoryPath: item.family.path,
       unitPriceMillicents: item.unitPriceMillicents,

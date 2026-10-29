@@ -70,6 +70,7 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
       vatByContext: {},
       operationOnly: false,
       requiresCold: false,
+      variantsAsTiles: true,
       audience: null,
     },
     editorial: {

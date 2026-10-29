@@ -42,6 +42,8 @@ const FACTS: PimFacts = {
   thumbnail: null,
   operationOnly: false,
   requiresCold: false,
+  variantsAsTiles: true,
+  productName: null,
   receivedAt: new Date("2026-08-17T08:00:00.000Z"),
 };
 

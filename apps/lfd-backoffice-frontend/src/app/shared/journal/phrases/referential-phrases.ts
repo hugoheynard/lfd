@@ -309,6 +309,25 @@ function coldRequirementChanged(fact: PhraseFact): Said {
   );
 }
 
+/**
+ * « … a montré chaque déclinaison de « Florentin » en vignette » / « … n'a
+ * plus montré que la déclinaison par défaut de « Florentin » ».
+ */
+function variantsAsTilesChanged(fact: PhraseFact): Said {
+  const tiles = fact.payload['to'] === true;
+  return byActor(
+    fact,
+    tiles
+      ? [
+          text('a montré chaque déclinaison de '),
+          ...theSubject(fact, PRODUCT),
+          text(' en vignette'),
+        ]
+      : [text("n'a plus montré que la déclinaison par défaut de "), ...theSubject(fact, PRODUCT)],
+    ['subjectLabel', 'from', 'to'],
+  );
+}
+
 function channelsChanged(fact: PhraseFact): Said {
   const p = fact.payload;
   if (p['to'] === 'inherited') {
@@ -363,6 +382,7 @@ export const REFERENTIAL_PHRASES = {
   'product.channels_changed': channelsChanged,
   'product.operation_only_changed': operationOnlyChanged,
   'product.cold_requirement_changed': coldRequirementChanged,
+  'product.variants_as_tiles_changed': variantsAsTilesChanged,
   'product.declared_ready': onProduct('a déclaré', ' prête à publier'),
   'product.ready_withdrawn': onProduct('a retiré la signature de'),
   'product.published': onSale('a publié', ' au catalogue'),

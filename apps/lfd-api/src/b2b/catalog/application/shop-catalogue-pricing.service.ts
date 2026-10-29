@@ -18,6 +18,7 @@ import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg
 import {
   inShopLanguage,
   shopCatalogueOf,
+  shownByShopSku,
   ttcCentsFromHtMillicentsFor,
 } from "./shop-catalogue-view.js";
 
@@ -177,9 +178,9 @@ export class ShopCataloguePricing {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
     // règle posée sur une parente ne mordrait pas.
-    const byProductSku = new Map(sellable.map((item) => [item.productSku, item]));
+    const byShopSku = shownByShopSku(sellable);
     const articles = catalogue.items.flatMap((item) => {
-      const source = byProductSku.get(item.sku);
+      const source = byShopSku.get(item.sku);
       return source === undefined
         ? []
         : [

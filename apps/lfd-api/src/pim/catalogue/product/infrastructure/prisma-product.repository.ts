@@ -82,6 +82,7 @@ interface ProductRow {
   requiresCold: boolean;
   audience: string | null;
   originVariantId: string | null;
+  variantsAsTiles: boolean;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
 }
@@ -187,6 +188,7 @@ function toProduct(row: ProductRow): Product {
     // Revalidée : une ligne relue n'est pas passée par le contrat.
     audience: row.audience === null ? null : audience(row.audience),
     originVariantId: row.originVariantId,
+    variantsAsTiles: row.variantsAsTiles,
     variants: row.variants.map(toVariant),
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
@@ -222,6 +224,7 @@ function toColumns(snapshot: ProductSnapshot) {
     requiresCold: snapshot.requiresCold,
     audience: snapshot.audience,
     originVariantId: snapshot.originVariantId ?? null,
+    variantsAsTiles: snapshot.variantsAsTiles ?? true,
   };
 }
 

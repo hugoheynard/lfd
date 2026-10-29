@@ -38,7 +38,7 @@ const SELLABLE = [
   }),
   catalogItem("PAT-002", { name: "Bûche" }),
   // Une déclinaison non vendue par la vitrine : jamais un SKU d'opération servi.
-  catalogItem("PAT-002", { sku: "PAT-002-2", isDefault: false }),
+  catalogItem("PAT-002", { sku: "PAT-002-2", isDefault: false, variantsAsTiles: false }),
 ];
 
 function sale(now: Date, over: Partial<ShopSale> = {}): ShopSale {

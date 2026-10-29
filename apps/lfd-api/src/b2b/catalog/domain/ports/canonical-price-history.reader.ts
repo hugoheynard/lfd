@@ -18,7 +18,7 @@ export abstract class CanonicalPriceHistoryReader {
    *
    * Parce que c'est l'unité que la plateforme B2B **vend** :
    * `ProductCatalogReader` expose `sku: item.productSku` et résout par
-   * `findDefaultByProductSku`. Les traces portent les deux SKU, et grouper par
+   * `findByShopSku`. Les traces portent les deux SKU, et grouper par
    * article rendrait une carte que personne ne sait interroger — les appelants
    * n'ont que le SKU produit en main.
    *

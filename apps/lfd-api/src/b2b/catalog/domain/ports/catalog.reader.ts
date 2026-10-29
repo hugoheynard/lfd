@@ -70,6 +70,12 @@ export interface ResolvedCatalogItem {
    */
   readonly isDefault: boolean;
   /**
+   * **Sa fiche montre chaque déclinaison en vignette** (fil v16,
+   * `plan-declinaisons-en-vignette.md`) : un article non défaut ne paraît au
+   * rayon — et ne se vend — que si c'est vrai (`isShownAsTile`).
+   */
+  readonly variantsAsTiles: boolean;
+  /**
    * **L'unité de vente** (`vente-au-poids.md`, P3) : au poids, la quantité
    * se compte en grammes et le prix s'entend AU KILO. Le pas et le minimum, en
    * grammes, sont ce contre quoi une quantité commandée se valide ; `null` à
@@ -180,7 +186,11 @@ export abstract class CatalogReader {
   abstract listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]>;
 
   /**
-   * L'unité **par défaut** d'un produit, par le SKU du PRODUIT.
+   * L'article vendu sous ce **SKU de vente** (`shopSkuOf`) : un SKU produit
+   * rend sa déclinaison par défaut ; le SKU d'une autre déclinaison la rend,
+   * seulement si sa fiche montre chaque déclinaison en vignette
+   * (`plan-declinaisons-en-vignette.md`, V4) — la caisse vend ce que la
+   * vitrine montre.
    *
    * Distincte de {@link findSku}, qui prend le SKU d'une déclinaison. Les deux
    * ne coïncident pas — le PIM dérive `VIE-001-1` de `VIE-001` — et c'est le SKU
@@ -192,13 +202,14 @@ export abstract class CatalogReader {
    * `null` si le produit est inconnu, masqué, ou sans taux de TVA — un article
    * qu'on ne sait pas facturer ne se vend pas.
    */
-  abstract findDefaultByProductSku(
+  abstract findByShopSku(
     productSku: string,
     audience: ShopAudience,
   ): Promise<ResolvedCatalogItem | null>;
 
   /**
-   * Les unités par défaut de **plusieurs** produits, en une lecture.
+   * Les articles de **plusieurs** SKU de vente, en une lecture, indexés par
+   * le SKU demandé — cf. {@link findByShopSku}.
    *
    * Par lot, et pour la même raison que le port des volumes : un panier de vingt
    * lignes, une liste d'habitudes de cinquante articles, résolus un par un,
@@ -206,7 +217,7 @@ export abstract class CatalogReader {
    * rendue plutôt que présent à `null` — l'appelant distingue ainsi « inconnu »
    * de « pas demandé ».
    */
-  abstract listDefaultsByProductSkus(
+  abstract listByShopSkus(
     productSkus: readonly string[],
     audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>>;

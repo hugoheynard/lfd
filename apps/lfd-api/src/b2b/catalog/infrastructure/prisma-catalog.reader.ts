@@ -17,13 +17,16 @@ import { STILL_SOLD } from "./sellable-filter.js";
 import { translationsColumnOf } from "./catalog-translations-column.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
+import { shopItemName, shopSkuOf } from "../domain/shop-sku.js";
+import { soldUnderShopSkus } from "./shop-sku-filter.js";
+import type { CatalogTranslations } from "../domain/catalog-translations.js";
 
 /**
  * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
  * défaut.**
  *
  * Il prend le SKU d'une DÉCLINAISON, là où le devis et la commande passent par
- * le SKU produit (`listDefaultsByProductSkus`), qui porte l'audience depuis le
+ * le SKU produit (`listByShopSkus`), qui porte l'audience depuis le
  * lot A3. Aucun chemin public ne l'atteint aujourd'hui (2026-09-21).
  *
  * Un `"pro"` qu'on voit est une décision ; un défaut de signature est un oubli
@@ -38,6 +41,9 @@ interface ItemRow {
   readonly priceMillicents: number | null;
   readonly publicByContext: unknown;
   readonly isDefault: boolean;
+  /** Fil v16 : la fiche montre chaque déclinaison ; le nom de la fiche (`NULL` avant). */
+  readonly variantsAsTiles: boolean;
+  readonly productName: string | null;
   readonly position: number;
   readonly vatRatePercent: { toNumber: () => number } | null;
   readonly allergens: unknown;
@@ -120,12 +126,12 @@ export class PrismaCatalogReader extends CatalogReader {
   }
 
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
-  async findDefaultByProductSku(
-    productSku: string,
+  async findByShopSku(
+    shopSku: string,
     audience: ShopAudience,
   ): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
-      where: { productSku, isDefault: true, ...STILL_SOLD },
+      where: { ...soldUnderShopSkus([shopSku]), ...STILL_SOLD },
       include: { category: true, override: { select: DECISION_COLUMNS } },
     });
     if (row === null || !servedToViewer(row, audience)) {
@@ -135,15 +141,15 @@ export class PrismaCatalogReader extends CatalogReader {
     return served === null ? null : resolve(row, served, await this.lineage([row]), audience);
   }
 
-  async listDefaultsByProductSkus(
-    productSkus: readonly string[],
+  async listByShopSkus(
+    shopSkus: readonly string[],
     audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
-    if (productSkus.length === 0) {
+    if (shopSkus.length === 0) {
       return new Map();
     }
     const rows = await this.prisma.catalogItem.findMany({
-      where: { productSku: { in: [...productSkus] }, isDefault: true, ...STILL_SOLD },
+      where: { ...soldUnderShopSkus(shopSkus), ...STILL_SOLD },
       include: { category: true, override: { select: DECISION_COLUMNS } },
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
@@ -153,7 +159,7 @@ export class PrismaCatalogReader extends CatalogReader {
       if (!servedToViewer(row, audience) || served === null) {
         continue;
       }
-      resolved.set(row.productSku, resolve(row, served, lineage, audience));
+      resolved.set(shopSkuOf(row), resolve(row, served, lineage, audience));
     }
     return resolved;
   }
@@ -360,7 +366,9 @@ function resolve(
   return {
     sku: row.sku,
     productSku: row.productSku,
-    name: row.name,
+    // « fiche — déclinaison » hors défaut (V5) — le nom que la vitrine, le
+    // devis et la ligne de commande portent tous trois.
+    name: shopItemName(row.name, row.productName, row.isDefault),
     unitPriceMillicents: served.unitPriceMillicents,
     pimPriceMillicents: served.pimPriceMillicents,
     vatRate: served.vatRate,
@@ -369,7 +377,7 @@ function resolve(
     // `NULL` lu `both`, comme `servedTo` le lit : une ligne jamais reçue par un fait.
     audience: catalogAudienceOf(row.audience) ?? "both",
     translations: {
-      name: translationsColumnOf(row.nameTranslations),
+      name: nameTranslationsOf(row),
       note: translationsColumnOf(row.noteTranslations),
       categoryName: translationsColumnOf(row.category.nameTranslations),
     },
@@ -381,6 +389,7 @@ function resolve(
       path: lineage(row.category.id),
     },
     isDefault: row.isDefault,
+    variantsAsTiles: row.variantsAsTiles,
     // Lue par la commande (P3) : l'unité dans laquelle la quantité se compte,
     // et ce contre quoi une quantité au poids se valide.
     saleUnit: saleUnitOf(row.sku, row.saleUnit),
@@ -397,6 +406,21 @@ function resolve(
     image: imageOf(row),
     thumbnail: thumbnailOf(row),
   };
+}
+
+/**
+ * Les traductions du nom servi : celles de la déclinaison, précédées du nom
+ * de la fiche hors défaut. Le fait ne porte pas les traductions de la fiche :
+ * elle reste en français (`plan-declinaisons-en-vignette.md`, V5).
+ */
+function nameTranslationsOf(row: ItemRow): CatalogTranslations {
+  const translations = translationsColumnOf(row.nameTranslations);
+  return Object.fromEntries(
+    Object.entries(translations).map(([language, name]) => [
+      language,
+      shopItemName(name, row.productName, row.isDefault),
+    ]),
+  );
 }
 
 /**

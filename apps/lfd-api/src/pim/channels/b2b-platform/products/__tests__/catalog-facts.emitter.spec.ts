@@ -80,6 +80,7 @@ function body(id: string): CatalogProductFactBody {
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
+      variantsAsTiles: true,
     },
     variants: [],
     gaps: { [`SKU-${id}-1`]: ["price"] },
@@ -143,6 +144,18 @@ describe("B2bCatalogFactsEmitter", () => {
       ?.payload ?? { audienceInherited: null };
 
     expect(CatalogProductChangedFact.fromPayload(older).body.audienceInherited).toBeNull();
+  });
+
+  /** Fil v16 : un fait resté dans la boîte avant l'option se lit cochée — la valeur de la colonne. */
+  it("relit un fait émis avant `variantsAsTiles` en le disant coché", async () => {
+    const { uow, emitter } = setup(["p_a"]);
+    await uow.run(() => emitter.emitProducts(["p_a"]));
+    const payload = uow.of(PIM_CATALOG_PRODUCT_CHANGED)[0]?.payload ?? {};
+    const { variantsAsTiles: _dropped, ...product } = payload["product"] as Record<string, unknown>;
+
+    expect(
+      CatalogProductChangedFact.fromPayload({ ...payload, product }).body.product.variantsAsTiles,
+    ).toBe(true);
   });
 
   it("ignore une fiche que le verrou ne trouve pas, sans tirer de numéro pour elle", async () => {

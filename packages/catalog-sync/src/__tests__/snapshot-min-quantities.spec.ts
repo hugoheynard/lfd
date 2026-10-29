@@ -33,8 +33,8 @@ const variant = {
 };
 
 describe("syncMinQuantitiesSchema", () => {
-  it("le fil est en v15", () => {
-    expect(CATALOG_SNAPSHOT_VERSION).toBe(15);
+  it("le fil est en v15 au moins", () => {
+    expect(CATALOG_SNAPSHOT_VERSION).toBeGreaterThanOrEqual(15);
   });
 
   it("accepte un minimum par audience, et `null` — aucun minimum", () => {

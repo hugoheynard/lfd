@@ -120,6 +120,12 @@ export const PIM_EVENTS = {
    */
   productAudienceChanged: "product.audience_changed",
   /**
+   * La fiche montre chaque déclinaison en vignette au rayon, ou seulement la
+   * déclinaison par défaut (`plan-declinaisons-en-vignette.md`, V1). Un fait
+   * à part, sur sa propre route : il change CE QUI paraît en boutique.
+   */
+  productVariantsAsTilesChanged: "product.variants_as_tiles_changed",
+  /**
    * La quantité minimale d'achat d'une déclinaison change, ou se met à suivre
    * le défaut (`plan-quantite-minimale.md`, M1). Un fait à part, sur sa
    * propre route : il change COMBIEN on doit en prendre.

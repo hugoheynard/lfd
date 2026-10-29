@@ -26,6 +26,7 @@ const CROISSANT: ResolvedCatalogItem = {
   translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
   family: VIENNOISERIES,
   isDefault: true,
+  variantsAsTiles: true,
   saleUnit: "piece",
   weightMinGrams: null,
   weightStepGrams: null,
@@ -44,8 +45,8 @@ function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {
   return {
     findSku: (sku) => Promise.resolve(items.find((item) => item.sku === sku) ?? null),
     listSellable: () => Promise.resolve([...items]),
-    findDefaultByProductSku: (productSku) => Promise.resolve(byProduct.get(productSku) ?? null),
-    listDefaultsByProductSkus: (skus) =>
+    findByShopSku: (productSku) => Promise.resolve(byProduct.get(productSku) ?? null),
+    listByShopSkus: (skus) =>
       Promise.resolve(
         new Map(
           skus.flatMap((sku) => {

@@ -23,7 +23,7 @@ export interface RecommendationFilterInput {
  *
  * Trois portes dans l'ordre du plan : `resolveMany(skus, audience)`, qui
  * applique `servedTo` lui-même (`prisma-catalog.reader.ts`,
- * `listDefaultsByProductSkus`, vérifié le 2026-10-18) — on ne relit donc pas
+ * `listByShopSkus`, vérifié le 2026-10-18) — on ne relit donc pas
  * le masquage ici ; puis l'heure limite du jour visé ; enfin le panier. Un
  * article qui ne passe pas disparaît, et une liste vide rend une liste vide.
  *

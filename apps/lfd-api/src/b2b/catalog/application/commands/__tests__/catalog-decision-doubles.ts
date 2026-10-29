@@ -51,6 +51,8 @@ function article(placement: Placement, sku: string = SKU): CatalogItem {
     thumbnail: null,
     operationOnly: false,
     requiresCold: false,
+    variantsAsTiles: true,
+    productName: null,
     orderTimeLimit: null,
     receivedAt: new Date("2026-01-01T00:00:00.000Z"),
   };

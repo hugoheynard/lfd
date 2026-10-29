@@ -50,6 +50,7 @@ function snapshotOf(version: number, variants: readonly Record<string, unknown>[
         thumbnail: null,
         operationOnly: false,
         requiresCold: false,
+        variantsAsTiles: true,
       },
     ],
     orderTimeLimits: [],

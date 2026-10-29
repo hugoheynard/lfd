@@ -21,7 +21,7 @@ import { z } from "zod";
  * pire qu'un push refusé, parce qu'il facture des prix qui n'existent pas.
  * Toute rupture de forme incrémente ce nombre.
  */
-export const CATALOG_SNAPSHOT_VERSION = 15;
+export const CATALOG_SNAPSHOT_VERSION = 16;
 
 /**
  * Une famille de produits, **à plat**.
@@ -565,6 +565,16 @@ export const syncProductSchema = z.object({
    * l'émission plutôt que de produire un article qu'on lirait « sec ».
    */
   requiresCold: z.boolean(),
+  /**
+   * **Montrer chaque déclinaison en vignette** au rayon (v16,
+   * `documentation/catalogue/plan-declinaisons-en-vignette.md`) — un fait de
+   * la fiche, que le récepteur descend sur ses articles : vrai, une
+   * déclinaison non défaut paraît au rayon et se vend sous son propre SKU.
+   *
+   * Obligatoire, comme `requiresCold` : un émetteur qui l'oublie échoue à
+   * l'émission plutôt que de laisser le récepteur choisir.
+   */
+  variantsAsTiles: z.boolean(),
 });
 export type SyncProduct = z.infer<typeof syncProductSchema>;
 
@@ -714,6 +724,7 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
     z.literal(13),
     z.literal(14),
     z.literal(15),
+    z.literal(16),
   ]),
   products: z.array(
     syncProductSchema.extend({
@@ -725,6 +736,9 @@ export const storedCatalogSnapshotSchema = catalogSnapshotSchema.extend({
       // Absent avant la v12 : le froid ne traversait pas, et aucun article
       // n'était déclaré froid. C'est la VERSION qui dit comment lire.
       requiresCold: z.boolean().optional(),
+      // Absent avant la v16 : seule la déclinaison par défaut paraissait au
+      // rayon. C'est la VERSION qui dit comment lire.
+      variantsAsTiles: z.boolean().optional(),
       // Absents avant la v8 : l'éditorial et le visuel ne traversaient pas. Une
       // arrivée d'avant la bascule reste lisible, et se lit alors « ni ligne ni
       // visuel » — ce qui est exact : elle n'en portait pas.

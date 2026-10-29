@@ -89,6 +89,7 @@ function productFact(
       thumbnail: null,
       operationOnly: false,
       requiresCold: false,
+      variantsAsTiles: true,
     },
     variants: [VARIANT],
     gaps: {},
