@@ -35,8 +35,9 @@ export interface UpdateVariantPricingInput {
    */
   readonly proPricePerKgHt?: string | null | undefined;
   readonly publicPricePerKgTtcCents?: number | null | undefined;
-  /** Montrer le prix au kilo en boutique (`plan-carte-tarif.md`). Absent = inchangé. */
-  readonly pricePerKgShown?: boolean | undefined;
+  /** Montrer chaque prix au kilo à son audience (`plan-carte-tarif.md`). Absent = inchangé. */
+  readonly pricePerKgShownPublic?: boolean | undefined;
+  readonly pricePerKgShownPro?: boolean | undefined;
   /**
    * L'unité de vente, le minimum et le pas en grammes
    * (`vente-au-poids.md`, lot P1). Absent = inchangé ; le domaine refuse
@@ -135,7 +136,12 @@ function pricingOfInput(input: UpdateVariantPricingInput): VariantPricing {
     ...(input.publicPricePerKgTtcCents === undefined
       ? {}
       : { publicPricePerKgTtcCents: input.publicPricePerKgTtcCents }),
-    ...(input.pricePerKgShown === undefined ? {} : { pricePerKgShown: input.pricePerKgShown }),
+    ...(input.pricePerKgShownPublic === undefined
+      ? {}
+      : { pricePerKgShownPublic: input.pricePerKgShownPublic }),
+    ...(input.pricePerKgShownPro === undefined
+      ? {}
+      : { pricePerKgShownPro: input.pricePerKgShownPro }),
     ...(input.saleUnit === undefined ? {} : { saleUnit: input.saleUnit }),
     ...(input.weightMinGrams === undefined ? {} : { weightMinGrams: input.weightMinGrams }),
     ...(input.weightStepGrams === undefined ? {} : { weightStepGrams: input.weightStepGrams }),
@@ -162,7 +168,8 @@ function pricingOf(
     readonly proPriceMillicents: number | null;
     readonly proPricePerKgMillicents: number | null;
     readonly publicPricePerKgTtcCents: number | null;
-    readonly pricePerKgShown: boolean;
+    readonly pricePerKgShownPublic: boolean;
+    readonly pricePerKgShownPro: boolean;
     readonly saleUnit: SaleUnit;
     readonly weightMinGrams: number | null;
     readonly weightStepGrams: number | null;
@@ -176,9 +183,10 @@ function pricingOf(
     proPriceMillicents: variant?.proPriceMillicents ?? null,
     proPricePerKgMillicents: variant?.proPricePerKgMillicents ?? null,
     publicPricePerKgTtcCents: variant?.publicPricePerKgTtcCents ?? null,
-    // La case « afficher en boutique » (`plan-carte-tarif.md`) : la décocher
-    // seule est un geste, il se trace.
-    pricePerKgShown: variant?.pricePerKgShown ?? true,
+    // Les cases « afficher aux particuliers / aux pros » (`plan-carte-tarif.md`) :
+    // en décocher une seule est un geste, il se trace.
+    pricePerKgShownPublic: variant?.pricePerKgShownPublic ?? true,
+    pricePerKgShownPro: variant?.pricePerKgShownPro ?? true,
     // L'unité de vente et son pas (`vente-au-poids.md`) : sans eux, un
     // passage au poids serait `untraced`.
     saleUnit: variant?.saleUnit ?? "piece",

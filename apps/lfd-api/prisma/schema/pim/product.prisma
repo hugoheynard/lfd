@@ -248,14 +248,23 @@ model ProductVariant {
   /// `documentation/pricing/plan-prix-au-kilo.md`. Donnée INFORMATIVE : rien
   /// ne le lit pour tarifer. Saisi, jamais calculé depuis le prix et le poids.
   /// `NULL` = non saisi ; suit le défaut avec le tarif. `CHECK (> 0)`.
-  proPricePerKgMillicents  Int? @map("pro_price_per_kg_millicents")
+  proPricePerKgMillicents  Int?    @map("pro_price_per_kg_millicents")
   /// **Le prix au kilo public TTC saisi**, en centimes. Même statut que le
   /// précédent : informatif, saisi, `NULL` = non saisi. `CHECK (> 0)`.
-  publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
-  /// **Le prix au kilo est-il montré en boutique ?** — `documentation/pricing/plan-carte-tarif.md`.
-  /// Faux : les deux prix restent saisis ici, mais le canal reçoit `null`.
-  /// Suit le défaut avec le tarif (`pricingFollowsDefault`).
+  publicPricePerKgTtcCents Int?    @map("public_price_per_kg_ttc_cents")
+  /// ⚠️ **Colonne morte depuis le 2026-10-29** — ni lue ni écrite par le code
+  /// (vérifié le 2026-10-29). La case unique a été remplacée le même jour par
+  /// une case par audience (les deux colonnes suivantes, reprises de celle-ci
+  /// par `20261029160000_prix_au_kilo_par_audience`). Elle reste en base
+  /// (CLAUDE.md §0 : une colonne morte reste) ; la retirer est une migration
+  /// à part, sur ordre de Hugo.
   pricePerKgShown          Boolean @default(true) @map("price_per_kg_shown")
+  /// **Le prix au kilo public TTC est-il montré aux particuliers ?** —
+  /// `documentation/pricing/plan-carte-tarif.md`. Faux : le prix reste saisi
+  /// ici, mais le canal reçoit `null`. Suit le défaut avec le tarif.
+  pricePerKgShownPublic    Boolean @default(true) @map("price_per_kg_shown_public")
+  /// **Le prix au kilo pro HT est-il montré aux pros ?** — même règle.
+  pricePerKgShownPro       Boolean @default(true) @map("price_per_kg_shown_pro")
 
   /// **L'unité de vente** — `piece` (défaut, tout l'existant) ou `weight`, la
   /// quantité se comptant alors en grammes (`documentation/pricing/vente-au-poids.md`).

@@ -452,52 +452,70 @@ describe('PricingForm — les blocs de la carte', () => {
 });
 
 /** La case « Afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
-describe('PricingForm — afficher le prix au kilo en boutique', () => {
-  function checkbox(host: HTMLElement): HTMLInputElement {
-    const input = blockTitled(host, 'Prix au kilo').querySelector<HTMLInputElement>(
-      'fold-checkbox input[type="checkbox"]',
+describe('PricingForm — afficher le prix au kilo, par audience', () => {
+  function checkbox(host: HTMLElement, label: string): HTMLInputElement {
+    const box = [...blockTitled(host, 'Prix au kilo').querySelectorAll('fold-checkbox')].find(
+      (candidate) => candidate.textContent?.includes(label) === true,
     );
-    if (input === null) {
-      throw new TypeError('case absente');
+    const input = box?.querySelector<HTMLInputElement>('input[type="checkbox"]');
+    if (input === null || input === undefined) {
+      throw new TypeError(`case « ${label} » absente`);
     }
     return input;
   }
 
-  it('cochée par défaut, sous les deux prix au kilo', () => {
+  it('deux cases cochées par défaut, sous les deux prix au kilo', () => {
     const store = setup();
     withFamily(store);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;
 
-    expect(store.pricePerKgShown()).toBe(true);
-    expect(checkbox(host).checked).toBe(true);
-    expect(host.textContent).toContain('Afficher le prix au kilo en boutique');
+    expect(store.pricePerKgShownPublic()).toBe(true);
+    expect(store.pricePerKgShownPro()).toBe(true);
+    expect(checkbox(host, 'Afficher aux particuliers').checked).toBe(true);
+    expect(checkbox(host, 'Afficher aux pros').checked).toBe(true);
   });
 
-  it('décochée, remonte au store sans toucher aux prix saisis', () => {
+  it('décocher les particuliers ne touche ni aux pros ni aux prix saisis', () => {
     const store = setup();
     withFamily(store);
     store.publicPricePerKgEur.set(14.9);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
 
-    checkbox(fixture.nativeElement as HTMLElement).click();
+    checkbox(fixture.nativeElement as HTMLElement, 'Afficher aux particuliers').click();
     fixture.detectChanges();
 
-    expect(store.pricePerKgShown()).toBe(false);
+    expect(store.pricePerKgShownPublic()).toBe(false);
+    expect(store.pricePerKgShownPro()).toBe(true);
     expect(store.publicPricePerKgEur()).toBe(14.9);
   });
 
-  it('se grise avec les prix quand le tarif est aligné', () => {
+  it('décocher les pros ne touche pas aux particuliers', () => {
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    checkbox(fixture.nativeElement as HTMLElement, 'Afficher aux pros').click();
+    fixture.detectChanges();
+
+    expect(store.pricePerKgShownPro()).toBe(false);
+    expect(store.pricePerKgShownPublic()).toBe(true);
+  });
+
+  it('se grisent avec les prix quand le tarif est aligné', () => {
     const store = setup();
     withFamily(store);
     store.pricingAligned.set(true);
     const fixture = TestBed.createComponent(PricingForm);
     fixture.detectChanges();
     const host = fixture.nativeElement as HTMLElement;
+    const inherited = host.querySelector('.stack.is-inherited');
 
-    expect(host.querySelector('.stack.is-inherited')?.contains(checkbox(host))).toBe(true);
+    expect(inherited?.contains(checkbox(host, 'Afficher aux particuliers'))).toBe(true);
+    expect(inherited?.contains(checkbox(host, 'Afficher aux pros'))).toBe(true);
   });
 });
 

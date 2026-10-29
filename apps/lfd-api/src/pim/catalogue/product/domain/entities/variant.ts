@@ -198,11 +198,14 @@ export interface VariantSnapshot {
   /** Le prix au kilo public TTC SAISI, en centimes ; `null` = non saisi. */
   readonly publicPricePerKgTtcCents: number | null;
   /**
-   * Le prix au kilo est-il MONTRÉ en boutique (`plan-carte-tarif.md`) ? Faux :
-   * les deux prix restent saisis, mais le canal ne les reçoit plus. Vrai par
-   * défaut ; suit le défaut avec le tarif quand `pricingFollowsDefault`.
+   * Chaque prix au kilo est-il MONTRÉ en boutique, par audience
+   * (`plan-carte-tarif.md`) ? Faux : le prix reste saisi, mais le canal ne
+   * reçoit plus CELUI-LÀ — le public TTC aux particuliers, le pro HT aux pros.
+   * Vrais par défaut ; suivent le défaut avec le tarif quand
+   * `pricingFollowsDefault`.
    */
-  readonly pricePerKgShown: boolean;
+  readonly pricePerKgShownPublic: boolean;
+  readonly pricePerKgShownPro: boolean;
   /**
    * L'unité de vente, propre à CETTE déclinaison — jamais héritée du défaut,
    * même quand elle en suit le tarif (`vente-au-poids.md`). Le pas et le
@@ -271,8 +274,9 @@ export interface VariantPricing {
    */
   readonly proPricePerKg?: ProPriceHt | null;
   readonly publicPricePerKgTtcCents?: number | null;
-  /** Montrer le prix au kilo en boutique (`plan-carte-tarif.md`). Absent = inchangé. */
-  readonly pricePerKgShown?: boolean;
+  /** Montrer chaque prix au kilo à son audience (`plan-carte-tarif.md`). Absent = inchangé. */
+  readonly pricePerKgShownPublic?: boolean;
+  readonly pricePerKgShownPro?: boolean;
   /**
    * L'unité de vente et, au poids, le pas et le minimum
    * (`vente-au-poids.md`). Chaque champ : **absent = inchangé**. Passer à
@@ -298,7 +302,8 @@ export class Variant {
   private proPriceMillicentsValue: number | null;
   private proPricePerKgMillicentsValue: number | null;
   private publicPricePerKgTtcCentsValue: number | null;
-  private pricePerKgShownFlag: boolean;
+  private pricePerKgShownPublicFlag: boolean;
+  private pricePerKgShownProFlag: boolean;
   private saleTermsValue: SaleTerms;
   private publishedFlag: boolean;
   private minQuantitiesValue: MinQuantities;
@@ -330,7 +335,8 @@ export class Variant {
     this.proPriceMillicentsValue = snapshot.proPriceMillicents;
     this.proPricePerKgMillicentsValue = snapshot.proPricePerKgMillicents;
     this.publicPricePerKgTtcCentsValue = snapshot.publicPricePerKgTtcCents;
-    this.pricePerKgShownFlag = snapshot.pricePerKgShown;
+    this.pricePerKgShownPublicFlag = snapshot.pricePerKgShownPublic;
+    this.pricePerKgShownProFlag = snapshot.pricePerKgShownPro;
     this.saleTermsValue = {
       saleUnit: snapshot.saleUnit,
       weightMinGrams: snapshot.weightMinGrams,
@@ -370,7 +376,8 @@ export class Variant {
       proPriceMillicents: null,
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
-      pricePerKgShown: true,
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: true,
       ...PIECE_SALE_TERMS,
       hasBeenPublished: false,
       minQuantities: NO_MIN_QUANTITIES,
@@ -419,7 +426,8 @@ export class Variant {
       proPriceMillicents: null,
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
-      pricePerKgShown: true,
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: true,
       // À la pièce, comme tout l'existant ; publiée seulement si son produit
       // est déjà en vente — c'est l'agrégat qui le dit (`Product.addVariant`).
       ...PIECE_SALE_TERMS,
@@ -854,7 +862,8 @@ export class Variant {
       this.proPriceMillicentsValue = resolved.proPriceMillicents;
       this.proPricePerKgMillicentsValue = resolved.proPricePerKgMillicents;
       this.publicPricePerKgTtcCentsValue = resolved.publicPricePerKgTtcCents;
-      this.pricePerKgShownFlag = resolved.pricePerKgShown;
+      this.pricePerKgShownPublicFlag = resolved.pricePerKgShownPublic;
+      this.pricePerKgShownProFlag = resolved.pricePerKgShownPro;
     }
     if (this.followsDefault.regulatory) {
       this.allergenSheetValue = resolved.allergenSheet;
@@ -901,8 +910,11 @@ export class Variant {
         input.publicPricePerKgTtcCents,
       );
     }
-    if (input.pricePerKgShown !== undefined) {
-      this.pricePerKgShownFlag = input.pricePerKgShown;
+    if (input.pricePerKgShownPublic !== undefined) {
+      this.pricePerKgShownPublicFlag = input.pricePerKgShownPublic;
+    }
+    if (input.pricePerKgShownPro !== undefined) {
+      this.pricePerKgShownProFlag = input.pricePerKgShownPro;
     }
   }
 
@@ -927,7 +939,8 @@ export class Variant {
       proPriceMillicents: this.proPriceMillicentsValue,
       proPricePerKgMillicents: this.proPricePerKgMillicentsValue,
       publicPricePerKgTtcCents: this.publicPricePerKgTtcCentsValue,
-      pricePerKgShown: this.pricePerKgShownFlag,
+      pricePerKgShownPublic: this.pricePerKgShownPublicFlag,
+      pricePerKgShownPro: this.pricePerKgShownProFlag,
       ...this.saleTermsValue,
       hasBeenPublished: this.publishedFlag,
       minQuantities: this.minQuantitiesValue,

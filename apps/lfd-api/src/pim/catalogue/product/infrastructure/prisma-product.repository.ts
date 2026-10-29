@@ -59,7 +59,8 @@ interface VariantRow extends MinQuantityColumns {
   proPriceMillicents: number | null;
   proPricePerKgMillicents: number | null;
   publicPricePerKgTtcCents: number | null;
-  pricePerKgShown: boolean;
+  pricePerKgShownPublic: boolean;
+  pricePerKgShownPro: boolean;
   saleUnit: string;
   weightMinGrams: number | null;
   weightStepGrams: number | null;
@@ -123,7 +124,8 @@ function toVariant(row: VariantRow): VariantSnapshot {
     proPriceMillicents: row.proPriceMillicents,
     proPricePerKgMillicents: row.proPricePerKgMillicents,
     publicPricePerKgTtcCents: row.publicPricePerKgTtcCents,
-    pricePerKgShown: row.pricePerKgShown,
+    pricePerKgShownPublic: row.pricePerKgShownPublic,
+    pricePerKgShownPro: row.pricePerKgShownPro,
     ...saleTermsOf(row),
     regulatoryFollowsDefault: row.regulatoryFollowsDefault,
     pricingFollowsDefault: row.pricingFollowsDefault,
@@ -366,7 +368,8 @@ export class PrismaProductRepository extends ProductRepository {
             proPriceMillicents: variant.proPriceMillicents,
             proPricePerKgMillicents: variant.proPricePerKgMillicents,
             publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
-            pricePerKgShown: variant.pricePerKgShown,
+            pricePerKgShownPublic: variant.pricePerKgShownPublic,
+            pricePerKgShownPro: variant.pricePerKgShownPro,
             ...saleTermsColumns(variant),
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,
@@ -386,7 +389,8 @@ export class PrismaProductRepository extends ProductRepository {
             proPriceMillicents: variant.proPriceMillicents,
             proPricePerKgMillicents: variant.proPricePerKgMillicents,
             publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
-            pricePerKgShown: variant.pricePerKgShown,
+            pricePerKgShownPublic: variant.pricePerKgShownPublic,
+            pricePerKgShownPro: variant.pricePerKgShownPro,
             ...saleTermsColumns(variant),
             regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
             pricingFollowsDefault: variant.pricingFollowsDefault,

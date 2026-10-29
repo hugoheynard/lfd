@@ -77,7 +77,8 @@ export class PrismaCatalogRevisionSource extends CatalogRevisionSource {
         ...(variant.publicPricePerKgTtcCents === null
           ? {}
           : { publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents }),
-        ...(variant.pricePerKgShown ? {} : { pricePerKgShown: false as const }),
+        ...(variant.pricePerKgShownPublic ? {} : { pricePerKgShownPublic: false as const }),
+        ...(variant.pricePerKgShownPro ? {} : { pricePerKgShownPro: false as const }),
         ...weightTermsOf(variant),
         isDefault: variant.isDefault,
         isDiscontinued: variant.isDiscontinued,

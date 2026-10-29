@@ -261,6 +261,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   publicPricePerKgTtcCents: 'Prix au kilo public TTC',
   // La case « afficher le prix au kilo en boutique » (`product.pricing_saved`, 2026-10-29).
   pricePerKgShown: 'Prix au kilo affiché en boutique',
+  pricePerKgShownPublic: 'Prix au kilo affiché aux particuliers',
+  pricePerKgShownPro: 'Prix au kilo affiché aux pros',
   providerId: 'Identifiant d’envoi',
   ratioBp: 'Rapport prix pro / prix public',
   quantity: 'Quantité',

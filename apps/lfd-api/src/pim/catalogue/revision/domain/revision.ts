@@ -127,11 +127,13 @@ export interface RevisionItemInput {
   readonly proPricePerKgMillicents?: number;
   readonly publicPricePerKgTtcCents?: number;
   /**
-   * La case « afficher le prix au kilo en boutique » (`plan-carte-tarif.md`)
-   * — **absente quand cochée**, ce qu'est tout l'existant, pour la même raison
-   * que le prix pro : décocher change l'empreinte de SON article seulement.
+   * Les cases « afficher le prix au kilo » aux particuliers et aux pros
+   * (`plan-carte-tarif.md`) — **absentes quand cochées**, ce qu'est tout
+   * l'existant, pour la même raison que le prix pro : décocher change
+   * l'empreinte de SON article seulement.
    */
-  readonly pricePerKgShown?: false;
+  readonly pricePerKgShownPublic?: false;
+  readonly pricePerKgShownPro?: false;
   /**
    * La vente au poids (`vente-au-poids.md`) — **absente à la pièce**, ce
    * qu'est tout l'existant, pour la même raison que le prix pro : les

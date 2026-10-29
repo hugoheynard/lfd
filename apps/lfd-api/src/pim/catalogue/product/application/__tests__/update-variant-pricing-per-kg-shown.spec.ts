@@ -9,7 +9,7 @@ import {
 } from "../update-variant-pricing.js";
 import { OneProduct, PRODUCT_ID, SELLABLE_VARIANT, tarte } from "./audience-doubles.js";
 
-/** La case « afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
+/** Les cases « afficher le prix au kilo », une par audience (`plan-carte-tarif.md`). */
 
 function pricing(
   products: OneProduct,
@@ -27,29 +27,54 @@ function pricing(
 
 const UNCHANGED = { priceCents: SELLABLE_VARIANT.priceCents, weightGrams: null } as const;
 
-describe("UpdateVariantPricingHandler — montrer le prix au kilo", () => {
-  it("décocher la SEULE case se journalise dans le fait de tarif", async () => {
+describe("UpdateVariantPricingHandler — montrer le prix au kilo par audience", () => {
+  it("décocher SEULE la case des particuliers se journalise, sous sa clé", async () => {
     const products = new OneProduct(tarte());
     const journal = new RecordingJournal();
 
-    await pricing(products, { ...UNCHANGED, pricePerKgShown: false }, journal);
+    await pricing(products, { ...UNCHANGED, pricePerKgShownPublic: false }, journal);
 
-    expect(products.stored?.variants[0]?.pricePerKgShown).toBe(false);
+    expect(products.stored?.variants[0]).toMatchObject({
+      pricePerKgShownPublic: false,
+      pricePerKgShownPro: true,
+    });
     expect(journal.types()).toEqual(["product.pricing_saved"]);
     expect(journal.entries[0]?.payload["changes"]).toEqual({
-      pricePerKgShown: { from: true, to: false },
+      pricePerKgShownPublic: { from: true, to: false },
     });
   });
 
-  it("absente : la case ne bouge pas, et la section passe sans trace", async () => {
+  it("décocher SEULE la case des pros se journalise, sous sa clé", async () => {
+    const products = new OneProduct(tarte());
+    const journal = new RecordingJournal();
+
+    await pricing(products, { ...UNCHANGED, pricePerKgShownPro: false }, journal);
+
+    expect(products.stored?.variants[0]).toMatchObject({
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: false,
+    });
+    expect(journal.entries[0]?.payload["changes"]).toEqual({
+      pricePerKgShownPro: { from: true, to: false },
+    });
+  });
+
+  it("absentes : les cases ne bougent pas, et la section passe sans trace", async () => {
     const products = new OneProduct(
-      tarte({ variants: [{ ...SELLABLE_VARIANT, pricePerKgShown: false }] }),
+      tarte({
+        variants: [
+          { ...SELLABLE_VARIANT, pricePerKgShownPublic: false, pricePerKgShownPro: false },
+        ],
+      }),
     );
     const journal = new RecordingJournal();
 
     await pricing(products, UNCHANGED, journal);
 
-    expect(products.stored?.variants[0]?.pricePerKgShown).toBe(false);
+    expect(products.stored?.variants[0]).toMatchObject({
+      pricePerKgShownPublic: false,
+      pricePerKgShownPro: false,
+    });
     expect(journal.types()).toEqual([]);
   });
 });

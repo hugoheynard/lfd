@@ -115,8 +115,8 @@
 
     @if (!byWeight()) {
       <!-- Les prix au kilo (K4) : SAISIS, jamais calculés — informatifs. Au
-           poids, le prix EST au kilo : ce bloc n'a plus d'objet. La case dit
-           si la boutique les reçoit (`plan-carte-tarif.md`). -->
+           poids, le prix EST au kilo : ce bloc n'a plus d'objet. Les deux cases
+           disent si la boutique reçoit chacun (`plan-carte-tarif.md`). -->
       <section class="block" aria-label="Prix au kilo">
         <fold-element-title variant="eyebrow" title="Prix au kilo" />
         <label class="field">
@@ -152,10 +152,17 @@
 
         <fold-checkbox
           class="per-kg-shown"
-          label="Afficher le prix au kilo en boutique"
-          hint="Décoché : le prix au kilo reste saisi ici, la boutique ne le montre plus."
-          [checked]="store.pricePerKgShown()"
-          (checkedChange)="store.pricePerKgShown.set($event)"
+          label="Afficher aux particuliers"
+          hint="Le prix au kilo public TTC. Décoché : il reste saisi ici, la boutique ne le montre plus aux particuliers."
+          [checked]="store.pricePerKgShownPublic()"
+          (checkedChange)="store.pricePerKgShownPublic.set($event)"
+        />
+        <fold-checkbox
+          class="per-kg-shown"
+          label="Afficher aux pros"
+          hint="Le prix au kilo pro HT. Décoché : il reste saisi ici, la boutique ne le montre plus aux pros."
+          [checked]="store.pricePerKgShownPro()"
+          (checkedChange)="store.pricePerKgShownPro.set($event)"
         />
       </section>
     } @else {

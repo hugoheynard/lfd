@@ -125,37 +125,68 @@ describe("Product — les prix au kilo dans la mutation de tarif", () => {
   });
 });
 
-/** La case « afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
-describe("Product — montrer ou non le prix au kilo", () => {
-  it("cochée à l'ouverture, pour le défaut comme pour une déclinaison ajoutée", () => {
+/** Les cases « afficher le prix au kilo », une par audience (`plan-carte-tarif.md`). */
+describe("Product — montrer ou non le prix au kilo, par audience", () => {
+  it("cochées à l'ouverture, pour le défaut comme pour une déclinaison ajoutée", () => {
     const product = aProduct();
 
-    expect(variantOf(product, "var_1")?.pricePerKgShown).toBe(true);
-    expect(variantOf(product, "var_2")?.pricePerKgShown).toBe(true);
+    for (const id of ["var_1", "var_2"]) {
+      expect(variantOf(product, id)).toMatchObject({
+        pricePerKgShownPublic: true,
+        pricePerKgShownPro: true,
+      });
+    }
   });
 
-  it("se décoche par la mutation de tarif sans effacer la saisie, et reste si absente", () => {
+  it("décocher les particuliers laisse les pros cochés, sans effacer la saisie", () => {
     const product = aProduct();
     priceKilo(product);
 
-    product.priceVariant("var_1", { priceCents: 1_200, weightGrams: 100, pricePerKgShown: false });
+    product.priceVariant("var_1", {
+      priceCents: 1_200,
+      weightGrams: 100,
+      pricePerKgShownPublic: false,
+    });
     product.priceVariant("var_1", { priceCents: 1_300, weightGrams: 100 });
 
     expect(variantOf(product, "var_1")).toMatchObject({
-      pricePerKgShown: false,
+      pricePerKgShownPublic: false,
+      pricePerKgShownPro: true,
       proPricePerKgMillicents: 1_023_697,
       publicPricePerKgTtcCents: 12_400,
     });
   });
 
-  it("une déclinaison alignée suit la case du défaut, sans la recopier chez elle", () => {
+  it("décocher les pros laisse les particuliers cochés", () => {
     const product = aProduct();
-    product.priceVariant("var_1", { priceCents: 1_200, weightGrams: 100, pricePerKgShown: false });
+
+    product.priceVariant("var_1", {
+      priceCents: 1_200,
+      weightGrams: 100,
+      pricePerKgShownPro: false,
+    });
+
+    expect(variantOf(product, "var_1")).toMatchObject({
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: false,
+    });
+  });
+
+  it("une déclinaison alignée suit les cases du défaut, sans les recopier chez elle", () => {
+    const product = aProduct();
+    product.priceVariant("var_1", {
+      priceCents: 1_200,
+      weightGrams: 100,
+      pricePerKgShownPro: false,
+    });
 
     product.alignVariant("var_2", "pricing", true);
 
-    expect(variantOf(product, "var_2")?.pricePerKgShown).toBe(false);
+    expect(variantOf(product, "var_2")).toMatchObject({
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: false,
+    });
     const own = product.persistenceSnapshot().variants.find((v) => v.id === "var_2");
-    expect(own?.pricePerKgShown).toBe(true);
+    expect(own?.pricePerKgShownPro).toBe(true);
   });
 });

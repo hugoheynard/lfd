@@ -474,8 +474,9 @@ interface VariantDraft {
   readonly publicPricePerKgEur: number | null;
   /** Le prix au kilo pro HT saisi, en TEXTE comme le prix pro HT. */
   readonly proPricePerKgHtText: string;
-  /** La case « afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
-  readonly pricePerKgShown: boolean;
+  /** Les cases « afficher aux particuliers / aux pros » (`plan-carte-tarif.md`). */
+  readonly pricePerKgShownPublic: boolean;
+  readonly pricePerKgShownPro: boolean;
   /** L'unité de vente, son pas et son minimum (`vente-au-poids.md`, P1). */
   readonly saleUnit: SaleUnit;
   readonly weightStepGrams: number | null;
@@ -614,11 +615,13 @@ export class ProductFormStore {
   readonly proPricePerKgHtText = signal('');
 
   /**
-   * **Montrer le prix au kilo en boutique** (`plan-carte-tarif.md`) — cochée
-   * par défaut. Décochée, les deux prix restent saisis ici et la boutique ne
-   * les reçoit plus. Part avec le tarif, et suit le défaut avec lui.
+   * **Montrer chaque prix au kilo à son audience** (`plan-carte-tarif.md`) —
+   * le public TTC aux particuliers, le pro HT aux pros ; cochées par défaut.
+   * Décochée, une case laisse son prix saisi ici et la boutique ne le reçoit
+   * plus. Partent avec le tarif, et suivent le défaut avec lui.
    */
-  readonly pricePerKgShown = signal(true);
+  readonly pricePerKgShownPublic = signal(true);
+  readonly pricePerKgShownPro = signal(true);
 
   /**
    * **L'unité de vente** (`vente-au-poids.md`, P1) — à la pièce ou au
@@ -1187,7 +1190,10 @@ export class ProductFormStore {
         this.saleUnit.set(value[7] === 'weight' ? 'weight' : 'piece');
         this.weightStepGrams.set((value[8] as number | null | undefined) ?? null);
         this.weightMinGrams.set((value[9] as number | null | undefined) ?? null);
-        this.pricePerKgShown.set(value[10] !== false);
+        // `value[10]` était la case unique : un brouillon d'avant la reprend
+        // pour les deux audiences.
+        this.pricePerKgShownPublic.set(value[10] !== false);
+        this.pricePerKgShownPro.set((value[11] ?? value[10]) !== false);
         return;
       case 'allergenes':
         this.declaration.set({
@@ -1720,7 +1726,8 @@ export class ProductFormStore {
       // leurs voisins — centimes pour le public, texte pour le pro.
       publicPricePerKgTtcCents: perKg === null ? null : Math.round(perKg * 100),
       proPricePerKgHt: proPricePayloadOf(this.proPricePerKgHtText()),
-      pricePerKgShown: this.pricePerKgShown(),
+      pricePerKgShownPublic: this.pricePerKgShownPublic(),
+      pricePerKgShownPro: this.pricePerKgShownPro(),
       // L'unité et ses grammes (P1) partent toujours : le serveur refuse un
       // changement d'unité sur une déclinaison déjà publiée, pas sa répétition.
       // À la pièce, le pas et le minimum n'ont pas d'objet.
@@ -2261,8 +2268,10 @@ export class ProductFormStore {
           this.saleUnit(),
           this.weightStepGrams(),
           this.weightMinGrams(),
-          // La case « afficher le prix au kilo » (`plan-carte-tarif.md`), à la suite.
-          this.pricePerKgShown(),
+          // Les cases « afficher le prix au kilo » (`plan-carte-tarif.md`), à la
+          // suite : particuliers à la place de l'ancienne case unique, pros après.
+          this.pricePerKgShownPublic(),
+          this.pricePerKgShownPro(),
         ]);
       case 'allergenes': {
         const declaration = this.declaration();
@@ -2299,7 +2308,8 @@ export class ProductFormStore {
       proPriceHtText: this.proPriceHtText(),
       publicPricePerKgEur: this.publicPricePerKgEur(),
       proPricePerKgHtText: this.proPricePerKgHtText(),
-      pricePerKgShown: this.pricePerKgShown(),
+      pricePerKgShownPublic: this.pricePerKgShownPublic(),
+      pricePerKgShownPro: this.pricePerKgShownPro(),
       saleUnit: this.saleUnit(),
       weightStepGrams: this.weightStepGrams(),
       weightMinGrams: this.weightMinGrams(),
@@ -2327,7 +2337,8 @@ export class ProductFormStore {
           ? null
           : variant.publicPricePerKgTtcCents / 100,
       proPricePerKgHtText: proPriceTextOf(variant?.proPricePerKgMillicents ?? null),
-      pricePerKgShown: variant?.pricePerKgShown ?? true,
+      pricePerKgShownPublic: variant?.pricePerKgShownPublic ?? true,
+      pricePerKgShownPro: variant?.pricePerKgShownPro ?? true,
       saleUnit: variant?.saleUnit ?? 'piece',
       weightStepGrams: variant?.weightStepGrams ?? null,
       weightMinGrams: variant?.weightMinGrams ?? null,
@@ -2351,7 +2362,8 @@ export class ProductFormStore {
     this.proPriceHtText.set(draft.proPriceHtText);
     this.publicPricePerKgEur.set(draft.publicPricePerKgEur);
     this.proPricePerKgHtText.set(draft.proPricePerKgHtText);
-    this.pricePerKgShown.set(draft.pricePerKgShown);
+    this.pricePerKgShownPublic.set(draft.pricePerKgShownPublic);
+    this.pricePerKgShownPro.set(draft.pricePerKgShownPro);
     this.saleUnit.set(draft.saleUnit);
     this.weightStepGrams.set(draft.weightStepGrams);
     this.weightMinGrams.set(draft.weightMinGrams);

@@ -48,7 +48,8 @@ interface VariantDetail {
   readonly priceCents: number | null;
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
-  readonly pricePerKgShown: boolean;
+  readonly pricePerKgShownPublic: boolean;
+  readonly pricePerKgShownPro: boolean;
 }
 
 async function defaultVariant(fiche: Fiche): Promise<VariantDetail> {
@@ -149,20 +150,27 @@ describe("les prix au kilo saisis", () => {
   });
 });
 
-/** La case « Afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
-describe("la case « afficher le prix au kilo en boutique »", () => {
-  it("cochée par défaut : l'existant garde son affichage", async () => {
+/**
+ * Les cases « Afficher aux particuliers » et « Afficher aux pros »
+ * (`plan-carte-tarif.md`) : chacune retient SON prix au kilo. La vitrine sert
+ * les deux montants aux deux audiences ; c'est l'écran qui choisit l'assiette.
+ */
+describe("les cases « afficher le prix au kilo », par audience", () => {
+  it("cochées par défaut : l'existant garde son affichage", async () => {
     const fiche = await anActiveFiche(staff, "Pain aux noix", "both");
-    expect((await defaultVariant(fiche)).pricePerKgShown).toBe(true);
+    expect(await defaultVariant(fiche)).toMatchObject({
+      pricePerKgShownPublic: true,
+      pricePerKgShownPro: true,
+    });
   });
 
-  it("décochée, le référentiel garde la saisie et la boutique ne la reçoit plus", async () => {
+  it("particuliers décochés : le référentiel garde la saisie, seul le public part à `null`", async () => {
     const fiche = await anActiveFiche(staff, "Pain complet", "both");
     const variant = await defaultVariant(fiche);
     await savePricing(fiche, variant, {
       proPricePerKgHt: "6.5",
       publicPricePerKgTtcCents: 820,
-      pricePerKgShown: false,
+      pricePerKgShownPublic: false,
     }).expect(200);
     await relayAll(ctx);
     await approve([fiche]);
@@ -170,28 +178,48 @@ describe("la case « afficher le prix au kilo en boutique »", () => {
     expect(await defaultVariant(fiche)).toMatchObject({
       proPricePerKgMillicents: 650_000,
       publicPricePerKgTtcCents: 820,
-      pricePerKgShown: false,
+      pricePerKgShownPublic: false,
+      pricePerKgShownPro: true,
     });
     for (const query of ["", "?audience=pro"]) {
       expect(await shopItem(fiche, query)).toMatchObject({
-        proPricePerKgMillicents: null,
+        proPricePerKgMillicents: 650_000,
         publicPricePerKgTtcCents: null,
       });
     }
   });
 
-  it("recochée, la boutique les sert de nouveau, sans ressaisie", async () => {
+  it("pros décochés : seul le pro part à `null`", async () => {
+    const fiche = await anActiveFiche(staff, "Pain bis", "both");
+    const variant = await defaultVariant(fiche);
+    await savePricing(fiche, variant, {
+      proPricePerKgHt: "6.5",
+      publicPricePerKgTtcCents: 820,
+      pricePerKgShownPro: false,
+    }).expect(200);
+    await relayAll(ctx);
+    await approve([fiche]);
+
+    for (const query of ["", "?audience=pro"]) {
+      expect(await shopItem(fiche, query)).toMatchObject({
+        proPricePerKgMillicents: null,
+        publicPricePerKgTtcCents: 820,
+      });
+    }
+  });
+
+  it("recochée, la boutique le sert de nouveau, sans ressaisie", async () => {
     const fiche = await anActiveFiche(staff, "Pain de mie", "both");
     const variant = await defaultVariant(fiche);
     await savePricing(fiche, variant, {
       publicPricePerKgTtcCents: 990,
-      pricePerKgShown: false,
+      pricePerKgShownPublic: false,
     }).expect(200);
     await relayAll(ctx);
     await approve([fiche]);
     expect((await shopItem(fiche))?.publicPricePerKgTtcCents).toBeNull();
 
-    await savePricing(fiche, variant, { pricePerKgShown: true }).expect(200);
+    await savePricing(fiche, variant, { pricePerKgShownPublic: true }).expect(200);
     await relayAll(ctx);
 
     expect((await shopItem(fiche))?.publicPricePerKgTtcCents).toBe(990);

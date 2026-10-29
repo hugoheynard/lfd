@@ -26,25 +26,40 @@
   ligne de base, restauration par position), `section-alignment` (la case
   « aligner » rendue sous l'en-tête de **toutes** les cartes, par la page).
 
-## 2. La case « Afficher le prix au kilo en boutique »
+## 2. Deux cases : « Afficher aux particuliers », « Afficher aux pros »
 
-- **Colonne** `pim.product_variant.price_per_kg_shown BOOLEAN NOT NULL DEFAULT
-true` (migration `20261029070000_afficher_le_prix_au_kilo`, additive,
-  `lock_timeout 5s`, défaut constant : pas de réécriture). Tout l'existant
-  reste affiché.
-- **Domaine** : `VariantSnapshot.pricePerKgShown`, mutée par `price()` (absent
-  = inchangé), résolue avec le tarif du défaut quand `pricingFollowsDefault`,
-  reprise à la promotion en défaut.
-- **Commande** : `pricePerKgShown?` dans `UpdateVariantPricingPayload` ; elle
-  part avec « Tout enregistrer ». Elle entre dans `changes` du fait
-  `product.pricing_saved` (clé ajoutée au schéma, optionnelle comme les autres).
-- **Fil — pas de nouvelle version.** Décochée, la projection émet `null` pour
-  les deux prix au kilo : c'est ce que le fil v-courant dit déjà d'un kilo non
-  saisi, et le seul lecteur au commerce est la vitrine. Le commerce n'est pas
-  touché : il range `null` et sert `null` dans `ShopItemView`.
-- **Révision** : `pricePerKgShown: false` entre dans l'article de révision,
-  **absent quand cochée** (même règle que le prix pro : les empreintes de
-  l'existant ne bougent pas).
+> Hugo, 2026-10-29, après la mise en production de la case unique (commit
+> `8058a3f0d`) : « j'aurais préféré pouvoir choisir l'affichage par
+> audience ». La case unique est remplacée par deux cases, sous les deux prix
+> au kilo, cochées par défaut. Bâti le même jour (non commité à l'écriture).
+
+- **Colonnes** `pim.product_variant.price_per_kg_shown_public` et
+  `price_per_kg_shown_pro`, `BOOLEAN NOT NULL DEFAULT true` (migration
+  `20261029160000_prix_au_kilo_par_audience`, additive, `lock_timeout 5s`).
+  **Migration de données, petite** : chacune reprend `price_per_kg_shown`
+  (`UPDATE … WHERE price_per_kg_shown = false`) — une fiche décochée reste
+  masquée dans les deux audiences.
+- **L'ancienne colonne `price_per_kg_shown`** (`20261029070000_afficher_le_prix_au_kilo`)
+  **reste en base**, ni lue ni écrite (commentaire daté dans `product.prisma`).
+  La retirer est une migration à part, sur ordre de Hugo.
+- **Domaine** : `VariantSnapshot.pricePerKgShownPublic` / `pricePerKgShownPro`,
+  mutées par `price()` (absente = inchangée), résolues avec le tarif du défaut
+  quand `pricingFollowsDefault`, reprises à la promotion en défaut.
+- **Commande** : `pricePerKgShownPublic?` / `pricePerKgShownPro?` dans
+  `UpdateVariantPricingPayload` (`@lfd/pim-contracts`) ; l'ancien champ
+  `pricePerKgShown` n'est plus accepté (pré-release, seul le back-office
+  l'envoyait). Elles entrent dans `changes` du fait `product.pricing_saved`
+  sous leurs deux clés ; la clé `pricePerKgShown` reste au schéma du fait,
+  pour que les lignes écrites le 2026-10-29 restent lisibles.
+- **Fil — pas de nouvelle version.** La projection émet `null` pour le prix
+  au kilo public TTC quand « particuliers » est décochée, et pour le pro HT
+  quand « pros » l'est — chacun selon SA case. Le commerce n'est pas touché.
+- **Révision** : `pricePerKgShownPublic: false` / `pricePerKgShownPro: false`,
+  **absentes quand cochées**. Une révision antérieure portant
+  `pricePerKgShown: false` garde son libellé dans le diff ; l'empreinte d'un
+  article décoché sous la case unique change au prochain calcul (clé renommée).
+- **Front** : deux `fold-checkbox` dans le bloc « Prix au kilo » ; libellés du
+  journal et du diff de révision pour les deux clés (l'ancienne gardée).
 
 ## 3. La carte en blocs nommés
 
@@ -63,20 +78,24 @@ la nouvelle case comprise), verrous de l'unité, refus du serveur dans le bloc
    cartes, et ce choix y est écrit (`product-form-page.html`) ; la déplacer
    pour une seule carte le défait. Le bloc « Prix » dit seulement, quand
    l'alignement est coché, « Suit le tarif de la déclinaison par défaut ».
-2. **Décocher masque le kilo dans les DEUX audiences** de la boutique (public
-   et pro) : la vitrine sert les deux montants aux deux, c'est l'écran qui
-   choisit l'assiette.
-3. **Au poids, la case n'est pas montrée** : le bloc « Prix au kilo » n'y existe
+2. ~~**Décocher masque le kilo dans les DEUX audiences**~~ — remplacé le
+   2026-10-29 par Hugo : une case par audience (§ 2). Chaque case retient SON
+   montant ; la vitrine sert toujours les deux montants restants aux deux
+   audiences, c'est l'écran qui choisit l'assiette.
+3. **Au poids, les cases ne sont pas montrées** : le bloc « Prix au kilo » n'y existe
    pas (le prix EST au kilo), et la case ne touche jamais au prix de vente.
    Une valeur décochée posée à la pièce reste en base et vaut si l'on revient
    à la pièce.
-4. **Nom** : `pricePerKgShown` / `price_per_kg_shown`.
+4. **Nom** : `pricePerKgShownPublic` / `pricePerKgShownPro`
+   (`price_per_kg_shown_public` / `_pro`) ; `price_per_kg_shown` est morte.
 5. Le libellé du titre « Unité de vente » remplace l'ancienne étiquette de
    champ du même nom (sinon il était dit deux fois) ; le sélecteur garde son
    `ariaLabel`.
 
 ## 5. Reste à faire
 
-- Rien dans le périmètre. Le miroir du commerce ne portera la case qu'au
-  prochain envoi de chaque fiche décochée (ou « Tout réémettre ») — sans effet
-  pour l'existant, toutes cochées.
+- Le miroir du commerce ne portera une case changée qu'au prochain envoi de
+  la fiche (ou « Tout réémettre ») ; la reprise de la migration ne change
+  rien au fil (une fiche décochée l'est dans les deux audiences, comme avant).
+- Retirer la colonne morte `price_per_kg_shown` : migration à part, sur
+  ordre de Hugo.

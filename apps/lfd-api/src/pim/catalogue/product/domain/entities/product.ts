@@ -870,7 +870,8 @@ export class Product {
           proPriceMillicents: source.proPriceMillicents,
           proPricePerKgMillicents: source.proPricePerKgMillicents,
           publicPricePerKgTtcCents: source.publicPricePerKgTtcCents,
-          pricePerKgShown: source.pricePerKgShown,
+          pricePerKgShownPublic: source.pricePerKgShownPublic,
+          pricePerKgShownPro: source.pricePerKgShownPro,
         }
       : {};
     return {

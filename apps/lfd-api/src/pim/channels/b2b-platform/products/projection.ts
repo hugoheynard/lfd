@@ -93,10 +93,12 @@ export function projectVariant(
     weightGrams: variant.weightGrams,
     // Informatifs, recopiés tels que saisis (`plan-prix-au-kilo.md`) : rien
     // ne les calcule ici, rien ne les lit pour tarifer de l'autre côté. Case
-    // « afficher en boutique » décochée (`plan-carte-tarif.md`) : `null`, ce
-    // que le fil sait déjà dire — le canal ne reçoit pas ce qu'il ne montre pas.
-    proPricePerKgMillicents: variant.pricePerKgShown ? variant.proPricePerKgMillicents : null,
-    publicPricePerKgTtcCents: variant.pricePerKgShown ? variant.publicPricePerKgTtcCents : null,
+    // de SON audience décochée (`plan-carte-tarif.md`) : `null`, ce que le fil
+    // sait déjà dire — le canal ne reçoit pas ce qu'il ne montre pas.
+    proPricePerKgMillicents: variant.pricePerKgShownPro ? variant.proPricePerKgMillicents : null,
+    publicPricePerKgTtcCents: variant.pricePerKgShownPublic
+      ? variant.publicPricePerKgTtcCents
+      : null,
     // L'unité de vente et ses termes (v14, `vente-au-poids.md`) :
     // recopiés tels que saisis, déjà validés par la déclinaison.
     saleUnit: variant.saleUnit,
