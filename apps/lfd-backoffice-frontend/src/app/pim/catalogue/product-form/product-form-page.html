@@ -119,6 +119,14 @@
             background="surface"
             justify="stretch"
           />
+          <!-- La déclinaison racine se dit en tête de ses cartes : c'est d'elle
+               que les autres héritent, et la modifier les touche aussi. -->
+          @if (store.editingDefault()) {
+            <fold-callout variant="info">
+              C'est la déclinaison racine du produit : les autres déclinaisons peuvent suivre ses
+              réglages, et ce que vous changez ici s'applique aussi à celles qui la suivent.
+            </fold-callout>
+          }
         }
         @for (section of visibleSections(); track section.key) {
           @if (section.key === 'tarif') {
