@@ -7,6 +7,7 @@ import { AuthFacade } from '../auth/auth.facade';
 import { EN } from '../client/copy/en';
 import { FR } from '../client/copy/fr';
 import { ClientLocale } from '../client/client-locale.service';
+import { ClientCopyService } from '../client/copy/client-copy.service';
 import { ShopCopyOverrides } from '../client/copy/shop-copy-overrides';
 import { LoginPage } from './login-page';
 
@@ -35,11 +36,13 @@ const el = (fixture: ComponentFixture<LoginPage>): HTMLElement =>
  * le gabarit, hors de portée d'un remplacement et du français seulement.
  */
 describe('LoginPage — ses textes', () => {
-  it('les lit au dictionnaire, dans la langue de l’écran', () => {
+  it('les lit au dictionnaire, dans la langue de l’écran', async () => {
     const fixture = boot();
     expect(el(fixture).querySelector('h1')?.textContent).toBe(FR.signup.loginPage.title);
 
     TestBed.inject(ClientLocale).current.set('en');
+    fixture.detectChanges();
+    await TestBed.inject(ClientCopyService).whenReady('en');
     fixture.detectChanges();
 
     expect(el(fixture).querySelector('h1')?.textContent).toBe(EN.signup.loginPage.title);

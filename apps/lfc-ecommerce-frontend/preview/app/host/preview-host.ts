@@ -8,6 +8,7 @@ import {
 
 import { App } from '../../../src/app/app';
 import { ClientLocale } from '../../../src/app/client/client-locale.service';
+import { ClientCopyService } from '../../../src/app/client/copy/client-copy.service';
 import { ShopCopyOverrides } from '../../../src/app/client/copy/shop-copy-overrides';
 import { previewConfig } from '../composition/preview-config';
 import type { PreviewStorages } from '../composition/memory-storage';
@@ -220,7 +221,12 @@ export class PreviewHost {
     this.win.document.documentElement.lang = message.locale;
     this.locale = message.locale;
     this.highlight = message.highlight;
-    this.scheduleSettle();
+    // L'anglais et l'italien se chargent à la demande (2026-10-29) : relever
+    // les clés visibles avant l'arrivée du dictionnaire les relèverait en français.
+    void injector
+      .get(ClientCopyService)
+      .whenReady(message.locale)
+      .then(() => this.scheduleSettle());
   }
 
   /** Après chaque changement du DOM : la surbrillance reposée, les clés visibles relevées. */

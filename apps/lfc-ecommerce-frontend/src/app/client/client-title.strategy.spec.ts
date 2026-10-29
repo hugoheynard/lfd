@@ -4,6 +4,7 @@ import { Title } from '@angular/platform-browser';
 import { provideRouter, Router, TitleStrategy } from '@angular/router';
 
 import { ClientLocale } from './client-locale.service';
+import { ClientCopyService } from './copy/client-copy.service';
 import { ClientTitleStrategy, pageTitle } from './client-title.strategy';
 
 @Component({ selector: 'app-blank', template: '' })
@@ -43,6 +44,9 @@ describe('ClientTitleStrategy — l’onglet et la langue suivent le visiteur', 
   it('réécrit l’onglet au changement de langue', async () => {
     await router.navigateByUrl('/boutique');
     locale.current.set('en');
+    TestBed.tick();
+    // L'anglais se charge à la demande : on attend son dictionnaire.
+    await TestBed.inject(ClientCopyService).whenReady('en');
     TestBed.tick();
     expect(title.getTitle()).toBe('Shop — La Folie Coffee');
   });

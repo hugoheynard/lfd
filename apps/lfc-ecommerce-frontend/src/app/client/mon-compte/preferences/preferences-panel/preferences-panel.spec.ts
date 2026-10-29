@@ -13,6 +13,7 @@ import { AccountService } from '../../../../account/account.service';
 import { ClientAddresses } from '../../../client-addresses.service';
 import { ClientLocale } from '../../../client-locale.service';
 import { ClientPreferences } from '../../../client-preferences.service';
+import { ClientCopyService } from '../../../copy/client-copy.service';
 import { EN } from '../../../copy/en';
 import { FR } from '../../../copy/fr';
 import { ServicePoints } from '../../../shop/pickup-points.store';
@@ -380,13 +381,16 @@ describe('PreferencesPanel', () => {
   });
 
   /** La langue n'est pas un réglage de société : aucun appel, et l'écran change tout de suite. */
-  it('la langue bascule tout de suite, sans rien enregistrer', () => {
+  it('la langue bascule tout de suite, sans rien enregistrer', async () => {
     fixture = boot(OWNER);
     const english = Array.from(
       el().querySelectorAll<HTMLButtonElement>('app-lang-switch button'),
     ).find((b) => b.textContent?.trim() === 'EN');
 
     english?.click();
+    fixture.detectChanges();
+    // L'anglais se charge à la demande (2026-10-29) : le temps d'un chunk.
+    await TestBed.inject(ClientCopyService).whenReady('en');
     fixture.detectChanges();
 
     expect(TestBed.inject(ClientLocale).current()).toBe('en');

@@ -37,14 +37,35 @@ describe('la superposition des textes publiés', () => {
 });
 
 describe('ClientCopyService et les remplacements', () => {
-  it('applique ceux de la langue courante, et seulement elle — sans aucun appel réseau', () => {
+  it('applique ceux de la langue courante, et seulement elle — sans aucun appel réseau', async () => {
     TestBed.configureTestingModule({});
     const copy = TestBed.inject(ClientCopyService);
     TestBed.inject(ShopCopyOverrides).receive('en', { 'cart.whoTitle': 'For whom?' });
 
     expect(copy.t().cart.whoTitle).toBe(FR.cart.whoTitle);
     TestBed.inject(ClientLocale).current.set('en');
+    TestBed.tick();
+    await copy.whenReady('en');
     expect(copy.t().cart.whoTitle).toBe('For whom?');
+  });
+
+  /** Chargement à la demande (2026-10-29) : jamais un retour par le français entre deux langues. */
+  it('garde la langue servie tant que la suivante n’est pas arrivée', async () => {
+    TestBed.configureTestingModule({});
+    const copy = TestBed.inject(ClientCopyService);
+    const locale = TestBed.inject(ClientLocale);
+    locale.current.set('en');
+    TestBed.tick();
+    await copy.whenReady('en');
+    const english = copy.t().cart.whoTitle;
+    expect(english).not.toBe(FR.cart.whoTitle);
+
+    locale.current.set('it');
+    TestBed.tick();
+    expect(copy.t().cart.whoTitle).toBe(english);
+    await copy.whenReady('it');
+    expect(copy.t().cart.whoTitle).not.toBe(english);
+    expect(copy.t().cart.whoTitle).not.toBe(FR.cart.whoTitle);
   });
 });
 
@@ -104,6 +125,7 @@ describe('la lecture des textes publiés', () => {
     TestBed.tick();
     answer('en', { 'cart.whoTitle': 'For whom?' });
     await loader.load('en');
+    await copy.whenReady('en');
     expect(copy.t().cart.whoTitle).toBe('For whom?');
 
     locale.current.set('fr');

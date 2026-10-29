@@ -72,13 +72,23 @@ describe('textsOfSpace', () => {
 });
 
 describe('ClientCopyService.everyLocale', () => {
-  it('rend chaque langue AVEC ses remplacements', () => {
+  it('rend chaque langue AVEC ses remplacements', async () => {
     TestBed.resetTestingModule();
     TestBed.inject(ShopCopyOverrides).receive('en', { 'chrome.signIn': 'Log in now' });
+    const service = TestBed.inject(ClientCopyService);
+    await Promise.all([service.whenReady('en'), service.whenReady('it')]);
 
-    const labels = TestBed.inject(ClientCopyService).everyLocale((copy) => copy.chrome.signIn);
+    const labels = service.everyLocale((copy) => copy.chrome.signIn);
 
     expect(labels[1]).toBe('Log in now');
     expect(labels).toHaveLength(3);
+  });
+
+  it('ne télécharge pas une langue jamais choisie pour mesurer un libellé', () => {
+    TestBed.resetTestingModule();
+
+    const labels = TestBed.inject(ClientCopyService).everyLocale((copy) => copy.chrome.signIn);
+
+    expect(labels).toHaveLength(1);
   });
 });

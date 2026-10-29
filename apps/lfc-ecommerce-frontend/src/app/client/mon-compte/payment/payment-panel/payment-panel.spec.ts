@@ -5,6 +5,7 @@ import { AccountService } from '../../../../account/account.service';
 import { EN } from '../../../copy/en';
 import { FR } from '../../../copy/fr';
 import { ClientLocale } from '../../../client-locale.service';
+import { ClientCopyService } from '../../../copy/client-copy.service';
 import { PaymentPanel, type PaymentPanelData } from './payment-panel';
 
 /** Ce que les doublés ont vu passer : les demandes, et les fermetures du panneau. */
@@ -162,9 +163,11 @@ describe('PaymentPanel', () => {
     expect(wire.closes).toEqual([undefined]);
   });
 
-  it('suit la langue de l’écran', () => {
+  it('suit la langue de l’écran', async () => {
     fixture = boot(CAN_REQUEST);
     TestBed.inject(ClientLocale).current.set('en');
+    fixture.detectChanges();
+    await TestBed.inject(ClientCopyService).whenReady('en');
     fixture.detectChanges();
 
     expect(badges()).toEqual([EN.account.stateUnavailable, EN.account.stateAvailable]);
