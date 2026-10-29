@@ -1,8 +1,9 @@
 import { BusinessError } from "../../../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus des deux gestes qui sortent une déclinaison de sa fiche — l'archiver,
- * ou en faire un produit (`plan-gestes-de-declinaison.md`, D1 et D2).
+ * Les refus des gestes qui changent la place d'une déclinaison dans sa fiche —
+ * l'archiver, en faire un produit, la désarchiver, ou en faire la déclinaison
+ * par défaut (`plan-gestes-de-declinaison.md`, D1, D2, G3 et G4).
  *
  * Des `BusinessError` (409) : la demande est bien formée, c'est l'état de la
  * fiche qui la refuse, et chaque message dit le geste qui la rend possible.
@@ -14,7 +15,8 @@ export class DefaultVariantNotDiscontinuableError extends BusinessError {
     super(
       "catalogue.variant.default_not_discontinuable",
       `La déclinaison « ${variantSku} » est celle par défaut de sa fiche : elle ne s'archive pas ` +
-        "tant que d'autres déclinaisons sont en vente. Désignez-en d'abord une autre par défaut, " +
+        "tant que d'autres déclinaisons sont en vente. Ouvrez d'abord l'onglet d'une autre " +
+        "déclinaison et choisissez « Faire de cette déclinaison la déclinaison par défaut », " +
         "ou archivez la fiche entière.",
     );
   }
@@ -48,7 +50,8 @@ export class DefaultVariantNotDetachableError extends BusinessError {
     super(
       "catalogue.variant.default_not_detachable",
       `La déclinaison « ${variantSku} » est celle par défaut de sa fiche : on n'en fait pas un ` +
-        "produit séparé. Désignez-en d'abord une autre par défaut.",
+        "produit séparé. Ouvrez d'abord l'onglet d'une autre déclinaison et choisissez " +
+        "« Faire de cette déclinaison la déclinaison par défaut ».",
     );
   }
 }
@@ -75,6 +78,49 @@ export class DetachedVariantNotRestorableError extends BusinessError {
       `La déclinaison « ${variantSku} » est devenue le produit « ${productLabel} » : elle vit déjà ` +
         "sous cette fiche, et la désarchiver vendrait deux fois le même article. " +
         "Allez sur la fiche de ce produit pour le modifier.",
+    );
+  }
+}
+
+/** Elle l'est déjà : il n'y a rien à changer. */
+export class VariantAlreadyDefaultError extends BusinessError {
+  constructor(readonly variantSku: string) {
+    super(
+      "catalogue.variant.already_default",
+      `La déclinaison « ${variantSku} » est déjà la déclinaison par défaut de sa fiche : ` +
+        "il n'y a rien à changer.",
+    );
+  }
+}
+
+/** Une archivée n'est plus en vente : elle ne peut pas porter la fiche. */
+export class DiscontinuedVariantNotDefaultableError extends BusinessError {
+  constructor(readonly variantSku: string) {
+    super(
+      "catalogue.variant.discontinued_not_defaultable",
+      `La déclinaison « ${variantSku} » est archivée : elle ne peut pas devenir la déclinaison ` +
+        "par défaut d'une fiche qui ne la vend plus. Désarchivez-la d'abord.",
+    );
+  }
+}
+
+/**
+ * Elle suit une moitié de la fiche que le défaut actuel n'a jamais saisie, et
+ * elle en garde une à elle, en sommeil. Devenue le défaut, elle devrait recevoir
+ * « rien » en propre — or sa saisie endormie se réveillerait sur l'étiquette.
+ */
+export class DormantSheetWouldWakeError extends BusinessError {
+  constructor(
+    readonly variantSku: string,
+    readonly half: "allergens" | "nutrition",
+  ) {
+    const the = half === "allergens" ? "les allergènes" : "les valeurs nutritionnelles";
+    super(
+      "catalogue.variant.dormant_sheet_would_wake",
+      `La déclinaison « ${variantSku} » suit ${the} de la déclinaison par défaut, qui n'en ` +
+        `a rien déclaré, et elle garde en sommeil une ancienne saisie à elle. En faire la ` +
+        `déclinaison par défaut réveillerait cette saisie sur l'étiquette. Déclarez d'abord ` +
+        `${the} de la déclinaison par défaut actuelle, ou désalignez celle-ci et relisez sa saisie.`,
     );
   }
 }

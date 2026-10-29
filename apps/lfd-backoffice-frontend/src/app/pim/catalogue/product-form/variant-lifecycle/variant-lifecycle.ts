@@ -17,8 +17,10 @@ import { ProductFormStore } from '../product-form-store';
  *
  * Trois morceaux, tous lus du magasin :
  * - d'où vient la fiche, si elle est née d'un détachement ;
- * - la zone de danger de la déclinaison OUVERTE — jamais du défaut, que le
- *   serveur refuserait : archiver, ou en faire un produit ;
+ * - pour la déclinaison OUVERTE, si elle n'est pas le défaut : « en faire la
+ *   déclinaison par défaut » (G4), HORS de la zone de danger — le geste ne
+ *   retire rien et se défait par le même geste sur l'autre onglet ; puis la
+ *   zone de danger : archiver, ou en faire un produit ;
  * - les archivées, repliées, chacune avec « Désarchiver » ou le produit
  *   qu'elle est devenue.
  *
@@ -52,6 +54,10 @@ export class VariantLifecycle {
 
   protected discontinue(variantId: string): void {
     void this.store.discontinueVariant(variantId);
+  }
+
+  protected makeDefault(variantId: string): void {
+    void this.store.makeVariantDefault(variantId);
   }
 
   protected restore(variantId: string): void {

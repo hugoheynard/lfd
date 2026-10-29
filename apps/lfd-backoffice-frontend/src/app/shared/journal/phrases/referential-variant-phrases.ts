@@ -251,7 +251,30 @@ function createdFromVariant(fact: PhraseFact): Said {
   );
 }
 
+/**
+ * « a fait de la déclinaison « 6 parts » (TAR-001-2) la déclinaison par défaut
+ * de « Tarte citron », à la place de « Entière » (TAR-001-1) » (G4).
+ */
+function defaultVariantChanged(fact: PhraseFact): Said {
+  const p = fact.payload;
+  return byActor(
+    fact,
+    [
+      text('a fait de '),
+      ...cite(VARIANT, p['variant']),
+      ...skuAside(p['sku']),
+      text(' la déclinaison par défaut '),
+      ...theSubject(fact, OF_PRODUCT),
+      text(', à la place de '),
+      ...cite(VARIANT, p['previous']),
+      ...skuAside(p['previousSku']),
+    ],
+    ['subjectLabel', 'variant', 'sku', 'previous', 'previousSku'],
+  );
+}
+
 export const REFERENTIAL_VARIANT_PHRASES = {
+  'product.default_variant_changed': defaultVariantChanged,
   'product.variant_discontinued': variantDiscontinued,
   'product.variant_restored': variantRestored,
   'product.variant_detached': variantDetached,

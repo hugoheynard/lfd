@@ -74,6 +74,10 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   [PIM_EVENTS.productVariantDiscontinued]: [],
   [PIM_EVENTS.productVariantDetached]: [],
   [PIM_EVENTS.productVariantRestored]: [],
+  // Un défaut changé a PU changer ce que voient celles qui le suivent — ou non,
+  // si les deux défauts portaient les mêmes valeurs : comme un reclassement, ce
+  // module n'attribue pas un possible (G4).
+  [PIM_EVENTS.productDefaultVariantChanged]: [],
   // Une signature ne modifie RIEN de la fiche : elle affirme quelque chose sur
   // elle. L'attribuer à un champ ferait dire à l'écran que quelqu'un a changé
   // un prix alors qu'il a seulement déclaré la fiche juste.

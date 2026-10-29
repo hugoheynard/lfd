@@ -13,6 +13,7 @@ import {
 } from "../../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../../domain/ports/editorial.repository.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
+import { ProductCompositionCopier } from "../../domain/ports/product-composition.copier.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
 import type { SkuAvailability } from "../../domain/services/sku-generator.js";
@@ -122,6 +123,15 @@ class Editorials extends EditorialRepository {
   }
 }
 
+/** La composition recopiée : de quelle fiche, vers laquelle. */
+class Composition extends ProductCompositionCopier {
+  readonly copies: { from: string; to: string }[] = [];
+  copy(from: string, to: string): Promise<void> {
+    this.copies.push({ from, to });
+    return Promise.resolve();
+  }
+}
+
 const FREE: SkuAvailability = { isTaken: () => Promise.resolve(false) };
 
 function origin(): ProductSnapshot {
@@ -164,7 +174,9 @@ function setup() {
   const allergens = new Allergens();
   const nutrition = new Nutrition();
   const editorials = new Editorials();
+  const composition = new Composition();
   return {
+    composition,
     products,
     journal,
     emitter,
@@ -179,6 +191,7 @@ function setup() {
       nutrition,
       new Stories(),
       editorials,
+      composition,
       journal,
       new RecordingDurable(),
       uow,
@@ -236,6 +249,14 @@ describe("DetachProductVariantHandler", () => {
     expect(archived).toMatchObject({ isDiscontinued: true, detachedToProductId: bornId });
     expect(journal.types()).toEqual(["product.created_from_variant", "product.variant_detached"]);
     expect(emitter.products).toEqual([[PRODUCT_ID, bornId]]);
+  });
+
+  it("recopie la composition en ingrédients de la fiche d'origine sur le produit né", async () => {
+    const { detach, composition } = setup();
+
+    const bornId = await detach.execute(new DetachProductVariantCommand(PRODUCT_ID, SECOND_ID));
+
+    expect(composition.copies).toEqual([{ from: PRODUCT_ID, to: bornId }]);
   });
 });
 

@@ -400,6 +400,16 @@ export class ProductHttpApi {
     );
   }
 
+  /**
+   * **En fait la déclinaison par défaut** — celles qui suivaient le défaut la
+   * suivent ; elle reçoit en propre ce qu'elle voyait (G4).
+   */
+  async makeVariantDefault(productId: string, variantId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(this.url(`products/${productId}/variants/${variantId}/make-default`), {}),
+    );
+  }
+
   /** **La désarchive** — refusé pour une déclinaison devenue un produit. */
   async restoreVariant(productId: string, variantId: string): Promise<void> {
     await firstValueFrom(

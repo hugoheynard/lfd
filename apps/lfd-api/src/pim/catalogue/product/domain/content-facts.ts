@@ -120,6 +120,9 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   [PIM_EVENTS.productVariantRestored]: true,
   // La naissance compte, comme `created` : c'est le premier fait de contenu.
   [PIM_EVENTS.productCreatedFromVariant]: true,
+  // Changer de défaut change ce que voient celles qui le suivent — tarif,
+  // allergènes, valeurs : une déclaration signée peut en devenir fausse (G4).
+  [PIM_EVENTS.productDefaultVariantChanged]: true,
 
   // ── Ce qui ne dit rien du contenu ───────────────────────────────────────
   // Les quatre transitions de statut. Elles décident de ce que le catalogue

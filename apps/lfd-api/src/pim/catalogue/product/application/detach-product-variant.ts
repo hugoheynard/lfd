@@ -10,6 +10,7 @@ import type { Product } from "../domain/entities/product.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import { EditorialRepository } from "../domain/ports/editorial.repository.js";
 import { NutritionValuesRepository } from "../domain/ports/nutrition-values.repository.js";
+import { ProductCompositionCopier } from "../domain/ports/product-composition.copier.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
 import {
@@ -45,6 +46,11 @@ export class DetachProductVariantCommand {
  * les lire (vérifié le 2026-10-29, `pim → b2b` interdit, aucun lecteur
  * déclaré dans `pim/channels/b2b-platform/`).
  *
+ * La composition en ingrédients suit (Hugo, 2026-10-29), par le port que le
+ * catalogue déclare et que la provenance implémente (`ProductCompositionCopier`).
+ * ⚠️ Les conditionnements, eux, ne sont PAS copiés : Hugo ne l'a pas demandé
+ * (vérifié le 2026-10-29) — le produit détaché naît sans conditionnement.
+ *
  * @returns l'id du nouveau produit — l'écran l'ouvre.
  */
 @CommandHandler(DetachProductVariantCommand)
@@ -58,6 +64,7 @@ export class DetachProductVariantHandler implements ICommandHandler<
     private readonly nutritionValues: NutritionValuesRepository,
     private readonly editorialReader: EditorialReader,
     private readonly editorials: EditorialRepository,
+    private readonly composition: ProductCompositionCopier,
     private readonly journal: PimJournal,
     private readonly durable: DurablePublisher,
     private readonly uow: UnitOfWork,
@@ -111,6 +118,7 @@ export class DetachProductVariantHandler implements ICommandHandler<
     if (variant?.nutrition != null) {
       await this.nutritionValues.save(variant.id, copiedNutrition(variant.nutrition), ticket);
     }
+    await this.composition.copy(origin.id, born.id, ticket);
     await this.copyEditorial(origin.id, born.id, ticket);
   }
 

@@ -10,6 +10,7 @@ import type { Sku } from "../value-objects/sku.value-object.js";
 import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
 import {
   DetachedVariantNotRestorableError,
+  DormantSheetWouldWakeError,
   VariantAlreadyDiscontinuedError,
   VariantNotDiscontinuedError,
 } from "../errors/variant-lifecycle-errors.js";
@@ -750,6 +751,66 @@ export class Variant {
       );
     }
     this.discontinuedFlag = false;
+  }
+
+  /**
+   * **Cède la place de défaut** (`plan-gestes-de-declinaison.md`, G4). Elle
+   * garde tout ce qu'elle porte : un défaut ne suit rien, donc tout ce qu'elle
+   * avait était déjà à elle.
+   */
+  demote(): void {
+    this.defaultFlag = false;
+  }
+
+  /**
+   * **Devient la déclinaison par défaut** (G4) — elle ne peut plus se suivre
+   * elle-même (CHECK `product_variant_default_*_follows_itself`), donc chaque
+   * moitié qu'elle suivait passe en PROPRE avec la valeur qu'elle voyait.
+   *
+   * `resolved` est son instantané RÉSOLU par la fiche AVANT la bascule : les
+   * valeurs du défaut sortant y sont déjà substituées. Ce qu'elle ne suivait
+   * pas reste tel quel. Le refus qui dépend de la fiche (l'archivée, celle qui
+   * l'est déjà) est celui de l'agrégat.
+   *
+   * @throws {DormantSheetWouldWakeError} elle suit une moitié que le défaut n'a
+   *   jamais déclarée, et en garde une ancienne à elle : la recevoir « vide »
+   *   demanderait d'effacer cette saisie, et la garder la réveillerait.
+   */
+  promoteToDefault(resolved: VariantSnapshot): void {
+    this.refuseDormantWake("allergens", this.followsDefault.regulatory, resolved.allergenSheet);
+    this.refuseDormantWake("nutrition", this.followsDefault.nutrition, resolved.nutrition);
+    if (this.followsDefault.pricing) {
+      this.priceCentsValue = resolved.priceCents;
+      this.weightGramsValue = resolved.weightGrams;
+      this.proPriceMillicentsValue = resolved.proPriceMillicents;
+      this.proPricePerKgMillicentsValue = resolved.proPricePerKgMillicents;
+      this.publicPricePerKgTtcCentsValue = resolved.publicPricePerKgTtcCents;
+    }
+    if (this.followsDefault.regulatory) {
+      this.allergenSheetValue = resolved.allergenSheet;
+    }
+    if (this.followsDefault.nutrition) {
+      this.nutritionValue = resolved.nutrition;
+    }
+    if (this.minQuantityFollowsDefaultFlag) {
+      this.minQuantitiesValue = resolved.minQuantities;
+    }
+    this.followsDefault.regulatory = false;
+    this.followsDefault.pricing = false;
+    this.followsDefault.nutrition = false;
+    this.minQuantityFollowsDefaultFlag = false;
+    this.defaultFlag = true;
+  }
+
+  private refuseDormantWake(
+    half: "allergens" | "nutrition",
+    follows: boolean,
+    seen: object | null,
+  ): void {
+    const own = half === "allergens" ? this.allergenSheetValue : this.nutritionValue;
+    if (follows && seen === null && own !== null) {
+      throw new DormantSheetWouldWakeError(this.skuValue, half);
+    }
   }
 
   /**

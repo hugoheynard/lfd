@@ -8,6 +8,24 @@
 }
 
 @if (retirable(); as tab) {
+  <div class="make-default">
+    <p>
+      Celles qui suivent la déclinaison par défaut (tarif, allergènes, valeurs, minimum) suivront «
+      {{ tab.label }} » ; elle garde en propre ce qu'elle en voyait.
+    </p>
+    <fold-inline-confirm
+      intent="primary"
+      message="Faire de cette déclinaison la déclinaison par défaut ?"
+      [labels]="{ confirm: 'Confirmer' }"
+      [loading]="store.busy()"
+      (confirmed)="makeDefault(tab.id)"
+    >
+      <button foldButton emphasis="soft" [disabled]="store.busy()">
+        Faire de cette déclinaison la déclinaison par défaut
+      </button>
+    </fold-inline-confirm>
+  </div>
+
   <fold-danger-zone appearance="section" title="Sortir cette déclinaison de la fiche">
     <p>
       Archivée, « {{ tab.label }} » quitte la fiche et la boutique ; elle reste en base, et les

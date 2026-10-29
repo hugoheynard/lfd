@@ -4,11 +4,12 @@ import { CommandBus } from "@nestjs/cqrs";
 import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.js";
 import { DetachProductVariantCommand } from "../application/detach-product-variant.js";
 import { DiscontinueProductVariantCommand } from "../application/discontinue-product-variant.js";
+import { MakeVariantDefaultCommand } from "../application/make-variant-default.js";
 import { RestoreProductVariantCommand } from "../application/restore-product-variant.js";
 
 /**
  * **Les gestes qui sortent une déclinaison de sa fiche, ou l'y ramènent**
- * (`plan-gestes-de-declinaison.md`, G1 et G2) — sous le même préfixe et le
+ * (`plan-gestes-de-declinaison.md`, G1 et G2), et celui qui en fait le défaut (G4) — sous le même préfixe et le
  * même mur que les fiches, dans leur propre contrôleur : `ProductController`
  * dépasse déjà la taille d'un fichier.
  *
@@ -36,6 +37,16 @@ export class ProductVariantLifecycleController {
   async restoreVariant(@Param("id") id: string, @Param("variantId") variantId: string) {
     await this.commands.execute<RestoreProductVariantCommand, void>(
       new RestoreProductVariantCommand(id, variantId),
+    );
+    return { id, variantId };
+  }
+
+  /** En fait la déclinaison par défaut : celles qui suivaient le défaut la suivent. */
+  @Post(":id/variants/:variantId/make-default")
+  @HttpCode(200)
+  async makeVariantDefault(@Param("id") id: string, @Param("variantId") variantId: string) {
+    await this.commands.execute<MakeVariantDefaultCommand, void>(
+      new MakeVariantDefaultCommand(id, variantId),
     );
     return { id, variantId };
   }

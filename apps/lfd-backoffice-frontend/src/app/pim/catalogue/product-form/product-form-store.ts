@@ -2067,6 +2067,14 @@ export class ProductFormStore {
     return this.runVariantGesture((id) => this.products.discontinueVariant(id, variantId));
   }
 
+  /**
+   * **En fait la déclinaison par défaut** — puis relit : l'onglet reste ouvert,
+   * il porte désormais la fiche (G4).
+   */
+  makeVariantDefault(variantId: string): Promise<boolean> {
+    return this.runVariantGesture((id) => this.products.makeVariantDefault(id, variantId));
+  }
+
   /** **La désarchive** — elle redevient un onglet, à son rang. */
   restoreVariant(variantId: string): Promise<boolean> {
     return this.runVariantGesture((id) => this.products.restoreVariant(id, variantId));

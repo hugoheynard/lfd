@@ -37,6 +37,8 @@ import {
   DefaultVariantNotDetachableError,
   DefaultVariantNotDiscontinuableError,
   LastLiveVariantNotDiscontinuableError,
+  DiscontinuedVariantNotDefaultableError,
+  VariantAlreadyDefaultError,
   VariantAlreadyDiscontinuedError,
 } from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
@@ -691,6 +693,47 @@ export class Product {
     this.variant(variantId).restore(detachedProductLabel);
   }
 
+  /**
+   * **Fait d'une déclinaison la déclinaison par défaut** (`plan-gestes-de-declinaison.md`,
+   * G4). Le cœur du geste est ce qui SUIT le défaut :
+   *
+   * - les sœurs qui suivaient l'ancien défaut (tarif, allergènes, nutrition,
+   *   minimum) suivent désormais la nouvelle — rien à écrire chez elles, le
+   *   lien est vivant ({@link resolvedSnapshot}) ;
+   * - la nouvelle ne peut pas se suivre elle-même : elle reçoit en PROPRE les
+   *   valeurs qu'elle voyait, drapeaux remis à `false` ({@link Variant.promoteToDefault}) ;
+   * - l'ancienne garde ses valeurs : un défaut ne suivait rien.
+   *
+   * Tenu après la bascule : une sœur qui suit le tarif se vend dans l'unité
+   * du nouveau défaut ({@link assertPricingUnitsAgree}).
+   *
+   * @returns l'ancien défaut, et les moitiés de fiche réglementaire que la
+   *   nouvelle a reçues en propre — elles se persistent par leurs ports dédiés.
+   * @throws {VariantAlreadyDefaultError} elle l'est déjà.
+   * @throws {DiscontinuedVariantNotDefaultableError} elle est archivée.
+   * @throws {DormantSheetWouldWakeError} cf. {@link Variant.promoteToDefault}.
+   * @throws {PricingAlignmentAcrossUnitsError} une sœur suivrait un tarif d'une autre unité.
+   */
+  makeVariantDefault(variantId: string): DefaultVariantChange {
+    const target = this.variant(variantId);
+    if (target.isDefault) {
+      throw new VariantAlreadyDefaultError(target.sku);
+    }
+    if (target.isDiscontinued) {
+      throw new DiscontinuedVariantNotDefaultableError(target.sku);
+    }
+    const previous = this.defaultVariant;
+    const resolved = this.resolvedSnapshot(target);
+    const inherited = {
+      allergens: target.follows("allergens"),
+      nutrition: target.follows("nutrition"),
+    };
+    target.promoteToDefault(resolved);
+    previous.demote();
+    this.assertPricingUnitsAgree();
+    return { previousDefaultId: previous.id, inherited };
+  }
+
   /** Le produit qu'une déclinaison de la fiche est devenue, ou `null`. */
   detachedProductOf(variantId: string): string | null {
     return this.variant(variantId).detachedToProductId;
@@ -854,6 +897,16 @@ function assertVariants(snapshot: ProductSnapshot): void {
       `${String(defaults)} déclinaison(s) par défaut au lieu d’une`,
     );
   }
+}
+
+/**
+ * Ce que {@link Product.makeVariantDefault} rend à son appelant : l'ancien
+ * défaut, pour le journal, et les moitiés de fiche que la nouvelle a reçues en
+ * propre — la fiche réglementaire s'écrit par ses ports, pas par `save`.
+ */
+export interface DefaultVariantChange {
+  readonly previousDefaultId: string;
+  readonly inherited: { readonly allergens: boolean; readonly nutrition: boolean };
 }
 
 /**

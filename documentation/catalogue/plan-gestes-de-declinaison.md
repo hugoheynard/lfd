@@ -22,11 +22,12 @@
 
 ## 2. Décisions (Hugo, 2026-10-29)
 
-| #   | Question                          | Décision                                                                                                                                                                                                                            |
-| --- | --------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| D1  | Supprimer une déclinaison         | **Archivée, hors vente** : `is_discontinued = true`. Elle quitte la fiche et la boutique, reste en base ; commandes, factures et tarifs qui la citent gardent leur sens ; sa référence n'est jamais réattribuée.                    |
-| D2  | La référence d'un produit détaché | **Nouvelle référence** : nouveau produit (nouvel id, nouveau SKU produit) et nouvel article `<SKU>-1` ; l'ancienne déclinaison est archivée (D1). Les tarifs posés sur l'ancien SKU ne suivent pas : ils sont listés.               |
-| D3  | Ce que copie le nouveau produit   | **Tout ce que la déclinaison voyait** : ses réglages propres et ce qu'elle héritait du défaut (tarif, allergènes, nutrition, minimum), plus la famille, la TVA, l'audience, les textes et visuels de la fiche. Il naît **inactif**. |
+| #   | Question                          | Décision                                                                                                                                                                                                                                                                                                                                                                                                                                                                                |
+| --- | --------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| D1  | Supprimer une déclinaison         | **Archivée, hors vente** : `is_discontinued = true`. Elle quitte la fiche et la boutique, reste en base ; commandes, factures et tarifs qui la citent gardent leur sens ; sa référence n'est jamais réattribuée.                                                                                                                                                                                                                                                                        |
+| D2  | La référence d'un produit détaché | **Nouvelle référence** : nouveau produit (nouvel id, nouveau SKU produit) et nouvel article `<SKU>-1` ; l'ancienne déclinaison est archivée (D1). Les tarifs posés sur l'ancien SKU ne suivent pas : ils sont listés.                                                                                                                                                                                                                                                                   |
+| D3  | Ce que copie le nouveau produit   | **Tout ce que la déclinaison voyait** : ses réglages propres et ce qu'elle héritait du défaut (tarif, allergènes, nutrition, minimum), plus la famille, la TVA, l'audience, les textes et visuels de la fiche, **et sa composition en ingrédients** (complété le 2026-10-29). Il naît **inactif**, sous le nom de la déclinaison. Les **conditionnements ne sont pas copiés** (non demandé), et les tarifs posés sur l'ancien SKU ne sont pas listés (confirmé par Hugo le 2026-10-29). |
+| D4  | Changer la déclinaison par défaut | **Un geste à part** (Hugo, 2026-10-29) : celles qui suivaient le défaut suivent la nouvelle ; la nouvelle reçoit en **propre** les valeurs résolues qu'elle voyait, drapeaux remis à `false` (elle ne peut pas se suivre elle-même) ; l'ancienne garde ses valeurs.                                                                                                                                                                                                                     |
 
 Règles qui en découlent :
 
@@ -90,6 +91,39 @@ Règles qui en découlent :
   de « devenue un produit ».
 - Back-office : les déclinaisons archivées se listent à part, chacune avec
   « Désarchiver » (`fold-inline-confirm`), ou « Devenue le produit Z » et son lien.
+
+### G4 — changer la déclinaison par défaut (Hugo, 2026-10-29)
+
+- `Product.makeVariantDefault(variantId)` : refuse celle qui l'est déjà et une
+  archivée. La nouvelle reçoit en propre le tarif, les allergènes, les valeurs
+  et le minimum qu'elle suivait (`Variant.promoteToDefault`) ; l'ancienne
+  cède la place (`demote`) et garde ses valeurs. Les sœurs suivent la nouvelle
+  sans rien écrire chez elles : le lien est vivant.
+- Deux refus qui découlent d'invariants déjà tenus : une sœur qui suit le
+  tarif doit se vendre dans l'unité du nouveau défaut
+  (`PricingAlignmentAcrossUnitsError`) ; et une déclinaison qui suit une moitié
+  de fiche que le défaut n'a **jamais déclarée**, tout en gardant une ancienne
+  saisie à elle en sommeil, est refusée (`DormantSheetWouldWakeError`) — la
+  recevoir « vide » demanderait d'effacer sa saisie (aucun port ne le permet),
+  la garder la réveillerait sur l'étiquette.
+- En base : aucun index unique sur `is_default` (vérifié dans les migrations
+  le 2026-10-29) ; les quatre CHECK `*_follows_itself` portent sur une ligne,
+  et `save` écrit `is_default` et les drapeaux dans le même `upsert`.
+- Commande colocalisée `make-variant-default.ts`, route
+  `POST /pim/catalogue/products/:id/variants/:variantId/make-default`, fait
+  `product.default_variant_changed`, émission au catalogue (le commerce relit
+  `catalog_items.is_default`).
+- Back-office : sur un onglet non défaut, « Faire de cette déclinaison la
+  déclinaison par défaut » (`fold-inline-confirm`), **hors** de la zone de
+  danger : le geste ne retire rien, et se défait par le même geste sur l'autre
+  onglet. Les refus d'archiver et de détacher le défaut nomment ce geste.
+
+### D3 complétée — la composition suit le détachement
+
+- Le catalogue déclare `ProductCompositionCopier`, la provenance l'implémente
+  (`IngredientCompositionCopier`), la racine les relie
+  (`appBootstrap/cited-allergens-feed.module.ts`) ; la copie part dans l'unité
+  de travail du détachement, sous le ticket de `product.created_from_variant`.
 
 ## 4. Ce qui n'est pas vérifié
 

@@ -14,7 +14,7 @@ import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
 
 /**
  * **Archiver, détacher, désarchiver une déclinaison**
- * (`plan-gestes-de-declinaison.md`, G1 et G2) : une archivée n'est plus un
+ * (`plan-gestes-de-declinaison.md`, G1 et G2), et en faire le défaut (G4) : une archivée n'est plus un
  * onglet, elle se liste à part ; les gestes relisent le serveur ; détacher
  * ouvre la nouvelle fiche.
  */
@@ -137,6 +137,11 @@ class FakeApi {
       }),
     );
   }
+  makeVariantDefault(...args: unknown[]) {
+    this.calls.push({ name: 'makeVariantDefault', args });
+    this.variants = this.variants.map((entry) => ({ ...entry, isDefault: entry.id === args[1] }));
+    return Promise.resolve();
+  }
   detachVariant(...args: unknown[]) {
     this.calls.push({ name: 'detachVariant', args });
     return Promise.resolve('prd_neuf');
@@ -224,8 +229,8 @@ describe('les gestes', () => {
 });
 
 describe('<app-variant-lifecycle>', () => {
-  async function render(select: string | null = null) {
-    const { store } = await setup();
+  async function render(select: string | null = null, api = new FakeApi()) {
+    const { store } = await setup(api);
     if (select !== null) {
       store.selectVariant(select);
     }
@@ -248,6 +253,21 @@ describe('<app-variant-lifecycle>', () => {
     expect(host.querySelector('fold-danger-zone')).not.toBeNull();
     expect(host.querySelectorAll('fold-danger-zone fold-inline-confirm')).toHaveLength(2);
     expect(host.textContent).toContain('Faire de cette déclinaison un produit');
+  });
+
+  it('fait de la déclinaison ouverte le défaut, hors de la zone de danger', async () => {
+    const api = new FakeApi();
+    const host = await render('var_2', api);
+    const store = TestBed.inject(ProductFormStore);
+
+    expect(host.querySelector('.make-default fold-inline-confirm')).not.toBeNull();
+    buttonNamed(host, 'Faire de cette déclinaison la déclinaison par défaut').click();
+    await settle();
+    buttonNamed(host, 'Confirmer').click();
+    await settle();
+
+    expect(api.calls.at(-1)).toEqual({ name: 'makeVariantDefault', args: ['prd_1', 'var_2'] });
+    expect(store.variantTabs().find((tab) => tab.isDefault)?.id).toBe('var_2');
   });
 
   it('ouvre la nouvelle fiche après un détachement confirmé', async () => {

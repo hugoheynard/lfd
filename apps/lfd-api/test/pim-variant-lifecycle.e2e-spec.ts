@@ -1,6 +1,7 @@
 /**
  * E2E — **archiver, détacher, désarchiver une déclinaison**
- * (`documentation/catalogue/plan-gestes-de-declinaison.md`, G1 et G2).
+ * (`documentation/catalogue/plan-gestes-de-declinaison.md`, G1 à G3), et en
+ * faire la déclinaison par défaut (G4).
  *
  * Ce que seul ce niveau prouve : que `is_discontinued` et la filiation
  * (`origin_variant_id`, `detached_to_product_id`) s'écrivent sous leurs clés
@@ -83,12 +84,17 @@ async function aSecondVariant(fiche: Fiche): Promise<VariantDetail> {
   return found;
 }
 
-function act(fiche: Fiche, variantId: string, verb: "discontinue" | "detach" | "restore") {
+type Verb = "discontinue" | "detach" | "restore" | "make-default";
+
+function act(fiche: Fiche, variantId: string, verb: Verb) {
   return staff().post(`${PRODUCTS}/${fiche.id}/variants/${variantId}/${verb}`).send({});
 }
 
 function itemOf(sku: string) {
-  return ctx.prisma.catalogItem.findUnique({ where: { sku }, select: { withdrawnAt: true } });
+  return ctx.prisma.catalogItem.findUnique({
+    where: { sku },
+    select: { withdrawnAt: true, isDefault: true },
+  });
 }
 
 describe("archiver une déclinaison", () => {
@@ -183,6 +189,27 @@ describe("faire d'une déclinaison un produit", () => {
     await act(fiche, defaultId, "detach").expect(409);
   });
 
+  /** Hugo, 2026-10-29 : le produit détaché reprend la composition de la fiche d'origine. */
+  it("recopie la composition en ingrédients sur le produit né", async () => {
+    const fiche = await anActiveFiche(staff, "Financiers", "both");
+    const second = await aSecondVariant(fiche);
+    await staff()
+      .post("/pim/ingredients")
+      .send({ key: "beurre-aop", name: { fr: "Beurre AOP" }, origin: "" })
+      .expect(201);
+    await staff()
+      .put(`/pim/products/${fiche.id}/ingredients`)
+      .send({ keys: ["beurre-aop"] })
+      .expect(200);
+
+    const bornId = jsonBody<{ id: string }>(await act(fiche, second.id, "detach").expect(201)).id;
+
+    const cited = jsonBody<{ key: string }[]>(
+      await staff().get(`/pim/products/${bornId}/ingredients`).expect(200),
+    );
+    expect(cited.map((row) => row.key)).toEqual(["beurre-aop"]);
+  });
+
   /** Exigence de Hugo (2026-10-29) : détacher `-2` puis ajouter → `-3`, jamais `-2-2`. */
   it("après le détachement de -2, la déclinaison suivante prend -3", async () => {
     const fiche = await anActiveFiche(staff, "Meringues", "both");
@@ -193,5 +220,59 @@ describe("faire d'une déclinaison un produit", () => {
     const third = await aSecondVariant(fiche);
 
     expect(third.sku).toBe(`${fiche.sku}-3`);
+  });
+});
+
+describe("faire d'une déclinaison la déclinaison par défaut", () => {
+  it("bascule le défaut, lui donne en propre le tarif qu'elle suivait, et le commerce le lit", async () => {
+    const fiche = await anActiveFiche(staff, "Cannelés", "both");
+    const second = await aSecondVariant(fiche);
+    const aligned = await staff()
+      .put(`${PRODUCTS}/${fiche.id}/variants/${second.id}/alignment`)
+      .send({ aspect: "pricing", aligned: true });
+    expect([200, 204]).toContain(aligned.status);
+    const before = await detail(fiche.id);
+    const previous = before.variants.find((v) => v.isDefault);
+
+    await act(fiche, second.id, "make-default").expect(200);
+    await relayAll(ctx);
+
+    const after = await detail(fiche.id);
+    expect(after.variants.find((v) => v.id === second.id)).toMatchObject({
+      isDefault: true,
+      priceCents: previous?.priceCents,
+    });
+    expect(after.variants.find((v) => v.id === previous?.id)?.isDefault).toBe(false);
+    const promoted = await ctx.prisma.productVariant.findUnique({
+      where: { id: second.id },
+      select: { pricingFollowsDefault: true, regulatoryFollowsDefault: true, priceCents: true },
+    });
+    expect(promoted).toEqual({
+      pricingFollowsDefault: false,
+      regulatoryFollowsDefault: false,
+      priceCents: previous?.priceCents,
+    });
+    expect((await itemOf(second.sku))?.isDefault).toBe(true);
+    expect((await itemOf(previous?.sku ?? ""))?.isDefault).toBe(false);
+    const facts = await ctx.prisma.activityEvent.count({
+      where: { type: "product.default_variant_changed", subjectId: fiche.id },
+    });
+    expect(facts).toBe(1);
+  });
+
+  it("refuse celle qui l'est déjà (409)", async () => {
+    const fiche = await anActiveFiche(staff, "Éclairs", "both");
+    await aSecondVariant(fiche);
+    const defaultId = (await detail(fiche.id)).variants.find((v) => v.isDefault)?.id ?? "";
+
+    await act(fiche, defaultId, "make-default").expect(409);
+  });
+
+  it("refuse une archivée (409)", async () => {
+    const fiche = await anActiveFiche(staff, "Choux", "both");
+    const second = await aSecondVariant(fiche);
+    await act(fiche, second.id, "discontinue").expect(200);
+
+    await act(fiche, second.id, "make-default").expect(409);
   });
 });

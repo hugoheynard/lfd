@@ -296,6 +296,12 @@ export const PIM_EVENTS = {
   /** Sur le NOUVEAU produit : sa naissance, et la déclinaison dont il vient (D2). */
   productCreatedFromVariant: "product.created_from_variant",
   /**
+   * **Une autre déclinaison devient celle par défaut** (G4) — celles qui
+   * suivaient le défaut suivent désormais elle ; elle reçoit en propre ce
+   * qu'elle voyait.
+   */
+  productDefaultVariantChanged: "product.default_variant_changed",
+  /**
    * **La fiche change de famille** — `{ from, to }`, les deux familles avec
    * leur nom du moment (`{ id, name }`, lot B du plan des phrases du journal).
    *

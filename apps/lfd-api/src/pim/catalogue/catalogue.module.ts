@@ -47,6 +47,7 @@ import { SetProductMinQuantitiesHandler } from "./product/application/set-produc
 import { DiscontinueProductVariantHandler } from "./product/application/discontinue-product-variant.js";
 import { DetachProductVariantHandler } from "./product/application/detach-product-variant.js";
 import { RestoreProductVariantHandler } from "./product/application/restore-product-variant.js";
+import { MakeVariantDefaultHandler } from "./product/application/make-variant-default.js";
 import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
 import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -186,6 +187,7 @@ import {
     DiscontinueProductVariantHandler,
     DetachProductVariantHandler,
     RestoreProductVariantHandler,
+    MakeVariantDefaultHandler,
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,

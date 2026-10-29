@@ -522,6 +522,19 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     }),
   ),
   /**
+   * Une autre déclinaison devient celle par défaut (`plan-gestes-de-declinaison.md`,
+   * G4, 2026-10-29) : la nouvelle, et celle qu'elle remplace.
+   */
+  "product.default_variant_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      sku: z.string(),
+      previous: named("variant"),
+      previousSku: z.string(),
+    }),
+  ),
+  /**
    * Ce qu'une fiche cite — les ingrédients, nommés, l'ordre compris.
    *
    * ⚠️ **Sans `subjectLabel`, par construction** (lot B, 2026-09-19) : il est
