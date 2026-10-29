@@ -8,13 +8,18 @@
   } @else {
     <span class="name">{{ name() }}</span>
   }
-  <span class="unit">{{ unit() }}</span>
-  @if (minimumLabel(); as minimum) {
-    <span class="unit" data-minimum>{{ minimum }}</span>
-  }
-  @if (weight(); as shown) {
-    <span class="unit" data-weight>{{ shown }}</span>
-  }
+  <!-- UNE case de grille pour toutes les mentions sous le nom : posées chacune
+       dans la zone « unit », le prix au kilo et le grammage se superposaient
+       (Hugo, 2026-10-29, sur une ligne au poids). -->
+  <span class="meta">
+    <span class="unit">{{ unit() }}</span>
+    @if (minimumLabel(); as minimum) {
+      <span class="unit" data-minimum>{{ minimum }}</span>
+    }
+    @if (weight(); as shown) {
+      <span class="unit" data-weight>{{ shown }}</span>
+    }
+  </span>
   @if (madeToOrder(); as limit) {
     <span class="made-to-order" data-made-to-order>{{ limit }}</span>
   }
