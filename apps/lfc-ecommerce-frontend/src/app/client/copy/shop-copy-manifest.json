@@ -1546,6 +1546,41 @@
           "variables": []
         },
         {
+          "key": "shop.shelvesRoot",
+          "fr": "Boutique",
+          "en": "Shop",
+          "it": "Negozio",
+          "variables": []
+        },
+        {
+          "key": "shop.shelfClimbTo",
+          "fr": "Remonter à {shelf}",
+          "en": "Back to {shelf}",
+          "it": "Torna a {shelf}",
+          "variables": ["shelf"]
+        },
+        {
+          "key": "shop.shelfClimbToRoot",
+          "fr": "Remonter à toute la boutique",
+          "en": "Back to the whole shop",
+          "it": "Torna a tutto il negozio",
+          "variables": []
+        },
+        {
+          "key": "shop.shelfLevel",
+          "fr": "Familles de {shelf}",
+          "en": "{shelf} families",
+          "it": "Famiglie di {shelf}",
+          "variables": ["shelf"]
+        },
+        {
+          "key": "shop.shelfWithChildren",
+          "fr": "{shelf}, {n} sous-familles",
+          "en": "{shelf}, {n} sub-families",
+          "it": "{shelf}, {n} sottofamiglie",
+          "variables": ["shelf", "n"]
+        },
+        {
           "key": "shop.priceHt",
           "fr": "{price} HT",
           "en": "{price} excl. VAT",

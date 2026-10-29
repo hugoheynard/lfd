@@ -6,6 +6,7 @@ import { ShopStore } from './shop.store';
 import { ClientLocale } from '../client-locale.service';
 import { operationKeyOf, operationText } from './operations';
 import { ALL_SHELVES, FEATURED_SHELF } from './shelves';
+import { inSubtree, shelfTreeOf } from './shelf-tree';
 
 /**
  * Retire accents et casse : « éclair » et « eclair » cherchent la même chose.
@@ -83,8 +84,16 @@ export class Shop {
       const skus = this.catalogue.operationOf(operationKey)?.skus ?? [];
       return skus.flatMap((sku) => this.catalogue.itemOf(sku) ?? []);
     }
-    return items.filter((item) => item.shelfId === shelf);
+    // Une famille montre son SOUS-ARBRE : choisir « Pâtisseries » sort ses
+    // tartes et ses entremets. Sur un catalogue plat, c'est le rayon seul.
+    const tree = this.shelfTree();
+    return items.filter((item) => item.shelfId === shelf || inSubtree(tree, item.shelfId, shelf));
   });
+
+  /** L'arbre des familles servies — `parentId` du serveur, à plat sans imbrication. */
+  private readonly shelfTree = computed(() =>
+    shelfTreeOf(this.catalogue.shelves().map((shelf) => ({ ...shelf, label: shelf.name }))),
+  );
 
   /**
    * L'opération dont le rayon est ouvert, quand elle porte son encart

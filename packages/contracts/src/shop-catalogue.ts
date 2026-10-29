@@ -42,6 +42,16 @@ export interface ShopShelfView {
   readonly name: string;
   /** L'ordre voulu par le référentiel — la vitrine ne trie pas elle-même. */
   readonly position: number;
+  /**
+   * **Sa famille parente**, quand le référentiel imbrique ses familles —
+   * `null` pour un rayon de tête (filtre « Plonger », 2026-10-29).
+   *
+   * Absente quand aucun rayon servi n'a de parente : le catalogue est plat, et
+   * la vue reste celle d'avant l'imbrication. Présente, la liste porte aussi
+   * les parentes sans article à elles, rangées avant leurs filles : un rayon
+   * parent montre son sous-arbre entier.
+   */
+  readonly parentId?: string | null;
 }
 
 /** Le visuel principal d'un article, ou rien. */

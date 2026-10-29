@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1713 textes
+## Sommaire — 1718 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 71 |
+| [Rayon / boutique](#espace-shop) | `shop` | 76 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 26 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1713** |
+| **Total** | | **1718** |
 
 ## Le parcours de commande
 
@@ -309,7 +309,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 71 textes.
+Source : `fr.ts · en.ts · it.ts` · 76 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -338,6 +338,11 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 | `shop.slidePause` | Mettre en pause le défilement | Pause the slideshow | Metti in pausa lo scorrimento |  |
 | `shop.slidePlay` | Reprendre le défilement | Resume the slideshow | Riprendi lo scorrimento |  |
 | `shop.shelvesGroup` | Les rayons | The shelves | I reparti |  |
+| `shop.shelvesRoot` | Boutique | Shop | Negozio |  |
+| `shop.shelfClimbTo` | Remonter à {shelf} | Back to {shelf} | Torna a {shelf} | `{shelf}` |
+| `shop.shelfClimbToRoot` | Remonter à toute la boutique | Back to the whole shop | Torna a tutto il negozio |  |
+| `shop.shelfLevel` | Familles de {shelf} | {shelf} families | Famiglie di {shelf} | `{shelf}` |
+| `shop.shelfWithChildren` | {shelf}, {n} sous-familles | {shelf}, {n} sub-families | {shelf}, {n} sottofamiglie | `{shelf}` `{n}` |
 | `shop.priceHt` | {price} HT | {price} excl. VAT | {price} IVA escl. | `{price}` |
 | `shop.htSuffix` | HT | excl. VAT | IVA escl. |  |
 | `shop.priceTtc` | {price} TTC | {price} incl. VAT | {price} IVA incl. | `{price}` |

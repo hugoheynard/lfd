@@ -459,6 +459,16 @@ export interface ClientCopy {
     readonly slidePlay: string;
     readonly shelvesGroup: string;
     /**
+     * Les rayons imbriqués (filtre « Plonger », 2026-10-29). `{shelf}` est le
+     * nom d'une famille, `{n}` un nombre de sous-familles. `shelvesRoot` est le
+     * premier cran du fil d'Ariane, « toute la boutique » en un mot.
+     */
+    readonly shelvesRoot: string;
+    readonly shelfClimbTo: string;
+    readonly shelfClimbToRoot: string;
+    readonly shelfLevel: string;
+    readonly shelfWithChildren: string;
+    /**
      * `{price}` est remplacé par le montant. Le rayon affiche du **hors taxe**,
      * et un prix alimentaire sans mention se lit TTC : la mention n'est pas une
      * décoration, c'est ce qui empêche la vignette de mentir.

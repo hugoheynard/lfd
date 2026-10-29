@@ -71,3 +71,278 @@
     }
   }
 }
+
+/**
+ * **« Plonger »** — les familles imbriquées (handoff du 2026-10-29, SPEC §2-§6).
+ *
+ * Tous les niveaux sont montés et empilés dans `.stage` ; leur classe
+ * `is-cur` / `is-left` / `is-right` donne seule la direction du mouvement.
+ * Les délais d'entrée arrivent en `--d` depuis le gabarit, nuls à la sortie :
+ * une sortie retardée laisserait des pastilles fantômes.
+ *
+ * Couleurs de la maquette ramenées au thème : le bleu plein (pastille de tête,
+ * indicateur de tête) est `--fold-color-primary` ; l'indicateur clair des
+ * niveaux imbriqués est `--fold-color-primary-surface` cerclé de
+ * `--fold-color-primary-border`. Le rayon est celui des pastilles d'aujourd'hui
+ * (`--fold-radius-lg`), pas la gélule de la maquette ; l'ombre de la pastille
+ * de tête est omise — la boutique est à plat depuis le 2026-10-27.
+ */
+.stage {
+  --ease: cubic-bezier(0.3, 0.7, 0.2, 1);
+  --row: 44px;
+
+  position: relative;
+  height: var(--row);
+  overflow: hidden;
+}
+
+.level {
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  transition:
+    transform 0.5s var(--ease),
+    opacity 0.18s;
+
+  &.is-cur {
+    transition:
+      transform 0.5s var(--ease),
+      opacity 0.2s;
+  }
+
+  &.is-left,
+  &.is-right {
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  &.is-left {
+    transform: translateX(-36px);
+  }
+
+  &.is-right {
+    transform: translateX(36px);
+  }
+}
+
+.crumb,
+.pill,
+.chip {
+  flex: none;
+  display: inline-flex;
+  align-items: center;
+  height: var(--row);
+  border: 0;
+  background: none;
+  font-family: var(--lfc-font-caps);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--lfc-tracking-label);
+  text-transform: uppercase;
+  white-space: nowrap;
+  cursor: pointer;
+}
+
+/* Le fil d'Ariane : bureau seulement (SPEC §6). */
+.crumb {
+  gap: 6px;
+  padding: 0 2px;
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-2xs);
+  opacity: 0;
+  transition: opacity 0.25s 0ms;
+
+  .is-cur & {
+    opacity: 1;
+    transition-delay: var(--d, 0ms);
+  }
+}
+
+.slash {
+  opacity: 0.45;
+}
+
+/* La pastille de tête : la famille où l'on est. Elle sert de retour. */
+.pill {
+  gap: 8px;
+  padding: 0 18px 0 14px;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  color: var(--fold-color-on-primary);
+  font-size: var(--fold-text-xs);
+  opacity: 0;
+  transform: scale(0.86);
+  transform-origin: left center;
+  transition:
+    transform 0.42s var(--ease),
+    opacity 0.25s;
+
+  .is-cur & {
+    opacity: 1;
+    transform: none;
+    transition-delay: 40ms;
+  }
+}
+
+.back {
+  font-size: var(--fold-text-lg);
+  line-height: 1;
+}
+
+.sep {
+  flex: none;
+  width: 1.5px;
+  height: 26px;
+  background: var(--fold-color-border);
+  opacity: 0;
+  transition: opacity 0.3s;
+
+  .is-cur & {
+    opacity: 1;
+    transition-delay: 100ms;
+  }
+}
+
+.rail {
+  position: relative;
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  gap: 6px;
+  overflow-x: auto;
+  scrollbar-width: none;
+
+  &::-webkit-scrollbar {
+    display: none;
+  }
+}
+
+/* L'indicateur glisse DERRIÈRE les pastilles. Sa place et sa largeur sont
+   posées par le composant ; `--shown` dit s'il y a une pastille allumée. */
+.indicator {
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  height: var(--row);
+  box-sizing: border-box;
+  border-radius: var(--fold-radius-lg);
+  background: var(--fold-color-primary);
+  opacity: 0;
+  pointer-events: none;
+  transition:
+    transform 0.42s var(--ease),
+    width 0.42s var(--ease),
+    opacity 0.25s;
+
+  .is-cur & {
+    opacity: var(--shown, 0);
+    transition-delay: 0ms, 0ms, 200ms;
+  }
+
+  .inner & {
+    border: 1.5px solid var(--fold-color-primary-border);
+    background: var(--fold-color-primary-surface);
+  }
+}
+
+.chip {
+  position: relative;
+  z-index: 1;
+  gap: 7px;
+  padding: 0 17px;
+  border: 1px solid var(--fold-color-border);
+  border-radius: var(--fold-radius-lg);
+  color: var(--fold-color-text-secondary);
+  font-size: var(--fold-text-xs);
+  opacity: 0;
+  transition:
+    color 0.3s,
+    border-color 0.3s,
+    opacity 0.26s var(--d, 0ms),
+    transform 0.44s var(--ease) var(--d, 0ms);
+
+  .is-right & {
+    transform: translateX(22px);
+  }
+
+  .is-left & {
+    transform: translateX(-18px);
+  }
+
+  .is-cur & {
+    opacity: 1;
+  }
+
+  &.on {
+    border-color: transparent;
+    color: var(--fold-color-on-primary);
+  }
+
+  /* Dans un niveau imbriqué : sans bord au repos, sauf qui a des enfants ;
+     allumée, le texte reste bleu sur l'indicateur clair — le bleu plein dit
+     « je suis dans cette famille », le clair « ce filtre est choisi ». */
+  .inner & {
+    border-color: transparent;
+
+    &.drill:not(.on) {
+      border-color: var(--fold-color-border);
+    }
+
+    &.on {
+      color: var(--fold-color-primary-text);
+    }
+  }
+}
+
+.count {
+  font-size: var(--fold-text-2xs);
+  font-variant-numeric: tabular-nums;
+  opacity: 0.6;
+}
+
+.caret {
+  font-size: var(--fold-text-md);
+  line-height: 1;
+  opacity: 0.6;
+}
+
+/* En pile : la pastille de tête seule, sans fil d'Ariane (SPEC §6). */
+@media (max-width: 899.98px) {
+  .crumb {
+    display: none;
+  }
+
+  .pill {
+    padding: 0 14px 0 12px;
+  }
+
+  .chip {
+    padding: 0 14px;
+  }
+}
+
+/* Mouvement réduit (SPEC §5.8) : rien ne glisse, les niveaux ne font que
+   changer d'opacité, et l'indicateur se pose sans transition. */
+@media (prefers-reduced-motion: reduce) {
+  .level.is-cur,
+  .level.is-left,
+  .level.is-right {
+    transform: none;
+    transition: opacity 0.12s;
+  }
+
+  .level .crumb,
+  .level .pill,
+  .level .sep,
+  .level .chip {
+    transform: none;
+    transition: none;
+  }
+
+  /* Sa place reste posée en ligne par le composant : seule la course disparaît. */
+  .level .indicator {
+    transition: none;
+  }
+}

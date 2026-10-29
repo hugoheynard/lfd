@@ -12,6 +12,7 @@ import {
   type ShopSale,
 } from "./shop-catalogue-operations.js";
 import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
+import { shelfTranslationsOf, shelfTreeOf } from "./shop-shelf-tree.js";
 
 /**
  * **Ce qu'une vitrine montre, et comment ça se range** — sans un seul prix
@@ -157,7 +158,7 @@ export function inShopLanguage(
     return view;
   }
   const byShopSku = shownByShopSku(sellable);
-  const byFamily = new Map(sellable.map((item) => [item.categoryId, item]));
+  const shelfNames = shelfTranslationsOf(sellable);
   return {
     ...view,
     items: view.items.map((item) => {
@@ -172,10 +173,10 @@ export function inShopLanguage(
           };
     }),
     shelves: view.shelves.map((shelf) => {
-      const source = byFamily.get(shelf.id);
-      return source === undefined
+      const translations = shelfNames.get(shelf.id);
+      return translations === undefined
         ? shelf
-        : { ...shelf, name: inLanguage(shelf.name, source.translations.categoryName, language) };
+        : { ...shelf, name: inLanguage(shelf.name, translations, language) };
     }),
   };
 }
@@ -201,12 +202,19 @@ export function shownByShopSku(
  *
  * La position vient de la première occurrence : `listSellable` rend déjà les
  * articles dans l'ordre d'affichage, rayon par rayon.
+ *
+ * Dès qu'une famille peuplée a une parente, les rayons sont rendus **en
+ * arbre** (`shelfTreeOf`) ; un catalogue plat garde cette composition-ci.
  */
 function shelvesOf(
   sellable: readonly ResolvedCatalogItem[],
   shown: readonly ShopItemView[],
 ): readonly ShopShelfView[] {
   const peopled = new Set(shown.map((item) => item.shelfId));
+  const tree = shelfTreeOf(sellable, peopled);
+  if (tree !== null) {
+    return tree;
+  }
   const shelves = new Map<string, ShopShelfView>();
   for (const item of sellable) {
     if (!peopled.has(item.categoryId) || shelves.has(item.categoryId)) {

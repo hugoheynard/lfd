@@ -5,6 +5,7 @@ import { FR } from '../copy/fr';
 import { ALL_SHELVES } from './shelves';
 import {
   hydrateWith,
+  NESTED_CATALOGUE,
   operationCatalogue,
   TEST_CATALOGUE,
   TEST_ITEMS,
@@ -42,6 +43,17 @@ describe('Shop — ce que la boutique montre', () => {
 
     expect(shop.products().every((item) => item.shelfId === shelf?.id)).toBe(true);
     expect(shop.heading()).toBe(shelf?.name);
+  });
+
+  it('une famille parente montre son sous-arbre entier, et se titre de son nom', () => {
+    hydrateWith(TestBed.inject(ShopCatalogue), NESTED_CATALOGUE);
+    shop.browse('cat_patis');
+
+    expect(shown()).toEqual(['PAT-TAR', 'PAT-OPE', 'PAT-FOR']);
+    expect(shop.heading()).toBe('Pâtisseries');
+
+    shop.browse('cat_ent');
+    expect(shown()).toEqual(['PAT-OPE', 'PAT-FOR']);
   });
 
   /**

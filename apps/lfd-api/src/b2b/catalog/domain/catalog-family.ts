@@ -1,3 +1,4 @@
+import type { CatalogTranslations } from "./catalog-translations.js";
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 /**
@@ -27,6 +28,26 @@ export interface CatalogFamily {
   readonly slug: string;
   /** La famille elle-même en tête, puis ses parentes. Jamais vide. */
   readonly path: readonly string[];
+  /**
+   * **Ses parentes, de quoi les montrer en rayon** — de la plus proche à la
+   * plus lointaine, dans l'ordre de `path` privé de sa tête.
+   *
+   * Lues pour la boutique, qui range ses rayons en arbre (« Plonger », handoff
+   * du 2026-10-29) : une parente sans article à elle n'apparaît dans aucune
+   * ligne lue, et son nom ne viendrait de nulle part ailleurs.
+   *
+   * Absente quand la famille n'a pas de parente — le lecteur ne paie alors
+   * aucune lecture de plus (cf. `lineage`).
+   */
+  readonly ancestors?: readonly CatalogFamilyAncestor[];
+}
+
+/** Une parente telle qu'un rayon la nomme et la range. */
+export interface CatalogFamilyAncestor {
+  readonly id: string;
+  readonly name: string;
+  readonly position: number;
+  readonly nameTranslations: CatalogTranslations;
 }
 
 /** La famille telle qu'un écran la reçoit — sans lignée ni slug. */

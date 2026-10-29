@@ -1,14 +1,85 @@
 <nav [attr.aria-label]="t().shop.shelvesGroup">
-  <div class="chips">
-    @for (item of shelves(); track item.id) {
-      <button
-        type="button"
-        [class.on]="active() === item.id"
-        [attr.aria-pressed]="active() === item.id"
-        (click)="picked.emit(item.id)"
-      >
-        {{ item.label }}
-      </button>
-    }
-  </div>
+  @if (nested()) {
+    <!-- « PLONGER » : un niveau par famille qui a des enfants, tous montés et
+         empilés au même endroit. Seul le niveau `cur` est visible et
+         atteignable ; les autres sont `inert`. -->
+    <div #stage class="stage" (keydown.escape)="climb()">
+      @for (level of levels(); track level.id) {
+        @let cur = level.state === 'cur';
+        <div
+          class="level"
+          role="toolbar"
+          [attr.data-level]="level.id"
+          [attr.aria-label]="level.ariaLabel"
+          [attr.inert]="cur ? null : ''"
+          [class.is-cur]="cur"
+          [class.is-left]="level.state === 'left'"
+          [class.is-right]="level.state === 'right'"
+        >
+          @if (level.nested) {
+            @for (crumb of level.crumbs; track crumb.id; let j = $index) {
+              <button
+                type="button"
+                class="crumb"
+                [style.--d.ms]="cur ? j * 40 : 0"
+                (click)="pick(crumb.id)"
+              >
+                <span>{{ crumb.label }}</span
+                ><span class="slash" aria-hidden="true">/</span>
+              </button>
+            }
+            <button
+              type="button"
+              class="pill"
+              [attr.aria-label]="level.climbLabel"
+              (click)="pick(level.climbTo)"
+            >
+              <span class="back" aria-hidden="true">‹</span>
+              <span>{{ level.label }}</span>
+              <span class="count" aria-hidden="true">{{ level.count }}</span>
+            </button>
+            <span class="sep" aria-hidden="true"></span>
+          }
+          <div #rail class="rail" [class.inner]="level.nested">
+            <span class="indicator" aria-hidden="true"></span>
+            @for (chip of level.chips; track chip.id) {
+              <button
+                type="button"
+                class="chip"
+                [class.on]="chip.on"
+                [class.drill]="chip.drill"
+                [attr.data-shelf]="chip.id"
+                [attr.aria-pressed]="chip.on"
+                [attr.aria-haspopup]="chip.drill ? 'true' : null"
+                [attr.aria-label]="chip.ariaLabel"
+                [style.--d.ms]="chip.delay"
+                (click)="pick(chip.id)"
+              >
+                <span>{{ chip.label }}</span>
+                @if (chip.count !== null) {
+                  <span class="count" aria-hidden="true">{{ chip.count }}</span>
+                }
+                @if (chip.drill) {
+                  <span class="caret" aria-hidden="true">›</span>
+                }
+              </button>
+            }
+          </div>
+        </div>
+      }
+    </div>
+  } @else {
+    <div class="chips">
+      @for (item of shelves(); track item.id) {
+        <button
+          type="button"
+          [class.on]="active() === item.id"
+          [attr.aria-pressed]="active() === item.id"
+          (click)="picked.emit(item.id)"
+        >
+          {{ item.label }}
+        </button>
+      }
+    </div>
+  }
 </nav>

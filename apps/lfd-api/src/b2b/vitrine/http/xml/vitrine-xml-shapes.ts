@@ -104,6 +104,7 @@ const shelf = objectOf<ShopShelfView>({
   id: required(xmlString),
   name: required(xmlString),
   position: required(xmlInteger),
+  parentId: optional(xmlString),
 });
 
 const operation = objectOf<ShopOperationView>({

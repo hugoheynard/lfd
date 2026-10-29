@@ -255,6 +255,11 @@ export const FR: ClientCopy = {
     slidePause: 'Mettre en pause le défilement',
     slidePlay: 'Reprendre le défilement',
     shelvesGroup: 'Les rayons',
+    shelvesRoot: 'Boutique',
+    shelfClimbTo: 'Remonter à {shelf}',
+    shelfClimbToRoot: 'Remonter à toute la boutique',
+    shelfLevel: 'Familles de {shelf}',
+    shelfWithChildren: '{shelf}, {n} sous-familles',
     priceHt: '{price} HT',
     htSuffix: 'HT',
     // Le rayon d'un particulier affiche le TTC (D13) : un prix alimentaire sans

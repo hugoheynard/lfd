@@ -1,4 +1,3 @@
-import { categoryPathOf } from "@lfd/catalog-sync";
 import { Injectable } from "@nestjs/common";
 import type { OrderLineAllergens } from "@lfd/contracts";
 
@@ -15,11 +14,18 @@ import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { translationsColumnOf } from "./catalog-translations-column.js";
+import {
+  FLAT_LINEAGE,
+  lineageFrom,
+  type FamilyLineage,
+  type Lineage,
+} from "./catalog-family-lineage.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
 import { shopItemName, shopSkuOf } from "../domain/shop-sku.js";
 import { soldUnderShopSkus } from "./shop-sku-filter.js";
 import type { CatalogTranslations } from "../domain/catalog-translations.js";
+import type { CatalogFamily } from "../domain/catalog-family.js";
 
 /**
  * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
@@ -220,27 +226,14 @@ export class PrismaCatalogReader extends CatalogReader {
    */
   private async lineage(rows: readonly ItemRow[]): Promise<Lineage> {
     if (rows.every((row) => row.category.parentId === null)) {
-      return (familyId) => [familyId];
+      return FLAT_LINEAGE;
     }
     const families = await this.prisma.catalogCategory.findMany({
-      select: { id: true, parentId: true },
+      select: { id: true, parentId: true, name: true, position: true, nameTranslations: true },
     });
-    const nodes = families.map((family) => ({ id: family.id, parentId: family.parentId }));
-    const cache = new Map<string, readonly string[]>();
-    return (familyId) => {
-      const known = cache.get(familyId);
-      if (known !== undefined) {
-        return known;
-      }
-      const path = categoryPathOf(nodes, familyId);
-      cache.set(familyId, path);
-      return path;
-    };
+    return lineageFrom(families);
   }
 }
-
-/** La lignée d'une famille, la famille en tête. */
-type Lineage = (familyId: string) => readonly string[];
 
 /**
  * **L'article est-il servi à ce lecteur ?** — `servedTo`, la règle du domaine,
@@ -357,6 +350,14 @@ function featuredFor(row: ItemRow, viewer: ShopAudience): boolean {
   return (viewer === "pro" ? row.override?.isFeaturedPro : row.override?.isFeaturedPublic) ?? false;
 }
 
+/** Le chemin, et les parentes seulement s'il y en a : une famille racine n'en porte pas. */
+function familyLineageOf({
+  path,
+  ancestors,
+}: FamilyLineage): Pick<CatalogFamily, "path" | "ancestors"> {
+  return ancestors.length === 0 ? { path } : { path, ancestors };
+}
+
 function resolve(
   row: ItemRow,
   served: ServedPrice,
@@ -386,7 +387,7 @@ function resolve(
       name: row.category.name,
       position: row.category.position,
       slug: row.category.slug,
-      path: lineage(row.category.id),
+      ...familyLineageOf(lineage(row.category.id)),
     },
     isDefault: row.isDefault,
     variantsAsTiles: row.variantsAsTiles,

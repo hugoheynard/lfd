@@ -140,6 +140,28 @@ export function operationCatalogue(state: ShopOperationState): ShopCatalogueView
 }
 
 /**
+ * **Un catalogue aux familles imbriquées** (filtre « Plonger ») : Pâtisseries
+ * a deux filles, Tartes et Entremets, et Entremets une fille, « 8 parts ».
+ * La parente n'a aucun article à elle — elle montre son sous-arbre.
+ */
+export const NESTED_CATALOGUE: ShopCatalogueView = {
+  shelves: [
+    { id: 'cat_vien', name: 'Viennoiseries', position: 0, parentId: null },
+    { id: 'cat_patis', name: 'Pâtisseries', position: 1, parentId: null },
+    { id: 'cat_tar', name: 'Tartes', position: 2, parentId: 'cat_patis' },
+    { id: 'cat_ent', name: 'Entremets', position: 3, parentId: 'cat_patis' },
+    { id: 'cat_ent_8', name: '8 parts', position: 4, parentId: 'cat_ent' },
+  ],
+  items: [
+    item({ sku: 'VIE-001', name: 'Croissant', shelfId: 'cat_vien' }),
+    item({ sku: 'PAT-TAR', name: 'Tarte aux myrtilles', shelfId: 'cat_tar' }),
+    item({ sku: 'PAT-OPE', name: 'Opéra', shelfId: 'cat_ent_8' }),
+    item({ sku: 'PAT-FOR', name: 'Forêt-noire', shelfId: 'cat_ent_8' }),
+  ],
+  operations: [],
+};
+
+/**
  * Pose le catalogue comme le réseau le poserait.
  *
  * Elle écrit dans l'état privé du dépôt plutôt que d'en fabriquer un double :
