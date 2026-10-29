@@ -120,8 +120,9 @@
             justify="stretch"
           />
           <!-- La déclinaison racine se dit en tête de ses cartes : c'est d'elle
-               que les autres héritent, et la modifier les touche aussi. -->
-          @if (store.editingDefault()) {
+               que les autres héritent, et la modifier les touche aussi. Seule, elle
+               n'a personne à qui transmettre : rien à dire. -->
+          @if (store.editingDefault() && store.variants().length > 1) {
             <fold-callout variant="info">
               C'est la déclinaison racine du produit : les autres déclinaisons peuvent suivre ses
               réglages, et ce que vous changez ici s'applique aussi à celles qui la suivent.
