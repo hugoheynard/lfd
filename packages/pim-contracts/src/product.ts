@@ -504,7 +504,32 @@ export type ProductDetailView = ProductView & {
    * avait des images, et le premier enregistrement les aurait effacées.
    */
   readonly media: readonly ProductMediaView[];
+  /** D'où vient la fiche, et ce que ses déclinaisons archivées sont devenues. */
+  readonly lineage: ProductLineageView;
 };
+
+/**
+ * **La filiation d'un détachement** (`plan-gestes-de-declinaison.md`, G2) —
+ * des deux côtés, avec les noms du moment pour que l'écran pose un lien.
+ */
+export interface ProductLineageView {
+  /** Né de cette déclinaison de cette fiche ; `null` = né d'une création. */
+  readonly origin: {
+    readonly productId: string;
+    readonly productSku: string;
+    readonly productName: LocalizedText;
+    readonly variantSku: string;
+    readonly variantName: LocalizedText;
+  } | null;
+  /** Par id de déclinaison archivée : le produit qu'elle est devenue. */
+  readonly detachedTo: Readonly<Record<string, DetachedProductView>>;
+}
+
+export interface DetachedProductView {
+  readonly productId: string;
+  readonly productSku: string;
+  readonly productName: LocalizedText;
+}
 
 /**
  * Le panneau **Visuels**, enregistré d'un bloc.

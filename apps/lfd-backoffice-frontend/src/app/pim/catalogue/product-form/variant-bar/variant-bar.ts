@@ -7,6 +7,7 @@ import {
 } from 'fold-ng';
 
 import { ProductFormStore } from '../product-form-store';
+import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
 
 /**
  * **La barre des déclinaisons**, sous l'en-tête de la fiche.
@@ -31,7 +32,13 @@ import { ProductFormStore } from '../product-form-store';
   selector: 'app-variant-bar',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldBadgeComponent, FoldButtonComponent, FoldButtonIconComponent, FoldInputComponent],
+  imports: [
+    FoldBadgeComponent,
+    FoldButtonComponent,
+    FoldButtonIconComponent,
+    FoldInputComponent,
+    VariantLifecycle,
+  ],
   templateUrl: './variant-bar.html',
   styleUrl: './variant-bar.scss',
 })

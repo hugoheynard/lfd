@@ -68,3 +68,10 @@
 .add {
   margin-block-end: var(--fold-space-xs);
 }
+
+/* L'espace sous les gestes de déclinaison, posé par le parent — et seulement
+   quand ils montrent quelque chose : sur une fiche sans archivée, ouverte sur
+   le défaut, le composant ne rend rien et ne doit rien décaler. */
+app-variant-lifecycle:has(> *) {
+  margin-block-end: var(--fold-space-md);
+}

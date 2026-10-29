@@ -491,6 +491,37 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
   "product.archived": labelled(skuAndName()),
   "product.restored": labelled(skuAndName()),
   /**
+   * Une déclinaison archivée — hors vente, en base pour toujours
+   * (`plan-gestes-de-declinaison.md`, D1, 2026-10-29). Né avec `subjectLabel`.
+   */
+  "product.variant_discontinued": fact(
+    payload({ subjectLabel: subjectLabel(), variant: named("variant"), sku: z.string() }),
+  ),
+  /** Désarchivée : son rang, sa référence, la vente selon la fiche. */
+  "product.variant_restored": fact(
+    payload({ subjectLabel: subjectLabel(), variant: named("variant"), sku: z.string() }),
+  ),
+  /** Sur l'origine : la déclinaison partie faire un produit, et ce produit (D2). */
+  "product.variant_detached": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      sku: z.string(),
+      product: named("product"),
+      productSku: z.string(),
+    }),
+  ),
+  /** Sur le nouveau produit : sa naissance, et la fiche et la déclinaison d'où il vient (D2). */
+  "product.created_from_variant": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      sku: z.string(),
+      name: localizedText(),
+      origin: named("product"),
+      originVariantSku: z.string(),
+    }),
+  ),
+  /**
    * Ce qu'une fiche cite — les ingrédients, nommés, l'ordre compris.
    *
    * ⚠️ **Sans `subjectLabel`, par construction** (lot B, 2026-09-19) : il est

@@ -48,6 +48,7 @@ function detailOf(row: Product): ProductDetail {
     media: [],
     readiness: null,
     readinessStale: false,
+    lineage: { origin: null, detachedTo: {} },
   };
 }
 

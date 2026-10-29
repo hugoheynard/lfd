@@ -87,6 +87,7 @@ function detailWith(variants: readonly Variant[]): ProductDetail {
     media: [],
     readiness: null,
     readinessStale: false,
+    lineage: { origin: null, detachedTo: {} },
   };
 }
 

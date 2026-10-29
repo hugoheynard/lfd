@@ -82,7 +82,15 @@ model Product {
   /// l'amorce des attributs libres — alors elle mérite un plan —, ou la retirer
   /// en trois déploiements. La laisser sans mot est la seule mauvaise réponse.
   attributes Json             @default("{}")
-  variants   ProductVariant[]
+  variants   ProductVariant[] @relation("ProductVariants")
+
+  /// Né du détachement de cette déclinaison (`plan-gestes-de-declinaison.md`,
+  /// G2) ; `null` = né d'une création. Restrict : la déclinaison d'origine ne
+  /// se supprime pas, elle s'archive.
+  originVariantId String?          @map("origin_variant_id")
+  originVariant   ProductVariant?  @relation("ProductOriginVariant", fields: [originVariantId], references: [id], onDelete: Restrict)
+  /// Les déclinaisons d'autres fiches devenues ce produit (au plus une).
+  detachedFrom    ProductVariant[] @relation("VariantDetachedToProduct")
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
@@ -141,7 +149,7 @@ model ProductContextVat {
 model ProductVariant {
   id             String  @id
   productId      String  @map("product_id")
-  product        Product @relation(fields: [productId], references: [id])
+  product        Product @relation("ProductVariants", fields: [productId], references: [id])
   sku            String  @unique
   name           Json
   options        Json    @default("{}")
@@ -269,6 +277,13 @@ model ProductVariant {
   /// de ligne est un état — personne ne s'est prononcé.
   allergenSheet   VariantAllergens?
   nutritionValues NutritionValues?
+
+  /// Devenue ce produit par détachement (`plan-gestes-de-declinaison.md`, G2) ;
+  /// posée avec `is_discontinued`, elle interdit de la désarchiver.
+  detachedToProductId String?   @map("detached_to_product_id")
+  detachedToProduct   Product?  @relation("VariantDetachedToProduct", fields: [detachedToProductId], references: [id], onDelete: Restrict)
+  /// Les produits nés d'elle (au plus un).
+  originOf            Product[] @relation("ProductOriginVariant")
 
   @@index([productId])
   @@map("product_variant")

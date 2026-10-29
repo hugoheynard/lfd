@@ -51,6 +51,7 @@ interface VariantRow extends MinQuantityColumns {
   options: unknown;
   isDefault: boolean;
   isDiscontinued: boolean;
+  detachedToProductId: string | null;
   position: number;
   priceCents: number | null;
   weightGrams: number | null;
@@ -80,6 +81,7 @@ interface ProductRow {
   operationOnly: boolean;
   requiresCold: boolean;
   audience: string | null;
+  originVariantId: string | null;
   variants: VariantRow[];
   contextVat: readonly { vatRateId: string; context: { key: string } }[];
 }
@@ -110,6 +112,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     options: readStringMapColumn(row.options, "variant.options"),
     isDefault: row.isDefault,
     isDiscontinued: row.isDiscontinued,
+    detachedToProductId: row.detachedToProductId,
     position: row.position,
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
@@ -183,6 +186,7 @@ function toProduct(row: ProductRow): Product {
     requiresCold: row.requiresCold,
     // Revalidée : une ligne relue n'est pas passée par le contrat.
     audience: row.audience === null ? null : audience(row.audience),
+    originVariantId: row.originVariantId,
     variants: row.variants.map(toVariant),
     vatByContext: Object.fromEntries(
       row.contextVat.map((line) => [line.context.key, line.vatRateId]),
@@ -217,6 +221,7 @@ function toColumns(snapshot: ProductSnapshot) {
     operationOnly: snapshot.operationOnly,
     requiresCold: snapshot.requiresCold,
     audience: snapshot.audience,
+    originVariantId: snapshot.originVariantId ?? null,
   };
 }
 
@@ -345,6 +350,7 @@ export class PrismaProductRepository extends ProductRepository {
             options: { ...variant.options },
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
+            detachedToProductId: variant.detachedToProductId ?? null,
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,
@@ -362,6 +368,7 @@ export class PrismaProductRepository extends ProductRepository {
             name: localizedColumn(variant.name),
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
+            detachedToProductId: variant.detachedToProductId ?? null,
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,

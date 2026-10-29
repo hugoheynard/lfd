@@ -33,6 +33,12 @@ import {
   type ComplianceFinding,
 } from "../services/product-compliance.js";
 import { refusalOf } from "./activation-refusal.js";
+import {
+  DefaultVariantNotDetachableError,
+  DefaultVariantNotDiscontinuableError,
+  LastLiveVariantNotDiscontinuableError,
+  VariantAlreadyDiscontinuedError,
+} from "../errors/variant-lifecycle-errors.js";
 import { PricingAlignmentAcrossUnitsError } from "../errors/sale-unit-errors.js";
 import type { CompletenessRules } from "../services/variant-completeness.js";
 
@@ -90,6 +96,12 @@ export interface ProductSnapshot {
    * hérite (C2 du plan `plan-catalogue-synchronise-par-audience.md`).
    */
   readonly audience: Audience | null;
+  /**
+   * La déclinaison dont il est né par détachement (`plan-gestes-de-declinaison.md`,
+   * G2) ; `null` = né d'une création. Facultatif à la LECTURE (absent = `null`),
+   * comme `VariantSnapshot.detachedToProductId` : l'agrégat le rend toujours.
+   */
+  readonly originVariantId?: string | null | undefined;
 }
 
 /**
@@ -139,6 +151,7 @@ export class Product {
     private operationOnlyValue: boolean,
     private requiresColdValue: boolean,
     private audienceValue: Audience | null,
+    private readonly originVariantIdValue: string | null = null,
   ) {}
 
   static open(input: NewProductInput): Product {
@@ -180,6 +193,7 @@ export class Product {
       snapshot.operationOnly,
       snapshot.requiresCold,
       snapshot.audience,
+      snapshot.originVariantId ?? null,
     );
   }
 
@@ -594,6 +608,95 @@ export class Product {
   }
 
   /**
+   * **Archive une déclinaison** — `is_discontinued`, hors vente, en base pour
+   * toujours (`plan-gestes-de-declinaison.md`, D1).
+   *
+   * Elle RESTE dans l'agrégat : son rang reste pris ({@link nextVariantPosition}),
+   * si bien que la suivante prend `-3` après un `-2` archivé, et jamais `-2-2`.
+   * Ce sont les lectures (fiche, faits du catalogue) qui l'écartent.
+   *
+   * @throws {DefaultVariantNotDiscontinuableError} le défaut, tant qu'il en reste d'autres.
+   * @throws {LastLiveVariantNotDiscontinuableError} la dernière vivante : c'est la fiche qu'on archive.
+   * @throws {VariantAlreadyDiscontinuedError} déjà archivée.
+   */
+  discontinueVariant(variantId: string): void {
+    const target = this.variant(variantId);
+    if (target.isDiscontinued) {
+      throw new VariantAlreadyDiscontinuedError(target.sku);
+    }
+    const othersAlive = this.variantList.some(
+      (variant) => variant.id !== variantId && !variant.isDiscontinued,
+    );
+    if (!othersAlive) {
+      throw new LastLiveVariantNotDiscontinuableError(target.sku);
+    }
+    if (target.isDefault) {
+      throw new DefaultVariantNotDiscontinuableError(target.sku);
+    }
+    target.discontinue();
+  }
+
+  /**
+   * **Fait d'une déclinaison un produit** (`plan-gestes-de-declinaison.md`,
+   * D2 et D3) : le nouveau produit naît de ce qu'elle VOYAIT — sa vue résolue,
+   * plus la famille, le genre, la TVA, l'audience, le froid et l'opération de
+   * la fiche — et l'origine l'archive dans le même geste.
+   *
+   * Il naît **brouillon** : un produit neuf n'a jamais été relu sous sa
+   * nouvelle référence. Le nom du produit est celui de la déclinaison.
+   *
+   * @throws {DefaultVariantNotDetachableError} le défaut porte la fiche.
+   * @throws {VariantAlreadyDiscontinuedError} une archivée ne se détache pas.
+   */
+  detachVariant(
+    variantId: string,
+    input: { id: string; sku: Sku; defaultVariant: { id: string; sku: Sku } },
+  ): Product {
+    const target = this.variant(variantId);
+    if (target.isDiscontinued) {
+      throw new VariantAlreadyDiscontinuedError(target.sku);
+    }
+    if (target.isDefault) {
+      throw new DefaultVariantNotDetachableError(target.sku);
+    }
+    const resolved = this.resolvedSnapshot(target);
+    target.detachTo(input.id);
+    return new Product(
+      input.id,
+      input.sku.value,
+      resolved.name,
+      slugOf(resolved.name),
+      this.kindValue,
+      this.categoryIdValue,
+      "draft",
+      [Variant.openDefaultFrom(resolved, { ...input.defaultVariant, name: resolved.name })],
+      { ...this.vatByContextValue },
+      this.operationOnlyValue,
+      this.requiresColdValue,
+      this.audienceValue,
+      variantId,
+    );
+  }
+
+  /**
+   * **Désarchive une déclinaison** — elle reprend son rang et sa référence, et
+   * revient en vente selon l'état de la fiche. Refuse celle devenue un produit.
+   *
+   * @param detachedProductLabel le nom du produit qu'elle est devenue, s'il y
+   *   en a un, pour que le refus le dise.
+   * @throws {VariantNotDiscontinuedError} elle n'est pas archivée.
+   * @throws {DetachedVariantNotRestorableError} elle est devenue un produit.
+   */
+  restoreVariant(variantId: string, detachedProductLabel?: string): void {
+    this.variant(variantId).restore(detachedProductLabel);
+  }
+
+  /** Le produit qu'une déclinaison de la fiche est devenue, ou `null`. */
+  detachedProductOf(variantId: string): string | null {
+    return this.variant(variantId).detachedToProductId;
+  }
+
+  /**
    * Ajoute une déclinaison — **jamais la première**, jamais celle par défaut.
    *
    * Elle prend le rang suivant, et sa fiche réglementaire suit celle du défaut :
@@ -734,6 +837,7 @@ export class Product {
       operationOnly: this.operationOnlyValue,
       requiresCold: this.requiresColdValue,
       audience: this.audienceValue,
+      originVariantId: this.originVariantIdValue,
     };
   }
 }

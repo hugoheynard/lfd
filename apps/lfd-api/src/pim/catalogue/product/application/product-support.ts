@@ -1,6 +1,7 @@
 import type { LocalizedText } from "../../shared/domain/value-objects/localized-text.js";
 import { ProductNotFoundError, VariantNotFoundError } from "../domain/errors/product-errors.js";
 import type { Product } from "../domain/entities/product.js";
+import type { VariantSnapshot } from "../domain/entities/variant.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 
 /**
@@ -40,4 +41,21 @@ export async function requireProduct(products: ProductRepository, id: string): P
     throw new ProductNotFoundError(id);
   }
   return product;
+}
+
+/**
+ * L'instantané d'UNE déclinaison de la fiche, ou le refus — pour les gestes
+ * qui la citent tout entière (sa référence, son nom) après l'avoir mutée.
+ *
+ * @throws {VariantNotFoundError} la déclinaison n'est pas sous cette fiche.
+ */
+export function variantSnapshotOf(
+  product: { readonly id: string; readonly variants: readonly VariantSnapshot[] },
+  variantId: string,
+): VariantSnapshot {
+  const variant = product.variants.find((candidate) => candidate.id === variantId);
+  if (variant === undefined) {
+    throw new VariantNotFoundError(product.id, variantId);
+  }
+  return variant;
 }

@@ -11,6 +11,8 @@ import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-a
 import { requireCategory } from "../../category/application/category-support.js";
 import { CategoryRepository } from "../../category/domain/ports/category.repository.js";
 import { audienceView, type AudienceView } from "./audience-view.js";
+import { DetachmentLineageReader } from "../domain/ports/detachment-lineage.reader.js";
+import { detachmentLineageOf, type ProductLineage } from "./detachment-lineage-view.js";
 
 /** Détail complet : le socle, sa couche éditoriale, ses visuels et sa signature. */
 export type ProductDetail = ProductRecord &
@@ -55,6 +57,8 @@ export type ProductDetail = ProductRecord &
      * l'ancienne mesure affirmait de faux.
      */
     readonly readinessStale: boolean;
+    /** D'où vient la fiche, et ce que ses déclinaisons archivées sont devenues. */
+    readonly lineage: ProductLineage;
   };
 
 export class GetProductDetailQuery {
@@ -74,6 +78,7 @@ export class GetProductDetailHandler implements IQueryHandler<
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly categories: CategoryRepository,
+    private readonly lineage: DetachmentLineageReader,
   ) {}
 
   async execute(query: GetProductDetailQuery): Promise<ProductDetail | null> {
@@ -81,12 +86,13 @@ export class GetProductDetailHandler implements IQueryHandler<
     if (product === null) {
       return null;
     }
-    const [editorial, media, readiness, contentUpdatedAt, category] = await Promise.all([
+    const [editorial, media, readiness, contentUpdatedAt, category, lineage] = await Promise.all([
       this.editorials.findByProduct(query.id),
       this.editorials.mediaOf(query.id),
       this.readiness.read(query.id),
       this.readiness.contentUpdatedAt(query.id),
       requireCategory(this.categories, product.categoryId),
+      detachmentLineageOf(this.lineage, product),
     ]);
     const authors = await this.staffAuthors.identify([readiness?.readyBy ?? null]);
     return {
@@ -94,6 +100,7 @@ export class GetProductDetailHandler implements IQueryHandler<
       ...audienceView(product, category.audience),
       editorial,
       media,
+      lineage,
       readiness:
         readiness === null
           ? null

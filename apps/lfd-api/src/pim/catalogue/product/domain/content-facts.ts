@@ -113,6 +113,13 @@ const CONTENT_FACTS: Readonly<Record<string, boolean>> = {
   // réglementaire montre ce que la composition mentionne, en changer la liste
   // peut rendre fausse une déclaration signée. Elle est donc du contenu.
   [PIM_EVENTS.productIngredientsSaved]: true,
+  // Une déclinaison qui sort de la fiche change ce qu'elle vend : un
+  // signataire voudrait revoir la fiche sans elle (`plan-gestes-de-declinaison.md`).
+  [PIM_EVENTS.productVariantDiscontinued]: true,
+  [PIM_EVENTS.productVariantDetached]: true,
+  [PIM_EVENTS.productVariantRestored]: true,
+  // La naissance compte, comme `created` : c'est le premier fait de contenu.
+  [PIM_EVENTS.productCreatedFromVariant]: true,
 
   // ── Ce qui ne dit rien du contenu ───────────────────────────────────────
   // Les quatre transitions de statut. Elles décident de ce que le catalogue

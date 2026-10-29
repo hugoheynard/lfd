@@ -93,6 +93,7 @@ class FakeApi {
       media: [],
       readiness: null,
       readinessStale: false,
+      lineage: { origin: null, detachedTo: {} },
     });
   }
 

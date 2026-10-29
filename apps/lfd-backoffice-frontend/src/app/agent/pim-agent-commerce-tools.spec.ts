@@ -91,6 +91,7 @@ function detailWith(
     media: overrides.media ?? [{ role: 'hero', url: 'https://x/a.jpg', name: 'a' }],
     readiness: null,
     readinessStale: false,
+    lineage: { origin: null, detachedTo: {} },
   };
 }
 

@@ -68,6 +68,12 @@ const TOUCHES: Readonly<Record<string, readonly string[] | "changes" | "*">> = {
   [PIM_EVENTS.productArchived]: ["status"],
   [PIM_EVENTS.productRestored]: ["status"],
   [PIM_EVENTS.productCreated]: "*",
+  // Né d'une déclinaison détachée : tout ce qu'il porte vient de ce geste.
+  [PIM_EVENTS.productCreatedFromVariant]: "*",
+  // Une déclinaison sortie de la fiche : aucun champ de la fiche n'a bougé.
+  [PIM_EVENTS.productVariantDiscontinued]: [],
+  [PIM_EVENTS.productVariantDetached]: [],
+  [PIM_EVENTS.productVariantRestored]: [],
   // Une signature ne modifie RIEN de la fiche : elle affirme quelque chose sur
   // elle. L'attribuer à un champ ferait dire à l'écran que quelqu'un a changé
   // un prix alors qu'il a seulement déclaré la fiche juste.

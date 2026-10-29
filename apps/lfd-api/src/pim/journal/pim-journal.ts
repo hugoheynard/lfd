@@ -283,6 +283,19 @@ export const PIM_EVENTS = {
   productArchived: "product.archived",
   productRestored: "product.restored",
   /**
+   * **Une déclinaison archivée** — hors vente, en base pour toujours
+   * (`plan-gestes-de-declinaison.md`, D1). Préfixé `product.` comme le plan
+   * le nomme : les deux gardes exhaustives (`content-facts.ts`,
+   * `attribution.ts`) ne voient que ce préfixe.
+   */
+  productVariantDiscontinued: "product.variant_discontinued",
+  /** Désarchivée : elle reprend son rang et sa référence (jamais une détachée). */
+  productVariantRestored: "product.variant_restored",
+  /** Sur l'ORIGINE : une déclinaison en est partie faire un produit (D2). */
+  productVariantDetached: "product.variant_detached",
+  /** Sur le NOUVEAU produit : sa naissance, et la déclinaison dont il vient (D2). */
+  productCreatedFromVariant: "product.created_from_variant",
+  /**
    * **La fiche change de famille** — `{ from, to }`, les deux familles avec
    * leur nom du moment (`{ id, name }`, lot B du plan des phrases du journal).
    *

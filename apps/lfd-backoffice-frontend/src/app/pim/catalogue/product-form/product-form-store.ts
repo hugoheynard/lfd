@@ -17,6 +17,7 @@ import {
   type Locale,
   type LocalizedText,
   type OperationAudience,
+  type ProductLineageView,
   type ProductReadinessView,
   type ProPrice,
   type SaleUnit,
@@ -829,6 +830,13 @@ export class ProductFormStore {
    */
   private readonly variantsValue = signal<readonly Variant[]>([]);
   readonly variants: Signal<readonly Variant[]> = this.variantsValue;
+
+  /**
+   * **La filiation d'un détachement** (`plan-gestes-de-declinaison.md`, G2) :
+   * d'où vient la fiche, et ce que ses déclinaisons archivées sont devenues.
+   */
+  private readonly lineageValue = signal<ProductLineageView>({ origin: null, detachedTo: {} });
+  readonly lineage: Signal<ProductLineageView> = this.lineageValue;
 
   private readonly variantId = signal('');
   /** La déclinaison qu'on édite — le défaut à l'ouverture. */
@@ -1858,15 +1866,35 @@ export class ProductFormStore {
    * « Déclinaison 2 » ferait enregistrer le repli comme s'il était un nom.
    */
   readonly variantTabs = computed(() =>
-    this.variants().map((variant) => ({
-      id: variant.id,
-      label: variantTabLabel(variant),
-      /** Le NOM brut, pour le formulaire de renommage — le libellé peut être un repli. */
-      name: variant.name[SOURCE_LOCALE] ?? '',
-      sku: variant.sku,
-      isDefault: variant.isDefault,
-      selected: variant.id === this.variantId(),
-    })),
+    // Une archivée n'est plus un onglet (`plan-gestes-de-declinaison.md`, G1) :
+    // elle se liste à part, sous la barre ({@link archivedVariants}).
+    this.variants()
+      .filter((variant) => !variant.isDiscontinued)
+      .map((variant) => ({
+        id: variant.id,
+        label: variantTabLabel(variant),
+        /** Le NOM brut, pour le formulaire de renommage — le libellé peut être un repli. */
+        name: variant.name[SOURCE_LOCALE] ?? '',
+        sku: variant.sku,
+        isDefault: variant.isDefault,
+        selected: variant.id === this.variantId(),
+      })),
+  );
+
+  /**
+   * **Les déclinaisons archivées**, listées à part sous la barre — chacune avec
+   * le produit qu'elle est devenue si elle a été détachée (et alors sans
+   * « Désarchiver » : le serveur le refuserait).
+   */
+  readonly archivedVariants = computed(() =>
+    this.variants()
+      .filter((variant) => variant.isDiscontinued)
+      .map((variant) => ({
+        id: variant.id,
+        label: variantTabLabel(variant),
+        sku: variant.sku,
+        detachedTo: this.lineageValue().detachedTo[variant.id] ?? null,
+      })),
   );
 
   /** La déclinaison éditée est-elle celle par défaut ? */
@@ -2029,6 +2057,51 @@ export class ProductFormStore {
       await this.hydrate(id);
     } catch (caught) {
       this.error.set(messageOf(caught));
+    } finally {
+      this.busy.set(false);
+    }
+  }
+
+  /** **Archive une déclinaison** — puis relit : l'onglet disparaît, la liste à part la montre. */
+  discontinueVariant(variantId: string): Promise<boolean> {
+    return this.runVariantGesture((id) => this.products.discontinueVariant(id, variantId));
+  }
+
+  /** **La désarchive** — elle redevient un onglet, à son rang. */
+  restoreVariant(variantId: string): Promise<boolean> {
+    return this.runVariantGesture((id) => this.products.restoreVariant(id, variantId));
+  }
+
+  /**
+   * **En fait un produit** — rend l'id de la nouvelle fiche, que la page ouvre,
+   * ou `null` si le serveur a refusé (le message est déjà affiché).
+   */
+  async detachVariant(variantId: string): Promise<string | null> {
+    let born: string | null = null;
+    await this.runVariantGesture(async (id) => {
+      born = await this.products.detachVariant(id, variantId);
+    });
+    return born;
+  }
+
+  /**
+   * Le cadre des trois gestes : un à la fois, l'erreur affichée, puis une
+   * relecture complète — rien n'est peint d'avance, le serveur décide.
+   */
+  private async runVariantGesture(gesture: (productId: string) => Promise<void>): Promise<boolean> {
+    const id = this.productId();
+    if (id === '' || this.busy()) {
+      return false;
+    }
+    this.busy.set(true);
+    this.error.set(null);
+    try {
+      await gesture(id);
+      await this.hydrate(id);
+      return true;
+    } catch (caught) {
+      this.error.set(messageOf(caught));
+      return false;
     } finally {
       this.busy.set(false);
     }
@@ -2239,7 +2312,9 @@ export class ProductFormStore {
     this.skuValue.set(product.sku);
     this.statusValue.set(product.status);
     this.slugValue.set(product.slug?.fr ?? '');
-    this.variantCountValue.set(product.variants.length);
+    // Les ARCHIVÉES ne comptent pas : l'en-tête dit ce que la fiche vend.
+    this.variantCountValue.set(product.variants.filter((entry) => !entry.isDiscontinued).length);
+    this.lineageValue.set(detail.lineage);
     this.nameText.set(product.name);
     this.kind.set(product.kind);
     this.categoryId.set(product.categoryId);
@@ -2258,7 +2333,10 @@ export class ProductFormStore {
     this.variantsValue.set(product.variants);
     // On garde la déclinaison ouverte si elle existe encore — une relecture
     // après enregistrement ne doit pas ramener l'écran sur le défaut.
-    const kept = product.variants.find((entry) => entry.id === this.variantId());
+    // Une archivée n'est plus un onglet : elle ne peut pas rester ouverte.
+    const kept = product.variants.find(
+      (entry) => entry.id === this.variantId() && !entry.isDiscontinued,
+    );
     const variant =
       kept ?? product.variants.find((entry) => entry.isDefault) ?? product.variants[0];
     this.variantId.set(variant?.id ?? '');

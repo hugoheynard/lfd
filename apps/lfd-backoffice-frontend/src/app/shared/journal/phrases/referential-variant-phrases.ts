@@ -187,7 +187,75 @@ function proPricePrefilled(fact: PhraseFact): Said {
   );
 }
 
+const PRODUCT: Noun = { the: 'le produit', a: 'un produit' };
+
+/** « a archivé la déclinaison « 6 parts » (TAR-001-6) de « Tarte citron » ». */
+function variantDiscontinued(fact: PhraseFact): Said {
+  return variantGesture(fact, 'a archivé ');
+}
+
+/** « a désarchivé la déclinaison « 6 parts » (TAR-001-6) de « Tarte citron » ». */
+function variantRestored(fact: PhraseFact): Said {
+  return variantGesture(fact, 'a désarchivé ');
+}
+
+function variantGesture(fact: PhraseFact, verb: string): Said {
+  const p = fact.payload;
+  return byActor(
+    fact,
+    [
+      text(verb),
+      ...cite(VARIANT, p['variant']),
+      ...skuAside(p['sku']),
+      text(' '),
+      ...theSubject(fact, OF_PRODUCT),
+    ],
+    ['subjectLabel', 'variant', 'sku'],
+  );
+}
+
+/** « a fait de la déclinaison « 6 parts » de « Tarte citron » le produit « 6 parts » (P-…) ». */
+function variantDetached(fact: PhraseFact): Said {
+  const p = fact.payload;
+  return byActor(
+    fact,
+    [
+      text('a fait de '),
+      ...cite(VARIANT, p['variant']),
+      ...skuAside(p['sku']),
+      text(' '),
+      ...theSubject(fact, OF_PRODUCT),
+      text(' '),
+      ...cite(PRODUCT, p['product']),
+      ...skuAside(p['productSku']),
+    ],
+    ['subjectLabel', 'variant', 'sku', 'product', 'productSku'],
+  );
+}
+
+/** « a créé « 6 parts » (P-…) à partir d'une déclinaison (TAR-001-6) de « Tarte citron » ». */
+function createdFromVariant(fact: PhraseFact): Said {
+  const p = fact.payload;
+  return byActor(
+    fact,
+    [
+      text('a créé '),
+      ...theSubject(fact, PRODUCT),
+      ...skuAside(p['sku']),
+      text(' à partir de la déclinaison'),
+      ...skuAside(p['originVariantSku']),
+      text(' '),
+      ...cite({ the: 'de', a: 'd’une fiche' }, p['origin']),
+    ],
+    ['subjectLabel', 'sku', 'name', 'origin', 'originVariantSku'],
+  );
+}
+
 export const REFERENTIAL_VARIANT_PHRASES = {
+  'product.variant_discontinued': variantDiscontinued,
+  'product.variant_restored': variantRestored,
+  'product.variant_detached': variantDetached,
+  'product.created_from_variant': createdFromVariant,
   'product.pro_price_prefilled': proPricePrefilled,
   'variant.added': variantAdded,
   'variant.aligned': (fact) => variantAligned(fact, fact.payload['aspect'], ['aspect']),

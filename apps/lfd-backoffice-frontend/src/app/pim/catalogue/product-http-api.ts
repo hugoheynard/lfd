@@ -3,6 +3,7 @@ import { Injectable, inject } from '@angular/core';
 import type {
   ProductDetailView,
   ProductIngredientAllergensView,
+  ProductLineageView,
   ProductReadinessView,
   ProductEditorialView,
   ProductListView,
@@ -100,6 +101,8 @@ export interface ProductDetail {
    * jamais la date (audit 2026-09-01, tranches 3 et 7).
    */
   readonly readinessStale: boolean;
+  /** D'où vient la fiche, et ce que ses déclinaisons archivées sont devenues. */
+  readonly lineage: ProductLineageView;
 }
 
 function toNutritionValues(nutrition: VariantNutritionView | null): NutritionValues {
@@ -287,6 +290,7 @@ export class ProductHttpApi {
       })),
       readiness: row.readiness,
       readinessStale: row.readinessStale,
+      lineage: row.lineage,
     };
   }
 
@@ -384,6 +388,34 @@ export class ProductHttpApi {
    */
   renameVariant(productId: string, variantId: string, name: LocalizedText): Promise<void> {
     return this.put(`products/${productId}/variants/${variantId}/name`, { name });
+  }
+
+  /**
+   * **Archive une déclinaison** — hors vente, en base ; sa référence n'est
+   * jamais réattribuée (`plan-gestes-de-declinaison.md`, G1).
+   */
+  async discontinueVariant(productId: string, variantId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(this.url(`products/${productId}/variants/${variantId}/discontinue`), {}),
+    );
+  }
+
+  /** **La désarchive** — refusé pour une déclinaison devenue un produit. */
+  async restoreVariant(productId: string, variantId: string): Promise<void> {
+    await firstValueFrom(
+      this.http.post(this.url(`products/${productId}/variants/${variantId}/restore`), {}),
+    );
+  }
+
+  /** **En fait un produit**, né inactif ; rend l'id de la nouvelle fiche (G2). */
+  async detachVariant(productId: string, variantId: string): Promise<string> {
+    const { id } = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(
+        this.url(`products/${productId}/variants/${variantId}/detach`),
+        {},
+      ),
+    );
+    return id;
   }
 
   /**

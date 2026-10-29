@@ -9,6 +9,11 @@ import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
 import {
+  DetachedVariantNotRestorableError,
+  VariantAlreadyDiscontinuedError,
+  VariantNotDiscontinuedError,
+} from "../errors/variant-lifecycle-errors.js";
+import {
   DefaultVariantCannotFollowMinQuantityError,
   MinQuantityOnWeightSaleError,
 } from "../errors/min-quantity-errors.js";
@@ -120,6 +125,14 @@ export interface VariantSnapshot {
   readonly options: Readonly<Record<string, string>>;
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
+  /**
+   * Le produit qu'elle est devenue par détachement
+   * (`plan-gestes-de-declinaison.md`, G2) — posé avec `isDiscontinued`, et ce
+   * qui interdit de la désarchiver. Facultatif à la LECTURE de l'instantané
+   * (absent = `null`) : les dizaines d'instantanés de test écrits avant lui
+   * n'ont pas à le nommer ; l'agrégat le rend toujours.
+   */
+  readonly detachedToProductId?: string | null | undefined;
   readonly position: number;
   /**
    * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
@@ -256,6 +269,7 @@ export class Variant {
   private readonly optionsValue: Readonly<Record<string, string>>;
   private defaultFlag: boolean;
   private discontinuedFlag: boolean;
+  private detachedToProductIdValue: string | null;
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
@@ -285,6 +299,7 @@ export class Variant {
     this.optionsValue = snapshot.options;
     this.defaultFlag = snapshot.isDefault;
     this.discontinuedFlag = snapshot.isDiscontinued;
+    this.detachedToProductIdValue = snapshot.detachedToProductId ?? null;
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
@@ -400,6 +415,36 @@ export class Variant {
 
   static reconstitute(snapshot: VariantSnapshot): Variant {
     return new Variant(snapshot);
+  }
+
+  /**
+   * Le défaut d'un produit **né d'une déclinaison détachée**
+   * (`plan-gestes-de-declinaison.md`, D3) : tout ce qu'elle voyait, en propre.
+   *
+   * `resolved` est l'instantané RÉSOLU par son ancienne fiche — prix, allergènes,
+   * valeurs et minimum du défaut qu'elle suivait y sont déjà substitués. Elle ne
+   * suit plus rien : c'est elle, le défaut. Elle n'a jamais été publiée sous sa
+   * nouvelle référence, donc son unité de vente n'est pas figée.
+   */
+  static openDefaultFrom(
+    resolved: VariantSnapshot,
+    input: { id: string; sku: Sku; name: LocalizedText },
+  ): Variant {
+    return new Variant({
+      ...resolved,
+      id: input.id,
+      sku: input.sku.value,
+      name: input.name,
+      isDefault: true,
+      isDiscontinued: false,
+      detachedToProductId: null,
+      position: 0,
+      hasBeenPublished: false,
+      minQuantityFollowsDefault: false,
+      regulatoryFollowsDefault: false,
+      pricingFollowsDefault: false,
+      nutritionFollowsDefault: false,
+    });
   }
 
   get id(): string {
@@ -660,6 +705,54 @@ export class Variant {
   }
 
   /**
+   * **La sort de la vente**, sans la supprimer (`plan-gestes-de-declinaison.md`,
+   * D1). Irréversible ici : sa référence n'est jamais réattribuée, et les
+   * commandes qui la citent gardent leur sens. Les refus qui dépendent de ses
+   * sœurs (le défaut, la dernière vivante) sont ceux de l'agrégat.
+   */
+  discontinue(): void {
+    if (this.discontinuedFlag) {
+      throw new VariantAlreadyDiscontinuedError(this.skuValue);
+    }
+    this.discontinuedFlag = true;
+  }
+
+  /** L'archive en la disant devenue ce produit — le détachement (G2). */
+  detachTo(productId: string): void {
+    this.discontinue();
+    this.detachedToProductIdValue = productId;
+  }
+
+  /** Le produit qu'elle est devenue, ou `null`. */
+  get detachedToProductId(): string | null {
+    return this.detachedToProductIdValue;
+  }
+
+  /**
+   * **La remet en vente**, à son rang et sous sa référence d'origine. Refuse
+   * une déclinaison devenue un produit : elle vit déjà sous une autre fiche, et
+   * la remettre en vente vendrait deux fois le même article.
+   * `detachedProductLabel` : le nom de ce produit, pour que le refus le dise
+   * (l'agrégat n'en connaît que l'id).
+   *
+   * @throws {VariantNotDiscontinuedError} elle n'est pas archivée.
+   * @throws {DetachedVariantNotRestorableError} elle est devenue un produit.
+   */
+  restore(detachedProductLabel?: string): void {
+    if (!this.discontinuedFlag) {
+      throw new VariantNotDiscontinuedError(this.skuValue);
+    }
+    if (this.detachedToProductIdValue !== null) {
+      throw new DetachedVariantNotRestorableError(
+        this.skuValue,
+        this.detachedToProductIdValue,
+        detachedProductLabel,
+      );
+    }
+    this.discontinuedFlag = false;
+  }
+
+  /**
    * Les prix au kilo, chacun indépendant de tout autre : un poids changé n'y
    * touche pas, rien ne les calcule. `> 0` : un kilo à zéro s'afficherait
    * « 0,00 € / kg ».
@@ -692,6 +785,7 @@ export class Variant {
       options: this.optionsValue,
       isDefault: this.defaultFlag,
       isDiscontinued: this.discontinuedFlag,
+      detachedToProductId: this.detachedToProductIdValue,
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,

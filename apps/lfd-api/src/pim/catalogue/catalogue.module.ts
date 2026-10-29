@@ -44,6 +44,9 @@ import { GetProductReadinessHandler } from "./product/application/get-product-re
 import { ActivateProductHandler } from "./product/application/activate-product.js";
 import { SetProductAudienceHandler } from "./product/application/set-product-audience.js";
 import { SetProductMinQuantitiesHandler } from "./product/application/set-product-min-quantities.js";
+import { DiscontinueProductVariantHandler } from "./product/application/discontinue-product-variant.js";
+import { DetachProductVariantHandler } from "./product/application/detach-product-variant.js";
+import { RestoreProductVariantHandler } from "./product/application/restore-product-variant.js";
 import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
 import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -84,11 +87,14 @@ import { ProductRepository } from "./product/domain/ports/product.repository.js"
 import { CategoryController } from "./category/http/category.controller.js";
 import { ProductController } from "./product/http/product.controller.js";
 import { ProductMinQuantitiesController } from "./product/http/product-min-quantities.controller.js";
+import { ProductVariantLifecycleController } from "./product/http/product-variant-lifecycle.controller.js";
 import { ReferenceController } from "./shared/http/reference.controller.js";
 import { PrismaCatalogueReader } from "./shared/infrastructure/prisma-catalogue-reader.js";
 import { PrismaCategoryRepository } from "./category/infrastructure/prisma-category.repository.js";
 import { PrismaProductCountReader } from "./category/infrastructure/prisma-product-count.reader.js";
 import { PrismaEditorialReader } from "./product/infrastructure/prisma-editorial-reader.js";
+import { DetachmentLineageReader } from "./product/domain/ports/detachment-lineage.reader.js";
+import { PrismaDetachmentLineageReader } from "./product/infrastructure/prisma-detachment-lineage.reader.js";
 import { PublishedAllergensReader } from "./product/domain/ports/published-allergens.reader.js";
 import { PrismaPublishedAllergensReader } from "./product/infrastructure/prisma-published-allergens.reader.js";
 import { PrismaReadinessRepository } from "./product/infrastructure/prisma-readiness.repository.js";
@@ -130,6 +136,7 @@ import {
     CategoryController,
     ProductController,
     ProductMinQuantitiesController,
+    ProductVariantLifecycleController,
     ProductHistoryController,
     ReferenceController,
   ],
@@ -176,6 +183,9 @@ import {
     ActivateProductHandler,
     SetProductAudienceHandler,
     SetProductMinQuantitiesHandler,
+    DiscontinueProductVariantHandler,
+    DetachProductVariantHandler,
+    RestoreProductVariantHandler,
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,
@@ -197,6 +207,7 @@ import {
     { provide: NutritionValuesRepository, useClass: PrismaNutritionValuesRepository },
     { provide: EditorialRepository, useClass: PrismaEditorialRepository },
     { provide: EditorialReader, useClass: PrismaEditorialReader },
+    { provide: DetachmentLineageReader, useClass: PrismaDetachmentLineageReader },
     { provide: PublishedAllergensReader, useClass: PrismaPublishedAllergensReader },
     { provide: ProductImageUsage, useClass: PrismaProductImageUsage },
     { provide: IllustratedProductsReader, useClass: PrismaIllustratedProductsReader },

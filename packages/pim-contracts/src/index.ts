@@ -195,6 +195,8 @@ export type {
   ProductActivationGapsView,
   ProductEditorialView,
   ProductDetailView,
+  ProductLineageView,
+  DetachedProductView,
   ProductReadinessView,
   ProductMediaView,
   SetProductMediaPayload,
