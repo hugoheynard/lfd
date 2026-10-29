@@ -8,6 +8,9 @@ import { referenceCanonicalFor } from "../floor-reference.js";
 import { Clock } from "../../../../platform/time/clock.js";
 import { describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { scopeNameOf } from "../scope-names.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { saleReferenceOf } from "../../domain/services/sale-references.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { SetPriceFloorCommand } from "./set-price-floor.command.js";
 import type { PricingActKind } from "../../domain/pricing-act.js";
 
@@ -18,6 +21,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
     private readonly catalog: ProductCatalogReader,
     private readonly clock: Clock,
     private readonly ids: IdGenerator,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   /**
@@ -30,6 +34,8 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
    * apprend qu'une décision antérieure existait, et invite à chercher laquelle.
    */
   async execute(command: SetPriceFloorCommand): Promise<void> {
+    // Un plancher sur une référence hors vente ne protégerait rien (L5).
+    await assertOnSale(this.references, [saleReferenceOf(command.scope)]);
     const now = this.clock.now();
     const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
     await this.pose(command, existing === null ? "posed" : "replaced", now);

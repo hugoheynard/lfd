@@ -7,6 +7,9 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { VolumeLadderAggregate } from "../../domain/entities/volume-ladder.js";
 import { VolumeLadderRepository } from "../../domain/ports/volume-ladder.repository.js";
 import { describeLadder } from "../../domain/pricing-act.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { saleReferenceOf } from "../../domain/services/sale-references.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { SetVolumeLadderCommand } from "./set-volume-ladder.command.js";
 
 /**
@@ -24,11 +27,14 @@ export class SetVolumeLadderHandler implements ICommandHandler<SetVolumeLadderCo
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly priced: PricedDecisionsReader,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   async execute(command: SetVolumeLadderCommand): Promise<string> {
     const ladder = VolumeLadderAggregate.pose(this.ids.next(), command.draft, command.staffUserId);
+    // Un barème sur une référence hors vente ne mordrait jamais (L5).
+    await assertOnSale(this.references, [saleReferenceOf(command.draft.scope)]);
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec un barème en cours, jamais avec un rangé. Depuis que clore borne

@@ -9,6 +9,9 @@ import { VolumeCommitmentSignedEvent } from "../../domain/volume-commitment.even
 import { VolumeCommitmentAggregate } from "../../domain/entities/volume-commitment.js";
 import { VolumeCommitmentRepository } from "../../domain/ports/volume-commitment.repository.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { saleReferenceOf } from "../../domain/services/sale-references.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { SignVolumeCommitmentCommand } from "./sign-volume-commitment.command.js";
 import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 
@@ -25,6 +28,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
     private readonly priced: PricedDecisionsReader,
     private readonly companies: PricedCompanyNamer,
     private readonly saleUnits: ArticleSaleUnits,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   async execute(command: SignVolumeCommitmentCommand): Promise<string> {
@@ -40,6 +44,8 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
       },
       command.staffUserId,
     );
+    // Un engagement sur une référence hors vente ne se cumulerait jamais (L5).
+    await assertOnSale(this.references, [saleReferenceOf(payload.scope)]);
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec un engagement en cours, jamais avec un rangé. Depuis que clore borne

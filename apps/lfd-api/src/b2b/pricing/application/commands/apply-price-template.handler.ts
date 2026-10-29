@@ -6,6 +6,8 @@ import { describeArticleCount } from "../../domain/pricing-act.js";
 import { PriceTemplateNotFoundError } from "../../domain/pricing-errors.js";
 import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeRepository } from "../../domain/ports/company-mercuriale.repository.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { ApplyPriceTemplateCommand } from "./apply-price-template.command.js";
 
 @CommandHandler(ApplyPriceTemplateCommand)
@@ -17,6 +19,7 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
     private readonly templates: PriceTemplateRepository,
     private readonly mercuriales: CompanyMercurialeRepository,
     private readonly ids: IdGenerator,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   /**
@@ -52,6 +55,12 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
     if (template === null) {
       throw new PriceTemplateNotFoundError(command.id);
     }
+    // Relu à l'application, pas seulement à l'enregistrement : un article du
+    // gabarit a pu être retiré entre-temps (L5).
+    await assertOnSale(
+      this.references,
+      template.lines.map((line) => line.sku),
+    );
     const state = template.toPersistence();
     const validFrom = new Date(command.payload.validFrom);
     const validTo = command.payload.validTo === null ? null : new Date(command.payload.validTo);

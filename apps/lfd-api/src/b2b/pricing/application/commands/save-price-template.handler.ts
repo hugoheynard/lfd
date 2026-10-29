@@ -4,6 +4,8 @@ import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PriceTemplate } from "../../domain/entities/price-template.js";
 import { PriceTemplateRepository } from "../../domain/ports/price-template.repository.js";
 import { PriceTemplateNotFoundError } from "../../domain/pricing-errors.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { SavePriceTemplateCommand } from "./save-price-template.command.js";
 
 @CommandHandler(SavePriceTemplateCommand)
@@ -11,9 +13,16 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
   constructor(
     private readonly templates: PriceTemplateRepository,
     private readonly ids: IdGenerator,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   async execute(command: SavePriceTemplateCommand): Promise<string> {
+    // Un gabarit est une mercuriale en attente : la faute de frappe se dit ici,
+    // pas le jour où on l'applique à un client (L5).
+    await assertOnSale(
+      this.references,
+      command.payload.lines.map((line) => line.sku),
+    );
     const draft = {
       kind: command.payload.kind,
       label: command.payload.label,

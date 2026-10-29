@@ -32,6 +32,8 @@ import { PrismaPricingDecisionsReader } from "./infrastructure/prisma-pricing-de
 import { PrismaPricedCompanyReader } from "./infrastructure/prisma-priced-company.reader.js";
 import { PricingDecisionsReader } from "./application/ports/pricing-decisions.reader.js";
 import { PricedCompanyReader } from "./domain/ports/priced-company.reader.js";
+import { SaleReferenceReader } from "./domain/ports/sale-reference.reader.js";
+import { CatalogSaleReferenceReader } from "./infrastructure/catalog-sale-reference.reader.js";
 import { PricedCompanyNamer } from "./domain/ports/priced-company-namer.js";
 import { PrismaPricedCompanyNamer } from "./infrastructure/prisma-priced-company-namer.js";
 import { PrismaPricingFloorRepository } from "./infrastructure/prisma-pricing-floor.repository.js";
@@ -188,6 +190,9 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // part du lecteur ci-dessus, qui ne lit que le pro (limites-de-prix).
     { provide: PriceLimitsReader, useClass: PrismaPriceLimitsReader },
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
+    // « Cette référence est-elle en vente ? » — les éditeurs de décisions la
+    // posent avant d'écrire (L5 de `plan-pro-voit-les-declinaisons.md`).
+    { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
     { provide: PricingJournalReader, useClass: PrismaPricingJournalReader },
   ],

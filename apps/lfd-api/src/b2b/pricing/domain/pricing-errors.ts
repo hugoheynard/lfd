@@ -28,3 +28,4 @@ export * from "./errors/volume-commitment-errors.js";
 export * from "./errors/price-template-errors.js";
 export * from "./errors/mercuriale-errors.js";
 export * from "./errors/shared-errors.js";
+export * from "./errors/sale-reference-errors.js";

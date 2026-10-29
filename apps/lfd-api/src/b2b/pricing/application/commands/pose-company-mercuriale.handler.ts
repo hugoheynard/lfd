@@ -12,6 +12,8 @@ import {
 } from "../../domain/pricing-errors.js";
 import { MercurialeDraftStore } from "../ports/mercuriale-draft.store.js";
 import { describeMercuriale } from "./company-mercuriale-support.js";
+import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
+import { assertOnSale } from "./sale-reference-support.js";
 import { PoseCompanyMercurialeCommand } from "./pose-company-mercuriale.command.js";
 
 @CommandHandler(PoseCompanyMercurialeCommand)
@@ -25,6 +27,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly drafts: MercurialeDraftStore,
     private readonly priced: PricedDecisionsReader,
+    private readonly references: SaleReferenceReader,
   ) {}
 
   /**
@@ -49,10 +52,17 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
    *
    * @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société.
    * @throws {RunningMercurialeError} une mercuriale couvre déjà cette période.
+   * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
+   * @throws {SaleReferenceWithdrawnError} une ligne vise un article retiré.
    */
   async execute(command: PoseCompanyMercurialeCommand): Promise<number> {
     const { companyId, payload, staffUserId } = command;
     await this.assertCompanyExists(companyId);
+    // Une ligne sur une référence hors vente ne mordrait jamais (L5).
+    await assertOnSale(
+      this.references,
+      payload.lines.map((line) => line.sku),
+    );
 
     const validFrom = new Date(payload.validFrom);
     const validTo = new Date(payload.validTo);

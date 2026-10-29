@@ -229,9 +229,17 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   déclinaison non défaut vendable au canal pro (la seule, `CHO-001-2`, n'a pas
   de prix pro) — médiane du plancher global inchangée, 511 848 millicentimes.
   E2E : `test/catalog-pro-variants.e2e-spec.ts`.
-- **L5** `feat(pricing)` : les éditeurs de mercuriale et d'engagement refusent
+- ~~**L5** `feat(pricing)` : les éditeurs de mercuriale et d'engagement refusent
   un SKU absent du catalogue (aujourd'hui une faute de frappe crée une
-  décision qui ne mord jamais).
+  décision qui ne mord jamais).~~ — **bâti le 2026-10-29** (non commité à
+  l'écriture de cette ligne). Sept gestes lisent le port `SaleReferenceReader`
+  (`resolveMany` pro et public, puis les articles retirés) et refusent par
+  `ensureOnSale` : mercuriale, gabarit (enregistrer et appliquer), engagement,
+  règle, plancher et barème de portée `product:`/`variant:`. Deux refus 409 :
+  `pricing.sale_reference.not_on_sale` (inconnue, masquée ou sans prix) et
+  `pricing.sale_reference.withdrawn`. Le brouillon de mercuriale n'est pas
+  jugé (il n'est pas une décision). Les décisions déjà posées ne sont pas
+  touchées. E2E : `apps/lfd-api/test/pricing-sale-references.e2e-spec.ts`.
 - **L6** `feat(backoffice)` : dire pourquoi une déclinaison n'est pas proposée
   aux pros.
 - **L7**, à part : la filiation du détachement au commerce — le canal porte

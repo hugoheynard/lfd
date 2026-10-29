@@ -12,6 +12,7 @@
  */
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
+import { InMemorySaleReferences } from "../../../infrastructure/in-memory-sale-references.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
 import {
   PricingFloor,
@@ -96,7 +97,7 @@ function setup(): {
   const ids = new FixedIdGenerator("flr");
   return {
     floors,
-    set: new SetPriceFloorHandler(floors, catalog, clock, ids),
+    set: new SetPriceFloorHandler(floors, catalog, clock, ids, new InMemorySaleReferences()),
     confirm: new ConfirmPriceFloorHandler(floors, catalog, clock, ids),
     archive: new ArchivePriceFloorHandler(floors, clock, catalog),
   };
