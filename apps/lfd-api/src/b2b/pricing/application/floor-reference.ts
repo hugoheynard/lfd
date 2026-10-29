@@ -35,9 +35,11 @@ export function referenceCanonicalFor(
 /**
  * Les articles qu'une portée vise.
  *
- * `product` et `variant` visent le même SKU tant que le catalogue n'a qu'un
- * niveau — même écart temporaire que dans `pricingContextFor`, et il se referme
- * à la bascule du catalogue sans que ce fichier change.
+ * `product` et `variant` visent le même SKU de vente : le tarif est à plat
+ * (2026-10-29, cf. `pricingContextFor`), une limite sur `P-X` ne compte pas
+ * `P-X-2`. Une limite de famille, elle, compte chaque déclinaison montrée au
+ * canal pro depuis L4 (`plan-pro-voit-les-declinaisons.md`, 2026-10-29) : sa
+ * médiane de référence se calcule sur elles aussi.
  */
 function targeted(
   scope: PriceScope,

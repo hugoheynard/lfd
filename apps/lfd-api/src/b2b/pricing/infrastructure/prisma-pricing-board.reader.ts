@@ -138,9 +138,11 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // tout ce qu'on sait de lui, et `canonicalHistoryStartsAt` dit à l'écran
     // jusqu'où il peut se fier à ce qu'il lit.
     //
-    // La clé des deux côtés est le SKU **produit** : `ProductCatalogReader`
-    // expose `sku: item.productSku`, et l'historique se groupe pareil. C'est
-    // l'unité que la plateforme vend.
+    // La clé est le SKU de VENTE (`shopSkuOf`) côté catalogue, le SKU produit
+    // côté historique : les deux coïncident pour le défaut. Une déclinaison
+    // montrée (`P-X-2`, listée depuis L4, 2026-10-29) n'y trouve aucune trace
+    // et garde son tarif courant — la lecture datée par déclinaison est le lot
+    // L1 de `plan-pro-voit-les-declinaisons.md`, pas encore bâti.
     //
     // Seul le PRIX est repris du passé, pas le taux : le sujet de ce tableau est
     // le tarif canonique. Le taux historisé sert au devis, qui engage — le

@@ -52,4 +52,18 @@ describe("CatalogDeliveryProductsReader — le froid des produits", () => {
 
     expect(products.every((product) => !product.requiresCold)).toBe(true);
   });
+
+  /** L4 (2026-10-29) : une déclinaison montrée entre à la grille sous SON SKU de vente. */
+  it("relaie une déclinaison montrée sous son SKU, avec son froid à elle", async () => {
+    const withPart = new InMemoryProductCatalog([
+      article("TAR-001", "Tarte au citron"),
+      article("TAR-001-2", "Tarte au citron part"),
+    ]);
+    const reader = new CatalogDeliveryProductsReader(withPart, new FixedColdSkus(["TAR-001-2"]));
+
+    expect(await reader.sold()).toEqual([
+      { sku: "TAR-001", name: "Tarte au citron", requiresCold: false },
+      { sku: "TAR-001-2", name: "Tarte au citron part", requiresCold: true },
+    ]);
+  });
 });

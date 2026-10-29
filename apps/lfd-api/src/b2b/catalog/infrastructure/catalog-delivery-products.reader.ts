@@ -11,8 +11,9 @@ import { ProductCatalogReader } from "../domain/ports/product-catalog.reader.js"
  * **Les produits vendus, relayés à la livraison** (lot 4 bis, v2-2) — pour la
  * grille des contenances.
  *
- * Sur `ProductCatalogReader.all()` : le catalogue PRO vendable, unités par
- * défaut, sous leur SKU de vente. Le colisage et la feuille d'arrêt ne le
+ * Sur `ProductCatalogReader.all()` : le catalogue PRO vendable, défauts et
+ * déclinaisons montrées en vignette (L4, 2026-10-29), sous leur SKU de vente —
+ * la grille règle donc une contenance pour `P-X-2` comme pour `P-X`. Le colisage et la feuille d'arrêt ne le
  * lisent plus pour le froid (`DeliveryColdSkusReader`, toutes déclinaisons).
  * Rangé comme le référentiel. Aucun prix ne traverse : la livraison n'en a que faire.
  */

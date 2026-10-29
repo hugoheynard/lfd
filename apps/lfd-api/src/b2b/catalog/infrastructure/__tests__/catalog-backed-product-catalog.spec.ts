@@ -117,12 +117,33 @@ describe("le catalogue du checkout, branché sur la base", () => {
     expect(item?.article.categoryPath).toEqual(["fam-tartes", "fam-patis"]);
   });
 
-  /** Les autres conditionnements n'existaient pas pour la boutique : ils n'entrent pas. */
-  it("ne montre que les déclinaisons par défaut", async () => {
-    const carton = { ...CROISSANT, sku: "VIE-001-2", isDefault: false };
-    const catalog = new CatalogBackedProductCatalog(reader([CROISSANT, carton]));
+  /** Une fiche qui ne montre pas ses déclinaisons n'en vend que le défaut. */
+  it("ne liste que le défaut d'une fiche qui ne montre pas ses déclinaisons", async () => {
+    const single = { ...CROISSANT, variantsAsTiles: false };
+    const carton = { ...single, sku: "VIE-001-2", isDefault: false };
+    const catalog = new CatalogBackedProductCatalog(reader([single, carton]));
 
-    expect(await catalog.all()).toHaveLength(1);
+    expect((await catalog.all()).map((item) => item.sku)).toEqual(["VIE-001"]);
+  });
+
+  /**
+   * Régression (plan-pro-voit-les-declinaisons, L4, 2026-10-29) : `all()`
+   * gardait le seul défaut, et la saisie staff ne proposait pas la part d'une
+   * fiche montrée en vignette, que la vitrine vendait pourtant.
+   */
+  it("la saisie staff propose la part d'une fiche montrée en vignette", async () => {
+    const part = { ...CROISSANT, sku: "VIE-001-2", isDefault: false, name: "Croissant part" };
+    const catalog = new CatalogBackedProductCatalog(reader([CROISSANT, part]));
+
+    const listed = await catalog.all();
+
+    expect(listed.map((item) => [item.sku, item.name])).toEqual([
+      ["VIE-001", "Croissant"],
+      ["VIE-001-2", "Croissant part"],
+    ]);
+    // Le sceau porte le même SKU de vente que la ligne : le tarificateur vise
+    // `VIE-001-2`, pas son produit (modèle à plat).
+    expect(listed[1]?.article.sku).toBe("VIE-001-2");
   });
 
   it("range le catalogue dans l'ordre du référentiel, puis par nom", async () => {

@@ -7,7 +7,7 @@ import {
 } from "../domain/ports/catalog.reader.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { compareFamilies } from "../domain/catalog-family.js";
-import { shopSkuOf } from "../domain/shop-sku.js";
+import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
 import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-catalog.reader.js";
 
 /**
@@ -28,8 +28,10 @@ import { ProductCatalogReader, type CatalogItem } from "../domain/ports/product-
  *
  * Les autres déclinaisons se résolvent sous LEUR SKU quand leur fiche montre
  * chaque déclinaison en vignette (`plan-declinaisons-en-vignette.md`, V4,
- * 2026-10-29) : la caisse vend ce que la vitrine montre. `all()`, lui, reste
- * aux défauts — le canal pro ne les liste pas encore.
+ * 2026-10-29) : la caisse vend ce que la vitrine montre. `all()` les liste
+ * aussi depuis le 2026-10-29 (`plan-pro-voit-les-declinaisons.md`, L4) : la
+ * saisie staff, le tableau des prix et la grille des bacs proposent ce que la
+ * vitrine pro montre.
  */
 @Injectable()
 export class CatalogBackedProductCatalog extends ProductCatalogReader {
@@ -58,12 +60,18 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
    * Le catalogue vendable, **rangé comme le référentiel** : la position de la
    * famille, puis l'alphabet. Plus d'ordre des rayons dans le code — celui du
    * PIM fait foi, et une famille nouvelle y prend sa place sans déploiement.
+   *
+   * **Ce que la vitrine pro montre** (`isShownAsTile`) : le défaut, plus chaque
+   * déclinaison d'une fiche en vignette — chacune sous son SKU de vente
+   * (`shopSkuOf`, le seul point qui décide de cette clé). Une déclinaison sans
+   * prix pro, d'audience publique ou en attente de validation pro n'arrive pas
+   * jusqu'ici : `listSellable("pro")` l'écarte déjà (Q3 a).
    */
   async all(): Promise<readonly CatalogItem[]> {
     // `pro` : ce lecteur sert le canal professionnel, pas la vitrine publique.
     const items = await this.catalog.listSellable("pro");
     return items
-      .filter((item) => item.isDefault)
+      .filter(isShownAsTile)
       .map((item) => toCatalogItem(item))
       .sort(byFamilyThenName);
   }

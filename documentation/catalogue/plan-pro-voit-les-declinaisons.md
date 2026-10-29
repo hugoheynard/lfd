@@ -222,8 +222,13 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   de données : `lecteur-de-migrations`.
 - **L2** : diagnostic `proReviewPending` de `P-ADQBEM-2`, lecture seule.
 - **L3** `feat(catalog)` : G4 refuse ou liste (BLOQUANT ci-dessus).
-- **L4** `feat(catalog)` : `all()` passe à `isShownAsTile` ; le commit chiffre
-  le saut de dérive des planchers de famille (médiane recalculée).
+- ~~**L4** `feat(catalog)` : `all()` passe à `isShownAsTile` ; le commit chiffre
+  le saut de dérive des planchers de famille (médiane recalculée).~~ — **bâti
+  le 2026-10-29** (non commité à l'écriture de cette ligne). Saut mesuré sur la
+  base de dev le même jour : aucun plancher de famille en vigueur, et aucune
+  déclinaison non défaut vendable au canal pro (la seule, `CHO-001-2`, n'a pas
+  de prix pro) — médiane du plancher global inchangée, 511 848 millicentimes.
+  E2E : `test/catalog-pro-variants.e2e-spec.ts`.
 - **L5** `feat(pricing)` : les éditeurs de mercuriale et d'engagement refusent
   un SKU absent du catalogue (aujourd'hui une faute de frappe crée une
   décision qui ne mord jamais).
