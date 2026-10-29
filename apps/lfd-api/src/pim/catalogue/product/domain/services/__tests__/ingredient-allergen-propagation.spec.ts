@@ -22,6 +22,7 @@ function variant(declared: readonly string[] | null, over: Partial<VariantSnapsh
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,

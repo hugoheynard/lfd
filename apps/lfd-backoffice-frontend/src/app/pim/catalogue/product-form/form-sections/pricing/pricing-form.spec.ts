@@ -393,6 +393,114 @@ describe('PricingForm — aucune suggestion de prix pro', () => {
 });
 
 /** K4 (`plan-prix-au-kilo.md`) : deux prix au kilo SAISIS, jamais calculés. */
+/** Le bloc dont le titre fold porte ce nom. */
+function blockTitled(host: HTMLElement, title: string): HTMLElement {
+  const block = [...host.querySelectorAll<HTMLElement>('section.block')].find(
+    (candidate) => candidate.getAttribute('aria-label') === title,
+  );
+  if (block === undefined) {
+    throw new TypeError(`bloc « ${title} » absent`);
+  }
+  return block;
+}
+
+function blockTitles(host: HTMLElement): string[] {
+  return [...host.querySelectorAll('section.block')].map((b) => b.getAttribute('aria-label') ?? '');
+}
+
+/** `plan-carte-tarif.md` : la carte en blocs nommés. */
+describe('PricingForm — les blocs de la carte', () => {
+  it('à la pièce : unité de vente, prix, prix au kilo, puis TVA', () => {
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(blockTitles(host)).toEqual(['Unité de vente', 'Prix', 'Prix au kilo', 'TVA']);
+    expect(blockTitled(host, 'TVA').querySelector('app-channels-form')).not.toBeNull();
+    expect(blockTitled(host, 'Prix').textContent).toContain('Prix pro HT');
+    expect(host.querySelectorAll('fold-element-title').length).toBe(4);
+  });
+
+  it('au poids : le bloc « Vente au poids » prend la place du kilo', () => {
+    const store = setup();
+    withFamily(store);
+    store.saleUnit.set('weight');
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    expect(blockTitles(fixture.nativeElement as HTMLElement)).toEqual([
+      'Unité de vente',
+      'Prix',
+      'Vente au poids',
+      'TVA',
+    ]);
+  });
+
+  it('aligné : le bloc « Prix » dit qu’il suit le défaut', () => {
+    const store = setup();
+    withFamily(store);
+    store.pricingAligned.set(true);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    expect(blockTitled(fixture.nativeElement as HTMLElement, 'Prix').textContent).toContain(
+      'Suit le tarif de la déclinaison par défaut',
+    );
+  });
+});
+
+/** La case « Afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
+describe('PricingForm — afficher le prix au kilo en boutique', () => {
+  function checkbox(host: HTMLElement): HTMLInputElement {
+    const input = blockTitled(host, 'Prix au kilo').querySelector<HTMLInputElement>(
+      'fold-checkbox input[type="checkbox"]',
+    );
+    if (input === null) {
+      throw new TypeError('case absente');
+    }
+    return input;
+  }
+
+  it('cochée par défaut, sous les deux prix au kilo', () => {
+    const store = setup();
+    withFamily(store);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(store.pricePerKgShown()).toBe(true);
+    expect(checkbox(host).checked).toBe(true);
+    expect(host.textContent).toContain('Afficher le prix au kilo en boutique');
+  });
+
+  it('décochée, remonte au store sans toucher aux prix saisis', () => {
+    const store = setup();
+    withFamily(store);
+    store.publicPricePerKgEur.set(14.9);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+
+    checkbox(fixture.nativeElement as HTMLElement).click();
+    fixture.detectChanges();
+
+    expect(store.pricePerKgShown()).toBe(false);
+    expect(store.publicPricePerKgEur()).toBe(14.9);
+  });
+
+  it('se grise avec les prix quand le tarif est aligné', () => {
+    const store = setup();
+    withFamily(store);
+    store.pricingAligned.set(true);
+    const fixture = TestBed.createComponent(PricingForm);
+    fixture.detectChanges();
+    const host = fixture.nativeElement as HTMLElement;
+
+    expect(host.querySelector('.stack.is-inherited')?.contains(checkbox(host))).toBe(true);
+  });
+});
+
 describe('PricingForm — les prix au kilo saisis', () => {
   function render(): HTMLElement {
     const fixture = TestBed.createComponent(PricingForm);
@@ -411,14 +519,16 @@ describe('PricingForm — les prix au kilo saisis', () => {
     return input;
   }
 
-  it('offre les deux champs, chacun sous le prix qu’il accompagne', () => {
+  // Disposition revue le 2026-10-29 (`plan-carte-tarif.md`) : les deux prix
+  // au kilo ont leur bloc, sous celui des prix — ils ne s'intercalent plus.
+  it('offre les deux champs dans le bloc « Prix au kilo », sous le bloc « Prix »', () => {
     const store = setup();
     withFamily(store);
     const host = render();
-    const labels = [...host.querySelectorAll('.field-label')].map((l) => l.textContent?.trim());
+    const block = blockTitled(host, 'Prix au kilo');
+    const labels = [...block.querySelectorAll('.field-label')].map((l) => l.textContent?.trim());
 
-    expect(labels.indexOf('Prix au kilo public TTC')).toBe(labels.indexOf('Prix public TTC') + 1);
-    expect(labels.indexOf('Prix au kilo pro HT')).toBe(labels.indexOf('Prix pro HT') + 1);
+    expect(labels).toEqual(['Prix au kilo public TTC', 'Prix au kilo pro HT']);
     expect(inputUnder(host, 'Prix au kilo pro HT').getAttribute('inputmode')).toBe('decimal');
   });
 
@@ -501,7 +611,7 @@ describe('PricingForm — vendre à la pièce ou au poids', () => {
     withFamily(store);
     const { host } = render();
 
-    expect(labels(host)[0]).toBe('Unité de vente');
+    expect(blockTitles(host)[0]).toBe('Unité de vente');
     expect(labels(host)).toContain('Prix public TTC');
     expect(labels(host)).toContain('Prix au kilo public TTC');
     expect(labels(host)).not.toContain('Pas de saisie');

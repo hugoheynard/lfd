@@ -48,6 +48,7 @@ interface VariantDetail {
   readonly priceCents: number | null;
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
+  readonly pricePerKgShown: boolean;
 }
 
 async function defaultVariant(fiche: Fiche): Promise<VariantDetail> {
@@ -145,5 +146,54 @@ describe("les prix au kilo saisis", () => {
     await savePricing(fiche, variant, { publicPricePerKgTtcCents: 0 }).expect(400);
 
     expect((await defaultVariant(fiche)).publicPricePerKgTtcCents).toBeNull();
+  });
+});
+
+/** La case « Afficher le prix au kilo en boutique » (`plan-carte-tarif.md`). */
+describe("la case « afficher le prix au kilo en boutique »", () => {
+  it("cochée par défaut : l'existant garde son affichage", async () => {
+    const fiche = await anActiveFiche(staff, "Pain aux noix", "both");
+    expect((await defaultVariant(fiche)).pricePerKgShown).toBe(true);
+  });
+
+  it("décochée, le référentiel garde la saisie et la boutique ne la reçoit plus", async () => {
+    const fiche = await anActiveFiche(staff, "Pain complet", "both");
+    const variant = await defaultVariant(fiche);
+    await savePricing(fiche, variant, {
+      proPricePerKgHt: "6.5",
+      publicPricePerKgTtcCents: 820,
+      pricePerKgShown: false,
+    }).expect(200);
+    await relayAll(ctx);
+    await approve([fiche]);
+
+    expect(await defaultVariant(fiche)).toMatchObject({
+      proPricePerKgMillicents: 650_000,
+      publicPricePerKgTtcCents: 820,
+      pricePerKgShown: false,
+    });
+    for (const query of ["", "?audience=pro"]) {
+      expect(await shopItem(fiche, query)).toMatchObject({
+        proPricePerKgMillicents: null,
+        publicPricePerKgTtcCents: null,
+      });
+    }
+  });
+
+  it("recochée, la boutique les sert de nouveau, sans ressaisie", async () => {
+    const fiche = await anActiveFiche(staff, "Pain de mie", "both");
+    const variant = await defaultVariant(fiche);
+    await savePricing(fiche, variant, {
+      publicPricePerKgTtcCents: 990,
+      pricePerKgShown: false,
+    }).expect(200);
+    await relayAll(ctx);
+    await approve([fiche]);
+    expect((await shopItem(fiche))?.publicPricePerKgTtcCents).toBeNull();
+
+    await savePricing(fiche, variant, { pricePerKgShown: true }).expect(200);
+    await relayAll(ctx);
+
+    expect((await shopItem(fiche))?.publicPricePerKgTtcCents).toBe(990);
   });
 });

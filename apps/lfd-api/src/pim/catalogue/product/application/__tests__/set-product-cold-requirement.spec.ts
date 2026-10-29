@@ -61,6 +61,7 @@ function tarte(requiresCold: boolean): OneProduct {
         proPriceMillicents: null,
         proPricePerKgMillicents: null,
         publicPricePerKgTtcCents: null,
+        pricePerKgShown: true,
         saleUnit: "piece",
         weightMinGrams: null,
         weightStepGrams: null,

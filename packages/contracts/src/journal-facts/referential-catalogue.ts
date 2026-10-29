@@ -124,6 +124,8 @@ const pricingChanges = () =>
     // Les prix au kilo saisis (`plan-prix-au-kilo.md`), chacun dans son unité.
     proPricePerKgMillicents: millicents().nullable(),
     publicPricePerKgTtcCents: cents().nullable(),
+    // La case « afficher le prix au kilo en boutique » (`plan-carte-tarif.md`).
+    pricePerKgShown: z.boolean(),
     // L'unité de vente et, au poids, son minimum et son pas en grammes
     // (`vente-au-poids.md`, lot P1).
     saleUnit: z.enum(["piece", "weight"]),

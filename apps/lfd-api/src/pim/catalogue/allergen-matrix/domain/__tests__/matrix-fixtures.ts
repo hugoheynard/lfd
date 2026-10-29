@@ -121,6 +121,7 @@ export function variant(id: string, over: Partial<VariantSnapshot> = {}): Varian
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,

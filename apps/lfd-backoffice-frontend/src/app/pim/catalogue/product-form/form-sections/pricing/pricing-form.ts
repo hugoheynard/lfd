@@ -1,5 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
-import { FoldCalloutComponent, FoldViewToggleComponent, type FoldViewToggleOption } from 'fold-ng';
+import {
+  FoldCalloutComponent,
+  FoldCheckboxComponent,
+  FoldElementTitleComponent,
+  FoldViewToggleComponent,
+  type FoldViewToggleOption,
+} from 'fold-ng';
 
 import { ChannelsForm } from '../channels/channels-form';
 import { ProductFormStore } from '../../product-form-store';
@@ -22,11 +28,21 @@ import { numberValue, textValue } from '../dom';
  * Le CHOIX d'assiette a disparu avec la décision de ne garder qu'un système :
  * un prix se saisit TTC, le hors taxe se calcule. Il n'y a donc plus de
  * ternaire sur l'étiquette du champ, ni de bascule sous lui.
+ *
+ * Depuis le 2026-10-29 (`plan-carte-tarif.md`), la carte se lit en blocs
+ * nommés — unité de vente, prix, prix au kilo, vente au poids, TVA — et le
+ * bloc du kilo porte la case « afficher en boutique ».
  */
 @Component({
   selector: 'app-pricing-form',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [ChannelsForm, FoldCalloutComponent, FoldViewToggleComponent],
+  imports: [
+    ChannelsForm,
+    FoldCalloutComponent,
+    FoldCheckboxComponent,
+    FoldElementTitleComponent,
+    FoldViewToggleComponent,
+  ],
   templateUrl: './pricing-form.html',
   styleUrls: ['../form-section.scss', './pricing-form.scss'],
 })

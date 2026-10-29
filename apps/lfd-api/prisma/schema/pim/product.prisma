@@ -252,6 +252,10 @@ model ProductVariant {
   /// **Le prix au kilo public TTC saisi**, en centimes. Même statut que le
   /// précédent : informatif, saisi, `NULL` = non saisi. `CHECK (> 0)`.
   publicPricePerKgTtcCents Int? @map("public_price_per_kg_ttc_cents")
+  /// **Le prix au kilo est-il montré en boutique ?** — `documentation/pricing/plan-carte-tarif.md`.
+  /// Faux : les deux prix restent saisis ici, mais le canal reçoit `null`.
+  /// Suit le défaut avec le tarif (`pricingFollowsDefault`).
+  pricePerKgShown          Boolean @default(true) @map("price_per_kg_shown")
 
   /// **L'unité de vente** — `piece` (défaut, tout l'existant) ou `weight`, la
   /// quantité se comptant alors en grammes (`documentation/pricing/vente-au-poids.md`).

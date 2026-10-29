@@ -6,12 +6,31 @@
    phrase pour accueillir cinq caractères. Elles se replient l'une sous l'autre
    quand la colonne se resserre. */
 .tarif {
-  display: grid;
-  /* La colonne de gauche s'élargit : elle ne porte plus le seul champ « Prix »
-     mais l'assiette et le prix professionnel, qui sont des phrases. */
-  grid-template-columns: minmax(13rem, 16rem) 1fr;
+  /* En blocs nommés (`plan-carte-tarif.md`) : la colonne des prix, étroite, et
+     le bloc TVA à côté. Ils passent l'un sous l'autre dès que la carte n'a
+     plus la place des deux — `flex-wrap`, sans point de rupture à tenir. */
+  display: flex;
+  flex-wrap: wrap;
   gap: var(--fold-space-xl);
-  align-items: start;
+  align-items: flex-start;
+
+  > .stack {
+    flex: 1 1 13rem;
+    max-width: 20rem;
+    gap: var(--fold-space-xl);
+  }
+
+  > .block-vat {
+    flex: 3 1 18rem;
+    min-width: 0;
+  }
+}
+
+/* Un bloc : son titre, puis ses champs, espacés par le seul `gap`. */
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
 }
 
 /* L'unité DANS le champ : « € » n'est pas une étiquette, c'est ce que mesure le
@@ -55,7 +74,6 @@
    pas. Rien n'y est saisissable — la remise se règle ailleurs, et l'écran le
    dit plutôt que d'offrir un champ mort. */
 .pro {
-  margin-block-start: var(--fold-space-md);
   padding-block-start: var(--fold-space-md);
   border-block-start: 1px solid var(--fold-color-border-subtle);
   display: flex;
@@ -96,10 +114,6 @@
   margin: 0;
   font-size: var(--fold-text-2xs);
   color: var(--fold-color-text-faded);
-}
-
-.pro-missing {
-  margin-block-start: var(--fold-space-md);
 }
 
 .muted {

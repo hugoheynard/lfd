@@ -25,6 +25,7 @@ function variant(over: Partial<VariantRecord> = {}): VariantRecord {
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: "piece",
     weightMinGrams: null,
     weightStepGrams: null,

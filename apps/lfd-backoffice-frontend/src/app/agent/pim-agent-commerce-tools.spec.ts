@@ -41,6 +41,7 @@ function variant(id: string, overrides: Partial<Variant>): Variant {
     proPriceMillicents: 250000,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: 'piece',
     weightMinGrams: null,
     weightStepGrams: null,

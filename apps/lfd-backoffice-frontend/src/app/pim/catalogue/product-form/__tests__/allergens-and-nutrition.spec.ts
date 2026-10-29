@@ -52,6 +52,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: 'piece',
     weightMinGrams: null,
     weightStepGrams: null,
@@ -95,6 +96,7 @@ class FakeApi {
         proPriceMillicents: null,
         proPricePerKgMillicents: null,
         publicPricePerKgTtcCents: null,
+        pricePerKgShown: true,
       },
       editorial: {
         descriptionShort: null,

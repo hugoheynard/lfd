@@ -259,6 +259,8 @@ export const KEY_LABELS: Readonly<Record<string, string>> = {
   proPricePerKgMillicents: 'Prix au kilo pro HT',
   proteinG: 'Protéines',
   publicPricePerKgTtcCents: 'Prix au kilo public TTC',
+  // La case « afficher le prix au kilo en boutique » (`product.pricing_saved`, 2026-10-29).
+  pricePerKgShown: 'Prix au kilo affiché en boutique',
   providerId: 'Identifiant d’envoi',
   ratioBp: 'Rapport prix pro / prix public',
   quantity: 'Quantité',

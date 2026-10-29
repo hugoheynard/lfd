@@ -113,6 +113,8 @@ export interface Variant {
   proPricePerKgMillicents: number | null;
   /** Le prix au kilo public TTC saisi, en centimes ; `null` = pas saisi. Informatif (K4). */
   publicPricePerKgTtcCents: number | null;
+  /** Le prix au kilo est-il montré en boutique (`plan-carte-tarif.md`) ? Résolu comme le tarif. */
+  pricePerKgShown: boolean;
   /** À la pièce ou au poids (`vente-au-poids.md`, P1) — prix au kg si `weight`. */
   saleUnit: SaleUnit;
   /** Le minimum d'une ligne au poids, en grammes ; `null` = pas de minimum. */

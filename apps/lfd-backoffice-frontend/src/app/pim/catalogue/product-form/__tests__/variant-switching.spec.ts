@@ -43,6 +43,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     proPriceMillicents: 2_730_331,
     proPricePerKgMillicents: 1_240_000,
     publicPricePerKgTtcCents: 1_490,
+    pricePerKgShown: true,
     saleUnit: 'piece',
     weightMinGrams: null,
     weightStepGrams: null,
@@ -71,6 +72,7 @@ const SECOND = variant({
   proPriceMillicents: null,
   proPricePerKgMillicents: null,
   publicPricePerKgTtcCents: null,
+  pricePerKgShown: true,
   regulatoryFollowsDefault: true,
   nutritionFollowsDefault: true,
 });

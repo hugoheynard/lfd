@@ -1,19 +1,21 @@
-<!-- La forme de la maquette : le prix à gauche, étroit, et à sa droite le bloc
-     qui dit d'où viennent les taux. Les deux se lisent ensemble parce qu'ils
-     répondent à la même question — combien, et sous quel régime. -->
+<!-- La carte en BLOCS NOMMÉS (`plan-carte-tarif.md`, 2026-10-29) : unité de
+     vente, prix, prix au kilo, vente au poids, TVA. Chaque bloc a son titre,
+     et chaque champ se lit dans le bloc qui le nomme plutôt qu'à la suite
+     d'une colonne. -->
 <!-- HÉRITÉ : on montre ce qui s'applique, on empêche d'y toucher. Masquer
      serait pire — la question devant une déclinaison alignée est « et elle
      vaut combien, alors ? », pas « où est passé le prix ». Seule la colonne du
      PRIX se grise : les canaux et les taux d'à côté sont portés par la fiche
-     et se lisent pareil sur toutes ses déclinaisons. -->
+     et se lisent pareil sur toutes ses déclinaisons. La case « aligner » vit
+     sous l'en-tête de la carte, comme sur toutes les autres. -->
 <div class="tarif">
   <div class="stack" [class.is-inherited]="store.pricingAligned()">
     <!-- L'unité de vente (P1, `vente-au-poids.md`) : en tête, parce
          qu'elle change le sens de chaque prix dessous. Elle change tant que la
          référence n'a servi nulle part (`plan-changer-l-unite-de-vente.md`,
          § 8) : l'écran le dit avant qu'on essaie, le serveur tranche. -->
-    <div class="field">
-      <span class="field-label">Unité de vente</span>
+    <section class="block" aria-label="Unité de vente">
+      <fold-element-title variant="eyebrow" title="Unité de vente" />
       <fold-view-toggle
         ariaLabel="Unité de vente"
         size="sm"
@@ -38,152 +40,165 @@
       @if (saleUnitRefusal(); as message) {
         <fold-callout variant="alert" appearance="flat" announce>{{ message }}</fold-callout>
       }
-    </div>
+    </section>
 
-    <label class="field">
-      <!-- L'étiquette ne se calcule plus : il n'y a qu'une assiette. Elle a été
-           une expression ternaire tant qu'une fiche pouvait porter un montant
-           hors taxe — l'appeler « Prix public TTC » aurait menti sur le nombre
-           affiché, et c'est le seul mensonge qu'un écran de tarif ne peut pas
-           se permettre. -->
-      <span class="field-label">{{
-        byWeight() ? 'Prix public TTC au kg' : 'Prix public TTC'
-      }}</span>
-      <span class="field-money">
-        <input
-          class="native-input"
-          type="number"
-          step="0.01"
-          min="0"
-          [value]="store.priceEur() ?? ''"
-          (input)="store.priceEur.set(numberValue($event))"
-        />
-        <span class="field-unit" aria-hidden="true">€</span>
-      </span>
-    </label>
-
-    <!-- Le prix au kilo public TTC (K4) : SAISI, jamais calculé — informatif.
-         Au poids, le prix public EST au kilo : ce champ n'a plus d'objet. -->
-    @if (!byWeight()) {
+    <section class="block" aria-label="Prix">
+      <fold-element-title variant="eyebrow" title="Prix" />
+      @if (store.pricingAligned()) {
+        <p class="field-hint">Suit le tarif de la déclinaison par défaut.</p>
+      }
       <label class="field">
-        <span class="field-label">Prix au kilo public TTC</span>
+        <!-- L'étiquette ne se calcule plus : il n'y a qu'une assiette. Au
+             poids seulement, le prix public EST au kilo. -->
+        <span class="field-label">{{
+          byWeight() ? 'Prix public TTC au kg' : 'Prix public TTC'
+        }}</span>
         <span class="field-money">
           <input
             class="native-input"
             type="number"
             step="0.01"
             min="0"
-            [value]="store.publicPricePerKgEur() ?? ''"
-            (input)="store.publicPricePerKgEur.set(numberValue($event))"
+            [value]="store.priceEur() ?? ''"
+            (input)="store.priceEur.set(numberValue($event))"
           />
           <span class="field-unit" aria-hidden="true">€</span>
         </span>
       </label>
-    }
 
-    <!-- Le prix PRO HORS TAXE saisi (lot P), sous le prix public. Un champ
-         TEXTE et non nombre : cinq décimales tapées doivent partir telles
-         quelles, et c'est le serveur qui refuse la sixième. -->
-    <label class="field">
-      <span class="field-label">{{ byWeight() ? 'Prix pro HT au kg' : 'Prix pro HT' }}</span>
-      <span class="field-money field-money-ht">
-        <input
-          class="native-input"
-          type="text"
-          inputmode="decimal"
-          autocomplete="off"
-          [value]="store.proPriceHtText()"
-          (input)="store.proPriceHtText.set(textValue($event))"
-        />
-        <span class="field-unit" aria-hidden="true">€ HT</span>
-      </span>
-      <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non vendu aux pros.</span>
-    </label>
-
-    <!-- Le prix au kilo pro HT (K4) : SAISI comme le prix pro, en texte.
-         Masqué au poids, pour la même raison que le public. -->
-    @if (!byWeight()) {
+      <!-- Le prix PRO HORS TAXE saisi (lot P). Un champ TEXTE et non nombre :
+           cinq décimales tapées doivent partir telles quelles, et c'est le
+           serveur qui refuse la sixième. -->
       <label class="field">
-        <span class="field-label">Prix au kilo pro HT</span>
+        <span class="field-label">{{ byWeight() ? 'Prix pro HT au kg' : 'Prix pro HT' }}</span>
         <span class="field-money field-money-ht">
           <input
             class="native-input"
             type="text"
             inputmode="decimal"
             autocomplete="off"
-            [value]="store.proPricePerKgHtText()"
-            (input)="store.proPricePerKgHtText.set(textValue($event))"
+            [value]="store.proPriceHtText()"
+            (input)="store.proPriceHtText.set(textValue($event))"
           />
           <span class="field-unit" aria-hidden="true">€ HT</span>
         </span>
-        <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non saisi.</span>
+        <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non vendu aux pros.</span>
       </label>
+
+      <!-- Le prix PROFESSIONNEL TTC, sous sa saisie. Toujours saisi depuis le
+           lot R3 (2026-10-27) : le HT saisi fait foi, le TTC n'en est que
+           l'affichage. -->
+      @if (store.proPricing(); as pro) {
+        <div class="pro">
+          <p class="pro-head">
+            <span class="pro-title">Prix pro TTC</span>
+          </p>
+          <p class="pro-amount">
+            <strong>{{ pro.ttc }}</strong>
+            <span class="pro-net">{{ pro.ht }} HT</span>
+          </p>
+          <p class="pro-say">
+            Le <strong>HT saisi</strong> fait foi&nbsp;; ce TTC n’en est que l’affichage.
+          </p>
+        </div>
+      } @else if (store.priceEur() !== null && store.proPriceMillicents() === null) {
+        <p class="pro-missing">
+          Aucun <strong>prix pro HT</strong> saisi&nbsp;: cette déclinaison n’est pas vendue aux
+          professionnels.
+        </p>
+      } @else if (store.priceEur() !== null) {
+        <p class="pro-missing">
+          Prix pro TTC indisponible&nbsp;: <strong>taux pro</strong> non défini.
+        </p>
+      }
+    </section>
+
+    @if (!byWeight()) {
+      <!-- Les prix au kilo (K4) : SAISIS, jamais calculés — informatifs. Au
+           poids, le prix EST au kilo : ce bloc n'a plus d'objet. La case dit
+           si la boutique les reçoit (`plan-carte-tarif.md`). -->
+      <section class="block" aria-label="Prix au kilo">
+        <fold-element-title variant="eyebrow" title="Prix au kilo" />
+        <label class="field">
+          <span class="field-label">Prix au kilo public TTC</span>
+          <span class="field-money">
+            <input
+              class="native-input"
+              type="number"
+              step="0.01"
+              min="0"
+              [value]="store.publicPricePerKgEur() ?? ''"
+              (input)="store.publicPricePerKgEur.set(numberValue($event))"
+            />
+            <span class="field-unit" aria-hidden="true">€</span>
+          </span>
+        </label>
+
+        <label class="field">
+          <span class="field-label">Prix au kilo pro HT</span>
+          <span class="field-money field-money-ht">
+            <input
+              class="native-input"
+              type="text"
+              inputmode="decimal"
+              autocomplete="off"
+              [value]="store.proPricePerKgHtText()"
+              (input)="store.proPricePerKgHtText.set(textValue($event))"
+            />
+            <span class="field-unit" aria-hidden="true">€ HT</span>
+          </span>
+          <span class="field-hint">Jusqu’à 5 décimales. Vide&nbsp;: non saisi.</span>
+        </label>
+
+        <fold-checkbox
+          class="per-kg-shown"
+          label="Afficher le prix au kilo en boutique"
+          hint="Décoché : le prix au kilo reste saisi ici, la boutique ne le montre plus."
+          [checked]="store.pricePerKgShown()"
+          (checkedChange)="store.pricePerKgShown.set($event)"
+        />
+      </section>
     } @else {
       <!-- Au poids : le pas de saisie (requis pour activer) et le minimum. -->
-      <label class="field">
-        <span class="field-label">Pas de saisie</span>
-        <span class="field-money">
-          <input
-            class="native-input"
-            type="number"
-            step="1"
-            min="1"
-            [value]="store.weightStepGrams() ?? ''"
-            (input)="store.weightStepGrams.set(numberValue($event))"
-          />
-          <span class="field-unit" aria-hidden="true">g</span>
-        </span>
-        <span class="field-hint">Requis pour activer la déclinaison.</span>
-      </label>
+      <section class="block" aria-label="Vente au poids">
+        <fold-element-title variant="eyebrow" title="Vente au poids" />
+        <label class="field">
+          <span class="field-label">Pas de saisie</span>
+          <span class="field-money">
+            <input
+              class="native-input"
+              type="number"
+              step="1"
+              min="1"
+              [value]="store.weightStepGrams() ?? ''"
+              (input)="store.weightStepGrams.set(numberValue($event))"
+            />
+            <span class="field-unit" aria-hidden="true">g</span>
+          </span>
+          <span class="field-hint">Requis pour activer la déclinaison.</span>
+        </label>
 
-      <label class="field">
-        <span class="field-label">Minimum</span>
-        <span class="field-money">
-          <input
-            class="native-input"
-            type="number"
-            step="1"
-            min="1"
-            [value]="store.weightMinGrams() ?? ''"
-            (input)="store.weightMinGrams.set(numberValue($event))"
-          />
-          <span class="field-unit" aria-hidden="true">g</span>
-        </span>
-        <span class="field-hint">Facultatif. Vide&nbsp;: pas de minimum.</span>
-      </label>
-    }
-
-    <!-- Le prix PROFESSIONNEL, sous le prix public. Toujours saisi depuis le
-         lot R3 (2026-10-27) : plus de remise des règles comptables, plus de
-         pastille — le HT saisi fait foi, le TTC n'en est que l'affichage. -->
-    @if (store.proPricing(); as pro) {
-      <div class="pro">
-        <p class="pro-head">
-          <span class="pro-title">Prix pro TTC</span>
-        </p>
-        <p class="pro-amount">
-          <strong>{{ pro.ttc }}</strong>
-          <span class="pro-net">{{ pro.ht }} HT</span>
-        </p>
-        <p class="pro-say">
-          Le <strong>HT saisi</strong> fait foi&nbsp;; ce TTC n’en est que l’affichage.
-        </p>
-      </div>
-    } @else if (store.priceEur() !== null && store.proPriceMillicents() === null) {
-      <!-- Sans saisie : la déclinaison n'est pas vendue aux professionnels. Le
-           dire, plutôt que de laisser un blanc. -->
-      <p class="pro-missing">
-        Aucun <strong>prix pro HT</strong> saisi&nbsp;: cette déclinaison n’est pas vendue aux
-        professionnels.
-      </p>
-    } @else if (store.priceEur() !== null) {
-      <!-- Une saisie, mais aucun taux pro : le TTC ne se calcule pas, et le
-           canal écarte l'article pour la même raison. -->
-      <p class="pro-missing">
-        Prix pro TTC indisponible&nbsp;: <strong>taux pro</strong> non défini.
-      </p>
+        <label class="field">
+          <span class="field-label">Minimum</span>
+          <span class="field-money">
+            <input
+              class="native-input"
+              type="number"
+              step="1"
+              min="1"
+              [value]="store.weightMinGrams() ?? ''"
+              (input)="store.weightMinGrams.set(numberValue($event))"
+            />
+            <span class="field-unit" aria-hidden="true">g</span>
+          </span>
+          <span class="field-hint">Facultatif. Vide&nbsp;: pas de minimum.</span>
+        </label>
+      </section>
     }
   </div>
 
-  <app-channels-form />
+  <section class="block block-vat" aria-label="TVA">
+    <fold-element-title variant="eyebrow" title="TVA" />
+    <app-channels-form />
+  </section>
 </div>

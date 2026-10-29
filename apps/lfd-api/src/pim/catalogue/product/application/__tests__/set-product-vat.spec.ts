@@ -60,6 +60,7 @@ function snapshot(vatByContext: Readonly<Record<string, string>> = {}): ProductS
         proPriceMillicents: null,
         proPricePerKgMillicents: null,
         publicPricePerKgTtcCents: null,
+        pricePerKgShown: true,
         saleUnit: "piece",
         weightMinGrams: null,
         weightStepGrams: null,

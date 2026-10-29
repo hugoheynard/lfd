@@ -164,6 +164,7 @@ function toVariant(variant: VariantView): Variant {
     proPriceMillicents: variant.proPriceMillicents,
     proPricePerKgMillicents: variant.proPricePerKgMillicents,
     publicPricePerKgTtcCents: variant.publicPricePerKgTtcCents,
+    pricePerKgShown: variant.pricePerKgShown,
     saleUnit: variant.saleUnit,
     weightMinGrams: variant.weightMinGrams,
     weightStepGrams: variant.weightStepGrams,

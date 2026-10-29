@@ -124,6 +124,12 @@ export const updateVariantPricingPayloadSchema = z.object({
    */
   publicPricePerKgTtcCents: z.number().int().min(0).nullable().optional(),
   /**
+   * Montrer le prix au kilo en boutique (`plan-carte-tarif.md`). Décoché, les
+   * deux prix au kilo restent saisis mais le canal ne les reçoit plus. Absent
+   * = inchangé.
+   */
+  pricePerKgShown: z.boolean().optional(),
+  /**
    * L'unité de vente (`vente-au-poids.md`) : `piece` ou `weight`. Absent
    * = inchangée. Figée par le domaine après la première publication.
    */
@@ -274,6 +280,11 @@ export interface VariantView {
    */
   readonly proPricePerKgMillicents: number | null;
   readonly publicPricePerKgTtcCents: number | null;
+  /**
+   * Le prix au kilo est-il montré en boutique (`plan-carte-tarif.md`) ?
+   * Résolu comme le tarif : une déclinaison alignée rend celui du défaut.
+   */
+  readonly pricePerKgShown: boolean;
   /**
    * L'unité de vente, PROPRE à la déclinaison — jamais héritée du défaut
    * (`vente-au-poids.md`). Au poids, le minimum (`null` = aucun) et le pas
