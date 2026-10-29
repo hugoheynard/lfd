@@ -5,7 +5,9 @@ export type { CatalogShelf } from './catalog-shelves';
 export { toCatalogProduct } from './to-catalog-product';
 export {
   firstSaleQuantityOf,
+  floorQuantityOf,
   lineSaleQuantity,
+  pieceMinimumOf,
   saleQuantityLabel,
   saleStepOf,
   saleUnitOf,

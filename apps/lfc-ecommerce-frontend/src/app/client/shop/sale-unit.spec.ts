@@ -2,6 +2,7 @@ import {
   firstQuantityOf,
   lineTotalOf,
   nextQuantity,
+  pieceMinimumOf,
   previousQuantity,
   quantityLabel,
   requestedLine,
@@ -24,6 +25,30 @@ describe('sale-unit', () => {
     expect(nextQuantity(piece, 0)).toBe(1);
     expect(nextQuantity(piece, 3)).toBe(4);
     expect(previousQuantity(piece, 1)).toBe(0);
+  });
+
+  // Plan quantité minimale, Q4 : « on ne doit pas pouvoir faire − » sous le minimum.
+  it('une pièce à minimum part du minimum, et le « − » au minimum retire la ligne', () => {
+    const item: SaleTerms = { minQuantity: 6 };
+    expect(pieceMinimumOf(item)).toBe(6);
+    expect(firstQuantityOf(item)).toBe(6);
+    expect(nextQuantity(item, 0)).toBe(6);
+    expect(nextQuantity(item, 6)).toBe(7);
+    expect(previousQuantity(item, 7)).toBe(6);
+    expect(previousQuantity(item, 6)).toBe(0);
+  });
+
+  it('un minimum absent, nul ou d’une pièce ne change rien', () => {
+    for (const item of [{}, { minQuantity: null }, { minQuantity: 1 }] satisfies SaleTerms[]) {
+      expect(pieceMinimumOf(item)).toBeNull();
+      expect(firstQuantityOf(item)).toBe(1);
+    }
+  });
+
+  it('un article au poids ignore le minimum de pièces', () => {
+    const item: SaleTerms = { ...byWeight(100, null), minQuantity: 6 };
+    expect(pieceMinimumOf(item)).toBeNull();
+    expect(firstQuantityOf(item)).toBe(100);
   });
 
   it('au poids sans minimum, part du pas et avance du pas', () => {

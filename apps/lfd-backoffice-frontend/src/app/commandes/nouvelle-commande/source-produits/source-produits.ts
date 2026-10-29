@@ -248,13 +248,14 @@ function fromCatalog(item: CatalogItemView): ProposedLine {
  * minimum, « / kg » —, repris du catalogue (P5). Rien pour une pièce, ni pour
  * un SKU que le catalogue ne connaît plus.
  */
-function weightTermsOf(item: CatalogItemView | undefined): Partial<CatalogProduct> {
+function saleTermsOf(item: CatalogItemView | undefined): Partial<CatalogProduct> {
   if (item === undefined) {
     return {};
   }
   const { saleUnit, step, minimum, unit, outOfStock } = toCatalogProduct(item);
   if (saleUnit !== 'weight') {
-    return {};
+    // Une pièce n'apporte que son minimum de pièces (plan quantité minimale, Q6).
+    return minimum === undefined ? {} : { minimum };
   }
   return {
     saleUnit,
@@ -279,7 +280,7 @@ function averageQuantityOf(stat: CustomerSkuStat, item: CatalogItemView | undefi
 
 function fromHabit(stat: CustomerSkuStat, item: CatalogItemView | undefined): ProposedLine {
   const orders = stat.orderCount > 1 ? `${stat.orderCount} commandes` : '1 commande';
-  const terms = weightTermsOf(item);
+  const terms = saleTermsOf(item);
   // Une ligne au poids se cumule en grammes : « 3,5 kg », pas « 3500 pcs ».
   const total =
     terms.saleUnit === 'weight'
@@ -314,13 +315,15 @@ function fromOrderLine(
       id: line.sku,
       name: line.productName,
       price: formatMillicents(line.unitPriceMillicents),
-      ...weightTermsOf(item),
+      ...saleTermsOf(item),
       // L'unité figée sur la ligne fait foi, même si l'article a quitté le catalogue.
       ...(line.saleUnit === 'weight' ? { saleUnit: 'weight' as const, unit: '/ kg' } : {}),
     },
     unitPriceMillicents: line.unitPriceMillicents,
     hint: `×${saleQuantityLabel(line.quantity, line.saleUnit)}`,
-    quantity: line.quantity,
+    // Reprise d'une commande passée sous un minimum posé depuis : on propose le
+    // minimum d'aujourd'hui, que le serveur exige (plan quantité minimale, Q6).
+    quantity: Math.max(line.quantity, item === undefined ? 0 : (firstSaleQuantityOf(item) ?? 0)),
     available: true,
   };
 }

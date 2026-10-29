@@ -82,6 +82,15 @@ export class CartRow {
   readonly quantityChange = output<number>();
   readonly remove = output<void>();
 
+  /**
+   * « Minimum 6 pièces » : le stepper s'y arrête, la ligne dit pourquoi (plan
+   * `catalogue/plan-quantite-minimale.md`, Q6). Au poids, le pas et les
+   * grammes le disent déjà.
+   */
+  protected readonly minimumText = computed(() =>
+    this.saleUnit() === 'piece' && this.min() > 1 ? `Minimum ${this.min()} pièces` : null,
+  );
+
   protected readonly unitPrice = computed(() => formatMillicents(this.unitPriceMillicents()));
 
   /** Le tarif barré — cf. {@link strikedPriceOf}, qui porte la règle et l'unité. */

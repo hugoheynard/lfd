@@ -9,7 +9,7 @@ import type {
 
 import type { FulfillmentChoice } from '../nouvelle-commande/acheminement-commande/acheminement-commande';
 import { requestedLineOf, type CartLine } from '../nouvelle-commande/cart.store';
-import { weightTermsOf } from '../nouvelle-commande/draft-payload';
+import { saleTermsOf } from '../nouvelle-commande/draft-payload';
 import { NEW_ADDRESS, type DraftSnapshot } from '../nouvelle-commande/draft.store';
 
 /**
@@ -61,7 +61,7 @@ export function revisionCartOf(
     if (line.saleUnit !== 'weight') {
       return base;
     }
-    return { ...base, ...(item === undefined ? {} : weightTermsOf(item)), saleUnit: 'weight' };
+    return { ...base, ...(item === undefined ? {} : saleTermsOf(item)), saleUnit: 'weight' };
   });
 }
 

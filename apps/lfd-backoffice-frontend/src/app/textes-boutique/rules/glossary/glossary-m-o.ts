@@ -57,6 +57,7 @@ export const GLOSSARY_M_O: Readonly<Record<string, string>> = {
   mentions: 'Mentions',
   menu: 'Menu',
   message: 'Message',
+  minimumPieces: 'Mention « Minimum N pièces » — quantité minimale de l’article',
   missingBookSlot: 'Heure manquante — créneau du carnet',
   missingDeadline: 'Heure manquante — échéance',
   missingSlot: 'Heure manquante — créneau',

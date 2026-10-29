@@ -26,9 +26,10 @@ describe('CartProductLine', () => {
     quantity: number,
     htCents: number | null = null,
     ttcCents: number | null = null,
+    product: Partial<CartLine['product']> = {},
   ): void {
     // 1,40 € HT / 1,48 € TTC à 5,5 % — le premier article de la vitrine de test.
-    const line: CartLine = { product: TEST_ITEMS[0]!, quantity };
+    const line: CartLine = { product: { ...TEST_ITEMS[0]!, ...product }, quantity };
     fixture = TestBed.createComponent(CartProductLine);
     fixture.componentRef.setInput('line', line);
     if (htCents !== null) {
@@ -118,6 +119,14 @@ describe('CartProductLine', () => {
    * quantité, on n'en ajoute pas une. Douze croissants ne se retirent pas en
    * douze appuis, et le champ se tape.
    */
+  // Plan quantité minimale, Q4 : le champ ne descend pas sous le minimum, et la ligne le dit.
+  it('arrête son champ au minimum de l’article, et le dit', () => {
+    render(6, null, null, { minQuantity: 6 });
+    const el = fixture.nativeElement as HTMLElement;
+    expect(field()?.min).toBe('6');
+    expect(el.querySelector('[data-minimum]')?.textContent?.trim()).toBe('Minimum 6 pièces');
+  });
+
   it('règle sa quantité par un champ, pas par un rail', () => {
     render(2);
     const el = fixture.nativeElement as HTMLElement;

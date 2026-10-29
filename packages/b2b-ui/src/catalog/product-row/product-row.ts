@@ -9,7 +9,7 @@ import {
 import { FoldButtonComponent, FoldNumberInputComponent, FoldToggleIconComponent } from 'fold-ng';
 
 import type { CatalogOrder, CatalogProduct } from '../catalog-product.model';
-import { saleQuantityLabel } from '../sale-terms';
+import { floorQuantityOf, saleQuantityLabel } from '../sale-terms';
 
 /**
  * `lfd-product-row` — **rangée order-pad compacte**, pensée pour le réappro
@@ -69,9 +69,12 @@ export class ProductRow<T extends CatalogProduct = CatalogProduct> {
   });
 
   readonly step = computed(() => (this.byWeight() || this.byPack() ? this.packSize() : 1));
-  readonly minQty = computed(() =>
-    this.byWeight() ? (this.product().minimum ?? this.step()) : this.step(),
-  );
+  /**
+   * Le plancher : le premier multiple du pas qui atteint le minimum de
+   * l'article (au poids, ou en pièces — plan quantité minimale, Q6), le pas
+   * lui-même sans minimum.
+   */
+  readonly minQty = computed(() => floorQuantityOf(this.product().minimum, this.step()));
   readonly packOptionLabel = computed(() => this.product().packLabel ?? `× ${this.packSize()}`);
   readonly quantity = linkedSignal(() => this.minQty());
   readonly addText = computed(() => `Ajouter ${this.said(this.quantity())}`);

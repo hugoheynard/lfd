@@ -110,6 +110,9 @@
         @if (perKiloHint(); as hint) {
           <span class="per-kilo">{{ hint }}</span>
         }
+        @if (minimumLabel(); as minimum) {
+          <span class="minimum" data-minimum>{{ minimum }}</span>
+        }
       </div>
 
       @if (staffPick.current(); as view) {

@@ -605,6 +605,11 @@ export interface ClientCopy {
      * vignette et la fiche disent « 12,40 € / kg ».
      */
     readonly perKilogram: string;
+    /**
+     * `{n}` = le minimum de pièces de l'article (plan
+     * `catalogue/plan-quantite-minimale.md`, Q4), toujours au moins deux.
+     */
+    readonly minimumPieces: string;
     /** `{pct}` = l'écart au tarif boutique, dérivé des deux montants, entier. */
     readonly proDiscount: string;
     /** `{n}` = la taille du lot proposé en raccourci. */

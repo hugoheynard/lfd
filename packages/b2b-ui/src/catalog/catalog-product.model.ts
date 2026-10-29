@@ -37,7 +37,10 @@ export interface CatalogProduct {
    * colisage, et la rangée dit « 500 g ». Absent ⇒ à la pièce.
    */
   saleUnit?: 'piece' | 'weight';
-  /** Le plancher de la quantité, quand il n'est pas le pas (le minimum d'un article au poids). */
+  /**
+   * Le plancher de la quantité, quand il n'est pas le pas : le minimum d'un
+   * article au poids, ou le minimum de pièces (plan quantité minimale, Q6).
+   */
   minimum?: number;
 }
 

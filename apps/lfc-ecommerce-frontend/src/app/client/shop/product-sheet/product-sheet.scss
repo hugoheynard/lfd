@@ -162,8 +162,9 @@
   color: var(--fold-color-text);
 }
 
-/* Le prix au kilo d'une pièce, sous le prix : une mention, pas un second prix. */
-.per-kilo {
+/* Le prix au kilo d'une pièce, le minimum de pièces, sous le prix : des mentions, pas un second prix. */
+.per-kilo,
+.minimum {
   flex-basis: 100%;
   font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;

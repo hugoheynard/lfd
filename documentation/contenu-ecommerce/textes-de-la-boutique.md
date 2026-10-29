@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1712 textes
+## Sommaire — 1713 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -19,7 +19,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
 | [Rayon / boutique](#espace-shop) | `shop` | 71 |
-| [Rayon — la fiche produit](#espace-product) | `product` | 25 |
+| [Rayon — la fiche produit](#espace-product) | `product` | 26 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
 | [Modifier — ce qu’on change d’une commande située](#espace-servicechange) | `serviceChange` | 9 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1712** |
+| **Total** | | **1713** |
 
 ## Le parcours de commande
 
@@ -389,7 +389,7 @@ Source : `fr.ts · en.ts · it.ts` · 71 textes.
 
 ### Rayon — la fiche produit — `product`
 
-Source : `fr.ts · en.ts · it.ts` · 25 textes.
+Source : `fr.ts · en.ts · it.ts` · 26 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -399,6 +399,7 @@ Source : `fr.ts · en.ts · it.ts` · 25 textes.
 | `product.operationPickupDay` | le {day} | on {day} | il {day} | `{day}` |
 | `product.perPiece` | / pièce | / piece | / pezzo |  |
 | `product.perKilogram` | / kg | / kg | / kg |  |
+| `product.minimumPieces` | Minimum {n} pièces | Minimum {n} pieces | Minimo {n} pezzi | `{n}` |
 | `product.proDiscount` | Prix pro −{pct} % | Trade price −{pct}% | Prezzo pro −{pct} % | `{pct}` |
 | `product.batch` | × {n} | × {n} | × {n} | `{n}` |
 | `product.batchAria` | {n} pièces | {n} pieces | {n} pezzi | `{n}` |

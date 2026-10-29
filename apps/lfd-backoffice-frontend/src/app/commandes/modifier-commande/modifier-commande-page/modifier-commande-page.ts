@@ -52,7 +52,7 @@ import {
   AcheminementCommande,
   type FulfillmentChoice,
 } from '../../nouvelle-commande/acheminement-commande/acheminement-commande';
-import { CartStore, weightLineOf } from '../../nouvelle-commande/cart.store';
+import { CartStore, saleLineOf } from '../../nouvelle-commande/cart.store';
 import { DraftStore } from '../../nouvelle-commande/draft.store';
 import type { OrderEntryCustomer } from '../../nouvelle-commande/order-entry-customer';
 import {
@@ -321,7 +321,7 @@ export class ModifierCommandePage {
         name: line.product.name,
         unitPriceMillicents: line.unitPriceMillicents,
         // Au poids (P5) : la quantité est en grammes, au pas et au minimum de l'article.
-        ...weightLineOf(line.product),
+        ...saleLineOf(line.product),
       },
       line.quantity,
     );

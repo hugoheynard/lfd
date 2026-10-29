@@ -6,7 +6,7 @@ import type {
   OrderDraftView,
 } from '@lfd/contracts';
 
-import { firstSaleQuantityOf, saleStepOf } from '@lfd/b2b-ui/catalog';
+import { firstSaleQuantityOf, pieceMinimumOf, saleStepOf } from '@lfd/b2b-ui/catalog';
 
 import { requestedLineOf, type CartLine } from './cart.store';
 import { NEW_ADDRESS, type DraftSnapshot } from './draft.store';
@@ -144,7 +144,7 @@ export function restoreLines(
       name: item.name,
       unitPriceMillicents: item.unitPriceMillicents,
       quantity: line.quantity,
-      ...weightTermsOf(item),
+      ...saleTermsOf(item),
     });
   }
   return { lines, dropped };
@@ -152,15 +152,17 @@ export function restoreLines(
 
 /**
  * L'unité, le pas et le minimum d'un article au poids, lus au catalogue du
- * jour (P5) ; rien pour une pièce — la ligne reste alors celle d'avant.
+ * jour (P5) ; pour une pièce, son seul minimum de pièces quand il en a un
+ * (plan quantité minimale, Q6) — sinon rien, la ligne reste celle d'avant.
  */
-export function weightTermsOf(
+export function saleTermsOf(
   item: CatalogItemView,
 ): Pick<CartLine, 'saleUnit' | 'step' | 'minimum'> {
   const step = saleStepOf(item);
   const minimum = firstSaleQuantityOf(item);
   if (item.saleUnit !== 'weight') {
-    return {};
+    const pieces = pieceMinimumOf(item);
+    return pieces === null ? {} : { minimum: pieces };
   }
   return {
     saleUnit: 'weight',

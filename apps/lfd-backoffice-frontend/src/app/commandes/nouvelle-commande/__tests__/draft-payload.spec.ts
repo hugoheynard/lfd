@@ -146,6 +146,16 @@ describe('la traduction écran ↔ brouillon', () => {
     ]);
   });
 
+  /** Plan `catalogue/plan-quantite-minimale.md`, Q6 : le plancher du jour suit la ligne. */
+  it('rouvre une pièce avec le minimum de pièces du catalogue du jour', () => {
+    const catalogue = [{ ...CATALOGUE[0]!, minQuantity: 6 }];
+    const restored = restoreLines(viewOf({ lines: [{ sku: 'VIE-001', quantity: 12 }] }), catalogue);
+
+    expect(restored.lines).toEqual([
+      { sku: 'VIE-001', name: 'Croissant', unitPriceMillicents: 120, quantity: 12, minimum: 6 },
+    ]);
+  });
+
   it('retire — et signale — un SKU que le catalogue ne connaît plus', () => {
     const restored = restoreLines(viewOf({ lines: [{ sku: 'PAT-002', quantity: 6 }] }), CATALOGUE);
 

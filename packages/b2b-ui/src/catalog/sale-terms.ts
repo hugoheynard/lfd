@@ -15,6 +15,21 @@ export interface SaleTerms {
   readonly saleUnit?: OrderSaleUnit | undefined;
   readonly weightStepGrams?: number | null | undefined;
   readonly weightMinGrams?: number | null | undefined;
+  /**
+   * Le minimum de pièces de l'article (plan
+   * `documentation/catalogue/plan-quantite-minimale.md`, Q4 et Q6) — absent ou
+   * `null` = pas de minimum ; sans effet au poids, qui a `weightMinGrams`.
+   */
+  readonly minQuantity?: number | null | undefined;
+}
+
+/** Le minimum de pièces d'un article à la pièce, ou `null` (aucun, ou au poids). */
+export function pieceMinimumOf(terms: SaleTerms): number | null {
+  if (saleUnitOf(terms) !== 'piece') {
+    return null;
+  }
+  const minimum = terms.minQuantity ?? null;
+  return minimum !== null && minimum > 1 ? minimum : null;
 }
 
 /** L'unité d'un article — absente du fil, c'est une pièce. */
@@ -38,17 +53,30 @@ export function saleStepOf(terms: SaleTerms): number | null {
 }
 
 /**
- * La plus petite quantité qu'on peut prendre : une pièce ; au poids, le
- * premier multiple du pas qui atteint le minimum (le pas lui-même sans
- * minimum). `null` quand l'article au poids n'a pas de pas.
+ * La plus petite quantité qu'on peut prendre : une pièce, ou le minimum de
+ * pièces de l'article ; au poids, le premier multiple du pas qui atteint le
+ * minimum (le pas lui-même sans minimum). `null` quand l'article au poids n'a
+ * pas de pas. Le serveur refuse dessous (`orders.line.quantity_below_minimum`).
  */
 export function firstSaleQuantityOf(terms: SaleTerms): number | null {
   const step = saleStepOf(terms);
-  if (step === null || saleUnitOf(terms) === 'piece') {
-    return step;
+  if (step === null) {
+    return null;
+  }
+  if (saleUnitOf(terms) === 'piece') {
+    return pieceMinimumOf(terms) ?? step;
   }
   const minimum = Math.max(terms.weightMinGrams ?? 0, step);
   return Math.ceil(minimum / step) * step;
+}
+
+/**
+ * Le plancher d'un stepper : le premier multiple du pas qui atteint le
+ * minimum, le pas lui-même sans minimum. Un minimum de 10 pièces vendues par
+ * carton de 6 part de 12 (plan quantité minimale, Q6).
+ */
+export function floorQuantityOf(minimum: number | undefined, step: number): number {
+  return Math.ceil(Math.max(minimum ?? step, step) / step) * step;
 }
 
 /** La quantité dite : « 3 » pièces, ou « 500 g » / « 1,25 kg ». */

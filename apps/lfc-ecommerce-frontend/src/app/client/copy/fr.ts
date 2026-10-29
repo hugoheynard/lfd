@@ -315,6 +315,7 @@ export const FR: ClientCopy = {
     operationPickupDay: 'le {day}',
     perPiece: '/ pièce',
     perKilogram: '/ kg',
+    minimumPieces: 'Minimum {n} pièces',
     proDiscount: 'Prix pro −{pct} %',
     batch: '× {n}',
     batchAria: '{n} pièces',

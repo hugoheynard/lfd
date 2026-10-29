@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { CartStore } from '../cart.store';
+import { CartStore, saleLineOf } from '../cart.store';
 
 /**
  * 🔴 **De vrais millicentimes**, et c'est le sujet de deux tests plus bas.
@@ -153,6 +153,27 @@ describe('CartStore', () => {
         { sku: 'SAU-001', quantity: 500, saleUnit: 'weight' },
         { sku: 'VIE-001', quantity: 3 },
       ]);
+    });
+  });
+
+  /** Plan `catalogue/plan-quantite-minimale.md`, Q6 : la ligne garde son plancher. */
+  describe('le minimum de pièces', () => {
+    it('garde le minimum d’une pièce, et rien d’autre', () => {
+      expect(saleLineOf({ minimum: 6 })).toEqual({ minimum: 6 });
+      expect(saleLineOf({ saleUnit: 'piece', minimum: 6 })).toEqual({ minimum: 6 });
+    });
+
+    it('ne garde rien pour une pièce sans minimum', () => {
+      expect(saleLineOf({})).toEqual({});
+      expect(saleLineOf({ minimum: 1 })).toEqual({});
+    });
+
+    it('garde l’unité, le pas et le minimum d’un article au poids', () => {
+      expect(saleLineOf({ saleUnit: 'weight', step: 100, minimum: 300 })).toEqual({
+        saleUnit: 'weight',
+        step: 100,
+        minimum: 300,
+      });
     });
   });
 });

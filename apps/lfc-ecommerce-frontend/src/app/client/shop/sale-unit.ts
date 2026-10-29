@@ -13,7 +13,23 @@ import { lineTotalCents, saleQuantity, weightLabel, type SaleQuantity } from '@l
  */
 
 /** Ce qu'il faut de l'article pour savoir comment il se compte. */
-export type SaleTerms = Pick<ShopItemView, 'saleUnit' | 'weightStepGrams' | 'weightMinGrams'>;
+export type SaleTerms = Pick<
+  ShopItemView,
+  'saleUnit' | 'weightStepGrams' | 'weightMinGrams' | 'minQuantity'
+>;
+
+/**
+ * Le minimum de pièces de l'article pour qui regarde (plan
+ * `documentation/catalogue/plan-quantite-minimale.md`, Q4) — `null` sans
+ * minimum, et toujours `null` au poids, qui a son `weightMinGrams`.
+ */
+export function pieceMinimumOf(item: SaleTerms): number | null {
+  if (isSoldByWeight(item)) {
+    return null;
+  }
+  const minimum = item.minQuantity ?? null;
+  return minimum !== null && minimum > 1 ? minimum : null;
+}
 
 /** L'unité de l'article — absente du fil, c'est une pièce (une boutique d'avant P4). */
 export function saleUnitOf(item: SaleTerms): OrderSaleUnit {
@@ -40,13 +56,18 @@ export function stepOf(item: SaleTerms): number | null {
 }
 
 /**
- * La plus petite quantité qu'on peut prendre : une pièce ; au poids, le premier
- * multiple du pas qui atteint le minimum (le pas lui-même sans minimum).
+ * La plus petite quantité qu'on peut prendre : une pièce, ou le minimum de
+ * pièces de l'article ; au poids, le premier multiple du pas qui atteint le
+ * minimum (le pas lui-même sans minimum). Le « − » d'une ligne à cette
+ * quantité la retire entière : rien ne se prend entre 1 et le minimum.
  */
 export function firstQuantityOf(item: SaleTerms): number | null {
   const step = stepOf(item);
-  if (step === null || !isSoldByWeight(item)) {
-    return step;
+  if (step === null) {
+    return null;
+  }
+  if (!isSoldByWeight(item)) {
+    return pieceMinimumOf(item) ?? step;
   }
   const minimum = Math.max(item.weightMinGrams ?? 0, step);
   return Math.ceil(minimum / step) * step;

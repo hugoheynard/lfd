@@ -31,6 +31,7 @@ import { ProVisit } from '../pro-visit.service';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 import {
   firstQuantityOf,
+  pieceMinimumOf,
   isSoldByWeight,
   lineTotalOf,
   nextQuantity,
@@ -177,7 +178,8 @@ export class ProductSheet {
     // Les lots sont des pièces : un article au poids n'en propose pas.
     return this.showsTtc() || this.byWeight()
       ? []
-      : BATCHES.map((size) => ({
+      : // Un lot sous le minimum poserait une quantité que le serveur refuse.
+        BATCHES.filter((size) => size >= this.first()).map((size) => ({
           size,
           label: fill(c.batch, { n: String(size) }),
           aria: fill(c.batchAria, { n: String(size) }),
@@ -276,6 +278,13 @@ export class ProductSheet {
   );
 
   /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  /** « Minimum 6 pièces » sous le prix, ou `null` sans minimum (plan quantité minimale, Q4). */
+  protected readonly minimumLabel = computed(() => {
+    const product = this.product();
+    const minimum = product === null ? null : pieceMinimumOf(product);
+    return minimum === null ? null : fill(this.t().product.minimumPieces, { n: String(minimum) });
+  });
+
   protected readonly perKiloHint = computed(() => {
     const product = this.product();
     return product === null

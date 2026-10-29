@@ -82,6 +82,19 @@ describe('ProductTile', () => {
     expect(el.querySelector('.per-kilo')?.textContent?.trim()).toBe('15,90 € / kg TTC');
   });
 
+  // Plan quantité minimale, Q4 : le minimum se dit sous le prix de la vignette.
+  it('écrit finement le minimum de pièces sous le prix', () => {
+    fixture.componentRef.setInput('product', { ...TEST_ITEMS[0], minQuantity: 6 });
+    fixture.detectChanges();
+
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('[data-minimum]')?.textContent?.trim()).toBe('Minimum 6 pièces');
+  });
+
+  it('ne dit aucun minimum sans minimum', () => {
+    expect((fixture.nativeElement as HTMLElement).querySelector('[data-minimum]')).toBeNull();
+  });
+
   it('ne dit aucun prix au kilo quand le référentiel n’en a pas saisi', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('.per-kilo')).toBeNull();
   });

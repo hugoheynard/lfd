@@ -8,7 +8,13 @@ import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../../shop/made-to-order';
 import { ShopPriceBasis } from '../../shop/shop-price-basis.service';
 import { type CartLine } from '../cart-total';
-import { firstQuantityOf, isSoldByWeight, quantityLabel, stepOf } from '../../shop/sale-unit';
+import {
+  firstQuantityOf,
+  isSoldByWeight,
+  pieceMinimumOf,
+  quantityLabel,
+  stepOf,
+} from '../../shop/sale-unit';
 
 /**
  * **Une ligne du panier** : la quantité, ce que c'est, ce que ça fait.
@@ -98,6 +104,12 @@ export class CartProductLine {
   );
 
   /** Le plancher du champ : une pièce, ou la première quantité au poids. */
+  /** « Minimum 6 pièces » : le champ s'y arrête, la ligne dit pourquoi (plan quantité minimale, Q4). */
+  protected readonly minimumLabel = computed(() => {
+    const minimum = pieceMinimumOf(this.line().product);
+    return minimum === null ? null : fill(this.t().product.minimumPieces, { n: String(minimum) });
+  });
+
   protected readonly minimum = computed(() => firstQuantityOf(this.line().product) ?? 1);
 
   /** Le pas du champ : une pièce, ou le pas de l'article au poids. */

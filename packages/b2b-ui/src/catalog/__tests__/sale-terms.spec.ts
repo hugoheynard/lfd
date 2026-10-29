@@ -3,6 +3,8 @@ import { lineTotalCents } from '@lfd/money';
 
 import {
   firstSaleQuantityOf,
+  floorQuantityOf,
+  pieceMinimumOf,
   lineSaleQuantity,
   saleQuantityLabel,
   saleStepOf,
@@ -84,5 +86,38 @@ describe('toCatalogProduct — un article au poids', () => {
       name: 'Croissant',
       price: toCatalogProduct(CROISSANT).price,
     });
+  });
+});
+
+/** Plan `catalogue/plan-quantite-minimale.md`, Q6 : la saisie staff part du minimum de pièces. */
+describe('sale-terms — le minimum de pièces', () => {
+  it('part du minimum de pièces de l’article', () => {
+    const item = { ...CROISSANT, minQuantity: 6 };
+    expect(pieceMinimumOf(item)).toBe(6);
+    expect(firstSaleQuantityOf(item)).toBe(6);
+    expect(toCatalogProduct(item).minimum).toBe(6);
+  });
+
+  it('ignore un minimum absent, nul ou d’une pièce', () => {
+    for (const minQuantity of [undefined, null, 1]) {
+      const item = { ...CROISSANT, minQuantity };
+      expect(pieceMinimumOf(item)).toBeNull();
+      expect(firstSaleQuantityOf(item)).toBe(1);
+      expect(toCatalogProduct(item).minimum).toBeUndefined();
+    }
+  });
+
+  it('ignore le minimum de pièces d’un article au poids', () => {
+    const item = { ...GRAVLAX, minQuantity: 6 };
+    expect(pieceMinimumOf(item)).toBeNull();
+    expect(firstSaleQuantityOf(item)).toBe(300);
+  });
+
+  it('plancher : le premier multiple du pas qui atteint le minimum', () => {
+    expect(floorQuantityOf(undefined, 1)).toBe(1);
+    expect(floorQuantityOf(6, 1)).toBe(6);
+    expect(floorQuantityOf(10, 6)).toBe(12);
+    expect(floorQuantityOf(undefined, 6)).toBe(6);
+    expect(floorQuantityOf(300, 100)).toBe(300);
   });
 });

@@ -26,7 +26,7 @@ import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
 import { perKiloHintLabel, shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
-import { quantityLabel, saleUnitOf } from '../sale-unit';
+import { pieceMinimumOf, quantityLabel, saleUnitOf } from '../sale-unit';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -184,6 +184,12 @@ export class ProductTile {
   );
 
   /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  /** « Minimum 6 pièces » sous le prix, ou `null` sans minimum (plan quantité minimale, Q4). */
+  protected readonly minimumLabel = computed(() => {
+    const minimum = pieceMinimumOf(this.product());
+    return minimum === null ? null : fill(this.t().product.minimumPieces, { n: String(minimum) });
+  });
+
   protected readonly perKiloHint = computed(() => {
     const shop = this.t().shop;
     return perKiloHintLabel(

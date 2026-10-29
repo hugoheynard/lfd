@@ -19,21 +19,25 @@ export interface CartLine {
   readonly saleUnit?: OrderSaleUnit;
   /** Le pas du stepper : le pas de l'article au poids ; absent = 1. */
   readonly step?: number;
-  /** Le plancher du stepper : le minimum de l'article au poids ; absent = 1. */
+  /**
+   * Le plancher du stepper : le minimum de l'article au poids, ou son minimum
+   * de pièces (plan quantité minimale, Q6) ; absent = 1.
+   */
   readonly minimum?: number;
 }
 
 /**
  * L'unité, le pas et le minimum d'un article au poids, tels que la ligne du
- * panier les garde ; rien pour une pièce (P5).
+ * panier les garde (P5) ; pour une pièce, son seul minimum de pièces quand il
+ * en a un (plan quantité minimale, Q6).
  */
-export function weightLineOf(product: {
+export function saleLineOf(product: {
   readonly saleUnit?: OrderSaleUnit | undefined;
   readonly step?: number | undefined;
   readonly minimum?: number | undefined;
 }): Pick<CartLine, 'saleUnit' | 'step' | 'minimum'> {
   if (product.saleUnit !== 'weight') {
-    return {};
+    return product.minimum !== undefined && product.minimum > 1 ? { minimum: product.minimum } : {};
   }
   return {
     saleUnit: 'weight',

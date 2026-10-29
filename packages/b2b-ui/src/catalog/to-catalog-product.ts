@@ -2,7 +2,7 @@ import type { CatalogItemView } from '@lfd/contracts';
 
 import { formatMillicents } from '../order/order-format';
 import type { CatalogProduct } from './catalog-product.model';
-import { firstSaleQuantityOf, saleStepOf, saleUnitOf } from './sale-terms';
+import { firstSaleQuantityOf, pieceMinimumOf, saleStepOf, saleUnitOf } from './sale-terms';
 
 /**
  * Un article du **catalogue serveur** en produit affichable.
@@ -25,7 +25,10 @@ export function toCatalogProduct(item: CatalogItemView): CatalogProduct {
     price: formatMillicents(item.unitPriceMillicents),
   };
   if (saleUnitOf(item) === 'piece') {
-    return base;
+    // Un minimum de pièces (plan quantité minimale, Q6) : le plancher du
+    // stepper, que la saisie staff respecte comme la boutique.
+    const minimum = pieceMinimumOf(item);
+    return minimum === null ? base : { ...base, minimum };
   }
   // Au poids (P5) : le prix est au kilo, la quantité en grammes, au pas et au
   // minimum de l'article. Sans pas, le serveur refuse toute quantité : la

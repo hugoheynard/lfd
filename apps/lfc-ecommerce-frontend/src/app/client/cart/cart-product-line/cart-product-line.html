@@ -9,6 +9,9 @@
     <span class="name">{{ name() }}</span>
   }
   <span class="unit">{{ unit() }}</span>
+  @if (minimumLabel(); as minimum) {
+    <span class="unit" data-minimum>{{ minimum }}</span>
+  }
   @if (weight(); as shown) {
     <span class="unit" data-weight>{{ shown }}</span>
   }

@@ -1913,6 +1913,13 @@
         },
         { "key": "product.perKilogram", "fr": "/ kg", "en": "/ kg", "it": "/ kg", "variables": [] },
         {
+          "key": "product.minimumPieces",
+          "fr": "Minimum {n} pièces",
+          "en": "Minimum {n} pieces",
+          "it": "Minimo {n} pezzi",
+          "variables": ["n"]
+        },
+        {
           "key": "product.proDiscount",
           "fr": "Prix pro −{pct} %",
           "en": "Trade price −{pct}%",

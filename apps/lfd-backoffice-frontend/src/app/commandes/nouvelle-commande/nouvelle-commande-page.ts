@@ -1,4 +1,5 @@
 import { PermissionsStore } from '../../auth/permissions.store';
+import { isBelowMinimumRefusal } from './below-minimum-refusal';
 import { isGraceRefusal } from './grace-refusal';
 import { isDeliveryClosedRefusal } from './delivery-closed-refusal';
 import { OrderCutoffWaiversService } from '../order-cutoff-waivers.service';
@@ -76,7 +77,7 @@ import type { OrderEntryBuyer, OrderEntryCustomer } from './order-entry-customer
 import { formatOrderInstant } from '@lfd/b2b-ui/order';
 import { narrowViewport } from '../../shared/viewport/narrow-viewport';
 import { BarrePanier } from './barre-panier/barre-panier';
-import { CartStore, requestedLineOf, weightLineOf, type CartLine } from './cart.store';
+import { CartStore, requestedLineOf, saleLineOf, type CartLine } from './cart.store';
 import { draftPayloadOf, draftSnapshotOf, restoreLines } from './draft-payload';
 import { DraftStore } from './draft.store';
 import { PanierPanel, type PanierPanelData } from './panier-panel/panier-panel';
@@ -519,7 +520,7 @@ export class NouvelleCommandePage {
         name: line.product.name,
         unitPriceMillicents: line.unitPriceMillicents,
         // Au poids (P5) : la quantité est en grammes, au pas et au minimum de l'article.
-        ...weightLineOf(line.product),
+        ...saleLineOf(line.product),
       },
       line.quantity,
     );
@@ -635,6 +636,11 @@ export class NouvelleCommandePage {
           "La livraison n'est pas proposée pour ce compte. Choisissez le retrait.",
         );
         void this.refreshDeliveryAvailability();
+      } else if (isBelowMinimumRefusal(error)) {
+        // Le message du serveur nomme l'article et son minimum : la saisie
+        // reste, le commercial relève la ligne.
+        this.lateDraft.set(null);
+        this.notify.refused(error, "Une ligne est sous la quantité minimale de l'article.");
       } else {
         this.lateDraft.set(null);
         this.notify.error(error, "La commande n'a pas pu être enregistrée.");

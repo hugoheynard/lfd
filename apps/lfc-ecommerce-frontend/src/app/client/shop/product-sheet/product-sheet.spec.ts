@@ -162,6 +162,33 @@ describe('ProductSheet', () => {
     expect(minus()?.disabled).toBe(true);
   });
 
+  // Plan quantité minimale, Q4 : la fiche part du minimum et son « − » s'y arrête.
+  it('part du minimum, ne descend pas dessous, et le dit sous le prix', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), minQuantity: 6 }, 0, true);
+
+    expect(el().querySelector('app-quantity-rail .qty')?.textContent?.trim()).toBe('6');
+    expect(minus()?.disabled).toBe(true);
+    expect(el().querySelector('[data-minimum]')?.textContent?.trim()).toBe('Minimum 6 pièces');
+    click(plus());
+    click(minus());
+    click(minus());
+    click(cta());
+    expect(set).toEqual([6]);
+  });
+
+  it('ne propose pas de lot sous le minimum', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), minQuantity: 10 }, 0, true);
+
+    const sizes = [...el().querySelectorAll('.batch')].map((b) => b.textContent?.trim());
+    expect(sizes).toEqual(['× 12', '× 24']);
+  });
+
+  it('ne dit aucun minimum sans minimum', () => {
+    mount(TEST_ITEMS[0] as ShopItemView, 0, true);
+
+    expect(el().querySelector('[data-minimum]')).toBeNull();
+  });
+
   it('dit « Déjà au panier », désactivé, quand le brouillon égale le panier', () => {
     mount(TEST_ITEMS[0] as ShopItemView, 2, true);
 
