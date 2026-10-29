@@ -143,9 +143,10 @@ Changer l'unité d'un article **déjà vendu** : hors champ, il faudrait dater
 l'unité partout (décisions, historique, facturation) — le geste reste une autre
 déclinaison ([`plan-changer-l-unite-de-vente.md`](plan-changer-l-unite-de-vente.md) § 7).
 
-## 5. À confirmer par Hugo
+## 5. Décisions du bâti, validées par Hugo le 2026-10-29
 
-Décisions prises au bâti, que personne n'a encore validées :
+Hugo : « pour un article au poids on doit pouvoir définir des raccourcis au
+poids » (1), « lot plus lourd noté » (2), « documenté » (3).
 
 - **Raccourcis de fournée et contenant principal en grammes**, plutôt que
   masqués pour un article au poids.
