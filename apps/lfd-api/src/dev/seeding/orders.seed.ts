@@ -25,6 +25,7 @@ import { featureSeededItems } from "./featured.seed.js";
 import { paintSeededSites } from "./site-colors.seed.js";
 import { placeTomorrowRounds, TOMORROW_ROUNDS_SKUS } from "./tomorrow-rounds.seed.js";
 import { prepareClients, type ScenarioClients } from "./scenario-clients.seed.js";
+import { ApproveReviewCommand } from "../../b2b/catalog/application/commands/approve-review.command.js";
 
 export type { SeedContext } from "./order-placing.seed.js";
 
@@ -252,6 +253,27 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
   // pas de ligne sous une référence que la boutique ne vendrait plus
   // (`plan-defaut-sous-sa-reference.md`, § 3).
   const found = new Set(known.map(shopSkuOf));
+  // Un article arrivé du référentiel attend sa validation au commerce avant
+  // d'être servi (lot 3, « Afficher ») : le semis la donne par le vrai geste,
+  // aux deux audiences et pour tout le miroir, sans quoi un article semé après coup (le saumon au
+  // poids, 2026-10-29) n'est jamais vendu et le scénario s'arrête.
+  const pending = await context.prisma.catalogItem.findMany({
+    // TOUT le miroir, pas seulement `wanted` : les lignes larges du scénario
+    // (`spreadLines`, `wideLines`) piochent dans le catalogue entier.
+    where: {
+      ...STILL_SOLD,
+      OR: [{ proReviewPending: true }, { publicReviewPending: true }],
+    },
+    select: { sku: true },
+  });
+  if (pending.length > 0) {
+    await context.commands.execute(
+      new ApproveReviewCommand(
+        pending.map((item) => item.sku),
+        ["pro", "public"],
+      ),
+    );
+  }
   const missing = wanted.filter((sku) => !found.has(sku));
   if (missing.length > 0) {
     throw new Error(
