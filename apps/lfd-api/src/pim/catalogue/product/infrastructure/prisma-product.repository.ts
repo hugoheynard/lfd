@@ -48,6 +48,7 @@ interface VariantRow extends MinQuantityColumns {
   id: string;
   sku: string;
   name: unknown;
+  internalLabel: string | null;
   options: unknown;
   isDefault: boolean;
   isDiscontinued: boolean;
@@ -110,6 +111,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     id: row.id,
     sku: row.sku,
     name: readLocalizedColumn(row.name, "variant.name"),
+    internalLabel: row.internalLabel,
     options: readStringMapColumn(row.options, "variant.options"),
     isDefault: row.isDefault,
     isDiscontinued: row.isDiscontinued,
@@ -287,6 +289,7 @@ export class PrismaProductRepository extends ProductRepository {
                 id: defaultVariant.id,
                 sku: defaultVariant.sku,
                 name: localizedColumn(defaultVariant.name),
+                internalLabel: defaultVariant.internalLabel ?? null,
                 isDefault: defaultVariant.isDefault,
                 position: defaultVariant.position,
               },
@@ -350,6 +353,7 @@ export class PrismaProductRepository extends ProductRepository {
             productId: snapshot.id,
             sku: variant.sku,
             name: localizedColumn(variant.name),
+            internalLabel: variant.internalLabel ?? null,
             options: { ...variant.options },
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
@@ -369,6 +373,7 @@ export class PrismaProductRepository extends ProductRepository {
           },
           update: {
             name: localizedColumn(variant.name),
+            internalLabel: variant.internalLabel ?? null,
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
             detachedToProductId: variant.detachedToProductId ?? null,

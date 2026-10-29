@@ -27,6 +27,8 @@ import {
   type AddProductVariantPayload,
   renameProductVariantPayloadSchema,
   type RenameProductVariantPayload,
+  setVariantShopNamePayloadSchema,
+  type SetVariantShopNamePayload,
   type AlignVariantPayload,
   saveVariantAllergensPayloadSchema,
   saveVariantNutritionPayloadSchema,
@@ -40,6 +42,7 @@ import { AdminSurface } from "../../../../platform/auth/admin-surface.decorator.
 import { ZodBody } from "../../../../platform/shared/http/zod-body.pipe.js";
 import { AddProductVariantCommand } from "../application/add-product-variant.js";
 import { RenameProductVariantCommand } from "../application/rename-product-variant.js";
+import { SetVariantShopNameCommand } from "../application/set-variant-shop-name.js";
 import { AlignVariantOnDefaultCommand } from "../application/align-variant-on-default.js";
 import { ArchiveProductCommand } from "../application/archive-product.js";
 import { CreateProductCommand } from "../application/create-product.js";
@@ -225,7 +228,9 @@ export class ProductController {
   }
 
   /**
-   * **Rebaptise une déclinaison.**
+   * **Rebaptise une déclinaison** — son libellé interne, l'onglet du
+   * référentiel (`plan-identite-de-declinaison.md`, I5). Le chemin garde
+   * `/name` : c'est le geste du crayon, et son appelant est le même.
    *
    * Un `PUT` sur `/name` et non un `PATCH` de la déclinaison entière : le nom
    * est la SEULE chose qu'on puisse y changer après coup. La référence est
@@ -240,7 +245,23 @@ export class ProductController {
     @Body(new ZodBody(renameProductVariantPayloadSchema)) body: RenameProductVariantPayload,
   ) {
     await this.commands.execute<RenameProductVariantCommand, void>(
-      new RenameProductVariantCommand(id, variantId, body.name),
+      new RenameProductVariantCommand(id, variantId, body.label),
+    );
+    return { id, variantId };
+  }
+
+  /**
+   * **Le nom de boutique d'une déclinaison** et ses langues — la carte
+   * « Identité de la déclinaison », enregistrée seule (§ 3 du même plan).
+   */
+  @Put(":id/variants/:variantId/shop-name")
+  async setVariantShopName(
+    @Param("id") id: string,
+    @Param("variantId") variantId: string,
+    @Body(new ZodBody(setVariantShopNamePayloadSchema)) body: SetVariantShopNamePayload,
+  ) {
+    await this.commands.execute<SetVariantShopNameCommand, void>(
+      new SetVariantShopNameCommand(id, variantId, body.name),
     );
     return { id, variantId };
   }

@@ -161,6 +161,9 @@ model ProductVariant {
   product        Product @relation("ProductVariants", fields: [productId], references: [id])
   sku            String  @unique
   name           Json
+  /// Le **libellé interne** (l'onglet du référentiel) ; `NULL` = le français
+  /// de `name`, le nom de boutique (`plan-identite-de-declinaison.md`, I3).
+  internalLabel  String? @map("internal_label")
   options        Json    @default("{}")
   isDefault      Boolean @default(false) @map("is_default")
   isDiscontinued Boolean @default(false) @map("is_discontinued")

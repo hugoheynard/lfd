@@ -79,6 +79,13 @@ Les SÉRIEUX :
 
 ## 4. Le lot (un seul : backend + back-office)
 
+> 🟦 **Bâti le 2026-10-29, pas encore commité.** Migration
+> `20261029060000_le_libelle_interne_des_declinaisons` ; route du crayon
+> `PUT …/variants/:variantId/name` sur `{ label }`, route du nom de boutique
+> `PUT …/variants/:variantId/shop-name` ; carte `app-variant-identity-form`.
+> Le nom de boutique enregistré est posé sur la déclinaison sans relire la
+> fiche (une relecture effacerait les brouillons des autres cartes).
+
 - Migration additive : `product_variant.internal_label TEXT NULL`.
 - Domaine : `internalLabel` (lu `internal_label ?? name.fr`) ;
   `renameInternalLabel(text)` ; `renameForShop(LocalizedText)` qui fige le

@@ -20,6 +20,7 @@ function backendProduct(overrides: Partial<BackendVariantLike> = {}) {
     id: 'prd_cafe_v1',
     sku: 'CAFE-1',
     name: { fr: 'Café' },
+    internalLabel: 'Café',
     options: {},
     position: 0,
     isDefault: true,

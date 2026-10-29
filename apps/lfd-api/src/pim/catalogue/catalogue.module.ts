@@ -20,6 +20,7 @@ import { ArchiveProductHandler } from "./product/application/archive-product.js"
 import { CreateCategoryHandler } from "./category/application/create-category.js";
 import { AddProductVariantHandler } from "./product/application/add-product-variant.js";
 import { RenameProductVariantHandler } from "./product/application/rename-product-variant.js";
+import { SetVariantShopNameHandler } from "./product/application/set-variant-shop-name.js";
 import { AlignVariantOnDefaultHandler } from "./product/application/align-variant-on-default.js";
 import { CreateProductHandler } from "./product/application/create-product.js";
 import { GetCategoryDetailHandler } from "./category/application/get-category-detail.js";
@@ -166,6 +167,7 @@ import {
     UpdateProductIdentityHandler,
     UpdateVariantPricingHandler,
     RenameProductVariantHandler,
+    SetVariantShopNameHandler,
     SetProductMediaHandler,
     OnMediaAssetDescribedHandler,
     SetProductOperationOnlyHandler,

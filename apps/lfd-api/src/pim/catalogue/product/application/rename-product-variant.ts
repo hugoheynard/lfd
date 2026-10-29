@@ -1,39 +1,34 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
-import { changesBetween } from "../../../../platform/journal/changes.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
-import {
-  localizedText,
-  type LocalizedText,
-} from "../../shared/domain/value-objects/localized-text.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { requireProduct } from "./product-support.js";
-import { CatalogEmitter } from "../../shared/domain/ports/catalog-emitter.js";
 
 export class RenameProductVariantCommand {
   constructor(
     readonly productId: string,
     readonly variantId: string,
-    readonly name: LocalizedText,
+    readonly label: string,
   ) {}
 }
 
 /**
- * **Rebaptise une déclinaison.**
+ * **Rebaptise une déclinaison** — son libellé INTERNE seulement
+ * (`documentation/catalogue/plan-identite-de-declinaison.md`, I5).
  *
- * Le verbe manquait entièrement, et son absence était invisible parce que la
- * création, elle, demandait bien un nom : on le saisissait, la base le gardait,
- * et plus rien ne permettait ni de le lire à l'écran ni de le corriger. Une
- * faute de frappe dans « Boîte de 220 g » était définitive.
+ * Le crayon de la barre des déclinaisons renommait le nom de boutique, faute
+ * d'en avoir un autre : un onglet corrigé changeait la vignette, le devis et ce
+ * que lit l'atelier. Le libellé ne part pas sur le fil ; il n'y a donc rien à
+ * émettre au catalogue, et le nom de boutique se change ailleurs
+ * (`set-variant-shop-name.ts`).
  *
- * La référence ne bouge pas avec le nom, et c'est délibéré : elle est dictée au
- * laboratoire et voyage dans les envois vers les canaux, où elle est la clé de
- * rapprochement. Renommer un article n'est pas en fabriquer un autre.
+ * Fait NOUVEAU, `variant.internal_label_changed` : `variant.renamed` raconte
+ * depuis l'origine le nom de boutique, et le garder pour les deux ferait mentir
+ * l'historique. Un renommage qui ne change rien n'écrit pas de fait.
  *
- * Comme les autres sections, un renommage qui ne change rien n'écrit pas de
- * fait : le journal est une trace d'audit, et « renommé » sur un nom identique
- * est un fait qui n'a pas eu lieu.
+ * La référence ne bouge pas avec le nom : elle est dictée au laboratoire et
+ * voyage dans les envois, où elle est la clé de rapprochement.
  */
 @CommandHandler(RenameProductVariantCommand)
 export class RenameProductVariantHandler implements ICommandHandler<
@@ -44,48 +39,34 @@ export class RenameProductVariantHandler implements ICommandHandler<
     private readonly products: ProductRepository,
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
-    private readonly emitter: CatalogEmitter,
   ) {}
 
   async execute(command: RenameProductVariantCommand): Promise<void> {
     const { productId, variantId } = command;
     const product = await requireProduct(this.products, productId);
-    const name = localizedText("nom", command.name);
-    const before = nameOf(product.snapshot().variants, variantId);
+    const before = product.variantInternalLabel(variantId);
 
-    product.renameVariant(variantId, name);
-    const changes = changesBetween(before, nameOf(product.snapshot().variants, variantId));
+    product.renameVariantInternalLabel(variantId, command.label);
+    const after = product.variantInternalLabel(variantId);
 
     await this.uow.run(async () => {
       const ticket =
-        Object.keys(changes).length > 0
+        before !== after
           ? await this.journal.trace({
-              type: PIM_EVENTS.variantRenamed,
+              type: PIM_EVENTS.variantInternalLabelChanged,
               subjectType: "product",
               subjectId: productId,
               // La déclinaison est DANS la charge, pas dans le sujet :
-              // l'historique se lit par fiche, et un sujet « variante » le
-              // couperait en autant de fils qu'il y a de déclinaisons.
+              // l'historique se lit par fiche.
               payload: {
                 subjectLabel: product.snapshot().name.fr,
-                // La déclinaison sous son nom APRÈS : c'est celui qu'elle porte
-                // depuis ; l'avant est dans le diff.
-                variant: { id: variantId, name: name.fr },
-                changes,
+                variant: { id: variantId, name: after },
+                before,
+                after,
               },
             })
-          : this.journal.untraced("déclinaison renommée sans modification");
+          : this.journal.untraced("libellé de déclinaison inchangé");
       await this.products.save(product, ticket);
-      await this.emitter.emitProducts([productId]);
     });
   }
-}
-
-/** Le nom d'UNE déclinaison, dans la forme que le comparateur du journal lit. */
-function nameOf(
-  variants: readonly { readonly id: string; readonly name: LocalizedText }[],
-  variantId: string,
-): Record<string, unknown> {
-  const variant = variants.find((candidate) => candidate.id === variantId);
-  return { name: variant?.name ?? null };
 }

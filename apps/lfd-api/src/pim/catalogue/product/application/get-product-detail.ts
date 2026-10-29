@@ -5,7 +5,11 @@ import { PimJournalReader } from "../../../journal/pim-journal-reader.js";
 import { isContentFact } from "../domain/content-facts.js";
 import { EditorialReader } from "../domain/ports/editorial-reader.js";
 import type { ProductEditorialView, ProductMediaRecord } from "../domain/ports/editorial-reader.js";
-import { ProductRepository, type ProductRecord } from "../domain/ports/product.repository.js";
+import {
+  ProductRepository,
+  type ProductRecord,
+  type VariantRecord,
+} from "../domain/ports/product.repository.js";
 import { ReadinessRepository } from "../domain/ports/readiness.repository.js";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { requireCategory } from "../../category/application/category-support.js";
@@ -15,8 +19,9 @@ import { DetachmentLineageReader } from "../domain/ports/detachment-lineage.read
 import { detachmentLineageOf, type ProductLineage } from "./detachment-lineage-view.js";
 
 /** Détail complet : le socle, sa couche éditoriale, ses visuels et sa signature. */
-export type ProductDetail = ProductRecord &
+export type ProductDetail = Omit<ProductRecord, "variants"> &
   AudienceView & {
+    readonly variants: readonly (VariantRecord & { readonly internalLabel: string })[];
     readonly editorial: ProductEditorialView | null;
     readonly media: readonly ProductMediaRecord[];
     /** `null` = personne ne s'est prononcé sur cette fiche. */
@@ -97,6 +102,12 @@ export class GetProductDetailHandler implements IQueryHandler<
     const authors = await this.staffAuthors.identify([readiness?.readyBy ?? null]);
     return {
       ...product.snapshot(),
+      // Le libellé RÉSOLU, jamais `null` : l'onglet n'a pas à connaître la règle
+      // de repli (`plan-identite-de-declinaison.md`, I3).
+      variants: product.snapshot().variants.map((variant) => ({
+        ...variant,
+        internalLabel: product.variantInternalLabel(variant.id),
+      })),
       ...audienceView(product, category.audience),
       editorial,
       media,

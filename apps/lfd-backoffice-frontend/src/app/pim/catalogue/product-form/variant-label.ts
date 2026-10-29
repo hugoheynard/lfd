@@ -1,5 +1,3 @@
-import { SOURCE_LOCALE } from '@lfd/pim-contracts';
-
 import type { Variant } from '../../data/models';
 
 /**
@@ -22,12 +20,12 @@ import type { Variant } from '../../data/models';
  * Le rang ne subsiste qu'en DERNIER recours : une fiche semée ou importée peut
  * porter un nom vide, et un onglet muet serait pire qu'un libellé générique.
  *
- * La langue est celle de la SOURCE : la barre est un repère de navigation, pas
- * un écran de traduction — celui-ci vit dans la section Identité, avec son
- * sélecteur de langue.
+ * Depuis le 2026-10-29, l'onglet lit le **libellé interne**, et plus le nom de
+ * boutique (`plan-identite-de-declinaison.md`, I1, I5) : celui-ci se saisit,
+ * avec ses langues, dans la carte « Identité de la déclinaison ».
  */
 export function variantTabLabel(variant: Variant): string {
-  const name = (variant.name[SOURCE_LOCALE] ?? '').trim();
+  const name = variant.internalLabel.trim();
   if (name !== '') {
     return name;
   }

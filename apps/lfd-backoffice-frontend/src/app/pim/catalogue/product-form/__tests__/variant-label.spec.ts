@@ -9,6 +9,7 @@ function variant(overrides: Partial<Variant>): Variant {
     id: 'var_1',
     sku: 'CHO-001-2',
     name: { fr: 'Boîte de 220 g' },
+    internalLabel: 'Boîte de 220 g',
     isDefault: false,
     isDiscontinued: false,
     position: 1,
@@ -34,15 +35,24 @@ describe('le libellé d’un onglet de déclinaison', () => {
     expect(variantTabLabel(variant({}))).toBe('Boîte de 220 g');
   });
 
+  /** L'onglet lit le libellé interne, jamais le nom de boutique (I5). */
+  it('montre le libellé interne quand il diffère du nom de boutique', () => {
+    expect(
+      variantTabLabel(
+        variant({ name: { fr: 'Coffret de florentins' }, internalLabel: 'Boîte atelier' }),
+      ),
+    ).toBe('Boîte atelier');
+  });
+
   /**
    * Le défaut n'est plus une exception : son nom part aux canaux comme les
    * autres, et le masquer derrière son rôle rendait invisible la seule
    * déclinaison qu'on ne pouvait déjà pas corriger. Le rôle se dit à côté.
    */
   it('montre aussi celui de la déclinaison par défaut', () => {
-    expect(variantTabLabel(variant({ isDefault: true, name: { fr: 'Gros florentin lait' } }))).toBe(
-      'Gros florentin lait',
-    );
+    expect(
+      variantTabLabel(variant({ isDefault: true, internalLabel: 'Gros florentin lait' })),
+    ).toBe('Gros florentin lait');
   });
 
   /**
@@ -51,10 +61,10 @@ describe('le libellé d’un onglet de déclinaison', () => {
    * affiché à partir de 1, comme la référence le suffixe.
    */
   it('retombe sur le rang quand le nom est vide', () => {
-    expect(variantTabLabel(variant({ name: { fr: '   ' }, position: 1 }))).toBe('Déclinaison 2');
+    expect(variantTabLabel(variant({ internalLabel: '   ', position: 1 }))).toBe('Déclinaison 2');
   });
 
   it('retombe sur « Défaut » quand le défaut n’a pas de nom', () => {
-    expect(variantTabLabel(variant({ isDefault: true, name: { fr: '' } }))).toBe('Défaut');
+    expect(variantTabLabel(variant({ isDefault: true, internalLabel: '' }))).toBe('Défaut');
   });
 });

@@ -8,6 +8,7 @@ import type { AllergenDeclaration } from "../value-objects/nutrition-declaration
 import type { ProPriceHt } from "../value-objects/pro-price-ht.js";
 import type { Sku } from "../value-objects/sku.value-object.js";
 import { SaleUnitFrozenError } from "../errors/sale-unit-errors.js";
+import { BlankVariantInternalLabelError } from "../errors/variant-label-errors.js";
 import {
   DetachedVariantNotRestorableError,
   DormantSheetWouldWakeError,
@@ -134,6 +135,13 @@ export interface VariantSnapshot {
    * n'ont pas à le nommer ; l'agrégat le rend toujours.
    */
   readonly detachedToProductId?: string | null | undefined;
+  /**
+   * Le **libellé interne** posé en propre (`plan-identite-de-declinaison.md`,
+   * I3) ; `null` = c'est le français du nom de boutique. Facultatif à la
+   * LECTURE, comme `detachedToProductId`, pour les instantanés de test écrits
+   * avant lui.
+   */
+  readonly internalLabel?: string | null | undefined;
   readonly position: number;
   /**
    * Cette déclinaison **suit les ALLERGÈNES de celle par défaut** — traces
@@ -267,6 +275,7 @@ export class Variant {
   private readonly identity: string;
   private readonly skuValue: string;
   private nameValue: LocalizedText;
+  private internalLabelValue: string | null;
   private readonly optionsValue: Readonly<Record<string, string>>;
   private defaultFlag: boolean;
   private discontinuedFlag: boolean;
@@ -297,6 +306,7 @@ export class Variant {
     this.identity = snapshot.id;
     this.skuValue = snapshot.sku;
     this.nameValue = snapshot.name;
+    this.internalLabelValue = snapshot.internalLabel ?? null;
     this.optionsValue = snapshot.options;
     this.defaultFlag = snapshot.isDefault;
     this.discontinuedFlag = snapshot.isDiscontinued;
@@ -336,6 +346,7 @@ export class Variant {
       id: input.id,
       sku: input.sku.value,
       name: input.name,
+      internalLabel: input.name.fr,
       options: {},
       isDefault: true,
       isDiscontinued: false,
@@ -383,6 +394,7 @@ export class Variant {
       id: input.id,
       sku: input.sku.value,
       name: input.name,
+      internalLabel: input.name.fr,
       options: input.options,
       isDefault: false,
       isDiscontinued: false,
@@ -436,6 +448,7 @@ export class Variant {
       id: input.id,
       sku: input.sku.value,
       name: input.name,
+      internalLabel: input.name.fr,
       isDefault: true,
       isDiscontinued: false,
       detachedToProductId: null,
@@ -581,7 +594,7 @@ export class Variant {
   }
 
   /**
-   * **Rebaptise l'article** — « Boîte de 220 g », pas le nom de la fiche.
+   * **Change le nom de BOUTIQUE de l'article** — « Boîte de 220 g », pas le nom de la fiche.
    *
    * Le nom était `readonly` depuis l'origine, et c'est exactement ce qui a rendu
    * la faute invisible : on le SAISISSAIT à la création, la base le gardait, et
@@ -592,8 +605,29 @@ export class Variant {
    * La référence, elle, reste immuable : elle est dictée au labo et voyage dans
    * les envois. Renommer n'est pas rebaptiser un article (`lint:sku-never-recycled`).
    */
-  rename(name: LocalizedText): void {
+  renameForShop(name: LocalizedText): void {
+    // Le libellé se FIGE au premier écart (§ 3) : tant qu'il n'est pas posé, il
+    // se lit sur le nom de boutique, et changer celui-ci renommerait l'onglet.
+    this.internalLabelValue ??= this.nameValue.fr;
     this.nameValue = name;
+  }
+
+  /**
+   * Le **libellé interne** — l'onglet du référentiel, jamais la boutique (I5).
+   * Le nom de boutique ne bouge pas : c'est lui que lisent le fil, le devis et
+   * l'atelier.
+   */
+  renameInternalLabel(label: string): void {
+    const trimmed = label.trim();
+    if (trimmed.length === 0) {
+      throw new BlankVariantInternalLabelError(this.skuValue);
+    }
+    this.internalLabelValue = trimmed;
+  }
+
+  /** Le libellé interne lu : le sien, sinon le français du nom de boutique. */
+  get internalLabel(): string {
+    return this.internalLabelValue ?? this.nameValue.fr;
   }
 
   /**
@@ -843,6 +877,7 @@ export class Variant {
       id: this.identity,
       sku: this.skuValue,
       name: this.nameValue,
+      internalLabel: this.internalLabelValue,
       options: this.optionsValue,
       isDefault: this.defaultFlag,
       isDiscontinued: this.discontinuedFlag,

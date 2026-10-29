@@ -151,6 +151,7 @@ function toVariant(variant: VariantView): Variant {
     id: variant.id,
     sku: variant.sku,
     name: variant.name,
+    internalLabel: variant.internalLabel,
     isDefault: variant.isDefault,
     isDiscontinued: variant.isDiscontinued,
     position: variant.position,
@@ -382,14 +383,23 @@ export class ProductHttpApi {
   }
 
   /**
-   * **Rebaptise une déclinaison.**
+   * **Rebaptise une déclinaison** — son libellé interne, l'onglet
+   * (`plan-identite-de-declinaison.md`, I5).
    *
-   * Le nom seul : la référence est immuable — elle est dictée au labo et sert de
+   * Le libellé seul : la référence est immuable — elle est dictée au labo et sert de
    * clé de rapprochement dans les envois — et les options décrivent l'article,
    * pas la façon de l'appeler.
    */
-  renameVariant(productId: string, variantId: string, name: LocalizedText): Promise<void> {
-    return this.put(`products/${productId}/variants/${variantId}/name`, { name });
+  renameVariant(productId: string, variantId: string, label: string): Promise<void> {
+    return this.put(`products/${productId}/variants/${variantId}/name`, { label });
+  }
+
+  /**
+   * **Le nom de boutique d'une déclinaison**, et ses langues — enregistré seul
+   * (`plan-identite-de-declinaison.md`, § 3).
+   */
+  setVariantShopName(productId: string, variantId: string, name: LocalizedText): Promise<void> {
+    return this.put(`products/${productId}/variants/${variantId}/shop-name`, { name });
   }
 
   /**

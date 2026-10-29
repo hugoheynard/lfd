@@ -570,6 +570,20 @@ export const REFERENTIAL_CATALOGUE_FACTS = {
     [variantRenamedV1],
   ),
   /**
+   * **Le libellé interne d'une déclinaison a changé** — l'onglet du
+   * référentiel, jamais la boutique (`plan-identite-de-declinaison.md`, I5).
+   * Fait distinct de `variant.renamed`, qui raconte depuis l'origine le nom de
+   * BOUTIQUE et le garde : l'historique ne mêle pas les deux.
+   */
+  "variant.internal_label_changed": fact(
+    payload({
+      subjectLabel: subjectLabel(),
+      variant: named("variant"),
+      before: z.string(),
+      after: z.string(),
+    }),
+  ),
+  /**
    * **Le prix pro HT pré-rempli depuis le ratio** (lot P, P5 de
    * `plan-catalogue-synchronise-par-audience.md`) — une ligne par déclinaison,
    * écrite seulement là où rien n'était saisi. `ratioBp` et `vatPercent` sont

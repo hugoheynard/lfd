@@ -1,0 +1,28 @@
+<!-- Le sélecteur ne fait basculer que le nom en boutique : c'est le seul champ
+     traduisible de la carte. -->
+<app-lang-switch
+  [(lang)]="name.locale"
+  [missing]="name.missing()"
+  [hint]="name.hint()"
+  ariaLabel="Langue du nom en boutique"
+/>
+
+<div class="stack">
+  <fold-input
+    [label]="name.label()"
+    [hint]="hint()"
+    [required]="name.locale() === sourceLocale"
+    [value]="name.value()"
+    (valueChange)="name.set($event)"
+  />
+  <div>
+    <button
+      foldButton
+      type="button"
+      [disabled]="busy() || !changed() || !name.filled()"
+      (click)="save()"
+    >
+      Enregistrer le nom en boutique
+    </button>
+  </div>
+</div>

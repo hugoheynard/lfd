@@ -93,7 +93,10 @@ export const EMPTY_NUTRITION: NutritionValues = {
 export interface Variant {
   id: string;
   sku: string;
+  /** Le nom de BOUTIQUE, localisé : celui que lisent la vignette, le devis, l'atelier. */
   name: LocalizedText;
+  /** Le libellé INTERNE — l'onglet ; ne part jamais en boutique (`plan-identite-de-declinaison.md`). */
+  internalLabel: string;
   isDefault: boolean;
   isDiscontinued: boolean;
   /** Le rang, à partir de 0 — c'est lui que la référence suffixe (`-1`, `-2`). */

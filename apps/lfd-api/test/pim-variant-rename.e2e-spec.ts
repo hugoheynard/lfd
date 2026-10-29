@@ -1,6 +1,12 @@
 /**
  * E2E du **renommage d'une déclinaison** — sur un vrai Postgres.
  *
+ * Depuis le 2026-10-29 (`documentation/catalogue/plan-identite-de-declinaison.md`,
+ * I5), le crayon renomme le **libellé interne** (`{ label }`), et le nom de
+ * boutique ne bouge pas ; il se change par `/shop-name`
+ * (`pim-variant-identity.e2e-spec.ts`). Les intentions ci-dessous sont les
+ * mêmes qu'avant, relues sur `internalLabel`.
+ *
  * Le verbe manquait entièrement, et son absence était invisible : la création
  * DEMANDE un nom, la base le gardait, `projection.ts` le poussait aux canaux —
  * et aucun écran ne le rendait ni ne permettait de le corriger. Une faute de
@@ -50,6 +56,7 @@ interface Detail {
     readonly sku: string;
     readonly isDefault: boolean;
     readonly name: Record<string, string>;
+    readonly internalLabel: string;
   }[];
 }
 
@@ -94,11 +101,13 @@ describe("Renommer une déclinaison", () => {
 
     const renamed = await staff()
       .put(`${PRODUCTS}/${id}/variants/${variantId}/name`)
-      .send({ name: { fr: "Boîte de 250 g" } });
+      .send({ label: "Boîte de 250 g" });
     expect(renamed.status).toBe(200);
 
     const variant = (await variantsOf(id)).find((entry) => entry.id === variantId);
-    expect(variant?.name["fr"]).toBe("Boîte de 250 g");
+    expect(variant?.internalLabel).toBe("Boîte de 250 g");
+    // Le crayon ne touche pas le nom de boutique (I5).
+    expect(variant?.name["fr"]).toBe("Boîte de 220 g");
   });
 
   /**
@@ -118,7 +127,7 @@ describe("Renommer une déclinaison", () => {
 
     await staff()
       .put(`${PRODUCTS}/${id}/variants/${variantId}/name`)
-      .send({ name: { fr: "Tout autre chose" } });
+      .send({ label: "Tout autre chose" });
 
     expect((await variantsOf(id)).find((entry) => entry.id === variantId)?.sku).toBe(before);
   });
@@ -132,14 +141,14 @@ describe("Renommer une déclinaison", () => {
   it("renomme aussi la déclinaison par défaut", async () => {
     const id = await aProduct();
     const variant = (await variantsOf(id)).find((entry) => entry.isDefault);
-    expect(variant?.name["fr"]).toBe("Croissant");
+    expect(variant?.internalLabel).toBe("Croissant");
 
     const renamed = await staff()
       .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/name`)
-      .send({ name: { fr: "Croissant au beurre" } });
+      .send({ label: "Croissant au beurre" });
     expect(renamed.status).toBe(200);
 
-    expect((await variantsOf(id)).find((entry) => entry.isDefault)?.name["fr"]).toBe(
+    expect((await variantsOf(id)).find((entry) => entry.isDefault)?.internalLabel).toBe(
       "Croissant au beurre",
     );
   });
@@ -156,10 +165,10 @@ describe("Renommer une déclinaison", () => {
 
     const response = await staff()
       .put(`${PRODUCTS}/${mine}/variants/${stranger?.id ?? ""}/name`)
-      .send({ name: { fr: "Volé" } });
+      .send({ label: "Volé" });
 
     expect(response.status).toBe(404);
-    expect((await variantsOf(other)).find((entry) => entry.isDefault)?.name["fr"]).toBe(
+    expect((await variantsOf(other)).find((entry) => entry.isDefault)?.internalLabel).toBe(
       "Croissant B",
     );
   });
@@ -170,7 +179,7 @@ describe("Renommer une déclinaison", () => {
 
     const response = await staff()
       .put(`${PRODUCTS}/${id}/variants/${variant?.id ?? ""}/name`)
-      .send({ name: { fr: "   " } });
+      .send({ label: "   " });
 
     expect(response.status).toBe(400);
   });

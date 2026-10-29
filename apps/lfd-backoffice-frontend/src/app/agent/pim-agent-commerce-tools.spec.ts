@@ -32,6 +32,7 @@ function variant(id: string, overrides: Partial<Variant>): Variant {
     id,
     sku: `SKU-${id}`,
     name: { fr: id },
+    internalLabel: id,
     isDefault: false,
     isDiscontinued: false,
     position: 1,

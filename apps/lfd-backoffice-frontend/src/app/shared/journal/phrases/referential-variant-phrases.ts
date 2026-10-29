@@ -117,6 +117,38 @@ function variantAdded(fact: PhraseFact): Said {
  * déclinaison citée (`variant`, sous son nom d'après) n'apprend rien de plus.
  * Sur une ligne d'avant le lot B, `variantId` reste au détail.
  */
+/**
+ * Le **libellé interne** d'une déclinaison — l'onglet du référentiel, jamais
+ * la boutique (`plan-identite-de-declinaison.md`, I5). La phrase le dit : un
+ * « renommé » nu se lirait comme un changement de vignette.
+ */
+function variantInternalLabelChanged(fact: PhraseFact): Said {
+  const p = fact.payload;
+  const before = optional(p['before']);
+  const after = optional(p['after']);
+  const product = [text(' '), ...theSubject(fact, OF_PRODUCT)];
+  if (before === null || after === null) {
+    return byActor(
+      fact,
+      [text('a changé le libellé interne d’une déclinaison'), ...product],
+      ['subjectLabel'],
+    );
+  }
+  return byActor(
+    fact,
+    [
+      text('a changé le libellé interne de la déclinaison « '),
+      name(before),
+      text(' »'),
+      ...product,
+      text(' en « '),
+      name(after),
+      text(' »'),
+    ],
+    ['subjectLabel', 'variant', 'before', 'after'],
+  );
+}
+
 function variantRenamed(fact: PhraseFact): Said {
   const p = fact.payload;
   const change = recordOf(recordOf(p['changes'])?.['name']);
@@ -283,6 +315,7 @@ export const REFERENTIAL_VARIANT_PHRASES = {
   'variant.added': variantAdded,
   'variant.aligned': (fact) => variantAligned(fact, fact.payload['aspect'], ['aspect']),
   'variant.renamed': variantRenamed,
+  'variant.internal_label_changed': variantInternalLabelChanged,
   // Retiré le 2026-09-03 au profit de `variant.aligned` : c'était lui, sur la
   // seule fiche réglementaire.
   'variant.regulatory_aligned': (fact) => variantAligned(fact, 'regulatory', []),

@@ -276,6 +276,12 @@ export const PIM_EVENTS = {
    */
   variantRenamed: "variant.renamed",
   /**
+   * Le **libellé interne** d'une déclinaison — l'onglet, pas la boutique
+   * (`plan-identite-de-declinaison.md`, § 3). `variant.renamed` garde son sens
+   * d'origine : le nom de boutique.
+   */
+  variantInternalLabelChanged: "variant.internal_label_changed",
+  /**
    * Le prix pro HT d'une déclinaison **pré-rempli depuis le ratio** (lot P,
    * P5) — un fait par déclinaison écrite. Nommé `variant.*` comme le plan le
    * nomme : il échappe donc à `attribution.ts` et à `content-facts.ts`, qui ne

@@ -37,6 +37,7 @@ const DEFAULT_VARIANT: Variant = {
   id: 'var_1',
   sku: 'CHO-001-1',
   name: { fr: 'Gros florentin lait' },
+  internalLabel: 'Gros florentin lait',
   isDefault: true,
   isDiscontinued: false,
   position: 0,

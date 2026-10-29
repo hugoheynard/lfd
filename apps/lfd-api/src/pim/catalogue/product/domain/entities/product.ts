@@ -546,10 +546,21 @@ export class Product {
    *
    * Le passage par l'agrégat n'est pas de la cérémonie : c'est lui qui refuse
    * de renommer la déclinaison d'une AUTRE fiche, et une requête forgée sur le
-   * seul identifiant de déclinaison n'a donc aucun effet ici.
+   * seul identifiant de déclinaison n'a donc aucun effet ici. Ici, le nom de
+   * BOUTIQUE — qui fige le libellé au premier écart.
    */
-  renameVariant(variantId: string, name: LocalizedText): void {
-    this.variant(variantId).rename(name);
+  renameVariantForShop(variantId: string, name: LocalizedText): void {
+    this.variant(variantId).renameForShop(name);
+  }
+
+  /** Le libellé interne LU d'une déclinaison — le sien, sinon son nom de boutique en français. */
+  variantInternalLabel(variantId: string): string {
+    return this.variant(variantId).internalLabel;
+  }
+
+  /** Le libellé INTERNE d'une déclinaison — le nom de boutique ne bouge pas. */
+  renameVariantInternalLabel(variantId: string, label: string): void {
+    this.variant(variantId).renameInternalLabel(label);
   }
 
   /** Tarif et poids d'une déclinaison **du produit**. */

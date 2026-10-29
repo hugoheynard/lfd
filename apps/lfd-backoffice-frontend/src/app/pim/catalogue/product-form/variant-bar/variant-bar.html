@@ -33,7 +33,7 @@
           @if (tab.selected) {
             <fold-button-icon
               icon="edit"
-              tooltip="Renommer la déclinaison"
+              tooltip="Renommer la déclinaison (usage interne)"
               [disabled]="store.busy()"
               (clicked)="rename(tab)"
             />
@@ -63,6 +63,13 @@
       </button>
     }
   </nav>
+
+  <!-- Le crayon ne renomme que l'onglet (plan-identite-de-declinaison.md, I6) :
+       sans cette phrase, on croirait corriger la vignette de la boutique. -->
+  <fold-callout variant="info">
+    Le nom de cette déclinaison est à usage interne. Le nom affiché en boutique se modifie dans
+    Identité de cette déclinaison.
+  </fold-callout>
 
   <!-- Sous la barre, ce qui ne retire rien : la filiation et « en faire la
        déclinaison par défaut ». Archiver, détacher et désarchiver sont dans

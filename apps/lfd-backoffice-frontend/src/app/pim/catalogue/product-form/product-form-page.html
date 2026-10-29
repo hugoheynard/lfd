@@ -227,6 +227,27 @@
           <!-- Elles suivent donc aussi le filtre de leur section d'ancrage —
                sans lui être rattachées deux fois : c'est la position dans la
                boucle qui les range, pas une famille recopiée. -->
+          @if (section.key === 'identite' && store.isEdit()) {
+            <!-- IDENTITÉ DE LA DÉCLINAISON — son nom en boutique et ses langues
+                 (plan-identite-de-declinaison.md, § 3). Ouverte sur TOUTE
+                 déclinaison, défaut compris ; seule, sur sa route, hors de
+                 « Tout enregistrer » : la carte Identité, elle, est à la fiche. -->
+            <fold-card>
+              <fold-page-section
+                title="Identité de la déclinaison"
+                separator
+                collapsible
+                [open]="sectionOpen('identite-declinaison')()"
+                (openChange)="setSectionOpen('identite-declinaison', $event)"
+              >
+                <span sectionSubtitle>
+                  Le nom sous lequel cette déclinaison est vendue, dans chaque langue. Enregistré
+                  tout de suite, à part du reste de la fiche.
+                </span>
+                <app-variant-identity-form />
+              </fold-page-section>
+            </fold-card>
+          }
           @if (section.key === 'tarif') {
             <!-- OPTIONS DU COMMERCE — la quantité minimale de la déclinaison
              ouverte, par clientèle seulement (plan-quantite-minimale.md,

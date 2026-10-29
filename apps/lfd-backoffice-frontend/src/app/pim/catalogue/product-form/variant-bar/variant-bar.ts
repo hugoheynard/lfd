@@ -3,6 +3,7 @@ import {
   FoldBadgeComponent,
   FoldButtonComponent,
   FoldButtonIconComponent,
+  FoldCalloutComponent,
   FoldInputComponent,
 } from 'fold-ng';
 
@@ -36,6 +37,7 @@ import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
     FoldBadgeComponent,
     FoldButtonComponent,
     FoldButtonIconComponent,
+    FoldCalloutComponent,
     FoldInputComponent,
     VariantLifecycle,
   ],
@@ -61,7 +63,7 @@ export class VariantBar {
   }
 
   /**
-   * Ouvre le renommage sur une déclinaison — **pré-rempli avec son NOM**, pas
+   * Ouvre le renommage sur une déclinaison — **pré-rempli avec son LIBELLÉ**, pas
    * avec le libellé de l'onglet : celui-ci peut être un repli (« Déclinaison
    * 2 »), et l'enregistrer ferait entrer le repli en base comme un vrai nom.
    */

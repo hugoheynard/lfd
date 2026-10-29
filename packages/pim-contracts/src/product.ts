@@ -241,7 +241,13 @@ export interface VariantNutritionView {
 export interface VariantView {
   readonly id: string;
   readonly sku: string;
+  /** Le **nom de boutique** : celui qui part sur le fil, au devis, à la facture. */
   readonly name: LocalizedText;
+  /**
+   * Le **libellé interne** — l'onglet du référentiel. Égal au français du nom
+   * de boutique tant qu'on ne les a pas distingués ; ne part jamais sur le fil.
+   */
+  readonly internalLabel: string;
   readonly options: Readonly<Record<string, string>>;
   readonly isDefault: boolean;
   readonly isDiscontinued: boolean;
@@ -637,17 +643,30 @@ export type SetProductVatPayload = z.infer<typeof setProductVatPayloadSchema>;
  * rentre pas — un poids, un conditionnement, un affinage.
  */
 /**
- * **Rebaptiser une déclinaison** — son nom seul.
+ * **Rebaptiser une déclinaison** — son libellé seul.
  *
  * Ni la référence ni les options ne voyagent avec : le SKU est immuable par
  * construction (il est dicté au labo et part dans les envois), et les options
  * décrivent ce qui distingue l'article, pas comment on l'appelle. Un `PUT` qui
  * accepterait les trois ferait d'un renommage un remplacement.
+ *
+ * Le crayon de la barre des déclinaisons : il renomme le **libellé interne**
+ * seulement (`plan-identite-de-declinaison.md`, I5). Un texte, pas un
+ * `LocalizedText` : le libellé ne se traduit pas, il ne part pas en boutique.
  */
 export const renameProductVariantPayloadSchema = z.object({
-  name: localizedTextSchema,
+  label: z.string(),
 });
 export type RenameProductVariantPayload = z.infer<typeof renameProductVariantPayloadSchema>;
+
+/**
+ * Le **nom de boutique** d'une déclinaison et ses langues — carte « Identité
+ * de la déclinaison », enregistrée seule (I1, I4 révisée au § 3).
+ */
+export const setVariantShopNamePayloadSchema = z.object({
+  name: localizedTextSchema,
+});
+export type SetVariantShopNamePayload = z.infer<typeof setVariantShopNamePayloadSchema>;
 
 export const addProductVariantPayloadSchema = z.object({
   name: localizedTextSchema,

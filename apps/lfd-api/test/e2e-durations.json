@@ -349,6 +349,7 @@
   "test/pim-sale-unit.e2e-spec.ts": 12377,
   "test/pim-sales-contexts.e2e-spec.ts": 9442,
   "test/pim-variant-lifecycle.e2e-spec.ts": 21004,
+  "test/pim-variant-identity.e2e-spec.ts": 10798,
   "test/pim-variant-rename.e2e-spec.ts": 3681,
   "test/pim-vat-rates.e2e-spec.ts": 6846,
   "test/pim-wall.e2e-spec.ts": 5544,

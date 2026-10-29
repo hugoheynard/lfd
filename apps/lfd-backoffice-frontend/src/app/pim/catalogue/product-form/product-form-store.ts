@@ -1875,8 +1875,8 @@ export class ProductFormStore {
       .map((variant) => ({
         id: variant.id,
         label: variantTabLabel(variant),
-        /** Le NOM brut, pour le formulaire de renommage — le libellé peut être un repli. */
-        name: variant.name[SOURCE_LOCALE] ?? '',
+        /** Le LIBELLÉ brut, pour le formulaire de renommage — celui de l'onglet peut être un repli. */
+        name: variant.internalLabel,
         sku: variant.sku,
         isDefault: variant.isDefault,
         selected: variant.id === this.variantId(),
@@ -2042,9 +2042,10 @@ export class ProductFormStore {
    * **Rebaptise une déclinaison**, celle qu'on désigne — pas forcément celle
    * qu'on édite.
    *
-   * Relecture complète après coup, comme pour l'ajout : le nom part dans les
-   * envois vers les canaux, et peindre l'onglet d'avance ferait croire à un
-   * enregistrement que le serveur peut encore refuser.
+   * Son libellé INTERNE seulement (`plan-identite-de-declinaison.md`, I5) : le
+   * nom de boutique se change dans la carte « Identité de la déclinaison ».
+   * Relecture complète après coup, comme pour l'ajout : peindre l'onglet
+   * d'avance ferait croire à un enregistrement que le serveur peut refuser.
    */
   async renameVariant(variantId: string, name: string): Promise<void> {
     const id = this.productId();
@@ -2055,13 +2056,26 @@ export class ProductFormStore {
     this.busy.set(true);
     this.error.set(null);
     try {
-      await this.products.renameVariant(id, variantId, { [SOURCE_LOCALE]: trimmed });
+      await this.products.renameVariant(id, variantId, trimmed);
       await this.hydrate(id);
     } catch (caught) {
       this.error.set(messageOf(caught));
     } finally {
       this.busy.set(false);
     }
+  }
+
+  /**
+   * **Le nom de boutique enregistré** par la carte « Identité de la
+   * déclinaison » (`plan-identite-de-declinaison.md`, § 3) — posé sur la
+   * déclinaison SANS relire la fiche : une relecture effacerait les brouillons
+   * des autres cartes, que cette carte n'enregistre pas. L'onglet ne change pas,
+   * il lit le libellé interne.
+   */
+  acceptVariantShopName(variantId: string, name: LocalizedText): void {
+    this.variantsValue.update((variants) =>
+      variants.map((variant) => (variant.id === variantId ? { ...variant, name } : variant)),
+    );
   }
 
   /** **Archive une déclinaison** — puis relit : l'onglet disparaît, la liste à part la montre. */

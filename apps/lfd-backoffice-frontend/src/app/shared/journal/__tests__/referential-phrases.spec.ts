@@ -333,6 +333,20 @@ describe('les déclinaisons', () => {
     expect(sentence(before)).toBe('Colette Martin a nommé « 6 parts » une déclinaison d’une fiche');
     expect(labels(before)).toEqual(['Déclinaison', 'Nom']);
   });
+
+  it('dit le libellé interne comme tel — pas comme un renommage en boutique', () => {
+    const fact = product('variant.internal_label_changed', {
+      subjectLabel: TART,
+      variant: { id: 'var_1', name: 'Tarte atelier' },
+      before: '6 parts',
+      after: 'Tarte atelier',
+    });
+
+    expect(sentence(fact)).toBe(
+      'Colette Martin a changé le libellé interne de la déclinaison « 6 parts » de « Tarte citron » en « Tarte atelier »',
+    );
+    expect(render(fact).detail).toEqual([]);
+  });
 });
 
 describe('les familles', () => {
