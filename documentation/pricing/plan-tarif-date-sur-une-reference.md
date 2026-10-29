@@ -298,3 +298,16 @@ absent = « maintenant » (sinon tout avenant saisi « aujourd'hui » est refus�
 faits `amended` sont irréversibles après merge ; `apply-price-template` ne fait
 ni `runningFor` ni le contrôle « a facturé » (dette existante, ne pas la dire
 couverte).
+
+## 12. Décisions de Hugo (2026-10-29)
+
+- **Q1 — non** : un avenant ne fait pas qu'ajouter. Hugo : « on peut imaginer
+  qu'il peut y avoir une fin à un prix spécial ». Un avenant peut aussi **mettre
+  fin, à une date, à une ligne** (de la grille ou d'un avenant antérieur) : la
+  ligne cesse de s'appliquer à partir de cette date, sans réécrire ni la grille
+  ni l'avenant d'origine. Changer un prix = un avenant qui termine l'ancienne
+  ligne et en ouvre une nouvelle à la même date. À intégrer au modèle (§ 1–3)
+  avant de bâtir : `lineFor` à une date doit tenir compte des fins.
+- **Q2 — oui** : jamais rétroactif (`validFrom` absent = maintenant, § 11).
+- **Q3 — oui** : un avenant est suspendu avec sa mercuriale en pause.
+- Ordre : livré **après** la bascule `bascule-defaut` (§ 11).
