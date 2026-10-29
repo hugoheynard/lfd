@@ -66,7 +66,11 @@ BOOLEAN NOT NULL DEFAULT false`, `CHECK (quantity >= 2)`,
 - `ShopItemView.minQuantity?: number | null` : le minimum **déjà résolu** pour
   l'audience et le contexte de qui regarde.
 
-### M3 — la carte « Options du commerce » (back-office)
+### M3 — la carte « Options du commerce » (back-office) — ✅ bâti le 2026-10-29
+
+Trois champs en deux groupes, Particuliers (À emporter, Sur place) et
+Professionnels (retrait et livraison) ; le contexte B2B se reconnaît à sa clé
+(`PRO_CONTEXT_KEY`, déjà l'exception du prix pro) faute d'audience sur le contexte.
 
 - Troisième carte du commerce, après Tarif & TVA : une grille audience ×
   contexte par déclinaison (celle de la barre de déclinaisons), avec la case « suit le défaut » sur les autres ; enregistrement immédiat sur sa route.

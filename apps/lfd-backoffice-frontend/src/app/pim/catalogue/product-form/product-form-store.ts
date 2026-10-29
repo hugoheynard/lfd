@@ -177,7 +177,7 @@ export interface ProPricing {
  * plutôt qu'une chaîne au fil du code — le jour où elle ne désigne plus rien,
  * il n'y a qu'un endroit à corriger.
  */
-const PRO_CONTEXT_KEY = 'b2b';
+export const PRO_CONTEXT_KEY = 'b2b';
 
 /**
  * Une ligne de l'héritage : un contexte de vente, ce qu'il dessert, son taux.
@@ -1628,8 +1628,10 @@ export class ProductFormStore {
    *
    * Ni les brouillons des autres articles, ni les lignes de base : une saisie en
    * cours ailleurs n'a pas à disparaître parce qu'on vient d'enregistrer ici.
+   * Publique : la carte de quantité minimale, qui écrit sur sa propre route,
+   * relit par là.
    */
-  private async reloadVariants(): Promise<void> {
+  async reloadVariants(): Promise<void> {
     const detail = await this.products.getDetail(this.productId());
     if (detail !== null) {
       this.variantsValue.set(detail.product.variants);

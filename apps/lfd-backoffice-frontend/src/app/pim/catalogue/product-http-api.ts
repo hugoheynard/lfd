@@ -12,6 +12,7 @@ import type {
   VariantView,
   LocalizedText,
   OperationAudience,
+  SetVariantMinQuantitiesPayload,
   SetProductAudiencePayload,
 } from '@lfd/pim-contracts';
 import { SOURCE_LOCALE, type VariantAspect } from '@lfd/pim-contracts';
@@ -161,6 +162,8 @@ function toVariant(variant: VariantView): Variant {
     regulatoryFollowsDefault: variant.regulatoryFollowsDefault,
     nutritionFollowsDefault: variant.nutritionFollowsDefault,
     pricingFollowsDefault: variant.pricingFollowsDefault,
+    minQuantities: variant.minQuantities,
+    minQuantityFollowsDefault: variant.minQuantityFollowsDefault,
     // Les deux moitiés de la déclaration viennent d'UNE ligne : `allergenSheet`
     // absent = personne ne s'est prononcé, et il n'y a alors pas non plus de
     // traces. Les lire séparément rouvrirait la divergence que la séparation
@@ -548,6 +551,19 @@ export class ProductHttpApi {
   async setAudience(id: string, audience: OperationAudience | null): Promise<void> {
     const payload: SetProductAudiencePayload = { audience };
     await this.put(`products/${id}/audience`, payload);
+  }
+
+  /**
+   * Pose la quantité minimale d'une déclinaison — sa grille, ou `"follow"`
+   * pour suivre le défaut. Sur sa route, hors de « Tout enregistrer ».
+   */
+  async setVariantMinQuantities(
+    id: string,
+    variantId: string,
+    minQuantities: SetVariantMinQuantitiesPayload['minQuantities'],
+  ): Promise<void> {
+    const payload: SetVariantMinQuantitiesPayload = { minQuantities };
+    await this.put(`products/${id}/variants/${variantId}/min-quantities`, payload);
   }
 
   private async put(path: string, body: unknown): Promise<void> {

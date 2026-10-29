@@ -1,0 +1,15 @@
+.mq {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.mq-actions {
+  display: flex;
+  justify-content: flex-end;
+}
+
+.mq-note {
+  margin: 0;
+  color: var(--fold-color-text-secondary);
+}

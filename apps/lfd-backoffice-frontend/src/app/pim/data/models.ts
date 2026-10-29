@@ -18,7 +18,12 @@
  * utilise — `@lfd/pim-contracts` tire zod, qui n'a rien à faire dans le bundle
  * initial.
  */
-import type { LocalizedText, OperationAudience, SaleUnit } from '@lfd/pim-contracts';
+import type {
+  LocalizedText,
+  OperationAudience,
+  SaleUnit,
+  VariantMinQuantities,
+} from '@lfd/pim-contracts';
 
 export type { Locale, LocalizedText, TranslatedLocale } from '@lfd/pim-contracts';
 
@@ -135,6 +140,15 @@ export interface Variant {
    * du défaut. C'est ce drapeau, et lui seul, qui dit d'où ils viennent.
    */
   pricingFollowsDefault: boolean;
+  /**
+   * La quantité minimale d'achat, en pièces, par audience et par clé de
+   * contexte (`plan-quantite-minimale.md`). **Résolue** : une déclinaison qui
+   * suit le défaut porte la grille du défaut, une déclinaison au poids une
+   * grille vide.
+   */
+  minQuantities: VariantMinQuantities;
+  /** Suit-elle la quantité minimale du défaut ? Toujours `false` sur le défaut. */
+  minQuantityFollowsDefault: boolean;
   /**
    * `null` = fiche non renseignée ; `[]` = « aucun allergène » déclaré.
    *

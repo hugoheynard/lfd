@@ -38,6 +38,7 @@ import { PricingForm } from './form-sections/pricing/pricing-form';
 import { OperationOnlyForm } from './form-sections/operation-only/operation-only-form';
 import { ColdRequirementForm } from './form-sections/cold-requirement/cold-requirement-form';
 import { AudienceForm } from './form-sections/audience/audience-form';
+import { MinQuantitiesForm } from './form-sections/min-quantities/min-quantities-form';
 import { OrderLimitForm } from './form-sections/order-limit/order-limit-form';
 import { IngredientsForm } from './form-sections/ingredients/ingredients-form';
 import { AllergensForm } from './form-sections/allergens/allergens-form';
@@ -129,6 +130,7 @@ interface PageSection {
     PricingForm,
     OperationOnlyForm,
     AudienceForm,
+    MinQuantitiesForm,
     ColdRequirementForm,
     OrderLimitForm,
     AllergensForm,

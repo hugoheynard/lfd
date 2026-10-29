@@ -49,6 +49,8 @@ function variant(over: Partial<Variant> = {}): Variant {
     regulatoryFollowsDefault: false,
     nutritionFollowsDefault: false,
     pricingFollowsDefault: false,
+    minQuantities: { pro: {}, public: {} },
+    minQuantityFollowsDefault: false,
     allergens: ['AM'],
     mayContain: [],
     nutrition: EMPTY_NUTRITION,

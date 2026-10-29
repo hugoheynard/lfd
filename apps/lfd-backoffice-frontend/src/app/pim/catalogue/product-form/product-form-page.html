@@ -224,6 +224,27 @@
                sans lui être rattachées deux fois : c'est la position dans la
                boucle qui les range, pas une famille recopiée. -->
           @if (section.key === 'tarif') {
+            <!-- OPTIONS DU COMMERCE — la quantité minimale de la déclinaison
+             ouverte, par clientèle et par contexte (plan-quantite-minimale.md,
+             M3). Juste après le tarif : on dit à quel prix, puis à partir de
+             combien. Seule, sur sa route, hors de « Tout enregistrer ». -->
+            @if (store.isEdit()) {
+              <fold-card>
+                <fold-page-section
+                  title="Options du commerce"
+                  separator
+                  collapsible
+                  [open]="sectionOpen('options-commerce')()"
+                  (openChange)="setSectionOpen('options-commerce', $event)"
+                >
+                  <span sectionSubtitle>
+                    La quantité minimale d'achat de cette déclinaison, en pièces, par clientèle et
+                    par contexte de vente. Une case vide ne pose aucun minimum.
+                  </span>
+                  <app-min-quantities-form />
+                </fold-page-section>
+              </fold-card>
+            }
             <!-- LIMITE DE COMMANDE — sa propre carte, et pas un bloc sous le tarif.
              « Combien ça coûte » et « jusqu'à quand on en prend » sont deux
              sujets : le premier est une décision commerciale, le second une
