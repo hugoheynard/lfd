@@ -1,4 +1,7 @@
 :host {
+  /* Une barre se touche, elle ne se sélectionne pas (Hugo, 2026-10-29). */
+  user-select: none;
+  -webkit-user-select: none;
   min-width: 0;
 }
 

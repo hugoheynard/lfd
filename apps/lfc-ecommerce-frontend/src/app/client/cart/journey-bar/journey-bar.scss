@@ -1,5 +1,8 @@
 /* Collée au bas du flux, comme dans la boutique (`CartBar` porte le sticky). */
 :host {
+  /* Une barre se touche, elle ne se sélectionne pas (Hugo, 2026-10-29). */
+  user-select: none;
+  -webkit-user-select: none;
   position: sticky;
   bottom: 0;
   z-index: 4;
