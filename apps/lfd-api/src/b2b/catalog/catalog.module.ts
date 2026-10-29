@@ -64,6 +64,8 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
 import { PrismaCatalogPricePerKgReader } from "./infrastructure/prisma-catalog-price-per-kg.reader.js";
 import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
+import { SaleSkuAliasReader } from "./domain/ports/sale-sku-alias.reader.js";
+import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias.reader.js";
 
 /**
  * **Le catalogue de la plateforme** : ce que le PIM pousse, plus ce qu'on décide
@@ -173,6 +175,9 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     // Ce qui fige l'unité de vente d'une déclinaison : le port est au
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
+    // Les anciennes références de vente (`plan-defaut-sous-sa-reference.md`,
+    // L1) : tout regroupement par article les lit, table vide jusqu'au L3.
+    { provide: SaleSkuAliasReader, useClass: PrismaSaleSkuAliasReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -198,6 +203,9 @@ import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-ord
     SaleOperations,
     ArticleSaleUnits,
     PrismaSaleReferenceUsage,
+    // Pour les regroupements par article de la commande, des alertes et des
+    // recommandations : une ancienne référence se lit comme sa cible.
+    SaleSkuAliasReader,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider

@@ -9,14 +9,15 @@ import {
   CatalogReader,
   type ResolvedCatalogItem,
 } from "../../catalog/domain/ports/catalog.reader.js";
+import { shopSkuOf } from "../../catalog/domain/shop-sku.js";
 import { SuggestionChoicesReader } from "../domain/ports/suggestion-choices.reader.js";
 import { SuggestionFamilyReader } from "../domain/ports/suggestion-family.reader.js";
 
 /**
  * Le catalogue SERVI, aux deux audiences, réduit à l'unité par défaut de
- * chaque produit — sous le SKU du PRODUIT, celui que la boutique vend
- * (`CatalogBackedProductCatalog`). Un article servi aux deux n'y paraît
- * qu'une fois.
+ * chaque produit — sous son SKU de VENTE (`shopSkuOf`, la seule règle :
+ * celui que la boutique vend, `plan-defaut-sous-sa-reference.md`, § 3). Un
+ * article servi aux deux n'y paraît qu'une fois.
  */
 async function servedDefaults(catalog: CatalogReader): Promise<readonly ResolvedCatalogItem[]> {
   const [pro, publicItems] = await Promise.all([
@@ -25,8 +26,8 @@ async function servedDefaults(catalog: CatalogReader): Promise<readonly Resolved
   ]);
   const byProduct = new Map<string, ResolvedCatalogItem>();
   for (const item of [...pro, ...publicItems]) {
-    if (item.isDefault && !byProduct.has(item.productSku)) {
-      byProduct.set(item.productSku, item);
+    if (item.isDefault && !byProduct.has(shopSkuOf(item))) {
+      byProduct.set(shopSkuOf(item), item);
     }
   }
   return [...byProduct.values()];
@@ -42,7 +43,7 @@ export class CatalogSuggestionChoicesReader extends SuggestionChoicesReader {
   async choices(): Promise<Omit<StaffSuggestionChoicesView, "sites">> {
     const items = await servedDefaults(this.catalog);
     const articles: StaffSuggestionArticleChoice[] = items
-      .map((item) => ({ sku: item.productSku, name: item.name, familyId: item.family.id }))
+      .map((item) => ({ sku: shopSkuOf(item), name: item.name, familyId: item.family.id }))
       .sort((left, right) => left.name.localeCompare(right.name, "fr"));
     const families = new Map<string, StaffSuggestionFamilyChoice & { readonly position: number }>();
     for (const item of items) {

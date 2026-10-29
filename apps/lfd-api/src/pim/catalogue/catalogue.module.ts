@@ -49,6 +49,8 @@ import { DiscontinueProductVariantHandler } from "./product/application/disconti
 import { DetachProductVariantHandler } from "./product/application/detach-product-variant.js";
 import { RestoreProductVariantHandler } from "./product/application/restore-product-variant.js";
 import { MakeVariantDefaultHandler } from "./product/application/make-variant-default.js";
+import { DefaultVariantChangeGate } from "./product/domain/ports/default-variant-change-gate.js";
+import { DefaultVariantChangeClosedUntilSwitch } from "./product/domain/services/default-variant-change-closed.js";
 import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
 import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -197,6 +199,9 @@ import {
     DetachProductVariantHandler,
     RestoreProductVariantHandler,
     MakeVariantDefaultHandler,
+    // Fermé jusqu'à la bascule de la référence du défaut
+    // (`plan-defaut-sous-sa-reference.md`, § 10, D-b) ; le L3 rouvre.
+    { provide: DefaultVariantChangeGate, useClass: DefaultVariantChangeClosedUntilSwitch },
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,

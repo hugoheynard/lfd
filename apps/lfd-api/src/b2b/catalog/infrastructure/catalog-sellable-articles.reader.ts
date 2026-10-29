@@ -6,6 +6,7 @@ import {
 } from "../../../production/channels/commerce/index.js";
 import { compareFamilies } from "../domain/catalog-family.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
  * **Les articles vendables, pour les raccourcis du fournil** (plan
@@ -14,7 +15,9 @@ import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog
  *
  * Le fournil fabrique pour les pros ET pour la vitrine : on lit les deux
  * audiences, et un produit vendu aux deux ne paraît qu'une fois, sous le SKU
- * PRODUIT et son unité par défaut — la clé des lignes de la fiche d'atelier.
+ * de VENTE de son défaut (`shopSkuOf`, la seule règle — le SKU produit tant
+ * que la bascule de `plan-defaut-sous-sa-reference.md` n'est pas faite) et
+ * son unité par défaut — la clé des lignes de la fiche d'atelier.
  *
  * L'ordre est celui du catalogue : les familles par position, et dans chaque
  * famille l'ordre de la lecture pro, puis les articles vendus seulement au
@@ -36,14 +39,14 @@ export class CatalogSellableArticlesReader extends SellableArticlesReader {
     ]);
     const byProduct = new Map<string, ResolvedCatalogItem>();
     for (const item of [...pro, ...shop]) {
-      if (item.isDefault && !byProduct.has(item.productSku)) {
-        byProduct.set(item.productSku, item);
+      if (item.isDefault && !byProduct.has(shopSkuOf(item))) {
+        byProduct.set(shopSkuOf(item), item);
       }
     }
     return [...byProduct.values()]
       .sort((left, right) => compareFamilies(left.family, right.family))
       .map((item) => ({
-        sku: item.productSku,
+        sku: shopSkuOf(item),
         name: item.name,
         familyId: item.family.id,
         familyName: item.family.name,

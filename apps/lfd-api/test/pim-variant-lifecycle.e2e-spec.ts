@@ -224,40 +224,33 @@ describe("faire d'une déclinaison un produit", () => {
 });
 
 describe("faire d'une déclinaison la déclinaison par défaut", () => {
-  it("bascule le défaut, lui donne en propre le tarif qu'elle suivait, et le commerce le lit", async () => {
+  /**
+   * Fermé jusqu'à la bascule de la référence du défaut
+   * (`plan-defaut-sous-sa-reference.md`, § 10, D-b). Le geste réussi restait
+   * éprouvé ici jusqu'au L1 ; il revient avec le L3, qui rouvre la porte.
+   * L'agrégat et le handler le gardent éprouvé entre-temps (porte ouverte).
+   */
+  it("refuse tant que la bascule n'est pas faite, et ne change rien (409)", async () => {
     const fiche = await anActiveFiche(staff, "Cannelés", "both");
     const second = await aSecondVariant(fiche);
-    const aligned = await staff()
-      .put(`${PRODUCTS}/${fiche.id}/variants/${second.id}/alignment`)
-      .send({ aspect: "pricing", aligned: true });
-    expect([200, 204]).toContain(aligned.status);
     const before = await detail(fiche.id);
-    const previous = before.variants.find((v) => v.isDefault);
 
-    await act(fiche, second.id, "make-default").expect(200);
+    const refus = await act(fiche, second.id, "make-default").expect(409);
     await relayAll(ctx);
 
-    const after = await detail(fiche.id);
-    expect(after.variants.find((v) => v.id === second.id)).toMatchObject({
-      isDefault: true,
-      priceCents: previous?.priceCents,
-    });
-    expect(after.variants.find((v) => v.id === previous?.id)?.isDefault).toBe(false);
-    const promoted = await ctx.prisma.productVariant.findUnique({
-      where: { id: second.id },
-      select: { pricingFollowsDefault: true, regulatoryFollowsDefault: true, priceCents: true },
-    });
-    expect(promoted).toEqual({
-      pricingFollowsDefault: false,
-      regulatoryFollowsDefault: false,
-      priceCents: previous?.priceCents,
-    });
-    expect((await itemOf(second.sku))?.isDefault).toBe(true);
-    expect((await itemOf(previous?.sku ?? ""))?.isDefault).toBe(false);
+    const body = jsonBody<{ code: string; message: string }>(refus);
+    expect(body.code).toBe("catalogue.variant.default_change_suspended");
+    expect(body.message).toContain(
+      "Le changement de déclinaison par défaut revient après la bascule de la référence du défaut.",
+    );
+    expect((await detail(fiche.id)).variants.map((v) => [v.id, v.isDefault])).toEqual(
+      before.variants.map((v) => [v.id, v.isDefault]),
+    );
+    expect((await itemOf(second.sku))?.isDefault).toBe(false);
     const facts = await ctx.prisma.activityEvent.count({
       where: { type: "product.default_variant_changed", subjectId: fiche.id },
     });
-    expect(facts).toBe(1);
+    expect(facts).toBe(0);
   });
 
   it("refuse celle qui l'est déjà (409)", async () => {

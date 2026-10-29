@@ -234,6 +234,28 @@ describe("le prévisionnel du fournil", () => {
   });
 
   /**
+   * La journée de la bascule (`plan-defaut-sous-sa-reference.md`, § 2 b) :
+   * une commande porte l'ANCIENNE référence, l'autre la nouvelle, et la table
+   * d'alias dit que c'est le même article. Le prévisionnel n'en sort qu'une
+   * ligne. L'ancienne graphie est réécrite en base : aucune route ne prend
+   * plus une référence qui ne se vend pas, et c'est le passé qu'on simule.
+   */
+  it("une journée mixte ancienne référence + nouvelle ne sort qu'une ligne par article", async () => {
+    const companyId = await seedSociete();
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 3 }]);
+    await ctx.prisma.orderLine.updateMany({ where: { sku: "VIE-001" }, data: { sku: "VIE-OLD" } });
+    await ctx.prisma.saleSkuAlias.create({
+      data: { aliasSku: "VIE-OLD", targetSku: "VIE-001", writtenAt: new Date() },
+    });
+    await placeOrder(companyId, DAY_1, [{ sku: "VIE-001", quantity: 4 }]);
+
+    const view = await forecast(DAY_1, DAY_1);
+
+    expect(view.lines.map((line) => [line.sku, line.quantities])).toEqual([["VIE-001", [7]]]);
+    expect(view.days[0]?.orderCount).toBe(2);
+  });
+
+  /**
    * 🔴 La régression que ce fichier existe pour tenir. Avant la clôture, la
    * commande est `placed` et le commerce la porte ; après, elle est basculée et
    * seul le **compte à produire arrêté** la connaît. Le chiffre ne doit pas

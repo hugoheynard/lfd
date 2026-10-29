@@ -2,7 +2,12 @@ import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/dir
 import { RecordingJournal } from "../../../../journal/__tests__/recording-journal.js";
 import { RecordingCatalogEmitter } from "../../../shared/domain/ports/__tests__/catalog-emitter-doubles.js";
 import { Product, type ProductSnapshot } from "../../domain/entities/product.js";
-import { VariantAlreadyDefaultError } from "../../domain/errors/variant-lifecycle-errors.js";
+import {
+  DefaultVariantChangeSuspendedError,
+  VariantAlreadyDefaultError,
+} from "../../domain/errors/variant-lifecycle-errors.js";
+import { DefaultVariantChangeGate } from "../../domain/ports/default-variant-change-gate.js";
+import { DefaultVariantChangeClosedUntilSwitch } from "../../domain/services/default-variant-change-closed.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
@@ -61,7 +66,18 @@ class Nutrition extends NutritionValuesRepository {
   }
 }
 
-function setup(newOver: Parameters<typeof bareVariant>[0] = {}) {
+/**
+ * La porte OUVERTE, celle que le L3 reliera : le geste lui-même reste éprouvé
+ * pendant qu'il est fermé en production (`plan-defaut-sous-sa-reference.md`, D-b).
+ */
+class OpenGate extends DefaultVariantChangeGate {
+  assertOpen(): void {}
+}
+
+function setup(
+  newOver: Parameters<typeof bareVariant>[0] = {},
+  gate: DefaultVariantChangeGate = new OpenGate(),
+) {
   const products = new Products(
     tarte({
       variants: [
@@ -90,6 +106,7 @@ function setup(newOver: Parameters<typeof bareVariant>[0] = {}) {
     journal,
     new DirectUnitOfWork(),
     emitter,
+    gate,
   );
   return { handler, products, journal, emitter, allergens, nutrition };
 }
@@ -127,5 +144,30 @@ describe("MakeVariantDefaultHandler", () => {
     expect(products.saves).toBe(0);
     expect(journal.types()).toEqual([]);
     expect(emitter.products).toEqual([]);
+  });
+
+  it("fermé jusqu'à la bascule : refuse en le disant, et n'écrit, ne journalise ni n'émet rien", async () => {
+    const { handler, products, journal, emitter } = setup(
+      {},
+      new DefaultVariantChangeClosedUntilSwitch(),
+    );
+
+    const refusal = handler.execute(new MakeVariantDefaultCommand(PRODUCT_ID, NEW_ID));
+
+    await expect(refusal).rejects.toThrow(DefaultVariantChangeSuspendedError);
+    await expect(refusal).rejects.toThrow(
+      "Le changement de déclinaison par défaut revient après la bascule de la référence du défaut.",
+    );
+    expect(products.saves).toBe(0);
+    expect(journal.types()).toEqual([]);
+    expect(emitter.products).toEqual([]);
+  });
+
+  it("fermé : une demande déjà impossible garde sa vraie raison", async () => {
+    const { handler } = setup({}, new DefaultVariantChangeClosedUntilSwitch());
+
+    await expect(
+      handler.execute(new MakeVariantDefaultCommand(PRODUCT_ID, OLD_ID)),
+    ).rejects.toThrow(VariantAlreadyDefaultError);
   });
 });

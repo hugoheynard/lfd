@@ -21,6 +21,11 @@ interface NormRow {
  * jamais été des achats, et une norme calculée sur des ventes annulées
  * mentirait. Les commandes zéro friction, elles, **comptent ici** : ce sont de
  * vraies quantités commandées, et la norme parle du produit, pas d'un compte.
+ *
+ * Rangée par ARTICLE : une ligne passée sous une ancienne référence compte
+ * pour sa cible (`sale_sku_alias`, `plan-defaut-sous-sa-reference.md`, § 2 a),
+ * la règle de `SaleSkuAliases.canonical` écrite en SQL — la médiane se calcule
+ * en base, le pli ne peut donc pas se faire après elle. Table vide jusqu'au L3.
  */
 @Injectable()
 export class PrismaProductNormStore extends ProductNormStore {
@@ -34,14 +39,15 @@ export class PrismaProductNormStore extends ProductNormStore {
   }): Promise<ComputedProductNorm[]> {
     const since = new Date(input.now.getTime() - input.windowDays * DAY_MS);
     const rows = await this.prisma.$queryRaw<NormRow[]>`
-      SELECT ol."sku" AS sku,
+      SELECT COALESCE(a."target_sku", ol."sku") AS sku,
              percentile_cont(0.5) WITHIN GROUP (ORDER BY ol."quantity") AS median,
              COUNT(*) AS lines
       FROM "order_lines" ol
       JOIN "orders" o ON o."id" = ol."order_id"
+      LEFT JOIN "sale_sku_alias" a ON a."alias_sku" = ol."sku"
       WHERE o."status" <> 'cancelled'
         AND o."created_at" >= ${since}
-      GROUP BY ol."sku"
+      GROUP BY COALESCE(a."target_sku", ol."sku")
     `;
     return rows.map((row) => ({
       sku: row.sku,

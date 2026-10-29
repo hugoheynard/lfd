@@ -7,22 +7,11 @@
   </fold-callout>
 }
 
-@if (retirable(); as tab) {
+@if (retirable()) {
   <div class="make-default">
-    <p>
-      Celles qui suivent la déclinaison par défaut (tarif, allergènes, valeurs, minimum) suivront «
-      {{ tab.label }} » ; elle garde en propre ce qu'elle en voyait.
-    </p>
-    <fold-inline-confirm
-      intent="primary"
-      message="Faire de cette déclinaison la déclinaison par défaut ?"
-      [labels]="{ confirm: 'Confirmer' }"
-      [loading]="store.busy()"
-      (confirmed)="makeDefault(tab.id)"
-    >
-      <button foldButton emphasis="soft" [disabled]="store.busy()">
-        Faire de cette déclinaison la déclinaison par défaut
-      </button>
-    </fold-inline-confirm>
+    <p id="make-default-suspended">{{ suspended }}</p>
+    <button foldButton emphasis="soft" disabled aria-describedby="make-default-suspended">
+      Faire de cette déclinaison la déclinaison par défaut
+    </button>
   </div>
 }

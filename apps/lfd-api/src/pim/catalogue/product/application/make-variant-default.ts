@@ -4,6 +4,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import type { WriteTicket } from "../../../../platform/journal/scoped-journal.js";
 import { PIM_EVENTS, PimJournal } from "../../../journal/pim-journal.js";
 import type { DefaultVariantChange, Product } from "../domain/entities/product.js";
+import { DefaultVariantChangeGate } from "../domain/ports/default-variant-change-gate.js";
 import { NutritionValuesRepository } from "../domain/ports/nutrition-values.repository.js";
 import { ProductRepository } from "../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../domain/ports/variant-allergens.repository.js";
@@ -29,6 +30,11 @@ export class MakeVariantDefaultCommand {
  * porte sur `is_default` (vérifié dans les migrations le 2026-10-29). Les
  * moitiés de fiche réglementaire que la nouvelle reçoit en propre passent par
  * leurs ports dédiés, comme toute déclaration : `save` ne les écrit pas.
+ *
+ * 🔴 **Fermé jusqu'à la bascule** (`plan-defaut-sous-sa-reference.md`, § 10,
+ * D-b) : la porte (`DefaultVariantChangeGate`) refuse APRÈS les refus de
+ * l'agrégat, pour qu'une demande déjà impossible le dise par sa vraie raison.
+ * Rien n'est écrit ni journalisé.
  */
 @CommandHandler(MakeVariantDefaultCommand)
 export class MakeVariantDefaultHandler implements ICommandHandler<MakeVariantDefaultCommand, void> {
@@ -39,12 +45,14 @@ export class MakeVariantDefaultHandler implements ICommandHandler<MakeVariantDef
     private readonly journal: PimJournal,
     private readonly uow: UnitOfWork,
     private readonly emitter: CatalogEmitter,
+    private readonly gate: DefaultVariantChangeGate,
   ) {}
 
   async execute(command: MakeVariantDefaultCommand): Promise<void> {
     const { productId, variantId } = command;
     const product = await requireProduct(this.products, productId);
     const change = product.makeVariantDefault(variantId);
+    this.gate.assertOpen(variantSnapshotOf(product.snapshot(), variantId).sku);
 
     await this.uow.run(async () => {
       const ticket = await this.trace(product, variantId, change.previousDefaultId);

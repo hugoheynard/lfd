@@ -1,6 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { SaleSkuAliasReader } from "../../catalog/domain/ports/sale-sku-alias.reader.js";
 import type { AlertEvaluationContext } from "../domain/detectors/context.js";
 import {
   AccountOrderHistoryReader,
@@ -8,6 +9,7 @@ import {
   type AccountOrderHistory,
   type EvaluatedOrderBound,
 } from "../domain/ports/order-history.reader.js";
+import { everOrderedAmong, historyByAskedSku } from "./article-history.js";
 
 /**
  * Les statuts qui **comptent** dans l'historique.
@@ -30,11 +32,19 @@ const COUNTED_STATUSES = [
 
 /**
  * L'historique d'un compte, en **trois** requêtes quelle que soit la taille du
- * panier — jamais une par ligne.
+ * panier — jamais une par ligne (plus la lecture des alias).
+ *
+ * Par ARTICLE : une ancienne référence (`PAI-001`) et sa cible (`PAI-001-1`)
+ * sont un seul historique (`plan-defaut-sous-sa-reference.md`, § 2 a). La
+ * requête cherche toutes les graphies, le pli se fait sur la référence
+ * canonique, et la clé rendue reste celle que le panier porte.
  */
 @Injectable()
 export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aliasReader: SaleSkuAliasReader,
+  ) {
     super();
   }
 
@@ -47,6 +57,8 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
     readonly now: Date;
   }): Promise<AccountOrderHistory> {
     const since = new Date(input.now.getTime() - input.windowDays * DAY_MS);
+    const aliases = await this.aliasReader.around(input.skus);
+    const spellings = [...aliases.spellingsOfAll(input.skus)];
     const walled = {
       companyId: input.companyId,
       status: { in: [...COUNTED_STATUSES] },
@@ -61,31 +73,23 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
       // Les lignes récentes, triées : le découpage par SKU se fait en mémoire,
       // ce qui évite une requête par produit.
       this.prisma.orderLine.findMany({
-        where: { sku: { in: [...input.skus] }, order: { ...walled, createdAt: { gte: since } } },
+        where: { sku: { in: spellings }, order: { ...walled, createdAt: { gte: since } } },
         select: { sku: true, quantity: true, order: { select: { createdAt: true } } },
         orderBy: { order: { createdAt: "desc" } },
       }),
       // « Jamais commandé » ignore la fenêtre : un produit pris il y a trois ans
       // n'est pas un nouveau produit.
       this.prisma.orderLine.findMany({
-        where: { sku: { in: [...input.skus] }, order: walled },
+        where: { sku: { in: spellings }, order: walled },
         select: { sku: true },
         distinct: ["sku"],
       }),
       this.prisma.order.count({ where: walled }),
     ]);
 
-    const history = new Map<string, number[]>();
-    for (const line of recent) {
-      const quantities = history.get(line.sku) ?? [];
-      if (quantities.length < input.maxOrdersPerSku) {
-        quantities.push(line.quantity);
-        history.set(line.sku, quantities);
-      }
-    }
     return {
-      history,
-      everOrdered: new Set(ever.map((line) => line.sku)),
+      history: historyByAskedSku(recent, input.skus, aliases, input.maxOrdersPerSku),
+      everOrdered: everOrderedAmong(ever, input.skus, aliases),
       previousOrderCount,
     };
   }
@@ -93,20 +97,35 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 
-/** La norme catalogue, lue depuis la projection — jamais agrégée à la volée. */
+/**
+ * La norme catalogue, lue depuis la projection — jamais agrégée à la volée.
+ * La projection est rangée par article (`PrismaProductNormStore.compute`) :
+ * on la lit sous la référence canonique, et on la rend sous celle du panier.
+ */
 @Injectable()
 export class PrismaProductNormReader extends ProductNormReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aliasReader: SaleSkuAliasReader,
+  ) {
     super();
   }
 
   async read(skus: readonly string[]): Promise<AlertEvaluationContext["norms"]> {
-    const rows = await this.prisma.productNorm.findMany({ where: { sku: { in: [...skus] } } });
-    return new Map(
+    const aliases = await this.aliasReader.around(skus);
+    const articles = [...new Set(skus.map((sku) => aliases.canonical(sku)))];
+    const rows = await this.prisma.productNorm.findMany({ where: { sku: { in: articles } } });
+    const byArticle = new Map(
       rows.map((row) => [
         row.sku,
         { medianQuantity: Number(row.medianQuantity), sampleLines: row.sampleLines },
       ]),
+    );
+    return new Map(
+      skus.flatMap((sku) => {
+        const norm = byArticle.get(aliases.canonical(sku));
+        return norm === undefined ? [] : [[sku, norm] as const];
+      }),
     );
   }
 }

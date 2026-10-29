@@ -675,3 +675,29 @@ model CatalogRules {
   @@map("catalog_rules")
   @@schema("public")
 }
+
+/// **Une ancienne référence de vente, et l'article qu'elle désigne**
+/// (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 2).
+///
+/// La déclinaison par défaut se vend aujourd'hui sous la référence de son
+/// produit (`shopSkuOf`). Le jour de la bascule (L3), elle se vendra sous la
+/// sienne, et `PAI-001` ne sera plus qu'une clé ancienne : le passé (lignes de
+/// commande, bons, compteurs) n'est pas réécrit, ce sont ses lecteurs qui
+/// traduisent par cette table. Tout regroupement passe par elle, jamais par
+/// `product_sku`, qui fusionnerait deux déclinaisons distinctes.
+///
+/// Sans `valid_from` / `valid_to` : tant que le défaut n'a jamais changé avant
+/// la bascule (le garde-fou du L3 le vérifie), une référence produit n'a
+/// désigné qu'un article. VIDE jusqu'au L3 — ses lecteurs sont livrés avant
+/// elle, et une table vide les laisse rendre ce qu'ils rendaient.
+model SaleSkuAlias {
+  /// L'ancienne référence, telle que le passé la porte.
+  aliasSku  String   @id @map("alias_sku")
+  /// La référence de vente qu'elle désigne désormais.
+  targetSku String   @map("target_sku")
+  writtenAt DateTime @map("written_at")
+
+  @@index([targetSku])
+  @@map("sale_sku_alias")
+  @@schema("public")
+}

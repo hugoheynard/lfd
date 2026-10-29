@@ -10,7 +10,7 @@ import { ReferenceApi } from '../../reference-api';
 import { provideTestSalesContexts } from '../../../sales-contexts/sales-context-store.testing';
 import type { Variant } from '../../../data/models';
 import { ProductFormStore } from '../product-form-store';
-import { VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
+import { DEFAULT_CHANGE_SUSPENDED, VariantLifecycle } from '../variant-lifecycle/variant-lifecycle';
 import { VariantRetirement } from '../variant-retirement/variant-retirement';
 
 /**
@@ -45,6 +45,7 @@ function variant(over: Partial<Variant> = {}): Variant {
     proPriceMillicents: null,
     proPricePerKgMillicents: null,
     publicPricePerKgTtcCents: null,
+    pricePerKgShown: true,
     saleUnit: 'piece',
     weightMinGrams: null,
     weightStepGrams: null,
@@ -254,19 +255,25 @@ describe('<app-variant-lifecycle>', () => {
     expect(host.textContent).not.toContain('Déclinaisons archivées');
   });
 
-  it('fait de la déclinaison ouverte le défaut', async () => {
+  /**
+   * Fermé jusqu'à la bascule de la référence du défaut
+   * (`plan-defaut-sous-sa-reference.md`, § 10, D-b) : le geste réussi était
+   * éprouvé ici jusqu'au L1, il revient avec le L3.
+   */
+  it('désactive « en faire le défaut », et dit pourquoi avec la phrase du serveur', async () => {
     const api = new FakeApi();
     const host = await render('var_2', api);
-    const store = TestBed.inject(ProductFormStore);
+    const calls = api.calls.length;
 
-    expect(host.querySelector('.make-default fold-inline-confirm')).not.toBeNull();
-    buttonNamed(host, 'Faire de cette déclinaison la déclinaison par défaut').click();
-    await settle();
-    buttonNamed(host, 'Confirmer').click();
+    const button = buttonNamed(host, 'Faire de cette déclinaison la déclinaison par défaut');
+    expect(button.disabled).toBe(true);
+    expect(host.querySelector('.make-default')?.textContent).toContain(DEFAULT_CHANGE_SUSPENDED);
+    expect(button.getAttribute('aria-describedby')).toBe('make-default-suspended');
+    button.click();
     await settle();
 
-    expect(api.calls.at(-1)).toEqual({ name: 'makeVariantDefault', args: ['prd_1', 'var_2'] });
-    expect(store.variantTabs().find((tab) => tab.isDefault)?.id).toBe('var_2');
+    expect(host.querySelector('.make-default fold-inline-confirm')).toBeNull();
+    expect(api.calls.length).toBe(calls);
   });
 });
 

@@ -1,20 +1,14 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { SaleSkuAliasReader } from "../../catalog/domain/ports/sale-sku-alias.reader.js";
 import {
   ExpectedProductionReader,
   type ExpectedDayProduction,
   type ServiceRange,
 } from "../../../production/channels/commerce/index.js";
-import { orderLineSaleUnitOf } from "./order-line-row.js";
+import { foldExpectedByArticle } from "./expected-production-fold.js";
 import { planWhere } from "./plan-filter.js";
-
-/** Ce qu'un article pèse une journée, en cours de pli. */
-interface ExpectedSum {
-  readonly productName: string;
-  readonly quantity: number;
-  readonly saleUnit: "piece" | "weight";
-}
 
 /**
  * **Ce que le commerce annonce au fournil pour les jours qui viennent.**
@@ -42,10 +36,22 @@ interface ExpectedSum {
  *
  * Aucun montant ne franchit ce port : la sélection ne les demande pas, donc il
  * n'y a rien à laisser tomber par distraction.
+ *
+ * ## Une ligne par ARTICLE, pas par graphie
+ *
+ * Le pli se fait sur la référence canonique (`SaleSkuAliases.canonical`), et
+ * c'est ici qu'il doit se faire : le fournil ne lit pas les tables du
+ * commerce, il ne saurait pas qu'une ancienne référence (`PAI-001`) et sa
+ * cible (`PAI-001-1`) sont le même article
+ * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 2 b). Table
+ * vide jusqu'à la bascule : chaque référence se lit comme elle-même.
  */
 @Injectable()
 export class PrismaExpectedProductionReader extends ExpectedProductionReader {
-  constructor(private readonly prisma: PrismaService) {
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly aliasReader: SaleSkuAliasReader,
+  ) {
     super();
   }
 
@@ -72,40 +78,9 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
       },
     });
 
-    const byDay = new Map<string, Map<string, ExpectedSum>>();
-    const orderCounts = new Map<string, number>();
-    for (const row of rows) {
-      if (row.requestedDeliveryDate === null) {
-        continue;
-      }
-      const day = row.requestedDeliveryDate.toISOString().slice(0, 10);
-      orderCounts.set(day, (orderCounts.get(day) ?? 0) + 1);
-      const items = byDay.get(day) ?? new Map<string, ExpectedSum>();
-      for (const line of row.lines) {
-        const known = items.get(line.sku);
-        items.set(line.sku, {
-          productName: known?.productName ?? line.productNameSnapshot,
-          // Une somme par article : un article n'a qu'une unité (figée à la
-          // publication), ses grammes s'additionnent entre eux (P6).
-          quantity: (known?.quantity ?? 0) + line.quantity,
-          saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
-        });
-      }
-      byDay.set(day, items);
-    }
-
-    return [...byDay.entries()].map(([day, items]) => ({
-      day,
-      items: [...items.entries()].map(([sku, item]) => ({
-        sku,
-        productName: item.productName,
-        quantity: item.quantity,
-        saleUnit: item.saleUnit,
-      })),
-      // Compté sur les LIGNES de commande lues, et non par une requête de plus :
-      // une commande sans ligne ne pèse rien au fournil, et n'a rien à faire
-      // dans un compte qu'on lit comme « combien de piles à répartir ».
-      orderCount: orderCounts.get(day) ?? 0,
-    }));
+    const aliases = await this.aliasReader.around([
+      ...new Set(rows.flatMap((row) => row.lines.map((line) => line.sku))),
+    ]);
+    return foldExpectedByArticle(rows, aliases);
   }
 }

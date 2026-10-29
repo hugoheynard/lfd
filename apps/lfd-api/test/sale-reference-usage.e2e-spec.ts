@@ -232,4 +232,35 @@ describe("SaleReferenceUsage — l'implémentation du commerce", () => {
       "VIE-001-2": [],
     });
   });
+
+  /**
+   * D-c de `plan-defaut-sous-sa-reference.md` : après la bascule, la
+   * déclinaison par défaut se vend sous SON SKU, et le passé porte encore la
+   * référence de la fiche. La table d'alias le dit ; l'usage se compte sur les
+   * deux graphies, sinon son unité redeviendrait modifiable.
+   */
+  it("PAI-001-1 est utilisée dès qu'une ligne PAI-001 existe, par la table d'alias", async () => {
+    const user = await createUser(ctx.prisma, { auth0Sub: "auth0|usage" });
+    const company = await createCompany(ctx.prisma, { status: CompanyStatus.active });
+    await ctx.prisma.orderDraft.create({
+      data: { companyId: company.id, payload: { lines: [{ sku: "PAI-001", quantity: 2 }] } },
+    });
+    await ctx.prisma.shopCart.create({
+      data: { userId: user.id, payload: { lines: [{ sku: "PAI-001-2", quantity: 1 }] } },
+    });
+    await ctx.prisma.saleSkuAlias.create({
+      data: { aliasSku: "PAI-001", targetSku: "PAI-001-1", writtenAt: at() },
+    });
+
+    const uses = await ctx.app.get(SaleReferenceUsage).usesOf([
+      // Sous L3, la référence de vente d'une déclinaison est son propre SKU.
+      own("PAI-001-1"),
+      own("PAI-001-3"),
+    ]);
+
+    expect(Object.fromEntries(uses)).toEqual({
+      "PAI-001-1": ["order_draft"],
+      "PAI-001-3": [],
+    });
+  });
 });

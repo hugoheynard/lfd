@@ -2,6 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { Clock } from "../../../platform/time/clock.js";
+import { SaleSkuAliasReader } from "../../catalog/domain/ports/sale-sku-alias.reader.js";
+import type { SaleSkuAliases } from "../../catalog/domain/sale-sku-aliases.js";
 import {
   CUSTOMER_SKUS_WINDOW_MONTHS,
   CustomerSkuReader,
@@ -33,12 +35,17 @@ interface Accumulator {
   lastOrderedAt: Date;
 }
 
-/** Adaptateur Prisma des habitudes d'achat d'une société. */
+/**
+ * Adaptateur Prisma des habitudes d'achat d'une société — par ARTICLE : une
+ * ligne passée sous une ancienne référence compte pour sa cible
+ * (`plan-defaut-sous-sa-reference.md`, § 2 a).
+ */
 @Injectable()
 export class PrismaCustomerSkuReader extends CustomerSkuReader {
   constructor(
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
+    private readonly aliasReader: SaleSkuAliasReader,
   ) {
     super();
   }
@@ -54,7 +61,8 @@ export class PrismaCustomerSkuReader extends CustomerSkuReader {
         order: { select: { id: true, createdAt: true } },
       },
     });
-    return tally(rows).sort(byReuseThenRecency);
+    const aliases = await this.aliasReader.around([...new Set(rows.map((row) => row.sku))]);
+    return tally(rows, aliases).sort(byReuseThenRecency);
   }
 
   /** Le début de la fenêtre, compté depuis le temps métier de la requête. */
@@ -65,13 +73,14 @@ export class PrismaCustomerSkuReader extends CustomerSkuReader {
   }
 }
 
-/** Regroupe les lignes par SKU. Les commandes sont comptées **distinctes**. */
-function tally(rows: readonly LineRow[]): CustomerSkuTally[] {
+/** Regroupe les lignes par article. Les commandes sont comptées **distinctes**. */
+function tally(rows: readonly LineRow[], aliases: SaleSkuAliases): CustomerSkuTally[] {
   const bySku = new Map<string, Accumulator>();
   for (const row of rows) {
-    const current = bySku.get(row.sku);
+    const sku = aliases.canonical(row.sku);
+    const current = bySku.get(sku);
     if (current === undefined) {
-      bySku.set(row.sku, {
+      bySku.set(sku, {
         lastProductName: row.productNameSnapshot,
         orders: new Set([row.order.id]),
         totalQuantity: row.quantity,

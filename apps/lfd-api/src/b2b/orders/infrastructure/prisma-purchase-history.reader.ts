@@ -29,6 +29,12 @@ const PLACED_DAY = Prisma.sql`((("o"."created_at" AT TIME ZONE 'UTC') AT TIME ZO
  * (`requested_delivery_date`), sinon son jour de passation ; la FENÊTRE, elle,
  * se compte sur la passation, comme les habitudes du back-office
  * (`PrismaCustomerSkuReader`).
+ *
+ * Par ARTICLE : une ligne passée sous une ancienne référence compte pour sa
+ * cible (`sale_sku_alias`, la règle de `SaleSkuAliases.canonical` écrite en
+ * SQL parce que le `GROUP BY` est en base). Sans cela, trois commandes sous
+ * `PAI-001` puis une sous `PAI-001-1` passeraient sous le seuil des trois
+ * commandes (`plan-defaut-sous-sa-reference.md`, § 10). Table vide jusqu'au L3.
  */
 @Injectable()
 export class PrismaPurchaseHistoryReader extends PurchaseHistoryReader {
@@ -42,10 +48,11 @@ export class PrismaPurchaseHistoryReader extends PurchaseHistoryReader {
       FROM (
         SELECT DISTINCT
           "o"."id" AS "id",
-          "l"."sku" AS "sku",
+          COALESCE("a"."target_sku", "l"."sku") AS "sku",
           to_char(COALESCE("o"."requested_delivery_date", ${PLACED_DAY}), 'YYYY-MM-DD') AS "day"
         FROM "order_lines" "l"
         JOIN "orders" "o" ON "o"."id" = "l"."order_id"
+        LEFT JOIN "sale_sku_alias" "a" ON "a"."alias_sku" = "l"."sku"
         WHERE "o"."company_id" = ${ask.companyId}
           AND "o"."created_at" >= ${ask.since}::date - 1
           AND ${PLACED_DAY} >= ${ask.since}::date

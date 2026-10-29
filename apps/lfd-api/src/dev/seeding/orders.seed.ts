@@ -1,6 +1,7 @@
 import type { DayComposer } from "../../delivery/application/day-composer.js";
 import type { S3StorageConfig } from "@lfd/storage";
 
+import { shopSkuOf } from "../../b2b/catalog/domain/shop-sku.js";
 import { STILL_SOLD } from "../../b2b/catalog/infrastructure/sellable-filter.js";
 import { purgeScenario, type ScenarioPurgeReport } from "../scenario/purge/scenario-purge.js";
 import { resolveScenarioScope } from "../scenario/purge/scenario-scope.js";
@@ -243,9 +244,12 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
     // retrait est NOMMÉE une fois, et la porte `withdrawn-filter` refuse une
     // lecture qui la réécrit à la main — c'est ainsi qu'elle finit par dériver.
     where: { productSku: { in: wanted }, isDefault: true, ...STILL_SOLD },
-    select: { productSku: true },
+    select: { sku: true, productSku: true, isDefault: true },
   });
-  const found = new Set(known.map((item) => item.productSku));
+  // La référence de VENTE (`shopSkuOf`), la seule règle : le semis ne pose
+  // pas de ligne sous une référence que la boutique ne vendrait plus
+  // (`plan-defaut-sous-sa-reference.md`, § 3).
+  const found = new Set(known.map(shopSkuOf));
   const missing = wanted.filter((sku) => !found.has(sku));
   if (missing.length > 0) {
     throw new Error(
@@ -299,13 +303,13 @@ async function spreadLines(context: SeedContext, skip: number): Promise<SeedLine
     // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
     // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
     where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
-    select: { productSku: true },
+    select: { sku: true, productSku: true, isDefault: true },
     orderBy: [{ categoryId: "asc" }, { productSku: "asc" }],
   });
   return items
     .filter((_, index) => index % 2 === skip)
     .map((item, index) => ({
-      sku: item.productSku,
+      sku: shopSkuOf(item),
       // Déterministe, et sur trois ordres de grandeur : c'est là que se voit
       // l'alignement des chiffres monospacés, et le contenant qui bascule du
       // singulier au pluriel.
@@ -319,7 +323,7 @@ async function wideLines(context: SeedContext): Promise<SeedLine[]> {
     // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
     // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
     where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
-    select: { productSku: true },
+    select: { sku: true, productSku: true, isDefault: true },
     orderBy: { productSku: "asc" },
     take: WIDE_LINE_COUNT,
   });
@@ -334,7 +338,7 @@ async function wideLines(context: SeedContext): Promise<SeedLine[]> {
   // contredisent pas, et la colonne de gauche montre des nombres à une et à
   // deux chiffres — c'est là que se voit l'alignement tabulaire.
   return items.map((item, index) => ({
-    sku: item.productSku,
+    sku: shopSkuOf(item),
     quantity: 2 + ((index * 7) % 23),
   }));
 }

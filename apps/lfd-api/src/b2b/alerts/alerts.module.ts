@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { AcknowledgeAlertHandler } from "./application/commands/acknowledge-alert.handler.js";
 import { ClearAccountAlertOverrideHandler } from "./application/commands/clear-account-alert-override.handler.js";
 import { RecomputeProductNormsHandler } from "./application/commands/recompute-product-norms.handler.js";
@@ -55,6 +56,9 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
  * jamais ses tables, jamais ses agrégats.
  */
 @Module({
+  // Le catalogue pour ses alias seulement : l'historique et la norme se lisent
+  // par article (`plan-defaut-sous-sa-reference.md`, L1).
+  imports: [CatalogModule],
   controllers: [
     AdminAlertRulesController,
     AdminAccountAlertRulesController,

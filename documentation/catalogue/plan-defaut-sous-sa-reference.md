@@ -147,7 +147,7 @@ Elles gardent `PAI-001` tant qu'on n'y touche pas. Le fournil et le colisage les
 
 ## 7. Lots (un lot = un commit, ordre sûr, chacun déployable)
 
-**L1 `feat(catalog)` : la lecture par alias, avant toute bascule.** Ce lot comprend :
+**L1 `feat(catalog)` : la lecture par alias, avant toute bascule.** 🟩 **Bâti le 2026-10-29, en partie** (non commité à l'écriture de cette ligne) — ce qui est fait, ce qui ne l'est pas et pourquoi : § 11. Ce lot comprend :
 
 - la migration de **schéma** de `sale_sku_alias`, laissée vide ;
 - un canonicaliseur unique, utilisé par tous les regroupements : fournil attendu et `ProductionCount`, `ProductNorm`, habitudes, `growth`, alertes, classement des lignes ;
@@ -268,3 +268,87 @@ au point d'implémentation des ports `production/channels/commerce/` et
 fermeture de G4, portée `product:` fermée à la saisie, règle unique pour les
 réimplémenteurs ; **L2** le front normalise avant `keepOnly` ; **L3** (attend
 Hugo) la bascule.
+
+## 11. Le L1 tel que bâti (2026-10-29)
+
+**Fait.**
+
+- La table `public.sale_sku_alias(alias_sku PK, target_sku, written_at)`, index
+  sur `target_sku`, migration de schéma additive
+  `20261029080000_les_alias_de_reference_de_vente` (`lock_timeout 5s`), VIDE.
+- La canonicalisation unique : `SaleSkuAliases` (`b2b/catalog/domain/sale-sku-aliases.ts`,
+  `canonical`, `spellingsOf`) et son port de lecture `SaleSkuAliasReader`
+  (implémentation `PrismaSaleSkuAliasReader`), exporté par `CatalogModule`.
+- Les regroupements par article : prévisionnel du fournil
+  (`prisma-expected-production.reader.ts` → `expected-production-fold.ts`),
+  classement des lignes (remise retrait, au recalcul — D-d), historique et
+  norme des alertes (lecture et recalcul de `ProductNorm`), habitudes du
+  client (`PrismaPurchaseHistoryReader`) et du back-office
+  (`PrismaCustomerSkuReader`), compteurs `growth`, articles retirés (L5).
+- D-c : `PrismaSaleReferenceUsage` compte la cible ET ses alias.
+- D-b : `MakeVariantDefault` refuse par une porte (`DefaultVariantChangeGate`,
+  reliée fermée), APRÈS les refus de l'agrégat ; le bouton du back-office est
+  désactivé avec la même phrase. Le détachement et la restauration ne touchent
+  pas le défaut (vérifié dans `product.ts` / `variant.ts` le 2026-10-29 : le
+  défaut ne s'archive ni ne se détache, et `restore` ne pose pas `isDefault`) :
+  rien à fermer.
+- Règle unique : `catalog-sellable-articles.reader.ts`,
+  `catalog-suggestion-catalogue.ts`, `orders.seed.ts` passent par `shopSkuOf` ;
+  `shop-sku-filter.ts` et `prisma-withdrawn-shop-skus.reader.ts` sont nommés
+  jumeaux en requête de `shopSkuOf` (ils basculent avec elle au L3) et
+  reçoivent des références canoniques.
+
+**Choix faits pendant le bâti.**
+
+- Les deux `GROUP BY` faits en base (habitudes du client, recalcul de la
+  norme) écrivent la règle en SQL (`LEFT JOIN sale_sku_alias`,
+  `COALESCE(target_sku, sku)`) : la médiane et le seuil se calculent en base,
+  le pli ne peut pas venir après. Partout ailleurs, la règle est `SaleSkuAliases`.
+- Les compteurs `growth` se plient en mémoire : `growth × public` ne se joint pas.
+- La fermeture de G4 est une politique de déploiement, pas un invariant de la
+  fiche : elle est un port (porte fermée au L1, ouverte ou retirée au L3), et
+  l'agrégat garde son geste éprouvé. L'e2e du geste réussi est remplacé par
+  celui du refus ; il revient au L3.
+
+**Pas fait, et pourquoi.**
+
+- **La fermeture à la saisie du § 1.4 n'est PAS bâtie.** Elle ferme toute
+  décision tarifaire sur toute déclinaison par défaut jusqu'au L3 (le défaut se
+  vend sous sa référence produit, et sa propre référence n'est pas en vente) ;
+  et l'écran de tarification, les limites de prix et le plancher par lot
+  posent tous une portée `product:` (`tarification-page.ts:264`, `:285`,
+  `limit-coverage.ts:108`, `bulk-floor-panel.ts:84`). La fermer sans basculer
+  ces écrans sur `variant:` rend la tarification inutilisable, et une dizaine
+  d'e2e de tarification (`admin-pricing`, `company-pricing`, `price-rules`…)
+  posent `product:VIE-001`. À trancher par Hugo.
+- **Le flux du jour au fournil (`DayOrdersReader` → `SitedDayOrders`) n'est
+  pas canonicalisé.** Les feuilles, comptes et fournées d'une journée close
+  après la bascule porteraient deux lignes pour un article ; mais le fournil et
+  le colisage rendent ensuite des références au commerce (manquants,
+  révisions, retraits), qui devraient retrouver la ligne `PAI-001` d'une
+  commande sous `PAI-001-1`. Le plan ne dit pas ce chemin de retour. Les ports
+  de `packing/channels/commerce/` que le commerce implémente ne regroupent rien
+  par référence (vérifié le 2026-10-29) : rien à y faire.
+- `catalog-not-served-cause.reader.ts` filtre toutes les déclinaisons d'une
+  fiche par `productSku` : passer par `shopSkuOf` change son résultat
+  aujourd'hui (le défaut seul au lieu de la fiche). Il bascule au L3.
+- L'alias en entrée (§ 5 : `POST /orders`, devis, compteur de résolutions) et
+  l'exposition de la table au front ne sont pas bâtis : hors de la commande de
+  ce lot.
+- Les messages `DefaultVariantNotDiscontinuableError` et
+  `DefaultVariantNotDetachableError` désignent comme geste de sortie « Faire de
+  cette déclinaison la déclinaison par défaut », fermé jusqu'au L3.
+
+## 12. Décisions prises au point L1 (Claude, 2026-10-29, sous mandat — à revoir)
+
+- **Le § 1.4 (fermer la portée `product:` à la saisie) est reporté au L3.**
+  Aujourd'hui le défaut se vend sous la référence produit : fermer `product:`
+  gèlerait toute décision tarifaire sur toute déclinaison par défaut jusqu'à
+  une bascule qui attend Hugo, et les écrans de tarification (qui posent
+  `product:` partout) seraient en 409. Le garde-fou du L3 suffit : il refuse la
+  bascule si une décision existe, au lieu de l'empêcher d'exister.
+- **Le flux du jour au fournil n'est pas canonicalisé au L1** : son chemin de
+  retour vers le commerce (manques, révisions) n'est pas écrit. D-a (bascule
+  hors journée ouverte) en tient lieu ; à revoir avec le L3.
+- **Les deux refus du défaut** (« ne s'archive pas », « ne se détache pas »)
+  ne renvoient plus vers le changement de défaut, suspendu : ils le disent.
