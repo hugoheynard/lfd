@@ -35,7 +35,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
    */
   async execute(command: SetPriceFloorCommand): Promise<void> {
     // Un plancher sur une référence hors vente ne protégerait rien (L5).
-    await assertOnSale(this.references, [saleReferenceOf(command.scope)]);
+    await assertOnSale(this.references, [saleReferenceOf(command.scope)], command.clientele);
     const now = this.clock.now();
     const existing = await this.floors.inForceFor(command.scope, command.clientele, now);
     await this.pose(command, existing === null ? "posed" : "replaced", now);

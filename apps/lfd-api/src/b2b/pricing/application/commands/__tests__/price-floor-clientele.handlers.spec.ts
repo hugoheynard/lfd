@@ -20,7 +20,11 @@ import {
   type FloorClientele,
 } from "../../../domain/entities/pricing-floor.js";
 import { PricingFloorRepository } from "../../../domain/ports/pricing-floor.repository.js";
-import { PriceFloorNotFoundError } from "../../../domain/pricing-errors.js";
+import {
+  PriceFloorNotFoundError,
+  SaleReferenceNotSoldToProsError,
+  SaleReferenceNotSoldToPublicError,
+} from "../../../domain/pricing-errors.js";
 import { ArchivePriceFloorCommand } from "../archive-price-floor.command.js";
 import { ArchivePriceFloorHandler } from "../archive-price-floor.handler.js";
 import { ConfirmPriceFloorCommand } from "../confirm-price-floor.command.js";
@@ -85,7 +89,7 @@ class InMemoryFloors extends PricingFloorRepository {
   }
 }
 
-function setup(): {
+function setup(references = new InMemorySaleReferences()): {
   readonly floors: InMemoryFloors;
   readonly set: SetPriceFloorHandler;
   readonly confirm: ConfirmPriceFloorHandler;
@@ -97,7 +101,7 @@ function setup(): {
   const ids = new FixedIdGenerator("flr");
   return {
     floors,
-    set: new SetPriceFloorHandler(floors, catalog, clock, ids, new InMemorySaleReferences()),
+    set: new SetPriceFloorHandler(floors, catalog, clock, ids, references),
     confirm: new ConfirmPriceFloorHandler(floors, catalog, clock, ids),
     archive: new ArchivePriceFloorHandler(floors, clock, catalog),
   };
@@ -162,5 +166,38 @@ describe("la clientèle d'une limite, geste par geste", () => {
 
     await expect(refusal).rejects.toBeInstanceOf(PriceFloorNotFoundError);
     await expect(refusal).rejects.toThrow("Aucune limite publique posée");
+  });
+});
+
+/**
+ * Hugo, 2026-10-29 : un plancher exige la vente dans SA clientèle — avant,
+ * être vendu à l'une des deux suffisait.
+ */
+describe("la clientèle d'une limite posée sur un article", () => {
+  const references = (): InMemorySaleReferences =>
+    new InMemorySaleReferences([], [], { proOnly: ["FOU-003"], publicOnly: ["TAR-002"] });
+
+  it("pose une limite publique sur un article vendu aux particuliers", async () => {
+    const { floors, set } = setup(references());
+    const scope: PriceScope = { type: "product", id: "TAR-002" };
+    await set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1"));
+    expect(await floors.inForceFor(scope, "public", AT)).not.toBeNull();
+  });
+
+  it("refuse une limite pro sur un article vendu aux seuls particuliers", async () => {
+    const { floors, set } = setup(references());
+    const scope: PriceScope = { type: "product", id: "TAR-002" };
+    await expect(
+      set.execute(new SetPriceFloorCommand(scope, "pro", WALL, "staff_1")),
+    ).rejects.toBeInstanceOf(SaleReferenceNotSoldToProsError);
+    expect(floors.acts).toHaveLength(0);
+  });
+
+  it("refuse une limite publique sur un article vendu aux seuls pros", async () => {
+    const { set } = setup(references());
+    const scope: PriceScope = { type: "product", id: "FOU-003" };
+    await expect(
+      set.execute(new SetPriceFloorCommand(scope, "public", WALL, "staff_1")),
+    ).rejects.toBeInstanceOf(SaleReferenceNotSoldToPublicError);
   });
 });

@@ -22,6 +22,7 @@ export class SavePriceTemplateHandler implements ICommandHandler<SavePriceTempla
     await assertOnSale(
       this.references,
       command.payload.lines.map((line) => line.sku),
+      "pro",
     );
     const draft = {
       kind: command.payload.kind,

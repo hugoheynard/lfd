@@ -26,6 +26,7 @@ import { PricedDecisionsReader } from "../../../domain/ports/priced-decisions.re
 import { VolumeCommitmentRepository } from "../../../domain/ports/volume-commitment.repository.js";
 import {
   SaleReferenceNotOnSaleError,
+  SaleReferenceNotSoldToProsError,
   SaleReferenceWithdrawnError,
 } from "../../../domain/pricing-errors.js";
 import { InMemorySaleReferences } from "../../../infrastructure/in-memory-sale-references.js";
@@ -40,7 +41,9 @@ import { SignVolumeCommitmentHandler } from "../sign-volume-commitment.handler.j
 
 const FROM = "2026-06-01T00:00:00.000Z";
 const TO = "2026-07-01T00:00:00.000Z";
-const REFERENCES = new InMemorySaleReferences(["VIE-001", "VIE-001-2"], ["PAI-009"]);
+const REFERENCES = new InMemorySaleReferences(["VIE-001", "VIE-001-2"], ["PAI-009"], {
+  publicOnly: ["TAR-002"],
+});
 
 class KnownCompanies extends PricedCompanyReader {
   exists(): Promise<boolean> {
@@ -194,6 +197,14 @@ describe("PoseCompanyMercurialeHandler — les références de la grille", () =>
     await expect(run()).rejects.toBeInstanceOf(SaleReferenceWithdrawnError);
     expect(mercuriales.saved).toHaveLength(0);
   });
+
+  // Hugo, 2026-10-29 : une mercuriale est pro ; vendu aux particuliers seuls ne suffit plus.
+  it("refuse une ligne sur un article vendu aux seuls particuliers", async () => {
+    const { mercuriales, run } = poseMercuriale(["VIE-001", "TAR-002"]);
+    await expect(run()).rejects.toBeInstanceOf(SaleReferenceNotSoldToProsError);
+    await expect(run()).rejects.toThrow(/« TAR-002 » n'est pas en vente aux professionnels/);
+    expect(mercuriales.saved).toHaveLength(0);
+  });
 });
 
 describe("SignVolumeCommitmentHandler — la référence engagée", () => {
@@ -212,6 +223,12 @@ describe("SignVolumeCommitmentHandler — la référence engagée", () => {
   it("refuse un article retiré sans rien signer", async () => {
     const { commitments, run } = signCommitment("PAI-009");
     await expect(run()).rejects.toBeInstanceOf(SaleReferenceWithdrawnError);
+    expect(commitments.signed).toHaveLength(0);
+  });
+
+  it("refuse un article vendu aux seuls particuliers : un engagement est pro", async () => {
+    const { commitments, run } = signCommitment("TAR-002");
+    await expect(run()).rejects.toBeInstanceOf(SaleReferenceNotSoldToProsError);
     expect(commitments.signed).toHaveLength(0);
   });
 });

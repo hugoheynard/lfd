@@ -60,6 +60,7 @@ export class ApplyPriceTemplateHandler implements ICommandHandler<
     await assertOnSale(
       this.references,
       template.lines.map((line) => line.sku),
+      "pro",
     );
     const state = template.toPersistence();
     const validFrom = new Date(command.payload.validFrom);

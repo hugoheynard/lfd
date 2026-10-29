@@ -62,6 +62,13 @@ async function aWithdrawnSku(): Promise<string> {
   return fiche.sku;
 }
 
+/** Une fiche vendue aux seuls particuliers (Hugo, 2026-10-29). */
+async function aPublicOnlySku(): Promise<string> {
+  const fiche = await anActiveFiche(staff, "Tarte des particuliers", "public");
+  await relayAll(ctx);
+  return fiche.sku;
+}
+
 interface Refusal {
   readonly code: string;
   readonly message: string;
@@ -97,6 +104,24 @@ describe("la mercuriale d'un client", () => {
 
     expect(body.code).toBe("pricing.sale_reference.withdrawn");
     expect(body.message).toContain(`« ${withdrawn} »`);
+  });
+
+  /**
+   * Hugo, 2026-10-29 : une décision pro exige la vente AUX PROS. Avant, un
+   * article vendu aux seuls particuliers suffisait, et la mercuriale ne
+   * s'appliquait jamais.
+   */
+  it("refuse une ligne sur un article vendu aux seuls particuliers, avec le refus nommé", async () => {
+    const company = await createCompany(ctx.prisma);
+    const publicOnly = await aPublicOnlySku();
+
+    const body = jsonBody<Refusal>(await pose(company.id, [SKU, publicOnly]).expect(409));
+
+    expect(body.code).toBe("pricing.sale_reference.not_sold_to_pros");
+    expect(body.message).toBe(
+      `L'article « ${publicOnly} » n'est pas en vente aux professionnels : une décision pro posée dessus ne s'appliquerait jamais. Ouvrez-le aux pros (prix pro, audience, validation pro), ou choisissez un autre article.`,
+    );
+    expect(await ctx.prisma.companyMercuriale.count({ where: { companyId: company.id } })).toBe(0);
   });
 
   it("pose une grille dont chaque ligne est en vente", async () => {
@@ -145,6 +170,24 @@ describe("l'engagement de volume", () => {
 });
 
 describe("la règle tarifaire", () => {
+  const rule = (sku: string) =>
+    staff()
+      .post("/admin/pricing/rules")
+      .send({
+        stage: "promotion",
+        label: "Promo publique",
+        scope: { type: "product", id: sku },
+        audience: { type: "all", id: null },
+        minQuantity: null,
+        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1000 },
+        validFrom: FROM,
+        validTo: TO,
+      });
+
+  it("accepte une règle « toutes clientèles » sur un article vendu aux seuls particuliers", async () => {
+    await rule(await aPublicOnlySku()).expect(201);
+  });
+
   it("refuse une portée article sur une référence inconnue", async () => {
     const body = jsonBody<Refusal>(
       await staff()

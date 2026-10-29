@@ -11,7 +11,7 @@ import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ruleNamesOf } from "../rule-names.js";
 import { SaleReferenceReader } from "../../domain/ports/sale-reference.reader.js";
-import { saleReferenceOf } from "../../domain/services/sale-references.js";
+import { clienteleOfAudience, saleReferenceOf } from "../../domain/services/sale-references.js";
 import { assertOnSale } from "./sale-reference-support.js";
 import { CreatePriceRuleCommand } from "./create-price-rule.command.js";
 
@@ -41,7 +41,11 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
   async execute(command: CreatePriceRuleCommand): Promise<string> {
     const rule = PricingRule.create(this.ids.next(), command.draft, command.staffUserId);
     // Une règle sur une référence hors vente ne mordrait jamais (L5).
-    await assertOnSale(this.references, [saleReferenceOf(command.draft.scope)]);
+    await assertOnSale(
+      this.references,
+      [saleReferenceOf(command.draft.scope)],
+      clienteleOfAudience(command.draft.audience),
+    );
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec une règle en cours, jamais avec une rangé. Depuis que clore borne

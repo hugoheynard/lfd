@@ -240,6 +240,21 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   `pricing.sale_reference.withdrawn`. Le brouillon de mercuriale n'est pas
   jugé (il n'est pas une décision). Les décisions déjà posées ne sont pas
   touchées. E2E : `apps/lfd-api/test/pricing-sale-references.e2e-spec.ts`.
+  **Choix tranché par Hugo le 2026-10-29** (après la mise en production,
+  commit `03975c71c`) : « en vente à au moins une clientèle » ne suffit plus
+  pour une décision PRO — elle exige la vente AUX PROS. Sont pro : la
+  mercuriale, l'engagement de volume, le modèle de prix (enregistrer et
+  appliquer), la règle et le barème d'audience `company` ou `segment`, le
+  plancher de clientèle `pro`. Le plancher `public` exige la vente aux
+  particuliers ; la règle et le barème d'audience `all` restent acceptés dès
+  qu'une clientèle achète. Le port rend désormais la clientèle
+  (`on_sale` = les deux, `pro_only`, `public_only`, `withdrawn`), et
+  `ensureOnSale` reçoit celle de la décision (`clienteleOfAudience` pour les
+  règles et barèmes). Deux refus 409 de plus, distincts des deux premiers :
+  `pricing.sale_reference.not_sold_to_pros` (message de Hugo) et
+  `pricing.sale_reference.not_sold_to_public`. Ordre : inconnue, retirée,
+  puis clientèle. Les décisions déjà posées ne sont pas touchées
+  (non commité à l'écriture de ces lignes).
 - ~~**L6** `feat(backoffice)` : dire pourquoi une déclinaison n'est pas proposée
   aux pros.~~ — **bâti le 2026-10-29** (non commité à l'écriture de cette
   ligne). Sous la barre des déclinaisons, `VariantProOffer` lit la vue

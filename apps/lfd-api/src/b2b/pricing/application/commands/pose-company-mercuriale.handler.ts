@@ -62,6 +62,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     await assertOnSale(
       this.references,
       payload.lines.map((line) => line.sku),
+      "pro",
     );
 
     const validFrom = new Date(payload.validFrom);

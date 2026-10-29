@@ -45,7 +45,7 @@ export class SignVolumeCommitmentHandler implements ICommandHandler<
       command.staffUserId,
     );
     // Un engagement sur une référence hors vente ne se cumulerait jamais (L5).
-    await assertOnSale(this.references, [saleReferenceOf(payload.scope)]);
+    await assertOnSale(this.references, [saleReferenceOf(payload.scope)], "pro");
     // 🔴 **Le recouvrement que la base ne voit pas.** La contrainte d'exclusion
     // est PARTIELLE (`WHERE archived_at IS NULL`) : elle refuse le chevauchement
     // avec un engagement en cours, jamais avec un rangé. Depuis que clore borne

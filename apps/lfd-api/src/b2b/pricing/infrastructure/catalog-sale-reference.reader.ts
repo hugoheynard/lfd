@@ -11,11 +11,10 @@ import {
  * Les références de vente, lues par **le chemin de la caisse** :
  * `resolveMany`, qui résout un SKU de vente comme la commande le fera.
  *
- * Les DEUX clientèles : une règle peut viser le public, une mercuriale le pro,
- * et le geste refuse ce qui ne se vend à personne — pas ce qui ne se vend pas
- * à la clientèle de la décision (cf. le rapport du lot L5). Ce qui n'est
- * vendu à personne est ensuite cherché parmi les retirés, pour que le refus
- * dise lequel des deux cas c'est.
+ * Les DEUX clientèles, et laquelle vend : une décision pro exige la vente aux
+ * pros (Hugo, 2026-10-29), un plancher public la vente aux particuliers. Ce
+ * qui n'est vendu à personne est ensuite cherché parmi les retirés, pour que
+ * le refus dise lequel des deux cas c'est.
  */
 @Injectable()
 export class CatalogSaleReferenceReader extends SaleReferenceReader {
@@ -35,8 +34,9 @@ export class CatalogSaleReferenceReader extends SaleReferenceReader {
     ]);
     const standings = new Map<string, SaleReferenceStanding>();
     for (const sku of shopSkus) {
-      if (pro.has(sku) || open.has(sku)) {
-        standings.set(sku, "on_sale");
+      const standing = standingOf(pro.has(sku), open.has(sku));
+      if (standing !== null) {
+        standings.set(sku, standing);
       }
     }
     const missing = shopSkus.filter((sku) => !standings.has(sku));
@@ -45,4 +45,14 @@ export class CatalogSaleReferenceReader extends SaleReferenceReader {
     }
     return standings;
   }
+}
+
+function standingOf(toPros: boolean, toPublic: boolean): SaleReferenceStanding | null {
+  if (toPros && toPublic) {
+    return "on_sale";
+  }
+  if (toPros) {
+    return "pro_only";
+  }
+  return toPublic ? "public_only" : null;
 }

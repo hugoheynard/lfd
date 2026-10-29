@@ -1,6 +1,26 @@
-import type { PriceScope } from "../price-rule.js";
+import type { PriceAudience, PriceScope } from "../price-rule.js";
 import type { SaleReferenceStanding } from "../ports/sale-reference.reader.js";
-import { SaleReferenceNotOnSaleError, SaleReferenceWithdrawnError } from "../pricing-errors.js";
+import {
+  SaleReferenceNotOnSaleError,
+  SaleReferenceNotSoldToProsError,
+  SaleReferenceNotSoldToPublicError,
+  SaleReferenceWithdrawnError,
+} from "../pricing-errors.js";
+
+/**
+ * **La clientèle qu'une décision vise** — `pro` (mercuriale, engagement,
+ * modèle de prix, audience société ou segment, plancher pro), `public`
+ * (plancher des particuliers), `any` (règle ou barème « toutes clientèles »).
+ */
+export type DecisionClientele = "pro" | "public" | "any";
+
+/**
+ * Une audience `segment` ou `company` ne désigne que des sociétés : elle est
+ * pro. Seule `all` vise les deux clientèles.
+ */
+export function clienteleOfAudience(audience: PriceAudience): DecisionClientele {
+  return audience.type === "all" ? "any" : "pro";
+}
 
 /**
  * **La référence qu'une portée vise**, ou `null` si elle vise une famille ou
@@ -22,10 +42,13 @@ export function saleReferenceOf(scope: PriceScope): string | null {
  *
  * @throws {SaleReferenceNotOnSaleError} une référence n'est connue de personne.
  * @throws {SaleReferenceWithdrawnError} une référence désigne un article retiré.
+ * @throws {SaleReferenceNotSoldToProsError} décision pro, article vendu aux seuls particuliers.
+ * @throws {SaleReferenceNotSoldToPublicError} décision des particuliers, article vendu aux seuls pros.
  */
 export function ensureOnSale(
   requested: readonly string[],
   standings: ReadonlyMap<string, SaleReferenceStanding>,
+  clientele: DecisionClientele,
 ): void {
   const asked = [...new Set(requested)];
   const unknown = asked.filter((sku) => !standings.has(sku));
@@ -35,5 +58,29 @@ export function ensureOnSale(
   const withdrawn = asked.filter((sku) => standings.get(sku) === "withdrawn");
   if (withdrawn.length > 0) {
     throw new SaleReferenceWithdrawnError(withdrawn);
+  }
+  ensureSoldTo(asked, standings, clientele);
+}
+
+/**
+ * Hugo, 2026-10-29 : une décision pro exige la vente AUX PROS ; une décision
+ * « toutes clientèles » se contente d'une vente à l'une des deux.
+ */
+function ensureSoldTo(
+  asked: readonly string[],
+  standings: ReadonlyMap<string, SaleReferenceStanding>,
+  clientele: DecisionClientele,
+): void {
+  if (clientele === "pro") {
+    const publicOnly = asked.filter((sku) => standings.get(sku) === "public_only");
+    if (publicOnly.length > 0) {
+      throw new SaleReferenceNotSoldToProsError(publicOnly);
+    }
+  }
+  if (clientele === "public") {
+    const proOnly = asked.filter((sku) => standings.get(sku) === "pro_only");
+    if (proOnly.length > 0) {
+      throw new SaleReferenceNotSoldToPublicError(proOnly);
+    }
   }
 }

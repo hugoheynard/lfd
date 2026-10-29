@@ -40,3 +40,35 @@ export class SaleReferenceWithdrawnError extends BusinessError {
     );
   }
 }
+
+/**
+ * La référence se vend, mais pas aux professionnels — et la décision est pro
+ * (mercuriale, engagement, modèle de prix, règle ou barème d'audience société,
+ * plancher pro). Hugo, 2026-10-29 : une décision pro sur un article public
+ * seul ne s'appliquerait jamais.
+ */
+export class SaleReferenceNotSoldToProsError extends BusinessError {
+  constructor(readonly skus: readonly string[]) {
+    super(
+      "pricing.sale_reference.not_sold_to_pros",
+      skus.length === 1
+        ? `L'article ${quoted(skus)} n'est pas en vente aux professionnels : une décision pro posée dessus ne s'appliquerait jamais. Ouvrez-le aux pros (prix pro, audience, validation pro), ou choisissez un autre article.`
+        : `Les articles ${quoted(skus)} ne sont pas en vente aux professionnels : une décision pro posée dessus ne s'appliquerait jamais. Ouvrez-les aux pros (prix pro, audience, validation pro), ou choisissez d'autres articles.`,
+    );
+  }
+}
+
+/**
+ * Le pendant pour un plancher posé sur la clientèle des particuliers : la
+ * référence ne se vend qu'aux pros.
+ */
+export class SaleReferenceNotSoldToPublicError extends BusinessError {
+  constructor(readonly skus: readonly string[]) {
+    super(
+      "pricing.sale_reference.not_sold_to_public",
+      skus.length === 1
+        ? `L'article ${quoted(skus)} n'est pas en vente aux particuliers : une décision posée dessus pour les particuliers ne s'appliquerait jamais. Ouvrez-le à la boutique, ou choisissez un autre article.`
+        : `Les articles ${quoted(skus)} ne sont pas en vente aux particuliers : une décision posée dessus pour les particuliers ne s'appliquerait jamais. Ouvrez-les à la boutique, ou choisissez d'autres articles.`,
+    );
+  }
+}

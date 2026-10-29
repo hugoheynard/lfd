@@ -5,16 +5,26 @@ import {
 
 /**
  * Les références de vente en mémoire, pour les suites d'application : ce que
- * l'on déclare en vente ou retiré l'est, tout le reste est inconnu.
+ * l'on déclare en vente (aux deux clientèles), vendu à une seule, ou retiré
+ * l'est ; tout le reste est inconnu.
  */
 export class InMemorySaleReferences extends SaleReferenceReader {
   readonly asked: (readonly string[])[] = [];
   private readonly standings = new Map<string, SaleReferenceStanding>();
 
-  constructor(onSale: readonly string[] = [], withdrawn: readonly string[] = []) {
+  constructor(
+    onSale: readonly string[] = [],
+    withdrawn: readonly string[] = [],
+    soldToOne: {
+      readonly proOnly?: readonly string[];
+      readonly publicOnly?: readonly string[];
+    } = {},
+  ) {
     super();
     onSale.forEach((sku) => this.standings.set(sku, "on_sale"));
     withdrawn.forEach((sku) => this.standings.set(sku, "withdrawn"));
+    (soldToOne.proOnly ?? []).forEach((sku) => this.standings.set(sku, "pro_only"));
+    (soldToOne.publicOnly ?? []).forEach((sku) => this.standings.set(sku, "public_only"));
   }
 
   standingOf(shopSkus: readonly string[]): Promise<ReadonlyMap<string, SaleReferenceStanding>> {
