@@ -216,3 +216,55 @@ Tests :
 > seule URL, un seul client Prisma ») ; le commentaire « autre db » de
 > `ProductNorm` est antérieur à B4. Le garde-fou peut donc lire le journal du
 > référentiel en SQL, dans la même migration.
+
+## 10. Contradiction de la révision 2 (vitruve, 2026-10-29) et décisions prises
+
+Décisions prises par Claude sous le mandat de Hugo du 2026-10-29 au soir
+(« finir tous les plans, point à la fin ») — **à revoir au point final** :
+
+- **D-a. La bascule ne se fait jamais sur une journée ouverte.** Le garde-fou
+  du L3 refuse aussi s'il trouve une journée de fournil ou de colisage non
+  close portant une référence produit (`production_day`, `packing.*`), au lieu
+  de réécrire ces tables : `production → b2b` et `packing → b2b` sont interdits,
+  et les fournées, stocks et réservations du jour (`ProductionOrderLine`,
+  `ProductionBatch`, `PackingStock @@id([serviceDay, sku])`…) ne savent pas
+  lire un alias. On bascule un jour sans service ouvert.
+- **D-b. Le changement de défaut (G4) est fermé dès le L1**, jusqu'à la
+  bascule : un seul usage après L1 ferait échouer L3 au déploiement. Refus
+  nommé (« le changement de déclinaison par défaut revient après la bascule de
+  la référence du défaut ») ; le bouton est désactivé avec la même phrase.
+  Rouvert par L3, où il ne déplace plus rien. En dev, la base porte déjà des
+  `product.default_variant_changed` : le geste en dev est écrit dans le L3
+  (le garde-fou ne compte que la production — variable d'environnement — ou
+  une commande de dev remet les défauts d'origine).
+- **D-c. Le port `SaleReferenceUsage` (unité de vente « déjà utilisée ») lit
+  la cible ET ses alias**, dès le L1 : sans cela, `PAI-001-1` redeviendrait
+  modifiable alors que l'article a été vendu sous `PAI-001`.
+- **D-d. La normalisation se fait au RECALCUL d'une commande ouverte**, pas
+  seulement à l'édition (classement des lignes, remise retrait).
+- **D-e. Le L3 n'est pas bâti ce soir.** C'est le seul lot cassant, sa
+  fenêtre réelle entre migration et nouveau code dure une à deux minutes
+  (`deploy_lfd_api.yml`, étape « Attendre que l'image neuve serve »), un échec
+  de `wrangler deploy` après une migration réussie laisserait l'ancien code sur
+  des données basculées, et un refus du garde-fou bloque tout déploiement de
+  l'API jusqu'à un `prisma migrate resolve --rolled-back` à la main (phrase de
+  runbook à écrire). Il attend Hugo, avec son retour arrière écrit.
+
+Objections intégrées aux lots : magasins oubliés (`SiteStockAlert`,
+`SiteResupplyLine`, `ResupplyReceiptLine`, `BakehouseResupplyDraft`,
+`CatalogOperationOverride.hiddenSkus` à vérifier) ; réimplémenteur oublié
+`prisma-withdrawn-shop-skus.reader.ts:34` (alimente le refus L5) ; 75 fichiers
+lisent `productSku`/`shopSkuOf`, pas 43 ; les habitudes
+(`list-my-usuals.handler.ts`, seuil de trois commandes que la scission ferait
+passer dessous) ; D2 et la restauration peuvent-ils toucher le défaut — à
+établir au L1 ; le journal du référentiel est `growth.activity_events`
+(`type = 'product.default_variant_changed'`) ; les avoirs ne portent pas de
+SKU (rien à faire) ; `BEGIN;` et `DO $$ … RAISE EXCEPTION` ont des précédents
+dans les migrations du dépôt.
+
+**Lots, version 3** : **L1** lecture par alias (table vide) — canonicalisation
+au point d'implémentation des ports `production/channels/commerce/` et
+`packing/…`, `SaleReferenceUsage` par alias, normalisation au recalcul,
+fermeture de G4, portée `product:` fermée à la saisie, règle unique pour les
+réimplémenteurs ; **L2** le front normalise avant `keepOnly` ; **L3** (attend
+Hugo) la bascule.
