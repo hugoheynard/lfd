@@ -66,6 +66,12 @@ async function aWithdrawnSku(): Promise<string> {
 async function aPublicOnlySku(): Promise<string> {
   const fiche = await anActiveFiche(staff, "Tarte des particuliers", "public");
   await relayAll(ctx);
+  // Validée pour les particuliers : l'article arrivé du référentiel attend sa
+  // validation avant d'être servi, et un article non servi est refusé plus tôt.
+  await staff()
+    .post("/admin/catalog/review/approve")
+    .send({ skus: [fiche.variantSku], audiences: ["public"] })
+    .expect(204);
   return fiche.sku;
 }
 
