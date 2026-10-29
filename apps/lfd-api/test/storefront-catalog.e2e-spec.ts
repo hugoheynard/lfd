@@ -155,8 +155,8 @@ describe("GET /admin/storefront/catalog", () => {
     expect(jsonBody<StorefrontCatalogView>(response)).toEqual({
       shelves: [{ key: "fam-vien", name: "Viennoiseries", operation: false }],
       items: [
-        { sku: "VIE-001-1", name: "Croissant", shelfKey: "fam-vien", served: true },
-        { sku: "VIE-002-1", name: "Chocolatine", shelfKey: "fam-vien", served: true },
+        { sku: "VIE-001", name: "Croissant", shelfKey: "fam-vien", served: true },
+        { sku: "VIE-002", name: "Chocolatine", shelfKey: "fam-vien", served: true },
       ],
       operations: [],
     });
@@ -184,12 +184,12 @@ describe("GET /admin/storefront/catalog", () => {
     const view = jsonBody<StorefrontCatalogView>(await staff.get(ROUTE).expect(200));
 
     expect(view.items).toContainEqual({
-      sku: "VIE-002-1",
+      sku: "VIE-002",
       name: "Chocolatine",
       shelfKey: "fam-vien",
       served: false,
     });
-    expect(view.items).toContainEqual(expect.objectContaining({ sku: "VIE-001-1", served: true }));
+    expect(view.items).toContainEqual(expect.objectContaining({ sku: "VIE-001", served: true }));
   });
 
   it("propose le rayon op:<key> d'une opération du commerce, et l'opération comme cible d'annonce", async () => {

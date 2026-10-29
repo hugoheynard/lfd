@@ -66,8 +66,8 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub(E2E_STAFF_SUB);
 
-/** VIE-001 est semé au catalogue e2e. */
-const SKU = "VIE-001";
+/** VIE-001-1 est semé au catalogue e2e. */
+const SKU = "VIE-001-1";
 const NEGOTIATED_CENTS = 150;
 const BUYER_SUB = "auth0|acheteur_cloture";
 
