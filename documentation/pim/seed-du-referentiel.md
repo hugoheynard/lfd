@@ -20,14 +20,52 @@ Sur une base vide, à partir du catalogue figé dans
 | -------------------------------------- | ----------------------------------- |
 | taux de TVA                            | 3                                   |
 | points de vente                        | 2 (+ `pos_b2b`, posé par migration) |
-| familles                               | 5                                   |
-| fiches produit                         | 95                                  |
-| fiches mises en vente                  | 95                                  |
+| familles                               | 19 (5 têtes, 14 sous-familles)      |
+| fiches produit                         | 99                                  |
+| fiches mises en vente                  | 99 (les deux drapeaux levés)        |
 | fiches vendues aux pros (matrice)      | 41                                  |
 | **références acceptées au miroir B2B** | **38**                              |
 
 Les 3 manquantes sont écartées pour `variant_sans_prix` : le catalogue de départ
 ne les tarife pas. Le seed ne comble pas ce trou — il le **rapporte**.
+
+⚠️ Familles et fiches recomptées le 2026-10-29 sur `catalogue.ts` et sur le
+rejeu de la base de développement ; les deux lignes du canal B2B (41, 38) ne
+l'ont pas été.
+
+## Ce que le corpus montre de ce qui est bâti (2026-10-29)
+
+Le corpus porte au moins un exemple de chaque geste de fiche livré, rejoué par
+le VRAI handler (`apps/lfd-api/prisma/seed-pim/capabilities.ts`, appelé par `replay.ts` avant la
+signature). Chaque geste est idempotent au rejeu : une déclinaison se retrouve
+par sa référence, une archivée ne reçoit plus rien, un nom ou un minimum
+inchangé n'écrit pas de fait.
+
+| Capacité                                                    | Où dans le corpus                                                                                                                                                                               | Commande rejouée                                                                                  |
+| ----------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| Familles imbriquées                                         | « Salé & traiteur » → Sandwichs & tranches, Parts salées, Salades, **Traiteur de la mer** (en plus des Pains, Viennoiseries, Pâtisseries)                                                       | `CreateCategoryCommand` (parent), `UpdateProductIdentityCommand` pour ranger une fiche déjà semée |
+| Vente au poids                                              | SAL-025 saumon gravlax, SAL-026 saumon fumé, SAL-027 rillettes de saumon (pas 50 g, minimum 100 g), SAL-028 salade de la mer (pas 100 g, minimum 200 g) — prix public TTC et pro HT **au kilo** | `UpdateVariantPricingCommand` (`saleUnit: weight`)                                                |
+| Prix au kilo sous une pièce                                 | chaque pain (`price-per-kg.ts`)                                                                                                                                                                 | `UpdateVariantPricingCommand`                                                                     |
+| Quantité minimale par audience                              | PAT-001 tartelette myrtilles (pro 6), VIE-012 abricotin (pro 10, public 2)                                                                                                                      | `SetProductMinQuantitiesCommand`                                                                  |
+| Déclinaisons en vignette, nom de boutique ≠ libellé interne | PAT-015 tarte myrtille : `-2` « Tarte aux myrtilles — 6 personnes » (interne « Tarte myrtille T2 »), `-3` 8 personnes                                                                           | `AddProductVariantCommand`, `SetVariantShopNameCommand`, `SetProductVariantsAsTilesCommand`       |
+| Déclinaison archivée                                        | PAT-015-4, 10 personnes                                                                                                                                                                         | `DiscontinueProductVariantCommand`                                                                |
+
+**Pas montré, et pourquoi** : la case « afficher le prix au kilo » par audience
+(`price_per_kg_shown_public` / `_pro`) était en cours de création dans l'arbre
+le 2026-10-29 ; le semis ne la touche pas, toutes les cases restent cochées.
+
+La fiche réglementaire inventée (`SEED_PIM_SYNTHETIC_SHEETS=1`) se lit sur la
+famille **propre** avant sa tête : le traiteur de la mer déclare du poisson, pas
+le gluten des sandwichs (`declarations.ts`).
+
+Le scénario de commandes de dev s'en sert : l'Hôtel des Pins commande, pour la
+journée jouée, ses viennoiseries à la pièce **et** 1 500 g de gravlax et 850 g
+de saumon fumé (`src/dev/seeding/delivery-day.seed.ts`). Le fournil compte
+chaque lot au poids entier, le colisage le met au bac en un lot, le bon de
+livraison dit l'unité — `test/dev-scenario.e2e-spec.ts` le vérifie. Les lignes
+que le semis tire de tout le miroir (le sac long, le catalogue étalé) se posent
+dans l'unité et au-dessus du minimum de chaque article
+(`apps/lfd-api/src/dev/seeding/catalog-quantities.seed.ts`).
 
 ## Pourquoi pas en SQL
 

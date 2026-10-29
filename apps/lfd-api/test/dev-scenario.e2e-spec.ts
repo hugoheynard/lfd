@@ -16,6 +16,7 @@ import type {
   DevScenarioResetReport,
   DevScenarioView,
   DevSeedOrdersOnlyReport,
+  StaffNote,
 } from "@lfd/contracts";
 
 import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
@@ -23,6 +24,7 @@ import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const SCENARIO = "/admin/dev/scenario";
 const RELOAD = "/admin/dev/seed/reload";
@@ -46,6 +48,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  // Les saumons au poids que la commande mêlée du scénario commande.
+  await seedWeighedArticles(ctx);
   await seedDriverRole(ctx);
   // Le décor — station, client de référence — que la remise suppose posé.
   await admin(ctx).post(RELOAD).expect(200);
@@ -160,6 +164,55 @@ describe("le scénario du jour, étape par étape", () => {
       expect(await ctx.prisma.staffNotification.count({ where: bells })).toBe(0);
       await next();
       expect(await ctx.prisma.staffNotification.count({ where: bells })).toBe(1);
+    },
+    TIMEOUT_MS,
+  );
+
+  /**
+   * La commande mêlée (2026-10-29) : l'Hôtel des Pins prend ses viennoiseries
+   * à la pièce et deux saumons au poids. Rechargée jusqu'à l'étape 5, elle
+   * doit être portée par les trois papiers du jour — le compte du fournil (un
+   * lot au poids entier, en grammes), le colisage (au bac, en un lot) et le
+   * bon de livraison (l'unité de la ligne).
+   */
+  it(
+    "porte la commande mêlée, pièces et poids, du fournil au bon de livraison",
+    async () => {
+      const { day } = await state();
+      const serviceDay = new Date(`${day}T00:00:00.000Z`);
+      const order = await ctx.prisma.order.findFirstOrThrow({
+        where: { requestedDeliveryDate: serviceDay, company: { enseigne: "Hôtel des Pins" } },
+        select: { id: true, lines: { select: { sku: true, quantity: true, saleUnit: true } } },
+      });
+      const weighed = order.lines.filter((line) => line.saleUnit === "weight");
+      expect(weighed.map((line) => line.quantity).sort((a, b) => a - b)).toEqual([850, 1_500]);
+      expect(order.lines.some((line) => line.saleUnit === "piece")).toBe(true);
+
+      const gravlax = weighed.find((line) => line.quantity === 1_500)?.sku ?? "";
+      expect(
+        await ctx.prisma.productionCount.findMany({
+          where: { serviceDay: day, sku: gravlax },
+          select: { quantity: true, saleUnit: true },
+        }),
+      ).toEqual([{ quantity: 1_500, saleUnit: "weight" }]);
+
+      const packed = await ctx.prisma.packingLine.findMany({
+        where: { serviceDay: day, orderId: order.id, saleUnit: "weight" },
+        select: { quantity: true, packedAt: true },
+      });
+      expect(packed).toHaveLength(2);
+      expect(packed.every((line) => line.packedAt !== null)).toBe(true);
+
+      const notes = jsonBody<readonly StaffNote[]>(
+        await admin(ctx).get(`/admin/orders/${order.id}/delivery-notes`).expect(200),
+      );
+      const noteLines = notes.flatMap((note) => note.lines);
+      expect(
+        noteLines
+          .filter((line) => line.saleUnit === "weight")
+          .map((line) => line.quantity)
+          .sort((a, b) => a - b),
+      ).toEqual([850, 1_500]);
     },
     TIMEOUT_MS,
   );

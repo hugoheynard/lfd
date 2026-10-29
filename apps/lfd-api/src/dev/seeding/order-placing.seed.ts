@@ -103,7 +103,10 @@ export interface Target {
 /** Une ligne de panier, par SKU de produit. */
 export interface SeedLine {
   readonly sku: string;
+  /** Des pièces — ou des GRAMMES quand `saleUnit` vaut `weight`. */
   readonly quantity: number;
+  /** Absent = à la pièce, comme la boutique l'envoie (`orderLineInputSchema`). */
+  readonly saleUnit?: "piece" | "weight";
 }
 
 /** Une tranche horaire demandée ; `start` nul = une échéance (« avant `end` »). */

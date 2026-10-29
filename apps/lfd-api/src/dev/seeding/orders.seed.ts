@@ -9,6 +9,8 @@ import { COUNTER, PICKUP_WINDOW } from "./counter-day.seed.js";
 import { PEAK_AHEAD, placePeak, placeTomorrow, TOMORROW } from "./ahead-days.seed.js";
 import { seedDeliverySettings } from "./delivery-settings.seed.js";
 import type { DeliveryDayReport } from "./delivery-day.seed.js";
+import { SEED_SALE_TERMS_SELECT, seedLineOf } from "./catalog-quantities.seed.js";
+import { WEIGHED_SKUS } from "./delivery-day.seed.js";
 import { CORPUS_SKUS, HISTORY_COUNT, HISTORY_EVERY_DAYS, linesFor } from "./order-lines.seed.js";
 import { isoDay, place, type SeedContext, type SeedLine, shiftDays } from "./order-placing.seed.js";
 import {
@@ -238,7 +240,7 @@ async function placeScenario(
  * la commande résout la déclinaison par défaut, comme la boutique.
  */
 async function ensureSkusExist(context: SeedContext): Promise<void> {
-  const wanted = [...new Set([...CORPUS_SKUS, ...TOMORROW_ROUNDS_SKUS])];
+  const wanted = [...new Set([...CORPUS_SKUS, ...TOMORROW_ROUNDS_SKUS, ...WEIGHED_SKUS])];
   const known = await context.prisma.catalogItem.findMany({
     // `STILL_SOLD` et pas un `withdrawnAt: null` recopié : la condition du
     // retrait est NOMMÉE une fois, et la porte `withdrawn-filter` refuse une
@@ -303,18 +305,20 @@ async function spreadLines(context: SeedContext, skip: number): Promise<SeedLine
     // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
     // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
     where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
-    select: { sku: true, productSku: true, isDefault: true },
+    select: { sku: true, productSku: true, isDefault: true, ...SEED_SALE_TERMS_SELECT },
     orderBy: [{ categoryId: "asc" }, { productSku: "asc" }],
   });
   return items
     .filter((_, index) => index % 2 === skip)
-    .map((item, index) => ({
-      sku: shopSkuOf(item),
+    .flatMap((item, index) => {
       // Déterministe, et sur trois ordres de grandeur : c'est là que se voit
       // l'alignement des chiffres monospacés, et le contenant qui bascule du
-      // singulier au pluriel.
-      quantity: 1 + ((index * 13) % 7) + (index % 5 === 0 ? 40 : 0) + (index % 11 === 0 ? 100 : 0),
-    }));
+      // singulier au pluriel. Dans l'unité de l'article (`seedLineOf`).
+      const base =
+        1 + ((index * 13) % 7) + (index % 5 === 0 ? 40 : 0) + (index % 11 === 0 ? 100 : 0);
+      const line = seedLineOf(shopSkuOf(item), item, base);
+      return line === null ? [] : [line];
+    });
 }
 
 async function wideLines(context: SeedContext): Promise<SeedLine[]> {
@@ -323,7 +327,7 @@ async function wideLines(context: SeedContext): Promise<SeedLine[]> {
     // refusé hors de ses jours (`orders.operation.day_outside`), et le semis
     // s'arrêtait sur la première bûche venue (constaté le 2026-09-28).
     where: { isDefault: true, operationOnly: false, ...STILL_SOLD },
-    select: { sku: true, productSku: true, isDefault: true },
+    select: { sku: true, productSku: true, isDefault: true, ...SEED_SALE_TERMS_SELECT },
     orderBy: { productSku: "asc" },
     take: WIDE_LINE_COUNT,
   });
@@ -337,8 +341,8 @@ async function wideLines(context: SeedContext): Promise<SeedLine[]> {
   // Des quantités qui varient sans hasard : deux exécutions du semis ne se
   // contredisent pas, et la colonne de gauche montre des nombres à une et à
   // deux chiffres — c'est là que se voit l'alignement tabulaire.
-  return items.map((item, index) => ({
-    sku: shopSkuOf(item),
-    quantity: 2 + ((index * 7) % 23),
-  }));
+  return items.flatMap((item, index) => {
+    const line = seedLineOf(shopSkuOf(item), item, 2 + ((index * 7) % 23));
+    return line === null ? [] : [line];
+  });
 }

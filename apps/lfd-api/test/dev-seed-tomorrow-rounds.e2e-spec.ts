@@ -21,6 +21,7 @@ import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { PROPOSAL, ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
 import { bootstrapE2e, type E2eContext, jsonBody } from "./e2e-harness.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 /**
@@ -43,6 +44,8 @@ beforeAll(async () => {
     overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE, ...ROAD_ROUTING_OVERRIDES],
   });
   await ctx.reset();
+  // Les saumons au poids que la commande mêlée du scénario commande.
+  await seedWeighedArticles(ctx);
   await seedDriverRole(ctx);
   const report = jsonBody<DevSeedReport>(await admin(ctx).post(RELOAD).expect(200));
   await ctx.drain();

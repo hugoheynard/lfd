@@ -13,6 +13,7 @@ import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 /** Un rechargement complet sème des dizaines de commandes : cf. `dev-seed-driver.e2e-spec.ts`. */
@@ -29,6 +30,8 @@ beforeAll(async () => {
   // Surveillé : ce semis s'est figé en CI le 2026-10-26 sans rien dire.
   report = await watchSeed("dev-seed-sites · semis", async () => {
     await ctx.reset();
+    // Les saumons au poids que la commande mêlée du scénario commande.
+    await seedWeighedArticles(ctx);
     await seedDriverRole(ctx);
     return reload();
   });

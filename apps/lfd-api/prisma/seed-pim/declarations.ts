@@ -55,6 +55,9 @@ const SOY = "AY";
 const NUTS_HAZELNUT = "SH";
 const NUTS_ALMOND = "SA";
 const SESAME = "AS";
+const FISH = "AF";
+const CRUSTACEANS = "AC";
+const MUSTARD = "BM";
 
 interface SyntheticSheet {
   readonly allergens: readonly string[];
@@ -119,6 +122,13 @@ const BY_FAMILY: ReadonlyMap<string, SyntheticSheet> = new Map([
     ),
   ],
   ["Salé & traiteur", sheet([GLUTEN_WHEAT, EGGS, MILK], [SESAME, SOY], 290, 16, 8, 24, 3, 11, 1.1)],
+  // Une SOUS-famille (2026-10-29) : le saumon ne porte pas le gluten des
+  // sandwichs de sa famille de tête, et une fiche inventée qui déclarerait du
+  // blé sur un gravlax ne ressemblerait à rien de réel.
+  [
+    "Traiteur de la mer",
+    sheet([FISH], [CRUSTACEANS, MUSTARD, MILK], 210, 13, 2.4, 1.5, 1.2, 21, 3.1),
+  ],
   [
     "Chocolat & confiserie",
     sheet([MILK, SOY], [NUTS_HAZELNUT, NUTS_ALMOND, GLUTEN_WHEAT], 545, 33, 20, 52, 48, 7, 0.2),
@@ -160,7 +170,12 @@ export function declarationFor(product: CorpusProduct): CorpusDeclaration | null
   if (!syntheticSheetsEnabled()) {
     return null;
   }
-  const source = BY_FAMILY.get(rootFamilyOf(product.categoryName)) ?? FALLBACK;
+  // La famille propre d'abord, sa tête ensuite : une sous-famille qui a son
+  // profil (« Traiteur de la mer ») ne prend pas celui de sa tête.
+  const source =
+    BY_FAMILY.get(product.categoryName) ??
+    BY_FAMILY.get(rootFamilyOf(product.categoryName)) ??
+    FALLBACK;
   return {
     allergens: source.allergens,
     mayContain: source.mayContain,

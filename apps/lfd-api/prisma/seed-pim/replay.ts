@@ -17,6 +17,7 @@ import type { CorpusNutrition, CorpusProduct } from "./corpus.js";
 import { declarationFor } from "./declarations.js";
 import { toContextVat, type Registry } from "./registry.js";
 import { seedPricePerKg } from "./price-per-kg.js";
+import { replayCapabilities, seedSaleTerms } from "./capabilities.js";
 import {
   localizedText,
   type LocalizedText,
@@ -99,6 +100,7 @@ async function replayProduct(
   await fillVariant(bus, prisma, productId, product, declaration);
   await describeProduct(bus, productId, product);
   await setOwnVat(bus, productId, product, registry);
+  await replayCapabilities(bus, prisma, productId, product);
   await settle(bus, productId, product, declaration !== null, report, alreadySigned);
 }
 
@@ -173,6 +175,7 @@ async function fillVariant(
       weightGrams: product.weightGrams,
       proPriceHt: product.proPriceHt,
       ...seedPricePerKg(product),
+      ...seedSaleTerms(product),
     }),
   );
   if (declaration !== null && variant.allergenSheet === null) {

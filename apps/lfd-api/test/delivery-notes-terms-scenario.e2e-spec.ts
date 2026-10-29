@@ -15,6 +15,7 @@ import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const SCENARIO = "/admin/dev/scenario";
 /** La dernière étape du scénario : « tournées chargées, prêtes à partir ». */
@@ -30,6 +31,8 @@ beforeAll(async () => {
   // Surveillé : ce semis s'est figé en CI le 2026-10-26 sans rien dire.
   await watchSeed("delivery-notes-terms-scenario · semis", async () => {
     await ctx.reset();
+    // Les saumons au poids que la commande mêlée du scénario commande.
+    await seedWeighedArticles(ctx);
     await seedDriverRole(ctx);
     await admin(ctx).post("/admin/dev/seed/reload").expect(200);
     await ctx.drain();

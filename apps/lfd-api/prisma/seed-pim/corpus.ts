@@ -71,6 +71,52 @@ export interface CorpusProduct {
    */
   readonly declaration: CorpusDeclaration | null;
   readonly vat: Readonly<Record<string, string>>;
+  /**
+   * **Vendu au poids** (`documentation/pricing/vente-au-poids.md`) : le prix
+   * public et le prix pro s'entendent alors PAR KILO, et la quantité se compte
+   * en grammes. Absent = à la pièce.
+   */
+  readonly soldByWeight?: CorpusWeightTerms | undefined;
+  /**
+   * La quantité minimale d'achat de la déclinaison par défaut, par audience
+   * (`documentation/catalogue/plan-quantite-minimale.md`). Absent = aucune.
+   */
+  readonly minQuantities?: CorpusMinQuantities | undefined;
+  /**
+   * Les déclinaisons de plus, montrées en vignette au rayon
+   * (`documentation/catalogue/plan-declinaisons-en-vignette.md`). Absent = le
+   * défaut seul.
+   */
+  readonly variants?: readonly CorpusVariant[] | undefined;
+}
+
+/** Le pas et le minimum d'un article au poids, en grammes. */
+export interface CorpusWeightTerms {
+  readonly weightStepGrams: number;
+  readonly weightMinGrams: number | null;
+}
+
+export interface CorpusMinQuantities {
+  readonly pro: number | null;
+  readonly public: number | null;
+}
+
+/**
+ * Une déclinaison de plus que le défaut, désignée par SA référence — c'est elle
+ * qui rend le rejeu idempotent, comme le SKU d'une fiche.
+ *
+ * Deux noms, parce que l'écran en a deux depuis l'identité de déclinaison
+ * (`documentation/catalogue/plan-identite-de-declinaison.md`) : le libellé
+ * INTERNE (l'onglet, l'atelier) et le nom de BOUTIQUE (vignette, commande).
+ */
+export interface CorpusVariant {
+  readonly sku: string;
+  readonly internalLabel: string;
+  readonly shopName: LocalizedText;
+  readonly priceCents: number;
+  readonly proPriceHt: string;
+  /** Archivée au semis : elle existe, elle ne se vend plus. */
+  readonly discontinued?: boolean | undefined;
 }
 
 export interface CorpusDeclaration {

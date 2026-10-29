@@ -18,6 +18,7 @@ import { bootstrapE2e, E2E_STAFF_ID, jsonBody, type E2eContext } from "./e2e-har
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { MY_ROUND, seedDriverRole } from "./delivery-driver-scene.js";
 import { ROAD_ROUTING_OVERRIDES } from "./delivery-routing-scene.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const RELOAD = "/admin/dev/seed/reload";
 
@@ -54,6 +55,8 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  // Les saumons au poids que la commande mêlée du scénario commande.
+  await seedWeighedArticles(ctx);
   await seedDriverRole(ctx);
 });
 

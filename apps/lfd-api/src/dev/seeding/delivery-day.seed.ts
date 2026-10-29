@@ -61,6 +61,13 @@ export interface DeliveryDayEntry {
   readonly lines: readonly SeedLine[];
 }
 
+/** Le saumon gravlax du corpus du référentiel, vendu au poids (`prisma/seed-pim/catalogue.ts`). */
+export const WEIGHED_GRAVLAX = "SAL-025";
+/** Le saumon fumé du même corpus, vendu au poids. */
+export const WEIGHED_SMOKED = "SAL-026";
+/** Les articles au poids que la journée commande — ce que le semis vérifie au catalogue AVANT d'écrire. */
+export const WEIGHED_SKUS: readonly string[] = [WEIGHED_GRAVLAX, WEIGHED_SMOKED];
+
 export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
   // ── Val d'Isère ─────────────────────────────────────────────────────────────
   {
@@ -131,10 +138,17 @@ export const DELIVERY_DAY: readonly DeliveryDayEntry[] = [
     enseigne: "Hôtel des Pins",
     window: null,
     ready: true,
+    // 🔴 La commande MÊLÉE (2026-10-29) : le buffet du petit-déjeuner prend
+    // ses viennoiseries à la pièce et son saumon au poids, en grammes —
+    // multiples du pas de 50 g, au-dessus du minimum de 100 g. La fiche
+    // d'atelier compte chaque lot au poids entier, le colisage le met au bac
+    // en un lot, le bon de livraison dit l'unité de la ligne.
     lines: [
       { sku: "VIE-001", quantity: 60 },
       { sku: "VIE-002", quantity: 40 },
       { sku: "VIE-009", quantity: 24 },
+      { sku: WEIGHED_GRAVLAX, quantity: 1_500, saleUnit: "weight" },
+      { sku: WEIGHED_SMOKED, quantity: 850, saleUnit: "weight" },
     ],
   },
   {

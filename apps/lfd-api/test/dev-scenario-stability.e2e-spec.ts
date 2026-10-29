@@ -29,6 +29,7 @@ import {
   PAYMENT_GATEWAY_OVERRIDE,
   tableCounts,
 } from "./dev-scenario-scene.js";
+import { seedWeighedArticles } from "./weighed-catalog-scene.js";
 
 const SCENARIO = "/admin/dev/scenario";
 /** Cinq tours : cf. l'en-tête. */
@@ -46,6 +47,8 @@ beforeAll(async () => {
     overrides: [ADMIN_VERIFIER_OVERRIDE, PAYMENT_GATEWAY_OVERRIDE, ...ROAD_ROUTING_OVERRIDES],
   });
   await ctx.reset();
+  // Les saumons au poids que la commande mêlée du scénario commande.
+  await seedWeighedArticles(ctx);
   await seedDriverRole(ctx);
   await admin(ctx).post("/admin/dev/seed/reload").expect(200);
   await ctx.drain();
