@@ -120,3 +120,16 @@ réponses PAR DÉFAUT du § 4, et ces questions restent ouvertes :
 
 **Après le déploiement** : lancer « Tout réémettre » (Catalogue publié), sans
 quoi les vignettes affichent le nom de la déclinaison seul.
+
+### Pistes de Hugo, à reprendre à froid (2026-10-29 au soir)
+
+Notées telles quelles, **rien n'est décidé** (« c'est trop confus pour le
+moment ») :
+
+- une déclinaison devrait avoir une **identité autonome**, traduisible comme
+  celle de la fiche ; le nom saisi à la création d'une déclinaison en
+  deviendrait le nom **français** (le stockage le permet déjà : `name` est un
+  `jsonb` `{ fr: … }`) ;
+- le **pro** devrait voir les déclinaisons en vignette comme le particulier,
+  quand elles sont dans son audience — lié à la question 1 (tarifs posés sur
+  le produit), donc plan et `vitruve` avant de bâtir.
