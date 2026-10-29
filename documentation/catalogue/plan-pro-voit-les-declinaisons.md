@@ -7,6 +7,27 @@
 > questions 1, 2 et 4. **Rien n'est bâti.** Touche à l'argent : `vitruve` avant
 > Hugo.
 
+> 🔴 **Révisé le 2026-10-29 au soir — le modèle est À PLAT.** Hugo : « tout le
+> monde a un SKU, ça devrait être flat ensuite, mercuriale etc. », puis « la
+> déclinaison peut hériter du tarif de son défaut, mais les mercuriales et le
+> reste sont basés sur les SKU ». Donc :
+>
+> - le **tarif de base** d'une déclinaison peut suivre celui du défaut — c'est
+>   l'existant du référentiel (`pricingFollowsDefault`), rien à bâtir ;
+> - **toute décision tarifaire** (mercuriale, plancher, palier, promotion,
+>   engagement de volume) vise **une référence de vente** et ne vaut que pour
+>   elle : `P-ADQBEM` pour le défaut, `P-ADQBEM-2` pour la part. **Aucun
+>   héritage** du produit vers ses déclinaisons — Q1 tranchée (b).
+>
+> Conséquences : les BLOQUANTS 2 et 3 du § 6 et le SÉRIEUX « Q1-a touche le
+> public » tombent avec l'héritage, et le lot 3 disparaît. Restent : la saisie
+> staff et le tableau des prix qui listent chaque déclinaison montrée (lot 4,
+> Q2), la chaîne du froid de la livraison (`coldProductSkus()` par SKU
+> produit), la référence d'un plancher (médiane) qui bouge quand des
+> déclinaisons entrent dans une portée, et — à part, défaut existant — la
+> lecture datée (lot 1, BLOQUANT 1 : deux clés ou une colonne `is_default`).
+> Le corps ci-dessous date d'avant cette révision.
+
 ## 1. L'existant (ouvert le 2026-10-29)
 
 ### 1.1 La vitrine pro ne filtre pas les déclinaisons dans le code
