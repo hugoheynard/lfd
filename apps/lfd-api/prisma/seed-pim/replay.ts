@@ -15,6 +15,7 @@ import type { PrismaService } from "../../src/platform/database/prisma.service.j
 import type { CorpusNutrition, CorpusProduct } from "./corpus.js";
 import { declarationFor } from "./declarations.js";
 import { toContextVat, type Registry } from "./registry.js";
+import { seedPricePerKg } from "./price-per-kg.js";
 
 /**
  * Le rejeu d'une fiche — **le cycle complet, dans l'ordre où un humain le
@@ -154,6 +155,7 @@ async function fillVariant(
       priceCents: product.priceCents,
       weightGrams: product.weightGrams,
       proPriceHt: product.proPriceHt,
+      ...seedPricePerKg(product),
     }),
   );
   if (declaration !== null && variant.allergenSheet === null) {
