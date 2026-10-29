@@ -120,3 +120,39 @@ Pour rester opposable, un ajout daté doit tracer :
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/pricing/application/commands/pose-company-mercuriale.handler.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/src/b2b/pricing/infrastructure/prisma-sale-reference-decisions.reader.ts
 - /Users/hugo/WebstormProjects/LaFolieDouce/apps/lfd-api/prisma/schema/public/pricing.prisma
+
+## 7. Contradiction (vitruve, 2026-10-29) — le § 1 est à reprendre
+
+**BLOQUANTS**
+
+1. **Le plan revient sur une décision déjà migrée.** `20260908160000_mercuriale_objet`
+   a repris toutes les règles `stage='mercuriale' AND audience_type='company'`
+   dans `company_mercuriales` et les a archivées (« N règles indépendantes que
+   rien ne reliait », risque de « 400 au paiement ») ; un gabarit pose
+   aujourd'hui un `CompanyMercuriale.pose(...)` (`apply-price-template.handler.ts`
+   ~68-100), et le contrat interdit de saisir une règle mercuriale
+   (`authoredPriceStageSchema = ["promotion","geste"]`, `packages/contracts/src/pricing.ts:78`).
+   Le commentaire de `pricing.prisma` ~345 qui dit le contraire est périmé.
+2. **Les sous-comptes** : la mercuriale vise `pricingCompanyId` (le principal
+   que suit un site), une règle `company` est jugée sur `companyId` — l'ajout
+   ne s'appliquerait pas aux sites.
+3. **Le doublon n'est gardé que dans un sens** : poser une mercuriale ou un
+   gabarit portant la même référence pendant qu'un ajout court donne deux
+   règles à égalité → `AmbiguousPriceRulesError`, commande en 400.
+
+**SÉRIEUX** : `variant:` battrait en silence une ligne de grille (`SCOPE_RANK`) —
+`product:` seulement ; plancher appliqué après (à afficher) ; trois lecteurs
+oubliés (comparatif `loaded-pricer.ts` ~300-335, `board-item.ts:132`,
+`company-pricing.query.ts:93`) ; clore = borner `validTo`, pas archiver ; motif
+obligatoire non tenu par le domaine.
+
+**Décision à prendre par Hugo (T0)** :
+
+- **(a)** revenir à des règles d'étage mercuriale, en répondant aux motifs de
+  `20260908160000` ;
+- **(b)** faire de l'ajout un **avenant daté de la mercuriale** : une nouvelle
+  version du document, avec sa fenêtre, qui hérite de `pricingCompanyId`, de la
+  clôture et du refus de doublon déjà tenus par la mercuriale.
+
+Recommandation de Claude : **(b)**, qui garde l'objet que la maison a choisi le
+2026-09-08 et règle d'un coup les trois bloquants.
