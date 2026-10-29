@@ -93,3 +93,29 @@ n'est levé ici :
 
 Hors de ces trois points, le comportement des fiches à une seule déclinaison
 est inchangé.
+
+## 5. Reporté à un second temps (Hugo, 2026-10-29)
+
+Hugo, le 2026-10-29 : « je voudrais qu'on déploie ce qu'on a et que tu notes
+ces questions pour un second temps ». Le lot part donc en production avec les
+réponses PAR DÉFAUT du § 4, et ces questions restent ouvertes :
+
+1. **Les tarifs posés sur le produit** (mercuriale, plancher, palier, promotion
+   sur `VIE-001`) valent-ils pour ses déclinaisons montrées en vignette
+   (`VIE-001-2`) ? Aujourd'hui : non — un client au prix négocié paie la
+   déclinaison au tarif normal. Question d'argent : `vitruve` avant de bâtir.
+2. **Le prix à une date passée** d'une déclinaison est refusé (400). Et défaut
+   probable antérieur : `PrismaCanonicalPriceHistoryReader` garde une ligne par
+   `productSku`, donc le prix rejoué d'une fiche à plusieurs déclinaisons peut
+   être celui d'une autre déclinaison. À vérifier puis corriger.
+3. **Le nom d'une déclinaison devient public** (« Florentin — Boîte de 220 g »),
+   contre la décision du 2026-09-13 (`plan-vendre-le-variant.md` § 10) ; et il
+   n'est pas traduit (la fiche arrive en français sur la boutique anglaise).
+4. **Le bon de commande pro** (`ProductCatalogReader.all()`,
+   `catalog-sellable-articles.reader.ts`) ne propose que la déclinaison par
+   défaut.
+5. **Le colisage et la livraison** (contenances des bacs, `requiresCold`) ne
+   vérifient pas une ligne vendue sous le SKU d'une déclinaison.
+
+**Après le déploiement** : lancer « Tout réémettre » (Catalogue publié), sans
+quoi les vignettes affichent le nom de la déclinaison seul.
