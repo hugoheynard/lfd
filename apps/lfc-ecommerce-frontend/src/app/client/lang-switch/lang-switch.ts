@@ -43,13 +43,23 @@ function isLocale(value: string): value is LocaleCode {
   imports: [FoldIconComponent, FoldViewToggleComponent],
   templateUrl: './lang-switch.html',
   styleUrl: './lang-switch.scss',
+  // Le sélecteur approché (souris, focus, doigt) charge les langues avant le
+  // clic : au premier changement, le libellé arrive sans attente et la largeur
+  // réservée au bouton « Se connecter » ne saute pas (2026-10-29, langues à la
+  // demande).
+  host: {
+    '(mouseenter)': 'preload()',
+    '(focusin)': 'preload()',
+    '(touchstart)': 'preload()',
+  },
 })
 export class LangSwitch {
   /** `sm` dans la barre du téléphone, `md` dans la colonne de bureau. */
   readonly size = input<'sm' | 'md'>('sm');
 
   protected readonly locale = inject(ClientLocale);
-  protected readonly t = inject(ClientCopyService).t;
+  private readonly copy = inject(ClientCopyService);
+  protected readonly t = this.copy.t;
   protected readonly options = OPTIONS;
 
   /** Le code affiché sur le globe. */
@@ -59,6 +69,13 @@ export class LangSwitch {
   protected readonly name = computed(
     () => LOCALES.find((l) => l.code === this.locale.current())?.name ?? '',
   );
+
+  /** Charge chaque langue une fois par visite ; `whenReady` ne rejette jamais. */
+  protected preload(): void {
+    for (const { code } of LOCALES) {
+      void this.copy.whenReady(code);
+    }
+  }
 
   /** Au doigt, on passe à la suivante — et la dernière ramène à la première. */
   protected cycle(): void {
