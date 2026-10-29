@@ -1,12 +1,13 @@
 import { ChangeDetectionStrategy, Component, computed, inject } from '@angular/core';
 import { Router } from '@angular/router';
-import { FoldButtonComponent, FoldCalloutComponent, FoldLinkComponent } from 'fold-ng';
+import {
+  FoldButtonComponent,
+  FoldCalloutComponent,
+  FoldInlineConfirmComponent,
+  FoldLinkComponent,
+} from 'fold-ng';
 
 import { ProductFormStore } from '../product-form-store';
-
-/** Pourquoi le bouton est désactivé — la même phrase que le refus du serveur. */
-export const DEFAULT_CHANGE_SUSPENDED =
-  'Le changement de déclinaison par défaut revient après la bascule de la référence du défaut.';
 
 /**
  * **Ce qui reste sous la barre des déclinaisons** : ce qui n'y retire rien
@@ -20,24 +21,24 @@ export const DEFAULT_CHANGE_SUSPENDED =
  * Archiver, détacher et désarchiver ont déménagé dans l'onglet « Danger » de
  * la fiche (`VariantRetirement`, demande de Hugo, 2026-10-29).
  *
- * 🔴 **Le changement de défaut est fermé jusqu'à la bascule de la référence
- * du défaut** (`documentation/catalogue/plan-defaut-sous-sa-reference.md`,
- * § 10, D-b) : le bouton reste visible mais désactivé, et la phrase du refus
- * du serveur est écrite à côté — un bouton grisé sans raison ne dit pas quoi
- * attendre. Le L3 rouvre le geste et sa confirmation en ligne.
+ * Confirmation en ligne (`fold-inline-confirm`), sans dialogue : ses mots
+ * viennent du fournisseur global d'`app.config.ts`, le libellé du bouton de
+ * confirmation est posé ici parce qu'il nomme le geste.
  */
 @Component({
   selector: 'app-variant-lifecycle',
   standalone: true,
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldButtonComponent, FoldCalloutComponent, FoldLinkComponent],
+  imports: [
+    FoldButtonComponent,
+    FoldCalloutComponent,
+    FoldInlineConfirmComponent,
+    FoldLinkComponent,
+  ],
   templateUrl: './variant-lifecycle.html',
   styleUrl: './variant-lifecycle.scss',
 })
 export class VariantLifecycle {
-  /** La phrase du refus du serveur (`DefaultVariantChangeSuspendedError`), mot pour mot. */
-  protected readonly suspended = DEFAULT_CHANGE_SUSPENDED;
-
   protected readonly store = inject(ProductFormStore);
   private readonly router = inject(Router);
 
@@ -45,6 +46,10 @@ export class VariantLifecycle {
   protected readonly retirable = computed(
     () => this.store.variantTabs().find((tab) => tab.selected && !tab.isDefault) ?? null,
   );
+
+  protected makeDefault(variantId: string): void {
+    void this.store.makeVariantDefault(variantId);
+  }
 
   protected open(productId: string): void {
     void this.router.navigate(['/pim/produits', productId]);

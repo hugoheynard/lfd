@@ -77,9 +77,10 @@ export class InMemoryCatalogOperations extends CatalogOperationsReader {
 }
 
 /**
- * Le catalogue, réduit à la lecture par SKU produit que `SaleOperations` fait.
- * Une audience peut être fermée à un article : il est alors absent, comme un
- * article sans prix public l'est au lecteur réel.
+ * Le catalogue, réduit à la lecture par SKU de VENTE que `SaleOperations` fait
+ * — celui de la déclinaison depuis la bascule (`plan-defaut-sous-sa-reference.md`,
+ * L3 ; le SKU produit jusque-là). Une audience peut être fermée à un article :
+ * il est alors absent, comme un article sans prix public l'est au lecteur réel.
  */
 export class DefaultsCatalog extends CatalogReader {
   constructor(
@@ -102,18 +103,14 @@ export class DefaultsCatalog extends CatalogReader {
   }
 
   listByShopSkus(
-    productSkus: readonly string[],
+    shopSkus: readonly string[],
     audience: ShopAudience,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     return Promise.resolve(
       new Map(
         this.items
-          .filter(
-            (item) =>
-              productSkus.includes(item.productSku) &&
-              this.closedTo.get(item.productSku) !== audience,
-          )
-          .map((item) => [item.productSku, item] as const),
+          .filter((item) => shopSkus.includes(item.sku) && this.closedTo.get(item.sku) !== audience)
+          .map((item) => [item.sku, item] as const),
       ),
     );
   }

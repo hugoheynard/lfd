@@ -11,24 +11,25 @@ export class PrismaCanonicalPriceHistoryReader extends CanonicalPriceHistoryRead
   }
 
   /**
-   * `distinct` sur le PRODUIT — l'unité que la plateforme vend — trié par date
-   * décroissante : Postgres le rend en `DISTINCT ON`, donc une seule ligne par
-   * produit **dans la requête**. Rapatrier tout l'historique pour n'en garder
+   * `distinct` sur l'ARTICLE (`sku`, la référence de vente depuis la bascule —
+   * `plan-defaut-sous-sa-reference.md`, L3) — trié par date décroissante :
+   * Postgres le rend en `DISTINCT ON`, donc une seule ligne par article
+   * **dans la requête**. Rapatrier tout l'historique pour n'en garder
    * que la dernière ligne coûterait de plus en plus cher pour un résultat de
    * taille constante, et la table ne fait que grandir.
    */
   async pricingAt(at: Date): Promise<ReadonlyMap<string, CatalogPricing>> {
     const rows = await this.prisma.catalogPriceHistory.findMany({
       where: { recordedAt: { lte: at } },
-      orderBy: [{ productSku: "asc" }, { recordedAt: "desc" }],
-      distinct: ["productSku"],
-      select: { productSku: true, priceMillicents: true, vatRatePercent: true },
+      orderBy: [{ sku: "asc" }, { recordedAt: "desc" }],
+      distinct: ["sku"],
+      select: { sku: true, priceMillicents: true, vatRatePercent: true },
     });
     return new Map(
       rows.map((row) => [
-        row.productSku,
+        row.sku,
         {
-          sku: row.productSku,
+          sku: row.sku,
           unitPriceMillicents: row.priceMillicents,
           // `Decimal` → `number` : le domaine ne connaît pas le type de l'ORM.
           vatRatePercent: row.vatRatePercent === null ? null : row.vatRatePercent.toNumber(),

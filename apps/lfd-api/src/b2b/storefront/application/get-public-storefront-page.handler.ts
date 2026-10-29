@@ -2,6 +2,7 @@ import type { PublicStorefrontPageView } from "@lfd/contracts";
 import { type IQueryHandler, QueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../platform/time/clock.js";
+import { DefaultSaleReferenceReader } from "../../catalog/domain/ports/default-sale-reference.reader.js";
 import { PublicStorefrontReader } from "../domain/public-storefront.reader.js";
 import { StorefrontSettingsReader } from "../domain/storefront-settings.reader.js";
 import { StorefrontOperationsReader } from "../domain/storefront-operations.reader.js";
@@ -10,11 +11,14 @@ import {
   hasOperationAnnouncements,
   resolveOperationAnnouncements,
 } from "./operation-announcements.js";
+import { tileProductSkusOf, withSaleReferences } from "./storefront-sale-references.js";
 
 /**
  * La page d'un rayon, ses annonces d'opération résolues à l'horloge du serveur
  * (D11). Les opérations ne se lisent que si la page en annonce une : la route
- * est anonyme, et hors saison aucune page n'en porte.
+ * est anonyme, et hors saison aucune page n'en porte. Chaque tuile d'article
+ * sort sous la référence de vente du défaut de sa fiche (L3 de
+ * `plan-defaut-sous-sa-reference.md`).
  */
 @QueryHandler(GetPublicStorefrontPageQuery)
 export class GetPublicStorefrontPageHandler implements IQueryHandler<
@@ -26,13 +30,18 @@ export class GetPublicStorefrontPageHandler implements IQueryHandler<
     private readonly operations: StorefrontOperationsReader,
     private readonly clock: Clock,
     private readonly settings: StorefrontSettingsReader,
+    private readonly saleReferences: DefaultSaleReferenceReader,
   ) {}
 
   async execute(query: GetPublicStorefrontPageQuery): Promise<PublicStorefrontPageView> {
-    const [page, setting] = await Promise.all([
+    const [stored, setting] = await Promise.all([
       this.reader.pageOf(query.shelfKey),
       this.settings.allergenDisplay(),
     ]);
+    const page = withSaleReferences(
+      stored,
+      await this.saleReferences.ofProducts(tileProductSkusOf(stored)),
+    );
     const audience = query.companyId === null ? "public" : "pro";
     const shown = hasOperationAnnouncements(page)
       ? await this.operations.shownTo(audience, this.clock.now())

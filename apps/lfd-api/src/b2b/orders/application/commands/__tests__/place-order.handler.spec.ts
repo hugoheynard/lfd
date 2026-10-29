@@ -1491,17 +1491,19 @@ describe("PlaceOrderHandler — un article d'opération datée", () => {
       pickupFrom: "2026-01-24",
       pickupUntil: "2026-01-25",
       audience: "both",
-      skus: ["VIE-001-1"],
+      skus: ["VIE-001"],
       ...over,
     };
   }
 
   function handlerOver(operation: SellableOperation, sink: { placed: OrderToPlace | null }) {
+    // L'article se vend sous la référence de sa déclinaison depuis la bascule
+    // (`plan-defaut-sous-sa-reference.md`, L3) : ici `VIE-001`, celle du panier.
     const sale = saleOperationsOver({
       now: PRICED_AT,
       operations: [operation],
-      items: [catalogItem("VIE-001")],
-      onlySkus: ["VIE-001-1"],
+      items: [catalogItem("VIE", { sku: "VIE-001" })],
+      onlySkus: ["VIE-001"],
     });
     return new PlaceOrderHandler(
       guard(null, null),

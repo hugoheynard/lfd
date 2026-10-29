@@ -20,10 +20,14 @@ export type { PricingParties } from "./loaded-pricer.js";
  *    Le tarif est À PLAT (Hugo, 2026-10-29, `plan-pro-voit-les-declinaisons.md`) :
  *    toute décision — mercuriale, plancher, palier, promotion, engagement — vise
  *    UNE référence de vente et ne vaut que pour elle. Une décision posée sur
- *    `P-X` n'atteint pas `P-X-2` ; seul le tarif de BASE peut suivre le défaut,
- *    et c'est le référentiel qui le dit (`pricingFollowsDefault`), pas ce
- *    contexte. Il n'y a donc aucun SKU produit à poser ici (vérifié le
- *    2026-10-29 : `all()` rend chaque déclinaison montrée sous son SKU de vente).
+ *    `P-X-1` n'atteint pas `P-X-2` ; seul le tarif de BASE peut suivre le
+ *    défaut, et c'est le référentiel qui le dit (`pricingFollowsDefault`), pas
+ *    ce contexte. Il n'y a donc aucun SKU produit à poser ici : depuis la
+ *    bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3), la
+ *    référence produit ne vend plus rien, le défaut compris (`shopSkuOf`), et
+ *    une portée `product:P-X` ne vise aucun article — l'éditeur la refuse
+ *    (`assertOnSale`) et le garde-fou de la bascule a vérifié qu'il n'en
+ *    restait aucune.
  * 2. ~~`categoryId` est le code de rayon~~ — **refermé le 2026-09-26** : la
  *    famille est la lignée d'identifiants du référentiel (`categoryPath`), et
  *    la migration `les_familles_se_lisent_en_donnees` a repris les portées

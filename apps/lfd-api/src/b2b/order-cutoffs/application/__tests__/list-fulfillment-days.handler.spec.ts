@@ -134,20 +134,20 @@ describe("ListFulfillmentDaysHandler — les opérations datées", () => {
   });
 
   it("un panier d'articles courants de l'opération n'est pas contraint", async () => {
-    const days = await handler().execute(new ListFulfillmentDaysQuery(["VIE-001"], "public"));
+    const days = await handler().execute(new ListFulfillmentDaysQuery(["VIE-001-1"], "public"));
     expect(days[0]?.date).toBe(nextFulfillmentDay([], NOW));
   });
 
   it("un panier qui porte la bûche ne propose que les jours de retrait de Noël", async () => {
     const days = await handler().execute(
-      new ListFulfillmentDaysQuery(["VIE-001", "PAT-002"], "public"),
+      new ListFulfillmentDaysQuery(["VIE-001-1", "PAT-002-1"], "public"),
     );
     expect(days).toEqual([{ pickupAddressId: null, date: "2026-12-20", orderUntil: null }]);
   });
 
   it("ne propose aucun jour quand l'opération n'est pas ouverte à cette clientèle", async () => {
     const days = await handler([{ ...NOEL, audience: "pro" }]).execute(
-      new ListFulfillmentDaysQuery(["PAT-002"], "public"),
+      new ListFulfillmentDaysQuery(["PAT-002-1"], "public"),
     );
     expect(days).toEqual([{ pickupAddressId: null, date: null, orderUntil: null }]);
   });
@@ -251,7 +251,7 @@ describe("ListFulfillmentDaysHandler — l'heure limite annoncée", () => {
 
   it("rend la limite du jour d'opération quand le panier déplace la journée", async () => {
     const days = await handler([NOEL], { rules: [veille23h] }).execute(
-      new ListFulfillmentDaysQuery(["PAT-002"], "public"),
+      new ListFulfillmentDaysQuery(["PAT-002-1"], "public"),
     );
     expect(days).toEqual([
       { pickupAddressId: null, date: "2026-12-20", orderUntil: "2026-12-19T22:00:00.000Z" },

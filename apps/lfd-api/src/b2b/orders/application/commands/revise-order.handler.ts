@@ -68,6 +68,7 @@ export class ReviseOrderHandler implements ICommandHandler<ReviseOrderCommand, R
     const scope = await this.revising.ensureRevisable(current, command.actor.kind);
     const revision = await this.revising.compose(current, command.content, command.actor, {
       requireChange: true,
+      scope,
     });
     ensureWithinScope(current, revision, scope);
     await this.unitOfWork.run(() => this.record(command, revision));

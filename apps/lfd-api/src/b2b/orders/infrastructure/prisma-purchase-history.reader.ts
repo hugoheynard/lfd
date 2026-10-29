@@ -34,7 +34,7 @@ const PLACED_DAY = Prisma.sql`((("o"."created_at" AT TIME ZONE 'UTC') AT TIME ZO
  * cible (`sale_sku_alias`, la règle de `SaleSkuAliases.canonical` écrite en
  * SQL parce que le `GROUP BY` est en base). Sans cela, trois commandes sous
  * `PAI-001` puis une sous `PAI-001-1` passeraient sous le seuil des trois
- * commandes (`plan-defaut-sous-sa-reference.md`, § 10). Table vide jusqu'au L3.
+ * commandes (`plan-defaut-sous-sa-reference.md`, § 10).
  */
 @Injectable()
 export class PrismaPurchaseHistoryReader extends PurchaseHistoryReader {

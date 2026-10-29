@@ -31,10 +31,12 @@ export class MakeVariantDefaultCommand {
  * moitiés de fiche réglementaire que la nouvelle reçoit en propre passent par
  * leurs ports dédiés, comme toute déclaration : `save` ne les écrit pas.
  *
- * 🔴 **Fermé jusqu'à la bascule** (`plan-defaut-sous-sa-reference.md`, § 10,
- * D-b) : la porte (`DefaultVariantChangeGate`) refuse APRÈS les refus de
- * l'agrégat, pour qu'une demande déjà impossible le dise par sa vraie raison.
- * Rien n'est écrit ni journalisé.
+ * La porte (`DefaultVariantChangeGate`) a été fermée du L1 à la bascule
+ * (`plan-defaut-sous-sa-reference.md`, § 10, D-b) ; elle est OUVERTE depuis
+ * (L3) : le défaut se vend sous sa propre référence, et en changer ne fait
+ * plus glisser ce qui est posé sur une référence de vente. Elle juge APRÈS les
+ * refus de l'agrégat, pour qu'une demande impossible le dise par sa vraie
+ * raison, et rien n'est écrit ni journalisé quand elle refuse.
  */
 @CommandHandler(MakeVariantDefaultCommand)
 export class MakeVariantDefaultHandler implements ICommandHandler<MakeVariantDefaultCommand, void> {

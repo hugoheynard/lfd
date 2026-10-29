@@ -10,11 +10,12 @@ import type { NotServedCause } from "../services/suggestion-alerts.js";
  */
 export abstract class NotServedCauseReader {
   /**
-   * @param productSkus des SKU **produit** que `resolveMany` n'a pas rendus.
+   * @param shopSkus des SKU **de vente** que `resolveMany` n'a pas rendus
+   * (une ancienne référence se juge comme sa cible).
    * @returns SKU → cause, une entrée par SKU demandé.
    */
   abstract causesOf(
-    productSkus: readonly string[],
+    shopSkus: readonly string[],
     audience: StaffSuggestionReader,
   ): Promise<ReadonlyMap<string, NotServedCause>>;
 }

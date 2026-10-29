@@ -3,19 +3,20 @@
  * panier, le devis et `POST /orders` renvoient
  * (`documentation/catalogue/plan-declinaisons-en-vignette.md`, V4).
  *
- * La déclinaison par défaut se vend sous le SKU de son PRODUIT, comme depuis
- * l'ouverture commerciale : les commandes passées le portent. Une autre
- * déclinaison — vendue seulement quand sa fiche montre chaque déclinaison en
- * vignette — se vend sous son propre SKU. Les deux espaces ne se recouvrent
- * pas : le registre du référentiel (`pim.sku_registry`) tient produits et
- * déclinaisons dans une seule table unique.
+ * 🔴 **Toute déclinaison se vend sous SA référence, le défaut compris**, depuis
+ * la bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3). Le défaut
+ * se vendait jusque-là sous le SKU de son produit (`PAI-001`), qui voulait
+ * donc dire « le défaut du moment » : un changement de défaut faisait glisser
+ * tout ce qui était posé dessus. La référence produit ne vend plus rien ; elle
+ * reste une ancienne clé, que `sale_sku_alias` traduit à l'entrée
+ * (`SaleReferenceIntake`) et à la lecture du passé (`SaleSkuAliases`).
+ *
+ * Gardée en fonction plutôt qu'inlinée : les jumelles en requête
+ * (`soldUnderShopSkus`, `PrismaWithdrawnShopSkusReader`) et tous les lecteurs
+ * la citent comme le seul point qui décide de la clé.
  */
-export function shopSkuOf(item: {
-  readonly sku: string;
-  readonly productSku: string;
-  readonly isDefault: boolean;
-}): string {
-  return item.isDefault ? item.productSku : item.sku;
+export function shopSkuOf(item: { readonly sku: string }): string {
+  return item.sku;
 }
 
 /**

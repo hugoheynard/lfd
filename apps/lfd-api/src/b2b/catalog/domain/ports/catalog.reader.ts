@@ -186,18 +186,18 @@ export abstract class CatalogReader {
   abstract listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]>;
 
   /**
-   * L'article vendu sous ce **SKU de vente** (`shopSkuOf`) : un SKU produit
-   * rend sa déclinaison par défaut ; le SKU d'une autre déclinaison la rend,
-   * seulement si sa fiche montre chaque déclinaison en vignette
-   * (`plan-declinaisons-en-vignette.md`, V4) — la caisse vend ce que la
-   * vitrine montre.
+   * L'article vendu sous ce **SKU de vente** (`shopSkuOf`) : la déclinaison
+   * par défaut sous sa référence ; une autre déclinaison, seulement si sa fiche
+   * montre chaque déclinaison en vignette (`plan-declinaisons-en-vignette.md`,
+   * V4) — la caisse vend ce que la vitrine montre.
    *
-   * Distincte de {@link findSku}, qui prend le SKU d'une déclinaison. Les deux
-   * ne coïncident pas — le PIM dérive `VIE-001-1` de `VIE-001` — et c'est le SKU
-   * produit que la boutique a toujours vendu : il est écrit dans les commandes
-   * passées, dans les paniers récurrents, dans les brouillons. Une bascule qui
-   * changerait d'identifiant réécrirait l'histoire ; cette méthode est ce qui
-   * permet de ne pas le faire.
+   * 🔴 **Un SKU produit ne rend plus rien** depuis la bascule du 2026-10-29
+   * (`plan-defaut-sous-sa-reference.md`, L3). Il rendait le défaut, parce que
+   * la boutique l'avait toujours vendu sous lui ; il reste écrit dans les
+   * commandes passées, les paniers et les brouillons, et c'est
+   * `sale_sku_alias` qui le traduit — à l'entrée (`SaleReferenceIntake`) et à
+   * la lecture du passé (`SaleSkuAliases`), jamais ici. Le passé n'est pas
+   * réécrit ; la caisse ne connaît que des références canoniques.
    *
    * `null` si le produit est inconnu, masqué, ou sans taux de TVA — un article
    * qu'on ne sait pas facturer ne se vend pas.

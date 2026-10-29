@@ -11,25 +11,21 @@ import type { CatalogPricing } from "@lfd/contracts";
  */
 export abstract class CanonicalPriceHistoryReader {
   /**
-   * Le tarif de chaque **produit** à cet instant : la dernière trace antérieure
-   * ou égale à `at`, indexée par SKU **de produit**.
+   * Le tarif de chaque **article** à cet instant : la dernière trace antérieure
+   * ou égale à `at`, indexée par SKU **de vente** — celui de la déclinaison.
    *
-   * ## Pourquoi le produit et non l'article
+   * ## Pourquoi l'article, et plus le produit
    *
-   * Parce que c'est l'unité que la plateforme B2B **vend** :
-   * `ProductCatalogReader` expose `sku: item.productSku` et résout par
-   * `findByShopSku`. Les traces portent les deux SKU, et grouper par
-   * article rendrait une carte que personne ne sait interroger — les appelants
-   * n'ont que le SKU produit en main.
+   * Parce que c'est l'unité que la plateforme **vend** : depuis la bascule du
+   * 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3), toute déclinaison se
+   * vend sous sa propre référence (`shopSkuOf`), le défaut compris. L'index
+   * était le SKU produit tant que le défaut se vendait sous lui ; il rendait
+   * alors une ligne par produit, celle de la trace la plus récente quelle que
+   * soit la déclinaison. Les traces portent les deux SKU depuis leur première
+   * écriture : rien n'est à reprendre, et une déclinaison montrée en vignette
+   * a désormais son propre historique.
    *
-   * ⚠️ **La limite, nommée** : un produit à plusieurs déclinaisons vendables
-   * (l'unité et le carton de 50) n'a qu'une ligne ici, celle de la trace la plus
-   * récente, quelle que soit la déclinaison dont elle vient. C'est sans effet
-   * tant que la boutique vend la déclinaison par défaut — ce qu'elle fait — et
-   * c'est le premier endroit à reprendre le jour où elle vendra les
-   * déclinaisons. `@lfd/catalog-sync` annonce déjà cette bascule.
-   *
-   * Un produit absent de la table rendue n'a **aucune** trace à cette date —
+   * Un article absent de la table rendue n'a **aucune** trace à cette date —
    * soit qu'il n'existait pas, soit que l'historique ne remontait pas si loin.
    * L'appelant doit distinguer les deux, et c'est {@link startsAt} qui le lui
    * permet : rendre le prix d'aujourd'hui à sa place serait exactement le

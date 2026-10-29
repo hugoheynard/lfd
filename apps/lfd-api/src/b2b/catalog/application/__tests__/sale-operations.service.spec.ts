@@ -9,7 +9,7 @@ import {
 } from "./sale-operations-doubles.js";
 
 /**
- * Le passage du SKU PRODUIT (celui de la commande) au SKU du CATALOGUE (celui
+ * Le passage du SKU de vente (celui de la commande) au SKU du CATALOGUE (celui
  * de l'opération). Dates comparées à l'horloge figée du service, jamais au mur.
  */
 
@@ -45,7 +45,7 @@ class CountingOperations extends InMemoryCatalogOperations {
 }
 
 describe("SaleOperations.accessOf", () => {
-  it("rend la réponse de D4 par SKU PRODUIT, pour les seuls articles operationOnly", async () => {
+  it("rend la réponse de D4 par SKU de vente, pour les seuls articles operationOnly", async () => {
     const sale = saleOperationsOver({
       now: NOW,
       operations: [noel()],
@@ -53,10 +53,10 @@ describe("SaleOperations.accessOf", () => {
       onlySkus: ["PAT-002-1"],
     });
 
-    const found = await sale.accessOf(["PAT-002", "VIE-001"], "public", "2026-12-22");
+    const found = await sale.accessOf(["PAT-002-1", "VIE-001-1"], "public", "2026-12-22");
 
-    expect([...found.keys()]).toEqual(["PAT-002"]);
-    expect(found.get("PAT-002")).toEqual({ productName: "Bûche", access: "orderable" });
+    expect([...found.keys()]).toEqual(["PAT-002-1"]);
+    expect(found.get("PAT-002-1")).toEqual({ productName: "Bûche", access: "orderable" });
   });
 
   it("distingue le devis (sans jour) de la commande sans jour", async () => {
@@ -67,8 +67,10 @@ describe("SaleOperations.accessOf", () => {
       onlySkus: ["PAT-002-1"],
     });
 
-    expect((await sale.accessOf(["PAT-002"], "pro")).get("PAT-002")?.access).toBe("shown");
-    expect((await sale.accessOf(["PAT-002"], "pro", null)).get("PAT-002")?.access).toMatchObject({
+    expect((await sale.accessOf(["PAT-002-1"], "pro")).get("PAT-002-1")?.access).toBe("shown");
+    expect(
+      (await sale.accessOf(["PAT-002-1"], "pro", null)).get("PAT-002-1")?.access,
+    ).toMatchObject({
       reason: "no_day",
     });
   });
@@ -81,14 +83,14 @@ describe("SaleOperations.accessOf", () => {
       onlySkus: ["PAT-002-1"],
     });
 
-    expect((await sale.accessOf(["PAT-002"], "public")).get("PAT-002")?.access).toBe("absent");
+    expect((await sale.accessOf(["PAT-002-1"], "public")).get("PAT-002-1")?.access).toBe("absent");
   });
 
   it("hors saison, ne lit pas les opérations", async () => {
     const operations = new CountingOperations([noel()], []);
     const sale = new SaleOperations(new DefaultsCatalog(ITEMS), operations, new FixedClock(NOW));
 
-    expect((await sale.accessOf(["PAT-002"], "pro")).size).toBe(0);
+    expect((await sale.accessOf(["PAT-002-1"], "pro")).size).toBe(0);
     expect(operations.operationsRead).toBe(0);
   });
 });
@@ -102,7 +104,7 @@ describe("SaleOperations.pickupRangesOf", () => {
       onlySkus: ["PAT-002-1"],
     });
 
-    expect(await sale.pickupRangesOf(["PAT-002", "VIE-001"], "pro")).toEqual([
+    expect(await sale.pickupRangesOf(["PAT-002-1", "VIE-001-1"], "pro")).toEqual([
       [{ from: "2026-12-20", until: "2026-12-24" }],
     ]);
   });
@@ -115,18 +117,20 @@ describe("SaleOperations.pickupRangesOf", () => {
       onlySkus: ["PAT-002-1"],
     });
 
-    expect(await sale.pickupRangesOf(["PAT-002"], "pro")).toEqual([[]]);
+    expect(await sale.pickupRangesOf(["PAT-002-1"], "pro")).toEqual([[]]);
   });
 });
 
 describe("SaleOperations.operationOnlyAmong", () => {
   it("nomme les articles operationOnly une fois, quelle que soit la clientèle qui les voit", async () => {
     const sale = new SaleOperations(
-      new DefaultsCatalog(ITEMS, new Map([["PAT-002", "pro"]])),
+      new DefaultsCatalog(ITEMS, new Map([["PAT-002-1", "pro"]])),
       new InMemoryCatalogOperations([], ["PAT-002-1"]),
       new FixedClock(NOW),
     );
 
-    expect(await sale.operationOnlyAmong(["PAT-002", "VIE-001", "PAT-002"])).toEqual(["Bûche"]);
+    expect(await sale.operationOnlyAmong(["PAT-002-1", "VIE-001-1", "PAT-002-1"])).toEqual([
+      "Bûche",
+    ]);
   });
 });

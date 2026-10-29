@@ -256,6 +256,39 @@ describe("le prévisionnel du fournil", () => {
   });
 
   /**
+   * La bascule (`plan-defaut-sous-sa-reference.md`, L3) : un panier gardé par
+   * le navigateur avant le déploiement porte encore `PAI-001`. Il se commande
+   * (l'alias écrit par la migration, que le semis rejoue) et la ligne sort
+   * sous la référence de la déclinaison.
+   */
+  it("un panier d'avant la bascule (`PAI-001`) se commande encore, et ressort `PAI-001-1`", async () => {
+    const companyId = await seedSociete();
+
+    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001", quantity: 3 }]);
+
+    expect(await ctx.prisma.orderLine.findMany({ select: { sku: true, quantity: true } })).toEqual([
+      { sku: "PAI-001-1", quantity: 3 },
+    ]);
+  });
+
+  /**
+   * Le fournil du jour de la bascule, sur l'alias réel du semis : une commande
+   * écrite AVANT sous `PAI-001` (la ligne est remise à sa graphie d'alors :
+   * aucune route n'écrit plus une référence produit), une APRÈS sous
+   * `PAI-001-1` — une seule ligne.
+   */
+  it("le jour de la bascule, une commande `PAI-001` d'avant et une `PAI-001-1` d'après font une ligne", async () => {
+    const companyId = await seedSociete();
+    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001-1", quantity: 2 }]);
+    await ctx.prisma.orderLine.updateMany({ data: { sku: "PAI-001" } });
+    await placeOrder(companyId, DAY_1, [{ sku: "PAI-001-1", quantity: 5 }]);
+
+    const view = await forecast(DAY_1, DAY_1);
+
+    expect(view.lines.map((line) => [line.sku, line.quantities])).toEqual([["PAI-001-1", [7]]]);
+  });
+
+  /**
    * 🔴 La régression que ce fichier existe pour tenir. Avant la clôture, la
    * commande est `placed` et le commerce la porte ; après, elle est basculée et
    * seul le **compte à produire arrêté** la connaît. Le chiffre ne doit pas

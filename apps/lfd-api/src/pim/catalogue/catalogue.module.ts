@@ -50,7 +50,7 @@ import { DetachProductVariantHandler } from "./product/application/detach-produc
 import { RestoreProductVariantHandler } from "./product/application/restore-product-variant.js";
 import { MakeVariantDefaultHandler } from "./product/application/make-variant-default.js";
 import { DefaultVariantChangeGate } from "./product/domain/ports/default-variant-change-gate.js";
-import { DefaultVariantChangeClosedUntilSwitch } from "./product/domain/services/default-variant-change-closed.js";
+import { DefaultVariantChangeOpen } from "./product/domain/services/default-variant-change-open.js";
 import { SetCategoryAudienceHandler } from "./category/application/set-category-audience.js";
 import { DeactivateProductHandler } from "./product/application/deactivate-product.js";
 import { RestoreProductHandler } from "./product/application/restore-product.js";
@@ -199,9 +199,10 @@ import {
     DetachProductVariantHandler,
     RestoreProductVariantHandler,
     MakeVariantDefaultHandler,
-    // Fermé jusqu'à la bascule de la référence du défaut
-    // (`plan-defaut-sous-sa-reference.md`, § 10, D-b) ; le L3 rouvre.
-    { provide: DefaultVariantChangeGate, useClass: DefaultVariantChangeClosedUntilSwitch },
+    // Fermé du L1 à la bascule de la référence du défaut, ouvert par elle
+    // (`plan-defaut-sous-sa-reference.md`, L3) ; un retour arrière relie
+    // `DefaultVariantChangeClosedUntilSwitch`.
+    { provide: DefaultVariantChangeGate, useClass: DefaultVariantChangeOpen },
     SetCategoryAudienceHandler,
     DeactivateProductHandler,
     GetProductDetailHandler,

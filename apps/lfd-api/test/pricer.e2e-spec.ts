@@ -417,6 +417,57 @@ describe("le mur, et la fenêtre", () => {
 });
 
 /**
+ * **Le changement de défaut ne fait plus glisser une décision**
+ * (`plan-defaut-sous-sa-reference.md`, L3 — G4 rouvert). Tant que le défaut se
+ * vendait sous la référence produit, une mercuriale posée sur elle passait à
+ * la nouvelle déclinaison par défaut. Désormais elle vise `VIE-001-1`, et y
+ * reste. Le changement de défaut est joué tel que le miroir le reçoit.
+ */
+describe("après la bascule, un changement de défaut", () => {
+  it("🔴 laisse la mercuriale sur la déclinaison qu'elle vise, sans la donner à la nouvelle", async () => {
+    const { companyId, sub } = await customerOf("auth0|pricer_g4");
+    const first = await ctx.prisma.catalogItem.findUniqueOrThrow({ where: { sku: SKU } });
+    await ctx.prisma.catalogItem.create({
+      data: {
+        sku: "VIE-001-2",
+        productId: first.productId,
+        productSku: first.productSku,
+        name: "Croissant — sachet de 6",
+        kind: first.kind,
+        categoryId: first.categoryId,
+        priceMillicents: first.priceMillicents,
+        vatRatePercent: first.vatRatePercent,
+        isDefault: false,
+        position: first.position + 1,
+        receivedAt: first.receivedAt,
+      },
+    });
+    await poseMercuriale(companyId, 150);
+    await ctx.prisma.catalogItem.update({ where: { sku: SKU }, data: { isDefault: false } });
+    await ctx.prisma.catalogItem.update({ where: { sku: "VIE-001-2" }, data: { isDefault: true } });
+
+    const quoted = jsonBody<{ lines: readonly { sku: string; unitPriceMillicents: number }[] }>(
+      await ctx
+        .asSub(sub)
+        .post("/orders/quote")
+        .send({
+          companyId,
+          lines: [
+            { sku: SKU, quantity: 1 },
+            { sku: "VIE-001-2", quantity: 1 },
+          ],
+        })
+        .expect(200),
+    );
+
+    expect(quoted.lines.map((line) => [line.sku, line.unitPriceMillicents])).toEqual([
+      [SKU, millicentsFromCents(150)],
+      ["VIE-001-2", first.priceMillicents],
+    ]);
+  });
+});
+
+/**
  * Ce que la façade **refuse**, et qui doit le rester.
  *
  * Le refus d'un SKU inconnu n'y est plus : il appartient au port du catalogue

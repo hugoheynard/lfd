@@ -3,6 +3,7 @@ import { SetVolumeLadderCommand } from "../../b2b/pricing/application/commands/s
 import { SignVolumeCommitmentCommand } from "../../b2b/pricing/application/commands/sign-volume-commitment.command.js";
 import type { ClientContext } from "./client.seed.js";
 import { asStaff, isoDay, monthDay, parisAt, SEED_STAFF_SUB } from "./order-placing.seed.js";
+import { saleSkusOf, withSaleSkus } from "./sale-references.seed.js";
 
 /**
  * **Les décisions tarifaires des deux cas** — par les commandes de la
@@ -52,13 +53,17 @@ export async function seedSubAccountPricing(
   targets: PricingTargets,
 ): Promise<void> {
   const to = monthsAfter(from, SEASON_MONTHS);
+  // Une décision vise une référence de VENTE : celle de la déclinaison depuis
+  // la bascule (L3) — la référence produit serait refusée, hors vente.
+  const mercuriale = await withSaleSkus(context.prisma, GROUP_MERCURIALE);
+  const committed = (await saleSkusOf(context.prisma, [COMMITTED_SKU])).get(COMMITTED_SKU);
   await asStaff(context.now, async () => {
     await poseMercuriale(context, targets.groupId, "Mercuriale Groupe des Cimes", from, to, [
-      ...GROUP_MERCURIALE,
+      ...mercuriale,
     ]);
-    await signCommitment(context, targets.groupId, from, to);
+    await signCommitment(context, targets.groupId, from, to, committed ?? COMMITTED_SKU);
     for (const hotelId of targets.hotelIds) {
-      await setHotelLadder(context, hotelId, from, to);
+      await setHotelLadder(context, hotelId, from, to, committed ?? COMMITTED_SKU);
     }
   });
 }
@@ -89,6 +94,7 @@ async function signCommitment(
   companyId: string,
   from: Date,
   to: Date,
+  sku: string,
 ): Promise<void> {
   const live = await prisma.volumeCommitment.count({ where: { companyId, archivedAt: null } });
   if (live > 0) {
@@ -98,7 +104,7 @@ async function signCommitment(
     new SignVolumeCommitmentCommand(
       {
         companyId,
-        scope: { type: "product", id: COMMITTED_SKU },
+        scope: { type: "product", id: sku },
         promisedQuantity: PROMISED_CROISSANTS,
         validFrom: from.toISOString(),
         validTo: to.toISOString(),
@@ -113,6 +119,7 @@ async function setHotelLadder(
   companyId: string,
   from: Date,
   to: Date,
+  sku: string,
 ): Promise<void> {
   const live = await prisma.volumeLadder.count({
     where: { audienceType: "company", audienceId: companyId, archivedAt: null },
@@ -123,7 +130,7 @@ async function setHotelLadder(
   await commands.execute(
     new SetVolumeLadderCommand(
       {
-        scope: { type: "product", id: COMMITTED_SKU },
+        scope: { type: "product", id: sku },
         audience: { type: "company", id: companyId },
         unit: "percent",
         tiers: HOTEL_TIERS,

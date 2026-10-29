@@ -15,9 +15,9 @@ export class DefaultVariantNotDiscontinuableError extends BusinessError {
     super(
       "catalogue.variant.default_not_discontinuable",
       `La déclinaison « ${variantSku} » est celle par défaut de sa fiche : elle ne s'archive pas ` +
-        "tant que d'autres déclinaisons sont en vente. Archivez la fiche entière, ou attendez le " +
-        "retour du changement de déclinaison par défaut (suspendu jusqu'à la bascule de la " +
-        "référence du défaut).",
+        "tant que d'autres déclinaisons sont en vente. Ouvrez d'abord l'onglet d'une autre " +
+        "déclinaison et choisissez « Faire de cette déclinaison la déclinaison par défaut », " +
+        "ou archivez la fiche entière.",
     );
   }
 }
@@ -50,8 +50,8 @@ export class DefaultVariantNotDetachableError extends BusinessError {
     super(
       "catalogue.variant.default_not_detachable",
       `La déclinaison « ${variantSku} » est celle par défaut de sa fiche : on n'en fait pas un ` +
-        "produit séparé. Le changement de déclinaison par défaut, qui le permettrait, est " +
-        "suspendu jusqu'à la bascule de la référence du défaut.",
+        "produit séparé. Ouvrez d'abord l'onglet d'une autre déclinaison et choisissez " +
+        "« Faire de cette déclinaison la déclinaison par défaut ».",
     );
   }
 }
@@ -132,7 +132,8 @@ export class DormantSheetWouldWakeError extends BusinessError {
  * Tant que le défaut se vend sous la référence de sa fiche, changer de défaut
  * déplace tout ce qui est posé sur cette référence, et un seul changement en
  * production ferait refuser la migration de bascule. Le geste revient avec
- * elle (L3), où il ne déplace plus rien.
+ * elle (L3), où il ne déplace plus rien : l'erreur n'est plus levée que par la
+ * porte fermée, déliée depuis (gardée pour un retour arrière).
  */
 export class DefaultVariantChangeSuspendedError extends BusinessError {
   constructor(readonly variantSku: string) {

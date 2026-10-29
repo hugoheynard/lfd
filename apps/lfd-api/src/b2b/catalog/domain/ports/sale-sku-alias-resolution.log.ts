@@ -4,7 +4,14 @@ import type { SaleSkuAliasPair } from "../sale-sku-aliases.js";
  * Les portes par lesquelles une référence de vente entre
  * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 5).
  */
-export type SaleReferenceEntry = "order" | "quote" | "shop_quote" | "shop_cart" | "order_draft";
+export type SaleReferenceEntry =
+  | "order"
+  | "quote"
+  | "shop_quote"
+  | "shop_cart"
+  | "order_draft"
+  /** La modification d'une commande ouverte, et ses devis (§ 6, L3). */
+  | "order_revision";
 
 /**
  * **Chaque résolution d'alias à l'entrée est comptée** (§ 5, § 7 L4).

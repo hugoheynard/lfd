@@ -14,8 +14,8 @@ export interface SaleSkuAliasPair {
  * par article passent par `canonical`, jamais par la référence produit : deux
  * déclinaisons d'une même fiche sont deux articles.
  *
- * La table est vide jusqu'à la bascule (L3) : `canonical` rend alors la
- * référence reçue, et chaque lecteur rend ce qu'il rendait.
+ * La table était vide jusqu'à la bascule (L3), qui l'a remplie : une
+ * référence sans alias (tout article créé depuis) se lit comme elle-même.
  */
 export class SaleSkuAliases {
   private readonly targets: ReadonlyMap<string, string>;

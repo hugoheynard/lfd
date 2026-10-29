@@ -68,6 +68,10 @@ import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import type { OrderIntake } from "../../services/order-intake.service.js";
 import { intakeAt } from "./intake-doubles.js";
+import { intakeOver } from "../../../../catalog/application/__tests__/sale-reference-intake.doubles.js";
+import { TableSaleSkuAliasReader } from "../../../../catalog/domain/__tests__/sale-sku-alias.doubles.js";
+import type { SaleSkuAliasPair } from "../../../../catalog/domain/sale-sku-aliases.js";
+import { RevisionAliasNormalizing } from "../../services/revision-alias-normalizing.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
@@ -215,6 +219,8 @@ export function revisingAt(
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
     readonly intake?: OrderIntake;
+    /** Les anciennes références (`sale_sku_alias`) ; aucune par défaut. */
+    readonly aliases?: readonly SaleSkuAliasPair[];
   } = {},
 ): OrderRevising {
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
@@ -246,6 +252,10 @@ export function revisingAt(
     options.plans ?? openPlanGate(),
     new CancellationRule(options.engagements ?? new FixedEngagements()),
     options.intake ?? intakeAt(undefined, "active", [], {}, undefined, clock),
+    new RevisionAliasNormalizing(
+      intakeOver(options.aliases ?? []),
+      new TableSaleSkuAliasReader(options.aliases ?? []),
+    ),
   );
 }
 
@@ -489,6 +499,7 @@ export function reviseScene(
     readonly plans?: OrderPlanGate;
     readonly engagements?: AccountOrderEngagementReader;
     readonly catalogItems?: readonly UnsealedCatalogItem[];
+    readonly aliases?: readonly SaleSkuAliasPair[];
   } = {},
 ) {
   const trace: string[] = [];
@@ -511,6 +522,7 @@ export function reviseScene(
       ...(options.plans === undefined ? {} : { plans: options.plans }),
       ...(options.engagements === undefined ? {} : { engagements: options.engagements }),
       ...(options.catalogItems === undefined ? {} : { catalogItems: options.catalogItems }),
+      ...(options.aliases === undefined ? {} : { aliases: options.aliases }),
     }),
     revisions,
     new OrderWorkshopRevision(desk, packing),

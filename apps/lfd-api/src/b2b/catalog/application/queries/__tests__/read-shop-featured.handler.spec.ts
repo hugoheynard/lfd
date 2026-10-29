@@ -74,7 +74,7 @@ describe("ReadShopFeaturedHandler", () => {
     const view = await handlerOver(catalog).execute(new ReadShopFeaturedQuery("pro", "fr"));
 
     expect(catalog.audiences).toEqual(["pro"]);
-    expect(view.map((item) => item.sku)).toEqual(["PAI-001", "VIE-001"]);
+    expect(view.map((item) => item.sku)).toEqual(["PAI-001-1", "VIE-001-1"]);
   });
 
   it("ne sort pas un article que la vitrine pro écarte (vendu seulement pendant une opération)", async () => {
@@ -85,7 +85,7 @@ describe("ReadShopFeaturedHandler", () => {
       new ReadShopFeaturedQuery("pro", "fr"),
     );
 
-    expect(view.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect(view.map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   it("traduit le nom dans la langue demandée", async () => {

@@ -148,7 +148,7 @@ export class ShopCataloguePricing {
     // limite d'un article que si elle est plus stricte que la générale (§9).
     // La table d'alias voyage avec la vitrine (`plan-defaut-sous-sa-reference.md`,
     // § 5, L2) : le navigateur normalise son panier AVANT d'oublier une
-    // référence que le catalogue ne porte plus. Une lecture, vide jusqu'au L3.
+    // référence que le catalogue ne porte plus. Une lecture, remplie par le L3.
     const [sellable, operations, operationOnlySkus, cutoffs, saleSkuAliases] = await Promise.all([
       this.catalog.listSellable(audience),
       this.operations.sellableOperations(),

@@ -89,6 +89,13 @@ const ALLOWED = new Set([
   // (`...STILL_SOLD`) — elle résout la déclinaison par défaut des SKU du corpus
   // pour la commande de l'écran, et un article retiré ne se met pas en avant.
   "apps/lfd-api/src/dev/seeding/featured.seed.ts",
+  // La tuile de la vitrine sous la référence du défaut (bascule L3,
+  // 2026-10-29) : elle PORTE le filtre (`...STILL_SOLD`).
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-default-sale-reference.reader.ts",
+  // La traduction des références du semis (bascule L3) : exempte et écrite
+  // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
+  // le handler refuse ensuite un article retiré.
+  "apps/lfd-api/src/dev/seeding/sale-references.seed.ts",
 ]);
 
 /** Les opérations qui LISENT. Les autres écrivent, et doivent voir toute la table. */

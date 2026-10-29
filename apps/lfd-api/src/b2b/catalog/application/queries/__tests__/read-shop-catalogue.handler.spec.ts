@@ -168,6 +168,15 @@ const GENERAL_EVE_23: OrderCutoffView = {
 const BAGUETTE = "PAI-001";
 const RESERVED = "PRO-001";
 
+/**
+ * La référence sous laquelle la vitrine sert la fiche : celle de sa
+ * déclinaison par défaut depuis la bascule (`plan-defaut-sous-sa-reference.md`,
+ * L3) — la référence produit jusque-là.
+ */
+function sold(productSku: string): string {
+  return catalogItem(productSku).sku;
+}
+
 function fixture(
   publicItems: readonly ResolvedCatalogItem[] = [
     catalogItem(BAGUETTE, { unitPriceMillicents: PUBLIC_MILLICENTS }),
@@ -220,7 +229,7 @@ describe("ReadShopCatalogueHandler", () => {
 
     expect(catalog.audiences).toEqual(["public"]);
     expect(view.items.map((item) => [item.sku, item.unitPriceMillicents])).toEqual([
-      [BAGUETTE, PUBLIC_MILLICENTS],
+      [sold(BAGUETTE), PUBLIC_MILLICENTS],
     ]);
   });
 
@@ -230,7 +239,7 @@ describe("ReadShopCatalogueHandler", () => {
     const view = await handler.execute(new ReadShopCatalogueQuery("fr", "pro"));
 
     expect(catalog.audiences).toEqual(["pro"]);
-    expect(view.items.map((item) => item.sku)).toEqual([BAGUETTE, RESERVED]);
+    expect(view.items.map((item) => item.sku)).toEqual([sold(BAGUETTE), sold(RESERVED)]);
     expect(view.items[0]).toMatchObject({
       unitPriceMillicents: PRO_MILLICENTS,
       isFeatured: true,
@@ -267,10 +276,10 @@ describe("ReadShopCatalogueHandler", () => {
       const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
 
       expect(limitsOf(view)).toEqual([
-        [BUCHE, { daysBefore: 2, time: "12:00" }],
-        [EVE_18, { daysBefore: 1, time: "18:00" }],
-        [SAME_DAY, null],
-        [BAGUETTE, null],
+        [sold(BUCHE), { daysBefore: 2, time: "12:00" }],
+        [sold(EVE_18), { daysBefore: 1, time: "18:00" }],
+        [sold(SAME_DAY), null],
+        [sold(BAGUETTE), null],
       ]);
     });
 
@@ -287,7 +296,7 @@ describe("ReadShopCatalogueHandler", () => {
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
 
-      expect(limitsOf(view)[2]).toEqual([SAME_DAY, { daysBefore: 0, time: "09:00" }]);
+      expect(limitsOf(view)[2]).toEqual([sold(SAME_DAY), { daysBefore: 0, time: "09:00" }]);
     });
 
     it("une règle d'un seul jour n'est pas la règle générale", async () => {
@@ -295,8 +304,8 @@ describe("ReadShopCatalogueHandler", () => {
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
 
-      expect(limitsOf(view)[3]).toEqual([BAGUETTE, null]);
-      expect(limitsOf(view)[1]).toEqual([EVE_18, { daysBefore: 1, time: "18:00" }]);
+      expect(limitsOf(view)[3]).toEqual([sold(BAGUETTE), null]);
+      expect(limitsOf(view)[1]).toEqual([sold(EVE_18), { daysBefore: 1, time: "18:00" }]);
     });
   });
 
@@ -309,7 +318,7 @@ describe("ReadShopCatalogueHandler", () => {
       expect(view.saleSkuAliases).toEqual([{ aliasSku: "P-X", targetSku: "P-X-1" }]);
     });
 
-    it("est vide tant que la bascule n'a pas eu lieu", async () => {
+    it("est vide quand la table ne porte aucun alias", async () => {
       const { handler } = fixture();
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr", "pro"));

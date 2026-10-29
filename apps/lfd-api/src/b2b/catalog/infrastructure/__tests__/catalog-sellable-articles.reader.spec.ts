@@ -79,14 +79,16 @@ describe("CatalogSellableArticlesReader", () => {
 
     const articles = await new CatalogSellableArticlesReader(catalog).sellableArticles();
 
+    // Sous la référence de la déclinaison par défaut depuis la bascule
+    // (`plan-defaut-sous-sa-reference.md`, L3) : `VIE-002` jusque-là.
     expect(articles.map((article) => article.sku)).toEqual([
-      "VIE-002",
-      "VIE-001",
-      "VIE-009",
-      "PAI-001",
+      "VIE-002-1",
+      "VIE-001-1",
+      "VIE-009-1",
+      "PAI-001-1",
     ]);
     expect(articles[0]).toEqual({
-      sku: "VIE-002",
+      sku: "VIE-002-1",
       name: "Nom VIE-002",
       familyId: "fam-vien",
       familyName: "Viennoiseries",
@@ -103,8 +105,8 @@ describe("CatalogSellableArticlesReader", () => {
     const articles = await new CatalogSellableArticlesReader(catalog).sellableArticles();
 
     expect(articles.map((article) => [article.sku, article.saleUnit])).toEqual([
-      ["SAU-001", "weight"],
-      ["VIE-001", "piece"],
+      ["SAU-001-1", "weight"],
+      ["VIE-001-1", "piece"],
     ]);
   });
 

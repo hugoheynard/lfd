@@ -21,7 +21,7 @@ const SELLABLE = [
 ];
 
 describe("withPricesPerKg", () => {
-  it("pose les deux prix saisis de la déclinaison par défaut, sur le SKU produit", () => {
+  it("pose les deux prix saisis de la déclinaison par défaut, sur sa référence de vente", () => {
     const view = shopCatalogueOf(SELLABLE, SALE);
     const perKg = new Map([
       ["PAI-001-1", { proPricePerKgMillicents: 1_234_567, publicPricePerKgTtcCents: 1_240 }],
@@ -30,7 +30,7 @@ describe("withPricesPerKg", () => {
 
     const items = withPricesPerKg(view, SELLABLE, perKg).items;
 
-    expect(items.find((item) => item.sku === "PAI-001")).toMatchObject({
+    expect(items.find((item) => item.sku === "PAI-001-1")).toMatchObject({
       proPricePerKgMillicents: 1_234_567,
       publicPricePerKgTtcCents: 1_240,
     });
@@ -41,7 +41,7 @@ describe("withPricesPerKg", () => {
 
     const items = withPricesPerKg(view, SELLABLE, new Map()).items;
 
-    expect(items.find((item) => item.sku === "VIE-001")).toMatchObject({
+    expect(items.find((item) => item.sku === "VIE-001-1")).toMatchObject({
       proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: null,
     });

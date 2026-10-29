@@ -169,7 +169,7 @@ Table vide : aucun effet visible. Tests :
 
 Il est déployé par `deploy_lfc_boutique.yml` **avant** L3. Table vide : aucun effet. Test unitaire : un panier `P-X` devient `P-X-1` quand la table le dit, et n'est pas élagué.
 
-**L3 `feat(catalog)!` : la bascule.** C'est le lot cassant. `vitruve` et `lecteur-de-migrations` sont obligatoires. Il comprend :
+**L3 `feat(catalog)!` : la bascule.** 🟩 **Bâti le 2026-10-29, NON déployé** (non commité à l'écriture de cette ligne) — il attend un « pousse main » de Hugo, un jour sans service ouvert ; ce qui est fait et ce qui reste : § 14. C'est le lot cassant. `vitruve` et `lecteur-de-migrations` sont obligatoires. Il comprend :
 
 - une seule migration de données transactionnelle : garde-fou (§ 1, § 2), écriture de la table, réécriture des magasins du § 3 ;
 - `shopSkuOf = item.sku` et la simplification de `shop-sku-filter.ts` ;
@@ -395,3 +395,78 @@ Hugo) la bascule.
   porte : c'est la normalisation à l'édition du § 6, au L3.
 - La vitrine ne publie que la table entière ; aucune pagination (quelques
   centaines de lignes au plus après la bascule).
+
+## 14. Le L3 tel que bâti (2026-10-29) — NON déployé
+
+**Fait.**
+
+- La migration de données `20261029100000_le_defaut_se_vend_sous_sa_reference`,
+  dans une transaction explicite : un garde-fou qui compte avant toute
+  écriture et lève un refus nommé (au plus cinq exemples par cas) — décisions
+  à portée `product`/`variant` sur une référence produit (archivées
+  comprises), lignes jsonb de mercuriale, brouillon et modèle,
+  `product.default_variant_changed`, journée de fournil non close ou de
+  colisage dont le fournil n'est pas clos portant une référence produit
+  (D-a), fiche à deux défauts — puis l'alias de chaque défaut (retirés
+  compris) et la réécriture des magasins : contenants et raccourcis vivants
+  du fournil, capacités des bacs, suggestions vivantes (articles ET
+  déclencheur sur un article), lignes d'abonnement, échéances à venir, choix
+  des lots, normes, alertes non levées, réassorts ni annulés ni arrivés et pas
+  encore remis au fournil, brouillons de réassort ouverts, empreintes
+  `item` de la vitrine. Réécritures conditionnées à l'absence de la cible là
+  où une clé l'exige ; rejouable.
+- Vérifié et NON réécrit : `hidden_skus` et `catalog_operation_items`
+  (SKU de déclinaison) ; `resupply_receipt_line` (une réception enregistrée
+  est toujours reçue) ; `production_count` (D-a).
+- Le geste en dev : le garde-fou s'éteint sur `lfc_b2b_dev` et
+  `lfc_b2b_test*` ; le réglage `lfd.default_sku_switch_guard` le force
+  (`strict`, le test d'intégration) ou l'éteint (`off`). Le semis de dev
+  traduit ses références produit vers le défaut
+  (`apps/lfd-api/src/dev/seeding/sale-references.seed.ts`).
+- Le retour arrière écrit, non appliqué :
+  `apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql`
+  (avec son propre garde-fou), et la section « Avant de déployer la bascule
+  du défaut » du runbook.
+- `shopSkuOf(item) = item.sku` ; ses jumelles en requête (`soldUnderShopSkus`,
+  une seule branche `sku IN …` gardant la condition de vignette ;
+  `PrismaWithdrawnShopSkusReader`) ; `CatalogNotServedCauseReader` par
+  article après l'alias ; l'historique du tarif canonique lu par article
+  (`sku`), plus par produit.
+- La porte G4 reliée OUVERTE (`DefaultVariantChangeOpen`), la porte fermée
+  gardée pour un retour arrière ; le bouton et les deux messages de refus du
+  défaut rendus à leur forme d'avant le L1.
+- La normalisation à la modification d'une commande ouverte (§ 6, D-d) :
+  `RevisionAliasNormalizing` — la demande passe par la porte d'entrée
+  (comptée `order_revision`), la révision précédente se lit sous la cible
+  (`canonicalPreviousLines` : prix figé gardé, deux graphies fusionnées, la
+  ligne de la cible l'emporte) ; pas sous la portée `quantities` (A2), où la
+  commande est déjà au fournil sous ses références.
+- Les tuiles d'article de la vitrine éditoriale servies sous la référence de
+  vente du défaut de leur fiche (`DefaultSaleReferenceReader`) — elles
+  disparaissaient de la boutique.
+- Les commentaires du § 7 réécrits et datés.
+
+**Pas fait, et pourquoi** : voir le rapport du lot — le flux du jour au
+fournil (§ 12) n'est pas canonicalisé, et c'est un point à trancher (§ 15).
+
+## 15. Ce que le L3 laisse à trancher (2026-10-29)
+
+- **Le flux du jour au fournil.** D-a garantit qu'aucune journée OUVERTE à la
+  bascule ne porte `PAI-001`. Mais une commande passée avant la bascule pour
+  un jour encore à venir garde `PAI-001` (§ 6) ; quand sa journée s'ouvre, le
+  fournil reçoit `PAI-001` à côté des `PAI-001-1` passées après : deux lignes
+  pour un article sur la fiche d'atelier, deux comptes, deux stocks au
+  colisage, et les contenants et raccourcis réécrits ne s'appliquent qu'à
+  `PAI-001-1`. Deux voies : (a) le garde-fou refuse aussi une commande ouverte
+  d'un jour à venir qui porte une référence produit (on bascule quand il n'y
+  en a pas) ; (b) canonicaliser `SitedDayOrders` ET chaque chemin de retour
+  vers le commerce (manques, révisions, retrait), qui retrouvent une ligne par
+  sa référence.
+- **La fenêtre de déploiement** (§ 4) : entre `migrate deploy` et l'image
+  neuve, l'ancien code traduit `PAI-001` en `PAI-001-1` à l'entrée et ne sait
+  pas vendre `PAI-001-1` : une commande d'un article par défaut est refusée
+  pendant une à deux minutes. Ce n'est pas « sans effet » comme le § 4 le
+  disait ; c'est une raison de plus de basculer un jour sans service.
+- **Un changement de défaut déjà joué en production** fait refuser le
+  garde-fou pour toujours (le journal ne s'efface pas) : Q2 (b) — remettre le
+  défaut d'origine — ne suffit pas à le faire passer.

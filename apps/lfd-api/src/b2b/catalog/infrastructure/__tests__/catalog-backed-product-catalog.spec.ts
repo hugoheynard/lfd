@@ -8,9 +8,9 @@ import { CatalogBackedProductCatalog } from "../catalog-backed-product-catalog.j
  * l'adaptateur change, et ce qu'il ne doit surtout pas changer.
  *
  * Ce qu'il change : la source du prix, qui passe d'une constante compilée à la
- * base. Ce qu'il ne change pas : l'IDENTIFIANT vendu. La boutique vend le SKU
- * du produit depuis l'ouverture commerciale, et ce SKU est écrit dans toutes les
- * commandes passées.
+ * base. L'IDENTIFIANT vendu est la référence de la déclinaison, défaut compris,
+ * depuis la bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3) ;
+ * la référence produit des commandes passées se traduit à l'entrée, pas ici.
  */
 
 const CROISSANT: ResolvedCatalogItem = {
@@ -40,12 +40,15 @@ const CROISSANT: ResolvedCatalogItem = {
   thumbnail: null,
 };
 
+/** Le lecteur, sur la règle de `soldUnderShopSkus` : par SKU, défaut ou vignette. */
 function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {
-  const byProduct = new Map(items.filter((item) => item.isDefault).map((i) => [i.productSku, i]));
+  const byProduct = new Map(
+    items.filter((item) => item.isDefault || item.variantsAsTiles).map((i) => [i.sku, i]),
+  );
   return {
     findSku: (sku) => Promise.resolve(items.find((item) => item.sku === sku) ?? null),
     listSellable: () => Promise.resolve([...items]),
-    findByShopSku: (productSku) => Promise.resolve(byProduct.get(productSku) ?? null),
+    findByShopSku: (shopSku) => Promise.resolve(byProduct.get(shopSku) ?? null),
     listByShopSkus: (skus) =>
       Promise.resolve(
         new Map(
@@ -60,30 +63,30 @@ function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {
 
 describe("le catalogue du checkout, branché sur la base", () => {
   /**
-   * Le test qui garde la compatibilité : le PIM vend `VIE-001-1`, la boutique
-   * vend `VIE-001`. Exposer le SKU du PIM aurait rendu illisibles toutes les
-   * commandes déjà passées.
+   * La bascule (`plan-defaut-sous-sa-reference.md`, L3) : le défaut se vendait
+   * sous `VIE-001`, la référence de son produit, qui glissait au changement de
+   * défaut. Il se vend sous la sienne ; la référence produit ne résout plus.
    */
-  it("vend l'article sous le SKU de son PRODUIT, pas celui de sa déclinaison", async () => {
+  it("vend le défaut sous la référence de SA déclinaison, plus sous celle du produit", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const item = await catalog.resolve("VIE-001", "pro");
+    const item = await catalog.resolve("VIE-001-1", "pro");
 
-    expect(item?.sku).toBe("VIE-001");
-    expect(await catalog.resolve("VIE-001-1", "pro")).toBeNull();
+    expect(item?.sku).toBe("VIE-001-1");
+    expect(await catalog.resolve("VIE-001", "pro")).toBeNull();
   });
 
   /** La décision B2B a déjà gagné en amont : l'adaptateur ne rejoue pas l'arbitrage. */
   it("rend le prix résolu, pas celui du PIM", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    expect((await catalog.resolve("VIE-001", "pro"))?.unitPriceMillicents).toBe(200_000);
+    expect((await catalog.resolve("VIE-001-1", "pro"))?.unitPriceMillicents).toBe(200_000);
   });
 
   it("sert la famille du référentiel telle que le miroir la porte", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const item = await catalog.resolve("VIE-001", "pro");
+    const item = await catalog.resolve("VIE-001-1", "pro");
 
     expect(item?.family).toEqual(VIENNOISERIES);
     expect(item?.article.categoryPath).toEqual(["fam-vien"]);
@@ -100,7 +103,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const orphan = { ...CROISSANT, categoryId: livree.id, family: livree };
     const catalog = new CatalogBackedProductCatalog(reader([orphan]));
 
-    const item = await catalog.resolve("VIE-001", "pro");
+    const item = await catalog.resolve("VIE-001-1", "pro");
 
     expect(item?.family?.id).toBe(livree.id);
     expect(item?.article.categoryPath).toEqual([livree.id]);
@@ -112,7 +115,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const tarte = { ...CROISSANT, categoryId: tartes.id, family: tartes };
     const catalog = new CatalogBackedProductCatalog(reader([tarte]));
 
-    const item = await catalog.resolve("VIE-001", "pro");
+    const item = await catalog.resolve("VIE-001-1", "pro");
 
     expect(item?.article.categoryPath).toEqual(["fam-tartes", "fam-patis"]);
   });
@@ -123,7 +126,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const carton = { ...single, sku: "VIE-001-2", isDefault: false };
     const catalog = new CatalogBackedProductCatalog(reader([single, carton]));
 
-    expect((await catalog.all()).map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect((await catalog.all()).map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   /**
@@ -138,7 +141,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const listed = await catalog.all();
 
     expect(listed.map((item) => [item.sku, item.name])).toEqual([
-      ["VIE-001", "Croissant"],
+      ["VIE-001-1", "Croissant"],
       ["VIE-001-2", "Croissant part"],
     ]);
     // Le sceau porte le même SKU de vente que la ligne : le tarificateur vise
@@ -168,8 +171,8 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("résout plusieurs SKU en une fois, et omet les inconnus", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const found = await catalog.resolveMany(["VIE-001", "ZZZ-999"], "pro");
+    const found = await catalog.resolveMany(["VIE-001-1", "ZZZ-999"], "pro");
 
-    expect([...found.keys()]).toEqual(["VIE-001"]);
+    expect([...found.keys()]).toEqual(["VIE-001-1"]);
   });
 });

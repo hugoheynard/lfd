@@ -145,7 +145,7 @@ async function countersOfSource(
  * référence (`PAI-001`) s'additionne à celui de sa cible
  * (`plan-defaut-sous-sa-reference.md`, § 2 a). Le pli se fait ici et non en
  * SQL : `growth` et `public` ne se joignent pas (`lint:cross-schema-join`).
- * Table vide jusqu'au L3 : rien ne fusionne, l'ordre de la requête tient.
+ * Sans alias, rien ne fusionne et l'ordre de la requête tient.
  */
 async function byArticle(
   views: readonly ProductAudienceCounterView[],

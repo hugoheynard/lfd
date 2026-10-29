@@ -19,7 +19,13 @@ import type { PrismaService } from "../src/platform/database/prisma.service.js";
  * dû être : un jeu de données de test.
  *
  * La forme suit le PIM, pas le seed : la déclinaison porte un SKU dérivé
- * (`VIE-001-1`), et c'est son `productSku` (`VIE-001`) que la boutique vend.
+ * (`VIE-001-1`), et c'est lui que la boutique vend depuis la bascule du
+ * 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3) — elle vendait jusque-là
+ * le `productSku` (`VIE-001`). Le semis joue un catalogue qui EXISTAIT à la
+ * bascule : chaque fiche porte son alias `VIE-001 → VIE-001-1`, comme la
+ * migration l'a écrit en production. Les suites qui nomment `VIE-001` à
+ * l'entrée (panier, devis, passation) éprouvent donc la porte d'entrée, et
+ * lisent `VIE-001-1` en sortie.
  */
 
 /**
@@ -205,5 +211,14 @@ export async function seedE2eCatalog(prisma: PrismaService): Promise<void> {
         receivedAt,
       };
     }),
+  });
+
+  // L'alias que la migration de bascule écrit pour toute fiche existante.
+  await prisma.saleSkuAlias.createMany({
+    data: CATALOG_SEED.map((item) => ({
+      aliasSku: item.sku,
+      targetSku: `${item.sku}-1`,
+      writtenAt: receivedAt,
+    })),
   });
 }

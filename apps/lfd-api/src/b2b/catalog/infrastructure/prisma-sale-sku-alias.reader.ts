@@ -9,9 +9,9 @@ const PAIR = { aliasSku: true, targetSku: true } as const;
 /**
  * Les alias de `sale_sku_alias` autour de ces références, en deux lectures
  * au plus : les lignes qui les nomment, puis les autres alias de leurs
- * cibles. La seconde ne part que si la première a trouvé une cible — la
- * table est vide jusqu'au L3, et une référence sans alias ne coûte qu'une
- * lecture sur la clé primaire et l'index de la cible.
+ * cibles. La seconde ne part que si la première a trouvé une cible : une
+ * référence sans alias ne coûte qu'une lecture sur la clé primaire et l'index
+ * de la cible.
  */
 @Injectable()
 export class PrismaSaleSkuAliasReader extends SaleSkuAliasReader {

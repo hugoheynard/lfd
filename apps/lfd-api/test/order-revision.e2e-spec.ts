@@ -184,6 +184,42 @@ function lineQuantities(orderId: string) {
   });
 }
 
+/**
+ * Une commande ouverte d'avant la bascule (`plan-defaut-sous-sa-reference.md`,
+ * § 6, L3) : elle garde `VIE-001` tant qu'on n'y touche pas ; modifiée, elle
+ * passe sous `VIE-001-1`. La ligne est remise à sa graphie d'alors en base —
+ * aucune route n'écrit plus une référence produit.
+ */
+describe("POST /orders/:id/revisions — une commande passée sous l'ancienne référence", () => {
+  it("normalise sa ligne, fusionne les deux graphies demandées, garde le prix et trace la révision", async () => {
+    const { orderId, pickupId } = await scene();
+    await ctx.prisma.orderLine.updateMany({
+      where: { orderId },
+      data: { sku: "VIE-001", unitPriceMillicents: 180_000, basePriceMillicents: null },
+    });
+
+    await buyer()
+      .post(`/orders/${orderId}/revisions`)
+      .send({
+        expectedRevision: 0,
+        ...content(pickupId, {
+          lines: [
+            { sku: "VIE-001", quantity: 4 },
+            { sku: "VIE-001-1", quantity: 8 },
+          ],
+        }),
+      })
+      .expect(200);
+
+    expect(await lineQuantities(orderId)).toEqual([
+      { sku: "VIE-001-1", quantity: 12, unitPriceMillicents: 180_000 },
+    ]);
+    const [entry] = await ctx.prisma.orderRevisionEntry.findMany({ where: { orderId } });
+    expect(entry?.changes).toEqual(["lines"]);
+    expect(JSON.stringify(entry?.composition)).toContain('"sku":"VIE-001"');
+  });
+});
+
 describe("POST /orders/:id/revisions — le client modifie sa commande au compte", () => {
   it("remplace les lignes, monte la révision, garde la composition précédente en entier", async () => {
     const { orderId, pickupId } = await scene();

@@ -34,6 +34,7 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
     const scope = await this.revising.ensureRevisable(current, query.actor.kind);
     const revision = await this.revising.compose(current, query.content, query.actor, {
       requireChange: false,
+      scope,
     });
     if (scope === "quantities" && !isQuantitiesOnly(current.lines, revision)) {
       throw new QuantitiesOnlyAfterArrestError(current.orderId);

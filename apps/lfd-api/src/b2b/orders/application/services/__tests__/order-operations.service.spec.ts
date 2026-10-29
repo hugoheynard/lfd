@@ -43,7 +43,7 @@ function operationsWith(operation: SellableOperation): OrderOperations {
   );
 }
 
-const LINES = [{ sku: "VIE-001" }, { sku: "PAT-002" }];
+const LINES = [{ sku: "VIE-001-1" }, { sku: "PAT-002-1" }];
 
 describe("OrderOperations.ensure", () => {
   it("laisse passer une société sur une opération réservée aux professionnels", async () => {

@@ -55,7 +55,7 @@ describe("shopCatalogueOf — les opérations datées", () => {
   it("hors fenêtre, écarte la bûche du rayon et ne montre aucune opération", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-10-01T00:00:00.000Z")));
 
-    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
     expect(view.shelves.map((shelf) => shelf.id)).toEqual(["fam-vien"]);
     expect(view.operations).toEqual([]);
   });
@@ -63,7 +63,7 @@ describe("shopCatalogueOf — les opérations datées", () => {
   it("annoncée : la bûche est en rayon, sa carte dit « annoncée », le rayon op: suit", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-11-05T00:00:00.000Z")));
 
-    expect(view.items.find((item) => item.sku === "PAT-002")?.operation).toEqual({
+    expect(view.items.find((item) => item.sku === "PAT-002-1")?.operation).toEqual({
       key: "noel-2026",
       state: "announced",
     });
@@ -78,8 +78,8 @@ describe("shopCatalogueOf — les opérations datées", () => {
         orderUntil: ORDER_UNTIL.toISOString(),
         pickupFrom: "2026-12-20",
         pickupUntil: "2026-12-24",
-        // SKU PRODUIT, dans l'ordre du référentiel, restreints à ce que la vitrine sert.
-        skus: ["PAT-002", "VIE-001"],
+        // SKU de vente, dans l'ordre du référentiel, restreints à ce que la vitrine sert.
+        skus: ["PAT-002-1", "VIE-001-1"],
         announceFrom: ANNOUNCE.toISOString(),
         awaitingProducts: false,
         showsOrderUntilTime: true,
@@ -90,16 +90,16 @@ describe("shopCatalogueOf — les opérations datées", () => {
   it("le croissant de l'opération ne porte aucun état : rien ne restreint sa vente", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
 
-    const croissant = view.items.find((item) => item.sku === "VIE-001");
+    const croissant = view.items.find((item) => item.sku === "VIE-001-1");
     expect(croissant).toBeDefined();
     expect(croissant !== undefined && "operation" in croissant).toBe(false);
   });
 
   it("ouverte puis close : la carte suit l'horloge", () => {
     const open = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
-    expect(open.items.find((item) => item.sku === "PAT-002")?.operation?.state).toBe("open");
+    expect(open.items.find((item) => item.sku === "PAT-002-1")?.operation?.state).toBe("open");
     const closed = shopCatalogueOf(SELLABLE, sale(ORDER_UNTIL));
-    expect(closed.items.find((item) => item.sku === "PAT-002")?.operation?.state).toBe("closed");
+    expect(closed.items.find((item) => item.sku === "PAT-002-1")?.operation?.state).toBe("closed");
     expect(closed.operations[0]?.state).toBe("closed");
   });
 
@@ -109,7 +109,7 @@ describe("shopCatalogueOf — les opérations datées", () => {
       sale(new Date("2026-12-01T00:00:00.000Z"), { operations: [noel({ audience: "pro" })] }),
     );
 
-    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["VIE-001-1"]);
     expect(view.operations).toEqual([]);
   });
 });
@@ -153,7 +153,7 @@ describe("shopCatalogueOf — les opérations au commerce", () => {
     const view = shopCatalogueOf(SELLABLE, sale(new Date("2026-12-01T00:00:00.000Z")));
 
     expect(view.operations[0]).toMatchObject({
-      skus: ["PAT-002", "VIE-001"],
+      skus: ["PAT-002-1", "VIE-001-1"],
       announceFrom: ANNOUNCE.toISOString(),
       awaitingProducts: false,
     });

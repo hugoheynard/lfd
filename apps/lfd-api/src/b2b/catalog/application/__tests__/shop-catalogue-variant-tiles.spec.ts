@@ -41,7 +41,7 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
   it("option cochée : deux déclinaisons vivantes, deux vignettes, chacune sous son SKU de vente", () => {
     const view = shopCatalogueOf(florentins(true), SALE);
 
-    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001", "CHO-001-2"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1", "CHO-001-2"]);
     expect(view.items[1]).toMatchObject({
       name: "Florentin — Boîte de 220 g",
       unitPriceMillicents: 1_250_000,
@@ -55,14 +55,14 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
   it("option décochée : la déclinaison par défaut seule, comme avant", () => {
     const view = shopCatalogueOf(florentins(false), SALE);
 
-    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1"]);
   });
 
   it("une déclinaison archivée — absente du vendable — n'a pas de vignette", () => {
     const [byDefault, box] = florentins(true);
     const view = shopCatalogueOf([byDefault!, box!].slice(0, 1), SALE);
 
-    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001"]);
+    expect(view.items.map((item) => item.sku)).toEqual(["CHO-001-1"]);
   });
 
   it("le prix au kilo d'une vignette est celui de SA déclinaison", () => {

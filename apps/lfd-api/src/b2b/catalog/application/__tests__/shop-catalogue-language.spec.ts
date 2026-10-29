@@ -82,8 +82,8 @@ describe("shopCatalogueOf — l'audience", () => {
     const items = shopCatalogueOf(SELLABLE, SALE).items;
 
     expect(items.map((item) => [item.sku, item.audience])).toEqual([
-      ["VIE-001", "both"],
-      ["PAI-001", "public"],
+      ["VIE-001-1", "both"],
+      ["PAI-001-1", "public"],
     ]);
   });
 });

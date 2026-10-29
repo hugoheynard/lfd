@@ -65,6 +65,8 @@ import { PrismaCatalogPricePerKgReader } from "./infrastructure/prisma-catalog-p
 import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
 import { SaleSkuAliasReader } from "./domain/ports/sale-sku-alias.reader.js";
+import { DefaultSaleReferenceReader } from "./domain/ports/default-sale-reference.reader.js";
+import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-default-sale-reference.reader.js";
 import { PrismaSaleSkuAliasReader } from "./infrastructure/prisma-sale-sku-alias.reader.js";
 import { SaleSkuAliasTableReader } from "./domain/ports/sale-sku-alias-table.reader.js";
 import { PrismaSaleSkuAliasTableReader } from "./infrastructure/prisma-sale-sku-alias-table.reader.js";
@@ -181,12 +183,14 @@ import { SaleReferenceIntake } from "./application/sale-reference-intake.service
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
     // Les anciennes références de vente (`plan-defaut-sous-sa-reference.md`,
-    // L1) : tout regroupement par article les lit, table vide jusqu'au L3.
+    // L1) : tout regroupement par article les lit ; remplie par la bascule (L3).
     { provide: SaleSkuAliasReader, useClass: PrismaSaleSkuAliasReader },
     // L'alias à l'entrée et la table publiée à la boutique (§ 5, L2).
     { provide: SaleSkuAliasTableReader, useClass: PrismaSaleSkuAliasTableReader },
     { provide: SaleSkuAliasResolutionLog, useClass: LoggedSaleSkuAliasResolutionLog },
     SaleReferenceIntake,
+    // Une fiche montrée sous la référence de vente de son défaut (L3).
+    { provide: DefaultSaleReferenceReader, useClass: PrismaDefaultSaleReferenceReader },
   ],
   // L'historique sort d'ici parce que l'écran de tarification en a besoin : sa
   // lecture datée doit rendre le tarif de CE jour-là, pas celui d'aujourd'hui.
@@ -218,6 +222,8 @@ import { SaleReferenceIntake } from "./application/sale-reference-intake.service
     // Pour la passation, les devis, le panier gardé et le brouillon : une
     // référence reçue est canonicalisée avant la résolution (§ 5).
     SaleReferenceIntake,
+    // Pour la vitrine éditoriale : ses tuiles désignent une fiche (L3).
+    DefaultSaleReferenceReader,
     CatalogItemRepository,
     // Le MODULE, et non le provider : `CatalogModule` ne le fournit plus depuis
     // que l'historique a son propre module — Nest refuse d'exporter un provider

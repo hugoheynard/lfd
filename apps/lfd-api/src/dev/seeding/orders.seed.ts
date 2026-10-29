@@ -249,10 +249,9 @@ async function ensureSkusExist(context: SeedContext): Promise<void> {
     where: { productSku: { in: wanted }, isDefault: true, ...STILL_SOLD },
     select: { sku: true, productSku: true, isDefault: true },
   });
-  // La référence de VENTE (`shopSkuOf`), la seule règle : le semis ne pose
-  // pas de ligne sous une référence que la boutique ne vendrait plus
-  // (`plan-defaut-sous-sa-reference.md`, § 3).
-  const found = new Set(known.map(shopSkuOf));
+  // Le corpus nomme la FICHE ; `place` traduit ensuite chaque ligne vers la
+  // référence de vente de son défaut (`withSaleSkus`, bascule L3).
+  const found = new Set(known.map((row) => row.productSku));
   // Un article arrivé du référentiel attend sa validation au commerce avant
   // d'être servi (lot 3, « Afficher ») : le semis la donne par le vrai geste,
   // aux deux audiences et pour tout le miroir, sans quoi un article semé après coup (le saumon au

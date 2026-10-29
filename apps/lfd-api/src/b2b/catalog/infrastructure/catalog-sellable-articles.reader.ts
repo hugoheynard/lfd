@@ -15,8 +15,8 @@ import { shopSkuOf } from "../domain/shop-sku.js";
  *
  * Le fournil fabrique pour les pros ET pour la vitrine : on lit les deux
  * audiences, et un produit vendu aux deux ne paraît qu'une fois, sous le SKU
- * de VENTE de son défaut (`shopSkuOf`, la seule règle — le SKU produit tant
- * que la bascule de `plan-defaut-sous-sa-reference.md` n'est pas faite) et
+ * de VENTE de son défaut (`shopSkuOf`, la seule règle — la référence de la
+ * déclinaison depuis la bascule de `plan-defaut-sous-sa-reference.md`, L3) et
  * son unité par défaut — la clé des lignes de la fiche d'atelier.
  *
  * L'ordre est celui du catalogue : les familles par position, et dans chaque

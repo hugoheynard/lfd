@@ -13,6 +13,7 @@ import { newTraceId } from "../../platform/context/trace-context.js";
 import { TechnicalError } from "../../platform/shared/errors/app-error.js";
 import { PaymentStatus } from "../../platform/database/client/client.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { withSaleSkus } from "./sale-references.seed.js";
 import { AllocateToContainerCommand } from "../../packing/application/containers/allocate-to-container.command.js";
 import { OpenPackingContainerCommand } from "../../packing/application/containers/open-packing-container.command.js";
 import { MarkWorksheetLineCommand } from "../../production/application/commands/mark-worksheet-line.command.js";
@@ -339,7 +340,9 @@ export async function place(
     requestedWindow: await chosenWindowOf(context, order, delivery),
     requestedDeliveryDate: order.forDay,
     note: order.note ?? "",
-    lines: [...order.lines],
+    // Le corpus nomme ses articles par leur référence produit ; la boutique
+    // vend sous la référence de la déclinaison (bascule, L3).
+    lines: await withSaleSkus(context.prisma, order.lines),
   };
   const placed = await runWithRequestContext(
     // Le contexte DATÉ : le `Clock` y lit `order.at`, donc l'heure limite se juge

@@ -43,8 +43,8 @@ import { planWhere } from "./plan-filter.js";
  * c'est ici qu'il doit se faire : le fournil ne lit pas les tables du
  * commerce, il ne saurait pas qu'une ancienne référence (`PAI-001`) et sa
  * cible (`PAI-001-1`) sont le même article
- * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 2 b). Table
- * vide jusqu'à la bascule : chaque référence se lit comme elle-même.
+ * (`documentation/catalogue/plan-defaut-sous-sa-reference.md`, § 2 b) : le
+ * jour de la bascule, une commande d'avant et une d'après font une ligne.
  */
 @Injectable()
 export class PrismaExpectedProductionReader extends ExpectedProductionReader {

@@ -8,6 +8,7 @@ import {
 } from "../../domain/errors/variant-lifecycle-errors.js";
 import { DefaultVariantChangeGate } from "../../domain/ports/default-variant-change-gate.js";
 import { DefaultVariantChangeClosedUntilSwitch } from "../../domain/services/default-variant-change-closed.js";
+import { DefaultVariantChangeOpen } from "../../domain/services/default-variant-change-open.js";
 import { NutritionValuesRepository } from "../../domain/ports/nutrition-values.repository.js";
 import { ProductRepository } from "../../domain/ports/product.repository.js";
 import { VariantAllergensRepository } from "../../domain/ports/variant-allergens.repository.js";
@@ -161,6 +162,16 @@ describe("MakeVariantDefaultHandler", () => {
     expect(products.saves).toBe(0);
     expect(journal.types()).toEqual([]);
     expect(emitter.products).toEqual([]);
+  });
+
+  /** La porte reliée depuis la bascule (`plan-defaut-sous-sa-reference.md`, L3). */
+  it("ouvert depuis la bascule : la porte reliée laisse passer le geste", async () => {
+    const { handler, products, journal } = setup({}, new DefaultVariantChangeOpen());
+
+    await handler.execute(new MakeVariantDefaultCommand(PRODUCT_ID, NEW_ID));
+
+    expect(products.saves).toBe(1);
+    expect(journal.types()).toEqual(["product.default_variant_changed"]);
   });
 
   it("fermé : une demande déjà impossible garde sa vraie raison", async () => {

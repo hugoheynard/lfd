@@ -5,6 +5,7 @@ import { ReactivateBinTypeCommand } from "../../delivery/application/commands/re
 import { SetBinCapacityCommand } from "../../delivery/application/commands/set-bin-capacity.command.js";
 import { asStaff } from "./order-placing.seed.js";
 import { binContainers, type RoundsContext, type SeedBins } from "./delivery-rounds.seed.js";
+import { withSaleSkus } from "./sale-references.seed.js";
 
 /**
  * **Le catalogue des bacs et quelques contenances** (lot 4 bis, tranche B —
@@ -100,7 +101,8 @@ export async function seedBinTypes(context: RoundsContext): Promise<ReadonlyMap<
   for (const binType of BIN_TYPES) {
     ids.set(binType.name, await ensureBinType(context, binType));
   }
-  for (const capacity of CAPACITIES) {
+  // Les contenances se tiennent par référence de VENTE (bascule, L3).
+  for (const capacity of await withSaleSkus(context.prisma, CAPACITIES)) {
     const binTypeId = ids.get(capacity.bin);
     if (binTypeId !== undefined) {
       await asStaff(context.now, () =>

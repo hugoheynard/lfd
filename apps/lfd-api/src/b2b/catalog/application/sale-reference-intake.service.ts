@@ -28,8 +28,9 @@ import type { SaleSkuAliasPair } from "../domain/sale-sku-aliases.js";
  * depuis trente jours. Les liens de fiche et les lecteurs de l'historique
  * gardent l'alias à vie.
  *
- * Table vide jusqu'à la bascule (L3) : une lecture, et les lignes reçues
- * rendues telles quelles.
+ * La table est remplie par la bascule (L3, migration
+ * `20261029100000_le_defaut_se_vend_sous_sa_reference`) : une référence
+ * produit reçue y trouve la déclinaison qui était le défaut ce jour-là.
  */
 @Injectable()
 export class SaleReferenceIntake {

@@ -2,14 +2,19 @@ import { isShownAsTile, shopItemName, shopSkuOf } from "../shop-sku.js";
 
 /** Le SKU de vente et le nom d'une vignette (`plan-declinaisons-en-vignette.md`, V4, V5). */
 describe("shopSkuOf", () => {
-  it("la déclinaison par défaut se vend sous le SKU produit — celui des commandes passées", () => {
-    expect(shopSkuOf({ sku: "VIE-001-1", productSku: "VIE-001", isDefault: true })).toBe("VIE-001");
+  /**
+   * Bascule du 2026-10-29 (`plan-defaut-sous-sa-reference.md`, L3) : le défaut
+   * se vendait sous `VIE-001` jusque-là ; un changement de défaut faisait
+   * glisser ce qui y était posé.
+   */
+  it("la déclinaison par défaut se vend sous SA référence, plus sous celle du produit", () => {
+    const defaultItem = { sku: "VIE-001-1", productSku: "VIE-001", isDefault: true };
+    expect(shopSkuOf(defaultItem)).toBe("VIE-001-1");
   });
 
   it("une autre déclinaison se vend sous son propre SKU", () => {
-    expect(shopSkuOf({ sku: "VIE-001-2", productSku: "VIE-001", isDefault: false })).toBe(
-      "VIE-001-2",
-    );
+    const other = { sku: "VIE-001-2", productSku: "VIE-001", isDefault: false };
+    expect(shopSkuOf(other)).toBe("VIE-001-2");
   });
 });
 

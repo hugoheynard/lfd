@@ -5,6 +5,7 @@ import type {
 } from "@lfd/contracts";
 
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { DefaultSaleReferenceReader } from "../../../catalog/domain/ports/default-sale-reference.reader.js";
 import type { AllergenDisplay } from "../../domain/allergen-display.js";
 import { PublicStorefrontReader } from "../../domain/public-storefront.reader.js";
 import { StorefrontSettingsReader } from "../../domain/storefront-settings.reader.js";
@@ -50,6 +51,27 @@ class FixedSettings extends StorefrontSettingsReader {
 
   allergenDisplay(): ReturnType<StorefrontSettingsReader["allergenDisplay"]> {
     return Promise.resolve({ allergenDisplay: this.display, updatedAt: null });
+  }
+}
+
+/** Les défauts en vente, écrits à la main ; chaque question est retenue. */
+class FixedDefaults extends DefaultSaleReferenceReader {
+  readonly asked: (readonly string[])[] = [];
+
+  constructor(private readonly defaults: Readonly<Record<string, string>> = {}) {
+    super();
+  }
+
+  ofProducts(productSkus: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    this.asked.push(productSkus);
+    return Promise.resolve(
+      new Map(
+        productSkus.flatMap((sku) => {
+          const sale = this.defaults[sku];
+          return sale === undefined ? [] : [[sku, sale] as const];
+        }),
+      ),
+    );
   }
 }
 
@@ -116,6 +138,7 @@ async function read(
     operations,
     NOW,
     new FixedSettings(),
+    new FixedDefaults(),
   );
   const page = await handler.execute(new GetPublicStorefrontPageQuery(shelfKey, companyId));
   return page.objects[0]?.contents ?? [];
@@ -248,6 +271,7 @@ describe("GetPublicStorefrontPageHandler — l'accueil", () => {
       new ShownByAudience({ public: [NOEL] }),
       NOW,
       new FixedSettings(),
+      new FixedDefaults(),
     );
 
     const page = await handler.execute(new GetPublicStorefrontPageQuery("home", null));
@@ -264,10 +288,42 @@ describe("GetPublicStorefrontPageHandler — la place des allergènes (2026-10-2
       new ShownByAudience({}),
       NOW,
       new FixedSettings("gallery"),
+      new FixedDefaults(),
     );
 
     const page = await handler.execute(new GetPublicStorefrontPageQuery("fam_pains", null));
 
     expect(page.allergenDisplay).toBe("gallery");
+  });
+});
+
+describe("GetPublicStorefrontPageHandler — les tuiles d'article (bascule du défaut, L3)", () => {
+  /**
+   * Bascule (`plan-defaut-sous-sa-reference.md`, L3) : la tuile gardait la
+   * référence produit, que la boutique ne vend plus — elle disparaissait.
+   */
+  it("sert chaque fiche sous la référence de vente de son défaut, et laisse les autres", async () => {
+    const defaults = new FixedDefaults({ "PAI-001": "PAI-001-1" });
+    const handler = new GetPublicStorefrontPageHandler(
+      new FixedPage({
+        rows: 2,
+        objects: [
+          object([{ kind: "product", sku: "PAI-001" }, { kind: "product", sku: "GONE" }, PLAIN]),
+        ],
+      }),
+      new ShownByAudience({}),
+      NOW,
+      new FixedSettings(),
+      defaults,
+    );
+
+    const page = await handler.execute(new GetPublicStorefrontPageQuery("all", null));
+
+    expect(defaults.asked).toEqual([["PAI-001", "GONE"]]);
+    expect(page.objects[0]?.contents).toEqual([
+      { kind: "product", sku: "PAI-001-1" },
+      { kind: "product", sku: "GONE" },
+      { ...PLAIN, operation: null },
+    ]);
   });
 });

@@ -592,6 +592,90 @@ redéployer : la migration repart de zéro. Ne **jamais** utiliser `--applied`
 ici : la contrainte et le défaut ne seraient pas posés, et Prisma croirait
 qu'ils le sont.
 
+## Avant de déployer la bascule du défaut (`20261029100000_le_defaut_se_vend_sous_sa_reference`)
+
+Plan : [`plan-defaut-sous-sa-reference.md`](../catalogue/plan-defaut-sous-sa-reference.md), L3
+(bâti le 2026-10-29, **non déployé**). La migration ouvre par un **garde-fou**
+qui compte et refuse, sans rien écrire, s'il trouve : une décision tarifaire
+sur une référence produit (`PAI-001`), un changement de défaut déjà joué
+(`product.default_variant_changed`), une journée de fournil ou de colisage
+non close qui porte une référence produit, ou une fiche à deux défauts.
+Puis elle écrit `sale_sku_alias` et réécrit les réglages clés par référence
+de vente, dans une seule transaction.
+
+**Quand** : sur un « pousse main » de Hugo, **un jour sans service ouvert**
+(D-a). Entre `migrate deploy` et l'image neuve (une à deux minutes, étape
+« Attendre que l'image neuve serve »), l'ancien code tourne sur les données
+basculées : il traduit `PAI-001` en `PAI-001-1` à l'entrée mais ne sait pas
+vendre `PAI-001-1`, donc **une commande portant un article par défaut est
+refusée** pendant cette fenêtre.
+
+**Avant de pousser, constater** sur la production, en lecture seule :
+
+```sql
+SELECT count(*) FROM growth.activity_events WHERE type = 'product.default_variant_changed';
+SELECT service_day FROM production.production_day WHERE closed_at IS NULL ORDER BY 1;
+```
+
+Un changement de défaut compté ⇒ **ne pas déployer** : la table d'alias
+suppose que `PAI-001` a toujours désigné le défaut d'aujourd'hui, et le
+garde-fou refusera quoi qu'on fasse ensuite (le journal ne s'efface pas).
+C'est la question Q2 du plan, à trancher par Hugo. Des journées ouvertes ⇒
+attendre leur clôture, ou vérifier qu'aucune ne porte de commande.
+
+**Si le garde-fou refuse quand même** : l'étape « Migrer la base » échoue,
+`wrangler deploy` ne part pas, l'ancienne version reste en ligne sur des
+données intactes (rien n'a été écrit : le refus annule la transaction). Le
+message dit chaque cas et au plus cinq exemples. Mais Prisma inscrit la
+migration en échec, et **tous les déploiements suivants de l'API s'arrêtent
+sur `P3009`**. Faire le geste que le message nomme — une décision tarifaire
+s'archive avec le code d'avant (`PAI-001-1` n'y est pas encore en vente) et
+se repose sur `PAI-001-1` après la bascule ; une journée se clôt — puis, sur
+le poste de Hugo, à la racine du dépôt, avec l'URL **directe** de production
+(la valeur du secret `DATABASE_LFD_PROD_DIRECT_URL`) :
+
+```bash
+DATABASE_LFD_URL='<URL directe de production>' pnpm --filter lfd-api exec \
+  prisma migrate resolve --rolled-back 20261029100000_le_defaut_se_vend_sous_sa_reference
+```
+
+et relancer le déploiement (`gh workflow run deploy_lfd_api.yml --ref main`) :
+la migration repart de zéro. Jamais `--applied` : l'alias et les réglages ne
+seraient pas écrits, et Prisma croirait qu'ils le sont.
+
+**Si `wrangler deploy` échoue après une migration réussie** : l'ancien code
+tourne sur des données basculées, et refuse toute commande d'un article par
+défaut (ci-dessus). Relancer d'abord le déploiement — la migration est déjà
+inscrite, l'étape répond `No pending migrations` et passe à `wrangler`. Si
+l'image ne part toujours pas, **défaire la bascule** : jouer à la main, une
+fois, par l'URL directe, le retour arrière écrit
+[`apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql`](../../apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql)
+(Prisma ne lit pas ce dossier) :
+
+```bash
+psql '<URL directe de production>' -v ON_ERROR_STOP=1 \
+  -f apps/lfd-api/prisma/rollback/20261029100000_le_defaut_se_vend_sous_sa_reference.sql
+```
+
+Il remet les réglages sur la référence produit et vide `sale_sku_alias` ; il
+refuse, sans rien écrire, si un changement de défaut a été joué ou une
+décision posée sur `PAI-001-1` depuis la bascule. La migration reste inscrite
+« appliquée » : ne pas la résoudre. Le code d'avant redevient juste sur ces
+données ; rebasculer plus tard demandera une **nouvelle** migration, et un
+`revert` du commit du L3 avant tout autre déploiement de l'API.
+
+**Contrôle** après une bascule réussie : `SELECT count(*) FROM
+public.sale_sku_alias;` égale le nombre de fiches qui ont un défaut, et un
+panier `PAI-001` se commande et ressort `PAI-001-1`.
+
+**En développement** : le garde-fou s'éteint sur `lfc_b2b_dev` et les bases
+`lfc_b2b_test*` (des décisions de semis et des changements de défaut essayés
+y existent) — `migrate deploy` passe et l'API démarre. Une base de dev sous
+un autre nom : `ALTER DATABASE <nom> SET lfd.default_sku_switch_guard = 'off';`
+puis relancer, ou `'strict'` pour l'éprouver. Le semis de dev traduit ses
+références produit (`VIE-001`) vers celle du défaut
+(`apps/lfd-api/src/dev/seeding/sale-references.seed.ts`).
+
 ## Basculer les opérations au commerce — l'ordre, et le retour
 
 **Fait le 2026-10-16** (0 opération au référentiel, rien à reprendre).

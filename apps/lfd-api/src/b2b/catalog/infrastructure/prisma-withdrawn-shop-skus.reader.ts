@@ -8,17 +8,16 @@ import { shopSkuOf } from "../domain/shop-sku.js";
 /**
  * Les articles retirés du miroir, par SKU de vente.
  *
- * Le SKU de vente d'un défaut est celui de son produit, celui d'une autre
- * déclinaison est le sien (`shopSkuOf`) ; la clause cherche les deux, puis la
- * clé se recalcule par `shopSkuOf` — le seul point qui décide de cette clé.
+ * Toute déclinaison se vend sous sa référence (`shopSkuOf`, depuis la bascule
+ * du 2026-10-29 — `plan-defaut-sous-sa-reference.md`, L3) : la clause cherche
+ * `sku IN …`, sa jumelle en requête. La branche « référence produit et
+ * défaut » est tombée avec la bascule.
  * `variantsAsTiles` n'est PAS exigé, contrairement à `soldUnderShopSkus` : une
  * déclinaison retirée a pu perdre sa vignette avec sa fiche, elle reste
  * « retirée » et non « inconnue » pour qui l'a vendue.
  *
  * Une ancienne référence (`sale_sku_alias`) se juge comme sa cible, et la
- * clé rendue reste celle demandée (`plan-defaut-sous-sa-reference.md`, L1).
- * La clause `OR` est la jumelle en requête de `shopSkuOf` : elle bascule avec
- * elle au L3, comme `soldUnderShopSkus`.
+ * clé rendue reste celle demandée (L1).
  */
 @Injectable()
 export class PrismaWithdrawnShopSkusReader extends WithdrawnShopSkusReader {
@@ -40,12 +39,9 @@ export class PrismaWithdrawnShopSkusReader extends WithdrawnShopSkusReader {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         withdrawnAt: { not: null },
-        OR: [
-          { productSku: { in: wanted }, isDefault: true },
-          { sku: { in: wanted }, isDefault: false },
-        ],
+        sku: { in: wanted },
       },
-      select: { sku: true, productSku: true, isDefault: true },
+      select: { sku: true },
     });
     const withdrawn = new Set(rows.map(shopSkuOf));
     return new Set(shopSkus.filter((sku) => withdrawn.has(aliases.canonical(sku))));

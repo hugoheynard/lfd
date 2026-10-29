@@ -81,7 +81,9 @@ describe("CreateSubscriptionHandler", () => {
   describe("un article d'opération datée (D6)", () => {
     const sale = saleOperationsOver({
       now: NOW,
-      items: [catalogItem("PAT-002", { name: "Bûche" }), catalogItem("SKU-1")],
+      // Par référence de VENTE, celle de la déclinaison depuis la bascule
+      // (`plan-defaut-sous-sa-reference.md`, L3) : `SKU-1` est celle du panier.
+      items: [catalogItem("PAT-002", { name: "Bûche" }), catalogItem("SKU", { sku: "SKU-1" })],
       onlySkus: ["PAT-002-1"],
     });
 
@@ -104,7 +106,7 @@ describe("CreateSubscriptionHandler", () => {
             ...payload,
             lines: [
               { sku: "SKU-1", quantity: 2 },
-              { sku: "PAT-002", quantity: 1 },
+              { sku: "PAT-002-1", quantity: 1 },
             ],
           },
           null,
@@ -145,7 +147,9 @@ describe("CreateSubscriptionHandler — un article au poids", () => {
       noSaleOperations(NOW),
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
-      articleSaleUnitsOver([catalogItem("SKU-1", { saleUnit: "weight", weightStepGrams: 100 })]),
+      articleSaleUnitsOver([
+        catalogItem("SKU", { sku: "SKU-1", saleUnit: "weight", weightStepGrams: 100 }),
+      ]),
     );
 
     await expect(

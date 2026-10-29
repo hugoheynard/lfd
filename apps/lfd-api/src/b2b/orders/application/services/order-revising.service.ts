@@ -35,6 +35,7 @@ import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderIntake } from "./order-intake.service.js";
 import type { OrderParties } from "./order-parties.js";
 import { OrderPlanGate } from "./order-plan-gate.service.js";
+import { RevisionAliasNormalizing } from "./revision-alias-normalizing.js";
 
 /**
  * **Recomposer une commande passée** (plan
@@ -63,6 +64,7 @@ export class OrderRevising {
     private readonly plans: OrderPlanGate,
     private readonly rule: CancellationRule,
     private readonly intake: OrderIntake,
+    private readonly aliases: RevisionAliasNormalizing,
   ) {}
 
   /**
@@ -169,13 +171,26 @@ export class OrderRevising {
    * Le devis d'une DEMANDE (M4, décision de Hugo du 2026-10-23) chiffre la
    * commande voulue par le client avec les règles de l'équipe, parce que
    * c'est l'équipe qui l'appliquera (`ReviseOrderCommand` en son nom).
+   *
+   * `scope` : sous la portée `quantities` (plan A2), la commande est déjà au
+   * fournil sous ses références, et ses lignes ne se normalisent pas — la
+   * clé (jour, commande, article) du colisage ne bouge jamais. Sinon, une
+   * ancienne référence passe à sa cible ({@link RevisionAliasNormalizing}).
    */
   async compose(
     order: RevisableOrder,
-    content: OrderContent,
+    received: OrderContent,
     author: RevisionActor,
-    options: { readonly requireChange: boolean; readonly rulesOf?: RevisionActor["kind"] },
+    options: {
+      readonly requireChange: boolean;
+      readonly rulesOf?: RevisionActor["kind"];
+      readonly scope?: RevisionScope;
+    },
   ): Promise<OrderRevisionToSave> {
+    const { content, previous } =
+      options.scope === "quantities"
+        ? { content: received, previous: order.lines }
+        : await this.aliases.normalize(order.lines, received);
     const actor = options.rulesOf ?? author.kind;
     await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
     await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
@@ -184,7 +199,7 @@ export class OrderRevising {
       placedByUserId: order.placedByUserId,
       placedByStaffId: order.placedByStaffId,
     };
-    const resolved = await this.composition.resolve(content, parties, order.lines);
+    const resolved = await this.composition.resolve(content, parties, previous);
     await this.ensureBeforeCutoff(order, content, actor);
     const arranged = await this.composition.arrange(
       content,

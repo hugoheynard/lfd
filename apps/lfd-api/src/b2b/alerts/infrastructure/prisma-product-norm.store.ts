@@ -25,7 +25,7 @@ interface NormRow {
  * Rangée par ARTICLE : une ligne passée sous une ancienne référence compte
  * pour sa cible (`sale_sku_alias`, `plan-defaut-sous-sa-reference.md`, § 2 a),
  * la règle de `SaleSkuAliases.canonical` écrite en SQL — la médiane se calcule
- * en base, le pli ne peut donc pas se faire après elle. Table vide jusqu'au L3.
+ * en base, le pli ne peut donc pas se faire après elle.
  */
 @Injectable()
 export class PrismaProductNormStore extends ProductNormStore {
