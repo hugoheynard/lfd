@@ -2158,3 +2158,17 @@ Chaque lot est vert seul ; M7 est le seul qui change un comportement visible.
 4. Un montant fixe cumulé après un % : borné au reste (proposé), ou refusé ?
 5. Plafond du nombre de remises par commande (lisibilité du papier) ?
 6. Faut-il un fait de journal par remise appliquée, ou la commande suffit-elle ?
+
+**Arbitrages du § 18.8 (mandat de Hugo « finis tout le plan », 2026-10-30)** :
+
+1. Plusieurs remises : `discount_promotion_id` = NULL et `discount_label` =
+   libellé générique (« Remises ») ; le détail fait foi dans `order_discounts`.
+   Une seule remise : les deux colonnes restent écrites comme aujourd'hui.
+2. L'égalité « somme des remises = `discount_cents` » est tenue par l'agrégat
+   et éprouvée en e2e — pas de déclencheur en base (règle inter-lignes, hors de
+   portée d'un CHECK).
+3. Bon partiel : chaque remise est recomposée sur les lignes parties.
+4. Un montant fixe appliqué après un pourcentage est borné au reste.
+5. Plafond de **5 remises** par commande, refus nommé au-delà (garde-fou).
+6. Pas de fait de journal par remise : le fait de la commande porte déjà le
+   total ; le détail se relit dans `order_discounts`.
