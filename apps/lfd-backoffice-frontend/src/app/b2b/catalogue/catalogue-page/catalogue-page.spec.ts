@@ -12,6 +12,7 @@ import type {
   PublishedVariantView,
 } from '@lfd/contracts';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { CataloguePage } from './catalogue-page';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
@@ -157,8 +158,10 @@ class FakeCatalogue {
 
 /** Le réglage sur mesure : aucun marqueur, sauf ceux qu'un test pose. */
 class FakeMadeToOrder {
+  calls = 0;
   marked: readonly MadeToOrderMarkView[] = [];
   marks(): Promise<readonly MadeToOrderMarkView[]> {
+    this.calls += 1;
     return Promise.resolve(this.marked);
   }
 }
@@ -172,7 +175,11 @@ class FakeNotify {
   refused(): void {}
 }
 
-async function render(api: FakeCatalogue, madeToOrder = new FakeMadeToOrder()) {
+async function render(
+  api: FakeCatalogue,
+  madeToOrder = new FakeMadeToOrder(),
+  can: (permission: string) => boolean = () => true,
+) {
   TestBed.configureTestingModule({
     imports: [CataloguePage],
     providers: [
@@ -180,6 +187,7 @@ async function render(api: FakeCatalogue, madeToOrder = new FakeMadeToOrder()) {
       { provide: CatalogueService, useValue: api },
       { provide: MadeToOrderService, useValue: madeToOrder },
       { provide: NotifyService, useValue: new FakeNotify() },
+      { provide: PermissionsStore, useValue: { can } },
     ],
   });
   const fixture: ComponentFixture<CataloguePage> = TestBed.createComponent(CataloguePage);
@@ -815,5 +823,19 @@ describe('le sur mesure (L1a)', () => {
     expect(badges).not.toContain('Sur mesure');
     expect(text(fixture)).not.toContain('réservé à');
     expect(text(fixture)).toContain('Sur mesure…');
+  });
+
+  /** Le sur mesure a son droit à part de `lfc_catalog` (Hugo, 2026-10-30). */
+  it('sans `lfc_made_to_order:read`, ni geste ni marqueurs demandés — le catalogue s’ouvre', async () => {
+    const madeToOrder = new FakeMadeToOrder();
+    const fixture = await render(
+      new FakeCatalogue(),
+      madeToOrder,
+      (permission) => permission !== 'lfc_made_to_order:read',
+    );
+
+    expect(madeToOrder.calls).toBe(0);
+    expect(text(fixture)).not.toContain('Sur mesure…');
+    expect(text(fixture)).toContain('Croissant');
   });
 });

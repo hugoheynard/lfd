@@ -545,6 +545,21 @@ naturellement ».
   `fetchUsualSuggestions` sans `orderableOnly`). Textes : `shop.reservedToOtherAccount(Hint)`,
   `cart.reservedLine`, `cart.dropReservedLines`.
 - **L2…** — la suite du § 8.
+- **Le droit du sur mesure — décidé par Hugo le 2026-10-30.** Les gestes du
+  sur mesure ont un droit à part, `lfc_made_to_order`, distinct de
+  `lfc_catalog` : décider du masquage n'emporte pas de dire à qui un article
+  est réservé. Les lectures (marqueurs, réservataires d'un article, articles
+  réservés d'une société) demandent `lfc_made_to_order:read` — la liste des
+  réservataires nomme des clients — et les gestes `write`.
+  🟦 **Bâti le 2026-10-30, non commité** : valeur d'enum
+  `20261031020000_le_droit_du_sur_mesure` (aucun droit accordé), surface
+  `@AdminSurface("lfc_made_to_order")` sur `AdminMadeToOrderController` ;
+  au back-office, « Sur mesure… » et les badges du catalogue publié, le
+  panneau et l'onglet « Articles réservés » suivent le droit (le sélecteur
+  de l'onglet demande en plus `lfc_catalog:read`, il lit la liste du
+  catalogue). ⚠️ Mise en service : accorder `lfc_made_to_order` à l'écran
+  (`/admin/staff-roles`), administrateur compris, aux rôles qui tenaient le
+  sur mesure sous `lfc_catalog`.
 
 ~~⚠️ Entre L1a et L1b, une réservation posée ne restreint encore rien : l'écran
 le dit (« la restriction s'appliquera au prochain déploiement ») et rien ne

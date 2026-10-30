@@ -47,7 +47,7 @@
         @if (reservedLabel(row); as reserved) {
           <fold-badge [content]="reserved" variant="info" />
         }
-        @if (row.item !== null) {
+        @if (madeToOrderEnabled() && row.item !== null) {
           <button foldButton size="sm" emphasis="soft" (click)="madeToOrderOpened.emit(row)">
             Sur mesure…
           </button>

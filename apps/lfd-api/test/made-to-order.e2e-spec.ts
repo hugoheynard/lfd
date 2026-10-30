@@ -5,7 +5,8 @@
  * Ce que seule cette suite prouve : les écritures tombent dans les VRAIES
  * tables (clé primaire du couple, CHECK de la visibilité, `decided_at` de
  * l'agrégat intact), les faits sous la vraie fiche staff, l'héritage lu par
- * `parent_company_id`, et le mur `lfc_catalog` sur les routes. Le mur de la
+ * `parent_company_id`, et le mur `lfc_made_to_order` sur les routes (droit à part de
+ * `lfc_catalog`, Hugo, 2026-10-30). Le mur de la
  * boutique n'est PAS ici : c'est le lot L1b.
  */
 import { CATALOG_SNAPSHOT_VERSION, type CatalogSnapshot } from "@lfd/catalog-sync";
@@ -252,7 +253,7 @@ describe("la réservation à une société", () => {
 });
 
 describe("le mur du paramétrage", () => {
-  it("le support, sans `lfc_catalog`, ne réserve ni ne lit", async () => {
+  it("le support, sans `lfc_made_to_order`, ne réserve ni ne lit", async () => {
     const company = await createCompany(ctx.prisma);
     await ctx.prisma.staffUser.create({
       data: {
@@ -270,5 +271,62 @@ describe("le mur du paramétrage", () => {
     await support.put(`${ITEM}/reservations/${company.id}`).expect(403);
     await support.get(`/admin/catalog/reservations/${company.id}`).expect(403);
     expect(await ctx.prisma.catalogItemReservation.count()).toBe(0);
+  });
+});
+
+/** Un rôle tel que la production le garde, et une personne active qui le porte. */
+async function holderOf(
+  key: string,
+  grants: readonly object[],
+): Promise<ReturnType<E2eContext["asSub"]>> {
+  await ctx.prisma.staffRoleDefinition.create({ data: { key, label: key, grants: [...grants] } });
+  await ctx.prisma.staffUser.create({
+    data: {
+      firstName: "Léa",
+      lastName: key,
+      email: `${key}@lfc.test`,
+      roleKey: key,
+      role: null,
+      status: "active",
+      auth0Id: `sub-${key}`,
+    },
+  });
+  return ctx.asSub(`sub-${key}`);
+}
+
+describe("le droit du sur mesure, à part du catalogue (Hugo, 2026-10-30)", () => {
+  it("`lfc_catalog:write` seul ne marque, ne réserve ni ne lit le sur mesure", async () => {
+    const company = await createCompany(ctx.prisma);
+    const catalogue = await holderOf("catalogue", [{ resource: "lfc_catalog", action: "write" }]);
+
+    await catalogue.put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(403);
+    await catalogue.put(`${ITEM}/reserved-visibility`).send({ visibility: "hidden" }).expect(403);
+    await catalogue.put(`${ITEM}/reservations/${company.id}`).expect(403);
+    await catalogue.delete(`${ITEM}/reservations/${company.id}`).expect(403);
+    await catalogue.get("/admin/catalog/made-to-order").expect(403);
+    await catalogue.get(`${ITEM}/reservation`).expect(403);
+    await catalogue.get(`/admin/catalog/reservations/${company.id}`).expect(403);
+    expect(await ctx.prisma.catalogItemReservation.count()).toBe(0);
+  });
+
+  it("la lecture seule voit les réservataires, et ne réserve pas", async () => {
+    const company = await createCompany(ctx.prisma);
+    const reader = await holderOf("lecteur", [{ resource: "lfc_made_to_order", action: "read" }]);
+
+    await reader.get("/admin/catalog/made-to-order").expect(200);
+    await reader.get(`${ITEM}/reservation`).expect(200);
+    await reader.get(`/admin/catalog/reservations/${company.id}`).expect(200);
+    await reader.put(`${ITEM}/reservations/${company.id}`).expect(403);
+  });
+
+  it("`lfc_made_to_order:write`, sans `lfc_catalog`, marque et réserve", async () => {
+    const company = await createCompany(ctx.prisma);
+    const writer = await holderOf("sur-mesure", [
+      { resource: "lfc_made_to_order", action: "write" },
+    ]);
+
+    await writer.put(`${ITEM}/made-to-order`).send({ madeToOrder: true }).expect(204);
+    await writer.put(`${ITEM}/reservations/${company.id}`).expect(204);
+    expect(await ctx.prisma.catalogItemReservation.count()).toBe(1);
   });
 });

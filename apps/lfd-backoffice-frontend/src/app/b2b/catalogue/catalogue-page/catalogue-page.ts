@@ -19,6 +19,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
 import { MadeToOrderService } from '../made-to-order.service';
@@ -96,6 +97,16 @@ export class CataloguePage {
   private readonly notify = inject(NotifyService);
   private readonly madeToOrder = inject(MadeToOrderService);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /**
+   * Le sur mesure a son droit à part (Hugo, 2026-10-30) : sans sa lecture, ni
+   * badges ni « Sur mesure… », et la liste des marqueurs n'est pas demandée —
+   * le serveur la refuserait et ferait tomber toute la page.
+   */
+  protected readonly canSeeMadeToOrder = computed(() =>
+    this.permissions.can('lfc_made_to_order:read'),
+  );
 
   protected readonly state = signal<LoadState>('loading');
   private readonly view = signal<PublishedCatalogView>({
@@ -179,7 +190,7 @@ export class CataloguePage {
       const [view, items, marks] = await Promise.all([
         this.catalogue.published(),
         this.catalogue.list(),
-        this.madeToOrder.marks(),
+        this.canSeeMadeToOrder() ? this.madeToOrder.marks() : Promise.resolve([]),
       ]);
       this.view.set(view);
       this.items.set(items);

@@ -45,13 +45,17 @@ class FakeMadeToOrder {
   }
 }
 
-async function render(api: FakeMadeToOrder, closes: unknown[] = []) {
+async function render(
+  api: FakeMadeToOrder,
+  closes: unknown[] = [],
+  can: (permission: string) => boolean = () => true,
+) {
   TestBed.configureTestingModule({
     imports: [MadeToOrderPanel],
     providers: [
       provideRouter([]),
       { provide: MadeToOrderService, useValue: api },
-      { provide: PermissionsStore, useValue: { can: () => true } },
+      { provide: PermissionsStore, useValue: { can } },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
       { provide: FoldPanelRef, useValue: new FoldPanelRef(1, (result) => closes.push(result)) },
     ],
@@ -76,6 +80,16 @@ describe('MadeToOrderPanel', () => {
     expect(text(fixture)).toContain('Le Fournil d’Anna');
     // Le mur est bâti (L1b, 2026-10-30) : l'annonce d'attente est partie.
     expect(text(fixture)).not.toContain('prochain déploiement');
+  });
+
+  /** Le sur mesure a son droit à part de `lfc_catalog` (Hugo, 2026-10-30). */
+  it('`lfc_catalog:write` sans `lfc_made_to_order:write` : lecture seule', async () => {
+    const fixture = await render(new FakeMadeToOrder(), [], (permission) =>
+      ['lfc_catalog:write', 'lfc_made_to_order:read'].includes(permission),
+    );
+
+    expect(text(fixture)).toContain('Le Fournil d’Anna');
+    expect(text(fixture)).not.toContain('Enregistrer');
   });
 
   it('cocher « sur mesure » n’envoie rien avant Enregistrer, puis seulement le marqueur', async () => {

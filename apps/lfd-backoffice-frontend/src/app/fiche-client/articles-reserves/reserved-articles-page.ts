@@ -67,7 +67,15 @@ export class ClientReservedArticlesPage {
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly canEdit = computed(() => this.permissions.can('lfc_catalog:write'));
+  /** Réserver ou retirer : le droit du sur mesure (Hugo, 2026-10-30), pas celui du catalogue. */
+  protected readonly canEdit = computed(() => this.permissions.can('lfc_made_to_order:write'));
+  /**
+   * Le sélecteur lit la liste du catalogue, servie sous `lfc_catalog:read` :
+   * sans elle, on retire encore, on ne réserve pas.
+   */
+  protected readonly canReserve = computed(
+    () => this.canEdit() && this.permissions.can('lfc_catalog:read'),
+  );
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<CompanyReservedArticlesView>({ own: [], principal: null });
   private readonly articles = signal<readonly CatalogAdminItemView[]>([]);
@@ -99,7 +107,7 @@ export class ClientReservedArticlesPage {
     try {
       const [view, articles] = await Promise.all([
         this.api.ofCompany(companyId),
-        this.canEdit() ? this.catalogue.list() : Promise.resolve([]),
+        this.canReserve() ? this.catalogue.list() : Promise.resolve([]),
       ]);
       this.view.set(view);
       this.articles.set(articles);

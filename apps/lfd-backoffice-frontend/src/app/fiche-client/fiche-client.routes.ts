@@ -98,11 +98,11 @@ export const ficheClientRoutes: Routes = [
         loadComponent: () => import('./tarifs/tarifs-page').then((m) => m.ClientTarifsPage),
       },
       {
-        // 🔴 `lfc_catalog:read` et non le droit du parent : réserver un article
-        // est une décision sur ce qui se vend (plan des articles sur mesure,
-        // L1a), et la surface serveur est `lfc_catalog`.
+        // 🔴 `lfc_made_to_order:read` et non le droit du parent : la surface
+        // serveur du sur mesure a son droit à part (Hugo, 2026-10-30, plan des
+        // articles sur mesure).
         path: 'articles-reserves',
-        canActivate: [permissionGuard('lfc_catalog:read')],
+        canActivate: [permissionGuard('lfc_made_to_order:read')],
         loadComponent: () =>
           import('./articles-reserves/reserved-articles-page').then(
             (m) => m.ClientReservedArticlesPage,

@@ -26,16 +26,15 @@ import { ListMadeToOrderMarksQuery } from "../application/queries/list-made-to-o
  * `documentation/catalogue/plan-articles-sur-mesure.md`, lot L1a) : marquer,
  * régler la visibilité, réserver à une société, retirer.
  *
- * Même surface que le paramétrage du catalogue (`lfc_catalog`) : c'est une
- * décision sur ce qui se vend, prise par ceux qui décident déjà du masquage.
- * Un contrôleur à part parce que le sujet en est un, et que le contrôleur
- * voisin dépasserait sa taille.
- *
- * ⚠️ Tant que le lot L1b n'est pas déployé, rien de ce qui se règle ici ne
- * restreint le rayon, le devis ni la commande.
+ * Surface À PART, `lfc_made_to_order` (Hugo, 2026-10-30) : décider du
+ * masquage (`lfc_catalog`) n'emporte pas de dire à qui un article est réservé.
+ * Les lectures demandent `read` — la liste des réservataires d'un article
+ * nomme des clients — et les gestes `write`, déduits du verbe. La garde se
+ * pose par contrôleur : c'est pour elle que ces routes ne vivent pas dans
+ * `AdminCatalogController`.
  */
 @Controller("admin/catalog")
-@AdminSurface("lfc_catalog")
+@AdminSurface("lfc_made_to_order")
 export class AdminMadeToOrderController {
   constructor(
     private readonly commands: CommandBus,

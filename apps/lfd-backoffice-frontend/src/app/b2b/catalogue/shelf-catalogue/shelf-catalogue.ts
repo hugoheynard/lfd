@@ -95,6 +95,9 @@ export class ShelfCatalogue {
    */
   readonly marks = input<ReadonlyMap<string, MadeToOrderMarkView>>(new Map());
 
+  /** Le droit de lire le sur mesure (`lfc_made_to_order:read`) : sans lui, pas de « Sur mesure… ». */
+  readonly madeToOrderEnabled = input(false);
+
   /** Ouvrir le réglage sur mesure d'un article en vente. */
   readonly madeToOrderOpened = output<PublishedRow>();
 

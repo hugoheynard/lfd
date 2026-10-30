@@ -44,13 +44,14 @@ class FakeMadeToOrder {
   }
 }
 
-async function render(api: FakeMadeToOrder, canWrite: boolean) {
+async function render(api: FakeMadeToOrder, canWrite: boolean | ((permission: string) => boolean)) {
+  const can = typeof canWrite === 'function' ? canWrite : () => canWrite;
   TestBed.configureTestingModule({
     imports: [ClientReservedArticlesPage],
     providers: [
       { provide: MadeToOrderService, useValue: api },
       { provide: CatalogueService, useValue: { list: () => Promise.resolve([]) } },
-      { provide: PermissionsStore, useValue: { can: () => canWrite } },
+      { provide: PermissionsStore, useValue: { can } },
       {
         provide: NotifyService,
         useValue: { success: () => undefined, error: () => undefined },
@@ -105,6 +106,29 @@ describe('ClientReservedArticlesPage', () => {
     const fixture = await render(new FakeMadeToOrder(), false);
 
     expect(text(fixture)).toContain('Tarte citron');
+    expect((fixture.nativeElement as HTMLElement).querySelector('fold-combobox')).toBeNull();
+    expect(text(fixture)).not.toContain('Retirer');
+  });
+
+  /**
+   * Le droit du sur mesure (Hugo, 2026-10-30) ouvre le retrait ; le sélecteur
+   * lit le catalogue, et demande en plus `lfc_catalog:read`.
+   */
+  it('`lfc_made_to_order:write` sans le catalogue : retirer oui, réserver non', async () => {
+    const fixture = await render(
+      new FakeMadeToOrder(),
+      (permission) => permission === 'lfc_made_to_order:write',
+    );
+
+    expect((fixture.nativeElement as HTMLElement).querySelector('fold-combobox')).toBeNull();
+    expect(text(fixture)).toContain('Retirer');
+  });
+
+  it('`lfc_catalog:write` seul ne réserve ni ne retire', async () => {
+    const fixture = await render(new FakeMadeToOrder(), (permission) =>
+      permission.startsWith('lfc_catalog:'),
+    );
+
     expect((fixture.nativeElement as HTMLElement).querySelector('fold-combobox')).toBeNull();
     expect(text(fixture)).not.toContain('Retirer');
   });

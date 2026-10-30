@@ -131,6 +131,7 @@
             [shelf]="shelf"
             [busy]="approving()"
             [marks]="marks()"
+            [madeToOrderEnabled]="canSeeMadeToOrder()"
             (madeToOrderOpened)="openMadeToOrder($event)"
             (maskToggled)="toggleMasking($event)"
             (approve)="approve($event)"

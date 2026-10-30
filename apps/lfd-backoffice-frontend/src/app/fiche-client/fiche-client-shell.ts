@@ -106,14 +106,14 @@ const ALL_TABS: readonly GuardedTab[] = [
   // Juste après les commandes : ce qu'il paie se lit à côté de ce qu'il achète.
   { key: 'tarifs', label: 'Tarifs', link: 'tarifs', icon: 'tag', permission: 'b2b_pricing:read' },
   // Juste après les tarifs : ce qu'il est seul à pouvoir commander (plan des
-  // articles sur mesure, L1a). Derrière le droit du paramétrage du catalogue,
+  // articles sur mesure, L1a). Derrière le droit du sur mesure (2026-10-30),
   // que la fiche (`b2b_companies:read`) ne garantit pas.
   {
     key: 'articles-reserves',
     label: 'Articles réservés',
     link: 'articles-reserves',
     icon: 'lock',
-    permission: 'lfc_catalog:read',
+    permission: 'lfc_made_to_order:read',
   },
   {
     key: 'paniers-recurrents',

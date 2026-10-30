@@ -130,9 +130,11 @@ describe('grantGroups', () => {
    * `collection_test`, le prélèvement d'essai
    * (comptabilite/prelevement/plan-prelevement-d-essai.md). 66 le 2026-10-25 :
    * `b2b_orders_shortfall`, décider du départ incomplet
-   * (plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b).
+   * (plan E6 (`documentation/commandes/bon-de-livraison.md`), E6b). 67 le
+   * 2026-10-30 : `lfc_made_to_order`, le sur mesure, détaché de `lfc_catalog`
+   * (catalogue/plan-articles-sur-mesure.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(66);
+    expect(RESOURCE_COUNT).toBe(67);
   });
 });

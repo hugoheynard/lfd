@@ -89,7 +89,7 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
   private readonly panel = inject(FoldPanelRef);
   private readonly permissions = inject(PermissionsStore);
 
-  protected readonly canEdit = computed(() => this.permissions.can('lfc_catalog:write'));
+  protected readonly canEdit = computed(() => this.permissions.can('lfc_made_to_order:write'));
   protected readonly state = signal<LoadState>('loading');
   protected readonly view = signal<ArticleReservationView | null>(null);
   protected readonly saving = signal(false);

@@ -212,6 +212,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     write:
       "Régler le programme, ajuster le solde d'un client, annuler un bon. N'ouvre encore aucun geste jusqu'à la bascule (F2).",
   },
+  lfc_made_to_order: {
+    read: "Voir quels articles sont sur mesure, à quelles sociétés ils sont réservés, et l'onglet « Articles réservés » d'une fiche client.",
+    write:
+      "Marquer un article sur mesure, régler sa visibilité aux autres pros, le réserver à une société ou l'en retirer.",
+  },
   lfc_suggestions: {
     read: "Voir les suggestions décidées par l'équipe — ce qui les déclenche, ce qu'elles montrent, où, à qui et quand — leur ordre, et leurs chiffres (affichée, cliquée, ajoutée).",
     write:
