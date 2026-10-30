@@ -154,7 +154,8 @@ flowchart LR
 
 ✅ **Sortie d'Accelerate faite** (bascule 2026-09-19, resserrement
 2026-09-22) — un seul transport, l'adaptateur `pg` : le container joint le
-pooler mutualisé (5 connexions par instance, 5 s pour en obtenir une), la
+pooler mutualisé (15 connexions par instance depuis le 2026-10-30 — offre
+Prisma Pro, 250 mutualisées —, 5 s pour en obtenir une), la
 migration du déploiement passe par l'URL **directe** `db.prisma.io` (secret
 `DATABASE_LFD_PROD_DIRECT_URL`), et une URL `prisma+postgres://` est refusée au
 démarrage. Détail : [`base-de-production.md`](../ops/base-de-production.md).

@@ -34,8 +34,10 @@ vie n'est pas, et non `database.module.ts`, où il est.
 | partiel, après                    | 20     | **20**                   | 1            |
 | complet, après (`pnpm test:e2e`)  | 340    | **21**                   | 1            |
 
-Le compte reste **borné par 4 workers × 5** (`max: 5` dans `prisma.service.ts`)
-et redescend à chaque fermeture : aucun cumul, loin des 100 du serveur.
+Le compte reste **borné par 4 workers × 15** (`max: 15` dans `prisma.service.ts`,
+relevé de 5 le 2026-10-30 pour l'offre Prisma Pro ; le tableau ci-dessus a été
+mesuré à 5) et redescend à chaque fermeture : aucun cumul, 60 au pire, sous les
+100 du serveur.
 
 ### Le test qui le garde
 

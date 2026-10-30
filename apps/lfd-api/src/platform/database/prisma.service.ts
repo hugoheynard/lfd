@@ -46,19 +46,21 @@ export class PrismaService extends PrismaClient {
 /**
  * Le pool d'UNE instance.
  *
- * - `max: 5` — deux instances coexistent une à deux minutes à chaque
- *   déploiement (l'ancienne répond encore, cf. `deploy_lfd_api.yml`) : dix
- *   connexions au pire. L'offre Prisma est **Pro** : 250 connexions
- *   mutualisées (Hugo, 2026-09-19), donc 2 à 4 % d'occupées. Relever ce
- *   plafond ne se justifie que si des requêtes ATTENDENT une connexion —
- *   elles finissent alors en « base indisponible » sous charge.
+ * - `max: 15` — relevé de 5 le 2026-10-30 (Hugo : offre Prisma **Pro**,
+ *   250 connexions mutualisées). Deux instances coexistent une à deux minutes
+ *   à chaque déploiement (l'ancienne répond encore, cf. `deploy_lfd_api.yml`) :
+ *   trente connexions au pire, 12 % de l'offre. Avec une seule instance et un
+ *   seul fil Node, c'est le nombre de requêtes qui peuvent lire la base EN MÊME
+ *   TEMPS ; à 5, un pic de devis faisait attendre la sixième. Le relever encore
+ *   ne se justifie que si un test de charge montre des requêtes qui ATTENDENT
+ *   une connexion (« base indisponible ») et un pooler loin de sa limite.
  * - `connectionTimeoutMillis` — une requête qui n'obtient pas de connexion
  *   ÉCHOUE, en « base indisponible », au lieu de pendre. Le défaut est
  *   l'attente infinie, et un pooler muet bloquerait jusqu'au boot.
  * - `idleTimeoutMillis` — explicite plutôt qu'hérité, pour qu'il se lise ici.
  */
 const POOL = {
-  max: 5,
+  max: 15,
   connectionTimeoutMillis: 5_000,
   idleTimeoutMillis: 30_000,
 } as const;
