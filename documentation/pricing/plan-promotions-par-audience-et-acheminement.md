@@ -582,3 +582,23 @@ segment). Les colonnes du § 3 (`clientele`) se renomment en conséquence au
 bâti. Restent à trancher : la personne aux deux casquettes, la saisie staff, la
 société et ses sites, et le PRIX DE BASE d'un pro en cours d'inscription
 (aujourd'hui `audienceOf` le sert au prix public, `customer-audience.ts:23`).
+
+## 10. Le pro en cours d'inscription voit le catalogue pro (Hugo, 2026-10-30)
+
+Décision : **un membre d'une société en attente de validation voit le
+catalogue pro quand il agit dans son espace pro** (au nom de sa société).
+Pour lui-même, hors de l'espace pro, il reste un particulier inscrit.
+Aujourd'hui c'est l'inverse : `audienceOf` (`customer-audience.ts:23`) ne
+rend `b2b` que pour une société ACTIVE, et ses 13 lecteurs (catalogue, prix,
+points de retrait, textes de la boutique, e-mails, contact…) servent donc le
+public à une société en attente.
+
+C'est un chantier à part, préalable aux promotions par sous-audience, qui
+déplace une frontière de sécurité (qui voit les prix pros) et touche l'argent :
+plan dédié et `vitruve` avant de bâtir. Questions ouvertes :
+
+- Peut-il **commander** au prix pro avant validation, ou seulement voir ?
+- Si oui : à quelles conditions de paiement (carte seulement, jamais « au
+  compte » avant validation) ?
+- Ses minimums, sa TVA affichée (HT), ses réservations sur mesure, sa
+  mercuriale : tout ce qui suit « pro » le suit-il aussi ?
