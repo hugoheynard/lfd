@@ -611,6 +611,16 @@ dans une colonne inventoriée, tout est annulé. La table
 `sale_sku_alias` reste, vide : sa suppression part dans un déploiement
 ultérieur.
 
+**Le journal suit, dans le même déploiement** :
+`20261030100000_le_journal_parle_la_reference_de_vente` (décision de Hugo du
+2026-10-30) réécrit les faits de `growth.activity_events` aux chemins où une
+charge porte une référence de vente (inventaire au § 16, « Corrections », 6) ;
+les faits `product.*` gardent la référence de la fiche. Rejouable ; elle
+annule tout s'il reste une référence produit à un chemin inventorié (une
+fiche sans défaut) — même geste qu'un refus de la bascule, avec son nom :
+`prisma migrate resolve --rolled-back 20261030100000_le_journal_parle_la_reference_de_vente`.
+Le script de constat la compte (`faits_du_journal_a_traduire`, informatif).
+
 **Quand** : sur un « pousse main » de Hugo, **un jour sans service ouvert, la
 boutique au calme**. Entre `migrate deploy` et l'image neuve (une à deux
 minutes, étape « Attendre que l'image neuve serve »), l'ancien code tourne sur
@@ -677,11 +687,13 @@ inscrite, l'étape répond `No pending migrations` et passe à `wrangler`. Si
 l'image ne part toujours pas, **défaire la bascule** : jouer à la main, une
 fois, par l'URL directe, le retour arrière écrit
 [`apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql`](../../apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql)
-(Prisma ne lit pas ce dossier) :
+(Prisma ne lit pas ce dossier), puis celui du journal :
 
 ```bash
 psql '<URL directe de production>' -v ON_ERROR_STOP=1 \
   -f apps/lfd-api/prisma/rollback/20261029180000_le_defaut_se_vend_sous_sa_reference.sql
+psql '<URL directe de production>' -v ON_ERROR_STOP=1 \
+  -f apps/lfd-api/prisma/rollback/20261030100000_le_journal_parle_la_reference_de_vente.sql
 ```
 
 C'est la même réécriture, carte inversée (`PAI-001-1 → PAI-001`) ; il refuse,

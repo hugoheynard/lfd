@@ -110,6 +110,7 @@
   "test/day-change-triggers.e2e-spec.ts": 5791,
   "test/day-supervision.e2e-spec.ts": 3937,
   "test/day-version.e2e-spec.ts": 11867,
+  "test/default-sku-journal-migration.e2e-spec.ts": 5271,
   "test/default-sku-switch-migration.e2e-spec.ts": 12903,
   "test/deferred-payment-block-roles-migration.e2e-spec.ts": 2346,
   "test/delivery-address-suggestions.e2e-spec.ts": 14000,

@@ -15,6 +15,8 @@
  * Les journées ouvertes et les commandes à venir sont INFORMATIVES depuis la
  * révision 3 (2026-10-29) : la bascule les réécrit dans la même transaction.
  * Les factures et arrêtés émis bloquent : un document émis ne se réécrit pas.
+ * Les faits du journal à traduire sont INFORMATIFS : la migration
+ * `20261030100000_le_journal_parle_la_reference_de_vente` les réécrit.
  */
 import { createRequire } from "node:module";
 
@@ -50,11 +52,18 @@ UNION ALL SELECT 'commandes_a_venir', count(*)::int FROM public.orders o JOIN pu
 UNION ALL SELECT 'fiches_a_deux_defauts', count(*)::int FROM (SELECT product_sku FROM public.catalog_items WHERE is_default GROUP BY 1 HAVING count(*) > 1) d
 UNION ALL SELECT 'factures_emises', count(DISTINCT i.id)::int FROM public.invoice i CROSS JOIN LATERAL jsonb_path_query(i.lines, 'lax $.**.sku') v JOIN refs ON jsonb_typeof(v) = 'string' AND ref = v #>> '{}'
 UNION ALL SELECT 'arretes_emis', count(DISTINCT b.id)::int FROM public.billing_statement b CROSS JOIN LATERAL jsonb_path_query(b.body, 'lax $.**.sku') v JOIN refs ON jsonb_typeof(v) = 'string' AND ref = v #>> '{}'
+UNION ALL SELECT 'faits_du_journal_a_traduire', count(DISTINCT e.id)::int FROM growth.activity_events e CROSS JOIN LATERAL jsonb_path_query(e.payload, 'lax $.**') v JOIN refs ON jsonb_typeof(v) = 'string' AND ref = v #>> '{}' WHERE e.type NOT LIKE 'product.%'
 UNION ALL SELECT 'commandes_aux_deux_references', count(DISTINCT a.order_id)::int FROM public.order_lines a JOIN public.catalog_items i ON i.product_sku = a.sku AND i.is_default JOIN public.order_lines b ON b.order_id = a.order_id AND b.sku = i.sku
 `;
 
 /** Constatées, mais réécrites par la bascule (révision 3) : elles ne bloquent pas. */
-const INFORMATIVE = new Set(["journees_fournil_ouvertes", "commandes_a_venir"]);
+const INFORMATIVE = new Set([
+  "journees_fournil_ouvertes",
+  "commandes_a_venir",
+  // Traduits par `20261030100000_le_journal_parle_la_reference_de_vente` (2026-10-30).
+  // Compte large (toute chaîne égale, hors fiche `product.*`) : un ordre de grandeur.
+  "faits_du_journal_a_traduire",
+]);
 
 const client = new Client({ connectionString: url });
 await client.connect();
