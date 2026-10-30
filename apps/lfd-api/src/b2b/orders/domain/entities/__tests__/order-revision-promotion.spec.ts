@@ -1,4 +1,4 @@
-import type { BillingAddressPayload, CartAdjustment } from "@lfd/contracts";
+import { discountCentsOf, type BillingAddressPayload, type CartAdjustment } from "@lfd/contracts";
 import { millicentsFromCents } from "@lfd/money";
 
 import { FulfillmentChangeAltersPromotionError } from "../../errors/fulfillment-promotion-errors.js";
@@ -35,7 +35,19 @@ interface Discount {
 }
 const NONE: Discount = { adjustment: null, promotionId: null };
 
-function input(siteId: string, discount: Discount): DraftOrderInput {
+const DELIVERY: DraftOrderInput["fulfillment"] = {
+  method: "delivery",
+  deliveryZoneId: "zone_1",
+  deliveryAddress: POINT,
+  deliveryAddressId: null,
+  pickupAddress: null,
+};
+
+function input(
+  siteId: string,
+  discount: Discount,
+  fulfillment?: DraftOrderInput["fulfillment"],
+): DraftOrderInput {
   const adjustment = discount.adjustment;
   return {
     companyId: "co_1",
@@ -49,7 +61,7 @@ function input(siteId: string, discount: Discount): DraftOrderInput {
       signatureRequired: { value: false, source: "default" },
     },
     placedByUserId: "usr_1",
-    fulfillment: {
+    fulfillment: fulfillment ?? {
       method: "pickup",
       deliveryZoneId: null,
       deliveryAddress: null,
@@ -69,10 +81,7 @@ function input(siteId: string, discount: Discount): DraftOrderInput {
         quantity: 10,
       },
     ],
-    discountCents:
-      adjustment === null || adjustment.mode !== "percent"
-        ? 0
-        : (SUBTOTAL_CENTS * adjustment.bp) / 10_000,
+    discountCents: adjustment === null ? 0 : discountCentsOf(adjustment, SUBTOTAL_CENTS),
     discountAdjustment: adjustment,
     discountPromotionId: discount.promotionId,
     deliveryFeeCents: 0,
@@ -203,5 +212,74 @@ describe("Order.revise — un changement de point ne change pas la promotion (L9
         /retirerait la promotion/,
       );
     });
+  });
+});
+
+describe("Order.revise — le MODE d'acheminement ne change pas la promotion non plus (L9)", () => {
+  // Du retrait à la livraison : `method` change, `pickup_point` aussi. La
+  // promotion « en retrait » ne suit pas, et la commande ne perd pas sa remise
+  // en silence.
+  it("refuse le passage à la livraison qui retirerait la promotion", () => {
+    expect(() => Order.revise(placed(PROMO_A), input("site_a", NONE, DELIVERY))).toThrow(
+      /retirerait la promotion/,
+    );
+  });
+
+  it("accepte le passage à la livraison quand la même promotion s'y applique encore", () => {
+    const revision = Order.revise(placed(PROMO_A), input("site_a", PROMO_A, DELIVERY));
+
+    expect(revision.changes).toContain("method");
+    expect(revision.state.discountPromotionId).toBe("promo_a");
+  });
+
+  it("accepte le passage à la livraison d'une commande sans promotion, avant comme après", () => {
+    expect(Order.revise(placed(NONE), input("site_a", NONE, DELIVERY)).changes).toContain("method");
+  });
+});
+
+describe("Order.revise — une commande d'avant L9, jugée sur sa remise figée", () => {
+  const FIVE_EUROS: CartAdjustment = { mode: "amount", cents: 500 };
+  const SIX_EUROS: CartAdjustment = { mode: "amount", cents: 600 };
+  const AMOUNT: Discount = { adjustment: FIVE_EUROS, promotionId: "promo_amount" };
+
+  it("accepte un montant fixe identique", () => {
+    const revision = Order.revise(placed(AMOUNT, null), input("site_b", AMOUNT));
+
+    expect(revision.state.discountAdjustment).toEqual(FIVE_EUROS);
+  });
+
+  it("refuse un montant fixe différent", () => {
+    const other: Discount = { adjustment: SIX_EUROS, promotionId: "promo_other" };
+
+    expect(() => Order.revise(placed(AMOUNT, null), input("site_b", other))).toThrow(
+      FulfillmentChangeAltersPromotionError,
+    );
+  });
+
+  // 10 % et 10 € ne sont pas le même effet : le nombre peut coïncider (1 000
+  // points de base, 1 000 centimes), le mode non.
+  it("refuse un pourcentage là où le figé était un montant, même nombre", () => {
+    const figé: Discount = { adjustment: { mode: "amount", cents: 1_000 }, promotionId: "p" };
+    const percent: Discount = { adjustment: { mode: "percent", bp: 1_000 }, promotionId: "p" };
+
+    expect(() => Order.revise(placed(figé, null), input("site_b", percent))).toThrow(
+      /remplacerait la promotion/,
+    );
+  });
+
+  it("ne juge pas un changement qui ne touche ni le mode ni le point", () => {
+    const sameSiteNewNote = { ...input("site_a", NONE), note: "Au fond de la cour" };
+
+    expect(Order.revise(placed(PROMO_A, null), sameSiteNewNote).changes).toEqual(["note"]);
+  });
+
+  // Une commande d'après L9 dont l'identifiant est connu est jugée sur
+  // l'identifiant, JAMAIS sur l'effet : deux promotions de même effet diffèrent.
+  it("une commande à identifiant connu n'est pas jugée sur l'effet", () => {
+    const twin: Discount = { adjustment: FIVE_EUROS, promotionId: "promo_twin" };
+
+    expect(() => Order.revise(placed(AMOUNT), input("site_b", twin))).toThrow(
+      /remplacerait la promotion/,
+    );
   });
 });

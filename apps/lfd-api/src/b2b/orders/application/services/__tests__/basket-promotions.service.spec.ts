@@ -155,3 +155,151 @@ describe("BasketPromotions.resolve", () => {
     );
   });
 });
+
+describe("BasketPromotions.resolve — retrait, point, livraison", () => {
+  const ANY_BUYER = { companyId: null, companyStatus: null, buyerKind: "registered" } as const;
+  const atPoint = (pickupId: string) => ({
+    ...REQUEST,
+    buyer: { ...ANY_BUYER, fulfillment: { method: "pickup" as const, pickupId } },
+  });
+  const delivering = {
+    ...REQUEST,
+    buyer: { ...ANY_BUYER, fulfillment: { method: "delivery" as const, pickupId: null } },
+  };
+  const pickupPromo = (over: Parameters<typeof livePromotion>[0]) =>
+    livePromotion({ validFrom: FROM, ...over });
+
+  it("une promotion « en retrait » vaut à tout point, jamais à la livraison", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([pickupPromo({ id: "retrait", fulfillment: { kind: "pickup" } })]),
+    );
+
+    expect((await service.resolve(atPoint("pk_a"))).promotionId).toBe("retrait");
+    expect((await service.resolve(atPoint("pk_b"))).promotionId).toBe("retrait");
+    expect((await service.resolve(delivering)).promotionId).toBeNull();
+  });
+
+  it("une promotion « en livraison » ne vaut pas au retrait", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([pickupPromo({ id: "livr", fulfillment: { kind: "delivery" } })]),
+    );
+
+    expect((await service.resolve(delivering)).promotionId).toBe("livr");
+    expect((await service.resolve(atPoint("pk_a"))).promotionId).toBeNull();
+  });
+
+  // Le point précis bat « le retrait » même moins généreux — et seulement à SON point.
+  it("le point précis bat « le retrait », et seulement à son point", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([
+        pickupPromo({ id: "a_retrait", fulfillment: { kind: "pickup" } }),
+        pickupPromo({
+          id: "z_point",
+          fulfillment: { kind: "pickup_point", pickupId: "pk_a" },
+          effect: { kind: "percent_off", basisPoints: 100 },
+        }),
+      ]),
+    );
+
+    expect((await service.resolve(atPoint("pk_a"))).promotionId).toBe("z_point");
+    expect((await service.resolve(atPoint("pk_b"))).promotionId).toBe("a_retrait");
+  });
+
+  it("invité et inscrit : un public « inscrits » ne remise que l'inscrit", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([
+        pickupPromo({
+          id: "inscrits",
+          audience: { kind: "individuals_registered" },
+          fulfillment: { kind: "pickup" },
+        }),
+      ]),
+    );
+    const as = (buyerKind: "guest" | "registered") => ({
+      ...REQUEST,
+      buyer: { ...REQUEST.buyer, buyerKind },
+    });
+
+    expect((await service.resolve(as("registered"))).discountCents).toBe(200);
+    const guest = await service.resolve(as("guest"));
+    expect(guest.discountCents).toBe(0);
+    expect(guest.promotionId).toBeNull();
+  });
+
+  it("un public « invités » ne remise que l'invité", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([
+        pickupPromo({
+          id: "invites",
+          audience: { kind: "individuals_guest" },
+          fulfillment: { kind: "pickup" },
+        }),
+      ]),
+    );
+
+    expect((await service.resolve(REQUEST)).promotionId).toBe("invites");
+    expect(
+      (
+        await service.resolve({
+          ...REQUEST,
+          buyer: { ...REQUEST.buyer, buyerKind: "registered" },
+        })
+      ).promotionId,
+    ).toBeNull();
+  });
+
+  // La fenêtre se juge à l'instant du `Clock` : début inclus, fin exclue.
+  it.each<[string, Date | null, Date, boolean]>([
+    ["début = maintenant (inclus)", null, NOW, true],
+    ["début = une ms après", null, new Date(NOW.getTime() + 1), false],
+    ["fin = maintenant (exclue)", FROM, NOW, false],
+    ["fin = une ms après", FROM, new Date(NOW.getTime() + 1), true],
+  ])("fenêtre : %s", async (_label, from, edge, applies) => {
+    const promo =
+      from === null
+        ? pickupPromo({ id: "w", validFrom: edge, fulfillment: { kind: "pickup" } })
+        : pickupPromo({ id: "w", validFrom: from, validTo: edge, fulfillment: { kind: "pickup" } });
+    const { service } = subject(new FixedBasketPromotions([promo]));
+
+    expect((await service.resolve(REQUEST)).promotionId).toBe(applies ? "w" : null);
+  });
+
+  it("une promotion en pause depuis maintenant ne remise plus", async () => {
+    const { service } = subject(
+      new FixedBasketPromotions([
+        pickupPromo({ id: "p", fulfillment: { kind: "pickup" }, suspendedFrom: NOW }),
+      ]),
+    );
+
+    expect((await service.resolve(REQUEST)).promotionId).toBeNull();
+  });
+
+  // Le rangement du catalogue n'est lu que si une portée l'exige ; fourni par
+  // la passation (`known`), il n'est pas relu.
+  it("ne lit le catalogue que pour une portée à règles, et jamais s'il est fourni", async () => {
+    const classes = new FixedLineClassifications({});
+    const scoped = pickupPromo({
+      id: "scoped",
+      fulfillment: { kind: "pickup" },
+      scope: {
+        mode: "only",
+        rules: [{ target: "category", targetId: "c_pains", eligible: true, targetRank: null }],
+      },
+    });
+    const plain = pickupPromo({ id: "plain", fulfillment: { kind: "pickup" } });
+    const build = (promotions: readonly LivePromotion[]) =>
+      new BasketPromotions(
+        new FixedBasketPromotions(promotions),
+        new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
+        classes,
+        new FixedClock(NOW),
+      );
+
+    await build([plain]).resolve(REQUEST);
+    expect(classes.asked).toEqual([]);
+    await build([scoped]).resolve({ ...REQUEST, known: new Map() });
+    expect(classes.asked).toEqual([]);
+    await build([scoped]).resolve(REQUEST);
+    expect(classes.asked).toEqual([["PAI-001"]]);
+  });
+});

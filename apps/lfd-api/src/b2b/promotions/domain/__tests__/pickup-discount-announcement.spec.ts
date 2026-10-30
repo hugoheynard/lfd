@@ -1,3 +1,7 @@
+import type { OrderLineClassification } from "../../../orders/domain/ports/order-line-classification.reader.js";
+import { chooseBasketPromotion } from "../../../orders/domain/services/basket-promotion-choice.js";
+import type { PromotionAudience } from "../promotion-audience.js";
+import { promotionsAdmitted, type LivePromotion } from "../live-promotion.js";
 import { announcedPickupDiscounts } from "../pickup-discount-announcement.js";
 import { ASKED_AT, LIVE_FROM, livePromotion } from "./live-promotion.fixture.js";
 
@@ -103,5 +107,157 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
     };
     expect(announcedPickupDiscounts([variant], "coeur", ASKED_AT).b2b).toBeNull();
     expect(announcedPickupDiscounts([threshold], "coeur", ASKED_AT).b2b).toBeNull();
+  });
+});
+
+describe("announcedPickupDiscounts — les bornes du temps", () => {
+  const live = livePromotion({
+    id: "w",
+    fulfillment: { kind: "pickup" },
+    validFrom: new Date(Date.UTC(2031, 0, 10)),
+    validTo: new Date(Date.UTC(2031, 0, 20)),
+  });
+  const announced = (at: Date) => announcedPickupDiscounts([live], "site", at).b2c !== null;
+
+  // Début inclus, fin exclue : la même fenêtre que la caisse (`inForceAt`).
+  it("annonce dès l'instant de début, plus à l'instant de fin", () => {
+    expect(announced(new Date(Date.UTC(2031, 0, 10) - 1))).toBe(false);
+    expect(announced(new Date(Date.UTC(2031, 0, 10)))).toBe(true);
+    expect(announced(new Date(Date.UTC(2031, 0, 20) - 1))).toBe(true);
+    expect(announced(new Date(Date.UTC(2031, 0, 20)))).toBe(false);
+  });
+
+  it("une pause POSÉE PLUS TARD ne retire rien à l'instant demandé", () => {
+    const willPause = { ...live, suspendedFrom: new Date(Date.UTC(2031, 0, 15)) };
+
+    expect(
+      announcedPickupDiscounts([willPause], "site", new Date(Date.UTC(2031, 0, 12))).b2c,
+    ).not.toBeNull();
+    expect(
+      announcedPickupDiscounts([willPause], "site", new Date(Date.UTC(2031, 0, 15))).b2c,
+    ).toBeNull();
+  });
+});
+
+describe("announcedPickupDiscounts — chaque clientèle lit SON public et SON libellé", () => {
+  const at = ASKED_AT;
+  const only = (audience: PromotionAudience) =>
+    announcedPickupDiscounts(
+      [livePromotion({ id: "x", audience, fulfillment: { kind: "pickup" } })],
+      "site",
+      at,
+    );
+
+  it.each([
+    ["everyone", { kind: "everyone" }, true, true],
+    ["pros_active", { kind: "pros_active" }, true, false],
+    ["pros", { kind: "pros" }, true, false],
+    ["everyone_but_active_pros", { kind: "everyone_but_active_pros" }, false, true],
+    ["individuals", { kind: "individuals" }, false, true],
+    // Un invité ou un inscrit n'est pas un fait de clientèle : le contrat ne le dit pas.
+    ["individuals_guest", { kind: "individuals_guest" }, false, false],
+    ["individuals_registered", { kind: "individuals_registered" }, false, false],
+    ["pros_pending", { kind: "pros_pending" }, false, false],
+  ] as const)("%s : pros %s, particuliers %s", (_kind, audience, b2b, b2c) => {
+    const announced = only(audience);
+
+    expect(announced.b2b !== null).toBe(b2b);
+    expect(announced.b2c !== null).toBe(b2c);
+  });
+
+  it("le libellé annoncé est celui de la clientèle, repli sur le commun", () => {
+    const labelled = livePromotion({
+      id: "l",
+      fulfillment: { kind: "pickup" },
+      label: "Commun",
+      audienceLabels: {
+        pros: { fr: "Tarif pro", en: null, it: "Prezzo pro" },
+        individuals: null,
+      },
+    });
+
+    const announced = announcedPickupDiscounts([labelled], "site", at);
+
+    expect(announced.b2b?.label).toEqual({ fr: "Tarif pro", en: "Tarif pro", it: "Prezzo pro" });
+    expect(announced.b2c?.label).toEqual({ fr: "Commun", en: "Commun", it: "Commun" });
+  });
+});
+
+describe("announcedPickupDiscounts — l'annonce dit ce que la caisse appliquera", () => {
+  const classes: ReadonlyMap<string, OrderLineClassification> = new Map();
+  const lines = [{ sku: "PAI-001", htCents: 10_000, quantity: 1 }];
+
+  /** La caisse, pour un acheteur type : le même juge, puis `chooseBasketPromotion`. */
+  function atCheckout(promotions: readonly LivePromotion[], clientele: "b2b" | "b2c") {
+    const admitted = promotionsAdmitted(promotions, ASKED_AT, {
+      companyId: null,
+      companyStatus: clientele === "b2b" ? "active" : null,
+      principal: { companyId: null },
+      buyerKind: "unknown",
+      fulfillment: { method: "pickup", pickupId: "site" },
+    });
+    return chooseBasketPromotion(admitted, lines, classes);
+  }
+
+  const CATALOGUE: readonly LivePromotion[] = [
+    livePromotion({ id: "p1", fulfillment: { kind: "pickup" } }),
+    livePromotion({
+      id: "p2",
+      fulfillment: { kind: "pickup_point", pickupId: "site" },
+      effect: { kind: "percent_off", basisPoints: 500 },
+      audience: { kind: "pros_active" },
+    }),
+    livePromotion({
+      id: "p3",
+      fulfillment: { kind: "pickup_point", pickupId: "autre" },
+      effect: { kind: "percent_off", basisPoints: 9000 },
+    }),
+    livePromotion({
+      id: "p4",
+      fulfillment: { kind: "delivery" },
+      effect: { kind: "percent_off", basisPoints: 9000 },
+    }),
+    livePromotion({
+      id: "p5",
+      fulfillment: { kind: "pickup" },
+      audience: { kind: "everyone_but_active_pros" },
+      effect: { kind: "percent_off", basisPoints: 1500 },
+    }),
+  ];
+
+  // Le point précis des pros (5 %) bat le retrait de tous (20 %) ; les
+  // particuliers, eux, ont le retrait « sauf pros » (15 %) : plus spécifique au
+  // public que « tout le monde ». La livraison et l'autre point ne comptent pas.
+  it.each(["b2b", "b2c"] as const)(
+    "la clientèle %s : même ajustement que la caisse",
+    (clientele) => {
+      const announced = announcedPickupDiscounts(CATALOGUE, "site", ASKED_AT)[clientele];
+      const cashier = atCheckout(CATALOGUE, clientele);
+
+      expect(announced?.adjustment).toEqual(cashier.discountAdjustment);
+    },
+  );
+
+  it("annonce 5 % aux pros et 15 % aux particuliers", () => {
+    const announced = announcedPickupDiscounts(CATALOGUE, "site", ASKED_AT);
+
+    expect(announced.b2b?.adjustment).toEqual({ mode: "percent", bp: 500 });
+    expect(announced.b2c?.adjustment).toEqual({ mode: "percent", bp: 1_500 });
+  });
+
+  it("rend la même annonce quel que soit l'ordre des promotions", () => {
+    expect(announcedPickupDiscounts([...CATALOGUE].reverse(), "site", ASKED_AT)).toEqual(
+      announcedPickupDiscounts(CATALOGUE, "site", ASKED_AT),
+    );
+  });
+
+  it("à rang et effet égaux, le plus petit identifiant, comme à la caisse", () => {
+    const twins = ["m", "b", "q"].map((id) =>
+      livePromotion({ id, fulfillment: { kind: "pickup" } }),
+    );
+    const withLabel = twins.map((twin) => ({ ...twin, label: { ...twin.label, fr: twin.id } }));
+
+    expect(announcedPickupDiscounts(withLabel, "site", ASKED_AT).b2c?.label.fr).toBe("b");
+    expect(atCheckout(withLabel, "b2c").label?.fr).toBe("b");
   });
 });
