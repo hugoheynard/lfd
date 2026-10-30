@@ -1,3 +1,5 @@
+import { PromotionsNotEditableYetError } from "./errors/promotion-errors.js";
+
 /**
  * **D'où le calcul tire les promotions** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
@@ -27,4 +29,17 @@ export function servesLegacy(source: PromotionsSource): boolean {
 /** Le nouveau chemin est-il calculé — servi ou à l'ombre ? */
 export function computesPromotions(source: PromotionsSource): boolean {
   return source !== "legacy";
+}
+
+/**
+ * **Peut-on écrire une promotion ?** Seulement une fois la bascule faite
+ * (plan, § 13.10, L7) : avant, le calcul lit l'existant, et une promotion
+ * posée ne s'appliquerait à aucun prix tout en ayant l'air de le faire.
+ *
+ * @throws {PromotionsNotEditableYetError} la source n'est pas `promotions`.
+ */
+export function assertPromotionsEditable(source: PromotionsSource): void {
+  if (source !== "promotions") {
+    throw new PromotionsNotEditableYetError(source);
+  }
 }

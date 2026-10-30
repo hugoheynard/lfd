@@ -1,0 +1,202 @@
+<fold-page-layout [title]="promotion()?.internalName ?? 'Promotion'" headerBleed separator>
+  <fold-back-link
+    pageEyebrow
+    icon="arrow-back"
+    label="Promotions ciblées"
+    routerLink="/promotions-ciblees"
+  />
+
+  @if (stateLabel(); as label) {
+    <fold-badge titleBadge [content]="label" [variant]="stateVariant()" radius="pill" />
+  }
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture de la promotion…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Promotion illisible">
+        <button foldButton (click)="load(id())">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (promotion(); as promotion) {
+        @if (promotion.archived; as archived) {
+          <fold-callout appearance="inset" variant="neutral">
+            Archivée le {{ instant(archived.at) }} — « {{ archived.reason }} ». Elle se lit, elle ne
+            s'applique plus.
+          </fold-callout>
+        } @else if (promotion.paused; as paused) {
+          <fold-callout appearance="inset" variant="warning">
+            En pause depuis le {{ instant(paused.at) }} : elle ne s'applique pas, et garde sa place
+            face aux autres promotions.
+          </fold-callout>
+        }
+
+        <fold-card>
+          <div class="block">
+            <fold-element-title variant="title" title="Identité" />
+            <dl class="facts">
+              <div>
+                <dt>Libellé client</dt>
+                <dd>{{ promotion.label.fr }}</dd>
+              </div>
+              @if (promotion.label.en !== null) {
+                <div>
+                  <dt>Anglais</dt>
+                  <dd>{{ promotion.label.en }}</dd>
+                </div>
+              }
+              @if (promotion.label.it !== null) {
+                <div>
+                  <dt>Italien</dt>
+                  <dd>{{ promotion.label.it }}</dd>
+                </div>
+              }
+              <div>
+                <dt>Motif</dt>
+                <dd>{{ promotion.reason ?? 'Aucun' }}</dd>
+              </div>
+              @if (origin(); as origin) {
+                <div>
+                  <dt>Origine</dt>
+                  <dd>{{ origin }}</dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Effet et fenêtre"
+              [subtitle]="
+                promotion.applicationPoint === 'line'
+                  ? 'Sur le prix de chaque ligne, entre le volume et le geste.'
+                  : 'Sur le panier, une fois les lignes chiffrées.'
+              "
+            />
+            <dl class="facts">
+              <div>
+                <dt>Effet</dt>
+                <dd>{{ effect(promotion) }}</dd>
+              </div>
+              <div>
+                <dt>Fenêtre</dt>
+                <dd>{{ window(promotion) }}</dd>
+              </div>
+              @if (promotion.applicationPoint === 'line') {
+                <div>
+                  <dt>Tarifs négociés</dt>
+                  <dd>
+                    {{
+                      promotion.stacksOverMercuriale
+                        ? "S'applique aussi sous une mercuriale"
+                        : "Ne s'applique pas sous une mercuriale"
+                    }}
+                  </dd>
+                </div>
+              }
+              @for (condition of promotion.conditions; track condition.kind) {
+                <div>
+                  <dt>Condition</dt>
+                  <dd>À partir de {{ condition.value }} par ligne</dd>
+                </div>
+              }
+            </dl>
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="block">
+            <fold-element-title variant="title" title="Public" />
+            <div class="tree">
+              @for (group of audienceTree; track group.label) {
+                <div class="tree-group">
+                  <span class="tree-group-label">{{ group.label }}</span>
+                  <ul class="tree-nodes">
+                    @for (node of group.nodes; track node.kind) {
+                      <li
+                        class="tree-node"
+                        [class.is-chosen]="node.kind === promotion.audience.kind"
+                      >
+                        @if (node.kind === promotion.audience.kind) {
+                          <fold-icon name="check" [size]="16" />
+                        }
+                        {{ node.label }}
+                        @if (
+                          node.kind === promotion.audience.kind && promotion.audience.companyId
+                        ) {
+                          — {{ promotion.audience.companyId }}
+                        }
+                      </li>
+                    }
+                  </ul>
+                </div>
+              }
+            </div>
+            @if (promotion.audience.kind === 'everyone_but_active_pros') {
+              <fold-callout appearance="inset" variant="neutral">
+                Tous sauf les pros actifs — le public de la remise de retrait reprise :
+                particuliers, et sociétés en attente ou suspendues.
+              </fold-callout>
+            }
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="block">
+            <fold-element-title variant="title" title="Acheminement" />
+            <ul class="tree-nodes">
+              @for (choice of fulfillmentChoices; track choice.kind) {
+                <li
+                  class="tree-node"
+                  [class.is-chosen]="choice.kind === promotion.fulfillment.kind"
+                >
+                  @if (choice.kind === promotion.fulfillment.kind) {
+                    <fold-icon name="check" [size]="16" />
+                    {{ fulfillment(promotion) }}
+                  } @else {
+                    {{ choice.label }}
+                  }
+                </li>
+              }
+            </ul>
+          </div>
+        </fold-card>
+
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Portée"
+              [subtitle]="
+                promotion.scope.mode === 'all_except'
+                  ? 'Tout le catalogue, sauf les exceptions.'
+                  : 'Seulement ce qui est inclus.'
+              "
+            />
+            @if (promotion.scope.rules.length === 0) {
+              <p class="muted">Aucune exception.</p>
+            } @else {
+              <ul class="rules">
+                @for (rule of promotion.scope.rules; track rule.target + rule.targetId) {
+                  <li class="rule">
+                    <fold-badge
+                      [content]="rule.eligible ? 'Incluse' : 'Exclue'"
+                      [variant]="rule.eligible ? 'success' : 'neutral'"
+                      radius="pill"
+                    />
+                    <span>{{ targetLabel[rule.target] }} · {{ rule.name ?? rule.targetId }}</span>
+                  </li>
+                }
+              </ul>
+            }
+          </div>
+        </fold-card>
+      }
+    }
+  }
+</fold-page-layout>

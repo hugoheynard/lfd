@@ -205,6 +205,25 @@ export const routes: Routes = [
       import('./b2b/tarification/simulateur/simulateur-page').then((m) => m.SimulateurPage),
   },
   {
+    // LES PROMOTIONS CIBLÉES — par public, acheminement et portée (plan
+    // `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+    // § 13.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
+    // serveur : la tarification pose les promotions, les réglages celles d'un
+    // point de retrait. En lecture seule jusqu'à la bascule (L8).
+    path: 'promotions-ciblees',
+    canActivate: [anyPermissionGuard('b2b_pricing:read', 'b2b_settings:read')],
+    title: 'Promotions ciblées — LFC B2B admin',
+    loadComponent: () =>
+      import('./targeted-promotions/promotions-page/promotions-page').then((m) => m.PromotionsPage),
+  },
+  {
+    path: 'promotions-ciblees/:id',
+    canActivate: [anyPermissionGuard('b2b_pricing:read', 'b2b_settings:read')],
+    title: 'Promotion — LFC B2B admin',
+    loadComponent: () =>
+      import('./targeted-promotions/promotion-page/promotion-page').then((m) => m.PromotionPage),
+  },
+  {
     // **Médiathèque** — le fonds d'images, indépendamment de ce qui l'affiche.
     //
     // Route de PREMIER niveau, hors de `pim/`, et c'est une affirmation sur le

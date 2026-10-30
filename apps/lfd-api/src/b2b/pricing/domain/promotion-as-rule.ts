@@ -42,11 +42,11 @@ export function promotionAsRule(
   context: PricingContext,
 ): PriceRule | null {
   // 🔴 Une cible `product` vise `catalog_items.product_id`, que la chaîne de
-  // prix ne connaît pas (`PricingContext` n'a que le SKU, vérifié le
-  // 2026-10-30). Le fait manque : la promotion ne s'applique pas, plutôt que
-  // de laisser une exception « tout sauf ce produit » couvrir ce produit.
-  // Aucune promotion de ligne n'en porte après la reprise (portées des règles
-  // : famille ou SKU, § 13.4).
+  // prix ne connaît pas (`PricingContext` n'a que le SKU). Depuis L7
+  // (2026-10-30), l'agrégat REFUSE une telle cible au point ligne
+  // (`PromotionProductTargetAtLineError`) : le tarif est à plat. Cette garde
+  // ne protège plus que d'une ligne écrite hors de l'agrégat — elle ne
+  // s'appliquerait pas, plutôt que de couvrir le produit qu'elle exclut.
   if (promotion.scope.rules.some((rule) => rule.target === "product")) {
     return null;
   }

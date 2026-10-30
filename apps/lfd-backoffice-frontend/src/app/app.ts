@@ -333,6 +333,7 @@ export class App {
   protected readonly canSeeShopManagement = computed(
     () =>
       this.canSeeSettings() ||
+      this.canSeeTargetedPromotions() ||
       this.canSeeCommerceOperations() ||
       this.canSeeLoyalty() ||
       this.canSeeSuggestions() ||
@@ -418,6 +419,13 @@ export class App {
    */
   protected readonly canSeeAdmin = computed(() => this.adminViews().length > 0);
   protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
+  /**
+   * Les promotions ciblées (plan des promotions, L7) : lues sous l'un OU
+   * l'autre droit, comme leur route.
+   */
+  protected readonly canSeeTargetedPromotions = computed(
+    () => this.permissions.can('b2b_pricing:read') || this.permissions.can('b2b_settings:read'),
+  );
   /**
    * **Comptabilité** — son propre droit, et surtout pas `b2b_settings`.
    *

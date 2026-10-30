@@ -1,0 +1,164 @@
+import { z } from "zod";
+
+/**
+ * **Les promotions, vues du back-office** (plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * § 13.9, lot L7).
+ *
+ * Les schémas ne valident que la FORME : les invariants (point ⇔
+ * acheminement, effet ⇔ point, portée, fenêtre) sont tenus par l'agrégat
+ * `Promotion`, et le refus nommé vient de lui.
+ */
+
+export const PROMOTION_AUDIENCE_KIND_VALUES = [
+  "everyone",
+  "individuals",
+  "individuals_guest",
+  "individuals_registered",
+  "pros",
+  "pros_active",
+  "pros_pending",
+  "company",
+  "company_and_sites",
+  "everyone_but_active_pros",
+] as const;
+export type PromotionAudienceKindValue = (typeof PROMOTION_AUDIENCE_KIND_VALUES)[number];
+
+export const PROMOTION_FULFILLMENT_KIND_VALUES = [
+  "any",
+  "pickup",
+  "pickup_point",
+  "delivery",
+] as const;
+export type PromotionFulfillmentKindValue = (typeof PROMOTION_FULFILLMENT_KIND_VALUES)[number];
+
+export const PROMOTION_EFFECT_KIND_VALUES = [
+  "percent_off",
+  "unit_amount_off",
+  "fixed_unit_price",
+  "basket_amount_off",
+] as const;
+export type PromotionEffectKindValue = (typeof PROMOTION_EFFECT_KIND_VALUES)[number];
+
+export const PROMOTION_SCOPE_TARGET_VALUES = ["category", "product", "variant"] as const;
+export type PromotionScopeTargetValue = (typeof PROMOTION_SCOPE_TARGET_VALUES)[number];
+
+/**
+ * L'état lu à l'instant de la question : `scheduled` = active mais pas
+ * encore ouverte, `ended` = active et fermée, sans être archivée.
+ */
+export const PROMOTION_LIFECYCLE_STATES = [
+  "active",
+  "scheduled",
+  "paused",
+  "ended",
+  "archived",
+] as const;
+export type PromotionLifecycleState = (typeof PROMOTION_LIFECYCLE_STATES)[number];
+
+/** D'où le calcul tire les promotions — l'écran n'écrit qu'à `promotions`. */
+export type PromotionsSourceValue = "legacy" | "shadow" | "promotions";
+
+const textSchema = z.string().trim().min(1).max(200);
+
+/** Les termes d'une promotion, tels que l'éditeur les envoie (L8). */
+export const promotionTermsPayloadSchema = z.object({
+  internalName: textSchema,
+  label: z.object({ fr: textSchema, en: textSchema.nullable(), it: textSchema.nullable() }),
+  reason: z.string().trim().min(1).max(280).nullable(),
+  effect: z.object({ kind: z.enum(PROMOTION_EFFECT_KIND_VALUES), value: z.number().int() }),
+  ownFloor: z.object({ mode: z.enum(["percent", "amount"]), value: z.number().int() }).nullable(),
+  stacksOverMercuriale: z.boolean(),
+  /** Borne basse incluse. */
+  validFrom: z.string().datetime(),
+  /** Borne haute exclue ; `null` = sans fin. */
+  validTo: z.string().datetime().nullable(),
+  audience: z.object({
+    kind: z.enum(PROMOTION_AUDIENCE_KIND_VALUES),
+    companyId: z.string().min(1).nullable(),
+  }),
+  fulfillment: z.object({
+    kind: z.enum(PROMOTION_FULFILLMENT_KIND_VALUES),
+    pickupId: z.string().min(1).nullable(),
+  }),
+  scope: z.object({
+    mode: z.enum(["all_except", "only"]),
+    rules: z
+      .array(
+        z.object({
+          target: z.enum(PROMOTION_SCOPE_TARGET_VALUES),
+          targetId: z.string().min(1),
+          eligible: z.boolean(),
+        }),
+      )
+      .max(500),
+  }),
+  conditions: z
+    .array(z.object({ kind: z.literal("min_quantity"), value: z.number().int() }))
+    .max(10),
+});
+export type PromotionTermsPayload = z.infer<typeof promotionTermsPayloadSchema>;
+
+/** Réviser : de nouveaux termes, et pourquoi. */
+export const revisePromotionPayloadSchema = z.object({
+  terms: promotionTermsPayloadSchema,
+  reason: z.string().trim().min(1).max(280).nullable(),
+});
+export type RevisePromotionPayload = z.infer<typeof revisePromotionPayloadSchema>;
+
+/** Archiver : le motif est obligatoire (l'agrégat le refuse vide). */
+export const archivePromotionPayloadSchema = z.object({
+  reason: z.string().max(280),
+});
+export type ArchivePromotionPayload = z.infer<typeof archivePromotionPayloadSchema>;
+
+/** Une règle de portée, avec le nom que l'écran montre (`null` = inconnu du catalogue servi). */
+export interface PromotionScopeRuleView {
+  readonly target: PromotionScopeTargetValue;
+  readonly targetId: string;
+  readonly eligible: boolean;
+  readonly name: string | null;
+}
+
+/** Une promotion, telle que la liste et la fiche la lisent. */
+export interface PromotionView {
+  readonly id: string;
+  readonly internalName: string;
+  readonly label: { readonly fr: string; readonly en: string | null; readonly it: string | null };
+  readonly reason: string | null;
+  readonly state: PromotionLifecycleState;
+  readonly applicationPoint: "line" | "basket";
+  readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: number };
+  readonly ownFloor: { readonly mode: "percent" | "amount"; readonly value: number } | null;
+  readonly stacksOverMercuriale: boolean;
+  readonly validFrom: string;
+  readonly validTo: string | null;
+  readonly audience: {
+    readonly kind: PromotionAudienceKindValue;
+    readonly companyId: string | null;
+  };
+  readonly fulfillment: {
+    readonly kind: PromotionFulfillmentKindValue;
+    readonly pickupId: string | null;
+  };
+  readonly scope: {
+    readonly mode: "all_except" | "only";
+    readonly rules: readonly PromotionScopeRuleView[];
+  };
+  readonly conditions: readonly { readonly kind: "min_quantity"; readonly value: number }[];
+  /** Le résumé que le journal fige — identifiants compris. */
+  readonly summary: string;
+  readonly paused: { readonly at: string; readonly by: string } | null;
+  readonly archived: { readonly at: string; readonly by: string; readonly reason: string } | null;
+  /** `null` = saisie à l'écran ; sinon la source reprise (`price_rule:…`, `pickup_discount:…`). */
+  readonly legacySource: string | null;
+  readonly createdAt: string;
+}
+
+/** La liste, et ce qui dit si l'écran peut écrire. */
+export interface PromotionListView {
+  readonly source: PromotionsSourceValue;
+  /** `true` une fois la bascule faite (`source = promotions`). */
+  readonly editable: boolean;
+  readonly promotions: readonly PromotionView[];
+}

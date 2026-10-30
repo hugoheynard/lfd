@@ -1,0 +1,76 @@
+.block {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.facts {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+  margin: 0;
+}
+
+.facts div {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.facts dt {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-xs);
+}
+
+.facts dd {
+  margin: 0;
+}
+
+.tree {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-lg);
+}
+
+.tree-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.tree-group-label {
+  font-weight: var(--fold-weight-medium);
+}
+
+.tree-nodes,
+.rules {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  color: var(--fold-color-text-muted);
+}
+
+.tree-node.is-chosen {
+  color: var(--fold-color-text);
+  font-weight: var(--fold-weight-medium);
+}
+
+.rule {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm);
+}
+
+.muted {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

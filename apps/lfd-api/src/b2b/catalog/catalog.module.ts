@@ -92,6 +92,8 @@ import { PrismaCatalogColdReader } from "./infrastructure/prisma-catalog-cold.re
 import { PrismaCatalogPricePerKgReader } from "./infrastructure/prisma-catalog-price-per-kg.reader.js";
 import { OrderLineClassificationReader } from "../orders/domain/ports/order-line-classification.reader.js";
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
+import { PromotionCatalogueReader } from "../promotions/domain/ports/promotion-catalogue.reader.js";
+import { CatalogPromotionCatalogueReader } from "./infrastructure/catalog-promotion-catalogue.reader.js";
 import { DefaultSaleReferenceReader } from "./domain/ports/default-sale-reference.reader.js";
 import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-default-sale-reference.reader.js";
 
@@ -226,6 +228,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
     { provide: OrderLineClassificationReader, useClass: PrismaOrderLineClassificationReader },
+    // Le port que les promotions DÉCLARENT (plan des promotions, L7) : le
+    // catalogue vendable, que le refus de chevauchement compare.
+    { provide: PromotionCatalogueReader, useClass: CatalogPromotionCatalogueReader },
     // Ce qui fige l'unité de vente d'une déclinaison : le port est au
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
@@ -252,6 +257,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // Pour la caisse et le devis : le rangement d'un SKU, que la remise de
     // retrait juge (plan des exclusions, V4).
     OrderLineClassificationReader,
+    // Pour les promotions : le refus de chevauchement et les noms de l'écran.
+    PromotionCatalogueReader,
     // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
     // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est

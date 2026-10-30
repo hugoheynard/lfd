@@ -35,7 +35,9 @@ const TERMS: PromotionTerms = {
     mode: "all_except",
     rules: [
       { target: "category", targetId: "c_boissons", eligible: false, targetRank: null },
-      { target: "product", targetId: "p_jus_maison", eligible: true, targetRank: null },
+      // Une déclinaison, pas un produit : depuis L7, un produit entier ne se
+      // vise qu'au panier (`PromotionProductTargetAtLineError`).
+      { target: "variant", targetId: "JUS-001-1", eligible: true, targetRank: null },
     ],
   },
   conditions: [{ kind: "min_quantity", value: 6 }],

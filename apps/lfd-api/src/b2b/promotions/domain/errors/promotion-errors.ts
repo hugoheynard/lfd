@@ -239,3 +239,88 @@ export class PromotionsSourceUnreadableError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Une cible `product` sur une promotion de LIGNE (décidé le 2026-10-30, lot
+ * L7, mandat de Hugo). Le tarif est à plat : toute décision du prix d'une
+ * ligne vise UNE référence de vente (`pricing-context.ts`), et la chaîne de
+ * prix ne connaît que le SKU. « Toutes les déclinaisons d'un produit » n'a de
+ * sens qu'au panier, où l'article est rangé au catalogue.
+ */
+export class PromotionProductTargetAtLineError extends DomainError {
+  constructor(readonly productId: string) {
+    super(
+      "promotions.product_target_at_line",
+      "Une promotion sans acheminement agit sur le prix de chaque déclinaison : elle ne peut pas viser un produit entier. Visez la famille ou la déclinaison.",
+    );
+  }
+}
+
+/**
+ * Écrire une promotion avant la bascule (plan, § 13.10, L7) : tant que le
+ * calcul lit l'existant (`promotions_source` à `legacy` ou `shadow`), une
+ * promotion posée ici ne s'appliquerait à aucun prix — l'écran est en lecture.
+ */
+export class PromotionsNotEditableYetError extends BusinessError {
+  constructor(readonly source: string) {
+    super(
+      "promotions.not_editable_yet",
+      "Les promotions s'éditent après la bascule : d'ici là, les prix se règlent dans la grille des promotions et la remise de chaque site sur sa fiche.",
+    );
+  }
+}
+
+/**
+ * Deux promotions qui se disputeraient un même article (plan, § 13.2,
+ * CHEVAUCHEMENT) : même point d'application, même public, même acheminement,
+ * fenêtres qui se recouvrent, un article vendable en commun.
+ */
+export class OverlappingPromotionError extends BusinessError {
+  constructor(
+    readonly otherPromotionId: string,
+    otherName: string,
+    articleName: string,
+    period: string,
+  ) {
+    super(
+      "promotions.overlapping",
+      `« ${otherName} » couvre déjà ${articleName} ${period} : raccourcissez l'une des deux ou excluez l'article.`,
+    );
+  }
+}
+
+/**
+ * Deux promotions de panier qui pourraient s'appliquer à une même commande
+ * (plan, § 13.2) : la commande ne compose qu'une remise de panier jusqu'au
+ * lot L12.
+ */
+export class BasketPromotionsWouldCombineError extends BusinessError {
+  constructor(
+    readonly otherPromotionId: string,
+    otherName: string,
+  ) {
+    super(
+      "promotions.basket_would_combine",
+      `« ${otherName} » pourrait s'appliquer à la même commande : une commande ne porte encore qu'une promotion liée à l'acheminement. Changez le public, l'acheminement ou les dates de l'une des deux.`,
+    );
+  }
+}
+
+/**
+ * Une promotion réglée depuis la mauvaise surface (plan, § 13.9 et § 14
+ * S-droits) : celle d'un point de retrait se règle depuis ce point, les
+ * autres depuis la tarification — chacune sous son droit.
+ */
+export class PromotionWrongSurfaceError extends BusinessError {
+  constructor(
+    readonly promotionId: string | null,
+    expected: "pickup_point" | "pricing",
+  ) {
+    super(
+      "promotions.wrong_surface",
+      expected === "pickup_point"
+        ? "Une promotion de retrait à un point se règle depuis ce point de retrait : ouvrez-la depuis la fiche du site."
+        : "Cette promotion ne vise pas ce point de retrait : réglez-la depuis l'écran Promotions, ou choisissez « retrait à ce point ».",
+    );
+  }
+}

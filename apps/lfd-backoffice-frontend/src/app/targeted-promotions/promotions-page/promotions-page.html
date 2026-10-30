@@ -1,0 +1,78 @@
+<fold-page-layout icon="tag" title="Promotions ciblées" separator>
+  <p description>
+    Une remise par public, par acheminement et par portée : particuliers ou pros, retrait ou
+    livraison, tout le catalogue sauf quelques articles ou seulement quelques-uns.
+  </p>
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des promotions…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les promotions">
+        <button foldButton (click)="reload()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (!editable()) {
+        <fold-callout appearance="inset" variant="info">
+          Les promotions s'appliqueront à la bascule. D'ici là, elles se lisent ici et les prix se
+          règlent comme avant : la grille des promotions, et la remise de chaque site sur sa fiche.
+        </fold-callout>
+      }
+      @if (pointName(); as point) {
+        <fold-callout appearance="inset" variant="neutral">
+          Seulement les promotions du retrait à {{ point }}.
+          <a routerLink="/promotions-ciblees">Voir toutes les promotions</a>
+        </fold-callout>
+      }
+
+      <fold-nav-layout>
+        <fold-tabs
+          tabNav
+          #bar="foldTabs"
+          size="compact"
+          activeStyle="fill"
+          background="surface"
+          [tabs]="tabs()"
+          [(activeKey)]="tab"
+        />
+
+        <fold-tab-panel [tabs]="bar" [key]="tab()">
+          @if (shown().length === 0) {
+            <fold-empty-state title="Aucune promotion ici">
+              <fold-icon empty-icon name="tag" [size]="28" />
+            </fold-empty-state>
+          } @else {
+            <fold-card>
+              <ul class="promotions">
+                @for (promotion of shown(); track promotion.id) {
+                  <li class="promotion">
+                    <div class="promotion-head">
+                      <a
+                        class="promotion-name"
+                        [routerLink]="['/promotions-ciblees', promotion.id]"
+                      >
+                        {{ promotion.internalName }}
+                      </a>
+                      <fold-badge
+                        [content]="stateLabel(promotion)"
+                        [variant]="stateVariant(promotion)"
+                        radius="pill"
+                      />
+                      @if (promotion.legacySource !== null) {
+                        <fold-badge content="Reprise" variant="neutral" radius="pill" />
+                      }
+                    </div>
+                    <p class="promotion-summary">{{ summary(promotion) }}</p>
+                    <p class="promotion-window">{{ window(promotion) }}</p>
+                  </li>
+                }
+              </ul>
+            </fold-card>
+          }
+        </fold-tab-panel>
+      </fold-nav-layout>
+    }
+  }
+</fold-page-layout>

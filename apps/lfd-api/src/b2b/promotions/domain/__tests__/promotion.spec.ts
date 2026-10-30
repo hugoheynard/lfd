@@ -13,6 +13,7 @@ import {
   PromotionLineOnlyOptionError,
   PromotionMissingTargetIdError,
   PromotionNotPausedError,
+  PromotionProductTargetAtLineError,
   PromotionReversedWindowError,
   PromotionScopeIncludesNothingError,
 } from "../errors/promotion-errors.js";
@@ -152,10 +153,37 @@ describe("Promotion.pose — les invariants des termes", () => {
       ).toThrow(PromotionCategoryAgainstModeError);
     });
 
-    it("admet un produit à contre-sens : c'est la réinclusion", () => {
+    it("admet un produit à contre-sens au panier : c'est la réinclusion", () => {
       const scope = {
         mode: "all_except" as const,
         rules: [rule("category", "c_1", false), rule("product", "p_1", true)],
+      };
+      expect(pose(basketTerms({ scope })).terms.scope).toEqual(scope);
+    });
+
+    /**
+     * L7 (2026-10-30) : la chaîne de prix ne connaît que le SKU, et le tarif
+     * est à plat — un produit entier ne se vise qu'au panier.
+     */
+    it("refuse un produit entier au point ligne, dans les deux modes, et à la relecture", () => {
+      const excluding = { mode: "all_except" as const, rules: [rule("product", "p_1", false)] };
+      const including = { mode: "only" as const, rules: [rule("product", "p_1", true)] };
+      expect(() => pose(lineTerms({ scope: excluding }))).toThrow(
+        PromotionProductTargetAtLineError,
+      );
+      expect(() => pose(lineTerms({ scope: including }))).toThrow(
+        PromotionProductTargetAtLineError,
+      );
+      const state = pose(basketTerms({ scope: excluding })).toPersistence();
+      expect(() => Promotion.restore({ ...state, fulfillment: { kind: "any" } })).toThrow(
+        PromotionProductTargetAtLineError,
+      );
+    });
+
+    it("admet une famille ou une déclinaison au point ligne", () => {
+      const scope = {
+        mode: "all_except" as const,
+        rules: [rule("category", "c_1", false), rule("variant", "VIE-001-1", true)],
       };
       expect(pose(lineTerms({ scope })).terms.scope).toEqual(scope);
     });

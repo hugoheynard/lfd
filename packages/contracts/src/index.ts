@@ -2912,3 +2912,27 @@ export type {
   SaleReferenceDecisionOrigin,
   SaleReferenceDecisionView,
 } from "./sale-reference-decisions.js";
+export {
+  PROMOTION_AUDIENCE_KIND_VALUES,
+  PROMOTION_FULFILLMENT_KIND_VALUES,
+  PROMOTION_EFFECT_KIND_VALUES,
+  PROMOTION_SCOPE_TARGET_VALUES,
+  PROMOTION_LIFECYCLE_STATES,
+  promotionTermsPayloadSchema,
+  revisePromotionPayloadSchema,
+  archivePromotionPayloadSchema,
+} from "./promotions.js";
+export type {
+  PromotionAudienceKindValue,
+  PromotionFulfillmentKindValue,
+  PromotionEffectKindValue,
+  PromotionScopeTargetValue,
+  PromotionLifecycleState,
+  PromotionsSourceValue,
+  PromotionTermsPayload,
+  RevisePromotionPayload,
+  ArchivePromotionPayload,
+  PromotionScopeRuleView,
+  PromotionView,
+  PromotionListView,
+} from "./promotions.js";

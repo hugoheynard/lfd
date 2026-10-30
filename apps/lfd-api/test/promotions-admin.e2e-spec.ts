@@ -1,0 +1,296 @@
+/**
+ * E2E de **l'écran Promotions** (plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * § 13.9, lot L7), sur le vrai Postgres et le vrai catalogue semé :
+ *
+ * 1. le verrou d'avant la bascule — en `legacy`, toute écriture rend 409, la
+ *    lecture dit « non éditable » ;
+ * 2. les droits — `b2b_pricing` pour l'écran, `b2b_settings` pour les
+ *    promotions d'un point de retrait, l'un OU l'autre pour lire ;
+ * 3. les refus nommés après la bascule — chevauchement (l'autre promotion et
+ *    l'article), deux promotions de panier, mauvaise surface, produit entier
+ *    au point ligne.
+ *
+ * Les fenêtres sont relatives (`daysAgo`) : la liste compare l'état à
+ * l'horloge.
+ */
+import type {
+  PromotionListView,
+  PromotionTermsPayload,
+  PromotionView,
+  StaffResource,
+} from "@lfd/contracts";
+
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
+import type { PromotionsSource } from "../src/b2b/promotions/domain/promotions-source.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+
+/** Le jeton porteur EST le `sub` du staff : chaque personne semée a le sien. */
+const subjectAsToken = {
+  verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: token, scopes: [] }),
+};
+
+let ctx: E2eContext;
+
+beforeAll(async () => {
+  ctx = await bootstrapE2e({ overrides: [{ token: AdminTokenVerifier, value: subjectAsToken }] });
+});
+
+afterAll(async () => {
+  await ctx.close();
+});
+
+beforeEach(async () => {
+  await ctx.reset();
+});
+
+const PROMOTIONS = "/admin/promotions";
+const AT_COEUR = "/admin/pickup-addresses/pk_coeur/promotions";
+const admin = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
+
+/** La source, posée comme la migration de bascule la posera — puis le cache oublié. */
+async function useSource(source: PromotionsSource): Promise<void> {
+  await ctx.prisma.promotionSetting.update({
+    where: { key: "promotions_source" },
+    data: { value: source },
+  });
+  ctx.app.get(PricingMaterialsCache).invalidate();
+}
+
+/** Une personne du rôle `role`, plus les dérogations dites — et son agent. */
+async function staffWith(
+  sub: string,
+  role: "communication" | "commercial",
+  grants: readonly { resource: StaffResource; action: "read" | "write" }[],
+): Promise<ReturnType<E2eContext["asSub"]>> {
+  const person = await ctx.prisma.staffUser.create({
+    data: {
+      firstName: "Test",
+      lastName: sub,
+      email: `${sub}@lfc.test`,
+      role,
+      status: "active",
+      auth0Id: sub,
+    },
+  });
+  for (const grant of grants) {
+    await ctx.prisma.staffPermissionOverride.create({
+      data: { staffUserId: person.id, ...grant, effect: "allow" },
+    });
+  }
+  return ctx.asSub(sub);
+}
+
+function terms(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPayload {
+  return {
+    internalName: "Croissants d'automne",
+    label: { fr: "−20 % sur le croissant", en: null, it: null },
+    reason: null,
+    effect: { kind: "percent_off", value: 2000 },
+    ownFloor: null,
+    stacksOverMercuriale: false,
+    validFrom: daysAgo(1),
+    validTo: null,
+    audience: { kind: "everyone", companyId: null },
+    fulfillment: { kind: "any", pickupId: null },
+    scope: { mode: "only", rules: [{ target: "variant", targetId: "VIE-001-1", eligible: true }] },
+    conditions: [],
+    ...over,
+  };
+}
+
+/** Le corps d'un refus, tel que `AppErrorFilter` l'écrit. */
+function refusalOf(response: Parameters<typeof jsonBody>[0]): { code: string; message: string } {
+  return jsonBody<{ code: string; message: string }>(response);
+}
+
+const AT_COEUR_POINT = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
+
+describe("avant la bascule (source legacy) — l'écran est en lecture seule", () => {
+  it("la liste se lit et se dit non éditable ; toute écriture rend 409, nommée", async () => {
+    const list = jsonBody<PromotionListView>(await admin().get(PROMOTIONS).expect(200));
+    expect(list).toMatchObject({ source: "legacy", editable: false });
+
+    const refused = await admin().post(PROMOTIONS).send(terms()).expect(409);
+    expect(refusalOf(refused)).toMatchObject({ code: "promotions.not_editable_yet" });
+    expect(refusalOf(refused).message).toContain("après la bascule");
+    await admin()
+      .post(AT_COEUR)
+      .send(terms({ fulfillment: AT_COEUR_POINT }))
+      .expect(409);
+    expect(await ctx.prisma.promotion.count()).toBe(0);
+  });
+});
+
+describe("les droits (§ 13.9)", () => {
+  beforeEach(async () => {
+    await useSource("promotions");
+  });
+
+  it("la lecture s'ouvre à b2b_pricing OU b2b_settings ; l'écriture, à son seul droit", async () => {
+    const pricingReader = await staffWith("pricing-reader", "communication", [
+      { resource: "b2b_pricing", action: "read" },
+    ]);
+    await pricingReader.get(PROMOTIONS).expect(200);
+    await pricingReader.post(PROMOTIONS).send(terms()).expect(403);
+
+    const settingsReader = await staffWith("settings-reader", "communication", [
+      { resource: "b2b_settings", action: "read" },
+    ]);
+    await settingsReader.get(PROMOTIONS).expect(200);
+    await settingsReader.get(AT_COEUR).expect(200);
+
+    const nobody = await staffWith("nobody", "communication", []);
+    await nobody.get(PROMOTIONS).expect(403);
+    await nobody.get(AT_COEUR).expect(403);
+  });
+
+  it("le tarifeur pose à l'écran, pas sur un point ; le réglage d'un site, l'inverse", async () => {
+    const pricer = await staffWith("pricer", "communication", [
+      { resource: "b2b_pricing", action: "write" },
+    ]);
+    await pricer.post(PROMOTIONS).send(terms()).expect(201);
+    await pricer
+      .post(AT_COEUR)
+      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
+      .expect(403);
+
+    const siteKeeper = await staffWith("site-keeper", "communication", [
+      { resource: "b2b_settings", action: "write" },
+    ]);
+    await siteKeeper
+      .post(AT_COEUR)
+      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
+      .expect(201);
+    await siteKeeper
+      .post(PROMOTIONS)
+      .send(terms({ internalName: "Autre" }))
+      .expect(403);
+  });
+});
+
+describe("après la bascule — les refus nommés", () => {
+  beforeEach(async () => {
+    await useSource("promotions");
+  });
+
+  it("refuse le chevauchement en nommant l'autre promotion et l'article", async () => {
+    await admin().post(PROMOTIONS).send(terms()).expect(201);
+    const refused = await admin()
+      .post(PROMOTIONS)
+      .send(terms({ internalName: "Doublon" }))
+      .expect(409);
+    expect(refusalOf(refused)).toMatchObject({ code: "promotions.overlapping" });
+    expect(refusalOf(refused).message).toContain(
+      "« Croissants d'automne » couvre déjà « Croissant »",
+    );
+    // Un autre public coexiste.
+    await admin()
+      .post(PROMOTIONS)
+      .send(terms({ internalName: "Pros", audience: { kind: "pros_active", companyId: null } }))
+      .expect(201);
+  });
+
+  it("refuse une seconde promotion de panier qui s'appliquerait à la même commande", async () => {
+    await admin()
+      .post(AT_COEUR)
+      .send(
+        terms({
+          internalName: "Cœur pros",
+          fulfillment: AT_COEUR_POINT,
+          audience: { kind: "pros_active", companyId: null },
+        }),
+      )
+      .expect(201);
+    const refused = await admin()
+      .post(PROMOTIONS)
+      .send(
+        terms({
+          internalName: "Tout retrait pros",
+          fulfillment: { kind: "pickup", pickupId: null },
+          audience: { kind: "pros", companyId: null },
+          scope: {
+            mode: "only",
+            rules: [{ target: "variant", targetId: "PAI-001-1", eligible: true }],
+          },
+        }),
+      )
+      .expect(409);
+    expect(refusalOf(refused)).toMatchObject({ code: "promotions.basket_would_combine" });
+    expect(refusalOf(refused).message).toContain("« Cœur pros »");
+  });
+
+  it("refuse une promotion de point posée depuis l'écran, et un produit entier au point ligne", async () => {
+    const wrongSurface = await admin()
+      .post(PROMOTIONS)
+      .send(terms({ fulfillment: AT_COEUR_POINT }))
+      .expect(409);
+    expect(refusalOf(wrongSurface)).toMatchObject({ code: "promotions.wrong_surface" });
+
+    const productId = (
+      await ctx.prisma.catalogItem.findFirstOrThrow({
+        where: { sku: "VIE-001-1" },
+        select: { productId: true },
+      })
+    ).productId;
+    const byProduct = await admin()
+      .post(PROMOTIONS)
+      .send(
+        terms({
+          scope: {
+            mode: "only",
+            rules: [{ target: "product", targetId: productId, eligible: true }],
+          },
+        }),
+      )
+      .expect(400);
+    expect(refusalOf(byProduct)).toMatchObject({ code: "promotions.product_target_at_line" });
+    expect(refusalOf(byProduct).message).toContain("Visez la famille ou la déclinaison");
+  });
+
+  it("la fiche relit la promotion, cibles nommées, et la liste se restreint au point", async () => {
+    const created = jsonBody<{ id: string }>(
+      await admin().post(PROMOTIONS).send(terms()).expect(201),
+    );
+    await admin()
+      .post(AT_COEUR)
+      .send(terms({ internalName: "Cœur", fulfillment: AT_COEUR_POINT }))
+      .expect(201);
+
+    const view = jsonBody<PromotionView>(
+      await admin().get(`${PROMOTIONS}/${created.id}`).expect(200),
+    );
+    expect(view).toMatchObject({ state: "active", applicationPoint: "line" });
+    expect(view.scope.rules).toEqual([
+      { target: "variant", targetId: "VIE-001-1", eligible: true, name: "Croissant" },
+    ]);
+
+    const atPoint = jsonBody<PromotionListView>(await admin().get(AT_COEUR).expect(200));
+    expect(atPoint.editable).toBe(true);
+    expect(atPoint.promotions.map((promotion) => promotion.internalName)).toEqual(["Cœur"]);
+    await admin().get(`${PROMOTIONS}/absente`).expect(404);
+  });
+
+  it("suspend, reprend et archive par les routes, chacune sous sa surface", async () => {
+    const created = jsonBody<{ id: string }>(
+      await admin()
+        .post(AT_COEUR)
+        .send(terms({ fulfillment: AT_COEUR_POINT }))
+        .expect(201),
+    );
+    await admin().post(`${PROMOTIONS}/${created.id}/pause`).send({}).expect(409);
+    await admin().post(`${AT_COEUR}/${created.id}/pause`).send({}).expect(204);
+    await admin().post(`${AT_COEUR}/${created.id}/resume`).send({}).expect(204);
+    await admin()
+      .post(`${AT_COEUR}/${created.id}/archive`)
+      .send({ reason: "fin de saison" })
+      .expect(204);
+    const events = await ctx.prisma.pricingEvent.findMany({
+      where: { subjectType: "promotion", subjectId: created.id },
+      orderBy: [{ occurredAt: "asc" }, { id: "asc" }],
+    });
+    expect(events.map((event) => event.act)).toEqual(["posed", "paused", "resumed", "archived"]);
+  });
+});

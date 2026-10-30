@@ -215,6 +215,10 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'catalogue-publie': 'b2b_settings:read',
   'promotions/frise': 'b2b_settings:read',
   'promotions/simulateur': 'b2b_settings:read',
+  // **Promotions ciblées** (plan des promotions, L7) — l'un OU l'autre droit,
+  // comme la route serveur : la tarification pose, les réglages règlent un point.
+  'promotions-ciblees': { anyOf: ['b2b_pricing:read', 'b2b_settings:read'] },
+  'promotions-ciblees/:id': { anyOf: ['b2b_pricing:read', 'b2b_settings:read'] },
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
   // mur `b2b_settings` l'aurait fermée à la communication, qui la compose

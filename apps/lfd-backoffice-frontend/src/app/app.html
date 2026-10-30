@@ -287,6 +287,20 @@
               (click)="mobileNavOpen.set(false)"
             ></a>
           }
+          @if (canSeeTargetedPromotions()) {
+            <!-- Les PROMOTIONS CIBLÉES (plan des promotions, L7) : par public,
+                 acheminement et portée. Sous b2b_pricing OU b2b_settings. -->
+            <a
+              fold-menu-item
+              icon="tag"
+              label="Promotions ciblées"
+              routerLink="/promotions-ciblees"
+              routerLinkActive
+              #targetedPromotionsRla="routerLinkActive"
+              [active]="targetedPromotionsRla.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
           @if (canSeeLoyalty()) {
             <!-- La FIDÉLITÉ, venue de la Comptabilité le 2026-10-16 (Hugo), sous
                  son droit `lfc_loyalty`. -->
@@ -1053,6 +1067,18 @@
               routerLinkActive
               #promotionsTile="routerLinkActive"
               [active]="promotionsTile.isActive"
+              (click)="mobileNavOpen.set(false)"
+            ></a>
+          }
+          @if (canSeeTargetedPromotions()) {
+            <a
+              fold-nav-tile
+              icon="tag"
+              label="Promotions ciblées"
+              routerLink="/promotions-ciblees"
+              routerLinkActive
+              #targetedPromotionsTile="routerLinkActive"
+              [active]="targetedPromotionsTile.isActive"
               (click)="mobileNavOpen.set(false)"
             ></a>
           }

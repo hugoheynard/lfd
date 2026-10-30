@@ -1,0 +1,60 @@
+<fold-card surface="sunken" padding="md">
+  <fold-page-section title="Promotions de retrait ici" separator>
+    <span sectionSubtitle>
+      Les promotions qui s'appliquent quand le client retire à ce point — y compris la remise
+      ci-dessus, reprise en promotion.
+    </span>
+
+    <div sectionActions>
+      <a
+        foldButton
+        size="sm"
+        emphasis="outline"
+        intent="neutral"
+        routerLink="/promotions-ciblees"
+        [queryParams]="{ pickupId: pickupId() }"
+      >
+        Gérer dans Promotions →
+      </a>
+    </div>
+
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture des promotions…" />
+      }
+      @case ('error') {
+        <fold-callout variant="neutral">
+          Les promotions de ce point ne se lisent pas d'ici : il faut le droit de lire la
+          tarification ou les réglages.
+        </fold-callout>
+      }
+      @default {
+        @if (!editable()) {
+          <fold-callout variant="info">
+            Les promotions s'appliqueront à la bascule : d'ici là, la remise de ce site se règle
+            dans la carte ci-dessus.
+          </fold-callout>
+        }
+        @if (current().length === 0) {
+          <p class="muted">Aucune promotion ne vise ce point.</p>
+        } @else {
+          <ul class="promotions">
+            @for (promotion of current(); track promotion.id) {
+              <li class="promotion">
+                <a [routerLink]="['/promotions-ciblees', promotion.id]">{{
+                  promotion.internalName
+                }}</a>
+                <fold-badge
+                  [content]="stateLabel(promotion)"
+                  [variant]="stateVariant(promotion)"
+                  radius="pill"
+                />
+                <span class="muted">{{ line(promotion) }}</span>
+              </li>
+            }
+          </ul>
+        }
+      }
+    }
+  </fold-page-section>
+</fold-card>

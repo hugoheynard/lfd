@@ -3,6 +3,7 @@ import {
   PromotionEffectPointMismatchError,
   PromotionLineOnlyOptionError,
   PromotionMissingTargetIdError,
+  PromotionProductTargetAtLineError,
   PromotionReversedWindowError,
 } from "./errors/promotion-errors.js";
 import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audience.js";
@@ -70,6 +71,7 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionReversedWindowError} fin avant le début.
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
  * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
+ * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws les refus de `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
  */
 export function assertTerms(terms: PromotionTerms): void {
@@ -97,6 +99,10 @@ export function assertTerms(terms: PromotionTerms): void {
     throw new PromotionLineOnlyOptionError("stacks_over_mercuriale");
   }
   assertScope(terms.scope);
+  const product = terms.scope.rules.find((rule) => rule.target === "product");
+  if (point === "line" && product !== undefined) {
+    throw new PromotionProductTargetAtLineError(product.targetId);
+  }
   terms.conditions.forEach(assertCondition);
 }
 
