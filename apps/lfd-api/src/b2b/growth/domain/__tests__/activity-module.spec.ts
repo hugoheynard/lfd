@@ -76,7 +76,7 @@ describe("moduleOf — le fournil", () => {
     expect(moduleOf(type)).toBe(module);
   });
 
-  it("le filtre du module production ne ramène que ses douze préfixes", () => {
+  it("le filtre du module production ne ramène que ses treize préfixes", () => {
     // Les contenants du colisage (K2b, 2026-10-04) : le poste est au fournil.
     // La feuille retirée après l'arrêt (plan A1, lot A1.3, 2026-10-25).
     // La sortie de réserve vers une boutique (plan A1, lot A1.4, 2026-10-25).
@@ -94,6 +94,7 @@ describe("moduleOf — le fournil", () => {
       "production_settings.",
       "production_closed_day.",
       "production_tranche_settings.",
+      "production_display_settings.",
       "production_batch_shortcut.",
       "production_dossier_recipient.",
     ]);
