@@ -12,6 +12,7 @@ import {
   ProductNormReader,
   type EvaluatedOrderBound,
 } from "../../domain/ports/order-history.reader.js";
+import { SkuLineageReader } from "../../domain/ports/sku-lineage.reader.js";
 
 /** Ce qu'une évaluation rend : ce qui se déclenche, et les règles qui l'ont dit. */
 export interface BasketEvaluation {
@@ -37,6 +38,7 @@ export class EvaluateBasket {
     private readonly overrides: AccountAlertOverridesStore,
     private readonly history: AccountOrderHistoryReader,
     private readonly norms: ProductNormReader,
+    private readonly lineage: SkuLineageReader,
   ) {}
 
   async evaluate(input: {
@@ -57,11 +59,15 @@ export class EvaluateBasket {
     }
 
     const skus = input.lines.map((line) => line.sku);
+    // Une déclinaison détachée change de référence, pas d'habitude (L7d-bis) :
+    // son historique remonte à ses anciennes références.
+    const ancestors = await this.lineage.ancestorsOf(skus);
     const [history, norms] = await Promise.all([
       this.history.read({
         companyId: input.companyId,
         evaluatedOrder: input.evaluatedOrder,
         skus,
+        ancestors,
         windowDays: widestWindow(effective),
         maxOrdersPerSku: MAX_BASELINE_ORDERS,
         now: input.now,

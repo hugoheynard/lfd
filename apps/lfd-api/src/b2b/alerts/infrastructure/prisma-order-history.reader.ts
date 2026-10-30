@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { AlertEvaluationContext } from "../domain/detectors/context.js";
+import { evaluatedSkusByReadSku } from "../domain/sku-lineage.js";
 import {
   AccountOrderHistoryReader,
   ProductNormReader,
@@ -42,10 +43,15 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
     readonly companyId: string;
     readonly evaluatedOrder: EvaluatedOrderBound | null;
     readonly skus: readonly string[];
+    readonly ancestors: ReadonlyMap<string, readonly string[]>;
     readonly windowDays: number;
     readonly maxOrdersPerSku: number;
     readonly now: Date;
   }): Promise<AccountOrderHistory> {
+    // La lignée entière est lue, puis chaque ligne rendue au SKU évalué qui en
+    // descend : une déclinaison détachée garde son historique (L7d-bis).
+    const owners = evaluatedSkusByReadSku(input.skus, input.ancestors);
+    const readSkus = [...owners.keys()];
     const since = new Date(input.now.getTime() - input.windowDays * DAY_MS);
     const walled = {
       companyId: input.companyId,
@@ -61,14 +67,14 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
       // Les lignes récentes, triées : le découpage par SKU se fait en mémoire,
       // ce qui évite une requête par produit.
       this.prisma.orderLine.findMany({
-        where: { sku: { in: [...input.skus] }, order: { ...walled, createdAt: { gte: since } } },
+        where: { sku: { in: readSkus }, order: { ...walled, createdAt: { gte: since } } },
         select: { sku: true, quantity: true, order: { select: { createdAt: true } } },
         orderBy: { order: { createdAt: "desc" } },
       }),
       // « Jamais commandé » ignore la fenêtre : un produit pris il y a trois ans
       // n'est pas un nouveau produit.
       this.prisma.orderLine.findMany({
-        where: { sku: { in: [...input.skus] }, order: walled },
+        where: { sku: { in: readSkus }, order: walled },
         select: { sku: true },
         distinct: ["sku"],
       }),
@@ -77,15 +83,17 @@ export class PrismaAccountOrderHistoryReader extends AccountOrderHistoryReader {
 
     const history = new Map<string, number[]>();
     for (const line of recent) {
-      const quantities = history.get(line.sku) ?? [];
-      if (quantities.length < input.maxOrdersPerSku) {
-        quantities.push(line.quantity);
-        history.set(line.sku, quantities);
+      for (const sku of owners.get(line.sku) ?? []) {
+        const quantities = history.get(sku) ?? [];
+        if (quantities.length < input.maxOrdersPerSku) {
+          quantities.push(line.quantity);
+          history.set(sku, quantities);
+        }
       }
     }
     return {
       history,
-      everOrdered: new Set(ever.map((line) => line.sku)),
+      everOrdered: new Set(ever.flatMap((line) => owners.get(line.sku) ?? [])),
       previousOrderCount,
     };
   }

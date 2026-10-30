@@ -44,6 +44,12 @@ export abstract class AccountOrderHistoryReader {
      */
     readonly evaluatedOrder: EvaluatedOrderBound | null;
     readonly skus: readonly string[];
+    /**
+     * Les anciennes références de chaque SKU évalué (L7d-bis) : une ligne
+     * passée sous l'une d'elles compte pour lui, dans `history` comme dans
+     * `everOrdered`. Vide quand aucun n'est né d'un détachement.
+     */
+    readonly ancestors: ReadonlyMap<string, readonly string[]>;
     /** Fenêtre de récence, en jours (celle de la règle de dérive). */
     readonly windowDays: number;
     /**

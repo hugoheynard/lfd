@@ -1,4 +1,5 @@
 import {
+  ancestorsOfEach,
   directSuccessorsOf,
   latestOfEach,
   MAX_SUCCESSION_DEPTH,
@@ -72,5 +73,42 @@ describe("latestOfEach", () => {
     const successors = new Map(chain.map(([from, to]) => [from ?? "", to ?? ""]));
 
     expect(latestOfEach(["S0"], successors).get("S0")).toBe(`S${String(MAX_SUCCESSION_DEPTH)}`);
+  });
+});
+
+describe("ancestorsOfEach", () => {
+  it("remonte la lignée, du plus proche au plus lointain", () => {
+    const articles = [born("P-2", "P-1"), born("P-3", "P-2")];
+
+    expect(ancestorsOfEach(["P-3"], articles)).toEqual(new Map([["P-3", ["P-2", "P-1"]]]));
+  });
+
+  it("un SKU sans ancêtre n'est pas dans la carte", () => {
+    expect(ancestorsOfEach(["P-1"], [born("P-2", "P-1")]).size).toBe(0);
+  });
+
+  it("un frère non désigné n'hérite pas de l'historique", () => {
+    const articles = [born("P-NEW-1", "P-OLD", true), born("P-NEW-2", "P-OLD", false)];
+
+    const ancestors = ancestorsOfEach(["P-NEW-1", "P-NEW-2"], articles);
+
+    expect(ancestors.get("P-NEW-1")).toEqual(["P-OLD"]);
+    expect(ancestors.has("P-NEW-2")).toBe(false);
+  });
+
+  it("s'arrête sur un cycle", () => {
+    const articles = [born("A", "B"), born("B", "A")];
+
+    expect(ancestorsOfEach(["A"], articles)).toEqual(new Map([["A", ["B"]]]));
+  });
+
+  it("ne remonte pas au-delà de la borne", () => {
+    const articles = Array.from({ length: MAX_SUCCESSION_DEPTH + 4 }, (_, index) =>
+      born(`S-${index + 1}`, `S-${index}`),
+    );
+
+    const chain = ancestorsOfEach([`S-${MAX_SUCCESSION_DEPTH + 4}`], articles);
+
+    expect([...chain.values()][0]).toHaveLength(MAX_SUCCESSION_DEPTH);
   });
 });

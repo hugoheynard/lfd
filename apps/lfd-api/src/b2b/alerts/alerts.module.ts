@@ -1,5 +1,6 @@
 import { Module } from "@nestjs/common";
 
+import { CatalogModule } from "../catalog/catalog.module.js";
 import { AcknowledgeAlertHandler } from "./application/commands/acknowledge-alert.handler.js";
 import { ClearAccountAlertOverrideHandler } from "./application/commands/clear-account-alert-override.handler.js";
 import { RecomputeProductNormsHandler } from "./application/commands/recompute-product-norms.handler.js";
@@ -25,11 +26,13 @@ import {
   ProductNormReader,
 } from "./domain/ports/order-history.reader.js";
 import { ProductNormStore } from "./domain/ports/product-norm.store.js";
+import { SkuLineageReader } from "./domain/ports/sku-lineage.reader.js";
 import { AdminAccountAlertRulesController } from "./http/admin-account-alert-rules.controller.js";
 import { AdminAccountAlertsController } from "./http/admin-account-alerts.controller.js";
 import { AdminAlertRulesController } from "./http/admin-alert-rules.controller.js";
 import { AdminRecomputeNormsController } from "./http/admin-recompute-norms.controller.js";
 import { OrderPreflightController } from "./http/order-preflight.controller.js";
+import { CatalogSkuLineageReader } from "./infrastructure/catalog-sku-lineage.reader.js";
 import { PrismaAccountAlertOverridesStore } from "./infrastructure/prisma-account-alert-overrides.store.js";
 import { PrismaAccountAlertRepository } from "./infrastructure/prisma-account-alert.repository.js";
 import { PrismaAlertCompanyReader } from "./infrastructure/prisma-alert-company.reader.js";
@@ -55,6 +58,8 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
  * jamais ses tables, jamais ses agrégats.
  */
 @Module({
+  // La lignée de détachement, lue au catalogue (L7d-bis).
+  imports: [CatalogModule],
   controllers: [
     AdminAlertRulesController,
     AdminAccountAlertRulesController,
@@ -71,6 +76,7 @@ import { PrismaProductNormStore } from "./infrastructure/prisma-product-norm.sto
     { provide: AccountOrderHistoryReader, useClass: PrismaAccountOrderHistoryReader },
     { provide: ProductNormReader, useClass: PrismaProductNormReader },
     { provide: ProductNormStore, useClass: PrismaProductNormStore },
+    { provide: SkuLineageReader, useClass: CatalogSkuLineageReader },
     EvaluateBasket,
     EvaluateOrderAlerts,
     { provide: AlertChannels, useClass: DispatchAlertChannels },

@@ -84,3 +84,44 @@ export function latestOfEach(
   }
   return latest;
 }
+
+/**
+ * Les ANCÊTRES de chaque SKU demandé, du plus proche au plus lointain ; un SKU
+ * sans ancêtre n'est pas dans la carte. Un article n'hérite de la référence
+ * dont sa fiche est née que s'il en est le successeur retenu
+ * ({@link directSuccessorsOf}) : un frère non désigné ne reçoit rien, comme
+ * dans {@link latestOfEach}. Borne et arrêt sur cycle identiques.
+ */
+export function ancestorsOfEach(
+  skus: readonly string[],
+  articles: readonly DetachedArticle[],
+): ReadonlyMap<string, readonly string[]> {
+  const predecessors = new Map<string, string>();
+  for (const [parent, child] of directSuccessorsOf(articles)) {
+    predecessors.set(child, parent);
+  }
+  const ancestors = new Map<string, readonly string[]>();
+  for (const sku of skus) {
+    const chain = walk(sku, predecessors);
+    if (chain.length > 0) {
+      ancestors.set(sku, chain);
+    }
+  }
+  return ancestors;
+}
+
+function walk(sku: string, links: ReadonlyMap<string, string>): readonly string[] {
+  const seen = new Set([sku]);
+  const chain: string[] = [];
+  let current = sku;
+  for (let depth = 0; depth < MAX_SUCCESSION_DEPTH; depth += 1) {
+    const next = links.get(current);
+    if (next === undefined || seen.has(next)) {
+      break;
+    }
+    seen.add(next);
+    chain.push(next);
+    current = next;
+  }
+  return chain;
+}

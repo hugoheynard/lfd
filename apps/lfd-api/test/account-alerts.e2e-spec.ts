@@ -235,6 +235,7 @@ describe("une commande déclenche l'évaluation", () => {
       companyId,
       evaluatedOrder: { id: first.id, placedAt: first.createdAt },
       skus: ["VIE-001-1", "VIE-002-1"],
+      ancestors: new Map(),
       windowDays: 365,
       maxOrdersPerSku: 10,
       now: new Date(),

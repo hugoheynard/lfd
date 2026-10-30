@@ -328,13 +328,13 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
 **Les lecteurs qui agrègent des lignes de commande par `sku`** (tous au
 commerce, aucune table « habitudes » : chacun lit `order_lines` à la volée) :
 
-| Lecteur                                                              | Ce qu'il rend                                                                           | L7d-bis                                                                                                                                 |
-| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
-| `PrismaCustomerSkuReader` → `ListCustomerSkusHandler`                | les habitudes d'une société au back-office (`GET admin/catalog/companies/:id`), 12 mois | **regroupé**                                                                                                                            |
-| `PrismaPurchaseHistoryReader` → `ListMyUsualsHandler`                | « vos habituels » à l'accueil pro, 12 mois                                              | **regroupé**                                                                                                                            |
-| `PrismaAccountOrderHistoryReader` (alertes)                          | normes de quantité et « jamais commandé » des SKU d'UN panier                           | non : un détecteur, pas un rapport ; il part du SKU neuf et devrait remonter aux ANCIENS (sens inverse) — question au § PLAN du rapport |
-| `PrismaCoPurchaseReader`, `PrismaSuggestedSkuSalesReader`            | paires « souvent pris avec », ventes des suggestions décidées                           | non : agrégats boutique entière partant d'ancres, même sens inverse                                                                     |
-| `PrismaCustomerVolumeReader`, `PrismaSkuVolumeReader` (tarification) | volumes d'engagement                                                                    | non : ils font un PRIX — c'est le report du L7c, pas un rapport                                                                         |
+| Lecteur                                                              | Ce qu'il rend                                                                           | L7d-bis                                                                             |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | ----------------------------------------------------------------------------------- |
+| `PrismaCustomerSkuReader` → `ListCustomerSkusHandler`                | les habitudes d'une société au back-office (`GET admin/catalog/companies/:id`), 12 mois | **regroupé**                                                                        |
+| `PrismaPurchaseHistoryReader` → `ListMyUsualsHandler`                | « vos habituels » à l'accueil pro, 12 mois                                              | **regroupé**                                                                        |
+| `PrismaAccountOrderHistoryReader` (alertes)                          | normes de quantité et « jamais commandé » des SKU d'UN panier                           | **lignée remontée** (2026-10-30, décision de Hugo) — cf. « Les alertes » ci-dessous |
+| `PrismaCoPurchaseReader`, `PrismaSuggestedSkuSalesReader`            | paires « souvent pris avec », ventes des suggestions décidées                           | non : agrégats boutique entière partant d'ancres, même sens inverse                 |
+| `PrismaCustomerVolumeReader`, `PrismaSkuVolumeReader` (tarification) | volumes d'engagement                                                                    | non : ils font un PRIX — c'est le report du L7c, pas un rapport                     |
 
 **La clé de regroupement : la référence la plus récente de la lignée.**
 Un article dont un autre est né (`catalog_items.detached_from_sku` = lui) a
@@ -355,6 +355,25 @@ facturé des deux. Aucun champ de contrat ajouté.
 même unité de travail que le détachement (`detach-product-variant.ts`, lu le
 2026-10-30) et la fiche née naît inactive — aucune commande ne porte les deux
 références, donc la somme des commandes distinctes reste exacte.
+
+**Les alertes remontent la lignée** (décision de Hugo du 2026-10-30 ; bâti
+le 2026-10-30, non commité à l'écriture de cette ligne). Sens inverse du
+regroupement : on part du SKU du panier et on remonte à ses ANCÊTRES (A → B
+→ C : C lit aussi B et A), même borne (`MAX_SUCCESSION_DEPTH`) et même arrêt
+sur cycle ; un article n'hérite que s'il est le successeur retenu de sa
+référence d'origine (seul article, ou défaut unique), comme pour le
+regroupement. Port `SaleReferenceLineageReader.ancestorsOf` (`b2b/catalog`,
+distinct du port de succession : ISP), relu par les alertes au travers de
+leur propre port `SkuLineageReader`. `EvaluateBasket` lit la lignée, puis
+`AccountOrderHistoryReader.read` reçoit `ancestors` et rend chaque ligne
+passée sous une ancienne référence au SKU évalué qui en descend. Les trois
+détecteurs en profitent : `first_order` (`everOrdered`), `quantity_drift` et
+`quantity_outlier` (`history` — l'aberration se tait dès que le compte a sa
+propre habitude, lignée comprise). **Reste hors lignée** : la norme
+catalogue (`product_norms`, médiane tous comptes par SKU) — un SKU né n'a pas
+de norme tant que ses propres lignes n'atteignent pas le plancher, donc
+l'aberration se tait sur lui ; elle ne crie pas à tort. E2E :
+`apps/lfd-api/test/alerts-detached-lineage.e2e-spec.ts`.
 
 - **L8** `docs(catalogue)`.
 

@@ -58,7 +58,9 @@ import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
 import { WithdrawnShopSkusReader } from "./domain/ports/withdrawn-shop-skus.reader.js";
 import { DetachmentOriginReader } from "./domain/ports/detachment-origin.reader.js";
 import { PrismaDetachmentOriginReader } from "./infrastructure/prisma-detachment-origin.reader.js";
+import { SaleReferenceLineageReader } from "./domain/ports/sale-reference-lineage.reader.js";
 import { SaleReferenceSuccessionReader } from "./domain/ports/sale-reference-succession.reader.js";
+import { PrismaSaleReferenceLineageReader } from "./infrastructure/prisma-sale-reference-lineage.reader.js";
 import { PrismaSaleReferenceSuccessionReader } from "./infrastructure/prisma-sale-reference-succession.reader.js";
 import { PrismaWithdrawnShopSkusReader } from "./infrastructure/prisma-withdrawn-shop-skus.reader.js";
 import { CatalogPricePerKgReader } from "./domain/ports/catalog-price-per-kg.reader.js";
@@ -178,6 +180,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // La lignée de détachement, sous laquelle les rapports par article
     // regroupent (`plan-pro-voit-les-declinaisons.md`, L7d-bis).
     { provide: SaleReferenceSuccessionReader, useClass: PrismaSaleReferenceSuccessionReader },
+    // La même lignée remontée, que les alertes lisent (L7d-bis).
+    { provide: SaleReferenceLineageReader, useClass: PrismaSaleReferenceLineageReader },
     { provide: CatalogPricePerKgReader, useClass: PrismaCatalogPricePerKgReader },
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
@@ -203,6 +207,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     DetachmentOriginReader,
     // Pour les habitudes et « vos habituels » : regrouper une lignée (L7d-bis).
     SaleReferenceSuccessionReader,
+    // Pour les alertes : une référence détachée hérite de l'historique (L7d-bis).
+    SaleReferenceLineageReader,
     // Pour la caisse et le devis : le rangement d'un SKU, que la remise de
     // retrait juge (plan des exclusions, V4).
     OrderLineClassificationReader,

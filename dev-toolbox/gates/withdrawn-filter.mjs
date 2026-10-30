@@ -101,6 +101,10 @@ const ALLOWED = new Set([
   // exempte et écrite — une filiation, pas une mise en vente ; la référence
   // la plus récente d'un historique peut être retirée.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-succession.reader.ts",
+  // La même lignée remontée vers les anciennes références, que les alertes
+  // lisent (L7d-bis, 2026-10-30) : exempte et écrite — un ancêtre est retiré
+  // par construction (le détachement archive l'origine).
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.

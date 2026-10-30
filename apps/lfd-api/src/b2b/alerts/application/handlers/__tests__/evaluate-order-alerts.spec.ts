@@ -9,6 +9,7 @@ import type { EvaluatedOrder } from "../../../domain/ports/evaluated-order.reade
 import type { AccountOrderHistory } from "../../../domain/ports/order-history.reader.js";
 import type { AlertDraft } from "../../../domain/evaluate-order.js";
 import type { AlertChannels } from "../../../domain/ports/alert-channels.js";
+import type { SkuLineageReader } from "../../../domain/ports/sku-lineage.reader.js";
 import { EvaluateBasket } from "../evaluate-basket.service.js";
 import { EvaluateOrderAlerts } from "../evaluate-order-alerts.service.js";
 
@@ -31,6 +32,7 @@ function build(overrides: {
   readonly history?: Partial<AccountOrderHistory>;
   readonly stored?: readonly StoredAlertRule[];
   readonly accountOverrides?: readonly StoredOverride[];
+  readonly ancestors?: ReadonlyMap<string, readonly string[]>;
 }) {
   const recorded: AlertToRecord[] = [];
   const readCalls: unknown[] = [];
@@ -61,6 +63,9 @@ function build(overrides: {
       },
     },
     { read: () => Promise.resolve(new Map() as AlertEvaluationContext["norms"]) },
+    {
+      ancestorsOf: () => Promise.resolve(overrides.ancestors ?? new Map()),
+    } satisfies SkuLineageReader,
   );
   const service = new EvaluateOrderAlerts(
     { read: () => Promise.resolve(overrides.order === undefined ? ORDER : overrides.order) },
@@ -161,6 +166,20 @@ describe("EvaluateOrderAlerts", () => {
     // passation, pas à celui de l'évaluation (course du 2026-09-07).
     expect(call.evaluatedOrder).toEqual({ id: "order_1", placedAt: ORDER.placedAt });
     expect(call.now).toBe(NOW);
+  });
+
+  /**
+   * L7d-bis : une déclinaison détachée change de référence, pas d'habitude.
+   * Sans ses ancêtres, sa première commande sous la nouvelle référence criait
+   * « jamais commandé ».
+   */
+  it("passe à l'historique les anciennes références d'un SKU détaché", async () => {
+    const ancestors = new Map([[SKU, ["VIE-OLD-2", "VIE-OLD-1"]]]);
+    const { service, readCalls } = build({ ancestors });
+
+    await service.evaluate("order_1");
+
+    expect((readCalls[0] as { ancestors: unknown }).ancestors).toBe(ancestors);
   });
 
   it("n'écrit rien quand toutes les règles sont éteintes globalement", async () => {

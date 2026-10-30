@@ -129,6 +129,7 @@ async function alertHistory(companyId: string): Promise<number> {
     companyId,
     evaluatedOrder: null,
     skus: [SKU],
+    ancestors: new Map(),
     windowDays: 30,
     now: new Date(),
     maxOrdersPerSku: 10,
