@@ -27,7 +27,12 @@ describe("sameTerms — deux termes disent-ils la même chose ?", () => {
     ["l'acheminement", lineTerms({ fulfillment: { kind: "delivery" } })],
     [
       "la portée",
-      lineTerms({ scope: { mode: "all_except", rules: [{ target: "category", id: "cat_1" }] } }),
+      lineTerms({
+        scope: {
+          mode: "all_except",
+          rules: [{ target: "category", targetId: "cat_1", eligible: false, targetRank: null }],
+        },
+      }),
     ],
     ["les conditions", lineTerms({ conditions: [{ kind: "min_quantity", value: 3 }] })],
   ])("diffèrent dès que %s change", (_what, other) => {

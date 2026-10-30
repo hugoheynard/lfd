@@ -2147,7 +2147,7 @@ généré exclu) : `prisma-order.repository.ts:148` (passation) et
 production. La passation est **une seule écriture imbriquée**
 (`this.prisma.order.create`, l. 99) : M3 y ajoute les remises en
 `create` imbriqué, donc dans la même instruction. La révision enchaîne
-plusieurs requêtes sur `this.prisma` (`save`, l. 58-62) ; qu'une
+plusieurs requêtes sur le client Prisma (`save`, l. 58-62) ; qu'une
 transaction les englobe **n'est pas vérifié ici** — M3 doit mettre
 `updateMany`, archivage et insertion dans une seule transaction, et le
 démontrer.
@@ -2216,7 +2216,7 @@ déclencheur (§ 18.2). Elle ne remplit rien : reproduire `splitCents` et
 rien ne garderait égale à `@lfd/money`.
 
 **Le remplissage est un script TypeScript** du back,
-`apps/lfd-api/prisma/backfill-order-discounts.ts` (commande
+le script backfill-order-discounts, à créer sous `apps/lfd-api/prisma/` (commande
 `pnpm --filter lfd-api backfill:order-discounts`), de la forme de
 `backfill-naf.ts` (ouvert le 2026-10-30) : il démarre l'`AppModule`, et
 compose chaque remise par **la même fonction de domaine que M1** (donc par

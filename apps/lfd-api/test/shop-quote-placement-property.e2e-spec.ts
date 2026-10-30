@@ -172,7 +172,8 @@ function pick<T>(rng: ReturnType<typeof drawer>, items: readonly [T, ...T[]]): T
   return items[rng.int(0, items.length - 1)] ?? items[0];
 }
 
-const AUDIENCES = [
+type Audience = PromotionTermsPayload["audiences"][number];
+const AUDIENCES: readonly [Audience, ...Audience[]] = [
   { kind: "everyone" as const, companyId: null },
   { kind: "individuals_registered" as const, companyId: null },
   { kind: "everyone_but_active_pros" as const, companyId: null },

@@ -257,7 +257,7 @@ describe("announcedPickupDiscounts — l'annonce dit ce que la caisse appliquera
     );
     const withLabel = twins.map((twin) => ({ ...twin, label: { ...twin.label, fr: twin.id } }));
 
-    expect(announcedPickupDiscounts(withLabel, "site", ASKED_AT).b2c?.label.fr).toBe("b");
+    expect(announcedPickupDiscounts(withLabel, "site", ASKED_AT).b2c?.label?.fr).toBe("b");
     expect(atCheckout(withLabel, "b2c").label?.fr).toBe("b");
   });
 });

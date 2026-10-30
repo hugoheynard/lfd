@@ -21,7 +21,7 @@ const article = (
   sku,
   name: `Article ${sku}`,
   productId: `prod_${sku}`,
-  categoryPath: ["cat_pain"],
+  categoryPath: ["family_bread"],
   saleUnit: "piece",
   ...overrides,
 });
@@ -126,12 +126,12 @@ describe("assertNoOverlap — ce qui se dispute et ce qui ne se dispute pas", ()
   // Au point ligne un article au poids n'est visé ni par le mode ni par une
   // famille : deux promotions « tout sauf » ne s'y disputent donc rien.
   it("au point ligne, un catalogue au poids seul n'offre aucun article commun", () => {
-    const weighed = [article("W", { saleUnit: "kg" })];
+    const weighed = [article("W", { saleUnit: "weight" })];
     expect(() => assertNoOverlap(rival("a"), [rival("b")], weighed)).not.toThrow();
   });
 
   it("au point panier, l'unité de vente ne compte pas", () => {
-    const weighed = [article("W", { saleUnit: "kg" })];
+    const weighed = [article("W", { saleUnit: "weight" })];
     expect(() =>
       assertNoOverlap(rival("a", basketTerms()), [rival("b", basketTerms())], weighed),
     ).toThrow(OverlappingPromotionError);
