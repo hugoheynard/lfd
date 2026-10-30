@@ -477,6 +477,18 @@ export const routes: Routes = [
       import('./analytics/audiences/audiences-page/audiences-page').then((m) => m.AudiencesPage),
   },
   {
+    // LE SUR MESURE (plan-sur-mesure-partout.md, lot R, 2026-10-30) — la
+    // troisième vue d'Analytics, sous le même droit : des ventes lues pour
+    // comprendre. Déclarée avant `analytics`, comme les audiences.
+    path: 'analytics/sur-mesure',
+    canActivate: [permissionGuard('b2b_growth:read')],
+    title: 'Sur mesure — LFC B2B admin',
+    loadComponent: () =>
+      import('./analytics/sur-mesure/made-to-order-page/made-to-order-page').then(
+        (m) => m.MadeToOrderPage,
+      ),
+  },
+  {
     // ANALYTICS — le module qui lit ce que le parc raconte.
     //
     // La croissance en est la première vue, sortie de Commercial : elle y était

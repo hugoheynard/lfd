@@ -401,6 +401,8 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   analytics: 'b2b_growth:read',
   // Les audiences de la clientèle (plan-audiences.md, A1, 2026-10-18).
   'analytics/audiences': 'b2b_growth:read',
+  // Les rapports du sur mesure (plan-sur-mesure-partout.md, lot R, 2026-10-30).
+  'analytics/sur-mesure': 'b2b_growth:read',
   'commercial/calendrier': 'b2b_growth:read',
   // LES DEMANDES CLIENTS, venues de `/b2b/demandes` le 2026-10-17 (Hugo) : le
   // droit du contact (demandes-clients.md, §6.8). Le mur `b2b_settings` de

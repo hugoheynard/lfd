@@ -1,0 +1,119 @@
+<fold-page-layout icon="stats" title="Sur mesure">
+  <p description>
+    Ce que rapportent les articles marqués « sur mesure », lu sur les commandes passées : par mois,
+    et par client. Montants hors taxe des lignes, avant les remises de commande.
+  </p>
+
+  <div class="reports">
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        title="Le sur mesure par mois"
+        subtitle="Mois de passation. La part se rapporte au hors taxe de toutes les lignes du mois."
+      />
+      <fold-view-toggle
+        ariaLabel="Nombre de mois"
+        size="sm"
+        [options]="windowOptions"
+        [value]="months().toString()"
+        (valueChange)="chooseWindow($event)"
+      />
+      @switch (monthlyState()) {
+        @case ('loading') {
+          <fold-loading message="Chargement du sur mesure par mois…" />
+        }
+        @case ('error') {
+          <fold-empty-state tone="alert" title="Impossible de charger le sur mesure par mois">
+            <button foldButton (click)="loadMonthly()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @default {
+          @if (monthly(); as view) {
+            @if (hasUnknown(view)) {
+              <fold-callout appearance="inset" variant="info">
+                « Avant le suivi » : des commandes passées avant que le marqueur ne soit gardé sur
+                la ligne. On ne sait pas si elles portaient du sur mesure ; elles ne sont comptées
+                ni d’un côté ni de l’autre.
+              </fold-callout>
+            }
+            <fold-data-table
+              density="compact"
+              narrowLayout="cards"
+              caption="Le sur mesure par mois"
+              [columns]="monthColumns"
+              [rows]="view.rows"
+              [rowKey]="monthKey"
+            />
+          }
+        }
+      }
+    </fold-card>
+
+    <fold-card>
+      <fold-element-title
+        variant="title"
+        title="Le sur mesure par client"
+        subtitle="Chaque société à part, un site avec le nom de son principal ; un particulier à lui seul."
+      />
+      <form class="period" (submit)="$event.preventDefault(); loadClients()">
+        <fold-date label="Du" [(value)]="from" required />
+        <fold-date label="Au" [(value)]="to" required />
+        <button foldButton type="submit">Afficher</button>
+      </form>
+      @if (periodRefusal(); as refusal) {
+        <fold-callout variant="alert" announce>{{ refusal }}</fold-callout>
+      }
+      @switch (clientsState()) {
+        @case ('loading') {
+          <fold-loading message="Chargement du sur mesure par client…" />
+        }
+        @case ('error') {
+          <fold-empty-state tone="alert" title="Impossible de charger le sur mesure par client">
+            <button foldButton (click)="loadClients()">Réessayer</button>
+          </fold-empty-state>
+        }
+        @default {
+          @if (clients(); as view) {
+            @if (view.unknownHtCents > 0) {
+              <fold-callout appearance="inset" variant="info">
+                {{ cents(view.unknownHtCents) }} HT de commandes d’avant le suivi sur la période :
+                on ne sait pas si elles portaient du sur mesure.
+              </fold-callout>
+            }
+            @if (view.clients.length === 0) {
+              @if (periodRefusal() === null) {
+                <fold-empty-state title="Aucun sur mesure sur la période" />
+              }
+            } @else {
+              <div class="clients">
+                @for (client of view.clients; track client.clientKey) {
+                  <section class="client">
+                    <fold-element-title
+                      [title]="client.name === '' ? 'Particulier sans nom' : client.name"
+                      [subtitle]="clientSubtitle(client)"
+                    />
+                    @if (client.articles.length > 0) {
+                      <fold-data-table
+                        density="compact"
+                        narrowLayout="cards"
+                        [caption]="'Articles sur mesure — ' + client.name"
+                        [columns]="articleColumns"
+                        [rows]="client.articles"
+                        [rowKey]="articleKey"
+                      />
+                    }
+                    @if (client.unknownHtCents > 0) {
+                      <fold-callout appearance="inset" variant="info">
+                        Avant le suivi : {{ cents(client.unknownHtCents) }} HT.
+                      </fold-callout>
+                    }
+                  </section>
+                }
+              </div>
+            }
+          }
+        }
+      }
+    </fold-card>
+  </div>
+</fold-page-layout>

@@ -1,7 +1,8 @@
 # Le marqueur « sur mesure » partout — plan
 
 > 🟨 **Partiel, 2026-10-30.** M1 à M4 bâtis le 2026-10-30 (non commités à
-> l'écriture de cette ligne) ; le lot R attend Hugo (Q6). Q1–Q5 et Q7
+> l'écriture de cette ligne) ; le lot R bâti le 2026-10-30 sur la réponse de
+> Hugo à Q6 (§ 5 ter, non commité à l'écriture de cette ligne). Q1–Q5 et Q7
 > **décidées par défaut le 2026-10-30, sur mandat de Hugo** (« fais tout ») :
 > les recommandations du plan, § 6. Ce qui suit était doc-first ; les écarts
 > bâtis sont dits en § 5 bis. Origine : Q6 du
@@ -161,7 +162,7 @@ papier noir et blanc ne se lit pas sans légende, et l'accessibilité vaut aussi
 | ~~**M2**~~ ✅ 2026-10-30                                           | `ProducibleLine.madeToOrder` (port du fournil) ; `prisma-day-orders.source.ts` le remplit ; colonne `production_order_line.made_to_order` ; `ProductionLineSnapshot`                       | e2e arrêt de journée : la valeur traverse ; le fournil ne lit aucune table du commerce (`lint:context-boundaries`, `lint:prisma-model-ownership` verts)                                                     |
 | ~~**M3**~~ ✅ 2026-10-30                                           | Fiche d'atelier, compte à produire, dossier du jour : rendu « SUR MESURE » ; `ExpectedItem` distingue sur mesure / non (Q2)                                                                | unitaires de rendu ; **spécimens** : les données d'exemple de la planche portent au moins une ligne sur mesure, et un test vérifie que le texte `SUR MESURE` figure dans le PDF de chaque spécimen concerné |
 | ~~**M4**~~ ✅ 2026-10-30 — fait et écran du colisage, voir § 5 bis | Fait `production.packing_list_drawn` + écran du colisage ; étiquettes selon Q4                                                                                                             | relecture d'un fait ancien → `null` ; spécimen d'étiquette si Q4 = oui                                                                                                                                      |
-| **R**                                                              | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
+| ~~**R**~~ ✅ 2026-10-30 — § 5 ter                                  | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
 
 Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres.
 
@@ -209,6 +210,74 @@ Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres
   signature » sur mesure ; fiche, compte et dossier d'exemple disent « SUR
   MESURE ». Les spécimens du commerce ne changent pas (Q3).
 
+## 5 ter. Lot R — forme des deux rapports (2026-10-30)
+
+Décision de Hugo du 2026-10-30 sur Q6 : **deux rapports, au back-office** —
+le sur mesure par mois, et le sur mesure par client. Ce qui suit fixe leur
+forme ; chaque convention suit un lecteur existant, **ouvert le 2026-10-30**.
+
+**Existence.** Aucun rapport « ventes par article » n'existe : les audiences
+rangent des **familles** par CA HT de lignes, jamais un article par client
+(`apps/lfd-api/src/b2b/orders/infrastructure/prisma-audience-order.reader.ts`,
+`skuSql`). Les deux rapports sont neufs.
+
+**Commandes retenues.** Le périmètre du chiffre d'affaires de la croissance,
+sans copie : `REVENUE_ORDER_STATUSES` et `REVENUE_PAYMENT_STATUSES`
+(`apps/lfd-api/src/b2b/growth/domain/revenue-scope.ts`, épandus par
+`revenue.where.ts`). Brouillons et **annulées exclus** ; carte en attente,
+refusée ou remboursée exclue ; au compte, gratuite ou encaissée comptée.
+
+**Date de référence.** Le **jour de passation à Paris** (`orders.created_at`
+lu en `Europe/Paris`), comme les audiences (`scope()` du même fichier). La
+croissance découpe en jours UTC (`dayKey`, `growth/domain/growth-stats.ts`) ;
+pour un mois, une commande de 0 h 30 le 1ᵉʳ serait comptée le mois d'avant —
+d'où Paris.
+
+**Montant.** Le **HT des lignes, avant remise de commande**
+(`order_lines.line_total_cents`), en centimes — la convention des audiences
+pour ce qui se compte par article (`skuSql`, « Le CA HT des LIGNES (avant
+remise de commande) »). **Pas de TTC** : la ligne d'un pro n'a pas de TTC
+(`line_total_ttc_cents` `NULL`, R3, `orders.prisma`) et la TVA se calcule
+par commande, par taux, après remises (`orders/domain/services/vat.ts`) ; un
+TTC par ligne serait un nombre que le dépôt ne calcule nulle part.
+
+**Les trois états.** `true` = sur mesure ; `false` = non ; `NULL` = **ligne
+d'avant le suivi** (M1). Le `NULL` n'est **jamais** compté comme non sur
+mesure : il a son propre montant, affiché sous le nom « commandes d'avant le
+suivi ».
+
+**Rapport 1 — par mois** (`GET /admin/growth/made-to-order/monthly?months=6|12|24`,
+12 par défaut, mois courant compris). Par mois : HT sur mesure, HT non sur
+mesure, HT d'avant le suivi, HT total des lignes (les trois), nombre de
+commandes portant au moins une ligne sur mesure, et la **part** = HT sur
+mesure ÷ HT total des lignes (`null` sur un mois vide). Le dénominateur est
+la même base que le numérateur — lignes HT avant remise —, pas le `total_cents`
+de la croissance, qui porte TVA et livraison.
+
+**Rapport 2 — par client** (`GET /admin/growth/made-to-order/clients?from=&to=`,
+jours `AAAA-MM-JJ` compris, au plus 366 jours). **Le client est la société
+qui commande, chaque site à part, son principal nommé** — tranché ainsi :
+le sur mesure se convient avec le site qui le commande et le reçoit ; le
+principal est celui **figé à la passation** (`principal_company_id`, `NULL`
+avant la colonne) — regrouper sous lui aurait mêlé, pour un même groupe, des
+commandes rattachées et d'autres non, selon leur date. Le nom du principal
+permet de lire un groupe sans le sommer à sa place. Un particulier est un
+client à lui seul (`placed_by_user_id`). Par client : HT sur mesure, puis
+par **article** (SKU et unité de vente) la quantité (pièces, ou grammes au
+poids), le HT et le nombre de commandes ; et le HT des lignes d'avant le
+suivi. Sont listés les clients qui ont au moins une ligne sur mesure **ou**
+d'avant le suivi sur la période.
+
+**Droit.** `b2b_growth:read`, celui de la croissance et des audiences
+(`admin-growth.controller.ts`, `admin-audiences.controller.ts`) : aucune
+ressource neuve, **aucune migration de droits**. ⚠️ Le rapport par client
+nomme les clients, là où les audiences s'interdisent toute case de moins de
+cinq : ce seuil est une règle du tableau des audiences, pas du droit.
+
+**Écran.** Analytics › Sur mesure (`/analytics/sur-mesure`), troisième vue de
+la section, aux deux arbres de navigation. Pas d'export CSV : aucune vue
+d'Analytics n'en a.
+
 ## 6. Questions ouvertes
 
 - ~~**Q1.**~~ Le nom du client réservataire figure-t-il sur la fiche atelier ?
@@ -229,8 +298,10 @@ Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres
 - **Q5.** Un article sur mesure sans réservation (marqueur seul, Q5 du plan
   parent) se marque-t-il pareil ? Supposé oui : le marqueur est indépendant.
   → **Oui — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
-- **Q6.** Quels rapports exactement : CA par article, ventes par client, export
+- ~~**Q6.**~~ Quels rapports exactement : CA par article, ventes par client, export
   comptable ? Aucun « ventes par article » trouvé (§ 1).
+  → **Deux rapports au back-office, le sur mesure par mois et par client —
+  Hugo, 2026-10-30.** Forme au § 5 ter.
 - **Q7.** Un réassort de boutique (`resupply-list-drawn.event.ts:11`) porte-t-il
   le marqueur ? Supposé non : un réassort n'est pas une commande client.
   → **Non — décidé par défaut le 2026-10-30, sur mandat de Hugo.**

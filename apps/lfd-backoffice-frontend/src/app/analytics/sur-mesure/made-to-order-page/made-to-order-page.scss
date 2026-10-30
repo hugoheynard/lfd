@@ -1,0 +1,28 @@
+:host {
+  display: block;
+}
+
+.reports {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.period {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: var(--fold-space-sm);
+}
+
+.clients {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-lg);
+}
+
+.client {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}

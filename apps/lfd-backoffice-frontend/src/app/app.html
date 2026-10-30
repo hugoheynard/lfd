@@ -526,6 +526,16 @@
             [active]="audiencesRla.isActive"
             (click)="mobileNavOpen.set(false)"
           ></a>
+          <a
+            fold-menu-item
+            icon="star"
+            label="Sur mesure"
+            routerLink="/analytics/sur-mesure"
+            routerLinkActive
+            #madeToOrderRla="routerLinkActive"
+            [active]="madeToOrderRla.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
         </fold-menu-section>
       }
 
@@ -1243,6 +1253,16 @@
             routerLinkActive
             #audiencesTile="routerLinkActive"
             [active]="audiencesTile.isActive"
+            (click)="mobileNavOpen.set(false)"
+          ></a>
+          <a
+            fold-nav-tile
+            icon="star"
+            label="Sur mesure"
+            routerLink="/analytics/sur-mesure"
+            routerLinkActive
+            #madeToOrderTile="routerLinkActive"
+            [active]="madeToOrderTile.isActive"
             (click)="mobileNavOpen.set(false)"
           ></a>
         </fold-nav-section>

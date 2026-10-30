@@ -79,6 +79,13 @@ import { AdminAvailabilityController } from "./http/admin-availability.controlle
 import { AppointmentsController } from "./http/appointments.controller.js";
 import { AdminCockpitController } from "./http/admin-cockpit.controller.js";
 import { AdminGrowthController } from "./http/admin-growth.controller.js";
+import { AdminMadeToOrderReportsController } from "./http/admin-made-to-order-reports.controller.js";
+import { GetMadeToOrderByClientHandler } from "./application/queries/get-made-to-order-by-client.handler.js";
+import { GetMadeToOrderMonthlyHandler } from "./application/queries/get-made-to-order-monthly.handler.js";
+import { MadeToOrderClientReader } from "./domain/ports/made-to-order-client.reader.js";
+import { MadeToOrderMonthlyReader } from "./domain/ports/made-to-order-monthly.reader.js";
+import { PrismaMadeToOrderClientReader } from "./infrastructure/prisma-made-to-order-client.reader.js";
+import { PrismaMadeToOrderMonthlyReader } from "./infrastructure/prisma-made-to-order-monthly.reader.js";
 import { AdminLeadsController } from "./http/admin-leads.controller.js";
 import { AdminMarketController } from "./http/admin-market.controller.js";
 import { AdminProspectsController } from "./http/admin-prospects.controller.js";
@@ -136,6 +143,7 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     AdminCockpitController,
     AdminLeadsController,
     AdminGrowthController,
+    AdminMadeToOrderReportsController,
     AdminMarketController,
     AdminAppointmentsController,
     AdminAvailabilityController,
@@ -179,6 +187,8 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     { provide: PortfolioMetricsReader, useClass: PrismaPortfolioMetricsReader },
     { provide: AcquisitionMetricsReader, useClass: PrismaAcquisitionMetricsReader },
     { provide: SectorRevenueReader, useClass: PrismaSectorRevenueReader },
+    { provide: MadeToOrderMonthlyReader, useClass: PrismaMadeToOrderMonthlyReader },
+    { provide: MadeToOrderClientReader, useClass: PrismaMadeToOrderClientReader },
     { provide: TerminationStatsReader, useClass: PrismaTerminationStatsReader },
     { provide: AvailabilityStore, useClass: PrismaAvailabilityStore },
     { provide: AppointmentRepository, useClass: PrismaAppointmentRepository },
@@ -198,6 +208,8 @@ import { PrismaLeadScoreStore } from "./infrastructure/prisma-lead-score.store.j
     GetPortfolioMetricsHandler,
     GetAcquisitionMetricsHandler,
     GetSectorRevenueHandler,
+    GetMadeToOrderMonthlyHandler,
+    GetMadeToOrderByClientHandler,
     GetTerminationStatsHandler,
     AddMarketZoneHandler,
     RemoveMarketZoneHandler,
