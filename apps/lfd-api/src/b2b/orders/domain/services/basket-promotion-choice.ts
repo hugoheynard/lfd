@@ -62,6 +62,11 @@ export const NO_BASKET_PROMOTION: BasketPromotionOutcome = {
  * Entre plusieurs : la plus spécifique (public — le rang de la cible qui
  * admet l'acheteur, L8b —, puis acheminement), puis la plus avantageuse pour
  * le client, puis le plus petit identifiant.
+ *
+ * Une promotion qui ne retire rien à CE panier (portée sans article commun,
+ * seuil non atteint) ne concourt pas : elle ne vise aucun article, et la
+ * laisser gagner sur son seul rang figeait une remise de 0 c à la place
+ * d'une remise réelle (brutus, 2026-10-30).
  */
 export function chooseBasketPromotion(
   candidates: readonly AdmittedPromotion[],
@@ -71,6 +76,9 @@ export function chooseBasketPromotion(
   let best: { outcome: BasketPromotionOutcome; rank: readonly number[] } | null = null;
   for (const promotion of candidates) {
     const outcome = outcomeOf(promotion, lines, classifications);
+    if (outcome.discountCents === 0) {
+      continue;
+    }
     const { publicRank, fulfillmentRank } = targetingRankOf(promotion);
     const rank = [publicRank, fulfillmentRank, outcome.discountCents];
     if (best === null || beats(rank, promotion.id, best.rank, best.outcome.promotionId)) {
