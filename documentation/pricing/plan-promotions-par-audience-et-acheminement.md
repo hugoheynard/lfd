@@ -1795,3 +1795,44 @@ Décisions par mandat de Hugo ; le corps ci-dessus est corrigé.
 - Prérequis : L12 lève la limite « une seule remise de panier »
   (`composeExactOrder`). Le refus de chevauchement à la pose ne s'applique pas
   entre deux promotions cumulables.
+
+## 17. Option documentée, non bâtie — remise par ligne, vérifiable par le client (Hugo, 2026-10-30)
+
+**Exigence de Hugo** : une méthode **fiscalement juste** et **vérifiable par
+le client à peu de décimales** — qu'il puisse refaire le calcul de sa facture
+avec une calculatrice, au centime.
+
+**Aujourd'hui** : une promotion de retrait (point panier) en pourcentage est
+calculée sur l'assiette des lignes éligibles et arrondie UNE fois sur le
+total. Le client voit la remise globale, pas sa répartition : il ne peut pas
+la refaire ligne par ligne, et aucun prix barré par article n'est exact.
+
+**Deux méthodes, comparées** :
+
+|                          | A — arrondi unique (millicentimes)                          | B — arrondi par ligne (centimes affichés)                     |
+| ------------------------ | ----------------------------------------------------------- | ------------------------------------------------------------- |
+| Remise d'une ligne       | calculée en millicentimes, non arrondie                     | arrondie au centime sur la ligne, affichée                    |
+| Total                    | somme des lignes, arrondie une fois                         | somme EXACTE des lignes affichées                             |
+| Égalité avec aujourd'hui | identique au centime                                        | peut différer d'un centime par ligne                          |
+| Vérifiable par le client | non : la somme des lignes affichées peut s'écarter du total | **oui** : tout ce qui s'additionne est affiché, à 2 décimales |
+| Prix barré par article   | indicatif (± 1 ct)                                          | exact                                                         |
+
+**Recommandation : B**, parce qu'elle répond à l'exigence (rien de caché sous
+le centime) :
+
+1. remise de chaque ligne = HT de la ligne × taux, **arrondie au centime
+   (demi au-dessus)**, affichée sur la ligne ;
+2. HT net de la ligne = HT − remise, affiché ;
+3. **total HT par taux de TVA = somme des HT nets affichés** de ce taux ;
+4. TVA = total HT du taux × taux, arrondie une fois par taux ; TTC = HT + TVA ;
+5. chaque montant d'une étape est la somme ou le produit, arrondi au centime,
+   de montants **déjà affichés** — le client refait tout à 2 décimales.
+
+**Conséquences, à trancher avant de bâtir** : B change certains totaux d'un
+centime par rapport au calcul actuel (fin de l'égalité au centime avec
+l'existant, voulue) ; elle touche le calcul exact du hors taxes
+(`composeExactOrder`), la trace des lignes, le bon, la facture et le PDF ; une
+remise en **montant fixe** sur le panier reste globale (pas de répartition par
+ligne sans règle arbitraire) — à afficher comme telle. À confronter aux
+règles de facturation (mentions des réductions par ligne, totaux par taux) et
+à `vitruve` (argent) avant tout bâti.
