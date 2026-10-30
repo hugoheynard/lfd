@@ -15,7 +15,7 @@ import { RecommendationFilter } from "../../services/recommendation-filter.js";
 import { ListMyUsualsHandler } from "../list-my-usuals.handler.js";
 import { ListMyUsualsQuery } from "../list-my-usuals.query.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 const NOW = new Date("2026-10-18T08:00:00.000Z");
 const TODAY = instantToLocal(NOW).day;
@@ -118,7 +118,7 @@ function harness(
     shelf,
     clock,
     new Lineage(lineage),
-    new CatalogViewers(new InMemoryReservationHolders()),
+    new CatalogViewers(new InMemoryServedCompanies()),
   );
   const read = (companyId: string | null, skus: readonly string[] = [], date?: string) =>
     handler.execute(

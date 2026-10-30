@@ -65,3 +65,31 @@ export function reservationHoldersOf(
     activePrincipalId: principal !== null && principal.status === ACTIVE ? principal.id : null,
   };
 }
+
+/** Une société servie : son statut et ses porteurs de réservation, lus ensemble. */
+export interface ServedCompanyRow {
+  readonly status: StandingCompanyStatus;
+  readonly holders: ReservationHolders;
+}
+
+/**
+ * **Le statut d'une société et ses porteurs de réservation, en UNE lecture**
+ * — ce que la fabrique du lecteur du catalogue décide (plan
+ * `plan-pros-en-cours-d-inscription.md`, lot P0). La même relation que
+ * {@link readReservationHolders}, plus le statut de la société elle-même :
+ * le budget de lectures du devis ne bouge pas.
+ *
+ * @returns `null` si la société est inconnue.
+ */
+export async function readServedCompany(
+  prisma: PrismaService,
+  companyId: string,
+): Promise<ServedCompanyRow | null> {
+  const company = await prisma.company.findUnique({
+    where: { id: companyId },
+    select: { status: true, parentCompany: { select: { id: true, status: true } } },
+  });
+  return company === null
+    ? null
+    : { status: company.status, holders: reservationHoldersOf(companyId, company.parentCompany) };
+}

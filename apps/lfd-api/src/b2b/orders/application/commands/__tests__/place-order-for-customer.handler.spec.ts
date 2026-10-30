@@ -80,7 +80,7 @@ import {
   RecordingTimings,
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -355,7 +355,7 @@ function handler(
           new FixedStopwatch(),
         ),
         new FixedClock(PRICED_AT),
-        new CatalogViewers(new InMemoryReservationHolders()),
+        new CatalogViewers(new InMemoryServedCompanies()),
       ),
       new CartAdjustments(
         pickups,
@@ -719,7 +719,7 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
             new FixedStopwatch(),
           ),
           new FixedClock(PRICED_AT),
-          new CatalogViewers(new InMemoryReservationHolders()),
+          new CatalogViewers(new InMemoryServedCompanies()),
         ),
         new CartAdjustments(
           pickups,

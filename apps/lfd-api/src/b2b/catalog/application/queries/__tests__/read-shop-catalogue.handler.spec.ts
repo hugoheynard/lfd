@@ -29,7 +29,7 @@ import { GivenPricesPerKg } from "../../__tests__/price-per-kg-doubles.js";
 import { ShopCataloguePricing } from "../../shop-catalogue-pricing.service.js";
 import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-catalogue.js";
 import { CatalogViewers } from "../../catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../infrastructure/in-memory-served-companies.js";
 import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
 
 /**
@@ -212,7 +212,7 @@ function fixture(
     new FixedClock(NOW),
     new GivenCutoffs(cutoffs),
     new GivenPricesPerKg(),
-    new CatalogViewers(new InMemoryReservationHolders()),
+    new CatalogViewers(new InMemoryServedCompanies()),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }

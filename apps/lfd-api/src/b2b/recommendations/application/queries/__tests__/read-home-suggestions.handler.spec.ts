@@ -21,7 +21,7 @@ import { StaffSuggestionShowcase } from "../../services/staff-suggestion-showcas
 import { ReadHomeSuggestionsHandler } from "../read-home-suggestions.handler.js";
 import { ReadHomeSuggestionsQuery } from "../read-home-suggestions.query.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 const NOW = new Date("2026-10-18T08:00:00.000Z");
 const TODAY = instantToLocal(NOW).day;
@@ -100,7 +100,7 @@ function harness(rules: readonly [string, Partial<StaffSuggestionRuleInput>, num
       new RecommendationFilter(CATALOG, new NoCutoffs(), clock),
       shelf,
       clock,
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     ),
   );
   const read = (skus: readonly string[] = [], companyId: string | null = null) =>

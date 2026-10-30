@@ -63,6 +63,8 @@ import { CatalogViewers } from "./application/catalog-viewers.service.js";
 import { ReservedArticleGuard } from "./application/reserved-article-guard.service.js";
 import { ReservationHoldersReader } from "./domain/ports/reservation-holders.reader.js";
 import { PrismaReservationHoldersReader } from "./infrastructure/prisma-reservation-holders.reader.js";
+import { ServedCompanyReader } from "./domain/ports/served-company.reader.js";
+import { PrismaServedCompanyReader } from "./infrastructure/prisma-served-company.reader.js";
 import { ShopOrderCutoffsReader } from "./domain/ports/shop-order-cutoffs.reader.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffsInForceModule } from "../order-cutoffs/order-cutoffs-in-force.module.js";
@@ -158,6 +160,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     CatalogViewers,
     ReservedArticleGuard,
     { provide: ReservationHoldersReader, useClass: PrismaReservationHoldersReader },
+    { provide: ServedCompanyReader, useClass: PrismaServedCompanyReader },
     { provide: ShopOrderCutoffsReader, useExisting: OrderCutoffsInForce },
     // Le prix ne se décide plus ici (lot D, 2026-10-15) : il se RETRACE
     // depuis le référentiel, une fois au déploiement.

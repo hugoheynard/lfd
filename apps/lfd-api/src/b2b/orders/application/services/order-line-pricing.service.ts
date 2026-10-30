@@ -13,7 +13,11 @@ import {
 } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { minQuantityFor } from "../../../catalog/domain/catalog-min-quantities.js";
 import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
-import { viewerAudience, type CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
+import {
+  pricingCompanyOf,
+  viewerAudience,
+  type CatalogViewer,
+} from "../../../catalog/domain/catalog-viewer.js";
 import { refuseReserved } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
 import {
   ensureMinimumQuantity,
@@ -81,6 +85,7 @@ export class OrderLinePricing {
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
    * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
    * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
+   * @throws {CompanyClosedOrderRefusedError} la société servie est terminée.
    */
   async resolve(
     input: readonly OrderLineRequest[],
@@ -89,7 +94,7 @@ export class OrderLinePricing {
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     const viewer = await this.billingViewer(parties);
-    return this.priceAll(input, parties, { withTiers: false, caller, viewer }, at);
+    return this.priceAll(input, { withTiers: false, caller, viewer }, at);
   }
 
   /**
@@ -108,7 +113,7 @@ export class OrderLinePricing {
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     const viewer = await this.billingViewer(parties);
-    return this.priceAll(input, parties, { withTiers: true, caller, viewer }, at);
+    return this.priceAll(input, { withTiers: true, caller, viewer }, at);
   }
 
   /**
@@ -175,7 +180,6 @@ export class OrderLinePricing {
     const kept = split.kept.map(({ line }) => line);
     const resolved = await this.priceAll(
       kept,
-      parties,
       { withTiers: false, caller, viewer },
       undefined,
       catalogue,
@@ -186,12 +190,13 @@ export class OrderLinePricing {
   private billingViewer(parties: ServedCompany): Promise<CatalogViewer> {
     // Verrouillés compris — pour les refuser par leur nom (S2), jamais pour
     // les tarifer : `refuseReserved` passe avant toute ligne.
-    return this.viewers.forCompany(parties.companyId, "served_and_locked");
+    // Et la société terminée y est refusée par son nom (P0) : devis et
+    // passation, client comme saisie staff, passent tous ici.
+    return this.viewers.forBilling(parties.companyId, "served_and_locked");
   }
 
   private async priceAll(
     input: readonly OrderLineRequest[],
-    parties: ServedCompany,
     {
       withTiers,
       caller,
@@ -294,7 +299,9 @@ export class OrderLinePricing {
 
     const lot = await this.pricer.load({
       articles: lines.map(({ item, quantity }) => ({ article: item.article, quantity })),
-      companyId: parties.companyId,
+      // La société du LECTEUR, jamais l'identifiant brut : servie au public
+      // (P0), elle ne charge ni mercuriale ni tarif de canal (§ 11, B2).
+      companyId: pricingCompanyOf(viewer),
       at,
       caller,
     });

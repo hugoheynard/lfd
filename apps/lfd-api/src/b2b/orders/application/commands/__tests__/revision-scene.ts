@@ -69,7 +69,7 @@ import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import type { OrderIntake } from "../../services/order-intake.service.js";
 import { intakeAt } from "./intake-doubles.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
@@ -226,7 +226,7 @@ export function revisingAt(
       catalog,
       pricer(clock),
       clock,
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     ),
     new CartAdjustments(
       pickups,

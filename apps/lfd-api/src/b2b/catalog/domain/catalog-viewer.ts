@@ -104,3 +104,13 @@ export function viewerHolderIds(viewer: CatalogViewer): readonly string[] {
   }
   return viewer.kind === "staff" && viewer.regarding !== null ? holderIds(viewer.regarding) : [];
 }
+
+/**
+ * **La société à passer au tarificateur** — celle du lecteur pro, `null`
+ * sinon (`plan-pros-en-cours-d-inscription.md`, § 11, B2). Le tarificateur
+ * charge mercuriale et tarif de canal PAR société, indépendamment du lecteur :
+ * une société servie au public ne lui passe donc jamais son identifiant brut.
+ */
+export function pricingCompanyOf(viewer: CatalogViewer): string | null {
+  return viewer.kind === "pro" ? viewer.holders.companyId : null;
+}

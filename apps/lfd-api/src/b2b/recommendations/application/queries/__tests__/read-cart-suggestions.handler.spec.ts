@@ -29,7 +29,7 @@ import { StaffSuggestionShowcase } from "../../services/staff-suggestion-showcas
 import { ReadCartSuggestionsHandler } from "../read-cart-suggestions.handler.js";
 import { ReadCartSuggestionsQuery } from "../read-cart-suggestions.query.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 const NOW = new Date("2026-10-18T08:00:00.000Z");
 const TODAY = instantToLocal(NOW).day;
@@ -123,7 +123,7 @@ function harness(
     filter,
     shelf,
     clock,
-    new CatalogViewers(new InMemoryReservationHolders()),
+    new CatalogViewers(new InMemoryServedCompanies()),
   );
   const coPurchases = new CoPurchases(pairs);
   const boughtWith = new BoughtWithShowcase(
@@ -131,7 +131,7 @@ function harness(
     filter,
     shelf,
     clock,
-    new CatalogViewers(new InMemoryReservationHolders()),
+    new CatalogViewers(new InMemoryServedCompanies()),
   );
   const handler = new ReadCartSuggestionsHandler(
     showcase,

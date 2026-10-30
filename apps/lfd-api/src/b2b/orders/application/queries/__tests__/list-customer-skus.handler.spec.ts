@@ -9,7 +9,7 @@ import { ListCustomerSkusHandler } from "../list-customer-skus.handler.js";
 import { ListCustomerSkusQuery } from "../list-customer-skus.query.js";
 import { VIENNOISERIES } from "../../../../catalog/domain/__tests__/families.fixture.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 
 /** Le catalogue d'AUJOURD'HUI : le croissant a augmenté, la brioche a disparu. */
 const CATALOG: Record<string, UnsealedCatalogItem> = {
@@ -70,7 +70,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([CROISSANT]),
       catalog,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -85,7 +85,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([CROISSANT]),
       catalog,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -101,7 +101,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([BRIOCHE_RETIREE]),
       catalog,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -117,7 +117,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([BRIOCHE_RETIREE]),
       catalog,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -130,7 +130,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([CROISSANT, BRIOCHE_RETIREE]),
       catalog,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const skus = (await handler.execute(new ListCustomerSkusQuery("c1"))).map((s) => s.sku);
@@ -154,7 +154,7 @@ describe("ListCustomerSkusHandler", () => {
         habits([CROISSANT, CROISSANT_ANCIEN]),
         catalog,
         new Lineage({ "VIE-001-2": "VIE-001" }),
-        new CatalogViewers(new InMemoryReservationHolders()),
+        new CatalogViewers(new InMemoryServedCompanies()),
       );
 
       const stats = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -176,7 +176,7 @@ describe("ListCustomerSkusHandler", () => {
         habits([CROISSANT_ANCIEN]),
         catalog,
         new Lineage({ "VIE-001-2": "VIE-001" }),
-        new CatalogViewers(new InMemoryReservationHolders()),
+        new CatalogViewers(new InMemoryServedCompanies()),
       );
 
       const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));
@@ -205,7 +205,7 @@ describe("ListCustomerSkusHandler", () => {
       habits([CROISSANT]),
       locked,
       new Lineage(),
-      new CatalogViewers(new InMemoryReservationHolders()),
+      new CatalogViewers(new InMemoryServedCompanies()),
     );
 
     const [stat] = await handler.execute(new ListCustomerSkusQuery("c1"));

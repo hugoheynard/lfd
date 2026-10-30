@@ -15,7 +15,12 @@ import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
 import { CatalogViewers } from "./catalog-viewers.service.js";
-import { anonymousViewer, viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
+import {
+  anonymousViewer,
+  pricingCompanyOf,
+  viewerAudience,
+  type CatalogViewer,
+} from "../domain/catalog-viewer.js";
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import {
   inShopLanguage,
@@ -117,8 +122,12 @@ export class ShopCataloguePricing {
     // Le lecteur d'une société porte sa réservation (`plan-articles-sur-mesure.md`,
     // § 6) : le rayon reconnu liste aussi, verrouillé, ce qui est réservé à un
     // autre compte et réglé « visible, non commandable » (S7).
+    //
+    // Et c'est la fabrique qui décide si la société est servie en pro
+    // (`plan-pros-en-cours-d-inscription.md`, P0) : servie au public, elle ne
+    // passe PAS son identifiant au tarificateur — ni mercuriale, ni tarif de canal.
     const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
-    return this.pricedFor(viewer, companyId, language);
+    return this.pricedFor(viewer, pricingCompanyOf(viewer), language);
   }
 
   /**

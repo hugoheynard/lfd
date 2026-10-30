@@ -431,6 +431,7 @@
   "test/sale-reference-usage.e2e-spec.ts": 5548,
   "test/sale-unit-change.e2e-spec.ts": 8929,
   "test/schema.e2e-spec.ts": 3429,
+  "test/served-company-status.e2e-spec.ts": 14979,
   "test/shipment-rank-handover.e2e-spec.ts": 7140,
   "test/shipment-rank-sheets.e2e-spec.ts": 8043,
   "test/shop-cart.e2e-spec.ts": 6279,
