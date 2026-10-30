@@ -83,3 +83,22 @@ model PromotionScopeRule {
   @@map("promotion_scope_rules")
   @@schema("public")
 }
+
+/// **Les réglages du contexte des promotions** — une ligne par clé (plan
+/// `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+/// § 13.5, § 14 S-bascule). Une seule clé aujourd'hui, `promotions_source` :
+/// `legacy` | `shadow` | `promotions`, la source que le calcul lit. Créée à
+/// `legacy` par la migration de la reprise (L4) ; passée à `promotions` par
+/// celle de la bascule (L8), dans la transaction de son contrôle d'égalité.
+/// En BASE et non en variable d'environnement : aucun déploiement ne peut
+/// servir le nouveau chemin sans la reprise contrôlée. Aucun lecteur avant L5.
+model PromotionSetting {
+  /// Tenue par un CHECK (`promotions_source`).
+  key       String   @id
+  /// Tenue par un CHECK selon la clé.
+  value     String
+  updatedAt DateTime @default(now()) @map("updated_at") @db.Timestamptz(3)
+
+  @@map("promotion_settings")
+  @@schema("public")
+}

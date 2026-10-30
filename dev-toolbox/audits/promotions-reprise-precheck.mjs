@@ -15,7 +15,11 @@
  * - les règles de prix d'étage `promotion` non archivées, par forme ;
  * - 🔴 BLOQUANT : celles que la reprise refuserait (`increase`, audience
  *   `segment`) et les paires `product`/`variant` sur un même SKU, une même
- *   audience, à fenêtres chevauchantes.
+ *   audience, à fenêtres chevauchantes ;
+ * - 🔴 BLOQUANT (ajouté le 2026-10-30) : les remises servies que le contrôle de
+ *   fin de la reprise refuse — une famille réglée à contre-sens du mode, un
+ *   « seulement » qui n'inclut rien. Lignes anciennes (avant le 2026-10-23) :
+ *   l'agrégat `Promotion` ne les relirait pas.
  *
  * Sortie : 0 = rien de bloquant ; 1 = au moins un compte bloquant ; 2 = URL absente.
  *
@@ -76,11 +80,11 @@ const PROMOTION_RULES = `
    WHERE stage = 'promotion' AND archived_at IS NULL
    GROUP BY 1, 2, 3, 4, 5 ORDER BY 6 DESC`;
 
-/** BLOQUANT : ce que la reprise ne sait pas exprimer. */
+/** BLOQUANT : ce que la reprise ne sait pas exprimer — archivées comprises, comme elle. */
 const REFUSED = `
   SELECT id, label, nature, direction, audience_type
     FROM public.price_rules
-   WHERE stage = 'promotion' AND archived_at IS NULL
+   WHERE stage = 'promotion'
      AND (direction = 'increase' OR audience_type = 'segment')
    ORDER BY id`;
 
@@ -97,6 +101,34 @@ const PRODUCT_VARIANT_PAIRS = `
    WHERE p.scope_type = 'product' AND p.stage = 'promotion' AND p.archived_at IS NULL
    ORDER BY p.id`;
 
+/** Les remises servies, une ligne par site et clientèle (prédicat de la reprise). */
+const SERVED = `
+  SELECT s.id, s.label, d.clientele, d.scope
+    FROM public.pickup_addresses s
+   CROSS JOIN LATERAL (VALUES
+     ('b2b', s.discount_scope::text, s.discount_mode IS NOT NULL AND s.discount_value > 0 AND s.discount_for_b2b),
+     ('b2c', s.b2c_discount_scope::text, s.b2c_discount_mode IS NOT NULL AND s.b2c_discount_value > 0)
+   ) AS d(clientele, scope, served)
+   WHERE s.archived_at IS NULL AND d.served`;
+
+/** BLOQUANT : une famille à contre-sens du mode (exclue en « seulement », incluse en « tous sauf »). */
+const REVERSED_FAMILIES = `
+  SELECT v.id, v.label, v.clientele, v.scope, r.target_id AS category
+    FROM (${SERVED}) v
+    JOIN public.pickup_discount_rules r
+      ON r.site_id = v.id AND r.audience::text = v.clientele AND r.target::text = 'category'
+   WHERE r.eligible <> (v.scope = 'only')
+   ORDER BY v.label, v.clientele`;
+
+/** BLOQUANT : un « seulement » sans aucune inclusion. */
+const ONLY_INCLUDES_NOTHING = `
+  SELECT v.id, v.label, v.clientele
+    FROM (${SERVED}) v
+   WHERE v.scope = 'only'
+     AND NOT EXISTS (SELECT 1 FROM public.pickup_discount_rules r
+                      WHERE r.site_id = v.id AND r.audience::text = v.clientele AND r.eligible)
+   ORDER BY v.label, v.clientele`;
+
 const client = new Client({ connectionString: url });
 await client.connect();
 let blocking = 0;
@@ -107,6 +139,8 @@ try {
   const rules = (await client.query(PROMOTION_RULES)).rows;
   const refused = (await client.query(REFUSED)).rows;
   const pairs = (await client.query(PRODUCT_VARIANT_PAIRS)).rows;
+  const reversed = (await client.query(REVERSED_FAMILIES)).rows;
+  const empty = (await client.query(ONLY_INCLUDES_NOTHING)).rows;
   await client.query("ROLLBACK");
 
   console.log(
@@ -152,7 +186,15 @@ try {
       `  ${p.product_rule} (product) × ${p.variant_rule} (variant) · SKU ${p.sku} · audience ${p.audience_type}`,
     );
   }
-  blocking = refused.length + pairs.length;
+  console.log(`🔴 Remises avec une famille à contre-sens du mode : ${reversed.length}`);
+  for (const r of reversed) {
+    console.log(`  ${r.label} (${r.id}) · ${r.clientele} · ${r.scope} · famille ${r.category}`);
+  }
+  console.log(`🔴 Remises « seulement » sans inclusion : ${empty.length}`);
+  for (const e of empty) {
+    console.log(`  ${e.label} (${e.id}) · ${e.clientele}`);
+  }
+  blocking = refused.length + pairs.length + reversed.length + empty.length;
   console.log(
     blocking === 0
       ? "\nRien de bloquant : la reprise peut être bâtie (L4)."

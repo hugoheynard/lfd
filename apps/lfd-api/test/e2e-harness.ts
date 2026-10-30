@@ -263,6 +263,12 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
         // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
         await ensureStaffRoleDefinitions(prisma);
+        // La source du calcul des promotions est posée par migration
+        // (`20261031120000_la_reprise_des_promotions`, à `legacy`) et le
+        // `TRUNCATE` l'emporte : remise ici, pour que son absence ne soit
+        // jamais un état que le calcul rencontre (choix du 2026-10-30, plutôt
+        // qu'un lecteur qui tiendrait l'absence pour `legacy`).
+        await ensurePromotionsSource(prisma);
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
         // donc qu'à effacer ce qu'un TEST y aurait ajouté.
@@ -535,6 +541,15 @@ async function assertDatabaseReady(prisma: PrismaService): Promise<void> {
 async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> {
   // La MÊME fonction que `db:seed:roles` (2026-10-07) : une seule graine fait foi.
   await resetRolesToSeed(prisma);
+}
+
+/** La ligne `promotions_source = legacy`, à l'identique de la migration qui la pose. */
+async function ensurePromotionsSource(prisma: PrismaService): Promise<void> {
+  await prisma.promotionSetting.upsert({
+    where: { key: "promotions_source" },
+    create: { key: "promotions_source", value: "legacy" },
+    update: { value: "legacy" },
+  });
 }
 
 async function ensureSalesContexts(prisma: PrismaService): Promise<void> {
