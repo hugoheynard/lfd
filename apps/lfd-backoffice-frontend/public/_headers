@@ -1,0 +1,10 @@
+# Cloudflare Pages recopie les <link rel="modulepreload"> de index.html en
+# en-têtes HTTP « Link » (Early Hints). Leurs adresses sont RELATIVES
+# (« chunk-….js ») et le navigateur les résout contre l'adresse demandée, sans
+# lire le <base href="/"> de la page : sur /admin/journal il chargeait
+# /admin/chunk-….js, que Pages servait en index.html (« MIME type text/html »),
+# et l'écran ne se chargeait pas (constaté en production le 2026-10-30).
+# On retire ces en-têtes : le navigateur précharge depuis le HTML, qui connaît
+# sa base.
+/*
+  ! Link
