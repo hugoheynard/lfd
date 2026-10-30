@@ -619,3 +619,28 @@ porte la politique. Défauts : les plus souples (Hugo, 2026-10-30), sauf le paie
 Chaque changement est journalisé (qui, quand, avant / après). Le plan dédié
 (préalable aux promotions par sous-audience) détaillera où chaque réglage est
 lu, et passera par `vitruve`.
+
+## 11. Un modèle global, tout de suite (Hugo, 2026-10-30)
+
+Décision : **la remise d'un point de retrait devient une promotion comme une
+autre**, pas un second système. Les points de retrait sont une
+sous-catégorie de l'acheminement « retrait » (tous · retrait · retrait au
+point X · livraison). Une promotion porte donc trois axes : **public**
+(audience / sous-audience, § 9), **acheminement**, et **portée** reprise du
+modèle de la remise de retrait (`settings.prisma`, `PickupDiscountScope`
+`all_except | only` + règles par famille ou produit, produit > famille, par
+clientèle) — une seule mécanique de portée, partagée.
+
+Conséquences, à traiter dans la refonte du plan (avant `vitruve`) :
+
+- reprise des remises de retrait existantes (taux par site et par clientèle,
+  portées et exceptions) en promotions : **migration de données** — relue par
+  `lecteur-de-migrations`, avec retour arrière ;
+- ordre de calcul : aujourd'hui la remise de retrait est un ajustement de
+  panier appliqué APRÈS la promotion, et elles se cumulent ; dans le modèle
+  unique, dire comment deux promotions s'appliquent ensemble (cumul ou la
+  meilleure) sans changer en silence les prix servis ;
+- la contrainte anti-chevauchement ne sait pas lire des exceptions : règle de
+  priorité ou refus à la pose ;
+- écrans : la fiche d'un site (Réglages › Sites) garde-t-elle un raccourci
+  vers « ses » promotions ?
