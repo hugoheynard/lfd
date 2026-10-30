@@ -1,0 +1,84 @@
+:host {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+// ── Une mercuriale posée : son entête, puis sa table ────────────────────────
+
+.tf-head-title {
+  display: flex;
+  align-items: center;
+  gap: var(--fold-space-sm, 0.5rem);
+}
+
+// Le champ de renommage prend la place du titre, sans faire sauter la ligne :
+// une entête qui change de hauteur en cliquant « Renommer » ferait bouger la
+// table sous les yeux.
+.tf-rename {
+  min-width: 18rem;
+}
+
+// Le panneau du popover de clôture. Une largeur bornée : les deux phrases qu'il
+// porte sont là pour être LUES avant de cliquer, et un paragraphe pleine largeur
+// dans une couche flottante ne se lit pas.
+.tf-close-panel {
+  max-width: 26rem;
+
+  p {
+    margin: 0 0 var(--fold-space-sm, 0.5rem);
+    font-size: var(--fold-text-base, 0.875rem);
+
+    &:last-child {
+      margin-bottom: 0;
+    }
+  }
+}
+
+.tf-name {
+  margin: 0;
+  font-size: 1.0625rem;
+}
+
+.tf-meta {
+  flex: 1 1 auto;
+  margin: 0;
+  font-size: var(--fold-text-base, 0.875rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tf-head-actions {
+  display: flex;
+  gap: var(--fold-space-sm, 0.5rem);
+  flex-wrap: wrap;
+}
+
+.tf-sku {
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}
+
+.tf-impact {
+  font-weight: 600;
+
+  &.is-down {
+    color: var(--fold-color-success, currentcolor);
+  }
+
+  // `alert` et non « danger » : fold ne porte pas ce second nom, et un `var()`
+  // qui vise un jeton inexistant tombe sur son repli SANS que rien ne rougisse
+  // — la hausse se serait affichée dans la couleur du texte courant, donc à
+  // l'identique d'une baisse. C'est la porte `fold-tokens` qui l'a vu.
+  &.is-up {
+    color: var(--fold-color-alert-text, currentcolor);
+  }
+}
+
+.tf-note {
+  display: block;
+  font-size: var(--fold-text-xs, 0.75rem);
+  color: var(--fold-color-text-muted);
+  font-variant-numeric: tabular-nums;
+}

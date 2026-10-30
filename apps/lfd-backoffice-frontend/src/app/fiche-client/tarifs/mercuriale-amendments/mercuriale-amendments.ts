@@ -23,6 +23,7 @@ import {
   FoldTextareaComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { CompanyPricingService } from '../company-pricing.service';
 import {
@@ -73,6 +74,7 @@ export class MercurialeAmendments {
 
   private readonly pricing = inject(CompanyPricingService);
   private readonly notify = inject(NotifyService);
+  private readonly permissions = inject(PermissionsStore);
 
   protected readonly maxLength = AMENDMENT_REASON_MAX_LENGTH;
   protected readonly gesture = signal<Gesture>(null);
@@ -84,7 +86,13 @@ export class MercurialeAmendments {
   protected readonly refusal = signal<string | null>(null);
   protected readonly saving = signal(false);
 
-  protected readonly amendable = computed(() => this.mercuriale().status !== 'expired');
+  /**
+   * Un avenant est une écriture : ni sur une mercuriale terminée, ni sans
+   * `b2b_pricing:write` — le serveur la refuserait (403), l'écran ne l'offre pas.
+   */
+  protected readonly amendable = computed(
+    () => this.mercuriale().status !== 'expired' && this.permissions.can('b2b_pricing:write'),
+  );
   protected readonly amendments = computed<readonly PosedMercurialeAmendmentView[]>(
     () => this.mercuriale().amendments ?? [],
   );

@@ -1,11 +1,13 @@
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type {
+  StaffPermission,
   AmendCompanyMercurialePayload,
   AmendedMercurialeResponse,
   PosedMercurialeView,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { CompanyPricingService } from '../company-pricing.service';
 import { MercurialeAmendments } from './mercuriale-amendments';
@@ -68,12 +70,15 @@ const MERCURIALE: PosedMercurialeView = {
   ],
 };
 
-function mount(mercuriale: PosedMercurialeView = MERCURIALE) {
+const CAN: readonly StaffPermission[] = ['b2b_pricing:read', 'b2b_pricing:write'];
+
+function mount(mercuriale: PosedMercurialeView = MERCURIALE, granted = CAN) {
   const pricing = new StubPricing();
   TestBed.configureTestingModule({
     providers: [
       { provide: CompanyPricingService, useValue: pricing },
       { provide: NotifyService, useValue: new StubNotify() },
+      { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
     ],
   });
   const fixture: ComponentFixture<MercurialeAmendments> =
@@ -107,6 +112,14 @@ describe('<app-mercuriale-amendments>', () => {
 
     expect(host.querySelector('[data-amendments]')).not.toBeNull();
     expect(host.querySelector('[data-amend-price]')).toBeNull();
+  });
+
+  it('ne propose aucun geste à un lecteur sans `b2b_pricing:write`, mais garde la liste', () => {
+    const { host } = mount(MERCURIALE, ['b2b_pricing:read']);
+
+    expect(host.querySelector('[data-amendments]')).not.toBeNull();
+    expect(host.querySelector('[data-amend-price]')).toBeNull();
+    expect(host.querySelector('[data-amend-end]')).toBeNull();
   });
 
   it('change un prix : envoie l’avenant qui arrête et rouvre, puis prévient le parent', async () => {
