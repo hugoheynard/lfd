@@ -1,5 +1,6 @@
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { CustomerAudience } from "./customer-audience.js";
+import type { DiscountLabelView } from "./discount-label.js";
 
 /**
  * **Ce que couvre la remise d'un point de retrait**, sans zod — la boutique
@@ -34,6 +35,11 @@ export interface PickupDiscountProductRule {
 /** La remise d'un point pour UNE clientèle. */
 export interface AudiencePickupDiscount {
   readonly adjustment: CartAdjustment;
+  /**
+   * Le libellé de la promotion pour CETTE clientèle (L8b, § 15.8) ; absent
+   * sous l'ancien chemin et sur la fiche d'un site, qui n'en a pas.
+   */
+  readonly label?: DiscountLabelView | undefined;
   readonly scope: PickupDiscountScope;
   readonly categories: readonly PickupDiscountCategoryRule[];
   readonly products: readonly PickupDiscountProductRule[];

@@ -64,12 +64,18 @@ export class AdminPromotionsController {
     private readonly queries: QueryBus,
   ) {}
 
-  /** Toutes, archivées comprises ; `pickupId` restreint à celles de ce point. */
+  /**
+   * Toutes, archivées comprises ; `pickupId` restreint à celles de ce point,
+   * `companyId` à celles dont le public nomme cette société.
+   */
   @Get()
   @RequireAnyPermission("b2b_pricing:read", "lfc_site_settings:read")
-  list(@Query("pickupId") pickupId: string | undefined): Promise<PromotionListView> {
+  list(
+    @Query("pickupId") pickupId: string | undefined,
+    @Query("companyId") companyId: string | undefined,
+  ): Promise<PromotionListView> {
     return this.queries.execute<ListPromotionsQuery, PromotionListView>(
-      new ListPromotionsQuery(pickupId === undefined || pickupId === "" ? null : pickupId),
+      new ListPromotionsQuery(presentOrNull(pickupId), presentOrNull(companyId)),
     );
   }
 
@@ -157,4 +163,9 @@ export class AdminPromotionsController {
       new ArchivePromotionCommand(id, staffUserId, payload.reason, PRICING_SURFACE),
     );
   }
+}
+
+/** Un paramètre de requête absent ou vide ne filtre pas. */
+function presentOrNull(value: string | undefined): string | null {
+  return value === undefined || value === "" ? null : value;
 }

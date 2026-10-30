@@ -1,6 +1,12 @@
 import { PromotionWrongSurfaceError } from "../errors/promotion-errors.js";
 import type { PromotionAudience } from "../promotion-audience.js";
-import { audiencesMeet, commonPeriod, fulfillmentsMeet } from "../promotion-overlap.js";
+import { PromotionAudienceSet } from "../promotion-audience-set.js";
+import {
+  audienceSetsMeet,
+  audiencesMeet,
+  commonPeriod,
+  fulfillmentsMeet,
+} from "../promotion-overlap.js";
 import { PRICING_SURFACE, assertSurfaceAdmits } from "../promotion-surface.js";
 import { FROM, UNTIL } from "./promotion-terms.fixture.js";
 
@@ -38,6 +44,36 @@ describe("audiencesMeet — un acheteur que les deux publics admettent", () => {
         { kind: "company", companyId: "c_site" },
       ),
     ).toBe(true);
+  });
+});
+
+describe("audienceSetsMeet — une promotion panier par commande, publics à plusieurs cibles (L8b)", () => {
+  const set = (...targets: PromotionAudience[]) => PromotionAudienceSet.of(targets);
+
+  it("invités contre inscrits : aucun acheteur commun", () => {
+    expect(audienceSetsMeet(set(of("individuals_guest")), set(of("individuals_registered")))).toBe(
+      false,
+    );
+  });
+
+  it("particuliers contre {inscrits, pros} : les inscrits se rencontrent", () => {
+    expect(
+      audienceSetsMeet(set(of("individuals")), set(of("individuals_registered"), of("pros"))),
+    ).toBe(true);
+  });
+
+  it("énumère les sociétés nommées des DEUX ensembles", () => {
+    const left = set({ kind: "company_and_sites", companyId: "c_principal" }, of("individuals"));
+    const right = set(of("individuals_guest"), { kind: "company", companyId: "c_site" });
+    // Le site de droite suit le principal de gauche : sans lui dans
+    // l'énumération, ils ne se rencontreraient que par les particuliers.
+    expect(
+      audienceSetsMeet(
+        set({ kind: "company_and_sites", companyId: "c_principal" }),
+        set({ kind: "company", companyId: "c_site" }),
+      ),
+    ).toBe(true);
+    expect(audienceSetsMeet(left, right)).toBe(true);
   });
 });
 

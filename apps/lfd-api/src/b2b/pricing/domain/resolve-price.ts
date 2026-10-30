@@ -19,7 +19,7 @@ import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-er
 import { applies, rejectionCauseOf, winnerOf } from "./specificity.js";
 import { ladderAsRule } from "./volume-ladder.js";
 import { promotionRulesFor } from "./promotion-as-rule.js";
-import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 
@@ -137,6 +137,7 @@ export function resolvePrice(
       stage,
       ruleId: winner.id,
       label: winner.label,
+      ...(winner.labels === undefined ? {} : { labels: winner.labels }),
       scope: winner.scope,
       // Arrondi pour l'AFFICHAGE seulement : `running` reste exact et poursuit
       // la chaîne. Reprendre cette valeur arrondie serait l'arrondi par étage
@@ -241,7 +242,7 @@ export interface PriceInputs {
    * 🔴 **Obligatoire, pour la même raison que `ladders`** : `[]` est une
    * déclaration — la source `legacy` n'en charge aucune, et le dit.
    */
-  readonly promotions: readonly LivePromotion[];
+  readonly promotions: readonly AdmittedPromotion[];
 }
 
 /**

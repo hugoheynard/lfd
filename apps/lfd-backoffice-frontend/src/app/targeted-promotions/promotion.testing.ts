@@ -14,7 +14,9 @@ export function promotionView(over: Partial<PromotionView> = {}): PromotionView 
     stacksOverMercuriale: false,
     validFrom: '2026-11-01T00:00:00.000Z',
     validTo: null,
+    audiences: [{ kind: 'everyone', companyId: null }],
     audience: { kind: 'everyone', companyId: null },
+    audienceLabels: { individuals: null, pros: null },
     fulfillment: { kind: 'any', pickupId: null },
     scope: {
       mode: 'only',

@@ -44,6 +44,11 @@ export function jsonSteps(steps: readonly PriceStepView[]): Prisma.InputJsonValu
     stage: step.stage,
     ruleId: step.ruleId,
     label: step.label,
+    // Les trois langues d'une promotion (L8b, § 15.12 Q1) — absentes de toute
+    // autre étape, et le lecteur les défaillit (`priceStepsSchema`).
+    ...(step.labels === undefined
+      ? {}
+      : { labels: { fr: step.labels.fr, en: step.labels.en, it: step.labels.it } }),
     resultMillicents: step.resultMillicents,
     // 🔴 **Le champ que le lecteur attendait depuis le 2026-09-03.**
     //

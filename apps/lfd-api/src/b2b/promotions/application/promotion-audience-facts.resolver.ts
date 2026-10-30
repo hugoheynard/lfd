@@ -63,9 +63,22 @@ export class PromotionAudienceFactsResolver {
     if (known.companyStatus !== undefined) {
       return known.companyStatus;
     }
-    if (!candidates.some((promotion) => audienceNeedsStatus(promotion.audience))) {
+    if (!candidates.some(needsStatus)) {
       return "unknown";
     }
     return this.statuses.companyStatusOf(known.companyId);
   }
+}
+
+/**
+ * Une promotion demande le statut si l'une de ses cibles le demande, ou si
+ * elle porte un libellé d'audience : le libellé Pros ou Particuliers se
+ * choisit sur le statut (L8b, § 15.8), sans quoi l'acheteur lirait le commun.
+ */
+function needsStatus(promotion: LivePromotion): boolean {
+  return (
+    promotion.audiences.some(audienceNeedsStatus) ||
+    promotion.audienceLabels.individuals !== null ||
+    promotion.audienceLabels.pros !== null
+  );
 }

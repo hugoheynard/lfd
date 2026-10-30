@@ -16,7 +16,10 @@ import { money } from "./order-sheet-pdf-format.js";
  * - « Remise retrait (5 %) » quand le point n'a pas de nom figé ;
  * - « Remise retrait Le Labo » quand la règle n'a pas été figée (commande
  *   antérieure au snapshot) : on ne la déduit pas d'une division ;
- * - « … sur X € éligibles » quand une ligne est exclue de l'assiette.
+ * - « … sur X € éligibles » quand une ligne est exclue de l'assiette ;
+ * - « Offre de rentrée (5 %) » quand la commande a figé le libellé de la
+ *   promotion panier (L8b, § 15.8) : il remplace « Remise retrait <point> ».
+ *   Une commande d'avant n'en a pas, et garde le libellé du point.
  */
 
 /** Points de base par point de pourcentage : 500 bp = 5 %. */
@@ -51,13 +54,18 @@ export interface PickupDiscountLabelInput {
   readonly site: string | null;
   /** L'assiette éligible, en centimes — `null` quand aucune ligne n'est exclue. */
   readonly eligibleCents: number | null;
+  /** Le libellé figé de la promotion, en français ; absent = commande d'avant L8b. */
+  readonly promotionLabel?: string | undefined;
 }
 
 /** Le libellé, assemblé — rien n'y est deviné. */
 export function pickupDiscountLabel(input: PickupDiscountLabelInput): string {
+  const name =
+    input.promotionLabel === undefined
+      ? ["Remise retrait", ...(input.site === null ? [] : [input.site])]
+      : [input.promotionLabel];
   return [
-    "Remise retrait",
-    ...(input.site === null ? [] : [input.site]),
+    ...name,
     ...(input.adjustment === null ? [] : [`(${adjustmentRuleLabel(input.adjustment)})`]),
     ...(input.eligibleCents === null ? [] : [`sur ${money(input.eligibleCents)} éligibles`]),
   ].join(" ");

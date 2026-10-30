@@ -1,11 +1,39 @@
 import { UnreadablePromotionRowError } from "../../domain/errors/promotion-errors.js";
 import { Promotion } from "../../domain/promotion.js";
+import { PromotionAudienceSet } from "../../domain/promotion-audience-set.js";
 import { FROM, basketTerms, lineTerms } from "../../domain/__tests__/promotion-terms.fixture.js";
+import {
+  audienceTargetRowsOf,
+  type PromotionAudienceTargetRow,
+} from "../promotion-audience-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence, type PromotionRow } from "../promotion-rows.js";
 
 function rowOf(promotion: Promotion): PromotionRow {
   return { ...toPersistence(promotion), origin: null };
 }
+
+/** Les cibles telles que l'adaptateur les écrit, à identifiants numérotés. */
+function targetsOf(promotion: Promotion): PromotionAudienceTargetRow[] {
+  let next = 0;
+  return audienceTargetRowsOf(promotion, () => `t_${(next += 1)}`);
+}
+
+/** Relire une promotion comme le dépôt : sa ligne, sa portée, ses cibles. */
+function reread(promotion: Promotion, row: PromotionRow = rowOf(promotion)): Promotion {
+  return toDomain(row, scopeRuleRowsOf(promotion), targetsOf(promotion));
+}
+
+const THREE_PUBLICS = lineTerms({
+  audiences: PromotionAudienceSet.of([
+    { kind: "individuals_registered" },
+    { kind: "pros" },
+    { kind: "company", companyId: "co_1" },
+  ]),
+  audienceLabels: {
+    individuals: { fr: "Offre inscrits", en: "Members offer", it: null },
+    pros: { fr: "Offre pros", en: null, it: null },
+  },
+});
 
 const SCOPED = lineTerms({
   scope: {
@@ -34,8 +62,38 @@ describe("les mappers de la promotion", () => {
     const promotion = Promotion.pose("promo_1", terms, "staff_1", FROM)
       .pause("staff_1", FROM)
       .archive("staff_2", FROM, "fin");
-    const back = toDomain(rowOf(promotion), scopeRuleRowsOf(promotion));
-    expect(back.toPersistence()).toEqual(promotion.toPersistence());
+    expect(reread(promotion).toPersistence()).toEqual(promotion.toPersistence());
+  });
+
+  it("aller-retour sans perte d'un public à trois cibles et de ses libellés d'audience (L8b)", () => {
+    const promotion = Promotion.pose("promo_1", THREE_PUBLICS, "staff_1", FROM);
+    expect(reread(promotion).toPersistence()).toEqual(promotion.toPersistence());
+  });
+
+  it("projette un public à plusieurs cibles en `several`, une cible seule en elle-même", () => {
+    const several = rowOf(Promotion.pose("promo_1", THREE_PUBLICS, "staff_1", FROM));
+    expect([several.audienceKind, several.audienceCompanyId]).toEqual(["several", null]);
+    const one = rowOf(
+      Promotion.pose(
+        "promo_2",
+        lineTerms({ audience: { kind: "company", companyId: "co_1" } }),
+        "staff_1",
+        FROM,
+      ),
+    );
+    expect([one.audienceKind, one.audienceCompanyId]).toEqual(["company", "co_1"]);
+  });
+
+  it("refuse une promotion sans cible plutôt que de relire la projection", () => {
+    const promotion = Promotion.pose("promo_1", lineTerms(), "staff_1", FROM);
+    expect(() => toDomain(rowOf(promotion), [], [])).toThrow(UnreadablePromotionRowError);
+  });
+
+  it("garde `tous sauf les pros actifs` d'une reprise, tel quel", () => {
+    const promotion = Promotion.pose("pd_1", basketTerms(), "system:reprise-promotions", FROM);
+    expect(reread(promotion).terms.audiences.targets).toEqual([
+      { kind: "everyone_but_active_pros" },
+    ]);
   });
 
   it("compose l'identifiant d'une règle de portée comme la reprise", () => {
@@ -54,7 +112,9 @@ describe("les mappers de la promotion", () => {
       FROM,
     );
     const origin = { kind: "pickup_discount", siteId: "site", clientele: "b2c" };
-    expect(toDomain({ ...rowOf(promotion), origin }, []).toPersistence().origin).toEqual(origin);
+    expect(reread(promotion, { ...rowOf(promotion), origin }).toPersistence().origin).toEqual(
+      origin,
+    );
   });
 
   it.each([
@@ -65,7 +125,7 @@ describe("les mappers de la promotion", () => {
     ["une origine inconnue", { origin: { kind: "ailleurs" } }],
   ])("refuse en la nommant une ligne avec %s", (_case, patch) => {
     const promotion = Promotion.pose("promo_1", lineTerms(), "staff_1", FROM);
-    expect(() => toDomain({ ...rowOf(promotion), ...patch }, [])).toThrow(
+    expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
       UnreadablePromotionRowError,
     );
   });

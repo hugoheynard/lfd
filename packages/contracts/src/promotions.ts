@@ -61,10 +61,36 @@ export type PromotionsSourceValue = "legacy" | "shadow" | "promotions";
 
 const textSchema = z.string().trim().min(1).max(200);
 
+const labelSchema = z.object({
+  fr: textSchema,
+  en: textSchema.nullable(),
+  it: textSchema.nullable(),
+});
+
+/** Une cible du public — `companyId` pour « une société » (± ses sites) seulement. */
+const audienceTargetSchema = z.object({
+  kind: z.enum(PROMOTION_AUDIENCE_KIND_VALUES),
+  companyId: z.string().min(1).nullable(),
+});
+
+/**
+ * La projection d'un public à plusieurs cibles sur une seule (`audience` de
+ * la vue) — gardée pour les lecteurs d'avant L8b, lue par personne de neuf.
+ */
+export const SEVERAL_AUDIENCES = "several";
+
 /** Les termes d'une promotion, tels que l'éditeur les envoie (L8). */
 export const promotionTermsPayloadSchema = z.object({
   internalName: textSchema,
-  label: z.object({ fr: textSchema, en: textSchema.nullable(), it: textSchema.nullable() }),
+  /** Le libellé COMMUN — le repli de chaque audience. */
+  label: labelSchema,
+  /**
+   * Les libellés Particuliers / Pros (L8b) — facultatifs, ils remplacent le
+   * commun pour leur audience (§ 15.12 Q2). Absent = aucun.
+   */
+  audienceLabels: z
+    .object({ individuals: labelSchema.nullable(), pros: labelSchema.nullable() })
+    .default({ individuals: null, pros: null }),
   reason: z.string().trim().min(1).max(280).nullable(),
   effect: z.object({ kind: z.enum(PROMOTION_EFFECT_KIND_VALUES), value: z.number().int() }),
   ownFloor: z.object({ mode: z.enum(["percent", "amount"]), value: z.number().int() }).nullable(),
@@ -73,10 +99,11 @@ export const promotionTermsPayloadSchema = z.object({
   validFrom: z.string().datetime(),
   /** Borne haute exclue ; `null` = sans fin. */
   validTo: z.string().datetime().nullable(),
-  audience: z.object({
-    kind: z.enum(PROMOTION_AUDIENCE_KIND_VALUES),
-    companyId: z.string().min(1).nullable(),
-  }),
+  /**
+   * Le public : un ENSEMBLE non vide de cibles (L8b, § 15.1). Le serveur le
+   * ramène à sa forme canonique (tous les enfants d'un parent ⇒ le parent).
+   */
+  audiences: z.array(audienceTargetSchema).min(1).max(50),
   fulfillment: z.object({
     kind: z.enum(PROMOTION_FULFILLMENT_KIND_VALUES),
     pickupId: z.string().min(1).nullable(),
@@ -121,10 +148,29 @@ export interface PromotionScopeRuleView {
 }
 
 /** Une promotion, telle que la liste et la fiche la lisent. */
+/** Un libellé client ; anglais et italien `null` = repli sur le français. */
+export interface PromotionLabelView {
+  readonly fr: string;
+  readonly en: string | null;
+  readonly it: string | null;
+}
+
+/** Une cible du public. */
+export interface PromotionAudienceTargetView {
+  readonly kind: PromotionAudienceKindValue;
+  readonly companyId: string | null;
+}
+
 export interface PromotionView {
   readonly id: string;
   readonly internalName: string;
-  readonly label: { readonly fr: string; readonly en: string | null; readonly it: string | null };
+  /** Le libellé commun. */
+  readonly label: PromotionLabelView;
+  /** Les libellés Particuliers / Pros ; `null` = le commun (L8b). */
+  readonly audienceLabels: {
+    readonly individuals: PromotionLabelView | null;
+    readonly pros: PromotionLabelView | null;
+  };
   readonly reason: string | null;
   readonly state: PromotionLifecycleState;
   readonly applicationPoint: "line" | "basket";
@@ -133,8 +179,14 @@ export interface PromotionView {
   readonly stacksOverMercuriale: boolean;
   readonly validFrom: string;
   readonly validTo: string | null;
+  /** Le public, en forme canonique — au moins une cible (L8b). */
+  readonly audiences: readonly PromotionAudienceTargetView[];
+  /**
+   * @deprecated La projection d'avant L8b : la cible unique, ou `several`
+   * (société `null`). Lue par personne de neuf ; lire `audiences`.
+   */
   readonly audience: {
-    readonly kind: PromotionAudienceKindValue;
+    readonly kind: PromotionAudienceKindValue | typeof SEVERAL_AUDIENCES;
     readonly companyId: string | null;
   };
   readonly fulfillment: {

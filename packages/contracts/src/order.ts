@@ -11,6 +11,7 @@ import {
   fulfillmentWindowSchema,
 } from "./address.js";
 import type { CartAdjustment } from "./cart-adjustment.js";
+import type { DiscountLabelView } from "./discount-label.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
@@ -824,6 +825,12 @@ export interface OrderView {
    * snapshot).
    */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Le libellé de la promotion panier, dans l'audience de l'acheteur, FIGÉ à
+   * la passation (L8b, plan des promotions § 15.8). Absent sur une commande
+   * d'avant, ou sans promotion : le papier dit alors « Remise retrait <point> ».
+   */
+  readonly discountLabel?: DiscountLabelView;
   /**
    * L'assiette de la remise de retrait, calculée sur les lignes **figées** —
    * présente seulement quand une remise s'applique et qu'une ligne en est

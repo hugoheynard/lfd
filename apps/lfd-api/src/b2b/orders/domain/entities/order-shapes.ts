@@ -26,6 +26,13 @@ import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 // pour le garder lisible, réexportées par lui : on les importe d'où l'on veut.
 
 /** Acheminement demandé : coursier (zone + adresse libre) OU retrait (point figé). */
+/** Un libellé de remise figé, trois langues sans trou. */
+export interface OrderDiscountLabel {
+  readonly fr: string;
+  readonly en: string;
+  readonly it: string;
+}
+
 export interface OrderFulfillmentInput {
   readonly method: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
@@ -113,6 +120,12 @@ export interface DraftOrderInput {
   readonly discountCents: number;
   /** L'ajustement qui l'a produite (taux ou montant), ou `null` si aucune. */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Le libellé de la promotion panier qui l'a produite, dans l'audience de
+   * l'acheteur (L8b, § 15.8) — figé tel quel. Absent ou `null` : aucune
+   * promotion, ou l'ancien chemin (la remise d'un site n'a pas de libellé).
+   */
+  readonly discountLabel?: OrderDiscountLabel | null;
   /** Frais de livraison (zone) déjà résolus, dans l'unité de la méthode (cf. `discountCents`). */
   readonly deliveryFeeCents: number;
   /** Le barème de zone qui l'a produit, ou `null` en retrait. */
@@ -196,6 +209,8 @@ export interface OrderToPlace {
   /** Les TTC des termes d'une commande `exact_ht`, `null` pour `line_ht` (CHECK). */
   readonly discountTtcCents: number | null;
   readonly discountAdjustment: CartAdjustment | null;
+  /** Cf. {@link DraftOrderInput.discountLabel} ; `null` = aucun. */
+  readonly discountLabel: OrderDiscountLabel | null;
   readonly deliveryFeeCents: number;
   readonly deliveryFeeTtcCents: number | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;

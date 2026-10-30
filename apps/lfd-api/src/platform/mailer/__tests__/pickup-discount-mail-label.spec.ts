@@ -78,4 +78,27 @@ describe("pickupDiscountMailLabel", () => {
   it("point inconnu, ajustement absent : rien d'inventé", () => {
     expect(pickupDiscountMailLabel(sheetWith({}, ""), fr, euros, "fr")).toBe("Remise retrait");
   });
+
+  it("une promotion figée sur la commande (L8b) : son nom dans la langue du destinataire", () => {
+    const label = pickupDiscountMailLabel(
+      sheetWith({
+        discountAdjustment: { mode: "percent", bp: 500 },
+        discountLabel: { fr: "Offre pros", en: "Pro offer", it: "Offerta pro" },
+      }),
+      mailCopyOf("en")["customer.order-placed"],
+      euros,
+      "en",
+    );
+    expect(squash(label)).toBe("Pro offer (5%)");
+  });
+
+  it("une commande d'avant L8b garde le libellé du point", () => {
+    const label = pickupDiscountMailLabel(
+      sheetWith({ discountAdjustment: { mode: "percent", bp: 500 } }),
+      fr,
+      euros,
+      "fr",
+    );
+    expect(squash(label)).toBe("Remise retrait Le Labo (5 %)");
+  });
 });

@@ -119,6 +119,14 @@ export class PromotionPage {
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
   protected readonly effect = (view: PromotionView): string => effectPhrase(view.effect);
+  /** La cible de ce nœud dans le public (L8b, plusieurs cibles), ou `undefined`. */
+  protected readonly targetOf = (
+    view: PromotionView,
+    kind: PromotionView['audiences'][number]['kind'],
+  ): PromotionView['audiences'][number] | undefined =>
+    view.audiences.find((target) => target.kind === kind);
+  protected readonly isLegacyAudience = (view: PromotionView): boolean =>
+    view.audiences.some((target) => target.kind === 'everyone_but_active_pros');
   protected readonly window = (view: PromotionView): string =>
     windowPhrase(view.validFrom, view.validTo);
   protected readonly fulfillment = (view: PromotionView): string =>

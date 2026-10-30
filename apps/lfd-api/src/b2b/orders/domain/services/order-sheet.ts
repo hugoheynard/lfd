@@ -109,6 +109,8 @@ function moneyOf(order: OrderView): SheetMoney {
     subtotalCents: order.subtotalCents,
     discountCents: order.discountCents,
     discountAdjustment: order.discountAdjustment,
+    // Le libellé figé à la passation (L8b) ; absent, le papier nomme le point.
+    ...(order.discountLabel === undefined ? {} : { discountLabel: order.discountLabel }),
     voucherDiscountCents: order.voucherDiscountCents,
     deliveryFeeCents: order.deliveryFeeCents,
     lateFeeCents: order.lateFeeCents,

@@ -43,6 +43,7 @@ export type PickupDiscountAudiences = z.infer<typeof pickupDiscountAudiencesSche
 export const audiencePickupDiscountSchema = z
   .object({
     adjustment: cartAdjustmentSchema,
+    label: z.object({ fr: z.string(), en: z.string(), it: z.string() }).readonly().optional(),
     scope: z.enum(["all_except", "only"]).default("all_except"),
     categories: z
       .array(z.object({ categoryId: z.string().min(1), eligible: z.boolean() }).readonly())

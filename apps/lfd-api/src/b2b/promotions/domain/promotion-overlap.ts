@@ -6,6 +6,7 @@ import {
 import type { PromotionCatalogueArticle } from "./ports/promotion-catalogue.reader.js";
 import { day } from "./promotion-act.js";
 import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audience.js";
+import type { PromotionAudienceSet } from "./promotion-audience-set.js";
 import {
   applicationPointOf,
   fulfillmentPickupIdOf,
@@ -39,10 +40,14 @@ export interface PromotionRival {
 }
 
 /**
- * **CHEVAUCHEMENT** : même point d'application, même public, même
- * acheminement, fenêtres qui se recouvrent, et au moins un article vendable
- * couvert par les deux. Le message nomme l'autre promotion et le premier
- * article commun, par ordre de nom.
+ * **CHEVAUCHEMENT** : même point d'application, même acheminement, des
+ * publics dont les COUVERTURES se croisent (une feuille de la partition, ou
+ * une même société — § 15.6, L8b), fenêtres qui se recouvrent, et au moins
+ * un article vendable couvert par les deux. Le message nomme l'autre
+ * promotion, le public commun et le premier article commun, par ordre de nom.
+ *
+ * Depuis L8b, `{pros}` contre `{pros_active}` est REFUSÉ (accepté avant, les
+ * rangs différant) : les deux visent les pros actifs.
  *
  * @throws {OverlappingPromotionError} un rival se dispute un article avec la candidate.
  */
@@ -53,7 +58,8 @@ export function assertNoOverlap(
 ): void {
   const point = applicationPointOf(candidate.terms.fulfillment);
   for (const rival of rivals) {
-    if (rival.id === candidate.id || !sameTargeting(candidate.terms, rival.terms)) {
+    const crossing = rival.id === candidate.id ? null : crossingOf(candidate.terms, rival.terms);
+    if (crossing === null) {
       continue;
     }
     const common = commonPeriod(candidate.terms, rival.terms);
@@ -69,6 +75,7 @@ export function assertNoOverlap(
       throw new OverlappingPromotionError(
         rival.id,
         rival.terms.internalName,
+        crossing,
         `« ${witness.name} »`,
         describePeriod(common),
       );
@@ -98,7 +105,7 @@ export function assertSingleBasketPromotion(
       rival.id !== candidate.id &&
       applicationPointOf(rival.terms.fulfillment) === "basket" &&
       commonPeriod(candidate.terms, rival.terms) !== null &&
-      audiencesMeet(candidate.terms.audience, rival.terms.audience) &&
+      audienceSetsMeet(candidate.terms.audiences, rival.terms.audiences) &&
       fulfillmentsMeet(candidate.terms.fulfillment, rival.terms.fulfillment);
     if (combines) {
       throw new BasketPromotionsWouldCombineError(rival.id, rival.terms.internalName);
@@ -106,13 +113,12 @@ export function assertSingleBasketPromotion(
   }
 }
 
-function sameTargeting(left: PromotionTerms, right: PromotionTerms): boolean {
-  return (
-    left.audience.kind === right.audience.kind &&
-    audienceCompanyIdOf(left.audience) === audienceCompanyIdOf(right.audience) &&
+/** Le public commun de deux promotions au même acheminement, ou `null`. */
+function crossingOf(left: PromotionTerms, right: PromotionTerms): string | null {
+  const sameFulfillment =
     left.fulfillment.kind === right.fulfillment.kind &&
-    fulfillmentPickupIdOf(left.fulfillment) === fulfillmentPickupIdOf(right.fulfillment)
-  );
+    fulfillmentPickupIdOf(left.fulfillment) === fulfillmentPickupIdOf(right.fulfillment);
+  return sameFulfillment ? left.audiences.crossing(right.audiences) : null;
 }
 
 /** La période commune de deux fenêtres (fin exclue), ou `null`. */
@@ -153,13 +159,33 @@ const BUYER_KINDS: readonly PromotionBuyerKind[] = ["guest", "registered"];
 const ANY_OTHER = "__unnamed__";
 
 /**
+ * **Deux publics à plusieurs cibles peuvent-ils admettre un même acheteur ?**
+ * Une paire de cibles qui se rencontre (§ 15.6) — les sociétés nommées des
+ * DEUX ensembles sont énumérées : sans elles, un acheteur de la société de
+ * droite ne le serait jamais.
+ */
+export function audienceSetsMeet(left: PromotionAudienceSet, right: PromotionAudienceSet): boolean {
+  const named = [...left.targets, ...right.targets]
+    .map(audienceCompanyIdOf)
+    .filter((id): id is string => id !== null);
+  return left.targets.some((mine) =>
+    right.targets.some((theirs) => audiencesMeet(mine, theirs, named)),
+  );
+}
+
+/**
  * **Un acheteur peut-il être admis par les deux publics ?** Jugé en
  * énumérant les acheteurs possibles et en posant à chacun la question même
  * du calcul (`audienceAdmits`) : une seconde écriture de la règle aurait fini
- * par la contredire.
+ * par la contredire. `extraCompanies` : les sociétés nommées ailleurs dans
+ * les deux ensembles.
  */
-export function audiencesMeet(left: PromotionAudience, right: PromotionAudience): boolean {
-  const named = [audienceCompanyIdOf(left), audienceCompanyIdOf(right)].filter(
+export function audiencesMeet(
+  left: PromotionAudience,
+  right: PromotionAudience,
+  extraCompanies: readonly string[] = [],
+): boolean {
+  const named = [audienceCompanyIdOf(left), audienceCompanyIdOf(right), ...extraCompanies].filter(
     (id): id is string => id !== null,
   );
   const companies = [...new Set([...named, ANY_OTHER])];

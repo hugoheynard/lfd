@@ -94,7 +94,8 @@ function terms(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPayload
     stacksOverMercuriale: false,
     validFrom: daysAgo(1),
     validTo: null,
-    audience: { kind: "everyone", companyId: null },
+    audienceLabels: { individuals: null, pros: null },
+    audiences: [{ kind: "everyone", companyId: null }],
     fulfillment: { kind: "any", pickupId: null },
     scope: { mode: "only", rules: [{ target: "variant", targetId: "VIE-001-1", eligible: true }] },
     conditions: [],
@@ -194,21 +195,103 @@ describe("après la bascule — les refus nommés", () => {
     await useSource("promotions");
   });
 
-  it("refuse le chevauchement en nommant l'autre promotion et l'article", async () => {
-    await admin().post(PROMOTIONS).send(terms()).expect(201);
+  /**
+   * RÉÉCRIT en L8b (2026-10-30) : « un autre public coexiste » posait `pros
+   * actifs` contre `tout le monde`, que l'ancien refus (même `kind`) laissait
+   * passer. Le chevauchement se juge désormais sur les COUVERTURES (§ 15.6) :
+   * seul un public disjoint coexiste, et `pros` contre `pros actifs` est
+   * refusé (vitruve n° 3, S4).
+   */
+  it("refuse le chevauchement en nommant l'autre promotion, le public commun et l'article", async () => {
+    const individuals = [{ kind: "individuals", companyId: null }] as const;
+    await admin()
+      .post(PROMOTIONS)
+      .send(terms({ audiences: [...individuals] }))
+      .expect(201);
     const refused = await admin()
       .post(PROMOTIONS)
-      .send(terms({ internalName: "Doublon" }))
+      .send(terms({ internalName: "Doublon", audiences: [...individuals] }))
       .expect(409);
     expect(refusalOf(refused)).toMatchObject({ code: "promotions.overlapping" });
     expect(refusalOf(refused).message).toContain(
-      "« Croissants d'automne » couvre déjà « Croissant »",
+      "« Croissants d'automne » vise déjà les particuliers et couvre « Croissant »",
     );
-    // Un autre public coexiste.
+    // Un public disjoint coexiste.
     await admin()
       .post(PROMOTIONS)
-      .send(terms({ internalName: "Pros", audience: { kind: "pros_active", companyId: null } }))
+      .send(
+        terms({
+          internalName: "Pros actifs",
+          audiences: [{ kind: "pros_active", companyId: null }],
+        }),
+      )
       .expect(201);
+    // `pros` couvre les pros actifs : refusé.
+    const pros = await admin()
+      .post(PROMOTIONS)
+      .send(
+        terms({ internalName: "Tous les pros", audiences: [{ kind: "pros", companyId: null }] }),
+      )
+      .expect(409);
+    expect(refusalOf(pros).message).toContain("« Pros actifs » vise déjà les pros actifs");
+  });
+
+  it("ramène le public à sa forme canonique et filtre l'écran par société (L8b)", async () => {
+    const created = await admin()
+      .post(PROMOTIONS)
+      .send(
+        terms({
+          audiences: [
+            { kind: "individuals_guest", companyId: null },
+            { kind: "individuals_registered", companyId: null },
+            { kind: "company", companyId: "co_e2e" },
+          ],
+          audienceLabels: {
+            individuals: { fr: "Pour vous", en: null, it: null },
+            pros: { fr: "Pour la maison", en: null, it: null },
+          },
+        }),
+      )
+      .expect(201);
+    const id = jsonBody<{ id: string }>(created).id;
+    await admin()
+      .post(PROMOTIONS)
+      .send(terms({ internalName: "Pros", audiences: [{ kind: "pros_active", companyId: null }] }))
+      .expect(201);
+
+    const filtered = jsonBody<PromotionListView>(
+      await admin().get(`${PROMOTIONS}?companyId=co_e2e`).expect(200),
+    );
+    expect(filtered.promotions.map((promotion) => promotion.id)).toEqual([id]);
+    expect(filtered.promotions[0]).toMatchObject({
+      audiences: [
+        { kind: "individuals", companyId: null },
+        { kind: "company", companyId: "co_e2e" },
+      ],
+      audience: { kind: "several", companyId: null },
+      audienceLabels: { pros: { fr: "Pour la maison" } },
+    });
+    const other = jsonBody<PromotionListView>(
+      await admin().get(`${PROMOTIONS}?companyId=co_autre`).expect(200),
+    );
+    expect(other.promotions).toEqual([]);
+  });
+
+  it("refuse un public vide et un libellé d'une audience que le public ne touche pas", async () => {
+    await admin()
+      .post(PROMOTIONS)
+      .send(terms({ audiences: [] }))
+      .expect(400);
+    const label = await admin()
+      .post(PROMOTIONS)
+      .send(
+        terms({
+          audiences: [{ kind: "pros", companyId: null }],
+          audienceLabels: { individuals: { fr: "Hors sujet", en: null, it: null }, pros: null },
+        }),
+      )
+      .expect(400);
+    expect(refusalOf(label)).toMatchObject({ code: "promotions.audience_label_without_audience" });
   });
 
   it("refuse une seconde promotion de panier qui s'appliquerait à la même commande", async () => {
@@ -218,7 +301,7 @@ describe("après la bascule — les refus nommés", () => {
         terms({
           internalName: "Cœur pros",
           fulfillment: AT_COEUR_POINT,
-          audience: { kind: "pros_active", companyId: null },
+          audiences: [{ kind: "pros_active", companyId: null }],
         }),
       )
       .expect(201);
@@ -228,7 +311,7 @@ describe("après la bascule — les refus nommés", () => {
         terms({
           internalName: "Tout retrait pros",
           fulfillment: { kind: "pickup", pickupId: null },
-          audience: { kind: "pros", companyId: null },
+          audiences: [{ kind: "pros", companyId: null }],
           scope: {
             mode: "only",
             rules: [{ target: "variant", targetId: "PAI-001-1", eligible: true }],

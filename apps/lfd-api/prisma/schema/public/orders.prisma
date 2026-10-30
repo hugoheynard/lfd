@@ -260,6 +260,12 @@ model Order {
   /// aucune, ou une commande que rien n'a encore figée (toute commande
   /// antérieure à L9). Identifiant opaque, sans clé étrangère.
   discountPromotionId   String?         @map("discount_promotion_id")
+  /// Le libellé de la promotion panier, `{fr, en, it}`, dans l'audience de
+  /// l'acheteur, FIGÉ à la passation (plan des promotions, § 15.8, L8b) : un
+  /// document relu plus tard ne dépend pas d'une promotion modifiée depuis.
+  /// `NULL` = aucune promotion, ou commande d'avant L8b — le papier retombe
+  /// sur « Remise retrait <point> ».
+  discountLabel         Json?           @map("discount_label")
   /// La part du **bon de fidélité** réellement imputée, HT, en centimes — à
   /// part de `discountCents` parce que la facture et l'assiette des points les
   /// distinguent. `0` = aucun bon (et toute commande antérieure au lot C).

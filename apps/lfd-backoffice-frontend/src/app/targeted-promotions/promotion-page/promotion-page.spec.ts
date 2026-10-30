@@ -44,7 +44,7 @@ describe('PromotionPage', () => {
     const root = await render(async () =>
       promotionView({
         applicationPoint: 'basket',
-        audience: { kind: 'individuals_registered', companyId: null },
+        audiences: [{ kind: 'individuals_registered', companyId: null }],
         fulfillment: { kind: 'pickup_point', pickupId: 'pk_coeur' },
       }),
     );

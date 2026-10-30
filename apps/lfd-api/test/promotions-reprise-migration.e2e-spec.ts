@@ -99,8 +99,14 @@ function rollbackStatement(): string {
   return statement[0];
 }
 
+/**
+ * La reprise, puis la cible de chaque promotion reprise : depuis L8b, le
+ * public se lit dans `promotion_audience_targets`, que la reprise (L4)
+ * n'écrit pas — la bascule l'enchaîne de même (`20261031140000`).
+ */
 async function reprise(): Promise<void> {
   await ctx.prisma.$executeRawUnsafe(`SELECT public.reprise_des_promotions()`);
+  await ctx.prisma.$executeRawUnsafe(`SELECT public.cibles_des_promotions_reprises()`);
 }
 
 const FROM = new Date(daysAgo(10));

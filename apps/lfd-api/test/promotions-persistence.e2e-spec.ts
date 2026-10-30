@@ -13,6 +13,7 @@
 import { PromotionRepository } from "../src/b2b/promotions/domain/ports/promotion.repository.js";
 import { promotionActOf } from "../src/b2b/promotions/domain/promotion-act.js";
 import { Promotion } from "../src/b2b/promotions/domain/promotion.js";
+import { PromotionAudienceSet } from "../src/b2b/promotions/domain/promotion-audience-set.js";
 import type { PromotionTerms } from "../src/b2b/promotions/domain/promotion-terms.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
 
@@ -23,13 +24,14 @@ const STAFF = "fiche-tarifeur";
 const TERMS: PromotionTerms = {
   internalName: "Automne, inscrits",
   label: { fr: "−20 % pour les inscrits", en: "−20% for members", it: null },
+  audienceLabels: { individuals: null, pros: null },
   reason: "lancement",
   effect: { kind: "percent_off", basisPoints: 2000 },
   ownFloor: { mode: "percent", value: 6000 },
   stacksOverMercuriale: true,
   validFrom: FROM,
   validTo: UNTIL,
-  audience: { kind: "individuals_registered" },
+  audiences: PromotionAudienceSet.of([{ kind: "individuals_registered" }]),
   fulfillment: { kind: "any" },
   scope: {
     mode: "all_except",
@@ -120,5 +122,96 @@ describe("la promotion en base", () => {
         `UPDATE "public"."promotions" SET "application_point" = 'basket' WHERE "id" = 'promo_e2e_4'`,
       ),
     ).rejects.toThrow(/promotions_point_follows_fulfillment|promotions_effect_fits_point|check/i);
+  });
+});
+
+/**
+ * L8b (plan § 15.3, § 15.10 point 6) : le public à plusieurs cibles, sa
+ * projection, et ce que la base tient d'elle-même.
+ */
+describe("le public à plusieurs cibles en base (L8b)", () => {
+  const SEVERAL: PromotionTerms = {
+    ...TERMS,
+    audiences: PromotionAudienceSet.of([
+      { kind: "individuals_registered" },
+      { kind: "pros" },
+      { kind: "company", companyId: "co_e2e" },
+    ]),
+    audienceLabels: {
+      individuals: { fr: "Merci d'être inscrit", en: null, it: null },
+      pros: { fr: "Offre pro", en: "Pro offer", it: null },
+    },
+  };
+
+  it("fait l'aller-retour sans perte, et projette `several` sur l'ancienne colonne", async () => {
+    const posed = await saveNew("promo_e2e_several", SEVERAL);
+    const loaded = await promotions.load("promo_e2e_several");
+    expect(loaded?.toPersistence()).toEqual(posed.toPersistence());
+    const row = await ctx.prisma.promotion.findUniqueOrThrow({
+      where: { id: "promo_e2e_several" },
+    });
+    expect([row.audienceKind, row.audienceCompanyId]).toEqual(["several", null]);
+    const targets = await ctx.prisma.promotionAudienceTarget.findMany({
+      where: { promotionId: "promo_e2e_several" },
+    });
+    expect(targets.map((target) => target.kind).sort()).toEqual([
+      "company",
+      "individuals_registered",
+      "pros",
+    ]);
+  });
+
+  it("une révision remplace les cibles en bloc", async () => {
+    const posed = await saveNew("promo_e2e_retarget", SEVERAL);
+    const revised = posed.revise({
+      ...TERMS,
+      audiences: PromotionAudienceSet.of([{ kind: "pros_active" }]),
+    });
+    await promotions.save(revised, promotionActOf(revised, "replaced", STAFF, UNTIL, null));
+    const targets = await ctx.prisma.promotionAudienceTarget.findMany({
+      where: { promotionId: "promo_e2e_retarget" },
+    });
+    expect(targets.map((target) => [target.kind, target.companyId])).toEqual([
+      ["pros_active", null],
+    ]);
+    const row = await ctx.prisma.promotion.findUniqueOrThrow({
+      where: { id: "promo_e2e_retarget" },
+    });
+    expect(row.audienceKind).toBe("pros_active");
+  });
+
+  it("la contrainte recréée accepte `several` et refuse une valeur inconnue", async () => {
+    await saveNew("promo_e2e_check");
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `UPDATE "public"."promotions" SET "audience_kind" = 'several' WHERE "id" = 'promo_e2e_check'`,
+      ),
+    ).resolves.toBe(1);
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `UPDATE "public"."promotions" SET "audience_kind" = 'martiens' WHERE "id" = 'promo_e2e_check'`,
+      ),
+    ).rejects.toThrow(/promotions_audience_known/);
+  });
+
+  it("l'index refuse deux fois la même cible sans société — NULLS NOT DISTINCT", async () => {
+    await saveNew("promo_e2e_unique", {
+      ...TERMS,
+      audiences: PromotionAudienceSet.of([{ kind: "pros" }]),
+    });
+    await expect(
+      ctx.prisma.$executeRawUnsafe(
+        `INSERT INTO "public"."promotion_audience_targets" ("id", "promotion_id", "kind", "company_id")
+         VALUES ('t_dup', 'promo_e2e_unique', 'pros', NULL)`,
+      ),
+    ).rejects.toThrow(/promotion_audience_targets_unique/);
+  });
+
+  it("une promotion sans cible est illisible plutôt que relue sur sa projection", async () => {
+    await saveNew("promo_e2e_orphan");
+    await ctx.prisma.$executeRawUnsafe(
+      `DELETE FROM "public"."promotion_audience_targets" WHERE "promotion_id" = 'promo_e2e_orphan'`,
+    );
+    await expect(promotions.load("promo_e2e_orphan")).rejects.toThrow(/aucune cible de public/);
   });
 });

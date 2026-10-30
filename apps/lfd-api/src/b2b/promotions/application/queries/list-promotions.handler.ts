@@ -28,7 +28,7 @@ export class ListPromotionsHandler implements IQueryHandler<
   async execute(query: ListPromotionsQuery): Promise<PromotionListView> {
     const now = this.clock.now();
     const [all, catalogue, source] = await Promise.all([
-      this.promotions.all(),
+      query.companyId === null ? this.promotions.all() : this.promotions.naming(query.companyId),
       this.catalogue.snapshot(),
       this.source.current(),
     ]);

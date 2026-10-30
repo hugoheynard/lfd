@@ -17,6 +17,7 @@ import { toDomain } from "./promotion-rows.js";
  */
 const WITH_SCOPE = {
   scopeRules: { orderBy: [{ target: "asc" as const }, { targetId: "asc" as const }] },
+  audienceTargets: true,
 };
 
 @Injectable()
@@ -30,12 +31,21 @@ export class PrismaPromotionBrowser extends PromotionBrowser {
       include: WITH_SCOPE,
       orderBy: [{ validFrom: "desc" }, { id: "asc" }],
     });
-    return rows.map((row) => toDomain(row, row.scopeRules));
+    return rows.map((row) => toDomain(row, row.scopeRules, row.audienceTargets));
+  }
+
+  async naming(companyId: string): Promise<readonly Promotion[]> {
+    const rows = await this.prisma.promotion.findMany({
+      where: { audienceTargets: { some: { companyId } } },
+      include: WITH_SCOPE,
+      orderBy: [{ validFrom: "desc" }, { id: "asc" }],
+    });
+    return rows.map((row) => toDomain(row, row.scopeRules, row.audienceTargets));
   }
 
   async find(id: string): Promise<Promotion | null> {
     const row = await this.prisma.promotion.findUnique({ where: { id }, include: WITH_SCOPE });
-    return row === null ? null : toDomain(row, row.scopeRules);
+    return row === null ? null : toDomain(row, row.scopeRules, row.audienceTargets);
   }
 }
 
@@ -51,6 +61,6 @@ export class PrismaPromotionRivalsReader extends PromotionRivalsReader {
       include: WITH_SCOPE,
       orderBy: { id: "asc" },
     });
-    return rows.map((row) => toDomain(row, row.scopeRules));
+    return rows.map((row) => toDomain(row, row.scopeRules, row.audienceTargets));
   }
 }

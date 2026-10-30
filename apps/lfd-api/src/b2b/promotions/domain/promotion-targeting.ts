@@ -1,6 +1,7 @@
 import { companyServiceOf } from "../../catalog/domain/company-service.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import type { PromotionAudience, PromotionAudienceKind } from "./promotion-audience.js";
+import type { LabelAudience } from "./promotion-audience-set.js";
 import type { PromotionFulfillment, PromotionFulfillmentKind } from "./promotion-fulfillment.js";
 
 /**
@@ -94,6 +95,33 @@ function byStatus(kind: StatusAudience, facts: PromotionAudienceFacts): boolean 
 
 function principalIs(facts: PromotionAudienceFacts, companyId: string): boolean {
   return facts.principal !== "unknown" && facts.principal.companyId === companyId;
+}
+
+/**
+ * **Le rang d'un public à plusieurs cibles, pour CET acheteur** (§ 15.6) : le
+ * plus haut rang parmi les cibles qui l'admettent ; `null` = aucune ne
+ * l'admet. Une cible seule garde le rang d'avant L8b.
+ */
+export function admittingRankOf(
+  audiences: readonly PromotionAudience[],
+  facts: PromotionAudienceFacts,
+): number | null {
+  const ranks = audiences
+    .filter((audience) => audienceAdmits(audience, facts))
+    .map((audience) => PUBLIC_RANK[audience.kind]);
+  return ranks.length === 0 ? null : Math.max(...ranks);
+}
+
+/**
+ * **L'audience de l'acheteur, au sens des libellés** (§ 15.8) — la décision
+ * de P0, comme `byStatus` : pro ou particulier. Statut non lu ⇒ `null`, le
+ * libellé commun.
+ */
+export function labelAudienceOf(facts: PromotionAudienceFacts): LabelAudience | null {
+  if (facts.companyStatus === "unknown") {
+    return null;
+  }
+  return companyServiceOf(facts.companyStatus) === "pro" ? "pros" : "individuals";
 }
 
 /** Les publics qui demandent le statut de la société — lu seulement s'il le faut. */

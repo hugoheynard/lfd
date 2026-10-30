@@ -5,6 +5,7 @@ import {
   PromotionWrongSurfaceError,
 } from "../../../domain/errors/promotion-errors.js";
 import { PRICING_SURFACE, type PromotionSurface } from "../../../domain/promotion-surface.js";
+import { PromotionAudienceSet } from "../../../domain/promotion-audience-set.js";
 import type { PromotionTerms } from "../../../domain/promotion-terms.js";
 import {
   FROM,
@@ -113,20 +114,61 @@ describe("le refus de chevauchement (§ 13.2)", () => {
     await expect(refusal).rejects.toThrow(OverlappingPromotionError);
     await expect(refusal).rejects.toThrow(
       // `UNTIL` est minuit UTC, donc 1 h à Paris : le 1er décembre est encore couvert.
-      "« Pains d'automne » couvre déjà « Pain de campagne » du 1er novembre 2026 au 1er décembre 2026",
+      "« Pains d'automne » vise déjà tout le monde et couvre « Pain de campagne » du 1er novembre 2026 au 1er décembre 2026",
     );
     expect(s.promotions.stored.size).toBe(1);
   });
 
-  it("laisse coexister deux portées disjointes, deux publics, deux fenêtres qui se suivent", async () => {
+  /**
+   * RÉÉCRIT en L8b (2026-10-30) : il posait `tout le monde` puis `pros actifs`
+   * sur la même famille, deux publics que l'ancien refus (même `kind`)
+   * laissait coexister. Le chevauchement se juge désormais sur les
+   * COUVERTURES (§ 15.6) — `tout le monde` couvre les pros actifs —, et deux
+   * publics ne coexistent plus que s'ils sont disjoints : particuliers / pros
+   * actifs.
+   */
+  it("laisse coexister deux portées disjointes, deux publics disjoints, deux fenêtres qui se suivent", async () => {
     const s = writeScene(FROM);
     const pose = (terms: PromotionTerms) =>
       s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
-    await pose(lineTerms({ scope: onlyFamily("c_pains"), validTo: UNTIL }));
-    await pose(lineTerms({ scope: onlyFamily("c_viennoiserie") }));
+    const individuals = { kind: "individuals" } as const;
+    await pose(lineTerms({ scope: onlyFamily("c_pains"), validTo: UNTIL, audience: individuals }));
+    await pose(lineTerms({ scope: onlyFamily("c_viennoiserie"), audience: individuals }));
     await pose(lineTerms({ scope: onlyFamily("c_pains"), audience: { kind: "pros_active" } }));
-    await pose(lineTerms({ scope: onlyFamily("c_pains"), validFrom: UNTIL }));
+    await pose(
+      lineTerms({ scope: onlyFamily("c_pains"), validFrom: UNTIL, audience: individuals }),
+    );
     expect(s.promotions.stored.size).toBe(4);
+  });
+
+  it("refuse `pros` contre `pros actifs` : leurs couvertures se croisent (L8b, vitruve n° 3 S4)", async () => {
+    const s = writeScene(FROM);
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    await pose(lineTerms({ internalName: "Pros", audience: { kind: "pros" } }));
+    const refusal = pose(lineTerms({ audience: { kind: "pros_active" } }));
+    await expect(refusal).rejects.toThrow(OverlappingPromotionError);
+    await expect(refusal).rejects.toThrow("« Pros » vise déjà les pros actifs");
+  });
+
+  it("refuse {inscrits, pros} contre {pros} et contre {pros actifs} ; accepte contre {invités}", async () => {
+    const s = writeScene(FROM);
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    await pose(
+      lineTerms({
+        internalName: "Inscrits et pros",
+        audiences: PromotionAudienceSet.of([{ kind: "individuals_registered" }, { kind: "pros" }]),
+      }),
+    );
+    await expect(pose(lineTerms({ audience: { kind: "pros" } }))).rejects.toThrow(
+      "« Inscrits et pros » vise déjà les pros",
+    );
+    await expect(pose(lineTerms({ audience: { kind: "pros_active" } }))).rejects.toThrow(
+      OverlappingPromotionError,
+    );
+    await pose(lineTerms({ audience: { kind: "individuals_guest" } }));
+    expect(s.promotions.stored.size).toBe(2);
   });
 
   it("au point ligne, une famille ne vise pas l'article au poids ; au panier, si", async () => {

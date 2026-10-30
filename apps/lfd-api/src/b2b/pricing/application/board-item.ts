@@ -17,7 +17,7 @@ import {
 } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import type { LinePromotionsForLot } from "../../promotions/application/line-promotion-supply.js";
-import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
 import { servesLegacy } from "../../promotions/domain/promotions-source.js";
 
 /**
@@ -81,7 +81,7 @@ export async function boardMaterials(
    * Les promotions du point ligne admises pour cette lecture — vides tant
    * que la source sert l'ancien chemin. Cf. {@link boardDecisions}.
    */
-  promotions: readonly LivePromotion[] = [],
+  promotions: readonly AdmittedPromotion[] = [],
 ): Promise<BoardMaterials> {
   const rules = loadedRules.map((entry) => entry.rule);
   const floors = loadedFloors.map((entry) => entry.floor);
@@ -125,7 +125,7 @@ export async function boardMaterials(
 export function boardDecisions(
   loadedRules: readonly LoadedRule[],
   promoted: LinePromotionsForLot,
-): { readonly rules: readonly LoadedRule[]; readonly promotions: readonly LivePromotion[] } {
+): { readonly rules: readonly LoadedRule[]; readonly promotions: readonly AdmittedPromotion[] } {
   if (servesLegacy(promoted.source)) {
     return { rules: loadedRules, promotions: [] };
   }

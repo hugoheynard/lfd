@@ -1,7 +1,7 @@
 import type { AudiencePickupDiscount } from "@lfd/contracts";
 
-import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
-import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
+import { admittedPromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { AdmittedPromotion } from "../../../../promotions/domain/live-promotion.js";
 import type { OrderLineClassification } from "../../ports/order-line-classification.reader.js";
 import { chooseBasketPromotion, NO_BASKET_PROMOTION } from "../basket-promotion-choice.js";
 import {
@@ -45,12 +45,12 @@ const LINES = [
 /** La remise de retrait, et sa reprise telle que la migration l'écrit (§ 13.4). */
 function legacyAndReprise(discount: AudiencePickupDiscount): {
   legacy: { cents: number; ineligible: ReadonlySet<string> };
-  promotion: LivePromotion;
+  promotion: AdmittedPromotion;
 } {
   const ineligible = ineligibleSkusOf(discount, LINES, CLASSES);
   return {
     legacy: { cents: pickupDiscountCentsOf(discount, LINES, ineligible), ineligible },
-    promotion: livePromotion({
+    promotion: admittedPromotion({
       id: "pd_site_b2c",
       effect:
         discount.adjustment.mode === "percent"
@@ -112,32 +112,32 @@ describe("chooseBasketPromotion — la reprise d'une remise de retrait", () => {
   });
 
   it("préfère le public le plus spécifique, puis la plus avantageuse, puis le plus petit id", () => {
-    const everyone = livePromotion({
+    const everyone = admittedPromotion({
       id: "a",
       audience: { kind: "everyone" },
       fulfillment: { kind: "pickup" },
       effect: { kind: "percent_off", basisPoints: 5000 },
     });
-    const pros = livePromotion({
+    const pros = admittedPromotion({
       id: "b",
       audience: { kind: "pros_active" },
       fulfillment: { kind: "pickup" },
     });
     expect(chooseBasketPromotion([everyone, pros], LINES, CLASSES).promotionId).toBe("b");
 
-    const twinLow = livePromotion({ id: "c", fulfillment: { kind: "pickup" } });
-    const twinHigh = livePromotion({
+    const twinLow = admittedPromotion({ id: "c", fulfillment: { kind: "pickup" } });
+    const twinHigh = admittedPromotion({
       id: "d",
       fulfillment: { kind: "pickup" },
       effect: { kind: "percent_off", basisPoints: 3000 },
     });
     expect(chooseBasketPromotion([twinLow, twinHigh], LINES, CLASSES).promotionId).toBe("d");
-    const twinSame = livePromotion({ id: "0", fulfillment: { kind: "pickup" } });
+    const twinSame = admittedPromotion({ id: "0", fulfillment: { kind: "pickup" } });
     expect(chooseBasketPromotion([twinLow, twinSame], LINES, CLASSES).promotionId).toBe("0");
   });
 
   it("retire de l'assiette une ligne sous le seuil de quantité", () => {
-    const promotion = livePromotion({
+    const promotion = admittedPromotion({
       fulfillment: { kind: "pickup" },
       conditions: [{ kind: "min_quantity", value: 2 }],
     });

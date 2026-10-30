@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import { discountLabelIn, type DiscountLabelView } from "./discount-label.js";
 
 /**
  * ## L'unité de l'argent, dans tout ce fichier
@@ -680,10 +681,29 @@ export interface PriceStepRivalView {
   readonly label: string;
 }
 
+/**
+ * Le libellé d'une étape dans la langue du client : les trois langues figées
+ * d'une promotion (L8b), le français sinon — toute trace d'avant.
+ */
+export function stepLabelIn(
+  step: { readonly label: string; readonly labels?: DiscountLabelView | undefined },
+  locale: string,
+): string {
+  return step.labels === undefined ? step.label : discountLabelIn(step.labels, locale);
+}
+
 export interface PriceStepView {
   readonly stage: PriceStage;
   readonly ruleId: string;
+  /** Le libellé en français — lu par tout lecteur, toute trace l'a. */
   readonly label: string;
+  /**
+   * **Les trois langues**, écrites SEULEMENT par une promotion depuis L8b
+   * (plan des promotions, § 15.8) : celles de l'audience de l'acheteur,
+   * figées. ADDITIF — une trace d'avant n'a que `label`, et un lecteur qui
+   * affiche dans la langue du client y retombe (`stepLabelIn`).
+   */
+  readonly labels?: DiscountLabelView | undefined;
   /**
    * **À quelle portée la règle a agi** — catalogue, famille, article.
    *
@@ -745,6 +765,9 @@ export const priceStepsSchema = z.array(
     stage: priceStageSchema,
     ruleId: z.string(),
     label: z.string(),
+    // Défailli comme les deux suivants, et pour la même raison : une trace
+    // d'avant L8b (2026-10-30) n'a que `label`.
+    labels: z.object({ fr: z.string(), en: z.string(), it: z.string() }).optional(),
     resultMillicents: z.number().int(),
     // Les deux champs sont **défaillis**, jamais requis, et c'est la seule
     // chose à ne pas changer ici : `parseTrace` rend `null` pour la trace

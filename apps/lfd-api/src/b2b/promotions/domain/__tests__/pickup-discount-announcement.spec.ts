@@ -22,17 +22,22 @@ const PUBLIC_AT_COEUR = livePromotion({
   fulfillment: { kind: "pickup_point", pickupId: "coeur" },
 });
 
+/** Le libellé commun des fixtures, sans traduction : le français dans les trois langues. */
+const SAME_EVERYWHERE = { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" };
+
 describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotions", () => {
   it("annonce la remise des pros et celle des particuliers, portée comprise", () => {
     expect(announcedPickupDiscounts([PROS_AT_COEUR, PUBLIC_AT_COEUR], "coeur", ASKED_AT)).toEqual({
       b2b: {
         adjustment: { mode: "percent", bp: 2000 },
+        label: SAME_EVERYWHERE,
         scope: "all_except",
         categories: [{ categoryId: "c_boissons", eligible: false }],
         products: [{ productId: "p_eau", eligible: true }],
       },
       b2c: {
         adjustment: { mode: "amount", cents: 300 },
+        label: SAME_EVERYWHERE,
         scope: "all_except",
         categories: [],
         products: [],
@@ -74,7 +79,11 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
   });
 
   it("une société nommée ne s'annonce pas : le contrat ne la porte pas", () => {
-    const company = { ...PROS_AT_COEUR, audience: { kind: "company", companyId: "co_1" } } as const;
+    const company = livePromotion({
+      ...PROS_AT_COEUR,
+      label: PROS_AT_COEUR.label.fr,
+      audiences: [{ kind: "company", companyId: "co_1" }],
+    });
     expect(announcedPickupDiscounts([company], "coeur", ASKED_AT).b2b).toBeNull();
   });
 

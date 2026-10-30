@@ -193,4 +193,13 @@ describe("la remise de retrait se nomme", () => {
       "Remise retrait (5 %)",
     );
   });
+
+  it("une promotion figée sur la commande (L8b) : son nom, en français, à la place du point", () => {
+    expect(
+      labels({
+        discountAdjustment: { mode: "percent", bp: 500 },
+        discountLabel: { fr: "Offre inscrits", en: "Members offer", it: "Offerta iscritti" },
+      }),
+    ).toContain("Offre inscrits (5 %)");
+  });
 });

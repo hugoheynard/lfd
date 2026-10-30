@@ -1,6 +1,11 @@
 import { isJsonRecord } from "../../../platform/database/json-columns.js";
 import { UnreadablePromotionRowError } from "../domain/errors/promotion-errors.js";
-import { audienceCompanyIdOf, audienceOf } from "../domain/promotion-audience.js";
+import {
+  audienceLabelOf,
+  audienceProjectionOf,
+  audiencesOf,
+  type PromotionAudienceTargetRow,
+} from "./promotion-audience-rows.js";
 import type { PromotionCondition } from "../domain/promotion-condition.js";
 import { effectOf, effectValueOf, type PromotionOwnFloor } from "../domain/promotion-effect.js";
 import { fulfillmentOf, fulfillmentPickupIdOf } from "../domain/promotion-fulfillment.js";
@@ -24,6 +29,12 @@ export interface PromotionRow {
   readonly labelFr: string;
   readonly labelEn: string | null;
   readonly labelIt: string | null;
+  readonly labelIndividualsFr: string | null;
+  readonly labelIndividualsEn: string | null;
+  readonly labelIndividualsIt: string | null;
+  readonly labelProsFr: string | null;
+  readonly labelProsEn: string | null;
+  readonly labelProsIt: string | null;
   readonly reason: string | null;
   readonly applicationPoint: string;
   readonly effectKind: string;
@@ -38,6 +49,7 @@ export interface PromotionRow {
   readonly archivedAt: Date | null;
   readonly archivedBy: string | null;
   readonly archiveReason: string | null;
+  /** Projection de la table des cibles, qui fait foi (L8b) — jamais relue. */
   readonly audienceKind: string;
   readonly audienceCompanyId: string | null;
   readonly fulfillmentKind: string;
@@ -71,28 +83,43 @@ export interface PromotionScopeRuleRow {
  * **Ligne → agrégat**, revalidé par `Promotion.restore` : une ligne écrite en
  * SQL (la reprise) qui contournerait un invariant est refusée ici, nommée.
  *
+ * Le public se lit dans **la table des cibles** (L8b) ; une promotion sans
+ * cible est illisible — jamais de repli sur `audience_kind`, qui n'est
+ * qu'une projection : ce serait une valeur inventée.
+ *
  * @throws {UnreadablePromotionRowError} une valeur que le domaine ne connaît pas.
  * @throws les refus de l'agrégat.
  */
-export function toDomain(row: PromotionRow, rules: readonly PromotionScopeRuleRow[]): Promotion {
+export function toDomain(
+  row: PromotionRow,
+  rules: readonly PromotionScopeRuleRow[],
+  targets: readonly PromotionAudienceTargetRow[],
+): Promotion {
   const unreadable = (detail: string) => new UnreadablePromotionRowError(row.id, detail);
   const effect = effectOf(row.effectKind, row.effectValue);
-  const audience = audienceOf(row.audienceKind, row.audienceCompanyId);
   const fulfillment = fulfillmentOf(row.fulfillmentKind, row.fulfillmentPickupId);
-  if (effect === null || audience === null || fulfillment === null) {
-    throw unreadable("effet, public ou acheminement inconnu");
+  if (effect === null || fulfillment === null) {
+    throw unreadable("effet ou acheminement inconnu");
   }
   const promotion = Promotion.restore({
     id: row.id,
     internalName: row.internalName,
     label: { fr: row.labelFr, en: row.labelEn, it: row.labelIt },
+    audienceLabels: {
+      individuals: audienceLabelOf(
+        row.labelIndividualsFr,
+        row.labelIndividualsEn,
+        row.labelIndividualsIt,
+      ),
+      pros: audienceLabelOf(row.labelProsFr, row.labelProsEn, row.labelProsIt),
+    },
     reason: row.reason,
     effect,
     ownFloor: ownFloorOf(row, unreadable),
     stacksOverMercuriale: row.stacksOverMercuriale,
     validFrom: row.validFrom,
     validTo: row.validTo,
-    audience,
+    audiences: audiencesOf(targets, unreadable),
     fulfillment,
     scope: {
       mode: scopeModeOf(row.scopeMode, unreadable),
@@ -112,7 +139,10 @@ export function toDomain(row: PromotionRow, rules: readonly PromotionScopeRuleRo
   return promotion;
 }
 
-/** **Agrégat → ligne**, sans sa portée ni son origine. */
+/**
+ * **Agrégat → ligne**, sans sa portée, ses cibles ni son origine. Le public y
+ * est PROJETÉ (L8b) : une cible ⇒ cette cible, plusieurs ⇒ `several`.
+ */
 export function toPersistence(promotion: Promotion): PromotionWriteRow {
   const state: PromotionState = promotion.toPersistence();
   return {
@@ -121,6 +151,12 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     labelFr: state.label.fr,
     labelEn: state.label.en,
     labelIt: state.label.it,
+    labelIndividualsFr: state.audienceLabels.individuals?.fr ?? null,
+    labelIndividualsEn: state.audienceLabels.individuals?.en ?? null,
+    labelIndividualsIt: state.audienceLabels.individuals?.it ?? null,
+    labelProsFr: state.audienceLabels.pros?.fr ?? null,
+    labelProsEn: state.audienceLabels.pros?.en ?? null,
+    labelProsIt: state.audienceLabels.pros?.it ?? null,
     reason: state.reason,
     applicationPoint: promotion.applicationPoint,
     effectKind: state.effect.kind,
@@ -135,8 +171,7 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     archivedAt: state.archived?.at ?? null,
     archivedBy: state.archived?.by ?? null,
     archiveReason: state.archived?.reason ?? null,
-    audienceKind: state.audience.kind,
-    audienceCompanyId: audienceCompanyIdOf(state.audience),
+    ...audienceProjectionOf(state.audiences.targets),
     fulfillmentKind: state.fulfillment.kind,
     fulfillmentPickupId: fulfillmentPickupIdOf(state.fulfillment),
     scopeMode: state.scope.mode,

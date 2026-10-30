@@ -1,6 +1,6 @@
 import { Injectable } from "@nestjs/common";
 
-import { promotionsAdmitted, type LivePromotion } from "../domain/live-promotion.js";
+import { promotionsAdmitted, type AdmittedPromotion } from "../domain/live-promotion.js";
 import { LinePromotionReader } from "../domain/ports/line-promotion.reader.js";
 import { PromotionShadowJournal } from "../domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../domain/ports/promotions-source.reader.js";
@@ -10,8 +10,12 @@ import { PromotionAudienceFactsResolver } from "./promotion-audience-facts.resol
 /** La source en vigueur, et les promotions de ligne qui visent ce client à cet instant. */
 export interface LinePromotionsForLot {
   readonly source: PromotionsSource;
-  /** Vide en `legacy` : rien n'est lu. Fenêtre, pause et public déjà jugés. */
-  readonly promotions: readonly LivePromotion[];
+  /**
+   * Vide en `legacy` : rien n'est lu. Fenêtre, pause et public déjà jugés ;
+   * chacune porte le rang de la cible qui admet ce client et le libellé de
+   * son audience (L8b) — statut `unknown` ⇒ le libellé commun.
+   */
+  readonly promotions: readonly AdmittedPromotion[];
   /**
    * Où consigner un écart — sous la source `shadow` seulement. Rendu avec la
    * source pour que celui qui compare ne puisse pas comparer sans consigner.

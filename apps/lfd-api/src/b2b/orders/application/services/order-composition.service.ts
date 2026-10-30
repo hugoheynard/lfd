@@ -13,6 +13,7 @@ import { lineTotalCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import type { DraftOrderInput } from "../../domain/entities/order.js";
+import type { OrderDiscountLabel } from "../../domain/entities/order-shapes.js";
 import {
   InvalidOrderFulfillmentError,
   PickupClosedAtRequestedTimeError,
@@ -57,6 +58,8 @@ interface ResolvedFulfillment {
   readonly discountCents: number;
   /** L'ajustement figé qui l'a produite (taux/montant du point), ou `null`. */
   readonly discountAdjustment: CartAdjustment | null;
+  /** Le libellé de la promotion panier pour l'acheteur, à figer (L8b) ; `null` sinon. */
+  readonly discountLabel: OrderDiscountLabel | null;
   /** Les SKU que la remise de retrait ne couvre pas — vide en coursier. */
   readonly ineligibleSkus: ReadonlySet<string>;
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
@@ -99,6 +102,7 @@ export type ComposedDraft = Pick<
   | "lines"
   | "discountCents"
   | "discountAdjustment"
+  | "discountLabel"
   | "deliveryFeeCents"
   | "deliveryFeeAdjustment"
   | "deliveryVatMode"
@@ -243,6 +247,7 @@ export class OrderComposition {
       lines,
       discountCents: amounts.discountCents,
       discountAdjustment: fulfillment.discountAdjustment,
+      discountLabel: fulfillment.discountLabel,
       deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
       deliveryFeeCents: amounts.deliveryFeeCents,
       deliveryVatMode: arranged.deliveryVatMode,
@@ -342,6 +347,7 @@ export class OrderComposition {
         pickupAddress: toSnapshot(retrait.point),
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
+        discountLabel: retrait.discountLabel,
         ineligibleSkus: retrait.ineligibleSkus,
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
@@ -366,6 +372,7 @@ export class OrderComposition {
       // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
       discountCents: 0,
       discountAdjustment: null,
+      discountLabel: null,
       ineligibleSkus: new Set(),
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable.

@@ -272,19 +272,20 @@ export class PromotionsNotEditableYetError extends BusinessError {
 
 /**
  * Deux promotions qui se disputeraient un même article (plan, § 13.2,
- * CHEVAUCHEMENT) : même point d'application, même public, même acheminement,
+ * CHEVAUCHEMENT) : même point d'application, publics qui se croisent, même acheminement,
  * fenêtres qui se recouvrent, un article vendable en commun.
  */
 export class OverlappingPromotionError extends BusinessError {
   constructor(
     readonly otherPromotionId: string,
     otherName: string,
+    commonPublic: string,
     articleName: string,
     period: string,
   ) {
     super(
       "promotions.overlapping",
-      `« ${otherName} » couvre déjà ${articleName} ${period} : raccourcissez l'une des deux ou excluez l'article.`,
+      `« ${otherName} » vise déjà ${commonPublic} et couvre ${articleName} ${period} : raccourcissez l'une des deux, retirez ce public de l'une, ou excluez l'article.`,
     );
   }
 }

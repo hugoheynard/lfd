@@ -41,6 +41,7 @@ const LEGACY: BasketPromotionOutcome = {
   discountAdjustment: { mode: "percent", bp: 2000 },
   ineligibleSkus: new Set(),
   promotionId: null,
+  label: null,
 };
 
 const REPRISE = livePromotion({
@@ -97,7 +98,45 @@ describe("BasketPromotions.served", () => {
 
     const served = await service.served(LEGACY, REQUEST);
 
-    expect(served).toEqual({ ...LEGACY, promotionId: "pd_pk_coeur_b2c" });
+    expect(served).toEqual({
+      ...LEGACY,
+      promotionId: "pd_pk_coeur_b2c",
+      // Le libellé figé : le commun, aucune audience n'ayant le sien (L8b).
+      label: { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" },
+    });
+  });
+
+  it("un public à deux cibles sert à chacun la même remise et le libellé de son audience (L8b)", async () => {
+    const both = livePromotion({
+      id: "p_both",
+      validFrom: FROM,
+      audiences: [{ kind: "individuals_registered" }, { kind: "pros" }],
+      audienceLabels: {
+        individuals: { fr: "Merci d'être inscrit", en: "Thanks for joining", it: null },
+        pros: { fr: "Offre pro", en: null, it: null },
+      },
+      fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+    });
+    const { service } = subject("promotions", new FixedBasketPromotions([both]));
+    const registered = await service.served(LEGACY, {
+      ...REQUEST,
+      buyer: { ...REQUEST.buyer, buyerKind: "registered" },
+    });
+    const pro = await service.served(LEGACY, {
+      ...REQUEST,
+      buyer: { ...REQUEST.buyer, companyId: "co_1", companyStatus: "active" },
+    });
+    const guest = await service.served(LEGACY, REQUEST);
+
+    expect(registered.discountCents).toBe(200);
+    expect(pro.discountCents).toBe(200);
+    expect(registered.label).toEqual({
+      fr: "Merci d'être inscrit",
+      en: "Thanks for joining",
+      it: "Merci d'être inscrit",
+    });
+    expect(pro.label).toEqual({ fr: "Offre pro", en: "Offre pro", it: "Offre pro" });
+    expect(guest.promotionId).toBeNull();
   });
 
   it("sous `promotions`, rien pour un autre point", async () => {

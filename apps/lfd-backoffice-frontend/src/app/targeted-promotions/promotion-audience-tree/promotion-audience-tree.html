@@ -1,0 +1,75 @@
+@if (legacy()) {
+  <fold-callout appearance="inset" variant="neutral">
+    Tous sauf les pros actifs — le public de la remise de retrait reprise. Il se lit ici en
+    Particuliers et Pros en cours d'inscription ; l'enregistrer le remplace par ces deux publics.
+  </fold-callout>
+}
+<fold-checkbox
+  label="Tout le monde"
+  [checked]="state('everyone').checked"
+  [indeterminate]="state('everyone').indeterminate"
+  (checkedChange)="toggle('everyone', $event)"
+/>
+<div class="branch">
+  <fold-checkbox
+    label="Particuliers"
+    [checked]="state('individuals').checked"
+    [indeterminate]="state('individuals').indeterminate"
+    [disabled]="state('individuals').disabled"
+    (checkedChange)="toggle('individuals', $event)"
+  />
+  <div class="leaves">
+    @for (leaf of individuals; track leaf.box) {
+      <fold-checkbox
+        [label]="leaf.label"
+        [checked]="state(leaf.box).checked"
+        [disabled]="state(leaf.box).disabled"
+        (checkedChange)="toggle(leaf.box, $event)"
+      />
+    }
+  </div>
+  @if (touchesIndividuals()) {
+    <ng-content select="[individualsLabels]" />
+  }
+</div>
+<div class="branch">
+  <fold-checkbox
+    label="Pros"
+    [checked]="state('pros').checked"
+    [indeterminate]="state('pros').indeterminate"
+    [disabled]="state('pros').disabled"
+    (checkedChange)="toggle('pros', $event)"
+  />
+  <div class="leaves">
+    @for (leaf of pros; track leaf.box) {
+      <fold-checkbox
+        [label]="leaf.label"
+        [checked]="state(leaf.box).checked"
+        [disabled]="state(leaf.box).disabled"
+        (checkedChange)="toggle(leaf.box, $event)"
+      />
+    }
+    <fold-checkbox
+      label="Une société"
+      [checked]="company() !== null"
+      [disabled]="everyoneChecked()"
+      (checkedChange)="toggleCompany($event)"
+    />
+    @if (company(); as named) {
+      <fold-input
+        label="Identifiant de la société"
+        hint="Celui de sa fiche client."
+        [value]="named.companyId ?? ''"
+        (valueChange)="setCompany($event)"
+      />
+      <fold-checkbox
+        label="Et ses sites"
+        [checked]="named.kind === 'company_and_sites'"
+        (checkedChange)="setSites($event)"
+      />
+    }
+  </div>
+  @if (touchesPros()) {
+    <ng-content select="[prosLabels]" />
+  }
+</div>

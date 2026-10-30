@@ -1,7 +1,7 @@
 import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import { RecordingShadowJournal } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { livePromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
-import type { LivePromotion } from "../../../promotions/domain/live-promotion.js";
+import { admittedPromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { AdmittedPromotion } from "../../../promotions/domain/live-promotion.js";
 import { LoadedPricer } from "../../domain/loaded-pricer.js";
 import type { PriceRule } from "../../domain/price-rule.js";
 import { materialsOf, NO_EVIDENCE } from "../../domain/pricing-materials.js";
@@ -39,7 +39,10 @@ const RULE: PriceRule = {
   suspendedFrom: null,
 };
 
-function pricer(rules: readonly PriceRule[], promotions: readonly LivePromotion[]): LoadedPricer {
+function pricer(
+  rules: readonly PriceRule[],
+  promotions: readonly AdmittedPromotion[],
+): LoadedPricer {
   return LoadedPricer.over(
     materialsOf({ rules, floors: [], ladders: [], commitments: [], mercuriale: null, promotions }),
     NO_EVIDENCE,
@@ -48,7 +51,7 @@ function pricer(rules: readonly PriceRule[], promotions: readonly LivePromotion[
   );
 }
 
-function shadowLot(promotions: readonly LivePromotion[]) {
+function shadowLot(promotions: readonly AdmittedPromotion[]) {
   const journal = new RecordingShadowJournal();
   const lot = new PricedLot(pricer([RULE], []), [CROISSANT], {
     pricer: pricer([], promotions),
@@ -59,7 +62,7 @@ function shadowLot(promotions: readonly LivePromotion[]) {
 
 describe("PricedLot sous l'ombre", () => {
   it("ne consigne rien quand la promotion reprise dit la même chose", () => {
-    const { lot, journal } = shadowLot([livePromotion({ validFrom: FROM })]);
+    const { lot, journal } = shadowLot([admittedPromotion({ validFrom: FROM })]);
 
     expect(lot.price("VIE-001", 3).finalMillicents).toBe(160_000);
     expect(journal.entries).toEqual([]);
@@ -67,7 +70,7 @@ describe("PricedLot sous l'ombre", () => {
 
   it("sert l'ancien prix et consigne l'écart, sans donnée personnelle", () => {
     const { lot, journal } = shadowLot([
-      livePromotion({
+      admittedPromotion({
         id: "promo_30",
         validFrom: FROM,
         effect: { kind: "percent_off", basisPoints: 3_000 },
@@ -89,7 +92,7 @@ describe("PricedLot sous l'ombre", () => {
   });
 
   it("consigne un écart de règle même à prix égal", () => {
-    const { lot, journal } = shadowLot([livePromotion({ id: "autre", validFrom: FROM })]);
+    const { lot, journal } = shadowLot([admittedPromotion({ id: "autre", validFrom: FROM })]);
 
     lot.price("VIE-001", 1);
 

@@ -8,5 +8,11 @@ import type { Promotion } from "../promotion.js";
 export abstract class PromotionBrowser {
   abstract all(): Promise<readonly Promotion[]>;
 
+  /**
+   * Celles dont le public NOMME cette société (`company` ou
+   * `company_and_sites`) — lu dans la table des cibles, qui fait foi (L8b).
+   */
+  abstract naming(companyId: string): Promise<readonly Promotion[]>;
+
   abstract find(id: string): Promise<Promotion | null>;
 }

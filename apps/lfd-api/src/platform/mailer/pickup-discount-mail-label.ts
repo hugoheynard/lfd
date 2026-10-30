@@ -1,4 +1,9 @@
-import type { CartAdjustment, ClientSheet, ContentLocale } from "@lfd/contracts";
+import {
+  discountLabelIn,
+  type CartAdjustment,
+  type ClientSheet,
+  type ContentLocale,
+} from "@lfd/contracts";
 
 import { fill } from "./copy/mail-copy.js";
 
@@ -12,6 +17,10 @@ import { fill } from "./copy/mail-copy.js";
  * mailer est de `platform/`, il ne connaît aucun contexte et ne peut pas
  * l'importer. Celui-ci parle la langue du destinataire (`Intl`), celui du bon
  * écrit le français à la main, pour un document archivé.
+ *
+ * Une commande qui a figé le libellé de sa promotion panier (L8b, § 15.8)
+ * est nommée par lui, dans la langue du destinataire, à la place du mot du
+ * dictionnaire et du point ; une commande d'avant garde le libellé du point.
  */
 
 /** Points de base par unité de fraction : 500 bp = 0,05. */
@@ -52,9 +61,13 @@ export function pickupDiscountMailLabel(
   const site = siteOf(sheet.fulfillment);
   const adjustment = sheet.money.discountAdjustment;
   const base = sheet.money.pickupDiscountBase;
+  const frozen = sheet.money.discountLabel;
+  const name =
+    frozen === undefined
+      ? [copy.recapDiscount, ...(site === null ? [] : [site])]
+      : [discountLabelIn(frozen, locale)];
   return [
-    copy.recapDiscount,
-    ...(site === null ? [] : [site]),
+    ...name,
     ...(adjustment === null ? [] : [`(${ruleOf(adjustment, locale)})`]),
     ...(base === undefined
       ? []

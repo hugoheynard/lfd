@@ -10,7 +10,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import type {
-  PromotionAudienceKindValue,
+  PromotionAudienceTargetView,
   PromotionEffectKindValue,
   PromotionFulfillmentKindValue,
   PromotionScopeTargetValue,
@@ -36,9 +36,8 @@ import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
 import { NotifyService } from '../../notify.service';
 import { nativeValue } from '../../shared/native-input';
 import { parisToday } from '../../shared/paris-today';
-import { audiencePhrase } from '../promotion-format';
+import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
 import {
-  EDITABLE_AUDIENCES,
   draftOf,
   draftProblem,
   effectsFor,
@@ -106,6 +105,7 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeTargetValue, string>> = {
     FoldLoadingStateComponent,
     FoldMultiselectComponent,
     FoldPageLayoutComponent,
+    PromotionAudienceTree,
   ],
   templateUrl: './promotion-editor-page.html',
   styleUrl: './promotion-editor-page.scss',
@@ -138,14 +138,6 @@ export class PromotionEditorPage {
     () => this.editable() && this.problem() === null && !this.saving(),
   );
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'any');
-  protected readonly namesCompany = computed(() =>
-    ['company', 'company_and_sites'].includes(this.draft().audienceKind),
-  );
-
-  protected readonly audienceOptions = EDITABLE_AUDIENCES.map((kind) => ({
-    value: kind,
-    label: audiencePhrase({ kind, companyId: null }),
-  }));
   protected readonly fulfillmentOptions = (
     Object.keys(FULFILLMENT_LABEL) as PromotionFulfillmentKindValue[]
   ).map((kind) => ({ value: kind, label: FULFILLMENT_LABEL[kind] }));
@@ -206,8 +198,8 @@ export class PromotionEditorPage {
     this.draft.update((draft) => withTargets(draft, target, ids, eligible));
   }
 
-  protected setAudience(kind: PromotionAudienceKindValue): void {
-    this.edit({ audienceKind: kind });
+  protected setAudiences(audiences: readonly PromotionAudienceTargetView[]): void {
+    this.edit({ audiences });
   }
 
   protected readonly dateOf = nativeValue;

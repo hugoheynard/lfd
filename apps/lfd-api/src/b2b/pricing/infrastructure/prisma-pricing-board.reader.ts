@@ -16,7 +16,7 @@ import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
 import { boardDecisions, boardMaterials } from "../application/board-item.js";
 import { LinePromotionSupply } from "../../promotions/application/line-promotion-supply.js";
-import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
 import {
   PricingDecisionsReader,
   type LoadedFloor,
@@ -36,7 +36,7 @@ interface LoadedBoard {
   readonly floors: readonly LoadedFloor[];
   readonly ladders: readonly VolumeLadder[];
   /** Les promotions de ligne du tableau général — vides sous l'ancien chemin. */
-  readonly promotions: readonly LivePromotion[];
+  readonly promotions: readonly AdmittedPromotion[];
   readonly articles: readonly CatalogItem[];
   /** Depuis quand le tarif est tracé — `null` si l'historique est vide. */
   readonly historyStartsAt: Date | null;

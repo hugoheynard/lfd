@@ -29,7 +29,7 @@ import { resolveScopedFloor } from "../domain/resolve-floor.js";
 import { commitmentFor, type VolumeCommitment } from "../domain/volume-commitment.js";
 import { LinePromotionSupply } from "../../promotions/application/line-promotion-supply.js";
 import { servesLegacy } from "../../promotions/domain/promotions-source.js";
-import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
 import type { ShadowPricer } from "./priced-lot.js";
 
 /**
@@ -360,7 +360,7 @@ function earliest(left: Date, right: Date): Date {
 /** Ce qui occupe l'étage `promotion` : les règles, ou les promotions. */
 interface Chain {
   readonly rules: readonly PriceRule[];
-  readonly promotions: readonly LivePromotion[];
+  readonly promotions: readonly AdmittedPromotion[];
 }
 
 /**

@@ -1,7 +1,7 @@
 import {
   minQuantityOf,
   targetingRankOf,
-  type LivePromotion,
+  type AdmittedPromotion,
 } from "../../promotions/domain/live-promotion.js";
 import type { PromotionEffect } from "../../promotions/domain/promotion-effect.js";
 import {
@@ -32,13 +32,15 @@ import type { PriceRule, PriceScope, PricingContext } from "./price-rule.js";
  *
  * L'audience rendue est `all` : le public a été jugé au chargement
  * (`promotionsAdmitted`), comme `inForceFor` juge celle des règles, et son
- * RANG voyage dans `promotion`.
+ * RANG — celui de la cible qui admet l'acheteur (L8b) — voyage dans
+ * `promotion`. Le libellé est celui de l'audience de l'acheteur, figé dans
+ * les trois langues (`labels`), `label` en étant le français.
  *
  * `null` : l'article n'est pas couvert. Rien n'est consigné — une règle hors
  * portée n'atteint pas non plus la chaîne (l'index par portée l'écarte).
  */
 export function promotionAsRule(
-  promotion: LivePromotion,
+  promotion: AdmittedPromotion,
   context: PricingContext,
 ): PriceRule | null {
   // 🔴 Une cible `product` vise `catalog_items.product_id`, que la chaîne de
@@ -71,7 +73,8 @@ export function promotionAsRule(
     validFrom: promotion.validFrom,
     validTo: promotion.validTo,
     suspendedFrom: promotion.suspendedFrom,
-    label: promotion.label,
+    label: promotion.servedLabel.fr,
+    labels: promotion.servedLabel,
     stacksOverMercuriale: promotion.stacksOverMercuriale,
     promotion: targetingRankOf(promotion),
     ...nature,
@@ -80,7 +83,7 @@ export function promotionAsRule(
 
 /** Les promotions qui visent cet article, en règles. */
 export function promotionRulesFor(
-  promotions: readonly LivePromotion[],
+  promotions: readonly AdmittedPromotion[],
   context: PricingContext,
 ): PriceRule[] {
   return promotions

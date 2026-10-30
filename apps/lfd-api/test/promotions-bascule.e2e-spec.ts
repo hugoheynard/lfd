@@ -223,6 +223,40 @@ describe("la bascule — rejouer, contrôler, basculer", () => {
     expect(await source()).toBe("promotions");
   });
 
+  /**
+   * L8b (§ 15.7) : après la bascule, le rejeu n'écrase plus une promotion
+   * reprise puis éditée — elle appartient au staff.
+   */
+  it("rappelée après la bascule, elle ne réécrit pas une promotion reprise puis éditée", async () => {
+    const sites = await seedSites();
+    await bascule();
+    const id = `pd_${sites.real}_b2b`;
+    await sql(`UPDATE public.promotions SET label_fr = 'Édité par le staff' WHERE id = '${id}'`);
+    const before = await ctx.prisma.promotion.findMany({ orderBy: { id: "asc" } });
+    const targets = await ctx.prisma.promotionAudienceTarget.findMany({ orderBy: { id: "asc" } });
+
+    await bascule();
+
+    expect(await ctx.prisma.promotion.findMany({ orderBy: { id: "asc" } })).toEqual(before);
+    expect(await ctx.prisma.promotionAudienceTarget.findMany({ orderBy: { id: "asc" } })).toEqual(
+      targets,
+    );
+    expect((await ctx.prisma.promotion.findUniqueOrThrow({ where: { id } })).labelFr).toBe(
+      "Édité par le staff",
+    );
+  });
+
+  it("avant la bascule, le rejeu donne leur cible aux promotions reprises", async () => {
+    const sites = await seedSites();
+    await bascule();
+    const targets = await ctx.prisma.promotionAudienceTarget.findMany({
+      where: { promotionId: `pd_${sites.real}_b2b` },
+    });
+    expect(targets.map((target) => [target.kind, target.companyId])).toEqual([
+      ["pros_active", null],
+    ]);
+  });
+
   it("un écart l'arrête en nommant la promotion, et la source reste à legacy", async () => {
     const sites = await seedSites();
     await sql("SELECT public.reprise_des_promotions()");
@@ -291,7 +325,8 @@ describe("après la bascule — un seul éditeur", () => {
         stacksOverMercuriale: false,
         validFrom: daysAgo(1),
         validTo: null,
-        audience: { kind: "everyone_but_active_pros", companyId: null },
+        audienceLabels: { individuals: null, pros: null },
+        audiences: [{ kind: "everyone_but_active_pros", companyId: null }],
         fulfillment: { kind: "pickup_point", pickupId: sites.real },
         scope: { mode: "all_except", rules: [] },
         conditions: [],
@@ -362,6 +397,17 @@ function pointIn(points: readonly PickupAddressView[], id: string): PickupAddres
   return point;
 }
 
+/** Une remise annoncée, sans le libellé que seule l'annonce des promotions porte (L8b). */
+function withoutLabel(
+  discount: AudiencePickupDiscount | null | undefined,
+): AudiencePickupDiscount | null | undefined {
+  if (discount === null || discount === undefined) {
+    return discount;
+  }
+  const { label: _label, ...rest } = discount;
+  return rest;
+}
+
 describe("annonce = caisse, après la bascule", () => {
   it("chaque point annonce, pour chaque clientèle, la remise que le devis applique", async () => {
     const sites = await seedSites();
@@ -373,10 +419,12 @@ describe("annonce = caisse, après la bascule", () => {
 
     for (const id of [sites.real, sites.village]) {
       // Les colonnes du site et l'annonce des promotions disent la même chose…
+      // (l'annonce porte EN PLUS le libellé de la promotion depuis L8b, que la
+      // fiche d'un site n'a jamais eu : comparé sans lui).
       const b2c = pointIn(await listed("/pickup-addresses"), id).discounts.b2c;
       const b2b = pointIn(await listed("/pickup-addresses?audience=pro"), id).discounts.b2b;
-      expect(b2c).toEqual(pointIn(visitor, id).discounts.b2c);
-      expect(b2b).toEqual(pointIn(pros, id).discounts.b2b);
+      expect(withoutLabel(b2c)).toEqual(pointIn(visitor, id).discounts.b2c);
+      expect(withoutLabel(b2b)).toEqual(pointIn(pros, id).discounts.b2b);
       expect(pointIn(await listed("/pickup-addresses/mine", ACTIVE), id).discounts.b2b).toEqual(
         b2b,
       );
@@ -411,7 +459,8 @@ describe("annonce = caisse, après la bascule", () => {
           stacksOverMercuriale: false,
           validFrom: daysAgo(1),
           validTo: null,
-          audience: { kind: "everyone_but_active_pros", companyId: null },
+          audienceLabels: { individuals: null, pros: null },
+          audiences: [{ kind: "everyone_but_active_pros", companyId: null }],
           fulfillment: { kind: "pickup_point", pickupId: sites.real },
           scope: { mode: "all_except", rules: [] },
           conditions: [],
@@ -444,6 +493,12 @@ describe("annonce = caisse, après la bascule", () => {
     expect(pointIn(await listed("/pickup-addresses"), sites.real).discounts.b2c).toBeNull();
 
     // L'autre instance : l'état et son acte, sans passer par le cache d'ici.
+    // RÉÉCRIT en L8b : le public se lit dans la table des cibles, qui fait
+    // foi ; `audience_kind` n'en est plus que la projection.
+    await sql(
+      `UPDATE public.promotion_audience_targets SET kind = 'everyone'
+        WHERE promotion_id = 'pd_${sites.real}_b2b'`,
+    );
     await sql(
       `UPDATE public.promotions SET audience_kind = 'everyone' WHERE id = 'pd_${sites.real}_b2b'`,
     );

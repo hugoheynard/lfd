@@ -34,6 +34,7 @@ import {
 import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
 import type { PromotionBuyerKind } from "../../../promotions/domain/promotion-targeting.js";
+import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
 
 /**
@@ -64,6 +65,8 @@ export interface ResolvedPickup {
    * l'ancien chemin (la remise du site n'a pas d'identifiant de promotion).
    */
   readonly promotionId: string | null;
+  /** Le libellé de cette promotion pour l'acheteur, que la commande fige (L8b) ; `null` sinon. */
+  readonly discountLabel: ServedPromotionLabel | null;
 }
 
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
@@ -198,6 +201,7 @@ export class CartAdjustments {
       discountAdjustment: discount?.adjustment ?? null,
       ineligibleSkus,
       promotionId: null,
+      label: null,
     };
     const served = await this.basket.served(legacy, {
       lines,
@@ -216,6 +220,7 @@ export class CartAdjustments {
       discountAdjustment: served.discountAdjustment,
       ineligibleSkus: served.ineligibleSkus,
       promotionId: served.promotionId,
+      discountLabel: served.label,
     };
   }
 

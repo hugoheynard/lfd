@@ -1,5 +1,5 @@
 import type {
-  PromotionAudienceKindValue,
+  PromotionAudienceTargetView,
   PromotionEffectKindValue,
   PromotionFulfillmentKindValue,
   PromotionScopeTargetValue,
@@ -9,6 +9,7 @@ import type {
 
 import { businessDayStart } from '../shared/business-day';
 import { parisToday } from '../shared/paris-today';
+import { minimalAudiences, touchesBranch } from './promotion-audience-tree/audience-selection';
 
 /**
  * **Le brouillon de l'éditeur des promotions** (plan
@@ -34,6 +35,14 @@ export interface PromotionDraft {
   readonly labelFr: string;
   readonly labelEn: string;
   readonly labelIt: string;
+  /** Le libellé Particuliers (L8b) ; vide = le commun. */
+  readonly individualsFr: string;
+  readonly individualsEn: string;
+  readonly individualsIt: string;
+  /** Le libellé Pros (L8b) ; vide = le commun. */
+  readonly prosFr: string;
+  readonly prosEn: string;
+  readonly prosIt: string;
   /** Le motif, au journal ; vide = aucun. */
   readonly reason: string;
   readonly effectKind: PromotionEffectKindValue;
@@ -43,8 +52,8 @@ export interface PromotionDraft {
   readonly validFrom: string;
   /** `AAAA-MM-JJ`, le premier jour NON couvert ; vide = sans fin. */
   readonly validTo: string;
-  readonly audienceKind: PromotionAudienceKindValue;
-  readonly companyId: string;
+  /** Le public, ensemble minimal (L8b) ; une société garde son identifiant tel que saisi. */
+  readonly audiences: readonly PromotionAudienceTargetView[];
   readonly fulfillmentKind: PromotionFulfillmentKindValue;
   readonly pickupId: string;
   readonly scopeMode: 'all_except' | 'only';
@@ -53,22 +62,6 @@ export interface PromotionDraft {
   readonly minQuantity: string;
   readonly stacksOverMercuriale: boolean;
 }
-
-/**
- * **Les publics que l'éditeur propose au lot L8.** Les invités, les inscrits
- * et les pros en cours d'inscription attendent le lot L10 (la porte
- * d'entrée n'est pas encore portée jusqu'au rayon) ; « Tous sauf les pros
- * actifs » reste proposé, c'est le public des remises de retrait reprises.
- */
-export const EDITABLE_AUDIENCES: readonly PromotionAudienceKindValue[] = [
-  'everyone',
-  'individuals',
-  'pros',
-  'pros_active',
-  'everyone_but_active_pros',
-  'company',
-  'company_and_sites',
-];
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
 export function effectsFor(
@@ -86,19 +79,35 @@ export function targetsFor(
   return fulfillment === 'any' ? ['category', 'variant'] : ['category', 'product'];
 }
 
+const NO_AUDIENCE_LABELS = {
+  individualsFr: '',
+  individualsEn: '',
+  individualsIt: '',
+  prosFr: '',
+  prosEn: '',
+  prosIt: '',
+} as const;
+
 export function emptyDraft(today: string, pickupId: string | null): PromotionDraft {
   return {
     internalName: '',
     labelFr: '',
     labelEn: '',
     labelIt: '',
+    ...NO_AUDIENCE_LABELS,
     reason: '',
     effectKind: 'percent_off',
     effectValue: '',
     validFrom: today,
     validTo: '',
-    audienceKind: pickupId === null ? 'everyone' : 'everyone_but_active_pros',
-    companyId: '',
+    // Sur un site : les particuliers et les pros en cours d'inscription — ce
+    // que « tous sauf les pros actifs » disait, dans les mots de l'arbre.
+    audiences:
+      pickupId === null
+        ? [{ kind: 'everyone', companyId: null }]
+        : minimalAudiences(
+            new Set(['individuals_guest', 'individuals_registered', 'pros_pending']),
+          ),
     fulfillmentKind: pickupId === null ? 'any' : 'pickup_point',
     pickupId: pickupId ?? '',
     scopeMode: 'all_except',
@@ -137,13 +146,18 @@ export function draftOf(view: PromotionView): PromotionDraft {
     labelFr: view.label.fr,
     labelEn: view.label.en ?? '',
     labelIt: view.label.it ?? '',
+    individualsFr: view.audienceLabels.individuals?.fr ?? '',
+    individualsEn: view.audienceLabels.individuals?.en ?? '',
+    individualsIt: view.audienceLabels.individuals?.it ?? '',
+    prosFr: view.audienceLabels.pros?.fr ?? '',
+    prosEn: view.audienceLabels.pros?.en ?? '',
+    prosIt: view.audienceLabels.pros?.it ?? '',
     reason: '',
     effectKind: view.effect.kind,
     effectValue: String(view.effect.value / EFFECT_FACTOR[view.effect.kind]).replace('.', ','),
     validFrom: parisToday(new Date(view.validFrom)),
     validTo: view.validTo === null ? '' : parisToday(new Date(view.validTo)),
-    audienceKind: view.audience.kind,
-    companyId: view.audience.companyId ?? '',
+    audiences: view.audiences,
     fulfillmentKind: view.fulfillment.kind,
     pickupId: view.fulfillment.pickupId ?? '',
     scopeMode: view.scope.mode,
@@ -161,6 +175,12 @@ export function draftOf(view: PromotionView): PromotionDraft {
 export function draftProblem(draft: PromotionDraft): string | null {
   if (draft.internalName.trim() === '' || draft.labelFr.trim() === '') {
     return 'Donnez un nom interne et un libellé client.';
+  }
+  if (draft.audiences.length === 0) {
+    return 'Cochez au moins un public.';
+  }
+  if (draft.audiences.some((target) => target.companyId?.trim() === '')) {
+    return "Saisissez l'identifiant de la société.";
   }
   if (decimalOf(draft.effectValue) === null) {
     return "Saisissez la valeur de l'effet, en chiffres.";
@@ -183,16 +203,20 @@ export function draftProblem(draft: PromotionDraft): string | null {
  * refuserait en le nommant.
  */
 export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
-  const companyNamed =
-    draft.audienceKind === 'company' || draft.audienceKind === 'company_and_sites';
   const atLine = draft.fulfillmentKind === 'any';
   const minQuantity = draft.minQuantity.trim();
   return {
     internalName: draft.internalName.trim(),
-    label: {
-      fr: draft.labelFr.trim(),
-      en: draft.labelEn.trim() === '' ? null : draft.labelEn.trim(),
-      it: draft.labelIt.trim() === '' ? null : draft.labelIt.trim(),
+    label: labelOf(draft.labelFr, draft.labelEn, draft.labelIt) ?? { fr: '', en: null, it: null },
+    // Un libellé d'une branche que le public ne touche plus n'est pas envoyé :
+    // l'écran l'a caché, l'agrégat le refuserait.
+    audienceLabels: {
+      individuals: touchesBranch(draft.audiences, 'individuals')
+        ? labelOf(draft.individualsFr, draft.individualsEn, draft.individualsIt)
+        : null,
+      pros: touchesBranch(draft.audiences, 'pros')
+        ? labelOf(draft.prosFr, draft.prosEn, draft.prosIt)
+        : null,
     },
     reason: draft.reason.trim() === '' ? null : draft.reason.trim(),
     effect: {
@@ -203,7 +227,10 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     stacksOverMercuriale: atLine && draft.stacksOverMercuriale,
     validFrom: businessDayStart(draft.validFrom) ?? '',
     validTo: draft.validTo === '' ? null : businessDayStart(draft.validTo),
-    audience: { kind: draft.audienceKind, companyId: companyNamed ? draft.companyId.trim() : null },
+    audiences: draft.audiences.map((target) => ({
+      kind: target.kind,
+      companyId: target.companyId === null ? null : target.companyId.trim(),
+    })),
     fulfillment: {
       kind: draft.fulfillmentKind,
       pickupId: draft.fulfillmentKind === 'pickup_point' ? draft.pickupId : null,
@@ -211,6 +238,12 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     scope: { mode: draft.scopeMode, rules: [...draft.rules] },
     conditions: minQuantity === '' ? [] : [{ kind: 'min_quantity', value: Number(minQuantity) }],
   };
+}
+
+/** Un libellé saisi ; `null` sans français — le commun suffit (§ 15.12 Q2). */
+function labelOf(fr: string, en: string, it: string): PromotionTermsPayload['label'] | null {
+  const optional = (text: string) => (text.trim() === '' ? null : text.trim());
+  return fr.trim() === '' ? null : { fr: fr.trim(), en: optional(en), it: optional(it) };
 }
 
 /**

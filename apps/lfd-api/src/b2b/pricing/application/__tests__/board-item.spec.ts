@@ -1,6 +1,6 @@
 import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import { boardDecisions, boardMaterials, itemView, targetsArticle } from "../board-item.js";
-import { livePromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import { admittedPromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import {
   floorFromRow,
@@ -235,7 +235,7 @@ describe("viser un article nommément", () => {
  * `promotions`, l'étage promotion vient des promotions et plus des règles.
  */
 describe("le tableau et la source des promotions", () => {
-  const promotion = livePromotion({
+  const promotion = admittedPromotion({
     id: "promo_ete",
     label: "Été",
     validFrom: new Date("2026-08-01T00:00:00.000Z"),

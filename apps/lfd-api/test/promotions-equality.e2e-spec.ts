@@ -141,8 +141,14 @@ async function useSource(source: PromotionsSource): Promise<void> {
   ctx.app.get(PricingMaterialsCache).invalidate();
 }
 
+/**
+ * La reprise, puis la cible de chaque promotion reprise : depuis L8b, le
+ * public se lit dans `promotion_audience_targets`, que la reprise (L4)
+ * n'écrit pas — la bascule l'enchaîne de même (`20261031140000`).
+ */
 async function reprise(): Promise<void> {
   await ctx.prisma.$executeRawUnsafe(`SELECT public.reprise_des_promotions()`);
+  await ctx.prisma.$executeRawUnsafe(`SELECT public.cibles_des_promotions_reprises()`);
 }
 
 // ─── Le corpus, posé par les vrais gestes ───────────────────────────────────
@@ -404,7 +410,31 @@ async function frozen(orderId: string) {
       },
     },
   });
-  return order;
+  return { ...order, lines: order.lines.map(withoutStepLabels) };
+}
+
+/**
+ * Depuis L8b (§ 15.8), l'étape d'une PROMOTION porte en plus ses trois
+ * langues (`labels`), qu'une règle d'étage n'a jamais eues : ajout additif,
+ * comparé à part — son français EST le libellé de l'étape, et c'est tout ce
+ * qu'il ajoute. Le reste de la trace se compare tel quel.
+ */
+function withoutStepLabels<T extends { readonly pricingSteps: unknown }>(line: T): T {
+  if (!Array.isArray(line.pricingSteps)) {
+    return line;
+  }
+  const steps: unknown[] = line.pricingSteps;
+  return {
+    ...line,
+    pricingSteps: steps.map((step: unknown) => {
+      if (typeof step !== "object" || step === null || !("labels" in step)) {
+        return step;
+      }
+      const { labels, ...rest } = step;
+      expect(labels).toMatchObject({ fr: "label" in rest ? rest.label : undefined });
+      return rest;
+    }),
+  };
 }
 
 async function placeAs(sub: string, pickupId: string) {

@@ -16,6 +16,15 @@ model Promotion {
   /// `NULL` = repli sur le français.
   labelEn              String?   @map("label_en")
   labelIt              String?   @map("label_it")
+  /// Le libellé **Particuliers** (L8b) ; `NULL` = repli sur le commun.
+  /// L'anglais et l'italien n'existent qu'avec le français (CHECK).
+  labelIndividualsFr   String?   @map("label_individuals_fr")
+  labelIndividualsEn   String?   @map("label_individuals_en")
+  labelIndividualsIt   String?   @map("label_individuals_it")
+  /// Le libellé **Pros** (L8b) ; `NULL` = repli sur le commun.
+  labelProsFr          String?   @map("label_pros_fr")
+  labelProsEn          String?   @map("label_pros_en")
+  labelProsIt          String?   @map("label_pros_it")
   reason               String?
   /// `line` | `basket` — miroir de `fulfillment_kind`, dérivé par l'agrégat.
   applicationPoint     String    @map("application_point")
@@ -36,6 +45,8 @@ model Promotion {
   /// L'id de la fiche du membre du staff qui a archivé.
   archivedBy           String?   @map("archived_by")
   archiveReason        String?   @map("archive_reason")
+  /// PROJECTION de `promotion_audience_targets`, qui fait foi depuis L8b :
+  /// une cible ⇒ cette cible, plusieurs ⇒ `several` (et société `NULL`).
   audienceKind         String    @map("audience_kind")
   /// Identifiant opaque, sans clé étrangère.
   audienceCompanyId    String?   @map("audience_company_id")
@@ -54,7 +65,8 @@ model Promotion {
   createdBy            String    @map("created_by")
   createdAt            DateTime  @map("created_at") @db.Timestamptz(3)
 
-  scopeRules PromotionScopeRule[]
+  scopeRules      PromotionScopeRule[]
+  audienceTargets PromotionAudienceTarget[]
 
   @@index([archivedAt])
   @@index([applicationPoint, archivedAt])
@@ -81,6 +93,32 @@ model PromotionScopeRule {
 
   @@unique([promotionId, target, targetId])
   @@map("promotion_scope_rules")
+  @@schema("public")
+}
+
+/// **Un public visé par une promotion** (plan des promotions, § 15.3, L8b) —
+/// une valeur de l'agrégat, remplacée en bloc avec lui. La table FAIT FOI ;
+/// `promotions.audience_kind` n'en est qu'une projection.
+///
+/// L'unicité `(promotion_id, kind, company_id) NULLS NOT DISTINCT` n'est PAS
+/// déclarée ici : Prisma ne sait pas l'exprimer, et un `@@unique` ordinaire
+/// laisserait passer deux fois `(p, pros, NULL)` (deux `NULL` sont distincts
+/// par défaut). Elle vit dans `migrations/20261031140000_les_publics_et_libelles`
+/// sous le nom `promotion_audience_targets_unique`. ⚠️ Une `prisma migrate dev`
+/// ultérieure proposera de la SUPPRIMER (elle ne voit que ce fichier) : refuser
+/// la ligne. Même précédent que `shop_carts_user_company_unique`.
+model PromotionAudienceTarget {
+  /// ULID à l'écriture ; `promotion_id:kind:company_id` pour le remplissage SQL.
+  id          String    @id
+  promotionId String    @map("promotion_id")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  /// Un public de l'arbre — jamais `several` (CHECK).
+  kind        String
+  /// Identifiant opaque, sans clé étrangère ; requis pour `company*` seulement.
+  companyId   String?   @map("company_id")
+
+  @@index([companyId])
+  @@map("promotion_audience_targets")
   @@schema("public")
 }
 

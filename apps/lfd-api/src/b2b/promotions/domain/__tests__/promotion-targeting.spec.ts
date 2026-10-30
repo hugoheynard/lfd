@@ -124,3 +124,54 @@ describe("promotionsAdmitted — fenêtre et pause à l'instant de la question",
     expect(kept.map((promotion) => promotion.id)).toEqual(["a", "d"]);
   });
 });
+
+describe("promotionsAdmitted — un public à plusieurs cibles (L8b, § 15.6)", () => {
+  const both = livePromotion({
+    id: "both",
+    audiences: [{ kind: "individuals_registered" }, { kind: "pros_active" }],
+  });
+
+  it("admet dès qu'UNE cible admet, et écarte quand aucune n'admet", () => {
+    const registered = facts({ ...PARTICULIER, buyerKind: "registered" });
+    const guest = facts({ ...PARTICULIER, buyerKind: "guest" });
+    expect(promotionsAdmitted([both], ASKED_AT, registered)).toHaveLength(1);
+    expect(promotionsAdmitted([both], ASKED_AT, facts())).toHaveLength(1);
+    expect(promotionsAdmitted([both], ASKED_AT, guest)).toHaveLength(0);
+  });
+
+  it("prend le rang le plus HAUT parmi les cibles qui admettent", () => {
+    const mixed = livePromotion({
+      audiences: [{ kind: "pros" }, { kind: "company", companyId: "co_1" }],
+    });
+    const [forCo1] = promotionsAdmitted([mixed], ASKED_AT, facts());
+    const [forOther] = promotionsAdmitted([mixed], ASKED_AT, facts({ companyId: "co_2" }));
+    expect(forCo1?.publicRank).toBe(4);
+    expect(forOther?.publicRank).toBe(1);
+  });
+
+  it("une cible seule garde le rang d'avant L8b", () => {
+    const [admitted] = promotionsAdmitted(
+      [livePromotion({ audience: { kind: "pros_active" } })],
+      ASKED_AT,
+      facts(),
+    );
+    expect(admitted?.publicRank).toBe(2);
+  });
+
+  it("fige le libellé de l'audience de l'acheteur, le commun si le statut n'est pas lu", () => {
+    const labelled = livePromotion({
+      audiences: [{ kind: "everyone" }],
+      audienceLabels: {
+        individuals: { fr: "Particuliers", en: null, it: null },
+        pros: { fr: "Pros", en: "Pros EN", it: null },
+      },
+    });
+    const pro = promotionsAdmitted([labelled], ASKED_AT, facts())[0]?.servedLabel;
+    const individual = promotionsAdmitted([labelled], ASKED_AT, PARTICULIER)[0]?.servedLabel;
+    const unknown = promotionsAdmitted([labelled], ASKED_AT, facts({ companyStatus: "unknown" }))[0]
+      ?.servedLabel;
+    expect(pro).toEqual({ fr: "Pros", en: "Pros EN", it: "Pros" });
+    expect(individual?.fr).toBe("Particuliers");
+    expect(unknown?.fr).toBe("−20 % sur tout");
+  });
+});

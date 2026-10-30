@@ -2,6 +2,7 @@ import type { PromotionTermsPayload } from "@lfd/contracts";
 
 import { PromotionMissingTargetIdError } from "../domain/errors/promotion-errors.js";
 import type { PromotionAudience } from "../domain/promotion-audience.js";
+import { PromotionAudienceSet } from "../domain/promotion-audience-set.js";
 import type { PromotionEffect } from "../domain/promotion-effect.js";
 import type { PromotionFulfillment } from "../domain/promotion-fulfillment.js";
 import type { PromotionTerms } from "../domain/promotion-terms.js";
@@ -11,18 +12,22 @@ import type { PromotionTerms } from "../domain/promotion-terms.js";
  * ce qui peut être refusé l'est par l'agrégat (`assertTerms`), dont le refus
  * nommé remonte tel quel. Une saisie ne pose jamais de rang de cible : seul
  * un rang repris d'une règle de prix en porte un.
+ *
+ * Le public passe par `PromotionAudienceSet.of`, qui le ramène à sa forme
+ * canonique et refuse l'ensemble vide (L8b) : le contrôleur n'en juge pas.
  */
 export function promotionTermsOf(payload: PromotionTermsPayload): PromotionTerms {
   return {
     internalName: payload.internalName,
     label: payload.label,
+    audienceLabels: payload.audienceLabels,
     reason: payload.reason,
     effect: effectOf(payload.effect),
     ownFloor: payload.ownFloor,
     stacksOverMercuriale: payload.stacksOverMercuriale,
     validFrom: new Date(payload.validFrom),
     validTo: payload.validTo === null ? null : new Date(payload.validTo),
-    audience: audienceOf(payload.audience),
+    audiences: PromotionAudienceSet.of(payload.audiences.map(audienceOf)),
     fulfillment: fulfillmentOf(payload.fulfillment),
     scope: {
       mode: payload.scope.mode,
@@ -44,7 +49,7 @@ function effectOf(effect: PromotionTermsPayload["effect"]): PromotionEffect {
   }
 }
 
-function audienceOf(audience: PromotionTermsPayload["audience"]): PromotionAudience {
+function audienceOf(audience: PromotionTermsPayload["audiences"][number]): PromotionAudience {
   switch (audience.kind) {
     case "company":
     case "company_and_sites":

@@ -5,7 +5,12 @@ import type {
   PickupDiscounts,
 } from "@lfd/contracts";
 
-import { promotionsAdmitted, targetingRankOf, type LivePromotion } from "./live-promotion.js";
+import {
+  promotionsAdmitted,
+  targetingRankOf,
+  type AdmittedPromotion,
+  type LivePromotion,
+} from "./live-promotion.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import { applicationPointOf } from "./promotion-fulfillment.js";
 import type { PromotionAudienceFacts } from "./promotion-targeting.js";
@@ -34,6 +39,10 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  * des pros sans qu'on la lui ait annoncée. Un public plus fin (une société,
  * les pros en cours d'inscription, les invités) n'est pas annoncé : le
  * contrat ne sait pas le dire.
+ *
+ * Le libellé annoncé est celui de la clientèle (L8b, § 15.8) : `b2b` lit le
+ * libellé Pros, `b2c` le libellé Particuliers, repli sur le commun — c'est ce
+ * que la caisse figera pour l'acheteur type.
  *
  * Une promotion que le contrat ne sait pas porter n'est pas annoncée non plus
  * plutôt que d'être annoncée fausse : une cible déclinaison (le contrat ne
@@ -87,40 +96,48 @@ function announcedFor(
 }
 
 /**
- * Le rang de la caisse (`chooseBasketPromotion`) moins le montant, que seul
- * un panier donne : l'écran refuse deux promotions panier qui pourraient
- * s'appliquer ensemble (`BasketPromotionsWouldCombineError`), donc il n'en
- * reste qu'une ici, et l'identifiant ne tranche qu'en théorie.
+ * Le rang de la caisse (`chooseBasketPromotion`) : public, acheminement, puis
+ * la plus avantageuse (§ 15.6) — sans panier, seulement entre deux effets de
+ * même nature (deux taux, deux montants) —, puis l'identifiant. L'écran
+ * refuse deux promotions panier qui pourraient s'appliquer ensemble
+ * (`BasketPromotionsWouldCombineError`) : il n'en reste qu'une ici, et ce
+ * départage ne tranche qu'en théorie.
  */
-function mostSpecific(candidates: readonly LivePromotion[]): LivePromotion | null {
-  let best: { promotion: LivePromotion; rank: readonly [number, number] } | null = null;
+function mostSpecific(candidates: readonly AdmittedPromotion[]): AdmittedPromotion | null {
+  let best: AdmittedPromotion | null = null;
   for (const promotion of candidates) {
-    const { publicRank, fulfillmentRank } = targetingRankOf(promotion);
-    const rank = [publicRank, fulfillmentRank] as const;
-    if (best === null || beats(rank, promotion.id, best.rank, best.promotion.id)) {
-      best = { promotion, rank };
+    if (best === null || beats(promotion, best)) {
+      best = promotion;
     }
   }
-  return best?.promotion ?? null;
+  return best;
 }
 
-function beats(
-  rank: readonly [number, number],
-  id: string,
-  bestRank: readonly [number, number],
-  bestId: string,
-): boolean {
-  if (rank[0] !== bestRank[0]) {
-    return rank[0] > bestRank[0];
+function beats(candidate: AdmittedPromotion, best: AdmittedPromotion): boolean {
+  const mine = targetingRankOf(candidate);
+  const theirs = targetingRankOf(best);
+  const deltas = [
+    mine.publicRank - theirs.publicRank,
+    mine.fulfillmentRank - theirs.fulfillmentRank,
+    advantageDelta(candidate.effect, best.effect),
+  ];
+  const decisive = deltas.find((delta) => delta !== 0);
+  return decisive === undefined ? candidate.id < best.id : decisive > 0;
+}
+
+/** Plus avantageux pour le client, entre deux effets de même nature ; `0` sinon. */
+function advantageDelta(left: PromotionEffect, right: PromotionEffect): number {
+  if (left.kind === "percent_off" && right.kind === "percent_off") {
+    return left.basisPoints - right.basisPoints;
   }
-  if (rank[1] !== bestRank[1]) {
-    return rank[1] > bestRank[1];
+  if (left.kind === "basket_amount_off" && right.kind === "basket_amount_off") {
+    return left.cents - right.cents;
   }
-  return id < bestId;
+  return 0;
 }
 
 /** La promotion dans la forme du contrat, ou `null` si elle ne s'y exprime pas. */
-function asPickupDiscount(promotion: LivePromotion): AudiencePickupDiscount | null {
+function asPickupDiscount(promotion: AdmittedPromotion): AudiencePickupDiscount | null {
   const adjustment = adjustmentOf(promotion.effect);
   const rules = promotion.scope.rules;
   if (
@@ -134,6 +151,7 @@ function asPickupDiscount(promotion: LivePromotion): AudiencePickupDiscount | nu
   const sorted = [...rules].sort((left, right) => left.targetId.localeCompare(right.targetId));
   return {
     adjustment,
+    label: promotion.servedLabel,
     scope: promotion.scope.mode,
     categories: sorted
       .filter((rule) => rule.target === "category")

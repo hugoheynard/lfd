@@ -1,5 +1,8 @@
-import type { LivePromotion } from "../../../promotions/domain/live-promotion.js";
-import { livePromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { AdmittedPromotion } from "../../../promotions/domain/live-promotion.js";
+import {
+  admittedPromotion,
+  type LivePromotionOverrides,
+} from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import type { PriceRule, PricingContext } from "../price-rule.js";
 import { promotionAsRule } from "../promotion-as-rule.js";
 import { resolvePrice } from "../resolve-price.js";
@@ -51,8 +54,8 @@ function rule(over: Partial<PriceRule> = {}): PriceRule {
 }
 
 /** La règle, telle que la reprise l'écrit : même id, même libellé, même fenêtre. */
-function reprise(source: PriceRule, over: Partial<LivePromotion>): LivePromotion {
-  return livePromotion({
+function reprise(source: PriceRule, over: LivePromotionOverrides): AdmittedPromotion {
+  return admittedPromotion({
     id: source.id,
     label: source.label,
     validFrom: source.validFrom,
@@ -67,7 +70,7 @@ function reprise(source: PriceRule, over: Partial<LivePromotion>): LivePromotion
 }
 
 /** L'effet, comme la reprise SQL le traduit (§ 13.4). */
-function effectOf(source: PriceRule): LivePromotion["effect"] {
+function effectOf(source: PriceRule): AdmittedPromotion["effect"] {
   if (source.nature === "replace") {
     return { kind: "fixed_unit_price", millicents: source.amountMillicents };
   }
@@ -87,7 +90,7 @@ const MERCURIALE: PriceRule = rule({
 
 function both(
   legacy: readonly PriceRule[],
-  promotions: readonly LivePromotion[],
+  promotions: readonly AdmittedPromotion[],
   ctx: PricingContext = context(),
   others: readonly PriceRule[] = [],
 ) {
@@ -106,13 +109,18 @@ function both(
 
 function expectSame(
   legacy: readonly PriceRule[],
-  promotions: readonly LivePromotion[],
+  promotions: readonly AdmittedPromotion[],
   ctx?: PricingContext,
   others?: readonly PriceRule[],
 ) {
   const { before, after } = both(legacy, promotions, ctx, others);
   expect(after.finalMillicents).toBe(before.finalMillicents);
-  expect(after.steps).toEqual(before.steps);
+  // La trace d'une promotion porte en PLUS ses trois langues (L8b, additif) :
+  // tout le reste de l'étape est celui de la règle reprise.
+  expect(after.steps.map(({ labels: _labels, ...step }) => step)).toEqual(before.steps);
+  for (const step of after.steps.filter((entry) => entry.labels !== undefined)) {
+    expect(step.labels?.fr).toBe(step.label);
+  }
   expect(after.rejected).toEqual(before.rejected);
   expect(after.sealedRuleIds).toEqual(before.sealedRuleIds);
   return before;
@@ -249,7 +257,7 @@ describe("promotionAsRule — la reprise d'une règle rend le même prix et la m
 
 describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
   it("ne présente pas une promotion qui ne couvre pas l'article", () => {
-    const excluded = livePromotion({
+    const excluded = admittedPromotion({
       scope: {
         mode: "all_except",
         rules: [{ target: "variant", targetId: "VIE-001-1", eligible: false, targetRank: null }],
@@ -259,7 +267,7 @@ describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
   });
 
   it("ne présente pas une portée par produit : la chaîne ne connaît pas le `product_id`", () => {
-    const byProduct = livePromotion({
+    const byProduct = admittedPromotion({
       scope: {
         mode: "all_except",
         rules: [{ target: "product", targetId: "p_croissant", eligible: false, targetRank: null }],
@@ -269,8 +277,8 @@ describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
   });
 
   it("met le public en tête : « pros actifs · tout » bat « tous · ce produit »", () => {
-    const pros = livePromotion({ id: "pros", audience: { kind: "pros_active" } });
-    const product = livePromotion({
+    const pros = admittedPromotion({ id: "pros", audience: { kind: "pros_active" } });
+    const product = admittedPromotion({
       id: "prod",
       effect: { kind: "percent_off", basisPoints: 5000 },
       scope: {
@@ -287,12 +295,15 @@ describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
   });
 
   it("à égalité stricte, la plus avantageuse pour le client, puis le plus petit id", () => {
-    const small = livePromotion({
+    const small = admittedPromotion({
       id: "b_small",
       effect: { kind: "percent_off", basisPoints: 1000 },
     });
-    const big = livePromotion({ id: "c_big", effect: { kind: "percent_off", basisPoints: 2500 } });
-    const twin = livePromotion({
+    const big = admittedPromotion({
+      id: "c_big",
+      effect: { kind: "percent_off", basisPoints: 2500 },
+    });
+    const twin = admittedPromotion({
       id: "a_twin",
       effect: { kind: "percent_off", basisPoints: 2500 },
     });

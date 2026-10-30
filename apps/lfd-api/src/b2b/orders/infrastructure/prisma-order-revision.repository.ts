@@ -81,6 +81,15 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        // La révision re-compose la remise : son libellé la suit (L8b).
+        discountLabel:
+          state.discountLabel === null
+            ? Prisma.DbNull
+            : {
+                fr: state.discountLabel.fr,
+                en: state.discountLabel.en,
+                it: state.discountLabel.it,
+              },
         deliveryFeeCents: state.deliveryFeeCents,
         deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
         lateFeeCents: state.lateFeeCents,

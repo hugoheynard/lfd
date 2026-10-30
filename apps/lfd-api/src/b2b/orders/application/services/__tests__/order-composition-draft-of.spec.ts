@@ -53,6 +53,7 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
       // Ce que `CartAdjustments` rend : 10 % du HT de ligne arrondi.
       discountCents: 199,
       discountAdjustment: { mode: "percent", bp: 1_000 },
+      discountLabel: null,
       ineligibleSkus: new Set(),
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,

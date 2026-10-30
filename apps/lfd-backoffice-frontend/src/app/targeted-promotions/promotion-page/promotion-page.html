@@ -171,18 +171,14 @@
                   <span class="tree-group-label">{{ group.label }}</span>
                   <ul class="tree-nodes">
                     @for (node of group.nodes; track node.kind) {
-                      <li
-                        class="tree-node"
-                        [class.is-chosen]="node.kind === promotion.audience.kind"
-                      >
-                        @if (node.kind === promotion.audience.kind) {
+                      @let chosen = targetOf(promotion, node.kind);
+                      <li class="tree-node" [class.is-chosen]="chosen !== undefined">
+                        @if (chosen !== undefined) {
                           <fold-icon name="check" [size]="16" />
                         }
                         {{ node.label }}
-                        @if (
-                          node.kind === promotion.audience.kind && promotion.audience.companyId
-                        ) {
-                          — {{ promotion.audience.companyId }}
+                        @if (chosen?.companyId) {
+                          — {{ chosen?.companyId }}
                         }
                       </li>
                     }
@@ -190,7 +186,7 @@
                 </div>
               }
             </div>
-            @if (promotion.audience.kind === 'everyone_but_active_pros') {
+            @if (isLegacyAudience(promotion)) {
               <fold-callout appearance="inset" variant="neutral">
                 Tous sauf les pros actifs — le public de la remise de retrait reprise :
                 particuliers, et sociétés en attente ou suspendues.

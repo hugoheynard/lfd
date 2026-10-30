@@ -167,8 +167,14 @@ export type PriceRule = {
    * base. Cf. `rule-lifecycle.ts`.
    */
   readonly suspendedFrom: Date | null;
-  /** Ce que la trace affichera. */
+  /** Ce que la trace affichera — en français. */
   readonly label: string;
+  /**
+   * **Les trois langues du libellé, pour une règle présentée par une
+   * PROMOTION seulement** (plan des promotions, § 15.8, L8b) : celles de
+   * l'audience de l'acheteur, que la trace FIGE. `label` en est le français.
+   */
+  readonly labels?: PriceStepLabels;
   /**
    * **Cette règle agit-elle malgré une mercuriale ?**
    *
@@ -202,6 +208,13 @@ export type PriceRule = {
 );
 
 /** Ce sur quoi on résout : un article, une quantité, un client, un instant. */
+/** Un libellé dans les trois langues du client, sans trou. */
+export interface PriceStepLabels {
+  readonly fr: string;
+  readonly en: string;
+  readonly it: string;
+}
+
 /** Le rang de ciblage d'une promotion, en tête de la spécificité. */
 export interface PromotionRank {
   readonly publicRank: number;
@@ -282,6 +295,11 @@ export interface PriceStep {
   readonly stage: PriceStage;
   readonly ruleId: string;
   readonly label: string;
+  /**
+   * Les trois langues, ÉCRITES SEULEMENT par une promotion (L8b, § 15.8) —
+   * additif : une ancienne trace n'a que `label`, et tout lecteur y retombe.
+   */
+  readonly labels?: PriceStepLabels;
   /**
    * **La portée à laquelle la règle a agi.**
    *

@@ -64,7 +64,8 @@ export function promotionActOf(
 export function describePromotion(terms: PromotionTerms): string {
   return [
     describeEffect(terms.effect),
-    describeAudience(terms.audience),
+    // Plusieurs publics (L8b) se lisent « particuliers inscrits + pros ».
+    terms.audiences.targets.map(describeAudience).join(" + "),
     describeFulfillment(terms.fulfillment),
     describeWindow(terms.validFrom, terms.validTo),
   ].join(" · ");

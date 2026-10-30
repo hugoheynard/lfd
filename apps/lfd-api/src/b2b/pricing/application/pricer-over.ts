@@ -9,7 +9,7 @@ import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js
 import type { PriceRule, ScopedPriceFloor } from "../domain/price-rule.js";
 import type { VolumeCommitment } from "../domain/volume-commitment.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
-import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
 
 /**
  * **La fabrique du tarificateur** — le seul chemin vers `LoadedPricer.over`.
@@ -67,7 +67,7 @@ export async function pricerOver(
     readonly ladders: readonly VolumeLadder[];
     readonly mercuriale: CompanyMercuriale | null;
     /** Les promotions du point ligne ; `[]` sous la source `legacy`, et DÉCLARÉ. */
-    readonly promotions: readonly LivePromotion[];
+    readonly promotions: readonly AdmittedPromotion[];
   } & (
     | {
         /** `measured` : ce qui a été lu, **et de quoi** mesurer le reste. */

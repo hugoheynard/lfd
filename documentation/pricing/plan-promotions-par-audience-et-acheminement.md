@@ -1393,10 +1393,16 @@ commandes du staff selon le client à la date.
 direction : le corps du § 13 garde ses décisions, ce § dit ce qui a changé et
 pourquoi ; en cas de divergence, le corps corrigé fait foi.
 
-## 15. L8b — une promotion, plusieurs publics, des libellés par audience (Hugo, 2026-10-30) — PLAN EXÉCUTABLE, CONTREDIT (§ 15.13), NON BÂTI
+## 15. L8b — une promotion, plusieurs publics, des libellés par audience (Hugo, 2026-10-30) — ✅ BÂTI le 2026-10-30 (non commité à l'écriture de cette ligne)
 
-Décidé par Hugo le 2026-10-30, après L8 (`109b6fd38`) ; **rien de ceci n'est
-dans le code** à cette date. Lot d'**argent** et de **migration** : `vitruve`
+Décidé par Hugo le 2026-10-30, après L8 (`109b6fd38`) ; **bâti le même jour**
+(migration `20261031140000_les_publics_et_libelles`). Écarts au texte ci-dessous,
+tranchés au bâti : la fonction SQL `cibles_des_promotions_reprises()` porte la
+synchronisation des cibles après une reprise (la bascule l'appelle) ;
+`minimalAudiences` vit dans `apps/lfd-backoffice-frontend/src/app/targeted-promotions/promotion-audience-tree/audience-selection.ts`, pas
+dans `promotion-draft.ts` ; le chevauchement par couvertures REFUSE aussi
+`{inscrits, pros}` contre `{pros_active}` (§ 15.10 disait « accepté », ce qui
+contredisait § 15.6 — c'est § 15.6 qui a été suivi). Lot d'**argent** et de **migration** : `vitruve`
 obligatoire avant de bâtir, `lecteur-de-migrations` sur la migration. Chaque
 affirmation sur l'existant ci-dessous a été ouverte le 2026-10-30.
 
@@ -1481,7 +1487,7 @@ supprimée), **mais elle modifie une contrainte** : c'est dit plutôt que tu.
 ### 15.4 Le domaine — agrégat et invariants
 
 - `PromotionAudience` (une cible) **reste** ; s'ajoute `PromotionAudienceSet`
-  (`domain/promotion-audience-set.ts`), value-object immuable.
+  (`apps/lfd-api/src/b2b/promotions/domain/promotion-audience-set.ts`), value-object immuable.
 - **La partition** (écrite une fois, dans ce value-object) : feuilles
   `individuals_guest`, `individuals_registered`, `pros_active`,
   `pros_pending` ; `individuals` = {invités, inscrits} ; `pros` = {actifs, en
@@ -1677,7 +1683,7 @@ refusé — test réécrit et nommé), puis contrat + éditeur.
 arrière du **code** relit `audience_kind = 'several'` par `audienceOf`
 (`promotion-rows.ts:80`), qui rend `null` ⇒ `UnreadablePromotionRowError`
 (`:82-83`) : toute lecture des promotions casse, caisse comprise. Le lot
-livre donc `prisma/rollback/2026103114xxxx_les_publics_et_libelles.sql`
+livre donc `apps/lfd-api/prisma/rollback/20261031140000_les_publics_et_libelles.sql`
 (dossier existant, précédent `rollback/20261031130000_…`) qui, **avant** le
 retour du code : pour chaque promotion `several` **active**, la ramène à sa
 première cible (ordre canonique) et l'**archive** avec le motif « retour
@@ -1700,6 +1706,14 @@ types des `PricingMaterials`, et `LivePromotion` y porte déjà `validFrom`.
 - **Q2** : une promotion `everyone` sans libellé Particuliers/Pros sert le
   commun aux deux — l'éditeur doit-il **exiger** les deux libellés dès que les
   deux audiences sont touchées, ou le commun suffit-il ?
+
+**Arbitrages (mandat de Hugo, 2026-10-30)** — appliqués au bâti :
+
+- **Q1** : la trace d'une ligne fige le libellé de l'audience de l'acheteur
+  dans les TROIS langues (`labels?: {fr, en, it}`, additif, sans trou — chaque
+  langue déjà résolue par son repli) ; `orders.discount_label` de même.
+- **Q2** : le libellé commun suffit ; les libellés Particuliers / Pros sont
+  facultatifs et le remplacent quand ils sont posés.
 
 ### 15.13 Contradiction de vitruve n° 3 (2026-10-30) — objection → réponse
 

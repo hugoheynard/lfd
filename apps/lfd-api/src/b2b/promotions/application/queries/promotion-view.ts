@@ -1,12 +1,13 @@
-import type {
-  PromotionLifecycleState,
-  PromotionScopeRuleView,
-  PromotionView,
+import {
+  SEVERAL_AUDIENCES,
+  type PromotionLifecycleState,
+  type PromotionScopeRuleView,
+  type PromotionView,
 } from "@lfd/contracts";
 
 import type { PromotionCatalogue } from "../../domain/ports/promotion-catalogue.reader.js";
 import { describePromotion } from "../../domain/promotion-act.js";
-import { audienceCompanyIdOf } from "../../domain/promotion-audience.js";
+import { audienceCompanyIdOf, type PromotionAudience } from "../../domain/promotion-audience.js";
 import { effectValueOf } from "../../domain/promotion-effect.js";
 import { fulfillmentPickupIdOf } from "../../domain/promotion-fulfillment.js";
 import type { PromotionScopeRule } from "../../domain/promotion-scope.js";
@@ -51,7 +52,12 @@ export function promotionViewOf(
     stacksOverMercuriale: state.stacksOverMercuriale,
     validFrom: state.validFrom.toISOString(),
     validTo: state.validTo?.toISOString() ?? null,
-    audience: { kind: state.audience.kind, companyId: audienceCompanyIdOf(state.audience) },
+    audienceLabels: state.audienceLabels,
+    audiences: state.audiences.targets.map((target) => ({
+      kind: target.kind,
+      companyId: audienceCompanyIdOf(target),
+    })),
+    audience: projectionOf(state.audiences.targets),
     fulfillment: {
       kind: state.fulfillment.kind,
       pickupId: fulfillmentPickupIdOf(state.fulfillment),
@@ -98,4 +104,12 @@ function nameOf(rule: PromotionScopeRule, catalogue: PromotionCatalogue): string
     case "variant":
       return catalogue.articles.find((article) => article.sku === rule.targetId)?.name ?? null;
   }
+}
+
+/** La projection d'avant L8b : la cible unique, ou `several` (§ 15.9). */
+function projectionOf(targets: readonly PromotionAudience[]): PromotionView["audience"] {
+  const [only] = targets;
+  return targets.length === 1 && only !== undefined
+    ? { kind: only.kind, companyId: audienceCompanyIdOf(only) }
+    : { kind: SEVERAL_AUDIENCES, companyId: null };
 }

@@ -67,7 +67,7 @@ export const AUDIENCE_TREE: readonly AudienceGroup[] = [
 const REPRISE_AUDIENCE = 'Tous sauf les pros actifs';
 
 /** Le public en une ligne : « Pros · actifs ». */
-export function audiencePhrase(audience: PromotionView['audience']): string {
+export function audiencePhrase(audience: PromotionView['audiences'][number]): string {
   if (audience.kind === 'everyone_but_active_pros') {
     return REPRISE_AUDIENCE;
   }
@@ -78,6 +78,42 @@ export function audiencePhrase(audience: PromotionView['audience']): string {
     }
   }
   return audience.kind;
+}
+
+/** Une cible, en mots courts : « Particuliers inscrits », « Tous les pros », « Société co_1 ». */
+const TARGET_PHRASE: Readonly<Record<PromotionAudienceKindValue, string>> = {
+  everyone: 'Tout le monde',
+  individuals: 'Tous les particuliers',
+  individuals_guest: 'Particuliers invités',
+  individuals_registered: 'Particuliers inscrits',
+  pros: 'Tous les pros',
+  pros_active: 'Pros actifs',
+  pros_pending: "Pros en cours d'inscription",
+  company: 'Société',
+  company_and_sites: 'Société',
+  everyone_but_active_pros: REPRISE_AUDIENCE,
+};
+
+/**
+ * Le public à plusieurs cibles (L8b) : « Particuliers inscrits · Tous les
+ * pros ». Une cible seule se lit comme avant ({@link audiencePhrase}).
+ */
+export function audiencesPhrase(audiences: PromotionView['audiences']): string {
+  const [only] = audiences;
+  if (audiences.length === 1 && only !== undefined) {
+    return audiencePhrase(only);
+  }
+  return audiences
+    .map((target) => {
+      const phrase = TARGET_PHRASE[target.kind];
+      if (target.companyId === null) {
+        return phrase;
+      }
+      return target.kind === 'company_and_sites'
+        ? `${phrase} ${target.companyId} et ses sites`
+        : `${phrase} ${target.companyId}`;
+    })
+    .join(' · ');
 }
 
 /** L'acheminement en une ligne ; le point nommé quand on connaît son nom. */
@@ -147,7 +183,7 @@ export function summaryPhrase(
 ): string {
   return [
     effectPhrase(view.effect),
-    audiencePhrase(view.audience),
+    audiencesPhrase(view.audiences),
     fulfillmentPhrase(view.fulfillment, pickupNames),
   ].join(' · ');
 }

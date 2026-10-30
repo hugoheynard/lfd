@@ -26,6 +26,7 @@ import {
 } from "./order-revision.js";
 import type {
   DraftOrderInput,
+  OrderDiscountLabel,
   OrderFulfillmentInput,
   OrderPrincipal,
   OrderSalesTerms,
@@ -99,6 +100,7 @@ export class Order {
     private readonly catalogVersionId: string | null,
     private readonly amounts: DraftedAmounts,
     private readonly discountAdjustment: CartAdjustment | null,
+    private readonly discountLabel: OrderDiscountLabel | null,
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
@@ -140,6 +142,7 @@ export class Order {
       input.catalogVersionId,
       amounts,
       input.discountAdjustment,
+      input.discountLabel ?? null,
       input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
@@ -335,6 +338,7 @@ export class Order {
       discountCents: this.amounts.discountCents,
       discountTtcCents: this.amounts.ttcTerms?.discountCents ?? null,
       discountAdjustment: this.discountAdjustment,
+      discountLabel: this.discountLabel,
       deliveryFeeCents: this.amounts.deliveryFeeCents,
       deliveryFeeTtcCents: this.amounts.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,

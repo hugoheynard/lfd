@@ -50,7 +50,8 @@
             (valueChange)="edit({ internalName: $event })"
           />
           <fold-input
-            label="Libellé client (français)"
+            label="Libellé commun (français)"
+            hint="Ce que lit tout client dont l'audience n'a pas son libellé."
             [value]="draft().labelFr"
             (valueChange)="edit({ labelFr: $event })"
           />
@@ -80,20 +81,48 @@
       <fold-card>
         <div class="block">
           <fold-element-title variant="title" title="Public et acheminement" />
-          <fold-listbox
-            label="Public"
-            [options]="audienceOptions"
-            [value]="draft().audienceKind"
-            (selectionChange)="setAudience($event)"
-          />
-          @if (namesCompany()) {
-            <fold-input
-              label="Identifiant de la société"
-              hint="Celui de sa fiche client."
-              [value]="draft().companyId"
-              (valueChange)="edit({ companyId: $event })"
-            />
-          }
+          <fold-element-title variant="eyebrow" title="Public" />
+          <app-promotion-audience-tree
+            [audiences]="draft().audiences"
+            (audiencesChange)="setAudiences($event)"
+          >
+            <div individualsLabels class="pair">
+              <fold-input
+                label="Libellé Particuliers"
+                hint="Vide : le libellé commun."
+                [value]="draft().individualsFr"
+                (valueChange)="edit({ individualsFr: $event })"
+              />
+              <fold-input
+                label="Anglais"
+                [value]="draft().individualsEn"
+                (valueChange)="edit({ individualsEn: $event })"
+              />
+              <fold-input
+                label="Italien"
+                [value]="draft().individualsIt"
+                (valueChange)="edit({ individualsIt: $event })"
+              />
+            </div>
+            <div prosLabels class="pair">
+              <fold-input
+                label="Libellé Pros"
+                hint="Vide : le libellé commun."
+                [value]="draft().prosFr"
+                (valueChange)="edit({ prosFr: $event })"
+              />
+              <fold-input
+                label="Anglais"
+                [value]="draft().prosEn"
+                (valueChange)="edit({ prosEn: $event })"
+              />
+              <fold-input
+                label="Italien"
+                [value]="draft().prosIt"
+                (valueChange)="edit({ prosIt: $event })"
+              />
+            </div>
+          </app-promotion-audience-tree>
           <fold-listbox
             label="Acheminement"
             hint="Une promotion d'acheminement s'applique au panier, après le prix des lignes."

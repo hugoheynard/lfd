@@ -19,7 +19,11 @@ describe('le brouillon de l’éditeur des promotions', () => {
     expect(draft).toMatchObject({
       fulfillmentKind: 'pickup_point',
       pickupId: 'pk_coeur',
-      audienceKind: 'everyone_but_active_pros',
+      // L8b : « tous sauf les pros actifs » dit dans les mots de l'arbre.
+      audiences: [
+        { kind: 'individuals', companyId: null },
+        { kind: 'pros_pending', companyId: null },
+      ],
     });
   });
 
@@ -73,5 +77,43 @@ describe('le brouillon de l’éditeur des promotions', () => {
     expect(termsOf(draft).scope.rules).toEqual([
       { target: 'variant', targetId: 'VIE-001-1', eligible: true },
     ]);
+  });
+
+  it('envoie le public et les libellés des seules branches touchées (L8b)', () => {
+    const draft = {
+      ...emptyDraft(TODAY, null),
+      internalName: 'A',
+      labelFr: 'Commun',
+      effectValue: '10',
+      audiences: [{ kind: 'individuals_registered' as const, companyId: null }],
+      individualsFr: 'Inscrits',
+      prosFr: 'Pros oubliés',
+    };
+    expect(termsOf(draft)).toMatchObject({
+      audiences: [{ kind: 'individuals_registered', companyId: null }],
+      audienceLabels: { individuals: { fr: 'Inscrits', en: null, it: null }, pros: null },
+    });
+  });
+
+  it('refuse un public vide et une société sans identifiant', () => {
+    const base = { ...emptyDraft(TODAY, null), internalName: 'A', labelFr: 'B', effectValue: '1' };
+    expect(draftProblem({ ...base, audiences: [] })).toContain('au moins un public');
+    expect(draftProblem({ ...base, audiences: [{ kind: 'company', companyId: ' ' }] })).toContain(
+      'société',
+    );
+  });
+
+  it('relit le public et les libellés d’une promotion', () => {
+    const draft = draftOf(
+      promotionView({
+        audiences: [
+          { kind: 'individuals_registered', companyId: null },
+          { kind: 'pros', companyId: null },
+        ],
+        audienceLabels: { individuals: null, pros: { fr: 'Pro', en: 'Pro EN', it: null } },
+      }),
+    );
+    expect(draft).toMatchObject({ prosFr: 'Pro', prosEn: 'Pro EN', prosIt: '', individualsFr: '' });
+    expect(draft.audiences).toHaveLength(2);
   });
 });

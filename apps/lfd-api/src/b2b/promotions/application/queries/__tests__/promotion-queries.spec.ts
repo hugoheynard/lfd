@@ -2,6 +2,8 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { PromotionNotFoundError } from "../../../domain/errors/promotion-errors.js";
 import { PromotionBrowser } from "../../../domain/ports/promotion-browser.reader.js";
 import { Promotion } from "../../../domain/promotion.js";
+import { audienceCompanyIdOf } from "../../../domain/promotion-audience.js";
+import { PromotionAudienceSet } from "../../../domain/promotion-audience-set.js";
 import type { PromotionTerms } from "../../../domain/promotion-terms.js";
 import {
   FROM,
@@ -23,6 +25,16 @@ class FixedBrowser extends PromotionBrowser {
 
   all(): Promise<readonly Promotion[]> {
     return Promise.resolve(this.promotions);
+  }
+
+  naming(companyId: string): Promise<readonly Promotion[]> {
+    return Promise.resolve(
+      this.promotions.filter((promotion) =>
+        promotion.terms.audiences.companies.some(
+          (target) => audienceCompanyIdOf(target) === companyId,
+        ),
+      ),
+    );
   }
 
   find(id: string): Promise<Promotion | null> {
@@ -60,7 +72,16 @@ const AT_COEUR = posed(
     },
   }),
 );
-const ALL = [ACTIVE, SCHEDULED, ENDED, PAUSED, ARCHIVED, AT_COEUR];
+const FOR_CO_1 = posed(
+  "p_co_1",
+  lineTerms({
+    audiences: PromotionAudienceSet.of([
+      { kind: "individuals_registered" },
+      { kind: "company", companyId: "co_1" },
+    ]),
+  }),
+);
+const ALL = [ACTIVE, SCHEDULED, ENDED, PAUSED, ARCHIVED, AT_COEUR, FOR_CO_1];
 
 function list(source: "legacy" | "promotions" = "legacy") {
   return new ListPromotionsHandler(
@@ -81,6 +102,7 @@ describe("ListPromotionsHandler", () => {
       p_paused: "paused",
       p_archived: "archived",
       p_coeur: "active",
+      p_co_1: "active",
     });
   });
 
@@ -100,6 +122,26 @@ describe("ListPromotionsHandler", () => {
       audience: { kind: "everyone_but_active_pros", companyId: null },
       effect: { kind: "percent_off", value: 1000 },
     });
+  });
+});
+
+describe("ListPromotionsHandler — le public à plusieurs cibles (L8b)", () => {
+  it("ne montre, filtré par société, que les promotions dont le public la nomme", async () => {
+    const view = await list().execute(new ListPromotionsQuery(null, "co_1"));
+    expect(view.promotions.map((p) => p.id)).toEqual(["p_co_1"]);
+  });
+
+  it("rend les cibles, et projette `several` dans l'ancien champ", async () => {
+    const view = await list().execute(new ListPromotionsQuery(null, "co_1"));
+    expect(view.promotions[0]).toMatchObject({
+      audiences: [
+        { kind: "individuals_registered", companyId: null },
+        { kind: "company", companyId: "co_1" },
+      ],
+      audience: { kind: "several", companyId: null },
+      audienceLabels: { individuals: null, pros: null },
+    });
+    expect(view.promotions[0]?.summary).toContain("particuliers inscrits + une société (co_1)");
   });
 });
 

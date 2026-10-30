@@ -3,9 +3,11 @@ import { discountCentsOf, type CartAdjustment } from "@lfd/contracts";
 import {
   minQuantityOf,
   targetingRankOf,
+  type AdmittedPromotion,
   type LivePromotion,
 } from "../../../promotions/domain/live-promotion.js";
 import type { PromotionEffect } from "../../../promotions/domain/promotion-effect.js";
+import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 import { promotionScopeCovers } from "../../../promotions/domain/promotion-scope.js";
 import type { OrderLineClassification } from "../ports/order-line-classification.reader.js";
 import { eligibleSubtotalCents, type PricedLine } from "./pickup-discount-eligibility.js";
@@ -31,6 +33,12 @@ export interface BasketPromotionOutcome {
   readonly ineligibleSkus: ReadonlySet<string>;
   /** La promotion retenue — ce que la révision comparera (L9). */
   readonly promotionId: string | null;
+  /**
+   * Son libellé dans l'audience de l'acheteur, trois langues — ce que la
+   * commande FIGE (`orders.discount_label`, L8b, § 15.8). `null` sans
+   * promotion, et sous l'ancien chemin (la remise d'un site n'en a pas).
+   */
+  readonly label: ServedPromotionLabel | null;
 }
 
 export const NO_BASKET_PROMOTION: BasketPromotionOutcome = {
@@ -38,6 +46,7 @@ export const NO_BASKET_PROMOTION: BasketPromotionOutcome = {
   discountAdjustment: null,
   ineligibleSkus: new Set(),
   promotionId: null,
+  label: null,
 };
 
 /**
@@ -50,11 +59,12 @@ export const NO_BASKET_PROMOTION: BasketPromotionOutcome = {
  * une même commande. Après la reprise il y en a au plus une — un seul point
  * de retrait par commande, une remise par clientèle (§ 13.2).
  *
- * Entre plusieurs : la plus spécifique (public, puis acheminement), puis la
- * plus avantageuse pour le client, puis le plus petit identifiant.
+ * Entre plusieurs : la plus spécifique (public — le rang de la cible qui
+ * admet l'acheteur, L8b —, puis acheminement), puis la plus avantageuse pour
+ * le client, puis le plus petit identifiant.
  */
 export function chooseBasketPromotion(
-  candidates: readonly LivePromotion[],
+  candidates: readonly AdmittedPromotion[],
   lines: readonly BasketLine[],
   classifications: ReadonlyMap<string, OrderLineClassification>,
 ): BasketPromotionOutcome {
@@ -72,7 +82,7 @@ export function chooseBasketPromotion(
 
 /** Ce que cette promotion retirerait de ce panier. */
 export function outcomeOf(
-  promotion: LivePromotion,
+  promotion: AdmittedPromotion,
   lines: readonly BasketLine[],
   classifications: ReadonlyMap<string, OrderLineClassification>,
 ): BasketPromotionOutcome {
@@ -99,6 +109,7 @@ export function outcomeOf(
     discountAdjustment: adjustment,
     ineligibleSkus,
     promotionId: promotion.id,
+    label: promotion.servedLabel,
   };
 }
 

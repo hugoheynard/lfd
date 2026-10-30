@@ -8,12 +8,13 @@ import { PricingMaterialsCache } from "../../pricing/infrastructure/pricing-mate
 import { PromotionRepository } from "../domain/ports/promotion.repository.js";
 import { PROMOTION_SUBJECT, type PromotionAct } from "../domain/promotion-act.js";
 import type { Promotion } from "../domain/promotion.js";
+import { audienceTargetRowsOf } from "./promotion-audience-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence } from "./promotion-rows.js";
 
 /**
  * **L'adaptateur Prisma de l'agrégat `Promotion`.** Il ne tient aucune
- * règle : elles sont dans l'agrégat. Il écrit l'état, la portée remplacée en
- * bloc, l'acte dans `pricing_events` (sujet `promotion`, § 13.9) et son miroir
+ * règle : elles sont dans l'agrégat. Il écrit l'état (et la projection de
+ * son public, L8b), la portée et les cibles du public remplacées en bloc, l'acte dans `pricing_events` (sujet `promotion`, § 13.9) et son miroir
  * au journal général — une seule transaction : l'état sans sa trace n'existe
  * pas.
  */
@@ -32,9 +33,12 @@ export class PrismaPromotionRepository extends PromotionRepository {
   async load(id: string): Promise<Promotion | null> {
     const row = await this.prisma.promotion.findUnique({
       where: { id },
-      include: { scopeRules: { orderBy: [{ target: "asc" }, { targetId: "asc" }] } },
+      include: {
+        scopeRules: { orderBy: [{ target: "asc" }, { targetId: "asc" }] },
+        audienceTargets: true,
+      },
     });
-    return row === null ? null : toDomain(row, row.scopeRules);
+    return row === null ? null : toDomain(row, row.scopeRules, row.audienceTargets);
   }
 
   async save(promotion: Promotion, act: PromotionAct): Promise<void> {
@@ -52,6 +56,14 @@ export class PrismaPromotionRepository extends PromotionRepository {
       if (rules.length > 0) {
         await this.prisma.promotionScopeRule.createMany({ data: rules });
       }
+      // Les cibles aussi (L8b) : la table fait foi, la projection
+      // `audience_kind` est écrite plus haut dans la même transaction.
+      await this.prisma.promotionAudienceTarget.deleteMany({
+        where: { promotionId: promotion.id },
+      });
+      await this.prisma.promotionAudienceTarget.createMany({
+        data: audienceTargetRowsOf(promotion, () => this.ids.next()),
+      });
       await this.inscribe(act);
     });
     // Après le commit, comme `PricingActWriter` : le calcul lit les

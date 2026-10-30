@@ -6,7 +6,8 @@ import {
   PromotionProductTargetAtLineError,
   PromotionReversedWindowError,
 } from "./errors/promotion-errors.js";
-import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audience.js";
+import { PromotionAudienceLabelWithoutAudienceError } from "./errors/promotion-audience-errors.js";
+import type { LabelAudience, PromotionAudienceSet } from "./promotion-audience-set.js";
 import { assertCondition, type PromotionCondition } from "./promotion-condition.js";
 import {
   EFFECTS_AT,
@@ -23,12 +24,9 @@ import {
 import type { PromotionScope } from "./promotion-scope.js";
 import { assertScope } from "./promotion-scope-checks.js";
 
-/** Le libellé montré au client ; anglais et italien `null` = repli sur le français. */
-export interface PromotionLabel {
-  readonly fr: string;
-  readonly en: string | null;
-  readonly it: string | null;
-}
+import type { PromotionAudienceLabels, PromotionLabel } from "./promotion-labels.js";
+
+export type { PromotionLabel } from "./promotion-labels.js";
 
 /**
  * **La fenêtre d'une promotion** : borne basse incluse, borne haute exclue,
@@ -48,7 +46,10 @@ export interface PromotionWindow {
  */
 export interface PromotionTerms extends PromotionWindow {
   readonly internalName: string;
+  /** Le libellé COMMUN — le repli de chaque audience (§ 15.4). */
   readonly label: PromotionLabel;
+  /** Les libellés Particuliers / Pros, facultatifs (§ 15.12 Q2). */
+  readonly audienceLabels: PromotionAudienceLabels;
   /** Le motif ; `null` = aucun. */
   readonly reason: string | null;
   readonly effect: PromotionEffect;
@@ -56,7 +57,8 @@ export interface PromotionTerms extends PromotionWindow {
   readonly ownFloor: PromotionOwnFloor | null;
   /** Point ligne seulement : au panier, la mercuriale ne scelle rien (§ 13.2). */
   readonly stacksOverMercuriale: boolean;
-  readonly audience: PromotionAudience;
+  /** Le public, en forme canonique (§ 15.4) — au moins une cible. */
+  readonly audiences: PromotionAudienceSet;
   readonly fulfillment: PromotionFulfillment;
   readonly scope: PromotionScope;
   readonly conditions: readonly PromotionCondition[];
@@ -72,6 +74,7 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
  * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
+ * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
  * @throws les refus de `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
  */
 export function assertTerms(terms: PromotionTerms): void {
@@ -79,6 +82,7 @@ export function assertTerms(terms: PromotionTerms): void {
   assertText("libellé", terms.label.fr);
   assertOptionalText("libellé anglais", terms.label.en);
   assertOptionalText("libellé italien", terms.label.it);
+  assertAudienceLabels(terms);
   assertOptionalText("motif", terms.reason);
   if (terms.validTo !== null && terms.validTo.getTime() <= terms.validFrom.getTime()) {
     throw new PromotionReversedWindowError(terms.validFrom, terms.validTo);
@@ -106,11 +110,41 @@ export function assertTerms(terms: PromotionTerms): void {
   terms.conditions.forEach(assertCondition);
 }
 
-/** @throws {PromotionMissingTargetIdError} une société ou un point nommé à vide. */
-function assertTargets(terms: PromotionTerms): void {
-  if (audienceCompanyIdOf(terms.audience)?.trim() === "") {
-    throw new PromotionMissingTargetIdError("company");
+const AUDIENCE_NAMES: Readonly<Record<LabelAudience, string>> = {
+  individuals: "Particuliers",
+  pros: "Pros",
+};
+
+/**
+ * Un libellé d'audience n'existe que si le public touche cette audience, et
+ * son français n'est pas vide (§ 15.4).
+ *
+ * @throws {PromotionAudienceLabelWithoutAudienceError} libellé d'une audience non visée.
+ * @throws {PromotionBlankTextError} libellé d'audience vide.
+ */
+function assertAudienceLabels(terms: PromotionTerms): void {
+  for (const audience of ["individuals", "pros"] as const) {
+    const label = terms.audienceLabels[audience];
+    if (label === null) {
+      continue;
+    }
+    if (!terms.audiences.touches(audience)) {
+      throw new PromotionAudienceLabelWithoutAudienceError(audience);
+    }
+    const name = AUDIENCE_NAMES[audience];
+    assertText(`libellé ${name}`, label.fr);
+    assertOptionalText(`libellé ${name} anglais`, label.en);
+    assertOptionalText(`libellé ${name} italien`, label.it);
   }
+}
+
+/**
+ * Les sociétés du public sont tenues par `PromotionAudienceSet` à sa
+ * construction ; reste le point de retrait.
+ *
+ * @throws {PromotionMissingTargetIdError} un point nommé à vide.
+ */
+function assertTargets(terms: PromotionTerms): void {
   if (fulfillmentPickupIdOf(terms.fulfillment)?.trim() === "") {
     throw new PromotionMissingTargetIdError("pickup_point");
   }

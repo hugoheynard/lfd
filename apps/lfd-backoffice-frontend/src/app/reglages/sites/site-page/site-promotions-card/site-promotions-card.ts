@@ -22,7 +22,7 @@ import {
 import {
   STATE_LABEL,
   STATE_VARIANT,
-  audiencePhrase,
+  audiencesPhrase,
   effectPhrase,
   windowPhrase,
 } from '../../../../targeted-promotions/promotion-format';
@@ -76,7 +76,7 @@ export class SitePromotionsCard {
   protected readonly stateLabel = (view: PromotionView): string => STATE_LABEL[view.state];
   protected readonly stateVariant = (view: PromotionView) => STATE_VARIANT[view.state];
   protected readonly line = (view: PromotionView): string =>
-    `${effectPhrase(view.effect)} · ${audiencePhrase(view.audience)} · ${windowPhrase(view.validFrom, view.validTo)}`;
+    `${effectPhrase(view.effect)} · ${audiencesPhrase(view.audiences)} · ${windowPhrase(view.validFrom, view.validTo)}`;
 
   constructor() {
     effect(() => {

@@ -694,6 +694,8 @@ export type {
 } from "./account-alert-override.js";
 export { cartAdjustmentSchema, cartAdjustmentCents, discountCentsOf } from "./cart-adjustment.js";
 export type { CartAdjustment } from "./cart-adjustment.js";
+export { discountLabelIn } from "./discount-label.js";
+export type { DiscountLabelView } from "./discount-label.js";
 export {
   pickupAddressPayloadSchema,
   pickupOpeningSchema,
@@ -1845,6 +1847,7 @@ export {
   setVolumeLadderPayloadSchema,
   volumeTierSchema,
   volumeTiersSchema,
+  stepLabelIn,
 } from "./pricing.js";
 export type {
   AuthoredPriceStage,
@@ -2918,6 +2921,7 @@ export {
   PROMOTION_EFFECT_KIND_VALUES,
   PROMOTION_SCOPE_TARGET_VALUES,
   PROMOTION_LIFECYCLE_STATES,
+  SEVERAL_AUDIENCES,
   promotionTermsPayloadSchema,
   revisePromotionPayloadSchema,
   archivePromotionPayloadSchema,
@@ -2933,6 +2937,8 @@ export type {
   RevisePromotionPayload,
   ArchivePromotionPayload,
   PromotionScopeRuleView,
+  PromotionLabelView,
+  PromotionAudienceTargetView,
   PromotionView,
   PromotionListView,
   PromotionsSourceView,

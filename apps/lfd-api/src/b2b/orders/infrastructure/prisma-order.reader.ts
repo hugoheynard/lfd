@@ -5,6 +5,7 @@ import {
   cartAdjustmentSchema,
   type DeliveryVatMode,
   deliveryVatModeSchema,
+  type DiscountLabelView,
   type FulfillmentMethod,
   type LateFeeAdjustment,
   lateFeeAdjustmentSchema,
@@ -20,6 +21,7 @@ import {
   recurringDeltasSchema,
 } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
+import { z } from "zod";
 
 import {
   PaymentStatus as PaymentStatusValue,
@@ -65,6 +67,7 @@ export interface OrderRow {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: Prisma.JsonValue | null;
+  readonly discountLabel: Prisma.JsonValue | null;
   readonly voucherDiscountCents: number;
   readonly discountTtcCents: number | null;
   readonly voucherTtcCents: number | null;
@@ -118,6 +121,7 @@ export const ORDER_SELECT = {
   subtotalCents: true,
   discountCents: true,
   discountAdjustment: true,
+  discountLabel: true,
   voucherDiscountCents: true,
   ...ORDER_TTC_TERMS_SELECT,
   deliveryFeeCents: true,
@@ -523,6 +527,7 @@ export function toOrderView(row: OrderRow): OrderView {
     subtotalCents: row.subtotalCents,
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
+    ...discountLabelFieldOf(row.discountLabel),
     ...pickupDiscountBaseFieldOf(row),
     voucherDiscountCents: row.voucherDiscountCents,
     ...orderTtcTermsFieldOf(row),
@@ -568,6 +573,20 @@ function refundsOf(rows: OrderRow["refunds"]): Pick<OrderView, "refunds" | "refu
  * les commandes antérieures à la colonne n'en portent pas, et un JSON d'une autre
  * forme ne doit pas remonter en vue.
  */
+/**
+ * Le libellé figé de la promotion panier (L8b), ou rien : `NULL` sur toute
+ * commande d'avant, et un JSON d'une autre forme ne remonte pas — le papier
+ * retombe alors sur « Remise retrait <point> », ce qui reste vrai.
+ */
+function discountLabelFieldOf(value: Prisma.JsonValue | null): {
+  readonly discountLabel?: DiscountLabelView;
+} {
+  const parsed = DISCOUNT_LABEL_SCHEMA.safeParse(value);
+  return parsed.success ? { discountLabel: parsed.data } : {};
+}
+
+const DISCOUNT_LABEL_SCHEMA = z.object({ fr: z.string(), en: z.string(), it: z.string() });
+
 function parseAdjustment(value: Prisma.JsonValue | null): CartAdjustment | null {
   return value === null ? null : cartAdjustmentSchema.parse(value);
 }

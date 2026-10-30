@@ -147,6 +147,15 @@ export class PrismaOrderRepository extends OrderRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        // Le libellé de la promotion panier, figé avec son ajustement (L8b).
+        discountLabel:
+          state.discountLabel === null
+            ? Prisma.DbNull
+            : {
+                fr: state.discountLabel.fr,
+                en: state.discountLabel.en,
+                it: state.discountLabel.it,
+              },
         // Le bon, et ce qu'il a imputé — à part de la remise (plan des points, C2).
         // L'index unique partiel refuse un second bon vivant, même si l'agrégat
         // du bon l'avait laissé passer.

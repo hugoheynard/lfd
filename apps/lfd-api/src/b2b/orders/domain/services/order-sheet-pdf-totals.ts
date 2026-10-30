@@ -48,7 +48,8 @@ export const PICKUP_DISCOUNT_EXCLUDED_NOTE = "* Non concerné par la remise retr
 
 /**
  * Le libellé de la remise de retrait, précis sur le point et la règle figés
- * ({@link pickupDiscountLabel}). L'assiette est dans la convention du bon :
+ * ({@link pickupDiscountLabel}) — ou le nom de la promotion figé sur la
+ * commande (L8b), en français : le bon est un document archivé. L'assiette est dans la convention du bon :
  * HT pour le pro, TTC pour le public quand ses lignes en portent un.
  */
 function discountLabel(sheet: PricedPaper, ttc: boolean): string {
@@ -56,6 +57,7 @@ function discountLabel(sheet: PricedPaper, ttc: boolean): string {
     adjustment: sheet.money.discountAdjustment,
     site: pickupSiteOf(sheet.fulfillment),
     eligibleCents: eligibleBaseCentsOf(sheet.money, ttc),
+    promotionLabel: sheet.money.discountLabel?.fr,
   });
 }
 

@@ -36,10 +36,10 @@ async function promotionsAt(
       at === null
         ? { applicationPoint: point, archivedAt: null }
         : { applicationPoint: point, ...unarchivedAt(at) },
-    include: { scopeRules: true },
+    include: { scopeRules: true, audienceTargets: true },
     orderBy: { id: "asc" },
   });
-  return rows.map((row) => livePromotionOf(toDomain(row, row.scopeRules)));
+  return rows.map((row) => livePromotionOf(toDomain(row, row.scopeRules, row.audienceTargets)));
 }
 
 @Injectable()

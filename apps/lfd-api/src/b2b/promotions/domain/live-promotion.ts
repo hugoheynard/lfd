@@ -1,13 +1,19 @@
 import type { PromotionAudience } from "./promotion-audience.js";
+import {
+  servedLabelFor,
+  type PromotionAudienceLabels,
+  type PromotionLabel,
+  type ServedPromotionLabel,
+} from "./promotion-labels.js";
 import type { PromotionCondition } from "./promotion-condition.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { PromotionScope } from "./promotion-scope.js";
 import {
-  audienceAdmits,
+  admittingRankOf,
   fulfillmentAdmits,
   FULFILLMENT_RANK,
-  PUBLIC_RANK,
+  labelAudienceOf,
   type PromotionAudienceFacts,
 } from "./promotion-targeting.js";
 import type { Promotion } from "./promotion.js";
@@ -25,8 +31,10 @@ import type { Promotion } from "./promotion.js";
  */
 export interface LivePromotion {
   readonly id: string;
-  /** Le libellé client — celui de la trace, comme le libellé d'une règle. */
-  readonly label: string;
+  /** Le libellé commun — le repli de chaque audience (§ 15.4). */
+  readonly label: PromotionLabel;
+  /** Les libellés Particuliers / Pros ; l'acheteur lit celui de son audience (§ 15.8). */
+  readonly audienceLabels: PromotionAudienceLabels;
   readonly effect: PromotionEffect;
   readonly stacksOverMercuriale: boolean;
   /** Borne basse **incluse**. */
@@ -35,7 +43,8 @@ export interface LivePromotion {
   readonly validTo: Date | null;
   /** L'instant de la pause, comme `suspendedFrom` d'une règle ; `null` = active. */
   readonly suspendedFrom: Date | null;
-  readonly audience: PromotionAudience;
+  /** Les cibles, en forme canonique — au moins une (§ 15.4). */
+  readonly audiences: readonly PromotionAudience[];
   readonly fulfillment: PromotionFulfillment;
   readonly scope: PromotionScope;
   readonly conditions: readonly PromotionCondition[];
@@ -46,13 +55,14 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
   const state = promotion.toPersistence();
   return {
     id: state.id,
-    label: state.label.fr,
+    label: state.label,
+    audienceLabels: state.audienceLabels,
     effect: state.effect,
     stacksOverMercuriale: state.stacksOverMercuriale,
     validFrom: state.validFrom,
     validTo: state.validTo,
     suspendedFrom: state.paused?.at ?? null,
-    audience: state.audience,
+    audiences: state.audiences.targets,
     fulfillment: state.fulfillment,
     scope: state.scope,
     conditions: state.conditions,
@@ -60,23 +70,51 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
 }
 
 /**
+ * **Une promotion admise pour UN acheteur** (§ 15.6, § 15.8, lot L8b) : ce
+ * que le public à plusieurs cibles ne dit qu'une fois l'acheteur connu — le
+ * rang de la cible qui l'admet, et le libellé de son audience, figé tel
+ * quel dans la trace et sur la commande.
+ *
+ * Un type distinct de {@link LivePromotion} pour qu'une promotion NON jugée
+ * ne puisse pas atteindre la chaîne de prix : le rang n'existe qu'admis.
+ */
+export interface AdmittedPromotion extends LivePromotion {
+  /** Le plus haut rang parmi les cibles qui admettent l'acheteur. */
+  readonly publicRank: number;
+  /** Le libellé de l'audience de l'acheteur, trois langues, repli commun. */
+  readonly servedLabel: ServedPromotionLabel;
+}
+
+/**
  * **Ce qui ne dépend pas de l'article** : fenêtre, pause, public,
  * acheminement — jugés une fois pour la question, comme `inForceFor` le fait
  * des règles. Borne basse incluse, haute exclue ; une pause posée avant
  * l'instant l'éteint, une pause posée après ne dit rien de cet instant.
+ * Le public admet si **au moins une** de ses cibles admet (§ 15.6).
  */
 export function promotionsAdmitted(
   promotions: readonly LivePromotion[],
   at: Date,
   facts: PromotionAudienceFacts,
-): LivePromotion[] {
-  return promotions.filter(
-    (promotion) =>
+): AdmittedPromotion[] {
+  const audience = labelAudienceOf(facts);
+  const admitted: AdmittedPromotion[] = [];
+  for (const promotion of promotions) {
+    const publicRank = admittingRankOf(promotion.audiences, facts);
+    if (
+      publicRank !== null &&
       inWindow(promotion, at) &&
       !(promotion.suspendedFrom !== null && promotion.suspendedFrom.getTime() <= at.getTime()) &&
-      audienceAdmits(promotion.audience, facts) &&
-      fulfillmentAdmits(promotion.fulfillment, facts.fulfillment),
-  );
+      fulfillmentAdmits(promotion.fulfillment, facts.fulfillment)
+    ) {
+      admitted.push({
+        ...promotion,
+        publicRank,
+        servedLabel: servedLabelFor(promotion.label, promotion.audienceLabels, audience),
+      });
+    }
+  }
+  return admitted;
 }
 
 function inWindow(promotion: LivePromotion, at: Date): boolean {
@@ -92,13 +130,16 @@ export function minQuantityOf(promotion: LivePromotion): number | null {
   return condition?.value ?? null;
 }
 
-/** Le rang du public et celui de l'acheminement — en tête de la spécificité. */
-export function targetingRankOf(promotion: LivePromotion): {
+/**
+ * Le rang du public (celui de la cible qui admet l'acheteur) et celui de
+ * l'acheminement — en tête de la spécificité.
+ */
+export function targetingRankOf(promotion: AdmittedPromotion): {
   readonly publicRank: number;
   readonly fulfillmentRank: number;
 } {
   return {
-    publicRank: PUBLIC_RANK[promotion.audience.kind],
+    publicRank: promotion.publicRank,
     fulfillmentRank: FULFILLMENT_RANK[promotion.fulfillment.kind],
   };
 }

@@ -7,6 +7,7 @@ import {
   fulfillmentWindowSchema,
 } from "./address.js";
 import { cartAdjustmentSchema, type CartAdjustment } from "./cart-adjustment.js";
+import type { DiscountLabelView } from "./discount-label.js";
 import {
   type FulfillmentMethod,
   fulfillmentMethodSchema,
@@ -163,6 +164,8 @@ export const sheetMoneySchema = z.object({
   discountCents: z.number().int(),
   /** Ce qui a produit la remise — sans lui, on ne sait dire qu'un montant. */
   discountAdjustment: cartAdjustmentSchema.nullable(),
+  /** Cf. {@link SheetMoney.discountLabel} — absent d'une feuille d'avant L8b. */
+  discountLabel: z.object({ fr: z.string(), en: z.string(), it: z.string() }).optional(),
   /** La part du bon de fidélité — absente d'une feuille d'avant le lot C, lue zéro. */
   voucherDiscountCents: z.number().int().default(0),
   deliveryFeeCents: z.number().int(),
@@ -187,6 +190,12 @@ export interface SheetMoney {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Le libellé de la promotion panier figé sur la commande (L8b) — il nomme
+   * la remise à la place de « Remise retrait <point> ». Absent : commande
+   * d'avant, ou sans promotion.
+   */
+  readonly discountLabel?: DiscountLabelView | undefined;
   /**
    * Le **bon de fidélité** imputé, HT — une ligne à part de la remise, jamais
    * fondue avec elle (plan des points, C7). `0` sans bon.
