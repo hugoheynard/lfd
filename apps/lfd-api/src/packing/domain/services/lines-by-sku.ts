@@ -18,6 +18,8 @@ export interface SummableLine {
   readonly productName: string;
   readonly quantity: number;
   readonly saleUnit?: SaleUnit;
+  /** Le marqueur « sur mesure » d'une ligne de commande (M4) ; un réassort n'en porte pas. */
+  readonly madeToOrder?: boolean | null;
 }
 
 /**
@@ -28,6 +30,10 @@ export interface SummableLine {
  * Le nom retenu est celui de la première ligne, comme le compte à produire du
  * fournil (`countOf`) : c'est le SKU qui fait foi. Une ligne de commande
  * porte son unité ; une ligne de réassort n'en porte pas (toujours des pièces).
+ *
+ * Le marqueur « sur mesure » (plan M4) : une seule ligne sur mesure fait la
+ * ligne sur mesure — c'est ce qui doit se voir au bac ; un « non » connu
+ * l'emporte sur une ignorance ; aucun marqueur connu, aucun marqueur.
  */
 export function linesBySku<Line extends SummableLine>(lines: readonly Line[]): readonly Line[] {
   const bySku = new Map<string, Line>();
@@ -41,7 +47,25 @@ export function linesBySku<Line extends SummableLine>(lines: readonly Line[]): r
       // Des pièces et des grammes du même article ne font pas une ligne (P6).
       throw new MixedSaleUnitLineError(line.sku);
     }
-    bySku.set(line.sku, { ...known, quantity: known.quantity + line.quantity });
+    const madeToOrder = mergedMadeToOrder(known.madeToOrder, line.madeToOrder);
+    bySku.set(line.sku, {
+      ...known,
+      quantity: known.quantity + line.quantity,
+      ...(madeToOrder === undefined ? {} : { madeToOrder }),
+    });
   }
   return [...bySku.values()];
+}
+
+function mergedMadeToOrder(
+  left: boolean | null | undefined,
+  right: boolean | null | undefined,
+): boolean | null | undefined {
+  if (left === true || right === true) {
+    return true;
+  }
+  if (left === false || right === false) {
+    return false;
+  }
+  return left === null || right === null ? null : undefined;
 }

@@ -63,6 +63,8 @@ export class PrismaPackingShadowLedger extends PackingShadowLedger {
         productName: line.productName,
         quantity: line.quantity,
         saleUnit: line.saleUnit,
+        // Un fait publié avant le plan sur mesure (M4) n'en dit rien : `NULL`.
+        madeToOrder: line.madeToOrder ?? null,
       })),
       skipDuplicates: true,
     });

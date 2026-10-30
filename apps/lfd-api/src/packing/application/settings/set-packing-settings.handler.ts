@@ -22,9 +22,13 @@ export class SetPackingSettingsHandler implements ICommandHandler<SetPackingSett
   ) {}
 
   async execute(command: SetPackingSettingsCommand): Promise<void> {
-    const next = PackingSettings.of({ halfSharing: command.halfSharing });
     await this.uow.run(async () => {
       const before = await this.reader.current();
+      const next = PackingSettings.of({
+        halfSharing: command.halfSharing,
+        showMadeToOrder:
+          command.showMadeToOrder ?? (before ?? PackingSettings.defaults()).showMadeToOrder,
+      });
       if (before?.equals(next) === true) {
         return;
       }

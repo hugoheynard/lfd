@@ -5,7 +5,12 @@ import { PackingSettingsRepository } from "../../domain/ports/packing-settings.r
 /** Les réglages du colisage, en mémoire : `null` tant que personne ne les a posés. */
 export class InMemoryPackingSettings extends PackingSettingsRepository {
   posed: PackingSettings | null;
-  readonly writes: { readonly halfSharing: boolean; readonly at: Date; readonly by: string }[] = [];
+  readonly writes: {
+    readonly halfSharing: boolean;
+    readonly showMadeToOrder: boolean;
+    readonly at: Date;
+    readonly by: string;
+  }[] = [];
 
   constructor(posed: PackingSettings | null = null) {
     super();
@@ -14,12 +19,19 @@ export class InMemoryPackingSettings extends PackingSettingsRepository {
 
   /** Le partage d'une moitié ouvert — le cas des suites qui éprouvent le geste lui-même. */
   static sharingOpen(): InMemoryPackingSettings {
-    return new InMemoryPackingSettings(PackingSettings.of({ halfSharing: true }));
+    return new InMemoryPackingSettings(
+      PackingSettings.of({ halfSharing: true, showMadeToOrder: true }),
+    );
   }
 
   save(settings: PackingSettings, at: Date, by: string): Promise<void> {
     this.posed = settings;
-    this.writes.push({ halfSharing: settings.halfSharing, at, by });
+    this.writes.push({
+      halfSharing: settings.halfSharing,
+      showMadeToOrder: settings.showMadeToOrder,
+      at,
+      by,
+    });
     return Promise.resolve();
   }
 

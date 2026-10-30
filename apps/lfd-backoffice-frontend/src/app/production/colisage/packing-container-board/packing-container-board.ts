@@ -18,8 +18,10 @@ import type {
   PackingLine,
   PackingSheet,
 } from '@lfd/contracts';
+import { DEFAULT_PACKING_SHOW_MADE_TO_ORDER } from '@lfd/contracts';
 import { saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 import {
+  FoldBadgeComponent,
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
@@ -116,6 +118,7 @@ function isMovingShare(data: unknown): data is MovingShare {
     CdkDrag,
     CdkDropList,
     CdkDropListGroup,
+    FoldBadgeComponent,
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
@@ -213,6 +216,11 @@ export class PackingContainerBoard {
    * (Hugo, 2026-10-25), et le serveur refuse de toute façon le geste fermé.
    */
   protected readonly halfSharing = signal(false);
+  /**
+   * La pastille « Sur mesure » est-elle demandée dans Réglages › Colisage
+   * (plan sur mesure, M4) ? Affichée tant qu'on ne l'a pas lu : c'est le défaut.
+   */
+  protected readonly showMadeToOrder = signal(DEFAULT_PACKING_SHOW_MADE_TO_ORDER);
   /** Le choix d'une moitié voisine est-il déplié (« Partager une moitié ») ? */
   protected readonly sharing = signal(false);
   protected readonly halves = signal<Loadable<readonly DeliveryBinFreeHalfView[]>>({
@@ -278,9 +286,12 @@ export class PackingContainerBoard {
   /** Lu à l'ouverture du tableau ; un poste resté ouvert sur un réglage fermé reçoit le refus du serveur. */
   private async loadHalfSharing(): Promise<void> {
     try {
-      this.halfSharing.set((await this.packingSettings.read()).halfSharing);
+      const settings = await this.packingSettings.read();
+      this.halfSharing.set(settings.halfSharing);
+      this.showMadeToOrder.set(settings.showMadeToOrder);
     } catch {
       this.halfSharing.set(false);
+      this.showMadeToOrder.set(DEFAULT_PACKING_SHOW_MADE_TO_ORDER);
     }
   }
 

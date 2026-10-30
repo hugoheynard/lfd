@@ -15,8 +15,8 @@ export class PrismaPackingSettingsReader extends PackingSettingsReader {
   async current(): Promise<PackingSettings | null> {
     const row = await this.prisma.packingSettings.findUnique({
       where: { key: PACKING_SETTINGS_KEY },
-      select: { halfSharing: true },
+      select: { halfSharing: true, showMadeToOrder: true },
     });
-    return row === null ? null : PackingSettings.of({ halfSharing: row.halfSharing });
+    return row === null ? null : PackingSettings.of(row);
   }
 }

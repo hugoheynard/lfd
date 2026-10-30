@@ -43,3 +43,31 @@ describe("linesBySku — au poids", () => {
     ).toThrow(/à la fois à la pièce et au poids/u);
   });
 });
+
+/** Plan sur mesure, M4 : le marqueur d'un article regroupé. */
+describe("linesBySku — le marqueur « sur mesure »", () => {
+  const cro = { sku: "CRO", productName: "Croissant", quantity: 1 };
+
+  it("un « oui » l'emporte sur un « non » et sur une ignorance", () => {
+    expect(
+      linesBySku([
+        { ...cro, madeToOrder: null },
+        { ...cro, madeToOrder: false },
+        { ...cro, madeToOrder: true },
+      ]),
+    ).toEqual([{ ...cro, quantity: 3, madeToOrder: true }]);
+  });
+
+  it("un « non » connu l'emporte sur une ignorance", () => {
+    expect(
+      linesBySku([
+        { ...cro, madeToOrder: null },
+        { ...cro, madeToOrder: false },
+      ]),
+    ).toEqual([{ ...cro, quantity: 2, madeToOrder: false }]);
+  });
+
+  it("des lignes sans marqueur (réassort) restent sans marqueur", () => {
+    expect(linesBySku([cro, cro])).toEqual([{ ...cro, quantity: 2 }]);
+  });
+});

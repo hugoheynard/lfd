@@ -53,6 +53,9 @@
           </span>
           <span class="cb-name">
             {{ line.productName }}
+            @if (showMadeToOrder() && line.madeToOrder === true) {
+              <fold-badge variant="info" content="Sur mesure" data-made-to-order />
+            }
             @if (line.awaitingProduction) {
               <app-awaiting-badge />
             }

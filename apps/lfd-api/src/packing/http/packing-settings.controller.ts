@@ -45,7 +45,7 @@ export class PackingSettingsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<SetPackingSettingsCommand, void>(
-      new SetPackingSettingsCommand(payload.halfSharing, staffUserId),
+      new SetPackingSettingsCommand(payload.halfSharing, staffUserId, payload.showMadeToOrder),
     );
   }
 }

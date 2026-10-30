@@ -87,6 +87,16 @@ export interface PackingLine {
   readonly allocated?: number;
   /** `quantity - allocated` — la colonne « À répartir ». Calculé au serveur. */
   readonly unallocated?: number;
+  /**
+   * Le marqueur « sur mesure » de la ligne, recopié du fait
+   * `production.packing_list_drawn` (plan sur mesure, M4). `null` : ligne
+   * inscrite avant le lot, ou fait publié sans le champ — on ne sait pas.
+   * L'écran ne montre la pastille que si Réglages › Colisage le demande
+   * (`PackingSettingsView.showMadeToOrder`).
+   *
+   * Facultatif dans le TYPE seulement : le serveur l'envoie toujours.
+   */
+  readonly madeToOrder?: boolean | null;
 }
 
 /**

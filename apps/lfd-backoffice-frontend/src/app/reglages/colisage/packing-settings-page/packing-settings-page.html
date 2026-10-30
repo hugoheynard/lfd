@@ -33,6 +33,21 @@
           <fold-callout variant="alert" announce>{{ message }}</fold-callout>
         }
       </fold-card>
+
+      <fold-card>
+        <fold-element-title cardHeader variant="title" title="Écran du colisage" />
+
+        @for (view of shown(); track view) {
+          <fold-checkbox
+            label="Afficher le sur mesure à l'écran du colisage"
+            hint="Une pastille « Sur mesure » sur chaque ligne d'un article fait sur mesure pour cette commande. Désactivé, l'écran ne la montre plus ; les papiers du fournil la portent toujours."
+            [checked]="view.showMadeToOrder"
+            (checkedChange)="setShowMadeToOrder($event)"
+            [disabled]="!canWrite() || saving()"
+            data-show-made-to-order
+          />
+        }
+      </fold-card>
     }
   }
 </fold-page-layout>

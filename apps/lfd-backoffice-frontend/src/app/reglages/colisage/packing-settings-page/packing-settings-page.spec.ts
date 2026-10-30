@@ -12,7 +12,11 @@ import { PackingSettingsPage } from './packing-settings-page';
  * fermé par défaut, se bascule d'une case — appliquée tout de suite, puis relue.
  */
 
-const DEFAULTS: PackingSettingsView = { halfSharing: false, source: 'default' };
+const DEFAULTS: PackingSettingsView = {
+  halfSharing: false,
+  showMadeToOrder: true,
+  source: 'default',
+};
 
 class FakeSettings {
   readonly payloads: PackingSettingsPayload[] = [];
@@ -32,7 +36,12 @@ class FakeSettings {
     if (this.refusal !== null) {
       return Promise.reject(this.refusal);
     }
-    this.current = { halfSharing: payload.halfSharing, source: 'explicit' };
+    const before = this.current instanceof Error ? DEFAULTS : this.current;
+    this.current = {
+      halfSharing: payload.halfSharing,
+      showMadeToOrder: payload.showMadeToOrder ?? before.showMadeToOrder,
+      source: 'explicit',
+    };
     return Promise.resolve();
   }
 }
@@ -65,11 +74,14 @@ async function settle(fixture: ComponentFixture<PackingSettingsPage>): Promise<v
   fixture.detectChanges();
 }
 
-function box(fixture: ComponentFixture<PackingSettingsPage>): HTMLInputElement {
+function box(
+  fixture: ComponentFixture<PackingSettingsPage>,
+  which = '[data-half-sharing]',
+): HTMLInputElement {
   const host = fixture.nativeElement as HTMLElement;
-  const input = host.querySelector<HTMLInputElement>('[data-half-sharing] input[type="checkbox"]');
+  const input = host.querySelector<HTMLInputElement>(`${which} input[type="checkbox"]`);
   if (input === null) {
-    throw new Error('Pas de case « Partager une moitié de bac ».');
+    throw new Error(`Pas de case ${which}.`);
   }
   return input;
 }
@@ -119,5 +131,27 @@ describe('PackingSettingsPage — Réglages › Colisage', () => {
     const host = fixture.nativeElement as HTMLElement;
     expect(host.querySelector('fold-empty-state')).not.toBeNull();
     expect(host.querySelector('[data-half-sharing]')).toBeNull();
+  });
+});
+
+/** Plan sur mesure, M4 (Hugo, 2026-10-30) : la pastille du poste, affichée par défaut. */
+describe('PackingSettingsPage — afficher le sur mesure', () => {
+  const MADE_TO_ORDER = '[data-show-made-to-order]';
+
+  it('montre la pastille demandée quand personne n’a rien réglé', async () => {
+    const fixture = await mount(new FakeSettings(DEFAULTS));
+    expect(box(fixture, MADE_TO_ORDER).checked).toBe(true);
+  });
+
+  it('la masque d’un clic sans toucher au partage, puis relit', async () => {
+    const api = new FakeSettings(DEFAULTS);
+    const fixture = await mount(api);
+
+    box(fixture, MADE_TO_ORDER).click();
+    await settle(fixture);
+
+    expect(api.payloads).toEqual([{ halfSharing: false, showMadeToOrder: false }]);
+    expect(box(fixture, MADE_TO_ORDER).checked).toBe(false);
+    expect(box(fixture).checked).toBe(false);
   });
 });

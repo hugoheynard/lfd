@@ -1,4 +1,6 @@
 import { randomUUID } from "node:crypto";
+
+import type { ProductionPackingView } from "@lfd/contracts";
 import { Buffer } from "node:buffer";
 
 import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
@@ -217,5 +219,46 @@ describe("le marqueur voyage jusqu'au fournil (M2–M4)", () => {
     });
     expect(lines.map((line) => line.madeToOrder)).toEqual([null, null]);
     expect(await pdfText(sheetRoute(order.reference))).not.toContain("SUR MESURE");
+  });
+});
+
+describe("le colisage range le marqueur et le sert au poste (M4)", () => {
+  async function boardLines(): Promise<Record<string, boolean | null | undefined>> {
+    const view = jsonBody<ProductionPackingView>(
+      await ctx.asSub(STAFF).get(`/admin/packing/${SERVICE_DAY}/board`).expect(200),
+    );
+    return Object.fromEntries(
+      view.sheets.flatMap((sheet) => sheet.lines.map((line) => [line.sku, line.madeToOrder])),
+    );
+  }
+
+  it("le fait de la liste à coliser porte le marqueur jusqu'à la feuille", async () => {
+    await mark(CROISSANT, true);
+    await place();
+    await closePlan(ctx);
+    await settle();
+
+    const stored = await ctx.prisma.packingLine.findMany({
+      where: { serviceDay: SERVICE_DAY },
+      select: { sku: true, madeToOrder: true },
+      orderBy: { sku: "asc" },
+    });
+    expect(stored).toEqual([
+      { sku: CROISSANT, madeToOrder: true },
+      { sku: PLAIN, madeToOrder: false },
+    ]);
+    expect(await boardLines()).toEqual({ [CROISSANT]: true, [PLAIN]: false });
+  });
+
+  it("une ligne d'avant le lot (`NULL`) se sert « on ne sait pas »", async () => {
+    const order = await place();
+    await ctx.prisma.orderLine.updateMany({
+      where: { orderId: order.id },
+      data: { madeToOrder: null },
+    });
+    await closePlan(ctx);
+    await settle();
+
+    expect(await boardLines()).toEqual({ [CROISSANT]: null, [PLAIN]: null });
   });
 });

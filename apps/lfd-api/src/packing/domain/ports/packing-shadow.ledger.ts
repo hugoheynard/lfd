@@ -29,6 +29,8 @@ export interface ShadowOrderToDraw {
     readonly quantity: number;
     /** P6 de `pricing/vente-au-poids.md` : `weight` = des grammes, mis au bac en un lot. */
     readonly saleUnit: SaleUnit;
+    /** Le marqueur « sur mesure » du fait (plan sur mesure, M4) ; absent = fait sans le champ. */
+    readonly madeToOrder?: boolean | null;
   }[];
 }
 

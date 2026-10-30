@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { PackingSettingsView } from '@lfd/contracts';
+import type { PackingSettingsPayload, PackingSettingsView } from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldButtonComponent,
@@ -20,7 +20,9 @@ type LoadState = 'loading' | 'ready' | 'error';
 /**
  * **Réglages › Colisage** (Hugo, 2026-10-25 : « partager une moitié devrait
  * être un réglage dans réglages/colisage, on devrait commencer avec ça
- * désactivé »). Un interrupteur : le partage d'une moitié de bac au poste.
+ * désactivé »). Deux interrupteurs : le partage d'une moitié de bac au poste,
+ * et la pastille « Sur mesure » sur ses lignes (plan sur mesure, M4 — Hugo,
+ * 2026-10-30), affichée par défaut.
  *
  * Sous `delivery_settings`, le droit des bacs et des contenances — la page se
  * fige sans `:write`. Chaque bascule s'applique tout de suite, puis relit :
@@ -73,13 +75,26 @@ export class PackingSettingsPage {
 
   /** Bascule le partage d'une moitié, puis relit. Un refus laisse l'état servi, avec la raison. */
   protected async setHalfSharing(halfSharing: boolean): Promise<void> {
+    await this.save({ halfSharing });
+  }
+
+  /** Montre ou tait la pastille « Sur mesure » au poste ; le partage reste celui servi. */
+  protected async setShowMadeToOrder(showMadeToOrder: boolean): Promise<void> {
+    const halfSharing = this.settings()?.halfSharing;
+    if (halfSharing === undefined) {
+      return;
+    }
+    await this.save({ halfSharing, showMadeToOrder });
+  }
+
+  private async save(payload: PackingSettingsPayload): Promise<void> {
     if (this.saving()) {
       return;
     }
     this.saving.set(true);
     this.failure.set(null);
     try {
-      await this.service.update({ halfSharing });
+      await this.service.update(payload);
       this.settings.set(await this.service.read());
     } catch (error) {
       this.failure.set(

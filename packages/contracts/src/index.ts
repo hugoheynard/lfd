@@ -944,7 +944,11 @@ export type {
   PackingContainerView,
 } from "./packing-containers.js";
 export type { PackingBagLabelView, PackingBagLabelsView } from "./packing-bag-labels.js";
-export { DEFAULT_PACKING_HALF_SHARING, packingSettingsPayloadSchema } from "./packing-settings.js";
+export {
+  DEFAULT_PACKING_HALF_SHARING,
+  DEFAULT_PACKING_SHOW_MADE_TO_ORDER,
+  packingSettingsPayloadSchema,
+} from "./packing-settings.js";
 export type { PackingSettingsPayload, PackingSettingsView } from "./packing-settings.js";
 export { qualityControlSettingsPayloadSchema } from "./quality-control-settings.js";
 export type {

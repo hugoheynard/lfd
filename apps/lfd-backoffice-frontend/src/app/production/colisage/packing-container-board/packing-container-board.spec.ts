@@ -176,6 +176,8 @@ let labels: FakeLabels;
 let rereads: number;
 /** Réglages › Colisage, servi : ouvert dans la plupart des cas, qui éprouvent le geste. */
 let halfSharing: boolean;
+/** La pastille « Sur mesure » (M4) : affichée, son défaut. */
+let showMadeToOrder = true;
 /** Le dialogue « combien ? » vit dans l'hôte des panneaux, hors du tableau. */
 let overlay: ComponentFixture<FoldPanelHostComponent>;
 
@@ -211,7 +213,9 @@ async function render(
       { provide: LabelPrinter, useValue: labels },
       {
         provide: PackingSettingsService,
-        useValue: { read: () => Promise.resolve({ halfSharing, source: 'explicit' }) },
+        useValue: {
+          read: () => Promise.resolve({ halfSharing, showMadeToOrder, source: 'explicit' }),
+        },
       },
       {
         provide: PackingDayReader,
@@ -621,5 +625,38 @@ describe('les contenants d’une commande `listed` (K2b)', () => {
     click(el, '[data-bag-labels]');
     expect(labels.asked).toEqual(['sacs 2026-10-05/o-1 [c-3]', 'sacs 2026-10-05/o-1 []']);
     expect(el.querySelector('[data-bin-label]')).toBeNull();
+  });
+});
+
+/** Plan sur mesure, M4 (Hugo, 2026-10-30) : la pastille « Sur mesure » d'une ligne. */
+describe('la pastille « Sur mesure » au colisage', () => {
+  beforeEach(() => {
+    api = new FakeContainers();
+    labels = new FakeLabels();
+    rereads = 0;
+    halfSharing = false;
+    showMadeToOrder = true;
+  });
+
+  const marked = (): PackingSheet =>
+    sheet({
+      lines: [
+        line({ sku: 'GAT', productName: 'Entremets', madeToOrder: true }),
+        line({ sku: 'CRO', productName: 'Croissant', madeToOrder: false }),
+        line({ sku: 'PAI', productName: 'Pain', madeToOrder: null }),
+      ],
+    });
+
+  it('se pose sur la seule ligne sur mesure quand le réglage la demande', async () => {
+    const { el } = await render(marked());
+    const badges = el.querySelectorAll('[data-made-to-order]');
+    expect(badges.length).toBe(1);
+    expect(said(badges[0]?.closest('.cb-name'))).toContain('Entremets');
+  });
+
+  it('se tait quand Réglages › Colisage ne la demande pas', async () => {
+    showMadeToOrder = false;
+    const { el } = await render(marked());
+    expect(el.querySelector('[data-made-to-order]')).toBeNull();
   });
 });

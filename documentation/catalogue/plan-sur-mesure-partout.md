@@ -155,13 +155,13 @@ papier noir et blanc ne se lit pas sans légende, et l'accessibilité vaut aussi
 
 ## 5. Lots
 
-| Lot                                                | Contenu                                                                                                                                                                                    | Tests                                                                                                                                                                                                       |
-| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| ~~**M1**~~ ✅ 2026-10-30                           | Colonne `order_line.made_to_order` ; `OrderLineSnapshot.madeToOrder` scellé à la composition (lecture du marqueur par le lecteur du catalogue) ; `orderLineDataOf` l'écrit ; révision idem | domaine : la ligne scelle la valeur ; application : composition lit le marqueur ; **e2e** : marqueur retiré après la passation → la ligne reste `true` ; ligne d'avant → `null`                             |
-| ~~**M2**~~ ✅ 2026-10-30                           | `ProducibleLine.madeToOrder` (port du fournil) ; `prisma-day-orders.source.ts` le remplit ; colonne `production_order_line.made_to_order` ; `ProductionLineSnapshot`                       | e2e arrêt de journée : la valeur traverse ; le fournil ne lit aucune table du commerce (`lint:context-boundaries`, `lint:prisma-model-ownership` verts)                                                     |
-| ~~**M3**~~ ✅ 2026-10-30                           | Fiche d'atelier, compte à produire, dossier du jour : rendu « SUR MESURE » ; `ExpectedItem` distingue sur mesure / non (Q2)                                                                | unitaires de rendu ; **spécimens** : les données d'exemple de la planche portent au moins une ligne sur mesure, et un test vérifie que le texte `SUR MESURE` figure dans le PDF de chaque spécimen concerné |
-| ~~**M4**~~ 🟨 2026-10-30 — fait seul, voir § 5 bis | Fait `production.packing_list_drawn` + écran du colisage ; étiquettes selon Q4                                                                                                             | relecture d'un fait ancien → `null` ; spécimen d'étiquette si Q4 = oui                                                                                                                                      |
-| **R**                                              | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
+| Lot                                                                | Contenu                                                                                                                                                                                    | Tests                                                                                                                                                                                                       |
+| ------------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~**M1**~~ ✅ 2026-10-30                                           | Colonne `order_line.made_to_order` ; `OrderLineSnapshot.madeToOrder` scellé à la composition (lecture du marqueur par le lecteur du catalogue) ; `orderLineDataOf` l'écrit ; révision idem | domaine : la ligne scelle la valeur ; application : composition lit le marqueur ; **e2e** : marqueur retiré après la passation → la ligne reste `true` ; ligne d'avant → `null`                             |
+| ~~**M2**~~ ✅ 2026-10-30                                           | `ProducibleLine.madeToOrder` (port du fournil) ; `prisma-day-orders.source.ts` le remplit ; colonne `production_order_line.made_to_order` ; `ProductionLineSnapshot`                       | e2e arrêt de journée : la valeur traverse ; le fournil ne lit aucune table du commerce (`lint:context-boundaries`, `lint:prisma-model-ownership` verts)                                                     |
+| ~~**M3**~~ ✅ 2026-10-30                                           | Fiche d'atelier, compte à produire, dossier du jour : rendu « SUR MESURE » ; `ExpectedItem` distingue sur mesure / non (Q2)                                                                | unitaires de rendu ; **spécimens** : les données d'exemple de la planche portent au moins une ligne sur mesure, et un test vérifie que le texte `SUR MESURE` figure dans le PDF de chaque spécimen concerné |
+| ~~**M4**~~ ✅ 2026-10-30 — fait et écran du colisage, voir § 5 bis | Fait `production.packing_list_drawn` + écran du colisage ; étiquettes selon Q4                                                                                                             | relecture d'un fait ancien → `null` ; spécimen d'étiquette si Q4 = oui                                                                                                                                      |
+| **R**                                                              | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
 
 Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres.
 
@@ -190,12 +190,21 @@ Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres
   (facultatif : l'attendu des réassorts partage le type) ; **aucun écran ne
   le lit encore** — l'écran du fournil n'est dans aucun lot.
 - **M4.** Le fait `production.packing_list_drawn` porte `madeToOrder` par
-  ligne, additif ; un fait ancien se relit sans le champ. **L'écran du
-  colisage n'est pas bâti** : le colisage recopie les lignes du fait dans
-  `packing.packing_line`, qui n'a pas la colonne — il faudrait une troisième
-  colonne (`packing_line.made_to_order`), que le § 3 ne prévoyait pas, plus
-  le contrat de la feuille et le badge du back-office. À décider.
-  Étiquettes : rien (Q4).
+  ligne, additif ; un fait ancien se relit sans le champ. Étiquettes : rien (Q4).
+- ~~**M4 bis — l'écran du colisage**~~ ✅ bâti le 2026-10-30 (décision de
+  Hugo du même jour). Migration `20261031000000_le_sur_mesure_au_colisage` :
+  `packing.packing_line.made_to_order BOOLEAN NULL` (écrit par l'abonné du
+  fait, `NULL` pour un fait ancien ; un article répété sur la commande est sur
+  mesure dès qu'une de ses lignes l'est — `linesBySku`) et
+  `packing.packing_settings.show_made_to_order` (défaut vrai). `PackingLine.madeToOrder`
+  au contrat de la feuille ; Réglages › Colisage porte « Afficher le sur
+  mesure à l'écran du colisage » (`PackingSettingsView.showMadeToOrder`,
+  facultatif au `PUT` : absent, il reste) ; le tableau des contenants du
+  poste pose une pastille fold « Sur mesure » sur la ligne quand le réglage
+  la demande. Le serveur sert le marqueur de toute façon : c'est l'écran qui
+  le tait. Le réglage n'est pas journalisé (le partage d'une moitié ne
+  l'était pas). Non couvert : la ligne en lecture seule d'une commande
+  déclarée prête (`app-packing-line`), qui ne lit pas les réglages.
 - **Spécimens** : la commande d'exemple du fournil porte un « Entremets
   signature » sur mesure ; fiche, compte et dossier d'exemple disent « SUR
   MESURE ». Les spécimens du commerce ne changent pas (Q3).

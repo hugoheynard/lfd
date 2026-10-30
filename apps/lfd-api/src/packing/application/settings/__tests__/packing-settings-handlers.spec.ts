@@ -26,13 +26,17 @@ describe("GetPackingSettingsHandler — les réglages tels qu'ils valent", () =>
   it("rend le partage fermé, par défaut, quand personne n'a rien posé", async () => {
     await expect(setup().get.execute()).resolves.toEqual({
       halfSharing: false,
+      showMadeToOrder: true,
       source: "default",
     });
   });
 
   it("rend le réglage posé", async () => {
-    await expect(setup(PackingSettings.of({ halfSharing: true })).get.execute()).resolves.toEqual({
+    await expect(
+      setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true })).get.execute(),
+    ).resolves.toEqual({
       halfSharing: true,
+      showMadeToOrder: true,
       source: "explicit",
     });
   });
@@ -44,11 +48,13 @@ describe("SetPackingSettingsHandler — poser les réglages du colisage", () => 
 
     await set.execute(new SetPackingSettingsCommand(true, "staff_1"));
 
-    expect(store.writes).toEqual([{ halfSharing: true, at: NOW, by: "staff_1" }]);
+    expect(store.writes).toEqual([
+      { halfSharing: true, showMadeToOrder: true, at: NOW, by: "staff_1" },
+    ]);
   });
 
   it("n'écrit rien quand le réglage est déjà en vigueur", async () => {
-    const { set, store } = setup(PackingSettings.of({ halfSharing: true }));
+    const { set, store } = setup(PackingSettings.of({ halfSharing: true, showMadeToOrder: true }));
 
     await set.execute(new SetPackingSettingsCommand(true, "staff_2"));
 
@@ -60,6 +66,34 @@ describe("SetPackingSettingsHandler — poser les réglages du colisage", () => 
 
     await set.execute(new SetPackingSettingsCommand(false, "staff_1"));
 
-    expect(store.writes).toEqual([{ halfSharing: false, at: NOW, by: "staff_1" }]);
+    expect(store.writes).toEqual([
+      { halfSharing: false, showMadeToOrder: true, at: NOW, by: "staff_1" },
+    ]);
+  });
+});
+
+/** Plan sur mesure, M4 : la pastille « Sur mesure » du poste, affichée par défaut. */
+describe("SetPackingSettingsHandler — afficher le sur mesure", () => {
+  it("masque la pastille et garde le partage tel qu'envoyé", async () => {
+    const { set, store, get } = setup();
+
+    await set.execute(new SetPackingSettingsCommand(false, "staff_1", false));
+
+    expect(store.writes).toEqual([
+      { halfSharing: false, showMadeToOrder: false, at: NOW, by: "staff_1" },
+    ]);
+    await expect(get.execute()).resolves.toMatchObject({ showMadeToOrder: false });
+  });
+
+  it("un envoi qui ne dit rien du sur mesure garde le réglage en vigueur", async () => {
+    const { set, store } = setup(
+      PackingSettings.of({ halfSharing: false, showMadeToOrder: false }),
+    );
+
+    await set.execute(new SetPackingSettingsCommand(true, "staff_1"));
+
+    expect(store.writes).toEqual([
+      { halfSharing: true, showMadeToOrder: false, at: NOW, by: "staff_1" },
+    ]);
   });
 });

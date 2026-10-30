@@ -50,16 +50,31 @@ async function read(): Promise<PackingSettingsView> {
 
 describe("GET|PUT admin/packing/settings", () => {
   it("rend le partage d'une moitié FERMÉ tant que personne n'a rien posé", async () => {
-    expect(await read()).toEqual({ halfSharing: false, source: "default" });
+    expect(await read()).toEqual({ halfSharing: false, showMadeToOrder: true, source: "default" });
   });
 
   it("ouvre puis referme le partage, une seule ligne en base", async () => {
     await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: true }).expect(204);
-    expect(await read()).toEqual({ halfSharing: true, source: "explicit" });
+    expect(await read()).toEqual({ halfSharing: true, showMadeToOrder: true, source: "explicit" });
 
     await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: false }).expect(204);
-    expect(await read()).toEqual({ halfSharing: false, source: "explicit" });
+    expect(await read()).toEqual({ halfSharing: false, showMadeToOrder: true, source: "explicit" });
     expect(await ctx.prisma.packingSettings.count()).toBe(1);
+  });
+
+  it("masque le sur mesure, et un envoi qui n'en dit rien le garde masqué (M4)", async () => {
+    await admin(ctx)
+      .put(PACKING_SETTINGS)
+      .send({ halfSharing: false, showMadeToOrder: false })
+      .expect(204);
+    expect(await read()).toEqual({
+      halfSharing: false,
+      showMadeToOrder: false,
+      source: "explicit",
+    });
+
+    await admin(ctx).put(PACKING_SETTINGS).send({ halfSharing: true }).expect(204);
+    expect(await read()).toMatchObject({ halfSharing: true, showMadeToOrder: false });
   });
 
   it("refuse une forme invalide (400)", async () => {

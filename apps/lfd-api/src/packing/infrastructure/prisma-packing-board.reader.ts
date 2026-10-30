@@ -42,6 +42,7 @@ const ORDER_SELECT = {
       productName: true,
       quantity: true,
       saleUnit: true,
+      madeToOrder: true,
       packedAt: true,
       packedBy: true,
       packedInitials: true,
@@ -121,6 +122,7 @@ interface OrderRow {
     readonly productName: string;
     readonly quantity: number;
     readonly saleUnit: string;
+    readonly madeToOrder: boolean | null;
     readonly packedAt: Date | null;
     readonly packedBy: string | null;
     readonly packedInitials: string;
@@ -155,6 +157,7 @@ function boardOrderOf(row: OrderRow, liveBins: ReadonlySet<string>): BoardOrder 
       productName: line.productName,
       quantity: line.quantity,
       saleUnit: packingSaleUnitOf(line.sku, line.saleUnit),
+      madeToOrder: line.madeToOrder,
       packed:
         line.packedAt === null || line.packedBy === null
           ? null

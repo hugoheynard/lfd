@@ -78,14 +78,17 @@ model PackingLine {
   order      PackingOrder @relation(fields: [serviceDay, orderId, rank], references: [serviceDay, orderId, rank], onDelete: Restrict)
 
   sku         String
-  productName String @map("product_name")
+  productName String   @map("product_name")
   /// La quantité DUE — celle de l'instantané du fournil. Des grammes si
   /// `saleUnit = weight`.
   quantity    Int
   /// `piece` ou `weight` (CHECK), recopiée de la liste à coliser (P6 de
   /// `pricing/vente-au-poids.md`). Une ligne au poids se met au bac EN
   /// UN LOT : sa quantité ne se répartit pas.
-  saleUnit    String @default("piece") @map("sale_unit")
+  saleUnit    String   @default("piece") @map("sale_unit")
+  /// Le marqueur « sur mesure » recopié du fait `production.packing_list_drawn`
+  /// (plan sur mesure, M4) ; `null` = ligne inscrite avant, ou fait sans le champ.
+  madeToOrder Boolean? @map("made_to_order")
 
   /// Au bac (K2) : réversible tant que le bac est ouvert. `null` = pas au bac.
   packedAt       DateTime? @map("packed_at") @db.Timestamptz(6)
@@ -319,11 +322,13 @@ model PackingStockReservation {
 /// **Aucune journée** : exception écrite dans `test/day-change-triggers.e2e-spec.ts`.
 model PackingSettings {
   /// Toujours `packing` : il n'y a qu'un réglage.
-  key         String   @id
+  key             String   @id
   /// Le geste « Partager une moitié » du poste ; fermé par défaut.
-  halfSharing Boolean  @default(false) @map("half_sharing")
-  updatedAt   DateTime @map("updated_at") @db.Timestamptz(6)
-  updatedBy   String   @map("updated_by")
+  halfSharing     Boolean  @default(false) @map("half_sharing")
+  /// La pastille « Sur mesure » à l'écran du colisage ; affichée par défaut.
+  showMadeToOrder Boolean  @default(true) @map("show_made_to_order")
+  updatedAt       DateTime @map("updated_at") @db.Timestamptz(6)
+  updatedBy       String   @map("updated_by")
 
   @@map("packing_settings")
   @@schema("packing")

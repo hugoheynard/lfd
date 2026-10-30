@@ -13,7 +13,12 @@ export class PrismaPackingSettingsRepository extends PackingSettingsRepository {
   }
 
   async save(settings: PackingSettings, at: Date, staffUserId: string): Promise<void> {
-    const row = { halfSharing: settings.halfSharing, updatedAt: at, updatedBy: staffUserId };
+    const row = {
+      halfSharing: settings.halfSharing,
+      showMadeToOrder: settings.showMadeToOrder,
+      updatedAt: at,
+      updatedBy: staffUserId,
+    };
     await this.prisma.packingSettings.upsert({
       where: { key: PACKING_SETTINGS_KEY },
       create: { key: PACKING_SETTINGS_KEY, ...row },

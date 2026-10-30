@@ -12,6 +12,15 @@ export interface BoardContainer {
   readonly lines: readonly { readonly sku: string; readonly quantity: number }[];
 }
 
+/**
+ * Une ligne du poste : celle du bac, plus le marqueur « sur mesure » qu'elle a
+ * reçu du fournil (plan sur mesure, M4). Absent ou `null` : on ne sait pas.
+ * Hors de `SheetLine` : le bac ne décide rien sur lui, le poste le montre.
+ */
+export interface BoardLine extends SheetLine {
+  readonly madeToOrder?: boolean | null;
+}
+
 /** Une commande de la liste à coliser, avec son rangement. */
 export interface BoardOrder {
   readonly orderId: string;
@@ -32,7 +41,7 @@ export interface BoardOrder {
   /** Sur `listed`, le nombre de contenants vivants ; sur `counted`, le compte. */
   readonly containers: number;
   readonly containerMode: ContainerMode;
-  readonly lines: readonly SheetLine[];
+  readonly lines: readonly BoardLine[];
   /** Les contenants vivants, dans l'ordre de création. */
   readonly containerList: readonly BoardContainer[];
   /** Le manque signalé en vigueur (E6a), `null` = aucun. */
