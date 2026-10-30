@@ -38,9 +38,16 @@ export function exactShopQuoteOf(input: ExactQuoteInput): {
   readonly voucherTotalEffectCents: number;
 } {
   const eligible = (sku: string) => !input.ineligibleSkus.has(sku);
+  // La remise du devis passe en LISTE (plan des promotions, § 18.6, lot M1) :
+  // une liste à un élément rend la remise unique au centime.
+  const coveredLines = input.lines.flatMap((line, i) => (eligible(line.sku) ? [i] : []));
   const composition = composeExactOrder({
     lines: input.lines.map((line) => ({ ...line, pickupDiscountEligible: eligible(line.sku) })),
-    discountAdjustment: input.discountAdjustment,
+    discountAdjustment: null,
+    basketDiscounts:
+      input.discountAdjustment === null
+        ? []
+        : [{ adjustment: input.discountAdjustment, coveredLines }],
     deliveryFeeAdjustment: input.deliveryFeeAdjustment,
     deliveryVatMode: input.deliveryVatMode,
     voucherFaceCents: input.voucherFaceCents,

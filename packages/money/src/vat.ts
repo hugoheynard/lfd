@@ -95,6 +95,15 @@ export interface VatVentilationInput {
    */
   readonly eligibleDiscountCents?: number | undefined;
   /**
+   * Plusieurs remises de panier, POSITIVES, dans leur ordre d'application —
+   * chacune retranchée de SES lignes (indices), au prorata de leur net après
+   * les précédentes (plan des promotions, § 18.4). Les montants sont ceux de
+   * `chainBasketDiscounts` au chemin `line_ht`. Exclusive de
+   * {@link eligibleDiscountCents}, qui en est la forme à un élément sur les
+   * lignes `discountEligible`.
+   */
+  readonly eligibleDiscounts?: readonly VatBasketDiscount[] | undefined;
+  /**
    * La remise sur **toutes** les lignes, POSITIVE (le bon de fidélité) —
    * retranchée APRÈS la remise restreinte, au prorata du net qu'elle a laissé.
    */
@@ -108,6 +117,12 @@ export interface VatVentilationInput {
    * répartit entre les groupes présents.
    */
   readonly extras: readonly VatExtra[];
+}
+
+/** Une remise de panier déjà chiffrée, HT, et les indices des lignes qu'elle couvre. */
+export interface VatBasketDiscount {
+  readonly cents: number;
+  readonly coveredLines: readonly number[];
 }
 
 /** Le décompte complet, en centimes entiers. */
@@ -144,7 +159,7 @@ export function ventilateVat(input: VatVentilationInput): VatVentilation {
   // restreinte d'abord (le point de retrait), celle de toutes les lignes
   // ensuite (le bon), sur ce que la première a laissé.
   const net = netOfDiscounts(input.lines, [
-    { cents: input.eligibleDiscountCents ?? 0, appliesTo: isDiscountEligible },
+    ...restrictedSteps(input),
     { cents: input.discountCents, appliesTo: () => true },
   ]);
   const discountCents = net.appliedCents;
@@ -185,10 +200,32 @@ function isDiscountEligible(line: VatLine): boolean {
   return line.discountEligible !== false;
 }
 
+/**
+ * Les remises restreintes, dans l'ordre : la liste, ou la remise unique
+ * d'hier sur les lignes éligibles.
+ *
+ * @throws {RangeError} si l'entrée porte les deux formes.
+ */
+function restrictedSteps(input: VatVentilationInput): readonly DiscountStep[] {
+  if (input.eligibleDiscounts === undefined) {
+    return [{ cents: input.eligibleDiscountCents ?? 0, appliesTo: isDiscountEligible }];
+  }
+  if (input.eligibleDiscountCents !== undefined) {
+    throw new RangeError("Remise restreinte unique et liste de remises sur la même ventilation.");
+  }
+  return input.eligibleDiscounts.map((discount) => {
+    const covered = new Set(discount.coveredLines);
+    return {
+      cents: discount.cents,
+      appliesTo: (_line: VatLine, index: number) => covered.has(index),
+    };
+  });
+}
+
 /** Une remise et son assiette. */
 interface DiscountStep {
   readonly cents: number;
-  readonly appliesTo: (line: VatLine) => boolean;
+  readonly appliesTo: (line: VatLine, index: number) => boolean;
 }
 
 /** Le net de chaque ligne, exact : `nums[i] / den`, et ce que les remises ont retranché. */

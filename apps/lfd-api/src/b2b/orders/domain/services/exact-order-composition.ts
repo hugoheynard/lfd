@@ -1,6 +1,9 @@
 import type { CartAdjustment, DeliveryVatMode } from "@lfd/contracts";
 import { composeTtcOrder, saleQuantity, type SaleUnit, type TtcOrderComposition } from "@lfd/money";
 
+import { AmbiguousBasketDiscountsError } from "../errors/basket-discount-errors.js";
+import { assertBasketDiscountCount, type OrderBasketDiscount } from "./basket-discounts.js";
+
 /**
  * **La composition d'une commande `exact_ht`** — l'unique traduction de la
  * commande vers `composeTtcOrder` (`@lfd/money`), plan
@@ -25,7 +28,15 @@ export interface ExactOrderInput {
     /** Absent = éligible, comme sur la ligne de commande. */
     readonly pickupDiscountEligible?: boolean | undefined;
   }[];
+  /** La remise unique d'hier, sur les lignes `pickupDiscountEligible`. */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Les remises de panier, dans leur ordre d'application (plan des
+   * promotions, § 18.4) — chacune dit ses lignes. Une liste à un élément
+   * rend la remise unique au centime. Exclusive de `discountAdjustment`, qui
+   * vaut alors `null`.
+   */
+  readonly basketDiscounts?: readonly OrderBasketDiscount[] | undefined;
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   /** `null` = commande d'avant le réglage, donc `standard` — comme `deliveryExtraOf`. */
   readonly deliveryVatMode: DeliveryVatMode | null;
@@ -39,7 +50,17 @@ export interface ExactOrderInput {
   readonly deliveryFeeFrozenTtcCents?: number | undefined;
 }
 
+/**
+ * @throws {TooManyBasketDiscountsError} plus de remises qu'une commande n'en porte.
+ * @throws {AmbiguousBasketDiscountsError} remise unique et liste à la fois.
+ */
 export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
+  if (input.basketDiscounts !== undefined) {
+    if (input.discountAdjustment !== null) {
+      throw new AmbiguousBasketDiscountsError();
+    }
+    assertBasketDiscountCount(input.basketDiscounts);
+  }
   return composeTtcOrder({
     lines: input.lines.map((line) => ({
       unitMillicents: line.unitPriceMillicents,
@@ -48,6 +69,7 @@ export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
       discountEligible: line.pickupDiscountEligible,
     })),
     pickupDiscount: input.discountAdjustment ?? undefined,
+    basketDiscounts: input.basketDiscounts,
     voucherCents: input.voucherFaceCents,
     deliveryFee:
       input.deliveryFeeAdjustment === null

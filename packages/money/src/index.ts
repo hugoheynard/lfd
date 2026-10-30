@@ -32,7 +32,14 @@ export {
 
 export { gapBp, discountBp, averageGapBp } from "./gap.js";
 export { DELIVERY_VAT_RATE, ventilateVat, ttcCentsOf } from "./vat.js";
-export type { VatExtra, VatLine, VatShare, VatVentilation, VatVentilationInput } from "./vat.js";
+export type {
+  VatBasketDiscount,
+  VatExtra,
+  VatLine,
+  VatShare,
+  VatVentilation,
+  VatVentilationInput,
+} from "./vat.js";
 export { composeTtcOrder, percentOf } from "./ttc-order.js";
 export type {
   TtcComposedLine,
@@ -45,6 +52,15 @@ export type {
   TtcRatePart,
 } from "./ttc-order.js";
 export { ttcOfHtAmount } from "./ttc-of-ht-amount.js";
+export { chainBasketDiscounts } from "./basket-discounts.js";
+export type {
+  BasketDiscount,
+  BasketDiscountAdjustment,
+  BasketDiscountChain,
+  BasketDiscountLine,
+  BasketDiscountPath,
+  BasketDiscountStep,
+} from "./basket-discounts.js";
 
 /**
  * La déduction du hors taxe depuis un prix d'étiquette — arrivée de

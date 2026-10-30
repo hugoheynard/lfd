@@ -1,8 +1,10 @@
+import { chainBasketDiscounts, type BasketDiscount } from "./basket-discounts.js";
 import { fractionByBasisPoints, fromCents, roundToCents } from "./exact.js";
 import { splitCents } from "./order-vat-split.js";
 import { ttcCentsFromHtMillicents } from "./tax.js";
 import { taxMultiplierBp, ttcOfHtAmount } from "./ttc-of-ht-amount.js";
 import { allocateRateVat } from "./ttc-vat-allocation.js";
+import { mergedByRate, pushPart, sumParts, termOf, totalOf } from "./ttc-order-parts.js";
 import { GRAMS_PER_KILOGRAM, type SaleQuantity } from "./sale-quantity.js";
 import { DELIVERY_VAT_RATE } from "./vat.js";
 
@@ -57,7 +59,17 @@ export interface TtcOrderDeliveryFee {
 
 export interface TtcOrderInput {
   readonly lines: readonly TtcOrderLine[];
+  /**
+   * La remise unique d'hier, sur les lignes `discountEligible` — la forme
+   * courte d'une liste {@link basketDiscounts} à un élément.
+   */
   readonly pickupDiscount?: TtcOrderAdjustment | undefined;
+  /**
+   * Les remises de panier, dans l'ordre d'application (plan des promotions,
+   * § 18.4) ; chacune dit ses lignes. Exclusive de {@link pickupDiscount} :
+   * `discountEligible` ne s'y lit pas.
+   */
+  readonly basketDiscounts?: readonly BasketDiscount[] | undefined;
   /** Valeur faciale TTC du bon (§ 10, Q2), imputée sur le TTC restant, bornée. */
   readonly voucherCents?: number | undefined;
   readonly deliveryFee?: TtcOrderDeliveryFee | undefined;
@@ -91,7 +103,10 @@ export interface TtcComposedLine extends TtcRatePart {
  */
 export interface TtcOrderComposition {
   readonly lines: readonly TtcComposedLine[];
+  /** La remise de panier TOTALE : la somme des étapes de {@link basketDiscounts}. */
   readonly pickupDiscount: TtcComposedTerm;
+  /** Une entrée par remise de l'entrée, dans son ordre (vide sans remise). */
+  readonly basketDiscounts: readonly TtcComposedTerm[];
   readonly voucher: TtcComposedTerm;
   readonly deliveryFee: TtcComposedTerm;
   /** Par taux croissant : le net (lignes − remises + port). */
@@ -112,13 +127,44 @@ export function composeTtcOrder(input: TtcOrderInput): TtcOrderComposition {
   );
   const lineTtcs = input.lines.map((line, i) => lineTtcCents(labels[i] ?? 0, line.quantity));
   const gross = weightsOf(input.lines, lineTtcs, () => true);
-  const eligible = weightsOf(input.lines, lineTtcs, (line) => line.discountEligible !== false);
-  const discount = pickupDiscountParts(input.pickupDiscount, eligible);
-  const net = new Map([...gross].map(([rate, w]) => [rate, w - BigInt(discount.get(rate) ?? 0)]));
+  const discounts = chainBasketDiscounts(
+    input.lines.map((line, i) => ({ amountCents: lineTtcs[i] ?? 0, vatRate: line.vatRate })),
+    basketDiscountsOf(input),
+    "exact_ht",
+  ).steps.map((step) => step.parts);
+  const net = new Map(
+    [...gross].map(([rate, w]) => [
+      rate,
+      w - discounts.reduce((acc, parts) => acc + BigInt(parts.get(rate) ?? 0), 0n),
+    ]),
+  );
   const voucherCents = bounded(input.voucherCents ?? 0, sum(net));
   const voucher = splitCents(voucherCents, net);
   const fee = deliveryFeeParts(input.deliveryFee, gross);
-  return assemble(input.lines, labels, lineTtcs, { discount, voucher, fee });
+  return assemble(input.lines, labels, lineTtcs, { discounts, voucher, fee });
+}
+
+/**
+ * La liste des remises : celle de l'entrée, ou la remise unique d'hier sur
+ * les lignes éligibles.
+ *
+ * @throws {RangeError} si l'entrée porte les deux formes — laquelle
+ *   appliquer ne se devine pas.
+ */
+function basketDiscountsOf(input: TtcOrderInput): readonly BasketDiscount[] {
+  if (input.basketDiscounts !== undefined) {
+    if (input.pickupDiscount !== undefined) {
+      throw new RangeError("Remise unique et liste de remises sur la même commande.");
+    }
+    return input.basketDiscounts;
+  }
+  if (input.pickupDiscount === undefined) {
+    return [];
+  }
+  const coveredLines = input.lines.flatMap((line, i) =>
+    line.discountEligible !== false ? [i] : [],
+  );
+  return [{ adjustment: input.pickupDiscount, coveredLines }];
 }
 
 /**
@@ -135,21 +181,6 @@ function lineTtcCents(labelCents: number, quantity: SaleQuantity): number {
     num: BigInt(labelCents) * BigInt(quantity.amount),
     den: BigInt(GRAMS_PER_KILOGRAM),
   });
-}
-
-function pickupDiscountParts(
-  adjustment: TtcOrderAdjustment | undefined,
-  eligible: ReadonlyMap<number, bigint>,
-): RatedTtc {
-  const base = sum(eligible);
-  if (adjustment === undefined || base <= 0n) {
-    return new Map();
-  }
-  if (adjustment.mode === "percent") {
-    return splitCents(bounded(percentOf(base, adjustment.bp), base), eligible);
-  }
-  const cents = bounded(ttcOfHtAmount(adjustment.cents, eligible), base);
-  return splitCents(cents, convertedWeights(eligible));
 }
 
 function deliveryFeeParts(
@@ -192,7 +223,8 @@ function convertedWeights(weights: ReadonlyMap<number, bigint>): ReadonlyMap<num
 }
 
 interface Adjustments {
-  readonly discount: RatedTtc;
+  /** Une ventilation par remise, dans l'ordre ; au moins un terme est toujours passé. */
+  readonly discounts: readonly RatedTtc[];
   readonly voucher: RatedTtc;
   readonly fee: RatedTtc;
 }
@@ -204,7 +236,10 @@ function assemble(
   adjustments: Adjustments,
 ): TtcOrderComposition {
   const composed: TtcComposedLine[] = [];
-  const discount: TtcRatePart[] = [];
+  // Sans remise, un terme nul tient la place d'hier : `allocateRateVat` départage
+  // par l'ordre des termes, et un terme nul ne reçoit rien.
+  const discountMaps = adjustments.discounts.length === 0 ? [new Map()] : adjustments.discounts;
+  const discounts: TtcRatePart[][] = discountMaps.map(() => []);
   const voucher: TtcRatePart[] = [];
   const fee: TtcRatePart[] = [];
   const byRate: TtcRatePart[] = [];
@@ -213,7 +248,7 @@ function assemble(
     const allocated = allocateRateVat(
       [
         ...indexes.map((i) => lineTtcs[i] ?? 0),
-        -(adjustments.discount.get(rate) ?? 0),
+        ...discountMaps.map((parts) => -(parts.get(rate) ?? 0)),
         -(adjustments.voucher.get(rate) ?? 0),
         adjustments.fee.get(rate) ?? 0,
       ],
@@ -223,15 +258,17 @@ function assemble(
       const term = allocated[k] ?? { ttcCents: 0, vatCents: 0, htCents: 0 };
       composed[lineIndex] = { ...term, vatRate: rate, labelCents: labels[lineIndex] ?? 0 };
     });
-    const [discountTerm, voucherTerm, feeTerm] = allocated.slice(indexes.length);
-    pushPart(discount, rate, discountTerm, -1);
+    const discountTerms = allocated.slice(indexes.length, indexes.length + discountMaps.length);
+    const [voucherTerm, feeTerm] = allocated.slice(indexes.length + discountMaps.length);
+    discountTerms.forEach((term, k) => pushPart(discounts[k] ?? [], rate, term, -1));
     pushPart(voucher, rate, voucherTerm, -1);
     pushPart(fee, rate, feeTerm, 1);
     byRate.push(sumParts(rate, allocated));
   }
   return {
     lines: composed,
-    pickupDiscount: termOf(discount),
+    pickupDiscount: termOf(mergedByRate(discounts.flat())),
+    basketDiscounts: adjustments.discounts.map((_, k) => termOf(discounts[k] ?? [])),
     voucher: termOf(voucher),
     deliveryFee: termOf(fee),
     byRate,
@@ -245,52 +282,6 @@ function ratesOf(lines: readonly TtcOrderLine[], adjustments: Adjustments): read
     rates.add(rate);
   }
   return [...rates].sort((a, b) => a - b);
-}
-
-function pushPart(
-  target: TtcRatePart[],
-  vatRate: number,
-  term:
-    { readonly ttcCents: number; readonly vatCents: number; readonly htCents: number } | undefined,
-  sign: 1 | -1,
-): void {
-  if (term !== undefined && term.ttcCents !== 0) {
-    target.push({
-      vatRate,
-      ttcCents: sign * term.ttcCents,
-      vatCents: sign * term.vatCents,
-      htCents: sign * term.htCents,
-    });
-  }
-}
-
-function sumParts(
-  vatRate: number,
-  terms: readonly {
-    readonly ttcCents: number;
-    readonly vatCents: number;
-    readonly htCents: number;
-  }[],
-): TtcRatePart {
-  return terms.reduce<TtcRatePart>(
-    (acc, t) => ({
-      vatRate,
-      ttcCents: acc.ttcCents + t.ttcCents,
-      vatCents: acc.vatCents + t.vatCents,
-      htCents: acc.htCents + t.htCents,
-    }),
-    { vatRate, ttcCents: 0, vatCents: 0, htCents: 0 },
-  );
-}
-
-function totalOf(byRate: readonly TtcRatePart[]): TtcOrderComposition["total"] {
-  const { ttcCents, vatCents, htCents } = sumParts(0, byRate);
-  return { ttcCents, vatCents, htCents };
-}
-
-function termOf(parts: readonly TtcRatePart[]): TtcComposedTerm {
-  const { ttcCents, vatCents, htCents } = sumParts(0, parts);
-  return { ttcCents, vatCents, htCents, parts };
 }
 
 function weightsOf(
