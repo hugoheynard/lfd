@@ -73,6 +73,7 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   downloadFailed: 'Téléchargement échoué',
   downloadPdf: 'Télécharger le PDF',
   dropAria: 'Retirer du panier — lecteur d’écran',
+  dropReservedLines: 'Retirer les articles réservés',
   due: 'Commande à régler',
   dueOn: 'Échéance le',
   earlyAccessBeforeOpening: 'Accès anticipé — avant l’ouverture',
