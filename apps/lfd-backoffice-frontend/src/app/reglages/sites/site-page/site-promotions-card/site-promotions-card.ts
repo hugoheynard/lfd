@@ -32,15 +32,15 @@ type LoadState = 'loading' | 'error' | 'ready';
 
 /**
  * **Les promotions de ce point de retrait** — le raccourci de la fiche d'un
- * site vers l'écran Promotions ciblées (plan
+ * site vers l'écran Promotions (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7). Une lecture : celles dont l'acheminement est « retrait
  * à ce point », hors archivées, et le lien vers la liste pré-filtrée.
  *
- * La carte de remise reste à côté et reste l'outil tant que la bascule
- * n'est pas faite ; « Nouvelle promotion pour ce site » arrive avec
- * l'écriture (L8). Sans le droit de lire les promotions, la carte le dit et
- * n'empêche rien d'autre.
+ * Avant la bascule, la carte de remise à côté reste l'outil ; après (L8),
+ * elle passe en lecture et « Nouvelle promotion pour ce site » ouvre
+ * l'éditeur pré-rempli « Retrait · ce point ». Sans le droit de lire les
+ * promotions, la carte le dit et n'empêche rien d'autre.
  */
 @Component({
   selector: 'app-site-promotions-card',

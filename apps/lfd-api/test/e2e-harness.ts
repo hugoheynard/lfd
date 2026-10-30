@@ -51,6 +51,7 @@ import { prismaSchemaSource } from "../src/platform/database/prisma-schema-sourc
 import { addDays, instantToLocal, localToInstant } from "@lfd/contracts";
 import { testDatabaseUrl } from "./setup-env.js";
 import { waitForDatabase } from "./database-readiness.js";
+import { assertMigrationsUnchanged } from "./migration-drift.js";
 import { armSessionTimeouts, watchStall } from "./database-stall.js";
 import { drainOrExplain } from "./drain-guard.js";
 import {
@@ -150,6 +151,9 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
   // Avant le boot : `app.init()` interroge déjà la base, et quatre workers qui
   // démarrent ensemble peuvent la trouver pas encore prête (cf. le fichier).
   await waitForDatabase(testDatabaseUrl());
+  // Une migration modifiée après application laisse le brouillon en base, et
+  // le résultat d'une suite dépend alors de l'ordre des autres (2026-10-30).
+  await assertMigrationsUnchanged(testDatabaseUrl());
   // Avant le boot, pour que le pool de l'application en hérite : une attente de
   // verrou devient une erreur nommée en 30 s, pas un hook muet (2026-10-26).
   await armSessionTimeouts(testDatabaseUrl());
@@ -543,7 +547,17 @@ async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> 
   await resetRolesToSeed(prisma);
 }
 
-/** La ligne `promotions_source = legacy`, à l'identique de la migration qui la pose. */
+/**
+ * La ligne `promotions_source`, remise à `legacy` à chaque `reset()`.
+ *
+ * ⚠️ PAS à l'identique des migrations depuis la bascule (L8,
+ * `20261031130000`), qui la passe à `promotions` : une vingtaine de suites
+ * posent encore les promotions par les anciens gestes (règle d'étage
+ * promotion, remise sur la fiche d'un site), que la bascule ferme. Elles
+ * éprouvent l'ancien chemin jusqu'au lot L12, qui le retire ; les suites du
+ * nouveau chemin posent `promotions` elles-mêmes (`promotions-equality`,
+ * `promotions-bascule`, `promotions-admin`) — décidé le 2026-10-30.
+ */
 async function ensurePromotionsSource(prisma: PrismaService): Promise<void> {
   await prisma.promotionSetting.upsert({
     where: { key: "promotions_source" },

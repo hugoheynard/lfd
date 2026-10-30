@@ -8,7 +8,9 @@ import {
   signal,
   untracked,
 } from '@angular/core';
+import { RouterLink } from '@angular/router';
 import type { PromotionScopeRuleView, PromotionView } from '@lfd/contracts';
+import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBackLinkComponent,
   FoldBadgeComponent,
@@ -18,9 +20,12 @@ import {
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldInputComponent,
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
 } from 'fold-ng';
+
+import { NotifyService } from '../../notify.service';
 
 import {
   AUDIENCE_TREE,
@@ -56,8 +61,9 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> =
  * effet, fenêtre, public (dans l'arbre « Tout le monde / Particuliers /
  * Pros »), acheminement, portée et ses exceptions, conditions.
  *
- * Les gestes (modifier, suspendre, archiver) arrivent avec la bascule, au
- * lot L8 : d'ici là, le serveur les refuse.
+ * Ses gestes (lot L8) : modifier (l'éditeur), mettre en pause, reprendre,
+ * archiver — motif obligatoire pour archiver. Ils ne s'offrent qu'une fois
+ * la bascule faite ; d'ici là, le serveur les refuserait.
  */
 @Component({
   selector: 'app-promotion-page',
@@ -71,20 +77,32 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> =
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
     FoldIconComponent,
+    FoldInputComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    RouterLink,
   ],
   templateUrl: './promotion-page.html',
   styleUrl: './promotion-page.scss',
 })
 export class PromotionPage {
   private readonly api = inject(PromotionsService);
+  private readonly notify = inject(NotifyService);
 
   readonly id = input.required<string>();
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly promotion = signal<PromotionView | null>(null);
   private readonly pickupNames = signal<ReadonlyMap<string, string>>(new Map());
+
+  /** L'écran écrit-il ? Dit par le serveur (la source), relu avec la fiche. */
+  protected readonly editable = signal(false);
+  protected readonly reason = signal('');
+  protected readonly acting = signal(false);
+  protected readonly refusal = signal<string | null>(null);
+  protected readonly canAct = computed(
+    () => this.editable() && this.promotion()?.archived === null && !this.acting(),
+  );
 
   protected readonly audienceTree = AUDIENCE_TREE;
   protected readonly fulfillmentChoices = FULFILLMENT_CHOICES;
@@ -118,12 +136,54 @@ export class PromotionPage {
   protected async load(id: string): Promise<void> {
     this.state.set('loading');
     try {
-      const [promotion, names] = await Promise.all([this.api.get(id), this.api.pickupNames()]);
+      const [promotion, names, source] = await Promise.all([
+        this.api.get(id),
+        this.api.pickupNames(),
+        this.api.source(),
+      ]);
       this.promotion.set(promotion);
+      this.editable.set(source.editable);
       this.pickupNames.set(names);
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  protected async pause(): Promise<void> {
+    await this.act('Promotion mise en pause.', (view) => this.api.pause(view, this.reasonOrNull()));
+  }
+
+  protected async resume(): Promise<void> {
+    await this.act('Promotion reprise.', (view) => this.api.resume(view, this.reasonOrNull()));
+  }
+
+  /** Archiver est terminal : le motif est exigé, et l'agrégat le refuse vide. */
+  protected async archive(): Promise<void> {
+    await this.act('Promotion archivée.', (view) => this.api.archive(view, this.reason().trim()));
+  }
+
+  private reasonOrNull(): string | null {
+    const reason = this.reason().trim();
+    return reason === '' ? null : reason;
+  }
+
+  private async act(done: string, gesture: (view: PromotionView) => Promise<void>): Promise<void> {
+    const view = this.promotion();
+    if (view === null || !this.canAct()) {
+      return;
+    }
+    this.acting.set(true);
+    this.refusal.set(null);
+    try {
+      await gesture(view);
+      this.notify.success(done);
+      this.reason.set('');
+      await this.load(view.id);
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, "Le geste n'a pas pu être fait."));
+    } finally {
+      this.acting.set(false);
     }
   }
 }

@@ -265,7 +265,7 @@ export class PromotionsNotEditableYetError extends BusinessError {
   constructor(readonly source: string) {
     super(
       "promotions.not_editable_yet",
-      "Les promotions s'éditent après la bascule : d'ici là, les prix se règlent dans la grille des promotions et la remise de chaque site sur sa fiche.",
+      "Les promotions s'éditent après la bascule : d'ici là, les promotions se règlent dans les Règles de prix et la remise de chaque site sur sa fiche.",
     );
   }
 }
@@ -321,6 +321,22 @@ export class PromotionWrongSurfaceError extends BusinessError {
       expected === "pickup_point"
         ? "Une promotion de retrait à un point se règle depuis ce point de retrait : ouvrez-la depuis la fiche du site."
         : "Cette promotion ne vise pas ce point de retrait : réglez-la depuis l'écran Promotions, ou choisissez « retrait à ce point ».",
+    );
+  }
+}
+
+/**
+ * Un ancien éditeur des promotions, fermé par la bascule (plan, § 13.10, L8) :
+ * le calcul ne lit plus ni les règles d'étage promotion ni la remise d'un
+ * site — une écriture y serait acceptée sans agir sur aucun prix.
+ */
+export class LegacyPromotionEditorClosedError extends BusinessError {
+  constructor(readonly editor: "price_rule" | "site_discount") {
+    super(
+      "promotions.legacy_editor_closed",
+      editor === "price_rule"
+        ? "Les promotions se règlent désormais dans l'écran Promotions : une règle d'étage promotion ne s'écrit plus et n'agit plus sur aucun prix. Posez-y une promotion, ou choisissez un autre étage."
+        : "La remise d'un site se règle désormais dans l'écran Promotions : depuis la fiche du site, « Nouvelle promotion pour ce site ». Ses anciennes colonnes n'agissent plus sur aucun prix.",
     );
   }
 }

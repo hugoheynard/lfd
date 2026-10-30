@@ -2,9 +2,22 @@
   <fold-back-link
     pageEyebrow
     icon="arrow-back"
-    label="Promotions ciblées"
+    label="Promotions"
     routerLink="/promotions-ciblees"
   />
+
+  @if (canAct()) {
+    <div pageActions>
+      <a
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        [routerLink]="['/promotions-ciblees', id(), 'modifier']"
+      >
+        Modifier
+      </a>
+    </div>
+  }
 
   @if (stateLabel(); as label) {
     <fold-badge titleBadge [content]="label" [variant]="stateVariant()" radius="pill" />
@@ -21,6 +34,46 @@
     }
     @default {
       @if (promotion(); as promotion) {
+        @if (refusal(); as message) {
+          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+        }
+        @if (canAct()) {
+          <fold-card>
+            <div class="block">
+              <fold-element-title
+                variant="title"
+                title="Gestes"
+                subtitle="La pause garde sa place face aux autres promotions ; l'archivage est définitif."
+              />
+              <fold-input
+                label="Motif"
+                hint="Au journal tarifaire — obligatoire pour archiver."
+                [value]="reason()"
+                (valueChange)="reason.set($event)"
+              />
+              <div class="gestures">
+                @if (promotion.paused === null) {
+                  <button foldButton emphasis="outline" intent="neutral" (click)="pause()">
+                    Mettre en pause
+                  </button>
+                } @else {
+                  <button foldButton emphasis="outline" intent="neutral" (click)="resume()">
+                    Reprendre
+                  </button>
+                }
+                <button
+                  foldButton
+                  emphasis="outline"
+                  intent="danger"
+                  [disabled]="reason().trim() === ''"
+                  (click)="archive()"
+                >
+                  Archiver
+                </button>
+              </div>
+            </div>
+          </fold-card>
+        }
         @if (promotion.archived; as archived) {
           <fold-callout appearance="inset" variant="neutral">
             Archivée le {{ instant(archived.at) }} — « {{ archived.reason }} ». Elle se lit, elle ne

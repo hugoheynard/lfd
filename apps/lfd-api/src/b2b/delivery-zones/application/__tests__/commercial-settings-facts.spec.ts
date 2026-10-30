@@ -22,6 +22,7 @@ import { RemoveDeliveryZoneCommand } from "../remove-delivery-zone.command.js";
 import { RemoveDeliveryZoneHandler } from "../remove-delivery-zone.handler.js";
 import { UpdateDeliveryZoneCommand } from "../update-delivery-zone.command.js";
 import { UpdateDeliveryZoneHandler } from "../update-delivery-zone.handler.js";
+import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 /**
  * **Les réglages qui décident du prix payé.**
@@ -149,9 +150,12 @@ describe("Les réglages commerciaux au journal", () => {
   it("emporte la REMISE de chaque clientèle d'un point de retrait — c'est la décision commerciale", async () => {
     const events = new RecordingPublisher();
 
-    await new UpdatePickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
-      new UpdatePickupAddressCommand("pickup_2", PICKUP),
-    );
+    await new UpdatePickupAddressHandler(
+      sites(),
+      events,
+      new DirectUnitOfWork(),
+      new FixedPromotionsSource("legacy"),
+    ).execute(new UpdatePickupAddressCommand("pickup_2", PICKUP));
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",

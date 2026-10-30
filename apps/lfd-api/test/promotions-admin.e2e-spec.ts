@@ -1,12 +1,13 @@
 /**
  * E2E de **l'écran Promotions** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7), sur le vrai Postgres et le vrai catalogue semé :
+ * § 13.9, lots L7-L8), sur le vrai Postgres et le vrai catalogue semé :
  *
  * 1. le verrou d'avant la bascule — en `legacy`, toute écriture rend 409, la
  *    lecture dit « non éditable » ;
- * 2. les droits — `b2b_pricing` pour l'écran, `b2b_settings` pour les
- *    promotions d'un point de retrait, l'un OU l'autre pour lire ;
+ * 2. les droits — `b2b_pricing` pour l'écran, `lfc_site_settings` (la fiche
+ *    d'un site, décision de Hugo du 2026-10-30) pour les promotions d'un
+ *    point de retrait, l'un OU l'autre pour lire ;
  * 3. les refus nommés après la bascule — chevauchement (l'autre promotion et
  *    l'article), deux promotions de panier, mauvaise surface, produit entier
  *    au point ligne.
@@ -47,7 +48,7 @@ beforeEach(async () => {
 });
 
 const PROMOTIONS = "/admin/promotions";
-const AT_COEUR = "/admin/pickup-addresses/pk_coeur/promotions";
+const AT_COEUR = "/admin/sites/pk_coeur/promotions";
 const admin = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 /** La source, posée comme la migration de bascule la posera — puis le cache oublié. */
@@ -129,7 +130,7 @@ describe("les droits (§ 13.9)", () => {
     await useSource("promotions");
   });
 
-  it("la lecture s'ouvre à b2b_pricing OU b2b_settings ; l'écriture, à son seul droit", async () => {
+  it("la lecture s'ouvre à b2b_pricing OU lfc_site_settings ; l'écriture, à son seul droit", async () => {
     const pricingReader = await staffWith("pricing-reader", "communication", [
       { resource: "b2b_pricing", action: "read" },
     ]);
@@ -137,7 +138,7 @@ describe("les droits (§ 13.9)", () => {
     await pricingReader.post(PROMOTIONS).send(terms()).expect(403);
 
     const settingsReader = await staffWith("settings-reader", "communication", [
-      { resource: "b2b_settings", action: "read" },
+      { resource: "lfc_site_settings", action: "read" },
     ]);
     await settingsReader.get(PROMOTIONS).expect(200);
     await settingsReader.get(AT_COEUR).expect(200);
@@ -158,7 +159,7 @@ describe("les droits (§ 13.9)", () => {
       .expect(403);
 
     const siteKeeper = await staffWith("site-keeper", "communication", [
-      { resource: "b2b_settings", action: "write" },
+      { resource: "lfc_site_settings", action: "write" },
     ]);
     await siteKeeper
       .post(AT_COEUR)
@@ -167,6 +168,23 @@ describe("les droits (§ 13.9)", () => {
     await siteKeeper
       .post(PROMOTIONS)
       .send(terms({ internalName: "Autre" }))
+      .expect(403);
+  });
+
+  /**
+   * Régression (décision de Hugo du 2026-10-30, qui corrige L7) : la remise
+   * d'un site se réglait par `PATCH admin/sites/:id`, sous
+   * `lfc_site_settings` ; L7 avait posé ses promotions sous `b2b_settings`,
+   * que l'écran des sites a quittée — qui réglait la remise aurait perdu le
+   * geste, et un autre l'aurait gagné.
+   */
+  it("b2b_settings seul n'écrit plus la promotion d'un point", async () => {
+    const legacyKeeper = await staffWith("legacy-keeper", "communication", [
+      { resource: "b2b_settings", action: "write" },
+    ]);
+    await legacyKeeper
+      .post(AT_COEUR)
+      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
       .expect(403);
   });
 });
@@ -271,6 +289,31 @@ describe("après la bascule — les refus nommés", () => {
     expect(atPoint.editable).toBe(true);
     expect(atPoint.promotions.map((promotion) => promotion.internalName)).toEqual(["Cœur"]);
     await admin().get(`${PROMOTIONS}/absente`).expect(404);
+  });
+
+  it("modifie par les routes, motif au journal ; une révision qui quitte sa surface est refusée", async () => {
+    const created = jsonBody<{ id: string }>(
+      await admin()
+        .post(AT_COEUR)
+        .send(terms({ fulfillment: AT_COEUR_POINT }))
+        .expect(201),
+    );
+    await admin()
+      .put(`${AT_COEUR}/${created.id}`)
+      .send({
+        terms: terms({ fulfillment: AT_COEUR_POINT, effect: { kind: "percent_off", value: 2500 } }),
+        reason: "on monte à 25 %",
+      })
+      .expect(204);
+    const view = jsonBody<PromotionView>(
+      await admin().get(`${PROMOTIONS}/${created.id}`).expect(200),
+    );
+    expect(view.effect).toEqual({ kind: "percent_off", value: 2500 });
+    const moved = await admin()
+      .put(`${AT_COEUR}/${created.id}`)
+      .send({ terms: terms(), reason: null })
+      .expect(409);
+    expect(refusalOf(moved)).toMatchObject({ code: "promotions.wrong_surface" });
   });
 
   it("suspend, reprend et archive par les routes, chacune sous sa surface", async () => {

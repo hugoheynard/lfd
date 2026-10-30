@@ -255,6 +255,11 @@ model Order {
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
   // prix : sans lui un document ne peut nommer la remise, seulement la chiffrer.
   discountAdjustment    Json?           @map("discount_adjustment")
+  /// La promotion PANIER qui a produit `discountCents` (plan des promotions,
+  /// § 13.8) — ajoutée à la bascule (L8), lue par la révision (L9). `NULL` =
+  /// aucune, ou une commande que rien n'a encore figée (toute commande
+  /// antérieure à L9). Identifiant opaque, sans clé étrangère.
+  discountPromotionId   String?         @map("discount_promotion_id")
   /// La part du **bon de fidélité** réellement imputée, HT, en centimes — à
   /// part de `discountCents` parce que la facture et l'assiette des points les
   /// distinguent. `0` = aucun bon (et toute commande antérieure au lot C).

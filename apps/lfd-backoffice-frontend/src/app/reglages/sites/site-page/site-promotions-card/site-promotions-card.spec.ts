@@ -49,4 +49,17 @@ describe('SitePromotionsCard', () => {
     });
     expect(root.textContent).toContain('ne se lisent pas d');
   });
+
+  it('après la bascule, ouvre l’éditeur pré-rempli pour ce site', async () => {
+    const root = await render(async () => ({
+      source: 'promotions',
+      editable: true,
+      promotions: [],
+    }));
+    const create = [...root.querySelectorAll('a')].find((link) =>
+      link.textContent?.includes('Nouvelle promotion pour ce site'),
+    );
+    expect(create?.getAttribute('href')).toBe('/promotions-ciblees/nouvelle?pickupId=pk_coeur');
+    expect(root.textContent).not.toContain("s'appliqueront à la bascule");
+  });
 });

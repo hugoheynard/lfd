@@ -9,6 +9,7 @@ import {
   type PromotionListView,
   type PromotionTermsPayload,
   type PromotionView,
+  type PromotionsSourceView,
   type RevisePromotionPayload,
 } from "@lfd/contracts";
 import {
@@ -36,6 +37,7 @@ import { PosePromotionCommand } from "../application/commands/pose-promotion.com
 import { ResumePromotionCommand } from "../application/commands/resume-promotion.command.js";
 import { RevisePromotionCommand } from "../application/commands/revise-promotion.command.js";
 import { GetPromotionQuery } from "../application/queries/get-promotion.query.js";
+import { GetPromotionsSourceQuery } from "../application/queries/get-promotions-source.query.js";
 import { ListPromotionsQuery } from "../application/queries/list-promotions.query.js";
 import { PRICING_SURFACE } from "../domain/promotion-surface.js";
 import { promotionTermsOf } from "./promotion-terms.mapper.js";
@@ -43,16 +45,16 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
 /**
  * **L'écran Promotions** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7), sous `b2b_pricing` — la ressource des règles de prix :
+ * § 13.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
  * qui posait une règle d'étage promotion pose une promotion.
  *
  * Les promotions de retrait à UN point s'écrivent depuis ce point, sous
- * `b2b_settings` (`AdminPickupPromotionsController`) ; ici, le geste les
+ * `lfc_site_settings` (`AdminPickupPromotionsController`) ; ici, le geste les
  * refuse (`PromotionWrongSurfaceError`). Les deux lectures s'ouvrent à l'un
  * OU l'autre droit : chacun voit ce que l'autre a posé.
  *
- * Avant la bascule (`promotions_source` ≠ `promotions`), toute écriture
- * rend 409 : l'écran est en lecture seule (L7), il s'ouvre à L8.
+ * Tant que `promotions_source` ≠ `promotions`, toute écriture rend 409 ; la
+ * migration de la bascule (L8) l'ouvre.
  */
 @Controller("admin/promotions")
 @AdminSurface("b2b_pricing")
@@ -64,15 +66,28 @@ export class AdminPromotionsController {
 
   /** Toutes, archivées comprises ; `pickupId` restreint à celles de ce point. */
   @Get()
-  @RequireAnyPermission("b2b_pricing:read", "b2b_settings:read")
+  @RequireAnyPermission("b2b_pricing:read", "lfc_site_settings:read")
   list(@Query("pickupId") pickupId: string | undefined): Promise<PromotionListView> {
     return this.queries.execute<ListPromotionsQuery, PromotionListView>(
       new ListPromotionsQuery(pickupId === undefined || pickupId === "" ? null : pickupId),
     );
   }
 
+  /**
+   * La source seule — lue par les anciens éditeurs, dont les droits sont ceux
+   * de la grille (`b2b_settings`) et de la fiche d'un site. Déclarée AVANT
+   * `:id`, qui l'avalerait sinon.
+   */
+  @Get("source")
+  @RequireAnyPermission("b2b_pricing:read", "lfc_site_settings:read", "b2b_settings:read")
+  source(): Promise<PromotionsSourceView> {
+    return this.queries.execute<GetPromotionsSourceQuery, PromotionsSourceView>(
+      new GetPromotionsSourceQuery(),
+    );
+  }
+
   @Get(":id")
-  @RequireAnyPermission("b2b_pricing:read", "b2b_settings:read")
+  @RequireAnyPermission("b2b_pricing:read", "lfc_site_settings:read")
   get(@Param("id") id: string): Promise<PromotionView> {
     return this.queries.execute<GetPromotionQuery, PromotionView>(new GetPromotionQuery(id));
   }

@@ -1,5 +1,11 @@
 <fold-card surface="sunken" padding="md">
   <fold-page-section title="Réductions de retrait sur ce site" separator>
+    @if (switched()) {
+      <fold-callout variant="info">
+        Ces réductions n'agissent plus : la remise de ce site se règle désormais dans l'écran
+        Promotions — « Nouvelle promotion pour ce site », juste en dessous.
+      </fold-callout>
+    }
     @if (loadError(); as message) {
       <fold-empty-state tone="alert" title="Les réductions ne s'affichent pas" [subtitle]="message">
         <button foldButton size="sm" type="button" (click)="load()">Réessayer</button>
@@ -11,7 +17,7 @@
             [site]="site()"
             [audience]="audience"
             [catalogue]="current"
-            [readOnly]="readOnly()"
+            [readOnly]="locked()"
             (saved)="saved.emit()"
           />
         }

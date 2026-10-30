@@ -9,6 +9,7 @@ import { PromotionWriteGuard } from "./application/commands/promotion-write-guar
 import { ResumePromotionHandler } from "./application/commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "./application/commands/revise-promotion.handler.js";
 import { GetPromotionHandler } from "./application/queries/get-promotion.handler.js";
+import { GetPromotionsSourceHandler } from "./application/queries/get-promotions-source.handler.js";
 import { ListPromotionsHandler } from "./application/queries/list-promotions.handler.js";
 import { PromotionBrowser } from "./domain/ports/promotion-browser.reader.js";
 import { PromotionRivalsReader } from "./domain/ports/promotion-rivals.reader.js";
@@ -24,7 +25,8 @@ import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.rep
 /**
  * **Les promotions** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`) :
- * l'agrégat, son dépôt et ses cinq gestes (L3), l'écran et ses refus (L7).
+ * l'agrégat, son dépôt et ses cinq gestes (L3), l'écran et ses refus (L7),
+ * son ouverture à la bascule (L8).
  *
  * Les lecteurs du CALCUL sont liés dans `PricingModule` (sous le cache des
  * matériaux) ; on en importe la source, que le verrou « avant la bascule »
@@ -45,6 +47,7 @@ import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.rep
     ArchivePromotionHandler,
     ListPromotionsHandler,
     GetPromotionHandler,
+    GetPromotionsSourceHandler,
   ],
 })
 export class PromotionsModule {}

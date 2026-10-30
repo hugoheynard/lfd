@@ -50,12 +50,12 @@ const TAB_LABELS: Readonly<Record<PromotionsTab, string>> = {
 const TAB_KEYS: readonly PromotionsTab[] = ['active', 'scheduled', 'paused', 'closed'];
 
 /**
- * **Promotions ciblées** — la liste (plan
+ * **Promotions** — la liste (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7) : par public, par acheminement, par portée.
  *
- * En LECTURE SEULE tant que la bascule n'est pas faite (`editable: false`,
- * dit par le serveur) : les gestes d'écriture arrivent au lot L8. Le
+ * « Nouvelle promotion » ne s'offre qu'une fois la bascule faite
+ * (`editable`, dit par le serveur, lot L8). Le
  * paramètre `pickupId` restreint la liste à un point de retrait — le
  * raccourci de la fiche d'un site.
  */

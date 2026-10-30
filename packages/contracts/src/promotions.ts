@@ -155,6 +155,15 @@ export interface PromotionView {
   readonly createdAt: string;
 }
 
+/**
+ * La source seule, et qui écrit : l'écran Promotions quand `editable`, les
+ * anciens éditeurs (étage promotion de la grille, remise d'un site) sinon.
+ */
+export interface PromotionsSourceView {
+  readonly source: PromotionsSourceValue;
+  readonly editable: boolean;
+}
+
 /** La liste, et ce qui dit si l'écran peut écrire. */
 export interface PromotionListView {
   readonly source: PromotionsSourceValue;

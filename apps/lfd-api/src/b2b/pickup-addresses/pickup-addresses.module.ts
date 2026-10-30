@@ -1,5 +1,9 @@
 import { Module } from "@nestjs/common";
 
+import { PricingModule } from "../pricing/pricing.module.js";
+import { PromotionPickupDiscountAnnouncer } from "../promotions/application/promotion-pickup-discount.announcer.js";
+import { PickupDiscountAnnouncer } from "./domain/pickup-discount.announcer.js";
+import { AnnouncedPickupAddressRepository } from "./infrastructure/announced-pickup-address.repository.js";
 import { GetPublicPickupScheduleHandler } from "./application/get-public-pickup-schedule.handler.js";
 import { ListPickupAddressesHandler } from "./application/list-pickup-addresses.handler.js";
 import { ListPublicPickupSlotsHandler } from "./application/list-public-pickup-slots.handler.js";
@@ -26,10 +30,16 @@ import { SitePickupPointNames } from "./infrastructure/site-pickup-point-names.j
  * l'agrégat `Site` (`SitesModule`, lot S1), qu'il réexporte.
  */
 @Module({
-  imports: [SitesModule],
+  // `PricingModule` pour la source des promotions : la bascule ferme la remise
+  // des sites (plan des promotions, L8) et l'annonce lit les promotions.
+  imports: [SitesModule, PricingModule],
   controllers: [PickupAddressesController, AdminPickupAddressesController],
   providers: [
-    { provide: PickupAddressRepository, useClass: PrismaPickupAddressRepository },
+    // La remise annoncée suit la source des promotions (L8) : le port est le
+    // décorateur, l'adaptateur Prisma en est la lecture brute.
+    PrismaPickupAddressRepository,
+    { provide: PickupDiscountAnnouncer, useClass: PromotionPickupDiscountAnnouncer },
+    { provide: PickupAddressRepository, useClass: AnnouncedPickupAddressRepository },
     // L'horaire PUBLIC : deux ports, un par sens (ISP). Un écran qui affiche une
     // grille n'a rien à faire d'un port capable de la réécrire.
     { provide: PickupScheduleRepository, useClass: PrismaPickupScheduleRepository },

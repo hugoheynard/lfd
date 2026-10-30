@@ -28,16 +28,19 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
 /**
  * **Les promotions d'UN point de retrait** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9 et § 14 S-droits, lot L7), sous `b2b_settings` — la ressource de
- * `admin/pickup-addresses`, qui réglait la remise de ce point : qui la
- * réglait la règle encore, rien ne s'ouvre à un autre droit.
+ * § 13.9 et § 14 S-droits, lots L7-L8), sous `lfc_site_settings` — la
+ * ressource de la fiche d'un site (`PATCH admin/sites/:id`), qui réglait la
+ * remise de ce point : qui la réglait la règle encore, rien ne s'ouvre à un
+ * autre droit (décision de Hugo du 2026-10-30, qui corrige L7 : la route
+ * vivait sous `admin/pickup-addresses`, `b2b_settings`, que l'écran des
+ * sites a quittée le 2026-10-13).
  *
  * Seules les promotions « retrait à CE point » s'y touchent ; le geste
  * refuse les autres (`PromotionWrongSurfaceError`). Même verrou que l'écran
- * Promotions : 409 avant la bascule.
+ * Promotions : 409 tant que la source n'est pas `promotions`.
  */
-@Controller("admin/pickup-addresses/:pickupId/promotions")
-@AdminSurface("b2b_settings")
+@Controller("admin/sites/:pickupId/promotions")
+@AdminSurface("lfc_site_settings")
 export class AdminPickupPromotionsController {
   constructor(
     private readonly commands: CommandBus,

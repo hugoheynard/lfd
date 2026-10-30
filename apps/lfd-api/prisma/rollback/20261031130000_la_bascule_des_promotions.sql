@@ -1,0 +1,30 @@
+-- RETOUR ARRIÈRE de 20261031130000_la_bascule_des_promotions
+-- (documentation/pricing/plan-promotions-par-audience-et-acheminement.md,
+-- § 13.4 « Retour arrière », § 13.5).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE, puis l'API se REDÉMARRE : la source est gardée sous le
+-- cache des matériaux de prix. La migration reste inscrite « appliquée ».
+--
+-- Remettre la source à `legacy` rend le calcul à l'ancien chemin : règles
+-- d'étage promotion et remise de chaque site, que la bascule n'a pas touchées.
+-- L'écran Promotions repasse en lecture seule, les anciens éditeurs se
+-- rouvrent (ils lisent la même ligne).
+--
+-- ⚠️ Ce qui est PERDU pour l'ancien chemin : toute promotion posée ou modifiée
+-- à l'écran depuis la bascule. Le journal tarifaire les liste (sujet
+-- `promotion`, acteur ≠ `system:reprise-promotions`), à reposer à la main
+-- dans les Règles de prix ou sur la fiche du site.
+--
+-- La colonne `orders.discount_promotion_id` RESTE (CLAUDE.md §0 : une colonne
+-- morte reste), comme les deux fonctions : inertes tant que rien ne les appelle.
+
+SET lock_timeout = '5s';
+
+BEGIN;
+
+UPDATE public.promotion_settings
+   SET value = 'legacy', updated_at = CURRENT_TIMESTAMP
+ WHERE key = 'promotions_source';
+
+COMMIT;

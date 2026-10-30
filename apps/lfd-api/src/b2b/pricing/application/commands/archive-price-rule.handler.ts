@@ -6,7 +6,8 @@ import { ruleNamesOf } from "../rule-names.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { ArchivePriceRuleCommand } from "./archive-price-rule.command.js";
-import { actOf, mustLoad } from "./rule-lifecycle-support.js";
+import { actOf, mustLoadEditable } from "./rule-lifecycle-support.js";
+import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 
 @CommandHandler(ArchivePriceRuleCommand)
 export class ArchivePriceRuleHandler implements ICommandHandler<ArchivePriceRuleCommand, void> {
@@ -15,11 +16,12 @@ export class ArchivePriceRuleHandler implements ICommandHandler<ArchivePriceRule
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
+    private readonly sources: PromotionsSourceReader,
   ) {}
 
   async execute(command: ArchivePriceRuleCommand): Promise<void> {
     const now = this.clock.now();
-    const rule = await mustLoad(this.rules, command.id);
+    const rule = await mustLoadEditable(this.rules, this.sources, command.id);
     await this.rules.update(
       rule.archive(command.staffUserId, now, command.reason),
       actOf(

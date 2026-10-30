@@ -1,6 +1,13 @@
 import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { PickupAddressView, PromotionListView, PromotionView } from '@lfd/contracts';
+import type {
+  CreatedIdResponse,
+  PickupAddressView,
+  PromotionListView,
+  PromotionsSourceView,
+  PromotionTermsPayload,
+  PromotionView,
+} from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { B2B_API_BASE } from '../api/api-config';
@@ -8,10 +15,12 @@ import { B2B_API_BASE } from '../api/api-config';
 /**
  * **Les promotions** — `/admin/promotions` (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7). Lecture sous `b2b_pricing` OU `b2b_settings`.
+ * § 13.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
  *
- * Aucune écriture d'ici au lot L8 : tant que la source du calcul n'est pas
- * `promotions`, le serveur refuse toute écriture (409), et l'écran le dit.
+ * L'écriture passe par la SURFACE de la promotion : une promotion « retrait
+ * à un point » s'écrit sous la fiche du site (`/admin/sites/:id/promotions`,
+ * `lfc_site_settings`), les autres sous `/admin/promotions` (`b2b_pricing`).
+ * Tant que la source n'est pas `promotions`, le serveur refuse (409).
  */
 @Injectable({ providedIn: 'root' })
 export class PromotionsService {
@@ -27,6 +36,53 @@ export class PromotionsService {
 
   get(id: string): Promise<PromotionView> {
     return firstValueFrom(this.http.get<PromotionView>(`${this.base}/${encodeURIComponent(id)}`));
+  }
+
+  /** La source seule : les anciens éditeurs s'en disent en lecture seule. */
+  source(): Promise<PromotionsSourceView> {
+    return firstValueFrom(this.http.get<PromotionsSourceView>(`${this.base}/source`));
+  }
+
+  async pose(terms: PromotionTermsPayload): Promise<string> {
+    const created = await firstValueFrom(
+      this.http.post<CreatedIdResponse>(this.surface(terms.fulfillment), terms),
+    );
+    return created.id;
+  }
+
+  revise(id: string, terms: PromotionTermsPayload, reason: string | null): Promise<void> {
+    return this.write(`${this.surface(terms.fulfillment)}/${encodeURIComponent(id)}`, 'put', {
+      terms,
+      reason,
+    });
+  }
+
+  pause(view: PromotionView, reason: string | null): Promise<void> {
+    return this.gesture(view, 'pause', { reason });
+  }
+
+  resume(view: PromotionView, reason: string | null): Promise<void> {
+    return this.gesture(view, 'resume', { reason });
+  }
+
+  archive(view: PromotionView, reason: string): Promise<void> {
+    return this.gesture(view, 'archive', { reason });
+  }
+
+  private gesture(view: PromotionView, verb: string, body: object): Promise<void> {
+    const path = `${this.surface(view.fulfillment)}/${encodeURIComponent(view.id)}/${verb}`;
+    return this.write(path, 'post', body);
+  }
+
+  private async write(path: string, method: 'post' | 'put', body: object): Promise<void> {
+    await firstValueFrom(this.http.request<void>(method, path, { body }));
+  }
+
+  /** La route de la promotion : celle de son point, ou celle de l'écran. */
+  private surface(fulfillment: PromotionView['fulfillment']): string {
+    return fulfillment.kind === 'pickup_point' && fulfillment.pickupId !== null
+      ? `${B2B_API_BASE}/admin/sites/${encodeURIComponent(fulfillment.pickupId)}/promotions`
+      : this.base;
   }
 
   /**

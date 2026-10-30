@@ -159,5 +159,5 @@ export function originPhrase(legacySource: string | null): string | null {
   }
   return legacySource.startsWith('pickup_discount:')
     ? 'Reprise de la remise de retrait du site'
-    : "Reprise d'une règle de la grille des promotions";
+    : "Reprise d'une règle des Règles de prix (étage promotion)";
 }

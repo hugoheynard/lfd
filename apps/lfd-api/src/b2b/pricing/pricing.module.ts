@@ -101,6 +101,8 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     BasketPromotionReader,
     PromotionAudienceFactsResolver,
     PromotionShadowJournal,
+    // Le tableau de tarification lit les promotions de ligne comme la caisse (L8).
+    LinePromotionSupply,
   ],
 })
 export class PricingModule {}

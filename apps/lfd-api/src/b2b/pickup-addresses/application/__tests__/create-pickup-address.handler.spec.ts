@@ -5,6 +5,7 @@ import { PickupDiscountScopeIncludesNothingError } from "../../domain/pickup-err
 import { CreatePickupAddressCommand } from "../create-pickup-address.command.js";
 import { CreatePickupAddressHandler } from "../create-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
+import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 describe("CreatePickupAddressHandler — les remises par clientèle", () => {
   it("refuse de créer un point dont une remise « seulement » n'inclut rien", async () => {
@@ -14,6 +15,7 @@ describe("CreatePickupAddressHandler — les remises par clientèle", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new FixedPromotionsSource("legacy"),
     );
 
     await expect(
@@ -43,6 +45,7 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new FixedPromotionsSource("legacy"),
     ).execute(
       new CreatePickupAddressCommand({
         ...FIELDS,

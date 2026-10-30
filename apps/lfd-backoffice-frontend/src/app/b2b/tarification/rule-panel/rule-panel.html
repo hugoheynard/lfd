@@ -4,8 +4,14 @@
 />
 
 <div class="body">
+  @if (promotionsMoved()) {
+    <fold-callout variant="info">
+      Les promotions se règlent désormais dans l'écran
+      <a routerLink="/promotions-ciblees" (click)="cancel()">Promotions</a> : ici, seuls les gestes.
+    </fold-callout>
+  }
   <fold-select label="Étage" [value]="stage()" (valueChange)="setStage($event)">
-    @for (option of stages; track option.value) {
+    @for (option of stages(); track option.value) {
       <option [value]="option.value">{{ option.label }}</option>
     }
   </fold-select>

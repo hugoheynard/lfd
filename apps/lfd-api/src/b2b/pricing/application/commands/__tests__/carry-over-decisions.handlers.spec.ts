@@ -36,6 +36,9 @@ import {
   TracingLock,
 } from "./carry-over.doubles.js";
 import { TracingUnitOfWork, type Trace } from "./mercuriale-amendment.doubles.js";
+import { FixedPromotionsSource } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { LegacyPromotionEditorClosedError } from "../../../../promotions/domain/errors/promotion-errors.js";
+import type { PromotionsSource } from "../../../../promotions/domain/promotions-source.js";
 
 const NOW = new Date("2026-03-01T09:00:00.000Z");
 const days = (n: number): Date => new Date(NOW.getTime() + n * 86_400_000);
@@ -68,6 +71,7 @@ function ruleSetup(
     stored?: PricingRule | null;
     carried?: readonly string[];
     reserved?: InMemoryReservedElsewhere;
+    source?: PromotionsSource;
   } = {},
 ) {
   const trace: Trace = [];
@@ -89,6 +93,7 @@ function ruleSetup(
     uow,
     new InMemoryProductCatalog([]),
     new NamedCompanies(),
+    new FixedPromotionsSource(options.source ?? "legacy"),
   );
   const run = () =>
     handler.execute(new CarryOverPriceRuleCommand("rule_old", OLD, NEW, REASON, "staff|paul"));
@@ -128,6 +133,12 @@ describe("CarryOverPriceRuleHandler", () => {
     const { trace, run } = ruleSetup({ origins: { [NEW]: "AUTRE" } });
     await expect(run()).rejects.toBeInstanceOf(NotDetachedFromError);
     expect(trace).toEqual([]);
+  });
+
+  it("refuse de reporter une règle d'étage promotion après la bascule, sans rien écrire", async () => {
+    const { rules, run } = ruleSetup({ source: "promotions" });
+    await expect(run()).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
+    expect(rules.saved).toEqual([]);
   });
 
   it("refuse une nouvelle référence hors vente, sans rien écrire", async () => {

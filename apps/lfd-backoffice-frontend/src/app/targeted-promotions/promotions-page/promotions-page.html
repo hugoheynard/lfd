@@ -1,8 +1,21 @@
-<fold-page-layout icon="tag" title="Promotions ciblées" separator>
+<fold-page-layout icon="tag" title="Promotions" separator>
   <p description>
     Une remise par public, par acheminement et par portée : particuliers ou pros, retrait ou
     livraison, tout le catalogue sauf quelques articles ou seulement quelques-uns.
   </p>
+
+  @if (editable()) {
+    <div pageActions>
+      <a
+        foldButton
+        intent="primary"
+        routerLink="/promotions-ciblees/nouvelle"
+        [queryParams]="pickupId() === undefined ? {} : { pickupId: pickupId() }"
+      >
+        Nouvelle promotion
+      </a>
+    </div>
+  }
 
   @switch (state()) {
     @case ('loading') {
@@ -17,7 +30,7 @@
       @if (!editable()) {
         <fold-callout appearance="inset" variant="info">
           Les promotions s'appliqueront à la bascule. D'ici là, elles se lisent ici et les prix se
-          règlent comme avant : la grille des promotions, et la remise de chaque site sur sa fiche.
+          règlent comme avant : les Règles de prix, et la remise de chaque site sur sa fiche.
         </fold-callout>
       }
       @if (pointName(); as point) {

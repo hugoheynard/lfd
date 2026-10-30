@@ -1,4 +1,7 @@
-import { PromotionsNotEditableYetError } from "./errors/promotion-errors.js";
+import {
+  LegacyPromotionEditorClosedError,
+  PromotionsNotEditableYetError,
+} from "./errors/promotion-errors.js";
 
 /**
  * **D'où le calcul tire les promotions** (plan
@@ -41,5 +44,25 @@ export function computesPromotions(source: PromotionsSource): boolean {
 export function assertPromotionsEditable(source: PromotionsSource): void {
   if (source !== "promotions") {
     throw new PromotionsNotEditableYetError(source);
+  }
+}
+
+/** Les deux anciens éditeurs : la grille des règles (étage promotion), la remise d'un site. */
+export type LegacyPromotionEditor = "price_rule" | "site_discount";
+
+/**
+ * **Un ancien éditeur peut-il encore écrire ?** Seulement avant la bascule
+ * (plan, § 13.10, L8) : après, le calcul ne le lit plus, et l'écriture
+ * aurait l'air d'agir sans agir. Le pendant exact de
+ * {@link assertPromotionsEditable} — à tout instant, un seul des deux écrit.
+ *
+ * @throws {LegacyPromotionEditorClosedError} la source est `promotions`.
+ */
+export function assertLegacyPromotionEditorOpen(
+  source: PromotionsSource,
+  editor: LegacyPromotionEditor,
+): void {
+  if (source === "promotions") {
+    throw new LegacyPromotionEditorClosedError(editor);
   }
 }

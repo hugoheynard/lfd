@@ -8,6 +8,8 @@ import { PickupAddressUpdatedEvent } from "../domain/pickup-address.events.js";
 import { PickupDiscount } from "../domain/pickup-discount.js";
 import { PickupAddressNotFoundError } from "../domain/pickup-errors.js";
 import { UpdatePickupAddressCommand } from "./update-pickup-address.command.js";
+import { PromotionsSourceReader } from "../../promotions/domain/ports/promotions-source.reader.js";
+import { assertLegacyPromotionEditorOpen } from "../../promotions/domain/promotions-source.js";
 
 /**
  * Handler **staff** : modifie le lieu d'un site — adresse, heures, remise,
@@ -22,6 +24,7 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
     private readonly sites: SiteRepository,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly sources: PromotionsSourceReader,
   ) {}
 
   /**
@@ -31,9 +34,15 @@ export class UpdatePickupAddressHandler implements ICommandHandler<
    * @throws {PickupDiscountScopeIncludesNothingError} une remise « seulement » sans inclusion.
    * @throws {PickupDiscountDuplicateRuleError} une règle en double.
    * @throws {ArchivedSiteError} le site est archivé.
+   * @throws {LegacyPromotionEditorClosedError} des remises envoyées après la bascule des promotions.
    */
   async execute(command: UpdatePickupAddressCommand): Promise<void> {
     const { discounts, gps, ...fields } = command.payload;
+    if (discounts !== undefined) {
+      // Seule la carte de la remise les envoie (`placePayload`, front) ;
+      // après la bascule (plan des promotions, L8), elle est en lecture.
+      assertLegacyPromotionEditorOpen(await this.sources.current(), "site_discount");
+    }
     await this.uow.run(async () => {
       const site = await this.sites.load(command.id);
       if (site === null) {

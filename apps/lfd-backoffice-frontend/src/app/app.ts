@@ -420,11 +420,12 @@ export class App {
   protected readonly canSeeAdmin = computed(() => this.adminViews().length > 0);
   protected readonly canSeeSettings = computed(() => this.permissions.can('b2b_settings:read'));
   /**
-   * Les promotions ciblées (plan des promotions, L7) : lues sous l'un OU
-   * l'autre droit, comme leur route.
+   * Les promotions (plan des promotions, L7-L8) : lues sous l'un OU
+   * l'autre droit, comme leur route — la tarification, ou la fiche d'un site.
    */
   protected readonly canSeeTargetedPromotions = computed(
-    () => this.permissions.can('b2b_pricing:read') || this.permissions.can('b2b_settings:read'),
+    () =>
+      this.permissions.can('b2b_pricing:read') || this.permissions.can('lfc_site_settings:read'),
   );
   /**
    * **Comptabilité** — son propre droit, et surtout pas `b2b_settings`.

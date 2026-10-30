@@ -9,6 +9,8 @@ import { SiteRepository } from "../../sites/domain/site.repository.js";
 import { PickupAddressCreatedEvent } from "../domain/pickup-address.events.js";
 import { PickupDiscount } from "../domain/pickup-discount.js";
 import { CreatePickupAddressCommand } from "./create-pickup-address.command.js";
+import { PromotionsSourceReader } from "../../promotions/domain/ports/promotions-source.reader.js";
+import { assertLegacyPromotionEditorOpen } from "../../promotions/domain/promotions-source.js";
 
 /**
  * Handler **staff** : crée un point de retrait — un site neuf, qui remet, est
@@ -28,10 +30,19 @@ export class CreatePickupAddressHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly sources: PromotionsSourceReader,
   ) {}
 
+  /**
+   * @throws {LegacyPromotionEditorClosedError} une remise posée après la bascule des promotions.
+   */
   async execute(command: CreatePickupAddressCommand): Promise<string> {
     const { discounts, gps, ...fields } = command.payload;
+    if (discounts.b2b !== null || discounts.b2c !== null) {
+      // Après la bascule (plan des promotions, L8), une remise de site ne
+      // s'écrit plus : elle n'agirait sur aucun prix.
+      assertLegacyPromotionEditorOpen(await this.sources.current(), "site_discount");
+    }
     const resolved = PickupDiscount.of(discounts);
     // Absent à la création : aucun point GPS saisi.
     const position = gps ?? null;

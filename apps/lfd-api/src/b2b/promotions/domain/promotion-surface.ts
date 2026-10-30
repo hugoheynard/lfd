@@ -8,7 +8,7 @@ import type { PromotionFulfillment } from "./promotion-fulfillment.js";
  *
  * - `pricing` : l'écran Promotions, sous `b2b_pricing`, la ressource des
  *   règles de prix ;
- * - `pickup_point` : un point de retrait, sous `b2b_settings`, la ressource
+ * - `pickup_point` : un point de retrait, sous `lfc_site_settings`, la ressource de la fiche du site,
  *   qui réglait la remise de ce point. Seules les promotions « retrait à CE
  *   point » s'y règlent.
  *

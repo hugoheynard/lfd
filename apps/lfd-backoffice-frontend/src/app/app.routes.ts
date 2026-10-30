@@ -171,7 +171,7 @@ export const routes: Routes = [
     // Gestion Boutique. Même mur que l'espace qu'elles ont quitté.
     path: 'promotions',
     canActivate: [permissionGuard('b2b_settings:read')],
-    title: 'Promotions — LFC B2B admin',
+    title: 'Règles de prix — LFC B2B admin',
     loadComponent: () =>
       import('./b2b/tarification/tarification-page').then((m) => m.TarificationPage),
   },
@@ -209,16 +209,37 @@ export const routes: Routes = [
     // `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
     // § 13.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
     // serveur : la tarification pose les promotions, les réglages celles d'un
-    // point de retrait. En lecture seule jusqu'à la bascule (L8).
+    // point de retrait (`lfc_site_settings`, la fiche du site — L8). L'entrée
+    // s'appelle « Promotions » depuis la bascule ; la grille, « Règles de prix ».
     path: 'promotions-ciblees',
-    canActivate: [anyPermissionGuard('b2b_pricing:read', 'b2b_settings:read')],
-    title: 'Promotions ciblées — LFC B2B admin',
+    canActivate: [anyPermissionGuard('b2b_pricing:read', 'lfc_site_settings:read')],
+    title: 'Promotions — LFC B2B admin',
     loadComponent: () =>
       import('./targeted-promotions/promotions-page/promotions-page').then((m) => m.PromotionsPage),
   },
   {
+    // L'éditeur (L8) : une pose, `?pickupId=` pré-remplit « Retrait · ce point ».
+    // Déclarée AVANT `:id`, qui l'avalerait sinon.
+    path: 'promotions-ciblees/nouvelle',
+    canActivate: [anyPermissionGuard('b2b_pricing:write', 'lfc_site_settings:write')],
+    title: 'Nouvelle promotion — LFC B2B admin',
+    loadComponent: () =>
+      import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(
+        (m) => m.PromotionEditorPage,
+      ),
+  },
+  {
+    path: 'promotions-ciblees/:id/modifier',
+    canActivate: [anyPermissionGuard('b2b_pricing:write', 'lfc_site_settings:write')],
+    title: 'Modifier une promotion — LFC B2B admin',
+    loadComponent: () =>
+      import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(
+        (m) => m.PromotionEditorPage,
+      ),
+  },
+  {
     path: 'promotions-ciblees/:id',
-    canActivate: [anyPermissionGuard('b2b_pricing:read', 'b2b_settings:read')],
+    canActivate: [anyPermissionGuard('b2b_pricing:read', 'lfc_site_settings:read')],
     title: 'Promotion — LFC B2B admin',
     loadComponent: () =>
       import('./targeted-promotions/promotion-page/promotion-page').then((m) => m.PromotionPage),

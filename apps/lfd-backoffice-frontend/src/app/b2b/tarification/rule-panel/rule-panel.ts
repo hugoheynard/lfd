@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, signal } f
 import type { AuthoredPriceStage, CreatePriceRulePayload, PriceScopePayload } from '@lfd/contracts';
 import {
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldCheckboxComponent,
   FoldInputComponent,
   FoldPanelHeaderComponent,
@@ -9,6 +10,7 @@ import {
   FoldSelectComponent,
 } from 'fold-ng';
 
+import { RouterLink } from '@angular/router';
 import { PriceAlterationField, type PriceAlteration } from '@lfd/b2b-ui/pricing';
 
 import { nativeValue } from '../../../shared/native-input';
@@ -16,6 +18,7 @@ import { NotifyService } from '../../../notify.service';
 import { MILLICENTS_PER_CENT } from '../pricing-format';
 import { TarificationService } from '../tarification.service';
 import { businessDayStart } from '../../../shared/business-day';
+import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 
 /** Charge d'ouverture : sur quoi la règle porte, et comment le dire à l'écran. */
 export interface RulePanelData {
@@ -68,10 +71,12 @@ type Nature = 'alter' | 'replace';
   imports: [
     FoldPanelHeaderComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldCheckboxComponent,
     FoldInputComponent,
     FoldSelectComponent,
     PriceAlterationField,
+    RouterLink,
   ],
   templateUrl: './rule-panel.html',
   styleUrl: './rule-panel.scss',
@@ -82,10 +87,20 @@ export class RulePanel {
   private readonly tarification = inject(TarificationService);
   private readonly notify = inject(NotifyService);
   private readonly ref = inject(FoldPanelRef<boolean>);
+  private readonly promotions = inject(PromotionsService);
 
   readonly data = input<RulePanelData | undefined>(undefined);
 
-  protected readonly stages = STAGES;
+  /**
+   * La bascule des promotions faite (plan des promotions, L8) : l'étage
+   * promotion ne se pose plus ici — le serveur le refuserait, nommé — et se
+   * règle dans l'écran Promotions. Lue au mieux : sans réponse, le panneau
+   * reste ce qu'il était et le refus du serveur reste la porte.
+   */
+  protected readonly promotionsMoved = signal(false);
+  protected readonly stages = computed(() =>
+    this.promotionsMoved() ? STAGES.filter((option) => option.value !== 'promotion') : STAGES,
+  );
 
   protected readonly stage = signal<AuthoredPriceStage>('promotion');
   protected readonly nature = signal<Nature>('alter');
@@ -109,7 +124,25 @@ export class RulePanel {
 
   protected readonly target = computed(() => this.data()?.target ?? '');
 
+  constructor() {
+    void this.readSource();
+  }
+
+  private async readSource(): Promise<void> {
+    try {
+      if ((await this.promotions.source()).editable) {
+        this.promotionsMoved.set(true);
+        this.stage.set('geste');
+      }
+    } catch {
+      this.promotionsMoved.set(false);
+    }
+  }
+
   protected readonly canSubmit = computed(() => {
+    if (this.promotionsMoved() && this.stage() === 'promotion') {
+      return false;
+    }
     if (this.label().trim() === '' || this.validFrom() === '') {
       return false;
     }
@@ -117,7 +150,7 @@ export class RulePanel {
   });
 
   protected setStage(stage: string): void {
-    const match = STAGES.find((candidate) => candidate.value === stage);
+    const match = this.stages().find((candidate) => candidate.value === stage);
     if (match !== undefined) {
       this.stage.set(match.value);
     }

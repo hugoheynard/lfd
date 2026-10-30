@@ -365,6 +365,11 @@ describe("le tableau de tarification", () => {
       })
       .expect(201);
 
+    // La source des promotions est gardée sous le cache des matériaux (L8,
+    // le tableau la lit comme la caisse) : la première lecture du processus
+    // la paie, pas la seconde. Une lecture d'amorce, non comptée, met les
+    // deux mesures au même régime — ce qu'on compare est la mercuriale.
+    await staff().get(`/admin/pricing/companies/${without.id}`).expect(200);
     const bare = await coldOperationsOf(() =>
       staff().get(`/admin/pricing/companies/${without.id}`).expect(200),
     );

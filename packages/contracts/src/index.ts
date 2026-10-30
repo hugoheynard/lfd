@@ -2935,4 +2935,5 @@ export type {
   PromotionScopeRuleView,
   PromotionView,
   PromotionListView,
+  PromotionsSourceView,
 } from "./promotions.js";

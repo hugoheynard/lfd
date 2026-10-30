@@ -4,6 +4,7 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { UnitOfWork } from "../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { Journal } from "../../../platform/journal/journal.js";
+import { PricingMaterialsCache } from "../../pricing/infrastructure/pricing-materials.cache.js";
 import { PromotionRepository } from "../domain/ports/promotion.repository.js";
 import { PROMOTION_SUBJECT, type PromotionAct } from "../domain/promotion-act.js";
 import type { Promotion } from "../domain/promotion.js";
@@ -23,6 +24,7 @@ export class PrismaPromotionRepository extends PromotionRepository {
     private readonly uow: UnitOfWork,
     private readonly ids: IdGenerator,
     private readonly journal: Journal,
+    private readonly cache: PricingMaterialsCache,
   ) {
     super();
   }
@@ -52,6 +54,10 @@ export class PrismaPromotionRepository extends PromotionRepository {
       }
       await this.inscribe(act);
     });
+    // Après le commit, comme `PricingActWriter` : le calcul lit les
+    // promotions sous le cache des matériaux, et la caisse de CETTE instance
+    // n'a pas à attendre l'estampille pour servir la promotion posée (L8).
+    this.cache.invalidate();
   }
 
   private async inscribe(act: PromotionAct): Promise<void> {

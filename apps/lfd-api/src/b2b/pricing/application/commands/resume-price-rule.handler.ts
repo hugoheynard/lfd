@@ -6,7 +6,8 @@ import { ruleNamesOf } from "../rule-names.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { ResumePriceRuleCommand } from "./resume-price-rule.command.js";
-import { actOf, mustLoad } from "./rule-lifecycle-support.js";
+import { actOf, mustLoadEditable } from "./rule-lifecycle-support.js";
+import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 
 @CommandHandler(ResumePriceRuleCommand)
 export class ResumePriceRuleHandler implements ICommandHandler<ResumePriceRuleCommand, void> {
@@ -15,6 +16,7 @@ export class ResumePriceRuleHandler implements ICommandHandler<ResumePriceRuleCo
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
+    private readonly sources: PromotionsSourceReader,
   ) {}
 
   /**
@@ -23,7 +25,7 @@ export class ResumePriceRuleHandler implements ICommandHandler<ResumePriceRuleCo
    */
   async execute(command: ResumePriceRuleCommand): Promise<void> {
     const now = this.clock.now();
-    const rule = await mustLoad(this.rules, command.id);
+    const rule = await mustLoadEditable(this.rules, this.sources, command.id);
     await this.rules.update(
       rule.resume(now),
       actOf(

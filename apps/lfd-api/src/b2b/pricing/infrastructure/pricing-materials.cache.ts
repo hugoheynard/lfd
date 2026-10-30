@@ -125,7 +125,12 @@ export class PricingMaterialsCache {
   /**
    * **L'état du monde tarifaire, en un identifiant.**
    *
-   * Le dernier `pricing_events.id` — un ULID, donc croissant. `""` quand le
+   * Le dernier `pricing_events.id` — un ULID, donc croissant. Seuls les ULID
+   * comptent (`< ULID_CEILING`) : un acte écrit HORS de l'`IdGenerator`
+   * (la reprise des promotions écrit `reprise:posed:<id>`, migration
+   * `20261031120000`) trie au-dessus de tout ULID, et figeait l'estampille
+   * pour toujours — aucune écriture suivante ne la faisait plus bouger
+   * (constaté le 2026-10-30 à la bascule des promotions, L8). `""` quand le
    * journal est vide : c'est un état comme un autre, et il ne se confond avec
    * aucun identifiant réel.
    *
@@ -140,7 +145,11 @@ export class PricingMaterialsCache {
       return this.pending;
     }
     const reading = this.prisma.pricingEvent
-      .findFirst({ orderBy: { id: "desc" }, select: { id: true } })
+      .findFirst({
+        where: { id: { lt: ULID_CEILING } },
+        orderBy: { id: "desc" },
+        select: { id: true },
+      })
       .then((row) => row?.id ?? "")
       .catch(() => this.lastKnown)
       .finally(() => {
@@ -167,6 +176,13 @@ export class PricingMaterialsCache {
     this.held.clear();
   }
 }
+
+/**
+ * Le premier caractère d'un ULID est `0`–`7` (48 bits de temps en Crockford
+ * base 32) : tout ULID trie sous `"8"`, tout identifiant préfixé d'une lettre
+ * au-dessus. La borne sert le parcours de l'index de la clé primaire.
+ */
+const ULID_CEILING = "8";
 
 /** Les clés, nommées une fois — une faute de frappe ferait deux caches. */
 export const PRICING_CACHE_KEYS = {

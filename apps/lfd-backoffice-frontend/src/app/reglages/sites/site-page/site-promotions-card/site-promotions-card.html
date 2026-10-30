@@ -1,11 +1,22 @@
 <fold-card surface="sunken" padding="md">
   <fold-page-section title="Promotions de retrait ici" separator>
     <span sectionSubtitle>
-      Les promotions qui s'appliquent quand le client retire à ce point — y compris la remise
-      ci-dessus, reprise en promotion.
+      Les promotions qui s'appliquent quand le client retire à ce point — la remise de ce site
+      comprise, reprise en promotion.
     </span>
 
     <div sectionActions>
+      @if (editable()) {
+        <a
+          foldButton
+          size="sm"
+          intent="primary"
+          routerLink="/promotions-ciblees/nouvelle"
+          [queryParams]="{ pickupId: pickupId() }"
+        >
+          Nouvelle promotion pour ce site
+        </a>
+      }
       <a
         foldButton
         size="sm"

@@ -7,14 +7,28 @@ import { promotionView } from '../promotion.testing';
 import { PromotionsService } from '../promotions.service';
 import { PromotionPage } from './promotion-page';
 
-async function render(get: () => Promise<PromotionView>) {
+async function render(
+  get: () => Promise<PromotionView>,
+  extra: {
+    editable?: boolean;
+    archive?: (view: PromotionView, reason: string) => Promise<void>;
+  } = {},
+) {
   TestBed.configureTestingModule({
     imports: [PromotionPage],
     providers: [
       provideRouter([]),
       {
         provide: PromotionsService,
-        useValue: { get, pickupNames: async () => new Map([['pk_coeur', 'Cœur de station']]) },
+        useValue: {
+          get,
+          pickupNames: async () => new Map([['pk_coeur', 'Cœur de station']]),
+          source: async () => ({
+            source: extra.editable === true ? 'promotions' : 'legacy',
+            editable: extra.editable === true,
+          }),
+          archive: extra.archive ?? (async () => undefined),
+        },
       },
     ],
   });
@@ -74,5 +88,28 @@ describe('PromotionPage', () => {
       throw new Error('réseau');
     });
     expect(root.textContent).toContain('Promotion illisible');
+  });
+
+  it('avant la bascule, ne propose aucun geste', async () => {
+    const root = await render(async () => promotionView());
+    expect(root.textContent).not.toContain('Mettre en pause');
+    expect(root.textContent).not.toContain('Modifier');
+  });
+
+  it('après, archive avec le motif saisi — et pas sans', async () => {
+    const archived: string[] = [];
+    const root = await render(async () => promotionView(), {
+      editable: true,
+      archive: async (_view, reason) => {
+        archived.push(reason);
+      },
+    });
+    const archive = [...root.querySelectorAll('button')].find(
+      (button) => button.textContent?.trim() === 'Archiver',
+    );
+    expect(archive?.disabled).toBe(true);
+    expect(root.textContent).toContain('Mettre en pause');
+    expect(root.textContent).toContain('Modifier');
+    expect(archived).toEqual([]);
   });
 });

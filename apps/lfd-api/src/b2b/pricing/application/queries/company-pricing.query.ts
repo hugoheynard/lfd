@@ -13,7 +13,8 @@ import { CustomerVolumeReader } from "../../domain/ports/customer-volume.reader.
 import { VolumeLadderReader } from "../../domain/ports/volume-ladder.reader.js";
 import { PricedCompanyNotFoundError } from "../../domain/pricing-errors.js";
 import { BoardElasticityService } from "../board-elasticity.service.js";
-import { boardMaterials, itemView } from "../board-item.js";
+import { boardDecisions, boardMaterials, itemView } from "../board-item.js";
+import { LinePromotionSupply } from "../../../promotions/application/line-promotion-supply.js";
 import { PricingDecisionsReader } from "../ports/pricing-decisions.reader.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
 import { groupByFamily } from "../board-category.js";
@@ -72,6 +73,7 @@ export class CompanyPricingQuery {
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly parties: PricingPartiesResolver,
     private readonly viewers: CatalogViewers,
+    private readonly linePromotions: LinePromotionSupply,
   ) {}
 
   /** @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société. */
@@ -110,10 +112,17 @@ export class CompanyPricingQuery {
     const reservedElsewhere = new Set(
       catalogue.filter((article) => article.reservation === "other").map((article) => article.sku),
     );
-    const { rules, floors } = await this.decisions.decisionsAt(at, { companyId }, articles);
+    const decided = await this.decisions.decisionsAt(at, { companyId }, articles);
+    const floors = decided.floors;
+    // La même bascule que la caisse (plan des promotions, L8) : sous
+    // `promotions`, l'étage promotion vient des promotions de CE client.
+    const { rules, promotions } = boardDecisions(
+      decided.rules,
+      await this.linePromotions.forLot(parties.companyId, at, false),
+    );
 
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));
-    const materials = await boardMaterials(rules, floors, at, live, ladders, parties);
+    const materials = await boardMaterials(rules, floors, at, live, ladders, parties, promotions);
     // Les familles qui portent au moins un article, dans l'ordre du référentiel.
     const categories: CompanyPricingCategoryView[] = groupByFamily(articles).map((shelf) => ({
       id: shelf.family.id,

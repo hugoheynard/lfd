@@ -1,5 +1,6 @@
 import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
-import { boardMaterials, itemView, targetsArticle } from "../board-item.js";
+import { boardDecisions, boardMaterials, itemView, targetsArticle } from "../board-item.js";
+import { livePromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import {
   floorFromRow,
@@ -226,5 +227,55 @@ describe("viser un article nommément", () => {
     expect(targetsArticle({ type: "variant", id: "VIE-001" }, "VIE-001")).toBe(true);
     expect(targetsArticle({ type: "category", id: "fam-vien" }, "VIE-001")).toBe(false);
     expect(targetsArticle({ type: "global", id: null }, "VIE-001")).toBe(false);
+  });
+});
+
+/**
+ * Le tableau suit la bascule des promotions (plan des promotions, L8) : sous
+ * `promotions`, l'étage promotion vient des promotions et plus des règles.
+ */
+describe("le tableau et la source des promotions", () => {
+  const promotion = livePromotion({
+    id: "promo_ete",
+    label: "Été",
+    validFrom: new Date("2026-08-01T00:00:00.000Z"),
+    effect: { kind: "percent_off", basisPoints: 3_000 },
+  });
+  const loaded = loadedRules([
+    ruleRow("a", { bp: 2_000 }),
+    ruleRow("g", { stage: "geste", bp: 1_000 }),
+  ]);
+
+  it.each(["legacy", "shadow"] as const)(
+    "sous %s, les règles telles quelles, aucune promotion",
+    (source) => {
+      const decided = boardDecisions(loaded, { source, promotions: [promotion], journal: null });
+      expect(decided.rules).toBe(loaded);
+      expect(decided.promotions).toEqual([]);
+    },
+  );
+
+  it("sous promotions, le prix vient de la promotion et la règle d'étage promotion disparaît", async () => {
+    const decided = boardDecisions(loaded, {
+      source: "promotions",
+      promotions: [promotion],
+      journal: null,
+    });
+    expect(decided.rules.map((entry) => entry.rule.id)).toEqual(["g"]);
+
+    const materials = await boardMaterials(
+      decided.rules,
+      [],
+      AT,
+      null,
+      [],
+      { companyId: null, pricingCompanyId: null },
+      decided.promotions,
+    );
+    const view = itemView(ARTICLE, CONTEXT, materials, { rules: decided.rules, floors: [] });
+
+    // 2,00 € × 0,70 × 0,90 = 1,26 € : la promotion à −30 %, puis le geste.
+    expect(view.finalMillicents).toBe(126_000);
+    expect(view.steps.map((step) => step.ruleId)).toEqual(["promo_ete", "g"]);
   });
 });

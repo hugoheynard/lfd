@@ -14,6 +14,9 @@ import {
 import { UpdatePickupAddressCommand } from "../update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../update-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
+import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { LegacyPromotionEditorClosedError } from "../../../promotions/domain/errors/promotion-errors.js";
+import type { PromotionsSource } from "../../../promotions/domain/promotions-source.js";
 
 /** −10 % aux pros, boissons exclues ; rien aux particuliers. */
 const PRO_DISCOUNT: AudiencePickupDiscount = {
@@ -33,10 +36,14 @@ function update(
   points: StoredPoints,
   payload: PickupAddressUpdatePayload,
   events = new RecordingPublisher(),
+  source: PromotionsSource = "legacy",
 ): Promise<void> {
-  return new UpdatePickupAddressHandler(points, events, new DirectUnitOfWork()).execute(
-    new UpdatePickupAddressCommand("pickup_1", payload),
-  );
+  return new UpdatePickupAddressHandler(
+    points,
+    events,
+    new DirectUnitOfWork(),
+    new FixedPromotionsSource(source),
+  ).execute(new UpdatePickupAddressCommand("pickup_1", payload));
 }
 
 describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
@@ -64,6 +71,28 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
     await update(points, { ...FIELDS, discounts: { b2b: null, b2c: individual } });
 
     expect(points.written?.discount.discounts).toEqual({ b2b: null, b2c: individual });
+  });
+
+  it("après la bascule des promotions, refuse des remises et n'écrit rien (L8)", async () => {
+    const points = new StoredPoints(PROS_ONLY);
+
+    await expect(
+      update(
+        points,
+        { ...FIELDS, discounts: { b2b: null, b2c: null } },
+        new RecordingPublisher(),
+        "promotions",
+      ),
+    ).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
+    expect(points.written).toBeNull();
+  });
+
+  it("après la bascule, le lieu sans remises s'écrit encore, remises gardées", async () => {
+    const points = new StoredPoints(PROS_ONLY);
+
+    await update(points, { ...FIELDS }, new RecordingPublisher(), "promotions");
+
+    expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
   });
 
   it("refuse une famille incluse en « tous sauf », sans rien écrire (Q1)", async () => {

@@ -14,7 +14,9 @@ import { CanonicalPriceHistoryReader } from "../../catalog/domain/ports/canonica
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
 import { PricingBoardReader } from "../application/ports/pricing-board.reader.js";
-import { boardMaterials } from "../application/board-item.js";
+import { boardDecisions, boardMaterials } from "../application/board-item.js";
+import { LinePromotionSupply } from "../../promotions/application/line-promotion-supply.js";
+import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
 import {
   PricingDecisionsReader,
   type LoadedFloor,
@@ -33,6 +35,8 @@ interface LoadedBoard {
   readonly rules: readonly LoadedRule[];
   readonly floors: readonly LoadedFloor[];
   readonly ladders: readonly VolumeLadder[];
+  /** Les promotions de ligne du tableau général — vides sous l'ancien chemin. */
+  readonly promotions: readonly LivePromotion[];
   readonly articles: readonly CatalogItem[];
   /** Depuis quand le tarif est tracé — `null` si l'historique est vide. */
   readonly historyStartsAt: Date | null;
@@ -69,6 +73,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     private readonly history: CanonicalPriceHistoryReader,
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
+    private readonly linePromotions: LinePromotionSupply,
   ) {
     super();
   }
@@ -164,9 +169,16 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // `companyId: null` : ce tableau montre ce qui JOUE sur un prix, tarifs
     // négociés d'autres comptes compris. C'est sa question, et elle n'est pas
     // celle de la fiche client.
-    const { rules, floors } = await this.decisions.decisionsAt(at, { companyId: null }, articles);
+    const decided = await this.decisions.decisionsAt(at, { companyId: null }, articles);
+    // La bascule des promotions (L8) : sous `promotions`, l'étage promotion
+    // vient des promotions qui visent un compte sans tarif négocié — à `at`,
+    // archivées d'après comprises, comme une lecture datée de la caisse.
+    const { rules, promotions } = boardDecisions(
+      decided.rules,
+      await this.linePromotions.forLot(null, at, true),
+    );
 
-    return { rules, floors, ladders, articles, historyStartsAt };
+    return { rules, floors: decided.floors, ladders, promotions, articles, historyStartsAt };
   }
 
   private async assemble(loaded: LoadedBoard, at: Date): Promise<PricingBoardView> {
@@ -177,6 +189,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       null,
       loaded.ladders,
       NO_PARTIES,
+      loaded.promotions,
     );
     // Groupé UNE fois : filtrer le catalogue entier par famille rendait le coût
     // proportionnel au produit familles × articles, pour un découpage qui ne

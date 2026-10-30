@@ -56,6 +56,6 @@ describe('les mots de l’écran Promotions', () => {
   it("dit l'origine d'une reprise", () => {
     expect(originPhrase(null)).toBeNull();
     expect(originPhrase('pickup_discount:pk_coeur:b2b')).toContain('remise de retrait');
-    expect(originPhrase('price_rule:r_1')).toContain('grille des promotions');
+    expect(originPhrase('price_rule:r_1')).toContain('Règles de prix');
   });
 });
