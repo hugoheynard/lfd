@@ -76,6 +76,11 @@
               <app-public-slots-card [pickupId]="current.id" />
             }
             <app-site-discount-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
+            <!-- Un site archivé n'est plus offert : son lien ouvrirait la boutique
+                 sans rien retenir. -->
+            @if (!archived()) {
+              <app-site-direct-link-card [pickupId]="current.id" />
+            }
           </fold-page-section>
         </fold-card>
       }

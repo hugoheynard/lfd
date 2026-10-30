@@ -70,10 +70,46 @@ flowchart TD
 | `changeDate()`                                    | l'encart « ce jour n'est plus possible », « Changer le jour » en livraison (barre)         | = `choose()`                           | jour → heure de la même maison ou adresse |
 | `modify()`                                        | « Modifier » (barre, panier)                                                               | = `choose()`                           | « Modifier mes choix » → l'étape choisie  |
 | `askChoice()` / `askTime()`                       | la modification d'une commande passée                                                      | jour → mode → …                        | — (n'écrit pas le brouillon)              |
+| `designate(point)`                                | le lien direct `?retrait=` (§2 bis)                                                        | brouillon « retrait à cette maison »   | le lien l'emporte, **jour gardé**         |
 
 `modify()`, `switchMode()` et `changeDate()` partagent une seule branche,
 `apply(change, choice)` : « mode » et « Changer la date » ne peuvent donc pas
 diverger entre le panneau « Modifier » et les gestes directs.
+
+## 2 bis. Le lien direct d'un point de retrait (2026-10-30)
+
+Pour le bouton « Commander » d'une fiche Google My Business, une adresse par
+site :
+
+```
+https://<boutique>/boutique?retrait=<id du point de retrait>
+```
+
+- **Un paramètre de requête, pas un fragment** : un `#` n'arrive pas au rendu
+  serveur et se perd chez les intermédiaires. Lu sur la route par `PickupLink`
+  (`apps/lfc-ecommerce-frontend/src/app/client/shop/pickup-link.ts`, figure de `shelf-address.ts`), sans `window` ;
+  rien ne s'applique au rendu serveur.
+- **À l'arrivée**, une fois la liste des points servie pour qui regarde : un
+  point offert devient le brouillon « retrait à cette maison »
+  (`OrderDoors.designate`) — ce que pose la carte d'une maison à l'accueil. Un
+  choix complet exige un jour et une heure, que le lien ne dit pas : la barre
+  dit la maison, et « Régler » reprend au jour (`resume()`).
+- **Le lien l'emporte** sur un autre service retenu : le choix complet est
+  effacé, sa journée passe au brouillon, son heure non (elle appartenait à
+  l'autre lieu). Déjà retenu à ce point : rien ne bouge. **Le panier n'est pas
+  touché** : changer de point ne vide aucune ligne, seul le devis se refait
+  (la remise est celle du point).
+- **Puis le paramètre quitte l'adresse** (`replaceUrl`) : un rechargement ou un
+  partage ultérieur ne réimpose pas le choix.
+- **Inconnu, archivé ou fermé à cette clientèle** : absent de la liste servie,
+  il est ignoré sans erreur — la boutique s'ouvre normalement, la console de
+  dev seule le dit. Une lecture des points en échec laisse le paramètre.
+- ⚠️ **Le brouillon vit en mémoire** : comme tout parcours interrompu, il ne
+  survit pas à un rechargement, et le paramètre est déjà parti.
+- **Au back-office**, la fiche d'un site de retrait (Réglages › Sites) montre
+  le lien en lecture seule avec « Copier le lien », construit sur
+  `SHOP_PUBLIC_URL` (variable `LFC_BOUTIQUE_URL` en déployé, la même que
+  `CLIENT_BASE_URL` de l'API). Vide : la carte le dit, sans lien.
 
 ## 3. Ce qui le tient
 

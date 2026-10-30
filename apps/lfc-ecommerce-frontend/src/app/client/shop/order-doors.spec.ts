@@ -876,3 +876,68 @@ describe('OrderDoors — la matrice des parcours', () => {
     expect(timed.every((step) => typeof step.day === 'string' && step.day !== '')).toBe(true);
   });
 });
+
+/**
+ * **Un point désigné par un lien direct** (`?retrait=`, `pickup-link.ts`) : le
+ * brouillon « retrait à cette maison », comme la carte d'une maison à l'accueil.
+ */
+describe('OrderDoors.designate — le lien direct', () => {
+  function setup(): { doors: OrderDoors; order: OrderContextStore } {
+    TestBed.resetTestingModule();
+    localStorage.clear();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        { provide: FoldPanelHostService, useValue: {} },
+        { provide: ClientAudience, useValue: { shown: signal('b2c') } },
+        VISITOR_AUTH,
+      ],
+    });
+    TestBed.inject(ServicePoints).receive([LABO, VILLAGE], [], [], null);
+    return { doors: TestBed.inject(OrderDoors), order: TestBed.inject(OrderContextStore) };
+  }
+
+  const AT_LABO: ServiceChoice = {
+    mode: 'pickup',
+    pickupAddressId: LABO.id,
+    place: 'Le Labo',
+    at: 'au Labo',
+    address: 'Route de la Balme, Val d’Isère',
+    slot: '7 h 30',
+    window: null,
+    date: LATER,
+  };
+
+  it('sans choix, pose le brouillon de la maison', () => {
+    const { doors, order } = setup();
+    doors.designate(VILLAGE);
+    expect(order.choice()).toBeNull();
+    expect(order.draft()).toEqual({
+      mode: 'pickup',
+      place: 'Le Village',
+      pickupAddressId: VILLAGE.id,
+      address: 'Route de la Balme, Val d’Isère',
+    });
+  });
+
+  it('l’emporte sur un autre point retenu, en gardant la journée', () => {
+    const { doors, order } = setup();
+    order.choice.set(AT_LABO);
+    doors.designate(VILLAGE);
+    expect(order.choice()).toBeNull();
+    expect(order.draft()).toMatchObject({
+      mode: 'pickup',
+      pickupAddressId: VILLAGE.id,
+      date: LATER,
+    });
+  });
+
+  it('ne touche à rien quand ce point est déjà retenu', () => {
+    const { doors, order } = setup();
+    order.choice.set(AT_LABO);
+    doors.designate(LABO);
+    expect(order.choice()).toEqual(AT_LABO);
+    expect(order.draft()).toBeNull();
+  });
+});

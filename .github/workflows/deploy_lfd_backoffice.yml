@@ -87,6 +87,9 @@ jobs:
           B2B_ADMIN_API_BASE_URL: ${{ vars.LFD_API_URL }}
           # L'application d'aperçu des textes de la boutique ; vide = « Aperçu indisponible ».
           SHOP_PREVIEW_URL: ${{ vars.SHOP_PREVIEW_URL }}
+          # La boutique publique — la même variable que `CLIENT_BASE_URL` de l'API :
+          # le lien direct d'un point de retrait se construit dessus ; vide = pas de lien.
+          SHOP_PUBLIC_URL: ${{ vars.LFC_BOUTIQUE_URL }}
         run: node scripts/generate-api-config.mjs
 
       - name: Generate Auth0 config (public build vars)

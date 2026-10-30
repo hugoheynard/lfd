@@ -28,6 +28,7 @@ import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
+import { SiteDirectLinkCard } from './site-direct-link-card/site-direct-link-card';
 import { SiteDiscountCard } from './site-discount-card/site-discount-card';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
@@ -74,6 +75,7 @@ const NOT_FOUND = 404;
   imports: [
     PublicSlotsCard,
     SiteDiscountCard,
+    SiteDirectLinkCard,
     SiteHoursCard,
     SiteIdentityCard,
     SiteRolesCard,

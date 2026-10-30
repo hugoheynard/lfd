@@ -1,0 +1,27 @@
+<fold-card surface="sunken" padding="md">
+  <fold-page-section title="Lien direct (Google My Business)" separator>
+    <span sectionSubtitle>
+      À mettre derrière le bouton « Commander » de la fiche Google de ce site : la boutique s'ouvre
+      avec ce point de retrait déjà choisi.
+    </span>
+
+    <!-- Un bloc de projection par `@if` : plusieurs nœuds à sa racine ne
+         projettent dans aucun emplacement. -->
+    @if (link() !== null) {
+      <div sectionActions>
+        <button foldButton size="sm" emphasis="outline" icon="copy" (click)="copy()">
+          Copier le lien
+        </button>
+      </div>
+    }
+
+    @if (link(); as url) {
+      <fold-input label="Lien direct" [value]="url" [readOnly]="true" />
+    } @else {
+      <fold-callout variant="info">
+        L'adresse publique de la boutique n'est pas configurée pour ce back-office (SHOP_PUBLIC_URL)
+        : le lien ne peut pas être construit.
+      </fold-callout>
+    }
+  </fold-page-section>
+</fold-card>

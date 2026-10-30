@@ -25,6 +25,7 @@ import { Shop } from '../shop.service';
 import { ShopStorefront } from '../storefront/shop-storefront.store';
 import { ShopStore } from '../shop.store';
 import { ShelfAddress } from '../shelf-address';
+import { PickupLink } from '../pickup-link';
 import { PieceAddress } from '../piece-address';
 import { PieceHead } from '../piece-head';
 import { FEATURED_SHELF } from '../shelves';
@@ -91,7 +92,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
    * parcouru — défendable, mais c'est un choix de produit, pas une conséquence
    * de la découpe. Cf. {@link ShopStore}.
    */
-  providers: [ShopStore, Shop, ShelfAddress, PieceAddress, PieceHead],
+  providers: [ShopStore, Shop, ShelfAddress, PickupLink, PieceAddress, PieceHead],
 })
 export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
@@ -205,6 +206,8 @@ export class ShopPage {
     inject(CartFulfillmentDays);
     // Le rayon suit l'adresse (`?rayon=`), et l'adresse suit le rayon.
     inject(ShelfAddress);
+    // Le lien direct d'un point de retrait (`?retrait=`), lu une fois.
+    inject(PickupLink);
     this.chrome.kicker.set(this.t().chrome.kickerShop);
     this.chrome.barOnDesktop.set(true);
     // Pas de chevron : le logo reprend le coin (Hugo, 2026-09-24 — « ça

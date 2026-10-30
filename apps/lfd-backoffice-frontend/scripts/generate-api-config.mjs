@@ -85,11 +85,18 @@ const shopPreviewUrl = (
   ''
 ).trim();
 
+// L'adresse PUBLIQUE de la boutique (la même que `CLIENT_BASE_URL` côté
+// API), pour les liens qu'on recopie ailleurs — le lien direct d'un point de
+// retrait, derrière le « Commander » d'une fiche Google. Vide = la fiche le
+// dit et ne fabrique pas de lien : facultative, donc hors de l'avertissement.
+const shopPublicUrl = (process.env['SHOP_PUBLIC_URL'] ?? fileVars['SHOP_PUBLIC_URL'] ?? '').trim();
+
 const body =
   `export const B2B_API_BASE_VALUE = ${JSON.stringify(apiBaseUrl)};\n` +
   `export const SENTRY_DSN_VALUE = ${JSON.stringify(sentryDsn)};\n` +
   `export const APP_REVISION_VALUE = ${JSON.stringify(appRevision)};\n` +
-  `export const SHOP_PREVIEW_URL_VALUE = ${JSON.stringify(shopPreviewUrl)};\n`;
+  `export const SHOP_PREVIEW_URL_VALUE = ${JSON.stringify(shopPreviewUrl)};\n` +
+  `export const SHOP_PUBLIC_URL_VALUE = ${JSON.stringify(shopPublicUrl)};\n`;
 
 mkdirSync(dirname(outPath), { recursive: true });
 writeFileSync(outPath, banner + body);

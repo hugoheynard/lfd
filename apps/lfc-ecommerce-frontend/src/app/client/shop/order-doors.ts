@@ -231,6 +231,41 @@ export class OrderDoors {
   }
 
   /**
+   * **Un point désigné par un lien direct** (`/boutique?retrait=<id>`, cf.
+   * `pickup-link.ts`) — le bouton « Commander » d'une fiche Google.
+   *
+   * Un choix COMPLET exige une journée et une heure, que le lien ne dit pas :
+   * on pose donc ce que la carte d'une maison pose à l'accueil
+   * ({@link startAt}) — le brouillon « retrait à cette maison ». La barre le
+   * dit, et « Régler » reprend le parcours à la journée ({@link resume}).
+   *
+   * Le lien l'emporte sur un autre service déjà retenu : c'est une intention
+   * explicite. La journée déjà retenue suit ; l'heure, elle, appartenait à
+   * l'autre lieu. Le panier n'est pas touché — seul le devis se refait, sur
+   * la remise du nouveau point. Déjà retenu à ce point : rien ne bouge.
+   */
+  designate(point: {
+    readonly id: string;
+    readonly label: string;
+    readonly ligne1: string;
+    readonly ville: string;
+  }): void {
+    const choice = this.order.choice();
+    if (choice?.mode === 'pickup' && choice.pickupAddressId === point.id) {
+      return;
+    }
+    const date = choice?.date ?? this.order.draft()?.date;
+    if (choice !== null) {
+      this.order.choice.set(null);
+    }
+    this.order.draft.set({
+      mode: 'pickup',
+      ...(date === undefined ? {} : { date }),
+      ...this.houseOf(point),
+    });
+  }
+
+  /**
    * **La même question, sans écrire la réponse** — pour un écran qui compose
    * un acheminement à lui (la modification d'une commande passée, plan
    * `plan-modifier-une-commande.md`, M3) et ne doit pas toucher au choix de la
