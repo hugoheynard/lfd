@@ -369,11 +369,36 @@ leur propre port `SkuLineageReader`. `EvaluateBasket` lit la lignée, puis
 passée sous une ancienne référence au SKU évalué qui en descend. Les trois
 détecteurs en profitent : `first_order` (`everOrdered`), `quantity_drift` et
 `quantity_outlier` (`history` — l'aberration se tait dès que le compte a sa
-propre habitude, lignée comprise). **Reste hors lignée** : la norme
-catalogue (`product_norms`, médiane tous comptes par SKU) — un SKU né n'a pas
-de norme tant que ses propres lignes n'atteignent pas le plancher, donc
-l'aberration se tait sur lui ; elle ne crie pas à tort. E2E :
+propre habitude, lignée comprise). La norme catalogue suit aussi depuis le
+2026-10-30 (§ ci-dessous). E2E :
 `apps/lfd-api/test/alerts-detached-lineage.e2e-spec.ts`.
+
+**La norme catalogue suit la lignée** (2026-10-30, bâti, non commité à
+l'écriture de cette ligne). Le trou : `product_norms` est une médiane tous
+comptes **par SKU** ; une référence née n'en avait pas tant que ses propres
+lignes n'atteignaient pas le plancher (`minSampleLines`, 20 par défaut), et
+`quantity_outlier` se taisait sur elle — un 5 tapé 500 passait à la première
+commande d'un nouveau compte.
+
+- **Choix : à la lecture, pas au recalcul.** Le recalcul (regrouper les
+  lignes des ancêtres dans la médiane du descendant) donnerait une médiane
+  exacte de l'union, mais demanderait la lignée de TOUT le catalogue au cron
+  et laisserait la référence née sans norme jusqu'au recalcul suivant — un
+  jour d'aveuglement précisément après le détachement. À la lecture, la
+  lignée est déjà lue par `EvaluateBasket` pour l'historique : zéro requête de
+  plus (la même lecture de `product_norms`, élargie aux ancêtres), effet
+  immédiat, projection inchangée, aucune migration.
+- **La règle** (`lineageNorms`, `alerts/domain/sku-lineage.ts`) : parmi le SKU
+  et ses ancêtres (même port `SkuLineageReader`, donc trace
+  `detached_from_variant_sku` prioritaire et repli sur le défaut), la norme
+  la **mieux échantillonnée** l'emporte, à égalité la plus proche. La
+  référence née hérite de l'ancienne, puis reprend la main quand ses lignes
+  dépassent celles de l'ancienne, qui, archivée, sort de la fenêtre. Pas de
+  fusion de médianes (une moyenne de médianes n'est pas une médiane). Le
+  plancher reste au détecteur.
+- **Tests** : `alerts/domain/__tests__/sku-lineage.spec.ts` ; e2e « une
+  référence née d'une ancienne à norme établie crie l'aberration dès sa
+  première commande » dans le fichier ci-dessus.
 
 ### Trace de la déclinaison d'origine (décision de Hugo du 2026-10-30)
 

@@ -7,6 +7,9 @@
  * l'historique passé sous l'ancienne — pas de « jamais commandé » ni d'écart
  * à tort, et l'habitude reste la référence d'un vrai écart.
  */
+import { CommandBus } from "@nestjs/cqrs";
+
+import { RecomputeProductNormsCommand } from "../src/b2b/alerts/application/commands/recompute-product-norms.command.js";
 import { EvaluateBasket } from "../src/b2b/alerts/application/handlers/evaluate-basket.service.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
@@ -73,19 +76,23 @@ async function approveAll(): Promise<void> {
 }
 
 /** Une société au compte, et la personne qui commande pour elle. */
-async function aBuyingCompany(): Promise<{ companyId: string; userId: string }> {
+async function aBuyingCompany(
+  sub = "auth0|lineage-alerts-buyer",
+): Promise<{ companyId: string; userId: string }> {
   const company = await createCompany(ctx.prisma);
   await ctx.prisma.company.update({
     where: { id: company.id },
     data: { grantedTerms: ["monthly"] },
   });
-  const user = await createUser(ctx.prisma, { auth0Sub: "auth0|lineage-alerts-buyer" });
+  const user = await createUser(ctx.prisma, { auth0Sub: sub });
   await attachTo(ctx.prisma, user.id, company.id, CustomerRole.owner);
   return { companyId: company.id, userId: user.id };
 }
 
-/** Une fiche à une déclinaison, commandée trois fois à 4, puis détachée. */
-async function aDetachedHabit(): Promise<{ companyId: string; bornSku: string }> {
+/** Une fiche à une déclinaison, commandée `orders` fois à 4, puis détachée. */
+async function aDetachedHabit(
+  orders = HABIT_ORDERS,
+): Promise<{ companyId: string; bornSku: string }> {
   const fiche = await anActiveFiche(staff, "Ancolie", "both");
   const partId = jsonBody<{ id: string }>(
     await staff()
@@ -100,7 +107,7 @@ async function aDetachedHabit(): Promise<{ companyId: string; bornSku: string }>
 
   const { companyId, userId } = await aBuyingCompany();
   const pickupSiteId = await pickupSite(ctx.prisma);
-  for (let index = 0; index < HABIT_ORDERS; index += 1) {
+  for (let index = 0; index < orders; index += 1) {
     await placeOrder(ctx, {
       buyerUserId: userId,
       companyId,
@@ -127,6 +134,10 @@ async function aDetachedHabit(): Promise<{ companyId: string; bornSku: string }>
 }
 
 const HABIT_ORDERS = 3;
+/** Le plancher par défaut de `product.quantity_outlier` (`minSampleLines`). */
+const NORM_FLOOR_LINES = 20;
+const NORM_WINDOW_DAYS = 180;
+const OUTLIER_QUANTITY = 40;
 const HABIT_QUANTITY = 4;
 const DRIFTED_QUANTITY = 12;
 
@@ -153,5 +164,24 @@ describe("L7d-bis — les alertes suivent la lignée d'une déclinaison détach�
     expect(await kindsFor(companyId, bornSku, DRIFTED_QUANTITY)).toEqual([
       "product.quantity_drift",
     ]);
+  });
+});
+
+describe("la norme catalogue suit la lignée (2026-10-30)", () => {
+  /**
+   * Avant : la norme se lisait par SKU seul, et une référence née n'en avait
+   * pas tant que ses propres lignes manquaient — l'aberration se taisait.
+   */
+  it("une référence née d'une ancienne à norme établie crie l'aberration dès sa première commande", async () => {
+    const { bornSku } = await aDetachedHabit(NORM_FLOOR_LINES);
+    await ctx.app.get(CommandBus).execute(new RecomputeProductNormsCommand(NORM_WINDOW_DAYS));
+    const newcomer = await aBuyingCompany("auth0|lineage-alerts-newcomer");
+
+    expect(await kindsFor(newcomer.companyId, bornSku, OUTLIER_QUANTITY)).toContain(
+      "product.quantity_outlier",
+    );
+    expect(await kindsFor(newcomer.companyId, bornSku, HABIT_QUANTITY)).not.toContain(
+      "product.quantity_outlier",
+    );
   });
 });
