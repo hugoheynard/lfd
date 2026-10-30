@@ -231,12 +231,16 @@ un `PendingProPolicyReader` doublé : chaque réglage coupé un par un.
   seulement** (le « au compte » est déjà fermé hors `active`,
   `order-settlement.ts:122`). Son **tarif — pro ou public — est un choix
   d'admin**, dans le même écran de réglages que les pros en cours
-  d'inscription. Défaut à confirmer par Hugo.
+  d'inscription. **Pas de défaut codé** (Hugo, 2026-10-30 : « on doit décider
+  en admin ») : le tarif d'une suspendue est un choix explicite et obligatoire
+  du staff — proposé au geste de suspension, société par société, et rien ne
+  part tant qu'il n'est pas fait (à confirmer au plan révisé : choix par société
+  au moment de suspendre, plutôt qu'un réglage global).
 - Le trou constaté par vitruve (une suspendue / terminée est tarifée pro au
   devis et à la passation, `order-line-pricing.service.ts:189` via
   `CatalogViewers.forCompany`, qui ne lit pas le statut) se ferme donc PAR ce
   réglage, au niveau de `forCompany` et de tous ses appelants (rayon, devis,
   passation, habituels, suggestions, « achetés avec », liste staff) — jamais au
   seul rayon.
-- Restent ouverts : la société **terminée** (commande refusée ?), et la
-  mercuriale séparée ou non du « traité en pro » (recommandé : une seule case).
+- **Case unique** « traité en pro », mercuriale comprise (Hugo, 2026-10-30).
+- Reste ouvert : la société **terminée** (commande refusée ?).
