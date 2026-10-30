@@ -681,23 +681,3 @@ model CatalogRules {
   @@map("catalog_rules")
   @@schema("public")
 }
-
-/// **Une ancienne référence de vente, et l'article qu'elle désigne** — table
-/// VIDE, sans lecteur ni écrivain depuis la révision 3 de
-/// `documentation/catalogue/plan-defaut-sous-sa-reference.md` (2026-10-29) :
-/// la bascule RÉÉCRIT la référence produit au lieu de la traduire.
-///
-/// Gardée tant qu'elle existe en base : sa suppression part dans un
-/// déploiement ULTÉRIEUR à la bascule (plan, § 16), pour que le retour arrière
-/// de la bascule n'ait pas à recréer une table.
-model SaleSkuAlias {
-  /// L'ancienne référence, telle que le passé la porte.
-  aliasSku  String   @id @map("alias_sku")
-  /// La référence de vente qu'elle désigne désormais.
-  targetSku String   @map("target_sku")
-  writtenAt DateTime @map("written_at")
-
-  @@index([targetSku])
-  @@map("sale_sku_alias")
-  @@schema("public")
-}

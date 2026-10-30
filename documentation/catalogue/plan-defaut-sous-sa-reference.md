@@ -631,9 +631,10 @@ ou un réglage posés depuis. Au-delà, c'est une nouvelle bascule.
    de développement, une décision tarifaire (2.f) qui heurterait celle de la
    cible reste sous la référence produit — documenté, non corrigé.
 
-**Ce qui reste (TODO daté du 2026-10-29)** : un déploiement ULTÉRIEUR à la
-bascule supprime `sale_sku_alias` (une migration `DROP TABLE` et le retrait du
-modèle), une fois le retour arrière devenu sans objet.
+~~**Ce qui reste (TODO daté du 2026-10-29)** : un déploiement ULTÉRIEUR à la
+bascule supprime `sale_sku_alias`.~~ Fait le 2026-10-30, après la mise en
+production de la bascule : migration `20261030140000_la_table_des_anciennes_references_part`
+(refuse si la table porte une ligne) et retrait du modèle.
 
 **Ce qui n'est pas vérifié** : la fenêtre de déploiement (§ 15) reste — entre
 `migrate deploy` et l'image neuve, l'ancien code peut écrire une ligne sous

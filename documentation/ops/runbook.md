@@ -608,8 +608,10 @@ ou un arrêté émis** qui porte une référence produit, ou une **collision** (
 commande, un réassort, une journée, une alerte de stock vivante qui porte les
 deux références). Elle finit par un **contrôle** : s'il reste une référence produit
 dans une colonne inventoriée, tout est annulé. La table
-`sale_sku_alias` reste, vide : sa suppression part dans un déploiement
-ultérieur.
+`sale_sku_alias` est restée, vide, un déploiement ; elle est supprimée par
+`20261030140000_la_table_des_anciennes_references_part` (2026-10-30). Un retour
+arrière de la bascule APRÈS cette migration doit d'abord la recréer vide, à
+l'identique de `20261029080000`.
 
 **Le journal suit, dans le même déploiement** :
 `20261030100000_le_journal_parle_la_reference_de_vente` (décision de Hugo du
