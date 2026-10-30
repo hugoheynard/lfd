@@ -86,6 +86,8 @@ describe("l'arrêt automatique, lu de l'heure limite générale", () => {
       automaticClose: null,
       closedDays: [],
       tranches: { mode: "fixed", fixedTranches: [] },
+      // Le rangement du fournil (2026-10-30) : par racine, sans intertitres.
+      display: { showSubcategories: false },
     });
   });
 
