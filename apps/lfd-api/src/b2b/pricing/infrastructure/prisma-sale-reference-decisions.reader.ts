@@ -1,6 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
+import { CorruptedPriceRuleError } from "../domain/pricing-errors.js";
+import { decisionOriginFromJson } from "./decision-origin-rows.js";
+import type { DecisionOrigin } from "../domain/entities/decision-carry-over.js";
 import {
   SaleReferenceDecisionsReader,
   type StandingDecision,
@@ -71,6 +74,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: row.validFrom,
       validTo: row.validTo,
       paused: row.pausedAt !== null,
+      origin: null,
     }));
   }
 
@@ -87,6 +91,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: row.validFrom,
       validTo: row.validTo,
       paused: row.pausedAt !== null,
+      origin: originOf(row),
     }));
   }
 
@@ -104,6 +109,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: row.validFrom,
       validTo: row.validTo,
       paused: false,
+      origin: originOf(row),
     }));
   }
 
@@ -120,6 +126,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: row.validFrom,
       validTo: row.validTo,
       paused: row.pausedAt !== null,
+      origin: originOf(row),
     }));
   }
 
@@ -141,6 +148,7 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: row.validFrom,
       validTo: row.validTo,
       paused: false,
+      origin: originOf(row),
     }));
   }
 
@@ -157,6 +165,12 @@ export class PrismaSaleReferenceDecisionsReader extends SaleReferenceDecisionsRe
       validFrom: null,
       validTo: null,
       paused: false,
+      origin: null,
     }));
   }
+}
+
+/** L'origine d'une décision reportée ; une forme inattendue lève. */
+function originOf(row: { readonly id: string; readonly origin: unknown }): DecisionOrigin | null {
+  return decisionOriginFromJson(row.origin, (why) => new CorruptedPriceRuleError(row.id, why));
 }

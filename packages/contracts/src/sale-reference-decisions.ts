@@ -11,6 +11,16 @@ export type SaleReferenceDecisionKind =
   | "price_template";
 
 /**
+ * D'où vient une décision REPORTÉE depuis l'ancienne référence d'un
+ * détachement (`plan-report-apres-detachement.md`, R0). L'écran s'en sert pour
+ * dire « déjà reportée » sur la ligne de l'ancienne.
+ */
+export interface SaleReferenceDecisionOrigin {
+  readonly fromSku: string;
+  readonly fromDecisionId: string;
+}
+
+/**
  * Une décision tarifaire EN VIGUEUR (ou programmée) qui vise une référence de
  * vente — `GET admin/pricing/sale-references/:sku/decisions`
  * (`documentation/catalogue/plan-pro-voit-les-declinaisons.md`, L7).
@@ -32,4 +42,6 @@ export interface SaleReferenceDecisionView {
   readonly validTo: string | null;
   /** En pause : debout, mais ne joue pas aujourd'hui. */
   readonly paused: boolean;
+  /** Reportée depuis une ancienne référence ; `null` = saisie (ou mercuriale, gabarit). */
+  readonly origin: SaleReferenceDecisionOrigin | null;
 }

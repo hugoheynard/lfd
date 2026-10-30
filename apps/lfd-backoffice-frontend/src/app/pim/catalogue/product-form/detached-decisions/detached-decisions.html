@@ -16,8 +16,9 @@
             @if (line.carried) {
               — reportée sur {{ newSku() }}
             } @else if (line.carriable && newSku(); as target) {
-              <app-mercuriale-carry-over
-                [mercurialeId]="line.id"
+              <app-decision-carry-over
+                [kind]="line.kind"
+                [decisionId]="line.id"
                 [fromSku]="sku"
                 [toSku]="target"
                 (carried)="reload()"
@@ -26,6 +27,34 @@
           </li>
         }
       </ul>
+      @if (carryAll().length > 1 && newSku(); as target) {
+        <fold-inline-confirm
+          intent="primary"
+          [message]="
+            carryAll().length +
+            ' décisions seront reportées sur ' +
+            target +
+            ', avec le motif « ' +
+            reasonFor(sku) +
+            ' ». Seules celles que votre rôle permet de poser.'
+          "
+          [labels]="{ confirm: 'Tout reporter', cancel: 'Annuler' }"
+          keepOpenOnConfirm
+          [loading]="carryingAll()"
+          [open]="carryAllOpen()"
+          (openChange)="carryAllOpen.set($event)"
+          (confirmed)="carryEverything(sku, target)"
+        >
+          <button foldButton size="sm" emphasis="outline" data-carry-all-trigger>
+            Tout reporter ({{ carryAll().length }})
+          </button>
+        </fold-inline-confirm>
+      }
+      @for (refusal of carryAllRefusals(); track refusal) {
+        <fold-callout appearance="inset" variant="alert" announce data-carry-all-error>{{
+          refusal
+        }}</fold-callout>
+      }
     </fold-callout>
   }
 }

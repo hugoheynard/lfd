@@ -314,6 +314,7 @@ export const PRICING_PHRASES = {
   'price_floor.replaced': floorAct('a remplacé'),
   'price_floor.archived': floorAct('a archivé'),
   'price_floor.confirmed': floorAct('a confirmé'),
+  'price_floor.carried': floorAct('a reporté'),
   'volume_ladder.posed': act('a posé', LADDER),
   'volume_ladder.paused': act('a suspendu', LADDER),
   'volume_ladder.resumed': act('a repris', LADDER),

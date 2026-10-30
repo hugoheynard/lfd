@@ -438,6 +438,8 @@ export const pricingActSchema = z.enum([
   "renamed",
   /** Une mercuriale a reçu un avenant daté : un prix ajouté ou une ligne arrêtée. */
   "amended",
+  /** Un plancher reporté sur la référence née d'un détachement : il ne remplace rien. */
+  "carried",
   /**
    * Sur le compte tarifaire d'un sous-compte (sujet `company`) : il commence /
    * cesse de suivre la mercuriale de son principal (`sous-comptes.md`, S3).
@@ -475,6 +477,7 @@ export const PRICING_ACT_LABELS: Readonly<Record<PricingActKind, string>> = {
   replaced: "Remplacée",
   renamed: "Renommée",
   amended: "Amendée",
+  carried: "Reportée",
   started: "Alignement",
   ended: "Fin d'alignement",
   joined: "Sous-compte aligné",
@@ -2043,6 +2046,24 @@ export const carryOverMercurialeLinePayloadSchema = z.object({
   reason: z.string().min(1).max(500),
 });
 export type CarryOverMercurialeLinePayload = z.infer<typeof carryOverMercurialeLinePayloadSchema>;
+
+/**
+ * **Reporter une décision** — règle, plancher, barème, engagement — sur la
+ * référence née d'un détachement, ou **remplacer** l'ancienne référence par
+ * la nouvelle dans un gabarit (`plan-report-apres-detachement.md`, § 4) :
+ * `POST admin/pricing/{rules|volume-ladders|floors|commitments|templates}/:id/carry-over`,
+ * chaque route sous la surface de SA famille. Répond `CreatedIdResponse` —
+ * l'identifiant de la décision posée, ou celui du gabarit édité.
+ */
+export const carryOverDecisionPayloadSchema = z.object({
+  /** L'ANCIENNE référence, celle que la décision nomme. */
+  fromSku: z.string().min(1),
+  /** La NOUVELLE référence, qui doit être née de l'ancienne. */
+  toSku: z.string().min(1),
+  /** Gardé au journal tarifaire ; l'écran le préremplit. */
+  reason: z.string().min(1).max(500),
+});
+export type CarryOverDecisionPayload = z.infer<typeof carryOverDecisionPayloadSchema>;
 
 /** Ce qu'une pose ou une clôture a touché — un palier, une règle. */
 export interface AffectedRulesResponse {

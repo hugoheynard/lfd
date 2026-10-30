@@ -5,6 +5,7 @@ import { VolumeCommitmentAggregate } from "../domain/entities/volume-commitment.
 import { VolumeCommitmentRepository } from "../domain/ports/volume-commitment.repository.js";
 import { OverlappingVolumeCommitmentError } from "../domain/pricing-errors.js";
 import { commitmentStateFromRow } from "./volume-commitment-rows.js";
+import { originColumn } from "./decision-origin-rows.js";
 
 /**
  * **Le nom de la contrainte**, et non son SQLSTATE — même raison que sur les
@@ -60,6 +61,7 @@ export class PrismaVolumeCommitmentRepository extends VolumeCommitmentRepository
           validFrom: state.validFrom,
           validTo: state.validTo,
           createdBy: state.createdBy,
+          ...originColumn(commitment.origin),
         },
       });
     } catch (error) {

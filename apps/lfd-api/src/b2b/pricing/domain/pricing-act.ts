@@ -55,6 +55,13 @@ export const PRICING_ACTS = [
    */
   "amended",
   /**
+   * **Reporté** — un plancher posé sur la référence née d'un détachement,
+   * depuis celui de l'ancienne (`plan-report-apres-detachement.md`, § 2.3).
+   * Ni `posed` ni `replaced` : il ne remplace rien, et il ne vient pas d'une
+   * saisie.
+   */
+  "carried",
+  /**
    * **Le suivi d'une mercuriale** entre comptes (`sous-comptes.md`, S3),
    * sur le sujet `company` seulement : le sous-compte commence / cesse de
    * suivre (`started` / `ended`), le principal gagne / perd un sous-compte qui
@@ -186,6 +193,7 @@ const FACT_TYPES: {
     replaced: null,
     renamed: "price_rule.renamed",
     amended: null,
+    carried: null,
     started: null,
     ended: null,
     joined: null,
@@ -200,6 +208,7 @@ const FACT_TYPES: {
     replaced: "price_floor.replaced",
     renamed: null,
     amended: null,
+    carried: "price_floor.carried",
     started: null,
     ended: null,
     joined: null,
@@ -214,6 +223,7 @@ const FACT_TYPES: {
     replaced: null,
     renamed: null,
     amended: null,
+    carried: null,
     started: null,
     ended: null,
     joined: null,
@@ -232,6 +242,7 @@ const FACT_TYPES: {
     replaced: null,
     renamed: "company_mercuriale.renamed",
     amended: "company_mercuriale.amended",
+    carried: null,
     started: null,
     ended: null,
     joined: null,
@@ -249,6 +260,7 @@ const FACT_TYPES: {
     replaced: null,
     renamed: null,
     amended: null,
+    carried: null,
     started: "pricing_follow.started",
     ended: "pricing_follow.ended",
     joined: "pricing_follower.joined",

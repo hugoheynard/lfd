@@ -11,6 +11,13 @@ import {
 } from "../pricing-errors.js";
 import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
+import {
+  carriedScope,
+  carriedWindow,
+  detachedOrigin,
+  type DecisionCarry,
+  type DecisionOrigin,
+} from "./decision-carry-over.js";
 import type { PriceAudience, PriceScope } from "../price-rule.js";
 import type { VolumeLadder, VolumeLadderUnit, VolumeTier } from "../volume-ladder.js";
 
@@ -31,6 +38,8 @@ export interface VolumeLadderState extends VolumeLadderDraft {
   readonly id: string;
   readonly createdBy: string;
   readonly lifecycle: RuleLifecycle;
+  /** Reporté depuis l'ancienne référence d'un détachement ; absente = saisi. */
+  readonly origin?: DecisionOrigin;
 }
 
 /**
@@ -84,6 +93,47 @@ export class VolumeLadderAggregate {
     return new VolumeLadderAggregate({ ...draft, tiers, id, createdBy, lifecycle: IN_FORCE });
   }
 
+  /**
+   * **Le report** sur la référence née d'un détachement
+   * (`plan-report-apres-detachement.md`, R3) : mêmes paliers, même audience,
+   * portée = la nouvelle référence, fenêtre bornée par l'ancienne. Un barème
+   * en pause naît en pause (§ 7 bis).
+   *
+   * @throws {DecisionNotOnReferenceError} il ne nomme pas l'ancienne référence.
+   * @throws {CarriedDecisionClosedError} il est archivé, ou terminé.
+   * @throws {RetroactiveCarryOverError} la fenêtre commencerait avant maintenant.
+   * @throws les refus de `pose`.
+   */
+  static carriedFrom(
+    id: string,
+    source: VolumeLadderAggregate,
+    carry: DecisionCarry,
+    createdBy: string,
+    now: Date,
+  ): VolumeLadderAggregate {
+    const old = source.state;
+    const scope = carriedScope(old.scope, old.id, carry);
+    const window = carriedWindow(
+      "volume_ladder",
+      old.id,
+      { ...old, archivedAt: old.lifecycle.archivedAt },
+      now,
+    );
+    const posed = VolumeLadderAggregate.pose(
+      id,
+      { ...draftOf(old), scope, validFrom: window.validFrom, validTo: window.validTo },
+      createdBy,
+    );
+    const paused = old.lifecycle.pausedAt !== null;
+    return new VolumeLadderAggregate({
+      ...posed.state,
+      origin: detachedOrigin(carry, old.id),
+      lifecycle: paused
+        ? { ...IN_FORCE, pausedAt: now, pausedBy: old.lifecycle.pausedBy }
+        : IN_FORCE,
+    });
+  }
+
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */
   static reconstitute(state: VolumeLadderState): VolumeLadderAggregate {
     return new VolumeLadderAggregate(state);
@@ -95,6 +145,11 @@ export class VolumeLadderAggregate {
 
   get label(): string {
     return this.state.label;
+  }
+
+  /** D'où vient le barème quand il a été reporté ; `null` = saisi. */
+  get origin(): DecisionOrigin | null {
+    return this.state.origin ?? null;
   }
 
   get status(): RuleStatus {
@@ -200,6 +255,19 @@ export class VolumeLadderAggregate {
   toPersistence(): VolumeLadderState {
     return this.state;
   }
+}
+
+/** L'intention d'un barème posé — sans son identité ni son cycle de vie. */
+function draftOf(state: VolumeLadderState): VolumeLadderDraft {
+  return {
+    scope: state.scope,
+    audience: state.audience,
+    unit: state.unit,
+    tiers: state.tiers,
+    label: state.label,
+    validFrom: state.validFrom,
+    validTo: state.validTo,
+  };
 }
 
 /** `id` est renseigné **si et seulement si** la portée n'est pas la plus large. */

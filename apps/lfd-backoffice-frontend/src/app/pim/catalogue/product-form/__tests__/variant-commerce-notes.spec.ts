@@ -1,15 +1,18 @@
 import { HttpErrorResponse, provideHttpClient } from '@angular/common/http';
 import type { Type } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
+import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
 import type {
   PublishedCatalogView,
   PublishedVariantView,
+  SaleReferenceDecisionKind,
   SaleReferenceDecisionView,
+  StaffPermission,
 } from '@lfd/contracts';
 import type { ProductLineageView } from '@lfd/pim-contracts';
 import { describe, expect, it } from 'vitest';
 
+import { PermissionsStore } from '../../../../auth/permissions.store';
 import { CatalogueService } from '../../../../b2b/catalogue/catalogue.service';
 import { SaleReferenceDecisionsService } from '../../../../b2b/tarification/sale-reference-decisions.service';
 import { CatalogueApi } from '../../catalogue-api';
@@ -232,18 +235,42 @@ class StubDecisions {
     this.asked.push(sku);
     return Promise.resolve(this.bySku[sku] ?? this.views);
   }
+  readonly carried: { kind: SaleReferenceDecisionKind; id: string }[] = [];
+  /** `refused` : les identifiants dont le report échoue. */
+  refused: readonly string[] = [];
+  carryOverDecision(kind: SaleReferenceDecisionKind, id: string): Promise<void> {
+    if (this.refused.includes(id)) {
+      return Promise.reject(new HttpErrorResponse({ status: 409, error: { message: 'Refusé.' } }));
+    }
+    this.carried.push({ kind, id });
+    return Promise.resolve();
+  }
 }
 
-async function render<T>(
-  component: Type<T>,
-  options: {
-    readonly catalogue?: StubCatalogue;
-    readonly decisions?: StubDecisions;
-    readonly api?: FakeApi;
-  },
-): Promise<HTMLElement> {
+interface RenderOptions {
+  readonly catalogue?: StubCatalogue;
+  readonly decisions?: StubDecisions;
+  readonly api?: FakeApi;
+  /** Les droits de la personne ; absents = le vrai magasin, qui n'en a lu aucun. */
+  readonly permissions?: readonly StaffPermission[];
+}
+
+async function render<T>(component: Type<T>, options: RenderOptions): Promise<HTMLElement> {
+  return (await mount(component, options)).nativeElement as HTMLElement;
+}
+
+async function mount<T>(component: Type<T>, options: RenderOptions): Promise<ComponentFixture<T>> {
+  const granted = options.permissions;
   TestBed.configureTestingModule({
     providers: [
+      ...(granted === undefined
+        ? []
+        : [
+            {
+              provide: PermissionsStore,
+              useValue: { can: (p: StaffPermission): boolean => granted.includes(p) },
+            },
+          ]),
       { provide: CatalogueService, useValue: options.catalogue ?? new StubCatalogue(null) },
       {
         provide: SaleReferenceDecisionsService,
@@ -259,7 +286,7 @@ async function render<T>(
   // après plus d'un tour de micro-tâches : on laisse la file se vider.
   await new Promise((resolve) => setTimeout(resolve));
   fixture.detectChanges();
-  return fixture.nativeElement as HTMLElement;
+  return fixture;
 }
 
 describe('<app-variant-pro-offer>', () => {
@@ -322,6 +349,7 @@ describe('<app-detached-decisions>', () => {
         validFrom: null,
         validTo: null,
         paused: false,
+        origin: null,
       },
     ]);
 
@@ -343,6 +371,7 @@ describe('<app-detached-decisions>', () => {
     validFrom: null,
     validTo: null,
     paused: false,
+    origin: null,
   };
 
   it('propose de reporter une mercuriale sur la nouvelle référence (T5)', async () => {
@@ -352,7 +381,7 @@ describe('<app-detached-decisions>', () => {
 
     const host = await render(DetachedDecisions, { api, decisions });
 
-    expect(host.querySelector('app-mercuriale-carry-over')).not.toBeNull();
+    expect(host.querySelector('app-decision-carry-over')).not.toBeNull();
     expect(host.textContent).not.toContain('reportée sur');
   });
 
@@ -363,20 +392,58 @@ describe('<app-detached-decisions>', () => {
 
     const host = await render(DetachedDecisions, { api, decisions });
 
-    expect(host.querySelector('app-mercuriale-carry-over')).toBeNull();
+    expect(host.querySelector('app-decision-carry-over')).toBeNull();
     expect(host.textContent).toContain('reportée sur CHO-001-1');
   });
 
-  it('ne propose pas de reporter une autre famille que la mercuriale', async () => {
+  // `plan-report-apres-detachement.md`, § 5 : toutes les familles se reportent
+  // (2026-10-30) — cette ligne affirmait l'inverse pour la règle.
+  it('propose aussi de reporter une règle, et « Tout reporter » quand il y en a plusieurs', async () => {
     const api = new FakeApi();
     api.lineage = ORIGIN;
-    const decisions = new StubDecisions([{ ...MERCURIALE, kind: 'price_rule' }], {
-      'CHO-001-1': [],
+    const decisions = new StubDecisions(
+      [MERCURIALE, { ...MERCURIALE, kind: 'price_rule', id: 'rule_1' }],
+      { 'CHO-001-1': [] },
+    );
+
+    const host = await render(DetachedDecisions, {
+      api,
+      decisions,
+      permissions: ['b2b_pricing:write'],
     });
 
-    const host = await render(DetachedDecisions, { api, decisions });
+    expect(host.querySelectorAll('app-decision-carry-over')).toHaveLength(2);
+    expect(host.querySelector('[data-carry-all-trigger]')?.textContent).toContain(
+      'Tout reporter (2)',
+    );
+  });
 
-    expect(host.querySelector('app-mercuriale-carry-over')).toBeNull();
+  it('« Tout reporter » ne reporte que ce que le rôle permet, et garde les refus à l’écran', async () => {
+    const api = new FakeApi();
+    api.lineage = ORIGIN;
+    const decisions = new StubDecisions(
+      [
+        MERCURIALE,
+        { ...MERCURIALE, kind: 'price_rule', id: 'rule_1' },
+        { ...MERCURIALE, kind: 'price_floor', id: 'flr_1', companyId: null },
+      ],
+      { 'CHO-001-1': [] },
+    );
+    decisions.refused = ['rule_1'];
+    const fixture = await mount(DetachedDecisions, {
+      api,
+      decisions,
+      permissions: ['b2b_pricing:write'],
+    });
+
+    await fixture.componentInstance['carryEverything']('CHO-000-2', 'CHO-001-1');
+    fixture.detectChanges();
+
+    // Le plancher demande `lfc_price_limits:write` : il attend quelqu'un qui l'a.
+    expect(decisions.carried).toEqual([{ kind: 'mercuriale', id: 'mer_1' }]);
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-carry-all-error]')?.textContent,
+    ).toContain('Refusé.');
   });
 
   it('ne demande rien sur une fiche qui n’est pas née d’un détachement', async () => {

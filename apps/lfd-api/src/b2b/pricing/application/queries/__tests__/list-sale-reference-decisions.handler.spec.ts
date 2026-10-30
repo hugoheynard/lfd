@@ -40,6 +40,7 @@ function decision(over: Partial<StandingDecision>): StandingDecision {
     validFrom: NOW,
     validTo: null,
     paused: false,
+    origin: null,
     ...over,
   };
 }
@@ -85,5 +86,22 @@ describe("ListSaleReferenceDecisionsHandler", () => {
       expect.objectContaining({ id: "c", companyId: null, companyName: null }),
       expect.objectContaining({ id: "d", companyName: null, validFrom: null }),
     ]);
+  });
+
+  it("rend l'origine d'une décision reportée, que l'écran lit pour dire « déjà reportée »", async () => {
+    const handler = new ListSaleReferenceDecisionsHandler(
+      new StubDecisions([
+        decision({
+          kind: "price_rule",
+          origin: { kind: "detached", fromSku: "TAR-001-2", fromDecisionId: "rule_old" },
+        }),
+      ]),
+      new CountingNamer(),
+      new FixedClock(NOW),
+    );
+
+    const [view] = await handler.execute(new ListSaleReferenceDecisionsQuery("TAR-001"));
+
+    expect(view?.origin).toEqual({ fromSku: "TAR-001-2", fromDecisionId: "rule_old" });
   });
 });

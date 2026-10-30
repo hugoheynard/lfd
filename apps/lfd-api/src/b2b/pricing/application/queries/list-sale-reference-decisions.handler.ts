@@ -61,5 +61,9 @@ function viewOf(
     validFrom: decision.validFrom?.toISOString() ?? null,
     validTo: decision.validTo?.toISOString() ?? null,
     paused: decision.paused,
+    origin:
+      decision.origin === null
+        ? null
+        : { fromSku: decision.origin.fromSku, fromDecisionId: decision.origin.fromDecisionId },
   };
 }

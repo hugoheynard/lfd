@@ -70,6 +70,18 @@ import { RenameCompanyMercurialeHandler } from "./application/commands/rename-co
 import { PoseCompanyMercurialeHandler } from "./application/commands/pose-company-mercuriale.handler.js";
 import { AmendCompanyMercurialeHandler } from "./application/commands/amend-company-mercuriale.handler.js";
 import { CarryOverMercurialeLineHandler } from "./application/commands/carry-over-mercuriale-line.handler.js";
+import { CarryOverPriceRuleHandler } from "./application/commands/carry-over-price-rule.handler.js";
+import { CarryOverPriceFloorHandler } from "./application/commands/carry-over-price-floor.handler.js";
+import { CarryOverVolumeLadderHandler } from "./application/commands/carry-over-volume-ladder.handler.js";
+import { CarryOverVolumeCommitmentHandler } from "./application/commands/carry-over-volume-commitment.handler.js";
+import { CarryOverPriceTemplateLineHandler } from "./application/commands/carry-over-price-template-line.handler.js";
+import { AdminPricingCarryOverController } from "./http/admin-pricing-carry-over.controller.js";
+import { CarriedDecisionsReader } from "./domain/ports/carried-decisions.reader.js";
+import { PrismaCarriedDecisionsReader } from "./infrastructure/prisma-carried-decisions.reader.js";
+import { CarryOverLock } from "./domain/ports/carry-over.lock.js";
+import { PrismaCarryOverLock } from "./infrastructure/prisma-carry-over.lock.js";
+import { CarriedFloorRepository } from "./domain/ports/carried-floor.repository.js";
+import { PrismaCarriedFloorRepository } from "./infrastructure/prisma-carried-floor.repository.js";
 import { SaleReferenceLineageReader } from "./domain/ports/sale-reference-lineage.reader.js";
 import { CatalogSaleReferenceLineageReader } from "./infrastructure/catalog-sale-reference-lineage.reader.js";
 import { CloseVolumeCommitmentHandler } from "./application/commands/close-volume-commitment.handler.js";
@@ -125,6 +137,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     AdminPriceTemplatesController,
     AdminCompanyPricingController,
     AdminSaleReferenceDecisionsController,
+    AdminPricingCarryOverController,
   ],
   providers: [
     BoardElasticityService,
@@ -181,6 +194,16 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     PoseCompanyMercurialeHandler,
     AmendCompanyMercurialeHandler,
     CarryOverMercurialeLineHandler,
+    // Le report des cinq autres familles (`plan-report-apres-detachement.md`) :
+    // chacun sous la surface de SA famille, sérialisé par un verrou consultatif.
+    CarryOverPriceRuleHandler,
+    CarryOverPriceFloorHandler,
+    CarryOverVolumeLadderHandler,
+    CarryOverVolumeCommitmentHandler,
+    CarryOverPriceTemplateLineHandler,
+    { provide: CarriedDecisionsReader, useClass: PrismaCarriedDecisionsReader },
+    { provide: CarryOverLock, useClass: PrismaCarryOverLock },
+    { provide: CarriedFloorRepository, useClass: PrismaCarriedFloorRepository },
     CloseCompanyMercurialeHandler,
     RenameCompanyMercurialeHandler,
     SavePriceTemplateHandler,

@@ -19,3 +19,13 @@ export class MissingAmendmentInAggregateError extends TechnicalError {
     );
   }
 }
+
+/** Le verrou d'un report de décision exige la transaction ouverte par le handler. */
+export class CarryOverLockOutsideTransactionError extends TechnicalError {
+  constructor() {
+    super(
+      "pricing.carry_over.lock_outside_transaction",
+      "Le verrou d'un report de décision exige une transaction ouverte : appeler ce port sous UnitOfWork.run.",
+    );
+  }
+}

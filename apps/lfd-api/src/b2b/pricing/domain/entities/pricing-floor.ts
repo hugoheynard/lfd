@@ -6,7 +6,15 @@ import {
   ScopeIdMismatchError,
   UnlockableDynamicFloorError,
 } from "../pricing-errors.js";
+import { FloorAlreadyInForceError } from "../pricing-errors.js";
 import type { PriceFloorPolicy } from "../floor-policy.js";
+import {
+  carriedScope,
+  carriedWindow,
+  detachedOrigin,
+  type DecisionCarry,
+  type DecisionOrigin,
+} from "./decision-carry-over.js";
 import type { PriceFloor, PriceScope, ScopedPriceFloor } from "../price-rule.js";
 
 /**
@@ -37,6 +45,18 @@ export interface PricingFloorState {
   readonly validFrom: Date;
   /** Borne haute **exclue**. `null` = elle arbitre encore. */
   readonly validTo: Date | null;
+  /** Reporté depuis l'ancienne référence d'un détachement ; absente = posé. */
+  readonly origin?: DecisionOrigin;
+}
+
+/** Ce que le report d'un plancher sait de la nouvelle référence. */
+export interface FloorCarryContext {
+  readonly createdBy: string;
+  readonly now: Date;
+  /** Le tarif représentatif de la NOUVELLE référence, figé au report. */
+  readonly referenceCanonicalMillicents: number | null;
+  /** Un plancher arbitre-t-il déjà la nouvelle référence, pour cette clientèle ? */
+  readonly inForceOnTarget: boolean;
 }
 
 /** 100 % du prix canonique, en points de base. */
@@ -145,6 +165,53 @@ export class PricingFloor {
     });
   }
 
+  /**
+   * **Le report** sur la référence née d'un détachement
+   * (`plan-report-apres-detachement.md`, § 2.3) — un chemin propre, pas
+   * `pose` : la fenêtre est `max(maintenant, début)` → fin RÉELLE de
+   * l'ancien, et rien n'est remplacé. Un pourcentage reste un pourcentage :
+   * il s'applique au canonique de la nouvelle référence (§ 7 bis) ; un
+   * montant se recopie.
+   *
+   * @throws {FloorAlreadyInForceError} un plancher arbitre déjà la nouvelle référence.
+   * @throws {DecisionNotOnReferenceError} l'ancien ne nomme pas l'ancienne référence.
+   * @throws {CarriedDecisionClosedError} l'ancien est archivé, ou terminé.
+   * @throws {RetroactiveCarryOverError} la fenêtre commencerait avant maintenant.
+   * @throws les refus de `pose`, dont `FloorAboveCanonicalError`.
+   */
+  static carriedFrom(
+    id: string,
+    source: { readonly floor: PricingFloor; readonly archivedAt: Date | null },
+    carry: DecisionCarry,
+    context: FloorCarryContext,
+  ): PricingFloor {
+    const old = source.floor.state;
+    const scope = carriedScope(old.scope, old.id, carry);
+    const window = carriedWindow(
+      "price_floor",
+      old.id,
+      { ...old, archivedAt: source.archivedAt },
+      context.now,
+    );
+    if (context.inForceOnTarget) {
+      throw new FloorAlreadyInForceError(carry.toSku, old.clientele);
+    }
+    const posed = PricingFloor.pose(
+      id,
+      scope,
+      old.clientele,
+      old.policy,
+      context.createdBy,
+      window.validFrom,
+      context.referenceCanonicalMillicents,
+    );
+    return new PricingFloor({
+      ...posed.state,
+      validTo: window.validTo,
+      origin: detachedOrigin(carry, old.id),
+    });
+  }
+
   static reconstitute(state: PricingFloorState): PricingFloor {
     return new PricingFloor(state);
   }
@@ -155,6 +222,11 @@ export class PricingFloor {
 
   get clientele(): FloorClientele {
     return this.state.clientele;
+  }
+
+  /** D'où vient le plancher quand il a été reporté ; `null` = posé. */
+  get origin(): DecisionOrigin | null {
+    return this.state.origin ?? null;
   }
 
   /** La forme que lit la résolution. */

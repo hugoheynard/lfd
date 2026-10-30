@@ -1,6 +1,8 @@
 # Reporter après un détachement : les cinq autres familles de décisions
 
-> 📐 **Doc-first, 2026-10-30.** Aucune ligne de code n'est écrite. Suite du
+> 🟦 **Bâti le 2026-10-30, lots R0 à R6, pas encore commité** (cf. § 6 pour
+> ce que chaque lot a livré et où le code s'écarte de la lettre du plan).
+> Le texte ci-dessous était doc-first : il décrit l'intention. Suite du
 > geste L7c bâti pour la mercuriale
 > ([`plan-tarif-date-sur-une-reference.md`](plan-tarif-date-sur-une-reference.md) § 6, § 13 T5 ;
 > [`../catalogue/plan-pro-voit-les-declinaisons.md`](../catalogue/plan-pro-voit-les-declinaisons.md), L7c).
@@ -266,23 +268,36 @@ offert qu'au staff qui a `lfc_price_limits`.
 
 ## 6. Lots (un lot = un commit)
 
-- **R0** — migration additive : `origin Json?` sur `price_rules`,
-  `price_floors`, `volume_ladders`, `volume_commitments` — **même forme** que
-  l'avenant (`{ kind: "detached", fromSku, fromDecisionId }`), relue par un
-  `originFromJson` partagé qui refuse une forme inattendue. Divergence écartée :
-  trois colonnes plates n'apporteraient qu'une unicité, qui serait fausse
-  (§ 3). Le lecteur de décisions la rend. `lecteur-de-migrations` avant main.
-- **R1** — règles : `PricingRule.carriedFrom(...)` (domaine pur, refus du
-  rétroactif), `CarryOverPriceRuleHandler`, route dans
-  `admin-pricing.controller.ts` ; journal `subjectType: "rule"`.
-- **R2** — planchers : extension de `PricingFloor` (§ 2.3), route dans
-  `admin-price-floors.controller.ts`.
-- **R3** — barèmes, comme R1.
-- **R4** — engagements : reportés à quantité promise égale (§ 2.1), route
-  dans `admin-volume-commitments.controller.ts`.
-- **R5** — gabarit : commande d'édition « remplacer la ligne ».
-- **R6** — front : composant de report générique, `carriable`/`carried`
-  élargis, spec du panneau.
+- ~~**R0** — migration additive : `origin Json?` sur `price_rules`,
+  `price_floors`, `volume_ladders`, `volume_commitments`~~ — ✅ bâti le
+  2026-10-30 : `20261030230000_l_origine_des_decisions_reportees`
+  (`lock_timeout` 5 s), lue par `decisionOriginFromJson`
+  (`apps/lfd-api/src/b2b/pricing/infrastructure/decision-origin-rows.ts`), rendue par le lecteur de
+  décisions (`SaleReferenceDecisionView.origin`). `lecteur-de-migrations`
+  avant main reste à faire.
+- ~~**R1** — règles~~ — ✅ bâti le 2026-10-30 : `PricingRule.carriedFrom`
+  (+ `apps/lfd-api/src/b2b/pricing/domain/entities/pricing-rule-carry-over.ts`), `CarryOverPriceRuleHandler`, acte
+  `posed` avec le motif. ⚠️ La route est dans
+  `apps/lfd-api/src/b2b/pricing/http/admin-pricing-carry-over.controller.ts`, **même surface**
+  `b2b_pricing`, et non dans `admin-pricing.controller.ts`, qui dépassait déjà
+  300 lignes.
+- ~~**R2** — planchers~~ — ✅ bâti le 2026-10-30 : `PricingFloor.carriedFrom`,
+  port `CarriedFloorRepository` (insérer sans borner), acte neuf `carried`
+  (fait `price_floor.carried`), route `POST admin/pricing/floors/:id/carry-over`
+  sous `lfc_price_limits`.
+- ~~**R3** — barèmes, comme R1~~ — ✅ bâti le 2026-10-30 (même contrôleur que R1).
+- ~~**R4** — engagements~~ — ✅ bâti le 2026-10-30 : même promesse, fait
+  `volume_commitment.signed` ; route `POST admin/pricing/commitments/:id/carry-over`.
+- ~~**R5** — gabarit~~ — ✅ bâti le 2026-10-30 : `PriceTemplate.replaceSku`,
+  route `POST admin/pricing/templates/:id/carry-over` (le motif est reçu,
+  sans journal où l'écrire).
+- ~~**R6** — front~~ — ✅ bâti le 2026-10-30 : `app-decision-carry-over`
+  remplace `app-mercuriale-carry-over`, `linesToCarryAll` et « Tout
+  reporter » dans `detached-decisions/`.
+
+« Déjà reporté » est tenu sous `pg_advisory_xact_lock` par (famille, nouvelle
+référence) — port `CarryOverLock` —, puis relu par `CarriedDecisionsReader`
+(`origin->>'fromSku'`).
 
 ## 7. Tests
 
@@ -348,3 +363,12 @@ offert qu'au staff qui a `lfc_price_limits`.
 | Mineur : import de `PricedPeriodIsSealedError`.                                                                                      | Corrigé : `domain/pricing-errors.js` (§ 0).                                                                                                                                                                           |
 | Mineur : le report de mercuriale n'est pas idempotent par contrainte.                                                                | Écrit au § 0 ; plus cité comme précédent.                                                                                                                                                                             |
 | Mineur : la fermeture d'engagement accepte `reason` null.                                                                            | Intégré à Q2.                                                                                                                                                                                                         |
+
+**Correction du 2026-10-30 (coordinateur, sous mandat de Hugo), après bâti.**
+La clé « déjà reportée » d'une **règle** est son identité d'exclusion
+(`price_rules_no_overlap`) : étage, audience, seuil — et non l'audience
+seule. Deux règles distinctes de l'ancienne référence (ex. une promotion et
+un geste pour la même société) se reportent donc toutes deux ; la même deux
+fois reste refusée (409). Le **barème** garde l'audience : son exclusion
+(`volume_ladders_no_overlap`) ne porte que portée et audience. Tenu par
+`ruleCarryKey` (`apps/lfd-api/src/b2b/pricing/domain/entities/decision-carry-over.ts`).

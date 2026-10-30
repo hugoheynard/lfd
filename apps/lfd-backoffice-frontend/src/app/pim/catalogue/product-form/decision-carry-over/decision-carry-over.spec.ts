@@ -1,48 +1,48 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { TestBed, type ComponentFixture } from '@angular/core/testing';
 import type {
-  AmendedMercurialeResponse,
-  CarryOverMercurialeLinePayload,
+  CarryOverDecisionPayload,
+  SaleReferenceDecisionKind,
   StaffPermission,
 } from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../../auth/permissions.store';
 import { SaleReferenceDecisionsService } from '../../../../b2b/tarification/sale-reference-decisions.service';
-import { MercurialeCarryOver } from './mercuriale-carry-over';
+import { DecisionCarryOver } from './decision-carry-over';
 
 /**
- * **Reporter une mercuriale sur la référence détachée**
- * (`plan-tarif-date-sur-une-reference.md`, § 6, T5) : le motif prérempli,
- * modifiable, jamais vide ; l'appel nomme l'ancienne et la nouvelle
- * référence ; un refus du serveur reste à l'écran.
+ * **Reporter une décision sur la référence détachée**
+ * (`plan-tarif-date-sur-une-reference.md`, § 6, T5 ; `plan-report-apres-detachement.md`,
+ * § 5) : le motif prérempli, modifiable, jamais vide ; l'appel nomme la
+ * famille, l'ancienne et la nouvelle référence ; le droit est celui de poser
+ * la famille ; un refus du serveur reste à l'écran.
  */
 
 const CAN: readonly StaffPermission[] = ['b2b_pricing:read', 'b2b_pricing:write'];
 
 class StubDecisions {
   readonly calls: {
-    fromSku: string;
-    mercurialeId: string;
-    payload: CarryOverMercurialeLinePayload;
+    kind: SaleReferenceDecisionKind;
+    id: string;
+    payload: CarryOverDecisionPayload;
   }[] = [];
   constructor(private readonly refusal: HttpErrorResponse | null = null) {}
-  carryOver(
-    fromSku: string,
-    mercurialeId: string,
-    payload: CarryOverMercurialeLinePayload,
-  ): Promise<AmendedMercurialeResponse> {
-    this.calls.push({ fromSku, mercurialeId, payload });
-    return this.refusal === null
-      ? Promise.resolve({ amendmentId: 'amd_1' })
-      : Promise.reject(this.refusal);
+  carryOverDecision(
+    kind: SaleReferenceDecisionKind,
+    id: string,
+    payload: CarryOverDecisionPayload,
+  ): Promise<void> {
+    this.calls.push({ kind, id, payload });
+    return this.refusal === null ? Promise.resolve() : Promise.reject(this.refusal);
   }
 }
 
 function mount(
   decisions: StubDecisions,
   permissions: readonly StaffPermission[] = CAN,
-): { fixture: ComponentFixture<MercurialeCarryOver>; carried: string[] } {
+  kind: SaleReferenceDecisionKind = 'mercuriale',
+): { fixture: ComponentFixture<DecisionCarryOver>; carried: string[] } {
   TestBed.configureTestingModule({
     providers: [
       { provide: SaleReferenceDecisionsService, useValue: decisions },
@@ -52,8 +52,9 @@ function mount(
       },
     ],
   });
-  const fixture = TestBed.createComponent(MercurialeCarryOver);
-  fixture.componentRef.setInput('mercurialeId', 'mer_1');
+  const fixture = TestBed.createComponent(DecisionCarryOver);
+  fixture.componentRef.setInput('kind', kind);
+  fixture.componentRef.setInput('decisionId', 'mer_1');
   fixture.componentRef.setInput('fromSku', 'CHO-000-2');
   fixture.componentRef.setInput('toSku', 'CHO-001-1');
   const carried: string[] = [];
@@ -62,14 +63,14 @@ function mount(
   return { fixture, carried };
 }
 
-const el = (f: ComponentFixture<MercurialeCarryOver>) => f.nativeElement as HTMLElement;
+const el = (f: ComponentFixture<DecisionCarryOver>) => f.nativeElement as HTMLElement;
 
-function open(f: ComponentFixture<MercurialeCarryOver>): void {
+function open(f: ComponentFixture<DecisionCarryOver>): void {
   f.componentInstance['onOpenChange'](true);
   f.detectChanges();
 }
 
-describe('<app-mercuriale-carry-over>', () => {
+describe('<app-decision-carry-over>', () => {
   beforeEach(() => {
     TestBed.resetTestingModule();
   });
@@ -104,9 +105,9 @@ describe('<app-mercuriale-carry-over>', () => {
 
     expect(decisions.calls).toEqual([
       {
-        fromSku: 'CHO-000-2',
-        mercurialeId: 'mer_1',
-        payload: { toSku: 'CHO-001-1', reason: 'Demande du chef' },
+        kind: 'mercuriale',
+        id: 'mer_1',
+        payload: { fromSku: 'CHO-000-2', toSku: 'CHO-001-1', reason: 'Demande du chef' },
       },
     ]);
     expect(carried).toEqual(['carried']);
@@ -141,5 +142,39 @@ describe('<app-mercuriale-carry-over>', () => {
       'déjà dans la grille',
     );
     expect(carried).toEqual([]);
+  });
+
+  it('un plancher demande `lfc_price_limits:write` : le droit sur la tarification ne suffit pas', () => {
+    expect(
+      el(mount(new StubDecisions(), CAN, 'price_floor').fixture).querySelector(
+        '[data-carry-over-trigger]',
+      ),
+    ).toBeNull();
+    TestBed.resetTestingModule();
+    expect(
+      el(
+        mount(new StubDecisions(), ['lfc_price_limits:write'], 'price_floor').fixture,
+      ).querySelector('[data-carry-over-trigger]'),
+    ).not.toBeNull();
+  });
+
+  it('reporte une règle par la route de sa famille', async () => {
+    const decisions = new StubDecisions();
+    const { fixture } = mount(decisions, CAN, 'price_rule');
+    open(fixture);
+
+    await fixture.componentInstance['confirm']();
+
+    expect(decisions.calls.map(({ kind, id }) => ({ kind, id }))).toEqual([
+      { kind: 'price_rule', id: 'mer_1' },
+    ]);
+  });
+
+  it('un gabarit se REMPLACE : le geste le dit', () => {
+    const { fixture } = mount(new StubDecisions(), CAN, 'price_template');
+
+    expect(el(fixture).querySelector('[data-carry-over-trigger]')?.textContent).toContain(
+      'Remplacer dans le gabarit',
+    );
   });
 });

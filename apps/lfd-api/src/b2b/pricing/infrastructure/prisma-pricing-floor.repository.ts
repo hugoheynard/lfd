@@ -2,8 +2,8 @@ import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { PricingFloorRepository } from "../domain/ports/pricing-floor.repository.js";
-import { PricingFloor, type FloorClientele } from "../domain/entities/pricing-floor.js";
-import { floorFromRow } from "./price-rows.js";
+import type { FloorClientele, PricingFloor } from "../domain/entities/pricing-floor.js";
+import { pricingFloorFromRow } from "./pricing-floor-rows.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 import type { PriceFloor, PriceScope } from "../domain/price-rule.js";
@@ -109,20 +109,7 @@ export class PrismaPricingFloorRepository extends PricingFloorRepository {
         OR: [{ validTo: null }, { validTo: { gt: at } }],
       },
     });
-    if (row === null) {
-      return null;
-    }
-    const scoped = floorFromRow(row);
-    return PricingFloor.reconstitute({
-      id: scoped.id,
-      scope: scoped.scope,
-      clientele: row.clientele,
-      policy: scoped.policy,
-      createdBy: row.createdBy,
-      referenceCanonicalMillicents: row.referenceCanonicalMillicents,
-      validFrom: row.validFrom,
-      validTo: row.validTo,
-    });
+    return row === null ? null : pricingFloorFromRow(row);
   }
 
   /**

@@ -1,3 +1,5 @@
+import type { DecisionOrigin } from "../entities/decision-carry-over.js";
+
 /** Les familles de décisions qui nomment une référence de vente — des VALEURS. */
 export type StandingDecisionKind =
   | "mercuriale"
@@ -18,6 +20,8 @@ export interface StandingDecision {
   readonly validFrom: Date | null;
   readonly validTo: Date | null;
   readonly paused: boolean;
+  /** Reportée depuis une ancienne référence ; `null` = saisie, mercuriale ou gabarit. */
+  readonly origin: DecisionOrigin | null;
 }
 
 /**

@@ -102,6 +102,8 @@ export const PRICING_FACTS = {
   "price_floor.replaced": act(),
   "price_floor.archived": act(),
   "price_floor.confirmed": act(),
+  /** Reporté depuis l'ancienne référence d'un détachement — il ne remplace rien. */
+  "price_floor.carried": act(),
 
   "volume_ladder.posed": act(),
   "volume_ladder.paused": act(),

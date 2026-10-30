@@ -1,8 +1,10 @@
 import {
   applyPriceTemplatePayloadSchema,
+  carryOverDecisionPayloadSchema,
   priceTemplateKindSchema,
   savePriceTemplatePayloadSchema,
   type ApplyPriceTemplatePayload,
+  type CarryOverDecisionPayload,
   type MercurialeBenchmarkView,
   type PriceTemplateKind,
   type PriceTemplateView,
@@ -27,6 +29,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody, ZodParam } from "../../../platform/shared/http/zod-body.pipe.js";
 import { ApplyPriceTemplateCommand } from "../application/commands/apply-price-template.command.js";
 import { SavePriceTemplateCommand } from "../application/commands/save-price-template.command.js";
+import { CarryOverPriceTemplateLineCommand } from "../application/commands/carry-over-price-template-line.command.js";
 import { GetPriceTemplateQuery } from "../application/queries/get-price-template.query.js";
 import { ListPriceTemplatesQuery } from "../application/queries/list-price-templates.query.js";
 import { ReadMercurialeBenchmarkQuery } from "../application/queries/read-mercuriale-benchmark.query.js";
@@ -133,5 +136,29 @@ export class AdminPriceTemplatesController {
       new ApplyPriceTemplateCommand(id, payload, staffUserId),
     );
     return { posedRules };
+  }
+
+  /**
+   * **Remplacer** l'ancienne référence par la nouvelle dans ce gabarit
+   * (`plan-report-apres-detachement.md`, R5) — l'édition qui tient lieu de
+   * report pour une grille sans fenêtre. Rend l'identifiant du gabarit.
+   */
+  @Post(":id/carry-over")
+  @HttpCode(HttpStatus.CREATED)
+  async carryOver(
+    @Param("id") id: string,
+    @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<CreatedIdResponse> {
+    const edited = await this.commands.execute<CarryOverPriceTemplateLineCommand, string>(
+      new CarryOverPriceTemplateLineCommand(
+        id,
+        payload.fromSku,
+        payload.toSku,
+        payload.reason,
+        staffUserId,
+      ),
+    );
+    return { id: edited };
   }
 }

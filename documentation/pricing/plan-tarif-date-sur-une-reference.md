@@ -340,7 +340,7 @@ couverte).
   l'unité de travail), route
   `POST admin/pricing/sale-references/:sku/decisions/mercuriales/:mercurialeId/carry-over`,
   bouton « Reporter sur … » de la fiche née d'un détachement
-  (`product-form/mercuriale-carry-over/`), e2e
+  (`product-form/decision-carry-over/`, ex-`mercuriale-carry-over/`, généralisé le 2026-10-30), e2e
   `apps/lfd-api/test/mercuriale-carry-over.e2e-spec.ts`. Deux écarts au § 6, sous mandat :
   `validFrom` = max(maintenant, **début de la ligne reportée**) et non la
   date du détachement (le catalogue ne la porte pas, et elle est passée par

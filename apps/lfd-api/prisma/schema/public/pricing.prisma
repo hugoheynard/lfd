@@ -94,6 +94,11 @@ model PriceRule {
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
 
+  /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
+  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
+  origin Json?
+
   @@index([stage])
   @@index([archivedAt])
   @@index([audienceId])
@@ -207,6 +212,11 @@ model PriceFloor {
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
 
+  /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
+  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
+  origin Json?
+
   @@map("price_floors")
   @@schema("public")
 }
@@ -264,6 +274,11 @@ model VolumeLadder {
   archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
+
+  /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
+  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
+  origin Json?
 
   @@index([archivedAt])
   @@map("volume_ladders")
@@ -530,6 +545,11 @@ model VolumeCommitment {
   archivedAt    DateTime? @map("archived_at") @db.Timestamptz(3)
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
+
+  /// D'où vient la décision quand elle a été REPORTÉE depuis l'ancienne
+  /// référence d'un détachement (`plan-report-apres-detachement.md`, R0) :
+  /// `{ kind: "detached", fromSku, fromDecisionId }`. `NULL` = saisie.
+  origin Json?
 
   @@index([companyId, archivedAt])
   @@map("volume_commitments")

@@ -3,6 +3,8 @@ import {
   EmptyPriceTemplateError,
   NonDecreasingTemplateTiersError,
   DuplicateTemplateSkuError,
+  DecisionAlreadyCarriedError,
+  DecisionNotOnReferenceError,
 } from "../pricing-errors.js";
 import type { PriceTemplateKind } from "@lfd/contracts";
 import { normalizeGrid, type GridRefusals, type PricingTier } from "../pricing-grid.js";
@@ -124,6 +126,37 @@ export class PriceTemplate {
       kind: draft.kind,
       label: draft.label,
       lines: normalizeGrid(draft.lines, REFUSALS),
+    });
+  }
+
+  /**
+   * **Remplacer la ligne de l'ancienne référence par la nouvelle**
+   * (`plan-report-apres-detachement.md`, § 2.2, R5 — Hugo, 2026-10-30).
+   *
+   * Pas un report daté : un gabarit n'a ni fenêtre ni société, il n'a jamais
+   * facturé. La ligne garde ses paliers et son volume prévu, et seule sa
+   * référence change ; les mercuriales déjà posées depuis lui portent leurs
+   * propres lignes, que le report de mercuriale reprend.
+   *
+   * @throws {ArchivedPriceTemplateIsSealedError} le gabarit est archivé.
+   * @throws {DecisionNotOnReferenceError} il ne porte pas l'ancienne référence.
+   * @throws {DecisionAlreadyCarriedError} il porte déjà la nouvelle.
+   */
+  replaceSku(fromSku: string, toSku: string): PriceTemplate {
+    if (this.state.archivedAt !== null) {
+      throw new ArchivedPriceTemplateIsSealedError(this.state.id);
+    }
+    if (!this.state.lines.some((line) => line.sku === fromSku)) {
+      throw new DecisionNotOnReferenceError(this.state.id, fromSku);
+    }
+    if (this.state.lines.some((line) => line.sku === toSku)) {
+      throw new DecisionAlreadyCarriedError("price_template", fromSku, toSku);
+    }
+    return new PriceTemplate({
+      ...this.state,
+      lines: this.state.lines.map((line) =>
+        line.sku === fromSku ? { ...line, sku: toSku } : line,
+      ),
     });
   }
 

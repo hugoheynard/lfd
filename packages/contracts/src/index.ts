@@ -1803,6 +1803,7 @@ export {
   renameCompanyMercurialePayloadSchema,
   amendCompanyMercurialePayloadSchema,
   carryOverMercurialeLinePayloadSchema,
+  carryOverDecisionPayloadSchema,
   saveMercurialeDraftPayloadSchema,
   renamePriceRulePayloadSchema,
   ruleStatusSchema,
@@ -1916,6 +1917,7 @@ export type {
   AmendCompanyMercurialePayload,
   AmendedMercurialeResponse,
   CarryOverMercurialeLinePayload,
+  CarryOverDecisionPayload,
   PosedMercurialeAmendmentView,
   AffectedRulesResponse,
   SaveMercurialeDraftPayload,
@@ -2884,5 +2886,6 @@ export type {
 } from "./bakehouse-resupply-draft.js";
 export type {
   SaleReferenceDecisionKind,
+  SaleReferenceDecisionOrigin,
   SaleReferenceDecisionView,
 } from "./sale-reference-decisions.js";

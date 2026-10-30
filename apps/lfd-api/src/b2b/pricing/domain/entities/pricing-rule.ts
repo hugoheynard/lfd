@@ -11,6 +11,8 @@ import {
   ReversedValidityWindowError,
 } from "../pricing-errors.js";
 import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
+import { detachedOrigin, type DecisionCarry, type DecisionOrigin } from "./decision-carry-over.js";
+import { carriedRuleDraft } from "./pricing-rule-carry-over.js";
 import type { RuleLifecycle, RuleStatus } from "../rule-lifecycle.js";
 import type {
   AuthoredPriceStage,
@@ -56,6 +58,8 @@ export interface PricingRuleState extends Omit<PricingRuleDraft, "stage"> {
   readonly id: string;
   readonly createdBy: string;
   readonly lifecycle: RuleLifecycle;
+  /** Reportée depuis l'ancienne référence d'un détachement ; absente = saisie. */
+  readonly origin?: DecisionOrigin;
 }
 
 /**
@@ -150,6 +154,30 @@ export class PricingRule {
     return new PricingRule({ ...draft, id, createdBy, lifecycle: IN_FORCE });
   }
 
+  /**
+   * **Le report** sur la référence née d'un détachement
+   * (`plan-report-apres-detachement.md`, R1) : même effet, même audience,
+   * portée = la nouvelle référence, fenêtre bornée par l'ancienne. Une règle
+   * en pause naît en pause (§ 7 bis) : reporter ne rallume pas un prix coupé.
+   *
+   * @throws les refus de `carriedRuleDraft`, puis ceux de `create`.
+   */
+  static carriedFrom(
+    id: string,
+    source: PricingRule,
+    carry: DecisionCarry,
+    createdBy: string,
+    now: Date,
+  ): PricingRule {
+    const { draft, pause } = carriedRuleDraft(source.state, carry, now);
+    const created = PricingRule.create(id, draft, createdBy);
+    return new PricingRule({
+      ...created.state,
+      origin: detachedOrigin(carry, source.state.id),
+      lifecycle: pause === null ? IN_FORCE : { ...IN_FORCE, pausedAt: now, pausedBy: pause.by },
+    });
+  }
+
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */
   static reconstitute(state: PricingRuleState): PricingRule {
     return new PricingRule(state);
@@ -161,6 +189,11 @@ export class PricingRule {
 
   get status(): RuleStatus {
     return statusOf(this.state.lifecycle);
+  }
+
+  /** D'où vient la règle quand elle a été reportée ; `null` = saisie. */
+  get origin(): DecisionOrigin | null {
+    return this.state.origin ?? null;
   }
 
   /** Ce que l'écran montre d'un coup d'œil : le libellé de la décision. */

@@ -8,6 +8,13 @@ import { WeightArticleCommitmentError } from "../errors/volume-commitment-errors
 import type { PriceScope } from "../price-rule.js";
 import type { VolumeCommitment } from "../volume-commitment.js";
 import { closingWindowAt } from "../rule-lifecycle.js";
+import {
+  carriedScope,
+  carriedWindow,
+  detachedOrigin,
+  type DecisionCarry,
+  type DecisionOrigin,
+} from "./decision-carry-over.js";
 
 /** Ce qu'un appelant apporte pour signer un engagement — l'intention. */
 export interface VolumeCommitmentDraft {
@@ -25,6 +32,8 @@ export interface VolumeCommitmentState extends VolumeCommitmentDraft {
   readonly archivedAt: Date | null;
   readonly archivedBy: string | null;
   readonly archiveReason: string | null;
+  /** Reporté depuis l'ancienne référence d'un détachement ; absente = signé. */
+  readonly origin?: DecisionOrigin;
 }
 
 /**
@@ -88,6 +97,47 @@ export class VolumeCommitmentAggregate {
     }
   }
 
+  /**
+   * **Le report** sur la référence née d'un détachement
+   * (`plan-report-apres-detachement.md`, § 2.1) : la MÊME promesse — même
+   * société, même quantité promise, fenêtre `max(maintenant, début)` → fin
+   * de l'ancien. La quantité promise fait le prix (`retainedQuantity`) :
+   * reporter le reste, ou clore, ferait payer le client plus cher le jour du
+   * détachement. L'ancien court jusqu'à sa fin (§ 7 bis) ; il ne cumule rien,
+   * son livré se compte sur l'ancienne référence seule.
+   *
+   * @throws {DecisionNotOnReferenceError} il ne nomme pas l'ancienne référence.
+   * @throws {CarriedDecisionClosedError} il est clos, ou terminé.
+   * @throws {RetroactiveCarryOverError} la fenêtre commencerait avant maintenant.
+   * @throws les refus de `sign`.
+   */
+  static carriedFrom(
+    id: string,
+    source: VolumeCommitmentAggregate,
+    carry: DecisionCarry,
+    createdBy: string,
+    now: Date,
+  ): VolumeCommitmentAggregate {
+    const old = source.state;
+    const scope = carriedScope(old.scope, old.id, carry);
+    const window = carriedWindow("volume_commitment", old.id, old, now);
+    const signed = VolumeCommitmentAggregate.sign(
+      id,
+      {
+        companyId: old.companyId,
+        scope,
+        promisedQuantity: old.promisedQuantity,
+        validFrom: window.validFrom,
+        validTo: window.validTo,
+      },
+      createdBy,
+    );
+    return new VolumeCommitmentAggregate({
+      ...signed.state,
+      origin: detachedOrigin(carry, old.id),
+    });
+  }
+
   /** Reconstruit sans revérifier : ce qui est en base y est déjà passé. */
   static reconstitute(state: VolumeCommitmentState): VolumeCommitmentAggregate {
     return new VolumeCommitmentAggregate(state);
@@ -95,6 +145,16 @@ export class VolumeCommitmentAggregate {
 
   get id(): string {
     return this.state.id;
+  }
+
+  /** La société engagée — c'est elle que vise un report. */
+  get companyId(): string {
+    return this.state.companyId;
+  }
+
+  /** D'où vient l'engagement quand il a été reporté ; `null` = signé. */
+  get origin(): DecisionOrigin | null {
+    return this.state.origin ?? null;
   }
 
   /**

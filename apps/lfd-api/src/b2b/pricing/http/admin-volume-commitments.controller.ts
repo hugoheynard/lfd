@@ -1,6 +1,8 @@
 import {
+  carryOverDecisionPayloadSchema,
   createVolumeCommitmentPayloadSchema,
   pricingReasonPayloadSchema,
+  type CarryOverDecisionPayload,
   type CreateVolumeCommitmentPayload,
   type PricingReasonPayload,
   type VolumeCommitmentView,
@@ -13,6 +15,7 @@ import { StaffUserId } from "../../../platform/auth/staff.decorator.js";
 import { ZodBody } from "../../../platform/shared/http/zod-body.pipe.js";
 import { CloseVolumeCommitmentCommand } from "../application/commands/close-volume-commitment.command.js";
 import { SignVolumeCommitmentCommand } from "../application/commands/sign-volume-commitment.command.js";
+import { CarryOverVolumeCommitmentCommand } from "../application/commands/carry-over-volume-commitment.command.js";
 import { ListVolumeCommitmentsQuery } from "../application/queries/list-volume-commitments.query.js";
 import type { CreatedIdResponse } from "@lfd/contracts";
 
@@ -67,5 +70,29 @@ export class AdminVolumeCommitmentsController {
     await this.commands.execute<CloseVolumeCommitmentCommand, void>(
       new CloseVolumeCommitmentCommand(id, payload.reason, staffUserId),
     );
+  }
+
+  /**
+   * **Reporter** l'engagement sur la référence née d'un détachement
+   * (`plan-report-apres-detachement.md`, R4) : la même promesse, signée sur la
+   * nouvelle. L'ancien court jusqu'à sa fin.
+   */
+  @Post(":id/carry-over")
+  @HttpCode(HttpStatus.CREATED)
+  async carryOver(
+    @Param("id") id: string,
+    @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<CreatedIdResponse> {
+    const signed = await this.commands.execute<CarryOverVolumeCommitmentCommand, string>(
+      new CarryOverVolumeCommitmentCommand(
+        id,
+        payload.fromSku,
+        payload.toSku,
+        payload.reason,
+        staffUserId,
+      ),
+    );
+    return { id: signed };
   }
 }

@@ -8,6 +8,7 @@ import { PricingActWriter } from "./pricing-act.writer.js";
 import { ladderStateFromRow } from "./volume-ladder-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 import { isExclusionViolation } from "./exclusion-violation.js";
+import { originColumn } from "./decision-origin-rows.js";
 
 /**
  * **Le nom de la contrainte**, et non son code SQLSTATE — même raison que pour
@@ -75,6 +76,11 @@ export class PrismaVolumeLadderRepository extends VolumeLadderRepository {
             validFrom: state.validFrom,
             validTo: state.validTo,
             createdBy: state.createdBy,
+            // Un barème REPORTÉ peut naître en pause (§ 7 bis du plan de
+            // report) ; posé à l'écran, ces deux colonnes restent nulles.
+            pausedAt: state.lifecycle.pausedAt,
+            pausedBy: state.lifecycle.pausedBy,
+            ...originColumn(ladder.origin),
           },
         }),
       );

@@ -8,6 +8,7 @@ import { PricingActWriter } from "./pricing-act.writer.js";
 import { ruleStateFromRow, type RuleRow } from "./price-rows.js";
 import type { PricingAct } from "../domain/pricing-act.js";
 import { isExclusionViolation } from "./exclusion-violation.js";
+import { originColumn } from "./decision-origin-rows.js";
 
 /**
  * **Le nom de la contrainte**, et non son code SQLSTATE.
@@ -79,7 +80,18 @@ export class PrismaPricingRuleRepository extends PricingRuleRepository {
 
   async save(rule: PricingRule, act: PricingAct): Promise<void> {
     try {
-      await this.acts.around(act, () => this.prisma.priceRule.create({ data: ruleData(rule) }));
+      await this.acts.around(act, () =>
+        this.prisma.priceRule.create({
+          data: {
+            ...ruleData(rule),
+            // Une règle REPORTÉE peut naître en pause (§ 7 bis du plan de
+            // report) ; posée à l'écran, ces deux colonnes restent nulles.
+            pausedAt: rule.toPersistence().lifecycle.pausedAt,
+            pausedBy: rule.toPersistence().lifecycle.pausedBy,
+            ...originColumn(rule.origin),
+          },
+        }),
+      );
     } catch (error) {
       if (isExclusionViolation(error, OVERLAP_CONSTRAINT)) {
         throw new OverlappingPriceRuleError(rule.toPersistence().stage, error);

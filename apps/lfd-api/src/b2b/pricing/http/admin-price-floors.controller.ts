@@ -1,7 +1,10 @@
 import {
+  carryOverDecisionPayloadSchema,
   floorClienteleQuerySchema,
   pricingReasonPayloadSchema,
   setPriceFloorPayloadSchema,
+  type CarryOverDecisionPayload,
+  type CreatedIdResponse,
   type FloorClienteleQuery,
   type PriceLimitsView,
   type ParsedSetPriceFloorPayload,
@@ -29,6 +32,7 @@ import { ListPriceLimitsQuery } from "../application/queries/list-price-limits.q
 import { ArchivePriceFloorCommand } from "../application/commands/archive-price-floor.command.js";
 import { ConfirmPriceFloorCommand } from "../application/commands/confirm-price-floor.command.js";
 import { SetPriceFloorCommand } from "../application/commands/set-price-floor.command.js";
+import { CarryOverPriceFloorCommand } from "../application/commands/carry-over-price-floor.command.js";
 import { UnknownPriceScopeError } from "../domain/pricing-errors.js";
 import type { FloorClientele } from "../domain/entities/pricing-floor.js";
 import type { PriceFloorPolicy } from "../domain/floor-policy.js";
@@ -137,6 +141,32 @@ export class AdminPriceFloorsController {
    * Le premier essai l'avait supposé et rendait un 404 qui accusait la donnée
    * alors que c'était le routage.
    */
+  /**
+   * **Reporter** cette version de plancher sur la référence née d'un
+   * détachement (`plan-report-apres-detachement.md`, R2). ICI, sous
+   * `lfc_price_limits`, et jamais sous le panneau des décisions
+   * (`b2b_pricing`) : il donnerait le plancher à qui n'a pas le droit de le
+   * poser (§ 4).
+   */
+  @Post("floors/:id/carry-over")
+  @HttpCode(HttpStatus.CREATED)
+  async carryOverFloor(
+    @Param("id") id: string,
+    @Body(new ZodBody(carryOverDecisionPayloadSchema)) payload: CarryOverDecisionPayload,
+    @StaffUserId() staffUserId: string,
+  ): Promise<CreatedIdResponse> {
+    const posed = await this.commands.execute<CarryOverPriceFloorCommand, string>(
+      new CarryOverPriceFloorCommand(
+        id,
+        payload.fromSku,
+        payload.toSku,
+        payload.reason,
+        staffUserId,
+      ),
+    );
+    return { id: posed };
+  }
+
   /**
    * **Archiver** une limite, avec le motif que l'écran a demandé.
    *
