@@ -540,3 +540,21 @@ Ne plus présupposer : §3.4 renvoie à Q8.
 
 Lignes de `place-shop-order.handler.ts` réalignées au §1.3 (`:149` register,
 `:154` draft, `:155` parties, ouvertes le 2026-10-30).
+
+## 8. Questions en suspens (discussion avec Hugo, 2026-10-30)
+
+Notées pour être tranchées ensemble ; rien n'est bâti tant qu'elles restent ouvertes.
+
+- **B1 confirmé, avec un cas posé par Hugo** : un particulier qui a un compte
+  passe commande « en invité », sans se connecter. Aujourd'hui la passation
+  invité inscrit une NOUVELLE personne à chaque commande, sans la rattacher au
+  compte existant de la même adresse (`place-shop-order.handler.ts:149`, D2 :
+  « deux visiteurs d'une même adresse font deux lignes »). Il est donc `guest`
+  et n'a pas la promotion « inscrits ». Accorder la promo sur la seule adresse
+  e-mail serait falsifiable (n'importe qui peut taper l'adresse d'un autre).
+  Piste recommandée : au panier, si l'adresse saisie correspond à un compte,
+  proposer « Vous avez un compte : connectez-vous pour profiter de −20 % »,
+  sans jamais l'appliquer sans connexion. À trancher.
+- **B3 / chevauchement** : Hugo reviendra sur la contrainte d'exclusion et la
+  façon dont deux promotions se chevauchent.
+- **Q1 à Q9** du § 7 : toutes ouvertes, avec la recommandation écrite.
