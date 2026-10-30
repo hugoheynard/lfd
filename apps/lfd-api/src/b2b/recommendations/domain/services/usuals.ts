@@ -144,3 +144,23 @@ function before(a: PurchasedSku, aLast: string, b: PurchasedSku, bLast: string):
   }
   return a.sku < b.sku ? -1 : a.sku > b.sku ? 1 : 0;
 }
+
+/**
+ * **L'historique d'une déclinaison détachée, sous une seule référence**
+ * (`plan-pro-voit-les-declinaisons.md`, L7d-bis) : les jours de l'ancienne et
+ * de la nouvelle s'additionnent sous la plus récente (`latest`, absente =
+ * elle-même). Aucune commande ne porte les deux — l'origine archive la
+ * déclinaison dans le geste du détachement (lu le 2026-10-30) —, donc un jour
+ * reste une commande.
+ */
+export function regroupHistory(
+  history: readonly PurchasedSku[],
+  latest: ReadonlyMap<string, string>,
+): readonly PurchasedSku[] {
+  const bySku = new Map<string, string[]>();
+  for (const entry of history) {
+    const sku = latest.get(entry.sku) ?? entry.sku;
+    bySku.set(sku, [...(bySku.get(sku) ?? []), ...entry.days]);
+  }
+  return [...bySku].map(([sku, days]) => ({ sku, days: days.sort() }));
+}

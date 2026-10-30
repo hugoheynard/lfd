@@ -78,6 +78,8 @@ import {
   ShopSuggestedArticleReader,
 } from "./infrastructure/catalog-cart-suggestions.js";
 import { CatalogAudienceSkuReader } from "./infrastructure/catalog-audience-sku.reader.js";
+import { CatalogLatestSaleReferenceReader } from "./infrastructure/catalog-latest-sale-reference.reader.js";
+import { LatestSaleReferenceReader } from "./domain/ports/latest-sale-reference.reader.js";
 import {
   PrismaAudienceCounterReader,
   PrismaAudienceCounterWriter,
@@ -155,6 +157,8 @@ import {
     RecommendationFilter,
     { provide: RecommendationCutoffReader, useExisting: OrderCutoffsInForce },
     { provide: AudienceSkuReader, useClass: CatalogAudienceSkuReader },
+    // « Vos habituels » réunit une déclinaison détachée (L7d-bis).
+    { provide: LatestSaleReferenceReader, useClass: CatalogLatestSaleReferenceReader },
     { provide: AudienceCounterWriter, useClass: PrismaAudienceCounterWriter },
     { provide: AudienceCounterReader, useClass: PrismaAudienceCounterReader },
     { provide: StaffSuggestionRuleRepository, useClass: PrismaStaffSuggestionRuleRepository },

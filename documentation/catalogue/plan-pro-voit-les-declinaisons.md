@@ -317,9 +317,45 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   une mercuriale est un document de lignes par société — la reposer, c'est en
   poser une seconde (recouvrement à vérifier) ou étendre l'existante (ce qui
   la réécrit) : à trancher par Hugo avant de bâtir.
-- **L7d-bis** (non bâti) : les rapports par article (habitudes) regroupant
+- ~~**L7d-bis** : les rapports par article (habitudes) regroupant
   ancienne et nouvelle référence, en lecture seule — le schéma des habitudes
-  n'a pas été ouvert (§ 7, « non vérifié »).
+  n'a pas été ouvert (§ 7, « non vérifié »).~~ — **bâti le 2026-10-30** (non
+  commité à l'écriture de cette ligne), selon le § « L7d-bis — inventaire et
+  forme » ci-dessous.
+
+### L7d-bis — inventaire et forme (ouvert le 2026-10-30)
+
+**Les lecteurs qui agrègent des lignes de commande par `sku`** (tous au
+commerce, aucune table « habitudes » : chacun lit `order_lines` à la volée) :
+
+| Lecteur                                                              | Ce qu'il rend                                                                           | L7d-bis                                                                                                                                 |
+| -------------------------------------------------------------------- | --------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------- |
+| `PrismaCustomerSkuReader` → `ListCustomerSkusHandler`                | les habitudes d'une société au back-office (`GET admin/catalog/companies/:id`), 12 mois | **regroupé**                                                                                                                            |
+| `PrismaPurchaseHistoryReader` → `ListMyUsualsHandler`                | « vos habituels » à l'accueil pro, 12 mois                                              | **regroupé**                                                                                                                            |
+| `PrismaAccountOrderHistoryReader` (alertes)                          | normes de quantité et « jamais commandé » des SKU d'UN panier                           | non : un détecteur, pas un rapport ; il part du SKU neuf et devrait remonter aux ANCIENS (sens inverse) — question au § PLAN du rapport |
+| `PrismaCoPurchaseReader`, `PrismaSuggestedSkuSalesReader`            | paires « souvent pris avec », ventes des suggestions décidées                           | non : agrégats boutique entière partant d'ancres, même sens inverse                                                                     |
+| `PrismaCustomerVolumeReader`, `PrismaSkuVolumeReader` (tarification) | volumes d'engagement                                                                    | non : ils font un PRIX — c'est le report du L7c, pas un rapport                                                                         |
+
+**La clé de regroupement : la référence la plus récente de la lignée.**
+Un article dont un autre est né (`catalog_items.detached_from_sku` = lui) a
+pour successeur cet autre ; la lignée se suit jusqu'au bout (A → B → C rend
+C). Le commerce range `detached_from_sku` sur **chaque** article de la fiche
+née : quand elle en porte plusieurs, le successeur est son article par
+défaut ; sans défaut unique, rien n'est regroupé (deux lignes plutôt qu'un
+choix inventé). La lignée se lit retirés compris : c'est une filiation, pas
+une mise en vente. Port `SaleReferenceSuccessionReader` (`b2b/catalog`),
+relu par la recommandation au travers de son propre port
+(`LatestSaleReferenceReader`), comme ses autres lectures du catalogue.
+
+**Le libellé** : celui de la ligne regroupée, donc de la référence la plus
+récente — le nom du catalogue d'aujourd'hui, ou, retirée, le dernier nom
+facturé des deux. Aucun champ de contrat ajouté.
+
+**Les compteurs s'additionnent** : l'origine archive la déclinaison dans la
+même unité de travail que le détachement (`detach-product-variant.ts`, lu le
+2026-10-30) et la fiche née naît inactive — aucune commande ne porte les deux
+références, donc la somme des commandes distinctes reste exacte.
+
 - **L8** `docs(catalogue)`.
 
 **Non vérifié** : ce que coûte un engagement de volume devenu orphelin à sa

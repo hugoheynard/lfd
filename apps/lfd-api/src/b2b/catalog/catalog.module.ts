@@ -58,6 +58,8 @@ import { CatalogColdReader } from "./domain/ports/catalog-cold.reader.js";
 import { WithdrawnShopSkusReader } from "./domain/ports/withdrawn-shop-skus.reader.js";
 import { DetachmentOriginReader } from "./domain/ports/detachment-origin.reader.js";
 import { PrismaDetachmentOriginReader } from "./infrastructure/prisma-detachment-origin.reader.js";
+import { SaleReferenceSuccessionReader } from "./domain/ports/sale-reference-succession.reader.js";
+import { PrismaSaleReferenceSuccessionReader } from "./infrastructure/prisma-sale-reference-succession.reader.js";
 import { PrismaWithdrawnShopSkusReader } from "./infrastructure/prisma-withdrawn-shop-skus.reader.js";
 import { CatalogPricePerKgReader } from "./domain/ports/catalog-price-per-kg.reader.js";
 import { PrismaCatalogOperationsReader } from "./infrastructure/prisma-catalog-operations.reader.js";
@@ -173,6 +175,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // La filiation d'un article né d'un détachement, que le report d'un prix
     // négocié vérifie (`plan-tarif-date-sur-une-reference.md`, § 6).
     { provide: DetachmentOriginReader, useClass: PrismaDetachmentOriginReader },
+    // La lignée de détachement, sous laquelle les rapports par article
+    // regroupent (`plan-pro-voit-les-declinaisons.md`, L7d-bis).
+    { provide: SaleReferenceSuccessionReader, useClass: PrismaSaleReferenceSuccessionReader },
     { provide: CatalogPricePerKgReader, useClass: PrismaCatalogPricePerKgReader },
     // Le port que la commande DÉCLARE (V4 du plan des exclusions), implémenté
     // ici sur les articles : la table appartient au catalogue.
@@ -180,8 +185,6 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // Ce qui fige l'unité de vente d'une déclinaison : le port est au
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
-    // Les anciennes références de vente (`plan-defaut-sous-sa-reference.md`,
-    // L1) : tout regroupement par article les lit ; remplie par la bascule (L3).
     // Une fiche montrée sous la référence de vente de son défaut (L3).
     { provide: DefaultSaleReferenceReader, useClass: PrismaDefaultSaleReferenceReader },
   ],
@@ -198,6 +201,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     WithdrawnShopSkusReader,
     // Pour la tarification : le report d'un prix négocié suit une filiation.
     DetachmentOriginReader,
+    // Pour les habitudes et « vos habituels » : regrouper une lignée (L7d-bis).
+    SaleReferenceSuccessionReader,
     // Pour la caisse et le devis : le rangement d'un SKU, que la remise de
     // retrait juge (plan des exclusions, V4).
     OrderLineClassificationReader,

@@ -96,6 +96,11 @@ const ALLOWED = new Set([
   // négocié vérifie (`plan-tarif-date-sur-une-reference.md`, § 6, 2026-10-30) :
   // elle PORTE le filtre (`...STILL_SOLD`) — on ne reporte pas sur un retiré.
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-detachment-origin.reader.ts",
+  // La lignée de détachement sous laquelle les rapports par article
+  // regroupent (`plan-pro-voit-les-declinaisons.md`, L7d-bis, 2026-10-30) :
+  // exempte et écrite — une filiation, pas une mise en vente ; la référence
+  // la plus récente d'un historique peut être retirée.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-succession.reader.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.

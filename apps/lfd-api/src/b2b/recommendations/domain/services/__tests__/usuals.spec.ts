@@ -1,6 +1,7 @@
 import {
   rankUsuals,
   reasonOf,
+  regroupHistory,
   USUALS_MIN_ORDERS,
   usualsWindowStart,
   WEEKLY_RHYTHM_MIN_OCCURRENCES,
@@ -89,5 +90,28 @@ describe("usualsWindowStart — douze mois, aujourd'hui compris", () => {
 
   it("ramène un 29 février au dernier jour du mois", () => {
     expect(usualsWindowStart("2028-02-29")).toBe("2027-02-28");
+  });
+});
+
+describe("regroupHistory — L7d-bis", () => {
+  it("réunit les jours sous la référence la plus récente, triés", () => {
+    expect(
+      regroupHistory(
+        [
+          { sku: "OLD", days: ["2026-09-08"] },
+          { sku: "NEW", days: ["2026-09-01", "2026-09-15"] },
+          { sku: "AUTRE", days: ["2026-09-02"] },
+        ],
+        new Map([["OLD", "NEW"]]),
+      ),
+    ).toEqual([
+      { sku: "NEW", days: ["2026-09-01", "2026-09-08", "2026-09-15"] },
+      { sku: "AUTRE", days: ["2026-09-02"] },
+    ]);
+  });
+
+  it("laisse l'historique tel quel sans lignée", () => {
+    const history = [{ sku: "A", days: ["2026-09-01"] }];
+    expect(regroupHistory(history, new Map())).toEqual(history);
   });
 });

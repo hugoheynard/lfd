@@ -46,6 +46,7 @@
   "test/cart-suggestions.e2e-spec.ts": 7409,
   "test/catalog-batch-writes.e2e-spec.ts": 9500,
   "test/catalog-cold-shop-skus.e2e-spec.ts": 13236,
+  "test/catalog-detached-habits.e2e-spec.ts": 8000,
   "test/catalog-detached-lineage.e2e-spec.ts": 9000,
   "test/catalog-facts-rules.e2e-spec.ts": 9000,
   "test/catalog-facts.e2e-spec.ts": 13869,

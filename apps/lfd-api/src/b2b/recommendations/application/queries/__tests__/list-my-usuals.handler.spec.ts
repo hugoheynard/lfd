@@ -3,6 +3,7 @@ import { instantToLocal, type ShopItemView } from "@lfd/contracts";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
+import { LatestSaleReferenceReader } from "../../../domain/ports/latest-sale-reference.reader.js";
 import {
   PurchaseHistoryReader,
   type PurchaseHistoryAsk,
@@ -73,6 +74,18 @@ class Histories extends PurchaseHistoryReader {
   }
 }
 
+/** La lignée de détachement : l'ancienne référence → la plus récente. */
+class Lineage extends LatestSaleReferenceReader {
+  constructor(private readonly latest: Readonly<Record<string, string>>) {
+    super();
+  }
+  latestOf(skus: readonly string[]) {
+    return Promise.resolve(
+      new Map(skus.flatMap((sku) => (sku in this.latest ? [[sku, this.latest[sku] ?? sku]] : []))),
+    );
+  }
+}
+
 function item(sku: string): ShopItemView {
   return {
     sku,
@@ -89,7 +102,11 @@ function item(sku: string): ShopItemView {
   };
 }
 
-function harness(history: Record<string, readonly PurchasedSku[]>, hidden: readonly string[] = []) {
+function harness(
+  history: Record<string, readonly PurchasedSku[]>,
+  hidden: readonly string[] = [],
+  lineage: Readonly<Record<string, string>> = {},
+) {
   const clock = new FixedClock(NOW);
   const histories = new Histories(new Map(Object.entries(history)));
   const shelf = new Shelf(new Set(hidden));
@@ -98,6 +115,7 @@ function harness(history: Record<string, readonly PurchasedSku[]>, hidden: reado
     new RecommendationFilter(CATALOG, new NoCutoffs(), clock),
     shelf,
     clock,
+    new Lineage(lineage),
   );
   const read = (companyId: string | null, skus: readonly string[] = [], date?: string) =>
     handler.execute(
@@ -167,5 +185,27 @@ describe("ListMyUsualsHandler — « vos habituels »", () => {
   it(`montre ${USUALS_PLACES} habituels au plus`, async () => {
     const { read } = harness({ co_a: MANY.map((sku) => ({ sku, days: TUESDAYS })) });
     expect(await read("co_a")).toHaveLength(USUALS_PLACES);
+  });
+
+  it("L7d-bis — réunit l'ancienne et la nouvelle référence d'une déclinaison détachée", async () => {
+    // Deux mardis sous l'ancienne référence, un sous la nouvelle : séparées,
+    // aucune n'atteint trois commandes ; réunies, c'est un rythme.
+    const split = {
+      co_a: [
+        { sku: "VIE-OLD-2", days: [TUESDAYS[0], TUESDAYS[1]] },
+        { sku: "VIE-001", days: [TUESDAYS[2]] },
+      ],
+    };
+    expect(await harness(split).read("co_a")).toEqual([]);
+
+    const shown = await harness(split, [], { "VIE-OLD-2": "VIE-001" }).read("co_a");
+
+    expect(shown).toEqual([
+      {
+        sku: "VIE-001",
+        item: item("VIE-001"),
+        reason: { source: "data", kind: "weekly_rhythm", weekday: "tue" },
+      },
+    ]);
   });
 });

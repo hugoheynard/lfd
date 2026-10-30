@@ -7,6 +7,7 @@ import {
   CustomerSkuReader,
   type CustomerSkuTally,
 } from "../domain/ports/customer-sku.reader.js";
+import { byReuseThenRecency } from "../domain/services/customer-sku-lineage.js";
 
 /**
  * Ce qu'une ligne de commande apporte au compte d'un SKU.
@@ -99,15 +100,4 @@ function tally(rows: readonly LineRow[]): CustomerSkuTally[] {
     totalCents: acc.totalCents,
     lastOrderedAt: acc.lastOrderedAt,
   }));
-}
-
-/**
- * **La reprise d'abord, la récence ensuite.** Ce que le commercial cherche est
- * l'habitude : un produit pris sur douze commandes passe devant celui pris une
- * fois la semaine dernière. Le chiffre d'affaires ne départage pas — il ferait
- * remonter les articles chers, pas les articles habituels.
- */
-function byReuseThenRecency(left: CustomerSkuTally, right: CustomerSkuTally): number {
-  const reuse = right.orderCount - left.orderCount;
-  return reuse === 0 ? right.lastOrderedAt.getTime() - left.lastOrderedAt.getTime() : reuse;
 }

@@ -2,10 +2,12 @@ import { instantToLocal, type UsualSuggestionView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
+import { LatestSaleReferenceReader } from "../../domain/ports/latest-sale-reference.reader.js";
 import { PurchaseHistoryReader } from "../../domain/ports/purchase-history.reader.js";
 import { SuggestedArticleReader } from "../../domain/ports/suggested-article.reader.js";
 import {
   rankUsuals,
+  regroupHistory,
   USUALS_PLACES,
   usualsWindowStart,
   type UsualCandidate,
@@ -18,7 +20,8 @@ const USUALS_AUDIENCE = "pro";
 
 /**
  * « Vos habituels » : l'historique de la SOCIÉTÉ sous son mur
- * (`PurchaseHistoryReader`), classé (`rankUsuals` : trois commandes au moins,
+ * (`PurchaseHistoryReader`), une déclinaison détachée réunie sous sa
+ * référence la plus récente (`regroupHistory`, L7d-bis), classé (`rankUsuals` : trois commandes au moins,
  * rythme hebdomadaire ou fréquence), puis le MÊME filtre que toute
  * suggestion (`RecommendationFilter` : servi au pro, commandable au jour
  * visé, absent du panier), puis la vitrine au prix de la société, puis la
@@ -35,6 +38,7 @@ export class ListMyUsualsHandler implements IQueryHandler<
     private readonly filter: RecommendationFilter,
     private readonly articles: SuggestedArticleReader,
     private readonly clock: Clock,
+    private readonly lineage: LatestSaleReferenceReader,
   ) {}
 
   async execute(query: ListMyUsualsQuery): Promise<readonly UsualSuggestionView[]> {
@@ -43,7 +47,11 @@ export class ListMyUsualsHandler implements IQueryHandler<
       return [];
     }
     const today = instantToLocal(this.clock.now()).day;
-    const history = await this.history.ofCompany({ companyId, since: usualsWindowStart(today) });
+    const bought = await this.history.ofCompany({ companyId, since: usualsWindowStart(today) });
+    const history = regroupHistory(
+      bought,
+      await this.lineage.latestOf(bought.map((entry) => entry.sku)),
+    );
     const ranked = rankUsuals(history, query.skus);
     if (ranked.length === 0) {
       return [];
