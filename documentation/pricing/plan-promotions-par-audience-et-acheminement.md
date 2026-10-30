@@ -7,7 +7,11 @@ acheminements et les segments d'audience ».
 **Cas déclencheur** : une promotion de −20 % pour les **particuliers avec
 compte** et pour **tous les pros**, sur **tous les acheminements**.
 
-**État : doc-first.** Rien n'est bâti. Le plan touche à l'argent et porte une
+**État : doc-first, EXÉCUTABLE depuis le 2026-10-30.** Le modèle retenu est
+le § 12 ; le **§ 13 est le plan à bâtir** (décisions par défaut, modèle de
+données, reprise, lots L0 à L12). Les §§ 3 à 7 sont l'historique de la
+discussion : là où ils divergent du § 12/13, ils portent la mention « dépassé ».
+Rien n'est bâti. Le plan touche à l'argent et porte une
 migration : `vitruve` est obligatoire avant Hugo (CLAUDE.md §9 bis) — **il a
 tourné le 2026-10-30** ; ses objections et les réponses sont au §7, et les
 sections qu'elles corrigent le disent.
@@ -113,6 +117,11 @@ deux règles de publics **qui se recouvrent** (`all` et `company:X`) — c'est
 
 ### 1.6 La remise du point de retrait
 
+> Complété au § 13.1 (rouvert le 2026-10-30) : la remise est un **pourcentage
+> OU un montant fixe en centimes** sur l'assiette (`cart-adjustment.ts:10-19`),
+> et la clientèle qui la reçoit est `audienceOf` (société ACTIVE seulement),
+> pas la décision « pro ou pas » du tarif (`company-service.ts:27-37`).
+
 - Un `PickupDiscount` par point, **une par clientèle** `b2b` / `b2c`
   (`apps/lfd-api/src/b2b/pickup-addresses/domain/pickup-discount.ts:36-40`).
 - C'est un **ajustement de panier**, pas un étage : montant en **centimes** sur
@@ -142,6 +151,12 @@ deux règles de publics **qui se recouvrent** (`all` et `company:X`) — c'est
 ---
 
 ## 3. Le modèle proposé
+
+> ⚠️ **Dépassé par les §§ 12 et 13** (2026-10-30) : plus de colonnes
+> `clientele` / `fulfillment` sur `price_rules`, plus de règles jumelles ni de
+> `campaign_id`. Une promotion est un agrégat à part (§ 13.3) ; l'acheminement
+> s'applique au point « panier », donc la scission de `OrderComposition.resolve`
+> (§ 3.4) n'est plus nécessaire (§ 13.6). Gardé pour l'historique.
 
 ### 3.1 Deux axes orthogonaux, pas un axe élargi
 
@@ -303,6 +318,8 @@ demande un référentiel de groupes, un écran et une règle d'appartenance dat�
 
 ## 4. Lots
 
+> ⚠️ **Dépassé par le § 13.10** (lots L0 à L12).
+
 ```mermaid
 flowchart LR
   P1[P1 colonnes + contrainte] --> P2[P2 domaine et contexte]
@@ -323,6 +340,9 @@ flowchart LR
 
 ## 5. Tests
 
+> ⚠️ **Dépassé par le § 13.11** ; les cas ci-dessous y sont repris quand ils
+> valent encore.
+
 - **Domaine** : `matchesAudience` sur la matrice clientèle × acheminement ×
   inconnu ; rang §3.5 (inscrit bat `public`, `company` bat `pro`, point bat
   retrait) ; refus `company` + `public_guest`.
@@ -340,6 +360,12 @@ flowchart LR
   - rayon anonyme : pas de barré sur une promo réservée aux inscrits.
 
 ## 6. Questions à Hugo
+
+> ⚠️ **Toutes tranchées** : Q1 (un public par promotion, § 12), Q2 (§ 13.2
+> RAYON), Q3 (zones : variante prévue, non bâtie), Q4 (segments : hors plan),
+> Q5 (la société prime, § 13.2), Q6 (cumul, § 13.2), Q7 (§ 8 : message à tout
+> invité), Q8 (§ 10 et la variante « pros en cours d'inscription »), Q9
+> (option b, § 13.2).
 
 1. **Q1** — Un public multiple = règles jumelles posées d'un geste (A,
    recommandé) ou un ensemble dans une seule règle (B) ?
@@ -364,6 +390,11 @@ flowchart LR
 ---
 
 ## 7. Contradiction de vitruve (2026-10-30)
+
+> ⚠️ Portait sur le modèle du § 3. **B1** (`buyerKind`) est repris tel quel au
+> § 13.7. **B2** est tranché (option b, § 13.2) et sa mise en œuvre change de
+> forme (§ 13.8). **B3** et « les lecteurs à adapter » visaient la contrainte
+> élargie de `price_rules`, abandonnée (§ 13.4). Le reste est historique.
 
 Chaque citation ci-dessous a été rouverte le 2026-10-30.
 
@@ -683,3 +714,501 @@ Promotion (agrégat)
   article, ordre face à la mercuriale et au volume (il doit reproduire au
   centime les prix d'aujourd'hui juste après la reprise), chevauchement à la
   pose, affichage au rayon d'une promo conditionnée par l'acheminement.
+
+---
+
+## 13. Le plan exécutable (2026-10-30, sur mandat de Hugo)
+
+Hugo, le 2026-10-30 : « attaque le code, sans t'arrêter ». Ce qui restait ouvert
+au § 12 est donc **décidé par défaut le 2026-10-30, sur mandat de Hugo** ;
+chaque décision le dit. Toutes les citations `fichier:ligne` de ce § ont été
+**ouvertes le 2026-10-30** (graphify d'abord, puis le fichier).
+
+### 13.1 L'existant que la reprise doit reproduire, rouvert
+
+**Les règles de prix d'étage « promotion »** :
+
+- l'étage `promotion` est le troisième de `mercuriale → volume → promotion →
+geste` (`apps/lfd-api/src/b2b/pricing/domain/price-rule.ts:23`) ; la chaîne
+  reste **exacte** d'un étage à l'autre, arrondie une seule fois à la fin
+  (`resolve-price.ts:130-139`, `:174`) ;
+- un seul gagnant par étage, `winnerOf` (`specificity.ts:340-369`), sur le
+  tuple `[audience, portée, proximité de famille, palier]`
+  (`specificity.ts:72-86`, rangs `all 0 < segment 1 < company 2`, `:32-36`) ;
+  une égalité stricte lève `AmbiguousPriceRulesError` (`:365-367`), que la
+  contrainte d'exclusion rend impossible en base (§ 1.5) ;
+- une mercuriale scelle les étages suivants, sauf `stacksOverMercuriale`
+  (`resolve-price.ts:118`) ; la limite (plancher) s'applique après tous les
+  étages (`resolve-price.ts:154-156`) ;
+- une règle porte `replace` (prix posé) ou `alter` (`increase`/`decrease`,
+  `percent`/`amount` en millicentimes) (`price-rule.ts:79-81`, `:190-193`),
+  un `minQuantity` (`:154`), une portée `global | category | product | variant`
+  (`:41`), une audience `all | segment | company` (`:44`), une pause
+  (`pricing.prisma:83`) et un archivage (`:93`) ;
+- 🔴 **`product` et `variant` visent le même identifiant** : le pricer pose
+  `productSku: item.sku, variantSku: item.sku` (`loaded-pricer.ts:313`,
+  `:391` ; `pricing-materials.loader.ts:209`), et `matchesScope` compare
+  `scope.id` à l'un ou l'autre (`specificity.ts:128-131`). Seul le RANG les
+  distingue (`SCOPE_RANK`, `specificity.ts:43-48`) ;
+- une portée `global` ou `category` ne vise pas un article vendu au poids
+  (`price-rule.ts:212-218`, `coversManyArticles`, `specificity.ts:126`) ;
+- les colonnes `floor_mode` / `floor_value` de `price_rules`
+  (`pricing.prisma:50-51`) n'ont **aucun lecteur** dans `apps/lfd-api/src`
+  hors client Prisma généré (grep du 2026-10-30) : `PriceRule` ne les porte pas
+  (`price-rule.ts:148-193`).
+
+**La remise d'un point de retrait** :
+
+- un **ajustement de panier** calculé après le prix des lignes, sur le hors
+  taxe déjà arrondi par ligne (`order-composition.service.ts:145-163`), par
+  `CartAdjustments.forPickup` (`cart-adjustments.service.ts:141-176`) ;
+- deux remises par site, colonnes `discount_*` (pros) et `b2c_discount_*`
+  (particuliers) (`settings.prisma:33-34`, `:50`, `:55-57`) + règles de portée
+  `pickup_discount_rules` par clientèle, cible `category | product`
+  (`settings.prisma:603-616`) ;
+- 🔴 la clientèle est `audienceOf` (`packages/contracts/src/customer-audience.ts:23-25`) :
+  **`b2b` pour une société ACTIVE seulement**. Un membre d'une société en
+  attente reçoit donc la remise **des particuliers** — alors que le tarif le
+  sert en pro (`company-service.ts:27-37`, `pending → pro`) ;
+- effet : `percent` en points de base OU `amount` en **centimes sur
+  l'assiette**, pas par unité (`cart-adjustment.ts:10-19`), borné à l'assiette
+  (`discountCentsOf`, `cart-adjustment.ts:52-54`), assiette = somme des HT des
+  lignes éligibles (`pickup-discount-eligibility.ts:45-61`) ;
+- la portée « produit » vise `catalog_items.product_id` (toutes ses
+  déclinaisons, `pickup-discount-scope.ts:76-94`,
+  `prisma-order-line-classification.reader.ts:43`), pas le SKU ; elle couvre
+  aussi les articles au poids (aucune lecture de l'unité de vente) ;
+- invariants : « seulement » inclut quelque chose (`pickup-discount.ts:90-92`),
+  une famille ne se règle que dans le sens du mode (`pickup-discount.ts:111-127`) ;
+- pas de scellement par la mercuriale, pas de plancher : c'est un montant de
+  panier ;
+- la commande en fige `discount_cents`, `discount_adjustment` et le drapeau
+  d'exclusion de chaque ligne (`order-composition.service.ts:213-243`) ; en
+  `exact_ht`, `composeExactOrder` **reçoit UN seul `discountAdjustment`**
+  (`order-composition.service.ts:384-400`) ;
+- **en révision, la remise est recalculée** : `compose` repasse par
+  `composition.resolve` (`order-revising.service.ts:181-186`), donc par
+  `forPickup` ; seules les LIGNES gardées gardent leur prix (R3,
+  `order-composition.service.ts:256-277`).
+
+### 13.2 Les décisions par défaut (2026-10-30, sur mandat de Hugo)
+
+**CUMUL — deux points d'application, et rien d'autre.**
+
+| Promotion                   | Point d'application                                                                                                                         | Ce qu'elle reproduit                 |
+| --------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------ |
+| SANS critère d'acheminement | **ligne** : l'étage `promotion` de la chaîne, entre volume et geste, scellable par la mercuriale, bornée par la limite de prix              | les règles de prix d'étage promotion |
+| AVEC critère d'acheminement | **panier** : après le prix des lignes, sur l'assiette des lignes qu'elle couvre, à l'endroit de `CartAdjustments.forPickup` / `forDelivery` | la remise de retrait                 |
+
+- Entre les deux points : **cumul**, comme aujourd'hui (la promotion « ligne »
+  baisse le prix unitaire, celle du panier s'applique ensuite sur le HT).
+- Dans un même point : **une seule promotion par article**, la plus
+  spécifique. Rang lexicographique : **public > acheminement > portée**, puis
+  l'existant de `winnerOf` (proximité de famille, palier). Égalité stricte →
+  **la plus avantageuse pour le client** (résultat le plus bas ; à résultat
+  égal, l'identifiant le plus petit, pour rester déterministe).
+- Au point panier, le scellement par la mercuriale **ne s'applique pas** et
+  aucune limite de prix ne joue (c'est un montant, comme la remise d'aujourd'hui).
+  `stacks_over_mercuriale` n'y est pas lu, et l'éditeur ne le propose pas.
+
+**Vérification que ça reproduit l'existant** (§ 13.1) :
+
+- règles d'étage promotion → promotions « ligne », présentées à `resolvePrice`
+  comme des règles de l'étage `promotion` (§ 13.5) : même place dans la chaîne,
+  même scellement, même limite, même arrondi unique. Les publics repris sont
+  `everyone` (rang 0) et `company` (rang le plus haut) : l'ordre `all <
+company` est conservé ; aucune n'a de critère d'acheminement (rang 0
+  partout) ; la portée garde son rang (§ 13.3, cible `variant` rang 3 pour
+  `variant`, rang 2 pour `product` — voir la colonne `target_rank`). Une
+  égalité stricte n'existe pas aujourd'hui (contrainte d'exclusion) : la règle
+  « la plus avantageuse » ne change donc aucun prix servi ;
+- remises de retrait → promotions « panier », une par site et par clientèle :
+  un seul point de retrait par commande et une seule remise par clientèle, donc
+  **au plus une promotion panier par commande** après la reprise ; même
+  assiette, même `discountCentsOf`, même arrondi unique, même figeage.
+
+**Ce qui ne reproduirait PAS, et comment c'est traité :**
+
+| Écart                                                                                             | Traitement                                                                                                                                           |
+| ------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| remise « particuliers » reçue par une société en attente ou suspendue (`audienceOf`)              | public de reprise **`everyone_but_active_pros`** (« Tous sauf les pros actifs »), et `pros_active` pour la remise des pros : exactement `audienceOf` |
+| remise en montant fixe sur l'assiette                                                             | effet `basket_amount_off` (centimes), réservé au point panier                                                                                        |
+| règle `replace` d'étage promotion                                                                 | effet `fixed_unit_price` (millicentimes), point ligne                                                                                                |
+| règle `increase`, audience `segment`                                                              | **non exprimables** : la reprise s'arrête (`RAISE EXCEPTION`) et les nomme — L0 les compte avant                                                     |
+| règle `minQuantity` d'étage promotion                                                             | condition `min_quantity` (la variante « quantité minimum » du § 12, bâtie ici), qui garde le 4ᵉ critère de `winnerOf`                                |
+| `product` et `variant` sur le même SKU (rangs 2 et 3)                                             | cible `variant` + `target_rank` repris (2 ou 3) ; et L0 compte les paires qui se disputeraient                                                       |
+| article au poids : `global`/`category` ne le visent pas au point ligne ; la remise de retrait, si | l'évaluateur de portée reçoit le point : au point ligne, une décision par mode ou par famille ne vise pas un article au poids ; au panier, si        |
+| produit de la remise = `product_id`, produit du tarif = SKU                                       | la portée partagée garde **deux** cibles : `product` (product_id, toutes déclinaisons) et `variant` (SKU)                                            |
+| `exact_ht` ne compose qu'UN `discountAdjustment`                                                  | jusqu'à L12, la pose **refuse** une promotion panier qui pourrait s'appliquer avec une autre sur une même commande (refus nommé)                     |
+| `floor_mode` d'une règle (sans lecteur)                                                           | non repris comme plancher propre (il n'agit pas aujourd'hui) ; copié dans `origin` pour mémoire                                                      |
+| révision : la remise de retrait est recalculée aujourd'hui                                        | la reprise garde ce recalcul ; le refus RÉVISION (ci-dessous) est un **changement de comportement**, livré APRÈS la bascule (L9)                     |
+
+**CHEVAUCHEMENT.** Pas de contrainte d'exclusion sur les promotions (elle ne
+lit pas les exceptions de portée). À la pose (création, modification, reprise
+d'une pause), refus nommé `OverlappingPromotionError` (`BusinessError`, 409)
+si une autre promotion **non archivée** (active ou en pause — une pause garde
+sa place, comme une règle de prix, `pricing.prisma:80-83`) a **même point
+d'application, même public, même acheminement**, une fenêtre qui chevauche, et
+une portée qui couvre **au moins un article du catalogue vendable** en commun.
+Le message nomme l'autre promotion et l'article témoin : « “−20 % retrait
+Cœur de station” couvre déjà le Pain de campagne du 01/11 au 30/11 :
+raccourcissez l'une des deux ou excluez l'article ». Sinon, la spécificité
+tranche au calcul. Le test se fait sur la projection du catalogue
+(`catalog_items`), pas en base par contrainte.
+
+**RAYON.** Une promotion conditionnée par l'acheminement ne baisse jamais
+`unitPriceMillicents` (l'acheminement y est inconnu) ; la fiche porte une
+mention « −20 % avec retrait à Cœur de station » (un point) ou « −20 % en
+retrait » (tous les points). Pas de barré.
+
+**RÉVISION.** Changer d'acheminement (méthode ou point) en révision quand ça
+**ajoute ou retire** une promotion conditionnée par l'acheminement sur la
+commande → refus nommé `FulfillmentChangeAltersPromotionError` (409) avec le
+geste de sortie : « Passer en livraison retire la promotion “−20 % en
+retrait” : annulez et recommandez, ou gardez le retrait » (option b du § 7 B2).
+« Ajoute ou retire » se juge sur l'**identifiant** de la promotion panier
+gagnante avant/après, à blanc. Un changement qui garde la même promotion
+(retrait A → retrait B, promotion « tous retraits ») passe, et son montant est
+recalculé comme aujourd'hui.
+
+**SOCIÉTÉ TERMINÉE.** Révision refusée aussi : comportement actuel de P0
+(`companyServiceOf` → `closed`, `company-service.ts:32-33`), gardé tel quel.
+
+**Égalité sur le public (Q5).** `company` bat tous les publics de clientèle,
+même moins généreuse : la négociation nominative prime.
+
+### 13.3 Le modèle de données
+
+Un contexte neuf, **`src/b2b/promotions/`** (domaine, application,
+infrastructure, http), propriétaire de ses tables pour
+`lint:prisma-model-ownership`. Fichier de schéma
+`prisma/schema/public/promotions.prisma` (`@@schema("public")`). La portée,
+partagée avec rien d'autre une fois la remise de retrait reprise, vit **dans le
+contexte** et non dans `b2b/shared` : `b2b/shared` n'admet qu'une règle commune
+à deux contextes vivants (CLAUDE.md §3), et après L12 il n'en reste qu'un.
+_(Décidé par défaut le 2026-10-30 ; le § 12 disait `b2b/shared` quand la remise
+de retrait restait un second lecteur.)_ Pendant la coexistence, la remise de
+retrait **délègue** à la même fonction pure (L2).
+
+**`promotions`** — l'agrégat :
+
+| Colonne                                          | Type                      | Nullité / invariant                                                                                                                                                                               |
+| ------------------------------------------------ | ------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id`                                             | text PK                   | ULID (`IdGenerator`) ; **= l'id de la règle** pour une reprise de `price_rules` (la trace figée garde son `ruleId`)                                                                               |
+| `internal_name`                                  | text                      | NOT NULL, non vide                                                                                                                                                                                |
+| `label_fr` / `label_en` / `label_it`             | text                      | `label_fr` NOT NULL ; les deux autres NULL = repli sur le français                                                                                                                                |
+| `reason`                                         | text                      | NULL = aucun motif                                                                                                                                                                                |
+| `application_point`                              | text                      | `line` \| `basket` ; CHECK `basket` ⇔ `fulfillment_kind <> 'any'`                                                                                                                                 |
+| `effect_kind`                                    | text                      | `percent_off` \| `unit_amount_off` \| `fixed_unit_price` \| `basket_amount_off` ; CHECK de compatibilité avec le point : ligne = les trois premiers ; panier = `percent_off`, `basket_amount_off` |
+| `effect_value`                                   | int                       | NOT NULL ; bp 1–10 000 (`percent_off`), millicentimes > 0 (`unit_amount_off`), ≥ 0 (`fixed_unit_price`), centimes > 0 (`basket_amount_off`)                                                       |
+| `own_floor_mode` / `own_floor_value`             | text / int                | les deux NULL ou les deux posés ; point ligne seulement ; NULL pour toute reprise                                                                                                                 |
+| `stacks_over_mercuriale`                         | boolean                   | NOT NULL DEFAULT false ; CHECK `false` si point panier                                                                                                                                            |
+| `valid_from` / `valid_to`                        | timestamptz(3)            | `valid_from` NOT NULL ; `valid_to` NULL = sans fin ; CHECK `valid_to > valid_from`                                                                                                                |
+| `paused_at` / `paused_by`                        | timestamptz / text        | les deux NULL ou les deux posés                                                                                                                                                                   |
+| `archived_at` / `archived_by` / `archive_reason` | timestamptz / text / text | les trois NULL ou les trois posés ; terminal                                                                                                                                                      |
+| `audience_kind`                                  | text                      | `everyone` \| `individuals` \| `individuals_guest` \| `individuals_registered` \| `pros` \| `pros_active` \| `pros_pending` \| `company` \| `company_and_sites` \| `everyone_but_active_pros`     |
+| `audience_company_id`                            | text                      | NOT NULL ⇔ `audience_kind IN ('company','company_and_sites')` (CHECK)                                                                                                                             |
+| `fulfillment_kind`                               | text                      | `any` \| `pickup` \| `pickup_point` \| `delivery`                                                                                                                                                 |
+| `fulfillment_pickup_id`                          | text                      | NOT NULL ⇔ `fulfillment_kind = 'pickup_point'` (CHECK) ; pas de clé étrangère (archivage, cf. § 7 B3)                                                                                             |
+| `scope_mode`                                     | text                      | `all_except` \| `only`                                                                                                                                                                            |
+| `conditions`                                     | jsonb                     | NOT NULL DEFAULT `'[]'` ; liste typée, toutes doivent tenir                                                                                                                                       |
+| `origin`                                         | jsonb                     | NULL = saisie ; sinon `{kind:"price_rule", ruleId, floor?}`, `{kind:"pickup_discount", siteId, clientele}` ou `{kind:"detached", …}`                                                              |
+| `legacy_source`                                  | text UNIQUE               | NULL = saisie ; `price_rule:<id>` ou `pickup_discount:<siteId>:<b2b\|b2c>` — la clé qui rend la reprise rejouable                                                                                 |
+| `created_by` / `created_at`                      | text / timestamptz        | NOT NULL ; `created_by` = id de fiche staff ou `system`                                                                                                                                           |
+
+Index : `(archived_at)`, `(application_point, archived_at)`,
+`(audience_company_id)`, `(fulfillment_pickup_id)`.
+
+`segment` (Pros/Particuliers) et la zone de livraison sont des variantes
+**prévues, non bâties** : elles n'entrent pas dans les CHECK tant qu'elles
+n'ont pas d'évaluateur (une valeur sans lecteur serait une promesse).
+
+**`promotion_scope_rules`** — la portée :
+
+| Colonne        | Type    | Invariant                                                                                                                            |
+| -------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `id`           | text PK | ULID                                                                                                                                 |
+| `promotion_id` | text FK | → `promotions.id`, `ON DELETE RESTRICT`                                                                                              |
+| `target`       | text    | `category` \| `product` (product_id) \| `variant` (SKU)                                                                              |
+| `target_id`    | text    | NOT NULL, identifiant opaque, sans clé étrangère (comme `settings.prisma:597-599`)                                                   |
+| `target_rank`  | int     | NULL sauf `variant` repris d'une portée `product` de règle (vaut 2) ; sinon le rang naturel (`variant` 3, `product` 2, `category` 1) |
+| `eligible`     | boolean | NOT NULL                                                                                                                             |
+
+UNIQUE `(promotion_id, target, target_id)`. Invariants tenus par l'agrégat
+(repris de `pickup-discount.ts`) : « seulement » inclut au moins une cible ;
+une famille ne se règle que dans le sens du mode ; pas de doublon.
+
+**Les conditions** (`conditions` jsonb, type somme fermé côté domaine) :
+`{ kind: "min_quantity", value: n }` bâtie (reprise de `minQuantity`, jugée
+sur `context.quantity`, `specificity.ts:280-288`). Prévues, non bâties :
+`basket_minimum`, `days_hours`, `first_order`, `promo_code`, `usage_limit`. Une
+variante = un type + son évaluateur ; `[]` = aucune condition. La spécificité
+lit `min_quantity` comme le 4ᵉ critère de `winnerOf` ; les autres n'y entrent
+pas.
+
+**Le ciblage** (domaine, pur) : `PromotionAudienceFacts = { companyId,
+principalCompanyId, companyStatus, customerAudience, buyerKind, fulfillment }`,
+**construits au serveur, jamais reçus** — une fabrique unique à côté de
+`PricingPartiesResolver` (`pricing-parties.resolver.ts:16-25`). `buyerKind` :
+`guest | registered | unknown` (tableau staff) ; `fulfillment` : `null` =
+inconnu. Un public qui demande un fait inconnu ne s'applique pas.
+
+Rang du public (du plus fort au plus faible) : `company` 4 >
+`company_and_sites` 3 > `individuals_guest` = `individuals_registered` =
+`pros_active` = `pros_pending` 2 > `individuals` = `pros` =
+`everyone_but_active_pros` 1 > `everyone` 0. Rang de l'acheminement :
+`pickup_point` 2 > `pickup` = `delivery` 1 > `any` 0.
+
+### 13.4 La reprise (migration de données)
+
+Une **fonction SQL** `public.reprise_des_promotions()` créée par la migration
+de L4, **appelée** par cette migration, et rappelée par celle de la bascule
+(L8) : la reprise est rejouable parce qu'elle s'écrit en `INSERT … ON CONFLICT
+(legacy_source) DO UPDATE` et remplace en bloc les règles de portée des
+promotions reprises. Elle ne touche **jamais** une promotion sans
+`legacy_source`.
+
+**Pré-contrôle** (en tête, `RAISE EXCEPTION` qui nomme les ids) : aucune
+règle non archivée d'étage `promotion` en `increase` ou en audience `segment` ;
+aucune paire `product`/`variant` sur le même SKU et la même audience à
+fenêtres chevauchantes ; tout `product_id` d'une règle de remise de retrait
+existe dans `catalog_items` (sinon la ligne orpheline est reprise telle
+quelle, la cible `product` n'a pas besoin du SKU — contrôle d'**information**
+seulement, `RAISE NOTICE`).
+
+**1. Règles de prix** (`price_rules` d'étage `promotion`, `archived_at IS NULL`) :
+
+```sql
+INSERT INTO promotions (id, internal_name, label_fr, application_point,
+  effect_kind, effect_value, stacks_over_mercuriale, valid_from, valid_to,
+  paused_at, paused_by, audience_kind, audience_company_id,
+  fulfillment_kind, scope_mode, conditions, origin, legacy_source,
+  created_by, created_at)
+SELECT r.id, r.label, r.label, 'line',
+  CASE WHEN r.nature = 'replace' THEN 'fixed_unit_price'
+       WHEN r.mode = 'percent' THEN 'percent_off' ELSE 'unit_amount_off' END,
+  CASE WHEN r.nature = 'replace' THEN r.amount_millicents ELSE r.value END,
+  r.stacks_over_mercuriale, r.valid_from, r.valid_to, r.paused_at, r.paused_by,
+  CASE r.audience_type WHEN 'all' THEN 'everyone' ELSE 'company' END,
+  r.audience_id, 'any',
+  CASE WHEN r.scope_type = 'global' THEN 'all_except' ELSE 'only' END,
+  CASE WHEN r.min_quantity IS NULL THEN '[]'::jsonb
+       ELSE jsonb_build_array(jsonb_build_object('kind','min_quantity','value',r.min_quantity)) END,
+  jsonb_strip_nulls(jsonb_build_object('kind','price_rule','ruleId',r.id,
+    'floor', CASE WHEN r.floor_mode IS NULL THEN NULL
+                  ELSE jsonb_build_object('mode',r.floor_mode,'value',r.floor_value) END,
+    'detached', r.origin)),
+  'price_rule:' || r.id, r.created_by, r.created_at
+FROM price_rules r
+WHERE r.stage = 'promotion' AND r.archived_at IS NULL
+ON CONFLICT (legacy_source) DO UPDATE SET … -- toutes les colonnes ci-dessus sauf id
+```
+
+Portée : `global` → aucune règle ; `category X` → `(category, X, eligible)` ;
+`product S` → `(variant, S, target_rank 2, eligible)` ; `variant S` →
+`(variant, S, eligible)`.
+
+**2. Remises de retrait** (une ligne par site et par clientèle remisée) :
+`sites.discount_mode IS NOT NULL AND discount_for_b2b` → public `pros_active` ;
+`sites.b2c_discount_mode IS NOT NULL` → public `everyone_but_active_pros`
+(`settings.prisma:45-57` : `discount_for_b2c` n'a plus de lecteur et n'est pas
+lu). Point `basket`, acheminement `pickup_point` = `sites.id`, effet
+`percent_off` (bp) ou `basket_amount_off` (centimes), `valid_from` = instant de
+la première reprise (conservé au rejeu), `valid_to` NULL, `scope_mode` =
+`discount_scope` / `b2c_discount_scope`, règles depuis `pickup_discount_rules`
+de la clientèle (`category` → `category`, `product` → `product`), libellé
+« Remise de retrait — <libellé du site> », `created_by = 'system'`. Une remise
+**retirée** depuis la reprise précédente (mode remis à NULL) → la promotion
+reprise est **archivée** (`archive_reason = 'remise retirée du site'`), jamais
+supprimée.
+
+**3. Contrôle de fin** (même transaction, `RAISE EXCEPTION` si faux) :
+nombre de règles d'étage promotion non archivées = nombre de promotions
+`legacy_source LIKE 'price_rule:%'` non archivées ; nombre de (site,
+clientèle) remisés = promotions `pickup_discount:%` non archivées ; pour
+chacune, nombre de règles de portée égal à la source ; aucune promotion
+reprise sans portée en `only`.
+
+**4. Journal** : un acte `posed` par promotion créée (pas au rejeu qui ne
+change rien), `actor = 'system'`, `reason = 'reprise des promotions'`,
+`summary` figé (§ 13.9).
+
+**Retour arrière.** Avant la bascule : rien à défaire pour les prix — le
+code lit l'ancien chemin ; les promotions reprises s'archivent par SQL
+(`UPDATE promotions SET archived_at = now(), archived_by = 'system',
+archive_reason = 'retour arrière de la reprise' WHERE legacy_source IS NOT
+NULL`), jamais de `DELETE`. Après la bascule : remettre `PROMOTIONS_SOURCE` à
+`legacy` (§ 13.5) ; les anciennes tables n'ont pas été touchées, mais toute
+promotion **posée ou modifiée** depuis la bascule est perdue pour l'ancien
+chemin — le journal (`pricing_events`, sujet `promotion`) les liste, à
+reposer à la main. Fenêtre de retour arrière gratuite : jusqu'à la première
+modification à l'écran.
+
+**Ordre de déploiement — aucun prix servi ne change avant la bascule** :
+
+```mermaid
+flowchart LR
+  E[Etendre - L3 tables, L4 reprise] --> O[Ombre - L5 calcul double, sert l'ancien]
+  O --> V[Verifier - L6 e2e d'egalite, journal d'ombre vide]
+  V --> B[Basculer - L8 rejeu puis lecture des promotions]
+  B --> R[Resserrer - L12 ancien chemin retire, colonnes gardees]
+```
+
+Les colonnes de `sites` et `price_rules` **restent en base** après L12
+(CLAUDE.md §0 : une colonne morte reste) ; les règles d'étage promotion sont
+archivées par la migration de L12 avec le motif « reprise en promotion
+<id> », pour que l'écran des règles ne les montre plus.
+
+### 13.5 Les deux évaluateurs, et le mode ombre
+
+- **Point ligne** : `PriceInputs` gagne `promotions: readonly
+LinePromotion[]`, **obligatoire** (un tableau vide est une déclaration, même
+  raison que `ladders`, `resolve-price.ts:217-227`). `assembled` les présente
+  comme des règles de l'étage `promotion` (`promotionAsRule`, sur le patron de
+  `ladderAsRule`, `resolve-price.ts:247-263`) : `resolvePrice` ne change pas.
+  `specificityOf` gagne le rang du public et de l'acheminement en tête ; une
+  règle de prix non reprise y vaut le rang de son audience (`all` → 0,
+  `company` → 4). L'égalité stricte entre deux **promotions** se résout par la
+  plus avantageuse ; entre deux règles de prix, l'erreur reste.
+- **Point panier** : `BasketPromotions.resolve(lines, facts, known)` dans
+  `b2b/orders/application/services/`, appelé par `resolveFulfillment` pour le
+  retrait **et** la livraison, rend `{ discountCents, discountAdjustment,
+ineligibleSkus, promotionId }` — la forme de `ResolvedPickup`
+  (`cart-adjustments.service.ts:37-46`), donc rien en aval ne change.
+- **`PROMOTIONS_SOURCE`** (`legacy | shadow | promotions`), lu par `AppConfig`
+  seulement. `legacy` : l'existant. `shadow` : on sert l'existant ET on calcule
+  le nouveau sur le devis et la passation ; une différence au centime (prix
+  unitaire résolu d'une ligne, ou montant de remise) est journalisée
+  (`promotions.shadow_divergence`, sans donnée personnelle : SKU, ids de
+  règles, deux montants). `promotions` : le nouveau seul — le chargeur ne lit
+  plus les règles d'étage promotion, `forPickup` ne lit plus la remise du site.
+
+### 13.6 L'acheminement connu avant le prix — pas de scission
+
+Décidé par défaut le 2026-10-30 : **le chemin minimal suffit**. Une promotion
+qui dépend de l'acheminement s'applique au point panier, et le point panier
+est **déjà** calculé après la résolution de l'acheminement
+(`order-composition.service.ts:158-162`). Aucune promotion « ligne » ne lit
+l'acheminement (CHECK `basket ⇔ fulfillment_kind <> 'any'`, § 13.3) : la
+scission de `OrderComposition.resolve` (§ 3.4) n'a plus d'objet. Ce qu'il faut
+seulement : que `resolveFulfillment` passe à `BasketPromotions` le **point
+retenu** (y compris présélectionné, `cart-adjustments.service.ts:148-151`) et
+la méthode.
+
+### 13.7 `buyerKind` (invité / inscrit)
+
+Repris du § 7 B1, inchangé sur le fond :
+
+- `OrderParties` gagne `buyerKind: "guest" | "registered"`, **obligatoire**
+  (`order-parties.ts:9-13`) ; posé par chaque handler selon sa route (table du
+  § 7 B1) ; jamais dans un schéma Zod ;
+- colonne `orders.buyer_kind` text NOT NULL DEFAULT `'registered'` + CHECK,
+  remplie dans la même migration : `guest` quand la personne qui a passé la
+  commande n'a pas d'identité de connexion (`users.auth0_sub IS NULL`,
+  `account.prisma:390-392`, `:407`) ; la révision la relit (§ 7 B1) ;
+  `lint:auth0-id-readers` ne lit que `apps/lfd-api/src`
+  (`dev-toolbox/gates/auth0-id-readers.mjs:45`) et la migration ne lit que la
+  nullité ;
+- le contexte de prix (`PricingParties`, `NO_PARTIES` →
+  `buyerKind: "unknown"`) et `PromotionAudienceFacts` le reçoivent ; le rayon
+  passe `registered` sur la route reconnue, `guest` sur la publique (§ 7 S —
+  le rayon) ; l'aperçu `?audience=pro` ne joue que `everyone`.
+
+### 13.8 La révision
+
+Dans `OrderRevising.compose` (`order-revising.service.ts:181-186`), après
+`composition.resolve` : si la méthode ou le point a changé, comparer
+`promotionId` de la promotion panier d'avant (figé sur la commande, colonne
+`orders.discount_promotion_id` text NULL ajoutée en L8) et d'après ; différents
+→ `FulfillmentChangeAltersPromotionError`. Rien n'est écrit avant le refus. La
+société terminée reste refusée en amont (P0). Livré en **L9**, après la
+bascule : c'est le seul changement de comportement assumé du plan.
+
+### 13.9 L'écran Promotions et le journal
+
+- Back-office, entrée **Tarification › Promotions** : liste (filtres état,
+  public, acheminement, point), éditeur à sept blocs du § 12 (identité, effet,
+  fenêtre, public — un seul menu, § 9 —, acheminement, portée familles/
+  produits/déclinaisons avec le mode, conditions). Le résumé lu par le staff :
+  « −20 % · particuliers inscrits · retrait à Cœur de station · du … au … ».
+  Pause, reprise, archivage (motif obligatoire). Permission : la ressource
+  `b2b_pricing` existante (aucune ressource neuve, aucun droit écrit en
+  migration — `lint:no-role-grants-in-migrations`).
+- **Raccourci depuis la fiche d'un site** (Réglages › Sites,
+  `apps/lfd-backoffice-frontend/src/app/reglages/sites/site-page/audience-discount-card/`) :
+  à la bascule, la carte de remise devient un résumé en lecture des
+  promotions dont l'acheminement vise ce point, avec « Gérer dans Promotions »
+  (liste pré-filtrée sur le point) et « Nouvelle promotion pour ce site »
+  (éditeur pré-rempli : Retrait · ce point).
+- **Journal** : `pricing_events` (`pricing.prisma:579-591`) gagne le sujet
+  `promotion` (`subject_type` est du texte, pas d'enum : aucune migration de
+  schéma), actes existants `posed | paused | resumed | archived | replaced`,
+  `summary` figé à l'écriture. La trace figée d'une ligne garde `ruleId` = id
+  de promotion (identique à l'id de règle pour une reprise) et le libellé du
+  public. Les clés écrites dans le journal sont figées dès le premier fait (§ 7
+  S — irréversible).
+- **Portes à armer** (avant de bâtir, mémoire « armer une porte ») :
+  `lint:dated-decisions` (liste en dur, `dev-toolbox/gates/dated-decisions.mjs:121-127`)
+  ajoute le fichier de l'agrégat ; `lint:rgpd-staff` : `promotions.created_by`,
+  `paused_by`, `archived_by` au registre comme leurs sœurs de `price_rules`
+  (`documentation/legal/rgpd-registre.json:1920-1929`) ;
+  `lint:prisma-model-ownership` : propriétaire `b2b/promotions` ;
+  `lint:prisma-schema-layout` : le fichier sous `public/`.
+
+### 13.10 Les lots
+
+Chaque lot est livrable seul ; **aucun prix servi ne change avant L8**.
+`vitruve` obligatoire avant L4 et L8 (argent + migration de données), et
+`lecteur-de-migrations` sur chaque migration.
+
+| Lot     | Contenu                                                                                                                                                                                                                                                                                                                                                                                         | Migration           | Prix servis                 |
+| ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------- | --------------------------- |
+| **L0**  | Pré-contrôle en lecture seule `dev-toolbox/audits/promotions-reprise-precheck.sql` (les comptes du § 13.4) ; Hugo le lance en production ; un compte non nul arrête le chantier jusqu'à décision                                                                                                                                                                                                | —                   | inchangés                   |
+| **L1**  | `buyerKind` : `OrderParties`, poseurs, `orders.buyer_kind` + remplissage, lecture en révision ; pas encore lu par le tarif                                                                                                                                                                                                                                                                      | additive            | inchangés                   |
+| **L2**  | Portée : fonction pure `promotionScopeCovers(scope, facts, point)` (cibles `category`/`product`/`variant`, rang, unité de vente par point) ; `pickupDiscountCovers` y délègue (`pickup-discount-scope.ts:76-94`) et `matchesScope` reste tel quel                                                                                                                                               | —                   | inchangés                   |
+| **L3**  | Tables `promotions` + `promotion_scope_rules` (CHECK du § 13.3) ; agrégat `Promotion` (factory `Promotion.pose`, `pause`, `resume`, `archive`, `revise`), VO effet / public / acheminement / conditions, dépôt `load`/`save`, actes au journal ; portes armées (§ 13.9) ; aucun lecteur au calcul                                                                                               | additive            | inchangés                   |
+| **L4**  | Fonction `reprise_des_promotions()` + premier appel, pré-contrôle, contrôle de fin ; e2e SQL de la migration (patron `test/price-limits-migration.e2e-spec.ts`)                                                                                                                                                                                                                                 | données, additive   | inchangés                   |
+| **L5**  | Évaluateurs ligne (`promotionAsRule`, rang du public) et panier (`BasketPromotions`), fabrique `PromotionAudienceFacts`, `PROMOTIONS_SOURCE` = `legacy` par défaut, mode `shadow`                                                                                                                                                                                                               | —                   | inchangés                   |
+| **L6**  | E2E d'**égalité** (§ 13.11) en `legacy` puis en `promotions` ; passage de dev en `shadow`                                                                                                                                                                                                                                                                                                       | —                   | inchangés                   |
+| **L7**  | Écran Promotions (back + front), refus de chevauchement, refus « deux promotions panier possibles », raccourci du site — **en lecture seule** tant que la source est `legacy`/`shadow` (l'API d'écriture rend 409 « Les promotions s'éditent après la bascule »)                                                                                                                                | —                   | inchangés                   |
+| **L8**  | **Bascule** : migration qui rappelle `reprise_des_promotions()`, ajoute `orders.discount_promotion_id` ; `PROMOTIONS_SOURCE=promotions` ; éditeur de règles refuse l'étage `promotion` (« Les promotions se posent dans Tarification › Promotions »), carte de remise du site en lecture ; écran Promotions ouvert en écriture. Condition : journal d'ombre vide sur dev ET e2e d'égalité verts | données, additive   | **identiques au centime**   |
+| **L9**  | Refus de révision (§ 13.8)                                                                                                                                                                                                                                                                                                                                                                      | —                   | inchangés ; refus nouveau   |
+| **L10** | Publics invités/inscrits/pros en cours actifs dans l'éditeur ; rayon : `buyerKind`, mention « avec retrait à … », message « Vous avez un compte ? Connectez-vous pour profiter de −20 % » à tout invité (§ 8) ; promotions de livraison                                                                                                                                                         | —                   | nouveaux seulement si posés |
+| **L11** | Documentation d'état (`architecture-resolution-de-prix.md`, `architecture-prix-boutique.md`, l'index), ce plan devient une doc d'état                                                                                                                                                                                                                                                           | —                   | —                           |
+| **L12** | **Resserrer** : chemin `legacy` retiré, `PickupDiscount` et ses lecteurs retirés, règles d'étage promotion archivées (motif daté), colonnes gardées ; `composeExactOrder` accepte une liste de remises panier et le refus « deux promotions panier » est levé                                                                                                                                   | données (archivage) | inchangés                   |
+
+### 13.11 Les tests
+
+- **Domaine** (sans Nest ni mock) : agrégat (CHECK miroir : point ⇔
+  acheminement, effet ⇔ point, public ⇔ société, fenêtre, « seulement » vide,
+  famille à contre-sens) ; portée (matrice cible × mode × unité de vente ×
+  point, rang) ; ciblage (chaque public × `companyStatus` × `customerAudience`
+  × `buyerKind`, fait inconnu → ne s'applique pas) ; spécificité (public >
+  acheminement > portée > palier ; `company` bat `pros_active` ; égalité →
+  la plus avantageuse, puis l'id).
+- **Application** (ports doublés) : `BasketPromotions` rend la forme de
+  `ResolvedPickup` ; refus de chevauchement (témoin nommé) ; refus de révision
+  (avant/après, rien d'écrit) ; mode ombre journalise une divergence et sert
+  l'ancien.
+- **E2E d'égalité** (vrai Postgres, fenêtres en `daysAgo`, données posées
+  **par les vrais gestes** : `CreatePriceRuleCommand`, `PausePriceRuleCommand`,
+  `UpdatePickupAddressCommand` avec remises et règles de portée, pose de
+  mercuriale, barème) : un même corpus est devisé et passé en
+  `PROMOTIONS_SOURCE=legacy`, puis `reprise_des_promotions()` est appelée, puis
+  le même corpus en `promotions` ; on compare **au centime** le prix unitaire
+  de chaque ligne, `discount_cents`, le total, la trace (`ruleId`) — sur :
+  règle promotion `all` globale / famille / produit / déclinaison, en
+  pourcentage, en montant et en prix posé ; règle `company:X` contre `all` ;
+  règle en pause ; règle avec `minQuantity` sous et au-dessus du seuil ;
+  client sous mercuriale avec et sans `stacksOverMercuriale` ; article au
+  poids sous une promotion de famille ; remise de retrait pros (société
+  active) et particuliers (invité, inscrit, **société en attente**, société
+  suspendue) ; remise en montant fixe supérieure à l'assiette ; portée « tout
+  sauf » avec famille exclue et produit réinclus, « seulement » ; commandes
+  `line_ht` et `exact_ht` ; révision qui change de point (montant recalculé
+  comme avant). Le rejeu de la reprise est idempotent (deuxième appel : zéro
+  changement, zéro acte).
+- **E2E de comportement** (après L8) : chevauchement refusé et nommé ;
+  promotions de publics différents qui coexistent ; révision retrait →
+  livraison refusée quand elle retire une promotion, acceptée sinon ; rayon
+  sans barré et avec mention ; invité sans la promotion « inscrits ».
