@@ -1,4 +1,7 @@
-import { UnreadablePromotionRowError } from "../../domain/errors/promotion-errors.js";
+import {
+  PromotionMissingTargetIdError,
+  UnreadablePromotionRowError,
+} from "../../domain/errors/promotion-errors.js";
 import { Promotion } from "../../domain/promotion.js";
 import { PromotionAudienceSet } from "../../domain/promotion-audience-set.js";
 import { FROM, basketTerms, lineTerms } from "../../domain/__tests__/promotion-terms.fixture.js";
@@ -128,5 +131,99 @@ describe("les mappers de la promotion", () => {
     expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
       UnreadablePromotionRowError,
     );
+  });
+
+  it.each([
+    ["un plancher propre inconnu", { ownFloorMode: "ratio", ownFloorValue: 1 }],
+    ["un archivage à moitié écrit (sans motif)", { archivedAt: FROM, archivedBy: "staff_1" }],
+    ["une pause sans auteur", { pausedBy: "staff_1" }],
+    ["un mode de portée inconnu", { scopeMode: "tout" }],
+    ["des conditions qui ne sont pas une liste", { conditions: { kind: "min_quantity" } }],
+    ["une origine qui n'est pas un objet", { origin: "reprise" }],
+    ["un acheminement inconnu", { fulfillmentKind: "drone" }],
+  ])("refuse en la nommant une ligne avec %s", (_case, patch) => {
+    const promotion = Promotion.pose("promo_1", lineTerms(), "staff_1", FROM);
+    expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
+      UnreadablePromotionRowError,
+    );
+  });
+
+  it("refuse un point de retrait sans identifiant : le refus nommé du domaine, pas un point inventé", () => {
+    const promotion = Promotion.pose("promo_1", basketTerms(), "staff_1", FROM);
+    const row = { ...rowOf(promotion), fulfillmentPickupId: null };
+    expect(() => reread(promotion, row)).toThrow(PromotionMissingTargetIdError);
+  });
+
+  it("refuse une règle de portée à cible inconnue, et un public à cible inconnue", () => {
+    const promotion = Promotion.pose("promo_1", SCOPED, "staff_1", FROM);
+    const rules = scopeRuleRowsOf(promotion).map((rule, i) =>
+      i === 0 ? { ...rule, target: "rayon" } : rule,
+    );
+    expect(() => toDomain(rowOf(promotion), rules, targetsOf(promotion))).toThrow(
+      UnreadablePromotionRowError,
+    );
+    const targets = targetsOf(promotion).map((target) => ({ ...target, kind: "vip" }));
+    expect(() => toDomain(rowOf(promotion), scopeRuleRowsOf(promotion), targets)).toThrow(
+      UnreadablePromotionRowError,
+    );
+  });
+
+  it("relit un archivage complet et une pause complète tels qu'écrits, auteur compris", () => {
+    const promotion = Promotion.pose("promo_1", lineTerms(), "staff_1", FROM)
+      .pause("staff_2", FROM)
+      .archive("staff_3", FROM, "fin de saison");
+    const state = reread(promotion).toPersistence();
+    expect(state.paused).toEqual({ at: FROM, by: "staff_2" });
+    expect(state.archived).toEqual({ at: FROM, by: "staff_3", reason: "fin de saison" });
+  });
+
+  it("aller-retour des trois états d'un libellé : `null`, absent, posé — et `it` sans `en` ne se perd pas", () => {
+    const promotion = Promotion.pose(
+      "promo_1",
+      lineTerms({
+        label: { fr: "Fr", en: null, it: "Solo italiano" },
+        audienceLabels: {
+          individuals: { fr: "Part", en: null, it: "Privati" },
+          pros: null,
+        },
+        audiences: PromotionAudienceSet.of([{ kind: "everyone" }]),
+      }),
+      "staff_1",
+      FROM,
+    );
+    const row = rowOf(promotion);
+    expect([row.labelEn, row.labelIt, row.labelIndividualsIt, row.labelProsFr]).toEqual([
+      null,
+      "Solo italiano",
+      "Privati",
+      null,
+    ]);
+    const again = reread(promotion).terms;
+    expect(again.label).toEqual({ fr: "Fr", en: null, it: "Solo italiano" });
+    expect(again.audienceLabels).toEqual({
+      individuals: { fr: "Part", en: null, it: "Privati" },
+      pros: null,
+    });
+  });
+
+  it("aller-retour de la fenêtre et des options de ligne : cumulable, plancher, mercuriale, fin", () => {
+    const promotion = Promotion.pose(
+      "promo_1",
+      lineTerms({
+        cumulative: true,
+        stacksOverMercuriale: true,
+        ownFloor: { mode: "amount", value: 12_345 },
+        validTo: new Date(FROM.getTime() + 1),
+      }),
+      "staff_1",
+      FROM,
+    );
+    const again = reread(promotion).terms;
+    expect(again).toMatchObject({
+      cumulative: true,
+      stacksOverMercuriale: true,
+      ownFloor: { mode: "amount", value: 12_345 },
+      validTo: new Date(FROM.getTime() + 1),
+    });
   });
 });
