@@ -224,3 +224,19 @@ un `PendingProPolicyReader` doublé : chaque réglage coupé un par un.
   annulation, ou alerte au commercial ?
 - **Q8** — Plusieurs rattachements dont un pending : rien de neuf (la société
   agissante est déclarée, `resolve-company.ts:27-31`) — à confirmer.
+
+## Décisions de Hugo après vitruve (2026-10-30)
+
+- **Société suspendue (par nous)** : elle peut encore commander, **par carte
+  seulement** (le « au compte » est déjà fermé hors `active`,
+  `order-settlement.ts:122`). Son **tarif — pro ou public — est un choix
+  d'admin**, dans le même écran de réglages que les pros en cours
+  d'inscription. Défaut à confirmer par Hugo.
+- Le trou constaté par vitruve (une suspendue / terminée est tarifée pro au
+  devis et à la passation, `order-line-pricing.service.ts:189` via
+  `CatalogViewers.forCompany`, qui ne lit pas le statut) se ferme donc PAR ce
+  réglage, au niveau de `forCompany` et de tous ses appelants (rayon, devis,
+  passation, habituels, suggestions, « achetés avec », liste staff) — jamais au
+  seul rayon.
+- Restent ouverts : la société **terminée** (commande refusée ?), et la
+  mercuriale séparée ou non du « traité en pro » (recommandé : une seule case).
