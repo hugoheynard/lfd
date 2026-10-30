@@ -1836,3 +1836,40 @@ remise en **montant fixe** sur le panier reste globale (pas de répartition par
 ligne sans règle arbitraire) — à afficher comme telle. À confronter aux
 règles de facturation (mentions des réductions par ligne, totaux par taux) et
 à `vitruve` (argent) avant tout bâti.
+
+### 17.1 Conditions de Hugo (2026-10-30) — elles priment sur toute méthode
+
+1. **Prix unitaire × quantité = montant de la ligne**, au centime, tel que le
+   client le refait : le prix unitaire affiché (TTC pour un particulier, HT
+   pour un pro), multiplié par le nombre d'articles, donne le montant affiché
+   de la ligne.
+2. **Règles fiscales françaises et Factur-X (EN 16931) respectées
+   absolument** — calculs de ligne, remises, totaux par taux de TVA.
+
+**Ce que ces conditions écartent** : la répartition au plus fort reste (C)
+telle quelle — elle donne à une ligne une remise qui n'est pas forcément un
+multiple de sa quantité, donc un prix unitaire net qui ne retombe pas juste
+(ex. 3 articles, remise de ligne 0,73 € ⇒ 0,2433… € l'unité). Elle ne reste
+valable que comme **remise de pied de document**, ventilée par taux (voir 2).
+
+**Méthode recommandée, sous ces conditions** :
+
+1. **Promotion en pourcentage sur des articles** (ligne OU retrait) : remise
+   appliquée au **prix unitaire**, arrondie au centime **sur l'unité** ⇒ prix
+   unitaire net ; montant de ligne = prix unitaire net × quantité. Condition 1
+   tenue par construction, et c'est la forme Factur-X d'une ligne (montant net
+   de ligne = quantité × prix net de l'article). Prix barré exact.
+2. **Remise en montant fixe sur le panier** : remise de **pied de document**,
+   ventilée par taux de TVA (une remise par taux, au prorata des bases, plus
+   fort reste pour le dernier centime) — forme Factur-X d'une remise au niveau
+   du document ; les lignes gardent leur prix plein.
+3. **TVA** : totale par taux = base du taux × taux, arrondie une fois par taux
+   (règle de calcul Factur-X).
+
+**À VÉRIFIER avant de bâtir (non vérifié ici)** : les règles de calcul exactes
+d'EN 16931 / Factur-X (ligne, remises de document, arrondis) dans le texte de
+la norme ; ce que fait aujourd'hui le dépôt pour un particulier (prix de
+référence TTC ou HT, `composeExactOrder`, `exact_ht`) — si le prix public est
+TTC, la condition 1 s'écrit en TTC et l'extraction de la TVA se fait par taux
+sur le total TTC ; l'écart d'un centime par unité avec le calcul actuel
+(remise globale) est assumé. `vitruve` obligatoire.
