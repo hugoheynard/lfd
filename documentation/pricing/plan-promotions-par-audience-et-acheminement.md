@@ -1393,36 +1393,249 @@ commandes du staff selon le client à la date.
 direction : le corps du § 13 garde ses décisions, ce § dit ce qui a changé et
 pourquoi ; en cas de divergence, le corps corrigé fait foi.
 
-## 15. Une promotion, plusieurs publics ; un libellé par audience (Hugo, 2026-10-30) — DÉCIDÉ, NON BÂTI
+## 15. L8b — une promotion, plusieurs publics, des libellés par audience (Hugo, 2026-10-30) — PLAN EXÉCUTABLE, NON BÂTI
 
-Décidé par Hugo le 2026-10-30, après L8 bâti ; **rien de ceci n'est dans le
-code** à cette date.
+Décidé par Hugo le 2026-10-30, après L8 (`109b6fd38`) ; **rien de ceci n'est
+dans le code** à cette date. Lot d'**argent** et de **migration** : `vitruve`
+obligatoire avant de bâtir, `lecteur-de-migrations` sur la migration. Chaque
+affirmation sur l'existant ci-dessous a été ouverte le 2026-10-30.
 
-1. **Le public devient un ENSEMBLE non vide de cibles de l'arbre** (§ 9) au
-   lieu d'une seule : « particuliers inscrits » + « tous les pros » en une
-   promotion plutôt que deux jumelles. « Tout le monde » exclut le reste ; une
-   cible et son ancêtre ne coexistent pas (l'ensemble est minimal). Ciblage :
-   au moins une cible admet l'acheteur ; spécificité = rang de la cible qui l'a
-   admis ; chevauchement et « une promotion panier par commande » jugés sur
-   l'ensemble. Migration ADDITIVE : une table d'ensemble, `audience_kind` /
-   `audience_company_id` gardés lisibles (et remplis par la reprise, qui ne
-   connaît que des publics simples).
-2. **Un libellé client par audience** — au minimum particuliers et pros,
-   chacun FR/EN/IT, repli sur le libellé commun ; le client lit celui de son
-   audience.
-3. **L'éditeur** : des cases à cocher en étages qui dessinent l'arbre (Tout le
-   monde ; Particuliers, Pros ; leurs enfants, la société avec son
-   sélecteur), parent ⇒ enfants cochés et grisés, tous les enfants ⇒ parent,
-   état indéterminé sur un parent partiel (`fold-checkbox` porte
-   `indeterminate`, vérifié dans les types de fold-ng le 2026-10-30), valeur envoyée
-   = l'ensemble minimal ; le libellé par audience sous chaque branche cochée.
+### 15.1 Les trois décisions
 
-**Pourquoi pas dans L8** : ce change l'agrégat (L3), le ciblage et la
-spécificité (L5), le chevauchement (L7) et le libellé de la trace figée — un
-lot d'argent à part, qui demande `vitruve`. Points à trancher avant de bâtir :
-le libellé figé dans la trace d'une ligne (`ruleId` + libellé) dépend alors de
-l'acheteur ; le contrôle d'égalité de L8 compare `audience_kind`, qu'un
-ensemble de plusieurs cibles ne résume pas (la reprise n'en crée jamais : sans
-effet sur l'égalité ni sur le rejeu tant que la table d'ensemble est vide pour
-les reprises) ; l'annonce d'un point (`PickupAddressView.discounts`) ne porte
-qu'un libellé par clientèle et pas de libellé du tout aujourd'hui.
+1. **Un ENSEMBLE non vide de publics** par promotion, pris dans l'arbre du § 9 :
+   « particuliers inscrits » + « tous les pros » en une promotion, fini les
+   jumelles. « Tout le monde » est **exclusif** ; une cible et son ancêtre ne
+   coexistent pas ; la valeur stockée est l'**ensemble minimal** (tous les
+   enfants d'un parent ⇒ le parent).
+2. **Le nom interne est séparé des libellés.** Le nom interne (staff, une
+   langue) identifie la promotion au back-office, dans les refus et le
+   journal. Les **libellés client** dépendent de l'**audience** et servent
+   l'affichage (boutique, devis, panier, trace de ligne) : au minimum un
+   libellé **Particuliers** et un libellé **Pros**, chacun FR/EN/IT, repli sur
+   le libellé **commun** (l'actuel). Le client lit celui de son audience.
+3. **L'éditeur** : public en **cases à cocher en étages** ; sous chaque branche
+   cochée (Particuliers / Pros), ses libellés.
+
+### 15.2 L'existant, rouvert
+
+| Sujet                | Aujourd'hui                                                                                                                                 | Où                                                                                                                                     |
+| -------------------- | ------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
+| Public               | UNE cible : union de 10 `kind`, dont `company` / `company_and_sites` avec `companyId`                                                       | `promotions/domain/promotion-audience.ts:15-25`                                                                                        |
+| Lecture d'une ligne  | `audienceOf(kind, companyId)` ; `null` ⇒ `UnreadablePromotionRowError`                                                                      | `promotion-audience.ts:55-75`, `infrastructure/promotion-rows.ts:80-84`                                                                |
+| Colonnes             | `audience_kind` NOT NULL, `audience_company_id` nullable, `internal_name`, `label_fr` NOT NULL, `label_en` / `label_it` nullables           | `prisma/schema/public/promotions.prisma:14-18, 39-41`                                                                                  |
+| Libellé              | un seul `PromotionLabel { fr, en, it }`, `fr` obligatoire                                                                                   | `domain/promotion-terms.ts:27, 50-51, 78-81`                                                                                           |
+| Ciblage              | `audienceAdmits(audience, facts)` sur une cible                                                                                             | `domain/promotion-targeting.ts:53-67` ; appelé par `live-promotion.ts:77`                                                              |
+| Rang                 | `PUBLIC_RANK[promotion.audience.kind]`                                                                                                      | `promotion-targeting.ts:134-145`, `live-promotion.ts:96-101`                                                                           |
+| Rang lu par          | la caisse panier, la règle de ligne, l'annonce                                                                                              | `orders/domain/services/basket-promotion-choice.ts:64`, `pricing/domain/promotion-as-rule.ts:76`, `pickup-discount-announcement.ts:98` |
+| Chevauchement        | `sameTargeting` = même `kind` + même `companyId` + même acheminement                                                                        | `domain/promotion-overlap.ts:109-116`, appelé `:56`                                                                                    |
+| Une promotion panier | `audiencesMeet(left, right)` : un acheteur possible admis par les deux                                                                      | `promotion-overlap.ts:89-107, 161-169`                                                                                                 |
+| Libellé du calcul    | `label: state.label.fr` — **toujours le français commun**                                                                                   | `domain/live-promotion.ts:29, 49`                                                                                                      |
+| Libellé figé         | la règle de ligne recopie `promotion.label` ; `resolvePrice` le fige dans l'étape (`label: winner.label`)                                   | `pricing/domain/promotion-as-rule.ts:74`, `pricing/domain/resolve-price.ts:137-139`, `price-rule.ts:281-284`                           |
+| Faits d'un lot       | `forLot(companyId, …)` résout les faits avant `promotionsAdmitted`                                                                          | `promotions/application/line-promotion-supply.ts:45-57`                                                                                |
+| Annonce d'un point   | `b2b` / `b2c` par un acheteur type ; aucun libellé dans `AudiencePickupDiscount`                                                            | `pickup-discount-announcement.ts:43-58, 72-87, 123-145` ; `packages/contracts/src/pickup-discount-scope.ts:35-40`                      |
+| Contrôle d'égalité   | `controle_des_promotions()` compare `p.audience_kind` aux sources reprises (règles, puis remises de retrait)                                | `prisma/migrations/20261031130000_la_bascule_des_promotions/migration.sql:40, 78, 112`                                                 |
+| Reprise rejouée      | écrit `audience_kind` / `label_fr` en upsert                                                                                                | `…/20261031120000_la_reprise_des_promotions/migration.sql:167-203, 212-241`                                                            |
+| Contrat              | `audience: { kind, companyId }`, `label: { fr, en, it }`, `internalName`                                                                    | `packages/contracts/src/promotions.ts:66-67, 76-79`                                                                                    |
+| Éditeur              | un `fold-select` « Public » sur `EDITABLE_AUDIENCES` (7 kinds, sans invités / inscrits / en cours d'inscription) ; un bloc libellé FR/EN/IT | `promotion-editor-page.html:47-68, 84-86`, `promotion-draft.ts:63-71`                                                                  |
+| Case à trois états   | `FoldCheckboxComponent.indeterminate` (signal, propriété native)                                                                            | `apps/lfd-backoffice-frontend/node_modules/fold-ng/types/fold-ng.d.ts:6813-6814`                                                       |
+
+### 15.3 Le modèle de données — migration ADDITIVE `2026103114xxxx_les_publics_et_libelles`
+
+Rien n'est supprimé ni resserré ; aucune valeur existante n'est réécrite.
+
+- **Table `public.promotion_audience_targets`** : `promotion_id` text FK →
+  `promotions.id`, `kind` text, `company_id` text nullable, PK
+  `(promotion_id, kind, coalesce(company_id, ''))` (index unique d'expression),
+  `CHECK ((kind IN ('company','company_and_sites')) = (company_id IS NOT NULL))`,
+  `CHECK (kind IN (…les 10…))`. Index `(company_id)` (le lecteur de statut de
+  société et l'écran filtrent par société).
+- **Colonnes `promotions`** : `label_individuals_fr/en/it`,
+  `label_pros_fr/en/it`, toutes nullables. `label_fr/en/it` deviennent le
+  libellé **commun** (sens inchangé : c'est ce que lit tout le code actuel).
+- **`audience_kind` / `audience_company_id` gardés, NOT NULL inchangé** :
+  pour une promotion à **une** cible, ils portent cette cible (comme
+  aujourd'hui) ; pour **plusieurs**, la valeur `'several'` et `NULL`. Ils
+  restent lisibles par tout ce qui les lit en SQL (le contrôle, la reprise).
+- **Remplissage** : la migration insère une ligne de cible par promotion
+  existante, recopiée de `audience_kind` / `audience_company_id`. Après elle,
+  **la table fait foi** ; les deux colonnes en sont une projection écrite par
+  l'adaptateur dans la même transaction.
+- **Un `CHECK` de cohérence** sur `promotions` : `audience_kind <> 'several'
+OR audience_company_id IS NULL`. La cohérence colonne ↔ table (une seule
+  ligne ⇔ pas `several`) est tenue par l'adaptateur et un test e2e, pas par un
+  trigger (le contrôle § 15.7 la vérifie aussi).
+
+### 15.4 Le domaine — agrégat et invariants
+
+- `PromotionAudience` (une cible) **reste** ; s'ajoute `PromotionAudienceSet`
+  (`domain/promotion-audience-set.ts`), value-object immuable, factory
+  `PromotionAudienceSet.of(targets)` qui **refuse** (`DomainError` nommé) :
+  ensemble vide ; `everyone` avec une autre cible ; `everyone_but_active_pros`
+  avec une autre cible (c'est un public de reprise, pas un nœud de l'arbre :
+  exclusif comme « Tout le monde ») ; une cible et son ancêtre ; un doublon.
+  Elle **ne normalise pas** en silence : « tous les enfants ⇒ le parent » est
+  le travail de l'éditeur ; le domaine refuse l'ensemble non minimal
+  (`individuals_guest` + `individuals_registered` ⇒ refus « choisir
+  Particuliers »). Interdire plutôt que corriger.
+- **L'arbre** est écrit une fois, dans ce value-object :
+  `individuals ⊃ {individuals_guest, individuals_registered}` ;
+  `pros ⊃ {pros_active, pros_pending, company_and_sites}` ;
+  `company_and_sites(X) ⊃ company(X)`. `pros_active` ne contient pas
+  `company` : une société désignée peut être en attente (§ 9) ; les deux
+  coexistent donc, et le rang départage (`company` 4 > `pros_active` 2).
+- `PromotionTerms.audience` devient `audiences: PromotionAudienceSet`
+  (`promotion-terms.ts:59`) ; `assertTargets` (`:110-117`) itère.
+- **Libellés** : `PromotionTerms.label` reste le **commun** (`fr` obligatoire,
+  `promotion-terms.ts:78-81`) ; s'ajoute `audienceLabels: { individuals:
+PromotionLabel | null, pros: PromotionLabel | null }`. Invariant : un
+  libellé d'audience n'existe que si l'ensemble touche cette audience (une
+  promotion « Pros actifs » ne porte pas de libellé Particuliers) ; `everyone`
+  admet les deux. Un libellé d'audience présent a son `fr` non vide.
+- `labelFor(audience: "individuals" | "pros", lang)` : libellé d'audience
+  dans la langue, sinon libellé d'audience FR, sinon commun dans la langue,
+  sinon commun FR. Une seule fonction, pure, testée en table.
+
+### 15.5 Le mapper et l'adaptateur
+
+- `toDomain(row, rules, targets)` (`promotion-rows.ts:77`) lit **la table** ;
+  `audienceOf` (`promotion-audience.ts:55`) sert par cible. Une promotion sans
+  ligne de cible ⇒ `UnreadablePromotionRowError` (jamais de repli sur
+  `audience_kind` : pas de valeur inventée).
+- `save` : `deleteMany` + `createMany` des cibles de CETTE promotion dans la
+  transaction de l'écriture (ce sont des lignes de valeur, pas un agrégat :
+  même geste que les règles de portée), puis la projection `audience_kind`.
+- Lecteurs à adapter (tous chargent par `toDomain`) :
+  `prisma-promotion.repository.ts`, `prisma-live-promotion.readers.ts`,
+  `prisma-promotion-browser.readers.ts` — un `include` de plus ; le filtre
+  « par société » de l'écran passe par la table.
+
+### 15.6 Ciblage, rang, chevauchement
+
+- `LivePromotion.audience` → `audiences: readonly PromotionAudience[]`
+  (`live-promotion.ts:38`). `promotionsAdmitted` (`:77`) : **au moins une**
+  cible admet.
+- **Rang** : `admittingRankOf(promotion, facts)` = le **plus haut**
+  `PUBLIC_RANK` parmi les cibles qui admettent cet acheteur — remplace
+  `targetingRankOf` (`live-promotion.ts:96`) aux trois appelants
+  (`basket-promotion-choice.ts:64`, `promotion-as-rule.ts:76`,
+  `pickup-discount-announcement.ts:98`), qui ont tous les faits sous la main.
+  Une promotion à une cible garde exactement son rang d'aujourd'hui.
+- **Chevauchement** (`promotion-overlap.ts:109-116`) : `sameTargeting` devient
+  « même acheminement **et** au moins une cible **identique** (même `kind`,
+  même `companyId`) dans les deux ensembles ». Pour deux singletons, c'est la
+  règle d'aujourd'hui, mot pour mot. Le refus nomme la cible commune.
+- **Une promotion panier par commande** (`:89-107`) : `audiencesMeet` sur
+  ensembles = il existe une paire (cible gauche, cible droite) qui se
+  rencontre ; `possibleBuyers` (`:171-184`) prend les sociétés nommées des
+  **deux ensembles**.
+
+### 15.7 Contrôle d'égalité et reprise rejouée
+
+- `controle_des_promotions()` ne regarde que les promotions **issues d'une
+  source** (jointure sur les règles et les remises de retrait reprises,
+  `migration.sql:78, 112`). La reprise n'écrit que des publics simples
+  (`20261031120000…/migration.sql:167-241`) : leur `audience_kind` reste une
+  cible réelle, la comparaison tient. La migration de L8b **remplace** la
+  fonction (`CREATE OR REPLACE`, sans toucher le `migration.sql` de L8 —
+  mémoire « un migration.sql ne se touche pas ») pour vérifier en plus :
+  pour une promotion reprise, exactement une ligne de cible, égale à
+  `audience_kind` / `audience_company_id`.
+- **Le rejeu de la reprise** (upsert sur `promotions`) n'écrit pas la table de
+  cibles. Il est donc suivi, dans la même fonction de rejeu, d'un upsert de la
+  cible unique des promotions reprises (`ON CONFLICT DO UPDATE`), sinon une
+  reprise rejouée après L8b laisserait une cible périmée. Test e2e : rejouer
+  deux fois ⇒ une ligne, égale à la source.
+
+### 15.8 Le libellé figé et l'annonce
+
+- **Trace d'une ligne** : le libellé figé est celui de l'**audience de
+  l'acheteur**, en **français** (la trace est lue par le staff et
+  l'historique ; la langue d'affichage se résout à la lecture par `ruleId`
+  — décision par défaut, voir Q1). `forLot` (`line-promotion-supply.ts:45-57`)
+  connaît le statut de la société par `factsFor` : l'audience est
+  `companyServiceOf(status) === "pro" ? "pros" : "individuals"` (même
+  fonction que `promotion-targeting.ts:76`). `LivePromotion.label`
+  (`live-promotion.ts:29, 49`) devient `labels` (commun + par audience), et
+  `promotionAsRule` (`promotion-as-rule.ts:74`) choisit
+  `labelFor(audienceDuLot, "fr")`. Un statut `unknown` ⇒ libellé commun.
+- **Panier** : `basket-promotion-choice` porte déjà les faits ; l'issue gagne
+  `label` résolu de la même façon.
+- **Annonce d'un point** : `AudiencePickupDiscount` gagne
+  `label: { fr, en, it } | null` (champ **additif**, `.optional()` côté
+  lecture : un front en ligne qui ne le lit pas ne casse pas). `announcedFor`
+  (`pickup-discount-announcement.ts:72-87`) connaît déjà sa clientèle :
+  `b2b` ⇒ libellé Pros, `b2c` ⇒ libellé Particuliers, repli commun.
+- Boutique / devis / panier côté front : afficher `label[lang] ?? label.fr`
+  là où un libellé de promotion s'affiche déjà ; rien de nouveau à poser.
+
+### 15.9 Contrats et éditeur
+
+- `packages/contracts/src/promotions.ts:76-79` : `audiences: z.array({kind,
+companyId}).min(1)` **à côté** de `audience` (gardé, rempli de la première
+  cible ou de `several`, lu par personne de neuf) ; `audienceLabels:
+{ individuals, pros }` nullables. Pré-release (§ 0) : `audience` pourra
+  disparaître au lot suivant sur décision de Hugo.
+- **Éditeur** (`promotion-draft.ts`, `promotion-editor-page.*`) : un
+  composant `promotion-audience-tree/` (dossier propre, fold d'abord) qui
+  remplace le `fold-select` (`promotion-editor-page.html:84-86`) :
+  - Tout le monde · Particuliers (Invités, Inscrits) · Pros (Actifs, En cours
+    d'inscription, Une société + sélecteur, ± ses sites) ; « Tous sauf les
+    pros actifs » n'est **pas** dans l'arbre (affiché en lecture seule si une
+    reprise le porte).
+  - parent coché ⇒ enfants cochés **et grisés** ; tous les enfants cochés ⇒
+    le parent se coche ; certains ⇒ parent `[indeterminate]="true"` ;
+    « Tout le monde » coché ⇒ tout le reste grisé.
+  - la valeur envoyée est l'**ensemble minimal** — fonction pure
+    `minimalAudiences(checked)` dans `promotion-draft.ts`, testée.
+  - sous Particuliers coché (ou partiel, ou Tout le monde) : libellé
+    Particuliers FR/EN/IT ; idem Pros. Le bloc actuel
+    (`promotion-editor-page.html:53-68`) devient « Libellé commun ».
+  - `EDITABLE_AUDIENCES` (`promotion-draft.ts:63-71`) disparaît au profit de
+    l'arbre.
+- Liste et fiche : le public se lit « Particuliers inscrits · Tous les pros ».
+
+### 15.10 Tests
+
+- **Domaine** : `PromotionAudienceSet.of` — vide, `everyone` + autre,
+  ancêtre + enfant (les trois branches de l'arbre), doublon,
+  `company(X)` + `pros_active` admis ; `labelFor` en table (16 cas de repli).
+- **Ciblage/rang** : une cible admet ⇒ admise ; rang = max des cibles qui
+  admettent ; singleton = rang d'aujourd'hui (tests existants inchangés).
+- **Chevauchement** : `{inscrits, pros}` contre `{pros}` refusé ;
+  contre `{pros_active}` accepté ; panier `{invités}` contre `{inscrits}`
+  accepté, `{individuals}` contre `{inscrits, pros}` refusé.
+- **Mapper** : aller-retour 1 et 3 cibles ; promotion sans cible ⇒
+  `UnreadablePromotionRowError`.
+- **E2E (vrai Postgres)** :
+  1. une promotion `{individuals_registered, pros}` donne **le même prix**
+     de ligne, la même remise panier et le même total qu'une paire de
+     jumelles, pour un inscrit et pour un pro actif ; un invité n'est pas
+     touché ;
+  2. le libellé figé de la trace est le libellé Particuliers pour
+     l'inscrit, Pros pour le pro, commun quand l'audience n'a pas le sien ;
+  3. l'annonce d'un point porte le libellé de chaque clientèle ;
+  4. reprise rejouée deux fois ⇒ une cible, égale à la source ;
+     `controle_des_promotions()` vert ;
+  5. le mur : l'écran filtré par société ne montre que les promotions qui la
+     désignent dans leur ensemble.
+- **Front** : `minimalAudiences` (tous les enfants ⇒ parent, exclusivité),
+  et le rendu de l'arbre (grisé, indéterminé) dans le spec du composant.
+
+### 15.11 Ordre et portes
+
+Une migration, puis domaine + adaptateur + calcul dans un commit (aucun prix
+ne change pour une promotion à une cible : les tests de L5-L8 restent verts
+sans modification — c'est la preuve), puis contrat + éditeur. Portes à
+regarder : `lint:prisma-model-ownership` (la table appartient à
+`b2b/promotions`), `lint:prisma-schema-layout` (`public/promotions.prisma`),
+`lint:dated-decisions` (la cible n'est pas datée seule : elle vit dans la
+fenêtre de sa promotion — à confirmer à l'armement), `lint:code-language`.
+
+### 15.12 Questions à Hugo
+
+- **Q1** : la trace figée garde le libellé **français** de l'audience (comme
+  aujourd'hui `label.fr`) ; l'affichage dans la langue du client se fait à la
+  lecture. D'accord, ou figer les trois langues ?
+- **Q2** : une promotion `everyone` sans libellé Particuliers/Pros sert le
+  commun aux deux — l'éditeur doit-il **exiger** les deux libellés dès que les
+  deux audiences sont touchées, ou le commun suffit-il ?
