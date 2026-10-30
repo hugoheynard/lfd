@@ -2172,3 +2172,20 @@ Chaque lot est vert seul ; M7 est le seul qui change un comportement visible.
 5. Plafond de **5 remises** par commande, refus nommé au-delà (garde-fou).
 6. Pas de fait de journal par remise : le fait de la commande porte déjà le
    total ; le détail se relit dans `order_discounts`.
+
+**Contradiction de vitruve sur le § 18 (2026-10-30) — à résoudre AVANT tout lot M** :
+
+- BLOQUANT 1 : la reprise compare à une ventilation que la facture ne fige pas
+  par commande (`invoice.vat_breakdown` agrège par taux et par clé, sur
+  plusieurs bons) ; seul figé par commande : les parts `exact_ht` des commandes.
+- BLOQUANT 2 : la reprise ne peut pas vivre dans un `migration.sql` (ce serait
+  réécrire `splitCents` en PL/pgSQL) ; dire qui l'exécute et que faire si elle refuse.
+- BLOQUANT 3 : lecteurs de la remise unique absents des lots — reliquat
+  (`remainder-decision-source.ts`), manquants (`prisma-shortfall-decision.repository.ts`),
+  `delivery-note-terms-control.ts`, bon de commande PDF, devis boutique,
+  mappers de facture, révision ; et `discount_adjustment` non tranché (rang 1 ou NULL).
+- SÉRIEUX : montant fixe au chemin TTC (`ttc-order.ts:140-152`) hors de
+  l'égalité promise ; clé Factur-X par remise sur plusieurs bons, repli de BT-97,
+  langue du libellé ; ne pas émettre BT-93/BT-94 ; DELETE physique à la révision
+  et FK du bon ; somme des bons partiels pour un montant fixe ; déclencheur
+  différé écarté sans raison ; M7 irréversible.
