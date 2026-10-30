@@ -30,6 +30,8 @@ const OLD_SKU = "CHO-000-2";
 const NEW_SKU = "CHO-001";
 const REASON = `Report de la déclinaison détachée ${OLD_SKU}`;
 
+const JUNE = new Date("2026-06-01T00:00:00.000Z");
+
 const stored = (): CompanyMercuriale =>
   CompanyMercuriale.pose(
     "merc_1",
@@ -93,6 +95,31 @@ describe("CarryOverMercurialeLineHandler", () => {
       reason: REASON,
     });
     expect(written?.act.summary).toContain(`+ ${NEW_SKU} reporté depuis ${OLD_SKU}`);
+  });
+
+  it("borne le report à l'arrêt de l'ancienne ligne posé par avenant", async () => {
+    const ending = stored().amend(
+      "amd_end",
+      {
+        lines: [],
+        endedSkus: [OLD_SKU],
+        validFrom: JUNE,
+        validTo: null,
+        reason: "Fin du prix en juin",
+        origin: null,
+      },
+      "staff|paul",
+      NOW,
+    );
+    const { mercuriales, handler } = setup({ mercuriale: ending });
+
+    await handler.execute(command());
+
+    expect(mercuriales.written[0]?.mercuriale.amendments.at(-1)).toMatchObject({
+      lines: [{ sku: NEW_SKU }],
+      validFrom: NOW,
+      validTo: JUNE,
+    });
   });
 
   it("refuse une référence qui n'est pas née de l'ancienne, sans rien ouvrir", async () => {

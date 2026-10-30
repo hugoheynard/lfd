@@ -24,7 +24,9 @@ const GRID_TIERS = [
 ];
 const REASON = "Report de la déclinaison détachée CHO-000-2";
 
-const posed = (validFrom = FROM): CompanyMercuriale =>
+const JUNE = new Date("2026-06-01T00:00:00.000Z");
+
+const posed = (validFrom = FROM, validTo: Date | null = TO): CompanyMercuriale =>
   CompanyMercuriale.pose(
     "merc_1",
     {
@@ -32,7 +34,7 @@ const posed = (validFrom = FROM): CompanyMercuriale =>
       label: "Mercuriale 2026",
       lines: [{ sku: "CHO-000-2", tiers: GRID_TIERS }],
       validFrom,
-      validTo: TO,
+      validTo,
     },
     "staff|marie",
   );
@@ -69,7 +71,7 @@ describe("CompanyMercuriale.carryOver", () => {
       lines: [{ sku: "CHO-001", tiers: GRID_TIERS }],
       endedSkus: [],
       validFrom: NOW,
-      validTo: null,
+      validTo: TO,
       reason: REASON,
       origin: { kind: "detached", fromSku: "CHO-000-2", fromMercurialeId: "merc_1" },
     });
@@ -82,6 +84,48 @@ describe("CompanyMercuriale.carryOver", () => {
     expect(
       carried.asRuleFor(context({ companyId: "co_site", pricingCompanyId: "co_folie" })),
     ).toMatchObject({ amountMillicents: 160_000, audience: { type: "company", id: "co_site" } });
+  });
+
+  it("s'arrête où s'arrête la ligne reportée : à l'arrêt posé par avenant", () => {
+    const ending = posed().amend(
+      "amd_end",
+      {
+        lines: [],
+        endedSkus: ["CHO-000-2"],
+        validFrom: JUNE,
+        validTo: null,
+        reason: "Fin du prix en juin",
+        origin: null,
+      },
+      "staff|paul",
+      NOW,
+    );
+
+    expect(carry(ending).amendments.at(-1)?.validTo).toEqual(JUNE);
+  });
+
+  it("s'arrête à la fin de l'avenant qui porte la ligne reportée", () => {
+    const repriced = posed().amend(
+      "amd_price",
+      {
+        lines: [{ sku: "CHO-000-2", tiers: GRID_TIERS }],
+        endedSkus: ["CHO-000-2"],
+        validFrom: NOW,
+        validTo: JUNE,
+        reason: "Prix de printemps",
+        origin: null,
+      },
+      "staff|paul",
+      NOW,
+    );
+
+    expect(carry(repriced, APRIL).amendments.at(-1)?.validTo).toEqual(JUNE);
+  });
+
+  it("reste sans fin quand la ligne reportée court sans fin", () => {
+    const [amendment] = carry(posed(FROM, null)).amendments;
+
+    expect(amendment?.validTo).toBeNull();
   });
 
   it("ne part pas avant le début d'une mercuriale programmée : le report commence avec elle", () => {

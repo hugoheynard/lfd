@@ -157,7 +157,7 @@ Pour chaque entrée `kind: "mercuriale"` de l'ancien sku, on propose « reporter
 
 - **Garde** : la nouvelle référence porte `detached_from_sku` = l'ancienne, et elle est en vente (`assertOnSale`, comme dans `pose-…handler.ts:62-66`).
 - **Paliers** : on les copie depuis la ligne de l'ancien sku, prise dans le document ou dans l'avenant qui la porte.
-- **Fenêtre** : `validFrom` = max(maintenant, date du détachement), `validTo` = `null`, c'est-à-dire la fin du document.
+- **Fenêtre** : `validFrom` = max(maintenant, début de la ligne reportée), `validTo` = la **fin réelle** de la ligne reportée de l'ancienne référence — son arrêt par avenant, la fin de son avenant ou celle du document ; `null` seulement si elle court sans fin (décision de Hugo, 2026-10-30).
 - **Motif** : prérempli « report de la déclinaison détachée <ancien sku> », modifiable, non vide. `origin` est rempli.
 - **Confirmation** : `fold-inline-confirm`, puis un appel à la commande de T2 par document.
 
@@ -344,8 +344,9 @@ couverte).
   `apps/lfd-api/test/mercuriale-carry-over.e2e-spec.ts`. Deux écarts au § 6, sous mandat :
   `validFrom` = max(maintenant, **début de la ligne reportée**) et non la
   date du détachement (le catalogue ne la porte pas, et elle est passée par
-  construction) ; `validTo` = `null` comme écrit, même quand la ligne de
-  l'ancienne référence est arrêtée plus tôt — à trancher (cf. rapport).
+  construction). `validTo` : d'abord `null` ; **borné le 2026-10-30** sur
+  décision de Hugo à la fin réelle de la ligne reportée (`carriedSegment`
+  rend déjà la fenêtre coupée par arrêt, avenant et document), non commité.
 - ~~**T6** l'écran~~ — bâti le 2026-10-30, non commité :
   `fiche-client/tarifs/mercuriale-amendments/` (liste des avenants sous la
   grille, « Ajouter ou changer un prix » — l'article déjà en cours est arrêté
@@ -361,7 +362,7 @@ couverte).
   les formes, la composition passe dans `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-segments.ts` et les refus
   dans `apps/lfd-api/src/b2b/pricing/domain/entities/mercuriale-amendment-checks.ts`.
 
-**Q1, telle que T1 la modélise — à confirmer par Hugo.** Un avenant porte
+**Q1, telle que T1 la modélise — confirmée par Hugo le 2026-10-30.** Un avenant porte
 `endedSkus` : chaque article cité voit sa ligne en cours s'arrêter à la
 `validFrom` de l'avenant, définitivement (la `validTo` de l'avenant ne borne
 que ses lignes ouvertes). Un arrêt ne touche que la grille et les avenants

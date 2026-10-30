@@ -15,7 +15,9 @@ export interface CarryOver {
  * de la prochaine, si elle n'a pas encore commencé), posés sur la nouvelle à
  * partir de maintenant — jamais avant le début de cette ligne, sans quoi un
  * report sur une mercuriale programmée sortirait du document —, jusqu'à la
- * fin du document.
+ * fin RÉELLE de la ligne reportée : son arrêt par avenant, la fin de son
+ * avenant ou celle du document (décision de Hugo, 2026-10-30). Une ligne qui
+ * court sans fin se reporte sans fin.
  *
  * L'ancienne ligne n'est pas arrêtée : la référence n'est plus en vente, elle
  * ne fait plus de prix. La filiation (« `toSku` est né de `fromSku` ») est au
@@ -36,7 +38,7 @@ export function carryOverDraft(
     lines: [{ sku: carry.toSku, tiers: source.line.tiers }],
     endedSkus: [],
     validFrom: source.from.getTime() > now.getTime() ? source.from : now,
-    validTo: null,
+    validTo: source.to,
     reason: carry.reason,
     origin: { kind: "detached", fromSku: carry.fromSku, fromMercurialeId: grid.id },
   };

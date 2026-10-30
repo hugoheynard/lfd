@@ -184,6 +184,24 @@ describe("le report d'une mercuriale sur la référence détachée (L7c)", () =>
     expect(decisions.map((decision) => decision.id)).toEqual([mercurialeId]);
   });
 
+  it("une ligne arrêtée par avenant puis reportée : le report s'arrête à la même date", async () => {
+    const { companyId, mercurialeId, oldSku, newSku } = await detachedWithMercuriale();
+    const endsAt = daysAgo(-10);
+    await staff()
+      .post(`/admin/pricing/companies/${companyId}/mercuriale/${mercurialeId}/amendments`)
+      .send({ reason: "Fin du prix négocié", validFrom: endsAt, endedSkus: [oldSku] })
+      .expect(201);
+
+    await carryOver(oldSku, mercurialeId, newSku).expect(201);
+
+    const amendments = await ctx.prisma.companyMercurialeAmendment.findMany({
+      where: { mercurialeId },
+      select: { origin: true, validTo: true },
+    });
+    const carried = amendments.find((amendment) => amendment.origin !== null);
+    expect(carried?.validTo?.toISOString()).toBe(endsAt);
+  });
+
   it("refuse de reporter sur une référence qui n'est pas née de l'ancienne", async () => {
     const { mercurialeId, oldSku } = await detachedWithMercuriale();
     const stranger = await ctx.prisma.catalogItem.findFirstOrThrow({

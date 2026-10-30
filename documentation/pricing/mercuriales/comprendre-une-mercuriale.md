@@ -319,7 +319,9 @@ née du détachement liste ces décisions, et propose pour chaque mercuriale de
 la **reporter** : un avenant dont l'origine est écrite
 (`{ kind: "detached", fromSku, fromMercurialeId }`), aux mêmes paliers que la
 ligne en cours de l'ancienne référence, dès maintenant (jamais avant le début de
-cette ligne) et jusqu'à la fin de la mercuriale. La garde est la **filiation**
+cette ligne) et jusqu'à la fin réelle de cette ligne : son arrêt par avenant,
+la fin de l'avenant qui la porte ou celle de la mercuriale — sans fin si elle
+court sans fin. Le report ne survit pas au prix qu'il recopie. La garde est la **filiation**
 lue au commerce (`catalog_items.detached_from_sku`) : on ne reporte que sur une
 référence née de l'ancienne, et vendue aux pros. Route :
 `POST admin/pricing/sale-references/:ancienSku/decisions/mercuriales/:id/carry-over`.
