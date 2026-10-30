@@ -330,7 +330,6 @@ export class OrderComposition {
     buyer: PickupBuyer,
     known: ReadonlyMap<string, OrderLineClassification>,
   ): Promise<ResolvedFulfillment> {
-    const { audience } = buyer;
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique.
       const retrait = await this.adjustments.forPickup(
@@ -364,22 +363,19 @@ export class OrderComposition {
     if (address === null) {
       throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
     }
-    const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
-    const coursier = await this.adjustments.forDelivery(
-      address.codePostal,
-      subtotalCents,
-      audience,
-    );
+    const coursier = await this.adjustments.forDelivery(address.codePostal, priced, buyer, known);
+    // La promotion « en livraison » (L10), servie par la même source que celle
+    // du retrait — rien sous l'ancien chemin, où la livraison n'en ouvrait aucune.
+    const { discount } = coursier;
     return {
       deliveryZoneId: coursier.zone.id,
       deliveryAddress: address,
       pickupAddress: null,
-      // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
-      discountCents: 0,
-      discountAdjustment: null,
-      discountLabel: null,
-      discountPromotionId: null,
-      ineligibleSkus: new Set(),
+      discountCents: discount.discountCents,
+      discountAdjustment: discount.discountAdjustment,
+      discountLabel: discount.label,
+      discountPromotionId: discount.promotionId,
+      ineligibleSkus: discount.ineligibleSkus,
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable.
       deliveryFeeAdjustment: coursier.feeAdjustment,

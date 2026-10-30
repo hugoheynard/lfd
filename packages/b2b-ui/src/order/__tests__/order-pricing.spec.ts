@@ -105,4 +105,40 @@ describe('la trace du prix, sur une ligne de commande', () => {
 
     expect(wasFloored(floored)).toBe(true);
   });
+
+  // Lot L10 du plan des promotions : une promotion fige ses trois langues
+  // (L8b) ; le lecteur lit la sienne, une trace d'avant reste en français.
+  it("dit le libellé d'une promotion dans la langue du lecteur", () => {
+    const translated = line({
+      unitPriceMillicents: 160,
+      pricing: {
+        basePriceMillicents: 200,
+        steps: [
+          {
+            stage: 'promotion',
+            ruleId: 'promo_1',
+            label: 'Merci d’être inscrit',
+            labels: { fr: 'Merci d’être inscrit', en: 'Thanks for joining', it: 'Grazie' },
+            scope: { type: 'global', id: null },
+            resultMillicents: 160,
+            supersedes: [],
+          },
+          {
+            stage: 'promotion',
+            ruleId: 'r_old',
+            label: 'Promo de rentrée',
+            scope: { type: 'global', id: null },
+            resultMillicents: 160,
+            supersedes: [],
+          },
+        ],
+        floored: false,
+        floorDecision: null,
+      },
+    });
+
+    expect(priceStepLabels(translated, 'en')).toEqual(['Thanks for joining', 'Promo de rentrée']);
+    expect(priceStepLabels(translated, 'it')).toEqual(['Grazie', 'Promo de rentrée']);
+    expect(priceStepLabels(translated)).toEqual(['Merci d’être inscrit', 'Promo de rentrée']);
+  });
 });

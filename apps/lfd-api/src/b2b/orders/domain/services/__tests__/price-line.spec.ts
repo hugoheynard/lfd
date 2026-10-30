@@ -77,7 +77,12 @@ function line(
   return priceLine(
     built,
     new PricedLot(
-      LoadedPricer.over(materials, evidence, { companyId, pricingCompanyId: companyId }, AT),
+      LoadedPricer.over(
+        materials,
+        evidence,
+        { companyId, pricingCompanyId: companyId, buyerKind: "unknown" },
+        AT,
+      ),
       [built.item.article],
     ),
   );

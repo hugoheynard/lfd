@@ -17,6 +17,7 @@ import type {
 } from "./price-rule.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 import { pricingContextFor } from "./pricing-context.js";
+import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
 
 /**
@@ -29,16 +30,28 @@ import { volumeTierPrices } from "./volume-tier-prices.js";
  * quand un sous-compte suit son tarif, la société elle-même sinon. Les deux
  * sont `null` ensemble, pour une commande sans entreprise.
  *
+ * `buyerKind` est la porte d'entrée, posée par la ROUTE (lot L10 du plan des
+ * promotions, § 13.7) : seuls les publics « invités » et « inscrits » d'une
+ * promotion de ligne la lisent. Jamais reçue d'un corps de requête.
+ *
  * Ne se construit que par `PricingPartiesResolver` (ou {@link NO_PARTIES}) :
  * une seconde fabrique ferait revenir le suivi d'aujourd'hui sur une relecture.
  */
 export interface PricingParties {
   readonly companyId: string | null;
   readonly pricingCompanyId: string | null;
+  readonly buyerKind: PricedBuyerKind;
 }
 
-/** Aucune société : le tableau général, le parcours sans compte. */
-export const NO_PARTIES: PricingParties = { companyId: null, pricingCompanyId: null };
+/**
+ * Aucune société, porte inconnue : le tableau général du staff. Un public
+ * « invités » ou « inscrits » n'y joue pas — le tableau ne sait pas qui.
+ */
+export const NO_PARTIES: PricingParties = {
+  companyId: null,
+  pricingCompanyId: null,
+  buyerKind: "unknown",
+};
 
 /**
  * **Ce qu'il faut savoir d'un article pour le tarifer**, et rien de plus.

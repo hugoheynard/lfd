@@ -46,7 +46,7 @@ function pricer(
   return LoadedPricer.over(
     materialsOf({ rules, floors: [], ladders: [], commitments: [], mercuriale: null, promotions }),
     NO_EVIDENCE,
-    { companyId: null, pricingCompanyId: null },
+    { companyId: null, pricingCompanyId: null, buyerKind: "unknown" },
     AT,
   );
 }

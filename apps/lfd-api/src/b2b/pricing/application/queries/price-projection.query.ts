@@ -75,6 +75,8 @@ export class PriceProjectionQuery {
     const lot = await this.pricer.load({
       articles: [{ article: item, quantity: 1 }],
       companyId: payload.companyId,
+      // Le staff projette : la porte du client n'est pas connue.
+      buyerKind: "unknown",
       // 🔴 `unproven` : une projection ne prouve ni commande ni historique — `N`
       // est une hypothèse. La lentille le dit AU CHARGEMENT, donc les
       // engagements ne sont même plus lus : cette requête les payait pour les

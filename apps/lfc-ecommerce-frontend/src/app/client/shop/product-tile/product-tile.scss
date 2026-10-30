@@ -211,6 +211,12 @@
   white-space: nowrap;
 }
 
+/* Une promotion qu'un acheminement ouvrirait (L10) : une mention, le nom du point peut être long. */
+.offer {
+  font-size: var(--fold-text-2xs);
+  color: var(--lfc-color-text-subtle);
+}
+
 .price {
   flex: none;
   display: inline-flex;

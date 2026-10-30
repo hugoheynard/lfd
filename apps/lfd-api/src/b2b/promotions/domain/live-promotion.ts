@@ -103,8 +103,7 @@ export function promotionsAdmitted(
     const publicRank = admittingRankOf(promotion.audiences, facts);
     if (
       publicRank !== null &&
-      inWindow(promotion, at) &&
-      !(promotion.suspendedFrom !== null && promotion.suspendedFrom.getTime() <= at.getTime()) &&
+      inForceAt(promotion, at) &&
       fulfillmentAdmits(promotion.fulfillment, facts.fulfillment)
     ) {
       admitted.push({
@@ -117,10 +116,17 @@ export function promotionsAdmitted(
   return admitted;
 }
 
-function inWindow(promotion: LivePromotion, at: Date): boolean {
+/**
+ * **En vigueur à cet instant** : dans sa fenêtre (borne basse incluse, haute
+ * exclue) et pas en pause — une pause posée avant l'instant l'éteint, une
+ * pause posée après ne dit rien de cet instant.
+ */
+export function inForceAt(promotion: LivePromotion, at: Date): boolean {
+  const time = at.getTime();
   return (
-    promotion.validFrom.getTime() <= at.getTime() &&
-    (promotion.validTo === null || promotion.validTo.getTime() > at.getTime())
+    promotion.validFrom.getTime() <= time &&
+    (promotion.validTo === null || promotion.validTo.getTime() > time) &&
+    !(promotion.suspendedFrom !== null && promotion.suspendedFrom.getTime() <= time)
   );
 }
 

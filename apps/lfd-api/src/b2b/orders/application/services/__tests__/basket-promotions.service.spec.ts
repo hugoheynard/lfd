@@ -1,6 +1,7 @@
 import {
   FixedBasketPromotions,
   FixedCompanyStatuses,
+  FixedPrincipals,
   FixedPromotionsSource,
   RecordingShadowJournal,
 } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
@@ -75,7 +76,7 @@ function subject(
   const service = new BasketPromotions(
     new FixedPromotionsSource(source),
     reader,
-    new PromotionAudienceFactsResolver(new FixedCompanyStatuses()),
+    new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     new FixedLineClassifications({}),
     journal,
     new FixedClock(NOW),

@@ -73,6 +73,7 @@ export class ReadMyShopCatalogueHandler implements IQueryHandler<
   async execute(query: ReadMyShopCatalogueQuery): Promise<ShopCatalogueView> {
     // En français : la route reconnue n'a pas encore de paramètre de langue
     // (lot des langues, 2026-10-18 — seule la vue publique en a reçu un).
-    return this.pricing.priced(query.companyId, CATALOG_SOURCE_LANGUAGE);
+    // La route reconnue : le `Principal` a été résolu en base (L10).
+    return this.pricing.priced(query.companyId, "registered", CATALOG_SOURCE_LANGUAGE);
   }
 }

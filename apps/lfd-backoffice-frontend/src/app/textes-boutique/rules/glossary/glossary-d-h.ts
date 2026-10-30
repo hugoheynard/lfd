@@ -62,6 +62,8 @@ export const GLOSSARY_D_H: Readonly<Record<string, string>> = {
   details: 'Voir le détail',
   directDebit: 'Prélèvement SEPA',
   discount: 'Remise',
+  discountAmount: 'Promotion — montant (« −5,00 € »)',
+  discountPercent: 'Promotion — pourcentage (« −20 % »)',
   discountLabel: 'Remise — libellé',
   discountOnBase: 'Remise retrait — sur les articles éligibles',
   discountTag: 'Remise — pastille',

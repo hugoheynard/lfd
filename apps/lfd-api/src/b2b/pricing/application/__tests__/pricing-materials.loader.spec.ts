@@ -35,7 +35,11 @@ const CROISSANT = catalogueArticle({
   saleUnit: "piece",
 });
 
-const SITE: PricingParties = { companyId: "co_site", pricingCompanyId: "co_group" };
+const SITE: PricingParties = {
+  companyId: "co_site",
+  pricingCompanyId: "co_group",
+  buyerKind: "unknown",
+};
 
 class AskedMercuriales extends CompanyMercurialeReader {
   readonly asked: { readonly epoch: PriceEpoch; readonly companyId: string | null }[] = [];
@@ -257,8 +261,12 @@ describe("PricingMaterialsLoader — deux clés", () => {
       mercuriales: [mercuriale("co_group", 80), mercuriale("co_site", 90)],
     });
 
-    expect(await priceOf(loader, { companyId: "co_site", pricingCompanyId: "co_site" })).toBe(
-      millicentsFromCents(90),
-    );
+    expect(
+      await priceOf(loader, {
+        companyId: "co_site",
+        pricingCompanyId: "co_site",
+        buyerKind: "unknown",
+      }),
+    ).toBe(millicentsFromCents(90));
   });
 });

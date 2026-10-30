@@ -164,7 +164,8 @@
 
 /* Le prix au kilo d'une pièce, le minimum de pièces, sous le prix : des mentions, pas un second prix. */
 .per-kilo,
-.minimum {
+.minimum,
+.offer {
   flex-basis: 100%;
   font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;

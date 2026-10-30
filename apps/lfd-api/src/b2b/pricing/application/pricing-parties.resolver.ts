@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { NO_PARTIES, type PricingParties } from "../domain/loaded-pricer.js";
 import { PricingAccountReader } from "../domain/ports/pricing-account.reader.js";
+import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
 
 /**
  * **La seule fabrique des parties d'un prix** (`sous-comptes.md`, §2.2).
@@ -16,11 +17,22 @@ import { PricingAccountReader } from "../domain/ports/pricing-account.reader.js"
 export class PricingPartiesResolver {
   constructor(private readonly accounts: PricingAccountReader) {}
 
-  /** Les parties pour cette société servie, à `at` ; aucune société, aucune clé. */
-  async partiesAt(companyId: string | null, at: Date): Promise<PricingParties> {
+  /**
+   * Les parties pour cette société servie, à `at` ; aucune société, aucune
+   * clé. La porte d'entrée est recopiée telle que la route l'a posée.
+   */
+  async partiesAt(
+    companyId: string | null,
+    at: Date,
+    buyerKind: PricedBuyerKind,
+  ): Promise<PricingParties> {
     if (companyId === null) {
-      return NO_PARTIES;
+      return { ...NO_PARTIES, buyerKind };
     }
-    return { companyId, pricingCompanyId: await this.accounts.pricingAccountOf(companyId, at) };
+    return {
+      companyId,
+      pricingCompanyId: await this.accounts.pricingAccountOf(companyId, at),
+      buyerKind,
+    };
   }
 }

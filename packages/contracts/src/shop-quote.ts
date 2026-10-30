@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
+import type { SignInOfferView } from "./promotion-offer.js";
 import { orderLineInputSchema, type OrderSaleUnit, type PickupDiscountBaseView } from "./order.js";
 
 /**
@@ -190,6 +191,15 @@ export interface ShopQuoteView {
    * boutique dit au client de l'ajouter de nouveau.
    */
   readonly removedLines?: readonly ShopQuoteRemovedLineView[];
+  /**
+   * **Une promotion réservée aux inscrits toucherait ce panier** (plan des
+   * promotions, § 8, lot L10) — servi au seul devis ANONYME : la boutique
+   * dit « Vous avez un compte ? Connectez-vous pour profiter de −20 % ».
+   * Jamais appliquée sans connexion, et jamais tirée de l'adresse saisie :
+   * la boutique ne révèle pas qu'une adresse a un compte (Hugo, 2026-10-30).
+   * **Absente** sinon.
+   */
+  readonly signInOffer?: SignInOfferView;
 }
 
 /** Une ligne que le devis a retirée, et ce que l'article est devenu. */

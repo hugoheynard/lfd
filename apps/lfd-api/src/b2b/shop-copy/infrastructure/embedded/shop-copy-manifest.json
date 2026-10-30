@@ -1975,6 +1975,41 @@
           "it": "Prezzo pro −{pct} %",
           "variables": ["pct"]
         },
+        {
+          "key": "product.offerAtPickupPoint",
+          "fr": "{discount} avec retrait à {place}",
+          "en": "{discount} with pickup at {place}",
+          "it": "{discount} con ritiro a {place}",
+          "variables": ["discount", "place"]
+        },
+        {
+          "key": "product.offerOnPickup",
+          "fr": "{discount} en retrait",
+          "en": "{discount} on pickup",
+          "it": "{discount} con ritiro",
+          "variables": ["discount"]
+        },
+        {
+          "key": "product.offerOnDelivery",
+          "fr": "{discount} en livraison",
+          "en": "{discount} on delivery",
+          "it": "{discount} con consegna",
+          "variables": ["discount"]
+        },
+        {
+          "key": "product.discountPercent",
+          "fr": "−{pct} %",
+          "en": "−{pct}%",
+          "it": "−{pct} %",
+          "variables": ["pct"]
+        },
+        {
+          "key": "product.discountAmount",
+          "fr": "−{amount}",
+          "en": "−{amount}",
+          "it": "−{amount}",
+          "variables": ["amount"]
+        },
         { "key": "product.batch", "fr": "× {n}", "en": "× {n}", "it": "× {n}", "variables": ["n"] },
         {
           "key": "product.batchAria",
@@ -3600,6 +3635,20 @@
           "en": "{name} is now sold by the piece: please add it again.",
           "it": "L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo.",
           "variables": ["name"]
+        },
+        {
+          "key": "cart.signInOffer",
+          "fr": "Vous avez un compte ? Connectez-vous pour profiter de {discount}.",
+          "en": "Have an account? Sign in to enjoy {discount}.",
+          "it": "Hai un account? Accedi per approfittare di {discount}.",
+          "variables": ["discount"]
+        },
+        {
+          "key": "cart.signInOfferPrices",
+          "fr": "Vous avez un compte ? Connectez-vous pour profiter de vos prix d’inscrit.",
+          "en": "Have an account? Sign in to enjoy your member prices.",
+          "it": "Hai un account? Accedi per approfittare dei tuoi prezzi da iscritto.",
+          "variables": []
         },
         {
           "key": "cart.reservedLine",

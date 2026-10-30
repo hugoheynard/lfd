@@ -68,7 +68,9 @@ export const VITRINE_DELIVERY_HEADER = "vitrine-delivery";
  * Les prix au kilo non plus (2026-10-28) : `plan-prix-au-kilo.md` laisse le
  * flux de la vitrine hors de son périmètre. L'unité de vente non plus
  * (2026-10-28, P4 de `vente-au-poids.md`). La quantité minimale non plus
- * (2026-10-29, M2 de `plan-quantite-minimale.md`).
+ * (2026-10-29, M2 de `plan-quantite-minimale.md`). Les promotions qu'un
+ * acheminement ouvrirait non plus (2026-10-30, L10 du plan des promotions) :
+ * l'agence n'a pas de panier où les choisir.
  */
 export type VitrineItemView = Omit<
   ShopItemView,
@@ -82,6 +84,7 @@ export type VitrineItemView = Omit<
   | "weightStepGrams"
   | "weightMinGrams"
   | "minQuantity"
+  | "fulfillmentOffers"
 > & {
   readonly isFeatured?: boolean;
   readonly operation?: ShopItemView["operation"];

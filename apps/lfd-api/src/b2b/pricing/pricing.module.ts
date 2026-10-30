@@ -22,10 +22,12 @@ import { PricingPartiesResolver } from "./application/pricing-parties.resolver.j
 import { CompanyFollowsReader } from "../account/domain/ports/company-follows.reader.js";
 import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-company-follows.reader.js";
 import { LinePromotionSupply } from "../promotions/application/line-promotion-supply.js";
+import { ShelfPromotionOffers } from "../promotions/application/shelf-promotion-offers.js";
 import { PromotionAudienceFactsResolver } from "../promotions/application/promotion-audience-facts.resolver.js";
 import { BasketPromotionReader } from "../promotions/domain/ports/basket-promotion.reader.js";
 import { LinePromotionReader } from "../promotions/domain/ports/line-promotion.reader.js";
 import { PromotionCompanyStatusReader } from "../promotions/domain/ports/promotion-company-status.reader.js";
+import { PromotionPrincipalReader } from "../promotions/domain/ports/promotion-principal.reader.js";
 import { PromotionShadowJournal } from "../promotions/domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../promotions/domain/ports/promotions-source.reader.js";
 import { LoggedPromotionShadowJournal } from "../promotions/infrastructure/logged-promotion-shadow.journal.js";
@@ -34,6 +36,7 @@ import {
   PrismaLinePromotionReader,
 } from "../promotions/infrastructure/prisma-live-promotion.readers.js";
 import { PrismaPromotionCompanyStatusReader } from "../promotions/infrastructure/prisma-promotion-company-status.reader.js";
+import { PrismaPromotionPrincipalReader } from "../promotions/infrastructure/prisma-promotion-principal.reader.js";
 import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prisma-promotions-source.reader.js";
 
 /**
@@ -73,11 +76,14 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     //   matériaux, singleton de ce module — l'inverse ferait un cycle de
     //   modules, et un second cache que l'estampille ne viderait pas.
     LinePromotionSupply,
+    // Ce que le rayon mentionne et le devis d'un invité annonce (L10).
+    ShelfPromotionOffers,
     PromotionAudienceFactsResolver,
     { provide: PromotionsSourceReader, useClass: PrismaPromotionsSourceReader },
     { provide: LinePromotionReader, useClass: PrismaLinePromotionReader },
     { provide: BasketPromotionReader, useClass: PrismaBasketPromotionReader },
     { provide: PromotionCompanyStatusReader, useClass: PrismaPromotionCompanyStatusReader },
+    { provide: PromotionPrincipalReader, useClass: PrismaPromotionPrincipalReader },
     { provide: PromotionShadowJournal, useClass: LoggedPromotionShadowJournal },
   ],
   exports: [
@@ -103,6 +109,10 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     PromotionShadowJournal,
     // Le tableau de tarification lit les promotions de ligne comme la caisse (L8).
     LinePromotionSupply,
+    // Le rayon mentionne les promotions de panier ; le devis d'un invité lit
+    // celles de ligne pour lui dire ce qu'une connexion ouvrirait (L10).
+    ShelfPromotionOffers,
+    LinePromotionReader,
   ],
 })
 export class PricingModule {}

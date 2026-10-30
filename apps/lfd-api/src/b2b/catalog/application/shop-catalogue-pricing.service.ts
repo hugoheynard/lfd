@@ -1,7 +1,15 @@
-import type { ContentLocale, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
+import type { ContentLocale, ShopCatalogueView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
+import {
+  ShopCatalogueOffers,
+  withFulfillmentOffers,
+  type ShelfBuyer,
+  type ShelfBuyerKind,
+} from "./shop-catalogue-offers.js";
+
+export type { ShelfBuyerKind } from "./shop-catalogue-offers.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { CatalogOperationsReader } from "../domain/ports/catalog-operations.reader.js";
 import { CatalogPricePerKgReader } from "../domain/ports/catalog-price-per-kg.reader.js";
@@ -22,12 +30,8 @@ import {
   type CatalogViewer,
 } from "../domain/catalog-viewer.js";
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
-import {
-  inShopLanguage,
-  shopCatalogueOf,
-  shownByShopSku,
-  ttcCentsFromHtMillicentsFor,
-} from "./shop-catalogue-view.js";
+import { inShopLanguage, shopCatalogueOf, shownByShopSku } from "./shop-catalogue-view.js";
+import { struck } from "./shop-catalogue-struck.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**
@@ -102,6 +106,7 @@ export class ShopCataloguePricing {
     private readonly cutoffs: ShopOrderCutoffsReader,
     private readonly pricesPerKg: CatalogPricePerKgReader,
     private readonly viewers: CatalogViewers,
+    private readonly offers: ShopCatalogueOffers,
   ) {}
 
   /**
@@ -109,11 +114,17 @@ export class ShopCataloguePricing {
    *
    * @param companyId `null` = un visiteur. Le tarif public, promotions
    * comprises, et aucune mercuriale lue — il n'y a rien à négocier sans client.
+   * @param buyerKind la porte d'entrée, posée par la ROUTE (lot L10 du plan des
+   * promotions) : `guest` sur la route publique, `registered` sur la reconnue.
    * @param language la langue des noms, lignes et rayons (lot des langues) —
    * le français quand le référentiel n'a rien traduit. Ni le rangement ni le
    * prix n'en dépendent.
    */
-  async priced(companyId: string | null, language: ContentLocale): Promise<ShopCatalogueView> {
+  async priced(
+    companyId: string | null,
+    buyerKind: ShelfBuyerKind,
+    language: ContentLocale,
+  ): Promise<ShopCatalogueView> {
     // 🔴 **L'audience se déduit ICI, et c'est le seul endroit.** « Sans société »
     // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
     // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
@@ -127,7 +138,7 @@ export class ShopCataloguePricing {
     // (`plan-pros-en-cours-d-inscription.md`, P0) : servie au public, elle ne
     // passe PAS son identifiant au tarificateur — ni mercuriale, ni tarif de canal.
     const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
-    return this.pricedFor(viewer, pricingCompanyOf(viewer), language);
+    return this.pricedFor(viewer, { companyId: pricingCompanyOf(viewer), buyerKind }, language);
   }
 
   /**
@@ -143,18 +154,27 @@ export class ShopCataloguePricing {
    * (`GET /shop/catalogue?audience=pro`) : le tarif pro de base est public,
    * les conditions négociées ne le sont pas — et elles ne peuvent pas fuir
    * d'ici, la porte ne recevant aucune société.
+   *
+   * À `pro`, l'audience est DÉCLARÉE par la requête : seules les promotions
+   * « tout le monde » y jouent (`previewed`, plan des promotions, § 13.7) —
+   * sans quoi taper `?audience=pro` publierait une promotion réservée. À
+   * `public`, c'est la route publique : un invité.
    */
   pricedWithoutCompany(
     audience: ShopAudience,
     language: ContentLocale = CATALOG_SOURCE_LANGUAGE,
   ): Promise<ShopCatalogueView> {
     // Sans société, un pro est anonyme : jamais un article réservé (Q2).
-    return this.pricedFor(anonymousViewer(audience), null, language);
+    return this.pricedFor(
+      anonymousViewer(audience),
+      { companyId: null, buyerKind: audience === "pro" ? "previewed" : "guest" },
+      language,
+    );
   }
 
   private async pricedFor(
     viewer: CatalogViewer,
-    companyId: string | null,
+    buyer: ShelfBuyer,
     language: ContentLocale,
   ): Promise<ShopCatalogueView> {
     const audience = viewerAudience(viewer);
@@ -179,20 +199,24 @@ export class ShopCataloguePricing {
     if (catalogue.items.length === 0) {
       return catalogue;
     }
-    const [priced, perKg] = await Promise.all([
-      this.withPrices(catalogue, sellable, { companyId, audience }),
+    const [priced, perKg, offered] = await Promise.all([
+      this.withPrices(catalogue, sellable, { ...buyer, audience }),
       // Lus À CÔTÉ de la résolution, jamais par elle : informatifs
       // (`plan-prix-au-kilo.md`, K3).
       this.pricesPerKg.bySkus(shownVariantSkus(catalogue, sellable)),
+      // Les promotions qu'un acheminement ouvrirait (L10) : MENTIONNÉES, jamais
+      // appliquées au prix du rayon, où l'acheminement est inconnu.
+      this.offers.offeredFor(buyer, catalogue),
     ]);
-    return inShopLanguage(withPricesPerKg(priced, sellable, perKg), sellable, language);
+    const mentioned = withFulfillmentOffers(priced, sellable, offered);
+    return inShopLanguage(withPricesPerKg(mentioned, sellable, perKg), sellable, language);
   }
 
   /** La vitrine au prix résolu, tarif barré quand une résolution le baisse. */
   private async withPrices(
     catalogue: ShopCatalogueView,
     sellable: readonly ResolvedCatalogItem[],
-    { companyId, audience }: { readonly companyId: string | null; readonly audience: ShopAudience },
+    { companyId, buyerKind, audience }: ShelfBuyer & { readonly audience: ShopAudience },
   ): Promise<ShopCatalogueView> {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
@@ -231,53 +255,9 @@ export class ShopCataloguePricing {
     // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
     // articles résolus à quelques millisecondes d'écart pourraient sinon tomber
     // de part et d'autre du basculement d'une promotion.
-    const lot = await this.pricer.load({ articles, companyId, caller: "shelf" });
+    const lot = await this.pricer.load({ articles, companyId, buyerKind, caller: "shelf" });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
     const prices = new Map(lot.all(lines).map((priced) => [priced.sku, priced.finalMillicents]));
     return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices, audience)) };
   }
-}
-
-/**
- * L'article à son prix, et le tarif à **barrer** quand le prix servi est plus bas.
- *
- * Rien de barré à prix égal : une rature sur deux prix identiques ferait
- * chercher une remise qui n'existe pas. Le champ reste donc **absent du fil**
- * dans le cas ordinaire, ce qui garde la surface publique étroite.
- *
- * Un SKU absent de la résolution garde son prix canonique : ce n'est pas censé
- * arriver — les deux listes viennent de la même lecture — et retomber sur le
- * tarif est le seul repli qui ne mente pas. Un prix à zéro, lui, ferait croire à
- * un article offert.
- */
-function struck(
-  item: ShopItemView,
-  prices: ReadonlyMap<string, number>,
-  audience: ShopAudience,
-): ShopItemView {
-  const resolved = prices.get(item.sku);
-  if (resolved === undefined) {
-    return item;
-  }
-  // 🔴 **Barré seulement si le prix servi est plus BAS**, jamais « s'ils
-  // diffèrent ». Un prix résolu peut monter au-dessus du tarif — une altération
-  // `increase`, une règle `replace` posée plus haut, ou un plancher qui relève
-  // (`resolve-price.ts:121`). Sur « ils diffèrent », la vitrine aurait alors
-  // barré le prix le plus BAS et présenté une référence mensongère sur une page
-  // publique. Le prix servi reste celui qui sera facturé, dans les deux sens ;
-  // c'est la rature qui exige une baisse (2026-09-09).
-  // 🔴 **Le TTC suit le prix résolu, toujours.** Il est dérivé à la
-  // construction, avant que la résolution n'ait joué : le laisser derrière
-  // ferait afficher au rayon la taxe du tarif et le montant de la promotion —
-  // deux nombres qui ne vont pas ensemble, sur une page publique.
-  const priced = {
-    ...item,
-    unitPriceMillicents: resolved,
-    // Celle d'un particulier est la valeur saisie (`ttcCentsFromHtMillicentsFor`, plan du centime, § 4).
-    unitPriceTtcCents: ttcCentsFromHtMillicentsFor(resolved, item.vatRatePercent, audience),
-  };
-  if (resolved >= item.unitPriceMillicents) {
-    return resolved === item.unitPriceMillicents ? item : priced;
-  }
-  return { ...priced, catalogPriceMillicents: item.unitPriceMillicents };
 }

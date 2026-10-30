@@ -98,6 +98,9 @@
         @if (minimumLabel(); as minimum) {
           <span class="minimum" data-minimum>{{ minimum }}</span>
         }
+        @for (offer of offerLabels(); track offer) {
+          <span class="offer" data-fulfillment-offer>{{ offer }}</span>
+        }
       </span>
 
       @if (locked(); as reason) {

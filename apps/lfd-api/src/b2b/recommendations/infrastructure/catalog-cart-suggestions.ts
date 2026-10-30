@@ -63,7 +63,8 @@ export class ShopSuggestedArticleReader extends SuggestedArticleReader {
     const shelf =
       companyId === null
         ? await this.pricing.pricedWithoutCompany(audience)
-        : await this.pricing.priced(companyId, CATALOG_SOURCE_LANGUAGE);
+        : // Une société résolue : la route reconnue.
+          await this.pricing.priced(companyId, "registered", CATALOG_SOURCE_LANGUAGE);
     return new Map(
       shelf.items.filter((item) => wanted.has(item.sku)).map((item) => [item.sku, item]),
     );

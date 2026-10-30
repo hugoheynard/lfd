@@ -140,6 +140,13 @@ export class OrderDetail {
   readonly audience = input<OrderAudience>('client');
 
   /**
+   * La langue du lecteur, pour le libellé d'une promotion figé dans les
+   * trois langues (lot L10 du plan des promotions). Défaut `fr` : le
+   * back-office, et toute trace d'avant, qui n'a que le français.
+   */
+  readonly locale = input('fr');
+
+  /**
    * Noms de produits par SKU, pour les lignes **retirées** d'une échéance
    * récurrente. Elles ne portent qu'un SKU (elles ne figurent pas dans la
    * commande), donc rien d'autre ne peut les nommer. À défaut, le SKU s'affiche

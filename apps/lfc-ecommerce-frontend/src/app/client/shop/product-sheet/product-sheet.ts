@@ -29,6 +29,7 @@ import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { perKiloHintLabel, ShopPriceBasis } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
+import { FulfillmentOfferLabels } from '../promotion-offers';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
 import {
   firstQuantityOf,
@@ -96,6 +97,7 @@ export class ProductSheet {
   readonly quantitySet = output<number>();
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly offers = inject(FulfillmentOfferLabels);
   private readonly basis = inject(ShopPriceBasis);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly locale = inject(ClientLocale);
@@ -285,6 +287,15 @@ export class ProductSheet {
   );
 
   /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
+  /**
+   * « −20 % avec retrait à Cœur de station » — les promotions qu'un
+   * acheminement ouvrirait, sans que le prix affiché les compte (L10).
+   */
+  protected readonly offerLabels = computed(() => {
+    const product = this.product();
+    return product === null ? [] : this.offers.of(product);
+  });
+
   /** « Minimum 6 pièces » sous le prix, ou `null` sans minimum (plan quantité minimale, Q4). */
   protected readonly minimumLabel = computed(() => {
     const product = this.product();

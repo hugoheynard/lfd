@@ -4,6 +4,8 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import {
   FixedBasketPromotions,
   FixedCompanyStatuses,
+  FixedLinePromotions,
+  FixedPrincipals,
   FixedPromotionsSource,
   RecordingShadowJournal,
 } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
@@ -14,6 +16,7 @@ import type { PromotionsSource } from "../../../../promotions/domain/promotions-
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import type { OrderLineClassificationReader } from "../../../domain/ports/order-line-classification.reader.js";
 import { BasketPromotions } from "../basket-promotions.service.js";
+import { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 import type { PickupBuyer } from "../cart-adjustments.service.js";
 
 /** L'instant des suites qui ne jugent pas de fenêtre : une promotion posée « depuis toujours » y vaut. */
@@ -34,7 +37,7 @@ export function basketPromotions(
   return new BasketPromotions(
     new FixedPromotionsSource(source),
     new FixedBasketPromotions(promotions),
-    new PromotionAudienceFactsResolver(new FixedCompanyStatuses()),
+    new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     classifications,
     journal,
     clock,
@@ -52,4 +55,26 @@ export function pickupBuyer(audience: CustomerAudience, companyId: string | null
     companyStatus: audience === "b2b" ? "active" : null,
     buyerKind: "registered",
   };
+}
+
+/**
+ * **Ce qu'une connexion ouvrirait à un invité** (L10) — par défaut `legacy`,
+ * qui ne lit rien et ne dit rien : ce que les suites d'avant L10 éprouvent.
+ */
+export function guestSignInOffer(
+  source: PromotionsSource = "legacy",
+  promotions: {
+    readonly line?: readonly LivePromotion[];
+    readonly basket?: readonly LivePromotion[];
+  } = {},
+  classifications: OrderLineClassificationReader = new FixedLineClassifications({}),
+  clock: FixedClock = new FixedClock(NOW),
+): GuestSignInOffer {
+  return new GuestSignInOffer(
+    new FixedPromotionsSource(source),
+    new FixedLinePromotions(promotions.line ?? []),
+    new FixedBasketPromotions(promotions.basket ?? []),
+    classifications,
+    clock,
+  );
 }

@@ -175,7 +175,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // archivées d'après comprises, comme une lecture datée de la caisse.
     const { rules, promotions } = boardDecisions(
       decided.rules,
-      await this.linePromotions.forLot(null, at, true),
+      await this.linePromotions.forLot(NO_PARTIES, at, true),
     );
 
     return { rules, floors: decided.floors, ladders, promotions, articles, historyStartsAt };

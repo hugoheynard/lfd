@@ -630,6 +630,21 @@ export interface ClientCopy {
     readonly minimumPieces: string;
     /** `{pct}` = l'écart au tarif boutique, dérivé des deux montants, entier. */
     readonly proDiscount: string;
+    /**
+     * La mention d'une promotion qu'un acheminement ouvrirait (plan des
+     * promotions, lot L10) — le prix du rayon ne la compte pas. `{discount}`
+     * = « −20 % » ou « −5,00 € » ({@link discountPercent}, {@link discountAmount}) ;
+     * `{place}` = le nom du point de retrait.
+     */
+    readonly offerAtPickupPoint: string;
+    /** `{discount}` — une promotion valable dans tous les points de retrait. */
+    readonly offerOnPickup: string;
+    /** `{discount}` — une promotion valable en livraison. */
+    readonly offerOnDelivery: string;
+    /** `{pct}` = le pourcentage, tel quel (« 20 », « 12,5 »). */
+    readonly discountPercent: string;
+    /** `{amount}` = le montant formaté (« 5,00 € »). */
+    readonly discountAmount: string;
     /** `{n}` = la taille du lot proposé en raccourci. */
     readonly batch: string;
     readonly batchAria: string;
@@ -712,6 +727,14 @@ export interface ClientCopy {
      */
     readonly unitChangedToWeight: string;
     readonly unitChangedToPiece: string;
+    /**
+     * Le devis anonyme sait qu'une promotion réservée aux inscrits toucherait
+     * ce panier (plan des promotions, § 8, lot L10) — dit à TOUT invité, sans
+     * jamais lire l'adresse saisie. `{discount}` = « −20 % ».
+     */
+    readonly signInOffer: string;
+    /** La même invitation quand la promotion pose un prix : rien à chiffrer. */
+    readonly signInOfferPrices: string;
     /**
      * Une ligne du panier gardé que le compte ne peut plus commander : l'article
      * est réservé à un autre compte (`plan-articles-sur-mesure.md`, L3). Elle est

@@ -25,6 +25,7 @@ import { PickupChoiceRequiredError } from "../../../domain/errors/pickup-choice-
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
+import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
 
 const TEN_PERCENT: AudiencePickupDiscount = {
@@ -365,6 +366,65 @@ describe("CartAdjustments — un retrait sans point choisi", () => {
   });
 });
 
+describe("CartAdjustments — la promotion de livraison (L10)", () => {
+  const EN_LIVRAISON = livePromotion({
+    id: "promo_livraison",
+    label: "−10 % en livraison",
+    effect: { kind: "percent_off", basisPoints: 1_000 },
+    fulfillment: { kind: "delivery" },
+    validFrom: new Date(Date.UTC(2020, 0, 1)),
+  });
+
+  function delivering(source: "legacy" | "promotions") {
+    return new CartAdjustments(
+      new OnePoint(point({ b2b: false, b2c: false })),
+      new OneZone(),
+      OPEN,
+      new Preferences(),
+      new FixedLineClassifications(),
+      basketPromotions(source, [EN_LIVRAISON]),
+    );
+  }
+
+  it("sert la promotion « en livraison » sous la source `promotions`, le port à côté", async () => {
+    const resolved = await delivering("promotions").forDelivery(
+      "73150",
+      BASKET,
+      pickupBuyer("b2c", null),
+    );
+
+    expect(resolved.discount.discountCents).toBe(500);
+    expect(resolved.discount.promotionId).toBe("promo_livraison");
+    expect(resolved.feeCents).toBe(2_000);
+  });
+
+  it("n'en sert aucune sous l'ancien chemin, où la livraison n'ouvrait rien", async () => {
+    const resolved = await delivering("legacy").forDelivery(
+      "73150",
+      BASKET,
+      pickupBuyer("b2c", null),
+    );
+
+    expect(resolved.discount.discountCents).toBe(0);
+    expect(resolved.discount.promotionId).toBeNull();
+  });
+
+  it("ne sert pas une promotion « en retrait » à une livraison", async () => {
+    const adjustments = new CartAdjustments(
+      new OnePoint(point({ b2b: false, b2c: false })),
+      new OneZone(),
+      OPEN,
+      new Preferences(),
+      new FixedLineClassifications(),
+      basketPromotions("promotions", [{ ...EN_LIVRAISON, fulfillment: { kind: "pickup" } }]),
+    );
+
+    const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
+
+    expect(resolved.discount.discountCents).toBe(0);
+  });
+});
+
 describe("CartAdjustments — la livraison, par clientèle", () => {
   it("chiffre la livraison ouverte, ligne absente comprise", async () => {
     const adjustments = new CartAdjustments(
@@ -376,7 +436,7 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       basketPromotions(),
     );
 
-    const resolved = await adjustments.forDelivery("73150", 5_000, "b2c");
+    const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
 
     expect(resolved.feeCents).toBe(2_000);
   });
@@ -395,9 +455,9 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
 
     // Même vers un code postal non desservi : la raison du refus est la
     // fermeture, et dire « on ne livre pas là » mentirait.
-    await expect(adjustments.forDelivery("99000", 5_000, "b2c")).rejects.toThrow(
-      DeliveryClosedForAudienceError,
-    );
+    await expect(
+      adjustments.forDelivery("99000", BASKET, pickupBuyer("b2c", null)),
+    ).rejects.toThrow(DeliveryClosedForAudienceError);
     expect(zones.lookups).toBe(0);
   });
 
@@ -412,10 +472,12 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
       basketPromotions(),
     );
 
-    expect((await adjustments.forDelivery("73150", 5_000, "b2b")).feeCents).toBe(2_000);
-    await expect(adjustments.forDelivery("99000", 5_000, "b2b")).rejects.toThrow(
-      NoDeliveryZoneForPostalCodeError,
-    );
+    expect(
+      (await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2b", null))).feeCents,
+    ).toBe(2_000);
+    await expect(
+      adjustments.forDelivery("99000", BASKET, pickupBuyer("b2b", null)),
+    ).rejects.toThrow(NoDeliveryZoneForPostalCodeError);
   });
 
   it("porte le code partagé avec la boutique et le message du plan", () => {

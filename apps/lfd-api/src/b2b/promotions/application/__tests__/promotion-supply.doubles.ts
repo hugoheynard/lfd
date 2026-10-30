@@ -3,13 +3,16 @@ import type { LivePromotion } from "../../domain/live-promotion.js";
 import { BasketPromotionReader } from "../../domain/ports/basket-promotion.reader.js";
 import { LinePromotionReader } from "../../domain/ports/line-promotion.reader.js";
 import { PromotionCompanyStatusReader } from "../../domain/ports/promotion-company-status.reader.js";
+import { PromotionPrincipalReader } from "../../domain/ports/promotion-principal.reader.js";
 import {
   PromotionShadowJournal,
   type PromotionShadowDivergence,
 } from "../../domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../../domain/ports/promotions-source.reader.js";
 import type { PromotionsSource } from "../../domain/promotions-source.js";
+import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { LinePromotionSupply } from "../line-promotion-supply.js";
+import { ShelfPromotionOffers } from "../shelf-promotion-offers.js";
 import { PromotionAudienceFactsResolver } from "../promotion-audience-facts.resolver.js";
 
 /**
@@ -79,6 +82,20 @@ export class FixedCompanyStatuses extends PromotionCompanyStatusReader {
   }
 }
 
+export class FixedPrincipals extends PromotionPrincipalReader {
+  /** Les sociétés dont le principal a été demandé, dans l'ordre. */
+  readonly asked: string[] = [];
+
+  constructor(private readonly principals: ReadonlyMap<string, string> = new Map()) {
+    super();
+  }
+
+  principalOf(companyId: string): Promise<string | null> {
+    this.asked.push(companyId);
+    return Promise.resolve(this.principals.get(companyId) ?? null);
+  }
+}
+
 export class RecordingShadowJournal extends PromotionShadowJournal {
   readonly entries: PromotionShadowDivergence[] = [];
 
@@ -101,7 +118,25 @@ export function linePromotionSupply(
   return new LinePromotionSupply(
     new FixedPromotionsSource(source),
     new FixedLinePromotions(promotions),
-    new PromotionAudienceFactsResolver(statuses),
+    new PromotionAudienceFactsResolver(statuses, new FixedPrincipals()),
     journal,
+  );
+}
+
+/**
+ * Ce que le rayon mentionne (L10) — par défaut `legacy`, qui ne lit rien :
+ * les suites d'avant L10.
+ */
+export function shelfPromotionOffers(
+  source: PromotionsSource = "legacy",
+  basket: readonly LivePromotion[] = [],
+  at: Date = new Date(Date.UTC(2030, 0, 1)),
+  statuses: PromotionCompanyStatusReader = new FixedCompanyStatuses(),
+): ShelfPromotionOffers {
+  return new ShelfPromotionOffers(
+    new FixedPromotionsSource(source),
+    new FixedBasketPromotions(basket),
+    new PromotionAudienceFactsResolver(statuses, new FixedPrincipals()),
+    new FixedClock(at),
   );
 }

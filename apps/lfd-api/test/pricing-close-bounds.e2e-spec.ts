@@ -135,6 +135,7 @@ async function pricedAt(companyId: string, at: Date): Promise<number> {
   const lot = await ctx.app.get(Pricer).load({
     articles: [{ article: found.article, quantity: 1 }],
     companyId,
+    buyerKind: "unknown",
     at,
     caller: "cart",
   });

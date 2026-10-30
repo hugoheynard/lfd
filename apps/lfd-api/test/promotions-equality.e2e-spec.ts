@@ -529,6 +529,7 @@ async function datedRead(companyId: string | null) {
   const lot = await ctx.app.get(Pricer).load({
     articles,
     companyId,
+    buyerKind: "unknown",
     at: new Date(daysAgo(2)),
     caller: "cart",
   });

@@ -1,5 +1,6 @@
 import type { ShopItemOrderLimit } from "./item-order-limit.js";
 import type { OrderSaleUnit } from "./order.js";
+import type { ShopItemFulfillmentOfferView } from "./promotion-offer.js";
 
 /**
  * **Le catalogue tel qu'une boutique PUBLIQUE le montre.**
@@ -242,6 +243,18 @@ export interface ShopItemView {
    * une remise qu'il n'a pas perdue.
    */
   readonly catalogPriceMillicents?: number;
+  /**
+   * **Les promotions qu'un acheminement ouvrirait sur cet article** (plan des
+   * promotions, § 13.2 RAYON, lot L10) — « −20 % avec retrait à Cœur de
+   * station ». Elles ne baissent JAMAIS {@link unitPriceMillicents} : au rayon,
+   * on ne sait pas encore comment l'article sera servi, et le devis les
+   * applique dès que l'acheminement est choisi.
+   *
+   * Seulement celles dont le public admet ce lecteur, en vigueur maintenant,
+   * et dont la portée couvre l'article. Absent DU FIL quand il n'y en a
+   * aucune — la règle de {@link catalogPriceMillicents}.
+   */
+  readonly fulfillmentOffers?: readonly ShopItemFulfillmentOfferView[];
   /** Le taux applicable, en pourcentage (5.5, 10). Un article sans taux ne sort pas d'ici. */
   readonly vatRatePercent: number;
   readonly shelfId: string;

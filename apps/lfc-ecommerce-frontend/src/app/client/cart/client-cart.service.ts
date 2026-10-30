@@ -181,6 +181,8 @@ export class ClientCart {
 
   /** Les lignes retirées au devis faute d'être encore vendues dans leur unité — cf. {@link ShopQuote.removedLines}. */
   readonly removedLines = this.quote.removedLines;
+  /** Ce qu'une connexion ouvrirait à un invité — cf. {@link ShopQuote.signInOffer}. */
+  readonly signInOffer = this.quote.signInOffer;
 
   /** Le refus du serveur que le décompte doit montrer à la place de ses montants. */
   readonly refusal = this.quote.refusal;

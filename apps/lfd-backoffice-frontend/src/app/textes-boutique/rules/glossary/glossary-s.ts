@@ -44,6 +44,8 @@ export const GLOSSARY_S: Readonly<Record<string, string>> = {
   sideParticulier: 'CGV — côté particulier',
   sidePro: 'CGV — côté pro',
   signIn: 'Se connecter',
+  signInOffer: 'Panier invité — « Connectez-vous pour profiter de −20 % »',
+  signInOfferPrices: 'Panier invité — « Connectez-vous », promotion à prix posé',
   signInCancelledSub: 'Connexion annulée — sous-titre',
   signInCancelledTitle: 'Connexion annulée — titre',
   signInFailedBack: 'Connexion échouée — retour',

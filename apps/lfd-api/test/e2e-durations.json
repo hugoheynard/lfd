@@ -410,6 +410,7 @@
   "test/promotions-audiences.e2e-spec.ts": 15498,
   "test/promotions-bascule.e2e-spec.ts": 14000,
   "test/promotions-equality.e2e-spec.ts": 13500,
+  "test/promotions-l10.e2e-spec.ts": 13286,
   "test/promotions-persistence.e2e-spec.ts": 6831,
   "test/promotions-reprise-migration.e2e-spec.ts": 12100,
   "test/promotions-revision.e2e-spec.ts": 17649,

@@ -29,10 +29,16 @@ import type { BasketLine } from "../../domain/services/basket-promotion-choice.j
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
+import {
+  GUEST_BUYER,
+  REGISTERED_BUYER,
+  type OrderBuyerKind,
+} from "../../domain/value-objects/order-buyer-kind.js";
 import { quantityOf } from "../../domain/value-objects/order-line.js";
 import { exactShopQuoteOf } from "./exact-shop-quote.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
+import { GuestSignInOffer } from "./guest-sign-in-offer.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import { OrderLinePricing, type ResolvedOrderLine } from "./order-line-pricing.service.js";
@@ -93,6 +99,7 @@ export class ShopCartQuoting {
     private readonly voucherQuotes: LoyaltyVoucherQuoteReader,
     private readonly clock: Clock,
     private readonly deliveryVat: OrderDeliveryVatReader,
+    private readonly signIn: GuestSignInOffer,
   ) {}
 
   /**
@@ -129,23 +136,25 @@ export class ShopCartQuoting {
     const { resolved, kept, removed } = await this.pricing.resolveWithoutStaleUnits(
       request.payload.lines,
       // `null` pour un visiteur : ce n'est pas un trou à combler, c'est le
-      // parcours par défaut de la boutique, et `applies` le sait déjà.
-      { companyId: request.companyId },
+      // parcours par défaut de la boutique, et `applies` le sait déjà. La
+      // porte d'entrée se lit sur la ROUTE (L10), comme au panier.
+      { companyId: request.companyId, buyerKind: buyerKindOf(request) },
       "cart",
     );
     const quoted = await this.quoteKept(
       { ...request, payload: { ...request.payload, lines: [...kept] } },
       resolved,
     );
-    return removed.length === 0
-      ? quoted
-      : {
-          ...quoted,
-          view: {
-            ...quoted.view,
-            removedLines: removed.map((line) => ({ ...line, reason: "sale_unit_changed" })),
-          },
-        };
+    // Ce qu'une connexion ouvrirait (L10) — au seul devis anonyme.
+    const signInOffer = await this.signIn.offerFor(request, resolved);
+    const view: ShopQuoteView = {
+      ...quoted.view,
+      ...(removed.length === 0
+        ? {}
+        : { removedLines: removed.map((line) => ({ ...line, reason: "sale_unit_changed" })) }),
+      ...(signInOffer === undefined ? {} : { signInOffer }),
+    };
+    return { ...quoted, view };
   }
 
   private async quoteKept(
@@ -330,16 +339,12 @@ export class ShopCartQuoting {
       return NO_TERMS;
     }
     const { audience, companyStatus } = await this.audiences.standingOf(companyId);
+    // La porte d'entrée se lit sur la ROUTE : le devis anonyme ne porte
+    // personne (`buyerUserId` nul), le devis reconnu porte le `Principal`
+    // résolu en base (plan des promotions, § 13.7).
+    const buyer = { audience, companyId, companyStatus, buyerKind: buyerKindOf({ buyerUserId }) };
     if (fulfillment.method === "pickup") {
-      const retrait = await this.adjustments.forPickup(fulfillment.pickupAddressId, priced, {
-        audience,
-        companyId,
-        companyStatus,
-        // La porte d'entrée se lit sur la ROUTE : le devis anonyme ne porte
-        // personne (`buyerUserId` nul), le devis reconnu porte le `Principal`
-        // résolu en base (plan des promotions, § 13.7).
-        buyerKind: buyerUserId === null ? "guest" : "registered",
-      });
+      const retrait = await this.adjustments.forPickup(fulfillment.pickupAddressId, priced, buyer);
       return {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
@@ -348,16 +353,12 @@ export class ShopCartQuoting {
         deliveryFeeAdjustment: null,
       };
     }
-    const coursier = await this.adjustments.forDelivery(
-      fulfillment.codePostal,
-      priced.reduce((sum, line) => sum + line.htCents, 0),
-      audience,
-    );
-    // Le coursier n'ouvre droit à aucune remise : c'est le retrait qui en porte une.
+    const coursier = await this.adjustments.forDelivery(fulfillment.codePostal, priced, buyer);
+    // La promotion « en livraison » (L10) : la même que la caisse appliquera.
     return {
-      discountCents: 0,
-      discountAdjustment: null,
-      ineligibleSkus: new Set(),
+      discountCents: coursier.discount.discountCents,
+      discountAdjustment: coursier.discount.discountAdjustment,
+      ineligibleSkus: coursier.discount.ineligibleSkus,
       deliveryFeeCents: coursier.feeCents,
       deliveryFeeAdjustment: coursier.feeAdjustment,
     };
@@ -397,4 +398,13 @@ interface OrderLineOf {
   readonly saleUnit: SaleUnit;
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
+}
+
+/**
+ * **La porte d'entrée d'un devis**, lue sur la ROUTE (plan des promotions,
+ * § 13.7) : le devis anonyme ne porte personne (`buyerUserId` nul), le devis
+ * reconnu porte le `Principal` résolu en base. Jamais un champ du corps.
+ */
+function buyerKindOf({ buyerUserId }: Pick<ShopCartQuoteRequest, "buyerUserId">): OrderBuyerKind {
+  return buyerUserId === null ? GUEST_BUYER : REGISTERED_BUYER;
 }

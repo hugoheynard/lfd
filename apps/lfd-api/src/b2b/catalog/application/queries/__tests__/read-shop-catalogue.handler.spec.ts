@@ -1,3 +1,8 @@
+import { ShopCatalogueOffers } from "../../shop-catalogue-offers.js";
+import type { ShelfPromotionOffers } from "../../../../promotions/application/shelf-promotion-offers.js";
+import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import { shelfPromotionOffers } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { FixedLineClassifications } from "../../../../orders/domain/ports/__tests__/line-classification-doubles.js";
 import type { CatalogPricing, OrderCutoffView } from "@lfd/contracts";
 
 import {
@@ -180,6 +185,7 @@ function fixture(
     catalogItem(BAGUETTE, { unitPriceMillicents: PUBLIC_MILLICENTS }),
   ],
   cutoffs: readonly OrderCutoffView[] = [GENERAL_EVE_23],
+  offers: ShelfPromotionOffers = shelfPromotionOffers(),
 ) {
   const catalog = new SellableCatalog({
     pro: [
@@ -215,6 +221,7 @@ function fixture(
     new GivenCutoffs(cutoffs),
     new GivenPricesPerKg(),
     new CatalogViewers(new InMemoryServedCompanies()),
+    new ShopCatalogueOffers(offers, new FixedLineClassifications()),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }
@@ -304,6 +311,53 @@ describe("ReadShopCatalogueHandler", () => {
 
       expect(limitsOf(view)[3]).toEqual([sold(BAGUETTE), null]);
       expect(limitsOf(view)[1]).toEqual([sold(EVE_18), { daysBefore: 1, time: "18:00" }]);
+    });
+  });
+
+  // Lot L10 : au rayon, une promotion conditionnée par l'acheminement se
+  // MENTIONNE, et ne baisse pas le prix — l'acheminement y est inconnu.
+  describe("la mention des promotions d'acheminement (L10)", () => {
+    const EN_RETRAIT = livePromotion({
+      id: "retrait",
+      fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+      validFrom: new Date(0),
+    });
+
+    it("mentionne la promotion sur la vignette, au prix inchangé", async () => {
+      const offers = shelfPromotionOffers("promotions", [EN_RETRAIT], NOW);
+      const { handler } = fixture(undefined, undefined, offers);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(view.items[0]).toMatchObject({
+        unitPriceMillicents: PUBLIC_MILLICENTS,
+        fulfillmentOffers: [
+          {
+            effect: { kind: "percent", basisPoints: 2_000 },
+            fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+          },
+        ],
+      });
+      expect(view.items[0]).not.toHaveProperty("catalogPriceMillicents");
+    });
+
+    it("ne mentionne rien sous l'ancien chemin, et la clé reste absente du fil", async () => {
+      const offers = shelfPromotionOffers("legacy", [EN_RETRAIT], NOW);
+      const { handler } = fixture(undefined, undefined, offers);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
+
+      expect(view.items[0]).not.toHaveProperty("fulfillmentOffers");
+    });
+
+    it("l'aperçu pro déclaré ne mentionne qu'une promotion « tout le monde »", async () => {
+      const pros = { ...EN_RETRAIT, id: "pros", audiences: [{ kind: "pros" as const }] };
+      const offers = shelfPromotionOffers("promotions", [pros], NOW);
+      const { handler } = fixture(undefined, undefined, offers);
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("fr", "pro"));
+
+      expect(view.items.every((item) => item.fulfillmentOffers === undefined)).toBe(true);
     });
   });
 });

@@ -92,6 +92,43 @@ describe('ProductTile', () => {
     expect(el.querySelector('[data-minimum]')?.textContent?.trim()).toBe('Minimum 6 pièces');
   });
 
+  // Lot L10 du plan des promotions : une promotion d'acheminement se MENTIONNE,
+  // et le prix du rayon ne la compte pas.
+  it('mentionne une promotion de retrait ou de livraison, au prix inchangé', () => {
+    const before = priceText();
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      fulfillmentOffers: [
+        { effect: { kind: 'percent', basisPoints: 2_000 }, fulfillment: { kind: 'pickup' } },
+        { effect: { kind: 'amount', millicents: 500_000 }, fulfillment: { kind: 'delivery' } },
+      ],
+    });
+    fixture.detectChanges();
+
+    const offers = [
+      ...(fixture.nativeElement as HTMLElement).querySelectorAll('[data-fulfillment-offer]'),
+    ].map((node) => node.textContent?.trim());
+    expect(offers).toEqual(['−20 % en retrait', '−5,00 € en livraison']);
+    expect(priceText()).toBe(before);
+  });
+
+  it('ne mentionne pas une promotion d’un point que la boutique ne connaît pas', () => {
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      fulfillmentOffers: [
+        {
+          effect: { kind: 'percent', basisPoints: 2_000 },
+          fulfillment: { kind: 'pickup_point', pickupId: 'inconnu' },
+        },
+      ],
+    });
+    fixture.detectChanges();
+
+    expect(
+      (fixture.nativeElement as HTMLElement).querySelector('[data-fulfillment-offer]'),
+    ).toBeNull();
+  });
+
   it('ne dit aucun minimum sans minimum', () => {
     expect((fixture.nativeElement as HTMLElement).querySelector('[data-minimum]')).toBeNull();
   });

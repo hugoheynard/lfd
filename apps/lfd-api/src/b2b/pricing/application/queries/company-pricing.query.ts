@@ -84,7 +84,8 @@ export class CompanyPricingQuery {
     await this.assertCompanyExists(companyId);
     // Le compte de tarif À CET INSTANT : un sous-compte qui suit son principal
     // paie la mercuriale du principal (`sous-comptes.md`, §2.2).
-    const parties = await this.parties.partiesAt(companyId, at);
+    // Porte inconnue : la fiche est lue par le staff, pas par le client.
+    const parties = await this.parties.partiesAt(companyId, at, "unknown");
 
     const [ladders, catalogue, mercuriales, live] = await Promise.all([
       this.ladders.listAll(at),
@@ -118,7 +119,7 @@ export class CompanyPricingQuery {
     // `promotions`, l'étage promotion vient des promotions de CE client.
     const { rules, promotions } = boardDecisions(
       decided.rules,
-      await this.linePromotions.forLot(parties.companyId, at, false),
+      await this.linePromotions.forLot(parties, at, false),
     );
 
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));

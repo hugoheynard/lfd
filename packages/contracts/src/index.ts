@@ -696,6 +696,12 @@ export { cartAdjustmentSchema, cartAdjustmentCents, discountCentsOf } from "./ca
 export type { CartAdjustment } from "./cart-adjustment.js";
 export { discountLabelIn } from "./discount-label.js";
 export type { DiscountLabelView } from "./discount-label.js";
+export type {
+  PromotionOfferEffectView,
+  PromotionOfferFulfillmentView,
+  ShopItemFulfillmentOfferView,
+  SignInOfferView,
+} from "./promotion-offer.js";
 export {
   pickupAddressPayloadSchema,
   pickupOpeningSchema,

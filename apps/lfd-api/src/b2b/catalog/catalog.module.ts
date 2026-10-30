@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { PricerModule } from "../pricing/pricer.module.js";
+import { PricingModule } from "../pricing/pricing.module.js";
 
 import { RetracePricesFromReferentialHandler } from "./application/commands/retrace-prices-from-referential.handler.js";
 import { CatalogPriceRetracer } from "./domain/ports/catalog-price-retracer.js";
@@ -59,6 +60,7 @@ import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
+import { ShopCatalogueOffers } from "./application/shop-catalogue-offers.js";
 import { CatalogViewers } from "./application/catalog-viewers.service.js";
 import { ReservedArticleGuard } from "./application/reserved-article-guard.service.js";
 import { ReservationHoldersReader } from "./domain/ports/reservation-holders.reader.js";
@@ -131,7 +133,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
   // `OrderCutoffsInForceModule` : la vitrine ne montre la limite d'un article
   // que si elle est plus stricte que la règle générale (§4 de
   // `limites-de-commande/limites-produit.md`, 2026-10-21).
-  imports: [PricerModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
+  // `PricingModule` pour les promotions que le rayon mentionne (L10) : il
+  // n'importe rien, donc aucun cycle.
+  imports: [PricerModule, PricingModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
   controllers: [
     AdminCatalogController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
@@ -159,6 +163,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.
     ShopCataloguePricing,
+    ShopCatalogueOffers,
     CatalogViewers,
     ReservedArticleGuard,
     { provide: ReservationHoldersReader, useClass: PrismaReservationHoldersReader },

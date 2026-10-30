@@ -51,6 +51,7 @@ export class ReadShopCatalogueHandler implements IQueryHandler<ReadShopCatalogue
     if (query.audience === "pro") {
       return this.pricing.pricedWithoutCompany("pro", query.language);
     }
-    return this.pricing.priced(null, query.language);
+    // La route publique : un invité (L10) — un public « inscrits » n'y baisse rien.
+    return this.pricing.priced(null, "guest", query.language);
   }
 }

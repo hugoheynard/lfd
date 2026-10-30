@@ -204,6 +204,15 @@ export class ShopQuote {
   });
 
   /**
+   * **Ce qu'une connexion ouvrirait** (plan des promotions, § 8, lot L10) —
+   * servi au seul devis anonyme ; `null` pour qui est déjà reconnu, même le
+   * temps qu'un devis reconnu remplace l'anonyme.
+   */
+  readonly signInOffer = computed(() =>
+    this.auth.isAuthenticated() ? null : (this.view().signInOffer ?? null),
+  );
+
+  /**
    * Ce dont le décompte dépend, et **rien d'autre**.
    *
    * Une clé plutôt que les signaux bruts : sans elle, tout changement du

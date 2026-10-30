@@ -171,11 +171,19 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * contrôle l'a posée. UNE lecture par devis à froid, constante, gardée sous
  * l'estampille du cache (zéro à chaud). Sous `legacy`, rien d'autre n'est lu.
  *
+ * 🔴 **De 8 à 9 le 2026-10-30** (lot L10 du même plan) : le devis ANONYME se
+ * demande ce qu'une connexion ouvrirait (`GuestSignInOffer`) — « Vous avez un
+ * compte ? Connectez-vous pour profiter de −20 % ». Il relit la source, gardée
+ * sous le cache, mais l'estampille se relit à chaque question au cache
+ * (`PricingMaterialsCache.of`) : UNE lecture de plus, constante, à froid comme
+ * à chaud. Sous `legacy`, rien d'autre ; sous `promotions`, les promotions
+ * (cachées) et le rangement des lignes, seulement s'il y a une candidate.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 8;
+const COLD_QUOTE_OPS = 9;
 
 /**
  * Sème `count` règles de promotion **distinctes**.

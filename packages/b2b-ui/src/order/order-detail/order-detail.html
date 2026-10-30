@@ -92,7 +92,7 @@
                        Sans eux, la seule réponse à un client qui conteste serait
                        « c'était le prix ». Les règles qui les ont produits
                        peuvent avoir été retirées depuis : la trace, elle, reste. -->
-                  @for (label of priceStepLabels(line); track $index) {
+                  @for (label of priceStepLabels(line, locale()); track $index) {
                     <span class="od-step">{{ label }}</span>
                   }
                   @if (wasFloored(line)) {

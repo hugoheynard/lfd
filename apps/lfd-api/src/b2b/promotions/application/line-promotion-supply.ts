@@ -5,7 +5,15 @@ import { LinePromotionReader } from "../domain/ports/line-promotion.reader.js";
 import { PromotionShadowJournal } from "../domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../domain/ports/promotions-source.reader.js";
 import { computesPromotions, type PromotionsSource } from "../domain/promotions-source.js";
+import { PREVIEWED_FACTS, type PricedBuyerKind } from "../domain/promotion-targeting.js";
 import { PromotionAudienceFactsResolver } from "./promotion-audience-facts.resolver.js";
+
+/** L'acheteur d'un lot, tel que la porte du prix le connaît — établi au serveur. */
+export interface LotBuyer {
+  /** La société servie ; `null` = particulier, ou le tableau général. */
+  readonly companyId: string | null;
+  readonly buyerKind: PricedBuyerKind;
+}
 
 /** La source en vigueur, et les promotions de ligne qui visent ce client à cet instant. */
 export interface LinePromotionsForLot {
@@ -33,9 +41,9 @@ export interface LinePromotionsForLot {
  *
  * L'acheminement n'entre pas ici : une promotion de ligne n'en a pas (CHECK
  * `basket ⇔ fulfillment_kind <> 'any'`, § 13.6). La porte d'entrée
- * (`buyerKind`) n'est pas encore transmise au chargeur des prix — `unknown`,
- * donc un public « invités » ou « inscrits » ne baisse aucun prix de ligne
- * avant le lot L10, qui la fait porter au rayon et au devis.
+ * (`buyerKind`) arrive de la route depuis le lot L10 — rayon, devis,
+ * passation, révision ; `unknown` pour le staff (tableau, projection), et
+ * l'aperçu déclaré (`previewed`) ne joue que « tout le monde ».
  */
 @Injectable()
 export class LinePromotionSupply {
@@ -46,16 +54,20 @@ export class LinePromotionSupply {
     private readonly journal: PromotionShadowJournal,
   ) {}
 
-  async forLot(companyId: string | null, at: Date, replay: boolean): Promise<LinePromotionsForLot> {
+  async forLot(buyer: LotBuyer, at: Date, replay: boolean): Promise<LinePromotionsForLot> {
     const source = await this.sources.current();
     if (!computesPromotions(source)) {
       return { source, promotions: [], journal: null };
     }
     const all = replay ? await this.lines.liveAt(at) : await this.lines.live();
-    const facts = await this.facts.factsFor(
-      { companyId, buyerKind: "unknown", fulfillment: null },
-      all,
-    );
+    const { buyerKind } = buyer;
+    const facts =
+      buyerKind === "previewed"
+        ? PREVIEWED_FACTS
+        : await this.facts.factsFor(
+            { companyId: buyer.companyId, buyerKind, fulfillment: null },
+            all,
+          );
     return {
       source,
       promotions: promotionsAdmitted(all, at, facts),

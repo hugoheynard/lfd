@@ -211,4 +211,18 @@ describe("Order.draft — la remise de retrait seulement sur un retrait", () => 
     expect(state.deliveryFeeCents).toBe(1_500);
     expect(state.discountCents).toBe(0);
   });
+
+  // Lot L10 du plan des promotions : une promotion de livraison est une
+  // remise de panier sur une commande livrée, port compris à côté.
+  it("accepte la livraison remisée par une promotion de livraison, avec son port", () => {
+    const state = placed({
+      fulfillment: DELIVERED,
+      deliveryFeeCents: 1_500,
+      deliveryFeeAdjustment: FEE,
+      discountPromotionId: "promo_livraison",
+    });
+
+    expect(state.discountCents).toBe(100);
+    expect(state.deliveryFeeCents).toBe(1_500);
+  });
 });

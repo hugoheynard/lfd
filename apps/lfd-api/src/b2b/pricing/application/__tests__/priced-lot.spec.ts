@@ -73,7 +73,7 @@ function lotOf(articles = [CROISSANT, PAIN], rules: readonly PriceRule[] = []): 
         promotions: [],
       }),
       NO_EVIDENCE,
-      { companyId: null, pricingCompanyId: null },
+      { companyId: null, pricingCompanyId: null, buyerKind: "unknown" },
       AT,
     ),
     articles,

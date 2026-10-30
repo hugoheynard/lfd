@@ -33,7 +33,7 @@ const AT = new Date("2026-08-17T00:00:00.000Z");
 const CONTEXT = pricingContextFor(
   { sku: "VIE-001", categoryPath: ["fam-vien"], saleUnit: "piece" },
   1,
-  { companyId: null, pricingCompanyId: null },
+  { companyId: null, pricingCompanyId: null, buyerKind: "unknown" },
   AT,
 );
 /** La suite déclare son catalogue, et le scelle comme le port le ferait. */
@@ -269,7 +269,7 @@ describe("le tableau et la source des promotions", () => {
       AT,
       null,
       [],
-      { companyId: null, pricingCompanyId: null },
+      { companyId: null, pricingCompanyId: null, buyerKind: "unknown" },
       decided.promotions,
     );
     const view = itemView(ARTICLE, CONTEXT, materials, { rules: decided.rules, floors: [] });

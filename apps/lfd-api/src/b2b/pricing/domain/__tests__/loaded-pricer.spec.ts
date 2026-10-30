@@ -187,7 +187,12 @@ function pricerOver(
     mercuriale: parts.mercuriale ?? null,
     promotions: [],
   });
-  return LoadedPricer.over(materials, evidence, { companyId, pricingCompanyId: companyId }, AT);
+  return LoadedPricer.over(
+    materials,
+    evidence,
+    { companyId, pricingCompanyId: companyId, buyerKind: "unknown" },
+    AT,
+  );
 }
 
 describe("price — la question ordinaire", () => {

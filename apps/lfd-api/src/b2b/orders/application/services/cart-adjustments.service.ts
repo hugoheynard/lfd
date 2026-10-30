@@ -5,10 +5,9 @@ import {
   pickupDiscountHasRules,
   pickupOpenTo,
   preselectedPickupId,
-  type CartAdjustment,
   type CustomerAudience,
 } from "@lfd/contracts";
-import type { DeliveryZoneView, PickupAddressView, WindowMode } from "@lfd/contracts";
+import type { PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { DeliveryAvailabilityReader } from "../../../delivery-availability/domain/ports/delivery-availability.reader.js";
@@ -31,63 +30,14 @@ import {
   ineligibleSkusOf,
   pickupDiscountCentsOf,
 } from "../../domain/services/pickup-discount-eligibility.js";
-import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
-import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
-import type { PromotionBuyerKind } from "../../../promotions/domain/promotion-targeting.js";
-import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
+import {
+  NO_BASKET_PROMOTION,
+  type BasketLine,
+} from "../../domain/services/basket-promotion-choice.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
+import type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
 
-/**
- * **Qui commande, établi au serveur** — ce dont la remise de retrait et les
- * promotions panier dépendent. Jamais lu d'un corps de requête.
- */
-export interface PickupBuyer {
-  readonly audience: CustomerAudience;
-  readonly companyId: string | null;
-  /** Le statut que la clientèle a été tirée de — lu UNE fois, par `CustomerAudiences`. */
-  readonly companyStatus: OrderCompanyStatus | null;
-  /** La porte d'entrée : posée par la route (devis) ou figée sur la commande (L1). */
-  readonly buyerKind: PromotionBuyerKind;
-}
-
-/** Le point de retrait retenu, et ce qu'il retire du panier. */
-export interface ResolvedPickup {
-  readonly point: PickupAddressView;
-  readonly discountCents: number;
-  readonly discountAdjustment: CartAdjustment | null;
-  /**
-   * Les SKU que la remise ne couvre pas — vide sans remise ou sans règle.
-   * La passation en fige le drapeau sur chaque ligne (R2).
-   */
-  readonly ineligibleSkus: ReadonlySet<string>;
-  /**
-   * La promotion panier retenue sous la source `promotions` ; `null` sous
-   * l'ancien chemin (la remise du site n'a pas d'identifiant de promotion).
-   */
-  readonly promotionId: string | null;
-  /** Le libellé de cette promotion pour l'acheteur, que la commande fige (L8b) ; `null` sinon. */
-  readonly discountLabel: ServedPromotionLabel | null;
-}
-
-/** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
-export interface ResolvedDelivery {
-  readonly zone: DeliveryZoneView;
-  /**
-   * Le mode créneau / échéance **global**, lu avec l'ouverture dans le même
-   * réglage (CA-D2). Une adresse du carnet peut le surcharger : la caisse
-   * résout, ce service ne connaît pas le carnet.
-   */
-  readonly globalWindowMode: WindowMode;
-  readonly feeCents: number;
-  /**
-   * **Ce qui a produit** `feeCents` — le barème de la zone, tel qu'il était.
-   *
-   * Rendu à côté du montant pour que la commande le FIGE, exactement comme elle
-   * fige déjà celui de la remise : `zone.fee` est mutable, et un montant nu ne
-   * se relit pas. Cf. `OrderView.deliveryFeeAdjustment`.
-   */
-  readonly feeAdjustment: CartAdjustment;
-}
+export type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
 
 /**
  * **Ce que l'acheminement retire ou ajoute au panier**, et rien d'autre.
@@ -249,8 +199,8 @@ export class CartAdjustments {
   }
 
   /**
-   * La zone **déduite du code postal livré**, et ses frais — si la livraison est
-   * proposée à cette clientèle.
+   * La zone **déduite du code postal livré**, ses frais, et la promotion de
+   * livraison — si la livraison est proposée à cette clientèle.
    *
    * Déduite, jamais choisie : c'est une propriété de l'adresse. Personne ne peut
    * donc annoncer un secteur moins cher que le sien — ni à la commande, ni au
@@ -259,27 +209,45 @@ export class CartAdjustments {
    * L'ouverture se juge AVANT la zone : fermée, la livraison l'est partout, et
    * répondre « on ne livre pas ce code postal » mentirait sur la raison.
    *
+   * La promotion de livraison (L10) passe par la même source que celle du
+   * retrait (`BasketPromotions.served`) : rien sous `legacy`, la promotion
+   * « en livraison » retenue sous `promotions`. Les frais n'en sont pas
+   * l'assiette : elle porte sur les marchandises, comme celle du retrait.
+   *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
    * @throws {NoDeliveryZoneForPostalCodeError} on ne livre pas ce code postal.
    */
   async forDelivery(
     codePostal: string,
-    subtotalCents: number,
-    audience: CustomerAudience,
+    lines: readonly BasketLine[],
+    buyer: PickupBuyer,
+    known: ReadonlyMap<string, OrderLineClassification> | null = null,
   ): Promise<ResolvedDelivery> {
     const settings = await this.delivery.current();
-    if (!deliveryOpenTo(settings, audience)) {
+    if (!deliveryOpenTo(settings, buyer.audience)) {
       throw new DeliveryClosedForAudienceError();
     }
     const zone = await this.zones.resolveForPostalCode(codePostal);
     if (zone === null) {
       throw new NoDeliveryZoneForPostalCodeError(codePostal);
     }
+    const subtotalCents = lines.reduce((sum, line) => sum + line.htCents, 0);
+    const discount = await this.basket.served(NO_BASKET_PROMOTION, {
+      lines,
+      buyer: {
+        companyId: buyer.companyId,
+        companyStatus: buyer.companyStatus,
+        buyerKind: buyer.buyerKind,
+        fulfillment: { method: "delivery", pickupId: null },
+      },
+      known,
+    });
     return {
       zone,
       globalWindowMode: settings.windowMode,
       feeCents: cartAdjustmentCents(zone.fee, subtotalCents),
       feeAdjustment: zone.fee,
+      discount,
     };
   }
 }

@@ -168,7 +168,7 @@ export class PricingMaterialsLoader {
         : this.mercuriales.liveFor(parties.pricingCompanyId, at),
       // La source des promotions, et — si elle les calcule — celles du point
       // ligne. En `legacy`, une lecture de plus et rien d'autre (L5).
-      this.linePromotions.forLot(parties.companyId, at, replay),
+      this.linePromotions.forLot(parties, at, replay),
     ]);
     const build = (chain: Chain) =>
       this.pricerOf(

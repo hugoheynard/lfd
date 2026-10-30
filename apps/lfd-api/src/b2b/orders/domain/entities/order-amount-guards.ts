@@ -154,6 +154,12 @@ export function ensureDiscountMatches(
  * Lu sur le montant ET sur la trace figée : un ajustement de remise qui rend
  * zéro reste une remise de retrait posée au mauvais endroit.
  *
+ * Depuis le lot L10 du plan des promotions, une commande LIVRÉE porte une
+ * remise de panier quand une **promotion de livraison** l'a produite — et
+ * seulement alors : elle porte l'identifiant de cette promotion
+ * (`discountPromotionId`), qu'aucune remise de site n'a jamais eu. Le port
+ * reste à côté : la promotion porte sur les marchandises, pas sur la course.
+ *
  * @throws {MisplacedPickupDiscountError} remise sur une commande livrée, ou
  * à côté de frais de livraison sur un retrait.
  */
@@ -165,6 +171,9 @@ export function ensurePickupDiscountOnlyOnPickup(
     return;
   }
   if (fulfillment.method !== "pickup") {
+    if ((input.discountPromotionId ?? null) !== null) {
+      return;
+    }
     throw new MisplacedPickupDiscountError("not_picked_up");
   }
   if (input.deliveryFeeCents > 0) {

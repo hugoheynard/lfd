@@ -1,4 +1,4 @@
-import type { CustomerOrderLineView, CustomerOrderView } from '@lfd/contracts';
+import { stepLabelIn, type CustomerOrderLineView, type CustomerOrderView } from '@lfd/contracts';
 
 import { formatAdjustment, formatCents, formatLateFeeTerms } from './order-format';
 
@@ -33,15 +33,17 @@ export function entryPriceOf(line: CustomerOrderLineView): number | null {
 }
 
 /**
- * Les libellés des étages qui ont produit un effet, dans l'ordre.
+ * Les libellés des étages qui ont produit un effet, dans l'ordre — dans la
+ * langue du lecteur quand la trace la porte (une promotion depuis L8b), le
+ * français sinon (lot L10 du plan des promotions).
  *
  * Le libellé est **destiné au client** — c'est ce que le contrat en dit, et
  * c'est pour ça qu'il peut s'afficher des deux côtés sans porte à poser. Une
  * ligne sans trace n'a rien à dire, et rend une liste vide plutôt qu'une phrase
  * inventée.
  */
-export function priceStepLabels(line: CustomerOrderLineView): readonly string[] {
-  return (line.pricing?.steps ?? []).map((step) => step.label);
+export function priceStepLabels(line: CustomerOrderLineView, locale = 'fr'): readonly string[] {
+  return (line.pricing?.steps ?? []).map((step) => stepLabelIn(step, locale));
 }
 
 /**

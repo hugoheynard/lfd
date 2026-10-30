@@ -11,6 +11,7 @@ import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
 import { PricingPartiesResolver } from "./pricing-parties.resolver.js";
 import { PRICING_RESOLVE_TIMING, type PricingCaller } from "./pricing-caller.js";
+import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
 import { Stopwatch } from "../../../platform/metrics/stopwatch.js";
 import { TimingRecorder } from "../../../platform/metrics/timing-recorder.js";
 
@@ -28,6 +29,13 @@ export interface LotRequest {
   /** Dans l'ordre où ils seront rendus. Un SKU en double est refusé. */
   readonly articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[];
   readonly companyId: string | null;
+  /**
+   * **La porte d'entrée**, posée par la route (lot L10 du plan des
+   * promotions) : `guest` sur une route publique, `registered` derrière un
+   * `Principal` résolu, `unknown` pour le staff, `previewed` pour l'aperçu
+   * dont l'audience est déclarée. Obligatoire : un appelant oublié ne compile pas.
+   */
+  readonly buyerKind: PricedBuyerKind;
   /**
    * **Ce que cette question autorise à prouver** — cf. {@link PriceLens}.
    *
@@ -139,7 +147,7 @@ export class Pricer {
     // mercuriale d'alors, pas celle du principal (`sous-comptes.md`, §2.2).
     const [items, parties] = await Promise.all([
       this.sealedAt(request.articles, at, epoch),
-      this.parties.partiesAt(request.companyId, at),
+      this.parties.partiesAt(request.companyId, at, request.buyerKind),
     ]);
     const pricers = await this.materials.pricerFor(
       items,

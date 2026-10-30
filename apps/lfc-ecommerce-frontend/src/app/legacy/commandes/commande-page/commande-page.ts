@@ -26,6 +26,7 @@ import { downloadText } from '../download-text';
 import { NotifyService } from '../../../notify.service';
 import { OrdersService } from '../orders.service';
 import { RecurringOrderPanel } from '../recurring-order-panel/recurring-order-panel';
+import { ClientLocale } from '../../../client/client-locale.service';
 
 /** Où en est le chargement de LA commande affichée. */
 type PageState = 'loading' | 'ready' | 'error';
@@ -47,6 +48,8 @@ type PageState = 'loading' | 'ready' | 'error';
 })
 export class CommandePage {
   private readonly route = inject(ActivatedRoute);
+  /** La langue du lecteur : le libellé d'une promotion se lit dans la sienne (L10). */
+  protected readonly locale = inject(ClientLocale).current;
   private readonly orders = inject(OrdersService);
   private readonly panelHost = inject(FoldPanelHostService);
   private readonly notify = inject(NotifyService);

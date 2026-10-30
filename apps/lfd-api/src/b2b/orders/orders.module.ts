@@ -122,6 +122,7 @@ import { QuoteOrderHandler } from "./application/queries/quote-order.handler.js"
 import { QuoteShopCartHandler } from "./application/queries/quote-shop-cart.handler.js";
 import { QuoteMyShopCartHandler } from "./application/queries/quote-my-shop-cart.handler.js";
 import { ShopCartQuoting } from "./application/services/shop-cart-quoting.service.js";
+import { GuestSignInOffer } from "./application/services/guest-sign-in-offer.service.js";
 import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
@@ -572,6 +573,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     QuoteOrderHandler,
     ReadMyShopCatalogueHandler,
     ShopCartQuoting,
+    GuestSignInOffer,
     QuoteShopCartHandler,
     QuoteMyShopCartHandler,
     GetOrderDraftHandler,

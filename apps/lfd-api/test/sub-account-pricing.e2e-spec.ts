@@ -125,6 +125,7 @@ async function lotOf(companyId: string, quantity: number, at?: Date): Promise<Pr
   return pricer.load({
     articles: [{ article: found.article, quantity }],
     companyId,
+    buyerKind: "unknown",
     at,
     caller: "cart",
   });

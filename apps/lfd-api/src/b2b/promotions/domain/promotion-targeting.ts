@@ -16,8 +16,30 @@ import type { PromotionFulfillment, PromotionFulfillmentKind } from "./promotion
  * accordée sur une supposition est une remise que personne n'a décidée.
  */
 
-/** Sans compte, reconnu, ou inconnu (le tableau du staff, le rayon avant L10). */
+/** Sans compte, reconnu, ou inconnu (le tableau du staff, la projection). */
 export type PromotionBuyerKind = "guest" | "registered" | "unknown";
+
+/**
+ * **La porte d'entrée telle que le tarif la transmet au point ligne** (lot
+ * L10, § 13.7) : celle de la route, plus `previewed` — l'aperçu sans société
+ * dont l'audience est DÉCLARÉE par la requête (`GET /shop/catalogue?audience=pro`).
+ * Une audience déclarée n'est pas un fait établi : seul « tout le monde » y
+ * joue (§ 7 S — le rayon), sans quoi taper `?audience=pro` publierait une
+ * promotion réservée.
+ */
+export type PricedBuyerKind = PromotionBuyerKind | "previewed";
+
+/**
+ * Les faits de l'aperçu déclaré : aucun statut, aucune porte, aucune société —
+ * seul `everyone` admet (`audienceAdmits` ne vise ni société ni statut inconnu).
+ */
+export const PREVIEWED_FACTS: PromotionAudienceFacts = {
+  companyId: null,
+  companyStatus: "unknown",
+  principal: "unknown",
+  buyerKind: "unknown",
+  fulfillment: null,
+};
 
 /** Le principal que la société suit — `unknown` tant qu'aucune question ne l'a lu. */
 export type PrincipalFact = "unknown" | { readonly companyId: string | null };

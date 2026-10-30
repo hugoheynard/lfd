@@ -3,10 +3,12 @@ import { Injectable } from "@nestjs/common";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import type { LivePromotion } from "../domain/live-promotion.js";
 import { PromotionCompanyStatusReader } from "../domain/ports/promotion-company-status.reader.js";
+import { PromotionPrincipalReader } from "../domain/ports/promotion-principal.reader.js";
 import {
   audienceNeedsStatus,
   type FulfillmentFact,
   type PromotionAudienceFacts,
+  type PrincipalFact,
   type PromotionBuyerKind,
 } from "../domain/promotion-targeting.js";
 
@@ -32,25 +34,45 @@ export interface KnownBuyerFacts {
  * un public qui le demande — après la reprise, aucune promotion de ligne
  * n'en a (publics `everyone` et `company`), et le devis ne paie rien.
  *
- * Le principal suivi (`company_and_sites`) n'est pas lu en L5 : `unknown`,
- * donc un tel public ne vise que la société elle-même. Aucun geste ne pose
- * encore ce public (l'éditeur est le lot L7).
+ * Le principal (`company_and_sites`, lot L10) est lu de même, seulement si
+ * une candidate vise une société ET ses sites : sans lui, un site ne serait
+ * jamais admis par le public de son principal.
  */
 @Injectable()
 export class PromotionAudienceFactsResolver {
-  constructor(private readonly statuses: PromotionCompanyStatusReader) {}
+  constructor(
+    private readonly statuses: PromotionCompanyStatusReader,
+    private readonly principals: PromotionPrincipalReader,
+  ) {}
 
   async factsFor(
     known: KnownBuyerFacts,
     candidates: readonly LivePromotion[],
   ): Promise<PromotionAudienceFacts> {
+    const [companyStatus, principal] = await Promise.all([
+      this.statusOf(known, candidates),
+      this.principalOf(known.companyId, candidates),
+    ]);
     return {
       companyId: known.companyId,
-      companyStatus: await this.statusOf(known, candidates),
-      principal: known.companyId === null ? { companyId: null } : "unknown",
+      companyStatus,
+      principal,
       buyerKind: known.buyerKind,
       fulfillment: known.fulfillment,
     };
+  }
+
+  private async principalOf(
+    companyId: string | null,
+    candidates: readonly LivePromotion[],
+  ): Promise<PrincipalFact> {
+    if (companyId === null) {
+      return { companyId: null };
+    }
+    if (!candidates.some(namesSites)) {
+      return "unknown";
+    }
+    return { companyId: await this.principals.principalOf(companyId) };
   }
 
   private async statusOf(
@@ -81,4 +103,9 @@ function needsStatus(promotion: LivePromotion): boolean {
     promotion.audienceLabels.individuals !== null ||
     promotion.audienceLabels.pros !== null
   );
+}
+
+/** Une promotion qui vise une société ET ses sites demande le principal de l'acheteur. */
+function namesSites(promotion: LivePromotion): boolean {
+  return promotion.audiences.some((audience) => audience.kind === "company_and_sites");
 }

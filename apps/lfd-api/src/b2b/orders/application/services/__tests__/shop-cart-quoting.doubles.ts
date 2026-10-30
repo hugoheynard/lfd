@@ -44,7 +44,8 @@ import { ShopCartQuoting } from "../shop-cart-quoting.service.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { basketPromotions } from "./basket-promotions.doubles.js";
+import { basketPromotions, guestSignInOffer } from "./basket-promotions.doubles.js";
+import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -218,6 +219,8 @@ export interface QuotingSetup {
   readonly companyStatus?: OrderCompanyStatus | null;
   readonly voucherCents?: number | null;
   readonly decisions?: QuotingDecisions;
+  /** Ce qu'une connexion ouvrirait (L10) ; par défaut, l'ancien chemin muet. */
+  readonly signIn?: GuestSignInOffer;
 }
 
 export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
@@ -247,5 +250,6 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
     new VoucherOf(setup.voucherCents ?? null),
     new FixedClock(PRICED_AT),
     new FixedDeliveryVat(setup.deliveryVatMode ?? "standard"),
+    setup.signIn ?? guestSignInOffer(),
   );
 }

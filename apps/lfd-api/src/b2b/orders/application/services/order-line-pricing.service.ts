@@ -3,8 +3,15 @@ import { saleUnitOfLine, type OrderLineInput as OrderLineRequest } from "@lfd/co
 
 import type { PricingParties } from "../../../pricing/domain/loaded-pricer.js";
 
-/** La société servie, seule clé que l'appelant connaît. */
+/** La société servie, seule clé que le catalogue lit. */
 type ServedCompany = Pick<PricingParties, "companyId">;
+
+/**
+ * La société servie et la porte d'entrée (lot L10 du plan des promotions) :
+ * ce que la tarification d'un panier reçoit — la porte vient de la route ou
+ * de la commande, jamais d'un corps de requête.
+ */
+type ServedBuyer = Pick<PricingParties, "companyId" | "buyerKind">;
 import { Pricer } from "../../../pricing/application/pricer.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import {
@@ -89,12 +96,12 @@ export class OrderLinePricing {
    */
   async resolve(
     input: readonly OrderLineRequest[],
-    parties: ServedCompany,
+    parties: ServedBuyer,
     caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     const viewer = await this.billingViewer(parties);
-    return this.priceAll(input, { withTiers: false, caller, viewer }, at);
+    return this.priceAll(input, { withTiers: false, caller, viewer, parties }, at);
   }
 
   /**
@@ -108,12 +115,12 @@ export class OrderLinePricing {
    */
   async explain(
     input: readonly OrderLineRequest[],
-    parties: ServedCompany,
+    parties: ServedBuyer,
     caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
     const viewer = await this.billingViewer(parties);
-    return this.priceAll(input, { withTiers: true, caller, viewer }, at);
+    return this.priceAll(input, { withTiers: true, caller, viewer, parties }, at);
   }
 
   /**
@@ -158,7 +165,7 @@ export class OrderLinePricing {
    */
   async resolveWithoutStaleUnits(
     input: readonly OrderLineRequest[],
-    parties: ServedCompany,
+    parties: ServedBuyer,
     caller: PricingCaller,
   ): Promise<{
     readonly resolved: ResolvedOrderLine[];
@@ -180,7 +187,7 @@ export class OrderLinePricing {
     const kept = split.kept.map(({ line }) => line);
     const resolved = await this.priceAll(
       kept,
-      { withTiers: false, caller, viewer },
+      { withTiers: false, caller, viewer, parties },
       undefined,
       catalogue,
     );
@@ -201,10 +208,12 @@ export class OrderLinePricing {
       withTiers,
       caller,
       viewer,
+      parties,
     }: {
       readonly withTiers: boolean;
       readonly caller: PricingCaller;
       readonly viewer: CatalogViewer;
+      readonly parties: ServedBuyer;
     },
     /**
      * L'instant de résolution, **quand l'appelant en a un**.
@@ -302,6 +311,9 @@ export class OrderLinePricing {
       // La société du LECTEUR, jamais l'identifiant brut : servie au public
       // (P0), elle ne charge ni mercuriale ni tarif de canal (§ 11, B2).
       companyId: pricingCompanyOf(viewer),
+      // La porte d'entrée de la route (L10) : un public « inscrits » ne
+      // baisse le prix que derrière une route qui a résolu un `Principal`.
+      buyerKind: parties.buyerKind,
       at,
       caller,
     });
