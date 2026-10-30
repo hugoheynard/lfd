@@ -644,3 +644,42 @@ Conséquences, à traiter dans la refonte du plan (avant `vitruve`) :
   priorité ou refus à la pose ;
 - écrans : la fiche d'un site (Réglages › Sites) garde-t-elle un raccourci
   vers « ses » promotions ?
+
+## 12. Le modèle retenu (Hugo, 2026-10-30) — remplace les §§ 3 et suivants là où ils divergent
+
+**Exigence de Hugo : le modèle est EXTENSIBLE** — un critère neuf s'ajoute
+sans refaire ni l'agrégat ni ses lecteurs.
+
+```
+Promotion (agrégat)
+├─ identité      nom interne · libellé client (FR/EN/IT) · motif
+├─ effet         −X % ou −X € unitaire · plancher propre optionnel
+├─ fenêtre       début obligatoire · fin optionnelle
+├─ état          active · en pause · archivée
+├─ public        Tout le monde | Particuliers (tous · invités · inscrits · segment*)
+│                | Pros (tous · actifs · en cours d'inscription · une société ± ses sites · segment*)
+├─ acheminement  Tous | Retrait (tous les points · un point) | Livraison (toute · zone*)
+├─ portée        tout sauf | seulement + exceptions famille / produit, produit > famille
+└─ conditions    liste vide par défaut — panier minimum*, quantité minimum*, jours/heures*,
+                 première commande*, code promo*, limite d'usage*
+                 (* = prévu, non bâti)
+```
+
+- **Trois objets** : la _portée d'éligibilité_ (partagée, `b2b/shared`, « cet
+  article est-il concerné ? ») ; le _ciblage_ (« cette commande est-elle
+  concernée ? », à partir de faits établis par le serveur : décision unique
+  « pro ou pas », invité/inscrit, acheminement, point) ; la _promotion_
+  (l'agrégat et ses invariants).
+- **Extensibilité** : chaque axe est un type somme fermé côté domaine, un
+  critère neuf = une variante + son évaluateur, sans toucher aux autres ; les
+  conditions sont une LISTE de conditions typées (toutes doivent tenir), donc
+  ajouter « code promo » n'est qu'une variante de plus.
+- **L'existant** : chaque remise de point de retrait devient une promotion
+  (public Particuliers tous ou Pros tous · acheminement Retrait · ce point ·
+  portée reprise telle quelle · sans fin) ; une règle de prix d'étage
+  « promotion » devient une promotion « seulement [sa portée] ». Mercuriale,
+  volume et geste restent des règles de prix.
+- **Laissé ouvert, à traiter ensuite** : cumul de deux promotions sur un même
+  article, ordre face à la mercuriale et au volume (il doit reproduire au
+  centime les prix d'aujourd'hui juste après la reprise), chevauchement à la
+  pose, affichage au rayon d'une promo conditionnée par l'acheminement.
