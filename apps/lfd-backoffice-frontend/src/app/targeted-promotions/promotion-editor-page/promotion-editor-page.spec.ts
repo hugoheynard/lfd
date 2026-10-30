@@ -22,7 +22,6 @@ interface Sent {
 
 async function render(
   inputs: { id?: string; pickupId?: string },
-  editable = true,
   write: { revise?: () => Promise<void>; pose?: () => Promise<string> } = {},
 ) {
   const sent: Sent = { revised: [], posed: [] };
@@ -33,7 +32,6 @@ async function render(
       {
         provide: PromotionsService,
         useValue: {
-          source: async () => ({ source: editable ? 'promotions' : 'legacy', editable }),
           pickupNames: async () => new Map([['pk_coeur', 'Cœur de station']]),
           get: async () => promotionView({ internalName: 'Croissants' }),
           revise: async (id: string, terms: PromotionTermsPayload, reason: string | null) => {
@@ -58,6 +56,17 @@ async function render(
   return { root: fixture.nativeElement as HTMLElement, fixture, sent };
 }
 
+/** Renomme la promotion, comme au clavier : le brouillon cesse d'égaler la relue. */
+function rename(root: HTMLElement, fixture: { detectChanges(): void }, name: string): void {
+  const field = [...root.querySelectorAll('input')].find((entry) => entry.value === 'Croissants');
+  if (field === undefined) {
+    throw new Error('Champ « Nom interne » introuvable.');
+  }
+  field.value = name;
+  field.dispatchEvent(new Event('input'));
+  fixture.detectChanges();
+}
+
 const button = (root: HTMLElement, text: string) =>
   [...root.querySelectorAll('button')].find((entry) => entry.textContent?.trim() === text);
 
@@ -71,16 +80,16 @@ describe('PromotionEditorPage', () => {
     expect(root.textContent).toContain('Donnez un nom interne');
   });
 
-  it('modifie une promotion existante, relue', async () => {
-    const { root } = await render({ id: 'promo_1' });
+  /**
+   * Régression : une promotion relue sans changement s'enregistrait quand
+   * même, et le serveur traçait une révision vide (corrigé le 2026-10-30).
+   */
+  it('modifie une promotion existante, relue : rien à enregistrer tant qu’elle est inchangée', async () => {
+    const { root, fixture } = await render({ id: 'promo_1' });
     expect(root.textContent).toContain('Modifier « Croissants »');
-    expect(button(root, 'Enregistrer')?.disabled).toBe(false);
-  });
-
-  it('avant la bascule, dit qu’on ne peut pas encore écrire', async () => {
-    const { root } = await render({ id: 'promo_1' }, false);
-    expect(root.textContent).toContain('après la bascule');
     expect(button(root, 'Enregistrer')?.disabled).toBe(true);
+    rename(root, fixture, 'Croissants du matin');
+    expect(button(root, 'Enregistrer')?.disabled).toBe(false);
   });
 
   describe('Enregistrer', () => {
@@ -88,33 +97,42 @@ describe('PromotionEditorPage', () => {
       [...root.querySelectorAll('input')].map((entry) => entry.value);
 
     it('un refus du serveur s’affiche en alerte, sans perdre la saisie ni quitter l’éditeur', async () => {
-      const { root, fixture, sent } = await render({ id: 'promo_1' }, true, {
-        revise: () =>
-          Promise.reject({ error: { message: 'Elle se dispute « Croissant » avec une autre.' } }),
-      });
+      const { root, fixture, sent } = await render(
+        { id: 'promo_1' },
+        {
+          revise: () =>
+            Promise.reject({ error: { message: 'Elle se dispute « Croissant » avec une autre.' } }),
+        },
+      );
+      rename(root, fixture, 'Croissants du matin');
       button(root, 'Enregistrer')?.click();
       await fixture.whenStable();
       fixture.detectChanges();
       expect(sent.revised).toHaveLength(1);
       expect(root.textContent).toContain('Elle se dispute « Croissant » avec une autre.');
-      expect(inputValues(root)).toContain('Croissants');
+      expect(inputValues(root)).toContain('Croissants du matin');
       expect(TestBed.inject(Router).url).not.toContain('promotions-ciblees');
       // La saisie intacte, on peut renvoyer : le bouton est rendu.
       expect(button(root, 'Enregistrer')?.disabled).toBe(false);
     });
 
     it('une panne sans message du serveur dit quand même que rien n’est enregistré', async () => {
-      const { root, fixture } = await render({ id: 'promo_1' }, true, {
-        revise: () => Promise.reject(new Error('boom')),
-      });
+      const { root, fixture } = await render(
+        { id: 'promo_1' },
+        {
+          revise: () => Promise.reject(new Error('boom')),
+        },
+      );
+      rename(root, fixture, 'Croissants du matin');
       button(root, 'Enregistrer')?.click();
       await fixture.whenStable();
       fixture.detectChanges();
       expect(root.textContent).toContain("n'a pas pu être enregistrée");
     });
 
-    it('envoie la promotion relue, sans motif inventé, puis ouvre sa fiche', async () => {
+    it('envoie la promotion modifiée, sans motif inventé, puis ouvre sa fiche', async () => {
       const { root, fixture, sent } = await render({ id: 'promo_1' });
+      rename(root, fixture, 'Croissants du matin');
       button(root, 'Enregistrer')?.click();
       await fixture.whenStable();
       expect(sent.revised).toHaveLength(1);
@@ -123,8 +141,8 @@ describe('PromotionEditorPage', () => {
       expect(TestBed.inject(Router).url).toBe('/promotions-ciblees/promo_1');
     });
 
-    it('avant la bascule, un clic ne part nulle part', async () => {
-      const { root, fixture, sent } = await render({ id: 'promo_1' }, false);
+    it('relue sans changement, un clic ne part nulle part', async () => {
+      const { root, fixture, sent } = await render({ id: 'promo_1' });
       button(root, 'Enregistrer')?.click();
       await fixture.whenStable();
       expect(sent.revised).toEqual([]);

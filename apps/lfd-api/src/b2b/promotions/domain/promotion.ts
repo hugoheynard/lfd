@@ -6,6 +6,7 @@ import {
 } from "./errors/promotion-errors.js";
 import { applicationPointOf, type PromotionApplicationPoint } from "./promotion-fulfillment.js";
 import { assertTerms, type PromotionTerms } from "./promotion-terms.js";
+import { sameTerms } from "./promotion-terms-equality.js";
 
 /** Qui a suspendu, et quand. */
 export interface PromotionPause {
@@ -134,6 +135,14 @@ export class Promotion {
     this.assertNotArchived();
     assertTerms(terms);
     return new Promotion({ ...this.state, ...termsOf(terms) });
+  }
+
+  /**
+   * **Dit-elle déjà ces termes ?** Une révision identique ne trace rien et
+   * n'écrit rien : le journal ne garde que ce qui a changé.
+   */
+  saysAlready(terms: PromotionTerms): boolean {
+    return sameTerms(this.terms, termsOf(terms));
   }
 
   /**

@@ -28,12 +28,6 @@
       </fold-empty-state>
     }
     @default {
-      @if (!editable()) {
-        <fold-callout appearance="inset" variant="info">
-          Les promotions s'éditent après la bascule : d'ici là, elles se règlent dans les Règles de
-          prix et la remise de chaque site sur sa fiche.
-        </fold-callout>
-      }
       @if (refusal(); as message) {
         <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
       } @else if (problem(); as message) {

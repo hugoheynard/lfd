@@ -20,7 +20,7 @@ import { B2B_API_BASE } from '../api/api-config';
  * L'écriture passe par la SURFACE de la promotion : une promotion « retrait
  * à un point » s'écrit sous la fiche du site (`/admin/sites/:id/promotions`,
  * `lfc_site_settings`), les autres sous `/admin/promotions` (`b2b_pricing`).
- * Tant que la source n'est pas `promotions`, le serveur refuse (409).
+ * Depuis L12, la source ne vaut plus que `promotions` : le serveur écrit toujours.
  */
 @Injectable({ providedIn: 'root' })
 export class PromotionsService {

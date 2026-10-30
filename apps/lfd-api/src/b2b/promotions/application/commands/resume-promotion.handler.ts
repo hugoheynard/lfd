@@ -18,6 +18,7 @@ export class ResumePromotionHandler implements ICommandHandler<ResumePromotionCo
   async execute(command: ResumePromotionCommand): Promise<void> {
     const now = this.clock.now();
     const promotion = await mustLoadPromotion(this.promotions, command.id);
+    this.guard.admitsTouch(command.surface, promotion);
     const resumed = promotion.resume();
     await this.guard.admitsPlace(command.surface, promotion, resumed);
     await this.promotions.save(

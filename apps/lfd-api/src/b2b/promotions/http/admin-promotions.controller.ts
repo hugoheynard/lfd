@@ -53,8 +53,9 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
  * refuse (`PromotionWrongSurfaceError`). Les deux lectures s'ouvrent à l'un
  * OU l'autre droit : chacun voit ce que l'autre a posé.
  *
- * Tant que `promotions_source` ≠ `promotions`, toute écriture rend 409 ; la
- * migration de la bascule (L8) l'ouvre.
+ * Depuis L12, `promotions_source` ne vaut plus que `promotions` : l'écran
+ * écrit toujours, et les refus d'écriture sont ceux de l'agrégat et de
+ * `PromotionWriteGuard` (vérifié le 2026-10-30, `promotions-source.ts`).
  */
 @Controller("admin/promotions")
 @AdminSurface("b2b_pricing")

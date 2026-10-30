@@ -123,7 +123,8 @@ export class PromotionEditorPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
-  protected readonly editable = signal(false);
+  /** Les termes relus, pour une révision ; `null` = une pose. */
+  private readonly loaded = signal<string | null>(null);
   protected readonly refusal = signal<string | null>(null);
   protected readonly saving = signal(false);
   private readonly catalogue = signal<CatalogueChoices>({ category: [], product: [], variant: [] });
@@ -135,7 +136,11 @@ export class PromotionEditorPage {
   );
   protected readonly problem = computed(() => draftProblem(this.draft()));
   protected readonly canSave = computed(
-    () => this.editable() && this.problem() === null && !this.saving(),
+    () => this.problem() === null && !this.saving() && !this.unchanged(),
+  );
+  /** Reposée à l'identique, une révision ne trace rien : rien à enregistrer. */
+  private readonly unchanged = computed(
+    () => this.loaded() !== null && this.loaded() === JSON.stringify(termsOf(this.draft())),
   );
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'any');
   protected readonly fulfillmentOptions = (
@@ -207,16 +212,16 @@ export class PromotionEditorPage {
   protected async load(id: string | null, pickupId: string | null): Promise<void> {
     this.state.set('loading');
     try {
-      const [source, catalogue, names, view] = await Promise.all([
-        this.api.source(),
+      const [catalogue, names, view] = await Promise.all([
         this.catalogueService.published(),
         this.api.pickupNames(),
         id === null ? Promise.resolve(null) : this.api.get(id),
       ]);
-      this.editable.set(source.editable);
       this.catalogue.set(catalogueChoicesOf(catalogue satisfies PublishedCatalogView));
       this.pickupNames.set(names);
-      this.draft.set(view === null ? emptyDraft(parisToday(), pickupId) : draftOf(view));
+      const draft = view === null ? emptyDraft(parisToday(), pickupId) : draftOf(view);
+      this.draft.set(draft);
+      this.loaded.set(view === null ? null : JSON.stringify(termsOf(draft)));
       this.state.set('ready');
     } catch {
       this.state.set('error');

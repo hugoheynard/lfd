@@ -223,9 +223,8 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
   it("chaque geste d'un point refuse la promotion d'un AUTRE point, sans rien écrire", async () => {
     const s = scene();
     const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, PICKUP_COEUR));
-    // Suspendue d'abord : « reprendre » juge l'état avant la surface, une active
-    // y répondrait « pas suspendue » et masquerait le refus qu'on éprouve.
-    await s.pause.execute(new PausePromotionCommand(id, STAFF, null, PICKUP_COEUR));
+    // Régression : « reprendre » jugeait l'état avant la surface, et rendait
+    // « pas suspendue » à un autre point. La promotion reste ici ACTIVE.
     const elsewhere: PromotionSurface = { kind: "pickup_point", pickupId: "pk_autre" };
     const before = s.promotions.stored.get(id);
     const acts = [...s.promotions.acts];
@@ -264,6 +263,27 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
     );
     const state = s.promotions.stored.get(id)?.toPersistence();
     expect(state).toMatchObject({ id, createdBy: STAFF, createdAt: FROM, internalName: "Autre" });
+  });
+
+  /**
+   * Régression : une révision identique écrivait quand même un acte
+   * `replaced` au journal (corrigé le 2026-10-30).
+   */
+  it("une révision identique à la promotion relue n'écrit ni état ni acte", async () => {
+    const { s, id, before, actsBefore } = await posed();
+    const same = before?.terms ?? lineTerms();
+    await s.revise.execute(new RevisePromotionCommand(id, same, STAFF, "x", PRICING_SURFACE));
+    expect(s.promotions.stored.get(id)).toBe(before);
+    expect(s.promotions.acts).toEqual(actsBefore);
+  });
+
+  it("une révision identique depuis un autre point reste refusée", async () => {
+    const { s, id, before } = await posed();
+    const same = before?.terms ?? lineTerms();
+    const elsewhere: PromotionSurface = { kind: "pickup_point", pickupId: "pk_autre" };
+    await expect(
+      s.revise.execute(new RevisePromotionCommand(id, same, STAFF, "x", elsewhere)),
+    ).rejects.toBeInstanceOf(PromotionWrongSurfaceError);
   });
 
   it("une promotion suspendue se révise et reste suspendue", async () => {
