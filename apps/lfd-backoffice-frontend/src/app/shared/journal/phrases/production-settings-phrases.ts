@@ -170,6 +170,18 @@ export const PRODUCTION_SETTINGS_PHRASES = {
       ],
       ['mode', 'fixedTranches', 'previous'],
     ),
+  'production_display_settings.updated': (fact) =>
+    byActor(
+      fact,
+      [
+        text(
+          fact.payload['showSubcategories'] === true
+            ? 'a affiché les sous-catégories au fournil'
+            : 'a masqué les sous-catégories au fournil',
+        ),
+      ],
+      ['showSubcategories', 'previous'],
+    ),
   'production_settings.close_changed': (fact) =>
     byActor(
       fact,

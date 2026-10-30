@@ -145,6 +145,13 @@
               <table class="pr-table">
                 <tbody>
                   @for (line of group.lines; track line.sku) {
+                    <!-- Une sous-catégorie, dans le rayon de sa racine : un
+                         intertitre, jamais un rayon à elle (2026-10-30). -->
+                    @if (group.intertitles.get(line.sku); as intertitle) {
+                      <tr class="pr-subcategory" data-subcategory>
+                        <th colspan="3" scope="rowgroup">{{ intertitle }}</th>
+                      </tr>
+                    }
                     <tr>
                       <td class="pr-qty">{{ line.label }}</td>
                       <td>

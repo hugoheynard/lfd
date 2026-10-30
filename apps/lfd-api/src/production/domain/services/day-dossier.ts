@@ -11,7 +11,7 @@ import type {
   ProductionOrderSnapshot,
   ProductionResupplySnapshot,
 } from "../entities/production-day.js";
-import { byPositionThenName } from "./production-worksheet-groups.js";
+import { rootShelvesOf, sectionOrdered } from "./root-shelves.js";
 
 /**
  * **Le dossier du jour** — ce que le fournil imprime le soir de l'arrêt :
@@ -54,6 +54,12 @@ export interface DossierRecapGroup {
   readonly quantity: number;
   readonly resupplyQuantity: number;
   readonly lines: readonly DossierRecapLine[];
+  /**
+   * Les intertitres de sous-catégorie (réglage « Afficher les
+   * sous-catégories », 2026-10-30) : le SKU de la première ligne de chaque
+   * sous-catégorie → son nom. Absent quand le réglage est éteint.
+   */
+  readonly intertitles?: ReadonlyMap<string, string>;
 }
 
 /** Le dossier, prêt à mettre en page. */
@@ -86,8 +92,10 @@ export function dayDossierOf(
   orders: readonly ProductionOrderSnapshot[],
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
   resupplies: readonly ProductionResupplySnapshot[] = [],
+  /** Le réglage « Afficher les sous-catégories » (2026-10-30). */
+  showSubcategories = false,
 ): DayDossier {
-  const recap = recapOf(talliesOf(orders, resupplies), shelves);
+  const recap = recapOf(talliesOf(orders, resupplies), shelves, showSubcategories);
   return {
     recap,
     sheets: [...orders].sort((left, right) => compareCodes(left.reference, right.reference)),
@@ -150,30 +158,28 @@ function talliesOf(
 function recapOf(
   lines: readonly DossierRecapLine[],
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
+  showSubcategories: boolean,
 ): readonly DossierRecapGroup[] {
-  const byFamily = new Map<string, { family: CatalogFamilyView; lines: DossierRecapLine[] }>();
-  const unshelved: DossierRecapLine[] = [];
-  for (const line of lines) {
-    const family = shelves?.get(line.sku);
-    if (family === undefined) {
-      unshelved.push(line);
-      continue;
+  const shelving = rootShelvesOf(lines, (line) => shelves?.get(line.sku));
+  const groups = shelving.shelves.map((shelf) => {
+    if (!showSubcategories) {
+      return groupOf(shelf.root.name, shelf.items);
     }
-    const bucket = byFamily.get(family.id);
-    if (bucket === undefined) {
-      byFamily.set(family.id, { family, lines: [line] });
-    } else {
-      bucket.lines.push(line);
+    const ordered = sectionOrdered(shelf.sections, biggestFirst);
+    const intertitles = new Map<string, string>();
+    for (const section of shelf.sections) {
+      const first = [...section.items].sort(biggestFirst)[0];
+      if (section.family !== null && first !== undefined) {
+        intertitles.set(first.sku, section.family.name);
+      }
     }
-  }
-  const groups = [...byFamily.values()]
-    .sort((left, right) => byPositionThenName(left.family, right.family))
-    .map((bucket) => groupOf(bucket.family.name, bucket.lines));
-  if (unshelved.length === 0) {
+    return { ...groupOf(shelf.root.name, ordered, false), intertitles };
+  });
+  if (shelving.unshelved.length === 0) {
     return groups;
   }
   const label = shelves === null ? SHELF_LABEL_UNKNOWN : SHELF_LABEL_OFF_CATALOG;
-  return [...groups, groupOf(label, unshelved)];
+  return [...groups, groupOf(label, shelving.unshelved)];
 }
 
 /**
@@ -181,12 +187,20 @@ function recapOf(
  * nom. Un article au poids pèse une ligne dans ce tri comme dans le total
  * (P6) : ses grammes ne se comparent pas à des pièces.
  */
-function groupOf(label: string, lines: readonly DossierRecapLine[]): DossierRecapGroup {
-  const sorted = [...lines].sort(
-    (left, right) =>
-      recapPieces(right) - recapPieces(left) ||
-      left.productName.localeCompare(right.productName, "fr"),
+function biggestFirst(left: DossierRecapLine, right: DossierRecapLine): number {
+  return (
+    recapPieces(right) - recapPieces(left) ||
+    left.productName.localeCompare(right.productName, "fr")
   );
+}
+
+/** Une fiche de poste ; `sort: false` garde l'ordre déjà rangé par sous-catégorie. */
+function groupOf(
+  label: string,
+  lines: readonly DossierRecapLine[],
+  sort = true,
+): DossierRecapGroup {
+  const sorted = sort ? [...lines].sort(biggestFirst) : lines;
   return {
     label,
     quantity: sorted.reduce((sum, line) => sum + recapPieces(line), 0),

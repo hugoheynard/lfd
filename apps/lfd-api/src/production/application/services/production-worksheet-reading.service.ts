@@ -15,6 +15,8 @@ import {
   type OvenWaitingOrders,
 } from "../../channels/packing/oven-waiting-orders.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
+import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import { ProductionContainerReader } from "../../domain/ports/production-container.reader.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { QualityCheckReader } from "../../domain/ports/quality-check.reader.js";
@@ -85,10 +87,11 @@ export class ProductionWorksheetReading {
     private readonly deadlines: WorksheetDeadlinesReading,
     private readonly checks: QualityCheckReader,
     private readonly waiting: OvenWaitingOrdersReader,
+    private readonly display: ProductionDisplaySettingsReader,
   ) {}
 
   async read(day: ServiceDay): Promise<ProductionWorksheetView> {
-    const [current, expected, producible, containers, tranches, checks, waiting] =
+    const [current, expected, producible, containers, tranches, checks, waiting, display] =
       await Promise.all([
         this.days.load(day),
         this.expected.expectedBetween(ServiceRange.of(day.value, day.value)),
@@ -97,6 +100,7 @@ export class ProductionWorksheetReading {
         this.deadlines.read(day),
         this.checks.forDay(day),
         this.waitingOrNull(day),
+        this.display.current(),
       ]);
 
     // 🔴 Le filtre par `orderId` n'est pas un confort. La clôture publie un
@@ -127,7 +131,11 @@ export class ProductionWorksheetReading {
       retakenAt: worksheet.retakenAt?.toISOString() ?? null,
       lines: worksheet.lines.map(viewOf),
       drift: worksheet.drift,
-      groups: worksheetGroupsOf(worksheet.lines, shelves).map((group) => groupView(group, viewOf)),
+      groups: worksheetGroupsOf(
+        worksheet.lines,
+        shelves,
+        (display ?? ProductionDisplaySettings.defaults()).showSubcategories,
+      ).map((group) => groupView(group, viewOf)),
       shelvesKnown: shelves !== null,
       relativeDay: relativeDayOf(day.value, this.clock.now()),
     };

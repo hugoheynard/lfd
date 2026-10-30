@@ -64,6 +64,13 @@
 
     @if (!isFolded(rayon.label)) {
       @for (line of rayon.lines; track line.sku) {
+        <!-- Une sous-catégorie, dans le rayon de sa racine : un intertitre,
+             jamais un rayon à elle (2026-10-30). -->
+        @if (rayon.intertitles.get(line.sku); as intertitle) {
+          <div class="pv-row pv-row--subcategory" data-subcategory>
+            <span class="pv-cell pv-cell--label pv-subcategory">{{ intertitle }}</span>
+          </div>
+        }
         <div class="pv-row pv-row--line">
           <div class="pv-cell pv-cell--label">
             <span class="pv-product">{{ line.productName }}</span>

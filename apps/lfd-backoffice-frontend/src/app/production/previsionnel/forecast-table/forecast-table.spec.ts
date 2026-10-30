@@ -80,18 +80,34 @@ const RAYONS: readonly ForecastRayon[] = [
         totalUnits: 60,
       },
     ],
+    intertitles: new Map(),
   },
 ];
 
-function mount(): ComponentFixture<ForecastTable> {
+function mount(rayons: readonly ForecastRayon[] = RAYONS): ComponentFixture<ForecastTable> {
   const fixture = TestBed.createComponent(ForecastTable);
   fixture.componentRef.setInput('headers', HEADERS);
-  fixture.componentRef.setInput('rayons', RAYONS);
+  fixture.componentRef.setInput('rayons', rayons);
   fixture.detectChanges();
   return fixture;
 }
 
 describe('ForecastTable', () => {
+  it('pose l’intertitre d’une sous-catégorie avant sa première ligne, dans le rayon racine', () => {
+    const [rayon] = RAYONS;
+    const fixture = mount(
+      rayon === undefined
+        ? []
+        : [{ ...rayon, intertitles: new Map([['VIE-002', 'Viennoiserie fine']]) }],
+    );
+    const titles = [...fixture.nativeElement.querySelectorAll('[data-subcategory]')].map(
+      (row: Element) => row.textContent?.trim(),
+    );
+
+    expect(titles).toEqual(['Viennoiserie fine']);
+    expect(fixture.nativeElement.querySelectorAll('.pv-row--rayon')).toHaveLength(1);
+  });
+
   it('rend une colonne de produit plus une par jour, sur CHAQUE ligne', () => {
     const fixture = mount();
     const rows = fixture.nativeElement.querySelectorAll('.pv-row');

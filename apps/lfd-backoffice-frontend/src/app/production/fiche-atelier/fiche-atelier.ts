@@ -17,6 +17,7 @@ import {
   type FoldViewToggleOption,
 } from 'fold-ng';
 
+import { sectionIntertitles } from '@lfd/b2b-ui/catalog';
 import type { WorkshopGroup, WorkshopLine } from '@lfd/contracts';
 
 import { StaffPrefsService } from '../../shared/staff-prefs/staff-prefs.service';
@@ -211,6 +212,19 @@ export class FicheAtelier {
   /** Les lignes complètes, telles que servies — sur téléphone, dans le bloc replié du pied. */
   protected readonly done = computed(() => this.current()?.done ?? []);
 
+  /**
+   * Les intertitres de sous-catégorie de la liste affichée (2026-10-30) : servis
+   * en `sections` quand le réglage les affiche, posés à chaque changement dans
+   * CETTE liste — au téléphone, une section dont la première ligne est faite
+   * garde son intertitre sur la suivante.
+   */
+  protected readonly intertitles = computed(() =>
+    intertitlesOf(this.current(), this.compact() ? this.todo() : this.lines()),
+  );
+
+  /** Les mêmes, dans le bloc replié des lignes faites. */
+  protected readonly doneIntertitles = computed(() => intertitlesOf(this.current(), this.done()));
+
   /** Les SKU dont un geste est en vol — la vue par tranche les désarme. */
   protected readonly busySkus = computed<ReadonlySet<string>>(
     () =>
@@ -257,4 +271,17 @@ export class FicheAtelier {
   protected toggleDone(): void {
     this.doneOpen.update((open) => !open);
   }
+}
+
+/** Les intertitres d'une liste de la fiche, d'après les sections servies. */
+function intertitlesOf(
+  group: WorkshopGroup | null,
+  lines: readonly WorkshopLine[],
+): ReadonlyMap<string, string> {
+  const sections = group?.sections;
+  if (sections === undefined) {
+    return new Map();
+  }
+  const bySku = new Map(sections.flatMap((section) => section.skus.map((sku) => [sku, section])));
+  return sectionIntertitles(lines, (line) => bySku.get(line.sku));
 }

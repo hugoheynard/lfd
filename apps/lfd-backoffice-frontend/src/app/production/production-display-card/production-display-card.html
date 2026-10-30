@@ -1,0 +1,23 @@
+<fold-card data-display-settings>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Rangement des fiches"
+    subtitle="Le prévisionnel, la fiche d’atelier et le dossier du jour rangent par catégorie principale : « Viennoiserie fine » est dans « Viennoiserie »."
+  />
+
+  @for (view of shown(); track view) {
+    <fold-checkbox
+      label="Afficher les sous-catégories"
+      hint="Un intertitre par sous-catégorie à l’intérieur de chaque catégorie principale — jamais un onglet à part."
+      [checked]="view.showSubcategories"
+      (checkedChange)="set($event)"
+      [disabled]="!canWrite() || busy()"
+      data-show-subcategories
+    />
+  }
+
+  @if (refusal(); as message) {
+    <fold-callout variant="alert" announce data-display-refusal>{{ message }}</fold-callout>
+  }
+</fold-card>

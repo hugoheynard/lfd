@@ -33,7 +33,26 @@ export interface ProductionSettingsView {
   readonly closedDays: readonly string[];
   /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
   readonly tranches: ProductionTranchesView;
+  /**
+   * Le rangement des écrans et papiers du fournil (2026-10-30). Facultatif
+   * dans le TYPE pour les fixtures ; le serveur l'émet toujours.
+   */
+  readonly display?: ProductionDisplayView;
 }
+
+/**
+ * **Le rangement du fournil** (Hugo, 2026-10-30) : prévisionnel, fiche
+ * d'atelier et dossier du jour rangent par catégorie RACINE. `showSubcategories`
+ * ajoute, dans le groupe racine, un intertitre par sous-catégorie — jamais un
+ * onglet. Sans réglage enregistré : `false`.
+ */
+export interface ProductionDisplayView {
+  readonly showSubcategories: boolean;
+}
+
+/** `PUT /admin/production/settings/display` — la forme. */
+export const productionDisplayPayloadSchema = z.object({ showSubcategories: z.boolean() }).strict();
+export type ProductionDisplayPayload = z.infer<typeof productionDisplayPayloadSchema>;
 
 /**
  * **Les tranches de production** (Hugo, 2026-10-28) : `fixed` — les heures

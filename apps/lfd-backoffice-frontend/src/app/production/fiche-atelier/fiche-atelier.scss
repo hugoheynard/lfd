@@ -334,3 +334,15 @@ fold-page-layout {
   color: var(--fold-color-text-faded);
   font-weight: var(--fold-weight-regular);
 }
+
+// L'intertitre d'une sous-catégorie, dans la fiche de sa racine (2026-10-30) :
+// le mot de la bande, sans la bande — on lit une seule fiche, pas deux.
+.fa-subcategory {
+  margin: var(--fold-space-md) 0 var(--fold-space-xs);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+  color: var(--fold-color-text-secondary);
+}

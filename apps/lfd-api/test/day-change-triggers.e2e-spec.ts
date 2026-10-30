@@ -65,6 +65,9 @@ const UNWATCHED: Readonly<Record<string, string>> = {
   // Les tranches de production (Réglages › Production, 2026-10-28) : un réglage.
   "production.production_tranche_settings":
     "les tranches de production, un réglage unique sans journée",
+  // Le rangement du fournil (Réglages › Production, 2026-10-30) : un réglage.
+  "production.production_display_settings":
+    "le rangement du fournil, un réglage unique sans journée",
   // Les raccourcis du fournil (Réglages › Production, 2026-10-28) : un réglage par produit.
   "production.production_batch_shortcut":
     "les raccourcis du fournil, un réglage par produit sans journée",

@@ -141,6 +141,12 @@ export class DossierDuJour {
    * 409 du serveur qui tranche.
    */
   readonly closed = input<boolean | null>(null);
+  /**
+   * Le réglage « Afficher les sous-catégories » du fournil (2026-10-30), lu
+   * par le parent dans le prévisionnel : un intertitre par sous-catégorie dans
+   * chaque rayon racine.
+   */
+  readonly showSubcategories = input(false);
   protected readonly view = signal<string>('recap');
   protected readonly views = VIEWS;
 
@@ -170,7 +176,13 @@ export class DossierDuJour {
 
   /** Les fiches de poste : commandes + réassorts, total d'abord (R3d-bis). */
   protected readonly recap = computed(() =>
-    productionRecap(this.sheets(), this.catalogue(), !this.shelvesLost(), this.resupplySheets()),
+    productionRecap(
+      this.sheets(),
+      this.catalogue(),
+      !this.shelvesLost(),
+      this.resupplySheets(),
+      this.showSubcategories(),
+    ),
   );
   protected readonly pieces = computed(() => totalPieces(this.recap()));
   protected readonly resupplyPieces = computed(() => resupplyPieces(this.recap()));

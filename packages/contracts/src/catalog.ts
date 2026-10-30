@@ -29,6 +29,23 @@ export interface CatalogFamilyView {
   readonly name: string;
   /** L'ordre du référentiel — celui dans lequel les rayons se parcourent. */
   readonly position: number;
+  /**
+   * **Sa catégorie racine** (2026-10-30, Hugo) : la plus lointaine de ses
+   * parentes, ou elle-même si elle n'en a pas. Le fournil range par racine
+   * (« Viennoiserie »), et « Viennoiserie fine » n'y fait plus son propre
+   * onglet. Facultatif dans le TYPE pour les fixtures et les lecteurs déjà
+   * déployés ; le serveur l'émet toujours.
+   */
+  readonly root?: CatalogFamilyNodeView;
+  /** Son chemin d'ids, elle en tête puis ses parentes — la lignée que lit la tarification. */
+  readonly path?: readonly string[];
+}
+
+/** Une famille réduite à ce qu'un rayon lit : son nom et sa place. */
+export interface CatalogFamilyNodeView {
+  readonly id: string;
+  readonly name: string;
+  readonly position: number;
 }
 
 /**

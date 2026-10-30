@@ -1,5 +1,6 @@
 import { addDays, instantToLocal, localToInstant, type CatalogFamilyView } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -117,6 +118,7 @@ function handlerFor(days: Days, now: Date = NOW): GetCurrentProductionWorksheetH
     new WorksheetDeadlinesReading(new FixedDueThresholds(), new InMemoryTrancheSettings().reader()),
     new InMemoryCheckReader(new CheckTable()),
     new FixedOvenWaitingOrders(),
+    new InMemoryDisplaySettings().reader(),
   );
   return new GetCurrentProductionWorksheetHandler(days, reading, clock);
 }

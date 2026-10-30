@@ -79,6 +79,14 @@ export function drawRecapGroup(
   rule(doc, y, 1.5);
   y += 4 * MM;
   for (const line of group.lines) {
+    const intertitle = group.intertitles?.get(line.sku);
+    if (intertitle !== undefined) {
+      // Une sous-catégorie, dans la page de sa racine (2026-10-30) : un
+      // intertitre, jamais une page à elle.
+      y = room(y, 18 * MM);
+      putCaps(doc, intertitle.toUpperCase(), LEFT, y);
+      y += 6 * MM;
+    }
     y = room(y, (line.resupplyQuantity > 0 ? 15 : 10) * MM);
     put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 16), bold: true });
     put(doc, line.productName, LEFT + 20 * MM, y, { size: 12, width: WIDTH - 75 * MM });

@@ -149,4 +149,10 @@ export interface ProductionForecastView {
   readonly peakDate: string | null;
   /** La plage entière, en pièces — la phrase qu'on lit en haut de l'écran. */
   readonly totalUnits: number;
+  /**
+   * Le réglage « Afficher les sous-catégories » du fournil (2026-10-30) : la
+   * matrice et le dossier du jour posent alors un intertitre par sous-catégorie
+   * dans chaque groupe racine. Absent = `false`.
+   */
+  readonly showSubcategories?: boolean;
 }

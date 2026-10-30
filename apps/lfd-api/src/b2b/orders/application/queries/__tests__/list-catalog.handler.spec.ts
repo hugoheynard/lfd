@@ -19,13 +19,36 @@ function item(sku: string, of: ReturnType<typeof family> | null) {
 }
 
 describe("ListCatalogHandler", () => {
-  it("sert la famille sans sa lignée ni son slug — id, nom, position", async () => {
+  /**
+   * Sans slug. La racine et le chemin y voyagent depuis le 2026-10-30 (Hugo) :
+   * le fournil range par catégorie racine. Une famille sans parente nommée
+   * est sa propre racine.
+   */
+  it("sert la famille sans son slug — id, nom, position, racine et chemin", async () => {
     const tartes = family("fam-tartes", "Tartes", 3, ["fam-patis"]);
     const handler = new ListCatalogHandler(new InMemoryProductCatalog([item("TAR-001", tartes)]));
 
     const [view] = await handler.execute();
 
-    expect(view?.family).toEqual({ id: "fam-tartes", name: "Tartes", position: 3 });
+    expect(view?.family).toEqual({
+      id: "fam-tartes",
+      name: "Tartes",
+      position: 3,
+      root: { id: "fam-tartes", name: "Tartes", position: 3 },
+      path: ["fam-tartes", "fam-patis"],
+    });
+  });
+
+  it("sert pour racine la plus lointaine des parentes", async () => {
+    const fine = {
+      ...family("fam-vien-fine", "Viennoiserie fine", 2, ["fam-vien"]),
+      ancestors: [{ id: "fam-vien", name: "Viennoiserie", position: 0, nameTranslations: {} }],
+    };
+    const handler = new ListCatalogHandler(new InMemoryProductCatalog([item("VIE-010", fine)]));
+
+    const [view] = await handler.execute();
+
+    expect(view?.family?.root).toEqual({ id: "fam-vien", name: "Viennoiserie", position: 0 });
   });
 
   /**

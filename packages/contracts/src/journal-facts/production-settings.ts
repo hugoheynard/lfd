@@ -81,6 +81,17 @@ export const PRODUCTION_SETTINGS_FACTS = {
     }),
   ),
   /**
+   * Le rangement du fournil (2026-10-30) : « Afficher les sous-catégories »,
+   * l'état posé et celui qu'il remplace, défaut compris. Un réglage unique,
+   * sans `subjectLabel`.
+   */
+  "production_display_settings.updated": fact(
+    payload({
+      showSubcategories: z.boolean(),
+      previous: payload({ showSubcategories: z.boolean() }),
+    }),
+  ),
+  /**
    * Un raccourci du fournil (plan `fournil/plan-raccourcis-du-fournil.md`,
    * S1, 2026-10-28) : pour un produit, un nom et un nombre de pièces. Nommé
    * « 1 plaque (VIE-001) » — le nom et le SKU produit.

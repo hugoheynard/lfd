@@ -1,4 +1,5 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
@@ -109,6 +110,7 @@ function setup(
     new FixedResupplyPrintColors(),
     new FixedPaperLogo(),
     deliveryNotes,
+    new InMemoryDisplaySettings().reader(),
   );
   return { handler: new GetDayDossierPdfHandler(new Days(day), papers), store, shelves };
 }

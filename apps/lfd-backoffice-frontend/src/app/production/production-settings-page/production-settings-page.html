@@ -114,6 +114,12 @@
           />
         }
 
+        <app-production-display-card
+          [display]="display()"
+          [canWrite]="canWrite()"
+          (saved)="retry()"
+        />
+
         <app-dossier-recipients-card [canWrite]="canWrite()" />
       </div>
     }

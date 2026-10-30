@@ -1,5 +1,6 @@
 import { instantToLocal, type CatalogFamilyView } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -134,6 +135,7 @@ function readingWith(
     new WorksheetDeadlinesReading(new FixedDueThresholds(due), settings.reader()),
     new InMemoryCheckReader(checks),
     waiting,
+    new InMemoryDisplaySettings().reader(),
   );
 }
 

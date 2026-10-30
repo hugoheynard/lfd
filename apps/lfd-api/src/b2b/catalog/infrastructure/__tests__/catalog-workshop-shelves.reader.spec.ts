@@ -79,6 +79,11 @@ class BrokenCatalog extends Catalog {
   }
 }
 
+/** Une famille sans parente, telle que le fournil la reçoit : sa propre racine. */
+function flat(id: string, name: string, position: number) {
+  return { id, name, position, root: { id, name, position }, path: [id] };
+}
+
 describe("CatalogWorkshopShelvesReader", () => {
   it("range sous la famille du référentiel, sous le SKU du PRODUIT", async () => {
     const catalog = new Catalog([item("VIE-001", VIENNOISERIES), item("PAI-001", PAINS)]);
@@ -90,8 +95,8 @@ describe("CatalogWorkshopShelvesReader", () => {
 
     expect(catalog.asked).toEqual(["VIE-001", "PAI-001"]);
     expect([...shelves.entries()]).toEqual([
-      ["VIE-001", { id: "fam-vien", name: "Viennoiseries", position: 0 }],
-      ["PAI-001", { id: "fam-pain", name: "Pains", position: 1 }],
+      ["VIE-001", flat("fam-vien", "Viennoiseries", 0)],
+      ["PAI-001", flat("fam-pain", "Pains", 1)],
     ]);
   });
 
@@ -109,7 +114,7 @@ describe("CatalogWorkshopShelvesReader", () => {
       "NEW-001",
     ]);
 
-    expect(shelves.get("NEW-001")).toEqual({ id: "01a0-inventee", name: "Snacking", position: 5 });
+    expect(shelves.get("NEW-001")).toEqual(flat("01a0-inventee", "Snacking", 5));
   });
 
   it("un SKU inconnu du catalogue est absent, jamais présent à `null`", async () => {

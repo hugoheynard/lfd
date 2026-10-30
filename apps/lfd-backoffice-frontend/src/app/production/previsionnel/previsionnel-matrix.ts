@@ -1,13 +1,14 @@
 import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
+  type CatalogFamilyNodeView,
   type CatalogFamilyView,
   type CatalogItemView,
   type OrderSaleUnit,
   type ProductionForecastLine,
   type ProductionForecastView,
 } from '@lfd/contracts';
-import { catalogShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
@@ -16,8 +17,9 @@ import { catalogShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
  * ordre stable, donc deux lectures rendent la même chose. L'ordre d'AFFICHAGE,
  * lui, est ici, parce qu'il dépend du **catalogue d'aujourd'hui** :
  *
- * - les rayons sortent dans l'**ordre du référentiel** (la `position` de la
- *   famille, via `catalogShelves`) et non par poids — c'est l'ordre que l'équipe connaît déjà, et un ordre qui
+ * - les rayons sont les catégories RACINE (2026-10-30, « Viennoiserie fine »
+ *   tombe dans « Viennoiserie ») et sortent dans l'**ordre du référentiel**
+ *   (la `position` de la racine, via `catalogRootShelves`) et non par poids — c'est l'ordre que l'équipe connaît déjà, et un ordre qui
  *   bougerait d'un jour à l'autre obligerait à relire la grille en entier ;
  * - à l'intérieur d'un rayon, la **quantité décroissante** sur toute la plage :
  *   c'est par le plus gros que le fournil commence. À égalité, par nom, pour que
@@ -91,6 +93,11 @@ export interface ForecastRayon {
   readonly quantities: readonly number[];
   readonly totalUnits: number;
   readonly lines: readonly ForecastProduct[];
+  /**
+   * Les intertitres de sous-catégorie : le SKU de la première ligne de chacune
+   * → son nom. Vide quand le réglage « Afficher les sous-catégories » est éteint.
+   */
+  readonly intertitles: ReadonlyMap<string, string>;
 }
 
 /**
@@ -115,27 +122,32 @@ export function forecastRayons(
   const peakColumn = view.days.findIndex((day) => day.date === view.peakDate);
   const products = view.lines.map((line) => productOf(line, width, peakColumn));
 
-  return catalogShelves(products, (product) => familyOf.get(product.sku) ?? null).map((shelf) => {
-    const lines = [...shelf.items].sort(
-      (a, b) => piecesOf(b) - piecesOf(a) || a.productName.localeCompare(b.productName, 'fr'),
-    );
-    // Un rayon additionne des produits différents : un produit au poids y
-    // pèse une pièce par jour où il sort, jamais ses grammes (P6).
-    const quantities = Array.from({ length: width }, (_unused, column) =>
-      lines.reduce((sum, line) => sum + (line.cells[column]?.pieces ?? 0), 0),
-    );
-    return {
-      family: shelf.family,
-      label: labelOf(shelf.family, shelvesKnown),
-      quantities,
-      totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
-      lines,
-    };
-  });
+  const byQuantity = (a: ForecastProduct, b: ForecastProduct): number =>
+    piecesOf(b) - piecesOf(a) || a.productName.localeCompare(b.productName, 'fr');
+  const showSubcategories = view.showSubcategories === true;
+
+  return catalogRootShelves(products, (product) => familyOf.get(product.sku) ?? null).map(
+    (shelf) => {
+      const { lines, intertitles } = arrangedShelf(shelf.sections, byQuantity, showSubcategories);
+      // Un rayon additionne des produits différents : un produit au poids y
+      // pèse une pièce par jour où il sort, jamais ses grammes (P6).
+      const quantities = Array.from({ length: width }, (_unused, column) =>
+        lines.reduce((sum, line) => sum + (line.cells[column]?.pieces ?? 0), 0),
+      );
+      return {
+        family: shelf.root,
+        label: labelOf(shelf.root, shelvesKnown),
+        quantities,
+        totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
+        lines,
+        intertitles,
+      };
+    },
+  );
 }
 
 /** Le nom d'un rayon — et ce qu'on dit quand on ne le connaît pas. */
-function labelOf(family: CatalogFamilyView | null, shelvesKnown: boolean): string {
+function labelOf(family: CatalogFamilyNodeView | null, shelvesKnown: boolean): string {
   if (family !== null) {
     return family.name;
   }

@@ -1,13 +1,14 @@
 import {
   SHELF_LABEL_OFF_CATALOG,
   SHELF_LABEL_UNKNOWN,
+  type CatalogFamilyNodeView,
   type CatalogFamilyView,
   type CatalogItemView,
   type AtelierSheet,
   type OrderSaleUnit,
   type ProductionDayResupply,
 } from '@lfd/contracts';
-import { catalogShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
+import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
 /**
  * La **récapitulation de production** : ce que le lot représente, rayon par
@@ -53,6 +54,8 @@ export interface ProductionRecapGroup {
   readonly quantity: number;
   readonly resupplyQuantity: number;
   readonly lines: readonly ProductionRecapLine[];
+  /** Les intertitres de sous-catégorie (SKU de la première ligne → nom) ; vide, réglage éteint. */
+  readonly intertitles: ReadonlyMap<string, string>;
 }
 
 /**
@@ -87,8 +90,9 @@ interface Tally {
 /**
  * Agrège les lignes d'un lot, groupées par rayon.
  *
- * Les rayons sortent dans l'**ordre du référentiel** (la `position` de la
- * famille, via `catalogShelves`) et non par poids : c'est l'ordre que l'équipe connaît déjà du catalogue, et un
+ * Les rayons sont les catégories RACINE (2026-10-30) et sortent dans
+ * l'**ordre du référentiel** (la `position` de la racine, via
+ * `catalogRootShelves`) et non par poids : c'est l'ordre que l'équipe connaît déjà du catalogue, et un
  * ordre qui bougerait d'un jour à l'autre obligerait à relire la feuille en
  * entier. À l'intérieur d'un rayon, en revanche, la **quantité décroissante** —
  * c'est par le plus gros que le fournil commence. À quantité égale, par nom,
@@ -108,19 +112,22 @@ export function productionRecap(
    * mêmes fiches de poste, dans le total — c'est ce que le poste enfourne.
    */
   resupplies: readonly ProductionDayResupply[] = [],
+  /** Le réglage « Afficher les sous-catégories » du fournil (2026-10-30). */
+  showSubcategories = false,
 ): readonly ProductionRecapGroup[] {
   const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const tallied = talliesOf(sheets, resupplies);
-  return catalogShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
-    const lines = [...shelf.items].sort(
-      (a, b) => recapPieces(b) - recapPieces(a) || a.productName.localeCompare(b.productName, 'fr'),
-    );
+  const biggestFirst = (a: ProductionRecapLine, b: ProductionRecapLine): number =>
+    recapPieces(b) - recapPieces(a) || a.productName.localeCompare(b.productName, 'fr');
+  return catalogRootShelves(tallied, (line) => familyOf.get(line.sku) ?? null).map((shelf) => {
+    const { lines, intertitles } = arrangedShelf(shelf.sections, biggestFirst, showSubcategories);
     return {
-      family: shelf.family,
-      label: shelfLabel(shelf.family, shelvesKnown),
+      family: shelf.root,
+      label: shelfLabel(shelf.root, shelvesKnown),
       quantity: lines.reduce((sum, line) => sum + recapPieces(line), 0),
       resupplyQuantity: lines.reduce((sum, line) => sum + line.resupplyQuantity, 0),
       lines,
+      intertitles,
     };
   });
 }
@@ -193,7 +200,7 @@ export function recapPieces(line: ProductionRecapLine): number {
  * qui nommeraient différemment une lecture ratée du catalogue en feraient deux
  * incidents distincts (ouvert le 2026-09-13).
  */
-export function shelfLabel(family: CatalogFamilyView | null, shelvesKnown: boolean): string {
+export function shelfLabel(family: CatalogFamilyNodeView | null, shelvesKnown: boolean): string {
   if (family !== null) {
     return family.name;
   }

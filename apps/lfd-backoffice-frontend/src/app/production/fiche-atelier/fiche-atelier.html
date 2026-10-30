@@ -232,6 +232,11 @@
             />
           } @else {
             @for (line of compact() ? todo() : lines(); track line.sku) {
+              <!-- Une sous-catégorie, dans la fiche de sa racine : un intertitre,
+                   jamais un onglet (réglage du fournil, 2026-10-30). -->
+              @if (intertitles().get(line.sku); as intertitle) {
+                <h2 class="fa-subcategory" data-subcategory>{{ intertitle }}</h2>
+              }
               <app-worksheet-line
                 [line]="line"
                 [busy]="gestures.isBusy(line)"
@@ -288,6 +293,9 @@
             @if (doneOpen()) {
               <div class="fa-done-lines">
                 @for (line of done(); track line.sku) {
+                  @if (doneIntertitles().get(line.sku); as intertitle) {
+                    <h2 class="fa-subcategory" data-subcategory>{{ intertitle }}</h2>
+                  }
                   <app-worksheet-line
                     [line]="line"
                     [busy]="gestures.isBusy(line)"

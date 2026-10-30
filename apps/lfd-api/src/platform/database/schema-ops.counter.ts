@@ -236,6 +236,8 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   ProductionQualitySettings: "production",
   // Les tranches de production (Réglages › Production, 2026-10-28) : un réglage unique.
   ProductionTrancheSettings: "production",
+  // Le rangement du fournil (Réglages › Production, 2026-10-30) : un réglage unique.
+  ProductionDisplaySettings: "production",
   // Les raccourcis du fournil (Réglages › Production, 2026-10-28) : un réglage par produit.
   ProductionBatchShortcut: "production",
   // La remise au colisage (2026-10-04, `colisage/colisage.md`, K1) :

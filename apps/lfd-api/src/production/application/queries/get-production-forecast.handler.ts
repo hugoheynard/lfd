@@ -13,6 +13,8 @@ import {
   type DatedAttemptTrace,
 } from "../../domain/ports/auto-close-attempt-log.js";
 import { ProductionPlanReader } from "../../domain/ports/production-plan.reader.js";
+import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import { ProductionSettingsReader } from "../../domain/ports/production-settings.reader.js";
 import { forecastDayState, type HouseMoment } from "../../domain/services/forecast-day-state.js";
 import { type OrderCutoffRule, planStopsAt } from "../../domain/services/latest-order-cutoff.js";
@@ -58,19 +60,22 @@ export class GetProductionForecastHandler implements IQueryHandler<
     private readonly attempts: AutoCloseAttemptLog,
     private readonly stopRules: PlanStopRules,
     private readonly resupplies: ExpectedResuppliesReader,
+    private readonly display: ProductionDisplaySettingsReader,
   ) {}
 
   async execute(query: GetProductionForecastQuery): Promise<ProductionForecastView> {
     const range = ServiceRange.of(query.from, query.to);
-    const [arrested, expected, rules, closedDays, attempts, frozen, sent] = await Promise.all([
-      this.plan.arrestedBetween(range),
-      this.expected.expectedBetween(range),
-      this.stopRules.rules(),
-      this.settings.closedDaysFrom(range.from.value),
-      this.attempts.between(range),
-      this.plan.arrestedResuppliesBetween(range),
-      this.resupplies.expectedBetween(range),
-    ]);
+    const [arrested, expected, rules, closedDays, attempts, frozen, sent, display] =
+      await Promise.all([
+        this.plan.arrestedBetween(range),
+        this.expected.expectedBetween(range),
+        this.stopRules.rules(),
+        this.settings.closedDaysFrom(range.from.value),
+        this.attempts.between(range),
+        this.plan.arrestedResuppliesBetween(range),
+        this.resupplies.expectedBetween(range),
+        this.display.current(),
+      ]);
     const matrix = forecastMatrix(range, arrested, expected, { arrested: frozen, expected: sent });
     const now = this.clock.now();
     const local = instantToLocal(now);
@@ -81,6 +86,8 @@ export class GetProductionForecastHandler implements IQueryHandler<
       lines: matrix.rows,
       peakDate: matrix.peakDate,
       totalUnits: matrix.totalUnits,
+      // Le rangement du fournil (2026-10-30) : la matrice et le dossier de l'écran le lisent ici.
+      showSubcategories: (display ?? ProductionDisplaySettings.defaults()).showSubcategories,
     };
   }
 }

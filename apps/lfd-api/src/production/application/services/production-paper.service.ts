@@ -14,6 +14,8 @@ import {
 } from "../../channels/commerce/planned-delivery-notes.reader.js";
 import { ResupplyPrintColorsReader } from "../../channels/commerce/resupply-print-colors.reader.js";
 import { WorkshopShelvesReader } from "../../channels/commerce/workshop-shelves.reader.js";
+import { ProductionDisplaySettings } from "../../domain/entities/production-display-settings.js";
+import { ProductionDisplaySettingsReader } from "../../domain/ports/production-display-settings.reader.js";
 import type {
   ProductionDay,
   ProductionLineSnapshot,
@@ -77,6 +79,7 @@ export class ProductionPapers {
     private readonly resupplyColors: ResupplyPrintColorsReader,
     private readonly logo: BrandLogoSource,
     private readonly deliveryNotes: PlannedDeliveryNotesReader,
+    private readonly display: ProductionDisplaySettingsReader,
   ) {}
 
   /**
@@ -171,14 +174,18 @@ export class ProductionPapers {
       ...resupplies.flatMap((resupply) => resupply.lines),
     ]);
     const orderIds = snapshot.orders.map((order) => order.orderId);
-    const [colors, resupplyColors, logo, deliveryNotes] = await Promise.all([
+    const [colors, resupplyColors, logo, deliveryNotes, display] = await Promise.all([
       this.colors.colorsOf(orderIds),
       this.resupplyColors.colorsOf([...new Set(resupplies.map((resupply) => resupply.siteId))]),
       this.logo.load(),
       this.deliveryNotesOrNull(snapshot.serviceDay, orderIds),
+      this.display.current(),
     ]);
+    // Le rangement (sous-catégories, 2026-10-30) est lu au tirage et figé
+    // avec le papier archivé, comme les rayons.
+    const { showSubcategories } = display ?? ProductionDisplaySettings.defaults();
     const bytes = await renderDayDossierPdf(
-      dayDossierOf(snapshot.orders, shelves, resupplies),
+      dayDossierOf(snapshot.orders, shelves, resupplies, showSubcategories),
       {
         serviceDay: snapshot.serviceDay,
         closedAt,

@@ -181,3 +181,14 @@
   display: block;
   margin-top: var(--fold-space-sm);
 }
+
+// L'intertitre d'une sous-catégorie : plus discret que le rayon, pour qu'on
+// lise une seule fiche de poste et non deux (2026-10-30).
+.pr-subcategory th {
+  padding: 2mm 0 0.5mm;
+  font-size: 9pt;
+  font-weight: 600;
+  text-align: left;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+}

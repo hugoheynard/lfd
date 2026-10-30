@@ -6,6 +6,7 @@ import {
 } from "@lfd/contracts";
 
 import { linePieces } from "./line-tally.js";
+import { rootShelvesOf, sectionOrdered, type ShelfSection } from "./root-shelves.js";
 import type { WorksheetLine } from "./production-worksheet.js";
 
 /**
@@ -37,21 +38,33 @@ export interface WorksheetGroup {
   readonly lines: readonly WorksheetLine[];
   readonly pending: readonly WorksheetLine[];
   readonly done: readonly WorksheetLine[];
+  /** Ses sous-catégories, seulement si le réglage les affiche. */
+  readonly sections?: readonly WorksheetSection[];
+}
+
+/** Une sous-catégorie d'une fiche ; `key: null` = la racine elle-même. */
+export interface WorksheetSection {
+  readonly key: string | null;
+  readonly label: string | null;
+  readonly skus: readonly string[];
 }
 
 /**
- * Range les lignes par rayon.
+ * Range les lignes par rayon — la catégorie RACINE depuis le 2026-10-30.
  *
  * ## Les deux ordres
  *
- * Les fiches suivent **le référentiel** — la position de la famille, puis son
+ * Les fiches suivent **le référentiel** — la position de la racine, puis son
  * nom : c'est l'ordre dans lequel tout le back-office montre les rayons, et un
  * fournil qui passe d'un écran à l'autre ne doit pas les chercher. Aucune liste
  * de rayons ici : une famille livrée par le PIM a sa fiche sans déploiement. Le groupe sans rayon ferme la
  * marche — il est l'anomalie, pas le travail du jour.
  *
- * Les lignes **gardent l'ordre reçu** : `worksheetOf` a déjà trié (le plus gros
- * d'abord). Retrier ici ferait deux règles pour un seul ordre.
+ * Une sous-catégorie (« Viennoiserie fine ») n'a PAS sa fiche : elle tombe
+ * dans celle de sa racine (« Viennoiserie »). Avec `showSubcategories`, la
+ * fiche porte ses `sections` et ses lignes sont rangées section par section ;
+ * sans, elles **gardent l'ordre reçu** : `worksheetOf` a déjà trié (le plus
+ * gros d'abord). Retrier ici ferait deux règles pour un seul ordre.
  *
  * ## Le groupe sans rayon, et ses deux libellés
  *
@@ -65,40 +78,34 @@ export interface WorksheetGroup {
 export function worksheetGroupsOf(
   lines: readonly WorksheetLine[],
   shelves: ReadonlyMap<string, CatalogFamilyView> | null,
+  showSubcategories = false,
 ): readonly WorksheetGroup[] {
-  const byFamily = new Map<string, { family: CatalogFamilyView; lines: WorksheetLine[] }>();
-  const unshelved: WorksheetLine[] = [];
-  for (const line of lines) {
-    const family = shelves?.get(line.sku);
-    if (family === undefined) {
-      unshelved.push(line);
-      continue;
+  const shelving = rootShelvesOf(lines, (line) => shelves?.get(line.sku));
+  const groups = shelving.shelves.map((shelf) => {
+    const family: CatalogFamilyView = { ...shelf.root };
+    if (!showSubcategories) {
+      return groupOf(shelf.root.id, family, shelf.root.name, shelf.items);
     }
-    const bucket = byFamily.get(family.id);
-    if (bucket === undefined) {
-      byFamily.set(family.id, { family, lines: [line] });
-    } else {
-      bucket.lines.push(line);
-    }
-  }
-  const groups = [...byFamily.values()]
-    .sort((left, right) => byPositionThenName(left.family, right.family))
-    .map((bucket) => groupOf(bucket.family.id, bucket.family, bucket.family.name, bucket.lines));
-  if (unshelved.length === 0) {
+    // L'ordre reçu, section par section : `sort` est stable, un comparateur nul le garde.
+    const ordered = sectionOrdered(shelf.sections, () => 0);
+    return {
+      ...groupOf(shelf.root.id, family, shelf.root.name, ordered),
+      sections: shelf.sections.map(sectionOf),
+    };
+  });
+  if (shelving.unshelved.length === 0) {
     return groups;
   }
   const label = shelves === null ? SHELF_LABEL_UNKNOWN : SHELF_LABEL_OFF_CATALOG;
-  return [...groups, groupOf(UNSHELVED_WORKSHOP_GROUP_KEY, null, label, unshelved)];
+  return [...groups, groupOf(UNSHELVED_WORKSHOP_GROUP_KEY, null, label, shelving.unshelved)];
 }
 
-/** Position, puis nom, puis id : deux homonymes restent chacun d'un bloc. */
-export function byPositionThenName(left: CatalogFamilyView, right: CatalogFamilyView): number {
-  const delta = left.position - right.position;
-  if (delta !== 0) {
-    return delta;
-  }
-  const byName = left.name.localeCompare(right.name, "fr");
-  return byName !== 0 ? byName : left.id.localeCompare(right.id);
+function sectionOf(section: ShelfSection<WorksheetLine>): WorksheetSection {
+  return {
+    key: section.family?.id ?? null,
+    label: section.family?.name ?? null,
+    skus: section.items.map((line) => line.sku),
+  };
 }
 
 /** Une fiche et ses compteurs — les deux listes dans l'ordre reçu. */

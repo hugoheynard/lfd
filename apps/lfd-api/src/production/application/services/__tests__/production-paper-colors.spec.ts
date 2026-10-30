@@ -1,5 +1,6 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { AppConfig } from "../../../../platform/config/app-config.js";
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
@@ -73,6 +74,7 @@ function papersWith(
       resupplyColors,
       new FixedPaperLogo(),
       deliveryNotes,
+      new InMemoryDisplaySettings().reader(),
     ),
     store,
   };

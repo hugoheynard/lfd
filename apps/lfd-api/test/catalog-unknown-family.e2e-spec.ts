@@ -179,6 +179,9 @@ describe("une famille livrée par le référentiel — la panne du 2026-09-26", 
       id: UNKNOWN_FAMILY,
       name: "Viennoiseries du matin",
       position: 5,
+      // Sans parente : sa propre racine (rangement du fournil, 2026-10-30).
+      root: { id: UNKNOWN_FAMILY, name: "Viennoiseries du matin", position: 5 },
+      path: [UNKNOWN_FAMILY],
     });
     expect(items.find((item) => item.sku === "VIE-001-1")?.family?.id).toBe(E2E_FAMILIES.VIE.id);
     // Le champ déprécié reste servi, et toujours à `null`.
@@ -204,6 +207,9 @@ describe("une famille livrée par le référentiel — la panne du 2026-09-26", 
       id: UNKNOWN_FAMILY,
       name: "Viennoiseries du matin",
       position: 5,
+      // Sans parente : sa propre racine (rangement du fournil, 2026-10-30).
+      root: { id: UNKNOWN_FAMILY, name: "Viennoiseries du matin", position: 5 },
+      path: [UNKNOWN_FAMILY],
     });
     expect(band?.items.map((item) => item.sku)).toEqual([ORPHAN]);
   });

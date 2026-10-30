@@ -1,6 +1,8 @@
 import { addDays } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import { ProductionDisplaySettings } from "../../../domain/entities/production-display-settings.js";
 import { ProductionTrancheSettings } from "../../../domain/entities/production-tranche-settings.js";
 import { todayOf } from "../../../domain/services/relative-day.js";
 import {
@@ -21,13 +23,15 @@ function subject() {
   const cutoffs = new CutoffRules();
   const resupplyTime = new ResupplyTime();
   const tranches = new InMemoryTrancheSettings();
+  const display = new InMemoryDisplaySettings();
   const handler = new GetProductionSettingsHandler(
     new SettingsReader(closedDays),
     stopRulesOf(cutoffs, resupplyTime),
     new FixedClock(NOW),
     tranches.reader(),
+    display.reader(),
   );
-  return { closedDays, cutoffs, resupplyTime, tranches, handler };
+  return { closedDays, cutoffs, resupplyTime, tranches, display, handler };
 }
 
 describe("GetProductionSettingsHandler", () => {
@@ -38,6 +42,7 @@ describe("GetProductionSettingsHandler", () => {
       automaticClose: null,
       closedDays: [],
       tranches: { mode: "fixed", fixedTranches: [] },
+      display: { showSubcategories: false },
     });
   });
 
@@ -57,7 +62,15 @@ describe("GetProductionSettingsHandler", () => {
       automaticClose: { daysBefore: 1, time: "23:15" },
       closedDays: [TODAY, addDays(TODAY, 5)],
       tranches: { mode: "fixed", fixedTranches: [] },
+      display: { showSubcategories: false },
     });
+  });
+
+  it("rend le rangement du fournil posé — les sous-catégories affichées", async () => {
+    const { handler, display } = subject();
+    display.posed = ProductionDisplaySettings.of({ showSubcategories: true });
+
+    expect((await handler.execute()).display).toEqual({ showSubcategories: true });
   });
 
   it("un rattrapage qui passe minuit arrête le plan le jour même", async () => {

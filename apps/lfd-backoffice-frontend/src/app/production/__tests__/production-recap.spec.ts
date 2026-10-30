@@ -206,3 +206,40 @@ describe('le récapitulatif de production, au poids', () => {
     expect(recap[0]?.lines[0]).toMatchObject({ saleUnit: 'piece', label: '40' });
   });
 });
+
+describe('le récapitulatif de production, par catégorie racine (2026-10-30)', () => {
+  const VIEN_ROOT = { id: 'fam_vien', name: 'Viennoiserie', position: 1 };
+  const FINE: CatalogFamilyView = {
+    id: 'fam_fine',
+    name: 'Viennoiserie fine',
+    position: 2,
+    root: VIEN_ROOT,
+  };
+  const NESTED = [
+    item('FIN', FINE),
+    item('CRO', { ...VIEN_ROOT, root: VIEN_ROOT }),
+    item('BAG', PAINS),
+  ];
+  const SHEETS = [
+    sheet('C-1', [
+      ['FIN', 'Kouign', 90],
+      ['CRO', 'Croissant', 10],
+      ['BAG', 'Baguette', 5],
+    ]),
+  ];
+
+  it('une sous-catégorie ne fait pas son rayon : elle est dans sa racine', () => {
+    const recap = productionRecap(SHEETS, NESTED);
+
+    expect(recap.map((group) => group.label)).toEqual(['Viennoiserie', 'Pains']);
+    expect(recap[0]?.quantity).toBe(100);
+    expect(recap[0]?.intertitles.size).toBe(0);
+  });
+
+  it('le réglage posé pose l’intertitre de la sous-catégorie', () => {
+    const recap = productionRecap(SHEETS, NESTED, true, [], true);
+
+    expect(recap[0]?.lines.map((line) => line.sku)).toEqual(['CRO', 'FIN']);
+    expect([...(recap[0]?.intertitles ?? [])]).toEqual([['FIN', 'Viennoiserie fine']]);
+  });
+});

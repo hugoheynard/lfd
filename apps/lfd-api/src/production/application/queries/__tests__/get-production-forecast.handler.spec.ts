@@ -1,5 +1,6 @@
 import { localToInstant } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import type { ExpectedDayProduction } from "../../../channels/commerce/expected-production.reader.js";
 import { ExpectedProductionReader } from "../../../channels/commerce/expected-production.reader.js";
@@ -51,6 +52,8 @@ interface World {
   readonly cutoffs: CutoffRules;
   readonly closedDays: ClosedDaysTable;
   readonly attempts: AttemptLog;
+  /** Le rangement du fournil ; absent = personne ne l'a posé. */
+  readonly display?: InMemoryDisplaySettings;
 }
 
 function world(now: Date = at("2026-09-03", "10:00")): World {
@@ -76,6 +79,7 @@ function handlerOf(
     w.attempts,
     stopRulesOf(w.cutoffs),
     resupplies,
+    (w.display ?? new InMemoryDisplaySettings()).reader(),
   );
 }
 
@@ -192,6 +196,17 @@ describe("GetProductionForecastHandler", () => {
     ]);
     expect(view.peakDate).toBe("2026-09-05");
     expect(view.totalUnits).toBe(596);
+  });
+
+  it("porte le rangement du fournil : sous-catégories éteintes par défaut, affichées si posées", async () => {
+    const query = new GetProductionForecastQuery("2026-09-03", "2026-09-03");
+    const unset = await handlerOf(new PlanStub([]), new ExpectedStub([])).execute(query);
+    const posed = await handlerOf(new PlanStub([]), new ExpectedStub([]), {
+      ...world(),
+      display: InMemoryDisplaySettings.showing(),
+    }).execute(query);
+
+    expect([unset.showSubcategories, posed.showSubcategories]).toEqual([false, true]);
   });
 
   it("interroge les DEUX sources sur la même plage", async () => {

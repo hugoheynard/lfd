@@ -203,6 +203,23 @@ export interface WorkshopGroup {
   readonly pending: readonly WorkshopLine[];
   /** Production faite, dans l'ordre de la fiche. */
   readonly done: readonly WorkshopLine[];
+  /**
+   * **Les sous-catégories de la fiche** (2026-10-30), dans l'ordre du
+   * référentiel — servies seulement quand le réglage « Afficher les
+   * sous-catégories » est posé, absentes sinon. Les lignes sont alors déjà
+   * rangées section par section ; l'écran pose un intertitre à chaque
+   * changement. `key: null` = les articles rangés directement dans la racine,
+   * en tête et sans intertitre.
+   */
+  readonly sections?: readonly WorkshopSection[];
+}
+
+/** Une sous-catégorie d'une fiche : son nom, et les SKU qui y sont rangés. */
+export interface WorkshopSection {
+  readonly key: string | null;
+  /** `null` = la racine elle-même : pas d'intertitre. */
+  readonly label: string | null;
+  readonly skus: readonly string[];
 }
 
 /** Une ligne dont l'écart a changé la quantité — « seigle 30 → 42 ». */

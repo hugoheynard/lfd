@@ -86,6 +86,11 @@ import { QualityCheckRepository } from "./domain/ports/quality-check.repository.
 import { QualityUploadRepository } from "./domain/ports/quality-upload.repository.js";
 import { ProductionQualityController } from "./http/production-quality.controller.js";
 import { SetProductionTranchesHandler } from "./application/commands/set-production-tranches.handler.js";
+import { SetProductionDisplayHandler } from "./application/commands/set-production-display.handler.js";
+import { ProductionDisplaySettingsReader } from "./domain/ports/production-display-settings.reader.js";
+import { ProductionDisplaySettingsRepository } from "./domain/ports/production-display-settings.repository.js";
+import { PrismaProductionDisplaySettingsReader } from "./infrastructure/prisma-production-display-settings.reader.js";
+import { PrismaProductionDisplaySettingsRepository } from "./infrastructure/prisma-production-display-settings.repository.js";
 import { ProductionTrancheSettingsReader } from "./domain/ports/production-tranche-settings.reader.js";
 import { ProductionTrancheSettingsRepository } from "./domain/ports/production-tranche-settings.repository.js";
 import { PrismaProductionTrancheSettingsReader } from "./infrastructure/prisma-production-tranche-settings.reader.js";
@@ -256,6 +261,12 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     SetQualityControlSettingsHandler,
     GetQualityControlSettingsHandler,
     SetProductionTranchesHandler,
+    SetProductionDisplayHandler,
+    { provide: ProductionDisplaySettingsReader, useClass: PrismaProductionDisplaySettingsReader },
+    {
+      provide: ProductionDisplaySettingsRepository,
+      useClass: PrismaProductionDisplaySettingsRepository,
+    },
     { provide: ProductionTrancheSettingsReader, useClass: PrismaProductionTrancheSettingsReader },
     {
       provide: ProductionTrancheSettingsRepository,

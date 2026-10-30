@@ -220,3 +220,49 @@ describe('forecastRayons — au poids', () => {
     expect(rayon?.lines.map((line) => line.sku)).toEqual(['VIE-1', 'VIE-SAU']);
   });
 });
+
+describe('forecastRayons — catégories racine (2026-10-30)', () => {
+  const VIEN_ROOT = { id: 'fam_vien', name: 'Viennoiserie', position: 1 };
+  const FINE: CatalogFamilyView = {
+    id: 'fam_fine',
+    name: 'Viennoiserie fine',
+    position: 2,
+    root: VIEN_ROOT,
+  };
+  const CATALOGUE = [
+    item('FIN-1', FINE),
+    item('VIE-1', { ...VIEN_ROOT, root: VIEN_ROOT }),
+    item('XXX-1', null),
+  ];
+  const LINES = [
+    { sku: 'FIN-1', productName: 'Kouign', quantities: [90, 0, 0] },
+    { sku: 'VIE-1', productName: 'Croissant', quantities: [10, 0, 0] },
+  ];
+
+  it('une sous-catégorie tombe dans le rayon de sa racine, sans intertitre par défaut', () => {
+    const rayons = forecastRayons(view(LINES), CATALOGUE);
+
+    expect(rayons.map((rayon) => rayon.label)).toEqual(['Viennoiserie']);
+    expect(rayons[0]?.lines.map((line) => line.sku)).toEqual(['FIN-1', 'VIE-1']);
+    expect(rayons[0]?.intertitles.size).toBe(0);
+  });
+
+  it('le réglage posé range par sous-catégorie, la racine d’abord, avec son intertitre', () => {
+    const rayons = forecastRayons({ ...view(LINES), showSubcategories: true }, CATALOGUE);
+
+    expect(rayons[0]?.lines.map((line) => line.sku)).toEqual(['VIE-1', 'FIN-1']);
+    expect([...(rayons[0]?.intertitles ?? [])]).toEqual([['FIN-1', 'Viennoiserie fine']]);
+  });
+
+  it('un article sans famille reste à part, réglage posé ou non', () => {
+    const rayons = forecastRayons(
+      {
+        ...view([...LINES, { sku: 'XXX-1', productName: 'Retiré', quantities: [1, 0, 0] }]),
+        showSubcategories: true,
+      },
+      CATALOGUE,
+    );
+
+    expect(rayons.map((rayon) => rayon.family?.id ?? null)).toEqual(['fam_vien', null]);
+  });
+});

@@ -1,5 +1,5 @@
 import type { CatalogTranslations } from "./catalog-translations.js";
-import type { CatalogFamilyView } from "@lfd/contracts";
+import type { CatalogFamilyNodeView, CatalogFamilyView } from "@lfd/contracts";
 
 /**
  * **Une famille du référentiel, telle que le commerce la range et la tarifie.**
@@ -50,9 +50,27 @@ export interface CatalogFamilyAncestor {
   readonly nameTranslations: CatalogTranslations;
 }
 
-/** La famille telle qu'un écran la reçoit — sans lignée ni slug. */
+/**
+ * La famille telle qu'un écran la reçoit — sans slug. Sa **racine** et son
+ * chemin y voyagent depuis le 2026-10-30 : le fournil range par catégorie
+ * racine (« Viennoiserie fine » sous « Viennoiserie »), et il ne lit pas le
+ * miroir — il reçoit cette vue par `WorkshopShelvesReader`.
+ */
 export function familyView(family: CatalogFamily): CatalogFamilyView {
-  return { id: family.id, name: family.name, position: family.position };
+  return {
+    id: family.id,
+    name: family.name,
+    position: family.position,
+    root: rootOf(family),
+    path: [...family.path],
+  };
+}
+
+/** La plus lointaine des parentes, ou la famille elle-même si elle n'en a pas. */
+function rootOf(family: CatalogFamily): CatalogFamilyNodeView {
+  const farthest = family.ancestors?.at(-1);
+  const node = farthest ?? family;
+  return { id: node.id, name: node.name, position: node.position };
 }
 
 /**

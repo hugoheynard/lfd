@@ -999,6 +999,7 @@ export type {
   WorkshopDriftLine,
   WorkshopGroup,
   WorkshopLine,
+  WorkshopSection,
 } from "./production-worksheet.js";
 export {
   recordWorkshopBatchSchema,
@@ -1015,11 +1016,14 @@ export {
   MAX_FIXED_TRANCHES,
   PRODUCTION_TRANCHE_MODES,
   productionClosedDayPayloadSchema,
+  productionDisplayPayloadSchema,
   productionTranchesPayloadSchema,
 } from "./production-settings.js";
 export type {
   ProductionAutomaticCloseView,
   ProductionClosedDayPayload,
+  ProductionDisplayPayload,
+  ProductionDisplayView,
   ProductionSettingsView,
   ProductionTrancheMode,
   ProductionTranchesPayload,
@@ -1258,7 +1262,7 @@ export type {
   PublishedShelfView,
   PublishedVariantView,
 } from "./published-catalog.js";
-export type { CatalogFamilyView, CatalogItemView } from "./catalog.js";
+export type { CatalogFamilyNodeView, CatalogFamilyView, CatalogItemView } from "./catalog.js";
 
 export {
   RESERVED_VISIBILITIES,

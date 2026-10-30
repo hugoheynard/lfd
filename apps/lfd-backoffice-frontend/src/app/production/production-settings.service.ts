@@ -4,6 +4,7 @@ import type {
   DossierRecipientPayload,
   DossierRecipientView,
   DossierStaffCandidateView,
+  ProductionDisplayPayload,
   ProductionSettingsView,
   ProductionTranchesPayload,
 } from '@lfd/contracts';
@@ -42,6 +43,11 @@ export class ProductionSettingsService {
   /** Les tranches de production (plan `fournil/plan-tranches-de-production.md`, T1). */
   async saveTranches(payload: ProductionTranchesPayload): Promise<void> {
     await firstValueFrom(this.http.put(`${SETTINGS}/tranches`, payload));
+  }
+
+  /** Le rangement du fournil : afficher ou non les sous-catégories (2026-10-30). */
+  async saveDisplay(payload: ProductionDisplayPayload): Promise<void> {
+    await firstValueFrom(this.http.put(`${SETTINGS}/display`, payload));
   }
 
   /** Les destinataires du dossier du jour (plan `dossier-prod-du-jour.md`, lot E2). */

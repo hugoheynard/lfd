@@ -158,4 +158,56 @@ describe("worksheetGroupsOf", () => {
       doneCount: 1,
     });
   });
+
+  describe("racines et sous-catégories (2026-10-30)", () => {
+    const VIEN_ROOT = { id: "fam-vien", name: "Viennoiseries", position: 0 };
+    const FINE: CatalogFamilyView = {
+      id: "fam-fine",
+      name: "Viennoiserie fine",
+      position: 2,
+      root: VIEN_ROOT,
+    };
+    const FEUILLETE: CatalogFamilyView = {
+      id: "fam-feuil",
+      name: "Feuilletés",
+      position: 1,
+      root: VIEN_ROOT,
+    };
+    const NESTED = shelves([
+      ["FIN-1", FINE],
+      ["VIE-1", { ...VIENNOISERIES, root: VIEN_ROOT }],
+      ["FEU-1", FEUILLETE],
+      ["PAI-1", PAINS],
+    ]);
+    const LINES = [line("FIN-1", 90), line("VIE-1", 50), line("FEU-1", 20), line("PAI-1", 10)];
+
+    it("une sous-catégorie n'a jamais sa fiche : elle tombe dans celle de sa racine", () => {
+      const groups = worksheetGroupsOf(LINES, NESTED);
+
+      expect(groups.map((group) => group.key)).toEqual(["fam-vien", "fam-pain"]);
+      expect(groups[0]).toMatchObject({ family: VIEN_ROOT, label: "Viennoiseries", lineCount: 3 });
+      // Réglage éteint : l'ordre reçu, et aucune section.
+      expect(groups[0]?.lines.map((l) => l.sku)).toEqual(["FIN-1", "VIE-1", "FEU-1"]);
+      expect(groups[0]?.sections).toBeUndefined();
+    });
+
+    it("le réglage posé range section par section — la racine d'abord, puis par position", () => {
+      const groups = worksheetGroupsOf(LINES, NESTED, true);
+
+      expect(groups[0]?.lines.map((l) => l.sku)).toEqual(["VIE-1", "FEU-1", "FIN-1"]);
+      expect(groups[0]?.sections).toEqual([
+        { key: null, label: null, skus: ["VIE-1"] },
+        { key: "fam-feuil", label: "Feuilletés", skus: ["FEU-1"] },
+        { key: "fam-fine", label: "Viennoiserie fine", skus: ["FIN-1"] },
+      ]);
+      expect(groups[0]?.pending.map((l) => l.sku)).toEqual(["VIE-1", "FEU-1", "FIN-1"]);
+    });
+
+    it("le groupe sans famille connue n'a pas de section, même réglage posé", () => {
+      const groups = worksheetGroupsOf([line("XXX-1", 3)], NESTED, true);
+
+      expect(groups).toEqual([expect.objectContaining({ key: UNSHELVED_WORKSHOP_GROUP_KEY })]);
+      expect(groups[0]?.sections).toBeUndefined();
+    });
+  });
 });

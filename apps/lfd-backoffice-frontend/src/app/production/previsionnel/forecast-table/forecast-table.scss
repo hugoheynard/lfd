@@ -484,3 +484,16 @@
 .pv-foot-resupplies {
   color: var(--fold-color-info-text);
 }
+
+/* ── L'INTERTITRE D'UNE SOUS-CATÉGORIE (2026-10-30) ─────────────────────────
+   Dans le rayon de sa racine, sur le papier, sans zébrage : la ligne de rayon
+   reste le seul bandeau sombre de la grille. Une seule cellule, sur toute la
+   largeur — une sous-catégorie n'a pas de totaux à elle. */
+.pv-subcategory {
+  grid-column: 1 / -1;
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-wide);
+  text-transform: uppercase;
+  color: var(--fold-color-text-muted);
+}

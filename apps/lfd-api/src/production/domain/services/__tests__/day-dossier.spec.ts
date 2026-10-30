@@ -195,4 +195,51 @@ describe("dayDossierOf", () => {
     expect(dossier.pieces).toBe(18);
     expect(dossier.resupplyPieces).toBe(18);
   });
+
+  describe("sous-catégories (rangement par racine, 2026-10-30)", () => {
+    const VIEN_ROOT = { id: "fam-vien", name: "Viennoiseries", position: 0 };
+    const FINE: CatalogFamilyView = {
+      id: "fam-fine",
+      name: "Viennoiserie fine",
+      position: 3,
+      root: VIEN_ROOT,
+    };
+    const NESTED = new Map<string, CatalogFamilyView>([
+      ["VIE-001", { ...VIENNOISERIES, root: VIEN_ROOT }],
+      ["VIE-002", FINE],
+      ["PAI-SEI", PAINS],
+    ]);
+
+    it("une sous-catégorie tombe dans la page de sa racine, sans page à elle", () => {
+      const dossier = dayDossierOf(ORDERS, NESTED);
+
+      expect(dossier.recap.map((group) => group.label)).toEqual([
+        "Viennoiseries",
+        "Pains",
+        "Hors catalogue",
+      ]);
+      expect(dossier.recap[0]?.lines.map((line) => line.sku)).toEqual(["VIE-001", "VIE-002"]);
+      expect(dossier.recap[0]?.intertitles).toBeUndefined();
+    });
+
+    it("le réglage posé range par sous-catégorie et pose son intertitre", () => {
+      const dossier = dayDossierOf(
+        [
+          order("ORD-0009", [
+            ["VIE-002", "Pain au chocolat", 90],
+            ["VIE-001", "Croissant", 5],
+          ]),
+        ],
+        NESTED,
+        [],
+        true,
+      );
+
+      // La racine d'abord, sans intertitre — même si la sous-catégorie pèse plus.
+      expect(dossier.recap[0]?.lines.map((line) => line.sku)).toEqual(["VIE-001", "VIE-002"]);
+      expect([...(dossier.recap[0]?.intertitles ?? new Map())]).toEqual([
+        ["VIE-002", "Viennoiserie fine"],
+      ]);
+    });
+  });
 });

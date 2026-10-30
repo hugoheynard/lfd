@@ -1,5 +1,6 @@
 import type { Buffer } from "node:buffer";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { instantToLocal } from "@lfd/contracts";
 import type { MailReceipt, SendMailArgs } from "@lfd/mailer";
 
@@ -197,6 +198,7 @@ export function setup(
       new FixedResupplyPrintColors(),
       new FixedPaperLogo(),
       new FixedPlannedDeliveryNotes(),
+      new InMemoryDisplaySettings().reader(),
     ),
     log,
     mailer,

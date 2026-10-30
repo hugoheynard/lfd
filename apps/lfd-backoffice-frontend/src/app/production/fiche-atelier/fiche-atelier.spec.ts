@@ -383,6 +383,31 @@ describe('la fiche d’atelier', () => {
     expect(text(el, '.fa-band-sum')).toContain('12345 pièces au total');
   });
 
+  it('pose un intertitre de sous-catégorie quand le serveur sert les sections', async () => {
+    api.view = sheet({
+      groups: [
+        {
+          ...painTodo(),
+          sections: [
+            { key: null, label: null, skus: ['BAG'] },
+            { key: 'fam_seigle', label: 'Pains spéciaux', skus: ['SEI'] },
+          ],
+        },
+      ],
+    });
+
+    const { el } = await render();
+
+    const titles = [...el.querySelectorAll('[data-subcategory]')].map((t) => t.textContent?.trim());
+    expect(titles).toEqual(['Pains spéciaux']);
+  });
+
+  it('sans sections servies, aucun intertitre', async () => {
+    const { el } = await render();
+
+    expect(el.querySelectorAll('[data-subcategory]')).toHaveLength(0);
+  });
+
   it('montre au poste fixe toutes les lignes servies, dans l’ordre servi', async () => {
     api.view = sheet({ groups: [painBaguetteDone()] });
     const { el } = await render();

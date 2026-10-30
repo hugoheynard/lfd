@@ -196,6 +196,11 @@ export class PrevisionnelPage {
    */
   protected readonly shelvesLost = signal(false);
 
+  /** Le réglage « Afficher les sous-catégories » du fournil, servi avec la matrice (2026-10-30). */
+  protected readonly showSubcategories = computed(
+    () => this.forecast()?.showSubcategories === true,
+  );
+
   protected readonly rayons = computed(() => {
     const forecast = this.forecast();
     return forecast === null ? [] : forecastRayons(forecast, this.catalogue(), !this.shelvesLost());

@@ -19,6 +19,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { parisToday } from '../../shared/paris-today';
 import { DossierRecipientsCard } from '../dossier-recipients-card/dossier-recipients-card';
 import { ProductionSettingsService } from '../production-settings.service';
+import { ProductionDisplayCard } from '../production-display-card/production-display-card';
 import { ProductionTranchesCard } from '../production-tranches-card/production-tranches-card';
 import { dayLabelOf } from '../worksheet-day';
 
@@ -81,6 +82,7 @@ export function automaticCloseLabel(close: ProductionAutomaticCloseView): string
     FoldIconComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    ProductionDisplayCard,
     ProductionTranchesCard,
     RouterLink,
   ],
@@ -113,6 +115,8 @@ export class ProductionSettingsPage {
   });
 
   protected readonly tranches = computed(() => this.view()?.tranches ?? null);
+  /** Le rangement du fournil ; un serveur qui ne le sert pas encore vaut le défaut. */
+  protected readonly display = computed(() => this.view()?.display ?? { showSubcategories: false });
 
   protected readonly closedDays = computed(() =>
     (this.view()?.closedDays ?? []).map((date) => ({ date, label: dayLabelOf(date) })),

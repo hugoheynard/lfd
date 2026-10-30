@@ -6,6 +6,7 @@ import {
   type CatalogFamilyView,
 } from "@lfd/contracts";
 
+import { InMemoryDisplaySettings } from "../../__tests__/production-display-settings-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import {
   DayOrdersReader,
@@ -146,6 +147,7 @@ function handlerFor(
   rules: ReadonlyMap<string, ContainerRule> = new Map(),
   shelves: Shelves = new Shelves(SEIGLE_AU_PAIN),
   commerce: Commerce = new Commerce(producible),
+  display: InMemoryDisplaySettings = new InMemoryDisplaySettings(),
 ): GetProductionWorksheetHandler {
   return new GetProductionWorksheetHandler(
     new ProductionWorksheetReading(
@@ -161,6 +163,7 @@ function handlerFor(
       ),
       new InMemoryCheckReader(new CheckTable()),
       new FixedOvenWaitingOrders(),
+      display.reader(),
     ),
   );
 }
