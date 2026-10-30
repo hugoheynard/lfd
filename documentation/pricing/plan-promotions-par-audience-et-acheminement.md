@@ -1639,3 +1639,12 @@ fenêtre de sa promotion — à confirmer à l'armement), `lint:code-language`.
 - **Q2** : une promotion `everyone` sans libellé Particuliers/Pros sert le
   commun aux deux — l'éditeur doit-il **exiger** les deux libellés dès que les
   deux audiences sont touchées, ou le commun suffit-il ?
+
+**Arbitrages du § 15.12 (mandat de Hugo, 2026-10-30)** :
+
+- **Q1** : la trace d'une ligne fige le libellé de l'audience de l'acheteur
+  dans les TROIS langues (FR/EN/IT) — un document relu plus tard (facture,
+  bon, historique) dans la langue du client ne doit pas dépendre d'une
+  promotion modifiée depuis.
+- **Q2** : le libellé commun suffit ; les libellés Particuliers / Pros sont
+  facultatifs et le remplacent quand ils sont posés.
