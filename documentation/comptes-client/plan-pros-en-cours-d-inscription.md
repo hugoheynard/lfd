@@ -329,3 +329,22 @@ Chaque réponse cite un fichier rouvert le 2026-10-30.
 Questions ajoutées : **Q10** — un site dont le principal est pending : lui
 ouvrir la passation par carte en le faisant payer lui-même, ou laisser le
 refus actuel ?
+
+## Arbitrages finaux (Hugo : « prends les décisions les plus cohérentes », 2026-10-30)
+
+- **Q9 — suspendues existantes** : tarif **public** provisoire, liste sortie au
+  lot P0 pour que Hugo tranche société par société.
+- **Q10 — site d'un principal en attente** : il suit son principal. Si le
+  principal est « traité en pro », le site commande au tarif pro, **par carte,
+  en payant lui-même** (un payeur non actif reste refusé, `order-payer.ts:33` :
+  le site ne peut pas faire payer un principal non validé).
+- **Q7 — refuser une inscription pro** : oui, une transition
+  `pending → terminated` (« inscription refusée ») ; les commandes déjà passées
+  au prix pro restent telles quelles (prix figés), la suite passe au refus des
+  sociétés terminées.
+- **Q6 — droit** : `b2b_settings`, comme les autres réglages de la plateforme.
+- **Q5 — contact** : une société en attente traitée en pro y est vue comme pro,
+  par la même décision unique.
+- **Q4 — emplacement** : `b2b/account/` (la politique porte sur le statut d'une
+  société, que ce contexte possède).
+- **Q8** : rien de neuf.
