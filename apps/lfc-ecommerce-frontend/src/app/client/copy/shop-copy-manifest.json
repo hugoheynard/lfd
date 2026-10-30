@@ -1847,6 +1847,20 @@
           "variables": []
         },
         {
+          "key": "shop.reservedToOtherAccount",
+          "fr": "Réservé à un autre compte",
+          "en": "Reserved for another account",
+          "it": "Riservato a un altro account",
+          "variables": []
+        },
+        {
+          "key": "shop.reservedToOtherAccountHint",
+          "fr": "Cet article est réservé à un autre compte : vous ne pouvez pas le commander.",
+          "en": "This item is reserved for another account: you cannot order it.",
+          "it": "Questo articolo è riservato a un altro account: non puoi ordinarlo.",
+          "variables": []
+        },
+        {
           "key": "shop.operationBadgeFrom",
           "fr": "Dès le {date}",
           "en": "From {date}",
@@ -3586,6 +3600,20 @@
           "en": "{name} is now sold by the piece: please add it again.",
           "it": "L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo.",
           "variables": ["name"]
+        },
+        {
+          "key": "cart.reservedLine",
+          "fr": "L’article {name} est réservé à un autre compte : il ne sera pas commandé.",
+          "en": "{name} is reserved for another account: it will not be ordered.",
+          "it": "L’articolo {name} è riservato a un altro account: non verrà ordinato.",
+          "variables": ["name"]
+        },
+        {
+          "key": "cart.dropReservedLines",
+          "fr": "Le retirer du panier",
+          "en": "Remove it from the cart",
+          "it": "Rimuovilo dal carrello",
+          "variables": []
         },
         {
           "key": "cart.excludedNote",

@@ -13,7 +13,13 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { AuthFacade } from '../../auth/auth.facade';
 import { CartStore } from './cart.store';
 import { ShopQuote } from './shop-quote.service';
-import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
+import {
+  hydrateWith,
+  LOCKED_CATALOGUE,
+  LOCKED_ITEM,
+  TEST_CATALOGUE,
+  TEST_ITEMS,
+} from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 import { loyaltyDouble, provideLoyalty, type LoyaltyDouble } from '../client-loyalty.fixture';
@@ -292,6 +298,27 @@ describe('ShopQuote', () => {
     });
     return booted;
   }
+
+  /**
+   * Un panier gardé qui porte un article réservé à un autre compte
+   * (`plan-articles-sur-mesure.md`, L3) : le serveur refuserait TOUT le
+   * décompte pour cette ligne — elle ne part pas, les autres si.
+   */
+  it('n’envoie pas au devis un article verrouillé gardé au panier', () => {
+    const booted = boot();
+    hydrateWith(TestBed.inject(ShopCatalogue), LOCKED_CATALOGUE);
+    const { cart, http } = booted;
+
+    cart.setQuantity(LOCKED_ITEM.sku, 2);
+    cart.setQuantity(SKU, 1);
+    quiet();
+
+    const asked = http.expectOne(QUOTE);
+    const skus = (asked.request.body as { lines: { sku: string }[] }).lines.map((l) => l.sku);
+    expect(skus).toEqual([SKU]);
+    asked.flush(ANSWER);
+    http.verify();
+  });
 
   it('chiffre une ligne au poids avec son unité', () => {
     const { cart, http } = bootWithSalmon();

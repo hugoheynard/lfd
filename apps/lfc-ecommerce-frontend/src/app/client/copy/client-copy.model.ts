@@ -572,6 +572,14 @@ export interface ClientCopy {
     /** À la place du « + » quand la commande de l'opération est close. */
     readonly operationClosed: string;
     /**
+     * À la place du « + » d'un article réservé à un autre compte et réglé
+     * « visible, non commandable » (`plan-articles-sur-mesure.md`, S2, L3) :
+     * la mention courte de la vignette.
+     */
+    readonly reservedToOtherAccount: string;
+    /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
+    readonly reservedToOtherAccountHint: string;
+    /**
      * La pastille CALCULÉE d'une annonce liée à une opération (D11), quand la
      * vitrine n'en a pas saisi : annoncée, `{date}` = l'ouverture courte
      * (« 15 nov. ») ; ouverte, `{days}` = les jours calendaires de Paris
@@ -704,6 +712,14 @@ export interface ClientCopy {
      */
     readonly unitChangedToWeight: string;
     readonly unitChangedToPiece: string;
+    /**
+     * Une ligne du panier gardé que le compte ne peut plus commander : l'article
+     * est réservé à un autre compte (`plan-articles-sur-mesure.md`, L3). Elle est
+     * exclue du décompte et de la commande. `{name}` = l'article.
+     */
+    readonly reservedLine: string;
+    /** Le bouton qui retire ces lignes du panier. */
+    readonly dropReservedLines: string;
     /** Le renvoi de la marque `*` posée sur une ligne exclue de la remise. */
     readonly excludedNote: string;
     /** Le nom accessible d'une ligne exclue : `{name}`. */

@@ -304,6 +304,9 @@ export const FR: ClientCopy = {
     operationOpensOn: 'Ouvre le {date}',
     operationNotOpen: 'Pas encore ouvert',
     operationClosed: 'Commandes closes',
+    reservedToOtherAccount: 'Réservé à un autre compte',
+    reservedToOtherAccountHint:
+      'Cet article est réservé à un autre compte : vous ne pouvez pas le commander.',
     operationBadgeFrom: 'Dès le {date}',
     operationBadgeDays: 'J‑{days}',
     operationBadgeLastDay: 'Dernier jour',
@@ -359,6 +362,8 @@ export const FR: ClientCopy = {
     discountOnBase: 'Remise retrait {at} −{value} sur {base} éligibles',
     unitChangedToWeight: 'L’article {name} se vend désormais au poids : ajoutez-le de nouveau.',
     unitChangedToPiece: 'L’article {name} se vend désormais à la pièce : ajoutez-le de nouveau.',
+    reservedLine: 'L’article {name} est réservé à un autre compte : il ne sera pas commandé.',
+    dropReservedLines: 'Le retirer du panier',
     excludedNote: '* Non concerné par la remise retrait.',
     excludedLineAria: '{name}, non concerné par la remise retrait',
     fee: 'Coursier',

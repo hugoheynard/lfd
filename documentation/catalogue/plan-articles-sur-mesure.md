@@ -428,6 +428,7 @@ flowchart LR
   vérification de la recherche serveur, correction du JSDoc de `servedTo`.
 - **L2 back-office** : les écrans du § 7.
 - **L3 boutique** : `orderable:false` grisé, rien dans les suggestions.
+  🟦 Bâti le 2026-10-30 (§ 10 bis).
 - **L4** : e2e du mur et budget.
 
 ## 9. Tests
@@ -525,6 +526,21 @@ naturellement ».
   attendait `reserved_article` ; les opérations datées du panier lisent en
   `staff` (le mur est tenu par la porte du prix). Budget : `COLD_QUOTE_OPS`
   inchangé à 7, le cas froid `/shop/quote/mine` reste au L4.
+- **L3** — la boutique (§ 7, § 8).
+  🟦 **Bâti le 2026-10-30, non commité.** La vignette d'un article
+  `orderable: false` se grise (photo seule, le texte garde son contraste) et
+  dit « Réservé à un autre compte » à la place du « + », sans « − » ni
+  pastille ; le nom, seul arrêt de la tuile, est décrit par cette raison
+  (`aria-describedby`). La fiche remplace quantité et ajout par la phrase.
+  `ClientCart` refuse l'ajout ; un panier gardé qui en porte déjà un l'exclut
+  des lignes (donc du devis et de la commande) et le signale par l'encadré
+  `reserved-lines-callout` du panier, avec « Le retirer du panier ». Avant
+  L3, la ligne partait au devis et le 409 `catalog.reserved_article`, qu'aucun
+  préfixe de `ShopQuote` ne reconnaît, faisait échouer tout le décompte en
+  silence. Aucune carte de suggestion ne montre un article verrouillé — y
+  compris les habituels, que le serveur rend verrouillés (S7) : écart à
+  trancher. Textes : `shop.reservedToOtherAccount(Hint)`,
+  `cart.reservedLine`, `cart.dropReservedLines`.
 - **L2…** — la suite du § 8.
 
 ~~⚠️ Entre L1a et L1b, une réservation posée ne restreint encore rien : l'écran

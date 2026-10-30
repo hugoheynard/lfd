@@ -11,6 +11,7 @@ import { ClientCompany } from '../../client-company.service';
 import { FR } from '../../copy/fr';
 import {
   hydrateWith,
+  LOCKED_ITEM,
   operationCatalogue,
   TEST_ITEMS,
   testOperationItem,
@@ -391,6 +392,17 @@ describe('ProductSheet', () => {
       expect(facts().some((fact) => fact.startsWith(FR.product.operationPickup))).toBe(false);
     });
   });
+  /** `plan-articles-sur-mesure.md`, L3 : ni quantité, ni ajout, la raison en phrase. */
+  it('dit qu’un article réservé à un autre compte ne se commande pas, sans stepper ni ajout', () => {
+    mount(LOCKED_ITEM, 0, true);
+
+    expect(el().querySelector('.soon')?.textContent?.trim()).toBe(
+      FR.shop.reservedToOtherAccountHint,
+    );
+    expect(cta()).toBeNull();
+    expect(el().querySelector('app-quantity-rail')).toBeNull();
+  });
+
   /** La limite propre de la pièce, quand le serveur la sert (Hugo, 2026-10-21). */
   it('dit « Préparé sur commande » quand la pièce porte une limite plus stricte', () => {
     mount(

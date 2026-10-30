@@ -7,6 +7,7 @@ import { ClientCompany } from '../../client-company.service';
 import { FR } from '../../copy/fr';
 import {
   hydrateWith,
+  LOCKED_ITEM,
   operationCatalogue,
   TEST_ITEMS,
   testOperationItem,
@@ -405,6 +406,40 @@ describe('ProductTile', () => {
     it('un article courant n’a ni pastille ni changement', () => {
       expect(el().querySelector('fold-badge')).toBeNull();
       expect(el().querySelector('.quick')).not.toBeNull();
+    });
+  });
+
+  /** `plan-articles-sur-mesure.md`, L3 : visible, non commandable. */
+  describe('un article réservé à un autre compte', () => {
+    const el = (): HTMLElement => fixture.nativeElement as HTMLElement;
+
+    beforeEach(() => {
+      fixture.componentRef.setInput('product', LOCKED_ITEM);
+      fixture.componentRef.setInput('quantity', 2);
+      fixture.detectChanges();
+    });
+
+    it('se grise, dit sa raison à la place du « + », sans « − » ni pastille de quantité', () => {
+      expect(el().querySelector('.tile')?.classList.contains('locked')).toBe(true);
+      expect(el().querySelector('[data-locked-reason]')?.textContent?.trim()).toBe(
+        FR.shop.reservedToOtherAccount,
+      );
+      expect(el().querySelector('.quick')).toBeNull();
+      expect(el().querySelector('.count')).toBeNull();
+    });
+
+    it('annonce la raison au lecteur d’écran sur le nom, seul arrêt de la tuile', () => {
+      const open = el().querySelector('.open');
+      const reason = el().querySelector('[data-locked-reason]');
+      expect(reason?.id).toBeTruthy();
+      expect(open?.getAttribute('aria-describedby')).toBe(reason?.id);
+    });
+
+    it('un article commandable n’est ni grisé ni décrit', () => {
+      fixture.componentRef.setInput('product', TEST_ITEMS[0]);
+      fixture.detectChanges();
+      expect(el().querySelector('.tile')?.classList.contains('locked')).toBe(false);
+      expect(el().querySelector('.open')?.hasAttribute('aria-describedby')).toBe(false);
     });
   });
 

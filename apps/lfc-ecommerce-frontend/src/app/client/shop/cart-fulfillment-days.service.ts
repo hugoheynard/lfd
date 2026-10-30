@@ -6,6 +6,7 @@ import { OrderAdmissionStore } from './order-admission.store';
 import { OrderOpeningStore } from './order-opening.store';
 import { ServicePoints } from './pickup-points.store';
 import { ShopCatalogue } from './shop-catalogue.store';
+import { isLocked } from './locked-item';
 
 /**
  * **Les jours proposés suivent le panier** (D6 de
@@ -43,7 +44,10 @@ export class CartFulfillmentDays {
     const quantities = this.cart.quantities();
     return this.catalogue
       .items()
-      .filter((item) => item.operation !== undefined && (quantities[item.sku] ?? 0) > 0);
+      .filter(
+        (item) =>
+          item.operation !== undefined && (quantities[item.sku] ?? 0) > 0 && !isLocked(item),
+      );
   });
 
   private readonly operationSkus = computed(() => this.operationItems().map((item) => item.sku), {

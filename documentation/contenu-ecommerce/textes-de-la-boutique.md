@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1720 textes
+## Sommaire — 1724 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 76 |
+| [Rayon / boutique](#espace-shop) | `shop` | 78 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 26 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -31,7 +31,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Choix de l’heure — le sélecteur de créneau](#espace-slotpicker) | `slotPicker` | 15 |
 | [Choix de l’heure — l’étape du créneau](#espace-slotstep) | `slotStep` | 11 |
 | [Choix de l’heure — le rappel téléphonique](#espace-rappel) | `rappel` | 12 |
-| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 79 |
+| [Panier, connexion et saisie invité](#espace-cart) | `cart` | 81 |
 | [Règlement](#espace-pay) | `pay` | 21 |
 | [Confirmation](#espace-done) | `done` | 28 |
 | [Confirmation — le QR de retrait](#espace-qr) | `qr` | 12 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1720** |
+| **Total** | | **1724** |
 
 ## Le parcours de commande
 
@@ -309,7 +309,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 76 textes.
+Source : `fr.ts · en.ts · it.ts` · 78 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -381,6 +381,8 @@ Source : `fr.ts · en.ts · it.ts` · 76 textes.
 | `shop.operationOpensOn` | Ouvre le {date} | Opens {date} | Apre il {date} | `{date}` |
 | `shop.operationNotOpen` | Pas encore ouvert | Not open yet | Non ancora aperto |  |
 | `shop.operationClosed` | Commandes closes | Orders closed | Ordini chiusi |  |
+| `shop.reservedToOtherAccount` | Réservé à un autre compte | Reserved for another account | Riservato a un altro account |  |
+| `shop.reservedToOtherAccountHint` | Cet article est réservé à un autre compte : vous ne pouvez pas le commander. | This item is reserved for another account: you cannot order it. | Questo articolo è riservato a un altro account: non puoi ordinarlo. |  |
 | `shop.operationBadgeFrom` | Dès le {date} | From {date} | Dal {date} | `{date}` |
 | `shop.operationBadgeDays` | J‑{days} | D‑{days} | G‑{days} | `{days}` |
 | `shop.operationBadgeLastDay` | Dernier jour | Last day | Ultimo giorno |  |
@@ -715,7 +717,7 @@ Source : `fr.ts · en.ts · it.ts` · 12 textes.
 
 ### Panier, connexion et saisie invité — `cart`
 
-Source : `fr.ts · en.ts · it.ts` · 79 textes.
+Source : `fr.ts · en.ts · it.ts` · 81 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -736,6 +738,8 @@ Source : `fr.ts · en.ts · it.ts` · 79 textes.
 | `cart.discountOnBase` | Remise retrait {at} −{value} sur {base} éligibles | Collection discount {at} −{value} on {base} eligible | Sconto ritiro {at} −{value} su {base} idonei | `{at}` `{value}` `{base}` |
 | `cart.unitChangedToWeight` | L’article {name} se vend désormais au poids : ajoutez-le de nouveau. | {name} is now sold by weight: please add it again. | L’articolo {name} ora si vende a peso: aggiungilo di nuovo. | `{name}` |
 | `cart.unitChangedToPiece` | L’article {name} se vend désormais à la pièce : ajoutez-le de nouveau. | {name} is now sold by the piece: please add it again. | L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo. | `{name}` |
+| `cart.reservedLine` | L’article {name} est réservé à un autre compte : il ne sera pas commandé. | {name} is reserved for another account: it will not be ordered. | L’articolo {name} è riservato a un altro account: non verrà ordinato. | `{name}` |
+| `cart.dropReservedLines` | Le retirer du panier | Remove it from the cart | Rimuovilo dal carrello |  |
 | `cart.excludedNote` | * Non concerné par la remise retrait. | * Not covered by the collection discount. | * Non coperto dallo sconto ritiro. |  |
 | `cart.excludedLineAria` | {name}, non concerné par la remise retrait | {name}, not covered by the collection discount | {name}, non coperto dallo sconto ritiro | `{name}` |
 | `cart.fee` | Coursier | Courier | Corriere |  |

@@ -30,6 +30,7 @@ import { ClientWorkspace } from '../client-workspace.service';
 import { CartStore } from './cart.store';
 import { OrderContextStore } from '../order-context.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { isLocked } from '../shop/locked-item';
 import { lineTermsOf, requestedLine } from '../shop/sale-unit';
 import { LOYALTY_REFUSAL_PREFIX, VoucherChoice } from './voucher-choice.service';
 
@@ -409,12 +410,16 @@ export class ShopQuote {
     const units = this.store.units();
     // L'unité FIGÉE à l'ajout, jamais celle du catalogue d'aujourd'hui : c'est
     // le serveur qui dit qu'elle a changé, et retire la ligne.
-    return this.catalogue
-      .items()
-      .filter((item) => (quantities[item.sku] ?? 0) > 0)
-      .map((item) =>
-        requestedLine(item.sku, quantities[item.sku] ?? 0, lineTermsOf(units[item.sku], item)),
-      );
+    return (
+      this.catalogue
+        .items()
+        // Un article verrouillé (réservé à un autre compte, L3) ne part pas :
+        // le serveur refuserait tout le décompte pour lui.
+        .filter((item) => (quantities[item.sku] ?? 0) > 0 && !isLocked(item))
+        .map((item) =>
+          requestedLine(item.sku, quantities[item.sku] ?? 0, lineTermsOf(units[item.sku], item)),
+        )
+    );
   }
 
   /**

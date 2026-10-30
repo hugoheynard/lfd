@@ -468,3 +468,11 @@
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+/* Réservé à un autre compte (`plan-articles-sur-mesure.md`, L3) : seule la
+   PHOTO se grise. Le texte garde son contraste (RGAA 3.2) — c'est lui qui dit
+   la raison. */
+.locked .photo img {
+  filter: grayscale(1);
+  opacity: 0.6;
+}

@@ -6,6 +6,7 @@ import type {
   HomeSuggestionView,
   ProductSuggestionsPayload,
   ProductSuggestionView,
+  ShopItemView,
   UsualSuggestionsPayload,
   UsualSuggestionView,
 } from '@lfd/contracts';
@@ -13,6 +14,7 @@ import { firstValueFrom, type Observable } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
+import { isLocked } from '../shop/locked-item';
 
 /**
  * **La requête des suggestions** (panier, fiche, accueil), dans un morceau
@@ -50,7 +52,7 @@ export function fetchStaffSuggestions(
 ): Promise<readonly CartSuggestionView[]> {
   const route = `${AUTH_CONFIG.apiBaseUrl}/shop/suggestions/${placement}`;
   if (token === null) {
-    return firstValueFrom(http.post<CartSuggestionView[]>(route, payload));
+    return firstValueFrom(http.post<CartSuggestionView[]>(route, payload)).then(orderableOnly);
   }
   return firstValueFrom(
     token.pipe(
@@ -60,7 +62,18 @@ export function fetchStaffSuggestions(
         }),
       ),
     ),
-  );
+  ).then(orderableOnly);
+}
+
+/**
+ * **Jamais suggérer ce qu'on ne peut pas commander**
+ * (`documentation/catalogue/plan-articles-sur-mesure.md`, L3). Le serveur ne
+ * sert pas d'article verrouillé aux suggestions du panier (S7) ; les habituels,
+ * eux, le rendent verrouillé. Une carte de suggestion est un « + » : elle n'en
+ * montre aucun, quelle que soit la route.
+ */
+function orderableOnly<V extends { readonly item: ShopItemView }>(views: readonly V[]): V[] {
+  return views.filter((view) => !isLocked(view.item));
 }
 
 /**
@@ -82,5 +95,5 @@ export function fetchUsualSuggestions(
         }),
       ),
     ),
-  );
+  ).then(orderableOnly);
 }

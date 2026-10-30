@@ -10,7 +10,12 @@ import type { AudienceOrigin } from '../audience/product-audience-queue';
 import { ProductAudience } from '../audience/product-audience.service';
 import { ClientCart } from '../cart/client-cart.service';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
-import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
+import {
+  hydrateWith,
+  LOCKED_ITEM,
+  TEST_CATALOGUE,
+  TEST_ITEMS,
+} from '../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { StaffProductSuggestion } from './staff-product-suggestion.service';
 
@@ -156,6 +161,15 @@ describe('StaffProductSuggestion', () => {
     cart.add('PAI-001');
     pick.open('VIE-001');
     await answer(http, [STAFF_PICK]);
+
+    expect(pick.current()).toBeNull();
+  });
+
+  /** `plan-articles-sur-mesure.md`, L3 : un article verrouillé n'est jamais suggéré. */
+  it('ne suggère jamais un article réservé à un autre compte', async () => {
+    const { pick, http } = boot();
+    pick.open('VIE-001');
+    await answer(http, [{ ...STAFF_PICK, sku: LOCKED_ITEM.sku, item: LOCKED_ITEM }]);
 
     expect(pick.current()).toBeNull();
   });

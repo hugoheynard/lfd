@@ -1,0 +1,21 @@
+@if (messages().length > 0) {
+  <!-- `announce` : la ligne exclue est dite au lecteur d'écran quand l'encadré
+       paraît, pas seulement à qui le parcourt. -->
+  <fold-callout variant="warning" announce data-reserved-lines>
+    <div class="body">
+      @for (message of messages(); track message.sku) {
+        <p class="line" data-reserved-line>{{ message.text }}</p>
+      }
+      <button
+        foldButton
+        emphasis="outline"
+        intent="neutral"
+        size="sm"
+        type="button"
+        (click)="drop()"
+      >
+        {{ t().cart.dropReservedLines }}
+      </button>
+    </div>
+  </fold-callout>
+}

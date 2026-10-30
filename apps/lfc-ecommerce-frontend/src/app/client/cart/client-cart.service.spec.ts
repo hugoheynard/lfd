@@ -8,7 +8,14 @@ import { placeOrder, provideRecognised } from '../client-orders.fixture';
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 
-import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../shop/shop-catalogue.fixture';
+import {
+  hydrateWith,
+  LOCKED_CATALOGUE,
+  LOCKED_ITEM,
+  TEST_CATALOGUE,
+  TEST_ITEMS,
+} from '../shop/shop-catalogue.fixture';
+import { CartStore } from './cart.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 
@@ -122,6 +129,37 @@ describe('Les règles du panier', () => {
     cart.add('INCONNU');
 
     expect(cart.isEmpty()).toBe(true);
+  });
+
+  describe('un article réservé à un autre compte (L3)', () => {
+    beforeEach(() => {
+      hydrateWith(TestBed.inject(ShopCatalogue), LOCKED_CATALOGUE);
+    });
+
+    it('ne s’ajoute ni par le « + » ni par une quantité posée', () => {
+      const cart = TestBed.inject(ClientCart);
+      cart.add(LOCKED_ITEM.sku);
+      cart.setQuantity(LOCKED_ITEM.sku, 3);
+
+      expect(cart.isEmpty()).toBe(true);
+      expect(TestBed.inject(CartStore).quantityOf(LOCKED_ITEM.sku)).toBe(0);
+    });
+
+    it('déjà au panier gardé : exclu des lignes, signalé, puis retiré à la demande', () => {
+      const store = TestBed.inject(CartStore);
+      store.setQuantity(LOCKED_ITEM.sku, 2);
+      store.setQuantity('VIE-001', 1);
+      const cart = TestBed.inject(ClientCart);
+
+      expect(cart.lines().map((line) => line.product.sku)).toEqual(['VIE-001']);
+      expect(cart.reservedLines().map((item) => item.sku)).toEqual([LOCKED_ITEM.sku]);
+
+      cart.dropReserved();
+
+      expect(cart.reservedLines()).toEqual([]);
+      expect(store.quantityOf(LOCKED_ITEM.sku)).toBe(0);
+      expect(store.quantityOf('VIE-001')).toBe(1);
+    });
   });
 
   /** Le panier se relit comme la boutique se parcourt, pas comme on l'a rempli. */

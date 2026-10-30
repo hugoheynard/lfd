@@ -6,6 +6,7 @@ import { CartStore } from './cart.store';
 import { ShopCartSync } from './shop-cart-sync.service';
 import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
+import { isLocked } from '../shop/locked-item';
 import { ProVisit } from '../shop/pro-visit.service';
 import { nextQuantity, previousQuantity, isSoldByWeight, saleUnitOf } from '../shop/sale-unit';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
@@ -41,6 +42,13 @@ export type CartGesture = 'applied' | 'signInRequired';
  *    ligne, ce qui n'est pas la même chose que la garder à zéro ;
  * 3. **les lignes sortent dans l'ordre du RAYON**, pas dans celui des ajouts :
  *    le panier doit se relire comme la boutique se parcourt.
+ *
+ * Un article **verrouillé** — réservé à un autre compte
+ * (`plan-articles-sur-mesure.md`, L3) — est connu du catalogue mais n'entre
+ * pas : la première règle le traite comme une référence inconnue. Un panier
+ * GARDÉ qui en contient déjà un (composé avant la réservation, ou sur un autre
+ * appareil) ne le perd pas en silence : la ligne sort des {@link lines}, donc
+ * du devis et de la commande, et {@link reservedLines} la signale.
  */
 @Injectable({ providedIn: 'root' })
 export class ClientCart {
@@ -119,12 +127,28 @@ export class ClientCart {
     const units = this.store.units();
     return this.catalogue
       .items()
-      .filter((item) => (quantities[item.sku] ?? 0) > 0)
+      .filter((item) => (quantities[item.sku] ?? 0) > 0 && !isLocked(item))
       .map((product): CartLine => {
         const saleUnit = units[product.sku];
         const quantity = quantities[product.sku] ?? 0;
         return saleUnit === undefined ? { product, quantity } : { product, quantity, saleUnit };
       });
+  });
+
+  /**
+   * Les articles du panier gardé que ce compte ne peut pas commander : connus
+   * du catalogue, mais verrouillés. Hors des {@link lines} — ils ne partent ni
+   * au devis ni à la commande —, ils restent au dépôt jusqu'à ce que le client
+   * les retire ({@link dropReserved}) : une réservation levée les rendrait.
+   */
+  readonly reservedLines = computed(() => {
+    if (this.proVisit.active()) {
+      return [];
+    }
+    const quantities = this.store.quantities();
+    return this.catalogue
+      .items()
+      .filter((item) => (quantities[item.sku] ?? 0) > 0 && isLocked(item));
   });
 
   /**
@@ -195,7 +219,7 @@ export class ClientCart {
       return 'signInRequired';
     }
     const item = this.catalogue.itemOf(productId);
-    if (item !== null) {
+    if (item !== null && !isLocked(item)) {
       // Une pièce de plus ; au poids, un pas de plus — ou le minimum au premier geste.
       // L'unité se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8).
       this.store.setQuantity(
@@ -233,7 +257,7 @@ export class ClientCart {
       return 'signInRequired';
     }
     const item = this.catalogue.itemOf(productId);
-    if (item !== null) {
+    if (item !== null && !isLocked(item)) {
       this.store.setQuantity(productId, quantity, undefined, saleUnitOf(item));
     }
     return 'applied';
@@ -248,6 +272,13 @@ export class ClientCart {
    */
   drop(productId: string): void {
     this.store.setQuantity(productId, 0);
+  }
+
+  /** Retire du panier les articles verrouillés — cf. {@link reservedLines}. */
+  dropReserved(): void {
+    for (const item of this.reservedLines()) {
+      this.store.setQuantity(item.sku, 0);
+    }
   }
 
   clear(): void {

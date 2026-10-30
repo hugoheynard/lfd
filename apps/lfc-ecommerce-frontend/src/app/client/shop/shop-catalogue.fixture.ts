@@ -140,6 +140,25 @@ export function operationCatalogue(state: ShopOperationState): ShopCatalogueView
 }
 
 /**
+ * **Un article réservé à un autre compte**, réglé « visible, non commandable »
+ * (`plan-articles-sur-mesure.md`, L3) : le rayon reconnu le sert verrouillé.
+ */
+export const LOCKED_ITEM: ShopItemView = item({
+  sku: 'PAT-SUR',
+  name: 'Entremets sur mesure',
+  shelfId: 'cat_patis',
+  orderable: false,
+  lockedReason: 'reserved_to_other_account',
+});
+
+/** Le catalogue de test, avec l'article verrouillé. */
+export const LOCKED_CATALOGUE: ShopCatalogueView = {
+  shelves: [...TEST_SHELVES],
+  items: [...TEST_ITEMS, LOCKED_ITEM],
+  operations: [],
+};
+
+/**
  * **Un catalogue aux familles imbriquées** (filtre « Plonger ») : Pâtisseries
  * a deux filles, Tartes et Entremets, et Entremets une fille, « 8 parts ».
  * La parente n'a aucun article à elle — elle montre son sous-arbre.

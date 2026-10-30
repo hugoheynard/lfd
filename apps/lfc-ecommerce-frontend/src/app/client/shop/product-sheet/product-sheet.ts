@@ -21,6 +21,7 @@ import { discountBp, millicentsFromCents, unitPriceCents } from '@lfd/money';
 
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../made-to-order';
+import { lockedReason } from '../locked-item';
 import { operationGate, pickupSpan } from '../operations';
 import { artOf, objectPositionOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
@@ -128,8 +129,14 @@ export class ProductSheet {
    */
   protected readonly gate = computed(() => {
     const product = this.product();
-    return product === null
-      ? null
+    if (product === null) {
+      return null;
+    }
+    // Réservé à un autre compte (`plan-articles-sur-mesure.md`, L3) : ni
+    // quantité, ni ajout — la raison en phrase, à leur place.
+    const locked = lockedReason(product, this.t());
+    return locked !== null
+      ? { orderable: false, label: locked.sentence }
       : operationGate(product, this.operation(), this.locale.current(), this.t());
   });
 

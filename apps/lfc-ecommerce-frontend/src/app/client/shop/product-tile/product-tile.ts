@@ -19,6 +19,7 @@ import { ClientLocale } from '../../client-locale.service';
 import { allergenMention } from '../allergen-mention';
 import { madeToOrderShortLabel } from '../made-to-order';
 import { ShopAllergenDisplay } from '../storefront/allergen-display.service';
+import { lockedReason } from '../locked-item';
 import { operationGate } from '../operations';
 import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
@@ -52,6 +53,9 @@ import { pieceMinimumOf, quantityLabel, saleUnitOf } from '../sale-unit';
  * lui donne deux colonnes. C'est le rendu d'un rayon dont la page ne pose aucun
  * objet.
  */
+/** Le compteur des identifiants de raison — unique dans la page, rendu serveur compris. */
+let tileSequence = 0;
+
 @Component({
   selector: 'app-product-tile',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -121,6 +125,17 @@ export class ProductTile {
    * « + » devient « Ouvre le 15 nov. » ; close, « Commandes closes ». Un
    * article courant n'en porte pas, et rien ne change pour lui.
    */
+  /**
+   * **Un article réservé à un autre compte** (`plan-articles-sur-mesure.md`,
+   * L3) : grisé, sa raison à la place du « + », sans pastille de quantité. Le
+   * nom, seul arrêt de la tuile, est décrit par cette raison — le lecteur
+   * d'écran l'entend en ouvrant, pas seulement en parcourant.
+   */
+  protected readonly locked = computed(() => lockedReason(this.product(), this.t()));
+
+  /** L'identifiant de la raison, propre à la tuile : plusieurs tuiles cohabitent. */
+  protected readonly lockedId = `tile-locked-${++tileSequence}`;
+
   protected readonly gate = computed(() => {
     const product = this.product();
     const key = product.operation?.key;

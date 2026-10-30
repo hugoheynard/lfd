@@ -20,6 +20,7 @@ import {
 } from './service-day-notice.rules';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { ShopClock } from './shop-clock';
+import { isLocked } from './locked-item';
 
 /**
  * **Ce que la barre et le panier disent du jour de service**, avant de régler.
@@ -71,7 +72,7 @@ export class ServiceDayNotice {
     return this.catalogue
       .items()
       .flatMap((item) =>
-        item.orderTimeLimit !== undefined && (quantities[item.sku] ?? 0) > 0
+        item.orderTimeLimit !== undefined && (quantities[item.sku] ?? 0) > 0 && !isLocked(item)
           ? [{ name: item.name, limit: item.orderTimeLimit }]
           : [],
       );
