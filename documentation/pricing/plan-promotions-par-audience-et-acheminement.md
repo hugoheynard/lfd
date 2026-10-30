@@ -605,16 +605,16 @@ plan dédié et `vitruve` avant de bâtir. Questions ouvertes :
 
 **Précision de Hugo (2026-10-30) : ces choix sont des RÉGLAGES d'admin**, pas
 des décisions codées. Un écran « Pros en cours d'inscription » (Réglages)
-porte la politique, chaque ligne avec un défaut prudent :
+porte la politique. Défauts : les plus souples (Hugo, 2026-10-30), sauf le paiement, réservé à la carte :
 
 | Réglage                                               | Défaut proposé                         |
 | ----------------------------------------------------- | -------------------------------------- |
 | Voir le catalogue et les prix pros dans l'espace pro  | oui                                    |
-| Commander au prix pro avant validation                | non (voir seulement)                   |
+| Commander au prix pro avant validation                | oui                                    |
 | Moyens de paiement avant validation                   | carte seulement — jamais « au compte » |
 | Minimums et affichage HT des pros                     | oui (suivent le catalogue pro)         |
-| Mercuriale / réservations sur mesure avant validation | non                                    |
-| Remise pro du point de retrait                        | suit « commander »                     |
+| Mercuriale / réservations sur mesure avant validation | oui                                    |
+| Remise pro du point de retrait                        | oui                                    |
 
 Chaque changement est journalisé (qui, quand, avant / après). Le plan dédié
 (préalable aux promotions par sous-audience) détaillera où chaque réglage est
