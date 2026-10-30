@@ -112,7 +112,14 @@ export class StaffUserPanel {
   protected readonly email = signal('');
   protected readonly phone = signal('');
   protected readonly jobTitle = signal('');
-  protected readonly role = signal('commercial');
+  /**
+   * Vide tant qu'on n'a pas choisi : un défaut (« commercial » jusqu'au
+   * 2026-10-30) s'affichait mal — les options arrivent APRÈS la valeur, le
+   * navigateur montrait la première de la liste (« Administrateur ») pendant
+   * que la fiche partait en « commercial », et choisir l'option déjà affichée
+   * ne déclenchait aucun changement. Hugo l'a vu en créant un administrateur.
+   */
+  protected readonly role = signal('');
   protected readonly saving = signal(false);
 
   /** Les écarts au rôle — édités par la grille, enregistrés avec le reste. */
@@ -161,7 +168,8 @@ export class StaffUserPanel {
     () =>
       this.firstName().trim() !== '' &&
       this.lastName().trim() !== '' &&
-      LOOKS_LIKE_EMAIL.test(this.email().trim()),
+      LOOKS_LIKE_EMAIL.test(this.email().trim()) &&
+      this.role() !== '',
   );
 
   constructor() {

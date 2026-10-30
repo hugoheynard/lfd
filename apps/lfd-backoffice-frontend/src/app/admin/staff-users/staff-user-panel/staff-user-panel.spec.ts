@@ -154,8 +154,20 @@ describe('StaffUserPanel — le sélecteur de rôle lit les définitions', () =>
     const host = fixture.nativeElement as HTMLElement;
     return [...host.querySelectorAll<HTMLOptionElement>('option')]
       .map((option) => option.value)
-      .filter((value) => !['inherit', 'allow', 'deny'].includes(value));
+      .filter((value) => !['', 'inherit', 'allow', 'deny'].includes(value));
   }
+
+  /**
+   * Régression (Hugo, 2026-10-30) : la création partait en « commercial »
+   * alors que l'écran montrait « Administrateur ». Le défaut est retiré : la
+   * fiche n'est enregistrable qu'une fois un rôle choisi.
+   */
+  it('ne choisit aucun rôle par défaut à la création, et montre « Choisir un rôle »', async () => {
+    const { fixture } = await boot(null, ['staff_access:write']);
+    const select = (fixture.nativeElement as HTMLElement).querySelector('select');
+    expect(select?.value).toBe('');
+    expect(select?.selectedOptions[0]?.textContent?.trim()).toBe('Choisir un rôle');
+  });
 
   it('propose les rôles actifs, sans le sommet ni les archivés', async () => {
     const { fixture } = await boot(null, ['staff_access:write']);

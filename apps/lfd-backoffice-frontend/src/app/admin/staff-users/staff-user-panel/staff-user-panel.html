@@ -45,6 +45,9 @@
       [disabled]="isRescue()"
       (valueChange)="setRole($event)"
     >
+      @if (role() === '') {
+        <option value="" disabled>Choisir un rôle</option>
+      }
       @for (option of roleOptions(); track option.value) {
         <option [value]="option.value">{{ option.label }}</option>
       }
