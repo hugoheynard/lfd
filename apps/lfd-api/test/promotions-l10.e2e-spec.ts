@@ -213,7 +213,6 @@ describe("la porte d'entrée au point ligne (L10)", () => {
   it("même article, prix différent : l'inscrit a la promotion « inscrits », l'invité non", async () => {
     const site = await scene();
     const before = await anonymousQuote();
-    const guestBefore = await frozenUnitPrice(await placeAsGuest(site));
     await pose({});
 
     const guest = await anonymousQuote();
@@ -222,12 +221,19 @@ describe("la porte d'entrée au point ligne (L10)", () => {
     expect(unitPriceOf(registered)).toBe(Math.round(((unitPriceOf(before) ?? 0) * 8) / 10));
 
     // La passation suit le devis : la porte vient de la route, puis de la commande.
-    // (La ligne d'un invité se fige dans l'unité de sa méthode — `exact_ht` —,
-    // d'où la comparaison à sa propre passation d'avant la promotion.)
+    // L'invité est comparé à SON devis par le TOTAL payé : sa ligne se fige en
+    // `exact_ht`, son prix unitaire change donc de représentation, pas de somme.
+    // (Ce test comparait l'invité à sa propre passation d'avant la promotion, en
+    // l'expliquant par `exact_ht` : c'était en fait le prix PRO, figé hors
+    // requête par une seconde lecture d'horloge — corrigé le 2026-10-30.)
     const registeredOrder = await frozenUnitPrice(await placeAsRegistered(pickupOrder(site)));
-    const guestOrder = await frozenUnitPrice(await placeAsGuest(site));
     expect(registeredOrder).toBe(unitPriceOf(registered));
-    expect(guestOrder).toBe(guestBefore);
+    const guestQuote = await anonymousQuote({ method: "pickup", pickupAddressId: site });
+    const guestOrder = await ctx.prisma.order.findUniqueOrThrow({
+      where: { id: await placeAsGuest(site) },
+    });
+    expect(guestOrder.totalCents).toBe(guestQuote.totalCents);
+    expect(guestOrder.subtotalCents).toBe(guestQuote.subtotalHtCents);
   });
 
   it("au rayon : la route publique sert l'invité, la route reconnue l'inscrit", async () => {

@@ -279,7 +279,6 @@ function drafting(
         new RecordingTimings(),
         new FixedStopwatch(),
       ),
-      new FixedClock(PRICED_AT),
       new CatalogViewers(new InMemoryServedCompanies()),
     ),
     new CartAdjustments(

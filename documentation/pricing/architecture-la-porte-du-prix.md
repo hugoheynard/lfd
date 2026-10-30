@@ -30,6 +30,42 @@ lot.projectAt("VIE-001", 10_000); // « si le cumul valait N »
 **C'est la seule façon d'obtenir un prix hors de `b2b/pricing/`**, et
 `lint:price-door` le tient.
 
+### 🔴 « Maintenant » se dit par l'ABSENCE de `at` (2026-10-30)
+
+La porte décide de l'époque — `current` ou `replay` — en comparant `at` à **sa
+propre** lecture de l'horloge (`epochOf`, comparaison stricte). Un appelant qui
+lit l'horloge puis passe ce qu'il a lu crée donc **deux** instants. Dans une
+requête, ils coïncident (instant gelé à l'ingress) ; **hors requête** (job,
+consommateur, semis, handler appelé en direct), `SystemClock` rend le mur à
+chaque appel, la seconde lecture tombe une milliseconde plus tard, et la
+question du présent devient une relecture : l'article est rescellé au prix de
+`catalog_price_history`, qui ne porte que le tarif **pro**. C'est arrivé à
+`OrderLinePricing` : un invité passé hors requête payait le prix pro.
+
+Règle : **un appelant qui veut « maintenant » ne passe pas `at`**. La porte est
+le seul lecteur de l'horloge sur ce chemin, et elle la lit une fois.
+`OrderLinePricing` n'injecte plus de `Clock` du tout — l'erreur n'y est plus
+exprimable. Régressions :
+`apps/lfd-api/src/b2b/orders/application/services/__tests__/order-line-pricing-instant.spec.ts`
+(horloge qui avance à chaque lecture) et
+`apps/lfd-api/test/shop-quote-placement.e2e-spec.ts` (handler appelé nu, total
+égal au devis).
+
+⚠️ **Une relecture datée au PUBLIC est refusée**
+(`DatedPublicPriceUnsupportedError`, dans `OrderLinePricing`). L'historique
+canonique n'a qu'une colonne de prix, le tarif pro ; le prix public
+(`publicTtcCents`) n'y est pas tracé. Deux autres voies ont été écartées :
+tracer le prix public (migration + écrivain, pour une question qu'aucun appelant
+ne pose — vérifié le 2026-10-30 : `resolve`/`explain` ne reçoivent jamais
+d'instant), ou servir le prix public **du jour** à une relecture (le chiffre
+plausible et faux que `NoCanonicalPriceAtError` existe pour refuser). Le jour où
+une relecture publique sera voulue, c'est l'historique qu'il faudra étendre.
+
+Hors de ce correctif, `ProjectPriceHandler` passe encore `this.clock.now()` à la
+projection (staff, tarif pro) : même figure, sans prix public en jeu — mais une
+relecture contourne le cache et peut lever `NoCanonicalPriceAtError` sur un
+article neuf, si elle tourne hors requête. Non corrigé ici.
+
 ## 2. Les quatre objets, et l'ordre qui compte
 
 ```mermaid

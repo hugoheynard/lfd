@@ -44,6 +44,14 @@ export interface LotRequest {
    * le **dit**, plutôt que de le laisser deviner par la méthode appelée ensuite.
    */
   readonly lens?: PriceLens | undefined;
+  /**
+   * **Une relecture datée, et rien d'autre.** Pour « maintenant », ne rien
+   * passer : la porte lit l'horloge elle-même, une fois. Un appelant qui lit
+   * l'horloge puis la passe ici crée un second instant, et hors requête la
+   * question du présent devient une relecture d'une milliseconde — rescellée à
+   * l'historique canonique, qui ne porte que le tarif pro (régression du
+   * 2026-10-30, `architecture-la-porte-du-prix.md` §1).
+   */
   readonly at?: Date | undefined;
   /** Qui demande — l'étiquette de la sonde, jamais un critère de prix. */
   readonly caller: PricingCaller;

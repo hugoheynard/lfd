@@ -203,7 +203,6 @@ function pricingOf(
   return new OrderLinePricing(
     new InMemoryProductCatalog(catalog),
     pricer,
-    clock,
     new CatalogViewers(new InMemoryServedCompanies()),
   );
 }

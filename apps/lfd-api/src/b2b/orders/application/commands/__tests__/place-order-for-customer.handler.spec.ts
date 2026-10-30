@@ -357,7 +357,6 @@ function handler(
           new RecordingTimings(),
           new FixedStopwatch(),
         ),
-        new FixedClock(PRICED_AT),
         new CatalogViewers(new InMemoryServedCompanies()),
       ),
       new CartAdjustments(
@@ -723,7 +722,6 @@ describe("PlaceOrderForCustomerHandler — le règlement", () => {
             new RecordingTimings(),
             new FixedStopwatch(),
           ),
-          new FixedClock(PRICED_AT),
           new CatalogViewers(new InMemoryServedCompanies()),
         ),
         new CartAdjustments(

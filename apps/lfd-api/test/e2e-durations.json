@@ -455,6 +455,7 @@
   "test/shop-featured.e2e-spec.ts": 12315,
   "test/shop-nested-shelves.e2e-spec.ts": 3400,
   "test/shop-order.e2e-spec.ts": 5551,
+  "test/shop-quote-placement.e2e-spec.ts": 16324,
   "test/shop-quote.e2e-spec.ts": 6182,
   "test/shop-state-carry-over-migration.e2e-spec.ts": 3000,
   "test/shortfall-by-shipment-migration.e2e-spec.ts": 5000,

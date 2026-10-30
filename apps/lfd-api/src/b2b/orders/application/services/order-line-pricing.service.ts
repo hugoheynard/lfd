@@ -35,7 +35,7 @@ import {
   type LineToPrice,
   type ResolvedOrderLine,
 } from "../../domain/services/price-line.js";
-import { Clock } from "../../../../platform/time/clock.js";
+import { DatedPublicPriceUnsupportedError } from "../../domain/errors/dated-public-price.error.js";
 import { splitStaleUnitLines, type StaleUnitLine } from "../../domain/services/stale-unit-lines.js";
 import type { PricingCaller } from "../../../pricing/application/pricing-caller.js";
 
@@ -69,7 +69,6 @@ export class OrderLinePricing {
   constructor(
     private readonly catalog: ProductCatalogReader,
     private readonly pricer: Pricer,
-    private readonly clock: Clock,
     private readonly viewers: CatalogViewers,
   ) {}
 
@@ -233,17 +232,24 @@ export class OrderLinePricing {
       quantities.set(line.sku, (quantities.get(line.sku) ?? 0) + line.quantity);
     }
 
-    // L'instant est pris UNE fois pour toute la commande : deux lignes résolues à
-    // quelques millisecondes d'écart pourraient sinon tomber de part et d'autre
-    // du basculement d'une promotion.
+    // 🔴 **Ce service ne lit PAS l'horloge** (correctif du 2026-10-30). Il
+    // résolvait `at = this.clock.now()` puis le passait à la porte, qui relisait
+    // l'horloge pour juger l'époque. Dans une requête, l'instant est gelé et les
+    // deux lectures coïncident ; HORS requête (job, consommateur, semis, e2e qui
+    // appelle un handler), `SystemClock` rend le mur à chaque appel, la seconde
+    // lecture tombait une milliseconde plus tard, et `epochOf` jugeait la
+    // question du présent comme une relecture — rescellée à l'historique
+    // canonique, qui ne porte que le prix PRO. Un invité payait le prix pro.
     //
-    // Et il vient de l'horloge de la REQUÊTE, pas du mur. C'est le chemin qui
-    // FACTURE — un prix s'y défend devant le client, donc il doit être rejouable
-    // à un instant nommé, pas dépendre de la milliseconde du serveur.
-    //
-    // ⚠️ Sauf lecture datée explicite : `requestedAt` est absent partout sauf
-    // sur le chemin qui RELIT un prix passé.
-    const at = requestedAt ?? this.clock.now();
+    // « Maintenant » se dit donc par l'ABSENCE d'instant : la porte du prix est
+    // le seul lecteur de l'horloge sur ce chemin, et elle la lit une fois.
+    // Seule une LECTURE datée renseigne `requestedAt`.
+    const audience = viewerAudience(viewer);
+    if (requestedAt !== undefined && audience === "public") {
+      // L'historique canonique ne connaît que le tarif pro : relu au public, il
+      // rendrait un prix plausible et faux. Refusé plutôt que deviné.
+      throw new DatedPublicPriceUnsupportedError(requestedAt);
+    }
 
     // Le catalogue est résolu EN UN LOT, avant tout le reste : depuis qu'il vient
     // de la base, le résoudre ligne à ligne ferait une requête par ligne de
@@ -258,7 +264,6 @@ export class OrderLinePricing {
     // Et le LECTEUR porte la société (`plan-articles-sur-mesure.md`, § 6) : un
     // article réservé à un autre compte est refusé par son nom, un `hidden`
     // reste inconnu.
-    const audience = viewerAudience(viewer);
     const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], viewer));
     refuseReserved(catalogue, quantities.keys());
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
@@ -314,7 +319,7 @@ export class OrderLinePricing {
       // La porte d'entrée de la route (L10) : un public « inscrits » ne
       // baisse le prix que derrière une route qui a résolu un `Principal`.
       buyerKind: parties.buyerKind,
-      at,
+      at: requestedAt,
       caller,
     });
 

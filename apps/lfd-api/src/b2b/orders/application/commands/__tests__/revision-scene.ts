@@ -225,12 +225,7 @@ export function revisingAt(
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
   const classifications = new FixedLineClassifications();
   const composition = new OrderComposition(
-    new OrderLinePricing(
-      catalog,
-      pricer(clock),
-      clock,
-      new CatalogViewers(new InMemoryServedCompanies()),
-    ),
+    new OrderLinePricing(catalog, pricer(clock), new CatalogViewers(new InMemoryServedCompanies())),
     new CartAdjustments(
       pickups,
       zones,
