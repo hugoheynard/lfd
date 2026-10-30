@@ -304,7 +304,20 @@ offert qu'au staff qui a `lfc_price_limits`.
   report de plancher. Mur tenant : une règle de société A n'est pas reportable
   vers un sku réservé à B.
 
-## 8. Questions ouvertes à Hugo
+## 7 bis. Réponses de Hugo (2026-10-30)
+
+- **Pause** : une règle ou un barème en pause se reporte **en pause**.
+- **Engagement** : l'ancien engagement **court jusqu'à sa fin** à côté du
+  reporté (aucun avantage cumulé ; il ne s'applique plus, la référence n'étant
+  plus vendue) — la recommandation, retenue.
+- **Gabarit** : la ligne de l'ancienne référence est **remplacée**.
+- **Plancher** : **reporté** comme les autres, un pourcentage restant un
+  pourcentage (appliqué au prix de la nouvelle référence).
+- **Geste** : un **« Tout reporter »** qui ne reporte que ce que le rôle de la
+  personne permet (tarifs sous `b2b_pricing:write`, planchers sous
+  `lfc_price_limits:write`), à côté des reports un par un.
+
+## 8. Questions ouvertes à Hugo (tranchées au § 7 bis)
 
 1. **Pause** : une règle/un barème en pause se reporte-t-il en pause, ou pas
    du tout ?
