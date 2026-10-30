@@ -27,20 +27,25 @@ class FakeMadeToOrder {
       },
     ],
   };
-  readonly marked: boolean[] = [];
+  readonly sent: string[] = [];
 
   ofArticle(): Promise<ArticleReservationView> {
     return Promise.resolve(this.view);
   }
 
   setMadeToOrder(_sku: string, madeToOrder: boolean): Promise<void> {
-    this.marked.push(madeToOrder);
+    this.sent.push(`made-to-order:${madeToOrder}`);
     this.view = { ...this.view, isMadeToOrder: madeToOrder };
+    return Promise.resolve();
+  }
+
+  setReservedVisibility(_sku: string, visibility: string): Promise<void> {
+    this.sent.push(`visibility:${visibility}`);
     return Promise.resolve();
   }
 }
 
-async function render(api: FakeMadeToOrder) {
+async function render(api: FakeMadeToOrder, closes: unknown[] = []) {
   TestBed.configureTestingModule({
     imports: [MadeToOrderPanel],
     providers: [
@@ -48,7 +53,7 @@ async function render(api: FakeMadeToOrder) {
       { provide: MadeToOrderService, useValue: api },
       { provide: PermissionsStore, useValue: { can: () => true } },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
-      { provide: FoldPanelRef, useValue: new FoldPanelRef(1, () => undefined) },
+      { provide: FoldPanelRef, useValue: new FoldPanelRef(1, (result) => closes.push(result)) },
     ],
   });
   const fixture: ComponentFixture<MadeToOrderPanel> = TestBed.createComponent(MadeToOrderPanel);
@@ -73,16 +78,86 @@ describe('MadeToOrderPanel', () => {
     expect(text(fixture)).not.toContain('prochain déploiement');
   });
 
-  it('cocher « sur mesure » envoie le geste', async () => {
+  it('cocher « sur mesure » n’envoie rien avant Enregistrer, puis seulement le marqueur', async () => {
     const api = new FakeMadeToOrder();
-    const fixture = await render(api);
+    const closes: unknown[] = [];
+    const fixture = await render(api, closes);
+    const root = fixture.nativeElement as HTMLElement;
 
-    const box = (fixture.nativeElement as HTMLElement).querySelector<HTMLInputElement>(
-      'input[type="checkbox"]',
-    );
-    box?.click();
-    await new Promise((resolve) => setTimeout(resolve));
+    const save = (): HTMLButtonElement | undefined =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === 'Enregistrer');
+    expect(save()?.disabled).toBe(true);
 
-    expect(api.marked).toEqual([true]);
+    root.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    await settle(fixture);
+    expect(api.sent).toEqual([]);
+    expect(save()?.disabled).toBe(false);
+
+    save()?.click();
+    await settle(fixture);
+
+    expect(api.sent).toEqual(['made-to-order:true']);
+    expect(closes).toEqual([true]);
+  });
+
+  it('Annuler avec des changements demande, et Abandonner n’envoie rien', async () => {
+    const api = new FakeMadeToOrder();
+    const closes: unknown[] = [];
+    const fixture = await render(api, closes);
+    const root = fixture.nativeElement as HTMLElement;
+    const button = (label: string): HTMLButtonElement | undefined =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
+
+    root.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    await settle(fixture);
+    button('Annuler')?.click();
+    await settle(fixture);
+
+    expect(closes).toEqual([]);
+    expect(text(fixture)).toContain('Des modifications ne sont pas enregistrées');
+
+    button('Abandonner')?.click();
+    await settle(fixture);
+    expect(api.sent).toEqual([]);
+    expect(closes).toEqual([undefined]);
+  });
+
+  it('un échec garde la saisie, et réessayer ne renvoie que le reste', async () => {
+    const api = new FakeMadeToOrder();
+    let failMark = true;
+    const mark = api.setMadeToOrder.bind(api);
+    api.setMadeToOrder = (sku, value) =>
+      failMark ? Promise.reject(new Error('panne')) : mark(sku, value);
+    const closes: unknown[] = [];
+    const fixture = await render(api, closes);
+    const root = fixture.nativeElement as HTMLElement;
+    const button = (label: string): HTMLButtonElement | undefined =>
+      [...root.querySelectorAll('button')].find((b) => b.textContent?.trim() === label);
+
+    root.querySelector<HTMLInputElement>('input[type="checkbox"]')?.click();
+    [...root.querySelectorAll('button')]
+      .find((b) => b.textContent?.trim() === 'Visible, non commandable')
+      ?.click();
+    await settle(fixture);
+    button('Enregistrer')?.click();
+    await settle(fixture);
+
+    expect(api.sent).toEqual(['visibility:visible_locked']);
+    expect(text(fixture)).toContain("n'a pas pu être enregistré");
+    expect(root.querySelector<HTMLInputElement>('input[type="checkbox"]')?.checked).toBe(true);
+    expect(closes).toEqual([]);
+
+    failMark = false;
+    button('Enregistrer')?.click();
+    await settle(fixture);
+    expect(api.sent).toEqual(['visibility:visible_locked', 'made-to-order:true']);
+    expect(closes).toEqual([true]);
   });
 });
+
+async function settle(fixture: ComponentFixture<MadeToOrderPanel>): Promise<void> {
+  fixture.detectChanges();
+  await new Promise((resolve) => setTimeout(resolve));
+  await fixture.whenStable();
+  fixture.detectChanges();
+}

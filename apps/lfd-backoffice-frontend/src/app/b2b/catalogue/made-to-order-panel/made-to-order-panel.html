@@ -14,11 +14,14 @@
       @case ('ready') {
         @if (view(); as current) {
           <div class="stack">
+            @if (saveError(); as message) {
+              <fold-callout variant="alert">{{ message }}</fold-callout>
+            }
             <fold-checkbox
               label="Article sur mesure"
-              [checked]="current.isMadeToOrder"
+              [checked]="madeToOrder()"
               [disabled]="!canEdit() || saving()"
-              (checkedChange)="setMadeToOrder($event)"
+              (checkedChange)="madeToOrder.set($event)"
             />
 
             <div class="field">
@@ -28,8 +31,8 @@
                   ariaLabel="Ce que voient les autres professionnels"
                   size="sm"
                   [options]="visibilities"
-                  [value]="current.reservedVisibility"
-                  (valueChange)="setVisibility($event)"
+                  [value]="visibility()"
+                  (valueChange)="pickVisibility($event)"
                 />
               } @else {
                 <span>{{ visibilityLabel(current.reservedVisibility) }}</span>
@@ -73,7 +76,27 @@
     }
   </fold-panel-body>
 
-  <fold-panel-footer>
-    <button foldButton emphasis="outline" (click)="close()">Fermer</button>
+  <fold-panel-footer [align]="leaving() ? 'start' : 'between'">
+    @if (leaving()) {
+      <fold-callout variant="warning" class="leave">
+        Des modifications ne sont pas enregistrées.
+        <span actions class="actions">
+          <button foldButton emphasis="outline" intent="neutral" size="sm" (click)="keepEditing()">
+            Continuer
+          </button>
+          <button foldButton intent="danger" size="sm" (click)="discard()">Abandonner</button>
+        </span>
+      </fold-callout>
+    } @else {
+      <span class="hint">{{ dirty() ? 'Modifications non enregistrées' : '' }}</span>
+      <span class="actions">
+        <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Annuler</button>
+        @if (canEdit()) {
+          <button foldButton [disabled]="!dirty() || saving()" (click)="save()">
+            {{ saving() ? 'Enregistrement…' : 'Enregistrer' }}
+          </button>
+        }
+      </span>
+    }
   </fold-panel-footer>
 }

@@ -36,3 +36,12 @@
   gap: var(--fold-space-sm);
   align-items: baseline;
 }
+
+.actions {
+  display: inline-flex;
+  gap: var(--fold-space-sm);
+}
+
+.leave {
+  flex: 1;
+}

@@ -216,13 +216,14 @@ export class CataloguePage {
 
   /**
    * **Le sur mesure d'un article** (plan `plan-articles-sur-mesure.md`, L1a) :
-   * le panneau règle et relit ; à sa fermeture, les badges du rayon sont relus.
+   * le panneau enregistre d’un coup ; fermé sur un enregistrement, les badges
+   * du rayon sont relus — sur Annuler, rien n’a changé.
    */
   protected openMadeToOrder(row: PublishedRow): void {
-    const ref = this.panels.open<MadeToOrderPanelData>(MadeToOrderPanel, {
+    const ref = this.panels.open<MadeToOrderPanelData, boolean>(MadeToOrderPanel, {
       data: { sku: row.variant.sku, name: rowName(row) },
     });
-    void ref.closed.then(() => this.reloadMarks());
+    void ref.closed.then((saved) => (saved === true ? this.reloadMarks() : undefined));
   }
 
   private async reloadMarks(): Promise<void> {
