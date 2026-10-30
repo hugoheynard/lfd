@@ -602,3 +602,20 @@ plan dédié et `vitruve` avant de bâtir. Questions ouvertes :
   compte » avant validation) ?
 - Ses minimums, sa TVA affichée (HT), ses réservations sur mesure, sa
   mercuriale : tout ce qui suit « pro » le suit-il aussi ?
+
+**Précision de Hugo (2026-10-30) : ces choix sont des RÉGLAGES d'admin**, pas
+des décisions codées. Un écran « Pros en cours d'inscription » (Réglages)
+porte la politique, chaque ligne avec un défaut prudent :
+
+| Réglage                                               | Défaut proposé                         |
+| ----------------------------------------------------- | -------------------------------------- |
+| Voir le catalogue et les prix pros dans l'espace pro  | oui                                    |
+| Commander au prix pro avant validation                | non (voir seulement)                   |
+| Moyens de paiement avant validation                   | carte seulement — jamais « au compte » |
+| Minimums et affichage HT des pros                     | oui (suivent le catalogue pro)         |
+| Mercuriale / réservations sur mesure avant validation | non                                    |
+| Remise pro du point de retrait                        | suit « commander »                     |
+
+Chaque changement est journalisé (qui, quand, avant / après). Le plan dédié
+(préalable aux promotions par sous-audience) détaillera où chaque réglage est
+lu, et passera par `vitruve`.
