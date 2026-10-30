@@ -29,7 +29,9 @@
     "prisma/seed-pim.ts",
     "prisma/seed-pim",
     "prisma/seed-growth/fake-document-store.ts",
-    "prisma/mercuriale"
+    "prisma/mercuriale",
+    "prisma/backfill-order-discounts.ts",
+    "prisma/backfill-order-discounts-options.ts"
   ],
   "exclude": ["dist", "dist-seed", "node_modules", "test", "**/*.spec.ts"]
 }

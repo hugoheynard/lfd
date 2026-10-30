@@ -1,0 +1,100 @@
+/// **Une remise de panier appliquée à une commande** — plan
+/// `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+/// § 18.2 (lot M2). Une ligne par remise ; les colonnes `discount_*` de la
+/// commande restent écrites et lues jusqu'à la bascule des lecteurs.
+///
+/// Écrite en M2 par la reprise seule (`prisma/backfill-order-discounts.ts`) ;
+/// la passation et la révision l'écriront en M3, sous le déclencheur strict
+/// « somme des remises actives = `orders.discount_cents` » qui naît alors.
+///
+/// Écrit à la main dans `20261031170000_les_remises_de_panier`, invisible
+/// ici : l'unicité `(order_id, rank)` est un index PARTIEL sur les lignes non
+/// archivées ; `origin` ∈ {`computed`, `frozen`} ; `rank >= 1` ;
+/// `jsonb_typeof(vat_shares) = 'array'`.
+model OrderDiscount {
+  /// ULID.
+  id             String    @id
+  orderId        String    @map("order_id")
+  order          Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  /// `computed` : recomposée et égale au figé ; `frozen` : recopiée des
+  /// colonnes figées par la reprise, sans recalcul (§ 18.3, point 4).
+  origin         String
+  /// L'ordre d'application, à partir de 1 — figé, jamais recalculé (§ 18.4).
+  rank           Int
+  /// Opaque, sans clé étrangère ; `NULL` = remise reprise d'avant L9.
+  promotionId    String?   @map("promotion_id")
+  /// L'ajustement figé (`CartAdjustment`) ; `NULL` = commande d'avant la
+  /// colonne `orders.discount_adjustment`, reprise en `frozen`.
+  adjustment     Json?
+  /// `{fr, en, it}`, figé dans l'audience de l'acheteur.
+  label          Json?
+  /// L'assiette de l'étape (somme des restes de ses lignes), HT ou TTC selon
+  /// `vat_method`, arrondie au centime le plus proche (moitié vers le haut).
+  /// Information seulement : jamais relue pour calculer (§ 18.2).
+  baseCents      Int       @map("base_cents")
+  /// Le montant de l'étape, HT, positif.
+  amountCents    Int       @map("amount_cents")
+  /// Son TTC — commande `exact_ht` seulement.
+  amountTtcCents Int?      @map("amount_ttc_cents")
+  /// `[{rate, htCents, vatCents?, ttcCents?}]` — la ventilation de l'étape.
+  vatShares      Json      @map("vat_shares")
+  /// Une révision n'efface pas une remise, elle l'archive (§ 18.2, § 18.5).
+  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  coveredLines OrderLineDiscount[]
+  noteParts    DeliveryNoteDiscount[]
+
+  @@index([orderId])
+  @@map("order_discounts")
+  @@schema("public")
+}
+
+/// **Une ligne de commande couverte par une remise** (§ 18.2) — remplace le
+/// booléen `pickup_discount_eligible` pour les lecteurs neufs. Une ligne
+/// absente = ligne non couverte. Se lit par jointure sur la remise parente
+/// NON archivée : une couverture d'une remise archivée n'est jamais active.
+///
+/// `CASCADE` vers `order_lines`, et c'est voulu : la révision supprime et
+/// recrée les lignes de la commande (`prisma-order-revision.repository.ts`,
+/// `lines: { deleteMany }`, ouvert le 2026-10-30). Un `RESTRICT` y ferait
+/// refuser toute révision d'une commande reprise. `RESTRICT` vers la remise.
+model OrderLineDiscount {
+  orderLineId     String        @map("order_line_id")
+  orderLine       OrderLine     @relation(fields: [orderLineId], references: [id], onDelete: Cascade)
+  orderDiscountId String        @map("order_discount_id")
+  orderDiscount   OrderDiscount @relation(fields: [orderDiscountId], references: [id], onDelete: Restrict)
+
+  @@id([orderLineId, orderDiscountId])
+  @@index([orderDiscountId])
+  @@map("order_line_discounts")
+  @@schema("public")
+}
+
+/// **La part d'une remise sur un bon de livraison** (§ 18.2) — les montants
+/// DU BON, par remise : un bon partiel recompose, il ne remet pas au prorata.
+/// Un montant fixe n'a qu'une part, sur le BL-1 (règle du reliquat). FK
+/// `RESTRICT` vers la remise de commande : un bon parti pointe une remise
+/// archivée, jamais une ligne disparue.
+///
+/// Écrit à la main dans la migration : `jsonb_typeof(vat_shares) = 'array'`.
+model DeliveryNoteDiscount {
+  /// ULID.
+  id              String        @id
+  noteId          String        @map("note_id")
+  note            DeliveryNote  @relation(fields: [noteId], references: [id], onDelete: Restrict)
+  orderDiscountId String        @map("order_discount_id")
+  orderDiscount   OrderDiscount @relation(fields: [orderDiscountId], references: [id], onDelete: Restrict)
+  /// HT, positif.
+  amountCents     Int           @map("amount_cents")
+  /// Son TTC — bon `exact_ht` seulement.
+  amountTtcCents  Int?          @map("amount_ttc_cents")
+  /// `[{rate, htCents, vatCents?, ttcCents?}]`.
+  vatShares       Json          @map("vat_shares")
+  createdAt       DateTime      @default(now()) @map("created_at") @db.Timestamptz(6)
+
+  @@unique([noteId, orderDiscountId])
+  @@index([orderDiscountId])
+  @@map("delivery_note_discounts")
+  @@schema("public")
+}

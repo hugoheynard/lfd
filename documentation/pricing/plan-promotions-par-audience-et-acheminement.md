@@ -2021,18 +2021,18 @@ au lot M6 ; le dépôt d'avoir (`refund-credit-note.ts:145` émet `allowances: [
 Table `order_discounts` (schéma `public`), **une ligne par remise de panier
 appliquée** :
 
-| Colonne                                           | Sens                                                                   |
-| ------------------------------------------------- | ---------------------------------------------------------------------- |
-| `id` (ULID), `order_id` (FK `orders`, `RESTRICT`) | —                                                                      |
-| `origin` text NOT NULL, `computed` \| `frozen`    | `frozen` = recopiée des colonnes figées par la reprise, sans recalcul  |
-| `rank` int, unique `(order_id, rank)`             | **ordre d'application** (§ 16.1, étape 3), à partir de 1               |
-| `promotion_id` text NULL                          | opaque, sans FK ; `NULL` = remise reprise d'avant L9                   |
-| `adjustment` jsonb                                | `%` (bp) ou montant fixe, figé                                         |
-| `label` jsonb NULL                                | `{fr, en, it}`, figé dans l'audience de l'acheteur                     |
-| `base_cents` int                                  | l'assiette de l'étape (somme des restes), HT ou TTC selon `vat_method` |
-| `amount_cents` int                                | le montant de l'étape, HT                                              |
-| `amount_ttc_cents` int NULL                       | `exact_ht` seulement (même CHECK que `orders`)                         |
-| `vat_shares` jsonb                                | `[{rate, htCents, vatCents?, ttcCents?}]` — la ventilation de l'étape  |
+| Colonne                                           | Sens                                                                                                                                                                                                                                                                                                            |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `id` (ULID), `order_id` (FK `orders`, `RESTRICT`) | —                                                                                                                                                                                                                                                                                                               |
+| `origin` text NOT NULL, `computed` \| `frozen`    | `frozen` = recopiée des colonnes figées par la reprise, sans recalcul                                                                                                                                                                                                                                           |
+| `rank` int, unique `(order_id, rank)`             | **ordre d'application** (§ 16.1, étape 3), à partir de 1                                                                                                                                                                                                                                                        |
+| `promotion_id` text NULL                          | opaque, sans FK ; `NULL` = remise reprise d'avant L9                                                                                                                                                                                                                                                            |
+| `adjustment` jsonb                                | `%` (bp) ou montant fixe, figé                                                                                                                                                                                                                                                                                  |
+| `label` jsonb NULL                                | `{fr, en, it}`, figé dans l'audience de l'acheteur                                                                                                                                                                                                                                                              |
+| `base_cents` int                                  | l'assiette de l'étape (somme des restes), HT ou TTC selon `vat_method`, **arrondie au centime le plus proche, moitié vers le haut** (`roundToCents`) — information seulement, **jamais relue pour calculer** (décidé le 2026-10-30, faille rapportée par M1 : l'assiette exacte d'un rang ≥ 2 est un rationnel) |
+| `amount_cents` int                                | le montant de l'étape, HT                                                                                                                                                                                                                                                                                       |
+| `amount_ttc_cents` int NULL                       | `exact_ht` seulement (même CHECK que `orders`)                                                                                                                                                                                                                                                                  |
+| `vat_shares` jsonb                                | `[{rate, htCents, vatCents?, ttcCents?}]` — la ventilation de l'étape                                                                                                                                                                                                                                           |
 
 Et `order_line_discounts(order_line_id, order_discount_id)` — **l'éligibilité
 par remise et par ligne**, qui remplace le booléen unique pour les lecteurs
@@ -2354,6 +2354,20 @@ sequenceDiagram
 
 ### 18.6 Les lots
 
+**M2 bâti le 2026-10-30 (non commité à l'écriture de cette ligne)** —
+migration `20261031170000_les_remises_de_panier` (trois tables, index partiel,
+CHECK, sans déclencheur) ; reprise `apps/lfd-api/prisma/backfill-order-discounts.ts`
+(`pnpm --filter lfd-api backfill:order-discounts`), sur l'adaptateur
+`apps/lfd-api/src/b2b/orders/infrastructure/prisma-order-discount-backfill.ts` et le
+domaine `apps/lfd-api/src/b2b/orders/domain/services/order-discount-recovery.ts`. Écarts au texte, faits au bâti :
+`adjustment` nullable (commande d'avant la colonne, reprise `frozen`) ;
+`order_line_discounts` → `order_lines` en `CASCADE` (la révision supprime et
+recrée les lignes) ; le script ne démarre pas l'`AppModule` (ses tâches de
+fond tourneraient contre la base visée) ; une commande en écart à plusieurs
+taux, `exact_ht` compris, n'est pas écrite et est listée « à trancher » ;
+une commande dont les remises actives ne somment plus `discount_cents`
+(révisée par l'ancien code entre deux passes) est listée, jamais réécrite.
+
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`
 / `discount_label` doit être basculé **avant M7**, seul lot qui peut les
@@ -2502,3 +2516,17 @@ les colonnes, jusqu'à fin M3 ; commande en écart = ligne `origin = 'frozen'`
 (décidé) ; retour arrière écrit ; écrivains de `discount_cents` et
 transaction de passation vérifiés, celle de la révision à démontrer en M3 ;
 `NOT NULL`, `CHECK jsonb_typeof`, coût chiffré — § 18.2, § 18.3, § 18.9.
+
+**Décisions sur le rapport du lot M2 (mandat, 2026-10-30)** :
+
+- Une commande en écart est **écrite `frozen`** (§ 18.3 point 4) ; les phrases
+  du § 18.7 et du § 18.9 qui disent « sautée » sont périmées par cette décision.
+- Les parts d'une `frozen` multi-taux se tirent des **seules lignes éligibles** :
+  si elles sont d'un seul taux, la ligne s'écrit ; sinon elle reste « à trancher ».
+- `order_line_discounts → order_lines` en `ON DELETE CASCADE` (la révision recrée
+  ses lignes) : M3 réécrit les couvertures à chaque révision.
+- Runbook, temps 5 : exiger **zéro écart ET zéro désaccord** (`drifted`). M3
+  ajoute au script `--refresh-drifted`, qui archive la ligne périmée et reprend la
+  commande ; à blanc d'abord, comme le reste.
+- Le script n'amorce pas l'`AppModule` (ses tâches de fond tourneraient contre la
+  base visée) : client Prisma nu, même arithmétique du domaine.

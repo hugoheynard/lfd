@@ -42,6 +42,7 @@
     "db:dev:clone": "tsx prisma/clone-dev.ts",
     "seed:growth": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/seed-growth.ts",
     "seed:growth:reset": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/reset-growth.ts",
+    "backfill:order-discounts": "tsx prisma/backfill-order-discounts.ts",
     "backfill:naf": "NODE_ENV=development TS_NODE_TRANSPILE_ONLY=1 node --no-warnings --loader ts-node/esm prisma/backfill-naf.ts",
     "seed:invoices": "tsc -p tsconfig.seed.json && cp -R fonts assets dist-seed/ && node --env-file=.env dist-seed/prisma/seed-invoices.js",
     "seed:orders": "tsc -p tsconfig.seed.json && node --env-file=.env dist-seed/prisma/seed-orders.js",
