@@ -72,7 +72,11 @@ function mercuriale(amountMillicents: number, over: Partial<PriceRule> = {}): Pr
 
 describe("resolvePrice — sans règle", () => {
   it("rend le prix canonique et une trace vide", () => {
-    const result = resolvePrice(240, { rules: [], ladders: [], mercuriale: null }, context());
+    const result = resolvePrice(
+      240,
+      { rules: [], ladders: [], mercuriale: null, promotions: [] },
+      context(),
+    );
 
     expect(result.finalMillicents).toBe(240);
     expect(result.basePriceMillicents).toBe(240);
@@ -82,7 +86,7 @@ describe("resolvePrice — sans règle", () => {
 
   it("refuse un prix canonique négatif — une dette n'est pas une ligne de commande", () => {
     expect(() =>
-      resolvePrice(-100, { rules: [], ladders: [], mercuriale: null }, context()),
+      resolvePrice(-100, { rules: [], ladders: [], mercuriale: null, promotions: [] }, context()),
     ).toThrow(InvalidCanonicalPriceError);
   });
 
@@ -93,7 +97,7 @@ describe("resolvePrice — sans règle", () => {
   it("accepte un article à zéro, et les altérations le laissent à zéro", () => {
     const result = resolvePrice(
       0,
-      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
     );
 
@@ -116,6 +120,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -138,6 +143,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -150,7 +156,7 @@ describe("resolvePrice — la composition (fork 2)", () => {
   it("un étage sans gagnante est transparent", () => {
     const result = resolvePrice(
       240,
-      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
     );
 
@@ -179,6 +185,7 @@ describe("resolvePrice — l'arrondi unique", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -193,7 +200,7 @@ describe("resolvePrice — l'arrondi unique", () => {
     // 5 × 0,5 = 2,5 → 3. L'arrondi IEEE rendrait 2.
     const result = resolvePrice(
       5,
-      { rules: [percentOff({ id: "p", bp: 5000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 5000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
     );
 
@@ -212,6 +219,7 @@ describe("resolvePrice — l'arrondi unique", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -225,7 +233,7 @@ describe("resolvePrice — replace contre alter", () => {
   it("une mercuriale POSE un prix, elle ne remise pas", () => {
     const result = resolvePrice(
       240,
-      { rules: [mercuriale(210)], ladders: [], mercuriale: null },
+      { rules: [mercuriale(210)], ladders: [], mercuriale: null, promotions: [] },
       context(),
     );
 
@@ -252,6 +260,7 @@ describe("resolvePrice — replace contre alter", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context({ quantity: 100 }),
     );
@@ -279,6 +288,7 @@ describe("resolvePrice — replace contre alter", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -318,6 +328,7 @@ describe("resolvePrice — replace contre alter", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -330,7 +341,11 @@ describe("resolvePrice — replace contre alter", () => {
     const wrong = percentOff({ id: "p", bp: -2000 });
 
     expect(() =>
-      resolvePrice(240, { rules: [wrong], ladders: [], mercuriale: null }, context()),
+      resolvePrice(
+        240,
+        { rules: [wrong], ladders: [], mercuriale: null, promotions: [] },
+        context(),
+      ),
     ).toThrow(InvalidAlterationError);
   });
 });
@@ -342,7 +357,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
   it("relève le prix sous une fraction du canonique, et le CONSIGNE", () => {
     const result = resolvePrice(
       1000,
-      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
       floorPercent,
     );
@@ -354,7 +369,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
   it("relève le prix sous un montant plancher", () => {
     const result = resolvePrice(
       1000,
-      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
       floorAmount,
     );
@@ -366,7 +381,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
   it("ne consigne rien quand le plancher n'a pas servi", () => {
     const result = resolvePrice(
       1000,
-      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 1000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
       floorPercent,
     );
@@ -390,6 +405,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
       floorPercent,
@@ -403,7 +419,7 @@ describe("resolvePrice — le plancher (fork 3)", () => {
   it("la trace garde les étages même quand le plancher a repris la main", () => {
     const result = resolvePrice(
       1000,
-      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null },
+      { rules: [percentOff({ id: "p", bp: 9000 })], ladders: [], mercuriale: null, promotions: [] },
       context(),
       floorPercent,
     );
@@ -420,7 +436,11 @@ describe("resolvePrice — l'ambiguïté", () => {
     const second = percentOff({ id: "b", bp: 2000 });
 
     expect(() =>
-      resolvePrice(240, { rules: [first, second], ladders: [], mercuriale: null }, context()),
+      resolvePrice(
+        240,
+        { rules: [first, second], ladders: [], mercuriale: null, promotions: [] },
+        context(),
+      ),
     ).toThrow(AmbiguousPriceRulesError);
   });
 
@@ -434,6 +454,7 @@ describe("resolvePrice — l'ambiguïté", () => {
         ],
         ladders: [],
         mercuriale: null,
+        promotions: [],
       },
       context(),
     );
@@ -487,7 +508,7 @@ describe("le plancher naturel du système", () => {
   it("ramène à zéro une baisse en euros plus grande que le prix, et le consigne", () => {
     const resolved = resolvePrice(
       200,
-      { rules: [minus(500)], ladders: [], mercuriale: null },
+      { rules: [minus(500)], ladders: [], mercuriale: null, promotions: [] },
       context,
     );
 
@@ -499,7 +520,7 @@ describe("le plancher naturel du système", () => {
   it("ne crie pas quand le prix tombe pile à zéro", () => {
     const resolved = resolvePrice(
       200,
-      { rules: [minus(200)], ladders: [], mercuriale: null },
+      { rules: [minus(200)], ladders: [], mercuriale: null, promotions: [] },
       context,
     );
 
@@ -510,7 +531,7 @@ describe("le plancher naturel du système", () => {
   it("laisse tranquille un prix qui reste positif", () => {
     const resolved = resolvePrice(
       200,
-      { rules: [minus(50)], ladders: [], mercuriale: null },
+      { rules: [minus(50)], ladders: [], mercuriale: null, promotions: [] },
       context,
     );
 
@@ -550,25 +571,33 @@ describe("l'unité d'une altération en montant", () => {
 
     // 2,50 € − 0,05 € = 2,45 €, en millicentimes.
     expect(
-      resolvePrice(250_000, { rules: [geste], ladders: [], mercuriale: null }, context())
-        .finalMillicents,
+      resolvePrice(
+        250_000,
+        { rules: [geste], ladders: [], mercuriale: null, promotions: [] },
+        context(),
+      ).finalMillicents,
     ).toBe(245_000);
   });
 
   it("plancher en montant : 218 000 vaut 2,18 €, et relève à 2,18 €", () => {
     const resolved = resolvePrice(
       250_000,
-      { rules: [], ladders: [], mercuriale: null },
+      { rules: [], ladders: [], mercuriale: null, promotions: [] },
       context(),
       { mode: "amount", millicents: 218_000 },
     );
 
     expect(resolved.finalMillicents).toBe(250_000);
     expect(
-      resolvePrice(200_000, { rules: [], ladders: [], mercuriale: null }, context(), {
-        mode: "amount",
-        millicents: 218_000,
-      }),
+      resolvePrice(
+        200_000,
+        { rules: [], ladders: [], mercuriale: null, promotions: [] },
+        context(),
+        {
+          mode: "amount",
+          millicents: 218_000,
+        },
+      ),
     ).toMatchObject({ floored: true, finalMillicents: 218_000 });
   });
 });

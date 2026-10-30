@@ -30,7 +30,7 @@ import {
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
-import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
+import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import {
   ensureKeptMinimums,
   keptQuantityChanges,
@@ -42,7 +42,7 @@ import {
   type OrderLineSnapshot,
 } from "../../domain/value-objects/order-line.js";
 import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method.js";
-import { CartAdjustments } from "./cart-adjustments.service.js";
+import { CartAdjustments, type PickupBuyer } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderLinePricing } from "./order-line-pricing.service.js";
@@ -146,20 +146,25 @@ export class OrderComposition {
     // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
     // par la même fonction que la ligne persistée. Deux arithmétiques ici
     // feraient diverger le seuil de franco du total facturé.
-    const priced: readonly PricedLine[] = lines.map((line) => ({
+    const priced: readonly BasketLine[] = lines.map((line) => ({
       sku: line.sku,
       htCents: lineTotalCents(line.unitPriceMillicents, quantityOf(line)),
+      quantity: quantityOf(line).amount,
     }));
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
     const known = await this.classifications.classify(priced.map((line) => line.sku));
     // La clientèle, lue UNE fois : elle tarife l'acheminement et désigne les
     // CGV que la commande porte (plan des CGV, C2″, C4′).
-    const audience = await this.audiences.of(parties.companyId);
-    const fulfillment = await this.resolveFulfillment(content, priced, audience, {
-      companyId: parties.companyId,
+    // Le statut d'où elle est tirée vient avec elle : les promotions panier
+    // le lisent (plan des promotions, L5), sans seconde lecture.
+    const { audience, companyStatus } = await this.audiences.standingOf(parties.companyId);
+    const fulfillment = await this.resolveFulfillment(
+      content,
+      priced,
+      { audience, companyId: parties.companyId, companyStatus, buyerKind: parties.buyerKind },
       known,
-    });
+    );
     const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
     return { lines, subtotalCents, known, audience, fulfillment };
   }
@@ -312,23 +317,17 @@ export class OrderComposition {
    */
   private async resolveFulfillment(
     content: OrderContent,
-    priced: readonly PricedLine[],
-    audience: CustomerAudience,
-    {
-      companyId,
-      known,
-    }: {
-      readonly companyId: string | null;
-      readonly known: ReadonlyMap<string, OrderLineClassification>;
-    },
+    priced: readonly BasketLine[],
+    buyer: PickupBuyer,
+    known: ReadonlyMap<string, OrderLineClassification>,
   ): Promise<ResolvedFulfillment> {
+    const { audience } = buyer;
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique.
       const retrait = await this.adjustments.forPickup(
         content.pickupAddressId,
         priced,
-        audience,
-        companyId,
+        buyer,
         known,
       );
       // La tranche doit tenir dans l'UNE des fenêtres du point — jamais dans

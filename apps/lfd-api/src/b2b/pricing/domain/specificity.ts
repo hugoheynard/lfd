@@ -29,10 +29,18 @@ import type {
  * parce qu'il est plus spécifique, pas parce que c'est le volume.
  */
 
+/**
+ * Le rang de l'audience, **sur l'échelle du public des promotions** (plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * § 13.3 et § 13.5) : `all` 0 et `company` 4 y sont `everyone` et `company`,
+ * et `segment` reste entre les deux. L'ordre est celui d'avant (`all` <
+ * `segment` < `company`), seules les valeurs ont bougé — aucun arbitrage
+ * entre deux règles de prix ne change.
+ */
 const AUDIENCE_RANK: Readonly<Record<PriceAudience["type"], number>> = {
   all: 0,
-  segment: 1,
-  company: 2,
+  segment: 2,
+  company: 4,
 };
 
 /**
@@ -66,11 +74,15 @@ export function familyClosenessOf(scope: PriceScope, categoryPath: readonly stri
 }
 
 /**
- * Les quatre critères, du plus fort au plus faible. La proximité de famille
- * se glisse sous la portée : elle ne départage que deux familles entre elles.
+ * Les critères, du plus fort au plus faible. Le public et l'acheminement d'une
+ * promotion se lisent en tête (§ 13.2 : public > acheminement > portée) ; une
+ * règle de prix y vaut le rang de son audience, et un acheminement nul — elle
+ * n'en a pas. La proximité de famille se glisse sous la portée : elle ne
+ * départage que deux familles entre elles.
  */
 type Specificity = readonly [
   audience: number,
+  fulfillment: number,
   scope: number,
   familyCloseness: number,
   minQuantity: number,
@@ -78,14 +90,15 @@ type Specificity = readonly [
 
 function specificityOf(rule: PriceRule, categoryPath: readonly string[]): Specificity {
   return [
-    AUDIENCE_RANK[rule.audience.type],
+    rule.promotion?.publicRank ?? AUDIENCE_RANK[rule.audience.type],
+    rule.promotion?.fulfillmentRank ?? 0,
     SCOPE_RANK[rule.scope.type],
     familyClosenessOf(rule.scope, categoryPath),
     rule.minQuantity ?? 0,
   ];
 }
 
-/** Ordre lexicographique sur les trois critères. `0` = strictement aussi spécifiques. */
+/** Ordre lexicographique sur les critères. `0` = strictement aussi spécifiques. */
 function compare(left: Specificity, right: Specificity): number {
   for (let index = 0; index < left.length; index += 1) {
     const delta = (left[index] ?? 0) - (right[index] ?? 0);
@@ -337,7 +350,17 @@ export function rejectionCauseOf(
  *   on l'appelle avec des données fabriquées à la main — un test, un import, une
  *   migration.
  */
-export function winnerOf(rules: readonly PriceRule[], context: PricingContext): PriceRule | null {
+export function winnerOf(
+  rules: readonly PriceRule[],
+  context: PricingContext,
+  /**
+   * **Départage de deux PROMOTIONS strictement aussi spécifiques** (§ 13.2) :
+   * la plus avantageuse pour le client, puis le plus petit identifiant. Seul
+   * l'appelant qui connaît le prix entrant peut le dire — `resolvePrice`.
+   * Absent, ou entre deux règles de prix, l'égalité reste une erreur.
+   */
+  breakTie?: (left: PriceRule, right: PriceRule) => PriceRule,
+): PriceRule | null {
   // Déstructuré plutôt qu'indexé : `first` est alors typé non-`undefined` sans
   // assertion. Une garde `length === 0` ne l'apprend pas au compilateur, et il
   // aurait fallu lui mentir avec un `as`.
@@ -358,7 +381,11 @@ export function winnerOf(rules: readonly PriceRule[], context: PricingContext): 
       bestScore = score;
       tie = null;
     } else if (delta === 0) {
-      tie = candidate;
+      if (breakTie !== undefined && isPromotion(best) && isPromotion(candidate)) {
+        best = breakTie(best, candidate);
+      } else {
+        tie = candidate;
+      }
     }
   }
 
@@ -366,4 +393,9 @@ export function winnerOf(rules: readonly PriceRule[], context: PricingContext): 
     throw new AmbiguousPriceRulesError(best.stage, best.id, tie.id);
   }
   return best;
+}
+
+/** La règle a-t-elle été présentée par une promotion ? */
+function isPromotion(rule: PriceRule): boolean {
+  return rule.promotion !== undefined;
 }

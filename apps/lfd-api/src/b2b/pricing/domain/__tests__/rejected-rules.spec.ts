@@ -91,7 +91,7 @@ function ladder(over: Partial<VolumeLadder> = {}): VolumeLadder {
   };
 }
 
-const NOTHING = { rules: [], ladders: [], mercuriale: null } as const;
+const NOTHING = { rules: [], ladders: [], mercuriale: null, promotions: [] } as const;
 
 describe("ce que le moteur écarte", () => {
   it("n'écarte personne quand tout s'applique — et le DIT", () => {

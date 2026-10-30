@@ -21,6 +21,20 @@ import { FollowedPricingAccountReader } from "./infrastructure/followed-pricing-
 import { PricingPartiesResolver } from "./application/pricing-parties.resolver.js";
 import { CompanyFollowsReader } from "../account/domain/ports/company-follows.reader.js";
 import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-company-follows.reader.js";
+import { LinePromotionSupply } from "../promotions/application/line-promotion-supply.js";
+import { PromotionAudienceFactsResolver } from "../promotions/application/promotion-audience-facts.resolver.js";
+import { BasketPromotionReader } from "../promotions/domain/ports/basket-promotion.reader.js";
+import { LinePromotionReader } from "../promotions/domain/ports/line-promotion.reader.js";
+import { PromotionCompanyStatusReader } from "../promotions/domain/ports/promotion-company-status.reader.js";
+import { PromotionShadowJournal } from "../promotions/domain/ports/promotion-shadow.journal.js";
+import { PromotionsSourceReader } from "../promotions/domain/ports/promotions-source.reader.js";
+import { LoggedPromotionShadowJournal } from "../promotions/infrastructure/logged-promotion-shadow.journal.js";
+import {
+  PrismaBasketPromotionReader,
+  PrismaLinePromotionReader,
+} from "../promotions/infrastructure/prisma-live-promotion.readers.js";
+import { PrismaPromotionCompanyStatusReader } from "../promotions/infrastructure/prisma-promotion-company-status.reader.js";
+import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prisma-promotions-source.reader.js";
 
 /**
  * Contexte **prix** : les règles tarifaires, leurs planchers, et leur résolution.
@@ -54,6 +68,17 @@ import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-com
     PricingPartiesResolver,
     { provide: PricingAccountReader, useClass: FollowedPricingAccountReader },
     { provide: CompanyFollowsReader, useClass: PrismaCompanyFollowsReader },
+    // ▸ Les lecteurs des PROMOTIONS au calcul (plan des promotions, L5). Liés
+    //   ICI et non dans `PromotionsModule` : ils lisent sous le cache des
+    //   matériaux, singleton de ce module — l'inverse ferait un cycle de
+    //   modules, et un second cache que l'estampille ne viderait pas.
+    LinePromotionSupply,
+    PromotionAudienceFactsResolver,
+    { provide: PromotionsSourceReader, useClass: PrismaPromotionsSourceReader },
+    { provide: LinePromotionReader, useClass: PrismaLinePromotionReader },
+    { provide: BasketPromotionReader, useClass: PrismaBasketPromotionReader },
+    { provide: PromotionCompanyStatusReader, useClass: PrismaPromotionCompanyStatusReader },
+    { provide: PromotionShadowJournal, useClass: LoggedPromotionShadowJournal },
   ],
   exports: [
     PricingMaterialsLoader,
@@ -70,6 +95,12 @@ import { PrismaCompanyFollowsReader } from "../account/infrastructure/prisma-com
     VolumeCommitmentReader,
     CustomerVolumeReader,
     PricingPartiesResolver,
+    // Le point PANIER (les ajustements de la commande) lit la même source, les
+    // mêmes faits et le même journal que le point ligne.
+    PromotionsSourceReader,
+    BasketPromotionReader,
+    PromotionAudienceFactsResolver,
+    PromotionShadowJournal,
   ],
 })
 export class PricingModule {}

@@ -135,6 +135,7 @@ const NOTHING = materialsOf({
   commitments: [],
   // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
   mercuriale: null,
+  promotions: [],
 });
 
 describe("priceLine — la recette, sans base ni doublé", () => {
@@ -155,6 +156,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
       // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -177,6 +179,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       commitments: [],
       // Aucun tarif négocié : le champ est DÉCLARÉ, jamais omis.
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -193,6 +196,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       ladders: [],
       commitments: [],
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -223,6 +227,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       ladders: [],
       commitments: [commitment],
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({ quantity: 10 }, materials, NO_EVIDENCE, "co_1");
@@ -262,6 +267,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       ladders: [],
       commitments: [],
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({}, materials, NO_EVIDENCE);
@@ -291,6 +297,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       ladders: [],
       commitments: [],
       mercuriale: null,
+      promotions: [],
     });
 
     const resolved = line({}, materials, {
@@ -329,6 +336,7 @@ describe("priceLine — la recette, sans base ni doublé", () => {
       ],
       commitments: [],
       mercuriale: null,
+      promotions: [],
     });
 
     expect(line({}, materials, NO_EVIDENCE).volumeTiers).toBeNull();

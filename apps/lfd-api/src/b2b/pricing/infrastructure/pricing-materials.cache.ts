@@ -173,4 +173,12 @@ export const PRICING_CACHE_KEYS = {
   rules: "price-rules",
   floors: "price-floors",
   ladders: "volume-ladders",
+  // ▸ Les promotions (plan des promotions, L5) : leurs actes s'écrivent dans
+  //   `pricing_events` comme ceux des règles, donc l'estampille les couvre.
+  //   La source, elle, ne change que par migration ou à la main : après un
+  //   `UPDATE promotion_settings` posé à la main (l'ombre sur dev), redémarrer
+  //   l'API — aucun acte ne bouge l'estampille.
+  linePromotions: "line-promotions",
+  basketPromotions: "basket-promotions",
+  promotionsSource: "promotions-source",
 } as const;

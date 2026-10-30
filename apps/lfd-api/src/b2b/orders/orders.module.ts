@@ -125,6 +125,8 @@ import { ShopCartQuoting } from "./application/services/shop-cart-quoting.servic
 import { OrderNumberReader } from "./domain/ports/order-number.reader.js";
 import { PrismaOrderNumberReader } from "./infrastructure/prisma-order-number.reader.js";
 import { CartAdjustments } from "./application/services/cart-adjustments.service.js";
+import { BasketPromotions } from "./application/services/basket-promotions.service.js";
+import { PricingModule } from "../pricing/pricing.module.js";
 import { CustomerAudiences } from "./application/services/customer-audiences.service.js";
 import { OrderIntake } from "./application/services/order-intake.service.js";
 import { CompanyStatusReader } from "./domain/ports/company-status.reader.js";
@@ -308,6 +310,10 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     // chargeur : elle avait sa propre chorégraphie, comme les trois autres
     // appelants, et c'est ainsi que deux d'entre eux ont oublié un étage.
     PricerModule,
+    // Le point PANIER des promotions (plan des promotions, L5) lit la source,
+    // les promotions panier et le journal de l'ombre sous le cache des
+    // matériaux de prix — le singleton de ce module.
+    PricingModule,
   ],
   controllers: [
     ...ORDER_REFUND_CONTROLLERS,
@@ -369,6 +375,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     OrderOperations,
     OrderLinePricing,
     CartAdjustments,
+    BasketPromotions,
     CustomerAudiences,
     ListCustomerPickupsHandler,
     OrderIntake,

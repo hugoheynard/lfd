@@ -163,11 +163,19 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * tri des lignes d'unité périmée (`withoutStaleUnits`, commit d0b359c27) est
  * RETIRÉE : le tri et le prix lisent la même résolution du catalogue.
  *
+ * 🔴 **De 7 à 8 le 2026-10-30** : le chargeur des prix lit la SOURCE des
+ * promotions (`promotion_settings.promotions_source`, plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * § 13.5, lot L5) — une ligne de configuration en base, pas une variable
+ * d'environnement, pour que la bascule n'existe que si la migration de
+ * contrôle l'a posée. UNE lecture par devis à froid, constante, gardée sous
+ * l'estampille du cache (zéro à chaud). Sous `legacy`, rien d'autre n'est lu.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 7;
+const COLD_QUOTE_OPS = 8;
 
 /**
  * Sème `count` règles de promotion **distinctes**.

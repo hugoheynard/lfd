@@ -18,6 +18,8 @@ import type { PricingContext, ResolvedPrice } from "./price-rule.js";
 import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";
 import { applies, rejectionCauseOf, winnerOf } from "./specificity.js";
 import { ladderAsRule } from "./volume-ladder.js";
+import { promotionRulesFor } from "./promotion-as-rule.js";
+import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 
@@ -110,7 +112,10 @@ export function resolvePrice(
       }
     }
 
-    const winner = winnerOf(applicable, context);
+    const entering = running;
+    const winner = winnerOf(applicable, context, (left, right) =>
+      mostAdvantageous(left, right, entering),
+    );
     if (winner === null) {
       continue; // Étage transparent : il laisse passer le prix entrant.
     }
@@ -227,6 +232,16 @@ export interface PriceInputs {
   readonly ladders: readonly VolumeLadder[];
   /** La mercuriale du client, ou `null`. Présentée au palier de la mesure. */
   readonly mercuriale: CompanyMercuriale | null;
+  /**
+   * Les promotions du point LIGNE qui visent ce client à cet instant (plan
+   * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+   * § 13.5). Présentées à l'étage `promotion` par `promotionAsRule`, pour CET
+   * article.
+   *
+   * 🔴 **Obligatoire, pour la même raison que `ladders`** : `[]` est une
+   * déclaration — la source `legacy` n'en charge aucune, et le dit.
+   */
+  readonly promotions: readonly LivePromotion[];
 }
 
 /**
@@ -241,7 +256,9 @@ function assembled(
   inputs: PriceInputs,
   context: PricingContext,
 ): { rules: readonly PriceRule[]; dropped: readonly RejectedRule[] } {
-  const rules: PriceRule[] = [...inputs.rules];
+  // Une promotion qui ne couvre pas l'article ne devient pas une règle, et
+  // rien n'est consigné : une règle hors portée n'arrive pas ici non plus.
+  const rules: PriceRule[] = [...inputs.rules, ...promotionRulesFor(inputs.promotions, context)];
   const dropped: RejectedRule[] = [];
 
   for (const ladder of inputs.ladders) {
@@ -280,6 +297,20 @@ function assembled(
   }
 
   return { rules, dropped };
+}
+
+/**
+ * **De deux promotions strictement aussi spécifiques, la plus avantageuse
+ * pour le client** (§ 13.2) : le prix sortant le plus bas, puis — à prix
+ * égal — le plus petit identifiant, pour que la réponse ne dépende pas de
+ * l'ordre de lecture.
+ */
+function mostAdvantageous(left: PriceRule, right: PriceRule, entering: Exact): PriceRule {
+  const delta = compareExact(apply(entering, left), apply(entering, right));
+  if (delta !== 0) {
+    return delta < 0 ? left : right;
+  }
+  return left.id <= right.id ? left : right;
 }
 
 /** `replace` pose un prix ; `alter` modifie celui qui entre. */

@@ -405,6 +405,7 @@
   "test/production-tranches.e2e-spec.ts": 27461,
   "test/production-weight.e2e-spec.ts": 12000,
   "test/production-worksheet.e2e-spec.ts": 8049,
+  "test/promotions-equality.e2e-spec.ts": 13500,
   "test/promotions-persistence.e2e-spec.ts": 6831,
   "test/promotions-reprise-migration.e2e-spec.ts": 12100,
   "test/prospects.e2e-spec.ts": 3229,

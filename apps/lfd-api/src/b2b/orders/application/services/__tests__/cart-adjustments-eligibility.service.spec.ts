@@ -12,6 +12,7 @@ import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pic
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
+import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
 
 /**
  * La remise du point sur ses seules lignes éligibles (plan
@@ -25,8 +26,8 @@ const TEN_PERCENT: AudiencePickupDiscount = {
   products: [],
 };
 
-const PAIN = { sku: "PAI-001", htCents: 1_000 };
-const JUS = { sku: "BOI-001", htCents: 1_000 };
+const PAIN = { sku: "PAI-001", htCents: 1_000, quantity: 1 };
+const JUS = { sku: "BOI-001", htCents: 1_000, quantity: 1 };
 const BASKET = [PAIN, JUS];
 
 const CATALOGUE = {
@@ -110,6 +111,7 @@ function adjustments(
     new Open(),
     new NoPreference(),
     classifications,
+    basketPromotions(),
   );
 }
 
@@ -118,7 +120,7 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
     const resolved = await adjustments({
       ...TEN_PERCENT,
       categories: [{ categoryId: "c_boissons", eligible: false }],
-    }).forPickup("pickup_1", BASKET, "b2b", null);
+    }).forPickup("pickup_1", BASKET, pickupBuyer("b2b", null));
 
     expect(resolved.discountCents).toBe(100);
     expect([...resolved.ineligibleSkus]).toEqual(["BOI-001"]);
@@ -130,7 +132,7 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
       ...TEN_PERCENT,
       categories: [{ categoryId: "c_boissons", eligible: false }],
       products: [{ productId: "p_jus", eligible: true }],
-    }).forPickup("pickup_1", BASKET, "b2b", null);
+    }).forPickup("pickup_1", BASKET, pickupBuyer("b2b", null));
 
     expect(resolved.discountCents).toBe(200);
     expect(resolved.ineligibleSkus.size).toBe(0);
@@ -141,7 +143,7 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
       ...TEN_PERCENT,
       scope: "only",
       categories: [{ categoryId: "c_pains", eligible: true }],
-    }).forPickup("pickup_1", BASKET, "b2b", null);
+    }).forPickup("pickup_1", BASKET, pickupBuyer("b2b", null));
 
     expect(resolved.discountCents).toBe(100);
     expect([...resolved.ineligibleSkus]).toEqual(["BOI-001"]);
@@ -153,7 +155,7 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
       scope: "all_except",
       categories: [{ categoryId: "c_boissons", eligible: false }],
       products: [],
-    }).forPickup("pickup_1", BASKET, "b2b", null);
+    }).forPickup("pickup_1", BASKET, pickupBuyer("b2b", null));
 
     expect(resolved.discountCents).toBe(1_000);
   });
@@ -165,8 +167,7 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
     const resolved = await adjustments(TEN_PERCENT, classifications).forPickup(
       "pickup_1",
       BASKET,
-      "b2b",
-      null,
+      pickupBuyer("b2b", null),
     );
 
     expect(resolved.discountCents).toBe(200);
@@ -180,14 +181,18 @@ describe("CartAdjustments — l'assiette de la remise de retrait", () => {
     const resolved = await adjustments(
       { ...TEN_PERCENT, products: [{ productId: "p_jus", eligible: false }] },
       classifications,
-    ).forPickup("pickup_1", BASKET, "b2b", null, known);
+    ).forPickup("pickup_1", BASKET, pickupBuyer("b2b", null), known);
 
     expect([...resolved.ineligibleSkus]).toEqual(["BOI-001"]);
     expect(classifications.asked).toEqual([]);
   });
 
   it("n'exclut rien sans remise pour la clientèle", async () => {
-    const resolved = await adjustments(null).forPickup("pickup_1", BASKET, "b2b", null);
+    const resolved = await adjustments(null).forPickup(
+      "pickup_1",
+      BASKET,
+      pickupBuyer("b2b", null),
+    );
 
     expect(resolved.discountCents).toBe(0);
     expect(resolved.ineligibleSkus.size).toBe(0);

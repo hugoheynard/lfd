@@ -30,8 +30,24 @@ import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reade
 import {
   ineligibleSkusOf,
   pickupDiscountCentsOf,
-  type PricedLine,
 } from "../../domain/services/pickup-discount-eligibility.js";
+import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
+import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
+import type { PromotionBuyerKind } from "../../../promotions/domain/promotion-targeting.js";
+import { BasketPromotions } from "./basket-promotions.service.js";
+
+/**
+ * **Qui commande, établi au serveur** — ce dont la remise de retrait et les
+ * promotions panier dépendent. Jamais lu d'un corps de requête.
+ */
+export interface PickupBuyer {
+  readonly audience: CustomerAudience;
+  readonly companyId: string | null;
+  /** Le statut que la clientèle a été tirée de — lu UNE fois, par `CustomerAudiences`. */
+  readonly companyStatus: OrderCompanyStatus | null;
+  /** La porte d'entrée : posée par la route (devis) ou figée sur la commande (L1). */
+  readonly buyerKind: PromotionBuyerKind;
+}
 
 /** Le point de retrait retenu, et ce qu'il retire du panier. */
 export interface ResolvedPickup {
@@ -43,6 +59,11 @@ export interface ResolvedPickup {
    * La passation en fige le drapeau sur chaque ligne (R2).
    */
   readonly ineligibleSkus: ReadonlySet<string>;
+  /**
+   * La promotion panier retenue sous la source `promotions` ; `null` sous
+   * l'ancien chemin (la remise du site n'a pas d'identifiant de promotion).
+   */
+  readonly promotionId: string | null;
 }
 
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
@@ -108,6 +129,7 @@ export class CartAdjustments {
     private readonly delivery: DeliveryAvailabilityReader,
     private readonly preferences: PreferredPickupReader,
     private readonly classifications: OrderLineClassificationReader,
+    private readonly basket: BasketPromotions,
   ) {}
 
   /**
@@ -137,14 +159,18 @@ export class CartAdjustments {
    * @throws {PickupNotOfferedToAudienceError} aucun point choisi, et aucun n'est ouvert.
    * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose.
    * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
+   *
+   * 🔴 Depuis le lot L5 du plan des promotions, ce qui sort est ce que la
+   * SOURCE sert (`BasketPromotions.served`) : la remise du site en `legacy` et
+   * à l'ombre, la promotion panier du point retenu en `promotions`.
    */
   async forPickup(
     pickupAddressId: string | null,
-    lines: readonly PricedLine[],
-    audience: CustomerAudience,
-    companyId: string | null,
+    lines: readonly BasketLine[],
+    buyer: PickupBuyer,
     known: ReadonlyMap<string, OrderLineClassification> | null = null,
   ): Promise<ResolvedPickup> {
+    const { audience, companyId } = buyer;
     const point =
       pickupAddressId === null
         ? await this.preselected(audience, companyId)
@@ -164,14 +190,32 @@ export class CartAdjustments {
       ? new Map<string, OrderLineClassification>()
       : (known ?? (await this.classifications.classify(lines.map((line) => line.sku))));
     const ineligibleSkus = ineligibleSkusOf(discount, lines, classifications);
-    return {
-      point,
+    const legacy = {
       // Bornée à ce qu'elle remise (`discountCentsOf`) : l'assiette éligible.
       // Les frais de zone, juste en dessous, ne le sont pas — une course peut
       // coûter plus cher qu'un petit panier.
       discountCents: pickupDiscountCentsOf(discount, lines, ineligibleSkus),
       discountAdjustment: discount?.adjustment ?? null,
       ineligibleSkus,
+      promotionId: null,
+    };
+    const served = await this.basket.served(legacy, {
+      lines,
+      buyer: {
+        companyId,
+        companyStatus: buyer.companyStatus,
+        buyerKind: buyer.buyerKind,
+        // Le point RETENU — choisi ou présélectionné (§ 13.6).
+        fulfillment: { method: "pickup", pickupId: point.id },
+      },
+      known: ruled ? classifications : known,
+    });
+    return {
+      point,
+      discountCents: served.discountCents,
+      discountAdjustment: served.discountAdjustment,
+      ineligibleSkus: served.ineligibleSkus,
+      promotionId: served.promotionId,
     };
   }
 

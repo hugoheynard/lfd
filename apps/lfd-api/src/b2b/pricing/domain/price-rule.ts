@@ -187,12 +187,27 @@ export type PriceRule = {
    * s'empilerait sur elle-même n'a pas de lecture.
    */
   readonly stacksOverMercuriale: boolean;
+  /**
+   * **Présent seulement pour une règle présentée par une PROMOTION** (plan
+   * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+   * § 13.5) : le rang de son public et de son acheminement, que la
+   * spécificité lit en tête. Absent, la règle prend le rang de son audience.
+   * Deux règles qui le portent toutes deux et s'égalent strictement ne lèvent
+   * pas d'ambiguïté : la plus avantageuse pour le client gagne.
+   */
+  readonly promotion?: PromotionRank;
 } & (
   | { readonly nature: "replace"; readonly amountMillicents: number }
   | { readonly nature: "alter"; readonly alteration: PriceAlteration }
 );
 
 /** Ce sur quoi on résout : un article, une quantité, un client, un instant. */
+/** Le rang de ciblage d'une promotion, en tête de la spécificité. */
+export interface PromotionRank {
+  readonly publicRank: number;
+  readonly fulfillmentRank: number;
+}
+
 export interface PricingContext {
   readonly at: Date;
   readonly quantity: number;

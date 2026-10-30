@@ -117,7 +117,7 @@ describe("un avenant ajoute un prix daté", () => {
     };
     const result = resolvePrice(
       200_000,
-      { rules: [promotion], ladders: [], mercuriale: amend(posed()) },
+      { rules: [promotion], ladders: [], mercuriale: amend(posed()), promotions: [] },
       context(),
     );
 
@@ -132,7 +132,7 @@ describe("un avenant ajoute un prix daté", () => {
   ])("resolvePrice %s : le prix de l'avenant seulement dans sa fenêtre", (_, at, expected) => {
     const result = resolvePrice(
       200_000,
-      { rules: [], ladders: [], mercuriale: amend(posed()) },
+      { rules: [], ladders: [], mercuriale: amend(posed()), promotions: [] },
       context({ at }),
     );
 
@@ -254,7 +254,8 @@ describe("un avenant arrête une ligne (Q1)", () => {
     // Rendue avec sa fenêtre coupée : la résolution dit « expirée ».
     expect(rule?.validTo).toEqual(APRIL);
     expect(
-      resolvePrice(200_000, { rules: [], ladders: [], mercuriale }, vie(MAY)).finalMillicents,
+      resolvePrice(200_000, { rules: [], ladders: [], mercuriale, promotions: [] }, vie(MAY))
+        .finalMillicents,
     ).toBe(200_000);
   });
 

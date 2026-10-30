@@ -3,6 +3,7 @@ import { candidatesIn, indexByScope, type ScopeIndex } from "./scope-index.js";
 import type { VolumeCommitment } from "./volume-commitment.js";
 import type { VolumeLadder } from "./volume-ladder.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
+import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
 
 /**
  * **Tout ce qu'il faut pour tarifer un panier**, chargé une fois et rangé.
@@ -63,6 +64,15 @@ export interface PricingMaterials {
    * `CompanyMercuriale.asRuleFor`.
    */
   readonly mercuriale: CompanyMercuriale | null;
+  /**
+   * **Les promotions du point ligne**, admises pour ce client à cet instant
+   * (plan des promotions, § 13.5). Vide sous la source `legacy`.
+   *
+   * Pas rangées par portée : leur portée a des exceptions (« tout sauf »),
+   * qu'aucune clé ne dit — `promotionAsRule` la juge article par article.
+   * Elles sont peu nombreuses, et déjà filtrées par fenêtre et par public.
+   */
+  readonly promotions: readonly LivePromotion[];
 }
 
 /** Range les matériaux d'un panier. Chacun sait où lire sa portée. */
@@ -72,6 +82,7 @@ export function materialsOf(loaded: {
   readonly ladders: readonly VolumeLadder[];
   readonly commitments: readonly VolumeCommitment[];
   readonly mercuriale: CompanyMercuriale | null;
+  readonly promotions: readonly LivePromotion[];
 }): PricingMaterials {
   return {
     rules: indexByScope(loaded.rules, (rule) => rule.scope),
@@ -79,6 +90,7 @@ export function materialsOf(loaded: {
     ladders: indexByScope(loaded.ladders, (ladder) => ladder.scope),
     commitments: loaded.commitments,
     mercuriale: loaded.mercuriale,
+    promotions: loaded.promotions,
   };
 }
 

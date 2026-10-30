@@ -31,6 +31,7 @@ import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-c
 import { CatalogViewers } from "../../catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../infrastructure/in-memory-served-companies.js";
 import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
+import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 /**
  * La vitrine sans jeton, publique ou pro (2026-10-19) — montée sur la VRAIE
@@ -198,6 +199,7 @@ function fixture(
       noVolumeLadders,
       commitments,
       noCustomerVolumes,
+      legacyLinePromotionSupply(),
     ),
     new FixedClock(NOW),
     noPriceHistory,

@@ -25,7 +25,7 @@ import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.re
 import { deliveryExtraOf } from "../../domain/services/vat.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
-import type { PricedLine } from "../../domain/services/pickup-discount-eligibility.js";
+import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
@@ -166,8 +166,12 @@ export class ShopCartQuoting {
     const subtotalHtCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
     const terms = await this.termsOf(
       query.payload.fulfillment,
-      lines.map((line) => ({ sku: line.sku, htCents: line.lineTotalCents })),
-      query.companyId,
+      lines.map((line) => ({
+        sku: line.sku,
+        htCents: line.lineTotalCents,
+        quantity: line.quantity,
+      })),
+      query,
     );
     // 🔴 La méthode de la commande que ce devis annonce — celle qu'`Order.draft`
     // décidera sur la même société, jamais l'audience : un pro ne change pas
@@ -319,20 +323,23 @@ export class ShopCartQuoting {
    */
   private async termsOf(
     fulfillment: ShopQuoteFulfillment | null,
-    priced: readonly PricedLine[],
-    companyId: string | null,
+    priced: readonly BasketLine[],
+    { companyId, buyerUserId }: Pick<ShopCartQuoteRequest, "companyId" | "buyerUserId">,
   ): Promise<CartTerms> {
     if (fulfillment === null) {
       return NO_TERMS;
     }
-    const audience = await this.audiences.of(companyId);
+    const { audience, companyStatus } = await this.audiences.standingOf(companyId);
     if (fulfillment.method === "pickup") {
-      const retrait = await this.adjustments.forPickup(
-        fulfillment.pickupAddressId,
-        priced,
+      const retrait = await this.adjustments.forPickup(fulfillment.pickupAddressId, priced, {
         audience,
         companyId,
-      );
+        companyStatus,
+        // La porte d'entrée se lit sur la ROUTE : le devis anonyme ne porte
+        // personne (`buyerUserId` nul), le devis reconnu porte le `Principal`
+        // résolu en base (plan des promotions, § 13.7).
+        buyerKind: buyerUserId === null ? "guest" : "registered",
+      });
       return {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,

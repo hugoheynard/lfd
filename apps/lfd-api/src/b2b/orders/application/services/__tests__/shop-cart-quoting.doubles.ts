@@ -43,6 +43,8 @@ import { OrderOperations } from "../order-operations.service.js";
 import { ShopCartQuoting } from "../shop-cart-quoting.service.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
+import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { basketPromotions } from "./basket-promotions.doubles.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -186,6 +188,7 @@ function pricingOf(
       volumesFor: () => Promise.resolve(new Map<string, number>()),
       committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
     },
+    legacyLinePromotionSupply(),
   );
   const clock = new FixedClock(PRICED_AT);
   const pricer = new Pricer(
@@ -237,6 +240,7 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
       new Open(),
       new NoPreference(),
       new FixedLineClassifications(setup.classified ?? {}),
+      basketPromotions(),
     ),
     new CustomerAudiences(new CompanyAt(setup.companyStatus ?? null)),
     new OrderOperations(noSaleOperations(PRICED_AT)),

@@ -30,7 +30,12 @@ function grid(
     floor,
     mercuriale,
     (probe: PricingContext, applied: PriceFloor | null) =>
-      resolvePrice(canonicalMillicents, { rules, ladders, mercuriale }, probe, applied),
+      resolvePrice(
+        canonicalMillicents,
+        { rules, ladders, mercuriale, promotions: [] },
+        probe,
+        applied,
+      ),
   );
 }
 

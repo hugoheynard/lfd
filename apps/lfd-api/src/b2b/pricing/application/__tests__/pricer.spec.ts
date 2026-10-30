@@ -57,6 +57,7 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../platform/metrics/__tests__/metrics-doubles.js";
+import { legacyLinePromotionSupply } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -394,6 +395,7 @@ function pricerWith(
     new StubLadders(parts.ladders ?? []),
     commitments,
     volumes,
+    legacyLinePromotionSupply(),
   );
   return {
     pricer: new Pricer(

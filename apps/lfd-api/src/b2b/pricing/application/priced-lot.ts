@@ -1,8 +1,15 @@
 import type { VolumeTierPriceView } from "@lfd/contracts";
 
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
-import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { AppError, TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { LoadedPricer, PricedArticle } from "../domain/loaded-pricer.js";
+import type { PromotionShadowJournal } from "../../promotions/domain/ports/promotion-shadow.journal.js";
+
+/** Le tarificateur des promotions sous l'ombre, et où consigner ce qu'il dit autrement. */
+export interface ShadowPricer {
+  readonly pricer: LoadedPricer;
+  readonly journal: PromotionShadowJournal;
+}
 
 /**
  * **Un lot d'articles chargé, et tout ce qu'on peut lui demander.**
@@ -34,6 +41,11 @@ export class PricedLot {
   constructor(
     private readonly pricer: LoadedPricer,
     articles: readonly CatalogArticle[],
+    /**
+     * Le tarificateur des promotions sous la source `shadow` (plan des
+     * promotions, § 13.5) — calculé à côté, jamais servi ; `null` sinon.
+     */
+    private readonly shadow: ShadowPricer | null = null,
   ) {
     this.articles = new Map(articles.map((article) => [article.sku, article]));
   }
@@ -44,7 +56,13 @@ export class PricedLot {
    * @throws {ArticleNotInLotError} un SKU que ce lot n'a pas chargé.
    */
   price(sku: string, quantity: number): PricedArticle {
-    return this.pricer.price(this.articleFor(sku), quantity);
+    const article = this.articleFor(sku);
+    const served = this.pricer.price(article, quantity);
+    const { shadow } = this;
+    if (shadow !== null) {
+      compareInShadow(shadow, served, () => shadow.pricer.price(article, quantity));
+    }
+    return served;
   }
 
   /**
@@ -132,4 +150,46 @@ export class EmptyLotError extends TechnicalError {
       "Un lot de prix sans article : il n'y a rien à charger, et rien à demander ensuite.",
     );
   }
+}
+
+/**
+ * **L'ombre** : le prix des promotions, comparé au prix servi au centime et
+ * par la règle de l'étage `promotion` ; tout écart est consigné, et le prix
+ * servi ne change pas. Un échec du nouveau chemin est consigné aussi — jamais
+ * propagé : l'ombre ne fait pas tomber un panier que l'ancien chemin chiffre.
+ */
+function compareInShadow(
+  shadow: ShadowPricer,
+  served: PricedArticle,
+  priceInShadow: () => PricedArticle,
+): void {
+  let fresh: PricedArticle;
+  try {
+    fresh = priceInShadow();
+  } catch (error) {
+    shadow.journal.divergence({
+      point: "failure",
+      code: error instanceof AppError ? error.code : "unexpected",
+      message: error instanceof Error ? error.message : String(error),
+    });
+    return;
+  }
+  const servedRuleId = promotionStepOf(served);
+  const shadowRuleId = promotionStepOf(fresh);
+  if (fresh.finalMillicents !== served.finalMillicents || servedRuleId !== shadowRuleId) {
+    shadow.journal.divergence({
+      point: "line",
+      sku: served.sku,
+      quantity: served.quantity,
+      servedMillicents: served.finalMillicents,
+      shadowMillicents: fresh.finalMillicents,
+      servedRuleId,
+      shadowRuleId,
+    });
+  }
+}
+
+/** La règle (ou la promotion) qui a agi à l'étage `promotion`, ou `null`. */
+function promotionStepOf(article: PricedArticle): string | null {
+  return article.steps.find((step) => step.stage === "promotion")?.ruleId ?? null;
 }

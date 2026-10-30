@@ -93,7 +93,16 @@ export async function boardMaterials(
     //
     // Le sens est inchangé : le tableau montre un prix de vitrine, et un
     // engagement ouvrirait un palier que la vitrine ne promet pas.
-    pricer: await pricerOver({ rules, floors, ladders, mercuriale, lens: "unproven" }, parties, at),
+    //
+    // `promotions: []` (plan des promotions, L5, 2026-10-30) : le tableau lit
+    // les règles de prix, étage promotion compris, par son propre lecteur ;
+    // après la reprise elles disent la même chose que les promotions de ligne.
+    // Il basculera avec l'écran Promotions (L7/L8).
+    pricer: await pricerOver(
+      { rules, floors, ladders, mercuriale, promotions: [], lens: "unproven" },
+      parties,
+      at,
+    ),
   };
 }
 

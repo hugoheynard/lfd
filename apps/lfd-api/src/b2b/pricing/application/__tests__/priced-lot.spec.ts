@@ -64,7 +64,14 @@ const VOLUME_10: PriceRule = {
 function lotOf(articles = [CROISSANT, PAIN], rules: readonly PriceRule[] = []): PricedLot {
   return new PricedLot(
     LoadedPricer.over(
-      materialsOf({ rules, floors: [], ladders: [], commitments: [], mercuriale: null }),
+      materialsOf({
+        rules,
+        floors: [],
+        ladders: [],
+        commitments: [],
+        mercuriale: null,
+        promotions: [],
+      }),
       NO_EVIDENCE,
       { companyId: null, pricingCompanyId: null },
       AT,

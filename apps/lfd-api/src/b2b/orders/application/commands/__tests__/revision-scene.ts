@@ -70,6 +70,8 @@ import type { OrderIntake } from "../../services/order-intake.service.js";
 import { intakeAt } from "./intake-doubles.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
+import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { basketPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
@@ -175,6 +177,7 @@ function pricer(clock: FixedClock): Pricer {
         volumesFor: () => Promise.resolve(new Map<string, number>()),
         committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
       },
+      legacyLinePromotionSupply(),
     ),
     clock,
     noPriceHistory,
@@ -234,6 +237,7 @@ export function revisingAt(
       { current: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
       { preferredPickupOf: () => Promise.resolve(null) },
       classifications,
+      basketPromotions(),
     ),
     { of: () => Promise.resolve(NO_DELIVERY_DEFAULTS) },
     new OrderOperations(noSaleOperations(clock.now())),

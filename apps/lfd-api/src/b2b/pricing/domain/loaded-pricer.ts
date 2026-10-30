@@ -5,6 +5,7 @@ import { decideFloor } from "./floor-policy.js";
 import { floorMillicentsFor, resolveScopedFloor } from "./resolve-floor.js";
 import { resolvePrice } from "./resolve-price.js";
 import { floorsFor, laddersFor, rulesFor } from "./pricing-materials.js";
+import { promotionRulesFor } from "./promotion-as-rule.js";
 import type { PricingEvidence, PricingMaterials } from "./pricing-materials.js";
 import { commitmentFor, retainedQuantity } from "./volume-commitment.js";
 import type {
@@ -266,7 +267,12 @@ export class LoadedPricer {
       laddersFor(this.materials, context),
       // Les règles SANS la mercuriale : la grille la reconvertit elle-même à
       // chaque palier sondé, et la recevoir toute faite la figerait au premier.
-      rulesFor(this.materials, context),
+      // Les promotions y entrent EN RÈGLES : la grille lit leurs seuils de
+      // quantité, comme ceux des règles d'étage promotion qu'elles reprennent.
+      [
+        ...rulesFor(this.materials, context),
+        ...promotionRulesFor(this.materials.promotions, context),
+      ],
       context,
       scoped === null
         ? null
@@ -327,10 +333,10 @@ export class LoadedPricer {
     if (rule === null) {
       return null;
     }
-    // `ladders: []` et `mercuriale: null` sont DÉCLARÉS, pas omis.
+    // `ladders: []`, `mercuriale: null` et `promotions: []` sont DÉCLARÉS, pas omis.
     return resolvePrice(
       item.canonicalMillicents,
-      { rules: [rule], ladders: [], mercuriale: null },
+      { rules: [rule], ladders: [], mercuriale: null, promotions: [] },
       context,
     ).finalMillicents;
   }
@@ -418,6 +424,7 @@ export class LoadedPricer {
         rules: rulesFor(this.materials, context),
         ladders: laddersFor(this.materials, context),
         mercuriale: this.materials.mercuriale,
+        promotions: this.materials.promotions,
       },
       context,
       applied,

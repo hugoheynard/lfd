@@ -185,6 +185,7 @@ function pricerOver(
     ladders: parts.ladders ?? [],
     commitments: parts.commitments ?? [],
     mercuriale: parts.mercuriale ?? null,
+    promotions: [],
   });
   return LoadedPricer.over(materials, evidence, { companyId, pricingCompanyId: companyId }, AT);
 }

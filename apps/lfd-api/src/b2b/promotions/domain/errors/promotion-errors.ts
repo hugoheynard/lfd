@@ -222,3 +222,20 @@ export class PromotionNotFoundError extends ResourceNotFoundError {
     super("promotions.not_found", `Aucune promotion ${promotionId} : elle n'existe pas.`);
   }
 }
+
+/**
+ * La ligne `promotions_source` manque ou porte une valeur inconnue. Posée
+ * par la migration `20261031120000_la_reprise_des_promotions` : son absence
+ * n'est pas « legacy par défaut », c'est une base à réparer — tenir l'absence
+ * pour une valeur ferait servir un chemin que personne n'a choisi.
+ */
+export class PromotionsSourceUnreadableError extends TechnicalError {
+  constructor(readonly found: string | null) {
+    super(
+      "promotions.source_unreadable",
+      found === null
+        ? "La ligne de configuration « promotions_source » est absente : aucun prix ne peut être calculé tant qu'elle n'est pas remise (valeur « legacy », cf. la migration 20261031120000_la_reprise_des_promotions)."
+        : `La ligne de configuration « promotions_source » vaut « ${found} », que le calcul ne connaît pas : remettez « legacy », « shadow » ou « promotions ».`,
+    );
+  }
+}

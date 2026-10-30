@@ -1,7 +1,17 @@
 import { audienceOf, type CustomerAudience } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { CompanyStatusReader } from "../../domain/ports/company-status.reader.js";
+import {
+  CompanyStatusReader,
+  type OrderCompanyStatus,
+} from "../../domain/ports/company-status.reader.js";
+
+/** La clientèle, et le statut d'où elle est tirée — lus ensemble, une fois. */
+export interface CustomerStanding {
+  readonly audience: CustomerAudience;
+  /** `null` : aucune société, ou une société que la base ne connaît pas. */
+  readonly companyStatus: OrderCompanyStatus | null;
+}
 
 /**
  * **La clientèle d'une requête**, déduite de la société agissante.
@@ -21,9 +31,19 @@ export class CustomerAudiences {
 
   /** `null` = visiteur ou espace perso : B2C, sans lecture. */
   async of(companyId: string | null): Promise<CustomerAudience> {
+    return (await this.standingOf(companyId)).audience;
+  }
+
+  /**
+   * La clientèle ET le statut : les promotions panier lisent le statut (« pro
+   * ou pas », pros actifs, en cours d'inscription — plan des promotions,
+   * L5), la remise de retrait la clientèle. Une lecture pour les deux.
+   */
+  async standingOf(companyId: string | null): Promise<CustomerStanding> {
     if (companyId === null) {
-      return audienceOf(null);
+      return { audience: audienceOf(null), companyStatus: null };
     }
-    return audienceOf(await this.companies.companyStatusOf(companyId));
+    const companyStatus = await this.companies.companyStatusOf(companyId);
+    return { audience: audienceOf(companyStatus), companyStatus };
   }
 }

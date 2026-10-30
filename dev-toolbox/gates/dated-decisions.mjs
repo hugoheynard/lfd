@@ -131,6 +131,9 @@ function declaringFile(type) {
     //   Le type que L5 placera dans les matériaux devra y être déclaré, ou y
     //   être ajouté — la porte ne suit pas les `extends` (cf. plus haut).
     "promotions/domain/promotion-terms.ts",
+    // ▸ Entrées dans `PricingMaterials` au lot L5 (2026-10-30) : le modèle de
+    //   lecture que la chaîne reçoit, `LivePromotion`, porte sa fenêtre.
+    "promotions/domain/live-promotion.ts",
   ];
   const heads = [`interface ${type} `, `type ${type} =`, `class ${type} `];
   for (const file of files) {

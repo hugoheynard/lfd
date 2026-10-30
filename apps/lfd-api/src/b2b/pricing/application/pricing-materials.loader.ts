@@ -15,7 +15,9 @@ import { admitsEvidence, type PriceLens } from "../domain/price-lens.js";
 import { readsArchived, type PriceEpoch } from "../domain/price-epoch.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
 import { pricerOver } from "./pricer-over.js";
-import type { PricingContext } from "../domain/price-rule.js";
+import type { PriceRule, PricingContext, ScopedPriceFloor } from "../domain/price-rule.js";
+import type { VolumeLadder } from "../domain/volume-ladder.js";
+import type { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import {
   floorsFor,
   NO_EVIDENCE,
@@ -25,6 +27,22 @@ import {
 import { scopesOfAll } from "../domain/pricing-scopes.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
 import { commitmentFor, type VolumeCommitment } from "../domain/volume-commitment.js";
+import { LinePromotionSupply } from "../../promotions/application/line-promotion-supply.js";
+import { servesLegacy } from "../../promotions/domain/promotions-source.js";
+import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
+import type { ShadowPricer } from "./priced-lot.js";
+
+/**
+ * **Le tarificateur servi, et celui de l'ombre** (plan des promotions, § 13.5).
+ *
+ * `shadow` n'existe que sous la source `shadow` : le prix servi reste celui
+ * des règles d'étage promotion, et celui des promotions est calculé à côté
+ * pour être comparé — jamais servi.
+ */
+export interface LoadedPricers {
+  readonly served: LoadedPricer;
+  readonly shadow: ShadowPricer | null;
+}
 
 /** Un article du lot, sa quantité, et la portée qu'il vise. */
 interface LotEntry {
@@ -74,6 +92,7 @@ export class PricingMaterialsLoader {
     private readonly volumeLadders: VolumeLadderReader,
     private readonly commitments: VolumeCommitmentReader,
     private readonly customerVolumes: CustomerVolumeReader,
+    private readonly linePromotions: LinePromotionSupply,
   ) {}
 
   /**
@@ -96,7 +115,7 @@ export class PricingMaterialsLoader {
     at: Date,
     lens: PriceLens,
     epoch: PriceEpoch,
-  ): Promise<LoadedPricer | null> {
+  ): Promise<LoadedPricers | null> {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
       quantity,
@@ -121,7 +140,7 @@ export class PricingMaterialsLoader {
     const replay = readsArchived(epoch);
 
     // Quatre lectures pour tout le lot, en parallèle.
-    const [rules, floors, ladders, commitments, mercuriale] = await Promise.all([
+    const [rules, floors, ladders, commitments, mercuriale, promoted] = await Promise.all([
       replay ? this.priceRules.inScopesAt(scopes, at) : this.priceRules.inScopes(scopes),
       replay ? this.priceFloors.inScopesAt(scopes, at) : this.priceFloors.inScopes(scopes),
       replay ? this.volumeLadders.inScopesAt(scopes, at) : this.volumeLadders.inScopes(scopes),
@@ -147,7 +166,48 @@ export class PricingMaterialsLoader {
       replay
         ? this.mercuriales.liveAsOf(parties.pricingCompanyId, at)
         : this.mercuriales.liveFor(parties.pricingCompanyId, at),
+      // La source des promotions, et — si elle les calcule — celles du point
+      // ligne. En `legacy`, une lecture de plus et rien d'autre (L5).
+      this.linePromotions.forLot(parties.companyId, at, replay),
     ]);
+    const build = (chain: Chain) =>
+      this.pricerOf(
+        chain,
+        { floors, ladders, mercuriale, commitments },
+        entries,
+        parties,
+        at,
+        lens,
+      );
+    const legacy = { rules, promotions: [] };
+    const fresh = { rules: withoutPromotionStage(rules), promotions: promoted.promotions };
+    if (!servesLegacy(promoted.source)) {
+      return { served: await build(fresh), shadow: null };
+    }
+    const served = await build(legacy);
+    const { journal } = promoted;
+    return {
+      served,
+      shadow: journal === null ? null : { pricer: await build(fresh), journal },
+    };
+  }
+
+  /** Un tarificateur, sur une chaîne d'étage promotion donnée. */
+  private pricerOf(
+    chain: Chain,
+    read: {
+      readonly floors: readonly ScopedPriceFloor[];
+      readonly ladders: readonly VolumeLadder[];
+      readonly mercuriale: CompanyMercuriale | null;
+      readonly commitments: readonly VolumeCommitment[];
+    },
+    entries: readonly LotEntry[],
+    parties: PricingParties,
+    at: Date,
+    lens: PriceLens,
+  ): Promise<LoadedPricer> {
+    const { floors, ladders, mercuriale, commitments } = read;
+    const { rules, promotions } = chain;
     // 🔴 **La fabrique est commune à ce chargeur et aux écrans.** Elle l'est
     // depuis R21 : `LoadedPricer.over` avait deux appelants, et le second — le
     // tableau de tarification — montait `commitments: []` et `NO_EVIDENCE` à la
@@ -159,11 +219,12 @@ export class PricingMaterialsLoader {
             floors,
             ladders,
             mercuriale,
+            promotions,
             lens: "measured",
             commitments,
             measure: (materials) => this.measure(entries, materials, at),
           }
-        : { rules, floors, ladders, mercuriale, lens: "unproven" },
+        : { rules, floors, ladders, mercuriale, promotions, lens: "unproven" },
       parties,
       at,
     );
@@ -294,4 +355,18 @@ export class PricingMaterialsLoader {
  */
 function earliest(left: Date, right: Date): Date {
   return left.getTime() <= right.getTime() ? left : right;
+}
+
+/** Ce qui occupe l'étage `promotion` : les règles, ou les promotions. */
+interface Chain {
+  readonly rules: readonly PriceRule[];
+  readonly promotions: readonly LivePromotion[];
+}
+
+/**
+ * Les règles SANS l'étage `promotion` : sous les promotions, ce sont elles qui
+ * l'occupent — les deux ensemble compteraient deux fois la même remise.
+ */
+function withoutPromotionStage(rules: readonly PriceRule[]): PriceRule[] {
+  return rules.filter((rule) => rule.stage !== "promotion");
 }

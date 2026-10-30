@@ -141,19 +141,20 @@ export class Pricer {
       this.sealedAt(request.articles, at, epoch),
       this.parties.partiesAt(request.companyId, at),
     ]);
-    const pricer = await this.materials.pricerFor(
+    const pricers = await this.materials.pricerFor(
       items,
       parties,
       at,
       request.lens ?? "measured",
       epoch,
     );
-    if (pricer === null) {
+    if (pricers === null) {
       throw new UnresolvedArticleError(items[0]?.item.sku ?? "");
     }
     return new PricedLot(
-      pricer,
+      pricers.served,
       items.map(({ item }) => item),
+      pricers.shadow,
     );
   }
 
