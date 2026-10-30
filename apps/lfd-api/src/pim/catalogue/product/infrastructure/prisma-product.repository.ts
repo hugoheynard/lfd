@@ -53,6 +53,7 @@ interface VariantRow extends MinQuantityColumns {
   isDefault: boolean;
   isDiscontinued: boolean;
   detachedToProductId: string | null;
+  detachedFromVariantId: string | null;
   position: number;
   priceCents: number | null;
   weightGrams: number | null;
@@ -118,6 +119,7 @@ function toVariant(row: VariantRow): VariantSnapshot {
     isDefault: row.isDefault,
     isDiscontinued: row.isDiscontinued,
     detachedToProductId: row.detachedToProductId,
+    detachedFromVariantId: row.detachedFromVariantId,
     position: row.position,
     priceCents: row.priceCents,
     weightGrams: row.weightGrams,
@@ -295,6 +297,8 @@ export class PrismaProductRepository extends ProductRepository {
                 name: localizedColumn(defaultVariant.name),
                 internalLabel: defaultVariant.internalLabel ?? null,
                 isDefault: defaultVariant.isDefault,
+                // La trace d'un détachement s'écrit à la naissance, et nulle part ailleurs.
+                detachedFromVariantId: defaultVariant.detachedFromVariantId ?? null,
                 position: defaultVariant.position,
               },
             },
@@ -362,6 +366,7 @@ export class PrismaProductRepository extends ProductRepository {
             isDefault: variant.isDefault,
             isDiscontinued: variant.isDiscontinued,
             detachedToProductId: variant.detachedToProductId ?? null,
+            detachedFromVariantId: variant.detachedFromVariantId ?? null,
             position: variant.position,
             priceCents: variant.priceCents,
             weightGrams: variant.weightGrams,

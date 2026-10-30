@@ -65,6 +65,10 @@ const payloadSchema = z.object({
       // d'un fait émis avant elle, et lue `null` : aucun minimum n'existait,
       // et le commerce la range sans minimum.
       minQuantities: syncMinQuantitiesSchema.nullable().default(null),
+      // La trace de la déclinaison d'origine (`plan-pro-voit-les-declinaisons.md`,
+      // fait seul, sans version d'instantané) : absente d'un fait émis avant
+      // elle, et lue `null` — la règle du défaut s'applique alors au commerce.
+      detachedFromVariantSku: z.string().min(1).nullable().default(null),
     }),
   ),
   gaps: z.record(z.string(), z.array(z.string().min(1))),

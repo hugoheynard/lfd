@@ -1,0 +1,81 @@
+@if (data(); as article) {
+  <fold-panel-header title="Sur mesure" [subtitle]="article.name + ' · ' + article.sku" />
+
+  <fold-panel-body>
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Chargement du réglage…" />
+      }
+      @case ('error') {
+        <fold-empty-state tone="alert" title="Impossible de lire le réglage de cet article">
+          <button foldButton (click)="load(article.sku)">Réessayer</button>
+        </fold-empty-state>
+      }
+      @case ('ready') {
+        @if (view(); as current) {
+          <div class="stack">
+            <fold-callout variant="info">{{ restrictionPending }}</fold-callout>
+
+            <fold-checkbox
+              label="Article sur mesure"
+              [checked]="current.isMadeToOrder"
+              [disabled]="!canEdit() || saving()"
+              (checkedChange)="setMadeToOrder($event)"
+            />
+
+            <div class="field">
+              <span class="field-label">Pour les autres professionnels</span>
+              @if (canEdit()) {
+                <fold-view-toggle
+                  ariaLabel="Ce que voient les autres professionnels"
+                  size="sm"
+                  [options]="visibilities"
+                  [value]="current.reservedVisibility"
+                  (valueChange)="setVisibility($event)"
+                />
+              } @else {
+                <span>{{ visibilityLabel(current.reservedVisibility) }}</span>
+              }
+              <span class="hint">Ne joue que si l'article est réservé à au moins un compte.</span>
+            </div>
+
+            <div class="field">
+              <span class="field-label">
+                @if (current.holders.length === 0) {
+                  Réservé à aucun compte : ouvert à tous les pros
+                } @else {
+                  Réservé à {{ current.holders.length }} compte{{
+                    current.holders.length > 1 ? 's' : ''
+                  }}
+                }
+              </span>
+              <ul class="holders">
+                @for (holder of current.holders; track holder.companyId) {
+                  <li>
+                    <a [routerLink]="['/comptes-clients', holder.companyId, 'articles-reserves']">{{
+                      holder.companyName ?? holder.companyId
+                    }}</a>
+                    <span class="hint"
+                      >depuis le {{ when(holder.reservedAt)
+                      }}{{
+                        holder.reservedByName === null ? '' : ' · ' + holder.reservedByName
+                      }}</span
+                    >
+                  </li>
+                }
+              </ul>
+              <span class="hint"
+                >On réserve et on retire depuis la fiche du client, onglet « Articles réservés
+                ».</span
+              >
+            </div>
+          </div>
+        }
+      }
+    }
+  </fold-panel-body>
+
+  <fold-panel-footer>
+    <button foldButton emphasis="outline" (click)="close()">Fermer</button>
+  </fold-panel-footer>
+}

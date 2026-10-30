@@ -67,6 +67,7 @@ const VARIANT: CatalogVariantFact = {
   allergensPrecautionary: false,
   allergenTexts: null,
   nameTranslations: { en: "Butter croissant" },
+  detachedFromVariantSku: null,
 };
 
 function productFact(
@@ -290,6 +291,35 @@ describe("OnCatalogProductChangedHandler", () => {
     });
 
     expect(projection.onSale[0]).toMatchObject({ detachedFromSku: null });
+  });
+
+  /** « Trace de la déclinaison d'origine » : rangée sur l'article copié, tel que le fil la porte. */
+  it("range sur l'article la déclinaison d'origine qu'il porte", async () => {
+    const projection = new SpyingProduct(true);
+
+    await deliver(
+      projection,
+      productFact("active", { variants: [{ ...VARIANT, detachedFromVariantSku: "TAR-001-2" }] }),
+    );
+
+    expect(projection.onSale[0]).toMatchObject({ detachedFromVariantSku: "TAR-001-2" });
+  });
+
+  it("lit un fait d'avant la trace comme « pas de trace »", async () => {
+    const projection = new SpyingProduct(true);
+    const durable = productFact("active").durableFact();
+    const payload = JSON.parse(JSON.stringify(durable.payload)) as {
+      variants: Record<string, unknown>[];
+    };
+    delete payload.variants[0]?.["detachedFromVariantSku"];
+
+    await new OnCatalogProductChangedHandler(projection, refresher()).handle({
+      eventId: "evt_1",
+      type: durable.type,
+      payload,
+    });
+
+    expect(projection.onSale[0]).toMatchObject({ detachedFromVariantSku: null });
   });
 
   it("lève sur un fait illisible : la livraison se rejoue, rien n'est avalé", async () => {

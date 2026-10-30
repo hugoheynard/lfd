@@ -180,7 +180,11 @@ export function productBody(
     audience: "both",
     audienceInherited: true,
     product: { ...head, noteTranslations: {}, detachedFromSku: null },
-    variants: variants.map((variant) => ({ ...variant, nameTranslations: {} })),
+    variants: variants.map((variant) => ({
+      ...variant,
+      nameTranslations: {},
+      detachedFromVariantSku: null,
+    })),
     gaps: {},
     family: familyOf(family),
   };

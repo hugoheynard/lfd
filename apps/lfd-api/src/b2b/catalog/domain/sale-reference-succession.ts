@@ -13,6 +13,12 @@ export interface DetachedArticle {
   readonly sku: string;
   readonly detachedFromSku: string;
   readonly isDefault: boolean;
+  /**
+   * La déclinaison dont CET article est la copie (« Trace de la déclinaison
+   * d'origine ») ; absente ou `null` sur les autres articles, et sur toute
+   * fiche détachée avant la trace — qui reste à la règle du défaut.
+   */
+  readonly detachedFromVariantSku?: string | null | undefined;
 }
 
 /**
@@ -23,9 +29,11 @@ export const MAX_SUCCESSION_DEPTH = 16;
 
 /**
  * Le successeur DIRECT de chaque ancienne référence. Le commerce range la
- * filiation sur chaque article de la fiche née : un seul enfant le désigne ;
- * plusieurs, leur défaut ; sans défaut unique, aucun — deux lignes valent
- * mieux qu'un choix inventé.
+ * filiation sur chaque article de la fiche née. Si un frère porte la trace de
+ * la déclinaison d'origine, elle tranche : l'article qu'elle désigne, défaut
+ * ou non — un changement de défaut ne déplace pas la lignée. Sans trace (fiche
+ * détachée avant elle) : un seul enfant le désigne ; plusieurs, leur défaut ;
+ * sans défaut unique, aucun — deux lignes valent mieux qu'un choix inventé.
  */
 export function directSuccessorsOf(
   articles: readonly DetachedArticle[],
@@ -41,12 +49,22 @@ export function directSuccessorsOf(
   }
   const successors = new Map<string, string>();
   for (const [parent, siblings] of children) {
-    const chosen = soleOrDefault(siblings);
+    const chosen = siblings.some(isTraced) ? tracedTo(parent, siblings) : soleOrDefault(siblings);
     if (chosen !== null) {
       successors.set(parent, chosen.sku);
     }
   }
   return successors;
+}
+
+function isTraced(article: DetachedArticle): boolean {
+  return article.detachedFromVariantSku != null;
+}
+
+/** L'article unique dont la trace désigne `parent` ; aucun, si elle n'en désigne pas exactement un. */
+function tracedTo(parent: string, siblings: readonly DetachedArticle[]): DetachedArticle | null {
+  const designated = siblings.filter((article) => article.detachedFromVariantSku === parent);
+  return designated.length === 1 ? (designated[0] ?? null) : null;
 }
 
 function soleOrDefault(siblings: readonly DetachedArticle[]): DetachedArticle | null {

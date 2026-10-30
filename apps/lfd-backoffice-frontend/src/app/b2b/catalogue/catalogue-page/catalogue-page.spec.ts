@@ -4,6 +4,7 @@ import { describe, expect, it } from 'vitest';
 import { provideRouter } from '@angular/router';
 import type {
   CatalogAdminItemView,
+  MadeToOrderMarkView,
   PendingReviewView,
   PublishedCatalogView,
   PublishedCellCounts,
@@ -14,6 +15,7 @@ import type {
 import { NotifyService } from '../../../notify.service';
 import { CataloguePage } from './catalogue-page';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
+import { MadeToOrderService } from '../made-to-order.service';
 
 /**
  * La vue « Catalogue publié » : les prix du référentiel en lecture (lot D,
@@ -151,6 +153,14 @@ class FakeCatalogue {
   }
 }
 
+/** Le réglage sur mesure : aucun marqueur, sauf ceux qu'un test pose. */
+class FakeMadeToOrder {
+  marked: readonly MadeToOrderMarkView[] = [];
+  marks(): Promise<readonly MadeToOrderMarkView[]> {
+    return Promise.resolve(this.marked);
+  }
+}
+
 class FakeNotify {
   readonly successes: string[] = [];
   success(message: string): void {
@@ -160,12 +170,13 @@ class FakeNotify {
   refused(): void {}
 }
 
-async function render(api: FakeCatalogue) {
+async function render(api: FakeCatalogue, madeToOrder = new FakeMadeToOrder()) {
   TestBed.configureTestingModule({
     imports: [CataloguePage],
     providers: [
       provideRouter([]),
       { provide: CatalogueService, useValue: api },
+      { provide: MadeToOrderService, useValue: madeToOrder },
       { provide: NotifyService, useValue: new FakeNotify() },
     ],
   });
@@ -769,5 +780,38 @@ describe('CataloguePage — le prix public encaissé', () => {
 
     expect(text(fixture)).not.toContain('encaissé');
     expect(text(fixture)).not.toContain('1,06');
+  });
+});
+
+describe('le sur mesure (L1a)', () => {
+  it('marque l’article sur mesure et compte ses réservataires', async () => {
+    const madeToOrder = new FakeMadeToOrder();
+    madeToOrder.marked = [
+      {
+        sku: 'VIE-001-1',
+        isMadeToOrder: true,
+        reservedVisibility: 'hidden',
+        reservationCount: 2,
+      },
+    ];
+
+    const fixture = await render(new FakeCatalogue(), madeToOrder);
+
+    const badges = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-badge')].map(
+      (badge) => badge.textContent.trim(),
+    );
+    expect(badges).toContain('Sur mesure');
+    expect(badges).toContain('réservé à 2 comptes');
+  });
+
+  it('sans réglage, ni badge ni compte — le geste reste offert', async () => {
+    const fixture = await render(new FakeCatalogue());
+
+    const badges = [...(fixture.nativeElement as HTMLElement).querySelectorAll('fold-badge')].map(
+      (badge) => badge.textContent.trim(),
+    );
+    expect(badges).not.toContain('Sur mesure');
+    expect(text(fixture)).not.toContain('réservé à');
+    expect(text(fixture)).toContain('Sur mesure…');
   });
 });

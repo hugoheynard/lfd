@@ -95,7 +95,9 @@ export class CatalogFactsSource extends CatalogSnapshots {
           showcase: showcase.get(product.id),
           cited: cited.get(product.id) ?? [],
           catalogueUnion,
-          detachedFromSku: origins.get(product.id) ?? null,
+          detachedFromSku:
+            product.originVariantId == null ? null : (origins.get(product.originVariantId) ?? null),
+          variantOrigins: origins,
         }),
       );
     }
@@ -117,20 +119,29 @@ export class CatalogFactsSource extends CatalogSnapshots {
   }
 
   /**
-   * L'ancienne référence de vente de chaque fiche née d'un détachement : le
-   * SKU de sa déclinaison d'origine, qui se vendait sous son propre SKU (on
-   * ne détache jamais le défaut, G2). Une lecture par fiche détachée — rares.
+   * Le SKU de chaque déclinaison d'origine que les fiches citent — celle dont
+   * une fiche est née (`originVariantId`), et celle dont chacune de ses
+   * déclinaisons copiées garde la trace (`detachedFromVariantId`) : la même,
+   * par construction du détachement. Une lecture par origine — rares.
    */
   private async originSkus(
     products: readonly ProductRecord[],
   ): Promise<ReadonlyMap<string, string>> {
-    const detached = products.flatMap((product) =>
-      product.originVariantId == null ? [] : [[product.id, product.originVariantId] as const],
-    );
+    const ids = new Set<string>();
+    for (const product of products) {
+      if (product.originVariantId != null) {
+        ids.add(product.originVariantId);
+      }
+      for (const variant of product.variants) {
+        if (variant.detachedFromVariantId != null) {
+          ids.add(variant.detachedFromVariantId);
+        }
+      }
+    }
     const found = await Promise.all(
-      detached.map(async ([productId, variantId]) => {
+      [...ids].map(async (variantId) => {
         const origin = await this.lineage.originOf(variantId);
-        return origin === null ? [] : [[productId, origin.variantSku] as const];
+        return origin === null ? [] : [[variantId, origin.variantSku] as const];
       }),
     );
     return new Map(found.flat());

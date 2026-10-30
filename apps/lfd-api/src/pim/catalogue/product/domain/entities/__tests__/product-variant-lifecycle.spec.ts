@@ -167,6 +167,29 @@ describe("Product.detachVariant", () => {
     });
   });
 
+  /** « Trace de la déclinaison d'origine » (`plan-pro-voit-les-declinaisons.md`, 2026-10-30). */
+  it("la déclinaison copiée garde la déclinaison dont elle est née", () => {
+    const born = detach(product());
+
+    expect(variantOf(born, "prd_neuf_v1")?.detachedFromVariantId).toBe(SECOND_ID);
+    expect(variantOf(product(), DEFAULT_ID)?.detachedFromVariantId).toBeNull();
+  });
+
+  it("la trace ne suit pas le défaut : elle reste sur la copie", () => {
+    const born = Product.reconstitute({
+      ...detach(product()).snapshot(),
+      variants: [
+        ...detach(product()).snapshot().variants,
+        bareVariant({ id: "prd_neuf_v2", sku: "P-NEUF22-2", isDefault: false, position: 1 }),
+      ],
+    });
+
+    born.makeVariantDefault("prd_neuf_v2");
+
+    expect(variantOf(born, "prd_neuf_v1")?.detachedFromVariantId).toBe(SECOND_ID);
+    expect(variantOf(born, "prd_neuf_v2")?.detachedFromVariantId).toBeNull();
+  });
+
   it("refuse le défaut", () => {
     expect(() => detach(product(), DEFAULT_ID)).toThrow(DefaultVariantNotDetachableError);
   });

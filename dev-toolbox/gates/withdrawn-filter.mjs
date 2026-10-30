@@ -105,6 +105,10 @@ const ALLOWED = new Set([
   // lisent (L7d-bis, 2026-10-30) : exempte et écrite — un ancêtre est retiré
   // par construction (le détachement archive l'origine).
   "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-sale-reference-lineage.reader.ts",
+  // Le réglage sur mesure vu du back-office (`plan-articles-sur-mesure.md`,
+  // L1a, 2026-10-30) : il PORTE le filtre (`...STILL_SOLD`) sur ses deux
+  // lectures d'articles — on ne règle pas un article retiré.
+  "apps/lfd-api/src/b2b/catalog/infrastructure/prisma-made-to-order-admin.reader.ts",
   // La traduction des références du semis (bascule L3) : exempte et écrite
   // (`withdrawn-filter: exempt`) — un nom traduit, pas une mise en vente ;
   // le handler refuse ensuite un article retiré.

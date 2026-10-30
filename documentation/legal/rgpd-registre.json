@@ -909,6 +909,15 @@
       "information": false
     },
     {
+      "colonne": "public.catalog_item_reservations.reserved_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a réservé un article sur mesure à une société (`plan-articles-sur-mesure.md` § 4).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
+    },
+    {
       "colonne": "public.catalog_operation_overrides.decided_by",
       "personne": "staff",
       "categorie": "auteur-geste",

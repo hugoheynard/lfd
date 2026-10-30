@@ -1256,6 +1256,21 @@ export type {
 export type { CatalogFamilyView, CatalogItemView } from "./catalog.js";
 
 export {
+  RESERVED_VISIBILITIES,
+  setMadeToOrderPayloadSchema,
+  setReservedVisibilityPayloadSchema,
+} from "./catalog-reservation.js";
+export type {
+  ArticleReservationHolderView,
+  ArticleReservationView,
+  CompanyReservedArticlesView,
+  MadeToOrderMarkView,
+  ReservedArticleView,
+  ReservedVisibility,
+  SetMadeToOrderPayload,
+  SetReservedVisibilityPayload,
+} from "./catalog-reservation.js";
+export {
   setMaskingPayloadSchema,
   approveReviewPayloadSchema,
   REVIEW_BATCH_MAX,

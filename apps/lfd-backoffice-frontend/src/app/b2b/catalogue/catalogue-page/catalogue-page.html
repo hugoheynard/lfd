@@ -130,6 +130,8 @@
           <app-shelf-catalogue
             [shelf]="shelf"
             [busy]="approving()"
+            [marks]="marks()"
+            (madeToOrderOpened)="openMadeToOrder($event)"
             (maskToggled)="toggleMasking($event)"
             (approve)="approve($event)"
           />

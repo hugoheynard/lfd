@@ -256,6 +256,13 @@ export interface PimFacts {
    * articles construits avant elle restent valides sans la nommer.
    */
   readonly detachedFromSku?: string | null | undefined;
+  /**
+   * **La déclinaison d'origine de CET article** — le SKU de celle dont il est
+   * la copie (`plan-pro-voit-les-declinaisons.md`, « Trace de la déclinaison
+   * d'origine »). Elle désigne le continuateur, là où `detachedFromSku` est
+   * porté par tous les articles de la fiche née. Optionnelle, comme elle.
+   */
+  readonly detachedFromVariantSku?: string | null | undefined;
   readonly receivedAt: Date;
 }
 
@@ -516,6 +523,10 @@ export class CatalogItem {
 
   get detachedFromSku(): string | null {
     return this.facts.detachedFromSku ?? null;
+  }
+
+  get detachedFromVariantSku(): string | null {
+    return this.facts.detachedFromVariantSku ?? null;
   }
 
   get vatRatePercent(): number | null {

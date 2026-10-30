@@ -14,6 +14,7 @@ import {
   type JournalFactFamily,
 } from "./fact.js";
 import { COMMERCE_BUNDLE_FACTS } from "./commerce-bundles.js";
+import { COMMERCE_MADE_TO_ORDER_FACTS } from "./commerce-made-to-order.js";
 import { COMMERCE_OPERATION_FACTS } from "./commerce-operations.js";
 import { COMMERCE_SUGGESTION_FACTS } from "./commerce-suggestions.js";
 
@@ -143,6 +144,9 @@ export const COMMERCE_FACTS = {
   ...COMMERCE_SUGGESTION_FACTS,
   // Les formules (plan des formules, F2a, 2026-10-19) — même rangement.
   ...COMMERCE_BUNDLE_FACTS,
+  // Les articles sur mesure et leur réservation (plan des articles sur mesure,
+  // L1a, 2026-10-30) — même rangement.
+  ...COMMERCE_MADE_TO_ORDER_FACTS,
   "catalog_delivery.accepted": fact(
     payload({
       deliveryId: ref("catalog_delivery"),

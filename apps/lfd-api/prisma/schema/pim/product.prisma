@@ -312,6 +312,15 @@ model ProductVariant {
   detachedToProduct   Product?  @relation("VariantDetachedToProduct", fields: [detachedToProductId], references: [id], onDelete: Restrict)
   /// Les produits nés d'elle (au plus un).
   originOf            Product[] @relation("ProductOriginVariant")
+  /// **La déclinaison d'origine** de celle-ci, quand elle est la copie qu'un
+  /// détachement a fait naître (`plan-pro-voit-les-declinaisons.md`, « Trace
+  /// de la déclinaison d'origine »). Écrite à la naissance, jamais réécrite :
+  /// un changement de défaut ne la déplace pas. `NULL` pour toute autre
+  /// déclinaison, et pour une copie née avant cette colonne.
+  detachedFromVariantId String?          @map("detached_from_variant_id")
+  detachedFromVariant   ProductVariant?  @relation("VariantDetachedFromVariant", fields: [detachedFromVariantId], references: [id], onDelete: Restrict)
+  /// Les copies nées d'elle (au plus une).
+  detachedCopies        ProductVariant[] @relation("VariantDetachedFromVariant")
 
   @@index([productId])
   @@map("product_variant")

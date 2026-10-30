@@ -47,6 +47,7 @@ function input(over: Partial<ProductFactInput> = {}): ProductFactInput {
     cited: [],
     catalogueUnion: [],
     detachedFromSku: null,
+    variantOrigins: new Map(),
     ...over,
   };
 }
@@ -255,6 +256,23 @@ describe("projectProductFact", () => {
     expect(
       projectProductFact(input({ detachedFromSku: "TAR-001-2" })).product.detachedFromSku,
     ).toBe("TAR-001-2");
+  });
+
+  /** « Trace de la déclinaison d'origine » : sur la déclinaison copiée seule, en SKU. */
+  it("porte sur la déclinaison copiée le SKU de sa déclinaison d'origine", () => {
+    const base = tarte({ status: "published" });
+    const [copied] = base.variants;
+    if (copied === undefined) {
+      throw new RangeError("la fiche de test porte au moins une déclinaison");
+    }
+    const traced = { ...base, variants: [{ ...copied, detachedFromVariantId: "var_origin" }] };
+
+    const body = projectProductFact(
+      input({ product: traced, variantOrigins: new Map([["var_origin", "TAR-001-2"]]) }),
+    );
+
+    expect(body.variants[0]?.detachedFromVariantSku).toBe("TAR-001-2");
+    expect(projectProductFact(input()).variants[0]?.detachedFromVariantSku).toBeNull();
   });
 
   /** Une fiche inactive porte ses déclinaisons complètes : c'est la plateforme qui ne les vend pas. */

@@ -1,5 +1,9 @@
 import { ChangeDetectionStrategy, Component, computed, inject, signal } from '@angular/core';
-import type { CatalogAdminItemView, PublishedCatalogView } from '@lfd/contracts';
+import type {
+  CatalogAdminItemView,
+  MadeToOrderMarkView,
+  PublishedCatalogView,
+} from '@lfd/contracts';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -8,6 +12,7 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldSurfaceDirective,
   FoldViewToggleComponent,
@@ -16,6 +21,11 @@ import {
 
 import { NotifyService } from '../../../notify.service';
 import { CatalogueService, type ShopAudience } from '../catalogue.service';
+import { MadeToOrderService } from '../made-to-order.service';
+import {
+  MadeToOrderPanel,
+  type MadeToOrderPanelData,
+} from '../made-to-order-panel/made-to-order-panel';
 import {
   filterLabel,
   keptBy,
@@ -84,6 +94,8 @@ type LoadState = 'loading' | 'ready' | 'error';
 export class CataloguePage {
   private readonly catalogue = inject(CatalogueService);
   private readonly notify = inject(NotifyService);
+  private readonly madeToOrder = inject(MadeToOrderService);
+  private readonly panels = inject(FoldPanelHostService);
 
   protected readonly state = signal<LoadState>('loading');
   private readonly view = signal<PublishedCatalogView>({
@@ -92,6 +104,9 @@ export class CataloguePage {
     pendingReview: [],
   });
   private readonly items = signal<readonly CatalogAdminItemView[]>([]);
+
+  /** Le réglage sur mesure, par SKU (L1a) — seuls les articles qui en portent un. */
+  protected readonly marks = signal<ReadonlyMap<string, MadeToOrderMarkView>>(new Map());
 
   /** Une validation est en vol : les boutons du callout attendent. */
   protected readonly approving = signal(false);
@@ -161,9 +176,14 @@ export class CataloguePage {
   protected async load(): Promise<void> {
     this.state.set('loading');
     try {
-      const [view, items] = await Promise.all([this.catalogue.published(), this.catalogue.list()]);
+      const [view, items, marks] = await Promise.all([
+        this.catalogue.published(),
+        this.catalogue.list(),
+        this.madeToOrder.marks(),
+      ]);
       this.view.set(view);
       this.items.set(items);
+      this.marks.set(marksBySku(marks));
       this.state.set('ready');
     } catch {
       this.state.set('error');
@@ -194,6 +214,25 @@ export class CataloguePage {
     }
   }
 
+  /**
+   * **Le sur mesure d'un article** (plan `plan-articles-sur-mesure.md`, L1a) :
+   * le panneau règle et relit ; à sa fermeture, les badges du rayon sont relus.
+   */
+  protected openMadeToOrder(row: PublishedRow): void {
+    const ref = this.panels.open<MadeToOrderPanelData>(MadeToOrderPanel, {
+      data: { sku: row.variant.sku, name: rowName(row) },
+    });
+    void ref.closed.then(() => this.reloadMarks());
+  }
+
+  private async reloadMarks(): Promise<void> {
+    try {
+      this.marks.set(marksBySku(await this.madeToOrder.marks()));
+    } catch (error) {
+      this.notify.error(error, 'Les marqueurs sur mesure n’ont pas pu être relus.');
+    }
+  }
+
   /** Lève l'attente de validation, puis relit : le serveur reste l'autorité. */
   protected async approve(approval: ReviewApproval): Promise<void> {
     this.approving.set(true);
@@ -211,4 +250,10 @@ export class CataloguePage {
       this.approving.set(false);
     }
   }
+}
+
+function marksBySku(
+  marks: readonly MadeToOrderMarkView[],
+): ReadonlyMap<string, MadeToOrderMarkView> {
+  return new Map(marks.map((mark) => [mark.sku, mark]));
 }

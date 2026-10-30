@@ -6,6 +6,22 @@ import { RetracePricesFromReferentialHandler } from "./application/commands/retr
 import { CatalogPriceRetracer } from "./domain/ports/catalog-price-retracer.js";
 import { PrismaCatalogPriceRetracer } from "./infrastructure/prisma-catalog-price-retracer.js";
 import { SetMaskingHandler } from "./application/commands/set-masking.handler.js";
+import { SetMadeToOrderHandler } from "./application/commands/set-made-to-order.handler.js";
+import { SetReservedVisibilityHandler } from "./application/commands/set-reserved-visibility.handler.js";
+import { ReserveArticleHandler } from "./application/commands/reserve-article.handler.js";
+import { ReleaseArticleHandler } from "./application/commands/release-article.handler.js";
+import { ListMadeToOrderMarksHandler } from "./application/queries/list-made-to-order-marks.handler.js";
+import { GetArticleReservationHandler } from "./application/queries/get-article-reservation.handler.js";
+import { ListCompanyReservedArticlesHandler } from "./application/queries/list-company-reserved-articles.handler.js";
+import { MadeToOrderSettings } from "./domain/ports/made-to-order-settings.js";
+import { CatalogReservations } from "./domain/ports/catalog-reservations.js";
+import { ReservationCompanies } from "./domain/ports/reservation-companies.js";
+import { MadeToOrderAdminReader } from "./domain/ports/made-to-order-admin.reader.js";
+import { PrismaMadeToOrderSettings } from "./infrastructure/prisma-made-to-order-settings.js";
+import { PrismaCatalogReservations } from "./infrastructure/prisma-catalog-reservations.js";
+import { PrismaReservationCompanies } from "./infrastructure/prisma-reservation-companies.js";
+import { PrismaMadeToOrderAdminReader } from "./infrastructure/prisma-made-to-order-admin.reader.js";
+import { AdminMadeToOrderController } from "./http/admin-made-to-order.controller.js";
 import { ApproveReviewHandler } from "./application/commands/approve-review.handler.js";
 import { SetCatalogFeaturedHandler } from "./application/commands/set-catalog-featured.handler.js";
 import { OnProductMediaChangedHandler } from "./application/handlers/on-product-media-changed.handler.js";
@@ -110,6 +126,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
   imports: [PricerModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
   controllers: [
     AdminCatalogController,
+    // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
+    AdminMadeToOrderController,
     // La vitrine, sans jeton : on visite d'abord, on s'identifie pour régler.
     ShopCatalogueController,
     ShopFeaturedController,
@@ -141,6 +159,18 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     SetMaskingHandler,
     ApproveReviewHandler,
     SetCatalogFeaturedHandler,
+    // Le sur mesure et la réservation (L1a) : réglés ici, lus par le mur au L1b.
+    SetMadeToOrderHandler,
+    SetReservedVisibilityHandler,
+    ReserveArticleHandler,
+    ReleaseArticleHandler,
+    ListMadeToOrderMarksHandler,
+    GetArticleReservationHandler,
+    ListCompanyReservedArticlesHandler,
+    { provide: MadeToOrderSettings, useClass: PrismaMadeToOrderSettings },
+    { provide: CatalogReservations, useClass: PrismaCatalogReservations },
+    { provide: ReservationCompanies, useClass: PrismaReservationCompanies },
+    { provide: MadeToOrderAdminReader, useClass: PrismaMadeToOrderAdminReader },
     { provide: CatalogItemRepository, useClass: PrismaCatalogItemRepository },
     { provide: CatalogVisualsProjection, useClass: PrismaCatalogVisualsProjection },
     { provide: CatalogProductFactsProjection, useClass: PrismaCatalogProductFactsProjection },

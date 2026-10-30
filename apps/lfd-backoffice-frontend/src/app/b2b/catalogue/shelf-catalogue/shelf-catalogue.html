@@ -38,6 +38,20 @@
         @if (row.item?.vatRatePercent === null) {
           <fold-badge content="sans taux — invendable" variant="warning" />
         }
+        <!-- Le sur mesure (plan des articles sur mesure, L1a) : le marqueur, le
+             compte des réservataires, et le réglage — pour un article en vente
+             seulement, le serveur n'a de ligne que pour lui. -->
+        @if (markOf(row)?.isMadeToOrder) {
+          <fold-badge content="Sur mesure" variant="accent" />
+        }
+        @if (reservedLabel(row); as reserved) {
+          <fold-badge [content]="reserved" variant="info" />
+        }
+        @if (row.item !== null) {
+          <button foldButton size="sm" emphasis="soft" (click)="madeToOrderOpened.emit(row)">
+            Sur mesure…
+          </button>
+        }
       </span>
     </ng-template>
 

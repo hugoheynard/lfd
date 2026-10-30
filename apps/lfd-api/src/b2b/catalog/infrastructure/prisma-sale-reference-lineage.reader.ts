@@ -50,12 +50,19 @@ export class PrismaSaleReferenceLineageReader extends SaleReferenceLineageReader
     // withdrawn-filter: exempt — une filiation, pas une mise en vente.
     const rows = await this.prisma.catalogItem.findMany({
       where: { detachedFromSku: { in: [...parents] } },
-      select: { sku: true, detachedFromSku: true, isDefault: true },
+      select: { sku: true, detachedFromSku: true, isDefault: true, detachedFromVariantSku: true },
     });
     return rows.flatMap((row) =>
       row.detachedFromSku === null
         ? []
-        : [{ sku: row.sku, detachedFromSku: row.detachedFromSku, isDefault: row.isDefault }],
+        : [
+            {
+              sku: row.sku,
+              detachedFromSku: row.detachedFromSku,
+              isDefault: row.isDefault,
+              detachedFromVariantSku: row.detachedFromVariantSku,
+            },
+          ],
     );
   }
 }

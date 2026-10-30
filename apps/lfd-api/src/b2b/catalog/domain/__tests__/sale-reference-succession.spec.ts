@@ -36,6 +36,25 @@ describe("directSuccessorsOf", () => {
     expect(successors.has("P-OLD-2")).toBe(false);
   });
 
+  /** « Trace de la déclinaison d'origine » (2026-10-30) : un changement de défaut ne déplace pas la lignée. */
+  it("suit la trace plutôt que le défaut de la fiche née", () => {
+    const successors = directSuccessorsOf([
+      { ...born("P-NEW-1", "P-OLD-2", false), detachedFromVariantSku: "P-OLD-2" },
+      born("P-NEW-2", "P-OLD-2", true),
+    ]);
+
+    expect(successors.get("P-OLD-2")).toBe("P-NEW-1");
+  });
+
+  it("ne retombe pas sur le défaut quand une trace existe sans désigner l'ancienne référence", () => {
+    const successors = directSuccessorsOf([
+      { ...born("P-NEW-1", "P-OLD-2", false), detachedFromVariantSku: "P-AUTRE" },
+      born("P-NEW-2", "P-OLD-2", true),
+    ]);
+
+    expect(successors.has("P-OLD-2")).toBe(false);
+  });
+
   it("ignore un article qui se désignerait lui-même", () => {
     expect(directSuccessorsOf([born("P-X", "P-X")]).size).toBe(0);
   });
@@ -89,6 +108,18 @@ describe("ancestorsOfEach", () => {
 
   it("un frère non désigné n'hérite pas de l'historique", () => {
     const articles = [born("P-NEW-1", "P-OLD", true), born("P-NEW-2", "P-OLD", false)];
+
+    const ancestors = ancestorsOfEach(["P-NEW-1", "P-NEW-2"], articles);
+
+    expect(ancestors.get("P-NEW-1")).toEqual(["P-OLD"]);
+    expect(ancestors.has("P-NEW-2")).toBe(false);
+  });
+
+  it("remonte par la trace : le défaut d'aujourd'hui n'hérite pas, la copie si", () => {
+    const articles = [
+      { ...born("P-NEW-1", "P-OLD", false), detachedFromVariantSku: "P-OLD" },
+      born("P-NEW-2", "P-OLD", true),
+    ];
 
     const ancestors = ancestorsOfEach(["P-NEW-1", "P-NEW-2"], articles);
 

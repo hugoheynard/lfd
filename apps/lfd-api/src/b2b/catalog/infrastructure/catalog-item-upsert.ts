@@ -77,6 +77,7 @@ const SQL_NAMES = {
   variantsAsTiles: "variants_as_tiles",
   productName: "product_name",
   detachedFromSku: "detached_from_sku",
+  detachedFromVariantSku: "detached_from_variant_sku",
   receivedAt: "received_at",
   withdrawnAt: "withdrawn_at",
   publicReviewPending: "public_review_pending",

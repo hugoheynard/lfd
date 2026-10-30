@@ -1,0 +1,120 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Chargement des articles réservés…" />
+  }
+  @case ('error') {
+    <fold-empty-state tone="alert" title="Impossible de charger les articles réservés">
+      <button foldButton (click)="load(id())">Réessayer</button>
+    </fold-empty-state>
+  }
+  @case ('ready') {
+    <fold-page-section
+      title="Articles réservés"
+      icon="tag"
+      description="Les articles sur mesure que ce compte est seul à pouvoir commander, avec ses sites."
+    >
+      <div class="stack">
+        <!-- 🔴 L1a sans L1b : le réglage existe, le mur pas encore. -->
+        <fold-callout variant="info">{{ restrictionPending }}</fold-callout>
+
+        @if (canEdit()) {
+          <fold-combobox
+            size="sm"
+            clearOnSelect
+            label="Réserver un article à ce compte"
+            placeholder="Nom ou référence de l'article"
+            emptyText="Aucun article ne correspond."
+            [disabled]="pending() !== null"
+            [options]="options()"
+            (selectionChange)="reserve($event)"
+          />
+        }
+
+        @if (view().own.length === 0) {
+          <fold-empty-state
+            title="Aucun article réservé à ce compte"
+            subtitle="Il voit le catalogue ouvert à tous les professionnels."
+          />
+        } @else {
+          <ul class="articles">
+            @for (article of view().own; track article.sku) {
+              <li class="article">
+                <span class="identity">
+                  <span class="name">{{ article.name }}</span>
+                  <span class="muted">{{ article.sku }}</span>
+                </span>
+                <span class="tags">
+                  @if (article.isMadeToOrder) {
+                    <fold-badge content="Sur mesure" variant="accent" />
+                  }
+                  <fold-badge [content]="visibility(article)" variant="neutral" />
+                </span>
+                <span class="muted"
+                  >depuis le {{ when(article.reservedAt)
+                  }}{{
+                    article.reservedByName === null ? '' : ' · ' + article.reservedByName
+                  }}</span
+                >
+                @if (canEdit()) {
+                  <fold-inline-confirm
+                    intent="danger"
+                    [message]="releaseWarning"
+                    [labels]="{ confirm: 'Retirer' }"
+                    [loading]="pending() === article.sku"
+                    (confirmed)="release(article)"
+                  >
+                    <button
+                      foldButton
+                      size="sm"
+                      emphasis="soft"
+                      intent="danger"
+                      [disabled]="pending() !== null"
+                    >
+                      Retirer
+                    </button>
+                  </fold-inline-confirm>
+                }
+              </li>
+            }
+          </ul>
+        }
+      </div>
+    </fold-page-section>
+
+    @if (view().principal; as principal) {
+      <fold-page-section
+        [title]="'Hérités de ' + principal.name"
+        icon="org-chart"
+        description="Réservés au compte principal, ouverts à ses sites. Ils se retirent sur la fiche du principal."
+      >
+        <div class="stack">
+          @if (!principal.active) {
+            <fold-callout variant="warning">
+              Le compte principal n'est pas actif : ses articles réservés ne s'ouvrent pas à ce
+              site.
+            </fold-callout>
+          }
+          @if (principal.articles.length === 0) {
+            <fold-empty-state title="Aucun article réservé au compte principal" />
+          } @else {
+            <ul class="articles">
+              @for (article of principal.articles; track article.sku) {
+                <li class="article">
+                  <span class="identity">
+                    <span class="name">{{ article.name }}</span>
+                    <span class="muted">{{ article.sku }} · via {{ principal.name }}</span>
+                  </span>
+                  <span class="tags">
+                    @if (article.isMadeToOrder) {
+                      <fold-badge content="Sur mesure" variant="accent" />
+                    }
+                  </span>
+                </li>
+              }
+            </ul>
+          }
+        </div>
+      </fold-page-section>
+    }
+  }
+}

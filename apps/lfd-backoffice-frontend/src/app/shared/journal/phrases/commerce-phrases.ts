@@ -303,6 +303,32 @@ const pricesRetraced: Phrase = (fact) => {
   );
 };
 
+/** La société d'une réservation : son nom figé, ou son identifiant quand il est perdu. */
+function reservationCompany(fact: PhraseFact): Segment[] {
+  const company = optional(fact.payload['companyName']) ?? optional(fact.payload['companyId']);
+  return company === null ? [text('une société')] : [value(company)];
+}
+
+const RESERVATION_KEYS = [...ARTICLE_KEYS, 'companyId', 'companyName'];
+
+/** Ce que voient les autres pros d'un article réservé (plan des articles sur mesure, L1a). */
+const RESERVED_VISIBILITY_SAID: Readonly<Record<string, string>> = {
+  hidden: ' invisible aux autres professionnels',
+  visible_locked: ' visible mais non commandable par les autres professionnels',
+};
+
+const reservedVisibilitySet: Phrase = (fact) => {
+  const visibility = optional(fact.payload['visibility']);
+  const said = visibility === null ? undefined : RESERVED_VISIBILITY_SAID[visibility];
+  return byActor(
+    fact,
+    said === undefined
+      ? [text('a réglé la visibilité réservée de '), ...article(fact)]
+      : [text('a rendu '), ...article(fact), text(said)],
+    said === undefined ? ARTICLE_KEYS : [...ARTICLE_KEYS, 'visibility'],
+  );
+};
+
 export const COMMERCE_PHRASES = {
   'catalog_item.b2b_price_set': priceSet,
   'catalog_item.public_price_set': publicPriceSet,
@@ -347,6 +373,27 @@ export const COMMERCE_PHRASES = {
     'a cessé de mettre en avant ',
     ' en boutique publique',
   ),
+  // Les articles sur mesure et leur réservation (L1a, 2026-10-30).
+  'catalog_item.made_to_order_marked': onArticle('a marqué ', ' sur mesure'),
+  'catalog_item.made_to_order_unmarked': onArticle('a retiré le marqueur sur mesure de ', ''),
+  'catalog_item.reserved': (fact) =>
+    byActor(
+      fact,
+      [text('a réservé '), ...article(fact), text(' à '), ...reservationCompany(fact)],
+      RESERVATION_KEYS,
+    ),
+  'catalog_item.reservation_released': (fact) =>
+    byActor(
+      fact,
+      [
+        text('a retiré la réservation de '),
+        ...article(fact),
+        text(' à '),
+        ...reservationCompany(fact),
+      ],
+      RESERVATION_KEYS,
+    ),
+  'catalog_item.reserved_visibility_set': reservedVisibilitySet,
   'catalog_delivery.accepted': deliveryAccepted,
   'catalog_price_history.retraced': pricesRetraced,
   // La surcharge d'une opération datée reçue (D9, lot 2 du plan des opérations

@@ -399,6 +399,14 @@ model CatalogItem {
   /// article, et pour un article reçu avant ce lot.
   detachedFromSku String? @map("detached_from_sku")
 
+  /// **La déclinaison d'origine de CET article** — le SKU de la déclinaison
+  /// dont il est la copie, quand sa fiche est née d'un détachement
+  /// (`plan-pro-voit-les-declinaisons.md`, « Trace de la déclinaison
+  /// d'origine »). Contrairement à `detached_from_sku`, fait de la fiche
+  /// descendu sur tous ses articles, elle ne désigne que le continuateur.
+  /// `NULL` pour tout autre article, et pour une fiche détachée avant elle.
+  detachedFromVariantSku String? @map("detached_from_variant_sku")
+
   /// **Le geste du référentiel qui a posé les visuels** (UUID v7, ordonné
   /// dans le temps) — `null` tant qu'aucun fait de visuels n'a été projeté.
   /// Les visuels sont figés dans le fait : un fait ancien rejoué APRÈS un plus
@@ -431,6 +439,11 @@ model CatalogItem {
   proReviewPending Boolean @default(false) @map("pro_review_pending")
 
   override CatalogItemOverride?
+
+  /// Les sociétés auxquelles l'article est réservé (plan
+  /// `documentation/catalogue/plan-articles-sur-mesure.md`, L1a). Vide = ouvert
+  /// à tous les pros, comme avant.
+  reservations CatalogItemReservation[]
 
   @@index([categoryId])
   @@index([productId])
@@ -627,7 +640,41 @@ model CatalogItemOverride {
   decidedBy String?  @map("decided_by")
   decidedAt DateTime @updatedAt @map("decided_at")
 
+  /// **Sur mesure** (plan `documentation/catalogue/plan-articles-sur-mesure.md`,
+  /// L1a) : un marqueur propre, indépendant de la réservation. Il ne restreint
+  /// rien chez les pros (S4). Écrit par son seul geste, jamais par l'agrégat
+  /// des décisions, qui ne le connaît pas.
+  isMadeToOrder Boolean @default(false) @map("is_made_to_order")
+
+  /// Ce que voient les pros qui ne sont PAS réservataires d'un article réservé :
+  /// `hidden` (absent, le défaut) ou `visible_locked` (listé, non commandable).
+  /// Sans réservation, la valeur ne joue pas. Valeurs tenues par un CHECK.
+  reservedVisibility String @default("hidden") @map("reserved_visibility")
+
   @@map("catalog_item_overrides")
+  @@schema("public")
+}
+
+/// **Un article réservé à une société** (plan
+/// `documentation/catalogue/plan-articles-sur-mesure.md`, § 4). Une ligne par
+/// couple : la clé unique, l'index « quels articles pour cette société » et
+/// l'auteur du geste ne tiennent pas dans une colonne tableau.
+///
+/// `companyId` est OPAQUE, sans clé étrangère — la convention de la
+/// mercuriale. Retirer une réservation supprime sa ligne : ce n'est pas un
+/// agrégat métier, et le journal garde le geste.
+model CatalogItemReservation {
+  sku  String
+  item CatalogItem @relation(fields: [sku], references: [sku], onDelete: Restrict)
+
+  companyId  String   @map("company_id")
+  reservedAt DateTime @map("reserved_at") @db.Timestamptz(3)
+  /// L'id de la fiche staff qui a réservé (registre RGPD).
+  reservedBy String   @map("reserved_by")
+
+  @@id([sku, companyId])
+  @@index([companyId])
+  @@map("catalog_item_reservations")
   @@schema("public")
 }
 

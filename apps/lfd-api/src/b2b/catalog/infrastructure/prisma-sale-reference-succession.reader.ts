@@ -38,12 +38,19 @@ export class PrismaSaleReferenceSuccessionReader extends SaleReferenceSuccession
     // référence la plus récente d'un historique peut être retirée.
     const rows = await this.prisma.catalogItem.findMany({
       where: { detachedFromSku: { in: [...parents] } },
-      select: { sku: true, detachedFromSku: true, isDefault: true },
+      select: { sku: true, detachedFromSku: true, isDefault: true, detachedFromVariantSku: true },
     });
     return rows.flatMap((row) =>
       row.detachedFromSku === null
         ? []
-        : [{ sku: row.sku, detachedFromSku: row.detachedFromSku, isDefault: row.isDefault }],
+        : [
+            {
+              sku: row.sku,
+              detachedFromSku: row.detachedFromSku,
+              isDefault: row.isDefault,
+              detachedFromVariantSku: row.detachedFromVariantSku,
+            },
+          ],
     );
   }
 }

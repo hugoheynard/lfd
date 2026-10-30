@@ -90,6 +90,14 @@ export interface CatalogProductHead {
 export type CatalogVariantFact = Omit<SyncVariant, "minQuantities"> & {
   readonly nameTranslations: CatalogTranslations | null;
   readonly minQuantities: SyncMinQuantities | null;
+  /**
+   * **Le SKU de la déclinaison dont celle-ci est la copie**, quand un
+   * détachement l'a fait naître (`plan-pro-voit-les-declinaisons.md`, « Trace
+   * de la déclinaison d'origine »). Fait seul, comme `detachedFromSku` : le
+   * push reste en v16. `null` pour toute autre déclinaison, pour une copie
+   * née avant la trace, et sur un fait émis avant elle.
+   */
+  readonly detachedFromVariantSku: string | null;
 };
 
 /**
@@ -152,6 +160,11 @@ export interface ProductFactInput {
   readonly catalogueUnion: readonly string[];
   /** Le SKU de la déclinaison d'origine, si la fiche est née d'un détachement. */
   readonly detachedFromSku: string | null;
+  /**
+   * Id de déclinaison d'origine → son SKU, pour la trace de chaque
+   * déclinaison copiée ; un id absent n'est pas résolu, la trace part `null`.
+   */
+  readonly variantOrigins: ReadonlyMap<string, string>;
 }
 
 /** La famille projetée — pure, le taux part tel quel, `null` compris. */
@@ -254,6 +267,10 @@ function sellableVariant(variant: VariantOf, input: ProductFactInput): CatalogVa
       { cited: input.cited, catalogueUnion: input.catalogueUnion },
     ),
     nameTranslations: variantNameTranslationsOf(variant.name, input.product.name),
+    detachedFromVariantSku:
+      variant.detachedFromVariantId == null
+        ? null
+        : (input.variantOrigins.get(variant.detachedFromVariantId) ?? null),
   };
 }
 

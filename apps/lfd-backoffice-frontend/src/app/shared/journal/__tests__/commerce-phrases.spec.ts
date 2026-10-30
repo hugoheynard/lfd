@@ -321,3 +321,47 @@ describe('le cockpit', () => {
     );
   });
 });
+
+describe('les articles sur mesure (L1a)', () => {
+  const tarte = { subjectLabel: 'Tarte citron', sku: 'TAR-001' };
+
+  it('dit le marqueur, posé puis retiré', () => {
+    expect(sentence(item('catalog_item.made_to_order_marked', tarte))).toBe(
+      'Colette Martin a marqué « Tarte citron » (TAR-001) sur mesure',
+    );
+    expect(sentence(item('catalog_item.made_to_order_unmarked', tarte))).toBe(
+      'Colette Martin a retiré le marqueur sur mesure de « Tarte citron » (TAR-001)',
+    );
+  });
+
+  it('nomme la société d’une réservation, et son identifiant quand le nom est perdu', () => {
+    expect(
+      sentence(
+        item('catalog_item.reserved', {
+          ...tarte,
+          companyId: 'co_1',
+          companyName: 'Le Fournil d’Anna',
+        }),
+      ),
+    ).toBe('Colette Martin a réservé « Tarte citron » (TAR-001) à Le Fournil d’Anna');
+    expect(
+      sentence(
+        item('catalog_item.reservation_released', {
+          ...tarte,
+          companyId: 'co_1',
+          companyName: null,
+        }),
+      ),
+    ).toBe('Colette Martin a retiré la réservation de « Tarte citron » (TAR-001) à co_1');
+  });
+
+  it('dit la visibilité réservée en mots', () => {
+    expect(
+      sentence(
+        item('catalog_item.reserved_visibility_set', { ...tarte, visibility: 'visible_locked' }),
+      ),
+    ).toBe(
+      'Colette Martin a rendu « Tarte citron » (TAR-001) visible mais non commandable par les autres professionnels',
+    );
+  });
+});

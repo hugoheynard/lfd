@@ -1,10 +1,11 @@
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CatalogAdminItemView } from '@lfd/contracts';
+import type { CatalogAdminItemView, MadeToOrderMarkView } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 import { htMillicentsOf, MILLICENTS_PER_CENT, ttcCentsFromHtMillicents } from '@lfd/money';
 import {
   FoldBadgeComponent,
+  FoldButtonComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
   FoldDataTableRowNoteDirective,
@@ -16,6 +17,7 @@ import {
 } from 'fold-ng';
 
 import type { ShopAudience } from '../catalogue.service';
+import { reservationCountLabel } from '../made-to-order';
 import { PublishedCell } from '../published-cell/published-cell';
 import type { ReviewApproval } from '../review-callout/review-callout';
 import { ReviewRowNote } from '../review-row-note/review-row-note';
@@ -69,6 +71,7 @@ import {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldBadgeComponent,
+    FoldButtonComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
     FoldDataTableRowNoteDirective,
@@ -86,6 +89,15 @@ export class ShelfCatalogue {
   /** L'interrupteur d'une cellule d'audience — la route unique `/masking`. */
   readonly maskToggled = output<{ row: PublishedRow; audience: ShopAudience }>();
 
+  /**
+   * Le réglage sur mesure des articles qui en portent un, par SKU (plan
+   * `plan-articles-sur-mesure.md`, L1a). Absent = rien de réglé.
+   */
+  readonly marks = input<ReadonlyMap<string, MadeToOrderMarkView>>(new Map());
+
+  /** Ouvrir le réglage sur mesure d'un article en vente. */
+  readonly madeToOrderOpened = output<PublishedRow>();
+
   /** Une validation est en vol : les boutons des notes attendent. */
   readonly busy = input(false);
 
@@ -101,6 +113,13 @@ export class ShelfCatalogue {
   protected approveRow(row: PublishedRow, audiences: readonly ShopAudience[]): void {
     this.approve.emit({ skus: [row.variant.sku], audiences });
   }
+
+  protected markOf(row: PublishedRow): MadeToOrderMarkView | undefined {
+    return this.marks().get(row.variant.sku);
+  }
+
+  protected readonly reservedLabel = (row: PublishedRow): string | null =>
+    reservationCountLabel(this.markOf(row));
 
   protected readonly euros = formatEuros;
   protected readonly name = rowName;

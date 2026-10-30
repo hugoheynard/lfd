@@ -140,6 +140,14 @@ export interface VariantSnapshot {
    */
   readonly detachedToProductId?: string | null | undefined;
   /**
+   * La déclinaison dont elle est la COPIE, quand un détachement l'a fait
+   * naître (`plan-pro-voit-les-declinaisons.md`, « Trace de la déclinaison
+   * d'origine »). Posée à la naissance ({@link Variant.openDefaultFrom}),
+   * jamais réécrite : un changement de défaut ne la déplace pas. Facultatif à
+   * la LECTURE (absent = `null`), comme `detachedToProductId`.
+   */
+  readonly detachedFromVariantId?: string | null | undefined;
+  /**
    * Le **libellé interne** posé en propre (`plan-identite-de-declinaison.md`,
    * I3) ; `null` = c'est le français du nom de boutique. Facultatif à la
    * LECTURE, comme `detachedToProductId`, pour les instantanés de test écrits
@@ -296,6 +304,7 @@ export class Variant {
   private defaultFlag: boolean;
   private discontinuedFlag: boolean;
   private detachedToProductIdValue: string | null;
+  private readonly detachedFromVariantIdValue: string | null;
   private positionValue: number;
   private priceCentsValue: number | null;
   private weightGramsValue: number | null;
@@ -329,6 +338,7 @@ export class Variant {
     this.defaultFlag = snapshot.isDefault;
     this.discontinuedFlag = snapshot.isDiscontinued;
     this.detachedToProductIdValue = snapshot.detachedToProductId ?? null;
+    this.detachedFromVariantIdValue = snapshot.detachedFromVariantId ?? null;
     this.positionValue = snapshot.position;
     this.priceCentsValue = snapshot.priceCents;
     this.weightGramsValue = snapshot.weightGrams;
@@ -476,6 +486,7 @@ export class Variant {
       isDefault: true,
       isDiscontinued: false,
       detachedToProductId: null,
+      detachedFromVariantId: resolved.id,
       position: 0,
       hasBeenPublished: false,
       minQuantityFollowsDefault: false,
@@ -933,6 +944,7 @@ export class Variant {
       isDefault: this.defaultFlag,
       isDiscontinued: this.discontinuedFlag,
       detachedToProductId: this.detachedToProductIdValue,
+      detachedFromVariantId: this.detachedFromVariantIdValue,
       position: this.positionValue,
       priceCents: this.priceCentsValue,
       weightGrams: this.weightGramsValue,

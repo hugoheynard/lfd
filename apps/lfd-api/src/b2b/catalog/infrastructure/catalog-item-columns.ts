@@ -101,6 +101,7 @@ export function pimFactsColumns(facts: PimFacts) {
     variantsAsTiles: facts.variantsAsTiles,
     productName: facts.productName,
     detachedFromSku: facts.detachedFromSku ?? null,
+    detachedFromVariantSku: facts.detachedFromVariantSku ?? null,
     receivedAt: facts.receivedAt,
   };
 }

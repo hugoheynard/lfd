@@ -473,6 +473,46 @@ flowchart LR
 - **Q8.** Un principal suspendu ferme les articles réservés à ses sites par
   héritage (supposé, comme `inheritedSiteWhere`) ?
 
+## 10 bis. Réponses de Hugo (2026-10-30) et ordre des lots
+
+- **Q1 oui**, et mieux : quand on pose une mercuriale chez un client, on ne
+  **voit** que les articles auxquels il a droit (le sélecteur d'articles de la
+  fiche Tarifs lit le catalogue avec le lecteur du client). Le refus à
+  l'écriture reste, comme filet derrière l'écran.
+- **Q2 non** : un pro non connecté ne voit jamais un article réservé.
+- **Q3** : l'héritage est gardé (réservé au principal → ouvert à ses sites) ;
+  réservé à un site → n'encombre pas le catalogue du principal.
+- **Q5 oui** : le marqueur seul ferme le public.
+- **Q6 partout** : fiche atelier, étiquettes, rapports — lots ultérieurs.
+- **Q7 ok** : occurrence non générée, alerte staff nommée.
+- **Q8 oui** : un principal suspendu ferme les articles hérités.
+
+**Ordre des lots, révisé par Hugo** : « commençons par créer la manière
+d'identifier un article comme sur mesure, ensuite la page du commerce dans
+laquelle on donne accès à cet article, et le reste devrait découler
+naturellement ».
+
+- **L1a** — le marqueur et la réservation : migration, commandes CQRS
+  d'administration (marquer, réserver, retirer, régler la visibilité),
+  lectures admin, et l'écran du back-office (article : badge, réglage ; fiche
+  client : « Articles réservés »). Aucun mur encore.
+  🟦 **Bâti le 2026-10-30, non commité** : migration
+  `20261030160000_les_articles_sur_mesure`, routes `admin/catalog/made-to-order`,
+  `:sku/made-to-order`, `:sku/reserved-visibility`, `:sku/reservation`,
+  `:sku/reservations/:companyId` (PUT, DELETE), `reservations/:companyId`
+  (surface `lfc_catalog`) ; cinq faits `catalog_item.*` ; panneau « Sur
+  mesure… » au catalogue publié, onglet « Articles réservés » de la fiche
+  (`lfc_catalog:read`). Reste hors L1a : le filtre « sur mesure » du catalogue
+  admin (§ 7), et `readReservationHolders` (L1b) — la fiche lit le principal
+  par `parent_company_id` dans le lecteur d'administration.
+- **L1b** — le mur (§ 5, § 6) : `CatalogViewer`, `servedToViewer`, refus
+  nommé, S3, sélecteur de la mercuriale filtré.
+- **L2…** — la suite du § 8.
+
+⚠️ Entre L1a et L1b, une réservation posée ne restreint encore rien : l'écran
+le dit (« la restriction s'appliquera au prochain déploiement ») et rien ne
+part sur `main` entre les deux sans que Hugo le sache.
+
 ## 11. Contradiction de vitruve (2026-10-30)
 
 | #   | Objection                                                                                                                                                        | Réponse                                                                                                                                                                           |

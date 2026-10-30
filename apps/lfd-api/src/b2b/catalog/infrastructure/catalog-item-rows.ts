@@ -54,6 +54,7 @@ export interface ItemRow {
   readonly variantsAsTiles: boolean;
   readonly productName: string | null;
   readonly detachedFromSku: string | null;
+  readonly detachedFromVariantSku: string | null;
   readonly receivedAt: Date;
   readonly withdrawnAt: Date | null;
   readonly audience: string | null;
@@ -164,6 +165,7 @@ export function toDomain(row: ItemRow): CatalogItem {
       variantsAsTiles: row.variantsAsTiles,
       productName: row.productName,
       detachedFromSku: row.detachedFromSku,
+      detachedFromVariantSku: row.detachedFromVariantSku,
       receivedAt: row.receivedAt,
     },
     withdrawnAt: row.withdrawnAt,

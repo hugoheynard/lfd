@@ -375,6 +375,45 @@ de norme tant que ses propres lignes n'atteignent pas le plancher, donc
 l'aberration se tait sur lui ; elle ne crie pas à tort. E2E :
 `apps/lfd-api/test/alerts-detached-lineage.e2e-spec.ts`.
 
+### Trace de la déclinaison d'origine (décision de Hugo du 2026-10-30)
+
+**Le trou.** `catalog_items.detached_from_sku` est un fait de la FICHE née,
+descendu sur chacun de ses articles : il dit d'où la fiche vient, pas lequel
+de ses articles en est le continuateur. La succession prend donc le défaut de
+la fiche née — et le suit s'il change (G4). Or le détachement
+(`detach-product-variant.ts`, lu le 2026-10-30) fait naître la fiche avec UNE
+déclinaison, `<SKU>-1`, copiée de l'origine ; les suivantes s'ajoutent après,
+et le défaut peut passer à l'une d'elles : les habitudes et les alertes
+suivaient alors une déclinaison qui n'a jamais été l'ancienne.
+
+**Forme.**
+
+- **Référentiel** : `pim.product_variant.detached_from_variant_id` (nullable,
+  clé étrangère `ON DELETE RESTRICT` vers la déclinaison d'origine, comme
+  `detached_to_product_id`). Posée par `Variant.openDefaultFrom` au
+  détachement, sur la déclinaison copiée, et jamais réécrite : un changement
+  de défaut ne la déplace pas. Toute autre déclinaison la porte `NULL`.
+- **Fil** : `variants[].detachedFromVariantSku` dans `pim.catalog_product_changed`
+  — le SKU de la déclinaison d'origine, résolu à l'émission. Fait seul, comme
+  `detachedFromSku` (L7) : l'instantané du push reste en v16. Absent d'un fait
+  émis avant lui, lu `null` (rétrocompatible).
+- **Commerce** : `catalog_items.detached_from_variant_sku` (nullable), rangé
+  par article tel que le fil le porte.
+
+**La règle.** Parmi les articles nés d'une même référence : si l'un d'eux
+porte la trace et qu'elle la désigne, c'est LUI le successeur, défaut ou non ;
+si la trace existe chez un frère mais ne désigne personne, aucun (deux lignes
+plutôt qu'un choix inventé). Sans trace chez aucun frère, la règle du défaut
+d'avant tient (seul article, ou défaut unique). Même règle dans les deux sens
+(`latestOfEach`, `ancestorsOfEach`), qui partagent `directSuccessorsOf`.
+
+**Le repli, et ce qui n'est pas reconstituable.** Une fiche détachée AVANT
+cette colonne n'a pas de trace au référentiel, et rien n'en reconstitue une
+sûre : `<SKU>-1` peut avoir été renommée, et la position 0 n'est pas une
+filiation. Ces fiches restent sur la règle du défaut, pour toujours — sans
+reprise de données. Une fiche détachée après reçoit la trace dès sa première
+émission.
+
 - **L8** `docs(catalogue)`.
 
 **Non vérifié** : ce que coûte un engagement de volume devenu orphelin à sa
