@@ -569,3 +569,31 @@ part sur `main` entre les deux sans que Hugo le sache.~~ Levé au L1b
 | m   | « quatre lectures ».                                                                                                                                             | Cinq ; JSDoc corrigé au L1.                                                                                                                                                       |
 | m   | Mise en avant « avec société ».                                                                                                                                  | Faux : route `@Public()` ; lecteur anonyme ou public.                                                                                                                             |
 | m   | Recherche à vérifier au L2.                                                                                                                                      | Au L1.                                                                                                                                                                            |
+
+## 12. Le mur du rayon public sur les abonnements de particulier (2026-10-30)
+
+**Le trou** (relevé au VU du L1b) : `ReservedArticleGuard.ensureOpenTo`
+rendait la main sans rien lire quand la société était `null`. Un abonnement
+en perso — création comme dérogation d'échéance — ne passait donc aucun mur :
+un particulier pouvait s'abonner à un article d'audience pro, en attente de
+validation publique, masqué au public, réservé ou sur mesure.
+
+**Bâti** : en perso, la garde résout les lignes par le lecteur `public`
+(`PUBLIC_VIEWER`, donc `servedTo(item, "public")` — le mur de son rayon) ; le
+premier SKU absent est refusé par `ArticleNotServedToPublicError` (409,
+`catalog.article_not_served_to_public`, « n'est pas proposé aux
+particuliers »). Un seul refus pour tous les cas, SKU inconnu compris :
+distinguer « réservé » d'« inconnu » dirait au particulier ce que son rayon
+lui cache. Les deux handlers appelaient déjà la garde ; rien n'y change.
+Tests : `reserved-article-guard.spec.ts`, `create-subscription.handler.spec.ts`,
+e2e `apps/lfd-api/test/public-subscription-wall.e2e-spec.ts`.
+
+**Abonnement pro — décidé par Hugo le 2026-10-30, bâti** : un abonnement pro
+passe le mur complet du rayon pro (audience, validation pro, masquage,
+réservation, référence inconnue). La garde résout par
+`proViewer(holders, "served_and_locked")` : un article absent est refusé par
+`ArticleNotServedToCompanyError` (409, `catalog.article_not_served_to_company`),
+sans distinguer un réservé invisible d'un inconnu ; un article montré
+verrouillé garde `ReservedArticleRefusedError`. Pré-lancement : aucun
+abonnement réel à protéger d'un refus nouveau à la dérogation. Avant, la garde
+ne jugeait que la réservation et laissait passer audience et SKU inconnu.

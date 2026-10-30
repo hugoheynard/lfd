@@ -12,14 +12,12 @@ import {
   WeightArticleInSubscriptionError,
 } from "../../../domain/errors/subscription-errors.js";
 import { SubscriptionCreatedEvent } from "../../../domain/events/subscription-created.event.js";
+import { ArticleNotServedToPublicError } from "../../../../catalog/domain/errors/not-served-to-public.error.js";
 import { CreateSubscriptionCommand } from "../create-subscription.command.js";
 import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
-import { subscriptionGestures } from "./subscription-gesture-doubles.js";
-import { ReservedArticleGuard } from "../../../../catalog/application/reserved-article-guard.service.js";
-import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { guardServing, subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 const payload: CreateSubscriptionPayload = {
@@ -47,7 +45,7 @@ describe("CreateSubscriptionHandler", () => {
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
-      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+      guardServing("SKU-1", "SKU-2", "PAT-002-1"),
     );
 
     const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -69,7 +67,7 @@ describe("CreateSubscriptionHandler", () => {
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
-      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+      guardServing("SKU-1", "SKU-2", "PAT-002-1"),
     );
 
     await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -102,7 +100,7 @@ describe("CreateSubscriptionHandler", () => {
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
-        new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+        guardServing("SKU-1", "SKU-2", "PAT-002-1"),
       );
 
       const refused = handler.execute(
@@ -134,7 +132,7 @@ describe("CreateSubscriptionHandler", () => {
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
-        new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+        guardServing("SKU-1", "SKU-2", "PAT-002-1"),
       );
 
       await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -157,12 +155,33 @@ describe("CreateSubscriptionHandler — un article au poids", () => {
       articleSaleUnitsOver([
         catalogItem("SKU", { sku: "SKU-1", saleUnit: "weight", weightStepGrams: 100 }),
       ]),
-      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+      guardServing("SKU-1", "SKU-2", "PAT-002-1"),
     );
 
     await expect(
       handler.execute(new CreateSubscriptionCommand("user_1", payload, null)),
     ).rejects.toThrow(WeightArticleInSubscriptionError);
+    expect(repo.created).toHaveLength(0);
+  });
+});
+
+/** Régression du 2026-10-30 : un particulier s'abonnait à un article que son rayon ne sert pas. */
+describe("CreateSubscriptionHandler — le mur du rayon public", () => {
+  it("refuse à un particulier un article non servi aux particuliers, et n'écrit rien", async () => {
+    const repo = new FakeSubscriptionRepository();
+    const handler = new CreateSubscriptionHandler(
+      repo,
+      new RecordingPublisher(),
+      noSaleOperations(NOW),
+      new DirectUnitOfWork(),
+      subscriptionGestures(new FakeSubscriptionRepository()).gestures,
+      articleSaleUnitsOver(),
+      guardServing("SKU-2"),
+    );
+
+    await expect(
+      handler.execute(new CreateSubscriptionCommand("user_1", payload, null)),
+    ).rejects.toThrow(ArticleNotServedToPublicError);
     expect(repo.created).toHaveLength(0);
   });
 });

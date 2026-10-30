@@ -22,10 +22,7 @@ import { SetSubscriptionStatusHandler } from "../set-subscription-status.handler
 import { UpsertOccurrenceOverrideCommand } from "../upsert-occurrence-override.command.js";
 import { UpsertOccurrenceOverrideHandler } from "../upsert-occurrence-override.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
-import { subscriptionGestures } from "./subscription-gesture-doubles.js";
-import { ReservedArticleGuard } from "../../../../catalog/application/reserved-article-guard.service.js";
-import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
-import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
+import { guardServing, subscriptionGestures } from "./subscription-gesture-doubles.js";
 
 /**
  * N4e (`plan-notifications-sous-comptes.md`) : la société de l'espace sur le
@@ -59,7 +56,7 @@ function build(options: { readonly member?: boolean } = {}) {
       uow,
       doubles.gestures,
       articleSaleUnitsOver(),
-      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+      guardServing("SKU-1", "SKU-2", "PAT-002-1"),
     ),
     status: new SetSubscriptionStatusHandler(repo, events, uow, doubles.gestures),
     remove: new DeleteSubscriptionHandler(
@@ -75,7 +72,7 @@ function build(options: { readonly member?: boolean } = {}) {
       uow,
       doubles.gestures,
       articleSaleUnitsOver(),
-      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
+      guardServing("SKU-1", "SKU-2", "PAT-002-1"),
     ),
   };
 }
