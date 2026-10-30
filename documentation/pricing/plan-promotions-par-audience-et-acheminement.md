@@ -2024,6 +2024,7 @@ appliquée** :
 | Colonne                                           | Sens                                                                   |
 | ------------------------------------------------- | ---------------------------------------------------------------------- |
 | `id` (ULID), `order_id` (FK `orders`, `RESTRICT`) | —                                                                      |
+| `origin` text NOT NULL, `computed` \| `frozen`    | `frozen` = recopiée des colonnes figées par la reprise, sans recalcul  |
 | `rank` int, unique `(order_id, rank)`             | **ordre d'application** (§ 16.1, étape 3), à partir de 1               |
 | `promotion_id` text NULL                          | opaque, sans FK ; `NULL` = remise reprise d'avant L9                   |
 | `adjustment` jsonb                                | `%` (bp) ou montant fixe, figé                                         |
@@ -2072,12 +2073,18 @@ table, et **après** la seconde passe de reprise à zéro écart (§ 18.3).
 CREATE FUNCTION order_discounts_match_order() RETURNS trigger
 LANGUAGE plpgsql AS $$
 DECLARE
-  target text := CASE TG_TABLE_NAME WHEN 'orders' THEN NEW.id ELSE NEW.order_id END;
+  target text;
   expected int;
   total int;
   active int;
   bad text;
 BEGIN
+  -- Deux branches : un CASE résoudrait NEW.order_id sur `orders` et échouerait.
+  IF TG_TABLE_NAME = 'orders' THEN
+    target := NEW.id;
+  ELSE
+    target := NEW.order_id;
+  END IF;
   SELECT discount_cents INTO expected FROM orders WHERE id = target;
   SELECT coalesce(sum(amount_cents), 0), count(*) INTO total, active
     FROM order_discounts WHERE order_id = target AND archived_at IS NULL;
@@ -2124,7 +2131,50 @@ pas (elle est arrondie une fois par taux sur la base, § 18.4) ; `ttcCents`
 absent n'est admis que si la remise n'a pas de `amount_ttc_cents`
 (`line_ht`), et alors aucune part ne doit en porter. Un `vat_shares` vide
 donne `ht` NULL et échoue, sauf `amount_cents = 0` — qui n'a pas de ligne.
-Texte à recompiler au lot (pas exécuté ici).
+**Texte non exécuté à l'écriture** : il sera compilé et exécuté sur
+`lfd-dev-postgres` au lot, avec le test e2e du déclencheur (§ 18.7) à
+l'appui. Contraintes de ligne en plus : `rank` et `amount_cents` `NOT NULL`,
+`CHECK (jsonb_typeof(vat_shares) = 'array')`.
+
+**Coût à la passation** : deux lectures par clé (la commande par sa clé
+primaire, les remises par l'index `order_id`) au commit de chaque
+`INSERT` de commande — de l'ordre de la dizaine de microsecondes à côté
+des dizaines d'écritures de lignes que la passation fait déjà.
+
+**Qui écrit `orders.discount_cents`** (grep du 2026-10-30, client Prisma
+généré exclu) : `prisma-order.repository.ts:148` (passation) et
+`prisma-order-revision.repository.ts:82` (révision), seulement — en
+production. La passation est **une seule écriture imbriquée**
+(`this.prisma.order.create`, l. 99) : M3 y ajoute les remises en
+`create` imbriqué, donc dans la même instruction. La révision enchaîne
+plusieurs requêtes sur `this.prisma` (`save`, l. 58-62) ; qu'une
+transaction les englobe **n'est pas vérifié ici** — M3 doit mettre
+`updateMany`, archivage et insertion dans une seule transaction, et le
+démontrer.
+
+**Fixtures e2e (même lot que le déclencheur)** : elles écrivent des
+commandes par Prisma, hors agrégat, et ne connaissent pas `order_discounts`.
+`test/cycle-statements.e2e-spec.ts:133-141` (`discountCents: seed.discountCents
+?? 0`) et `:212` (`discountCents: 500`) sèment des commandes remisées : le
+déclencheur strict les refuserait. Une aide de fixture qui écrit aussi la
+remise les remplace. Le grep du 2026-10-30 des `test/*.ts` qui font
+`order.create`/`order.update` et nomment `discountCents` en trouve six à
+trier au lot : `cycle-statements`, `loyalty-partial-order`,
+`loyalty-earning`, `order-exact-ht`, `remainder-settlement`,
+`promotions-revision` (un nommage n'est pas une écriture non nulle : le
+lot les ouvre un par un).
+
+**Retour arrière du déclencheur** :
+
+```sql
+DROP TRIGGER order_discounts_match_order_on_orders ON orders;
+DROP TRIGGER order_discounts_match_order_on_discounts ON order_discounts;
+DROP FUNCTION order_discounts_match_order();
+```
+
+Redéployer le code de M2 (qui n'écrit pas `order_discounts`) **sous** le
+déclencheur ferait refuser chaque passation remisée : on retire le
+déclencheur d'abord, on redéploie ensuite.
 
 **Les colonnes actuelles restent lisibles et écrites** : `discount_cents` =
 le total, `discount_ttc_cents` = le total TTC, `pickup_discount_eligible` = OU
@@ -2194,10 +2244,16 @@ compose chaque remise par **la même fonction de domaine que M1** (donc par
      de ses remises = son `discount_cents` ;
    - on ne compare **pas** à la facture : elle n'est pas un figé par
      commande (objection BLOQUANT 1, acceptée) ;
-4. **en cas d'écart** : n'écrit rien pour CETTE commande, continue les
-   autres, et sort en code non nul avec la liste (numéro, attendu, obtenu).
-   Une commande refusée reste sans ligne ; aucun déclencheur n'existe encore
-   (§ 18.2). Corriger un écart est une décision de Hugo, commande par
+4. **en cas d'écart — décidé (mandat 2026-10-30)** : le script n'invente
+   rien et ne recalcule rien. Il écrit une ligne `origin = 'frozen'` qui
+   recopie les valeurs **figées** : `amount_cents = discount_cents`,
+   `amount_ttc_cents = discount_ttc_cents`, promotion, ajustement et libellé
+   figés, et des parts tirées des colonnes figées existantes (`ttc_by_rate`
+   en `exact_ht` ; en `line_ht`, une seule part au taux unique si la
+   commande n'en a qu'un, sinon la question est rendue à Hugo pour CETTE
+   commande). Chaque ligne `frozen` est listée dans le rapport (numéro,
+   attendu, obtenu). Le temps 5 du runbook n'est donc jamais bloqué
+   indéfiniment ; une ligne `computed` est la seule qui prouve l'égalité. Corriger un écart est une décision de Hugo, commande par
    commande — le script ne force jamais.
 
 **Exécution — décidé (mandat 2026-10-30, ex-Q-M1)** : le script refuse une
@@ -2217,9 +2273,9 @@ Hugo. Il vit sous `apps/lfd-api/prisma/`, déjà dans l'allowlist de
    désormais la table) ;
 4. **seconde passe** : rattrape les commandes passées ou révisées entre 2
    et 3 par l'ancien code ; à blanc, puis `--write` ;
-5. seulement si cette passe rend **zéro écart et zéro commande sans
-   ligne**, déployer la migration du déclencheur (fin de M3). Sinon, les
-   écarts vont à Hugo et le déclencheur attend.
+5. seulement si cette passe rend **zéro commande sans ligne** (les écarts
+   sont devenus des lignes `frozen`, lues par Hugo), déployer la migration
+   du déclencheur (fin de M3).
 
 ### 18.4 Ordre et arrondis
 
@@ -2406,6 +2462,14 @@ d.archived_at IS NULL`) — une couverture d'une remise archivée n'est
 | Déclencheur écarté sans raison                 | Adopté, strict, né en M3 (seconde passe) ; arbitrage n° 2 révisé                                                                                              | § 18.2         |
 | M7 irréversible                                | Écrit, avec ce qu'un retour arrière peut et ne peut pas faire                                                                                                 | § 18.6         |
 
+**L'« avant » de la révision (L9)** : il se lit dans `order_discounts` si la
+commande a des lignes actives ; sinon il est dérivé des colonnes
+`discount_*` figées, comme UNE remise de rang 1 (aujourd'hui
+`fulfillment-promotion.ts:32-42` lit `discountAdjustment` et
+`discountPromotionId`, ouvert le 2026-10-30). La lecture par colonnes
+disparaît au lot du déclencheur strict (fin de M3) : à partir de là toute
+commande remisée a des lignes.
+
 Le § 18.5 se lit avec cette correction : la révision **archive** les lignes
 non archivées de la commande et en insère de nouvelles, dans sa transaction ;
 « remplace » n'y veut plus dire « supprime ».
@@ -2430,3 +2494,11 @@ dette existante (SÉRIEUX 1) ; runbook en cinq temps (SÉRIEUX 2) ; texte SQL
 de la fonction (SÉRIEUX 3) ; Q-M1 décidée (SÉRIEUX 4) ; tests de reprise,
 couvertures par jointure, allowlist `no-direct-env` (MINEURS) — § 18.2,
 § 18.3, § 18.6, § 18.7, § 18.10.
+
+**Troisième passe de vitruve (2026-10-30), sur `24b14a5a8`** — SQL en
+`IF/ELSE`, compilé au lot sur `lfd-dev-postgres` ; fixtures e2e basculées
+dans le lot du déclencheur ; « avant » de L9 lu dans la table, sinon dans
+les colonnes, jusqu'à fin M3 ; commande en écart = ligne `origin = 'frozen'`
+(décidé) ; retour arrière écrit ; écrivains de `discount_cents` et
+transaction de passation vérifiés, celle de la révision à démontrer en M3 ;
+`NOT NULL`, `CHECK jsonb_typeof`, coût chiffré — § 18.2, § 18.3, § 18.9.
