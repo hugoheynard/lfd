@@ -28,37 +28,37 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
       'staff_user.created',
       { person: CECILE, roleLabel: 'Commercial' },
       'Création d’un membre de l’équipe',
-      'Hugo Heynard a créé Cécile Martin, Commercial',
+      'Hugo Heynard (staff LFD — Administrateur) a créé Cécile Martin, Commercial',
     ],
     [
       'staff_user.invited',
       { person: CECILE, kind: 'invitation' },
       'Invitation',
-      'Hugo Heynard a invité Cécile Martin à rejoindre le back-office',
+      'Hugo Heynard (staff LFD — Administrateur) a invité Cécile Martin à rejoindre le back-office',
     ],
     [
       'staff_user.invited',
       { person: CECILE, kind: 'password_reset' },
       'Nouveau mot de passe',
-      'Hugo Heynard a envoyé à Cécile Martin un lien pour choisir un nouveau mot de passe',
+      'Hugo Heynard (staff LFD — Administrateur) a envoyé à Cécile Martin un lien pour choisir un nouveau mot de passe',
     ],
     [
       'staff_user.password_link_issued',
       { person: CECILE },
       'Lien remis à la main',
-      'Hugo Heynard a fabriqué un lien d’accès pour Cécile Martin, à lui remettre en personne',
+      'Hugo Heynard (staff LFD — Administrateur) a fabriqué un lien d’accès pour Cécile Martin, à lui remettre en personne',
     ],
     [
       'staff_user.identity_edited',
       { person: CECILE, previous: null, fields: ['téléphone', 'fonction'] },
       'Fiche modifiée',
-      'Hugo Heynard a modifié la fiche de Cécile Martin : téléphone, fonction',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin : téléphone, fonction',
     ],
     [
       'staff_user.role_changed',
       { person: CECILE, fromLabel: 'Commercial', toLabel: 'Comptabilité' },
       'Changement de rôle',
-      'Hugo Heynard a fait passer Cécile Martin de Commercial à Comptabilité',
+      'Hugo Heynard (staff LFD — Administrateur) a fait passer Cécile Martin de Commercial à Comptabilité',
     ],
     [
       'staff_user.overrides_changed',
@@ -75,38 +75,38 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
         ],
       },
       'Droits individuels',
-      'Hugo Heynard a changé les droits individuels de Cécile Martin — accordé : Tarification (écriture) — refusé : Prospects (lecture) — rendu au rôle : Alertes (lecture)',
+      'Hugo Heynard (staff LFD — Administrateur) a changé les droits individuels de Cécile Martin — accordé : Tarification (écriture) — refusé : Prospects (lecture) — rendu au rôle : Alertes (lecture)',
     ],
     [
       'staff_user.suspended',
       { person: CECILE },
       'Accès suspendu',
-      'Hugo Heynard a suspendu l’accès de Cécile Martin',
+      'Hugo Heynard (staff LFD — Administrateur) a suspendu l’accès de Cécile Martin',
     ],
     [
       'staff_user.activated',
       { subjectLabel: 'Cécile Martin', person: CECILE },
       'Accès activé',
-      'Hugo Heynard a activé l’accès de Cécile Martin',
+      'Hugo Heynard (staff LFD — Administrateur) a activé l’accès de Cécile Martin',
     ],
     // Les lignes d'avant le 2026-09-19 couvrent aussi la première activation (D7).
     [
       'staff_user.reinstated',
       { person: CECILE },
       'Accès activé ou rétabli',
-      'Hugo Heynard a activé ou rétabli l’accès de Cécile Martin',
+      'Hugo Heynard (staff LFD — Administrateur) a activé ou rétabli l’accès de Cécile Martin',
     ],
     [
       'staff_user.deleted',
       { person: CECILE, roleLabel: 'Commercial' },
       'Suppression d’un membre',
-      'Hugo Heynard a supprimé la fiche de Cécile Martin (Commercial)',
+      'Hugo Heynard (staff LFD — Administrateur) a supprimé la fiche de Cécile Martin (Commercial)',
     ],
     [
       'staff_role.created',
       { label: 'Logistique', grants: [] },
       'Nouveau rôle',
-      'Hugo Heynard a créé le rôle Logistique',
+      'Hugo Heynard (staff LFD — Administrateur) a créé le rôle Logistique',
     ],
     [
       'staff_role.updated',
@@ -118,19 +118,19 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
         changed: [],
       },
       'Rôle modifié',
-      'Hugo Heynard a modifié le rôle Commercial : + Alertes (écriture)',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié le rôle Commercial : + Alertes (écriture)',
     ],
     [
       'staff_role.archived',
       { label: 'Logistique' },
       'Rôle archivé',
-      'Hugo Heynard a archivé le rôle Logistique',
+      'Hugo Heynard (staff LFD — Administrateur) a archivé le rôle Logistique',
     ],
     [
       'staff_role.restored',
       { label: 'Logistique' },
       'Rôle restauré',
-      'Hugo Heynard a restauré le rôle Logistique',
+      'Hugo Heynard (staff LFD — Administrateur) a restauré le rôle Logistique',
     ],
   ])('%s — %s', (type, payload, title, sentence) => {
     const line = toLine(event(type, payload));
@@ -194,7 +194,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
 
     expect(line.title).toBe('Invitation');
     expect(line.sentence).toBe(
-      'Admin La Folie Coffee a invité Cécile Martin à rejoindre le back-office (reprise)',
+      'Admin La Folie Coffee (staff LFD — Administrateur) a invité Cécile Martin à rejoindre le back-office (reprise)',
     );
   });
 
@@ -204,7 +204,9 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
       event('staff_user.created', { person: CECILE, roleLabel: 'Commercial', backfilled: 'true' }),
     );
 
-    expect(lived.sentence).toBe('Hugo Heynard a créé Cécile Martin, Commercial');
+    expect(lived.sentence).toBe(
+      'Hugo Heynard (staff LFD — Administrateur) a créé Cécile Martin, Commercial',
+    );
     expect(malformed.sentence).not.toContain('(reprise)');
   });
 
@@ -218,7 +220,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(line.sentence).toBe(
-      'Hugo Heynard a modifié la fiche de Cécile Martin (anciennement Cécile Dupont) : nom',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin (anciennement Cécile Dupont) : nom',
     );
   });
 
@@ -236,7 +238,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(line.sentence).toBe(
-      'Hugo Heynard a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → 07 55 66 77 88 ; fonction (vide) → Vendeuse',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → 07 55 66 77 88 ; fonction (vide) → Vendeuse',
     );
   });
 
@@ -251,7 +253,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(line.sentence).toBe(
-      'Hugo Heynard a modifié la fiche de Cécile Martin : nom Dupont → Martin',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin : nom Dupont → Martin',
     );
   });
 
@@ -269,7 +271,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(line.sentence).toBe(
-      'Hugo Heynard a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → (vide) ; fonction (vide) → (vide)',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin : téléphone 06 11 22 33 44 → (vide) ; fonction (vide) → (vide)',
     );
   });
 
@@ -282,7 +284,9 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Hugo Heynard a modifié la fiche de Cécile Martin : téléphone');
+    expect(line.sentence).toBe(
+      'Hugo Heynard (staff LFD — Administrateur) a modifié la fiche de Cécile Martin : téléphone',
+    );
   });
 
   it('rappelle l’ancien libellé d’un rôle renommé, et dit une action changée', () => {
@@ -297,7 +301,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(line.sentence).toBe(
-      'Hugo Heynard a modifié le rôle Ventes (anciennement Commercial) : − Prospects (lecture), Tarification → écriture',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié le rôle Ventes (anciennement Commercial) : − Prospects (lecture), Tarification → écriture',
     );
   });
 
@@ -322,10 +326,10 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     );
 
     expect(role.sentence).toBe(
-      'Hugo Heynard a modifié le rôle Atelier : + Alertes (lecture) via l’outil agent role_grant',
+      'Hugo Heynard (staff LFD — Administrateur) a modifié le rôle Atelier : + Alertes (lecture) via l’outil agent role_grant',
     );
     expect(person.sentence).toBe(
-      'Hugo Heynard a fait passer Cécile Martin de Atelier à Support via l’outil agent staff_assign_role',
+      'Hugo Heynard (staff LFD — Administrateur) a fait passer Cécile Martin de Atelier à Support via l’outil agent staff_assign_role',
     );
   });
 
@@ -333,7 +337,7 @@ describe('toLine — les faits de l’équipe, en phrases', () => {
     // Du JSON non typé : une personne absente rend `—`, un rôle absent disparaît.
     const line = toLine(event('staff_user.created', { person: 'cecile@x.fr' }));
 
-    expect(line.sentence).toBe('Hugo Heynard a créé —');
+    expect(line.sentence).toBe('Hugo Heynard (staff LFD — Administrateur) a créé —');
   });
 
   // Une recommandation que le cockpit a affichée : l'auteur de la ligne n'a

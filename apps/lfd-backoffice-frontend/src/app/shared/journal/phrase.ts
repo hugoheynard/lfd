@@ -284,24 +284,60 @@ const UNNAMED_AUTHORS: Readonly<Record<ActorType, string>> = {
   customer: 'un client',
 };
 
-/** L'auteur en sujet d'une phrase à la voix active. */
-export function actorSubject(actorName: string | null, actorType: ActorType): string {
-  return optional(actorName) ?? UNNAMED_ACTORS[actorType];
+/**
+ * La **qualité** de l'auteur, dite après son nom (décision de Hugo du
+ * 2026-10-30, §7 de `plan-phrases-du-journal.md`) : « staff LFD — Commercial »,
+ * « staff LFD » sans fonction connue, « client pro » ou « client particulier »
+ * — que l'API fige telle quelle dans `actorRole` pour un client. Une ligne
+ * client d'avant n'en porte pas : rien plutôt qu'une qualité devinée.
+ */
+export function actorQuality(actorRole: string | null, actorType: ActorType): string | null {
+  const role = optional(actorRole);
+  if (actorType === 'staff') {
+    return role === null ? 'staff LFD' : `staff LFD — ${role}`;
+  }
+  if (actorType === 'customer') {
+    return role;
+  }
+  return null;
 }
 
 /**
- * L'auteur après « par ». La fonction entre parenthèses quand elle est connue :
- * « qui a fait ça, et à quel titre » est la question qu'on pose à un journal.
+ * « Hugo Heynard (staff LFD — Commercial) ». `undefined` : la vue ne porte pas
+ * la colonne (l'historique d'une fiche) — le nom seul, plutôt qu'une qualité
+ * déduite d'un champ qu'on n'a pas lu.
+ */
+function namedWithQuality(
+  name: string,
+  actorRole: string | null | undefined,
+  actorType: ActorType,
+): string {
+  const quality = actorRole === undefined ? null : actorQuality(actorRole, actorType);
+  return quality === null ? name : `${name} (${quality})`;
+}
+
+/**
+ * L'auteur en sujet d'une phrase à la voix active, sa qualité après son nom.
+ * La ligne ne répète alors pas « par … » : la qualité n'est dite qu'une fois.
+ */
+export function actorSubject(
+  actorName: string | null,
+  actorType: ActorType,
+  actorRole?: string | null,
+): string {
+  const name = optional(actorName);
+  return name === null ? UNNAMED_ACTORS[actorType] : namedWithQuality(name, actorRole, actorType);
+}
+
+/**
+ * L'auteur après « par », sa qualité entre parenthèses : « qui a fait ça, et à
+ * quel titre » est la question qu'on pose à un journal.
  */
 export function actorBy(
   actorName: string | null,
-  actorRole: string | null,
+  actorRole: string | null | undefined,
   actorType: ActorType,
 ): string {
   const name = optional(actorName);
-  if (name === null) {
-    return UNNAMED_AUTHORS[actorType];
-  }
-  const role = optional(actorRole);
-  return role === null ? name : `${name} (${role})`;
+  return name === null ? UNNAMED_AUTHORS[actorType] : namedWithQuality(name, actorRole, actorType);
 }

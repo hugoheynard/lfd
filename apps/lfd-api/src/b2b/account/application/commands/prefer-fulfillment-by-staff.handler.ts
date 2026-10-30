@@ -10,6 +10,7 @@ import { FulfillmentPreferenceSetByStaffEvent } from "../../domain/events/staff-
 import { companyNamed, type DeliveryAddressRef } from "../../domain/events/journal-names.js";
 import { CompanyAddressReader } from "../../domain/ports/company-address.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { citedPickupPoint, PickupPointNames } from "../../domain/ports/pickup-point-names.js";
 import { PreferFulfillmentByStaffCommand } from "./prefer-fulfillment-by-staff.command.js";
 
 /**
@@ -30,6 +31,7 @@ export class PreferFulfillmentByStaffHandler implements ICommandHandler<
   constructor(
     private readonly companies: CompanyRepository,
     private readonly addresses: CompanyAddressReader,
+    private readonly pickupPoints: PickupPointNames,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
@@ -44,12 +46,13 @@ export class PreferFulfillmentByStaffHandler implements ICommandHandler<
     // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
     // y est remise à `null`, et le journal dit ce qui a été posé.
     const kept = company.fulfillmentPreference;
+    const pickupAddress = await citedPickupPoint(this.pickupPoints, kept.pickupAddressId);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
         new FulfillmentPreferenceSetByStaffEvent(companyNamed(command.companyId, company), {
           method: kept.method,
-          pickupAddressId: kept.pickupAddressId,
+          pickupAddress,
           deliveryAddress,
           signatureRequired: kept.signatureRequired,
         }),

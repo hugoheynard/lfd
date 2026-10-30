@@ -462,7 +462,8 @@ function onVehicle(verb: string, tail = ''): Phrase {
     );
 }
 
-const PICKUP_POINT: Noun = { the: 'le point de retrait', a: 'un point de retrait' };
+/** Un point de retrait cité — aussi par les phrases des comptes et des paniers. */
+export const PICKUP_POINT: Noun = { the: 'le point de retrait', a: 'un point de retrait' };
 
 export const ORDERS_PHRASES = {
   'order.placed': orderPlaced,

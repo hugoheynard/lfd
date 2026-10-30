@@ -63,6 +63,21 @@ export interface DeliveryAddressRef {
   readonly codePostal: string;
 }
 
+/**
+ * Un point de retrait cité : `null` s'il n'y en a pas, `{ id, name }` quand
+ * son nom est connu, l'id seul sinon — le fait ne s'invente pas de nom (même
+ * forme que les heures limites, `order-cutoff.events.ts`).
+ */
+export type PickupPointRef = NamedRef | string | null;
+
+/** Le point désigné par `id`, cité avec `name` s'il en a un. */
+export function pickupPointRef(id: string | null, name: string | null): PickupPointRef {
+  if (id === null) {
+    return null;
+  }
+  return name === null ? id : { id, name };
+}
+
 /** Une société citée sous le nom qu'affichent les écrans — l'enseigne, à défaut la raison sociale. */
 export function companyNamed(companyId: string, company: { displayName(): string }): NamedRef {
   return { id: companyId, name: company.displayName() };

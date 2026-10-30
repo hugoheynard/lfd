@@ -117,7 +117,8 @@ function toLine(entry: ProductHistoryEntryView): HistoryLine {
     segments: fact.segments,
     detail: fact.detail,
     when: factWhen(entry.occurredAt),
-    actor: actorBy(entry.actorName, null, entry.actorType),
+    // L'historique d'une fiche ne porte pas la fonction : le nom seul.
+    actor: actorBy(entry.actorName, undefined, entry.actorType),
     namesActor: fact.namesActor,
     mark: circleMark(entry),
     type: entry.type,

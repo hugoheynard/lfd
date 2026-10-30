@@ -4,6 +4,7 @@ import { journalLevelLabel } from '../../feature-levels';
 import { entries, optional, recordOf, strings, type Payload } from '../payload-read';
 import {
   byActor,
+  cite,
   citePerson,
   citedName,
   fieldList,
@@ -33,6 +34,7 @@ import {
   RECURRENCE,
   SUPPORT_CHANNEL,
 } from '../values/accounts-values';
+import { PICKUP_POINT } from './orders-phrases';
 import { labelIn } from '../values';
 import { DOORSTEP_RULE } from '../values/orders-values';
 
@@ -473,9 +475,40 @@ const deliveryDepositSet: Phrase = (fact) =>
   );
 
 /**
+ * « en retrait à « Boutique Oberkampf » » — le point sous son nom figé
+ * (décision de Hugo du 2026-10-30, §7 du plan des phrases). Une ligne d'avant,
+ * ou un point que l'annuaire ne nommait plus, dit « en retrait » sans lieu :
+ * l'id reste au détail, et jamais « au laboratoire », qui était faux.
+ */
+function inPickup(p: Payload): { readonly segments: Segment[]; readonly consumed: string[] } {
+  const cited = p['pickupAddress'];
+  if (citedName(cited) === null) {
+    return { segments: [text('en retrait')], consumed: [] };
+  }
+  return {
+    segments: [text('en retrait à '), ...cite({ ...PICKUP_POINT, the: '' }, cited)],
+    consumed: ['pickupAddress'],
+  };
+}
+
+/** « en retrait à « X » », ou « en livraison par coursier » — le mode et, en retrait, le lieu. */
+function inMethod(
+  p: Payload,
+  method: unknown,
+): { readonly segments: Segment[]; readonly consumed: string[] } {
+  if (method === 'pickup') {
+    return inPickup(p);
+  }
+  return {
+    segments: [text('en '), valueIn(FULFILLMENT_METHOD, method, { inSentence: true })],
+    consumed: [],
+  };
+}
+
+/**
  * « … a réglé le client « X » en livraison par coursier par défaut, à Paris
- * (75011), signature exigée ». Le point de retrait n'est connu que par son id :
- * il reste au détail.
+ * (75011), signature exigée », ou « … en retrait à « Boutique Oberkampf » par
+ * défaut ».
  */
 const fulfillmentPreferenceSet: Phrase = (fact) => {
   const p = fact.payload;
@@ -492,13 +525,14 @@ const fulfillmentPreferenceSet: Phrase = (fact) => {
   const place = placeOf(cited);
   const signature = p['signatureRequired'];
   const signs = delivery && typeof signature === 'boolean';
+  const how = inMethod(p, method);
   return byActor(
     fact,
     [
       text('a réglé '),
       ...client(fact, 'the'),
-      text(' en '),
-      valueIn(FULFILLMENT_METHOD, method, { inSentence: true }),
+      text(' '),
+      ...how.segments,
       text(' par défaut'),
       ...(delivery && place !== null ? [text(', à '), name(place)] : []),
       ...(signs ? [text(signature ? ', signature exigée' : ', sans signature')] : []),
@@ -506,6 +540,7 @@ const fulfillmentPreferenceSet: Phrase = (fact) => {
     [
       'subjectLabel',
       'method',
+      ...how.consumed,
       ...(delivery && place !== null ? ['deliveryAddress'] : []),
       ...(signs ? ['signatureRequired'] : []),
     ],
@@ -660,19 +695,25 @@ const occurrenceOverridden: Phrase = (fact) => {
   );
 };
 
-/** « … a supprimé un panier récurrent (chaque semaine, livraison par coursier) ». */
-const subscriptionDeleted: Phrase = (fact) =>
-  byActor(
+/**
+ * « … a supprimé un panier récurrent (chaque semaine, livraison par coursier) »,
+ * ou « (…, en retrait à « Boutique Oberkampf ») ».
+ */
+const subscriptionDeleted: Phrase = (fact) => {
+  const method = fact.payload['fulfillmentMethod'];
+  const pickup = method === 'pickup' ? inPickup(fact.payload) : null;
+  return byActor(
     fact,
     [
       text('a supprimé un panier récurrent ('),
       valueIn(RECURRENCE, fact.payload['recurrence'], { inSentence: true }),
       text(', '),
-      valueIn(FULFILLMENT_METHOD, fact.payload['fulfillmentMethod'], { inSentence: true }),
+      ...(pickup?.segments ?? [valueIn(FULFILLMENT_METHOD, method, { inSentence: true })]),
       text(')'),
     ],
-    ['recurrence', 'fulfillmentMethod'],
+    ['recurrence', 'fulfillmentMethod', ...(pickup?.consumed ?? [])],
   );
+};
 
 // ─── L'accès aux fonctionnalités ────────────────────────────────────────────
 

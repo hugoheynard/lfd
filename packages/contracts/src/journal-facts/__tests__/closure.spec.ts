@@ -103,12 +103,12 @@ const BARE_REFS: Readonly<Record<string, string>> = {
     "nommé par l'annuaire ; une fiche staff que l'annuaire ne sait plus nommer n'a plus de nom à donner",
   "delivery_round.driver_unassigned:previous":
     "nommé par l'annuaire ; une fiche staff que l'annuaire ne sait plus nommer n'a plus de nom à donner",
-  "company.fulfillment_preference_set:pickupAddressId":
-    "les comptes ne lisent pas les points de retrait, rangés dans leur contexte",
+  "company.fulfillment_preference_set:pickupAddress":
+    "un point de retrait disparu se cite par son id",
   "company.client_note_edited_by_staff:noteId":
     "le nom d'une note est son titre, c'est-à-dire du contenu",
   "subscription.created:subscriptionId": "un panier récurrent n'a pas de nom",
-  "subscription.deleted:pickupAddressId": "les paniers ne lisent pas les points de retrait",
+  "subscription.deleted:pickupAddress": "un point de retrait disparu se cite par son id",
   "support.requested:supportRequestId": "une demande de contact n'a pas de nom",
   "support.handled:supportRequestId": "une demande de contact n'a pas de nom",
   "feature_access.exemption_added:exemptionId":

@@ -38,6 +38,11 @@ export interface FactInput {
   readonly subjectId: string;
   readonly actorName: string | null;
   readonly actorType: ActorType;
+  /**
+   * La fonction (staff) ou la qualité (client) figée à l'acte. Absente : la
+   * vue ne la porte pas, et la phrase ne dit que le nom.
+   */
+  readonly actorRole?: string | null | undefined;
 }
 
 export interface RenderedFact {
@@ -76,7 +81,7 @@ export function renderFact(fact: FactInput, shownElsewhere: readonly string[] = 
     payload: fact.payload,
     subjectType: fact.subjectType,
     subjectId: fact.subjectId,
-    actor: actorSubject(fact.actorName, fact.actorType),
+    actor: actorSubject(fact.actorName, fact.actorType, fact.actorRole),
   };
   // Un type hors catalogue est une ligne écrite par une version plus récente
   // de l'API : le repli la dit sans inventer. Tout type connu a sa phrase.

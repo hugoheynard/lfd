@@ -7,9 +7,23 @@ export interface ActorIdentity {
    * La fonction **en clair** (« Commercial »), pas la clé du rôle. Un journal se
    * relit dans six mois : figer « Comptabilité » survit au renommage du rôle,
    * et évite à l'écran d'embarquer la table des libellés.
+   *
+   * Pour un **client**, sa qualité au moment de l'acte (décision de Hugo du
+   * 2026-10-30, §7 du plan des phrases) : {@link CUSTOMER_QUALITY}. `null`
+   * sur les lignes d'avant.
    */
   readonly role: string | null;
 }
+
+/**
+ * La qualité d'un client, en clair, comme la fonction d'un membre du staff :
+ * **pro** quand il agit pour une société active, **particulier** sinon — la
+ * seule définition de « qui est pro » du dépôt (`audienceOf`, `@lfd/contracts`).
+ */
+export const CUSTOMER_QUALITY = {
+  b2b: "client pro",
+  b2c: "client particulier",
+} as const;
 
 /**
  * Comment s'appelle celui qui agit — et à quel titre — **au moment où il agit**.
@@ -26,5 +40,13 @@ export interface ActorIdentity {
  * identifiant technique au milieu d'une phrase.
  */
 export abstract class ActorNamer {
-  abstract describe(type: ActivityActorType, id: string | null): Promise<ActorIdentity>;
+  /**
+   * @param actingCompanyId la société pour laquelle la requête agit, ou `null`
+   *   — ce qui fait d'un client un pro ou un particulier.
+   */
+  abstract describe(
+    type: ActivityActorType,
+    id: string | null,
+    actingCompanyId: string | null,
+  ): Promise<ActorIdentity>;
 }

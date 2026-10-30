@@ -341,9 +341,9 @@ describe('les adresses d’un client', () => {
       'Colette Martin a réglé le client « Café des Halles » en livraison par coursier par défaut, à Paris (75011), signature exigée',
     );
     expect(labels(delivery)).toEqual(['Point de retrait']);
-    expect(sentence(pickup)).toBe(
-      'Colette Martin a réglé un client en retrait au laboratoire par défaut',
-    );
+    // Une ligne d'avant le 2026-10-30 : le point par son seul id, donc « en
+    // retrait » sans lieu — plus jamais « au laboratoire », qui était faux.
+    expect(sentence(pickup)).toBe('Colette Martin a réglé un client en retrait par défaut');
     expect(labels(pickup)).toEqual([
       'Point de retrait',
       'Adresse de livraison',
@@ -574,9 +574,45 @@ describe('les paniers récurrents', () => {
           lines: [],
         }),
       ),
-    ).toBe(
-      'Jean Dupont a supprimé un panier récurrent (toutes les 2 semaines, retrait au laboratoire)',
+    ).toBe('Jean Dupont a supprimé un panier récurrent (toutes les 2 semaines, en retrait)');
+  });
+
+  it('nomme le lieu de retrait figé à l’écriture (§7, 2026-10-30)', () => {
+    const named = { id: 'pa_1', name: 'Boutique Oberkampf' };
+    const preference = company('company.fulfillment_preference_set', {
+      subjectLabel: CAFE,
+      method: 'pickup',
+      pickupAddress: named,
+      deliveryAddress: null,
+      signatureRequired: false,
+    });
+    const deleted = person('subscription.deleted', {
+      recurrence: 'weekly',
+      status: 'active',
+      startDate: '2026-09-01',
+      endDate: null,
+      fulfillmentMethod: 'pickup',
+      pickupAddress: named,
+      lines: [],
+    });
+    const bare = company('company.fulfillment_preference_set', {
+      subjectLabel: CAFE,
+      method: 'pickup',
+      pickupAddress: 'pa_gone',
+      deliveryAddress: null,
+      signatureRequired: false,
+    });
+
+    expect(sentence(preference)).toBe(
+      'Colette Martin a réglé le client « Café des Halles » en retrait à « Boutique Oberkampf » par défaut',
     );
+    expect(labels(preference)).not.toContain('Point de retrait');
+    expect(sentence(deleted)).toContain('(chaque semaine, en retrait à « Boutique Oberkampf »)');
+    // Un point que l'annuaire ne nommait plus : « en retrait », l'id au détail.
+    expect(sentence(bare)).toBe(
+      'Colette Martin a réglé le client « Café des Halles » en retrait par défaut',
+    );
+    expect(labels(bare)).toContain('Point de retrait');
   });
 });
 

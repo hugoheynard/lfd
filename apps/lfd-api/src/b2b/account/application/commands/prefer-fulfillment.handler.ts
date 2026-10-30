@@ -10,6 +10,7 @@ import {
 } from "../../domain/errors/account-errors.js";
 import { CompanyAddressReader } from "../../domain/ports/company-address.reader.js";
 import { CompanyRepository } from "../../domain/ports/company.repository.js";
+import { citedPickupPoint, PickupPointNames } from "../../domain/ports/pickup-point-names.js";
 import { MembershipReader } from "../../domain/ports/membership.reader.js";
 import { ensureCompanyAdmin } from "../../domain/services/company-access.js";
 import { PreferFulfillmentCommand } from "./company-settings-commands.js";
@@ -34,6 +35,7 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     private readonly memberships: MembershipReader,
     private readonly companies: CompanyRepository,
     private readonly addresses: CompanyAddressReader,
+    private readonly pickupPoints: PickupPointNames,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
   ) {}
@@ -51,12 +53,13 @@ export class PreferFulfillmentHandler implements ICommandHandler<PreferFulfillme
     // La préférence telle que l'agrégat l'a retenue : l'adresse de l'autre mode
     // y est remise à `null`, et le journal dit ce qui a été posé.
     const kept = company.fulfillmentPreference;
+    const pickupAddress = await citedPickupPoint(this.pickupPoints, kept.pickupAddressId);
     await this.uow.run(async () => {
       await this.companies.save(company);
       await this.events.publishTraced(
         new FulfillmentPreferenceSetByMemberEvent(companyNamed(command.companyId, company), {
           method: kept.method,
-          pickupAddressId: kept.pickupAddressId,
+          pickupAddress,
           deliveryAddress,
           signatureRequired: kept.signatureRequired,
         }),

@@ -132,7 +132,12 @@ export class PrismaActivityRecorder extends ActivityRecorder {
     const context = currentRequestContext();
     const actorType = bySystem ? "system" : (context?.actor.type ?? "system");
     const actorId = bySystem ? null : (context?.actor.id ?? null);
-    return { actorType, actorId, actor: await this.describeOrNothing(actorType, actorId) };
+    const actingCompanyId = bySystem ? null : (context?.companyId ?? null);
+    return {
+      actorType,
+      actorId,
+      actor: await this.describeOrNothing(actorType, actorId, actingCompanyId),
+    };
   }
 
   /**
@@ -143,9 +148,10 @@ export class PrismaActivityRecorder extends ActivityRecorder {
   private async describeOrNothing(
     type: "customer" | "staff" | "system",
     id: string | null,
+    actingCompanyId: string | null,
   ): Promise<ActorIdentity> {
     try {
-      return await this.actors.describe(type, id);
+      return await this.actors.describe(type, id, actingCompanyId);
     } catch {
       return { name: null, role: null };
     }

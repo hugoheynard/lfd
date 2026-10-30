@@ -15,6 +15,7 @@ import {
   fact,
   instant,
   named,
+  namedOrBare,
   payload,
   ref,
   retired,
@@ -337,18 +338,28 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     }),
   ),
   /**
-   * ⚠️ `pickupAddressId` reste un identifiant nu : les comptes ne lisent pas les
-   * points de retrait, qui vivent dans leur propre contexte (lot B, 2026-09-19).
+   * Le point de retrait cité avec son nom du moment, sous `pickupAddress`,
+   * depuis le 2026-10-30 (décision de Hugo, §7 du plan des phrases) : la ligne
+   * dit où, et plus « au laboratoire » qu'elle ne savait pas. L'id seul pour
+   * un point que l'annuaire ne connaissait plus. Les lignes d'avant gardent
+   * `pickupAddressId`, un identifiant nu.
    */
   "company.fulfillment_preference_set": fact(
     payload({
       subjectLabel: subjectLabel(),
       method: fulfillmentMethodSchema.nullable(),
-      pickupAddressId: ref("pickup_address").nullable(),
+      pickupAddress: namedOrBare("pickup_address").nullable(),
       deliveryAddress: deliveryAddress().nullable(),
       signatureRequired: z.boolean(),
     }),
     [
+      payload({
+        subjectLabel: subjectLabel(),
+        method: fulfillmentMethodSchema.nullable(),
+        pickupAddressId: ref("pickup_address").nullable(),
+        deliveryAddress: deliveryAddress().nullable(),
+        signatureRequired: z.boolean(),
+      }),
       payload({
         method: fulfillmentMethodSchema.nullable(),
         pickupAddressId: ref("pickup_address").nullable(),
@@ -522,9 +533,9 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
     }),
   ),
   /**
-   * Ce que le panier décidait, sans coordonnée ni texte libre. ⚠️
-   * `pickupAddressId` reste un identifiant nu : les paniers ne lisent pas les
-   * points de retrait (lot B, 2026-09-19).
+   * Ce que le panier décidait, sans coordonnée ni texte libre. Le point de
+   * retrait y est cité avec son nom du moment depuis le 2026-10-30 (§7 du plan
+   * des phrases) ; les lignes d'avant gardent `pickupAddressId`, nu.
    */
   "subscription.deleted": fact(
     payload({
@@ -533,9 +544,20 @@ export const ACCOUNTS_AND_CARTS_FACTS = {
       startDate: day(),
       endDate: day().nullable(),
       fulfillmentMethod: fulfillmentMethodSchema,
-      pickupAddressId: ref("pickup_address").nullable(),
+      pickupAddress: namedOrBare("pickup_address").nullable(),
       lines: z.array(payload({ sku: z.string(), quantity: count() })),
     }),
+    [
+      payload({
+        recurrence: recurrenceSchema,
+        status: subscriptionStatusSchema,
+        startDate: day(),
+        endDate: day().nullable(),
+        fulfillmentMethod: fulfillmentMethodSchema,
+        pickupAddressId: ref("pickup_address").nullable(),
+        lines: z.array(payload({ sku: z.string(), quantity: count() })),
+      }),
+    ],
   ),
 
   /**

@@ -3,7 +3,7 @@ import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import { ACCOUNT_FACTS } from "./account-facts.js";
 import { placeOf } from "./address-place.js";
-import type { DeliveryAddressRef, NamedRef } from "./journal-names.js";
+import type { DeliveryAddressRef, NamedRef, PickupPointRef } from "./journal-names.js";
 import { CompanyStaffAct } from "./staff-acts.event.js";
 
 /**
@@ -114,7 +114,7 @@ export class FulfillmentPreferenceSetByStaffEvent extends CompanyStaffAct {
     company: NamedRef,
     readonly preference: {
       readonly method: string | null;
-      readonly pickupAddressId: string | null;
+      readonly pickupAddress: PickupPointRef;
       readonly deliveryAddress: DeliveryAddressRef | null;
       readonly signatureRequired: boolean;
     },

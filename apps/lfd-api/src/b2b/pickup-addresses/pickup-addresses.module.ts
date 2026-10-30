@@ -16,6 +16,8 @@ import { PrismaPublicPickupScheduleReader } from "./infrastructure/prisma-public
 import { AdminPickupAddressesController } from "./http/admin-pickup-addresses.controller.js";
 import { PickupAddressesController } from "./http/pickup-addresses.controller.js";
 import { SitesModule } from "../sites/sites.module.js";
+import { PickupPointNames } from "../account/domain/ports/pickup-point-names.js";
+import { SitePickupPointNames } from "./infrastructure/site-pickup-point-names.js";
 
 /**
  * **Points de retrait** (globaux) — les sites qui remettent, vus du client.
@@ -41,7 +43,10 @@ import { SitesModule } from "../sites/sites.module.js";
     // La surface PUBLIQUE des créneaux : elle ne sert que des heures, jamais
     // les règles qui les produisent.
     ListPublicPickupSlotsHandler,
+    // Le port que les comptes et les paniers déclarent pour nommer un point
+    // au journal (§7 du plan des phrases, 2026-10-30).
+    { provide: PickupPointNames, useClass: SitePickupPointNames },
   ],
-  exports: [PickupAddressRepository, SitesModule],
+  exports: [PickupAddressRepository, PickupPointNames, SitesModule],
 })
 export class PickupAddressesModule {}

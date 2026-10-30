@@ -242,3 +242,27 @@ ne manque rien.
    de description.
 2. **D5 — oui** : les lignes anciennes qui ne portent qu'un identifiant
    affichent « une famille (identifiant …) », pas un nom résolu aujourd'hui.
+
+## 7. Décisions de Hugo (2026-10-30) — le lieu de retrait et la qualité de l'auteur
+
+**1. Le lieu de retrait est nommé.** `company.fulfillment_preference_set` et
+`subscription.deleted` portaient le point par son seul id (`pickupAddressId`),
+parce que les comptes et les paniers ne lisaient pas les points de retrait ; la
+phrase disait alors « en retrait au laboratoire », ce qui était faux. Ils portent
+désormais `pickupAddress: namedOrBare("pickup_address").nullable()` — le nom du
+site figé à l'écriture, l'id seul pour un point inconnu —, l'ancienne forme
+restant lisible en version antérieure : la figure des heures limites (lot B).
+Côté API, les comptes déclarent le port `PickupPointNames`
+(`b2b/account/domain/ports/pickup-point-names.ts`), que les points de retrait
+implémentent par les sites (`SitePickupPointNames`, archivés compris) ; tout
+reste dans le bloc `b2b`, sans passer par `appBootstrap`. Le back-office dit
+« en retrait à « Nom du site » », et « en retrait » sans lieu sur les lignes
+d'avant.
+
+**2. La qualité de l'auteur suit son nom.** Staff : « (staff LFD — fonction) »,
+ou « (staff LFD) » sans fonction connue. Client : « (client pro) » ou « (client
+particulier) », figée à l'acte dans `actor_role` (sans migration : la colonne
+existait, vide pour un client) — pro quand la requête agit pour une société
+active, selon `audienceOf`, la seule définition de « qui est pro ». Les lignes
+client d'avant restent sans qualité ; le système est inchangé. La qualité est
+dite une fois : dans le sujet d'une phrase à la voix active, sinon après « par ».

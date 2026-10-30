@@ -2,6 +2,7 @@ import type { SubscriptionStatus } from "@lfd/contracts";
 import type { JournalFactType } from "@lfd/contracts/journal-facts";
 
 import type { JournalFact, JournaledEvent } from "../../../../platform/journal/journal-fact.js";
+import type { PickupPointRef } from "../../../account/domain/events/journal-names.js";
 import type { OccurrenceOverride, SubscriptionDecision } from "../entities/subscription.js";
 
 /**
@@ -92,17 +93,29 @@ export class SubscriptionDeletedEvent implements JournaledEvent {
   constructor(
     readonly subscriptionId: string,
     readonly decision: SubscriptionDecision,
+    /**
+     * Le point de retrait cité avec son nom du moment (§7 du plan des
+     * phrases, 2026-10-30) : `null` sans point, l'id seul s'il est inconnu.
+     */
+    readonly pickupAddress: PickupPointRef,
   ) {}
 
   journalFact(): JournalFact {
+    const { pickupAddressId: _id, ...decided } = this.decision;
     return {
       type: SUBSCRIPTION_FACTS.deleted,
       subjectType: SUBJECT_TYPE,
       subjectId: this.subscriptionId,
       payload: {
-        ...this.decision,
+        ...decided,
+        pickupAddress: citedCopy(this.pickupAddress),
         lines: this.decision.lines.map((line) => ({ ...line })),
       },
     };
   }
+}
+
+/** Une copie de la citation : la charge ne partage rien avec l'appelant. */
+function citedCopy(cited: PickupPointRef): PickupPointRef {
+  return cited === null || typeof cited === "string" ? cited : { ...cited };
 }

@@ -167,7 +167,7 @@ describe("les gestes du client sur son panier", () => {
           startDate: START,
           endDate: END,
           fulfillmentMethod: "delivery",
-          pickupAddressId: null,
+          pickupAddress: null,
           lines: [{ sku: "VIE-001-1", quantity: 3 }],
         },
       },

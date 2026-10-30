@@ -1,6 +1,10 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { SUBSCRIPTION_DELETED } from "../../../account/domain/events/site-gesture.fact.js";
+import {
+  citedPickupPoint,
+  PickupPointNames,
+} from "../../../account/domain/ports/pickup-point-names.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { SubscriptionDeletedEvent } from "../../domain/events/subscription-acts.events.js";
@@ -28,6 +32,7 @@ export class DeleteSubscriptionHandler implements ICommandHandler<DeleteSubscrip
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
+    private readonly pickupPoints: PickupPointNames,
   ) {}
 
   /**
@@ -39,10 +44,14 @@ export class DeleteSubscriptionHandler implements ICommandHandler<DeleteSubscrip
       command.subscriptionId,
       command.actorUserId,
     );
+    const decision = subscription.decision();
+    // Nommé AVANT la transaction : une lecture d'un autre contexte n'a rien à
+    // faire dans le verrou de la suppression.
+    const pickupAddress = await citedPickupPoint(this.pickupPoints, decision.pickupAddressId);
     await this.uow.run(async () => {
       await this.subscriptions.remove(command.subscriptionId);
       await this.events.publishTraced(
-        new SubscriptionDeletedEvent(command.subscriptionId, subscription.decision()),
+        new SubscriptionDeletedEvent(command.subscriptionId, decision, pickupAddress),
       );
       await this.gestures.announce({
         type: SUBSCRIPTION_DELETED,

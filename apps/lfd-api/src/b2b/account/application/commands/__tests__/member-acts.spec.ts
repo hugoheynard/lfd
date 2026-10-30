@@ -24,6 +24,7 @@ import {
   UpdatePrimaryContactCommand,
 } from "../contact-commands.js";
 import { PreferFulfillmentHandler } from "../prefer-fulfillment.handler.js";
+import { TablePickupPointNames } from "../../../domain/ports/__tests__/table-pickup-point-names.js";
 import { RemoveCompanyContactHandler } from "../remove-company-contact.handler.js";
 import { RemoveDeliveryAddressHandler } from "../remove-delivery-address.handler.js";
 import { RequestPaymentTermHandler } from "../request-payment-term.handler.js";
@@ -157,6 +158,7 @@ describe("les adresses, par le client", () => {
       member,
       companies,
       new AddressReaderWithA1(),
+      new TablePickupPointNames(),
       events,
       uow,
     ).execute(new PreferFulfillmentCommand("u1", "c1", preference));
@@ -164,10 +166,33 @@ describe("les adresses, par le client", () => {
     expect(events.traced.map((event) => event.journalFact())).toEqual([
       fact("company.fulfillment_preference_set", {
         method: "delivery",
-        pickupAddressId: null,
+        pickupAddress: null,
         deliveryAddress: placed("a1"),
         signatureRequired: false,
       }),
+    ]);
+  });
+
+  it("cite le point de retrait préféré avec son nom du moment (§7, 2026-10-30)", async () => {
+    const { events, uow, member, companies } = build();
+    const preference = {
+      method: "pickup" as const,
+      pickupAddressId: "pa_1",
+      deliveryAddressId: null,
+      signatureRequired: false,
+    };
+
+    await new PreferFulfillmentHandler(
+      member,
+      companies,
+      new AddressReaderWithA1(),
+      new TablePickupPointNames(new Map([["pa_1", "Boutique Oberkampf"]])),
+      events,
+      uow,
+    ).execute(new PreferFulfillmentCommand("u1", "c1", preference));
+
+    expect(events.traced.map((event) => event.journalFact().payload["pickupAddress"])).toEqual([
+      { id: "pa_1", name: "Boutique Oberkampf" },
     ]);
   });
 });

@@ -331,6 +331,63 @@ describe("les noms du moment", () => {
 });
 
 /**
+ * Décisions de Hugo du 2026-10-30 (§7 du plan des phrases) : la préférence
+ * d'acheminement cite le point de retrait sous son nom du moment, et la ligne
+ * fige la qualité du client qui agit — pro, pour une société active.
+ */
+describe("le lieu de retrait et la qualité de l'auteur", () => {
+  it("la préférence porte le nom du site, et la ligne dit « client pro »", async () => {
+    const site = await staff()
+      .post("/admin/pickup-addresses")
+      .send({
+        label: "Boutique Oberkampf",
+        ligne1: "5 rue du Four",
+        ligne2: "",
+        codePostal: "75011",
+        ville: "Paris",
+        pays: "France",
+        discounts: { b2b: null, b2c: null },
+      })
+      .expect(201);
+    const pickupAddressId = jsonBody<{ id: string }>(site).id;
+
+    await owner()
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "pickup", pickupAddressId })
+      .expect(204);
+
+    const rows = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.fulfillment_preference_set" },
+      select: { actorRole: true, payload: true },
+    });
+    expect(rows.map((row) => row.actorRole)).toEqual(["client pro"]);
+    expect(rows[0]?.payload).toMatchObject({
+      pickupAddress: { id: pickupAddressId, name: "Boutique Oberkampf" },
+    });
+  });
+
+  /**
+   * Hugo, 2026-10-30 : « client pro dès qu'il agit pour une société » — le
+   * gérant d'une société en attente de validation n'est pas un particulier.
+   * La première version suivait `audienceOf` (société ACTIVE seulement).
+   */
+  it("dit « client pro » pour une société en attente de validation", async () => {
+    await ctx.prisma.company.update({ where: { id: companyId }, data: { status: "pending" } });
+
+    await owner()
+      .patch(`/companies/${companyId}/fulfillment-preference`)
+      .send({ method: "delivery", pickupAddressId: null })
+      .expect(204);
+
+    const rows = await ctx.prisma.activityEvent.findMany({
+      where: { type: "company.fulfillment_preference_set" },
+      select: { actorRole: true },
+    });
+    expect(rows.map((row) => row.actorRole)).toEqual(["client pro"]);
+  });
+});
+
+/**
  * Le KBIS et la procédure de livraison écrivent le MÊME fait que chez le staff
  * (`company.kbis_uploaded`, `company.delivery_procedure_edited`, renommés le
  * 2026-09-19) : un geste, un nom, l'auteur de la ligne les distingue.

@@ -1,10 +1,11 @@
+import type { CustomerAudience } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import type { ActivityActorType } from "../domain/activity-event.js";
 
-import { ActorNamer, type ActorIdentity } from "../domain/ports/actor-namer.js";
+import { ActorNamer, CUSTOMER_QUALITY, type ActorIdentity } from "../domain/ports/actor-namer.js";
 
 /**
  * Résout le nom d'un acteur au moment de l'acte : la fiche staff par le port
@@ -27,7 +28,11 @@ export class PrismaActorNamer extends ActorNamer {
     super();
   }
 
-  async describe(type: ActivityActorType, id: string | null): Promise<ActorIdentity> {
+  async describe(
+    type: ActivityActorType,
+    id: string | null,
+    actingCompanyId: string | null,
+  ): Promise<ActorIdentity> {
     if (id === null || id.trim() === "") {
       return NOBODY;
     }
@@ -44,23 +49,53 @@ export class PrismaActorNamer extends ActorNamer {
           };
     }
     if (type === "customer") {
-      const user = await this.prisma.user.findUnique({
-        where: { id },
-        select: { firstName: true, lastName: true },
-      });
-      if (user === null) {
-        return NOBODY;
-      }
-      // 🔴 Plus d'e-mail en secours (lot B du plan des phrases, 2026-09-19) :
-      // `actor_name` se fige au journal, et une coordonnée n'y entre pas. Un
-      // client sans nom saisi reste sans nom ; l'écran dit alors « un client »
-      // (`ACTOR_FALLBACK`, `product-history.ts` ; `journal-line.ts`), et son id
-      // reste en `actor_id` pour le retrouver.
-      const name = fullName(user.firstName, user.lastName);
-      // Pas de « fonction » pour un client : il n'en a pas dans le back-office.
-      return { name: name === "" ? null : name, role: null };
+      return this.describeCustomer(id, actingCompanyId);
     }
     return NOBODY;
+  }
+
+  /**
+   * Le nom du client, et sa qualité au moment de l'acte : pro s'il agit pour
+   * une société active, particulier sinon (§7 du plan des phrases,
+   * 2026-10-30). La qualité tient même sans nom : elle ne dit rien de lui.
+   */
+  private async describeCustomer(
+    id: string,
+    actingCompanyId: string | null,
+  ): Promise<ActorIdentity> {
+    const user = await this.prisma.user.findUnique({
+      where: { id },
+      select: { firstName: true, lastName: true },
+    });
+    if (user === null) {
+      return NOBODY;
+    }
+    const quality = CUSTOMER_QUALITY[await this.actingAudience(actingCompanyId)];
+    // 🔴 Plus d'e-mail en secours (lot B du plan des phrases, 2026-09-19) :
+    // `actor_name` se fige au journal, et une coordonnée n'y entre pas. Un
+    // client sans nom saisi reste sans nom ; l'écran dit alors « un client »
+    // (`ACTOR_FALLBACK`, `product-history.ts` ; `journal-line.ts`), et son id
+    // reste en `actor_id` pour le retrouver.
+    const name = fullName(user.firstName, user.lastName);
+    // Pas de « fonction » pour un client, mais une qualité : pro ou particulier.
+    return { name: name === "" ? null : name, role: quality };
+  }
+
+  /**
+   * Pro dès qu'il agit pour une société qui existe, QUEL QUE SOIT son statut
+   * (Hugo, 2026-10-30) : le gérant d'une société en attente de validation est
+   * un client pro, pas un particulier. `audienceOf` ne convient pas ici : il
+   * dit quel CATALOGUE servir (société active seulement), pas qui a agi.
+   */
+  private async actingAudience(companyId: string | null): Promise<CustomerAudience> {
+    if (companyId === null) {
+      return "b2c";
+    }
+    const company = await this.prisma.company.findUnique({
+      where: { id: companyId },
+      select: { id: true },
+    });
+    return company === null ? "b2c" : "b2b";
   }
 }
 

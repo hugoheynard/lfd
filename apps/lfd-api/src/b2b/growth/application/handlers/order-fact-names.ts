@@ -31,7 +31,7 @@ export async function staffCitation(
   actors: ActorNamer,
   staffUserId: string,
 ): Promise<{ readonly id: string; readonly name: string } | string> {
-  const identity = await orNull(() => actors.describe("staff", staffUserId));
+  const identity = await orNull(() => actors.describe("staff", staffUserId, null));
   const name = identity?.name ?? null;
   return name === null || name === "" ? staffUserId : { id: staffUserId, name };
 }

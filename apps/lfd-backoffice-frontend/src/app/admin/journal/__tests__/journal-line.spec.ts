@@ -35,9 +35,11 @@ describe('toLine', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Hugo Heynard a passé le taux de TVA « Réduit » de 5,5 % à 10 %');
+    expect(line.sentence).toBe(
+      'Hugo Heynard (staff LFD — Commercial) a passé le taux de TVA « Réduit » de 5,5 % à 10 %',
+    );
     expect(line.blast).toBe('touche 12 familles à emporter, 3 sur place, 2 B2B');
-    expect(line.actor).toBe('Hugo Heynard (Commercial)');
+    expect(line.actor).toBe('Hugo Heynard (staff LFD — Commercial)');
   });
 
   /**
@@ -109,7 +111,9 @@ describe('toLine', () => {
     // Une portée absente n'est pas un zéro : c'est un fait sans aval.
     const line = toLine(event({ type: 'vat_rate.renamed', payload: { from: 'A', to: 'B' } }));
 
-    expect(line.sentence).toBe('Hugo Heynard a renommé le taux de TVA « A » en « B »');
+    expect(line.sentence).toBe(
+      'Hugo Heynard (staff LFD — Commercial) a renommé le taux de TVA « A » en « B »',
+    );
     expect(line.blast).toBe('');
   });
 
@@ -164,7 +168,9 @@ describe('toLine', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Hugo Heynard a passé la commande ORD-142 pour Jean Dupont');
+    expect(line.sentence).toBe(
+      'Hugo Heynard (staff LFD — Commercial) a passé la commande ORD-142 pour Jean Dupont',
+    );
     expect(line.detail.map((row) => row.label)).toEqual(['Commande', 'Client', 'Total']);
   });
 });
@@ -185,9 +191,9 @@ describe('toLine — une commande, telle qu’un humain la lit', () => {
       }),
     );
 
-    expect(line.sentence).toBe('Hugo Heynard a passé la commande ORD-142');
+    expect(line.sentence).toBe('Hugo Heynard (staff LFD — Commercial) a passé la commande ORD-142');
     expect(line.forWhom).toBe('Boulangerie Martin (SARL MARTIN)');
-    expect(line.actor).toBe('Hugo Heynard (Commercial)');
+    expect(line.actor).toBe('Hugo Heynard (staff LFD — Commercial)');
     // Une date lisible, pas l'ISO brut.
     expect(line.when).not.toContain('T');
     expect(line.when).toContain('2026');
@@ -220,7 +226,8 @@ describe('toLine — une commande, telle qu’un humain la lit', () => {
 describe('toLine — les notes du commercial', () => {
   // Le geste se dit par le dictionnaire des valeurs depuis le lot D des
   // phrases (2026-09-19), l'auteur en sujet.
-  const NOTES = 'Hugo Heynard a modifié les notes du commercial d’un client';
+  const NOTES =
+    'Hugo Heynard (staff LFD — Commercial) a modifié les notes du commercial d’un client';
 
   it.each([
     ['note_added', `${NOTES} : note ajoutée`],

@@ -1,5 +1,7 @@
 import { Module } from "@nestjs/common";
 
+import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
+
 import { AddDeliveryStepHandler } from "./application/commands/add-delivery-step.handler.js";
 import { AddDeliveryStepByStaffHandler } from "./application/commands/add-delivery-step-by-staff.handler.js";
 import { RemoveDeliveryStepHandler } from "./application/commands/remove-delivery-step.handler.js";
@@ -235,6 +237,9 @@ import {
  * sans Prisma ni réseau.
  */
 @Module({
+  // Le nom d'un point de retrait, que le journal des préférences fige
+  // (`PickupPointNames`, §7 du plan des phrases, 2026-10-30).
+  imports: [PickupAddressesModule],
   controllers: [
     MeController,
     CompaniesController,

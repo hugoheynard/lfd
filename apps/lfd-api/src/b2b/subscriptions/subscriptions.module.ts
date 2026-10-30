@@ -1,6 +1,7 @@
 import { Module } from "@nestjs/common";
 
 import { AccountModule } from "../account/account.module.js";
+import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { SubscriptionGestures } from "./application/services/subscription-gestures.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { CreateSubscriptionHandler } from "./application/commands/create-subscription.handler.js";
@@ -24,7 +25,7 @@ import { SubscriptionsController } from "./http/subscriptions.controller.js";
   // Le catalogue, pour refuser un article d'opération datée (`SaleOperations`).
   // `AccountModule` depuis N4e (2026-10-20) : le mur par le rattachement
   // actuel, le nom du site, l'annonce au principal.
-  imports: [CatalogModule, AccountModule],
+  imports: [CatalogModule, AccountModule, PickupAddressesModule],
   controllers: [SubscriptionsController, AdminSubscriptionsController],
   providers: [
     CreateSubscriptionHandler,
