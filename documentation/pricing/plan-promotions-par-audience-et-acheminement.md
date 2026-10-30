@@ -554,7 +554,11 @@ Notées pour être tranchées ensemble ; rien n'est bâti tant qu'elles restent 
   e-mail serait falsifiable (n'importe qui peut taper l'adresse d'un autre).
   Piste recommandée : au panier, si l'adresse saisie correspond à un compte,
   proposer « Vous avez un compte : connectez-vous pour profiter de −20 % »,
-  sans jamais l'appliquer sans connexion. À trancher.
+  sans jamais l'appliquer sans connexion. **Tranché par Hugo le 2026-10-30** :
+  le message s'affiche à TOUT invité tant qu'une promotion « inscrits » est en
+  vigueur — « Vous avez un compte ? Connectez-vous pour profiter de −20 % » —
+  SANS vérifier l'adresse saisie : la boutique ne révèle jamais qu'une adresse
+  a un compte. La promotion ne s'applique qu'après connexion.
 - **B3 / chevauchement** : Hugo reviendra sur la contrainte d'exclusion et la
   façon dont deux promotions se chevauchent.
 - **Q1 à Q9** du § 7 : toutes ouvertes, avec la recommandation écrite.
