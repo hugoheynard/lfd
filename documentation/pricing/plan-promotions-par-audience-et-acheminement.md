@@ -2368,6 +2368,29 @@ taux, `exact_ht` compris, n'est pas écrite et est listée « à trancher » ;
 une commande dont les remises actives ne somment plus `discount_cents`
 (révisée par l'ancien code entre deux passes) est listée, jamais réécrite.
 
+**M3 bâti le 2026-10-31 (non commité à l'écriture de cette ligne)** — la
+passation (`prisma-order.repository.ts`) écrit ses remises en `create`
+imbriqué et leurs couvertures dans la même transaction ; l'agrégat les calcule
+(`apps/lfd-api/src/b2b/orders/domain/entities/order-basket-discounts.ts`, par la chaîne de M1) et les rend
+dans `OrderToPlace.basketDiscounts`. La révision
+(`prisma-order-revision.repository.ts`) archive l'ensemble actif et insère le
+neuf dans UNE transaction, l'historique écrit en dernier (l'e2e
+`apps/lfd-api/test/order-discounts-control.e2e-spec.ts` démontre qu'un échec en fin de
+révision défait l'archivage). L9 compare une liste ordonnée, l'« avant » lu
+dans `order_discounts` s'il y a des lignes actives, sinon dans les colonnes
+(`fulfillment-promotion.ts`) ; le refus nomme le libellé figé. Le script gagne
+`--refresh-drifted`. Migration SÉPARÉE du déclencheur strict :
+`20261031180000_le_controle_des_remises` (compilée et éprouvée sur le Postgres
+jetable), à ne déployer qu'au temps 5 du runbook. Fixtures : seule
+`cycle-statements` semait une commande remisée à la main (aide
+`apps/lfd-api/test/order-discount-fixtures.ts`) ; les cinq autres du § 18.2 nommaient
+`discountCents` sans l'écrire. Écarts au texte, faits au bâti : une remise de
+montant nul n'a pas de ligne, et L9 garde donc la lecture par colonnes après
+le déclencheur (une commande à remise arrondie à zéro n'a pas de ligne) ; les
+lignes de commande reçoivent leur identifiant de l'`IdGenerator` (la
+couverture doit les citer dans la même transaction) ; la décision « parts
+d'une `frozen` tirées des seules lignes éligibles » est appliquée à la reprise.
+
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`
 / `discount_label` doit être basculé **avant M7**, seul lot qui peut les
@@ -2530,3 +2553,17 @@ transaction de passation vérifiés, celle de la révision à démontrer en M3 ;
   commande ; à blanc d'abord, comme le reste.
 - Le script n'amorce pas l'`AppModule` (ses tâches de fond tourneraient contre la
   base visée) : client Prisma nu, même arithmétique du domaine.
+
+**Décision sur le rapport de M3 (mandat, 2026-10-31) — le déclencheur part AVEC M3** :
+le déclencheur ne contrôle qu'à l'écriture (INSERT d'une commande, UPDATE de
+`discount_cents`, écriture d'une remise) ; il ne parcourt jamais les commandes
+existantes. Depuis M3, les deux seuls écrivains de `discount_cents` (passation,
+révision) écrivent leurs remises dans la même transaction, et une révision d'une
+commande non reprise réécrit son ensemble. Le retenir jusqu'au temps 5 ne
+protégeait donc que contre l'ANCIEN code, qui n'est plus déployé en même temps
+que lui. Runbook révisé : (1) M2, (2) passe de reprise, (3) M3 + déclencheur,
+(4) seconde passe et `--refresh-drifted` jusqu'à zéro écart et zéro désaccord,
+condition de M7 et non plus du déclencheur. Retour arrière : retirer le
+déclencheur AVANT de redéployer le code de M2 (inchangé). Écart connu :
+`prisma/clone-dev.ts` recopie `orders` sans `order_discounts` et échouera sous le
+déclencheur sur une commande remisée (outil de dev, à basculer).

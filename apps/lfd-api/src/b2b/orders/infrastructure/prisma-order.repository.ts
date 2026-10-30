@@ -10,6 +10,7 @@ import {
 import { customerCancellationColumnsOf } from "./customer-cancellation.columns.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { IdGenerator } from "../../../platform/id/id-generator.js";
 import { SecretGenerator } from "../../../platform/secret/secret-generator.js";
 import { Clock } from "../../../platform/time/clock.js";
 import type { Order } from "../domain/entities/order.js";
@@ -22,7 +23,7 @@ import { formatOrderNumber } from "../domain/services/order-number.js";
 import type { FirstHandoverStatus } from "../domain/services/shipment-settlement.js";
 import { issuesHandoverToken, type HandoverVia } from "../domain/services/handover.js";
 import { toFulfillmentJson } from "./order-json.js";
-import { orderLineDataOf } from "./order-line.data.js";
+import { identifiedLinesOf, orderDiscountsWriteOf, writeCoverage } from "./order-discounts.data.js";
 import { ttcTermsColumnsOf } from "./order-money-columns.js";
 import { planWhere } from "./plan-filter.js";
 
@@ -65,6 +66,7 @@ export class PrismaOrderRepository extends OrderRepository {
     private readonly prisma: PrismaService,
     private readonly clock: Clock,
     private readonly secrets: SecretGenerator,
+    private readonly ids: IdGenerator,
   ) {
     super();
   }
@@ -96,108 +98,119 @@ export class PrismaOrderRepository extends OrderRepository {
     // L'agrégat a validé et calculé ; on lit son état sérialisé. Coursier et
     // retrait ont déjà figé leurs adresses en snapshot (plus d'adresse d'entreprise).
     const state = order.toPersistence();
-    return this.prisma.order.create({
-      data: {
-        orderNumber: await this.nextOrderNumber(),
-        // Le jeton de remise naît ici, au même endroit et pour la même raison que
-        // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
-        // aucun moyen de produire sans dépendre d'une source d'aléa.
-        //
-        // ⚠️ « Seul le retrait en reçoit un » disait cette ligne jusqu'au
-        // 2026-09-10 — faux depuis le 2026-09-07. `issuesHandoverToken()` n'a
-        // plus de paramètre : les deux acheminements en reçoivent un, parce que
-        // le coursier scanne aussi. La fonction reste pour NOMMER la décision.
-        handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
-        companyId: state.companyId,
-        // Le payeur copié à la passation (sous-comptes §2.3).
-        billedCompanyId: state.billedCompanyId,
-        // Le principal et ce qu'il voit, copiés à la passation (avis au principal, §2).
-        principalCompanyId: state.principalCompanyId,
-        principalSeesAmount: state.principalSeesAmount,
-        // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
-        // société, qui peut changer ou disparaître après la passation.
-        clientele: state.clientele,
-        // La langue de la boutique à la passation (lot A3) ; `null` = pas dite.
-        locale: state.locale,
-        placedByUserId: state.placedByUserId,
-        placedByStaffId: state.placedByStaffId,
-        // La porte de passation, posée par la route et figée (§ 13.7, L1).
-        buyerKind: state.buyerKind,
-        placedOffPlan: state.placedOffPlan,
-        customerCancellableUntil: state.customerCancellableUntil,
-        ...customerCancellationColumnsOf(state.customerCancellation),
-        requestedDeliveryDate: state.requestedDeliveryDate,
-        // D'où venaient les articles, jamais à quel prix — celui-là est sur la
-        // ligne. `null` = aucune version posée à cet instant, ce qui est la
-        // vérité pour toute commande antérieure à la première validation.
-        catalogVersionId: state.catalogVersionId,
-        fulfillmentMethod: state.fulfillmentMethod,
-        deliveryZoneId: state.deliveryZoneId,
-        deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
-        // Le lien vers le carnet, confirmé sous le mur avant d'entrer dans
-        // l'agrégat : la feuille de route y relit consignes et procédure.
-        deliveryAddressId: state.deliveryAddressId,
-        pickupAddress: state.pickupAddress ?? Prisma.DbNull,
-        // L'acheminement convenu, figé avec sa provenance — plus jamais relu.
-        fulfillment: toFulfillmentJson(state.agreed),
-        // La méthode et les TTC des termes, figés par l'agrégat (plan du
-        // centime, § 7) : `line_ht` et trois `NULL`, ou `exact_ht` et trois
-        // entiers — le CHECK `orders_ttc_terms_iff_exact_ht` le tient.
-        ...ttcTermsColumnsOf(state),
-        subtotalCents: state.subtotalCents,
-        discountCents: state.discountCents,
-        discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
-        // La promotion panier retenue (L9) ; `null` = aucune. Les commandes
-        // d'avant L9 restent `NULL` = « inconnu » (§ 13.8).
-        discountPromotionId: state.discountPromotionId,
-        // Le libellé de la promotion panier, figé avec son ajustement (L8b).
-        discountLabel:
-          state.discountLabel === null
-            ? Prisma.DbNull
-            : {
-                fr: state.discountLabel.fr,
-                en: state.discountLabel.en,
-                it: state.discountLabel.it,
-              },
-        // Le bon, et ce qu'il a imputé — à part de la remise (plan des points, C2).
-        // L'index unique partiel refuse un second bon vivant, même si l'agrégat
-        // du bon l'avait laissé passer.
-        voucherDiscountCents: state.voucherDiscountCents,
-        loyaltyVoucherId: state.loyaltyVoucherId,
-        deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
-        deliveryFeeCents: state.deliveryFeeCents,
-        lateFeeCents: state.lateFeeCents,
-        // L'ajustement ET son taux, figés ensemble : un montant sans son taux ne
-        // se justifie pas devant un comptable, et il ne se recalcule pas — le
-        // réglage aura changé.
-        lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
-        // Le mode de TVA du port, figé : c'est ce que l'écran et le dossier de
-        // facturation relisent — rien ne recalcule la commande.
-        deliveryVatMode: state.deliveryVatMode,
-        // Les CGV en vigueur pour l'audience qui l'a tarifée (C4′), figées avec
-        // elle, dans la même écriture — donc dans la transaction de passation.
-        salesTermsKey: SALES_TERMS_ROW_KEYS[state.salesTerms.document],
-        salesTermsRevision: state.salesTerms.revision,
-        salesTermsFileId: state.salesTerms.fileId,
-        vatCents: state.vatCents,
-        // La ventilation part AVEC le total, pas à côté : c'est ce qui
-        // permettra au bon de détailler « dont TVA 5,5 % » sans rien refaire.
-        // Recopiées en objets nus : Prisma refuse une interface dans un champ
-        // JSON (il lui manque la signature d'index), et un cast masquerait
-        // qu'on écrit une FORME, pas un type du domaine.
-        vatShares: state.vatShares.map((share) => ({
-          rate: share.rate,
-          amountCents: share.amountCents,
-        })),
-        totalCents: state.totalCents,
-        paymentStatus: state.paymentStatus,
-        stripePaymentIntentId: state.stripePaymentIntentId,
-        note: state.note,
-        lines: {
-          create: state.lines.map(orderLineDataOf),
+    const orderNumber = await this.nextOrderNumber();
+    // Les remises de panier (plan des promotions, § 18.2, M3) : imbriquées dans
+    // la commande, leurs couvertures juste après, dans la même transaction —
+    // le déclencheur différé juge Σ remises = `discount_cents` au COMMIT.
+    const lines = identifiedLinesOf(state.lines, () => this.ids.next());
+    const discounts = orderDiscountsWriteOf(state.basketDiscounts, lines.ids, () =>
+      this.ids.next(),
+    );
+    return this.prisma.$transaction(async (tx) => {
+      const placed = await tx.order.create({
+        data: {
+          orderNumber,
+          // Le jeton de remise naît ici, au même endroit et pour la même raison que
+          // le numéro : c'est une valeur générée à l'écriture, que l'agrégat n'a
+          // aucun moyen de produire sans dépendre d'une source d'aléa.
+          //
+          // ⚠️ « Seul le retrait en reçoit un » disait cette ligne jusqu'au
+          // 2026-09-10 — faux depuis le 2026-09-07. `issuesHandoverToken()` n'a
+          // plus de paramètre : les deux acheminements en reçoivent un, parce que
+          // le coursier scanne aussi. La fonction reste pour NOMMER la décision.
+          handoverToken: issuesHandoverToken() ? this.secrets.next() : null,
+          companyId: state.companyId,
+          // Le payeur copié à la passation (sous-comptes §2.3).
+          billedCompanyId: state.billedCompanyId,
+          // Le principal et ce qu'il voit, copiés à la passation (avis au principal, §2).
+          principalCompanyId: state.principalCompanyId,
+          principalSeesAmount: state.principalSeesAmount,
+          // Qui commande, déduit par l'agrégat et figé : jamais relu depuis la
+          // société, qui peut changer ou disparaître après la passation.
+          clientele: state.clientele,
+          // La langue de la boutique à la passation (lot A3) ; `null` = pas dite.
+          locale: state.locale,
+          placedByUserId: state.placedByUserId,
+          placedByStaffId: state.placedByStaffId,
+          // La porte de passation, posée par la route et figée (§ 13.7, L1).
+          buyerKind: state.buyerKind,
+          placedOffPlan: state.placedOffPlan,
+          customerCancellableUntil: state.customerCancellableUntil,
+          ...customerCancellationColumnsOf(state.customerCancellation),
+          requestedDeliveryDate: state.requestedDeliveryDate,
+          // D'où venaient les articles, jamais à quel prix — celui-là est sur la
+          // ligne. `null` = aucune version posée à cet instant, ce qui est la
+          // vérité pour toute commande antérieure à la première validation.
+          catalogVersionId: state.catalogVersionId,
+          fulfillmentMethod: state.fulfillmentMethod,
+          deliveryZoneId: state.deliveryZoneId,
+          deliveryAddressSnapshot: state.deliveryAddress ?? Prisma.DbNull,
+          // Le lien vers le carnet, confirmé sous le mur avant d'entrer dans
+          // l'agrégat : la feuille de route y relit consignes et procédure.
+          deliveryAddressId: state.deliveryAddressId,
+          pickupAddress: state.pickupAddress ?? Prisma.DbNull,
+          // L'acheminement convenu, figé avec sa provenance — plus jamais relu.
+          fulfillment: toFulfillmentJson(state.agreed),
+          // La méthode et les TTC des termes, figés par l'agrégat (plan du
+          // centime, § 7) : `line_ht` et trois `NULL`, ou `exact_ht` et trois
+          // entiers — le CHECK `orders_ttc_terms_iff_exact_ht` le tient.
+          ...ttcTermsColumnsOf(state),
+          subtotalCents: state.subtotalCents,
+          discountCents: state.discountCents,
+          discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+          // La promotion panier retenue (L9) ; `null` = aucune. Les commandes
+          // d'avant L9 restent `NULL` = « inconnu » (§ 13.8).
+          discountPromotionId: state.discountPromotionId,
+          // Le libellé de la promotion panier, figé avec son ajustement (L8b).
+          discountLabel:
+            state.discountLabel === null
+              ? Prisma.DbNull
+              : {
+                  fr: state.discountLabel.fr,
+                  en: state.discountLabel.en,
+                  it: state.discountLabel.it,
+                },
+          // Le bon, et ce qu'il a imputé — à part de la remise (plan des points, C2).
+          // L'index unique partiel refuse un second bon vivant, même si l'agrégat
+          // du bon l'avait laissé passer.
+          voucherDiscountCents: state.voucherDiscountCents,
+          loyaltyVoucherId: state.loyaltyVoucherId,
+          deliveryFeeAdjustment: state.deliveryFeeAdjustment ?? Prisma.DbNull,
+          deliveryFeeCents: state.deliveryFeeCents,
+          lateFeeCents: state.lateFeeCents,
+          // L'ajustement ET son taux, figés ensemble : un montant sans son taux ne
+          // se justifie pas devant un comptable, et il ne se recalcule pas — le
+          // réglage aura changé.
+          lateFeeAdjustment: state.lateFeeAdjustment ?? Prisma.DbNull,
+          // Le mode de TVA du port, figé : c'est ce que l'écran et le dossier de
+          // facturation relisent — rien ne recalcule la commande.
+          deliveryVatMode: state.deliveryVatMode,
+          // Les CGV en vigueur pour l'audience qui l'a tarifée (C4′), figées avec
+          // elle, dans la même écriture — donc dans la transaction de passation.
+          salesTermsKey: SALES_TERMS_ROW_KEYS[state.salesTerms.document],
+          salesTermsRevision: state.salesTerms.revision,
+          salesTermsFileId: state.salesTerms.fileId,
+          vatCents: state.vatCents,
+          // La ventilation part AVEC le total, pas à côté : c'est ce qui
+          // permettra au bon de détailler « dont TVA 5,5 % » sans rien refaire.
+          // Recopiées en objets nus : Prisma refuse une interface dans un champ
+          // JSON (il lui manque la signature d'index), et un cast masquerait
+          // qu'on écrit une FORME, pas un type du domaine.
+          vatShares: state.vatShares.map((share) => ({
+            rate: share.rate,
+            amountCents: share.amountCents,
+          })),
+          totalCents: state.totalCents,
+          paymentStatus: state.paymentStatus,
+          stripePaymentIntentId: state.stripePaymentIntentId,
+          note: state.note,
+          lines: { create: lines.create },
+          discounts: { create: discounts.create },
         },
-      },
-      select: { id: true, orderNumber: true },
+        select: { id: true, orderNumber: true },
+      });
+      await writeCoverage(tx, discounts.coverage);
+      return placed;
     });
   }
 

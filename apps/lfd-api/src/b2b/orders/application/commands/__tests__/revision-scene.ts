@@ -319,6 +319,8 @@ function seed(): RevisableOrder {
     // pas d'acheminement, et la règle L9 (§ 13.8) n'a rien à juger.
     discountPromotionId: null,
     discountAdjustment: { mode: "percent", bp: 1_000 },
+    // Sans ligne `order_discounts` : L9 lit les colonnes figées (§ 18.9).
+    activeDiscounts: [],
     totalCents: 1,
     stripePaymentIntentId: null,
     cancelledAt: null,

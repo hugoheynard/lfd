@@ -14,6 +14,7 @@ import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 
 import { ensureDraftable } from "./order-amount-guards.js";
 import { lineHtAmountsOf, type DraftedAmounts } from "./order-amounts.js";
+import { appliedBasketDiscountsOf } from "./order-basket-discounts.js";
 import { exactAmountsOf } from "./order-exact-amounts.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
@@ -342,6 +343,11 @@ export class Order {
       discountAdjustment: this.discountAdjustment,
       discountLabel: this.discountLabel,
       discountPromotionId: this.discountPromotionId,
+      basketDiscounts: appliedBasketDiscountsOf(this.amounts.basketSteps, {
+        promotionId: this.discountPromotionId,
+        adjustment: this.discountAdjustment,
+        label: this.discountLabel,
+      }),
       deliveryFeeCents: this.amounts.deliveryFeeCents,
       deliveryFeeTtcCents: this.amounts.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,

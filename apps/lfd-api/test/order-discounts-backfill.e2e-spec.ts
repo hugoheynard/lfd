@@ -8,6 +8,11 @@
  * au centime, un écart injecté repris en `frozen` et listé, une seconde passe
  * sans effet, l'index partiel contre une double écriture — et la révision
  * d'une commande reprise, qui supprime et recrée ses lignes, toujours admise.
+ *
+ * Depuis M3, la passation écrit elle-même sa remise et un déclencheur refuse
+ * une commande remisée sans elle : une commande « d'avant » se fabrique par
+ * `asPlacedBeforeM3` (ses remises archivées, le contrôle suspendu le temps de
+ * la transaction), un écart ou un désaccord par `withoutDiscountControl`.
  */
 import type { AdminPlacedOrderResponse, PlacedOrderResponse } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
@@ -22,6 +27,7 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { IdGenerator } from "../src/platform/id/id-generator.js";
+import { Clock } from "../src/platform/time/clock.js";
 import {
   bootstrapE2e,
   E2E_STAFF_SUB,
@@ -30,6 +36,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { asPlacedBeforeM3, withoutDiscountControl } from "./order-discount-fixtures.js";
 import { poseSiteDiscount } from "./promotion-fixtures.js";
 
 const DAY = serviceDay(7);
@@ -101,7 +108,11 @@ beforeEach(async () => {
 });
 
 const backfill = (): PrismaOrderDiscountBackfill =>
-  new PrismaOrderDiscountBackfill(ctx.prisma, ctx.app.get(IdGenerator, { strict: false }));
+  new PrismaOrderDiscountBackfill(
+    ctx.prisma,
+    ctx.app.get(IdGenerator, { strict: false }),
+    ctx.app.get(Clock, { strict: false }),
+  );
 
 async function runPass(write: boolean) {
   const runner = backfill();
@@ -112,8 +123,14 @@ async function runPass(write: boolean) {
   return lines;
 }
 
+/** Les remises ACTIVES : celles qu'une commande d'avant M3 n'avait pas. */
 const discountsOf = (orderId: string) =>
-  ctx.prisma.orderDiscount.findMany({ where: { orderId }, include: { coveredLines: true } });
+  ctx.prisma.orderDiscount.findMany({
+    where: { orderId, archivedAt: null },
+    include: { coveredLines: true },
+  });
+
+const activeCount = () => ctx.prisma.orderDiscount.count({ where: { archivedAt: null } });
 
 /** Un particulier commande un banana bread au Labo : `exact_ht`, −10 % TTC. */
 async function personalOrder(): Promise<string> {
@@ -133,6 +150,7 @@ async function personalOrder(): Promise<string> {
       .send({ idempotencyKey: randomUUID(), salesTerms: null, ...content() })
       .expect(201),
   );
+  await asPlacedBeforeM3(ctx.prisma, placed.id);
   return placed.id;
 }
 
@@ -157,6 +175,7 @@ async function proOrder(): Promise<string> {
       })
       .expect(201),
   );
+  await asPlacedBeforeM3(ctx.prisma, placed.id);
   return placed.id;
 }
 
@@ -230,7 +249,7 @@ describe("la passe", () => {
     const report = await runPass(false);
 
     expect(report.map((line) => line.outcome.kind)).toEqual(["computed"]);
-    expect(await ctx.prisma.orderDiscount.count()).toBe(0);
+    expect(await activeCount()).toBe(0);
   });
 
   it("une seconde passe ne reprend rien ; une écriture concurrente se voit sautée", async () => {
@@ -239,14 +258,16 @@ describe("la passe", () => {
 
     expect(await runPass(true)).toEqual([]);
     expect(await backfill().recover(orderId, true)).toMatchObject({ outcome: { kind: "already" } });
-    expect(await ctx.prisma.orderDiscount.count()).toBe(1);
+    expect(await activeCount()).toBe(1);
   });
 
   it("un écart injecté : ligne frozen recopiée des colonnes, listée", async () => {
     const orderId = await proOrder();
     const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
     const injected = order.discountCents + 1;
-    await ctx.prisma.order.update({ where: { id: orderId }, data: { discountCents: injected } });
+    await withoutDiscountControl(ctx.prisma, async (tx) => {
+      await tx.order.update({ where: { id: orderId }, data: { discountCents: injected } });
+    });
 
     const report = await runPass(true);
 
@@ -268,19 +289,71 @@ describe("la passe", () => {
     const orderId = await proOrder();
     await runPass(true);
     const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
-    await ctx.prisma.order.update({
-      where: { id: orderId },
-      data: { discountCents: order.discountCents * 2 },
+    await withoutDiscountControl(ctx.prisma, async (tx) => {
+      await tx.order.update({
+        where: { id: orderId },
+        data: { discountCents: order.discountCents * 2 },
+      });
     });
 
     expect(await runPass(true)).toEqual([]);
     expect(await backfill().drifted()).toEqual([
       {
+        orderId,
         orderNumber: order.orderNumber,
         discountCents: order.discountCents * 2,
         activeCents: order.discountCents,
       },
     ]);
+  });
+});
+
+describe("--refresh-drifted (M3)", () => {
+  /** Le désaccord qu'une révision par le code de M2 laissait : `discount_cents` réécrit seul. */
+  async function drift(orderId: string, discountCents: number): Promise<void> {
+    await withoutDiscountControl(ctx.prisma, async (tx) => {
+      await tx.order.update({ where: { id: orderId }, data: { discountCents } });
+    });
+  }
+
+  it("archive la remise périmée et reprend la commande — à blanc d'abord", async () => {
+    const orderId = await proOrder();
+    await runPass(true);
+    const order = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    const [stale] = await discountsOf(orderId);
+    const drifted = order.discountCents + 1;
+    await drift(orderId, drifted);
+
+    expect(await backfill().refresh(orderId, false)).toMatchObject({
+      outcome: { kind: "frozen" },
+    });
+    expect((await discountsOf(orderId)).map((discount) => discount.id)).toEqual([stale?.id]);
+
+    await backfill().refresh(orderId, true);
+
+    const [fresh] = await discountsOf(orderId);
+    expect(fresh).toMatchObject({ origin: "frozen", amountCents: drifted });
+    expect(fresh?.id).not.toBe(stale?.id);
+    const archived = await ctx.prisma.orderDiscount.findUniqueOrThrow({
+      where: { id: stale?.id ?? "" },
+    });
+    expect(archived.archivedAt).not.toBeNull();
+    expect(await backfill().drifted()).toEqual([]);
+    expect(await backfill().refresh(orderId, true)).toMatchObject({
+      outcome: { kind: "already" },
+    });
+  });
+
+  it("une commande révisée sans remise : ses remises archivées, rien de repris", async () => {
+    const orderId = await proOrder();
+    await runPass(true);
+    await drift(orderId, 0);
+
+    expect(await backfill().refresh(orderId, true)).toMatchObject({
+      outcome: { kind: "archived" },
+    });
+    expect(await discountsOf(orderId)).toEqual([]);
+    expect(await backfill().drifted()).toEqual([]);
   });
 });
 
@@ -326,10 +399,12 @@ describe("les contraintes", () => {
   /**
    * La révision supprime et recrée les lignes de la commande : une couverture
    * en RESTRICT l'aurait refusée sur toute commande reprise entre M2 et M3.
+   * Depuis M3, elle archive la remise reprise et en écrit une neuve, couverte.
    */
   it("une commande reprise se révise encore : ses couvertures suivent ses lignes", async () => {
     const orderId = await proOrder();
     await runPass(true);
+    const [recovered] = await discountsOf(orderId);
 
     await ctx
       .asSub(BUYER)
@@ -337,7 +412,12 @@ describe("les contraintes", () => {
       .send({ expectedRevision: 0, ...content({ quantity: 20 }) })
       .expect(200);
 
-    expect(await ctx.prisma.orderLineDiscount.count()).toBe(0);
-    expect(await ctx.prisma.orderDiscount.count()).toBe(1);
+    const [fresh] = await discountsOf(orderId);
+    expect(fresh?.id).not.toBe(recovered?.id);
+    expect(fresh?.origin).toBe("computed");
+    const lines = await ctx.prisma.orderLine.findMany({ where: { orderId }, select: { id: true } });
+    expect(fresh?.coveredLines.map((covered) => covered.orderLineId)).toEqual(
+      lines.map((line) => line.id),
+    );
   });
 });

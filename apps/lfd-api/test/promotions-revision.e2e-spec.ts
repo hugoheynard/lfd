@@ -245,6 +245,9 @@ describe("révision et promotion de retrait (L9)", () => {
     const orderId = await place(decor, decor.labo);
     // Ce que portent les commandes passées avant L9 : la remise, sans son identifiant.
     await ctx.prisma.order.update({ where: { id: orderId }, data: { discountPromotionId: null } });
+    // Et sa remise en table, reprise sans identifiant : depuis M3, L9 lit
+    // l'« avant » dans `order_discounts` dès qu'elle y a une ligne active (§ 18.9).
+    await ctx.prisma.orderDiscount.updateMany({ where: { orderId }, data: { promotionId: null } });
 
     const refused = await revise(orderId, content(decor.boutique)).expect(409);
 

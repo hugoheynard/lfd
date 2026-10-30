@@ -10,6 +10,7 @@ import {
   ensurePickupDiscountOnlyOnPickup,
   voucherDiscountOf,
 } from "./order-amount-guards.js";
+import { lineHtBasketStepsOf, type BasketDiscountStepAmounts } from "./order-basket-discounts.js";
 import { clienteleOf } from "./order-fulfillment.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
@@ -51,6 +52,8 @@ export interface DraftedAmounts {
   readonly ttcTerms: OrderTtcTerms | null;
   /** La part de chaque taux, taux croissants ; `null` pour `line_ht`. */
   readonly ttcByRate: readonly OrderRateAmounts[] | null;
+  /** Les étapes de remise de panier, `order_discounts` (plan des promotions, § 18.2, M3). */
+  readonly basketSteps: readonly BasketDiscountStepAmounts[];
 }
 
 /**
@@ -116,5 +119,14 @@ export function lineHtAmountsOf(
     totalCents,
     ttcTerms: null,
     ttcByRate: null,
+    basketSteps: lineHtBasketStepsOf(
+      lines.map((line) => ({
+        amountCents: line.lineTotalCents,
+        vatRate: line.vatRate,
+        eligible: line.pickupDiscountEligible,
+      })),
+      input.discountAdjustment,
+      input.discountCents,
+    ),
   };
 }

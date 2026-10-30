@@ -14,6 +14,8 @@ import {
   type SalesTermsDocument,
 } from "@lfd/contracts";
 
+import { z } from "zod";
+
 import type { Prisma } from "../../../platform/database/client/client.js";
 import { refundPositionOf, type RefundStatus } from "../domain/entities/order-refund.js";
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
@@ -109,6 +111,12 @@ export const REVISABLE_ORDER_SELECT = {
   // Un départ décidé sur UN envoi suffit à figer la commande (plan E7 reliquat, LB).
   shortfallDecisions: { select: { id: true }, take: 1 },
   lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
+  // Les remises ACTIVES, par rang : l'« avant » de L9 (plan des promotions, § 18.9, M3).
+  discounts: {
+    where: { archivedAt: null },
+    select: { promotionId: true, adjustment: true, label: true },
+    orderBy: { rank: "asc" },
+  },
 } as const;
 
 interface RevisableLineRow extends OrderLineRow {
@@ -161,6 +169,11 @@ export interface RevisableOrderRow {
   readonly customerCancellationHoursBefore: number | null;
   readonly shortfallDecisions: readonly { readonly id: string }[];
   readonly lines: readonly RevisableLineRow[];
+  readonly discounts: readonly {
+    readonly promotionId: string | null;
+    readonly adjustment: Prisma.JsonValue | null;
+    readonly label: Prisma.JsonValue | null;
+  }[];
 }
 
 /** Ligne → la commande telle qu'on la modifie. Les JSON sont validés, jamais castés. */
@@ -207,6 +220,12 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     discountPromotionId: row.discountPromotionId,
     discountAdjustment:
       row.discountAdjustment === null ? null : cartAdjustmentSchema.parse(row.discountAdjustment),
+    activeDiscounts: row.discounts.map((discount) => ({
+      promotionId: discount.promotionId,
+      adjustment:
+        discount.adjustment === null ? null : cartAdjustmentSchema.parse(discount.adjustment),
+      label: frenchLabelOf(discount.label),
+    })),
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
     vatMethod: vatMethodOf(row.id, row.vatMethod),
@@ -245,6 +264,14 @@ function toLineSnapshot(line: RevisableLineRow): OrderLineSnapshot {
     categoryId: line.categoryId,
     madeToOrder: line.madeToOrder,
   };
+}
+
+const frozenLabelSchema = z.object({ fr: z.string() });
+
+/** Le libellé figé, en français ; une forme inattendue se tait plutôt que de faire tomber la révision. */
+function frenchLabelOf(value: Prisma.JsonValue | null): string | null {
+  const parsed = frozenLabelSchema.safeParse(value);
+  return parsed.success ? parsed.data.fr : null;
 }
 
 function lateFeeOf(value: Prisma.JsonValue | null): LateFeeAdjustment | null {

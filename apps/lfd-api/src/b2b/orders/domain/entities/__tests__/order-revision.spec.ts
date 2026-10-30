@@ -106,6 +106,7 @@ function placed(
     shortfallDecided: false,
     discountPromotionId: state.discountPromotionId,
     discountAdjustment: state.discountAdjustment,
+    activeDiscounts: [],
     totalCents: state.totalCents,
     stripePaymentIntentId: null,
     cancelledAt: null,

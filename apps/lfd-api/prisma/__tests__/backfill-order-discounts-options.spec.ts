@@ -2,6 +2,7 @@ import {
   assertBackfillTarget,
   backfillReport,
   parseBackfillArgs,
+  refreshReport,
 } from "../backfill-order-discounts-options.js";
 
 /**
@@ -15,17 +16,34 @@ const REMOTE = "postgres://user:secret@pooled.db.prisma.io:5432/lfd_prod?sslmode
 
 describe("les options", () => {
   it("à blanc par défaut", () => {
-    expect(parseBackfillArgs([])).toEqual({ write: false, production: null });
+    expect(parseBackfillArgs([])).toEqual({
+      write: false,
+      refreshDrifted: false,
+      production: null,
+    });
   });
 
   it("--write écrit ; le `--` de pnpm est ignoré", () => {
-    expect(parseBackfillArgs(["--", "--write"])).toEqual({ write: true, production: null });
+    expect(parseBackfillArgs(["--", "--write"])).toEqual({
+      write: true,
+      refreshDrifted: false,
+      production: null,
+    });
   });
 
   it("--production prend le nom retapé", () => {
     expect(parseBackfillArgs(["--production", "lfd_prod", "--write"])).toEqual({
       write: true,
+      refreshDrifted: false,
       production: "lfd_prod",
+    });
+  });
+
+  it("--refresh-drifted reprend les désaccords, à blanc tant que --write manque (M3)", () => {
+    expect(parseBackfillArgs(["--refresh-drifted"])).toEqual({
+      write: false,
+      refreshDrifted: true,
+      production: null,
     });
   });
 
@@ -41,25 +59,27 @@ describe("les options", () => {
 
 describe("la cible", () => {
   it("une base locale passe sans --production", () => {
-    expect(() => assertBackfillTarget(LOCAL, { write: true, production: null })).not.toThrow();
+    expect(() =>
+      assertBackfillTarget(LOCAL, { write: true, refreshDrifted: false, production: null }),
+    ).not.toThrow();
   });
 
   it("une base distante sans --production est refusée", () => {
-    expect(() => assertBackfillTarget(REMOTE, { write: false, production: null })).toThrow(
-      /--production/,
-    );
+    expect(() =>
+      assertBackfillTarget(REMOTE, { write: false, refreshDrifted: false, production: null }),
+    ).toThrow(/--production/);
   });
 
   it("une base distante avec le bon nom retapé passe", () => {
     expect(() =>
-      assertBackfillTarget(REMOTE, { write: false, production: "lfd_prod" }),
+      assertBackfillTarget(REMOTE, { write: false, refreshDrifted: false, production: "lfd_prod" }),
     ).not.toThrow();
   });
 
   it("un nom retapé qui n'est pas celui de l'URL est refusé", () => {
-    expect(() => assertBackfillTarget(REMOTE, { write: true, production: "lfd_dev" })).toThrow(
-      /cible « lfd_prod »/,
-    );
+    expect(() =>
+      assertBackfillTarget(REMOTE, { write: true, refreshDrifted: false, production: "lfd_dev" }),
+    ).toThrow(/cible « lfd_prod »/);
   });
 });
 
@@ -74,7 +94,7 @@ describe("le rapport", () => {
         },
         { orderNumber: "ORD-3", outcome: { kind: "undecided", reason: "commande à 2 taux" } },
       ],
-      [{ orderNumber: "ORD-4", discountCents: 300, activeCents: 250 }],
+      [{ orderId: "o4", orderNumber: "ORD-4", discountCents: 300, activeCents: 250 }],
       false,
     );
 
@@ -86,6 +106,26 @@ describe("le rapport", () => {
       "  ORD-3 — à trancher (rien d'écrit) : commande à 2 taux",
       "  1 commande(s) dont les remises actives ne somment plus discount_cents :",
       "  ORD-4 — remises actives 250 c, discount_cents 300 c",
+    ]);
+  });
+});
+
+describe("le rapport de --refresh-drifted (M3)", () => {
+  it("dit, commande par commande, ce que la reprise a fait de chaque désaccord", () => {
+    const report = refreshReport(
+      [
+        { orderNumber: "ORD-4", outcome: { kind: "computed", gap: null } },
+        { orderNumber: "ORD-5", outcome: { kind: "archived" } },
+        { orderNumber: "ORD-6", outcome: { kind: "undecided", reason: "2 taux" } },
+      ],
+      true,
+    );
+
+    expect(report).toEqual([
+      "Désaccords repris — ÉCRITURE : 3 commande(s)",
+      "  ORD-4 — computed",
+      "  ORD-5 — sans remise : ses remises périmées archivées, aucune reprise",
+      "  ORD-6 — à trancher (rien d'écrit) : 2 taux",
     ]);
   });
 });

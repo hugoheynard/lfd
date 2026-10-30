@@ -119,6 +119,7 @@ function placed(
     shortfallDecided: false,
     discountPromotionId: frozenId,
     discountAdjustment: state.discountAdjustment,
+    activeDiscounts: [],
     totalCents: state.totalCents,
     stripePaymentIntentId: null,
     cancelledAt: null,
@@ -280,6 +281,68 @@ describe("Order.revise — une commande d'avant L9, jugée sur sa remise figée"
 
     expect(() => Order.revise(placed(AMOUNT), input("site_b", twin))).toThrow(
       /remplacerait la promotion/,
+    );
+  });
+});
+
+describe("Order.revise — l'« avant » se lit dans order_discounts quand la commande y a des lignes (M3)", () => {
+  const label = "Remise du Labo";
+
+  /** La commande, ses colonnes figées ET ses remises actives relues en table. */
+  function withActive(
+    discount: Discount,
+    active: RevisableOrder["activeDiscounts"],
+  ): RevisableOrder {
+    return { ...placed(discount), activeDiscounts: active };
+  }
+
+  /**
+   * Régression : L9 ne lisait que les colonnes `discount_*`. La table fait foi
+   * dès qu'elle a des lignes actives (§ 18.9) : ici les colonnes disent
+   * `promo_a`, la table `promo_b`, et c'est `promo_b` que l'après doit garder.
+   */
+  it("compare à la table, pas aux colonnes, dès qu'elle a des lignes actives", () => {
+    const table = withActive(PROMO_A, [{ promotionId: "promo_b", adjustment: TEN_PERCENT, label }]);
+    const promoB: Discount = { adjustment: TEN_PERCENT, promotionId: "promo_b" };
+
+    expect(Order.revise(table, input("site_b", promoB)).changes).toContain("pickup_point");
+    expect(() => Order.revise(table, input("site_b", PROMO_A))).toThrow(
+      FulfillmentChangeAltersPromotionError,
+    );
+  });
+
+  it("nomme la promotion en cause par son libellé figé", () => {
+    const table = withActive(PROMO_A, [{ promotionId: "promo_a", adjustment: TEN_PERCENT, label }]);
+
+    expect(() => Order.revise(table, input("site_b", NONE))).toThrow(
+      `retirerait la promotion « ${label} »`,
+    );
+  });
+
+  it("refuse l'acheminement qui ne garderait qu'une remise sur deux", () => {
+    const two = withActive(PROMO_A, [
+      { promotionId: "promo_a", adjustment: TEN_PERCENT, label },
+      { promotionId: "promo_c", adjustment: FIFTEEN_PERCENT, label: "Cumul" },
+    ]);
+
+    expect(() => Order.revise(two, input("site_b", PROMO_A))).toThrow(
+      "retirerait la promotion « Cumul »",
+    );
+  });
+
+  it("une remise reprise sans identifiant se juge sur son ajustement", () => {
+    const frozen = withActive(PROMO_A, [
+      { promotionId: null, adjustment: TEN_PERCENT, label: null },
+    ]);
+    const other: Discount = { adjustment: FIFTEEN_PERCENT, promotionId: "promo_b" };
+
+    expect(Order.revise(frozen, input("site_b", PROMO_A)).changes).toContain("pickup_point");
+    expect(() => Order.revise(frozen, input("site_b", other))).toThrow(/remplacerait la promotion/);
+  });
+
+  it("sans ligne active, les colonnes figées font foi (commande non reprise)", () => {
+    expect(() => Order.revise(withActive(PROMO_A, []), input("site_b", NONE))).toThrow(
+      /retirerait la promotion dont/,
     );
   });
 });

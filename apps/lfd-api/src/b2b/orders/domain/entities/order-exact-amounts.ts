@@ -10,6 +10,7 @@ import { composeExactOrder } from "../services/exact-order-composition.js";
 import { OrderLine, type OrderLineInput } from "../value-objects/order-line.js";
 import { ensurePickupDiscountOnlyOnPickup, ensureVoucherUsable } from "./order-amount-guards.js";
 import type { DraftedAmounts } from "./order-amounts.js";
+import { exactBasketStepsOf } from "./order-basket-discounts.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 
 /**
@@ -90,6 +91,11 @@ export function exactAmountsOf(
       voucherCents: composition.voucher.ttcCents,
       deliveryFeeCents: composition.deliveryFee.ttcCents,
     },
+    basketSteps: exactBasketStepsOf(
+      lines.map((line) => ({ eligible: line.pickupDiscountEligible })),
+      composition,
+      input.discountAdjustment,
+    ),
   };
 }
 

@@ -13,17 +13,23 @@ import { refuseNonLocalTarget } from "./local-target.js";
 export interface BackfillOptions {
   /** À blanc par défaut : `--write` seul écrit. */
   readonly write: boolean;
+  /**
+   * `--refresh-drifted` (M3) : archive les remises actives d'une commande qui
+   * ne somment plus `discount_cents`, et la reprend. À blanc comme le reste.
+   */
+  readonly refreshDrifted: boolean;
   /** Le nom de base retapé après `--production`, ou `null` (cible locale seulement). */
   readonly production: string | null;
 }
 
 const USAGE =
-  "Usage : backfill:order-discounts [--write] [--production <nom de la base>]. " +
+  "Usage : backfill:order-discounts [--write] [--refresh-drifted] [--production <nom de la base>]. " +
   "À blanc par défaut ; --write après lecture du compte.";
 
 /** @throws {Error} une option inconnue, ou `--production` sans nom de base. */
 export function parseBackfillArgs(argv: readonly string[]): BackfillOptions {
   let write = false;
+  let refreshDrifted = false;
   let production: string | null = null;
   for (let i = 0; i < argv.length; i += 1) {
     const arg = argv[i];
@@ -32,6 +38,8 @@ export function parseBackfillArgs(argv: readonly string[]): BackfillOptions {
     }
     if (arg === "--write") {
       write = true;
+    } else if (arg === "--refresh-drifted") {
+      refreshDrifted = true;
     } else if (arg === "--production") {
       const name = argv[i + 1];
       if (name === undefined || name.startsWith("--") || name === "") {
@@ -43,7 +51,7 @@ export function parseBackfillArgs(argv: readonly string[]): BackfillOptions {
       throw new Error(`Option inconnue « ${String(arg)} ». ${USAGE}`);
     }
   }
-  return { write, production };
+  return { write, refreshDrifted, production };
 }
 
 /**
@@ -106,6 +114,25 @@ export function backfillReport(
   return out;
 }
 
+/**
+ * Le rapport de `--refresh-drifted` (M3) : chaque commande en désaccord,
+ * reprise, archivée sans remise, ou laissée telle quelle avec sa raison.
+ */
+export function refreshReport(
+  lines: readonly BackfillReportLine[],
+  write: boolean,
+): readonly string[] {
+  const out = [
+    write
+      ? `Désaccords repris — ÉCRITURE : ${lines.length} commande(s)`
+      : `Désaccords à reprendre — À BLANC : ${lines.length} commande(s)`,
+  ];
+  for (const line of lines) {
+    out.push(`  ${line.orderNumber} — ${detailOf(line) ?? line.outcome.kind}`);
+  }
+  return out;
+}
+
 function detailOf(line: BackfillReportLine): string | null {
   const { outcome } = line;
   switch (outcome.kind) {
@@ -115,6 +142,8 @@ function detailOf(line: BackfillReportLine): string | null {
       return `à trancher (rien d'écrit) : ${outcome.reason}`;
     case "unreadable":
       return `illisible (rien d'écrit) : ${outcome.reason}`;
+    case "archived":
+      return "sans remise : ses remises périmées archivées, aucune reprise";
     default:
       return null;
   }

@@ -1,3 +1,4 @@
+import type { AppliedBasketDiscount } from "./order-basket-discounts.js";
 import type {
   BillingAddressPayload,
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
@@ -219,6 +220,12 @@ export interface OrderToPlace {
   readonly discountLabel: OrderDiscountLabel | null;
   /** Cf. {@link DraftOrderInput.discountPromotionId} ; `null` = aucune. */
   readonly discountPromotionId: string | null;
+  /**
+   * Les remises de panier, une par ligne `order_discounts` (plan des
+   * promotions, § 18.2, M3) — Σ `amountCents` = `discountCents`, ce que le
+   * déclencheur différé tient au COMMIT. Vide sans remise, ou à remise nulle.
+   */
+  readonly basketDiscounts: readonly AppliedBasketDiscount[];
   readonly deliveryFeeCents: number;
   readonly deliveryFeeTtcCents: number | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;

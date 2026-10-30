@@ -3,9 +3,11 @@
 /// § 18.2 (lot M2). Une ligne par remise ; les colonnes `discount_*` de la
 /// commande restent écrites et lues jusqu'à la bascule des lecteurs.
 ///
-/// Écrite en M2 par la reprise seule (`prisma/backfill-order-discounts.ts`) ;
-/// la passation et la révision l'écriront en M3, sous le déclencheur strict
-/// « somme des remises actives = `orders.discount_cents` » qui naît alors.
+/// Écrite par la reprise (`prisma/backfill-order-discounts.ts`, M2), par la
+/// passation et par la révision (M3) ; la révision archive l'ensemble actif et
+/// en insère un neuf. Le déclencheur différé `order_discounts_match_order`
+/// (`20261031180000_le_controle_des_remises`) tient au COMMIT « somme des
+/// remises actives = `orders.discount_cents` » et la cohérence des parts.
 ///
 /// Écrit à la main dans `20261031170000_les_remises_de_panier`, invisible
 /// ici : l'unicité `(order_id, rank)` est un index PARTIEL sur les lignes non

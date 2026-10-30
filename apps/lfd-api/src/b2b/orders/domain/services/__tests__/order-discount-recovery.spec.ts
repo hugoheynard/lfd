@@ -109,11 +109,30 @@ describe("une commande line_ht", () => {
     });
   });
 
-  it("en écart à plusieurs taux : à trancher, rien d'inventé", () => {
-    const recovery = recoverOrderDiscount(lineHtOrder({ discountCents: 137 }));
+  it("en écart, lignes couvertes à plusieurs taux : à trancher, rien d'inventé", () => {
+    const recovery = recoverOrderDiscount(
+      lineHtOrder({
+        discountCents: 137,
+        lines: [line("l1"), line("l2", { vatRate: 20, lineTotalCents: 500 })],
+      }),
+    );
 
     expect(recovery.kind).toBe("undecided");
     expect(recovery.kind === "undecided" && recovery.reason).toContain("2 taux");
+  });
+
+  /**
+   * Décision sur le rapport de M2 (2026-10-30) : la part d'une `frozen` se
+   * tire des seules lignes couvertes. Une ligne exclue à un autre taux n'a
+   * reçu aucune part de la remise : elle ne rend plus la commande « à trancher ».
+   */
+  it("en écart, une ligne exclue à un autre taux ne compte pas : frozen au taux des couvertes", () => {
+    const recovery = recoverOrderDiscount(lineHtOrder({ discountCents: 137 }));
+
+    expect(recovery).toMatchObject({
+      kind: "recovered",
+      discount: { origin: "frozen", amountCents: 137, vatShares: [{ rate: 5.5, htCents: 137 }] },
+    });
   });
 
   it("sans ajustement figé : frozen, rien ne se recompose", () => {

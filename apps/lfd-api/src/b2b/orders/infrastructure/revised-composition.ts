@@ -1,5 +1,4 @@
 import type { Prisma } from "../../../platform/database/client/client.js";
-import type { PrismaService } from "../../../platform/database/prisma.service.js";
 
 /** Les colonnes de `orders` qu'une révision réécrit — celles que l'historique garde. */
 const REVISED_COLUMNS = {
@@ -70,7 +69,7 @@ const REVISED_COLUMNS = {
  * taux de TVA (décimal) en nombre : un JSON ne porte ni l'un ni l'autre.
  */
 export async function revisedCompositionOf(
-  prisma: PrismaService,
+  prisma: Pick<Prisma.TransactionClient, "order">,
   orderId: string,
 ): Promise<Prisma.InputJsonObject> {
   const row = await prisma.order.findUniqueOrThrow({

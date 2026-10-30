@@ -36,6 +36,7 @@ import {
   receivedColumns,
   settleByRecopy,
 } from "./factories.js";
+import { frozenDiscountsCreate } from "./order-discount-fixtures.js";
 import {
   cardGatewayDouble,
   payByCard,
@@ -139,6 +140,9 @@ async function seedLegacyOrder(buyer: Client, seed: LegacyOrderSeed): Promise<st
       placedByUserId: buyer.userId,
       subtotalCents: seed.subtotalCents,
       discountCents: seed.discountCents ?? 0,
+      // Sa remise en table, dans la même instruction : le contrôle différé
+      // refuse une commande remisée sans elle (plan des promotions, M3).
+      discounts: frozenDiscountsCreate(seed.discountCents ?? 0, 5.5),
       deliveryFeeCents: seed.deliveryFeeCents ?? 0,
       vatCents: seed.vatCents,
       totalCents: seed.totalCents,

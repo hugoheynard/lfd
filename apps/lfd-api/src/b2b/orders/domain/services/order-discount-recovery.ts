@@ -91,14 +91,17 @@ interface FrozenAmounts {
 
 /**
  * Les colonnes figées, recopiées. La part par taux n'est pas figée par
- * commande : elle ne se déduit sans calcul que d'une commande à un seul taux
- * (§ 18.3, point 4). Sinon, la raison du refus.
+ * commande : elle ne se déduit sans calcul que si les lignes COUVERTES par la
+ * remise sont d'un seul taux (§ 18.3, point 4 ; décision sur le rapport de
+ * M2, 2026-10-30 — une ligne exclue n'a reçu aucune part de la remise).
+ * Sinon, la raison du refus.
  */
 function frozenAmounts(order: RecoveryOrder): FrozenAmounts | string {
-  const rates = [...new Set(order.lines.map((line) => line.vatRate))];
+  const covered = order.lines.filter((line) => line.eligible);
+  const rates = [...new Set(covered.map((line) => line.vatRate))];
   const rate = rates[0];
   if (rates.length !== 1 || rate === undefined) {
-    return `commande à ${rates.length} taux : sa part par taux ne se recopie pas sans calcul, à trancher par Hugo`;
+    return `lignes couvertes à ${rates.length} taux : la part par taux ne se recopie pas sans calcul, à trancher par Hugo`;
   }
   const own = copied(order.vatMethod, rate, order.discountCents, order.discountTtcCents);
   if (own === null) {

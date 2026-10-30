@@ -10,6 +10,7 @@ import {
   assertBackfillTarget,
   backfillReport,
   parseBackfillArgs,
+  refreshReport,
 } from "./backfill-order-discounts-options.js";
 
 /**
@@ -24,6 +25,9 @@ import {
  *
  * - À blanc par défaut ; `--write` après lecture du compte par Hugo.
  * - Cible locale seulement, sauf `--production <nom de la base>` retapé.
+ * - `--refresh-drifted` (M3) : archive les remises périmées d'une commande
+ *   révisée par l'ancien code et la reprend — à blanc d'abord, comme le reste.
+ *   Le temps 5 du runbook exige zéro écart ET zéro désaccord.
  * - Runbook en cinq temps : § 18.3 (première passe après M2, seconde après M3,
  *   le déclencheur seulement si la seconde ne laisse aucune commande sans ligne).
  *
@@ -37,13 +41,21 @@ async function main(): Promise<void> {
   assertBackfillTarget(url, options);
   const prisma = new PrismaClient({ adapter: new PrismaPg({ connectionString: url }) });
   try {
-    const backfill = new PrismaOrderDiscountBackfill(prisma, new UlidGenerator(new SystemClock()));
+    const clock = new SystemClock();
+    const backfill = new PrismaOrderDiscountBackfill(prisma, new UlidGenerator(clock), clock);
     const lines = [];
     for (const orderId of await backfill.pendingOrderIds()) {
       lines.push(await backfill.recover(orderId, options.write));
     }
-    const drifted = await backfill.drifted();
-    for (const text of backfillReport(lines, drifted, options.write)) {
+    const report = [...backfillReport(lines, await backfill.drifted(), options.write)];
+    if (options.refreshDrifted) {
+      const refreshed = [];
+      for (const order of await backfill.drifted()) {
+        refreshed.push(await backfill.refresh(order.orderId, options.write));
+      }
+      report.push(...refreshReport(refreshed, options.write));
+    }
+    for (const text of report) {
       console.log(text);
     }
   } finally {

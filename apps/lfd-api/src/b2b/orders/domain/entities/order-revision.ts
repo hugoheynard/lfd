@@ -84,6 +84,13 @@ export interface RevisableOrder {
   readonly discountPromotionId: string | null;
   /** L'ajustement de la remise figé à la passation, `null` sans remise. */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * Les remises de panier ACTIVES, relues dans `order_discounts` par rang
+   * (plan des promotions, § 18.9, M3) — vide pour une commande qui n'en a pas
+   * de ligne : remise nulle, ou commande pas encore reprise. L9 lit alors
+   * les colonnes figées.
+   */
+  readonly activeDiscounts: readonly FrozenBasketPromotion[];
   /** L'ajustement de la surtaxe tardive figé à la passation, `null` sans surtaxe (R4). */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
@@ -105,6 +112,16 @@ export interface RevisableOrder {
   readonly customerCancellation: FixedCustomerCancellation;
   /** L'instant figé ; seul, il dit le délai d'une commande d'avant la colonne du délai. */
   readonly customerCancellableUntil: Date | null;
+}
+
+/** Une remise active d'une commande, telle que L9 la compare (plan des promotions, § 18.5). */
+export interface FrozenBasketPromotion {
+  /** `NULL` = remise reprise d'avant L9 : on compare alors l'ajustement. */
+  readonly promotionId: string | null;
+  /** `NULL` = commande d'avant la colonne, reprise `frozen`. */
+  readonly adjustment: CartAdjustment | null;
+  /** Le libellé figé, en français — ce que le refus nomme ; `null` sans libellé. */
+  readonly label: string | null;
 }
 
 /**

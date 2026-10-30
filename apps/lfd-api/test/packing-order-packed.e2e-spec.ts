@@ -11,6 +11,7 @@ import { randomUUID } from "node:crypto";
  */
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { PrismaService } from "../src/platform/database/prisma.service.js";
+import { IdGenerator } from "../src/platform/id/id-generator.js";
 import { SecretGenerator } from "../src/platform/secret/secret-generator.js";
 import { Clock } from "../src/platform/time/clock.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
@@ -135,6 +136,7 @@ beforeAll(async () => {
     ctx.app.get(PrismaService),
     ctx.app.get(Clock),
     ctx.app.get(SecretGenerator),
+    ctx.app.get(IdGenerator),
   );
 });
 
