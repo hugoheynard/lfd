@@ -11,6 +11,7 @@ import { DefineGeneralOrderCutoffCommand } from "../../b2b/order-cutoffs/applica
 import { CreatePickupAddressCommand } from "../../b2b/pickup-addresses/application/create-pickup-address.command.js";
 import { CreateDeliveryZoneCommand } from "../../b2b/delivery-zones/application/create-delivery-zone.command.js";
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { posePointDiscount } from "./station-promotions.seed.js";
 
 /**
  * **La station** : points de retrait, zones de livraison, heure limite.
@@ -143,6 +144,8 @@ export const SEEDED_ZONE_LABELS: readonly string[] = ZONES.map((zone) => zone.la
 export interface StationContext {
   readonly prisma: PrismaClient;
   readonly commands: CommandBus;
+  /** L'instant du semis : l'ouverture des remises de retrait posées. */
+  readonly now: Date;
 }
 
 export async function seedStation(context: StationContext): Promise<void> {
@@ -151,7 +154,7 @@ export async function seedStation(context: StationContext): Promise<void> {
   await seedOrderCutoffs(context);
 }
 
-async function seedPickupPoints({ prisma, commands }: StationContext): Promise<void> {
+async function seedPickupPoints({ prisma, commands, now }: StationContext): Promise<void> {
   for (const point of POINTS) {
     const existing = await prisma.site.findFirst({ where: { label: point.label } });
     if (existing) {
@@ -165,22 +168,19 @@ async function seedPickupPoints({ prisma, commands }: StationContext): Promise<v
       codePostal: point.codePostal,
       ville: point.ville,
       pays: "France",
-      discounts: discountsFor(point.discount),
+      // Plus de remise sur la fiche depuis L12 : elle se pose en promotions.
+      discounts: { b2b: null, b2c: null },
       opening: point.opening,
       gps: point.gps,
     };
-    await commands.execute(new CreatePickupAddressCommand(payload));
+    const pickupId = await commands.execute<CreatePickupAddressCommand, string>(
+      new CreatePickupAddressCommand(payload),
+    );
+    if (point.discount !== null) {
+      await posePointDiscount(commands, pickupId, point.discount, now);
+    }
     console.log(`✓ Point de retrait « ${point.label} » semé.`);
   }
-}
-
-/** La remise semée vaut pour les deux clientèles, sans règle de portée. */
-function discountsFor(adjustment: CartAdjustment | null): PickupAddressPayload["discounts"] {
-  if (adjustment === null) {
-    return { b2b: null, b2c: null };
-  }
-  const discount = { adjustment, scope: "all_except" as const, categories: [], products: [] };
-  return { b2b: discount, b2c: discount };
 }
 
 async function seedDeliveryZones({ prisma, commands }: StationContext): Promise<void> {

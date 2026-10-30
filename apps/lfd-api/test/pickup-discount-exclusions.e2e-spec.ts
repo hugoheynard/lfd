@@ -28,6 +28,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const ACTIVE = "auth0|exclusions-pro";
@@ -127,18 +128,25 @@ async function seedPoint(excluded: Article): Promise<string> {
       codePostal: "75002",
       ville: "Paris",
       pays: "France",
-      discounts: {
-        b2b: {
-          adjustment: { mode: "percent", bp: 1_000 },
-          scope: "all_except",
-          categories: [{ categoryId: excluded.categoryId, eligible: false }],
-          products: [],
-        },
-        b2c: null,
-      },
+      discounts: { b2b: null, b2c: null },
     })
     .expect(201);
-  return jsonBody<CreatedPickupResponse>(response).id;
+  const id = jsonBody<CreatedPickupResponse>(response).id;
+  // Depuis L12, la remise d'un point se pose en promotions, plus sur sa fiche :
+  // « pros actifs · retrait à ce point · tout sauf la famille exclue ».
+  await posePromotion(
+    ctx.asSub(E2E_STAFF_SUB),
+    promotionTerms({
+      effect: { kind: "percent_off", value: 1_000 },
+      audiences: [{ kind: "pros_active", companyId: null }],
+      fulfillment: { kind: "pickup_point", pickupId: id },
+      scope: {
+        mode: "all_except",
+        rules: [{ target: "category", targetId: excluded.categoryId, eligible: false }],
+      },
+    }),
+  );
+  return id;
 }
 
 function linesOf(articles: readonly Article[]): readonly { sku: string; quantity: number }[] {

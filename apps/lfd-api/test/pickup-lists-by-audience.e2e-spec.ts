@@ -22,6 +22,7 @@ import type request from "supertest";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const PERSO = "auth0|listes-perso";
@@ -59,20 +60,6 @@ async function seedPeople(): Promise<string> {
   return company.id;
 }
 
-/** La même remise aux deux clientèles, sans règle — `0` = aucune. */
-function discountsOf(cents: number): Record<string, unknown> {
-  const discount =
-    cents === 0
-      ? null
-      : {
-          adjustment: { mode: "amount", cents },
-          scope: "all_except",
-          categories: [],
-          products: [],
-        };
-  return { b2b: discount, b2c: discount };
-}
-
 /** Un site créé comme le back-office le crée, puis réservé si demandé. */
 async function seedSite(
   label: string,
@@ -88,12 +75,17 @@ async function seedSite(
       codePostal: "75002",
       ville: "Paris",
       pays: "France",
-      // Une remise propre à chaque site : c'est elle qui dit, au devis, quel
-      // point a été retenu sans qu'on l'ait choisi.
-      discounts: discountsOf(discountCents),
+      discounts: { b2b: null, b2c: null },
     })
     .expect(201);
   const id = jsonBody<CreatedPickupResponse>(response).id;
+  // Une remise propre à chaque site : c'est elle qui dit, au devis, quel
+  // point a été retenu sans qu'on l'ait choisi. Depuis L12, elle se pose en
+  // promotions — la même aux deux clientèles.
+  if (discountCents !== 0) {
+    const discount = { mode: "amount", value: discountCents } as const;
+    await poseSiteDiscount(staff(), id, { b2b: discount, b2c: discount });
+  }
   if (audiences !== undefined) {
     await staff()
       .put(`/admin/sites/${id}/roles`)

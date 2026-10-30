@@ -25,6 +25,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const SERVICE_DAY = serviceDay();
@@ -106,18 +107,13 @@ async function seedProsOnlyPoint(): Promise<string> {
       ville: "Paris",
       pays: "France",
       isDefault: true,
-      discounts: {
-        b2b: {
-          adjustment: { mode: "percent", bp: 1_000 },
-          scope: "all_except",
-          categories: [],
-          products: [],
-        },
-        b2c: null,
-      },
+      discounts: { b2b: null, b2c: null },
     })
     .expect(201);
-  return jsonBody<CreatedPickupResponse>(response).id;
+  const id = jsonBody<CreatedPickupResponse>(response).id;
+  // Depuis L12, la remise d'un point se pose en promotions, plus sur sa fiche.
+  await poseSiteDiscount(staff(), id, { b2b: { mode: "percent", value: 1_000 } });
+  return id;
 }
 
 async function seedZone(): Promise<void> {

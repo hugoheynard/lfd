@@ -16,6 +16,7 @@ import { WORKSPACE_HEADER } from "@lfd/contracts";
 
 import { CompanyStatus, CustomerRole } from "../src/platform/database/client/client.js";
 import { E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { bootCustomerScene, company, member } from "./order-customer-cancel-scene.js";
 import { resetScene } from "./order-staff-cancel-scene.js";
 import { detach, family, type Person, setStatus } from "./company-standing-scene.js";
@@ -47,18 +48,13 @@ async function prosOnlyPoint(): Promise<string> {
       ville: "Paris",
       pays: "France",
       isDefault: true,
-      discounts: {
-        b2b: {
-          adjustment: { mode: "percent", bp: 1_000 },
-          scope: "all_except",
-          categories: [],
-          products: [],
-        },
-        b2c: null,
-      },
+      discounts: { b2b: null, b2c: null },
     })
     .expect(201);
-  return jsonBody<CreatedPickupResponse>(response).id;
+  const id = jsonBody<CreatedPickupResponse>(response).id;
+  // Depuis L12, la remise d'un point se pose en promotions, plus sur sa fiche.
+  await poseSiteDiscount(ctx.asSub(E2E_STAFF_SUB), id, { b2b: { mode: "percent", value: 1_000 } });
+  return id;
 }
 
 /** La remise du devis reconnu, avec ou sans espace de travail déclaré. */

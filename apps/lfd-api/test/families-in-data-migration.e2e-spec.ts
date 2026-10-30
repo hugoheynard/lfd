@@ -61,13 +61,17 @@ async function replay(): Promise<void> {
   await ctx.prisma.$executeRawUnsafe(migration());
 }
 
-/** Une règle de −50 % sur une portée, active depuis hier. */
+/**
+ * Une règle de −50 % sur une portée, active depuis hier. Étage `geste` : depuis
+ * L12, l'étage `promotion` n'est plus lu par le prix (les promotions l'occupent
+ * seules), et la migration rejouée ne regarde pas l'étage.
+ */
 async function insertRule(id: string, scopeType: string, scopeId: string | null): Promise<void> {
   await ctx.prisma.$executeRawUnsafe(
     `INSERT INTO "public"."price_rules"
        ("id", "stage", "nature", "scope_type", "scope_id", "audience_type", "direction", "mode",
         "value", "valid_from", "label", "created_by")
-     VALUES ($1, 'promotion', 'alter', $2, $3, 'all', 'decrease', 'percent', 5000,
+     VALUES ($1, 'geste', 'alter', $2, $3, 'all', 'decrease', 'percent', 5000,
              $4::timestamptz, 'e2e', 'e2e')`,
     id,
     scopeType,
