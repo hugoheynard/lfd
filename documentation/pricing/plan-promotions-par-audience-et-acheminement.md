@@ -2046,21 +2046,85 @@ archivée, jamais une ligne disparue.
 
 Invariants, **en base** (interdire plutôt que vérifier) :
 
-- somme des `amount_cents` **non archivés** = `orders.discount_cents` :
+- somme des `amount_cents` **non archivés** = `orders.discount_cents`, et
+  `discount_cents > 0` ⇒ au moins une ligne non archivée :
   **déclencheur de contrainte différé** (`CREATE CONSTRAINT TRIGGER …
 DEFERRABLE INITIALLY DEFERRED`), sur `order_discounts` (insert/update) et
-  sur `orders` (`UPDATE OF discount_cents`). Le dépôt en a déjà un, de la même
-  forme (`invoice_number_counter_has_invoice`, migration
+  sur `orders` (**`INSERT`** et `UPDATE OF discount_cents`). Le dépôt en a
+  déjà un, de la même forme (`invoice_number_counter_has_invoice`, migration
   `20261022160000_le_prefixe_de_numero`, ouverte le 2026-10-30). Coût : une
-  somme indexée par `order_id`, au commit, sur une table de quelques lignes
-  par commande — raisonnable. **Deux temps** : en M2 il ne contrôle qu'une
-  commande qui a au moins une ligne non archivée (les commandes pas encore
-  reprises en ont zéro) ; en M3, une fois la reprise rendue à zéro écart, il
-  devient strict (« `discount_cents > 0` ⇒ au moins une ligne »). Ce qui
-  remplace l'arbitrage n° 2 ci-dessous ;
-- somme des `vat_shares` d'une remise = son `amount_cents` : CHECK sur la
-  ligne impossible en jsonb sans fonction ; tenu par l'agrégat et le
-  déclencheur ci-dessus le relit (même fonction, même commit).
+  somme indexée par `order_id`, au commit, sur quelques lignes par commande
+  — raisonnable. Ce qui remplace l'arbitrage n° 2 ci-dessous ;
+- par remise : somme des `htCents` de `vat_shares` = `amount_cents`, et, si
+  les parts portent `ttcCents` (`exact_ht`), leur somme =
+  `amount_ttc_cents`. Même fonction.
+
+**Le déclencheur naît strict, en M3 — aucun en M2** (seconde passe de
+vitruve, 2026-10-30). Un déclencheur tolérant (« contrôler seulement les
+commandes qui ont des lignes ») casserait la révision d'une commande reprise
+entre M2 et M3 : `prisma-order-revision.repository.ts:82` réécrit
+`discount_cents` (ouvert le 2026-10-30) sans encore écrire
+`order_discounts`, et la somme ne tiendrait plus. Il est donc posé par la
+migration de M3, dans le déploiement où passation et révision écrivent la
+table, et **après** la seconde passe de reprise à zéro écart (§ 18.3).
+
+```sql
+CREATE FUNCTION order_discounts_match_order() RETURNS trigger
+LANGUAGE plpgsql AS $$
+DECLARE
+  target text := CASE TG_TABLE_NAME WHEN 'orders' THEN NEW.id ELSE NEW.order_id END;
+  expected int;
+  total int;
+  active int;
+  bad text;
+BEGIN
+  SELECT discount_cents INTO expected FROM orders WHERE id = target;
+  SELECT coalesce(sum(amount_cents), 0), count(*) INTO total, active
+    FROM order_discounts WHERE order_id = target AND archived_at IS NULL;
+  IF total <> expected OR (expected > 0 AND active = 0) THEN
+    RAISE EXCEPTION 'commande % : remises % c, discount_cents % c', target, total, expected
+      USING ERRCODE = 'check_violation';
+  END IF;
+  -- Parts par taux : htCents toujours présent ; ttcCents seulement en exact_ht.
+  -- Une part sans htCents compte pour NULL et fait échouer l'égalité.
+  SELECT d.id INTO bad
+    FROM order_discounts d
+    CROSS JOIN LATERAL (
+      SELECT sum((p->>'htCents')::int) AS ht,
+             sum((p->>'ttcCents')::int) AS ttc,
+             count(*) FILTER (WHERE p ? 'ttcCents') AS with_ttc,
+             count(*) AS parts
+        FROM jsonb_array_elements(d.vat_shares) AS p
+    ) s
+   WHERE d.order_id = target AND d.archived_at IS NULL
+     AND (s.ht IS DISTINCT FROM d.amount_cents
+          OR (d.amount_ttc_cents IS NULL AND s.with_ttc > 0)
+          OR (d.amount_ttc_cents IS NOT NULL
+              AND (s.with_ttc <> s.parts OR s.ttc IS DISTINCT FROM d.amount_ttc_cents)))
+   LIMIT 1;
+  IF bad IS NOT NULL THEN
+    RAISE EXCEPTION 'remise % : parts par taux incohérentes', bad
+      USING ERRCODE = 'check_violation';
+  END IF;
+  RETURN NULL;
+END $$;
+
+CREATE CONSTRAINT TRIGGER order_discounts_match_order_on_discounts
+  AFTER INSERT OR UPDATE ON order_discounts
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+  EXECUTE FUNCTION order_discounts_match_order();
+CREATE CONSTRAINT TRIGGER order_discounts_match_order_on_orders
+  AFTER INSERT OR UPDATE OF discount_cents ON orders
+  DEFERRABLE INITIALLY DEFERRED FOR EACH ROW
+  EXECUTE FUNCTION order_discounts_match_order();
+```
+
+`vatCents` absent n'est pas contrôlé : la TVA d'une remise ne s'additionne
+pas (elle est arrondie une fois par taux sur la base, § 18.4) ; `ttcCents`
+absent n'est admis que si la remise n'a pas de `amount_ttc_cents`
+(`line_ht`), et alors aucune part ne doit en porter. Un `vat_shares` vide
+donne `ht` NULL et échoue, sauf `amount_cents = 0` — qui n'a pas de ligne.
+Texte à recompiler au lot (pas exécuté ici).
 
 **Les colonnes actuelles restent lisibles et écrites** : `discount_cents` =
 le total, `discount_ttc_cents` = le total TTC, `pickup_discount_eligible` = OU
@@ -2084,9 +2148,15 @@ de l'existant** : `remainderAdjustmentsOf`
 le 2026-10-30) ne transmet au reliquat qu'une remise **en pourcentage** ; un
 montant fixe est compté entier sur le BL-1. Chaque remise suit la même
 règle : un % est recomposé sur les lignes de chaque envoi, un montant fixe
-n'a qu'un `delivery_note_discounts` (celui du BL-1). La somme des bons d'une
-remise fixe vaut donc son montant de commande par construction, et une
-remise fixe n'est jamais comptée deux fois.
+n'a qu'un `delivery_note_discounts` (celui du BL-1), et n'est jamais comptée
+deux fois. **Dette existante, non aggravée** : sur le BL-1, le fixe est
+borné à l'assiette éligible des lignes qui partent (`discountCentsOf`,
+`delivery-notes/domain/value-objects/delivery-note-terms.ts:206` ; même
+borne dans `composeExactOrder` appelé par `exact-departure.ts:55`, ouverts
+le 2026-10-30). Si le BL-1 part avec une assiette inférieure au fixe, la
+somme des bons est **inférieure** au montant de la commande. C'est le
+comportement d'aujourd'hui pour la remise unique ; le plan le garde tel quel
+pour chaque remise fixe, sans le corriger ni l'étendre.
 
 ### 18.3 La reprise (migration de données additive, exécutée par un script)
 
@@ -2126,15 +2196,30 @@ compose chaque remise par **la même fonction de domaine que M1** (donc par
      commande (objection BLOQUANT 1, acceptée) ;
 4. **en cas d'écart** : n'écrit rien pour CETTE commande, continue les
    autres, et sort en code non nul avec la liste (numéro, attendu, obtenu).
-   Une commande refusée reste sans ligne ; le déclencheur, en premier temps,
-   la tolère ; le resserrement de M3 ne se déploie pas tant que le script ne
-   rend pas zéro. Corriger un écart est une décision de Hugo, commande par
+   Une commande refusée reste sans ligne ; aucun déclencheur n'existe encore
+   (§ 18.2). Corriger un écart est une décision de Hugo, commande par
    commande — le script ne force jamais.
 
-Par défaut le script tourne **à blanc** (`--write` pour écrire) et rend le
-compte. Qui l'exécute en production, et comment il franchit le refus de
-cible non locale de `local-target.ts`, est une question ouverte (§ 18.10,
-Q-M1) : c'est une phrase de runbook.
+**Exécution — décidé (mandat 2026-10-30, ex-Q-M1)** : le script refuse une
+cible non locale comme `backfill-naf.ts`, sauf avec le drapeau
+`--production` **et** le nom de la base retapé en argument. Il tourne à
+blanc par défaut ; `--write` n'est passé qu'après lecture du compte par
+Hugo. Il vit sous `apps/lfd-api/prisma/`, déjà dans l'allowlist de
+`lint:no-direct-env` (`ALLOWED_DIRECTORIES`,
+`dev-toolbox/gates/no-direct-env.mjs:45`, ouvert le 2026-10-30) : il lit
+`DATABASE_LFD_URL` comme `backfill-naf.ts`, sans entrée de plus.
+
+**Runbook, dans cet ordre** :
+
+1. déployer M2 (tables seules) ;
+2. première passe : à blanc, compte lu par Hugo, puis `--write` ;
+3. déployer M3 **sans** le déclencheur (passation et révision écrivent
+   désormais la table) ;
+4. **seconde passe** : rattrape les commandes passées ou révisées entre 2
+   et 3 par l'ancien code ; à blanc, puis `--write` ;
+5. seulement si cette passe rend **zéro écart et zéro commande sans
+   ligne**, déployer la migration du déclencheur (fin de M3). Sinon, les
+   écarts vont à Hugo et le déclencheur attend.
 
 ### 18.4 Ordre et arrondis
 
@@ -2218,15 +2303,15 @@ le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`
 / `discount_label` doit être basculé **avant M7**, seul lot qui peut les
 mettre à `NULL` avec une remise non nulle.
 
-| Lot    | Contenu                                                                                                                                                                      | Lecteurs inscrits                                                                                                                                                                                                                                                    | Prérequis    |
-| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
-| **M1** | Domaine : `composeTtcOrder` et le chemin `line_ht` prennent une **liste** de remises (une liste à un élément = aujourd'hui, % ET fixe) ; test d'égalité au centime           | `exact-order-composition.ts`, `ttc-order.ts`, `vat.ts`, devis boutique `exact-shop-quote.ts` (composition)                                                                                                                                                           | —            |
-| **M2** | Migration additive (tables, index partiels, déclencheur premier temps) + script de reprise (§ 18.3) ; `lecteur-de-migrations`                                                | —                                                                                                                                                                                                                                                                    | M1           |
-| **M3** | Passation et révision écrivent la table ET les colonnes actuelles ; révision = archiver + insérer ; L9 sur un ensemble ; déclencheur strict une fois la reprise à zéro écart | `order-composition.service.ts`, `cart-adjustments.service.ts`, `prisma-order.repository.ts`, `prisma-order-revision.repository.ts`, `fulfillment-promotion.ts`, `revision-quote-view.ts`, `prisma-order-revision-history.reader.ts`, `quote-my-shop-cart.handler.ts` | M2 + reprise |
-| **M4** | Bons : complet, partiel, reliquat, manquants, contrôle des termes ; PDF une ligne par remise                                                                                 | `exact-departure.ts`, `remainder-decision-source.ts`, `prisma-shortfall-decision.repository.ts`, `delivery-note-terms-control.ts`, `delivery-note-sheet.ts`, `delivery-note-pdf.ts`                                                                                  | M3           |
-| **M5** | Facture et Factur-X : clé (promotion, taux), `Reason` = libellé fr figé, repli « Remise », pas de BT-93/94 ; `billable_*` inchangés en total                                 | `invoice-order-split.ts`, `invoice-dossier.ts`, `frozen-invoice-order.mapper.ts`, `billable-invoice-order.mapper.ts`, `get-invoice-dossier.handler.ts`, `invoice-dossier-csv.ts`, `facturx-settlement.ts`, `facturx-arithmetic.ts`                                   | M4           |
-| **M6** | Lecteurs : `discounts[]` (`discountLabel` reste, déprécié), bon de commande PDF, e-mails, boutique, back-office                                                              | `prisma-order.reader.ts`, `order-sheet.ts`, `order-sheet-pdf-totals.ts`, `pickup-discount-mail-label.ts`, `mail-templates.ts`, les cinq écrans boutique du § 18.1 ; back-office **à rouvrir** au début du lot (non ouvert ici)                                       | M3           |
-| **M7** | Lever `assertSingleBasketPromotion` pour les cumulables et le refus de la case « Cumulable » au panier — **irréversible**                                                    | —                                                                                                                                                                                                                                                                    | M3 à M6      |
+| Lot    | Contenu                                                                                                                                                                                                                | Lecteurs inscrits                                                                                                                                                                                                                                                    | Prérequis    |
+| ------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------ |
+| **M1** | Domaine : `composeTtcOrder` et le chemin `line_ht` prennent une **liste** de remises (une liste à un élément = aujourd'hui, % ET fixe) ; test d'égalité au centime                                                     | `exact-order-composition.ts`, `ttc-order.ts`, `vat.ts`, devis boutique `exact-shop-quote.ts` (composition)                                                                                                                                                           | —            |
+| **M2** | Migration additive (tables, index partiels, **sans déclencheur**) + script de reprise (§ 18.3) ; `lecteur-de-migrations`                                                                                               | —                                                                                                                                                                                                                                                                    | M1           |
+| **M3** | Passation et révision écrivent la table ET les colonnes actuelles ; révision = archiver + insérer ; L9 sur un ensemble ; seconde passe de reprise, puis migration du déclencheur strict si zéro écart (runbook § 18.3) | `order-composition.service.ts`, `cart-adjustments.service.ts`, `prisma-order.repository.ts`, `prisma-order-revision.repository.ts`, `fulfillment-promotion.ts`, `revision-quote-view.ts`, `prisma-order-revision-history.reader.ts`, `quote-my-shop-cart.handler.ts` | M2 + reprise |
+| **M4** | Bons : complet, partiel, reliquat, manquants, contrôle des termes ; PDF une ligne par remise                                                                                                                           | `exact-departure.ts`, `remainder-decision-source.ts`, `prisma-shortfall-decision.repository.ts`, `delivery-note-terms-control.ts`, `delivery-note-sheet.ts`, `delivery-note-pdf.ts`                                                                                  | M3           |
+| **M5** | Facture et Factur-X : clé (promotion, taux), `Reason` = libellé fr figé, repli « Remise », pas de BT-93/94 ; `billable_*` inchangés en total                                                                           | `invoice-order-split.ts`, `invoice-dossier.ts`, `frozen-invoice-order.mapper.ts`, `billable-invoice-order.mapper.ts`, `get-invoice-dossier.handler.ts`, `invoice-dossier-csv.ts`, `facturx-settlement.ts`, `facturx-arithmetic.ts`                                   | M4           |
+| **M6** | Lecteurs : `discounts[]` (`discountLabel` reste, déprécié), bon de commande PDF, e-mails, boutique, back-office                                                                                                        | `prisma-order.reader.ts`, `order-sheet.ts`, `order-sheet-pdf-totals.ts`, `pickup-discount-mail-label.ts`, `mail-templates.ts`, les cinq écrans boutique du § 18.1 ; back-office **à rouvrir** au début du lot (non ouvert ici)                                       | M3           |
+| **M7** | Lever `assertSingleBasketPromotion` pour les cumulables et le refus de la case « Cumulable » au panier — **irréversible**                                                                                              | —                                                                                                                                                                                                                                                                    | M3 à M6      |
 
 Chaque lot est vert seul ; M7 est le seul qui change un comportement visible.
 
@@ -2242,8 +2327,17 @@ afficher des libellés `NULL`. M7 se déploie donc sur l'ordre exprès de Hugo.
   specs de `ttc-order` et `vat`) ; deux remises %, % + fixe, fixe bornée à
   l'assiette, assiettes qui se recouvrent partiellement ; somme des parts
   par taux = montant de l'étape ; plancher.
-- **Migration** (e2e) : une commande d'avant reprise donne une ligne dont les
-  parts égalent la facture figée.
+- **Reprise** (e2e) : une commande `exact_ht` d'avant reprise donne une
+  ligne qui redonne `discount_ttc_cents` et `ttc_by_rate` à l'identique ; une
+  commande `line_ht`, une ligne dont les parts somment `discount_cents` ; un
+  écart injecté = commande sautée et listée ; seconde passe sans effet sur
+  une commande déjà reprise.
+- **Déclencheur** (e2e) : insertion d'une commande avec `discount_cents > 0`
+  sans ligne → refus au commit ; parts `ttcCents` partielles → refus.
+- **Couvertures actives** : `order_line_discounts` se lit **par jointure sur
+  la remise parente non archivée** (`JOIN order_discounts d … AND
+d.archived_at IS NULL`) — une couverture d'une remise archivée n'est
+  jamais lue comme active ; un test le tient après une révision.
 - **E2E** : deux remises de panier sur un panier à deux taux — totaux par taux
   justes, bon complet et partiel, facture et XML Factur-X (deux BG-20 par
   taux, `AllowanceTotalAmount` = somme, contrôle `facturx-arithmetic`
@@ -2308,8 +2402,8 @@ afficher des libellés `NULL`. M7 se déploie donc sur l'ordre exprès de Hugo.
 | Clé Factur-X sur plusieurs bons, repli, langue | Clé (promotion, taux), `Reason` fr figé, repli « Remise », reprise sans id = `COMPANY_DISCOUNT`                                                               | § 18.4, Q-M2   |
 | BT-93 / BT-94                                  | Non émis, et pourquoi                                                                                                                                         | § 18.4         |
 | DELETE à la révision, FK du bon                | Archivage (`archived_at`), index partiel, FK `RESTRICT` toujours valide                                                                                       | § 18.2, § 18.5 |
-| Somme des bons partiels, montant fixe          | Règle existante du reliquat : un fixe tout au BL-1, un % recomposé par envoi                                                                                  | § 18.2         |
-| Déclencheur écarté sans raison                 | Adopté, en deux temps ; arbitrage n° 2 révisé                                                                                                                 | § 18.2         |
+| Somme des bons partiels, montant fixe          | Fixe tout au BL-1, % recomposé ; somme < commande possible : dette existante écrite                                                                           | § 18.2         |
+| Déclencheur écarté sans raison                 | Adopté, strict, né en M3 (seconde passe) ; arbitrage n° 2 révisé                                                                                              | § 18.2         |
 | M7 irréversible                                | Écrit, avec ce qu'un retour arrière peut et ne peut pas faire                                                                                                 | § 18.6         |
 
 Le § 18.5 se lit avec cette correction : la révision **archive** les lignes
@@ -2318,14 +2412,21 @@ non archivées de la commande et en insère de nouvelles, dans sa transaction ;
 
 ### 18.10 Questions ouvertes à Hugo (2026-10-30)
 
-- **Q-M1** — Le script de reprise en production : qui le lance, et
-  comment ? `backfill-naf.ts` refuse toute cible non locale
-  (`refuseNonLocalTarget`) ; ouvrir un second chemin vers la production est
-  une décision (proposition : drapeau explicite `--production` + nom de la
-  base retapé, à blanc d'abord, compte lu par Hugo, puis `--write`).
+- ~~**Q-M1**~~ — **décidé (mandat 2026-10-30)** : `--production` + nom de
+  la base retapé, à blanc, puis `--write` après lecture du compte par Hugo
+  (§ 18.3).
 - **Q-M2** — Une même promotion figée sous deux libellés dans deux bons d'une
   facture (renommée entre deux commandes) : une BG-20 par (promotion, taux)
   impose un seul `Reason`. Proposition : le libellé du bon le plus ancien de
   la facture ; l'alternative est une clé (promotion, libellé, taux).
 - **Q-M3** — Le texte d'EN 16931 (nombre de BG-20 par taux, longueur de
   BT-97) n'a pas été ouvert : à lire avant M5, pas avant M1.
+
+**Seconde passe de vitruve (2026-10-30), sur `f2dfc02b1`** — reprise :
+aucun déclencheur en M2, il naît strict en M3 après la seconde passe
+(BLOQUANT 1) ; il écoute aussi `INSERT` sur `orders` (BLOQUANT 2) ; « par
+construction » retiré, la somme des bons inférieure au fixe écrite comme
+dette existante (SÉRIEUX 1) ; runbook en cinq temps (SÉRIEUX 2) ; texte SQL
+de la fonction (SÉRIEUX 3) ; Q-M1 décidée (SÉRIEUX 4) ; tests de reprise,
+couvertures par jointure, allowlist `no-direct-env` (MINEURS) — § 18.2,
+§ 18.3, § 18.6, § 18.7, § 18.10.
