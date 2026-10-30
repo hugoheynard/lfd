@@ -222,7 +222,11 @@ export class OrderDoors {
    * jour, puis l'heure de cette maison.
    */
   async startAt(pickupAddressId: string, place: string, address: string): Promise<boolean> {
-    return this.track({ mode: 'pickup', place, pickupAddressId, address }, async () => {
+    // Désignée, la maison se retient comme par le lien direct ({@link designate}) :
+    // un rechargement avant le jour la retrouve.
+    const start = { mode: 'pickup', place, pickupAddressId, address } as const;
+    this.order.pinHouse(start);
+    return this.track(start, async () => {
       const day = await this.askDay();
       return day === null
         ? null
@@ -258,10 +262,12 @@ export class OrderDoors {
     if (choice !== null) {
       this.order.choice.set(null);
     }
-    this.order.draft.set({
+    // Persisté : le paramètre quitte l'adresse, un rechargement doit retrouver la maison.
+    this.order.pinHouse({
       mode: 'pickup',
       ...(date === undefined ? {} : { date }),
       ...this.houseOf(point),
+      pickupAddressId: point.id,
     });
   }
 

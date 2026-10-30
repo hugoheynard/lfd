@@ -7,7 +7,7 @@ import { deliveryOpenTo } from '@lfd/contracts/shop-values';
 import { ClientAudience } from './client-audience.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { ServicePoints } from './shop/pickup-points.store';
-import { isRecord, readLocal, readString, writeLocal } from './local-store';
+import { clearLocal, isRecord, readLocal, readString, writeLocal } from './local-store';
 
 /**
  * Le mode de service retenu, avec tout ce qu'il entraîne.
@@ -115,6 +115,9 @@ function parseWindow(raw: unknown): FulfillmentWindow | null {
 
 const KEY = 'order.choice';
 
+/** Le brouillon « retrait à cette maison », quand une maison a été désignée. */
+const HOUSE_DRAFT_KEY = 'order.houseDraft';
+
 /**
  * **Le parcours en cours**, avant que le choix soit complet (plan
  * `documentation/commandes/passation/plan-barre-qui-accompagne.md`).
@@ -134,6 +137,32 @@ export interface OrderDraft {
   readonly place?: string;
   readonly pickupAddressId?: string;
   readonly address?: string;
+}
+
+/**
+ * Le brouillon « retrait à cette maison » relu du navigateur, ou `null`.
+ *
+ * Seule cette forme se relit : un retrait, une maison nommée par son id. La
+ * journée suit si elle est une date ; le reste du parcours ne se persiste pas.
+ */
+export function parseHouseDraft(raw: unknown): OrderDraft | null {
+  if (!isRecord(raw) || raw['mode'] !== 'pickup') {
+    return null;
+  }
+  const pickupAddressId = readString(raw['pickupAddressId']);
+  if (pickupAddressId === null) {
+    return null;
+  }
+  const place = readString(raw['place']);
+  const address = readString(raw['address']);
+  const date = readString(raw['date']);
+  return {
+    mode: 'pickup',
+    pickupAddressId,
+    ...(place === null ? {} : { place }),
+    ...(address === null ? {} : { address }),
+    ...(date !== null && /^\d{4}-\d{2}-\d{2}$/.test(date) ? { date } : {}),
+  };
 }
 
 /** Ce qui est relu du navigateur est du texte : on VALIDE avant de le croire. */
@@ -232,10 +261,20 @@ export class OrderContextStore {
   /**
    * Le parcours en cours, ou `null`. Posé par `OrderDoors` à chaque étape,
    * effacé quand le choix complet s'écrit ; GARDÉ quand on ferme un dialogue
-   * en route — la barre dit alors où l'on s'est arrêté. En mémoire seulement :
-   * un parcours interrompu ne survit pas à un rechargement, le choix si.
+   * en route — la barre dit alors où l'on s'est arrêté. En mémoire, sauf
+   * une exception : le brouillon d'une maison DÉSIGNÉE ({@link pinHouse} —
+   * lien direct, carte d'une maison) est relu du navigateur, parce que le
+   * lien a quitté l'adresse et qu'un rechargement perdait la maison (Hugo,
+   * 2026-10-30).
    */
-  readonly draft = signal<OrderDraft | null>(null);
+  readonly draft = signal<OrderDraft | null>(readLocal(HOUSE_DRAFT_KEY, parseHouseDraft));
+
+  /**
+   * La maison dont le brouillon se persiste, ou `null`. Elle cesse de l'être
+   * dès que le brouillon parle d'autre chose — une autre maison, la livraison,
+   * plus rien — ou qu'un choix complet est écrit.
+   */
+  private pinnedHouse: string | null = untracked(() => this.draft())?.pickupAddressId ?? null;
 
   /**
    * La date d'ouverture à laquelle la journée retenue vient d'être RAMENÉE,
@@ -253,6 +292,41 @@ export class OrderContextStore {
   constructor() {
     effect(() => {
       writeLocal(KEY, this.choice());
+    });
+
+    effect(() => {
+      const draft = this.draft();
+      const choice = this.choice();
+      if (
+        this.pinnedHouse !== null &&
+        choice === null &&
+        draft?.mode === 'pickup' &&
+        draft.pickupAddressId === this.pinnedHouse
+      ) {
+        writeLocal(HOUSE_DRAFT_KEY, draft);
+        return;
+      }
+      this.pinnedHouse = null;
+      clearLocal(HOUSE_DRAFT_KEY);
+    });
+
+    /**
+     * **Une maison désignée devenue non offerte est oubliée** — même règle
+     * que le retrait complet ci-dessous, sur le brouillon relu : un lien
+     * d'hier vers un site archivé ne doit pas survivre à son point.
+     */
+    effect(() => {
+      const draft = this.draft();
+      if (
+        draft?.pickupAddressId === undefined ||
+        draft.pickupAddressId !== this.pinnedHouse ||
+        !this.points.pickupsKnown()
+      ) {
+        return;
+      }
+      if (!this.points.pickups().some((point) => point.id === draft.pickupAddressId)) {
+        this.draft.set(null);
+      }
     });
 
     /**
@@ -363,5 +437,15 @@ export class OrderContextStore {
         this.choice.set(null);
       }
     });
+  }
+
+  /**
+   * Pose le brouillon « retrait à cette maison » et le PERSISTE : il survit
+   * à un rechargement tant qu'il parle de cette maison et qu'aucun choix
+   * complet ne le remplace.
+   */
+  pinHouse(draft: OrderDraft & { readonly pickupAddressId: string }): void {
+    this.pinnedHouse = draft.pickupAddressId;
+    this.draft.set(draft);
   }
 }

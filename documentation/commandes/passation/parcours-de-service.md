@@ -104,8 +104,15 @@ https://<boutique>/boutique?retrait=<id du point de retrait>
 - **Inconnu, archivé ou fermé à cette clientèle** : absent de la liste servie,
   il est ignoré sans erreur — la boutique s'ouvre normalement, la console de
   dev seule le dit. Une lecture des points en échec laisse le paramètre.
-- ⚠️ **Le brouillon vit en mémoire** : comme tout parcours interrompu, il ne
-  survit pas à un rechargement, et le paramètre est déjà parti.
+- **Le brouillon d'une maison désignée survit au rechargement** (Hugo,
+  2026-10-30) : `OrderContextStore.pinHouse` le persiste en `localStorage`
+  (clé `lfc.order.houseDraft`, même prudence que le choix : lecture validée,
+  rien au rendu serveur). Relu au chargement, il est revalidé contre les
+  points servis : un point devenu non offert est oublié. Il cesse de se
+  persister dès qu'un choix complet s'écrit, ou que le brouillon parle d'une
+  autre maison, de la livraison, ou de rien. La carte d'une maison à
+  l'accueil (`startAt`) pose le même brouillon persistant ; les autres
+  parcours interrompus restent en mémoire.
 - **Au back-office**, la fiche d'un site de retrait (Réglages › Sites) montre
   le lien en lecture seule avec « Copier le lien », construit sur
   `SHOP_PUBLIC_URL` (variable `LFC_BOUTIQUE_URL` en déployé, la même que

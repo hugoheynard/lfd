@@ -230,6 +230,68 @@ describe('OrderContextStore — le retrait et la liste servie', () => {
   });
 });
 
+/** Le lien direct d'un point de retrait (parcours-de-service.md § 2 bis, 2026-10-30). */
+describe('OrderContextStore — la maison désignée survit au rechargement', () => {
+  const LABO_DRAFT = {
+    mode: 'pickup',
+    place: 'Le Labo',
+    pickupAddressId: 'pick_labo',
+    address: 'Route de la Balme, Val d’Isère',
+  } as const;
+
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
+  it('retrouve le brouillon après un rechargement', () => {
+    const first = boot(PERSONAL_WORKSPACE).store;
+    first.pinHouse(LABO_DRAFT);
+    TestBed.tick();
+
+    const { store } = boot(PERSONAL_WORKSPACE);
+    TestBed.inject(ServicePoints).receive([LABO_POINT], [], []);
+    TestBed.tick();
+
+    expect(store.draft()).toEqual(LABO_DRAFT);
+  });
+
+  it('oublie une maison devenue non offerte', () => {
+    localStorage.setItem('lfc.order.houseDraft', JSON.stringify(LABO_DRAFT));
+    const { store } = boot(PERSONAL_WORKSPACE);
+    expect(store.draft()?.pickupAddressId).toBe('pick_labo');
+
+    TestBed.inject(ServicePoints).receive([{ ...LABO_POINT, id: 'pick_village' }], [], []);
+    TestBed.tick();
+
+    expect(store.draft()).toBeNull();
+    expect(localStorage.getItem('lfc.order.houseDraft')).toBeNull();
+  });
+
+  it('efface le brouillon persistant quand un choix complet est écrit', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    store.pinHouse(LABO_DRAFT);
+    TestBed.tick();
+    expect(localStorage.getItem('lfc.order.houseDraft')).not.toBeNull();
+
+    store.choice.set(AU_LABO);
+    store.draft.set(null);
+    TestBed.tick();
+
+    expect(localStorage.getItem('lfc.order.houseDraft')).toBeNull();
+  });
+
+  it('cesse de persister quand le brouillon parle d’une autre maison', () => {
+    const { store } = boot(PERSONAL_WORKSPACE);
+    store.pinHouse(LABO_DRAFT);
+    TestBed.tick();
+
+    store.draft.set({ mode: 'pickup', pickupAddressId: 'pick_village', place: 'Le Village' });
+    TestBed.tick();
+
+    expect(localStorage.getItem('lfc.order.houseDraft')).toBeNull();
+  });
+});
+
 /** Lot J4 : une journée d'avant le premier jour commandable y est ramenée. */
 describe('OrderContextStore — le premier jour commandable', () => {
   beforeEach(() => {
