@@ -291,6 +291,8 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
   return {
     ...seed(),
     totalCents: state.totalCents,
+    discountPromotionId: state.discountPromotionId,
+    discountAdjustment: state.discountAdjustment,
     fulfillment: {
       method: state.fulfillmentMethod,
       deliveryZoneId: state.deliveryZoneId,
@@ -319,6 +321,10 @@ function seed(): RevisableOrder {
     status: "placed",
     paymentStatus: "not_required",
     shortfallDecided: false,
+    // Déjà au Labo, avec sa remise : composer le squelette ne change donc
+    // pas d'acheminement, et la règle L9 (§ 13.8) n'a rien à juger.
+    discountPromotionId: null,
+    discountAdjustment: { mode: "percent", bp: 1_000 },
     totalCents: 1,
     stripePaymentIntentId: null,
     cancelledAt: null,
@@ -329,7 +335,15 @@ function seed(): RevisableOrder {
       deliveryZoneId: null,
       deliveryAddress: null,
       deliveryAddressId: null,
-      pickupAddress: null,
+      pickupAddress: {
+        siteId: LABO_POINT.id,
+        label: LABO_POINT.label,
+        ligne1: LABO_POINT.ligne1,
+        ligne2: LABO_POINT.ligne2,
+        codePostal: LABO_POINT.codePostal,
+        ville: LABO_POINT.ville,
+        pays: LABO_POINT.pays,
+      },
     },
     agreed: {
       window: { value: null, source: "default" },

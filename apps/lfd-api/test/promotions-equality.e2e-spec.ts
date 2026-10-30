@@ -464,7 +464,13 @@ async function placeAsGuest(pickupId: string) {
   return frozen(placed.id);
 }
 
-/** L'équipe passe pour la société active au premier site, puis la révise vers l'autre. */
+/**
+ * L'équipe passe pour la société active au premier site, puis la révise en
+ * gardant le point. Jusqu'à L9 la révision partait vers l'autre site et
+ * comparait la remise recalculée ; ce changement de point est refusé depuis
+ * (plan des promotions § 13.8, changement de comportement assumé), dans les
+ * deux sources — l'égalité se juge donc sur une révision qui garde le point.
+ */
 async function placeThenRevise(corpus: Corpus) {
   const content = (pickupAddressId: string, lines: readonly unknown[]) => ({
     requestedDeliveryDate: SERVICE_DAY,
@@ -490,7 +496,7 @@ async function placeThenRevise(corpus: Corpus) {
     .post(`/admin/orders/${placed.id}/revisions`)
     .send({
       expectedRevision: 0,
-      ...content(corpus.otherSite, [...LINES, { sku: "PAI-002-1", quantity: 3 }]),
+      ...content(corpus.realSite, [...LINES, { sku: "PAI-002-1", quantity: 3 }]),
     })
     .expect(200);
   return { placed: placedFacts, revised: await frozen(placed.id) };

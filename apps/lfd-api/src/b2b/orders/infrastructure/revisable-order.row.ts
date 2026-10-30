@@ -1,5 +1,6 @@
 import {
   billingAddressPayloadSchema,
+  cartAdjustmentSchema,
   contentLocaleSchema,
   deliveryVatModeSchema,
   lateFeeAdjustmentSchema,
@@ -90,6 +91,8 @@ export const REVISABLE_ORDER_SELECT = {
   fulfillment: true,
   note: true,
   lateFeeAdjustment: true,
+  discountPromotionId: true,
+  discountAdjustment: true,
   deliveryVatMode: true,
   loyaltyVoucherId: true,
   voucherDiscountCents: true,
@@ -141,6 +144,8 @@ export interface RevisableOrderRow {
   readonly fulfillment: Prisma.JsonValue | null;
   readonly note: string;
   readonly lateFeeAdjustment: Prisma.JsonValue | null;
+  readonly discountPromotionId: string | null;
+  readonly discountAdjustment: Prisma.JsonValue | null;
   readonly deliveryVatMode: string | null;
   readonly loyaltyVoucherId: string | null;
   readonly voucherDiscountCents: number;
@@ -199,6 +204,9 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     note: row.note,
     lines: row.lines.map(toLineSnapshot),
     lateFeeAdjustment: lateFeeOf(row.lateFeeAdjustment),
+    discountPromotionId: row.discountPromotionId,
+    discountAdjustment:
+      row.discountAdjustment === null ? null : cartAdjustmentSchema.parse(row.discountAdjustment),
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
     vatMethod: vatMethodOf(row.id, row.vatMethod),

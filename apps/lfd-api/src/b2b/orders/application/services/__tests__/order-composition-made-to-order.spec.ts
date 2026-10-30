@@ -66,6 +66,7 @@ function draftLine(
       discountCents: 0,
       discountAdjustment: null,
       discountLabel: null,
+      discountPromotionId: null,
       ineligibleSkus: new Set(),
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,

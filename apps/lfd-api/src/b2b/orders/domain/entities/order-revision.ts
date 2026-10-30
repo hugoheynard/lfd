@@ -2,6 +2,7 @@ import {
   ORDER_REVISION_CHANGES,
   // Aliasé comme dans `order.ts` : `OrderFulfillmentInput` désigne le mode + les adresses.
   type OrderFulfillment as AgreedFulfillment,
+  type CartAdjustment,
   type ContentLocale,
   type DeliveryVatMode,
   type LateFeeAdjustment,
@@ -19,6 +20,7 @@ import {
   ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
+import { ensureFulfillmentKeepsPromotion } from "../services/fulfillment-promotion.js";
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
@@ -75,6 +77,13 @@ export interface RevisableOrder {
    * réglage, comme la passation l'aurait fait.
    */
   readonly deliveryVatMode: DeliveryVatMode | null;
+  /**
+   * La promotion panier figée (L9) ; `null` = aucune, OU une commande d'avant
+   * L9 (« inconnu ») — la révision se rabat alors sur `discountAdjustment`.
+   */
+  readonly discountPromotionId: string | null;
+  /** L'ajustement de la remise figé à la passation, `null` sans remise. */
+  readonly discountAdjustment: CartAdjustment | null;
   /** L'ajustement de la surtaxe tardive figé à la passation, `null` sans surtaxe (R4). */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
@@ -178,6 +187,7 @@ export function ensureNoShortfallDecision(order: RevisableOrder): void {
  * @throws {RevisionBelowVoucherError} le total passerait sous le bon imputé.
  * @throws {RevisionRequiresPaymentError} une commande gratuite deviendrait payante.
  * @throws {RevisionFreesAccountOrderError} une commande au compte deviendrait gratuite.
+ * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement change la promotion panier (L9).
  */
 export function revisionOf(order: RevisableOrder, state: OrderToPlace): OrderRevisionToSave {
   ensureFrozenPrices(order.lines, state);
@@ -191,6 +201,7 @@ export function revisionOf(order: RevisableOrder, state: OrderToPlace): OrderRev
     throw new RevisionFreesAccountOrderError(order.orderId);
   }
   const changes = changesOf(order, state);
+  ensureFulfillmentKeepsPromotion(order, state, changes);
   const serviceDay = dayOf(state.requestedDeliveryDate);
   return {
     orderId: order.orderId,

@@ -147,6 +147,9 @@ export class PrismaOrderRepository extends OrderRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        // La promotion panier retenue (L9) ; `null` = aucune. Les commandes
+        // d'avant L9 restent `NULL` = « inconnu » (§ 13.8).
+        discountPromotionId: state.discountPromotionId,
         // Le libellé de la promotion panier, figé avec son ajustement (L8b).
         discountLabel:
           state.discountLabel === null

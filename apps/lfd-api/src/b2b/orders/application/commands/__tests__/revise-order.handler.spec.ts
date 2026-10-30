@@ -1,6 +1,7 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ORDER_REVISED } from "../../../domain/events/order-revised.event.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
+import { FulfillmentChangeAltersPromotionError } from "../../../domain/errors/fulfillment-promotion-errors.js";
 import { ShortfallDecidedRevisionError } from "../../../domain/errors/order-revision-errors.js";
 import {
   CardOrderNotRevisableError,
@@ -22,6 +23,22 @@ import {
   placedOrder,
   reviseScene,
 } from "./revision-scene.js";
+
+/** Le retrait du Labo devient une livraison à échéance (« avant 10 h »). */
+const TO_DELIVERY = {
+  fulfillmentMethod: "delivery",
+  pickupAddressId: null,
+  // La zone livre à échéance : « avant 10 h », sans heure de début.
+  requestedWindow: { start: null, end: "10:00" },
+  deliveryAddress: {
+    label: "",
+    ligne1: "2 rue Neuve",
+    ligne2: "",
+    codePostal: "73150",
+    ville: "Val d'Isère",
+    pays: "France",
+  },
+} as const;
 
 /**
  * **Modifier une commande** (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
@@ -131,31 +148,12 @@ describe("ReviseOrderHandler — le geste", () => {
     expect(revisions.saved[0]?.revision.state.buyerKind).toBe("guest");
   });
 
-  it("passer du retrait à la livraison ajoute les frais de zone et retire la remise", async () => {
-    const order = await placedOrder();
+  it("passer du retrait à la livraison ajoute les frais de zone (commande sans remise)", async () => {
+    // Sans remise avant ni après : L9 (§ 13.8) n'a rien à refuser.
+    const order = await placedOrder({ discountAdjustment: null });
     const { handler, revisions, durable } = reviseScene(order);
 
-    await handler.execute(
-      new ReviseOrderCommand(
-        "ord_1",
-        STAFF,
-        0,
-        content({
-          fulfillmentMethod: "delivery",
-          pickupAddressId: null,
-          // La zone livre à échéance : « avant 10 h », sans heure de début.
-          requestedWindow: { start: null, end: "10:00" },
-          deliveryAddress: {
-            label: "",
-            ligne1: "2 rue Neuve",
-            ligne2: "",
-            codePostal: "73150",
-            ville: "Val d'Isère",
-            pays: "France",
-          },
-        }),
-      ),
-    );
+    await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content(TO_DELIVERY)));
 
     const saved = revisions.saved[0]?.revision;
     expect(saved?.state).toMatchObject({ discountCents: 0, deliveryFeeCents: 500 });
@@ -163,6 +161,20 @@ describe("ReviseOrderHandler — le geste", () => {
       expect.arrayContaining(["method", "pickup_point", "delivery_address"]),
     );
     expect(durable.facts[1]?.payload).toMatchObject({ routeChanged: true });
+  });
+
+  /**
+   * Changement de comportement (L9, plan des promotions § 13.8) : jusqu'au
+   * 2026-10-30, ce passage retirait la remise du point en silence.
+   */
+  it("refuse de passer à la livraison quand la commande perdrait la remise de son point", async () => {
+    const order = await placedOrder();
+    const { handler, revisions } = reviseScene(order);
+
+    await expect(
+      handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content(TO_DELIVERY))),
+    ).rejects.toThrow(FulfillmentChangeAltersPromotionError);
+    expect(revisions.saved).toHaveLength(0);
   });
 
   it("une date qui change fait tenir les DEUX journées au fournil", async () => {

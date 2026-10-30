@@ -54,6 +54,7 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
       discountCents: 199,
       discountAdjustment: { mode: "percent", bp: 1_000 },
       discountLabel: null,
+      discountPromotionId: null,
       ineligibleSkus: new Set(),
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,
@@ -100,5 +101,16 @@ describe("OrderComposition.draftOf — l'unité de la méthode", () => {
     expect(standard.deliveryFeeCents).toBe(1_200);
     expect(follows.deliveryFeeCents).toBe(1_055);
     expect(standard.discountCents).toBe(0);
+  });
+
+  it("porte l'identifiant de la promotion panier que la commande fige (L9)", () => {
+    const draft = OrderComposition.draftOf(
+      CONTENT,
+      resolved({ discountPromotionId: "promo_1" }),
+      ARRANGED,
+      "line_ht",
+    );
+
+    expect(draft.discountPromotionId).toBe("promo_1");
   });
 });

@@ -81,6 +81,9 @@ export class PrismaOrderRevisionRepository extends OrderRevisionRepository {
         subtotalCents: state.subtotalCents,
         discountCents: state.discountCents,
         discountAdjustment: state.discountAdjustment ?? Prisma.DbNull,
+        // La promotion panier retenue (L9) ; `null` = aucune. Les commandes
+        // d'avant L9 restent `NULL` = « inconnu » (§ 13.8).
+        discountPromotionId: state.discountPromotionId,
         // La révision re-compose la remise : son libellé la suit (L8b).
         discountLabel:
           state.discountLabel === null

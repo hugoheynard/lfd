@@ -126,6 +126,12 @@ export interface DraftOrderInput {
    * promotion, ou l'ancien chemin (la remise d'un site n'a pas de libellé).
    */
   readonly discountLabel?: OrderDiscountLabel | null;
+  /**
+   * L'identifiant de la promotion panier qui l'a produite (L9, § 13.8) —
+   * figé, la révision le compare. Absent ou `null` : aucune promotion, ou
+   * l'ancien chemin.
+   */
+  readonly discountPromotionId?: string | null;
   /** Frais de livraison (zone) déjà résolus, dans l'unité de la méthode (cf. `discountCents`). */
   readonly deliveryFeeCents: number;
   /** Le barème de zone qui l'a produit, ou `null` en retrait. */
@@ -211,6 +217,8 @@ export interface OrderToPlace {
   readonly discountAdjustment: CartAdjustment | null;
   /** Cf. {@link DraftOrderInput.discountLabel} ; `null` = aucun. */
   readonly discountLabel: OrderDiscountLabel | null;
+  /** Cf. {@link DraftOrderInput.discountPromotionId} ; `null` = aucune. */
+  readonly discountPromotionId: string | null;
   readonly deliveryFeeCents: number;
   readonly deliveryFeeTtcCents: number | null;
   readonly deliveryFeeAdjustment: CartAdjustment | null;

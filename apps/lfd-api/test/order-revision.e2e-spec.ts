@@ -125,7 +125,8 @@ interface Scene {
  * 73150, une société au compte, son acheteur — et sa commande de 10
  * croissants, saisie par l'équipe au compte.
  */
-async function scene(): Promise<Scene> {
+async function scene(options: { readonly discounted?: boolean } = {}): Promise<Scene> {
+  const discounted = options.discounted ?? true;
   const point = await ctx.prisma.site.create({
     data: {
       label: "Labo",
@@ -134,8 +135,8 @@ async function scene(): Promise<Scene> {
       ville: "Val d'Isère",
       pays: "France",
       isDefault: true,
-      discountMode: "percent",
-      discountValue: 1_000,
+      discountMode: discounted ? "percent" : null,
+      discountValue: discounted ? 1_000 : null,
     },
     select: { id: true },
   });
@@ -250,10 +251,16 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
     ]);
   });
 
-  it("retrait → livraison un autre jour : frais de zone, plus de remise, les deux jours marqués", async () => {
-    const { orderId, pickupId } = await scene();
+  /**
+   * Changement de comportement (L9, plan des promotions § 13.8) : avec la
+   * remise du point, ce passage la retirait en silence ; il est refusé
+   * désormais. La commande d'ici n'a pas de remise, et c'est le seul cas où
+   * le passage reste permis.
+   */
+  it("retrait → livraison un autre jour : frais de zone, les deux jours marqués", async () => {
+    const { orderId, pickupId } = await scene({ discounted: false });
     const before = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
-    expect(before.discountCents).toBeGreaterThan(0);
+    expect(before.discountCents).toBe(0);
     await ctx.prisma.orderCollection.create({
       data: {
         orderId,
@@ -308,6 +315,34 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
 });
 
 describe("POST /orders/:id/revisions — les refus", () => {
+  it("L9 : refuse retrait → livraison quand la commande perdrait la remise de son point", async () => {
+    const { orderId, pickupId } = await scene();
+
+    const refused = await staff()
+      .post(`/admin/orders/${orderId}/revisions`)
+      .send({
+        expectedRevision: 0,
+        ...content(pickupId, {
+          fulfillmentMethod: "delivery",
+          pickupAddressId: null,
+          requestedWindow: { start: null, end: "10:00" },
+          deliveryAddress: {
+            label: "",
+            ligne1: "2 rue Neuve",
+            ligne2: "",
+            codePostal: "73150",
+            ville: "Val d'Isère",
+            pays: "France",
+          },
+        }),
+      })
+      .expect(409);
+
+    expect(JSON.stringify(refused.body)).toContain("retirerait la promotion");
+    const after = await ctx.prisma.order.findUniqueOrThrow({ where: { id: orderId } });
+    expect(after).toMatchObject({ revision: 0, fulfillmentMethod: "pickup" });
+  });
+
   it("refuse une commande réglée par carte, avec le geste de sortie", async () => {
     const { pickupId } = await scene();
     const placed = jsonBody<{ id: string }>(

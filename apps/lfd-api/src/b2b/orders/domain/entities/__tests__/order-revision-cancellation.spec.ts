@@ -88,6 +88,8 @@ function placed(
     status: "placed",
     paymentStatus: "not_required",
     shortfallDecided: false,
+    discountPromotionId: state.discountPromotionId,
+    discountAdjustment: state.discountAdjustment,
     totalCents: state.totalCents,
     stripePaymentIntentId: null,
     cancelledAt: null,

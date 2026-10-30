@@ -60,6 +60,8 @@ interface ResolvedFulfillment {
   readonly discountAdjustment: CartAdjustment | null;
   /** Le libellé de la promotion panier pour l'acheteur, à figer (L8b) ; `null` sinon. */
   readonly discountLabel: OrderDiscountLabel | null;
+  /** La promotion panier retenue, que la commande fige et que la révision compare (L9). */
+  readonly discountPromotionId: string | null;
   /** Les SKU que la remise de retrait ne couvre pas — vide en coursier. */
   readonly ineligibleSkus: ReadonlySet<string>;
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
@@ -103,6 +105,7 @@ export type ComposedDraft = Pick<
   | "discountCents"
   | "discountAdjustment"
   | "discountLabel"
+  | "discountPromotionId"
   | "deliveryFeeCents"
   | "deliveryFeeAdjustment"
   | "deliveryVatMode"
@@ -248,6 +251,7 @@ export class OrderComposition {
       discountCents: amounts.discountCents,
       discountAdjustment: fulfillment.discountAdjustment,
       discountLabel: fulfillment.discountLabel,
+      discountPromotionId: fulfillment.discountPromotionId,
       deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
       deliveryFeeCents: amounts.deliveryFeeCents,
       deliveryVatMode: arranged.deliveryVatMode,
@@ -348,6 +352,7 @@ export class OrderComposition {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
         discountLabel: retrait.discountLabel,
+        discountPromotionId: retrait.promotionId,
         ineligibleSkus: retrait.ineligibleSkus,
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
@@ -373,6 +378,7 @@ export class OrderComposition {
       discountCents: 0,
       discountAdjustment: null,
       discountLabel: null,
+      discountPromotionId: null,
       ineligibleSkus: new Set(),
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable.
