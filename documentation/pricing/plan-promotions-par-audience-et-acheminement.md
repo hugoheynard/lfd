@@ -1393,7 +1393,7 @@ commandes du staff selon le client à la date.
 direction : le corps du § 13 garde ses décisions, ce § dit ce qui a changé et
 pourquoi ; en cas de divergence, le corps corrigé fait foi.
 
-## 15. L8b — une promotion, plusieurs publics, des libellés par audience (Hugo, 2026-10-30) — PLAN EXÉCUTABLE, NON BÂTI
+## 15. L8b — une promotion, plusieurs publics, des libellés par audience (Hugo, 2026-10-30) — PLAN EXÉCUTABLE, CONTREDIT (§ 15.13), NON BÂTI
 
 Décidé par Hugo le 2026-10-30, après L8 (`109b6fd38`) ; **rien de ceci n'est
 dans le code** à cette date. Lot d'**argent** et de **migration** : `vitruve`
@@ -1439,61 +1439,77 @@ affirmation sur l'existant ci-dessous a été ouverte le 2026-10-30.
 | Éditeur              | un `fold-select` « Public » sur `EDITABLE_AUDIENCES` (7 kinds, sans invités / inscrits / en cours d'inscription) ; un bloc libellé FR/EN/IT | `promotion-editor-page.html:47-68, 84-86`, `promotion-draft.ts:63-71`                                                                  |
 | Case à trois états   | `FoldCheckboxComponent.indeterminate` (signal, propriété native)                                                                            | `apps/lfd-backoffice-frontend/node_modules/fold-ng/types/fold-ng.d.ts:6813-6814`                                                       |
 
-### 15.3 Le modèle de données — migration ADDITIVE `2026103114xxxx_les_publics_et_libelles`
+### 15.3 Le modèle de données — migration `2026103114xxxx_les_publics_et_libelles`
 
-Rien n'est supprimé ni resserré ; aucune valeur existante n'est réécrite.
+Additive pour les données (aucune valeur existante réécrite, aucune colonne
+supprimée), **mais elle modifie une contrainte** : c'est dit plutôt que tu.
 
-- **Table `public.promotion_audience_targets`** : `promotion_id` text FK →
-  `promotions.id`, `kind` text, `company_id` text nullable, PK
-  `(promotion_id, kind, coalesce(company_id, ''))` (index unique d'expression),
-  `CHECK ((kind IN ('company','company_and_sites')) = (company_id IS NOT NULL))`,
-  `CHECK (kind IN (…les 10…))`. Index `(company_id)` (le lecteur de statut de
-  société et l'écran filtrent par société).
+- **Contrainte `promotions_audience_known`** (posée par
+  `20261031110000_les_promotions/migration.sql:93-97`, liste fermée des 10
+  `kind`) : la migration la **SUPPRIME puis la RECRÉE** avec la même liste
+  **plus `'several'`** (`ALTER TABLE … DROP CONSTRAINT … ; ADD CONSTRAINT …`,
+  dans la même transaction). Sans ce geste, la première promotion à plusieurs
+  publics serait refusée en base. Le `migration.sql` de L3 n'est pas touché.
+- **Table `public.promotion_audience_targets`** : `id` text **PK** (ULID,
+  `IdGenerator`), `promotion_id` text FK → `promotions.id`, `kind` text,
+  `company_id` text nullable ;
+  `CHECK ((kind IN ('company','company_and_sites')) = (company_id IS NOT NULL))` ;
+  `CHECK (kind IN (…les 10…))` (jamais `several` ici) ; index `(company_id)`.
+  **Unicité** : `CREATE UNIQUE INDEX promotion_audience_targets_unique ON …
+(promotion_id, kind, company_id) NULLS NOT DISTINCT`, **écrit à la main**
+  dans le SQL. **Prisma ne sait pas l'exprimer** : précédent
+  `prisma/schema/public/orders.prisma:1073-1076` (« un `@@unique` ordinaire
+  laisserait passer » deux `NULL`). On suit ce précédent : **pas de
+  `@@unique` dans le schéma**, un `///` qui nomme l'index et la migration ;
+  déclarer un `@@unique` sans `NULLS NOT DISTINCT` créerait un second index
+  plus faible au prochain `migrate dev`. La cible de conflit de la reprise
+  (§ 15.7) est **cet index** (`ON CONFLICT (promotion_id, kind, company_id)`,
+  que Postgres apparie à l'index `NULLS NOT DISTINCT`).
 - **Colonnes `promotions`** : `label_individuals_fr/en/it`,
   `label_pros_fr/en/it`, toutes nullables. `label_fr/en/it` deviennent le
   libellé **commun** (sens inchangé : c'est ce que lit tout le code actuel).
 - **`audience_kind` / `audience_company_id` gardés, NOT NULL inchangé** :
-  pour une promotion à **une** cible, ils portent cette cible (comme
-  aujourd'hui) ; pour **plusieurs**, la valeur `'several'` et `NULL`. Ils
-  restent lisibles par tout ce qui les lit en SQL (le contrôle, la reprise).
-- **Remplissage** : la migration insère une ligne de cible par promotion
-  existante, recopiée de `audience_kind` / `audience_company_id`. Après elle,
-  **la table fait foi** ; les deux colonnes en sont une projection écrite par
-  l'adaptateur dans la même transaction.
-- **Un `CHECK` de cohérence** sur `promotions` : `audience_kind <> 'several'
-OR audience_company_id IS NULL`. La cohérence colonne ↔ table (une seule
-  ligne ⇔ pas `several`) est tenue par l'adaptateur et un test e2e, pas par un
-  trigger (le contrôle § 15.7 la vérifie aussi).
+  une cible ⇒ cette cible (comme aujourd'hui) ; plusieurs ⇒ `'several'` et
+  `NULL`. `CHECK (audience_kind <> 'several' OR audience_company_id IS NULL)`.
+- **Colonne `orders.discount_label` jsonb nullable** `{fr, en, it}` : le
+  libellé de la remise panier **figé à la passation** (§ 15.8).
+- **Remplissage** : une ligne de cible par promotion existante, recopiée de
+  `audience_kind` / `audience_company_id`. Après elle, **la table fait foi** ;
+  les deux colonnes en sont une projection écrite par l'adaptateur dans la
+  même transaction.
 
 ### 15.4 Le domaine — agrégat et invariants
 
 - `PromotionAudience` (une cible) **reste** ; s'ajoute `PromotionAudienceSet`
-  (`domain/promotion-audience-set.ts`), value-object immuable, factory
-  `PromotionAudienceSet.of(targets)` qui **refuse** (`DomainError` nommé) :
-  ensemble vide ; `everyone` avec une autre cible ; `everyone_but_active_pros`
-  avec une autre cible (c'est un public de reprise, pas un nœud de l'arbre :
-  exclusif comme « Tout le monde ») ; une cible et son ancêtre ; un doublon.
-  Elle **ne normalise pas** en silence : « tous les enfants ⇒ le parent » est
-  le travail de l'éditeur ; le domaine refuse l'ensemble non minimal
-  (`individuals_guest` + `individuals_registered` ⇒ refus « choisir
-  Particuliers »). Interdire plutôt que corriger.
-- **L'arbre** est écrit une fois, dans ce value-object :
-  `individuals ⊃ {individuals_guest, individuals_registered}` ;
-  `pros ⊃ {pros_active, pros_pending, company_and_sites}` ;
-  `company_and_sites(X) ⊃ company(X)`. `pros_active` ne contient pas
-  `company` : une société désignée peut être en attente (§ 9) ; les deux
-  coexistent donc, et le rang départage (`company` 4 > `pros_active` 2).
+  (`domain/promotion-audience-set.ts`), value-object immuable.
+- **La partition** (écrite une fois, dans ce value-object) : feuilles
+  `individuals_guest`, `individuals_registered`, `pros_active`,
+  `pros_pending` ; `individuals` = {invités, inscrits} ; `pros` = {actifs, en
+  cours d'inscription} ; `everyone` = {Particuliers, Pros} ;
+  `everyone_but_active_pros` = {Particuliers, Pros en cours d'inscription}.
+  `company` et `company_and_sites` sont **hors partition** (une société n'est
+  pas une feuille : elle peut être active ou en attente, § 9).
+- **Factory `PromotionAudienceSet.of(targets)` NORMALISE** vers une forme
+  canonique : calcule la couverture en feuilles, remonte au parent tout
+  groupe complet (invités + inscrits ⇒ Particuliers ; Particuliers + Pros ⇒
+  Tout le monde), et **refuse** (`DomainError` nommé) : l'ensemble vide ; un
+  doublon de société. `company(X)` avec `company_and_sites(X)` ⇒
+  `company_and_sites(X)`. Une société avec `pros` (ou `everyone`) reste
+  distincte : son rang (4/3) n'est pas celui de `pros` (1), et le staff qui
+  l'a cochée veut ce rang. Deux écritures du même public donnent donc **la
+  même valeur stockée** — c'est ce qui rend les comparaisons sûres.
+  `everyone_but_active_pros` se normalise en `{individuals, pros_pending}` à
+  l'écriture d'une promotion **neuve** ; une reprise qui le porte le garde
+  (le contrôle d'égalité le compare tel quel, § 15.7).
 - `PromotionTerms.audience` devient `audiences: PromotionAudienceSet`
   (`promotion-terms.ts:59`) ; `assertTargets` (`:110-117`) itère.
 - **Libellés** : `PromotionTerms.label` reste le **commun** (`fr` obligatoire,
   `promotion-terms.ts:78-81`) ; s'ajoute `audienceLabels: { individuals:
 PromotionLabel | null, pros: PromotionLabel | null }`. Invariant : un
-  libellé d'audience n'existe que si l'ensemble touche cette audience (une
-  promotion « Pros actifs » ne porte pas de libellé Particuliers) ; `everyone`
-  admet les deux. Un libellé d'audience présent a son `fr` non vide.
-- `labelFor(audience: "individuals" | "pros", lang)` : libellé d'audience
-  dans la langue, sinon libellé d'audience FR, sinon commun dans la langue,
-  sinon commun FR. Une seule fonction, pure, testée en table.
+  libellé d'audience n'existe que si la couverture touche cette audience ;
+  un libellé d'audience présent a son `fr` non vide.
+- `labelFor(audience, lang)` : libellé d'audience dans la langue, sinon son
+  FR, sinon commun dans la langue, sinon commun FR. Pure, testée en table.
 
 ### 15.5 Le mapper et l'adaptateur
 
@@ -1515,58 +1531,79 @@ PromotionLabel | null, pros: PromotionLabel | null }`. Invariant : un
   (`live-promotion.ts:38`). `promotionsAdmitted` (`:77`) : **au moins une**
   cible admet.
 - **Rang** : `admittingRankOf(promotion, facts)` = le **plus haut**
-  `PUBLIC_RANK` parmi les cibles qui admettent cet acheteur — remplace
-  `targetingRankOf` (`live-promotion.ts:96`) aux trois appelants
+  `PUBLIC_RANK` parmi les cibles qui admettent — remplace `targetingRankOf`
+  (`live-promotion.ts:96`) aux trois appelants
   (`basket-promotion-choice.ts:64`, `promotion-as-rule.ts:76`,
-  `pickup-discount-announcement.ts:98`), qui ont tous les faits sous la main.
-  Une promotion à une cible garde exactement son rang d'aujourd'hui.
-- **Chevauchement** (`promotion-overlap.ts:109-116`) : `sameTargeting` devient
-  « même acheminement **et** au moins une cible **identique** (même `kind`,
-  même `companyId`) dans les deux ensembles ». Pour deux singletons, c'est la
-  règle d'aujourd'hui, mot pour mot. Le refus nomme la cible commune.
+  `pickup-discount-announcement.ts:98`). Une cible seule garde son rang.
+- **Égalité de rang** : la plus **avantageuse pour le client**, puis l'id —
+  le départage existant (`basket-promotion-choice.ts:65` met déjà
+  `discountCents` après les rangs, puis l'id ; l'annonce départage par l'id,
+  `pickup-discount-announcement.ts:107-120`, et gagne le critère de montant).
+- **Chevauchement** (`promotion-overlap.ts:109-116`) : `sameTargeting` est
+  remplacé par « même acheminement **et COUVERTURES qui se croisent** » : la
+  couverture d'un ensemble = ses feuilles de la partition, plus ses sociétés
+  nommées (une société croise une autre société seulement si c'est la même,
+  ou si l'une est `company_and_sites`). Deux promotions dont les couvertures
+  se croisent, sur le même point, le même acheminement, une fenêtre et un
+  article communs, sont **refusées** ; le refus nomme la feuille commune.
+  Conséquence voulue : `{pros}` contre `{pros_active}` est désormais
+  **refusé** (aujourd'hui accepté, rangs différents) — vitruve n° 3, S4.
 - **Une promotion panier par commande** (`:89-107`) : `audiencesMeet` sur
-  ensembles = il existe une paire (cible gauche, cible droite) qui se
-  rencontre ; `possibleBuyers` (`:171-184`) prend les sociétés nommées des
-  **deux ensembles**.
+  ensembles = une paire de cibles qui se rencontre ; `possibleBuyers`
+  (`:171-184`) prend les sociétés nommées des **deux ensembles** (sans quoi
+  un acheteur de la société de droite n'est jamais énuméré).
 
-### 15.7 Contrôle d'égalité et reprise rejouée
+### 15.7 Contrôle d'égalité et reprise : figés à la bascule
 
-- `controle_des_promotions()` ne regarde que les promotions **issues d'une
-  source** (jointure sur les règles et les remises de retrait reprises,
-  `migration.sql:78, 112`). La reprise n'écrit que des publics simples
-  (`20261031120000…/migration.sql:167-241`) : leur `audience_kind` reste une
-  cible réelle, la comparaison tient. La migration de L8b **remplace** la
-  fonction (`CREATE OR REPLACE`, sans toucher le `migration.sql` de L8 —
-  mémoire « un migration.sql ne se touche pas ») pour vérifier en plus :
-  pour une promotion reprise, exactement une ligne de cible, égale à
-  `audience_kind` / `audience_company_id`.
-- **Le rejeu de la reprise** (upsert sur `promotions`) n'écrit pas la table de
-  cibles. Il est donc suivi, dans la même fonction de rejeu, d'un upsert de la
-  cible unique des promotions reprises (`ON CONFLICT DO UPDATE`), sinon une
-  reprise rejouée après L8b laisserait une cible périmée. Test e2e : rejouer
-  deux fois ⇒ une ligne, égale à la source.
+- La bascule de L8 a rejoué la reprise, contrôlé, basculé
+  (`20261031130000…/migration.sql:152-167`). **Après la bascule, la reprise
+  ne réécrit plus rien** : une promotion reprise puis éditée appartient au
+  staff, et un rejeu qui écraserait l'édition serait une perte silencieuse.
+  La migration de L8b fait un **`CREATE OR REPLACE FUNCTION
+public.bascule_des_promotions()`** (le `migration.sql` de L8 n'est pas
+  touché) qui **sort sans effet** si `promotion_settings.promotions_source`
+  vaut déjà `'promotions'` (`RAISE NOTICE` qui le dit).
+- `controle_des_promotions()` (`migration.sql:40`, comparaisons `:78, :112`)
+  ne porte donc que sur **l'avant-bascule** ; elle n'est plus appelée après.
+  Elle n'est pas modifiée. Sur une base où la bascule n'a pas encore eu lieu
+  (base neuve), la reprise n'écrit que des publics simples
+  (`20261031120000…/migration.sql:167-241`) et le remplissage du § 15.3 leur
+  donne leur cible unique.
+- Si un rejeu avant bascule devait écrire une cible, sa cible de conflit est
+  l'index `promotion_audience_targets_unique` (§ 15.3).
 
-### 15.8 Le libellé figé et l'annonce
+### 15.8 Le libellé figé : trace, remise panier, annonce
 
-- **Trace d'une ligne** : le libellé figé est celui de l'**audience de
-  l'acheteur**, en **français** (la trace est lue par le staff et
-  l'historique ; la langue d'affichage se résout à la lecture par `ruleId`
-  — décision par défaut, voir Q1). `forLot` (`line-promotion-supply.ts:45-57`)
-  connaît le statut de la société par `factsFor` : l'audience est
-  `companyServiceOf(status) === "pro" ? "pros" : "individuals"` (même
-  fonction que `promotion-targeting.ts:76`). `LivePromotion.label`
-  (`live-promotion.ts:29, 49`) devient `labels` (commun + par audience), et
-  `promotionAsRule` (`promotion-as-rule.ts:74`) choisit
-  `labelFor(audienceDuLot, "fr")`. Un statut `unknown` ⇒ libellé commun.
-- **Panier** : `basket-promotion-choice` porte déjà les faits ; l'issue gagne
-  `label` résolu de la même façon.
-- **Annonce d'un point** : `AudiencePickupDiscount` gagne
-  `label: { fr, en, it } | null` (champ **additif**, `.optional()` côté
-  lecture : un front en ligne qui ne le lit pas ne casse pas). `announcedFor`
-  (`pickup-discount-announcement.ts:72-87`) connaît déjà sa clientèle :
-  `b2b` ⇒ libellé Pros, `b2c` ⇒ libellé Particuliers, repli commun.
-- Boutique / devis / panier côté front : afficher `label[lang] ?? label.fr`
-  là où un libellé de promotion s'affiche déjà ; rien de nouveau à poser.
+- **Format de la trace — ADDITIF.** `PriceStep.label: string`
+  (`pricing/domain/price-rule.ts:284`, contrat
+  `packages/contracts/src/pricing.ts:686`) **reste** : français, lu par
+  tous les lecteurs actuels. S'ajoute `labels?: { fr, en, it }`, **écrit
+  seulement par les promotions** ; les anciennes traces gardent la chaîne
+  seule, et rien ne se réécrit dans les commandes existantes. Pour une
+  promotion, `label` = `labels.fr` de l'audience de l'acheteur.
+- **L'audience du lot** : `forLot` (`line-promotion-supply.ts:45-57`) a le
+  statut par `factsFor` ; audience = `companyServiceOf(status) === "pro"`
+  (comme `promotion-targeting.ts:76`) ; statut `unknown` ⇒ commun.
+  `LivePromotion.label` (`live-promotion.ts:29, 49`) devient `labels` ;
+  `promotionAsRule` (`promotion-as-rule.ts:74`) recopie le libellé de
+  l'audience ; `resolvePrice` (`resolve-price.ts:137-139`) recopie `labels`
+  à côté de `label`.
+- **Lecteurs à adapter** (repli sur `label` quand `labels` manque) : le
+  schéma de contrat (`pricing.ts:686`, `:747` et `:760` — `supersedes`
+  reste `{ruleId, label}`) ; le front boutique et le back-office là où ils
+  affichent une étape ; `orders/application/queries/reconstruct-line-rules.handler.ts` ;
+  `catalog/infrastructure/prisma-catalog-price-retracer.ts` ; le PDF.
+- **Remise panier — FIGÉE à la passation** : colonne
+  `orders.discount_label` (§ 15.3), écrite avec `discount_promotion_id` par
+  le libellé de l'audience de l'acheteur ; lue par le PDF, les bons et la
+  facture (`orders/domain/services/order-sheet-pdf-totals.ts`,
+  `pickup-discount-label.ts`, `platform/mailer/pickup-discount-mail-label.ts`),
+  **repli** sur `pickupDiscountLabel` pour les commandes d'avant.
+- **Annonce d'un point** : `AudiencePickupDiscount`
+  (`contracts/src/pickup-discount-scope.ts:35-40`) gagne
+  `label?: { fr, en, it }` ; `announcedFor`
+  (`pickup-discount-announcement.ts:72-87`) : `b2b` ⇒ Pros, `b2c` ⇒
+  Particuliers, repli commun.
 
 ### 15.9 Contrats et éditeur
 
@@ -1591,7 +1628,9 @@ companyId}).min(1)` **à côté** de `audience` (gardé, rempli de la première
     Particuliers FR/EN/IT ; idem Pros. Le bloc actuel
     (`promotion-editor-page.html:53-68`) devient « Libellé commun ».
   - `EDITABLE_AUDIENCES` (`promotion-draft.ts:63-71`) disparaît au profit de
-    l'arbre.
+    l'arbre ; les autres lecteurs de `audienceKind` à basculer sur
+    `audiences` : `promotion-draft.ts:46, 100, 145-146, 187, 206` et
+    `promotion-editor-page.ts:145-148`.
 - Liste et fiche : le public se lit « Particuliers inscrits · Tous les pros ».
 
 ### 15.10 Tests
@@ -1607,29 +1646,51 @@ companyId}).min(1)` **à côté** de `audience` (gardé, rempli de la première
 - **Mapper** : aller-retour 1 et 3 cibles ; promotion sans cible ⇒
   `UnreadablePromotionRowError`.
 - **E2E (vrai Postgres)** :
-  1. une promotion `{individuals_registered, pros}` donne **le même prix**
-     de ligne, la même remise panier et le même total qu'une paire de
-     jumelles, pour un inscrit et pour un pro actif ; un invité n'est pas
-     touché ;
-  2. le libellé figé de la trace est le libellé Particuliers pour
-     l'inscrit, Pros pour le pro, commun quand l'audience n'a pas le sien ;
+  1. au point **PANIER** (`buyerKind` connu à la passation) : une promotion
+     `{individuals_registered, pros}` donne la même remise et le même total
+     qu'une paire de jumelles, pour un inscrit et un pro actif ; un invité
+     n'est pas touché. Au point **ligne**, l'égalité pour une cible
+     « inscrits » est **en attente de L10** (`forLot` passe
+     `buyerKind: "unknown"`, `line-promotion-supply.ts:52`) ; le test ligne
+     se fait sur `{pros_active, individuals}` ;
+  2. `labels` de la trace et `orders.discount_label` = Particuliers pour
+     l'inscrit, Pros pour le pro, commun sinon ; une commande d'avant L8b
+     relue garde sa chaîne ;
   3. l'annonce d'un point porte le libellé de chaque clientèle ;
-  4. reprise rejouée deux fois ⇒ une cible, égale à la source ;
-     `controle_des_promotions()` vert ;
+  4. `bascule_des_promotions()` rappelée après la bascule ⇒ aucune ligne
+     changée, une promotion reprise éditée reste éditée ;
   5. le mur : l'écran filtré par société ne montre que les promotions qui la
-     désignent dans leur ensemble.
+     désignent ;
+  6. la contrainte recréée accepte `several` et refuse une valeur inconnue ;
+     l'index refuse deux fois `(p, pros, NULL)`.
 - **Front** : `minimalAudiences` (tous les enfants ⇒ parent, exclusivité),
   et le rendu de l'arbre (grisé, indéterminé) dans le spec du composant.
 
-### 15.11 Ordre et portes
+### 15.11 Ordre, portes, irréversibilité
 
 Une migration, puis domaine + adaptateur + calcul dans un commit (aucun prix
 ne change pour une promotion à une cible : les tests de L5-L8 restent verts
-sans modification — c'est la preuve), puis contrat + éditeur. Portes à
-regarder : `lint:prisma-model-ownership` (la table appartient à
+sans modification, sauf le chevauchement `{pros}`/`{pros_active}` désormais
+refusé — test réécrit et nommé), puis contrat + éditeur.
+
+**Irréversible dès la première promotion à plusieurs publics.** Un retour
+arrière du **code** relit `audience_kind = 'several'` par `audienceOf`
+(`promotion-rows.ts:80`), qui rend `null` ⇒ `UnreadablePromotionRowError`
+(`:82-83`) : toute lecture des promotions casse, caisse comprise. Le lot
+livre donc `prisma/rollback/2026103114xxxx_les_publics_et_libelles.sql`
+(dossier existant, précédent `rollback/20261031130000_…`) qui, **avant** le
+retour du code : pour chaque promotion `several` **active**, la ramène à sa
+première cible (ordre canonique) et l'**archive** avec le motif « retour
+arrière L8b : publics réduits à <cible> », ou **refuse** en la nommant si
+cette réduction changerait un prix servi sans archive possible. Il recrée
+ensuite l'ancienne contrainte. La table et les colonnes restent.
+
+Portes : `lint:prisma-model-ownership` (la table appartient à
 `b2b/promotions`), `lint:prisma-schema-layout` (`public/promotions.prisma`),
-`lint:dated-decisions` (la cible n'est pas datée seule : elle vit dans la
-fenêtre de sa promotion — à confirmer à l'armement), `lint:code-language`.
+`lint:code-language`. **`lint:dated-decisions` n'a rien à armer** : une
+cible n'a pas de fenêtre propre, elle vit dans celle de sa promotion ; la
+porte (`dev-toolbox/gates/dated-decisions.mjs:121-137`) ne vérifie que les
+types des `PricingMaterials`, et `LivePromotion` y porte déjà `validFrom`.
 
 ### 15.12 Questions à Hugo
 
@@ -1640,11 +1701,33 @@ fenêtre de sa promotion — à confirmer à l'armement), `lint:code-language`.
   commun aux deux — l'éditeur doit-il **exiger** les deux libellés dès que les
   deux audiences sont touchées, ou le commun suffit-il ?
 
-**Arbitrages du § 15.12 (mandat de Hugo, 2026-10-30)** :
+### 15.13 Contradiction de vitruve n° 3 (2026-10-30) — objection → réponse
 
-- **Q1** : la trace d'une ligne fige le libellé de l'audience de l'acheteur
-  dans les TROIS langues (FR/EN/IT) — un document relu plus tard (facture,
-  bon, historique) dans la langue du client ne doit pas dépendre d'une
-  promotion modifiée depuis.
-- **Q2** : le libellé commun suffit ; les libellés Particuliers / Pros sont
-  facultatifs et le remplacent quand ils sont posés.
+Décisions par mandat de Hugo ; le corps ci-dessus est corrigé.
+
+- **B1** — « additive » était faux : `promotions_audience_known`
+  (`20261031110000:93-97`) refuse `'several'`. → La migration la supprime et
+  la recrée avec `'several'` (§ 15.3).
+- **B2** — PK composite sur `coalesce(company_id, '')` : inexprimable en
+  Prisma, conflit de reprise sans cible. → `id` PK + index unique
+  `NULLS NOT DISTINCT` écrit en SQL, non déclaré en Prisma
+  (`orders.prisma:1073`), cible de conflit (§ 15.3).
+- **B3** — remplacer le libellé de la trace casse les lecteurs. → Additif :
+  `label` reste, `labels?` à côté, repli ; lecteurs listés (§ 15.8).
+- **S4** — refus « non minimal » et identité des cibles laissaient passer
+  des publics équivalents. → Normalisation canonique sur la partition,
+  chevauchement par couvertures (§§ 15.4, 15.6).
+- **S5** — l'égalité jumelles n'est démontrable qu'où `buyerKind` est connu.
+  → Au point panier ; la ligne attend L10 (§ 15.10).
+- **S6** — le libellé panier n'était figé nulle part. →
+  `orders.discount_label`, repli `pickupDiscountLabel` (§ 15.8).
+- **S7** — le rejeu écraserait une promotion reprise puis éditée. →
+  `bascule_des_promotions()` sans effet après la bascule ; contrôle
+  d'avant-bascule seulement (§ 15.7).
+- **S8** — retour arrière du code après une `several` : lecture cassée. →
+  Écrit, et `prisma/rollback/` fourni (§ 15.11).
+- **S9** — égalité de rang non dite. → Avantage client, puis id (§ 15.6).
+- **Mineurs** — lecteurs front de `audienceKind` listés (§ 15.9) ;
+  `possibleBuyers` prend les sociétés des deux ensembles (§ 15.6) ; le
+  contrôle `migration.sql:40` n'est pas modifié (§ 15.7) ; cible non datée,
+  porte vérifiée (§ 15.11).
