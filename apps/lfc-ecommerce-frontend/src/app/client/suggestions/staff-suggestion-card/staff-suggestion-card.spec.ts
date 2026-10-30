@@ -14,7 +14,12 @@ import { FR } from '../../copy/fr';
 import { matchMediaAt } from '../../mon-compte/account.fixture';
 import { ProVisit } from '../../shop/pro-visit.service';
 import { formatCents } from '../../format-money';
-import { hydrateWith, TEST_CATALOGUE, TEST_ITEMS } from '../../shop/shop-catalogue.fixture';
+import {
+  hydrateWith,
+  LOCKED_ITEM,
+  TEST_CATALOGUE,
+  TEST_ITEMS,
+} from '../../shop/shop-catalogue.fixture';
 import { ShopCatalogue } from '../../shop/shop-catalogue.store';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
@@ -199,5 +204,25 @@ describe('StaffSuggestionCard', () => {
     expect(pitch()?.contains(plus())).toBe(false);
     expect(pitch()?.textContent).toContain(BAGUETTE.name);
     expect(plus()?.getAttribute('aria-label')).toBe(`Ajouter ${BAGUETTE.name}`);
+  });
+
+  /** Un habituel réservé à un autre compte : le client doit voir pourquoi il ne peut plus. */
+  it('un habituel verrouillé est grisé, dit sa raison à la place du « + », et n’ajoute rien', () => {
+    const locked: SuggestionView = {
+      sku: LOCKED_ITEM.sku,
+      item: LOCKED_ITEM,
+      reason: { source: 'data', kind: 'frequent', orderCount: 3 },
+    };
+    mount(locked, 'Vos habituels');
+
+    expect(plus()).toBeNull();
+    expect(card()?.classList.contains('locked')).toBe(true);
+    const reason = root().querySelector('[data-locked-reason]');
+    expect(reason?.textContent).toContain(FR.shop.reservedToOtherAccount);
+    expect(pitch()?.getAttribute('aria-describedby')).toBe(reason?.id);
+
+    pitch()?.click();
+    expect(asked).toEqual([LOCKED_ITEM.sku]);
+    expect(taken).toEqual([]);
   });
 });

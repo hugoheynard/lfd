@@ -1,6 +1,6 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import type { SuggestionReason, SuggestionView } from '@lfd/contracts';
-import { FoldIconComponent } from 'fold-ng';
+import { FoldBadgeComponent, FoldIconComponent } from 'fold-ng';
 
 import { ProductAudience } from '../../audience/product-audience.service';
 import { CartEntries } from '../../cart/cart-entries';
@@ -8,6 +8,7 @@ import { ClientCart } from '../../cart/client-cart.service';
 import { ClientLocale } from '../../client-locale.service';
 import type { ClientCopy } from '../../copy/client-copy.model';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { lockedReason } from '../../shop/locked-item';
 import { PieceRequest } from '../../shop/piece-request.service';
 import { ProVisit } from '../../shop/pro-visit.service';
 import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.service';
@@ -34,16 +35,22 @@ import { shelfPriceLabel, ShopPriceBasis } from '../../shop/shop-price-basis.ser
  * Un HABITUEL d'un pro (R1, à l'accueil) a la même carte encore : son titre
  * est sa raison, « Tous les mardis » ou « Commandé 6 fois ».
  *
+ * Un habituel VERROUILLÉ (réservé à un autre compte, L3 — seuls les habituels
+ * en servent) est grisé : sa raison prend la place du « + » et décrit le
+ * bouton de la fiche au lecteur d'écran, comme sur la vignette.
+ *
  * Générique sur la vue : la fiche et l'accueil, qui ne servent que le
  * décidé, reçoivent leurs propres vues en retour.
  */
 /** Les textes de la boutique qui mettent une raison calculée en phrase. */
+let cardSequence = 0;
+
 type ReasonCopy = Pick<ClientCopy['shop'], 'boughtWith' | 'usualEvery' | 'usualOrdered'>;
 
 @Component({
   selector: 'app-staff-suggestion-card',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldIconComponent],
+  imports: [FoldBadgeComponent, FoldIconComponent],
   templateUrl: './staff-suggestion-card.html',
   styleUrl: './staff-suggestion-card.scss',
 })
@@ -65,6 +72,12 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
   private readonly entries = inject(CartEntries);
   private readonly pieces = inject(PieceRequest);
   private readonly proVisit = inject(ProVisit).active;
+
+  /** La raison d'un article verrouillé, ou `null` : alors pas de « + ». */
+  protected readonly locked = computed(() => lockedReason(this.view().item, this.t()));
+
+  /** L'identifiant de la raison, propre à la carte : plusieurs cartes cohabitent. */
+  protected readonly lockedId = `suggestion-locked-${++cardSequence}`;
 
   protected readonly card = computed(() => {
     const view = this.view();
@@ -104,6 +117,9 @@ export class StaffSuggestionCard<V extends SuggestionView = SuggestionView> {
 
   protected take(): void {
     const view = this.view();
+    if (this.locked() !== null) {
+      return;
+    }
     const entering = this.cart.quantityOf(view.sku) === 0;
     // La visite pro détourne le geste vers la connexion : ni `taken`, ni compte.
     if (this.cart.admit() === 'signInRequired') {

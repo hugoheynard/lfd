@@ -3,6 +3,7 @@ import type { UsualSuggestionView } from '@lfd/contracts';
 import { FoldIconComponent } from 'fold-ng';
 
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { isLocked } from '../../shop/locked-item';
 import { sizedMedia } from '../../shop/media-source';
 import { HOUSE_MARK, HouseMark } from '../../shop/house-mark/house-mark';
 import { StaffSuggestionCard } from '../staff-suggestion-card/staff-suggestion-card';
@@ -43,6 +44,7 @@ export class UsualGroupCard {
       .views.slice(0, MOSAIC_SIZE)
       .map((view) => ({
         sku: view.sku,
+        locked: isLocked(view.item),
         src: sizedMedia((view.item.image ?? view.item.thumbnail)?.url ?? HOUSE_MARK, TILE_WIDTH),
       })),
   );

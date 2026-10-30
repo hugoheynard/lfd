@@ -68,9 +68,10 @@ export function fetchStaffSuggestions(
 /**
  * **Jamais suggérer ce qu'on ne peut pas commander**
  * (`documentation/catalogue/plan-articles-sur-mesure.md`, L3). Le serveur ne
- * sert pas d'article verrouillé aux suggestions du panier (S7) ; les habituels,
- * eux, le rendent verrouillé. Une carte de suggestion est un « + » : elle n'en
- * montre aucun, quelle que soit la route.
+ * sert pas d'article verrouillé aux suggestions du panier (S7). Les habituels
+ * font exception (Hugo, 2026-10-30) : le client l'a déjà commandé, et doit
+ * comprendre pourquoi il ne peut plus — {@link fetchUsualSuggestions} garde
+ * l'article, que la carte montre grisé avec sa raison, sans « + ».
  */
 function orderableOnly<V extends { readonly item: ShopItemView }>(views: readonly V[]): V[] {
   return views.filter((view) => !isLocked(view.item));
@@ -80,6 +81,7 @@ function orderableOnly<V extends { readonly item: ShopItemView }>(views: readonl
  * **« Vos habituels »** (R1) — la route murée SEULE : il n'y a pas de route
  * publique, et l'appelant ne demande qu'avec une société dans l'espace
  * courant. Même morceau que les autres suggestions : rien à charger de plus.
+ * Un article verrouillé y RESTE, grisé par la carte (pas d'`orderableOnly`).
  */
 export function fetchUsualSuggestions(
   http: HttpClient,
@@ -95,5 +97,5 @@ export function fetchUsualSuggestions(
         }),
       ),
     ),
-  ).then(orderableOnly);
+  );
 }

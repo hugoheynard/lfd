@@ -63,3 +63,14 @@
   line-height: var(--lfc-leading-tight);
   color: var(--lfc-color-accent-text);
 }
+
+/* Un habituel réservé à un autre compte : la carte se grise, la raison reste lisible. */
+.locked {
+  border-color: var(--fold-color-border);
+  background: var(--fold-color-surface-sunken);
+
+  .pitch-title,
+  .pitch-line {
+    color: var(--fold-color-text-muted);
+  }
+}

@@ -1,12 +1,24 @@
 <!-- Deux boutons côte à côte, jamais l'un dans l'autre (Hugo, 2026-10-18) :
      la carte ouvre la fiche de l'article, le « + » seul l'ajoute. Le nom du
      premier est ce qu'il montre ; le second a le sien. -->
-<div class="suggestion">
-  <button class="add" type="button" [attr.aria-label]="card().addLabel" (click)="take()">
-    <fold-icon name="plus" />
-  </button>
-  <button class="pitch" type="button" (click)="open()">
-    <span class="pitch-title">{{ card().title }}</span>
-    <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
-  </button>
+<div class="suggestion" [class.locked]="locked() !== null">
+  @if (locked(); as reason) {
+    <!-- Habituel réservé à un autre compte (L3) : pas de « + », la raison
+         décrit le bouton de la fiche. -->
+    <button class="pitch" type="button" [attr.aria-describedby]="lockedId" (click)="open()">
+      <span class="pitch-title">{{ card().title }}</span>
+      <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
+    </button>
+    <span [id]="lockedId" data-locked-reason>
+      <fold-badge variant="neutral" [content]="reason.short" />
+    </span>
+  } @else {
+    <button class="add" type="button" [attr.aria-label]="card().addLabel" (click)="take()">
+      <fold-icon name="plus" />
+    </button>
+    <button class="pitch" type="button" (click)="open()">
+      <span class="pitch-title">{{ card().title }}</span>
+      <span class="pitch-line">{{ card().line }} · {{ card().price }} {{ card().suffix }}</span>
+    </button>
+  }
 </div>

@@ -427,7 +427,7 @@ flowchart LR
   commandes d'administration, garde de la mercuriale (si Q1 = oui),
   vérification de la recherche serveur, correction du JSDoc de `servedTo`.
 - **L2 back-office** : les écrans du § 7.
-- **L3 boutique** : `orderable:false` grisé, rien dans les suggestions.
+- **L3 boutique** : `orderable:false` grisé, rien dans les suggestions, sauf les habituels, grisés avec leur raison (Hugo, 2026-10-30).
   🟦 Bâti le 2026-10-30 (§ 10 bis).
 - **L4** : e2e du mur et budget.
 
@@ -537,9 +537,12 @@ naturellement ».
   `reserved-lines-callout` du panier, avec « Le retirer du panier ». Avant
   L3, la ligne partait au devis et le 409 `catalog.reserved_article`, qu'aucun
   préfixe de `ShopQuote` ne reconnaît, faisait échouer tout le décompte en
-  silence. Aucune carte de suggestion ne montre un article verrouillé — y
-  compris les habituels, que le serveur rend verrouillés (S7) : écart à
-  trancher. Textes : `shop.reservedToOtherAccount(Hint)`,
+  silence. Aucune suggestion ne montre un article verrouillé, sauf les
+  habituels (tranché par Hugo le 2026-10-30, non commité) : le client l'a
+  déjà commandé, la carte le montre donc grisé, « Réservé à un autre compte »
+  à la place du « + » (décrit au lecteur d'écran), sa photo grisée dans la
+  mosaïque (`staff-suggestion-card`, `usual-group-card`,
+  `fetchUsualSuggestions` sans `orderableOnly`). Textes : `shop.reservedToOtherAccount(Hint)`,
   `cart.reservedLine`, `cart.dropReservedLines`.
 - **L2…** — la suite du § 8.
 

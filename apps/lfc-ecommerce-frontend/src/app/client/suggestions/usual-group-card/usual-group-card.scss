@@ -43,6 +43,12 @@
   transition: transform 400ms ease;
 }
 
+/* Un habituel réservé à un autre compte : sa photo se grise, comme la vignette. */
+.tile.locked {
+  filter: grayscale(1);
+  opacity: 0.6;
+}
+
 .card:hover .tile {
   transform: scale(1.04);
 }
