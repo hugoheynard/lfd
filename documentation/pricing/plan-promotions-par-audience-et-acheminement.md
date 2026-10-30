@@ -568,7 +568,9 @@ Notées pour être tranchées ensemble ; rien n'est bâti tant qu'elles restent 
 - **Audience** : particuliers ou pros (ou tout le monde).
 - **Sous-audience** : ce que le serveur reconnaît seul, sans réglage —
   particuliers _invités_ (commande sans connexion) ou _inscrits_ (connectés,
-  pour eux-mêmes) ; pros _tous_ ou _une société_ (± ses sites).
+  pour eux-mêmes) ; pros _actifs_ (société validée), _en cours d'inscription_
+  (société en attente de validation — Hugo, 2026-10-30 : des pros, pas des
+  particuliers), _tous_ (les deux), ou _une société_ (± ses sites).
 - **Segment** : une liste que le staff crée et entretient — de sociétés
   (« Hôtels de la station ») ou de comptes inscrits (« Clients fidèles »,
   jamais d'invités). Chantier séparé ; dans le code actuel, `segment` ne
@@ -577,5 +579,6 @@ Notées pour être tranchées ensemble ; rien n'est bâti tant qu'elles restent 
 Le public d'une promotion se choisit dans un seul menu : Tout le monde ·
 Particuliers (tous / invités / inscrits / segment) · Pros (tous / une société /
 segment). Les colonnes du § 3 (`clientele`) se renomment en conséquence au
-bâti. Restent à trancher : la personne aux deux casquettes, la saisie staff,
-la société non validée, la société et ses sites.
+bâti. Restent à trancher : la personne aux deux casquettes, la saisie staff, la
+société et ses sites, et le PRIX DE BASE d'un pro en cours d'inscription
+(aujourd'hui `audienceOf` le sert au prix public, `customer-audience.ts:23`).
