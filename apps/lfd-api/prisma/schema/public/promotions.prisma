@@ -1,0 +1,85 @@
+/// **Une promotion** — l'agrégat `Promotion` de `src/b2b/promotions/` (plan
+/// `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+/// § 13.3, lot L3). Trois axes — public, acheminement, portée — et une liste
+/// de conditions. Aucun lecteur de prix ne la lit encore (L5).
+///
+/// Les colonnes de sorte sont du TEXTE tenu par des CHECK (migration
+/// `20261031110000_les_promotions`), pas des enums : une variante neuve est
+/// un CHECK élargi, sans `ALTER TYPE`. Les invariants que le SQL ne voit pas
+/// (portée) sont tenus par l'agrégat, à la pose ET à la relecture.
+model Promotion {
+  /// ULID à la saisie ; l'id de la règle reprise, ou `pd_<site>_<clientèle>`
+  /// pour une remise de retrait reprise (§ 13.4).
+  id                   String    @id
+  internalName         String    @map("internal_name")
+  labelFr              String    @map("label_fr")
+  /// `NULL` = repli sur le français.
+  labelEn              String?   @map("label_en")
+  labelIt              String?   @map("label_it")
+  reason               String?
+  /// `line` | `basket` — miroir de `fulfillment_kind`, dérivé par l'agrégat.
+  applicationPoint     String    @map("application_point")
+  /// `percent_off` | `unit_amount_off` | `fixed_unit_price` | `basket_amount_off`.
+  effectKind           String    @map("effect_kind")
+  /// bp, millicentimes ou centimes selon `effect_kind`.
+  effectValue          Int       @map("effect_value")
+  ownFloorMode         String?   @map("own_floor_mode")
+  ownFloorValue        Int?      @map("own_floor_value")
+  stacksOverMercuriale Boolean   @default(false) @map("stacks_over_mercuriale")
+  /// Borne basse incluse, haute exclue ; `NULL` = sans fin.
+  validFrom            DateTime  @map("valid_from") @db.Timestamptz(3)
+  validTo              DateTime? @map("valid_to") @db.Timestamptz(3)
+  pausedAt             DateTime? @map("paused_at") @db.Timestamptz(3)
+  /// L'id de la fiche du membre du staff qui a suspendu.
+  pausedBy             String?   @map("paused_by")
+  archivedAt           DateTime? @map("archived_at") @db.Timestamptz(3)
+  /// L'id de la fiche du membre du staff qui a archivé.
+  archivedBy           String?   @map("archived_by")
+  archiveReason        String?   @map("archive_reason")
+  audienceKind         String    @map("audience_kind")
+  /// Identifiant opaque, sans clé étrangère.
+  audienceCompanyId    String?   @map("audience_company_id")
+  fulfillmentKind      String    @map("fulfillment_kind")
+  /// Sans clé étrangère : un point archivé garde ses promotions (§ 7 B3).
+  fulfillmentPickupId  String?   @map("fulfillment_pickup_id")
+  /// `all_except` | `only`.
+  scopeMode            String    @map("scope_mode")
+  /// Liste typée, toutes doivent tenir ; `[]` = aucune.
+  conditions           Json      @default("[]")
+  /// `NULL` = saisie ; sinon la mémoire de la source reprise.
+  origin               Json?
+  /// `NULL` = saisie ; la clé qui rend la reprise rejouable.
+  legacySource         String?   @unique @map("legacy_source")
+  /// L'id de la fiche du membre du staff, ou un acteur système nommé.
+  createdBy            String    @map("created_by")
+  createdAt            DateTime  @map("created_at") @db.Timestamptz(3)
+
+  scopeRules PromotionScopeRule[]
+
+  @@index([archivedAt])
+  @@index([applicationPoint, archivedAt])
+  @@index([audienceCompanyId])
+  @@index([fulfillmentPickupId])
+  @@map("promotions")
+  @@schema("public")
+}
+
+/// **Une règle de portée d'une promotion** : telle famille, tel produit
+/// (`product_id`, toutes déclinaisons) ou telle déclinaison (SKU) est éligible
+/// ou non. Remplacée en bloc avec la promotion.
+model PromotionScopeRule {
+  id          String    @id
+  promotionId String    @map("promotion_id")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  /// `category` | `product` | `variant`.
+  target      String
+  /// Identifiant opaque du catalogue, sans clé étrangère.
+  targetId    String    @map("target_id")
+  /// `NULL` = rang naturel ; `2` pour une déclinaison reprise d'une portée produit.
+  targetRank  Int?      @map("target_rank")
+  eligible    Boolean
+
+  @@unique([promotionId, target, targetId])
+  @@map("promotion_scope_rules")
+  @@schema("public")
+}

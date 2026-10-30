@@ -1,5 +1,9 @@
-import { type AudiencePickupDiscount, discountCentsOf, pickupDiscountCovers } from "@lfd/contracts";
+import { type AudiencePickupDiscount, discountCentsOf } from "@lfd/contracts";
 
+import {
+  promotionScopeCovers,
+  type PromotionScope,
+} from "../../../promotions/domain/promotion-scope.js";
 import type { OrderLineClassification } from "../ports/order-line-classification.reader.js";
 
 /**
@@ -27,18 +31,50 @@ export function ineligibleSkusOf(
   if (discount === null) {
     return new Set();
   }
+  const scope = pickupDiscountScopeOf(discount);
   const out = new Set<string>();
   for (const line of lines) {
     const known = classifications.get(line.sku);
     const facts = {
+      sku: line.sku,
       productId: known?.productId ?? null,
       categoryPath: known?.categoryPath ?? [],
     };
-    if (!pickupDiscountCovers(discount, facts)) {
+    if (!promotionScopeCovers(scope, facts, BASKET)) {
       out.add(line.sku);
     }
   }
   return out;
+}
+
+/** La remise de retrait est un montant de panier : l'unité de vente n'y joue pas. */
+const BASKET = { kind: "basket" } as const;
+
+/**
+ * **La remise de retrait, lue comme une portée de promotion** (lot L2 du plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`) :
+ * la même mécanique de portée, une seule, que la reprise en promotions
+ * (L4) écrira dans `promotion_scope_rules`. Ses produits visent le
+ * `product_id` (toutes déclinaisons), jamais un SKU.
+ */
+export function pickupDiscountScopeOf(discount: AudiencePickupDiscount): PromotionScope {
+  return {
+    mode: discount.scope,
+    rules: [
+      ...discount.products.map((rule) => ({
+        target: "product" as const,
+        targetId: rule.productId,
+        eligible: rule.eligible,
+        targetRank: null,
+      })),
+      ...discount.categories.map((rule) => ({
+        target: "category" as const,
+        targetId: rule.categoryId,
+        eligible: rule.eligible,
+        targetRank: null,
+      })),
+    ],
+  };
 }
 
 /** Le hors taxe des seules lignes éligibles — l'assiette de R1. */

@@ -47,7 +47,8 @@ import { join } from "node:path";
 import { fileURLToPath } from "node:url";
 
 const ROOT = fileURLToPath(new URL("../..", import.meta.url));
-const DOMAIN = join(ROOT, "apps", "lfd-api", "src", "b2b", "pricing", "domain");
+const B2B = join(ROOT, "apps", "lfd-api", "src", "b2b");
+const DOMAIN = join(B2B, "pricing", "domain");
 const MATERIALS = join(DOMAIN, "pricing-materials.ts");
 
 /**
@@ -119,17 +120,23 @@ for (const { field, type } of families) {
  */
 function declaringFile(type) {
   const files = [
-    "price-rule.ts",
-    "volume-ladder.ts",
-    "volume-commitment.ts",
-    "entities/company-mercuriale.ts",
-    "entities/pricing-floor.ts",
+    "pricing/domain/price-rule.ts",
+    "pricing/domain/volume-ladder.ts",
+    "pricing/domain/volume-commitment.ts",
+    "pricing/domain/entities/company-mercuriale.ts",
+    "pricing/domain/entities/pricing-floor.ts",
+    // ▸ LES PROMOTIONS (plan des promotions, L3, armé le 2026-10-30 AVANT
+    //   qu'elles entrent dans `PricingMaterials` au lot L5) : leurs termes et
+    //   leur fenêtre (`PromotionTerms`, `PromotionWindow`) sont déclarés ici.
+    //   Le type que L5 placera dans les matériaux devra y être déclaré, ou y
+    //   être ajouté — la porte ne suit pas les `extends` (cf. plus haut).
+    "promotions/domain/promotion-terms.ts",
   ];
   const heads = [`interface ${type} `, `type ${type} =`, `class ${type} `];
   for (const file of files) {
     let text;
     try {
-      text = readFileSync(join(DOMAIN, file), "utf8");
+      text = readFileSync(join(B2B, file), "utf8");
     } catch {
       continue;
     }

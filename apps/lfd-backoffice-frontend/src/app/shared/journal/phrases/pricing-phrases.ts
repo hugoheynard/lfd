@@ -59,6 +59,8 @@ interface ActSubject {
 const RULE: ActSubject = { the: 'la règle de prix', a: 'une règle de prix', lead: null };
 const LADDER: ActSubject = { the: 'le barème de volume', a: 'un barème de volume', lead: 'Barème' };
 const MERCURIALE: ActSubject = { the: 'la mercuriale', a: 'une mercuriale', lead: 'Mercuriale' };
+/** Une promotion (plan des promotions, L3) : sa phrase figée n'ouvre pas sur son nom. */
+const PROMOTION: ActSubject = { the: 'la promotion', a: 'une promotion', lead: null };
 
 /**
  * La tête d'une phrase figée : « Geste « Été » · −10 % · … » →
@@ -323,4 +325,9 @@ export const PRICING_PHRASES = {
   'company_mercuriale.archived': act('a archivé', MERCURIALE),
   'company_mercuriale.renamed': renamed(MERCURIALE),
   'company_mercuriale.amended': act('a amendé', MERCURIALE),
+  'promotion.posed': act('a posé', PROMOTION),
+  'promotion.paused': act('a suspendu', PROMOTION),
+  'promotion.resumed': act('a repris', PROMOTION),
+  'promotion.archived': act('a archivé', PROMOTION),
+  'promotion.replaced': act('a révisé', PROMOTION),
 } as const satisfies Partial<Record<JournalFactType, Phrase>>;

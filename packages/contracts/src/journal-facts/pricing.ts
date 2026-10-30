@@ -116,6 +116,17 @@ export const PRICING_FACTS = {
   /** Un avenant daté : le motif est toujours renseigné. */
   "company_mercuriale.amended": act(),
 
+  /**
+   * **Une promotion** (`plan-promotions-par-audience-et-acheminement.md`,
+   * § 13.9, lot L3) : miroir de `pricing_events`, sujet `promotion`.
+   * `replaced` = une révision des termes, l'identité gardée.
+   */
+  "promotion.posed": act(),
+  "promotion.paused": act(),
+  "promotion.resumed": act(),
+  "promotion.archived": act(),
+  "promotion.replaced": act(),
+
   /** Le sujet est le SOUS-COMPTE : il suit la mercuriale de `parent`. */
   "pricing_follow.started": followAct("parent", false),
   "pricing_follow.ended": followAct("parent", true),

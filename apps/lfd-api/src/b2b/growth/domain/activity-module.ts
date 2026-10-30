@@ -66,6 +66,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // décision du commercial (Q9, `sous-comptes.md`, S3).
     "pricing_follow.",
     "pricing_follower.",
+    // Une promotion (plan des promotions, L3, 2026-10-30) : une décision
+    // tarifaire comme les règles qu'elle reprendra.
+    "promotion.",
     // Le catalogue B2B — prix négocié, vitrine, arrivée validée — décide ce
     // qu'on vend et à quel prix : le même métier que la tarification
     // (2026-09-19).
