@@ -186,6 +186,9 @@ const PREFIXES: Readonly<Record<ActivityModule, readonly string[]>> = {
     // Les tranches de production (Réglages › Production, 2026-10-28) — ⚠️
     // `production_tranche_settings.` ne tombe PAS sous `production_settings.`.
     "production_tranche_settings.",
+    // Le rangement par catégorie racine (Réglages › Fournil, 2026-10-30) — même
+    // piège : `production_display_settings.` n'est pas sous `production_settings.`.
+    "production_display_settings.",
     // Les raccourcis du fournil, « 1 plaque · 24 » (Réglages › Production, 2026-10-28).
     "production_batch_shortcut.",
     // Les destinataires du dossier du jour par e-mail (E1, 2026-10-06).
