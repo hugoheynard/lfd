@@ -82,6 +82,15 @@ export const SUGGESTION_ORDER = domain('ordre des suggestions', {
   priority: 'Par priorité',
 });
 
+/**
+ * La visibilité d'un article réservé aux autres pros
+ * (`catalog_item.reserved_visibility_set`, articles sur mesure, 2026-10-30).
+ */
+export const RESERVED_VISIBILITY = domain('visibilité d’un article réservé', {
+  hidden: 'Invisible aux autres pros',
+  visible_locked: 'Visible, non commandable',
+});
+
 export const COMMERCE_VALUES: ValueFamily = {
   enums: [
     LEAD_STATUS,
@@ -93,6 +102,7 @@ export const COMMERCE_VALUES: ValueFamily = {
     SUGGESTION_TRIGGER,
     SUGGESTION_PLACEMENT,
     SUGGESTION_ORDER,
+    RESERVED_VISIBILITY,
   ],
   literals: {
     // `lead.converted` : converti à la main, ou rapproché à l'inscription.

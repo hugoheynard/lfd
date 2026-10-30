@@ -111,6 +111,9 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // Le seul onglet de la fiche qui ne suit PAS le droit du parent : voir ce
   // qu'un client a négocié n'est pas voir sa fiche.
   'comptes-clients/:id/tarifs': 'b2b_pricing:read',
+  // Réserver un article est une décision sur ce qui se vend (articles sur
+  // mesure, L1a) : le droit du catalogue, pas celui du compte.
+  'comptes-clients/:id/articles-reserves': 'lfc_catalog:read',
   'comptes-clients/:id/facturation': null,
   'comptes-clients/:id/stats': null,
   'comptes-clients/:id/paniers-recurrents': null,
