@@ -114,14 +114,17 @@ describe('App — Gestion Boutique', () => {
     expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
   });
 
-  it('montre « Promotions » sous b2b_settings:read, dans les deux arbres', () => {
+  // L'ancienne grille `/promotions` s'appelle « Règles de prix » depuis la
+  // bascule des promotions (L8, 2026-10-30) : le nom « Promotions » est passé
+  // au nouvel écran `/promotions-ciblees`.
+  it('montre « Règles de prix » sous b2b_settings:read, dans les deux arbres', () => {
     const link = '/promotions';
     expect(render(['b2b_settings:read']).querySelector(rail(link))?.getAttribute('label')).toBe(
-      'Promotions',
+      'Règles de prix',
     );
     expect(
       render(['b2b_settings:read'], true).querySelector(tile(link))?.getAttribute('label'),
-    ).toBe('Promotions');
+    ).toBe('Règles de prix');
     expect(render(['pim_catalog:read']).querySelector(rail(link))).toBeNull();
   });
 
