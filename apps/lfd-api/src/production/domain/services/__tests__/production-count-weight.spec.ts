@@ -14,12 +14,14 @@ const croissants = (quantity: number): Line => ({
   productName: "Croissant",
   quantity,
   saleUnit: "piece",
+  madeToOrder: null,
 });
 const salmon = (grams: number): Line => ({
   sku: "TRA-SAU",
   productName: "Saumon gravlax",
   quantity: grams,
   saleUnit: "weight",
+  madeToOrder: null,
 });
 
 function order(orderId: string, lines: readonly Line[]): ProducibleOrder {
@@ -113,8 +115,20 @@ describe("countOf — au poids", () => {
 describe("freezeOrder / freezeResupply — l'unité est recopiée, jamais déduite", () => {
   it("fige l'unité de chaque ligne de commande", () => {
     expect(freezeOrder(order("a", [croissants(3), salmon(500)])).lines).toEqual([
-      { sku: "VIE-001", productName: "Croissant", quantity: 3, saleUnit: "piece" },
-      { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 500, saleUnit: "weight" },
+      {
+        sku: "VIE-001",
+        productName: "Croissant",
+        quantity: 3,
+        saleUnit: "piece",
+        madeToOrder: null,
+      },
+      {
+        sku: "TRA-SAU",
+        productName: "Saumon gravlax",
+        quantity: 500,
+        saleUnit: "weight",
+        madeToOrder: null,
+      },
     ]);
   });
 

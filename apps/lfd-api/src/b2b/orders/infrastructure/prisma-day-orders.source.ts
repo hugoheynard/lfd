@@ -81,7 +81,15 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
           },
         },
         placedBy: { select: { firstName: true, lastName: true, email: true } },
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
+        lines: {
+          select: {
+            sku: true,
+            productNameSnapshot: true,
+            quantity: true,
+            saleUnit: true,
+            madeToOrder: true,
+          },
+        },
       },
     });
 
@@ -106,6 +114,9 @@ export class PrismaDayOrdersSource extends DayOrdersSource {
           productName: line.productNameSnapshot,
           quantity: line.quantity,
           saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
+          // Scellé à la passation (`plan-sur-mesure-partout.md`, M2), servi
+          // tel quel : le fournil ne relit jamais le catalogue.
+          madeToOrder: line.madeToOrder,
         })),
         sheetDetails: sheetDetailsOf(row),
       },

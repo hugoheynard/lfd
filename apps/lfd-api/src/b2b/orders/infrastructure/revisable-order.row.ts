@@ -53,6 +53,7 @@ const LINE_SELECT = {
   pricingCommitment: true,
   pricingRejected: true,
   pickupDiscountEligible: true,
+  madeToOrder: true,
   productId: true,
   categoryId: true,
 } as const;
@@ -108,6 +109,7 @@ export const REVISABLE_ORDER_SELECT = {
 interface RevisableLineRow extends OrderLineRow {
   readonly productId: string | null;
   readonly categoryId: string | null;
+  readonly madeToOrder: boolean | null;
 }
 
 /** La forme que Prisma rend pour {@link REVISABLE_ORDER_SELECT}. */
@@ -229,6 +231,7 @@ function toLineSnapshot(line: RevisableLineRow): OrderLineSnapshot {
     pickupDiscountEligible: line.pickupDiscountEligible,
     productId: line.productId,
     categoryId: line.categoryId,
+    madeToOrder: line.madeToOrder,
   };
 }
 

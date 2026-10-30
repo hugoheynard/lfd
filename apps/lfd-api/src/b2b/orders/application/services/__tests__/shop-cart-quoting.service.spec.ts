@@ -15,8 +15,18 @@ const CATALOG = [
 ];
 
 const CLASSIFIED = {
-  "PAI-001": { productId: "p_pain", categoryId: "c_pains", categoryPath: ["c_pains"] },
-  "TAS-001": { productId: "p_tasse", categoryId: "c_objets", categoryPath: ["c_objets"] },
+  "PAI-001": {
+    productId: "p_pain",
+    categoryId: "c_pains",
+    categoryPath: ["c_pains"],
+    madeToOrder: false,
+  },
+  "TAS-001": {
+    productId: "p_tasse",
+    categoryId: "c_objets",
+    categoryPath: ["c_objets"],
+    madeToOrder: false,
+  },
 };
 
 const MUGS_EXCLUDED: AudiencePickupDiscount = {

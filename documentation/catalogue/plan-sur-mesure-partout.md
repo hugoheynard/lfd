@@ -1,6 +1,10 @@
 # Le marqueur « sur mesure » partout — plan
 
-> 📐 **Doc-first, 2026-10-30.** Rien de ce qui suit n'est bâti. Origine : Q6 du
+> 🟨 **Partiel, 2026-10-30.** M1 à M4 bâtis le 2026-10-30 (non commités à
+> l'écriture de cette ligne) ; le lot R attend Hugo (Q6). Q1–Q5 et Q7
+> **décidées par défaut le 2026-10-30, sur mandat de Hugo** (« fais tout ») :
+> les recommandations du plan, § 6. Ce qui suit était doc-first ; les écarts
+> bâtis sont dits en § 5 bis. Origine : Q6 du
 > plan [`plan-articles-sur-mesure.md`](plan-articles-sur-mesure.md) (§ 10 bis,
 > réponse de Hugo : « Q6 partout : fiche atelier, étiquettes, rapports — lots
 > ultérieurs »). Chaque affirmation sur l'existant cite le fichier et la ligne
@@ -151,32 +155,74 @@ papier noir et blanc ne se lit pas sans légende, et l'accessibilité vaut aussi
 
 ## 5. Lots
 
-| Lot    | Contenu                                                                                                                                                                                    | Tests                                                                                                                                                                                                       |
-| ------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **M1** | Colonne `order_line.made_to_order` ; `OrderLineSnapshot.madeToOrder` scellé à la composition (lecture du marqueur par le lecteur du catalogue) ; `orderLineDataOf` l'écrit ; révision idem | domaine : la ligne scelle la valeur ; application : composition lit le marqueur ; **e2e** : marqueur retiré après la passation → la ligne reste `true` ; ligne d'avant → `null`                             |
-| **M2** | `ProducibleLine.madeToOrder` (port du fournil) ; `prisma-day-orders.source.ts` le remplit ; colonne `production_order_line.made_to_order` ; `ProductionLineSnapshot`                       | e2e arrêt de journée : la valeur traverse ; le fournil ne lit aucune table du commerce (`lint:context-boundaries`, `lint:prisma-model-ownership` verts)                                                     |
-| **M3** | Fiche d'atelier, compte à produire, dossier du jour : rendu « SUR MESURE » ; `ExpectedItem` distingue sur mesure / non (Q2)                                                                | unitaires de rendu ; **spécimens** : les données d'exemple de la planche portent au moins une ligne sur mesure, et un test vérifie que le texte `SUR MESURE` figure dans le PDF de chaque spécimen concerné |
-| **M4** | Fait `production.packing_list_drawn` + écran du colisage ; étiquettes selon Q4                                                                                                             | relecture d'un fait ancien → `null` ; spécimen d'étiquette si Q4 = oui                                                                                                                                      |
-| **R**  | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
+| Lot                                                | Contenu                                                                                                                                                                                    | Tests                                                                                                                                                                                                       |
+| -------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| ~~**M1**~~ ✅ 2026-10-30                           | Colonne `order_line.made_to_order` ; `OrderLineSnapshot.madeToOrder` scellé à la composition (lecture du marqueur par le lecteur du catalogue) ; `orderLineDataOf` l'écrit ; révision idem | domaine : la ligne scelle la valeur ; application : composition lit le marqueur ; **e2e** : marqueur retiré après la passation → la ligne reste `true` ; ligne d'avant → `null`                             |
+| ~~**M2**~~ ✅ 2026-10-30                           | `ProducibleLine.madeToOrder` (port du fournil) ; `prisma-day-orders.source.ts` le remplit ; colonne `production_order_line.made_to_order` ; `ProductionLineSnapshot`                       | e2e arrêt de journée : la valeur traverse ; le fournil ne lit aucune table du commerce (`lint:context-boundaries`, `lint:prisma-model-ownership` verts)                                                     |
+| ~~**M3**~~ ✅ 2026-10-30                           | Fiche d'atelier, compte à produire, dossier du jour : rendu « SUR MESURE » ; `ExpectedItem` distingue sur mesure / non (Q2)                                                                | unitaires de rendu ; **spécimens** : les données d'exemple de la planche portent au moins une ligne sur mesure, et un test vérifie que le texte `SUR MESURE` figure dans le PDF de chaque spécimen concerné |
+| ~~**M4**~~ 🟨 2026-10-30 — fait seul, voir § 5 bis | Fait `production.packing_list_drawn` + écran du colisage ; étiquettes selon Q4                                                                                                             | relecture d'un fait ancien → `null` ; spécimen d'étiquette si Q4 = oui                                                                                                                                      |
+| **R**                                              | Rapports : confirmer l'existence (ou non) d'un rapport par article, puis filtre/colonne                                                                                                    | e2e : mur `company_id` sur l'agrégat, et somme par marqueur                                                                                                                                                 |
 
 Un lot à la fois, dans cet ordre ; M1 est le seul préalable de tous les autres.
 
+## 5 bis. Ce qui a été bâti, et où il s'écarte (2026-10-30)
+
+- **Migration** `20261030210000_le_sur_mesure_scelle_sur_la_ligne` : les deux
+  colonnes du § 3, `BOOLEAN NULL`, sans reprise.
+- **M1.** Le marqueur est lu par `OrderLineClassificationReader` (le lecteur
+  du catalogue que la passation lisait déjà pour produit et famille — une
+  lecture, pas deux) et scellé par `OrderComposition` (`madeToOrderOf`). En
+  révision, une ligne **gardée** garde ce qu'elle a scellé, `NULL` compris
+  (même règle que son prix figé, R3) ; une ligne **nouvelle** lit le
+  catalogue du jour. Un SKU que le catalogue ne range pas reste `NULL`.
+- **M2.** `ProducibleLine.madeToOrder` (requis), `ProductionLineSnapshot.madeToOrder`
+  (facultatif : les lignes de réassort le partagent et ne le portent pas, Q7).
+- **M3.** « SUR MESURE » en petites capitales sous le nom, sur la fiche
+  d'atelier, le compte à produire et les bons du dossier du jour.
+  ⚠️ **Le compte arrêté reste UN total par SKU** : `production_count` est
+  unique sur `(service_day, sku)` et les fournées se cochent par SKU. La
+  ligne séparée de Q2 se fait donc **au papier** (`countPaperRowsOf`), depuis
+  les lignes de commande figées : la part sur mesure d'une référence y a sa
+  propre ligne. Séparer le compte lui-même demanderait de changer une clé
+  unique servie — hors d'une migration additive. Le **récapitulatif** du
+  dossier du jour (par rayon) ne sépare pas : le § 4 ne le demandait pas.
+  `ExpectedItem.madeToOrderQuantity` porte la part sur mesure de l'attendu
+  (facultatif : l'attendu des réassorts partage le type) ; **aucun écran ne
+  le lit encore** — l'écran du fournil n'est dans aucun lot.
+- **M4.** Le fait `production.packing_list_drawn` porte `madeToOrder` par
+  ligne, additif ; un fait ancien se relit sans le champ. **L'écran du
+  colisage n'est pas bâti** : le colisage recopie les lignes du fait dans
+  `packing.packing_line`, qui n'a pas la colonne — il faudrait une troisième
+  colonne (`packing_line.made_to_order`), que le § 3 ne prévoyait pas, plus
+  le contrat de la feuille et le badge du back-office. À décider.
+  Étiquettes : rien (Q4).
+- **Spécimens** : la commande d'exemple du fournil porte un « Entremets
+  signature » sur mesure ; fiche, compte et dossier d'exemple disent « SUR
+  MESURE ». Les spécimens du commerce ne changent pas (Q3).
+
 ## 6. Questions ouvertes
 
-- **Q1.** Le nom du client réservataire figure-t-il sur la fiche atelier ?
+- ~~**Q1.**~~ Le nom du client réservataire figure-t-il sur la fiche atelier ?
   La fiche porte déjà le client de la commande ; « réservé à X » ajouterait
   une information qui n'est pas un fait de la commande. Recommandé : non.
+  → **Non — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
 - **Q2.** Compte à produire et attendu des jours : une ligne « Sur mesure »
   séparée par SKU, ou la référence fusionnée avec une mention ? Recommandé :
   séparée — c'est souvent une recette différente.
+  → **Séparée — décidé par défaut le 2026-10-30, sur mandat de Hugo** (au
+  papier, cf. § 5 bis).
 - **Q3.** Les documents qui sortent chez le client (confirmation, BL,
   récapitulatif) disent-ils « sur mesure » ? Recommandé : non par défaut.
+  → **Non — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
 - **Q4.** Étiquettes de sac / bac : elles ne portent pas de lignes aujourd'hui.
   Faut-il une mention « contient du sur mesure » ? Recommandé : non.
+  → **Non — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
 - **Q5.** Un article sur mesure sans réservation (marqueur seul, Q5 du plan
   parent) se marque-t-il pareil ? Supposé oui : le marqueur est indépendant.
+  → **Oui — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
 - **Q6.** Quels rapports exactement : CA par article, ventes par client, export
   comptable ? Aucun « ventes par article » trouvé (§ 1).
 - **Q7.** Un réassort de boutique (`resupply-list-drawn.event.ts:11`) porte-t-il
   le marqueur ? Supposé non : un réassort n'est pas une commande client.
+  → **Non — décidé par défaut le 2026-10-30, sur mandat de Hugo.**
 - **Q8.** `vitruve` sur ce plan avant bâtisse ?

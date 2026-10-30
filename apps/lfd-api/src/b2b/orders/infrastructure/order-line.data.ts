@@ -26,6 +26,9 @@ export function orderLineDataOf(line: OrderLineSnapshot): Prisma.OrderLineCreate
     // Figés par l'agrégat (R2 du plan des exclusions) : la facture
     // lit ce drapeau, jamais la règle du jour.
     pickupDiscountEligible: line.pickupDiscountEligible,
+    // Scellé par la composition (`plan-sur-mesure-partout.md`, M1), `null`
+    // compris : « on ne savait pas » ne devient pas « non » à l'écriture.
+    madeToOrder: line.madeToOrder,
     productId: line.productId,
     categoryId: line.categoryId,
     basePriceMillicents: line.pricing?.basePriceMillicents ?? null,

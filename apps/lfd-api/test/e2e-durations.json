@@ -226,6 +226,7 @@
   "test/loyalty-voucher-order.e2e-spec.ts": 9574,
   "test/loyalty-welcome.e2e-spec.ts": 10037,
   "test/loyalty.e2e-spec.ts": 6124,
+  "test/made-to-order-everywhere.e2e-spec.ts": 10535,
   "test/made-to-order-wall.e2e-spec.ts": 15021,
   "test/made-to-order.e2e-spec.ts": 20337,
   "test/mail-copy-default-drift.e2e-spec.ts": 8000,

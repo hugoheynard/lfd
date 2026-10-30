@@ -67,6 +67,15 @@ export interface OrderLineInput {
    */
   readonly productId?: string | null;
   readonly categoryId?: string | null;
+  /**
+   * **L'article était-il « sur mesure » à la passation ?** Lu au catalogue par
+   * la composition et scellé ici (plan
+   * `documentation/catalogue/plan-sur-mesure-partout.md`, M1) : le marqueur
+   * retiré demain ne réécrit pas la ligne d'hier. Absent ou `null` = on ne
+   * savait pas (ligne fabriquée à la main, SKU que le catalogue ne connaît
+   * pas, ligne écrite avant le lot) — jamais `false` inventé.
+   */
+  readonly madeToOrder?: boolean | null;
 }
 
 /** Une ligne prête à persister (snapshots figés + total calculé). */
@@ -107,6 +116,8 @@ export interface OrderLineSnapshot extends OrderLineInput {
   readonly pickupDiscountEligible: boolean;
   readonly productId: string | null;
   readonly categoryId: string | null;
+  /** Requis ici : `null` est un aveu (« on ne savait pas »), que le type oblige à poser. */
+  readonly madeToOrder: boolean | null;
 }
 
 /**
@@ -131,6 +142,7 @@ export class OrderLine {
     readonly pickupDiscountEligible: boolean,
     readonly productId: string | null,
     readonly categoryId: string | null,
+    readonly madeToOrder: boolean | null,
   ) {}
 
   /**
@@ -179,6 +191,7 @@ export class OrderLine {
       input.pickupDiscountEligible ?? true,
       input.productId ?? null,
       input.categoryId ?? null,
+      input.madeToOrder ?? null,
     );
   }
 
@@ -231,6 +244,7 @@ export class OrderLine {
       input.pickupDiscountEligible ?? true,
       input.productId ?? null,
       input.categoryId ?? null,
+      input.madeToOrder ?? null,
     );
   }
 
@@ -250,6 +264,7 @@ export class OrderLine {
       pickupDiscountEligible: this.pickupDiscountEligible,
       productId: this.productId,
       categoryId: this.categoryId,
+      madeToOrder: this.madeToOrder,
     };
   }
 }

@@ -24,6 +24,7 @@ describe("OrderLine", () => {
       pickupDiscountEligible: true,
       productId: null,
       categoryId: null,
+      madeToOrder: null,
     });
   });
 

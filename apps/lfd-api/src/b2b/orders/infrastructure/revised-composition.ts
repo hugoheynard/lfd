@@ -52,6 +52,7 @@ const REVISED_COLUMNS = {
       pricingRejected: true,
       allergens: true,
       pickupDiscountEligible: true,
+      madeToOrder: true,
       productId: true,
       categoryId: true,
     },

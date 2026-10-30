@@ -9,6 +9,12 @@ export interface OrderLineClassification {
   readonly productId: string;
   readonly categoryId: string;
   readonly categoryPath: readonly string[];
+  /**
+   * Le marqueur « sur mesure » de l'article au moment de la lecture (plan
+   * `documentation/catalogue/plan-sur-mesure-partout.md`, M1) — la passation
+   * le scelle sur la ligne, et plus personne ne le relit ensuite.
+   */
+  readonly madeToOrder: boolean;
 }
 
 /**
@@ -17,7 +23,7 @@ export interface OrderLineClassification {
  * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
  *
  * Lu à la passation pour figer produit et famille sur la ligne et décider
- * son éligibilité à la remise de retrait ; lu au devis seulement quand la
+ * son éligibilité à la remise de retrait, et son marqueur « sur mesure » ; lu au devis seulement quand la
  * remise a des règles. Un port étroit (ISP) : ni prix, ni nom — l'autorité de
  * prix reste `ProductCatalogReader`.
  */

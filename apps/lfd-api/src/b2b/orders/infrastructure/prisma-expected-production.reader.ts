@@ -14,6 +14,7 @@ interface ExpectedSum {
   readonly productName: string;
   readonly quantity: number;
   readonly saleUnit: "piece" | "weight";
+  readonly madeToOrderQuantity: number;
 }
 
 /**
@@ -68,7 +69,15 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
       },
       select: {
         requestedDeliveryDate: true,
-        lines: { select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true } },
+        lines: {
+          select: {
+            sku: true,
+            productNameSnapshot: true,
+            quantity: true,
+            saleUnit: true,
+            madeToOrder: true,
+          },
+        },
       },
     });
 
@@ -89,6 +98,10 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
           // publication), ses grammes s'additionnent entre eux (P6).
           quantity: (known?.quantity ?? 0) + line.quantity,
           saleUnit: orderLineSaleUnitOf(line.sku, line.saleUnit),
+          // Le marqueur scellé sur la ligne, jamais le catalogue du jour
+          // (`plan-sur-mesure-partout.md`, M3) ; `NULL` ne compte pas.
+          madeToOrderQuantity:
+            (known?.madeToOrderQuantity ?? 0) + (line.madeToOrder === true ? line.quantity : 0),
         });
       }
       byDay.set(day, items);
@@ -101,6 +114,7 @@ export class PrismaExpectedProductionReader extends ExpectedProductionReader {
         productName: item.productName,
         quantity: item.quantity,
         saleUnit: item.saleUnit,
+        madeToOrderQuantity: item.madeToOrderQuantity,
       })),
       // Compté sur les LIGNES de commande lues, et non par une requête de plus :
       // une commande sans ligne ne pèse rien au fournil, et n'a rien à faire

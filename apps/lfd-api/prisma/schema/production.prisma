@@ -316,6 +316,11 @@ model ProductionOrderLine {
   /// (plan `pricing/vente-au-poids.md`, P6). `piece` pour toute ligne
   /// figée avant la colonne : aucun article au poids n'existait.
   saleUnit    String @default("piece") @map("sale_unit")
+  /// **Sur mesure**, recopié de la ligne de commande à l'arrêt (plan
+  /// `documentation/catalogue/plan-sur-mesure-partout.md`, M2) — jamais relu
+  /// au catalogue. `NULL` = ligne figée avant la colonne, ou commande d'avant
+  /// le marqueur : on ne savait pas.
+  madeToOrder Boolean? @map("made_to_order")
 
   /// **La ligne est DANS le bac**, telle que le poste de colisage la constate.
   ///

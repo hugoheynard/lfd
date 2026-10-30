@@ -22,6 +22,13 @@ export interface ProducibleLine {
    * grammes lus comme des pièces feraient cuire 1 250 articles.
    */
   readonly saleUnit: SaleUnit;
+  /**
+   * **Sur mesure**, tel que la ligne de commande l'a scellé à la passation
+   * (plan `documentation/catalogue/plan-sur-mesure-partout.md`, M2) — le
+   * fournil le recopie, il ne le relit jamais au catalogue. `null` = ligne
+   * d'avant le marqueur : on ne savait pas, et le papier n'en dit rien.
+   */
+  readonly madeToOrder: boolean | null;
 }
 
 /**

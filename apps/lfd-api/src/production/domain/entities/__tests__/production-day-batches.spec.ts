@@ -34,7 +34,9 @@ const ORDERS: readonly ProducibleOrder[] = ["1", "2"].map((n) => ({
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: SKU, productName: "Croissant", quantity: 12, saleUnit: "piece" }],
+  lines: [
+    { sku: SKU, productName: "Croissant", quantity: 12, saleUnit: "piece", madeToOrder: null },
+  ],
 }));
 
 function batch(id: string, quantity: number, cancelled = false): ProductionBatchSnapshot {

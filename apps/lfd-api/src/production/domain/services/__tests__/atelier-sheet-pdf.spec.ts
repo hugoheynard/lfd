@@ -13,7 +13,15 @@ describe("renderProductionCountPdf", () => {
     const closedAt = new Date("2026-10-06T22:30:00.000Z");
     const pages = pdfPages(
       await renderProductionCountPdf(
-        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null, saleUnit: "piece" }],
+        [
+          {
+            sku: "VIE-001",
+            productName: "Croissant",
+            quantity: 4,
+            madeToOrder: false,
+            saleUnit: "piece",
+          },
+        ],
         { serviceDay: "2026-10-07", closedAt, logo: PAPER_LOGO },
         [],
       ),
@@ -122,14 +130,14 @@ describe("renderProductionCountPdf — la répartition du jour par couleur", () 
       productName: "Croissant",
       quantity: 10,
       saleUnit: "piece" as const,
-      done: null,
+      madeToOrder: false,
     },
     {
       sku: "VIE-002",
       productName: "Pain au chocolat",
       quantity: 4,
       saleUnit: "piece" as const,
-      done: null,
+      madeToOrder: false,
     },
   ];
 
@@ -164,7 +172,15 @@ describe("renderProductionCountPdf — le cadre", () => {
   it("se titre « Compte à produire » et ne nomme plus « La Folie Coffee — Fournil »", async () => {
     const [page] = pdfPages(
       await renderProductionCountPdf(
-        [{ sku: "VIE-001", productName: "Croissant", quantity: 4, done: null, saleUnit: "piece" }],
+        [
+          {
+            sku: "VIE-001",
+            productName: "Croissant",
+            quantity: 4,
+            madeToOrder: false,
+            saleUnit: "piece",
+          },
+        ],
         SHEET,
         [],
       ),
@@ -180,7 +196,7 @@ describe("renderProductionCountPdf — le cadre", () => {
       productName: `Produit ${String(index)}`,
       quantity: 1,
       saleUnit: "piece" as const,
-      done: null,
+      madeToOrder: false,
     }));
     const pages = pdfPages(await renderProductionCountPdf(items, SHEET, []));
     expect(pages).toHaveLength(2);

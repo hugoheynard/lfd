@@ -1,6 +1,7 @@
 import type { CatalogFamilyView } from "@lfd/contracts";
 
 import { AppConfig } from "../../../../platform/config/app-config.js";
+import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
 import { WorkshopShelvesReader } from "../../../channels/commerce/workshop-shelves.reader.js";
 import {
   ProductionDay,
@@ -25,7 +26,7 @@ import { ProductionPapers } from "../production-paper.service.js";
 const DAY = "2026-10-07";
 const CLOSED = new Date("2026-10-06T16:00:00.000Z");
 
-const ORDER: ProductionOrderSnapshot = {
+const ORDER: ProductionOrderSnapshot & ProducibleOrder = {
   packed: null,
   orderId: "ord-1",
   rank: 1,
@@ -37,7 +38,9 @@ const ORDER: ProductionOrderSnapshot = {
   clientele: "pro",
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
+  lines: [
+    { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece", madeToOrder: null },
+  ],
 };
 
 class NoAdminOrigin extends AppConfig {

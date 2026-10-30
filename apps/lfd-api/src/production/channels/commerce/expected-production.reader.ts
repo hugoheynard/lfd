@@ -9,6 +9,17 @@ export interface ExpectedItem {
   /** Des pièces, ou des grammes si `saleUnit = "weight"` (P6). */
   readonly quantity: number;
   readonly saleUnit: SaleUnit;
+  /**
+   * **La part sur mesure** de `quantity` — lignes dont la commande a scellé le
+   * marqueur (plan `documentation/catalogue/plan-sur-mesure-partout.md`, M3,
+   * Q2 : la part sur mesure se compte à part). Une part, pas un second
+   * article : l'attendu reste UN total par SKU, comme le compte qu'il annonce.
+   * `0` = rien de sur mesure, ou des lignes d'avant le marqueur.
+   *
+   * Facultatif : l'attendu des RÉASSORTS partage ce type, et un réassort ne
+   * porte pas le marqueur (Q7). Absent vaut `0`.
+   */
+  readonly madeToOrderQuantity?: number;
 }
 
 /** Ce qui est attendu une journée. `AAAA-MM-JJ`, et rien d'autre. */

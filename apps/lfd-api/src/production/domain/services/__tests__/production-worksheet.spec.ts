@@ -60,6 +60,7 @@ function arrival(orderId: string, lines: readonly [string, string, number][]): P
       productName,
       quantity,
       saleUnit: "piece",
+      madeToOrder: null,
     })),
   };
 }

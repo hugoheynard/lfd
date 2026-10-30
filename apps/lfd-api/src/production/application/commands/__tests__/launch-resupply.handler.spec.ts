@@ -50,7 +50,15 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
+  lines: [
+    {
+      sku: "VIE-001",
+      productName: "Croissant",
+      quantity: 40,
+      saleUnit: "piece",
+      madeToOrder: null,
+    },
+  ],
 };
 
 const ASAP: PlacedResupply = {

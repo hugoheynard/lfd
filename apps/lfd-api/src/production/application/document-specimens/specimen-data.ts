@@ -32,6 +32,15 @@ export const SPECIMEN_ORDER: ProductionOrderSnapshot = {
     // Un article au poids sur la planche (P6 de `pricing/vente-au-poids.md`) :
     // « 1,25 kg » doit se lire sur la fiche, le compte et le dossier.
     { sku: "EXEMPLE-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+    // Un article sur mesure (`catalogue/plan-sur-mesure-partout.md`, M3) :
+    // « SUR MESURE » doit se lire sur la fiche, le compte et le dossier.
+    {
+      sku: "EXEMPLE-ENT",
+      productName: "Entremets signature",
+      quantity: 1,
+      saleUnit: "piece",
+      madeToOrder: true,
+    },
   ],
   sheetDetails: null,
 };

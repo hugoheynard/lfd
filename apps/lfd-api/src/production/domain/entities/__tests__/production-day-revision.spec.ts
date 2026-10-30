@@ -36,6 +36,7 @@ function order(
       ...line,
       productName: `Article ${line.sku}`,
       saleUnit: "piece",
+      madeToOrder: null,
     })),
   };
 }

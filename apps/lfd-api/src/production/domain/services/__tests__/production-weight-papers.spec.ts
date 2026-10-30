@@ -136,8 +136,8 @@ describe("la fiche d'atelier et le compte à produire, au poids", () => {
     const [page] = pdfPages(
       await renderProductionCountPdf(
         [
-          { ...salmon(2500), done: null },
-          { ...croissants(42), done: null },
+          { ...salmon(2500), madeToOrder: false },
+          { ...croissants(42), madeToOrder: false },
         ],
         SHEET,
         [],
@@ -151,7 +151,7 @@ describe("la fiche d'atelier et le compte à produire, au poids", () => {
 
   it("un poids sous le kilo s'écrit en grammes, jamais « 0,5 kg »", async () => {
     const [page] = pdfPages(
-      await renderProductionCountPdf([{ ...salmon(500), done: null }], SHEET, []),
+      await renderProductionCountPdf([{ ...salmon(500), madeToOrder: false }], SHEET, []),
     );
 
     expect(page).toContain("500 g");

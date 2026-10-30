@@ -28,6 +28,7 @@ import {
 } from "../../domain/services/atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
 import { dayDossierOf } from "../../domain/services/day-dossier.js";
+import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
 import { dayDossierPdfKey, renderDayDossierPdf } from "../../domain/services/day-dossier-pdf.js";
 
 /** Un papier servi : ses octets et le nom proposé au téléchargement. */
@@ -127,7 +128,7 @@ export class ProductionPapers {
           this.logo.load(),
         ]);
         return renderProductionCountPdf(
-          snapshot.counts,
+          countPaperRowsOf(snapshot.counts, snapshot.orders),
           { serviceDay: snapshot.serviceDay, closedAt, logo },
           countColorSharesOf(snapshot.orders, resupplies, colors, resupplyColors),
         );

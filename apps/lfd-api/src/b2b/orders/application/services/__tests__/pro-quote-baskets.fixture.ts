@@ -36,6 +36,7 @@ export function proQuoteOf(basket: ProBasket): {
           productId: `p_${String(i)}`,
           categoryId: eligible === false ? "c_excl" : "c_in",
           categoryPath: [eligible === false ? "c_excl" : "c_in"],
+          madeToOrder: false,
         },
       ]),
     ),

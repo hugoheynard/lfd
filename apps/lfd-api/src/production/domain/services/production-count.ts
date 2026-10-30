@@ -50,6 +50,7 @@ export function freezeOrder(order: ProducibleOrder): ProductionOrderSnapshot {
       productName: line.productName,
       quantity: line.quantity,
       saleUnit: line.saleUnit,
+      madeToOrder: line.madeToOrder,
     })),
     sheetDetails: order.sheetDetails,
   };

@@ -28,7 +28,15 @@ function order(overrides: Partial<ProducibleOrder> = {}): ProducibleOrder {
     clientele: null,
     siteId: null,
     sheetDetails: null,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
+    lines: [
+      {
+        sku: "VIE-001",
+        productName: "Croissant",
+        quantity: 40,
+        saleUnit: "piece",
+        madeToOrder: null,
+      },
+    ],
     ...overrides,
   };
 }
@@ -75,11 +83,27 @@ describe("arrêter une journée", () => {
       [
         order({
           orderId: "ord_1",
-          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 40, saleUnit: "piece" }],
+          lines: [
+            {
+              sku: "VIE-001",
+              productName: "Croissant",
+              quantity: 40,
+              saleUnit: "piece",
+              madeToOrder: null,
+            },
+          ],
         }),
         order({
           orderId: "ord_2",
-          lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" }],
+          lines: [
+            {
+              sku: "VIE-001",
+              productName: "Croissant",
+              quantity: 12,
+              saleUnit: "piece",
+              madeToOrder: null,
+            },
+          ],
         }),
       ],
       new Set<string>(),
@@ -100,11 +124,27 @@ describe("arrêter une journée", () => {
     day.close(
       [
         order({
-          lines: [{ sku: "VIE-009", productName: "Pain au lait", quantity: 5, saleUnit: "piece" }],
+          lines: [
+            {
+              sku: "VIE-009",
+              productName: "Pain au lait",
+              quantity: 5,
+              saleUnit: "piece",
+              madeToOrder: null,
+            },
+          ],
         }),
         order({
           orderId: "ord_2",
-          lines: [{ sku: "PAI-001", productName: "Tradition", quantity: 3, saleUnit: "piece" }],
+          lines: [
+            {
+              sku: "PAI-001",
+              productName: "Tradition",
+              quantity: 3,
+              saleUnit: "piece",
+              madeToOrder: null,
+            },
+          ],
         }),
       ],
       new Set<string>(),

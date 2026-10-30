@@ -43,7 +43,9 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: SKU, productName: "Croissant", quantity: 20, saleUnit: "piece" }],
+  lines: [
+    { sku: SKU, productName: "Croissant", quantity: 20, saleUnit: "piece", madeToOrder: null },
+  ],
 };
 
 function resupply(servedByTransfer: boolean, quantity: number): PlacedResupply {

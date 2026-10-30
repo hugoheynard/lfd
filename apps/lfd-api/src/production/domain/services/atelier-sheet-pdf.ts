@@ -1,6 +1,6 @@
 import { Buffer } from "node:buffer";
 
-import type { ProducedItemSnapshot, ProductionOrderSnapshot } from "../entities/production-day.js";
+import type { ProductionOrderSnapshot } from "../entities/production-day.js";
 import {
   LEFT,
   MM,
@@ -20,6 +20,7 @@ import {
 import { drawCountPie } from "./count-color-pie.js";
 import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
 import type { CountColorShare } from "./count-color-shares.js";
+import { type CountPaperRow, isMadeToOrder, MADE_TO_ORDER_MENTION } from "./made-to-order.js";
 import { drawRouting } from "./order-routing-pdf.js";
 import { PaperPages } from "../../../platform/pdf/paper-pages.js";
 
@@ -128,12 +129,18 @@ function drawLines(
   putCaps(doc, `À PRÉPARER — ${String(pieces)} pièces`, LEFT, y);
   y += 6 * MM;
   for (const line of order.lines) {
-    y = room(y, 10 * MM);
+    const marked = isMadeToOrder(line);
+    y = room(y, marked ? 14 * MM : 10 * MM);
     // La quantité en GROS, à gauche : c'est le seul chiffre qu'on lit à un
     // mètre, les mains prises. Le nom suit, le SKU ferme la ligne.
     put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 60 * MM });
     putRight(doc, line.sku, RIGHT, y + 1 * MM, 9);
+    if (marked) {
+      // Sous le nom, en petites capitales (`plan-sur-mesure-partout.md`, M3).
+      putCaps(doc, MADE_TO_ORDER_MENTION, LEFT + 18 * MM, y + 6 * MM);
+      y += 4 * MM;
+    }
     y += 6.4 * MM;
     rule(doc, y, 0.6, ROW_GRAY);
     y += 3 * MM;
@@ -163,9 +170,14 @@ function drawScan(doc: Doc, url: string, reference: string, y: number): void {
  * `shares` est la répartition du jour entre les couleurs de destination : UN
  * camembert en haut, à droite du total (Hugo, 2026-10-22), sans un mot. Vide :
  * aucun camembert.
+ *
+ * `items` : les lignes de `countPaperRowsOf` — la part sur mesure d'un article
+ * y a sa propre ligne, marquée « SUR MESURE » (plan
+ * `plan-sur-mesure-partout.md`, Q2). « N articles » compte des références,
+ * pas des lignes.
  */
 export function renderProductionCountPdf(
-  items: readonly ProducedItemSnapshot[],
+  items: readonly CountPaperRow[],
   sheet: { readonly serviceDay: string; readonly closedAt: Date; readonly logo: Buffer },
   shares: readonly CountColorShare[],
 ): Promise<Buffer> {
@@ -176,20 +188,25 @@ export function renderProductionCountPdf(
       const pages = new PaperPages(doc);
       let y = pages.open("Compte à produire");
       const total = piecesOfLines(items);
-      putCaps(doc, `${String(items.length)} articles, ${String(total)} pièces`, LEFT, y);
+      const articles = new Set(items.map((item) => item.sku)).size;
+      putCaps(doc, `${String(articles)} articles, ${String(total)} pièces`, LEFT, y);
       if (shares.length > 0) {
         drawCountPie(doc, shares, { x: RIGHT - PIE, y: y + PIE - 1 * MM }, PIE);
         y += 2 * PIE - 2 * MM;
       }
       y += 7 * MM;
       for (const item of items) {
-        y = pages.room(y, 11 * MM);
+        y = pages.room(y, item.madeToOrder ? 15 * MM : 11 * MM);
         put(doc, lineFigure(item), LEFT, y - 1.5 * MM, {
           size: figureFontSize(item, 20),
           bold: true,
         });
         put(doc, item.productName, LEFT + 22 * MM, y, { size: 14, width: WIDTH - 64 * MM });
         putRight(doc, item.sku, RIGHT, y + 1.5 * MM, 9);
+        if (item.madeToOrder) {
+          putCaps(doc, MADE_TO_ORDER_MENTION, LEFT + 22 * MM, y + 6.5 * MM);
+          y += 4 * MM;
+        }
         y += 7 * MM;
         rule(doc, y, 0.6, ROW_GRAY);
         y += 3.5 * MM;

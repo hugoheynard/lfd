@@ -43,6 +43,9 @@ export function packingListFactsOf(
             productName: line.productName,
             quantity: line.quantity,
             saleUnit: line.saleUnit,
+            // Additif (`plan-sur-mesure-partout.md`, M4) : `null` écrit tel
+            // quel, comme la journée l'a figé.
+            madeToOrder: line.madeToOrder ?? null,
           })),
         },
         reopenedAt,

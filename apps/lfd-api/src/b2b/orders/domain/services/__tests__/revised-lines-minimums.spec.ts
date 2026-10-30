@@ -28,6 +28,7 @@ function snapshot(
     pickupDiscountEligible: false,
     productId: null,
     categoryId: null,
+    madeToOrder: null,
   };
 }
 

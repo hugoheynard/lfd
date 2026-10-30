@@ -164,8 +164,20 @@ describe("worksheetOf — une ligne au poids", () => {
         counts: [counted("SAU", 1000, "weight"), counted("CRO", 10, "piece")],
         arrivals: [
           arrival([
-            { sku: "SAU", productName: "Saumon", quantity: 500, saleUnit: "weight" },
-            { sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+            {
+              sku: "SAU",
+              productName: "Saumon",
+              quantity: 500,
+              saleUnit: "weight",
+              madeToOrder: null,
+            },
+            {
+              sku: "CRO",
+              productName: "Croissant",
+              quantity: 6,
+              saleUnit: "piece",
+              madeToOrder: null,
+            },
           ]),
         ],
       }),

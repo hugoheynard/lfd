@@ -30,8 +30,18 @@ const JUS = { sku: "BOI-001", htCents: 1_000 };
 const BASKET = [PAIN, JUS];
 
 const CATALOGUE = {
-  "PAI-001": { productId: "p_pain", categoryId: "c_pains", categoryPath: ["c_pains"] },
-  "BOI-001": { productId: "p_jus", categoryId: "c_jus", categoryPath: ["c_jus", "c_boissons"] },
+  "PAI-001": {
+    productId: "p_pain",
+    categoryId: "c_pains",
+    categoryPath: ["c_pains"],
+    madeToOrder: false,
+  },
+  "BOI-001": {
+    productId: "p_jus",
+    categoryId: "c_jus",
+    categoryPath: ["c_jus", "c_boissons"],
+    madeToOrder: false,
+  },
 };
 
 class OnePoint extends PickupAddressRepository {

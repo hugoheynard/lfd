@@ -28,6 +28,15 @@ export interface ProductionLineSnapshot {
   readonly quantity: number;
   /** Recopiée de la commande (P6) ; un réassort est toujours à la pièce. */
   readonly saleUnit: SaleUnit;
+  /**
+   * **Sur mesure**, recopié de la commande à l'arrêt (plan
+   * `plan-sur-mesure-partout.md`, M2). `null` = on ne savait pas (ligne
+   * d'avant le marqueur), ou ligne de réassort — un réassort n'est pas une
+   * commande client et ne porte pas le marqueur (Q7). Facultatif : absent
+   * vaut `null` — un réassort et une ligne figée avant la colonne n'en
+   * savent rien, et ne l'écrivent pas.
+   */
+  readonly madeToOrder?: boolean | null;
 }
 
 /**

@@ -421,8 +421,9 @@ function toSnapshot(point: PickupAddressView): PickupSnapshot {
 }
 
 /**
- * La ligne, avec ce qui se fige d'elle pour la remise de retrait : son
- * rangement au catalogue et son éligibilité (R2 du plan des exclusions).
+ * La ligne, avec ce qui se fige d'elle à la passation : son rangement au
+ * catalogue et son éligibilité à la remise de retrait (R2 du plan des
+ * exclusions), et son marqueur « sur mesure ».
  */
 function classified(
   line: OrderLineInput,
@@ -435,5 +436,23 @@ function classified(
     pickupDiscountEligible: !ineligible.has(line.sku),
     productId: where?.productId ?? null,
     categoryId: where?.categoryId ?? null,
+    madeToOrder: madeToOrderOf(line, where),
   };
+}
+
+/**
+ * Le marqueur « sur mesure » à sceller (plan `plan-sur-mesure-partout.md`,
+ * M1). Une ligne qui le porte déjà — une ligne gardée en révision — garde ce
+ * qu'elle a scellé, `null` compris : même règle que son prix figé (R3). Une
+ * ligne neuve lit le catalogue du jour ; un SKU qu'il ne range pas reste
+ * `null`, « on ne savait pas », jamais un `false` inventé.
+ */
+function madeToOrderOf(
+  line: OrderLineInput,
+  where: OrderLineClassification | undefined,
+): boolean | null {
+  if (line.madeToOrder !== undefined) {
+    return line.madeToOrder;
+  }
+  return where?.madeToOrder ?? null;
 }

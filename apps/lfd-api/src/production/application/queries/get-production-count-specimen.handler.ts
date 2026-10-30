@@ -4,6 +4,7 @@ import { BrandLogoSource } from "../../../platform/brand/brand-logo.source.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { renderProductionCountPdf } from "../../domain/services/atelier-sheet-pdf.js";
 import { countColorSharesOf } from "../../domain/services/count-color-shares.js";
+import { countPaperRowsOf } from "../../domain/services/made-to-order.js";
 import { countOf } from "../../domain/services/production-count.js";
 import { specimenServiceDay } from "../document-specimens/specimen-data.js";
 import {
@@ -34,7 +35,10 @@ export class GetProductionCountSpecimenHandler implements IQueryHandler<
   async execute(): Promise<ProductionPaper> {
     const now = this.clock.now();
     const bytes = await renderProductionCountPdf(
-      countOf([...SPECIMEN_DAY_ORDERS, ...SPECIMEN_DAY_RESUPPLIES]),
+      countPaperRowsOf(
+        countOf([...SPECIMEN_DAY_ORDERS, ...SPECIMEN_DAY_RESUPPLIES]),
+        SPECIMEN_DAY_ORDERS,
+      ),
       { serviceDay: specimenServiceDay(now), closedAt: now, logo: await this.logo.load() },
       countColorSharesOf(
         SPECIMEN_DAY_ORDERS,

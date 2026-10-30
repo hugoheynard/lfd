@@ -828,6 +828,7 @@ describe("PlaceOrderHandler", () => {
         pickupDiscountEligible: true,
         productId: null,
         categoryId: null,
+        madeToOrder: null,
         // Aucune règle dans ces doubles : la trace existe et dit qu'aucun étage
         // n'a joué. C'est une affirmation, pas une absence.
         pricing: {
@@ -1034,8 +1035,18 @@ describe("PlaceOrderHandler", () => {
       },
     };
     const classifications = new FixedLineClassifications({
-      "VIE-001": { productId: "p_croissant", categoryId: "c_vie", categoryPath: ["c_vie"] },
-      "VIE-002": { productId: "p_pain_choc", categoryId: "c_vie", categoryPath: ["c_vie"] },
+      "VIE-001": {
+        productId: "p_croissant",
+        categoryId: "c_vie",
+        categoryPath: ["c_vie"],
+        madeToOrder: false,
+      },
+      "VIE-002": {
+        productId: "p_pain_choc",
+        categoryId: "c_vie",
+        categoryPath: ["c_vie"],
+        madeToOrder: false,
+      },
     });
     const handler = new PlaceOrderHandler(
       guard("orders", "active"),

@@ -33,6 +33,8 @@ describe("GetDayDossierSpecimenHandler", () => {
     expect(text).toContain("EXEMPLE-0001");
     expect(text).toContain("EXEMPLE-0003");
     expect(text).toContain("BON 3/3");
+    // Le bon de l'exemple porte une ligne sur mesure (`plan-sur-mesure-partout.md`, M3).
+    expect(text).toContain("SUR MESURE");
     expect(text).toContain("RÉASSORT 1/1");
     expect(text).toContain("Dossier de production du");
     expect(text).toContain("Viennoiseries");

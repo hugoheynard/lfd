@@ -44,6 +44,7 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
         categoryId: true,
         isDefault: true,
         category: { select: { parentId: true } },
+        override: { select: { isMadeToOrder: true } },
       },
       orderBy: [{ sku: "asc" }],
     });
@@ -54,6 +55,9 @@ export class PrismaOrderLineClassificationReader extends OrderLineClassification
         productId: row.productId,
         categoryId: row.categoryId,
         categoryPath: lineage(row.categoryId),
+        // Sans décision posée, l'article n'est pas marqué : le défaut de la
+        // colonne (`false`), lu tel quel.
+        madeToOrder: row.override?.isMadeToOrder ?? false,
       });
     }
     return found;

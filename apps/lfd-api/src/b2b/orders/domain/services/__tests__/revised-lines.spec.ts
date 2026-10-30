@@ -22,6 +22,7 @@ function snapshot(sku: string, unitPriceMillicents: number): OrderLineSnapshot {
     pickupDiscountEligible: false,
     productId: "prod_old",
     categoryId: "cat_old",
+    madeToOrder: null,
   };
 }
 

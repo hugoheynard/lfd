@@ -127,6 +127,7 @@ describe("Order.draft — calcul monétaire", () => {
         pickupDiscountEligible: true,
         productId: null,
         categoryId: null,
+        madeToOrder: null,
       },
     ]);
   });

@@ -30,6 +30,8 @@ describe("GetAtelierSheetSpecimenHandler", () => {
     expect(pdf.fileName).toBe("exemple-fiche-atelier.pdf");
     expect(text).toContain("EXEMPLE-0001");
     expect(text).toContain("Baguette tradition");
+    // La ligne sur mesure de l'exemple (`plan-sur-mesure-partout.md`, M3).
+    expect(text).toContain("SUR MESURE");
     expect(text).toContain("EXEMPLE-0001 // Fiche de préparation");
     expect(text).not.toContain("€");
   });

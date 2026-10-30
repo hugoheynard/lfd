@@ -45,7 +45,9 @@ const ORDER: ProducibleOrder = {
   clientele: null,
   siteId: null,
   sheetDetails: null,
-  lines: [{ sku: SKU, productName: "Croissant", quantity: 30, saleUnit: "piece" }],
+  lines: [
+    { sku: SKU, productName: "Croissant", quantity: 30, saleUnit: "piece", madeToOrder: null },
+  ],
 };
 
 function closedDay(): ProductionDay {

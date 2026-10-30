@@ -16,7 +16,10 @@ describe("GetProductionCountSpecimenHandler", () => {
     expect(text).toContain("Croissant pur beurre");
     // 40+12+15 baguettes, 60+18+20 croissants, 30+24, 6, 2 → 5 articles, 227 pièces.
     // Le saumon de l'exemple est au poids (P6) : il compte pour une pièce.
-    expect(text).toContain("6 articles, 228 pièces");
+    // L'entremets est sur mesure (`plan-sur-mesure-partout.md`, M3) : une pièce,
+    // sur sa propre ligne marquée.
+    expect(text).toContain("7 articles, 229 pièces");
+    expect(text).toContain("SUR MESURE");
     expect(text).toContain("1,25 kg");
     expect(text).not.toContain("€");
   });

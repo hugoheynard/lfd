@@ -64,7 +64,15 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
             clientele: true,
             siteId: true,
             ...SHEET_COLUMNS,
-            lines: { select: { sku: true, productName: true, quantity: true, saleUnit: true } },
+            lines: {
+              select: {
+                sku: true,
+                productName: true,
+                quantity: true,
+                saleUnit: true,
+                madeToOrder: true,
+              },
+            },
           },
         },
         // Les réassorts figés à l'arrêt (lot R3a) et les lancés (R4a) — à part des commandes.
@@ -130,6 +138,7 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
           productName: line.productName,
           quantity: line.quantity,
           saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
+          madeToOrder: line.madeToOrder,
         })),
         sheetDetails: sheetDetailsOf(order),
       })),
@@ -236,6 +245,9 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
                 productName: line.productName,
                 quantity: line.quantity,
                 saleUnit: line.saleUnit,
+                // `NULL` écrit tel quel : « on ne savait pas » ne devient pas
+                // « non » en traversant (plan `plan-sur-mesure-partout.md`, M2).
+                madeToOrder: line.madeToOrder ?? null,
                 ...carried.lines.get(`${carriedKey(order.orderId, order.rank)}/${line.sku}`),
               })),
             },

@@ -23,6 +23,13 @@ export interface PackingListLine {
    * un fait écrit avant le champ se relit `piece`.
    */
   readonly saleUnit: SaleUnit;
+  /**
+   * **Sur mesure**, tel que la journée l'a figé (plan
+   * `documentation/catalogue/plan-sur-mesure-partout.md`, M4). Additif et
+   * facultatif : un fait écrit avant le champ — ou une ligne d'avant le
+   * marqueur — se relit `null`, « on ne savait pas », jamais `false`.
+   */
+  readonly madeToOrder?: boolean | null;
 }
 
 /** Une commande à coliser, telle que le fournil l'a inscrite au plan. */
@@ -169,6 +176,14 @@ function clienteleOf(value: unknown): Clientele | null {
   return value === "pro" || value === "public" ? value : null;
 }
 
+/**
+ * Additif : absent, `null` ou hors forme rendent `null` — un fait ancien reste
+ * lisible, et le champ n'est alors pas posé (absent vaut `null`).
+ */
+function flagOf(value: unknown): boolean | null {
+  return typeof value === "boolean" ? value : null;
+}
+
 function linesOf(value: unknown): readonly PackingListLine[] | null {
   if (!Array.isArray(value)) {
     return null;
@@ -183,7 +198,15 @@ function linesOf(value: unknown): readonly PackingListLine[] | null {
     if (sku === null || typeof productName !== "string" || quantity === null || saleUnit === null) {
       return null;
     }
-    lines.push({ sku, productName, quantity, saleUnit });
+    const madeToOrder = flagOf(raw?.["madeToOrder"]);
+    lines.push({
+      sku,
+      productName,
+      quantity,
+      saleUnit,
+      // Absent reste absent : un fait d'avant le champ se relit tel qu'écrit.
+      ...(madeToOrder === null ? {} : { madeToOrder }),
+    });
   }
   return lines;
 }
