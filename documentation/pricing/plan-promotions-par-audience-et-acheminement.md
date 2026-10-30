@@ -1967,3 +1967,194 @@ référence TTC ou HT, `composeExactOrder`, `exact_ht`) — si le prix public es
 TTC, la condition 1 s'écrit en TTC et l'extraction de la TVA se fait par taux
 sur le total TTC ; l'écart d'un centime par unité avec le calcul actuel
 (remise globale) est assumé. `vitruve` obligatoire.
+
+## 18. Plusieurs remises de panier par commande, et le cumul au panier — plan, non bâti (2026-10-30)
+
+Le § 16.1 a fixé la **forme arithmétique** (une remise par article, reste
+exact par ligne, un arrondi par étape, ventilation `splitCents` par taux). Ce
+paragraphe écrit ce qui manquait : la **persistance**, et chacun de ses
+lecteurs. C'est de l'argent, une migration de données et un document légal :
+**`vitruve` avant Hugo** (CLAUDE.md § 9 bis). Rien n'est bâti.
+
+### 18.1 L'existant, rouvert (2026-10-30, après L12 `32e205d4b`)
+
+| Ce qui porte UNE remise                                                                                                            | Où (fichier:ligne)                                                                                                                                                                                                  |
+| ---------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Colonnes de la commande : `discount_cents`, `discount_adjustment`, `discount_promotion_id`, `discount_label`, `discount_ttc_cents` | `apps/lfd-api/prisma/schema/public/orders.prisma:254-290`                                                                                                                                                           |
+| Assiette par ligne : un booléen `pickup_discount_eligible`                                                                         | `orders.prisma:744` ; bon : `delivery-notes.prisma:115`                                                                                                                                                             |
+| Montants facturables en ombre : `billable_discount_cents`                                                                          | `orders.prisma:387`                                                                                                                                                                                                 |
+| Composition exacte : UN `pickupDiscount` passé à `composeTtcOrder`                                                                 | `src/b2b/orders/domain/services/exact-order-composition.ts:42-50` ; `packages/money/src/ttc-order.ts:109-116` (`pickupDiscountParts`, l. 140)                                                                       |
+| Chemin `line_ht` (pros) : définition du TTC                                                                                        | `packages/money/src/vat.ts:139` (`ventilateVat`)                                                                                                                                                                    |
+| Passation : le libellé et l'ajustement d'UNE promotion                                                                             | `src/b2b/orders/application/services/order-composition.service.ts:62, 253, 353, 376` ; `cart-adjustments.service.ts:144`                                                                                            |
+| Refus de pose « une promotion panier par commande »                                                                                | `src/b2b/promotions/domain/promotion-overlap.ts:104` (`assertSingleBasketPromotion`), appelé `promotion-write-guard.ts:70`                                                                                          |
+| Révision (L9) : compare UNE promotion                                                                                              | `src/b2b/orders/domain/services/fulfillment-promotion.ts:24-48` (`discountPromotionId` ou `sameAdjustment`)                                                                                                         |
+| Écriture de la révision                                                                                                            | `src/b2b/orders/infrastructure/prisma-order-revision.repository.ts:88-94` ; passation : `prisma-order.repository.ts:154`                                                                                            |
+| Bon partiel exact                                                                                                                  | `src/b2b/delivery-notes/domain/services/exact-departure.ts:59, 112, 125` ; colonnes `delivery-notes.prisma:50, 64`                                                                                                  |
+| Bon : feuille et PDF                                                                                                               | `delivery-notes/domain/services/delivery-note-sheet.ts:58, 148` ; `delivery-note-pdf.ts`                                                                                                                            |
+| Facture : une remise de document par taux, clé unique `COMPANY_DISCOUNT`                                                           | `src/b2b/accounting/domain/services/invoice-dossier.ts:90-92` ; `invoice-order-split.ts:29-76`                                                                                                                      |
+| Factur-X : un BG-20 **par taux et par clé**, `Reason` tiré de la clé                                                               | `accounting/domain/services/facturx-settlement.ts:39-44, 100-130` ; contrôle `facturx-arithmetic.ts:27, 92-144`                                                                                                     |
+| E-mail : UN libellé figé                                                                                                           | `src/platform/mailer/pickup-discount-mail-label.ts:55-68` ; `mail-templates.ts:524`                                                                                                                                 |
+| Lecture de commande : UN `discountLabel`                                                                                           | `src/b2b/orders/infrastructure/prisma-order.reader.ts:70, 124, 530, 581`                                                                                                                                            |
+| Boutique : récapitulatifs                                                                                                          | `lfc-ecommerce-frontend/src/app/client/mes-commandes/order-detail/order-detail.ts`, `order-rows.ts`, `order-ticket-rows.ts`, `commande/confirmation-page/confirmation-page.ts`, `cart/cart-summary/cart-summary.ts` |
+
+**Ce que le dépôt sait DÉJÀ émettre en Factur-X** : plusieurs remises de
+document par taux (BG-20, une par clé et par taux — aujourd'hui « Remise
+client » et « Bon de fidélité ») ; le contrôle arithmétique relit leur somme
+(`AllowanceTotalAmount`). Plusieurs remises de panier n'ajoutent donc **aucune
+forme** au XML : seulement des clés de plus, dont le `Reason` (BT-97) doit
+porter le libellé figé au lieu d'une table de clés fixes (une clé inconnue
+s'écrit aujourd'hui telle quelle, l. 128-131 — un id de promotion n'est pas un
+motif lisible).
+
+**Journal** : aucun fait de `packages/contracts/src/journal-facts/` ne porte
+la remise d'une commande (grep du 2026-10-30 ; seul `orders-production.ts`
+parle de remise, et c'est le réglage du point de retrait). Rien à migrer ; un
+fait neuf n'est pas demandé par ce plan.
+
+**Non vérifié ici** : le back-office (détail de commande, dossier de
+facturation) — le grep n'y trouve que des exemples et des fixtures, à rouvrir
+au lot M6 ; le dépôt d'avoir (`refund-credit-note.ts:145` émet `allowances: []`,
+à confirmer qu'il ne relit pas la remise).
+
+### 18.2 Le modèle — additif
+
+Table `order_discounts` (schéma `public`), **une ligne par remise de panier
+appliquée** :
+
+| Colonne                                           | Sens                                                                   |
+| ------------------------------------------------- | ---------------------------------------------------------------------- |
+| `id` (ULID), `order_id` (FK `orders`, `RESTRICT`) | —                                                                      |
+| `rank` int, unique `(order_id, rank)`             | **ordre d'application** (§ 16.1, étape 3), à partir de 1               |
+| `promotion_id` text NULL                          | opaque, sans FK ; `NULL` = remise reprise d'avant L9                   |
+| `adjustment` jsonb                                | `%` (bp) ou montant fixe, figé                                         |
+| `label` jsonb NULL                                | `{fr, en, it}`, figé dans l'audience de l'acheteur                     |
+| `base_cents` int                                  | l'assiette de l'étape (somme des restes), HT ou TTC selon `vat_method` |
+| `amount_cents` int                                | le montant de l'étape, HT                                              |
+| `amount_ttc_cents` int NULL                       | `exact_ht` seulement (même CHECK que `orders`)                         |
+| `vat_shares` jsonb                                | `[{rate, htCents, vatCents?, ttcCents?}]` — la ventilation de l'étape  |
+
+Et `order_line_discounts(order_line_id, order_discount_id)` — **l'éligibilité
+par remise et par ligne**, qui remplace le booléen unique pour les lecteurs
+neufs. Une ligne absente = ligne non couverte par cette remise.
+
+Invariants, **en base** (interdire plutôt que vérifier) : somme des
+`amount_cents` = `orders.discount_cents` (déclencheur différé, ou CHECK
+porté par l'agrégat si le déclencheur est refusé — Q2) ; somme des
+`vat_shares` d'une remise = son `amount_cents` (agrégat).
+
+**Les colonnes actuelles restent lisibles et écrites** : `discount_cents` =
+le total, `discount_ttc_cents` = le total TTC, `pickup_discount_eligible` = OU
+des couvertures ; `discount_promotion_id`, `discount_adjustment`,
+`discount_label` = la remise de rang 1 (et `NULL` si plusieurs, Q1). Aucune
+colonne retirée (CLAUDE.md § 0 : une colonne morte reste en base).
+
+Même forme pour le bon : `delivery_note_discounts` (montants **du bon**, par
+remise, recalculés au départ partiel), car un bon partiel ne remet pas au
+prorata simple (`exact-departure.ts` recompose).
+
+### 18.3 La reprise (migration de données additive)
+
+Une commande dont `discount_cents > 0` reçoit **une** ligne `rank = 1` :
+`promotion_id`, `adjustment`, `label` recopiés ; `amount_cents =
+discount_cents` ; `amount_ttc_cents = discount_ttc_cents` ;
+`base_cents` = somme des lignes éligibles (HT `line_ht`, TTC `exact_ht`) ;
+`vat_shares` recalculés par `splitCents` sur les mêmes poids que
+`pickupDiscountParts` / `ventilateVat` — **et comparés** à la ventilation
+déjà figée de la facture si elle existe (refus de la migration en cas
+d'écart, avec la liste des commandes). `order_line_discounts` = les lignes
+`pickup_discount_eligible = true`. Même reprise pour les bons. Une commande
+sans remise ne reçoit rien. Requête de contrôle écrite dans la migration,
+idempotente (`ON CONFLICT DO NOTHING`).
+
+### 18.4 Ordre et arrondis
+
+Ordre : non cumulables (rang de `chooseBasketPromotion`, puis id), puis
+cumulables (rang, id) — § 16.1, étape 3. Il est **figé** dans `rank` : un
+lecteur ne le recalcule jamais. Un arrondi par étape (demi vers le haut),
+ventilation par `splitCents` sur les restes de l'étape. **Une seule remise =
+au centime près aujourd'hui** : l'étape 1 est l'assiette éligible actuelle,
+son montant `discountCentsOf` actuel, sa ventilation `splitCents` sur les
+mêmes poids entiers (§ 16.1, point 5) ; un test d'égalité le tient (M1).
+
+**Conditions du § 17.1** : une remise de panier reste une remise **de pied
+de document** ventilée par taux — les lignes gardent leur prix unitaire ×
+quantité intact, condition 1 tenue par construction. Factur-X : une BG-20
+par remise et par taux (BT-92 montant, BT-97 libellé figé, BT-95/96 taux),
+base de TVA = lignes − remises + frais par taux, TVA arrondie une fois par
+taux — forme déjà émise (§ 18.1). **À vérifier dans le texte d'EN 16931**
+avant M5 : qu'aucune règle ne borne le nombre de BG-20 par taux, et la
+longueur de BT-97.
+
+```mermaid
+flowchart LR
+  A[Lignes, prix unitaire x quantite] --> B[Remise rang 1 sur ses restes]
+  B --> C[Remise rang 2 sur les restes]
+  C --> D[Bon de fidelite sur le net]
+  D --> E[Base par taux puis TVA arrondie une fois]
+  B -.-> F[order_discounts rang 1, parts par taux]
+  C -.-> G[order_discounts rang 2, parts par taux]
+```
+
+### 18.5 La révision (L9 étendu)
+
+`ensureFulfillmentKeepsPromotion` compare un **ensemble** : la liste
+ordonnée des `promotion_id` (ou, pour une remise reprise sans id,
+`sameAdjustment`) avant et après. Un changement d'acheminement qui ajoute,
+retire ou remplace une remise de l'ensemble est refusé, en nommant laquelle
+(`FulfillmentChangeAltersPromotionError` gagne la promotion en cause). Un
+changement de quantité recalcule les montants de chaque étape (l'ensemble
+reste) et réécrit `order_discounts` en entier dans la transaction de la
+révision (remplacer, pas muter ligne à ligne).
+
+```mermaid
+sequenceDiagram
+  participant R as Revision
+  participant C as Composition
+  participant D as order_discounts
+  R->>C: recompose avec le nouvel etat
+  C-->>R: ensemble de remises ordonne
+  R->>R: meme ensemble que la commande, sinon refus nomme
+  R->>D: remplace les lignes de la commande
+```
+
+### 18.6 Les lots
+
+| Lot    | Contenu                                                                                                                                                                                 | Prérequis |
+| ------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------- |
+| **M1** | Domaine : `composeTtcOrder` et le chemin `line_ht` prennent une **liste** de remises (une liste à un élément = aujourd'hui) ; test d'égalité au centime sur le corpus de specs existant | —         |
+| **M2** | Migration additive `order_discounts`, `order_line_discounts`, `delivery_note_discounts` + reprise (§ 18.3) ; `lecteur-de-migrations`                                                    | M1        |
+| **M3** | Passation et révision écrivent la table ET les colonnes actuelles ; L9 sur un ensemble                                                                                                  | M2        |
+| **M4** | Bon de livraison (complet et partiel, `exact-departure.ts`) : lit la table, PDF une ligne par remise                                                                                    | M3        |
+| **M5** | Facture et Factur-X : une clé d'allowance par remise, `Reason` = libellé figé ; `billable_*` inchangés en total                                                                         | M4        |
+| **M6** | Lecteurs : `prisma-order.reader.ts` expose `discounts[]` (le champ `discountLabel` reste, déprécié), e-mails, boutique, back-office                                                     | M3        |
+| **M7** | Lever `assertSingleBasketPromotion` pour les cumulables et le refus de la case « Cumulable » au panier                                                                                  | M3 à M6   |
+
+Chaque lot est vert seul ; M7 est le seul qui change un comportement visible.
+
+### 18.7 Les tests
+
+- **Domaine** : une remise = mêmes montants qu'avant (table de cas reprise des
+  specs de `ttc-order` et `vat`) ; deux remises %, % + fixe, fixe bornée à
+  l'assiette, assiettes qui se recouvrent partiellement ; somme des parts
+  par taux = montant de l'étape ; plancher.
+- **Migration** (e2e) : une commande d'avant reprise donne une ligne dont les
+  parts égalent la facture figée.
+- **E2E** : deux remises de panier sur un panier à deux taux — totaux par taux
+  justes, bon complet et partiel, facture et XML Factur-X (deux BG-20 par
+  taux, `AllowanceTotalAmount` = somme, contrôle `facturx-arithmetic`
+  vert) ; **une seule remise = prix identique à aujourd'hui** (même
+  `total`, mêmes parts) ; révision qui change l'acheminement et perdrait une
+  remise → refus nommé ; mur tenant sur la lecture de `order_discounts`.
+
+### 18.8 Questions ouvertes
+
+1. Les colonnes uniques (`discount_promotion_id`, `discount_label`) avec
+   plusieurs remises : rang 1, ou `NULL` (un lecteur ancien afficherait un
+   libellé partiel) ? Proposition : `NULL` + libellé générique.
+2. L'invariant « somme = `discount_cents` » : déclencheur différé en base, ou
+   tenu par l'agrégat seul ?
+3. Le bon partiel : recompose-t-on chaque remise sur les lignes parties
+   (proposition, comme aujourd'hui), ou ventile-t-on la remise de commande ?
+4. Un montant fixe cumulé après un % : borné au reste (proposé), ou refusé ?
+5. Plafond du nombre de remises par commande (lisibilité du papier) ?
+6. Faut-il un fait de journal par remise appliquée, ou la commande suffit-elle ?
