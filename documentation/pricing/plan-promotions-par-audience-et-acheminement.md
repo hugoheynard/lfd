@@ -2567,3 +2567,22 @@ condition de M7 et non plus du déclencheur. Retour arrière : retirer le
 déclencheur AVANT de redéployer le code de M2 (inchangé). Écart connu :
 `prisma/clone-dev.ts` recopie `orders` sans `order_discounts` et échouera sous le
 déclencheur sur une commande remisée (outil de dev, à basculer).
+
+**Rectification de la décision précédente (vitruve, 2026-10-31)** — sa
+justification était **fausse** : `deploy_lfd_api.yml` lance `prisma migrate
+deploy` (l. 351) AVANT `wrangler deploy`, donc le conteneur de M2 sert encore
+sous le déclencheur pendant la bascule, et chaque passation ou révision remisée
+qu'il écrit est refusée au COMMIT ; si le déploiement échoue après la migration,
+ce refus dure jusqu'au `DROP TRIGGER` manuel. Ce qui reste vrai et décide :
+
+- **En pré-release** (§ 0 de CLAUDE.md, aucune commande réelle), la fenêtre est
+  acceptée telle quelle : M3 et son déclencheur partent ensemble vers `main`.
+- **Au lancement commercial**, ce schéma (code et déclencheur dans un même
+  déploiement) est interdit pour tout contrôle à venir : deux déploiements.
+- L'en-tête de `20261031180000_le_controle_des_remises/migration.sql` (« ne se
+  déploie qu'après la seconde passe ») est **périmé par cette décision** et ne
+  peut plus être corrigé (checksum). Le runbook fait foi.
+- Entre M3 et la seconde passe, une commande non reprise se lit par le **repli
+  sur les colonnes** (une remise de rang 1) : M4, M5 et M6 doivent passer par
+  ce même repli, jamais lire `order_discounts` seul. Condition inscrite à chacun.
+- `prisma/clone-dev.ts` : à basculer en M4 (recopier `order_discounts`).
