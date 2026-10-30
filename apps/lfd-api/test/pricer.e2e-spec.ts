@@ -38,6 +38,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { PUBLIC_VIEWER, staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (): Promise<{ subject: string; scopes: string[] }> =>
@@ -104,7 +105,7 @@ async function lotOf(
   // chemin que la caisse, cette déduction comprise.
   const resolved = await catalog.resolveMany(
     lines.map((line) => line.sku),
-    companyId === null ? "public" : "pro",
+    companyId === null ? PUBLIC_VIEWER : staffViewer("pro"),
   );
   const articles = lines.map((line) => {
     const found = resolved.get(line.sku);
@@ -477,7 +478,7 @@ describe("après la bascule, un changement de défaut", () => {
 describe("les refus", () => {
   it("refuse le même article demandé deux fois", async () => {
     const { companyId } = await customerOf("auth0|pricer_dup");
-    const found = await catalog.resolve(SKU, "pro");
+    const found = await catalog.resolve(SKU, staffViewer("pro"));
     const article = found?.article;
     if (article === undefined) {
       throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);

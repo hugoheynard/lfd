@@ -29,6 +29,8 @@ import {
   PreviewStaffSuggestionsQuery,
   type PreviewPlace,
 } from "../preview-staff-suggestions.query.js";
+import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 const NOW = new Date("2026-10-18T08:00:00.000Z");
 const TODAY = instantToLocal(NOW).day;
@@ -125,11 +127,18 @@ function harness(rules: readonly Seed[], pairs: readonly CoPurchasePair[] = []) 
     filter,
     shelf,
     clock,
+    new CatalogViewers(new InMemoryReservationHolders()),
   );
   const coPurchases = new CoPurchases(pairs);
   const handler = new PreviewStaffSuggestionsHandler(
     showcase,
-    new BoughtWithShowcase(coPurchases, filter, shelf, clock),
+    new BoughtWithShowcase(
+      coPurchases,
+      filter,
+      shelf,
+      clock,
+      new CatalogViewers(new InMemoryReservationHolders()),
+    ),
     new CatalogCartFamilyReader(CATALOG),
     clock,
   );

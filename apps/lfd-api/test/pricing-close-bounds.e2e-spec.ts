@@ -32,6 +32,7 @@ import {
   type E2eContext,
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 const fakeGateway = {
   createIntent: () => Promise.resolve({ paymentIntentId: "pi_e2e", clientSecret: "pi_e2e_secret" }),
@@ -126,7 +127,7 @@ async function placeOrderFor(companyId: string): Promise<string> {
 
 /** Le prix que la relecture DATÉE rend, par le vrai `Pricer`. */
 async function pricedAt(companyId: string, at: Date): Promise<number> {
-  const resolved = await ctx.app.get(ProductCatalogReader).resolveMany([SKU], "pro");
+  const resolved = await ctx.app.get(ProductCatalogReader).resolveMany([SKU], staffViewer("pro"));
   const found = resolved.get(SKU);
   if (found === undefined) {
     throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);

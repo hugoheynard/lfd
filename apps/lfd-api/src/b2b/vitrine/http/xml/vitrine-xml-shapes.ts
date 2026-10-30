@@ -95,6 +95,10 @@ export const VITRINE_ITEM_SHAPE: XmlObjectShape = objectOf<VitrineItemView>({
   shelfName: required(xmlString),
   URLProduct: required(xmlString),
   isFeatured: optional(xmlBoolean),
+  // Jamais émis par la vitrine publique (un article verrouillé n'y sort pas,
+  // S3 de `plan-articles-sur-mesure.md`) ; déclarés parce que la forme les porte.
+  orderable: optional(xmlBoolean),
+  lockedReason: optional(oneOf(["reserved_to_other_account"])),
   audience: required(oneOf(["public", "pro", "both"])),
   operation: optional(itemOperation),
   orderTimeLimit: optional(itemOrderLimit),

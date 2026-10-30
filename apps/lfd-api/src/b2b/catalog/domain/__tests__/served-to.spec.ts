@@ -12,6 +12,8 @@ function item(over: Partial<ServableItem> = {}): ServableItem {
     isHiddenPublic: false,
     publicReviewPending: false,
     proReviewPending: false,
+    isReserved: false,
+    isMadeToOrder: false,
     ...over,
   };
 }
@@ -73,5 +75,34 @@ describe("catalogAudienceOf", () => {
     expect(catalogAudienceOf("both")).toBe("both");
     expect(catalogAudienceOf(null)).toBeNull();
     expect(catalogAudienceOf("tous")).toBeNull();
+  });
+});
+
+/**
+ * S3 de `plan-articles-sur-mesure.md` : un article réservé ou sur mesure n'est
+ * JAMAIS servi au public, quelle que soit son audience — et `servedToAnyone`,
+ * que lisent la vitrine et les ventes d'opération, ne dit plus « oui » par sa
+ * branche pro pour lui.
+ */
+describe("S3 — réservé ou sur mesure, jamais au public", () => {
+  it.each([
+    ["réservé", { isReserved: true }],
+    ["sur mesure", { isMadeToOrder: true }],
+  ])("%s : refusé au public, servi aux pros", (_label, over) => {
+    expect(servedTo(item({ audience: "both", ...over }), "public")).toBe(false);
+    expect(servedTo(item({ audience: "public", ...over }), "public")).toBe(false);
+    expect(servedTo(item({ audience: "both", ...over }), "pro")).toBe(true);
+  });
+
+  it.each([
+    ["réservé", { isReserved: true }],
+    ["sur mesure", { isMadeToOrder: true }],
+  ])("%s : `servedToAnyone` dit non, même servi aux pros", (_label, over) => {
+    expect(servedToAnyone(item({ audience: "both", ...over }))).toBe(false);
+    expect(servedToAnyone(item({ audience: "pro", ...over }))).toBe(false);
+  });
+
+  it("un article ouvert reste servi à quelqu'un par sa branche pro", () => {
+    expect(servedToAnyone(item({ audience: "pro" }))).toBe(true);
   });
 });

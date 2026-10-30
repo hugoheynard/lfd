@@ -6,12 +6,19 @@ import { ProductCatalogReader } from "../../../catalog/domain/ports/product-cata
 import type { ShopAudience } from "../../../catalog/domain/ports/catalog.reader.js";
 import { judgeOrderable, type FulfillmentTarget } from "../../domain/orderable-today.js";
 import { RecommendationCutoffReader } from "../../domain/ports/recommendation-cutoff.reader.js";
+import { staffViewer, type CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /** Ce qu'on demande au filtre : des candidats déjà classés, pour un lecteur. */
 export interface RecommendationFilterInput {
   /** Les SKU proposés, dans l'ordre où ils seraient montrés. */
   readonly candidates: readonly string[];
-  readonly audience: ShopAudience;
+  /**
+   * Qui regarde — la société et son principal pour un pro reconnu
+   * (`plan-articles-sur-mesure.md`, § 6) : un article réservé à un autre
+   * compte n'est jamais suggéré, sauf aux habituels qui le montrent verrouillé
+   * (S7, `served_and_locked`).
+   */
+  readonly viewer: CatalogViewer;
   /** Les SKU déjà au panier : jamais suggérés. */
   readonly inCart: readonly string[];
   /** Le jour visé, s'il est choisi ; `null` = pas d'heure à opposer. */
@@ -52,7 +59,7 @@ export class RecommendationFilter {
       return { kept: [], refused: new Map() };
     }
     const [served, fallback] = await Promise.all([
-      this.catalog.resolveMany(input.candidates, input.audience),
+      this.catalog.resolveMany(input.candidates, input.viewer),
       input.target === null ? Promise.resolve([]) : this.cutoffs.list(),
     ]);
     const refused = new Map<string, FilterRefusal>();
@@ -89,13 +96,17 @@ export class RecommendationFilter {
    * jour). Sans panier, et sans point de retrait : la règle générale du
    * commerce, celle de la livraison. Une liste de jours vide ne juge que le
    * service.
+   *
+   * Lu en lecteur `staff` de l'audience : l'alerte est un écran du personnel,
+   * et un article réservé n'y est pas « non servi » pour autant
+   * (`plan-articles-sur-mesure.md`, S5).
    */
   async judgeOver(input: PeriodFilterInput): Promise<PeriodJudgement> {
     if (input.candidates.length === 0) {
       return { notServed: new Set(), neverOrderable: new Set() };
     }
     const [served, fallback] = await Promise.all([
-      this.catalog.resolveMany(input.candidates, input.audience),
+      this.catalog.resolveMany(input.candidates, staffViewer(input.audience)),
       input.days.length === 0 ? Promise.resolve([]) : this.cutoffs.list(),
     ]);
     const notServed = new Set(input.candidates.filter((sku) => !served.has(sku)));

@@ -1,6 +1,7 @@
 import { legacyShelfCodeOfSlug } from "../../catalog/domain/legacy-shelf-codes.js";
 import type { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
 import type { PricingSubjectType } from "../domain/pricing-act.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /** Les deux formes d'un sujet de limite de famille — pro, puis publique. */
 const FAMILY_FLOOR_SUBJECT = /^(public:)?category:(.+)$/;
@@ -31,7 +32,9 @@ export async function legacyJournalSubjects(
   if (match === null || familyId === undefined) {
     return [];
   }
-  const family = (await catalog.all()).find((item) => item.family?.id === familyId)?.family;
+  const family = (await catalog.all(staffViewer("pro"))).find(
+    (item) => item.family?.id === familyId,
+  )?.family;
   const code = family === undefined || family === null ? null : legacyShelfCodeOfSlug(family.slug);
   return code === null ? [] : [`${match[1] ?? ""}category:${code}`];
 }

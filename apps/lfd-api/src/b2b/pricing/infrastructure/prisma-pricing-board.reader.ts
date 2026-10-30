@@ -23,6 +23,7 @@ import {
 import { actsAt, categoryView, groupByFamily } from "../application/board-category.js";
 import { ruleViewFromRow } from "./price-rows.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /** Au-delà, ce n'est plus une mémoire consultable, c'est un export. */
 const ARCHIVED_PAGE = 100;
@@ -125,7 +126,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
       this.ladders.listAll(at),
       this.history.pricingAt(at),
       this.history.startsAt(),
-      this.catalog.all(),
+      this.catalog.all(staffViewer("pro")),
     ]);
 
     // Le tarif représentatif d'AUJOURD'HUI, par portée : c'est lui qui, comparé

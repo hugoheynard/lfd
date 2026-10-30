@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 import { shopSkuOf } from "../domain/shop-sku.js";
 
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
+import { staffViewer } from "../domain/catalog-viewer.js";
 
 /**
  * **Quels articles se vendent au poids**, parmi ceux d'un panier qui n'en
@@ -24,8 +25,8 @@ export class ArticleSaleUnits {
       return new Set();
     }
     const [pro, open] = await Promise.all([
-      this.catalog.listByShopSkus(skus, "pro"),
-      this.catalog.listByShopSkus(skus, "public"),
+      this.catalog.listByShopSkus(skus, staffViewer("pro")),
+      this.catalog.listByShopSkus(skus, staffViewer("public")),
     ]);
     return new Set(
       [...pro.values(), ...open.values()]

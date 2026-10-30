@@ -7,6 +7,9 @@ import { UpsertOccurrenceOverrideHandler } from "../upsert-occurrence-override.h
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { SubscriptionNotFoundError } from "../../../domain/errors/subscription-errors.js";
 import { subscriptionGestures } from "./subscription-gesture-doubles.js";
+import { ReservedArticleGuard } from "../../../../catalog/application/reserved-article-guard.service.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 function build() {
   const repo = new FakeSubscriptionRepository();
@@ -17,6 +20,7 @@ function build() {
     new DirectUnitOfWork(),
     subscriptionGestures(repo).gestures,
     articleSaleUnitsOver(),
+    new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
   );
   return { repo, events, handler };
 }

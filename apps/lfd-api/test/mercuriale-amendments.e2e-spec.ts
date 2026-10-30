@@ -34,6 +34,7 @@ import {
 } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble } from "./order-factory.js";
+import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -115,7 +116,7 @@ const amend = (companyId: string, mercurialeId: string, body: Record<string, unk
 
 /** Le prix que rend le vrai `Pricer` — au présent, ou en relecture datée. */
 async function priceOf(companyId: string, sku: string, at?: Date): Promise<number> {
-  const found = await ctx.app.get(ProductCatalogReader).resolve(sku, "pro");
+  const found = await ctx.app.get(ProductCatalogReader).resolve(sku, staffViewer("pro"));
   if (found === null) {
     throw new Error(`Le catalogue e2e ne connaît pas « ${sku} ».`);
   }
@@ -129,7 +130,7 @@ async function priceOf(companyId: string, sku: string, at?: Date): Promise<numbe
 }
 
 async function canonical(sku: string): Promise<number> {
-  const found = await ctx.app.get(ProductCatalogReader).resolve(sku, "pro");
+  const found = await ctx.app.get(ProductCatalogReader).resolve(sku, staffViewer("pro"));
   if (found === null) {
     throw new Error(`Le catalogue e2e ne connaît pas « ${sku} ».`);
   }

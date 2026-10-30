@@ -1,6 +1,6 @@
 # Articles sur mesure — réservés à des comptes pros
 
-> 📐 Plan, doc-first (Hugo, 2026-10-30). Rien n'est bâti. **Révision 2**
+> 📐 Plan (Hugo, 2026-10-30). L1a commité, L1b bâti (§ 10 bis). **Révision 2**
 > (2026-10-30) : contredit par `vitruve`, objections intégrées — cf. § 11.
 > Chaque affirmation sur l'existant cite un `fichier:ligne` ouvert le
 > 2026-10-30 (chemins relatifs à `apps/lfd-api/`). Contradiction de `vitruve`
@@ -496,7 +496,7 @@ naturellement ».
   d'administration (marquer, réserver, retirer, régler la visibilité),
   lectures admin, et l'écran du back-office (article : badge, réglage ; fiche
   client : « Articles réservés »). Aucun mur encore.
-  🟦 **Bâti le 2026-10-30, non commité** : migration
+  ✅ **Bâti le 2026-10-30, commité `b406da16b`** : migration
   `20261030160000_les_articles_sur_mesure`, routes `admin/catalog/made-to-order`,
   `:sku/made-to-order`, `:sku/reserved-visibility`, `:sku/reservation`,
   `:sku/reservations/:companyId` (PUT, DELETE), `reservations/:companyId`
@@ -507,11 +507,30 @@ naturellement ».
   par `parent_company_id` dans le lecteur d'administration.
 - **L1b** — le mur (§ 5, § 6) : `CatalogViewer`, `servedToViewer`, refus
   nommé, S3, sélecteur de la mercuriale filtré.
+  🟦 **Bâti le 2026-10-30, non commité.** `CatalogViewer` remplace l'audience
+  dans `CatalogReader` et `ProductCatalogReader` (`findSku` retiré du port) ;
+  `servedToViewer` pur (`catalog/domain/served-to-viewer.ts`) ; S3 dans
+  `servedTo` et `servedToAnyone` ; `readReservationHolders` dans
+  `b2b/shared/company-standing` (la fiche « Articles réservés » lit le
+  principal par `readSitePrincipal`, même fichier) ; `CatalogViewers`, seule
+  fabrique d'un lecteur pro reconnu ; `ReservedArticleRefusedError` (409,
+  code `catalog.reserved_article`) ; lignes gardées par `keptLinesViewer` ;
+  mur à l'abonnement (`ReservedArticleGuard`) et règle Q7 écrite
+  (`subscriptions/domain/services/reserved-occurrence.ts`, sans appelant tant
+  que la génération n'existe pas) ; Tarifs filtrés et pose/avenant/report
+  refusés (Q1). E2e : `test/made-to-order-wall.e2e-spec.ts`. Écarts au texte
+  du plan, à trancher : un lecteur `staff` porte une **audience** (le prix
+  d'entrée en dépend) et un `regarding` avec son **principal** ; un article
+  `hidden` reste un **article inconnu** au devis (S2), alors que le § 9.1
+  attendait `reserved_article` ; les opérations datées du panier lisent en
+  `staff` (le mur est tenu par la porte du prix). Budget : `COLD_QUOTE_OPS`
+  inchangé à 7, le cas froid `/shop/quote/mine` reste au L4.
 - **L2…** — la suite du § 8.
 
-⚠️ Entre L1a et L1b, une réservation posée ne restreint encore rien : l'écran
+~~⚠️ Entre L1a et L1b, une réservation posée ne restreint encore rien : l'écran
 le dit (« la restriction s'appliquera au prochain déploiement ») et rien ne
-part sur `main` entre les deux sans que Hugo le sache.
+part sur `main` entre les deux sans que Hugo le sache.~~ Levé au L1b
+(2026-10-30) : le mur est bâti, l'annonce est retirée des deux écrans.
 
 ## 11. Contradiction de vitruve (2026-10-30)
 

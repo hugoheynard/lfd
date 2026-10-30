@@ -16,6 +16,7 @@ import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { prepareAtCommerce } from "./operations-at-commerce-seed.js";
 import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
+import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 /**
  * **Le drapeau `operationOnly` devient une règle de vente** (lot 3 de
@@ -190,7 +191,9 @@ describe("hors de toute fenêtre", () => {
   it("la fiche atelier et la tarification la voient toujours (D5)", async () => {
     const shelves = await ctx.app.get(WorkshopShelvesReader).shelvesOf(["PAT-002-1"]);
     expect(shelves.has("PAT-002-1")).toBe(true);
-    expect(await ctx.app.get(ProductCatalogReader).resolve("PAT-002-1", "pro")).not.toBeNull();
+    expect(
+      await ctx.app.get(ProductCatalogReader).resolve("PAT-002-1", staffViewer("pro")),
+    ).not.toBeNull();
   });
 });
 

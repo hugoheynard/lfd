@@ -14,6 +14,7 @@ import {
   type ResolvedCatalogItem,
   type ShopAudience,
 } from "../domain/ports/catalog.reader.js";
+import { staffViewer } from "../domain/catalog-viewer.js";
 
 /** La réponse de D4 pour un article du panier, et le nom qui ira dans le message. */
 export interface ProductSaleAccess {
@@ -124,7 +125,14 @@ export class SaleOperations {
     });
   }
 
-  /** Les articles du panier qui ne se vendent QUE par une opération (D3). */
+  /**
+   * Les articles du panier qui ne se vendent QUE par une opération (D3).
+   *
+   * Lu en lecteur `staff` de l'audience (`plan-articles-sur-mesure.md`, § 6) :
+   * ce service ne liste rien à un client, il répond sur les SKU que le panier
+   * porte déjà. Le mur des réservations est tenu par la porte du prix
+   * (`OrderLinePricing`), que la caisse et le devis passent de toute façon.
+   */
   private async boundItems(
     productSkus: readonly string[],
     audience: ShopAudience,
@@ -136,7 +144,7 @@ export class SaleOperations {
     if (only.size === 0) {
       return [];
     }
-    const items = await this.catalog.listByShopSkus(productSkus, audience);
+    const items = await this.catalog.listByShopSkus(productSkus, staffViewer(audience));
     return [...items.values()].filter((item) => only.has(item.sku));
   }
 }

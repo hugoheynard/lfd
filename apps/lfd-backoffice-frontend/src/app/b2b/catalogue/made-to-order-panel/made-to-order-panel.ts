@@ -15,7 +15,6 @@ import {
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
-  FoldCalloutComponent,
   FoldCheckboxComponent,
   FoldEmptyStateComponent,
   FoldLoadingStateComponent,
@@ -32,7 +31,7 @@ import {
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
 import { MadeToOrderService } from '../made-to-order.service';
-import { RESERVED_VISIBILITY_LABELS, RESTRICTION_PENDING, reservationDate } from '../made-to-order';
+import { RESERVED_VISIBILITY_LABELS, reservationDate } from '../made-to-order';
 
 /** L'article dont on règle le sur mesure. */
 export interface MadeToOrderPanelData {
@@ -59,7 +58,6 @@ type LoadState = 'loading' | 'ready' | 'error';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     FoldButtonComponent,
-    FoldCalloutComponent,
     FoldCheckboxComponent,
     FoldEmptyStateComponent,
     FoldLoadingStateComponent,
@@ -92,7 +90,6 @@ export class MadeToOrderPanel implements FoldPanelContent<MadeToOrderPanelData> 
   );
 
   protected readonly when = reservationDate;
-  protected readonly restrictionPending = RESTRICTION_PENDING;
 
   constructor() {
     effect(() => {

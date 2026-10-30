@@ -27,11 +27,7 @@ import {
 import { PermissionsStore } from '../../auth/permissions.store';
 import { NotifyService } from '../../notify.service';
 import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
-import {
-  RESERVED_VISIBILITY_LABELS,
-  RESTRICTION_PENDING,
-  reservationDate,
-} from '../../b2b/catalogue/made-to-order';
+import { RESERVED_VISIBILITY_LABELS, reservationDate } from '../../b2b/catalogue/made-to-order';
 import { MadeToOrderService } from '../../b2b/catalogue/made-to-order.service';
 
 type LoadState = 'loading' | 'ready' | 'error';
@@ -78,7 +74,6 @@ export class ClientReservedArticlesPage {
   /** Le SKU dont le geste est en vol — un seul à la fois. */
   protected readonly pending = signal<string | null>(null);
 
-  protected readonly restrictionPending = RESTRICTION_PENDING;
   protected readonly when = reservationDate;
   protected readonly releaseWarning =
     'Retirer cette réservation ? Dès que la restriction s’applique, l’article redevient visible et commandable par tous les professionnels — nom, photo et composition compris.';

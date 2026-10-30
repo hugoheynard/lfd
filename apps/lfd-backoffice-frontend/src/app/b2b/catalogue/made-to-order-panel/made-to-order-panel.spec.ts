@@ -64,12 +64,13 @@ const text = (fixture: ComponentFixture<MadeToOrderPanel>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 describe('MadeToOrderPanel', () => {
-  it('nomme les comptes réservataires, et dit que le mur n’est pas encore là', async () => {
+  it('nomme les comptes réservataires, sans plus annoncer un mur à venir', async () => {
     const fixture = await render(new FakeMadeToOrder());
 
     expect(text(fixture)).toContain('Réservé à 1 compte');
     expect(text(fixture)).toContain('Le Fournil d’Anna');
-    expect(text(fixture)).toContain('La restriction s’appliquera avec le prochain déploiement');
+    // Le mur est bâti (L1b, 2026-10-30) : l'annonce d'attente est partie.
+    expect(text(fixture)).not.toContain('prochain déploiement');
   });
 
   it('cocher « sur mesure » envoie le geste', async () => {

@@ -4,7 +4,8 @@ import type { CatalogArticle } from "../catalogue-article.js";
 import type { CatalogFamily } from "../catalog-family.js";
 import { NO_CATALOG_MIN_QUANTITIES, type CatalogMinQuantities } from "../catalog-min-quantities.js";
 import type { CatalogSaleUnit } from "../catalog-sale-unit.js";
-import type { ShopAudience } from "./catalog.reader.js";
+import type { CatalogViewer } from "../catalog-viewer.js";
+import type { CatalogReservationMark } from "../served-to-viewer.js";
 
 /** Ce que le seed porte pour un SKU : nom + prix unitaire **HT** en millicentimes. */
 export interface PricedSku {
@@ -64,6 +65,12 @@ export interface CatalogItem extends PricedSku {
    */
   readonly minQuantities: CatalogMinQuantities;
   /**
+   * **Réservé, et à qui pour ce lecteur** (`plan-articles-sur-mesure.md`, § 5).
+   * `other` chez un pro reconnu = verrouillé : le chemin qui facture le refuse
+   * par son nom (`ReservedArticleRefusedError`).
+   */
+  readonly reservation: CatalogReservationMark;
+  /**
    * **Ce qu'il faut pour le tarifer, scellé par le catalogue.**
    *
    * Frappé par l'adaptateur, donc porteur de la preuve que son
@@ -87,8 +94,12 @@ export interface CatalogItem extends PricedSku {
  * Ses conditions de vente sont facultatives et valent la pièce
  * ({@link PIECE_SALE_TERMS}) : ce qu'est tout article qui ne dit pas le contraire.
  */
-export type UnsealedCatalogItem = Omit<CatalogItem, "article" | keyof CatalogSaleTerms> &
-  Partial<CatalogSaleTerms>;
+export type UnsealedCatalogItem = Omit<
+  CatalogItem,
+  "article" | "reservation" | keyof CatalogSaleTerms
+> &
+  Partial<CatalogSaleTerms> &
+  Partial<Pick<CatalogItem, "reservation">>;
 
 /** Comment un article se vend : l'unité, au poids le pas et le minimum en grammes, et ses minimums en pièces. */
 export type CatalogSaleTerms = Pick<
@@ -122,7 +133,7 @@ export abstract class ProductCatalogReader {
    * facturer un prix périmé dès qu'un autre pod reçoit une poussée du PIM. Sur
    * l'autorité de prix du checkout, c'était le mauvais compromis.
    */
-  abstract resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null>;
+  abstract resolve(sku: string, viewer: CatalogViewer): Promise<CatalogItem | null>;
 
   /**
    * Le catalogue entier, dans l'ordre où il se parcourt.
@@ -132,7 +143,7 @@ export abstract class ProductCatalogReader {
    * quatrième copie de la table des produits, dans l'app admin — donc un écran
    * où le commercial annonce au téléphone un prix que le serveur refuse ensuite.
    */
-  abstract all(): Promise<readonly CatalogItem[]>;
+  abstract all(viewer: CatalogViewer): Promise<readonly CatalogItem[]>;
 
   /**
    * Résout **plusieurs** SKU en une lecture.
@@ -145,6 +156,6 @@ export abstract class ProductCatalogReader {
    */
   abstract resolveMany(
     skus: readonly string[],
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ReadonlyMap<string, CatalogItem>>;
 }

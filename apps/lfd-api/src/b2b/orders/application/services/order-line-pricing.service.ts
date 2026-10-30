@@ -12,6 +12,9 @@ import {
   ProductCatalogReader,
 } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { minQuantityFor } from "../../../catalog/domain/catalog-min-quantities.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
+import { viewerAudience, type CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
+import { refuseReserved } from "../../../catalog/domain/errors/reserved-article-refused.error.js";
 import {
   ensureMinimumQuantity,
   ensureSaleQuantity,
@@ -56,6 +59,7 @@ export class OrderLinePricing {
     private readonly catalog: ProductCatalogReader,
     private readonly pricer: Pricer,
     private readonly clock: Clock,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   /**
@@ -75,6 +79,7 @@ export class OrderLinePricing {
    * résolu par la porte du prix, à l'instant de la résolution.
    *
    * @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas.
+   * @throws {ReservedArticleRefusedError} un article réservé à un autre compte.
    * @throws {QuantityBelowMinimumError} un SKU sous le minimum de la clientèle.
    */
   async resolve(
@@ -83,7 +88,8 @@ export class OrderLinePricing {
     caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
-    return this.priceAll(input, parties, { withTiers: false, caller }, at);
+    const viewer = await this.billingViewer(parties);
+    return this.priceAll(input, parties, { withTiers: false, caller, viewer }, at);
   }
 
   /**
@@ -101,7 +107,8 @@ export class OrderLinePricing {
     caller: PricingCaller,
     at?: Date,
   ): Promise<ResolvedOrderLine[]> {
-    return this.priceAll(input, parties, { withTiers: true, caller }, at);
+    const viewer = await this.billingViewer(parties);
+    return this.priceAll(input, parties, { withTiers: true, caller, viewer }, at);
   }
 
   /**
@@ -113,6 +120,12 @@ export class OrderLinePricing {
    * Même déduction d'audience que {@link priceAll}, pour que la ligne gardée
    * soit tenue au minimum même qu'une ligne nouvelle. Un SKU sorti du
    * catalogue est ABSENT de la table rendue, jamais présent à `null`.
+   *
+   * 🔴 **Réservation levée, ici seulement** (`plan-articles-sur-mesure.md`,
+   * § 5, Q4) : ces SKU sont déjà commandés par cette commande. Sans la levée,
+   * un article dont la réservation a changé tomberait absent, et son minimum
+   * serait sauté en silence (`ensureKeptMinimums`). Les lignes NOUVELLES
+   * passent `priceAll`, donc le mur.
    */
   async minimumsOf(
     skus: readonly string[],
@@ -121,8 +134,9 @@ export class OrderLinePricing {
     if (skus.length === 0) {
       return new Map();
     }
-    const audience = parties.companyId === null ? "public" : "pro";
-    const catalogue = await this.catalog.resolveMany(skus, audience);
+    const viewer = await this.viewers.forKeptLines(parties.companyId);
+    const audience = viewerAudience(viewer);
+    const catalogue = await this.catalog.resolveMany(skus, viewer);
     return new Map(
       [...catalogue].map(([sku, item]) => [sku, minQuantityFor(item.minQuantities, audience)]),
     );
@@ -149,10 +163,10 @@ export class OrderLinePricing {
     if (input.length === 0) {
       return { resolved: [], kept: input, removed: [] };
     }
-    const audience = parties.companyId === null ? "public" : "pro";
+    const viewer = await this.billingViewer(parties);
     const catalogue = await this.catalog.resolveMany(
       [...new Set(input.map((line) => line.sku))],
-      audience,
+      viewer,
     );
     const split = splitStaleUnitLines(
       input.map((line) => ({ line, sku: line.sku, saleUnit: saleUnitOfLine(line) })),
@@ -162,17 +176,31 @@ export class OrderLinePricing {
     const resolved = await this.priceAll(
       kept,
       parties,
-      { withTiers: false, caller },
+      { withTiers: false, caller, viewer },
       undefined,
       catalogue,
     );
     return { resolved, kept, removed: split.removed };
   }
 
+  private billingViewer(parties: ServedCompany): Promise<CatalogViewer> {
+    // Verrouillés compris — pour les refuser par leur nom (S2), jamais pour
+    // les tarifer : `refuseReserved` passe avant toute ligne.
+    return this.viewers.forCompany(parties.companyId, "served_and_locked");
+  }
+
   private async priceAll(
     input: readonly OrderLineRequest[],
     parties: ServedCompany,
-    { withTiers, caller }: { readonly withTiers: boolean; readonly caller: PricingCaller },
+    {
+      withTiers,
+      caller,
+      viewer,
+    }: {
+      readonly withTiers: boolean;
+      readonly caller: PricingCaller;
+      readonly viewer: CatalogViewer;
+    },
     /**
      * L'instant de résolution, **quand l'appelant en a un**.
      *
@@ -212,8 +240,13 @@ export class OrderLinePricing {
     // d'étiquette. La faire ici ET au rayon n'est pas une duplication, c'est
     // l'exigence que les deux s'accordent — `quote-order-parity` le tient, et
     // un e2e du rayon vérifie qu'il annonce ce que le devis chiffre.
-    const audience = parties.companyId === null ? "public" : "pro";
-    const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], audience));
+    //
+    // Et le LECTEUR porte la société (`plan-articles-sur-mesure.md`, § 6) : un
+    // article réservé à un autre compte est refusé par son nom, un `hidden`
+    // reste inconnu.
+    const audience = viewerAudience(viewer);
+    const catalogue = loaded ?? (await this.catalog.resolveMany([...quantities.keys()], viewer));
+    refuseReserved(catalogue, quantities.keys());
     // 🔴 Le SKU inconnu est refusé AVANT le chargement des matériaux. Charger
     // d'abord ferait payer des lectures pour un panier qu'on va refuser.
     //

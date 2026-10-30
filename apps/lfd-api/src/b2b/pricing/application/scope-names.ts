@@ -1,6 +1,7 @@
 import { legacyShelfLabel } from "../../catalog/domain/legacy-shelf-codes.js";
 import type { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
 import type { PriceScope } from "../domain/price-rule.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /**
  * **Le nom du moment** de ce qu'une portée tarifaire vise — pour le figer dans
@@ -29,10 +30,12 @@ export async function scopeNameOf(
   }
   if (scope.type === "category") {
     const familyId = scope.id;
-    const family = (await catalog.all()).find((item) => item.family?.id === familyId)?.family;
+    const family = (await catalog.all(staffViewer("pro"))).find(
+      (item) => item.family?.id === familyId,
+    )?.family;
     return family?.name ?? legacyShelfLabel(familyId);
   }
   // `pro` : on ne cherche QU'UN NOM ici — l'audience ne le change pas, et
   // l'écran qui l'affiche est celui de la tarification professionnelle.
-  return (await catalog.resolve(scope.id, "pro"))?.name ?? null;
+  return (await catalog.resolve(scope.id, staffViewer("pro")))?.name ?? null;
 }

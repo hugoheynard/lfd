@@ -28,6 +28,9 @@ import { catalogItem, InMemoryCatalogOperations } from "../../__tests__/sale-ope
 import { GivenPricesPerKg } from "../../__tests__/price-per-kg-doubles.js";
 import { ShopCataloguePricing } from "../../shop-catalogue-pricing.service.js";
 import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-catalogue.js";
+import { CatalogViewers } from "../../catalog-viewers.service.js";
+import { InMemoryReservationHolders } from "../../../infrastructure/in-memory-reservation-holders.js";
+import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
 
 /**
  * La vitrine sans jeton, publique ou pro (2026-10-19) — montée sur la VRAIE
@@ -50,13 +53,10 @@ class SellableCatalog extends CatalogReader {
     super();
   }
 
-  listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
+  listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]> {
+    const audience = viewerAudience(viewer);
     this.audiences.push(audience);
     return Promise.resolve([...this.byAudience[audience]]);
-  }
-
-  findSku(): Promise<ResolvedCatalogItem | null> {
-    return Promise.reject(new Error("lecture inattendue"));
   }
 
   findByShopSku(): Promise<ResolvedCatalogItem | null> {
@@ -212,6 +212,7 @@ function fixture(
     new FixedClock(NOW),
     new GivenCutoffs(cutoffs),
     new GivenPricesPerKg(),
+    new CatalogViewers(new InMemoryReservationHolders()),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }

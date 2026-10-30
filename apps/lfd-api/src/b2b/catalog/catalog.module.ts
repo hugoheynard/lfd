@@ -59,6 +59,10 @@ import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
+import { CatalogViewers } from "./application/catalog-viewers.service.js";
+import { ReservedArticleGuard } from "./application/reserved-article-guard.service.js";
+import { ReservationHoldersReader } from "./domain/ports/reservation-holders.reader.js";
+import { PrismaReservationHoldersReader } from "./infrastructure/prisma-reservation-holders.reader.js";
 import { ShopOrderCutoffsReader } from "./domain/ports/shop-order-cutoffs.reader.js";
 import { OrderCutoffsInForce } from "../order-cutoffs/domain/order-cutoffs-in-force.js";
 import { OrderCutoffsInForceModule } from "../order-cutoffs/order-cutoffs-in-force.module.js";
@@ -151,6 +155,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // bas : la route reconnue l'appelle avec un `companyId`, la publique avec
     // `null`, et c'est la seule différence entre elles.
     ShopCataloguePricing,
+    CatalogViewers,
+    ReservedArticleGuard,
+    { provide: ReservationHoldersReader, useClass: PrismaReservationHoldersReader },
     { provide: ShopOrderCutoffsReader, useExisting: OrderCutoffsInForce },
     // Le prix ne se décide plus ici (lot D, 2026-10-15) : il se RETRACE
     // depuis le référentiel, une fois au déploiement.
@@ -247,6 +254,9 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est
     // descendue ici.
     ShopCataloguePricing,
+    CatalogViewers,
+    // Pour les abonnements : le mur des articles réservés, sans tarifer.
+    ReservedArticleGuard,
     // Les opérations datées, pour la caisse, le devis, les jours et les
     // abonnements (lot 3 du plan des opérations datées).
     SaleOperations,

@@ -41,6 +41,8 @@ import { CustomerAudiences } from "../customer-audiences.service.js";
 import { OrderLinePricing } from "../order-line-pricing.service.js";
 import { OrderOperations } from "../order-operations.service.js";
 import { ShopCartQuoting } from "../shop-cart-quoting.service.js";
+import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 /**
  * Le devis de la boutique monté sur ses VRAIS services, ports doublés à la
@@ -194,7 +196,12 @@ function pricingOf(
     new RecordingTimings(),
     new FixedStopwatch(),
   );
-  return new OrderLinePricing(new InMemoryProductCatalog(catalog), pricer, clock);
+  return new OrderLinePricing(
+    new InMemoryProductCatalog(catalog),
+    pricer,
+    clock,
+    new CatalogViewers(new InMemoryReservationHolders()),
+  );
 }
 
 /** Ce qui varie d'un devis à l'autre ; tout le reste est fixé. */

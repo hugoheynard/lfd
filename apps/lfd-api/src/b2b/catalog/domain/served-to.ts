@@ -25,6 +25,13 @@ export interface ServableItem {
   readonly publicReviewPending: boolean;
   /** Personne ne l'a encore validé pour les pros (Hugo, 2026-10-15, option 2). */
   readonly proReviewPending: boolean;
+  /**
+   * Réservé à au moins une société (`plan-articles-sur-mesure.md`, S3) : jamais
+   * servi au public. Chez les pros, c'est `servedToViewer` qui décide qui y a droit.
+   */
+  readonly isReserved: boolean;
+  /** Marqué « sur mesure » (S3, Q5) : jamais servi au public, ouvert à tous les pros (S4). */
+  readonly isMadeToOrder: boolean;
 }
 
 /**
@@ -38,10 +45,13 @@ export interface ServableItem {
  * masquage ne fait donc que retirer : montrer aux pros un article que le
  * référentiel dit `public` est impossible depuis la plateforme (H5).
  *
- * 🔴 Elle remplace quatre lectures directes du masquage — le rayon, la fiche
+ * 🔴 Elle remplace cinq lectures directes du masquage — le rayon, la fiche
  * et le lot de SKU (donc la commande), l'éditeur de vitrine, le résumé « en
- * vente », l'export. Une seule écriture, sans quoi un jour l'un des quatre
- * vendrait ce que les autres cachent.
+ * vente », l'export. Une seule écriture, sans quoi un jour l'un des cinq
+ * vendrait ce que les autres cachent. Depuis le L1b des articles sur mesure
+ * (2026-10-30), elle porte aussi S3 : un article réservé ou sur mesure n'est
+ * jamais servi au public, quelle que soit son audience. La réservation chez
+ * les pros se juge par-dessus, dans `servedToViewer`.
  */
 export function servedTo(item: ServableItem, viewer: ShopAudience): boolean {
   const audience = item.audience ?? "both";
@@ -50,7 +60,7 @@ export function servedTo(item: ServableItem, viewer: ShopAudience): boolean {
   }
   return viewer === "pro"
     ? !item.isHidden && !item.proReviewPending
-    : !item.isHiddenPublic && !item.publicReviewPending;
+    : !item.isHiddenPublic && !item.publicReviewPending && !item.isReserved && !item.isMadeToOrder;
 }
 
 /** L'audience (`null` lu `both`) contient-elle ce lecteur ? */
@@ -59,9 +69,20 @@ export function audienceIncludes(audience: CatalogAudience | null, viewer: ShopA
   return effective === "both" || effective === viewer;
 }
 
-/** L'article est-il servi à quelqu'un — un pro, un particulier, ou les deux ? */
+/**
+ * L'article est-il servi à **tout le monde d'une audience** — un particulier,
+ * ou tous les pros ?
+ *
+ * 🔴 Ses lecteurs (l'éditeur de vitrine, les ventes d'opération) servent des
+ * pages publiques : la branche pro ne dit donc « oui » que pour un article ni
+ * réservé ni sur mesure (S3, `plan-articles-sur-mesure.md`). Un article servi
+ * à quelques pros seulement n'est pas « servi à quelqu'un » au sens de la
+ * vitrine.
+ */
 export function servedToAnyone(item: ServableItem): boolean {
-  return servedTo(item, "pro") || servedTo(item, "public");
+  return (
+    servedTo(item, "public") || (servedTo(item, "pro") && !item.isReserved && !item.isMadeToOrder)
+  );
 }
 
 /**

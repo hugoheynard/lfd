@@ -59,6 +59,8 @@ function line(overrides: Partial<CatalogAdminItemView>): CatalogAdminItemView {
     audience: null,
     isFeaturedPro: false,
     isFeaturedPublic: false,
+    isMadeToOrder: false,
+    isReserved: false,
     operationOnly: false,
     decidedBy: null,
     decidedByName: null,

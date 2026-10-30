@@ -2,6 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
+import { ReservedArticleGuard } from "../../../catalog/application/reserved-article-guard.service.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { SubscriptionOccurrenceOverriddenEvent } from "../../domain/events/subscription-acts.events.js";
 import { SubscriptionRepository } from "../../domain/ports/subscription.repository.js";
@@ -30,6 +31,7 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
     private readonly saleUnits: ArticleSaleUnits,
+    private readonly reserved: ReservedArticleGuard,
   ) {}
 
   async execute(command: UpsertOccurrenceOverrideCommand): Promise<void> {
@@ -40,6 +42,13 @@ export class UpsertOccurrenceOverrideHandler implements ICommandHandler<
       command.actorUserId,
     );
     const { payload } = command;
+    // Le mur des articles réservés (`plan-articles-sur-mesure.md`, § 6) : une
+    // échéance dérogée ne commande pas ce que le panier d'origine n'aurait
+    // pas pu commander.
+    await this.reserved.ensureOpenTo(
+      subscription.companyId,
+      payload.skipped ? [] : payload.lines.map((line) => line.sku),
+    );
     const weightSold = await this.saleUnits.weightSoldAmong(payload.lines.map((line) => line.sku));
     const date = IsoDate.fromString(command.date);
     const before = subscription.overrideOn(date);

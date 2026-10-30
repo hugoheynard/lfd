@@ -25,6 +25,7 @@ import {
 import { NO_SUGGESTION_CONDITIONS } from "../../../domain/value-objects/suggestion-conditions.js";
 import { RecommendationFilter } from "../../services/recommendation-filter.js";
 import { ListStaffSuggestionAlertsHandler } from "../list-staff-suggestion-alerts.handler.js";
+import { viewerAudience, type CatalogViewer } from "../../../../catalog/domain/catalog-viewer.js";
 
 // Comparé au `FixedClock`, jamais à l'horloge réelle.
 const NOW = new Date("2026-10-18T08:00:00.000Z");
@@ -56,14 +57,14 @@ class TwoShelves extends ProductCatalogReader {
       public: new InMemoryProductCatalog(publicItems),
     };
   }
-  resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null> {
-    return this.shelves[audience].resolve(sku);
+  resolve(sku: string, viewer: CatalogViewer): Promise<CatalogItem | null> {
+    return this.shelves[viewerAudience(viewer)].resolve(sku);
   }
   all(): Promise<readonly CatalogItem[]> {
     return this.shelves.pro.all();
   }
-  resolveMany(skus: readonly string[], audience: ShopAudience) {
-    return this.shelves[audience].resolveMany(skus);
+  resolveMany(skus: readonly string[], viewer: CatalogViewer) {
+    return this.shelves[viewerAudience(viewer)].resolveMany(skus);
   }
 }
 

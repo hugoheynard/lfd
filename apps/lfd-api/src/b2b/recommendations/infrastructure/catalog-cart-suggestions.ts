@@ -7,6 +7,7 @@ import type { ShopAudience } from "../../catalog/domain/ports/catalog.reader.js"
 import { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
 import { CartFamilyReader } from "../domain/ports/cart-family.reader.js";
 import { SuggestedArticleReader } from "../domain/ports/suggested-article.reader.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /** La lignée des familles du panier, lue au catalogue servi — sous le SKU du PRODUIT. */
 @Injectable()
@@ -22,7 +23,9 @@ export class CatalogCartFamilyReader extends CartFamilyReader {
     if (skus.length === 0) {
       return new Map();
     }
-    const served = await this.catalog.resolveMany(skus, audience);
+    // Les familles des SEULS articles du panier, qui ne sortent pas d'ici :
+    // lecteur `staff` (`plan-articles-sur-mesure.md`, § 6).
+    const served = await this.catalog.resolveMany(skus, staffViewer(audience));
     const paths = new Map<string, readonly string[]>();
     for (const [sku, item] of served) {
       if (item.family !== null) {

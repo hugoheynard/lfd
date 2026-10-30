@@ -73,12 +73,13 @@ const text = (fixture: ComponentFixture<ClientReservedArticlesPage>): string =>
   (fixture.nativeElement as HTMLElement).textContent ?? '';
 
 describe('ClientReservedArticlesPage', () => {
-  it('liste les articles du compte, et dit que la restriction n’est pas encore appliquée', async () => {
+  it('liste les articles du compte, sans plus annoncer un mur à venir', async () => {
     const fixture = await render(new FakeMadeToOrder(), true);
 
     expect(text(fixture)).toContain('Tarte citron');
     expect(text(fixture)).toContain('Invisible aux autres pros');
-    expect(text(fixture)).toContain('La restriction s’appliquera avec le prochain déploiement');
+    // Le mur est bâti (L1b, 2026-10-30) : l'annonce d'attente est partie.
+    expect(text(fixture)).not.toContain('prochain déploiement');
   });
 
   it('montre les articles du principal en lecture seule, et son état', async () => {

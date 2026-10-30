@@ -826,6 +826,7 @@ export type {
   ShopItemOperationView,
   ShopItemAllergensView,
   ShopItemAudience,
+  ShopItemLockedReason,
   ShopItemView,
   ShopOperationState,
   ShopOperationText,

@@ -8,6 +8,7 @@ import type { NegotiatedPrice } from "../../domain/services/mercuriale-benchmark
 import { LoadedPricer } from "../../domain/loaded-pricer.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import type { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **Ce que le marché paie déjà, article par article.**
@@ -55,7 +56,7 @@ export class MercurialeBenchmarkQuery {
       ),
     ];
     // `pro` : une mercuriale est un tarif négocié — elle n'existe pas au public.
-    const catalogue = await this.catalog.resolveMany(skus, "pro");
+    const catalogue = await this.catalog.resolveMany(skus, staffViewer("pro"));
 
     return benchmarkByProduct(
       mercuriales.flatMap((mercuriale) => this.observationsOf(mercuriale, catalogue, at)),

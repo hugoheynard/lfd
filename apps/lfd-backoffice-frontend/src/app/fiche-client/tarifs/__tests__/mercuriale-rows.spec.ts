@@ -5,7 +5,7 @@ import type {
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
-import { gapBp, mercurialeRowKey, mercurialeRows } from '../mercuriale-rows';
+import { gapBp, lineNoteOf, mercurialeRowKey, mercurialeRows } from '../mercuriale-rows';
 
 /**
  * **La jointure entre ce qu'on a accordé et ce que ça vaut au catalogue.**
@@ -166,5 +166,20 @@ describe('les lignes datées à part (avenants, 2026-10-29)', () => {
 
     expect(row?.lineNote).toBeNull();
     expect(row?.amendmentId).toBeNull();
+  });
+});
+
+/** Q1 de `plan-articles-sur-mesure.md` : la ligne reste, l'écran dit pourquoi elle ne sert plus. */
+describe('lineNoteOf — un article réservé depuis à un autre compte', () => {
+  const line = { sku: 'SUR-001', productName: 'Brioche', unitPriceMillicents: 1, minQuantity: 1 };
+
+  it('étiquette la ligne « Réservé à un autre compte »', () => {
+    expect(lineNoteOf({ ...line, lockedReason: 'reserved_to_other_account' })).toBe(
+      'Réservé à un autre compte',
+    );
+  });
+
+  it('ne dit rien d’une ligne ordinaire', () => {
+    expect(lineNoteOf(line)).toBeNull();
   });
 });

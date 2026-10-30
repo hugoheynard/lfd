@@ -6,12 +6,13 @@ import {
 } from "../../../delivery/channels/commerce/index.js";
 import { CatalogColdReader } from "../domain/ports/catalog-cold.reader.js";
 import { ProductCatalogReader } from "../domain/ports/product-catalog.reader.js";
+import { staffViewer } from "../domain/catalog-viewer.js";
 
 /**
  * **Les produits vendus, relayés à la livraison** (lot 4 bis, v2-2) — pour la
  * grille des contenances.
  *
- * Sur `ProductCatalogReader.all()` : le catalogue PRO vendable, défauts et
+ * Sur `ProductCatalogReader.all(staffViewer("pro"))` : le catalogue PRO vendable, défauts et
  * déclinaisons montrées en vignette (L4, 2026-10-29), sous leur SKU de vente —
  * la grille règle donc une contenance pour `P-X-2` comme pour `P-X`. Le colisage et la feuille d'arrêt ne le
  * lisent plus pour le froid (`DeliveryColdSkusReader`, toutes déclinaisons).
@@ -27,7 +28,10 @@ export class CatalogDeliveryProductsReader extends DeliveryProductsReader {
   }
 
   async sold(): Promise<readonly DeliveryProduct[]> {
-    const [items, cold] = await Promise.all([this.catalog.all(), this.cold.coldShopSkus()]);
+    const [items, cold] = await Promise.all([
+      this.catalog.all(staffViewer("pro")),
+      this.cold.coldShopSkus(),
+    ]);
     return items.map((item) => ({
       sku: item.sku,
       name: item.name,

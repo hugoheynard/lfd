@@ -1,10 +1,7 @@
 import { Injectable } from "@nestjs/common";
 
-import {
-  CatalogReader,
-  type ResolvedCatalogItem,
-  type ShopAudience,
-} from "../domain/ports/catalog.reader.js";
+import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import type { CatalogViewer } from "../domain/catalog-viewer.js";
 import { catalogueArticle } from "../domain/catalogue-article.js";
 import { compareFamilies } from "../domain/catalog-family.js";
 import { isShownAsTile, shopSkuOf } from "../domain/shop-sku.js";
@@ -39,16 +36,16 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
     super();
   }
 
-  async resolve(sku: string, audience: ShopAudience): Promise<CatalogItem | null> {
-    const item = await this.catalog.findByShopSku(sku, audience);
+  async resolve(sku: string, viewer: CatalogViewer): Promise<CatalogItem | null> {
+    const item = await this.catalog.findByShopSku(sku, viewer);
     return item === null ? null : toCatalogItem(item);
   }
 
   async resolveMany(
     skus: readonly string[],
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ReadonlyMap<string, CatalogItem>> {
-    const items = await this.catalog.listByShopSkus(skus, audience);
+    const items = await this.catalog.listByShopSkus(skus, viewer);
     const found = new Map<string, CatalogItem>();
     for (const [shopSku, item] of items) {
       found.set(shopSku, toCatalogItem(item));
@@ -65,11 +62,14 @@ export class CatalogBackedProductCatalog extends ProductCatalogReader {
    * déclinaison d'une fiche en vignette — chacune sous son SKU de vente
    * (`shopSkuOf`, le seul point qui décide de cette clé). Une déclinaison sans
    * prix pro, d'audience publique ou en attente de validation pro n'arrive pas
-   * jusqu'ici : `listSellable("pro")` l'écarte déjà (Q3 a).
+   * jusqu'ici : `listSellable` l'écarte déjà (Q3 a).
+   *
+   * Le lecteur est celui de l'appelant (`plan-articles-sur-mesure.md`, § 6) :
+   * ses appelants au 2026-10-30 sont tous des écrans du personnel ou des
+   * lectures internes, et passent un lecteur `staff`.
    */
-  async all(): Promise<readonly CatalogItem[]> {
-    // `pro` : ce lecteur sert le canal professionnel, pas la vitrine publique.
-    const items = await this.catalog.listSellable("pro");
+  async all(viewer: CatalogViewer): Promise<readonly CatalogItem[]> {
+    const items = await this.catalog.listSellable(viewer);
     return items
       .filter(isShownAsTile)
       .map((item) => toCatalogItem(item))
@@ -102,6 +102,7 @@ function toCatalogItem(item: ResolvedCatalogItem): CatalogItem {
     weightMinGrams: item.weightMinGrams,
     weightStepGrams: item.weightStepGrams,
     minQuantities: item.minQuantities,
+    reservation: item.reservation,
     // 🔴 La frappe, ici et pas ailleurs : c'est l'endroit qui vient de LIRE le
     // catalogue. Le prix scellé ne peut donc pas venir d'un appelant.
     article: catalogueArticle({

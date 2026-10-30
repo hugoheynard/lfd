@@ -8,6 +8,7 @@ import type {
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { UnknownSkuError } from "../../../catalog/domain/errors/unknown-sku.error.js";
 import { Pricer } from "../pricer.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **Ce que l'article coûterait à des niveaux de cumul qui n'existent pas encore.**
@@ -63,7 +64,7 @@ export class PriceProjectionQuery {
   /** @throws {UnknownSkuError} un SKU que le catalogue ne connaît pas. */
   async project(payload: PriceProjectionPayload, at: Date): Promise<PriceProjectionView> {
     // `pro` : l'écran de tarification projette le prix du canal professionnel.
-    const found = await this.catalog.resolve(payload.sku, "pro");
+    const found = await this.catalog.resolve(payload.sku, staffViewer("pro"));
     if (found === null) {
       throw new UnknownSkuError(payload.sku);
     }

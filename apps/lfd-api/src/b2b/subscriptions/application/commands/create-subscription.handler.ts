@@ -5,6 +5,7 @@ import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { DomainEventPublisher } from "../../../../platform/events/domain-event-publisher.js";
 import { ArticleSaleUnits } from "../../../catalog/application/article-sale-units.service.js";
 import { SaleOperations } from "../../../catalog/application/sale-operations.service.js";
+import { ReservedArticleGuard } from "../../../catalog/application/reserved-article-guard.service.js";
 import { OperationOnlyInSubscriptionError } from "../../domain/errors/subscription-errors.js";
 import { Subscription } from "../../domain/entities/subscription.js";
 import { SubscriptionCreatedEvent } from "../../domain/events/subscription-created.event.js";
@@ -50,12 +51,14 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly gestures: SubscriptionGestures,
     private readonly saleUnits: ArticleSaleUnits,
+    private readonly reserved: ReservedArticleGuard,
   ) {}
 
   /**
    * @throws {OperationOnlyInSubscriptionError} une ligne ne se vend que pendant une opération.
    * @throws {WeightArticleInSubscriptionError} une ligne se vend au poids.
    * @throws {SubscriptionSiteMembershipLostError} la société visée n'est pas celle de l'acteur.
+   * @throws {ReservedArticleRefusedError} une ligne vise un article réservé à un autre compte.
    */
   async execute(command: CreateSubscriptionCommand): Promise<CreatedSubscription> {
     const { payload } = command;
@@ -69,6 +72,11 @@ export class CreateSubscriptionHandler implements ICommandHandler<
     const weightSold = await this.saleUnits.weightSoldAmong(payload.lines.map((line) => line.sku));
     // Hors requête (semis), rien n'a confronté la société aux rattachements.
     await this.gestures.ensureMember(command.companyId, command.actorUserId);
+    // Le mur des articles réservés (`plan-articles-sur-mesure.md`, § 6).
+    await this.reserved.ensureOpenTo(
+      command.companyId,
+      payload.lines.map((line) => line.sku),
+    );
     const subscription = Subscription.open({
       placedByUserId: command.actorUserId,
       companyId: command.companyId,

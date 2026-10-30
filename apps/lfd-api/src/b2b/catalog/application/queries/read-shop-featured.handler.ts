@@ -6,6 +6,7 @@ import { CatalogOperationsReader } from "../../domain/ports/catalog-operations.r
 import { CatalogReader } from "../../domain/ports/catalog.reader.js";
 import { inShopLanguage, shopCatalogueOf } from "../shop-catalogue-view.js";
 import { ReadShopFeaturedQuery } from "./read-shop-featured.query.js";
+import { anonymousViewer } from "../../domain/catalog-viewer.js";
 
 @QueryHandler(ReadShopFeaturedQuery)
 export class ReadShopFeaturedHandler implements IQueryHandler<ReadShopFeaturedQuery> {
@@ -31,7 +32,8 @@ export class ReadShopFeaturedHandler implements IQueryHandler<ReadShopFeaturedQu
    */
   async execute(query: ReadShopFeaturedQuery): Promise<ShopFeaturedView> {
     const [sellable, operations, operationOnlySkus] = await Promise.all([
-      this.catalog.listSellable(query.audience),
+      // Route `@Public()`, sans société : le pro y est anonyme (§ 6).
+      this.catalog.listSellable(anonymousViewer(query.audience)),
       this.operations.sellableOperations(),
       this.operations.operationOnlySkus(),
     ]);

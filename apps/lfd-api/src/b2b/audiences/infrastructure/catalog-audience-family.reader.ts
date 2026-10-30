@@ -6,6 +6,7 @@ import {
   AudienceFamilyReader,
   type AudienceFamily,
 } from "../domain/ports/audience-family.reader.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /** Le catalogue pro d'abord, puis le public pour ce que le pro ne sert pas. */
 const AUDIENCES_IN_ORDER: readonly ShopAudience[] = ["pro", "public"];
@@ -29,7 +30,7 @@ export class CatalogAudienceFamilyReader extends AudienceFamilyReader {
       if (missing.length === 0) {
         break;
       }
-      const served = await this.catalog.resolveMany(missing, audience);
+      const served = await this.catalog.resolveMany(missing, staffViewer(audience));
       for (const [sku, item] of served) {
         if (item.family !== null) {
           found.set(sku, { id: item.family.id, name: item.family.name });

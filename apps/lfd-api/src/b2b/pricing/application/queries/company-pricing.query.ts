@@ -22,6 +22,7 @@ import { posedMercurialeView } from "../posed-mercuriale-view.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
 /**
  * **Ce que paie UN client**, article par article — la lecture de l'onglet
@@ -70,6 +71,7 @@ export class CompanyPricingQuery {
     private readonly clock: Clock,
     private readonly staffAuthors: StaffAuthorDirectory,
     private readonly parties: PricingPartiesResolver,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   /** @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société. */
@@ -82,9 +84,13 @@ export class CompanyPricingQuery {
     // paie la mercuriale du principal (`sous-comptes.md`, §2.2).
     const parties = await this.parties.partiesAt(companyId, at);
 
-    const [ladders, articles, mercuriales, live] = await Promise.all([
+    const [ladders, catalogue, mercuriales, live] = await Promise.all([
       this.ladders.listAll(at),
-      this.catalog.all(),
+      // Au nom de CE client (`plan-articles-sur-mesure.md`, Q1) : la grille, et
+      // donc le sélecteur d'articles de la pose et des avenants, ne propose que
+      // ce à quoi il a droit. Ce qui est réservé à un autre compte n'en sort
+      // pas ; une ligne déjà posée dessus reste, étiquetée.
+      this.viewers.regarding(companyId).then((viewer) => this.catalog.all(viewer)),
       // Ce qu'on a DÉCIDÉ chez ce client — en cours, à venir, terminées.
       this.mercuriales.listFor(companyId),
       // Ce qui AGIT maintenant : c'est elle, et elle seule, qui entre dans le
@@ -100,9 +106,13 @@ export class CompanyPricingQuery {
     // une règle d'un tiers qui entrerait dans le matériau pourrait gagner son
     // étage, et le prix rendu serait celui d'un autre client. La fenêtre des
     // planchers y est aussi — c'est là qu'elle manquait.
+    const articles = catalogue.filter((article) => article.reservation !== "other");
+    const reservedElsewhere = new Set(
+      catalogue.filter((article) => article.reservation === "other").map((article) => article.sku),
+    );
     const { rules, floors } = await this.decisions.decisionsAt(at, { companyId }, articles);
 
-    const names = new Map(articles.map((article) => [article.sku, article.name]));
+    const names = new Map(catalogue.map((article) => [article.sku, article.name]));
     const materials = await boardMaterials(rules, floors, at, live, ladders, parties);
     // Les familles qui portent au moins un article, dans l'ordre du référentiel.
     const categories: CompanyPricingCategoryView[] = groupByFamily(articles).map((shelf) => ({
@@ -167,6 +177,7 @@ export class CompanyPricingQuery {
           // qu'elle ne vise plus rien.
           (sku) => names.get(sku) ?? sku,
           mercurialeAuthors,
+          (sku) => reservedElsewhere.has(sku),
         ),
       ),
       negotiatedSkuCount: sealed.length,

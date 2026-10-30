@@ -18,6 +18,7 @@ import { CatalogReader } from "../src/b2b/catalog/domain/ports/catalog.reader.js
 import { CATEGORY, snapshotOf } from "./catalog-ingest-fixtures.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { PUBLIC_VIEWER, staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 let ctx: E2eContext;
 
@@ -271,20 +272,22 @@ describe("un article à moitié tarifé", () => {
     expect(row.withdrawnAt).toBeNull();
     expect(await ctx.prisma.catalogPriceHistory.count()).toBe(0);
 
-    const publicSkus = (await reader().listSellable("public")).map((item) => item.sku);
-    const proSkus = (await reader().listSellable("pro")).map((item) => item.sku);
+    const publicSkus = (await reader().listSellable(PUBLIC_VIEWER)).map((item) => item.sku);
+    const proSkus = (await reader().listSellable(staffViewer("pro"))).map((item) => item.sku);
     expect(publicSkus).toContain("VIE-002-1");
     expect(proSkus).not.toContain("VIE-002-1");
     // La commande pro le refuse comme un SKU non servi : la porte ne le rend pas.
-    expect(await reader().findSku("VIE-002-1")).toBeNull();
+    expect(await reader().findByShopSku("VIE-002-1", staffViewer("pro"))).toBeNull();
   });
 
   it("sans prix public : servi aux pros, absent pour le public", async () => {
     await push(snapshotOf([{ sku: "VIE-003", priceMillicents: 200_000, publicPrice: null }]));
 
-    const publicSkus = (await reader().listSellable("public")).map((item) => item.sku);
+    const publicSkus = (await reader().listSellable(PUBLIC_VIEWER)).map((item) => item.sku);
     expect(publicSkus).not.toContain("VIE-003-1");
-    expect((await reader().findSku("VIE-003-1"))?.unitPriceMillicents).toBe(200_000);
+    expect(
+      (await reader().findByShopSku("VIE-003-1", staffViewer("pro")))?.unitPriceMillicents,
+    ).toBe(200_000);
   });
 
   it("le prix pro qui disparaît laisse la dernière trace, sans ligne gratuite", async () => {

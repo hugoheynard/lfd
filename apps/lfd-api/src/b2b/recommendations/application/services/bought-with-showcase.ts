@@ -14,6 +14,8 @@ import {
   type BoughtWithCandidate,
 } from "../../domain/services/bought-with.js";
 import { RecommendationFilter } from "./recommendation-filter.js";
+import { anonymousViewer } from "../../../catalog/domain/catalog-viewer.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
 /** Ce que le panier demande au calculé. */
 export interface BoughtWithAsk {
@@ -50,6 +52,7 @@ export class BoughtWithShowcase {
     private readonly filter: RecommendationFilter,
     private readonly articles: SuggestedArticleReader,
     private readonly clock: Clock,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   async show(ask: BoughtWithAsk): Promise<readonly CartSuggestionView[]> {
@@ -70,7 +73,10 @@ export class BoughtWithShowcase {
     }
     const kept = await this.filter.keep({
       candidates: ranked.map((candidate) => candidate.sku),
-      audience: ask.audience,
+      viewer:
+        ask.companyId === null
+          ? anonymousViewer(ask.audience)
+          : await this.viewers.forCompany(ask.companyId),
       inCart: ask.inCart,
       target: ask.target,
     });

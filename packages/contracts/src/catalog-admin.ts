@@ -132,6 +132,16 @@ export interface CatalogAdminItemView {
   readonly isFeaturedPro: boolean;
   readonly isFeaturedPublic: boolean;
   /**
+   * **Sur mesure** (`documentation/catalogue/plan-articles-sur-mesure.md`, S4) :
+   * jamais servi au public (S3, Q5), ouvert à tous les pros.
+   */
+  readonly isMadeToOrder: boolean;
+  /**
+   * **Réservé à au moins un compte** (S1) : jamais servi au public, ni à la
+   * vitrine (S3). Le détail des comptes vit sur l'article (`/reservation`).
+   */
+  readonly isReserved: boolean;
+  /**
    * Vendu **seulement pendant une opération** (fil v11), tel que reçu. Porté ici
    * parce que ce port est le miroir que le contrôle de parité confronte.
    */

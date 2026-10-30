@@ -7,6 +7,7 @@ import {
 import { compareFamilies } from "../domain/catalog-family.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
 import { shopSkuOf } from "../domain/shop-sku.js";
+import { staffViewer } from "../domain/catalog-viewer.js";
 
 /**
  * **Les articles vendables, pour les raccourcis du fournil** (plan
@@ -34,8 +35,8 @@ export class CatalogSellableArticlesReader extends SellableArticlesReader {
 
   async sellableArticles(): Promise<readonly SellableArticle[]> {
     const [pro, shop] = await Promise.all([
-      this.catalog.listSellable("pro"),
-      this.catalog.listSellable("public"),
+      this.catalog.listSellable(staffViewer("pro")),
+      this.catalog.listSellable(staffViewer("public")),
     ]);
     const byProduct = new Map<string, ResolvedCatalogItem>();
     for (const item of [...pro, ...shop]) {

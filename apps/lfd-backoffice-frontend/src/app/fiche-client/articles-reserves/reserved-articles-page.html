@@ -14,9 +14,6 @@
       description="Les articles sur mesure que ce compte est seul à pouvoir commander, avec ses sites."
     >
       <div class="stack">
-        <!-- 🔴 L1a sans L1b : le réglage existe, le mur pas encore. -->
-        <fold-callout variant="info">{{ restrictionPending }}</fold-callout>
-
         @if (canEdit()) {
           <fold-combobox
             size="sm"

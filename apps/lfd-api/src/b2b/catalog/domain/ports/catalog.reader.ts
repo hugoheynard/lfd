@@ -6,6 +6,8 @@ import type { CatalogTranslations } from "../catalog-translations.js";
 import type { ShopAllergenFacts } from "../shop-allergens.js";
 import type { CatalogAudience } from "../served-to.js";
 import type { CatalogMinQuantities } from "../catalog-min-quantities.js";
+import type { CatalogViewer } from "../catalog-viewer.js";
+import type { CatalogReservationMark } from "../served-to-viewer.js";
 
 /** Un article vendable, prix **résolu** : la décision locale a déjà gagné. */
 export interface ResolvedCatalogItem {
@@ -44,6 +46,13 @@ export interface ResolvedCatalogItem {
    * ne rend jamais `pro` : `servedTo` l'a écarté avant.
    */
   readonly audience: CatalogAudience;
+  /**
+   * **L'article est-il réservé, et à qui pour ce lecteur**
+   * (`plan-articles-sur-mesure.md`, § 5) — `servedToViewer` l'a déjà admis.
+   * `other` chez un pro reconnu = listé non commandable (S2, S7) ; chez le
+   * personnel, l'étiquette « réservé à un autre compte ».
+   */
+  readonly reservation: CatalogReservationMark;
   /**
    * Les traductions de `name`, `note` et `categoryName` (lot des langues,
    * 2026-10-18). Vides tant que rien n'est reçu : la vitrine sert alors le
@@ -155,6 +164,14 @@ export interface ResolvedCatalogItem {
  * Les appelants ne voient jamais les deux tables : ils voient un catalogue. La
  * composition est faite ici une seule fois — la laisser fuir donnerait autant de
  * versions de « quel prix s'applique » qu'il y a d'écrans.
+ *
+ * 🔴 **Le mur des articles réservés est ici** (`plan-articles-sur-mesure.md`,
+ * § 5) : chaque méthode reçoit un `CatalogViewer`, jamais une audience seule.
+ * Et **aucun cache clé par audience ne porte d'article réservé** : un futur
+ * cache du rayon sera clé par société, ou ne gardera que les articles non
+ * réservés. Au 2026-10-30, rien ne met le catalogue en cache — le cache des
+ * matériaux de prix (`PricingMaterialsCache`) ne porte que des décisions de
+ * prix, aucun article (vérifié ce jour-là).
  */
 /**
  * **À QUI l'on sert** — et c'est la seule chose qui change le prix d'entrée.
@@ -172,18 +189,16 @@ export interface ResolvedCatalogItem {
 export type ShopAudience = "pro" | "public";
 
 export abstract class CatalogReader {
-  /** Un SKU, ou `null` s'il est inconnu **ou masqué**. */
-  abstract findSku(sku: string): Promise<ResolvedCatalogItem | null>;
   /**
-   * Tout ce qui est vendable **pour cette audience**, masqués exclus, dans
-   * l'ordre d'affichage.
+   * Tout ce qui est vendable **pour ce lecteur**, masqués et réservés à
+   * d'autres exclus, dans l'ordre d'affichage.
    *
    * ⚠️ « Vendable » dépend de qui regarde : un article dont le référentiel n'a
    * pas encore poussé le prix public n'est pas vendable au `public`, alors
    * qu'il l'est au `pro`. Il est ÉCARTÉ plutôt que servi au tarif pro — le même
    * refus que pour un article sans taux de TVA, et pour la même raison.
    */
-  abstract listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]>;
+  abstract listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]>;
 
   /**
    * L'article vendu sous ce **SKU de vente** (`shopSkuOf`) : la déclinaison
@@ -203,7 +218,7 @@ export abstract class CatalogReader {
    */
   abstract findByShopSku(
     productSku: string,
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ResolvedCatalogItem | null>;
 
   /**
@@ -218,6 +233,6 @@ export abstract class CatalogReader {
    */
   abstract listByShopSkus(
     productSkus: readonly string[],
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>>;
 }

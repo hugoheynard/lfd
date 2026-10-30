@@ -5,6 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { OrderCutoffReader } from "../../domain/ports/order-cutoff.reader.js";
 import { decideStrictestOrderCutoff } from "../../domain/services/order-cutoff-guard.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **Ce que l'heure limite dira de ce panier pour ce jour**, sans rien refuser.
@@ -28,7 +29,7 @@ export class OrderCutoffNotice {
   async forDay(skus: readonly string[], fulfillmentDate: string): Promise<OrderQuoteCutoffView> {
     const [fallback, items] = await Promise.all([
       this.cutoffs.list(),
-      this.catalog.resolveMany(skus, "pro"),
+      this.catalog.resolveMany(skus, staffViewer("pro")),
     ]);
     const decision = decideStrictestOrderCutoff({
       lines: skus.map((sku) => ({ sku, limit: items.get(sku)?.orderTimeLimit ?? null })),

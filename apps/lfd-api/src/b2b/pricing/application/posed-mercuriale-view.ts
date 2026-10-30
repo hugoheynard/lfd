@@ -31,6 +31,15 @@ import type { CompanyMercuriale, LineSegment } from "../domain/entities/company-
 export type ProductNamer = (sku: string) => string;
 
 /**
+ * L'article est-il réservé à un autre compte que celui de la mercuriale ?
+ * (`plan-articles-sur-mesure.md`, Q1) — rendu par l'appelant, qui a lu le
+ * catalogue au nom du client.
+ */
+export type ReservedElsewhere = (sku: string) => boolean;
+
+const NOWHERE: ReservedElsewhere = () => false;
+
+/**
  * L'état de la mercuriale **à l'instant lu**.
  *
  * Dérivé, jamais stocké : une colonne `status` pourrait contredire ses propres
@@ -79,6 +88,7 @@ function linesOf(
   mercuriale: CompanyMercuriale,
   at: Date,
   nameOf: ProductNamer,
+  reservedElsewhere: ReservedElsewhere,
 ): readonly PosedMercurialeLineView[] {
   return mercuriale.segments
     .flatMap((segment) =>
@@ -88,6 +98,9 @@ function linesOf(
         unitPriceMillicents: tier.unitPriceMillicents,
         minQuantity: tier.minQuantity,
         ...ownWindowOf(mercuriale, segment, at),
+        ...(reservedElsewhere(segment.line.sku)
+          ? { lockedReason: "reserved_to_other_account" as const }
+          : {}),
       })),
     )
     .sort((left, right) => left.unitPriceMillicents - right.unitPriceMillicents);
@@ -141,15 +154,18 @@ function amendmentsOf(
  *   qu'elle ne vise plus rien.
  * @param authors nomme qui l'a établie — résolu d'un coup pour toutes les
  *   mercuriales de la lecture (`architecture-journalisation.md` §12, D3).
+ * @param reservedElsewhere étiquette une ligne dont l'article a été réservé à
+ *   un autre compte après la pose (Q1) ; personne par défaut.
  */
 export function posedMercurialeView(
   mercuriale: CompanyMercuriale,
   at: Date,
   nameOf: ProductNamer,
   authors: StaffAuthors,
+  reservedElsewhere: ReservedElsewhere = NOWHERE,
 ): PosedMercurialeView {
   const state = mercuriale.toPersistence();
-  const lines = linesOf(mercuriale, at, nameOf);
+  const lines = linesOf(mercuriale, at, nameOf, reservedElsewhere);
   return {
     id: state.id,
     label: state.label,

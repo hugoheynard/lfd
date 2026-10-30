@@ -14,6 +14,7 @@ import {
 } from "../../domain/services/usuals.js";
 import { RecommendationFilter } from "../services/recommendation-filter.js";
 import { ListMyUsualsQuery } from "./list-my-usuals.query.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
 /** Les habituels ne se lisent que dans la vitrine des pros. */
 const USUALS_AUDIENCE = "pro";
@@ -39,6 +40,7 @@ export class ListMyUsualsHandler implements IQueryHandler<
     private readonly articles: SuggestedArticleReader,
     private readonly clock: Clock,
     private readonly lineage: LatestSaleReferenceReader,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   async execute(query: ListMyUsualsQuery): Promise<readonly UsualSuggestionView[]> {
@@ -58,7 +60,9 @@ export class ListMyUsualsHandler implements IQueryHandler<
     }
     const kept = await this.filter.keep({
       candidates: ranked.map((candidate) => candidate.sku),
-      audience: USUALS_AUDIENCE,
+      // Le lecteur de la société : un article réservé à un autre compte et
+      // réglé « visible, non commandable » reste, verrouillé (S7).
+      viewer: await this.viewers.forCompany(companyId, "served_and_locked"),
       inCart: query.skus,
       target: query.target,
     });

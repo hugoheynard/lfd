@@ -56,6 +56,9 @@ export function mercurialeRowKey(row: MercurialeRowView): string {
 
 const DAY = new Intl.DateTimeFormat('fr-FR', { dateStyle: 'short', timeZone: 'Europe/Paris' });
 
+/** La note d'une ligne sur un article réservé depuis à un autre compte. */
+export const RESERVED_ELSEWHERE_NOTE = 'Réservé à un autre compte';
+
 /** La note d'une ligne datée à part (2026-10-29 : avenants et arrêts). */
 export function lineNoteOf(line: PosedMercurialeLineView): string | null {
   const parts: string[] = [];
@@ -67,6 +70,11 @@ export function lineNoteOf(line: PosedMercurialeLineView): string | null {
   }
   if (line.status !== undefined) {
     parts.push(POSED_MERCURIALE_STATUS_LABELS[line.status]);
+  }
+  // Réservé depuis à un autre compte (`plan-articles-sur-mesure.md`, Q1) : la
+  // ligne reste, le client ne peut plus le commander — l'écran le dit.
+  if (line.lockedReason === 'reserved_to_other_account') {
+    parts.push(RESERVED_ELSEWHERE_NOTE);
   }
   return parts.length === 0 ? null : parts.join(' · ');
 }

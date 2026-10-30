@@ -1782,6 +1782,12 @@ export interface PosedMercurialeLineView {
   /** L'avenant qui a ouvert cette ligne, et son motif. Absents = la grille. */
   readonly amendmentId?: string;
   readonly amendmentReason?: string;
+  /**
+   * **L'article est réservé à un autre compte** depuis la pose
+   * (`documentation/catalogue/plan-articles-sur-mesure.md`, Q1) : la ligne
+   * reste, mais le client ne peut plus le commander. Absent sinon.
+   */
+  readonly lockedReason?: "reserved_to_other_account";
 }
 
 /** **Un avenant daté**, tel que le dossier staff le liste sous la grille. */

@@ -6,6 +6,7 @@ import {
   SaleReferenceReader,
   type SaleReferenceStanding,
 } from "../domain/ports/sale-reference.reader.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /**
  * Les références de vente, lues par **le chemin de la caisse** :
@@ -29,8 +30,8 @@ export class CatalogSaleReferenceReader extends SaleReferenceReader {
     shopSkus: readonly string[],
   ): Promise<ReadonlyMap<string, SaleReferenceStanding>> {
     const [pro, open] = await Promise.all([
-      this.catalog.resolveMany(shopSkus, "pro"),
-      this.catalog.resolveMany(shopSkus, "public"),
+      this.catalog.resolveMany(shopSkus, staffViewer("pro")),
+      this.catalog.resolveMany(shopSkus, staffViewer("public")),
     ]);
     const standings = new Map<string, SaleReferenceStanding>();
     for (const sku of shopSkus) {

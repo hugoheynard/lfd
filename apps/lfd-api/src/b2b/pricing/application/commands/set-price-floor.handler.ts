@@ -13,6 +13,7 @@ import { saleReferenceOf } from "../../domain/services/sale-references.js";
 import { assertOnSale } from "./sale-reference-support.js";
 import { SetPriceFloorCommand } from "./set-price-floor.command.js";
 import type { PricingActKind } from "../../domain/pricing-act.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 @CommandHandler(SetPriceFloorCommand)
 export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorCommand, void> {
@@ -50,7 +51,7 @@ export class SetPriceFloorHandler implements ICommandHandler<SetPriceFloorComman
       policy,
       staffUserId,
       at,
-      referenceCanonicalFor(scope, await this.catalog.all()),
+      referenceCanonicalFor(scope, await this.catalog.all(staffViewer("pro"))),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",

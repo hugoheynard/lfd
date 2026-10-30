@@ -6,6 +6,7 @@ import { ProductCatalogReader } from "../../../catalog/domain/ports/product-cata
 import { SaleReferenceSuccessionReader } from "../../../catalog/domain/ports/sale-reference-succession.reader.js";
 import { regroupByLineage } from "../../domain/services/customer-sku-lineage.js";
 import { ListCustomerSkusQuery } from "./list-customer-skus.query.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
 /**
  * Les habitudes d'achat d'une société, **rejointes au catalogue**.
@@ -32,6 +33,7 @@ export class ListCustomerSkusHandler implements IQueryHandler<
     private readonly habits: CustomerSkuReader,
     private readonly catalog: ProductCatalogReader,
     private readonly lineage: SaleReferenceSuccessionReader,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   async execute(query: ListCustomerSkusQuery): Promise<readonly CustomerSkuStat[]> {
@@ -43,12 +45,16 @@ export class ListCustomerSkusHandler implements IQueryHandler<
     // Résolus EN UN LOT : une liste d'habitudes compte des dizaines d'articles,
     // et depuis que le catalogue vient de la base, un par un serait une requête
     // par ligne.
+    //
+    // Au lecteur de CE client (`plan-articles-sur-mesure.md`, S7) : ce qu'il
+    // peut commander, et, verrouillé, ce qui est réservé à un autre compte.
     const items = await this.catalog.resolveMany(
       tallies.map((tally) => tally.sku),
-      "pro",
+      await this.viewers.forCompany(query.companyId, "served_and_locked"),
     );
     return tallies.map((tally) => {
       const item = items.get(tally.sku) ?? null;
+      const locked = item?.reservation === "other";
       return {
         sku: tally.sku,
         productName: item?.name ?? tally.lastProductName,
@@ -57,7 +63,8 @@ export class ListCustomerSkusHandler implements IQueryHandler<
         totalQuantity: tally.totalQuantity,
         totalCents: tally.totalCents,
         lastOrderedAt: tally.lastOrderedAt.toISOString(),
-        stillAvailable: item !== null,
+        stillAvailable: item !== null && !locked,
+        ...(locked ? { lockedReason: "reserved_to_other_account" as const } : {}),
       };
     });
   }

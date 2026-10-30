@@ -89,6 +89,9 @@ export function ttcCentsFromHtMillicentsFor(
     : ttcCentsOf(lineTotalCents(unitPriceMillicents, pieces(1)), vatRate);
 }
 
+/** Les deux clés d'un article verrouillé, absentes du fil sinon. */
+const LOCKED = { orderable: false, lockedReason: "reserved_to_other_account" } as const;
+
 function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView {
   return {
     // Le SKU de VENTE (V4) : celui du produit pour le défaut, le sien pour une
@@ -122,6 +125,9 @@ function toItem(item: ResolvedCatalogItem, audience: ShopAudience): ShopItemView
     // professionnels » se lit `both`. La route publique ne rend jamais `pro` —
     // `servedTo` l'a écarté au lecteur.
     audience: item.audience,
+    // Réservé à un autre compte, réglé « visible, non commandable » : le
+    // lecteur ne le rend qu'au rayon reconnu et aux habituels (S7).
+    ...(item.reservation === "other" ? LOCKED : {}),
     // Absents quand le commerce ne sait pas — jamais « aucun allergène » par
     // défaut, et la clé n'entre pas dans le fil pour rien.
     ...allergensOf(item, CATALOG_SOURCE_LANGUAGE),

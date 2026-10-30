@@ -10,7 +10,15 @@ import {
 import { saleUnitOf } from "./catalog-sale-unit.js";
 import { shopAllergenFactsOf } from "./shop-allergen-facts.js";
 import { PUBLIC_SALES_CONTEXT } from "../domain/public-context.js";
-import { catalogAudienceOf, servedTo } from "../domain/served-to.js";
+import { catalogAudienceOf } from "../domain/served-to.js";
+import { viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
+import type { CatalogReservationMark } from "../domain/served-to-viewer.js";
+import {
+  ACCESS_DECISION_COLUMNS,
+  accessOf,
+  reservationInclude,
+  type AccessRow,
+} from "./catalog-item-access.js";
 import { publicByContextOf } from "./public-by-context.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { translationsColumnOf } from "./catalog-translations-column.js";
@@ -20,27 +28,14 @@ import {
   type FamilyLineage,
   type Lineage,
 } from "./catalog-family-lineage.js";
-import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 import { servedImageAlt } from "./catalog-image-alt.js";
 import { shopItemName, shopSkuOf } from "../domain/shop-sku.js";
 import { soldUnderShopSkus } from "./shop-sku-filter.js";
 import type { CatalogTranslations } from "../domain/catalog-translations.js";
 import type { CatalogFamily } from "../domain/catalog-family.js";
 
-/**
- * ⚠️ **`findSku` reste au tarif `pro`, et c'est écrit plutôt que laissé par
- * défaut.**
- *
- * Il prend le SKU d'une DÉCLINAISON, là où le devis et la commande passent par
- * le SKU produit (`listByShopSkus`), qui porte l'audience depuis le
- * lot A3. Aucun chemin public ne l'atteint aujourd'hui (2026-09-21).
- *
- * Un `"pro"` qu'on voit est une décision ; un défaut de signature est un oubli
- * en devenir — et sur un prix, un oubli se facture.
- */
-
-/** La forme que Prisma rend, article + famille + décision locale éventuelle. */
-interface ItemRow {
+/** La forme que Prisma rend, article + famille + décision locale + réservation. */
+interface ItemRow extends AccessRow {
   readonly sku: string;
   readonly productSku: string;
   readonly name: string;
@@ -103,6 +98,8 @@ interface ItemRow {
     readonly isHiddenPublic: boolean;
     readonly isFeaturedPro: boolean;
     readonly isFeaturedPublic: boolean;
+    readonly isMadeToOrder: boolean;
+    readonly reservedVisibility: string;
   } | null;
 }
 
@@ -119,58 +116,42 @@ export class PrismaCatalogReader extends CatalogReader {
     super();
   }
 
-  async findSku(sku: string): Promise<ResolvedCatalogItem | null> {
-    const row = await this.prisma.catalogItem.findUnique({
-      where: { sku, ...STILL_SOLD },
-      include: { category: true, override: { select: DECISION_COLUMNS } },
-    });
-    if (row === null || !servedToViewer(row, "pro")) {
-      return null;
-    }
-    const served = servedPriceOf(row, "pro");
-    return served === null ? null : resolve(row, served, await this.lineage([row]), "pro");
-  }
-
   /** Une seule ligne visée par index, jamais le catalogue entier chargé puis filtré. */
-  async findByShopSku(
-    shopSku: string,
-    audience: ShopAudience,
-  ): Promise<ResolvedCatalogItem | null> {
+  async findByShopSku(shopSku: string, viewer: CatalogViewer): Promise<ResolvedCatalogItem | null> {
     const row = await this.prisma.catalogItem.findFirst({
       where: { ...soldUnderShopSkus([shopSku]), ...STILL_SOLD },
-      include: { category: true, override: { select: DECISION_COLUMNS } },
+      include: itemInclude(viewer),
     });
-    if (row === null || !servedToViewer(row, audience)) {
+    if (row === null) {
       return null;
     }
-    const served = servedPriceOf(row, audience);
-    return served === null ? null : resolve(row, served, await this.lineage([row]), audience);
+    const lineage = await this.lineage([row]);
+    return servedItem(row, viewer, lineage);
   }
 
   async listByShopSkus(
     shopSkus: readonly string[],
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
     if (shopSkus.length === 0) {
       return new Map();
     }
     const rows = await this.prisma.catalogItem.findMany({
       where: { ...soldUnderShopSkus(shopSkus), ...STILL_SOLD },
-      include: { category: true, override: { select: DECISION_COLUMNS } },
+      include: itemInclude(viewer),
     });
     const resolved = new Map<string, ResolvedCatalogItem>();
     const lineage = await this.lineage(rows);
     for (const row of rows) {
-      const served = servedPriceOf(row, audience);
-      if (!servedToViewer(row, audience) || served === null) {
-        continue;
+      const item = servedItem(row, viewer, lineage);
+      if (item !== null) {
+        resolved.set(shopSkuOf(row), item);
       }
-      resolved.set(shopSkuOf(row), resolve(row, served, lineage, audience));
     }
     return resolved;
   }
 
-  async listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
+  async listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]> {
     const rows = await this.prisma.catalogItem.findMany({
       where: {
         ...STILL_SOLD,
@@ -188,7 +169,7 @@ export class PrismaCatalogReader extends CatalogReader {
           { vatRatePercent: { not: null } },
         ],
       },
-      include: { category: true, override: { select: DECISION_COLUMNS } },
+      include: itemInclude(viewer),
       // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
       // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
       // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
@@ -202,11 +183,8 @@ export class PrismaCatalogReader extends CatalogReader {
     });
     const lineage = await this.lineage(rows);
     return rows.flatMap((row) => {
-      if (!servedToViewer(row, audience)) {
-        return [];
-      }
-      const served = servedPriceOf(row, audience);
-      return served === null ? [] : [resolve(row, served, lineage, audience)];
+      const item = servedItem(row, viewer, lineage);
+      return item === null ? [] : [item];
     });
   }
 
@@ -235,28 +213,37 @@ export class PrismaCatalogReader extends CatalogReader {
   }
 }
 
+/** Ce que chaque lecture demande : la famille, la décision locale, la réservation. */
+function itemInclude(viewer: CatalogViewer) {
+  return {
+    category: true as const,
+    override: { select: ACCESS_DECISION_COLUMNS },
+    ...reservationInclude(viewer),
+  };
+}
+
 /**
- * **L'article est-il servi à ce lecteur ?** — `servedTo`, la règle du domaine,
- * appliquée à une ligne lue.
+ * **L'article tel que ce lecteur le reçoit**, ou `null`.
  *
- * 🔴 **Quatre sites posaient cette question, et aucun ne la posait ainsi.** Ils
- * lisaient `isHidden` quel que soit le demandeur — le rayon, la fiche, le lot de
- * SKU, la commande. Rendre le seul `listSellable` conscient de l'audience aurait
- * fait diverger le rayon et la caisse (relevé par `vitruve` le 2026-09-21). Ils
- * l'appellent donc tous, et depuis le lot 2a elle lit aussi l'audience de
- * l'article : un article `public` n'est ni montré ni vendu à un pro.
+ * 🔴 Les quatre lectures passent par ici, et c'est le point : elles lisaient
+ * le masquage chacune à sa façon jusqu'au 2026-09-21 (relevé par `vitruve`),
+ * et rendre le seul rayon conscient de la réservation aurait fait diverger le
+ * rayon et la caisse. `accessOf` applique `servedToViewer` — audience,
+ * masquages, validations, S3, réservation (`plan-articles-sur-mesure.md`,
+ * § 5) ; `locked` n'arrive que chez le lecteur qui l'a demandé (S7).
  */
-function servedToViewer(row: ItemRow, viewer: ShopAudience): boolean {
-  return servedTo(
-    {
-      audience: catalogAudienceOf(row.audience),
-      isHidden: row.override?.isHidden ?? false,
-      isHiddenPublic: row.override?.isHiddenPublic ?? false,
-      publicReviewPending: row.publicReviewPending,
-      proReviewPending: row.proReviewPending,
-    },
-    viewer,
-  );
+function servedItem(
+  row: ItemRow,
+  viewer: CatalogViewer,
+  lineage: Lineage,
+): ResolvedCatalogItem | null {
+  const access = accessOf(row, viewer);
+  if (access.verdict === "absent") {
+    return null;
+  }
+  const audience = viewerAudience(viewer);
+  const served = servedPriceOf(row, audience);
+  return served === null ? null : resolve(row, served, lineage, audience, access.mark);
 }
 
 /** L'entrée du pipeline de prix, et le taux qui l'accompagne. */
@@ -363,6 +350,7 @@ function resolve(
   served: ServedPrice,
   lineage: Lineage,
   viewer: ShopAudience,
+  reservation: CatalogReservationMark,
 ): ResolvedCatalogItem {
   return {
     sku: row.sku,
@@ -377,6 +365,7 @@ function resolve(
     categoryName: row.category.name,
     // `NULL` lu `both`, comme `servedTo` le lit : une ligne jamais reçue par un fait.
     audience: catalogAudienceOf(row.audience) ?? "both",
+    reservation,
     translations: {
       name: nameTranslationsOf(row),
       note: translationsColumnOf(row.noteTranslations),

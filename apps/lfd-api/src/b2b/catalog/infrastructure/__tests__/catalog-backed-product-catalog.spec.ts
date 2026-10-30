@@ -2,6 +2,10 @@ import { NO_TRANSLATIONS } from "../../domain/catalog-translations.js";
 import { CatalogReader, type ResolvedCatalogItem } from "../../domain/ports/catalog.reader.js";
 import { family, PAINS, VIENNOISERIES } from "../../domain/__tests__/families.fixture.js";
 import { CatalogBackedProductCatalog } from "../catalog-backed-product-catalog.js";
+import { staffViewer } from "../../domain/catalog-viewer.js";
+
+/** Le lecteur ne change rien ici : le double ne le lit pas, le mur est en amont. */
+const VIEWER = staffViewer("pro");
 
 /**
  * **La bascule du catalogue** (Cat C5b), éprouvée sur ce qui compte : ce que
@@ -23,6 +27,7 @@ const CROISSANT: ResolvedCatalogItem = {
   categoryId: VIENNOISERIES.id,
   categoryName: VIENNOISERIES.name,
   audience: "both",
+  reservation: "none",
   translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
   family: VIENNOISERIES,
   isDefault: true,
@@ -46,7 +51,6 @@ function reader(items: readonly ResolvedCatalogItem[]): CatalogReader {
     items.filter((item) => item.isDefault || item.variantsAsTiles).map((i) => [i.sku, i]),
   );
   return {
-    findSku: (sku) => Promise.resolve(items.find((item) => item.sku === sku) ?? null),
     listSellable: () => Promise.resolve([...items]),
     findByShopSku: (shopSku) => Promise.resolve(byProduct.get(shopSku) ?? null),
     listByShopSkus: (skus) =>
@@ -70,23 +74,23 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("vend le défaut sous la référence de SA déclinaison, plus sous celle du produit", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const item = await catalog.resolve("VIE-001-1", "pro");
+    const item = await catalog.resolve("VIE-001-1", VIEWER);
 
     expect(item?.sku).toBe("VIE-001-1");
-    expect(await catalog.resolve("VIE-001", "pro")).toBeNull();
+    expect(await catalog.resolve("VIE-001", VIEWER)).toBeNull();
   });
 
   /** La décision B2B a déjà gagné en amont : l'adaptateur ne rejoue pas l'arbitrage. */
   it("rend le prix résolu, pas celui du PIM", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    expect((await catalog.resolve("VIE-001-1", "pro"))?.unitPriceMillicents).toBe(200_000);
+    expect((await catalog.resolve("VIE-001-1", VIEWER))?.unitPriceMillicents).toBe(200_000);
   });
 
   it("sert la famille du référentiel telle que le miroir la porte", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const item = await catalog.resolve("VIE-001-1", "pro");
+    const item = await catalog.resolve("VIE-001-1", VIEWER);
 
     expect(item?.family).toEqual(VIENNOISERIES);
     expect(item?.article.categoryPath).toEqual(["fam-vien"]);
@@ -103,7 +107,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const orphan = { ...CROISSANT, categoryId: livree.id, family: livree };
     const catalog = new CatalogBackedProductCatalog(reader([orphan]));
 
-    const item = await catalog.resolve("VIE-001-1", "pro");
+    const item = await catalog.resolve("VIE-001-1", VIEWER);
 
     expect(item?.family?.id).toBe(livree.id);
     expect(item?.article.categoryPath).toEqual([livree.id]);
@@ -115,7 +119,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const tarte = { ...CROISSANT, categoryId: tartes.id, family: tartes };
     const catalog = new CatalogBackedProductCatalog(reader([tarte]));
 
-    const item = await catalog.resolve("VIE-001-1", "pro");
+    const item = await catalog.resolve("VIE-001-1", VIEWER);
 
     expect(item?.article.categoryPath).toEqual(["fam-tartes", "fam-patis"]);
   });
@@ -126,7 +130,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const carton = { ...single, sku: "VIE-001-2", isDefault: false };
     const catalog = new CatalogBackedProductCatalog(reader([single, carton]));
 
-    expect((await catalog.all()).map((item) => item.sku)).toEqual(["VIE-001-1"]);
+    expect((await catalog.all(VIEWER)).map((item) => item.sku)).toEqual(["VIE-001-1"]);
   });
 
   /**
@@ -138,7 +142,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const part = { ...CROISSANT, sku: "VIE-001-2", isDefault: false, name: "Croissant part" };
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT, part]));
 
-    const listed = await catalog.all();
+    const listed = await catalog.all(VIEWER);
 
     expect(listed.map((item) => [item.sku, item.name])).toEqual([
       ["VIE-001-1", "Croissant"],
@@ -161,7 +165,7 @@ describe("le catalogue du checkout, branché sur la base", () => {
     const brioche = { ...CROISSANT, sku: "VIE-002-1", productSku: "VIE-002", name: "Brioche" };
     const catalog = new CatalogBackedProductCatalog(reader([pain, CROISSANT, brioche]));
 
-    const names = (await catalog.all()).map((item) => item.name);
+    const names = (await catalog.all(VIEWER)).map((item) => item.name);
 
     // Viennoiseries (position 0) avant Pains (1), alphabétique à l'intérieur.
     expect(names).toEqual(["Brioche", "Croissant", "Baguette"]);
@@ -171,8 +175,16 @@ describe("le catalogue du checkout, branché sur la base", () => {
   it("résout plusieurs SKU en une fois, et omet les inconnus", async () => {
     const catalog = new CatalogBackedProductCatalog(reader([CROISSANT]));
 
-    const found = await catalog.resolveMany(["VIE-001-1", "ZZZ-999"], "pro");
+    const found = await catalog.resolveMany(["VIE-001-1", "ZZZ-999"], VIEWER);
 
     expect([...found.keys()]).toEqual(["VIE-001-1"]);
+  });
+
+  /** Le mur est en amont (`servedToViewer`) : l'étiquette traverse telle quelle. */
+  it("porte l'étiquette de réservation jusqu'au chemin qui facture", async () => {
+    const locked = { ...CROISSANT, reservation: "other" as const };
+    const catalog = new CatalogBackedProductCatalog(reader([locked]));
+
+    expect((await catalog.resolve("VIE-001-1", VIEWER))?.reservation).toBe("other");
   });
 });

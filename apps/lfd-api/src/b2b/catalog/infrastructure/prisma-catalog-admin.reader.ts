@@ -45,7 +45,9 @@ interface AdminRow {
     readonly isFeaturedPublic: boolean;
     readonly decidedBy: string | null;
     readonly decidedAt: Date;
+    readonly isMadeToOrder: boolean;
   } | null;
+  readonly _count: { readonly reservations: number };
 }
 
 @Injectable()
@@ -64,7 +66,11 @@ export class PrismaCatalogAdminReader extends CatalogAdminReader {
       // article retiré y apparaîtrait comme un écart avec le référentiel qui ne
       // l'envoie plus.
       where: { ...STILL_SOLD },
-      include: { category: true, override: { select: DECISION_COLUMNS } },
+      include: {
+        category: true,
+        override: { select: { ...DECISION_COLUMNS, isMadeToOrder: true } },
+        _count: { select: { reservations: true } },
+      },
       // 🔴 `sku` DÉPARTAGE, et ce n'est pas de la coquetterie : le référentiel
       // envoie `position: 0` sur **tous** les articles (vérifié le 2026-09-10 —
       // dix-neuf viennoiseries, dix-neuf zéros). Les deux premiers critères sont
@@ -127,6 +133,8 @@ function toView(row: AdminRow, authors: StaffAuthors): CatalogAdminItemView {
     proReviewPending: row.proReviewPending,
     isFeaturedPro: row.override?.isFeaturedPro ?? false,
     isFeaturedPublic: row.override?.isFeaturedPublic ?? false,
+    isMadeToOrder: row.override?.isMadeToOrder ?? false,
+    isReserved: row._count.reservations > 0,
     operationOnly: row.operationOnly,
     decidedBy: row.override?.decidedBy ?? null,
     decidedByName: authors.nameOf(row.override?.decidedBy ?? null),

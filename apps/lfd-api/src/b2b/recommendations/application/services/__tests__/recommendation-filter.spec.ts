@@ -5,6 +5,7 @@ import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-me
 import type { UnsealedCatalogItem } from "../../../../catalog/domain/ports/product-catalog.reader.js";
 import { RecommendationCutoffReader } from "../../../domain/ports/recommendation-cutoff.reader.js";
 import { RecommendationFilter } from "../recommendation-filter.js";
+import { PRO_ANONYMOUS_VIEWER, PUBLIC_VIEWER } from "../../../../catalog/domain/catalog-viewer.js";
 
 // Dates comparées au `FixedClock` de la fixture, jamais à l'horloge réelle.
 const TODAY = "2026-03-10";
@@ -58,7 +59,7 @@ describe("RecommendationFilter", () => {
 
     const kept = await filter.keep({
       candidates: ["UNKNOWN", "COMMERCE", "CLOSED", "IN_CART", "OPEN"],
-      audience: "public",
+      viewer: PUBLIC_VIEWER,
       inCart: ["IN_CART"],
       target: { date: TOMORROW, pickupAddressId: null },
     });
@@ -73,7 +74,7 @@ describe("RecommendationFilter", () => {
 
     const kept = await filter.keep({
       candidates: ["CLOSED"],
-      audience: "pro",
+      viewer: PRO_ANONYMOUS_VIEWER,
       inCart: [],
       target: null,
     });
@@ -87,7 +88,7 @@ describe("RecommendationFilter", () => {
     const filter = new RecommendationFilter(catalog, cutoffs, clock());
 
     await expect(
-      filter.keep({ candidates: [], audience: "pro", inCart: [], target: null }),
+      filter.keep({ candidates: [], viewer: PRO_ANONYMOUS_VIEWER, inCart: [], target: null }),
     ).resolves.toEqual([]);
   });
 

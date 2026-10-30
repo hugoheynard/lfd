@@ -20,6 +20,7 @@ function item(productSku: string, of: CatalogFamily): ResolvedCatalogItem {
     categoryId: of.id,
     categoryName: of.name,
     audience: "both",
+    reservation: "none",
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: of,
     isDefault: true,

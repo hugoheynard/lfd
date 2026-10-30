@@ -30,6 +30,12 @@ import {
   type ShowcaseTrace,
 } from "../../domain/services/suggestion-diagnosis.js";
 import { RecommendationFilter } from "./recommendation-filter.js";
+import {
+  anonymousViewer,
+  viewerAudience,
+  type CatalogViewer,
+} from "../../../catalog/domain/catalog-viewer.js";
+import { CatalogViewers } from "../../../catalog/application/catalog-viewers.service.js";
 
 /** Ce qu'un emplacement demande : son lecteur, son panier, son jour, sa place. */
 export interface ShowcaseAsk {
@@ -105,12 +111,17 @@ export class StaffSuggestionShowcase {
     private readonly filter: RecommendationFilter,
     private readonly articles: SuggestedArticleReader,
     private readonly clock: Clock,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   /** Ce que la boutique affiche : le lecteur se déduit de la société, le jour du `Clock`. */
   async show(ask: ShowcaseAsk): Promise<readonly StaffSuggestionView[]> {
-    const audience = ask.companyId === null ? "public" : "pro";
-    const reader: ShelfReader = { companyId: ask.companyId, audience };
+    const viewer = await this.viewers.forCompany(ask.companyId);
+    const reader: ShelfReader = {
+      companyId: ask.companyId,
+      audience: viewerAudience(viewer),
+      viewer,
+    };
     const { day, time } = instantToLocal(this.clock.now());
     const site = shopSiteOf(ask.target);
     return (await this.run({ ...ask, reader, day, time, site })).shown;
@@ -121,7 +132,11 @@ export class StaffSuggestionShowcase {
    * choisis. Sans société : à un pro, la vitrine pro sans tarif de société.
    */
   async diagnose(ask: ShowcasePreviewAsk): Promise<ShowcaseDiagnosis> {
-    const reader: ShelfReader = { companyId: null, audience: ask.audience };
+    const reader: ShelfReader = {
+      companyId: null,
+      audience: ask.audience,
+      viewer: anonymousViewer(ask.audience),
+    };
     const { shown, trace } = await this.run({ ...ask, reader });
     return { shown, rules: diagnoseRules(trace) };
   }
@@ -149,7 +164,7 @@ export class StaffSuggestionShowcase {
     );
     const judged = await this.filter.judge({
       candidates: candidates.map((candidate) => candidate.sku),
-      audience,
+      viewer: ask.reader.viewer,
       inCart: ask.inCart,
       target: ask.target,
     });
@@ -198,6 +213,8 @@ export class StaffSuggestionShowcase {
 interface ShelfReader {
   readonly companyId: string | null;
   readonly audience: ShopAudience;
+  /** Le lecteur du catalogue — la société et son principal, ou un anonyme. */
+  readonly viewer: CatalogViewer;
 }
 
 /** Ce que l'affichage sait pour juger les conditions (RS8). */

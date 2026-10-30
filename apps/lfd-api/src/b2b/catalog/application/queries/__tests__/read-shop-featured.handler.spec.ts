@@ -4,6 +4,7 @@ import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { catalogItem, InMemoryCatalogOperations } from "../../__tests__/sale-operations-doubles.js";
 import { ReadShopFeaturedHandler } from "../read-shop-featured.handler.js";
 import { ReadShopFeaturedQuery } from "../read-shop-featured.query.js";
+import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
 
 /**
  * Les incontournables pros sans jeton (2026-10-19). Aucune date n'est comparée
@@ -20,13 +21,10 @@ class SellableCatalog extends CatalogReader {
     super();
   }
 
-  listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
+  listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]> {
+    const audience = viewerAudience(viewer);
     this.audiences.push(audience);
     return Promise.resolve([...this.byAudience[audience]]);
-  }
-
-  findSku(): Promise<ResolvedCatalogItem | null> {
-    return Promise.reject(new Error("lecture inattendue"));
   }
 
   findByShopSku(): Promise<ResolvedCatalogItem | null> {

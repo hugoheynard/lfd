@@ -5,6 +5,7 @@ import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { minQuantityFor } from "../../../catalog/domain/catalog-min-quantities.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { ListCatalogQuery } from "./list-catalog.query.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * Rend le catalogue. Une projection sans logique : le port a déjà rangé et
@@ -18,7 +19,7 @@ export class ListCatalogHandler implements IQueryHandler<
   constructor(private readonly catalog: ProductCatalogReader) {}
 
   async execute(): Promise<readonly CatalogItemView[]> {
-    const items = await this.catalog.all();
+    const items = await this.catalog.all(staffViewer("pro"));
     return items.map((item) => ({
       sku: item.sku,
       name: item.name,

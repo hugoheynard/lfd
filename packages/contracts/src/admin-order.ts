@@ -171,8 +171,14 @@ export interface CustomerSkuStat {
    * Le SKU existe-t-il encore au catalogue ? Faux = commandé autrefois, plus
    * proposable. On le montre quand même, barré : disparu de l'écran, il
    * laisserait croire que le client ne l'a jamais pris.
+   *
+   * Faux aussi pour un article réservé à un autre compte et réglé « visible,
+   * non commandable » — {@link lockedReason} le dit alors
+   * (`documentation/catalogue/plan-articles-sur-mesure.md`, S7).
    */
   readonly stillAvailable: boolean;
+  /** Présent seulement quand l'article est verrouillé pour ce client ; absent sinon. */
+  readonly lockedReason?: "reserved_to_other_account";
 }
 
 /**

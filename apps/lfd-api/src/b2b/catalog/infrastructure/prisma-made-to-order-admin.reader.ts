@@ -12,12 +12,13 @@ import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-auth
 import { MadeToOrderAdminReader } from "../domain/ports/made-to-order-admin.reader.js";
 import { reservedVisibilityOf } from "./reserved-visibility-column.js";
 import { STILL_SOLD } from "./sellable-filter.js";
+import {
+  readSitePrincipal,
+  reservationHoldersOf,
+} from "../../shared/company-standing/infrastructure/read-reservation-holders.js";
 
 /** Le réglage lu sur la ligne de décision ; absente = les défauts de la base. */
 const SETTING = { select: { isMadeToOrder: true, reservedVisibility: true } } as const;
-
-/** Le seul statut d'un principal qui ouvre ses sites (Q8, comme `inheritedSiteWhere`). */
-const ACTIVE = "active";
 
 type Setting = { readonly isMadeToOrder: boolean; readonly reservedVisibility: string } | null;
 
@@ -88,19 +89,16 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
     };
   }
 
+  /**
+   * Le principal se lit par la requête partagée (`readSitePrincipal`) : la
+   * même relation que le mur du catalogue, en un seul endroit.
+   */
   async ofCompany(companyId: string): Promise<CompanyReservedArticlesView | null> {
-    const company = await this.prisma.company.findUnique({
-      where: { id: companyId },
-      select: {
-        parentCompany: {
-          select: { id: true, status: true, enseigne: true, raisonSociale: true },
-        },
-      },
-    });
+    const company = await readSitePrincipal(this.prisma, companyId);
     if (company === null) {
       return null;
     }
-    const parent = company.parentCompany;
+    const parent = company.principal;
     const holders = parent === null ? [companyId] : [companyId, parent.id];
     const articles = await this.reservedTo(holders);
     return {
@@ -111,7 +109,7 @@ export class PrismaMadeToOrderAdminReader extends MadeToOrderAdminReader {
           : {
               companyId: parent.id,
               name: companyDisplayName(parent),
-              active: parent.status === ACTIVE,
+              active: reservationHoldersOf(companyId, parent).activePrincipalId !== null,
               articles: articles.get(parent.id) ?? [],
             },
     };

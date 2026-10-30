@@ -14,8 +14,6 @@
       @case ('ready') {
         @if (view(); as current) {
           <div class="stack">
-            <fold-callout variant="info">{{ restrictionPending }}</fold-callout>
-
             <fold-checkbox
               label="Article sur mesure"
               [checked]="current.isMadeToOrder"

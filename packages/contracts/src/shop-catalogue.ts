@@ -81,6 +81,9 @@ export interface ShopImageFocal {
   readonly y: number;
 }
 
+/** Pourquoi un article listé n'est pas commandable (S2 des articles sur mesure). */
+export type ShopItemLockedReason = "reserved_to_other_account";
+
 /** Une référence en vente. */
 export interface ShopItemView {
   /**
@@ -244,6 +247,18 @@ export interface ShopItemView {
   readonly shelfId: string;
   /** La pièce qui ne doit pas se noyer dans son rayon — mise en avant POUR CE LECTEUR. */
   readonly isFeatured: boolean;
+  /**
+   * **Non commandable**, et pourquoi
+   * (`documentation/catalogue/plan-articles-sur-mesure.md`, S2, S7) : un
+   * article réservé à un autre compte, réglé « visible, non commandable ».
+   * Seuls le rayon reconnu (`/shop/catalogue/mine`) et les habituels le
+   * rendent ; le devis et la commande le refusent par son nom.
+   *
+   * **Absents DU FIL** dans le cas ordinaire — commandable —, comme
+   * {@link catalogPriceMillicents} : la surface publique reste étroite.
+   */
+  readonly orderable?: false;
+  readonly lockedReason?: ShopItemLockedReason;
   /**
    * **À qui l'article se vend**, tel que le référentiel le dit (Hugo,
    * 2026-10-18, option a de B1 — `vitrine.md` §4 décision 5) :

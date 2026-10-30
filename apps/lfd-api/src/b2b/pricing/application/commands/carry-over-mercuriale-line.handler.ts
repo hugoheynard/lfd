@@ -12,7 +12,8 @@ import {
 } from "../../domain/pricing-errors.js";
 import { CarryOverMercurialeLineCommand } from "./carry-over-mercuriale-line.command.js";
 import { describeCarryOver } from "./company-mercuriale-support.js";
-import { assertOnSale } from "./sale-reference-support.js";
+import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
+import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
 
 @CommandHandler(CarryOverMercurialeLineCommand)
 export class CarryOverMercurialeLineHandler implements ICommandHandler<
@@ -26,6 +27,7 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly reservations: ReservedElsewhereReader,
   ) {}
 
   /**
@@ -43,6 +45,7 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
    * @throws {NotDetachedFromError} la nouvelle référence n'est pas née de l'ancienne.
    * @throws {SaleReferenceNotOnSaleError} la nouvelle référence ne se vend pas aux pros.
    * @throws {CarriedMercurialeNotFoundError} aucune mercuriale de cet identifiant.
+   * @throws {ReservedArticleRefusedError} la nouvelle référence est réservée à un autre compte.
    * @throws les refus de `CompanyMercuriale.carryOver`.
    */
   async execute(command: CarryOverMercurialeLineCommand): Promise<string> {
@@ -60,6 +63,9 @@ export class CarryOverMercurialeLineHandler implements ICommandHandler<
       if (mercuriale === null) {
         throw new CarriedMercurialeNotFoundError(mercurialeId);
       }
+      // Ni vers un article réservé à un autre compte (Q1) : le compte n'est
+      // connu qu'une fois la mercuriale chargée.
+      await assertNotReservedElsewhere(this.reservations, mercuriale.companyId, [toSku]);
       const carried = mercuriale.carryOver(
         amendmentId,
         { fromSku, toSku, reason },

@@ -4,6 +4,7 @@ import type { PriceTemplateKind, PriceTemplateView } from "@lfd/contracts";
 import { StaffAuthorDirectory } from "../../../../staff/directory/domain/staff-author-directory.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { PriceTemplatesReader, type StoredPriceTemplate } from "../ports/price-templates.reader.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **Les gabarits, avec le tarif catalogue en regard.**
@@ -45,7 +46,7 @@ export class PriceTemplatesQuery {
     const skus = [...new Set(states.flatMap((state) => state.lines.map((line) => line.sku)))];
     const [catalogue, authors] = await Promise.all([
       // `pro` : un gabarit de prix vise le canal professionnel.
-      this.catalog.resolveMany(skus, "pro"),
+      this.catalog.resolveMany(skus, staffViewer("pro")),
       this.staffAuthors.identify(states.map((state) => state.createdBy)),
     ]);
 

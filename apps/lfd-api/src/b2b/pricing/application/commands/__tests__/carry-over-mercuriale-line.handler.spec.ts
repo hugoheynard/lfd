@@ -24,6 +24,7 @@ import {
   TracingUnitOfWork,
   type Trace,
 } from "./mercuriale-amendment.doubles.js";
+import { InMemoryReservedElsewhere } from "../../../infrastructure/in-memory-reserved-elsewhere.js";
 
 const NOW = new Date("2026-03-01T00:00:00.000Z");
 const OLD_SKU = "CHO-000-2";
@@ -66,6 +67,7 @@ function setup(
     new FixedIdGenerator("amd"),
     new FixedClock(NOW),
     uow,
+    new InMemoryReservedElsewhere(),
   );
   return { trace, mercuriales, handler };
 }

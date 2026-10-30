@@ -11,6 +11,7 @@ import {
   type ShopAudience,
 } from "../../domain/ports/catalog.reader.js";
 import { SaleOperations } from "../sale-operations.service.js";
+import { viewerAudience, type CatalogViewer } from "../../domain/catalog-viewer.js";
 
 /**
  * Les doubles des opérations datées côté VENDEUR, partagés par les suites de
@@ -34,6 +35,7 @@ export function catalogItem(
     categoryId: "fam-patisseries",
     categoryName: "Pâtisseries",
     audience: "both",
+    reservation: "none",
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: {
       id: "fam-patisseries",
@@ -90,10 +92,6 @@ export class DefaultsCatalog extends CatalogReader {
     super();
   }
 
-  findSku(): Promise<ResolvedCatalogItem | null> {
-    return Promise.reject(new Error("lecture inattendue"));
-  }
-
   listSellable(): Promise<ResolvedCatalogItem[]> {
     return Promise.reject(new Error("lecture inattendue"));
   }
@@ -104,8 +102,9 @@ export class DefaultsCatalog extends CatalogReader {
 
   listByShopSkus(
     shopSkus: readonly string[],
-    audience: ShopAudience,
+    viewer: CatalogViewer,
   ): Promise<ReadonlyMap<string, ResolvedCatalogItem>> {
+    const audience = viewerAudience(viewer);
     return Promise.resolve(
       new Map(
         this.items

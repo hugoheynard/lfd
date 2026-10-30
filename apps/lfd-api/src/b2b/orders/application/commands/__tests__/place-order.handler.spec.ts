@@ -160,6 +160,8 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
+import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 /**
  * L'historique du tarif canonique — **jamais consulté ici** : ces cas ne posent
@@ -472,6 +474,7 @@ function drafting(
         new FixedStopwatch(),
       ),
       new FixedClock(PRICED_AT),
+      new CatalogViewers(new InMemoryReservationHolders()),
     ),
     new CartAdjustments(
       pickupsDouble,

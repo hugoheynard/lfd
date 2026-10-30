@@ -6,6 +6,7 @@ import {
   type ResolvedCatalogItem,
 } from "../../catalog/domain/ports/catalog.reader.js";
 import { type ResupplyArticle, ResupplyCatalogue } from "../domain/resupply-catalogue.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /** La vitrine sert les particuliers : c'est leur catalogue qu'elle reçoit. */
 const SHOP_AUDIENCE = "public";
@@ -22,14 +23,14 @@ export class CatalogResupplyCatalogue extends ResupplyCatalogue {
   }
 
   async articles(): Promise<readonly ResupplyArticle[]> {
-    const items = await this.catalog.listSellable(SHOP_AUDIENCE);
+    const items = await this.catalog.listSellable(staffViewer(SHOP_AUDIENCE));
     // Un article au poids n'est pas proposé : un réassort ne compte que des
     // pièces (`vente-au-poids.md`, §2) — et le demander est refusé.
     return items.filter((item) => item.isDefault && item.saleUnit === "piece").map(toArticle);
   }
 
   async article(sku: string): Promise<ResupplyArticle | null> {
-    const item = await this.catalog.findByShopSku(sku, SHOP_AUDIENCE);
+    const item = await this.catalog.findByShopSku(sku, staffViewer(SHOP_AUDIENCE));
     return item === null ? null : toArticle(item);
   }
 }

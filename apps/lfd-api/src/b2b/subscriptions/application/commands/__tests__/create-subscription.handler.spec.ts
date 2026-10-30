@@ -17,6 +17,9 @@ import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { DirectUnitOfWork } from "../../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { subscriptionGestures } from "./subscription-gesture-doubles.js";
+import { ReservedArticleGuard } from "../../../../catalog/application/reserved-article-guard.service.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 /** Publisher doublé : capture les événements publiés (extension du port, sans cast). */
 const payload: CreateSubscriptionPayload = {
@@ -44,6 +47,7 @@ describe("CreateSubscriptionHandler", () => {
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
+      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
     );
 
     const result = await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -65,6 +69,7 @@ describe("CreateSubscriptionHandler", () => {
       new DirectUnitOfWork(),
       subscriptionGestures(new FakeSubscriptionRepository()).gestures,
       articleSaleUnitsOver(),
+      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
     );
 
     await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -97,6 +102,7 @@ describe("CreateSubscriptionHandler", () => {
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
+        new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
       );
 
       const refused = handler.execute(
@@ -128,6 +134,7 @@ describe("CreateSubscriptionHandler", () => {
         new DirectUnitOfWork(),
         subscriptionGestures(new FakeSubscriptionRepository()).gestures,
         articleSaleUnitsOver(),
+        new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
       );
 
       await handler.execute(new CreateSubscriptionCommand("user_1", payload, null));
@@ -150,6 +157,7 @@ describe("CreateSubscriptionHandler — un article au poids", () => {
       articleSaleUnitsOver([
         catalogItem("SKU", { sku: "SKU-1", saleUnit: "weight", weightStepGrams: 100 }),
       ]),
+      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
     );
 
     await expect(

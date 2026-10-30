@@ -85,6 +85,7 @@ function item(sku: string, cents: number, name = `Article ${sku}`): CatalogItem 
     unitPriceMillicents: millicentsFromCents(cents),
     vatRate: 5.5,
     ...PIECE_SALE_TERMS,
+    reservation: "none",
     family: VIENNOISERIES,
     allergens: null satisfies OrderLineAllergens | null,
     orderTimeLimit: null satisfies OrderLimitSpec | null,

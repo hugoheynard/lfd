@@ -21,6 +21,7 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, payByCard, pickupSite, placeOrder } from "./order-factory.js";
+import { staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
 const stubAdminVerifier = {
   verify: (token: string): Promise<{ subject: string; scopes: string[] }> =>
@@ -117,7 +118,7 @@ function poseMercuriale(companyId: string, cents: number) {
 }
 
 async function lotOf(companyId: string, quantity: number, at?: Date): Promise<PricedLot> {
-  const found = await catalog.resolve(SKU, "pro");
+  const found = await catalog.resolve(SKU, staffViewer("pro"));
   if (found === null) {
     throw new Error(`Le catalogue e2e ne connaît pas « ${SKU} ».`);
   }

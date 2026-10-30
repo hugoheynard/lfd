@@ -16,7 +16,8 @@ import {
 } from "../../domain/pricing-errors.js";
 import { AmendCompanyMercurialeCommand } from "./amend-company-mercuriale.command.js";
 import { describeAmendment } from "./company-mercuriale-support.js";
-import { assertOnSale } from "./sale-reference-support.js";
+import { assertNotReservedElsewhere, assertOnSale } from "./sale-reference-support.js";
+import { ReservedElsewhereReader } from "../../domain/ports/reserved-elsewhere.reader.js";
 
 @CommandHandler(AmendCompanyMercurialeCommand)
 export class AmendCompanyMercurialeHandler implements ICommandHandler<
@@ -30,6 +31,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly reservations: ReservedElsewhereReader,
   ) {}
 
   /**
@@ -47,6 +49,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
    * @throws {PricedCompanyNotFoundError} l'identifiant ne désigne aucune société.
    * @throws {AmendedMercurialeNotFoundError} cette mercuriale n'est pas chez ce client.
    * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
+   * @throws {ReservedArticleRefusedError} une ligne ouverte vise un article réservé à un autre compte.
    * @throws les refus de `CompanyMercuriale.amend`.
    */
   async execute(command: AmendCompanyMercurialeCommand): Promise<string> {
@@ -58,6 +61,11 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
       this.references,
       command.payload.lines.map((line) => line.sku),
       "pro",
+    );
+    await assertNotReservedElsewhere(
+      this.reservations,
+      companyId,
+      command.payload.lines.map((line) => line.sku),
     );
     const now = this.clock.now();
     const draft = draftOf(command, now);

@@ -7,6 +7,7 @@ import {
 } from "../../domain/ports/catalog.reader.js";
 import { PAINS, VIENNOISERIES } from "../../domain/__tests__/families.fixture.js";
 import { CatalogSellableArticlesReader } from "../catalog-sellable-articles.reader.js";
+import { viewerAudience, type CatalogViewer } from "../../domain/catalog-viewer.js";
 
 /**
  * **Les articles vendables des raccourcis du fournil** : les deux audiences,
@@ -28,6 +29,7 @@ function item(
     categoryId: of.id,
     categoryName: of.name,
     audience: "both",
+    reservation: "none",
     translations: { name: NO_TRANSLATIONS, note: NO_TRANSLATIONS, categoryName: NO_TRANSLATIONS },
     family: of,
     isDefault: true,
@@ -53,11 +55,8 @@ class Catalog extends CatalogReader {
     super();
   }
 
-  findSku(): Promise<ResolvedCatalogItem | null> {
-    return Promise.reject(new Error("lecture inattendue"));
-  }
-
-  listSellable(audience: ShopAudience): Promise<ResolvedCatalogItem[]> {
+  listSellable(viewer: CatalogViewer): Promise<ResolvedCatalogItem[]> {
+    const audience = viewerAudience(viewer);
     return Promise.resolve(this.byAudience[audience]);
   }
 

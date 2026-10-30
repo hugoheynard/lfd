@@ -15,6 +15,7 @@ import { SubscriptionSiteMembershipLostError } from "../../../domain/errors/subs
 import { CreateSubscriptionCommand } from "../create-subscription.command.js";
 import { CreateSubscriptionHandler } from "../create-subscription.handler.js";
 import { DeleteSubscriptionCommand } from "../delete-subscription.command.js";
+import { TablePickupPointNames } from "../../../../account/domain/ports/__tests__/table-pickup-point-names.js";
 import { DeleteSubscriptionHandler } from "../delete-subscription.handler.js";
 import { SetSubscriptionStatusCommand } from "../set-subscription-status.command.js";
 import { SetSubscriptionStatusHandler } from "../set-subscription-status.handler.js";
@@ -22,6 +23,9 @@ import { UpsertOccurrenceOverrideCommand } from "../upsert-occurrence-override.c
 import { UpsertOccurrenceOverrideHandler } from "../upsert-occurrence-override.handler.js";
 import { activeSubscription, FakeSubscriptionRepository } from "./fake-subscription-repository.js";
 import { subscriptionGestures } from "./subscription-gesture-doubles.js";
+import { ReservedArticleGuard } from "../../../../catalog/application/reserved-article-guard.service.js";
+import { InMemoryProductCatalog } from "../../../../catalog/infrastructure/in-memory-product-catalog.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 /**
  * N4e (`plan-notifications-sous-comptes.md`) : la société de l'espace sur le
@@ -55,15 +59,23 @@ function build(options: { readonly member?: boolean } = {}) {
       uow,
       doubles.gestures,
       articleSaleUnitsOver(),
+      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
     ),
     status: new SetSubscriptionStatusHandler(repo, events, uow, doubles.gestures),
-    remove: new DeleteSubscriptionHandler(repo, events, uow, doubles.gestures),
+    remove: new DeleteSubscriptionHandler(
+      repo,
+      events,
+      uow,
+      doubles.gestures,
+      new TablePickupPointNames(),
+    ),
     override: new UpsertOccurrenceOverrideHandler(
       repo,
       events,
       uow,
       doubles.gestures,
       articleSaleUnitsOver(),
+      new ReservedArticleGuard(new InMemoryProductCatalog([]), new InMemoryReservationHolders()),
     ),
   };
 }

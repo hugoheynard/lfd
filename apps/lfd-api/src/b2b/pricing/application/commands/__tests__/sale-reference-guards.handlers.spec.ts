@@ -38,6 +38,8 @@ import { PoseCompanyMercurialeCommand } from "../pose-company-mercuriale.command
 import { PoseCompanyMercurialeHandler } from "../pose-company-mercuriale.handler.js";
 import { SignVolumeCommitmentCommand } from "../sign-volume-commitment.command.js";
 import { SignVolumeCommitmentHandler } from "../sign-volume-commitment.handler.js";
+import { InMemoryReservedElsewhere } from "../../../infrastructure/in-memory-reserved-elsewhere.js";
+import { ReservedArticleRefusedError } from "../../../../catalog/domain/errors/reserved-article-refused.error.js";
 
 const FROM = "2026-06-01T00:00:00.000Z";
 const TO = "2026-07-01T00:00:00.000Z";
@@ -123,9 +125,6 @@ class RecordingCommitments extends VolumeCommitmentRepository {
 
 /** Un catalogue où rien ne se vend au poids : seul `listByShopSkus` est lu. */
 class PieceOnlyCatalog extends CatalogReader {
-  findSku(): Promise<ResolvedCatalogItem | null> {
-    return Promise.resolve(null);
-  }
   listSellable(): Promise<ResolvedCatalogItem[]> {
     return Promise.resolve([]);
   }
@@ -137,7 +136,7 @@ class PieceOnlyCatalog extends CatalogReader {
   }
 }
 
-function poseMercuriale(skus: readonly string[]) {
+function poseMercuriale(skus: readonly string[], reservations = new InMemoryReservedElsewhere()) {
   const mercuriales = new RecordingMercuriales();
   const handler = new PoseCompanyMercurialeHandler(
     new KnownCompanies(),
@@ -146,6 +145,7 @@ function poseMercuriale(skus: readonly string[]) {
     new NoDrafts(),
     new NothingPriced(),
     REFERENCES,
+    reservations,
   );
   const payload: PoseCompanyMercurialePayload = {
     label: "Été",
@@ -183,6 +183,21 @@ function signCommitment(sku: string) {
     run: () => handler.execute(new SignVolumeCommitmentCommand(payload, "staff_1")),
   };
 }
+
+describe("PoseCompanyMercurialeHandler — les articles réservés (Q1)", () => {
+  it("refuse une ligne sur un article réservé à un autre compte, en le nommant", async () => {
+    const reservedToOther = new InMemoryReservedElsewhere(new Map([["VIE-001-2", ["co_2"]]]));
+    const { mercuriales, run } = poseMercuriale(["VIE-001", "VIE-001-2"], reservedToOther);
+    await expect(run()).rejects.toBeInstanceOf(ReservedArticleRefusedError);
+    await expect(run()).rejects.toMatchObject({ sku: "VIE-001-2" });
+    expect(mercuriales.saved).toHaveLength(0);
+  });
+
+  it("pose une ligne sur un article réservé à CE compte", async () => {
+    const reservedToHim = new InMemoryReservedElsewhere(new Map([["VIE-001-2", ["co_1"]]]));
+    await expect(poseMercuriale(["VIE-001-2"], reservedToHim).run()).resolves.toBe(1);
+  });
+});
 
 describe("PoseCompanyMercurialeHandler — les références de la grille", () => {
   it("pose une grille dont chaque ligne est en vente, déclinaison comprise", async () => {

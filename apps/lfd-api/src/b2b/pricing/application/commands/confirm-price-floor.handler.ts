@@ -10,6 +10,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { describeFloor, describeScope } from "../../domain/pricing-act.js";
 import { scopeNameOf } from "../scope-names.js";
 import { ConfirmPriceFloorCommand } from "./confirm-price-floor.command.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 @CommandHandler(ConfirmPriceFloorCommand)
 export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFloorCommand, void> {
@@ -45,7 +46,7 @@ export class ConfirmPriceFloorHandler implements ICommandHandler<ConfirmPriceFlo
       state.policy,
       command.staffUserId,
       now,
-      referenceCanonicalFor(state.scope, await this.catalog.all()),
+      referenceCanonicalFor(state.scope, await this.catalog.all(staffViewer("pro"))),
     );
     await this.floors.pose(floor, {
       subjectType: "floor",

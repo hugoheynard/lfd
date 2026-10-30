@@ -12,6 +12,7 @@ import {
 import { shopSkuOf } from "../../catalog/domain/shop-sku.js";
 import { SuggestionChoicesReader } from "../domain/ports/suggestion-choices.reader.js";
 import { SuggestionFamilyReader } from "../domain/ports/suggestion-family.reader.js";
+import { staffViewer } from "../../catalog/domain/catalog-viewer.js";
 
 /**
  * Le catalogue SERVI, aux deux audiences, réduit à l'unité par défaut de
@@ -21,8 +22,8 @@ import { SuggestionFamilyReader } from "../domain/ports/suggestion-family.reader
  */
 async function servedDefaults(catalog: CatalogReader): Promise<readonly ResolvedCatalogItem[]> {
   const [pro, publicItems] = await Promise.all([
-    catalog.listSellable("pro"),
-    catalog.listSellable("public"),
+    catalog.listSellable(staffViewer("pro")),
+    catalog.listSellable(staffViewer("public")),
   ]);
   const byProduct = new Map<string, ResolvedCatalogItem>();
   for (const item of [...pro, ...publicItems]) {

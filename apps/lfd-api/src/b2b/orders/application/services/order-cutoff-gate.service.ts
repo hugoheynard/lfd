@@ -10,6 +10,7 @@ import {
   ensureWithinOrderCutoff,
   type LineOrderLimit,
 } from "../../domain/services/order-cutoff-guard.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 /**
  * **L'heure limite opposée à un panier** — extraite d'`OrderDrafting` le
@@ -51,7 +52,7 @@ export class OrderCutoffGate {
     const [fallback, items, waiver] = await Promise.all([
       this.cutoffs.list(),
       // `pro` : la saisie par le staff exige une société (cf. `place-order-for-customer`).
-      this.catalog.resolveMany(skus, "pro"),
+      this.catalog.resolveMany(skus, staffViewer("pro")),
       // Une commande sans entreprise n'a pas de dérogation possible : elle
       // n'appartient à personne à qui on aurait pu en accorder une.
       !withWaiver || companyId === null
@@ -76,7 +77,7 @@ export class OrderCutoffGate {
   async decide(skus: readonly string[], fulfillmentDate: string): Promise<OrderCutoffDecision> {
     const [fallback, items] = await Promise.all([
       this.cutoffs.list(),
-      this.catalog.resolveMany(skus, "pro"),
+      this.catalog.resolveMany(skus, staffViewer("pro")),
     ]);
     return decideStrictestOrderCutoff({
       lines: limitsOf(skus, items),

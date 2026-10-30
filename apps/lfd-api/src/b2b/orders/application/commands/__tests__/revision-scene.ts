@@ -68,6 +68,8 @@ import { openPlanGate } from "./plan-doubles.js";
 import { FixedDeliveryVat } from "./fixed-delivery-vat.js";
 import type { OrderIntake } from "../../services/order-intake.service.js";
 import { intakeAt } from "./intake-doubles.js";
+import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
+import { InMemoryReservationHolders } from "../../../../catalog/infrastructure/in-memory-reservation-holders.js";
 
 /**
  * **La scène de la modification d'une commande** (plan
@@ -220,7 +222,12 @@ export function revisingAt(
   const catalog = new InMemoryProductCatalog(options.catalogItems ?? CATALOG);
   const classifications = new FixedLineClassifications();
   const composition = new OrderComposition(
-    new OrderLinePricing(catalog, pricer(clock), clock),
+    new OrderLinePricing(
+      catalog,
+      pricer(clock),
+      clock,
+      new CatalogViewers(new InMemoryReservationHolders()),
+    ),
     new CartAdjustments(
       pickups,
       zones,

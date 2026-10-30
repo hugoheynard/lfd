@@ -5,6 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { ProductCatalogReader } from "../../../catalog/domain/ports/product-catalog.reader.js";
 import { PriceLimitsReader } from "../ports/price-limits.reader.js";
 import { ListPriceLimitsQuery } from "./list-price-limits.query.js";
+import { staffViewer } from "../../../catalog/domain/catalog-viewer.js";
 
 @QueryHandler(ListPriceLimitsQuery)
 export class ListPriceLimitsHandler implements IQueryHandler<
@@ -22,7 +23,7 @@ export class ListPriceLimitsHandler implements IQueryHandler<
     const floors = await this.limits.inForce(
       query.clientele,
       this.clock.now(),
-      await this.catalog.all(),
+      await this.catalog.all(staffViewer("pro")),
     );
     return { clientele: query.clientele, floors };
   }

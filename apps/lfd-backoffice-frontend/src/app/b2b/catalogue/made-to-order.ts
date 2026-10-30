@@ -11,13 +11,6 @@ export const RESERVED_VISIBILITY_LABELS: Readonly<Record<ReservedVisibility, str
   visible_locked: 'Visible, non commandable',
 };
 
-/**
- * 🔴 Le mur n'est pas encore là (L1a sans L1b) : une réservation posée ne
- * retire l'article à personne. La phrase est la même sur les deux écrans.
- */
-export const RESTRICTION_PENDING =
-  'La restriction s’appliquera avec le prochain déploiement : pour l’instant, une réservation ne retire cet article à aucun autre professionnel.';
-
 const DAY = new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' });
 
 /** « 30 octobre 2026 » — le jour d'une réservation, à l'heure de Paris du poste. */

@@ -34,6 +34,8 @@ import { PricingDecisionsReader } from "./application/ports/pricing-decisions.re
 import { PricedCompanyReader } from "./domain/ports/priced-company.reader.js";
 import { SaleReferenceReader } from "./domain/ports/sale-reference.reader.js";
 import { CatalogSaleReferenceReader } from "./infrastructure/catalog-sale-reference.reader.js";
+import { ReservedElsewhereReader } from "./domain/ports/reserved-elsewhere.reader.js";
+import { CatalogReservedElsewhereReader } from "./infrastructure/catalog-reserved-elsewhere.reader.js";
 import { PricedCompanyNamer } from "./domain/ports/priced-company-namer.js";
 import { SaleReferenceDecisionsReader } from "./domain/ports/sale-reference-decisions.reader.js";
 import { PrismaSaleReferenceDecisionsReader } from "./infrastructure/prisma-sale-reference-decisions.reader.js";
@@ -204,6 +206,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // « Cette référence est-elle en vente ? » — les éditeurs de décisions la
     // posent avant d'écrire (L5 de `plan-pro-voit-les-declinaisons.md`).
     { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },
+    { provide: ReservedElsewhereReader, useClass: CatalogReservedElsewhereReader },
     // « De quelle ancienne référence est-elle née ? » — le report d'une
     // mercuriale sur la référence détachée (`plan-tarif-date-sur-une-reference.md`, § 6).
     { provide: SaleReferenceLineageReader, useClass: CatalogSaleReferenceLineageReader },

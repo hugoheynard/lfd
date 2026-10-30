@@ -5,6 +5,7 @@ import type {
   BundleChoiceArticle,
   BundleChoiceVerdict,
 } from "../domain/ports/bundle-choice-article.js";
+import { PUBLIC_VIEWER } from "../../catalog/domain/catalog-viewer.js";
 
 /** Ce qu'il faut d'une ligne du paramétrage pour juger un article. */
 type AdminLine = Awaited<ReturnType<CatalogAdminReader["list"]>>[number];
@@ -28,7 +29,7 @@ export async function catalogBundleArticles(
   admin: CatalogAdminReader,
   catalog: CatalogReader,
 ): Promise<readonly BundleChoiceArticle[]> {
-  const [lines, sellable] = await Promise.all([admin.list(), catalog.listSellable("public")]);
+  const [lines, sellable] = await Promise.all([admin.list(), catalog.listSellable(PUBLIC_VIEWER)]);
   const thumbnails = new Map(
     sellable.map((item) => [item.sku, (item.thumbnail ?? item.image)?.url ?? null]),
   );

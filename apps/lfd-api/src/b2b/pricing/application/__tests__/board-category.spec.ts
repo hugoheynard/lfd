@@ -36,6 +36,7 @@ function article(sku: string, of: CatalogFamily | null): CatalogItem {
     unitPriceMillicents: 200_000,
     vatRate: 5.5,
     ...PIECE_SALE_TERMS,
+    reservation: "none",
     family: of,
     allergens: null,
     orderTimeLimit: null,

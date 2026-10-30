@@ -4,6 +4,7 @@ import { Injectable } from "@nestjs/common";
 import { WorkshopShelvesReader } from "../../../production/channels/commerce/index.js";
 import { familyView } from "../domain/catalog-family.js";
 import { CatalogReader } from "../domain/ports/catalog.reader.js";
+import { staffViewer } from "../domain/catalog-viewer.js";
 
 /**
  * **Le rayon des articles du fournil**, lu dans le miroir du catalogue.
@@ -33,7 +34,7 @@ export class CatalogWorkshopShelvesReader extends WorkshopShelvesReader {
   }
 
   async shelvesOf(skus: readonly string[]): Promise<ReadonlyMap<string, CatalogFamilyView>> {
-    const items = await this.catalog.listByShopSkus(skus, "pro");
+    const items = await this.catalog.listByShopSkus(skus, staffViewer("pro"));
     const shelves = new Map<string, CatalogFamilyView>();
     for (const [shopSku, item] of items) {
       shelves.set(shopSku, familyView(item.family));

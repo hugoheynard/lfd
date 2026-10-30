@@ -14,6 +14,8 @@ import { catalogueArticle } from "../domain/catalogue-article.js";
 import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
+import { CatalogViewers } from "./catalog-viewers.service.js";
+import { anonymousViewer, viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import {
   inShopLanguage,
@@ -94,6 +96,7 @@ export class ShopCataloguePricing {
     private readonly clock: Clock,
     private readonly cutoffs: ShopOrderCutoffsReader,
     private readonly pricesPerKg: CatalogPricePerKgReader,
+    private readonly viewers: CatalogViewers,
   ) {}
 
   /**
@@ -110,7 +113,12 @@ export class ShopCataloguePricing {
     // veut dire « sans rien de négocié » : ni mercuriale, ni tarif de canal — et
     // donc le prix d'étiquette. La déduction est la même que celle qui pilotait
     // déjà la mercuriale ; elle nomme simplement ce qu'elle voulait dire.
-    return this.pricedFor(companyId === null ? "public" : "pro", companyId, language);
+    //
+    // Le lecteur d'une société porte sa réservation (`plan-articles-sur-mesure.md`,
+    // § 6) : le rayon reconnu liste aussi, verrouillé, ce qui est réservé à un
+    // autre compte et réglé « visible, non commandable » (S7).
+    const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
+    return this.pricedFor(viewer, companyId, language);
   }
 
   /**
@@ -131,21 +139,23 @@ export class ShopCataloguePricing {
     audience: ShopAudience,
     language: ContentLocale = CATALOG_SOURCE_LANGUAGE,
   ): Promise<ShopCatalogueView> {
-    return this.pricedFor(audience, null, language);
+    // Sans société, un pro est anonyme : jamais un article réservé (Q2).
+    return this.pricedFor(anonymousViewer(audience), null, language);
   }
 
   private async pricedFor(
-    audience: ShopAudience,
+    viewer: CatalogViewer,
     companyId: string | null,
     language: ContentLocale,
   ): Promise<ShopCatalogueView> {
+    const audience = viewerAudience(viewer);
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
     // plus sur la route anonyme, sans cache — le miroir des opérations tient
     // en quelques lignes, et une clôture doit s'appliquer à la minute.
     // Les heures limites en vigueur : une lecture de plus, pour ne montrer la
     // limite d'un article que si elle est plus stricte que la générale (§9).
     const [sellable, operations, operationOnlySkus, cutoffs] = await Promise.all([
-      this.catalog.listSellable(audience),
+      this.catalog.listSellable(viewer),
       this.operations.sellableOperations(),
       this.operations.operationOnlySkus(),
       this.cutoffs.list(),
