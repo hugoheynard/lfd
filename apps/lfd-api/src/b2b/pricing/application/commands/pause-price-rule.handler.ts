@@ -7,7 +7,6 @@ import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { PausePriceRuleCommand } from "./pause-price-rule.command.js";
 import { actOf, mustLoadEditable } from "./rule-lifecycle-support.js";
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 
 @CommandHandler(PausePriceRuleCommand)
 export class PausePriceRuleHandler implements ICommandHandler<PausePriceRuleCommand, void> {
@@ -16,12 +15,11 @@ export class PausePriceRuleHandler implements ICommandHandler<PausePriceRuleComm
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
-    private readonly sources: PromotionsSourceReader,
   ) {}
 
   async execute(command: PausePriceRuleCommand): Promise<void> {
     const now = this.clock.now();
-    const rule = await mustLoadEditable(this.rules, this.sources, command.id);
+    const rule = await mustLoadEditable(this.rules, command.id);
     await this.rules.update(
       rule.pause(command.staffUserId, now),
       actOf(

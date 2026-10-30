@@ -61,6 +61,8 @@ export interface PromotionDraft {
   /** Vide = aucune condition de quantité. */
   readonly minQuantity: string;
   readonly stacksOverMercuriale: boolean;
+  /** Cumulable avec les autres promotions cumulables (§ 16) — point ligne seulement. */
+  readonly cumulative: boolean;
 }
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
@@ -114,6 +116,7 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
     rules: [],
     minQuantity: '',
     stacksOverMercuriale: false,
+    cumulative: false,
   };
 }
 
@@ -168,6 +171,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
     })),
     minQuantity: quantity === undefined ? '' : String(quantity.value),
     stacksOverMercuriale: view.stacksOverMercuriale,
+    cumulative: view.cumulative,
   };
 }
 
@@ -225,6 +229,9 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     },
     ownFloor: null,
     stacksOverMercuriale: atLine && draft.stacksOverMercuriale,
+    // Le cumul ne se bâtit qu'au point ligne : une promotion d'acheminement
+    // ne l'envoie pas (l'agrégat la refuserait, plan § 16.1).
+    cumulative: atLine && draft.cumulative,
     validFrom: businessDayStart(draft.validFrom) ?? '',
     validTo: draft.validTo === '' ? null : businessDayStart(draft.validTo),
     audiences: draft.audiences.map((target) => ({
@@ -262,6 +269,7 @@ export function withFulfillment(
     effectKind: effectsFor(kind).includes(draft.effectKind) ? draft.effectKind : 'percent_off',
     rules: draft.rules.filter((rule) => targets.includes(rule.target)),
     stacksOverMercuriale: kind === 'any' && draft.stacksOverMercuriale,
+    cumulative: kind === 'any' && draft.cumulative,
   };
 }
 

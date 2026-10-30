@@ -12,6 +12,7 @@ import { PickupAddressRepository } from "../../../../pickup-addresses/domain/pic
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.reader.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
+import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
 import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
 
 /**
@@ -105,13 +106,14 @@ function adjustments(
     discounts: { b2b, b2c: null },
     opening: { publicOpening: null, proPickup: null },
   };
+  // L12 : la remise du site est posée en promotion de retrait à ce point,
+  // telle que la reprise l'écrit — l'ancien chemin est retiré.
   return new CartAdjustments(
     new OnePoint(point),
     new NoZones(),
     new Open(),
     new NoPreference(),
-    classifications,
-    basketPromotions(),
+    basketPromotions(pickupDiscountPromotions([point]), classifications),
   );
 }
 

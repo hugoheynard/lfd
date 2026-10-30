@@ -2,7 +2,6 @@ import { Injectable } from "@nestjs/common";
 
 import { PromotionCatalogueReader } from "../../domain/ports/promotion-catalogue.reader.js";
 import { PromotionRivalsReader } from "../../domain/ports/promotion-rivals.reader.js";
-import { PromotionsSourceReader } from "../../domain/ports/promotions-source.reader.js";
 import { applicationPointOf } from "../../domain/promotion-fulfillment.js";
 import {
   assertNoOverlap,
@@ -11,17 +10,15 @@ import {
 } from "../../domain/promotion-overlap.js";
 import { assertSurfaceAdmits, type PromotionSurface } from "../../domain/promotion-surface.js";
 import type { Promotion } from "../../domain/promotion.js";
-import { assertPromotionsEditable } from "../../domain/promotions-source.js";
 
 /**
  * **Ce qui peut refuser une écriture et que l'agrégat ne voit pas** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.2, § 13.9, § 13.10 L7) — partagé par les cinq gestes :
  *
- * 1. la bascule : rien ne s'écrit tant que le calcul lit l'existant ;
- * 2. la surface : une promotion de retrait à un point se règle depuis ce
+ * 1. la surface : une promotion de retrait à un point se règle depuis ce
  *    point, sous son droit, les autres depuis la tarification ;
- * 3. les rivales : pas de chevauchement, une seule promotion de panier par
+ * 2. les rivales : pas de chevauchement, une seule promotion de panier par
  *    commande — jugés seulement là où la promotion reprend (ou garde) sa
  *    place : pose, révision, reprise.
  *
@@ -31,7 +28,6 @@ import { assertPromotionsEditable } from "../../domain/promotions-source.js";
 @Injectable()
 export class PromotionWriteGuard {
   constructor(
-    private readonly source: PromotionsSourceReader,
     private readonly rivals: PromotionRivalsReader,
     private readonly catalogue: PromotionCatalogueReader,
   ) {}
@@ -39,11 +35,11 @@ export class PromotionWriteGuard {
   /**
    * Le geste ne change pas la place de la promotion (pause, archivage).
    *
-   * @throws {PromotionsNotEditableYetError} avant la bascule.
    * @throws {PromotionWrongSurfaceError} la promotion appartient à l'autre surface.
    */
-  async admitsTouch(surface: PromotionSurface, promotion: Promotion): Promise<void> {
-    assertPromotionsEditable(await this.source.current());
+  admitsTouch(surface: PromotionSurface, promotion: Promotion): void {
+    // Synchrone depuis L12 : la source, seule lecture, ne vaut plus que
+    // `promotions`, et n'est plus lue ici.
     assertSurfaceAdmits(surface, promotion.terms.fulfillment, promotion.id);
   }
 
@@ -51,7 +47,6 @@ export class PromotionWriteGuard {
    * La promotion prend (ou reprend) sa place : `before` est son état d'avant
    * pour une révision ou une reprise, `null` pour une pose.
    *
-   * @throws {PromotionsNotEditableYetError} avant la bascule.
    * @throws {PromotionWrongSurfaceError} l'ancienne ou la nouvelle forme appartient à l'autre surface.
    * @throws {OverlappingPromotionError} une autre se dispute un article avec elle.
    * @throws {BasketPromotionsWouldCombineError} une autre de panier pourrait s'appliquer avec elle.
@@ -61,7 +56,6 @@ export class PromotionWriteGuard {
     before: Promotion | null,
     after: Promotion,
   ): Promise<void> {
-    assertPromotionsEditable(await this.source.current());
     if (before !== null) {
       assertSurfaceAdmits(surface, before.terms.fulfillment, before.id);
     }

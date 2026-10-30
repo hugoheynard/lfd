@@ -202,6 +202,12 @@
               [checked]="draft().stacksOverMercuriale"
               (checkedChange)="edit({ stacksOverMercuriale: $event })"
             />
+            <fold-checkbox
+              label="Cumulable"
+              hint="Cochée, elle s'ajoute aux autres promotions cumulables du même article et du même client, l'une après l'autre (−20 % puis −15 % du reste = −32 %). Face à une promotion non cumulable, le client reçoit la plus avantageuse. Le plancher arrête toujours la descente."
+              [checked]="draft().cumulative"
+              (checkedChange)="edit({ cumulative: $event })"
+            />
           }
         </div>
       </fold-card>

@@ -43,8 +43,9 @@ import { OrderOperations } from "../order-operations.service.js";
 import { ShopCartQuoting } from "../shop-cart-quoting.service.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
-import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { basketPromotions, guestSignInOffer } from "./basket-promotions.doubles.js";
+import { linePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
+import { pointDiscountPromotions, guestSignInOffer } from "./basket-promotions.doubles.js";
 import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 
 /**
@@ -158,6 +159,8 @@ const empty = () => Promise.resolve([]);
  */
 export interface QuotingDecisions {
   readonly rules?: readonly PriceRule[];
+  /** Les promotions de ligne — l'étage `promotion` depuis L12. */
+  readonly promotions?: readonly LivePromotion[];
   readonly mercuriale?: CompanyMercuriale | null;
 }
 
@@ -189,7 +192,7 @@ function pricingOf(
       volumesFor: () => Promise.resolve(new Map<string, number>()),
       committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
     },
-    legacyLinePromotionSupply(),
+    linePromotionSupply(decisions.promotions ?? []),
   );
   const clock = new FixedClock(PRICED_AT);
   const pricer = new Pricer(
@@ -218,7 +221,7 @@ export interface QuotingSetup {
   readonly companyStatus?: OrderCompanyStatus | null;
   readonly voucherCents?: number | null;
   readonly decisions?: QuotingDecisions;
-  /** Ce qu'une connexion ouvrirait (L10) ; par défaut, l'ancien chemin muet. */
+  /** Ce qu'une connexion ouvrirait (L10) ; par défaut, aucune promotion. */
   readonly signIn?: GuestSignInOffer;
 }
 
@@ -241,8 +244,10 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
       new OneZone(setup.zone ?? null),
       new Open(),
       new NoPreference(),
-      new FixedLineClassifications(setup.classified ?? {}),
-      basketPromotions(),
+      pointDiscountPromotions(
+        new OnePoint(point),
+        new FixedLineClassifications(setup.classified ?? {}),
+      ),
     ),
     new CustomerAudiences(new CompanyAt(setup.companyStatus ?? null)),
     new OrderOperations(noSaleOperations(PRICED_AT)),

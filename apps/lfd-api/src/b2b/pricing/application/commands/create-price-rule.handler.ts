@@ -1,4 +1,3 @@
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 import { assertRuleEditorOpen } from "./rule-lifecycle-support.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -37,13 +36,12 @@ export class CreatePriceRuleHandler implements ICommandHandler<CreatePriceRuleCo
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
     private readonly references: SaleReferenceReader,
-    private readonly sources: PromotionsSourceReader,
   ) {}
 
   /** Rend l'identifiant posé : l'écran en a besoin pour cibler ses gestes. */
   async execute(command: CreatePriceRuleCommand): Promise<string> {
     // Après la bascule, l'étage promotion se pose dans l'écran Promotions (L8).
-    await assertRuleEditorOpen(command.draft.stage, this.sources);
+    assertRuleEditorOpen(command.draft.stage);
     const rule = PricingRule.create(this.ids.next(), command.draft, command.staffUserId);
     // Une règle sur une référence hors vente ne mordrait jamais (L5).
     await assertOnSale(

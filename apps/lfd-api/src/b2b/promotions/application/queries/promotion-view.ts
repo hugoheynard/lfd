@@ -50,6 +50,7 @@ export function promotionViewOf(
     effect: { kind: state.effect.kind, value: effectValueOf(state.effect) },
     ownFloor: state.ownFloor,
     stacksOverMercuriale: state.stacksOverMercuriale,
+    cumulative: state.cumulative,
     validFrom: state.validFrom.toISOString(),
     validTo: state.validTo?.toISOString() ?? null,
     audienceLabels: state.audienceLabels,

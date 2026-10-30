@@ -77,6 +77,9 @@ export function promotionAsRule(
     labels: promotion.servedLabel,
     stacksOverMercuriale: promotion.stacksOverMercuriale,
     promotion: targetingRankOf(promotion),
+    // § 16.1 : présent seulement quand coché — une règle sans le champ est
+    // non cumulable, et l'étage suit alors le chemin d'avant.
+    ...(promotion.cumulative ? { cumulative: true } : {}),
     ...nature,
   };
 }

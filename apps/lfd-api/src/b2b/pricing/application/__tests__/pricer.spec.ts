@@ -57,7 +57,9 @@ import {
   FixedStopwatch,
   RecordingTimings,
 } from "../../../../platform/metrics/__tests__/metrics-doubles.js";
-import { legacyLinePromotionSupply } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { linePromotionSupply } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { livePromotion } from "../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { LivePromotion } from "../../../promotions/domain/live-promotion.js";
 
 // ── L'instant, et les fenêtres ────────────────────────────────────────────
 //
@@ -379,6 +381,8 @@ interface Doubles {
 function pricerWith(
   parts: {
     rules?: readonly PriceRule[];
+    /** Les promotions de ligne — l'étage `promotion` depuis L12. */
+    promotions?: readonly LivePromotion[];
     floors?: readonly ScopedPriceFloor[];
     ladders?: readonly VolumeLadder[];
     mercuriales?: readonly PosedMercuriale[];
@@ -401,7 +405,7 @@ function pricerWith(
     new StubLadders(parts.ladders ?? []),
     commitments,
     volumes,
-    legacyLinePromotionSupply(),
+    linePromotionSupply(parts.promotions ?? []),
   );
   return {
     pricer: new Pricer(
@@ -418,21 +422,17 @@ function pricerWith(
 
 // ── Des matériaux tout faits ──────────────────────────────────────────────
 
-/** Une promotion de −10 % sur tout le catalogue, ouverte à tous. */
-const TEN_PERCENT_OFF: PriceRule = {
+/**
+ * Une promotion de −10 % sur tout le catalogue, ouverte à tous. Une règle
+ * d'étage promotion jusqu'à L12 (2026-10-30) ; l'étage n'est plus occupé
+ * que par les promotions, et la même décision s'y pose ainsi.
+ */
+const TEN_PERCENT_OFF: LivePromotion = livePromotion({
   id: "rule_promo",
-  stage: "promotion",
-  scope: { type: "global", id: null },
-  audience: { type: "all", id: null },
-  minQuantity: null,
-  validFrom: LONG_AGO,
-  validTo: null,
-  suspendedFrom: null,
   label: "Promotion de printemps",
-  stacksOverMercuriale: false,
-  nature: "alter",
-  alteration: { direction: "decrease", mode: "percent", bp: 1_000 },
-};
+  validFrom: LONG_AGO,
+  effect: { kind: "percent_off", basisPoints: 1_000 },
+});
 
 /** Un barème qui s'ouvre dès la dixième pièce, sur le croissant. */
 const LADDER_FROM_TEN: VolumeLadder = {
@@ -508,7 +508,7 @@ describe("Pricer.load — le prix d'un article", () => {
    * règle qui l'a produit a été retirée.
    */
   it("🔴 emporte la trace, pas seulement le chiffre", async () => {
-    const { pricer } = pricerWith({ rules: [TEN_PERCENT_OFF] });
+    const { pricer } = pricerWith({ promotions: [TEN_PERCENT_OFF] });
 
     const lot = await lotOf(pricer, [{ sku: "CRO-001", quantity: 1 }], null);
 
@@ -545,7 +545,7 @@ describe("Pricer.load — le prix d'un article", () => {
    */
   it("scelle la chaîne quand le client a une mercuriale", async () => {
     const { pricer } = pricerWith({
-      rules: [TEN_PERCENT_OFF],
+      promotions: [TEN_PERCENT_OFF],
       mercuriales: [mercurialeFor("cmp_1", 80)],
     });
 
@@ -648,7 +648,7 @@ describe("Pricer.load — plusieurs articles", () => {
    * ici ; le budget e2e le mesure sur la vraie base.
    */
   it("🔴 ne charge qu'une fois pour trois articles", async () => {
-    const { pricer, doubles } = pricerWith({ rules: [TEN_PERCENT_OFF] });
+    const { pricer, doubles } = pricerWith({ promotions: [TEN_PERCENT_OFF] });
 
     await lotOf(
       pricer,

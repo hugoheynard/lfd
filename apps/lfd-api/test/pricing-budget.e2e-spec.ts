@@ -179,14 +179,24 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * à chaud. Sous `legacy`, rien d'autre ; sous `promotions`, les promotions
  * (cachées) et le rangement des lignes, seulement s'il y a une candidate.
  *
+ * 🔴 **De 9 à 10 le 2026-10-30** (lot L12 du même plan) : le harnais pose
+ * désormais la source servie en production, `promotions`, au lieu de
+ * `legacy` — et l'ancien chemin, qui ne lisait rien de plus, est retiré. Le
+ * devis à froid lit donc ce que la production lit sous `promotions` (les
+ * promotions de ligne et de panier, que `legacy` ne lisait pas). Mesuré ce
+ * jour-là : 10, constant, pour une ligne comme pour dix ; le détail requête
+ * par requête n'a pas été relevé.
+ *
  * ⚠️ **La thèse du fichier n'a pas bougé** : ce qui compte n'est pas 4, 5, 6, 7
  * ou 8, c'est que dix lignes coûtent le même nombre qu'une seule. C'est
  * l'égalité qui attrape un N+1, pas la valeur absolue.
  */
-const COLD_QUOTE_OPS = 9;
+const COLD_QUOTE_OPS = 10;
 
 /**
- * Sème `count` règles de promotion **distinctes**.
+ * Sème `count` règles **distinctes** — d'étage `geste` depuis L12
+ * (2026-10-30) : l'étage `promotion` n'est plus lu par le prix, et des
+ * règles que personne ne lirait ne mesureraient rien.
  *
  * ⚠️ Distinctes, et le premier jet ne l'était pas : la contrainte d'exclusion a
  * refusé le semis, parce que dix règles visaient le même article sur la même
@@ -206,7 +216,7 @@ async function seedRules(count: number): Promise<void> {
   await ctx.prisma.priceRule.createMany({
     data: Array.from({ length: count }, (_unused, index) => ({
       id: `rule_budget_${String(index)}`,
-      stage: "promotion",
+      stage: "geste",
       nature: "alter",
       scopeType: "product",
       scopeId: skus[index % skus.length] ?? "VIE-001-1",
@@ -499,12 +509,13 @@ describe("le cache des matériaux, vu d'une autre instance", () => {
         .expect(200),
     ).lines[0]?.unitPriceMillicents;
 
-    // « L'autre instance » pose une promotion : la règle ET son acte au journal,
+    // « L'autre instance » pose une règle (d'étage `geste` depuis L12 : l'étage
+    // `promotion` n'est plus lu) : la règle ET son acte au journal,
     // comme `PricingActWriter` le ferait — mais SANS toucher au cache d'ici.
     await ctx.prisma.priceRule.create({
       data: {
         id: "rule_autre_instance",
-        stage: "promotion",
+        stage: "geste",
         nature: "alter",
         scopeType: "global",
         scopeId: null,

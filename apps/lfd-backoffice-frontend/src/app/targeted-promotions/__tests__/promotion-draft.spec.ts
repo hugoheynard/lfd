@@ -65,6 +65,18 @@ describe('le brouillon de l’éditeur des promotions', () => {
     expect(basket.rules).toEqual([]);
   });
 
+  it('envoie « Cumulable » au point ligne, et le retire avec l’acheminement (§ 16)', () => {
+    const base = { ...emptyDraft(TODAY, null), internalName: 'A', labelFr: 'B', effectValue: '20' };
+    expect(base.cumulative).toBe(false);
+    expect(termsOf(base).cumulative).toBe(false);
+    const cumulative = { ...base, cumulative: true };
+    expect(termsOf(cumulative).cumulative).toBe(true);
+    const basket = withFulfillment(cumulative, 'pickup');
+    expect(basket.cumulative).toBe(false);
+    expect(termsOf({ ...cumulative, fulfillmentKind: 'pickup' }).cumulative).toBe(false);
+    expect(draftOf(promotionView({ cumulative: true })).cumulative).toBe(true);
+  });
+
   it('une famille suit le sens du mode, et le mode la retourne', () => {
     const draft = withTargets(emptyDraft(TODAY, null), 'category', ['fam-vien'], true);
     expect(draft.rules).toEqual([{ target: 'category', targetId: 'fam-vien', eligible: false }]);

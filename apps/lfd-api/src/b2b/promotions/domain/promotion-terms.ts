@@ -57,6 +57,12 @@ export interface PromotionTerms extends PromotionWindow {
   readonly ownFloor: PromotionOwnFloor | null;
   /** Point ligne seulement : au panier, la mercuriale ne scelle rien (§ 13.2). */
   readonly stacksOverMercuriale: boolean;
+  /**
+   * « Cumulable » (§ 16) : s'ajoute successivement aux autres cumulables du
+   * même article et du même client. Point ligne seulement tant que la
+   * commande ne sait porter qu'une remise de panier (§ 16.1).
+   */
+  readonly cumulative: boolean;
   /** Le public, en forme canonique (§ 15.4) — au moins une cible. */
   readonly audiences: PromotionAudienceSet;
   readonly fulfillment: PromotionFulfillment;
@@ -72,7 +78,7 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionBlankTextError} nom interne ou libellé vide.
  * @throws {PromotionReversedWindowError} fin avant le début.
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
- * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
+ * @throws {PromotionLineOnlyOptionError} plancher propre, cumul sur mercuriale ou « Cumulable » au panier.
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
  * @throws les refus de `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
@@ -101,6 +107,9 @@ export function assertTerms(terms: PromotionTerms): void {
   }
   if (terms.stacksOverMercuriale && point === "basket") {
     throw new PromotionLineOnlyOptionError("stacks_over_mercuriale");
+  }
+  if (terms.cumulative && point === "basket") {
+    throw new PromotionLineOnlyOptionError("cumulative");
   }
   assertScope(terms.scope);
   const product = terms.scope.rules.find((rule) => rule.target === "product");

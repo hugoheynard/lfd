@@ -6,17 +6,11 @@ import type {
 
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
-import {
-  PickupAddressNotFoundError,
-  PickupDiscountCategoryReinclusionError,
-  PickupDiscountDuplicateRuleError,
-} from "../../domain/pickup-errors.js";
+import { PickupAddressNotFoundError } from "../../domain/pickup-errors.js";
 import { UpdatePickupAddressCommand } from "../update-pickup-address.command.js";
 import { UpdatePickupAddressHandler } from "../update-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
-import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { LegacyPromotionEditorClosedError } from "../../../promotions/domain/errors/promotion-errors.js";
-import type { PromotionsSource } from "../../../promotions/domain/promotions-source.js";
 
 /** −10 % aux pros, boissons exclues ; rien aux particuliers. */
 const PRO_DISCOUNT: AudiencePickupDiscount = {
@@ -36,14 +30,10 @@ function update(
   points: StoredPoints,
   payload: PickupAddressUpdatePayload,
   events = new RecordingPublisher(),
-  source: PromotionsSource = "legacy",
 ): Promise<void> {
-  return new UpdatePickupAddressHandler(
-    points,
-    events,
-    new DirectUnitOfWork(),
-    new FixedPromotionsSource(source),
-  ).execute(new UpdatePickupAddressCommand("pickup_1", payload));
+  return new UpdatePickupAddressHandler(points, events, new DirectUnitOfWork()).execute(
+    new UpdatePickupAddressCommand("pickup_1", payload),
+  );
 }
 
 describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
@@ -59,69 +49,42 @@ describe("UpdatePickupAddressHandler — les remises par clientèle", () => {
     expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
   });
 
-  it("remises présentes : les écrit, chaque clientèle la sienne", async () => {
-    const points = new StoredPoints(PROS_ONLY);
-    const individual: AudiencePickupDiscount = {
-      adjustment: { mode: "amount", cents: 300 },
-      scope: "only",
-      categories: [],
-      products: [{ productId: "p_baguette", eligible: true }],
-    };
-
-    await update(points, { ...FIELDS, discounts: { b2b: null, b2c: individual } });
-
-    expect(points.written?.discount.discounts).toEqual({ b2b: null, b2c: individual });
-  });
-
-  it("après la bascule des promotions, refuse des remises et n'écrit rien (L8)", async () => {
+  /**
+   * L12 : l'éditeur des remises de site est fermé pour de bon. Les refus de
+   * forme (famille à contre-sens, règle en double) restent éprouvés au
+   * domaine (`pickup-discount.spec.ts`) ; par ce geste, toute remise envoyée
+   * est refusée AVANT, et rien n'est écrit.
+   */
+  it.each<[string, AudiencePickupDiscount | null]>([
+    ["des remises vides", null],
+    [
+      "une remise de particuliers",
+      {
+        adjustment: { mode: "amount", cents: 300 },
+        scope: "only",
+        categories: [],
+        products: [{ productId: "p_baguette", eligible: true }],
+      },
+    ],
+    [
+      "une famille incluse en « tous sauf »",
+      { ...PRO_DISCOUNT, categories: [{ categoryId: "c_pains", eligible: true }] },
+    ],
+  ])("refuse %s en nommant l'écran Promotions, et n'écrit rien", async (_label, b2c) => {
     const points = new StoredPoints(PROS_ONLY);
 
     await expect(
-      update(
-        points,
-        { ...FIELDS, discounts: { b2b: null, b2c: null } },
-        new RecordingPublisher(),
-        "promotions",
-      ),
+      update(points, { ...FIELDS, discounts: { b2b: null, b2c } }),
     ).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
     expect(points.written).toBeNull();
   });
 
-  it("après la bascule, le lieu sans remises s'écrit encore, remises gardées", async () => {
+  it("le lieu sans remises s'écrit encore, remises gardées", async () => {
     const points = new StoredPoints(PROS_ONLY);
 
-    await update(points, { ...FIELDS }, new RecordingPublisher(), "promotions");
+    await update(points, { ...FIELDS });
 
     expect(points.written?.discount.discounts).toEqual({ b2b: PRO_DISCOUNT, b2c: null });
-  });
-
-  it("refuse une famille incluse en « tous sauf », sans rien écrire (Q1)", async () => {
-    const points = new StoredPoints(PROS_ONLY);
-    const reversed: AudiencePickupDiscount = {
-      ...PRO_DISCOUNT,
-      categories: [{ categoryId: "c_pains", eligible: true }],
-    };
-
-    await expect(
-      update(points, { ...FIELDS, discounts: { b2b: reversed, b2c: null } }),
-    ).rejects.toBeInstanceOf(PickupDiscountCategoryReinclusionError);
-    expect(points.written).toBeNull();
-  });
-
-  it("refuse une règle en double, sans rien écrire", async () => {
-    const points = new StoredPoints(PROS_ONLY);
-    const twice: AudiencePickupDiscount = {
-      ...PRO_DISCOUNT,
-      categories: [
-        { categoryId: "c_boissons", eligible: false },
-        { categoryId: "c_boissons", eligible: true },
-      ],
-    };
-
-    await expect(
-      update(points, { ...FIELDS, discounts: { b2b: twice, b2c: null } }),
-    ).rejects.toBeInstanceOf(PickupDiscountDuplicateRuleError);
-    expect(points.written).toBeNull();
   });
 
   it("un point introuvable est un 404, et rien n'est journalisé", async () => {

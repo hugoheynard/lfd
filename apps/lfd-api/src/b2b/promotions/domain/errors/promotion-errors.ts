@@ -68,15 +68,24 @@ export class PromotionEffectPointMismatchError extends DomainError {
   }
 }
 
-/** Plancher propre ou cumul sur mercuriale sur une promotion de panier. */
+/** Une option du seul point ligne, posée sur une promotion de panier. */
+export type LineOnlyOption = "own_floor" | "stacks_over_mercuriale" | "cumulative";
+
+const LINE_ONLY_MESSAGES: Readonly<Record<LineOnlyOption, string>> = {
+  own_floor:
+    "Un plancher propre ne s'applique qu'à une promotion sans acheminement : retirez le plancher, ou l'acheminement.",
+  stacks_over_mercuriale:
+    "« S'applique aussi aux tarifs négociés » ne vaut que pour une promotion sans acheminement : décochez-le, ou retirez l'acheminement.",
+  // Plan des promotions, § 16.1 : la commande ne porte encore qu'UNE remise de
+  // panier ; deux promotions de panier ne peuvent donc pas se cumuler.
+  cumulative:
+    "« Cumulable » ne vaut, pour l'instant, que pour une promotion sans acheminement : une commande ne porte encore qu'une remise de panier. Décochez-la, ou retirez l'acheminement.",
+};
+
+/** Plancher propre, cumul sur mercuriale ou « Cumulable » sur une promotion de panier. */
 export class PromotionLineOnlyOptionError extends DomainError {
-  constructor(readonly option: "own_floor" | "stacks_over_mercuriale") {
-    super(
-      "promotions.line_only_option",
-      option === "own_floor"
-        ? "Un plancher propre ne s'applique qu'à une promotion sans acheminement : retirez le plancher, ou l'acheminement."
-        : "« S'applique aussi aux tarifs négociés » ne vaut que pour une promotion sans acheminement : décochez-le, ou retirez l'acheminement.",
-    );
+  constructor(readonly option: LineOnlyOption) {
+    super("promotions.line_only_option", LINE_ONLY_MESSAGES[option]);
   }
 }
 
@@ -224,18 +233,18 @@ export class PromotionNotFoundError extends ResourceNotFoundError {
 }
 
 /**
- * La ligne `promotions_source` manque ou porte une valeur inconnue. Posée
- * par la migration `20261031120000_la_reprise_des_promotions` : son absence
- * n'est pas « legacy par défaut », c'est une base à réparer — tenir l'absence
- * pour une valeur ferait servir un chemin que personne n'a choisi.
+ * La ligne `promotions_source` manque ou ne vaut pas `promotions`. Depuis
+ * L12, c'est un garde-fou (CHECK de la migration
+ * `20261031150000_le_resserrement_des_promotions`) : son absence ou une
+ * autre valeur est une base à réparer, jamais un chemin à servir.
  */
 export class PromotionsSourceUnreadableError extends TechnicalError {
   constructor(readonly found: string | null) {
     super(
       "promotions.source_unreadable",
       found === null
-        ? "La ligne de configuration « promotions_source » est absente : aucun prix ne peut être calculé tant qu'elle n'est pas remise (valeur « legacy », cf. la migration 20261031120000_la_reprise_des_promotions)."
-        : `La ligne de configuration « promotions_source » vaut « ${found} », que le calcul ne connaît pas : remettez « legacy », « shadow » ou « promotions ».`,
+        ? "La ligne de configuration « promotions_source » est absente : aucun prix ne peut être calculé tant qu'elle n'est pas remise à « promotions » (cf. la migration 20261031150000_le_resserrement_des_promotions)."
+        : `La ligne de configuration « promotions_source » vaut « ${found} » : l'ancien chemin de calcul est retiré, seule « promotions » est servie. Remettez « promotions ».`,
     );
   }
 }
@@ -252,20 +261,6 @@ export class PromotionProductTargetAtLineError extends DomainError {
     super(
       "promotions.product_target_at_line",
       "Une promotion sans acheminement agit sur le prix de chaque déclinaison : elle ne peut pas viser un produit entier. Visez la famille ou la déclinaison.",
-    );
-  }
-}
-
-/**
- * Écrire une promotion avant la bascule (plan, § 13.10, L7) : tant que le
- * calcul lit l'existant (`promotions_source` à `legacy` ou `shadow`), une
- * promotion posée ici ne s'appliquerait à aucun prix — l'écran est en lecture.
- */
-export class PromotionsNotEditableYetError extends BusinessError {
-  constructor(readonly source: string) {
-    super(
-      "promotions.not_editable_yet",
-      "Les promotions s'éditent après la bascule : d'ici là, les promotions se règlent dans les Règles de prix et la remise de chaque site sur sa fiche.",
     );
   }
 }

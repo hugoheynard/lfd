@@ -24,6 +24,7 @@ export function lineTerms(overrides: TermsOverrides = {}): PromotionTerms {
     effect: { kind: "percent_off", basisPoints: 2000 },
     ownFloor: null,
     stacksOverMercuriale: false,
+    cumulative: false,
     validFrom: FROM,
     validTo: null,
     audiences: PromotionAudienceSet.restore([audience ?? { kind: "everyone" }]),

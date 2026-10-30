@@ -5,10 +5,8 @@ import { Injectable } from "@nestjs/common";
 import { Clock } from "../../../../platform/time/clock.js";
 import { BasketPromotionReader } from "../../../promotions/domain/ports/basket-promotion.reader.js";
 import { LinePromotionReader } from "../../../promotions/domain/ports/line-promotion.reader.js";
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 import { signInOfferFor } from "../../../promotions/domain/promotion-offers.js";
 import type { FulfillmentFact } from "../../../promotions/domain/promotion-targeting.js";
-import { servesLegacy } from "../../../promotions/domain/promotions-source.js";
 import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
 
 /** Le devis demandé : la route (personne, société) et l'acheminement choisi. */
@@ -30,8 +28,7 @@ interface QuotedLine {
  * Servi au seul devis ANONYME, quand une promotion réservée aux particuliers
  * inscrits toucherait ce panier. Jamais appliquée sans connexion, et jamais
  * tirée de l'adresse saisie : la boutique ne révèle pas qu'une adresse a un
- * compte. Seulement sous la source qui sert les promotions — sous l'ancien
- * chemin, la caisse ne les appliquerait pas après connexion non plus.
+ * compte.
  *
  * Lit les deux points (ligne et panier) : une promotion « inscrits » de l'un
  * comme de l'autre est ce qu'une connexion ouvrirait. Le rangement des lignes
@@ -40,7 +37,6 @@ interface QuotedLine {
 @Injectable()
 export class GuestSignInOffer {
   constructor(
-    private readonly sources: PromotionsSourceReader,
     private readonly lines: LinePromotionReader,
     private readonly basket: BasketPromotionReader,
     private readonly classifications: OrderLineClassificationReader,
@@ -57,9 +53,6 @@ export class GuestSignInOffer {
     resolved: readonly QuotedLine[],
   ): Promise<SignInOfferView | undefined> {
     if (request.buyerUserId !== null || request.companyId !== null || resolved.length === 0) {
-      return undefined;
-    }
-    if (servesLegacy(await this.sources.current())) {
       return undefined;
     }
     const quoted = resolved.map(({ line }) => line);

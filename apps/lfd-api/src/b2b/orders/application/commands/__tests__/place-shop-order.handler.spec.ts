@@ -100,8 +100,8 @@ import {
 } from "../../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
-import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
-import { basketPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
+import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { pointDiscountPromotions } from "../../services/__tests__/basket-promotions.doubles.js";
 
 /**
  * **La commande sans compte**, éprouvée là où elle décide — plan
@@ -271,7 +271,7 @@ function drafting(
           noVolumeLadders,
           noCommitments,
           noCustomerVolumes,
-          legacyLinePromotionSupply(),
+          noLinePromotionSupply(),
         ),
         new FixedClock(PRICED_AT),
         noPriceHistory,
@@ -286,8 +286,7 @@ function drafting(
       zones(),
       deliveryAvailability(delivery),
       noPreferredPickup,
-      new FixedLineClassifications(),
-      basketPromotions(),
+      pointDiscountPromotions(pickups()),
     ),
     noDeliveryDefaults,
     noOrderCutoffs,

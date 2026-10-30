@@ -101,6 +101,16 @@ describe("Promotion.pose — les invariants des termes", () => {
     expect(() => pose(lineTerms({ stacksOverMercuriale: true }))).not.toThrow();
   });
 
+  /** § 16.1 : la commande ne porte encore qu'une remise de panier. */
+  it("refuse « Cumulable » au panier, en le disant ; l'accepte à la ligne", () => {
+    expect(() => pose(basketTerms({ cumulative: true }))).toThrow(PromotionLineOnlyOptionError);
+    expect(() => pose(basketTerms({ cumulative: true }))).toThrow(
+      /« Cumulable ».*une remise de panier/u,
+    );
+    expect(() => pose(lineTerms({ cumulative: true }))).not.toThrow();
+    expect(pose(lineTerms({ cumulative: true })).terms.cumulative).toBe(true);
+  });
+
   it("refuse un plancher propre au-delà de 100 % ou négatif", () => {
     expect(() => pose(lineTerms({ ownFloor: { mode: "percent", value: 10_001 } }))).toThrow(
       PromotionInvalidOwnFloorError,

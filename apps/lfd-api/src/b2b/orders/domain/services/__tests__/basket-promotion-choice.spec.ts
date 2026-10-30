@@ -3,17 +3,18 @@ import type { AudiencePickupDiscount } from "@lfd/contracts";
 import { admittedPromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import type { AdmittedPromotion } from "../../../../promotions/domain/live-promotion.js";
 import type { OrderLineClassification } from "../../ports/order-line-classification.reader.js";
+import { repriseScopeOf } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
 import { chooseBasketPromotion, NO_BASKET_PROMOTION } from "../basket-promotion-choice.js";
-import {
-  ineligibleSkusOf,
-  pickupDiscountCentsOf,
-  pickupDiscountScopeOf,
-} from "../pickup-discount-eligibility.js";
 
 /**
  * Le point panier (plan des promotions, § 13.2 et § 13.11, lot L5) : une
  * remise de retrait reprise en promotion rend le MÊME montant, la même
  * assiette et le même ajustement que la remise du site.
+ *
+ * RÉÉCRIT en L12 (2026-10-30) : l'ancien chemin (`ineligibleSkusOf`,
+ * `pickupDiscountCentsOf`) est retiré du code. Les montants et assiettes
+ * qu'il rendait sur ce panier sont désormais écrits en clair — les mêmes
+ * valeurs, comparées au centime comme avant.
  */
 
 const CLASSES: ReadonlyMap<string, OrderLineClassification> = new Map([
@@ -42,25 +43,18 @@ const LINES = [
   { sku: "BOI-001", htCents: 450, quantity: 2 },
 ];
 
-/** La remise de retrait, et sa reprise telle que la migration l'écrit (§ 13.4). */
-function legacyAndReprise(discount: AudiencePickupDiscount): {
-  legacy: { cents: number; ineligible: ReadonlySet<string> };
-  promotion: AdmittedPromotion;
-} {
-  const ineligible = ineligibleSkusOf(discount, LINES, CLASSES);
-  return {
-    legacy: { cents: pickupDiscountCentsOf(discount, LINES, ineligible), ineligible },
-    promotion: admittedPromotion({
-      id: "pd_site_b2c",
-      effect:
-        discount.adjustment.mode === "percent"
-          ? { kind: "percent_off", basisPoints: discount.adjustment.bp }
-          : { kind: "basket_amount_off", cents: discount.adjustment.cents },
-      audience: { kind: "everyone_but_active_pros" },
-      fulfillment: { kind: "pickup_point", pickupId: "site" },
-      scope: pickupDiscountScopeOf(discount),
-    }),
-  };
+/** La reprise d'une remise de retrait en promotion. */
+function reprise(discount: AudiencePickupDiscount): AdmittedPromotion {
+  return admittedPromotion({
+    id: "pd_site_b2c",
+    effect:
+      discount.adjustment.mode === "percent"
+        ? { kind: "percent_off", basisPoints: discount.adjustment.bp }
+        : { kind: "basket_amount_off", cents: discount.adjustment.cents },
+    audience: { kind: "everyone_but_active_pros" },
+    fulfillment: { kind: "pickup_point", pickupId: "site" },
+    scope: repriseScopeOf(discount),
+  });
 }
 
 function discount(over: Partial<AudiencePickupDiscount>): AudiencePickupDiscount {
@@ -74,12 +68,15 @@ function discount(over: Partial<AudiencePickupDiscount>): AudiencePickupDiscount
 }
 
 describe("chooseBasketPromotion — la reprise d'une remise de retrait", () => {
-  it.each<[string, AudiencePickupDiscount]>([
-    ["20 % sur tout", discount({})],
+  // Ce que l'ancien chemin rendait sur `LINES` (assiette 2 561 c en tout).
+  it.each<[string, AudiencePickupDiscount, number, readonly string[]]>([
+    ["20 % sur tout", discount({}), 512, []],
     // Le cas réel de production : tout sauf UNE exception.
     [
       "20 % tout sauf un produit",
       discount({ products: [{ productId: "p_jus", eligible: false }] }),
+      422,
+      ["BOI-001"],
     ],
     [
       "tout sauf une famille, produit réinclus",
@@ -87,22 +84,26 @@ describe("chooseBasketPromotion — la reprise d'une remise de retrait", () => {
         categories: [{ categoryId: "c_pains", eligible: false }],
         products: [{ productId: "p_seigle", eligible: true }],
       }),
+      265,
+      ["PAI-001"],
     ],
     [
       "seulement une famille",
       discount({ scope: "only", categories: [{ categoryId: "c_boissons", eligible: true }] }),
+      90,
+      ["PAI-001", "PAI-002"],
     ],
     [
       "montant fixe supérieur à l'assiette",
       discount({ adjustment: { mode: "amount", cents: 99_999 } }),
+      2_561,
+      [],
     ],
-  ])("%s : même montant, même assiette, même ajustement", (_label, source) => {
-    const { legacy, promotion } = legacyAndReprise(source);
+  ])("%s : même montant, même assiette, même ajustement", (_label, source, cents, ineligible) => {
+    const chosen = chooseBasketPromotion([reprise(source)], LINES, CLASSES);
 
-    const chosen = chooseBasketPromotion([promotion], LINES, CLASSES);
-
-    expect(chosen.discountCents).toBe(legacy.cents);
-    expect([...chosen.ineligibleSkus].sort()).toEqual([...legacy.ineligible].sort());
+    expect(chosen.discountCents).toBe(cents);
+    expect([...chosen.ineligibleSkus].sort()).toEqual([...ineligible]);
     expect(chosen.discountAdjustment).toEqual(source.adjustment);
     expect(chosen.promotionId).toBe("pd_site_b2c");
   });

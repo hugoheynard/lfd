@@ -143,7 +143,8 @@ function postRule(scope: { type: string; id: string | null }, value: number) {
   return staff()
     .post("/admin/pricing/rules")
     .send({
-      stage: "promotion",
+      // `geste` depuis L12 : l'étage `promotion` ne s'écrit plus.
+      stage: "geste",
       scope,
       audience: { type: "all", id: null },
       minQuantity: null,
@@ -247,7 +248,7 @@ describe("elle se tarife et se limite par son id", () => {
 
     const line = await quoteOf(companyId, ORPHAN);
 
-    expect(line.steps.map((step) => step.stage)).toEqual(["promotion"]);
+    expect(line.steps.map((step) => step.stage)).toEqual(["geste"]);
     expect(line.floored).toBe(true);
     // −90 % l'aurait mis à 10 % du tarif : la limite l'a relevé à 60 %.
     expect(line.unitPriceMillicents).toBe((line.canonicalMillicents * 6) / 10);

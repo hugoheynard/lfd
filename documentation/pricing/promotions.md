@@ -162,7 +162,8 @@ Migration `20261031120000_la_reprise_des_promotions` : les **remises de
 retrait** des sites et les **règles d'étage promotion** deviennent des
 promotions, par une fonction rejouable. Pré-contrôle en lecture seule :
 `dev-toolbox/audits/promotions-reprise-precheck.mjs`. L'égalité des prix avant
-et après est prouvée par `apps/lfd-api/test/promotions-equality.e2e-spec.ts`.
+et après a été prouvée par l'e2e d'égalité de L6 (`promotions-equality`, retirée en L12 avec
+l'ancien chemin qu'elle comparait, 2026-10-30).
 
 ### 2.5 Les refus à la pose
 

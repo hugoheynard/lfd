@@ -231,10 +231,10 @@ describe("viser un article nommément", () => {
 });
 
 /**
- * Le tableau suit la bascule des promotions (plan des promotions, L8) : sous
- * `promotions`, l'étage promotion vient des promotions et plus des règles.
+ * Le tableau suit la caisse (plan des promotions, L8, L12) : l'étage
+ * promotion vient des promotions et plus des règles.
  */
-describe("le tableau et la source des promotions", () => {
+describe("le tableau et les promotions", () => {
   const promotion = admittedPromotion({
     id: "promo_ete",
     label: "Été",
@@ -246,21 +246,8 @@ describe("le tableau et la source des promotions", () => {
     ruleRow("g", { stage: "geste", bp: 1_000 }),
   ]);
 
-  it.each(["legacy", "shadow"] as const)(
-    "sous %s, les règles telles quelles, aucune promotion",
-    (source) => {
-      const decided = boardDecisions(loaded, { source, promotions: [promotion], journal: null });
-      expect(decided.rules).toBe(loaded);
-      expect(decided.promotions).toEqual([]);
-    },
-  );
-
-  it("sous promotions, le prix vient de la promotion et la règle d'étage promotion disparaît", async () => {
-    const decided = boardDecisions(loaded, {
-      source: "promotions",
-      promotions: [promotion],
-      journal: null,
-    });
+  it("le prix vient de la promotion et la règle d'étage promotion disparaît", async () => {
+    const decided = boardDecisions(loaded, [promotion]);
     expect(decided.rules.map((entry) => entry.rule.id)).toEqual(["g"]);
 
     const materials = await boardMaterials(

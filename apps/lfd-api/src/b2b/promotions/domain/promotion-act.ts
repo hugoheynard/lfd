@@ -68,6 +68,8 @@ export function describePromotion(terms: PromotionTerms): string {
     terms.audiences.targets.map(describeAudience).join(" + "),
     describeFulfillment(terms.fulfillment),
     describeWindow(terms.validFrom, terms.validTo),
+    // Dit seulement quand coché (§ 16) : les phrases déjà figées n'en parlent pas.
+    ...(terms.cumulative ? ["cumulable"] : []),
   ].join(" · ");
 }
 

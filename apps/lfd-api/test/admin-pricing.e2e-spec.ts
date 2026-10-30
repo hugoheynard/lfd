@@ -112,9 +112,16 @@ interface RuleBody {
   validTo?: string | null;
 }
 
+/**
+ * Une règle de prix — d'étage `geste` depuis L12 (2026-10-30) : l'étage
+ * `promotion` ne s'écrit plus (les promotions ont leur écran), et ces suites
+ * éprouvent la mécanique des règles, que l'étage ne change pas. Là où deux
+ * étages d'altération devaient coexister (promotion + geste), l'un devient un
+ * barème.
+ */
 function ruleBody(overrides: RuleBody = {}): Record<string, unknown> {
   return {
-    stage: "promotion",
+    stage: "geste",
     scope: { type: "global", id: null },
     audience: { type: "all", id: null },
     minQuantity: null,
@@ -281,7 +288,7 @@ describe("poser une règle", () => {
     const response = await postRule({ label: "La même, autrement nommée" });
 
     expect(response.status).toBe(409);
-    expect(jsonBody<{ message: string }>(response).message).toContain("promotion");
+    expect(jsonBody<{ message: string }>(response).message).toContain("« geste »");
   });
 
   /**
@@ -451,7 +458,8 @@ describe("suspendre, reprendre, archiver", () => {
 
     const [entry] = await journalOf(id);
 
-    expect(entry?.summary).toContain("Promotion");
+    // « Geste » depuis L12 : la règle par défaut de ces suites n'est plus d'étage promotion.
+    expect(entry?.summary).toContain("Geste");
   });
 
   /**
@@ -576,10 +584,14 @@ describe("suspendre, reprendre, archiver", () => {
    * L'écran doit le voir avant lui.
    */
   it("signale deux altérations du catalogue qui se recouvrent", async () => {
-    await postRule({
-      stage: "promotion",
-      label: "Promo de rentrée",
-      effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
+    // RÉÉCRIT en L12 (2026-10-30) : la première était une règle d'étage
+    // promotion, qui ne s'écrit plus. Deux RÈGLES d'étages différents ne
+    // peuvent plus s'altérer toutes deux sur « tous clients » (une mercuriale
+    // pose un prix, pour une société) : le second étage est un barème d'une
+    // seule marche, qui compose de la même façon.
+    await putLadder([{ minQuantity: 1, value: 2_000 }], {
+      scope: { type: "category", id: FAMILY },
+      label: "Barème de rentrée",
       validFrom: "2026-08-01T00:00:00.000Z",
       validTo: "2026-08-20T00:00:00.000Z",
     });
@@ -615,16 +627,16 @@ describe("suspendre, reprendre, archiver", () => {
    * plus ce qu'il croit dire.
    */
   it("cesse de signaler le recouvrement dès qu'une des deux est suspendue", async () => {
+    // RÉÉCRIT en L12 : l'autre altération est un barème (cf. le cas précédent).
     const { id } = jsonBody<{ id: string }>(
       await postRule({
-        stage: "promotion",
+        stage: "geste",
         validFrom: daysFromToday(-19),
         validTo: daysFromToday(1),
       }),
     );
-    await postRule({
-      stage: "geste",
-      label: "Geste",
+    await putLadder([{ minQuantity: 1, value: 1_000 }], {
+      scope: { type: "category", id: FAMILY },
       validFrom: daysFromToday(-5),
       validTo: daysFromToday(10),
     });
@@ -642,7 +654,7 @@ describe("suspendre, reprendre, archiver", () => {
    */
   it("pose le barème sur la frise, et annonce le cumul aux deux bouts", async () => {
     await postRule({
-      stage: "promotion",
+      stage: "geste",
       label: "Promo catalogue",
       effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
       validFrom: "2026-08-01T00:00:00.000Z",
@@ -677,7 +689,7 @@ describe("suspendre, reprendre, archiver", () => {
   it("dit que la promotion de famille évince celle du catalogue, et pendant combien de temps", async () => {
     const { id: catalogueId } = jsonBody<{ id: string }>(
       await postRule({
-        stage: "promotion",
+        stage: "geste",
         label: "Promo catalogue",
         effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_000 },
         validFrom: "2026-08-01T00:00:00.000Z",
@@ -686,7 +698,7 @@ describe("suspendre, reprendre, archiver", () => {
     );
 
     await postRule({
-      stage: "promotion",
+      stage: "geste",
       scope: { type: "category", id: FAMILY },
       label: "Promo viennoiserie",
       effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1_000 },
@@ -874,7 +886,7 @@ describe("l'écran de tarification", () => {
 
     expect(item.steps).toHaveLength(1);
     expect(item.steps[0]).toMatchObject({
-      stage: "promotion",
+      stage: "geste",
       label: "Promo de rentrée",
       resultMillicents: 180_000,
     });
@@ -1057,7 +1069,7 @@ describe("le rapport prix / volume", () => {
     return ctx.prisma.priceRule.create({
       data: {
         id: "promo",
-        stage: "promotion",
+        stage: "geste",
         nature: "alter",
         scopeType: "global",
         audienceType: "all",
@@ -1383,7 +1395,7 @@ describe("l’écran daté et la comparaison", () => {
   it("rend le tableau tel qu'il était : une règle archivée depuis y agit encore", async () => {
     const { id } = jsonBody<{ id: string }>(
       await postRule({
-        stage: "promotion",
+        stage: "geste",
         effect: { nature: "alter", direction: "decrease", mode: "percent", value: 5_000 },
         validFrom: "2026-01-01T00:00:00.000Z",
         validTo: null,
@@ -1419,7 +1431,7 @@ describe("l’écran daté et la comparaison", () => {
    */
   it("dit ce qui a bougé entre les deux marqueurs", async () => {
     await postRule({
-      stage: "promotion",
+      stage: "geste",
       effect: { nature: "alter", direction: "decrease", mode: "percent", value: 5_000 },
       validFrom: "2026-08-15T00:00:00.000Z",
       validTo: null,
@@ -1675,8 +1687,8 @@ describe("renommer une règle", () => {
     // L'étage, en donnée structurée, sur chaque acte (TODO des phrases,
     // 2026-09-19) : il n'était dit qu'au début de la phrase figée.
     expect(facts.map((fact) => fact.payload)).toEqual([
-      expect.objectContaining({ stage: "promotion" }),
-      expect.objectContaining({ stage: "promotion" }),
+      expect.objectContaining({ stage: "geste" }),
+      expect.objectContaining({ stage: "geste" }),
     ]);
   });
 

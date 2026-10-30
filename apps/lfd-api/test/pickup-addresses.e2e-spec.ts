@@ -102,25 +102,24 @@ describe("points de retrait", () => {
 });
 
 /**
- * Les remises d'un point, une par clientèle, avec leur portée (plan
+ * Les remises d'un point, une par clientèle (plan
  * `plan-remise-retrait-par-clientele-et-exclusions.md`, lot A, 2026-10-22).
+ *
+ * RÉÉCRIT en L12 (2026-10-30, plan des promotions) : la remise d'un point se
+ * règle dans l'écran Promotions, et les colonnes de la fiche ne sont plus ni
+ * écrites ni lues. Les cas qui éprouvaient l'écriture des remises (règles
+ * relues de leur table, remplacement en bloc, refus de forme, case des pros)
+ * éprouvaient un éditeur retiré : ils deviennent son refus. Les refus de
+ * forme restent éprouvés au domaine (`pickup-discount.spec.ts`), l'annonce
+ * tirée des promotions dans `promotions-l12.e2e-spec.ts`.
  */
 describe("points de retrait — une remise par clientèle", () => {
-  const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
   const PRO: AudiencePickupDiscount = {
-    adjustment: TEN_PERCENT,
+    adjustment: { mode: "percent", bp: 1_000 },
     scope: "all_except",
     categories: [{ categoryId: "c_boissons", eligible: false }],
     products: [{ productId: "p_jus", eligible: true }],
   };
-
-  async function createWith(body: Record<string, unknown>): Promise<string> {
-    const response = await staff()
-      .post("/admin/pickup-addresses")
-      .send({ ...point("Labo Paris"), ...body })
-      .expect(201);
-    return jsonBody<CreatedPickupResponse>(response).id;
-  }
 
   async function only(): Promise<PickupAddressView> {
     const [first] = await list();
@@ -131,97 +130,38 @@ describe("points de retrait — une remise par clientèle", () => {
   }
 
   it("à la création, sans remises : aucune clientèle n'en reçoit", async () => {
-    await createWith({});
+    await create("Labo Paris");
 
     expect((await only()).discounts).toEqual({ b2b: null, b2c: null });
   });
 
-  it("sert chaque remise avec ses règles, relues de leur table", async () => {
-    await createWith({ discounts: { b2b: PRO, b2c: null } });
+  it("refuse (409) de créer un point avec une remise, en nommant l'écran Promotions", async () => {
+    const response = await staff()
+      .post("/admin/pickup-addresses")
+      .send({ ...point("Labo Paris"), discounts: { b2b: PRO, b2c: null } })
+      .expect(409);
 
-    expect((await only()).discounts).toEqual({ b2b: PRO, b2c: null });
+    expect((response.body as { code?: string }).code).toBe("promotions.legacy_editor_closed");
+    expect(await list()).toEqual([]);
   });
 
-  it("un PATCH sans remises n'efface ni la remise ni ses règles", async () => {
-    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
+  it("refuse (409) un PATCH qui porte des remises ; sans elles, le lieu s'écrit", async () => {
+    const id = await create("Labo Paris");
+
+    const refused = await staff()
+      .patch(`/admin/pickup-addresses/${id}`)
+      .send({ ...point("Labo Paris"), discounts: { b2b: PRO, b2c: null } })
+      .expect(409);
+    expect((refused.body as { message?: string }).message).toContain(
+      "Nouvelle promotion pour ce site",
+    );
 
     await staff()
       .patch(`/admin/pickup-addresses/${id}`)
       .send({ ...point("Labo Paris — renommé") })
       .expect(204);
-
     const served = await only();
     expect(served.label).toBe("Labo Paris — renommé");
-    expect(served.discounts).toEqual({ b2b: PRO, b2c: null });
-  });
-
-  it("remplace les règles en bloc quand la remise change", async () => {
-    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
-    const individual: AudiencePickupDiscount = {
-      adjustment: { mode: "amount", cents: 300 },
-      scope: "only",
-      categories: [{ categoryId: "c_pains", eligible: true }],
-      products: [],
-    };
-
-    await staff()
-      .patch(`/admin/pickup-addresses/${id}`)
-      .send({ ...point("Labo Paris"), discounts: { b2b: null, b2c: individual } })
-      .expect(204);
-
-    expect((await only()).discounts).toEqual({ b2b: null, b2c: individual });
-    expect(await ctx.prisma.pickupDiscountRule.count({ where: { siteId: id } })).toBe(1);
-  });
-
-  it("refuse (400) une remise « seulement » qui n'inclut rien, et n'écrit rien", async () => {
-    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
-
-    const response = await staff()
-      .patch(`/admin/pickup-addresses/${id}`)
-      .send({
-        ...point("Labo Paris"),
-        discounts: { b2b: { ...PRO, scope: "only", categories: [], products: [] }, b2c: null },
-      })
-      .expect(400);
-
-    expect((response.body as { code?: string }).code).toBe("pickup.discount.only_includes_nothing");
-    expect((await only()).discounts.b2b).toEqual(PRO);
-  });
-
-  it("refuse (400) une famille incluse en « tous sauf », et n'écrit rien", async () => {
-    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
-
-    const response = await staff()
-      .patch(`/admin/pickup-addresses/${id}`)
-      .send({
-        ...point("Labo Paris"),
-        discounts: {
-          b2b: {
-            ...PRO,
-            scope: "all_except",
-            categories: [{ categoryId: "c_pains", eligible: true }],
-          },
-          b2c: null,
-        },
-      })
-      .expect(400);
-
-    const body = response.body as { code?: string; message?: string };
-    expect(body.code).toBe("pickup.discount.category_against_scope");
-    expect(body.message).toMatch(/famille « c_pains ».*réincluez les produits voulus/u);
-    expect((await only()).discounts.b2b).toEqual(PRO);
-  });
-
-  /**
-   * La reprise sans effacement (V8) : la réduction d'avant est celle des pros
-   * seulement si leur case était cochée. Un point d'avant le lot, dont la
-   * remise était fermée aux pros, est simulé en décochant la case en base —
-   * aucun geste du domaine ne produit plus cet état.
-   */
-  it("ne donne pas aux pros une réduction dont leur case était décochée", async () => {
-    const id = await createWith({ discounts: { b2b: PRO, b2c: null } });
-    await ctx.prisma.site.update({ where: { id }, data: { discountForB2b: false } });
-
-    expect((await only()).discounts.b2b).toBeNull();
+    expect(served.discounts).toEqual({ b2b: null, b2c: null });
   });
 });

@@ -15,7 +15,7 @@ import type { PriceRule, ScopedPriceFloor } from "../../domain/price-rule.js";
 import type { VolumeCommitment } from "../../domain/volume-commitment.js";
 import type { VolumeLadder } from "../../domain/volume-ladder.js";
 import { PricingMaterialsLoader } from "../pricing-materials.loader.js";
-import { legacyLinePromotionSupply } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { noLinePromotionSupply } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 /**
  * **Le chargeur à deux clés** (`sous-comptes.md`, §2.2) : les règles
@@ -196,7 +196,7 @@ function loaderWith(parts: {
     new NoLadders(),
     commitments,
     volumes,
-    legacyLinePromotionSupply(),
+    noLinePromotionSupply(),
   );
   return { loader, mercuriales, commitments, volumes };
 }
@@ -216,7 +216,7 @@ async function priceOf(
   if (pricer === null) {
     throw new Error("Le lot d'un article ne peut pas être vide.");
   }
-  return pricer.served.price(CROISSANT, 1).finalMillicents;
+  return pricer.price(CROISSANT, 1).finalMillicents;
 }
 
 describe("PricingMaterialsLoader — deux clés", () => {

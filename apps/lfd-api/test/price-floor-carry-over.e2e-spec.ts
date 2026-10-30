@@ -79,7 +79,9 @@ async function detachedWithFloor(): Promise<{ floorId: string; oldSku: string; n
   await staffOf(ctx)
     .post("/admin/pricing/rules")
     .send({
-      stage: "promotion",
+      // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
+      // mécanique éprouvée ici ne dépend pas de l'étage.
+      stage: "geste",
       label: "Demi-prix",
       scope: { type: "variant", id: newSku },
       audience: { type: "all", id: null },

@@ -177,7 +177,9 @@ describe("🔴 régression R17 — la fin de la clôture est persistée", () => 
     const created = await staff()
       .post("/admin/pricing/rules")
       .send({
-        stage: "promotion",
+        // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
+        // mécanique éprouvée ici ne dépend pas de l'étage.
+        stage: "geste",
         scope: { type: "global", id: null },
         audience: { type: "all", id: null },
         minQuantity: null,

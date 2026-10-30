@@ -95,6 +95,12 @@ export const promotionTermsPayloadSchema = z.object({
   effect: z.object({ kind: z.enum(PROMOTION_EFFECT_KIND_VALUES), value: z.number().int() }),
   ownFloor: z.object({ mode: z.enum(["percent", "amount"]), value: z.number().int() }).nullable(),
   stacksOverMercuriale: z.boolean(),
+  /**
+   * « Cumulable » (plan des promotions, § 16) : s'ajoute successivement aux
+   * autres promotions cumulables du même article et du même client. Point
+   * ligne seulement pour l'instant (§ 16.1). Absent = non cumulable.
+   */
+  cumulative: z.boolean().default(false),
   /** Borne basse incluse. */
   validFrom: z.string().datetime(),
   /** Borne haute exclue ; `null` = sans fin. */
@@ -177,6 +183,8 @@ export interface PromotionView {
   readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: number };
   readonly ownFloor: { readonly mode: "percent" | "amount"; readonly value: number } | null;
   readonly stacksOverMercuriale: boolean;
+  /** « Cumulable » (§ 16) ; `false` pour toute promotion d'avant la case. */
+  readonly cumulative: boolean;
   readonly validFrom: string;
   readonly validTo: string | null;
   /** Le public, en forme canonique — au moins une cible (L8b). */

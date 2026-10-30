@@ -48,11 +48,14 @@ beforeEach(async () => {
   await ctx.reset();
 });
 
-/** Une règle de société sur la part, puis la part détachée. */
-async function detachedWithRule(withGeste = false): Promise<{
+/**
+ * Une règle de société sur la part, puis la part détachée. D'étage `geste`
+ * depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et le report
+ * éprouvé ici ne dépend pas de l'étage.
+ */
+async function detachedWithRule(): Promise<{
   companyId: string;
   ruleId: string;
-  gesteId: string;
   oldSku: string;
   newSku: string;
 }> {
@@ -62,7 +65,7 @@ async function detachedWithRule(withGeste = false): Promise<{
     await staffOf(ctx)
       .post("/admin/pricing/rules")
       .send({
-        stage: "promotion",
+        stage: "geste",
         label: "Prix de la part",
         scope: { type: "variant", id: part.oldSku },
         audience: { type: "company", id: companyId },
@@ -73,26 +76,8 @@ async function detachedWithRule(withGeste = false): Promise<{
       })
       .expect(201),
   ).id;
-  // Une seconde règle, même société, autre étage : une autre identité.
-  const gesteId = withGeste
-    ? jsonBody<CreatedIdResponse>(
-        await staffOf(ctx)
-          .post("/admin/pricing/rules")
-          .send({
-            stage: "geste",
-            label: "Geste",
-            scope: { type: "variant", id: part.oldSku },
-            audience: { type: "company", id: companyId },
-            minQuantity: null,
-            effect: { nature: "alter", direction: "decrease", mode: "percent", value: 500 },
-            validFrom: daysAgo(3),
-            validTo: daysAgo(-30),
-          })
-          .expect(201),
-      ).id
-    : "";
   const newSku = await detach(ctx, part);
-  return { companyId, ruleId, gesteId, oldSku: part.oldSku, newSku };
+  return { companyId, ruleId, oldSku: part.oldSku, newSku };
 }
 
 const carry = (ruleId: string, fromSku: string, toSku: string) =>
@@ -167,13 +152,10 @@ describe("le report d'une règle sur la référence détachée (R1)", () => {
     expect(await quotedPrice(ctx, CLIENT, companyId, newSku)).toBe(PART_PRO_PRICE_MILLICENTS);
   });
 
-  it("deux règles d'étages différents, même société : toutes deux se reportent, la même deux fois non", async () => {
-    const { ruleId, gesteId, oldSku, newSku } = await detachedWithRule(true);
-    await carry(ruleId, oldSku, newSku).expect(201);
-    await carry(gesteId, oldSku, newSku).expect(201);
-    const refused = await carry(gesteId, oldSku, newSku).expect(409);
-
-    expect(jsonBody<{ code: string }>(refused).code).toBe("pricing.carry_over.already_carried");
-    expect(await ctx.prisma.priceRule.count({ where: { scopeId: newSku } })).toBe(2);
-  });
+  // RETIRÉ en L12 (2026-10-30) : « deux règles d'étages différents, même
+  // société, toutes deux se reportent ». Une seule règle reste saisissable
+  // (`geste` — `promotion` est fermé, `volume` passe par le barème, la
+  // mercuriale par son écran) : le cas ne se produit plus par le vrai geste.
+  // L'identité par étage reste éprouvée sans base
+  // (`carry-over-decisions.handlers.spec.ts`, « une règle d'un AUTRE étage »).
 });

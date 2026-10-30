@@ -21,6 +21,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { createUser } from "./factories.js";
 import { Prisma } from "../src/platform/database/client/client.js";
 
@@ -202,9 +203,10 @@ describe("un particulier paie la somme des étiquettes", () => {
 
   it("prend la remise retrait sur le TTC : −10 % de 21,00 € = 2,10 €", async () => {
     await client();
-    await ctx.prisma.site.update({
-      where: { id: pickupId },
-      data: { b2cDiscountMode: "percent", b2cDiscountValue: 1_000 },
+    // Posée en promotion de retrait à ce point depuis L12 (c'était la colonne
+    // de remise des particuliers sur la fiche du site).
+    await poseSiteDiscount(ctx.asSub(E2E_STAFF_SUB), pickupId, {
+      b2c: { mode: "percent", value: 1_000 },
     });
 
     const order = await placed(basket(1));

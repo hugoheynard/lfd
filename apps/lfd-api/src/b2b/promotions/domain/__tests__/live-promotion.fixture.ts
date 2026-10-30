@@ -27,6 +27,7 @@ export function livePromotion(overrides: LivePromotionOverrides = {}): LivePromo
     audienceLabels: NO_AUDIENCE_LABELS,
     effect: { kind: "percent_off", basisPoints: 2000 },
     stacksOverMercuriale: false,
+    cumulative: false,
     validFrom: LIVE_FROM,
     validTo: null,
     suspendedFrom: null,

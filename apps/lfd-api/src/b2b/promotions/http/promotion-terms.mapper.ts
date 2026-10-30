@@ -25,6 +25,7 @@ export function promotionTermsOf(payload: PromotionTermsPayload): PromotionTerms
     effect: effectOf(payload.effect),
     ownFloor: payload.ownFloor,
     stacksOverMercuriale: payload.stacksOverMercuriale,
+    cumulative: payload.cumulative,
     validFrom: new Date(payload.validFrom),
     validTo: payload.validTo === null ? null : new Date(payload.validTo),
     audiences: PromotionAudienceSet.of(payload.audiences.map(audienceOf)),

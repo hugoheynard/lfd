@@ -49,6 +49,11 @@ export interface PromotionRival {
  * Depuis L8b, `{pros}` contre `{pros_active}` est REFUSÉ (accepté avant, les
  * rangs différant) : les deux visent les pros actifs.
  *
+ * Depuis L12 (§ 16), deux promotions **toutes deux cumulables** ne se
+ * disputent rien : elles se combinent, l'une après l'autre. Le refus ne
+ * s'applique plus entre elles — il reste entre une cumulable et une non
+ * cumulable, et entre deux non cumulables.
+ *
  * @throws {OverlappingPromotionError} un rival se dispute un article avec la candidate.
  */
 export function assertNoOverlap(
@@ -58,6 +63,9 @@ export function assertNoOverlap(
 ): void {
   const point = applicationPointOf(candidate.terms.fulfillment);
   for (const rival of rivals) {
+    if (candidate.terms.cumulative && rival.terms.cumulative) {
+      continue;
+    }
     const crossing = rival.id === candidate.id ? null : crossingOf(candidate.terms, rival.terms);
     if (crossing === null) {
       continue;

@@ -115,8 +115,8 @@ export class CompanyPricingQuery {
     );
     const decided = await this.decisions.decisionsAt(at, { companyId }, articles);
     const floors = decided.floors;
-    // La même bascule que la caisse (plan des promotions, L8) : sous
-    // `promotions`, l'étage promotion vient des promotions de CE client.
+    // Comme la caisse (plan des promotions, L8, L12) : l'étage promotion
+    // vient des promotions de CE client.
     const { rules, promotions } = boardDecisions(
       decided.rules,
       await this.linePromotions.forLot(parties, at, false),

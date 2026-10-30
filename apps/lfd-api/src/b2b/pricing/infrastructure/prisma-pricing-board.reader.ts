@@ -170,7 +170,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // négociés d'autres comptes compris. C'est sa question, et elle n'est pas
     // celle de la fiche client.
     const decided = await this.decisions.decisionsAt(at, { companyId: null }, articles);
-    // La bascule des promotions (L8) : sous `promotions`, l'étage promotion
+    // Comme la caisse (plan des promotions, L8, L12) : l'étage promotion
     // vient des promotions qui visent un compte sans tarif négocié — à `at`,
     // archivées d'après comprises, comme une lecture datée de la caisse.
     const { rules, promotions } = boardDecisions(

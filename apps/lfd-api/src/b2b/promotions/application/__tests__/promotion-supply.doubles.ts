@@ -4,10 +4,6 @@ import { BasketPromotionReader } from "../../domain/ports/basket-promotion.reade
 import { LinePromotionReader } from "../../domain/ports/line-promotion.reader.js";
 import { PromotionCompanyStatusReader } from "../../domain/ports/promotion-company-status.reader.js";
 import { PromotionPrincipalReader } from "../../domain/ports/promotion-principal.reader.js";
-import {
-  PromotionShadowJournal,
-  type PromotionShadowDivergence,
-} from "../../domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../../domain/ports/promotions-source.reader.js";
 import type { PromotionsSource } from "../../domain/promotions-source.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
@@ -21,8 +17,9 @@ import { PromotionAudienceFactsResolver } from "../promotion-audience-facts.reso
  * suites qui assemblent le vrai chargeur des prix.
  */
 
+/** La source — `promotions`, seule valeur depuis L12 : lue par l'écran Promotions. */
 export class FixedPromotionsSource extends PromotionsSourceReader {
-  constructor(private readonly source: PromotionsSource) {
+  constructor(private readonly source: PromotionsSource = "promotions") {
     super();
   }
 
@@ -32,7 +29,7 @@ export class FixedPromotionsSource extends PromotionsSourceReader {
 }
 
 export class FixedLinePromotions extends LinePromotionReader {
-  /** Combien de fois le présent a été lu — l'ombre et `legacy` le surveillent. */
+  /** Combien de fois le présent a été lu. */
   reads = 0;
 
   constructor(private readonly promotions: readonly LivePromotion[] = []) {
@@ -51,7 +48,7 @@ export class FixedLinePromotions extends LinePromotionReader {
 }
 
 export class FixedBasketPromotions extends BasketPromotionReader {
-  /** Combien de fois le présent a été lu — `legacy` ne doit rien lire. */
+  /** Combien de fois le présent a été lu. */
   reads = 0;
 
   constructor(private readonly promotions: readonly LivePromotion[] = []) {
@@ -96,45 +93,28 @@ export class FixedPrincipals extends PromotionPrincipalReader {
   }
 }
 
-export class RecordingShadowJournal extends PromotionShadowJournal {
-  readonly entries: PromotionShadowDivergence[] = [];
-
-  divergence(entry: PromotionShadowDivergence): void {
-    this.entries.push(entry);
-  }
-}
-
-/** La fourniture de la source `legacy` : l'existant, rien de lu. */
-export function legacyLinePromotionSupply(): LinePromotionSupply {
-  return linePromotionSupply("legacy", []);
+/** Aucune promotion de ligne : les suites qui ne jugent que les règles de prix. */
+export function noLinePromotionSupply(): LinePromotionSupply {
+  return linePromotionSupply([]);
 }
 
 export function linePromotionSupply(
-  source: PromotionsSource,
   promotions: readonly LivePromotion[],
-  journal: PromotionShadowJournal = new RecordingShadowJournal(),
   statuses: PromotionCompanyStatusReader = new FixedCompanyStatuses(),
 ): LinePromotionSupply {
   return new LinePromotionSupply(
-    new FixedPromotionsSource(source),
     new FixedLinePromotions(promotions),
     new PromotionAudienceFactsResolver(statuses, new FixedPrincipals()),
-    journal,
   );
 }
 
-/**
- * Ce que le rayon mentionne (L10) — par défaut `legacy`, qui ne lit rien :
- * les suites d'avant L10.
- */
+/** Ce que le rayon mentionne (L10) — par défaut, aucune promotion panier. */
 export function shelfPromotionOffers(
-  source: PromotionsSource = "legacy",
   basket: readonly LivePromotion[] = [],
   at: Date = new Date(Date.UTC(2030, 0, 1)),
   statuses: PromotionCompanyStatusReader = new FixedCompanyStatuses(),
 ): ShelfPromotionOffers {
   return new ShelfPromotionOffers(
-    new FixedPromotionsSource(source),
     new FixedBasketPromotions(basket),
     new PromotionAudienceFactsResolver(statuses, new FixedPrincipals()),
     new FixedClock(at),

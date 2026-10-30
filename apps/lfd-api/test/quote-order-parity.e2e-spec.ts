@@ -32,7 +32,15 @@ import type { BillingAddressPayload, ShopQuotePayload, ShopQuoteView } from "@lf
 import request from "supertest";
 
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import {
+  bootstrapE2e,
+  E2E_STAFF_SUB,
+  jsonBody,
+  serviceDay,
+  type E2eContext,
+} from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 
 /** Passerelle doublée : une commande personnelle se règle par carte. */
 const fakeGateway = {
@@ -46,7 +54,20 @@ let ctx: E2eContext;
 let pickupId = "pickup_absent";
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e({ overrides: [{ token: PaymentGateway, value: fakeGateway }] });
+  // Le staff pose la remise du point par l'écran des promotions (L12) : son
+  // jeton est doublé.
+  ctx = await bootstrapE2e({
+    overrides: [
+      { token: PaymentGateway, value: fakeGateway },
+      {
+        token: AdminTokenVerifier,
+        value: {
+          verify: (): Promise<{ subject: string; scopes: string[] }> =>
+            Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+        },
+      },
+    ],
+  });
 });
 
 afterAll(async () => {
@@ -95,14 +116,14 @@ async function seedPickup(): Promise<string> {
       ville: "Paris",
       pays: "France",
       isDefault: true,
-      discountMode: "percent",
-      discountValue: 1_000,
-      // La remise des particuliers a ses colonnes depuis le 2026-10-22 : la
-      // même, comme la reprise l'a recopiée pour tout point ouvert aux deux.
-      b2cDiscountMode: "percent",
-      b2cDiscountValue: 1_000,
     },
     select: { id: true },
+  });
+  // La même remise pour les deux clientèles, posée en promotions de retrait à
+  // ce point depuis L12 (c'étaient les colonnes de remise de la fiche).
+  await poseSiteDiscount(ctx.asSub(E2E_STAFF_SUB), point.id, {
+    b2b: { mode: "percent", value: 1_000 },
+    b2c: { mode: "percent", value: 1_000 },
   });
   return point.id;
 }
@@ -174,7 +195,7 @@ async function moneyOf(orderId: string) {
 async function expectParity(
   payload: ShopQuotePayload,
   orderContent: Record<string, unknown>,
-): Promise<void> {
+): Promise<ShopQuoteView> {
   const view = jsonBody<ShopQuoteView>(await quote(payload).expect(200));
   const placed = jsonBody<{ id: string }>(
     await ctx
@@ -201,11 +222,12 @@ async function expectParity(
     vatCents: view.vat.reduce((sum, share) => sum + share.amountCents, 0),
     totalCents: view.totalCents,
   }).toEqual(facture);
+  return view;
 }
 
 describe("le devis de la vitrine et la facture", () => {
   it("🔴 s'accordent au centime en RETRAIT, remise comprise", async () => {
-    await expectParity(
+    const view = await expectParity(
       {
         lines: [...PANIER],
         fulfillment: { method: "pickup", pickupAddressId: pickupId },
@@ -216,6 +238,9 @@ describe("le devis de la vitrine et la facture", () => {
         requestedWindow: { start: "07:00", end: "08:00" },
       },
     );
+    // L12 : la remise vient désormais d'une promotion — elle doit JOUER, sans
+    // quoi l'égalité se vérifierait sur zéro des deux côtés.
+    expect(view.discountCents).toBeGreaterThan(0);
   });
 
   it("🔴 s'accordent au centime en COURSIER, frais de zone compris", async () => {

@@ -42,6 +42,7 @@ import {
   serviceDay,
   type E2eContext,
 } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 const DAY = serviceDay(7);
@@ -135,11 +136,14 @@ async function scene(options: { readonly discounted?: boolean } = {}): Promise<S
       ville: "Val d'Isère",
       pays: "France",
       isDefault: true,
-      discountMode: discounted ? "percent" : null,
-      discountValue: discounted ? 1_000 : null,
     },
     select: { id: true },
   });
+  // La remise des pros, posée en promotion de retrait à ce point depuis L12
+  // (c'était la colonne de remise sur la fiche du site).
+  if (discounted) {
+    await poseSiteDiscount(staff(), point.id, { b2b: { mode: "percent", value: 1_000 } });
+  }
   await ctx.prisma.deliveryZone.create({
     data: { postalPrefixes: ["73150"], label: "Val d'Isère", feeMode: "amount", feeValue: 500 },
   });

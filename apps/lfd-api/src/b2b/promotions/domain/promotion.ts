@@ -198,6 +198,7 @@ function termsOf(terms: PromotionTerms): PromotionTerms {
     effect: terms.effect,
     ownFloor: terms.ownFloor,
     stacksOverMercuriale: terms.stacksOverMercuriale,
+    cumulative: terms.cumulative,
     validFrom: terms.validFrom,
     validTo: terms.validTo,
     audiences: terms.audiences,

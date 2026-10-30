@@ -1,21 +1,23 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { RecordingPublisher } from "../../../../platform/events/__tests__/recording-publisher.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
-import { PickupDiscountScopeIncludesNothingError } from "../../domain/pickup-errors.js";
+import { LegacyPromotionEditorClosedError } from "../../../promotions/domain/errors/promotion-errors.js";
 import { CreatePickupAddressCommand } from "../create-pickup-address.command.js";
 import { CreatePickupAddressHandler } from "../create-pickup-address.handler.js";
 import { FIELDS, StoredPoints } from "./pickup-address-doubles.js";
-import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 describe("CreatePickupAddressHandler — les remises par clientèle", () => {
-  it("refuse de créer un point dont une remise « seulement » n'inclut rien", async () => {
+  /**
+   * L12 : l'éditeur des remises de site est fermé. Le refus de forme (« seulement »
+   * vide) reste éprouvé au domaine ; ce geste refuse toute remise avant.
+   */
+  it("refuse de créer un point avec une remise, en nommant l'écran Promotions", async () => {
     const points = new StoredPoints(null);
     const handler = new CreatePickupAddressHandler(
       points,
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
-      new FixedPromotionsSource("legacy"),
     );
 
     await expect(
@@ -33,7 +35,7 @@ describe("CreatePickupAddressHandler — les remises par clientèle", () => {
           },
         }),
       ),
-    ).rejects.toBeInstanceOf(PickupDiscountScopeIncludesNothingError);
+    ).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
     expect(points.written).toBeNull();
   });
 });
@@ -45,7 +47,6 @@ describe("CreatePickupAddressHandler — le point GPS", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
-      new FixedPromotionsSource("legacy"),
     ).execute(
       new CreatePickupAddressCommand({
         ...FIELDS,

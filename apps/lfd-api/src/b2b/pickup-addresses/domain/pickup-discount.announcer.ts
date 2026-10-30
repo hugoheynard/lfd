@@ -13,10 +13,8 @@ import type { PickupDiscounts } from "@lfd/contracts";
  */
 export abstract class PickupDiscountAnnouncer {
   /**
-   * Les remises annoncées de ces points, par identifiant ; `null` tant que
-   * le calcul lit l'ancien chemin — les colonnes du site font alors foi.
+   * Les remises annoncées de ces points, par identifiant. Depuis L12, la
+   * seule source : les colonnes de remise du site ne font plus foi.
    */
-  abstract announced(
-    pickupIds: readonly string[],
-  ): Promise<ReadonlyMap<string, PickupDiscounts> | null>;
+  abstract announced(pickupIds: readonly string[]): Promise<ReadonlyMap<string, PickupDiscounts>>;
 }

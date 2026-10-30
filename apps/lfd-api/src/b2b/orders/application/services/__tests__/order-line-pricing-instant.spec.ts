@@ -12,7 +12,7 @@ import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-m
 import { ownPricingParties } from "../../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { Pricer } from "../../../../pricing/application/pricer.js";
 import { PricingMaterialsLoader } from "../../../../pricing/application/pricing-materials.loader.js";
-import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { DatedPublicPriceUnsupportedError } from "../../../domain/errors/dated-public-price.error.js";
 import { OrderLinePricing } from "../order-line-pricing.service.js";
 import { catalogItem, PRICED_AT } from "./shop-cart-quoting.doubles.js";
@@ -83,7 +83,7 @@ function pricingWith(history: CanonicalPriceHistoryReader): OrderLinePricing {
       volumesFor: () => Promise.resolve(new Map<string, number>()),
       committedVolumesFor: () => Promise.resolve(new Map<string, number>()),
     },
-    legacyLinePromotionSupply(),
+    noLinePromotionSupply(),
   );
   return new OrderLinePricing(
     new InMemoryProductCatalog([catalogItem("VIE-001", "Croissant", PUBLIC_PRICE, 0)]),

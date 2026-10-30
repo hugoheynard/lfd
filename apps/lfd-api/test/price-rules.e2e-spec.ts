@@ -224,7 +224,7 @@ describe("la trace figée sur la ligne", () => {
 
   it("garde le prix d'entrée ET chaque étage qui a joué", async () => {
     await seedRule({ id: "vol", stage: "volume", bp: 2000 });
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
 
@@ -238,7 +238,9 @@ describe("la trace figée sur la ligne", () => {
         scope: { type: "global", id: null },
       },
       {
-        stage: "promotion",
+        // `geste` depuis L12 (2026-10-30) : l'étage `promotion` ne s'écrit plus, et la
+        // mécanique éprouvée ici ne dépend pas de l'étage.
+        stage: "geste",
         ruleId: "promo",
         label: "promo",
         resultMillicents: 144_000,
@@ -249,7 +251,7 @@ describe("la trace figée sur la ligne", () => {
   });
 
   it("consigne que le plancher a relevé le prix", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 5000 });
     await seedFloor("global", null, 150);
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
@@ -260,7 +262,7 @@ describe("la trace figée sur la ligne", () => {
     // exactement ce qu'on veut pouvoir montrer.
     expect(line.pricingSteps).toEqual([
       {
-        stage: "promotion",
+        stage: "geste",
         ruleId: "promo",
         label: "promo",
         resultMillicents: 100_000,
@@ -276,7 +278,7 @@ describe("la trace figée sur la ligne", () => {
    * l'explication d'une facture déjà payée.
    */
   it("survit à la suppression de la règle qui l'a produite", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
     const orderId = jsonBody<{ id: string }>(await placeOrder(1)).id;
 
     await ctx.prisma.priceRule.delete({ where: { id: "promo" } });
@@ -284,7 +286,7 @@ describe("la trace figée sur la ligne", () => {
     const line = await lineOf(orderId);
     expect(line.pricingSteps).toEqual([
       {
-        stage: "promotion",
+        stage: "geste",
         ruleId: "promo",
         label: "promo",
         resultMillicents: 180_000,
@@ -299,9 +301,9 @@ describe("la trace figée sur la ligne", () => {
 
 describe("la contrainte d'exclusion", () => {
   it("refuse deux règles également spécifiques aux fenêtres qui se chevauchent", async () => {
-    await seedRule({ id: "a", stage: "promotion" });
+    await seedRule({ id: "a", stage: "geste" });
 
-    await expect(seedRule({ id: "b", stage: "promotion" })).rejects.toThrow();
+    await expect(seedRule({ id: "b", stage: "geste" })).rejects.toThrow();
   });
 
   /**
@@ -320,13 +322,13 @@ describe("la contrainte d'exclusion", () => {
   it("laisse passer deux règles qui se SUCCÈDENT sans se chevaucher", async () => {
     await seedRule({
       id: "a",
-      stage: "promotion",
+      stage: "geste",
       validFrom: new Date("2026-01-01T00:00:00.000Z"),
       validTo: new Date("2026-02-01T00:00:00.000Z"),
     });
 
     await expect(
-      seedRule({ id: "b", stage: "promotion", validFrom: new Date("2026-02-01T00:00:00.000Z") }),
+      seedRule({ id: "b", stage: "geste", validFrom: new Date("2026-02-01T00:00:00.000Z") }),
     ).resolves.toBeDefined();
   });
 
@@ -367,7 +369,7 @@ describe("une règle prise en compte sans redémarrer", () => {
     await staff()
       .post("/admin/pricing/rules")
       .send({
-        stage: "promotion",
+        stage: "geste",
         scope: { type: "global", id: null },
         audience: { type: "all", id: null },
         minQuantity: null,
@@ -386,7 +388,7 @@ describe("une règle prise en compte sans redémarrer", () => {
     const created = await staff()
       .post("/admin/pricing/rules")
       .send({
-        stage: "promotion",
+        stage: "geste",
         scope: { type: "global", id: null },
         audience: { type: "all", id: null },
         minQuantity: null,
@@ -417,7 +419,7 @@ describe("une règle change le prix facturé", () => {
   });
 
   it("une remise globale s'applique à la ligne", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const response = await placeOrder(1);
 
@@ -451,7 +453,7 @@ describe("une règle change le prix facturé", () => {
 
   it("deux étages se COMPOSENT, ils ne s'additionnent pas", async () => {
     await seedRule({ id: "vol", stage: "volume", bp: 2000 });
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const response = await placeOrder(1);
 
@@ -462,7 +464,7 @@ describe("une règle change le prix facturé", () => {
   it("une règle expirée ne s'applique plus", async () => {
     await seedRule({
       id: "vieille",
-      stage: "promotion",
+      stage: "geste",
       bp: 5000,
       validFrom: new Date("2020-01-01T00:00:00.000Z"),
       validTo: new Date("2020-02-01T00:00:00.000Z"),
@@ -484,7 +486,7 @@ describe("une règle change le prix facturé", () => {
    * réellement la ligne, pas seulement qu'il se lit.
    */
   it("le plancher relève un prix que les règles ont trop descendu", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 5000 }); // 200 → 100
+    await seedRule({ id: "promo", stage: "geste", bp: 5000 }); // 200 → 100
     await seedFloor("global", null, 150);
 
     const response = await placeOrder(1);
@@ -493,7 +495,7 @@ describe("une règle change le prix facturé", () => {
   });
 
   it("un plancher que le prix ne touche pas ne change rien", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 }); // 200 → 180
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 }); // 200 → 180
     await seedFloor("global", null, 150);
 
     const response = await placeOrder(1);
@@ -506,7 +508,7 @@ describe("une règle change le prix facturé", () => {
    * l'article sans que personne n'ait eu à le recopier dessus.
    */
   it("le plancher de la famille couvre ses articles", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 5000 });
     await seedFloor("category", E2E_FAMILIES.VIE.id, 170);
 
     const response = await placeOrder(1);
@@ -516,7 +518,7 @@ describe("une règle change le prix facturé", () => {
 
   /** Un plancher d'article REMPLACE celui de sa famille — il peut donc l'abaisser. */
   it("le plancher de l'article l'emporte sur celui de sa famille", async () => {
-    await seedRule({ id: "promo", stage: "promotion", bp: 5000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 5000 });
     await seedFloor("category", E2E_FAMILIES.VIE.id, 170);
     await seedFloor("product", SKU, 120);
 
@@ -577,7 +579,7 @@ describe("les décisions en vigueur ce jour-là que la trace n'explique pas", ()
   it("nomme une règle qui visait un autre client", async () => {
     await seedRule({
       id: "ciblee",
-      stage: "promotion",
+      stage: "geste",
       bp: 1500,
       audienceType: "company",
       audienceId: "cmp_autre",
@@ -614,7 +616,7 @@ describe("les décisions en vigueur ce jour-là que la trace n'explique pas", ()
 describe("le scellement par la mercuriale", () => {
   it("une promotion ne s'applique PAS par-dessus un tarif négocié", async () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const line = await lineOf(jsonBody<{ id: string }>(await placeOrder(1)).id);
 
@@ -638,7 +640,7 @@ describe("le scellement par la mercuriale", () => {
     // renomme, et le nom d'aujourd'hui n'est pas celui qui a facturé.
     expect(line.pricingRejected).toEqual([
       {
-        stage: "promotion",
+        stage: "geste",
         ruleId: "promo",
         label: "promo",
         scope: { type: "global", id: null },
@@ -667,7 +669,7 @@ describe("le scellement par la mercuriale", () => {
       await staff()
         .post("/admin/pricing/rules")
         .send({
-          stage: "promotion",
+          stage: "geste",
           scope: { type: "global", id: null },
           audience: { type: "all", id: null },
           minQuantity: null,
@@ -692,7 +694,7 @@ describe("le scellement par la mercuriale", () => {
     await staff()
       .post("/admin/pricing/rules")
       .send({
-        stage: "promotion",
+        stage: "geste",
         scope: { type: "global", id: null },
         audience: { type: "all", id: null },
         minQuantity: null,
@@ -708,7 +710,7 @@ describe("le scellement par la mercuriale", () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
     await seedRule({
       id: "promo",
-      stage: "promotion",
+      stage: "geste",
       bp: 1000,
       stacksOverMercuriale: true,
     });
@@ -811,7 +813,7 @@ describe("POST /orders/quote — la grille et le scellement", () => {
    */
   it("ne rend au client ni le chemin du prix, ni le plancher, ni les règles", async () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const body = jsonBody<{ lines: Record<string, unknown>[] }>(await quote(1).expect(200));
     const line = body.lines[0] ?? {};
@@ -841,7 +843,7 @@ describe("POST /orders/quote — la grille et le scellement", () => {
 describe("POST /admin/orders/quote — le scellement, côté comptoir", () => {
   it("nomme la mercuriale qui scelle, et la règle qu'elle écarte", async () => {
     await seedRule({ id: "merc", stage: "mercuriale", amountMillicents: 180_000 });
-    await seedRule({ id: "promo", stage: "promotion", bp: 1000 });
+    await seedRule({ id: "promo", stage: "geste", bp: 1000 });
 
     const body = jsonBody<{
       lines: { sealedByRuleId: string | null; sealedRuleIds: string[] }[];
@@ -1050,7 +1052,7 @@ describe("une remise en euros plus grande que le prix", () => {
     await ctx.prisma.priceRule.create({
       data: {
         id: "rule_cadeau",
-        stage: "promotion",
+        stage: "geste",
         nature: "alter",
         scopeType: "global",
         scopeId: null,
@@ -1096,7 +1098,7 @@ describe("une remise en euros plus grande que le prix", () => {
     await ctx.prisma.priceRule.create({
       data: {
         id: "rule_cadeau_2",
-        stage: "promotion",
+        stage: "geste",
         nature: "alter",
         scopeType: "global",
         scopeId: null,

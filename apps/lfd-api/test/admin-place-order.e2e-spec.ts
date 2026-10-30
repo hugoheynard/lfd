@@ -25,7 +25,8 @@ import {
   PaymentGateway,
   type PaymentIntentState,
 } from "../src/b2b/payments/domain/payment-gateway.js";
-import { bootstrapE2e, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, serviceDay, type E2eContext } from "./e2e-harness.js";
+import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 
 /**
@@ -447,19 +448,15 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
 
   it("applique la promotion en cours, et dit par quel étage elle passe", async () => {
     const { companyId } = await seedCompany(true);
-    await staff()
-      .post("/admin/pricing/rules")
-      .send({
-        stage: "promotion",
-        scope: { type: "global", id: null },
-        audience: { type: "all", id: null },
-        minQuantity: null,
-        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 2_500 },
-        label: "Promo devis",
-        validFrom: new Date(Date.now() - 86_400_000).toISOString(),
-        validTo: null,
-      })
-      .expect(201);
+    // Posée à l'écran Promotions depuis L12 (c'était une règle d'étage promotion).
+    await posePromotion(
+      staff(),
+      promotionTerms({
+        label: { fr: "Promo devis", en: null, it: null },
+        effect: { kind: "percent_off", value: 2_500 },
+        validFrom: daysAgo(1),
+      }),
+    );
 
     const quote = jsonBody<{
       lines: {
@@ -487,19 +484,15 @@ describe("POST /admin/orders/quote — ce que ça coûtera", () => {
    */
   it("annonce exactement ce que la commande facture ensuite", async () => {
     const { companyId, buyerId } = await seedCompany(true);
-    await staff()
-      .post("/admin/pricing/rules")
-      .send({
-        stage: "promotion",
-        scope: { type: "global", id: null },
-        audience: { type: "all", id: null },
-        minQuantity: null,
-        effect: { nature: "alter", direction: "decrease", mode: "percent", value: 1_000 },
-        label: "Promo comparaison",
-        validFrom: new Date(Date.now() - 86_400_000).toISOString(),
-        validTo: null,
-      })
-      .expect(201);
+    // Posée à l'écran Promotions depuis L12 (c'était une règle d'étage promotion).
+    await posePromotion(
+      staff(),
+      promotionTerms({
+        label: { fr: "Promo comparaison", en: null, it: null },
+        effect: { kind: "percent_off", value: 1_000 },
+        validFrom: daysAgo(1),
+      }),
+    );
 
     const quote = jsonBody<{ lines: { unitPriceMillicents: number }[] }>(
       await staff()

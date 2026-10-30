@@ -1,7 +1,9 @@
 import { millicentsFromCents } from "@lfd/money";
 
 import { CompanyMercuriale } from "../../../../pricing/domain/entities/company-mercuriale.js";
-import type { PriceRule } from "../../../../pricing/domain/price-rule.js";
+import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
+import type { PromotionScope } from "../../../../promotions/domain/promotion-scope.js";
 import {
   WeightBelowMinimumError,
   WeightOffStepError,
@@ -37,22 +39,18 @@ function weighed(quantity: number) {
   return { sku: "SAU-001", quantity, saleUnit: "weight" as const };
 }
 
-/** −10 % sur toute une portée, ouverte à tous. */
-function tenPercentOn(scope: PriceRule["scope"]): PriceRule {
-  return {
-    id: `promo-${scope.type}`,
-    stage: "promotion",
-    scope,
-    audience: { type: "all", id: null },
-    minQuantity: null,
+/**
+ * −10 % sur toute une portée, ouverte à tous. Une règle d'étage promotion
+ * jusqu'à L12 (2026-10-30) ; la même décision posée en promotion de ligne.
+ */
+function tenPercentOn(id: string, scope: PromotionScope): LivePromotion {
+  return livePromotion({
+    id,
     label: "Promotion",
-    stacksOverMercuriale: false,
-    nature: "alter",
-    alteration: { direction: "decrease", mode: "percent", bp: 1_000 },
+    effect: { kind: "percent_off", basisPoints: 1_000 },
     validFrom: new Date("2020-01-01T00:00:00.000Z"),
-    validTo: null,
-    suspendedFrom: null,
-  };
+    scope,
+  });
 }
 
 describe("ShopCartQuoting — une ligne au poids", () => {
@@ -87,11 +85,14 @@ describe("ShopCartQuoting — une ligne au poids", () => {
   });
 
   it("écarte une règle globale et une règle de famille, que le croissant prend", async () => {
-    const rules = [
-      tenPercentOn({ type: "global", id: null }),
-      tenPercentOn({ type: "category", id: "fam-pain" }),
+    const promotions = [
+      tenPercentOn("promo-global", { mode: "all_except", rules: [] }),
+      tenPercentOn("promo-category", {
+        mode: "only",
+        rules: [{ target: "category", targetId: "fam-pain", eligible: true, targetRank: null }],
+      }),
     ];
-    const { view } = await quoting({ decisions: { rules } }).quote({
+    const { view } = await quoting({ decisions: { promotions } }).quote({
       ...PRO,
       payload: {
         lines: [weighed(1_000), { sku: "VIE-001", quantity: 10 }],

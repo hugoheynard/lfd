@@ -37,6 +37,7 @@ import { ProductCatalogReader } from "../src/b2b/catalog/domain/ports/product-ca
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { SchemaOpsCounter } from "../src/platform/database/schema-ops.counter.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
 import { attachTo, createCompany, createUser } from "./factories.js";
 import { PUBLIC_VIEWER, staffViewer } from "../src/b2b/catalog/domain/catalog-viewer.js";
 
@@ -172,28 +173,12 @@ function seedLadderFromOne(id = "ladder_pricer") {
   });
 }
 
-/** Une promotion publique de −15 %, sur tout le catalogue. */
-function seedPromotion(id = "rule_pricer_promo") {
-  return ctx.prisma.priceRule.create({
-    data: {
-      id,
-      stage: "promotion",
-      nature: "alter",
-      scopeType: "global",
-      scopeId: null,
-      audienceType: "all",
-      audienceId: null,
-      minQuantity: null,
-      direction: "decrease",
-      mode: "percent",
-      value: 1_500,
-      validFrom: new Date("2026-01-01T00:00:00.000Z"),
-      validTo: null,
-      label: "Promotion de printemps",
-      stacksOverMercuriale: false,
-      createdBy: "e2e",
-    },
-  });
+/**
+ * Une promotion publique de −15 %, sur tout le catalogue — posée par l'écran
+ * Promotions depuis L12 (c'était une règle d'étage promotion écrite en base).
+ */
+function seedPromotion(): Promise<string> {
+  return posePromotion(staff(), promotionTerms());
 }
 
 /** Pose une mercuriale par la route staff — le chemin réel, contraintes comprises. */
@@ -507,13 +492,13 @@ describe("les refus", () => {
 describe("la trace", () => {
   it("🔴 emporte les étages et les règles évincées", async () => {
     const { companyId } = await customerOf("auth0|pricer_trace");
-    await seedPromotion();
+    const promotionId = await seedPromotion();
     await seedLadderFromOne();
 
     const priced = await priceOne(SKU, companyId, 1);
 
     expect(priced.steps.map((step) => step.stage)).toEqual(["volume", "promotion"]);
-    expect(priced.steps.map((step) => step.ruleId)).toEqual(["ladder_pricer", "rule_pricer_promo"]);
+    expect(priced.steps.map((step) => step.ruleId)).toEqual(["ladder_pricer", promotionId]);
     // Composition, pas addition : −10 % puis −15 % font −23,5 %.
     expect(priced.finalMillicents).toBe(Math.round(priced.canonicalMillicents * 0.9 * 0.85));
   });

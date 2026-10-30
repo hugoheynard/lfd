@@ -267,11 +267,10 @@ export async function bootstrapE2e(options: E2eOptions = {}): Promise<E2eContext
         // partout, qui accuserait le mur au lieu du harnais. Ils sont remis AVANT
         // l'opérateur des suites, que la clé étrangère `role_key` y rattache.
         await ensureStaffRoleDefinitions(prisma);
-        // La source du calcul des promotions est posée par migration
-        // (`20261031120000_la_reprise_des_promotions`, à `legacy`) et le
+        // La source du calcul des promotions est posée par migration (à
+        // `promotions` depuis la bascule, seule valeur admise depuis L12) et le
         // `TRUNCATE` l'emporte : remise ici, pour que son absence ne soit
-        // jamais un état que le calcul rencontre (choix du 2026-10-30, plutôt
-        // qu'un lecteur qui tiendrait l'absence pour `legacy`).
+        // jamais un état que le calcul rencontre.
         await ensurePromotionsSource(prisma);
         // Le référentiel d'allergènes est posé par migration, comme les contextes
         // de vente, et préservé par le `TRUNCATE` pour la même raison. Ne reste
@@ -548,21 +547,16 @@ async function ensureStaffRoleDefinitions(prisma: PrismaService): Promise<void> 
 }
 
 /**
- * La ligne `promotions_source`, remise à `legacy` à chaque `reset()`.
- *
- * ⚠️ PAS à l'identique des migrations depuis la bascule (L8,
- * `20261031130000`), qui la passe à `promotions` : une vingtaine de suites
- * posent encore les promotions par les anciens gestes (règle d'étage
- * promotion, remise sur la fiche d'un site), que la bascule ferme. Elles
- * éprouvent l'ancien chemin jusqu'au lot L12, qui le retire ; les suites du
- * nouveau chemin posent `promotions` elles-mêmes (`promotions-equality`,
- * `promotions-bascule`, `promotions-admin`) — décidé le 2026-10-30.
+ * La ligne `promotions_source`, remise à `promotions` à chaque `reset()` —
+ * à l'identique des migrations depuis L12 (`20261031150000`), dont le CHECK
+ * n'admet plus qu'elle. Les suites qui posaient leurs promotions par les
+ * anciens gestes les posent désormais par les promotions.
  */
 async function ensurePromotionsSource(prisma: PrismaService): Promise<void> {
   await prisma.promotionSetting.upsert({
     where: { key: "promotions_source" },
-    create: { key: "promotions_source", value: "legacy" },
-    update: { value: "legacy" },
+    create: { key: "promotions_source", value: "promotions" },
+    update: { value: "promotions" },
   });
 }
 

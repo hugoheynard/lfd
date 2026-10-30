@@ -1,7 +1,6 @@
 import {
   BasketPromotionsWouldCombineError,
   OverlappingPromotionError,
-  PromotionsNotEditableYetError,
   PromotionWrongSurfaceError,
 } from "../../../domain/errors/promotion-errors.js";
 import { PRICING_SURFACE, type PromotionSurface } from "../../../domain/promotion-surface.js";
@@ -30,39 +29,6 @@ function onlyFamily(familyId: string): PromotionTerms["scope"] {
     rules: [{ target: "category", targetId: familyId, eligible: true, targetRank: null }],
   };
 }
-
-describe("le verrou d'avant la bascule (L7)", () => {
-  it.each(["legacy", "shadow"] as const)(
-    "en source %s, la pose rend le refus nommé et n'écrit rien",
-    async (source) => {
-      const s = writeScene(FROM, source);
-      await expect(
-        s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE)),
-      ).rejects.toThrow(PromotionsNotEditableYetError);
-      expect(s.promotions.acts).toEqual([]);
-    },
-  );
-
-  it("en source legacy, une promotion reprise ne se suspend ni ne s'archive", async () => {
-    const open = writeScene(FROM);
-    const id = await open.pose.execute(
-      new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE),
-    );
-    const locked = writeScene(FROM, "legacy");
-    const posed = open.promotions.stored.get(id);
-    if (posed === undefined) {
-      throw new TypeError("la pose aurait dû écrire");
-    }
-    locked.promotions.stored.set(id, posed);
-    await expect(
-      locked.pause.execute(new PausePromotionCommand(id, STAFF, null, PRICING_SURFACE)),
-    ).rejects.toThrow(PromotionsNotEditableYetError);
-    await expect(
-      locked.archive.execute(new ArchivePromotionCommand(id, STAFF, "fin", PRICING_SURFACE)),
-    ).rejects.toThrow(PromotionsNotEditableYetError);
-    expect(locked.promotions.acts).toEqual([]);
-  });
-});
 
 describe("la surface et son droit (§ 13.9)", () => {
   it("refuse de poser une promotion de retrait à un point depuis l'écran Promotions", async () => {
@@ -192,6 +158,21 @@ describe("le refus de chevauchement (§ 13.2)", () => {
     await expect(
       s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF, COEUR)),
     ).rejects.toThrow("« Pain de seigle au poids »");
+  });
+
+  /** § 16 : deux cumulables se combinent, elles ne se disputent rien. */
+  it("laisse deux cumulables se recouvrir ; refuse une non cumulable face à une cumulable", async () => {
+    const s = writeScene(FROM);
+    const pose = (terms: PromotionTerms) =>
+      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    await pose(lineTerms({ internalName: "Cumul A", cumulative: true }));
+    await pose(lineTerms({ internalName: "Cumul B", cumulative: true }));
+    expect(s.promotions.stored.size).toBe(2);
+
+    await expect(pose(lineTerms({ internalName: "Seule" }))).rejects.toThrow(
+      OverlappingPromotionError,
+    );
+    expect(s.promotions.stored.size).toBe(2);
   });
 
   it("une rivale en pause garde sa place ; une archivée la rend", async () => {

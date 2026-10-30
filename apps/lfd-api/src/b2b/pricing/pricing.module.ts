@@ -28,9 +28,7 @@ import { BasketPromotionReader } from "../promotions/domain/ports/basket-promoti
 import { LinePromotionReader } from "../promotions/domain/ports/line-promotion.reader.js";
 import { PromotionCompanyStatusReader } from "../promotions/domain/ports/promotion-company-status.reader.js";
 import { PromotionPrincipalReader } from "../promotions/domain/ports/promotion-principal.reader.js";
-import { PromotionShadowJournal } from "../promotions/domain/ports/promotion-shadow.journal.js";
 import { PromotionsSourceReader } from "../promotions/domain/ports/promotions-source.reader.js";
-import { LoggedPromotionShadowJournal } from "../promotions/infrastructure/logged-promotion-shadow.journal.js";
 import {
   PrismaBasketPromotionReader,
   PrismaLinePromotionReader,
@@ -84,7 +82,6 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     { provide: BasketPromotionReader, useClass: PrismaBasketPromotionReader },
     { provide: PromotionCompanyStatusReader, useClass: PrismaPromotionCompanyStatusReader },
     { provide: PromotionPrincipalReader, useClass: PrismaPromotionPrincipalReader },
-    { provide: PromotionShadowJournal, useClass: LoggedPromotionShadowJournal },
   ],
   exports: [
     PricingMaterialsLoader,
@@ -101,12 +98,11 @@ import { PrismaPromotionsSourceReader } from "../promotions/infrastructure/prism
     VolumeCommitmentReader,
     CustomerVolumeReader,
     PricingPartiesResolver,
-    // Le point PANIER (les ajustements de la commande) lit la même source, les
-    // mêmes faits et le même journal que le point ligne.
+    // Le point PANIER (les ajustements de la commande) lit les mêmes faits que
+    // le point ligne ; la source reste lue par l'écran Promotions (garde-fou, L12).
     PromotionsSourceReader,
     BasketPromotionReader,
     PromotionAudienceFactsResolver,
-    PromotionShadowJournal,
     // Le tableau de tarification lit les promotions de ligne comme la caisse (L8).
     LinePromotionSupply,
     // Le rayon mentionne les promotions de panier ; le devis d'un invité lit

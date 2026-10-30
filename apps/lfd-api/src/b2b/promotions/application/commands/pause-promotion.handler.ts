@@ -18,7 +18,7 @@ export class PausePromotionHandler implements ICommandHandler<PausePromotionComm
   async execute(command: PausePromotionCommand): Promise<void> {
     const now = this.clock.now();
     const promotion = await mustLoadPromotion(this.promotions, command.id);
-    await this.guard.admitsTouch(command.surface, promotion);
+    this.guard.admitsTouch(command.surface, promotion);
     const paused = promotion.pause(command.staffUserId, now);
     await this.promotions.save(
       paused,

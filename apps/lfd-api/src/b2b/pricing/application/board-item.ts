@@ -16,9 +16,7 @@ import {
   type ScopedPriceFloor,
 } from "../domain/price-rule.js";
 import type { VolumeLadder } from "../domain/volume-ladder.js";
-import type { LinePromotionsForLot } from "../../promotions/application/line-promotion-supply.js";
 import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
-import { servesLegacy } from "../../promotions/domain/promotions-source.js";
 
 /**
  * **Ce qui ne dépend pas de l'article, calculé une seule fois par lecture.**
@@ -78,8 +76,8 @@ export async function boardMaterials(
    */
   parties: PricingParties = NO_PARTIES,
   /**
-   * Les promotions du point ligne admises pour cette lecture — vides tant
-   * que la source sert l'ancien chemin. Cf. {@link boardDecisions}.
+   * Les promotions du point ligne admises pour cette lecture. Cf.
+   * {@link boardDecisions}.
    */
   promotions: readonly AdmittedPromotion[] = [],
 ): Promise<BoardMaterials> {
@@ -103,8 +101,7 @@ export async function boardMaterials(
     // engagement ouvrirait un palier que la vitrine ne promet pas.
     //
     // Les promotions de ligne (plan des promotions, L8) : celles que
-    // `boardDecisions` a retenues — aucune sous l'ancien chemin, où les
-    // règles d'étage promotion disent la même chose.
+    // `boardDecisions` a retenues.
     pricer: await pricerOver(
       { rules, floors, ladders, mercuriale, promotions, lens: "unproven" },
       parties,
@@ -114,24 +111,20 @@ export async function boardMaterials(
 }
 
 /**
- * **Ce que le tableau lit, selon la source des promotions** (plan
+ * **Ce que le tableau lit** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lot L8) — la même bascule que le chargeur de la caisse
- * (`PricingMaterialsLoader`) : sous `legacy` et à l'ombre, les règles telles
- * quelles et aucune promotion ; sous `promotions`, les règles SANS l'étage
- * promotion, qu'aucun prix ne lit plus, et les promotions de ligne admises.
- * Sans ça, l'écran montrerait une règle que la caisse ignore.
+ * § 13.5, lots L8 et L12) — comme le chargeur de la caisse
+ * (`PricingMaterialsLoader`) : les règles SANS l'étage promotion, qu'aucun
+ * prix ne lit plus, et les promotions de ligne admises. Sans ça, l'écran
+ * montrerait une règle que la caisse ignore.
  */
 export function boardDecisions(
   loadedRules: readonly LoadedRule[],
-  promoted: LinePromotionsForLot,
+  promotions: readonly AdmittedPromotion[],
 ): { readonly rules: readonly LoadedRule[]; readonly promotions: readonly AdmittedPromotion[] } {
-  if (servesLegacy(promoted.source)) {
-    return { rules: loadedRules, promotions: [] };
-  }
   return {
     rules: loadedRules.filter((entry) => entry.rule.stage !== "promotion"),
-    promotions: promoted.promotions,
+    promotions,
   };
 }
 

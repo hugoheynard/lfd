@@ -1,4 +1,4 @@
-import type { CustomerAudience, PickupAddressView } from "@lfd/contracts";
+import { NO_PICKUP_DISCOUNTS, type CustomerAudience, type PickupAddressView } from "@lfd/contracts";
 import { Inject, Injectable } from "@nestjs/common";
 
 import { PickupAddressRepository } from "../domain/pickup-address.repository.js";
@@ -7,12 +7,12 @@ import { PrismaPickupAddressRepository } from "./prisma-pickup-address.repositor
 
 /**
  * **Les points proposés, avec la remise que la caisse appliquera** (plan des
- * promotions, § 14 B5, lot L8) — l'adaptateur Prisma, dont la remise est
- * remplacée par l'annonce des promotions une fois la bascule faite.
+ * promotions, § 14 B5, lots L8 et L12) — l'adaptateur Prisma, dont la
+ * remise est remplacée par l'annonce des promotions.
  *
  * Un décorateur plutôt qu'une branche dans l'adaptateur : la lecture des
- * sites ne sait rien des promotions, et le retrait de l'ancien chemin (L12)
- * se fera en retirant ce fichier, pas en démêlant l'autre.
+ * sites ne sait rien des promotions. Depuis L12, les colonnes de remise du
+ * site ne sont plus jamais servies — un point sans promotion n'annonce rien.
  *
  * Tous les lecteurs du port en héritent — la liste de la boutique, la
  * caisse, les heures limites : un seul endroit dit la remise d'un point.
@@ -44,12 +44,9 @@ export class AnnouncedPickupAddressRepository extends PickupAddressRepository {
       return points;
     }
     const announced = await this.announcer.announced(points.map((point) => point.id));
-    if (announced === null) {
-      return points;
-    }
     return points.map((point) => ({
       ...point,
-      discounts: announced.get(point.id) ?? point.discounts,
+      discounts: announced.get(point.id) ?? NO_PICKUP_DISCOUNTS,
     }));
   }
 }

@@ -15,12 +15,22 @@ import request from "supertest";
 
 import { snapshotOf } from "./catalog-ingest-fixtures.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { bootstrapE2e, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { poseSiteDiscount } from "./promotion-fixtures.js";
+
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+};
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  // Le staff pose les promotions par leur écran (L12) : son jeton est doublé.
+  ctx = await bootstrapE2e({
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+  });
 });
 
 afterAll(async () => {
@@ -78,14 +88,14 @@ async function seedPickup(mode: "percent" | "amount", value: number): Promise<st
       ville: "Paris",
       pays: "France",
       isDefault: true,
-      discountMode: mode,
-      discountValue: value,
-      // La remise des particuliers a ses colonnes depuis le 2026-10-22 : la
-      // même, comme la reprise l'a recopiée pour tout point ouvert aux deux.
-      b2cDiscountMode: mode,
-      b2cDiscountValue: value,
     },
     select: { id: true },
+  });
+  // La même remise pour les deux clientèles, posée en promotions de retrait à
+  // ce point depuis L12 (c'étaient les colonnes de remise de la fiche).
+  await poseSiteDiscount(ctx.asSub(E2E_STAFF_SUB), point.id, {
+    b2b: { mode, value },
+    b2c: { mode, value },
   });
   return point.id;
 }

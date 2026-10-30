@@ -35,6 +35,10 @@ model Promotion {
   ownFloorMode         String?   @map("own_floor_mode")
   ownFloorValue        Int?      @map("own_floor_value")
   stacksOverMercuriale Boolean   @default(false) @map("stacks_over_mercuriale")
+  /// « Cumulable » (plan des promotions, § 16) — point ligne seulement
+  /// (CHECK `promotions_cumulative_line_only`, migration
+  /// `20261031160000_les_promotions_cumulables`).
+  cumulative           Boolean   @default(false)
   /// Borne basse incluse, haute exclue ; `NULL` = sans fin.
   validFrom            DateTime  @map("valid_from") @db.Timestamptz(3)
   validTo              DateTime? @map("valid_to") @db.Timestamptz(3)

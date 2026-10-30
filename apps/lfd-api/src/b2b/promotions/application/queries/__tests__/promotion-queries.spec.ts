@@ -83,11 +83,11 @@ const FOR_CO_1 = posed(
 );
 const ALL = [ACTIVE, SCHEDULED, ENDED, PAUSED, ARCHIVED, AT_COEUR, FOR_CO_1];
 
-function list(source: "legacy" | "promotions" = "legacy") {
+function list() {
   return new ListPromotionsHandler(
     new FixedBrowser(ALL),
     new FixedPromotionCatalogue(),
-    new FixedPromotionsSource(source),
+    new FixedPromotionsSource(),
     new FixedClock(ASKED),
   );
 }
@@ -106,11 +106,10 @@ describe("ListPromotionsHandler", () => {
     });
   });
 
-  it("dit l'écran en lecture seule avant la bascule, ouvert après", async () => {
-    const before = await list("legacy").execute(new ListPromotionsQuery(null));
-    expect(before).toMatchObject({ source: "legacy", editable: false });
-    const after = await list("promotions").execute(new ListPromotionsQuery(null));
-    expect(after).toMatchObject({ source: "promotions", editable: true });
+  // L12 : le cas « en lecture seule avant la bascule » est retiré avec l'ancien chemin.
+  it("dit l'écran ouvert : la source ne vaut plus que `promotions`", async () => {
+    const view = await list().execute(new ListPromotionsQuery(null));
+    expect(view).toMatchObject({ source: "promotions", editable: true });
   });
 
   it("restreint au point de retrait demandé (le raccourci du site)", async () => {

@@ -314,4 +314,13 @@ describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
     );
     expect(priced.steps.map((step) => step.ruleId)).toEqual(["a_twin"]);
   });
+
+  /** § 16.1 : la case « Cumulable » voyage jusqu'à la chaîne, et seulement cochée. */
+  it("porte « Cumulable » quand la promotion la coche, et rien sinon", () => {
+    const ticked = promotionAsRule(admittedPromotion({ cumulative: true }), context());
+    const plain = promotionAsRule(admittedPromotion(), context());
+
+    expect(ticked?.cumulative).toBe(true);
+    expect(plain).not.toHaveProperty("cumulative");
+  });
 });

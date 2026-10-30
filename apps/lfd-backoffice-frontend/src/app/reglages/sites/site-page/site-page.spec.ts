@@ -24,6 +24,7 @@ import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SitesService } from '../sites.service';
 import { SitePage } from './site-page';
+import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 
 /** 8 € pour une clientèle, sans règle de portée. */
 const EIGHT_EUROS = {
@@ -151,6 +152,16 @@ async function mount(
         useValue: { readPublic: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
       },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
+      // L12 : la source ne vaut plus que `promotions`. Doublée ici — sans quoi
+      // la carte interrogeait l'API réellement joignable (celle de dev en
+      // local, aucune en CI) et le cas dépendait du poste.
+      {
+        provide: PromotionsService,
+        useValue: {
+          source: () => Promise.resolve({ source: 'promotions', editable: true }),
+          list: () => Promise.resolve({ source: 'promotions', editable: true, promotions: [] }),
+        },
+      },
     ],
   });
   const fixture = TestBed.createComponent(SitePage);
@@ -283,20 +294,22 @@ describe('SitePage — les réductions, une carte par clientèle', () => {
     expect(fixture.nativeElement.textContent).toContain('Particuliers');
   });
 
-  it('retirer la réduction des pros n’enregistre qu’elle, sur le lieu ENREGISTRÉ', async () => {
+  /**
+   * RÉÉCRIT en L12 (2026-10-30) : il éprouvait l'écriture d'une réduction
+   * depuis sa carte. Depuis la bascule, la réduction d'un site se règle dans
+   * l'écran Promotions et l'API refuse cette écriture : la carte est en
+   * lecture, et « Enregistrer » n'envoie rien.
+   */
+  it('la réduction des pros est en lecture : retirer puis enregistrer n’envoie rien', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    identity(fixture)['draft'].update((d) => ({ ...d, ligne1: 'brouillon de la page' }));
+    await fixture.whenStable();
+    fixture.detectChanges();
     const card = audienceCard(fixture, 0);
     card['setDiscount'](null);
 
     await card['save']();
 
-    expect(pickups.updated).toHaveLength(1);
-    expect(pickups.updated[0]).toMatchObject({
-      ligne1: LABO.ligne1,
-      discounts: { b2b: null, b2c: null },
-    });
-    expect(pickups.updated[0] && 'gps' in pickups.updated[0]).toBe(false);
+    expect(pickups.updated).toEqual([]);
   });
 
   it('crée un site sans réduction : elle se règle une fois qu’il existe', async () => {

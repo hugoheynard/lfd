@@ -1,4 +1,9 @@
-import type { CustomerAudience, PickupAddressView, PickupDiscounts } from "@lfd/contracts";
+import {
+  NO_PICKUP_DISCOUNTS,
+  type CustomerAudience,
+  type PickupAddressView,
+  type PickupDiscounts,
+} from "@lfd/contracts";
 
 import { FIELDS } from "../../application/__tests__/pickup-address-doubles.js";
 import { PickupAddressRepository } from "../../domain/pickup-address.repository.js";
@@ -44,29 +49,19 @@ class TwoPoints extends PickupAddressRepository {
 class FixedAnnouncer extends PickupDiscountAnnouncer {
   readonly asked: (readonly string[])[] = [];
 
-  constructor(private readonly answer: ReadonlyMap<string, PickupDiscounts> | null) {
+  constructor(private readonly answer: ReadonlyMap<string, PickupDiscounts>) {
     super();
   }
 
-  announced(pickupIds: readonly string[]): Promise<ReadonlyMap<string, PickupDiscounts> | null> {
+  announced(pickupIds: readonly string[]): Promise<ReadonlyMap<string, PickupDiscounts>> {
     this.asked.push(pickupIds);
     return Promise.resolve(this.answer);
   }
 }
 
-describe("AnnouncedPickupAddressRepository — la remise annoncée suit la source", () => {
-  it("avant la bascule, rend les colonnes du site", async () => {
-    const repository = new AnnouncedPickupAddressRepository(
-      new TwoPoints(),
-      new FixedAnnouncer(null),
-    );
-
-    const listed = await repository.list(null);
-
-    expect(listed.map((entry) => entry.discounts)).toEqual([SITE_COLUMNS, SITE_COLUMNS]);
-  });
-
-  it("après, rend l'annonce des promotions — à la liste comme à la caisse", async () => {
+describe("AnnouncedPickupAddressRepository — la remise annoncée vient des promotions", () => {
+  // L12 : « avant la bascule, les colonnes du site » est retiré avec l'ancien chemin.
+  it("rend l'annonce des promotions — à la liste comme à la caisse", async () => {
     const announcer = new FixedAnnouncer(new Map([["coeur", FROM_PROMOTIONS]]));
     const repository = new AnnouncedPickupAddressRepository(new TwoPoints(), announcer);
 
@@ -74,6 +69,8 @@ describe("AnnouncedPickupAddressRepository — la remise annoncée suit la sourc
     const resolved = await repository.resolve("coeur");
 
     expect(listed[0]?.discounts).toEqual(FROM_PROMOTIONS);
+    // Un point sans promotion n'annonce rien : ses colonnes ne font plus foi (L12).
+    expect(listed[1]?.discounts).toEqual(NO_PICKUP_DISCOUNTS);
     expect(resolved?.discounts).toEqual(FROM_PROMOTIONS);
     expect(announcer.asked).toEqual([["coeur", "gare"], ["coeur"]]);
   });

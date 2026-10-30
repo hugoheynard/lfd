@@ -42,6 +42,7 @@ export interface PromotionRow {
   readonly ownFloorMode: string | null;
   readonly ownFloorValue: number | null;
   readonly stacksOverMercuriale: boolean;
+  readonly cumulative: boolean;
   readonly validFrom: Date;
   readonly validTo: Date | null;
   readonly pausedAt: Date | null;
@@ -117,6 +118,7 @@ export function toDomain(
     effect,
     ownFloor: ownFloorOf(row, unreadable),
     stacksOverMercuriale: row.stacksOverMercuriale,
+    cumulative: row.cumulative,
     validFrom: row.validFrom,
     validTo: row.validTo,
     audiences: audiencesOf(targets, unreadable),
@@ -164,6 +166,7 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     ownFloorMode: state.ownFloor?.mode ?? null,
     ownFloorValue: state.ownFloor?.value ?? null,
     stacksOverMercuriale: state.stacksOverMercuriale,
+    cumulative: state.cumulative,
     validFrom: state.validFrom,
     validTo: state.validTo,
     pausedAt: state.paused?.at ?? null,

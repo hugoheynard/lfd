@@ -359,7 +359,7 @@ Choix faits au bâti, que le plan ne précisait pas :
   convertie à son taux, le TTC obtenu redécoupé par taux. Le bon se borne au
   TTC net après remise ; le port en pourcentage prend pour assiette le TTC
   brut des marchandises, comme le HT brut côté pro
-  (`cart-adjustments.service.ts:232`).
+  (`cart-adjustments.service.ts:218`).
 - **L'arrondi d'un pourcentage** est récrit en entiers dans `@lfd/money`
   (`percentOf`), qui ne dépend pas de `@lfd/contracts` où vit
   `cartAdjustmentCents`. Doublon assumé ; **C2 ajoute un test, dans l'API qui

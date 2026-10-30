@@ -15,12 +15,22 @@ import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { DurablePublisher } from "../src/platform/outbox/durable-publisher.js";
 import { deliverAsFacts } from "./catalog-facts-delivery.js";
 import { CATEGORY, PUBLIC_LABEL, snapshotOf } from "./catalog-ingest-fixtures.js";
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
+import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
+
+const stubAdminVerifier = {
+  verify: (): Promise<{ subject: string; scopes: string[] }> =>
+    Promise.resolve({ subject: E2E_STAFF_SUB, scopes: [] }),
+};
 
 let ctx: E2eContext;
 
 beforeAll(async () => {
-  ctx = await bootstrapE2e();
+  // Le staff pose les promotions par leur écran (L12) : son jeton est doublé.
+  ctx = await bootstrapE2e({
+    overrides: [{ token: AdminTokenVerifier, value: stubAdminVerifier }],
+  });
 });
 
 afterAll(async () => {
@@ -355,26 +365,40 @@ describe("la vitrine publique", () => {
  */
 describe("la vitrine publique sert le prix RÉSOLU", () => {
   /**
-   * Une règle posée en direct.
+   * Une décision publique sur tout le catalogue. Une BAISSE est une promotion,
+   * posée à l'écran Promotions depuis L12 (c'était une règle d'étage
+   * promotion) ; une HAUSSE n'en est pas une — elle reste une règle de prix,
+   * d'étage `geste`, posée en direct.
    *
    * `ctx.reset()` vide le cache des matériaux (`e2e-harness.ts`), donc un semis
    * direct est vu par la lecture suivante — sans quoi ces cas passeraient au
    * vert sur les matériaux du test d'avant.
    */
-  function seedRule(over: {
+  async function seedRule(over: {
     id: string;
     direction: "increase" | "decrease";
     bp: number;
   }): Promise<unknown> {
+    if (over.direction === "decrease") {
+      // 🔴 « tout le monde » : c'est TOUT le sujet. Une promotion publique ne
+      // demande aucun client, et s'applique à un visiteur.
+      return posePromotion(
+        ctx.asSub(E2E_STAFF_SUB),
+        promotionTerms({
+          internalName: over.id,
+          label: { fr: over.id, en: null, it: null },
+          effect: { kind: "percent_off", value: over.bp },
+          validFrom: daysAgo(10),
+        }),
+      );
+    }
     return ctx.prisma.priceRule.create({
       data: {
         id: over.id,
-        stage: "promotion",
+        stage: "geste",
         nature: "alter",
         scopeType: "global",
         scopeId: null,
-        // 🔴 `all` : c'est TOUT le sujet. Une promotion publique ne demande
-        // aucun client, et `matchesAudience` la rend applicable à un visiteur.
         audienceType: "all",
         audienceId: null,
         minQuantity: null,

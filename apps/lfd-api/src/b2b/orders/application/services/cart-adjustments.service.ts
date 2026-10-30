@@ -1,8 +1,6 @@
 import {
   cartAdjustmentCents,
   deliveryOpenTo,
-  pickupDiscountFor,
-  pickupDiscountHasRules,
   pickupOpenTo,
   preselectedPickupId,
   type CustomerAudience,
@@ -21,19 +19,9 @@ import {
   PickupNotOfferedToAudienceError,
 } from "../../domain/errors/order-errors.js";
 import { PickupChoiceRequiredError } from "../../domain/errors/pickup-choice-errors.js";
-import {
-  type OrderLineClassification,
-  OrderLineClassificationReader,
-} from "../../domain/ports/order-line-classification.reader.js";
+import type { OrderLineClassification } from "../../domain/ports/order-line-classification.reader.js";
 import { PreferredPickupReader } from "../../domain/ports/preferred-pickup.reader.js";
-import {
-  ineligibleSkusOf,
-  pickupDiscountCentsOf,
-} from "../../domain/services/pickup-discount-eligibility.js";
-import {
-  NO_BASKET_PROMOTION,
-  type BasketLine,
-} from "../../domain/services/basket-promotion-choice.js";
+import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
 import { BasketPromotions } from "./basket-promotions.service.js";
 import type { PickupBuyer, ResolvedDelivery, ResolvedPickup } from "./cart-adjustments.types.js";
 
@@ -81,7 +69,6 @@ export class CartAdjustments {
     private readonly zones: DeliveryZoneRepository,
     private readonly delivery: DeliveryAvailabilityReader,
     private readonly preferences: PreferredPickupReader,
-    private readonly classifications: OrderLineClassificationReader,
     private readonly basket: BasketPromotions,
   ) {}
 
@@ -101,8 +88,8 @@ export class CartAdjustments {
    *
    * La remise porte sur les seules lignes qu'elle couvre (R1 du plan des
    * exclusions) : `known` est le rangement que la passation a déjà lu pour le
-   * figer ; sans lui (le devis), il n'est lu que si la remise a des règles —
-   * une remise sur tout le panier n'a rien à demander au catalogue.
+   * figer ; sans lui (le devis), il n'est lu que si une promotion a des
+   * règles — une remise sur tout le panier n'a rien à demander au catalogue.
    *
    * Un site réservé à l'autre clientèle (Hugo, 2026-10-15) est refusé ICI,
    * pour que le devis et les trois passations — client, boutique, équipe —
@@ -113,9 +100,9 @@ export class CartAdjustments {
    * @throws {PickupChoiceRequiredError} aucun point choisi, et aucun ne s'impose.
    * @throws {PickupClosedForAudienceError} le site ne remet pas à cette clientèle.
    *
-   * 🔴 Depuis le lot L5 du plan des promotions, ce qui sort est ce que la
-   * SOURCE sert (`BasketPromotions.served`) : la remise du site en `legacy` et
-   * à l'ombre, la promotion panier du point retenu en `promotions`.
+   * 🔴 Depuis le lot L12 du plan des promotions, la remise est la promotion
+   * panier du point retenu (`BasketPromotions.resolve`) : les colonnes de
+   * remise du site ne sont plus lues pour le prix.
    */
   async forPickup(
     pickupAddressId: string | null,
@@ -137,23 +124,7 @@ export class CartAdjustments {
       const others = await this.pickups.list(audience);
       throw new PickupClosedForAudienceError(point.label, audience, others.length > 0);
     }
-    const discount = pickupDiscountFor(point, audience);
-    const ruled = discount !== null && pickupDiscountHasRules(discount);
-    const classifications = !ruled
-      ? new Map<string, OrderLineClassification>()
-      : (known ?? (await this.classifications.classify(lines.map((line) => line.sku))));
-    const ineligibleSkus = ineligibleSkusOf(discount, lines, classifications);
-    const legacy = {
-      // Bornée à ce qu'elle remise (`discountCentsOf`) : l'assiette éligible.
-      // Les frais de zone, juste en dessous, ne le sont pas — une course peut
-      // coûter plus cher qu'un petit panier.
-      discountCents: pickupDiscountCentsOf(discount, lines, ineligibleSkus),
-      discountAdjustment: discount?.adjustment ?? null,
-      ineligibleSkus,
-      promotionId: null,
-      label: null,
-    };
-    const served = await this.basket.served(legacy, {
+    const served = await this.basket.resolve({
       lines,
       buyer: {
         companyId,
@@ -162,7 +133,7 @@ export class CartAdjustments {
         // Le point RETENU — choisi ou présélectionné (§ 13.6).
         fulfillment: { method: "pickup", pickupId: point.id },
       },
-      known: ruled ? classifications : known,
+      known,
     });
     return {
       point,
@@ -209,9 +180,8 @@ export class CartAdjustments {
    * L'ouverture se juge AVANT la zone : fermée, la livraison l'est partout, et
    * répondre « on ne livre pas ce code postal » mentirait sur la raison.
    *
-   * La promotion de livraison (L10) passe par la même source que celle du
-   * retrait (`BasketPromotions.served`) : rien sous `legacy`, la promotion
-   * « en livraison » retenue sous `promotions`. Les frais n'en sont pas
+   * La promotion de livraison (L10) passe par le même chemin que celle du
+   * retrait (`BasketPromotions.resolve`). Les frais n'en sont pas
    * l'assiette : elle porte sur les marchandises, comme celle du retrait.
    *
    * @throws {DeliveryClosedForAudienceError} la livraison est fermée à la clientèle.
@@ -232,7 +202,7 @@ export class CartAdjustments {
       throw new NoDeliveryZoneForPostalCodeError(codePostal);
     }
     const subtotalCents = lines.reduce((sum, line) => sum + line.htCents, 0);
-    const discount = await this.basket.served(NO_BASKET_PROMOTION, {
+    const discount = await this.basket.resolve({
       lines,
       buyer: {
         companyId: buyer.companyId,

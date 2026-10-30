@@ -7,7 +7,6 @@ import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { PricingRuleRepository } from "../../domain/ports/pricing-rule.repository.js";
 import { RenamePriceRuleCommand } from "./rename-price-rule.command.js";
 import { actOf, mustLoadEditable } from "./rule-lifecycle-support.js";
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 
 /**
  * **Renommer** — la seule modification qu'une règle accepte.
@@ -26,12 +25,11 @@ export class RenamePriceRuleHandler implements ICommandHandler<RenamePriceRuleCo
     private readonly clock: Clock,
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
-    private readonly sources: PromotionsSourceReader,
   ) {}
 
   async execute(command: RenamePriceRuleCommand): Promise<void> {
     const now = this.clock.now();
-    const rule = await mustLoadEditable(this.rules, this.sources, command.id);
+    const rule = await mustLoadEditable(this.rules, command.id);
     const renamed = rule.rename(command.label);
     await this.rules.rename(
       renamed,

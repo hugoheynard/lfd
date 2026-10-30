@@ -202,6 +202,14 @@ export type PriceRule = {
    * pas d'ambiguïté : la plus avantageuse pour le client gagne.
    */
   readonly promotion?: PromotionRank;
+  /**
+   * **« Cumulable »** — porté par une promotion seulement (plan des
+   * promotions, § 16, § 16.1) : à l'étage `promotion`, les cumulables
+   * s'appliquent l'une après l'autre au lieu de se disputer l'étage
+   * (`cumulative-promotions.ts`). Absent = non cumulable, comme toute règle
+   * de prix.
+   */
+  readonly cumulative?: boolean;
 } & (
   | { readonly nature: "replace"; readonly amountMillicents: number }
   | { readonly nature: "alter"; readonly alteration: PriceAlteration }

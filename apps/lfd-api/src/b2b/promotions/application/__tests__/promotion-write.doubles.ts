@@ -13,14 +13,12 @@ import {
   type PromotionApplicationPoint,
 } from "../../domain/promotion-fulfillment.js";
 import type { Promotion } from "../../domain/promotion.js";
-import type { PromotionsSource } from "../../domain/promotions-source.js";
 import { ArchivePromotionHandler } from "../commands/archive-promotion.handler.js";
 import { PausePromotionHandler } from "../commands/pause-promotion.handler.js";
 import { PosePromotionHandler } from "../commands/pose-promotion.handler.js";
 import { PromotionWriteGuard } from "../commands/promotion-write-guard.js";
 import { ResumePromotionHandler } from "../commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "../commands/revise-promotion.handler.js";
-import { FixedPromotionsSource } from "./promotion-supply.doubles.js";
 
 /**
  * **Les doublés des gestes d'écriture** (plan des promotions, L3 et L7) —
@@ -108,16 +106,12 @@ export class FixedPromotionCatalogue extends PromotionCatalogueReader {
   }
 }
 
-/** Les cinq gestes, branchés sur le dépôt en mémoire — la bascule faite par défaut. */
-export function writeScene(at: Date, source: PromotionsSource = "promotions") {
+/** Les cinq gestes, branchés sur le dépôt en mémoire. */
+export function writeScene(at: Date) {
   const promotions = new InMemoryPromotions();
   const catalogue = new FixedPromotionCatalogue();
   const clock = new FixedClock(at);
-  const guard = new PromotionWriteGuard(
-    new FixedPromotionsSource(source),
-    new InMemoryPromotionRivals(promotions.stored),
-    catalogue,
-  );
+  const guard = new PromotionWriteGuard(new InMemoryPromotionRivals(promotions.stored), catalogue);
   return {
     promotions,
     catalogue,

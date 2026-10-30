@@ -22,7 +22,6 @@ import { RemoveDeliveryZoneCommand } from "../remove-delivery-zone.command.js";
 import { RemoveDeliveryZoneHandler } from "../remove-delivery-zone.handler.js";
 import { UpdateDeliveryZoneCommand } from "../update-delivery-zone.command.js";
 import { UpdateDeliveryZoneHandler } from "../update-delivery-zone.handler.js";
-import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 /**
  * **Les réglages qui décident du prix payé.**
@@ -78,7 +77,9 @@ function zones(stored: DeliveryZoneView | null = null): DeliveryZoneRepository {
 function sites(): InMemorySites {
   return new InMemorySites(
     storedSite("pickup_2", {
-      place: { ...PLACE, discount: PickupDiscount.of({ b2b: null, b2c: null }) },
+      // La remise posée sur la fiche avant L12 : l'éditeur est fermé depuis,
+      // et une mise à jour du lieu la garde telle quelle.
+      place: { ...PLACE, discount: PickupDiscount.of(PICKUP.discounts) },
     }),
     storedSite("pickup_1"),
   );
@@ -147,15 +148,18 @@ describe("Les réglages commerciaux au journal", () => {
     expect(events.factTypes()).toEqual(["delivery_zone.updated"]);
   });
 
+  /**
+   * RÉÉCRIT en L12 (2026-10-30) : la remise d'un site ne s'écrit plus par ce
+   * geste (elle se règle dans l'écran Promotions, journalisée là). Le fait du
+   * lieu emporte toujours la remise EFFECTIVE de la fiche, relue en base.
+   */
   it("emporte la REMISE de chaque clientèle d'un point de retrait — c'est la décision commerciale", async () => {
     const events = new RecordingPublisher();
+    const { discounts: _sent, ...withoutDiscounts } = PICKUP;
 
-    await new UpdatePickupAddressHandler(
-      sites(),
-      events,
-      new DirectUnitOfWork(),
-      new FixedPromotionsSource("legacy"),
-    ).execute(new UpdatePickupAddressCommand("pickup_2", PICKUP));
+    await new UpdatePickupAddressHandler(sites(), events, new DirectUnitOfWork()).execute(
+      new UpdatePickupAddressCommand("pickup_2", withoutDiscounts),
+    );
 
     expect(events.traced[0]?.journalFact().payload).toMatchObject({
       ville: "Paris",

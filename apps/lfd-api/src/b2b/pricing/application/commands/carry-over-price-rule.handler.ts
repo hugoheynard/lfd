@@ -1,4 +1,3 @@
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 import { assertRuleEditorOpen } from "./rule-lifecycle-support.js";
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
@@ -53,7 +52,6 @@ export class CarryOverPriceRuleHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly catalog: ProductCatalogReader,
     private readonly companies: PricedCompanyNamer,
-    private readonly sources: PromotionsSourceReader,
   ) {}
 
   /**
@@ -77,7 +75,7 @@ export class CarryOverPriceRuleHandler implements ICommandHandler<
       if (source === null) {
         throw new CarriedDecisionNotFoundError("price_rule", command.ruleId);
       }
-      await assertRuleEditorOpen(source.asPriceRule.stage, this.sources);
+      assertRuleEditorOpen(source.asPriceRule.stage);
       const rule = PricingRule.carriedFrom(id, source, carry, command.staffUserId, now);
       await this.guard(rule, carry, now);
       const names = await ruleNamesOf(rule.asPriceRule, this.catalog, this.companies);

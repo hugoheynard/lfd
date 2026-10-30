@@ -5,7 +5,6 @@ import {
 } from "@lfd/contracts";
 import type { SaleUnit } from "@lfd/money";
 
-import { pickupDiscountScopeOf } from "../../../orders/domain/services/pickup-discount-eligibility.js";
 import type { PriceScope, PricingContext } from "../../../pricing/domain/price-rule.js";
 import {
   SCOPE_RANK,
@@ -13,6 +12,7 @@ import {
   matchesScope,
 } from "../../../pricing/domain/specificity.js";
 import { promotionScopeMatch, type PromotionScope } from "../promotion-scope.js";
+import { repriseScopeOf as pickupDiscountScopeOf } from "./pickup-discount-reprise.fixture.js";
 
 /**
  * **Lot L2 : la portée partagée ne change aucun prix.** Deux égalités, sur

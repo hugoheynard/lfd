@@ -1,10 +1,8 @@
 import {
-  addCents,
   compareExact,
   fractionByBasisPoints,
   fromCents,
   roundToCents,
-  scaleByBasisPoints,
   type Exact,
 } from "@lfd/money";
 import {
@@ -15,7 +13,13 @@ import {
   type RejectedRule,
 } from "./price-rule.js";
 import type { PricingContext, ResolvedPrice } from "./price-rule.js";
-import { InvalidAlterationError, InvalidCanonicalPriceError } from "./pricing-errors.js";
+import { InvalidCanonicalPriceError } from "./pricing-errors.js";
+import {
+  applyRule as apply,
+  mostAdvantageous,
+  rejectionOf as rejection,
+} from "./price-rule-application.js";
+import { isCumulative, resolveCumulativeStage } from "./cumulative-promotions.js";
 import { applies, rejectionCauseOf, winnerOf } from "./specificity.js";
 import { ladderAsRule } from "./volume-ladder.js";
 import { promotionRulesFor } from "./promotion-as-rule.js";
@@ -112,6 +116,16 @@ export function resolvePrice(
       }
     }
 
+    // Une promotion « Cumulable » applicable (plan des promotions, § 16.1) :
+    // l'étage passe par sa chaîne. Sans elle, le chemin d'avant, intact.
+    if (stage === "promotion" && applicable.some(isCumulative)) {
+      const outcome = resolveCumulativeStage(applicable, context, running, sealedByRuleId !== null);
+      running = outcome.running;
+      steps.push(...outcome.steps);
+      rejected.push(...outcome.rejected);
+      continue;
+    }
+
     const entering = running;
     const winner = winnerOf(applicable, context, (left, right) =>
       mostAdvantageous(left, right, entering),
@@ -194,17 +208,6 @@ export function resolvePrice(
       .map((entry) => entry.ruleId),
     rejected,
     finalMillicents: clampedToZero ? 0 : rounded,
-  };
-}
-
-/** Une règle écartée, avec ce que la trace garde d'elle. */
-function rejection(rule: PriceRule, cause: RejectedRule["cause"]): RejectedRule {
-  return {
-    stage: rule.stage,
-    ruleId: rule.id,
-    label: rule.label,
-    scope: rule.scope,
-    cause,
   };
 }
 
@@ -298,38 +301,6 @@ function assembled(
   }
 
   return { rules, dropped };
-}
-
-/**
- * **De deux promotions strictement aussi spécifiques, la plus avantageuse
- * pour le client** (§ 13.2) : le prix sortant le plus bas, puis — à prix
- * égal — le plus petit identifiant, pour que la réponse ne dépende pas de
- * l'ordre de lecture.
- */
-function mostAdvantageous(left: PriceRule, right: PriceRule, entering: Exact): PriceRule {
-  const delta = compareExact(apply(entering, left), apply(entering, right));
-  if (delta !== 0) {
-    return delta < 0 ? left : right;
-  }
-  return left.id <= right.id ? left : right;
-}
-
-/** `replace` pose un prix ; `alter` modifie celui qui entre. */
-function apply(running: Exact, rule: PriceRule): Exact {
-  if (rule.nature === "replace") {
-    return fromCents(rule.amountMillicents);
-  }
-
-  const { alteration } = rule;
-  const direction = alteration.direction === "increase" ? 1 : -1;
-  const magnitude = alteration.mode === "percent" ? alteration.bp : alteration.millicents;
-  if (!Number.isInteger(magnitude) || magnitude <= 0) {
-    throw new InvalidAlterationError(magnitude);
-  }
-
-  return alteration.mode === "percent"
-    ? scaleByBasisPoints(running, alteration.bp, direction)
-    : addCents(running, alteration.millicents, direction);
 }
 
 /**

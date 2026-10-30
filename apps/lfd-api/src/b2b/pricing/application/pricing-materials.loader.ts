@@ -28,21 +28,7 @@ import { scopesOfAll } from "../domain/pricing-scopes.js";
 import { resolveScopedFloor } from "../domain/resolve-floor.js";
 import { commitmentFor, type VolumeCommitment } from "../domain/volume-commitment.js";
 import { LinePromotionSupply } from "../../promotions/application/line-promotion-supply.js";
-import { servesLegacy } from "../../promotions/domain/promotions-source.js";
 import type { AdmittedPromotion } from "../../promotions/domain/live-promotion.js";
-import type { ShadowPricer } from "./priced-lot.js";
-
-/**
- * **Le tarificateur servi, et celui de l'ombre** (plan des promotions, § 13.5).
- *
- * `shadow` n'existe que sous la source `shadow` : le prix servi reste celui
- * des règles d'étage promotion, et celui des promotions est calculé à côté
- * pour être comparé — jamais servi.
- */
-export interface LoadedPricers {
-  readonly served: LoadedPricer;
-  readonly shadow: ShadowPricer | null;
-}
 
 /** Un article du lot, sa quantité, et la portée qu'il vise. */
 interface LotEntry {
@@ -115,7 +101,7 @@ export class PricingMaterialsLoader {
     at: Date,
     lens: PriceLens,
     epoch: PriceEpoch,
-  ): Promise<LoadedPricers | null> {
+  ): Promise<LoadedPricer | null> {
     const entries: LotEntry[] = items.map(({ item, quantity }) => ({
       item,
       quantity,
@@ -140,7 +126,7 @@ export class PricingMaterialsLoader {
     const replay = readsArchived(epoch);
 
     // Quatre lectures pour tout le lot, en parallèle.
-    const [rules, floors, ladders, commitments, mercuriale, promoted] = await Promise.all([
+    const [rules, floors, ladders, commitments, mercuriale, promotions] = await Promise.all([
       replay ? this.priceRules.inScopesAt(scopes, at) : this.priceRules.inScopes(scopes),
       replay ? this.priceFloors.inScopesAt(scopes, at) : this.priceFloors.inScopes(scopes),
       replay ? this.volumeLadders.inScopesAt(scopes, at) : this.volumeLadders.inScopes(scopes),
@@ -166,33 +152,24 @@ export class PricingMaterialsLoader {
       replay
         ? this.mercuriales.liveAsOf(parties.pricingCompanyId, at)
         : this.mercuriales.liveFor(parties.pricingCompanyId, at),
-      // La source des promotions, et — si elle les calcule — celles du point
-      // ligne. En `legacy`, une lecture de plus et rien d'autre (L5).
+      // Les promotions du point ligne, admises pour ce client à cet instant.
       this.linePromotions.forLot(parties, at, replay),
     ]);
-    const build = (chain: Chain) =>
-      this.pricerOf(
-        chain,
-        { floors, ladders, mercuriale, commitments },
-        entries,
-        parties,
-        at,
-        lens,
-      );
-    const legacy = { rules, promotions: [] };
-    const fresh = { rules: withoutPromotionStage(rules), promotions: promoted.promotions };
-    if (!servesLegacy(promoted.source)) {
-      return { served: await build(fresh), shadow: null };
-    }
-    const served = await build(legacy);
-    const { journal } = promoted;
-    return {
-      served,
-      shadow: journal === null ? null : { pricer: await build(fresh), journal },
-    };
+    // L'étage `promotion` est occupé par les promotions seules depuis L12 :
+    // une règle d'étage promotion encore lue (lecture datée d'avant son
+    // archivage) ne compte pas — les deux ensemble compteraient deux fois la
+    // même remise.
+    return this.pricerOf(
+      { rules: withoutPromotionStage(rules), promotions },
+      { floors, ladders, mercuriale, commitments },
+      entries,
+      parties,
+      at,
+      lens,
+    );
   }
 
-  /** Un tarificateur, sur une chaîne d'étage promotion donnée. */
+  /** Un tarificateur, sur les règles et les promotions du lot. */
   private pricerOf(
     chain: Chain,
     read: {
@@ -357,16 +334,13 @@ function earliest(left: Date, right: Date): Date {
   return left.getTime() <= right.getTime() ? left : right;
 }
 
-/** Ce qui occupe l'étage `promotion` : les règles, ou les promotions. */
+/** Les règles hors étage `promotion`, et les promotions qui l'occupent. */
 interface Chain {
   readonly rules: readonly PriceRule[];
   readonly promotions: readonly AdmittedPromotion[];
 }
 
-/**
- * Les règles SANS l'étage `promotion` : sous les promotions, ce sont elles qui
- * l'occupent — les deux ensemble compteraient deux fois la même remise.
- */
+/** Les règles SANS l'étage `promotion` : ce sont les promotions qui l'occupent. */
 function withoutPromotionStage(rules: readonly PriceRule[]): PriceRule[] {
   return rules.filter((rule) => rule.stage !== "promotion");
 }

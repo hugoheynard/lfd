@@ -23,8 +23,6 @@ import type {
 } from "@lfd/contracts";
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
-import { PricingMaterialsCache } from "../src/b2b/pricing/infrastructure/pricing-materials.cache.js";
-import type { PromotionsSource } from "../src/b2b/promotions/domain/promotions-source.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
 
 /** Le jeton porteur EST le `sub` du staff : chaque personne semée a le sien. */
@@ -50,15 +48,6 @@ beforeEach(async () => {
 const PROMOTIONS = "/admin/promotions";
 const AT_COEUR = "/admin/sites/pk_coeur/promotions";
 const admin = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
-
-/** La source, posée comme la migration de bascule la posera — puis le cache oublié. */
-async function useSource(source: PromotionsSource): Promise<void> {
-  await ctx.prisma.promotionSetting.update({
-    where: { key: "promotions_source" },
-    data: { value: source },
-  });
-  ctx.app.get(PricingMaterialsCache).invalidate();
-}
 
 /** Une personne du rôle `role`, plus les dérogations dites — et son agent. */
 async function staffWith(
@@ -92,6 +81,7 @@ function terms(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPayload
     effect: { kind: "percent_off", value: 2000 },
     ownFloor: null,
     stacksOverMercuriale: false,
+    cumulative: false,
     validFrom: daysAgo(1),
     validTo: null,
     audienceLabels: { individuals: null, pros: null },
@@ -110,27 +100,10 @@ function refusalOf(response: Parameters<typeof jsonBody>[0]): { code: string; me
 
 const AT_COEUR_POINT = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
 
-describe("avant la bascule (source legacy) — l'écran est en lecture seule", () => {
-  it("la liste se lit et se dit non éditable ; toute écriture rend 409, nommée", async () => {
-    const list = jsonBody<PromotionListView>(await admin().get(PROMOTIONS).expect(200));
-    expect(list).toMatchObject({ source: "legacy", editable: false });
-
-    const refused = await admin().post(PROMOTIONS).send(terms()).expect(409);
-    expect(refusalOf(refused)).toMatchObject({ code: "promotions.not_editable_yet" });
-    expect(refusalOf(refused).message).toContain("après la bascule");
-    await admin()
-      .post(AT_COEUR)
-      .send(terms({ fulfillment: AT_COEUR_POINT }))
-      .expect(409);
-    expect(await ctx.prisma.promotion.count()).toBe(0);
-  });
-});
+// L12 : « avant la bascule, l'écran est en lecture seule » est retiré avec
+// l'ancien chemin — la source ne vaut plus que `promotions` (CHECK).
 
 describe("les droits (§ 13.9)", () => {
-  beforeEach(async () => {
-    await useSource("promotions");
-  });
-
   it("la lecture s'ouvre à b2b_pricing OU lfc_site_settings ; l'écriture, à son seul droit", async () => {
     const pricingReader = await staffWith("pricing-reader", "communication", [
       { resource: "b2b_pricing", action: "read" },
@@ -191,10 +164,6 @@ describe("les droits (§ 13.9)", () => {
 });
 
 describe("après la bascule — les refus nommés", () => {
-  beforeEach(async () => {
-    await useSource("promotions");
-  });
-
   /**
    * RÉÉCRIT en L8b (2026-10-30) : « un autre public coexiste » posait `pros
    * actifs` contre `tout le monde`, que l'ancien refus (même `kind`) laissait

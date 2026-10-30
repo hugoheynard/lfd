@@ -26,6 +26,8 @@ import { PreferredPickupReader } from "../../../domain/ports/preferred-pickup.re
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { CartAdjustments } from "../cart-adjustments.service.js";
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
+import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
+import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
 import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
 
 const TEN_PERCENT: AudiencePickupDiscount = {
@@ -67,7 +69,7 @@ const TARENTAISE: DeliveryZoneView = {
  * l'adaptateur ; `resolve` rend le point quelle que soit sa clientèle.
  */
 class Points extends PickupAddressRepository {
-  private readonly points: readonly PickupAddressView[];
+  readonly points: readonly PickupAddressView[];
   constructor(...points: readonly PickupAddressView[]) {
     super();
     this.points = points;
@@ -136,15 +138,37 @@ class Settings extends DeliveryAvailabilityReader {
 
 const OPEN = new Settings(DEFAULT_DELIVERY_AVAILABILITY);
 
+/**
+ * Les ajustements sur ces points, dont la remise est posée en PROMOTION de
+ * retrait à ce point — la reprise de la remise du site (L12 : l'ancien
+ * chemin, qui lisait la remise sur la fiche, est retiré).
+ */
+function cartAdjustments(
+  points: Points,
+  zones: DeliveryZoneRepository,
+  settings: DeliveryAvailabilityReader,
+  preferences: PreferredPickupReader,
+  extra: readonly LivePromotion[] = [],
+): CartAdjustments {
+  return new CartAdjustments(
+    points,
+    zones,
+    settings,
+    preferences,
+    basketPromotions(
+      [...pickupDiscountPromotions(points.points), ...extra],
+      new FixedLineClassifications(),
+    ),
+  );
+}
+
 describe("CartAdjustments — la remise du point, par clientèle", () => {
   it("applique une remise réservée aux pros à une société active", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: false })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     const resolved = await adjustments.forPickup("pickup_1", BASKET, pickupBuyer("b2b", null));
@@ -155,13 +179,11 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
 
   /** Ce qui est figé sur la commande : rien, comme pour un point sans remise. */
   it("ne remise pas un particulier quand la remise est réservée aux pros", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: false })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     const resolved = await adjustments.forPickup("pickup_1", BASKET, pickupBuyer("b2c", null));
@@ -173,13 +195,11 @@ describe("CartAdjustments — la remise du point, par clientèle", () => {
   });
 
   it("ne remise pas un pro quand la remise est réservée aux particuliers", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: false, b2c: true })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     expect(
@@ -194,13 +214,11 @@ describe("CartAdjustments — le retrait, par clientèle du site", () => {
     pickupAudiences: PickupDiscountAudiences,
     ...others: readonly PickupAddressView[]
   ): CartAdjustments {
-    return new CartAdjustments(
+    return cartAdjustments(
       new Points({ ...point({ b2b: true, b2c: true }), pickupAudiences }, ...others),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
   }
 
@@ -257,13 +275,11 @@ describe("CartAdjustments — le retrait, par clientèle du site", () => {
   });
 
   it("un site d'avant les cases (vue sans le champ) reste ouvert aux deux", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
     await expect(
       adjustments.forPickup(null, BASKET, pickupBuyer("b2b", null)),
@@ -285,14 +301,7 @@ describe("CartAdjustments — un retrait sans point choisi", () => {
   const PROS_ONLY = { ...VILLAGE, pickupAudiences: { b2b: true, b2c: false } };
 
   function adjustments(points: Points, preferences = new Preferences()): CartAdjustments {
-    return new CartAdjustments(
-      points,
-      new OneZone(),
-      OPEN,
-      preferences,
-      new FixedLineClassifications(),
-      basketPromotions(),
-    );
+    return cartAdjustments(points, new OneZone(), OPEN, preferences);
   }
 
   it("retient le point préféré de la société quand il lui est ouvert", async () => {
@@ -375,48 +384,31 @@ describe("CartAdjustments — la promotion de livraison (L10)", () => {
     validFrom: new Date(Date.UTC(2020, 0, 1)),
   });
 
-  function delivering(source: "legacy" | "promotions") {
-    return new CartAdjustments(
+  function delivering() {
+    return cartAdjustments(
       new OnePoint(point({ b2b: false, b2c: false })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(source, [EN_LIVRAISON]),
+      [EN_LIVRAISON],
     );
   }
 
-  it("sert la promotion « en livraison » sous la source `promotions`, le port à côté", async () => {
-    const resolved = await delivering("promotions").forDelivery(
-      "73150",
-      BASKET,
-      pickupBuyer("b2c", null),
-    );
+  it("sert la promotion « en livraison », le port à côté", async () => {
+    const resolved = await delivering().forDelivery("73150", BASKET, pickupBuyer("b2c", null));
 
     expect(resolved.discount.discountCents).toBe(500);
     expect(resolved.discount.promotionId).toBe("promo_livraison");
     expect(resolved.feeCents).toBe(2_000);
   });
 
-  it("n'en sert aucune sous l'ancien chemin, où la livraison n'ouvrait rien", async () => {
-    const resolved = await delivering("legacy").forDelivery(
-      "73150",
-      BASKET,
-      pickupBuyer("b2c", null),
-    );
-
-    expect(resolved.discount.discountCents).toBe(0);
-    expect(resolved.discount.promotionId).toBeNull();
-  });
-
   it("ne sert pas une promotion « en retrait » à une livraison", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: false, b2c: false })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions("promotions", [{ ...EN_LIVRAISON, fulfillment: { kind: "pickup" } }]),
+      [{ ...EN_LIVRAISON, fulfillment: { kind: "pickup" } }],
     );
 
     const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
@@ -427,13 +419,11 @@ describe("CartAdjustments — la promotion de livraison (L10)", () => {
 
 describe("CartAdjustments — la livraison, par clientèle", () => {
   it("chiffre la livraison ouverte, ligne absente comprise", async () => {
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       OPEN,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));
@@ -444,13 +434,11 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
   it("refuse la livraison fermée à la clientèle, AVANT de chercher la zone", async () => {
     const zones = new OneZone();
     const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       zones,
       closedToB2c,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     // Même vers un code postal non desservi : la raison du refus est la
@@ -463,13 +451,11 @@ describe("CartAdjustments — la livraison, par clientèle", () => {
 
   it("laisse passer l'autre clientèle quand une seule est fermée", async () => {
     const closedToB2c = new Settings({ ...DEFAULT_DELIVERY_AVAILABILITY, openToB2c: false });
-    const adjustments = new CartAdjustments(
+    const adjustments = cartAdjustments(
       new OnePoint(point({ b2b: true, b2c: true })),
       new OneZone(),
       closedToB2c,
       new Preferences(),
-      new FixedLineClassifications(),
-      basketPromotions(),
     );
 
     expect(

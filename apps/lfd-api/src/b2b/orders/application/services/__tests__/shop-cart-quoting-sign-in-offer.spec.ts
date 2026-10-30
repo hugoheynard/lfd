@@ -25,21 +25,17 @@ const INSCRITS = livePromotion({
 });
 const PAYLOAD = { lines: [{ sku: "PAI-001", quantity: 2 }], fulfillment: null };
 
-function quoting(source: "legacy" | "promotions") {
+function quoting() {
   return quotingOf({
     catalog: CATALOG,
     classified: CLASSIFIED,
-    signIn: guestSignInOffer(
-      source,
-      { line: [INSCRITS] },
-      new FixedLineClassifications(CLASSIFIED),
-    ),
+    signIn: guestSignInOffer({ line: [INSCRITS] }, new FixedLineClassifications(CLASSIFIED)),
   });
 }
 
 describe("ShopCartQuoting — ce qu'une connexion ouvrirait (L10)", () => {
   it("le dit au devis anonyme, sans rien appliquer", async () => {
-    const { view } = await quoting("promotions").quote({
+    const { view } = await quoting().quote({
       payload: PAYLOAD,
       companyId: null,
       buyerUserId: null,
@@ -49,20 +45,10 @@ describe("ShopCartQuoting — ce qu'une connexion ouvrirait (L10)", () => {
   });
 
   it("ne le dit pas à un devis reconnu", async () => {
-    const { view } = await quoting("promotions").quote({
+    const { view } = await quoting().quote({
       payload: PAYLOAD,
       companyId: null,
       buyerUserId: "usr_1",
-    });
-
-    expect(view).not.toHaveProperty("signInOffer");
-  });
-
-  it("ne le dit pas sous l'ancien chemin, qui ne l'appliquerait pas", async () => {
-    const { view } = await quoting("legacy").quote({
-      payload: PAYLOAD,
-      companyId: null,
-      buyerUserId: null,
     });
 
     expect(view).not.toHaveProperty("signInOffer");

@@ -27,7 +27,6 @@ import {
   PLACE,
   storedSite,
 } from "./site-doubles.js";
-import { FixedPromotionsSource } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 const ROLES = {
   pickup: true,
@@ -409,7 +408,6 @@ describe("Plus de site par défaut (Hugo, 2026-10-15)", () => {
       new FixedIdGenerator(),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
-      new FixedPromotionsSource("legacy"),
     );
     const payload = {
       label: "Fournil",

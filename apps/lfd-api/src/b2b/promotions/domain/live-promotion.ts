@@ -37,6 +37,8 @@ export interface LivePromotion {
   readonly audienceLabels: PromotionAudienceLabels;
   readonly effect: PromotionEffect;
   readonly stacksOverMercuriale: boolean;
+  /** « Cumulable » (§ 16) — point ligne seulement. */
+  readonly cumulative: boolean;
   /** Borne basse **incluse**. */
   readonly validFrom: Date;
   /** Borne haute **exclue** ; `null` = sans fin. */
@@ -59,6 +61,7 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
     audienceLabels: state.audienceLabels,
     effect: state.effect,
     stacksOverMercuriale: state.stacksOverMercuriale,
+    cumulative: state.cumulative,
     validFrom: state.validFrom,
     validTo: state.validTo,
     suspendedFrom: state.paused?.at ?? null,

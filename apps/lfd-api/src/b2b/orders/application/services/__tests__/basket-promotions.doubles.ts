@@ -6,13 +6,12 @@ import {
   FixedCompanyStatuses,
   FixedLinePromotions,
   FixedPrincipals,
-  FixedPromotionsSource,
-  RecordingShadowJournal,
 } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { PromotionAudienceFactsResolver } from "../../../../promotions/application/promotion-audience-facts.resolver.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
-import type { PromotionShadowJournal } from "../../../../promotions/domain/ports/promotion-shadow.journal.js";
-import type { PromotionsSource } from "../../../../promotions/domain/promotions-source.js";
+import { BasketPromotionReader } from "../../../../promotions/domain/ports/basket-promotion.reader.js";
+import { pickupDiscountPromotions } from "../../../../promotions/domain/__tests__/pickup-discount-reprise.fixture.js";
+import type { PickupAddressRepository } from "../../../../pickup-addresses/domain/pickup-address.repository.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import type { OrderLineClassificationReader } from "../../../domain/ports/order-line-classification.reader.js";
 import { BasketPromotions } from "../basket-promotions.service.js";
@@ -23,23 +22,54 @@ import type { PickupBuyer } from "../cart-adjustments.service.js";
 const NOW = new Date(Date.UTC(2030, 0, 1));
 
 /**
- * **Le point panier sous une source donnée** — par défaut `legacy`, qui rend
- * la remise du site sans rien lire d'autre : ce que les suites d'avant L5
- * éprouvent.
+ * **Le point panier sur ces promotions** — par défaut aucune : depuis L12,
+ * la remise d'un site n'est plus lue, une suite qui veut une remise de
+ * retrait pose la promotion de ce point.
  */
 export function basketPromotions(
-  source: PromotionsSource = "legacy",
   promotions: readonly LivePromotion[] = [],
-  journal: PromotionShadowJournal = new RecordingShadowJournal(),
   classifications: OrderLineClassificationReader = new FixedLineClassifications({}),
   clock: FixedClock = new FixedClock(NOW),
 ): BasketPromotions {
   return new BasketPromotions(
-    new FixedPromotionsSource(source),
     new FixedBasketPromotions(promotions),
     new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     classifications,
-    journal,
+    clock,
+  );
+}
+
+/**
+ * **Les remises des points, lues en promotions** — ce que la reprise a écrit
+ * de chaque remise de site (§ 13.4). Depuis L12 l'ancien chemin est retiré :
+ * les suites qui configurent une remise sur la fiche d'un point la reçoivent
+ * ainsi, posée en promotion de retrait à ce point, et gardent leurs
+ * assertions.
+ */
+class PointDiscountPromotions extends BasketPromotionReader {
+  constructor(private readonly points: PickupAddressRepository) {
+    super();
+  }
+
+  async live(): Promise<readonly LivePromotion[]> {
+    return pickupDiscountPromotions(await this.points.list(null));
+  }
+
+  liveAt(): Promise<readonly LivePromotion[]> {
+    return this.live();
+  }
+}
+
+/** Le point panier sur les remises de ces points, reprises en promotions. */
+export function pointDiscountPromotions(
+  points: PickupAddressRepository,
+  classifications: OrderLineClassificationReader = new FixedLineClassifications({}),
+  clock: FixedClock = new FixedClock(NOW),
+): BasketPromotions {
+  return new BasketPromotions(
+    new PointDiscountPromotions(points),
+    new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
+    classifications,
     clock,
   );
 }
@@ -51,18 +81,16 @@ export function basketPromotions(
 export function pickupBuyer(audience: CustomerAudience, companyId: string | null): PickupBuyer {
   return {
     audience,
-    companyId,
+    // Un pro a toujours une société : sans elle, la promotion « pros actifs »
+    // (la reprise d'une remise de pros) ne l'admettrait pas (L12).
+    companyId: audience === "b2b" ? (companyId ?? "co_pro") : companyId,
     companyStatus: audience === "b2b" ? "active" : null,
     buyerKind: "registered",
   };
 }
 
-/**
- * **Ce qu'une connexion ouvrirait à un invité** (L10) — par défaut `legacy`,
- * qui ne lit rien et ne dit rien : ce que les suites d'avant L10 éprouvent.
- */
+/** **Ce qu'une connexion ouvrirait à un invité** (L10) — par défaut, aucune promotion. */
 export function guestSignInOffer(
-  source: PromotionsSource = "legacy",
   promotions: {
     readonly line?: readonly LivePromotion[];
     readonly basket?: readonly LivePromotion[];
@@ -71,7 +99,6 @@ export function guestSignInOffer(
   clock: FixedClock = new FixedClock(NOW),
 ): GuestSignInOffer {
   return new GuestSignInOffer(
-    new FixedPromotionsSource(source),
     new FixedLinePromotions(promotions.line ?? []),
     new FixedBasketPromotions(promotions.basket ?? []),
     classifications,

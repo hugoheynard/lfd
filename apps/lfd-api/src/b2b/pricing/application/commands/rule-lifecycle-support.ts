@@ -4,8 +4,7 @@ import { describeRule, ruleCitations } from "../../domain/pricing-act.js";
 import type { PricingRule } from "../../domain/entities/pricing-rule.js";
 import type { PricingAct, PricingActKind, RuleNames } from "../../domain/pricing-act.js";
 import type { PriceStage } from "../../domain/price-rule.js";
-import type { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
-import { assertLegacyPromotionEditorOpen } from "../../../promotions/domain/promotions-source.js";
+import { refuseLegacyPromotionEditor } from "../../../promotions/domain/promotions-source.js";
 
 /**
  * **Les trois gestes qui arrêtent, reprennent et rangent une règle** — plus le
@@ -69,29 +68,25 @@ export function actOf(
 }
 
 /**
- * **Une règle d'étage promotion ne s'écrit plus après la bascule** (plan
+ * **Une règle d'étage promotion ne s'écrit plus** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.10, L8) : le calcul lit les promotions, et la règle n'agirait sur
- * aucun prix. Les autres étages ne lisent pas la source.
+ * § 13.10, L8 puis L12) : le calcul lit les promotions, et la règle
+ * n'agirait sur aucun prix.
  *
- * @throws {LegacyPromotionEditorClosedError} étage promotion, source `promotions`.
+ * @throws {LegacyPromotionEditorClosedError} étage promotion.
  */
-export async function assertRuleEditorOpen(
-  stage: PriceStage,
-  sources: PromotionsSourceReader,
-): Promise<void> {
+export function assertRuleEditorOpen(stage: PriceStage): void {
   if (stage === "promotion") {
-    assertLegacyPromotionEditorOpen(await sources.current(), "price_rule");
+    refuseLegacyPromotionEditor("price_rule");
   }
 }
 
 /** {@link mustLoad}, puis {@link assertRuleEditorOpen} : les quatre gestes sur une règle. */
 export async function mustLoadEditable(
   rules: PricingRuleRepository,
-  sources: PromotionsSourceReader,
   id: string,
 ): Promise<PricingRule> {
   const rule = await mustLoad(rules, id);
-  await assertRuleEditorOpen(rule.asPriceRule.stage, sources);
+  assertRuleEditorOpen(rule.asPriceRule.stage);
   return rule;
 }

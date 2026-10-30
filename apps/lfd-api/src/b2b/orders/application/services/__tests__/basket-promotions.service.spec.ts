@@ -2,14 +2,11 @@ import {
   FixedBasketPromotions,
   FixedCompanyStatuses,
   FixedPrincipals,
-  FixedPromotionsSource,
-  RecordingShadowJournal,
 } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { PromotionAudienceFactsResolver } from "../../../../promotions/application/promotion-audience-facts.resolver.js";
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
 import { BasketPromotionReader } from "../../../../promotions/domain/ports/basket-promotion.reader.js";
-import type { PromotionsSource } from "../../../../promotions/domain/promotions-source.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { TechnicalError } from "../../../../../platform/shared/errors/app-error.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
@@ -17,9 +14,10 @@ import type { BasketPromotionOutcome } from "../../../domain/services/basket-pro
 import { BasketPromotions, type BasketPromotionRequest } from "../basket-promotions.service.js";
 
 /**
- * **Le point panier et sa source** (plan des promotions, § 13.5 et § 13.11,
- * lot L5) : `legacy` sert la remise du site sans rien lire, `promotions` sert
- * la promotion panier, l'ombre sert l'ancien et consigne tout écart.
+ * **Le point panier** (plan des promotions, § 13.5 et § 13.11, lots L5 et
+ * L12) : la promotion panier du point retenu. Les cas `legacy` et `shadow`
+ * sont retirés avec l'ancien chemin (L12) ; l'échec d'une lecture, qu'avalait
+ * l'ombre, remonte désormais.
  */
 
 const NOW = new Date("2026-11-15T10:00:00.000Z");
@@ -36,13 +34,11 @@ const REQUEST: BasketPromotionRequest = {
   known: null,
 };
 
-/** La remise du site, telle que l'ancien chemin l'a calculée : 20 % de 10 €. */
-const LEGACY: BasketPromotionOutcome = {
+/** Ce que la reprise de la remise du site rend : 20 % de 10 €. */
+const EXPECTED: Omit<BasketPromotionOutcome, "promotionId" | "label"> = {
   discountCents: 200,
   discountAdjustment: { mode: "percent", bp: 2000 },
   ineligibleSkus: new Set(),
-  promotionId: null,
-  label: null,
 };
 
 const REPRISE = livePromotion({
@@ -68,39 +64,24 @@ class UnreadableInTest extends TechnicalError {
   }
 }
 
-function subject(
-  source: PromotionsSource,
-  reader: BasketPromotionReader = new FixedBasketPromotions([REPRISE]),
-) {
-  const journal = new RecordingShadowJournal();
+function subject(reader: BasketPromotionReader = new FixedBasketPromotions([REPRISE])) {
   const service = new BasketPromotions(
-    new FixedPromotionsSource(source),
     reader,
     new PromotionAudienceFactsResolver(new FixedCompanyStatuses(), new FixedPrincipals()),
     new FixedLineClassifications({}),
-    journal,
     new FixedClock(NOW),
   );
-  return { service, journal };
+  return { service };
 }
 
-describe("BasketPromotions.served", () => {
-  it("sous `legacy`, rend la remise du site sans lire une promotion", async () => {
-    const reader = new FixedBasketPromotions([REPRISE]);
-    const { service, journal } = subject("legacy", reader);
+describe("BasketPromotions.resolve", () => {
+  it("rend la promotion du point, de la forme de `ResolvedPickup`", async () => {
+    const { service } = subject();
 
-    await expect(service.served(LEGACY, REQUEST)).resolves.toBe(LEGACY);
-    expect(reader.reads).toBe(0);
-    expect(journal.entries).toEqual([]);
-  });
-
-  it("sous `promotions`, rend la promotion du point, de la forme de `ResolvedPickup`", async () => {
-    const { service } = subject("promotions");
-
-    const served = await service.served(LEGACY, REQUEST);
+    const served = await service.resolve(REQUEST);
 
     expect(served).toEqual({
-      ...LEGACY,
+      ...EXPECTED,
       promotionId: "pd_pk_coeur_b2c",
       // Le libellé figé : le commun, aucune audience n'ayant le sien (L8b).
       label: { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" },
@@ -118,16 +99,16 @@ describe("BasketPromotions.served", () => {
       },
       fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
     });
-    const { service } = subject("promotions", new FixedBasketPromotions([both]));
-    const registered = await service.served(LEGACY, {
+    const { service } = subject(new FixedBasketPromotions([both]));
+    const registered = await service.resolve({
       ...REQUEST,
       buyer: { ...REQUEST.buyer, buyerKind: "registered" },
     });
-    const pro = await service.served(LEGACY, {
+    const pro = await service.resolve({
       ...REQUEST,
       buyer: { ...REQUEST.buyer, companyId: "co_1", companyStatus: "active" },
     });
-    const guest = await service.served(LEGACY, REQUEST);
+    const guest = await service.resolve(REQUEST);
 
     expect(registered.discountCents).toBe(200);
     expect(pro.discountCents).toBe(200);
@@ -140,10 +121,10 @@ describe("BasketPromotions.served", () => {
     expect(guest.promotionId).toBeNull();
   });
 
-  it("sous `promotions`, rien pour un autre point", async () => {
-    const { service } = subject("promotions");
+  it("rien pour un autre point", async () => {
+    const { service } = subject();
 
-    const served = await service.served(LEGACY, {
+    const served = await service.resolve({
       ...REQUEST,
       buyer: { ...REQUEST.buyer, fulfillment: { method: "pickup", pickupId: "pk_autre" } },
     });
@@ -152,42 +133,25 @@ describe("BasketPromotions.served", () => {
     expect(served.promotionId).toBeNull();
   });
 
-  it("à l'ombre, sert l'ancien et ne consigne rien quand les deux s'accordent", async () => {
-    const { service, journal } = subject("shadow");
-
-    await expect(service.served(LEGACY, REQUEST)).resolves.toBe(LEGACY);
-    expect(journal.entries).toEqual([]);
-  });
-
-  it("à l'ombre, sert l'ancien et consigne l'écart de montant", async () => {
-    const { service, journal } = subject("shadow");
+  it("rien pour un pro actif : la reprise vise « tous sauf les pros actifs »", async () => {
+    const { service } = subject();
     const pros = {
       ...REQUEST,
       buyer: { ...REQUEST.buyer, companyId: "co_1", companyStatus: "active" as const },
     };
 
-    await expect(service.served(LEGACY, pros)).resolves.toBe(LEGACY);
-    expect(journal.entries).toEqual([
-      {
-        point: "basket",
-        pickupId: "pk_coeur",
-        servedCents: 200,
-        shadowCents: 0,
-        shadowPromotionId: null,
-      },
-    ]);
+    const served = await service.resolve(pros);
+
+    expect(served.discountCents).toBe(0);
+    expect(served.promotionId).toBeNull();
   });
 
-  it("à l'ombre, un échec du nouveau chemin est consigné et ne fait pas tomber la commande", async () => {
-    const { service, journal } = subject("shadow", new FailingBasketPromotions());
+  /** L12 : l'ombre avalait cet échec ; sans ancien chemin, il n'y a rien à servir à la place. */
+  it("une promotion illisible fait remonter l'erreur, sans remise inventée", async () => {
+    const { service } = subject(new FailingBasketPromotions());
 
-    await expect(service.served(LEGACY, REQUEST)).resolves.toBe(LEGACY);
-    expect(journal.entries).toEqual([
-      {
-        point: "failure",
-        code: "promotions.unreadable_row",
-        message: "La promotion pd_x est illisible en base.",
-      },
-    ]);
+    await expect(service.resolve(REQUEST)).rejects.toThrow(
+      "La promotion pd_x est illisible en base.",
+    );
   });
 });

@@ -29,6 +29,7 @@ const TERMS: PromotionTerms = {
   effect: { kind: "percent_off", basisPoints: 2000 },
   ownFloor: { mode: "percent", value: 6000 },
   stacksOverMercuriale: true,
+  cumulative: false,
   validFrom: FROM,
   validTo: UNTIL,
   audiences: PromotionAudienceSet.of([{ kind: "individuals_registered" }]),

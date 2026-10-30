@@ -36,9 +36,7 @@ import {
   TracingLock,
 } from "./carry-over.doubles.js";
 import { TracingUnitOfWork, type Trace } from "./mercuriale-amendment.doubles.js";
-import { FixedPromotionsSource } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { LegacyPromotionEditorClosedError } from "../../../../promotions/domain/errors/promotion-errors.js";
-import type { PromotionsSource } from "../../../../promotions/domain/promotions-source.js";
 
 const NOW = new Date("2026-03-01T09:00:00.000Z");
 const days = (n: number): Date => new Date(NOW.getTime() + n * 86_400_000);
@@ -47,11 +45,16 @@ const NEW = "CHO-001";
 const REASON = `Report de la déclinaison détachée ${OLD}`;
 const LINEAGE = new InMemorySaleReferenceLineage({ [NEW]: OLD });
 
-const companyRule = () =>
+/**
+ * Une règle de société à reporter. Étage `geste` par défaut depuis L12
+ * (2026-10-30) : l'étage `promotion` ne s'écrit plus du tout, et ces suites
+ * éprouvent le report, pas la fermeture — qui garde son propre cas.
+ */
+const companyRule = (stage: "geste" | "promotion" = "geste") =>
   PricingRule.create(
     "rule_old",
     {
-      stage: "promotion",
+      stage,
       scope: { type: "variant", id: OLD },
       audience: { type: "company", id: "co_1" },
       minQuantity: null,
@@ -71,7 +74,6 @@ function ruleSetup(
     stored?: PricingRule | null;
     carried?: readonly string[];
     reserved?: InMemoryReservedElsewhere;
-    source?: PromotionsSource;
   } = {},
 ) {
   const trace: Trace = [];
@@ -93,7 +95,6 @@ function ruleSetup(
     uow,
     new InMemoryProductCatalog([]),
     new NamedCompanies(),
-    new FixedPromotionsSource(options.source ?? "legacy"),
   );
   const run = () =>
     handler.execute(new CarryOverPriceRuleCommand("rule_old", OLD, NEW, REASON, "staff|paul"));
@@ -135,8 +136,8 @@ describe("CarryOverPriceRuleHandler", () => {
     expect(trace).toEqual([]);
   });
 
-  it("refuse de reporter une règle d'étage promotion après la bascule, sans rien écrire", async () => {
-    const { rules, run } = ruleSetup({ source: "promotions" });
+  it("refuse de reporter une règle d'étage promotion, sans rien écrire", async () => {
+    const { rules, run } = ruleSetup({ stored: companyRule("promotion") });
     await expect(run()).rejects.toBeInstanceOf(LegacyPromotionEditorClosedError);
     expect(rules.saved).toEqual([]);
   });
@@ -148,13 +149,13 @@ describe("CarryOverPriceRuleHandler", () => {
   });
 
   it("refuse un second report pour la même société", async () => {
-    const { rules, run } = ruleSetup({ carried: ["promotion|company:co_1|0"] });
+    const { rules, run } = ruleSetup({ carried: ["geste|company:co_1|0"] });
     await expect(run()).rejects.toBeInstanceOf(DecisionAlreadyCarriedError);
     expect(rules.saved).toEqual([]);
   });
 
   it("accepte une règle d'un AUTRE étage pour la même société : deux règles, deux reports", async () => {
-    const { rules, run } = ruleSetup({ carried: ["geste|company:co_1|0"] });
+    const { rules, run } = ruleSetup({ carried: ["volume|company:co_1|0"] });
     await expect(run()).resolves.toBe("rule_000001");
     expect(rules.saved).toHaveLength(1);
   });

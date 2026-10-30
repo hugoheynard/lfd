@@ -1,15 +1,12 @@
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
-import { AppError } from "../../../../platform/shared/errors/app-error.js";
 import {
   PromotionAudienceFactsResolver,
   type KnownBuyerFacts,
 } from "../../../promotions/application/promotion-audience-facts.resolver.js";
 import { promotionsAdmitted } from "../../../promotions/domain/live-promotion.js";
 import { BasketPromotionReader } from "../../../promotions/domain/ports/basket-promotion.reader.js";
-import { PromotionShadowJournal } from "../../../promotions/domain/ports/promotion-shadow.journal.js";
-import { PromotionsSourceReader } from "../../../promotions/domain/ports/promotions-source.reader.js";
 import {
   chooseBasketPromotion,
   needsClassifications,
@@ -31,17 +28,10 @@ export interface BasketPromotionRequest {
 }
 
 /**
- * **Le point PANIER, et la source qui décide s'il sert** (plan
+ * **Le point PANIER** (plan
  * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lot L5).
- *
- * L'appelant a déjà calculé la remise de l'ancien chemin (`legacy`) ; ce
- * service lit la source et rend ce qui est SERVI :
- *
- * - `legacy` : l'ancien, sans rien lire d'autre ;
- * - `shadow` : l'ancien, après avoir calculé le nouveau et consigné tout
- *   écart de montant (`promotions.shadow_divergence`) ;
- * - `promotions` : le nouveau.
+ * § 13.5, lots L5 et L12) : la promotion panier de ce panier. Depuis L12, la
+ * seule source — la remise d'un site n'est plus lue.
  *
  * La fenêtre se juge à l'instant de la question — le `now` du `Clock`, comme
  * les règles de prix au présent. Aucune lecture datée d'un panier n'existe
@@ -50,31 +40,13 @@ export interface BasketPromotionRequest {
 @Injectable()
 export class BasketPromotions {
   constructor(
-    private readonly sources: PromotionsSourceReader,
     private readonly promotions: BasketPromotionReader,
     private readonly facts: PromotionAudienceFactsResolver,
     private readonly classifications: OrderLineClassificationReader,
-    private readonly journal: PromotionShadowJournal,
     private readonly clock: Clock,
   ) {}
 
-  /** @param legacy la remise de retrait de l'ancien chemin, déjà calculée. */
-  async served(
-    legacy: BasketPromotionOutcome,
-    request: BasketPromotionRequest,
-  ): Promise<BasketPromotionOutcome> {
-    const source = await this.sources.current();
-    if (source === "legacy") {
-      return legacy;
-    }
-    if (source === "promotions") {
-      return this.resolve(request);
-    }
-    await this.compareInShadow(legacy, request);
-    return legacy;
-  }
-
-  /** La promotion panier de ce panier, par le nouveau chemin seul. */
+  /** La promotion panier de ce panier. */
   async resolve(request: BasketPromotionRequest): Promise<BasketPromotionOutcome> {
     const at = this.clock.now();
     const all = await this.promotions.live();
@@ -86,33 +58,5 @@ export class BasketPromotions {
         ? await this.classifications.classify(request.lines.map((line) => line.sku))
         : new Map<string, OrderLineClassification>());
     return chooseBasketPromotion(candidates, request.lines, known);
-  }
-
-  private async compareInShadow(
-    legacy: BasketPromotionOutcome,
-    request: BasketPromotionRequest,
-  ): Promise<void> {
-    const pickupId = request.buyer.fulfillment?.pickupId ?? "";
-    let fresh: BasketPromotionOutcome;
-    try {
-      fresh = await this.resolve(request);
-    } catch (error) {
-      // L'ombre ne fait pas tomber une commande que l'ancien chemin sait chiffrer.
-      this.journal.divergence({
-        point: "failure",
-        code: error instanceof AppError ? error.code : "unexpected",
-        message: error instanceof Error ? error.message : String(error),
-      });
-      return;
-    }
-    if (fresh.discountCents !== legacy.discountCents) {
-      this.journal.divergence({
-        point: "basket",
-        pickupId,
-        servedCents: legacy.discountCents,
-        shadowCents: fresh.discountCents,
-        shadowPromotionId: fresh.promotionId,
-      });
-    }
   }
 }

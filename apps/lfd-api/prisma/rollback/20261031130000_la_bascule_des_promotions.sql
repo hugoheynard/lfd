@@ -1,3 +1,13 @@
+-- ⛔ PÉRIMÉ depuis le lot L12 (2026-10-30, migration
+-- 20261031150000_le_resserrement_des_promotions). Ce retour arrière remettait
+-- `promotions_source` à `legacy` et/ou rejouait `reprise_des_promotions()` :
+-- le CHECK n'admet plus que `promotions`, la reprise est neutralisée, et le
+-- code ne sait plus servir l'ancien chemin. Il ne se joue plus : la garde
+-- ci-dessous l'arrête avant toute écriture. Gardé pour l'histoire.
+DO $$ BEGIN
+  RAISE EXCEPTION 'retour arrière périmé depuis L12 (20261031150000) : ne pas le jouer';
+END $$;
+
 -- RETOUR ARRIÈRE de 20261031130000_la_bascule_des_promotions
 -- (documentation/pricing/plan-promotions-par-audience-et-acheminement.md,
 -- § 13.4 « Retour arrière », § 13.5).

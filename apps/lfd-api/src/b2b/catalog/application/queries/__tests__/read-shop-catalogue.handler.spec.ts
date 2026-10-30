@@ -36,7 +36,7 @@ import { ReadShopCatalogueHandler, ReadShopCatalogueQuery } from "../read-shop-c
 import { CatalogViewers } from "../../catalog-viewers.service.js";
 import { InMemoryServedCompanies } from "../../../infrastructure/in-memory-served-companies.js";
 import { viewerAudience, type CatalogViewer } from "../../../domain/catalog-viewer.js";
-import { legacyLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
+import { noLinePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 
 /**
  * La vitrine sans jeton, publique ou pro (2026-10-19) — montée sur la VRAIE
@@ -205,7 +205,7 @@ function fixture(
       noVolumeLadders,
       commitments,
       noCustomerVolumes,
-      legacyLinePromotionSupply(),
+      noLinePromotionSupply(),
     ),
     new FixedClock(NOW),
     noPriceHistory,
@@ -324,7 +324,7 @@ describe("ReadShopCatalogueHandler", () => {
     });
 
     it("mentionne la promotion sur la vignette, au prix inchangé", async () => {
-      const offers = shelfPromotionOffers("promotions", [EN_RETRAIT], NOW);
+      const offers = shelfPromotionOffers([EN_RETRAIT], NOW);
       const { handler } = fixture(undefined, undefined, offers);
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
@@ -341,9 +341,10 @@ describe("ReadShopCatalogueHandler", () => {
       expect(view.items[0]).not.toHaveProperty("catalogPriceMillicents");
     });
 
-    it("ne mentionne rien sous l'ancien chemin, et la clé reste absente du fil", async () => {
-      const offers = shelfPromotionOffers("legacy", [EN_RETRAIT], NOW);
-      const { handler } = fixture(undefined, undefined, offers);
+    // L12 : « ne mentionne rien sous l'ancien chemin » est retiré avec lui ;
+    // sans promotion, la clé reste absente du fil.
+    it("ne mentionne rien sans promotion, et la clé reste absente du fil", async () => {
+      const { handler } = fixture(undefined, undefined, shelfPromotionOffers([], NOW));
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr"));
 
@@ -352,7 +353,7 @@ describe("ReadShopCatalogueHandler", () => {
 
     it("l'aperçu pro déclaré ne mentionne qu'une promotion « tout le monde »", async () => {
       const pros = { ...EN_RETRAIT, id: "pros", audiences: [{ kind: "pros" as const }] };
-      const offers = shelfPromotionOffers("promotions", [pros], NOW);
+      const offers = shelfPromotionOffers([pros], NOW);
       const { handler } = fixture(undefined, undefined, offers);
 
       const view = await handler.execute(new ReadShopCatalogueQuery("fr", "pro"));
