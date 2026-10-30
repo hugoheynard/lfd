@@ -562,3 +562,20 @@ Notées pour être tranchées ensemble ; rien n'est bâti tant qu'elles restent 
 - **B3 / chevauchement** : Hugo reviendra sur la contrainte d'exclusion et la
   façon dont deux promotions se chevauchent.
 - **Q1 à Q9** du § 7 : toutes ouvertes, avec la recommandation écrite.
+
+## 9. Vocabulaire verrouillé (Hugo, 2026-10-30)
+
+- **Audience** : particuliers ou pros (ou tout le monde).
+- **Sous-audience** : ce que le serveur reconnaît seul, sans réglage —
+  particuliers _invités_ (commande sans connexion) ou _inscrits_ (connectés,
+  pour eux-mêmes) ; pros _tous_ ou _une société_ (± ses sites).
+- **Segment** : une liste que le staff crée et entretient — de sociétés
+  (« Hôtels de la station ») ou de comptes inscrits (« Clients fidèles »,
+  jamais d'invités). Chantier séparé ; dans le code actuel, `segment` ne
+  désigne qu'un groupe de sociétés, et aucun n'existe en base.
+
+Le public d'une promotion se choisit dans un seul menu : Tout le monde ·
+Particuliers (tous / invités / inscrits / segment) · Pros (tous / une société /
+segment). Les colonnes du § 3 (`clientele`) se renomment en conséquence au
+bâti. Restent à trancher : la personne aux deux casquettes, la saisie staff,
+la société non validée, la société et ses sites.
