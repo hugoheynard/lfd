@@ -278,6 +278,8 @@ describe("POST /admin/orders — la trace", () => {
     // L'identifiant de la fiche d'annuaire de l'opérateur E2E, résolu par le
     // guard — pas le `sub` du jeton, et surtout pas une chaîne inventée.
     expect(row.placedByStaffId).not.toBeNull();
+    // La saisie de l'équipe porte un membre de société : `registered` (L1).
+    expect(row.buyerKind).toBe("registered");
   });
 
   // Lot S2 des sites : le snapshot du point garde l'id du site qui remet.

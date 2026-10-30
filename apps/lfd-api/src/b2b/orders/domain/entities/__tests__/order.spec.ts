@@ -1,3 +1,4 @@
+import { GuestOrderOutsidePublicShopError } from "../../errors/order-buyer-kind-errors.js";
 import { StaffOrderLocaleError } from "../../errors/order-locale-errors.js";
 import { OrderLocale } from "../../value-objects/order-locale.js";
 import {
@@ -49,6 +50,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     billedCompanyId: null,
     principal: null,
     placedByStaffId: null,
+    buyerKind: "registered",
     // L'acheminement CONVENU, figé à la commande : ici, le défaut du point.
     agreed: {
       window: { value: null, source: "default" },
@@ -685,5 +687,23 @@ describe("Order — la langue de la commande (lot A3)", () => {
 
   it("laisse passer une saisie de l'équipe sans langue", () => {
     expect(deferred({ placedByStaffId: "staff_1" }).locale).toBeNull();
+  });
+});
+
+/** Lot L1 du plan des promotions (§ 13.7) : la porte de passation, figée. */
+describe("Order — porte de passation", () => {
+  it("fige l'invité posé par la route", () => {
+    const order = Order.draft(
+      draftInput({ companyId: null, billedCompanyId: null, buyerKind: "guest" }),
+    );
+    order.deferPayment();
+
+    expect(order.toPersistence().buyerKind).toBe("guest");
+  });
+
+  it("REFUSE un invité qui porterait une société", () => {
+    expect(() => Order.draft(draftInput({ companyId: "co_1", buyerKind: "guest" }))).toThrow(
+      GuestOrderOutsidePublicShopError,
+    );
   });
 });

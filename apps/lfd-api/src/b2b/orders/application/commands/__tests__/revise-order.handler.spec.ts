@@ -106,6 +106,31 @@ describe("ReviseOrderHandler — le geste", () => {
     ]);
   });
 
+  it("RELIT la porte de passation sur la commande : un invité reste invité (L1)", async () => {
+    // La révision ne connaît plus la route d'origine : c'est la colonne figée
+    // qui le dit, jamais l'auteur de la révision (ici l'équipe).
+    const placed = await placedOrder();
+    const guest = {
+      ...placed,
+      companyId: null,
+      billedCompanyId: null,
+      principal: null,
+      buyerKind: "guest" as const,
+    };
+    const { handler, revisions } = reviseScene(guest);
+
+    await handler.execute(
+      new ReviseOrderCommand(
+        "ord_1",
+        STAFF,
+        0,
+        content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
+      ),
+    );
+
+    expect(revisions.saved[0]?.revision.state.buyerKind).toBe("guest");
+  });
+
   it("passer du retrait à la livraison ajoute les frais de zone et retire la remise", async () => {
     const order = await placedOrder();
     const { handler, revisions, durable } = reviseScene(order);

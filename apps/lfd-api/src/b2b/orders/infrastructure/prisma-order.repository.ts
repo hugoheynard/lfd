@@ -121,6 +121,8 @@ export class PrismaOrderRepository extends OrderRepository {
         locale: state.locale,
         placedByUserId: state.placedByUserId,
         placedByStaffId: state.placedByStaffId,
+        // La porte de passation, posée par la route et figée (§ 13.7, L1).
+        buyerKind: state.buyerKind,
         placedOffPlan: state.placedOffPlan,
         customerCancellableUntil: state.customerCancellableUntil,
         ...customerCancellationColumnsOf(state.customerCancellation),

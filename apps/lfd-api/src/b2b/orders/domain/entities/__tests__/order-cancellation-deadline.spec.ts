@@ -16,6 +16,7 @@ function draftInput(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     billedCompanyId: null,
     principal: null,
     placedByStaffId: null,
+    buyerKind: "registered",
     agreed: {
       window: { value: { start: "08:30", end: "10:00" }, source: "override" },
       contact: { value: null, source: "default" },

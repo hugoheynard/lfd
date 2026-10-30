@@ -510,6 +510,14 @@ describe("PlaceShopOrderHandler — le porteur", () => {
     expect(sink.placed?.placedByStaffId).toBeNull();
   });
 
+  it("fige la porte de passation « invité », posée par la route et non par le payload (L1)", async () => {
+    const { handler, sink } = scene();
+
+    await handler.execute(new PlaceShopOrderCommand(payload()));
+
+    expect(sink.placed?.buyerKind).toBe("guest");
+  });
+
   it("NORMALISE l'adresse avant de l'écrire", async () => {
     // Deux graphies d'une même boîte ne doivent pas donner deux façons d'écrire
     // à la même personne — même si D2 admet qu'elles donnent deux lignes.

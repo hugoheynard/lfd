@@ -175,6 +175,7 @@ export class OrderDrafting {
       principal,
       placedByUserId: parties.placedByUserId,
       placedByStaffId: parties.placedByStaffId,
+      buyerKind: parties.buyerKind,
       // 🔴 Plus d'estampille de version (Q2, Hugo, 2026-10-17 — plan
       // documentation/catalogue/catalogue-synchronise.md §6, X0). Les lignes
       // portent leur snapshot (prix, nom, TVA) ; la colonne reste en base et

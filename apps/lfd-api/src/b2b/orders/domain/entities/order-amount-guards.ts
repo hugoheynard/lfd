@@ -14,6 +14,7 @@ import {
   InvalidOrderVoucherError,
   VoucherNotForCompanyOrderError,
 } from "../errors/order-voucher-errors.js";
+import { ensureBuyerKindFits } from "../value-objects/order-buyer-kind.js";
 import { voucherImputationCents } from "../services/voucher-imputation.js";
 import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./order.js";
 
@@ -34,6 +35,7 @@ import type { DraftOrderInput, OrderFulfillmentInput, OrderVoucher } from "./ord
  * @throws {BilledWithoutCompanyError} un payeur sans société (image du CHECK `order_billed_needs_company`).
  * @throws {PrincipalWithoutCompanyError} un principal sans société.
  * @throws {StaffOrderLocaleError} une langue sur une saisie du staff.
+ * @throws {GuestOrderOutsidePublicShopError} un invité avec société ou saisi par l'équipe.
  * @throws {InvalidOrderPaymentError} un terme négatif.
  */
 export function ensureDraftable(input: DraftOrderInput): void {
@@ -49,6 +51,7 @@ export function ensureDraftable(input: DraftOrderInput): void {
   if (input.placedByStaffId !== null && input.locale !== null) {
     throw new StaffOrderLocaleError();
   }
+  ensureBuyerKindFits(input);
   if (input.discountCents < 0 || input.deliveryFeeCents < 0 || input.lateFeeCents < 0) {
     throw new InvalidOrderPaymentError("Remise, frais et surtaxe doivent être positifs.");
   }

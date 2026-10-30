@@ -50,6 +50,7 @@ function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     billedCompanyId: "co_1",
     principal: null,
     placedByStaffId: null,
+    buyerKind: "registered",
     agreed: {
       window: { value: { start: "07:00", end: "08:00" }, source: "override" },
       contact: { value: null, source: "default" },
@@ -99,6 +100,7 @@ function placed(
     principal: null,
     placedByUserId: state.placedByUserId,
     placedByStaffId: null,
+    buyerKind: "registered",
     status: "placed",
     paymentStatus: "not_required",
     shortfallDecided: false,

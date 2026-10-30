@@ -28,6 +28,7 @@ import { OrderDrafting } from "../services/order-drafting.service.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { settleOrder, type CreatedIntent } from "../services/order-settlement.js";
 import { PlaceOrderCommand, type PlaceOrderResult } from "./place-order.command.js";
+import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /**
  * Passe une commande — **zéro friction**, le client pour lui-même.
@@ -150,7 +151,13 @@ export class PlaceOrderHandler implements ICommandHandler<PlaceOrderCommand, Pla
         ? null
         : await this.voucherQuotes.quote(payload.voucherId, command.actorUserId, this.clock.now());
     const { order, waiverUsed } = await this.drafting.draft(
-      { companyId, placedByUserId: command.actorUserId, placedByStaffId: null },
+      // Derrière `@CurrentUser` : un `Principal` résolu en base (§ 13.7).
+      {
+        companyId,
+        placedByUserId: command.actorUserId,
+        placedByStaffId: null,
+        buyerKind: REGISTERED_BUYER,
+      },
       payload,
       voucher,
       OrderLocale.ofOptional(payload.locale),

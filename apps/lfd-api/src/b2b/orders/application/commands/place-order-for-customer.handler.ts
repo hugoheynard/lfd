@@ -21,6 +21,7 @@ import {
   PlaceOrderForCustomerCommand,
   type PlaceOrderForCustomerResult,
 } from "./place-order-for-customer.command.js";
+import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
@@ -73,7 +74,13 @@ export class PlaceOrderForCustomerHandler implements ICommandHandler<
     ensureOrderMember(role, companyId);
 
     const { order, waiverUsed } = await this.drafting.draft(
-      { companyId, placedByUserId: buyerUserId, placedByStaffId: command.staffUserId },
+      // Le client porté est membre d'une société : un compte, pas un invité (§ 13.7).
+      {
+        companyId,
+        placedByUserId: buyerUserId,
+        placedByStaffId: command.staffUserId,
+        buyerKind: REGISTERED_BUYER,
+      },
       payload,
       // Le staff ne dépense pas le bon d'un client : son contrat n'en nomme aucun (plan des points, C3).
       null,

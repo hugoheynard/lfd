@@ -23,6 +23,7 @@ import type { FixedCustomerCancellation } from "../services/customer-cancellatio
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
 import type { OrderLineSnapshot } from "../value-objects/order-line.js";
+import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { RefundPosition } from "./order-refund.js";
 import type {
@@ -48,6 +49,8 @@ export interface RevisableOrder {
   readonly principal: OrderPrincipal | null;
   readonly placedByUserId: string;
   readonly placedByStaffId: string | null;
+  /** Figé à la passation et RELU ici : la révision ne connaît pas la route d'origine (§ 13.7). */
+  readonly buyerKind: OrderBuyerKind;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;

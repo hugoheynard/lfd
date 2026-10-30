@@ -355,6 +355,10 @@ describe("commander pour un site, depuis le principal (S6, R5)", () => {
 
     expect(await ctx.prisma.order.count({ where: { companyId: g.site } })).toBe(1);
     expect(await ctx.prisma.order.count({ where: { companyId: g.principal } })).toBe(0);
+    // Passée derrière un compte reconnu : `registered`, posé par la route (L1).
+    expect(
+      await ctx.prisma.order.count({ where: { companyId: g.site, buyerKind: "registered" } }),
+    ).toBe(1);
   });
 });
 

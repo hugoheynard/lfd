@@ -1,3 +1,5 @@
+import type { OrderBuyerKind } from "../../domain/value-objects/order-buyer-kind.js";
+
 /**
  * **Qui est concerné** par une commande : le client porté, et le membre de
  * l'équipe s'il a saisi à sa place.
@@ -10,4 +12,10 @@ export interface OrderParties {
   readonly companyId: string | null;
   readonly placedByUserId: string;
   readonly placedByStaffId: string | null;
+  /**
+   * Sans compte ou reconnu — posé par CHAQUE handler selon sa route, jamais
+   * lu d'un payload (plan des promotions, § 13.7). Obligatoire : un poseur
+   * oublié ne compile pas.
+   */
+  readonly buyerKind: OrderBuyerKind;
 }

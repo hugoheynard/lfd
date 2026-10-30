@@ -653,6 +653,8 @@ describe("PlaceOrderHandler", () => {
     await handler.execute(new PlaceOrderCommand("u1", payload(), null));
 
     expect(sink.placed?.catalogVersionId).toBeNull();
+    // Derrière `@CurrentUser` : un compte reconnu, posé par la route (L1).
+    expect(sink.placed?.buyerKind).toBe("registered");
   });
 
   /** 2026-10-07 : la livraison l'apprenait par un appel en mémoire, perdu à un redémarrage. */

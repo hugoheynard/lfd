@@ -53,6 +53,7 @@ function input(over: Partial<DraftOrderInput> = {}): DraftOrderInput {
     principal: null,
     placedByUserId: "user_1",
     placedByStaffId: null,
+    buyerKind: "registered",
     agreed: {
       window: { value: null, source: "default" },
       contact: { value: null, source: "default" },

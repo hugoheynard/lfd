@@ -19,6 +19,7 @@ function input(day: string, start: string): DraftOrderInput {
     billedCompanyId: null,
     principal: null,
     placedByStaffId: null,
+    buyerKind: "registered",
     agreed: {
       window: { value: { start, end: "12:00" }, source: "override" },
       contact: { value: null, source: "default" },
@@ -83,6 +84,7 @@ function placed(
     principal: null,
     placedByUserId: "usr_1",
     placedByStaffId: null,
+    buyerKind: "registered",
     status: "placed",
     paymentStatus: "not_required",
     shortfallDecided: false,

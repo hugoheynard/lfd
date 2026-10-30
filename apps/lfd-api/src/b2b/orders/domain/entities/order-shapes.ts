@@ -16,6 +16,7 @@ import type {
 import type { VatShare } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
+import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
@@ -81,6 +82,8 @@ export interface DraftOrderInput {
   readonly placedByUserId: string;
   /** Qui l'a saisie chez LFC, ou `null` quand le client a commandé seul. */
   readonly placedByStaffId: string | null;
+  /** Sans compte ou reconnu, posé par la route (cf. `OrderBuyerKind`). */
+  readonly buyerKind: OrderBuyerKind;
   readonly fulfillment: OrderFulfillmentInput;
   /**
    * L'acheminement **convenu** — tranche, contact, signature — déjà figé avec sa
@@ -173,6 +176,7 @@ export interface OrderToPlace {
    */
   readonly customerCancellableUntil: Date | null;
   readonly placedByStaffId: string | null;
+  readonly buyerKind: OrderBuyerKind;
   readonly fulfillmentMethod: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
   readonly deliveryAddress: BillingAddressPayload | null;

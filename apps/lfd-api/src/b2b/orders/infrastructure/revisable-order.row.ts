@@ -18,6 +18,7 @@ import { refundPositionOf, type RefundStatus } from "../domain/entities/order-re
 import type { RevisableOrder } from "../domain/entities/order-revision.js";
 import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
+import { buyerKindOf } from "./order-buyer-kind.column.js";
 import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { vatMethodOf } from "./order-money-columns.js";
@@ -73,6 +74,7 @@ export const REVISABLE_ORDER_SELECT = {
   principalSeesAmount: true,
   placedByUserId: true,
   placedByStaffId: true,
+  buyerKind: true,
   status: true,
   paymentStatus: true,
   totalCents: true,
@@ -123,6 +125,7 @@ export interface RevisableOrderRow {
   readonly principalSeesAmount: boolean | null;
   readonly placedByUserId: string;
   readonly placedByStaffId: string | null;
+  readonly buyerKind: string;
   readonly status: OrderStatus;
   readonly paymentStatus: PaymentStatus;
   readonly totalCents: number;
@@ -169,6 +172,7 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
         : { companyId: row.principalCompanyId, seesAmount: row.principalSeesAmount },
     placedByUserId: row.placedByUserId,
     placedByStaffId: row.placedByStaffId,
+    buyerKind: buyerKindOf(row.id, row.buyerKind),
     status: row.status,
     paymentStatus: row.paymentStatus,
     totalCents: row.totalCents,

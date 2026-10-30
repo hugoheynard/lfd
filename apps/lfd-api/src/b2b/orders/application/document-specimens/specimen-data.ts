@@ -14,6 +14,7 @@ import { frozenPickupDiscountBaseOf } from "../../domain/services/pickup-discoun
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { settlementRegimeOf } from "../../domain/services/settlement-regime.js";
 import type { OrderLineInput } from "../../domain/value-objects/order-line.js";
+import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /**
  * **Les données d'exemple du bon de commande** — la planche des documents de
@@ -152,6 +153,7 @@ function common(requestedFor: Date): CommonInput {
     principal: null,
     placedByUserId: "specimen-user",
     placedByStaffId: null,
+    buyerKind: REGISTERED_BUYER,
     requestedDeliveryDate: requestedFor,
     note: NOTE,
     catalogVersionId: null,

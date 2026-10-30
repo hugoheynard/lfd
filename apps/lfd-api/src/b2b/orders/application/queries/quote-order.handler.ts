@@ -11,6 +11,7 @@ import { lineTotalCents, type SaleUnit } from "@lfd/money";
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
 import { quantityOf } from "../../domain/value-objects/order-line.js";
+import { REGISTERED_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /**
  * **Ce que la commande coûterait**, demandé avant de la passer.
@@ -61,6 +62,8 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
         // n'apparaît qu'au moment où une commande existe, et porte une trace.
         placedByUserId: query.actorUserId,
         placedByStaffId: query.asStaff ? query.actorUserId : null,
+        // Derrière une route gardée, staff ou client : un compte reconnu (§ 13.7).
+        buyerKind: REGISTERED_BUYER,
       },
       query.payload.lines.map((line) => ({
         sku: line.sku,

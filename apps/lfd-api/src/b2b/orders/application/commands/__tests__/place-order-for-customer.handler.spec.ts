@@ -826,6 +826,8 @@ describe("PlaceOrderForCustomerHandler — les CGV en vigueur", () => {
       fileId: "ldf_pro_9",
     });
     expect(sink.placed?.placedByStaffId).toBe("staff_1");
+    // La saisie de l'équipe porte un membre de société : un compte (L1).
+    expect(sink.placed?.buyerKind).toBe("registered");
   });
 
   it("une société en attente porte les CGV particuliers (C2″)", async () => {

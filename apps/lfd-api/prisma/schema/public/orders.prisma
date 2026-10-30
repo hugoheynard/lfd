@@ -120,6 +120,15 @@ model Order {
   // aurait dupliqué la même information dans une troisième forme.
   placedByStaffId String? @map("placed_by_staff_id")
 
+  /// **Par quelle porte la personne a commandé** : `guest` (boutique publique,
+  /// sans compte) ou `registered` (derrière un compte reconnu, saisie de
+  /// l'équipe comprise). Posée par la route, figée, relue par la révision —
+  /// plan `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`
+  /// § 13.7. Tenue par deux CHECK : la valeur, et « un invité n'a ni société
+  /// ni saisie de l'équipe ». Les commandes d'avant la colonne sont reprises
+  /// par la migration `20261031100000_la_porte_de_passation`.
+  buyerKind String @default("registered") @map("buyer_kind")
+
   /// **QUI commande, figé à la passation** — pas le tarif appliqué.
   ///
   /// Déduite par l'agrégat (`Order.toPersistence()` : société posée → `pro`,

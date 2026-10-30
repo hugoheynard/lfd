@@ -252,12 +252,19 @@ describe("la commande sans compte — la commande produite", () => {
 
     const order = await ctx.prisma.order.findUniqueOrThrow({
       where: { id: placed.id },
-      select: { companyId: true, clientele: true, paymentStatus: true, placedByStaffId: true },
+      select: {
+        companyId: true,
+        clientele: true,
+        paymentStatus: true,
+        placedByStaffId: true,
+        buyerKind: true,
+      },
     });
 
     expect(order.companyId).toBeNull();
     expect(order.clientele).toBe("public");
     expect(order.placedByStaffId).toBeNull();
+    expect(order.buyerKind).toBe("guest");
     // La carte, toujours : l'intention est créée, la commande attend son
     // règlement.
     expect(order.paymentStatus).toBe("pending");

@@ -183,6 +183,7 @@ export class OrderRevising {
       companyId: order.companyId,
       placedByUserId: order.placedByUserId,
       placedByStaffId: order.placedByStaffId,
+      buyerKind: order.buyerKind,
     };
     const resolved = await this.composition.resolve(content, parties, order.lines);
     await this.ensureBeforeCutoff(order, content, actor);
@@ -318,6 +319,7 @@ function draftInputOf(
     principal: order.principal,
     placedByUserId: order.placedByUserId,
     placedByStaffId: order.placedByStaffId,
+    buyerKind: order.buyerKind,
     catalogVersionId: order.catalogVersionId,
     // R4 : la surtaxe de la passation, ni créée ni retirée — son ajustement
     // figé appliqué au nouveau sous-total, comme l'agrégat le vérifie.

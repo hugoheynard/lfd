@@ -25,6 +25,7 @@ import { OrderDrafting } from "../services/order-drafting.service.js";
 import { CustomerCancellationDeadline } from "../services/customer-cancellation-deadline.js";
 import { OrderIntake } from "../services/order-intake.service.js";
 import { PlaceShopOrderCommand, type PlaceShopOrderResult } from "./place-shop-order.command.js";
+import { GUEST_BUYER } from "../../domain/value-objects/order-buyer-kind.js";
 
 /** Devise unique de la plateforme (montants en centimes d'euro). */
 const CURRENCY = "eur";
@@ -152,7 +153,13 @@ export class PlaceShopOrderHandler implements ICommandHandler<
     // le 2026-09-17). Le nommer pour l'ignorer laisserait croire qu'on a choisi
     // de ne pas le consommer.
     const { order } = await this.drafting.draft(
-      { companyId: null, placedByUserId: buyerUserId, placedByStaffId: null },
+      // La boutique publique, `@Public()` : un invité, en dur (§ 13.7).
+      {
+        companyId: null,
+        placedByUserId: buyerUserId,
+        placedByStaffId: null,
+        buyerKind: GUEST_BUYER,
+      },
       payload,
       // Un invité n'a pas de bons : son contrat n'en nomme aucun (plan des points, C3).
       null,

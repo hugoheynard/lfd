@@ -311,6 +311,7 @@ function seed(): RevisableOrder {
     principal: null,
     placedByUserId: "usr_1",
     placedByStaffId: null,
+    buyerKind: "registered",
     status: "placed",
     paymentStatus: "not_required",
     shortfallDecided: false,

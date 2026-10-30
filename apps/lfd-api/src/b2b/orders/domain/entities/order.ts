@@ -41,6 +41,7 @@ import {
   type FixedCustomerCancellation,
 } from "../services/customer-cancellation-window.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
+import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
 import { placementVatMethodOf, type OrderVatMethod } from "../value-objects/order-vat-method.js";
 
@@ -90,6 +91,7 @@ export class Order {
     private readonly principal: OrderPrincipal | null,
     private readonly placedByUserId: string,
     private readonly placedByStaffId: string | null,
+    private readonly buyerKind: OrderBuyerKind,
     private readonly fulfillment: OrderFulfillmentInput,
     private readonly agreed: AgreedFulfillment,
     private readonly requestedDeliveryDate: Date | null,
@@ -130,6 +132,7 @@ export class Order {
       input.principal,
       input.placedByUserId,
       input.placedByStaffId,
+      input.buyerKind,
       fulfillment,
       input.agreed,
       input.requestedDeliveryDate,
@@ -314,6 +317,7 @@ export class Order {
       clientele: clienteleOf(this.companyId),
       placedByUserId: this.placedByUserId,
       placedByStaffId: this.placedByStaffId,
+      buyerKind: this.buyerKind,
       placedOffPlan: this.offPlan,
       customerCancellation: this.customerCancellation,
       customerCancellableUntil: this.customerCancellableUntil,
