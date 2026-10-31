@@ -144,3 +144,28 @@ describe("invoiceVatBreakdown", () => {
     ]);
   });
 });
+describe("invoiceVatBreakdown — le libellé d'une remise (plan des promotions, M5)", () => {
+  const goods = [{ htCents: 1_000, vatRate: 5.5 }];
+
+  it("recopie le libellé sur chaque part de la remise", () => {
+    const vat = invoiceVatBreakdown({
+      goods,
+      allowances: [{ key: "basket_promotion:p1", label: "Retrait", byRate: [] }],
+      charges: [],
+    });
+    expect(vat.categories[0]?.allowances[0]).toEqual({
+      key: "basket_promotion:p1",
+      label: "Retrait",
+      amountCents: 0,
+    });
+  });
+
+  it("n'ajoute aucune clé quand la remise n'a pas de libellé", () => {
+    const vat = invoiceVatBreakdown({
+      goods,
+      allowances: [{ key: "company_discount", byRate: [{ vatRate: 5.5, amountCents: 10 }] }],
+      charges: [],
+    });
+    expect(Object.keys(vat.categories[0]?.allowances[0] ?? {})).toEqual(["key", "amountCents"]);
+  });
+});

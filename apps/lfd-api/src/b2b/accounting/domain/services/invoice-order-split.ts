@@ -7,6 +7,11 @@ import {
 } from "@lfd/money";
 
 import { InvoiceDossierLateFeeRateMissingError } from "../errors/invoice-dossier-errors.js";
+import {
+  chainedBasketDiscountsOf,
+  unchainedBasketDiscountsGap,
+  type InvoiceBasketDiscountSplit,
+} from "./invoice-basket-discount-split.js";
 import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 import { normalizedVatRate } from "./invoice-lines.js";
 
@@ -36,6 +41,12 @@ export interface OrderInvoiceSplit {
   readonly pickupDiscountCents: number;
   /** Ce que le bon de fidélité a réellement déduit. */
   readonly voucherCents: number;
+  /**
+   * Ses remises de panier une par une, quand il en porte plusieurs aux parts
+   * figées (lot M5) ; `null` : sa remise est toute dans `pickupDiscount`,
+   * sous la clé de la remise client, comme avant M5.
+   */
+  readonly basketDiscounts: readonly InvoiceBasketDiscountSplit[] | null;
 }
 
 /**
@@ -46,17 +57,31 @@ export interface OrderInvoiceSplit {
  */
 export function splitInvoiceOrder(order: FrozenInvoiceOrder): OrderInvoiceSplit {
   const following = order.deliveryVatMode === "follows_goods" && order.deliveryFeeCents !== 0;
-  const split = splitOrderByRate(ventilationInputOf(order, following));
-  const pickupDiscountCents = sumOf(split.eligibleDiscount);
-  const voucherCents = sumOf(split.discount);
+  const input = ventilationInputOf(order, following);
+  const split = splitOrderByRate(input);
+  const chained = chainedBasketDiscountsOf(order, input.lines);
+  // Plusieurs remises figées : chacune garde ses parts, et le bon de fidélité
+  // se découpe sur ce qu'elles laissent — l'ordre de `ventilateVat`. Le port
+  // se découpe sur les bases brutes, qu'aucune remise ne touche.
+  const pickupDiscount = chained?.eligibleDiscount ?? split.eligibleDiscount;
+  const voucher = chained?.voucher ?? split.discount;
   return {
-    pickupDiscount: split.eligibleDiscount,
-    voucher: split.discount,
+    pickupDiscount,
+    voucher,
     followingDelivery: following ? (split.extras[0] ?? []) : [],
     standardDeliveryCents: following ? 0 : order.deliveryFeeCents,
-    pickupDiscountCents,
-    voucherCents,
+    pickupDiscountCents: sumOf(pickupDiscount),
+    voucherCents: sumOf(voucher),
+    basketDiscounts: chained?.discounts ?? null,
   };
+}
+
+/**
+ * Pourquoi ce bon, qui porte plusieurs remises, sera facturé sous la remise
+ * client sans détail — `null` s'il ne l'est pas. Pour la journalisation.
+ */
+export function basketDiscountFallbackOf(order: FrozenInvoiceOrder): string | null {
+  return unchainedBasketDiscountsGap(order, ventilationInputOf(order, false).lines);
 }
 
 function ventilationInputOf(order: FrozenInvoiceOrder, following: boolean): VatVentilationInput {

@@ -49,6 +49,10 @@ function row(overrides: Partial<BillableInvoiceOrderRow> = {}): BillableInvoiceO
     createdAt: PLACED,
     requestedDeliveryDate: new Date("2026-10-21T00:00:00.000Z"),
     discountCents: 0,
+    discountPromotionId: null,
+    discountAdjustment: null,
+    discountLabel: null,
+    discounts: [],
     voucherDiscountCents: 0,
     deliveryFeeCents: 0,
     deliveryVatMode: null,
@@ -88,10 +92,11 @@ describe("toBillableInvoiceOrder", () => {
         ...PARTIAL_BILLABLE,
         billableTotalCents: 317,
         deliveryNotes: [
-          { number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 2)] },
+          { number: "BL-1042-1", serviceDay: null, discounts: [], lines: [noteLine("CRO", 2)] },
           {
             number: "BL-1042-2",
             serviceDay: new Date("2026-10-23T00:00:00.000Z"),
+            discounts: [],
             lines: [noteLine("CRO", 1)],
           },
         ],
@@ -114,9 +119,10 @@ describe("toBillableInvoiceOrder", () => {
           {
             number: "BL-1042-1",
             serviceDay: null,
+            discounts: [],
             lines: [noteLine("CRO", 1), noteLine("PAI", 2)],
           },
-          { number: "BL-1042-2", serviceDay: null, lines: [noteLine("CRO", 1)] },
+          { number: "BL-1042-2", serviceDay: null, discounts: [], lines: [noteLine("CRO", 1)] },
         ],
       }),
     );
@@ -144,7 +150,9 @@ describe("toBillableInvoiceOrder", () => {
         billableVatCents: 17,
         billableVatShares: [{ rate: 5.5, amountCents: 17 }],
         billableTotalCents: 317,
-        deliveryNotes: [{ number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 3)] }],
+        deliveryNotes: [
+          { number: "BL-1042-1", serviceDay: null, discounts: [], lines: [noteLine("CRO", 3)] },
+        ],
       }),
     );
 
@@ -192,6 +200,7 @@ describe("l'unité de vente des lignes (plan vente au poids, P7)", () => {
           {
             number: "BL-1042-1",
             serviceDay: null,
+            discounts: [],
             lines: [noteLine("CRO", 1), noteLine("PAI", 750, "weight")],
           },
         ],
@@ -217,7 +226,12 @@ describe("l'unité de vente des lignes (plan vente au poids, P7)", () => {
           ...PARTIAL_BILLABLE,
           shortfallDecisions: [{ id: "dec_1" }],
           deliveryNotes: [
-            { number: "BL-1042-1", serviceDay: null, lines: [noteLine("CRO", 1, "")] },
+            {
+              number: "BL-1042-1",
+              serviceDay: null,
+              discounts: [],
+              lines: [noteLine("CRO", 1, "")],
+            },
           ],
         }),
       ),

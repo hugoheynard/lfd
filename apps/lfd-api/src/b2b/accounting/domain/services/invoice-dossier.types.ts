@@ -50,6 +50,33 @@ export interface FrozenOrderVatShare {
   readonly amountCents: number;
 }
 
+/** Une part figée d'une remise de panier, sur un taux, HT en centimes. */
+export interface FrozenInvoiceDiscountPart {
+  readonly rate: number;
+  readonly amountCents: number;
+}
+
+/**
+ * **Une remise de panier d'un bon**, dans l'ordre d'application (plan
+ * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * § 18.4, lot M5). Lue par le repli unique `frozenBasketDiscountsOf` : la
+ * table `order_discounts` si la commande y a des remises actives, sinon les
+ * colonnes `discount_*` comme une remise de rang 1.
+ */
+export interface FrozenInvoiceDiscount {
+  /** `null` = remise reprise d'avant L9 : elle garde la clé de la remise client. */
+  readonly promotionId: string | null;
+  /** Le libellé figé, en français ; `null` sans libellé (repli « Remise »). */
+  readonly label: string | null;
+  /**
+   * Ses parts par taux sur CE qui est facturé — `delivery_note_discounts`
+   * des bons remis quand ils en ont, sinon `order_discounts.vat_shares` ;
+   * `null` = non figées (commande non reprise) : le bon se découpe alors comme
+   * avant M5, sur le total de sa remise.
+   */
+  readonly parts: readonly FrozenInvoiceDiscountPart[] | null;
+}
+
 /** Un bon du dossier, montants lus tels quels. */
 export interface FrozenInvoiceOrder {
   readonly reference: string;
@@ -58,6 +85,11 @@ export interface FrozenInvoiceOrder {
   readonly requestedDeliveryDate: string | null;
   readonly lines: readonly FrozenInvoiceLine[];
   readonly discountCents: number;
+  /**
+   * Ses remises de panier (lot M5). Absent ou d'au plus une remise : le bon se
+   * découpe comme avant M5, sous la clé de la remise client.
+   */
+  readonly basketDiscounts?: readonly FrozenInvoiceDiscount[];
   readonly voucherDiscountCents: number;
   readonly deliveryFeeCents: number;
   readonly deliveryVatMode: FrozenDeliveryVatMode | null;

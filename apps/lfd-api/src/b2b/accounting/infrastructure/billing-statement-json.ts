@@ -108,5 +108,11 @@ function categoryJson(category: InvoiceVatCategory): Prisma.InputJsonValue {
 }
 
 function partJson(part: InvoiceVatPart): Prisma.InputJsonValue {
-  return { key: part.key, amountCents: part.amountCents };
+  // Le libellé n'est écrit que s'il existe : une ventilation sans remise de
+  // promotion garde, octet pour octet, la forme d'avant M5.
+  return {
+    key: part.key,
+    amountCents: part.amountCents,
+    ...(part.label === undefined ? {} : { label: part.label }),
+  };
 }

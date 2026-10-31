@@ -31,7 +31,8 @@ export const statementBuyerSchema = z.object({
 });
 
 const cents = z.number().int();
-const part = z.object({ key: z.string(), amountCents: cents });
+/** `label` : le libellé figé d'une remise de promotion (plan des promotions, § 18.4, M5). */
+const part = z.object({ key: z.string(), amountCents: cents, label: z.string().optional() });
 
 /** La ventilation par taux — le miroir de `vatBreakdownJson`, partagé avec la facture émise. */
 export const vatBreakdownSchema = z.object({

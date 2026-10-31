@@ -6,6 +6,11 @@ import type {
   FrozenInvoiceOrder,
   FrozenOrderVatShare,
 } from "../domain/services/invoice-dossier.types.js";
+import {
+  INVOICE_ORDER_DISCOUNTS_SELECT,
+  invoiceBasketDiscountsOf,
+} from "./invoice-basket-discounts.columns.js";
+import { warnedOfBasketDiscountFallback } from "./invoice-basket-discount-fallback.warning.js";
 import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le jour `AAAA-MM-JJ` d'une colonne `@db.Date`, lue à minuit UTC. */
@@ -21,6 +26,11 @@ export const FROZEN_INVOICE_ORDER_SELECT = {
   createdAt: true,
   requestedDeliveryDate: true,
   discountCents: true,
+  // Les remises de panier, une par une (lot M5) : la table, sinon les colonnes.
+  discountPromotionId: true,
+  discountAdjustment: true,
+  discountLabel: true,
+  discounts: INVOICE_ORDER_DISCOUNTS_SELECT,
   voucherDiscountCents: true,
   deliveryFeeCents: true,
   deliveryVatMode: true,
@@ -48,8 +58,13 @@ type FrozenInvoiceOrderRow = Prisma.OrderGetPayload<{
   select: typeof FROZEN_INVOICE_ORDER_SELECT;
 }>;
 
-/** La ligne Prisma d'un bon → les entrées du simulateur de facture. */
+/** La ligne Prisma d'un bon → les entrées du simulateur de facture ; un repli de remise est journalisé. */
 export function toFrozenInvoiceOrder(row: FrozenInvoiceOrderRow): FrozenInvoiceOrder {
+  return warnedOfBasketDiscountFallback(frozenInvoiceOrderOf(row));
+}
+
+/** La même traduction, sans avertir : la base de la lecture facturable, qui avertit sur SON résultat. */
+export function frozenInvoiceOrderOf(row: FrozenInvoiceOrderRow): FrozenInvoiceOrder {
   return {
     reference: row.orderNumber,
     createdAt: row.createdAt,
@@ -67,6 +82,7 @@ export function toFrozenInvoiceOrder(row: FrozenInvoiceOrderRow): FrozenInvoiceO
       pickupDiscountEligible: line.pickupDiscountEligible,
     })),
     discountCents: row.discountCents,
+    basketDiscounts: invoiceBasketDiscountsOf(row),
     voucherDiscountCents: row.voucherDiscountCents,
     deliveryFeeCents: row.deliveryFeeCents,
     deliveryVatMode: parseDeliveryVatMode(row.deliveryVatMode),

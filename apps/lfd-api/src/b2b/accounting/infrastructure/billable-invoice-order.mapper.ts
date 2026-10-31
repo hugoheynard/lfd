@@ -9,8 +9,13 @@ import type {
 } from "../domain/services/invoice-dossier.types.js";
 import {
   FROZEN_INVOICE_ORDER_SELECT,
-  toFrozenInvoiceOrder,
+  frozenInvoiceOrderOf,
 } from "./frozen-invoice-order.mapper.js";
+import { warnedOfBasketDiscountFallback } from "./invoice-basket-discount-fallback.warning.js";
+import {
+  INVOICE_NOTE_DISCOUNTS_SELECT,
+  invoiceBasketDiscountsOf,
+} from "./invoice-basket-discounts.columns.js";
 import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le statut d'un bon de livraison remis (`delivery_note.status`). */
@@ -57,6 +62,8 @@ export const BILLABLE_INVOICE_ORDER_SELECT = {
     select: {
       number: true,
       serviceDay: true,
+      // Ses parts par remise, écrites au départ (lot M4) ou par la reprise.
+      discounts: INVOICE_NOTE_DISCOUNTS_SELECT,
       lines: {
         // Une ligne livrée à zéro n'est pas facturée (§ 4).
         where: { quantity: { gt: 0 } },
@@ -103,30 +110,36 @@ const DAY_LENGTH = 10;
  * @throws {UnsettledPartialOrderError} une commande décidée sans montants facturables.
  */
 export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvoiceOrder {
-  const ordered = toFrozenInvoiceOrder(row);
+  const ordered = frozenInvoiceOrderOf(row);
   const partial = row.shortfallDecisions.length > 0;
   const fromNotes = partial || row.deliveryNotes.length > 1;
   if (row.billableTotalCents === null) {
     if (partial) {
       throw new UnsettledPartialOrderError(row.orderNumber);
     }
-    return ordered;
+    return warnedOfBasketDiscountFallback(ordered);
   }
   // CHECK « tout ou rien » (migration `20261025140100`) : un total posé porte
   // les six autres ; le repli ne sert qu'au typage.
-  return {
+  return warnedOfBasketDiscountFallback({
     ...ordered,
     lines: fromNotes
       ? row.deliveryNotes.flatMap((note) => noteLinesOf(row.orderNumber, note))
       : ordered.lines,
     discountCents: row.billableDiscountCents ?? ordered.discountCents,
+    // Ce qui est facturé est ce qui est parti : les parts des bons remis
+    // quand ils en portent, celles de la commande sinon (lot M5).
+    basketDiscounts: invoiceBasketDiscountsOf(
+      row,
+      row.deliveryNotes.flatMap((note) => note.discounts),
+    ),
     voucherDiscountCents: row.billableVoucherDiscountCents ?? ordered.voucherDiscountCents,
     deliveryFeeCents: row.billableDeliveryFeeCents ?? ordered.deliveryFeeCents,
     lateFeeCents: row.billableLateFeeCents ?? ordered.lateFeeCents,
     vatShares: parseVatShares(row.billableVatShares),
     vatCents: row.billableVatCents ?? ordered.vatCents,
     totalCents: row.billableTotalCents,
-  };
+  });
 }
 
 /** Les numéros des BL remis, par rang — ce que cite la ligne de référence de la facture. */

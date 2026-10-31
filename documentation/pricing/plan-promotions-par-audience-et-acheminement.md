@@ -2319,6 +2319,17 @@ c'est voulu — après un départ partiel le % d'un bon n'est plus celui de la
 facture, et une base agrégée sur plusieurs bons ne serait pas l'assiette
 d'aucune remise.
 
+**Décision (2026-10-31, sur le rapport de M5)** : la clé (promotion, taux)
+ne s'applique qu'aux factures dont au moins une commande porte plusieurs
+remises. Tant qu'aucune n'en a plusieurs, la facture garde la clé unique
+`company_discount` et le motif « Remise client » : sa ventilation figée et
+son XML restent ceux d'avant M5, octet pour octet (la règle du papier du bon,
+M4). Dans une facture mixte, une commande d'une seule remise passe sous la
+clé de sa promotion, avec ses parts d'avant. **Q-M2 précisée** : le libellé
+retenu est celui de la commande la plus ancienne (`createdAt`) dont le
+libellé n'est pas nul. Le libellé est figé dans `vat_breakdown` (champ
+`label` d'une part, absent sans libellé ; `@lfd/money` l'admet).
+
 ```mermaid
 flowchart LR
   A[Lignes, prix unitaire x quantite] --> B[Remise rang 1 sur ses restes]
@@ -2423,6 +2434,18 @@ texte, faits au bâti :
 - `SheetMoney.discountLines` (contrat, additif) porte les lignes de remise ;
   le pavé de totaux partagé (`order-sheet-pdf-totals.ts`) les lit — le bon de
   commande ne les remplit pas encore (M6).
+
+**M5 bâti le 2026-10-31 (non commité à l'écriture de cette ligne)** — la
+facture lit chaque remise par le repli unique
+(`apps/lfd-api/src/b2b/accounting/infrastructure/invoice-basket-discounts.columns.ts`) ;
+les parts viennent de `delivery_note_discounts` des bons remis quand ils en
+portent, sinon de `order_discounts.vat_shares`. Les clés et le motif suivent
+la décision du § 18.4 (`apps/lfd-api/src/b2b/accounting/domain/services/invoice-discount-allowances.ts`, `facturx-settlement.ts`).
+Une commande à plusieurs remises dont les parts ne tombent pas juste (non
+figées, somme ≠ remise, taux dépassé) est facturée au bon montant sous
+`company_discount`, sans détail, et l'écart est **journalisé**
+(`apps/lfd-api/src/b2b/accounting/infrastructure/invoice-basket-discount-fallback.warning.ts`). CSV et dossier ne lisent que
+des totaux, inchangés. L'avoir n'est pas touché.
 
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`

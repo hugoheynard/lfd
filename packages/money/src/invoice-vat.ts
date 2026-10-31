@@ -39,6 +39,12 @@ import type { VatLine } from "./vat.js";
  */
 export interface InvoiceAllowance {
   readonly key: string;
+  /**
+   * Le libellé figé à écrire pour cette remise (BT-97), quand la clé seule ne
+   * le dit pas — une remise de panier par promotion. Absent : l'appelant lit
+   * le libellé dans sa clé, et la part n'en porte pas.
+   */
+  readonly label?: string | undefined;
   readonly byRate: readonly RatedCents[];
 }
 
@@ -59,6 +65,8 @@ export interface InvoiceVatInput {
 /** La part d'une remise ou d'un frais sur un taux. */
 export interface InvoiceVatPart {
   readonly key: string;
+  /** Recopié de la remise ({@link InvoiceAllowance.label}) ; absent sinon. */
+  readonly label?: string | undefined;
   readonly amountCents: number;
 }
 
@@ -112,7 +120,9 @@ export function invoiceVatBreakdown(input: InvoiceVatInput): InvoiceVatBreakdown
     .sort((left, right) => left - right)
     .map((rate) =>
       categoryOf(rate, goodsByRate.get(rate) ?? 0, {
-        allowances: input.allowances.map((a, i) => partOf(a.key, allowanceParts[i], rate)),
+        allowances: input.allowances.map((a, i) =>
+          labelled(partOf(a.key, allowanceParts[i], rate), a),
+        ),
         charges: input.charges.map((c, i) => partOf(c.key, chargeParts[i], rate)),
       }),
     );
@@ -188,6 +198,10 @@ function partOf(
   rate: number,
 ): InvoiceVatPart {
   return { key, amountCents: parts?.get(rate) ?? 0 };
+}
+
+function labelled(part: InvoiceVatPart, allowance: InvoiceAllowance): InvoiceVatPart {
+  return allowance.label === undefined ? part : { ...part, label: allowance.label };
 }
 
 function sumByRate(lines: readonly VatLine[]): Map<number, number> {

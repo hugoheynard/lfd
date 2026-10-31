@@ -14,6 +14,7 @@ import type {
   InvoiceGaps,
   VatRoundingGap,
 } from "./invoice-dossier.types.js";
+import { basketDiscountAllowances, COMPANY_DISCOUNT_KEY } from "./invoice-discount-allowances.js";
 import { aggregateInvoiceLines } from "./invoice-lines.js";
 import { inconsistentOrders } from "./invoice-order-consistency.js";
 import {
@@ -57,7 +58,7 @@ import {
  * quoi l'invariant dépendrait de la santé de chaque JSON.
  */
 
-export const COMPANY_DISCOUNT = "company_discount";
+export const COMPANY_DISCOUNT = COMPANY_DISCOUNT_KEY;
 export const LOYALTY_VOUCHER = "loyalty_voucher";
 export const DELIVERY_STANDARD = "delivery_standard";
 export const DELIVERY_FOLLOWS_GOODS = "delivery_follows_goods";
@@ -88,7 +89,7 @@ function buildInvoice(orders: readonly FrozenInvoiceOrder[]): Invoice {
   const vat = invoiceVatBreakdown({
     goods: lines.map((line) => ({ htCents: line.amountCents, vatRate: line.vatRate })),
     allowances: [
-      { key: COMPANY_DISCOUNT, byRate: splits.flatMap((split) => split.pickupDiscount) },
+      ...basketDiscountAllowances(orders, splits),
       { key: LOYALTY_VOUCHER, byRate: splits.flatMap((split) => split.voucher) },
     ],
     charges: [...deliveryCharges(splits), ...lateFeeCharges(orders)],

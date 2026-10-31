@@ -1,4 +1,4 @@
-import type { InvoiceVatCategory } from "@lfd/money";
+import type { InvoiceVatCategory, InvoiceVatPart } from "@lfd/money";
 
 import { mandateReferenceOf, type InvoiceState } from "../entities/invoice.types.js";
 import { centsAmount, dateElement, ratePercent, textElement } from "./facturx-format.js";
@@ -10,6 +10,7 @@ import {
   LATE_FEE_PREFIX,
   LOYALTY_VOUCHER,
 } from "./invoice-dossier.js";
+import { BASKET_PROMOTION_PREFIX } from "./invoice-discount-allowances.js";
 
 /**
  * `ApplicableHeaderTradeSettlement` du XML Factur-X, dans l'ordre du schéma
@@ -43,6 +44,11 @@ const ALLOWANCE_CHARGE_REASONS: Readonly<Record<string, string>> = {
   [DELIVERY_FOLLOWS_GOODS]: "Frais de livraison",
 };
 const LATE_FEE_REASON = "Majoration de commande tardive";
+/**
+ * BT-97 d'une remise de promotion sans libellé figé (plan des promotions,
+ * § 18.4, lot M5) : un identifiant de promotion n'est jamais un motif.
+ */
+const BASKET_PROMOTION_FALLBACK_REASON = "Remise";
 
 /** La ligne de catégorie de TVA d'une ligne d'article (BG-30). */
 export function lineTradeTax(rate: number): string {
@@ -101,20 +107,20 @@ function headerTradeTax(category: InvoiceVatCategory): string {
 function allowanceCharges(category: InvoiceVatCategory): readonly string[] {
   const allowances = category.allowances
     .filter((part) => part.amountCents !== 0)
-    .map((part) => allowanceCharge(false, part.key, part.amountCents, category.rate));
+    .map((part) => allowanceCharge(false, part, category.rate));
   const charges = category.charges
     .filter((part) => part.amountCents !== 0)
-    .map((part) => allowanceCharge(true, part.key, part.amountCents, category.rate));
+    .map((part) => allowanceCharge(true, part, category.rate));
   return [...allowances, ...charges];
 }
 
 /** BG-20 (remise, `false`) ou BG-21 (frais, `true`), sur UN taux. */
-function allowanceCharge(isCharge: boolean, key: string, cents: number, rate: number): string {
+function allowanceCharge(isCharge: boolean, part: InvoiceVatPart, rate: number): string {
   return [
     "<ram:SpecifiedTradeAllowanceCharge>",
     `<ram:ChargeIndicator><udt:Indicator>${String(isCharge)}</udt:Indicator></ram:ChargeIndicator>`,
-    textElement("ram:ActualAmount", centsAmount(cents)),
-    textElement("ram:Reason", reasonOf(key)),
+    textElement("ram:ActualAmount", centsAmount(part.amountCents)),
+    textElement("ram:Reason", reasonOf(part)),
     "<ram:CategoryTradeTax>",
     textElement("ram:TypeCode", VAT_TYPE),
     textElement("ram:CategoryCode", STANDARD_CATEGORY),
@@ -124,8 +130,19 @@ function allowanceCharge(isCharge: boolean, key: string, cents: number, rate: nu
   ].join("");
 }
 
-/** Une clé inconnue s'écrit telle quelle : un libellé brut vaut mieux qu'un libellé deviné. */
-function reasonOf(key: string): string {
+/**
+ * Le libellé figé d'abord (une remise de promotion, lot M5) ; sinon celui de
+ * la clé. Une clé inconnue s'écrit telle quelle : un libellé brut vaut mieux
+ * qu'un libellé deviné.
+ */
+function reasonOf(part: InvoiceVatPart): string {
+  const { key } = part;
+  if (part.label !== undefined) {
+    return part.label;
+  }
+  if (key.startsWith(BASKET_PROMOTION_PREFIX)) {
+    return BASKET_PROMOTION_FALLBACK_REASON;
+  }
   if (key.startsWith(LATE_FEE_PREFIX)) {
     return LATE_FEE_REASON;
   }
