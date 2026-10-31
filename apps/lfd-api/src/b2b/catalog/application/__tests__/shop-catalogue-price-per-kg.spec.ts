@@ -4,8 +4,8 @@ import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
  * Les prix au kilo sur le rayon (`plan-prix-au-kilo.md`, K3) : posés tels que
- * saisis, les deux, chacun nommé par son unité — et `null` quand rien n'est
- * saisi, jamais un montant inventé.
+ * saisis — celui de l'audience servie seulement (2026-10-31) — et `null` quand
+ * rien n'est saisi, jamais un montant inventé.
  */
 
 const SALE = {
@@ -21,25 +21,42 @@ const SELLABLE = [
 ];
 
 describe("withPricesPerKg", () => {
-  it("pose les deux prix saisis de la déclinaison par défaut, sur sa référence de vente", () => {
-    const view = shopCatalogueOf(SELLABLE, SALE);
-    const perKg = new Map([
-      ["PAI-001-1", { proPricePerKgMillicents: 1_234_567, publicPricePerKgTtcCents: 1_240 }],
-      ["PAI-001-2", { proPricePerKgMillicents: 9, publicPricePerKgTtcCents: 9 }],
-    ]);
+  const ENTERED = new Map([
+    ["PAI-001-1", { proPricePerKgMillicents: 1_234_567, publicPricePerKgTtcCents: 1_240 }],
+    ["PAI-001-2", { proPricePerKgMillicents: 9, publicPricePerKgTtcCents: 9 }],
+  ]);
 
-    const items = withPricesPerKg(view, SELLABLE, perKg).items;
+  /**
+   * Régression : les deux prix au kilo partaient à toutes les audiences — le
+   * prix pro sur la route publique (corrigé le 2026-10-31, une audience, une
+   * information).
+   */
+  it("au rayon public : le prix au kilo public de la déclinaison par défaut, pas le pro", () => {
+    const view = shopCatalogueOf(SELLABLE, SALE);
+
+    const items = withPricesPerKg(view, SELLABLE, ENTERED, "public").items;
+
+    expect(items.find((item) => item.sku === "PAI-001-1")).toMatchObject({
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: 1_240,
+    });
+  });
+
+  it("au rayon pro : le prix au kilo pro, pas le public", () => {
+    const view = shopCatalogueOf(SELLABLE, SALE);
+
+    const items = withPricesPerKg(view, SELLABLE, ENTERED, "pro").items;
 
     expect(items.find((item) => item.sku === "PAI-001-1")).toMatchObject({
       proPricePerKgMillicents: 1_234_567,
-      publicPricePerKgTtcCents: 1_240,
+      publicPricePerKgTtcCents: null,
     });
   });
 
   it("rend `null` aux deux quand rien n'est saisi — jamais l'absence ni un zéro", () => {
     const view = shopCatalogueOf(SELLABLE, SALE);
 
-    const items = withPricesPerKg(view, SELLABLE, new Map()).items;
+    const items = withPricesPerKg(view, SELLABLE, new Map(), "public").items;
 
     expect(items.find((item) => item.sku === "VIE-001-1")).toMatchObject({
       proPricePerKgMillicents: null,
@@ -54,7 +71,7 @@ describe("withPricesPerKg", () => {
     ]);
 
     const [before] = view.items;
-    const [after] = withPricesPerKg(view, SELLABLE, perKg).items;
+    const [after] = withPricesPerKg(view, SELLABLE, perKg, "public").items;
 
     expect(after?.unitPriceMillicents).toBe(before?.unitPriceMillicents);
     expect(after?.unitPriceTtcCents).toBe(before?.unitPriceTtcCents);

@@ -5,6 +5,18 @@ import type {
   PickupAddressView,
 } from '@lfd/contracts';
 
+/**
+ * **Ce que les cartes lisent d'un point de retrait** : son identité et son
+ * lieu, rien d'autre. Le back-office leur passe la vue complète
+ * (`PickupAddressView`), la boutique celle de son audience
+ * (`AudiencePickupAddressView`, 2026-10-31) — sans remise par clientèle.
+ * Les deux s'y substituent ; une carte partagée n'a pas à savoir laquelle.
+ */
+export type OfferedPickup = Pick<
+  PickupAddressView,
+  'id' | 'label' | 'ligne1' | 'ligne2' | 'codePostal' | 'ville' | 'pays'
+>;
+
 /** Une destination proposée au choix : sa valeur et son libellé. */
 export interface FulfillmentDestination {
   readonly value: string;
@@ -29,7 +41,7 @@ export const DEFAULT_DESTINATION = '';
  */
 export function namedDestinations(input: {
   readonly method: FulfillmentMethod | null;
-  readonly pickups: readonly PickupAddressView[];
+  readonly pickups: readonly OfferedPickup[];
   readonly deliveries: readonly DeliveryAddressView[];
 }): readonly FulfillmentDestination[] {
   if (input.method === 'pickup') {
@@ -54,7 +66,7 @@ export function namedDestinations(input: {
  */
 export function fulfillmentDestinations(input: {
   readonly method: FulfillmentMethod | null;
-  readonly pickups: readonly PickupAddressView[];
+  readonly pickups: readonly OfferedPickup[];
   readonly deliveries: readonly DeliveryAddressView[];
   readonly defaultLabel: string;
 }): readonly FulfillmentDestination[] {

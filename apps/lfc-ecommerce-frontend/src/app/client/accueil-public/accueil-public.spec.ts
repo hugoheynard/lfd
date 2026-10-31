@@ -6,7 +6,7 @@ import type {
   CartAdjustment,
   CustomerOrderLineView,
   CustomerOrderView,
-  PickupAddressView,
+  AudiencePickupAddressView,
   ShopOperationView,
 } from '@lfd/contracts';
 import {
@@ -14,8 +14,6 @@ import {
   pickupAnnouncementOf,
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
-  pickupOpenTo,
-  type CustomerAudience,
 } from '@lfd/contracts/shop-values';
 import { afterEach, describe, expect, it } from 'vitest';
 
@@ -41,18 +39,6 @@ import { NOEL, storefrontObject } from '../shop/storefront/storefront.fixture';
 import { AccueilPublic } from './accueil-public';
 import { ShopCopyOverrides } from '../copy/shop-copy-overrides';
 
-/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
-function discountsFor(
-  adjustment: CartAdjustment | null,
-  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
-): PickupAddressView['discounts'] {
-  const discount =
-    adjustment === null
-      ? null
-      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
-  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
-}
-
 /**
  * **L'accueil public** — ce que voit un visiteur sans compte.
  *
@@ -63,8 +49,11 @@ function discountsFor(
  */
 
 function point(
-  over: Partial<PickupAddressView> & { id: string; discount?: CartAdjustment | null },
-): PickupAddressView {
+  over: Partial<Omit<AudiencePickupAddressView, 'discount'>> & {
+    id: string;
+    discount?: CartAdjustment | null;
+  },
+): AudiencePickupAddressView {
   const { discount = null, ...rest } = over;
   return {
     label: 'Le Labo',
@@ -73,8 +62,13 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discounts: discountsFor(discount),
+    // La remise servie à qui regarde — une seule (2026-10-31).
+    discount:
+      discount === null
+        ? null
+        : { adjustment: discount, scope: 'all_except', categories: [], products: [] },
     opening: { publicOpening: null, proPickup: null },
+    gps: null,
     ...rest,
   };
 }
@@ -83,13 +77,9 @@ function point(
 const DIX = { mode: 'percent', bp: 1000 } as const;
 
 class FakePoints {
-  readonly pickups = signal<readonly PickupAddressView[]>([]);
+  readonly pickups = signal<readonly AudiencePickupAddressView[]>([]);
   /** Aucun premier jour commandable : le choix gardé n'est pas le sujet (lot J4). */
   readonly firstOrderableDay = signal<string | null>(null);
-  /** La même règle que le vrai dépôt : on n'en double que la source. */
-  pickupsFor(audience: CustomerAudience): readonly PickupAddressView[] {
-    return this.pickups().filter((candidate) => pickupOpenTo(candidate, audience));
-  }
   /**
    * Le réglage « Livraison » à son défaut, ouvert aux deux — ce que le vrai
    * dépôt rend tant que rien n'est lu. La porte du coursier le lit depuis
@@ -212,7 +202,7 @@ let contactSettings: PublicContactSettingsView = NO_CONTACT_SETTINGS;
 let lastPoints = new FakePoints();
 
 async function mount(
-  points: readonly PickupAddressView[],
+  points: readonly AudiencePickupAddressView[],
   who: Regard = 'visiteur',
   orders: readonly CustomerOrderView[] = [],
   sold: readonly string[] = [],
@@ -228,7 +218,7 @@ async function mount(
       { provide: ServicePoints, useValue: store },
       {
         provide: ClientAudience,
-        useValue: { shown: signal('b2c' as const), announcement: signal('b2c' as const) },
+        useValue: { shown: signal('b2c' as const), servedAsPro: signal(false) },
       },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
@@ -300,10 +290,7 @@ describe('AccueilPublic — ce que les maisons annoncent', () => {
    * refiltrer : deux règles finiraient par se contredire.
    */
   it('montre les maisons servies, sans les refiltrer par clientèle', async () => {
-    const fixture = await mount([
-      point({ id: 'a' }),
-      point({ id: 'b', label: 'Le Labo', pickupAudiences: { b2b: false, b2c: true } }),
-    ]);
+    const fixture = await mount([point({ id: 'a' }), point({ id: 'b', label: 'Le Labo' })]);
 
     const shown = fixture.componentInstance['houses']().map((house) => house.point.id);
     expect(shown).toEqual(['a', 'b']);
@@ -354,7 +341,7 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
         { provide: ServicePoints, useValue: store },
         {
           provide: ClientAudience,
-          useValue: { shown: signal('b2c' as const), announcement: signal('b2c' as const) },
+          useValue: { shown: signal('b2c' as const), servedAsPro: signal(false) },
         },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: new FakeShop([]) },
@@ -649,7 +636,7 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
           provide: ClientAudience,
           useValue: {
             shown: signal(audienceOf(status)),
-            announcement: signal(pickupAnnouncementOf(status)),
+            servedAsPro: signal(pickupAnnouncementOf(status) !== 'b2c'),
           },
         },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
@@ -897,7 +884,7 @@ describe('AccueilPublic — quand le retrait n’est pas proposé', () => {
           provide: ClientAudience,
           useValue: {
             shown: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)),
-            announcement: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)),
+            servedAsPro: signal(who === 'pro'),
           },
         },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },

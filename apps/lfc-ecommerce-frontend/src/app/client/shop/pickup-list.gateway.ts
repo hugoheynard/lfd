@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 import { switchMap } from 'rxjs/operators';
 
@@ -32,17 +32,17 @@ export class PickupListGateway {
   }
 
   /** Les points de CE lecteur. */
-  pickupsOf(reader: string): Promise<readonly PickupAddressView[]> {
+  pickupsOf(reader: string): Promise<readonly AudiencePickupAddressView[]> {
     const base = AUTH_CONFIG.apiBaseUrl;
     if (reader === VISITOR) {
       return firstValueFrom(
-        this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses`),
+        this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses`),
       );
     }
     return firstValueFrom(
       this.auth.accessToken$().pipe(
         switchMap((token) =>
-          this.http.get<readonly PickupAddressView[]>(`${base}/pickup-addresses/mine`, {
+          this.http.get<readonly AudiencePickupAddressView[]>(`${base}/pickup-addresses/mine`, {
             headers: { Authorization: `Bearer ${token}` },
           }),
         ),

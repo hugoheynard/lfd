@@ -74,7 +74,7 @@ describe("shopCatalogueOf — chaque déclinaison en vignette", () => {
     ]);
 
     expect(shownVariantSkus(view, sellable)).toEqual(["CHO-001-1", "CHO-001-2"]);
-    expect(withPricesPerKg(view, sellable, perKg).items[1]).toMatchObject({
+    expect(withPricesPerKg(view, sellable, perKg, "public").items[1]).toMatchObject({
       sku: "CHO-001-2",
       publicPricePerKgTtcCents: 5_600,
     });

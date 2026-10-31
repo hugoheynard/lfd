@@ -80,6 +80,26 @@ describe("offerCandidates — ce que le rayon peut mentionner", () => {
 
     expect(candidates).toEqual([]);
   });
+
+  /**
+   * Une audience, une information (Hugo, 2026-10-31 ; plan
+   * `chaque-audience-son-information`, § 4) : le rayon d'un invité ne mentionne
+   * ni une promotion des inscrits, ni une promotion d'une clientèle pro.
+   */
+  it("au rayon d'un invité, aucune promotion « inscrits » ni « pros »", () => {
+    const reserved = (
+      ["individuals_registered", "pros", "pros_active", "pros_pending"] as const
+    ).map((kind) => ({ ...EN_RETRAIT, id: kind, audiences: [{ kind }] }));
+
+    expect(offerCandidates(reserved, ASKED_AT, INDIVIDUAL)).toEqual([]);
+    expect(
+      offerCandidates(
+        [{ ...EN_RETRAIT, id: "invites", audiences: [{ kind: "individuals_guest" as const }] }],
+        ASKED_AT,
+        INDIVIDUAL,
+      ).map((p) => p.id),
+    ).toEqual(["invites"]);
+  });
 });
 
 describe("fulfillmentOffersFor — la mention sur un article", () => {

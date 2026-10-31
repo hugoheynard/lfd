@@ -1,7 +1,7 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { CartAdjustment, PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView, CartAdjustment } from '@lfd/contracts';
 import { FoldPanelRef } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
 
@@ -16,24 +16,12 @@ import { ServicePoints } from '../pickup-points.store';
 import { PublicHousePickerDialog } from './public-house-picker-dialog';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
-/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
-function discountsFor(
-  adjustment: CartAdjustment | null,
-  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
-): PickupAddressView['discounts'] {
-  const discount =
-    adjustment === null
-      ? null
-      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
-  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
-}
-
 /** Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. */
 function point(
   id: string,
   label: string,
-  discount: CartAdjustment | null = null,
-): PickupAddressView {
+  adjustment: CartAdjustment | null = null,
+): AudiencePickupAddressView {
   return {
     id,
     label,
@@ -42,8 +30,12 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discounts: discountsFor(discount),
+    discount:
+      adjustment === null
+        ? null
+        : { adjustment, scope: 'all_except', categories: [], products: [] },
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },
+    gps: null,
   };
 }
 
@@ -52,7 +44,7 @@ const VILLAGE = point('pick_village', 'Le Village', { mode: 'percent', bp: 1000 
 
 interface Monde {
   readonly currentId?: string | null;
-  readonly points?: readonly PickupAddressView[];
+  readonly points?: readonly AudiencePickupAddressView[];
   readonly workspace?: WorkspaceDouble;
 }
 
@@ -78,7 +70,7 @@ function boot({
       provideHttpClientTesting(),
       {
         provide: ClientAudience,
-        useValue: { shown: () => 'b2c', current: () => 'b2c', announcement: () => 'b2c' },
+        useValue: { shown: () => 'b2c', current: () => 'b2c', servedAsPro: () => false },
       },
       provideWorkspace(workspace),
       {
@@ -110,8 +102,7 @@ describe('PublicHousePickerDialog', () => {
    * dialogue propose ce qu'on lui sert, sans refiltrer.
    */
   it('propose les maisons servies, sans les refiltrer', () => {
-    const reserved: PickupAddressView = { ...LABO, pickupAudiences: { b2b: true, b2c: false } };
-    const rendered = houses(boot({ points: [reserved, VILLAGE] }).fixture);
+    const rendered = houses(boot({ points: [LABO, VILLAGE] }).fixture);
 
     expect(rendered).toHaveLength(2);
   });

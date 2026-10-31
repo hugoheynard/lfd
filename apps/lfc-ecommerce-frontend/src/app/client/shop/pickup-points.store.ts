@@ -1,9 +1,12 @@
 import { HttpClient } from '@angular/common/http';
 import { computed, effect, inject, Injectable, signal, untracked } from '@angular/core';
-import type { DeliveryZoneView, FulfillmentDayView, PickupAddressView } from '@lfd/contracts';
+import type {
+  DeliveryZoneView,
+  FulfillmentDayView,
+  AudiencePickupAddressView,
+} from '@lfd/contracts';
 // Valeurs par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
 import {
-  NO_PICKUP_DISCOUNTS,
   DEFAULT_DELIVERY_AVAILABILITY,
   type PublicDeliveryAvailabilityView,
 } from '@lfd/contracts/shop-values';
@@ -59,7 +62,7 @@ export class ServicePoints {
    */
   private pickupsReader: string | null = null;
 
-  private readonly pickupList = signal<readonly PickupAddressView[]>([]);
+  private readonly pickupList = signal<readonly AudiencePickupAddressView[]>([]);
   private readonly zoneList = signal<readonly DeliveryZoneView[]>([]);
   private readonly dayList = signal<readonly FulfillmentDayView[]>([]);
   private readonly settingsHeld = signal<PublicDeliveryAvailabilityView | null>(null);
@@ -284,16 +287,22 @@ export class ServicePoints {
     return this.list.readerKey();
   }
 
-  private pickupsOf(reader: string): Promise<readonly PickupAddressView[]> {
+  private pickupsOf(reader: string): Promise<readonly AudiencePickupAddressView[]> {
     return this.list.pickupsOf(reader);
   }
 
   /**
-   * Relit les points seuls, au changement de lecteur. Un échec garde la liste
-   * connue : la caisse refuse de toute façon un point fermé, en le nommant.
+   * Relit les points seuls, au changement de lecteur. La liste se vide d'abord :
+   * celle de l'ancien lecteur n'est pas la sienne. Un échec la laisse vide, et
+   * {@link pickupsSettled} le dit.
    */
   private async refreshPickups(reader: string): Promise<void> {
     this.pickupsReader = reader;
+    // La liste lue pour l'ancien lecteur porte SA remise (2026-10-31 : une
+    // audience, une information) : elle ne se montre pas au nouveau, même le
+    // temps d'une requête, ni après un échec.
+    this.pickupList.set([]);
+    this.servedFor.set(null);
     try {
       const pickups = await this.pickupsOf(reader);
       if (this.pickupsReader === reader) {
@@ -302,7 +311,7 @@ export class ServicePoints {
         this.pickupsFailed.set(false);
       }
     } catch {
-      // La liste connue reste : voir plus haut.
+      // Vide : la liste connue était celle d'un autre lecteur.
       this.pickupsFailed.set(true);
     }
   }
@@ -376,19 +385,17 @@ export class ServicePoints {
 }
 
 /**
- * Un point tel qu'une API servie AVANT les remises par clientèle peut le
- * rendre : sans `discounts` (2026-10-22 ; avant, sans `discountAudiences`).
+ * Un point tel qu'une API d'avant le 2026-10-31 peut le rendre : sans
+ * `discount` (elle servait les remises de toutes les clientèles, que la
+ * boutique ne lit plus) ni, plus ancienne, `gps`.
  *
  * Ce n'est pas une copie du contrat : l'appel HTTP est typé par
- * `PickupAddressView`, et ce type n'élargit que le PARAMÈTRE du normaliseur —
- * la vue du contrat y entre telle quelle.
- *
- * Le plan (§4) fait partir l'API et les fronts dans le même merge, mais un front
- * servi avant l'API lit une vue sans les nouveaux champs — et doit les tenir
- * pour ouverts, c'est-à-dire pour ce qui s'appliquait jusque-là.
+ * `AudiencePickupAddressView`, et ce type n'élargit que le PARAMÈTRE du
+ * normaliseur — la vue du contrat y entre telle quelle.
  */
-type ServedPickup = Omit<PickupAddressView, 'discounts'> & {
-  readonly discounts?: PickupAddressView['discounts'];
+type ServedPickup = Omit<AudiencePickupAddressView, 'discount' | 'gps'> & {
+  readonly discount?: AudiencePickupAddressView['discount'];
+  readonly gps?: AudiencePickupAddressView['gps'];
 };
 
 /** Une journée telle qu'une API d'avant le 2026-10-21 la rend : sans `orderUntil`. */
@@ -405,12 +412,24 @@ function servedDay(day: ServedDay): FulfillmentDayView {
 type ServedDeliveryAvailability = Partial<PublicDeliveryAvailabilityView>;
 
 /**
- * Un point sans `discounts` vient d'une API d'avant : la boutique n'y annonce
+ * Un point sans `discount` vient d'une API d'avant : la boutique n'y annonce
  * aucune remise plutôt que d'en inventer une — le devis, servi par le
- * serveur, dit de toute façon ce qui s'applique.
+ * serveur, dit de toute façon ce qui s'applique. Le point est reconstruit
+ * champ par champ : ce qu'une API d'avant servait en plus n'est pas gardé.
  */
-function servedPickup(point: ServedPickup): PickupAddressView {
-  return { ...point, discounts: point.discounts ?? NO_PICKUP_DISCOUNTS };
+function servedPickup(point: ServedPickup): AudiencePickupAddressView {
+  return {
+    id: point.id,
+    label: point.label,
+    ligne1: point.ligne1,
+    ligne2: point.ligne2,
+    codePostal: point.codePostal,
+    ville: point.ville,
+    pays: point.pays,
+    discount: point.discount ?? null,
+    opening: point.opening,
+    gps: point.gps ?? null,
+  };
 }
 
 /** Une clientèle absente de la vue est tenue pour ouverte : l'existant. */

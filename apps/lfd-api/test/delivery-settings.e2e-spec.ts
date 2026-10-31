@@ -14,7 +14,7 @@ import type {
   CreatedIdResponse,
   CreatedPickupResponse,
   DepartureView,
-  PickupAddressView,
+  AudiencePickupAddressView,
   StaffRole,
   VehiclesView,
 } from "@lfd/contracts";
@@ -306,7 +306,7 @@ describe("le point GPS d'un point de retrait", () => {
       pays: "France",
     };
     const gpsOf = async (): Promise<unknown> =>
-      jsonBody<readonly PickupAddressView[]>(
+      jsonBody<readonly AudiencePickupAddressView[]>(
         await ctx.http().get("/pickup-addresses").expect(200),
       )[0]?.gps;
 

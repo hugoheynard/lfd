@@ -1,7 +1,11 @@
 import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { type CompanyView, type PickupAddressView, PERSONAL_WORKSPACE } from '@lfd/contracts';
+import {
+  type CompanyView,
+  type AudiencePickupAddressView,
+  PERSONAL_WORKSPACE,
+} from '@lfd/contracts';
 import { beforeEach, describe, expect, it } from 'vitest';
 
 import { provideRecognised } from './client-orders.fixture';
@@ -26,7 +30,7 @@ const AU_LABO: ServiceChoice = {
 };
 
 /** Le point du retrait {@link AU_LABO}, tel que le serveur le sert. */
-const LABO_POINT: PickupAddressView = {
+const LABO_POINT: AudiencePickupAddressView = {
   id: 'pick_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -34,7 +38,8 @@ const LABO_POINT: PickupAddressView = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discounts: { b2b: null, b2c: null },
+  discount: null,
+  gps: null,
   opening: { proPickup: null, publicOpening: null },
 };
 

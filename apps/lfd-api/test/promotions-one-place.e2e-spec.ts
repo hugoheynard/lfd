@@ -11,7 +11,8 @@
  */
 import type {
   CreatedPickupResponse,
-  PickupAddressView,
+  AudiencePickupAddressView,
+  AudiencePickupDiscount,
   PromotionTermsPayload,
   ShopQuoteView,
 } from "@lfd/contracts";
@@ -87,11 +88,11 @@ async function quoteAt(pickupAddressId: string): Promise<ShopQuoteView> {
   return jsonBody<ShopQuoteView>(await ctx.http().post("/shop/quote").send(body).expect(200));
 }
 
-async function announcedAt(pickupId: string): Promise<PickupAddressView["discounts"]["b2c"]> {
-  const points = jsonBody<readonly PickupAddressView[]>(
+async function announcedAt(pickupId: string): Promise<AudiencePickupDiscount | null> {
+  const points = jsonBody<readonly AudiencePickupAddressView[]>(
     await ctx.http().get("/pickup-addresses").expect(200),
   );
-  return points.find((point) => point.id === pickupId)?.discounts.b2c ?? null;
+  return points.find((point) => point.id === pickupId)?.discount ?? null;
 }
 
 function lineTotalOf(quote: ShopQuoteView): number {

@@ -217,7 +217,11 @@ export class ShopCataloguePricing {
       this.clock.now(),
       priced.sealing,
     );
-    return inShopLanguage(withPricesPerKg(mentioned, sellable, perKg), sellable, language);
+    return inShopLanguage(
+      withPricesPerKg(mentioned, sellable, perKg, audience),
+      sellable,
+      language,
+    );
   }
 
   /** La vitrine au prix résolu, tarif barré quand une résolution le baisse. */

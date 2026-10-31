@@ -4,7 +4,6 @@ import {
   audienceOf,
   type CustomerAudience,
   pickupAnnouncementOf,
-  type PickupAnnouncementKey,
 } from '@lfd/contracts/shop-values';
 
 import { AuthFacade } from '../auth/auth.facade';
@@ -60,20 +59,21 @@ export class ClientAudience {
   readonly shown = computed<CustomerAudience>(() => this.current() ?? 'b2c');
 
   /**
-   * **Quelle remise de retrait annoncer** : celle d'une société active, d'une
-   * société EN ATTENTE, ou des particuliers (`pickupAnnouncementOf`).
+   * **Servi en pro par la caisse** : une société active, ou EN ATTENTE
+   * (`companyServiceOf`) — ce qui fait dire « Prix pro » plutôt que « Prix
+   * boutique » à un point sans remise.
    *
-   * Distincte de la clientèle parce qu'une société en attente est `b2c` pour
-   * tout le reste (CGV, contact, livraison) mais servie en pro par la caisse,
-   * qui juge ses promotions avec son statut : lui annoncer la remise `b2c`
-   * promettait une promotion « particuliers » que la caisse ne retirait pas
-   * (corrigé le 2026-10-31). Tant que l'espace n'est pas connu, les
-   * particuliers — la même prudence que {@link shown}.
+   * Ce n'est plus une clé d'annonce (2026-10-31, Hugo : « chaque audience n'a
+   * le droit qu'à son information ») : le serveur rend déjà, sur chaque
+   * point, la seule remise de qui regarde. Tant que l'espace n'est pas connu,
+   * les particuliers — la même prudence que {@link shown}.
    */
-  readonly announcement = computed<PickupAnnouncementKey>(() => {
+  readonly servedAsPro = computed<boolean>(() => {
     if (!this.auth.isAuthenticated() || this.current() === null) {
-      return 'b2c';
+      return false;
     }
-    return pickupAnnouncementOf(this.workspace.company()?.status ?? null);
+    // La règle partagée avec le serveur : toute annonce autre que celle des
+    // particuliers est celle d'une société servie en pro.
+    return pickupAnnouncementOf(this.workspace.company()?.status ?? null) !== 'b2c';
   });
 }

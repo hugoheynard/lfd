@@ -12,9 +12,8 @@
 import {
   type CreatedPickupResponse,
   PICKUP_CHOICE_REQUIRED,
-  type PickupAddressView,
+  type AudiencePickupAddressView,
   type PickupDiscountAudiences,
-  pickupDiscountFor,
   type ShopQuoteView,
 } from "@lfd/contracts";
 import type request from "supertest";
@@ -102,11 +101,11 @@ async function seedSite(
   return id;
 }
 
-const labels = (points: readonly PickupAddressView[]): readonly string[] =>
+const labels = (points: readonly { readonly label: string }[]): readonly string[] =>
   points.map((point) => point.label);
 
 async function listed(agent: ReturnType<E2eContext["asSub"]>, url: string) {
-  return labels(jsonBody<readonly PickupAddressView[]>(await agent.get(url).expect(200)));
+  return labels(jsonBody<readonly { readonly label: string }[]>(await agent.get(url).expect(200)));
 }
 
 /** Un devis en retrait SANS point choisi — le seul chemin où le serveur présélectionne. */
@@ -139,16 +138,17 @@ describe("les listes, filtrées au serveur", () => {
     await seedSite("Particuliers seulement", { b2b: false, b2c: true }, 300);
 
     const response = await ctx.http().get("/pickup-addresses?audience=pro").expect(200);
-    const points = jsonBody<readonly PickupAddressView[]>(response);
+    const points = jsonBody<readonly AudiencePickupAddressView[]>(response);
 
     expect(labels(points)).toEqual(["Les deux", "Pros seulement"]);
-    expect(points.map((point) => pickupDiscountFor(point, "b2b")?.adjustment)).toEqual([
+    expect(points.map((point) => point.discount?.adjustment)).toEqual([
       { mode: "amount", cents: 100 },
       { mode: "amount", cents: 200 },
     ]);
+    // Une seule part par appel (2026-10-31) : plus de champ par clientèle.
     expect(Object.keys(points[0] ?? {}).sort()).toEqual(
-      ["codePostal", "discounts", "gps", "id", "label", "ligne1", "ligne2"]
-        .concat(["opening", "pays", "pickupAudiences", "ville"])
+      ["codePostal", "discount", "gps", "id", "label", "ligne1", "ligne2"]
+        .concat(["opening", "pays", "ville"])
         .sort(),
     );
   });

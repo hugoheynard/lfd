@@ -1,6 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView } from '@lfd/contracts';
 import { firstValueFrom } from 'rxjs';
 
 import { AUTH_CONFIG } from '../../auth/auth.config';
@@ -17,11 +17,14 @@ import { AUTH_CONFIG } from '../../auth/auth.config';
 export class ProPickupListGateway {
   private readonly http = inject(HttpClient);
 
-  list(): Promise<readonly PickupAddressView[]> {
+  list(): Promise<readonly AudiencePickupAddressView[]> {
     return firstValueFrom(
-      this.http.get<readonly PickupAddressView[]>(`${AUTH_CONFIG.apiBaseUrl}/pickup-addresses`, {
-        params: { audience: 'pro' },
-      }),
+      this.http.get<readonly AudiencePickupAddressView[]>(
+        `${AUTH_CONFIG.apiBaseUrl}/pickup-addresses`,
+        {
+          params: { audience: 'pro' },
+        },
+      ),
     );
   }
 }

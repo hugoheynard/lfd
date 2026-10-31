@@ -3,7 +3,7 @@ import { HttpTestingController, provideHttpClientTesting } from '@angular/common
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
-import type { CartAdjustment, PickupAddressView, ShopFeaturedView } from '@lfd/contracts';
+import type { AudiencePickupAddressView, CartAdjustment, ShopFeaturedView } from '@lfd/contracts';
 import { FoldPanelHostService } from 'fold-ng';
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -16,19 +16,14 @@ import { ContactDialog } from '../shop/contact-dialog/contact-dialog';
 import { NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import { ProLanding } from './pro-landing';
 
-/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
-function discountsFor(
-  adjustment: CartAdjustment | null,
-  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
-): PickupAddressView['discounts'] {
-  const discount =
-    adjustment === null
-      ? null
-      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
-  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
+/** La remise d'un point telle que la vitrine pro la reçoit — une seule (2026-10-31). */
+function discountOf(adjustment: CartAdjustment | null): AudiencePickupAddressView['discount'] {
+  return adjustment === null
+    ? null
+    : { adjustment, scope: 'all_except', categories: [], products: [] };
 }
 
-const LABO: PickupAddressView = {
+const LABO: AudiencePickupAddressView = {
   id: 'pick_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -36,14 +31,16 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discounts: discountsFor({ mode: 'percent', bp: 1000 }),
+  discount: discountOf({ mode: 'percent', bp: 1000 }),
   opening: { proPickup: null, publicOpening: null },
+  gps: null,
 };
-const VILLAGE: PickupAddressView = {
+/** Remisé pour les particuliers seulement : le serveur ne sert rien à la vitrine pro. */
+const VILLAGE: AudiencePickupAddressView = {
   ...LABO,
   id: 'pick_village',
   label: 'Le Village',
-  discounts: discountsFor({ mode: 'percent', bp: 1500 }, { b2b: false, b2c: true }),
+  discount: discountOf(null),
 };
 
 const FEATURED: ShopFeaturedView = [
@@ -108,7 +105,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
   });
 
   /** La lecture publique des points pros, doublée. */
-  function answer(body: readonly PickupAddressView[] | 'error'): void {
+  function answer(body: readonly AudiencePickupAddressView[] | 'error'): void {
     const http = TestBed.inject(HttpTestingController);
     const req = http.expectOne(
       (r) => r.url.endsWith('/pickup-addresses') && r.params.get('audience') === 'pro',
@@ -151,7 +148,7 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(maybe('pro-pickup-points')).toBeNull();
   });
 
-  it('plusieurs points : leur nombre, et la meilleure remise PRO (pas celle des particuliers)', async () => {
+  it('plusieurs points : leur nombre, et la meilleure remise servie à la vitrine pro', async () => {
     answer([LABO, VILLAGE]);
     await settle();
     expect(maybe('pro-pickup-points')?.textContent?.trim()).toBe('2 points de retrait');

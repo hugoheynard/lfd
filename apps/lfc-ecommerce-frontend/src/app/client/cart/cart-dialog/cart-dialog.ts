@@ -154,7 +154,7 @@ export class CartDialog {
   /** Les portes du mode de service — les mêmes que l'accueil ouvre. */
   private readonly doors = inject(OrderDoors);
   private readonly points = inject(ServicePoints);
-  private readonly announcement = inject(ClientAudience).announcement;
+  private readonly servedAsPro = inject(ClientAudience).servedAsPro;
 
   /** « Trop tard pour demain : … » — le même avertissement que la barre du rayon. */
   private readonly dayNotice = inject(ServiceDayNotice);
@@ -449,7 +449,7 @@ export class CartDialog {
     }
     const offer = this.points
       .pickups()
-      .map((point) => pickupOffer(point, this.announcement(), this.t().pickupDialog))
+      .map((point) => pickupOffer(point, this.servedAsPro(), this.t().pickupDialog))
       .find((o) => o.hasOffer);
     return offer === undefined ? c.otherPickup : fill(c.otherPickupOffer, { offer: offer.label });
   });

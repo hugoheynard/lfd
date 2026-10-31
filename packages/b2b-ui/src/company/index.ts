@@ -99,7 +99,7 @@ export {
   preferenceForMethod,
   preferenceForSignature,
 } from './fulfillment-preference.model';
-export type { FulfillmentDestination } from './fulfillment-preference.model';
+export type { FulfillmentDestination, OfferedPickup } from './fulfillment-preference.model';
 export { DeliveryProcedureEditor } from './delivery-procedure/delivery-procedure-editor/delivery-procedure-editor';
 export { DeliveryStepForm } from './delivery-procedure/delivery-step-form/delivery-step-form';
 export {

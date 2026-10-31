@@ -16,7 +16,7 @@
  */
 import type {
   CreatedPickupResponse,
-  PickupAddressView,
+  AudiencePickupAddressView,
   PromotionTermsPayload,
   ShopCatalogueView,
   ShopQuoteView,
@@ -180,10 +180,10 @@ describe("un point + une zone en UNE promotion", () => {
     const sc = await scene();
     await pose(terms(sc));
 
-    const points = jsonBody<readonly PickupAddressView[]>(
+    const points = jsonBody<readonly AudiencePickupAddressView[]>(
       await ctx.http().get("/pickup-addresses").expect(200),
     );
-    const announced = (id: string) => points.find((point) => point.id === id)?.discounts.b2c;
+    const announced = (id: string) => points.find((point) => point.id === id)?.discount;
     expect(announced(sc.labo)?.adjustment).toEqual({ mode: "percent", bp: 1_000 });
     expect(announced(sc.gare)).toBeNull();
   });

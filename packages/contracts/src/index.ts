@@ -730,7 +730,12 @@ export type {
   DevScenarioStepView,
   DevScenarioView,
 } from "./dev-seed.js";
-export type { PickupAddressPayload, PickupAddressView, CreatedPickupResponse } from "./pickup.js";
+export type {
+  AudiencePickupAddressView,
+  PickupAddressPayload,
+  PickupAddressView,
+  CreatedPickupResponse,
+} from "./pickup.js";
 export {
   siteColorSchema,
   siteColorsPayloadSchema,

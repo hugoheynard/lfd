@@ -11,7 +11,7 @@
 import {
   publicPickupSlotsFor,
   type CreatedPickupResponse,
-  type PickupAddressView,
+  type AudiencePickupAddressView,
   type PublicPickupScheduleView,
 } from "@lfd/contracts";
 
@@ -235,7 +235,7 @@ describe("créneaux publics de retrait — un point non réglé est inchangé", 
     const id = await createPoint("Labo Lyon");
 
     const response = await ctx.http().get("/pickup-addresses").expect(200);
-    const points = jsonBody<readonly PickupAddressView[]>(response);
+    const points = jsonBody<readonly AudiencePickupAddressView[]>(response);
 
     expect(points.find((candidate) => candidate.id === id)?.opening).toEqual(PRO_OPENING);
   });
@@ -249,7 +249,7 @@ describe("créneaux publics de retrait — un point non réglé est inchangé", 
       .expect(204);
 
     const response = await ctx.http().get("/pickup-addresses").expect(200);
-    const points = jsonBody<readonly PickupAddressView[]>(response);
+    const points = jsonBody<readonly AudiencePickupAddressView[]>(response);
     expect(points.find((candidate) => candidate.id === id)?.opening).toEqual(PRO_OPENING);
   });
 });

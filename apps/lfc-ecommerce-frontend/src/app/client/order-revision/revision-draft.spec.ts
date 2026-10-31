@@ -1,10 +1,10 @@
-import type { CustomerOrderView, PickupAddressView } from '@lfd/contracts';
+import type { CustomerOrderView, AudiencePickupAddressView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { LIVE_PICKUP } from '../mes-commandes/order-view.fixture';
 import { contentOf, draftOf, withAdded, withoutLine, withQuantity } from './revision-draft';
 
-const LABO: PickupAddressView = {
+const LABO: AudiencePickupAddressView = {
   id: 'pa_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -12,11 +12,12 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: "Val d'Isère",
   pays: 'France',
-  discounts: { b2b: null, b2c: null },
+  discount: null,
+  gps: null,
   opening: { proPickup: null, publicOpening: null },
 };
 
-function point(overrides: Partial<PickupAddressView> = {}): PickupAddressView {
+function point(overrides: Partial<AudiencePickupAddressView> = {}): AudiencePickupAddressView {
   return { ...LABO, ...overrides };
 }
 

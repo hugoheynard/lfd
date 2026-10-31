@@ -345,6 +345,7 @@
   "test/payment-links.e2e-spec.ts": 6545,
   "test/payments-journal.e2e-spec.ts": 5571,
   "test/pickup-addresses.e2e-spec.ts": 6506,
+  "test/pickup-audience-information.e2e-spec.ts": 18000,
   "test/pickup-audience.e2e-spec.ts": 4000,
   "test/pickup-discount-exclusions.e2e-spec.ts": 7484,
   "test/pickup-lists-by-audience.e2e-spec.ts": 12000,

@@ -196,6 +196,34 @@ export interface PickupAddressView {
   readonly gps?: GpsPoint | null | undefined;
 }
 
+/**
+ * **Un point de retrait tel que la boutique le reçoit** — pour UNE audience
+ * (Hugo, 2026-10-31 : « chaque audience n'a le droit qu'à son information » ;
+ * `documentation/promotions/plan-chaque-audience-son-information.md`, § 5).
+ *
+ * Distincte de {@link PickupAddressView}, qui garde ses remises par clientèle
+ * pour le back-office : celle-ci n'a STRUCTURELLEMENT aucun champ par
+ * clientèle — ni `discounts`, ni `pickupAudiences`. Le serveur a déjà choisi
+ * la remise (`discount`) d'après l'audience déclarée (route publique) ou
+ * établie (`/mine`), et filtré la liste par clientèle : la boutique n'a plus
+ * rien à choisir, donc plus rien à recevoir des autres.
+ */
+export interface AudiencePickupAddressView {
+  readonly id: string;
+  readonly label: string;
+  readonly ligne1: string;
+  readonly ligne2: string;
+  readonly codePostal: string;
+  readonly ville: string;
+  readonly pays: string;
+  /** La remise annoncée à CETTE audience en retrait ici, ou `null`. */
+  readonly discount: AudiencePickupDiscount | null;
+  /** Quand on peut venir — cf. {@link pickupOpeningSchema}. */
+  readonly opening: PickupOpening;
+  /** Le point GPS du lieu, `null` s'il n'est pas saisi. */
+  readonly gps: GpsPoint | null;
+}
+
 /** Réponse de création d'un point de retrait. */
 export interface CreatedPickupResponse {
   readonly id: string;

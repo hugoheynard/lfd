@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { DEFAULT_DELIVERY_AVAILABILITY, type PickupAddressView } from '@lfd/contracts';
+import { type AudiencePickupAddressView, DEFAULT_DELIVERY_AVAILABILITY } from '@lfd/contracts';
 import { of } from 'rxjs';
 import { beforeEach, describe, expect, it } from 'vitest';
 
@@ -18,8 +18,8 @@ import { ServicePoints } from './pickup-points.store';
 import { hydrateWith, operationCatalogue } from './shop-catalogue.fixture';
 import { ShopCatalogue } from './shop-catalogue.store';
 
-/** Un point tel qu'une API d'AVANT les remises par clientèle le sert : sans `discounts`. */
-const OLD_POINT: Omit<PickupAddressView, 'discounts'> = {
+/** Un point tel qu'une API d'avant le 2026-10-31 le sert : sans `discount` ni `gps`. */
+const OLD_POINT: Omit<AudiencePickupAddressView, 'discount' | 'gps'> = {
   id: 'pick_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -75,9 +75,20 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   });
 
   /** Plan §4 : un front servi avant l'API lit une vue sans les nouveaux champs. */
-  it('n’annonce aucune remise pour un point servi sans `discounts`', () => {
+  it('n’annonce aucune remise pour un point servi sans `discount`', () => {
     points.receive([OLD_POINT], []);
-    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null, b2bPending: null });
+    expect(points.pickups()[0]?.discount).toBeNull();
+  });
+
+  /**
+   * Une API d'avant le 2026-10-31 servait les remises de TOUTES les clientèles :
+   * le point est reconstruit champ par champ, elles ne restent pas dans l'état.
+   */
+  it('ne garde rien de ce qu’une API d’avant servait par clientèle', () => {
+    const legacy = { ...OLD_POINT, discounts: { b2b: null, b2c: null }, pickupAudiences: {} };
+    points.receive([legacy], []);
+    expect(Object.keys(points.pickups()[0] ?? {})).not.toContain('discounts');
+    expect(Object.keys(points.pickups()[0] ?? {})).not.toContain('pickupAudiences');
   });
 
   it('ouvert aux deux, et NON connu, tant que rien n’est lu', () => {
@@ -95,7 +106,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
 
     expect(points.deliveryAvailability()).toMatchObject({ openToB2b: true, openToB2c: false });
     expect(points.deliveryAvailabilityKnown()).toBe(true);
-    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null, b2bPending: null });
+    expect(points.pickups()[0]?.discount).toBeNull();
     http.verify();
   });
 
@@ -256,6 +267,33 @@ describe('ServicePoints — la liste des points, par lecteur', () => {
     await new Promise((resolve) => setTimeout(resolve, 0));
 
     expect(points.pickups().map((p) => p.id)).toEqual(['pros']);
+    http.verify();
+  });
+
+  /**
+   * Une audience, une information (2026-10-31) : la liste de l'ancien lecteur
+   * porte SA remise, et ne se montre pas au nouveau — ni pendant la relecture,
+   * ni après son échec.
+   */
+  it('se vide au changement de lecteur, et reste vide si la relecture échoue', async () => {
+    const workspace = workspaceDouble();
+    const { points, http } = boot(true, workspace);
+    const hydrating = points.hydrate();
+    http.expectOne(url('/pickup-addresses/mine')).flush([OLD_POINT]);
+    answerTheRest(http);
+    await hydrating;
+
+    workspace.choose('cmp_pro');
+    TestBed.tick();
+    expect(points.pickups()).toEqual([]);
+    expect(points.pickupsKnown()).toBe(false);
+    http
+      .expectOne(url('/pickup-addresses/mine'))
+      .flush('panne', { status: 500, statusText: 'Server Error' });
+    await new Promise((resolve) => setTimeout(resolve, 0));
+
+    expect(points.pickups()).toEqual([]);
+    expect(points.pickupsSettled()).toBe(true);
     http.verify();
   });
 });

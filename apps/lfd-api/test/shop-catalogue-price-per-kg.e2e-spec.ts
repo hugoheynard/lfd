@@ -101,15 +101,15 @@ describe("les prix au kilo saisis", () => {
     await relayAll(ctx);
     await approve([fiche]);
 
-    const before = await shopItem(fiche);
-    expect(before).toMatchObject({
-      proPricePerKgMillicents: 612_345,
+    // Une audience, une information (2026-10-31) : chaque rayon ne sert que
+    // SON prix au kilo. Régression : le rayon public servait aussi le pro.
+    expect(await shopItem(fiche)).toMatchObject({
+      proPricePerKgMillicents: null,
       publicPricePerKgTtcCents: 790,
     });
-    // Le rayon pro sert les MÊMES deux montants : c'est l'écran qui choisit.
     expect(await shopItem(fiche, "?audience=pro")).toMatchObject({
       proPricePerKgMillicents: 612_345,
-      publicPricePerKgTtcCents: 790,
+      publicPricePerKgTtcCents: null,
     });
   });
 
@@ -152,8 +152,9 @@ describe("les prix au kilo saisis", () => {
 
 /**
  * Les cases « Afficher aux particuliers » et « Afficher aux pros »
- * (`plan-carte-tarif.md`) : chacune retient SON prix au kilo. La vitrine sert
- * les deux montants aux deux audiences ; c'est l'écran qui choisit l'assiette.
+ * (`plan-carte-tarif.md`) : chacune retient SON prix au kilo. Depuis le
+ * 2026-10-31, chaque rayon ne sert que celui de son audience (une audience,
+ * une information) : le public au rayon public, le pro au rayon pro.
  */
 describe("les cases « afficher le prix au kilo », par audience", () => {
   it("cochées par défaut : l'existant garde son affichage", async () => {
@@ -181,12 +182,14 @@ describe("les cases « afficher le prix au kilo », par audience", () => {
       pricePerKgShownPublic: false,
       pricePerKgShownPro: true,
     });
-    for (const query of ["", "?audience=pro"]) {
-      expect(await shopItem(fiche, query)).toMatchObject({
-        proPricePerKgMillicents: 650_000,
-        publicPricePerKgTtcCents: null,
-      });
-    }
+    expect(await shopItem(fiche)).toMatchObject({
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: null,
+    });
+    expect(await shopItem(fiche, "?audience=pro")).toMatchObject({
+      proPricePerKgMillicents: 650_000,
+      publicPricePerKgTtcCents: null,
+    });
   });
 
   it("pros décochés : seul le pro part à `null`", async () => {
@@ -200,12 +203,14 @@ describe("les cases « afficher le prix au kilo », par audience", () => {
     await relayAll(ctx);
     await approve([fiche]);
 
-    for (const query of ["", "?audience=pro"]) {
-      expect(await shopItem(fiche, query)).toMatchObject({
-        proPricePerKgMillicents: null,
-        publicPricePerKgTtcCents: 820,
-      });
-    }
+    expect(await shopItem(fiche)).toMatchObject({
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: 820,
+    });
+    expect(await shopItem(fiche, "?audience=pro")).toMatchObject({
+      proPricePerKgMillicents: null,
+      publicPricePerKgTtcCents: null,
+    });
   });
 
   it("recochée, la boutique le sert de nouveau, sans ressaisie", async () => {

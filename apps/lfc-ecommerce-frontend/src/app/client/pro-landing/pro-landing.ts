@@ -9,7 +9,11 @@ import {
   untracked,
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
-import type { PickupAddressView, ShopFeaturedItemView, ShopImageView } from '@lfd/contracts';
+import type {
+  AudiencePickupAddressView,
+  ShopFeaturedItemView,
+  ShopImageView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldHeroCardComponent,
@@ -164,7 +168,7 @@ export class ProLanding {
   protected readonly shop = SHOP;
 
   /** `null` tant que la lecture court ; vide si elle échoue. */
-  private readonly points = signal<readonly PickupAddressView[] | null>(null);
+  private readonly points = signal<readonly AudiencePickupAddressView[] | null>(null);
   protected readonly pointsLoading = computed(() => this.points() === null);
 
   /** « 3 points de retrait », ou le nom du seul — `null` sans point lu. */
@@ -180,7 +184,7 @@ export class ProLanding {
 
   /** La meilleure remise pro, sinon la mention générique de la carte. */
   protected readonly pickupNote = computed(() => {
-    const best = bestPickupDiscount(this.points() ?? [], 'b2b');
+    const best = bestPickupDiscount(this.points() ?? []);
     return best === null
       ? this.c().pickup.note
       : fill(this.c().pickupPoints.discount, { value: discountLabel(best) });

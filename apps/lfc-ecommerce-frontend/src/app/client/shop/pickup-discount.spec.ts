@@ -1,6 +1,6 @@
-import type { AudiencePickupDiscount, PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView, AudiencePickupDiscount } from '@lfd/contracts';
 
-import { pickupOffer } from './pickup-discount';
+import { bestPickupDiscount, pickupAdjustmentFor, pickupOffer } from './pickup-discount';
 
 const COPY = {
   discountTag: '−{value} sur tout',
@@ -16,7 +16,7 @@ const TEN_PERCENT: AudiencePickupDiscount = {
   products: [],
 };
 
-function pointWith(b2c: AudiencePickupDiscount | null): PickupAddressView {
+function pointWith(discount: AudiencePickupDiscount | null): AudiencePickupAddressView {
   return {
     id: 'pick_labo',
     label: 'Le Labo',
@@ -25,8 +25,9 @@ function pointWith(b2c: AudiencePickupDiscount | null): PickupAddressView {
     codePostal: '73150',
     ville: 'Val d’Isère',
     pays: 'France',
-    discounts: { b2b: null, b2c },
+    discount,
     opening: { proPickup: null, publicOpening: null },
+    gps: null,
   };
 }
 
@@ -36,7 +37,7 @@ function pointWith(b2c: AudiencePickupDiscount | null): PickupAddressView {
  */
 describe('pickupOffer — sur tout ou sur une sélection', () => {
   it('dit « sur tout » sans règle', () => {
-    expect(pickupOffer(pointWith(TEN_PERCENT), 'b2c', COPY).label).toBe('−10 % sur tout');
+    expect(pickupOffer(pointWith(TEN_PERCENT), false, COPY).label).toBe('−10 % sur tout');
   });
 
   it('dit « sur une sélection » dès qu’une règle exclut', () => {
@@ -44,12 +45,12 @@ describe('pickupOffer — sur tout ou sur une sélection', () => {
       ...TEN_PERCENT,
       categories: [{ categoryId: 'cat_epicerie', eligible: false }],
     });
-    expect(pickupOffer(point, 'b2c', COPY).label).toBe('−10 % sur une sélection');
+    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur une sélection');
   });
 
   it('dit « sur une sélection » en mode « seulement »', () => {
     const point = pointWith({ ...TEN_PERCENT, scope: 'only' });
-    expect(pickupOffer(point, 'b2c', COPY).label).toBe('−10 % sur une sélection');
+    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur une sélection');
   });
 
   it('une règle qui réinclut seule ne retire rien : « sur tout »', () => {
@@ -57,39 +58,39 @@ describe('pickupOffer — sur tout ou sur une sélection', () => {
       ...TEN_PERCENT,
       products: [{ productId: 'prd_tasse', eligible: true }],
     });
-    expect(pickupOffer(point, 'b2c', COPY).label).toBe('−10 % sur tout');
+    expect(pickupOffer(point, false, COPY).label).toBe('−10 % sur tout');
   });
 
-  it('sans remise pour la clientèle, le tarif', () => {
-    expect(pickupOffer(pointWith(TEN_PERCENT), 'b2b', COPY)).toEqual({
+  it('sans remise, le tarif : « Prix pro » à qui la caisse sert en pro', () => {
+    expect(pickupOffer(pointWith(null), true, COPY)).toEqual({
       label: 'Prix pro',
+      hasOffer: false,
+    });
+  });
+
+  it('sans remise, « Prix boutique » à un particulier', () => {
+    expect(pickupOffer(pointWith(null), false, COPY)).toEqual({
+      label: 'Prix boutique',
       hasOffer: false,
     });
   });
 });
 
-describe('pickupOffer — une société en attente', () => {
-  const PENDING_ONLY: PickupAddressView = {
-    ...pointWith(TEN_PERCENT),
-    discounts: { b2b: null, b2c: TEN_PERCENT, b2bPending: null },
-  };
-
-  /**
-   * Régression : la remise des particuliers était annoncée à une société en
-   * attente, que la caisse sert en pro et à qui elle ne la retire pas (2026-10-31).
-   */
-  it('ne lui annonce pas la remise des particuliers ; elle lit le tarif pro', () => {
-    expect(pickupOffer(PENDING_ONLY, 'b2bPending', COPY)).toEqual({
-      label: 'Prix pro',
-      hasOffer: false,
-    });
+/**
+ * Depuis le 2026-10-31, le serveur rend UNE remise par point, celle de qui
+ * regarde : la boutique la lit telle quelle, sans clé de clientèle.
+ */
+describe('la remise unique du point', () => {
+  it('pickupAdjustmentFor lit la remise servie, ou rien', () => {
+    expect(pickupAdjustmentFor(pointWith(TEN_PERCENT))).toEqual({ mode: 'percent', bp: 1000 });
+    expect(pickupAdjustmentFor(pointWith(null))).toBeNull();
   });
 
-  it('lui annonce sa propre remise', () => {
-    const point = {
-      ...PENDING_ONLY,
-      discounts: { ...PENDING_ONLY.discounts, b2bPending: TEN_PERCENT },
-    };
-    expect(pickupOffer(point, 'b2bPending', COPY).label).toBe('−10 % sur tout');
+  it('bestPickupDiscount retient la meilleure des remises servies', () => {
+    const twenty = { ...TEN_PERCENT, adjustment: { mode: 'percent', bp: 2000 } } as const;
+    expect(
+      bestPickupDiscount([pointWith(TEN_PERCENT), pointWith(twenty), pointWith(null)]),
+    ).toEqual({ mode: 'percent', bp: 2000 });
+    expect(bestPickupDiscount([pointWith(null)])).toBeNull();
   });
 });

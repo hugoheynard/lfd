@@ -255,6 +255,7 @@ import { AdminOrderDraftsController } from "./http/admin-order-drafts.controller
 import { AdminOfferedPickupsController } from "./http/admin-offered-pickups.controller.js";
 import { MyPickupAddressesController } from "./http/my-pickup-addresses.controller.js";
 import { ListCustomerPickupsHandler } from "./application/queries/list-customer-pickups.handler.js";
+import { ListMyShopPickupsHandler } from "./application/queries/list-my-shop-pickups.handler.js";
 import { DeliveryDefaultsReader } from "./domain/ports/delivery-defaults.reader.js";
 import { PrismaDeliveryDefaultsReader } from "./infrastructure/prisma-delivery-defaults.reader.js";
 import { AdminOrdersController } from "./http/admin-orders.controller.js";
@@ -379,6 +380,7 @@ import { AdminSupervisionController } from "./http/admin-supervision.controller.
     BasketPromotions,
     CustomerAudiences,
     ListCustomerPickupsHandler,
+    ListMyShopPickupsHandler,
     OrderIntake,
     GetMyOrderAdmissionHandler,
     GetGuestOrderAdmissionHandler,

@@ -12,7 +12,7 @@ import {
 } from '@angular/core';
 import { Router } from '@angular/router';
 import { RetraitOpener } from '../mes-commandes/retrait-opener.service';
-import { type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
+import { type CartAdjustment, type AudiencePickupAddressView } from '@lfd/contracts';
 import { FoldButtonComponent, FoldCalloutComponent } from 'fold-ng';
 
 import { ClientAudience } from '../client-audience.service';
@@ -76,7 +76,7 @@ const SHOP = '/boutique';
 
 /** Une maison, telle que la carte l'affiche. */
 interface House {
-  readonly point: PickupAddressView;
+  readonly point: AudiencePickupAddressView;
   /** Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas. */
   readonly name: string;
   readonly place: string;
@@ -141,7 +141,7 @@ export class AccueilPublic {
   protected readonly c = screenCopy('accueilPublic', accueilPublicCopy);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
-  private readonly announcement = inject(ClientAudience).announcement;
+  private readonly servedAsPro = inject(ClientAudience).servedAsPro;
 
   private readonly auth = inject(AuthFacade);
   private readonly identity = inject(ClientIdentity);
@@ -569,16 +569,15 @@ export class AccueilPublic {
    * corrigé le 2026-09-15) parce que chacun calculait le sien.
    */
   protected readonly houses = computed<readonly House[]>(() => {
-    const announcement = this.announcement();
+    const servedAsPro = this.servedAsPro();
     const copy = this.t().pickupDialog;
     const points = this.points.pickups();
-    const best = bestPickupDiscount(points, announcement);
+    const best = bestPickupDiscount(points);
     let flagged = false;
     return points.map((point) => {
       // Le drapeau ne se pose QU'UNE fois : deux cartes « le plus avantageux »
       // ne diraient plus rien.
-      const isBest =
-        !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point, announcement), best);
+      const isBest = !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point), best);
       if (isBest) {
         flagged = true;
       }
@@ -586,7 +585,7 @@ export class AccueilPublic {
         point,
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
-        offer: pickupOffer(point, announcement, copy),
+        offer: pickupOffer(point, servedAsPro, copy),
         best: isBest,
       };
     });
@@ -599,8 +598,7 @@ export class AccueilPublic {
    * retrait » serait une promesse vide écrite en gros.
    */
   protected readonly bestLabel = computed(() => {
-    const announcement = this.announcement();
-    const best = bestPickupDiscount(this.points.pickups(), announcement);
+    const best = bestPickupDiscount(this.points.pickups());
     return best === null ? null : fill(this.c().proof.discount, { value: discountLabel(best) });
   });
 
@@ -610,7 +608,7 @@ export class AccueilPublic {
    * 🔴 C'est une OUVERTURE, pas un premier créneau, et le libellé le dit. La
    * maquette annonçait « 6 h 30 premier créneau » ; un créneau public se règle
    * désormais en back-office mais aucune route ne le sert à un visiteur, alors
-   * que l'heure d'ouverture, elle, voyage déjà dans `PickupAddressView`. On
+   * que l'heure d'ouverture, elle, voyage déjà dans `AudiencePickupAddressView`. On
    * affiche la donnée qu'on a sous le nom qui lui revient.
    *
    * Un point qui ne reçoit pas de public porte `publicOpening: null` : il ne

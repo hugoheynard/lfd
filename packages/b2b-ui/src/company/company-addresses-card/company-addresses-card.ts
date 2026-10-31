@@ -4,9 +4,9 @@ import type {
   DeliveryAddressView,
   DeliveryContact,
   GpsPoint,
-  PickupAddressView,
   WindowMode,
 } from '@lfd/contracts';
+import type { OfferedPickup } from '../fulfillment-preference.model';
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
@@ -91,7 +91,7 @@ export class CompanyAddressesCard {
    * s'impose. Lecture seule — les points se règlent côté staff (Réglages ›
    * Sites), jamais ici.
    */
-  readonly pickup = input<PickupAddressView | null>(null);
+  readonly pickup = input<OfferedPickup | null>(null);
   /**
    * Afficher le bloc **point de retrait**. `true` quand la livraison est masquée
    * (le retrait est alors l'acheminement) — complémentaire de `showDeliveries`.

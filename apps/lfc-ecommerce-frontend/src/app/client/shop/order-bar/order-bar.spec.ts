@@ -2,7 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import { instantToLocal, type CartAdjustment, type PickupAddressView } from '@lfd/contracts';
+import {
+  instantToLocal,
+  type CartAdjustment,
+  type AudiencePickupAddressView,
+} from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import { ClientCart } from '../../cart/client-cart.service';
@@ -15,28 +19,13 @@ import { SERVICE_CHANGE_FR } from '../../copy/screens/service-change.copy';
 import { OrderBar } from './order-bar';
 import { ShopCopyOverrides } from '../../copy/shop-copy-overrides';
 
-/** La remise d'un point pour les clientèles cochées, sans règle de portée. */
-function discountsFor(
-  adjustment: CartAdjustment | null,
-  audiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
-): PickupAddressView['discounts'] {
-  const discount =
-    adjustment === null
-      ? null
-      : { adjustment, scope: 'all_except' as const, categories: [], products: [] };
-  return { b2b: audiences.b2b ? discount : null, b2c: audiences.b2c ? discount : null };
-}
-
 const LABO_ID = 'pick_labo';
 
-/** Toute clientèle reçoit la remise — le défaut du dépôt, et celui d'ici. */
-const POUR_TOUS = { b2b: true, b2c: true } as const;
-
-/** Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. */
-function point(
-  discount: CartAdjustment | null = null,
-  discountAudiences: { readonly b2b: boolean; readonly b2c: boolean } = POUR_TOUS,
-): PickupAddressView {
+/**
+ * Un point COMPLET : aucun cast, donc rien qui puisse mentir sur sa forme. Sa
+ * remise est celle que le serveur sert À QUI REGARDE (2026-10-31) — une seule.
+ */
+function point(adjustment: CartAdjustment | null = null): AudiencePickupAddressView {
   return {
     id: LABO_ID,
     label: 'Le Labo',
@@ -45,8 +34,12 @@ function point(
     codePostal: '73150',
     ville: "Val d'Isère",
     pays: 'France',
-    discounts: discountsFor(discount, discountAudiences),
+    discount:
+      adjustment === null
+        ? null
+        : { adjustment, scope: 'all_except', categories: [], products: [] },
     opening: { publicOpening: { start: '07:00', end: '12:00' }, proPickup: null },
+    gps: null,
   };
 }
 
@@ -77,7 +70,7 @@ interface Panier {
 
 interface Monde {
   readonly choice?: ServiceChoice | null;
-  readonly pickup?: PickupAddressView;
+  readonly pickup?: AudiencePickupAddressView;
   readonly panier?: Panier;
 }
 
@@ -96,7 +89,7 @@ function boot({
       // Un visiteur est `b2c` : c'est ce que la boutique publique sert.
       {
         provide: ClientAudience,
-        useValue: { shown: () => 'b2c', current: () => 'b2c', announcement: () => 'b2c' },
+        useValue: { shown: () => 'b2c', current: () => 'b2c', servedAsPro: () => false },
       },
       {
         provide: ClientCart,
@@ -209,14 +202,12 @@ describe('OrderBar', () => {
 
   /**
    * 🔴 Le cas qui justifie de relire la remise du POINT plutôt que de la porter
-   * dans le choix : une remise réservée aux pros ne s'annonce pas à un
-   * visiteur, qui est `b2c`. C'est la règle que le serveur applique au devis —
-   * l'annoncer ici la ferait mentir à la facture.
+   * dans le choix : une remise réservée aux pros n'est plus servie à un
+   * visiteur (2026-10-31, une audience, une information) — le point arrive
+   * sans remise, et la barre n'en invente pas.
    */
-  it('tait une remise qui ne vise que les pros', () => {
-    const fixture = boot({
-      pickup: point({ mode: 'percent', bp: 2000 }, { b2b: true, b2c: false }),
-    });
+  it('tait l’offre quand le point n’en sert aucune à qui regarde', () => {
+    const fixture = boot({ pickup: point(null) });
 
     expect(el(fixture).querySelector('.offer')).toBeNull();
   });

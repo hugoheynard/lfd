@@ -2,7 +2,11 @@
 
 > 📝 **Plan du 2026-10-31**, règle de Hugo du même jour. Déplace une
 > **frontière de sécurité** (ce qu'une route publique sert) : `vitruve` avant
-> le bâti. Rien n'est bâti.
+> le bâti.
+>
+> ✅ **Bâti le 2026-10-31, non commité** (§ 6) : les deux routes des points,
+> la vue par audience, la boutique, le prix au kilo du rayon. L'état décrit
+> par [`promotions.md`](promotions.md) (« Ce que voit le client »).
 
 ## 1. La règle (Hugo, 2026-10-31)
 
@@ -112,3 +116,30 @@ une fois connectés. Donc :
 7. Le JSDoc de `pickup-addresses.controller.ts` qui disait l'exposition
    acceptable est corrigé dans le même commit ; citer `announcedFor`, pas des
    lignes.
+
+## 6. Bâti (2026-10-31, non commité)
+
+- **API** : `ListShopPickupsQuery` (route publique, audience déclarée) et
+  `ListMyShopPickupsQuery` (`/mine`, audience établie) rendent
+  `AudiencePickupAddressView` (`packages/contracts/src/pickup.ts`), fabriquée
+  champ par champ par `audiencePickupAddressOf`
+  (`apps/lfd-api/src/b2b/pickup-addresses/application/audience-pickup-address.ts`). Les
+  requêtes de l'équipe (`ListPickupAddressesQuery`,
+  `ListCustomerPickupsQuery`) gardent la vue complète.
+- **Boutique** : les lecteurs lisent `point.discount` ; la clé d'annonce
+  `ClientAudience.announcement` a disparu au profit de `servedAsPro`
+  (« Prix pro » / « Prix boutique » sur un point sans remise). Le magasin
+  `ServicePoints` se vide au changement de lecteur, et reste vide si la
+  relecture échoue. Les cartes partagées de `@lfd/b2b-ui` ne lisent plus que
+  le lieu d'un point (`OfferedPickup`).
+- **Ouverture du § 2.4** : une fuite de même nature corrigée — les deux prix
+  au kilo (`proPricePerKgMillicents`, `publicPricePerKgTtcCents`) partaient à
+  toutes les audiences, le pro sur la route publique ; chaque rayon ne sert
+  plus que le sien (`withPricesPerKg`). Le rayon d'un invité ne mentionne
+  aucune promotion « inscrits » ni « pros » (vérifié, test ajouté). Les
+  autres routes ouvertes ne servent qu'une part par appel, ou n'ont pas de
+  condition commerciale ; ce qui demande une décision est remonté à Hugo.
+- **Tests** : `apps/lfd-api/test/pickup-audience-information.e2e-spec.ts` (anonyme,
+  `?audience=pro`, `?audience=pending` → 400, pro actif, société en
+  attente, particulier inscrit — réponse sérialisée sans clé par clientèle),
+  unitaires des deux requêtes et de la projection.

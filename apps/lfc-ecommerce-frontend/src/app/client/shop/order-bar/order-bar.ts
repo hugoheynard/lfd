@@ -97,7 +97,7 @@ export class OrderBar {
   private readonly t = inject(ClientCopyService).t;
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
-  private readonly announcement = inject(ClientAudience).announcement;
+  private readonly servedAsPro = inject(ClientAudience).servedAsPro;
 
   protected readonly c = screenCopy('commandTerms', commandTermsCopy);
   /** Les mots de la bascule : ceux du panneau « Modifier mes choix ». */
@@ -160,7 +160,7 @@ export class OrderBar {
     if (point === undefined) {
       return null;
     }
-    const offer = pickupOffer(point, this.announcement(), this.t().pickupDialog);
+    const offer = pickupOffer(point, this.servedAsPro(), this.t().pickupDialog);
     return offer.hasOffer ? offer.label : null;
   });
 

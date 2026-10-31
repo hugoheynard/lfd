@@ -6,6 +6,7 @@ import { PickupDiscountAnnouncer } from "./domain/pickup-discount.announcer.js";
 import { AnnouncedPickupAddressRepository } from "./infrastructure/announced-pickup-address.repository.js";
 import { GetPublicPickupScheduleHandler } from "./application/get-public-pickup-schedule.handler.js";
 import { ListPickupAddressesHandler } from "./application/list-pickup-addresses.handler.js";
+import { ListShopPickupsHandler } from "./application/list-shop-pickups.handler.js";
 import { ListPublicPickupSlotsHandler } from "./application/list-public-pickup-slots.handler.js";
 import { SavePublicPickupScheduleHandler } from "./application/save-public-pickup-schedule.handler.js";
 import { CreatePickupAddressHandler } from "./application/create-pickup-address.handler.js";
@@ -45,6 +46,7 @@ import { SitePickupPointNames } from "./infrastructure/site-pickup-point-names.j
     { provide: PickupScheduleRepository, useClass: PrismaPickupScheduleRepository },
     { provide: PublicPickupScheduleReader, useClass: PrismaPublicPickupScheduleReader },
     ListPickupAddressesHandler,
+    ListShopPickupsHandler,
     CreatePickupAddressHandler,
     UpdatePickupAddressHandler,
     RemovePickupAddressHandler,

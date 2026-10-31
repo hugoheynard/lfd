@@ -4,7 +4,7 @@ import { ActivatedRoute, convertToParamMap, provideRouter, Router } from '@angul
 import type {
   CustomerOrderDetailView,
   OrderRevisionQuoteView,
-  PickupAddressView,
+  AudiencePickupAddressView,
 } from '@lfd/contracts';
 import { By } from '@angular/platform-browser';
 import { FoldNumberInputComponent } from 'fold-ng';
@@ -25,7 +25,7 @@ import {
 } from '../order-revision.gateway';
 import { OrderRevisionPage } from './order-revision-page';
 
-const LABO: PickupAddressView = {
+const LABO: AudiencePickupAddressView = {
   id: 'pa_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -33,7 +33,8 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: "Val d'Isère",
   pays: 'France',
-  discounts: { b2b: null, b2c: null },
+  discount: null,
+  gps: null,
   opening: { proPickup: null, publicOpening: null },
 };
 

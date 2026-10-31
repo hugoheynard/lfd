@@ -3,7 +3,6 @@ import type {
   DeliveryAddressView,
   FulfillmentMethod,
   FulfillmentPreferenceView,
-  PickupAddressView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -22,6 +21,7 @@ import {
   preferenceForSignature,
   preferenceForDestination,
   preferenceForMethod,
+  type OfferedPickup,
 } from '../fulfillment-preference.model';
 
 /**
@@ -56,7 +56,7 @@ export class CompanyFulfillmentCard {
   /** La préférence enregistrée ; `method: null` = aucune posée. */
   readonly preference = input.required<FulfillmentPreferenceView>();
   /** Les points de retrait de la plateforme (le défaut en tête). */
-  readonly pickups = input<readonly PickupAddressView[]>([]);
+  readonly pickups = input<readonly OfferedPickup[]>([]);
   /** Les adresses de livraison de cette société (la défaut en tête). */
   readonly deliveries = input<readonly DeliveryAddressView[]>([]);
   /** La livraison est-elle un service ouvert ? Sinon, seul le retrait a un sens. */

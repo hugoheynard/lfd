@@ -1,9 +1,4 @@
-import {
-  audienceOf,
-  type CustomerAudience,
-  type PickupAddressView,
-  type PublicPickupSlot,
-} from "@lfd/contracts";
+import type { AudiencePickupAddressView, PublicPickupSlot } from "@lfd/contracts";
 import { Controller, Get, Param, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
@@ -11,7 +6,7 @@ import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { ListPickupAddressesQuery } from "../application/list-pickup-addresses.query.js";
+import { ListShopPickupsQuery } from "../application/list-shop-pickups.query.js";
 import { ListPublicPickupSlotsQuery } from "../application/list-public-pickup-slots.query.js";
 
 /**
@@ -20,12 +15,6 @@ import { ListPublicPickupSlotsQuery } from "../application/list-public-pickup-sl
  * écran lirait « aucun créneau » là où la faute est dans l'appel.
  */
 const daySchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/u, "jour attendu au format AAAA-MM-JJ");
-
-/** Une route anonyme ne connaît personne : c'est la clientèle d'un visiteur. */
-const VISITOR_AUDIENCE = audienceOf(null);
-
-/** La clientèle pro, telle que `audienceOf` la nomme pour une société active. */
-const PRO_AUDIENCE: CustomerAudience = "b2b";
 
 /**
  * `?audience=pro` — la SEULE valeur admise. Absent = la clientèle d'un visiteur
@@ -56,18 +45,25 @@ export class PickupAddressesController {
    * les points ouverts aux pros (Hugo, 2026-10-19 — la landing pro publique
    * affiche « je retire au Labo, −x % » à qui n'a pas encore de compte).
    *
-   * Exposer la liste pro à un anonyme est acceptable : c'est la même vue que
-   * la liste particulier (adresse, heures, remise et ses clientèles), sans
-   * règle, fermeture ni réglage du back-office ; et la remise reste DÉCIDÉE à
-   * la caisse par la société agissante (`audienceOf`) — la lire ici ne donne
-   * aucun droit de l'obtenir.
+   * **Une seule part par appel** (Hugo, 2026-10-31 : « chaque audience n'a le
+   * droit qu'à son information ») : chaque point porte la remise de
+   * l'audience DÉCLARÉE et elle seule — celle des particuliers, ou celle
+   * d'une société active pour la vitrine pro, publique par choix. La vue
+   * servie n'a aucun champ par clientèle (`AudiencePickupAddressView`).
+   *
+   * ⚠️ Jusqu'au 2026-10-31, ce JSDoc tenait pour acceptable de servir ici les
+   * trois remises (`b2b`, `b2bPending`, `b2c`, une par acheteur type d'
+   * `announcedFor`) à n'importe quel anonyme : un visiteur recevait celle des
+   * pros et celle des pros en cours d'inscription. Cette dernière ne sort plus
+   * que par `GET /pickup-addresses/mine`, à une société réellement en attente :
+   * une audience qui se déclare ne s'établit pas.
    */
   @Get()
   list(
     @Query("audience", new ZodQuery(listQuerySchema)) audience: "pro" | undefined,
-  ): Promise<readonly PickupAddressView[]> {
-    return this.queries.execute<ListPickupAddressesQuery, readonly PickupAddressView[]>(
-      new ListPickupAddressesQuery(audience === "pro" ? PRO_AUDIENCE : VISITOR_AUDIENCE),
+  ): Promise<readonly AudiencePickupAddressView[]> {
+    return this.queries.execute<ListShopPickupsQuery, readonly AudiencePickupAddressView[]>(
+      new ListShopPickupsQuery(audience === "pro" ? "pro" : "visitor"),
     );
   }
 

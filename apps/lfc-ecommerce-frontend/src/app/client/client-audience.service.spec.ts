@@ -65,34 +65,34 @@ describe('ClientAudience — la clientèle de l’écran', () => {
 });
 
 /**
- * L'annonce d'une remise de retrait suit ce que la caisse appliquera, pas la
- * clientèle : une société en attente est servie en pro.
+ * Le serveur choisit désormais la remise de chaque point (2026-10-31) : il ne
+ * reste à la boutique qu'à savoir si la caisse la sert en pro — « Prix pro »
+ * ou « Prix boutique » sur un point sans remise.
  */
-describe('ClientAudience — quelle remise de retrait annoncer', () => {
-  it('un visiteur lit l’annonce des particuliers', () => {
-    expect(resolve(false, null).announcement()).toBe('b2c');
+describe('ClientAudience — servi en pro par la caisse', () => {
+  it('un visiteur ne l’est pas', () => {
+    expect(resolve(false, null).servedAsPro()).toBe(false);
   });
 
-  it('une société active lit l’annonce des pros', () => {
-    expect(resolve(true, 'cmp_1', [company('active')]).announcement()).toBe('b2b');
+  it('une société active l’est', () => {
+    expect(resolve(true, 'cmp_1', [company('active')]).servedAsPro()).toBe(true);
   });
 
   /**
-   * Régression : une société en attente lisait l’annonce des particuliers et
-   * se voyait promettre leur promotion, que la caisse — qui la sert en pro —
-   * ne retirait pas (2026-10-31).
+   * Régression : une société en attente lisait l’étiquette des particuliers,
+   * alors que la caisse la sert en pro (2026-10-31).
    */
-  it('une société en attente lit SA propre annonce, pas celle des particuliers', () => {
+  it('une société en attente l’est, tout en restant de la clientèle B2C', () => {
     const audience = resolve(true, 'cmp_1', [company('pending')]);
-    expect(audience.announcement()).toBe('b2bPending');
+    expect(audience.servedAsPro()).toBe(true);
     expect(audience.current()).toBe('b2c');
   });
 
-  it('une société suspendue lit l’annonce des particuliers', () => {
-    expect(resolve(true, 'cmp_1', [company('suspended')]).announcement()).toBe('b2c');
+  it('une société suspendue ne l’est pas', () => {
+    expect(resolve(true, 'cmp_1', [company('suspended')]).servedAsPro()).toBe(false);
   });
 
-  it('reconnu avant `/me` : l’annonce des particuliers, par prudence', () => {
-    expect(resolve(true, null).announcement()).toBe('b2c');
+  it('reconnu avant `/me` : pas encore, par prudence', () => {
+    expect(resolve(true, null).servedAsPro()).toBe(false);
   });
 });

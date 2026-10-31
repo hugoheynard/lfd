@@ -1,7 +1,8 @@
-import type { PickupAddressView } from "@lfd/contracts";
+import { type CustomerAudience, type PickupAddressView, pickupOpenTo } from "@lfd/contracts";
 
 import { InMemorySites, storedSite } from "../../../sites/application/__tests__/site-doubles.js";
 import type { SitePlace } from "../../../sites/domain/site.js";
+import { PickupAddressRepository } from "../../domain/pickup-address.repository.js";
 import { PickupDiscount } from "../../domain/pickup-discount.js";
 
 /** Les champs d'un point de retrait, communs aux specs de création et de modification. */
@@ -47,5 +48,25 @@ export class StoredPoints extends InMemorySites {
   get written(): SitePlace | null {
     const last = this.saved.at(-1);
     return last === undefined ? null : (this.stateOf(last)?.place ?? null);
+  }
+}
+
+/** Le port de lecture, filtré comme l'adaptateur le fait en base : par la case de la clientèle. */
+export class FilteringPickups extends PickupAddressRepository {
+  readonly asked: (CustomerAudience | null)[] = [];
+
+  constructor(private readonly points: readonly PickupAddressView[]) {
+    super();
+  }
+
+  list(audience: CustomerAudience | null): Promise<readonly PickupAddressView[]> {
+    this.asked.push(audience);
+    return Promise.resolve(
+      audience === null ? this.points : this.points.filter((p) => pickupOpenTo(p, audience)),
+    );
+  }
+
+  resolve(): Promise<PickupAddressView | null> {
+    return Promise.resolve(null);
   }
 }

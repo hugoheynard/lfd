@@ -18,7 +18,7 @@ import { randomUUID } from "node:crypto";
 
 import type {
   CreatedPickupResponse,
-  PickupAddressView,
+  AudiencePickupAddressView,
   PlacedOrderResponse,
   PromotionTermsPayload,
 } from "@lfd/contracts";
@@ -318,16 +318,14 @@ describe("l'annonce d'un point, par clientèle (L8b)", () => {
       audienceLabels: { individuals: INDIVIDUALS_LABEL, pros: PROS_LABEL },
     });
     const listed = async (path: string) =>
-      jsonBody<readonly PickupAddressView[]>(await ctx.http().get(path).expect(200)).find(
+      jsonBody<readonly AudiencePickupAddressView[]>(await ctx.http().get(path).expect(200)).find(
         (point) => point.id === site,
-      )?.discounts;
-    expect((await listed("/pickup-addresses"))?.b2c?.label).toEqual({
+      )?.discount;
+    expect((await listed("/pickup-addresses"))?.label).toEqual({
       fr: "Merci d'être inscrit",
       en: "Thanks for joining",
       it: "Merci d'être inscrit",
     });
-    expect((await listed("/pickup-addresses?audience=pro"))?.b2b?.label?.fr).toBe(
-      "Offre de la maison",
-    );
+    expect((await listed("/pickup-addresses?audience=pro"))?.label?.fr).toBe("Offre de la maison");
   });
 });

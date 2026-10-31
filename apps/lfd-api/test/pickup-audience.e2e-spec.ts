@@ -189,8 +189,10 @@ describe("un site d'avant les cases", () => {
     await seedPeople();
     const site = await seedSite();
 
+    // Les cases d'un site ne regardent que l'équipe (2026-10-31) : la liste
+    // publique n'a plus de champ par clientèle.
     const listed = jsonBody<readonly PickupAddressView[]>(
-      await ctx.http().get("/pickup-addresses").expect(200),
+      await staff().get("/admin/pickup-addresses").expect(200),
     );
     expect(listed[0]?.pickupAudiences).toEqual({ b2b: true, b2c: true });
 

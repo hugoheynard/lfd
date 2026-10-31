@@ -1,5 +1,5 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input } from '@angular/core';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView } from '@lfd/contracts';
 // Par le sous-chemin sans zod : la même règle que la caisse (budget `cloudflare`).
 import { preselectedPickupId } from '@lfd/contracts/shop-values';
 import {
@@ -36,7 +36,7 @@ export interface HousePickerData {
 
 /** Une maison, telle que la liste l'affiche. */
 interface House {
-  readonly point: PickupAddressView;
+  readonly point: AudiencePickupAddressView;
   readonly name: string;
   readonly place: string;
   readonly offer: { readonly label: string; readonly hasOffer: boolean };
@@ -103,12 +103,15 @@ export class PublicHousePickerDialog {
   static open(
     panels: FoldPanelHostService,
     data: HousePickerData,
-  ): FoldPanelRef<PickupAddressView | undefined> {
-    return panels.open<HousePickerData, PickupAddressView | undefined>(PublicHousePickerDialog, {
-      side: dialogSide(),
-      stack: true,
-      data,
-    });
+  ): FoldPanelRef<AudiencePickupAddressView | undefined> {
+    return panels.open<HousePickerData, AudiencePickupAddressView | undefined>(
+      PublicHousePickerDialog,
+      {
+        side: dialogSide(),
+        stack: true,
+        data,
+      },
+    );
   }
 
   readonly data = input.required<HousePickerData>();
@@ -118,7 +121,7 @@ export class PublicHousePickerDialog {
   private readonly ref = inject(FoldPanelRef);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
-  private readonly announcement = inject(ClientAudience).announcement;
+  private readonly servedAsPro = inject(ClientAudience).servedAsPro;
   private readonly workspace = inject(ClientWorkspace);
 
   /**
@@ -142,7 +145,7 @@ export class PublicHousePickerDialog {
   }
 
   protected readonly houses = computed<readonly House[]>(() => {
-    const announcement = this.announcement();
+    const servedAsPro = this.servedAsPro();
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
     const selectedId = currentId ?? this.preselectedId();
@@ -150,14 +153,14 @@ export class PublicHousePickerDialog {
     return this.points
       .pickups()
       .filter((point) => day === null || servesOn(this.points.nextDayFor(point.id), day))
-      .map((point) => ({ point, offer: pickupOffer(point, announcement, copy) }))
+      .map((point) => ({ point, offer: pickupOffer(point, servedAsPro, copy) }))
       .map(({ point, offer }) => ({
         point,
         // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
         offer,
-        showsOffer: announcement !== 'b2c' || offer.hasOffer,
+        showsOffer: servedAsPro || offer.hasOffer,
         current: point.id === currentId,
         selected: point.id === selectedId,
         ready: readyLabel(point, this.c().readyFrom),
@@ -176,7 +179,7 @@ export class PublicHousePickerDialog {
 }
 
 /** « Prêt dès 6 h 30 » — ou rien, faute d'ouverture publique déclarée. */
-function readyLabel(point: PickupAddressView, gabarit: string): string {
+function readyLabel(point: AudiencePickupAddressView, gabarit: string): string {
   // `null` ET `undefined` : la fenêtre peut manquer, et sa borne aussi. Les deux
   // veulent dire la même chose ici — on ne sait pas, donc on ne dit rien.
   const start = point.opening.publicOpening?.start ?? null;

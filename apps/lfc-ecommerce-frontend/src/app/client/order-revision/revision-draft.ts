@@ -2,7 +2,7 @@ import type {
   BillingAddressPayload,
   CustomerOrderView,
   OrderRevisionQuotePayload,
-  PickupAddressView,
+  AudiencePickupAddressView,
 } from '@lfd/contracts';
 
 import { serviceContentOf } from '../client-orders.service';
@@ -44,7 +44,7 @@ export interface RevisionDraft {
  */
 export function draftOf(
   order: CustomerOrderView,
-  pickups: readonly PickupAddressView[],
+  pickups: readonly AudiencePickupAddressView[],
 ): RevisionDraft {
   return {
     lines: order.lines.map((line) => ({
@@ -59,7 +59,7 @@ export function draftOf(
 
 function serviceOf(
   order: CustomerOrderView,
-  pickups: readonly PickupAddressView[],
+  pickups: readonly AudiencePickupAddressView[],
 ): ServiceChoice | null {
   const date = order.requestedDeliveryDate;
   if (date === null) {

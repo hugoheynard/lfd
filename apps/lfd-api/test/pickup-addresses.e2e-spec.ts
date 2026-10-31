@@ -5,6 +5,7 @@
  * point en tête.
  */
 import type {
+  AudiencePickupAddressView,
   AudiencePickupDiscount,
   CreatedPickupResponse,
   PickupAddressView,
@@ -52,8 +53,14 @@ async function create(label: string): Promise<string> {
   return jsonBody<CreatedPickupResponse>(response).id;
 }
 
-async function list(): Promise<readonly PickupAddressView[]> {
+async function list(): Promise<readonly AudiencePickupAddressView[]> {
   const response = await ctx.http().get("/pickup-addresses").expect(200);
+  return jsonBody<readonly AudiencePickupAddressView[]>(response);
+}
+
+/** La vue de l'équipe : la seule qui porte encore une remise par clientèle. */
+async function adminList(): Promise<readonly PickupAddressView[]> {
+  const response = await staff().get("/admin/pickup-addresses").expect(200);
   return jsonBody<readonly PickupAddressView[]>(response);
 }
 
@@ -121,7 +128,7 @@ describe("points de retrait — une remise par clientèle", () => {
   };
 
   async function only(): Promise<PickupAddressView> {
-    const [first] = await list();
+    const [first] = await adminList();
     if (first === undefined) {
       throw new Error("aucun point servi");
     }

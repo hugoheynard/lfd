@@ -1,14 +1,8 @@
-import {
-  type CustomerAudience,
-  type PickupAddressView,
-  pickupDiscountFor,
-  pickupOpenTo,
-} from "@lfd/contracts";
+import { type PickupAddressView, pickupDiscountFor } from "@lfd/contracts";
 
-import { PickupAddressRepository } from "../../domain/pickup-address.repository.js";
 import { ListPickupAddressesHandler } from "../list-pickup-addresses.handler.js";
 import { ListPickupAddressesQuery } from "../list-pickup-addresses.query.js";
-import { FIELDS } from "./pickup-address-doubles.js";
+import { FIELDS, FilteringPickups } from "./pickup-address-doubles.js";
 
 const TEN_PERCENT = {
   adjustment: { mode: "percent", bp: 1000 },
@@ -36,26 +30,6 @@ const point = (
 const BOTH = { b2b: true, b2c: true };
 const PRO_ONLY = { b2b: true, b2c: false };
 const PERSO_ONLY = { b2b: false, b2c: true };
-
-/** Le port, filtré comme l'adaptateur le fait en base : par la case de la clientèle. */
-class FilteringPickups extends PickupAddressRepository {
-  readonly asked: (CustomerAudience | null)[] = [];
-
-  constructor(private readonly points: readonly PickupAddressView[]) {
-    super();
-  }
-
-  list(audience: CustomerAudience | null): Promise<readonly PickupAddressView[]> {
-    this.asked.push(audience);
-    return Promise.resolve(
-      audience === null ? this.points : this.points.filter((p) => pickupOpenTo(p, audience)),
-    );
-  }
-
-  resolve(): Promise<PickupAddressView | null> {
-    return Promise.resolve(null);
-  }
-}
 
 const POINTS = [
   point("Labo", BOTH, PRO_ONLY),

@@ -7,7 +7,7 @@
  */
 import type {
   CreatedPickupResponse,
-  PickupAddressView,
+  AudiencePickupAddressView,
   RoleGrant,
   SitePaletteView,
   SiteView,
@@ -80,7 +80,7 @@ async function site(id: string): Promise<SiteView> {
 
 async function publicLabels(): Promise<readonly string[]> {
   const response = await ctx.http().get("/pickup-addresses").expect(200);
-  return jsonBody<readonly PickupAddressView[]>(response).map((point) => point.label);
+  return jsonBody<readonly AudiencePickupAddressView[]>(response).map((point) => point.label);
 }
 
 describe("admin/sites — rôles", () => {

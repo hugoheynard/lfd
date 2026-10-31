@@ -1,5 +1,5 @@
 import { computed, inject, Injectable } from '@angular/core';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView } from '@lfd/contracts';
 // Par le sous-chemin sans zod, comme le reste de la boutique (budget `cloudflare`).
 import { preselectedPickupId } from '@lfd/contracts/shop-values';
 
@@ -22,7 +22,7 @@ export class PickupAddressesService {
   readonly addresses = this.points.pickups;
 
   /** Le point qui s'impose sans choix — le seul ouvert —, ou `null`. */
-  readonly preselectedPickup = computed<PickupAddressView | null>(() => {
+  readonly preselectedPickup = computed<AudiencePickupAddressView | null>(() => {
     const points = this.addresses();
     const id = preselectedPickupId(points, null);
     return points.find((point) => point.id === id) ?? null;

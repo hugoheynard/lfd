@@ -2,7 +2,7 @@ import { provideHttpClient } from '@angular/common/http';
 import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import type { PickupAddressView } from '@lfd/contracts';
+import type { AudiencePickupAddressView } from '@lfd/contracts';
 import type { PublicDeliveryAvailabilityView } from '@lfd/contracts/shop-values';
 import { FoldPanelHostService } from 'fold-ng';
 import { of } from 'rxjs';
@@ -33,7 +33,7 @@ const VISITOR_AUTH = {
 };
 
 /** Un point servi à qui regarde : le retrait est ouvert. */
-const LABO: PickupAddressView = {
+const LABO: AudiencePickupAddressView = {
   id: 'pick_labo',
   label: 'Le Labo',
   ligne1: 'Route de la Balme',
@@ -41,12 +41,13 @@ const LABO: PickupAddressView = {
   codePostal: '73150',
   ville: 'Val d’Isère',
   pays: 'France',
-  discounts: { b2b: null, b2c: null },
+  discount: null,
+  gps: null,
   opening: { proPickup: null, publicOpening: null },
 };
 
 /** Le jour pris au panneau, et un jour plus tardif. Comparés entre eux seulement. */
-const VILLAGE: PickupAddressView = { ...LABO, id: 'pick_village', label: 'Le Village' };
+const VILLAGE: AudiencePickupAddressView = { ...LABO, id: 'pick_village', label: 'Le Village' };
 const DAY = '2026-11-03';
 const LATER = '2026-11-05';
 
@@ -134,7 +135,7 @@ describe('OrderDoors.choose — rien de choisi', () => {
   /** Les dialogues ouverts, et les données qu'ils ont reçues. */
   function opened(
     availability: Availability,
-    pickups: readonly PickupAddressView[] = [LABO, VILLAGE],
+    pickups: readonly AudiencePickupAddressView[] = [LABO, VILLAGE],
     replies: ReadonlyMap<unknown, unknown> = new Map<unknown, unknown>([[DayPickerDialog, DAY]]),
     datas: unknown[] = [],
   ): Promise<readonly unknown[]> {
@@ -261,7 +262,7 @@ describe('OrderDoors.choose — rien de choisi', () => {
  */
 describe('OrderDoors — à qui le retrait est ouvert', () => {
   function doors(
-    pickups: readonly PickupAddressView[] | null,
+    pickups: readonly AudiencePickupAddressView[] | null,
     availability: Availability | null = null,
   ): OrderDoors {
     TestBed.resetTestingModule();

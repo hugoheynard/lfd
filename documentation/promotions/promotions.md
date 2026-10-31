@@ -123,13 +123,23 @@ dans le modèle, et la boutique l'affiche depuis L10.
 - **Invité** : s'il existe une promotion réservée aux inscrits, il lit
   « Vous avez un compte ? Connectez-vous pour profiter de −X % ».
 - **Panier, confirmation, e-mail, bons, facture** : une ligne par remise.
-- **Remise d'un point de retrait** : une annonce par acheteur type —
-  société active (`b2b`), société **en attente** (`b2bPending`),
-  particulier (`b2c`). La boutique lit celle du statut de la société
-  agissante (`pickupAnnouncementOf`). Une société en attente est `b2c` pour
-  tout le reste (CGV, contact, livraison) mais la caisse la sert en pro :
-  jusqu'au 2026-10-31 elle lisait l'annonce `b2c` et se voyait promettre une
-  promotion « particuliers » que la caisse ne lui retirait pas.
+- **Remise d'un point de retrait** : le serveur calcule une annonce par
+  acheteur type — société active (`b2b`), société **en attente**
+  (`b2bPending`), particulier (`b2c`) — mais la boutique n'en reçoit
+  **qu'une**, celle de qui regarde (Hugo, 2026-10-31 : « chaque audience n'a
+  le droit qu'à son information » ; [plan](plan-chaque-audience-son-information.md)).
+  `GET /pickup-addresses` (public) sert celle des particuliers, ou celle des
+  pros actifs avec `?audience=pro` (la vitrine pro, publique par choix) ;
+  `GET /pickup-addresses/mine` sert celle de l'audience **établie** de
+  l'espace (pro actif, pro en attente, particulier inscrit,
+  `pickupAnnouncementOf`). La remise des pros en cours d'inscription ne
+  sort que là. La vue servie (`AudiencePickupAddressView.discount`) n'a
+  aucun champ par clientèle ; les trois restent sur `/admin/pickup-addresses`
+  pour l'équipe. Une société en attente est `b2c` pour tout le reste (CGV,
+  contact, livraison) mais la caisse la sert en pro : elle lit « Prix pro »
+  sur un point sans remise (`ClientAudience.servedAsPro`).
+- **Prix au kilo** : le rayon ne sert que celui de son audience — le pro au
+  rayon pro, le public au rayon public (2026-10-31, même règle).
 
 ---
 

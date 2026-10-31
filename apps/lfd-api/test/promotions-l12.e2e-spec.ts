@@ -21,7 +21,7 @@ import {
   pickupDiscountCovers,
   type AudiencePickupDiscount,
   type CreatedPickupResponse,
-  type PickupAddressView,
+  type AudiencePickupAddressView,
   type PromotionTermsPayload,
   type ShopQuoteView,
 } from "@lfd/contracts";
@@ -297,12 +297,15 @@ async function announcedCents(
 async function listed(
   path: string,
   sub: string | null = null,
-): Promise<readonly PickupAddressView[]> {
+): Promise<readonly AudiencePickupAddressView[]> {
   const agent = sub === null ? ctx.http() : ctx.asSub(sub);
-  return jsonBody<readonly PickupAddressView[]>(await agent.get(path).expect(200));
+  return jsonBody<readonly AudiencePickupAddressView[]>(await agent.get(path).expect(200));
 }
 
-function pointIn(points: readonly PickupAddressView[], id: string): PickupAddressView {
+function pointIn(
+  points: readonly AudiencePickupAddressView[],
+  id: string,
+): AudiencePickupAddressView {
   const point = points.find((entry) => entry.id === id);
   if (point === undefined) {
     throw new Error(`Le point ${id} n'est pas listé.`);
@@ -317,28 +320,31 @@ describe("annonce = caisse", () => {
     await personIn(PENDING, CompanyStatus.pending);
 
     for (const id of [sites.real, sites.village]) {
-      const b2c = pointIn(await listed("/pickup-addresses"), id).discounts.b2c;
-      const b2b = pointIn(await listed("/pickup-addresses?audience=pro"), id).discounts.b2b;
-      expect(pointIn(await listed("/pickup-addresses/mine", ACTIVE), id).discounts.b2b).toEqual(
-        b2b,
-      );
+      const b2c = pointIn(await listed("/pickup-addresses"), id).discount;
+      const b2b = pointIn(await listed("/pickup-addresses?audience=pro"), id).discount;
+      expect(pointIn(await listed("/pickup-addresses/mine", ACTIVE), id).discount).toEqual(b2b);
 
       const anonymous = await anonymousQuote(id);
       expect(anonymous.discountCents).toBe(await announcedCents(b2c, anonymous));
       expect(anonymous.discountAdjustment).toEqual(b2c?.adjustment ?? null);
       const active = await myQuote(ACTIVE, id);
       expect(active.discountCents).toBe(await announcedCents(b2b, active));
-      // Une société en attente est de la clientèle des particuliers (`audienceOf`).
+      // Une société en attente lit SA remise, établie par `/mine` (2026-10-31).
+      const announcedPending = pointIn(
+        await listed("/pickup-addresses/mine", PENDING),
+        id,
+      ).discount;
       const pending = await myQuote(PENDING, id);
-      expect(pending.discountCents).toBe(await announcedCents(b2c, pending));
+      expect(pending.discountCents).toBe(await announcedCents(announcedPending, pending));
     }
     expect(
-      pointIn(await listed("/pickup-addresses?audience=pro"), sites.real).discounts.b2b?.adjustment,
+      pointIn(await listed("/pickup-addresses?audience=pro"), sites.real).discount?.adjustment,
     ).toEqual({ mode: "percent", bp: 2_000 });
-    expect(pointIn(await listed("/pickup-addresses"), sites.real).discounts.b2c).toBeNull();
-    expect(
-      pointIn(await listed("/pickup-addresses"), sites.village).discounts.b2c?.adjustment,
-    ).toEqual({ mode: "percent", bp: 1_500 });
+    expect(pointIn(await listed("/pickup-addresses"), sites.real).discount).toBeNull();
+    expect(pointIn(await listed("/pickup-addresses"), sites.village).discount?.adjustment).toEqual({
+      mode: "percent",
+      bp: 1_500,
+    });
   });
 
   /** Les colonnes de remise d'un site ne sont plus lues : seule une promotion annonce et remise. */
@@ -350,7 +356,7 @@ describe("annonce = caisse", () => {
     );
     ctx.app.get(PricingMaterialsCache).invalidate();
 
-    expect(pointIn(await listed("/pickup-addresses"), real).discounts.b2c).toBeNull();
+    expect(pointIn(await listed("/pickup-addresses"), real).discount).toBeNull();
     expect((await anonymousQuote(real)).discountCents).toBe(0);
   });
 
@@ -364,14 +370,14 @@ describe("annonce = caisse", () => {
       }),
     );
 
-    const announced = pointIn(await listed("/pickup-addresses"), real).discounts.b2c;
+    const announced = pointIn(await listed("/pickup-addresses"), real).discount;
     expect(announced?.adjustment).toEqual({ mode: "percent", bp: 500 });
     const quote = await anonymousQuote(real);
     expect(quote.discountCents).toBe(await announcedCents(announced ?? null, quote));
     expect(quote.discountCents).toBeGreaterThan(0);
 
     await staff().post(`/admin/promotions/${id}/pause`).send({ reason: null }).expect(204);
-    expect(pointIn(await listed("/pickup-addresses"), real).discounts.b2c).toBeNull();
+    expect(pointIn(await listed("/pickup-addresses"), real).discount).toBeNull();
     expect((await anonymousQuote(real)).discountCents).toBe(0);
   });
 
@@ -381,7 +387,7 @@ describe("annonce = caisse", () => {
    */
   it("une écriture d'une autre instance est vue", async () => {
     const sites = await seedSites();
-    expect(pointIn(await listed("/pickup-addresses"), sites.real).discounts.b2c).toBeNull();
+    expect(pointIn(await listed("/pickup-addresses"), sites.real).discount).toBeNull();
     const promotion = await ctx.prisma.promotion.findFirstOrThrow({
       where: { internalName: "Cœur · pros" },
       select: { id: true },
@@ -408,8 +414,9 @@ describe("annonce = caisse", () => {
       },
     });
 
-    expect(
-      pointIn(await listed("/pickup-addresses"), sites.real).discounts.b2c?.adjustment,
-    ).toEqual({ mode: "percent", bp: 2_000 });
+    expect(pointIn(await listed("/pickup-addresses"), sites.real).discount?.adjustment).toEqual({
+      mode: "percent",
+      bp: 2_000,
+    });
   });
 });
