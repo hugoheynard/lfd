@@ -56,6 +56,7 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
       discountLabel: null,
       discountPromotionId: null,
       ineligibleSkus: new Set(),
+      applied: [],
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,
       globalWindowMode: null,

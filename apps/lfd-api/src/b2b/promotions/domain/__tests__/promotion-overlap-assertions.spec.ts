@@ -1,4 +1,5 @@
 import {
+  TooManyCumulativeBasketPromotionsError,
   BasketPromotionsWouldCombineError,
   OverlappingPromotionError,
 } from "../errors/promotion-errors.js";
@@ -7,6 +8,7 @@ import type { PromotionCatalogueArticle } from "../ports/promotion-catalogue.rea
 import { PromotionAudienceSet } from "../promotion-audience-set.js";
 import {
   assertNoOverlap,
+  assertCumulativeBasketCapacity,
   assertSingleBasketPromotion,
   commonPeriod,
   type PromotionRival,
@@ -163,6 +165,22 @@ describe("assertSingleBasketPromotion — une remise de panier par commande", ()
     const pickup = rival("b", basketTerms({ fulfillment: { kind: "pickup" } }));
     expect(() => assertSingleBasketPromotion(delivery, [pickup])).not.toThrow();
   });
+
+  /** M7 (§ 18.6) : deux cumulables s'enchaînent ; une non cumulable reste seule. */
+  it("laisse passer deux cumulables, refuse une cumulable face à une non cumulable", () => {
+    const cumulative = rival("a", basketTerms({ cumulative: true }));
+    expect(() =>
+      assertSingleBasketPromotion(cumulative, [rival("b", basketTerms({ cumulative: true }))]),
+    ).not.toThrow();
+    expect(() => assertSingleBasketPromotion(cumulative, [rival("b", basketTerms())])).toThrow(
+      BasketPromotionsWouldCombineError,
+    );
+    expect(() =>
+      assertSingleBasketPromotion(rival("a", basketTerms()), [
+        rival("b", basketTerms({ cumulative: true })),
+      ]),
+    ).toThrow(/sauf si les deux sont « Cumulable »/u);
+  });
 });
 
 describe("commonPeriod — bornes", () => {
@@ -197,5 +215,33 @@ describe("inForceAt — début inclus, fin exclue", () => {
     const paused = (offset: number) => livePromotion({ suspendedFrom: at(offset) });
     expect(inForceAt(paused(0), at(0))).toBe(false);
     expect(inForceAt(paused(1), at(0))).toBe(true);
+  });
+});
+
+/** M7 (décision du 2026-10-31) : une commande porte cinq remises de panier au plus. */
+describe("assertCumulativeBasketCapacity — pas de sixième cumulable de panier", () => {
+  const cumulative = (id: string) =>
+    rival(id, basketTerms({ cumulative: true, internalName: `Cumul ${id}` }));
+  const five = ["b", "c", "d", "e", "f"].map(cumulative);
+
+  it("refuse une sixième, en nommant les cinq et le geste de sortie", () => {
+    expect(() => assertCumulativeBasketCapacity(cumulative("a"), five)).toThrow(
+      TooManyCumulativeBasketPromotionsError,
+    );
+    expect(() => assertCumulativeBasketCapacity(cumulative("a"), five)).toThrow(
+      /« Cumul b ».*Décochez « Cumulable »/u,
+    );
+  });
+
+  it("admet une cinquième, et ne compte ni elle-même ni une rivale hors de sa fenêtre", () => {
+    expect(() => assertCumulativeBasketCapacity(cumulative("a"), five.slice(1))).not.toThrow();
+    expect(() => assertCumulativeBasketCapacity(five[0] ?? cumulative("b"), five)).not.toThrow();
+    const bounded = rival("a", basketTerms({ cumulative: true, validTo: UNTIL }));
+    const later = rival("g", basketTerms({ cumulative: true, validFrom: UNTIL }));
+    expect(() => assertCumulativeBasketCapacity(bounded, [...five.slice(1), later])).not.toThrow();
+  });
+
+  it("ne juge pas une promotion non cumulable", () => {
+    expect(() => assertCumulativeBasketCapacity(rival("a", basketTerms()), five)).not.toThrow();
   });
 });

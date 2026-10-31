@@ -65,15 +65,15 @@ describe('le brouillon de l’éditeur des promotions', () => {
     expect(basket.rules).toEqual([]);
   });
 
-  it('envoie « Cumulable » au point ligne, et le retire avec l’acheminement (§ 16)', () => {
+  it('envoie « Cumulable » aux deux points, et la garde en changeant d’acheminement (§ 16, M7)', () => {
     const base = { ...emptyDraft(TODAY, null), internalName: 'A', labelFr: 'B', effectValue: '20' };
     expect(base.cumulative).toBe(false);
     expect(termsOf(base).cumulative).toBe(false);
     const cumulative = { ...base, cumulative: true };
     expect(termsOf(cumulative).cumulative).toBe(true);
     const basket = withFulfillment(cumulative, 'pickup');
-    expect(basket.cumulative).toBe(false);
-    expect(termsOf({ ...cumulative, fulfillmentKind: 'pickup' }).cumulative).toBe(false);
+    expect(basket.cumulative).toBe(true);
+    expect(termsOf({ ...cumulative, fulfillmentKind: 'pickup' }).cumulative).toBe(true);
     expect(draftOf(promotionView({ cumulative: true })).cumulative).toBe(true);
   });
 
@@ -250,13 +250,13 @@ describe('le brouillon → le corps minimal, bords', () => {
     }
   });
 
-  it('« mercuriale » et « Cumulable » ne partent qu’au point ligne, même laissés cochés', () => {
+  it('« mercuriale » ne part qu’au point ligne ; « Cumulable » part aux deux points (M7)', () => {
     const checked = { ...base, stacksOverMercuriale: true, cumulative: true };
     expect(termsOf(checked)).toMatchObject({ stacksOverMercuriale: true, cumulative: true });
     for (const kind of ['pickup', 'pickup_point', 'delivery'] as const) {
       expect(termsOf({ ...checked, fulfillmentKind: kind })).toMatchObject({
         stacksOverMercuriale: false,
-        cumulative: false,
+        cumulative: true,
       });
     }
   });

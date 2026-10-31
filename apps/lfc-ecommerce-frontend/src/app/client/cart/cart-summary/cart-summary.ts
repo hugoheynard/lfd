@@ -10,6 +10,7 @@ import {
 import { FoldCalloutComponent, FoldListboxComponent, type FoldSelectItem } from 'fold-ng';
 
 import { formatCents, formatRate } from '../../format-money';
+import { adjustmentValue, quoteDiscountRows } from '../quote-discount-rows';
 import { CartProductLine } from '../cart-product-line/cart-product-line';
 import { StaffCartSuggestion } from '../staff-cart-suggestion.service';
 import { StaffSuggestionCard } from '../../suggestions/staff-suggestion-card/staff-suggestion-card';
@@ -149,14 +150,28 @@ export class CartSummary implements OnInit {
     // Les deux formes se lisent différemment — « −10 % » et « −2,00 € » — et
     // c'est pour ça que le libellé porte la VALEUR mise en forme plutôt qu'un
     // nombre suivi d'un pourcent en dur dans la copie.
-    const value =
-      adjustment.mode === 'percent'
-        ? formatRate(adjustment.bp / 100)
-        : formatCents(adjustment.cents);
+    const value = adjustmentValue(adjustment);
     const base = this.eligibleBase();
     return base === null
       ? fill(this.t().cart.discount, { at: choice.at, value })
       : fill(this.t().cart.discountOnBase, { at: choice.at, value, base });
+  });
+
+  /**
+   * Les lignes de remise du décompte : LA ligne d'hier, ou une par remise
+   * quand des promotions cumulables en font naître plusieurs (lot M7).
+   */
+  protected readonly discountRows = computed(() => {
+    const at = this.order.choice()?.at;
+    if (at === undefined) {
+      return [];
+    }
+    return quoteDiscountRows(
+      this.totals(),
+      this.discountLabel(),
+      (value) => fill(this.t().cart.discount, { at, value }),
+      this.locale.current(),
+    );
   });
 
   /**
@@ -184,7 +199,7 @@ export class CartSummary implements OnInit {
    * qu'elle qualifie ne renverrait à rien.
    */
   protected readonly excludedSkus = computed<ReadonlySet<string>>(() =>
-    this.discountLabel() === null
+    this.discountRows().length === 0
       ? new Set()
       : new Set(this.totals().pickupDiscountBase?.excludedSkus ?? []),
   );

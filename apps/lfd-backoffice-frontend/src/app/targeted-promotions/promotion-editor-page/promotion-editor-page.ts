@@ -143,6 +143,12 @@ export class PromotionEditorPage {
     () => this.loaded() !== null && this.loaded() === JSON.stringify(termsOf(this.draft())),
   );
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'any');
+  /** Le cumul dit son effet au point où il joue : la ligne, ou le panier (M7). */
+  protected readonly cumulativeHint = computed(() =>
+    this.atLine()
+      ? "Cochée, elle s'ajoute aux autres promotions cumulables du même article et du même client, l'une après l'autre (−20 % puis −15 % du reste = −32 %). Face à une promotion non cumulable, le client reçoit la plus avantageuse. Le plancher arrête toujours la descente."
+      : "Cochée, sa remise s'ajoute sur la commande aux autres promotions de panier cumulables du même client, l'une après l'autre sur ce qui reste (−10 % puis −5 % du reste). Face à une promotion non cumulable, le client reçoit la plus avantageuse. Cinq remises au plus par commande.",
+  );
   protected readonly fulfillmentOptions = (
     Object.keys(FULFILLMENT_LABEL) as PromotionFulfillmentKindValue[]
   ).map((kind) => ({ value: kind, label: FULFILLMENT_LABEL[kind] }));

@@ -35,7 +35,7 @@ const REQUEST: BasketPromotionRequest = {
 };
 
 /** Ce que la reprise de la remise du site rend : 20 % de 10 €. */
-const EXPECTED: Omit<BasketPromotionOutcome, "promotionId" | "label"> = {
+const EXPECTED: Omit<BasketPromotionOutcome, "promotionId" | "label" | "applied"> = {
   discountCents: 200,
   discountAdjustment: { mode: "percent", bp: 2000 },
   ineligibleSkus: new Set(),
@@ -85,6 +85,16 @@ describe("BasketPromotions.resolve", () => {
       promotionId: "pd_pk_coeur_b2c",
       // Le libellé figé : le commun, aucune audience n'ayant le sien (L8b).
       label: { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" },
+      // La remise unique, seule de la liste (M7).
+      applied: [
+        {
+          promotionId: "pd_pk_coeur_b2c",
+          adjustment: EXPECTED.discountAdjustment,
+          label: { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" },
+          ineligibleSkus: new Set(),
+          discountCents: 200,
+        },
+      ],
     });
   });
 

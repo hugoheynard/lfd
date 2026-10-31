@@ -23,8 +23,8 @@ const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set(["method", "pic
  *
  * L'« avant » se lit dans `order_discounts` quand la commande y a des lignes
  * actives ; sinon dans les colonnes `discount_*` figées, comme UNE remise de
- * rang 1 (§ 18.9). L'« après » est la remise que la nouvelle composition
- * retient — une seule jusqu'à M7. Les deux se lisent par la PRÉSENCE d'un
+ * rang 1 (§ 18.9). L'« après » est ce que la nouvelle composition retient :
+ * la remise unique des colonnes, ou la liste des remises cumulées (M7). Les deux se lisent par la PRÉSENCE d'un
  * ajustement, pas par le montant : une remise arrondie à zéro n'a pas de
  * ligne en table, mais reste la promotion de la commande.
  *
@@ -63,7 +63,13 @@ function promotionsBefore(order: RevisableOrder): readonly FrozenBasketPromotion
 
 function promotionsAfter(state: OrderToPlace): readonly FrozenBasketPromotion[] {
   if (state.discountAdjustment === null) {
-    return [];
+    // Plusieurs remises (M7) : les colonnes uniques sont à `null`, la liste
+    // de l'agrégat fait foi — aucune de ses étapes n'est nulle.
+    return state.basketDiscounts.map((discount) => ({
+      promotionId: discount.promotionId,
+      adjustment: discount.adjustment,
+      label: discount.label?.fr ?? null,
+    }));
   }
   return [
     {

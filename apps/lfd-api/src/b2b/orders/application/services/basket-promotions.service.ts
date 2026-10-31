@@ -1,4 +1,4 @@
-import { Injectable } from "@nestjs/common";
+import { Injectable, Logger } from "@nestjs/common";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import {
@@ -39,6 +39,8 @@ export interface BasketPromotionRequest {
  */
 @Injectable()
 export class BasketPromotions {
+  private readonly logger = new Logger(BasketPromotions.name);
+
   constructor(
     private readonly promotions: BasketPromotionReader,
     private readonly facts: PromotionAudienceFactsResolver,
@@ -57,6 +59,16 @@ export class BasketPromotions {
       (needsClassifications(candidates)
         ? await this.classifications.classify(request.lines.map((line) => line.sku))
         : new Map<string, OrderLineClassification>());
-    return chooseBasketPromotion(candidates, request.lines, known);
+    const outcome = chooseBasketPromotion(candidates, request.lines, known);
+    if (outcome.beyondCap !== undefined) {
+      // La pose refuse une sixième cumulable ; si l'on en trouve plus de cinq
+      // ici, la caisse ne tombe pas : elle garde les cinq premières, et
+      // l'équipe doit l'apprendre (plan des promotions, M7, 2026-10-31).
+      this.logger.warn(
+        `Plus de cinq promotions panier cumulables pour ce panier : écartées ${outcome.beyondCap.join(", ")}. ` +
+          "Archiver ou restreindre l'une d'elles à l'écran Promotions.",
+      );
+    }
+    return outcome;
   }
 }

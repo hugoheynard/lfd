@@ -7,8 +7,9 @@
  *    (le refus de chevauchement ne s'applique pas entre elles) et se
  *    combinent l'une après l'autre au devis ;
  * 2. une non cumulable face à une cumulable reste refusée à la pose ;
- * 3. « Cumulable » est refusé sur une promotion de panier (§ 16.1 : une
- *    commande ne porte encore qu'une remise de panier).
+ * 3. « Cumulable » est admis sur une promotion de panier depuis M7 (§ 18.6),
+ *    et deux cumulables de panier se posent ensemble ; une non cumulable de
+ *    panier face à elles reste refusée.
  *
  * Les fenêtres sont relatives (`daysAgo`) : elles sont jugées à l'horloge.
  */
@@ -98,19 +99,23 @@ describe("le cumul sur demande (§ 16)", () => {
     expect(await ctx.prisma.promotion.count()).toBe(1);
   });
 
-  it("refuse « Cumulable » sur une promotion de panier, en le nommant (§ 16.1)", async () => {
+  it("admet deux promotions de panier cumulables, refuse une non cumulable face à elles (M7)", async () => {
+    const basket = (internalName: string, cumulative: boolean) =>
+      promotionTerms({
+        internalName,
+        fulfillment: { kind: "pickup", pickupId: null },
+        cumulative,
+      });
+    await posePromotion(staff(), basket("Panier cumulable A", true));
+    await posePromotion(staff(), basket("Panier cumulable B", true));
+
     const refused = await staff()
       .post("/admin/promotions")
-      .send(
-        promotionTerms({
-          internalName: "Panier cumulable",
-          fulfillment: { kind: "pickup", pickupId: null },
-          cumulative: true,
-        }),
-      )
-      .expect(400);
+      .send(basket("Panier seul", false))
+      .expect(409);
 
-    expect(jsonBody<{ code: string }>(refused).code).toBe("promotions.line_only_option");
-    expect(await ctx.prisma.promotion.count()).toBe(0);
+    // Même acheminement : le chevauchement nomme l'article, avant la limite par commande.
+    expect(jsonBody<{ code: string }>(refused).code).toBe("promotions.overlapping");
+    expect(await ctx.prisma.promotion.count()).toBe(2);
   });
 });

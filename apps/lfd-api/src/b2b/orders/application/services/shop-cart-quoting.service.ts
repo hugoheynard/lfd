@@ -23,9 +23,13 @@ import {
 import { LoyaltyVoucherQuoteReader } from "../../domain/ports/loyalty-voucher-quote.reader.js";
 import { OrderDeliveryVatReader } from "../../domain/ports/order-delivery-vat.reader.js";
 import { deliveryExtraOf } from "../../domain/services/vat.js";
+import { exactLineTtcsOf } from "../../domain/services/exact-order-composition.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
-import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
+import type {
+  BasketLine,
+  BasketPromotionApplied,
+} from "../../domain/services/basket-promotion-choice.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
@@ -35,6 +39,7 @@ import {
   type OrderBuyerKind,
 } from "../../domain/value-objects/order-buyer-kind.js";
 import { quantityOf } from "../../domain/value-objects/order-line.js";
+import { lineHtCumulatedQuoteOf } from "./cumulated-shop-quote.js";
 import { exactShopQuoteOf } from "./exact-shop-quote.js";
 
 import { CartAdjustments } from "./cart-adjustments.service.js";
@@ -68,8 +73,10 @@ export interface ShopCartQuote {
 interface CartTerms {
   readonly discountCents: number;
   readonly discountAdjustment: ShopQuoteView["discountAdjustment"];
-  /** Les SKU que la remise du point ne couvre pas. */
+  /** Les SKU qu'aucune remise de panier ne couvre. */
   readonly ineligibleSkus: ReadonlySet<string>;
+  /** Les remises retenues, dans l'ordre d'application ; à partir de deux, cumulées (M7). */
+  readonly applied: readonly BasketPromotionApplied[];
   readonly deliveryFeeCents: number;
   /** Le barème de la zone, `null` hors coursier — la commande `exact_ht` le rejoue en TTC. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
@@ -79,6 +86,7 @@ const NO_TERMS: CartTerms = {
   discountCents: 0,
   discountAdjustment: null,
   ineligibleSkus: new Set(),
+  applied: [],
   deliveryFeeCents: 0,
   deliveryFeeAdjustment: null,
 };
@@ -173,12 +181,22 @@ export class ShopCartQuoting {
     // ligne. C'est ce que fait `Order.draft`, et c'est ce qui fait qu'un seuil
     // de remise se déclenche au même centime des deux côtés.
     const subtotalHtCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
+    // Les plans de remise se comparent dans l'unité de la commande (M7) :
+    // en TTC pour un particulier, par la composition même de l'agrégat.
+    const ttcLines =
+      placementVatMethodOf(query.companyId) === "exact_ht"
+        ? exactLineTtcsOf(resolved.map(({ line }) => line))
+        : null;
     const terms = await this.termsOf(
       query.payload.fulfillment,
-      lines.map((line) => ({
+      lines.map((line, index) => ({
         sku: line.sku,
         htCents: line.lineTotalCents,
         quantity: line.quantity,
+        exact:
+          ttcLines === null
+            ? undefined
+            : { ttcCents: ttcLines[index] ?? 0, vatRate: line.vatRatePercent },
       })),
       query,
     );
@@ -193,6 +211,8 @@ export class ShopCartQuoting {
       subtotalHtCents - terms.discountCents,
     );
 
+    // Plusieurs remises (M7) : la chaîne même que l'agrégat rejouera.
+    const cumulated = lineHtCumulatedQuoteOf(lines, terms.applied);
     // Le MÊME lecteur que la passation (plan TVA des frais de port, V4) : si le
     // réglage change entre le devis et la commande, la passation fait foi.
     const deliveryVatMode = await this.deliveryVat.current();
@@ -202,9 +222,12 @@ export class ShopCartQuoting {
         vatRate: line.vatRatePercent,
         discountEligible: !terms.ineligibleSkus.has(line.sku),
       })),
-      // Les deux remises sur leurs assiettes, comme dans `computeOrderTotals` :
-      // celle du point sur les lignes qu'elle couvre, le bon sur toutes (V2).
-      eligibleDiscountCents: terms.discountCents,
+      // Les remises sur leurs assiettes, comme dans `computeOrderTotals` :
+      // celle du point (ou chacune des cumulées, M7) sur les lignes qu'elle
+      // couvre, le bon sur toutes (V2).
+      ...(cumulated === null
+        ? { eligibleDiscountCents: terms.discountCents }
+        : { eligibleDiscounts: cumulated.eligibleDiscounts }),
       discountCents: voucherDiscountCents,
       // Le coursier est un terme HORS remise — on ne fait pas de geste
       // commercial sur une prestation —, taxé selon le mode réglé, traduit par
@@ -218,7 +241,7 @@ export class ShopCartQuoting {
     // « Remise retrait sur X € éligibles » : la clé n'existe que si une ligne
     // est exclue d'une remise qui s'applique (lot C).
     const base = pickupDiscountBaseOf(
-      terms.discountAdjustment !== null,
+      terms.discountAdjustment !== null || cumulated !== null,
       lines.map((line) => ({
         sku: line.sku,
         lineTotalCents: line.lineTotalCents,
@@ -233,6 +256,7 @@ export class ShopCartQuoting {
       // `ventilated.discountCents` porte la somme des deux : on les rend à part.
       discountCents: terms.discountCents,
       discountAdjustment: terms.discountAdjustment,
+      ...(cumulated === null ? {} : { discounts: cumulated.views }),
       ...(base === null ? {} : { pickupDiscountBase: base }),
       voucherDiscountCents,
       deliveryFeeCents: terms.deliveryFeeCents,
@@ -310,6 +334,7 @@ export class ShopCartQuoting {
       })),
       ineligibleSkus: terms.ineligibleSkus,
       discountAdjustment: terms.discountAdjustment,
+      applied: terms.applied,
       deliveryFeeAdjustment: terms.deliveryFeeAdjustment,
       deliveryVatMode: await this.deliveryVat.current(),
       voucherFaceCents: voucher?.valueCents ?? 0,
@@ -349,6 +374,7 @@ export class ShopCartQuoting {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
         ineligibleSkus: retrait.ineligibleSkus,
+        applied: retrait.applied,
         deliveryFeeCents: 0,
         deliveryFeeAdjustment: null,
       };
@@ -359,6 +385,7 @@ export class ShopCartQuoting {
       discountCents: coursier.discount.discountCents,
       discountAdjustment: coursier.discount.discountAdjustment,
       ineligibleSkus: coursier.discount.ineligibleSkus,
+      applied: coursier.discount.applied,
       deliveryFeeCents: coursier.feeCents,
       deliveryFeeAdjustment: coursier.feeAdjustment,
     };

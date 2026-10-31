@@ -4,7 +4,7 @@ import { chainBasketDiscounts, roundToCents, type TtcOrderComposition } from "@l
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 import { chainLineHtBasketDiscounts } from "../services/basket-discounts.js";
 import type { DiscountVatShare } from "../services/order-discount-recovery-shapes.js";
-import type { OrderDiscountLabel } from "./order-shapes.js";
+import type { DraftOrderInput, OrderDiscountLabel } from "./order-shapes.js";
 
 /**
  * **Les remises de panier qu'une commande fige, une ligne par remise** —
@@ -16,9 +16,9 @@ import type { OrderDiscountLabel } from "./order-shapes.js";
  * que la somme des montants égale `orders.discount_cents`, et c'est l'agrégat
  * qui fige l'un et l'autre dans la même composition.
  *
- * Une seule remise en production jusqu'à M7 : la liste a au plus un élément,
- * et une remise de montant nul n'a pas de ligne (§ 18.2 : une part vide ne
- * somme à rien).
+ * Depuis M7, plusieurs remises quand des promotions panier cumulables
+ * s'enchaînent (`order-cumulated-discounts.ts`) ; une remise de montant nul
+ * n'a pas de ligne (§ 18.2 : une part vide ne somme à rien).
  */
 
 /** Les montants d'une étape, tels que la commande les fige. */
@@ -134,30 +134,56 @@ export function exactBasketStepsOf(
   ];
 }
 
+/** Ce qui a produit une étape, figé : sa promotion, son ajustement, son libellé. */
+export interface BasketDiscountTrace {
+  readonly promotionId: string | null;
+  readonly adjustment: CartAdjustment;
+  readonly label: OrderDiscountLabel | null;
+}
+
 /**
- * Les étapes, avec ce qui les a produites. Une seule remise par commande
- * jusqu'à M7 : la promotion, l'ajustement et le libellé figés sont ceux des
- * colonnes `discount_*`.
+ * Les étapes, avec ce qui les a produites — une trace par étape, dans le
+ * même ordre. La remise unique d'hier a pour trace les colonnes `discount_*`
+ * ({@link singleBasketTraces}) ; des remises cumulées (lot M7), chacune la
+ * sienne.
  */
 export function appliedBasketDiscountsOf(
   steps: readonly BasketDiscountStepAmounts[],
-  trace: {
-    readonly promotionId: string | null;
-    readonly adjustment: CartAdjustment | null;
-    readonly label: OrderDiscountLabel | null;
-  },
+  traces: readonly BasketDiscountTrace[],
 ): readonly AppliedBasketDiscount[] {
+  return steps.flatMap((step, index) => {
+    const trace = traces[index];
+    return trace === undefined ? [] : [{ ...step, rank: index + 1, ...trace }];
+  });
+}
+
+/** La trace de la remise unique : les colonnes figées, ou aucune sans ajustement. */
+export function singleBasketTraces(trace: {
+  readonly promotionId: string | null;
+  readonly adjustment: CartAdjustment | null;
+  readonly label: OrderDiscountLabel | null;
+}): readonly BasketDiscountTrace[] {
   const { adjustment } = trace;
-  if (adjustment === null) {
-    return [];
+  return adjustment === null ? [] : [{ ...trace, adjustment }];
+}
+
+/**
+ * Ce qui a produit chaque étape de remise : les remises cumulées une à une
+ * (lot M7), ou la remise unique des colonnes `discount_*`.
+ */
+export function basketTracesOf(input: DraftOrderInput): readonly BasketDiscountTrace[] {
+  if (input.basketDiscounts !== undefined) {
+    return input.basketDiscounts.map(({ promotionId, adjustment, label }) => ({
+      promotionId,
+      adjustment,
+      label,
+    }));
   }
-  return steps.map((step, index) => ({
-    ...step,
-    rank: index + 1,
-    promotionId: trace.promotionId,
-    adjustment,
-    label: trace.label,
-  }));
+  return singleBasketTraces({
+    promotionId: input.discountPromotionId ?? null,
+    adjustment: input.discountAdjustment,
+    label: input.discountLabel ?? null,
+  });
 }
 
 function coveredOf(lines: readonly { readonly eligible: boolean }[]): readonly number[] {

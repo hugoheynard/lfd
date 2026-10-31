@@ -53,10 +53,10 @@
         <dt>{{ t().done.recapContent }}</dt>
         <dd>{{ piecesLabel() }}</dd>
       </div>
-      @if (discountLabel(); as label) {
+      @for (row of discountRows(); track $index) {
         <div class="row saved">
-          <dt>{{ label }}</dt>
-          <dd>−{{ money(done.totals.discountCents) }}</dd>
+          <dt>{{ row.label }}</dt>
+          <dd>−{{ money(row.cents) }}</dd>
         </div>
       }
       <!-- La part HT du bon, telle que la commande l'a imputée : le total

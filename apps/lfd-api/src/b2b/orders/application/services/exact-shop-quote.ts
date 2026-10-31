@@ -4,6 +4,9 @@ import type { SaleUnit } from "@lfd/money";
 import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
 import { exactVoucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
+import type { BasketPromotionApplied } from "../../domain/services/basket-promotion-choice.js";
+import { cumulatedDiscountsOf } from "../../domain/services/basket-promotion-plan.js";
+import { discountView } from "./cumulated-shop-quote.js";
 
 /**
  * **Le devis d'un particulier, composé en TTC** (`exact_ht`, plan
@@ -27,6 +30,8 @@ export interface ExactQuoteInput {
   }[];
   readonly ineligibleSkus: ReadonlySet<string>;
   readonly discountAdjustment: CartAdjustment | null;
+  /** Les remises retenues ; à partir de deux, cumulées (lot M7) et seules lues. */
+  readonly applied: readonly BasketPromotionApplied[];
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryVatMode: DeliveryVatMode;
   /** La valeur faciale TTC du bon nommé, `0` sans bon (§ 10, Q2). */
@@ -41,13 +46,15 @@ export function exactShopQuoteOf(input: ExactQuoteInput): {
   // La remise du devis passe en LISTE (plan des promotions, § 18.6, lot M1) :
   // une liste à un élément rend la remise unique au centime.
   const coveredLines = input.lines.flatMap((line, i) => (eligible(line.sku) ? [i] : []));
+  const cumulated = cumulatedDiscountsOf(input.lines, input.applied);
   const composition = composeExactOrder({
     lines: input.lines.map((line) => ({ ...line, pickupDiscountEligible: eligible(line.sku) })),
     discountAdjustment: null,
     basketDiscounts:
-      input.discountAdjustment === null
+      cumulated ??
+      (input.discountAdjustment === null
         ? []
-        : [{ adjustment: input.discountAdjustment, coveredLines }],
+        : [{ adjustment: input.discountAdjustment, coveredLines }]),
     deliveryFeeAdjustment: input.deliveryFeeAdjustment,
     deliveryVatMode: input.deliveryVatMode,
     voucherFaceCents: input.voucherFaceCents,
@@ -65,7 +72,7 @@ export function exactShopQuoteOf(input: ExactQuoteInput): {
     };
   });
   const base = pickupDiscountBaseOf(
-    input.discountAdjustment !== null,
+    input.discountAdjustment !== null || cumulated !== undefined,
     lines.map((line) => ({ ...line, eligible: eligible(line.sku) })),
   );
   const view: ShopQuoteView = {
@@ -73,6 +80,13 @@ export function exactShopQuoteOf(input: ExactQuoteInput): {
     subtotalHtCents: lines.reduce((sum, line) => sum + line.lineTotalCents, 0),
     discountCents: composition.pickupDiscount.htCents,
     discountAdjustment: input.discountAdjustment,
+    ...(cumulated === undefined
+      ? {}
+      : {
+          discounts: composition.basketDiscounts.map((term, i) =>
+            discountView(input.applied[i], term.htCents, term.ttcCents),
+          ),
+        }),
     ...(base === null ? {} : { pickupDiscountBase: base }),
     voucherDiscountCents: composition.voucher.htCents,
     deliveryFeeCents: composition.deliveryFee.htCents,

@@ -354,3 +354,61 @@ describe("Order.revise — l'« avant » se lit dans order_discounts quand la co
     );
   });
 });
+
+/**
+ * M7 (plan des promotions, § 18.5 et § 18.6) : l'« après » d'une commande à
+ * plusieurs remises est la LISTE de l'agrégat, les colonnes uniques étant à
+ * `NULL`. 10 % puis 5 % du reste sur 20,00 € HT = 2,00 € + 0,90 €.
+ */
+describe("Order.revise — plusieurs remises cumulées, comparées rang par rang (M7)", () => {
+  const FIVE_PERCENT: CartAdjustment = { mode: "percent", bp: 500 };
+  const CUMULATED = [
+    { promotionId: "promo_a", adjustment: TEN_PERCENT, label: null, coveredLines: [0] },
+    { promotionId: "promo_b", adjustment: FIVE_PERCENT, label: null, coveredLines: [0] },
+  ];
+
+  function cumulatedInput(
+    siteId: string,
+    discounts: DraftOrderInput["basketDiscounts"],
+    cents: number,
+  ): DraftOrderInput {
+    return { ...input(siteId, NONE), basketDiscounts: discounts, discountCents: cents };
+  }
+
+  function placedCumulated(): RevisableOrder {
+    return {
+      ...placed(NONE),
+      activeDiscounts: CUMULATED.map((discount, index) => ({
+        orderDiscountId: `od_${index}`,
+        promotionId: discount.promotionId,
+        adjustment: discount.adjustment,
+        label: null,
+        coveredSkus: ["VIE-001"],
+      })),
+    };
+  }
+
+  it("accepte un point où les deux mêmes remises s'appliquent, dans le même ordre", () => {
+    const revision = Order.revise(placedCumulated(), cumulatedInput("site_b", CUMULATED, 290));
+
+    expect(revision.state.basketDiscounts.map((discount) => discount.promotionId)).toEqual([
+      "promo_a",
+      "promo_b",
+    ]);
+    expect(revision.state.discountPromotionId).toBeNull();
+  });
+
+  it("refuse un point qui retirerait l'une des deux, en nommant le geste", () => {
+    const single = input("site_b", PROMO_A);
+
+    expect(() => Order.revise(placedCumulated(), single)).toThrow(/retirerait la promotion/);
+  });
+
+  it("refuse un point qui inverserait leur ordre", () => {
+    const swapped = [CUMULATED[1], CUMULATED[0]].filter((discount) => discount !== undefined);
+
+    expect(() => Order.revise(placedCumulated(), cumulatedInput("site_b", swapped, 290))).toThrow(
+      FulfillmentChangeAltersPromotionError,
+    );
+  });
+});

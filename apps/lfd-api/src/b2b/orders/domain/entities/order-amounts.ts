@@ -1,4 +1,4 @@
-import type { VatShare } from "@lfd/money";
+import type { VatBasketDiscount, VatShare } from "@lfd/money";
 
 import { computeOrderTotals } from "../services/vat.js";
 import { OrderLine } from "../value-objects/order-line.js";
@@ -11,6 +11,7 @@ import {
   voucherDiscountOf,
 } from "./order-amount-guards.js";
 import { lineHtBasketStepsOf, type BasketDiscountStepAmounts } from "./order-basket-discounts.js";
+import { ensureCumulatedShape, lineHtCumulatedStepsOf } from "./order-cumulated-discounts.js";
 import { clienteleOf } from "./order-fulfillment.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
@@ -80,7 +81,12 @@ export function lineHtAmountsOf(
     (sum, line) => (line.pickupDiscountEligible ? sum + line.lineTotalCents : sum),
     0,
   );
-  ensureDiscountMatches(input, eligibleSubtotalCents);
+  const stepLines = lines.map((line) => ({
+    amountCents: line.lineTotalCents,
+    vatRate: line.vatRate,
+    eligible: line.pickupDiscountEligible,
+  }));
+  const basket = lineHtBasketOf(input, stepLines, eligibleSubtotalCents);
   ensureLateFeeMatches(input, subtotalCents);
   ensureDeliveryFeeMatches(input, subtotalCents);
   ensurePickupDiscountOnlyOnPickup(input, fulfillment);
@@ -100,7 +106,8 @@ export function lineHtAmountsOf(
       vatRate: line.vatRate,
       discountEligible: line.pickupDiscountEligible,
     })),
-    discountCents: input.discountCents,
+    discountCents: basket.eligibleDiscounts === undefined ? input.discountCents : 0,
+    eligibleDiscounts: basket.eligibleDiscounts,
     voucherDiscountCents,
     deliveryFeeCents: input.deliveryFeeCents,
     deliveryVatMode: input.deliveryVatMode,
@@ -119,14 +126,33 @@ export function lineHtAmountsOf(
     totalCents,
     ttcTerms: null,
     ttcByRate: null,
-    basketSteps: lineHtBasketStepsOf(
-      lines.map((line) => ({
-        amountCents: line.lineTotalCents,
-        vatRate: line.vatRate,
-        eligible: line.pickupDiscountEligible,
-      })),
-      input.discountAdjustment,
-      input.discountCents,
-    ),
+    basketSteps: basket.steps,
   };
+}
+
+/**
+ * Les remises de panier `line_ht` : la remise unique d'hier (sa garde, son
+ * étape de rang 1), ou plusieurs remises cumulées (lot M7), rejouées par la
+ * chaîne et passées à `ventilateVat` chacune sur ses lignes.
+ *
+ * @throws {InvalidOrderPaymentError} un montant qui ne découle pas de ses ajustements.
+ */
+function lineHtBasketOf(
+  input: DraftOrderInput,
+  lines: readonly { amountCents: number; vatRate: number; eligible: boolean }[],
+  eligibleSubtotalCents: number,
+): {
+  readonly steps: readonly BasketDiscountStepAmounts[];
+  readonly eligibleDiscounts: readonly VatBasketDiscount[] | undefined;
+} {
+  const cumulated = input.basketDiscounts;
+  if (cumulated === undefined) {
+    ensureDiscountMatches(input, eligibleSubtotalCents);
+    return {
+      steps: lineHtBasketStepsOf(lines, input.discountAdjustment, input.discountCents),
+      eligibleDiscounts: undefined,
+    };
+  }
+  ensureCumulatedShape(input, cumulated, lines);
+  return lineHtCumulatedStepsOf(lines, cumulated, input.discountCents);
 }

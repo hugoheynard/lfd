@@ -45,7 +45,11 @@ import { CatalogViewers } from "../../../../catalog/application/catalog-viewers.
 import { InMemoryServedCompanies } from "../../../../catalog/infrastructure/in-memory-served-companies.js";
 import { linePromotionSupply } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import type { LivePromotion } from "../../../../promotions/domain/live-promotion.js";
-import { pointDiscountPromotions, guestSignInOffer } from "./basket-promotions.doubles.js";
+import {
+  basketPromotions,
+  guestSignInOffer,
+  pointDiscountPromotions,
+} from "./basket-promotions.doubles.js";
 import type { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 
 /**
@@ -223,6 +227,11 @@ export interface QuotingSetup {
   readonly decisions?: QuotingDecisions;
   /** Ce qu'une connexion ouvrirait (L10) ; par défaut, aucune promotion. */
   readonly signIn?: GuestSignInOffer;
+  /**
+   * Les promotions panier, posées telles quelles (lot M7) — au lieu des
+   * remises `b2c` / `b2b` du point, lues en promotions.
+   */
+  readonly basketPromotions?: readonly LivePromotion[];
 }
 
 export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
@@ -244,10 +253,16 @@ export function quotingOf(setup: QuotingSetup): ShopCartQuoting {
       new OneZone(setup.zone ?? null),
       new Open(),
       new NoPreference(),
-      pointDiscountPromotions(
-        new OnePoint(point),
-        new FixedLineClassifications(setup.classified ?? {}),
-      ),
+      setup.basketPromotions === undefined
+        ? pointDiscountPromotions(
+            new OnePoint(point),
+            new FixedLineClassifications(setup.classified ?? {}),
+          )
+        : basketPromotions(
+            setup.basketPromotions,
+            new FixedLineClassifications(setup.classified ?? {}),
+            new FixedClock(PRICED_AT),
+          ),
     ),
     new CustomerAudiences(new CompanyAt(setup.companyStatus ?? null)),
     new OrderOperations(noSaleOperations(PRICED_AT)),

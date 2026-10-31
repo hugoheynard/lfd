@@ -151,17 +151,19 @@
                     }}
                   </dd>
                 </div>
-                <div>
-                  <dt>Cumul</dt>
-                  <dd>
-                    {{
-                      promotion.cumulative
-                        ? 'Cumulable avec les autres promotions cumulables'
-                        : 'Non cumulable : une seule promotion par article'
-                    }}
-                  </dd>
-                </div>
               }
+              <div>
+                <dt>Cumul</dt>
+                <dd>
+                  {{
+                    promotion.cumulative
+                      ? 'Cumulable avec les autres promotions cumulables'
+                      : promotion.applicationPoint === 'line'
+                        ? 'Non cumulable : une seule promotion par article'
+                        : 'Non cumulable : une seule remise de panier par article'
+                  }}
+                </dd>
+              </div>
               @for (condition of promotion.conditions; track condition.kind) {
                 <div>
                   <dt>Condition</dt>

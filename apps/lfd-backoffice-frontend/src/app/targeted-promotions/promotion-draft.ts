@@ -229,9 +229,9 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     },
     ownFloor: null,
     stacksOverMercuriale: atLine && draft.stacksOverMercuriale,
-    // Le cumul ne se bâtit qu'au point ligne : une promotion d'acheminement
-    // ne l'envoie pas (l'agrégat la refuserait, plan § 16.1).
-    cumulative: atLine && draft.cumulative,
+    // Le cumul vaut aux deux points depuis M7 (plan des promotions, § 18.6) :
+    // au panier, les remises cumulables s'enchaînent sur la commande.
+    cumulative: draft.cumulative,
     validFrom: businessDayStart(draft.validFrom) ?? '',
     validTo: draft.validTo === '' ? null : businessDayStart(draft.validTo),
     audiences: draft.audiences.map((target) => ({
@@ -269,7 +269,6 @@ export function withFulfillment(
     effectKind: effectsFor(kind).includes(draft.effectKind) ? draft.effectKind : 'percent_off',
     rules: draft.rules.filter((rule) => targets.includes(rule.target)),
     stacksOverMercuriale: kind === 'any' && draft.stacksOverMercuriale,
-    cumulative: kind === 'any' && draft.cumulative,
   };
 }
 

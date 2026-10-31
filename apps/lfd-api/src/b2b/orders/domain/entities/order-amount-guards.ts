@@ -167,11 +167,14 @@ export function ensurePickupDiscountOnlyOnPickup(
   input: DraftOrderInput,
   fulfillment: OrderFulfillmentInput,
 ): void {
-  if (input.discountCents === 0 && input.discountAdjustment === null) {
+  const cumulated = (input.basketDiscounts?.length ?? 0) > 0;
+  if (input.discountCents === 0 && input.discountAdjustment === null && !cumulated) {
     return;
   }
   if (fulfillment.method !== "pickup") {
-    if ((input.discountPromotionId ?? null) !== null) {
+    // Des remises cumulées viennent toutes de promotions (lot M7) : chacune
+    // porte son identifiant.
+    if ((input.discountPromotionId ?? null) !== null || cumulated) {
       return;
     }
     throw new MisplacedPickupDiscountError("not_picked_up");

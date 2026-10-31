@@ -185,7 +185,7 @@ export class OrderRevising {
       placedByStaffId: order.placedByStaffId,
       buyerKind: order.buyerKind,
     };
-    const resolved = await this.composition.resolve(content, parties, order.lines);
+    const resolved = await this.composition.resolve(content, parties, order.lines, order.vatMethod);
     await this.ensureBeforeCutoff(order, content, actor);
     const arranged = await this.composition.arrange(
       content,

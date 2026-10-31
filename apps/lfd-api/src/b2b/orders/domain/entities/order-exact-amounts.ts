@@ -11,6 +11,7 @@ import { OrderLine, type OrderLineInput } from "../value-objects/order-line.js";
 import { ensurePickupDiscountOnlyOnPickup, ensureVoucherUsable } from "./order-amount-guards.js";
 import type { DraftedAmounts } from "./order-amounts.js";
 import { exactBasketStepsOf } from "./order-basket-discounts.js";
+import { ensureCumulatedShape, exactCumulatedStepsOf } from "./order-cumulated-discounts.js";
 import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 
 /**
@@ -44,19 +45,30 @@ export function exactAmountsOf(
   if (input.voucher !== null) {
     ensureVoucherUsable(input.voucher, input.companyId);
   }
+  const cumulated = input.basketDiscounts;
+  if (cumulated !== undefined) {
+    ensureCumulatedShape(
+      input,
+      cumulated,
+      input.lines.map((line) => ({ eligible: line.pickupDiscountEligible ?? true })),
+    );
+  }
   const composition = composeExactOrder({
     lines: input.lines,
     discountAdjustment: input.discountAdjustment,
+    ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
     deliveryFeeAdjustment: input.deliveryFeeAdjustment,
     deliveryVatMode: input.deliveryVatMode,
     voucherFaceCents: input.voucher?.valueCents ?? 0,
   });
-  ensureTtcMatches(
-    input.discountAdjustment,
-    input.discountCents,
-    composition.pickupDiscount.ttcCents,
-    "La remise retenue, taxe comprise, ne correspond pas à l'ajustement appliqué.",
-  );
+  if (cumulated === undefined) {
+    ensureTtcMatches(
+      input.discountAdjustment,
+      input.discountCents,
+      composition.pickupDiscount.ttcCents,
+      "La remise retenue, taxe comprise, ne correspond pas à l'ajustement appliqué.",
+    );
+  }
   ensureTtcMatches(
     input.deliveryFeeAdjustment,
     input.deliveryFeeCents,
@@ -91,11 +103,14 @@ export function exactAmountsOf(
       voucherCents: composition.voucher.ttcCents,
       deliveryFeeCents: composition.deliveryFee.ttcCents,
     },
-    basketSteps: exactBasketStepsOf(
-      lines.map((line) => ({ eligible: line.pickupDiscountEligible })),
-      composition,
-      input.discountAdjustment,
-    ),
+    basketSteps:
+      cumulated === undefined
+        ? exactBasketStepsOf(
+            lines.map((line) => ({ eligible: line.pickupDiscountEligible })),
+            composition,
+            input.discountAdjustment,
+          )
+        : exactCumulatedStepsOf(composition, cumulated, input.discountCents),
   };
 }
 

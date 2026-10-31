@@ -101,13 +101,9 @@ describe("Promotion.pose — les invariants des termes", () => {
     expect(() => pose(lineTerms({ stacksOverMercuriale: true }))).not.toThrow();
   });
 
-  /** § 16.1 : la commande ne porte encore qu'une remise de panier. */
-  it("refuse « Cumulable » au panier, en le disant ; l'accepte à la ligne", () => {
-    expect(() => pose(basketTerms({ cumulative: true }))).toThrow(PromotionLineOnlyOptionError);
-    expect(() => pose(basketTerms({ cumulative: true }))).toThrow(
-      /« Cumulable ».*une remise de panier/u,
-    );
-    expect(() => pose(lineTerms({ cumulative: true }))).not.toThrow();
+  /** M7 (§ 18.6) : la commande porte plusieurs remises de panier, « Cumulable » y est admise. */
+  it("accepte « Cumulable » aux deux points", () => {
+    expect(pose(basketTerms({ cumulative: true })).terms.cumulative).toBe(true);
     expect(pose(lineTerms({ cumulative: true })).terms.cumulative).toBe(true);
   });
 

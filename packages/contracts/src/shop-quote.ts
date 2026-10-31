@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
+import type { OrderDiscountView } from "./order-discount.js";
 import type { SignInOfferView } from "./promotion-offer.js";
 import { orderLineInputSchema, type OrderSaleUnit, type PickupDiscountBaseView } from "./order.js";
 
@@ -157,6 +158,16 @@ export interface ShopQuoteView {
    * d'API, et empêché de la traduire.
    */
   readonly discountAdjustment: CartAdjustment | null;
+  /**
+   * **Une entrée par remise de panier, dans l'ordre d'application** (plan
+   * des promotions, § 18.6, lot M7) — présente seulement quand des
+   * promotions panier cumulables en font naître PLUSIEURS ; leur somme est
+   * `discountCents`, et `discountAdjustment` vaut alors `null`. Absente :
+   * une remise au plus, que `discountCents` et `discountAdjustment` disent
+   * comme hier. La forme est celle de la commande (`OrderDiscountView`) :
+   * ce que le devis annonce est ce que la commande figera.
+   */
+  readonly discounts?: readonly OrderDiscountView[];
   /**
    * L'assiette de la remise de retrait — **absente** sauf quand une remise
    * s'applique et qu'une ligne en est exclue (« remise retrait sur X €

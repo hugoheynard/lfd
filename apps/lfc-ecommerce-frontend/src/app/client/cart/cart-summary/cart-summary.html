@@ -51,10 +51,10 @@
       <dd>{{ money(totals().subtotalHtCents) }}</dd>
     </div>
 
-    @if (discountLabel(); as label) {
+    @for (row of discountRows(); track $index) {
       <div class="row saved">
-        <dt>{{ label }}</dt>
-        <dd>−{{ money(totals().discountCents) }}</dd>
+        <dt>{{ row.label }}</dt>
+        <dd>−{{ money(row.cents) }}</dd>
       </div>
     }
 

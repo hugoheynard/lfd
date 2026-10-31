@@ -34,6 +34,20 @@ export interface OrderDiscountLabel {
   readonly it: string;
 }
 
+/**
+ * **Une remise de panier cumulée**, telle que la composition la retient (plan
+ * des promotions, § 18.6, lot M7) — dans l'ordre d'application. L'agrégat
+ * rejoue la chaîne et en fige les montants ; il ne reçoit que la trace.
+ */
+export interface DraftBasketDiscount {
+  readonly promotionId: string;
+  readonly adjustment: CartAdjustment;
+  /** Le libellé dans l'audience de l'acheteur, figé tel quel. */
+  readonly label: OrderDiscountLabel | null;
+  /** Les indices, dans `DraftOrderInput.lines`, des lignes qu'elle couvre. */
+  readonly coveredLines: readonly number[];
+}
+
 export interface OrderFulfillmentInput {
   readonly method: FulfillmentMethod;
   readonly deliveryZoneId: string | null;
@@ -133,6 +147,15 @@ export interface DraftOrderInput {
    * l'ancien chemin.
    */
   readonly discountPromotionId?: string | null;
+  /**
+   * **Plusieurs remises de panier** (lot M7, § 18.6), à partir de DEUX, dans
+   * l'ordre d'application. Présente : `discountCents` est leur total (dans
+   * l'unité de la méthode), `discountAdjustment` et `discountPromotionId`
+   * valent `null` et `discountLabel` le libellé générique (arbitrage n° 1,
+   * § 18.8) ; le drapeau d'éligibilité de chaque ligne est le OU des
+   * couvertures. Absente : la remise unique d'hier, ou aucune.
+   */
+  readonly basketDiscounts?: readonly DraftBasketDiscount[] | undefined;
   /** Frais de livraison (zone) déjà résolus, dans l'unité de la méthode (cf. `discountCents`). */
   readonly deliveryFeeCents: number;
   /** Le barème de zone qui l'a produit, ou `null` en retrait. */

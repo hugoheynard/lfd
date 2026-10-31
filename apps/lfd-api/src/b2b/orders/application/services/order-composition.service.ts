@@ -13,7 +13,10 @@ import { lineTotalCents } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
 
 import type { DraftOrderInput } from "../../domain/entities/order.js";
-import type { OrderDiscountLabel } from "../../domain/entities/order-shapes.js";
+import type {
+  DraftBasketDiscount,
+  OrderDiscountLabel,
+} from "../../domain/entities/order-shapes.js";
 import {
   InvalidOrderFulfillmentError,
   PickupClosedAtRequestedTimeError,
@@ -29,9 +32,16 @@ import {
   OrderLineClassificationReader,
 } from "../../domain/ports/order-line-classification.reader.js";
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
-import { composeExactOrder } from "../../domain/services/exact-order-composition.js";
+import {
+  composeExactOrder,
+  exactLineTtcsOf,
+} from "../../domain/services/exact-order-composition.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
-import type { BasketLine } from "../../domain/services/basket-promotion-choice.js";
+import type {
+  BasketLine,
+  BasketPromotionApplied,
+} from "../../domain/services/basket-promotion-choice.js";
+import { cumulatedDiscountsOf } from "../../domain/services/basket-promotion-plan.js";
 import {
   ensureKeptMinimums,
   keptQuantityChanges,
@@ -42,7 +52,10 @@ import {
   type OrderLineInput,
   type OrderLineSnapshot,
 } from "../../domain/value-objects/order-line.js";
-import type { OrderVatMethod } from "../../domain/value-objects/order-vat-method.js";
+import {
+  placementVatMethodOf,
+  type OrderVatMethod,
+} from "../../domain/value-objects/order-vat-method.js";
 import { CartAdjustments, type PickupBuyer } from "./cart-adjustments.service.js";
 import { CustomerAudiences } from "./customer-audiences.service.js";
 import type { OrderContent } from "./order-content.js";
@@ -62,8 +75,10 @@ interface ResolvedFulfillment {
   readonly discountLabel: OrderDiscountLabel | null;
   /** La promotion panier retenue, que la commande fige et que la révision compare (L9). */
   readonly discountPromotionId: string | null;
-  /** Les SKU que la remise de retrait ne couvre pas — vide en coursier. */
+  /** Les SKU qu'aucune remise de panier ne couvre. */
   readonly ineligibleSkus: ReadonlySet<string>;
+  /** Les remises retenues, dans l'ordre d'application (lot M7) ; à partir de deux, cumulées. */
+  readonly applied: readonly BasketPromotionApplied[];
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
@@ -106,6 +121,7 @@ export type ComposedDraft = Pick<
   | "discountAdjustment"
   | "discountLabel"
   | "discountPromotionId"
+  | "basketDiscounts"
   | "deliveryFeeCents"
   | "deliveryFeeAdjustment"
   | "deliveryVatMode"
@@ -148,15 +164,21 @@ export class OrderComposition {
     content: OrderContent,
     parties: OrderParties,
     frozen: readonly OrderLineSnapshot[] | null,
+    vatMethod: OrderVatMethod = placementVatMethodOf(parties.companyId),
   ): Promise<ResolvedContent> {
     const lines = await this.priceLines(content.lines, parties, frozen);
+    // Les plans de remise se comparent dans l'unité de la commande (M7) :
+    // en TTC pour `exact_ht`, par la composition même de l'agrégat.
+    const ttcLines = vatMethod === "exact_ht" ? exactLineTtcsOf(lines) : null;
     // Le sous-total est un MONTANT : arrondi au centime, une fois par ligne,
     // par la même fonction que la ligne persistée. Deux arithmétiques ici
     // feraient diverger le seuil de franco du total facturé.
-    const priced: readonly BasketLine[] = lines.map((line) => ({
+    const priced: readonly BasketLine[] = lines.map((line, index) => ({
       sku: line.sku,
       htCents: lineTotalCents(line.unitPriceMillicents, quantityOf(line)),
       quantity: quantityOf(line).amount,
+      exact:
+        ttcLines === null ? undefined : { ttcCents: ttcLines[index] ?? 0, vatRate: line.vatRate },
     }));
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
@@ -224,9 +246,10 @@ export class OrderComposition {
     const lines = resolved.lines.map((line) =>
       classified(line, resolved.known, fulfillment.ineligibleSkus),
     );
+    const cumulated = cumulatedDiscountsOf(lines, fulfillment.applied);
     const amounts =
       vatMethod === "exact_ht"
-        ? exactTermsOf(lines, fulfillment, arranged.deliveryVatMode)
+        ? exactTermsOf(lines, fulfillment, cumulated, arranged.deliveryVatMode)
         : {
             discountCents: fulfillment.discountCents,
             deliveryFeeCents: fulfillment.deliveryFeeCents,
@@ -252,6 +275,7 @@ export class OrderComposition {
       discountAdjustment: fulfillment.discountAdjustment,
       discountLabel: fulfillment.discountLabel,
       discountPromotionId: fulfillment.discountPromotionId,
+      ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
       deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
       deliveryFeeCents: amounts.deliveryFeeCents,
       deliveryVatMode: arranged.deliveryVatMode,
@@ -353,6 +377,7 @@ export class OrderComposition {
         discountLabel: retrait.discountLabel,
         discountPromotionId: retrait.promotionId,
         ineligibleSkus: retrait.ineligibleSkus,
+        applied: retrait.applied,
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
         globalWindowMode: null,
@@ -376,6 +401,7 @@ export class OrderComposition {
       discountLabel: discount.label,
       discountPromotionId: discount.promotionId,
       ineligibleSkus: discount.ineligibleSkus,
+      applied: discount.applied,
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable.
       deliveryFeeAdjustment: coursier.feeAdjustment,
@@ -392,17 +418,20 @@ export class OrderComposition {
 function exactTermsOf(
   lines: readonly OrderLineInput[],
   fulfillment: ResolvedFulfillment,
+  cumulated: readonly DraftBasketDiscount[] | undefined,
   deliveryVatMode: DeliveryVatMode,
 ): { readonly discountCents: number; readonly deliveryFeeCents: number } {
   const composed = composeExactOrder({
     lines,
     discountAdjustment: fulfillment.discountAdjustment,
+    ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
     deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
     deliveryVatMode,
     voucherFaceCents: 0,
   });
+  const discounted = fulfillment.discountAdjustment !== null || cumulated !== undefined;
   return {
-    discountCents: fulfillment.discountAdjustment === null ? 0 : composed.pickupDiscount.ttcCents,
+    discountCents: discounted ? composed.pickupDiscount.ttcCents : 0,
     deliveryFeeCents:
       fulfillment.deliveryFeeAdjustment === null ? 0 : composed.deliveryFee.ttcCents,
   };

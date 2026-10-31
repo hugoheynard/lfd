@@ -6,7 +6,6 @@ import {
 } from "../../domain/errors/promotion-audience-errors.js";
 import {
   PromotionBlankTextError,
-  PromotionLineOnlyOptionError,
   PromotionMissingTargetIdError,
   PromotionReversedWindowError,
 } from "../../domain/errors/promotion-errors.js";
@@ -155,6 +154,18 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
       );
       expect(terms.fulfillment).toEqual({ kind: "pickup" });
     });
+
+    /** M7 (§ 18.6) : « Cumulable » passe au panier, et l'agrégat l'admet. */
+    it("porte « Cumulable » sur une promotion de panier", () => {
+      const promotion = pose(
+        payload({
+          cumulative: true,
+          effect: { kind: "percent_off", value: 1000 },
+          fulfillment: { kind: "pickup_point", pickupId: "pk_1" },
+        }),
+      );
+      expect(promotion.terms.cumulative).toBe(true);
+    });
   });
 
   describe("les refus de l'agrégat remontent nommés, derrière le mapper", () => {
@@ -168,18 +179,6 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
       expect(() => pose(payload({ validTo: "2026-11-01T00:00:00.000Z" }))).toThrow(
         PromotionReversedWindowError,
       );
-    });
-
-    it("« Cumulable » sur une promotion de panier", () => {
-      expect(() =>
-        pose(
-          payload({
-            cumulative: true,
-            effect: { kind: "percent_off", value: 1000 },
-            fulfillment: { kind: "pickup_point", pickupId: "pk_1" },
-          }),
-        ),
-      ).toThrow(PromotionLineOnlyOptionError);
     });
 
     it("un libellé commun d'espaces", () => {

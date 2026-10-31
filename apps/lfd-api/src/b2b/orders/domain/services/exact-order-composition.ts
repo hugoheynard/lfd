@@ -81,3 +81,18 @@ export function composeExactOrder(input: ExactOrderInput): TtcOrderComposition {
           },
   });
 }
+
+/**
+ * Le TTC de chaque ligne, tel que la composition le rend — l'unité dans
+ * laquelle les plans de remise d'une commande `exact_ht` se comparent
+ * (plan des promotions, M7, décision du 2026-10-31).
+ */
+export function exactLineTtcsOf(lines: ExactOrderInput["lines"]): readonly number[] {
+  return composeExactOrder({
+    lines,
+    discountAdjustment: null,
+    deliveryFeeAdjustment: null,
+    deliveryVatMode: null,
+    voucherFaceCents: 0,
+  }).lines.map((line) => line.ttcCents);
+}

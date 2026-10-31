@@ -12,10 +12,12 @@
  * La preuve centrale : avec UNE remise, la facture, sa ventilation et son XML
  * sont ceux d'hier, que la commande soit reprise ou non.
  *
- * ⚠️ Deux remises sur une commande ne se posent pas encore par le vrai chemin
- * (le refus `assertSingleBasketPromotion` tombe au lot M7) : la seconde est
- * écrite par Prisma, dans la transaction qui garde le contrôle des remises
- * vrai (somme = `discount_cents`, déclencheur différé).
+ * ⚠️ La seconde remise est écrite par Prisma, dans la transaction qui garde
+ * le contrôle des remises vrai (somme = `discount_cents`, déclencheur
+ * différé) : ces cas-ci (un montant fixe de 10 c, une commande composée en
+ * TTC) n'ont pas de chemin de passation. Depuis M7, deux remises se posent
+ * aussi par le vrai chemin — promotions panier cumulables —, éprouvé de
+ * bout en bout par `promotions-basket-cumul.e2e-spec.ts`.
  */
 import { randomUUID } from "node:crypto";
 

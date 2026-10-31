@@ -2,6 +2,7 @@ import type { StandingCompanyStatus } from "../../shared/company-standing/domain
 import {
   BasketPromotionsWouldCombineError,
   OverlappingPromotionError,
+  TooManyCumulativeBasketPromotionsError,
 } from "./errors/promotion-errors.js";
 import type { PromotionCatalogueArticle } from "./ports/promotion-catalogue.reader.js";
 import { day } from "./promotion-act.js";
@@ -92,12 +93,17 @@ export function assertNoOverlap(
 }
 
 /**
- * **Une seule promotion de panier par commande** jusqu'au lot L12 :
- * `composeExactOrder` ne compose qu'une remise de panier. Une promotion de
- * panier est refusée si une autre pourrait s'appliquer à une même commande —
- * un acheteur que les deux publics admettent, un acheminement que les deux
- * admettent, des fenêtres qui se recouvrent. L'article n'y entre pas : la
- * limite est par commande.
+ * **Une seule promotion de panier NON CUMULABLE par commande** : une
+ * promotion de panier est refusée si une autre pourrait s'appliquer à une
+ * même commande — un acheteur que les deux publics admettent, un
+ * acheminement que les deux admettent, des fenêtres qui se recouvrent.
+ * L'article n'y entre pas : la limite est par commande.
+ *
+ * Depuis M7 (plan des promotions, § 18.6), deux promotions de panier
+ * **toutes deux cumulables** ne se disputent rien : elles s'enchaînent sur la
+ * commande (`chooseBasketPromotions`), cinq au plus. Le refus reste entre une
+ * cumulable et une non cumulable, et entre deux non cumulables — comme au
+ * point ligne (`assertNoOverlap`).
  *
  * @throws {BasketPromotionsWouldCombineError} un rival pourrait s'appliquer avec elle.
  */
@@ -109,6 +115,9 @@ export function assertSingleBasketPromotion(
     return;
   }
   for (const rival of rivals) {
+    if (candidate.terms.cumulative && rival.terms.cumulative) {
+      continue;
+    }
     const combines =
       rival.id !== candidate.id &&
       applicationPointOf(rival.terms.fulfillment) === "basket" &&
@@ -118,6 +127,47 @@ export function assertSingleBasketPromotion(
     if (combines) {
       throw new BasketPromotionsWouldCombineError(rival.id, rival.terms.internalName);
     }
+  }
+}
+
+/**
+ * Le plafond des remises de panier d'une commande (plan des promotions,
+ * § 18.8, arbitrage n° 5) — la source unique : la commande le relit
+ * (`MAX_BASKET_DISCOUNTS`).
+ */
+export const MAX_BASKET_DISCOUNTS_PER_ORDER = 5;
+
+/**
+ * **Pas de sixième promotion panier cumulable sur une même commande**
+ * (décision du 2026-10-31, mandat, lot M7) : une cumulable de panier est
+ * refusée si cinq autres cumulables pourraient s'appliquer avec elle — un
+ * acheteur que les publics admettent, un acheminement qu'ils admettent, des
+ * fenêtres qui se recouvrent. Jugé deux à deux avec la candidate : un
+ * garde-fou à la pose, la caisse garde de toute façon les cinq premières.
+ *
+ * @throws {TooManyCumulativeBasketPromotionsError}
+ */
+export function assertCumulativeBasketCapacity(
+  candidate: PromotionRival,
+  rivals: readonly PromotionRival[],
+): void {
+  if (!candidate.terms.cumulative || applicationPointOf(candidate.terms.fulfillment) !== "basket") {
+    return;
+  }
+  const companions = rivals.filter(
+    (rival) =>
+      rival.id !== candidate.id &&
+      rival.terms.cumulative &&
+      applicationPointOf(rival.terms.fulfillment) === "basket" &&
+      commonPeriod(candidate.terms, rival.terms) !== null &&
+      audienceSetsMeet(candidate.terms.audiences, rival.terms.audiences) &&
+      fulfillmentsMeet(candidate.terms.fulfillment, rival.terms.fulfillment),
+  );
+  if (companions.length >= MAX_BASKET_DISCOUNTS_PER_ORDER) {
+    throw new TooManyCumulativeBasketPromotionsError(
+      companions.map((rival) => rival.terms.internalName).sort(),
+      MAX_BASKET_DISCOUNTS_PER_ORDER,
+    );
   }
 }
 

@@ -7,7 +7,10 @@ import type {
 } from "@lfd/contracts";
 
 import type { OrderCompanyStatus } from "../../domain/ports/company-status.reader.js";
-import type { BasketPromotionOutcome } from "../../domain/services/basket-promotion-choice.js";
+import type {
+  BasketPromotionApplied,
+  BasketPromotionOutcome,
+} from "../../domain/services/basket-promotion-choice.js";
 import type { PromotionBuyerKind } from "../../../promotions/domain/promotion-targeting.js";
 import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 
@@ -47,6 +50,11 @@ export interface ResolvedPickup {
   readonly promotionId: string | null;
   /** Le libellé de cette promotion pour l'acheteur, que la commande fige (L8b) ; `null` sinon. */
   readonly discountLabel: ServedPromotionLabel | null;
+  /**
+   * Les remises retenues, dans l'ordre d'application (lot M7) : à partir de
+   * deux, les champs ci-dessus disent le total (cf. `BasketPromotionOutcome`).
+   */
+  readonly applied: readonly BasketPromotionApplied[];
 }
 
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */

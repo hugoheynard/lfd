@@ -37,7 +37,7 @@ export interface LivePromotion {
   readonly audienceLabels: PromotionAudienceLabels;
   readonly effect: PromotionEffect;
   readonly stacksOverMercuriale: boolean;
-  /** « Cumulable » (§ 16) — point ligne seulement. */
+  /** « Cumulable » (§ 16) — aux deux points depuis M7 (§ 18.6). */
   readonly cumulative: boolean;
   /** Borne basse **incluse**. */
   readonly validFrom: Date;

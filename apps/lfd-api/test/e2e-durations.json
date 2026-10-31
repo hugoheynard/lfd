@@ -414,6 +414,7 @@
   "test/production-worksheet.e2e-spec.ts": 8049,
   "test/promotions-admin.e2e-spec.ts": 13900,
   "test/promotions-audiences.e2e-spec.ts": 15498,
+  "test/promotions-basket-cumul.e2e-spec.ts": 14243,
   "test/promotions-cumul.e2e-spec.ts": 12875,
   "test/promotions-l10.e2e-spec.ts": 13286,
   "test/promotions-l12.e2e-spec.ts": 20662,

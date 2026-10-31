@@ -4,6 +4,7 @@ import { PromotionCatalogueReader } from "../../domain/ports/promotion-catalogue
 import { PromotionRivalsReader } from "../../domain/ports/promotion-rivals.reader.js";
 import { applicationPointOf } from "../../domain/promotion-fulfillment.js";
 import {
+  assertCumulativeBasketCapacity,
   assertNoOverlap,
   assertSingleBasketPromotion,
   type PromotionRival,
@@ -50,6 +51,7 @@ export class PromotionWriteGuard {
    * @throws {PromotionWrongSurfaceError} l'ancienne ou la nouvelle forme appartient à l'autre surface.
    * @throws {OverlappingPromotionError} une autre se dispute un article avec elle.
    * @throws {BasketPromotionsWouldCombineError} une autre de panier pourrait s'appliquer avec elle.
+   * @throws {TooManyCumulativeBasketPromotionsError} cinq cumulables de panier s'appliqueraient déjà avec elle.
    */
   async admitsPlace(
     surface: PromotionSurface,
@@ -68,6 +70,7 @@ export class PromotionWriteGuard {
       // Le chevauchement d'abord : il nomme l'article, l'autre refus non.
       assertNoOverlap(candidate, rivals, (await this.catalogue.snapshot()).articles);
       assertSingleBasketPromotion(candidate, rivals);
+      assertCumulativeBasketCapacity(candidate, rivals);
     }
   }
 }

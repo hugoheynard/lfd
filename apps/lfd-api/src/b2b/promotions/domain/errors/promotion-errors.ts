@@ -69,20 +69,19 @@ export class PromotionEffectPointMismatchError extends DomainError {
 }
 
 /** Une option du seul point ligne, posée sur une promotion de panier. */
-export type LineOnlyOption = "own_floor" | "stacks_over_mercuriale" | "cumulative";
+export type LineOnlyOption = "own_floor" | "stacks_over_mercuriale";
 
 const LINE_ONLY_MESSAGES: Readonly<Record<LineOnlyOption, string>> = {
   own_floor:
     "Un plancher propre ne s'applique qu'à une promotion sans acheminement : retirez le plancher, ou l'acheminement.",
   stacks_over_mercuriale:
     "« S'applique aussi aux tarifs négociés » ne vaut que pour une promotion sans acheminement : décochez-le, ou retirez l'acheminement.",
-  // Plan des promotions, § 16.1 : la commande ne porte encore qu'UNE remise de
-  // panier ; deux promotions de panier ne peuvent donc pas se cumuler.
-  cumulative:
-    "« Cumulable » ne vaut, pour l'instant, que pour une promotion sans acheminement : une commande ne porte encore qu'une remise de panier. Décochez-la, ou retirez l'acheminement.",
 };
 
-/** Plancher propre, cumul sur mercuriale ou « Cumulable » sur une promotion de panier. */
+/**
+ * Plancher propre ou cumul sur mercuriale sur une promotion de panier.
+ * « Cumulable » y est admise depuis M7 (plan des promotions, § 18.6).
+ */
 export class PromotionLineOnlyOptionError extends DomainError {
   constructor(readonly option: LineOnlyOption) {
     super("promotions.line_only_option", LINE_ONLY_MESSAGES[option]);
@@ -297,7 +296,7 @@ export class BasketPromotionsWouldCombineError extends BusinessError {
   ) {
     super(
       "promotions.basket_would_combine",
-      `« ${otherName} » pourrait s'appliquer à la même commande : une commande ne porte encore qu'une promotion liée à l'acheminement. Changez le public, l'acheminement ou les dates de l'une des deux.`,
+      `« ${otherName} » pourrait s'appliquer à la même commande : une commande ne porte qu'une promotion liée à l'acheminement, sauf si les deux sont « Cumulable ». Cochez « Cumulable » sur les deux, ou changez le public, l'acheminement ou les dates de l'une d'elles.`,
     );
   }
 }
@@ -333,6 +332,25 @@ export class LegacyPromotionEditorClosedError extends BusinessError {
       editor === "price_rule"
         ? "Les promotions se règlent désormais dans l'écran Promotions : une règle d'étage promotion ne s'écrit plus et n'agit plus sur aucun prix. Posez-y une promotion, ou choisissez un autre étage."
         : "La remise d'un site se règle désormais dans l'écran Promotions : depuis la fiche du site, « Nouvelle promotion pour ce site ». Ses anciennes colonnes n'agissent plus sur aucun prix.",
+    );
+  }
+}
+
+/**
+ * **Une sixième promotion panier cumulable sur une même commande** (lot M7,
+ * décision du 2026-10-31) : une commande porte cinq remises de panier au
+ * plus ; le refus nomme celles qui s'appliqueraient déjà.
+ */
+export class TooManyCumulativeBasketPromotionsError extends BusinessError {
+  constructor(
+    readonly companionNames: readonly string[],
+    readonly maximum: number,
+  ) {
+    super(
+      "promotions.too_many_cumulative_basket",
+      `Une commande porte ${maximum} remises de panier au plus, et ${companionNames.length} promotions cumulables ` +
+        `pourraient déjà s'appliquer avec celle-ci (${companionNames.map((name) => `« ${name} »`).join(", ")}). ` +
+        "Décochez « Cumulable », ou archivez l'une d'elles, ou changez le public, l'acheminement ou les dates.",
     );
   }
 }

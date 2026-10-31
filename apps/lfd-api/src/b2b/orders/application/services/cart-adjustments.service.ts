@@ -142,6 +142,7 @@ export class CartAdjustments {
       ineligibleSkus: served.ineligibleSkus,
       promotionId: served.promotionId,
       discountLabel: served.label,
+      applied: served.applied,
     };
   }
 

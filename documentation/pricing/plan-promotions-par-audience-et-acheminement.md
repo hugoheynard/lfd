@@ -1836,6 +1836,8 @@ pour toutes les promotions.
 
 **Point PANIER — plusieurs remises, forme arithmétique.**
 
+_Précisé au bâti de M7 (2026-10-31, mandat) : plafond et unité de comparaison des plans — § 18.6, « Décisions sur le rapport de M7 »._
+
 1. Sélection : les candidates admises (fenêtre, public, acheminement) ont
    chacune leur ensemble de lignes couvertes `E_p` (portée + seuil, comme
    `outcomeOf`). Les non cumulables sont triées par le rang de
@@ -2464,6 +2466,50 @@ le ticket de la boutique aussi (TTC figés). E2E
 donnée** : le panier et la confirmation de la boutique lisent le DEVIS
 (`ShopQuoteView`), qui ne porte qu'une remise tant que M7 n'a pas ouvert le
 cumul au panier.
+
+**M7 bâti le 2026-10-31 (non commité à l'écriture de cette ligne) —
+IRRÉVERSIBLE une fois en production, à ne déployer que sur ordre exprès de
+Hugo**, et seulement après la seconde passe de reprise à zéro écart et zéro
+désaccord (condition du runbook, non vérifiable depuis le code). La case
+« Cumulable » est admise au panier (agrégat, éditeur, mapper ; migration
+`20261031190000_le_cumul_au_panier` qui retire le CHECK
+`promotions_cumulative_line_only`) ; `assertSingleBasketPromotion` laisse
+passer deux cumulables ; le choix (`apps/lfd-api/src/b2b/orders/domain/services/basket-promotion-plan.ts`)
+suit le § 16.1, étapes 1 et 2, sur le chemin `line_ht` du panier, et retire
+une étape ramenée à zéro. À partir de deux remises, la composition passe
+`DraftOrderInput.basketDiscounts` (couverture par SKU) et l'agrégat rejoue la
+chaîne (`apps/lfd-api/src/b2b/orders/domain/entities/order-cumulated-discounts.ts`) ; les colonnes uniques valent `NULL`,
+le libellé « Remises / Discounts / Sconti ». Le devis porte `discounts[]`
+(`ShopQuoteView`, additif, types seuls), le panier et la confirmation de la
+boutique une ligne par remise. E2E `apps/lfd-api/test/promotions-basket-cumul.e2e-spec.ts`
+et second tirage de `shop-quote-placement-property.e2e-spec.ts`.
+
+**Décisions sur le rapport de M7 (mandat, 2026-10-31)** :
+
+- **Plafond de cinq — une caisse ne tombe jamais.** À la POSE, une sixième
+  promotion panier cumulable qui pourrait s'appliquer avec cinq autres
+  (publics, acheminements et fenêtres qui se recoupent, jugés deux à deux
+  avec elle) est refusée, en nommant les cinq et le geste de sortie
+  (`TooManyCumulativeBasketPromotionsError`, garde de chevauchement). À la
+  SÉLECTION, défense en profondeur : au-delà de cinq, les cinq premières dans
+  l'ordre du § 16.1 sont gardées, les autres écartées et journalisées par
+  `BasketPromotions` ; le devis et la passation ne lèvent jamais. Le plafond
+  a une seule source (`MAX_BASKET_DISCOUNTS_PER_ORDER`, relu par la commande).
+- **Les deux plans du § 16.1 (étape 2) se comparent dans l'unité de la
+  commande** : en TTC pour une commande `exact_ht` (ce que le particulier
+  paie, TTC de ligne de `composeExactOrder`), en HT pour `line_ht`. Le
+  départage des non cumulables entre elles reste au montant HT (le rang de
+  la caisse, inchangé). Un cas où les deux unités départagent différemment
+  existe et est tenu par un test : deux lignes de 10,00 € HT à 5,5 % et
+  20 %, un fixe de 1,00 € sur tout contre 10 % de la seule ligne à 20 % —
+  jeu égal en HT (non cumulable), chaîne plus forte en TTC.
+- **Assumé** : l'annonce d'un point (`PickupDiscounts`) et l'offre de
+  connexion (`signInOffer`) n'annoncent qu'UNE remise, la plus spécifique ;
+  la caisse peut en retirer davantage. Le contrat n'est pas étendu.
+- **Assumé** : une cumulable visant un point nommé est plus spécifique
+  qu'une cumulable « au retrait » et s'applique avant elle ; changer de point
+  peut donc changer le rang 1, et L9 refuse alors la révision
+  (« remplacerait »), conformément au § 18.5.
 
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`

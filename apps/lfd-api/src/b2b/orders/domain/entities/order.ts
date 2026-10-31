@@ -14,7 +14,11 @@ import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 
 import { ensureDraftable } from "./order-amount-guards.js";
 import { lineHtAmountsOf, type DraftedAmounts } from "./order-amounts.js";
-import { appliedBasketDiscountsOf } from "./order-basket-discounts.js";
+import {
+  appliedBasketDiscountsOf,
+  basketTracesOf,
+  type BasketDiscountTrace,
+} from "./order-basket-discounts.js";
 import { exactAmountsOf } from "./order-exact-amounts.js";
 import { clienteleOf, normalizeFulfillment } from "./order-fulfillment.js";
 import {
@@ -103,6 +107,7 @@ export class Order {
     private readonly discountAdjustment: CartAdjustment | null,
     private readonly discountLabel: OrderDiscountLabel | null,
     private readonly discountPromotionId: string | null,
+    private readonly basketTraces: readonly BasketDiscountTrace[],
     private readonly deliveryFeeAdjustment: CartAdjustment | null,
     private readonly lateFeeCents: number,
     private readonly lateFeeAdjustment: LateFeeAdjustment | null,
@@ -146,6 +151,7 @@ export class Order {
       input.discountAdjustment,
       input.discountLabel ?? null,
       input.discountPromotionId ?? null,
+      basketTracesOf(input),
       input.deliveryFeeAdjustment,
       input.lateFeeCents,
       input.lateFeeAdjustment,
@@ -343,11 +349,7 @@ export class Order {
       discountAdjustment: this.discountAdjustment,
       discountLabel: this.discountLabel,
       discountPromotionId: this.discountPromotionId,
-      basketDiscounts: appliedBasketDiscountsOf(this.amounts.basketSteps, {
-        promotionId: this.discountPromotionId,
-        adjustment: this.discountAdjustment,
-        label: this.discountLabel,
-      }),
+      basketDiscounts: appliedBasketDiscountsOf(this.amounts.basketSteps, this.basketTraces),
       deliveryFeeCents: this.amounts.deliveryFeeCents,
       deliveryFeeTtcCents: this.amounts.ttcTerms?.deliveryFeeCents ?? null,
       deliveryFeeAdjustment: this.deliveryFeeAdjustment,

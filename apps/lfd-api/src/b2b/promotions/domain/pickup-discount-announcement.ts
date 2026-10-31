@@ -99,9 +99,12 @@ function announcedFor(
  * Le rang de la caisse (`chooseBasketPromotion`) : public, acheminement, puis
  * la plus avantageuse (§ 15.6) — sans panier, seulement entre deux effets de
  * même nature (deux taux, deux montants) —, puis l'identifiant. L'écran
- * refuse deux promotions panier qui pourraient s'appliquer ensemble
- * (`BasketPromotionsWouldCombineError`) : il n'en reste qu'une ici, et ce
- * départage ne tranche qu'en théorie.
+ * refuse deux promotions panier NON cumulables qui pourraient s'appliquer
+ * ensemble (`BasketPromotionsWouldCombineError`). Depuis M7, des promotions
+ * panier cumulables s'enchaînent à la caisse : le contrat n'annonçant qu'une
+ * remise par clientèle, seule la plus spécifique est annoncée ici, et la
+ * caisse en retire davantage (vérifié le 2026-10-31 : `PickupDiscounts`
+ * porte un `AudiencePickupDiscount` par clientèle).
  */
 function mostSpecific(candidates: readonly AdmittedPromotion[]): AdmittedPromotion | null {
   let best: AdmittedPromotion | null = null;

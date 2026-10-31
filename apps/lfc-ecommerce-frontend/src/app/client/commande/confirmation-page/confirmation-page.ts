@@ -6,6 +6,7 @@ import { FoldIconComponent } from 'fold-ng';
 import { AuthFacade } from '../../../auth/auth.facade';
 import { storedGuestIdentity } from '../../cart/guest-identity-form/guest-identity-form';
 import { formatCents, formatRate } from '../../../client/format-money';
+import { adjustmentValue, quoteDiscountRows } from '../../cart/quote-discount-rows';
 import { ClientLocale } from '../../../client/client-locale.service';
 import { ClientChrome } from '../../../client/client-chrome.service';
 import { ClientOrders } from '../../../client/client-orders.service';
@@ -173,11 +174,27 @@ export class ConfirmationPage {
     if (!order || adjustment === null || order.totals.discountCents === 0) {
       return null;
     }
-    const value =
-      adjustment.mode === 'percent'
-        ? formatRate(adjustment.bp / 100)
-        : formatCents(adjustment.cents);
-    return fill(this.t().cart.discount, { at: order.service.at, value });
+    return fill(this.t().cart.discount, {
+      at: order.service.at,
+      value: adjustmentValue(adjustment),
+    });
+  });
+
+  /**
+   * Les lignes de remise du décompte gelé : LA ligne d'hier, ou une par
+   * remise quand des promotions cumulables en ont fait naître plusieurs (M7).
+   */
+  protected readonly discountRows = computed(() => {
+    const order = this.order();
+    if (!order) {
+      return [];
+    }
+    return quoteDiscountRows(
+      order.totals,
+      this.discountLabel(),
+      (value) => fill(this.t().cart.discount, { at: order.service.at, value }),
+      this.locale.current(),
+    );
   });
 
   /**

@@ -9,6 +9,10 @@
  * promotion de ligne devant une promotion de panier. Le tirage est à graine
  * FIXE : un rouge se rejoue à l'identique, et le message nomme le panier.
  *
+ * Depuis M7, un second tirage pose deux ou trois promotions panier
+ * CUMULABLES : le devis annonce chaque remise (`discounts`), et la commande
+ * fige les mêmes, au centime, dans `order_discounts`.
+ *
  * Deux propriétés, pour un invité (`/shop/quote` → `/shop/orders`) et pour un
  * inscrit (`/shop/quote/mine` → `/orders`) :
  *
@@ -48,6 +52,9 @@ const SERVICE_DAY = serviceDay();
 /** Le tirage est rejouable : changer la graine change TOUS les paniers. */
 const SEED = 20_261_030;
 const CASES = 50;
+/** Le cumul au panier (lot M7) : son propre tirage, pour ne rien changer aux paniers d'hier. */
+const CUMULATED_SEED = 20_261_031;
+const CUMULATED_CASES = 30;
 const SKUS = [
   "VIE-001-1",
   "VIE-002-1",
@@ -294,6 +301,153 @@ const FULFILLMENT = (): { method: "pickup"; pickupAddressId: string } => ({
   pickupAddressId: site,
 });
 
+/**
+ * Un panier : ses promotions posées, ses deux devis, ses deux passations — et
+ * les égalités au centime. Rend le devis de l'inscrit.
+ */
+async function quotedAndPlaced(
+  basket: Basket,
+  index: number,
+  clientIp: string | null = null,
+): Promise<ShopQuoteView> {
+  await setPromotions(basket.promotions);
+  const label = `#${String(index)} ${basket.describe}`;
+
+  // Le devis anonyme est limité en débit par adresse : un second tirage
+  // passe par sa propre adresse, sans rien changer à ce qu'on éprouve.
+  const visitor = clientIp === null ? ctx.http() : ctx.http().set("x-lfc-client-ip", clientIp);
+  const anonymous = jsonBody<ShopQuoteView>(
+    await visitor
+      .post("/shop/quote")
+      .send({ lines: basket.lines, fulfillment: FULFILLMENT() })
+      .expect(200),
+  );
+  const mine = jsonBody<ShopQuoteView>(
+    await ctx
+      .asSub(REGISTERED)
+      .post("/shop/quote/mine")
+      .send({ lines: basket.lines, fulfillment: FULFILLMENT() })
+      .expect(200),
+  );
+  expectArithmetic(anonymous, `${label} (invité)`);
+  expectArithmetic(mine, `${label} (inscrit)`);
+
+  // Par le handler : la route publique est limitée en débit, et cinquante
+  // passations d'invité de suite la feraient répondre 429 — sans rapport
+  // avec ce qu'on éprouve ici (le calcul, pas la porte HTTP).
+  const guest = await ctx.app.get(PlaceShopOrderHandler).execute(
+    new PlaceShopOrderCommand({
+      idempotencyKey: randomUUID(),
+      salesTerms: null,
+      buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
+      fulfillmentMethod: "pickup",
+      requestedWindow: { start: "07:00", end: "08:00" },
+      deliveryAddress: null,
+      deliveryAddressId: null,
+      pickupAddressId: site,
+      requestedDeliveryDate: SERVICE_DAY,
+      note: "",
+      lines: basket.lines,
+    }),
+  );
+  const registered = jsonBody<PlacedOrderResponse>(
+    await ctx
+      .asSub(REGISTERED)
+      .post("/orders")
+      .send({
+        idempotencyKey: randomUUID(),
+        salesTerms: null,
+        pickupAddressId: site,
+        requestedDeliveryDate: SERVICE_DAY,
+        fulfillmentMethod: "pickup",
+        requestedWindow: { start: "07:00", end: "08:00" },
+        note: "",
+        lines: basket.lines,
+      })
+      .expect(201),
+  );
+  await ctx.drain();
+
+  expect({ label, invité: await orderPaid(guest.id) }).toEqual({
+    label,
+    invité: quotePaid(anonymous),
+  });
+  expect({ label, inscrit: await orderPaid(registered.id) }).toEqual({
+    label,
+    inscrit: quotePaid(mine),
+  });
+  expect({ label, intention: guest.payment?.amountCents }).toEqual({
+    label,
+    // Un total nul (100 % de remise) n'ouvre aucune intention de règlement.
+    intention: anonymous.totalCents > 0 ? anonymous.totalCents : undefined,
+  });
+  await expectSameDiscounts(guest.id, anonymous, `${label} (invité)`);
+  await expectSameDiscounts(registered.id, mine, `${label} (inscrit)`);
+  return mine;
+}
+
+/**
+ * Le devis annonce chaque remise que la commande fige (lot M7) : une
+ * entrée de `discounts` par ligne active de `order_discounts`, mêmes montants
+ * HT et TTC, même ordre. Sans `discounts`, une remise au plus.
+ */
+async function expectSameDiscounts(
+  orderId: string,
+  view: ShopQuoteView,
+  label: string,
+): Promise<void> {
+  const rows = await ctx.prisma.orderDiscount.findMany({
+    where: { orderId, archivedAt: null },
+    orderBy: { rank: "asc" },
+    select: { amountCents: true, amountTtcCents: true },
+  });
+  if (view.discounts === undefined) {
+    expect({ label, rows: rows.length <= 1 }).toEqual({ label, rows: true });
+    return;
+  }
+  expect({ label, rows }).toEqual({
+    label,
+    rows: view.discounts.map((discount) => ({
+      amountCents: discount.amountCents,
+      amountTtcCents: discount.amountTtcCents,
+    })),
+  });
+}
+
+/**
+ * Deux ou trois promotions panier CUMULABLES (lot M7) — tout le monde, au
+ * retrait : elles s'enchaînent sur le reste, un arrondi par étape.
+ */
+function drawCumulatedBasket(rng: ReturnType<typeof drawer>, index: number): Basket {
+  const picked = [...SKUS].sort(() => rng.next() - 0.5).slice(0, rng.int(1, 5));
+  const lines = picked.map((sku) => ({ sku, quantity: rng.int(1, 15) }));
+  const promotions = Array.from({ length: rng.int(2, 3) }, (_, rank) => {
+    const amount = rng.next() < 0.3;
+    const onFamily = rng.next() < 0.35;
+    return terms(index * 10 + rank, {
+      cumulative: true,
+      effect: amount
+        ? { kind: "basket_amount_off", value: pick(rng, AMOUNTS) }
+        : { kind: "percent_off", value: pick(rng, PERCENTS) },
+      fulfillment: { kind: "pickup", pickupId: null },
+      scope: onFamily
+        ? {
+            mode: "only",
+            rules: [{ target: "category", targetId: E2E_FAMILIES.VIE.id, eligible: true }],
+          }
+        : { mode: "all_except", rules: [] },
+    });
+  });
+  return {
+    lines,
+    promotions,
+    describe: JSON.stringify({
+      lines,
+      promotions: promotions.map((p) => [p.effect, p.scope.mode]),
+    }),
+  };
+}
+
 describe("le devis prédit la passation, sur des paniers tirés au hasard", () => {
   it(`${String(CASES)} paniers (graine ${String(SEED)}) : même total TTC au centime, décompte qui s'additionne`, async () => {
     const rng = drawer(SEED);
@@ -301,79 +455,23 @@ describe("le devis prédit la passation, sur des paniers tirés au hasard", () =
 
     for (let index = 0; index < CASES; index += 1) {
       const basket = drawBasket(rng, index);
-      await setPromotions(basket.promotions);
-      const label = `#${String(index)} ${basket.describe}`;
-
-      const anonymous = jsonBody<ShopQuoteView>(
-        await ctx
-          .http()
-          .post("/shop/quote")
-          .send({ lines: basket.lines, fulfillment: FULFILLMENT() })
-          .expect(200),
-      );
-      const mine = jsonBody<ShopQuoteView>(
-        await ctx
-          .asSub(REGISTERED)
-          .post("/shop/quote/mine")
-          .send({ lines: basket.lines, fulfillment: FULFILLMENT() })
-          .expect(200),
-      );
-      expectArithmetic(anonymous, `${label} (invité)`);
-      expectArithmetic(mine, `${label} (inscrit)`);
-
-      // Par le handler : la route publique est limitée en débit, et cinquante
-      // passations d'invité de suite la feraient répondre 429 — sans rapport
-      // avec ce qu'on éprouve ici (le calcul, pas la porte HTTP).
-      const guest = await ctx.app.get(PlaceShopOrderHandler).execute(
-        new PlaceShopOrderCommand({
-          idempotencyKey: randomUUID(),
-          salesTerms: null,
-          buyer: { firstName: "Camille", email: "camille@visiteur.fr", phone: "0600000000" },
-          fulfillmentMethod: "pickup",
-          requestedWindow: { start: "07:00", end: "08:00" },
-          deliveryAddress: null,
-          deliveryAddressId: null,
-          pickupAddressId: site,
-          requestedDeliveryDate: SERVICE_DAY,
-          note: "",
-          lines: basket.lines,
-        }),
-      );
-      const registered = jsonBody<PlacedOrderResponse>(
-        await ctx
-          .asSub(REGISTERED)
-          .post("/orders")
-          .send({
-            idempotencyKey: randomUUID(),
-            salesTerms: null,
-            pickupAddressId: site,
-            requestedDeliveryDate: SERVICE_DAY,
-            fulfillmentMethod: "pickup",
-            requestedWindow: { start: "07:00", end: "08:00" },
-            note: "",
-            lines: basket.lines,
-          })
-          .expect(201),
-      );
-      await ctx.drain();
-
-      expect({ label, invité: await orderPaid(guest.id) }).toEqual({
-        label,
-        invité: quotePaid(anonymous),
-      });
-      expect({ label, inscrit: await orderPaid(registered.id) }).toEqual({
-        label,
-        inscrit: quotePaid(mine),
-      });
-      expect({ label, intention: guest.payment?.amountCents }).toEqual({
-        label,
-        // Un total nul (100 % de remise) n'ouvre aucune intention de règlement.
-        intention: anonymous.totalCents > 0 ? anonymous.totalCents : undefined,
-      });
-      if (mine.discountCents > 0) discounted += 1;
+      if ((await quotedAndPlaced(basket, index)).discountCents > 0) discounted += 1;
     }
 
     // Le tirage doit éprouver des remises : un lot sans remise ne prouverait rien.
     expect(discounted).toBeGreaterThan(CASES / 5);
+  }, 600_000);
+
+  it(`${String(CUMULATED_CASES)} paniers à remises cumulées (graine ${String(CUMULATED_SEED)}) : devis = commande au centime, remise par remise`, async () => {
+    const rng = drawer(CUMULATED_SEED);
+    let cumulated = 0;
+
+    for (let index = 0; index < CUMULATED_CASES; index += 1) {
+      const view = await quotedAndPlaced(drawCumulatedBasket(rng, index), index, "203.0.113.31");
+      if ((view.discounts?.length ?? 0) >= 2) cumulated += 1;
+    }
+
+    // Le tirage doit éprouver le cumul : un lot sans deux remises ne prouverait rien.
+    expect(cumulated).toBeGreaterThan(CUMULATED_CASES / 3);
   }, 600_000);
 });

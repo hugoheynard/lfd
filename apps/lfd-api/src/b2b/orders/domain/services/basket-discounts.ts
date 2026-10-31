@@ -1,6 +1,7 @@
 import type { CartAdjustment } from "@lfd/contracts";
 import { chainBasketDiscounts, type BasketDiscountChain, type VatLine } from "@lfd/money";
 
+import { MAX_BASKET_DISCOUNTS_PER_ORDER } from "../../../promotions/domain/promotion-overlap.js";
 import { TooManyBasketDiscountsError } from "../errors/basket-discount-errors.js";
 
 /**
@@ -15,7 +16,7 @@ import { TooManyBasketDiscountsError } from "../errors/basket-discount-errors.js
  */
 
 /** Plafond du nombre de remises de panier par commande (§ 18.8, arbitrage n° 5). */
-export const MAX_BASKET_DISCOUNTS = 5;
+export const MAX_BASKET_DISCOUNTS = MAX_BASKET_DISCOUNTS_PER_ORDER;
 
 /**
  * Une remise de panier : son ajustement tel que saisi (pourcentage, ou
