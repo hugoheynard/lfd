@@ -36,9 +36,9 @@ const SHELF_QUANTITY = 1;
 /**
  * **La grille de prix d'un public** (`plan-export-grille-de-prix.md`, § 4).
  *
- * Chaque prix passe par la porte (`Pricer.load`), avec la société servie et
- * la porte d'entrée du public choisi, à la date choisie — la question même du
- * rayon. Les remises au panier retenues passent par la règle de la caisse,
+ * Chaque prix passe par la porte (`Pricer.load`), avec l'acheteur du public
+ * choisi — une société servie, un particulier par sa porte d'entrée, ou un pro
+ * type (§ 8) — à la date choisie : la question même du rayon. Les remises au panier retenues passent par la règle de la caisse,
  * article par article (`priceGridRowOf`). Rien n'est écrit.
  */
 @QueryHandler(ExportPriceGridQuery)
@@ -58,7 +58,7 @@ export class ExportPriceGridHandler implements IQueryHandler<ExportPriceGridQuer
     const context = await this.contexts.contextOf(payload);
     const [set, shelf] = await Promise.all([
       this.promotions.of(context),
-      this.shelves.shelfFor(context.companyId, context.judgedAt),
+      this.shelves.shelfFor(context.viewer, context.judgedAt),
     ]);
     const chosen = chosenOf(payload.basketPromotions, set.basket);
     const retained = chosen.flatMap(({ promotion, part }) =>
@@ -69,7 +69,8 @@ export class ExportPriceGridHandler implements IQueryHandler<ExportPriceGridQuer
       audience: context.labels.audience,
       day: context.labels.day,
       fulfillment: context.labels.fulfillment,
-      basis: shelf.basis,
+      basis: context.basis,
+      remarks: context.labels.remarks,
       displayedPromotions: set.displayedPrice.map((promotion) => promotion.servedLabel.fr),
       basketPromotions: chosen.map(({ promotion, part }) => ({
         label: promotion.servedLabel.fr,
@@ -94,8 +95,8 @@ export class ExportPriceGridHandler implements IQueryHandler<ExportPriceGridQuer
     const [lot, classifications] = await Promise.all([
       this.pricer.load({
         articles: shelf.articles.map(({ article }) => ({ article, quantity: SHELF_QUANTITY })),
-        companyId: shelf.pricingCompanyId,
-        buyerKind: context.buyerKind,
+        buyer: context.buyer,
+        lens: context.lens,
         at: context.at,
         caller: "back-office",
       }),
@@ -119,7 +120,7 @@ export class ExportPriceGridHandler implements IQueryHandler<ExportPriceGridQuer
         },
         retained,
         classifications,
-        shelf.basis,
+        context.basis,
       );
     });
   }

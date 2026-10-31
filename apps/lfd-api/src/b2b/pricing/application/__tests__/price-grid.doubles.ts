@@ -5,6 +5,11 @@ import {
   RecordingTimings,
 } from "../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
+import {
+  proViewer,
+  PUBLIC_VIEWER,
+  type CatalogViewer,
+} from "../../../catalog/domain/catalog-viewer.js";
 import { catalogueArticle } from "../../../catalog/domain/catalogue-article.js";
 import { CanonicalPriceHistoryReader } from "../../../catalog/domain/ports/canonical-price-history.reader.js";
 import {
@@ -21,10 +26,7 @@ import { CompanyMercuriale } from "../../domain/entities/company-mercuriale.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { PricedCompanyNamer } from "../../domain/ports/priced-company-namer.js";
 import { PriceGridFulfillmentNamer } from "../../domain/ports/price-grid-fulfillment.namer.js";
-import {
-  PriceGridServingReader,
-  type PriceGridServing,
-} from "../../domain/ports/price-grid-serving.reader.js";
+import { PriceGridViewerReader } from "../../domain/ports/price-grid-viewer.reader.js";
 import {
   PriceGridShelfReader,
   type PriceGridShelf,
@@ -69,16 +71,16 @@ export class NamedPlaces extends PriceGridFulfillmentNamer {
   }
 }
 
-/** Une société servie en pro, qui paie son propre tarif ; sans société, le public. */
-export class GivenServing extends PriceGridServingReader {
+/** Une société servie en pro, qui paie son propre tarif ; les autres, au public. */
+export class GivenViewers extends PriceGridViewerReader {
   constructor(private readonly proCompanies: ReadonlySet<string> = new Set([COMPANY])) {
     super();
   }
-  servingOf(companyId: string | null): Promise<PriceGridServing> {
+  viewerOf(companyId: string): Promise<CatalogViewer> {
     return Promise.resolve(
-      companyId !== null && this.proCompanies.has(companyId)
-        ? { basis: "ht", pricingCompanyId: companyId }
-        : { basis: "ttc", pricingCompanyId: null },
+      this.proCompanies.has(companyId)
+        ? proViewer({ companyId, activePrincipalId: null })
+        : PUBLIC_VIEWER,
     );
   }
 }
@@ -100,20 +102,17 @@ export function shelfArticle(sku: string, unitPriceMillicents: number): PriceGri
   };
 }
 
-/** Le rayon donné, dont l'assiette suit le service — et ce qu'on lui a demandé. */
+/** Le rayon donné — et à quel lecteur, à quel instant, on l'a demandé. */
 export class GivenShelf extends PriceGridShelfReader {
-  readonly asked: { readonly companyId: string | null; readonly at: Date }[] = [];
+  readonly asked: { readonly viewer: CatalogViewer; readonly at: Date }[] = [];
 
-  constructor(
-    private readonly articles: readonly PriceGridShelfArticle[],
-    private readonly serving: PriceGridServingReader = new GivenServing(),
-  ) {
+  constructor(private readonly articles: readonly PriceGridShelfArticle[]) {
     super();
   }
 
-  async shelfFor(companyId: string | null, at: Date): Promise<PriceGridShelf> {
-    this.asked.push({ companyId, at });
-    return { ...(await this.serving.servingOf(companyId)), articles: this.articles };
+  shelfFor(viewer: CatalogViewer, at: Date): Promise<PriceGridShelf> {
+    this.asked.push({ viewer, at });
+    return Promise.resolve({ articles: this.articles });
   }
 }
 
@@ -231,7 +230,7 @@ export function gridServices(
       new FixedClock(now),
       new NamedCompanies(),
       new NamedPlaces(),
-      new GivenServing(),
+      new GivenViewers(),
     ),
     promotions: new PriceGridPromotions(
       linePromotionSupply(options.lines ?? [], statuses),

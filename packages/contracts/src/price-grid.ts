@@ -12,14 +12,14 @@ import type { PromotionEffectKindValue } from "./promotions.js";
 
 /**
  * Pour qui. Les publics que la porte du prix sait servir sans société
- * (particuliers inscrits, invités), ou une société précise — sa mercuriale et
- * son réglage de promotions s'appliquent alors.
- *
- * ⚠️ « Les pros » en public type n'y est PAS (2026-10-31) : la porte ne sait
- * établir le statut « société active » que d'une société réelle, et l'aperçu
- * déclaré n'admet que « tout le monde ». Cf. le plan, § 2.
+ * (particuliers inscrits, invités), un **pro type** (société active, ou en
+ * cours d'inscription — plan, § 8 : aucune société, ses faits d'audience
+ * déclarés par le staff), ou une société précise — sa mercuriale et son
+ * réglage de promotions s'appliquent alors.
  */
 export const priceGridAudienceSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("pro_active") }),
+  z.object({ kind: z.literal("pro_pending") }),
   z.object({ kind: z.literal("individuals_registered") }),
   z.object({ kind: z.literal("individuals_guest") }),
   z.object({ kind: z.literal("company"), companyId: z.string().trim().min(1) }),

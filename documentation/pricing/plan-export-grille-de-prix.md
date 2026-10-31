@@ -10,9 +10,9 @@
 > « Exporter une grille de prix » sur `/pim/catalogue`. **Écarts au plan**, chacun
 > en suspens chez Hugo :
 >
-> - **« Les pros » en public type n'est pas bâti** : la porte du prix ne sait
->   établir « société active » que d'une société réelle, et l'aperçu déclaré
->   (`previewed`) n'admet que « tout le monde ». Pour les pros : choisir une société.
+> - ~~**« Les pros » en public type n'est pas bâti**~~ — bâti le 2026-10-31
+>   par le § 8 (non commité) : « Pros (société active) » et « Pros en cours
+>   d'inscription ».
 > - **Les promotions du prix affiché ne se décochent pas** : la porte les applique
 >   sans paramètre d'exclusion. Elles sont listées et nommées en tête.
 > - **Un jour passé est refusé pour un particulier** (l'historique ne garde que
@@ -125,6 +125,22 @@ sans identité, `b2bPending`, `b2c`).
   ou « Une société précise ».
 
 ## 8. Après vitruve (2026-10-31) — fait foi sur le § 7
+
+> 🟦 **Bâti le 2026-10-31** (non commité). `TypicalBuyer`
+> (`apps/lfd-api/src/b2b/promotions/domain/lot-buyer.ts`, constructeur privé,
+> classe nominale) et sa fabrique `priceGridTypicalBuyer`
+> (`apps/lfd-api/src/b2b/pricing/application/price-grid-typical-buyer.ts`) ; `LotRequest.buyer`
+> et `LotBuyer` = `real | typical` ; `lotBuyerFacts` (le `switch` du point
+> ligne et du rayon) ; `TYPICAL_BUYER` dans `promotion-targeting.ts` ; ports
+> `PriceGridViewerReader` et `PriceGridShelfReader.shelfFor(viewer)` ; contrat
+> `pro_active` · `pro_pending` ; porte `lint:typical-buyer`
+> (`dev-toolbox/gates/typical-buyer.mjs`). **Écart au texte** : la classe vit
+> dans le domaine des promotions — un constructeur privé exige sa fabrique
+> statique dans la même classe, et le domaine ne lit pas l'application ; la
+> fabrique du module d'export l'enveloppe, et la porte refuse tout import en
+> valeur de l'une ou de l'autre ailleurs. La société des faits d'une société
+> précise est désormais celle que reçoit la porte du prix (`pricingCompanyOf`
+> du lecteur), pour l'offre de ligne comme pour le panier.
 
 1. **Un objet opaque, pas un nouveau `PricedBuyerKind`** : une chaîne de
    l'union s'écrirait depuis n'importe quelle route. `TypicalBuyer`, classe

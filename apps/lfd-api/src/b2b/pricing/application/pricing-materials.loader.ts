@@ -10,7 +10,7 @@ import { SkuVolumeReader } from "../domain/ports/sku-volume.reader.js";
 import { VolumeCommitmentReader } from "../domain/ports/volume-commitment.reader.js";
 import { VolumeLadderReader } from "../domain/ports/volume-ladder.reader.js";
 import type { CatalogArticle } from "../../catalog/domain/catalogue-article.js";
-import { LoadedPricer, type PricingParties } from "../domain/loaded-pricer.js";
+import { LoadedPricer, lotBuyerOf, type PricingParties } from "../domain/loaded-pricer.js";
 import { admitsEvidence, type PriceLens } from "../domain/price-lens.js";
 import { readsArchived, type PriceEpoch } from "../domain/price-epoch.js";
 import { pricingContextFor } from "../domain/pricing-context.js";
@@ -153,7 +153,7 @@ export class PricingMaterialsLoader {
         ? this.mercuriales.liveAsOf(parties.pricingCompanyId, at)
         : this.mercuriales.liveFor(parties.pricingCompanyId, at),
       // Les promotions du point ligne, admises pour ce client à cet instant.
-      this.linePromotions.forLot(parties, at, replay),
+      this.linePromotions.forLot(lotBuyerOf(parties), at, replay),
     ]);
     // L'étage `promotion` est occupé par les promotions seules depuis L12 :
     // une règle d'étage promotion encore lue (lecture datée d'avant son

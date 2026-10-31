@@ -5,8 +5,10 @@ import { PromotionAudienceFactsResolver } from "../../promotions/application/pro
 import {
   promotionsAdmitted,
   type AdmittedPromotion,
+  type LivePromotion,
 } from "../../promotions/domain/live-promotion.js";
 import { BasketPromotionReader } from "../../promotions/domain/ports/basket-promotion.reader.js";
+import type { PromotionAudienceFacts } from "../../promotions/domain/promotion-targeting.js";
 import type { PriceGridContext } from "./price-grid-context.js";
 
 /** Les promotions que ce public reçoit, des deux points d'application. */
@@ -26,6 +28,10 @@ export interface PriceGridPromotionSet {
  * - le point panier par `BasketPromotionReader` et `PromotionAudienceFactsResolver`,
  *   jugé comme `BasketPromotions` le fait au devis — sans créneau : une
  *   promotion à heures ne s'y applique pas, comme au devis sans créneau.
+ *
+ * Les deux jugent le MÊME acheteur (`context.buyer`) : jusqu'au 2026-10-31,
+ * l'offre de ligne lisait le compte de tarif et les faits du panier la société
+ * choisie (§ 8). Un pro type apporte ses faits déclarés, sans résolveur.
  */
 @Injectable()
 export class PriceGridPromotions {
@@ -37,24 +43,30 @@ export class PriceGridPromotions {
 
   async of(context: PriceGridContext): Promise<PriceGridPromotionSet> {
     const [displayedPrice, all] = await Promise.all([
-      this.lines.forLot(
-        { companyId: context.serving.pricingCompanyId, buyerKind: context.buyerKind },
-        context.judgedAt,
-        context.replay,
-      ),
+      this.lines.forLot(context.buyer, context.judgedAt, context.replay),
       context.replay ? this.baskets.liveAt(context.judgedAt) : this.baskets.live(),
     ]);
-    const facts = await this.facts.factsFor(
-      {
-        companyId: context.companyId,
-        buyerKind: context.buyerKind,
-        fulfillment: context.fulfillment,
-      },
-      all,
-    );
+    const facts = await this.basketFactsOf(context, all);
     return {
       displayedPrice,
       basket: promotionsAdmitted(all, context.judgedAt, facts, null),
     };
+  }
+
+  /** Les faits du panier, l'acheminement compris. */
+  private basketFactsOf(
+    context: PriceGridContext,
+    candidates: readonly LivePromotion[],
+  ): Promise<PromotionAudienceFacts> {
+    const { buyer, fulfillment } = context;
+    switch (buyer.kind) {
+      case "typical":
+        return Promise.resolve({ ...buyer.facts, fulfillment });
+      case "real":
+        return this.facts.factsFor(
+          { companyId: buyer.companyId, buyerKind: buyer.buyerKind, fulfillment },
+          candidates,
+        );
+    }
   }
 }

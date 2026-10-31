@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { EMPTY_DRAFT, payloadOf, questionOf } from '../price-grid-draft';
+import { AUDIENCE_OPTIONS, EMPTY_DRAFT, payloadOf, questionOf } from '../price-grid-draft';
 
 const PROMO = {
   id: 'p',
@@ -13,6 +13,19 @@ describe('le brouillon de la grille de prix', () => {
   it('aucune question tant que le point ou la société manque', () => {
     expect(questionOf(EMPTY_DRAFT)).toBeNull();
     expect(questionOf({ ...EMPTY_DRAFT, pickupId: 'pt', audience: 'company' })).toBeNull();
+  });
+
+  it('propose les deux pros types, posés sans société', () => {
+    expect(AUDIENCE_OPTIONS.map((option) => option.label)).toEqual([
+      'Pros (société active)',
+      "Pros en cours d'inscription",
+      'Particuliers inscrits',
+      'Particuliers sans compte',
+      'Une société précise',
+    ]);
+    expect(
+      questionOf({ ...EMPTY_DRAFT, pickupId: 'pt', audience: 'pro_pending' })?.audience,
+    ).toEqual({ kind: 'pro_pending' });
   });
 
   it('un jour vide se dit « maintenant »', () => {

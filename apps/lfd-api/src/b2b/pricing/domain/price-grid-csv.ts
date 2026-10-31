@@ -30,6 +30,8 @@ export interface PriceGridHeading {
   readonly day: string;
   readonly fulfillment: string;
   readonly basis: PriceGridBasis;
+  /** Ce que l'en-tête dit de ce public — limites d'un pro type, lentille (§ 8.6, § 8.7). */
+  readonly remarks: readonly string[];
   readonly displayedPromotions: readonly string[];
   readonly basketPromotions: readonly PriceGridHeadingDiscount[];
   readonly pricePerKg: boolean;
@@ -70,6 +72,7 @@ function headingLines(heading: PriceGridHeading): readonly string[] {
     csvQuoted(`Date : ${heading.day}`),
     csvQuoted(`Acheminement : ${heading.fulfillment}`),
     csvQuoted(`${basis}, à l'unité de vente — au kilo pour un article vendu au poids.`),
+    ...heading.remarks.map(csvQuoted),
     csvQuoted(`Promotions dans le prix affiché : ${listOrNone(heading.displayedPromotions)}`),
     csvQuoted(`Remises au panier retenues : ${listOrNone(discounts)}`),
     csvQuoted(PRICE_GRID_NOTICE),

@@ -1,5 +1,6 @@
+import type { CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
 import type { CatalogArticle } from "../../../catalog/domain/catalogue-article.js";
-import type { PriceGridArticle, PriceGridBasis } from "../price-grid-row.js";
+import type { PriceGridArticle } from "../price-grid-row.js";
 
 /** Un article du rayon de ce public : l'article scellé, et ce que la grille en écrit. */
 export interface PriceGridShelfArticle {
@@ -11,11 +12,8 @@ export interface PriceGridShelfArticle {
   readonly enteredPerKg: PriceGridArticle["enteredPerKg"];
 }
 
-/** Le rayon d'un public, et qui le tarificateur doit connaître. */
+/** Le rayon d'un public. Son assiette et son acheteur viennent du contexte, pas d'ici. */
 export interface PriceGridShelf {
-  readonly basis: PriceGridBasis;
-  /** La société dont la porte lit le tarif ; `null` = servie sans rien de négocié. */
-  readonly pricingCompanyId: string | null;
   readonly articles: readonly PriceGridShelfArticle[];
 }
 
@@ -27,6 +25,9 @@ export interface PriceGridShelf {
  * Un port de lecture, et lui seul : l'export ne fait rien d'autre du catalogue.
  */
 export abstract class PriceGridShelfReader {
-  /** @param companyId `null` = un particulier ; sinon la société choisie. */
-  abstract shelfFor(companyId: string | null, at: Date): Promise<PriceGridShelf>;
+  /**
+   * @param viewer le lecteur du public (§ 8.3) : `PUBLIC_VIEWER`, le pro
+   *   anonyme pour un pro type, ou celui d'une société précise.
+   */
+  abstract shelfFor(viewer: CatalogViewer, at: Date): Promise<PriceGridShelf>;
 }

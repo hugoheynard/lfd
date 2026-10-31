@@ -2,7 +2,8 @@
  * E2E de **la grille de prix d'un public** (`documentation/pricing/plan-export-grille-de-prix.md`,
  * § 5) : la parité avec le rayon — le prix après les remises du prix affiché
  * est celui que la vitrine sert au même public, le même jour —, la liste des
- * promotions qui remplit le panneau, et le fichier (BOM, point-virgule, nom).
+ * promotions qui remplit le panneau, et le fichier (BOM, point-virgule, nom) ;
+ * et le pro type (§ 8), au prix d'une société active ordinaire.
  *
  * Les dates sont relatives à maintenant (`daysAgo`) : aucune n'est écrite en dur.
  */
@@ -114,6 +115,35 @@ describe("la grille et le rayon disent le même prix", () => {
         lineTotalCents(item.unitPriceMillicents, pieces(1)),
       ]);
     }
+  });
+});
+
+describe("le pro type de la grille (plan, § 8)", () => {
+  /**
+   * Une société active SANS mercuriale ni conditions propres paie le tarif pro,
+   * avec les promotions de sa clientèle : son rayon reconnu est donc le prix du
+   * pro type — sur les articles non réservés, les seuls que le pro type liste.
+   */
+  it("« Pros (société active) » : le HT du rayon reconnu d'une société active ordinaire", async () => {
+    const response = await exportGrid({ audience: { kind: "pro_active" } }).expect(200);
+    const shelf = jsonBody<ShopCatalogueView>(
+      await ctx.asSub(MEMBER).get("/shop/catalogue/mine").expect(200),
+    );
+
+    const grid = displayedBySku(response.text);
+    const mine = new Map(
+      shelf.items
+        .filter((item) => item.orderable !== false)
+        .map((item) => [item.sku, lineTotalCents(item.unitPriceMillicents, pieces(1))]),
+    );
+    expect(grid.size).toBeGreaterThan(0);
+    for (const [sku, cents] of grid) {
+      expect([sku, cents]).toEqual([sku, mine.get(sku)]);
+    }
+    expect(response.text).toContain("Prix HT");
+    expect(response.text).toContain("hors articles réservés");
+    expect(response.text).toContain("mêmes prix, promotions différentes");
+    expect(response.text).toContain("Projection");
   });
 });
 

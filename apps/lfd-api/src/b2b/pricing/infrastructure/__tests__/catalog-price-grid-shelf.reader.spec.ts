@@ -8,11 +8,15 @@ import {
   CatalogReader,
   type ResolvedCatalogItem,
 } from "../../../catalog/domain/ports/catalog.reader.js";
-import type { CatalogViewer } from "../../../catalog/domain/catalog-viewer.js";
+import {
+  PRO_ANONYMOUS_VIEWER,
+  PUBLIC_VIEWER,
+  type CatalogViewer,
+} from "../../../catalog/domain/catalog-viewer.js";
 import { CatalogBackedProductCatalog } from "../../../catalog/infrastructure/catalog-backed-product-catalog.js";
 import { shopSkuOf } from "../../../catalog/domain/shop-sku.js";
 import { InMemoryServedCompanies } from "../../../catalog/infrastructure/in-memory-served-companies.js";
-import { CatalogPriceGridServingReader } from "../catalog-price-grid-serving.reader.js";
+import { CatalogPriceGridViewerReader } from "../catalog-price-grid-viewer.reader.js";
 import { CatalogPriceGridShelfReader } from "../catalog-price-grid-shelf.reader.js";
 
 /**
@@ -52,7 +56,6 @@ const ITEMS: ResolvedCatalogItem[] = [
 
 function reader(catalog: CatalogReader = new RecordingCatalog()): CatalogPriceGridShelfReader {
   return new CatalogPriceGridShelfReader(
-    new CatalogViewers(new InMemoryServedCompanies(new Map([["co_suspendue", "suspended"]]))),
     catalog,
     new InMemoryCatalogOperations(),
     new GivenPricesPerKg(
@@ -64,10 +67,8 @@ function reader(catalog: CatalogReader = new RecordingCatalog()): CatalogPriceGr
 
 describe("le rayon d'un public pour la grille de prix", () => {
   it("un particulier : TTC, sans société ; seules les déclinaisons montrées", async () => {
-    const shelf = await reader().shelfFor(null, AT);
+    const shelf = await reader().shelfFor(PUBLIC_VIEWER, AT);
 
-    expect(shelf.basis).toBe("ttc");
-    expect(shelf.pricingCompanyId).toBeNull();
     expect(shelf.articles.map((entry) => entry.article.sku)).toEqual(["VIE-001-1"]);
     expect(shelf.articles[0]).toMatchObject({
       familyName: "Pâtisseries",
@@ -78,23 +79,23 @@ describe("le rayon d'un public pour la grille de prix", () => {
     expect(shelf.articles[0]?.article.name).toBe("Croissant pur beurre");
   });
 
-  it("une société active : HT, et son tarif ; une suspendue est servie au public", async () => {
-    const pro = await reader().shelfFor("co_folie", AT);
-    const suspended = await reader().shelfFor("co_suspendue", AT);
+  it("lit le rayon AU LECTEUR reçu — le pro anonyme pour un pro type (§ 8.3)", async () => {
+    const catalog = new RecordingCatalog();
 
-    expect(pro).toMatchObject({ basis: "ht", pricingCompanyId: "co_folie" });
-    expect(suspended).toMatchObject({ basis: "ttc", pricingCompanyId: null });
+    await reader(catalog).shelfFor(PRO_ANONYMOUS_VIEWER, AT);
+
+    expect(catalog.viewers).toEqual([PRO_ANONYMOUS_VIEWER]);
   });
 
-  it("le service se décide comme la vitrine, sans lire le rayon", async () => {
-    const serving = new CatalogPriceGridServingReader(
-      new CatalogViewers(new InMemoryServedCompanies()),
+  it("le lecteur d'une société se décide comme la vitrine : une suspendue au public", async () => {
+    const viewers = new CatalogPriceGridViewerReader(
+      new CatalogViewers(new InMemoryServedCompanies(new Map([["co_suspendue", "suspended"]]))),
     );
 
-    expect(await serving.servingOf("co_folie")).toEqual({
-      basis: "ht",
-      pricingCompanyId: "co_folie",
+    expect(await viewers.viewerOf("co_folie")).toMatchObject({
+      kind: "pro",
+      holders: { companyId: "co_folie" },
     });
-    expect(await serving.servingOf(null)).toEqual({ basis: "ttc", pricingCompanyId: null });
+    expect(await viewers.viewerOf("co_suspendue")).toEqual(PUBLIC_VIEWER);
   });
 });

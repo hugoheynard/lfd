@@ -139,7 +139,8 @@ describe("exporter une grille de prix", () => {
       new ExportPriceGridQuery(payload({ audience: { kind: "company", companyId: COMPANY } })),
     );
 
-    expect(linesOf(file.csv)[4]).toContain("−10 % pour tous");
+    // Une ligne de plus en tête pour une société : sa lentille (§ 8.7).
+    expect(linesOf(file.csv)[5]).toContain("−10 % pour tous");
     expect(cellsOf(file.csv, CROISSANT).slice(5, 7)).toEqual(["1,50", "1,35"]);
   });
 
@@ -165,8 +166,8 @@ describe("exporter une grille de prix", () => {
       ),
     );
 
-    expect(linesOf(file.csv)[5]).toContain("Panier ign (ignorée)");
-    expect(linesOf(file.csv)[8]).toContain('"Panier col (remise au panier)";"Prix net estimé HT"');
+    expect(linesOf(file.csv)[6]).toContain("Panier ign (ignorée)");
+    expect(linesOf(file.csv)[9]).toContain('"Panier col (remise au panier)";"Prix net estimé HT"');
     // Colonne : « 20 % » ; net : 1,50 − 10 % = 1,35.
     expect(cellsOf(file.csv, CROISSANT).slice(7)).toEqual(['"20 %"', "1,35"]);
   });

@@ -1,7 +1,7 @@
 import type { PriceRuleView, PricingBoardView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
-import { NO_PARTIES } from "../domain/loaded-pricer.js";
+import { lotBuyerOf, NO_PARTIES } from "../domain/loaded-pricer.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { BoardElasticityService } from "../application/board-elasticity.service.js";
@@ -175,7 +175,7 @@ export class PrismaPricingBoardReader extends PricingBoardReader {
     // archivées d'après comprises, comme une lecture datée de la caisse.
     const { rules, promotions } = boardDecisions(
       decided.rules,
-      await this.linePromotions.forLot(NO_PARTIES, at, true),
+      await this.linePromotions.forLot(lotBuyerOf(NO_PARTIES), at, true),
     );
 
     return { rules, floors: decided.floors, ladders, promotions, articles, historyStartsAt };

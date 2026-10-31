@@ -1,3 +1,5 @@
+import type { PickupAnnouncementKey } from "@lfd/contracts";
+
 import { companyServiceOf } from "../../catalog/domain/company-service.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import type { PromotionAudience, PromotionAudienceKind } from "./promotion-audience.js";
@@ -37,6 +39,40 @@ export const PREVIEWED_FACTS: PromotionAudienceFacts = {
   principal: "unknown",
   buyerKind: "unknown",
   fulfillment: null,
+};
+
+/** Les faits d'un acheteur, hors acheminement — ce qu'un acheteur type déclare. */
+export type BuyerAudienceFacts = Omit<PromotionAudienceFacts, "fulfillment">;
+
+/**
+ * **Les acheteurs types** — une société sans identité (aucun public
+ * « société » ne la vise), porte d'entrée inconnue : `b2b` active,
+ * `b2bPending` en attente, `b2c` sans société.
+ *
+ * UNE définition, deux lecteurs (`plan-export-grille-de-prix.md`, § 8.4) :
+ * l'annonce d'un point de retrait (`pickup-discount-announcement.ts`) et le
+ * « pro type » de la grille de prix (`TypicalBuyer`, `lot-buyer.ts`). Deux
+ * copies auraient pu dire deux choses d'un même pro.
+ */
+export const TYPICAL_BUYER: Readonly<Record<PickupAnnouncementKey, BuyerAudienceFacts>> = {
+  b2b: {
+    companyId: null,
+    companyStatus: "active",
+    principal: { companyId: null },
+    buyerKind: "unknown",
+  },
+  b2bPending: {
+    companyId: null,
+    companyStatus: "pending",
+    principal: { companyId: null },
+    buyerKind: "unknown",
+  },
+  b2c: {
+    companyId: null,
+    companyStatus: null,
+    principal: { companyId: null },
+    buyerKind: "unknown",
+  },
 };
 
 /** Le principal que la société suit — `unknown` tant qu'aucune question ne l'a lu. */

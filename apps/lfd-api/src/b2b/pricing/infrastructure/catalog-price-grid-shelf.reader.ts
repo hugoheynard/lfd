@@ -1,10 +1,9 @@
 import { Injectable } from "@nestjs/common";
 
-import { CatalogViewers } from "../../catalog/application/catalog-viewers.service.js";
 import { shopCatalogueOf, shownByShopSku } from "../../catalog/application/shop-catalogue-view.js";
 import { shownVariantSkus } from "../../catalog/application/shop-catalogue-price-per-kg.js";
 import { ProductCatalogReader } from "../../catalog/domain/ports/product-catalog.reader.js";
-import { pricingCompanyOf, viewerAudience } from "../../catalog/domain/catalog-viewer.js";
+import { viewerAudience, type CatalogViewer } from "../../catalog/domain/catalog-viewer.js";
 import { CatalogOperationsReader } from "../../catalog/domain/ports/catalog-operations.reader.js";
 import {
   CatalogPricePerKgReader,
@@ -23,8 +22,8 @@ const NOT_ENTERED: CatalogPricePerKg = {
 };
 
 /**
- * Le rayon d'un public, **composé comme la vitrine** : le lecteur de la société
- * (`CatalogViewers.forCompany`, qui décide pro ou public), la même définition
+ * Le rayon d'un public, **composé comme la vitrine** : le lecteur du public
+ * (reçu du contexte — § 8.3 du plan), la même définition
  * de « ce que la vitrine montre » (`shopCatalogueOf`, opérations datées jugées
  * à `at`), le même sceau d'article. Les articles réservés à un autre compte
  * n'y sont pas : la grille liste ce qui se vend à ce public.
@@ -35,7 +34,6 @@ const NOT_ENTERED: CatalogPricePerKg = {
 @Injectable()
 export class CatalogPriceGridShelfReader extends PriceGridShelfReader {
   constructor(
-    private readonly viewers: CatalogViewers,
     private readonly catalog: CatalogReader,
     private readonly operations: CatalogOperationsReader,
     private readonly pricesPerKg: CatalogPricePerKgReader,
@@ -44,8 +42,7 @@ export class CatalogPriceGridShelfReader extends PriceGridShelfReader {
     super();
   }
 
-  async shelfFor(companyId: string | null, at: Date): Promise<PriceGridShelf> {
-    const viewer = await this.viewers.forCompany(companyId, "served");
+  async shelfFor(viewer: CatalogViewer, at: Date): Promise<PriceGridShelf> {
     const audience = viewerAudience(viewer);
     const [sellable, operations, operationOnlySkus] = await Promise.all([
       this.catalog.listSellable(viewer),
@@ -83,10 +80,6 @@ export class CatalogPriceGridShelfReader extends PriceGridShelfReader {
         },
       ];
     });
-    return {
-      basis: audience === "pro" ? "ht" : "ttc",
-      pricingCompanyId: pricingCompanyOf(viewer),
-      articles,
-    };
+    return { articles };
   }
 }

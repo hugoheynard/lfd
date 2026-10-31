@@ -20,6 +20,7 @@ import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js
 import { groupByFamily } from "../board-category.js";
 import { familyView } from "../../../catalog/domain/catalog-family.js";
 import { posedMercurialeView } from "../posed-mercuriale-view.js";
+import { lotBuyerOf } from "../../domain/loaded-pricer.js";
 import { pricingContextFor } from "../../domain/pricing-context.js";
 import { CompanyMercurialeReader } from "../../domain/ports/company-mercuriale.reader.js";
 import { PricingPartiesResolver } from "../pricing-parties.resolver.js";
@@ -119,7 +120,7 @@ export class CompanyPricingQuery {
     // vient des promotions de CE client.
     const { rules, promotions } = boardDecisions(
       decided.rules,
-      await this.linePromotions.forLot(parties, at, false),
+      await this.linePromotions.forLot(lotBuyerOf(parties), at, false),
     );
 
     const names = new Map(catalogue.map((article) => [article.sku, article.name]));

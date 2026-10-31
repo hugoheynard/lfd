@@ -2,6 +2,7 @@ import { Injectable } from "@nestjs/common";
 
 import { NO_PARTIES, type PricingParties } from "../domain/loaded-pricer.js";
 import { PricingAccountReader } from "../domain/ports/pricing-account.reader.js";
+import type { LotBuyer } from "../../promotions/domain/lot-buyer.js";
 import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
 
 /**
@@ -16,6 +17,22 @@ import type { PricedBuyerKind } from "../../promotions/domain/promotion-targetin
 @Injectable()
 export class PricingPartiesResolver {
   constructor(private readonly accounts: PricingAccountReader) {}
+
+  /**
+   * Les parties de l'acheteur d'un lot — la porte du prix.
+   *
+   * Un pro type (`plan-export-grille-de-prix.md`, § 8) n'est AUCUNE société :
+   * ni compte de tarif, ni mercuriale, ni engagement ; il porte ses faits
+   * d'audience déclarés jusqu'au point ligne.
+   */
+  partiesFor(buyer: LotBuyer, at: Date): Promise<PricingParties> {
+    switch (buyer.kind) {
+      case "typical":
+        return Promise.resolve({ ...NO_PARTIES, typical: buyer });
+      case "real":
+        return this.partiesAt(buyer.companyId, at, buyer.buyerKind);
+    }
+  }
 
   /**
    * Les parties pour cette société servie, à `at` ; aucune société, aucune

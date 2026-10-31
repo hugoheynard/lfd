@@ -11,7 +11,7 @@ import { EmptyLotError, PricedLot } from "./priced-lot.js";
 import { PricingMaterialsLoader } from "./pricing-materials.loader.js";
 import { PricingPartiesResolver } from "./pricing-parties.resolver.js";
 import { PRICING_RESOLVE_TIMING, type PricingCaller } from "./pricing-caller.js";
-import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
+import type { LotBuyer } from "../../promotions/domain/lot-buyer.js";
 import { Stopwatch } from "../../../platform/metrics/stopwatch.js";
 import { TimingRecorder } from "../../../platform/metrics/timing-recorder.js";
 
@@ -28,14 +28,19 @@ export type { PricedArticle } from "../domain/loaded-pricer.js";
 export interface LotRequest {
   /** Dans l'ordre où ils seront rendus. Un SKU en double est refusé. */
   readonly articles: readonly { readonly article: CatalogArticle; readonly quantity: number }[];
-  readonly companyId: string | null;
   /**
-   * **La porte d'entrée**, posée par la route (lot L10 du plan des
-   * promotions) : `guest` sur une route publique, `registered` derrière un
-   * `Principal` résolu, `unknown` pour le staff, `previewed` pour l'aperçu
-   * dont l'audience est déclarée. Obligatoire : un appelant oublié ne compile pas.
+   * **L'acheteur** — union discriminée (`plan-export-grille-de-prix.md`, § 8.1).
+   *
+   * `real` : la société servie (ou `null`) et **la porte d'entrée**, posée par
+   * la route (lot L10 du plan des promotions) : `guest` sur une route publique,
+   * `registered` derrière un `Principal` résolu, `unknown` pour le staff,
+   * `previewed` pour l'aperçu dont l'audience est déclarée. Obligatoire : un
+   * appelant oublié ne compile pas.
+   *
+   * `typical` : un pro type déclaré par le staff (`TypicalBuyer`), objet opaque
+   * que seul l'export de la grille de prix fabrique (`lint:typical-buyer`).
    */
-  readonly buyerKind: PricedBuyerKind;
+  readonly buyer: LotBuyer;
   /**
    * **Ce que cette question autorise à prouver** — cf. {@link PriceLens}.
    *
@@ -119,7 +124,7 @@ export class Pricer {
     const lot = await this.resolve(request);
     this.timings.record(
       PRICING_RESOLVE_TIMING,
-      { caller: request.caller, audience: request.companyId === null ? "public" : "pro" },
+      { caller: request.caller, audience: timingAudienceOf(request.buyer) },
       elapsed(),
       request.articles.length,
     );
@@ -155,7 +160,7 @@ export class Pricer {
     // mercuriale d'alors, pas celle du principal (`sous-comptes.md`, §2.2).
     const [items, parties] = await Promise.all([
       this.sealedAt(request.articles, at, epoch),
-      this.parties.partiesAt(request.companyId, at, request.buyerKind),
+      this.parties.partiesFor(request.buyer, at),
     ]);
     const pricer = await this.materials.pricerFor(
       items,
@@ -214,6 +219,16 @@ export class Pricer {
         quantity,
       };
     });
+  }
+}
+
+/** L'audience de la sonde : un pro type est un pro, une société réelle aussi. */
+function timingAudienceOf(buyer: LotBuyer): "public" | "pro" {
+  switch (buyer.kind) {
+    case "typical":
+      return "pro";
+    case "real":
+      return buyer.companyId === null ? "public" : "pro";
   }
 }
 

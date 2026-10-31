@@ -2,10 +2,15 @@ import { instantToLocal, localToInstant, type PriceGridQuestion } from "@lfd/con
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
-import type {
-  FulfillmentFact,
-  PromotionBuyerKind,
-} from "../../promotions/domain/promotion-targeting.js";
+import {
+  PRO_ANONYMOUS_VIEWER,
+  PUBLIC_VIEWER,
+  pricingCompanyOf,
+  viewerAudience,
+  type CatalogViewer,
+} from "../../catalog/domain/catalog-viewer.js";
+import type { RealLotBuyer, TypicalBuyer } from "../../promotions/domain/lot-buyer.js";
+import type { FulfillmentFact } from "../../promotions/domain/promotion-targeting.js";
 import {
   PriceGridCompanyNotFoundError,
   PriceGridDatedPublicError,
@@ -15,20 +20,46 @@ import {
 } from "../domain/errors/price-grid-errors.js";
 import { PricedCompanyNamer } from "../domain/ports/priced-company-namer.js";
 import { PriceGridFulfillmentNamer } from "../domain/ports/price-grid-fulfillment.namer.js";
-import {
-  PriceGridServingReader,
-  type PriceGridServing,
-} from "../domain/ports/price-grid-serving.reader.js";
+import { PriceGridViewerReader } from "../domain/ports/price-grid-viewer.reader.js";
+import type { PriceGridBasis } from "../domain/price-grid-row.js";
+import type { PriceLens } from "../domain/price-lens.js";
+import { priceGridTypicalBuyer } from "./price-grid-typical-buyer.js";
 
 /** Minuit, heure de Paris : un jour choisi se lit à son ouverture. */
 const DAY_OPENING = "00:00";
 
+/** Les limites d'un pro type, que l'en-tête du fichier écrit (§ 8.6). */
+const TYPICAL_LIMITS =
+  "Pro type, aucune société : hors conditions négociées, hors remises réservées à une " +
+  "société et ses sites, hors articles réservés, hors remises jugées au créneau.";
+
+/** Ce que les deux pros types ont en commun, et ce qui les sépare (§ 8.5). */
+const TYPICAL_SAME_PRICES =
+  "Pros (société active) et pros en cours d'inscription : mêmes prix, promotions " +
+  "différentes — chacun ne reçoit que celles qui visent sa clientèle.";
+
+/** La lentille, dite (§ 8.7). */
+const LENS_REMARKS: Readonly<Record<"typical" | "company", string>> = {
+  typical: "Projection : le prix d'un pro type, sans historique ni engagement.",
+  company: "Prix réel de cette société : sa mercuriale, ses conditions et ses engagements compris.",
+};
+
+/**
+ * L'acheteur de la grille : un pro type, ou un acheteur réel (une société, ou
+ * un particulier par sa porte d'entrée). Le MÊME pour la porte du prix, pour
+ * la liste des promotions de ligne et pour les faits du panier.
+ */
+export type PriceGridBuyer =
+  TypicalBuyer | (RealLotBuyer & { readonly buyerKind: "guest" | "registered" });
+
 /** La question d'une grille, établie au serveur — jamais un fait reçu tel quel. */
 export interface PriceGridContext {
-  /** La société des faits du ciblage ; `null` = un particulier. */
-  readonly companyId: string | null;
-  readonly buyerKind: Exclude<PromotionBuyerKind, "unknown">;
-  readonly serving: PriceGridServing;
+  readonly buyer: PriceGridBuyer;
+  /** Le lecteur du catalogue : il décide la gamme et le tarif (pro HT, public TTC). */
+  readonly viewer: CatalogViewer;
+  readonly basis: PriceGridBasis;
+  /** `unproven` pour un pro type (une projection), `measured` sinon. */
+  readonly lens: PriceLens;
   /** `undefined` = maintenant : la porte lit l'horloge elle-même (`LotRequest.at`). */
   readonly at: Date | undefined;
   /** L'instant auquel les promotions se jugent — `at`, ou l'horloge. */
@@ -42,7 +73,18 @@ export interface PriceGridContext {
     readonly audience: string;
     readonly day: string;
     readonly fulfillment: string;
+    /** Ce que l'en-tête dit de ce public : ses limites, sa lentille. */
+    readonly remarks: readonly string[];
   };
+}
+
+/** Ce que la question établit de l'acheteur, avant la date et l'acheminement. */
+interface EstablishedBuyer {
+  readonly buyer: PriceGridBuyer;
+  readonly viewer: CatalogViewer;
+  readonly lens: PriceLens;
+  readonly label: string;
+  readonly remarks: readonly string[];
 }
 
 /** Un jour `AAAA-MM-JJ` lu à la française. */
@@ -62,7 +104,7 @@ export class PriceGridContexts {
     private readonly clock: Clock,
     private readonly companies: PricedCompanyNamer,
     private readonly places: PriceGridFulfillmentNamer,
-    private readonly servings: PriceGridServingReader,
+    private readonly viewers: PriceGridViewerReader,
   ) {}
 
   /**
@@ -77,7 +119,7 @@ export class PriceGridContexts {
       this.buyerOf(question.audience),
       this.fulfillmentOf(question.fulfillment),
     ]);
-    const serving = await this.servings.servingOf(buyer.companyId);
+    const basis = viewerAudience(buyer.viewer) === "pro" ? "ht" : "ttc";
     const now = this.clock.now();
     const today = instantToLocal(now).day;
     const day = question.day ?? today;
@@ -85,12 +127,14 @@ export class PriceGridContexts {
     // et rescellerait l'article à l'historique (`architecture-la-porte-du-prix.md`, § 1).
     const at = day === today ? undefined : this.instantOf(day);
     const replay = at !== undefined && at.getTime() < now.getTime();
-    if (replay && serving.basis === "ttc") {
+    if (replay && basis === "ttc") {
       throw new PriceGridDatedPublicError(frenchDay(day));
     }
     return {
-      ...buyer,
-      serving,
+      buyer: buyer.buyer,
+      viewer: buyer.viewer,
+      basis,
+      lens: buyer.lens,
       at,
       judgedAt: at ?? now,
       day,
@@ -100,6 +144,7 @@ export class PriceGridContexts {
         audience: buyer.label,
         day: day === today ? `${frenchDay(day)} (aujourd'hui)` : frenchDay(day),
         fulfillment: fulfillment.label,
+        remarks: buyer.remarks,
       },
     };
   }
@@ -112,24 +157,39 @@ export class PriceGridContexts {
     return instant;
   }
 
-  private async buyerOf(audience: PriceGridQuestion["audience"]): Promise<{
-    readonly companyId: string | null;
-    readonly buyerKind: PriceGridContext["buyerKind"];
-    readonly label: string;
-  }> {
+  private async buyerOf(audience: PriceGridQuestion["audience"]): Promise<EstablishedBuyer> {
     switch (audience.kind) {
+      case "pro_active":
+        return typicalOf(audience.kind, "Pros (société active)");
+      case "pro_pending":
+        return typicalOf(audience.kind, "Pros en cours d'inscription");
       case "individuals_registered":
-        return { companyId: null, buyerKind: "registered", label: "Particuliers inscrits" };
+        return individualsOf("registered", "Particuliers inscrits");
       case "individuals_guest":
-        return { companyId: null, buyerKind: "guest", label: "Particuliers sans compte" };
-      case "company": {
-        const name = await this.companies.nameOf(audience.companyId);
-        if (name === null) {
-          throw new PriceGridCompanyNotFoundError(audience.companyId);
-        }
-        return { companyId: audience.companyId, buyerKind: "registered", label: name };
-      }
+        return individualsOf("guest", "Particuliers sans compte");
+      case "company":
+        return this.companyOf(audience.companyId);
     }
+  }
+
+  /**
+   * Une société précise, servie comme la vitrine la sert. La société des
+   * faits est celle que la porte du prix reçoit (`pricingCompanyOf`) — la
+   * même pour l'offre de ligne et pour les faits du panier (§ 8).
+   */
+  private async companyOf(companyId: string): Promise<EstablishedBuyer> {
+    const name = await this.companies.nameOf(companyId);
+    if (name === null) {
+      throw new PriceGridCompanyNotFoundError(companyId);
+    }
+    const viewer = await this.viewers.viewerOf(companyId);
+    return {
+      buyer: { kind: "real", companyId: pricingCompanyOf(viewer), buyerKind: "registered" },
+      viewer,
+      lens: "measured",
+      label: name,
+      remarks: [LENS_REMARKS.company],
+    };
   }
 
   private async fulfillmentOf(
@@ -154,4 +214,26 @@ export class PriceGridContexts {
       label: `Livraison — zone ${name}`,
     };
   }
+}
+
+/** Un pro type : le lecteur pro anonyme — tarif pro HT, sans mercuriale ni article réservé. */
+function typicalOf(clientele: "pro_active" | "pro_pending", label: string): EstablishedBuyer {
+  return {
+    buyer: priceGridTypicalBuyer(clientele),
+    viewer: PRO_ANONYMOUS_VIEWER,
+    lens: "unproven",
+    label,
+    remarks: [TYPICAL_LIMITS, TYPICAL_SAME_PRICES, LENS_REMARKS.typical],
+  };
+}
+
+/** Des particuliers : leur vrai `buyerKind`, sans société (§ 8.5). */
+function individualsOf(buyerKind: "guest" | "registered", label: string): EstablishedBuyer {
+  return {
+    buyer: { kind: "real", companyId: null, buyerKind },
+    viewer: PUBLIC_VIEWER,
+    lens: "measured",
+    label,
+    remarks: [],
+  };
 }

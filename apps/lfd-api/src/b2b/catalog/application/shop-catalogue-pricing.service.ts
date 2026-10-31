@@ -263,7 +263,11 @@ export class ShopCataloguePricing {
     // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
     // articles résolus à quelques millisecondes d'écart pourraient sinon tomber
     // de part et d'autre du basculement d'une promotion.
-    const lot = await this.pricer.load({ articles, companyId, buyerKind, caller: "shelf" });
+    const lot = await this.pricer.load({
+      articles,
+      buyer: { kind: "real", companyId, buyerKind },
+      caller: "shelf",
+    });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
     const all = lot.all(lines);
     const prices = new Map(all.map((priced) => [priced.sku, priced.finalMillicents]));

@@ -31,7 +31,7 @@ export class ListPriceGridPromotionsHandler implements IQueryHandler<
     const context = await this.contexts.contextOf(query.question);
     const set = await this.promotions.of(context);
     return {
-      basis: context.serving.basis,
+      basis: context.basis,
       displayedPrice: set.displayedPrice.map(priceGridPromotionView),
       basket: set.basket.map(priceGridPromotionView),
     };

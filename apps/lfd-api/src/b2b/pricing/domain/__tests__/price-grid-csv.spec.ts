@@ -15,6 +15,7 @@ const HEADING: PriceGridHeading = {
   day: "01/12/2026",
   fulfillment: "Retrait — Cœur de station",
   basis: "ttc",
+  remarks: [],
   displayedPromotions: ["−10 % sur les viennoiseries"],
   basketPromotions: [
     { label: "Retrait −20 %", part: "column" },
@@ -42,6 +43,15 @@ function linesOf(csv: string): readonly string[] {
 }
 
 describe("la grille de prix en CSV", () => {
+  it("écrit en tête, après l'assiette, ce que le contexte dit de ce public (§ 8.6)", () => {
+    const remarks = ["Pro type, aucune société : hors articles réservés.", "Projection."];
+    const lines = linesOf(priceGridCsv({ ...HEADING, remarks }, []));
+
+    expect(lines[4]).toBe(`"${remarks[0] ?? ""}"`);
+    expect(lines[5]).toBe(`"${remarks[1] ?? ""}"`);
+    expect(lines).toContain(`"${PRICE_GRID_NOTICE}"`);
+  });
+
   it("commence par le BOM et finit par CRLF", () => {
     const csv = priceGridCsv(HEADING, [ROW]);
 

@@ -122,8 +122,7 @@ async function priceOf(companyId: string, sku: string, at?: Date): Promise<numbe
   }
   const lot = await ctx.app.get(Pricer).load({
     articles: [{ article: found.article, quantity: 1 }],
-    companyId,
-    buyerKind: "unknown",
+    buyer: { kind: "real", companyId, buyerKind: "unknown" },
     at,
     caller: "cart",
   });
@@ -137,8 +136,7 @@ async function canonical(sku: string): Promise<number> {
   }
   const lot = await ctx.app.get(Pricer).load({
     articles: [{ article: found.article, quantity: 1 }],
-    companyId: "co_sans_tarif",
-    buyerKind: "unknown",
+    buyer: { kind: "real", companyId: "co_sans_tarif", buyerKind: "unknown" },
     caller: "cart",
   });
   return lot.price(sku, 1).canonicalMillicents;

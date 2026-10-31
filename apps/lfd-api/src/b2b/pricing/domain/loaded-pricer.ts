@@ -18,6 +18,7 @@ import type {
 import type { PromotionAdmission } from "./entities/mercuriale-promotion-policy.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 import { pricingContextFor } from "./pricing-context.js";
+import type { LotBuyer, TypicalBuyer } from "../../promotions/domain/lot-buyer.js";
 import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
 import { volumeTierPrices } from "./volume-tier-prices.js";
 
@@ -42,6 +43,23 @@ export interface PricingParties {
   readonly companyId: string | null;
   readonly pricingCompanyId: string | null;
   readonly buyerKind: PricedBuyerKind;
+  /**
+   * Un pro TYPE de la grille de prix (`plan-export-grille-de-prix.md`, § 8) :
+   * aucune société (les deux clés sont `null`), et ses faits d'audience
+   * déclarés. Absent pour tout acheteur réel.
+   */
+  readonly typical?: TypicalBuyer | undefined;
+}
+
+/** L'acheteur que le point ligne juge — le pro type s'il y en a un. */
+export function lotBuyerOf(parties: PricingParties): LotBuyer {
+  return (
+    parties.typical ?? {
+      kind: "real",
+      companyId: parties.companyId,
+      buyerKind: parties.buyerKind,
+    }
+  );
 }
 
 /**

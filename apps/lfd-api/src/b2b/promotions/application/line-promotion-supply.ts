@@ -2,15 +2,11 @@ import { Injectable } from "@nestjs/common";
 
 import { promotionsAdmitted, type AdmittedPromotion } from "../domain/live-promotion.js";
 import { LinePromotionReader } from "../domain/ports/line-promotion.reader.js";
-import { PREVIEWED_FACTS, type PricedBuyerKind } from "../domain/promotion-targeting.js";
+import type { LotBuyer } from "../domain/lot-buyer.js";
+import { lotBuyerFacts } from "./lot-buyer-facts.js";
 import { PromotionAudienceFactsResolver } from "./promotion-audience-facts.resolver.js";
 
-/** L'acheteur d'un lot, tel que la porte du prix le connaît — établi au serveur. */
-export interface LotBuyer {
-  /** La société servie ; `null` = particulier, ou le tableau général. */
-  readonly companyId: string | null;
-  readonly buyerKind: PricedBuyerKind;
-}
+export type { LotBuyer } from "../domain/lot-buyer.js";
 
 /**
  * **Ce que le chargeur des prix demande aux promotions** (plan des
@@ -24,7 +20,8 @@ export interface LotBuyer {
  * `documentation/promotions/promotions.md`, § 2.14). La porte d'entrée
  * (`buyerKind`) arrive de la route depuis le lot L10 — rayon, devis,
  * passation, révision ; `unknown` pour le staff (tableau, projection), et
- * l'aperçu déclaré (`previewed`) ne joue que « tout le monde ».
+ * l'aperçu déclaré (`previewed`) ne joue que « tout le monde », et un pro
+ * type de la grille de prix apporte ses faits (`lotBuyerFacts`).
  */
 @Injectable()
 export class LinePromotionSupply {
@@ -35,14 +32,7 @@ export class LinePromotionSupply {
 
   async forLot(buyer: LotBuyer, at: Date, replay: boolean): Promise<readonly AdmittedPromotion[]> {
     const all = replay ? await this.lines.liveAt(at) : await this.lines.live();
-    const { buyerKind } = buyer;
-    const facts =
-      buyerKind === "previewed"
-        ? PREVIEWED_FACTS
-        : await this.facts.factsFor(
-            { companyId: buyer.companyId, buyerKind, fulfillment: null },
-            all,
-          );
+    const facts = await lotBuyerFacts(buyer, all, this.facts);
     // Le point ligne ne connaît pas de créneau — et aucune promotion à heures
     // n'y est posée (plan jours et heures, § 11).
     return promotionsAdmitted(all, at, facts, null);

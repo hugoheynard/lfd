@@ -158,7 +158,12 @@ async function lotOf(
       quantity: line.quantity,
     })),
   );
-  return pricer.load({ articles, companyId, buyerKind: "unknown", at, caller: "cart" });
+  return pricer.load({
+    articles,
+    buyer: { kind: "real", companyId, buyerKind: "unknown" },
+    at,
+    caller: "cart",
+  });
 }
 
 /** Le même lot, mais pour une question qui ne prouve rien. */
@@ -175,8 +180,7 @@ async function unprovenLotOf(
   );
   return pricer.load({
     articles,
-    companyId,
-    buyerKind: "unknown",
+    buyer: { kind: "real", companyId, buyerKind: "unknown" },
     lens: "unproven",
     caller: "back-office",
   });
@@ -723,7 +727,11 @@ describe("Pricer.load — plusieurs articles", () => {
     const { pricer, doubles } = pricerWith();
 
     await expect(
-      pricer.load({ articles: [], companyId: "cmp_1", buyerKind: "unknown", caller: "cart" }),
+      pricer.load({
+        articles: [],
+        buyer: { kind: "real", companyId: "cmp_1", buyerKind: "unknown" },
+        caller: "cart",
+      }),
     ).rejects.toBeInstanceOf(EmptyLotError);
     expect(doubles.rules.seenAt).toEqual([]);
   });
@@ -893,7 +901,11 @@ describe("Pricer.load — la sonde du calcul", () => {
     const { pricer, doubles } = pricerWith();
 
     await expect(
-      pricer.load({ articles: [], companyId: null, buyerKind: "unknown", caller: "shelf" }),
+      pricer.load({
+        articles: [],
+        buyer: { kind: "real", companyId: null, buyerKind: "unknown" },
+        caller: "shelf",
+      }),
     ).rejects.toBeInstanceOf(EmptyLotError);
     expect(doubles.timings.recorded).toEqual([]);
   });

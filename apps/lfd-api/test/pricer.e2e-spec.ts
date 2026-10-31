@@ -115,7 +115,12 @@ async function lotOf(
     }
     return { article: found.article, quantity: line.quantity };
   });
-  return pricer.load({ articles, companyId, buyerKind: "unknown", at, caller: "cart" });
+  return pricer.load({
+    articles,
+    buyer: { kind: "real", companyId, buyerKind: "unknown" },
+    at,
+    caller: "cart",
+  });
 }
 
 /** Le prix d'UN article, du chargement à la question — le geste le plus courant. */
@@ -351,7 +356,11 @@ describe("le budget de la façade", () => {
 
     const cost = await coldOperationsOf(async () => {
       await expect(
-        pricer.load({ articles: [], companyId, buyerKind: "unknown", caller: "cart" }),
+        pricer.load({
+          articles: [],
+          buyer: { kind: "real", companyId, buyerKind: "unknown" },
+          caller: "cart",
+        }),
       ).rejects.toBeInstanceOf(EmptyLotError);
     });
 
@@ -475,8 +484,7 @@ describe("les refus", () => {
           { article, quantity: 5 },
           { article, quantity: 5 },
         ],
-        companyId,
-        buyerKind: "unknown",
+        buyer: { kind: "real", companyId, buyerKind: "unknown" },
         caller: "cart",
       }),
     ).rejects.toBeInstanceOf(DuplicateArticleError);

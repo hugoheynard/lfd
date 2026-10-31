@@ -9,10 +9,10 @@ import { ExportPriceGridHandler } from "./application/queries/export-price-grid.
 import { ListPriceGridPromotionsHandler } from "./application/queries/list-price-grid-promotions.handler.js";
 import { PricedCompanyNamer } from "./domain/ports/priced-company-namer.js";
 import { PriceGridFulfillmentNamer } from "./domain/ports/price-grid-fulfillment.namer.js";
-import { PriceGridServingReader } from "./domain/ports/price-grid-serving.reader.js";
+import { PriceGridViewerReader } from "./domain/ports/price-grid-viewer.reader.js";
 import { PriceGridShelfReader } from "./domain/ports/price-grid-shelf.reader.js";
 import { AdminPriceGridController } from "./http/admin-price-grid.controller.js";
-import { CatalogPriceGridServingReader } from "./infrastructure/catalog-price-grid-serving.reader.js";
+import { CatalogPriceGridViewerReader } from "./infrastructure/catalog-price-grid-viewer.reader.js";
 import { CatalogPriceGridShelfReader } from "./infrastructure/catalog-price-grid-shelf.reader.js";
 import { PrismaPricedCompanyNamer } from "./infrastructure/prisma-priced-company-namer.js";
 import { RepositoryPriceGridFulfillmentNamer } from "./infrastructure/price-grid-fulfillment.namer.js";
@@ -36,7 +36,7 @@ import { PricingModule } from "./pricing.module.js";
     ListPriceGridPromotionsHandler,
     ExportPriceGridHandler,
     { provide: PriceGridShelfReader, useClass: CatalogPriceGridShelfReader },
-    { provide: PriceGridServingReader, useClass: CatalogPriceGridServingReader },
+    { provide: PriceGridViewerReader, useClass: CatalogPriceGridViewerReader },
     { provide: PriceGridFulfillmentNamer, useClass: RepositoryPriceGridFulfillmentNamer },
     { provide: PricedCompanyNamer, useClass: PrismaPricedCompanyNamer },
   ],

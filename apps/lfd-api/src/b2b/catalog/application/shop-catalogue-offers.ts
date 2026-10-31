@@ -46,7 +46,7 @@ export class ShopCatalogueOffers {
   ) {}
 
   async offeredFor(buyer: ShelfBuyer, catalogue: ShopCatalogueView): Promise<ShelfOffered> {
-    const candidates = await this.offers.candidatesFor(buyer);
+    const candidates = await this.offers.candidatesFor({ kind: "real", ...buyer });
     if (!offersNeedProducts(candidates)) {
       return { candidates, productIds: new Map() };
     }

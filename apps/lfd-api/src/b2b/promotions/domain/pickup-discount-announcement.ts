@@ -13,7 +13,7 @@ import {
 } from "./live-promotion.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import { applicationPointOf } from "./promotion-fulfillment.js";
-import type { PromotionAudienceFacts } from "./promotion-targeting.js";
+import { TYPICAL_BUYER, type PromotionAudienceFacts } from "./promotion-targeting.js";
 
 /**
  * **Ce que la boutique ANNONCE d'un point de retrait**, tiré des promotions
@@ -38,6 +38,10 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  * promotion `pros` lui était retirée sans être annoncée. La boutique choisit
  * l'annonce par `pickupAnnouncementOf(statut)`.
  *
+ * Les faits de ces acheteurs types sont `TYPICAL_BUYER` (`promotion-targeting.ts`),
+ * la définition que la grille de prix lit aussi pour son « pro type »
+ * (`plan-export-grille-de-prix.md`, § 8.4).
+ *
  * Exact pour les publics qui ne dépendent que du statut de la société —
  * `everyone`, `pros`, `pros_active`, `pros_pending`, `individuals`,
  * `everyone_but_active_pros`, ceux de la reprise. Un public plus fin (une
@@ -55,29 +59,6 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  * à jours et heures n'est annoncée que pendant ses heures, et jamais celle
  * jugée au créneau : le contrat n'a pas de place pour dire « de 17 h à 19 h ».
  */
-
-const TYPICAL_BUYER: Readonly<
-  Record<PickupAnnouncementKey, Omit<PromotionAudienceFacts, "fulfillment">>
-> = {
-  b2b: {
-    companyId: null,
-    companyStatus: "active",
-    principal: { companyId: null },
-    buyerKind: "unknown",
-  },
-  b2bPending: {
-    companyId: null,
-    companyStatus: "pending",
-    principal: { companyId: null },
-    buyerKind: "unknown",
-  },
-  b2c: {
-    companyId: null,
-    companyStatus: null,
-    principal: { companyId: null },
-    buyerKind: "unknown",
-  },
-};
 
 /** Les trois remises annoncées d'un point, à l'instant `at`. */
 export function announcedPickupDiscounts(

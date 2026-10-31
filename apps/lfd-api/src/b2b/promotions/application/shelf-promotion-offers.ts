@@ -4,8 +4,8 @@ import { Clock } from "../../../platform/time/clock.js";
 import type { LivePromotion } from "../domain/live-promotion.js";
 import { BasketPromotionReader } from "../domain/ports/basket-promotion.reader.js";
 import { offerCandidates } from "../domain/promotion-offers.js";
-import { PREVIEWED_FACTS } from "../domain/promotion-targeting.js";
-import type { LotBuyer } from "./line-promotion-supply.js";
+import type { LotBuyer } from "../domain/lot-buyer.js";
+import { lotBuyerFacts } from "./lot-buyer-facts.js";
 import { PromotionAudienceFactsResolver } from "./promotion-audience-facts.resolver.js";
 
 /**
@@ -29,14 +29,7 @@ export class ShelfPromotionOffers {
     if (all.length === 0) {
       return [];
     }
-    const { buyerKind } = buyer;
-    const facts =
-      buyerKind === "previewed"
-        ? PREVIEWED_FACTS
-        : await this.facts.factsFor(
-            { companyId: buyer.companyId, buyerKind, fulfillment: null },
-            all,
-          );
+    const facts = await lotBuyerFacts(buyer, all, this.facts);
     return offerCandidates(all, this.clock.now(), facts);
   }
 }

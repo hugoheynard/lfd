@@ -32,7 +32,14 @@ export const EMPTY_DRAFT: PriceGridDraft = {
   zoneId: null,
 };
 
+/**
+ * Les publics proposés (plan, § 7 et § 8). Les deux pros types n'existent pas
+ * en base : le serveur les tarife au tarif pro HT, sans mercuriale, avec les
+ * promotions de leur clientèle — l'en-tête du fichier dit ses limites.
+ */
 export const AUDIENCE_OPTIONS: readonly { value: PriceGridAudienceChoice; label: string }[] = [
+  { value: 'pro_active', label: 'Pros (société active)' },
+  { value: 'pro_pending', label: "Pros en cours d'inscription" },
   { value: 'individuals_registered', label: 'Particuliers inscrits' },
   { value: 'individuals_guest', label: 'Particuliers sans compte' },
   { value: 'company', label: 'Une société précise' },

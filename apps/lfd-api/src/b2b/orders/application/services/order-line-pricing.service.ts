@@ -347,12 +347,15 @@ export class OrderLinePricing {
 
     const lot = await this.pricer.load({
       articles: lines.map(({ item, quantity }) => ({ article: item.article, quantity })),
-      // La société du LECTEUR, jamais l'identifiant brut : servie au public
-      // (P0), elle ne charge ni mercuriale ni tarif de canal (§ 11, B2).
-      companyId: pricingCompanyOf(viewer),
-      // La porte d'entrée de la route (L10) : un public « inscrits » ne
-      // baisse le prix que derrière une route qui a résolu un `Principal`.
-      buyerKind: parties.buyerKind,
+      buyer: {
+        kind: "real",
+        // La société du LECTEUR, jamais l'identifiant brut : servie au public
+        // (P0), elle ne charge ni mercuriale ni tarif de canal (§ 11, B2).
+        companyId: pricingCompanyOf(viewer),
+        // La porte d'entrée de la route (L10) : un public « inscrits » ne
+        // baisse le prix que derrière une route qui a résolu un `Principal`.
+        buyerKind: parties.buyerKind,
+      },
       at: requestedAt,
       caller,
     });
