@@ -19,6 +19,12 @@ import type { PurgeClient, ScenarioScope } from "./scenario-scope.js";
  * remboursement et le remboursement. Oubliée, la première faisait échouer
  * toute la remise (« Une ressource liée est introuvable », 2026-10-25).
  *
+ * Les remises de panier (M2, 2026-10-31) suivent la même clé : la remise d'un
+ * BL et la part d'une ligne tiennent la remise de la commande en `RESTRICT`,
+ * qui tient la commande en `RESTRICT`. Elles partent donc dans cet ordre-là,
+ * avant les BL et la commande (relu dans la migration le 2026-10-31). Le
+ * contrôle différé des remises ne veille qu'aux insertions et mises à jour.
+ *
  * @returns les lignes supprimées, dont les commandes à part.
  */
 export async function purgeCommerce(
@@ -38,6 +44,11 @@ export async function purgeCommerce(
     }),
     await tx.orderDayChange.deleteMany({ where: { serviceDay: { in: [...scope.days] } } }),
     ...(await purgeOrderChildren(tx, orderIds)),
+    await tx.deliveryNoteDiscount.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
+    await tx.orderLineDiscount.deleteMany({
+      where: { orderDiscount: { orderId: { in: orderIds } } },
+    }),
+    await tx.orderDiscount.deleteMany({ where: { orderId: { in: orderIds } } }),
     await tx.deliveryNoteLine.deleteMany({ where: { note: { orderId: { in: orderIds } } } }),
     await tx.deliveryNote.deleteMany({ where: { orderId: { in: orderIds } } }),
   ];
