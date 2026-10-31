@@ -279,3 +279,25 @@ unitaire de la ligne` ; le reste de la ligne entre dans l'assiette des
 après la révision ? Proposition : non — la couverture protège seulement
 contre l'**heure** ; les autres règles se rejugent comme pour toute
 promotion.
+
+## 11. Prêt à bâtir (2026-10-31) — ce qui fait foi
+
+- **Révision** : les §§ 9 et 10 (la couverture par quantité) sont
+  **remplacés** par le prix verrouillé
+  ([`plan-remises-acquises.md`](plan-remises-acquises.md) § 10) : une remise
+  à heures acquise à la passation est rejouée comme toute remise de panier ;
+  une hausse de quantité qui changerait le prix est refusée ; un SKU neuf
+  n'en reçoit pas. Plus de table de couverture.
+- **Une promotion à heures est une remise au panier** (refus à la pose au
+  prix affiché) : `handover_at` l'exige (§ 8.4), et on garde la même règle
+  pour `ordered_at` — un seul cas à expliquer.
+- **Jours fériés** (Hugo) : ignorés — un jour compte sauf indication
+  contraire ; les fermetures datées d'un point de retrait suffisent (un
+  point fermé ne prend pas de commande).
+- **Minuit** (Hugo, option a) : une plage ne passe pas minuit ; deux plages.
+- Le reste du § 8 tient : instant réglé par promotion (`ordered_at` /
+  `handover_at`, créneau sans début → sa fin, sans créneau → ne s'applique
+  pas), annonce hors des heures réglée par promotion, créneau jugé par L9
+  (la cible figée du prix verrouillé), un seul évaluateur de Paris partagé
+  avec les suggestions, heure murale aux bascules, recouvrement par moment,
+  aucune promotion à heures posée avant la fin du déploiement.
