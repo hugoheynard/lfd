@@ -1,3 +1,5 @@
+import type { Weekday } from "./address.js";
+
 /**
  * **Ce qu'une promotion promet sans s'appliquer encore** (`documentation/promotions/promotions.md`, § 2.16, lot L10) — sans zod : la boutique le lit au rayon.
  *
@@ -40,10 +42,33 @@ export interface PromotionOfferFulfillmentView {
   readonly delivery: PromotionDeliveryReachView;
 }
 
+/**
+ * **Les jours et heures d'une promotion qui n'agit qu'à certaines heures**
+ * (`documentation/promotions/plan-jours-et-heures.md`, § 8) — à la pendule de
+ * Paris. Une promotion hors de ses heures n'est servie ici que si elle a
+ * choisi de les dire ; elle n'est jamais présentée comme active.
+ */
+export interface PromotionOfferHoursView {
+  /** `ordered_at` : l'heure de la commande ; `handover_at` : celle du créneau choisi. */
+  readonly moment: "ordered_at" | "handover_at";
+  readonly windows: readonly {
+    readonly weekdays: readonly Weekday[];
+    readonly start: string;
+    readonly end: string;
+  }[];
+  /**
+   * `true` : commandée maintenant, la remise vaut (`ordered_at` seulement) ;
+   * `false` : elle ne vaut qu'aux heures dites.
+   */
+  readonly activeNow: boolean;
+}
+
 /** Une promotion de panier qu'un acheminement ouvrirait sur cet article. */
 export interface ShopItemFulfillmentOfferView {
   readonly effect: PromotionOfferEffectView;
   readonly fulfillment: PromotionOfferFulfillmentView;
+  /** **Absente** pour une promotion sans jours ni heures. */
+  readonly hours?: PromotionOfferHoursView;
 }
 
 /**
@@ -53,4 +78,6 @@ export interface ShopItemFulfillmentOfferView {
  */
 export interface SignInOfferView {
   readonly effect: PromotionOfferEffectView | null;
+  /** **Absente** pour une promotion sans jours ni heures. */
+  readonly hours?: PromotionOfferHoursView;
 }

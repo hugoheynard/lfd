@@ -704,6 +704,7 @@ export type {
   PromotionDeliveryReachView,
   ShopItemFulfillmentOfferView,
   SignInOfferView,
+  PromotionOfferHoursView,
 } from "./promotion-offer.js";
 export {
   pickupAddressPayloadSchema,
@@ -867,6 +868,7 @@ export type {
   ShopQuoteVatShare,
   ShopQuoteView,
   ShopQuoteRemovedLineView,
+  ShopQuoteEndedDiscountView,
 } from "./shop-quote.js";
 export type {
   CreatedOrderCutoffWaiverResponse,
@@ -886,6 +888,8 @@ export {
   weekdayOf,
 } from "./paris-time.js";
 export type { LocalMoment } from "./paris-time.js";
+export { clockRangeCovers, weeklyMomentOf, weeklyMomentOfLocal } from "./weekly-clock.js";
+export type { ClockRange, WeeklyMoment } from "./weekly-clock.js";
 export { productionForecastQuerySchema } from "./production-forecast.js";
 export type {
   ProductionForecastDay,
@@ -2938,6 +2942,8 @@ export {
   PROMOTION_SCOPE_TARGET_VALUES,
   PROMOTION_LIFECYCLE_STATES,
   SEVERAL_AUDIENCES,
+  PROMOTION_HOURS_MOMENT_VALUES,
+  promotionConditionSchema,
   promotionTermsPayloadSchema,
   revisePromotionPayloadSchema,
   archivePromotionPayloadSchema,
@@ -2951,6 +2957,8 @@ export type {
   PromotionLifecycleState,
   PromotionsSourceValue,
   PromotionTermsPayload,
+  PromotionConditionView,
+  PromotionHoursMomentValue,
   RevisePromotionPayload,
   ArchivePromotionPayload,
   PromotionScopeRuleView,

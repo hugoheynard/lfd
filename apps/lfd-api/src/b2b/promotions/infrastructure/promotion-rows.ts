@@ -1,4 +1,3 @@
-import { isJsonRecord } from "../../../platform/database/json-columns.js";
 import { UnreadablePromotionRowError } from "../domain/errors/promotion-errors.js";
 import {
   audienceLabelOf,
@@ -15,6 +14,11 @@ import {
   type PromotionScopeTarget,
 } from "../domain/promotion-scope.js";
 import { Promotion, type PromotionState } from "../domain/promotion.js";
+import {
+  conditionFromJson,
+  conditionRowOf,
+  type PromotionConditionRow,
+} from "./promotion-condition-rows.js";
 import { originOf } from "./promotion-origin-rows.js";
 import {
   fulfillmentColumnsOf,
@@ -74,7 +78,7 @@ export interface PromotionRow {
  * (L4) pose et qu'aucun geste ne change — une saisie naît donc à `NULL`.
  */
 export type PromotionWriteRow = Omit<PromotionRow, "conditions" | "origin"> & {
-  readonly conditions: readonly { readonly kind: string; readonly value: number }[];
+  readonly conditions: readonly PromotionConditionRow[];
 };
 
 export interface PromotionScopeRuleRow {
@@ -183,7 +187,7 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     ...audienceProjectionOf(state.audiences.targets),
     ...fulfillmentColumnsOf(state.fulfillment),
     scopeMode: state.scope.mode,
-    conditions: state.conditions.map((condition) => ({ ...condition })),
+    conditions: state.conditions.map(conditionRowOf),
     legacySource: state.legacySource,
     createdBy: state.createdBy,
     createdAt: state.createdAt,
@@ -240,14 +244,11 @@ function conditionsOf(value: unknown, unreadable: Unreadable): PromotionConditio
     throw unreadable("conditions qui ne sont pas une liste");
   }
   return value.map((entry: unknown): PromotionCondition => {
-    if (
-      isJsonRecord(entry) &&
-      entry["kind"] === "min_quantity" &&
-      typeof entry["value"] === "number"
-    ) {
-      return { kind: "min_quantity", value: entry["value"] };
+    const condition = conditionFromJson(entry);
+    if (condition === null) {
+      throw unreadable("condition inconnue");
     }
-    throw unreadable("condition inconnue");
+    return condition;
   });
 }
 

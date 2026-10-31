@@ -1,9 +1,11 @@
 import { AUDIENCE_LABEL, type PromotionAudience } from "./promotion-audience.js";
+import { weeklyHoursOf } from "./promotion-condition.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { Promotion } from "./promotion.js";
 import type { PromotionTerms } from "./promotion-terms.js";
 import { sameTerms } from "./promotion-terms-equality.js";
+import { describeWeeklyHours } from "./promotion-weekly-hours.js";
 
 /**
  * **Un acte sur une promotion** — l'unité du journal (`documentation/promotions/promotions.md`, § 2.9). Il s'écrit dans `pricing_events`, sujet `promotion`, à côté des
@@ -114,9 +116,17 @@ export function describePromotion(
     terms.audiences.targets.map(describeAudience).join(" + "),
     describeFulfillment(terms.fulfillment, names),
     describeWindow(terms.validFrom, terms.validTo),
+    // Dit seulement quand posés : les phrases déjà figées n'en parlent pas.
+    ...describeHoursOf(terms),
     // Dit seulement quand coché (§ 16) : les phrases déjà figées n'en parlent pas.
     ...(terms.cumulative ? ["cumulable"] : []),
   ].join(" · ");
+}
+
+/** « commandé tous les jours de 17 h à 19 h » (plan jours et heures, § 4). */
+function describeHoursOf(terms: PromotionTerms): string[] {
+  const hours = weeklyHoursOf(terms.conditions);
+  return hours === null ? [] : [describeWeeklyHours(hours)];
 }
 
 function describeEffect(effect: PromotionEffect): string {

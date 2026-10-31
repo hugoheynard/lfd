@@ -123,6 +123,7 @@ describe("QuoteOrderRevisionHandler", () => {
           pickup: "all",
           delivery: "none",
           origin: "placed",
+          hours: null,
         },
       };
       const order = { ...(await placedOrder()), activeDiscounts: [fromTen] };

@@ -2,6 +2,7 @@ import {
   ensureFulfillmentKeepsPromotion,
   revisedFulfillmentOf,
 } from "../services/fulfillment-promotion.js";
+import { ensureSlotKeepsPromotionHours } from "../services/slot-promotion-hours.js";
 import { ProductionPlanClosedError } from "../errors/production-plan-closed.error.js";
 import type {
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
@@ -192,7 +193,10 @@ export class Order {
     ensureNoShortfallDecision(current);
     // L9 avant les gardes de montant : une remise emportée hors de sa cible
     // se refuse en nommant la promotion (plan des remises acquises, § 10.2).
-    ensureFulfillmentKeepsPromotion(current, revisedFulfillmentOf(input));
+    const revisedFulfillment = revisedFulfillmentOf(input);
+    ensureFulfillmentKeepsPromotion(current, revisedFulfillment);
+    // Le créneau, contre les heures figées d'une promotion « au retrait ».
+    ensureSlotKeepsPromotionHours(current, revisedFulfillment);
     const revised = Order.compose(input, current.vatMethod);
     revised.carryCustomerCancellation(
       effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {

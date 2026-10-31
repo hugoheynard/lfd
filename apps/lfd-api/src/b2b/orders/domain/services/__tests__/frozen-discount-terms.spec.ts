@@ -12,7 +12,7 @@ function terms(
   pickup: FrozenDiscountTerms["pickup"],
   delivery: FrozenDiscountTerms["delivery"],
 ): FrozenDiscountTerms {
-  return { cumulative: false, minQuantity: null, pickup, delivery, origin: "placed" };
+  return { cumulative: false, minQuantity: null, pickup, delivery, origin: "placed", hours: null };
 }
 
 describe("termsAdmit", () => {
@@ -59,6 +59,7 @@ describe("placedTermsOf", () => {
       pickup: { points: ["p1"] },
       delivery: "all",
       origin: "placed",
+      hours: null,
     });
   });
 

@@ -51,7 +51,9 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  *
  * Une promotion que le contrat ne sait pas porter n'est pas annoncée non plus
  * plutôt que d'être annoncée fausse : une cible déclinaison (le contrat ne
- * connaît que familles et produits), une condition de quantité.
+ * connaît que familles et produits), une condition de quantité. Une promotion
+ * à jours et heures n'est annoncée que pendant ses heures, et jamais celle
+ * jugée au créneau : le contrat n'a pas de place pour dire « de 17 h à 19 h ».
  */
 
 const TYPICAL_BUYER: Readonly<
@@ -103,7 +105,10 @@ function announcedFor(
   const basket = promotions.filter(
     (promotion) => applicationPointOf(promotion.fulfillment) === "basket",
   );
-  const winner = mostSpecific(promotionsAdmitted(basket, at, facts));
+  // Sans créneau : une promotion jugée au créneau n'est pas annoncée, une
+  // promotion à heures ne l'est que pendant ses heures (plan jours et heures,
+  // § 8) — le contrat ne sait pas dire des heures.
+  const winner = mostSpecific(promotionsAdmitted(basket, at, facts, null));
   return winner === null ? null : asPickupDiscount(winner);
 }
 
@@ -157,7 +162,7 @@ function asPickupDiscount(promotion: AdmittedPromotion): AudiencePickupDiscount 
   const rules = promotion.scope.rules;
   if (
     adjustment === null ||
-    promotion.conditions.length > 0 ||
+    promotion.conditions.some((condition) => condition.kind !== "weekly_hours") ||
     rules.some((rule) => rule.target === "variant")
   ) {
     return null;

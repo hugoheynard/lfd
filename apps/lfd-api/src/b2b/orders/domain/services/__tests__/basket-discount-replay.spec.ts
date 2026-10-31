@@ -27,6 +27,7 @@ function terms(over: Partial<FrozenDiscountTerms> = {}): FrozenDiscountTerms {
     pickup: "all",
     delivery: "none",
     origin: "placed",
+    hours: null,
     ...over,
   };
 }

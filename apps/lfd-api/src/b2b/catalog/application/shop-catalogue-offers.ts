@@ -86,11 +86,16 @@ export function sealingOfShelf(
  * 🔴 Sur un article que la mercuriale du lecteur fixe, une promotion que sa
  * politique exclut n'est PAS mentionnée (`plan-la-mercuriale-decide.md`, § 8) :
  * la caisse ne l'appliquerait pas. Sur ses articles non négociés, rien ne change.
+ *
+ * Une promotion à jours et heures dit ses heures, active ou non à `at` ; hors
+ * de ses heures, elle n'est mentionnée que si elle a choisi de les dire
+ * (`plan-jours-et-heures.md`, § 8).
  */
 export function withFulfillmentOffers(
   catalogue: ShopCatalogueView,
   sellable: readonly ResolvedCatalogItem[],
   { candidates, productIds }: ShelfOffered,
+  at: Date,
   sealing: ReadonlyMap<string, PromotionAdmission> = new Map(),
 ): ShopCatalogueView {
   if (candidates.length === 0) {
@@ -105,11 +110,15 @@ export function withFulfillmentOffers(
       const offers =
         source === undefined
           ? []
-          : fulfillmentOffersFor(candidates, {
-              sku: item.sku,
-              productId: productIds.get(item.sku) ?? null,
-              categoryPath: source.family.path,
-            }).filter(
+          : fulfillmentOffersFor(
+              candidates,
+              {
+                sku: item.sku,
+                productId: productIds.get(item.sku) ?? null,
+                categoryPath: source.family.path,
+              },
+              at,
+            ).filter(
               (offer) => admission === undefined || admitsPromotion(admission, offer.promotionId),
             );
       return offers.length === 0 ? item : { ...item, fulfillmentOffers: offers.map(offerView) };
@@ -118,5 +127,7 @@ export function withFulfillmentOffers(
 }
 
 function offerView(offer: FulfillmentOffer): ShopItemFulfillmentOfferView {
-  return { effect: offer.effect, fulfillment: offer.fulfillment };
+  const view = { effect: offer.effect, fulfillment: offer.fulfillment };
+  // Les jours et heures (plan jours et heures, § 8) : absents sans eux.
+  return offer.hours === undefined ? view : { ...view, hours: offer.hours };
 }

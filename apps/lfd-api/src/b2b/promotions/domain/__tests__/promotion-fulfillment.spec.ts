@@ -107,7 +107,7 @@ describe("le rang se calcule PAR FAIT — le contre-exemple de vitruve (§ 8.3)"
   });
   const ranks = (fact: FulfillmentFact) =>
     Object.fromEntries(
-      promotionsAdmitted([A, B], ASKED_AT, buyer(fact)).map((admitted) => [
+      promotionsAdmitted([A, B], ASKED_AT, buyer(fact), null).map((admitted) => [
         admitted.id,
         targetingRankOf(admitted).fulfillmentRank,
       ]),

@@ -1,3 +1,5 @@
+import type { FulfillmentWindow } from "@lfd/contracts";
+
 import { sameValue, type RevisableOrder } from "../entities/order-revision.js";
 import type { DraftOrderInput } from "../entities/order-shapes.js";
 import { FulfillmentChangeAltersPromotionError } from "../errors/fulfillment-promotion-errors.js";
@@ -22,6 +24,10 @@ export interface RevisedFulfillment {
   readonly zoneId: string | null;
   readonly deliveryAddress: unknown;
   readonly promotions: readonly ComparedPromotion[];
+  /** Le jour de service `AAAA-MM-JJ`, `null` sans jour — le créneau que juge une promotion à heures. */
+  readonly serviceDay: string | null;
+  /** La tranche convenue, `null` sans tranche. */
+  readonly window: FulfillmentWindow | null;
 }
 
 /** L'entrée, réduite comme `normalizeFulfillment` la réduira. */
@@ -34,6 +40,11 @@ export function revisedFulfillmentOf(input: DraftOrderInput): RevisedFulfillment
     zoneId: pickup ? null : fulfillment.deliveryZoneId,
     deliveryAddress: pickup ? null : fulfillment.deliveryAddress,
     promotions: promotionsAfter(input),
+    serviceDay:
+      input.requestedDeliveryDate === null
+        ? null
+        : input.requestedDeliveryDate.toISOString().slice(0, 10),
+    window: input.agreed.window.value,
   };
 }
 
@@ -96,7 +107,7 @@ function fulfillmentChanged(order: RevisableOrder, after: RevisedFulfillment): b
 }
 
 /** La remise est-elle encore dans la nouvelle composition ? Par identifiant (`null` compris). */
-function stillApplied(had: RevisableDiscount, after: readonly ComparedPromotion[]): boolean {
+export function stillApplied(had: RevisableDiscount, after: readonly ComparedPromotion[]): boolean {
   return after.some((has) => has.promotionId === had.promotionId);
 }
 

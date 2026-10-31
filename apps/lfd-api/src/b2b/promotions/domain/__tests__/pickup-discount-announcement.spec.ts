@@ -238,13 +238,18 @@ describe("announcedPickupDiscounts — l'annonce dit ce que la caisse appliquera
 
   /** La caisse, pour un acheteur type : le même juge, puis `chooseBasketPromotion`. */
   function atCheckout(promotions: readonly LivePromotion[], clientele: "b2b" | "b2c") {
-    const admitted = promotionsAdmitted(promotions, ASKED_AT, {
-      companyId: null,
-      companyStatus: clientele === "b2b" ? "active" : null,
-      principal: { companyId: null },
-      buyerKind: "unknown",
-      fulfillment: { method: "pickup", pickupId: "site" },
-    });
+    const admitted = promotionsAdmitted(
+      promotions,
+      ASKED_AT,
+      {
+        companyId: null,
+        companyStatus: clientele === "b2b" ? "active" : null,
+        principal: { companyId: null },
+        buyerKind: "unknown",
+        fulfillment: { method: "pickup", pickupId: "site" },
+      },
+      null,
+    );
     return chooseBasketPromotion(admitted, lines, classes);
   }
 

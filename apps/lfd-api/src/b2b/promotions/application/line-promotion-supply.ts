@@ -43,6 +43,8 @@ export class LinePromotionSupply {
             { companyId: buyer.companyId, buyerKind, fulfillment: null },
             all,
           );
-    return promotionsAdmitted(all, at, facts);
+    // Le point ligne ne connaît pas de créneau — et aucune promotion à heures
+    // n'y est posée (plan jours et heures, § 11).
+    return promotionsAdmitted(all, at, facts, null);
   }
 }

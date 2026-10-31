@@ -32,6 +32,7 @@ const REQUEST: BasketPromotionRequest = {
     fulfillment: { method: "pickup", pickupId: "pk_coeur" },
   },
   known: null,
+  handoverAt: null,
 };
 
 /** Ce que la reprise de la remise du site rend : 20 % de 10 €. */
@@ -100,6 +101,7 @@ describe("BasketPromotions.resolve", () => {
             pickup: { points: ["pk_coeur"] },
             delivery: "none",
             origin: "placed",
+            hours: null,
           },
         },
       ],

@@ -82,6 +82,23 @@ describe("les mappers de la promotion", () => {
       basketTerms({ fulfillment: { kind: "basket", pickup: "all", delivery: "all" } }),
     ],
     [
+      "une promotion de panier à jours et heures (plan jours et heures)",
+      basketTerms({
+        conditions: [
+          { kind: "min_quantity", value: 2 },
+          {
+            kind: "weekly_hours",
+            moment: "handover_at",
+            announceOutside: true,
+            windows: [
+              { weekdays: ["mon", "tue"], start: "07:00", end: "09:00" },
+              { weekdays: ["mon"], start: "17:00", end: "24:00" },
+            ],
+          },
+        ],
+      }),
+    ],
+    [
       "une société et ses sites",
       lineTerms({ audience: { kind: "company_and_sites", companyId: "co_1" } }),
     ],
@@ -109,6 +126,15 @@ describe("les mappers de la promotion", () => {
       ),
     );
     expect([one.audienceKind, one.audienceCompanyId]).toEqual(["company", "co_1"]);
+  });
+
+  it("refuse une condition de jours et heures à la forme inconnue, en la nommant", () => {
+    const promotion = Promotion.pose("promo_1", basketTerms(), "staff_1", FROM);
+    const row = {
+      ...rowOf(promotion),
+      conditions: [{ kind: "weekly_hours", moment: "lundi", announceOutside: false, windows: [] }],
+    };
+    expect(() => reread(promotion, row)).toThrow(/condition inconnue/u);
   });
 
   it("refuse une promotion sans cible plutôt que de relire la projection", () => {

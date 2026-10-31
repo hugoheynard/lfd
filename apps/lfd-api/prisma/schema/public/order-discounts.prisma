@@ -57,6 +57,9 @@ model OrderDiscount {
   /// `placed` (figé à la passation) | `backfilled` (déduit de la promotion par
   /// la reprise) ; `NULL` = inconnu.
   frozenTermsOrigin        String?   @map("frozen_terms_origin")
+  /// Les jours et heures de la promotion (`plan-jours-et-heures.md`, § 11),
+  /// `NULL` sans eux : un changement de créneau se juge contre eux (L9).
+  weeklyHours              Json?     @map("weekly_hours")
   /// Une révision n'efface pas une remise, elle l'archive (§ 18.2, § 18.5).
   archivedAt               DateTime? @map("archived_at") @db.Timestamptz(6)
   createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)

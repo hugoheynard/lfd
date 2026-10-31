@@ -1,3 +1,5 @@
+import type { LocalMoment } from "@lfd/contracts";
+
 import type { PromotionAudience } from "./promotion-audience.js";
 import {
   servedLabelFor,
@@ -5,7 +7,7 @@ import {
   type PromotionLabel,
   type ServedPromotionLabel,
 } from "./promotion-labels.js";
-import type { PromotionCondition } from "./promotion-condition.js";
+import { conditionsAdmitMoments, type PromotionCondition } from "./promotion-condition.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { PromotionScope } from "./promotion-scope.js";
@@ -91,12 +93,33 @@ export interface AdmittedPromotion extends LivePromotion {
 
 /**
  * **Ce qui ne dépend pas de l'article** : fenêtre, pause, public,
- * acheminement — jugés une fois pour la question, comme `inForceFor` le fait
- * des règles. Borne basse incluse, haute exclue ; une pause posée avant
- * l'instant l'éteint, une pause posée après ne dit rien de cet instant.
- * Le public admet si **au moins une** de ses cibles admet (§ 15.6).
+ * acheminement, jours et heures — jugés une fois pour la question, comme
+ * `inForceFor` le fait des règles. Borne basse incluse, haute exclue ; une
+ * pause posée avant l'instant l'éteint, une pause posée après ne dit rien de
+ * cet instant. Le public admet si **au moins une** de ses cibles admet (§ 15.6).
+ *
+ * Les jours et heures (`plan-jours-et-heures.md`, § 8) se jugent à l'instant
+ * que la promotion choisit : `at` — la commande — ou `handoverAt`, le début
+ * du créneau choisi (sa fin sans début) ; `null` = aucun créneau connu, et
+ * une promotion jugée au créneau ne s'applique pas.
  */
 export function promotionsAdmitted(
+  promotions: readonly LivePromotion[],
+  at: Date,
+  facts: PromotionAudienceFacts,
+  handoverAt: LocalMoment | null,
+): AdmittedPromotion[] {
+  const moments = { orderedAt: at, handoverAt };
+  return promotionsAdmittedAtAnyHour(promotions, at, facts).filter((promotion) =>
+    conditionsAdmitMoments(promotion.conditions, moments),
+  );
+}
+
+/**
+ * Le même jugement, **sans les jours et heures** — ce que le panier relit
+ * pour dire qu'une remise à heures a pris fin (plan jours et heures, § 8).
+ */
+export function promotionsAdmittedAtAnyHour(
   promotions: readonly LivePromotion[],
   at: Date,
   facts: PromotionAudienceFacts,

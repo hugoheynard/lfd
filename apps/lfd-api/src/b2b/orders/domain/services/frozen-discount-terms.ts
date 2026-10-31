@@ -1,4 +1,6 @@
 import { minQuantityOf, type LivePromotion } from "../../../promotions/domain/live-promotion.js";
+import { weeklyHoursOf } from "../../../promotions/domain/promotion-condition.js";
+import type { PromotionWeeklyHours } from "../../../promotions/domain/promotion-weekly-hours.js";
 import type {
   DeliveryReach,
   PickupReach,
@@ -22,6 +24,11 @@ export interface FrozenDiscountTerms {
   readonly delivery: DeliveryReach;
   /** `placed` : figé à la passation ; `backfilled` : déduit de la promotion par la reprise. */
   readonly origin: FrozenTermsOrigin;
+  /**
+   * Les jours et heures de la promotion (`plan-jours-et-heures.md`, § 11),
+   * `null` sans eux : un changement de créneau se juge contre eux (L9).
+   */
+  readonly hours: PromotionWeeklyHours | null;
 }
 
 export type FrozenTermsOrigin = "placed" | "backfilled";
@@ -41,6 +48,7 @@ export function placedTermsOf(promotion: LivePromotion): FrozenDiscountTerms | n
     pickup: fulfillment.pickup,
     delivery: fulfillment.delivery,
     origin: "placed",
+    hours: weeklyHoursOf(promotion.conditions),
   };
 }
 

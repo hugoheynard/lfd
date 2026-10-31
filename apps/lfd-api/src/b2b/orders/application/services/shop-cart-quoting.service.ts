@@ -32,6 +32,7 @@ import {
   type BasketPromotionApplied,
 } from "../../domain/services/basket-promotion-choice.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
+import type { EndedBasketPromotion } from "../../domain/services/ended-basket-promotions.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
 import {
@@ -81,6 +82,8 @@ interface CartTerms {
   readonly deliveryFeeCents: number;
   /** Le barème de la zone, `null` hors coursier — la commande `exact_ht` le rejoue en TTC. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
+  /** Les remises à heures finies aujourd'hui (plan jours et heures, § 8). */
+  readonly ended: readonly EndedBasketPromotion[];
 }
 
 const NO_TERMS: CartTerms = {
@@ -90,6 +93,7 @@ const NO_TERMS: CartTerms = {
   applied: [],
   deliveryFeeCents: 0,
   deliveryFeeAdjustment: null,
+  ended: [],
 };
 
 /**
@@ -208,7 +212,8 @@ export class ShopCartQuoting {
     // décidera sur la même société, jamais l'audience : un pro ne change pas
     // d'un centime (plan du centime, § 8).
     if (placementVatMethodOf(query.companyId) === "exact_ht") {
-      return this.exactQuote(query, resolved, terms);
+      const exact = await this.exactQuote(query, resolved, terms);
+      return { ...exact, view: withEndedDiscounts(exact.view, terms.ended) };
     }
     const voucherDiscountCents = await this.voucherDiscountOf(
       query,
@@ -269,7 +274,7 @@ export class ShopCartQuoting {
       totalCents: ventilated.totalCents,
     };
     return {
-      view,
+      view: withEndedDiscounts(view, terms.ended),
       voucherTotalEffectCents: voucherTotalEffectCents(ventilation, voucherDiscountCents),
     };
   }
@@ -373,6 +378,8 @@ export class ShopCartQuoting {
     // résolu en base (plan des promotions, § 13.7).
     const buyer = { audience, companyId, companyStatus, buyerKind: buyerKindOf({ buyerUserId }) };
     if (fulfillment.method === "pickup") {
+      // Le devis de la boutique n'a pas de créneau : une promotion jugée au
+      // créneau n'y est pas chiffrée (plan jours et heures, § 8.3).
       const retrait = await this.adjustments.forPickup(fulfillment.pickupAddressId, priced, buyer);
       return {
         discountCents: retrait.discountCents,
@@ -381,6 +388,7 @@ export class ShopCartQuoting {
         applied: retrait.applied,
         deliveryFeeCents: 0,
         deliveryFeeAdjustment: null,
+        ended: retrait.ended,
       };
     }
     const coursier = await this.adjustments.forDelivery(fulfillment.codePostal, priced, buyer);
@@ -392,8 +400,25 @@ export class ShopCartQuoting {
       applied: coursier.discount.applied,
       deliveryFeeCents: coursier.feeCents,
       deliveryFeeAdjustment: coursier.feeAdjustment,
+      ended: coursier.discount.ended ?? [],
     };
   }
+}
+
+/**
+ * Les remises à heures qui ont pris fin aujourd'hui (plan jours et heures,
+ * § 8) : « La remise « X » a pris fin à 19 h ». La clé est absente sinon.
+ */
+function withEndedDiscounts(
+  view: ShopQuoteView,
+  ended: readonly EndedBasketPromotion[],
+): ShopQuoteView {
+  return ended.length === 0
+    ? view
+    : {
+        ...view,
+        endedDiscounts: ended.map((entry) => ({ label: entry.label, endedAt: entry.endedAt })),
+      };
 }
 
 /**

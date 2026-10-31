@@ -12,6 +12,7 @@ const LISTED: FrozenDiscountTerms = {
   pickup: { points: ["p1", "p2"] },
   delivery: "none",
   origin: "placed",
+  hours: null,
 };
 
 describe("frozenTermsData / frozenTermsOf", () => {
@@ -44,5 +45,25 @@ describe("frozenTermsData / frozenTermsOf", () => {
     const broken = { ...frozenTermsData(LISTED), fulfillmentDelivery: "partout" };
 
     expect(() => frozenTermsOf("od_9", broken)).toThrow(/od_9.*acheminement « partout »/u);
+  });
+
+  it("relit les jours et heures figés (plan jours et heures, § 11)", () => {
+    const hours: FrozenDiscountTerms = {
+      ...LISTED,
+      hours: {
+        kind: "weekly_hours",
+        moment: "handover_at",
+        announceOutside: true,
+        windows: [{ weekdays: ["tue", "thu"], start: "07:00", end: "09:00" }],
+      },
+    };
+
+    expect(frozenTermsOf("od_1", frozenTermsData(hours))).toEqual(hours);
+  });
+
+  it("refuse, en le nommant, des jours et heures illisibles", () => {
+    const broken = { ...frozenTermsData(LISTED), weeklyHours: { kind: "weekly_hours" } };
+
+    expect(() => frozenTermsOf("od_9", broken)).toThrow(/od_9.*jours et heures/u);
   });
 });

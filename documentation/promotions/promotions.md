@@ -690,8 +690,8 @@ pickupId }` ou `{ method: "delivery", zoneId }`. Admission
   « tous » 1, prix affiché 0. Deux promotions disjointes ne se comparent
   jamais : A = {point P1, toutes zones} et B = {tous points, zone Z} — en Z,
   B passe avant A ; en P1, A avant B.
-- **Recouvrement d'ensembles** (`fulfillmentsMeet`,
-  `promotion-overlap.ts:291`) : deux promotions se recouvrent si une
+- **Recouvrement d'ensembles** (`fulfillmentsMeet`, sorti du juge du
+  recouvrement le 2026-10-31) : deux promotions se recouvrent si une
   commande peut être servie d'une façon que les deux admettent ; témoins :
   chaque point et chaque zone nommés, « un autre point », « une autre zone »,
   « livraison sans zone ».
@@ -858,6 +858,29 @@ clientèle** (plan du 2026-10-22, « une remise par clientèle, avec ses
 exclusions par famille et par produit », supprimé le 2026-10-31) : ses
 exclusions et son assiette éligible ont été reprises telles quelles par les
 promotions à la bascule (L12), qui les ont remplacées.
+
+### 2.18 Jours et heures (2026-10-31, serveur bâti, écran à venir)
+
+Plan : [`plan-jours-et-heures.md`](plan-jours-et-heures.md) (§ 11 fait foi).
+Une condition `weekly_hours` — instant jugé (`ordered_at`, la commande ;
+`handover_at`, le début du créneau choisi, sa fin sans début), annonce hors
+des heures, plages `{weekdays, start, end}` à la pendule de Paris, une plage
+ne passe pas minuit (fin `24:00` admise), jours fériés ignorés. Toujours une
+remise **au panier** (refus à la pose au prix affiché). Rangée dans le JSONB
+`promotions.conditions` ; les heures se figent aussi sur la remise
+(`order_discounts.weekly_hours`, migration `20261101100000`), pour que L9 juge
+un changement de créneau contre elles. Le juge de Paris est celui des
+suggestions (`clockRangeCovers`, `weeklyMomentOf` dans `@lfd/contracts`).
+Le devis de la boutique n'a pas de créneau : une promotion `handover_at` n'y
+est pas chiffrée, la passation l'applique. Le panier relu après la fin d'une
+plage porte `endedDiscounts` (« a pris fin à 19 h »).
+
+**Runbook — déploiement** : 🔴 **aucune promotion à heures posée avant que
+le déploiement soit fini**, sur toutes les instances. Le lecteur d'avant
+refuse toute condition inconnue et charge les promotions en bloc : une
+instance ancienne qui lit une promotion à heures fait tomber **toutes** les
+promotions. Au lancement commercial, une variante de condition se livre en
+deux temps (lecteur, puis écriture).
 
 ---
 

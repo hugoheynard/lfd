@@ -70,6 +70,7 @@ function checkoutCents(promotions: readonly LivePromotion[], facts: PromotionAud
     promotions.filter((promotion) => promotion.fulfillment.kind !== "displayed_price"),
     ASKED_AT,
     facts,
+    null,
   );
   return chooseBasketPromotion(admitted, LINES, CLASSES).discountCents;
 }
@@ -362,7 +363,7 @@ describe("l'offre « connectez-vous » ne dépasse pas ce que l'inscrit se voit 
       segmentId: null,
       cumulativeQuantity: null,
     };
-    const admitted = promotionsAdmitted(promotions, ASKED_AT, INDIVIDUAL("registered"));
+    const admitted = promotionsAdmitted(promotions, ASKED_AT, INDIVIDUAL("registered"), null);
     const priced = resolvePrice(
       100_000,
       { rules: [], ladders: [], mercuriale: null, promotions: admitted },

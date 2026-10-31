@@ -210,7 +210,13 @@ export class ShopCataloguePricing {
       // appliquées au prix du rayon, où l'acheminement est inconnu.
       this.offers.offeredFor(buyer, catalogue),
     ]);
-    const mentioned = withFulfillmentOffers(priced.view, sellable, offered, priced.sealing);
+    const mentioned = withFulfillmentOffers(
+      priced.view,
+      sellable,
+      offered,
+      this.clock.now(),
+      priced.sealing,
+    );
     return inShopLanguage(withPricesPerKg(mentioned, sellable, perKg), sellable, language);
   }
 

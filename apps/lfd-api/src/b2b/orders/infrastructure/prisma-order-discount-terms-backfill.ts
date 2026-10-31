@@ -33,7 +33,11 @@ export interface TermsBackfillLine {
   readonly outcome: TermsBackfillOutcome;
 }
 
-const conditionsSchema = z.array(z.object({ kind: z.string(), value: z.number() }));
+// `value` n'est porté que par `min_quantity` ; les jours et heures se relisent
+// par `frozenTermsOf` (plan jours et heures, § 11).
+const conditionsSchema = z.array(
+  z.object({ kind: z.string(), value: z.number().optional() }).passthrough(),
+);
 
 export class PrismaOrderDiscountTermsBackfill {
   constructor(
@@ -128,6 +132,7 @@ async function deducedTerms(
       fulfillmentPickupPoints: promotion.pickupPoints.map((point) => point.pickupId),
       fulfillmentDeliveryZones: promotion.deliveryZones.map((zone) => zone.zoneId),
       frozenTermsOrigin: "backfilled",
+      weeklyHours: conditions.data.find((entry) => entry.kind === "weekly_hours") ?? null,
     }) ?? "termes illisibles"
   );
 }

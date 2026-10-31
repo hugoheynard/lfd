@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import type { CartAdjustment } from "./cart-adjustment.js";
+import type { DiscountLabelView } from "./discount-label.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { OrderDiscountView } from "./order-discount.js";
 import type { SignInOfferView } from "./promotion-offer.js";
@@ -211,6 +212,20 @@ export interface ShopQuoteView {
    * **Absente** sinon.
    */
   readonly signInOffer?: SignInOfferView;
+  /**
+   * **Les remises à heures qui ont pris fin aujourd'hui** et qui auraient
+   * touché ce panier (`documentation/promotions/plan-jours-et-heures.md`,
+   * § 8 « Caches ») : un panier affiché à 18 h 59 et relu à 19 h dit « La
+   * remise « X » a pris fin à 19 h » plutôt qu'un total qui change sans
+   * explication. **Absente** sinon.
+   */
+  readonly endedDiscounts?: readonly ShopQuoteEndedDiscountView[];
+}
+
+/** Une remise à heures finie : son libellé et l'heure de sa fin (`HH:MM`, Paris). */
+export interface ShopQuoteEndedDiscountView {
+  readonly label: DiscountLabelView;
+  readonly endedAt: string;
 }
 
 /** Une ligne que le devis a retirée, et ce que l'article est devenu. */

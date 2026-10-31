@@ -33,3 +33,26 @@ function messageOf(
     "Gardez le même acheminement, ou annulez la commande et repassez-la avec le nouveau."
   );
 }
+
+/**
+ * **Un changement de créneau qui sort des heures d'une promotion jugée au
+ * retrait** (`documentation/promotions/plan-jours-et-heures.md`, § 8.2) — refusé
+ * en nommant le cas réel, pas comme un changement d'acheminement : la
+ * commande a été remisée pour ce créneau-là.
+ */
+export class SlotOutsidePromotionHoursError extends BusinessError {
+  constructor(
+    readonly orderId: string,
+    /** Le libellé figé de la promotion, en français ; `null` s'il n'y en a pas. */
+    readonly promotionLabel: string | null,
+    /** « tous les jours de 17 h à 19 h ». */
+    readonly schedule: string,
+  ) {
+    const named = promotionLabel === null ? "" : ` « ${promotionLabel} »`;
+    super(
+      "orders.revise.slot_outside_promotion_hours",
+      `Ce créneau tombe hors des heures de la promotion${named} (${schedule}) : ` +
+        "choisissez un créneau dans ces heures, ou annulez la commande et repassez-la avec le nouveau créneau.",
+    );
+  }
+}

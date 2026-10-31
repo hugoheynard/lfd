@@ -7,7 +7,8 @@ import {
 } from "./errors/promotion-errors.js";
 import { PromotionAudienceLabelWithoutAudienceError } from "./errors/promotion-audience-errors.js";
 import type { LabelAudience, PromotionAudienceSet } from "./promotion-audience-set.js";
-import { assertCondition, type PromotionCondition } from "./promotion-condition.js";
+import { PromotionHoursAtDisplayedPriceError } from "./errors/promotion-hours-errors.js";
+import { assertConditions, weeklyHoursOf, type PromotionCondition } from "./promotion-condition.js";
 import {
   EFFECTS_AT,
   assertEffectValue,
@@ -86,7 +87,8 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionLineOnlyOptionError} plancher propre au panier.
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
- * @throws les refus de `assertFulfillment`, `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
+ * @throws {PromotionHoursAtDisplayedPriceError} des jours et heures « dans le prix affiché ».
+ * @throws les refus de `assertFulfillment`, `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertConditions`.
  */
 export function assertTerms(terms: PromotionTerms): void {
   assertText("nom interne", terms.internalName);
@@ -116,7 +118,12 @@ export function assertTerms(terms: PromotionTerms): void {
   if (point === "line" && product !== undefined) {
     throw new PromotionProductTargetAtLineError(product.targetId);
   }
-  terms.conditions.forEach(assertCondition);
+  assertConditions(terms.conditions);
+  // Une promotion à heures est toujours une remise au panier (plan jours et
+  // heures, § 11) : le rayon ne connaît pas de créneau.
+  if (point === "line" && weeklyHoursOf(terms.conditions) !== null) {
+    throw new PromotionHoursAtDisplayedPriceError();
+  }
 }
 
 const AUDIENCE_NAMES: Readonly<Record<LabelAudience, string>> = {

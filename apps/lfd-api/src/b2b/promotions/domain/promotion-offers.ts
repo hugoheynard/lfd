@@ -1,5 +1,6 @@
 import { inForceAt, minQuantityOf, type LivePromotion } from "./live-promotion.js";
 import type { PromotionEffect } from "./promotion-effect.js";
+import { weeklyHoursOf } from "./promotion-condition.js";
 import type { DeliveryReach, PickupReach } from "./promotion-fulfillment.js";
 import {
   promotionExtendsToWeight,
@@ -14,6 +15,11 @@ import {
   type FulfillmentFact,
   type PromotionAudienceFacts,
 } from "./promotion-targeting.js";
+import {
+  weeklyHoursStanding,
+  type PromotionHoursMoment,
+  type PromotionHoursWindow,
+} from "./promotion-weekly-hours.js";
 
 /**
  * **Ce qu'une promotion promet sans s'appliquer encore** (`documentation/promotions/promotions.md`, § 2.16, lot L10) — pur.
@@ -42,11 +48,23 @@ export interface OfferFulfillment {
   readonly delivery: DeliveryReach;
 }
 
+/**
+ * Les jours et heures d'une promotion qui n'agit qu'à certaines heures, et
+ * si elle agit maintenant (plan jours et heures, § 8, « Annonce »).
+ */
+export interface OfferHours {
+  readonly moment: PromotionHoursMoment;
+  readonly windows: readonly PromotionHoursWindow[];
+  readonly activeNow: boolean;
+}
+
 /** Une promotion de panier qu'un acheminement ouvrirait sur un article. */
 export interface FulfillmentOffer {
   readonly promotionId: string;
   readonly effect: OfferEffect;
   readonly fulfillment: OfferFulfillment;
+  /** **Absente** : sans jours ni heures. */
+  readonly hours?: OfferHours;
 }
 
 const MILLICENTS_PER_CENT = 1_000;
@@ -80,8 +98,26 @@ export function offerCandidates(
     (promotion) =>
       promotion.fulfillment.kind === "basket" &&
       inForceAt(promotion, at) &&
+      offerHoursAt(promotion, at) !== "silent" &&
       admittingRankOf(promotion.audiences, facts) !== null,
   );
+}
+
+/**
+ * **Ce qu'une promotion à heures laisse dire à cet instant** (plan jours et
+ * heures, § 8) : `null` sans jours ni heures ; ses heures, active ou non ;
+ * `silent` hors de ses heures quand elle a choisi de se taire.
+ */
+export function offerHoursAt(promotion: LivePromotion, at: Date): OfferHours | "silent" | null {
+  const hours = weeklyHoursOf(promotion.conditions);
+  if (hours === null) {
+    return null;
+  }
+  const standing = weeklyHoursStanding(hours, at);
+  if (standing === "silent") {
+    return "silent";
+  }
+  return { moment: hours.moment, windows: hours.windows, activeNow: standing === "active" };
 }
 
 /** Les candidates qui demandent le produit de l'article (cible `product`). */
@@ -98,13 +134,16 @@ export function offersNeedProducts(candidates: readonly LivePromotion[]): boolea
 export function fulfillmentOffersFor(
   candidates: readonly LivePromotion[],
   article: PromotionScopeFacts,
+  at: Date,
 ): FulfillmentOffer[] {
   const offers: FulfillmentOffer[] = [];
   for (const promotion of candidates) {
     const effect = offerEffectOf(promotion.effect);
     const { fulfillment } = promotion;
+    const hours = offerHoursAt(promotion, at);
     if (
       effect === null ||
+      hours === "silent" ||
       fulfillment.kind === "displayed_price" ||
       !promotionScopeCovers(promotion.scope, article, { kind: "basket" })
     ) {
@@ -114,6 +153,7 @@ export function fulfillmentOffersFor(
       promotionId: promotion.id,
       effect,
       fulfillment: { pickup: fulfillment.pickup, delivery: fulfillment.delivery },
+      ...(hours === null ? {} : { hours }),
     });
   }
   return offers.sort((left, right) => (left.promotionId < right.promotionId ? -1 : 1));
@@ -164,13 +204,14 @@ export function signInOfferFor(
   at: Date,
   lines: readonly OfferedLine[],
   fulfillment: FulfillmentFact | null,
-): { readonly effect: OfferEffect | null } | undefined {
+): { readonly effect: OfferEffect | null; readonly hours?: OfferHours } | undefined {
   const registered = individualFacts("registered", null);
   const guest = individualFacts("guest", null);
   const offered = promotions
     .filter(
       (promotion) =>
         inForceAt(promotion, at) &&
+        offerHoursAt(promotion, at) !== "silent" &&
         admittingRankOf(promotion.audiences, registered) !== null &&
         admittingRankOf(promotion.audiences, guest) === null &&
         (fulfillment === null || fulfillmentAdmits(promotion.fulfillment, fulfillment)) &&
@@ -178,7 +219,12 @@ export function signInOfferFor(
     )
     .sort((left, right) => offerOrder(left) - offerOrder(right) || (left.id < right.id ? -1 : 1));
   const best = offered[0];
-  return best === undefined ? undefined : { effect: offerEffectOf(best.effect) };
+  if (best === undefined) {
+    return undefined;
+  }
+  const hours = offerHoursAt(best, at);
+  const effect = offerEffectOf(best.effect);
+  return hours === null || hours === "silent" ? { effect } : { effect, hours };
 }
 
 function touches(promotion: LivePromotion, line: OfferedLine): boolean {

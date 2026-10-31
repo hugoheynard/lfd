@@ -1,4 +1,3 @@
-import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import {
   BasketPromotionsWouldCombineError,
   OverlappingPromotionError,
@@ -6,23 +5,14 @@ import {
 } from "./errors/promotion-errors.js";
 import type { PromotionCatalogueArticle } from "./ports/promotion-catalogue.reader.js";
 import { day } from "./promotion-act.js";
-import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audience.js";
-import type { PromotionAudienceSet } from "./promotion-audience-set.js";
-import {
-  applicationPointOf,
-  listedPointsOf,
-  listedZonesOf,
-  type PromotionFulfillment,
-} from "./promotion-fulfillment.js";
+import { weeklyHoursOf } from "./promotion-condition.js";
+import { applicationPointOf } from "./promotion-fulfillment.js";
+import { audienceSetsMeet, fulfillmentsMeet } from "./promotion-meeting.js";
 import { sharedArticleOf } from "./promotion-shared-article.js";
 import type { PromotionTerms, PromotionWindow } from "./promotion-terms.js";
-import {
-  audienceAdmits,
-  fulfillmentAdmits,
-  type FulfillmentFact,
-  type PromotionAudienceFacts,
-  type PromotionBuyerKind,
-} from "./promotion-targeting.js";
+import { weeklyHoursMeet } from "./promotion-weekly-hours.js";
+
+export { audienceSetsMeet, audiencesMeet, fulfillmentsMeet } from "./promotion-meeting.js";
 
 /**
  * **Deux promotions qui ne doivent pas coexister** (`documentation/promotions/promotions.md`, § 2.16, lot L7) — pur.
@@ -135,13 +125,7 @@ export function assertSingleBasketPromotion(
     if (candidate.terms.cumulative && rival.terms.cumulative) {
       continue;
     }
-    const combines =
-      rival.id !== candidate.id &&
-      applicationPointOf(rival.terms.fulfillment) === "basket" &&
-      commonPeriod(candidate.terms, rival.terms) !== null &&
-      audienceSetsMeet(candidate.terms.audiences, rival.terms.audiences) &&
-      fulfillmentsMeet(candidate.terms.fulfillment, rival.terms.fulfillment);
-    if (combines) {
+    if (rival.id !== candidate.id && basketsMeet(candidate.terms, rival.terms)) {
       throw new BasketPromotionsWouldCombineError(rival.id, rival.terms.internalName);
     }
   }
@@ -175,10 +159,7 @@ export function assertCumulativeBasketCapacity(
     (rival) =>
       rival.id !== candidate.id &&
       rival.terms.cumulative &&
-      applicationPointOf(rival.terms.fulfillment) === "basket" &&
-      commonPeriod(candidate.terms, rival.terms) !== null &&
-      audienceSetsMeet(candidate.terms.audiences, rival.terms.audiences) &&
-      fulfillmentsMeet(candidate.terms.fulfillment, rival.terms.fulfillment),
+      basketsMeet(candidate.terms, rival.terms),
   );
   if (companions.length >= MAX_BASKET_DISCOUNTS_PER_ORDER) {
     throw new TooManyCumulativeBasketPromotionsError(
@@ -188,9 +169,31 @@ export function assertCumulativeBasketCapacity(
   }
 }
 
-/** Le public commun de deux promotions dont les acheminements se croisent, ou `null`. */
+/**
+ * Une promotion de panier (`right`) peut-elle valoir pour une même commande
+ * que `left` ? Fenêtres, publics, acheminements, jours et heures (plan jours
+ * et heures, § 8, « Recouvrement »).
+ */
+function basketsMeet(left: PromotionTerms, right: PromotionTerms): boolean {
+  return (
+    applicationPointOf(right.fulfillment) === "basket" &&
+    commonPeriod(left, right) !== null &&
+    audienceSetsMeet(left.audiences, right.audiences) &&
+    fulfillmentsMeet(left.fulfillment, right.fulfillment) &&
+    hoursMeet(left, right)
+  );
+}
+
+function hoursMeet(left: PromotionTerms, right: PromotionTerms): boolean {
+  return weeklyHoursMeet(weeklyHoursOf(left.conditions), weeklyHoursOf(right.conditions));
+}
+
+/**
+ * Le public commun de deux promotions dont les acheminements — et les jours
+ * et heures — se croisent, ou `null`.
+ */
 function crossingOf(left: PromotionTerms, right: PromotionTerms): string | null {
-  return fulfillmentsMeet(left.fulfillment, right.fulfillment)
+  return fulfillmentsMeet(left.fulfillment, right.fulfillment) && hoursMeet(left, right)
     ? left.audiences.crossing(right.audiences)
     : null;
 }
@@ -217,92 +220,4 @@ function describePeriod(period: PromotionWindow): string {
   return period.validTo === null
     ? `à partir ${from}`
     : `${from} au ${day(new Date(period.validTo.getTime() - LAST_COVERED_MS))}`;
-}
-
-/** Les statuts d'une société qui commande encore ; une société close ne commande plus. */
-const ORDERING_STATUSES: readonly StandingCompanyStatus[] = ["pending", "active", "suspended"];
-const BUYER_KINDS: readonly PromotionBuyerKind[] = ["guest", "registered"];
-/** Une société qu'aucun des deux publics ne nomme. */
-const ANY_OTHER = "__unnamed__";
-
-/**
- * **Deux publics à plusieurs cibles peuvent-ils admettre un même acheteur ?**
- * Une paire de cibles qui se rencontre (§ 15.6) — les sociétés nommées des
- * DEUX ensembles sont énumérées : sans elles, un acheteur de la société de
- * droite ne le serait jamais.
- */
-export function audienceSetsMeet(left: PromotionAudienceSet, right: PromotionAudienceSet): boolean {
-  const named = [...left.targets, ...right.targets]
-    .map(audienceCompanyIdOf)
-    .filter((id): id is string => id !== null);
-  return left.targets.some((mine) =>
-    right.targets.some((theirs) => audiencesMeet(mine, theirs, named)),
-  );
-}
-
-/**
- * **Un acheteur peut-il être admis par les deux publics ?** Jugé en
- * énumérant les acheteurs possibles et en posant à chacun la question même
- * du calcul (`audienceAdmits`) : une seconde écriture de la règle aurait fini
- * par la contredire. `extraCompanies` : les sociétés nommées ailleurs dans
- * les deux ensembles.
- */
-export function audiencesMeet(
-  left: PromotionAudience,
-  right: PromotionAudience,
-  extraCompanies: readonly string[] = [],
-): boolean {
-  const named = [audienceCompanyIdOf(left), audienceCompanyIdOf(right), ...extraCompanies].filter(
-    (id): id is string => id !== null,
-  );
-  const companies = [...new Set([...named, ANY_OTHER])];
-  return possibleBuyers(companies).some(
-    (facts) => audienceAdmits(left, facts) && audienceAdmits(right, facts),
-  );
-}
-
-function possibleBuyers(companies: readonly string[]): PromotionAudienceFacts[] {
-  const buyers: PromotionAudienceFacts[] = [];
-  for (const buyerKind of BUYER_KINDS) {
-    buyers.push(buyer(null, null, null, buyerKind));
-    for (const companyId of companies) {
-      for (const status of ORDERING_STATUSES) {
-        for (const principal of [null, ...companies.filter((id) => id !== companyId)]) {
-          buyers.push(buyer(companyId, status, principal, buyerKind));
-        }
-      }
-    }
-  }
-  return buyers;
-}
-
-function buyer(
-  companyId: string | null,
-  companyStatus: StandingCompanyStatus | null,
-  principal: string | null,
-  buyerKind: PromotionBuyerKind,
-): PromotionAudienceFacts {
-  return {
-    companyId,
-    companyStatus,
-    principal: { companyId: principal },
-    buyerKind,
-    fulfillment: null,
-  };
-}
-
-/**
- * **Une commande peut-elle être servie d'une façon que les deux admettent ?**
- * Témoins (`promotions.md`, § 2.14) : chaque point et chaque zone
- * nommés, « un autre point », « une autre zone », « livraison sans zone ».
- */
-export function fulfillmentsMeet(left: PromotionFulfillment, right: PromotionFulfillment): boolean {
-  const points = [...listedPointsOf(left), ...listedPointsOf(right), ANY_OTHER];
-  const zones = [...listedZonesOf(left), ...listedZonesOf(right), ANY_OTHER];
-  const facts: FulfillmentFact[] = [
-    ...[...new Set(points)].map((pickupId): FulfillmentFact => ({ method: "pickup", pickupId })),
-    ...[...new Set(zones)].map((zoneId): FulfillmentFact => ({ method: "delivery", zoneId })),
-    { method: "delivery", zoneId: null },
-  ];
-  return facts.some((fact) => fulfillmentAdmits(left, fact) && fulfillmentAdmits(right, fact));
 }

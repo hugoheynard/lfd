@@ -1,5 +1,5 @@
 import {
-  minutesOfDay,
+  clockRangeCovers,
   STAFF_SUGGESTION_WEEKDAYS,
   type StaffSuggestionConditions,
   type StaffSuggestionPlacement,
@@ -164,8 +164,10 @@ export function plainConditions(conditions: SuggestionConditions): StaffSuggesti
   };
 }
 
-/** L'heure `HH:MM` est-elle dans la plage — début compris, fin exclue ? */
+/**
+ * L'heure `HH:MM` est-elle dans la plage — début compris, fin exclue ? Le
+ * juge est celui que les promotions à heures partagent (`clockRangeCovers`).
+ */
 export function hoursCover(hours: SuggestionHours, time: string): boolean {
-  const minute = minutesOfDay(time);
-  return minutesOfDay(hours.from) <= minute && minute < minutesOfDay(hours.to);
+  return clockRangeCovers({ start: hours.from, end: hours.to }, time);
 }

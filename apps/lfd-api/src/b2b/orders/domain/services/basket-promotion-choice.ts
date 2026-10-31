@@ -18,6 +18,7 @@ import {
   type BasketCandidate,
   type BasketPromotionApplied,
 } from "./basket-promotion-plan.js";
+import type { EndedBasketPromotion } from "./ended-basket-promotions.js";
 import { placedTermsOf } from "./frozen-discount-terms.js";
 import { eligibleSubtotalCents, type PricedLine } from "./pickup-discount-eligibility.js";
 
@@ -100,6 +101,12 @@ export interface BasketPromotionOutcome {
    * seulement s'il y en a : l'application le journalise (M7, 2026-10-31).
    */
   readonly beyondCap?: readonly string[];
+  /**
+   * Les remises à heures qui ont pris fin aujourd'hui et auraient touché ce
+   * panier (`plan-jours-et-heures.md`, § 8) — présent seulement s'il y en a :
+   * le devis le dit au client.
+   */
+  readonly ended?: readonly EndedBasketPromotion[];
 }
 
 export const NO_BASKET_PROMOTION: BasketPromotionOutcome = {

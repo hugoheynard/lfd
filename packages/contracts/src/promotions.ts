@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { weekdaySchema, type Weekday } from "./address.js";
+
 import type { PromotionOfferFulfillmentView } from "./promotion-offer.js";
 
 /**
@@ -77,6 +79,50 @@ const audienceTargetSchema = z.object({
 const reachIdsSchema = z.array(z.string().max(64)).max(200);
 
 /** L'acheminement : la forme seule ; « au moins un mode coché » est tenu par l'agrégat. */
+/**
+ * **Les instants qu'une promotion à jours et heures peut juger**
+ * (`documentation/promotions/plan-jours-et-heures.md`, § 6 Q1) : celui où le
+ * client commande, ou le début du créneau choisi (sa fin s'il n'a pas de début).
+ */
+export const PROMOTION_HOURS_MOMENT_VALUES = ["ordered_at", "handover_at"] as const;
+export type PromotionHoursMomentValue = (typeof PROMOTION_HOURS_MOMENT_VALUES)[number];
+
+/**
+ * Une plage de la semaine : des jours, une heure de début et une de fin, à la
+ * pendule de Paris. La FORME seulement — `HH:MM`, fin après début et plages
+ * disjointes un même jour sont jugés par le domaine, qui nomme le refus.
+ */
+const weeklyHoursWindowSchema = z.object({
+  weekdays: z.array(weekdaySchema).max(7),
+  start: z.string().max(5),
+  end: z.string().max(5),
+});
+
+/** Une condition de promotion ; toutes doivent tenir. */
+export const promotionConditionSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("min_quantity"), value: z.number().int() }),
+  z.object({
+    kind: z.literal("weekly_hours"),
+    moment: z.enum(PROMOTION_HOURS_MOMENT_VALUES),
+    /** Hors des heures, la boutique dit-elle les heures (Q2) ? */
+    announceOutside: z.boolean(),
+    windows: z.array(weeklyHoursWindowSchema).max(14),
+  }),
+]);
+/** Une condition, telle que la fiche la lit. */
+export type PromotionConditionView =
+  | { readonly kind: "min_quantity"; readonly value: number }
+  | {
+      readonly kind: "weekly_hours";
+      readonly moment: PromotionHoursMomentValue;
+      readonly announceOutside: boolean;
+      readonly windows: readonly {
+        readonly weekdays: readonly Weekday[];
+        readonly start: string;
+        readonly end: string;
+      }[];
+    };
+
 const fulfillmentSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("displayed_price") }),
   z.object({
@@ -149,9 +195,7 @@ export const promotionTermsPayloadSchema = z.object({
       )
       .max(500),
   }),
-  conditions: z
-    .array(z.object({ kind: z.literal("min_quantity"), value: z.number().int() }))
-    .max(10),
+  conditions: z.array(promotionConditionSchema).max(10),
 });
 export type PromotionTermsPayload = z.infer<typeof promotionTermsPayloadSchema>;
 
@@ -227,7 +271,7 @@ export interface PromotionView {
     readonly mode: "all_except" | "only";
     readonly rules: readonly PromotionScopeRuleView[];
   };
-  readonly conditions: readonly { readonly kind: "min_quantity"; readonly value: number }[];
+  readonly conditions: readonly PromotionConditionView[];
   /** Le résumé que le journal fige — identifiants compris. */
   readonly summary: string;
   readonly paused: { readonly at: string; readonly by: string } | null;

@@ -4,6 +4,7 @@ import {
   pickupOpenTo,
   preselectedPickupId,
   type CustomerAudience,
+  type LocalMoment,
 } from "@lfd/contracts";
 import type { PickupAddressView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
@@ -103,12 +104,17 @@ export class CartAdjustments {
    * 🔴 Depuis le lot L12 du plan des promotions, la remise est la promotion
    * panier du point retenu (`BasketPromotions.resolve`) : les colonnes de
    * remise du site ne sont plus lues pour le prix.
+   *
+   * `handoverAt` : le créneau choisi, que juge une promotion « au retrait »
+   * (`plan-jours-et-heures.md`, § 8) ; `null` sans créneau — le devis de la
+   * boutique —, et une promotion jugée au créneau ne s'applique pas.
    */
   async forPickup(
     pickupAddressId: string | null,
     lines: readonly BasketLine[],
     buyer: PickupBuyer,
     known: ReadonlyMap<string, OrderLineClassification> | null = null,
+    handoverAt: LocalMoment | null = null,
   ): Promise<ResolvedPickup> {
     const { audience, companyId } = buyer;
     const point =
@@ -134,6 +140,7 @@ export class CartAdjustments {
         fulfillment: { method: "pickup", pickupId: point.id },
       },
       known,
+      handoverAt,
     });
     return {
       point,
@@ -143,6 +150,7 @@ export class CartAdjustments {
       promotionId: served.promotionId,
       discountLabel: served.label,
       applied: served.applied,
+      ended: served.ended ?? [],
     };
   }
 
@@ -193,6 +201,7 @@ export class CartAdjustments {
     lines: readonly BasketLine[],
     buyer: PickupBuyer,
     known: ReadonlyMap<string, OrderLineClassification> | null = null,
+    handoverAt: LocalMoment | null = null,
   ): Promise<ResolvedDelivery> {
     const settings = await this.delivery.current();
     if (!deliveryOpenTo(settings, buyer.audience)) {
@@ -213,6 +222,7 @@ export class CartAdjustments {
         fulfillment: { method: "delivery", zoneId: zone.id },
       },
       known,
+      handoverAt,
     });
     return {
       zone,

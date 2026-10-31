@@ -1,0 +1,22 @@
+-- RETOUR ARRIÈRE de 20261101100000_les_heures_figees_des_remises
+-- (documentation/promotions/plan-jours-et-heures.md, § 11).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant n'écrit ni ne lit `weekly_hours` : la colonne reste à NULL
+-- sous lui, et le CHECK `order_discounts_weekly_hours_with_terms` ne refuse
+-- aucune de ses écritures. Le retour arrière est donc le retour du code
+-- seul ; ce fichier n'a rien à jouer.
+--
+-- ⚠️ Ce qui est PERDU au retour du code : rien en base. Une remise à heures
+-- posée entre-temps garde ses heures, que le code d'avant ignore — un
+-- changement de créneau ne serait plus jugé contre elles.
+--
+-- Retirer la colonne serait un resserrement, dans un déploiement ultérieur,
+-- sur décision de Hugo (une colonne morte reste en base) :
+--
+--   ALTER TABLE public.order_discounts
+--     DROP CONSTRAINT order_discounts_weekly_hours_with_terms;
+
+SELECT 1;

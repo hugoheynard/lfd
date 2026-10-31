@@ -32,6 +32,7 @@ import {
   OrderLineClassificationReader,
 } from "../../domain/ports/order-line-classification.reader.js";
 import { windowFitsPickup } from "../../domain/services/agreed-fulfillment.js";
+import { handoverMomentOf } from "../../domain/services/handover-moment.js";
 import {
   composeExactOrder,
   exactLineTtcsOf,
@@ -380,6 +381,9 @@ export class OrderComposition {
     buyer: PickupBuyer,
     known: ReadonlyMap<string, OrderLineClassification>,
   ): Promise<ResolvedFulfillment> {
+    // Le créneau choisi, que juge une promotion « au retrait » (plan jours et
+    // heures, § 8.3) — en révision aussi, mais le rejeu y remplace la remise.
+    const handoverAt = handoverMomentOf(content.requestedDeliveryDate, content.requestedWindow);
     if (content.fulfillmentMethod === "pickup") {
       // La remise vient du service PARTAGÉ avec le devis de la boutique.
       const retrait = await this.adjustments.forPickup(
@@ -387,6 +391,7 @@ export class OrderComposition {
         priced,
         buyer,
         known,
+        handoverAt,
       );
       // La tranche doit tenir dans l'UNE des fenêtres du point — jamais dans
       // leur union : entre le créneau pro et l'ouverture publique il peut y
@@ -413,7 +418,13 @@ export class OrderComposition {
     if (address === null) {
       throw new InvalidOrderFulfillmentError("Adresse de livraison requise en coursier.");
     }
-    const coursier = await this.adjustments.forDelivery(address.codePostal, priced, buyer, known);
+    const coursier = await this.adjustments.forDelivery(
+      address.codePostal,
+      priced,
+      buyer,
+      known,
+      handoverAt,
+    );
     // La promotion « en livraison » (L10), servie par la même source que celle
     // du retrait — rien sous l'ancien chemin, où la livraison n'en ouvrait aucune.
     const { discount } = coursier;

@@ -143,6 +143,7 @@ describe("promotionsAdmitted — fenêtre et pause à l'instant de la question",
       ],
       ASKED_AT,
       facts(),
+      null,
     );
     expect(kept.map((promotion) => promotion.id)).toEqual(["a", "d"]);
   });
@@ -157,17 +158,17 @@ describe("promotionsAdmitted — un public à plusieurs cibles (L8b, § 15.6)", 
   it("admet dès qu'UNE cible admet, et écarte quand aucune n'admet", () => {
     const registered = facts({ ...PARTICULIER, buyerKind: "registered" });
     const guest = facts({ ...PARTICULIER, buyerKind: "guest" });
-    expect(promotionsAdmitted([both], ASKED_AT, registered)).toHaveLength(1);
-    expect(promotionsAdmitted([both], ASKED_AT, facts())).toHaveLength(1);
-    expect(promotionsAdmitted([both], ASKED_AT, guest)).toHaveLength(0);
+    expect(promotionsAdmitted([both], ASKED_AT, registered, null)).toHaveLength(1);
+    expect(promotionsAdmitted([both], ASKED_AT, facts(), null)).toHaveLength(1);
+    expect(promotionsAdmitted([both], ASKED_AT, guest, null)).toHaveLength(0);
   });
 
   it("prend le rang le plus HAUT parmi les cibles qui admettent", () => {
     const mixed = livePromotion({
       audiences: [{ kind: "pros" }, { kind: "company", companyId: "co_1" }],
     });
-    const [forCo1] = promotionsAdmitted([mixed], ASKED_AT, facts());
-    const [forOther] = promotionsAdmitted([mixed], ASKED_AT, facts({ companyId: "co_2" }));
+    const [forCo1] = promotionsAdmitted([mixed], ASKED_AT, facts(), null);
+    const [forOther] = promotionsAdmitted([mixed], ASKED_AT, facts({ companyId: "co_2" }), null);
     expect(forCo1?.publicRank).toBe(4);
     expect(forOther?.publicRank).toBe(1);
   });
@@ -177,6 +178,7 @@ describe("promotionsAdmitted — un public à plusieurs cibles (L8b, § 15.6)", 
       [livePromotion({ audience: { kind: "pros_active" } })],
       ASKED_AT,
       facts(),
+      null,
     );
     expect(admitted?.publicRank).toBe(2);
   });
@@ -189,10 +191,14 @@ describe("promotionsAdmitted — un public à plusieurs cibles (L8b, § 15.6)", 
         pros: { fr: "Pros", en: "Pros EN", it: null },
       },
     });
-    const pro = promotionsAdmitted([labelled], ASKED_AT, facts())[0]?.servedLabel;
-    const individual = promotionsAdmitted([labelled], ASKED_AT, PARTICULIER)[0]?.servedLabel;
-    const unknown = promotionsAdmitted([labelled], ASKED_AT, facts({ companyStatus: "unknown" }))[0]
-      ?.servedLabel;
+    const pro = promotionsAdmitted([labelled], ASKED_AT, facts(), null)[0]?.servedLabel;
+    const individual = promotionsAdmitted([labelled], ASKED_AT, PARTICULIER, null)[0]?.servedLabel;
+    const unknown = promotionsAdmitted(
+      [labelled],
+      ASKED_AT,
+      facts({ companyStatus: "unknown" }),
+      null,
+    )[0]?.servedLabel;
     expect(pro).toEqual({ fr: "Pros", en: "Pros EN", it: "Pros" });
     expect(individual?.fr).toBe("Particuliers");
     expect(unknown?.fr).toBe("−20 % sur tout");

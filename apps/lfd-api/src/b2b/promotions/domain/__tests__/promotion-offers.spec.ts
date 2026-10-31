@@ -84,7 +84,7 @@ describe("offerCandidates — ce que le rayon peut mentionner", () => {
 
 describe("fulfillmentOffersFor — la mention sur un article", () => {
   it("mentionne une promotion dont la portée couvre l'article", () => {
-    expect(fulfillmentOffersFor([EN_RETRAIT], PAIN)).toEqual([
+    expect(fulfillmentOffersFor([EN_RETRAIT], PAIN, ASKED_AT)).toEqual([
       {
         promotionId: "retrait",
         effect: { kind: "percent", basisPoints: 2_000 },
@@ -103,7 +103,7 @@ describe("fulfillmentOffersFor — la mention sur un article", () => {
         delivery: { zones: ["zone_vallee"] },
       },
     });
-    expect(fulfillmentOffersFor([both], PAIN)).toEqual([
+    expect(fulfillmentOffersFor([both], PAIN, ASKED_AT)).toEqual([
       {
         promotionId: "point_zone",
         effect: { kind: "percent", basisPoints: 2_000 },
@@ -113,7 +113,7 @@ describe("fulfillmentOffersFor — la mention sur un article", () => {
   });
 
   it("ne mentionne jamais une promotion « dans le prix affiché » — elle baisse déjà le prix", () => {
-    expect(fulfillmentOffersFor([livePromotion({ id: "ligne" })], PAIN)).toEqual([]);
+    expect(fulfillmentOffersFor([livePromotion({ id: "ligne" })], PAIN, ASKED_AT)).toEqual([]);
   });
 
   it("ne mentionne pas un article que la portée exclut", () => {
@@ -127,7 +127,7 @@ describe("fulfillmentOffersFor — la mention sur un article", () => {
       },
     };
 
-    expect(fulfillmentOffersFor([excluded], PAIN)).toEqual([]);
+    expect(fulfillmentOffersFor([excluded], PAIN, ASKED_AT)).toEqual([]);
     expect(offersNeedProducts([excluded])).toBe(true);
     expect(offersNeedProducts([EN_RETRAIT])).toBe(false);
   });
@@ -135,7 +135,7 @@ describe("fulfillmentOffersFor — la mention sur un article", () => {
   it("ne mentionne pas un prix posé", () => {
     const posed = { ...EN_RETRAIT, effect: { kind: "fixed_unit_price" as const, millicents: 1 } };
 
-    expect(fulfillmentOffersFor([posed], PAIN)).toEqual([]);
+    expect(fulfillmentOffersFor([posed], PAIN, ASKED_AT)).toEqual([]);
   });
 });
 

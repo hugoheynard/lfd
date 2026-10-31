@@ -1,5 +1,11 @@
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { DeliveryReach, PickupReach } from "../../promotions/domain/promotion-fulfillment.js";
+import type { PromotionWeeklyHours } from "../../promotions/domain/promotion-weekly-hours.js";
+import {
+  weeklyHoursFromJson,
+  weeklyHoursRowOf,
+  type WeeklyHoursRow,
+} from "../../promotions/infrastructure/promotion-condition-rows.js";
 import type {
   FrozenDiscountTerms,
   FrozenTermsOrigin,
@@ -22,6 +28,8 @@ export interface FrozenTermsColumns {
   readonly fulfillmentPickupPoints: readonly string[];
   readonly fulfillmentDeliveryZones: readonly string[];
   readonly frozenTermsOrigin: string | null;
+  /** Les jours et heures figés (`jsonb`), `NULL` sans eux — plan jours et heures, § 11. */
+  readonly weeklyHours?: unknown;
 }
 
 export const FROZEN_TERMS_SELECT = {
@@ -32,6 +40,7 @@ export const FROZEN_TERMS_SELECT = {
   fulfillmentPickupPoints: true,
   fulfillmentDeliveryZones: true,
   frozenTermsOrigin: true,
+  weeklyHours: true,
 } as const;
 
 const UNKNOWN_TERMS = {
@@ -53,6 +62,8 @@ export function frozenTermsData(terms: FrozenDiscountTerms | null): {
   readonly fulfillmentPickupPoints: string[];
   readonly fulfillmentDeliveryZones: string[];
   readonly frozenTermsOrigin: string | null;
+  /** Absent = `NULL` : pas de jours ni d'heures. */
+  readonly weeklyHours?: WeeklyHoursRow;
 } {
   if (terms === null) {
     return { ...UNKNOWN_TERMS, fulfillmentPickupPoints: [], fulfillmentDeliveryZones: [] };
@@ -65,6 +76,7 @@ export function frozenTermsData(terms: FrozenDiscountTerms | null): {
     fulfillmentPickupPoints: typeof terms.pickup === "object" ? [...terms.pickup.points] : [],
     fulfillmentDeliveryZones: typeof terms.delivery === "object" ? [...terms.delivery.zones] : [],
     frozenTermsOrigin: terms.origin,
+    ...(terms.hours === null ? {} : { weeklyHours: weeklyHoursRowOf(terms.hours) }),
   };
 }
 
@@ -100,7 +112,19 @@ export function frozenTermsOf(
     pickup: pickupOf(discountId, row.fulfillmentPickup, row.fulfillmentPickupPoints),
     delivery: deliveryOf(discountId, row.fulfillmentDelivery, row.fulfillmentDeliveryZones),
     origin: originOf(discountId, row.frozenTermsOrigin),
+    hours: hoursOf(discountId, row.weeklyHours),
   };
+}
+
+function hoursOf(discountId: string, value: unknown): PromotionWeeklyHours | null {
+  if (value === null || value === undefined) {
+    return null;
+  }
+  const hours = weeklyHoursFromJson(value);
+  if (hours === null) {
+    throw new FrozenTermsUnreadableError(discountId, "jours et heures");
+  }
+  return hours;
 }
 
 function originOf(discountId: string, value: string): FrozenTermsOrigin {

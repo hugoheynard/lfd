@@ -11,6 +11,7 @@ import type {
   BasketPromotionApplied,
   BasketPromotionOutcome,
 } from "../../domain/services/basket-promotion-choice.js";
+import type { EndedBasketPromotion } from "../../domain/services/ended-basket-promotions.js";
 import type { PromotionBuyerKind } from "../../../promotions/domain/promotion-targeting.js";
 import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 
@@ -55,6 +56,8 @@ export interface ResolvedPickup {
    * deux, les champs ci-dessus disent le total (cf. `BasketPromotionOutcome`).
    */
   readonly applied: readonly BasketPromotionApplied[];
+  /** Les remises à heures finies aujourd'hui qui auraient touché ce panier (§ 8 du plan jours et heures). */
+  readonly ended: readonly EndedBasketPromotion[];
 }
 
 /** La zone déduite du code postal, et ce qu'elle ajoute au panier. */
