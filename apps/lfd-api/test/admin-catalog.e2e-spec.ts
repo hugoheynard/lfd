@@ -882,6 +882,38 @@ describe("GET /admin/catalog/published", () => {
     expect(variant?.pro.state).toBe("en_vente");
     expect(variant?.public.state).toBe("masque");
   });
+
+  it("sert l'unité de vente de chaque déclinaison en vente", async () => {
+    const variant = (await published()).entries[0]?.variants[0];
+
+    expect(variant?.saleUnit).toBe("piece");
+  });
+
+  it("sert le chemin de familles de la fiche, sa famille puis ses parentes", async () => {
+    const base = snapshot(millicentsFromCents(200));
+    await deliverAsFacts(
+      ctx,
+      {
+        ...base,
+        categories: [
+          {
+            id: "fam-matin",
+            name: "Le matin",
+            slug: "le-matin",
+            parentId: null,
+            position: 0,
+            vatRatePercent: 5.5,
+          },
+          ...base.categories.map((category) => ({ ...category, parentId: "fam-matin" })),
+        ],
+      },
+      { alone: true },
+    );
+
+    const entry = (await published()).entries.find((e) => e.productId === "prd_1");
+
+    expect(entry?.categoryPath).toEqual(["fam-vien", "fam-matin"]);
+  });
 });
 
 /**

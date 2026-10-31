@@ -32,6 +32,7 @@ export function entry(
     productSku: productId,
     name,
     categoryId,
+    categoryPath: [categoryId],
     status,
     audience: 'both',
     audienceInherited: true,

@@ -38,6 +38,7 @@ function item(over: Partial<PublishedItemRow>): PublishedItemRow {
     name: "Croissant",
     categoryId: "fam-feuillete",
     isDefault: true,
+    saleUnit: "piece",
     position: 0,
     audience: "both",
     publicReviewPending: false,
@@ -108,9 +109,30 @@ const SOURCE: PublishedCatalogSource = {
     }),
   ],
   families: [
-    { id: "fam-boulange", name: "Pains", position: 2, audience: "both", withdrawn: false },
-    { id: "fam-feuillete", name: "Viennoiseries", position: 1, audience: "pro", withdrawn: false },
-    { id: "fam-sans-fiche", name: "Vide", position: 3, audience: "both", withdrawn: false },
+    {
+      id: "fam-boulange",
+      name: "Pains",
+      parentId: null,
+      position: 2,
+      audience: "both",
+      withdrawn: false,
+    },
+    {
+      id: "fam-feuillete",
+      name: "Viennoiseries",
+      parentId: null,
+      position: 1,
+      audience: "pro",
+      withdrawn: false,
+    },
+    {
+      id: "fam-sans-fiche",
+      name: "Vide",
+      parentId: null,
+      position: 3,
+      audience: "both",
+      withdrawn: false,
+    },
   ],
 };
 
@@ -136,6 +158,7 @@ describe("publishedCatalogViewOf", () => {
         name: "Croissant",
         onSale: true,
         isDefault: true,
+        saleUnit: "piece",
         gaps: [],
         reviewPending: { pro: false, public: false },
         pro: { state: "en_vente", htMillicents: 120_000 },
@@ -151,6 +174,7 @@ describe("publishedCatalogViewOf", () => {
         name: null,
         onSale: false,
         isDefault: false,
+        saleUnit: null,
         gaps: ["price", "allergens"],
         reviewPending: { pro: false, public: false },
         pro: { state: "incomplet", htMillicents: null },
@@ -226,5 +250,26 @@ describe("publishedCatalogViewOf", () => {
 
     expect(variant?.pro).toEqual({ state: "incomplet", htMillicents: null });
     expect(variant?.public).toEqual({ state: "en_vente", ttcCents: 180 });
+  });
+
+  it("sert le chemin de familles de chaque fiche, la plus proche en tête", () => {
+    const nested = publishedCatalogViewOf({
+      ...SOURCE,
+      families: SOURCE.families.map((family) =>
+        family.id === "fam-feuillete" ? { ...family, parentId: "fam-boulange" } : family,
+      ),
+    });
+    const croissant = nested.entries.find((e) => e.productSku === "VIE-1");
+    expect(croissant?.categoryPath).toEqual(["fam-feuillete", "fam-boulange"]);
+    expect(nested.entries.find((e) => e.productSku === "PAI-1")?.categoryPath).toEqual([
+      "fam-boulange",
+    ]);
+  });
+
+  it("sert l'unité de vente d'un article en vente, rien pour une déclinaison non vendue", () => {
+    const weighed = publishedCatalogViewOf({ ...SOURCE, items: [item({ saleUnit: "weight" })] });
+    const croissant = weighed.entries.find((e) => e.productSku === "VIE-1");
+    expect(croissant?.variants.find((v) => v.sku === "VIE-1-1")?.saleUnit).toBe("weight");
+    expect(view.entries.find((e) => e.productSku === "VIE-2")?.variants[0]?.saleUnit).toBeNull();
   });
 });

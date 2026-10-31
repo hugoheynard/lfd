@@ -42,6 +42,11 @@
       "types": "./src/product-path.ts",
       "import": "./dist/product-path.js",
       "require": "./dist/product-path.js"
+    },
+    "./promotion-scope": {
+      "types": "./src/promotion-scope.ts",
+      "import": "./dist/promotion-scope.js",
+      "require": "./dist/promotion-scope.js"
     }
   },
   "private": true,

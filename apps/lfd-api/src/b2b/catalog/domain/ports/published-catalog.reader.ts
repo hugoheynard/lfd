@@ -1,4 +1,5 @@
 import type { CatalogEntryStatus, EntryVariant } from "../catalog-product-facts.js";
+import type { CatalogSaleUnit } from "../entities/catalog-item.js";
 import type { CatalogAudience } from "../served-to.js";
 
 /** Une fiche reçue du référentiel (`catalog_entries`). */
@@ -25,6 +26,7 @@ export interface PublishedItemRow {
   readonly name: string;
   readonly categoryId: string;
   readonly isDefault: boolean;
+  readonly saleUnit: CatalogSaleUnit;
   readonly position: number;
   readonly audience: CatalogAudience | null;
   readonly publicReviewPending: boolean;
@@ -44,6 +46,8 @@ export interface PublishedItemRow {
 export interface PublishedFamilyRow {
   readonly id: string;
   readonly name: string;
+  /** La famille mère — `null` à la racine. */
+  readonly parentId: string | null;
   readonly position: number;
   readonly audience: CatalogAudience | null;
   readonly withdrawn: boolean;

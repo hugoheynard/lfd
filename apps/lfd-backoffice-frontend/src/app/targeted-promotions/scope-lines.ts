@@ -1,7 +1,10 @@
 import type { PromotionScopeTargetValue } from '@lfd/contracts';
 
 import type { ScopeArticle } from './catalogue-choices';
-import { targetsFor, type PromotionDraft, type PromotionScopeRuleDraft } from './promotion-draft';
+import type { PromotionDraft, PromotionScopeRuleDraft } from './promotion-draft';
+import { exceptionTarget } from './scope-count';
+
+export { covers, coveredCount, exceptionTarget, lineChoiceIds } from './scope-count';
 
 /**
  * **La portée d'une promotion, rangée par famille** — la carte « Sur quels
@@ -22,23 +25,17 @@ export function modeSense(mode: PromotionDraft['scopeMode']): boolean {
   return mode === 'only';
 }
 
-/** La cible des « Sauf » d'une ligne : la déclinaison au prix affiché, le produit au panier. */
-export function exceptionTarget(draft: PromotionDraft): 'product' | 'variant' {
-  return targetsFor(draft.fulfillmentKind).includes('variant') ? 'variant' : 'product';
-}
-
-/** La famille directe de l'article qu'une règle produit ou déclinaison vise ; `null` sinon. */
-export function familyOfRule(
+/** L'article qu'une règle produit ou déclinaison vise ; `undefined` sinon. */
+function articleOfRule(
   rule: PromotionScopeRuleDraft,
   articles: readonly ScopeArticle[],
-): string | null {
+): ScopeArticle | undefined {
   if (rule.target === 'category') {
-    return null;
+    return undefined;
   }
-  const article = articles.find((entry) =>
+  return articles.find((entry) =>
     rule.target === 'variant' ? entry.sku === rule.targetId : entry.productId === rule.targetId,
   );
-  return article?.familyId ?? null;
 }
 
 export interface FamilyLine {
@@ -57,23 +54,36 @@ export interface ScopeLayout {
   readonly apart: readonly PromotionScopeRuleDraft[];
 }
 
-/** Une règle produit/déclinaison est-elle un « Sauf » de cette famille ? */
+/** Les familles qui font ligne : réglées dans le sens du mode. */
+function headIds(draft: PromotionDraft): readonly string[] {
+  const sense = modeSense(draft.scopeMode);
+  return draft.rules
+    .filter((rule) => rule.target === 'category' && rule.eligible === sense)
+    .map((rule) => rule.targetId);
+}
+
+/**
+ * Une règle produit/déclinaison est-elle un « Sauf » de cette famille ? Son
+ * article est dans la famille ou une de ses sous-familles, et aucune ligne
+ * plus proche de lui ne le range — la famille la plus proche l'emporte,
+ * comme au moteur.
+ */
 function ownedBy(
   rule: PromotionScopeRuleDraft,
   line: { readonly familyId: string; readonly eligible: boolean },
-  target: 'product' | 'variant',
+  draft: PromotionDraft,
   articles: readonly ScopeArticle[],
 ): boolean {
-  return (
-    rule.target === target &&
-    rule.eligible !== line.eligible &&
-    familyOfRule(rule, articles) === line.familyId
-  );
+  if (rule.target !== exceptionTarget(draft) || rule.eligible === line.eligible) {
+    return false;
+  }
+  const heads = new Set([...headIds(draft), line.familyId]);
+  const path = articleOfRule(rule, articles)?.categoryPath ?? [];
+  return path.find((familyId) => heads.has(familyId)) === line.familyId;
 }
 
 export function scopeLayout(draft: PromotionDraft, articles: readonly ScopeArticle[]): ScopeLayout {
   const sense = modeSense(draft.scopeMode);
-  const target = exceptionTarget(draft);
   const families = draft.rules.filter((rule) => rule.target === 'category');
   const heads = families.filter((rule) => rule.eligible === sense);
   const lines = heads.map((rule) => ({
@@ -81,13 +91,13 @@ export function scopeLayout(draft: PromotionDraft, articles: readonly ScopeArtic
     eligible: rule.eligible,
     exceptionIds: draft.rules
       .filter((candidate) =>
-        ownedBy(candidate, { familyId: rule.targetId, eligible: sense }, target, articles),
+        ownedBy(candidate, { familyId: rule.targetId, eligible: sense }, draft, articles),
       )
       .map((candidate) => candidate.targetId),
   }));
   const owned = (rule: PromotionScopeRuleDraft) =>
     heads.some((head) =>
-      ownedBy(rule, { familyId: head.targetId, eligible: sense }, target, articles),
+      ownedBy(rule, { familyId: head.targetId, eligible: sense }, draft, articles),
     );
   return {
     lines,
@@ -127,14 +137,13 @@ export function withoutFamilyLine(
   articles: readonly ScopeArticle[],
 ): PromotionDraft {
   const line = { familyId, eligible: modeSense(draft.scopeMode) };
-  const target = exceptionTarget(draft);
   return replaceRules(
     draft,
     (rule) =>
       (rule.target === 'category' &&
         rule.targetId === familyId &&
         rule.eligible === line.eligible) ||
-      ownedBy(rule, line, target, articles),
+      ownedBy(rule, line, draft, articles),
     [],
   );
 }
@@ -150,7 +159,7 @@ export function withFamilyExceptions(
   const target = exceptionTarget(draft);
   return replaceRules(
     draft,
-    (rule) => ownedBy(rule, line, target, articles),
+    (rule) => ownedBy(rule, line, draft, articles),
     ids.map((targetId) => ({ target, targetId, eligible: !line.eligible })),
   );
 }
@@ -204,58 +213,4 @@ export function withScopeModeLines(
       return flipped.has(rule) ? { ...rule, eligible: !rule.eligible } : rule;
     }),
   };
-}
-
-/** Ce qu'il faut d'un article pour juger s'il est concerné ; `sku: null` = le produit entier. */
-interface Facts {
-  readonly sku: string | null;
-  readonly productId: string;
-  readonly familyId: string;
-}
-
-/**
- * **L'article est-il concerné ?** — la règle du moteur
- * (`apps/lfd-api/src/b2b/promotions/domain/promotion-scope.ts`,
- * `promotionScopeMatch`, relu le 2026-10-31) : déclinaison > produit >
- * famille > mode. Deux écarts, faute de données servies : seule la famille
- * DIRECTE est connue (pas de chemin de parentes), et l'unité de vente ne l'est
- * pas (au prix affiché, le moteur n'étend pas famille ni mode à un article au
- * poids).
- */
-export function covers(draft: PromotionDraft, facts: Facts): boolean {
-  const find = (target: PromotionScopeTargetValue, id: string | null) =>
-    id === null
-      ? undefined
-      : draft.rules.find((rule) => rule.target === target && rule.targetId === id);
-  const decided =
-    find('variant', facts.sku) ??
-    find('product', facts.productId) ??
-    find('category', facts.familyId);
-  return decided === undefined ? draft.scopeMode === 'all_except' : decided.eligible;
-}
-
-/** Les articles comptés, dans l'unité du genre : la déclinaison, ou le produit. */
-function countedFacts(draft: PromotionDraft, articles: readonly ScopeArticle[]): Facts[] {
-  if (exceptionTarget(draft) === 'variant') {
-    return articles.map(({ sku, productId, familyId }) => ({ sku, productId, familyId }));
-  }
-  const seen = new Map<string, Facts>();
-  for (const { productId, familyId } of articles) {
-    if (!seen.has(productId)) {
-      seen.set(productId, { sku: null, productId, familyId });
-    }
-  }
-  return [...seen.values()];
-}
-
-/** « N concernés sur M », toutes familles, ou celle d'une ligne. */
-export function coveredCount(
-  draft: PromotionDraft,
-  articles: readonly ScopeArticle[],
-  familyId: string | null = null,
-): { readonly covered: number; readonly total: number } {
-  const facts = countedFacts(draft, articles).filter(
-    (fact) => familyId === null || fact.familyId === familyId,
-  );
-  return { covered: facts.filter((fact) => covers(draft, fact)).length, total: facts.length };
 }

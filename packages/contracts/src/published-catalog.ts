@@ -1,4 +1,5 @@
 import type { CatalogItemAudience } from "./catalog-admin.js";
+import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **La vue « Catalogue publié »** (`GET admin/catalog/published`) — lot 3 de
@@ -69,6 +70,13 @@ export interface PublishedVariantView {
   /** Une ligne en vente sur la plateforme (`catalog_items`) — sinon lue du fait. */
   readonly onSale: boolean;
   readonly isDefault: boolean;
+  /**
+   * L'unité de vente de l'article en vente (`catalog_items.sale_unit`) ;
+   * `null` = déclinaison que la plateforme ne vend pas, unité inconnue.
+   * Au prix affiché, une promotion par famille ou par mode n'atteint pas un
+   * article au poids (`@lfd/contracts/promotion-scope`).
+   */
+  readonly saleUnit: OrderSaleUnit | null;
   /** Ce qui lui manque (`[]` = rien) — les codes du référentiel (`price`, `allergens`, `vat:b2b`…). */
   readonly gaps: readonly string[];
   /** En attente de validation, par audience (`true` = pas encore servie à elle). */
@@ -83,6 +91,12 @@ export interface PublishedEntryView {
   readonly productSku: string;
   readonly name: string;
   readonly categoryId: string;
+  /**
+   * La famille puis ses parentes, la plus proche en tête — la forme de
+   * `PromotionScopeFacts.categoryPath` : une règle posée sur une parente
+   * couvre la fiche. Une parente inconnue du miroir arrête la remontée.
+   */
+  readonly categoryPath: readonly string[];
   readonly status: PublishedEntryStatus;
   /** L'audience EFFECTIVE de la fiche (sa dérogation, sinon sa famille). */
   readonly audience: CatalogItemAudience;

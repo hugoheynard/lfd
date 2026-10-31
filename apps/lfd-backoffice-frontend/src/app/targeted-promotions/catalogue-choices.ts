@@ -84,14 +84,17 @@ export function withRuleTargets(
 
 /**
  * **Un article du catalogue publié, rattaché à sa famille** — ce que la carte
- * « Sur quels articles ? » compte et range par famille. `familyId` est la
- * famille DIRECTE de la fiche : la vue publiée ne sert pas le chemin des
- * familles parentes (vérifié le 2026-10-31, `PublishedEntryView.categoryId`).
+ * « Sur quels articles ? » compte et range par famille.
  */
 export interface ScopeArticle {
   readonly sku: string;
   readonly productId: string;
+  /** La famille DIRECTE de la fiche. */
   readonly familyId: string;
+  /** La famille puis ses parentes, la plus proche en tête (`PromotionScopeFacts`). */
+  readonly categoryPath: readonly string[];
+  /** `null` = déclinaison que la plateforme ne vend pas : unité inconnue. */
+  readonly saleUnit: 'piece' | 'weight' | null;
 }
 
 /** Les articles proposables — mêmes filtres que {@link catalogueChoicesOf}. */
@@ -106,6 +109,8 @@ export function scopeArticlesOf(view: PublishedCatalogView): ScopeArticle[] {
         sku: variant.sku,
         productId: entry.productId,
         familyId: entry.categoryId,
+        categoryPath: entry.categoryPath,
+        saleUnit: variant.saleUnit,
       })),
     );
 }

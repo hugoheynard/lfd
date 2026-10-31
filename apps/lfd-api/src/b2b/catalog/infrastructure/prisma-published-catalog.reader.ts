@@ -10,6 +10,7 @@ import {
 } from "../domain/ports/published-catalog.reader.js";
 import { catalogAudienceOf } from "../domain/served-to.js";
 import { publicByContextOf } from "./public-by-context.js";
+import { saleUnitOf } from "./catalog-sale-unit.js";
 import { STILL_SOLD } from "./sellable-filter.js";
 import { DECISION_COLUMNS } from "./catalog-decision-columns.js";
 
@@ -23,6 +24,7 @@ interface ItemRow {
   readonly name: string;
   readonly categoryId: string;
   readonly isDefault: boolean;
+  readonly saleUnit: string;
   readonly position: number;
   readonly audience: string | null;
   readonly publicReviewPending: boolean;
@@ -76,6 +78,7 @@ export class PrismaPublishedCatalogReader extends PublishedCatalogReader {
       families: families.map((family) => ({
         id: family.id,
         name: family.name,
+        parentId: family.parentId,
         position: family.position,
         audience: catalogAudienceOf(family.audience),
         withdrawn: family.withdrawnAt !== null,
@@ -92,6 +95,7 @@ function toItem(row: ItemRow): PublishedItemRow {
     name: row.name,
     categoryId: row.categoryId,
     isDefault: row.isDefault,
+    saleUnit: saleUnitOf(row.sku, row.saleUnit),
     position: row.position,
     audience: catalogAudienceOf(row.audience),
     publicReviewPending: row.publicReviewPending,

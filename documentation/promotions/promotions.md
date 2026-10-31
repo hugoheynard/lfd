@@ -791,6 +791,13 @@ promotions à la bascule (L12), qui les ont remplacées.
 
 ## Limites connues et reste à faire
 
+- **La règle de portée vit en une seule copie** (2026-10-31) :
+  `packages/contracts/src/promotion-scope.ts`, importée par le sous-chemin
+  `@lfd/contracts/promotion-scope` (sans zod) ; le domaine des promotions la
+  réexporte, le compteur du back-office (`targeted-promotions/scope-count.ts`)
+  la rejoue avec le chemin de familles et l'unité de vente que le catalogue
+  publié de l'admin sert désormais. Une déclinaison non vendue (`saleUnit`
+  nul) ne compte au prix affiché que si une règle la nomme.
 - **Pourcentages et articles au poids** (décision de Hugo, 2026-10-31, à
   bâtir) : au point ligne, une promotion en **pourcentage** s'étendra aux
   articles vendus au poids par sa famille et par « tout sauf » — **toutes**

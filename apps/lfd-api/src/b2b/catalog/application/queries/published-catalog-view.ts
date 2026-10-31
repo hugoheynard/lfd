@@ -6,6 +6,7 @@ import type {
   PublishedShelfView,
   PublishedVariantView,
 } from "@lfd/contracts";
+import { categoryPathOf } from "@lfd/catalog-sync";
 
 import type {
   PublishedCatalogSource,
@@ -37,10 +38,14 @@ const SHOP_AUDIENCES: readonly ShopAudience[] = ["pro", "public"];
 export function publishedCatalogViewOf(source: PublishedCatalogSource): PublishedCatalogView {
   const itemsByProduct = groupBy(source.items, (item) => item.productId);
   const familyOf = new Map(source.families.map((family) => [family.id, family]));
+  const pathOf = (familyId: string) => categoryPathOf(source.families, familyId);
   const entries = [...source.entries, ...pushedEntriesOf(source.entries, itemsByProduct)]
     .sort((a, b) => familyRank(familyOf, a) - familyRank(familyOf, b))
     .map((entry) =>
-      entryViewOf(entry, itemsByProduct.get(entry.productId) ?? [], familyOf.get(entry.categoryId)),
+      entryViewOf(entry, itemsByProduct.get(entry.productId) ?? [], {
+        family: familyOf.get(entry.categoryId),
+        categoryPath: pathOf(entry.categoryId),
+      }),
     );
   return {
     shelves: shelvesOf(source.families, entries),
@@ -90,7 +95,10 @@ function pushedEntryOf(
 function entryViewOf(
   entry: PublishedEntryRow,
   items: readonly PublishedItemRow[],
-  family: PublishedFamilyRow | undefined,
+  lineage: {
+    readonly family: PublishedFamilyRow | undefined;
+    readonly categoryPath: readonly string[];
+  },
 ): PublishedEntryView {
   const onSale = items.map((item) => onSaleViewOf(entry, item));
   const listed = new Set(onSale.map((variant) => variant.sku));
@@ -108,10 +116,11 @@ function entryViewOf(
     productSku: entry.productSku,
     name: entry.name,
     categoryId: entry.categoryId,
+    categoryPath: lineage.categoryPath,
     status: entry.status,
     audience: entry.audience,
     audienceInherited: entry.audienceInherited,
-    familyAudience: family?.audience ?? null,
+    familyAudience: lineage.family?.audience ?? null,
     variants: [...onSale, ...proposed, ...incomplete],
     receivedAt: entry.receivedAt.toISOString(),
   };
@@ -147,6 +156,7 @@ function onSaleViewOf(entry: PublishedEntryRow, item: PublishedItemRow): Publish
     name: item.name,
     onSale: true,
     isDefault: item.isDefault,
+    saleUnit: item.saleUnit,
     gaps: [...gaps],
     reviewPending: reviewPendingOf(item),
     pro: { state: publishedCellOf("pro", input), htMillicents: item.proHtMillicents },
@@ -162,6 +172,7 @@ function proposedViewOf(entry: PublishedEntryRow, variant: EntryVariant): Publis
     name: variant.name,
     onSale: false,
     isDefault: variant.isDefault,
+    saleUnit: null,
     gaps: [],
     reviewPending: { pro: false, public: false },
     pro: { state: publishedCellOf("pro", input), htMillicents: variant.proHtMillicents },
@@ -181,6 +192,7 @@ function incompleteViewOf(
     name: null,
     onSale: false,
     isDefault: false,
+    saleUnit: null,
     gaps: [...gaps],
     reviewPending: { pro: false, public: false },
     pro: { state: publishedCellOf("pro", input), htMillicents: null },

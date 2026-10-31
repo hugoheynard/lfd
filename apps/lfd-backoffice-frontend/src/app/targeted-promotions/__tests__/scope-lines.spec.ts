@@ -6,6 +6,7 @@ import { draftSummary } from '../promotion-summary';
 import { promotionView } from '../promotion.testing';
 import {
   coveredCount,
+  lineChoiceIds,
   scopeLayout,
   withApartTargets,
   withFamilyExceptions,
@@ -14,11 +15,18 @@ import {
   withScopeModeLines,
 } from '../scope-lines';
 
+const article = (
+  sku: string,
+  productId: string,
+  categoryPath: readonly [string, ...string[]],
+  saleUnit: ScopeArticle['saleUnit'] = 'piece',
+): ScopeArticle => ({ sku, productId, familyId: categoryPath[0], categoryPath, saleUnit });
+
 const ARTICLES: readonly ScopeArticle[] = [
-  { sku: 'N70-1', productId: 'p_noir', familyId: 'c_choc' },
-  { sku: 'N70-2', productId: 'p_noir', familyId: 'c_choc' },
-  { sku: 'L-1', productId: 'p_lait', familyId: 'c_choc' },
-  { sku: 'CR-1', productId: 'p_croi', familyId: 'c_vien' },
+  article('N70-1', 'p_noir', ['c_choc']),
+  article('N70-2', 'p_noir', ['c_choc']),
+  article('L-1', 'p_lait', ['c_choc']),
+  article('CR-1', 'p_croi', ['c_vien']),
 ];
 const NAMES = new Map([
   ['c_choc', 'Chocolaterie'],
@@ -136,5 +144,58 @@ describe('la portée rangée par famille', () => {
     expect(termsOf(draft).scope.rules).toEqual(
       rules.map(({ target, targetId, eligible }) => ({ target, targetId, eligible })),
     );
+  });
+});
+
+/** Une famille parente (`c_epicerie` ⊃ `c_choc`) et un article au poids. */
+const TREE: readonly ScopeArticle[] = [
+  article('N70-1', 'p_noir', ['c_choc', 'c_epicerie']),
+  article('L-1', 'p_lait', ['c_choc', 'c_epicerie']),
+  article('MIEL-1', 'p_miel', ['c_epicerie']),
+  article('COMTE-KG', 'p_comte', ['c_cremerie'], 'weight'),
+  article('CR-1', 'p_croi', ['c_vien']),
+];
+
+describe('le compte suit la règle du moteur', () => {
+  it('une famille parente couvre les articles de ses sous-familles', () => {
+    const only = withScopeModeLines(atLine(), 'only', TREE);
+    const draft = withFamilyLine(only, 'c_epicerie');
+    expect(coveredCount(draft, TREE)).toEqual({ covered: 3, total: 5 });
+    expect(coveredCount(draft, TREE, 'c_epicerie')).toEqual({ covered: 3, total: 3 });
+  });
+
+  it('un « Sauf » sous une sous-famille se range dans la ligne de la parente', () => {
+    const draft = withFamilyExceptions(
+      withFamilyLine(atLine(), 'c_epicerie'),
+      'c_epicerie',
+      ['N70-1'],
+      TREE,
+    );
+    const layout = scopeLayout(draft, TREE);
+    expect(layout.lines).toEqual([
+      { familyId: 'c_epicerie', eligible: false, exceptionIds: ['N70-1'] },
+    ]);
+    expect(layout.apart).toEqual([]);
+  });
+
+  it('au prix affiché, le mode n’atteint pas un article au poids — sa déclinaison, si', () => {
+    // « tout sauf rien » : quatre articles à la pièce, pas le comté au poids.
+    expect(coveredCount(atLine(), TREE)).toEqual({ covered: 4, total: 5 });
+    const named = withApartTargets(atLine(), 'variant', true, ['COMTE-KG'], TREE);
+    expect(coveredCount(named, TREE)).toEqual({ covered: 5, total: 5 });
+  });
+
+  it('au panier, l’unité de vente ne joue pas', () => {
+    const basket = { ...emptyDraft('2026-11-02', 'pk'), rules: [] };
+    expect(coveredCount(basket, TREE)).toEqual({ covered: 5, total: 5 });
+  });
+
+  it('une déclinaison non vendue (unité inconnue) n’est pas comptée sur la foi du mode', () => {
+    const unknown = [article('NEW-1', 'p_new', ['c_vien'], null)];
+    expect(coveredCount(atLine(), unknown)).toEqual({ covered: 0, total: 1 });
+  });
+
+  it('les « Sauf » proposés par une ligne parente viennent aussi des sous-familles', () => {
+    expect(lineChoiceIds(atLine(), TREE, 'c_epicerie')).toEqual(['N70-1', 'L-1', 'MIEL-1']);
   });
 });

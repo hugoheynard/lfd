@@ -76,6 +76,7 @@ import {
 import {
   coveredCount,
   exceptionTarget,
+  lineChoiceIds,
   scopeLayout,
   withApartTargets,
   withFamilyExceptions,
@@ -300,16 +301,9 @@ export class PromotionPage {
   protected readonly familyLines = computed(() => {
     const draft = this.draft();
     const only = draft.scopeMode === 'only';
-    const target = exceptionTarget(draft);
     const names = this.names();
     return this.layout().lines.map((line) => {
-      const ids = [
-        ...new Set(
-          this.articles()
-            .filter((article) => article.familyId === line.familyId)
-            .map((article) => (target === 'variant' ? article.sku : article.productId)),
-        ),
-      ];
+      const ids = lineChoiceIds(draft, this.articles(), line.familyId);
       const { covered } = coveredCount(draft, this.articles(), line.familyId);
       return {
         familyId: line.familyId,
