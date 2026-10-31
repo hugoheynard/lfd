@@ -123,3 +123,38 @@ sans identité, `b2bPending`, `b2c`).
 - L'export propose alors : « Pros (société active) », « Pros en cours
   d'inscription », « Particuliers inscrits », « Particuliers sans compte »,
   ou « Une société précise ».
+
+## 8. Après vitruve (2026-10-31) — fait foi sur le § 7
+
+1. **Un objet opaque, pas un nouveau `PricedBuyerKind`** : une chaîne de
+   l'union s'écrirait depuis n'importe quelle route. `TypicalBuyer`, classe
+   à constructeur privé, fabrique dans le module d'export ; la porte du prix
+   reçoit `buyer: Real | Typical` (union discriminée) ; une porte d'import
+   garantit que seul `pricing/application/price-grid-*` importe la fabrique.
+2. **Des faits construits en amont**, sans passer par
+   `PromotionAudienceFactsResolver` (qui rend « particulier » sans société,
+   avant de lire le statut) ; les deux ternaires (`line-promotion-supply.ts`,
+   `shelf-promotion-offers.ts`) deviennent des `switch` exhaustifs.
+3. **Les ports de la grille prennent un lecteur, pas un `companyId`** :
+   `PRO_ANONYMOUS_VIEWER` (`catalog/domain/catalog-viewer.ts`) pour un pro
+   type — tarif pro HT, sans mercuriale ni tarif de canal, sans article
+   réservé.
+4. **Une seule définition du pro type** : `TYPICAL_BUYER` sort de
+   `pickup-discount-announcement.ts` vers `promotion-targeting.ts`, lue par
+   l'annonce d'un point et par la grille.
+5. **Seulement deux clientèles types** : `pro_active`, `pro_pending` — les
+   particuliers ont déjà leur vrai `buyerKind` sans société
+   (`price-grid-context.ts`). Les deux pros ont le même tarif (`pending` vaut
+   `pro`) et ne diffèrent que par les promotions qui les visent : à écrire
+   dans l'en-tête.
+6. **L'en-tête d'un pro type dit ses limites** : « hors conditions
+   négociées, hors remises réservées à une société et ses sites, hors
+   articles réservés, hors remises jugées au créneau ».
+7. **`lens`** : `unproven` pour un pro type (projection) ; `measured` pour
+   une société précise (son prix réel, engagements compris) — dit dans
+   l'en-tête.
+
+**Signalé à Hugo, hors lot** : `GET /pickup-addresses` est public et annonce
+la remise du « pro actif type » d'un point à tout visiteur
+(`promotion-pickup-discount.announcer.ts`) ; décision du 2026-10-15 à
+confirmer (publier la remise pro d'un point est-il voulu ?).
