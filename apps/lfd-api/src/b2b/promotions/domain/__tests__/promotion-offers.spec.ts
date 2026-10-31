@@ -29,7 +29,11 @@ const EN_RETRAIT = livePromotion({
 
 const PAIN = { sku: "PAIN-1", productId: "prod_pain", categoryPath: ["fam_pains"] };
 
-const LINE_OF_PAIN: OfferedLine = { article: PAIN, point: { kind: "line", saleUnit: "piece" } };
+const LINE_OF_PAIN: OfferedLine = {
+  article: PAIN,
+  point: { kind: "line", saleUnit: "piece" },
+  quantity: 1,
+};
 
 describe("offerEffectOf — l'effet tel qu'il se dit", () => {
   it("dit un pourcentage, un montant par article, un montant de panier en millicentimes", () => {
@@ -117,6 +121,23 @@ describe("signInOfferFor — ce qu'une connexion ouvrirait à un invité", () =>
 
   it("dit la promotion réservée aux inscrits qui touche le panier", () => {
     expect(signInOfferFor([INSCRITS], ASKED_AT, [LINE_OF_PAIN], null)).toEqual({
+      effect: { kind: "percent", basisPoints: 2_000 },
+    });
+  });
+
+  /**
+   * Régression : une promotion « inscrits » à quantité minimum était proposée
+   * (« profitez de −20 % ») sur un panier sous le seuil, où la caisse ne
+   * retire rien après connexion (fix 2026-10-31).
+   */
+  it("ne promet pas une promotion dont la quantité minimum n'est pas atteinte", () => {
+    const fromTen = livePromotion({
+      id: "inscrits-dix",
+      audience: { kind: "individuals_registered" },
+      conditions: [{ kind: "min_quantity", value: 10 }],
+    });
+    expect(signInOfferFor([fromTen], ASKED_AT, [LINE_OF_PAIN], null)).toBeUndefined();
+    expect(signInOfferFor([fromTen], ASKED_AT, [{ ...LINE_OF_PAIN, quantity: 10 }], null)).toEqual({
       effect: { kind: "percent", basisPoints: 2_000 },
     });
   });

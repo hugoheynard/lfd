@@ -18,7 +18,7 @@ interface QuoteRequest {
 
 /** Une ligne tarifée du devis, telle que la portée la juge. */
 interface QuotedLine {
-  readonly line: { readonly sku: string; readonly saleUnit: SaleUnit };
+  readonly line: { readonly sku: string; readonly saleUnit: SaleUnit; readonly quantity: number };
 }
 
 /**
@@ -74,6 +74,7 @@ export class GuestSignInOffer {
           categoryPath: known.get(entry.sku)?.categoryPath ?? [],
         },
         point: { kind: "line", saleUnit: entry.saleUnit },
+        quantity: entry.quantity,
       })),
       fulfillmentFactOf(request.payload.fulfillment),
     );

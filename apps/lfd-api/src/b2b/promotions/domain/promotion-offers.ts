@@ -1,4 +1,4 @@
-import { inForceAt, type LivePromotion } from "./live-promotion.js";
+import { inForceAt, minQuantityOf, type LivePromotion } from "./live-promotion.js";
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import {
@@ -113,6 +113,8 @@ export interface OfferedLine {
   readonly article: PromotionScopeFacts;
   /** L'unité de vente : au point ligne, une famille ou un mode ne vise pas le poids. */
   readonly point: Extract<PromotionScopePoint, { readonly kind: "line" }>;
+  /** Pièces, ou grammes au poids : la quantité que la caisse compare au seuil. */
+  readonly quantity: number;
 }
 
 /** Les faits d'un particulier sans société, pour une porte donnée. */
@@ -132,7 +134,9 @@ function individualFacts(
 /**
  * **La promotion qu'un invité aurait en se connectant** — réservée aux
  * inscrits (admise pour un particulier inscrit, PAS pour un invité), en
- * vigueur, et dont la portée touche au moins une ligne. L'acheminement, s'il
+ * vigueur, et dont la portée touche au moins une ligne qui en atteint la
+ * quantité minimum — sans quoi la caisse ne retirerait rien après connexion,
+ * et l'offre promettrait ce qu'elle ne donne pas. L'acheminement, s'il
  * est choisi, doit l'admettre ; inconnu, il ne l'écarte pas : le message
  * invite, il ne chiffre rien.
  *
@@ -163,6 +167,10 @@ export function signInOfferFor(
 }
 
 function touches(promotion: LivePromotion, line: OfferedLine): boolean {
+  const threshold = minQuantityOf(promotion);
+  if (threshold !== null && line.quantity < threshold) {
+    return false;
+  }
   const point: PromotionScopePoint =
     promotion.fulfillment.kind === "any" ? line.point : { kind: "basket" };
   return promotionScopeCovers(promotion.scope, line.article, point);

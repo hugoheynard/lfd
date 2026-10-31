@@ -86,7 +86,7 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
         payload: { fulfillment: over.fulfillment ?? null },
       },
       (over.lines ?? [{ sku: "PAI-001" }]).map(({ sku }) => ({
-        line: { sku, saleUnit: "piece" as const },
+        line: { sku, saleUnit: "piece" as const, quantity: 1 },
       })),
     );
   }
