@@ -34,6 +34,9 @@ function subjectOf(orderId: string, requestedDeliveryDate: Date | null): Handove
 }
 
 class FixedSubjects extends HandoverSubjectReader {
+  /** Les lots demandés : un départ se lit en UNE lecture (2026-10-31). */
+  readonly batches: (readonly string[])[] = [];
+
   constructor(private readonly subjects: readonly HandoverSubject[]) {
     super();
   }
@@ -46,25 +49,37 @@ class FixedSubjects extends HandoverSubjectReader {
     return Promise.resolve(null);
   }
 
-  byOrderId(orderId: string): Promise<HandoverSubject | null> {
-    return Promise.resolve(this.subjects.find((subject) => subject.orderId === orderId) ?? null);
+  byOrderId(): Promise<HandoverSubject | null> {
+    return Promise.reject(new RangeError("le départ lit par lot, jamais une commande à la fois"));
+  }
+
+  byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>> {
+    this.batches.push(orderIds);
+    const wanted = new Set(orderIds);
+    return Promise.resolve(
+      new Map(
+        this.subjects
+          .filter((subject) => wanted.has(subject.orderId))
+          .map((subject) => [subject.orderId, subject]),
+      ),
+    );
   }
 }
 
 describe("HandoverDepartureHolds — « lesquelles sont retenues ? »", () => {
   it("rend les retenues, au jour demandé de chaque commande, une question par jour", async () => {
     const holds = new FixedQualityHolds(["o_2", "o_3"]);
-    const reader = new HandoverDepartureHolds(
-      new FixedSubjects([
-        subjectOf("o_1", DAY_A),
-        subjectOf("o_2", DAY_A),
-        subjectOf("o_3", DAY_B),
-      ]),
-      holds,
-    );
+    const subjects = new FixedSubjects([
+      subjectOf("o_3", DAY_B),
+      subjectOf("o_1", DAY_A),
+      subjectOf("o_2", DAY_A),
+    ]);
+    const reader = new HandoverDepartureHolds(subjects, holds);
 
     const held = await reader.heldOrders(["o_1", "o_2", "o_3"]);
 
+    // Une seule lecture au commerce, quel que soit le nombre de commandes.
+    expect(subjects.batches).toEqual([["o_1", "o_2", "o_3"]]);
     expect([...held].sort()).toEqual(["o_2", "o_3"]);
     expect(holds.asked).toEqual([
       { serviceDay: "2030-03-12", orderIds: ["o_1", "o_2"] },

@@ -130,4 +130,18 @@ describe("StopSheets — la fiche de chaque arrêt (PL4)", () => {
       shortfall,
     });
   });
+
+  it("lit les départs en une fois, et une commande inconnue garde une fiche vide", async () => {
+    const departures = departingAll(
+      new Map([
+        ["o1", [{ sku: "VIE-001", name: "Croissant", quantity: 1, saleUnit: "piece" as const }]],
+      ]),
+    );
+
+    const result = await sheets(departures).of(["o1", "o_unknown", "o1"]);
+
+    // Une commande à la fois jusqu'au 2026-10-31 : une lecture par arrêt.
+    expect(departures.batches).toEqual([["o1", "o_unknown"]]);
+    expect(result.get("o_unknown")).toEqual({ lines: [], shortfall: null, binsExpected: null });
+  });
 });

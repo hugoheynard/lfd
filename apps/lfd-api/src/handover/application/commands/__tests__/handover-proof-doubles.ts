@@ -135,4 +135,15 @@ export class NumberedSubjects extends HandoverSubjectReader {
           },
     );
   }
+
+  async byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>> {
+    const found = new Map<string, HandoverSubject>();
+    for (const orderId of orderIds) {
+      const subject = await this.byOrderId(orderId);
+      if (subject !== null) {
+        found.set(orderId, subject);
+      }
+    }
+    return found;
+  }
 }

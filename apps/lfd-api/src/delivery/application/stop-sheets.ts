@@ -53,12 +53,12 @@ export class StopSheets {
       this.cold.coldSkus(),
       this.catalog.listTypes(),
       this.catalog.activeCapacities(),
-      Promise.all(unique.map((orderId) => this.departures.departureOf(orderId))),
+      this.departures.departuresOf(unique),
     ]);
     const inService = types.filter((type) => type.archivedAt === null).map(packingTypeOf);
     return new Map(
-      unique.map((orderId, index): [string, StopSheet] => {
-        const departure = perOrder[index];
+      unique.map((orderId): [string, StopSheet] => {
+        const departure = perOrder.get(orderId);
         const lines = packingLinesOf(departure?.lines ?? [], coldSkus);
         const binsExpected =
           lines.length === 0

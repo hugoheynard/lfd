@@ -495,10 +495,13 @@ describe("GetDeliveryRoundProposalHandler — la place (CA4)", () => {
    * plaçait presque rien avant le colisage.
    */
   it("une commande dont on ne connaît pas les bacs est placée, et nommée « place non vérifiée »", async () => {
-    const { handler } = scene({ lines: new BreadForEveryOrder(new Map(), new Set(["o1", "o5"])) });
+    const lines = new BreadForEveryOrder(new Map(), new Set(["o1", "o5"]));
+    const { handler } = scene({ lines });
 
     const view = await handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false));
 
+    // Les lignes se lisaient commande par commande jusqu'au 2026-10-31 : un seul lot.
+    expect(lines.batches).toHaveLength(1);
     expect(placed(view)).toEqual(["o1", "o2", "o3", "o4", "o7"]);
     expect(view.unfit).toEqual([]);
     // o5 n'est pas située, mais ses bacs sont inconnus aussi : l'écran la retrouvera si on la place.

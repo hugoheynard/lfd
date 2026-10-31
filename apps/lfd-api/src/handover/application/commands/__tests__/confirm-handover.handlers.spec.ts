@@ -80,6 +80,17 @@ class OneOrder extends HandoverSubjectReader {
   byOrderId(): Promise<HandoverSubject | null> {
     return Promise.resolve(this.subject);
   }
+
+  async byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>> {
+    const found = new Map<string, HandoverSubject>();
+    for (const orderId of orderIds) {
+      const subject = await this.byOrderId();
+      if (subject !== null) {
+        found.set(orderId, subject);
+      }
+    }
+    return found;
+  }
 }
 
 function subject(withPackedRest: boolean): HandoverSubject {

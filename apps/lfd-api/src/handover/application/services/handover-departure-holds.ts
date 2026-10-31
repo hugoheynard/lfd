@@ -12,7 +12,7 @@ import { HandoverSubjectReader } from "../../channels/commerce/handover-subject.
  *
  * Les commandes sont regroupées par jour : une question au fournil par jour,
  * pas par commande. Une commande sans jour demandé, ou que le commerce ne sert
- * plus, n'est dans aucun plan — aucune retenue ne peut la viser.
+ * plus, n'est dans aucun plan. Les commandes se lisent en une fois (2026-10-31) — aucune retenue ne peut la viser.
  */
 @Injectable()
 export class HandoverDepartureHolds extends DepartureHoldsReader {
@@ -32,10 +32,11 @@ export class HandoverDepartureHolds extends DepartureHoldsReader {
   }
 
   private async groupByDay(orderIds: readonly string[]): Promise<Map<string, string[]>> {
-    const subjects = await Promise.all(orderIds.map((id) => this.subjects.byOrderId(id)));
+    const subjects = await this.subjects.byOrderIds(orderIds);
     const byDay = new Map<string, string[]>();
-    for (const subject of subjects) {
-      if (subject === null || subject.requestedDeliveryDate === null) {
+    for (const orderId of orderIds) {
+      const subject = subjects.get(orderId);
+      if (subject === undefined || subject.requestedDeliveryDate === null) {
         continue;
       }
       const day = subject.requestedDeliveryDate.toISOString().slice(0, 10);

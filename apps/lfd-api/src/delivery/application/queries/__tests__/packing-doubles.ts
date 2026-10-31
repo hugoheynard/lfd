@@ -24,17 +24,37 @@ export class FixedOrderLines extends DeliveryOrderLinesReader {
   linesOf(orderId: string): Promise<readonly DeliveryOrderLine[]> {
     return Promise.resolve(this.byOrder.get(orderId) ?? []);
   }
+
+  linesOfMany(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly DeliveryOrderLine[]>> {
+    return Promise.resolve(pick(this.byOrder, orderIds));
+  }
 }
 
 /** Ce qui part de chaque commande, figé ; une commande inconnue ne part de rien. */
 export class FixedDepartures extends DeliveryDeparturesReader {
+  /** Les lots demandés : chaque lecteur lit en UNE fois (2026-10-31). */
+  readonly batches: (readonly string[])[] = [];
+
   constructor(private readonly byOrder: ReadonlyMap<string, DeliveryDeparture>) {
     super();
   }
 
-  departureOf(orderId: string): Promise<DeliveryDeparture> {
-    return Promise.resolve(this.byOrder.get(orderId) ?? { lines: [], shortfall: null });
+  departuresOf(orderIds: readonly string[]): Promise<ReadonlyMap<string, DeliveryDeparture>> {
+    this.batches.push(orderIds);
+    return Promise.resolve(pick(this.byOrder, orderIds));
   }
+}
+
+/** Les entrées connues parmi celles demandées ; une inconnue est absente. */
+function pick<T>(byOrder: ReadonlyMap<string, T>, orderIds: readonly string[]): Map<string, T> {
+  return new Map(
+    orderIds.flatMap((orderId): [string, T][] => {
+      const found = byOrder.get(orderId);
+      return found === undefined ? [] : [[orderId, found]];
+    }),
+  );
 }
 
 /** Des lignes dues qui partent toutes : aucun départ incomplet. */

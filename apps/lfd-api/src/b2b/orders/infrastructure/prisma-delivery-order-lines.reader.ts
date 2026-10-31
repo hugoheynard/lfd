@@ -25,13 +25,47 @@ export class PrismaDeliveryOrderLinesReader extends DeliveryOrderLinesReader {
     const rows = await this.prisma.orderLine.findMany({
       where: { orderId },
       orderBy: { id: "asc" },
-      select: { sku: true, productNameSnapshot: true, quantity: true, saleUnit: true },
+      select: LINE_SELECT,
     });
-    return rows.map((row) => ({
-      sku: row.sku,
-      name: row.productNameSnapshot,
-      quantity: row.quantity,
-      saleUnit: orderLineSaleUnitOf(row.sku, row.saleUnit),
-    }));
+    return rows.map(toLine);
   }
+
+  async linesOfMany(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly DeliveryOrderLine[]>> {
+    if (orderIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.orderLine.findMany({
+      where: { orderId: { in: [...orderIds] } },
+      orderBy: { id: "asc" },
+      select: { orderId: true, ...LINE_SELECT },
+    });
+    const byOrder = new Map<string, DeliveryOrderLine[]>();
+    for (const row of rows) {
+      byOrder.set(row.orderId, [...(byOrder.get(row.orderId) ?? []), toLine(row)]);
+    }
+    return byOrder;
+  }
+}
+
+const LINE_SELECT = {
+  sku: true,
+  productNameSnapshot: true,
+  quantity: true,
+  saleUnit: true,
+} as const;
+
+function toLine(row: {
+  readonly sku: string;
+  readonly productNameSnapshot: string;
+  readonly quantity: number;
+  readonly saleUnit: string;
+}): DeliveryOrderLine {
+  return {
+    sku: row.sku,
+    name: row.productNameSnapshot,
+    quantity: row.quantity,
+    saleUnit: orderLineSaleUnitOf(row.sku, row.saleUnit),
+  };
 }

@@ -37,6 +37,12 @@ export interface DeliveryDeparture {
  * qui PART d'un départ incomplet décidé (ISP). **Aucun montant.**
  */
 export abstract class DeliveryDeparturesReader {
-  /** Ce qui part de cette commande ; aucune ligne si elle est inconnue. */
-  abstract departureOf(orderId: string): Promise<DeliveryDeparture>;
+  /**
+   * Ce qui part de ces commandes, en une lecture (2026-10-31 : la lecture
+   * commande par commande est retirée). Une commande inconnue est **absente**
+   * de la table ; l'appelant la lit comme un départ vide.
+   */
+  abstract departuresOf(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, DeliveryDeparture>>;
 }

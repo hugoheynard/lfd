@@ -120,4 +120,12 @@ export abstract class HandoverSubjectReader {
    * exactement comme pour le numéro.
    */
   abstract byOrderId(orderId: string): Promise<HandoverSubject | null>;
+
+  /**
+   * Les mêmes commandes, **par lot** et en une lecture — le départ d'une
+   * tournée demande « lesquelles sont retenues ? » pour toutes ses commandes
+   * à la fois (2026-10-31). Une commande que le commerce ne sert pas est
+   * **absente** de la table rendue, comme `byOrderId` rend `null`.
+   */
+  abstract byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>>;
 }

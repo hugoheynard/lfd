@@ -32,6 +32,9 @@ export class FixedDeclaredBins extends DeclaredBinsReader {
 
 /** Chaque commande porte `quantity` pains, sauf celles dont on ne connaît pas les lignes. */
 export class BreadForEveryOrder extends DeliveryOrderLinesReader {
+  /** Les lots demandés : la capacité lit les lignes en UNE fois (2026-10-31). */
+  readonly batches: (readonly string[])[] = [];
+
   constructor(
     private readonly quantities: ReadonlyMap<string, number> = new Map(),
     private readonly withoutLines: ReadonlySet<string> = new Set(),
@@ -47,6 +50,20 @@ export class BreadForEveryOrder extends DeliveryOrderLinesReader {
     return Promise.resolve([
       { sku: BREAD_SKU, name: "Pain", quantity, saleUnit: "piece" as const },
     ]);
+  }
+
+  async linesOfMany(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly DeliveryOrderLine[]>> {
+    this.batches.push(orderIds);
+    const found = new Map<string, readonly DeliveryOrderLine[]>();
+    for (const orderId of orderIds) {
+      const lines = await this.linesOf(orderId);
+      if (lines.length > 0) {
+        found.set(orderId, lines);
+      }
+    }
+    return found;
   }
 }
 

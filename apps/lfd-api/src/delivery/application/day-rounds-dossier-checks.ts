@@ -31,9 +31,7 @@ const NO_DEPARTURE: DeliveryDeparture = { lines: [], shortfall: null };
  * (`addressesOfOrders`, le même critère que la feuille de route : adresse de
  * livraison vivante de SA société), et le départ incomplet décidé.
  *
- * ⚠️ `departureOf` se lit commande par commande — le canal n'a pas de forme
- * par lot (2026-10-26). En parallèle, sur les seules commandes du jour : une
- * poignée de dizaines, au tirage d'un papier.
+ * Le départ se lit par lot, en une lecture (`departuresOf`, 2026-10-31).
  */
 @Injectable()
 export class DayRoundsDossierChecks {
@@ -63,12 +61,12 @@ export class DayRoundsDossierChecks {
       this.orders.byIds(orderIds),
       this.orders.departureSheetsOf(orderIds),
       this.addresses.addressesOfOrders(orderIds),
-      Promise.all(orderIds.map(async (id) => [id, await this.departures.departureOf(id)] as const)),
+      this.departures.departuresOf(orderIds),
     ]);
     const factsById = new Map(facts.map((fact) => [fact.orderId, fact]));
     const sheetsById = new Map(sheets.map((sheet) => [sheet.orderId, sheet]));
     const linkedIds = new Set(linked.map((address) => address.orderId));
-    const departureById = new Map(departures);
+    const departureById = departures;
     return dossierChecksOf(
       [...firstOf.values()].map((target): DossierOrderFacts => {
         const fact = factsById.get(target.orderId);

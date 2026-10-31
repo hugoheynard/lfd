@@ -69,6 +69,17 @@ class FixedSubjects extends HandoverSubjectReader {
   byOrderId(orderId: string): Promise<HandoverSubject | null> {
     return Promise.resolve(this.subjects.find((subject) => subject.orderId === orderId) ?? null);
   }
+
+  async byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>> {
+    const found = new Map<string, HandoverSubject>();
+    for (const orderId of orderIds) {
+      const subject = await this.byOrderId(orderId);
+      if (subject !== null) {
+        found.set(orderId, subject);
+      }
+    }
+    return found;
+  }
 }
 
 class InMemoryHandovers extends OrderHandoverRepository {

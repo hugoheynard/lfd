@@ -23,4 +23,12 @@ export interface DeliveryOrderLine {
 export abstract class DeliveryOrderLinesReader {
   /** Les lignes de cette commande, dans l'ordre de la commande ; vide si elle est inconnue. */
   abstract linesOf(orderId: string): Promise<readonly DeliveryOrderLine[]>;
+
+  /**
+   * Les lignes de ces commandes, en une lecture, chacune dans l'ordre de la
+   * commande. Une commande inconnue (ou sans ligne) est **absente** de la table.
+   */
+  abstract linesOfMany(
+    orderIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly DeliveryOrderLine[]>>;
 }

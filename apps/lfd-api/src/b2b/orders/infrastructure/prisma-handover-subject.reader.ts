@@ -60,6 +60,22 @@ export class PrismaHandoverSubjectReader extends HandoverSubjectReader {
     return this.one({ id: orderId });
   }
 
+  async byOrderIds(orderIds: readonly string[]): Promise<ReadonlyMap<string, HandoverSubject>> {
+    if (orderIds.length === 0) {
+      return new Map();
+    }
+    const rows = await this.prisma.order.findMany({
+      where: { id: { in: [...orderIds] } },
+      select: { ...HANDOVER_SELECT, deliveryNotes: LATER_SHIPMENTS_SELECT },
+    });
+    return new Map(
+      rows.map((row): [string, HandoverSubject] => [
+        row.id,
+        { ...toHandoverSubject(row), laterShipments: laterShipmentsOf(row.deliveryNotes) },
+      ]),
+    );
+  }
+
   /** La même lecture, trois clés — cf. l'en-tête de cette classe. */
   private async one(
     where:

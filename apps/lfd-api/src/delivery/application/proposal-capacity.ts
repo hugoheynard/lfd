@@ -74,13 +74,10 @@ export class ProposalCapacity {
     const toEstimate = unique.filter((orderId) => !byOrder.has(orderId));
     const [coldSkus, perOrder] = await Promise.all([
       toEstimate.length === 0 ? Promise.resolve(new Set<string>()) : this.cold.coldSkus(),
-      Promise.all(toEstimate.map((orderId) => this.lines.linesOf(orderId))),
+      this.lines.linesOfMany(toEstimate),
     ]);
     const linesOf = new Map(
-      toEstimate.map((orderId, index) => [
-        orderId,
-        packingLinesOf(perOrder[index] ?? [], coldSkus),
-      ]),
+      toEstimate.map((orderId) => [orderId, packingLinesOf(perOrder.get(orderId) ?? [], coldSkus)]),
     );
     const inService = types.filter((type) => type.archivedAt === null).map(packingTypeOf);
     const binTypes = new Map(types.map((type) => [type.id, planBinTypeOf(type)]));

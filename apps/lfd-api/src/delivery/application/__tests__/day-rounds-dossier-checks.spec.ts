@@ -94,7 +94,11 @@ function subject() {
       ],
     ]),
   );
-  return { checks: new DayRoundsDossierChecks(orders, addresses, departures), addresses };
+  return {
+    checks: new DayRoundsDossierChecks(orders, addresses, departures),
+    addresses,
+    departures,
+  };
 }
 
 describe("DayRoundsDossierChecks — les alertes lues aux canaux de la livraison", () => {
@@ -155,8 +159,8 @@ describe("DayRoundsDossierChecks — les alertes lues aux canaux de la livraison
     expect(addresses.asked).toEqual([]);
   });
 
-  it("lit le carnet une fois pour le lot, sans doublon", async () => {
-    const { checks, addresses } = subject();
+  it("lit le carnet et le départ une fois pour le lot, sans doublon", async () => {
+    const { checks, addresses, departures } = subject();
     await checks.checksOf(
       [
         { orderId: "o_ok", rank: 1, roundTitle: null },
@@ -166,5 +170,7 @@ describe("DayRoundsDossierChecks — les alertes lues aux canaux de la livraison
       ShipmentNoteNumbers.NONE,
     );
     expect(addresses.asked).toEqual([["o_ok", "o_loose"]]);
+    // Le départ se lisait commande par commande jusqu'au 2026-10-31.
+    expect(departures.batches).toEqual([["o_ok", "o_loose"]]);
   });
 });
