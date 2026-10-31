@@ -791,6 +791,21 @@ promotions à la bascule (L12), qui les ont remplacées.
 
 ## Limites connues et reste à faire
 
+- **Pourcentages et articles au poids** (décision de Hugo, 2026-10-31, à
+  bâtir) : au point ligne, une promotion en **pourcentage** s'étendra aux
+  articles vendus au poids par sa famille et par « tout sauf » — **toutes**
+  les promotions, déjà posées comprises (liste des conflits de recouvrement
+  dressée avant la bascule). Les montants et prix posés restent réservés aux
+  articles nommés. Une promotion à **quantité minimum** ne s'étend pas au
+  poids. Contredit par vitruve : deux barrières (`promotionScopeMatch` et
+  `coversManyArticles` / `matchesScope` du moteur de prix) — la seconde
+  reste pour les règles de prix ordinaires ; prix, annonce et compteur
+  basculent ensemble ; l'effet entre, obligatoire, dans le point de
+  jugement.
+- **Un seuil en grammes par article au poids** (idée de Hugo, 2026-10-31,
+  non bâtie) : « dès 500 g » posé article par article, en remplacement d'une
+  quantité minimum qui n'a pas de sens au poids.
+
 - **Production** : la reprise du § 2.12 reste à jouer ; un seul endroit,
   page unique et acheminements à cocher attendent le prochain « pousse
   main ». Contrôle préalable non fait : les rôles qui avaient
