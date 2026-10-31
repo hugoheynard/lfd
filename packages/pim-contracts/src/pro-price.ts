@@ -3,7 +3,7 @@ import { ttcCentsFromHtMillicents } from "@lfd/money";
 /**
  * **Le prix professionnel** — toujours saisi.
  *
- * Depuis le lot R3 de `documentation/pricing/plan-retirer-le-rapport-pro.md`
+ * Depuis le lot R3 de `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`
  * (2026-10-27), le prix pro HT se saisit par déclinaison et c'est sa seule
  * source. Le rapport prix pro / prix public (`ratio_ttc`), ses deux méthodes,
  * son réglage et sa suggestion sont retirés : ils induisaient en erreur à côté

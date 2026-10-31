@@ -10,7 +10,7 @@ Pour eux, **le poids commandé est le poids facturé** : aucune pesée après co
 aucun prix qui bouge entre la commande et la facture. C'est ce qui permet aux
 particuliers de payer par carte à la commande, comme pour une pièce.
 
-Il fait suite à [`plan-prix-au-kilo.md`](plan-prix-au-kilo.md), où le prix au
+Il fait suite à [`plan-prix-au-kilo.md`](saisie/plan-prix-au-kilo.md), où le prix au
 kilo est une donnée informative : pour un article au poids, il devient **le**
 prix de vente.
 
@@ -21,7 +21,7 @@ prix de vente.
   Elle change librement, même publiée, **tant que sa référence de vente n'a
   servi nulle part** — commande de tout statut, brouillon, panier gardé,
   abonnement, réassort, lot, gabarit, décision tarifaire en vigueur ou close
-  ([`plan-changer-l-unite-de-vente.md`](plan-changer-l-unite-de-vente.md) § 8,
+  ([`plan-changer-l-unite-de-vente.md`](saisie/plan-changer-l-unite-de-vente.md) § 8,
   Hugo, 2026-10-29). Le référentiel le demande au commerce par
   `SaleReferenceUsage` (`pim/channels/b2b-platform/sale-reference-usage/`).
   Jusqu'à cette date, elle était figée à la première publication
@@ -46,7 +46,7 @@ prix de vente.
 | **Le minimum**                | `weightMinGrams`, facultatif (vide = aucun) : en dessous, refus.                                                                                                                                                                                                                                                                                                                                           |
 | **La garde d'une tonne**      | Pas de limite métier ; `MAX_LINE_WEIGHT_GRAMS` = 1 000 000 (`packages/contracts/src/order.ts`) arrête la faute de frappe. Les pièces gardent `MAX_LINE_QUANTITY` (10 000).                                                                                                                                                                                                                                 |
 | **L'unité figée**             | Le sélecteur est modifiable tant que la référence n'a servi nulle part ; l'écran dit où elle a servi avant qu'on essaie (`GET /pim/catalogue/products/:id/sale-unit-usage`), et `Variant.changeSaleTerms` refuse (`SaleReferenceInUseError`, 409 ; `SaleReferenceUsageUnknownError` si le commerce ne répond pas). Un panier à l'ancienne unité perd la ligne au devis (`removedLines`), jamais convertie. |
-| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`plan-centime-particuliers.md`](plan-centime-particuliers.md) §4).                                                                                                                                                                                                          |
+| **Le prix au kilo**           | Les particuliers lisent un TTC au kilo, dérivé du HT au kilo ; la ligne vaut étiquette × grammes ÷ 1000, arrondie au centime ([`plan-centime-particuliers.md`](centime-et-tva/plan-centime-particuliers.md) §4).                                                                                                                                                                                           |
 | **Les décisions de prix**     | Une décision qui couvre plusieurs articles — règle, barème ou plancher de portée **globale ou de famille** — ne s'applique pas à un article au poids : `coversManyArticles` (`apps/lfd-api/src/b2b/pricing/domain/specificity.ts`). La mercuriale et les décisions d'un article s'appliquent, au kilo et en grammes.                                                                                       |
 | **L'affichage**               | Grammes sous le kilo, kilos au-delà : « 500 g », « 1,25 kg », « 12,40 € / kg » (`packages/money/src/sale-quantity-label.ts`). Sur la facture et l'avoir, toujours des kilos à trois décimales.                                                                                                                                                                                                             |
 | **Les totaux multi-articles** | Fiche d'atelier, compte à produire, dossier du jour, camembert, prévisionnel, colisage, comptoir, feuille de route : une ligne au poids compte pour **une pièce** (`pieceTally`, `packages/money/src/sale-quantity-tally.ts`), et pour rien à 0 g.                                                                                                                                                         |
@@ -141,7 +141,7 @@ Aucune pesée réelle, aucun ajustement après la commande.
 
 Changer l'unité d'un article **déjà vendu** : hors champ, il faudrait dater
 l'unité partout (décisions, historique, facturation) — le geste reste une autre
-déclinaison ([`plan-changer-l-unite-de-vente.md`](plan-changer-l-unite-de-vente.md) § 7).
+déclinaison ([`plan-changer-l-unite-de-vente.md`](saisie/plan-changer-l-unite-de-vente.md) § 7).
 
 ## 5. Décisions du bâti, validées par Hugo le 2026-10-29
 

@@ -9,7 +9,7 @@
 
 La question du jour : faut-il un cache par client, ou des réplicas, quand on
 aura 200 clients pros avec mercuriales ? La réponse honnête était « mesurer
-d'abord » ([`pricing/optimisation-resolution-de-prix.md`](../pricing/optimisation-resolution-de-prix.md)).
+d'abord » ([`pricing/moteur/optimisation-resolution-de-prix.md`](../pricing/moteur/optimisation-resolution-de-prix.md)).
 Cette sonde est la mesure.
 
 Le trafic de la passerelle donne déjà un p95 par surface

@@ -30,7 +30,7 @@ model VatRate {
 /// le catalogue.
 ///
 /// 🔴 **Plus lue ni écrite depuis le 2026-10-27** (lot R3 de
-/// `documentation/pricing/plan-retirer-le-rapport-pro.md`) : sa seule règle,
+/// `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`) : sa seule règle,
 /// le rapport du prix pro, est retirée — le prix pro est toujours saisi. La
 /// table reste en base (CLAUDE.md § 0), le code qui l'écrivait est parti.
 ///
@@ -59,7 +59,7 @@ model AccountingRules {
 
   /// Le rapport **prix pro TTC / prix public TTC**, en points de base entiers
   /// (9 000 = 90 %). 🔴 **Colonne morte depuis le 2026-10-27** (lot R3 de
-  /// `documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix pro est
+  /// `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`) : le prix pro est
   /// toujours saisi, et plus aucun code ne lit ni n'écrit cette colonne. Elle
   /// reste en base (CLAUDE.md § 0 : une colonne morte reste), avec sa
   /// contrainte `accounting_rules_pro_ratio_bounds`.
@@ -67,7 +67,7 @@ model AccountingRules {
 
   /// La méthode du prix professionnel — **une seule valeur depuis le
   /// 2026-10-27** : `entered`, le prix pro HT saisi par déclinaison (lot R3 de
-  /// `documentation/pricing/plan-retirer-le-rapport-pro.md`). `ratio_ttc` est
+  /// `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`). `ratio_ttc` est
   /// retirée ; la migration `20261027110000_le_prix_pro_est_toujours_saisi`
   /// refuse de passer sur une ligne qui la porte encore. Plus aucun code ne
   /// lit ni n'écrit cette colonne.

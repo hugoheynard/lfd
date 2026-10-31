@@ -62,7 +62,7 @@ La méthode `remise_apres_tva_max` a été **retirée le jour même** de sa livr
 prémisse qu'elle reproduisait ces prix ; elle n'en reproduit que dix — ceux qui
 tombent sur `TTC × 0,75`.
 
-> ⚠️ **Retiré le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) : le
+> ⚠️ **Retiré le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)) : le
 > mécanisme de sélection est parti avec `ratio_ttc` — plus de méthode, plus de
 > route, plus de sélecteur ; le prix pro est toujours saisi, et `proPriceOf`
 > vit dans `packages/pim-contracts/src/pro-price.ts`. Le paragraphe suivant est

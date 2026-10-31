@@ -104,7 +104,7 @@ export class QuoteOrderHandler implements IQueryHandler<QuoteOrderQuery, OrderQu
 
 /**
  * Le sous-total HT, par la méthode de la commande que ce devis annonce (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 6) : pour une
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 6) : pour une
  * société, la somme des HT de ligne arrondis ; pour un particulier
  * (`exact_ht`), la somme des HT que la composition TTC rend, sans remise ni
  * port — que ce devis ne connaît pas. ⚠️ Pour un particulier, ce HT peut

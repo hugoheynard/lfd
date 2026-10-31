@@ -10,7 +10,7 @@ import { discountView } from "./cumulated-shop-quote.js";
 
 /**
  * **Le devis d'un particulier, composé en TTC** (`exact_ht`, plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 4 à § 6) — la
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4 à § 6) — la
  * composition même que l'agrégat fera à la passation (`composeExactOrder`),
  * donc le total qu'il prélèvera : Σ quantité × étiquette, moins la remise et
  * le bon, plus le port, tous en TTC.

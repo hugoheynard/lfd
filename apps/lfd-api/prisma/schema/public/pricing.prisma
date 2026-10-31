@@ -1,5 +1,5 @@
 // ---------------------------------------------------------------------------
-// Règles tarifaires — cf. documentation/pricing/architecture-resolution-de-prix.md
+// Règles tarifaires — cf. documentation/pricing/moteur/architecture-resolution-de-prix.md
 // ---------------------------------------------------------------------------
 
 /// Une **règle tarifaire** : un étage, une portée, une audience, une fenêtre.
@@ -462,7 +462,7 @@ model MercurialeDraft {
 /// ⚠️ Cette pose ne refait ni le pré-contrôle « une mercuriale court déjà »,
 /// ni le refus « une mercuriale close a facturé sur la période » de la pose
 /// à l'écran : seule la contrainte d'exclusion la retient (dette notée au
-/// § 11 de `documentation/pricing/plan-tarif-date-sur-une-reference.md`).
+/// § 11 de `documentation/pricing/mercuriales/plan-tarif-date-sur-une-reference.md`).
 model PriceTemplate {
   id String @id
 

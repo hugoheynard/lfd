@@ -190,7 +190,7 @@ export const syncVariantSchema = z.object({
    *
    * **`null` = pas de prix pro : l'article n'est pas vendable aux
    * professionnels**, jamais « gratuit ». Depuis le 2026-10-27
-   * (`documentation/pricing/plan-prix-manquant-non-bloquant.md`), une
+   * (`documentation/pricing/saisie/plan-prix-manquant-non-bloquant.md`), une
    * déclinaison se publie dès qu'elle a le prix d'au moins une audience de sa
    * fiche ; le récepteur ne la sert qu'à l'audience dont elle a le prix.
    * Une déclinaison sans AUCUN prix reste exclue par l'émetteur, qui le dit.

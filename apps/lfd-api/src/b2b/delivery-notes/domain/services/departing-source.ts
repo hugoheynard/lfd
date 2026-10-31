@@ -22,7 +22,7 @@ import { exactDepartureOf } from "./exact-departure.js";
  *
  * Une commande composée en TTC (`exact_ht`) ne recopie aucune ligne figée :
  * {@link exactDepartureOf} les réécrit toutes, avec l'en-tête (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 5).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 5).
  *
  * Idempotente : appliquée à sa propre sortie, elle la rend.
  *

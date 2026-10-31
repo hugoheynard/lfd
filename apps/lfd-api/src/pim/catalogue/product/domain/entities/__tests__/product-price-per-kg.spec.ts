@@ -4,7 +4,7 @@ import { Sku } from "../../value-objects/sku.value-object.js";
 import { Product } from "../product.js";
 
 /**
- * **Les prix au kilo saisis** (`documentation/pricing/plan-prix-au-kilo.md`,
+ * **Les prix au kilo saisis** (`documentation/pricing/saisie/plan-prix-au-kilo.md`,
  * K1) — deux montants indépendants, jamais calculés, portés par la mutation
  * de tarif et hérités par une déclinaison alignée.
  */

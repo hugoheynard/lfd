@@ -1,6 +1,6 @@
 /**
  * E2E du **report d'un plancher sur la référence née d'un détachement**
- * (`documentation/pricing/plan-report-apres-detachement.md`, § 2.3, R2, § 7).
+ * (`documentation/pricing/saisie/plan-report-apres-detachement.md`, § 2.3, R2, § 7).
  *
  * Ce que seul ce niveau prouve : le pourcentage reporté s'applique au prix de
  * la NOUVELLE référence à la caisse ; un second report est refusé même après

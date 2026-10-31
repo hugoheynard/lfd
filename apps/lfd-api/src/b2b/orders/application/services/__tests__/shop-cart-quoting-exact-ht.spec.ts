@@ -2,7 +2,7 @@ import { catalogItem, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
  * **Le devis d'un particulier annonce ce que Stripe prélèvera** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 4 à § 6, lot C2).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4 à § 6, lot C2).
  * Composé en TTC par la fonction même que l'agrégat rejoue à la passation.
  */
 const CATALOG = [

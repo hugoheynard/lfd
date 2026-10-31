@@ -124,7 +124,7 @@ function byRateOf(value: Prisma.JsonValue): readonly OrderRateAmounts[] | null {
 
 /**
  * La méthode et les TTC d'un BL (`delivery_note.vat_method`, migration
- * `20261027180000`, plan `documentation/pricing/plan-centime-particuliers.md`,
+ * `20261027180000`, plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`,
  * § 7) : `exact_ht` et ses trois TTC, ou `line_ht` et trois `NULL`. Un BL sans
  * en-tête (d'avant E4a) est `line_ht` — la colonne est non nulle.
  */

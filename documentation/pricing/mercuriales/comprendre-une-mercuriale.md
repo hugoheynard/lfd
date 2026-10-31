@@ -251,7 +251,7 @@ réels. Suivi au registre (**R11**).
 ## 7 bis. L'avenant daté — ajouter, changer ou arrêter un prix
 
 **Bâti le 2026-10-30** (plan
-[`../plan-tarif-date-sur-une-reference.md`](../plan-tarif-date-sur-une-reference.md),
+[`plan-tarif-date-sur-une-reference.md`](plan-tarif-date-sur-une-reference.md),
 décisions de Hugo du 2026-10-29). ✅ Décrit le code qui tourne.
 
 Un **avenant** est un bloc immuable rattaché à **sa** mercuriale

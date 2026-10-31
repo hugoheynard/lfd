@@ -16,7 +16,7 @@ import type { DraftOrderInput, OrderFulfillmentInput } from "./order-shapes.js";
 
 /**
  * **`exact_ht`** — la commande d'un particulier, composée en TTC (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 4 et § 5).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4 et § 5).
  *
  * Les montants reçus sont **dans l'unité de la méthode** : la remise retrait
  * et le port arrivent en TTC, le bon à sa valeur faciale TTC (§ 10, Q2). Les

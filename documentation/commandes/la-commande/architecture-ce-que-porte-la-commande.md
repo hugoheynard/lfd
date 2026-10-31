@@ -244,7 +244,7 @@ flowchart TD
 - **La formule du TTC n'est écrite qu'à un endroit**, `ventilateVat`. La
   recopier ici en ferait une deuxième définition — c'est déjà arrivé, et il y
   manquait la surtaxe. Pour ajouter un terme :
-  [`../../pricing/ajouter-un-terme-au-panier.md`](../../pricing/ajouter-un-terme-au-panier.md).
+  [`../../pricing/boutique-et-panier/ajouter-un-terme-au-panier.md`](../../pricing/boutique-et-panier/ajouter-un-terme-au-panier.md).
 - La **clientèle tarifée** qui décide de la remise et des frais
   (`CustomerAudiences`) n'est **pas** `clientele` (§3.2) et n'est pas figée
   comme telle : seul son effet l'est, dans les ajustements.

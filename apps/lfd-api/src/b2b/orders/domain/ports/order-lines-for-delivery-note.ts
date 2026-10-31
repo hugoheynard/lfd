@@ -45,7 +45,7 @@ export interface DeliveryNoteOrderTerms {
   readonly totalCents: number;
   /**
    * Les TTC figés des termes d'une commande `exact_ht` (plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 7) ; `null` pour
+   * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 7) ; `null` pour
    * une commande `line_ht` — la méthode se lit là.
    */
   readonly ttcTerms: DeliveryNoteOrderTtcTerms | null;

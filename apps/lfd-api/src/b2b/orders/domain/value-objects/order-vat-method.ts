@@ -1,6 +1,6 @@
 /**
  * **Comment les montants d'une commande sont composés** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 4, § 7, voie B).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4, § 7, voie B).
  *
  * - `line_ht` : le calcul pro — HT de ligne arrondi une fois, TVA une fois par
  *   taux sur l'assiette (`ventilateVat`). Celui de TOUTE commande d'avant le

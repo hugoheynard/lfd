@@ -546,7 +546,7 @@ ont été ajoutés, les afficher dans la boutique ».
 >   `content-facts.ts`), est renommé `product.pro_price_prefilled` le
 >   2026-10-15 (Hugo) : il est attribué au champ `proPriceMillicents` et
 >   périme la signature — **P5 retiré le 2026-10-27** (lot R2 de
->   [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)),
+>   [`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)),
 >   le fait reste lisible ;
 > - la révision ne porte `proPriceMillicents` que lorsqu'il est saisi : une clé
 >   à `null` partout aurait rebasculé toutes les empreintes déjà posées.

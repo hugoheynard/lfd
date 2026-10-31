@@ -51,7 +51,7 @@ export abstract class PriceFloorReader {
    *
    * Le remède est de leur donner une fenêtre, comme les quatre autres familles
    * en ont une ; il est nommé au §7 de
-   * `documentation/pricing/architecture-clore-nest-pas-ranger.md` et n'est pas
+   * `documentation/pricing/moteur/architecture-clore-nest-pas-ranger.md` et n'est pas
    * bâti. En attendant, la **facture** ne dépend pas de cette lecture : la ligne
    * porte `floorDecision` figée avec son prix.
    */

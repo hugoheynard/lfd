@@ -1,6 +1,6 @@
 /**
  * **Où une référence de vente a déjà servi** — ce qui fige l'unité de vente
- * d'une déclinaison (`documentation/pricing/plan-changer-l-unite-de-vente.md`,
+ * d'une déclinaison (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`,
  * § 8, décision de Hugo du 2026-10-29).
  *
  * Une catégorie par lieu que le commerce tient. Le référentiel ne les lit pas

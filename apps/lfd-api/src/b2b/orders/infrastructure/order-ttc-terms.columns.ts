@@ -4,7 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 
 /**
  * **Les TTC figés d'une commande composée en TTC**, relus pour ses documents
- * (plan `documentation/pricing/plan-centime-particuliers.md`, lot C3) : le bon
+ * (plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C3) : le bon
  * de commande et le courriel d'un particulier écrivent ses gestes tels qu'il
  * les a payés. Le CHECK `orders_ttc_terms_iff_exact_ht` tient les trois
  * colonnes ensemble, non nulles si et seulement si la commande est `exact_ht`.

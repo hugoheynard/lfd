@@ -249,7 +249,7 @@ model Order {
   //
   // La définition vit dans `ventilateVat` (`@lfd/money`), et nulle part
   // ailleurs. Pour ajouter un terme à ce panier :
-  // `documentation/pricing/ajouter-un-terme-au-panier.md`.
+  // `documentation/pricing/boutique-et-panier/ajouter-un-terme-au-panier.md`.
   subtotalCents         Int             @map("subtotal_cents")
   discountCents         Int             @default(0) @map("discount_cents")
   // L'ajustement (%, ou € fixe) qui a PRODUIT `discountCents`, figé comme les
@@ -278,7 +278,7 @@ model Order {
   loyaltyVoucherId      String?         @map("loyalty_voucher_id")
   loyaltyVoucher        LoyaltyVoucher? @relation(fields: [loyaltyVoucherId], references: [id], onDelete: Restrict)
   /// **Comment les montants ont été composés** (plan
-  /// `documentation/pricing/plan-centime-particuliers.md`, § 7) : `line_ht`
+  /// `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 7) : `line_ht`
   /// (le calcul pro, et toute commande d'avant le 2026-10-27) ou `exact_ht`
   /// (particulier : composée en TTC, TVA extraite par taux). Décidée une fois
   /// par l'agrégat, relue ensuite — une révision ne la change pas. Tenue par
@@ -651,7 +651,7 @@ model OrderLine {
   lineTotalTtcCents Int? @map("line_total_ttc_cents")
 
   /// **La trace de résolution**, figée à la passation — cf.
-  /// `documentation/pricing/architecture-resolution-de-prix.md`.
+  /// `documentation/pricing/moteur/architecture-resolution-de-prix.md`.
   ///
   /// Elle répond à « pourquoi ce prix ? » six mois plus tard, quand les règles
   /// qui l'ont produit peuvent avoir été retirées. C'est un fait clos, comme le

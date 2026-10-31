@@ -6,7 +6,7 @@
 > options sont posées au § 6 avec une recommandation et une question ouverte.
 >
 > Voisins : [`contextes-et-points-de-vente.md`](contextes-et-points-de-vente.md)
-> (où vit le taux) · [`architecture-prix-ancre-ttc.md`](../pricing/architecture-prix-ancre-ttc.md)
+> (où vit le taux) · [`architecture-prix-ancre-ttc.md`](../pricing/centime-et-tva/architecture-prix-ancre-ttc.md)
 > (comment se fabrique un prix) · [`journalisation-et-tracabilite.md`](journalisation-et-tracabilite.md)
 > (l'anatomie d'une trace).
 >
@@ -149,7 +149,7 @@ prix public TTC (product_variant.price_cents)        → le prix public
 prix pro HT saisi (par déclinaison), sinon dérivé    → le prix pro, par proPriceOf
 ```
 
-> ⚠️ **Depuis le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)) : le prix pro
+> ⚠️ **Depuis le 2026-10-27** (lot R3 de [`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)) : le prix pro
 > est toujours saisi — plus de rapport, plus de méthode, plus de repli. Le
 > paragraphe suivant est l'état d'avant.
 

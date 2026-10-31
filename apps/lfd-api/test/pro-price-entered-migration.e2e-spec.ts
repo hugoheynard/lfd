@@ -1,6 +1,6 @@
 /**
  * E2E de la **garde** de `20261027110000_le_prix_pro_est_toujours_saisi`
- * (lot R3 de `documentation/pricing/plan-retirer-le-rapport-pro.md`), sur le
+ * (lot R3 de `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`), sur le
  * vrai Postgres.
  *
  * Une migration ne se rejoue pas « avant » dans un e2e : la base de test l'a

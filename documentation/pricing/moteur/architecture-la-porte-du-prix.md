@@ -6,7 +6,7 @@
 > Il a d'abord été un plan — même fichier, autre nom —, contredit par `vitruve`
 > sur ses quatre décisions puis bâti en quatre lots. Le raisonnement, les
 > versions démolies et ce que chaque lot a trouvé en chemin vivent au
-> [journal de remédiation](journal-de-remediation.md), §R26. Ici, seulement
+> [journal de remédiation](../journal-de-remediation.md), §R26. Ici, seulement
 > l'état.
 
 ---

@@ -1,6 +1,6 @@
 # La trace qui explique — reprise de R25
 
-**Ouvert le 2026-09-09.** Reprend la moitié de [R25](journal-de-remediation.md)
+**Ouvert le 2026-09-09.** Reprend la moitié de [R25](../journal-de-remediation.md)
 que la contradiction a refusé de laisser bâtir : la **forme** du scellement.
 
 > 🔴 **Les §1 à §8 décrivent une forme MORTE.** `vitruve` l'a démolie en six

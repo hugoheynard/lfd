@@ -136,7 +136,7 @@ irréversible. Voir la proposition du § 8.
 > lecture `GET /pim/catalogue/products/:id/sale-unit-usage` sert la carte
 > « Tarif » avant qu'on essaie ; le devis retire la ligne périmée
 > (`removedLines`) et la boutique fige l'unité à l'ajout. État :
-> [`vente-au-poids.md`](vente-au-poids.md) §1, §2.
+> [`vente-au-poids.md`](../vente-au-poids.md) §1, §2.
 
 **Le verrou ne porte plus sur « publié », mais sur « déjà utilisé ».**
 L'unité d'une déclinaison change librement **tant qu'aucune commande (même
@@ -158,7 +158,7 @@ Une déclinaison passée librement au poids (son propre SKU jamais utilisé) qui
 devient ENSUITE le défaut se vend sous le SKU de la fiche, déjà commandé à la
 pièce : deux unités sous une même référence, et les BLOQUANTS du § 7
 reviennent. Le trou préexistait. Il se ferme avec
-[`plan-defaut-sous-sa-reference.md`](../catalogue/plan-defaut-sous-sa-reference.md) :
+[`plan-defaut-sous-sa-reference.md`](../../catalogue/plan-defaut-sous-sa-reference.md) :
 quand le défaut se vend sous son propre SKU, une référence ne change plus
 jamais d'article. D'ici là, ne pas faire d'une déclinaison au poids le défaut
 d'une fiche déjà vendue à la pièce.

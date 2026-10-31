@@ -1,6 +1,6 @@
 /**
  * E2E du **report d'un engagement de volume sur la référence née d'un
- * détachement** (`documentation/pricing/plan-report-apres-detachement.md`,
+ * détachement** (`documentation/pricing/saisie/plan-report-apres-detachement.md`,
  * § 2.1, R4, § 7).
  *
  * Ce que seul ce niveau prouve : la quantité promise, recopiée, ouvre le

@@ -3,7 +3,7 @@ import { percentOf } from "@lfd/money";
 
 /**
  * **Deux règles d'arrondi d'un pourcentage, une seule réponse** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 5, § 9 bis).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 5, § 9 bis).
  *
  * `percentOf` (`@lfd/money`, en entiers) arrondit la remise et les frais en
  * pourcentage d'une commande de particulier ; `cartAdjustmentCents`

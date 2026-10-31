@@ -537,7 +537,7 @@ function recapRows(
 
 /**
  * **Le pied d'une commande composée en TTC** (`exact_ht`, plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 9 quinquies) : le total,
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 9 quinquies) : le total,
  * puis « dont TVA » par taux — le format du ticket. Chaque montant est LU sur
  * la part figée (`ttc_by_rate`), jamais reconstitué : un e-mail qui
  * recalculerait pourrait différer d'un centime du bon et de la facture.

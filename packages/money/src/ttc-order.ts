@@ -10,7 +10,7 @@ import { DELIVERY_VAT_RATE } from "./vat.js";
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 4 et § 5 (voie B).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4 et § 5 (voie B).
  *
  * Chaque terme est d'abord un TTC : la ligne vaut quantité × étiquette (au
  * poids : étiquette au kilo × grammes / 1000, arrondie au centime), la

@@ -27,7 +27,7 @@ import { Prisma } from "../src/platform/database/client/client.js";
 
 /**
  * E2E de la **commande d'un particulier composée en TTC** — lot C2 du plan
- * `documentation/pricing/plan-centime-particuliers.md` (voie B).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (voie B).
  *
  * Ce que seule la base prouve : la méthode et les TTC des termes s'écrivent
  * sous leurs CHECK (`orders_ttc_terms_iff_exact_ht`), le montant que

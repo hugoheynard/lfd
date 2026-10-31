@@ -22,12 +22,12 @@ import { discountLabelIn, type DiscountLabelView } from "./discount-label.js";
  * restent en centimes : ce sont des sommes réellement échangées, et c'est en
  * les formant qu'on arrondit, **une seule fois**.
  *
- * Cf. `documentation/pricing/architecture-prix-ancre-ttc.md`.
+ * Cf. `documentation/pricing/centime-et-tva/architecture-prix-ancre-ttc.md`.
  */
 
 /**
  * Le vocabulaire du **prix** — cf.
- * `documentation/pricing/architecture-resolution-de-prix.md`.
+ * `documentation/pricing/moteur/architecture-resolution-de-prix.md`.
  *
  * Il sert **deux publics**, et c'est pourquoi il ne s'appelle plus
  * « pricing-admin » : le staff qui saisit les règles, et le client qui lit la
@@ -2026,7 +2026,7 @@ export type RenameCompanyMercurialePayload = z.infer<typeof renameCompanyMercuri
 
 /**
  * **Amender une mercuriale posée** : un avenant daté
- * (`documentation/pricing/plan-tarif-date-sur-une-reference.md`).
+ * (`documentation/pricing/mercuriales/plan-tarif-date-sur-une-reference.md`).
  *
  * Il ouvre des lignes (`lines`) et/ou arrête, à sa date d'effet, des lignes
  * qui couraient (`endedSkus`) — de la grille ou d'un avenant antérieur. Changer

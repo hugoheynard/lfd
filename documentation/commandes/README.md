@@ -141,14 +141,14 @@ flowchart TD
 
 **Je veux IMPLÉMENTER.**
 
-| Ce que je m'apprête à faire                      | Le document                                                                                            |
-| ------------------------------------------------ | ------------------------------------------------------------------------------------------------------ |
-| Ajouter une remise, un frais, une taxe au panier | [`../pricing/ajouter-un-terme-au-panier.md`](../pricing/ajouter-un-terme-au-panier.md)                 |
-| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                                         |
-| Retirer `OrderCutoff`                            | [`../limites-de-commande/demontage-order-cutoff.md`](../limites-de-commande/demontage-order-cutoff.md) |
-| Rendre le bon de commande dans un format de plus | [`architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md)                     |
-| Écrire le gabarit du courriel de confirmation    | [`architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md) §4                  |
-| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first                 |
+| Ce que je m'apprête à faire                      | Le document                                                                                                                  |
+| ------------------------------------------------ | ---------------------------------------------------------------------------------------------------------------------------- |
+| Ajouter une remise, un frais, une taxe au panier | [`../pricing/boutique-et-panier/ajouter-un-terme-au-panier.md`](../pricing/boutique-et-panier/ajouter-un-terme-au-panier.md) |
+| Toucher au calcul d'un prix de ligne             | [`../pricing/README.md`](../pricing/README.md)                                                                               |
+| Retirer `OrderCutoff`                            | [`../limites-de-commande/demontage-order-cutoff.md`](../limites-de-commande/demontage-order-cutoff.md)                       |
+| Rendre le bon de commande dans un format de plus | [`architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md)                                           |
+| Écrire le gabarit du courriel de confirmation    | [`architecture-bon-de-commande.md`](bon-et-pieces/architecture-bon-de-commande.md) §4                                        |
+| Émettre un document comptable                    | [`../b2b/architecture-facturation.md`](../b2b/architecture-facturation.md) — doc-first                                       |
 
 **Je veux savoir CE QUI CLOCHE.**
 

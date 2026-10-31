@@ -53,7 +53,7 @@ export interface CorpusProduct {
   /**
    * Le prix pro HT **saisi**, en euros tels qu'on les tape (cinq décimales au
    * plus), ou `null` sans prix. Depuis le lot R3 de
-   * `documentation/pricing/plan-retirer-le-rapport-pro.md` (2026-10-27), c'est
+   * `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md` (2026-10-27), c'est
    * la seule source du prix pro : sans lui, rien ne se vend aux pros.
    *
    * Les montants du corpus sont ceux que le rapport d'origine (90 % du prix

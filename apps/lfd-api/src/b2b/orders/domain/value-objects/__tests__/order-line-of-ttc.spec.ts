@@ -3,7 +3,7 @@ import { OrderLine } from "../order-line.js";
 
 /**
  * `OrderLine.ofTtc` — la ligne d'une commande composée en TTC (`exact_ht`,
- * plan `documentation/pricing/plan-centime-particuliers.md`, § 4) : le HT est
+ * plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4) : le HT est
  * reçu de la composition, et la ligne vérifie ce qu'elle peut vérifier seule.
  */
 const BANANA = {

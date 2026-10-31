@@ -402,7 +402,7 @@ TTC vaut `H + arrondi(H × taux)` et saute certains centimes. Mesuré le
 2026-09-28 sur des étiquettes de 0,50 € à 10,00 € : 49/951 encaissées à un
 autre montant à 5,5 %, 86/951 à 10 %, 159/951 à 20 %. Symptôme constaté en
 production (1,90 € + 0,50 € encaissés 2,39 €), document dédié :
-[`pricing/ecart-du-centime-particuliers.md`](../pricing/ecart-du-centime-particuliers.md),
+[`pricing/centime-et-tva/ecart-du-centime-particuliers.md`](../pricing/centime-et-tva/ecart-du-centime-particuliers.md),
 qui attend le cabinet (son §6).
 
 **Avec l'option (a)**, le prix d'un article de formule est un prix d'article :

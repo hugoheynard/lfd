@@ -3,7 +3,7 @@ import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
  * L'étiquette d'un particulier est la valeur saisie (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 4, lot C3) ; celle
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4, lot C3) ; celle
  * du pro ne bouge pas.
  */
 

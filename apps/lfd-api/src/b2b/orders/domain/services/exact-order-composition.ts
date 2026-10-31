@@ -7,7 +7,7 @@ import { assertBasketDiscountCount, type OrderBasketDiscount } from "./basket-di
 /**
  * **La composition d'une commande `exact_ht`** — l'unique traduction de la
  * commande vers `composeTtcOrder` (`@lfd/money`), plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 4, § 5).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4, § 5).
  *
  * Le devis de la boutique, la composition de la passation et de la révision,
  * et l'agrégat appellent CETTE fonction : la remise, le bon et le port d'un

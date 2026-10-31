@@ -1,6 +1,6 @@
 /**
  * E2E du **report d'un barème de volume sur la référence née d'un
- * détachement** (`documentation/pricing/plan-report-apres-detachement.md`, R3, § 7).
+ * détachement** (`documentation/pricing/saisie/plan-report-apres-detachement.md`, R3, § 7).
  *
  * Ce que seul ce niveau prouve : les paliers reportés font le prix de la
  * NOUVELLE référence à la caisse, un barème en pause se reporte en pause

@@ -92,7 +92,7 @@ Trois choses se lisent dans ces deux blocs, et elles sont la spécification :
 ## 2. Ce n'est pas un choix d'écran : c'est déjà le modèle du serveur
 
 `Order.draft()` compose exactement ce décompte
-([`order.ts:189-207`](../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts)) :
+([`order.ts:189-207`](../../../apps/lfd-api/src/b2b/orders/domain/entities/order.ts)) :
 
 | Terme              | Ce que le domaine en fait                                    |
 | ------------------ | ------------------------------------------------------------ |
@@ -104,7 +104,7 @@ Trois choses se lisent dans ces deux blocs, et elles sont la spécification :
 | `totalCents`       | `(sous-total − remise) + frais + surtaxe + TVA` — le **TTC** |
 
 Et le moteur de TVA
-([`vat.ts`](../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)) l'écrit
+([`vat.ts`](../../../apps/lfd-api/src/b2b/orders/domain/services/vat.ts)) l'écrit
 en toutes lettres dès sa deuxième phrase : _« Les prix du catalogue sont HT. »_
 Il regroupe par taux, déduit la remise **au prorata de chaque groupe**, applique
 le taux au net, et taxe le transport à `DELIVERY_VAT_RATE = 20` — une constante
@@ -179,7 +179,7 @@ produit un résultat visible. C'est la configuration exacte qui a déjà coûté
 où deux modèles calculent le même nombre, ils finissent par ne plus le faire.
 
 Et ce n'est pas une dette de confort : **la facture aura besoin de la même
-ventilation**. [`architecture-facturation.md`](../b2b/architecture-facturation.md)
+ventilation**. [`architecture-facturation.md`](../../b2b/architecture-facturation.md)
 prévoit du Factur-X dès le départ, et le format impose une décomposition de TVA
 par taux. Faire la ventilation ici, c'est la faire une fois pour trois lecteurs
 — le panier, la commande, la facture.

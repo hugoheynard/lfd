@@ -2,7 +2,7 @@ import type { PriceFloor } from "./price-rule.js";
 
 /**
  * **Le plancher à deux étages** — cf.
- * `documentation/pricing/architecture-resolution-de-prix.md`.
+ * `documentation/pricing/moteur/architecture-resolution-de-prix.md`.
  *
  * Un plancher unique force à choisir entre protéger et laisser négocier. Il en
  * faut donc deux : un **mur** qu'on ne franchit jamais, et une **porte** plus

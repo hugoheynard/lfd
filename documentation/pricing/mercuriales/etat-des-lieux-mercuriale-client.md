@@ -76,7 +76,7 @@ de la **route**, jamais d'un état interne. Seul `mercuriale` se pose.
 
 ⚠️ Le dossier `simulation/` **résout un prix dans le navigateur**. C'est la
 cinquième occurrence du motif que
-[`../ecrans-de-tarification.md`](../ecrans-de-tarification.md) nomme, et le seul
+[`../saisie/ecrans-de-tarification.md`](../saisie/ecrans-de-tarification.md) nomme, et le seul
 défaut ouvert de cet écran — suivi comme **R2** au registre.
 
 ### 2.2 Le back — `b2b/pricing/`

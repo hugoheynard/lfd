@@ -1,6 +1,6 @@
 /**
  * E2E — **changer l'unité de vente d'une déclinaison publiée**
- * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8, Hugo,
+ * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8, Hugo,
  * 2026-10-29).
  *
  * Ce que seul ce niveau prouve : le référentiel interroge le commerce par le

@@ -1,6 +1,6 @@
 /**
  * E2E — **où une référence de vente a déjà servi, lu par le commerce**
- * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8).
+ * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8).
  *
  * Ce que seul ce niveau prouve : chacune des douze catégories se lit dans SA
  * table, sous le vrai schéma (colonnes `sku`, portées, grilles et paniers en

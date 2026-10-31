@@ -4,7 +4,7 @@ import { renderOrderSheetText } from '../order-sheet-text';
 
 /**
  * Le bon texte d'une commande de particulier composée en TTC (plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C3) : le format du
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C3) : le format du
  * ticket. Le bon d'un pro (`line_ht`, sans `ttcTerms`) ne bouge pas : figé ici.
  */
 

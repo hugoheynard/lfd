@@ -15,7 +15,7 @@
 > **Le test qui tient la fermeture** : `pricing-budget.e2e-spec.ts` exige que
 > `GET /admin/pricing` et `POST /shop/quote` annoncent le **même** prix sur un
 > article dont un barème s'ouvre dès la première pièce — le cas exact décrit
-> ci-dessous. Voir [`../pricing/architecture-pricer.md`](../pricing/architecture-pricer.md).
+> ci-dessous. Voir [`../pricing/moteur/architecture-pricer.md`](../pricing/moteur/architecture-pricer.md).
 
 > Trouvé en cherchant autre chose : Hugo signalait un écart entre un prix de
 > mercuriale et ce que la boutique affichait. La mercuriale n'était pas en
@@ -65,7 +65,7 @@ n'apparaît qu'avec un palier ouvert **dès la première pièce** — un cas que
 n'interdit, et que le premier essai de barème produit naturellement.
 
 C'est le quatrième exemple de ce que
-[`ecrans-de-tarification.md`](../pricing/ecrans-de-tarification.md) appelle « un
+[`ecrans-de-tarification.md`](../pricing/saisie/ecrans-de-tarification.md) appelle « un
 écran qui recalcule de son côté » ; les trois autres y sont déjà racontés.
 
 ## Ce que ça touche, et qui n'est pas seulement cet écran

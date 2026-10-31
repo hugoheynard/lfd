@@ -12,7 +12,7 @@ import { discountTextLines } from './order-sheet-discount-text';
 
 /**
  * **Le bon texte d'une commande composée en TTC, au format du ticket** (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 3 et lot C3) : les
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 3 et lot C3) : les
  * lignes en TTC (quantité × étiquette), la remise, le bon et le port en TTC,
  * le total, puis le récapitulatif par taux — HT, TVA, TTC.
  *

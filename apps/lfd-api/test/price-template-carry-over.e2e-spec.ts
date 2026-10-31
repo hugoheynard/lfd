@@ -1,6 +1,6 @@
 /**
  * E2E du **remplacement de l'ancienne référence dans un gabarit**
- * (`documentation/pricing/plan-report-apres-detachement.md`, § 2.2, R5).
+ * (`documentation/pricing/saisie/plan-report-apres-detachement.md`, § 2.2, R5).
  *
  * Ce que seul ce niveau prouve : la ligne du gabarit change de référence en
  * base, paliers gardés, sous la garde de filiation lue au vrai catalogue ; le

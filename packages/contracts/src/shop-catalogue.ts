@@ -190,7 +190,7 @@ export interface ShopItemView {
   readonly minQuantity?: number | null;
   /**
    * **Le prix au kilo PRO, hors taxe, en millicentimes** — tel que saisi au
-   * référentiel (`documentation/pricing/plan-prix-au-kilo.md`).
+   * référentiel (`documentation/pricing/saisie/plan-prix-au-kilo.md`).
    *
    * 🔴 **Informatif** : saisi, jamais calculé depuis le prix et le poids, et
    * jamais facturé — ni le panier, ni le devis, ni la facture ne le lisent.

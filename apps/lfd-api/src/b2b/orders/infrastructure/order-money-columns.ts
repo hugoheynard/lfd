@@ -206,7 +206,7 @@ export function dayOf(date: Date | null): string | null {
 
 /**
  * La méthode de TVA et les TTC des termes, tels que l'agrégat les a figés
- * (plan `documentation/pricing/plan-centime-particuliers.md`, § 7) — écrits
+ * (plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 7) — écrits
  * par la passation et par la révision, de la même façon.
  */
 export function ttcTermsColumnsOf(state: {

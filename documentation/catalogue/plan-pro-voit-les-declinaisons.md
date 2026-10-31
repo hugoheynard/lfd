@@ -302,7 +302,7 @@ SKU de ligne : une ligne PUBLIQUE déjà vendue sous `P-X-2` sort
   de cette ligne) — Hugo a tranché la question ouverte ci-dessous par
   l'**avenant daté** : reporter une mercuriale, c'est lui ajouter un avenant
   sur la nouvelle référence, jamais en poser une seconde ni réécrire la grille
-  ([`../pricing/plan-tarif-date-sur-une-reference.md`](../pricing/plan-tarif-date-sur-une-reference.md),
+  ([`../pricing/mercuriales/plan-tarif-date-sur-une-reference.md`](../pricing/mercuriales/plan-tarif-date-sur-une-reference.md),
   § 6, T5). Garde `detached_from_sku`, bouton « Reporter sur … » et
   `fold-inline-confirm` sur la liste du (d). Les cinq autres familles (règles,
   planchers, barèmes, engagements, gabarits) restent à reposer par leur propre

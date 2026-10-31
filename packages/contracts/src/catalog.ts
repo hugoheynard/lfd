@@ -19,7 +19,7 @@ import type { OrderSaleUnit } from "./order.js";
  *
  * L'`id` est celui du PIM, reçu par le miroir `catalog_categories` ; `name` et
  * `position` aussi. Il n'y a plus de liste des rayons dans le code (plan
- * `documentation/pricing/plan-familles-en-donnees.md`) : une famille livrée par
+ * `documentation/pricing/saisie/plan-familles-en-donnees.md`) : une famille livrée par
  * le référentiel EST un rayon, sans déploiement. L'union fermée qui la
  * remplaçait a mis tout le catalogue pro en 500 le 2026-09-26, le jour où le
  * PIM a rangé un article dans une famille qu'elle ne connaissait pas.

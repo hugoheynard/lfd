@@ -2,7 +2,7 @@
 
 > **2026-09-21.** Décrit le code des lots **A1** et **A2** de
 > le plan « un seul canal, deux prix » (retiré le 2026-10-16 ; ses décisions
-> encore vraies sont dans [`catalogue-synchronise.md`](../catalogue/catalogue-synchronise.md) §5).
+> encore vraies sont dans [`catalogue-synchronise.md`](../../catalogue/catalogue-synchronise.md) §5).
 >
 > ✅ **À jour au 2026-09-21, fin de journée.** La chaîne est complète : le
 > référentiel pose une étiquette, la plateforme peut en poser une autre, le
@@ -151,7 +151,7 @@ Trois pièces, et l'ordre compte :
 multiplication : `HT × (1 + taux)` à l'écran aurait reposé la seconde règle
 d'arrondi que `POST /shop/quote` existe pour supprimer. `ttcCentsOf` a donc
 quitté `b2b/catalog/application/shop-catalogue-view.ts` pour
-[`packages/money/src/vat.ts`](../../packages/money/src/vat.ts) le jour où le
+[`packages/money/src/vat.ts`](../../../packages/money/src/vat.ts) le jour où le
 devis en est devenu le second appelant — pas par rangement, mais parce que deux
 définitions de « combien ça coûte taxe comprise » divergent toujours d'un
 centime, et que ce centime est précisément l'écart qu'on réparait.
@@ -302,7 +302,7 @@ TTC. Elle n'est pas servie telle quelle :
 🔴 **Le TTC qui ressort n'est pas toujours celui qu'on a posé.** L'aller-retour
 hors taxe ne revient pas toujours sur lui-même : un centime, jamais plus, mais
 **systématiquement vers le haut** à 10 % et à 20 % — 182 et 333 prix sur 2 000
-(mesuré, [`ancrage-du-ttc-pose.mjs`](../../dev-toolbox/analyses/ancrage-du-ttc-pose.mjs)).
+(mesuré, [`ancrage-du-ttc-pose.mjs`](../../../dev-toolbox/analyses/ancrage-du-ttc-pose.mjs)).
 
 La décision (Hugo, 2026-09-21) est d'**assumer** l'écart plutôt que de
 construire une TVA par soustraction. Sa contrepartie est qu'on le **dit** : la

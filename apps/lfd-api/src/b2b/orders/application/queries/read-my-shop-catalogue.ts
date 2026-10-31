@@ -56,7 +56,7 @@ import { CATALOG_SOURCE_LANGUAGE } from "../../../catalog/domain/catalog-transla
  * les étages : un palier « à partir de 50 » ne se voit donc pas en vitrine. Le
  * panier, lui, résout à la quantité réelle. C'est la même règle que la route
  * publique, et la raison est écrite au §3 de
- * [`documentation/pricing/architecture-prix-boutique.md`](../../../../../../documentation/pricing/architecture-prix-boutique.md).
+ * [`documentation/pricing/boutique-et-panier/architecture-prix-boutique.md`](../../../../../../documentation/pricing/boutique-et-panier/architecture-prix-boutique.md).
  */
 export class ReadMyShopCatalogueQuery {
   /** `null` = aucune société résolue : la lecture rend alors le tarif catalogue. */

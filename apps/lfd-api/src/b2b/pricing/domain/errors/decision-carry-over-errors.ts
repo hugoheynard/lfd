@@ -1,7 +1,7 @@
 /**
  * **Les refus du REPORT d'une décision tarifaire** — règle, plancher, barème,
  * engagement, gabarit — sur la référence née d'un détachement
- * (`documentation/pricing/plan-report-apres-detachement.md`, § 3).
+ * (`documentation/pricing/saisie/plan-report-apres-detachement.md`, § 3).
  *
  * Lus par le staff sur la fiche produit, pas par quelqu'un qui a le code sous
  * les yeux : chacun nomme le cas et le geste de sortie. `NotDetachedFromError`

@@ -5,7 +5,7 @@
  * (`viennoiserie`) au lieu de l'identifiant du référentiel, et la table qui
  * traduisait l'un en l'autre était en dur. Elle a mis le catalogue pro en 500
  * le jour où le PIM a créé une famille qu'elle ne connaissait pas (plan
- * `documentation/pricing/plan-familles-en-donnees.md`).
+ * `documentation/pricing/saisie/plan-familles-en-donnees.md`).
  *
  * Les décisions vivantes ont été reprises par la migration
  * `les_familles_se_lisent_en_donnees`. Ce qui garde les codes, c'est ce qui

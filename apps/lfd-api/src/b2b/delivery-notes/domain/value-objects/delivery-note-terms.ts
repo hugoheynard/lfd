@@ -48,7 +48,7 @@ export interface DeliveryNoteTerms {
   readonly totalCents: number;
   /**
    * Les TTC des termes d'un BL composé en TTC (`exact_ht`, plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 7) — `null` =
+   * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 7) — `null` =
    * `line_ht`. La méthode du BL EST cette présence : un BL `exact_ht` sans ses
    * TTC, ou l'inverse, ne s'écrit pas (image du CHECK
    * `delivery_note_ttc_terms_iff_exact_ht`).

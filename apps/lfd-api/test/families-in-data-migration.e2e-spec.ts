@@ -1,6 +1,6 @@
 /**
  * E2E de la migration **`les_familles_se_lisent_en_donnees`**, sur le vrai
- * Postgres (`documentation/pricing/plan-familles-en-donnees.md`, « Lots 1 à 3
+ * Postgres (`documentation/pricing/saisie/plan-familles-en-donnees.md`, « Lots 1 à 3
  * réunis », point 5, et §4).
  *
  * Elle reprend les décisions de portée famille posées en CODE de rayon

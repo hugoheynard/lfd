@@ -277,7 +277,7 @@ prêter le prix du jour. La cinquième, elle, était la dangereuse — une lectu
 3 mars appliquait un palier atteint en novembre, et rien ne le signalait.
 
 **R17 est donc close**, et le registre le porte :
-[`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md). Ce qui ne l'est pas, et
+[`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md). Ce qui ne l'est pas, et
 qu'il ne faut pas confondre avec elle, c'est **R21** : le tableau de
 tarification garde sa propre séquence de chargement. Il lit juste — c'est le
 chargeur qui a rejoint sa sémantique, pas l'inverse — mais il la lit **à côté**

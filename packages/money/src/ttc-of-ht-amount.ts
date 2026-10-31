@@ -2,7 +2,7 @@ import { roundToCents } from "./exact.js";
 
 /**
  * **Un montant fixe saisi HT, rendu en TTC** — la conversion nommée du plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 5, R1 et R2).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 5, R1 et R2).
  *
  * Les réglages restent saisis HT (frais de zone, remise retrait en montant
  * fixe) ; une commande de particulier, construite en TTC, les applique en TTC.

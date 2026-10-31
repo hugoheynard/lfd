@@ -7,7 +7,7 @@
  * tarif d'un client, Limites de prix, saisie de commande. La table traduisait
  * une famille du référentiel (`cat_vien`) en un code de rayon (`viennoiserie`)
  * pris dans une union fermée. Elle a été retirée (plan
- * `documentation/pricing/plan-familles-en-donnees.md`) : le rayon EST la
+ * `documentation/pricing/saisie/plan-familles-en-donnees.md`) : le rayon EST la
  * famille, par son id, avec son nom et sa position lus dans le miroir.
  *
  * ## Ce qu'elle refuse

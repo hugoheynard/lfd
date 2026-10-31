@@ -197,7 +197,7 @@ export class OrderLine {
 
   /**
    * **Une ligne d'une commande composée en TTC** (`exact_ht`, plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 4) : son HT est
+   * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4) : son HT est
    * REÇU de la composition (`composeTtcOrder`), pas dérivé du prix.
    *
    * 🔴 L'invariant de {@link create} — « le HT de ligne dérive du prix, jamais

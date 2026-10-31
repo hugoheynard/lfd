@@ -698,7 +698,7 @@ export const vatSharesSchema = z.array(vatShareSchema);
 
 /**
  * **Les TTC des termes d'une commande composée en TTC** — celle d'un
- * particulier (`exact_ht`, plan `documentation/pricing/plan-centime-particuliers.md`,
+ * particulier (`exact_ht`, plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`,
  * § 7) : la remise retrait, le bon imputé et le port, tels que le client les
  * a payés. Absents d'une commande pro ou antérieure : ses documents lisent
  * alors les HT.

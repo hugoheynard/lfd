@@ -1,6 +1,6 @@
 /**
  * E2E de **l'avenant daté d'une mercuriale**
- * (`documentation/pricing/plan-tarif-date-sur-une-reference.md`, T2–T3).
+ * (`documentation/pricing/mercuriales/plan-tarif-date-sur-une-reference.md`, T2–T3).
  *
  * Ce que seul ce niveau prouve : le verrou `FOR UPDATE` contre deux écritures
  * concurrentes, la relecture datée sur la vraie base (avenants rangés après

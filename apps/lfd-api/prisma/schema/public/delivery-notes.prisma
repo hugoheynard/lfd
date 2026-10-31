@@ -59,7 +59,7 @@ model DeliveryNote {
   /// La méthode de composition (cf. `Order.vatMethod`), et les TTC des termes
   /// d'un BL `exact_ht` — contrainte À PART du « tout ou rien » (migration
   /// `20261027180000`), écrits depuis le lot C3 du plan
-  /// `documentation/pricing/plan-centime-particuliers.md`.
+  /// `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`.
   vatMethod            String  @map("vat_method")
   discountTtcCents     Int?    @map("discount_ttc_cents")
   voucherTtcCents      Int?    @map("voucher_ttc_cents")

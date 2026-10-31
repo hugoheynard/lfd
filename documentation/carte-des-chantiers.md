@@ -236,14 +236,14 @@ Les questions sont dans le doc ; je peux les résumer chacune en une liste.
 
 ## 5. Bloqués par l'extérieur
 
-| Qui                          | Ce qu'on attend                                                                                                                                                           | Doc                                                          |
-| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------ |
-| **Le cabinet comptable**     | l'écart du centime (TVA « en dedans » pour un particulier) ; S4 des sous-comptes (Q3) ; fidélité et cartes cadeaux ; remboursement réussi puis échoué ; BT-26 sur l'avoir | `pricing/ecart-du-centime-particuliers.md`, `comptabilite/…` |
-| **La Caisse d'Épargne**      | neuf questions sur dix (pain.008, délais, FRST/RCUR, retours, amendement…) ; le libellé B2B du mandat ; l'amendement d'un mandat actif                                    | `comptabilite/prelevement/question-banque.md`                |
-| **Un vrai fichier bancaire** | éprouver l'import pain.002 / camt.054 (PA5), le rejet de lot entier                                                                                                       | `comptabilite/prelevement/retours-bancaires.md`              |
-| **Un achat**                 | une imprimante Zebra (IM0 à IM4)                                                                                                                                          | `impression/plan-imprimantes-thermiques.md`                  |
-| **Le terrain**               | la mesure MAX_WAYPOINTS sur iPhone ; le DPO pour la position du livreur                                                                                                   | `livraisons/livreur/gps-y-aller-et-position.md` §7           |
-| **Un geste de production**   | le verrou de dix ans sur le seau des factures ; les contrôles SQL avant promotion ; l'abonnement du webhook Stripe aux `checkout.*`                                       | `ops/runbook.md`, `comptabilite/…`                           |
+| Qui                          | Ce qu'on attend                                                                                                                                                           | Doc                                                                         |
+| ---------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------- |
+| **Le cabinet comptable**     | l'écart du centime (TVA « en dedans » pour un particulier) ; S4 des sous-comptes (Q3) ; fidélité et cartes cadeaux ; remboursement réussi puis échoué ; BT-26 sur l'avoir | `pricing/centime-et-tva/ecart-du-centime-particuliers.md`, `comptabilite/…` |
+| **La Caisse d'Épargne**      | neuf questions sur dix (pain.008, délais, FRST/RCUR, retours, amendement…) ; le libellé B2B du mandat ; l'amendement d'un mandat actif                                    | `comptabilite/prelevement/question-banque.md`                               |
+| **Un vrai fichier bancaire** | éprouver l'import pain.002 / camt.054 (PA5), le rejet de lot entier                                                                                                       | `comptabilite/prelevement/retours-bancaires.md`                             |
+| **Un achat**                 | une imprimante Zebra (IM0 à IM4)                                                                                                                                          | `impression/plan-imprimantes-thermiques.md`                                 |
+| **Le terrain**               | la mesure MAX_WAYPOINTS sur iPhone ; le DPO pour la position du livreur                                                                                                   | `livraisons/livreur/gps-y-aller-et-position.md` §7                          |
+| **Un geste de production**   | le verrou de dix ans sur le seau des factures ; les contrôles SQL avant promotion ; l'abonnement du webhook Stripe aux `checkout.*`                                       | `ops/runbook.md`, `comptabilite/…`                                          |
 
 ## 6. Le ménage documentaire
 
@@ -261,7 +261,7 @@ supprimé, sauf si un `migration.sql` le cite — alors bandeau daté) :
 - `comptabilite/fidelite/plan-points-de-fidelite.md` (A–E2 ; ne garder que F)
 - `comptabilite/mandat/plan-mandat-client.md`
 - `commandes/passation/architecture-idempotence-de-passation.md`, `architecture-supervision-du-jour.md`, `architecture-tva-des-frais-de-port.md`, `architecture-bon-de-commande.md`, `plan-bon-de-commande-public-en-ttc.md`, `boutique-rayon-layout.md`, `architecture-ce-que-porte-la-commande.md`, `plan-agregation-des-commandes.md` (A1, A2)
-- `pricing/plan-materiaux-de-prix.md`, `plan-decompte-du-panier-ht.md`, `plan-familles-en-donnees.md`, `plan-la-trace-qui-explique.md`, `mercuriales/plan-la-mercuriale-devient-un-objet.md`
+- `pricing/moteur/plan-materiaux-de-prix.md`, `plan-decompte-du-panier-ht.md`, `plan-familles-en-donnees.md`, `plan-la-trace-qui-explique.md`, `mercuriales/plan-la-mercuriale-devient-un-objet.md`
 - `pim/plan-separer-allergenes-et-nutrition.md` (§9, §10 restent) — le plan des méthodes de remise professionnelle est retiré le 2026-10-16, repris dans `catalogue/catalogue-synchronise.md`
 - `livraisons/architecture/plan-schema-delivery.md`, `chargement/plan-geometrie-du-plancher.md`, `clientele/plan-remise-et-livraison-par-clientele.md`, `clientele/plan-retrait-slots.md`, `clientele/plan-procedure-de-livraison.md`
 - `fournil/plan-fournees-progressives.md`, `plan-controle-qualite.md` (le bandeau dit « rien n'est bâti », QC1–QC5 le sont), `relecture-des-postes.md`

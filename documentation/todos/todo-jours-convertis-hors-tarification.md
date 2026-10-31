@@ -6,7 +6,7 @@ six semaines, et le motif était apparu entre-temps dans une dizaine de fichiers
 de la comptabilité. 📐 **Plan** au §5, rien n'est bâti.
 
 > Né d'un effet de bord : `lint:business-day` (chantier 2 de
-> [`durcir-le-calcul-des-prix.md`](../pricing/durcir-le-calcul-des-prix.md)) a
+> [`durcir-le-calcul-des-prix.md`](../pricing/moteur/durcir-le-calcul-des-prix.md)) a
 > d'abord été lancée sur tout le dépôt et a relevé 19 lignes hors tarification.
 > La porte a été resserrée sur les fenêtres tarifaires parce que ces lignes ne
 > se jugent pas au même critère. Ce fichier est ce qui reste de ce passage.

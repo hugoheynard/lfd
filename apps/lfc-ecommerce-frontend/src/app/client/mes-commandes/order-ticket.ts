@@ -7,7 +7,7 @@ import type {
 
 /**
  * **Le ticket d'une commande composée en TTC** — celle d'un particulier (plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C3). Ses lignes à
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C3). Ses lignes à
  * leur TTC scellé (quantité × étiquette), la remise, le bon et le port à leur
  * TTC figé, le total payé, puis HT / TVA / TTC de chaque taux tels que la
  * commande les a figés (`ttc_by_rate`). Tout est LU : aucune TVA ne se calcule

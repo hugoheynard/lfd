@@ -1,6 +1,6 @@
 /**
  * E2E — **les prix au kilo, de la saisie au référentiel jusqu'au rayon**
- * (`documentation/pricing/plan-prix-au-kilo.md`, K1 à K3).
+ * (`documentation/pricing/saisie/plan-prix-au-kilo.md`, K1 à K3).
  *
  * Ce que seul ce niveau prouve : que deux montants saisis dans « Tarif & TVA »
  * se rangent au référentiel (colonnes et `CHECK`), traversent le fil v13 par

@@ -162,7 +162,7 @@ push. Les clés de manque (`apps/lfd-api/src/pim/catalogue/product/domain/servic
 `price`, `allergens`, `pro_price`, `vat:<contexte>`. Ce n'est
 plus la matrice des canaux qui filtre : c'est l'audience. (`pro_price_rule`,
 « rapport pro non réglé », n'est plus calculé depuis le 2026-10-27 — lot R3 de
-[`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md) ;
+[`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md) ;
 l'écran garde son libellé pour les manques publiés avant.)
 
 ### La réémission
@@ -469,7 +469,7 @@ montre à l'agrégat ce qu'il ne voit pas — taux résolus, contextes en servic
 
 Le référentiel pose le prix public TTC et, par déclinaison, le **prix pro
 HT saisi** — sa **seule source** depuis le 2026-10-27 (lot R3 de
-[`plan-retirer-le-rapport-pro.md`](../pricing/plan-retirer-le-rapport-pro.md)).
+[`plan-retirer-le-rapport-pro.md`](../pricing/saisie/plan-retirer-le-rapport-pro.md)).
 Une seule porte le résout, `proPriceOf` (`packages/pim-contracts/src/pro-price.ts`),
 appelée par le fil (`catalog-facts.ts`) et la fiche (`product-form-store.ts`) ;
 la complétude juge directement la saisie (vérifié le 2026-10-27) :

@@ -2,7 +2,7 @@ import { proPriceOf } from "../pro-price.js";
 
 /**
  * **L'unique porte du prix professionnel** — toujours saisi depuis le lot R3
- * (`documentation/pricing/plan-retirer-le-rapport-pro.md`, 2026-10-27).
+ * (`documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`, 2026-10-27).
  */
 describe("le prix professionnel saisi", () => {
   it("sert le HT saisi au millicentime, et en déduit le TTC au centime", () => {

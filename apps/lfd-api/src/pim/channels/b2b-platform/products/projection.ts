@@ -69,7 +69,7 @@ function frenchOf(text: { readonly fr: string }): string {
  * Le prix pro est **hors taxe**, quelle que soit l'assiette de la déclinaison :
  * la plateforme professionnelle facture en HT de bout en bout, et la frontière
  * du TTC s'arrête à ce fichier. Cf.
- * `documentation/pricing/architecture-prix-ancre-ttc.md` § 4.
+ * `documentation/pricing/centime-et-tva/architecture-prix-ancre-ttc.md` § 4.
  */
 export function projectVariant(
   variant: VariantRecord,

@@ -49,7 +49,7 @@ const TEN_PERCENT = { mode: "percent", bp: 1_000 } as const;
 /**
  * Une commande de SOCIÉTÉ par défaut : la remise de retrait y est un montant
  * HT (`line_ht`). Depuis la voie B (plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C2), celle d'un
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C2), celle d'un
  * particulier se prend sur le TTC — cf. le dernier bloc et
  * `order-exact-ht.spec.ts`.
  */

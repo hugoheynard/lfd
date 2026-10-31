@@ -48,7 +48,7 @@ code. Il tranche ce qui doit l'être **avant** — parce que ce chantier touche 
 nombre auquel un client consent.
 
 > Le contexte et l'ordre des lots : [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md).
-> Le moteur lui-même : [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md).
+> Le moteur lui-même : [`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md).
 
 🔴 **Périmètre : la commande de base et la mercuriale à prix fixe.** Les
 **paliers de volume sont reportés** — ils ne sortent pas de la vue par oubli

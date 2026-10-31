@@ -23,11 +23,11 @@
 > route** — c'est la nature d'un journal. Elles sont conservées et marquées.
 > **Ne jamais implémenter depuis la partie C** : A et B disent l'état.
 >
-> Voisins : [`../pim/contextes-et-points-de-vente.md`](../pim/contextes-et-points-de-vente.md)
+> Voisins : [`../../pim/contextes-et-points-de-vente.md`](../../pim/contextes-et-points-de-vente.md)
 > — où vit le taux, et pourquoi une carte naît d'une règle fiscale ;
-> [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md) — la
+> [`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md) — la
 > chaîne d'étages, qui reste **HT de bout en bout** et que ce chantier ne touche
-> pas ; [`README.md`](README.md) — la chaîne complète, du référentiel à la facture.
+> pas ; [`README.md`](../README.md) — la chaîne complète, du référentiel à la facture.
 
 ---
 
@@ -99,7 +99,7 @@ sens, pas deux. Cf. **C.5**.
 ## B.1 Où ça vit
 
 > ⚠️ **Le rapport pro est retiré le 2026-10-27** (lot R3 de
-> [`plan-retirer-le-rapport-pro.md`](plan-retirer-le-rapport-pro.md)) : le prix
+> [`plan-retirer-le-rapport-pro.md`](../saisie/plan-retirer-le-rapport-pro.md)) : le prix
 > pro HT se saisit, `ProPriceRatio`, pro-discount.ts (retiré le 2026-10-27), `proPriceFromPublic` et
 > l'écran du rapport n'existent plus ; la colonne `pro_price_ratio_bp` reste en
 > base, plus lue. Le tableau ci-dessous est l'état d'avant.

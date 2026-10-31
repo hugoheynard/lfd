@@ -1,6 +1,6 @@
 /**
  * E2E — **une famille livrée par le référentiel devient un rayon, sans
- * déploiement** (plan `documentation/pricing/plan-familles-en-donnees.md`).
+ * déploiement** (plan `documentation/pricing/saisie/plan-familles-en-donnees.md`).
  *
  * Régression de la panne du 2026-09-26 : une famille créée au PIM n'avait pas
  * de rayon dans la table en dur, la traduction levait, et la Tarification,

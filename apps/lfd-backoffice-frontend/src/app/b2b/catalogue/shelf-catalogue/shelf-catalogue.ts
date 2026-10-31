@@ -201,7 +201,7 @@ export class ShelfCatalogue {
    * L'étiquette est une ENTRÉE : elle est mise hors taxe, traverse la
    * résolution, puis le rayon public la rend par `ttcCentsFromHtMillicents`
    * — la chaîne de la vignette d'un particulier depuis le lot C3 du plan
-   * `documentation/pricing/plan-centime-particuliers.md` (§ 4). Elle revient
+   * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4). Elle revient
    * sur la valeur saisie ; l'écart d'un centime que cette colonne montrait
    * (HT de ligne arrondi d'abord, Hugo, 2026-09-21) reste celui du pro, qui
    * n'est pas affiché ici. La colonne reste : elle dit ce que la chaîne réelle

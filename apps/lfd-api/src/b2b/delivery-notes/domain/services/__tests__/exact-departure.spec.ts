@@ -13,7 +13,7 @@ import { columnDiscounts } from "../../../../orders/domain/services/__tests__/fr
 
 /**
  * Le BL partiel d'une commande de particulier composée en TTC (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 5, lot C3).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 5, lot C3).
  */
 
 /** Banana bread : étiquette 21,00 € à 5,5 % (HT résolu 19,90521 €). */

@@ -21,7 +21,7 @@ export interface FrozenOrderAdjustments {
   readonly deliveryVatMode: DeliveryVatMode | null;
   /**
    * Les TTC figés d'une commande `exact_ht` (plan
-   * `documentation/pricing/plan-centime-particuliers.md`, § 5, « Le bon de
+   * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 5, « Le bon de
    * livraison partiel ») : le bon imputé et le port, que le BL reprend ;
    * `null` pour une commande `line_ht`. La remise retrait n'y est pas : elle
    * se refait sur le livré.

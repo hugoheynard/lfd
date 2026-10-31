@@ -203,7 +203,7 @@ describe("la vitrine publique", () => {
       "name",
       "note",
       // ⚠️ **Un élargissement ASSUMÉ** (2026-10-28, Hugo —
-      // `documentation/pricing/plan-prix-au-kilo.md`) : les deux prix au kilo
+      // `documentation/pricing/saisie/plan-prix-au-kilo.md`) : les deux prix au kilo
       // SAISIS, informatifs, chacun nommé par son unité ; l'écran choisit
       // l'assiette. Le pro HT n'est pas un secret : le tarif pro de base est
       // déjà public (`?audience=pro`, 2026-10-19).

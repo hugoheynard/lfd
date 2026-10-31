@@ -13,13 +13,13 @@
 > `unitsPerPack` »** et que « le prix vit dans le seed B2B ». **Les deux sont
 > faux depuis le 2026-08-31** : `ProductVariant.priceCents` existe, le prix se
 > saisit en TTC sur la déclinaison, et chaque taux en dérive son HT
-> ([`architecture-prix-ancre-ttc.md`](architecture-prix-ancre-ttc.md)).
+> ([`architecture-prix-ancre-ttc.md`](../centime-et-tva/architecture-prix-ancre-ttc.md)).
 >
 > Tout le raisonnement de ce document repose sur ce point de départ. Le suivre
 > ferait **construire contre le modèle en place**, ce qui est précisément ce
 > qu'une doc périmée coûte. Il n'est pas réécrit de mémoire — ce serait la faute
 > inverse, et plus chère. Il est suivi comme **R14** dans
-> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md) : à réécrire sur
+> [`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md) : à réécrire sur
 > l'existant, ou à archiver.
 >
 > **Ce qui vaut toujours** : la question qu'il pose — séparer le **fait produit**

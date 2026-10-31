@@ -7,7 +7,7 @@ import type { OrderContent } from "../order-content.js";
 
 /**
  * `OrderComposition.draftOf` rend la remise et le port **dans l'unité de la
- * méthode** — plan `documentation/pricing/plan-centime-particuliers.md`
+ * méthode** — plan `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`
  * (§ 5, lot C2) : HT tels que `CartAdjustments` les rend pour `line_ht`, TTC
  * par la composition de l'agrégat pour `exact_ht`.
  */

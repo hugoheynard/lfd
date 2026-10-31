@@ -1,6 +1,6 @@
 /**
  * E2E du **report d'une règle de prix sur la référence née d'un détachement**
- * (`documentation/pricing/plan-report-apres-detachement.md`, R1, § 7).
+ * (`documentation/pricing/saisie/plan-report-apres-detachement.md`, R1, § 7).
  *
  * Ce que seul ce niveau prouve : la filiation lue au vrai catalogue du
  * commerce, la règle posée à la caisse sur la NOUVELLE référence, l'origine

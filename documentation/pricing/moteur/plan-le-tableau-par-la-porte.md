@@ -6,7 +6,7 @@
 > lire avant de reproposer la première idée, qui est la plus naturelle.
 >
 > Ce qui reste ouvert est au registre :
-> [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md), entrée R21.
+> [`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md), entrée R21.
 
 ## 1. Ce qui est vrai aujourd'hui, vérifié dans le code
 

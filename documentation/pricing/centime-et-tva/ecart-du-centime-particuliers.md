@@ -21,7 +21,7 @@ règlement et le montant encaissé par Stripe disent **2,39 €**.
 
 Le référentiel fait saisir une **étiquette TTC** ; le système en dérive un
 **HT en millicentimes** à la lecture, au taux du contexte
-([`chemin-du-prix-public.md`](chemin-du-prix-public.md)), puis applique les
+([`chemin-du-prix-public.md`](../boutique-et-panier/chemin-du-prix-public.md)), puis applique les
 promotions et paliers en HT (`resolvePrice`). Une ligne de commande ne reçoit
 que ce HT (`apps/lfd-api/src/b2b/orders/domain/value-objects/order-line.ts`).
 
@@ -53,7 +53,7 @@ dit 2,39 — à vérifier.
 
 ## 3. Ce n'est pas un bug, c'est une décision de 2026-09-21
 
-[`chemin-du-prix-public.md`](chemin-du-prix-public.md) (§ « les lignes TTC ne
+[`chemin-du-prix-public.md`](../boutique-et-panier/chemin-du-prix-public.md) (§ « les lignes TTC ne
 font pas le total ») assume cet écart : la TVA se calcule sur l'assiette par
 taux, comme une facture, plutôt que par soustraction. Un test le fige
 (`packages/money/src/__tests__/vat.spec.ts`). Le changer, c'est **retourner

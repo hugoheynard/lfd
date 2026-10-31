@@ -239,7 +239,7 @@ function taxedGestureRows(sheet: PricedPaper): readonly TotalRow[] {
 
 /**
  * Les gestes d'une commande **composée en TTC** (`exact_ht`, plan
- * `documentation/pricing/plan-centime-particuliers.md`, lot C3) : leurs TTC
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, lot C3) : leurs TTC
  * sont figés, on les écrit tels quels — aucune répartition, le format du
  * ticket. `null` pour une autre commande, qui garde la répartition.
  */

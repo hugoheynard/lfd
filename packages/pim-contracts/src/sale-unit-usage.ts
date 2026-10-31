@@ -1,6 +1,6 @@
 /**
  * **Ce qui fige l'unité de vente de chaque déclinaison d'une fiche**
- * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8).
+ * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8).
  *
  * L'écran le dit AVANT qu'on essaie ; le serveur tranche quand même au
  * changement. `GET /catalogue/products/:id/sale-unit-usage`.

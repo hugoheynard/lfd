@@ -11,7 +11,7 @@ export interface CatalogPricePerKg {
 
 /**
  * Port de **lecture** des prix au kilo, vu par la vitrine
- * (`documentation/pricing/plan-prix-au-kilo.md`, K3).
+ * (`documentation/pricing/saisie/plan-prix-au-kilo.md`, K3).
  *
  * 🔴 **À part de `CatalogReader`, et c'est la promesse « informative » tenue
  * par construction** : `ResolvedCatalogItem` nourrit la résolution du prix, la

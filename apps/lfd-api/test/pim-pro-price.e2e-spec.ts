@@ -5,7 +5,7 @@
  * la saisie (cinq décimales, colonne `pro_price_millicents`) et l'activation
  * qui l'exige. Le pré-remplissage depuis le rapport (lot R2) puis le rapport
  * et sa méthode (lot R3) sont retirés le 2026-10-27
- * (`documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix pro est
+ * (`documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`) : le prix pro est
  * toujours saisi.
  */
 import { type ProductListView } from "@lfd/pim-contracts";
@@ -191,7 +191,7 @@ describe("le prix pro saisi, seule source", () => {
 
 /**
  * Le pré-remplissage en masse depuis le rapport est retiré le 2026-10-27
- * (lot R2 de `documentation/pricing/plan-retirer-le-rapport-pro.md`) : le prix
+ * (lot R2 de `documentation/pricing/saisie/plan-retirer-le-rapport-pro.md`) : le prix
  * pro est toujours saisi. La route ne doit plus répondre.
  */
 describe("le pré-remplissage retiré", () => {

@@ -3,7 +3,7 @@ import { rateBp, taxMultiplierBp } from "./ttc-of-ht-amount.js";
 
 /**
  * **La TVA d'un taux, extraite de son TTC puis répartie sur ses termes** —
- * étapes 2 à 4 du § 4 de `documentation/pricing/plan-centime-particuliers.md`.
+ * étapes 2 à 4 du § 4 de `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`.
  *
  * - TVA du taux = ⌈TTC × t / (1 + t)⌉ : jamais moins que HT net × t ;
  * - chaque terme reçoit l'arrondi commercial de la TVA qu'il CONTIENT (signée :

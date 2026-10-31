@@ -13,7 +13,7 @@ import { loyaltyDouble, provideLoyalty } from '../client-loyalty.fixture';
 
 /**
  * **L'unité d'une ligne, figée à l'ajout, et la ligne que le devis retire**
- * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8).
+ * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8).
  *
  * Régression : le panier recalculait l'unité depuis le catalogue courant ; un
  * article passé au poids faisait partir « 3 » pièces en 3 g.

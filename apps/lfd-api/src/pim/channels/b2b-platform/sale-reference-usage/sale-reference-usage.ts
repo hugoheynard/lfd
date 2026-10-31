@@ -23,7 +23,7 @@ export interface SaleReferenceQuery {
  * modèle de `GeneralOrderCutoffReader`.
  *
  * Il fige l'unité de vente d'une déclinaison dès sa première utilisation
- * (`documentation/pricing/plan-changer-l-unite-de-vente.md`, § 8) : commande
+ * (`documentation/pricing/saisie/plan-changer-l-unite-de-vente.md`, § 8) : commande
  * de tout statut, brouillon, panier gardé, abonnement, réassort, lot, gabarit,
  * décision tarifaire en vigueur ou close. `pim → b2b` est interdit : le
  * référentiel demande, il ne va pas lire.

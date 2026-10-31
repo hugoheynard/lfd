@@ -69,7 +69,7 @@ export function shopCatalogueOf(
 
 /**
  * **L'étiquette TTC d'un article**, selon la clientèle (plan
- * `documentation/pricing/plan-centime-particuliers.md`, § 4 et § 8) :
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md`, § 4 et § 8) :
  *
  * - `public` — `ttcCentsFromHtMillicents`, la valeur saisie au référentiel, et
  *   celle que la commande d'un particulier multiplie par la quantité : le

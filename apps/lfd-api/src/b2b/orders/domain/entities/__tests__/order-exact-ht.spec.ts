@@ -14,7 +14,7 @@ import { Order, type DraftOrderInput } from "../order.js";
 
 /**
  * **La commande d'un particulier, composée en TTC** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 4, § 5, lot C2).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4, § 5, lot C2).
  * Le client paie Σ quantité × étiquette, moins ses remises, plus son port ;
  * la TVA s'extrait par taux au centime supérieur ; les colonnes HT
  * s'additionnent exactement.

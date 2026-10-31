@@ -173,7 +173,7 @@ model ProductVariant {
   /// Prix **canonique** de l'unité réellement vendue (R4) — tarif de référence,
   /// HT, en centimes d'euro, **pré-altération**. `NULL` = pas encore tarifé. Les
   /// dégressifs de volume et remises vivent dans la couche pricing B2B, jamais
-  /// ici (cf. documentation/pricing/architecture-conditionnements-pricing.md).
+  /// ici (cf. documentation/pricing/saisie/architecture-conditionnements-pricing.md).
   priceCents  Int? @map("price_cents")
   /// **Ce que `price_cents` veut dire.** `ht` par défaut : la colonne portait un
   /// prix hors taxe depuis toujours, et un défaut qui change le sens des lignes
@@ -245,7 +245,7 @@ model ProductVariant {
   proPriceMillicents Int? @map("pro_price_millicents")
 
   /// **Le prix au kilo professionnel HORS TAXE saisi**, en millicentimes —
-  /// `documentation/pricing/plan-prix-au-kilo.md`. Donnée INFORMATIVE : rien
+  /// `documentation/pricing/saisie/plan-prix-au-kilo.md`. Donnée INFORMATIVE : rien
   /// ne le lit pour tarifer. Saisi, jamais calculé depuis le prix et le poids.
   /// `NULL` = non saisi ; suit le défaut avec le tarif. `CHECK (> 0)`.
   proPricePerKgMillicents  Int?    @map("pro_price_per_kg_millicents")
@@ -260,7 +260,7 @@ model ProductVariant {
   /// à part, sur ordre de Hugo.
   pricePerKgShown          Boolean @default(true) @map("price_per_kg_shown")
   /// **Le prix au kilo public TTC est-il montré aux particuliers ?** —
-  /// `documentation/pricing/plan-carte-tarif.md`. Faux : le prix reste saisi
+  /// `documentation/pricing/saisie/plan-carte-tarif.md`. Faux : le prix reste saisi
   /// ici, mais le canal reçoit `null`. Suit le défaut avec le tarif.
   pricePerKgShownPublic    Boolean @default(true) @map("price_per_kg_shown_public")
   /// **Le prix au kilo pro HT est-il montré aux pros ?** — même règle.
@@ -291,7 +291,7 @@ model ProductVariant {
   /// déclinaison. Rattachés ici et non au produit : « carton de 20 » ne veut
   /// rien dire tant qu'on ne sait pas de quoi (des parts, ou des tartes 6
   /// parts ?). La relation EST l'information — cf. la révision du 2026-08-23
-  /// de `documentation/pricing/architecture-conditionnements-pricing.md`, qui
+  /// de `documentation/pricing/saisie/architecture-conditionnements-pricing.md`, qui
   /// renverse le choix initial de les modéliser en déclinaisons plates.
   packagings ProductPackaging[]
 

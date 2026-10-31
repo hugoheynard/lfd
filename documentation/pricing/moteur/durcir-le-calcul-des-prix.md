@@ -13,7 +13,7 @@ sont bâtis.**
 > l'état vérifié contre le code. Le §7 dit les deux fois où ce document s'est
 > trompé.
 >
-> Le travail restant vit dans [`ce-qui-reste-a-faire.md`](ce-qui-reste-a-faire.md).
+> Le travail restant vit dans [`ce-qui-reste-a-faire.md`](../ce-qui-reste-a-faire.md).
 
 ---
 

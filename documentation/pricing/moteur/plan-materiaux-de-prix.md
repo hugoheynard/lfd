@@ -36,7 +36,7 @@
 >
 > Il suppose lu [`optimisation-resolution-de-prix.md`](optimisation-resolution-de-prix.md),
 > qui établit que l'unité de coût est **l'opération facturée**, pas le temps.
-> Voir aussi [`README.md`](README.md) pour la chaîne complète.
+> Voir aussi [`README.md`](../README.md) pour la chaîne complète.
 
 ---
 
@@ -211,7 +211,7 @@ réponse : différer y serait un défaut, pas une économie. Cf.
 ### Où l'idiome vit
 
 Dans le back-office d'abord, là où le besoin est. **Second consommateur connu** :
-le lot 2 de [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md), qui branchera
+le lot 2 de [`plan-boutique-sur-api.md`](../boutique-et-panier/plan-boutique-sur-api.md), qui branchera
 la boutique sur `POST /orders/quote`. Le jour où il arrive, l'idiome monte dans
 `@lfd/b2b-ui` — pas avant : un utilitaire partagé écrit pour un seul appelant se
 révèle toujours mal découpé quand le second arrive.

@@ -5,7 +5,7 @@
 > La référence courte. Elle répond à trois questions : **qui** fabrique un prix,
 > **quoi** entre dedans, et **que se passe-t-il** dans chaque cas de figure.
 >
-> Pour la conception de la façade → [`architecture-pricer.md`](architecture-pricer.md).
+> Pour la conception de la façade → [`architecture-pricer.md`](moteur/architecture-pricer.md).
 > Pour ce qu'est une mercuriale → [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md).
 
 ---

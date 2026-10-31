@@ -4,7 +4,7 @@ import { FROZEN_PRO_QUOTES } from "./pro-quote-baskets.frozen.js";
 
 /**
  * **Le devis pro ne change pas d'un centime** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 9, lot C2).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 9, lot C2).
  *
  * Les vingt paniers de `Order.draft`, rejoués au devis de la boutique pour une
  * société active. La vue ENTIÈRE a été relevée sur le code d'avant la voie B :

@@ -10,7 +10,7 @@ import type { DraftOrderInput } from "../order.js";
 
 /**
  * **Vingt paniers PRO** passés à `Order.draft` — la contre-épreuve du plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 9, lot C2) : le pro
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 9, lot C2) : le pro
  * ne change pas d'un centime. Les montants attendus ont été relevés sur le
  * code d'AVANT la voie B (2026-10-27) et sont écrits en dur dans la spec.
  */

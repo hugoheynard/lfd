@@ -18,7 +18,7 @@ import type { OrderRateAmounts } from "../value-objects/order-rate-amounts.js";
 
 /**
  * **Les montants d'une commande, selon sa méthode** — plan
- * `documentation/pricing/plan-centime-particuliers.md` (§ 4, § 6).
+ * `documentation/pricing/centime-et-tva/plan-centime-particuliers.md` (§ 4, § 6).
  *
  * Deux compositions, une forme de sortie : `line_ht` (ci-dessous, le calcul
  * d'avant la voie B, inchangé) et `exact_ht` (`order-exact-amounts.ts`). Sorti

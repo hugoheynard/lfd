@@ -1,7 +1,7 @@
 # Les écrans de tarification — ce que le commercial voit
 
 **Ouvert le 2026-09-06**, en sortant 441 lignes de
-[`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md). ✅
+[`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md). ✅
 Décrit du code qui tourne.
 
 > ## Pourquoi un document à part
@@ -26,7 +26,7 @@ Décrit du code qui tourne.
 > La cinquième est **ouverte** : `commercial/tarification/simulation/` résout un
 > prix unitaire dans le navigateur et réimplémente les trois régimes
 > d'engagement, sans jamais appeler le serveur. Suivie en **R2** au
-> [registre](ce-qui-reste-a-faire.md).
+> [registre](../ce-qui-reste-a-faire.md).
 >
 > Cinq occurrences d'un même motif, c'est ce qui distingue une maladresse d'un
 > défaut de conception : la contrainte ci-dessus n'est tenue par rien côté
@@ -41,7 +41,7 @@ Décrit du code qui tourne.
 > | **Les gabarits** — la grille de prix nommée               | Cette offre est-elle la même que celle-là, et qu'est-ce qu'elle m'oblige à vendre ?        |
 
 > **Le moteur, lui, est à côté** :
-> [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md).
+> [`architecture-resolution-de-prix.md`](../moteur/architecture-resolution-de-prix.md).
 > Les étages, la spécificité, le plancher et la trace y sont expliqués — ce
 > document-ci suppose qu'on les connaît.
 
