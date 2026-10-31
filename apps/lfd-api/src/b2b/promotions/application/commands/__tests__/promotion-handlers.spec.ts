@@ -66,7 +66,8 @@ describe("les gestes sur une promotion", () => {
       "resumed",
       "archived",
     ]);
-    expect(s.promotions.acts[1]?.summary).toContain("retrait au point pk_coeur");
+    // Le point par son nom au moment du fait (plan des acheminements, § 8.4).
+    expect(s.promotions.acts[1]?.summary).toContain("retrait au point Cœur de station");
     expect(s.promotions.stored.get(id)?.status).toBe("archived");
   });
 

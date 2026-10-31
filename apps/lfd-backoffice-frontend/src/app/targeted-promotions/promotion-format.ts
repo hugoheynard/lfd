@@ -116,23 +116,31 @@ export function audiencesPhrase(audiences: PromotionView['audiences']): string {
     .join(' · ');
 }
 
-/** L'acheminement en une ligne ; le point nommé quand on connaît son nom. */
+/**
+ * L'acheminement en une ligne ; les points nommés quand on connaît leur nom.
+ * Les zones restent dites par leur identifiant jusqu'au lot de l'écran
+ * (`documentation/promotions/plan-acheminements-a-cocher.md`).
+ */
 export function fulfillmentPhrase(
   fulfillment: PromotionView['fulfillment'],
   pickupNames: ReadonlyMap<string, string>,
 ): string {
-  switch (fulfillment.kind) {
-    case 'any':
-      return 'Tous les acheminements';
-    case 'pickup':
-      return 'Retrait · tous les points';
-    case 'pickup_point': {
-      const id = fulfillment.pickupId ?? '';
-      return `Retrait · ${pickupNames.get(id) ?? id}`;
-    }
-    case 'delivery':
-      return 'Livraison';
+  if (fulfillment.kind === 'displayed_price') {
+    return 'Tous les acheminements';
   }
+  const parts: string[] = [];
+  const { pickup, delivery } = fulfillment;
+  if (pickup === 'all') {
+    parts.push('Retrait · tous les points');
+  } else if (pickup !== 'none') {
+    parts.push(`Retrait · ${pickup.points.map((id) => pickupNames.get(id) ?? id).join(', ')}`);
+  }
+  if (delivery === 'all') {
+    parts.push('Livraison');
+  } else if (delivery !== 'none') {
+    parts.push(`Livraison · ${delivery.zones.join(', ')}`);
+  }
+  return parts.join(' + ');
 }
 
 const BP_PER_PERCENT = 100;

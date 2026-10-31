@@ -24,7 +24,10 @@ describe("sameTerms — deux termes disent-ils la même chose ?", () => {
     ["l'effet", lineTerms({ effect: { kind: "percent_off", basisPoints: 1500 } })],
     ["la fin de fenêtre", lineTerms({ validTo: UNTIL })],
     ["le public", lineTerms({ audiences: PromotionAudienceSet.of([{ kind: "individuals" }]) })],
-    ["l'acheminement", lineTerms({ fulfillment: { kind: "delivery" } })],
+    [
+      "l'acheminement",
+      lineTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: "all" } }),
+    ],
     [
       "la portée",
       lineTerms({

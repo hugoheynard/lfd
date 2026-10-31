@@ -2,7 +2,6 @@ import {
   PromotionBlankTextError,
   PromotionEffectPointMismatchError,
   PromotionLineOnlyOptionError,
-  PromotionMissingTargetIdError,
   PromotionProductTargetAtLineError,
   PromotionReversedWindowError,
 } from "./errors/promotion-errors.js";
@@ -18,7 +17,7 @@ import {
 } from "./promotion-effect.js";
 import {
   applicationPointOf,
-  fulfillmentPickupIdOf,
+  assertFulfillment,
   type PromotionFulfillment,
 } from "./promotion-fulfillment.js";
 import type { PromotionScope } from "./promotion-scope.js";
@@ -81,7 +80,7 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
- * @throws les refus de `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
+ * @throws les refus de `assertFulfillment`, `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
  */
 export function assertTerms(terms: PromotionTerms): void {
   assertText("nom interne", terms.internalName);
@@ -93,7 +92,7 @@ export function assertTerms(terms: PromotionTerms): void {
   if (terms.validTo !== null && terms.validTo.getTime() <= terms.validFrom.getTime()) {
     throw new PromotionReversedWindowError(terms.validFrom, terms.validTo);
   }
-  assertTargets(terms);
+  assertFulfillment(terms.fulfillment);
   const point = applicationPointOf(terms.fulfillment);
   assertEffectValue(terms.effect);
   if (!EFFECTS_AT[point].includes(terms.effect.kind)) {
@@ -141,18 +140,6 @@ function assertAudienceLabels(terms: PromotionTerms): void {
     assertText(`libellé ${name}`, label.fr);
     assertOptionalText(`libellé ${name} anglais`, label.en);
     assertOptionalText(`libellé ${name} italien`, label.it);
-  }
-}
-
-/**
- * Les sociétés du public sont tenues par `PromotionAudienceSet` à sa
- * construction ; reste le point de retrait.
- *
- * @throws {PromotionMissingTargetIdError} un point nommé à vide.
- */
-function assertTargets(terms: PromotionTerms): void {
-  if (fulfillmentPickupIdOf(terms.fulfillment)?.trim() === "") {
-    throw new PromotionMissingTargetIdError("pickup_point");
   }
 }
 

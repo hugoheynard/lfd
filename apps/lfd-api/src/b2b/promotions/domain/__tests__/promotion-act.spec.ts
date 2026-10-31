@@ -5,7 +5,7 @@ import { FROM, UNTIL, basketTerms, lineTerms } from "./promotion-terms.fixture.j
 describe("la phrase figée d'une promotion", () => {
   it("dit l'effet, le public, l'acheminement et la fenêtre", () => {
     expect(describePromotion(lineTerms())).toBe(
-      "−20 % · tout le monde · tous acheminements · du 1er novembre 2026, sans date de fin",
+      "−20 % · tout le monde · dans le prix affiché · du 1er novembre 2026, sans date de fin",
     );
     expect(
       describePromotion(
@@ -13,6 +13,40 @@ describe("la phrase figée d'une promotion", () => {
       ),
     ).toBe(
       "−5,50 € sur le panier · tous sauf les pros actifs · retrait au point pk_coeur · du 1er novembre 2026 au 1er décembre 2026",
+    );
+  });
+
+  /** Plan des acheminements, § 8.4 : les points et les zones par leur NOM au moment du fait. */
+  it("nomme les points et les zones par leur libellé, à défaut par leur identifiant", () => {
+    const terms = basketTerms({
+      fulfillment: {
+        kind: "basket",
+        pickup: { points: ["pk_coeur"] },
+        delivery: { zones: ["zone_vallee", "zone_retiree"] },
+      },
+    });
+    const names = {
+      points: new Map([["pk_coeur", "Cœur de station"]]),
+      zones: new Map([["zone_vallee", "La vallée"]]),
+    };
+    expect(describePromotion(terms, names)).toContain(
+      "retrait au point Cœur de station et livraison dans les zones La vallée, zone_retiree",
+    );
+  });
+
+  it.each([
+    ["tous les points", { pickup: "all", delivery: "none" }, "· retrait ·"],
+    ["toutes les zones", { pickup: "none", delivery: "all" }, "· livraison ·"],
+    ["les deux", { pickup: "all", delivery: "all" }, "· retrait et livraison ·"],
+    [
+      "deux points",
+      { pickup: { points: ["a", "b"] }, delivery: "none" },
+      "· retrait aux points a, b ·",
+    ],
+    ["une zone", { pickup: "none", delivery: { zones: ["z"] } }, "· livraison en zone z ·"],
+  ] as const)("dit %s", (_case, reach, phrase) => {
+    expect(describePromotion(basketTerms({ fulfillment: { kind: "basket", ...reach } }))).toContain(
+      phrase,
     );
   });
 

@@ -380,7 +380,7 @@ describe("CartAdjustments — la promotion de livraison (L10)", () => {
     id: "promo_livraison",
     label: "−10 % en livraison",
     effect: { kind: "percent_off", basisPoints: 1_000 },
-    fulfillment: { kind: "delivery" },
+    fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
     validFrom: new Date(Date.UTC(2020, 0, 1)),
   });
 
@@ -408,7 +408,7 @@ describe("CartAdjustments — la promotion de livraison (L10)", () => {
       new OneZone(),
       OPEN,
       new Preferences(),
-      [{ ...EN_LIVRAISON, fulfillment: { kind: "pickup" } }],
+      [{ ...EN_LIVRAISON, fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }],
     );
 
     const resolved = await adjustments.forDelivery("73150", BASKET, pickupBuyer("b2c", null));

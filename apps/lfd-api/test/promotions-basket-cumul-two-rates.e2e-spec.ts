@@ -82,7 +82,7 @@ beforeEach(async () => {
       internalName: "Cumul A",
       label: { fr: LABEL_A, en: null, it: null },
       effect: { kind: "percent_off", value: 1_000 },
-      fulfillment: { kind: "pickup", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       cumulative: true,
     }),
   );
@@ -92,7 +92,7 @@ beforeEach(async () => {
       internalName: "Cumul B",
       label: { fr: LABEL_B, en: null, it: null },
       effect: { kind: "percent_off", value: 500 },
-      fulfillment: { kind: "pickup", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       cumulative: true,
     }),
   );

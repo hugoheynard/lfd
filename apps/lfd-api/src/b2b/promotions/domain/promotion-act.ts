@@ -34,6 +34,19 @@ export interface PromotionAct {
   readonly subjectLabel: string;
 }
 
+/**
+ * **Les noms des points et des zones au moment du fait** (plan
+ * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4) : le
+ * journal nomme ce qu'il vise par son libellé, pas par son identifiant. Un
+ * nom absent retombe sur l'identifiant (une zone supprimée depuis).
+ */
+export interface FulfillmentNames {
+  readonly points: ReadonlyMap<string, string>;
+  readonly zones: ReadonlyMap<string, string>;
+}
+
+export const NO_FULFILLMENT_NAMES: FulfillmentNames = { points: new Map(), zones: new Map() };
+
 /** L'acte d'un geste sur cette promotion, avec sa phrase figée. */
 export function promotionActOf(
   promotion: Promotion,
@@ -41,6 +54,7 @@ export function promotionActOf(
   actor: string,
   at: Date,
   reason: string | null,
+  names: FulfillmentNames = NO_FULFILLMENT_NAMES,
 ): PromotionAct {
   const terms = promotion.terms;
   return {
@@ -49,24 +63,29 @@ export function promotionActOf(
     actor,
     at,
     reason,
-    summary: describePromotion(terms),
+    summary: describePromotion(terms, names),
     subjectLabel: terms.internalName,
   };
 }
 
 /**
  * **La phrase que le staff lit** : « −20 % · particuliers inscrits · retrait
- * au point pk_1 · du 1er novembre 2026, sans date de fin ».
+ * au point Cœur de station et livraison · du 1er novembre 2026, sans date de
+ * fin ».
  *
- * Les sociétés et les points sont nommés par leur identifiant : le domaine ne
- * connaît pas leurs noms, et le résumé est figé à l'écriture.
+ * Les sociétés sont nommées par leur identifiant ; les points et les zones
+ * par le nom que l'appelant a lu au moment du fait (`names`), à défaut par
+ * leur identifiant. Le résumé est figé à l'écriture.
  */
-export function describePromotion(terms: PromotionTerms): string {
+export function describePromotion(
+  terms: PromotionTerms,
+  names: FulfillmentNames = NO_FULFILLMENT_NAMES,
+): string {
   return [
     describeEffect(terms.effect),
     // Plusieurs publics (L8b) se lisent « particuliers inscrits + pros ».
     terms.audiences.targets.map(describeAudience).join(" + "),
-    describeFulfillment(terms.fulfillment),
+    describeFulfillment(terms.fulfillment, names),
     describeWindow(terms.validFrom, terms.validTo),
     // Dit seulement quand coché (§ 16) : les phrases déjà figées n'en parlent pas.
     ...(terms.cumulative ? ["cumulable"] : []),
@@ -93,17 +112,31 @@ function describeAudience(audience: PromotionAudience): string {
     : label;
 }
 
-function describeFulfillment(fulfillment: PromotionFulfillment): string {
-  switch (fulfillment.kind) {
-    case "any":
-      return "tous acheminements";
-    case "pickup":
-      return "retrait";
-    case "pickup_point":
-      return `retrait au point ${fulfillment.pickupId}`;
-    case "delivery":
-      return "livraison";
+function describeFulfillment(fulfillment: PromotionFulfillment, names: FulfillmentNames): string {
+  if (fulfillment.kind === "displayed_price") {
+    return "dans le prix affiché";
   }
+  const parts: string[] = [];
+  const { pickup, delivery } = fulfillment;
+  if (pickup !== "none") {
+    parts.push(
+      pickup === "all"
+        ? "retrait"
+        : `retrait ${pickup.points.length === 1 ? "au point" : "aux points"} ${named(pickup.points, names.points)}`,
+    );
+  }
+  if (delivery !== "none") {
+    parts.push(
+      delivery === "all"
+        ? "livraison"
+        : `livraison ${delivery.zones.length === 1 ? "en zone" : "dans les zones"} ${named(delivery.zones, names.zones)}`,
+    );
+  }
+  return parts.join(" et ");
+}
+
+function named(ids: readonly string[], names: ReadonlyMap<string, string>): string {
+  return ids.map((id) => names.get(id) ?? id).join(", ");
 }
 
 function describeWindow(validFrom: Date, validTo: Date | null): string {

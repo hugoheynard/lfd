@@ -128,7 +128,7 @@ function terms(over: Partial<PromotionTermsPayload>): Record<string, unknown> {
     validFrom: daysAgo(1),
     validTo: null,
     audiences: [{ kind: "individuals_registered", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,
@@ -273,7 +273,7 @@ describe("les promotions de livraison (L10)", () => {
     await pose({
       internalName: "Livraison d'automne",
       audiences: [{ kind: "everyone", companyId: null }],
-      fulfillment: { kind: "delivery", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
       effect: { kind: "percent_off", value: 1_000 },
     });
 
@@ -306,7 +306,7 @@ describe("la mention au rayon (L10)", () => {
     await pose({
       internalName: "Retrait au Labo",
       audiences: [{ kind: "everyone", companyId: null }],
-      fulfillment: { kind: "pickup_point", pickupId: site },
+      fulfillment: { kind: "basket", pickup: { points: [site] }, delivery: "none" },
     });
 
     const item = jsonBody<ShopCatalogueView>(
@@ -320,7 +320,7 @@ describe("la mention au rayon (L10)", () => {
     expect(item?.fulfillmentOffers).toEqual([
       {
         effect: { kind: "percent", basisPoints: 2_000 },
-        fulfillment: { kind: "pickup_point", pickupId: site },
+        fulfillment: { pickup: { points: [site] }, delivery: "none" },
       },
     ]);
   });

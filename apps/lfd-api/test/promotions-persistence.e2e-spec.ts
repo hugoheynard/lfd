@@ -16,6 +16,7 @@ import { Promotion } from "../src/b2b/promotions/domain/promotion.js";
 import { PromotionAudienceSet } from "../src/b2b/promotions/domain/promotion-audience-set.js";
 import type { PromotionTerms } from "../src/b2b/promotions/domain/promotion-terms.js";
 import { bootstrapE2e, type E2eContext } from "./e2e-harness.js";
+import { seedPickupPoint } from "./promotion-fixtures.js";
 
 const FROM = new Date("2026-11-01T00:00:00.000Z");
 const UNTIL = new Date("2026-12-01T00:00:00.000Z");
@@ -33,7 +34,7 @@ const TERMS: PromotionTerms = {
   validFrom: FROM,
   validTo: UNTIL,
   audiences: PromotionAudienceSet.of([{ kind: "individuals_registered" }]),
-  fulfillment: { kind: "any" },
+  fulfillment: { kind: "displayed_price" },
   scope: {
     mode: "all_except",
     rules: [
@@ -60,6 +61,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await seedPickupPoint(ctx, "pk_coeur");
 });
 
 async function saveNew(id: string, terms: PromotionTerms = TERMS): Promise<Promotion> {
@@ -69,6 +71,50 @@ async function saveNew(id: string, terms: PromotionTerms = TERMS): Promise<Promo
 }
 
 describe("la promotion en base", () => {
+  /** Plan des acheminements, § 4 : un point ET une zone, dans les tables de liaison. */
+  it("fait l'aller-retour d'un point et de deux zones, liaisons comprises", async () => {
+    await seedPickupPoint(ctx, "pk_gare", "La gare");
+    for (const [id, label, prefix] of [
+      ["zone_vallee", "La vallée", "73150"],
+      ["zone_sommet", "Le sommet", "73320"],
+    ] as const) {
+      await ctx.prisma.deliveryZone.create({
+        data: { id, label, postalPrefixes: [prefix], feeMode: "amount", feeValue: 500 },
+      });
+    }
+    const posed = await saveNew("promo_e2e_zones", {
+      ...TERMS,
+      fulfillment: {
+        kind: "basket",
+        pickup: { points: ["pk_gare", "pk_coeur"] },
+        delivery: { zones: ["zone_sommet", "zone_vallee"] },
+      },
+      ownFloor: null,
+      stacksOverMercuriale: false,
+      effect: { kind: "percent_off", basisPoints: 1000 },
+      scope: { mode: "all_except", rules: [] },
+      conditions: [],
+    });
+
+    const loaded = await promotions.load("promo_e2e_zones");
+    expect(loaded?.toPersistence()).toEqual(posed.toPersistence());
+    expect(loaded?.terms.fulfillment).toEqual({
+      kind: "basket",
+      pickup: { points: ["pk_coeur", "pk_gare"] },
+      delivery: { zones: ["zone_sommet", "zone_vallee"] },
+    });
+    const row = await ctx.prisma.promotion.findUniqueOrThrow({
+      where: { id: "promo_e2e_zones" },
+      select: { fulfillmentPickup: true, fulfillmentDelivery: true, fulfillmentKind: true },
+    });
+    // Les anciennes colonnes ne sont plus écrites (§ 9).
+    expect(row).toEqual({
+      fulfillmentPickup: "listed",
+      fulfillmentDelivery: "listed",
+      fulfillmentKind: null,
+    });
+  });
+
   it("fait l'aller-retour sans perte, portée et conditions comprises", async () => {
     const posed = await saveNew("promo_e2e_1");
     const loaded = await promotions.load("promo_e2e_1");
@@ -92,7 +138,7 @@ describe("la promotion en base", () => {
     await promotions.save(paused, promotionActOf(paused, "paused", STAFF, UNTIL, null));
     const revised = paused.revise({
       ...TERMS,
-      fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+      fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
       ownFloor: null,
       stacksOverMercuriale: false,
       scope: {

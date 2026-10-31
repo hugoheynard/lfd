@@ -1,6 +1,6 @@
 # Plan — l'acheminement d'une promotion se coche
 
-> 📝 **Plan du 2026-10-31**, doc-first. Touche l'**argent** (où la remise
+> 📝 **Plan du 2026-10-31**, contredit deux fois par vitruve (§ 8, § 9 font foi), prêt à bâtir. Touche l'**argent** (où la remise
 > s'applique) et porte une **migration** de données : `vitruve` avant le
 > bâti. Rien n'est bâti.
 
@@ -130,3 +130,128 @@ Carte « Sur quel mode d'acheminement et de consommation » :
 - Une zone archivée ou supprimée après la pose : la promotion garde son
   identifiant, n'admet plus rien dans cette zone ; à afficher « zone
   retirée » à l'écran (à confirmer au bâti selon le cycle de vie des zones).
+
+## 8. Après vitruve (2026-10-31) — ce qui remplace les §§ 2 à 6 là où ils divergent
+
+Première contradiction : trois BLOQUANTS, sept SÉRIEUX. Décisions de Hugo le
+même jour : **(a) refuser la suppression d'une zone qu'une promotion vise** ;
+**une bascule en un seul déploiement** (pré-release, § 0 du CLAUDE.md) ; et
+« séparer retrait et livraison est indispensable ».
+
+### 8.1 La zone entre dans le fait d'acheminement
+
+- `FulfillmentFact` (`promotion-targeting.ts:48-52`) devient
+  `{ method: "pickup", pickupId } | { method: "delivery", zoneId: string | null }`.
+- La zone se résout par le code postal, par la règle même des frais
+  (`resolveForPostalCode`, `prisma-delivery-zone.repository.ts:90`, préfixe
+  le plus long), exposée aux commandes par un **port** de lecture
+  (`DeliveryZoneOfPostalCode`) que `delivery-zones` implémente ; `promotions`
+  ne l'importe pas, il reçoit le fait déjà résolu.
+- Producteurs du fait à brancher : `cart-adjustments.service.ts:212`
+  (caisse et devis), `guest-sign-in-offer.service.ts:91` (offre de
+  connexion), `promotion-overlap.ts:291` (témoins). La commande passée garde
+  sa zone (`orders.delivery_zone_id`) : la révision d'une commande relit la
+  même.
+- Livraison sans zone résolue (code postal hors zones) : admise par
+  `delivery = all` seulement — et la commande, de toute façon, n'a pas de
+  frais de zone.
+
+### 8.2 Zones et points supprimés
+
+- `promotion_delivery_zones.zone_id` : clé étrangère **RESTRICT**. Supprimer
+  une zone qu'une promotion non archivée vise est refusé avant la base par
+  `delivery-zones`, qui lit les promotions par un port (« Cette zone est
+  visée par la promotion « X » : retirez-la de la promotion ou archivez
+  celle-ci ») ; une promotion archivée libère la zone (la ligne de liaison
+  part avec l'archivage — à trancher au bâti : garder la liaison et
+  RESTRICT seulement sur les non archivées passe par le contrôle applicatif,
+  la FK reste `RESTRICT` et l'archivage efface ses liaisons).
+- Points de retrait : un site **s'archive**, il ne se supprime pas
+  (`settings.prisma`, `archivedAt` — « remplace la suppression physique »).
+  `promotion_pickup_points.pickup_id` en FK `RESTRICT` ; un point archivé
+  reste dans la promotion et n'admet plus rien (plus de commande à ce point).
+
+### 8.3 Le rang de spécificité se calcule par fait
+
+- `AdmittedPromotion` porte son rang d'acheminement **pour le fait jugé** ;
+  `promotionsAdmitted` (`live-promotion.ts:110`) le calcule ;
+  `targetingRankOf` (`live-promotion.ts:146-153`) le lit au lieu de
+  `FULFILLMENT_RANK[kind]`. Rangs : point nommé ou zone nommée = 2 ; tous
+  les points ou toutes les zones = 1 ; `displayed_price` = 0.
+- Consommateurs inchangés dans leur forme : `basket-promotion-plan.ts:123`,
+  `pickup-discount-announcement.ts:137`, `pricing/domain/specificity.ts:94`
+  (via `price-rule.ts:229`) — ce dernier ne voit que des promotions
+  `displayed_price` (point ligne), rang 0 comme aujourd'hui.
+- Contre-exemple de vitruve, tenu : A = {points [P1], livraison toutes},
+  B = {retrait tous, zones [Z]} — en Z, B (2) avant A (1) ; en P1, A (2)
+  avant B (1).
+
+### 8.4 Le reste
+
+- **Lecteurs** : la liste du § 2 est fausse (« dix fichiers ») ; le bâti
+  part de la liste de vitruve — `promotion-terms-equality.ts`,
+  `promotion-write-guard.ts:43`, `line-promotion-supply.ts:23` (filtre
+  `fulfillment_kind <> 'any'`), `prisma-live-promotion.readers.ts`,
+  `prisma-promotion-browser.readers.ts`, `promotion-rivals.reader.ts`,
+  `orders/domain/services/fulfillment-promotion.ts`,
+  `cart-adjustments.service.ts`, `shop-catalogue-offers.ts`,
+  `shelf-promotion-offers.ts`, boutique `client/shop/promotion-offers.ts`,
+  back-office `promotion-words.ts`, `promotion-format.ts`,
+  `promotion-summary.ts`, `promotion-draft.ts`, semis
+  `station-promotions.seed.ts`, onze e2e et `promotion-fixtures.ts`.
+- **Contrat de la boutique** (`promotion-offer.ts:26-29`) : on le casse
+  (pré-release). Une offre porte l'ENSEMBLE (`pickup`, `delivery`) d'une
+  promotion ; la boutique dit « au retrait à … » ou « en livraison » selon
+  ce que le client regarde.
+- **Révision L9** : l'agrégat **trie** points et zones à la construction ;
+  reposer la même liste dans un autre ordre n'est pas une révision.
+  Et l'**adresse livrée** compte parmi les changements d'acheminement jugés
+  à la révision (avec le mode et le point) : la zone entrant dans le fait,
+  une autre adresse peut retirer la promotion (validé le 2026-10-31).
+- **Recouvrement** : témoins ajoutés — chaque zone de chaque liste, « une
+  autre zone », « livraison sans zone ».
+- **Persistance** : `application_point` reste dérivé et réécrit ;
+  `fulfillment_kind` et `fulfillment_pickup_id` **disparaissent** dans le
+  même déploiement (bascule unique), après la migration de données ;
+  `listed` relu sans ligne de liaison = erreur de lecture nommée (jamais un
+  ensemble vide silencieux).
+- **Retour arrière** : gratuit jusqu'à la première promotion « point +
+  zone » posée en production ; après, une restauration perdrait sa forme.
+- **Journal** : les nouveaux faits nomment les points et les zones (leurs
+  libellés au moment du fait), pas leurs identifiants ; les faits passés
+  restent tels qu'écrits.
+
+## 9. Seconde passe de vitruve (2026-10-31) — aucun bloquant ; tranché
+
+- **Ports, sans cycle** : `promotions` déclare `DeliveryZoneDirectory`
+  (« ces zones existent-elles, leurs libellés ») et `PickupPointDirectory`
+  (même question pour les sites) ; `delivery-zones` déclare
+  `PromotionsTargetingZone` (« quelles promotions non archivées visent
+  cette zone ») ; `appBootstrap` relie. Aucun des modules n'importe l'autre.
+  Poser une promotion sur une zone ou un site inconnu est un refus nommé,
+  jamais une violation de clé étrangère.
+- ⚠️ **Corrigé le 2026-10-31 (auteur, au bâti)** : la suppression d'une zone
+  est refusée tant qu'une promotion la nomme, **archivée comprise** — la FK
+  est `RESTRICT`, le fait de suppression ne nomme plus de promotions, et
+  `listed` sans liaison devient inatteignable (la CASCADE ci-dessous rendait
+  illisible toute promotion archivée dont la zone partait). Le reste de ce
+  point est périmé.
+- **Suppression d'une zone** : refusée tant qu'une promotion **non
+  archivée** la vise (décision (a) de Hugo), contrôle et suppression dans la
+  même transaction, la zone verrouillée (`FOR UPDATE`). La FK
+  `promotion_delivery_zones.zone_id` est en `ON DELETE CASCADE` : une
+  promotion **archivée** perd la liaison à la suppression de la zone ; le
+  fait de suppression nomme les promotions archivées touchées, et le journal
+  de chaque promotion garde le libellé de la zone. L'archivage d'une
+  promotion n'efface rien.
+- **Colonnes anciennes** : `fulfillment_kind` et `fulfillment_pickup_id`
+  **restent en base**, rendues nullables, plus écrites ni lues (« une
+  colonne morte reste en base », CLAUDE.md § 0, qui vaut aussi en
+  pré-release). La bascule reste unique pour le code ; le retour arrière
+  n'est plus gratuit dès le déploiement (le code précédent lirait des
+  colonnes vides pour les nouvelles promotions).
+- **Livraison sans zone** : inatteignable à la caisse
+  (`cart-adjustments.service.ts:202-203` lève
+  `NoDeliveryZoneForPostalCodeError`) ; la règle « admise par
+  `delivery = all` seulement » ne concerne que l'annonce et les témoins.
+- Ligne citée : `resolveForPostalCode` est à `prisma-delivery-zone.repository.ts:91`.

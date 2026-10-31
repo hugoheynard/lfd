@@ -24,15 +24,16 @@ describe('les mots de l’écran Promotions', () => {
 
   it('nomme le point de retrait quand il est connu, son identifiant sinon', () => {
     const names = new Map([['pk_coeur', 'Cœur de station']]);
-    expect(fulfillmentPhrase({ kind: 'pickup_point', pickupId: 'pk_coeur' }, names)).toBe(
-      'Retrait · Cœur de station',
-    );
-    expect(fulfillmentPhrase({ kind: 'pickup_point', pickupId: 'pk_x' }, names)).toBe(
-      'Retrait · pk_x',
-    );
-    expect(fulfillmentPhrase({ kind: 'any', pickupId: null }, names)).toBe(
-      'Tous les acheminements',
-    );
+    expect(
+      fulfillmentPhrase(
+        { kind: 'basket', pickup: { points: ['pk_coeur'] }, delivery: 'none' },
+        names,
+      ),
+    ).toBe('Retrait · Cœur de station');
+    expect(
+      fulfillmentPhrase({ kind: 'basket', pickup: { points: ['pk_x'] }, delivery: 'none' }, names),
+    ).toBe('Retrait · pk_x');
+    expect(fulfillmentPhrase({ kind: 'displayed_price' }, names)).toBe('Tous les acheminements');
   });
 
   it("dit l'effet dans son unité", () => {

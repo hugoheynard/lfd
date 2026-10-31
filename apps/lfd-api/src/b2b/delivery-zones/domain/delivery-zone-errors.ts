@@ -16,3 +16,20 @@ export class DuplicatePostalCodeError extends BusinessError {
     );
   }
 }
+
+/**
+ * Une zone qu'une promotion nomme, archivée comprise (**409**) — plan
+ * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9 : une
+ * promotion garde la trace de ses zones.
+ */
+export class DeliveryZoneTargetedByPromotionError extends BusinessError {
+  constructor(
+    readonly promotionName: string,
+    readonly archived: boolean,
+  ) {
+    super(
+      "delivery_zone.targeted_by_promotion",
+      `Cette zone est nommée par la promotion « ${promotionName} »${archived ? " (archivée)" : ""} : une promotion garde la trace de ses zones.`,
+    );
+  }
+}

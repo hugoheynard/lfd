@@ -30,7 +30,7 @@ export function promotionTerms(over: Partial<PromotionTermsPayload> = {}): Promo
     validFrom: daysAgo(10),
     validTo: null,
     audiences: [{ kind: "everyone", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,
@@ -90,8 +90,34 @@ export async function poseSiteDiscount(
           value: discount.value,
         },
         audiences: [{ kind, companyId: null }],
-        fulfillment: { kind: "pickup_point", pickupId },
+        fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
       }),
     );
   }
+}
+
+/**
+ * **Un point de retrait à identifiant connu** (plan
+ * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) : une
+ * promotion ne nomme plus qu'un site qui existe — clé étrangère, et refus
+ * nommé avant elle. Les suites qui visaient un point inventé (`pk_coeur`) le
+ * sèment ici. Écrit en Prisma : la route de création tire son identifiant,
+ * et ces suites ont besoin de le connaître d'avance.
+ */
+export async function seedPickupPoint(
+  ctx: E2eContext,
+  id: string,
+  label = "Cœur de station",
+): Promise<void> {
+  await ctx.prisma.site.create({
+    data: {
+      id,
+      label,
+      ligne1: "1 place de la Station",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+    },
+  });
 }

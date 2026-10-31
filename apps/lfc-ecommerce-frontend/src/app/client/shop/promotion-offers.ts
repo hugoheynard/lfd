@@ -31,26 +31,34 @@ export function offerDiscountLabel(
 }
 
 /**
- * La mention d'UNE offre — `null` quand le point qu'elle nomme n'est pas (ou
- * pas encore) dans la liste servie : une mention sans lieu promettrait la
- * remise partout.
+ * Les mentions d'UNE offre — une par acheminement qu'elle ouvre (une offre
+ * porte l'ENSEMBLE depuis `documentation/promotions/plan-acheminements-a-cocher.md`).
+ * Un point qui n'est pas (ou pas encore) dans la liste servie n'est pas dit :
+ * une mention sans lieu promettrait la remise partout. Une sélection de zones
+ * se dit « en livraison » jusqu'au lot de la boutique.
  */
-export function fulfillmentOfferLabel(
+export function fulfillmentOfferLabels(
   offer: ShopItemFulfillmentOfferView,
   product: ClientCopy['product'],
   pickupLabel: (id: string) => string | null,
-): string | null {
+): readonly string[] {
   const discount = offerDiscountLabel(offer.effect, product);
-  switch (offer.fulfillment.kind) {
-    case 'pickup':
-      return fill(product.offerOnPickup, { discount });
-    case 'delivery':
-      return fill(product.offerOnDelivery, { discount });
-    case 'pickup_point': {
-      const place = pickupLabel(offer.fulfillment.pickupId);
-      return place === null ? null : fill(product.offerAtPickupPoint, { discount, place });
+  const { pickup, delivery } = offer.fulfillment;
+  const labels: string[] = [];
+  if (pickup === 'all') {
+    labels.push(fill(product.offerOnPickup, { discount }));
+  } else if (pickup !== 'none') {
+    for (const id of pickup.points) {
+      const place = pickupLabel(id);
+      if (place !== null) {
+        labels.push(fill(product.offerAtPickupPoint, { discount, place }));
+      }
     }
   }
+  if (delivery !== 'none') {
+    labels.push(fill(product.offerOnDelivery, { discount }));
+  }
+  return labels;
 }
 
 /**
@@ -77,13 +85,13 @@ export class FulfillmentOfferLabels {
     if (offers.length === 0) {
       return [];
     }
-    if (offers.some((offer) => offer.fulfillment.kind === 'pickup_point')) {
+    if (offers.some((offer) => typeof offer.fulfillment.pickup === 'object')) {
       untracked(() => void this.points.hydrate());
     }
     const labels = this.labelsById();
     const product = this.t().product;
-    return offers
-      .map((offer) => fulfillmentOfferLabel(offer, product, (id) => labels.get(id) ?? null))
-      .filter((label): label is string => label !== null);
+    return offers.flatMap((offer) =>
+      fulfillmentOfferLabels(offer, product, (id) => labels.get(id) ?? null),
+    );
   }
 }

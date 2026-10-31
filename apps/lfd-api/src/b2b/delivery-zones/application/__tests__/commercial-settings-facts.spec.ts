@@ -22,6 +22,7 @@ import { RemoveDeliveryZoneCommand } from "../remove-delivery-zone.command.js";
 import { RemoveDeliveryZoneHandler } from "../remove-delivery-zone.handler.js";
 import { UpdateDeliveryZoneCommand } from "../update-delivery-zone.command.js";
 import { UpdateDeliveryZoneHandler } from "../update-delivery-zone.handler.js";
+import { FixedPromotionsTargetingZone, RecordingZoneLock } from "./remove-delivery-zone.doubles.js";
 
 /**
  * **Les réglages qui décident du prix payé.**
@@ -116,9 +117,13 @@ describe("Les réglages commerciaux au journal", () => {
     const events = new RecordingPublisher();
     const stored: DeliveryZoneView = { ...ZONE, id: "zone_3" };
 
-    await new RemoveDeliveryZoneHandler(zones(stored), events, new DirectUnitOfWork()).execute(
-      new RemoveDeliveryZoneCommand("zone_3"),
-    );
+    await new RemoveDeliveryZoneHandler(
+      zones(stored),
+      new RecordingZoneLock(),
+      new FixedPromotionsTargetingZone(),
+      events,
+      new DirectUnitOfWork(),
+    ).execute(new RemoveDeliveryZoneCommand("zone_3"));
 
     expect(events.traced[0]?.journalFact()).toMatchObject({
       type: "delivery_zone.removed",
@@ -131,9 +136,13 @@ describe("Les réglages commerciaux au journal", () => {
     const events = new RecordingPublisher();
 
     await expect(
-      new RemoveDeliveryZoneHandler(zones(), events, new DirectUnitOfWork()).execute(
-        new RemoveDeliveryZoneCommand("zone_absente"),
-      ),
+      new RemoveDeliveryZoneHandler(
+        zones(),
+        new RecordingZoneLock(),
+        new FixedPromotionsTargetingZone(),
+        events,
+        new DirectUnitOfWork(),
+      ).execute(new RemoveDeliveryZoneCommand("zone_absente")),
     ).rejects.toBeInstanceOf(DeliveryZoneNotFoundError);
     expect(events.traced).toHaveLength(0);
   });

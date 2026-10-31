@@ -29,7 +29,7 @@ export function pickupDiscountPromotion(
         ? { kind: "percent_off", basisPoints: discount.adjustment.bp }
         : { kind: "basket_amount_off", cents: discount.adjustment.cents },
     audience: clientele === "b2b" ? { kind: "pros_active" } : { kind: "everyone_but_active_pros" },
-    fulfillment: { kind: "pickup_point", pickupId },
+    fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
     scope: repriseScopeOf(discount),
   });
 }

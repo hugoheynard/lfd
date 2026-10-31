@@ -15,6 +15,7 @@ import type { PickupAddressRepository } from "../../../../pickup-addresses/domai
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import type { OrderLineClassificationReader } from "../../../domain/ports/order-line-classification.reader.js";
 import { BasketPromotions } from "../basket-promotions.service.js";
+import { DeliveryZoneOfPostalCodeReader } from "../../../domain/ports/delivery-zone-of-postal-code.reader.js";
 import { GuestSignInOffer } from "../guest-sign-in-offer.service.js";
 import type { PickupBuyer } from "../cart-adjustments.service.js";
 
@@ -102,6 +103,21 @@ export function guestSignInOffer(
     new FixedLinePromotions(promotions.line ?? []),
     new FixedBasketPromotions(promotions.basket ?? []),
     classifications,
+    new FixedZoneOfPostalCode(),
     clock,
   );
+}
+
+/**
+ * La zone d'un code postal : `zone_<code>` pour tout code postal, sauf ceux
+ * de `uncovered` (plan des acheminements, § 8.1).
+ */
+export class FixedZoneOfPostalCode extends DeliveryZoneOfPostalCodeReader {
+  constructor(private readonly uncovered: readonly string[] = []) {
+    super();
+  }
+
+  zoneIdOf(codePostal: string): Promise<string | null> {
+    return Promise.resolve(this.uncovered.includes(codePostal) ? null : `zone_${codePostal}`);
+  }
 }

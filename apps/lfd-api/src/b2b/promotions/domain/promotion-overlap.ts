@@ -10,7 +10,8 @@ import { audienceCompanyIdOf, type PromotionAudience } from "./promotion-audienc
 import type { PromotionAudienceSet } from "./promotion-audience-set.js";
 import {
   applicationPointOf,
-  fulfillmentPickupIdOf,
+  listedPointsOf,
+  listedZonesOf,
   type PromotionFulfillment,
 } from "./promotion-fulfillment.js";
 import { promotionScopeCovers, type PromotionScopePoint } from "./promotion-scope.js";
@@ -41,7 +42,8 @@ export interface PromotionRival {
 }
 
 /**
- * **CHEVAUCHEMENT** : même point d'application, même acheminement, des
+ * **CHEVAUCHEMENT** : même point d'application, des acheminements qui
+ * admettent une même commande (plan des acheminements, § 3), des
  * publics dont les COUVERTURES se croisent (une feuille de la partition, ou
  * une même société — § 15.6, L8b), fenêtres qui se recouvrent, et au moins
  * un article vendable couvert par les deux. Le message nomme l'autre
@@ -171,12 +173,11 @@ export function assertCumulativeBasketCapacity(
   }
 }
 
-/** Le public commun de deux promotions au même acheminement, ou `null`. */
+/** Le public commun de deux promotions dont les acheminements se croisent, ou `null`. */
 function crossingOf(left: PromotionTerms, right: PromotionTerms): string | null {
-  const sameFulfillment =
-    left.fulfillment.kind === right.fulfillment.kind &&
-    fulfillmentPickupIdOf(left.fulfillment) === fulfillmentPickupIdOf(right.fulfillment);
-  return sameFulfillment ? left.audiences.crossing(right.audiences) : null;
+  return fulfillmentsMeet(left.fulfillment, right.fulfillment)
+    ? left.audiences.crossing(right.audiences)
+    : null;
 }
 
 /** La période commune de deux fenêtres (fin exclue), ou `null`. */
@@ -282,17 +283,18 @@ function buyer(
   };
 }
 
-/** **Une commande peut-elle être servie d'une façon que les deux admettent ?** */
+/**
+ * **Une commande peut-elle être servie d'une façon que les deux admettent ?**
+ * Témoins (plan des acheminements, § 8.4) : chaque point et chaque zone
+ * nommés, « un autre point », « une autre zone », « livraison sans zone ».
+ */
 export function fulfillmentsMeet(left: PromotionFulfillment, right: PromotionFulfillment): boolean {
-  const points = [fulfillmentPickupIdOf(left), fulfillmentPickupIdOf(right)].filter(
-    (id): id is string => id !== null,
-  );
+  const points = [...listedPointsOf(left), ...listedPointsOf(right), ANY_OTHER];
+  const zones = [...listedZonesOf(left), ...listedZonesOf(right), ANY_OTHER];
   const facts: FulfillmentFact[] = [
-    { method: "delivery", pickupId: null },
-    ...[...new Set([...points, ANY_OTHER])].map((pickupId): FulfillmentFact => ({
-      method: "pickup",
-      pickupId,
-    })),
+    ...[...new Set(points)].map((pickupId): FulfillmentFact => ({ method: "pickup", pickupId })),
+    ...[...new Set(zones)].map((zoneId): FulfillmentFact => ({ method: "delivery", zoneId })),
+    { method: "delivery", zoneId: null },
   ];
   return facts.some((fact) => fulfillmentAdmits(left, fact) && fulfillmentAdmits(right, fact));
 }

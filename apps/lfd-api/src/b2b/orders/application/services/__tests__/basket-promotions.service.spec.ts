@@ -45,7 +45,7 @@ const REPRISE = livePromotion({
   id: "pd_pk_coeur_b2c",
   validFrom: FROM,
   audience: { kind: "everyone_but_active_pros" },
-  fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+  fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
 });
 
 class FailingBasketPromotions extends BasketPromotionReader {
@@ -107,7 +107,7 @@ describe("BasketPromotions.resolve", () => {
         individuals: { fr: "Merci d'être inscrit", en: "Thanks for joining", it: null },
         pros: { fr: "Offre pro", en: null, it: null },
       },
-      fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+      fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
     });
     const { service } = subject(new FixedBasketPromotions([both]));
     const registered = await service.resolve({
@@ -174,14 +174,19 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
   });
   const delivering = {
     ...REQUEST,
-    buyer: { ...ANY_BUYER, fulfillment: { method: "delivery" as const, pickupId: null } },
+    buyer: { ...ANY_BUYER, fulfillment: { method: "delivery" as const, zoneId: null } },
   };
   const pickupPromo = (over: Parameters<typeof livePromotion>[0]) =>
     livePromotion({ validFrom: FROM, ...over });
 
   it("une promotion « en retrait » vaut à tout point, jamais à la livraison", async () => {
     const { service } = subject(
-      new FixedBasketPromotions([pickupPromo({ id: "retrait", fulfillment: { kind: "pickup" } })]),
+      new FixedBasketPromotions([
+        pickupPromo({
+          id: "retrait",
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+        }),
+      ]),
     );
 
     expect((await service.resolve(atPoint("pk_a"))).promotionId).toBe("retrait");
@@ -191,7 +196,12 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
 
   it("une promotion « en livraison » ne vaut pas au retrait", async () => {
     const { service } = subject(
-      new FixedBasketPromotions([pickupPromo({ id: "livr", fulfillment: { kind: "delivery" } })]),
+      new FixedBasketPromotions([
+        pickupPromo({
+          id: "livr",
+          fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
+        }),
+      ]),
     );
 
     expect((await service.resolve(delivering)).promotionId).toBe("livr");
@@ -202,10 +212,13 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
   it("le point précis bat « le retrait », et seulement à son point", async () => {
     const { service } = subject(
       new FixedBasketPromotions([
-        pickupPromo({ id: "a_retrait", fulfillment: { kind: "pickup" } }),
+        pickupPromo({
+          id: "a_retrait",
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+        }),
         pickupPromo({
           id: "z_point",
-          fulfillment: { kind: "pickup_point", pickupId: "pk_a" },
+          fulfillment: { kind: "basket", pickup: { points: ["pk_a"] }, delivery: "none" },
           effect: { kind: "percent_off", basisPoints: 100 },
         }),
       ]),
@@ -221,7 +234,7 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
         pickupPromo({
           id: "inscrits",
           audience: { kind: "individuals_registered" },
-          fulfillment: { kind: "pickup" },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
         }),
       ]),
     );
@@ -242,7 +255,7 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
         pickupPromo({
           id: "invites",
           audience: { kind: "individuals_guest" },
-          fulfillment: { kind: "pickup" },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
         }),
       ]),
     );
@@ -267,8 +280,17 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
   ])("fenêtre : %s", async (_label, from, edge, applies) => {
     const promo =
       from === null
-        ? pickupPromo({ id: "w", validFrom: edge, fulfillment: { kind: "pickup" } })
-        : pickupPromo({ id: "w", validFrom: from, validTo: edge, fulfillment: { kind: "pickup" } });
+        ? pickupPromo({
+            id: "w",
+            validFrom: edge,
+            fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+          })
+        : pickupPromo({
+            id: "w",
+            validFrom: from,
+            validTo: edge,
+            fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+          });
     const { service } = subject(new FixedBasketPromotions([promo]));
 
     expect((await service.resolve(REQUEST)).promotionId).toBe(applies ? "w" : null);
@@ -277,7 +299,11 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
   it("une promotion en pause depuis maintenant ne remise plus", async () => {
     const { service } = subject(
       new FixedBasketPromotions([
-        pickupPromo({ id: "p", fulfillment: { kind: "pickup" }, suspendedFrom: NOW }),
+        pickupPromo({
+          id: "p",
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+          suspendedFrom: NOW,
+        }),
       ]),
     );
 
@@ -290,13 +316,16 @@ describe("BasketPromotions.resolve — retrait, point, livraison", () => {
     const classes = new FixedLineClassifications({});
     const scoped = pickupPromo({
       id: "scoped",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: {
         mode: "only",
         rules: [{ target: "category", targetId: "c_pains", eligible: true, targetRank: null }],
       },
     });
-    const plain = pickupPromo({ id: "plain", fulfillment: { kind: "pickup" } });
+    const plain = pickupPromo({
+      id: "plain",
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    });
     const build = (promotions: readonly LivePromotion[]) =>
       new BasketPromotions(
         new FixedBasketPromotions(promotions),

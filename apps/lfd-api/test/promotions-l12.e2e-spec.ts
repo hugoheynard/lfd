@@ -108,7 +108,7 @@ function atPoint(
     validTo: null,
     audienceLabels: { individuals: null, pros: null },
     audiences: [{ kind: "everyone_but_active_pros", companyId: null }],
-    fulfillment: { kind: "pickup_point", pickupId },
+    fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,

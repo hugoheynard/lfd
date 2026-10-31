@@ -117,7 +117,7 @@ describe("ListPromotionsHandler", () => {
     expect(view.promotions.map((p) => p.id)).toEqual(["p_coeur"]);
     expect(view.promotions[0]).toMatchObject({
       applicationPoint: "basket",
-      fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+      fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
       audience: { kind: "everyone_but_active_pros", companyId: null },
       effect: { kind: "percent_off", value: 1000 },
     });

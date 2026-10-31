@@ -6,6 +6,7 @@ import { PromotionRepository } from "../../domain/ports/promotion.repository.js"
 import { promotionActOf } from "../../domain/promotion-act.js";
 import { Promotion } from "../../domain/promotion.js";
 import { PosePromotionCommand } from "./pose-promotion.command.js";
+import { PromotionFulfillmentNames } from "./promotion-fulfillment-names.js";
 import { PromotionWriteGuard } from "./promotion-write-guard.js";
 
 /** Rend l'identifiant de la promotion posée ; le client relit ensuite. */
@@ -14,6 +15,7 @@ export class PosePromotionHandler implements ICommandHandler<PosePromotionComman
   constructor(
     private readonly promotions: PromotionRepository,
     private readonly guard: PromotionWriteGuard,
+    private readonly names: PromotionFulfillmentNames,
     private readonly ids: IdGenerator,
     private readonly clock: Clock,
   ) {}
@@ -21,10 +23,11 @@ export class PosePromotionHandler implements ICommandHandler<PosePromotionComman
   async execute(command: PosePromotionCommand): Promise<string> {
     const now = this.clock.now();
     const promotion = Promotion.pose(this.ids.next(), command.terms, command.staffUserId, now);
+    const names = await this.names.required(promotion.terms.fulfillment);
     await this.guard.admitsPlace(promotion);
     await this.promotions.save(
       promotion,
-      promotionActOf(promotion, "posed", command.staffUserId, now, command.terms.reason),
+      promotionActOf(promotion, "posed", command.staffUserId, now, command.terms.reason, names),
     );
     return promotion.id;
   }

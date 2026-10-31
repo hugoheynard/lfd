@@ -6,7 +6,7 @@ import { FixedBasketPromotions } from "./promotion-supply.doubles.js";
 const AT_COEUR = livePromotion({
   id: "pd_coeur_b2b",
   audience: { kind: "pros_active" },
-  fulfillment: { kind: "pickup_point", pickupId: "coeur" },
+  fulfillment: { kind: "basket", pickup: { points: ["coeur"] }, delivery: "none" },
 });
 
 describe("PromotionPickupDiscountAnnouncer", () => {

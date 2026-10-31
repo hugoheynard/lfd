@@ -9,7 +9,7 @@ import { ASKED_AT, LIVE_FROM, livePromotion } from "./live-promotion.fixture.js"
 const PROS_AT_COEUR = livePromotion({
   id: "pd_coeur_b2b",
   audience: { kind: "pros_active" },
-  fulfillment: { kind: "pickup_point", pickupId: "coeur" },
+  fulfillment: { kind: "basket", pickup: { points: ["coeur"] }, delivery: "none" },
   scope: {
     mode: "all_except",
     rules: [
@@ -23,7 +23,7 @@ const PUBLIC_AT_COEUR = livePromotion({
   id: "pd_coeur_b2c",
   effect: { kind: "basket_amount_off", cents: 300 },
   audience: { kind: "everyone_but_active_pros" },
-  fulfillment: { kind: "pickup_point", pickupId: "coeur" },
+  fulfillment: { kind: "basket", pickup: { points: ["coeur"] }, delivery: "none" },
 });
 
 /** Le libellé commun des fixtures, sans traduction : le français dans les trois langues. */
@@ -57,6 +57,31 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
     });
   });
 
+  /** Plan des acheminements, § 3 : une promotion annonce au point P si elle l'admet au retrait. */
+  it("annonce une promotion « un point + une zone » à son point, ni ailleurs ni pour sa seule zone", () => {
+    const pointAndZone = livePromotion({
+      id: "point_zone",
+      audience: { kind: "pros_active" },
+      fulfillment: {
+        kind: "basket",
+        pickup: { points: ["coeur"] },
+        delivery: { zones: ["zone_vallee"] },
+      },
+    });
+    const zoneOnly = livePromotion({
+      id: "zone_seule",
+      audience: { kind: "pros_active" },
+      fulfillment: { kind: "basket", pickup: "none", delivery: { zones: ["zone_vallee"] } },
+    });
+
+    expect(announcedPickupDiscounts([pointAndZone], "coeur", ASKED_AT).b2b?.adjustment).toEqual({
+      mode: "percent",
+      bp: 2000,
+    });
+    expect(announcedPickupDiscounts([pointAndZone], "gare", ASKED_AT).b2b).toBeNull();
+    expect(announcedPickupDiscounts([zoneOnly], "coeur", ASKED_AT).b2b).toBeNull();
+  });
+
   it("n'annonce rien à un autre point, ni une promotion de ligne", () => {
     const line = livePromotion({ id: "line" });
     expect(announcedPickupDiscounts([PROS_AT_COEUR, line], "autre", ASKED_AT)).toEqual({
@@ -67,7 +92,10 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
   });
 
   it("une promotion « tous les retraits » s'annonce à chaque point, aux deux clientèles", () => {
-    const everywhere = livePromotion({ id: "all", fulfillment: { kind: "pickup" } });
+    const everywhere = livePromotion({
+      id: "all",
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    });
     const announced = announcedPickupDiscounts([everywhere], "autre", ASKED_AT);
     expect(announced.b2b?.adjustment).toEqual({ mode: "percent", bp: 2000 });
     expect(announced.b2c?.adjustment).toEqual({ mode: "percent", bp: 2000 });
@@ -77,7 +105,7 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
     const everywhere = livePromotion({
       id: "a_all",
       effect: { kind: "percent_off", basisPoints: 5000 },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       audience: { kind: "pros_active" },
     });
     expect(
@@ -122,7 +150,7 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
 describe("announcedPickupDiscounts — les bornes du temps", () => {
   const live = livePromotion({
     id: "w",
-    fulfillment: { kind: "pickup" },
+    fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     validFrom: new Date(Date.UTC(2031, 0, 10)),
     validTo: new Date(Date.UTC(2031, 0, 20)),
   });
@@ -152,7 +180,13 @@ describe("announcedPickupDiscounts — chaque clientèle lit SON public et SON l
   const at = ASKED_AT;
   const only = (audience: PromotionAudience) =>
     announcedPickupDiscounts(
-      [livePromotion({ id: "x", audience, fulfillment: { kind: "pickup" } })],
+      [
+        livePromotion({
+          id: "x",
+          audience,
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+        }),
+      ],
       "site",
       at,
     );
@@ -177,7 +211,7 @@ describe("announcedPickupDiscounts — chaque clientèle lit SON public et SON l
   it("le libellé annoncé est celui de la clientèle, repli sur le commun", () => {
     const labelled = livePromotion({
       id: "l",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       label: "Commun",
       audienceLabels: {
         pros: { fr: "Tarif pro", en: null, it: "Prezzo pro" },
@@ -215,26 +249,26 @@ describe("announcedPickupDiscounts — l'annonce dit ce que la caisse appliquera
   }
 
   const CATALOGUE: readonly LivePromotion[] = [
-    livePromotion({ id: "p1", fulfillment: { kind: "pickup" } }),
+    livePromotion({ id: "p1", fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }),
     livePromotion({
       id: "p2",
-      fulfillment: { kind: "pickup_point", pickupId: "site" },
+      fulfillment: { kind: "basket", pickup: { points: ["site"] }, delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 500 },
       audience: { kind: "pros_active" },
     }),
     livePromotion({
       id: "p3",
-      fulfillment: { kind: "pickup_point", pickupId: "autre" },
+      fulfillment: { kind: "basket", pickup: { points: ["autre"] }, delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 9000 },
     }),
     livePromotion({
       id: "p4",
-      fulfillment: { kind: "delivery" },
+      fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
       effect: { kind: "percent_off", basisPoints: 9000 },
     }),
     livePromotion({
       id: "p5",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       audience: { kind: "everyone_but_active_pros" },
       effect: { kind: "percent_off", basisPoints: 1500 },
     }),
@@ -268,7 +302,7 @@ describe("announcedPickupDiscounts — l'annonce dit ce que la caisse appliquera
 
   it("à rang et effet égaux, le plus petit identifiant, comme à la caisse", () => {
     const twins = ["m", "b", "q"].map((id) =>
-      livePromotion({ id, fulfillment: { kind: "pickup" } }),
+      livePromotion({ id, fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }),
     );
     const withLabel = twins.map((twin) => ({ ...twin, label: { ...twin.label, fr: twin.id } }));
 

@@ -10,6 +10,7 @@ import { livePromotionOf, type LivePromotion } from "../domain/live-promotion.js
 import { BasketPromotionReader } from "../domain/ports/basket-promotion.reader.js";
 import { LinePromotionReader } from "../domain/ports/line-promotion.reader.js";
 import type { PromotionApplicationPoint } from "../domain/promotion-fulfillment.js";
+import { FULFILLMENT_LINKS } from "./promotion-fulfillment-rows.js";
 import { toDomain } from "./promotion-rows.js";
 
 /**
@@ -36,7 +37,7 @@ async function promotionsAt(
       at === null
         ? { applicationPoint: point, archivedAt: null }
         : { applicationPoint: point, ...unarchivedAt(at) },
-    include: { scopeRules: true, audienceTargets: true },
+    include: { scopeRules: true, audienceTargets: true, ...FULFILLMENT_LINKS },
     orderBy: { id: "asc" },
   });
   return rows.map((row) => livePromotionOf(toDomain(row, row.scopeRules, row.audienceTargets)));

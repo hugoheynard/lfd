@@ -1,7 +1,4 @@
-import {
-  PromotionMissingTargetIdError,
-  UnreadablePromotionRowError,
-} from "../../domain/errors/promotion-errors.js";
+import { UnreadablePromotionRowError } from "../../domain/errors/promotion-errors.js";
 import { Promotion } from "../../domain/promotion.js";
 import { PromotionAudienceSet } from "../../domain/promotion-audience-set.js";
 import { FROM, basketTerms, lineTerms } from "../../domain/__tests__/promotion-terms.fixture.js";
@@ -9,10 +6,23 @@ import {
   audienceTargetRowsOf,
   type PromotionAudienceTargetRow,
 } from "../promotion-audience-rows.js";
+import {
+  fulfillmentLinkRowsOf,
+  type PromotionFulfillmentLinkRows,
+} from "../promotion-fulfillment-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence, type PromotionRow } from "../promotion-rows.js";
 
-function rowOf(promotion: Promotion): PromotionRow {
-  return { ...toPersistence(promotion), origin: null };
+type ReadRow = PromotionRow & PromotionFulfillmentLinkRows;
+
+/** La ligne telle que le dépôt la relit : colonnes, et liaisons des points et des zones. */
+function rowOf(promotion: Promotion): ReadRow {
+  const { points, zones } = fulfillmentLinkRowsOf(promotion);
+  return {
+    ...toPersistence(promotion),
+    origin: null,
+    pickupPoints: points.map(({ pickupId }) => ({ pickupId })),
+    deliveryZones: zones.map(({ zoneId }) => ({ zoneId })),
+  };
 }
 
 /** Les cibles telles que l'adaptateur les écrit, à identifiants numérotés. */
@@ -22,7 +32,7 @@ function targetsOf(promotion: Promotion): PromotionAudienceTargetRow[] {
 }
 
 /** Relire une promotion comme le dépôt : sa ligne, sa portée, ses cibles. */
-function reread(promotion: Promotion, row: PromotionRow = rowOf(promotion)): Promotion {
+function reread(promotion: Promotion, row: ReadRow = rowOf(promotion)): Promotion {
   return toDomain(row, scopeRuleRowsOf(promotion), targetsOf(promotion));
 }
 
@@ -56,6 +66,20 @@ describe("les mappers de la promotion", () => {
     [
       "une promotion de panier sur un point",
       basketTerms({ effect: { kind: "basket_amount_off", cents: 300 } }),
+    ],
+    [
+      "une promotion de panier sur deux points et une zone (plan des acheminements)",
+      basketTerms({
+        fulfillment: {
+          kind: "basket",
+          pickup: { points: ["pk_gare", "pk_coeur"] },
+          delivery: { zones: ["zone_vallee"] },
+        },
+      }),
+    ],
+    [
+      "une promotion de panier sur tous les points et toutes les zones",
+      basketTerms({ fulfillment: { kind: "basket", pickup: "all", delivery: "all" } }),
     ],
     [
       "une société et ses sites",
@@ -140,7 +164,7 @@ describe("les mappers de la promotion", () => {
     ["un mode de portée inconnu", { scopeMode: "tout" }],
     ["des conditions qui ne sont pas une liste", { conditions: { kind: "min_quantity" } }],
     ["une origine qui n'est pas un objet", { origin: "reprise" }],
-    ["un acheminement inconnu", { fulfillmentKind: "drone" }],
+    ["un acheminement coché sur une promotion de ligne", { fulfillmentPickup: "all" }],
   ])("refuse en la nommant une ligne avec %s", (_case, patch) => {
     const promotion = Promotion.pose("promo_1", lineTerms(), "staff_1", FROM);
     expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
@@ -148,10 +172,59 @@ describe("les mappers de la promotion", () => {
     );
   });
 
-  it("refuse un point de retrait sans identifiant : le refus nommé du domaine, pas un point inventé", () => {
+  /** Plan des acheminements, § 8.4 : jamais un ensemble vide silencieux. */
+  it("refuse une sélection de points relue sans aucune ligne de liaison", () => {
     const promotion = Promotion.pose("promo_1", basketTerms(), "staff_1", FROM);
-    const row = { ...rowOf(promotion), fulfillmentPickupId: null };
-    expect(() => reread(promotion, row)).toThrow(PromotionMissingTargetIdError);
+    const row = { ...rowOf(promotion), pickupPoints: [] };
+    expect(() => reread(promotion, row)).toThrow(UnreadablePromotionRowError);
+  });
+
+  it.each([
+    ["un mode de retrait inconnu", { fulfillmentPickup: "drone" }],
+    ["un mode de livraison absent au panier", { fulfillmentDelivery: null }],
+    ["une zone liée sous « aucune livraison »", { deliveryZones: [{ zoneId: "zone_vallee" }] }],
+  ])("refuse en la nommant une promotion de panier avec %s", (_case, patch) => {
+    const promotion = Promotion.pose("promo_1", basketTerms(), "staff_1", FROM);
+    expect(() => reread(promotion, { ...rowOf(promotion), ...patch })).toThrow(
+      UnreadablePromotionRowError,
+    );
+  });
+
+  it("écrit les modes et les liaisons d'un point et d'une zone, dans l'ordre trié", () => {
+    const promotion = Promotion.pose(
+      "promo_1",
+      basketTerms({
+        fulfillment: {
+          kind: "basket",
+          pickup: { points: ["pk_gare", "pk_coeur"] },
+          delivery: { zones: ["zone_vallee"] },
+        },
+      }),
+      "staff_1",
+      FROM,
+    );
+    const row = rowOf(promotion);
+    expect([row.applicationPoint, row.fulfillmentPickup, row.fulfillmentDelivery]).toEqual([
+      "basket",
+      "listed",
+      "listed",
+    ]);
+    expect(fulfillmentLinkRowsOf(promotion)).toEqual({
+      points: [
+        { promotionId: "promo_1", pickupId: "pk_coeur" },
+        { promotionId: "promo_1", pickupId: "pk_gare" },
+      ],
+      zones: [{ promotionId: "promo_1", zoneId: "zone_vallee" }],
+    });
+  });
+
+  it("n'écrit aucun mode pour une promotion « dans le prix affiché »", () => {
+    const row = rowOf(Promotion.pose("promo_1", lineTerms(), "staff_1", FROM));
+    expect([row.applicationPoint, row.fulfillmentPickup, row.fulfillmentDelivery]).toEqual([
+      "line",
+      null,
+      null,
+    ]);
   });
 
   it("refuse une règle de portée à cible inconnue, et un public à cible inconnue", () => {

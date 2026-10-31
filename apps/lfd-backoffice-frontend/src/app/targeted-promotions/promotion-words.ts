@@ -1,8 +1,6 @@
-import type {
-  PromotionEffectKindValue,
-  PromotionFulfillmentKindValue,
-  PromotionScopeTargetValue,
-} from '@lfd/contracts';
+import type { PromotionEffectKindValue, PromotionScopeTargetValue } from '@lfd/contracts';
+
+import type { DraftFulfillmentKind } from './promotion-draft';
 
 /** Les mots des choix de la page d'une promotion — ce que le client en reçoit. */
 
@@ -13,7 +11,7 @@ export const EFFECT_LABEL: Readonly<Record<PromotionEffectKindValue, string>> = 
   basket_amount_off: 'Montant sur le panier (€ HT)',
 };
 
-export const FULFILLMENT_LABEL: Readonly<Record<PromotionFulfillmentKindValue, string>> = {
+export const FULFILLMENT_LABEL: Readonly<Record<DraftFulfillmentKind, string>> = {
   any: 'Quel que soit l’acheminement',
   pickup: 'Au retrait, à tous les points',
   pickup_point: 'Au retrait, à un point',
@@ -21,7 +19,7 @@ export const FULFILLMENT_LABEL: Readonly<Record<PromotionFulfillmentKindValue, s
 };
 
 /** La conséquence, dite au client : le prix affiché, ou la remise au panier. */
-export const FULFILLMENT_HINT: Readonly<Record<PromotionFulfillmentKindValue, string>> = {
+export const FULFILLMENT_HINT: Readonly<Record<DraftFulfillmentKind, string>> = {
   any: 'Le prix baisse au catalogue : le client voit le prix remisé avant de commander, sur chaque ligne.',
   pickup:
     'Le prix au catalogue ne bouge pas : la remise s’applique au panier quand le client choisit le retrait.',

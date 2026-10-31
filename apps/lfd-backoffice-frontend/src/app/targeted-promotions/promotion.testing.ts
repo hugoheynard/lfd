@@ -18,7 +18,7 @@ export function promotionView(over: Partial<PromotionView> = {}): PromotionView 
     audiences: [{ kind: 'everyone', companyId: null }],
     audience: { kind: 'everyone', companyId: null },
     audienceLabels: { individuals: null, pros: null },
-    fulfillment: { kind: 'any', pickupId: null },
+    fulfillment: { kind: 'displayed_price' },
     scope: {
       mode: 'only',
       rules: [{ target: 'variant', targetId: 'VIE-001-1', eligible: true, name: 'Croissant' }],

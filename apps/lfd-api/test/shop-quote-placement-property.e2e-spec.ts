@@ -163,7 +163,7 @@ function terms(index: number, over: Drawn): PromotionTermsPayload {
     validFrom: daysAgo(1),
     validTo: null,
     audiences: [{ kind: "everyone", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,
@@ -209,8 +209,8 @@ function drawBasket(rng: ReturnType<typeof drawer>, index: number): Basket {
           : { kind: "percent_off", value: pick(rng, PERCENTS) },
         fulfillment:
           rng.next() < 0.5
-            ? { kind: "pickup", pickupId: null }
-            : { kind: "pickup_point", pickupId: site },
+            ? { kind: "basket", pickup: "all", delivery: "none" }
+            : { kind: "basket", pickup: { points: [site] }, delivery: "none" },
         conditions: withMin ? [{ kind: "min_quantity", value: rng.int(2, 8) }] : [],
         scope: onFamily
           ? {
@@ -241,6 +241,9 @@ function drawBasket(rng: ReturnType<typeof drawer>, index: number): Basket {
 async function setPromotions(promotions: readonly PromotionTermsPayload[]): Promise<void> {
   await ctx.prisma.promotionScopeRule.deleteMany();
   await ctx.prisma.promotionAudienceTarget.deleteMany();
+  // Les liaisons d'acheminement (plan des acheminements à cocher, § 4).
+  await ctx.prisma.promotionPickupPoint.deleteMany();
+  await ctx.prisma.promotionDeliveryZone.deleteMany();
   await ctx.prisma.promotion.deleteMany();
   for (const promotion of promotions) {
     const response = await staff().post("/admin/promotions").send(promotion);
@@ -423,7 +426,7 @@ function drawCumulatedBasket(rng: ReturnType<typeof drawer>, index: number): Bas
       effect: amount
         ? { kind: "basket_amount_off", value: pick(rng, AMOUNTS) }
         : { kind: "percent_off", value: pick(rng, PERCENTS) },
-      fulfillment: { kind: "pickup", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: onFamily
         ? {
             mode: "only",

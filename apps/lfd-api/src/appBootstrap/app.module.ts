@@ -48,6 +48,7 @@ import { DeliveryRoundPlacementsModule } from "./delivery-round-placements.modul
 import { DeliveryTransferCounterModule } from "./delivery-transfer-counter.module.js";
 import { DebtorMandateModule } from "./debtor-mandate.module.js";
 import { LoyaltyVoucherModule } from "./loyalty-voucher.module.js";
+import { PromotionFulfillmentTargetsModule } from "./promotion-fulfillment-targets.module.js";
 import { AccountOrderEngagementModule } from "./account-order-engagement.module.js";
 import { DeliveryNotePlanningModule } from "./delivery-note-planning.module.js";
 import { IssuedMandatesModule } from "./issued-mandates.module.js";
@@ -216,6 +217,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     DeliveryTransferCounterModule,
     DebtorMandateModule,
     LoyaltyVoucherModule,
+    PromotionFulfillmentTargetsModule,
     AccountOrderEngagementModule,
     // La commande et son bon de livraison (plan E1).
     DeliveryNotePlanningModule,

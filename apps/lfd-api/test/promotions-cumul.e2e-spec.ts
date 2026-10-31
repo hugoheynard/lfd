@@ -103,7 +103,7 @@ describe("le cumul sur demande (§ 16)", () => {
     const basket = (internalName: string, cumulative: boolean) =>
       promotionTerms({
         internalName,
-        fulfillment: { kind: "pickup", pickupId: null },
+        fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
         cumulative,
       });
     await posePromotion(staff(), basket("Panier cumulable A", true));

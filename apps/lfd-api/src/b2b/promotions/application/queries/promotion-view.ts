@@ -9,7 +9,6 @@ import type { PromotionCatalogue } from "../../domain/ports/promotion-catalogue.
 import { describePromotion } from "../../domain/promotion-act.js";
 import { audienceCompanyIdOf, type PromotionAudience } from "../../domain/promotion-audience.js";
 import { effectValueOf } from "../../domain/promotion-effect.js";
-import { fulfillmentPickupIdOf } from "../../domain/promotion-fulfillment.js";
 import type { PromotionScopeRule } from "../../domain/promotion-scope.js";
 import type { Promotion } from "../../domain/promotion.js";
 
@@ -59,10 +58,7 @@ export function promotionViewOf(
       companyId: audienceCompanyIdOf(target),
     })),
     audience: projectionOf(state.audiences.targets),
-    fulfillment: {
-      kind: state.fulfillment.kind,
-      pickupId: fulfillmentPickupIdOf(state.fulfillment),
-    },
+    fulfillment: state.fulfillment,
     scope: {
       mode: state.scope.mode,
       rules: state.scope.rules.map((rule) => ruleViewOf(rule, catalogue)),

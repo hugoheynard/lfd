@@ -52,7 +52,7 @@ function basket(
     label: `Promo ${id}`,
     effect,
     cumulative: options.cumulative ?? false,
-    fulfillment: { kind: "pickup" },
+    fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     scope:
       options.onlyProduct === undefined
         ? { mode: "all_except", rules: [] }

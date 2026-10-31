@@ -27,7 +27,7 @@ function payload(overrides: Partial<PromotionTermsPayload> = {}): PromotionTerms
     validFrom: "2026-11-01T00:00:00.000Z",
     validTo: null,
     audiences: [{ kind: "everyone", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...overrides,
@@ -142,17 +142,26 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
   });
 
   describe("l'acheminement", () => {
-    it("refuse un point de retrait sans identifiant", () => {
-      expect(() =>
-        promotionTermsOf(payload({ fulfillment: { kind: "pickup_point", pickupId: null } })),
-      ).toThrow(PromotionMissingTargetIdError);
+    it("traduit « dans le prix affiché » sans rien d'autre", () => {
+      const terms = promotionTermsOf(payload({ fulfillment: { kind: "displayed_price" } }));
+      expect(terms.fulfillment).toEqual({ kind: "displayed_price" });
     });
 
-    it("n'emporte pas l'identifiant d'un point quand l'acheminement n'en vise pas", () => {
+    it("traduit un point ET des zones tels quels — l'ordre et les refus sont ceux de l'agrégat", () => {
       const terms = promotionTermsOf(
-        payload({ fulfillment: { kind: "pickup", pickupId: "pk_1" } }),
+        payload({
+          fulfillment: {
+            kind: "basket",
+            pickup: { points: ["pk_2", "pk_1"] },
+            delivery: { zones: ["zone_a"] },
+          },
+        }),
       );
-      expect(terms.fulfillment).toEqual({ kind: "pickup" });
+      expect(terms.fulfillment).toEqual({
+        kind: "basket",
+        pickup: { points: ["pk_2", "pk_1"] },
+        delivery: { zones: ["zone_a"] },
+      });
     });
 
     /** M7 (§ 18.6) : « Cumulable » passe au panier, et l'agrégat l'admet. */
@@ -161,7 +170,7 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
         payload({
           cumulative: true,
           effect: { kind: "percent_off", value: 1000 },
-          fulfillment: { kind: "pickup_point", pickupId: "pk_1" },
+          fulfillment: { kind: "basket", pickup: { points: ["pk_1"] }, delivery: "none" },
         }),
       );
       expect(promotion.terms.cumulative).toBe(true);

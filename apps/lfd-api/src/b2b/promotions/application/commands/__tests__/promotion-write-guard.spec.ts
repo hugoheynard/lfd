@@ -42,9 +42,14 @@ describe("un seul endroit", () => {
     const s = writeScene(FROM);
     const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
     await s.revise.execute(
-      new RevisePromotionCommand(id, basketTerms({ fulfillment: { kind: "any" } }), STAFF, null),
+      new RevisePromotionCommand(
+        id,
+        basketTerms({ fulfillment: { kind: "displayed_price" } }),
+        STAFF,
+        null,
+      ),
     );
-    expect(s.promotions.stored.get(id)?.terms.fulfillment).toEqual({ kind: "any" });
+    expect(s.promotions.stored.get(id)?.terms.fulfillment).toEqual({ kind: "displayed_price" });
     await s.revise.execute(new RevisePromotionCommand(id, basketTerms(), STAFF, null));
     await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
     expect(s.promotions.acts.map((act) => act.kind)).toEqual([
@@ -225,7 +230,7 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
     );
     const combined = basketTerms({
       audience: { kind: "pros" },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: onlyFamily("c_pains"),
     });
     const refusal = s.pose.execute(new PosePromotionCommand(combined, STAFF));
@@ -237,12 +242,15 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
     const s = writeScene(FROM);
     await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
     await s.pose.execute(
-      new PosePromotionCommand(basketTerms({ fulfillment: { kind: "delivery" } }), STAFF),
+      new PosePromotionCommand(
+        basketTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: "all" } }),
+        STAFF,
+      ),
     );
     await s.pose.execute(
       new PosePromotionCommand(
         basketTerms({
-          fulfillment: { kind: "pickup" },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
           validFrom: new Date(FROM.getTime() - 10 * DAY_MS),
           validTo: FROM,
         }),

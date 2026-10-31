@@ -24,6 +24,7 @@ import type {
 
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import { bootstrapE2e, daysAgo, E2E_STAFF_SUB, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { seedPickupPoint } from "./promotion-fixtures.js";
 
 /** Le jeton porteur EST le `sub` du staff : chaque personne semée a le sien. */
 const subjectAsToken = {
@@ -43,6 +44,7 @@ afterAll(async () => {
 
 beforeEach(async () => {
   await ctx.reset();
+  await seedPickupPoint(ctx, "pk_coeur");
 });
 
 const PROMOTIONS = "/admin/promotions";
@@ -86,7 +88,7 @@ function terms(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPayload
     validTo: null,
     audienceLabels: { individuals: null, pros: null },
     audiences: [{ kind: "everyone", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "only", rules: [{ target: "variant", targetId: "VIE-001-1", eligible: true }] },
     conditions: [],
     ...over,
@@ -98,7 +100,11 @@ function refusalOf(response: Parameters<typeof jsonBody>[0]): { code: string; me
   return jsonBody<{ code: string; message: string }>(response);
 }
 
-const AT_COEUR_POINT = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
+const AT_COEUR_POINT: PromotionTermsPayload["fulfillment"] = {
+  kind: "basket",
+  pickup: { points: ["pk_coeur"] },
+  delivery: "none",
+};
 
 /** Une autre déclinaison que celle de `terms()`, pour que deux poses ne se disputent rien. */
 const VIE_002: PromotionTermsPayload["scope"] = {
@@ -277,7 +283,7 @@ describe("après la bascule — les refus nommés", () => {
       .send(
         terms({
           internalName: "Tout retrait pros",
-          fulfillment: { kind: "pickup", pickupId: null },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
           audiences: [{ kind: "pros", companyId: null }],
           scope: {
             mode: "only",
@@ -360,7 +366,7 @@ describe("après la bascule — les refus nommés", () => {
     const moved = jsonBody<PromotionView>(
       await admin().get(`${PROMOTIONS}/${created.id}`).expect(200),
     );
-    expect(moved.fulfillment).toEqual({ kind: "any", pickupId: null });
+    expect(moved.fulfillment).toEqual({ kind: "displayed_price" });
   });
 
   it("suspend, reprend et archive la promotion d'un point par les routes de l'écran", async () => {

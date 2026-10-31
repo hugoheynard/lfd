@@ -110,7 +110,7 @@ describe("une promotion se règle à un seul endroit", () => {
     const site = await poseSite();
     const posed = await staff()
       .post("/admin/promotions")
-      .send(siteDiscount({ kind: "pickup_point", pickupId: site }))
+      .send(siteDiscount({ kind: "basket", pickup: { points: [site] }, delivery: "none" }))
       .expect(201);
     const { id } = jsonBody<{ id: string }>(posed);
     const before = await quoteAt(site);
@@ -119,7 +119,7 @@ describe("une promotion se règle à un seul endroit", () => {
 
     await staff()
       .put(`/admin/promotions/${id}`)
-      .send({ terms: siteDiscount({ kind: "any", pickupId: null }), reason: "un seul endroit" })
+      .send({ terms: siteDiscount({ kind: "displayed_price" }), reason: "un seul endroit" })
       .expect(204);
 
     const events = await ctx.prisma.pricingEvent.findMany({

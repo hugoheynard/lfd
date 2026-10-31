@@ -99,8 +99,14 @@ describe('ProductTile', () => {
     fixture.componentRef.setInput('product', {
       ...TEST_ITEMS[0],
       fulfillmentOffers: [
-        { effect: { kind: 'percent', basisPoints: 2_000 }, fulfillment: { kind: 'pickup' } },
-        { effect: { kind: 'amount', millicents: 500_000 }, fulfillment: { kind: 'delivery' } },
+        {
+          effect: { kind: 'percent', basisPoints: 2_000 },
+          fulfillment: { pickup: 'all', delivery: 'none' },
+        },
+        {
+          effect: { kind: 'amount', millicents: 500_000 },
+          fulfillment: { pickup: 'none', delivery: 'all' },
+        },
       ],
     });
     fixture.detectChanges();
@@ -118,7 +124,7 @@ describe('ProductTile', () => {
       fulfillmentOffers: [
         {
           effect: { kind: 'percent', basisPoints: 2_000 },
-          fulfillment: { kind: 'pickup_point', pickupId: 'inconnu' },
+          fulfillment: { pickup: { points: ['inconnu'] }, delivery: 'none' },
         },
       ],
     });

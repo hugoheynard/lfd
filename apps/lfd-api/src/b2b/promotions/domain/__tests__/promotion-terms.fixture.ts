@@ -28,7 +28,7 @@ export function lineTerms(overrides: TermsOverrides = {}): PromotionTerms {
     validFrom: FROM,
     validTo: null,
     audiences: PromotionAudienceSet.restore([audience ?? { kind: "everyone" }]),
-    fulfillment: { kind: "any" },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...rest,
@@ -41,7 +41,7 @@ export function basketTerms(overrides: TermsOverrides = {}): PromotionTerms {
     internalName: "Remise de retrait — Cœur de station",
     effect: { kind: "percent_off", basisPoints: 1000 },
     audience: { kind: "everyone_but_active_pros" },
-    fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+    fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
     ...overrides,
   });
 }

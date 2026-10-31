@@ -77,11 +77,24 @@ describe("audienceSetsMeet — une promotion panier par commande, publics à plu
 
 describe("fulfillmentsMeet — une commande que les deux acheminements admettent", () => {
   it("retrait à un point rencontre « tout retrait », pas un autre point ni la livraison", () => {
-    const coeur = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
-    expect(fulfillmentsMeet(coeur, { kind: "pickup" })).toBe(true);
-    expect(fulfillmentsMeet(coeur, { kind: "pickup_point", pickupId: "pk_autre" })).toBe(false);
-    expect(fulfillmentsMeet(coeur, { kind: "delivery" })).toBe(false);
-    expect(fulfillmentsMeet({ kind: "any" }, { kind: "delivery" })).toBe(true);
+    const coeur = { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" } as const;
+    expect(fulfillmentsMeet(coeur, { kind: "basket", pickup: "all", delivery: "none" })).toBe(true);
+    expect(
+      fulfillmentsMeet(coeur, {
+        kind: "basket",
+        pickup: { points: ["pk_autre"] },
+        delivery: "none",
+      }),
+    ).toBe(false);
+    expect(fulfillmentsMeet(coeur, { kind: "basket", pickup: "none", delivery: "all" })).toBe(
+      false,
+    );
+    expect(
+      fulfillmentsMeet(
+        { kind: "displayed_price" },
+        { kind: "basket", pickup: "none", delivery: "all" },
+      ),
+    ).toBe(true);
   });
 });
 

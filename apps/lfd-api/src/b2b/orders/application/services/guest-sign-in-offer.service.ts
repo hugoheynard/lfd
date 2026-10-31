@@ -7,6 +7,7 @@ import { BasketPromotionReader } from "../../../promotions/domain/ports/basket-p
 import { LinePromotionReader } from "../../../promotions/domain/ports/line-promotion.reader.js";
 import { signInOfferFor } from "../../../promotions/domain/promotion-offers.js";
 import type { FulfillmentFact } from "../../../promotions/domain/promotion-targeting.js";
+import { DeliveryZoneOfPostalCodeReader } from "../../domain/ports/delivery-zone-of-postal-code.reader.js";
 import { OrderLineClassificationReader } from "../../domain/ports/order-line-classification.reader.js";
 
 /** Le devis demandé : la route (personne, société) et l'acheminement choisi. */
@@ -40,6 +41,7 @@ export class GuestSignInOffer {
     private readonly lines: LinePromotionReader,
     private readonly basket: BasketPromotionReader,
     private readonly classifications: OrderLineClassificationReader,
+    private readonly zones: DeliveryZoneOfPostalCodeReader,
     private readonly clock: Clock,
   ) {}
 
@@ -63,7 +65,10 @@ export class GuestSignInOffer {
     if (promotions.length === 0) {
       return undefined;
     }
-    const known = await this.classifications.classify(quoted.map((entry) => entry.sku));
+    const [known, fulfillment] = await Promise.all([
+      this.classifications.classify(quoted.map((entry) => entry.sku)),
+      this.fulfillmentFactOf(request.payload.fulfillment),
+    ]);
     return signInOfferFor(
       promotions,
       this.clock.now(),
@@ -76,17 +81,24 @@ export class GuestSignInOffer {
         point: { kind: "line", saleUnit: entry.saleUnit },
         quantity: entry.quantity,
       })),
-      fulfillmentFactOf(request.payload.fulfillment),
+      fulfillment,
     );
   }
-}
 
-/** L'acheminement du devis, s'il est choisi ; un point non choisi reste inconnu. */
-function fulfillmentFactOf(fulfillment: ShopQuoteFulfillment | null): FulfillmentFact | null {
-  if (fulfillment === null) {
-    return null;
+  /**
+   * L'acheminement du devis, s'il est choisi. Un point non choisi reste
+   * `null` (seul « tous les points » l'admet) ; une livraison porte la zone
+   * de son code postal, la règle des frais (plan des acheminements, § 8.1).
+   */
+  private async fulfillmentFactOf(
+    fulfillment: ShopQuoteFulfillment | null,
+  ): Promise<FulfillmentFact | null> {
+    if (fulfillment === null) {
+      return null;
+    }
+    if (fulfillment.method === "pickup") {
+      return { method: "pickup", pickupId: fulfillment.pickupAddressId };
+    }
+    return { method: "delivery", zoneId: await this.zones.zoneIdOf(fulfillment.codePostal) };
   }
-  return fulfillment.method === "pickup"
-    ? { method: "pickup", pickupId: fulfillment.pickupAddressId }
-    : { method: "delivery", pickupId: null };
 }

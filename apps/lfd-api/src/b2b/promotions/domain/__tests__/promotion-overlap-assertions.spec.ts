@@ -63,14 +63,25 @@ describe("assertNoOverlap — ce qui se dispute et ce qui ne se dispute pas", ()
   });
 
   it("accepte deux acheminements différents (livraison contre retrait à un point)", () => {
-    const left = rival("a", lineTerms({ fulfillment: { kind: "delivery" } }));
-    const right = rival("b", lineTerms({ fulfillment: { kind: "pickup" } }));
+    const left = rival(
+      "a",
+      lineTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: "all" } }),
+    );
+    const right = rival(
+      "b",
+      lineTerms({ fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }),
+    );
     expect(() => assertNoOverlap(left, [right], ARTICLES)).not.toThrow();
   });
 
   it("accepte deux points de retrait distincts, refuse le même", () => {
     const at = (pickupId: string) =>
-      rival(pickupId, lineTerms({ fulfillment: { kind: "pickup_point", pickupId } }));
+      rival(
+        pickupId,
+        lineTerms({
+          fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
+        }),
+      );
     expect(() => assertNoOverlap(at("pk_1"), [at("pk_2")], ARTICLES)).not.toThrow();
     expect(() => assertNoOverlap(at("pk_1"), [rival("x", at("pk_1").terms)], ARTICLES)).toThrow(
       OverlappingPromotionError,
@@ -161,8 +172,14 @@ describe("assertSingleBasketPromotion — une remise de panier par commande", ()
   });
 
   it("accepte des acheminements qu'aucune commande ne partage", () => {
-    const delivery = rival("a", basketTerms({ fulfillment: { kind: "delivery" } }));
-    const pickup = rival("b", basketTerms({ fulfillment: { kind: "pickup" } }));
+    const delivery = rival(
+      "a",
+      basketTerms({ fulfillment: { kind: "basket", pickup: "none", delivery: "all" } }),
+    );
+    const pickup = rival(
+      "b",
+      basketTerms({ fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }),
+    );
     expect(() => assertSingleBasketPromotion(delivery, [pickup])).not.toThrow();
   });
 

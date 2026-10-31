@@ -4,6 +4,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
 import { promotionActOf } from "../../domain/promotion-act.js";
 import { mustLoadPromotion } from "./promotion-support.js";
+import { PromotionFulfillmentNames } from "./promotion-fulfillment-names.js";
 import { PromotionWriteGuard } from "./promotion-write-guard.js";
 import { RevisePromotionCommand } from "./revise-promotion.command.js";
 
@@ -12,6 +13,7 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
   constructor(
     private readonly promotions: PromotionRepository,
     private readonly guard: PromotionWriteGuard,
+    private readonly names: PromotionFulfillmentNames,
     private readonly clock: Clock,
   ) {}
 
@@ -23,10 +25,11 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
       // Reposée à l'identique : rien ne s'écrit, donc rien à juger.
       return;
     }
+    const names = await this.names.required(revised.terms.fulfillment);
     await this.guard.admitsPlace(revised);
     await this.promotions.save(
       revised,
-      promotionActOf(revised, "replaced", command.staffUserId, now, command.reason),
+      promotionActOf(revised, "replaced", command.staffUserId, now, command.reason, names),
     );
   }
 }

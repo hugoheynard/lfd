@@ -146,7 +146,7 @@ function promotion(site: string, over: Partial<PromotionTermsPayload>): Record<s
     validFrom: daysAgo(1),
     validTo: null,
     audiences: [{ kind: "everyone", companyId: null }],
-    fulfillment: { kind: "pickup_point", pickupId: site },
+    fulfillment: { kind: "basket", pickup: { points: [site] }, delivery: "none" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,

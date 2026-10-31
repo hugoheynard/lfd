@@ -2,7 +2,7 @@ import { companyServiceOf } from "../../catalog/domain/company-service.js";
 import type { StandingCompanyStatus } from "../../shared/company-standing/domain/company-standing.js";
 import type { PromotionAudience, PromotionAudienceKind } from "./promotion-audience.js";
 import type { LabelAudience } from "./promotion-audience-set.js";
-import type { PromotionFulfillment, PromotionFulfillmentKind } from "./promotion-fulfillment.js";
+import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 
 /**
  * **Le ciblage** — « cette commande est-elle concernée ? » (plan
@@ -44,12 +44,21 @@ export const PREVIEWED_FACTS: PromotionAudienceFacts = {
 /** Le principal que la société suit — `unknown` tant qu'aucune question ne l'a lu. */
 export type PrincipalFact = "unknown" | { readonly companyId: string | null };
 
-/** L'acheminement retenu ; `null` = inconnu (rayon, fiche, devis sans service). */
-export interface FulfillmentFact {
-  readonly method: "pickup" | "delivery";
-  /** Le point retenu — choisi ou présélectionné ; `null` en livraison. */
-  readonly pickupId: string | null;
-}
+/**
+ * L'acheminement retenu ; `null` = inconnu (rayon, fiche, devis sans service).
+ *
+ * En livraison, la ZONE entre dans le fait (plan
+ * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.1) : résolue
+ * par le code postal, à la règle même des frais (préfixe le plus long), et
+ * reçue déjà résolue — les promotions ne lisent pas les zones. `null` = aucune
+ * zone ne couvre ce code postal (l'annonce, les témoins : inatteignable à la
+ * caisse, qui refuse la livraison avant). Au retrait, `pickupId` `null` = le
+ * point n'est pas encore choisi (le devis anonyme) : seul « tous les points »
+ * l'admet, comme seul « toutes les zones » admet une livraison sans zone.
+ */
+export type FulfillmentFact =
+  | { readonly method: "pickup"; readonly pickupId: string | null }
+  | { readonly method: "delivery"; readonly zoneId: string | null };
 
 export interface PromotionAudienceFacts {
   /** La société servie ; `null` = particulier. */
@@ -156,24 +165,66 @@ export function audienceNeedsStatus(audience: PromotionAudience): boolean {
 }
 
 /**
- * **Cet acheminement vise-t-il la commande ?** Inconnu (`null`), seul `any`
- * s'applique : une promotion « en retrait » ne baisse pas un prix dont on ne
- * sait pas comment il sera servi (§ 13.2, RAYON).
+ * **Cet acheminement vise-t-il la commande ?** Inconnu (`null`), seul « dans
+ * le prix affiché » s'applique : une promotion « en retrait » ne baisse pas
+ * un prix dont on ne sait pas comment il sera servi (§ 13.2, RAYON).
+ *
+ * Retrait au point P : `pickup = all`, ou P nommé. Livraison dans la zone Z :
+ * `delivery = all`, ou Z nommée ; une livraison sans zone n'est admise que par
+ * `delivery = all` (plan des acheminements, § 3, § 8.1).
  */
 export function fulfillmentAdmits(
   fulfillment: PromotionFulfillment,
   fact: FulfillmentFact | null,
 ): boolean {
-  switch (fulfillment.kind) {
-    case "any":
-      return true;
-    case "pickup":
-      return fact?.method === "pickup";
-    case "pickup_point":
-      return fact?.method === "pickup" && fact.pickupId === fulfillment.pickupId;
-    case "delivery":
-      return fact?.method === "delivery";
+  return fulfillmentRankOf(fulfillment, fact) !== null;
+}
+
+/** « Tous » d'un côté coché. */
+const ALL_RANK = 1;
+/** Un point ou une zone nommé : plus spécifique que « tous ». */
+const LISTED_RANK = 2;
+/** « Dans le prix affiché » : aucun critère d'acheminement. */
+const DISPLAYED_PRICE_RANK = 0;
+
+/**
+ * **Le rang d'acheminement POUR CE FAIT** (plan des acheminements, § 8.3) —
+ * `null` = l'acheminement n'admet pas ce fait. Point nommé ou zone nommée = 2 ;
+ * tous les points ou toutes les zones = 1 ; « dans le prix affiché » = 0.
+ *
+ * Calculé par fait, jamais par promotion : A = {point P1, toutes les zones}
+ * et B = {tous les points, zone Z} se rangent B avant A en Z, et A avant B en
+ * P1. Deux promotions disjointes ne se comparent donc jamais, et les formes
+ * d'avant gardent leur départage (un point, 2 ; un mode, 1).
+ */
+export function fulfillmentRankOf(
+  fulfillment: PromotionFulfillment,
+  fact: FulfillmentFact | null,
+): number | null {
+  if (fulfillment.kind === "displayed_price") {
+    return DISPLAYED_PRICE_RANK;
   }
+  if (fact === null) {
+    return null;
+  }
+  if (fact.method === "pickup") {
+    const { pickup } = fulfillment;
+    if (pickup === "none") {
+      return null;
+    }
+    if (pickup === "all") {
+      return ALL_RANK;
+    }
+    return fact.pickupId !== null && pickup.points.includes(fact.pickupId) ? LISTED_RANK : null;
+  }
+  const { delivery } = fulfillment;
+  if (delivery === "none") {
+    return null;
+  }
+  if (delivery === "all") {
+    return ALL_RANK;
+  }
+  return fact.zoneId !== null && delivery.zones.includes(fact.zoneId) ? LISTED_RANK : null;
 }
 
 /**
@@ -192,12 +243,4 @@ export const PUBLIC_RANK: Readonly<Record<PromotionAudienceKind, number>> = {
   pros: 1,
   everyone_but_active_pros: 1,
   everyone: 0,
-};
-
-/** Le rang de l'acheminement : un point précis bat un mode, un mode bat « tous ». */
-export const FULFILLMENT_RANK: Readonly<Record<PromotionFulfillmentKind, number>> = {
-  pickup_point: 2,
-  pickup: 1,
-  delivery: 1,
-  any: 0,
 };

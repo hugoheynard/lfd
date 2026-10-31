@@ -5,6 +5,7 @@ import { PromotionBrowser } from "../domain/ports/promotion-browser.reader.js";
 import { PromotionRivalsReader } from "../domain/ports/promotion-rivals.reader.js";
 import type { PromotionApplicationPoint } from "../domain/promotion-fulfillment.js";
 import type { Promotion } from "../domain/promotion.js";
+import { FULFILLMENT_LINKS } from "./promotion-fulfillment-rows.js";
 import { toDomain } from "./promotion-rows.js";
 
 /**
@@ -18,6 +19,7 @@ import { toDomain } from "./promotion-rows.js";
 const WITH_SCOPE = {
   scopeRules: { orderBy: [{ target: "asc" as const }, { targetId: "asc" as const }] },
   audienceTargets: true,
+  ...FULFILLMENT_LINKS,
 };
 
 @Injectable()

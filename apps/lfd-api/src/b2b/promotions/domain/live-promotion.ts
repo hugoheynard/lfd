@@ -11,8 +11,7 @@ import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { PromotionScope } from "./promotion-scope.js";
 import {
   admittingRankOf,
-  fulfillmentAdmits,
-  FULFILLMENT_RANK,
+  fulfillmentRankOf,
   labelAudienceOf,
   type PromotionAudienceFacts,
 } from "./promotion-targeting.js";
@@ -84,6 +83,13 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
 export interface AdmittedPromotion extends LivePromotion {
   /** Le plus haut rang parmi les cibles qui admettent l'acheteur. */
   readonly publicRank: number;
+  /**
+   * Le rang d'acheminement POUR LE FAIT JUGÉ (plan
+   * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.3) : une
+   * promotion qui coche un point et toutes les zones est plus spécifique à
+   * ce point qu'en livraison.
+   */
+  readonly fulfillmentRank: number;
   /** Le libellé de l'audience de l'acheteur, trois langues, repli commun. */
   readonly servedLabel: ServedPromotionLabel;
 }
@@ -104,14 +110,12 @@ export function promotionsAdmitted(
   const admitted: AdmittedPromotion[] = [];
   for (const promotion of promotions) {
     const publicRank = admittingRankOf(promotion.audiences, facts);
-    if (
-      publicRank !== null &&
-      inForceAt(promotion, at) &&
-      fulfillmentAdmits(promotion.fulfillment, facts.fulfillment)
-    ) {
+    const fulfillmentRank = fulfillmentRankOf(promotion.fulfillment, facts.fulfillment);
+    if (publicRank !== null && fulfillmentRank !== null && inForceAt(promotion, at)) {
       admitted.push({
         ...promotion,
         publicRank,
+        fulfillmentRank,
         servedLabel: servedLabelFor(promotion.label, promotion.audienceLabels, audience),
       });
     }
@@ -141,7 +145,7 @@ export function minQuantityOf(promotion: LivePromotion): number | null {
 
 /**
  * Le rang du public (celui de la cible qui admet l'acheteur) et celui de
- * l'acheminement — en tête de la spécificité.
+ * l'acheminement pour le fait jugé — en tête de la spécificité.
  */
 export function targetingRankOf(promotion: AdmittedPromotion): {
   readonly publicRank: number;
@@ -149,6 +153,6 @@ export function targetingRankOf(promotion: AdmittedPromotion): {
 } {
   return {
     publicRank: promotion.publicRank,
-    fulfillmentRank: FULFILLMENT_RANK[promotion.fulfillment.kind],
+    fulfillmentRank: promotion.fulfillmentRank,
   };
 }

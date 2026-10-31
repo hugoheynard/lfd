@@ -5,6 +5,8 @@ import {
   type PromotionCatalogueArticle,
   PromotionCatalogueReader,
 } from "../../domain/ports/promotion-catalogue.reader.js";
+import { DeliveryZoneDirectory } from "../../domain/ports/delivery-zone.directory.js";
+import { PickupPointDirectory } from "../../domain/ports/pickup-point.directory.js";
 import { PromotionRivalsReader } from "../../domain/ports/promotion-rivals.reader.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
 import type { PromotionAct } from "../../domain/promotion-act.js";
@@ -16,6 +18,7 @@ import type { Promotion } from "../../domain/promotion.js";
 import { ArchivePromotionHandler } from "../commands/archive-promotion.handler.js";
 import { PausePromotionHandler } from "../commands/pause-promotion.handler.js";
 import { PosePromotionHandler } from "../commands/pose-promotion.handler.js";
+import { PromotionFulfillmentNames } from "../commands/promotion-fulfillment-names.js";
 import { PromotionWriteGuard } from "../commands/promotion-write-guard.js";
 import { ResumePromotionHandler } from "../commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "../commands/revise-promotion.handler.js";
@@ -56,6 +59,55 @@ export class InMemoryPromotionRivals extends PromotionRivalsReader {
       ),
     );
   }
+}
+
+/** Ce que connaissent les annuaires doublés : deux points, deux zones (plan des acheminements, § 9). */
+export const KNOWN_POINTS: ReadonlyMap<string, string> = new Map([
+  ["pk_coeur", "Cœur de station"],
+  ["pk_gare", "La gare"],
+]);
+export const KNOWN_ZONES: ReadonlyMap<string, string> = new Map([
+  ["zone_vallee", "La vallée"],
+  ["zone_sommet", "Le sommet"],
+]);
+
+function labelsIn(
+  known: ReadonlyMap<string, string>,
+  ids: readonly string[],
+): Promise<ReadonlyMap<string, string>> {
+  return Promise.resolve(
+    new Map(ids.flatMap((id) => (known.has(id) ? [[id, known.get(id) ?? id] as const] : []))),
+  );
+}
+
+/** Les sites connus, en mémoire. */
+export class FixedPickupPointDirectory extends PickupPointDirectory {
+  constructor(private readonly known: ReadonlyMap<string, string> = KNOWN_POINTS) {
+    super();
+  }
+
+  labelsOf(pickupIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    return labelsIn(this.known, pickupIds);
+  }
+}
+
+/** Les zones connues, en mémoire. */
+export class FixedDeliveryZoneDirectory extends DeliveryZoneDirectory {
+  constructor(private readonly known: ReadonlyMap<string, string> = KNOWN_ZONES) {
+    super();
+  }
+
+  labelsOf(zoneIds: readonly string[]): Promise<ReadonlyMap<string, string>> {
+    return labelsIn(this.known, zoneIds);
+  }
+}
+
+/** Les noms, sur les deux annuaires doublés. */
+export function fulfillmentNames(): PromotionFulfillmentNames {
+  return new PromotionFulfillmentNames(
+    new FixedDeliveryZoneDirectory(),
+    new FixedPickupPointDirectory(),
+  );
 }
 
 /** Un pain à la pièce, une viennoiserie, et un article au poids. */
@@ -112,13 +164,14 @@ export function writeScene(at: Date) {
   const catalogue = new FixedPromotionCatalogue();
   const clock = new FixedClock(at);
   const guard = new PromotionWriteGuard(new InMemoryPromotionRivals(promotions.stored), catalogue);
+  const names = fulfillmentNames();
   return {
     promotions,
     catalogue,
-    pose: new PosePromotionHandler(promotions, guard, new FixedIdGenerator("promo"), clock),
-    revise: new RevisePromotionHandler(promotions, guard, clock),
-    pause: new PausePromotionHandler(promotions, clock),
-    resume: new ResumePromotionHandler(promotions, guard, clock),
-    archive: new ArchivePromotionHandler(promotions, clock),
+    pose: new PosePromotionHandler(promotions, guard, names, new FixedIdGenerator("promo"), clock),
+    revise: new RevisePromotionHandler(promotions, guard, names, clock),
+    pause: new PausePromotionHandler(promotions, names, clock),
+    resume: new ResumePromotionHandler(promotions, guard, names, clock),
+    archive: new ArchivePromotionHandler(promotions, names, clock),
   };
 }

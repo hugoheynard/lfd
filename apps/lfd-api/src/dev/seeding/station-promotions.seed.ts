@@ -47,7 +47,7 @@ export async function posePointDiscount(
           validFrom: now,
           validTo: null,
           audiences: PromotionAudienceSet.of([audience]),
-          fulfillment: { kind: "pickup_point", pickupId },
+          fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
           scope: { mode: "all_except", rules: [] },
           conditions: [],
         },

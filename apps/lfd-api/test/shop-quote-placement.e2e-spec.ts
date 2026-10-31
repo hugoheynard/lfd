@@ -124,7 +124,7 @@ function terms(over: Partial<PromotionTermsPayload>): Record<string, unknown> {
     validFrom: daysAgo(1),
     validTo: null,
     audiences: [{ kind: "individuals_registered", companyId: null }],
-    fulfillment: { kind: "any", pickupId: null },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...over,

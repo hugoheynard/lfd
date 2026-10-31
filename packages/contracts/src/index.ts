@@ -700,6 +700,8 @@ export type { OrderDiscountView } from "./order-discount.js";
 export type {
   PromotionOfferEffectView,
   PromotionOfferFulfillmentView,
+  PromotionPickupReachView,
+  PromotionDeliveryReachView,
   ShopItemFulfillmentOfferView,
   SignInOfferView,
 } from "./promotion-offer.js";
@@ -2940,6 +2942,7 @@ export {
 export type {
   PromotionAudienceKindValue,
   PromotionFulfillmentKindValue,
+  PromotionFulfillmentView,
   PromotionEffectKindValue,
   PromotionScopeTargetValue,
   PromotionLifecycleState,

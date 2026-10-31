@@ -243,12 +243,23 @@ describe('le brouillon → le corps minimal, bords', () => {
   it('l’identifiant du point n’est envoyé que pour « Retrait · un point »', () => {
     const point = { ...base, pickupId: 'pk_coeur' };
     expect(termsOf({ ...point, fulfillmentKind: 'pickup_point' }).fulfillment).toEqual({
-      kind: 'pickup_point',
-      pickupId: 'pk_coeur',
+      kind: 'basket',
+      pickup: { points: ['pk_coeur'] },
+      delivery: 'none',
     });
-    for (const kind of ['any', 'pickup', 'delivery'] as const) {
-      expect(termsOf({ ...point, fulfillmentKind: kind }).fulfillment.pickupId).toBeNull();
-    }
+    expect(termsOf({ ...point, fulfillmentKind: 'any' }).fulfillment).toEqual({
+      kind: 'displayed_price',
+    });
+    expect(termsOf({ ...point, fulfillmentKind: 'pickup' }).fulfillment).toEqual({
+      kind: 'basket',
+      pickup: 'all',
+      delivery: 'none',
+    });
+    expect(termsOf({ ...point, fulfillmentKind: 'delivery' }).fulfillment).toEqual({
+      kind: 'basket',
+      pickup: 'none',
+      delivery: 'all',
+    });
   });
 
   it('« mercuriale » ne part qu’au point ligne ; « Cumulable » part aux deux points (M7)', () => {
@@ -327,7 +338,7 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
 
   it('une copie pour un autre public garde tout sauf le public, et marque son nom', () => {
     const original = promotionView({
-      fulfillment: { kind: 'delivery', pickupId: null },
+      fulfillment: { kind: 'basket', pickup: 'none', delivery: 'all' },
       applicationPoint: 'basket',
       cumulative: true,
       conditions: [{ kind: 'min_quantity', value: 3 }],

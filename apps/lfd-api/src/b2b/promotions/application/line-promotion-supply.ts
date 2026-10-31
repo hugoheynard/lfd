@@ -19,8 +19,9 @@ export interface LotBuyer {
  * cible qui admet ce client et le libellé de son audience (L8b), statut
  * `unknown` ⇒ le libellé commun. Depuis L12, la seule source.
  *
- * L'acheminement n'entre pas ici : une promotion de ligne n'en a pas (CHECK
- * `basket ⇔ fulfillment_kind <> 'any'`, § 13.6). La porte d'entrée
+ * L'acheminement n'entre pas ici : une promotion de ligne est « dans le prix
+ * affiché », sans critère d'acheminement (CHECK `promotions_point_follows_modes`,
+ * plan `documentation/promotions/plan-acheminements-a-cocher.md`). La porte d'entrée
  * (`buyerKind`) arrive de la route depuis le lot L10 — rayon, devis,
  * passation, révision ; `unknown` pour le staff (tableau, projection), et
  * l'aperçu déclaré (`previewed`) ne joue que « tout le monde ».

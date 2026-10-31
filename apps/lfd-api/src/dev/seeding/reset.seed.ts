@@ -243,11 +243,15 @@ async function trimStation(prisma: PrismaClient): Promise<{ pickupPoints: number
     where: { preferredPickupAddress: { label: { notIn: [...SEEDED_POINT_LABELS] } } },
     data: { preferredPickupAddressId: null },
   });
+  // Un point ou une zone qu'une promotion nomme reste (plan des acheminements
+  // à cocher, § 8.2, § 9) : le point par sa clé étrangère `RESTRICT`, la zone
+  // parce que sa liaison partirait en cascade et laisserait la promotion
+  // illisible. Les promotions ne sont pas coupées par ce module.
   const points = await prisma.site.deleteMany({
-    where: { label: { notIn: [...SEEDED_POINT_LABELS] } },
+    where: { label: { notIn: [...SEEDED_POINT_LABELS] }, promotionPoints: { none: {} } },
   });
   const zones = await prisma.deliveryZone.deleteMany({
-    where: { label: { notIn: [...SEEDED_ZONE_LABELS] } },
+    where: { label: { notIn: [...SEEDED_ZONE_LABELS] }, promotionTargets: { none: {} } },
   });
   return { pickupPoints: points.count, zones: zones.count };
 }

@@ -24,7 +24,7 @@ const INDIVIDUAL: PromotionAudienceFacts = {
 
 const EN_RETRAIT = livePromotion({
   id: "retrait",
-  fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+  fulfillment: { kind: "basket", pickup: { points: ["pickup_1"] }, delivery: "none" },
 });
 
 const PAIN = { sku: "PAIN-1", productId: "prod_pain", categoryPath: ["fam_pains"] };
@@ -88,9 +88,32 @@ describe("fulfillmentOffersFor — la mention sur un article", () => {
       {
         promotionId: "retrait",
         effect: { kind: "percent", basisPoints: 2_000 },
-        fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+        fulfillment: { pickup: { points: ["pickup_1"] }, delivery: "none" },
       },
     ]);
+  });
+
+  /** Plan des acheminements, § 8.4 : une offre porte l'ENSEMBLE, la boutique choisit quoi dire. */
+  it("porte l'ensemble d'une promotion « un point + une zone »", () => {
+    const both = livePromotion({
+      id: "point_zone",
+      fulfillment: {
+        kind: "basket",
+        pickup: { points: ["pickup_1"] },
+        delivery: { zones: ["zone_vallee"] },
+      },
+    });
+    expect(fulfillmentOffersFor([both], PAIN)).toEqual([
+      {
+        promotionId: "point_zone",
+        effect: { kind: "percent", basisPoints: 2_000 },
+        fulfillment: { pickup: { points: ["pickup_1"] }, delivery: { zones: ["zone_vallee"] } },
+      },
+    ]);
+  });
+
+  it("ne mentionne jamais une promotion « dans le prix affiché » — elle baisse déjà le prix", () => {
+    expect(fulfillmentOffersFor([livePromotion({ id: "ligne" })], PAIN)).toEqual([]);
   });
 
   it("ne mentionne pas un article que la portée exclut", () => {
@@ -164,12 +187,37 @@ describe("signInOfferFor — ce qu'une connexion ouvrirait à un invité", () =>
   });
 
   it("écarte une promotion de retrait quand le panier part en livraison", () => {
-    const pickup = { ...INSCRITS, fulfillment: { kind: "pickup" as const } };
+    const pickup = {
+      ...INSCRITS,
+      fulfillment: { kind: "basket" as const, pickup: "all" as const, delivery: "none" as const },
+    };
 
     expect(
-      signInOfferFor([pickup], ASKED_AT, [LINE_OF_PAIN], { method: "delivery", pickupId: null }),
+      signInOfferFor([pickup], ASKED_AT, [LINE_OF_PAIN], { method: "delivery", zoneId: null }),
     ).toBeUndefined();
     expect(signInOfferFor([pickup], ASKED_AT, [LINE_OF_PAIN], null)).toBeDefined();
+  });
+
+  /** Plan des acheminements, § 8.1 : la zone entre dans le fait. */
+  it("offre une promotion « point + zone » dans la zone et au point, pas ailleurs", () => {
+    const both = {
+      ...INSCRITS,
+      fulfillment: {
+        kind: "basket" as const,
+        pickup: { points: ["pickup_1"] },
+        delivery: { zones: ["zone_vallee"] },
+      },
+    };
+    const offer = (fact: Parameters<typeof signInOfferFor>[3]) =>
+      signInOfferFor([both], ASKED_AT, [LINE_OF_PAIN], fact);
+
+    expect(offer({ method: "delivery", zoneId: "zone_vallee" })).toBeDefined();
+    expect(offer({ method: "pickup", pickupId: "pickup_1" })).toBeDefined();
+    expect(offer({ method: "delivery", zoneId: "zone_sommet" })).toBeUndefined();
+    expect(offer({ method: "delivery", zoneId: null })).toBeUndefined();
+    expect(offer({ method: "pickup", pickupId: "pickup_2" })).toBeUndefined();
+    // Point pas encore choisi : seul « tous les points » l'admettrait.
+    expect(offer({ method: "pickup", pickupId: null })).toBeUndefined();
   });
 
   it("préfère le plus fort pourcentage, puis un montant, puis un prix posé sans montant", () => {

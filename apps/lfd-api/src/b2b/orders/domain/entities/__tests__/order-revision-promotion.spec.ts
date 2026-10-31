@@ -100,8 +100,9 @@ function input(
 function placed(
   discount: Discount,
   frozenId: string | null = discount.promotionId,
+  delivered?: DraftOrderInput["fulfillment"],
 ): RevisableOrder {
-  const order = Order.draft(input("site_a", discount));
+  const order = Order.draft(input("site_a", discount, delivered));
   order.deferPayment();
   const state = order.toPersistence();
   return {
@@ -126,7 +127,7 @@ function placed(
     cancelledAt: null,
     refunds: { refundableCents: 0, inFlightCents: 0 },
     serviceDay: DAY,
-    fulfillment: {
+    fulfillment: delivered ?? {
       method: state.fulfillmentMethod,
       deliveryZoneId: null,
       deliveryAddress: null,
@@ -236,6 +237,37 @@ describe("Order.revise — le MODE d'acheminement ne change pas la promotion non
 
   it("accepte le passage à la livraison d'une commande sans promotion, avant comme après", () => {
     expect(Order.revise(placed(NONE), input("site_a", NONE, DELIVERY)).changes).toContain("method");
+  });
+});
+
+/**
+ * Plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.1 : la
+ * ZONE entre dans le fait d'acheminement. Une autre adresse peut tomber dans
+ * une autre zone — l'adresse livrée est donc un changement d'acheminement.
+ */
+describe("Order.revise — l'adresse livrée ne change pas la promotion non plus", () => {
+  const ELSEWHERE: DraftOrderInput["fulfillment"] = {
+    ...DELIVERY,
+    deliveryZoneId: "zone_2",
+    deliveryAddress: { ...POINT, ligne1: "1 route du Sommet", codePostal: "73320" },
+  };
+
+  it("refuse l'adresse d'une autre zone qui retirerait la promotion de la zone", () => {
+    const attempt = () =>
+      Order.revise(placed(PROMO_A, "promo_a", DELIVERY), input("site_a", NONE, ELSEWHERE));
+
+    expect(attempt).toThrow(FulfillmentChangeAltersPromotionError);
+    expect(attempt).toThrow(/retirerait la promotion/);
+  });
+
+  it("accepte l'adresse d'une autre zone quand la même promotion s'y applique", () => {
+    const revision = Order.revise(
+      placed(PROMO_A, "promo_a", DELIVERY),
+      input("site_a", PROMO_A, ELSEWHERE),
+    );
+
+    expect(revision.changes).toContain("delivery_address");
+    expect(revision.state.discountPromotionId).toBe("promo_a");
   });
 });
 

@@ -139,7 +139,7 @@ describe('PromotionPage', () => {
       get: async () =>
         promotionView({
           applicationPoint: 'basket',
-          fulfillment: { kind: 'delivery', pickupId: null },
+          fulfillment: { kind: 'basket', pickup: 'none', delivery: 'all' },
         }),
     });
     expect(atBasket.root.textContent).toContain('Le prix au catalogue ne bouge pas');

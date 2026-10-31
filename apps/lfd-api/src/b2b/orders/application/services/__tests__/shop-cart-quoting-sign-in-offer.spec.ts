@@ -143,7 +143,10 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
   // Une promotion de PANIER « inscrits » compte comme une de ligne — mais son
   // acheminement, une fois choisi, doit l'admettre. Inconnu, il n'écarte rien.
   it("lit aussi le point panier, et l'acheminement choisi l'écarte s'il ne l'admet pas", async () => {
-    const delivery = registered({ id: "livr", fulfillment: { kind: "delivery" } });
+    const delivery = registered({
+      id: "livr",
+      fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
+    });
 
     expect(await ask({ basket: [delivery] })).toEqual({
       effect: { kind: "percent", basisPoints: 2_000 },
@@ -164,7 +167,7 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
 
   it("une promotion au point précis ne s'offre pas à un autre point", async () => {
     const atCoeur = registered({
-      fulfillment: { kind: "pickup_point", pickupId: "pk_coeur" },
+      fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
     });
 
     expect(
@@ -185,7 +188,7 @@ describe("GuestSignInOffer — seulement ce qu'une connexion ouvrirait vraiment"
     const weak = registered({ id: "a_weak" });
     const strong = registered({
       id: "z_strong",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 3_000 },
     });
 

@@ -91,21 +91,44 @@ describe("audienceAdmits — les publics de clientèle contre le statut relu en 
 
 describe("fulfillmentAdmits — l'acheminement retenu", () => {
   it("n'applique qu'un acheminement « tous » quand il est inconnu", () => {
-    expect(fulfillmentAdmits({ kind: "any" }, null)).toBe(true);
-    expect(fulfillmentAdmits({ kind: "pickup" }, null)).toBe(false);
-    expect(fulfillmentAdmits({ kind: "pickup_point", pickupId: "pk_1" }, null)).toBe(false);
-    expect(fulfillmentAdmits({ kind: "delivery" }, null)).toBe(false);
+    expect(fulfillmentAdmits({ kind: "displayed_price" }, null)).toBe(true);
+    expect(fulfillmentAdmits({ kind: "basket", pickup: "all", delivery: "none" }, null)).toBe(
+      false,
+    );
+    expect(
+      fulfillmentAdmits({ kind: "basket", pickup: { points: ["pk_1"] }, delivery: "none" }, null),
+    ).toBe(false);
+    expect(fulfillmentAdmits({ kind: "basket", pickup: "none", delivery: "all" }, null)).toBe(
+      false,
+    );
   });
 
   it("vise le point retenu, pas un autre", () => {
     const atPoint = { method: "pickup", pickupId: "pk_1" } as const;
-    expect(fulfillmentAdmits({ kind: "pickup_point", pickupId: "pk_1" }, atPoint)).toBe(true);
-    expect(fulfillmentAdmits({ kind: "pickup_point", pickupId: "pk_2" }, atPoint)).toBe(false);
-    expect(fulfillmentAdmits({ kind: "pickup" }, atPoint)).toBe(true);
-    expect(fulfillmentAdmits({ kind: "delivery" }, atPoint)).toBe(false);
-    expect(fulfillmentAdmits({ kind: "delivery" }, { method: "delivery", pickupId: null })).toBe(
+    expect(
+      fulfillmentAdmits(
+        { kind: "basket", pickup: { points: ["pk_1"] }, delivery: "none" },
+        atPoint,
+      ),
+    ).toBe(true);
+    expect(
+      fulfillmentAdmits(
+        { kind: "basket", pickup: { points: ["pk_2"] }, delivery: "none" },
+        atPoint,
+      ),
+    ).toBe(false);
+    expect(fulfillmentAdmits({ kind: "basket", pickup: "all", delivery: "none" }, atPoint)).toBe(
       true,
     );
+    expect(fulfillmentAdmits({ kind: "basket", pickup: "none", delivery: "all" }, atPoint)).toBe(
+      false,
+    );
+    expect(
+      fulfillmentAdmits(
+        { kind: "basket", pickup: "none", delivery: "all" },
+        { method: "delivery", zoneId: null },
+      ),
+    ).toBe(true);
   });
 });
 

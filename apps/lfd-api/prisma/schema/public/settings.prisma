@@ -139,6 +139,9 @@ model Site {
   /// La grille de tables de la salle (L2) — vide sauf sur un site `eatIn`.
   tables SiteTable[]
 
+  /// Les promotions qui nomment ce point (plan des acheminements, § 8.2).
+  promotionPoints PromotionPickupPoint[]
+
   @@map("pickup_addresses")
   @@schema("public")
 }
@@ -199,6 +202,9 @@ model DeliveryZone {
 
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
+
+  /// Les promotions qui nomment cette zone (plan des acheminements, § 9).
+  promotionTargets PromotionDeliveryZone[]
 
   @@map("delivery_zones")
   @@schema("public")

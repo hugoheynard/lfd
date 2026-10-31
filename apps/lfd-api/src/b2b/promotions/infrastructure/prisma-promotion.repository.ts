@@ -9,6 +9,7 @@ import { PromotionRepository } from "../domain/ports/promotion.repository.js";
 import { PROMOTION_SUBJECT, type PromotionAct } from "../domain/promotion-act.js";
 import type { Promotion } from "../domain/promotion.js";
 import { audienceTargetRowsOf } from "./promotion-audience-rows.js";
+import { FULFILLMENT_LINKS, fulfillmentLinkRowsOf } from "./promotion-fulfillment-rows.js";
 import { scopeRuleRowsOf, toDomain, toPersistence } from "./promotion-rows.js";
 
 /**
@@ -36,6 +37,7 @@ export class PrismaPromotionRepository extends PromotionRepository {
       include: {
         scopeRules: { orderBy: [{ target: "asc" }, { targetId: "asc" }] },
         audienceTargets: true,
+        ...FULFILLMENT_LINKS,
       },
     });
     return row === null ? null : toDomain(row, row.scopeRules, row.audienceTargets);
@@ -64,12 +66,31 @@ export class PrismaPromotionRepository extends PromotionRepository {
       await this.prisma.promotionAudienceTarget.createMany({
         data: audienceTargetRowsOf(promotion, () => this.ids.next()),
       });
+      await this.replaceFulfillmentLinks(promotion);
       await this.inscribe(act);
     });
     // Après le commit, comme `PricingActWriter` : le calcul lit les
     // promotions sous le cache des matériaux, et la caisse de CETTE instance
     // n'a pas à attendre l'estampille pour servir la promotion posée (L8).
     this.cache.invalidate();
+  }
+
+  /**
+   * Les points et les zones nommés (plan des acheminements, § 4) — des
+   * valeurs de l'agrégat, remplacées en bloc comme la portée. Leur existence
+   * a été jugée avant, par l'application : une clé étrangère violée ici
+   * serait une course, pas un refus attendu.
+   */
+  private async replaceFulfillmentLinks(promotion: Promotion): Promise<void> {
+    const { points, zones } = fulfillmentLinkRowsOf(promotion);
+    await this.prisma.promotionPickupPoint.deleteMany({ where: { promotionId: promotion.id } });
+    await this.prisma.promotionDeliveryZone.deleteMany({ where: { promotionId: promotion.id } });
+    if (points.length > 0) {
+      await this.prisma.promotionPickupPoint.createMany({ data: [...points] });
+    }
+    if (zones.length > 0) {
+      await this.prisma.promotionDeliveryZone.createMany({ data: [...zones] });
+    }
   }
 
   private async inscribe(act: PromotionAct): Promise<void> {

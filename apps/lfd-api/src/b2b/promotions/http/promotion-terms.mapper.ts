@@ -63,12 +63,10 @@ function audienceOf(audience: PromotionTermsPayload["audiences"][number]): Promo
   }
 }
 
+/** Une traduction de forme : les refus (rien coché, sélection vide, doublon) sont ceux de l'agrégat. */
 function fulfillmentOf(fulfillment: PromotionTermsPayload["fulfillment"]): PromotionFulfillment {
-  if (fulfillment.kind !== "pickup_point") {
-    return { kind: fulfillment.kind };
+  if (fulfillment.kind === "displayed_price") {
+    return { kind: "displayed_price" };
   }
-  if (fulfillment.pickupId === null) {
-    throw new PromotionMissingTargetIdError("pickup_point");
-  }
-  return { kind: fulfillment.kind, pickupId: fulfillment.pickupId };
+  return { kind: "basket", pickup: fulfillment.pickup, delivery: fulfillment.delivery };
 }

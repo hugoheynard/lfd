@@ -27,7 +27,7 @@ function cumulative(id: string, basisPoints: number): LivePromotion {
     effect: { kind: "percent_off", basisPoints },
     cumulative: true,
     validFrom: PRICED_AT,
-    fulfillment: { kind: "pickup" },
+    fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
   });
 }
 

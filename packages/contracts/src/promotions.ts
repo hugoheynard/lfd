@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import type { PromotionOfferFulfillmentView } from "./promotion-offer.js";
+
 /**
  * **Les promotions, vues du back-office** (plan
  * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
@@ -24,12 +26,12 @@ export const PROMOTION_AUDIENCE_KIND_VALUES = [
 ] as const;
 export type PromotionAudienceKindValue = (typeof PROMOTION_AUDIENCE_KIND_VALUES)[number];
 
-export const PROMOTION_FULFILLMENT_KIND_VALUES = [
-  "any",
-  "pickup",
-  "pickup_point",
-  "delivery",
-] as const;
+/**
+ * « Dans le prix affiché » (le prix de l'article baisse au catalogue, pour
+ * tous les acheminements) ou « en remise au panier », où retrait et
+ * livraison se cochent (plan `documentation/promotions/plan-acheminements-a-cocher.md`).
+ */
+export const PROMOTION_FULFILLMENT_KIND_VALUES = ["displayed_price", "basket"] as const;
 export type PromotionFulfillmentKindValue = (typeof PROMOTION_FULFILLMENT_KIND_VALUES)[number];
 
 export const PROMOTION_EFFECT_KIND_VALUES = [
@@ -73,6 +75,24 @@ const audienceTargetSchema = z.object({
   companyId: z.string().min(1).nullable(),
 });
 
+/** Les identifiants d'une sélection — vide, à blanc ou en double : refusé par l'agrégat, nommé. */
+const reachIdsSchema = z.array(z.string().max(64)).max(200);
+
+/** L'acheminement : la forme seule ; « au moins un mode coché » est tenu par l'agrégat. */
+const fulfillmentSchema = z.discriminatedUnion("kind", [
+  z.object({ kind: z.literal("displayed_price") }),
+  z.object({
+    kind: z.literal("basket"),
+    pickup: z.union([z.enum(["none", "all"]), z.object({ points: reachIdsSchema })]),
+    delivery: z.union([z.enum(["none", "all"]), z.object({ zones: reachIdsSchema })]),
+  }),
+]);
+
+/** L'acheminement d'une promotion, tel que l'éditeur l'envoie et que la fiche le relit. */
+export type PromotionFulfillmentView =
+  | { readonly kind: "displayed_price" }
+  | ({ readonly kind: "basket" } & PromotionOfferFulfillmentView);
+
 /**
  * La projection d'un public à plusieurs cibles sur une seule (`audience` de
  * la vue) — gardée pour les lecteurs d'avant L8b, lue par personne de neuf.
@@ -110,10 +130,7 @@ export const promotionTermsPayloadSchema = z.object({
    * ramène à sa forme canonique (tous les enfants d'un parent ⇒ le parent).
    */
   audiences: z.array(audienceTargetSchema).min(1).max(50),
-  fulfillment: z.object({
-    kind: z.enum(PROMOTION_FULFILLMENT_KIND_VALUES),
-    pickupId: z.string().min(1).nullable(),
-  }),
+  fulfillment: fulfillmentSchema,
   scope: z.object({
     mode: z.enum(["all_except", "only"]),
     rules: z
@@ -197,10 +214,8 @@ export interface PromotionView {
     readonly kind: PromotionAudienceKindValue | typeof SEVERAL_AUDIENCES;
     readonly companyId: string | null;
   };
-  readonly fulfillment: {
-    readonly kind: PromotionFulfillmentKindValue;
-    readonly pickupId: string | null;
-  };
+  /** Les points et les zones par leur identifiant, triés. */
+  readonly fulfillment: PromotionFulfillmentView;
   readonly scope: {
     readonly mode: "all_except" | "only";
     readonly rules: readonly PromotionScopeRuleView[];

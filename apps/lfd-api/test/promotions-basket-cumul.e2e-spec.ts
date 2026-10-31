@@ -67,7 +67,7 @@ beforeEach(async () => {
       internalName: "Cumul A",
       label: { fr: LABEL_A, en: null, it: null },
       effect: { kind: "percent_off", value: 1_000 },
-      fulfillment: { kind: "pickup", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       cumulative: true,
     }),
   );
@@ -77,7 +77,7 @@ beforeEach(async () => {
       internalName: "Cumul B",
       label: { fr: LABEL_B, en: null, it: null },
       effect: { kind: "percent_off", value: 500 },
-      fulfillment: { kind: "pickup", pickupId: null },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       cumulative: true,
     }),
   );
@@ -158,7 +158,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
         promotionTerms({
           internalName: name,
           effect: { kind: "percent_off", value: 100 },
-          fulfillment: { kind: "pickup", pickupId: null },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
           cumulative: true,
         }),
       );
@@ -169,7 +169,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
       .send(
         promotionTerms({
           internalName: "Cumul F",
-          fulfillment: { kind: "pickup", pickupId: null },
+          fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
           cumulative: true,
         }),
       )
@@ -235,7 +235,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
       promotionTerms({
         internalName: "Cumul du point",
         effect: { kind: "percent_off", value: 200 },
-        fulfillment: { kind: "pickup_point", pickupId: other },
+        fulfillment: { kind: "basket", pickup: { points: [other] }, delivery: "none" },
         cumulative: true,
       }),
     );

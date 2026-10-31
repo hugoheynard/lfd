@@ -22,11 +22,25 @@ export type PromotionOfferEffectView =
   | { readonly kind: "percent"; readonly basisPoints: number }
   | { readonly kind: "amount"; readonly millicents: number };
 
-/** L'acheminement qui ouvre la promotion — jamais « tous » : celle-là baisse déjà le prix. */
-export type PromotionOfferFulfillmentView =
-  | { readonly kind: "pickup" }
-  | { readonly kind: "pickup_point"; readonly pickupId: string }
-  | { readonly kind: "delivery" };
+/**
+ * Le retrait d'une promotion de panier : aucun, tous les points, ou ceux-là
+ * (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 3).
+ */
+export type PromotionPickupReachView = "none" | "all" | { readonly points: readonly string[] };
+
+/** La livraison d'une promotion de panier : aucune, toutes les zones, ou celles-là. */
+export type PromotionDeliveryReachView = "none" | "all" | { readonly zones: readonly string[] };
+
+/**
+ * L'ENSEMBLE des acheminements qui ouvrent la promotion — jamais « dans le
+ * prix affiché » : celle-là baisse déjà le prix. La boutique dit « au retrait
+ * à … » ou « en livraison » selon ce que le client regarde (plan des
+ * acheminements, § 8.4 ; contrat cassé le 2026-10-31, pré-release).
+ */
+export interface PromotionOfferFulfillmentView {
+  readonly pickup: PromotionPickupReachView;
+  readonly delivery: PromotionDeliveryReachView;
+}
 
 /** Une promotion de panier qu'un acheminement ouvrirait sur cet article. */
 export interface ShopItemFulfillmentOfferView {

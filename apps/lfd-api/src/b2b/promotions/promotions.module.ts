@@ -5,6 +5,7 @@ import { PricingModule } from "../pricing/pricing.module.js";
 import { ArchivePromotionHandler } from "./application/commands/archive-promotion.handler.js";
 import { PausePromotionHandler } from "./application/commands/pause-promotion.handler.js";
 import { PosePromotionHandler } from "./application/commands/pose-promotion.handler.js";
+import { PromotionFulfillmentNames } from "./application/commands/promotion-fulfillment-names.js";
 import { PromotionWriteGuard } from "./application/commands/promotion-write-guard.js";
 import { ResumePromotionHandler } from "./application/commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "./application/commands/revise-promotion.handler.js";
@@ -39,6 +40,8 @@ import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.rep
     { provide: PromotionBrowser, useClass: PrismaPromotionBrowser },
     { provide: PromotionRivalsReader, useClass: PrismaPromotionRivalsReader },
     PromotionWriteGuard,
+    // Les ports qu'il lit sont liés par `appBootstrap` (`PromotionFulfillmentTargetsModule`).
+    PromotionFulfillmentNames,
     PosePromotionHandler,
     RevisePromotionHandler,
     PausePromotionHandler,

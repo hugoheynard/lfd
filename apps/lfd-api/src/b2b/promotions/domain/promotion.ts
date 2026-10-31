@@ -4,7 +4,11 @@ import {
   PromotionArchiveReasonMissingError,
   PromotionNotPausedError,
 } from "./errors/promotion-errors.js";
-import { applicationPointOf, type PromotionApplicationPoint } from "./promotion-fulfillment.js";
+import {
+  applicationPointOf,
+  canonicalFulfillment,
+  type PromotionApplicationPoint,
+} from "./promotion-fulfillment.js";
 import { assertTerms, type PromotionTerms } from "./promotion-terms.js";
 import { sameTerms } from "./promotion-terms-equality.js";
 
@@ -77,7 +81,7 @@ export class Promotion {
   static pose(id: string, terms: PromotionTerms, by: string, at: Date): Promotion {
     assertTerms(terms);
     return new Promotion({
-      ...terms,
+      ...termsOf(terms),
       id,
       paused: null,
       archived: null,
@@ -96,7 +100,7 @@ export class Promotion {
    */
   static restore(state: PromotionState): Promotion {
     assertTerms(state);
-    return new Promotion(state);
+    return new Promotion({ ...state, ...termsOf(state) });
   }
 
   get id(): string {
@@ -197,7 +201,10 @@ export class Promotion {
   }
 }
 
-/** Les seuls termes — sans quoi une révision pourrait réécrire l'identité. */
+/**
+ * Les seuls termes — sans quoi une révision pourrait réécrire l'identité —,
+ * en forme canonique : points et zones triés (plan des acheminements, § 8.4).
+ */
 function termsOf(terms: PromotionTerms): PromotionTerms {
   return {
     internalName: terms.internalName,
@@ -211,7 +218,7 @@ function termsOf(terms: PromotionTerms): PromotionTerms {
     validFrom: terms.validFrom,
     validTo: terms.validTo,
     audiences: terms.audiences,
-    fulfillment: terms.fulfillment,
+    fulfillment: canonicalFulfillment(terms.fulfillment),
     scope: terms.scope,
     conditions: terms.conditions,
   };

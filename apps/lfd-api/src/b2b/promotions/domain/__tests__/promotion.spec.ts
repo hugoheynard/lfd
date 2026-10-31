@@ -17,6 +17,13 @@ import {
   PromotionReversedWindowError,
   PromotionScopeIncludesNothingError,
 } from "../errors/promotion-errors.js";
+import {
+  PromotionBlankFulfillmentTargetError,
+  PromotionDuplicateFulfillmentTargetError,
+  PromotionEmptyFulfillmentListError,
+  PromotionReachesNothingError,
+} from "../errors/promotion-fulfillment-errors.js";
+import type { DeliveryReach, PickupReach } from "../promotion-fulfillment.js";
 import { Promotion } from "../promotion.js";
 import type { PromotionTerms } from "../promotion-terms.js";
 import { FROM, UNTIL, basketTerms, lineTerms } from "./promotion-terms.fixture.js";
@@ -121,8 +128,78 @@ describe("Promotion.pose — les invariants des termes", () => {
       PromotionMissingTargetIdError,
     );
     expect(() =>
-      pose(basketTerms({ fulfillment: { kind: "pickup_point", pickupId: " " } })),
-    ).toThrow(PromotionMissingTargetIdError);
+      pose(
+        basketTerms({
+          fulfillment: { kind: "basket", pickup: { points: [" "] }, delivery: "none" },
+        }),
+      ),
+    ).toThrow(PromotionBlankFulfillmentTargetError);
+  });
+
+  describe("l'acheminement à cocher (plan des acheminements, § 3)", () => {
+    const basket = (pickup: PickupReach, delivery: DeliveryReach) =>
+      basketTerms({ fulfillment: { kind: "basket", pickup, delivery } });
+
+    it("refuse une remise au panier qui ne coche rien", () => {
+      expect(() => pose(basket("none", "none"))).toThrow(PromotionReachesNothingError);
+    });
+
+    it.each([
+      ["de points", basket({ points: [] }, "none"), "pickup"],
+      ["de zones", basket("none", { zones: [] }), "delivery"],
+    ] as const)("refuse une sélection vide %s", (_case, terms, side) => {
+      expect(() => pose(terms)).toThrow(new PromotionEmptyFulfillmentListError(side));
+    });
+
+    it("refuse un point ou une zone en double", () => {
+      expect(() => pose(basket({ points: ["pk_1", "pk_1"] }, "none"))).toThrow(
+        PromotionDuplicateFulfillmentTargetError,
+      );
+      expect(() => pose(basket("all", { zones: ["z_1", "z_2", "z_1"] }))).toThrow(
+        PromotionDuplicateFulfillmentTargetError,
+      );
+    });
+
+    it("admet un point ET une zone dans UNE promotion", () => {
+      const promotion = pose(basket({ points: ["pk_1"] }, { zones: ["z_1"] }));
+      expect(promotion.applicationPoint).toBe("basket");
+    });
+
+    it("trie points et zones à la pose, à la relecture et à la révision", () => {
+      const promotion = pose(basket({ points: ["pk_b", "pk_a"] }, { zones: ["z_2", "z_1"] }));
+      const sorted = {
+        kind: "basket",
+        pickup: { points: ["pk_a", "pk_b"] },
+        delivery: { zones: ["z_1", "z_2"] },
+      };
+      expect(promotion.terms.fulfillment).toEqual(sorted);
+      expect(
+        Promotion.restore({
+          ...promotion.toPersistence(),
+          fulfillment: {
+            kind: "basket",
+            pickup: { points: ["pk_b", "pk_a"] },
+            delivery: { zones: ["z_2", "z_1"] },
+          },
+        }).terms.fulfillment,
+      ).toEqual(sorted);
+      expect(
+        promotion.revise(basket({ points: ["pk_b", "pk_a"] }, { zones: ["z_1", "z_2"] })).terms
+          .fulfillment,
+      ).toEqual(sorted);
+    });
+
+    /** Révision L9 (§ 8.4) : reposer la même liste dans un autre ordre n'est pas une révision. */
+    it("dit déjà la même liste reposée dans un autre ordre", () => {
+      const promotion = pose(basket({ points: ["pk_a", "pk_b"] }, "none"));
+      expect(promotion.saysAlready(basket({ points: ["pk_b", "pk_a"] }, "none"))).toBe(true);
+      expect(promotion.saysAlready(basket({ points: ["pk_a"] }, "none"))).toBe(false);
+    });
+
+    it("« dans le prix affiché » agit sur la ligne, une remise au panier sur le panier", () => {
+      expect(pose(lineTerms()).applicationPoint).toBe("line");
+      expect(pose(basket("none", "all")).applicationPoint).toBe("basket");
+    });
   });
 
   describe("la portée", () => {
@@ -181,9 +258,9 @@ describe("Promotion.pose — les invariants des termes", () => {
         PromotionProductTargetAtLineError,
       );
       const state = pose(basketTerms({ scope: excluding })).toPersistence();
-      expect(() => Promotion.restore({ ...state, fulfillment: { kind: "any" } })).toThrow(
-        PromotionProductTargetAtLineError,
-      );
+      expect(() =>
+        Promotion.restore({ ...state, fulfillment: { kind: "displayed_price" } }),
+      ).toThrow(PromotionProductTargetAtLineError);
     });
 
     it("admet une famille ou une déclinaison au point ligne", () => {

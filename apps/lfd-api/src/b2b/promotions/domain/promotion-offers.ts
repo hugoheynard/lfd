@@ -1,6 +1,6 @@
 import { inForceAt, minQuantityOf, type LivePromotion } from "./live-promotion.js";
 import type { PromotionEffect } from "./promotion-effect.js";
-import type { PromotionFulfillment } from "./promotion-fulfillment.js";
+import type { DeliveryReach, PickupReach } from "./promotion-fulfillment.js";
 import {
   promotionScopeCovers,
   type PromotionScopeFacts,
@@ -32,8 +32,16 @@ export type OfferEffect =
   | { readonly kind: "percent"; readonly basisPoints: number }
   | { readonly kind: "amount"; readonly millicents: number };
 
-/** L'acheminement qui ouvre une promotion de panier — jamais « tous ». */
-export type OfferFulfillment = Exclude<PromotionFulfillment, { readonly kind: "any" }>;
+/**
+ * L'ENSEMBLE des acheminements qui ouvrent une promotion de panier (plan
+ * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4) — la
+ * boutique dit « au retrait à … » ou « en livraison » selon ce que le
+ * client regarde.
+ */
+export interface OfferFulfillment {
+  readonly pickup: PickupReach;
+  readonly delivery: DeliveryReach;
+}
 
 /** Une promotion de panier qu'un acheminement ouvrirait sur un article. */
 export interface FulfillmentOffer {
@@ -71,7 +79,7 @@ export function offerCandidates(
 ): LivePromotion[] {
   return promotions.filter(
     (promotion) =>
-      promotion.fulfillment.kind !== "any" &&
+      promotion.fulfillment.kind === "basket" &&
       inForceAt(promotion, at) &&
       admittingRankOf(promotion.audiences, facts) !== null,
   );
@@ -98,12 +106,16 @@ export function fulfillmentOffersFor(
     const { fulfillment } = promotion;
     if (
       effect === null ||
-      fulfillment.kind === "any" ||
+      fulfillment.kind === "displayed_price" ||
       !promotionScopeCovers(promotion.scope, article, { kind: "basket" })
     ) {
       continue;
     }
-    offers.push({ promotionId: promotion.id, effect, fulfillment });
+    offers.push({
+      promotionId: promotion.id,
+      effect,
+      fulfillment: { pickup: fulfillment.pickup, delivery: fulfillment.delivery },
+    });
   }
   return offers.sort((left, right) => (left.promotionId < right.promotionId ? -1 : 1));
 }
@@ -172,7 +184,7 @@ function touches(promotion: LivePromotion, line: OfferedLine): boolean {
     return false;
   }
   const point: PromotionScopePoint =
-    promotion.fulfillment.kind === "any" ? line.point : { kind: "basket" };
+    promotion.fulfillment.kind === "displayed_price" ? line.point : { kind: "basket" };
   return promotionScopeCovers(promotion.scope, line.article, point);
 }
 

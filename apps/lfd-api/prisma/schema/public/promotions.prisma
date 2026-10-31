@@ -54,9 +54,20 @@ model Promotion {
   audienceKind         String    @map("audience_kind")
   /// Identifiant opaque, sans clé étrangère.
   audienceCompanyId    String?   @map("audience_company_id")
-  fulfillmentKind      String    @map("fulfillment_kind")
-  /// Sans clé étrangère : un point archivé garde ses promotions (§ 7 B3).
+  /// MORTE depuis `20261031200000_les_acheminements_a_cocher` (plan
+  /// `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) : rendue
+  /// nullable, ni lue ni écrite, gardée en base (CLAUDE.md § 0). Elle dit
+  /// l'acheminement d'une promotion à la date de la migration ; une révision
+  /// ultérieure ne la met pas à jour.
+  fulfillmentKind      String?   @map("fulfillment_kind")
+  /// MORTE, comme `fulfillment_kind`.
   fulfillmentPickupId  String?   @map("fulfillment_pickup_id")
+  /// Le retrait d'une promotion de panier : `none` | `all` | `listed` (les
+  /// points dans `promotion_pickup_points`) ; `NULL` = « dans le prix
+  /// affiché » (point ligne). Tenu par des CHECK.
+  fulfillmentPickup    String?   @map("fulfillment_pickup")
+  /// La livraison, même forme (les zones dans `promotion_delivery_zones`).
+  fulfillmentDelivery  String?   @map("fulfillment_delivery")
   /// `all_except` | `only`.
   scopeMode            String    @map("scope_mode")
   /// Liste typée, toutes doivent tenir ; `[]` = aucune.
@@ -71,6 +82,8 @@ model Promotion {
 
   scopeRules      PromotionScopeRule[]
   audienceTargets PromotionAudienceTarget[]
+  pickupPoints    PromotionPickupPoint[]
+  deliveryZones   PromotionDeliveryZone[]
 
   @@index([archivedAt])
   @@index([applicationPoint, archivedAt])
@@ -123,6 +136,40 @@ model PromotionAudienceTarget {
 
   @@index([companyId])
   @@map("promotion_audience_targets")
+  @@schema("public")
+}
+
+/// **Un point de retrait nommé par une promotion** (plan
+/// `documentation/promotions/plan-acheminements-a-cocher.md`, § 4, § 8.2) —
+/// une valeur de l'agrégat, remplacée en bloc avec lui. Un site s'archive et
+/// ne se supprime pas : la clé étrangère est `RESTRICT`, et un point archivé
+/// reste dans la promotion sans plus rien admettre.
+model PromotionPickupPoint {
+  promotionId String    @map("promotion_id")
+  promotion   Promotion @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  pickupId    String    @map("pickup_id")
+  site        Site      @relation(fields: [pickupId], references: [id], onDelete: Restrict)
+
+  @@id([promotionId, pickupId])
+  @@index([pickupId])
+  @@map("promotion_pickup_points")
+  @@schema("public")
+}
+
+/// **Une zone de livraison nommée par une promotion** (plan des
+/// acheminements, § 4, § 9). `RESTRICT` : supprimer une zone qu'une promotion
+/// nomme, archivée comprise, est refusé avant, par les zones, dans la
+/// transaction de la suppression (zone verrouillée) — une promotion garde la
+/// trace de ses zones (décision de l'auteur du plan, 2026-10-31).
+model PromotionDeliveryZone {
+  promotionId String       @map("promotion_id")
+  promotion   Promotion    @relation(fields: [promotionId], references: [id], onDelete: Restrict)
+  zoneId      String       @map("zone_id")
+  zone        DeliveryZone @relation(fields: [zoneId], references: [id], onDelete: Restrict)
+
+  @@id([promotionId, zoneId])
+  @@index([zoneId])
+  @@map("promotion_delivery_zones")
   @@schema("public")
 }
 

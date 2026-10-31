@@ -5,7 +5,7 @@ import { Clock } from "../../../../platform/time/clock.js";
 import { PromotionBrowser } from "../../domain/ports/promotion-browser.reader.js";
 import { PromotionCatalogueReader } from "../../domain/ports/promotion-catalogue.reader.js";
 import { PromotionsSourceReader } from "../../domain/ports/promotions-source.reader.js";
-import { fulfillmentPickupIdOf } from "../../domain/promotion-fulfillment.js";
+import { listedPointsOf } from "../../domain/promotion-fulfillment.js";
 import { ListPromotionsQuery } from "./list-promotions.query.js";
 import { promotionViewOf } from "./promotion-view.js";
 
@@ -32,12 +32,12 @@ export class ListPromotionsHandler implements IQueryHandler<
       this.catalogue.snapshot(),
       this.source.current(),
     ]);
+    const { pickupId } = query;
+    // Celles qui NOMMENT ce point — le raccourci de la fiche du site.
     const shown =
-      query.pickupId === null
+      pickupId === null
         ? all
-        : all.filter(
-            (promotion) => fulfillmentPickupIdOf(promotion.terms.fulfillment) === query.pickupId,
-          );
+        : all.filter((promotion) => listedPointsOf(promotion.terms.fulfillment).includes(pickupId));
     return {
       source,
       editable: source === "promotions",

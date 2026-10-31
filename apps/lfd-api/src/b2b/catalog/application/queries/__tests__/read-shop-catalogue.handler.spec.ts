@@ -319,7 +319,7 @@ describe("ReadShopCatalogueHandler", () => {
   describe("la mention des promotions d'acheminement (L10)", () => {
     const EN_RETRAIT = livePromotion({
       id: "retrait",
-      fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+      fulfillment: { kind: "basket", pickup: { points: ["pickup_1"] }, delivery: "none" },
       validFrom: new Date(0),
     });
 
@@ -334,7 +334,7 @@ describe("ReadShopCatalogueHandler", () => {
         fulfillmentOffers: [
           {
             effect: { kind: "percent", basisPoints: 2_000 },
-            fulfillment: { kind: "pickup_point", pickupId: "pickup_1" },
+            fulfillment: { pickup: { points: ["pickup_1"] }, delivery: "none" },
           },
         ],
       });

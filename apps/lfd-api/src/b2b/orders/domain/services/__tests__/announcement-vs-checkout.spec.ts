@@ -59,12 +59,15 @@ const COMPANY = (status: "active" | "pending"): PromotionAudienceFacts => ({
 
 /** Un panier-promotion : retrait, `pickup` par défaut. */
 function basket(over: LivePromotionOverrides): LivePromotion {
-  return livePromotion({ fulfillment: { kind: "pickup" }, ...over });
+  return livePromotion({
+    fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    ...over,
+  });
 }
 
 function checkoutCents(promotions: readonly LivePromotion[], facts: PromotionAudienceFacts) {
   const admitted = promotionsAdmitted(
-    promotions.filter((promotion) => promotion.fulfillment.kind !== "any"),
+    promotions.filter((promotion) => promotion.fulfillment.kind !== "displayed_price"),
     ASKED_AT,
     facts,
   );
@@ -154,7 +157,7 @@ describe("l'annonce d'un point de retrait ne dépasse pas la caisse", () => {
         basket({
           id: "a_point",
           cumulative: true,
-          fulfillment: { kind: "pickup_point", pickupId: PICKUP },
+          fulfillment: { kind: "basket", pickup: { points: [PICKUP] }, delivery: "none" },
           effect: { kind: "basket_amount_off", cents: 300 },
         }),
         basket({
@@ -298,7 +301,7 @@ describe("l'offre « connectez-vous » ne dépasse pas ce que l'inscrit se voit 
         id: "b_point",
         cumulative: true,
         audience: { kind: "individuals_registered" },
-        fulfillment: { kind: "pickup_point", pickupId: PICKUP },
+        fulfillment: { kind: "basket", pickup: { points: [PICKUP] }, delivery: "none" },
         effect: { kind: "percent_off", basisPoints: 500 },
       }),
     ];

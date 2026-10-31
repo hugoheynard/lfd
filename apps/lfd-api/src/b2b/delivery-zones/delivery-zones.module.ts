@@ -6,7 +6,11 @@ import { RemoveDeliveryZoneHandler } from "./application/remove-delivery-zone.ha
 import { UpdateDeliveryZoneHandler } from "./application/update-delivery-zone.handler.js";
 import { ListDeliveryZonesHandler } from "./application/list-delivery-zones.handler.js";
 import { ListUncoveredPostalCodesHandler } from "./application/list-uncovered-postal-codes.handler.js";
+import { DeliveryZoneOfPostalCodeReader } from "../orders/domain/ports/delivery-zone-of-postal-code.reader.js";
+import { DeliveryZoneOfPostalCodeResolver } from "./application/delivery-zone-of-postal-code.resolver.js";
 import { DeliveryZoneRepository } from "./domain/delivery-zone.repository.js";
+import { DeliveryZoneLock } from "./domain/ports/delivery-zone-lock.js";
+import { PrismaDeliveryZoneLock } from "./infrastructure/prisma-delivery-zone-lock.js";
 import { PrismaDeliveryZoneRepository } from "./infrastructure/prisma-delivery-zone.repository.js";
 import { AdminDeliveryZonesController } from "./http/admin-delivery-zones.controller.js";
 import { DeliveryZonesController } from "./http/delivery-zones.controller.js";
@@ -14,7 +18,8 @@ import { DeliveryZonesController } from "./http/delivery-zones.controller.js";
 /**
  * **Zones de livraison** (globales) — code postal → frais de livraison. Exporte
  * `DeliveryZoneRepository` : le contexte `orders` en a besoin pour calculer le
- * frais d'une commande livrée vers une zone. Importe `AccountModule` pour le
+ * frais d'une commande livrée vers une zone, et `DeliveryZoneOfPostalCodeReader`,
+ * la zone d'un code postal pour le fait d'acheminement des promotions. Importe `AccountModule` pour le
  * seul port des codes postaux de livraison (comptes non couverts, 2026-10-20).
  */
 @Module({
@@ -22,12 +27,14 @@ import { DeliveryZonesController } from "./http/delivery-zones.controller.js";
   controllers: [DeliveryZonesController, AdminDeliveryZonesController],
   providers: [
     { provide: DeliveryZoneRepository, useClass: PrismaDeliveryZoneRepository },
+    { provide: DeliveryZoneLock, useClass: PrismaDeliveryZoneLock },
+    { provide: DeliveryZoneOfPostalCodeReader, useClass: DeliveryZoneOfPostalCodeResolver },
     ListDeliveryZonesHandler,
     ListUncoveredPostalCodesHandler,
     CreateDeliveryZoneHandler,
     UpdateDeliveryZoneHandler,
     RemoveDeliveryZoneHandler,
   ],
-  exports: [DeliveryZoneRepository],
+  exports: [DeliveryZoneRepository, DeliveryZoneOfPostalCodeReader],
 })
 export class DeliveryZonesModule {}

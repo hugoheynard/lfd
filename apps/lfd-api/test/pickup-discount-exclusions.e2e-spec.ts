@@ -139,7 +139,7 @@ async function seedPoint(excluded: Article): Promise<string> {
     promotionTerms({
       effect: { kind: "percent_off", value: 1_000 },
       audiences: [{ kind: "pros_active", companyId: null }],
-      fulfillment: { kind: "pickup_point", pickupId: id },
+      fulfillment: { kind: "basket", pickup: { points: [id] }, delivery: "none" },
       scope: {
         mode: "all_except",
         rules: [{ target: "category", targetId: excluded.categoryId, eligible: false }],

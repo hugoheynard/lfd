@@ -5,14 +5,23 @@ import type { OrderToPlace } from "../entities/order-shapes.js";
 import { FulfillmentChangeAltersPromotionError } from "../errors/fulfillment-promotion-errors.js";
 import { frozenBasketDiscountsOf, type FrozenBasketPromotion } from "./frozen-basket-discounts.js";
 
-/** Les changements qui peuvent faire entrer ou sortir une promotion conditionnée par l'acheminement. */
-const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set(["method", "pickup_point"]);
+/**
+ * Les changements qui peuvent faire entrer ou sortir une promotion
+ * conditionnée par l'acheminement. L'adresse livrée en est depuis que la
+ * ZONE entre dans le fait (plan `documentation/promotions/plan-acheminements-a-cocher.md`,
+ * § 8.1) : une autre adresse peut tomber dans une autre zone.
+ */
+const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set([
+  "method",
+  "pickup_point",
+  "delivery_address",
+]);
 
 /**
  * **L9 — changer d'acheminement ne change pas les promotions** (plan
  * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.8, étendu à un ENSEMBLE au § 18.5, lot M3). Seulement quand le mode ou
- * le point change : une révision qui garde l'acheminement se recompose comme
+ * § 13.8, étendu à un ENSEMBLE au § 18.5, lot M3). Seulement quand le mode, le
+ * point ou l'adresse livrée change : une révision qui garde l'acheminement se recompose comme
  * avant.
  *
  * La comparaison porte sur la liste ORDONNÉE des remises de panier, rang par

@@ -1,7 +1,6 @@
 import type {
   PromotionAudienceTargetView,
   PromotionEffectKindValue,
-  PromotionFulfillmentKindValue,
   PromotionScopeTargetValue,
   PromotionTermsPayload,
   PromotionView,
@@ -10,6 +9,52 @@ import type {
 import { businessDayStart } from '../shared/business-day';
 import { parisToday } from '../shared/paris-today';
 import { minimalAudiences, touchesBranch } from './promotion-audience-tree/audience-selection';
+
+/**
+ * **Le choix d'acheminement de l'écran d'aujourd'hui** — UN seul. Le contrat
+ * dit désormais un ENSEMBLE (`documentation/promotions/plan-acheminements-a-cocher.md`) ;
+ * l'écran ne change pas dans ce lot, il traduit à la frontière
+ * (`draftFulfillmentOf`, `payloadFulfillmentOf`). Le lot de l'écran le
+ * remplacera par des cases.
+ */
+export type DraftFulfillmentKind = 'any' | 'pickup' | 'pickup_point' | 'delivery';
+
+/**
+ * L'ensemble relu, dans le choix unique de l'écran. Une forme qu'il ne sait
+ * pas dire (un point ET la livraison, plusieurs points, des zones) est lue
+ * par son premier élément — le lot de l'écran la montrera entière.
+ */
+export function draftFulfillmentOf(fulfillment: PromotionView['fulfillment']): {
+  readonly kind: DraftFulfillmentKind;
+  readonly pickupId: string;
+} {
+  if (fulfillment.kind === 'displayed_price') {
+    return { kind: 'any', pickupId: '' };
+  }
+  if (typeof fulfillment.pickup === 'object') {
+    return { kind: 'pickup_point', pickupId: fulfillment.pickup.points[0] ?? '' };
+  }
+  return fulfillment.pickup === 'all'
+    ? { kind: 'pickup', pickupId: '' }
+    : { kind: 'delivery', pickupId: '' };
+}
+
+/** Le choix unique de l'écran, dans la forme du contrat. */
+export function payloadFulfillmentOf(
+  kind: DraftFulfillmentKind,
+  pickupId: string,
+): PromotionTermsPayload['fulfillment'] {
+  switch (kind) {
+    case 'any':
+      return { kind: 'displayed_price' };
+    case 'pickup':
+      return { kind: 'basket', pickup: 'all', delivery: 'none' };
+    case 'pickup_point':
+      return { kind: 'basket', pickup: { points: [pickupId] }, delivery: 'none' };
+    case 'delivery':
+      return { kind: 'basket', pickup: 'none', delivery: 'all' };
+  }
+}
 
 /**
  * **Le brouillon de l'éditeur des promotions** (plan
@@ -54,7 +99,7 @@ export interface PromotionDraft {
   readonly validTo: string;
   /** Le public, ensemble minimal (L8b) ; une société garde son identifiant tel que saisi. */
   readonly audiences: readonly PromotionAudienceTargetView[];
-  readonly fulfillmentKind: PromotionFulfillmentKindValue;
+  readonly fulfillmentKind: DraftFulfillmentKind;
   readonly pickupId: string;
   readonly scopeMode: 'all_except' | 'only';
   readonly rules: readonly PromotionScopeRuleDraft[];
@@ -66,9 +111,7 @@ export interface PromotionDraft {
 }
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
-export function effectsFor(
-  fulfillment: PromotionFulfillmentKindValue,
-): readonly PromotionEffectKindValue[] {
+export function effectsFor(fulfillment: DraftFulfillmentKind): readonly PromotionEffectKindValue[] {
   return fulfillment === 'any'
     ? ['percent_off', 'unit_amount_off', 'fixed_unit_price']
     : ['percent_off', 'basket_amount_off'];
@@ -76,7 +119,7 @@ export function effectsFor(
 
 /** Les cibles d'un point : le tarif ne connaît que le SKU, le panier connaît le produit. */
 export function targetsFor(
-  fulfillment: PromotionFulfillmentKindValue,
+  fulfillment: DraftFulfillmentKind,
 ): readonly PromotionScopeTargetValue[] {
   return fulfillment === 'any' ? ['category', 'variant'] : ['category', 'product'];
 }
@@ -161,8 +204,8 @@ export function draftOf(view: PromotionView): PromotionDraft {
     validFrom: parisToday(new Date(view.validFrom)),
     validTo: view.validTo === null ? '' : parisToday(new Date(view.validTo)),
     audiences: view.audiences,
-    fulfillmentKind: view.fulfillment.kind,
-    pickupId: view.fulfillment.pickupId ?? '',
+    fulfillmentKind: draftFulfillmentOf(view.fulfillment).kind,
+    pickupId: draftFulfillmentOf(view.fulfillment).pickupId,
     scopeMode: view.scope.mode,
     rules: view.scope.rules.map(({ target, targetId, eligible }) => ({
       target,
@@ -238,10 +281,7 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
       kind: target.kind,
       companyId: target.companyId === null ? null : target.companyId.trim(),
     })),
-    fulfillment: {
-      kind: draft.fulfillmentKind,
-      pickupId: draft.fulfillmentKind === 'pickup_point' ? draft.pickupId : null,
-    },
+    fulfillment: payloadFulfillmentOf(draft.fulfillmentKind, draft.pickupId),
     scope: { mode: draft.scopeMode, rules: [...draft.rules] },
     conditions: minQuantity === '' ? [] : [{ kind: 'min_quantity', value: Number(minQuantity) }],
   };
@@ -258,10 +298,7 @@ function labelOf(fr: string, en: string, it: string): PromotionTermsPayload['lab
  * cibles qui n'y ont pas de sens sont ramenés à ce qui en a, plutôt que
  * d'envoyer un corps que l'agrégat refuserait.
  */
-export function withFulfillment(
-  draft: PromotionDraft,
-  kind: PromotionFulfillmentKindValue,
-): PromotionDraft {
+export function withFulfillment(draft: PromotionDraft, kind: DraftFulfillmentKind): PromotionDraft {
   const targets = targetsFor(kind);
   return {
     ...draft,

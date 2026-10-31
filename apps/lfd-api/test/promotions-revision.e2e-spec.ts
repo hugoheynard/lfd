@@ -131,7 +131,7 @@ async function poseAt(pickupId: string): Promise<void> {
       validFrom: daysAgo(1),
       validTo: null,
       audiences: [{ kind: "everyone", companyId: null }],
-      fulfillment: { kind: "pickup_point", pickupId },
+      fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
       scope: { mode: "all_except", rules: [] },
       conditions: [],
     })
@@ -179,7 +179,8 @@ function frozen(orderId: string) {
 
 async function promotionAt(pickupId: string): Promise<string> {
   const rows = await ctx.prisma.$queryRawUnsafe<{ id: string }[]>(
-    "SELECT id FROM public.promotions WHERE fulfillment_pickup_id = $1",
+    // Le point se lit dans la table de liaison depuis les acheminements à cocher.
+    "SELECT promotion_id AS id FROM public.promotion_pickup_points WHERE pickup_id = $1",
     pickupId,
   );
   expect(rows).toHaveLength(1);

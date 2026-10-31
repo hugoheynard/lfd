@@ -56,7 +56,7 @@ function reprise(discount: AudiencePickupDiscount): AdmittedPromotion {
         ? { kind: "percent_off", basisPoints: discount.adjustment.bp }
         : { kind: "basket_amount_off", cents: discount.adjustment.cents },
     audience: { kind: "everyone_but_active_pros" },
-    fulfillment: { kind: "pickup_point", pickupId: "site" },
+    fulfillment: { kind: "basket", pickup: { points: ["site"] }, delivery: "none" },
     scope: repriseScopeOf(discount),
   });
 }
@@ -120,30 +120,36 @@ describe("chooseBasketPromotion — la reprise d'une remise de retrait", () => {
     const everyone = admittedPromotion({
       id: "a",
       audience: { kind: "everyone" },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 5000 },
     });
     const pros = admittedPromotion({
       id: "b",
       audience: { kind: "pros_active" },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     });
     expect(chooseBasketPromotion([everyone, pros], LINES, CLASSES).promotionId).toBe("b");
 
-    const twinLow = admittedPromotion({ id: "c", fulfillment: { kind: "pickup" } });
+    const twinLow = admittedPromotion({
+      id: "c",
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    });
     const twinHigh = admittedPromotion({
       id: "d",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 3000 },
     });
     expect(chooseBasketPromotion([twinLow, twinHigh], LINES, CLASSES).promotionId).toBe("d");
-    const twinSame = admittedPromotion({ id: "0", fulfillment: { kind: "pickup" } });
+    const twinSame = admittedPromotion({
+      id: "0",
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    });
     expect(chooseBasketPromotion([twinLow, twinSame], LINES, CLASSES).promotionId).toBe("0");
   });
 
   it("retire de l'assiette une ligne sous le seuil de quantité", () => {
     const promotion = admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       conditions: [{ kind: "min_quantity", value: 2 }],
     });
     const chosen = chooseBasketPromotion([promotion], LINES, CLASSES);
@@ -164,12 +170,12 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
   it("l'acheminement le plus précis l'emporte sur une remise plus forte", () => {
     const mode = admittedPromotion({
       id: "a_mode",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 5000 },
     });
     const point = admittedPromotion({
       id: "z_point",
-      fulfillment: { kind: "pickup_point", pickupId: "site" },
+      fulfillment: { kind: "basket", pickup: { points: ["site"] }, delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 500 },
     });
 
@@ -185,11 +191,11 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
     const company = admittedPromotion({
       id: "b_company",
       audience: { kind: "company", companyId: "co_1" },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     });
     const everyoneAtPoint = admittedPromotion({
       id: "a_point",
-      fulfillment: { kind: "pickup_point", pickupId: "site" },
+      fulfillment: { kind: "basket", pickup: { points: ["site"] }, delivery: "none" },
     });
 
     expect(chooseBasketPromotion([everyoneAtPoint, company], LINES, CLASSES).promotionId).toBe(
@@ -200,17 +206,17 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
   it("à rang égal, un montant fixe qui remise plus qu'un pourcentage l'emporte — et inversement", () => {
     const percent = admittedPromotion({
       id: "b_pct",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 1000 },
     });
     const bigAmount = admittedPromotion({
       id: "z_amount",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 300 },
     });
     const smallAmount = admittedPromotion({
       id: "a_amount",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 100 },
     });
 
@@ -226,12 +232,12 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
   it("compare les montants BORNÉS à l'assiette, pas les nominaux", () => {
     const huge = admittedPromotion({
       id: "z_huge",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 900_000 },
     });
     const big = admittedPromotion({
       id: "a_big",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 99_999 },
     });
 
@@ -243,7 +249,7 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
 
   it("rend le même choix quel que soit l'ordre des candidates", () => {
     const twins = ["m", "c", "x", "a"].map((id) =>
-      admittedPromotion({ id, fulfillment: { kind: "pickup" } }),
+      admittedPromotion({ id, fulfillment: { kind: "basket", pickup: "all", delivery: "none" } }),
     );
 
     const forward = chooseBasketPromotion(twins, LINES, CLASSES).promotionId;
@@ -255,7 +261,7 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
 
   it("un effet de ligne n'est pas une remise de panier : rien n'est retiré", () => {
     const line = admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "unit_amount_off", millicents: 5_000 },
     });
 
@@ -270,13 +276,13 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
     const winner = admittedPromotion({
       id: "w",
       label: "Offre gagnante",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints: 3000 },
     });
     const loser = admittedPromotion({
       id: "l",
       label: "Offre perdante",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     });
 
     expect(chooseBasketPromotion([loser, winner], LINES, CLASSES).label?.fr).toBe("Offre gagnante");
@@ -286,7 +292,7 @@ describe("chooseBasketPromotion — l'ordre du choix", () => {
 describe("chooseBasketPromotion — assiette et arrondi", () => {
   const pickup = (basisPoints: number) =>
     admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "percent_off", basisPoints },
     });
 
@@ -330,7 +336,7 @@ describe("chooseBasketPromotion — assiette et arrondi", () => {
 
   it("un montant fixe sous l'assiette est rendu tel quel, sans arrondi", () => {
     const fixed = admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 250 },
     });
 
@@ -339,7 +345,7 @@ describe("chooseBasketPromotion — assiette et arrondi", () => {
 
   it("un montant fixe sur un panier de 0 c ne remise rien (jamais négatif)", () => {
     const fixed = admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       effect: { kind: "basket_amount_off", cents: 250 },
     });
 
@@ -354,7 +360,7 @@ describe("chooseBasketPromotion — assiette et arrondi", () => {
 
   it("l'assiette d'une portée « seulement » est celle des seules lignes couvertes", () => {
     const boissons = admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: ONLY_BOISSONS,
       effect: { kind: "percent_off", basisPoints: 1000 },
     });
@@ -369,8 +375,13 @@ describe("chooseBasketPromotion — assiette et arrondi", () => {
   // famille : une portée « seulement » ne le couvre pas, « tout sauf » oui.
   it("une ligne au rangement inconnu n'est couverte que par « tout sauf »", () => {
     const unknown = [{ sku: "XXX-999", htCents: 1_000, quantity: 1 }];
-    const only = admittedPromotion({ fulfillment: { kind: "pickup" }, scope: ONLY_BOISSONS });
-    const allExcept = admittedPromotion({ fulfillment: { kind: "pickup" } });
+    const only = admittedPromotion({
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+      scope: ONLY_BOISSONS,
+    });
+    const allExcept = admittedPromotion({
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
+    });
 
     expect(chooseBasketPromotion([only], unknown, CLASSES).discountCents).toBe(0);
     expect(chooseBasketPromotion([allExcept], unknown, CLASSES).discountCents).toBe(200);
@@ -380,7 +391,7 @@ describe("chooseBasketPromotion — assiette et arrondi", () => {
 describe("chooseBasketPromotion — la condition de quantité minimum", () => {
   const withMin = (value: number) =>
     admittedPromotion({
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       conditions: [{ kind: "min_quantity", value }],
     });
 
@@ -422,12 +433,12 @@ describe("chooseBasketPromotion — une promotion qui ne touche aucune ligne", (
   it("ne prive pas l'acheteur d'une remise réelle", () => {
     const everyone = admittedPromotion({
       id: "everyone_20",
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
     });
     const prosOnBoissons = admittedPromotion({
       id: "pros_boissons",
       audience: { kind: "pros_active" },
-      fulfillment: { kind: "pickup" },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "none" },
       scope: ONLY_BOISSONS,
     });
     const breadOnly = [{ sku: "PAI-001", htCents: 1_000, quantity: 1 }];

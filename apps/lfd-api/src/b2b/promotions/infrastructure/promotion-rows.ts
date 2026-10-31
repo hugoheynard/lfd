@@ -8,14 +8,19 @@ import {
 } from "./promotion-audience-rows.js";
 import type { PromotionCondition } from "../domain/promotion-condition.js";
 import { effectOf, effectValueOf, type PromotionOwnFloor } from "../domain/promotion-effect.js";
-import { fulfillmentOf, fulfillmentPickupIdOf } from "../domain/promotion-fulfillment.js";
 import {
   PROMOTION_SCOPE_TARGETS,
   type PromotionScopeMode,
   type PromotionScopeRule,
   type PromotionScopeTarget,
 } from "../domain/promotion-scope.js";
-import { Promotion, type PromotionOrigin, type PromotionState } from "../domain/promotion.js";
+import { Promotion, type PromotionState } from "../domain/promotion.js";
+import { originOf } from "./promotion-origin-rows.js";
+import {
+  fulfillmentColumnsOf,
+  fulfillmentFromRow,
+  type PromotionFulfillmentLinkRows,
+} from "./promotion-fulfillment-rows.js";
 
 /**
  * **Les deux mappers de l'agrégat `Promotion`** — ligne ↔ domaine. Aucun type
@@ -53,8 +58,9 @@ export interface PromotionRow {
   /** Projection de la table des cibles, qui fait foi (L8b) — jamais relue. */
   readonly audienceKind: string;
   readonly audienceCompanyId: string | null;
-  readonly fulfillmentKind: string;
-  readonly fulfillmentPickupId: string | null;
+  /** `none` | `all` | `listed` ; `NULL` au point ligne (plan des acheminements, § 4). */
+  readonly fulfillmentPickup: string | null;
+  readonly fulfillmentDelivery: string | null;
   readonly scopeMode: string;
   readonly conditions: unknown;
   readonly origin: unknown;
@@ -92,16 +98,16 @@ export interface PromotionScopeRuleRow {
  * @throws les refus de l'agrégat.
  */
 export function toDomain(
-  row: PromotionRow,
+  row: PromotionRow & PromotionFulfillmentLinkRows,
   rules: readonly PromotionScopeRuleRow[],
   targets: readonly PromotionAudienceTargetRow[],
 ): Promotion {
   const unreadable = (detail: string) => new UnreadablePromotionRowError(row.id, detail);
   const effect = effectOf(row.effectKind, row.effectValue);
-  const fulfillment = fulfillmentOf(row.fulfillmentKind, row.fulfillmentPickupId);
-  if (effect === null || fulfillment === null) {
-    throw unreadable("effet ou acheminement inconnu");
+  if (effect === null) {
+    throw unreadable("effet inconnu");
   }
+  const fulfillment = fulfillmentFromRow(row.applicationPoint, row, row, unreadable);
   const promotion = Promotion.restore({
     id: row.id,
     internalName: row.internalName,
@@ -175,8 +181,7 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     archivedBy: state.archived?.by ?? null,
     archiveReason: state.archived?.reason ?? null,
     ...audienceProjectionOf(state.audiences.targets),
-    fulfillmentKind: state.fulfillment.kind,
-    fulfillmentPickupId: fulfillmentPickupIdOf(state.fulfillment),
+    ...fulfillmentColumnsOf(state.fulfillment),
     scopeMode: state.scope.mode,
     conditions: state.conditions.map((condition) => ({ ...condition })),
     legacySource: state.legacySource,
@@ -265,41 +270,4 @@ function archiveOf(row: PromotionRow, unreadable: Unreadable): PromotionState["a
     throw unreadable("archivage à moitié écrit");
   }
   return { at: archivedAt, by: archivedBy, reason: archiveReason };
-}
-
-function originOf(value: unknown, unreadable: Unreadable): PromotionOrigin | null {
-  if (value === null) {
-    return null;
-  }
-  if (!isJsonRecord(value)) {
-    throw unreadable("origine illisible");
-  }
-  if (value["kind"] === "price_rule" && typeof value["ruleId"] === "string") {
-    return {
-      kind: "price_rule",
-      ruleId: value["ruleId"],
-      ...(floorMemoOf(value["floor"]) ?? {}),
-      ...(value["detached"] === undefined ? {} : { detached: value["detached"] }),
-    };
-  }
-  const { siteId, clientele } = value;
-  if (
-    value["kind"] === "pickup_discount" &&
-    typeof siteId === "string" &&
-    typeof clientele === "string"
-  ) {
-    return { kind: "pickup_discount", siteId, clientele };
-  }
-  throw unreadable("origine inconnue");
-}
-
-function floorMemoOf(value: unknown): { readonly floor: { mode: string; value: number } } | null {
-  if (
-    isJsonRecord(value) &&
-    typeof value["mode"] === "string" &&
-    typeof value["value"] === "number"
-  ) {
-    return { floor: { mode: value["mode"], value: value["value"] } };
-  }
-  return null;
 }

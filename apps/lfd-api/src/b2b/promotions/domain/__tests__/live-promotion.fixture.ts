@@ -1,5 +1,6 @@
 import type { AdmittedPromotion, LivePromotion } from "../live-promotion.js";
 import type { PromotionAudience } from "../promotion-audience.js";
+import type { PromotionFulfillment } from "../promotion-fulfillment.js";
 import { NO_AUDIENCE_LABELS } from "../promotion-labels.js";
 import { PUBLIC_RANK } from "../promotion-targeting.js";
 
@@ -32,7 +33,7 @@ export function livePromotion(overrides: LivePromotionOverrides = {}): LivePromo
     validTo: null,
     suspendedFrom: null,
     audiences: [audience ?? { kind: "everyone" }],
-    fulfillment: { kind: "any" },
+    fulfillment: { kind: "displayed_price" },
     scope: { mode: "all_except", rules: [] },
     conditions: [],
     ...rest,
@@ -40,15 +41,34 @@ export function livePromotion(overrides: LivePromotionOverrides = {}): LivePromo
 }
 
 /**
- * La même, ADMISE comme la caisse la reçoit : rang de sa première cible,
- * libellé commun dans les trois langues.
+ * Le rang d'acheminement d'une forme d'AVANT les cases, pour le fait qu'elle
+ * admet : un point nommé 2, un mode 1, le prix affiché 0 — le départage
+ * d'avant, que le rang par fait garde (plan des acheminements, § 8.3).
+ * Une forme à deux côtés n'a pas de rang sans fait : la passer en override.
  */
-export function admittedPromotion(overrides: LivePromotionOverrides = {}): AdmittedPromotion {
-  const live = livePromotion(overrides);
+function soleSideRank(fulfillment: PromotionFulfillment): number {
+  if (fulfillment.kind === "displayed_price") {
+    return 0;
+  }
+  const listed = typeof fulfillment.pickup === "object" || typeof fulfillment.delivery === "object";
+  return listed ? 2 : 1;
+}
+
+/**
+ * La même, ADMISE comme la caisse la reçoit : rang de sa première cible,
+ * libellé commun dans les trois langues. `fulfillmentRank` : celui du fait
+ * jugé, à défaut celui de sa forme d'avant.
+ */
+export function admittedPromotion(
+  overrides: LivePromotionOverrides & { readonly fulfillmentRank?: number } = {},
+): AdmittedPromotion {
+  const { fulfillmentRank, ...rest } = overrides;
+  const live = livePromotion(rest);
   const fr = live.label.fr;
   return {
     ...live,
     publicRank: Math.max(...live.audiences.map((audience) => PUBLIC_RANK[audience.kind])),
+    fulfillmentRank: fulfillmentRank ?? soleSideRank(live.fulfillment),
     servedLabel: { fr, en: live.label.en ?? fr, it: live.label.it ?? fr },
   };
 }
