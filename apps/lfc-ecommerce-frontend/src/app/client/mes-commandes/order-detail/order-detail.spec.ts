@@ -239,4 +239,27 @@ describe('OrderDetail', () => {
     expect(text('[data-pickup-discount] dd')).toBe('−10 % sur 5,28 € TTC éligibles');
     expect(text('[data-pickup-excluded] dd')).toBe('Tasse, Torchon');
   });
+  /**
+   * Régression : deux remises cumulées s'affichaient en « −{somme} sur {base}
+   * éligibles », une base qui n'était celle d'aucune remise (M7, 2026-10-31).
+   */
+  it('dit une ligne par remise, sans assiette, quand la commande en cumule plusieurs', () => {
+    fixture.componentRef.setInput('order', {
+      ...ROWS[0]!,
+      discountLines: [
+        { label: { fr: 'Inscrits', en: 'Members', it: 'Iscritti' }, cents: 50 },
+        { cents: 30 },
+      ],
+    });
+    fixture.detectChanges();
+    expect(el().querySelector('[data-pickup-discount]')).toBeNull();
+    const lines = Array.from(el().querySelectorAll('[data-discount-line]')).map((line) =>
+      [
+        line.querySelector('dt')?.textContent?.trim(),
+        line.querySelector('dd')?.textContent?.trim(),
+      ].join(' '),
+    );
+    expect(lines).toEqual(['Inscrits −0,50 €', `${FR.orders.detailPickupDiscount} −0,30 €`]);
+    expect(el().textContent).not.toContain('éligibles');
+  });
 });

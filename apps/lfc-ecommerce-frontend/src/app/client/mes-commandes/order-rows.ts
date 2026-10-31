@@ -8,6 +8,7 @@ import type {
 import { isSettled } from '@lfd/contracts/shop-values';
 
 import { formatWindow } from '../format-hour';
+import { discountLinesOf, type HistoryDiscountLine } from './order-discount-lines';
 import { ticketOf, type OrderTicket } from './order-ticket';
 
 /**
@@ -218,6 +219,8 @@ export interface HistoryOrder {
    * comme `pickupDiscountBase` dans la commande relue.
    */
   readonly pickupDiscount?: HistoryPickupDiscount;
+  /** Une ligne par remise quand la commande en porte plusieurs — alors sans `pickupDiscount`. */
+  readonly discountLines?: readonly HistoryDiscountLine[];
   readonly status: OrderRowStatus;
   readonly payment: OrderPayment;
   readonly refund: OrderRefund;
@@ -417,6 +420,7 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
     pretax: order.settlement === 'account',
     voucherDiscountCents: order.voucherDiscountCents,
     ...pickupDiscountOf(order),
+    ...discountLinesOf(order),
     ...ticketFieldOf(order),
     status: statusOf(order),
     // Le régime calculé au serveur, pas une recopie du critère (F5) : `account`
@@ -437,7 +441,9 @@ export function historyRowOf(order: RowSource, org: string, copy: RowCopy): Hist
  */
 function pickupDiscountOf(order: RowSource): { pickupDiscount?: HistoryPickupDiscount } {
   const base = order.pickupDiscountBase;
-  if (base === undefined) {
+  // Plusieurs remises : leur somme sur l'union des lignes n'est l'assiette
+  // d'aucune — `discountLinesOf` les dit une à une.
+  if (base === undefined || (order.discounts?.length ?? 0) >= 2) {
     return {};
   }
   const pretax = order.settlement === 'account' || base.eligibleTtcCents === null;

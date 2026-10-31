@@ -53,6 +53,15 @@
         </div>
       }
     }
+    <!-- Plusieurs remises : une ligne chacune, sans assiette (M7, option c). -->
+    @if (discountLines(); as lines) {
+      @for (line of lines; track $index) {
+        <div class="fact" data-discount-line>
+          <dt>{{ line.label }}</dt>
+          <dd>{{ line.value }}</dd>
+        </div>
+      }
+    }
     @if (voucherAmount(); as amount) {
       <div class="fact">
         <dt>{{ t().cart.voucherHtLine }}</dt>

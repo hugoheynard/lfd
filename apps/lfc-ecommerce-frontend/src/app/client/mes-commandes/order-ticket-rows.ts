@@ -82,7 +82,9 @@ function discountGestures(
     return [[copy.detailPickupDiscount, -ticket.discountCents]];
   }
   return ticket.discounts.map((discount) => [
-    discount.label === undefined ? copy.detailPickupDiscount : labelIn(discount.label, locale),
+    discount.label === undefined
+      ? copy.detailPickupDiscount
+      : discountLabelIn(discount.label, locale),
     -discount.ttcCents,
   ]);
 }
@@ -92,6 +94,6 @@ function discountGestures(
  * (`@lfd/contracts`), recopiée : une valeur du baril n'entre pas dans la
  * boutique pour une ligne.
  */
-function labelIn(label: DiscountLabelView, locale: string): string {
+export function discountLabelIn(label: DiscountLabelView, locale: string): string {
   return locale === 'en' ? label.en : locale === 'it' ? label.it : label.fr;
 }

@@ -376,4 +376,40 @@ describe('le site et l’auteur d’une commande (plan des commandes des sites, 
       historyRowOf({ ...excluding, settlement: 'paid' }, '', COPY).pickupDiscount,
     ).toMatchObject({ eligibleCents: 528, eligiblePretax: false });
   });
+  /**
+   * Régression : avec deux remises cumulées, le tiroir écrivait « −{somme} sur
+   * {union des lignes} éligibles » — l'assiette d'aucune remise (M7, 2026-10-31).
+   */
+  it('ne donne aucune assiette à une commande à plusieurs remises, mais une ligne par remise', () => {
+    const cumulated: CustomerOrderView = {
+      ...ORDER,
+      discountCents: 80,
+      discountAdjustment: null,
+      discounts: [
+        {
+          label: { fr: 'Inscrits', en: 'Members', it: 'Iscritti' },
+          adjustment: { mode: 'percent', bp: 1000 },
+          amountCents: 50,
+          amountTtcCents: 53,
+        },
+        { adjustment: { mode: 'amount', cents: 30 }, amountCents: 30, amountTtcCents: null },
+      ],
+      pickupDiscountBase: {
+        eligibleHtCents: 500,
+        eligibleTtcCents: 528,
+        excludedSkus: ['PAI-001'],
+      },
+    };
+    const row = historyRowOf(cumulated, '', COPY);
+    expect(row.pickupDiscount).toBeUndefined();
+    expect(row.discountLines).toEqual([
+      { label: { fr: 'Inscrits', en: 'Members', it: 'Iscritti' }, cents: 50 },
+      { cents: 30 },
+    ]);
+    expect(historyRowOf({ ...cumulated, settlement: 'paid' }, '', COPY).discountLines).toEqual([
+      { label: { fr: 'Inscrits', en: 'Members', it: 'Iscritti' }, cents: 53 },
+      { cents: 30 },
+    ]);
+    expect(historyRowOf(ORDER, '', COPY).discountLines).toBeUndefined();
+  });
 });

@@ -9,7 +9,7 @@ import { OrderCancelSection } from '../../order-cancellation/order-cancel-sectio
 import { OrderReviseSection } from '../../order-revision/order-revise-section/order-revise-section';
 import { formatCents } from '../../format-money';
 import { isFulfilled, type HistoryOrder, type OrderPayment } from '../order-rows';
-import { ticketRowsOf } from '../order-ticket-rows';
+import { discountLabelIn, ticketRowsOf } from '../order-ticket-rows';
 
 /** Une note de 1 à 5. Zéro veut dire « pas encore notée », pas « zéro étoile ». */
 const STARS = [1, 2, 3, 4, 5] as const;
@@ -106,6 +106,24 @@ export class OrderDetail {
     return ticket === undefined
       ? null
       : ticketRowsOf(ticket, this.t().orders, this.locale.current());
+  });
+
+  /**
+   * Une ligne par remise quand la commande en porte plusieurs (M7, option c
+   * du 2026-10-31) — libellé figé dans la langue de l'écran, montant ; aucune
+   * base, la vue n'en sert pas par remise. `null` avec une remise au plus.
+   */
+  protected readonly discountLines = computed(() => {
+    const lines = this.order().discountLines;
+    if (lines === undefined) {
+      return null;
+    }
+    const fallback = this.t().orders.detailPickupDiscount;
+    const locale = this.locale.current();
+    return lines.map((line) => ({
+      label: line.label === undefined ? fallback : discountLabelIn(line.label, locale),
+      value: `−${formatCents(line.cents)}`,
+    }));
   });
 
   /**
