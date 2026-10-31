@@ -178,10 +178,19 @@ describe('le compte suit la règle du moteur', () => {
     expect(layout.apart).toEqual([]);
   });
 
-  it('au prix affiché, le mode n’atteint pas un article au poids — sa déclinaison, si', () => {
-    // « tout sauf rien » : quatre articles à la pièce, pas le comté au poids.
-    expect(coveredCount(atLine(), TREE)).toEqual({ covered: 4, total: 5 });
-    const named = withApartTargets(atLine(), 'variant', true, ['COMTE-KG'], TREE);
+  it('au prix affiché, un pourcentage sans seuil atteint l’article au poids par le mode et par sa famille', () => {
+    // Décision du 2026-10-31 : « −X % tout sauf rien » compte aussi le comté au poids.
+    expect(coveredCount(atLine(), TREE)).toEqual({ covered: 5, total: 5 });
+    const family = withFamilyLine(withScopeModeLines(atLine(), 'only', TREE), 'c_cremerie');
+    expect(coveredCount(family, TREE)).toEqual({ covered: 1, total: 5 });
+  });
+
+  it('au prix affiché, un montant ou un pourcentage « dès 3 » n’atteint l’article au poids que nommé', () => {
+    const amount: PromotionDraft = { ...atLine(), effectKind: 'unit_amount_off' };
+    const fromThree: PromotionDraft = { ...atLine(), minQuantity: '3' };
+    expect(coveredCount(amount, TREE)).toEqual({ covered: 4, total: 5 });
+    expect(coveredCount(fromThree, TREE)).toEqual({ covered: 4, total: 5 });
+    const named = withApartTargets(amount, 'variant', true, ['COMTE-KG'], TREE);
     expect(coveredCount(named, TREE)).toEqual({ covered: 5, total: 5 });
   });
 

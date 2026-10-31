@@ -139,6 +139,7 @@ describe("la portée partagée reproduit la portée d'une règle de prix", () =>
         const match = promotionScopeMatch(scope, article, {
           kind: "line",
           saleUnit: article.saleUnit,
+          extendsToWeight: false,
         });
         const expected = matchesScope(priceScope, context)
           ? {
@@ -147,6 +148,28 @@ describe("la portée partagée reproduit la portée d'une règle de prix", () =>
             }
           : null;
         expect({ sku: article.sku, match }).toEqual({ sku: article.sku, match: expected });
+      }
+    },
+  );
+});
+
+describe("un pourcentage qui s'étend au poids juge l'article au poids comme une pièce", () => {
+  it.each(PRICE_SCOPES.map((scope) => [`${scope.type}:${scope.id ?? "-"}`, scope] as const))(
+    "%s : même décision, même rang qu'à la pièce",
+    (_name, priceScope) => {
+      const scope = promotionScopeOfRule(priceScope);
+      for (const article of ARTICLES) {
+        const extended = promotionScopeMatch(scope, article, {
+          kind: "line",
+          saleUnit: article.saleUnit,
+          extendsToWeight: true,
+        });
+        const asPiece = promotionScopeMatch(scope, article, {
+          kind: "line",
+          saleUnit: "piece",
+          extendsToWeight: false,
+        });
+        expect({ sku: article.sku, match: extended }).toEqual({ sku: article.sku, match: asPiece });
       }
     },
   );

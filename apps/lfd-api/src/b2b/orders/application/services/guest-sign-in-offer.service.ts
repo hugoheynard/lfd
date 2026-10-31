@@ -78,7 +78,7 @@ export class GuestSignInOffer {
           productId: known.get(entry.sku)?.productId ?? null,
           categoryPath: known.get(entry.sku)?.categoryPath ?? [],
         },
-        point: { kind: "line", saleUnit: entry.saleUnit },
+        saleUnit: entry.saleUnit,
         quantity: entry.quantity,
       })),
       fulfillment,

@@ -2,9 +2,11 @@ import { inForceAt, minQuantityOf, type LivePromotion } from "./live-promotion.j
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { DeliveryReach, PickupReach } from "./promotion-fulfillment.js";
 import {
+  promotionExtendsToWeight,
   promotionScopeCovers,
   type PromotionScopeFacts,
   type PromotionScopePoint,
+  type PromotionScopeSaleUnit,
 } from "./promotion-scope.js";
 import {
   admittingRankOf,
@@ -120,8 +122,12 @@ export function fulfillmentOffersFor(
 /** Une ligne du panier d'un invité, telle que la portée la juge. */
 export interface OfferedLine {
   readonly article: PromotionScopeFacts;
-  /** L'unité de vente : au point ligne, une famille ou un mode ne vise pas le poids. */
-  readonly point: Extract<PromotionScopePoint, { readonly kind: "line" }>;
+  /**
+   * L'unité de vente : au point ligne, une famille ou un mode ne vise le
+   * poids que pour une promotion qui s'y étend (2026-10-31) — jugé par
+   * promotion, pas par ligne.
+   */
+  readonly saleUnit: PromotionScopeSaleUnit;
   /** Pièces, ou grammes au poids : la quantité que la caisse compare au seuil. */
   readonly quantity: number;
 }
@@ -181,7 +187,13 @@ function touches(promotion: LivePromotion, line: OfferedLine): boolean {
     return false;
   }
   const point: PromotionScopePoint =
-    promotion.fulfillment.kind === "displayed_price" ? line.point : { kind: "basket" };
+    promotion.fulfillment.kind === "displayed_price"
+      ? {
+          kind: "line",
+          saleUnit: line.saleUnit,
+          extendsToWeight: promotionExtendsToWeight(promotion.effect.kind, threshold !== null),
+        }
+      : { kind: "basket" };
   return promotionScopeCovers(promotion.scope, line.article, point);
 }
 

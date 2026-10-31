@@ -31,7 +31,7 @@ const PAIN = { sku: "PAIN-1", productId: "prod_pain", categoryPath: ["fam_pains"
 
 const LINE_OF_PAIN: OfferedLine = {
   article: PAIN,
-  point: { kind: "line", saleUnit: "piece" },
+  saleUnit: "piece",
   quantity: 1,
 };
 

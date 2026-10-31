@@ -47,6 +47,9 @@ export function scopeKeysOf(context: PricingContext): readonly ScopeKey[] {
   // et de famille ne le visent pas (`coversManyArticles`, plan de la vente au
   // poids §2). C'est ici que l'exclusion tient pour les règles, les barèmes et
   // les planchers à la fois, puisque les trois passent par cet index.
+  // Les PROMOTIONS n'y passent pas (`promotionAsRule`, jugées par article) :
+  // un pourcentage qui s'étend au poids y arrive en portée `variant`, et cette
+  // exclusion reste entière pour les règles ordinaires (vérifié le 2026-10-31).
   if (!coversManyArticles(context)) {
     return own;
   }

@@ -6,6 +6,7 @@ import {
 import type { PriceRule, PricingContext } from "../price-rule.js";
 import { promotionAsRule } from "../promotion-as-rule.js";
 import { resolvePrice } from "../resolve-price.js";
+import { grams, lineTotalCents } from "@lfd/money";
 
 /**
  * **Le point ligne reproduit les règles d'étage promotion au centime** (plan
@@ -206,9 +207,17 @@ describe("promotionAsRule — la reprise d'une règle rend le même prix et la m
     expectSame([source], [reprise(source, {})], context({ quantity }));
   });
 
-  it("ne vise pas un article au poids par une famille ni par le mode, des deux côtés", () => {
-    const global = rule({ id: "r_g" });
-    const family = rule({ id: "r_f", scope: { type: "category", id: "fam-croissants" } });
+  it("un montant ne vise pas un article au poids par une famille ni par le mode, des deux côtés", () => {
+    const amount = {
+      nature: "alter",
+      alteration: { direction: "decrease", mode: "amount", millicents: 50_000 },
+    } as const;
+    const global = rule({ id: "r_g", ...amount });
+    const family = rule({
+      id: "r_f",
+      scope: { type: "category", id: "fam-croissants" },
+      ...amount,
+    });
     // Le prix et les étages seulement : en production, l'index par portée
     // n'apporte pas ces règles-là à la chaîne (`scopeKeysOf`), et la trace
     // n'en dit rien ; passées ici à la main, `applies` les nomme hors portée.
@@ -232,6 +241,15 @@ describe("promotionAsRule — la reprise d'une règle rend le même prix et la m
     expect(before.steps).toEqual([]);
   });
 
+  it("une règle de prix ordinaire en pourcentage ne vise toujours pas le poids par famille ni mode", () => {
+    const before = resolvePrice(
+      CANONICAL,
+      { rules: [rule({ id: "r_g" })], ladders: [], mercuriale: null, promotions: [] },
+      context({ saleUnit: "weight", quantity: 1250 }),
+    );
+    expect(before.steps).toEqual([]);
+    expect(before.finalMillicents).toBe(CANONICAL);
+  });
   it.each([false, true])("sous mercuriale, cumul %s : scellée ou non, pareil", (stacks) => {
     const source = rule({ stacksOverMercuriale: stacks });
     expectSame([source], [reprise(source, {})], context(), [MERCURIALE]);
@@ -322,5 +340,98 @@ describe("promotionAsRule — ce qui n'est pas une règle de prix", () => {
 
     expect(ticked?.cumulative).toBe(true);
     expect(plain).not.toHaveProperty("cumulative");
+  });
+});
+
+describe("promotionAsRule — un pourcentage s'étend au poids (décision du 2026-10-31)", () => {
+  const WEIGHT = context({ saleUnit: "weight", quantity: 1250 });
+  const PER_KILO = 2_390_000;
+  const TEN = { kind: "percent_off", basisPoints: 1000 } as const;
+  const FAMILY_ONLY = {
+    mode: "only",
+    rules: [{ target: "category", targetId: "fam-croissants", eligible: true, targetRank: null }],
+  } as const;
+
+  function price(promotions: readonly AdmittedPromotion[], ctx: PricingContext = WEIGHT) {
+    return resolvePrice(PER_KILO, { rules: [], ladders: [], mercuriale: null, promotions }, ctx);
+  }
+
+  it("« −10 % tout sauf » baisse le prix au kilo, et la ligne au poids réel tombe juste", () => {
+    const priced = price([admittedPromotion({ id: "all", effect: TEN })]);
+    expect(priced.steps.map((step) => step.ruleId)).toEqual(["all"]);
+    expect(priced.finalMillicents).toBe(2_151_000);
+    // 21,51 €/kg × 1,250 kg = 26,8875 € : un seul arrondi, au poids réel.
+    expect(lineTotalCents(priced.finalMillicents, grams(1250))).toBe(2689);
+  });
+
+  it("par sa famille, et la règle rendue vise le SKU au rang de la famille", () => {
+    const promotion = admittedPromotion({ effect: TEN, scope: FAMILY_ONLY });
+    const presented = promotionAsRule(promotion, WEIGHT);
+    expect(presented?.scope).toEqual({ type: "variant", id: "VIE-001-1" });
+    expect(presented?.promotion?.coverage).toEqual({ scopeRank: 1, familyCloseness: 2 });
+    expect(promotionAsRule(promotion, context())?.promotion).not.toHaveProperty("coverage");
+  });
+
+  it("une exclusion de famille le retire toujours", () => {
+    const excluded = admittedPromotion({
+      effect: TEN,
+      scope: {
+        mode: "all_except",
+        rules: [
+          { target: "category", targetId: "fam-croissants", eligible: false, targetRank: null },
+        ],
+      },
+    });
+    expect(promotionAsRule(excluded, WEIGHT)).toBeNull();
+  });
+
+  it("un montant, un prix posé ne s'étendent pas", () => {
+    const amount = admittedPromotion({ effect: { kind: "unit_amount_off", millicents: 50_000 } });
+    const fixed = admittedPromotion({
+      effect: { kind: "fixed_unit_price", millicents: 1_000_000 },
+    });
+    expect(promotionAsRule(amount, WEIGHT)).toBeNull();
+    expect(promotionAsRule(fixed, WEIGHT)).toBeNull();
+  });
+
+  it("un pourcentage à quantité minimum ne s'étend pas, même seuil atteint", () => {
+    const fromThree = admittedPromotion({
+      effect: TEN,
+      conditions: [{ kind: "min_quantity", value: 3 }],
+    });
+    expect(promotionAsRule(fromThree, WEIGHT)).toBeNull();
+    expect(price([fromThree]).finalMillicents).toBe(PER_KILO);
+  });
+
+  it("garde le rang de sa décision : une promotion qui nomme l'article bat le mode étendu", () => {
+    const everything = admittedPromotion({
+      id: "a_all",
+      effect: { kind: "percent_off", basisPoints: 3000 },
+    });
+    const named = admittedPromotion({
+      id: "b_named",
+      effect: TEN,
+      scope: {
+        mode: "only",
+        rules: [{ target: "variant", targetId: "VIE-001-1", eligible: true, targetRank: null }],
+      },
+    });
+    expect(price([everything, named]).steps.map((step) => step.ruleId)).toEqual(["b_named"]);
+  });
+
+  it("garde la proximité : la sous-famille bat la parente, comme à la pièce", () => {
+    const parent = admittedPromotion({
+      id: "a_parent",
+      effect: { kind: "percent_off", basisPoints: 3000 },
+      scope: {
+        mode: "only",
+        rules: [
+          { target: "category", targetId: "fam-viennoiseries", eligible: true, targetRank: null },
+        ],
+      },
+    });
+    const child = admittedPromotion({ id: "b_child", effect: TEN, scope: FAMILY_ONLY });
+    expect(price([parent, child]).steps.map((step) => step.ruleId)).toEqual(["b_child"]);
+    expect(price([parent, child], context()).steps.map((step) => step.ruleId)).toEqual(["b_child"]);
   });
 });

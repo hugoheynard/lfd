@@ -1,4 +1,5 @@
 import {
+  promotionExtendsToWeight,
   promotionScopeCovers,
   type PromotionScope,
   type PromotionScopePoint,
@@ -32,21 +33,27 @@ function scopeOf(draft: PromotionDraft): PromotionScope {
 
 /**
  * Le point où le moteur pose la question : la ligne au prix affiché, le
- * panier sinon. Une unité inconnue (déclinaison que la plateforme ne vend
- * pas) se juge comme une unité autre que la pièce : seule une règle qui la
- * nomme l'atteint — on ne la compte pas sur la foi d'une famille.
+ * panier sinon. Au poids, un pourcentage sans quantité minimum s'étend par
+ * famille et par mode (décision du 2026-10-31), comme au moteur. Une unité
+ * inconnue (déclinaison que la plateforme ne vend pas) ne s'étend jamais :
+ * seule une règle qui la nomme l'atteint — on ne la compte pas sur la foi
+ * d'une famille.
  */
 function pointOf(draft: PromotionDraft, article: ScopeArticle): PromotionScopePoint {
-  return draft.fulfillmentKind === 'displayed_price'
-    ? { kind: 'line', saleUnit: article.saleUnit ?? 'weight' }
-    : { kind: 'basket' };
+  if (draft.fulfillmentKind !== 'displayed_price') {
+    return { kind: 'basket' };
+  }
+  const extendsToWeight =
+    article.saleUnit !== null &&
+    promotionExtendsToWeight(draft.effectKind, draft.minQuantity.trim() !== '');
+  return { kind: 'line', saleUnit: article.saleUnit ?? 'weight', extendsToWeight };
 }
 
 /**
  * **Cet article est-il concerné ?** — la règle même du moteur
  * (`@lfd/contracts/promotion-scope`, `promotionScopeCovers`) : déclinaison >
- * produit > famille la plus proche > mode, et au prix affiché, ni famille ni
- * mode n'atteignent un article au poids.
+ * produit > famille la plus proche > mode, et au prix affiché, famille et
+ * mode n'atteignent un article au poids que pour un pourcentage sans seuil.
  */
 export function covers(draft: PromotionDraft, article: ScopeArticle): boolean {
   const { sku, productId, categoryPath } = article;

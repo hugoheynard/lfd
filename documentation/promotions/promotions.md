@@ -225,6 +225,69 @@ pas choisi. Elle touche le calcul du prix affiché (argent) : plan et
   le rang est `[public, acheminement, remise]` puis l'id
   (`basket-promotion-choice.ts:75`).
 
+#### Pourcentages et articles au poids (décision de Hugo, 2026-10-31, sur `dev`)
+
+Au point **ligne**, une promotion en **pourcentage** (`percent_off`) **sans
+quantité minimum** s'étend aux articles vendus au poids par sa règle de
+famille et par le mode « tout sauf » — toutes les promotions, déjà posées
+comprises. Les montants (`unit_amount_off`), les prix posés
+(`fixed_unit_price`) et toute promotion à quantité minimum restent réservés,
+pour le poids, aux articles nommés (produit, déclinaison) : leurs montants
+et leurs seuils se lisent à la pièce. Les règles de prix ordinaires ne
+changent pas (`coversManyArticles`, `scopeKeysOf` intacts). Au panier, rien
+ne change : l'unité de vente n'y a jamais joué.
+
+Deux barrières, et chacune a sa clé :
+
+- **la portée** — `promotionScopeMatch`
+  (`packages/contracts/src/promotion-scope.ts`) : le point `line` porte,
+  OBLIGATOIRE, `extendsToWeight`, calculé par promotion
+  (`promotionExtendsToWeight(effectKind, hasMinQuantity)`). Le typecheck
+  force chaque appelant : le prix (`promotion-as-rule.ts`), le refus de
+  chevauchement (`apps/lfd-api/src/b2b/promotions/domain/promotion-shared-article.ts`), l'offre de connexion
+  (`promotion-offers.ts`, `touches`) et le compteur du back-office
+  (`targeted-promotions/scope-count.ts`, `pointOf` — une unité inconnue ne
+  s'étend jamais) ;
+- **le moteur** — `matchesScope` refuse au poids une portée `global` ou
+  `category`. Un article au poids couvert par extension reçoit donc une
+  portée `variant` (son SKU), et le rang de la décision (mode 0, famille 1 et
+  sa proximité) voyage dans `promotion.coverage`, que `specificityOf` lit à
+  la place de la portée : une promotion qui nomme l'article, ou une
+  sous-famille, l'emporte comme à la pièce. Conséquence visible : la trace
+  d'une telle étape nomme la déclinaison plutôt que la famille ou « tout ».
+
+L'arrondi reste unique : le pourcentage s'applique au prix au kilo
+(millicentimes), puis `lineTotalCents` multiplie par le poids réel et
+arrondit une fois (−10 % sur 23,90 €/kg, 1 250 g → 26,89 €).
+
+**Recouvrement.** L'extension peut faire naître un chevauchement entre deux
+promotions de ligne déjà posées, sur un article au poids.
+`weightExtensionConflicts` (`apps/lfd-api/src/b2b/promotions/domain/promotion-weight-conflicts.ts`) en dresse
+la liste ; sur le semis de démo, elle est vide (il ne pose que des remises de
+point, au panier — `apps/lfd-api/src/dev/seeding/__tests__/station-promotions.seed.spec.ts`).
+Un tel conflit ne casse aucun prix (`winnerOf` départage deux promotions par
+l'avantage du client, puis l'id) ; il refuse la prochaine révision de l'une
+des deux. **En production, non exécuté** : la requête de lecture suivante
+dresse les paires candidates, à confronter ensuite au public et à la portée
+(ou à `weightExtensionConflicts` sur le catalogue vendable) :
+
+```sql
+-- Lecture seule : paires de promotions de ligne vivantes dont au moins une
+-- s'étend au poids, aux fenêtres qui se recouvrent, pas toutes deux cumulables.
+SELECT a.id, a.internal_name, b.id, b.internal_name
+FROM public.promotions a
+JOIN public.promotions b ON a.id < b.id
+WHERE a.application_point = 'line' AND b.application_point = 'line'
+  AND a.archived_at IS NULL AND b.archived_at IS NULL
+  AND NOT (a.cumulative AND b.cumulative)
+  AND a.valid_from < COALESCE(b.valid_to, 'infinity')
+  AND b.valid_from < COALESCE(a.valid_to, 'infinity')
+  AND (
+    (a.effect_kind = 'percent_off' AND NOT a.conditions @> '[{"kind":"min_quantity"}]')
+    OR (b.effect_kind = 'percent_off' AND NOT b.conditions @> '[{"kind":"min_quantity"}]')
+  );
+```
+
 ### 2.3 La source, la bascule, et l'ancien calcul retiré (L12)
 
 `domain/promotions-source.ts:15` : la ligne `promotions_source`
@@ -413,7 +476,9 @@ remonte après la valeur) :
    famille DIRECTE d'une fiche (pas le chemin des parentes) ni l'unité de
    vente ; le compte ignore donc une règle posée sur une famille parente, et
    compte un article au poids que le moteur n'étend pas par famille ou mode au
-   prix affiché.
+   prix affiché. ⚠️ Ces limites datent d'avant le 2026-10-31 : depuis, le
+   compteur rejoue la règle partagée avec le chemin et l'unité (voir « Limites
+   connues »), extension des pourcentages au poids comprise.
 
 8. **« Où en est-elle ? »** — une promotion existante seulement.
 
@@ -798,17 +863,6 @@ promotions à la bascule (L12), qui les ont remplacées.
   la rejoue avec le chemin de familles et l'unité de vente que le catalogue
   publié de l'admin sert désormais. Une déclinaison non vendue (`saleUnit`
   nul) ne compte au prix affiché que si une règle la nomme.
-- **Pourcentages et articles au poids** (décision de Hugo, 2026-10-31, à
-  bâtir) : au point ligne, une promotion en **pourcentage** s'étendra aux
-  articles vendus au poids par sa famille et par « tout sauf » — **toutes**
-  les promotions, déjà posées comprises (liste des conflits de recouvrement
-  dressée avant la bascule). Les montants et prix posés restent réservés aux
-  articles nommés. Une promotion à **quantité minimum** ne s'étend pas au
-  poids. Contredit par vitruve : deux barrières (`promotionScopeMatch` et
-  `coversManyArticles` / `matchesScope` du moteur de prix) — la seconde
-  reste pour les règles de prix ordinaires ; prix, annonce et compteur
-  basculent ensemble ; l'effet entre, obligatoire, dans le point de
-  jugement.
 - **Un seuil en grammes par article au poids** (idée de Hugo, 2026-10-31,
   non bâtie) : « dès 500 g » posé article par article, en remplacement d'une
   quantité minimum qui n'a pas de sens au poids.

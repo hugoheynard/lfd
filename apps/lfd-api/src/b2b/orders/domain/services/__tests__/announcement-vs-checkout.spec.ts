@@ -275,12 +275,12 @@ describe("l'offre « connectez-vous » ne dépasse pas ce que l'inscrit se voit 
   const OFFERED = [
     {
       article: { sku: "PAI-001", productId: "p_pain", categoryPath: ["c_pains"] },
-      point: { kind: "line", saleUnit: "piece" },
+      saleUnit: "piece",
       quantity: 4,
     },
     {
       article: { sku: "BOI-001", productId: "p_jus", categoryPath: ["c_b"] },
-      point: { kind: "line", saleUnit: "piece" },
+      saleUnit: "piece",
       quantity: 1,
     },
   ] as const;

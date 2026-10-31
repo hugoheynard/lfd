@@ -426,6 +426,7 @@
   "test/promotions-persistence.e2e-spec.ts": 6831,
   "test/promotions-point-and-zone.e2e-spec.ts": 22055,
   "test/promotions-revision.e2e-spec.ts": 17649,
+  "test/promotions-weight.e2e-spec.ts": 8850,
   "test/prospects.e2e-spec.ts": 3229,
   "test/public-pickup-slots-surface.e2e-spec.ts": 3930,
   "test/public-pickup-slots.e2e-spec.ts": 5155,

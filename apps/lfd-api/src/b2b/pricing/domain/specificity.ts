@@ -90,8 +90,8 @@ function specificityOf(rule: PriceRule, categoryPath: readonly string[]): Specif
   return [
     rule.promotion?.publicRank ?? AUDIENCE_RANK[rule.audience.type],
     rule.promotion?.fulfillmentRank ?? 0,
-    SCOPE_RANK[rule.scope.type],
-    familyClosenessOf(rule.scope, categoryPath),
+    rule.promotion?.coverage?.scopeRank ?? SCOPE_RANK[rule.scope.type],
+    rule.promotion?.coverage?.familyCloseness ?? familyClosenessOf(rule.scope, categoryPath),
     rule.minQuantity ?? 0,
   ];
 }
@@ -153,6 +153,11 @@ export function matchesScope(scope: PriceScope, context: PricingContext): boolea
  *
  * Écrit une fois ici et relu par `scopeKeysOf` : l'index et le prédicat doivent
  * rendre les mêmes candidats (`scope-index.spec.ts`).
+ *
+ * Inchangé par l'extension des pourcentages au poids (décision de Hugo du
+ * 2026-10-31) : une promotion qui s'y étend arrive ici en portée `variant`
+ * (`promotionAsRule`), son rang porté par `promotion.coverage` — vérifié le
+ * 2026-10-31.
  */
 export function coversManyArticles(context: Pick<PricingContext, "saleUnit">): boolean {
   return context.saleUnit === "piece";

@@ -1,13 +1,15 @@
 import {
   promotionScopeCovers,
+  promotionExtendsToWeight,
   promotionScopeMatch,
   type PromotionScope,
   type PromotionScopeFacts,
   type PromotionScopeRule,
 } from "../promotion-scope.js";
 
-const LINE_PIECE = { kind: "line", saleUnit: "piece" } as const;
-const LINE_WEIGHT = { kind: "line", saleUnit: "weight" } as const;
+const LINE_PIECE = { kind: "line", saleUnit: "piece", extendsToWeight: false } as const;
+const LINE_WEIGHT = { kind: "line", saleUnit: "weight", extendsToWeight: false } as const;
+const LINE_WEIGHT_EXTENDED = { kind: "line", saleUnit: "weight", extendsToWeight: true } as const;
 const BASKET = { kind: "basket" } as const;
 
 const CROISSANT: PromotionScopeFacts = {
@@ -111,6 +113,24 @@ describe("promotionScopeMatch — la portée d'éligibilité", () => {
       expect(promotionScopeCovers(scope("all_except"), FROMAGE_AU_POIDS, LINE_WEIGHT)).toBe(false);
       const family = scope("only", [rule("category", "c_cremerie", true)]);
       expect(promotionScopeCovers(family, FROMAGE_AU_POIDS, LINE_WEIGHT)).toBe(false);
+    });
+
+    it("au point ligne, une promotion qui s'y étend le vise par le mode et par sa famille, au même rang", () => {
+      expect(
+        promotionScopeMatch(scope("all_except"), FROMAGE_AU_POIDS, LINE_WEIGHT_EXTENDED),
+      ).toEqual({ rank: 0, familyCloseness: 0 });
+      const family = scope("only", [rule("category", "c_cremerie", true)]);
+      expect(promotionScopeMatch(family, FROMAGE_AU_POIDS, LINE_WEIGHT_EXTENDED)?.rank).toBe(1);
+      const excluded = scope("all_except", [rule("category", "c_cremerie", false)]);
+      expect(promotionScopeCovers(excluded, FROMAGE_AU_POIDS, LINE_WEIGHT_EXTENDED)).toBe(false);
+    });
+
+    it("seul un pourcentage sans quantité minimum s'étend au poids", () => {
+      expect(promotionExtendsToWeight("percent_off", false)).toBe(true);
+      expect(promotionExtendsToWeight("percent_off", true)).toBe(false);
+      expect(promotionExtendsToWeight("unit_amount_off", false)).toBe(false);
+      expect(promotionExtendsToWeight("fixed_unit_price", false)).toBe(false);
+      expect(promotionExtendsToWeight("basket_amount_off", false)).toBe(false);
     });
 
     it("au point ligne, une décision sur l'article lui-même le vise", () => {

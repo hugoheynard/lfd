@@ -14,7 +14,7 @@ import {
   listedZonesOf,
   type PromotionFulfillment,
 } from "./promotion-fulfillment.js";
-import { promotionScopeCovers, type PromotionScopePoint } from "./promotion-scope.js";
+import { sharedArticleOf } from "./promotion-shared-article.js";
 import type { PromotionTerms, PromotionWindow } from "./promotion-terms.js";
 import {
   audienceAdmits,
@@ -62,34 +62,51 @@ export function assertNoOverlap(
   rivals: readonly PromotionRival[],
   articles: readonly PromotionCatalogueArticle[],
 ): void {
-  const point = applicationPointOf(candidate.terms.fulfillment);
   for (const rival of rivals) {
-    if (candidate.terms.cumulative && rival.terms.cumulative) {
-      continue;
-    }
-    const crossing = rival.id === candidate.id ? null : crossingOf(candidate.terms, rival.terms);
-    if (crossing === null) {
-      continue;
-    }
-    const common = commonPeriod(candidate.terms, rival.terms);
-    if (common === null) {
-      continue;
-    }
-    const witness = articles.find(
-      (article) =>
-        promotionScopeCovers(candidate.terms.scope, article, scopePoint(point, article)) &&
-        promotionScopeCovers(rival.terms.scope, article, scopePoint(point, article)),
-    );
-    if (witness !== undefined) {
+    const overlap = overlapOf(candidate, rival, articles);
+    if (overlap !== null) {
       throw new OverlappingPromotionError(
         rival.id,
         rival.terms.internalName,
-        crossing,
-        `« ${witness.name} »`,
-        describePeriod(common),
+        overlap.crossing,
+        `« ${overlap.witness.name} »`,
+        describePeriod(overlap.period),
       );
     }
   }
+}
+
+/** Ce que deux promotions se disputent : le public commun, la période, un article. */
+export interface PromotionOverlap {
+  readonly crossing: string;
+  readonly period: PromotionWindow;
+  readonly witness: PromotionCatalogueArticle;
+}
+
+/**
+ * **Le chevauchement de deux promotions**, ou `null` — la règle de
+ * {@link assertNoOverlap}, sans le refus : la liste des conflits que
+ * l'extension au poids ferait naître la relit (`promotion-weight-conflicts.ts`).
+ */
+export function overlapOf(
+  candidate: PromotionRival,
+  rival: PromotionRival,
+  articles: readonly PromotionCatalogueArticle[],
+): PromotionOverlap | null {
+  if (candidate.terms.cumulative && rival.terms.cumulative) {
+    return null;
+  }
+  const crossing = rival.id === candidate.id ? null : crossingOf(candidate.terms, rival.terms);
+  if (crossing === null) {
+    return null;
+  }
+  const period = commonPeriod(candidate.terms, rival.terms);
+  if (period === null) {
+    return null;
+  }
+  const point = applicationPointOf(candidate.terms.fulfillment);
+  const witness = sharedArticleOf(candidate.terms, rival.terms, articles, point);
+  return witness === null ? null : { crossing, period, witness };
 }
 
 /**
@@ -200,13 +217,6 @@ function describePeriod(period: PromotionWindow): string {
   return period.validTo === null
     ? `à partir ${from}`
     : `${from} au ${day(new Date(period.validTo.getTime() - LAST_COVERED_MS))}`;
-}
-
-function scopePoint(
-  point: "line" | "basket",
-  article: PromotionCatalogueArticle,
-): PromotionScopePoint {
-  return point === "line" ? { kind: "line", saleUnit: article.saleUnit } : { kind: "basket" };
 }
 
 /** Les statuts d'une société qui commande encore ; une société close ne commande plus. */

@@ -83,18 +83,48 @@ export interface PromotionScopeFacts {
 }
 
 /**
+ * L'effet d'une promotion, réduit à sa nature — les valeurs de
+ * `PromotionEffect["kind"]` du moteur, redites ici pour rester sans
+ * dépendance.
+ */
+export type PromotionScopeEffectKind =
+  "percent_off" | "unit_amount_off" | "fixed_unit_price" | "basket_amount_off";
+
+/**
  * **Le point d'application** où la question est posée.
  *
  * Au point `line`, une décision qui couvre plusieurs articles — par le mode ou
- * par une famille — ne vise pas un article vendu au poids : ses montants se
- * lisent à la pièce (`coversManyArticles`, `specificity.ts`, vérifié le
- * 2026-10-30). Au point `basket`, la promotion est un montant sur une
- * assiette en hors taxe : l'unité de vente n'y joue pas, exactement comme la
- * remise de retrait d'aujourd'hui.
+ * par une famille — ne vise un article vendu au poids que si la promotion
+ * S'Y ÉTEND (`extendsToWeight`, décision de Hugo du 2026-10-31,
+ * `documentation/promotions/promotions.md`, § 2.2) : un pourcentage sans
+ * quantité minimum se lit aussi bien sur un prix au kilo que sur un prix à la
+ * pièce ; un montant, un prix posé ou un seuil en pièces non, et restent
+ * réservés aux articles nommés. Le champ est OBLIGATOIRE pour que chaque
+ * appelant le calcule par promotion ({@link promotionExtendsToWeight}) plutôt
+ * que d'en hériter un défaut. Au point `basket`, la promotion est un montant
+ * sur une assiette en hors taxe : l'unité de vente n'y joue pas, exactement
+ * comme la remise de retrait d'aujourd'hui.
  */
 export type PromotionScopePoint =
-  | { readonly kind: "line"; readonly saleUnit: PromotionScopeSaleUnit }
+  | {
+      readonly kind: "line";
+      readonly saleUnit: PromotionScopeSaleUnit;
+      readonly extendsToWeight: boolean;
+    }
   | { readonly kind: "basket" };
+
+/**
+ * **Cette promotion s'étend-elle, au point ligne, aux articles au poids
+ * qu'elle couvre par famille ou par mode ?** Oui pour un pourcentage sans
+ * quantité minimum, et pour lui seul (décision de Hugo, 2026-10-31) : un
+ * seuil en pièces n'a pas de lecture en grammes.
+ */
+export function promotionExtendsToWeight(
+  effectKind: PromotionScopeEffectKind,
+  hasMinQuantity: boolean,
+): boolean {
+  return effectKind === "percent_off" && !hasMinQuantity;
+}
 
 /** Ce qui a décidé de l'éligibilité, pour arbitrer entre deux promotions. */
 export interface PromotionScopeMatch {
@@ -124,7 +154,7 @@ export function promotionScopeMatch(
   if (article !== undefined) {
     return article.eligible ? { rank: rankOf(article), familyCloseness: 0 } : null;
   }
-  if (point.kind === "line" && point.saleUnit !== "piece") {
+  if (point.kind === "line" && point.saleUnit !== "piece" && !point.extendsToWeight) {
     return null;
   }
   const family = nearestFamilyRule(scope, facts.categoryPath);

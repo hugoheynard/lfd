@@ -53,6 +53,11 @@ function tenPercentOn(id: string, scope: PromotionScope): LivePromotion {
   });
 }
 
+/** −0,50 € l'unité sur toute une portée : un montant, qui ne s'étend pas au poids. */
+function fiftyCentsOn(id: string, scope: PromotionScope): LivePromotion {
+  return { ...tenPercentOn(id, scope), effect: { kind: "unit_amount_off", millicents: 50_000 } };
+}
+
 describe("ShopCartQuoting — une ligne au poids", () => {
   it("chiffre un pro : prix au kilo × grammes / 1000, arrondi une fois", async () => {
     const { view } = await quoting().quote({
@@ -84,10 +89,10 @@ describe("ShopCartQuoting — une ligne au poids", () => {
     expect(view.totalCents).toBe(1_628);
   });
 
-  it("écarte une règle globale et une règle de famille, que le croissant prend", async () => {
+  it("écarte un montant global et un montant de famille, que le croissant prend", async () => {
     const promotions = [
-      tenPercentOn("promo-global", { mode: "all_except", rules: [] }),
-      tenPercentOn("promo-category", {
+      fiftyCentsOn("promo-global", { mode: "all_except", rules: [] }),
+      fiftyCentsOn("promo-category", {
         mode: "only",
         rules: [{ target: "category", targetId: "fam-pain", eligible: true, targetRank: null }],
       }),
@@ -98,6 +103,34 @@ describe("ShopCartQuoting — une ligne au poids", () => {
         lines: [weighed(1_000), { sku: "VIE-001", quantity: 10 }],
         fulfillment: null,
       },
+    });
+
+    expect(view.lines[0]).toMatchObject({ sku: "SAU-001", unitPriceMillicents: 1_234_567 });
+    expect(view.lines[1]).toMatchObject({ sku: "VIE-001", unitPriceMillicents: 150_000 });
+  });
+
+  /** Décision du 2026-10-31 : un pourcentage sans seuil s'étend au poids par le mode. */
+  it("applique « −10 % tout sauf » au prix au kilo, et la ligne se calcule au poids réel", async () => {
+    const promotions = [tenPercentOn("promo-global", { mode: "all_except", rules: [] })];
+    const { view } = await quoting({ decisions: { promotions } }).quote({
+      ...PRO,
+      payload: { lines: [weighed(1_000), { sku: "VIE-001", quantity: 10 }], fulfillment: null },
+    });
+
+    expect(view.lines[0]).toMatchObject({ sku: "SAU-001", unitPriceMillicents: 1_111_110 });
+    expect(view.lines[1]).toMatchObject({ sku: "VIE-001", unitPriceMillicents: 180_000 });
+  });
+
+  it("n'étend pas au poids un pourcentage à quantité minimum", async () => {
+    const promotions = [
+      {
+        ...tenPercentOn("promo-des-3", { mode: "all_except", rules: [] }),
+        conditions: [{ kind: "min_quantity", value: 3 } as const],
+      },
+    ];
+    const { view } = await quoting({ decisions: { promotions } }).quote({
+      ...PRO,
+      payload: { lines: [weighed(1_000), { sku: "VIE-001", quantity: 10 }], fulfillment: null },
     });
 
     expect(view.lines[0]).toMatchObject({ sku: "SAU-001", unitPriceMillicents: 1_234_567 });

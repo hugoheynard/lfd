@@ -225,6 +225,23 @@ export interface PriceStepLabels {
 export interface PromotionRank {
   readonly publicRank: number;
   readonly fulfillmentRank: number;
+  /**
+   * **Le rang de la décision qui a couvert l'article, quand la portée rendue
+   * ne le dit plus** — présent seulement pour un article au poids qu'un
+   * pourcentage couvre par sa famille ou par son mode (décision de Hugo,
+   * 2026-10-31, `documentation/promotions/promotions.md`, § 2.2). La règle
+   * porte alors une portée `variant` (le SKU jugé), seule forme que
+   * `matchesScope` laisse passer au poids ; sans ce champ, elle prendrait le
+   * rang d'une déclinaison nommée et évincerait à tort une promotion qui nomme
+   * l'article, ou une famille plus proche.
+   */
+  readonly coverage?: PromotionCoverageRank;
+}
+
+/** Le rang de portée et la proximité de famille d'une décision de portée. */
+export interface PromotionCoverageRank {
+  readonly scopeRank: number;
+  readonly familyCloseness: number;
 }
 
 export interface PricingContext {

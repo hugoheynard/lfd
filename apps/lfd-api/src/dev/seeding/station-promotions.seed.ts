@@ -5,6 +5,7 @@ import { PosePromotionCommand } from "../../b2b/promotions/application/commands/
 import type { PromotionAudience } from "../../b2b/promotions/domain/promotion-audience.js";
 import { PromotionAudienceSet } from "../../b2b/promotions/domain/promotion-audience-set.js";
 import type { PromotionEffect } from "../../b2b/promotions/domain/promotion-effect.js";
+import type { PromotionTerms } from "../../b2b/promotions/domain/promotion-terms.js";
 
 /**
  * L'auteur des promotions semées : un acteur système nommé, comme la reprise
@@ -12,6 +13,12 @@ import type { PromotionEffect } from "../../b2b/promotions/domain/promotion-effe
  * La ligne de commande n'a pas de fiche staff à citer.
  */
 const SEED_ACTOR = "system:dev-seed";
+
+/** Les deux audiences d'une remise de point, comme la reprise (§ 13.4) les écrivait. */
+export const POINT_DISCOUNT_AUDIENCES: readonly PromotionAudience[] = [
+  { kind: "pros_active" },
+  { kind: "everyone_but_active_pros" },
+];
 
 /**
  * **La remise d'un point, posée en promotions** (plan des promotions, L12).
@@ -28,34 +35,41 @@ export async function posePointDiscount(
   adjustment: CartAdjustment,
   now: Date,
 ): Promise<void> {
-  const audiences: readonly PromotionAudience[] = [
-    { kind: "pros_active" },
-    { kind: "everyone_but_active_pros" },
-  ];
-  for (const audience of audiences) {
+  for (const audience of POINT_DISCOUNT_AUDIENCES) {
     await commands.execute(
-      new PosePromotionCommand(
-        {
-          internalName: `Remise de retrait · ${audience.kind}`,
-          description: null,
-          label: { fr: "Remise de retrait", en: null, it: null },
-          audienceLabels: { individuals: null, pros: null },
-          reason: null,
-          effect: effectOf(adjustment),
-          ownFloor: null,
-          stacksOverMercuriale: false,
-          cumulative: false,
-          validFrom: now,
-          validTo: null,
-          audiences: PromotionAudienceSet.of([audience]),
-          fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
-          scope: { mode: "all_except", rules: [] },
-          conditions: [],
-        },
-        SEED_ACTOR,
-      ),
+      new PosePromotionCommand(pointDiscountTerms(pickupId, adjustment, now, audience), SEED_ACTOR),
     );
   }
+}
+
+/**
+ * Les termes d'une remise de point, pour une audience — exportés pour que la
+ * liste des conflits de l'extension au poids (`promotion-weight-conflicts.ts`)
+ * juge exactement ce que le semis pose.
+ */
+export function pointDiscountTerms(
+  pickupId: string,
+  adjustment: CartAdjustment,
+  now: Date,
+  audience: PromotionAudience,
+): PromotionTerms {
+  return {
+    internalName: `Remise de retrait · ${audience.kind}`,
+    description: null,
+    label: { fr: "Remise de retrait", en: null, it: null },
+    audienceLabels: { individuals: null, pros: null },
+    reason: null,
+    effect: effectOf(adjustment),
+    ownFloor: null,
+    stacksOverMercuriale: false,
+    cumulative: false,
+    validFrom: now,
+    validTo: null,
+    audiences: PromotionAudienceSet.of([audience]),
+    fulfillment: { kind: "basket", pickup: { points: [pickupId] }, delivery: "none" },
+    scope: { mode: "all_except", rules: [] },
+    conditions: [],
+  };
 }
 
 function effectOf(adjustment: CartAdjustment): PromotionEffect {

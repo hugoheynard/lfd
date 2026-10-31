@@ -138,9 +138,28 @@ describe("assertNoOverlap — ce qui se dispute et ce qui ne se dispute pas", ()
 
   // Au point ligne un article au poids n'est visé ni par le mode ni par une
   // famille : deux promotions « tout sauf » ne s'y disputent donc rien.
-  it("au point ligne, un catalogue au poids seul n'offre aucun article commun", () => {
+  it("au point ligne, un catalogue au poids seul n'offre aucun article commun à deux montants", () => {
     const weighed = [article("W", { saleUnit: "weight" })];
-    expect(() => assertNoOverlap(rival("a"), [rival("b")], weighed)).not.toThrow();
+    const amount = () => lineTerms({ effect: { kind: "unit_amount_off", millicents: 50_000 } });
+    expect(() =>
+      assertNoOverlap(rival("a", amount()), [rival("b", amount())], weighed),
+    ).not.toThrow();
+  });
+
+  /** Décision du 2026-10-31 : un pourcentage sans seuil s'étend au poids, au mode comme à la famille. */
+  it("au point ligne, deux pourcentages sans seuil se disputent l'article au poids", () => {
+    const weighed = [article("W", { saleUnit: "weight" })];
+    expect(() => assertNoOverlap(rival("a"), [rival("b")], weighed)).toThrow(
+      OverlappingPromotionError,
+    );
+  });
+
+  it("au point ligne, un pourcentage face à un montant ou à un pourcentage « dès 3 » : rien au poids", () => {
+    const weighed = [article("W", { saleUnit: "weight" })];
+    const amount = lineTerms({ effect: { kind: "unit_amount_off", millicents: 50_000 } });
+    const fromThree = lineTerms({ conditions: [{ kind: "min_quantity", value: 3 }] });
+    expect(() => assertNoOverlap(rival("a"), [rival("b", amount)], weighed)).not.toThrow();
+    expect(() => assertNoOverlap(rival("a"), [rival("b", fromThree)], weighed)).not.toThrow();
   });
 
   it("au point panier, l'unité de vente ne compte pas", () => {

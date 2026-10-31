@@ -131,7 +131,30 @@ describe("le refus de chevauchement (§ 13.2)", () => {
     expect(s.promotions.stored.size).toBe(2);
   });
 
-  it("au point ligne, une famille ne vise pas l'article au poids ; au panier, si", async () => {
+  it("au point ligne, une famille ne vise pas l'article au poids pour un montant ; au panier, si", async () => {
+    const s = writeScene(FROM);
+    const weightOnly: PromotionTerms["scope"] = {
+      mode: "only",
+      rules: [
+        { target: "category", targetId: "c_pains", eligible: true, targetRank: null },
+        { target: "variant", targetId: "PAI-001-1", eligible: false, targetRank: null },
+      ],
+    };
+    const amount = { kind: "unit_amount_off", millicents: 50_000 } as const;
+    await s.pose.execute(
+      new PosePromotionCommand(lineTerms({ scope: weightOnly, effect: amount }), STAFF),
+    );
+    await s.pose.execute(
+      new PosePromotionCommand(lineTerms({ scope: weightOnly, effect: amount }), STAFF),
+    );
+    await s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF));
+    await expect(
+      s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF)),
+    ).rejects.toThrow("« Pain de seigle au poids »");
+  });
+
+  /** Décision du 2026-10-31 : un pourcentage sans seuil s'étend au poids par sa famille. */
+  it("au point ligne, deux pourcentages par famille se disputent l'article au poids", async () => {
     const s = writeScene(FROM);
     const weightOnly: PromotionTerms["scope"] = {
       mode: "only",
@@ -141,10 +164,8 @@ describe("le refus de chevauchement (§ 13.2)", () => {
       ],
     };
     await s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF));
-    await s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF));
-    await s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF));
     await expect(
-      s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF)),
+      s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF)),
     ).rejects.toThrow("« Pain de seigle au poids »");
   });
 
