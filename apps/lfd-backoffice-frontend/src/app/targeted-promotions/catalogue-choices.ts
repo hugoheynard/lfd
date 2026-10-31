@@ -81,3 +81,31 @@ export function withRuleTargets(
     variant: [...choices.variant, ...extra('variant')],
   };
 }
+
+/**
+ * **Un article du catalogue publié, rattaché à sa famille** — ce que la carte
+ * « Sur quels articles ? » compte et range par famille. `familyId` est la
+ * famille DIRECTE de la fiche : la vue publiée ne sert pas le chemin des
+ * familles parentes (vérifié le 2026-10-31, `PublishedEntryView.categoryId`).
+ */
+export interface ScopeArticle {
+  readonly sku: string;
+  readonly productId: string;
+  readonly familyId: string;
+}
+
+/** Les articles proposables — mêmes filtres que {@link catalogueChoicesOf}. */
+export function scopeArticlesOf(view: PublishedCatalogView): ScopeArticle[] {
+  const families = new Set(
+    view.shelves.filter((shelf) => !shelf.withdrawn).map((shelf) => shelf.categoryId),
+  );
+  return view.entries
+    .filter((entry) => families.has(entry.categoryId) && entry.status !== 'archived')
+    .flatMap((entry) =>
+      entry.variants.map((variant) => ({
+        sku: variant.sku,
+        productId: entry.productId,
+        familyId: entry.categoryId,
+      })),
+    );
+}

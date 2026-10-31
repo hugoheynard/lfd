@@ -40,8 +40,10 @@ import { parisToday } from '../../shared/paris-today';
 import {
   catalogueChoicesOf,
   choiceNames,
+  scopeArticlesOf,
   withRuleTargets,
   type CatalogueChoices,
+  type ScopeArticle,
 } from '../catalogue-choices';
 import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
 import {
@@ -50,16 +52,14 @@ import {
   duplicateDraft,
   effectsFor,
   emptyDraft,
-  targetIds,
   targetsFor,
   switchType,
   termsOf,
-  withScopeMode,
-  withTargets,
   type DraftFulfillmentKind,
   type DraftReach,
   type DraftSetAside,
   type PromotionDraft,
+  type PromotionScopeRuleDraft,
 } from '../promotion-draft';
 import { STATE_LABEL, STATE_VARIANT, originPhrase } from '../promotion-format';
 import { draftSummary } from '../promotion-summary';
@@ -72,8 +72,26 @@ import {
   SCOPE_OPTIONS,
   TARGET_LABEL,
 } from '../promotion-words';
+import {
+  coveredCount,
+  exceptionTarget,
+  scopeLayout,
+  withApartTargets,
+  withFamilyExceptions,
+  withFamilyLine,
+  withoutFamilyLine,
+  withoutRule,
+  withScopeModeLines,
+} from '../scope-lines';
 
 type LoadState = 'loading' | 'error' | 'ready';
+
+/** « 3 déclinaisons concernées », « 1 produit concerné ». */
+function countOf(count: number, unit: string, adjective: string): string {
+  const plural = count > 1 ? 's' : '';
+  const feminine = unit === 'déclinaison' ? 'e' : '';
+  return `${count} ${unit}${plural} ${adjective}${feminine}${plural}`;
+}
 
 const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
 
@@ -150,6 +168,8 @@ export class PromotionPage {
   protected readonly reason = signal('');
   protected readonly acting = signal(false);
   private readonly catalogue = signal<CatalogueChoices>(NO_CHOICES);
+  /** Les articles publiés et leur famille directe — pour ranger et compter. */
+  private readonly articles = signal<readonly ScopeArticle[]>([]);
   /** Les points proposés aujourd'hui ; `null` = la liste ne se lit pas. */
   private readonly activePickups = signal<ReadonlyMap<string, string> | null>(null);
   /** Tous les sites, archivés compris — pour nommer un point archivé. */
@@ -178,7 +198,7 @@ export class PromotionPage {
     this.isNew() ? 'Nouvelle promotion' : (this.promotion()?.internalName ?? 'Promotion'),
   );
   protected readonly summary = computed(() =>
-    draftSummary(this.draft(), choiceNames(this.catalogue()), this.pickupNames(), this.zoneNames()),
+    draftSummary(this.draft(), this.names(), this.pickupNames(), this.zoneNames(), this.articles()),
   );
   protected readonly problem = computed(() => draftProblem(this.draft()));
   /** Reposée à l'identique, une révision ne trace rien : rien à enregistrer. */
@@ -257,19 +277,85 @@ export class PromotionPage {
     const kept = this.draft().delivery.ids.filter((id) => !known.has(id));
     return [...options, ...kept.map((id) => ({ value: id, label: id }))];
   });
-  /** Les listes de la portée : une par cible du point, et par sens pour produit et déclinaison. */
-  protected readonly scopeLists = computed(() => {
+  private readonly names = computed(() => choiceNames(this.catalogue()));
+  private readonly layout = computed(() => scopeLayout(this.draft(), this.articles()));
+  /** Le mot de l'unité comptée : la déclinaison au prix affiché, le produit au panier. */
+  private readonly unit = computed(() =>
+    exceptionTarget(this.draft()) === 'variant' ? 'déclinaison' : 'produit',
+  );
+  /**
+   * « 42 déclinaisons concernées sur 180 » — la règle du moteur, sur le
+   * catalogue chargé. Sans catalogue, aucun compte : « 0 sur 0 » mentirait.
+   */
+  protected readonly scopeSubtitle = computed(() => {
+    const rule = "Un produit ou une déclinaison réglé ici l'emporte sur sa famille.";
+    const { covered, total } = coveredCount(this.draft(), this.articles());
+    return total === 0
+      ? rule
+      : `${countOf(covered, this.unit(), 'concerné')} sur ${total}. ${rule}`;
+  });
+  /** Une ligne par famille réglée, avec ses « Sauf ». */
+  protected readonly familyLines = computed(() => {
     const draft = this.draft();
     const only = draft.scopeMode === 'only';
-    return targetsFor(draft.fulfillmentKind).flatMap((target) =>
-      (target === 'category' ? [only] : [true, false]).map((eligible) => ({
-        target,
-        eligible,
-        label: `${TARGET_LABEL[target]} ${eligible ? 'incluses' : 'exclues'}`,
-        options: this.catalogue()[target],
-        value: targetIds(draft, target, eligible),
-      })),
+    const target = exceptionTarget(draft);
+    const names = this.names();
+    return this.layout().lines.map((line) => {
+      const ids = [
+        ...new Set(
+          this.articles()
+            .filter((article) => article.familyId === line.familyId)
+            .map((article) => (target === 'variant' ? article.sku : article.productId)),
+        ),
+      ];
+      const { covered } = coveredCount(draft, this.articles(), line.familyId);
+      return {
+        familyId: line.familyId,
+        name: names.get(line.familyId) ?? line.familyId,
+        subtitle: `${only ? 'Incluse' : 'Exclue'} · ${countOf(covered, this.unit(), 'concerné')}`,
+        exceptLabel: only ? 'Sauf — à retirer' : 'Sauf — à réintégrer',
+        options: ids.map((id) => ({ value: id, label: names.get(id) ?? id })),
+        value: line.exceptionIds,
+      };
+    });
+  });
+  /** Les familles qu'aucune règle ne règle encore. */
+  protected readonly addableFamilies = computed(() => {
+    const ruled = new Set(
+      this.draft()
+        .rules.filter((rule) => rule.target === 'category')
+        .map((rule) => rule.targetId),
     );
+    return this.catalogue()
+      .category.flatMap((group) => group.options)
+      .filter((option) => !ruled.has(option.value));
+  });
+  /** Les familles à contre-sens du mode : dites, gardées, retirables d'un geste. */
+  protected readonly strayFamilies = computed(() =>
+    this.layout().counterFamilies.map((rule) => ({
+      rule,
+      message: `La famille « ${this.names().get(rule.targetId) ?? rule.targetId} » est ${
+        rule.eligible ? 'incluse' : 'exclue'
+      }, à contre-sens du mode choisi : sa règle est gardée telle quelle.`,
+    })),
+  );
+  /** « Articles à part » : une liste par cible du genre et par sens. */
+  protected readonly apartLists = computed(() => {
+    const draft = this.draft();
+    const apart = this.layout().apart;
+    return targetsFor(draft.fulfillmentKind)
+      .filter((target) => target !== 'category')
+      .flatMap((target) =>
+        [true, false].map((eligible) => ({
+          target,
+          eligible,
+          label: `${TARGET_LABEL[target]} ${eligible ? 'incluses' : 'exclues'}`,
+          options: this.catalogue()[target],
+          value: apart
+            .filter((rule) => rule.target === target && rule.eligible === eligible)
+            .map((rule) => rule.targetId),
+        })),
+      );
   });
   protected readonly instant = (at: string): string =>
     new Date(at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
@@ -311,15 +397,46 @@ export class PromotionPage {
   }
 
   protected setScopeMode(mode: 'all_except' | 'only'): void {
-    this.draft.update((draft) => withScopeMode(draft, mode));
+    this.scopeEdit((draft) => withScopeModeLines(draft, mode, this.articles()));
   }
 
-  protected setTargets(
+  /** Le choix « Ajouter une famille » : remis à vide dès que la ligne est posée. */
+  protected readonly familyToAdd = signal<string | null>(null);
+
+  protected addFamily(familyId: string | null): void {
+    if (familyId !== null) {
+      this.scopeEdit((draft) => withFamilyLine(draft, familyId));
+    }
+    this.familyToAdd.set(null);
+  }
+
+  protected removeFamily(familyId: string): void {
+    this.scopeEdit((draft) => withoutFamilyLine(draft, familyId, this.articles()));
+  }
+
+  protected setExceptions(familyId: string, ids: readonly string[]): void {
+    this.scopeEdit((draft) => withFamilyExceptions(draft, familyId, ids, this.articles()));
+  }
+
+  protected setApart(
     target: PromotionScopeTargetValue,
     eligible: boolean,
     ids: readonly string[],
   ): void {
-    this.draft.update((draft) => withTargets(draft, target, ids, eligible));
+    this.scopeEdit((draft) => withApartTargets(draft, target, eligible, ids, this.articles()));
+  }
+
+  protected removeRule(rule: PromotionScopeRuleDraft): void {
+    this.scopeEdit((draft) => withoutRule(draft, rule));
+  }
+
+  /** En lecture seule, rien ne bouge — même un contrôle qui ne sait pas se désactiver. */
+  private scopeEdit(change: (draft: PromotionDraft) => PromotionDraft): void {
+    if (this.readOnly()) {
+      return;
+    }
+    this.draft.update(change);
+    this.refusal.set(null);
   }
 
   protected setAudiences(audiences: readonly PromotionAudienceTargetView[]): void {
@@ -336,7 +453,13 @@ export class PromotionPage {
       const [catalogue, active, sites, zones, view, source, original] = await Promise.all([
         // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
         // le lire voit quand même la promotion, ses cibles nommées par elle.
-        this.catalogueService.published().then(catalogueChoicesOf, () => null),
+        this.catalogueService.published().then(
+          (published) => ({
+            choices: catalogueChoicesOf(published),
+            articles: scopeArticlesOf(published),
+          }),
+          () => null,
+        ),
         this.api.activePickupNames(),
         this.api.everySiteName(),
         this.api.zoneNames(),
@@ -346,7 +469,8 @@ export class PromotionPage {
       ]);
       this.catalogueMissing.set(catalogue === null);
       const rules = (view ?? original)?.scope.rules ?? [];
-      this.catalogue.set(withRuleTargets(catalogue ?? NO_CHOICES, rules));
+      this.catalogue.set(withRuleTargets(catalogue?.choices ?? NO_CHOICES, rules));
+      this.articles.set(catalogue?.articles ?? []);
       this.activePickups.set(active);
       this.siteNames.set(sites);
       this.zoneNames.set(zones);

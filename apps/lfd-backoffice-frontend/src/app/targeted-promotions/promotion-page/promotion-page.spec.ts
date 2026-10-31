@@ -504,4 +504,95 @@ describe('PromotionPage', () => {
       expect(root.textContent).toContain('Elle recouvre « Croissants » pour le même public.');
     });
   });
+
+  describe('Sur quels articles ? — une ligne par famille', () => {
+    const counts = {
+      inactif: 0,
+      en_vente: 0,
+      masque: 0,
+      pas_vendu: 0,
+      en_attente_validation: 0,
+      incomplet: 0,
+    };
+    const shelf = (categoryId: string, name: string) => ({
+      categoryId,
+      name,
+      position: 0,
+      withdrawn: false,
+      pro: counts,
+      public: counts,
+    });
+    const entry = (
+      productId: string,
+      categoryId: string,
+      skus: readonly [string, string][],
+    ): PublishedCatalogView['entries'][number] => ({
+      productId,
+      productSku: productId,
+      name: productId,
+      categoryId,
+      status: 'active',
+      audience: 'both',
+      audienceInherited: true,
+      familyAudience: null,
+      receivedAt: '2026-10-30T10:00:00.000Z',
+      variants: skus.map(([sku, name]) => ({
+        sku,
+        name,
+        onSale: true,
+        isDefault: true,
+        gaps: [],
+        reviewPending: { pro: false, public: false },
+        pro: { state: 'en_vente', htMillicents: null },
+        public: { state: 'en_vente', ttcCents: null },
+      })),
+    });
+    const PUBLISHED: PublishedCatalogView = {
+      shelves: [shelf('c_choc', 'Chocolaterie'), shelf('c_vien', 'Viennoiserie')],
+      entries: [
+        entry('p_noir', 'c_choc', [['N70-1', 'Noir 70 %']]),
+        entry('p_lait', 'c_choc', [['L-1', 'Lait']]),
+        entry('p_croi', 'c_vien', [['CR-1', 'Croissant']]),
+      ],
+      pendingReview: [],
+    };
+    const scoped = (permissions?: readonly StaffPermission[]) =>
+      render({
+        ...(permissions === undefined ? {} : { permissions }),
+        catalogue: async () => PUBLISHED,
+        get: async () =>
+          promotionView({
+            scope: {
+              mode: 'all_except',
+              rules: [
+                { target: 'category', targetId: 'c_choc', eligible: false, name: 'Chocolaterie' },
+                { target: 'variant', targetId: 'N70-1', eligible: true, name: 'Noir 70 %' },
+              ],
+            },
+          }),
+      });
+
+    it('montre la famille exclue, son compte et son « Sauf », le compteur et le résumé', async () => {
+      const { root } = await scoped();
+      const text = root.textContent ?? '';
+      const line = [...root.querySelectorAll('fold-card fold-card')].find((card) =>
+        card.textContent?.includes('Chocolaterie'),
+      );
+      expect(line?.textContent).toContain('Exclue · 1 déclinaison concernée');
+      expect(line?.textContent).toContain('Sauf — à réintégrer');
+      expect(line?.textContent).toContain('Noir 70 %');
+      expect(text).toContain('2 déclinaisons concernées sur 3');
+      expect(text).toContain('sur tout sauf Chocolaterie (hors Noir 70 % · N70-1)');
+      expect(button(line as HTMLElement, 'Retirer')).toBeDefined();
+      expect(root.querySelector('fold-listbox[label="Ajouter une famille"]')).not.toBeNull();
+      expect(text).toContain('Articles à part');
+    });
+
+    it('en lecture seule, la ligne se lit sans geste', async () => {
+      const { root } = await scoped(['lfc_site_settings:read']);
+      expect(root.textContent).toContain('Exclue · 1 déclinaison concernée');
+      expect(button(root, 'Retirer')).toBeUndefined();
+      expect(root.querySelector('fold-listbox[label="Ajouter une famille"]')).toBeNull();
+    });
+  });
 });

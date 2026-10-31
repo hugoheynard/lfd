@@ -366,7 +366,33 @@ ce qui a du sens). Les cartes, dans l'ordre :
 4. **« Sur quel mode d’acheminement et de consommation ? »** — **seulement**
    en remise sur le panier (détail ci-dessous).
 5. **« Sur quels articles ? »** — familles et déclinaisons pour baisser le
-   prix, familles et produits pour le panier (`targetsFor`).
+   prix, familles et produits pour le panier (`targetsFor`). Rangée **par
+   famille** depuis le 2026-10-31 (demande de Hugo ; mise en page reprise de
+   l'ancienne carte de remise de retrait des sites) :
+   - en tête, l'**étendue** (« Tout le catalogue, sauf… » / « Seulement… »)
+     et, en sous-titre, « N déclinaisons (ou produits) concernées sur M »,
+     compté sur le catalogue publié chargé avec la règle du moteur
+     (`promotionScopeMatch` : déclinaison > produit > famille > mode) ;
+   - **une ligne par famille réglée** dans le sens du mode (exclue ou
+     incluse), avec son état, son compte, un « Retirer », et un choix
+     multiple **« Sauf »** des déclinaisons ou produits de cette famille à
+     réintégrer (en « tout sauf ») ou à retirer (en « seulement ») — chacun
+     devient une règle d'`eligible` inverse. « Ajouter une famille » propose
+     les familles non encore réglées. Changer d'étendue retourne la famille
+     **et** ses « Sauf » ;
+   - **« Articles à part »** : les règles produit/déclinaison qu'aucune ligne
+     ne range (inclus / exclus), hors catalogue compris ;
+   - une famille à **contre-sens** du mode (parente exclue, sous-famille
+     incluse…) s'affiche en alerte avec « Retirer », jamais réécrite.
+
+   Toute règle que l'écran ne range pas repart telle quelle à l'enregistrement
+   (`apps/lfd-backoffice-frontend/src/app/targeted-promotions/scope-lines.ts`,
+   aller-retour testé). **Limites** : la vue du catalogue publié ne sert que la
+   famille DIRECTE d'une fiche (pas le chemin des parentes) ni l'unité de
+   vente ; le compte ignore donc une règle posée sur une famille parente, et
+   compte un article au poids que le moteur n'étend pas par famille ou mode au
+   prix affiché.
+
 6. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
    cumul ; « Aussi pour les clients à tarif négocié » **seulement** pour
    baisser le prix (le panier ne la porte pas).

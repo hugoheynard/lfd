@@ -282,7 +282,7 @@
           <fold-element-title
             variant="title"
             title="Sur quels articles ?"
-            subtitle="Un produit ou une déclinaison réglé ici l'emporte sur sa famille."
+            [subtitle]="scopeSubtitle()"
           />
           <fold-listbox
             label="Étendue"
@@ -291,7 +291,72 @@
             [disabled]="readOnly()"
             (selectionChange)="setScopeMode($event)"
           />
-          @for (list of scopeLists(); track list.label) {
+
+          @for (stray of strayFamilies(); track stray.rule.targetId) {
+            <fold-callout variant="alert">
+              {{ stray.message }}
+              @if (!readOnly()) {
+                <button
+                  foldButton
+                  actions
+                  size="sm"
+                  emphasis="soft"
+                  type="button"
+                  (click)="removeRule(stray.rule)"
+                >
+                  Retirer
+                </button>
+              }
+            </fold-callout>
+          }
+
+          @for (line of familyLines(); track line.familyId) {
+            <fold-card surface="sunken" padding="sm">
+              <div class="reach">
+                <fold-element-title variant="title" [title]="line.name" [subtitle]="line.subtitle">
+                  @if (!readOnly()) {
+                    <button
+                      foldButton
+                      titleAction
+                      size="sm"
+                      emphasis="soft"
+                      type="button"
+                      (click)="removeFamily(line.familyId)"
+                    >
+                      Retirer
+                    </button>
+                  }
+                </fold-element-title>
+                <fold-multiselect
+                  searchable
+                  [label]="line.exceptLabel"
+                  placeholder="Aucun"
+                  emptyText="Aucun article de cette famille au catalogue publié."
+                  [options]="line.options"
+                  [value]="line.value"
+                  [disabled]="readOnly()"
+                  (valueChange)="setExceptions(line.familyId, $event)"
+                />
+              </div>
+            </fold-card>
+          }
+
+          @if (!readOnly() && addableFamilies().length > 0) {
+            <fold-listbox
+              label="Ajouter une famille"
+              placeholder="Choisir une famille"
+              [options]="addableFamilies()"
+              [(value)]="familyToAdd"
+              (selectionChange)="addFamily($event)"
+            />
+          }
+
+          <fold-element-title
+            variant="caps"
+            title="Articles à part"
+            subtitle="Hors des familles réglées ci-dessus."
+          />
+          @for (list of apartLists(); track list.label) {
             <fold-multiselect
               searchable
               [label]="list.label"
@@ -299,7 +364,7 @@
               [options]="list.options"
               [value]="list.value"
               [disabled]="readOnly()"
-              (valueChange)="setTargets(list.target, list.eligible, $event)"
+              (valueChange)="setApart(list.target, list.eligible, $event)"
             />
           }
         </div>

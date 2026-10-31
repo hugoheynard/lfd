@@ -54,6 +54,6 @@ export const TARGET_LABEL: Readonly<Record<PromotionScopeTargetValue, string>> =
 };
 
 export const SCOPE_OPTIONS = [
-  { value: 'all_except' as const, label: 'Tout le catalogue, sauf des exceptions' },
-  { value: 'only' as const, label: 'Seulement une sélection' },
+  { value: 'all_except' as const, label: 'Tout le catalogue, sauf…' },
+  { value: 'only' as const, label: 'Seulement…' },
 ];

@@ -2,7 +2,9 @@ import type { PromotionAudienceTargetView } from '@lfd/contracts';
 
 import { businessDayStart } from '../shared/business-day';
 import { decimalOf, EFFECT_FACTOR, type PromotionDraft } from './promotion-draft';
+import type { ScopeArticle } from './catalogue-choices';
 import { effectPhrase } from './promotion-format';
+import { scopeLayout } from './scope-lines';
 
 /**
  * **La promotion en une phrase**, pendant la saisie : « −20 % pour les pros
@@ -15,10 +17,11 @@ export function draftSummary(
   names: ReadonlyMap<string, string>,
   pickupNames: ReadonlyMap<string, string>,
   zoneNames: ReadonlyMap<string, string> = new Map(),
+  articles: readonly ScopeArticle[] = [],
 ): string {
   return [
     `${effectPart(draft)} pour ${audiencePart(draft.audiences)}`,
-    scopePart(draft, names),
+    scopePart(draft, names, articles),
     fulfillmentPart(draft, pickupNames, zoneNames),
     windowPart(draft),
   ].join(', ');
@@ -67,17 +70,34 @@ function audiencePart(audiences: readonly PromotionAudienceTargetView[]): string
 /** Au-delà, la phrase cesse d'être lue : on compte le reste. */
 const NAMED_AT_MOST = 3;
 
-function scopePart(draft: PromotionDraft, names: ReadonlyMap<string, string>): string {
-  const named = (eligible: boolean) =>
-    draft.rules
+/**
+ * Une famille réglée se nomme avec ses « Sauf » : « Chocolaterie (hors Noir
+ * 70 %) ». Les règles à part et les familles à contre-sens suivent, rangées
+ * par leur sens.
+ */
+function scopePart(
+  draft: PromotionDraft,
+  names: ReadonlyMap<string, string>,
+  articles: readonly ScopeArticle[],
+): string {
+  const nameOf = (id: string) => names.get(id) ?? id;
+  const layout = scopeLayout(draft, articles);
+  const lineNames = layout.lines.map((line) =>
+    line.exceptionIds.length === 0
+      ? nameOf(line.familyId)
+      : `${nameOf(line.familyId)} (hors ${listed(line.exceptionIds.map(nameOf))})`,
+  );
+  const others = (eligible: boolean) =>
+    [...layout.counterFamilies, ...layout.apart]
       .filter((rule) => rule.eligible === eligible)
-      .map((rule) => names.get(rule.targetId) ?? rule.targetId);
-  const excluded = named(false);
+      .map((rule) => nameOf(rule.targetId));
+  const only = draft.scopeMode === 'only';
+  const excluded = [...(only ? [] : lineNames), ...others(false)];
   const except = excluded.length === 0 ? '' : ` sauf ${shortList(excluded)}`;
-  if (draft.scopeMode === 'all_except') {
+  if (!only) {
     return excluded.length === 0 ? 'sur tout le catalogue' : `sur tout${except}`;
   }
-  const included = named(true);
+  const included = [...lineNames, ...others(true)];
   return included.length === 0
     ? 'sur une sélection encore vide'
     : `seulement sur ${shortList(included)}${except}`;
