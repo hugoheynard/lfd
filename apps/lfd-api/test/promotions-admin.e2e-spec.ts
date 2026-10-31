@@ -80,7 +80,6 @@ function terms(over: Partial<PromotionTermsPayload> = {}): PromotionTermsPayload
     reason: null,
     effect: { kind: "percent_off", value: 2000 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: daysAgo(1),
     validTo: null,

@@ -3,8 +3,10 @@ import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
 import {
+  sealingOfShelf,
   ShopCatalogueOffers,
   withFulfillmentOffers,
+  type ShelfPrices,
   type ShelfBuyer,
   type ShelfBuyerKind,
 } from "./shop-catalogue-offers.js";
@@ -208,7 +210,7 @@ export class ShopCataloguePricing {
       // appliquées au prix du rayon, où l'acheminement est inconnu.
       this.offers.offeredFor(buyer, catalogue),
     ]);
-    const mentioned = withFulfillmentOffers(priced, sellable, offered);
+    const mentioned = withFulfillmentOffers(priced.view, sellable, offered, priced.sealing);
     return inShopLanguage(withPricesPerKg(mentioned, sellable, perKg), sellable, language);
   }
 
@@ -217,7 +219,7 @@ export class ShopCataloguePricing {
     catalogue: ShopCatalogueView,
     sellable: readonly ResolvedCatalogItem[],
     { companyId, buyerKind, audience }: ShelfBuyer & { readonly audience: ShopAudience },
-  ): Promise<ShopCatalogueView> {
+  ): Promise<ShelfPrices> {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
     // règle posée sur une parente ne mordrait pas.
@@ -249,7 +251,7 @@ export class ShopCataloguePricing {
       // Rien à tarifer : la vitrine sort au tarif, c'est-à-dire exactement ce
       // qu'elle servait avant R22. Un rayon vide serait pire qu'un rayon au
       // canonique.
-      return catalogue;
+      return { view: catalogue, sealing: new Map() };
     }
 
     // 🔴 La porte prend l'instant elle-même, une fois pour tout le lot : deux
@@ -257,7 +259,11 @@ export class ShopCataloguePricing {
     // de part et d'autre du basculement d'une promotion.
     const lot = await this.pricer.load({ articles, companyId, buyerKind, caller: "shelf" });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
-    const prices = new Map(lot.all(lines).map((priced) => [priced.sku, priced.finalMillicents]));
-    return { ...catalogue, items: catalogue.items.map((item) => struck(item, prices, audience)) };
+    const all = lot.all(lines);
+    const prices = new Map(all.map((priced) => [priced.sku, priced.finalMillicents]));
+    return {
+      view: { ...catalogue, items: catalogue.items.map((item) => struck(item, prices, audience)) },
+      sealing: sealingOfShelf(all),
+    };
   }
 }

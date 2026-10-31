@@ -279,12 +279,11 @@ describe("les mappers de la promotion", () => {
     });
   });
 
-  it("aller-retour de la fenêtre et des options de ligne : cumulable, plancher, mercuriale, fin", () => {
+  it("aller-retour de la fenêtre et des options de ligne : cumulable, plancher, fin", () => {
     const promotion = Promotion.pose(
       "promo_1",
       lineTerms({
         cumulative: true,
-        stacksOverMercuriale: true,
         ownFloor: { mode: "amount", value: 12_345 },
         validTo: new Date(FROM.getTime() + 1),
       }),
@@ -294,7 +293,6 @@ describe("les mappers de la promotion", () => {
     const again = reread(promotion).terms;
     expect(again).toMatchObject({
       cumulative: true,
-      stacksOverMercuriale: true,
       ownFloor: { mode: "amount", value: 12_345 },
       validTo: new Date(FROM.getTime() + 1),
     });

@@ -2960,3 +2960,14 @@ export type {
   PromotionListView,
   PromotionsSourceView,
 } from "./promotions.js";
+export {
+  MERCURIALE_PROMOTION_MODE_VALUES,
+  mercurialePromotionPolicySchema,
+} from "./mercuriale-promotion-policy.js";
+export type {
+  MercurialePromotionModeValue,
+  MercurialePromotionPolicyPayload,
+  MercurialePromotionPolicyView,
+  AcceptingMercurialeView,
+  MercurialesAcceptingPromotionView,
+} from "./mercuriale-promotion-policy.js";

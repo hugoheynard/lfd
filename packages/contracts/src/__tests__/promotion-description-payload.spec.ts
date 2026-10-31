@@ -11,7 +11,6 @@ const TERMS = {
   reason: null,
   effect: { kind: "percent_off", value: 1000 },
   ownFloor: null,
-  stacksOverMercuriale: false,
   validFrom: "2026-11-01T00:00:00.000Z",
   validTo: null,
   audiences: [{ kind: "everyone", companyId: null }],

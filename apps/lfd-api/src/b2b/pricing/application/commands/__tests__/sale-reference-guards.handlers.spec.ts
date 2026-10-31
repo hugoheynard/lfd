@@ -7,6 +7,7 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à la
  * fixture, jamais au mur.
  */
+import { InMemoryPolicyPromotionNames } from "../../../infrastructure/in-memory-policy-promotion-names.js";
 import type { CreateVolumeCommitmentPayload, PoseCompanyMercurialePayload } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -146,6 +147,7 @@ function poseMercuriale(skus: readonly string[], reservations = new InMemoryRese
     new NothingPriced(),
     REFERENCES,
     reservations,
+    new InMemoryPolicyPromotionNames(),
   );
   const payload: PoseCompanyMercurialePayload = {
     label: "Été",

@@ -27,7 +27,6 @@ export function livePromotion(overrides: LivePromotionOverrides = {}): LivePromo
     label: { fr: label ?? "−20 % sur tout", en: null, it: null },
     audienceLabels: NO_AUDIENCE_LABELS,
     effect: { kind: "percent_off", basisPoints: 2000 },
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: LIVE_FROM,
     validTo: null,

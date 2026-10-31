@@ -26,9 +26,10 @@ import { deliveryExtraOf } from "../../domain/services/vat.js";
 import { exactLineTtcsOf } from "../../domain/services/exact-order-composition.js";
 import { voucherImputationCents } from "../../domain/services/voucher-imputation.js";
 import { pickupDiscountBaseOf } from "../../domain/services/pickup-discount-base.js";
-import type {
-  BasketLine,
-  BasketPromotionApplied,
+import {
+  lineSealingOf,
+  type BasketLine,
+  type BasketPromotionApplied,
 } from "../../domain/services/basket-promotion-choice.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
@@ -193,6 +194,9 @@ export class ShopCartQuoting {
         sku: line.sku,
         htCents: line.lineTotalCents,
         quantity: line.quantity,
+        // La mercuriale qui fixe la ligne (`plan-la-mercuriale-decide.md`, § 8) :
+        // le devis juge l'assiette comme la caisse.
+        sealing: lineSealingOf(resolved[index]?.priced ?? UNSEALED),
         exact:
           ttcLines === null
             ? undefined
@@ -435,3 +439,6 @@ interface OrderLineOf {
 function buyerKindOf({ buyerUserId }: Pick<ShopCartQuoteRequest, "buyerUserId">): OrderBuyerKind {
   return buyerUserId === null ? GUEST_BUYER : REGISTERED_BUYER;
 }
+
+/** Une ligne sans résolution correspondante : aucune mercuriale ne la fixe. */
+const UNSEALED = { sealedByRuleId: null, sealingAdmission: null } as const;

@@ -158,7 +158,6 @@ function terms(index: number, over: Drawn): PromotionTermsPayload {
     reason: null,
     effect: { kind: "percent_off", value: 2_000 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: daysAgo(1),
     validTo: null,

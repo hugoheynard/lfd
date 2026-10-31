@@ -1,3 +1,5 @@
+import type { PricedArticle } from "../../../pricing/domain/loaded-pricer.js";
+import { lineSealingOf, type LineSealing } from "../../domain/services/basket-promotion-choice.js";
 import type { OrderLineInput as OrderLineRequest } from "@lfd/contracts";
 
 import type { RevisableDiscount } from "../../domain/services/basket-discount-replay.js";
@@ -27,6 +29,11 @@ export interface RevisedFrom {
 export interface RevisedLines {
   readonly lines: readonly OrderLineInput[];
   readonly refusals: readonly KeptLineRefusal[];
+  /**
+   * Le scellement des lignes TARIFÉES ICI, par SKU (`plan-la-mercuriale-decide.md`,
+   * § 8) — les gardées reprennent leur prix figé, et leurs remises sont rejouées.
+   */
+  readonly sealing: ReadonlyMap<string, LineSealing>;
 }
 
 /**
@@ -72,5 +79,17 @@ export async function priceRevisedLines(
   const lines = split.order
     .map((sku) => split.frozen.get(sku) ?? freshBySku.get(sku))
     .filter((line): line is OrderLineInput => line !== undefined);
-  return { lines, refusals };
+  return { lines, refusals, sealing: sealingBySku(fresh) };
+}
+
+/** Le scellement de chaque ligne tarifée, par SKU — absent = aucune mercuriale ne la fixe. */
+export function sealingBySku(
+  resolved: readonly { readonly line: { readonly sku: string }; readonly priced: PricedArticle }[],
+): ReadonlyMap<string, LineSealing> {
+  return new Map(
+    resolved.flatMap((entry) => {
+      const sealing = lineSealingOf(entry.priced);
+      return sealing === null ? [] : [[entry.line.sku, sealing] as const];
+    }),
+  );
 }

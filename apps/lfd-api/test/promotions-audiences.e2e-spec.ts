@@ -140,7 +140,6 @@ function promotion(site: string, over: Partial<PromotionTermsPayload>): Record<s
     reason: null,
     effect: { kind: "percent_off", value: 1_000 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     validFrom: daysAgo(1),
     validTo: null,
     audiences: [{ kind: "everyone", companyId: null }],

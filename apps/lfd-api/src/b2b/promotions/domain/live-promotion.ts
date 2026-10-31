@@ -33,7 +33,6 @@ export interface LivePromotion {
   /** Les libellés Particuliers / Pros ; l'acheteur lit celui de son audience (§ 15.8). */
   readonly audienceLabels: PromotionAudienceLabels;
   readonly effect: PromotionEffect;
-  readonly stacksOverMercuriale: boolean;
   /** « Cumulable » (§ 16) — aux deux points depuis M7 (§ 18.6). */
   readonly cumulative: boolean;
   /** Borne basse **incluse**. */
@@ -57,7 +56,6 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
     label: state.label,
     audienceLabels: state.audienceLabels,
     effect: state.effect,
-    stacksOverMercuriale: state.stacksOverMercuriale,
     cumulative: state.cumulative,
     validFrom: state.validFrom,
     validTo: state.validTo,

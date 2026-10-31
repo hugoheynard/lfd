@@ -1,3 +1,9 @@
+import {
+  admissionAt,
+  checkedAdmission,
+  NO_PROMOTION_ADMITTED,
+  type PromotionAdmission,
+} from "./mercuriale-promotion-policy.js";
 import { ArchivedMercurialeIsSealedError, ReversedValidityWindowError } from "../pricing-errors.js";
 import { normalizeGrid, type PricingGridLine } from "../pricing-grid.js";
 import { IN_FORCE, closingWindowAt, statusOf, suspendedFromOf } from "../rule-lifecycle.js";
@@ -38,9 +44,19 @@ export interface CompanyMercurialeDraft {
   readonly validFrom: Date;
   /** Borne haute **exclue**. `null` = sans terme. */
   readonly validTo: Date | null;
+  /**
+   * La politique de promotions de départ (`plan-la-mercuriale-decide.md`,
+   * § 8) — absente = « Aucune promotion », le défaut d'une mercuriale neuve.
+   */
+  readonly promotionPolicy?: PromotionAdmission | undefined;
 }
 
-export interface CompanyMercurialeState extends CompanyMercurialeDraft {
+export interface CompanyMercurialeState extends Omit<CompanyMercurialeDraft, "promotionPolicy"> {
+  /**
+   * La politique de départ ; un avenant peut en porter une nouvelle à sa date
+   * d'effet (cf. {@link CompanyMercuriale.promotionPolicyAt}).
+   */
+  readonly promotionPolicy: PromotionAdmission;
   readonly id: string;
   readonly createdBy: string;
   readonly lifecycle: RuleLifecycle;
@@ -121,6 +137,7 @@ export class CompanyMercuriale {
     }
     return new CompanyMercuriale({
       ...draft,
+      promotionPolicy: checkedAdmission(draft.promotionPolicy ?? NO_PROMOTION_ADMITTED),
       lines: normalizeGrid(draft.lines, MERCURIALE_REFUSALS),
       id,
       createdBy,
@@ -152,6 +169,16 @@ export class CompanyMercuriale {
 
   get amendments(): readonly MercurialeAmendment[] {
     return this.state.amendments;
+  }
+
+  /** La politique de départ, posée avec le document. */
+  get promotionPolicy(): PromotionAdmission {
+    return this.state.promotionPolicy;
+  }
+
+  /** La politique de promotions en vigueur à cette date — document, puis avenants. */
+  promotionPolicyAt(at: Date): PromotionAdmission {
+    return admissionAt(this.state, at);
   }
 
   get status(): RuleStatus {

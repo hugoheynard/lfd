@@ -1,6 +1,7 @@
 import type { SaleUnit } from "@lfd/money";
 
 import type { PriceFloorPolicy } from "./floor-policy.js";
+import type { PromotionAdmission } from "./entities/mercuriale-promotion-policy.js";
 
 /**
  * Le vocabulaire de la **résolution de prix** — cf.
@@ -208,6 +209,14 @@ export type PriceRule = {
    * de prix.
    */
   readonly cumulative?: boolean;
+  /**
+   * **Ce que la mercuriale laisse passer** — porté par la règle d'étage
+   * `mercuriale` que rend une mercuriale, et par elle seule : sa politique de
+   * promotions datée, lue à l'instant du contexte (`plan-la-mercuriale-decide.md`,
+   * § 8). Quand elle scelle, une PROMOTION passe si cette politique l'accepte ;
+   * absent = aucune (une règle de mercuriale écrite à la main n'en dit rien).
+   */
+  readonly promotionAdmission?: PromotionAdmission;
 } & (
   | { readonly nature: "replace"; readonly amountMillicents: number }
   | { readonly nature: "alter"; readonly alteration: PriceAlteration }
@@ -383,6 +392,12 @@ export interface ResolvedPrice {
    * évincée par plus spécifique, ou si le tarif négocié du client l'a scellée.
    */
   readonly sealedByRuleId: string | null;
+  /**
+   * **Ce que la mercuriale scellante laisse passer** — `null` sans scellement.
+   * Le panier le lit pour retirer cette ligne de l'assiette d'une remise que la
+   * politique n'accepte pas (`plan-la-mercuriale-decide.md`, § 8, bloquant 2).
+   */
+  readonly sealingAdmission: PromotionAdmission | null;
   /**
    * Les règles qui **auraient agi** si la mercuriale n'avait pas scellé.
    *

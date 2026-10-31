@@ -126,6 +126,8 @@ export function negotiatedSkuCount(mercuriale: CompanyMercuriale): number {
 export function describeAmendment(
   mercuriale: CompanyMercuriale,
   draft: MercurialeAmendmentDraft,
+  /** La phrase de la nouvelle politique de promotions, ou `null` s'il n'y touche pas. */
+  promotionPhrase: string | null = null,
 ): string {
   const parts: string[] = [];
   if (draft.lines.length > 0) {
@@ -138,6 +140,9 @@ export function describeAmendment(
     parts.push(
       `arrêt de ${describeArticleCount(draft.endedSkus.length)} le ${describeDay(draft.validFrom)}`,
     );
+  }
+  if (promotionPhrase !== null) {
+    parts.push(`${promotionPhrase} à partir du ${describeDay(draft.validFrom)}`);
   }
   return `Avenant — ${parts.join(" ; ")}`;
 }

@@ -5,6 +5,8 @@ import type {
   PosedMercurialeView,
 } from "@lfd/contracts";
 
+import type { MercurialePromotionPolicyView } from "@lfd/contracts";
+import type { PromotionAdmission } from "../domain/entities/mercuriale-promotion-policy.js";
 import type { StaffAuthors } from "../../../staff/directory/domain/staff-author-directory.js";
 
 import type { CompanyMercuriale, LineSegment } from "../domain/entities/company-mercuriale.js";
@@ -143,6 +145,7 @@ function amendmentsOf(
       reason: amendment.reason,
       openedSkus: amendment.lines.map((line) => line.sku),
       endedSkus: [...amendment.endedSkus],
+      promotionPolicy: policyView(amendment.promotionPolicy ?? null),
       createdBy: amendment.createdBy,
       createdByName: authors.nameOf(amendment.createdBy),
     }));
@@ -183,5 +186,18 @@ export function posedMercurialeView(
     createdByName: authors.nameOf(state.createdBy),
     lines,
     amendments: amendmentsOf(mercuriale, authors),
+    // À son début si elle n'a pas commencé : c'est la politique qu'elle aura.
+    promotionPolicy: policyOf(
+      mercuriale.promotionPolicyAt(at.getTime() < state.validFrom.getTime() ? state.validFrom : at),
+    ),
+    initialPromotionPolicy: policyOf(state.promotionPolicy),
   };
+}
+
+function policyOf(policy: PromotionAdmission): MercurialePromotionPolicyView {
+  return { mode: policy.mode, promotionIds: [...policy.promotionIds] };
+}
+
+function policyView(policy: PromotionAdmission | null): MercurialePromotionPolicyView | null {
+  return policy === null ? null : policyOf(policy);
 }

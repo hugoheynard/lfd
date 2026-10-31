@@ -35,7 +35,7 @@ function context(over: Partial<PricingContext> = {}): PricingContext {
 function promo(
   id: string,
   bp: number,
-  over: { cumulative?: boolean; family?: string; stacksOverMercuriale?: boolean } = {},
+  over: { cumulative?: boolean; family?: string } = {},
 ): AdmittedPromotion {
   return admittedPromotion({
     id,
@@ -43,7 +43,6 @@ function promo(
     validFrom: FROM,
     effect: { kind: "percent_off", basisPoints: bp },
     cumulative: over.cumulative ?? false,
-    stacksOverMercuriale: over.stacksOverMercuriale ?? false,
     scope:
       over.family === undefined
         ? { mode: "all_except", rules: [] }
@@ -167,7 +166,7 @@ describe("le cumul de promotions au point ligne (§ 16)", () => {
     expect(tiny.steps.map((step) => step.resultMillicents)).toEqual([4_901, 3_430]);
   });
 
-  it("une cumulable sans « tarifs négociés » est scellée par la mercuriale ; la chaîne continue sans elle", () => {
+  it("une cumulable que la politique de la mercuriale n'accepte pas est scellée ; la chaîne continue sans elle", () => {
     const merc: PriceRule = {
       id: "merc",
       stage: "mercuriale",
@@ -179,14 +178,12 @@ describe("le cumul de promotions au point ligne (§ 16)", () => {
       suspendedFrom: null,
       label: "Mercuriale",
       stacksOverMercuriale: false,
+      promotionAdmission: { mode: "selected", promotionIds: ["franchit"] },
       nature: "replace",
       amountMillicents: 900_000,
     };
     const result = priced(
-      [
-        promo("scellée", 2_000, CUMULATIVE),
-        promo("franchit", 1_000, { ...CUMULATIVE, stacksOverMercuriale: true }),
-      ],
+      [promo("scellée", 2_000, CUMULATIVE), promo("franchit", 1_000, CUMULATIVE)],
       { rules: [merc] },
     );
 

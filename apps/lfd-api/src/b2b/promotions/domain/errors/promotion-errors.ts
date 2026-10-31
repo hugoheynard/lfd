@@ -67,17 +67,16 @@ export class PromotionEffectPointMismatchError extends DomainError {
 }
 
 /** Une option du seul point ligne, posée sur une promotion de panier. */
-export type LineOnlyOption = "own_floor" | "stacks_over_mercuriale";
+export type LineOnlyOption = "own_floor";
 
 const LINE_ONLY_MESSAGES: Readonly<Record<LineOnlyOption, string>> = {
   own_floor:
     "Un plancher propre ne s'applique qu'à une promotion sans acheminement : retirez le plancher, ou l'acheminement.",
-  stacks_over_mercuriale:
-    "« S'applique aussi aux tarifs négociés » ne vaut que pour une promotion sans acheminement : décochez-le, ou retirez l'acheminement.",
 };
 
 /**
- * Plancher propre ou cumul sur mercuriale sur une promotion de panier.
+ * Plancher propre sur une promotion de panier. (« Aussi pour les tarifs
+ * négociés » est retirée le 2026-10-31 : la mercuriale décide.)
  * « Cumulable » y est admise depuis M7 (plan des promotions, § 18.6).
  */
 export class PromotionLineOnlyOptionError extends DomainError {

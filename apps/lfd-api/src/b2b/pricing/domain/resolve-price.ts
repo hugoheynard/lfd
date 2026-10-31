@@ -20,6 +20,7 @@ import {
   rejectionOf as rejection,
 } from "./price-rule-application.js";
 import { isCumulative, resolveCumulativeStage } from "./cumulative-promotions.js";
+import { admissionOf, passesSeal } from "./mercuriale-seal.js";
 import { applies, rejectionCauseOf, winnerOf } from "./specificity.js";
 import { ladderAsRule } from "./volume-ladder.js";
 import { promotionRulesFor } from "./promotion-as-rule.js";
@@ -46,7 +47,8 @@ import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
  *
  * Une quatrième s'y est ajoutée le 2026-08-18 : **la mercuriale scelle**. Un
  * prix négocié posé à l'étage mercuriale rend les étages suivants transparents,
- * sauf pour une règle qui porte `stacksOverMercuriale`. Auparavant la chaîne
+ * sauf pour une règle qui porte `stacksOverMercuriale`, ou une promotion que la
+ * politique datée de la mercuriale accepte (2026-10-31, `mercuriale-seal.ts`). Auparavant la chaîne
  * composait jusqu'au bout, si bien qu'un compte au tarif négocié empochait AUSSI
  * la promotion publique — un cumul que personne n'avait décidé, qui ne se lisait
  * nulle part, et qui ne se découvrait qu'en comparant deux factures.
@@ -89,7 +91,7 @@ export function resolvePrice(
   // boucle ci-dessous ne peut pas les voir.
   const rejected: RejectedRule[] = [...dropped];
   let running = fromCents(canonicalMillicents);
-  let sealedByRuleId: string | null = null;
+  let sealing: PriceRule | null = null;
 
   for (const stage of PRICE_STAGES) {
     // Le gagnant de l'étage se désigne D'ABORD, le SCELLEMENT décide ENSUITE
@@ -119,7 +121,7 @@ export function resolvePrice(
     // Une promotion « Cumulable » applicable (plan des promotions, § 16.1) :
     // l'étage passe par sa chaîne. Sans elle, le chemin d'avant, intact.
     if (stage === "promotion" && applicable.some(isCumulative)) {
-      const outcome = resolveCumulativeStage(applicable, context, running, sealedByRuleId !== null);
+      const outcome = resolveCumulativeStage(applicable, context, running, sealing);
       running = outcome.running;
       steps.push(...outcome.steps);
       rejected.push(...outcome.rejected);
@@ -134,7 +136,7 @@ export function resolvePrice(
       continue; // Étage transparent : il laisse passer le prix entrant.
     }
     const losers = applicable.filter((rule) => rule.id !== winner.id);
-    if (sealedByRuleId !== null && !winner.stacksOverMercuriale) {
+    if (sealing !== null && !passesSeal(winner, sealing)) {
       // Scellé : la règle est écartée, et le fait est CONSIGNÉ plutôt qu'avalé.
       //
       // Les perdants de cet étage y passent aussi, et sous « évincée » : ils ont
@@ -167,7 +169,7 @@ export function resolvePrice(
       rejected.push(rejection(loser, "superseded"));
     }
     if (stage === "mercuriale") {
-      sealedByRuleId = winner.id;
+      sealing = winner;
     }
   }
 
@@ -199,7 +201,8 @@ export function resolvePrice(
     steps,
     floored,
     clampedToZero,
-    sealedByRuleId,
+    sealedByRuleId: sealing?.id ?? null,
+    sealingAdmission: sealing === null ? null : admissionOf(sealing),
     // **Dérivé**, plus construit à part : deux listes tenues en parallèle
     // finissent par diverger d'un cas. Les vues vivantes qui le servent déjà ne
     // voient aucune différence.

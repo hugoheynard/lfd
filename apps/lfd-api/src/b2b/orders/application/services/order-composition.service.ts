@@ -60,7 +60,12 @@ import type { OrderContent } from "./order-content.js";
 import { OrderLinePricing } from "./order-line-pricing.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import type { OrderParties } from "./order-parties.js";
-import { priceRevisedLines, type RevisedFrom, type RevisedLines } from "./revised-line-pricing.js";
+import {
+  priceRevisedLines,
+  sealingBySku,
+  type RevisedFrom,
+  type RevisedLines,
+} from "./revised-line-pricing.js";
 
 /** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
 interface ResolvedFulfillment {
@@ -179,7 +184,12 @@ export class OrderComposition {
     revised: RevisedFrom | null,
     vatMethod: OrderVatMethod = placementVatMethodOf(parties.companyId),
   ): Promise<ResolvedContent> {
-    const { lines, refusals } = await this.priceLines(content.lines, parties, revised, vatMethod);
+    const { lines, refusals, sealing } = await this.priceLines(
+      content.lines,
+      parties,
+      revised,
+      vatMethod,
+    );
     // Les plans de remise se comparent dans l'unité de la commande (M7) :
     // en TTC pour `exact_ht`, par la composition même de l'agrégat.
     const ttcLines = vatMethod === "exact_ht" ? exactLineTtcsOf(lines) : null;
@@ -192,6 +202,9 @@ export class OrderComposition {
       quantity: quantityOf(line).amount,
       exact:
         ttcLines === null ? undefined : { ttcCents: ttcLines[index] ?? 0, vatRate: line.vatRate },
+      // La mercuriale qui fixe la ligne retire celle-ci de l'assiette des
+      // remises que sa politique refuse (`plan-la-mercuriale-decide.md`, § 8).
+      sealing: sealing.get(line.sku) ?? null,
     }));
     // Produit et famille, lus UNE fois et figés sur chaque ligne : ce qui dira
     // demain pourquoi une ligne était exclue de la remise (plan des exclusions).
@@ -319,7 +332,11 @@ export class OrderComposition {
   ): Promise<RevisedLines> {
     if (revised === null) {
       const resolved = await this.linePricing.resolve(requested, parties, "checkout");
-      return { lines: resolved.map((entry) => entry.line), refusals: [] };
+      return {
+        lines: resolved.map((entry) => entry.line),
+        refusals: [],
+        sealing: sealingBySku(resolved),
+      };
     }
     return priceRevisedLines(this.linePricing, requested, parties, revised, vatMethod);
   }

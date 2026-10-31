@@ -34,12 +34,12 @@ export class MissingAmendmentReasonError extends DomainError {
   }
 }
 
-/** **Un avenant qui n'ajoute rien et n'arrête rien.** */
+/** **Un avenant qui n'ajoute rien, n'arrête rien et ne change pas la politique de promotions.** */
 export class EmptyAmendmentError extends DomainError {
   constructor() {
     super(
       "pricing.mercuriale.amendment.empty",
-      "Cet avenant ne dit rien : ajoutez au moins un article, ou désignez au moins une ligne à arrêter.",
+      "Cet avenant ne dit rien : ajoutez au moins un article, désignez au moins une ligne à arrêter, ou changez la politique de promotions.",
     );
   }
 }

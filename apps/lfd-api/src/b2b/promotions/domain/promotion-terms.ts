@@ -60,8 +60,6 @@ export interface PromotionTerms extends PromotionWindow {
   readonly effect: PromotionEffect;
   /** `null` = le plancher de la plateforme. Point ligne seulement. */
   readonly ownFloor: PromotionOwnFloor | null;
-  /** Point ligne seulement : au panier, la mercuriale ne scelle rien (§ 13.2). */
-  readonly stacksOverMercuriale: boolean;
   /**
    * « Cumulable » (§ 16) : s'ajoute successivement aux autres cumulables du
    * même article et du même client. Aux deux points depuis M7 (§ 18.6) : au
@@ -85,7 +83,7 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionDescriptionNotCanonicalError} description vide ou bordée d'espaces.
  * @throws {PromotionReversedWindowError} fin avant le début.
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
- * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
+ * @throws {PromotionLineOnlyOptionError} plancher propre au panier.
  * @throws {PromotionProductTargetAtLineError} un produit entier visé au point ligne.
  * @throws {PromotionAudienceLabelWithoutAudienceError} un libellé d'audience que le public ne touche pas.
  * @throws les refus de `assertFulfillment`, `assertEffectValue`, `assertOwnFloor`, `assertScope`, `assertCondition`.
@@ -112,9 +110,6 @@ export function assertTerms(terms: PromotionTerms): void {
       throw new PromotionLineOnlyOptionError("own_floor");
     }
     assertOwnFloor(terms.ownFloor);
-  }
-  if (terms.stacksOverMercuriale && point === "basket") {
-    throw new PromotionLineOnlyOptionError("stacks_over_mercuriale");
   }
   assertScope(terms.scope);
   const product = terms.scope.rules.find((rule) => rule.target === "product");

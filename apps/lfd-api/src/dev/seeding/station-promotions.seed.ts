@@ -61,7 +61,6 @@ export function pointDiscountTerms(
     reason: null,
     effect: effectOf(adjustment),
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: now,
     validTo: null,

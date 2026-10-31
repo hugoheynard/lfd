@@ -8,6 +8,10 @@ import {
 import type { PromotionEffect } from "../../../promotions/domain/promotion-effect.js";
 import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 import { promotionScopeCovers } from "../../../promotions/domain/promotion-scope.js";
+import {
+  admitsPromotion,
+  type PromotionAdmission,
+} from "../../../pricing/domain/entities/mercuriale-promotion-policy.js";
 import type { OrderLineClassification } from "../ports/order-line-classification.reader.js";
 import {
   basketPromotionPlanOf,
@@ -34,6 +38,38 @@ export interface BasketLine extends PricedLine {
    * les plans de remise s'y comparent en TTC (M7, 2026-10-31). Absent = `line_ht`.
    */
   readonly exact?: { readonly ttcCents: number; readonly vatRate: number } | undefined;
+  /**
+   * **La mercuriale qui fixe le prix de cette ligne**, et ce qu'elle laisse
+   * passer (`plan-la-mercuriale-decide.md`, § 8, bloquant 2). Absente ou
+   * `null` = ligne qu'aucune mercuriale ne fixe : rien ne change.
+   *
+   * Jugée PAR PROMOTION, jamais dans `ineligibleSkus` global : une même ligne
+   * entre dans l'assiette d'une promotion « Au choix » et sort de celle d'une
+   * autre.
+   */
+  readonly sealing?: LineSealing | null | undefined;
+}
+
+/** Le scellement d'une ligne : l'id du document mercuriale, et sa politique datée. */
+export interface LineSealing {
+  readonly mercurialeId: string;
+  readonly admission: PromotionAdmission;
+}
+
+/** Le scellement que la résolution a rendu pour cette ligne, ou `null`. */
+export function lineSealingOf(priced: {
+  readonly sealedByRuleId: string | null;
+  readonly sealingAdmission: PromotionAdmission | null;
+}): LineSealing | null {
+  return priced.sealedByRuleId === null || priced.sealingAdmission === null
+    ? null
+    : { mercurialeId: priced.sealedByRuleId, admission: priced.sealingAdmission };
+}
+
+/** La mercuriale qui fixe cette ligne refuse-t-elle cette promotion ? */
+function sealedAgainst(line: BasketLine, promotionId: string): boolean {
+  const sealing = line.sealing ?? null;
+  return sealing !== null && !admitsPromotion(sealing.admission, promotionId);
 }
 
 /** La forme de `ResolvedPickup`, moins le point : rien en aval ne change. */
@@ -164,7 +200,11 @@ export function outcomeOf(
       categoryPath: known?.categoryPath ?? [],
     };
     const covered = promotionScopeCovers(promotion.scope, facts, { kind: "basket" });
-    if (!covered || (threshold !== null && line.quantity < threshold)) {
+    if (
+      !covered ||
+      (threshold !== null && line.quantity < threshold) ||
+      sealedAgainst(line, promotion.id)
+    ) {
       ineligibleSkus.add(line.sku);
     }
   }

@@ -260,6 +260,7 @@
   "test/media-tags.e2e-spec.ts": 7300,
   "test/mercuriale-amendments.e2e-spec.ts": 10968,
   "test/mercuriale-carry-over.e2e-spec.ts": 9898,
+  "test/mercuriale-promotion-policy.e2e-spec.ts": 16690,
   "test/migration-drift.e2e-spec.ts": 1500,
   "test/monthly-invoices.e2e-spec.ts": 9000,
   "test/my-invoices-archive.e2e-spec.ts": 10319,

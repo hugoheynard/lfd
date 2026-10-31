@@ -118,7 +118,9 @@ export const promotionTermsPayloadSchema = z.object({
   reason: z.string().trim().min(1).max(280).nullable(),
   effect: z.object({ kind: z.enum(PROMOTION_EFFECT_KIND_VALUES), value: z.number().int() }),
   ownFloor: z.object({ mode: z.enum(["percent", "amount"]), value: z.number().int() }).nullable(),
-  stacksOverMercuriale: z.boolean(),
+  // `stacksOverMercuriale` est retiré (2026-10-31) : c'est la politique de la
+  // mercuriale qui décide (`plan-la-mercuriale-decide.md`, § 8). Un onglet qui
+  // l'envoie encore voit le champ ignoré (zod retire l'inconnu).
   /**
    * « Cumulable » (plan des promotions, § 16) : s'ajoute successivement aux
    * autres promotions cumulables du même article et du même client. Point
@@ -205,7 +207,6 @@ export interface PromotionView {
   readonly applicationPoint: "line" | "basket";
   readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: number };
   readonly ownFloor: { readonly mode: "percent" | "amount"; readonly value: number } | null;
-  readonly stacksOverMercuriale: boolean;
   /** « Cumulable » (§ 16) ; `false` pour toute promotion d'avant la case. */
   readonly cumulative: boolean;
   readonly validFrom: string;

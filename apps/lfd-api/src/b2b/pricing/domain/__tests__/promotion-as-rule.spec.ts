@@ -62,7 +62,6 @@ function reprise(source: PriceRule, over: LivePromotionOverrides): AdmittedPromo
     validFrom: source.validFrom,
     validTo: source.validTo,
     suspendedFrom: source.suspendedFrom,
-    stacksOverMercuriale: source.stacksOverMercuriale,
     conditions:
       source.minQuantity === null ? [] : [{ kind: "min_quantity", value: source.minQuantity }],
     effect: effectOf(source),
@@ -250,9 +249,23 @@ describe("promotionAsRule — la reprise d'une règle rend le même prix et la m
     expect(before.steps).toEqual([]);
     expect(before.finalMillicents).toBe(CANONICAL);
   });
-  it.each([false, true])("sous mercuriale, cumul %s : scellée ou non, pareil", (stacks) => {
-    const source = rule({ stacksOverMercuriale: stacks });
+  it("sous mercuriale sans politique : la règle et la promotion sont scellées, pareil", () => {
+    const source = rule({ stacksOverMercuriale: false });
     expectSame([source], [reprise(source, {})], context(), [MERCURIALE]);
+  });
+
+  /**
+   * La règle qui franchissait par `stacksOverMercuriale` franchit, reprise en
+   * promotion, par la politique « Au choix » que la reprise pose sur la
+   * mercuriale (`plan-la-mercuriale-decide.md`, § 8).
+   */
+  it("sous mercuriale, cumul coché : la reprise franchit par la politique « Au choix »", () => {
+    const source = rule({ stacksOverMercuriale: true });
+    const accepting: PriceRule = {
+      ...MERCURIALE,
+      promotionAdmission: { mode: "selected", promotionIds: [source.id] },
+    };
+    expectSame([source], [reprise(source, {})], context(), [accepting]);
   });
 
   it("une promotion en pause depuis avant l'instant n'agit plus, comme la règle suspendue", () => {

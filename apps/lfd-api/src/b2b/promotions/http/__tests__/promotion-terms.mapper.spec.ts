@@ -22,7 +22,6 @@ function payload(overrides: Partial<PromotionTermsPayload> = {}): PromotionTerms
     reason: null,
     effect: { kind: "percent_off", value: 2000 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: "2026-11-01T00:00:00.000Z",
     validTo: null,

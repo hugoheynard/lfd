@@ -1,3 +1,4 @@
+import type { PromotionAdmission } from "./mercuriale-promotion-policy.js";
 import type { PricingGridLine } from "../pricing-grid.js";
 
 /**
@@ -36,6 +37,13 @@ export interface MercurialeAmendmentDraft {
   readonly validTo: Date | null;
   readonly reason: string;
   readonly origin: AmendmentOrigin | null;
+  /**
+   * **Une nouvelle politique de promotions**, à partir de `validFrom` et
+   * jusqu'au prochain avenant qui en porte une (`plan-la-mercuriale-decide.md`,
+   * § 8) — facultative : absente ou `null`, l'avenant ne la change pas. Elle
+   * ne suit PAS `validTo`, qui ne borne que les lignes ouvertes.
+   */
+  readonly promotionPolicy?: PromotionAdmission | null | undefined;
 }
 
 export interface MercurialeAmendment extends MercurialeAmendmentDraft {

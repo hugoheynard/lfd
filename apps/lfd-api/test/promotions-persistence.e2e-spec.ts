@@ -29,7 +29,6 @@ const TERMS: PromotionTerms = {
   reason: "lancement",
   effect: { kind: "percent_off", basisPoints: 2000 },
   ownFloor: { mode: "percent", value: 6000 },
-  stacksOverMercuriale: true,
   cumulative: false,
   validFrom: FROM,
   validTo: UNTIL,
@@ -90,7 +89,6 @@ describe("la promotion en base", () => {
         delivery: { zones: ["zone_sommet", "zone_vallee"] },
       },
       ownFloor: null,
-      stacksOverMercuriale: false,
       effect: { kind: "percent_off", basisPoints: 1000 },
       scope: { mode: "all_except", rules: [] },
       conditions: [],
@@ -140,7 +138,6 @@ describe("la promotion en base", () => {
       ...TERMS,
       fulfillment: { kind: "basket", pickup: { points: ["pk_coeur"] }, delivery: "none" },
       ownFloor: null,
-      stacksOverMercuriale: false,
       scope: {
         mode: "only",
         rules: [{ target: "variant", targetId: "SKU-PAIN", eligible: true, targetRank: 2 }],

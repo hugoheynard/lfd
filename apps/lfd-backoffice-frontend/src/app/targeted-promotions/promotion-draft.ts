@@ -242,7 +242,9 @@ export function draftOf(view: PromotionView): PromotionDraft {
       eligible,
     })),
     minQuantity: quantity === undefined ? '' : String(quantity.value),
-    stacksOverMercuriale: view.stacksOverMercuriale,
+    // Retirée du contrat le 2026-10-31 : la mercuriale décide
+    // (`plan-la-mercuriale-decide.md`, § 8). La case part au lot des écrans.
+    stacksOverMercuriale: false,
     cumulative: view.cumulative,
   };
 }
@@ -303,7 +305,6 @@ function fulfillmentProblem(draft: PromotionDraft): string | null {
  * refuserait en le nommant.
  */
 export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
-  const atLine = draft.fulfillmentKind === 'displayed_price';
   const minQuantity = draft.minQuantity.trim();
   return {
     internalName: draft.internalName.trim(),
@@ -325,7 +326,6 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
       value: Math.round((decimalOf(draft.effectValue) ?? 0) * EFFECT_FACTOR[draft.effectKind]),
     },
     ownFloor: null,
-    stacksOverMercuriale: atLine && draft.stacksOverMercuriale,
     // Le cumul vaut aux deux points depuis M7 (plan des promotions, § 18.6) :
     // au panier, les remises cumulables s'enchaînent sur la commande.
     cumulative: draft.cumulative,

@@ -35,6 +35,10 @@ model Promotion {
   effectValue          Int       @map("effect_value")
   ownFloorMode         String?   @map("own_floor_mode")
   ownFloorValue        Int?      @map("own_floor_value")
+  /// MORTE depuis `20261101090000_la_mercuriale_decide` (plan
+  /// `documentation/promotions/plan-la-mercuriale-decide.md`, § 8) : c'est la
+  /// politique de la mercuriale qui décide. Ni lue ni écrite par l'API, gardée
+  /// en base (CLAUDE.md § 0) ; seul le script de reprise la lit.
   stacksOverMercuriale Boolean   @default(false) @map("stacks_over_mercuriale")
   /// « Cumulable » (plan des promotions, § 16) — point ligne seulement
   /// (CHECK `promotions_cumulative_line_only`, migration

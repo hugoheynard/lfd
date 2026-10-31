@@ -5,6 +5,7 @@ import type { PriceRule, PricingContext } from "../price-rule.js";
 import { suspendedFromOf, type RuleLifecycle } from "../rule-lifecycle.js";
 import type { AmendedGrid, LineSegment } from "./mercuriale-amendment.js";
 import { segmentAt } from "./mercuriale-segments.js";
+import { admissionAt, type PromotionAdmission } from "./mercuriale-promotion-policy.js";
 
 /*
  * La mercuriale lue comme la RÈGLE de son étage — séparée de l'agrégat pour
@@ -18,6 +19,8 @@ export interface RuledMercuriale extends AmendedGrid {
   readonly companyId: string;
   readonly label: string;
   readonly lifecycle: RuleLifecycle;
+  /** La politique de promotions de départ ; les avenants en portent les suivantes. */
+  readonly promotionPolicy: PromotionAdmission;
 }
 
 /**
@@ -60,6 +63,14 @@ export interface RuledMercuriale extends AmendedGrid {
  * compte de tarif du contexte (`pricingCompanyId`), et la règle rendue vise
  * la société servie : c'est à elle que la résolution confronte l'audience.
  * Une mercuriale d'un autre compte ne rend rien.
+ *
+ * ## Sa politique de promotions voyage avec elle
+ *
+ * La règle porte ce que la mercuriale laisse passer À L'INSTANT DU CONTEXTE
+ * (`plan-la-mercuriale-decide.md`, § 8) : une lecture datée lit l'entrée de
+ * sa date, jamais le réglage d'aujourd'hui : celle du dernier avenant qui en
+ * porte une, sinon celle du document. Un site, qui paie la mercuriale de son
+ * principal, en suit aussi la politique.
  */
 export function mercurialeRuleFor(
   mercuriale: RuledMercuriale,
@@ -95,6 +106,7 @@ export function mercurialeRuleFor(
     // Une mercuriale ne franchit pas son propre scellement — l'agrégat des
     // règles le refuse, et le dire ici évite qu'on se demande.
     stacksOverMercuriale: false,
+    promotionAdmission: admissionAt(mercuriale, context.at),
     nature: "replace",
     amountMillicents: tier.unitPriceMillicents,
   };

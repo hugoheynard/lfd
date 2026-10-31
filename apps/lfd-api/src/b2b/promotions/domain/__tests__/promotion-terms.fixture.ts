@@ -24,7 +24,6 @@ export function lineTerms(overrides: TermsOverrides = {}): PromotionTerms {
     reason: null,
     effect: { kind: "percent_off", basisPoints: 2000 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: FROM,
     validTo: null,

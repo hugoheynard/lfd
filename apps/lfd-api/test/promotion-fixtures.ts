@@ -24,7 +24,6 @@ export function promotionTerms(over: Partial<PromotionTermsPayload> = {}): Promo
     reason: null,
     effect: { kind: "percent_off", value: 1_500 },
     ownFloor: null,
-    stacksOverMercuriale: false,
     cumulative: false,
     validFrom: daysAgo(10),
     validTo: null,

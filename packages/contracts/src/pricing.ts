@@ -1,6 +1,10 @@
 import { z } from "zod";
 
 import type { CatalogFamilyView } from "./catalog.js";
+import {
+  mercurialePromotionPolicySchema,
+  type MercurialePromotionPolicyView,
+} from "./mercuriale-promotion-policy.js";
 import { discountLabelIn, type DiscountLabelView } from "./discount-label.js";
 
 /**
@@ -1827,6 +1831,11 @@ export interface PosedMercurialeAmendmentView {
   readonly openedSkus: readonly string[];
   /** Les articles dont il arrête la ligne en cours, à `validFrom`. */
   readonly endedSkus: readonly string[];
+  /**
+   * La politique de promotions qu'il ouvre à `validFrom`, ou `null` s'il n'y
+   * touche pas (`plan-la-mercuriale-decide.md`, § 8).
+   */
+  readonly promotionPolicy?: MercurialePromotionPolicyView | null;
   readonly createdBy: string;
   readonly createdByName: string | null;
 }
@@ -1892,6 +1901,14 @@ export interface PosedMercurialeView {
    * qu'un front en ligne ne le lise pas encore.
    */
   readonly amendments?: readonly PosedMercurialeAmendmentView[];
+  /**
+   * **Sa politique de promotions à l'instant de la lecture** — à son début
+   * si elle n'a pas commencé (`plan-la-mercuriale-decide.md`, § 8). Celle de
+   * départ, puis celles des avenants, se lisent sur eux.
+   */
+  readonly promotionPolicy?: MercurialePromotionPolicyView;
+  /** Sa politique de DÉPART, posée avec elle. */
+  readonly initialPromotionPolicy?: MercurialePromotionPolicyView;
 }
 
 export interface CompanyPricingView {
@@ -1956,6 +1973,11 @@ export const poseCompanyMercurialePayloadSchema = z.object({
   validTo: z.string().datetime(),
   /** Bornées à trois cents : le catalogue B2B en compte moins d'une centaine. */
   lines: z.array(companyMercurialeLineSchema).min(1).max(300),
+  /**
+   * Sa politique de promotions de départ (`plan-la-mercuriale-decide.md`,
+   * § 8). Absente = « Aucune promotion ».
+   */
+  promotionPolicy: mercurialePromotionPolicySchema.optional(),
 });
 export type PoseCompanyMercurialePayload = z.infer<typeof poseCompanyMercurialePayloadSchema>;
 
@@ -2045,6 +2067,12 @@ export const amendCompanyMercurialePayloadSchema = z.object({
   lines: z.array(companyMercurialeLineSchema).max(300).default([]),
   /** Les articles dont la ligne en cours s'arrête à `validFrom`. */
   endedSkus: z.array(z.string().min(1)).max(300).default([]),
+  /**
+   * Une NOUVELLE politique de promotions à partir de `validFrom`
+   * (`plan-la-mercuriale-decide.md`, § 8). Absente = inchangée. Un avenant
+   * qui ne porte qu'elle est valide.
+   */
+  promotionPolicy: mercurialePromotionPolicySchema.optional(),
 });
 export type AmendCompanyMercurialePayload = z.infer<typeof amendCompanyMercurialePayloadSchema>;
 
@@ -2114,6 +2142,8 @@ export const saveMercurialeDraftPayloadSchema = z.object({
   validFrom: z.string().datetime().nullable(),
   validTo: z.string().datetime().nullable(),
   lines: z.array(companyMercurialeLineSchema).max(300),
+  /** La politique de promotions envisagée. Absente = « Aucune promotion ». */
+  promotionPolicy: mercurialePromotionPolicySchema.optional(),
 });
 export type SaveMercurialeDraftPayload = z.infer<typeof saveMercurialeDraftPayloadSchema>;
 

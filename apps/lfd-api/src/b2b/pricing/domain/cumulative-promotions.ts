@@ -3,6 +3,7 @@ import { compareExact, roundToCents, type Exact } from "@lfd/money";
 import type { PriceRule, PriceStep, PricingContext, RejectedRule } from "./price-rule.js";
 import { applyRule, mostAdvantageous, rejectionOf } from "./price-rule-application.js";
 import { compareSpecificity, winnerOf } from "./specificity.js";
+import { passesSeal } from "./mercuriale-seal.js";
 
 /** Ce que l'étage rend : le prix sortant, exact, ses étapes, ses écartées. */
 export interface PromotionStageOutcome {
@@ -26,8 +27,9 @@ export function isCumulative(rule: PriceRule): boolean {
  *    15 % = −32 %), sans arrondi intermédiaire ;
  * 3. le gagnant et la chaîne se comparent sur le prix sortant : le plus bas
  *    l'emporte, et à égalité le gagnant non cumulable (l'existant) ;
- * 4. le scellement d'une mercuriale se juge par règle : une cumulable sans
- *    `stacksOverMercuriale` est écartée `sealed`, la chaîne continue sans elle.
+ * 4. le scellement d'une mercuriale se juge par règle (`passesSeal`) : une
+ *    cumulable que la politique de la mercuriale scellante n'accepte pas est
+ *    écartée `sealed`, la chaîne continue sans elle.
  *
  * Le plancher n'est pas ici : il s'applique au prix final, après tous les
  * étages, et arrête donc la descente quel que soit le nombre d'étapes.
@@ -39,9 +41,9 @@ export function resolveCumulativeStage(
   applicable: readonly PriceRule[],
   context: PricingContext,
   entering: Exact,
-  sealed: boolean,
+  sealing: PriceRule | null,
 ): PromotionStageOutcome {
-  const sealedOut = (rule: PriceRule): boolean => sealed && !rule.stacksOverMercuriale;
+  const sealedOut = (rule: PriceRule): boolean => sealing !== null && !passesSeal(rule, sealing);
   const rejected: RejectedRule[] = [];
 
   const single = singleWinner(applicable, context, entering, sealedOut, rejected);

@@ -388,7 +388,6 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
       label: { fr: 'Fr', en: null, it: 'Solo italiano' },
       validTo: '2026-12-31T23:00:00.000Z',
       cumulative: true,
-      stacksOverMercuriale: true,
       conditions: [{ kind: 'min_quantity', value: 6 }],
       audiences: [
         { kind: 'pros', companyId: null },
@@ -402,7 +401,6 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
       audienceLabels: { individuals: null, pros: { fr: 'Pro', en: null, it: 'Pro IT' } },
       effect: view.effect,
       cumulative: true,
-      stacksOverMercuriale: true,
       validFrom: '2026-10-31T23:00:00.000Z',
       validTo: '2026-12-31T23:00:00.000Z',
       audiences: view.audiences,

@@ -1,5 +1,11 @@
 import { Module } from "@nestjs/common";
 
+import { AdminMercurialesController } from "./http/admin-mercuriales.controller.js";
+import { ListMercurialesAcceptingPromotionHandler } from "./application/queries/list-mercuriales-accepting-promotion.handler.js";
+import { UnendedMercurialesReader } from "./domain/ports/unended-mercuriales.reader.js";
+import { PrismaUnendedMercurialesReader } from "./infrastructure/prisma-unended-mercuriales.reader.js";
+import { PolicyPromotionNamesReader } from "./domain/ports/policy-promotion-names.reader.js";
+import { PrismaPolicyPromotionNamesReader } from "./infrastructure/prisma-policy-promotion-names.reader.js";
 import { CatalogModule } from "../catalog/catalog.module.js";
 import { ArchivePriceFloorHandler } from "./application/commands/archive-price-floor.handler.js";
 import { ConfirmPriceFloorHandler } from "./application/commands/confirm-price-floor.handler.js";
@@ -136,6 +142,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     AdminVolumeCommitmentsController,
     AdminPriceTemplatesController,
     AdminCompanyPricingController,
+    AdminMercurialesController,
     AdminSaleReferenceDecisionsController,
     AdminPricingCarryOverController,
   ],
@@ -170,6 +177,8 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     ProjectPriceHandler,
     ReadCompanyPricingHandler,
     ReadMercurialeDraftHandler,
+    ListMercurialesAcceptingPromotionHandler,
+    { provide: UnendedMercurialesReader, useClass: PrismaUnendedMercurialesReader },
     ReadPricingJournalHandler,
     ReadSubjectJournalHandler,
     ReadSubjectJournalPageHandler,
@@ -226,6 +235,7 @@ import { PrismaCompanyMercurialeRepository } from "./infrastructure/prisma-compa
     // part du lecteur ci-dessus, qui ne lit que le pro (limites-de-prix).
     { provide: PriceLimitsReader, useClass: PrismaPriceLimitsReader },
     { provide: PricedCompanyReader, useClass: PrismaPricedCompanyReader },
+    { provide: PolicyPromotionNamesReader, useClass: PrismaPolicyPromotionNamesReader },
     // « Cette référence est-elle en vente ? » — les éditeurs de décisions la
     // posent avant d'écrire (L5 de `plan-pro-voit-les-declinaisons.md`).
     { provide: SaleReferenceReader, useClass: CatalogSaleReferenceReader },

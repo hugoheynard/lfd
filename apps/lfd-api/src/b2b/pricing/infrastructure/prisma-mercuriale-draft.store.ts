@@ -1,4 +1,8 @@
-import type { SaveMercurialeDraftPayload } from "@lfd/contracts";
+import {
+  MERCURIALE_PROMOTION_MODE_VALUES,
+  type MercurialePromotionModeValue,
+  type SaveMercurialeDraftPayload,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { PrismaService } from "../../../platform/database/prisma.service.js";
@@ -32,6 +36,7 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
       validFrom: row.validFrom?.toISOString() ?? null,
       validTo: row.validTo?.toISOString() ?? null,
       lines: linesOf(row.lines),
+      promotionPolicy: promotionPolicyOf(row.promotionMode, row.promotionIds),
       updatedBy: row.updatedBy,
       updatedAt: row.updatedAt.toISOString(),
     };
@@ -48,6 +53,9 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
       validFrom: payload.validFrom === null ? null : new Date(payload.validFrom),
       validTo: payload.validTo === null ? null : new Date(payload.validTo),
       lines: [...payload.lines],
+      // Absente = « Aucune promotion » (`plan-la-mercuriale-decide.md`, § 8).
+      promotionMode: payload.promotionPolicy?.mode ?? "none",
+      promotionIds: [...(payload.promotionPolicy?.promotionIds ?? [])],
       updatedBy: staffUserId,
     };
     await this.prisma.mercurialeDraft.upsert({
@@ -76,6 +84,17 @@ export class PrismaMercurialeDraftStore extends MercurialeDraftStore {
  * que de faire tomber l'écran : un brouillon amputé d'une ligne se recomplète,
  * une page blanche ne dit rien.
  */
+/** La politique envisagée ; un mode inconnu redevient « Aucune » — un brouillon ne tarife rien. */
+function promotionPolicyOf(
+  mode: string,
+  promotionIds: readonly string[],
+): { mode: MercurialePromotionModeValue; promotionIds: string[] } {
+  const known = MERCURIALE_PROMOTION_MODE_VALUES.find((candidate) => candidate === mode);
+  return known === undefined
+    ? { mode: "none", promotionIds: [] }
+    : { mode: known, promotionIds: [...promotionIds] };
+}
+
 function linesOf(raw: unknown): { sku: string; unitPriceMillicents: number }[] {
   if (!Array.isArray(raw)) {
     return [];

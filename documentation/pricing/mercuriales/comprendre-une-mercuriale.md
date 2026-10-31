@@ -85,6 +85,11 @@ Une mercuriale, elle, ne peut pas porter ce drapeau : c'est elle qui scelle, il
 ne désignerait rien. Refusé plutôt qu'ignoré — un drapeau accepté puis sans
 effet finit par être coché en croyant obtenir quelque chose.
 
+⚠️ **Depuis le 2026-10-31, ce drapeau ne vaut plus que pour les règles de prix
+ordinaires.** Une **promotion** ne le porte plus : c'est la **politique de
+promotions de la mercuriale** qui décide (§ 7 bis, et
+[`plan-la-mercuriale-decide.md`](../../promotions/plan-la-mercuriale-decide.md)).
+
 ## 4. Ce qu'une mercuriale REFUSE, et pourquoi
 
 Trois refus, tous portés par l'agrégat `PricingRule` — donc valables pour la
@@ -279,15 +284,16 @@ flowchart LR
 
 Ce que l'agrégat refuse (`CompanyMercuriale.amend`) :
 
-| Refus                                                        | Erreur                                                           |
-| ------------------------------------------------------------ | ---------------------------------------------------------------- |
-| une mercuriale close                                         | `ArchivedMercurialeIsSealedError`                                |
-| un motif vide                                                | `MissingAmendmentReasonError`                                    |
-| un avenant qui n'ouvre ni n'arrête rien                      | `EmptyAmendmentError`                                            |
-| une fenêtre inversée, ou qui déborde du document             | `ReversedValidityWindowError`, `AmendmentOutsideMercurialeError` |
-| un début **passé** — jamais rétroactif ; absent = maintenant | `RetroactiveAmendmentError`                                      |
-| arrêter une ligne qui ne court pas à cette date              | `NoNegotiatedLineToEndError`                                     |
-| un article déjà négocié sur la période (grille ou avenant)   | `SkuAlreadyNegotiatedError`                                      |
+| Refus                                                           | Erreur                                                           |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- |
+| une mercuriale close                                            | `ArchivedMercurialeIsSealedError`                                |
+| un motif vide                                                   | `MissingAmendmentReasonError`                                    |
+| un avenant qui n'ouvre, n'arrête, ni ne change la politique     | `EmptyAmendmentError`                                            |
+| une politique « Au choix » vide, ou une liste hors « Au choix » | `InconsistentPromotionSelectionError`                            |
+| une fenêtre inversée, ou qui déborde du document                | `ReversedValidityWindowError`, `AmendmentOutsideMercurialeError` |
+| un début **passé** — jamais rétroactif ; absent = maintenant    | `RetroactiveAmendmentError`                                      |
+| arrêter une ligne qui ne court pas à cette date                 | `NoNegotiatedLineToEndError`                                     |
+| un article déjà négocié sur la période (grille ou avenant)      | `SkuAlreadyNegotiatedError`                                      |
 
 Ce qu'il faut savoir en le lisant :
 
@@ -310,6 +316,39 @@ Ce qu'il faut savoir en le lisant :
 chaque ligne datée à part, « Avenant du … » ou sa fin ; les avenants sont listés
 sous la grille ; deux gestes — **ajouter ou changer un prix** (l'article déjà
 en cours est arrêté dans le même avenant) et **arrêter une ligne**.
+
+### La politique de promotions — aucune, toutes, au choix
+
+**Bâtie le 2026-10-31** (plan
+[`plan-la-mercuriale-decide.md`](../../promotions/plan-la-mercuriale-decide.md),
+§ 8, réorientation de Hugo le même jour : par la pose et les avenants, pas par
+une table à part). ✅ Décrit le code qui tourne côté serveur ; l'écran est le
+lot suivant.
+
+Sur les articles qu'elle **fixe** (à partir de leur premier palier), la
+mercuriale dit si son client profite des promotions : **aucune** (le défaut,
+prix négocié net), **toutes**, ou **au choix** (une liste de promotions). Au
+prix affiché comme au panier, et pour un site comme pour son principal.
+
+- **à la pose** : la mercuriale porte sa politique de départ
+  (`company_mercuriales.promotion_mode` / `promotion_ids`) ; le brouillon porte
+  celle qu'on posera ;
+- **un avenant** peut porter une NOUVELLE politique (mêmes colonnes,
+  `promotion_mode` nul = il n'y touche pas), à partir de sa date d'effet, seul
+  ou avec des lignes de prix — jamais rétroactif, comme tout avenant ;
+- **la politique à une date** = celle du dernier avenant (non rangé à cette
+  date) qui en porte une et dont la date d'effet est passée — à date égale, le
+  dernier écrit —, sinon celle du document (`admissionAt`). Une lecture datée
+  lit donc celle de sa date.
+
+Le moteur : la règle d'étage `mercuriale` porte la politique de son instant
+(`promotionAdmission`) ; une promotion passe le scellement si elle l'accepte
+(`passesSeal`). Au panier, la ligne scellée porte le document et sa politique
+(`BasketLine.sealing`), et chaque remise de panier l'exclut de **son**
+assiette si elle ne l'accepte pas. Au rayon, une promotion exclue n'est pas
+mentionnée sur l'article négocié. Une promotion archivée reste dans une liste,
+sans effet. Au journal, la phrase de la pose et de l'avenant nomme la
+politique (« promotions : au choix — « Rentrée » »).
 
 ### Le report sur une référence détachée
 

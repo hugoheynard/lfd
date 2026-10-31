@@ -1,3 +1,7 @@
+import {
+  MERCURIALE_PROMOTION_MODES,
+  type PromotionAdmission,
+} from "../domain/entities/mercuriale-promotion-policy.js";
 import { CompanyMercuriale } from "../domain/entities/company-mercuriale.js";
 import type {
   AmendmentOrigin,
@@ -33,6 +37,8 @@ export function mercurialeFromRow(row: {
   readonly archivedAt: Date | null;
   readonly archivedBy: string | null;
   readonly archiveReason: string | null;
+  readonly promotionMode: string;
+  readonly promotionIds: readonly string[];
   readonly amendments: readonly AmendmentRow[];
 }): CompanyMercuriale {
   const state: CompanyMercurialeState = {
@@ -43,6 +49,7 @@ export function mercurialeFromRow(row: {
     validFrom: row.validFrom,
     validTo: row.validTo,
     createdBy: row.createdBy,
+    promotionPolicy: promotionPolicyFromRow(row.id, row.promotionMode, row.promotionIds),
     lifecycle: {
       pausedAt: row.pausedAt,
       pausedBy: row.pausedBy,
@@ -64,6 +71,8 @@ export interface AmendmentRow {
   readonly validTo: Date | null;
   readonly reason: string;
   readonly origin: unknown;
+  readonly promotionMode: string | null;
+  readonly promotionIds: readonly string[];
   readonly createdBy: string;
   readonly createdAt: Date;
   readonly archivedAt: Date | null;
@@ -92,12 +101,40 @@ function amendmentFromRow(mercurialeId: string, row: AmendmentRow): MercurialeAm
     validTo: row.validTo,
     reason: row.reason,
     origin: originFromJson(mercurialeId, row.origin),
+    promotionPolicy:
+      row.promotionMode === null
+        ? null
+        : promotionPolicyFromRow(mercurialeId, row.promotionMode, row.promotionIds),
     createdBy: row.createdBy,
     createdAt: row.createdAt,
     archivedAt: row.archivedAt,
     archivedBy: row.archivedBy,
     archiveReason: row.archiveReason,
   };
+}
+
+/**
+ * La politique de promotions d'une ligne — vérifiée, pas castée : un mode
+ * inconnu ne doit pas sortir en prix (`plan-la-mercuriale-decide.md`, § 8).
+ */
+export function promotionPolicyFromRow(
+  id: string,
+  mode: string,
+  promotionIds: readonly string[],
+): PromotionAdmission {
+  const known = MERCURIALE_PROMOTION_MODES.find((candidate) => candidate === mode);
+  if (known === undefined) {
+    throw new CorruptedMercurialeError(id, `politique de promotions inconnue « ${mode} »`);
+  }
+  return { mode: known, promotionIds: [...promotionIds] };
+}
+
+/** Les deux colonnes d'une politique, telles qu'elles s'écrivent. */
+export function promotionPolicyColumns(policy: PromotionAdmission): {
+  readonly promotionMode: string;
+  readonly promotionIds: string[];
+} {
+  return { promotionMode: policy.mode, promotionIds: [...policy.promotionIds] };
 }
 
 function originFromJson(id: string, value: unknown): AmendmentOrigin | null {

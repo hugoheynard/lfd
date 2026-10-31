@@ -89,6 +89,8 @@ describe("posedMercurialeView — les avenants", () => {
         reason: "Ajout du pain, fin du croissant",
         openedSkus: ["PAI-001"],
         endedSkus: ["CRO-001"],
+        // Il ne touche pas la politique de promotions (`plan-la-mercuriale-decide.md`, § 8).
+        promotionPolicy: null,
         createdBy: "staff|paul",
         createdByName: null,
       },

@@ -345,6 +345,12 @@ model CompanyMercuriale {
   archivedBy    String?   @map("archived_by")
   archiveReason String?   @map("archive_reason")
 
+  /// La politique de promotions de DÉPART (`plan-la-mercuriale-decide.md`,
+  /// § 8) : `none` | `all` | `selected` (CHECK), la liste en `selected`
+  /// seulement. Un avenant peut en porter une nouvelle à sa date d'effet.
+  promotionMode String   @default("none") @map("promotion_mode")
+  promotionIds  String[] @default([]) @map("promotion_ids")
+
   /// Ses avenants datés (`plan-tarif-date-sur-une-reference.md`).
   amendments CompanyMercurialeAmendment[]
 
@@ -381,6 +387,12 @@ model CompanyMercurialeAmendment {
   reason String
   /// D'où vient l'avenant quand ce n'est pas une saisie libre (report L7c).
   origin Json?
+
+  /// Une NOUVELLE politique de promotions à partir de `valid_from`
+  /// (`plan-la-mercuriale-decide.md`, § 8) ; `NULL` = l'avenant ne la change
+  /// pas. Même forme que sur la mercuriale (CHECK).
+  promotionMode String?  @map("promotion_mode")
+  promotionIds  String[] @default([]) @map("promotion_ids")
 
   createdBy String   @map("created_by")
   /// Écrit par le domaine (horloge du handler) : l'ordre d'écriture décide de
@@ -436,6 +448,11 @@ model MercurialeDraft {
   /// s'écrit entière ou pas du tout. Une table fille permettrait d'en
   /// enregistrer la moitié, et personne ne le verrait.
   lines Json
+
+  /// La politique de promotions envisagée, posée avec la mercuriale
+  /// (`plan-la-mercuriale-decide.md`, § 8). Même forme (CHECK).
+  promotionMode String   @default("none") @map("promotion_mode")
+  promotionIds  String[] @default([]) @map("promotion_ids")
 
   /// Qui l'a touché en dernier — la négociation se reprend souvent à deux.
   updatedBy String   @map("updated_by")

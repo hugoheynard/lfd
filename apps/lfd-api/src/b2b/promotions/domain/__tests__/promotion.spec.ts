@@ -98,14 +98,10 @@ describe("Promotion.pose — les invariants des termes", () => {
     ).not.toThrow();
   });
 
-  it("refuse au panier le plancher propre et le cumul sur mercuriale", () => {
+  it("refuse au panier le plancher propre", () => {
     expect(() => pose(basketTerms({ ownFloor: { mode: "percent", value: 5000 } }))).toThrow(
       PromotionLineOnlyOptionError,
     );
-    expect(() => pose(basketTerms({ stacksOverMercuriale: true }))).toThrow(
-      PromotionLineOnlyOptionError,
-    );
-    expect(() => pose(lineTerms({ stacksOverMercuriale: true }))).not.toThrow();
   });
 
   /** M7 (§ 18.6) : la commande porte plusieurs remises de panier, « Cumulable » y est admise. */

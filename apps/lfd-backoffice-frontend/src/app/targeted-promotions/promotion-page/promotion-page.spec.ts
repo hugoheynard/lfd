@@ -233,7 +233,6 @@ describe('PromotionPage', () => {
         get: async () =>
           promotionView({
             effect: { kind: 'fixed_unit_price', value: 120_000 },
-            stacksOverMercuriale: true,
           }),
       });
       const before = root.querySelector('fold-callout')?.textContent;

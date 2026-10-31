@@ -6,6 +6,8 @@
  * Ports doublés par de vraies sous-classes. Les dates ne sont comparées qu'à
  * l'horloge figée de la fixture.
  */
+import { SelectedPromotionNotFoundError } from "../../../domain/errors/mercuriale-promotion-policy-errors.js";
+import { InMemoryPolicyPromotionNames } from "../../../infrastructure/in-memory-policy-promotion-names.js";
 import type { AmendCompanyMercurialePayload } from "@lfd/contracts";
 
 import { FixedIdGenerator } from "../../../../../platform/id/fixed-id-generator.js";
@@ -69,6 +71,7 @@ function setup(options: { known?: boolean; mercuriale?: CompanyMercuriale | null
     new FixedClock(NOW),
     uow,
     new InMemoryReservedElsewhere(),
+    new InMemoryPolicyPromotionNames(new Map([["promo_rentree", "Rentrée"]])),
   );
   return { trace, mercuriales, handler };
 }
@@ -113,6 +116,36 @@ describe("AmendCompanyMercurialeHandler", () => {
       subjectLabel: "Mercuriale 2026",
     });
     expect(written?.act.summary).toMatch(/^Avenant — \+ 1 article/);
+  });
+
+  it("un avenant qui ne change que la politique de promotions : écrit, et nommé au journal", async () => {
+    const { mercuriales, handler } = setup();
+
+    await run(
+      handler,
+      payload({
+        lines: [],
+        promotionPolicy: { mode: "selected", promotionIds: ["promo_rentree"] },
+      }),
+    );
+
+    const [written] = mercuriales.written;
+    expect(written?.act.summary).toBe(
+      "Avenant — promotions : au choix — « Rentrée » à partir du 1er mars 2026",
+    );
+    expect(written?.mercuriale.promotionPolicyAt(NOW)).toEqual({
+      mode: "selected",
+      promotionIds: ["promo_rentree"],
+    });
+  });
+
+  it("refuse une promotion inconnue dans la politique, sans rien écrire", async () => {
+    const { mercuriales, handler } = setup();
+
+    await expect(
+      run(handler, payload({ promotionPolicy: { mode: "selected", promotionIds: ["promo_x"] } })),
+    ).rejects.toThrow(SelectedPromotionNotFoundError);
+    expect(mercuriales.written).toEqual([]);
   });
 
   it("refuse une date d'effet passée, sans rien écrire", async () => {

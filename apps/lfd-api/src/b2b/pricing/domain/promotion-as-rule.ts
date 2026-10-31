@@ -20,7 +20,7 @@ import { coversManyArticles } from "./specificity.js";
  * pas, elle reçoit une règle de plus.
  *
  * Même place (entre volume et geste), même scellement par la mercuriale (sauf
- * `stacksOverMercuriale`), même plancher, même arrondi unique : ce qui le
+ * si sa politique de promotions l'accepte), même plancher, même arrondi unique : ce qui le
  * tient est que la règle rendue est une `PriceRule` comme les autres.
  *
  * La portée est jugée ICI, pour cet article : la règle rendue porte une
@@ -90,7 +90,9 @@ export function promotionAsRule(
     suspendedFrom: promotion.suspendedFrom,
     label: promotion.servedLabel.fr,
     labels: promotion.servedLabel,
-    stacksOverMercuriale: promotion.stacksOverMercuriale,
+    // Une promotion ne perce plus le scellement d'elle-même : c'est la
+    // politique de la mercuriale scellante qui décide (`mercuriale-seal.ts`).
+    stacksOverMercuriale: false,
     promotion: rankOf(promotion, match, extended),
     // § 16.1 : présent seulement quand coché — une règle sans le champ est
     // non cumulable, et l'étage suit alors le chemin d'avant.

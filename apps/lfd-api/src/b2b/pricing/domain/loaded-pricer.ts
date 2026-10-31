@@ -15,6 +15,7 @@ import type {
   RejectedRule,
   ResolvedPrice,
 } from "./price-rule.js";
+import type { PromotionAdmission } from "./entities/mercuriale-promotion-policy.js";
 import type { CompanyMercuriale } from "./entities/company-mercuriale.js";
 import { pricingContextFor } from "./pricing-context.js";
 import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
@@ -99,6 +100,11 @@ export interface PricedArticle {
   readonly steps: readonly PriceStep[];
   /** La mercuriale qui a **scellé** la chaîne, ou `null`. */
   readonly sealedByRuleId: string | null;
+  /**
+   * Ce que cette mercuriale laisse passer, ou `null` sans scellement — le
+   * panier en tire l'assiette de chaque remise (`plan-la-mercuriale-decide.md`, § 8).
+   */
+  readonly sealingAdmission: PromotionAdmission | null;
   /** Les règles qui auraient agi sans ce scellement. */
   readonly sealedRuleIds: readonly string[];
   /** Le plancher a-t-il **relevé** ce prix ? */
@@ -486,6 +492,7 @@ export class LoadedPricer {
       quantity: context.quantity,
       steps: resolved.steps,
       sealedByRuleId: resolved.sealedByRuleId,
+      sealingAdmission: resolved.sealingAdmission,
       sealedRuleIds: resolved.sealedRuleIds,
       floored: resolved.floored,
       clampedToZero: resolved.clampedToZero,

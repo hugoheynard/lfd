@@ -1,3 +1,4 @@
+import { checkedAdmission } from "./mercuriale-promotion-policy.js";
 import {
   AmendmentOutsideMercurialeError,
   DuplicateEndedSkuError,
@@ -57,13 +58,21 @@ export function checkedAmendment(
   if (draft.reason.trim().length === 0) {
     throw new MissingAmendmentReasonError();
   }
-  if (draft.lines.length === 0 && draft.endedSkus.length === 0) {
+  const promotionPolicy = draft.promotionPolicy ?? null;
+  // Un avenant qui ne fait que changer la politique de promotions est valide
+  // (Hugo, 2026-10-31) : c'est le geste daté qui la fait évoluer.
+  if (draft.lines.length === 0 && draft.endedSkus.length === 0 && promotionPolicy === null) {
     throw new EmptyAmendmentError();
   }
   assertWindow(grid, draft, now);
   const lines = draft.lines.length === 0 ? [] : normalizeGrid(draft.lines, MERCURIALE_REFUSALS);
   assertEndsRunningLines(grid, draft);
-  return { ...draft, reason: draft.reason.trim(), lines };
+  return {
+    ...draft,
+    reason: draft.reason.trim(),
+    lines,
+    promotionPolicy: promotionPolicy === null ? null : checkedAdmission(promotionPolicy),
+  };
 }
 
 function assertWindow(grid: AmendedGrid, draft: MercurialeAmendmentDraft, now: Date): void {

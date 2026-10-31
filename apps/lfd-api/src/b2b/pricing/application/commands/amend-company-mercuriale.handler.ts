@@ -1,5 +1,7 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { PolicyPromotionNamesReader } from "../../domain/ports/policy-promotion-names.reader.js";
+import { namedPolicy } from "./promotion-policy-support.js";
 import { UnitOfWork } from "../../../../platform/database/unit-of-work.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { Clock } from "../../../../platform/time/clock.js";
@@ -32,6 +34,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
     private readonly reservations: ReservedElsewhereReader,
+    private readonly promotionNames: PolicyPromotionNamesReader,
   ) {}
 
   /**
@@ -50,6 +53,7 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
    * @throws {AmendedMercurialeNotFoundError} cette mercuriale n'est pas chez ce client.
    * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
    * @throws {ReservedArticleRefusedError} une ligne ouverte vise un article réservé à un autre compte.
+   * @throws les refus de `namedPolicy` (nouvelle politique de promotions).
    * @throws les refus de `CompanyMercuriale.amend`.
    */
   async execute(command: AmendCompanyMercurialeCommand): Promise<string> {
@@ -68,7 +72,12 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
       command.payload.lines.map((line) => line.sku),
     );
     const now = this.clock.now();
-    const draft = draftOf(command, now);
+    // Une nouvelle politique de promotions, facultative (`plan-la-mercuriale-decide.md`, § 8).
+    const promotions =
+      command.payload.promotionPolicy === undefined
+        ? null
+        : await namedPolicy(this.promotionNames, command.payload.promotionPolicy);
+    const draft = { ...draftOf(command, now), promotionPolicy: promotions?.policy ?? null };
     const amendmentId = this.ids.next();
 
     await this.uow.run(async () => {
@@ -77,7 +86,11 @@ export class AmendCompanyMercurialeHandler implements ICommandHandler<
         throw new AmendedMercurialeNotFoundError(mercurialeId);
       }
       const amended = mercuriale.amend(amendmentId, draft, staffUserId, now);
-      await this.mercuriales.addAmendment(amended, amendmentId, actOf(amended, draft, staffUserId));
+      await this.mercuriales.addAmendment(
+        amended,
+        amendmentId,
+        actOf(amended, draft, staffUserId, promotions?.phrase ?? null),
+      );
     });
     return amendmentId;
   }
@@ -104,7 +117,12 @@ function draftOf(command: AmendCompanyMercurialeCommand, now: Date): MercurialeA
  * L'acte : sur le DOCUMENT (un seul fil pour l'accord), daté de la prise
  * d'effet comme la pose, avec le motif — jamais nul ici.
  */
-function actOf(mercuriale: CompanyMercuriale, draft: MercurialeAmendmentDraft, actor: string) {
+function actOf(
+  mercuriale: CompanyMercuriale,
+  draft: MercurialeAmendmentDraft,
+  actor: string,
+  promotionPhrase: string | null,
+) {
   return {
     subjectType: "mercuriale" as const,
     subjectId: mercuriale.id,
@@ -112,7 +130,7 @@ function actOf(mercuriale: CompanyMercuriale, draft: MercurialeAmendmentDraft, a
     actor,
     at: draft.validFrom,
     reason: draft.reason.trim(),
-    summary: describeAmendment(mercuriale, draft),
+    summary: describeAmendment(mercuriale, draft, promotionPhrase),
     subjectLabel: mercuriale.label,
   };
 }

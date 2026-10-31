@@ -1,5 +1,8 @@
 import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
+import { NO_PROMOTION_ADMITTED } from "../../domain/entities/mercuriale-promotion-policy.js";
+import { PolicyPromotionNamesReader } from "../../domain/ports/policy-promotion-names.reader.js";
+import { namedPolicy } from "./promotion-policy-support.js";
 import { PricedDecisionsReader } from "../../domain/ports/priced-decisions.reader.js";
 import { IdGenerator } from "../../../../platform/id/id-generator.js";
 import { PricedCompanyReader } from "../../domain/ports/priced-company.reader.js";
@@ -30,6 +33,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
     private readonly priced: PricedDecisionsReader,
     private readonly references: SaleReferenceReader,
     private readonly reservations: ReservedElsewhereReader,
+    private readonly promotionNames: PolicyPromotionNamesReader,
   ) {}
 
   /**
@@ -57,6 +61,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
    * @throws {SaleReferenceNotOnSaleError} une ligne vise une référence qui ne se vend pas.
    * @throws {SaleReferenceWithdrawnError} une ligne vise un article retiré.
    * @throws {ReservedArticleRefusedError} une ligne vise un article réservé à un autre compte.
+   * @throws les refus de `namedPolicy` (politique de promotions de départ).
    */
   async execute(command: PoseCompanyMercurialeCommand): Promise<number> {
     const { companyId, payload, staffUserId } = command;
@@ -76,6 +81,12 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
 
     const validFrom = new Date(payload.validFrom);
     const validTo = new Date(payload.validTo);
+    // La politique de promotions de départ (`plan-la-mercuriale-decide.md`,
+    // § 8) — absente, « Aucune », le défaut d'une mercuriale neuve.
+    const promotions = await namedPolicy(
+      this.promotionNames,
+      payload.promotionPolicy ?? NO_PROMOTION_ADMITTED,
+    );
 
     const running = await this.mercuriales.runningFor(companyId, validFrom, validTo);
     if (running !== null) {
@@ -116,6 +127,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
         })),
         validFrom,
         validTo,
+        promotionPolicy: promotions.policy,
       },
       staffUserId,
     );
@@ -131,7 +143,7 @@ export class PoseCompanyMercurialeHandler implements ICommandHandler<
       // elle redisait l'acte, que le type et la phrase disent déjà (TODO des
       // phrases du journal, 2026-09-19). Les lignes d'avant la gardent.
       reason: null,
-      summary: describeMercuriale(mercuriale),
+      summary: `${describeMercuriale(mercuriale)} ; ${promotions.phrase}`,
       subjectLabel: mercuriale.label,
     });
 

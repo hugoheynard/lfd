@@ -125,7 +125,17 @@ La case devient un **choix à trois positions** sur la mercuriale :
 
 Trois BLOQUANTS, levés :
 
-1. **La politique est une décision datée, pas un champ vivant.** Une
+1. ⚠️ **Réorienté par Hugo le 2026-10-31, après vitruve** — la table
+   `mercuriale_promotion_policies` décrite ci-dessous n'est **pas** créée.
+   La politique passe par le mécanisme qui date déjà la mercuriale : le
+   document porte sa politique de départ (`promotion_mode` + `promotion_ids`,
+   fixée à la pose, et sur le brouillon) ; un **avenant** peut porter une
+   nouvelle politique à partir de son `validFrom`, seul ou avec des lignes de
+   prix (un avenant qui ne fait que la changer est valide) ; la politique à
+   une date est celle du dernier avenant qui en porte une avant cette date,
+   sinon celle du document. Le reste du § 8 tient. Détail bâti :
+   [`comprendre-une-mercuriale.md`](../pricing/mercuriales/comprendre-une-mercuriale.md), § 7 bis.
+   Texte d'origine : **La politique est une décision datée, pas un champ vivant.** Une
    mercuriale est un document immuable qui entre dans la résolution datée
    (`pricing.prisma:300`, `lint:dated-decisions`) : modifier sa politique sur
    place ferait payer au passé le réglage d'aujourd'hui (la panne R17 du

@@ -8,7 +8,7 @@ import { RunningMercurialeError } from "../domain/pricing-errors.js";
 import { MissingAmendmentInAggregateError } from "./mercuriale-lock-errors.js";
 import { PricingActWriter } from "./pricing-act.writer.js";
 import { isExclusionViolation } from "./exclusion-violation.js";
-import { LIVE_AMENDMENTS, mercurialeFromRow } from "./mercuriale-rows.js";
+import { LIVE_AMENDMENTS, mercurialeFromRow, promotionPolicyColumns } from "./mercuriale-rows.js";
 import { currentTransaction } from "../../../platform/database/transaction.store.js";
 import { MercurialeLockOutsideTransactionError } from "./mercuriale-lock-errors.js";
 
@@ -65,6 +65,7 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
             })),
             validFrom: state.validFrom,
             validTo: state.validTo,
+            ...promotionPolicyColumns(state.promotionPolicy),
             createdBy: state.createdBy,
           },
         }),
@@ -167,6 +168,9 @@ export class PrismaCompanyMercurialeRepository extends CompanyMercurialeReposito
           validFrom: amendment.validFrom,
           validTo: amendment.validTo,
           reason: amendment.reason,
+          ...(amendment.promotionPolicy == null
+            ? {}
+            : promotionPolicyColumns(amendment.promotionPolicy)),
           ...(amendment.origin === null
             ? {}
             : {
