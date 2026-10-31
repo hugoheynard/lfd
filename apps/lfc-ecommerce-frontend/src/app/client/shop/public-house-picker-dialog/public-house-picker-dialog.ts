@@ -118,7 +118,7 @@ export class PublicHousePickerDialog {
   private readonly ref = inject(FoldPanelRef);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
-  private readonly audience = inject(ClientAudience).shown;
+  private readonly announcement = inject(ClientAudience).announcement;
   private readonly workspace = inject(ClientWorkspace);
 
   /**
@@ -142,7 +142,7 @@ export class PublicHousePickerDialog {
   }
 
   protected readonly houses = computed<readonly House[]>(() => {
-    const audience = this.audience();
+    const announcement = this.announcement();
     const copy = this.t().pickupDialog;
     const currentId = this.data().currentId;
     const selectedId = currentId ?? this.preselectedId();
@@ -150,14 +150,14 @@ export class PublicHousePickerDialog {
     return this.points
       .pickups()
       .filter((point) => day === null || servesOn(this.points.nextDayFor(point.id), day))
-      .map((point) => ({ point, offer: pickupOffer(point, audience, copy) }))
+      .map((point) => ({ point, offer: pickupOffer(point, announcement, copy) }))
       .map(({ point, offer }) => ({
         point,
         // Le nom d'usage, sa ville à défaut — une carte sans titre ne se distingue pas.
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
         offer,
-        showsOffer: audience === 'b2b' || offer.hasOffer,
+        showsOffer: announcement !== 'b2c' || offer.hasOffer,
         current: point.id === currentId,
         selected: point.id === selectedId,
         ready: readyLabel(point, this.c().readyFrom),

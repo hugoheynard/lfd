@@ -132,7 +132,7 @@ describe("points de retrait — une remise par clientèle", () => {
   it("à la création, sans remises : aucune clientèle n'en reçoit", async () => {
     await create("Labo Paris");
 
-    expect((await only()).discounts).toEqual({ b2b: null, b2c: null });
+    expect((await only()).discounts).toEqual({ b2b: null, b2bPending: null, b2c: null });
   });
 
   it("refuse (409) de créer un point avec une remise, en nommant l'écran Promotions", async () => {
@@ -162,6 +162,6 @@ describe("points de retrait — une remise par clientèle", () => {
       .expect(204);
     const served = await only();
     expect(served.label).toBe("Labo Paris — renommé");
-    expect(served.discounts).toEqual({ b2b: null, b2c: null });
+    expect(served.discounts).toEqual({ b2b: null, b2bPending: null, b2c: null });
   });
 });

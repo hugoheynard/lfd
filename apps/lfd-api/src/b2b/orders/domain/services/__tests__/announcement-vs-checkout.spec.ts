@@ -74,10 +74,10 @@ function checkoutCents(promotions: readonly LivePromotion[], facts: PromotionAud
 /** Ce que l'annonce de la clientèle vaudrait sur CE panier, bornée comme la caisse. */
 function announcedCents(
   promotions: readonly LivePromotion[],
-  clientele: "b2b" | "b2c",
+  clientele: "b2b" | "b2bPending" | "b2c",
 ): number | null {
   const announced = announcedPickupDiscounts(promotions, PICKUP, ASKED_AT)[clientele];
-  if (announced === null) {
+  if (announced === null || announced === undefined) {
     return null;
   }
   const rules = [
@@ -213,6 +213,10 @@ describe("l'annonce d'un point de retrait ne dépasse pas la caisse", () => {
       const announced = announcedCents(promotions, "b2b");
       expect(checkoutCents(promotions, COMPANY("active"))).toBeGreaterThanOrEqual(announced ?? 0);
     });
+    it(`société en attente : ${name}`, () => {
+      const announced = announcedCents(promotions, "b2bPending");
+      expect(checkoutCents(promotions, COMPANY("pending"))).toBeGreaterThanOrEqual(announced ?? 0);
+    });
     it(`b2c : ${name}`, () => {
       const announced = announcedCents(promotions, "b2c");
       for (const kind of ["guest", "registered"] as const) {
@@ -220,6 +224,48 @@ describe("l'annonce d'un point de retrait ne dépasse pas la caisse", () => {
       }
     });
   }
+});
+
+describe("l'annonce faite à une société en attente", () => {
+  const PROMOTIONS = [
+    basket({
+      id: "a_ind",
+      audience: { kind: "individuals" },
+      effect: { kind: "percent_off", basisPoints: 1500 },
+    }),
+    basket({
+      id: "b_pros",
+      audience: { kind: "pros" },
+      effect: { kind: "percent_off", basisPoints: 500 },
+    }),
+  ];
+
+  /**
+   * Régression : une société en attente lisait l'annonce `b2c` (`audienceOf`)
+   * et se voyait promettre −15 % « particuliers » au retrait, quand la caisse,
+   * qui la sert en pro, ne retirait que la promotion des pros (2026-10-31).
+   */
+  it("ne promet pas la promotion des particuliers à une société en attente, que la caisse sert en pro", () => {
+    const announced = announcedPickupDiscounts(PROMOTIONS, PICKUP, ASKED_AT).b2bPending;
+    expect(announced?.adjustment).toEqual({ mode: "percent", bp: 500 });
+    expect(checkoutCents(PROMOTIONS, COMPANY("pending"))).toBeGreaterThanOrEqual(
+      announcedCents(PROMOTIONS, "b2bPending") ?? 0,
+    );
+  });
+
+  it("lui annonce une promotion « pros en attente », que l'annonce b2b ne porte pas", () => {
+    const promotions = [
+      basket({
+        id: "a_pending",
+        audience: { kind: "pros_pending" },
+        effect: { kind: "percent_off", basisPoints: 1000 },
+      }),
+    ];
+    const announced = announcedPickupDiscounts(promotions, PICKUP, ASKED_AT);
+    expect(announced.b2bPending?.adjustment).toEqual({ mode: "percent", bp: 1000 });
+    expect(announced.b2b).toBeNull();
+    expect(announced.b2c).toBeNull();
+  });
 });
 
 describe("l'offre « connectez-vous » ne dépasse pas ce que l'inscrit se voit retirer", () => {

@@ -76,7 +76,10 @@ function boot({
     providers: [
       provideHttpClient(),
       provideHttpClientTesting(),
-      { provide: ClientAudience, useValue: { shown: () => 'b2c', current: () => 'b2c' } },
+      {
+        provide: ClientAudience,
+        useValue: { shown: () => 'b2c', current: () => 'b2c', announcement: () => 'b2c' },
+      },
       provideWorkspace(workspace),
       {
         provide: FoldPanelRef,

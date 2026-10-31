@@ -13,7 +13,7 @@ import { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 import {
   type AudiencePickupDiscount,
   pickupDiscountFor,
-  type PickupDiscounts,
+  type AnnouncedPickupDiscounts,
 } from "./pickup-discount-scope.js";
 
 // Le défaut et la règle vivent sans zod, pour le démarrage de la boutique : on
@@ -175,9 +175,10 @@ export interface PickupAddressView {
   readonly pays: string;
   /**
    * La remise appliquée au panier en cas de retrait ici, une par clientèle —
-   * avec ce qu'elle couvre (`pickupDiscountCovers`).
+   * avec ce qu'elle couvre (`pickupDiscountCovers`) ; plus celle d'une
+   * société en attente (`b2bPending`), qu'on lit par `pickupAnnouncementOf`.
    */
-  readonly discounts: PickupDiscounts;
+  readonly discounts: AnnouncedPickupDiscounts;
   /**
    * **À qui le site remet en retrait** (Hugo, 2026-10-15) — un site peut être
    * réservé aux pros ou aux particuliers. Toujours rendu par le serveur ;

@@ -94,7 +94,10 @@ function boot({
       provideHttpClient(),
       provideHttpClientTesting(),
       // Un visiteur est `b2c` : c'est ce que la boutique publique sert.
-      { provide: ClientAudience, useValue: { shown: () => 'b2c', current: () => 'b2c' } },
+      {
+        provide: ClientAudience,
+        useValue: { shown: () => 'b2c', current: () => 'b2c', announcement: () => 'b2c' },
+      },
       {
         provide: ClientCart,
         useValue: {

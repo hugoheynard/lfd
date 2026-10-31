@@ -11,6 +11,7 @@ import type {
 } from '@lfd/contracts';
 import {
   audienceOf,
+  pickupAnnouncementOf,
   DEFAULT_DELIVERY_AVAILABILITY,
   type DeliveryAvailabilityView,
   pickupOpenTo,
@@ -225,7 +226,10 @@ async function mount(
     providers: [
       provideRouter([]),
       { provide: ServicePoints, useValue: store },
-      { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
+      {
+        provide: ClientAudience,
+        useValue: { shown: signal('b2c' as const), announcement: signal('b2c' as const) },
+      },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
       // Les jours bornés par le panier ne sont pas le sujet de l'accueil.
@@ -348,7 +352,10 @@ describe('AccueilPublic — ce qu’il refuse de dire', () => {
       providers: [
         provideRouter([]),
         { provide: ServicePoints, useValue: store },
-        { provide: ClientAudience, useValue: { shown: signal('b2c' as const) } },
+        {
+          provide: ClientAudience,
+          useValue: { shown: signal('b2c' as const), announcement: signal('b2c' as const) },
+        },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: new FakeShop([]) },
         { provide: CartFulfillmentDays, useValue: {} },
@@ -638,7 +645,13 @@ describe('AccueilPublic — ce que dit la porte du coursier quand elle attend', 
       providers: [
         provideRouter([]),
         { provide: ServicePoints, useValue: store },
-        { provide: ClientAudience, useValue: { shown: signal(audienceOf(status)) } },
+        {
+          provide: ClientAudience,
+          useValue: {
+            shown: signal(audienceOf(status)),
+            announcement: signal(pickupAnnouncementOf(status)),
+          },
+        },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: boutique },
         { provide: CartFulfillmentDays, useValue: {} },
@@ -882,7 +895,10 @@ describe('AccueilPublic — quand le retrait n’est pas proposé', () => {
         { provide: ServicePoints, useValue: store },
         {
           provide: ClientAudience,
-          useValue: { shown: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)) },
+          useValue: {
+            shown: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)),
+            announcement: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)),
+          },
         },
         { provide: ClientOrderHistory, useValue: { orders: signal([]) } },
         { provide: ShopCatalogue, useValue: boutique },

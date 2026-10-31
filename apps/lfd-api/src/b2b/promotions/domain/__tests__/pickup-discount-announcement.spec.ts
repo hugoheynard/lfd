@@ -30,7 +30,7 @@ const PUBLIC_AT_COEUR = livePromotion({
 const SAME_EVERYWHERE = { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" };
 
 describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotions", () => {
-  it("annonce la remise des pros et celle des particuliers, portée comprise", () => {
+  it("annonce la remise des pros, d'une société en attente et des particuliers, portée comprise", () => {
     expect(announcedPickupDiscounts([PROS_AT_COEUR, PUBLIC_AT_COEUR], "coeur", ASKED_AT)).toEqual({
       b2b: {
         adjustment: { mode: "percent", bp: 2000 },
@@ -38,6 +38,14 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
         scope: "all_except",
         categories: [{ categoryId: "c_boissons", eligible: false }],
         products: [{ productId: "p_eau", eligible: true }],
+      },
+      // « Tous sauf les pros actifs » admet une société en attente.
+      b2bPending: {
+        adjustment: { mode: "amount", cents: 300 },
+        label: SAME_EVERYWHERE,
+        scope: "all_except",
+        categories: [],
+        products: [],
       },
       b2c: {
         adjustment: { mode: "amount", cents: 300 },
@@ -53,6 +61,7 @@ describe("announcedPickupDiscounts — l'annonce d'un point, tirée des promotio
     const line = livePromotion({ id: "line" });
     expect(announcedPickupDiscounts([PROS_AT_COEUR, line], "autre", ASKED_AT)).toEqual({
       b2b: null,
+      b2bPending: null,
       b2c: null,
     });
   });
@@ -179,6 +188,12 @@ describe("announcedPickupDiscounts — chaque clientèle lit SON public et SON l
     const announced = announcedPickupDiscounts([labelled], "site", at);
 
     expect(announced.b2b?.label).toEqual({ fr: "Tarif pro", en: "Tarif pro", it: "Prezzo pro" });
+    // Une société en attente est servie en pro : la caisse lui fige le libellé Pros.
+    expect(announced.b2bPending?.label).toEqual({
+      fr: "Tarif pro",
+      en: "Tarif pro",
+      it: "Prezzo pro",
+    });
     expect(announced.b2c?.label).toEqual({ fr: "Commun", en: "Commun", it: "Commun" });
   });
 });

@@ -66,8 +66,10 @@ export { ALL_DISCOUNT_AUDIENCES } from "./pickup-discount-audiences.js";
 export {
   NO_PICKUP_DISCOUNTS,
   pickupDiscountCovers,
+  pickupAnnouncementOf,
   pickupDiscountFor,
 } from "./pickup-discount-scope.js";
+export type { PickupAnnouncementKey } from "./pickup-discount-scope.js";
 export {
   PICKUP_CHOICE_REQUIRED,
   PICKUP_CLOSED_FOR_AUDIENCE,

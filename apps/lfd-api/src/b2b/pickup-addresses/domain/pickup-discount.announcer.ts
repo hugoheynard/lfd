@@ -1,4 +1,4 @@
-import type { PickupDiscounts } from "@lfd/contracts";
+import type { AnnouncedPickupDiscounts } from "@lfd/contracts";
 
 /**
  * **Ce que la boutique annonce de la remise d'un point**, quand ce n'est plus
@@ -16,5 +16,7 @@ export abstract class PickupDiscountAnnouncer {
    * Les remises annoncées de ces points, par identifiant. Depuis L12, la
    * seule source : les colonnes de remise du site ne font plus foi.
    */
-  abstract announced(pickupIds: readonly string[]): Promise<ReadonlyMap<string, PickupDiscounts>>;
+  abstract announced(
+    pickupIds: readonly string[],
+  ): Promise<ReadonlyMap<string, AnnouncedPickupDiscounts>>;
 }

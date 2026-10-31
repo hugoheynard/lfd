@@ -63,3 +63,36 @@ describe('ClientAudience — la clientèle de l’écran', () => {
     expect(audience.shown()).toBe('b2c');
   });
 });
+
+/**
+ * L'annonce d'une remise de retrait suit ce que la caisse appliquera, pas la
+ * clientèle : une société en attente est servie en pro.
+ */
+describe('ClientAudience — quelle remise de retrait annoncer', () => {
+  it('un visiteur lit l’annonce des particuliers', () => {
+    expect(resolve(false, null).announcement()).toBe('b2c');
+  });
+
+  it('une société active lit l’annonce des pros', () => {
+    expect(resolve(true, 'cmp_1', [company('active')]).announcement()).toBe('b2b');
+  });
+
+  /**
+   * Régression : une société en attente lisait l’annonce des particuliers et
+   * se voyait promettre leur promotion, que la caisse — qui la sert en pro —
+   * ne retirait pas (2026-10-31).
+   */
+  it('une société en attente lit SA propre annonce, pas celle des particuliers', () => {
+    const audience = resolve(true, 'cmp_1', [company('pending')]);
+    expect(audience.announcement()).toBe('b2bPending');
+    expect(audience.current()).toBe('b2c');
+  });
+
+  it('une société suspendue lit l’annonce des particuliers', () => {
+    expect(resolve(true, 'cmp_1', [company('suspended')]).announcement()).toBe('b2c');
+  });
+
+  it('reconnu avant `/me` : l’annonce des particuliers, par prudence', () => {
+    expect(resolve(true, null).announcement()).toBe('b2c');
+  });
+});

@@ -1,5 +1,5 @@
 import type { CartAdjustment } from "./cart-adjustment.js";
-import type { CustomerAudience } from "./customer-audience.js";
+import type { CompanyStatus } from "./customer-sheet.js";
 import type { DiscountLabelView } from "./discount-label.js";
 
 /**
@@ -51,15 +51,59 @@ export interface PickupDiscounts {
   readonly b2c: AudiencePickupDiscount | null;
 }
 
-/** Aucune remise, pour personne. */
-export const NO_PICKUP_DISCOUNTS: PickupDiscounts = { b2b: null, b2c: null };
+/**
+ * **Ce qu'un point ANNONCE**, une remise par acheteur type — la forme servie
+ * (`PickupAddressView.discounts`), là où {@link PickupDiscounts} reste la
+ * forme saisie sur un site.
+ *
+ * `b2bPending` existe parce que la clientèle ment pour une société EN
+ * ATTENTE : `audienceOf('pending')` dit `b2c` (une remise « pros
+ * seulement » ne s'obtient pas en tapant un SIRET), mais la caisse la sert
+ * en pro et juge les publics avec son statut — `pros` l'admet,
+ * `individuals` non. Lui annoncer la remise `b2c` promettait une promotion
+ * « particuliers » que la caisse ne retirait pas (corrigé le 2026-10-31,
+ * Hugo, option a) : elle lit désormais la sienne.
+ *
+ * Toujours rendu par l'annonce des promotions ; facultatif dans le TYPE,
+ * comme `pickupAudiences`, pour la vue d'un site (forme saisie, sans
+ * société en attente) et les vues construites à la main : absent = aucune
+ * remise annoncée, jamais celle d'une autre clientèle.
+ */
+export interface AnnouncedPickupDiscounts extends PickupDiscounts {
+  readonly b2bPending?: AudiencePickupDiscount | null | undefined;
+}
 
-/** La remise du point pour cette clientèle, ou `null` si elle n'en reçoit pas. */
+/** L'acheteur type dont on lit l'annonce d'un point. */
+export type PickupAnnouncementKey = keyof AnnouncedPickupDiscounts;
+
+/** Aucune remise, pour personne. */
+export const NO_PICKUP_DISCOUNTS: AnnouncedPickupDiscounts = {
+  b2b: null,
+  b2c: null,
+  b2bPending: null,
+};
+
+/**
+ * **Quelle annonce lire, selon le statut de la société agissante** : active
+ * → `b2b`, en attente → `b2bPending`, sinon `b2c`. Distincte d'`audienceOf`,
+ * qui règle aussi les CGV et le contact : seule l'annonce d'une remise doit
+ * suivre ce que la caisse appliquera à une société en attente.
+ */
+export function pickupAnnouncementOf(
+  actingCompanyStatus: CompanyStatus | null,
+): PickupAnnouncementKey {
+  if (actingCompanyStatus === "active") {
+    return "b2b";
+  }
+  return actingCompanyStatus === "pending" ? "b2bPending" : "b2c";
+}
+
+/** La remise annoncée du point pour cet acheteur type, ou `null`. */
 export function pickupDiscountFor(
-  point: { readonly discounts: PickupDiscounts },
-  audience: CustomerAudience,
+  point: { readonly discounts: AnnouncedPickupDiscounts },
+  key: PickupAnnouncementKey,
 ): AudiencePickupDiscount | null {
-  return point.discounts[audience];
+  return point.discounts[key] ?? null;
 }
 
 /** Ce qu'il faut savoir d'une ligne pour juger son éligibilité. */

@@ -67,3 +67,29 @@ describe('pickupOffer — sur tout ou sur une sélection', () => {
     });
   });
 });
+
+describe('pickupOffer — une société en attente', () => {
+  const PENDING_ONLY: PickupAddressView = {
+    ...pointWith(TEN_PERCENT),
+    discounts: { b2b: null, b2c: TEN_PERCENT, b2bPending: null },
+  };
+
+  /**
+   * Régression : la remise des particuliers était annoncée à une société en
+   * attente, que la caisse sert en pro et à qui elle ne la retire pas (2026-10-31).
+   */
+  it('ne lui annonce pas la remise des particuliers ; elle lit le tarif pro', () => {
+    expect(pickupOffer(PENDING_ONLY, 'b2bPending', COPY)).toEqual({
+      label: 'Prix pro',
+      hasOffer: false,
+    });
+  });
+
+  it('lui annonce sa propre remise', () => {
+    const point = {
+      ...PENDING_ONLY,
+      discounts: { ...PENDING_ONLY.discounts, b2bPending: TEN_PERCENT },
+    };
+    expect(pickupOffer(point, 'b2bPending', COPY).label).toBe('−10 % sur tout');
+  });
+});

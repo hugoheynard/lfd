@@ -1,6 +1,11 @@
 import { computed, inject, Injectable } from '@angular/core';
 // Par le sous-chemin sans zod : chargé au démarrage (budget `cloudflare`).
-import { audienceOf, type CustomerAudience } from '@lfd/contracts/shop-values';
+import {
+  audienceOf,
+  type CustomerAudience,
+  pickupAnnouncementOf,
+  type PickupAnnouncementKey,
+} from '@lfd/contracts/shop-values';
 
 import { AuthFacade } from '../auth/auth.facade';
 import { ClientWorkspace } from './client-workspace.service';
@@ -53,4 +58,22 @@ export class ClientAudience {
    * de trop n'en retire aucune.
    */
   readonly shown = computed<CustomerAudience>(() => this.current() ?? 'b2c');
+
+  /**
+   * **Quelle remise de retrait annoncer** : celle d'une société active, d'une
+   * société EN ATTENTE, ou des particuliers (`pickupAnnouncementOf`).
+   *
+   * Distincte de la clientèle parce qu'une société en attente est `b2c` pour
+   * tout le reste (CGV, contact, livraison) mais servie en pro par la caisse,
+   * qui juge ses promotions avec son statut : lui annoncer la remise `b2c`
+   * promettait une promotion « particuliers » que la caisse ne retirait pas
+   * (corrigé le 2026-10-31). Tant que l'espace n'est pas connu, les
+   * particuliers — la même prudence que {@link shown}.
+   */
+  readonly announcement = computed<PickupAnnouncementKey>(() => {
+    if (!this.auth.isAuthenticated() || this.current() === null) {
+      return 'b2c';
+    }
+    return pickupAnnouncementOf(this.workspace.company()?.status ?? null);
+  });
 }

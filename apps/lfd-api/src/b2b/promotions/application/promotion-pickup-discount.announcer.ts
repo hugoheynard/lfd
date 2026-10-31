@@ -1,4 +1,4 @@
-import type { PickupDiscounts } from "@lfd/contracts";
+import type { AnnouncedPickupDiscounts } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Clock } from "../../../platform/time/clock.js";
@@ -20,7 +20,9 @@ export class PromotionPickupDiscountAnnouncer extends PickupDiscountAnnouncer {
     super();
   }
 
-  async announced(pickupIds: readonly string[]): Promise<ReadonlyMap<string, PickupDiscounts>> {
+  async announced(
+    pickupIds: readonly string[],
+  ): Promise<ReadonlyMap<string, AnnouncedPickupDiscounts>> {
     const at = this.clock.now();
     const live = await this.promotions.live();
     return new Map(pickupIds.map((id) => [id, announcedPickupDiscounts(live, id, at)]));

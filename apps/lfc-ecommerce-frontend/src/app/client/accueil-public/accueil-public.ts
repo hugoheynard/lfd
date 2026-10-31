@@ -141,7 +141,7 @@ export class AccueilPublic {
   protected readonly c = screenCopy('accueilPublic', accueilPublicCopy);
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
-  private readonly audience = inject(ClientAudience).shown;
+  private readonly announcement = inject(ClientAudience).announcement;
 
   private readonly auth = inject(AuthFacade);
   private readonly identity = inject(ClientIdentity);
@@ -569,16 +569,16 @@ export class AccueilPublic {
    * corrigé le 2026-09-15) parce que chacun calculait le sien.
    */
   protected readonly houses = computed<readonly House[]>(() => {
-    const audience = this.audience();
+    const announcement = this.announcement();
     const copy = this.t().pickupDialog;
     const points = this.points.pickups();
-    const best = bestPickupDiscount(points, audience);
+    const best = bestPickupDiscount(points, announcement);
     let flagged = false;
     return points.map((point) => {
       // Le drapeau ne se pose QU'UNE fois : deux cartes « le plus avantageux »
       // ne diraient plus rien.
       const isBest =
-        !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point, audience), best);
+        !flagged && best !== null && sameAdjustment(pickupAdjustmentFor(point, announcement), best);
       if (isBest) {
         flagged = true;
       }
@@ -586,7 +586,7 @@ export class AccueilPublic {
         point,
         name: point.label || point.ville,
         place: `${point.ville} · ${point.ligne1}`,
-        offer: pickupOffer(point, audience, copy),
+        offer: pickupOffer(point, announcement, copy),
         best: isBest,
       };
     });
@@ -599,8 +599,8 @@ export class AccueilPublic {
    * retrait » serait une promesse vide écrite en gros.
    */
   protected readonly bestLabel = computed(() => {
-    const audience = this.audience();
-    const best = bestPickupDiscount(this.points.pickups(), audience);
+    const announcement = this.announcement();
+    const best = bestPickupDiscount(this.points.pickups(), announcement);
     return best === null ? null : fill(this.c().proof.discount, { value: discountLabel(best) });
   });
 

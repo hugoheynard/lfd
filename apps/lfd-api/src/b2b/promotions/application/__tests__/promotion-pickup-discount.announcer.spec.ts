@@ -19,7 +19,7 @@ describe("PromotionPickupDiscountAnnouncer", () => {
 
     expect(announced.get("coeur")?.b2b?.adjustment).toEqual({ mode: "percent", bp: 2000 });
     expect(announced.get("coeur")?.b2c).toBeNull();
-    expect(announced.get("autre")).toEqual({ b2b: null, b2c: null });
+    expect(announced.get("autre")).toEqual({ b2b: null, b2bPending: null, b2c: null });
     expect(promotions.reads).toBe(1);
   });
 });

@@ -1,10 +1,5 @@
-import type {
-  AudiencePickupDiscount,
-  CartAdjustment,
-  CustomerAudience,
-  PickupAddressView,
-} from '@lfd/contracts';
-import { pickupDiscountFor } from '@lfd/contracts/shop-values';
+import type { AudiencePickupDiscount, CartAdjustment, PickupAddressView } from '@lfd/contracts';
+import { pickupDiscountFor, type PickupAnnouncementKey } from '@lfd/contracts/shop-values';
 
 import { fill } from '../copy/client-copy.service';
 import { formatCents, formatRate } from '../format-money';
@@ -21,6 +16,10 @@ import { formatCents, formatRate } from '../format-money';
  * remise et livraison par clientèle, D2) : une remise « pros seulement » ne
  * s'annonce pas en perso. Tout lecteur passe par `pickupDiscountFor`, la règle
  * que le serveur applique au devis.
+ *
+ * 🔴 **On lit l'annonce de l'ACHETEUR TYPE, pas de la clientèle** depuis le
+ * 2026-10-31 : une société en attente est `b2c` mais servie en pro, et lit
+ * sa propre annonce (`b2bPending`, `ClientAudience.announcement`).
  */
 
 /**
@@ -33,9 +32,9 @@ import { formatCents, formatRate } from '../format-money';
  */
 export function pickupAdjustmentFor(
   point: PickupAddressView,
-  audience: CustomerAudience,
+  announcement: PickupAnnouncementKey,
 ): CartAdjustment | null {
-  return pickupDiscountFor(point, audience)?.adjustment ?? null;
+  return pickupDiscountFor(point, announcement)?.adjustment ?? null;
 }
 
 /** Ce qu'un point promet à une clientèle, en une étiquette. */
@@ -56,7 +55,9 @@ export interface PickupOfferCopy {
 
 /**
  * « −20 % sur tout », ou le tarif qu'on y paie sans remise : « Prix pro » à une
- * société active, « Prix boutique » à un particulier (Hugo, 2026-09-15).
+ * société active, « Prix boutique » à un particulier (Hugo, 2026-09-15). Une
+ * société en attente lit « Prix pro » depuis le 2026-10-31 : la caisse la
+ * sert en pro (`companyServiceOf`).
  *
  * Une seule écriture pour le dialogue et les cartes de boutique : deux
  * étiquettes calculées chacune de son côté finiraient par se contredire, comme
@@ -64,12 +65,12 @@ export interface PickupOfferCopy {
  */
 export function pickupOffer(
   point: PickupAddressView,
-  audience: CustomerAudience,
+  announcement: PickupAnnouncementKey,
   copy: PickupOfferCopy,
 ): PickupOffer {
-  const discount = pickupDiscountFor(point, audience);
+  const discount = pickupDiscountFor(point, announcement);
   if (discount === null) {
-    return { label: audience === 'b2b' ? copy.proPrice : copy.shopPrice, hasOffer: false };
+    return { label: announcement === 'b2c' ? copy.shopPrice : copy.proPrice, hasOffer: false };
   }
   const tag = coversSelection(discount) ? copy.discountTagSelection : copy.discountTag;
   return { label: fill(tag, { value: discountLabel(discount.adjustment) }), hasOffer: true };
@@ -96,7 +97,7 @@ export function discountLabel(adjustment: CartAdjustment): string {
 }
 
 /**
- * La meilleure remise proposée **à cette clientèle**, ou `null`.
+ * La meilleure remise proposée **à cet acheteur type**, ou `null`.
  *
  * Comparer un pourcentage à un montant n'a pas de sens sans panier : on retient
  * donc la meilleure de chaque nature, en préférant le pourcentage — c'est ce que
@@ -104,10 +105,10 @@ export function discountLabel(adjustment: CartAdjustment): string {
  */
 export function bestPickupDiscount(
   points: readonly PickupAddressView[],
-  audience: CustomerAudience,
+  announcement: PickupAnnouncementKey,
 ): CartAdjustment | null {
   const offers = points
-    .map((point) => pickupAdjustmentFor(point, audience))
+    .map((point) => pickupAdjustmentFor(point, announcement))
     .filter((d) => d !== null);
   const percents = offers.filter((d) => d.mode === 'percent');
   if (percents.length > 0) {

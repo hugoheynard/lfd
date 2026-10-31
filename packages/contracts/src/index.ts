@@ -2362,12 +2362,15 @@ export {
 export type { PickupAddressUpdatePayload, PickupDiscountAudiences } from "./pickup.js";
 export {
   NO_PICKUP_DISCOUNTS,
+  pickupAnnouncementOf,
   pickupDiscountCovers,
   pickupDiscountFor,
   pickupDiscountHasRules,
 } from "./pickup-discount-scope.js";
 export type {
+  AnnouncedPickupDiscounts,
   AudiencePickupDiscount,
+  PickupAnnouncementKey,
   PickupDiscountCategoryRule,
   PickupDiscountLineFacts,
   PickupDiscountProductRule,

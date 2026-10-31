@@ -1,8 +1,8 @@
 import type {
   AudiencePickupDiscount,
   CartAdjustment,
-  CustomerAudience,
-  PickupDiscounts,
+  AnnouncedPickupDiscounts,
+  PickupAnnouncementKey,
 } from "@lfd/contracts";
 
 import {
@@ -20,29 +20,35 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  * (plan `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
  * § 14 B5, lot L8) — pur.
  *
- * Le contrat `PickupAddressView.discounts` porte UNE remise par clientèle
- * (`b2b` = société active, `b2c` = tout le reste : `audienceOf`). Après la
- * bascule, la caisse applique la promotion panier gagnante ; l'annonce doit
- * dire la même, sans que la boutique change. La question est donc posée
- * avec les faits d'un acheteur TYPE de chaque clientèle, au même juge que
- * la caisse (`promotionsAdmitted`, puis le rang du public et de
- * l'acheminement) :
+ * Le contrat `PickupAddressView.discounts` porte UNE remise par acheteur
+ * type. Après la bascule, la caisse applique la promotion panier gagnante ;
+ * l'annonce doit dire la même, sans que la boutique change. La question est
+ * donc posée avec les faits d'un acheteur TYPE, au même juge que la caisse
+ * (`promotionsAdmitted`, puis le rang du public et de l'acheminement) :
  *
  * - `b2b` : une société active, sans identité (aucun public « société » ne
  *   la vise), porte d'entrée inconnue ;
+ * - `b2bPending` : une société EN ATTENTE, sans identité, porte inconnue ;
  * - `b2c` : aucune société, porte d'entrée inconnue.
  *
- * Exact pour les publics qui ne dépendent que de la clientèle — `everyone`,
- * `pros_active`, `everyone_but_active_pros`, ceux de la reprise. `pros` et
- * `individuals` s'annoncent à l'acheteur type, mais un membre d'une société
- * en attente (clientèle `b2c`, servi en pro) reçoit à la caisse la promotion
- * des pros sans qu'on la lui ait annoncée. Un public plus fin (une société,
- * les pros en cours d'inscription, les invités) n'est pas annoncé : le
- * contrat ne sait pas le dire.
+ * `b2bPending` ferme une sur-annonce (2026-10-31, Hugo, option a) : la
+ * clientèle d'une société en attente est `b2c` (`audienceOf`), mais la
+ * caisse la sert en pro (`companyServiceOf('pending') = 'pro'`) et juge ses
+ * publics avec `companyStatus: 'pending'`. Elle lisait l'annonce `b2c` — une
+ * promotion `individuals` lui était promise, la caisse retirait 0 ; et une
+ * promotion `pros` lui était retirée sans être annoncée. La boutique choisit
+ * l'annonce par `pickupAnnouncementOf(statut)`.
  *
- * Le libellé annoncé est celui de la clientèle (L8b, § 15.8) : `b2b` lit le
- * libellé Pros, `b2c` le libellé Particuliers, repli sur le commun — c'est ce
- * que la caisse figera pour l'acheteur type.
+ * Exact pour les publics qui ne dépendent que du statut de la société —
+ * `everyone`, `pros`, `pros_active`, `pros_pending`, `individuals`,
+ * `everyone_but_active_pros`, ceux de la reprise. Un public plus fin (une
+ * société, les invités ou les inscrits) n'est pas annoncé à l'acheteur type,
+ * dont la porte est inconnue : le contrat ne sait pas le dire.
+ *
+ * Le libellé annoncé est celui que la caisse figera (L8b, § 15.8,
+ * `labelAudienceOf`) : `b2b` et `b2bPending` lisent le libellé Pros — une
+ * société en attente est servie en pro —, `b2c` le libellé Particuliers,
+ * repli sur le commun.
  *
  * Une promotion que le contrat ne sait pas porter n'est pas annoncée non plus
  * plutôt que d'être annoncée fausse : une cible déclinaison (le contrat ne
@@ -50,11 +56,17 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
  */
 
 const TYPICAL_BUYER: Readonly<
-  Record<CustomerAudience, Omit<PromotionAudienceFacts, "fulfillment">>
+  Record<PickupAnnouncementKey, Omit<PromotionAudienceFacts, "fulfillment">>
 > = {
   b2b: {
     companyId: null,
     companyStatus: "active",
+    principal: { companyId: null },
+    buyerKind: "unknown",
+  },
+  b2bPending: {
+    companyId: null,
+    companyStatus: "pending",
     principal: { companyId: null },
     buyerKind: "unknown",
   },
@@ -66,20 +78,21 @@ const TYPICAL_BUYER: Readonly<
   },
 };
 
-/** Les deux remises annoncées d'un point, à l'instant `at`. */
+/** Les trois remises annoncées d'un point, à l'instant `at`. */
 export function announcedPickupDiscounts(
   promotions: readonly LivePromotion[],
   pickupId: string,
   at: Date,
-): PickupDiscounts {
+): Required<AnnouncedPickupDiscounts> {
   return {
     b2b: announcedFor("b2b", promotions, pickupId, at),
+    b2bPending: announcedFor("b2bPending", promotions, pickupId, at),
     b2c: announcedFor("b2c", promotions, pickupId, at),
   };
 }
 
 function announcedFor(
-  clientele: CustomerAudience,
+  clientele: PickupAnnouncementKey,
   promotions: readonly LivePromotion[],
   pickupId: string,
   at: Date,
@@ -102,7 +115,7 @@ function announcedFor(
  * refuse deux promotions panier NON cumulables qui pourraient s'appliquer
  * ensemble (`BasketPromotionsWouldCombineError`). Depuis M7, des promotions
  * panier cumulables s'enchaînent à la caisse : le contrat n'annonçant qu'une
- * remise par clientèle, seule la plus spécifique est annoncée ici, et la
+ * remise par acheteur type, seule la plus spécifique est annoncée ici, et la
  * caisse en retire davantage (vérifié le 2026-10-31 : `PickupDiscounts`
  * porte un `AudiencePickupDiscount` par clientèle).
  */
