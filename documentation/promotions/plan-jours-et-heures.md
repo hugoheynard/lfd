@@ -231,3 +231,51 @@ unitaire de la ligne` ; le reste de la ligne entre dans l'assiette des
   prix net unique).
 - **`handover_at`** : la couverture ne s'applique pas (l'instant est le
   créneau, pas la passation) ; changer de créneau reste jugé par L9 (§ 8.2).
+
+## 10. Troisième passe de vitruve (2026-10-31) — fait foi sur le § 9
+
+1. **La couverture se rejuge, elle ne se recopie pas seulement.** À la
+   révision, pour une promotion à heures `ordered_at` :
+   - si l'instant de révision est **dans la plage**, la couverture devient la
+     quantité révisée entière (un nouveau jugement à l'heure, comme une
+     commande neuve) ;
+   - sinon, elle devient `min(couverte, révisée)`.
+     Une seule remise par promotion dans l'ensemble actif : la chaîne M7 et son
+     plafond de 5 ne voient jamais deux fois la même promotion. « Jamais
+     accrue » se lit : jamais accrue **hors de la plage**.
+2. **`weekly_hours` + `ordered_at` est réservé au panier** : refus du domaine
+   à la pose pour une promotion « dans le prix affiché ». Une ligne à moitié
+   couverte aurait deux prix pour un même SKU, ce que l'unicité
+   `@@unique([orderId, sku])` (`orders.prisma:771`) et la règle « prix
+   unitaire × quantité = montant » interdisent. `handover_at` reste permis au
+   point ligne ? Non : § 8.4 l'a déjà réservé au panier (le rayon ne connaît
+   pas de créneau). **Une promotion à heures est donc toujours une remise au
+   panier.**
+3. **Où vit la couverture** : une table fille de `order_discounts`,
+   `order_discount_coverages (order_discount_id, sku, covered_quantity)`,
+   clé primaire sur les deux premières, `covered_quantity > 0` (pièces ou
+   grammes), RESTRICT vers la remise, clé par SKU sans clé étrangère vers la
+   ligne — les lignes sont recréées à chaque révision
+   (`prisma-order-revision.repository.ts:120`). La révision lit la
+   couverture de la remise active de même promotion et l'écrit, rejugée, sur
+   la remise neuve avant d'archiver l'ancienne. Le déclencheur différé ne
+   contrôle que des sommes : la règle du point 1 est tenue par le domaine
+   (testée), pas par la base. La reprise n'a rien à écrire : aucune remise
+   d'avant n'a d'heures.
+4. **Assiette** : en révision hors plage, l'assiette d'une remise à heures
+   est la somme, par SKU, de `min(couverte, révisée)` × le prix net de la
+   ligne **après les remises de rang inférieur** (comme `base_cents`).
+5. **Bons partiels et annulation partielle** : un bon répartit la remise à
+   heures **au prorata** des quantités livrées de chaque SKU, comme les autres
+   remises (`delivery_note_discounts`) — pas « les couvertes d'abord ».
+   L'annulation partielle passe par la révision (à vérifier au bâti ; si un
+   autre chemin existe, il réduit la couverture de même).
+6. **Au poids** : la couverture est en grammes ; un ajustement de pesée
+   après passation ne passe pas par la révision et ne touche pas la
+   couverture (à vérifier au bâti).
+
+**Reste à Hugo** : une couverture acquise survit-elle si la promotion est
+**archivée**, ou si une **autre condition** (quantité minimum) cesse de tenir
+après la révision ? Proposition : non — la couverture protège seulement
+contre l'**heure** ; les autres règles se rejugent comme pour toute
+promotion.
