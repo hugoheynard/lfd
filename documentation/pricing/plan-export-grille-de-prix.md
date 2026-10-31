@@ -1,7 +1,24 @@
 # Plan — exporter une grille de prix pour une plaquette
 
 > 📝 **Plan du 2026-10-31**, demande de Hugo. Lecture seule : aucun prix n'est
-> écrit, aucune règle ne change. Rien n'est bâti.
+> écrit, aucune règle ne change.
+>
+> 🟦 **Bâti le 2026-10-31** (non commité) : `ExportPriceGridQuery` et
+> `ListPriceGridPromotionsQuery` (`apps/lfd-api/src/b2b/pricing/`, module
+> `apps/lfd-api/src/b2b/pricing/price-grid.module.ts`), routes `POST /admin/pricing/price-grid/{promotions,export}`
+> sous `b2b_pricing:read`, contrat `@lfd/contracts` (`packages/contracts/src/price-grid.ts`), panneau
+> « Exporter une grille de prix » sur `/pim/catalogue`. **Écarts au plan**, chacun
+> en suspens chez Hugo :
+>
+> - **« Les pros » en public type n'est pas bâti** : la porte du prix ne sait
+>   établir « société active » que d'une société réelle, et l'aperçu déclaré
+>   (`previewed`) n'admet que « tout le monde ». Pour les pros : choisir une société.
+> - **Les promotions du prix affiché ne se décochent pas** : la porte les applique
+>   sans paramètre d'exclusion. Elles sont listées et nommées en tête.
+> - **Un jour passé est refusé pour un particulier** (l'historique ne garde que
+>   le tarif pro — `architecture-la-porte-du-prix.md`, § 1) ; un jour se lit à
+>   00 h 00, heure de Paris ; une remise « à certains jours et heures » ne s'y
+>   applique pas (pas de créneau, comme au devis).
 
 ## 1. La demande (Hugo, 2026-10-31)
 

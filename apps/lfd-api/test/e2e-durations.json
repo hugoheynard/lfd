@@ -381,6 +381,7 @@
   "test/platform-content.e2e-spec.ts": 4340,
   "test/position-checks.e2e-spec.ts": 14852,
   "test/price-floor-carry-over.e2e-spec.ts": 19374,
+  "test/price-grid-export.e2e-spec.ts": 9844,
   "test/price-limits-migration.e2e-spec.ts": 4325,
   "test/price-limits.e2e-spec.ts": 8236,
   "test/price-rule-carry-over.e2e-spec.ts": 20577,

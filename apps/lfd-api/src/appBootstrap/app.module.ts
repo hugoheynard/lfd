@@ -25,6 +25,7 @@ import { GrowthModule } from "../b2b/growth/growth.module.js";
 import { OrdersModule } from "../b2b/orders/orders.module.js";
 import { PricerModule } from "../b2b/pricing/pricer.module.js";
 import { PricingAdminModule } from "../b2b/pricing/pricing-admin.module.js";
+import { PriceGridModule } from "../b2b/pricing/price-grid.module.js";
 import { PromotionsModule } from "../b2b/promotions/promotions.module.js";
 import { OrderPricingModule } from "../b2b/orders/order-pricing.module.js";
 import { AccountingModule } from "../b2b/accounting/accounting.module.js";
@@ -223,6 +224,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     DeliveryNotePlanningModule,
     IssuedMandatesModule,
     PricingAdminModule,
+    PriceGridModule,
     // Les promotions (plan des promotions, L3) : l'agrégat et ses gestes, sans écran.
     PromotionsModule,
     PricingFollowJournalModule,

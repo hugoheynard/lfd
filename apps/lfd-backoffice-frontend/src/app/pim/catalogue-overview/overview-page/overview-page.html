@@ -48,6 +48,15 @@
           <button foldButton emphasis="outline" intent="neutral" routerLink="/pim/produits">
             Ouvrir les produits
           </button>
+          <button
+            foldButton
+            emphasis="outline"
+            intent="neutral"
+            data-price-grid
+            (click)="openPriceGrid()"
+          >
+            Exporter une grille de prix
+          </button>
         </div>
       </fold-page-section>
     </fold-card>

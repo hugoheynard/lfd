@@ -9,10 +9,12 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { CatalogueOverviewHttpApi } from '../catalogue-overview-http-api';
 import { ReemissionPanel } from '../reemission/reemission-panel/reemission-panel';
+import { PriceGridPanel } from '../price-grid/price-grid-panel/price-grid-panel';
 
 /**
  * **Où en est le catalogue** — l'accueil du référentiel.
@@ -45,6 +47,7 @@ import { ReemissionPanel } from '../reemission/reemission-panel/reemission-panel
 })
 export class CatalogueOverviewPage {
   private readonly api = inject(CatalogueOverviewHttpApi);
+  private readonly panelHost = inject(FoldPanelHostService);
 
   protected readonly overview = signal<CatalogOverviewView | null>(null);
   protected readonly error = signal<string | null>(null);
@@ -52,6 +55,11 @@ export class CatalogueOverviewPage {
 
   constructor() {
     void this.load();
+  }
+
+  /** La grille de prix d'un public, pour une plaquette (`plan-export-grille-de-prix.md`). */
+  protected openPriceGrid(): void {
+    this.panelHost.open(PriceGridPanel);
   }
 
   private async load(): Promise<void> {

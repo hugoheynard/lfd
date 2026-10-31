@@ -1,0 +1,180 @@
+<fold-panel-header
+  title="Exporter une grille de prix"
+  subtitle="Un CSV pour une plaquette : HT pour un pro, TTC pour un particulier. Estimé, non contractuel."
+/>
+
+<fold-panel-body>
+  @if (refusal(); as refusal) {
+    <fold-callout variant="alert" data-refusal>{{ refusal }}</fold-callout>
+  }
+
+  <section class="part">
+    <fold-element-title variant="bar" title="Pour qui" [level]="3" />
+    <fold-listbox
+      label="Public"
+      hint="Pour les pros, choisissez une société : sa mercuriale et son réglage de promotions s'appliquent."
+      [options]="audienceOptions"
+      [value]="draft().audience"
+      (selectionChange)="chooseAudience($event)"
+      data-audience
+    />
+    @if (draft().audience === 'company') {
+      @if (chosenCompany(); as company) {
+        <div class="chosen" data-chosen-company>
+          <span class="chosen-name">{{ nameOf(company) }}</span>
+          <button foldButton size="sm" emphasis="soft" (click)="edit({ companyId: null })">
+            Changer
+          </button>
+        </div>
+      } @else {
+        @switch (companiesState()) {
+          @case ('loading') {
+            <fold-loading message="Lecture des comptes clients…" />
+          }
+          @case ('error') {
+            <fold-empty-state tone="alert" title="Impossible de charger les comptes clients">
+              <button foldButton (click)="loadCompanies()">Réessayer</button>
+            </fold-empty-state>
+          }
+          @default {
+            <fold-search
+              placeholder="Société, SIRET, propriétaire de l’espace…"
+              ariaLabel="Chercher la société"
+              (searchChange)="companyQuery.set($event)"
+            />
+            <ul class="results">
+              @for (company of companyResults(); track company.id) {
+                <li class="result" data-candidate>
+                  <span class="chosen-name">{{ nameOf(company) }}</span>
+                  <button foldButton size="sm" emphasis="outline" (click)="chooseCompany(company)">
+                    Choisir
+                  </button>
+                </li>
+              }
+            </ul>
+          }
+        }
+      }
+    }
+  </section>
+
+  <section class="part">
+    <fold-element-title variant="bar" title="Quand" [level]="3" />
+    <fold-date
+      label="Date des prix"
+      optional
+      hint="Vide : aujourd'hui."
+      [value]="draft().day"
+      (valueChange)="edit({ day: $event })"
+      data-day
+    />
+  </section>
+
+  <section class="part">
+    <fold-element-title variant="bar" title="Comment il reçoit" [level]="3" />
+    @if (placesError(); as message) {
+      <fold-callout variant="alert">{{ message }}</fold-callout>
+    }
+    <fold-listbox
+      label="Acheminement"
+      [options]="methodOptions"
+      [value]="draft().method"
+      (selectionChange)="edit({ method: $event })"
+      data-method
+    />
+    @if (draft().method === 'pickup') {
+      <fold-listbox
+        label="Point de retrait"
+        placeholder="Choisir…"
+        [options]="pickupOptions()"
+        [value]="draft().pickupId"
+        (selectionChange)="edit({ pickupId: $event })"
+        data-pickup
+      />
+    } @else {
+      <fold-listbox
+        label="Zone de livraison"
+        placeholder="Choisir…"
+        [options]="zoneOptions()"
+        [value]="draft().zoneId"
+        (selectionChange)="edit({ zoneId: $event })"
+        data-zone
+      />
+    }
+  </section>
+
+  <section class="part">
+    <fold-element-title variant="bar" title="Promotions" [level]="3" />
+    @switch (promotionsState()) {
+      @case ('idle') {
+        <p class="hint">Choisissez le public et l'acheminement pour lire les promotions.</p>
+      }
+      @case ('loading') {
+        <fold-loading message="Lecture des promotions…" />
+      }
+      @case ('error') {
+        <fold-empty-state
+          tone="alert"
+          title="Impossible de lire les promotions"
+          [subtitle]="promotionsError() ?? ''"
+        />
+      }
+      @default {
+        @if (promotions(); as view) {
+          <p class="hint" data-displayed>
+            Dans le prix affiché :
+            @for (promotion of view.displayedPrice; track promotion.id; let last = $last) {
+              {{ promotion.label }} ({{ effectPhrase(promotion.effect) }}){{ last ? '' : ' ; ' }}
+            } @empty {
+              aucune.
+            }
+          </p>
+          @if (view.basket.length === 0) {
+            <p class="hint" data-no-basket>Aucune remise au panier pour ce public.</p>
+          }
+          @for (promotion of view.basket; track promotion.id) {
+            <div class="promotion" data-basket-promotion>
+              <fold-checkbox
+                [label]="promotion.label + ' — ' + effectPhrase(promotion.effect)"
+                [checked]="partOf(promotion) !== 'unchecked'"
+                (checkedChange)="toggle(promotion, $event)"
+              />
+              @if (partOf(promotion) !== 'unchecked') {
+                <fold-listbox
+                  label="Quelle partie"
+                  size="sm"
+                  [options]="partOptions"
+                  [value]="partOf(promotion)"
+                  (selectionChange)="setPart(promotion, $event)"
+                />
+              }
+            </div>
+          }
+        }
+      }
+    }
+  </section>
+
+  <section class="part">
+    <fold-checkbox
+      label="Ajouter le prix au kilo saisi"
+      hint="Celui de la fiche, quand il existe — une information, pas un calcul."
+      [checked]="pricePerKg()"
+      (checkedChange)="pricePerKg.set($event)"
+      data-price-per-kg
+    />
+  </section>
+</fold-panel-body>
+
+<fold-panel-footer>
+  <button foldButton emphasis="outline" intent="neutral" (click)="cancel()">Fermer</button>
+  <button
+    foldButton
+    data-export
+    [loading]="exporting()"
+    [disabled]="!canExport()"
+    (click)="exportGrid()"
+  >
+    Exporter
+  </button>
+</fold-panel-footer>

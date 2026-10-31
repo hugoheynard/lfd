@@ -270,6 +270,11 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // descendue ici.
     ShopCataloguePricing,
     CatalogViewers,
+    // Pour la grille de prix (`plan-export-grille-de-prix.md`) : le rayon d'un
+    // public se compose comme la vitrine — opérations datées comprises — et
+    // porte le prix au kilo saisi, lu À CÔTÉ de la résolution.
+    CatalogOperationsReader,
+    CatalogPricePerKgReader,
     // Pour les abonnements : le mur des articles réservés, sans tarifer.
     ReservedArticleGuard,
     // Les opérations datées, pour la caisse, le devis, les jours et les

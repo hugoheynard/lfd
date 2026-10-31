@@ -358,6 +358,7 @@ function resolve(
     // « fiche — déclinaison » hors défaut (V5) — le nom que la vitrine, le
     // devis et la ligne de commande portent tous trois.
     name: shopItemName(row.name),
+    productName: row.productName,
     unitPriceMillicents: served.unitPriceMillicents,
     pimPriceMillicents: served.pimPriceMillicents,
     vatRate: served.vatRate,

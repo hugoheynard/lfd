@@ -23,6 +23,13 @@ export interface ResolvedCatalogItem {
    */
   readonly productSku: string;
   readonly name: string;
+  /**
+   * Le nom de la **fiche** (fil v16) — lu par la grille de prix, qui range
+   * famille, produit et déclinaison en colonnes (`plan-export-grille-de-prix.md`).
+   * `null` = non reçu du référentiel ; absent = un lecteur qui ne le porte pas.
+   * La vitrine ne l'affiche pas (`shopItemName`).
+   */
+  readonly productName?: string | null;
   /** Prix HT en **millicentimes** réellement applicable — celui du B2B s'il existe. */
   readonly unitPriceMillicents: number;
   /** Le prix du PIM, gardé pour que l'écran puisse montrer l'écart. */

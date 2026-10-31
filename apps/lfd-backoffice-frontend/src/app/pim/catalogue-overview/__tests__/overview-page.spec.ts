@@ -75,4 +75,13 @@ describe('CatalogueOverviewPage', () => {
     expect(rendu).not.toContain('dernière publication');
     expect(rendu).not.toContain('a bougé');
   });
+
+  it('propose d’exporter une grille de prix', async () => {
+    setup(overview());
+
+    const host = await render();
+    expect(host.querySelector('[data-price-grid]')?.textContent).toContain(
+      'Exporter une grille de prix',
+    );
+  });
 });

@@ -2979,3 +2979,20 @@ export type {
   AcceptingMercurialeView,
   MercurialesAcceptingPromotionView,
 } from "./mercuriale-promotion-policy.js";
+export {
+  priceGridAudienceSchema,
+  priceGridFulfillmentSchema,
+  priceGridQuestionSchema,
+  priceGridExportPayloadSchema,
+  PRICE_GRID_BASKET_PARTS,
+  PRICE_GRID_MAX_BASKET_PROMOTIONS,
+} from "./price-grid.js";
+export type {
+  PriceGridAudience,
+  PriceGridFulfillment,
+  PriceGridQuestion,
+  PriceGridBasketPart,
+  PriceGridExportPayload,
+  PriceGridPromotionView,
+  PriceGridPromotionsView,
+} from "./price-grid.js";
