@@ -358,6 +358,63 @@ export function withFulfillment(draft: PromotionDraft, kind: DraftFulfillmentKin
   };
 }
 
+/** Ce qu'un genre de remise a en propre, mis de côté quand on le quitte. */
+export interface DraftTypeFields {
+  /** L'effet tel que le genre l'avait laissé. */
+  readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: string };
+  /** Les cibles que l'autre genre ne lit pas (déclinaisons, ou produits). */
+  readonly rules: readonly PromotionScopeRuleDraft[];
+  readonly stacksOverMercuriale: boolean;
+}
+
+/** Les champs mis de côté, par genre ; vide au chargement. */
+export type DraftSetAside = Partial<Record<DraftFulfillmentKind, DraftTypeFields>>;
+
+/**
+ * **Changer de genre de remise dans une saisie** : ce que le genre quitté a
+ * en propre — un effet qu'il est seul à lire, ses cibles, « tarif négocié » —
+ * est mis de côté, et ce que le genre retrouvé avait laissé lui est rendu.
+ * Un aller-retour ne perd rien ; le corps envoyé ne porte jamais que le genre
+ * choisi. Le retrait et la livraison restent dans le brouillon, ignorés hors
+ * panier (`payloadFulfillmentOf`).
+ */
+export function switchType(
+  draft: PromotionDraft,
+  setAside: DraftSetAside,
+  kind: DraftFulfillmentKind,
+): { readonly draft: PromotionDraft; readonly setAside: DraftSetAside } {
+  if (draft.fulfillmentKind === kind) {
+    return { draft, setAside };
+  }
+  const targets = targetsFor(kind);
+  const leaving: DraftTypeFields = {
+    effect: { kind: draft.effectKind, value: draft.effectValue },
+    rules: draft.rules.filter((rule) => !targets.includes(rule.target)),
+    stacksOverMercuriale: draft.stacksOverMercuriale,
+  };
+  const found = setAside[kind];
+  const moved = withFulfillment(draft, kind);
+  // Le genre retrouvé reprend SON effet ; à défaut, un effet qu'il sait lire
+  // suit, et un autre repart vide plutôt que relu dans une autre unité.
+  const effectFollows = effectsFor(kind).includes(draft.effectKind);
+  const effect =
+    found !== undefined
+      ? { effectKind: found.effect.kind, effectValue: found.effect.value }
+      : effectFollows
+        ? {}
+        : { effectKind: 'percent_off' as const, effectValue: '' };
+  return {
+    draft: {
+      ...moved,
+      ...effect,
+      rules: [...moved.rules, ...(found?.rules ?? [])],
+      stacksOverMercuriale: kind === 'displayed_price' && (found?.stacksOverMercuriale ?? false),
+    },
+    // Le genre retrouvé a repris ce qu'il avait laissé : il ne reste de côté que l'autre.
+    setAside: { [draft.fulfillmentKind]: leaving },
+  };
+}
+
 /** Le mode change le sens d'une famille : ses règles sont retournées avec lui. */
 export function withScopeMode(draft: PromotionDraft, mode: 'all_except' | 'only'): PromotionDraft {
   const familyEligible = mode === 'only';

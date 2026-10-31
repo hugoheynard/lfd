@@ -30,6 +30,7 @@ import {
   FoldLoadingStateComponent,
   FoldMultiselectComponent,
   FoldPageLayoutComponent,
+  FoldViewToggleComponent,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -51,11 +52,13 @@ import {
   emptyDraft,
   targetIds,
   targetsFor,
+  switchType,
   termsOf,
-  withFulfillment,
   withScopeMode,
   withTargets,
+  type DraftFulfillmentKind,
   type DraftReach,
+  type DraftSetAside,
   type PromotionDraft,
 } from '../promotion-draft';
 import { STATE_LABEL, STATE_VARIANT, originPhrase } from '../promotion-format';
@@ -78,14 +81,16 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
  * **La page d'une promotion — fiche ET formulaire** (décision de Hugo du
  * 2026-10-31 : un seul layout, pas de mode lecture et de mode édition).
  *
- * Les cartes suivent l'ordre où l'on pense une promotion : quoi, pour qui,
+ * Le genre de remise se choisit d'abord (décision de Hugo du 2026-10-31) :
+ * baisser le prix des articles, ou remise sur le panier. Les cartes qui
+ * suivent ne montrent que ce qui a du sens pour ce genre — quoi, pour qui,
  * comment le client la reçoit, sur quoi, quand — puis son état, ses gestes.
  * Un résumé en une phrase, en tête, suit la saisie.
  *
  * Sans `id`, elle pose ; avec, elle révise (le motif part au journal). Sans
  * `b2b_pricing:write`, avant la bascule de la source, ou une fois archivée,
  * les mêmes champs sont désactivés et rien ne s'enregistre. `pickupId`
- * pré-remplit « En remise au panier · retrait à ce point », depuis la fiche
+ * pré-remplit « Remise sur le panier · retrait à ce point », depuis la fiche
  * d'un site.
  *
  * Elle ne juge que la forme (`draftProblem`) ; tout refus métier vient du
@@ -109,6 +114,7 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
     FoldLoadingStateComponent,
     FoldMultiselectComponent,
     FoldPageLayoutComponent,
+    FoldViewToggleComponent,
     PromotionAudienceTree,
     RouterLink,
   ],
@@ -132,6 +138,8 @@ export class PromotionPage {
   protected readonly state = signal<LoadState>('loading');
   protected readonly promotion = signal<PromotionView | null>(null);
   protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
+  /** Ce que l'autre genre de remise avait en propre, pour un aller-retour sans perte. */
+  private readonly setAside = signal<DraftSetAside>({});
   /** Les termes relus, pour une révision ; `null` = une pose. */
   private readonly loaded = signal<string | null>(null);
   /** La source a basculé : le serveur accepte les écritures (relu avec la fiche). */
@@ -199,9 +207,22 @@ export class PromotionPage {
       ? "Elle s'ajoute aux autres promotions cumulables du même article (−20 % puis −15 % du reste = −32 %). Sinon, le client reçoit la plus avantageuse."
       : "Sa remise s'ajoute aux autres remises de panier cumulables (−10 % puis −5 % du reste), cinq au plus. Sinon, le client reçoit la plus avantageuse.",
   );
-  protected readonly fulfillmentOptions = FULFILLMENT_OPTIONS;
-  protected readonly fulfillmentHint = computed(
+  /** Les deux genres, tous désactivés en lecture seule. */
+  protected readonly typeOptions = computed(() =>
+    FULFILLMENT_OPTIONS.map(({ value, label, icon }) => ({
+      value,
+      label,
+      icon,
+      disabled: this.readOnly(),
+    })),
+  );
+  protected readonly typeHint = computed(
     () => FULFILLMENT_OPTIONS.find((option) => option.value === this.draft().fulfillmentKind)?.hint,
+  );
+  protected readonly effectHint = computed(() =>
+    this.atLine()
+      ? 'Un pourcentage, un montant retiré à chaque article, ou un prix posé.'
+      : 'Un pourcentage, ou un montant retiré du panier.',
   );
   protected readonly pickupReachOptions = PICKUP_REACH_OPTIONS;
   protected readonly deliveryReachOptions = DELIVERY_REACH_OPTIONS;
@@ -267,8 +288,20 @@ export class PromotionPage {
     this.refusal.set(null);
   }
 
-  protected setFulfillment(kind: PromotionDraft['fulfillmentKind']): void {
-    this.draft.update((draft) => withFulfillment(draft, kind));
+  /** Le genre de remise ; la vue ne parle que `string`, d'où le tri. */
+  protected setType(value: string): void {
+    const kind = FULFILLMENT_OPTIONS.find((option) => option.value === value)?.value;
+    if (kind === undefined || this.readOnly()) {
+      return;
+    }
+    this.switchTo(kind);
+  }
+
+  private switchTo(kind: DraftFulfillmentKind): void {
+    const next = switchType(this.draft(), this.setAside(), kind);
+    this.draft.set(next.draft);
+    this.setAside.set(next.setAside);
+    this.refusal.set(null);
   }
 
   /** Retrait ou livraison : la case, « tous / certains », ou la sélection. */
@@ -327,6 +360,7 @@ export class PromotionPage {
             ? duplicateDraft(original)
             : emptyDraft(parisToday(), pickupId);
       this.draft.set(draft);
+      this.setAside.set({});
       this.loaded.set(view === null ? null : JSON.stringify(termsOf(draft)));
       this.state.set('ready');
     } catch {

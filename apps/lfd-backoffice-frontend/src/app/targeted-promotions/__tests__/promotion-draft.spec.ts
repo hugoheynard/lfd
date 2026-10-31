@@ -5,6 +5,7 @@ import {
   draftProblem,
   duplicateDraft,
   emptyDraft,
+  switchType,
   termsOf,
   withFulfillment,
   withScopeMode,
@@ -67,6 +68,53 @@ describe('le brouillon de l’éditeur des promotions', () => {
     const basket = withFulfillment(line, 'basket');
     expect(basket.effectKind).toBe('percent_off');
     expect(basket.rules).toEqual([]);
+  });
+
+  it('changer de genre met de côté ce qui lui est propre, et le rend au retour', () => {
+    const line = withTargets(
+      {
+        ...emptyDraft(TODAY, null),
+        effectKind: 'fixed_unit_price',
+        effectValue: '1,20',
+        stacksOverMercuriale: true,
+      },
+      'variant',
+      ['VIE-001-1'],
+      false,
+    );
+    const away = switchType(line, {}, 'basket');
+    // Au panier : ni prix posé, ni déclinaison, ni tarif négocié — et pas de
+    // « 1,20 » relu en pourcentage.
+    expect(away.draft).toMatchObject({
+      fulfillmentKind: 'basket',
+      effectKind: 'percent_off',
+      effectValue: '',
+      rules: [],
+      stacksOverMercuriale: false,
+    });
+    const back = switchType({ ...away.draft, labelFr: 'Gardé' }, away.setAside, 'displayed_price');
+    expect(back.draft).toMatchObject({
+      fulfillmentKind: 'displayed_price',
+      effectKind: 'fixed_unit_price',
+      effectValue: '1,20',
+      rules: line.rules,
+      stacksOverMercuriale: true,
+      labelFr: 'Gardé',
+    });
+  });
+
+  it('un effet que les deux genres lisent suit la première bascule ; chaque genre garde ensuite le sien', () => {
+    const line = { ...emptyDraft(TODAY, null), effectValue: '15' };
+    const away = switchType(line, {}, 'basket');
+    expect(away.draft).toMatchObject({ effectKind: 'percent_off', effectValue: '15' });
+    expect(switchType(away.draft, away.setAside, 'basket')).toEqual(away);
+    const edited = { ...away.draft, effectKind: 'basket_amount_off' as const, effectValue: '5' };
+    const back = switchType(edited, away.setAside, 'displayed_price');
+    expect(back.draft).toMatchObject({ effectKind: 'percent_off', effectValue: '15' });
+    expect(switchType(back.draft, back.setAside, 'basket').draft).toMatchObject({
+      effectKind: 'basket_amount_off',
+      effectValue: '5',
+    });
   });
 
   it('envoie « Cumulable » aux deux points, et la garde en changeant d’acheminement (§ 16, M7)', () => {

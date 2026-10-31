@@ -119,7 +119,74 @@ const textInputs = (root: HTMLElement) => [
   ...root.querySelectorAll<HTMLInputElement>('input:not([type=checkbox]):not([type=search])'),
 ];
 
+const typeChoice = (root: HTMLElement, label: string) =>
+  [...root.querySelectorAll<HTMLButtonElement>('fold-view-toggle button')].find((entry) =>
+    entry.textContent?.includes(label),
+  );
+
 describe('PromotionPage', () => {
+  describe('le genre de remise se choisit d’abord', () => {
+    it('la première carte est le choix du genre, puis la valeur', async () => {
+      const { root } = await render({ inputs: {} });
+      const text = root.textContent ?? '';
+      expect(text.indexOf('Quel genre de remise ?')).toBeGreaterThan(-1);
+      expect(text.indexOf('Quel genre de remise ?')).toBeLessThan(
+        text.indexOf('Que reçoit le client (valeur de la réduction) ?'),
+      );
+      expect(typeChoice(root, 'Baisser le prix des articles')?.getAttribute('aria-checked')).toBe(
+        'true',
+      );
+      expect(text).not.toContain('Où joue la promotion');
+    });
+
+    it('baisser le prix : ni acheminement, ni montant sur le panier ; tarif négocié proposé', async () => {
+      const { root } = await render({ inputs: {} });
+      const text = root.textContent ?? '';
+      expect(text).not.toContain('Sur quel mode d’acheminement');
+      expect(text).toContain('Aussi pour les clients à tarif négocié');
+      expect(text).not.toContain('Montant sur le panier');
+    });
+
+    it('remise sur le panier : l’acheminement apparaît, le tarif négocié disparaît', async () => {
+      const { root, fixture } = await render({ inputs: {} });
+      typeChoice(root, 'Remise sur le panier')?.click();
+      fixture.detectChanges();
+      const text = root.textContent ?? '';
+      expect(text).toContain('Sur quel mode d’acheminement');
+      expect(text).not.toContain('Aussi pour les clients à tarif négocié');
+      expect(text).toContain('Le prix au catalogue ne bouge pas');
+    });
+
+    it('un aller-retour ne perd pas ce qui était propre au genre, et le résumé suit', async () => {
+      const { root, fixture } = await render({
+        get: async () =>
+          promotionView({
+            effect: { kind: 'fixed_unit_price', value: 120_000 },
+            stacksOverMercuriale: true,
+          }),
+      });
+      const before = root.querySelector('fold-callout')?.textContent;
+      typeChoice(root, 'Remise sur le panier')?.click();
+      fixture.detectChanges();
+      expect(root.querySelector('fold-callout')?.textContent).not.toBe(before);
+      expect(textInputs(root).some((field) => field.value === '1,2')).toBe(false);
+      typeChoice(root, 'Baisser le prix des articles')?.click();
+      fixture.detectChanges();
+      expect(root.querySelector('fold-callout')?.textContent).toBe(before);
+      expect(textInputs(root).some((field) => field.value === '1,2')).toBe(true);
+      // Revenue à l'identique : rien à enregistrer.
+      expect(button(root, 'Enregistrer')?.disabled).toBe(true);
+    });
+
+    it('en lecture seule, le genre se lit et ne se change pas', async () => {
+      const { root } = await render({ permissions: ['lfc_site_settings:read'] });
+      const choices = [...root.querySelectorAll<HTMLButtonElement>('fold-view-toggle button')];
+      expect(choices).toHaveLength(2);
+      expect(choices.every((choice) => choice.disabled)).toBe(true);
+      expect(root.textContent).toContain('Baisser le prix des articles');
+    });
+  });
+
   it('ouvre une promotion directement en champs, avec son résumé en une phrase', async () => {
     const { root } = await render();
     expect(textInputs(root).map((field) => field.value)).toContain('Croissants');

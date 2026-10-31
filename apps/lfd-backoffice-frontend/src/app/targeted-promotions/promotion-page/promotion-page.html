@@ -72,6 +72,23 @@
         <div class="block">
           <fold-element-title
             variant="title"
+            title="Quel genre de remise ?"
+            [subtitle]="typeHint()"
+          />
+          <fold-view-toggle
+            ariaLabel="Genre de remise"
+            activeStyle="accent"
+            [options]="typeOptions()"
+            [value]="draft().fulfillmentKind"
+            (valueChange)="setType($event)"
+          />
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
             title="Que reçoit le client (valeur de la réduction) ?"
             [subtitle]="
               atLine()
@@ -82,7 +99,7 @@
           <div class="pair">
             <fold-listbox
               label="Remise"
-              hint="Le montant sur le panier se choisit en remise au panier."
+              [hint]="effectHint()"
               [options]="effectOptions()"
               [value]="draft().effectKind"
               [disabled]="readOnly()"
@@ -187,21 +204,13 @@
         </div>
       </fold-card>
 
-      <fold-card>
-        <div class="block">
-          <fold-element-title
-            variant="title"
-            title="Sur quel mode d’acheminement et de consommation ?"
-          />
-          <fold-listbox
-            label="Où joue la promotion"
-            [hint]="fulfillmentHint()"
-            [options]="fulfillmentOptions"
-            [value]="draft().fulfillmentKind"
-            [disabled]="readOnly()"
-            (selectionChange)="setFulfillment($event)"
-          />
-          @if (!atLine()) {
+      @if (!atLine()) {
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Sur quel mode d’acheminement et de consommation ?"
+            />
             <div class="reach">
               <fold-checkbox
                 label="Retrait"
@@ -264,9 +273,9 @@
                 </div>
               }
             </div>
-          }
-        </div>
-      </fold-card>
+          </div>
+        </fold-card>
+      }
 
       <fold-card>
         <div class="block">
