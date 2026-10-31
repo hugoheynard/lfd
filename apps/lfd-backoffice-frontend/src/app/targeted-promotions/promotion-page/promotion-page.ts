@@ -55,6 +55,7 @@ import {
   withFulfillment,
   withScopeMode,
   withTargets,
+  type DraftReach,
   type PromotionDraft,
 } from '../promotion-draft';
 import { STATE_LABEL, STATE_VARIANT, originPhrase } from '../promotion-format';
@@ -62,8 +63,9 @@ import { draftSummary } from '../promotion-summary';
 import { PromotionsService } from '../promotions.service';
 import {
   EFFECT_LABEL,
-  FULFILLMENT_HINT,
-  FULFILLMENT_LABEL,
+  FULFILLMENT_OPTIONS,
+  PICKUP_REACH_OPTIONS,
+  DELIVERY_REACH_OPTIONS,
   SCOPE_OPTIONS,
   TARGET_LABEL,
 } from '../promotion-words';
@@ -83,7 +85,8 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
  * Sans `id`, elle pose ; avec, elle révise (le motif part au journal). Sans
  * `b2b_pricing:write`, avant la bascule de la source, ou une fois archivée,
  * les mêmes champs sont désactivés et rien ne s'enregistre. `pickupId`
- * pré-remplit « Retrait · ce point », depuis la fiche d'un site.
+ * pré-remplit « En remise au panier · retrait à ce point », depuis la fiche
+ * d'un site.
  *
  * Elle ne juge que la forme (`draftProblem`) ; tout refus métier vient du
  * serveur, nommé, et reste affiché sans rien perdre de la saisie.
@@ -139,7 +142,15 @@ export class PromotionPage {
   protected readonly reason = signal('');
   protected readonly acting = signal(false);
   private readonly catalogue = signal<CatalogueChoices>(NO_CHOICES);
-  private readonly pickupNames = signal<ReadonlyMap<string, string>>(new Map());
+  /** Les points proposés aujourd'hui ; `null` = la liste ne se lit pas. */
+  private readonly activePickups = signal<ReadonlyMap<string, string> | null>(null);
+  /** Tous les sites, archivés compris — pour nommer un point archivé. */
+  private readonly siteNames = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly zoneNames = signal<ReadonlyMap<string, string>>(new Map());
+  /** Les noms connus d'un point : actif d'abord, puis la palette. */
+  private readonly pickupNames = computed(
+    () => new Map([...this.siteNames(), ...(this.activePickups() ?? new Map<string, string>())]),
+  );
 
   protected readonly isNew = computed(() => this.id() === undefined);
   /** Le nom de l'original, pour une copie ; `null` sinon. */
@@ -159,7 +170,7 @@ export class PromotionPage {
     this.isNew() ? 'Nouvelle promotion' : (this.promotion()?.internalName ?? 'Promotion'),
   );
   protected readonly summary = computed(() =>
-    draftSummary(this.draft(), choiceNames(this.catalogue()), this.pickupNames()),
+    draftSummary(this.draft(), choiceNames(this.catalogue()), this.pickupNames(), this.zoneNames()),
   );
   protected readonly problem = computed(() => draftProblem(this.draft()));
   /** Reposée à l'identique, une révision ne trace rien : rien à enregistrer. */
@@ -181,19 +192,19 @@ export class PromotionPage {
   });
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
-  protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'any');
-  protected readonly fulfillmentHint = computed(
-    () => FULFILLMENT_HINT[this.draft().fulfillmentKind],
-  );
+  protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'displayed_price');
   /** Le cumul dit son effet au point où il joue : la ligne, ou le panier (M7). */
   protected readonly cumulativeHint = computed(() =>
     this.atLine()
       ? "Elle s'ajoute aux autres promotions cumulables du même article (−20 % puis −15 % du reste = −32 %). Sinon, le client reçoit la plus avantageuse."
       : "Sa remise s'ajoute aux autres remises de panier cumulables (−10 % puis −5 % du reste), cinq au plus. Sinon, le client reçoit la plus avantageuse.",
   );
-  protected readonly fulfillmentOptions = Object.entries(FULFILLMENT_LABEL).map(
-    ([value, label]) => ({ value: value as PromotionDraft['fulfillmentKind'], label }),
+  protected readonly fulfillmentOptions = FULFILLMENT_OPTIONS;
+  protected readonly fulfillmentHint = computed(
+    () => FULFILLMENT_OPTIONS.find((option) => option.value === this.draft().fulfillmentKind)?.hint,
   );
+  protected readonly pickupReachOptions = PICKUP_REACH_OPTIONS;
+  protected readonly deliveryReachOptions = DELIVERY_REACH_OPTIONS;
   protected readonly scopeOptions = SCOPE_OPTIONS;
   protected readonly effectOptions = computed(() =>
     effectsFor(this.draft().fulfillmentKind).map((kind) => ({
@@ -201,9 +212,30 @@ export class PromotionPage {
       label: EFFECT_LABEL[kind],
     })),
   );
-  protected readonly pickupOptions = computed(() =>
-    [...this.pickupNames()].map(([value, label]) => ({ value, label })),
-  );
+  /**
+   * Les points proposables : les sites actifs, plus ceux que la promotion
+   * garde et qui ne le sont plus — visibles, nommés « archivé », pour qu'on
+   * les retire sciemment plutôt qu'en silence.
+   */
+  protected readonly pickupOptions = computed(() => {
+    const active = this.activePickups();
+    const options = [...(active ?? [])].map(([value, label]) => ({ value, label }));
+    const kept = this.draft().pickup.ids.filter((id) => !active?.has(id));
+    return [
+      ...options,
+      ...kept.map((id) => {
+        const name = this.siteNames().get(id) ?? id;
+        return { value: id, label: active === null ? name : `${name} (archivé)` };
+      }),
+    ];
+  });
+  /** Les zones proposables ; une zone visée ne se supprime pas (refus serveur). */
+  protected readonly zoneOptions = computed(() => {
+    const known = this.zoneNames();
+    const options = [...known].map(([value, label]) => ({ value, label }));
+    const kept = this.draft().delivery.ids.filter((id) => !known.has(id));
+    return [...options, ...kept.map((id) => ({ value: id, label: id }))];
+  });
   /** Les listes de la portée : une par cible du point, et par sens pour produit et déclinaison. */
   protected readonly scopeLists = computed(() => {
     const draft = this.draft();
@@ -239,6 +271,12 @@ export class PromotionPage {
     this.draft.update((draft) => withFulfillment(draft, kind));
   }
 
+  /** Retrait ou livraison : la case, « tous / certains », ou la sélection. */
+  protected setReach(side: 'pickup' | 'delivery', change: Partial<DraftReach>): void {
+    this.draft.update((draft) => ({ ...draft, [side]: { ...draft[side], ...change } }));
+    this.refusal.set(null);
+  }
+
   protected setScopeMode(mode: 'all_except' | 'only'): void {
     this.draft.update((draft) => withScopeMode(draft, mode));
   }
@@ -262,11 +300,13 @@ export class PromotionPage {
   ): Promise<void> {
     this.state.set('loading');
     try {
-      const [catalogue, names, view, source, original] = await Promise.all([
+      const [catalogue, active, sites, zones, view, source, original] = await Promise.all([
         // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
         // le lire voit quand même la promotion, ses cibles nommées par elle.
         this.catalogueService.published().then(catalogueChoicesOf, () => null),
-        this.api.pickupNames(),
+        this.api.activePickupNames(),
+        this.api.everySiteName(),
+        this.api.zoneNames(),
         id === null ? Promise.resolve(null) : this.api.get(id),
         id === null ? Promise.resolve(null) : this.api.source(),
         id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
@@ -274,7 +314,9 @@ export class PromotionPage {
       this.catalogueMissing.set(catalogue === null);
       const rules = (view ?? original)?.scope.rules ?? [];
       this.catalogue.set(withRuleTargets(catalogue ?? NO_CHOICES, rules));
-      this.pickupNames.set(names);
+      this.activePickups.set(active);
+      this.siteNames.set(sites);
+      this.zoneNames.set(zones);
       this.promotion.set(view);
       this.sourceEditable.set(source?.editable ?? false);
       this.copiedFrom.set(original?.internalName ?? null);

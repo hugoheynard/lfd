@@ -36,6 +36,8 @@ interface Setup {
   readonly catalogue?: () => Promise<PublishedCatalogView>;
   readonly revise?: () => Promise<void>;
   readonly pose?: () => Promise<string>;
+  /** Les points actifs ; `null` = la liste ne se lit pas (défaut : Cœur de station). */
+  readonly active?: ReadonlyMap<string, string> | null;
 }
 
 async function render(setup: Setup = {}) {
@@ -49,7 +51,18 @@ async function render(setup: Setup = {}) {
       {
         provide: PromotionsService,
         useValue: {
-          pickupNames: async () => new Map([['pk_coeur', 'Cœur de station']]),
+          activePickupNames: async () =>
+            setup.active === undefined ? new Map([['pk_coeur', 'Cœur de station']]) : setup.active,
+          everySiteName: async () =>
+            new Map([
+              ['pk_coeur', 'Cœur de station'],
+              ['pk_vieux', 'Vieux comptoir'],
+            ]),
+          zoneNames: async () =>
+            new Map([
+              ['z_centre', 'Centre'],
+              ['z_nord', 'Nord'],
+            ]),
           get: setup.get ?? (async () => promotionView({ internalName: 'Croissants' })),
           source: async () => ({
             source: setup.editable === false ? 'legacy' : 'promotions',
@@ -133,7 +146,7 @@ describe('PromotionPage', () => {
 
   it('dit la conséquence de l’acheminement pour le client', async () => {
     const atLine = await render();
-    expect(atLine.root.textContent).toContain('Le prix baisse au catalogue');
+    expect(atLine.root.textContent).toContain('Le prix de l’article baisse au catalogue');
     TestBed.resetTestingModule();
     const atBasket = await render({
       get: async () =>
@@ -143,6 +156,105 @@ describe('PromotionPage', () => {
         }),
     });
     expect(atBasket.root.textContent).toContain('Le prix au catalogue ne bouge pas');
+  });
+
+  describe('l’acheminement se coche', () => {
+    const SET = {
+      kind: 'basket',
+      pickup: { points: ['pk_coeur', 'pk_vieux'] },
+      delivery: { zones: ['z_centre'] },
+    } as const;
+    const checkbox = (root: HTMLElement, label: string) =>
+      [...root.querySelectorAll('fold-checkbox')]
+        .find((box) => box.textContent?.includes(label))
+        ?.querySelector('input');
+
+    it('dans le prix affiché, aucune case : l’acheminement n’a pas à être choisi', async () => {
+      const { root } = await render();
+      expect(checkbox(root, 'Retrait')).toBeUndefined();
+      expect(checkbox(root, 'Livraison')).toBeUndefined();
+    });
+
+    it('montre l’ensemble entier : deux cases cochées, les points et la zone nommés', async () => {
+      const { root } = await render({
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      expect(checkbox(root, 'Retrait')?.checked).toBe(true);
+      expect(checkbox(root, 'Livraison')?.checked).toBe(true);
+      expect(root.textContent).toContain(
+        'au retrait à Cœur de station et Vieux comptoir et en livraison dans la zone Centre',
+      );
+    });
+
+    it('un point archivé que la promotion garde reste proposé, dit « archivé »', async () => {
+      const { fixture } = await render({
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      const options = fixture.componentInstance['pickupOptions']();
+      expect(options).toEqual([
+        { value: 'pk_coeur', label: 'Cœur de station' },
+        { value: 'pk_vieux', label: 'Vieux comptoir (archivé)' },
+      ]);
+    });
+
+    it('sans la liste des points actifs, ne dit aucun point archivé à tort', async () => {
+      const { fixture } = await render({
+        active: null,
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      expect(fixture.componentInstance['pickupOptions']().map((option) => option.label)).toEqual([
+        'Cœur de station',
+        'Vieux comptoir',
+      ]);
+    });
+
+    it('décocher tout est une saisie incomplète, et rien ne s’enregistre', async () => {
+      const { root, fixture, sent } = await render({
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      checkbox(root, 'Retrait')?.click();
+      fixture.detectChanges();
+      checkbox(root, 'Livraison')?.click();
+      fixture.detectChanges();
+      expect(root.textContent).toContain('Cochez le retrait, la livraison, ou les deux.');
+      expect(button(root, 'Enregistrer')?.disabled).toBe(true);
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised).toEqual([]);
+    });
+
+    it('« certaines zones » sans zone choisie est incomplet ; une zone ajoutée part avec le reste', async () => {
+      const { root, fixture, sent } = await render({
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      const page = fixture.componentInstance;
+      page['setReach']('delivery', { ids: [] });
+      fixture.detectChanges();
+      expect(root.textContent).toContain('Choisissez au moins une zone de livraison');
+      page['setReach']('delivery', { ids: ['z_nord', 'z_centre'] });
+      fixture.detectChanges();
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised[0]?.terms.fulfillment).toEqual({
+        kind: 'basket',
+        pickup: { points: ['pk_coeur', 'pk_vieux'] },
+        delivery: { zones: ['z_centre', 'z_nord'] },
+      });
+    });
+
+    it('une copie pour un autre public recopie l’ensemble entier', async () => {
+      const { root, fixture, sent } = await render({
+        inputs: { from: 'promo_1' },
+        get: async () => promotionView({ applicationPoint: 'basket', fulfillment: SET }),
+      });
+      expect(checkbox(root, 'Retrait')?.checked).toBe(true);
+      expect(checkbox(root, 'Livraison')?.checked).toBe(true);
+      checkbox(root, 'Tout le monde')?.click();
+      fixture.detectChanges();
+      button(root, 'Poser la promotion')?.click();
+      await fixture.whenStable();
+      expect(sent.posed[0]?.fulfillment).toEqual(SET);
+    });
   });
 
   describe('sans le droit d’écrire', () => {

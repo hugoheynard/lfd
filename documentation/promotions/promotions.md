@@ -319,6 +319,26 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 `b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
 `:id`.
 
+**L'acheminement se coche** (2026-10-31,
+[`plan-acheminements-a-cocher.md`](plan-acheminements-a-cocher.md) § 5). La
+carte « Sur quel mode d’acheminement et de consommation ? » s'ouvre sur un
+choix, « Où joue la promotion » : **Dans le prix affiché** (le prix de
+l'article baisse au catalogue, pour tous les acheminements) ou **En remise au
+panier** (la remise s'applique au panier selon l'acheminement coché). Au
+panier viennent deux cases, **Retrait** et **Livraison** ; sous chaque case
+cochée, « Tous les points » / « Certains points » (ou « Toutes les zones » /
+« Certaines zones ») et, pour « certains », un `fold-multiselect` des sites
+actifs ou des zones (`GET /delivery-zones`). Un point archivé que la
+promotion garde reste dans la liste, suffixé « (archivé) » — son nom vient de
+la palette des sites ; sans la liste des points actifs, rien n'est dit
+archivé. Rien de coché, ou une sélection vide, est une saisie incomplète (le
+serveur refuse aussi). Le brouillon porte l'ensemble entier
+(`promotion-draft.ts`, `DraftReach` par côté — une case décochée garde sa
+sélection) ; le résumé le dit (« au retrait à L'adroit et en livraison dans
+la zone Centre »), la liste aussi (« Retrait · … + Livraison · … »), et
+« Dupliquer pour un autre public » le recopie. Le filtre de la liste par
+point est tenu par le serveur (`?pickupId=`).
+
 ### 2.10 Journal
 
 Actes `posed`, `paused`, `resumed`, `archived`, `replaced`

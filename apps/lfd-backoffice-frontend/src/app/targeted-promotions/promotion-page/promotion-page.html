@@ -82,7 +82,7 @@
           <div class="pair">
             <fold-listbox
               label="Remise"
-              hint="Le montant sur le panier se choisit avec un acheminement précis."
+              hint="Le montant sur le panier se choisit en remise au panier."
               [options]="effectOptions()"
               [value]="draft().effectKind"
               [disabled]="readOnly()"
@@ -194,21 +194,76 @@
             title="Sur quel mode d’acheminement et de consommation ?"
           />
           <fold-listbox
-            label="Acheminement"
+            label="Où joue la promotion"
             [hint]="fulfillmentHint()"
             [options]="fulfillmentOptions"
             [value]="draft().fulfillmentKind"
             [disabled]="readOnly()"
             (selectionChange)="setFulfillment($event)"
           />
-          @if (draft().fulfillmentKind === 'pickup_point') {
-            <fold-listbox
-              label="Point de retrait"
-              [options]="pickupOptions()"
-              [value]="draft().pickupId"
-              [disabled]="readOnly()"
-              (selectionChange)="edit({ pickupId: $event })"
-            />
+          @if (!atLine()) {
+            <div class="reach">
+              <fold-checkbox
+                label="Retrait"
+                hint="La remise s'applique quand le client vient chercher sa commande."
+                [checked]="draft().pickup.on"
+                [disabled]="readOnly()"
+                (checkedChange)="setReach('pickup', { on: $event })"
+              />
+              @if (draft().pickup.on) {
+                <div class="pair">
+                  <fold-listbox
+                    label="Points de retrait"
+                    [options]="pickupReachOptions"
+                    [value]="draft().pickup.all"
+                    [disabled]="readOnly()"
+                    (selectionChange)="setReach('pickup', { all: $event })"
+                  />
+                  @if (!draft().pickup.all) {
+                    <fold-multiselect
+                      searchable
+                      label="Lesquels"
+                      placeholder="Aucun"
+                      [options]="pickupOptions()"
+                      [value]="draft().pickup.ids"
+                      [disabled]="readOnly()"
+                      (valueChange)="setReach('pickup', { ids: $event })"
+                    />
+                  }
+                </div>
+              }
+            </div>
+            <div class="reach">
+              <fold-checkbox
+                label="Livraison"
+                hint="La remise s'applique quand le client se fait livrer."
+                [checked]="draft().delivery.on"
+                [disabled]="readOnly()"
+                (checkedChange)="setReach('delivery', { on: $event })"
+              />
+              @if (draft().delivery.on) {
+                <div class="pair">
+                  <fold-listbox
+                    label="Zones de livraison"
+                    [options]="deliveryReachOptions"
+                    [value]="draft().delivery.all"
+                    [disabled]="readOnly()"
+                    (selectionChange)="setReach('delivery', { all: $event })"
+                  />
+                  @if (!draft().delivery.all) {
+                    <fold-multiselect
+                      searchable
+                      label="Lesquelles"
+                      placeholder="Aucune"
+                      [options]="zoneOptions()"
+                      [value]="draft().delivery.ids"
+                      [disabled]="readOnly()"
+                      (valueChange)="setReach('delivery', { ids: $event })"
+                    />
+                  }
+                </div>
+              }
+            </div>
           }
         </div>
       </fold-card>

@@ -24,7 +24,8 @@ describe('draftSummary', () => {
             { kind: 'individuals_registered', companyId: null },
           ],
           rules: [{ target: 'category', targetId: 'c_choc', eligible: false }],
-          fulfillmentKind: 'delivery',
+          fulfillmentKind: 'basket',
+          delivery: { on: true, all: true, ids: [] },
         }),
         NAMES,
         PICKUPS,
@@ -42,8 +43,8 @@ describe('draftSummary', () => {
   it('nomme le point, la sélection et la fin (dernier jour couvert, la veille de la borne)', () => {
     const phrase = draftSummary(
       draft({
-        fulfillmentKind: 'pickup_point',
-        pickupId: 'pk_coeur',
+        fulfillmentKind: 'basket',
+        pickup: { on: true, all: false, ids: ['pk_coeur'] },
         scopeMode: 'only',
         rules: [{ target: 'category', targetId: 'c_pains', eligible: true }],
         validTo: '2026-12-01',
@@ -54,6 +55,43 @@ describe('draftSummary', () => {
     expect(phrase).toContain('seulement sur Pains');
     expect(phrase).toContain('au retrait à Cœur de station');
     expect(phrase).toContain('du 1 novembre 2026 au 30 novembre 2026');
+  });
+
+  it('dit l’ensemble : les points et les zones, nommés', () => {
+    const ZONES = new Map([
+      ['z_centre', 'Centre'],
+      ['z_nord', 'Nord'],
+    ]);
+    const both = draftSummary(
+      draft({
+        fulfillmentKind: 'basket',
+        pickup: { on: true, all: false, ids: ['pk_coeur', 'pk_adroit'] },
+        delivery: { on: true, all: false, ids: ['z_centre'] },
+      }),
+      NAMES,
+      new Map([...PICKUPS, ['pk_adroit', "L'adroit"]]),
+      ZONES,
+    );
+    expect(both).toContain(
+      "au retrait à Cœur de station et L'adroit et en livraison dans la zone Centre",
+    );
+    const zones = draftSummary(
+      draft({
+        fulfillmentKind: 'basket',
+        pickup: { on: true, all: true, ids: [] },
+        delivery: { on: true, all: false, ids: ['z_centre', 'z_nord'] },
+      }),
+      NAMES,
+      PICKUPS,
+      ZONES,
+    );
+    expect(zones).toContain('au retrait et en livraison dans les zones Centre et Nord');
+    expect(draftSummary(draft({ fulfillmentKind: 'basket' }), NAMES, PICKUPS)).toContain(
+      'à un acheminement à choisir',
+    );
+    expect(draftSummary(draft({}), NAMES, PICKUPS)).toContain(
+      "dans le prix affiché, quel que soit l'acheminement",
+    );
   });
 
   it('compte au-delà de trois exceptions', () => {

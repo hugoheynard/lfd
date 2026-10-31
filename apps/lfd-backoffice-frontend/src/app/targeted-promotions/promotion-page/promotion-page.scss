@@ -4,6 +4,12 @@
   gap: var(--fold-space-md);
 }
 
+.reach {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
 .pair {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(12rem, 1fr));

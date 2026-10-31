@@ -14,11 +14,12 @@ export function draftSummary(
   draft: PromotionDraft,
   names: ReadonlyMap<string, string>,
   pickupNames: ReadonlyMap<string, string>,
+  zoneNames: ReadonlyMap<string, string> = new Map(),
 ): string {
   return [
     `${effectPart(draft)} pour ${audiencePart(draft.audiences)}`,
     scopePart(draft, names),
-    fulfillmentPart(draft, pickupNames),
+    fulfillmentPart(draft, pickupNames, zoneNames),
     windowPart(draft),
   ].join(', ');
 }
@@ -82,19 +83,42 @@ function scopePart(draft: PromotionDraft, names: ReadonlyMap<string, string>): s
     : `seulement sur ${shortList(included)}${except}`;
 }
 
-function fulfillmentPart(draft: PromotionDraft, pickupNames: ReadonlyMap<string, string>): string {
-  switch (draft.fulfillmentKind) {
-    case 'any':
-      return "quel que soit l'acheminement";
-    case 'pickup':
-      return 'au retrait';
-    case 'pickup_point':
-      return draft.pickupId === ''
-        ? 'au retrait à un point à choisir'
-        : `au retrait à ${pickupNames.get(draft.pickupId) ?? draft.pickupId}`;
-    case 'delivery':
-      return 'en livraison';
+/**
+ * L'ensemble, en mots : « au retrait à L'adroit et en livraison dans la zone
+ * Centre ». Une sélection se nomme entière — un point oublié dans la phrase
+ * serait un point qu'on croit hors de la promotion.
+ */
+function fulfillmentPart(
+  draft: PromotionDraft,
+  pickupNames: ReadonlyMap<string, string>,
+  zoneNames: ReadonlyMap<string, string>,
+): string {
+  if (draft.fulfillmentKind === 'displayed_price') {
+    return "dans le prix affiché, quel que soit l'acheminement";
   }
+  const parts: string[] = [];
+  const { pickup, delivery } = draft;
+  if (pickup.on) {
+    const points = pickup.ids.map((id) => pickupNames.get(id) ?? id);
+    parts.push(
+      pickup.all
+        ? 'au retrait'
+        : points.length === 0
+          ? 'au retrait à un point à choisir'
+          : `au retrait à ${listed(points)}`,
+    );
+  }
+  if (delivery.on) {
+    const zones = delivery.ids.map((id) => zoneNames.get(id) ?? id);
+    parts.push(
+      delivery.all
+        ? 'en livraison'
+        : zones.length === 0
+          ? 'en livraison dans une zone à choisir'
+          : `en livraison dans ${zones.length === 1 ? 'la zone' : 'les zones'} ${listed(zones)}`,
+    );
+  }
+  return parts.length === 0 ? 'à un acheminement à choisir' : parts.join(' et ');
 }
 
 const DAY = new Intl.DateTimeFormat('fr-FR', {

@@ -13,13 +13,16 @@ import {
 import { promotionView } from '../promotion.testing';
 
 const TODAY = '2026-11-02';
+const OFF = { on: false, all: true, ids: [] };
+const ALL = { on: true, all: true, ids: [] };
 
 describe('le brouillon de l’éditeur des promotions', () => {
-  it('pose « Retrait · ce point » quand on vient de la fiche d’un site', () => {
+  it('pose « au panier · retrait à ce point » quand on vient de la fiche d’un site', () => {
     const draft = emptyDraft(TODAY, 'pk_coeur');
     expect(draft).toMatchObject({
-      fulfillmentKind: 'pickup_point',
-      pickupId: 'pk_coeur',
+      fulfillmentKind: 'basket',
+      pickup: { on: true, all: false, ids: ['pk_coeur'] },
+      delivery: { on: false },
       // L8b : « tous sauf les pros actifs » dit dans les mots de l'arbre.
       audiences: [
         { kind: 'individuals', companyId: null },
@@ -40,7 +43,7 @@ describe('le brouillon de l’éditeur des promotions', () => {
         value: 5_000,
       },
     );
-    const basket = withFulfillment({ ...base, effectValue: '3' }, 'pickup');
+    const basket = withFulfillment({ ...base, effectValue: '3' }, 'basket');
     expect(termsOf({ ...basket, effectKind: 'basket_amount_off' }).effect).toEqual({
       kind: 'basket_amount_off',
       value: 300,
@@ -61,7 +64,7 @@ describe('le brouillon de l’éditeur des promotions', () => {
       ['VIE-001-1'],
       false,
     );
-    const basket = withFulfillment(line, 'pickup');
+    const basket = withFulfillment(line, 'basket');
     expect(basket.effectKind).toBe('percent_off');
     expect(basket.rules).toEqual([]);
   });
@@ -72,9 +75,11 @@ describe('le brouillon de l’éditeur des promotions', () => {
     expect(termsOf(base).cumulative).toBe(false);
     const cumulative = { ...base, cumulative: true };
     expect(termsOf(cumulative).cumulative).toBe(true);
-    const basket = withFulfillment(cumulative, 'pickup');
+    const basket = withFulfillment(cumulative, 'basket');
     expect(basket.cumulative).toBe(true);
-    expect(termsOf({ ...cumulative, fulfillmentKind: 'pickup' }).cumulative).toBe(true);
+    expect(termsOf({ ...cumulative, fulfillmentKind: 'basket', pickup: ALL }).cumulative).toBe(
+      true,
+    );
     expect(draftOf(promotionView({ cumulative: true })).cumulative).toBe(true);
   });
 
@@ -217,7 +222,7 @@ describe('le brouillon → le corps minimal, bords', () => {
   });
 
   it('un montant de panier au centime près ne dérive pas en flottant', () => {
-    const basket = withFulfillment({ ...base, effectValue: '19,99' }, 'pickup');
+    const basket = withFulfillment({ ...base, effectValue: '19,99' }, 'basket');
     expect(termsOf({ ...basket, effectKind: 'basket_amount_off' }).effect.value).toBe(1999);
   });
 
@@ -240,37 +245,66 @@ describe('le brouillon → le corps minimal, bords', () => {
     }
   });
 
-  it('l’identifiant du point n’est envoyé que pour « Retrait · un point »', () => {
-    const point = { ...base, pickupId: 'pk_coeur' };
-    expect(termsOf({ ...point, fulfillmentKind: 'pickup_point' }).fulfillment).toEqual({
+  it('envoie l’ensemble coché : rien, tous, ou la sélection triée, de chaque côté', () => {
+    const basket = { ...base, fulfillmentKind: 'basket' as const };
+    expect(
+      termsOf({ ...basket, pickup: { on: true, all: false, ids: ['pk_b', 'pk_a'] }, delivery: OFF })
+        .fulfillment,
+    ).toEqual({
       kind: 'basket',
-      pickup: { points: ['pk_coeur'] },
+      pickup: { points: ['pk_a', 'pk_b'] },
       delivery: 'none',
     });
-    expect(termsOf({ ...point, fulfillmentKind: 'any' }).fulfillment).toEqual({
-      kind: 'displayed_price',
-    });
-    expect(termsOf({ ...point, fulfillmentKind: 'pickup' }).fulfillment).toEqual({
+    expect(termsOf({ ...basket, pickup: ALL, delivery: ALL }).fulfillment).toEqual({
       kind: 'basket',
       pickup: 'all',
-      delivery: 'none',
+      delivery: 'all',
     });
-    expect(termsOf({ ...point, fulfillmentKind: 'delivery' }).fulfillment).toEqual({
+    expect(
+      termsOf({ ...basket, pickup: OFF, delivery: { on: true, all: false, ids: ['z_centre'] } })
+        .fulfillment,
+    ).toEqual({
       kind: 'basket',
       pickup: 'none',
-      delivery: 'all',
+      delivery: { zones: ['z_centre'] },
+    });
+    // Dans le prix affiché, ce qui est coché au panier ne part pas.
+    expect(
+      termsOf({ ...base, fulfillmentKind: 'displayed_price', pickup: ALL }).fulfillment,
+    ).toEqual({
+      kind: 'displayed_price',
     });
   });
 
-  it('« mercuriale » ne part qu’au point ligne ; « Cumulable » part aux deux points (M7)', () => {
-    const checked = { ...base, stacksOverMercuriale: true, cumulative: true };
-    expect(termsOf(checked)).toMatchObject({ stacksOverMercuriale: true, cumulative: true });
-    for (const kind of ['pickup', 'pickup_point', 'delivery'] as const) {
-      expect(termsOf({ ...checked, fulfillmentKind: kind })).toMatchObject({
-        stacksOverMercuriale: false,
-        cumulative: true,
-      });
-    }
+  it('une case décochée garde sa sélection : la recocher ne perd rien', () => {
+    const picked = { on: true, all: false, ids: ['pk_coeur'] };
+    const off = termsOf({
+      ...base,
+      fulfillmentKind: 'basket',
+      pickup: { ...picked, on: false },
+      delivery: ALL,
+    });
+    expect(off.fulfillment).toEqual({ kind: 'basket', pickup: 'none', delivery: 'all' });
+    const back = termsOf({ ...base, fulfillmentKind: 'basket', pickup: picked, delivery: ALL });
+    expect(back.fulfillment).toMatchObject({ pickup: { points: ['pk_coeur'] } });
+  });
+
+  it('une remise au panier sans acheminement, ou à une sélection vide, est une saisie incomplète', () => {
+    const basket = { ...base, fulfillmentKind: 'basket' as const };
+    expect(draftProblem({ ...basket, pickup: OFF, delivery: OFF })).toBe(
+      'Cochez le retrait, la livraison, ou les deux.',
+    );
+    expect(
+      draftProblem({ ...basket, pickup: { on: true, all: false, ids: [] }, delivery: OFF }),
+    ).toContain('point de retrait');
+    expect(
+      draftProblem({ ...basket, pickup: OFF, delivery: { on: true, all: false, ids: [] } }),
+    ).toContain('zone de livraison');
+    expect(draftProblem({ ...basket, pickup: OFF, delivery: ALL })).toBeNull();
+    // Une liste vide d'un côté DÉCOCHÉ ne bloque rien : elle ne part pas.
+    expect(
+      draftProblem({ ...basket, pickup: { on: false, all: false, ids: [] }, delivery: ALL }),
+    ).toBeNull();
   });
 
   it('une société sans identifiant (null) reste `null` dans le corps, un identifiant est rogné', () => {
@@ -315,6 +349,34 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
     });
   });
 
+  /**
+   * Régression : l'écran lisait un ensemble par son premier élément — une
+   * promotion à deux points et une zone, ré-enregistrée, perdait le second
+   * point et la livraison (lot écran du plan des acheminements, 2026-10-31).
+   */
+  it('aller-retour sans perte d’un ensemble à plusieurs points et plusieurs zones', () => {
+    const fulfillment = {
+      kind: 'basket',
+      pickup: { points: ['pk_adroit', 'pk_coeur'] },
+      delivery: { zones: ['z_centre', 'z_nord'] },
+    } as const;
+    const view = promotionView({ fulfillment, applicationPoint: 'basket' });
+    expect(draftOf(view)).toMatchObject({
+      fulfillmentKind: 'basket',
+      pickup: { on: true, all: false, ids: ['pk_adroit', 'pk_coeur'] },
+      delivery: { on: true, all: false, ids: ['z_centre', 'z_nord'] },
+    });
+    expect(termsOf(draftOf(view)).fulfillment).toEqual(fulfillment);
+    for (const other of [
+      { kind: 'basket', pickup: 'all', delivery: { zones: ['z_centre'] } },
+      { kind: 'basket', pickup: { points: ['pk_coeur'] }, delivery: 'all' },
+      { kind: 'basket', pickup: 'none', delivery: 'all' },
+      { kind: 'displayed_price' },
+    ] as const) {
+      expect(termsOf(draftOf(promotionView({ fulfillment: other }))).fulfillment).toEqual(other);
+    }
+  });
+
   it('une valeur décimale se relit puis se renvoie à l’identique, au millicentime près', () => {
     for (const value of [1, 7, 12_345, 99_999, 100_001]) {
       const view = promotionView({ effect: { kind: 'unit_amount_off', value } });
@@ -338,7 +400,11 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
 
   it('une copie pour un autre public garde tout sauf le public, et marque son nom', () => {
     const original = promotionView({
-      fulfillment: { kind: 'basket', pickup: 'none', delivery: 'all' },
+      fulfillment: {
+        kind: 'basket',
+        pickup: { points: ['pk_a', 'pk_b'] },
+        delivery: { zones: ['z_centre'] },
+      },
       applicationPoint: 'basket',
       cumulative: true,
       conditions: [{ kind: 'min_quantity', value: 3 }],
@@ -348,6 +414,7 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
     const { audiences: _kept, internalName: _name, ...same } = draftOf(original);
     expect(rest).toEqual(same);
     expect(copy.audiences).toEqual([]);
+    expect(termsOf(copy).fulfillment).toEqual(original.fulfillment);
     expect(internalName).toBe(`${original.internalName} (copie à revoir)`);
     expect(draftProblem(copy)).toBe('Cochez au moins un public.');
   });

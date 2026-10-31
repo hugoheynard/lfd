@@ -21,6 +21,7 @@ async function render(list: () => Promise<PromotionListView>, pickupId?: string)
             return list();
           },
           pickupNames: async () => new Map([['pk_coeur', 'Cœur de station']]),
+          zoneNames: async () => new Map([['z_centre', 'Centre']]),
         },
       },
     ],

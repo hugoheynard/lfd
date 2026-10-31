@@ -1,8 +1,10 @@
 # Plan — l'acheminement d'une promotion se coche
 
-> 📝 **Plan du 2026-10-31**, contredit deux fois par vitruve (§ 8, § 9 font foi), prêt à bâtir. Touche l'**argent** (où la remise
-> s'applique) et porte une **migration** de données : `vitruve` avant le
-> bâti. Rien n'est bâti.
+> ✅ **Bâti le 2026-10-31** — le serveur au commit `0dec40d6e`, l'écran du
+> back-office le même jour (carte « Sur quel mode d'acheminement et de
+> consommation », cf. [`promotions.md`](promotions.md) § 2.9). Plan du
+> 2026-10-31, contredit deux fois par vitruve (§ 8, § 9 font foi). Touche
+> l'**argent** (où la remise s'applique) et porte une **migration** de données.
 
 ## 1. La demande (Hugo, 2026-10-31)
 

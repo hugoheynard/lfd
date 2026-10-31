@@ -11,23 +11,33 @@ export const EFFECT_LABEL: Readonly<Record<PromotionEffectKindValue, string>> = 
   basket_amount_off: 'Montant sur le panier (€ HT)',
 };
 
-export const FULFILLMENT_LABEL: Readonly<Record<DraftFulfillmentKind, string>> = {
-  any: 'Quel que soit l’acheminement',
-  pickup: 'Au retrait, à tous les points',
-  pickup_point: 'Au retrait, à un point',
-  delivery: 'En livraison',
-};
+/** Où joue la promotion, et l'effet pour le client — dit sous le choix. */
+export const FULFILLMENT_OPTIONS: readonly {
+  readonly value: DraftFulfillmentKind;
+  readonly label: string;
+  readonly hint: string;
+}[] = [
+  {
+    value: 'displayed_price',
+    label: 'Dans le prix affiché',
+    hint: 'Le prix de l’article baisse au catalogue, pour tous les acheminements : le client voit le prix remisé avant de commander.',
+  },
+  {
+    value: 'basket',
+    label: 'En remise au panier',
+    hint: 'Le prix au catalogue ne bouge pas : la remise s’applique au panier quand le client choisit un acheminement coché ci-dessous.',
+  },
+];
 
-/** La conséquence, dite au client : le prix affiché, ou la remise au panier. */
-export const FULFILLMENT_HINT: Readonly<Record<DraftFulfillmentKind, string>> = {
-  any: 'Le prix baisse au catalogue : le client voit le prix remisé avant de commander, sur chaque ligne.',
-  pickup:
-    'Le prix au catalogue ne bouge pas : la remise s’applique au panier quand le client choisit le retrait.',
-  pickup_point:
-    'Le prix au catalogue ne bouge pas : la remise s’applique au panier quand le client choisit ce point.',
-  delivery:
-    'Le prix au catalogue ne bouge pas : la remise s’applique au panier quand le client choisit la livraison.',
-};
+export const PICKUP_REACH_OPTIONS = [
+  { value: true, label: 'Tous les points' },
+  { value: false, label: 'Certains points' },
+] as const;
+
+export const DELIVERY_REACH_OPTIONS = [
+  { value: true, label: 'Toutes les zones' },
+  { value: false, label: 'Certaines zones' },
+] as const;
 
 export const TARGET_LABEL: Readonly<Record<PromotionScopeTargetValue, string>> = {
   category: 'Familles',

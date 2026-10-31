@@ -117,13 +117,13 @@ export function audiencesPhrase(audiences: PromotionView['audiences']): string {
 }
 
 /**
- * L'acheminement en une ligne ; les points nommés quand on connaît leur nom.
- * Les zones restent dites par leur identifiant jusqu'au lot de l'écran
- * (`documentation/promotions/plan-acheminements-a-cocher.md`).
+ * L'acheminement en une ligne ; les points et les zones nommés quand on
+ * connaît leur nom, l'identifiant sinon.
  */
 export function fulfillmentPhrase(
   fulfillment: PromotionView['fulfillment'],
   pickupNames: ReadonlyMap<string, string>,
+  zoneNames: ReadonlyMap<string, string> = new Map(),
 ): string {
   if (fulfillment.kind === 'displayed_price') {
     return 'Tous les acheminements';
@@ -136,9 +136,9 @@ export function fulfillmentPhrase(
     parts.push(`Retrait · ${pickup.points.map((id) => pickupNames.get(id) ?? id).join(', ')}`);
   }
   if (delivery === 'all') {
-    parts.push('Livraison');
+    parts.push('Livraison · toutes les zones');
   } else if (delivery !== 'none') {
-    parts.push(`Livraison · ${delivery.zones.join(', ')}`);
+    parts.push(`Livraison · ${delivery.zones.map((id) => zoneNames.get(id) ?? id).join(', ')}`);
   }
   return parts.join(' + ');
 }
@@ -188,11 +188,12 @@ export function windowPhrase(validFrom: string, validTo: string | null): string 
 export function summaryPhrase(
   view: PromotionView,
   pickupNames: ReadonlyMap<string, string>,
+  zoneNames: ReadonlyMap<string, string> = new Map(),
 ): string {
   return [
     effectPhrase(view.effect),
     audiencesPhrase(view.audiences),
-    fulfillmentPhrase(view.fulfillment, pickupNames),
+    fulfillmentPhrase(view.fulfillment, pickupNames, zoneNames),
   ].join(' · ');
 }
 

@@ -88,6 +88,7 @@ export class PromotionsPage {
   protected readonly state = signal<LoadState>('loading');
   private readonly view = signal<PromotionListView | null>(null);
   protected readonly pickupNames = signal<ReadonlyMap<string, string>>(new Map());
+  private readonly zoneNames = signal<ReadonlyMap<string, string>>(new Map());
   protected readonly tab = signal<PromotionsTab>('active');
 
   protected readonly editable = computed(() => this.view()?.editable ?? false);
@@ -104,7 +105,7 @@ export class PromotionsPage {
   protected readonly stateLabel = (view: PromotionView): string => STATE_LABEL[view.state];
   protected readonly stateVariant = (view: PromotionView) => STATE_VARIANT[view.state];
   protected readonly summary = (view: PromotionView): string =>
-    summaryPhrase(view, this.pickupNames());
+    summaryPhrase(view, this.pickupNames(), this.zoneNames());
   protected readonly window = (view: PromotionView): string =>
     windowPhrase(view.validFrom, view.validTo);
 
@@ -123,9 +124,14 @@ export class PromotionsPage {
   private async load(pickupId: string | null): Promise<void> {
     this.state.set('loading');
     try {
-      const [view, names] = await Promise.all([this.api.list(pickupId), this.api.pickupNames()]);
+      const [view, names, zones] = await Promise.all([
+        this.api.list(pickupId),
+        this.api.pickupNames(),
+        this.api.zoneNames(),
+      ]);
       this.view.set(view);
       this.pickupNames.set(names);
+      this.zoneNames.set(zones);
       this.state.set('ready');
     } catch {
       this.state.set('error');

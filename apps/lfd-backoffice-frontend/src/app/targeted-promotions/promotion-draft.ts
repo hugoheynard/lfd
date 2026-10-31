@@ -11,49 +11,73 @@ import { parisToday } from '../shared/paris-today';
 import { minimalAudiences, touchesBranch } from './promotion-audience-tree/audience-selection';
 
 /**
- * **Le choix d'acheminement de l'écran d'aujourd'hui** — UN seul. Le contrat
- * dit désormais un ENSEMBLE (`documentation/promotions/plan-acheminements-a-cocher.md`) ;
- * l'écran ne change pas dans ce lot, il traduit à la frontière
- * (`draftFulfillmentOf`, `payloadFulfillmentOf`). Le lot de l'écran le
- * remplacera par des cases.
+ * **Où la promotion joue** : dans le prix affiché (le prix de l'article baisse
+ * au catalogue, pour tous les acheminements), ou en remise au panier selon
+ * l'acheminement coché (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 5).
  */
-export type DraftFulfillmentKind = 'any' | 'pickup' | 'pickup_point' | 'delivery';
+export type DraftFulfillmentKind = 'displayed_price' | 'basket';
 
 /**
- * L'ensemble relu, dans le choix unique de l'écran. Une forme qu'il ne sait
- * pas dire (un point ET la livraison, plusieurs points, des zones) est lue
- * par son premier élément — le lot de l'écran la montrera entière.
+ * Un côté de l'acheminement d'une remise au panier — le retrait ou la
+ * livraison. `on` est la case ; `all` « tous les points » / « toutes les
+ * zones » ; `ids` la sélection, gardée quand on décoche pour ne rien perdre
+ * d'un aller-retour sur la case.
  */
-export function draftFulfillmentOf(fulfillment: PromotionView['fulfillment']): {
-  readonly kind: DraftFulfillmentKind;
-  readonly pickupId: string;
-} {
-  if (fulfillment.kind === 'displayed_price') {
-    return { kind: 'any', pickupId: '' };
-  }
-  if (typeof fulfillment.pickup === 'object') {
-    return { kind: 'pickup_point', pickupId: fulfillment.pickup.points[0] ?? '' };
-  }
-  return fulfillment.pickup === 'all'
-    ? { kind: 'pickup', pickupId: '' }
-    : { kind: 'delivery', pickupId: '' };
+export interface DraftReach {
+  readonly on: boolean;
+  readonly all: boolean;
+  readonly ids: readonly string[];
 }
 
-/** Le choix unique de l'écran, dans la forme du contrat. */
-export function payloadFulfillmentOf(
-  kind: DraftFulfillmentKind,
-  pickupId: string,
-): PromotionTermsPayload['fulfillment'] {
-  switch (kind) {
-    case 'any':
-      return { kind: 'displayed_price' };
-    case 'pickup':
-      return { kind: 'basket', pickup: 'all', delivery: 'none' };
-    case 'pickup_point':
-      return { kind: 'basket', pickup: { points: [pickupId] }, delivery: 'none' };
-    case 'delivery':
-      return { kind: 'basket', pickup: 'none', delivery: 'all' };
+const REACH_OFF: DraftReach = { on: false, all: true, ids: [] };
+
+/** Un côté relu du contrat, entier : aucun choix unique, aucune perte. */
+function draftReachOf(reach: 'none' | 'all' | readonly string[]): DraftReach {
+  if (reach === 'none') {
+    return REACH_OFF;
   }
+  return reach === 'all' ? { on: true, all: true, ids: [] } : { on: true, all: false, ids: reach };
+}
+
+/** Un côté, dans la forme du contrat ; trié comme le serveur le relit. */
+function payloadReachOf(reach: DraftReach): 'none' | 'all' | string[] {
+  if (!reach.on) {
+    return 'none';
+  }
+  return reach.all ? 'all' : [...reach.ids].sort();
+}
+
+/** L'ensemble relu du contrat, dans le brouillon. */
+export function draftFulfillmentOf(fulfillment: PromotionView['fulfillment']): {
+  readonly fulfillmentKind: DraftFulfillmentKind;
+  readonly pickup: DraftReach;
+  readonly delivery: DraftReach;
+} {
+  if (fulfillment.kind === 'displayed_price') {
+    return { fulfillmentKind: 'displayed_price', pickup: REACH_OFF, delivery: REACH_OFF };
+  }
+  const { pickup, delivery } = fulfillment;
+  return {
+    fulfillmentKind: 'basket',
+    pickup: draftReachOf(typeof pickup === 'object' ? pickup.points : pickup),
+    delivery: draftReachOf(typeof delivery === 'object' ? delivery.zones : delivery),
+  };
+}
+
+/** L'ensemble du brouillon, dans la forme du contrat. */
+export function payloadFulfillmentOf(
+  draft: Pick<PromotionDraft, 'fulfillmentKind' | 'pickup' | 'delivery'>,
+): PromotionTermsPayload['fulfillment'] {
+  if (draft.fulfillmentKind === 'displayed_price') {
+    return { kind: 'displayed_price' };
+  }
+  const pickup = payloadReachOf(draft.pickup);
+  const delivery = payloadReachOf(draft.delivery);
+  return {
+    kind: 'basket',
+    pickup: typeof pickup === 'string' ? pickup : { points: pickup },
+    delivery: typeof delivery === 'string' ? delivery : { zones: delivery },
+  };
 }
 
 /**
@@ -100,7 +124,10 @@ export interface PromotionDraft {
   /** Le public, ensemble minimal (L8b) ; une société garde son identifiant tel que saisi. */
   readonly audiences: readonly PromotionAudienceTargetView[];
   readonly fulfillmentKind: DraftFulfillmentKind;
-  readonly pickupId: string;
+  /** Le retrait d'une remise au panier ; ignoré dans le prix affiché. */
+  readonly pickup: DraftReach;
+  /** La livraison d'une remise au panier ; ignorée dans le prix affiché. */
+  readonly delivery: DraftReach;
   readonly scopeMode: 'all_except' | 'only';
   readonly rules: readonly PromotionScopeRuleDraft[];
   /** Vide = aucune condition de quantité. */
@@ -112,7 +139,7 @@ export interface PromotionDraft {
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
 export function effectsFor(fulfillment: DraftFulfillmentKind): readonly PromotionEffectKindValue[] {
-  return fulfillment === 'any'
+  return fulfillment === 'displayed_price'
     ? ['percent_off', 'unit_amount_off', 'fixed_unit_price']
     : ['percent_off', 'basket_amount_off'];
 }
@@ -121,7 +148,7 @@ export function effectsFor(fulfillment: DraftFulfillmentKind): readonly Promotio
 export function targetsFor(
   fulfillment: DraftFulfillmentKind,
 ): readonly PromotionScopeTargetValue[] {
-  return fulfillment === 'any' ? ['category', 'variant'] : ['category', 'product'];
+  return fulfillment === 'displayed_price' ? ['category', 'variant'] : ['category', 'product'];
 }
 
 const NO_AUDIENCE_LABELS = {
@@ -153,8 +180,9 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
         : minimalAudiences(
             new Set(['individuals_guest', 'individuals_registered', 'pros_pending']),
           ),
-    fulfillmentKind: pickupId === null ? 'any' : 'pickup_point',
-    pickupId: pickupId ?? '',
+    fulfillmentKind: pickupId === null ? 'displayed_price' : 'basket',
+    pickup: pickupId === null ? REACH_OFF : { on: true, all: false, ids: [pickupId] },
+    delivery: REACH_OFF,
     scopeMode: 'all_except',
     rules: [],
     minQuantity: '',
@@ -204,8 +232,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
     validFrom: parisToday(new Date(view.validFrom)),
     validTo: view.validTo === null ? '' : parisToday(new Date(view.validTo)),
     audiences: view.audiences,
-    fulfillmentKind: draftFulfillmentOf(view.fulfillment).kind,
-    pickupId: draftFulfillmentOf(view.fulfillment).pickupId,
+    ...draftFulfillmentOf(view.fulfillment),
     scopeMode: view.scope.mode,
     rules: view.scope.rules.map(({ target, targetId, eligible }) => ({
       target,
@@ -238,8 +265,32 @@ export function draftProblem(draft: PromotionDraft): string | null {
   if (draft.validTo !== '' && businessDayStart(draft.validTo) === null) {
     return 'La date de fin ne se lit pas.';
   }
+  const reachProblem = fulfillmentProblem(draft);
+  if (reachProblem !== null) {
+    return reachProblem;
+  }
   if (draft.minQuantity.trim() !== '' && !/^\d+$/u.test(draft.minQuantity.trim())) {
     return 'La quantité minimum est un nombre entier.';
+  }
+  return null;
+}
+
+/**
+ * Une remise au panier coche au moins un acheminement, et une sélection n'est
+ * jamais vide — l'agrégat le refuse aussi ; l'écran le dit avant l'envoi.
+ */
+function fulfillmentProblem(draft: PromotionDraft): string | null {
+  if (draft.fulfillmentKind === 'displayed_price') {
+    return null;
+  }
+  if (!draft.pickup.on && !draft.delivery.on) {
+    return 'Cochez le retrait, la livraison, ou les deux.';
+  }
+  if (draft.pickup.on && !draft.pickup.all && draft.pickup.ids.length === 0) {
+    return 'Choisissez au moins un point de retrait, ou tous les points.';
+  }
+  if (draft.delivery.on && !draft.delivery.all && draft.delivery.ids.length === 0) {
+    return 'Choisissez au moins une zone de livraison, ou toutes les zones.';
   }
   return null;
 }
@@ -250,7 +301,7 @@ export function draftProblem(draft: PromotionDraft): string | null {
  * refuserait en le nommant.
  */
 export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
-  const atLine = draft.fulfillmentKind === 'any';
+  const atLine = draft.fulfillmentKind === 'displayed_price';
   const minQuantity = draft.minQuantity.trim();
   return {
     internalName: draft.internalName.trim(),
@@ -281,7 +332,7 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
       kind: target.kind,
       companyId: target.companyId === null ? null : target.companyId.trim(),
     })),
-    fulfillment: payloadFulfillmentOf(draft.fulfillmentKind, draft.pickupId),
+    fulfillment: payloadFulfillmentOf(draft),
     scope: { mode: draft.scopeMode, rules: [...draft.rules] },
     conditions: minQuantity === '' ? [] : [{ kind: 'min_quantity', value: Number(minQuantity) }],
   };
@@ -305,7 +356,7 @@ export function withFulfillment(draft: PromotionDraft, kind: DraftFulfillmentKin
     fulfillmentKind: kind,
     effectKind: effectsFor(kind).includes(draft.effectKind) ? draft.effectKind : 'percent_off',
     rules: draft.rules.filter((rule) => targets.includes(rule.target)),
-    stacksOverMercuriale: kind === 'any' && draft.stacksOverMercuriale,
+    stacksOverMercuriale: kind === 'displayed_price' && draft.stacksOverMercuriale,
   };
 }
 
