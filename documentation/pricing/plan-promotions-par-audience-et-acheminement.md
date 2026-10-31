@@ -2619,3 +2619,18 @@ ce refus dure jusqu'au `DROP TRIGGER` manuel. Ce qui reste vrai et décide :
   sur les colonnes** (une remise de rang 1) : M4, M5 et M6 doivent passer par
   ce même repli, jamais lire `order_discounts` seul. Condition inscrite à chacun.
 - `prisma/clone-dev.ts` : à basculer en M4 (recopier `order_discounts`).
+
+**Q-M3 répondue (2026-10-31, schematron CEN `ConnectingEurope/eInvoicing-EN16931`
+lu ; texte EN 16931-1 et spécification Factur-X NON lus)** :
+
+- Aucune règle CEN n'interdit plusieurs BG-20 au même taux : BR-S-08 et
+  BR-CO-11 additionnent tous les BT-92. La clé (promotion, taux) est donc admise.
+- Fatales : BR-31 (BT-92), BR-32 (BT-95), BR-33 / BR-CO-21 (BT-97 ou BT-98),
+  BR-CO-11, BR-S-08, BR-DEC-01 (2 décimales) ; égalités strictes, sans tolérance.
+- Le lien montant = base × % n'existe que chez Peppol (R040), absent du CEN : ne
+  pas émettre BT-93/BT-94 reste sans risque.
+- **Décision** : BT-97 seul (libellé figé fr, repli « Remise ») ; **pas de
+  BT-98** — BR-CO-5 exigerait qu'il dise la même chose que BT-97, et le code de
+  la liste UNTDID 5189 n'a pas été lu dans le texte officiel.
+  **Q-M2 décidée (mandat)** : une même promotion figée sous deux libellés sur une
+  même facture prend le libellé du bon le plus ancien.
