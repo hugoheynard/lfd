@@ -77,7 +77,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
   /** Plan §4 : un front servi avant l'API lit une vue sans les nouveaux champs. */
   it('n’annonce aucune remise pour un point servi sans `discounts`', () => {
     points.receive([OLD_POINT], []);
-    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null });
+    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null, b2bPending: null });
   });
 
   it('ouvert aux deux, et NON connu, tant que rien n’est lu', () => {
@@ -95,7 +95,7 @@ describe('ServicePoints — le réglage de livraison et les vues anciennes', () 
 
     expect(points.deliveryAvailability()).toMatchObject({ openToB2b: true, openToB2c: false });
     expect(points.deliveryAvailabilityKnown()).toBe(true);
-    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null });
+    expect(points.pickups()[0]?.discounts).toEqual({ b2b: null, b2c: null, b2bPending: null });
     http.verify();
   });
 
