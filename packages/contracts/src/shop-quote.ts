@@ -5,7 +5,12 @@ import type { DiscountLabelView } from "./discount-label.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { OrderDiscountView } from "./order-discount.js";
 import type { SignInOfferView } from "./promotion-offer.js";
-import { orderLineInputSchema, type OrderSaleUnit, type PickupDiscountBaseView } from "./order.js";
+import {
+  orderContentShape,
+  orderLineInputSchema,
+  type OrderSaleUnit,
+  type PickupDiscountBaseView,
+} from "./order.js";
 
 /**
  * **Ce que le panier de la boutique coûte**, demandé au serveur avant de
@@ -93,6 +98,15 @@ export const shopQuotePayloadSchema = z.object({
    * à une personne — et sur un devis de société.
    */
   voucherId: z.string().min(1).optional(),
+  /**
+   * Le jour et le créneau choisis, **validés comme à la passation** (mêmes
+   * champs de `orderContentShape`) : une promotion jugée « au créneau »
+   * (`promotions.md`, § 2.18) se chiffre alors au panier comme à la caisse
+   * (décision du 2026-10-31). Absents = devis sans créneau, rien n'est promis
+   * sur un instant inconnu.
+   */
+  requestedDeliveryDate: orderContentShape.requestedDeliveryDate.optional(),
+  requestedWindow: orderContentShape.requestedWindow,
 });
 
 export type ShopQuoteLinePayload = z.infer<typeof shopQuoteLineSchema>;

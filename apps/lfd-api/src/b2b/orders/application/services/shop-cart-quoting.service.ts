@@ -13,7 +13,7 @@ import {
   ventilateVat,
 } from "@lfd/money";
 import { Injectable } from "@nestjs/common";
-import type { CartAdjustment } from "@lfd/contracts";
+import type { CartAdjustment, LocalMoment } from "@lfd/contracts";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import {
@@ -41,6 +41,7 @@ import {
   type OrderBuyerKind,
 } from "../../domain/value-objects/order-buyer-kind.js";
 import { quantityOf } from "../../domain/value-objects/order-line.js";
+import { handoverMomentOf } from "../../domain/services/handover-moment.js";
 import { lineHtCumulatedQuoteOf } from "./cumulated-shop-quote.js";
 import { exactShopQuoteOf } from "./exact-shop-quote.js";
 
@@ -207,6 +208,9 @@ export class ShopCartQuoting {
             : { ttcCents: ttcLines[index] ?? 0, vatRate: line.vatRatePercent },
       })),
       query,
+      // L'instant jugé par la fonction même de la passation (§ 2.18) : `null`
+      // sans jour ou sans créneau, comme avant le 2026-10-31.
+      handoverMomentOf(query.payload.requestedDeliveryDate ?? null, query.payload.requestedWindow),
     );
     // 🔴 La méthode de la commande que ce devis annonce — celle qu'`Order.draft`
     // décidera sur la même société, jamais l'audience : un pro ne change pas
@@ -368,6 +372,7 @@ export class ShopCartQuoting {
     fulfillment: ShopQuoteFulfillment | null,
     priced: readonly BasketLine[],
     { companyId, buyerUserId }: Pick<ShopCartQuoteRequest, "companyId" | "buyerUserId">,
+    handoverAt: LocalMoment | null,
   ): Promise<CartTerms> {
     if (fulfillment === null) {
       return NO_TERMS;
@@ -378,9 +383,13 @@ export class ShopCartQuoting {
     // résolu en base (plan des promotions, § 13.7).
     const buyer = { audience, companyId, companyStatus, buyerKind: buyerKindOf({ buyerUserId }) };
     if (fulfillment.method === "pickup") {
-      // Le devis de la boutique n'a pas de créneau : une promotion jugée au
-      // créneau n'y est pas chiffrée (plan jours et heures, § 8.3).
-      const retrait = await this.adjustments.forPickup(fulfillment.pickupAddressId, priced, buyer);
+      const retrait = await this.adjustments.forPickup(
+        fulfillment.pickupAddressId,
+        priced,
+        buyer,
+        null,
+        handoverAt,
+      );
       return {
         discountCents: retrait.discountCents,
         discountAdjustment: retrait.discountAdjustment,
@@ -391,7 +400,13 @@ export class ShopCartQuoting {
         ended: retrait.ended,
       };
     }
-    const coursier = await this.adjustments.forDelivery(fulfillment.codePostal, priced, buyer);
+    const coursier = await this.adjustments.forDelivery(
+      fulfillment.codePostal,
+      priced,
+      buyer,
+      null,
+      handoverAt,
+    );
     // La promotion « en livraison » (L10) : la même que la caisse appliquera.
     return {
       discountCents: coursier.discount.discountCents,

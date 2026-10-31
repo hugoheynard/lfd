@@ -2,6 +2,7 @@ import { HttpClient } from '@angular/common/http';
 import { computed, inject, Injectable, signal } from '@angular/core';
 import { takeUntilDestroyed, toObservable } from '@angular/core/rxjs-interop';
 import type {
+  FulfillmentWindow,
   MyShopQuoteView,
   ShopQuoteFulfillment,
   ShopQuotePayload,
@@ -223,8 +224,12 @@ export class ShopQuote {
    * Ce dont le décompte dépend, et **rien d'autre**.
    *
    * Une clé plutôt que les signaux bruts : sans elle, tout changement du
-   * contexte de commande — le créneau choisi, le nom du lieu — relancerait une
-   * requête qui rendrait exactement les mêmes nombres.
+   * contexte de commande — le nom du lieu, une note — relancerait une requête
+   * qui rendrait exactement les mêmes nombres.
+   *
+   * Le créneau, lui, y est depuis le 2026-10-31 : une promotion jugée « au
+   * créneau » (`promotions.md`, § 2.18) se chiffre sur lui, et le changer
+   * redemande le décompte.
    */
   private readonly key = computed(() => {
     const lines = this.payloadLines();
@@ -236,7 +241,8 @@ export class ShopQuote {
     // Le bon choisi change le décompte : il est dans la clé. `null` hors de
     // l'espace personnel — cf. `VoucherChoice.effective`.
     const voucher = this.voucher.selected();
-    return JSON.stringify({ lines, service, reader, voucher });
+    const slot = this.slotOf();
+    return JSON.stringify({ lines, service, reader, voucher, slot });
   });
 
   constructor() {
@@ -312,11 +318,14 @@ export class ShopQuote {
       return of(null);
     }
     const voucherId = voucherIn(key);
-    const body = {
+    const slot = slotIn(key);
+    const body: ShopQuotePayload = {
       lines,
       fulfillment: fulfillmentIn(key),
       // Omis sans bon, jamais `null` : le contrat le déclare facultatif.
       ...(voucherId === null ? {} : { voucherId }),
+      // Les champs mêmes de la passation (`serviceContentOf`) ; omis sans créneau.
+      ...(slot === null ? {} : slot),
     };
     return this.quoted(body).pipe(
       tap((view) => {
@@ -438,6 +447,16 @@ export class ShopQuote {
     );
   }
 
+  private slotOf(): QuoteSlot | null {
+    const choice = this.order.choice();
+    // Sans créneau, le jour seul ne change rien au décompte : il n'entre pas
+    // dans la clé, et un changement de jour ne redemande rien.
+    if (choice === null || choice.window === null) {
+      return null;
+    }
+    return { requestedDeliveryDate: choice.date, requestedWindow: choice.window };
+  }
+
   /**
    * Le service retenu, sous la forme que le serveur attend : **une identité**,
    * jamais un montant.
@@ -470,6 +489,17 @@ function readerIn(key: string): string | null {
 /** Le bon encodé dans la clé, `null` = aucun. */
 function voucherIn(key: string): string | null {
   return (JSON.parse(key) as { voucher: string | null }).voucher;
+}
+
+/** Le jour et le créneau qu'une promotion « au créneau » juge (§ 2.18). */
+interface QuoteSlot {
+  readonly requestedDeliveryDate: string;
+  readonly requestedWindow: FulfillmentWindow;
+}
+
+/** Le créneau encodé dans la clé, `null` = aucun. */
+function slotIn(key: string): QuoteSlot | null {
+  return (JSON.parse(key) as { slot: QuoteSlot | null }).slot;
 }
 
 /** Le service encodé dans la clé. */

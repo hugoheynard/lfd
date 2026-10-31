@@ -871,8 +871,14 @@ remise **au panier** (refus à la pose au prix affiché). Rangée dans le JSONB
 (`order_discounts.weekly_hours`, migration `20261101100000`), pour que L9 juge
 un changement de créneau contre elles. Le juge de Paris est celui des
 suggestions (`clockRangeCovers`, `weeklyMomentOf` dans `@lfd/contracts`).
-Le devis de la boutique n'a pas de créneau : une promotion `handover_at` n'y
-est pas chiffrée, la passation l'applique. Le panier relu après la fin d'une
+Le devis de la boutique porte le créneau (décision du 2026-10-31) :
+`requestedDeliveryDate` et `requestedWindow`, facultatifs, validés comme à la
+passation (`orderContentShape`) ; l'instant jugé sort de la même fonction
+(`handoverMomentOf`), donc une promotion `handover_at` est chiffrée au panier
+comme à la caisse (parité éprouvée par `promotions-weekly-hours.e2e-spec.ts`).
+Sans créneau, rien n'est promis : le devis ne la chiffre pas. La boutique
+envoie le créneau choisi et redemande le devis quand il change
+(`cart/shop-quote.service.ts`). Le panier relu après la fin d'une
 plage porte `endedDiscounts` (« a pris fin à 19 h »).
 
 **Écrans** (2026-10-31). Back-office : dans la carte « Quand, et à quelles

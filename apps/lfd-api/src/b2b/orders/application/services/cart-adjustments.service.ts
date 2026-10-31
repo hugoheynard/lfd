@@ -106,8 +106,9 @@ export class CartAdjustments {
    * remise du site ne sont plus lues pour le prix.
    *
    * `handoverAt` : le créneau choisi, que juge une promotion « au retrait »
-   * (`plan-jours-et-heures.md`, § 8) ; `null` sans créneau — le devis de la
-   * boutique —, et une promotion jugée au créneau ne s'applique pas.
+   * (`plan-jours-et-heures.md`, § 8) ; `null` sans créneau — un devis de la
+   * boutique avant le choix du créneau —, et une promotion jugée au créneau
+   * ne s'applique pas.
    */
   async forPickup(
     pickupAddressId: string | null,
