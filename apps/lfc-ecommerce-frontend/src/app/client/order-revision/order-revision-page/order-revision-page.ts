@@ -48,6 +48,7 @@ import {
 } from '../revision-draft';
 import { addedArticleOf, weightFieldOf } from '../revision-sale-terms';
 import { ChangeRequestCard } from '../change-request-card/change-request-card';
+import { hasRefusal, refusalsBySku } from '../revision-refusals';
 import { RevisionQuote, type QuoteState } from '../revision-quote/revision-quote';
 
 /** Le délai de calme après le dernier geste avant de redemander le devis. */
@@ -188,6 +189,14 @@ export class OrderRevisionPage {
     return new Map(quote.kind === 'ready' ? quote.quote.lines.map((l) => [l.sku, l]) : []);
   });
 
+  /** Les refus du devis par SKU — prix qui changerait, article retiré, remise perdue (§ 10.4). */
+  private readonly refusals = computed(() => {
+    const quote = this.quote();
+    return quote.kind === 'ready'
+      ? refusalsBySku(quote.quote, this.c().refusals, this.locale.current())
+      : new Map<string, readonly string[]>();
+  });
+
   protected readonly lines = computed(() =>
     this.draft().lines.map((line) => {
       const quoted = this.quotedLines().get(line.sku);
@@ -198,6 +207,7 @@ export class OrderRevisionPage {
         price:
           quoted === undefined ? '' : quoted.priceFrozen ? this.c().priceKept : this.c().priceToday,
         removeAria: fill(this.c().removeAria, { name: line.name }),
+        refusals: this.refusals().get(line.sku) ?? [],
       };
     }),
   );
@@ -228,12 +238,13 @@ export class OrderRevisionPage {
     };
   });
 
-  /** Valider : un devis rendu, qui change quelque chose, et rien en vol. */
+  /** Valider : un devis rendu, sans refus, qui change quelque chose, et rien en vol. */
   protected readonly canSubmit = computed(() => {
     const quote = this.quote();
     return (
       quote.kind === 'ready' &&
       quote.quote.changes.length > 0 &&
+      !hasRefusal(quote.quote) &&
       !this.submitting() &&
       this.content() !== null
     );

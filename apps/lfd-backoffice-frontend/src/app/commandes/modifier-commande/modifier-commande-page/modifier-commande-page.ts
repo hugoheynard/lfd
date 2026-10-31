@@ -68,6 +68,7 @@ import {
   revisionContentOf,
   revisionDraftOf,
 } from '../revision-draft';
+import { hasRefusal, refusalsBySku } from '../revision-refusals';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -269,6 +270,18 @@ export class ModifierCommandePage {
       : null;
   });
 
+  /** Les refus du devis par SKU — prix qui changerait, article retiré, remise perdue (§ 10.4). */
+  protected readonly refusals = computed(() => {
+    const quote = this.quote();
+    return quote === null ? new Map<string, readonly string[]>() : refusalsBySku(quote);
+  });
+
+  /** Un refus dans le devis : « Valider » reste fermé, le serveur refuserait (409). */
+  protected readonly refused = computed(() => {
+    const quote = this.quote();
+    return quote !== null && hasRefusal(quote);
+  });
+
   protected readonly changes = computed(() =>
     (this.quote()?.changes ?? []).map((change: OrderRevisionChange) => ({
       key: change,
@@ -378,7 +391,7 @@ export class ModifierCommandePage {
   protected async validate(): Promise<void> {
     const content = this.content();
     const quote = this.quote();
-    if (content === null || quote === null) {
+    if (content === null || quote === null || hasRefusal(quote)) {
       return;
     }
     this.submitting.set(true);

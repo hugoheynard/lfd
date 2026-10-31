@@ -30,6 +30,7 @@ import { NotifyService } from '../../../notify.service';
 import { ORDER_REVISION_CHANGE } from '../../../shared/journal/values/orders-values';
 import { CustomerRequestsInbox } from '../customer-requests-inbox.store';
 import { CustomerRequestsService } from '../customer-requests.service';
+import { hasRefusal, refusalsBySku } from '../../../commandes/modifier-commande/revision-refusals';
 
 /** L'écart, tel que le serveur le calcule — ou la phrase de la règle qui refuse. */
 type QuoteState =
@@ -98,6 +99,15 @@ export class OrderChangeDetails {
     const view = this.ready();
     return view !== null && view.revision !== this.details().baseRevision;
   });
+  /** Les refus du devis par SKU (§ 10.4) : « Appliquer » serait refusé (409). */
+  protected readonly refusals = computed(() => {
+    const view = this.ready();
+    return view === null ? new Map<string, readonly string[]>() : refusalsBySku(view);
+  });
+  protected readonly refused = computed(() => {
+    const view = this.ready();
+    return view !== null && hasRefusal(view);
+  });
   protected readonly difference = computed(() => {
     const cents = this.ready()?.differenceCents ?? 0;
     return cents === 0 ? 'Aucun' : `${cents > 0 ? '+' : '−'} ${formatCents(Math.abs(cents))}`;
@@ -124,7 +134,7 @@ export class OrderChangeDetails {
   }
 
   protected async apply(): Promise<void> {
-    if (this.busy() !== null || this.ready() === null || this.stale()) return;
+    if (this.busy() !== null || this.ready() === null || this.stale() || this.refused()) return;
     this.busy.set('apply');
     this.error.set(null);
     try {

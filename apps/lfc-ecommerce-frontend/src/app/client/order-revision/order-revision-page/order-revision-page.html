@@ -49,6 +49,11 @@
                   [tooltip]="line.removeAria"
                   (clicked)="drop(line.sku)"
                 />
+                @for (said of line.refusals; track said) {
+                  <fold-callout class="refusal" variant="alert" data-line-refusal>{{
+                    said
+                  }}</fold-callout>
+                }
               </li>
             }
           </ul>

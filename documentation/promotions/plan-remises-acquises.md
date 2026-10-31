@@ -291,6 +291,6 @@ nommée. Les deux fronts (boutique et back-office) affichent ces refus.
 Écart : `noteBasketDiscountsOf` (bons) n'est pas importé — il saute les
 remises sans ajustement, et l'importer ferait dépendre `orders` de
 `delivery-notes` ; son mécanisme de couverture est repris dans `orders`.
-Comportement changé : un article sorti du catalogue dont on change la
+Écrans (2026-10-31) : le devis de révision montre chaque refus sous sa ligne, dans la boutique et le back-office (modification et demande M4), et la validation reste fermée tant qu'il y en a un. Comportement changé : un article sorti du catalogue dont on change la
 quantité est refusé par son nom (admis depuis le 2026-10-29). Reste : les
-écrans (refus par ligne et par remise dans l'aperçu).
+écrans faits ; reste la reprise des termes en production, au lancement commercial.

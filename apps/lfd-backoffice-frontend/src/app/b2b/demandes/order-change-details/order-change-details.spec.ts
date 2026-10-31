@@ -170,6 +170,32 @@ describe('OrderChangeDetails', () => {
     );
   });
 
+  it('un prix qui changerait : les deux prix à côté de la ligne, « Appliquer » fermé', async () => {
+    const [line] = QUOTE.lines;
+    if (line === undefined) throw new Error('fixture sans ligne');
+    const { fixture } = await mount(DETAILS, {
+      quote: () =>
+        Promise.resolve({
+          ...QUOTE,
+          lines: [
+            {
+              ...line,
+              refusal: {
+                kind: 'price_changed',
+                frozen: { unitPriceMillicents: 90_000, vatRate: 5.5, unitPriceTtcCents: null },
+                current: { unitPriceMillicents: 120_000, vatRate: 5.5, unitPriceTtcCents: null },
+              },
+            },
+          ],
+        }),
+    });
+    const said = host(fixture).querySelector('[data-line] [data-line-refusal]')?.textContent ?? '';
+    expect(said.replace(/\s/gu, ' ')).toContain('0,90 € HT → 1,20 € HT');
+    expect(host(fixture).querySelector<HTMLButtonElement>('button[data-apply]')?.disabled).toBe(
+      true,
+    );
+  });
+
   it('un refus d’appliquer se dit par la phrase du serveur', async () => {
     const refusal = new HttpErrorResponse({
       status: 409,

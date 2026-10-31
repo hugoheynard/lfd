@@ -54,10 +54,13 @@
             <fold-field label="Lignes demandées" [empty]="q.lines.length === 0">
               <ul class="ocd-lines">
                 @for (line of q.lines; track line.sku) {
-                  <li data-line>
+                  <li class="ocd-line" data-line>
                     {{ line.quantity }} × {{ line.productName }} —
                     {{ cents(line.lineTotalCents) }} HT
                     {{ line.priceFrozen ? '(prix d’origine)' : '(prix du jour)' }}
+                    @for (said of refusals().get(line.sku) ?? []; track said) {
+                      <fold-callout variant="alert" data-line-refusal>{{ said }}</fold-callout>
+                    }
                   </li>
                 }
               </ul>
@@ -125,7 +128,7 @@
             size="sm"
             icon="check"
             type="button"
-            [disabled]="busy() !== null || ready() === null || stale()"
+            [disabled]="busy() !== null || ready() === null || stale() || refused()"
             [loading]="busy() === 'apply'"
             (click)="apply()"
             data-apply

@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1731 textes
+## Sommaire — 1737 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -39,7 +39,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le cadre — bandeaux, installation, erreurs générales](#espace-chrome) | `chrome` | 61 |
 | [La navigation](#espace-nav) | `nav` | 16 |
 | [La colonne d’accompagnement](#espace-aside) | `aside` | 4 |
-| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 251 |
+| [Mes commandes (récapitulatif compris)](#espace-orders) | `orders` | 257 |
 | [Annuler une commande — Mes commandes et la page invité](#espace-ordercancel) | `orderCancel` | 57 |
 | [Fidélité](#espace-loyalty) | `loyalty` | 38 |
 | [Mon compte (factures comprises)](#espace-account) | `account` | 526 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1731** |
+| **Total** | | **1737** |
 
 ## Le parcours de commande
 
@@ -1012,7 +1012,7 @@ Source : `fr.ts · en.ts · it.ts` · 4 textes.
 
 ### Mes commandes (récapitulatif compris) — `orders`
 
-Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 251 textes.
+Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/order-change-request.copy.ts` · 257 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -1129,6 +1129,12 @@ Source : `screens/orders.copy.ts · screens/order-summary.copy.ts · screens/ord
 | `orders.revision.addNone` | Aucun article | No item | Nessun articolo |  |
 | `orders.revision.priceKept` | prix d’origine | original price | prezzo originale |  |
 | `orders.revision.priceToday` | prix du jour | today’s price | prezzo del giorno |  |
+| `orders.revision.refusals.linePriceChanged` | Changer la quantité change son prix : {frozen} → {current} — gardez la quantité commandée, ou annulez et passez une nouvelle commande. | Changing the quantity changes its price: {frozen} → {current} — keep the ordered quantity, or cancel and place a new order. | Cambiare la quantità ne cambia il prezzo: {frozen} → {current} — mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine. | `{frozen}` `{current}` |
+| `orders.revision.refusals.lineWithdrawn` | Cet article n’est plus vendu : gardez la quantité commandée, ou annulez et passez une nouvelle commande. | This item is no longer sold: keep the ordered quantity, or cancel and place a new order. | Questo articolo non è più in vendita: mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine. |  |
+| `orders.revision.refusals.discountLost` | Cette modification ferait perdre la remise {label} (dès {minimum}). | This change would lose the discount {label} (from {minimum}). | Questa modifica farebbe perdere lo sconto {label} (da {minimum}). | `{label}` `{minimum}` |
+| `orders.revision.refusals.discountLostUnnamed` | Cette modification ferait perdre une remise (dès {minimum}). | This change would lose a discount (from {minimum}). | Questa modifica farebbe perdere uno sconto (da {minimum}). | `{minimum}` |
+| `orders.revision.refusals.priceExclTax` | {price} HT | {price} excl. VAT | {price} IVA esclusa | `{price}` |
+| `orders.revision.refusals.pricePerKilo` | {price} le kg | {price} per kg | {price} al kg | `{price}` |
 | `orders.revision.removeAria` | Retirer {name} | Remove {name} | Rimuovi {name} | `{name}` |
 | `orders.revision.noLinesNote` | Une commande garde au moins un article : pour tout retirer, annulez-la depuis Mes commandes. | An order keeps at least one item: to remove everything, cancel it from My orders. | Un ordine conserva almeno un articolo: per togliere tutto, annullalo da I miei ordini. |  |
 | `orders.revision.serviceTitle` | Retrait ou livraison | Pickup or delivery | Ritiro o consegna |  |

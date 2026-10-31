@@ -21,6 +21,7 @@ import {
 import { NotifyService } from '../../../notify.service';
 import { ClientCopyService } from '../../copy/client-copy.service';
 import { OrderRevisionGateway, STALE_CHANGE_REQUEST } from '../order-revision.gateway';
+import { hasRefusal } from '../revision-refusals';
 import { RevisionQuote, type QuoteState } from '../revision-quote/revision-quote';
 
 /** Un refus de l'envoi : sa phrase, et s'il faut recharger la commande. */
@@ -84,8 +85,14 @@ export class ChangeRequestCard {
   protected readonly sending = signal(false);
   protected readonly refusal = signal<SendRefusal | null>(null);
 
+  /** Le devis porte un refus de prix ou de remise : la demande ne part pas (§ 10.4). */
+  private readonly refused = computed(() => {
+    const quote = this.quote();
+    return quote.kind === 'ready' && hasRefusal(quote.quote);
+  });
+
   protected readonly canSend = computed(
-    () => this.content() !== null && this.changed() && !this.sending(),
+    () => this.content() !== null && this.changed() && !this.sending() && !this.refused(),
   );
 
   protected async send(): Promise<void> {

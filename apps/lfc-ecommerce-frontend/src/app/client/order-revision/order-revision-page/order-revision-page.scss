@@ -42,6 +42,10 @@
   border-bottom: 1px solid var(--fold-color-border-subtle);
 }
 
+.refusal {
+  grid-column: 1 / -1;
+}
+
 .what {
   display: flex;
   flex-direction: column;

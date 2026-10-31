@@ -5857,6 +5857,48 @@
           "variables": []
         },
         {
+          "key": "orders.revision.refusals.linePriceChanged",
+          "fr": "Changer la quantité change son prix : {frozen} → {current} — gardez la quantité commandée, ou annulez et passez une nouvelle commande.",
+          "en": "Changing the quantity changes its price: {frozen} → {current} — keep the ordered quantity, or cancel and place a new order.",
+          "it": "Cambiare la quantità ne cambia il prezzo: {frozen} → {current} — mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine.",
+          "variables": ["frozen", "current"]
+        },
+        {
+          "key": "orders.revision.refusals.lineWithdrawn",
+          "fr": "Cet article n’est plus vendu : gardez la quantité commandée, ou annulez et passez une nouvelle commande.",
+          "en": "This item is no longer sold: keep the ordered quantity, or cancel and place a new order.",
+          "it": "Questo articolo non è più in vendita: mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine.",
+          "variables": []
+        },
+        {
+          "key": "orders.revision.refusals.discountLost",
+          "fr": "Cette modification ferait perdre la remise {label} (dès {minimum}).",
+          "en": "This change would lose the discount {label} (from {minimum}).",
+          "it": "Questa modifica farebbe perdere lo sconto {label} (da {minimum}).",
+          "variables": ["label", "minimum"]
+        },
+        {
+          "key": "orders.revision.refusals.discountLostUnnamed",
+          "fr": "Cette modification ferait perdre une remise (dès {minimum}).",
+          "en": "This change would lose a discount (from {minimum}).",
+          "it": "Questa modifica farebbe perdere uno sconto (da {minimum}).",
+          "variables": ["minimum"]
+        },
+        {
+          "key": "orders.revision.refusals.priceExclTax",
+          "fr": "{price} HT",
+          "en": "{price} excl. VAT",
+          "it": "{price} IVA esclusa",
+          "variables": ["price"]
+        },
+        {
+          "key": "orders.revision.refusals.pricePerKilo",
+          "fr": "{price} le kg",
+          "en": "{price} per kg",
+          "it": "{price} al kg",
+          "variables": ["price"]
+        },
+        {
           "key": "orders.revision.removeAria",
           "fr": "Retirer {name}",
           "en": "Remove {name}",

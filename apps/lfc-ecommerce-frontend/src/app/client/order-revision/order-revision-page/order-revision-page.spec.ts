@@ -188,6 +188,43 @@ describe('OrderRevisionPage', () => {
     expect(navigate).toHaveBeenCalledWith(['/mes-commandes', 'ord_9']);
   });
 
+  it('dit à côté de la ligne le prix qui changerait, et bloque la validation', async () => {
+    const base = quoteOf(['lines']);
+    const line = base.lines[0];
+    if (line === undefined) {
+      throw new Error('fixture sans ligne');
+    }
+    const refused: OrderRevisionQuoteView = {
+      ...base,
+      lines: [
+        {
+          ...line,
+          refusal: {
+            kind: 'price_changed',
+            frozen: { unitPriceMillicents: 85_300, vatRate: 5.5, unitPriceTtcCents: 90 },
+            current: { unitPriceMillicents: 113_740, vatRate: 5.5, unitPriceTtcCents: 120 },
+          },
+        },
+      ],
+      discountRefusals: [
+        {
+          kind: 'below_threshold',
+          label: { fr: 'Six achetés', en: 'Six bought', it: 'Sei comprati' },
+          minQuantity: 6,
+          sku: 'VIE-001',
+          quantity: 2,
+        },
+      ],
+    };
+    const { el } = await mount({ quote: () => ({ kind: 'ok', value: refused }) });
+    const said = [...el.querySelectorAll('[data-line] [data-line-refusal]')].map(
+      (node) => node.textContent ?? '',
+    );
+    expect(said[0]).toContain('0,90 € → 1,20 €');
+    expect(said[1]).toContain('Six achetés (dès 6)');
+    expect(el.querySelector<HTMLButtonElement>('[data-submit]')?.disabled).toBe(true);
+  });
+
   it('dit la commande modifiée ailleurs et propose de recharger', async () => {
     const { fixture, el } = await mount({
       quote: () => ({ kind: 'ok', value: quoteOf(['lines']) }),

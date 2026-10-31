@@ -143,6 +143,32 @@ describe('modifier une commande depuis le back-office', () => {
     expect(navigate).toHaveBeenCalledWith(['/commandes', 'ord_1']);
   });
 
+  it('dit la remise perdue à côté de la ligne, et ferme « Valider »', async () => {
+    const { fixture, page, quoteRevision, revise } = await mount();
+    quoteRevision.mockResolvedValueOnce({
+      ...QUOTE,
+      discountRefusals: [
+        {
+          kind: 'below_threshold',
+          label: { fr: 'Douze achetées', en: 'Twelve', it: 'Dodici' },
+          minQuantity: 12,
+          sku: 'BAG',
+          quantity: 10,
+        },
+      ],
+    });
+    page['cart'].setQuantity('BAG', 10);
+    await page['askQuote']();
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.mc-line [data-line-refusal]')?.textContent).toContain(
+      'la remise « Douze achetées » (dès 12)',
+    );
+    expect(el.querySelector<HTMLButtonElement>('[data-validate]')?.disabled).toBe(true);
+    await page['validate']();
+    expect(revise).not.toHaveBeenCalled();
+  });
+
   it('oublie le devis dès que la commande voulue change', async () => {
     const { page } = await mount();
     await page['askQuote']();

@@ -11,6 +11,21 @@ import {
   type OrderSummaryCopy,
 } from './order-summary.copy';
 
+/** Les phrases des refus d'un devis de révision (plan `plan-remises-acquises.md`, § 10.4). */
+export interface RevisionRefusalCopy {
+  /** `{frozen}` et `{current}` : les deux prix unitaires. */
+  readonly linePriceChanged: string;
+  readonly lineWithdrawn: string;
+  /** `{label}` et `{minimum}`. */
+  readonly discountLost: string;
+  /** `{minimum}` : la remise n'a pas de libellé. */
+  readonly discountLostUnnamed: string;
+  /** `{price}` : un prix hors taxes (commande d'un pro). */
+  readonly priceExclTax: string;
+  /** `{price}` : un prix au kilo. */
+  readonly pricePerKilo: string;
+}
+
 /**
  * **Modifier une commande passée** — le bouton du tiroir et l'écran de
  * modification (plan `documentation/commandes/modification/plan-modifier-une-commande.md`,
@@ -58,6 +73,8 @@ export interface OrderReviseCopy {
   readonly priceKept: string;
   /** Une ligne ajoutée : au prix du jour. */
   readonly priceToday: string;
+  /** Les refus d'une ligne ou d'une remise dans le devis (`plan-remises-acquises.md`, § 10.4). */
+  readonly refusals: RevisionRefusalCopy;
   /** `{name}` reçoit le nom de l'article. */
   readonly removeAria: string;
   readonly noLinesNote: string;
@@ -123,6 +140,16 @@ const ORDER_REVISE_FR: OrderReviseCopy = {
   addNone: 'Aucun article',
   priceKept: 'prix d’origine',
   priceToday: 'prix du jour',
+  refusals: {
+    linePriceChanged:
+      'Changer la quantité change son prix : {frozen} → {current} — gardez la quantité commandée, ou annulez et passez une nouvelle commande.',
+    lineWithdrawn:
+      'Cet article n’est plus vendu : gardez la quantité commandée, ou annulez et passez une nouvelle commande.',
+    discountLost: 'Cette modification ferait perdre la remise {label} (dès {minimum}).',
+    discountLostUnnamed: 'Cette modification ferait perdre une remise (dès {minimum}).',
+    priceExclTax: '{price} HT',
+    pricePerKilo: '{price} le kg',
+  },
   removeAria: 'Retirer {name}',
   noLinesNote:
     'Une commande garde au moins un article : pour tout retirer, annulez-la depuis Mes commandes.',
@@ -179,6 +206,16 @@ const ORDER_REVISE_EN: OrderReviseCopy = {
   addNone: 'No item',
   priceKept: 'original price',
   priceToday: 'today’s price',
+  refusals: {
+    linePriceChanged:
+      'Changing the quantity changes its price: {frozen} → {current} — keep the ordered quantity, or cancel and place a new order.',
+    lineWithdrawn:
+      'This item is no longer sold: keep the ordered quantity, or cancel and place a new order.',
+    discountLost: 'This change would lose the discount {label} (from {minimum}).',
+    discountLostUnnamed: 'This change would lose a discount (from {minimum}).',
+    priceExclTax: '{price} excl. VAT',
+    pricePerKilo: '{price} per kg',
+  },
   removeAria: 'Remove {name}',
   noLinesNote: 'An order keeps at least one item: to remove everything, cancel it from My orders.',
   serviceTitle: 'Pickup or delivery',
@@ -235,6 +272,16 @@ const ORDER_REVISE_IT: OrderReviseCopy = {
   addNone: 'Nessun articolo',
   priceKept: 'prezzo originale',
   priceToday: 'prezzo del giorno',
+  refusals: {
+    linePriceChanged:
+      'Cambiare la quantità ne cambia il prezzo: {frozen} → {current} — mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine.',
+    lineWithdrawn:
+      'Questo articolo non è più in vendita: mantieni la quantità ordinata, oppure annulla e fai un nuovo ordine.',
+    discountLost: 'Questa modifica farebbe perdere lo sconto {label} (da {minimum}).',
+    discountLostUnnamed: 'Questa modifica farebbe perdere uno sconto (da {minimum}).',
+    priceExclTax: '{price} IVA esclusa',
+    pricePerKilo: '{price} al kg',
+  },
   removeAria: 'Rimuovi {name}',
   noLinesNote:
     'Un ordine conserva almeno un articolo: per togliere tutto, annullalo da I miei ordini.',
