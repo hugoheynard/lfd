@@ -208,8 +208,8 @@ export const routes: Routes = [
     // LES PROMOTIONS CIBLÉES — par public, acheminement et portée (plan
     // `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
     // § 13.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
-    // serveur : la tarification pose les promotions, les réglages celles d'un
-    // point de retrait (`lfc_site_settings`, la fiche du site — L8). L'entrée
+    // serveur ; écrites sous `b2b_pricing:write` seul, « retrait à un point »
+    // compris (`documentation/promotions/plan-un-seul-endroit.md`). L'entrée
     // s'appelle « Promotions » depuis la bascule ; la grille, « Règles de prix ».
     path: 'promotions-ciblees',
     canActivate: [anyPermissionGuard('b2b_pricing:read', 'lfc_site_settings:read')],
@@ -221,7 +221,7 @@ export const routes: Routes = [
     // L'éditeur (L8) : une pose, `?pickupId=` pré-remplit « Retrait · ce point ».
     // Déclarée AVANT `:id`, qui l'avalerait sinon.
     path: 'promotions-ciblees/nouvelle',
-    canActivate: [anyPermissionGuard('b2b_pricing:write', 'lfc_site_settings:write')],
+    canActivate: [permissionGuard('b2b_pricing:write')],
     title: 'Nouvelle promotion — LFC B2B admin',
     loadComponent: () =>
       import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(
@@ -230,7 +230,7 @@ export const routes: Routes = [
   },
   {
     path: 'promotions-ciblees/:id/modifier',
-    canActivate: [anyPermissionGuard('b2b_pricing:write', 'lfc_site_settings:write')],
+    canActivate: [permissionGuard('b2b_pricing:write')],
     title: 'Modifier une promotion — LFC B2B admin',
     loadComponent: () =>
       import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(

@@ -38,8 +38,8 @@ type SiteIdentity = ReturnType<typeof toBillingPayload>;
  * **Identité et adresse d'un site** — et sa création (Hugo, 2026-10-13 :
  * chaque carte enregistre ce qu'elle montre). Sans `site`, la carte CRÉE :
  * un seul « Ajouter », puisque rien n'existe encore. Avec un site, elle
- * n'écrit que l'adresse, sur le lieu ENREGISTRÉ (`placePayload`) : heures et
- * réduction ont leurs sous-cartes. Le « site par défaut » a disparu le
+ * n'écrit que l'adresse, sur le lieu ENREGISTRÉ (`placePayload`) : les heures
+ * ont leur sous-carte. Le « site par défaut » a disparu le
  * 2026-10-15 (Hugo) : la présélection du retrait se décide par client.
  */
 @Component({
@@ -115,7 +115,7 @@ export class SiteIdentityCard {
     }
   }
 
-  /** Le reste — heures, réduction, rôles — se règle une fois le site créé. */
+  /** Le reste — heures, rôles — se règle une fois le site créé. */
   private async create(identity: SiteIdentity): Promise<void> {
     const created = await this.sites.create({
       ...identity,

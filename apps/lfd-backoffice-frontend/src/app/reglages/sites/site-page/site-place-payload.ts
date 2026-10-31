@@ -22,8 +22,8 @@ export function placePayload(
     ville: site.ville,
     pays: site.pays,
     opening: site.opening,
-    // Les remises sont absentes, donc inchangées : seule la carte de la
-    // réduction les envoie (2026-10-22).
+    // Les remises sont absentes, donc inchangées : plus aucune carte de la
+    // fiche ne les envoie (2026-10-31, plan-un-seul-endroit.md).
     ...change,
   };
 }

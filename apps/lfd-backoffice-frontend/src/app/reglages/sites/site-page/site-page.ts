@@ -28,9 +28,7 @@ import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
 import { SitesService } from '../sites.service';
 import { PublicSlotsCard } from './public-slots-card/public-slots-card';
-import { SitePromotionsCard } from './site-promotions-card/site-promotions-card';
 import { SiteDirectLinkCard } from './site-direct-link-card/site-direct-link-card';
-import { SiteDiscountCard } from './site-discount-card/site-discount-card';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SiteRolesCard } from './site-roles-card/site-roles-card';
@@ -58,14 +56,20 @@ const NOT_FOUND = 404;
  * Elle a été écrite pour la BOUTIQUE (commit `6902e7a8`, `feat(boutique)`), où
  * ce qu'on saisit tient en un formulaire.
  *
- * Un point de retrait n'est plus une adresse : il porte l'adresse, ses heures,
- * sa réduction et les clientèles de cette réduction — et il
+ * Un point de retrait n'est plus une adresse : il porte l'adresse, ses heures
+ * — et il
  * recevra ses créneaux publics, leurs badges, leurs capacités et les fermetures
  * datées (`documentation/commandes/passation/plan-creneaux-de-retrait.md`). Six sujets, bientôt
  * huit, qu'on ne lit pas de haut en bas : on va directement à celui qu'on vient
  * régler. C'est le critère qui sépare une page d'un panneau dans ce
  * back-office, où six pages de détail suivent déjà ce motif. Décidé avec Hugo
  * le 2026-09-16 ; le `CLAUDE.md` de cette app porte la règle.
+ *
+ * 🔴 **Elle ne parle plus de remises** (Hugo, 2026-10-31,
+ * `documentation/promotions/plan-un-seul-endroit.md`) : « la page réglage
+ * d'un site [reste] agnostique de comment le commerce le traite ». La
+ * réduction de retrait et les promotions du point se règlent à l'écran
+ * Promotions, seul endroit.
  *
  * Le même composant sert la création et l'édition : sans `id`, il n'y a rien à
  * charger, et seule la carte d'identité s'affiche, avec un unique « Ajouter ».
@@ -75,10 +79,8 @@ const NOT_FOUND = 404;
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     PublicSlotsCard,
-    SiteDiscountCard,
     SiteDirectLinkCard,
     SiteHoursCard,
-    SitePromotionsCard,
     SiteIdentityCard,
     SiteRolesCard,
     SiteTablesCard,

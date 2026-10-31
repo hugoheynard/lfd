@@ -39,7 +39,6 @@ import { RevisePromotionCommand } from "../application/commands/revise-promotion
 import { GetPromotionQuery } from "../application/queries/get-promotion.query.js";
 import { GetPromotionsSourceQuery } from "../application/queries/get-promotions-source.query.js";
 import { ListPromotionsQuery } from "../application/queries/list-promotions.query.js";
-import { PRICING_SURFACE } from "../domain/promotion-surface.js";
 import { promotionTermsOf } from "./promotion-terms.mapper.js";
 
 /**
@@ -48,10 +47,11 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
  * § 13.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
  * qui posait une règle d'étage promotion pose une promotion.
  *
- * Les promotions de retrait à UN point s'écrivent depuis ce point, sous
- * `lfc_site_settings` (`AdminPickupPromotionsController`) ; ici, le geste les
- * refuse (`PromotionWrongSurfaceError`). Les deux lectures s'ouvrent à l'un
- * OU l'autre droit : chacun voit ce que l'autre a posé.
+ * **Le seul endroit où une promotion s'écrit**, « retrait à un point »
+ * compris (`documentation/promotions/plan-un-seul-endroit.md`, décision de
+ * Hugo du 2026-10-31) : la route d'un site (`admin/sites/:pickupId/promotions`,
+ * sous `lfc_site_settings`) a disparu, et avec elle la notion de surface.
+ * Les lectures s'ouvrent encore à `lfc_site_settings:read`.
  *
  * Depuis L12, `promotions_source` ne vaut plus que `promotions` : l'écran
  * écrit toujours, et les refus d'écriture sont ceux de l'agrégat et de
@@ -106,7 +106,7 @@ export class AdminPromotionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<CreatedIdResponse> {
     const id = await this.commands.execute<PosePromotionCommand, string>(
-      new PosePromotionCommand(promotionTermsOf(payload), staffUserId, PRICING_SURFACE),
+      new PosePromotionCommand(promotionTermsOf(payload), staffUserId),
     );
     return { id };
   }
@@ -119,13 +119,7 @@ export class AdminPromotionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<RevisePromotionCommand, void>(
-      new RevisePromotionCommand(
-        id,
-        promotionTermsOf(payload.terms),
-        staffUserId,
-        payload.reason,
-        PRICING_SURFACE,
-      ),
+      new RevisePromotionCommand(id, promotionTermsOf(payload.terms), staffUserId, payload.reason),
     );
   }
 
@@ -137,7 +131,7 @@ export class AdminPromotionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<PausePromotionCommand, void>(
-      new PausePromotionCommand(id, staffUserId, payload.reason, PRICING_SURFACE),
+      new PausePromotionCommand(id, staffUserId, payload.reason),
     );
   }
 
@@ -149,7 +143,7 @@ export class AdminPromotionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<ResumePromotionCommand, void>(
-      new ResumePromotionCommand(id, staffUserId, payload.reason, PRICING_SURFACE),
+      new ResumePromotionCommand(id, staffUserId, payload.reason),
     );
   }
 
@@ -161,7 +155,7 @@ export class AdminPromotionsController {
     @StaffUserId() staffUserId: string,
   ): Promise<void> {
     await this.commands.execute<ArchivePromotionCommand, void>(
-      new ArchivePromotionCommand(id, staffUserId, payload.reason, PRICING_SURFACE),
+      new ArchivePromotionCommand(id, staffUserId, payload.reason),
     );
   }
 }

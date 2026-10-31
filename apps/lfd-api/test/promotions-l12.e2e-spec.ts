@@ -115,11 +115,8 @@ function atPoint(
   };
 }
 
-async function posePromotion(pickupId: string, terms: PromotionTermsPayload): Promise<string> {
-  const response = await staff()
-    .post(`/admin/sites/${pickupId}/promotions`)
-    .send(terms)
-    .expect(201);
+async function posePromotion(terms: PromotionTermsPayload): Promise<string> {
+  const response = await staff().post("/admin/promotions").send(terms).expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 
@@ -139,7 +136,6 @@ async function seedSites(): Promise<Sites> {
   const real = await poseSite("Cœur de station");
   const village = await poseSite("Village");
   await posePromotion(
-    real,
     atPoint(real, {
       internalName: "Cœur · pros",
       audiences: [{ kind: "pros_active", companyId: null }],
@@ -150,7 +146,6 @@ async function seedSites(): Promise<Sites> {
     }),
   );
   await posePromotion(
-    village,
     atPoint(village, {
       internalName: "Village · pros",
       effect: { kind: "basket_amount_off", value: 250 },
@@ -162,7 +157,6 @@ async function seedSites(): Promise<Sites> {
     }),
   );
   await posePromotion(
-    village,
     atPoint(village, {
       internalName: "Village · particuliers",
       effect: { kind: "percent_off", value: 1_500 },
@@ -367,7 +361,6 @@ describe("annonce = caisse", () => {
   it("une promotion posée à l'écran s'annonce et s'applique, et sa pause l'éteint des deux côtés", async () => {
     const real = await poseSite("Cœur de station");
     const id = await posePromotion(
-      real,
       atPoint(real, {
         internalName: "Particuliers au Cœur",
         label: { fr: "−5 % en retrait", en: null, it: null },
@@ -381,10 +374,7 @@ describe("annonce = caisse", () => {
     expect(quote.discountCents).toBe(await announcedCents(announced ?? null, quote));
     expect(quote.discountCents).toBeGreaterThan(0);
 
-    await staff()
-      .post(`/admin/sites/${real}/promotions/${id}/pause`)
-      .send({ reason: null })
-      .expect(204);
+    await staff().post(`/admin/promotions/${id}/pause`).send({ reason: null }).expect(204);
     expect(pointIn(await listed("/pickup-addresses"), real).discounts.b2c).toBeNull();
     expect((await anonymousQuote(real)).discountCents).toBe(0);
   });

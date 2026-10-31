@@ -140,11 +140,6 @@ async function pose(over: Partial<PromotionTermsPayload>): Promise<void> {
   ctx.app.get(PricingMaterialsCache).invalidate();
 }
 
-async function poseAtSite(site: string, over: Partial<PromotionTermsPayload>): Promise<void> {
-  await staff().post(`/admin/sites/${site}/promotions`).send(terms(over)).expect(201);
-  ctx.app.get(PricingMaterialsCache).invalidate();
-}
-
 function quoteBody(fulfillment: unknown): Record<string, unknown> {
   return { lines: LINES, fulfillment };
 }
@@ -308,7 +303,7 @@ describe("la mention au rayon (L10)", () => {
   it("mentionne la promotion de retrait d'un point, sans baisser le prix", async () => {
     const site = await scene();
     const before = await ctx.http().get("/shop/catalogue").expect(200);
-    await poseAtSite(site, {
+    await pose({
       internalName: "Retrait au Labo",
       audiences: [{ kind: "everyone", companyId: null }],
       fulfillment: { kind: "pickup_point", pickupId: site },

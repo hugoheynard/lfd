@@ -302,25 +302,6 @@ export class BasketPromotionsWouldCombineError extends BusinessError {
 }
 
 /**
- * Une promotion réglée depuis la mauvaise surface (plan, § 13.9 et § 14
- * S-droits) : celle d'un point de retrait se règle depuis ce point, les
- * autres depuis la tarification — chacune sous son droit.
- */
-export class PromotionWrongSurfaceError extends BusinessError {
-  constructor(
-    readonly promotionId: string | null,
-    expected: "pickup_point" | "pricing",
-  ) {
-    super(
-      "promotions.wrong_surface",
-      expected === "pickup_point"
-        ? "Une promotion de retrait à un point se règle depuis ce point de retrait : ouvrez-la depuis la fiche du site."
-        : "Cette promotion ne vise pas ce point de retrait : réglez-la depuis l'écran Promotions, ou choisissez « retrait à ce point ».",
-    );
-  }
-}
-
-/**
  * Un ancien éditeur des promotions, fermé par la bascule (plan, § 13.10, L8) :
  * le calcul ne lit plus ni les règles d'étage promotion ni la remise d'un
  * site — une écriture y serait acceptée sans agir sur aucun prix.

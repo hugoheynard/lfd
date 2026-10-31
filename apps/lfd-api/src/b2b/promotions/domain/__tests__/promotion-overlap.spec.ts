@@ -1,4 +1,3 @@
-import { PromotionWrongSurfaceError } from "../errors/promotion-errors.js";
 import type { PromotionAudience } from "../promotion-audience.js";
 import { PromotionAudienceSet } from "../promotion-audience-set.js";
 import {
@@ -7,7 +6,6 @@ import {
   commonPeriod,
   fulfillmentsMeet,
 } from "../promotion-overlap.js";
-import { PRICING_SURFACE, assertSurfaceAdmits } from "../promotion-surface.js";
 import { FROM, UNTIL } from "./promotion-terms.fixture.js";
 
 const of = (
@@ -101,19 +99,5 @@ describe("commonPeriod — la fin est exclue", () => {
       validFrom: UNTIL,
       validTo: null,
     });
-  });
-});
-
-describe("assertSurfaceAdmits", () => {
-  it("l'écran Promotions refuse un point ; un point refuse tout ce qui n'est pas lui", () => {
-    const coeur = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
-    expect(() => assertSurfaceAdmits(PRICING_SURFACE, coeur, null)).toThrow(
-      PromotionWrongSurfaceError,
-    );
-    expect(() => assertSurfaceAdmits(PRICING_SURFACE, { kind: "pickup" }, null)).not.toThrow();
-    expect(() => assertSurfaceAdmits(coeur, coeur, null)).not.toThrow();
-    expect(() => assertSurfaceAdmits(coeur, { kind: "pickup" }, null)).toThrow(
-      PromotionWrongSurfaceError,
-    );
   });
 });

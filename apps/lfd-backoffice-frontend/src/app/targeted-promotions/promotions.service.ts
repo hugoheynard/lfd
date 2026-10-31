@@ -17,10 +17,9 @@ import { B2B_API_BASE } from '../api/api-config';
  * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
  *
- * L'écriture passe par la SURFACE de la promotion : une promotion « retrait
- * à un point » s'écrit sous la fiche du site (`/admin/sites/:id/promotions`,
- * `lfc_site_settings`), les autres sous `/admin/promotions` (`b2b_pricing`).
- * Depuis L12, la source ne vaut plus que `promotions` : le serveur écrit toujours.
+ * L'écriture, de TOUTE promotion (« retrait à un point » compris), passe par
+ * `/admin/promotions`, sous `b2b_pricing` seul : un seul endroit depuis le
+ * 2026-10-31 (`documentation/promotions/plan-un-seul-endroit.md`).
  */
 @Injectable({ providedIn: 'root' })
 export class PromotionsService {
@@ -44,14 +43,12 @@ export class PromotionsService {
   }
 
   async pose(terms: PromotionTermsPayload): Promise<string> {
-    const created = await firstValueFrom(
-      this.http.post<CreatedIdResponse>(this.surface(terms.fulfillment), terms),
-    );
+    const created = await firstValueFrom(this.http.post<CreatedIdResponse>(this.base, terms));
     return created.id;
   }
 
   revise(id: string, terms: PromotionTermsPayload, reason: string | null): Promise<void> {
-    return this.write(`${this.surface(terms.fulfillment)}/${encodeURIComponent(id)}`, 'put', {
+    return this.write(`${this.base}/${encodeURIComponent(id)}`, 'put', {
       terms,
       reason,
     });
@@ -70,19 +67,12 @@ export class PromotionsService {
   }
 
   private gesture(view: PromotionView, verb: string, body: object): Promise<void> {
-    const path = `${this.surface(view.fulfillment)}/${encodeURIComponent(view.id)}/${verb}`;
+    const path = `${this.base}/${encodeURIComponent(view.id)}/${verb}`;
     return this.write(path, 'post', body);
   }
 
   private async write(path: string, method: 'post' | 'put', body: object): Promise<void> {
     await firstValueFrom(this.http.request<void>(method, path, { body }));
-  }
-
-  /** La route de la promotion : celle de son point, ou celle de l'écran. */
-  private surface(fulfillment: PromotionView['fulfillment']): string {
-    return fulfillment.kind === 'pickup_point' && fulfillment.pickupId !== null
-      ? `${B2B_API_BASE}/admin/sites/${encodeURIComponent(fulfillment.pickupId)}/promotions`
-      : this.base;
   }
 
   /**

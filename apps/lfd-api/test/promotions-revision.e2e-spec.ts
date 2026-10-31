@@ -119,7 +119,7 @@ async function scene(): Promise<Scene> {
 /** Une promotion de retrait au point donné, pour tous les publics. */
 async function poseAt(pickupId: string): Promise<void> {
   await staff()
-    .post(`/admin/sites/${pickupId}/promotions`)
+    .post("/admin/promotions")
     .send({
       internalName: "Retrait au point",
       label: { fr: "Remise retrait", en: null, it: null },

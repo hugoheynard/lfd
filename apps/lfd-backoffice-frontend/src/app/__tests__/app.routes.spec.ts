@@ -215,11 +215,12 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'catalogue-publie': 'b2b_settings:read',
   'promotions/frise': 'b2b_settings:read',
   'promotions/simulateur': 'b2b_settings:read',
-  // **Promotions ciblées** (plan des promotions, L7) — l'un OU l'autre droit,
-  // comme la route serveur : la tarification pose, les réglages règlent un point.
+  // **Promotions ciblées** (plan des promotions, L7) — lues sous l'un OU l'autre droit,
+  // comme la route serveur.
   'promotions-ciblees': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
-  'promotions-ciblees/nouvelle': { anyOf: ['b2b_pricing:write', 'lfc_site_settings:write'] },
-  'promotions-ciblees/:id/modifier': { anyOf: ['b2b_pricing:write', 'lfc_site_settings:write'] },
+  // Écrites sous b2b_pricing seul : un seul endroit (plan-un-seul-endroit.md, 2026-10-31).
+  'promotions-ciblees/nouvelle': 'b2b_pricing:write',
+  'promotions-ciblees/:id/modifier': 'b2b_pricing:write',
   'promotions-ciblees/:id': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le

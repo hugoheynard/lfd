@@ -154,7 +154,7 @@ function promotion(site: string, over: Partial<PromotionTermsPayload>): Record<s
 }
 
 async function pose(site: string, over: Partial<PromotionTermsPayload>): Promise<void> {
-  await staff().post(`/admin/sites/${site}/promotions`).send(promotion(site, over)).expect(201);
+  await staff().post("/admin/promotions").send(promotion(site, over)).expect(201);
 }
 
 function order(site: string): Record<string, unknown> {

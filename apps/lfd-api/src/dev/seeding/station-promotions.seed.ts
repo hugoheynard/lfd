@@ -20,7 +20,7 @@ const SEED_ACTOR = "system:dev-seed";
  * le semis la posait par `CreatePickupAddressCommand` et le rechargement de
  * dev mourait en 409. Elle se pose désormais comme la reprise (§ 13.4)
  * l'écrivait : « pros actifs » et « tous sauf les pros actifs », retrait à CE
- * point, sur tout — par le vrai geste, depuis la surface du point.
+ * point, sur tout — par le vrai geste, celui de l'écran Promotions.
  */
 export async function posePointDiscount(
   commands: CommandBus,
@@ -52,7 +52,6 @@ export async function posePointDiscount(
           conditions: [],
         },
         SEED_ACTOR,
-        { kind: "pickup_point", pickupId },
       ),
     );
   }

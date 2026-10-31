@@ -14,7 +14,6 @@ import { ListPromotionsHandler } from "./application/queries/list-promotions.han
 import { PromotionBrowser } from "./domain/ports/promotion-browser.reader.js";
 import { PromotionRivalsReader } from "./domain/ports/promotion-rivals.reader.js";
 import { PromotionRepository } from "./domain/ports/promotion.repository.js";
-import { AdminPickupPromotionsController } from "./http/admin-pickup-promotions.controller.js";
 import { AdminPromotionsController } from "./http/admin-promotions.controller.js";
 import {
   PrismaPromotionBrowser,
@@ -34,7 +33,7 @@ import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.rep
  */
 @Module({
   imports: [PricingModule, CatalogModule],
-  controllers: [AdminPromotionsController, AdminPickupPromotionsController],
+  controllers: [AdminPromotionsController],
   providers: [
     { provide: PromotionRepository, useClass: PrismaPromotionRepository },
     { provide: PromotionBrowser, useClass: PrismaPromotionBrowser },

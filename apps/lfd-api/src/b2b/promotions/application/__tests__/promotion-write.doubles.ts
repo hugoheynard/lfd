@@ -117,8 +117,8 @@ export function writeScene(at: Date) {
     catalogue,
     pose: new PosePromotionHandler(promotions, guard, new FixedIdGenerator("promo"), clock),
     revise: new RevisePromotionHandler(promotions, guard, clock),
-    pause: new PausePromotionHandler(promotions, guard, clock),
+    pause: new PausePromotionHandler(promotions, clock),
     resume: new ResumePromotionHandler(promotions, guard, clock),
-    archive: new ArchivePromotionHandler(promotions, guard, clock),
+    archive: new ArchivePromotionHandler(promotions, clock),
   };
 }

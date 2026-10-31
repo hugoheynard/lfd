@@ -22,7 +22,7 @@
 
     <fold-checkbox
       label="Retrait"
-      hint="proposé au retrait, onglet au comptoir, créneaux publics, réduction de retrait"
+      hint="proposé au retrait, onglet au comptoir, créneaux publics"
       [disabled]="readOnly()"
       [checked]="draft().pickup"
       (checkedChange)="set('pickup', $event)"

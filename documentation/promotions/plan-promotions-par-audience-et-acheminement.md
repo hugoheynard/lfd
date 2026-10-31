@@ -1232,25 +1232,33 @@ qui a été tranché en bâtissant :
 
 ### 13.9 L'écran Promotions et le journal
 
+> ✂️ **Rayé le 2026-10-31** pour les permissions et le raccourci de la fiche
+> d'un site : une promotion se règle à un seul endroit, l'écran Promotions,
+> sous `b2b_pricing` seul — plus de surface, plus de route de site, plus de
+> remise sur la fiche. Voir [`plan-un-seul-endroit.md`](plan-un-seul-endroit.md).
+
 - Back-office, entrée **Tarification › Promotions** : liste (filtres état,
   public, acheminement, point), éditeur à sept blocs du § 12 (identité, effet,
   fenêtre, public — un seul menu, § 9 —, acheminement, portée familles/
   produits/déclinaisons avec le mode, conditions). Le résumé lu par le staff :
   « −20 % · particuliers inscrits · retrait à Cœur de station · du … au … ».
-  Pause, reprise, archivage (motif obligatoire). Permissions (§ 14 S-droits) :
+  Pause, reprise, archivage (motif obligatoire). ~~Permissions (§ 14 S-droits) :
   une promotion dont l'acheminement est `pickup_point` s'écrit sous
   **`b2b_settings`**, la ressource qui garde aujourd'hui la remise sur la fiche
   du site (`admin-sites.controller.ts:58`) ; toutes les autres sous
   **`b2b_pricing`**, celle des règles de prix. Aucune ressource neuve, aucun
   droit écrit en migration (`lint:no-role-grants-in-migrations`) : qui réglait
   la remise d'un site la règle encore, qui posait une règle promotion la pose
-  encore — rien ne se perd à la bascule, rien ne s'ouvre non plus.
-- **Raccourci depuis la fiche d'un site** (Réglages › Sites,
+  encore — rien ne se perd à la bascule, rien ne s'ouvre non plus.~~ (rayé le
+  2026-10-31, [`plan-un-seul-endroit.md`](plan-un-seul-endroit.md) : toutes
+  sous `b2b_pricing`)
+- ~~**Raccourci depuis la fiche d'un site** (Réglages › Sites,
   `apps/lfd-backoffice-frontend/src/app/reglages/sites/site-page/audience-discount-card/`) :
   dès L4 (gel des sources), la carte de remise devient un résumé en lecture des
   promotions dont l'acheminement vise ce point, avec « Gérer dans Promotions »
   (liste pré-filtrée sur le point) et « Nouvelle promotion pour ce site »
-  (éditeur pré-rempli : Retrait · ce point).
+  (éditeur pré-rempli : Retrait · ce point).~~ (rayé le 2026-10-31 : la fiche
+  d'un site ne parle plus de remises, [`plan-un-seul-endroit.md`](plan-un-seul-endroit.md))
 - **Journal** : `pricing_events` (`pricing.prisma:579-591`) gagne le sujet
   `promotion` (`subject_type` est du texte, pas d'enum : aucune migration de
   schéma), actes existants `posed | paused | resumed | archived | replaced`,
@@ -1988,7 +1996,7 @@ lecteurs. C'est de l'argent, une migration de données et un document légal :
 | Composition exacte : UN `pickupDiscount` passé à `composeTtcOrder`                                                                 | `src/b2b/orders/domain/services/exact-order-composition.ts:42-50` ; `packages/money/src/ttc-order.ts:109-116` (`pickupDiscountParts`, l. 140)                                                                       |
 | Chemin `line_ht` (pros) : définition du TTC                                                                                        | `packages/money/src/vat.ts:139` (`ventilateVat`)                                                                                                                                                                    |
 | Passation : le libellé et l'ajustement d'UNE promotion                                                                             | `src/b2b/orders/application/services/order-composition.service.ts:62, 253, 353, 376` ; `cart-adjustments.service.ts:144`                                                                                            |
-| Refus de pose « une promotion panier par commande »                                                                                | `src/b2b/promotions/domain/promotion-overlap.ts:104` (`assertSingleBasketPromotion`), appelé `promotion-write-guard.ts:70`                                                                                          |
+| Refus de pose « une promotion panier par commande »                                                                                | `src/b2b/promotions/domain/promotion-overlap.ts:104` (`assertSingleBasketPromotion`), appelé `promotion-write-guard.ts:49`                                                                                          |
 | Révision (L9) : compare UNE promotion                                                                                              | `src/b2b/orders/domain/services/fulfillment-promotion.ts:24-48` (`discountPromotionId` ou `sameAdjustment`)                                                                                                         |
 | Écriture de la révision                                                                                                            | `src/b2b/orders/infrastructure/prisma-order-revision.repository.ts:88-94` ; passation : `prisma-order.repository.ts:154`                                                                                            |
 | Bon partiel exact                                                                                                                  | `src/b2b/delivery-notes/domain/services/exact-departure.ts:59, 112, 125` ; colonnes `delivery-notes.prisma:50, 64`                                                                                                  |

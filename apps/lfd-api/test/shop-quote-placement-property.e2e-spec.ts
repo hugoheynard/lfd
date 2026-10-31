@@ -243,13 +243,7 @@ async function setPromotions(promotions: readonly PromotionTermsPayload[]): Prom
   await ctx.prisma.promotionAudienceTarget.deleteMany();
   await ctx.prisma.promotion.deleteMany();
   for (const promotion of promotions) {
-    const response = await staff()
-      .post(
-        promotion.fulfillment.kind === "pickup_point"
-          ? `/admin/sites/${site}/promotions`
-          : "/admin/promotions",
-      )
-      .send(promotion);
+    const response = await staff().post("/admin/promotions").send(promotion);
     if (response.status !== 201) {
       throw new Error(
         `Pose refusée (${String(response.status)}) : ${JSON.stringify(response.body)} pour ${JSON.stringify(promotion)}`,

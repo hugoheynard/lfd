@@ -1,8 +1,8 @@
 /**
  * **Poser une promotion par le vrai geste** (plan
  * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * lot L12) — l'écran Promotions (`/admin/promotions`), ou celui d'un point
- * (`/admin/sites/:id/promotions`) pour une promotion de retrait à ce point.
+ * lot L12) — l'écran Promotions (`/admin/promotions`), seul endroit où une
+ * promotion se règle depuis le 2026-10-31 (`plan-un-seul-endroit.md`).
  *
  * Depuis L12, l'étage `promotion` n'est plus occupé que par les promotions et
  * la remise d'un site n'est plus lue : les suites qui posaient une règle
@@ -47,18 +47,9 @@ export function onlyVariant(sku: string): PromotionTermsPayload["scope"] {
   return { mode: "only", rules: [{ target: "variant", targetId: sku, eligible: true }] };
 }
 
-/**
- * Pose la promotion et rend son identifiant. Une promotion de retrait à un
- * point se pose depuis CE point (`lfc_site_settings`), les autres depuis
- * l'écran Promotions (`b2b_pricing`) — la surface du geste (§ 13.9).
- */
+/** Pose la promotion (sous `b2b_pricing`) et rend son identifiant. */
 export async function posePromotion(agent: Agent, terms: PromotionTermsPayload): Promise<string> {
-  const { pickupId } = terms.fulfillment;
-  const path =
-    terms.fulfillment.kind === "pickup_point" && pickupId !== null
-      ? `/admin/sites/${pickupId}/promotions`
-      : "/admin/promotions";
-  const response = await agent.post(path).send(terms).expect(201);
+  const response = await agent.post("/admin/promotions").send(terms).expect(201);
   return jsonBody<{ id: string }>(response).id;
 }
 

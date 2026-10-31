@@ -17,14 +17,11 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { NotifyService } from '../../../notify.service';
 import { SITES_PATH } from '../sites-path';
-import { AudienceDiscountCard } from './audience-discount-card/audience-discount-card';
-import { SiteDiscountCard } from './site-discount-card/site-discount-card';
 import { CatalogueService } from '../../../b2b/catalogue/catalogue.service';
 import { SiteHoursCard } from './site-hours-card/site-hours-card';
 import { SiteIdentityCard } from './site-identity-card/site-identity-card';
 import { SitesService } from '../sites.service';
 import { SitePage } from './site-page';
-import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 
 /** 8 € pour une clientèle, sans règle de portée. */
 const EIGHT_EUROS = {
@@ -152,16 +149,6 @@ async function mount(
         useValue: { readPublic: () => Promise.resolve(DEFAULT_DELIVERY_AVAILABILITY) },
       },
       { provide: NotifyService, useValue: { success: () => undefined, error: () => undefined } },
-      // L12 : la source ne vaut plus que `promotions`. Doublée ici — sans quoi
-      // la carte interrogeait l'API réellement joignable (celle de dev en
-      // local, aucune en CI) et le cas dépendait du poste.
-      {
-        provide: PromotionsService,
-        useValue: {
-          source: () => Promise.resolve({ source: 'promotions', editable: true }),
-          list: () => Promise.resolve({ source: 'promotions', editable: true, promotions: [] }),
-        },
-      },
     ],
   });
   const fixture = TestBed.createComponent(SitePage);
@@ -220,7 +207,7 @@ describe('SitePage — les cartes selon les rôles', () => {
     expect(fixture.nativeElement.textContent).not.toContain('Enregistrer les couleurs');
   });
 
-  it('réunit le retrait en UNE carte à trois sous-cartes (Hugo, 2026-10-13)', async () => {
+  it('réunit le retrait en UNE carte à sous-cartes (Hugo, 2026-10-13)', async () => {
     const { fixture } = await mount('pick_1');
     const root: HTMLElement = fixture.nativeElement;
     const text = root.textContent ?? '';
@@ -228,7 +215,7 @@ describe('SitePage — les cartes selon les rôles', () => {
       'Paramétrage du retrait',
       'Heures de retrait',
       'Créneaux publics de retrait',
-      'Réductions de retrait sur ce site',
+      'Lien direct',
     ].map((label) => text.indexOf(label));
 
     expect(order.every((at) => at >= 0)).toBe(true);
@@ -264,21 +251,25 @@ function identity(fixture: ComponentFixture<SitePage>): SiteIdentityCard {
   return fixture.debugElement.query(By.directive(SiteIdentityCard)).componentInstance;
 }
 
-/** La carte d'une clientèle, montée par la page : Pros, puis Particuliers. */
-function audienceCard(fixture: ComponentFixture<SitePage>, index: number): AudienceDiscountCard {
-  return fixture.debugElement.queryAll(By.directive(AudienceDiscountCard))[index]
-    ?.componentInstance;
-}
-
 /**
- * Chaque clientèle a SA réduction et SA sauvegarde (lot B du plan des
- * exclusions) : ses cas vivent dans `AudienceDiscountCard`, la page vérifie
- * le branchement.
+ * La fiche d'un site ne parle plus de remises (Hugo, 2026-10-31,
+ * `documentation/promotions/plan-un-seul-endroit.md` § 3.4) : le réglage d'un
+ * site décrit le lieu, pas ce que le commerce en fait. Une promotion se règle
+ * à l'écran Promotions, seul endroit.
  */
-describe('SitePage — les réductions, une carte par clientèle', () => {
-  it('enregistrer l’adresse n’envoie pas les remises, même modifiées', async () => {
+describe('SitePage — aucune remise sur la fiche', () => {
+  it('ne montre ni réduction de retrait ni promotions du point', async () => {
+    const { fixture } = await mount('pick_1');
+    const text: string = fixture.nativeElement.textContent;
+
+    expect(text).not.toMatch(/réduction/iu);
+    expect(text).not.toMatch(/promotion/iu);
+    expect(fixture.nativeElement.querySelector('app-site-discount-card')).toBeNull();
+    expect(fixture.nativeElement.querySelector('app-site-promotions-card')).toBeNull();
+  });
+
+  it('enregistrer l’adresse n’envoie pas les remises', async () => {
     const { fixture, pickups } = await mount('pick_1');
-    audienceCard(fixture, 1)['setDiscount']({ mode: 'percent', bp: 500, direction: 'decrease' });
     identity(fixture)['draft'].update((d) => ({ ...d, label: 'Laboratoire bis' }));
 
     await identity(fixture)['save']();
@@ -287,32 +278,7 @@ describe('SitePage — les réductions, une carte par clientèle', () => {
     expect(pickups.updated[0] && 'discounts' in pickups.updated[0]).toBe(false);
   });
 
-  it('montre deux cartes, Pros puis Particuliers', async () => {
-    const { fixture } = await mount('pick_1');
-
-    expect(fixture.debugElement.queryAll(By.directive(AudienceDiscountCard))).toHaveLength(2);
-    expect(fixture.nativeElement.textContent).toContain('Particuliers');
-  });
-
-  /**
-   * RÉÉCRIT en L12 (2026-10-30) : il éprouvait l'écriture d'une réduction
-   * depuis sa carte. Depuis la bascule, la réduction d'un site se règle dans
-   * l'écran Promotions et l'API refuse cette écriture : la carte est en
-   * lecture, et « Enregistrer » n'envoie rien.
-   */
-  it('la réduction des pros est en lecture : retirer puis enregistrer n’envoie rien', async () => {
-    const { fixture, pickups } = await mount('pick_1');
-    await fixture.whenStable();
-    fixture.detectChanges();
-    const card = audienceCard(fixture, 0);
-    card['setDiscount'](null);
-
-    await card['save']();
-
-    expect(pickups.updated).toEqual([]);
-  });
-
-  it('crée un site sans réduction : elle se règle une fois qu’il existe', async () => {
+  it('crée un site sans réduction', async () => {
     const { fixture, pickups, router } = await mount(undefined);
     vi.spyOn(router, 'navigate').mockResolvedValue(true);
     identity(fixture)['draft'].set(postalDraftFrom(LABO));
@@ -320,7 +286,6 @@ describe('SitePage — les réductions, une carte par clientèle', () => {
     await identity(fixture)['save']();
 
     expect(pickups.created[0]).toMatchObject({ discounts: { b2b: null, b2c: null } });
-    expect(fixture.debugElement.query(By.directive(SiteDiscountCard))).toBeNull();
   });
 });
 

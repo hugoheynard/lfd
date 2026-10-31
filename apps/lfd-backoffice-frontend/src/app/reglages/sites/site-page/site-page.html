@@ -75,9 +75,6 @@
             @if (!archived()) {
               <app-public-slots-card [pickupId]="current.id" />
             }
-            <app-site-discount-card [site]="current" [readOnly]="archived()" (saved)="reload()" />
-            <!-- Le raccourci vers ses promotions (plan des promotions, L7). -->
-            <app-site-promotions-card [pickupId]="current.id" />
             <!-- Un site archivé n'est plus offert : son lien ouvrirait la boutique
                  sans rien retenir. -->
             @if (!archived()) {

@@ -1,9 +1,7 @@
 import {
   BasketPromotionsWouldCombineError,
   OverlappingPromotionError,
-  PromotionWrongSurfaceError,
 } from "../../../domain/errors/promotion-errors.js";
-import { PRICING_SURFACE, type PromotionSurface } from "../../../domain/promotion-surface.js";
 import { PromotionAudienceSet } from "../../../domain/promotion-audience-set.js";
 import type { PromotionTerms } from "../../../domain/promotion-terms.js";
 import {
@@ -20,7 +18,6 @@ import { ResumePromotionCommand } from "../resume-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
 
 const STAFF = "staff_hugo";
-const COEUR: PromotionSurface = { kind: "pickup_point", pickupId: "pk_coeur" };
 const DAY_MS = 86_400_000;
 
 function onlyFamily(familyId: string): PromotionTerms["scope"] {
@@ -30,35 +27,32 @@ function onlyFamily(familyId: string): PromotionTerms["scope"] {
   };
 }
 
-describe("la surface et son droit (§ 13.9)", () => {
-  it("refuse de poser une promotion de retrait à un point depuis l'écran Promotions", async () => {
+/**
+ * Il n'y a plus qu'un endroit pour régler une promotion (plan
+ * `documentation/promotions/plan-un-seul-endroit.md`, 2026-10-31) : le geste
+ * ne juge plus d'où il vient.
+ */
+describe("un seul endroit", () => {
+  /**
+   * Régression : réviser la promotion reprise d'un site de « retrait à ce
+   * point » vers « tous acheminements » était refusé (« se règle depuis ce
+   * point de retrait »), et l'inverse aussi.
+   */
+  it("révise une promotion de retrait à un point vers « tous acheminements », et retour", async () => {
     const s = writeScene(FROM);
-    await expect(
-      s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, PRICING_SURFACE)),
-    ).rejects.toThrow(PromotionWrongSurfaceError);
-  });
-
-  it("refuse depuis un point une promotion qui ne vise pas ce point", async () => {
-    const s = writeScene(FROM);
-    await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, COEUR)),
-    ).rejects.toThrow(PromotionWrongSurfaceError);
-    const elsewhere = basketTerms({ fulfillment: { kind: "pickup_point", pickupId: "pk_autre" } });
-    await expect(s.pose.execute(new PosePromotionCommand(elsewhere, STAFF, COEUR))).rejects.toThrow(
-      PromotionWrongSurfaceError,
+    const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
+    await s.revise.execute(
+      new RevisePromotionCommand(id, basketTerms({ fulfillment: { kind: "any" } }), STAFF, null),
     );
-  });
-
-  it("refuse de suspendre depuis l'écran Promotions celle d'un point, et de la réviser vers « tous »", async () => {
-    const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, COEUR));
-    await expect(
-      s.pause.execute(new PausePromotionCommand(id, STAFF, null, PRICING_SURFACE)),
-    ).rejects.toThrow(PromotionWrongSurfaceError);
-    await expect(
-      s.revise.execute(new RevisePromotionCommand(id, lineTerms(), STAFF, null, COEUR)),
-    ).rejects.toThrow(PromotionWrongSurfaceError);
-    expect(s.promotions.acts.map((act) => act.kind)).toEqual(["posed"]);
+    expect(s.promotions.stored.get(id)?.terms.fulfillment).toEqual({ kind: "any" });
+    await s.revise.execute(new RevisePromotionCommand(id, basketTerms(), STAFF, null));
+    await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
+    expect(s.promotions.acts.map((act) => act.kind)).toEqual([
+      "posed",
+      "replaced",
+      "replaced",
+      "paused",
+    ]);
   });
 });
 
@@ -73,10 +67,9 @@ describe("le refus de chevauchement (§ 13.2)", () => {
           validTo: UNTIL,
         }),
         STAFF,
-        PRICING_SURFACE,
       ),
     );
-    const refusal = s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE));
+    const refusal = s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
     await expect(refusal).rejects.toThrow(OverlappingPromotionError);
     await expect(refusal).rejects.toThrow(
       // `UNTIL` est minuit UTC, donc 1 h à Paris : le 1er décembre est encore couvert.
@@ -95,8 +88,7 @@ describe("le refus de chevauchement (§ 13.2)", () => {
    */
   it("laisse coexister deux portées disjointes, deux publics disjoints, deux fenêtres qui se suivent", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) =>
-      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
     const individuals = { kind: "individuals" } as const;
     await pose(lineTerms({ scope: onlyFamily("c_pains"), validTo: UNTIL, audience: individuals }));
     await pose(lineTerms({ scope: onlyFamily("c_viennoiserie"), audience: individuals }));
@@ -109,8 +101,7 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("refuse `pros` contre `pros actifs` : leurs couvertures se croisent (L8b, vitruve n° 3 S4)", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) =>
-      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
     await pose(lineTerms({ internalName: "Pros", audience: { kind: "pros" } }));
     const refusal = pose(lineTerms({ audience: { kind: "pros_active" } }));
     await expect(refusal).rejects.toThrow(OverlappingPromotionError);
@@ -119,8 +110,7 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("refuse {inscrits, pros} contre {pros} et contre {pros actifs} ; accepte contre {invités}", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) =>
-      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
     await pose(
       lineTerms({
         internalName: "Inscrits et pros",
@@ -146,25 +136,18 @@ describe("le refus de chevauchement (§ 13.2)", () => {
         { target: "variant", targetId: "PAI-001-1", eligible: false, targetRank: null },
       ],
     };
-    await s.pose.execute(
-      new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF, PRICING_SURFACE),
-    );
-    await s.pose.execute(
-      new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF, PRICING_SURFACE),
-    );
-    await s.pose.execute(
-      new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF, COEUR),
-    );
+    await s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF));
+    await s.pose.execute(new PosePromotionCommand(lineTerms({ scope: weightOnly }), STAFF));
+    await s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF));
     await expect(
-      s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF, COEUR)),
+      s.pose.execute(new PosePromotionCommand(basketTerms({ scope: weightOnly }), STAFF)),
     ).rejects.toThrow("« Pain de seigle au poids »");
   });
 
   /** § 16 : deux cumulables se combinent, elles ne se disputent rien. */
   it("laisse deux cumulables se recouvrir ; refuse une non cumulable face à une cumulable", async () => {
     const s = writeScene(FROM);
-    const pose = (terms: PromotionTerms) =>
-      s.pose.execute(new PosePromotionCommand(terms, STAFF, PRICING_SURFACE));
+    const pose = (terms: PromotionTerms) => s.pose.execute(new PosePromotionCommand(terms, STAFF));
     await pose(lineTerms({ internalName: "Cumul A", cumulative: true }));
     await pose(lineTerms({ internalName: "Cumul B", cumulative: true }));
     expect(s.promotions.stored.size).toBe(2);
@@ -177,32 +160,31 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("une rivale en pause garde sa place ; une archivée la rend", async () => {
     const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE));
-    await s.pause.execute(new PausePromotionCommand(id, STAFF, null, PRICING_SURFACE));
+    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
+    await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
+    await expect(s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF))).rejects.toThrow(
+      OverlappingPromotionError,
+    );
+    await s.archive.execute(new ArchivePromotionCommand(id, STAFF, "fin"));
     await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE)),
-    ).rejects.toThrow(OverlappingPromotionError);
-    await s.archive.execute(new ArchivePromotionCommand(id, STAFF, "fin", PRICING_SURFACE));
-    await expect(
-      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE)),
+      s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF)),
     ).resolves.toBeDefined();
   });
 
   it("une révision ne se dispute pas avec elle-même, et la reprise d'une pause est jugée", async () => {
     const s = writeScene(FROM);
-    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE));
+    const id = await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
     await s.revise.execute(
       new RevisePromotionCommand(
         id,
         lineTerms({ effect: { kind: "percent_off", basisPoints: 3000 } }),
         STAFF,
         null,
-        PRICING_SURFACE,
       ),
     );
-    await s.pause.execute(new PausePromotionCommand(id, STAFF, null, PRICING_SURFACE));
+    await s.pause.execute(new PausePromotionCommand(id, STAFF, null));
     await expect(
-      s.resume.execute(new ResumePromotionCommand(id, STAFF, null, PRICING_SURFACE)),
+      s.resume.execute(new ResumePromotionCommand(id, STAFF, null)),
     ).resolves.toBeUndefined();
     expect(s.promotions.acts.map((act) => act.kind)).toEqual([
       "posed",
@@ -214,7 +196,7 @@ describe("le refus de chevauchement (§ 13.2)", () => {
 
   it("ne lit pas le catalogue quand aucune autre promotion n'existe", async () => {
     const s = writeScene(FROM);
-    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF, PRICING_SURFACE));
+    await s.pose.execute(new PosePromotionCommand(lineTerms(), STAFF));
     expect(s.catalogue.reads).toBe(0);
   });
 });
@@ -223,9 +205,9 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
   it("laisse coexister la remise des pros actifs et celle des autres, au même point", async () => {
     const s = writeScene(FROM);
     await s.pose.execute(
-      new PosePromotionCommand(basketTerms({ audience: { kind: "pros_active" } }), STAFF, COEUR),
+      new PosePromotionCommand(basketTerms({ audience: { kind: "pros_active" } }), STAFF),
     );
-    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, COEUR));
+    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
     expect(s.promotions.stored.size).toBe(2);
   });
 
@@ -239,7 +221,6 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
           scope: onlyFamily("c_viennoiserie"),
         }),
         STAFF,
-        COEUR,
       ),
     );
     const combined = basketTerms({
@@ -247,20 +228,16 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
       fulfillment: { kind: "pickup" },
       scope: onlyFamily("c_pains"),
     });
-    const refusal = s.pose.execute(new PosePromotionCommand(combined, STAFF, PRICING_SURFACE));
+    const refusal = s.pose.execute(new PosePromotionCommand(combined, STAFF));
     await expect(refusal).rejects.toThrow(BasketPromotionsWouldCombineError);
     await expect(refusal).rejects.toThrow("« Remise Cœur pros »");
   });
 
   it("laisse coexister une promotion de livraison et une de retrait, ou deux fenêtres disjointes", async () => {
     const s = writeScene(FROM);
-    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF, COEUR));
+    await s.pose.execute(new PosePromotionCommand(basketTerms(), STAFF));
     await s.pose.execute(
-      new PosePromotionCommand(
-        basketTerms({ fulfillment: { kind: "delivery" } }),
-        STAFF,
-        PRICING_SURFACE,
-      ),
+      new PosePromotionCommand(basketTerms({ fulfillment: { kind: "delivery" } }), STAFF),
     );
     await s.pose.execute(
       new PosePromotionCommand(
@@ -270,7 +247,6 @@ describe("une seule promotion de panier par commande, jusqu'à L12", () => {
           validTo: FROM,
         }),
         STAFF,
-        PRICING_SURFACE,
       ),
     );
     expect(s.promotions.stored.size).toBe(3);

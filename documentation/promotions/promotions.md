@@ -96,9 +96,13 @@ dans le modèle, et la boutique l'affiche depuis L10.
 
 ### Où on les règle
 
-- **Tarification › Promotions** : toutes les promotions (droit « tarifs B2B »).
-- **Fiche d'un site** : les promotions de ce point de retrait, et « Nouvelle
-  promotion pour ce site » (droit « réglages des sites »).
+- **Tarification › Promotions**, et là seulement : toutes les promotions,
+  « retrait à un point » compris (droit « tarifs B2B »). Un seul endroit
+  depuis le 2026-10-31 (décision de Hugo, [`plan-un-seul-endroit.md`](plan-un-seul-endroit.md)) :
+  la fiche d'un site ne parle plus de remises, elle décrit le lieu. L'écran
+  Promotions se filtre par point, et un passage « un point » → « tous
+  acheminements » y est une révision comme une autre (elle change de
+  mécanique : du panier aux lignes, et l'annonce du point disparaît).
 - L'ancienne grille s'appelle désormais **Règles de prix** ; elle ne pose plus
   de promotion (L12).
 
@@ -221,8 +225,7 @@ l'ancien chemin qu'elle comparait, 2026-10-30).
 | ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
 | Deux promotions du même point qui se recouvrent (public, acheminement, portée, période)   | `OverlappingPromotionError` (`domain/promotion-overlap.ts:54`)                                                                                   |
 | Deux promotions panier possibles pour une même commande, sauf si les deux sont cumulables | `BasketPromotionsWouldCombineError` (`assertSingleBasketPromotion`, `promotion-overlap.ts:110`)                                                  |
-| Une sixième cumulable de panier qui pourrait s'appliquer avec cinq autres                 | `TooManyCumulativeBasketPromotionsError` (`promotion-errors.ts:344`) ; plafond `MAX_BASKET_DISCOUNTS_PER_ORDER = 5` (`promotion-overlap.ts:138`) |
-| Posée depuis la mauvaise surface (fiche d'un site ≠ son point)                            | `PromotionWrongSurfaceError` (`domain/promotion-surface.ts:29`)                                                                                  |
+| Une sixième cumulable de panier qui pourrait s'appliquer avec cinq autres                 | `TooManyCumulativeBasketPromotionsError` (`promotion-errors.ts:325`) ; plafond `MAX_BASKET_DISCOUNTS_PER_ORDER = 5` (`promotion-overlap.ts:138`) |
 | Un produit entier ciblé au point ligne                                                    | `PromotionProductTargetAtLineError` (`domain/promotion-terms.ts:108`)                                                                            |
 | Effet non admis à ce point                                                                | `PromotionEffectPointMismatchError`                                                                                                              |
 | Portée vide, fenêtre inversée, texte vide, effet hors bornes                              | `PromotionScopeIncludesNothingError`, `PromotionReversedWindowError`, `PromotionBlankTextError`, `PromotionInvalidEffectError`                   |
@@ -290,11 +293,20 @@ Avec plusieurs remises, chaque libellé est figé dans sa ligne
 
 ### 2.9 Écrans et droits
 
-| Écran                                                 | Front                                                       | API                                          | Droit                       |
-| ----------------------------------------------------- | ----------------------------------------------------------- | -------------------------------------------- | --------------------------- |
-| Promotions (liste, fiche, éditeur, arbre des publics) | `apps/lfd-backoffice-frontend/src/app/targeted-promotions/` | `http/admin-promotions.controller.ts`        | `b2b_pricing` (`:60`)       |
-| Promotions d'un site                                  | `reglages/sites/site-page/site-promotions-card/`            | `http/admin-pickup-promotions.controller.ts` | `lfc_site_settings` (`:43`) |
-| Règles de prix (ancienne grille)                      | —                                                           | `b2b/pricing/http/`                          | `b2b_pricing`               |
+| Écran                                                 | Front                                                       | API                                   | Droit                                                               |
+| ----------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
+| Promotions (liste, fiche, éditeur, arbre des publics) | `apps/lfd-backoffice-frontend/src/app/targeted-promotions/` | `http/admin-promotions.controller.ts` | `b2b_pricing` (`:61`) ; lecture aussi sous `lfc_site_settings:read` |
+| Règles de prix (ancienne grille)                      | —                                                           | `b2b/pricing/http/`                   | `b2b_pricing`                                                       |
+
+Il n'y a plus de **surface** (d'où une promotion est réglée) depuis le
+2026-10-31 : la route `admin/sites/:pickupId/promotions` (sous
+`lfc_site_settings`), le fichier de la surface (retiré), `PromotionWrongSurfaceError` et
+les cartes de remise de la fiche d'un site sont retirés
+([`plan-un-seul-endroit.md`](plan-un-seul-endroit.md)). Qui tenait
+`lfc_site_settings:write` sans `b2b_pricing:write` ne règle plus la remise de
+son point : le droit des prix s'accorde à l'écran (`/admin/staff-roles`).
+Les écrans `nouvelle` et `:id/modifier` du back-office sont gardés par
+`b2b_pricing:write` seul.
 
 ### 2.10 Journal
 

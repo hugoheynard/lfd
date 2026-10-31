@@ -20,11 +20,10 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
     const promotion = await mustLoadPromotion(this.promotions, command.id);
     const revised = promotion.revise(command.terms);
     if (promotion.saysAlready(command.terms)) {
-      // Reposée à l'identique : la surface reste jugée, rien ne s'écrit.
-      this.guard.admitsTouch(command.surface, promotion);
+      // Reposée à l'identique : rien ne s'écrit, donc rien à juger.
       return;
     }
-    await this.guard.admitsPlace(command.surface, promotion, revised);
+    await this.guard.admitsPlace(revised);
     await this.promotions.save(
       revised,
       promotionActOf(revised, "replaced", command.staffUserId, now, command.reason),

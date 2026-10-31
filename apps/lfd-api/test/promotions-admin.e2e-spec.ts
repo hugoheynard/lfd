@@ -5,12 +5,12 @@
  *
  * 1. le verrou d'avant la bascule — en `legacy`, toute écriture rend 409, la
  *    lecture dit « non éditable » ;
- * 2. les droits — `b2b_pricing` pour l'écran, `lfc_site_settings` (la fiche
- *    d'un site, décision de Hugo du 2026-10-30) pour les promotions d'un
- *    point de retrait, l'un OU l'autre pour lire ;
+ * 2. les droits — `b2b_pricing` pour écrire TOUTE promotion, « retrait à un
+ *    point » compris (un seul endroit, décision de Hugo du 2026-10-31,
+ *    `documentation/promotions/plan-un-seul-endroit.md`), `b2b_pricing` OU
+ *    `lfc_site_settings` pour lire ;
  * 3. les refus nommés après la bascule — chevauchement (l'autre promotion et
- *    l'article), deux promotions de panier, mauvaise surface, produit entier
- *    au point ligne.
+ *    l'article), deux promotions de panier, produit entier au point ligne.
  *
  * Les fenêtres sont relatives (`daysAgo`) : la liste compare l'état à
  * l'horloge.
@@ -46,7 +46,7 @@ beforeEach(async () => {
 });
 
 const PROMOTIONS = "/admin/promotions";
-const AT_COEUR = "/admin/sites/pk_coeur/promotions";
+const AT_COEUR_LIST = "/admin/promotions?pickupId=pk_coeur";
 const admin = (): ReturnType<E2eContext["asSub"]> => ctx.asSub(E2E_STAFF_SUB);
 
 /** Une personne du rôle `role`, plus les dérogations dites — et son agent. */
@@ -100,11 +100,17 @@ function refusalOf(response: Parameters<typeof jsonBody>[0]): { code: string; me
 
 const AT_COEUR_POINT = { kind: "pickup_point", pickupId: "pk_coeur" } as const;
 
+/** Une autre déclinaison que celle de `terms()`, pour que deux poses ne se disputent rien. */
+const VIE_002: PromotionTermsPayload["scope"] = {
+  mode: "only",
+  rules: [{ target: "variant", targetId: "VIE-002-1", eligible: true }],
+};
+
 // L12 : « avant la bascule, l'écran est en lecture seule » est retiré avec
 // l'ancien chemin — la source ne vaut plus que `promotions` (CHECK).
 
-describe("les droits (§ 13.9)", () => {
-  it("la lecture s'ouvre à b2b_pricing OU lfc_site_settings ; l'écriture, à son seul droit", async () => {
+describe("les droits — un seul endroit", () => {
+  it("la lecture s'ouvre à b2b_pricing OU lfc_site_settings ; l'écriture, à b2b_pricing seul", async () => {
     const pricingReader = await staffWith("pricing-reader", "communication", [
       { resource: "b2b_pricing", action: "read" },
     ]);
@@ -115,51 +121,43 @@ describe("les droits (§ 13.9)", () => {
       { resource: "lfc_site_settings", action: "read" },
     ]);
     await settingsReader.get(PROMOTIONS).expect(200);
-    await settingsReader.get(AT_COEUR).expect(200);
+    await settingsReader.get(AT_COEUR_LIST).expect(200);
 
     const nobody = await staffWith("nobody", "communication", []);
     await nobody.get(PROMOTIONS).expect(403);
-    await nobody.get(AT_COEUR).expect(403);
   });
 
-  it("le tarifeur pose à l'écran, pas sur un point ; le réglage d'un site, l'inverse", async () => {
+  it("le tarifeur pose toute promotion, celle d'un point de retrait comprise", async () => {
     const pricer = await staffWith("pricer", "communication", [
       { resource: "b2b_pricing", action: "write" },
     ]);
     await pricer.post(PROMOTIONS).send(terms()).expect(201);
     await pricer
-      .post(AT_COEUR)
-      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
-      .expect(403);
+      .post(PROMOTIONS)
+      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur", scope: VIE_002 }))
+      .expect(201);
+  });
 
+  /**
+   * Le droit qui bouge (plan-un-seul-endroit.md § 4) : le réglage d'un site
+   * réglait la remise de SON point jusqu'au 2026-10-31. Il ne la règle plus.
+   */
+  it("lfc_site_settings:write sans b2b_pricing:write reçoit 403, même pour un point", async () => {
     const siteKeeper = await staffWith("site-keeper", "communication", [
       { resource: "lfc_site_settings", action: "write" },
     ]);
     await siteKeeper
-      .post(AT_COEUR)
-      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
-      .expect(201);
-    await siteKeeper
       .post(PROMOTIONS)
-      .send(terms({ internalName: "Autre" }))
+      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
       .expect(403);
   });
 
-  /**
-   * Régression (décision de Hugo du 2026-10-30, qui corrige L7) : la remise
-   * d'un site se réglait par `PATCH admin/sites/:id`, sous
-   * `lfc_site_settings` ; L7 avait posé ses promotions sous `b2b_settings`,
-   * que l'écran des sites a quittée — qui réglait la remise aurait perdu le
-   * geste, et un autre l'aurait gagné.
-   */
-  it("b2b_settings seul n'écrit plus la promotion d'un point", async () => {
-    const legacyKeeper = await staffWith("legacy-keeper", "communication", [
-      { resource: "b2b_settings", action: "write" },
-    ]);
-    await legacyKeeper
-      .post(AT_COEUR)
-      .send(terms({ fulfillment: AT_COEUR_POINT, internalName: "Cœur" }))
-      .expect(403);
+  it("l'ancienne route d'un site n'existe plus", async () => {
+    await admin().get("/admin/sites/pk_coeur/promotions").expect(404);
+    await admin()
+      .post("/admin/sites/pk_coeur/promotions")
+      .send(terms({ fulfillment: AT_COEUR_POINT }))
+      .expect(404);
   });
 });
 
@@ -265,7 +263,7 @@ describe("après la bascule — les refus nommés", () => {
 
   it("refuse une seconde promotion de panier qui s'appliquerait à la même commande", async () => {
     await admin()
-      .post(AT_COEUR)
+      .post(PROMOTIONS)
       .send(
         terms({
           internalName: "Cœur pros",
@@ -292,13 +290,7 @@ describe("après la bascule — les refus nommés", () => {
     expect(refusalOf(refused).message).toContain("« Cœur pros »");
   });
 
-  it("refuse une promotion de point posée depuis l'écran, et un produit entier au point ligne", async () => {
-    const wrongSurface = await admin()
-      .post(PROMOTIONS)
-      .send(terms({ fulfillment: AT_COEUR_POINT }))
-      .expect(409);
-    expect(refusalOf(wrongSurface)).toMatchObject({ code: "promotions.wrong_surface" });
-
+  it("refuse un produit entier au point ligne", async () => {
     const productId = (
       await ctx.prisma.catalogItem.findFirstOrThrow({
         where: { sku: "VIE-001-1" },
@@ -325,7 +317,7 @@ describe("après la bascule — les refus nommés", () => {
       await admin().post(PROMOTIONS).send(terms()).expect(201),
     );
     await admin()
-      .post(AT_COEUR)
+      .post(PROMOTIONS)
       .send(terms({ internalName: "Cœur", fulfillment: AT_COEUR_POINT }))
       .expect(201);
 
@@ -337,21 +329,21 @@ describe("après la bascule — les refus nommés", () => {
       { target: "variant", targetId: "VIE-001-1", eligible: true, name: "Croissant" },
     ]);
 
-    const atPoint = jsonBody<PromotionListView>(await admin().get(AT_COEUR).expect(200));
+    const atPoint = jsonBody<PromotionListView>(await admin().get(AT_COEUR_LIST).expect(200));
     expect(atPoint.editable).toBe(true);
     expect(atPoint.promotions.map((promotion) => promotion.internalName)).toEqual(["Cœur"]);
     await admin().get(`${PROMOTIONS}/absente`).expect(404);
   });
 
-  it("modifie par les routes, motif au journal ; une révision qui quitte sa surface est refusée", async () => {
+  it("modifie par les routes, motif au journal ; une révision qui quitte le point passe", async () => {
     const created = jsonBody<{ id: string }>(
       await admin()
-        .post(AT_COEUR)
+        .post(PROMOTIONS)
         .send(terms({ fulfillment: AT_COEUR_POINT }))
         .expect(201),
     );
     await admin()
-      .put(`${AT_COEUR}/${created.id}`)
+      .put(`${PROMOTIONS}/${created.id}`)
       .send({
         terms: terms({ fulfillment: AT_COEUR_POINT, effect: { kind: "percent_off", value: 2500 } }),
         reason: "on monte à 25 %",
@@ -361,25 +353,27 @@ describe("après la bascule — les refus nommés", () => {
       await admin().get(`${PROMOTIONS}/${created.id}`).expect(200),
     );
     expect(view.effect).toEqual({ kind: "percent_off", value: 2500 });
-    const moved = await admin()
-      .put(`${AT_COEUR}/${created.id}`)
-      .send({ terms: terms(), reason: null })
-      .expect(409);
-    expect(refusalOf(moved)).toMatchObject({ code: "promotions.wrong_surface" });
+    await admin()
+      .put(`${PROMOTIONS}/${created.id}`)
+      .send({ terms: terms(), reason: "tous acheminements" })
+      .expect(204);
+    const moved = jsonBody<PromotionView>(
+      await admin().get(`${PROMOTIONS}/${created.id}`).expect(200),
+    );
+    expect(moved.fulfillment).toEqual({ kind: "any", pickupId: null });
   });
 
-  it("suspend, reprend et archive par les routes, chacune sous sa surface", async () => {
+  it("suspend, reprend et archive la promotion d'un point par les routes de l'écran", async () => {
     const created = jsonBody<{ id: string }>(
       await admin()
-        .post(AT_COEUR)
+        .post(PROMOTIONS)
         .send(terms({ fulfillment: AT_COEUR_POINT }))
         .expect(201),
     );
-    await admin().post(`${PROMOTIONS}/${created.id}/pause`).send({}).expect(409);
-    await admin().post(`${AT_COEUR}/${created.id}/pause`).send({}).expect(204);
-    await admin().post(`${AT_COEUR}/${created.id}/resume`).send({}).expect(204);
+    await admin().post(`${PROMOTIONS}/${created.id}/pause`).send({}).expect(204);
+    await admin().post(`${PROMOTIONS}/${created.id}/resume`).send({}).expect(204);
     await admin()
-      .post(`${AT_COEUR}/${created.id}/archive`)
+      .post(`${PROMOTIONS}/${created.id}/archive`)
       .send({ reason: "fin de saison" })
       .expect(204);
     const events = await ctx.prisma.pricingEvent.findMany({

@@ -21,7 +21,7 @@ export class PosePromotionHandler implements ICommandHandler<PosePromotionComman
   async execute(command: PosePromotionCommand): Promise<string> {
     const now = this.clock.now();
     const promotion = Promotion.pose(this.ids.next(), command.terms, command.staffUserId, now);
-    await this.guard.admitsPlace(command.surface, null, promotion);
+    await this.guard.admitsPlace(promotion);
     await this.promotions.save(
       promotion,
       promotionActOf(promotion, "posed", command.staffUserId, now, command.terms.reason),
