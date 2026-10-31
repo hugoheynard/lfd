@@ -1,13 +1,17 @@
 # Les promotions
 
 > 🟧 **Doc d'état en cours de chantier — le plan fait foi pour la suite.**
-> Décrit le code **tel qu'il est sur `dev`** au 2026-10-30 (lots L0 à L9 et
-> L8b, jusqu'au commit `a41498947`). Ce qui est décidé et pas encore bâti vit
-> dans le plan
+> Décrit le code **tel qu'il est sur `dev`** au 2026-10-31 : lots L0 à L10,
+> L8b et L12, le cumul au point ligne puis au panier, la multi-remise de
+> panier M1 à M7, jusqu'au commit `31d15f3ee`. Ce qui est décidé et pas
+> encore bâti vit dans le plan
 > [`plan-promotions-par-audience-et-acheminement.md`](plan-promotions-par-audience-et-acheminement.md).
 >
-> **Sur `dev`, pas encore en production** : tout ce qui suit. Aucun commit des
-> promotions n'est sur `main` à cette date (`git log origin/main..a41498947`).
+> **Sur `dev`, rien en production** : tout ce qui suit. Aucun commit des
+> promotions n'est sur `main` (vérifié le 2026-10-31 :
+> `git merge-base --is-ancestor 775483131 origin/main` répond non). M7 est
+> **irréversible une fois en production** et ne se déploie que sur ordre exprès
+> de Hugo, après la seconde passe de reprise (§ 2.12).
 
 ---
 
@@ -58,10 +62,25 @@ flowchart TD
     H --> I
 ```
 
-Si plusieurs promotions visent le même article, **une seule** s'applique : la
-plus précise sur le public (une société bat « les pros », qui bat « tout le
-monde »), puis sur l'acheminement (un point bat « le retrait »), puis la plus
-avantageuse. Les promotions **ne se cumulent pas** aujourd'hui.
+Par défaut, une promotion **ne se cumule pas** : si plusieurs visent le même
+article, une seule s'applique — la plus précise sur le public (une société bat
+« les pros », qui bat « tout le monde »), puis sur l'acheminement (un point bat
+« le retrait »), puis la plus avantageuse.
+
+Une promotion **cochée « Cumulable »** s'enchaîne avec les autres cumulables :
+20 % puis 15 % du reste font −32 %, jamais −35 %. La meilleure des deux
+formules (la non cumulable seule, ou la chaîne des cumulables) l'emporte pour
+le client. Au panier, une commande peut ainsi porter **jusqu'à cinq remises**,
+chacune avec sa ligne sur le bon, la facture et l'e-mail.
+
+```mermaid
+flowchart LR
+    A["Panier"] --> B["Meilleure non cumulable<br/>par article"]
+    A --> C["Chaîne des cumulables<br/>20 % puis 15 % du reste"]
+    B --> D{"Le plus avantageux<br/>pour le client"}
+    C --> D
+    D --> E["Une ligne par remise<br/>bon, facture, e-mail"]
+```
 
 ### Trois exemples
 
@@ -73,22 +92,33 @@ avantageuse. Les promotions **ne se cumulent pas** aujourd'hui.
 
 Le premier cas est celui des anciennes « remises du point de retrait » : elles
 sont **devenues des promotions** à la bascule. Le troisième se pose aujourd'hui
-dans le modèle ; son affichage côté boutique viendra avec L10.
+dans le modèle, et la boutique l'affiche depuis L10.
 
 ### Où on les règle
 
 - **Tarification › Promotions** : toutes les promotions (droit « tarifs B2B »).
 - **Fiche d'un site** : les promotions de ce point de retrait, et « Nouvelle
   promotion pour ce site » (droit « réglages des sites »).
-- L'ancienne grille s'appelle désormais **Règles de prix**.
+- L'ancienne grille s'appelle désormais **Règles de prix** ; elle ne pose plus
+  de promotion (L12).
+
+### Ce que voit le client
+
+- **Au rayon** : le prix tient compte des promotions « tous acheminements »
+  qui le visent ; une promotion de retrait ou de livraison est **mentionnée**
+  (« −X % avec retrait à … ») sans changer le prix affiché.
+- **Invité** : s'il existe une promotion réservée aux inscrits, il lit
+  « Vous avez un compte ? Connectez-vous pour profiter de −X % ».
+- **Panier, confirmation, e-mail, bons, facture** : une ligne par remise.
 
 ---
 
 ## Partie 2 — pour aller plus loin
 
 Le contexte est `apps/lfd-api/src/b2b/promotions/` (domain, application,
-infrastructure, http). Les citations `fichier:ligne` ont été ouvertes le
-2026-10-30.
+infrastructure, http). Les citations `fichier:ligne` des §§ 2.1 à 2.10 ont
+été ouvertes le 2026-10-30 ; celles des ajouts du 2026-10-31 (L10, L12, cumul,
+multi-remise) l'ont été le 2026-10-31.
 
 ### 2.1 Le modèle
 
@@ -104,7 +134,11 @@ infrastructure, http). Les citations `fichier:ligne` ont été ouvertes le
 | Libellés              | `prisma/schema/public/promotions.prisma:15-27` | `label_*` (commun) + `label_individuals_*` + `label_pros_*`, FR/EN/IT                                                                                                                  |
 
 Tables : `promotions`, `promotion_scope_rules`, `promotion_audience_targets`,
-`promotion_settings` (`promotions.prisma`).
+`promotion_settings` (`promotions.prisma`). La case « Cumulable » est la
+colonne `promotions.cumulative` (`promotions.prisma:41`, défaut `false` ;
+migration `20261031160000_les_promotions_cumulables`, et
+`20261031190000_le_cumul_au_panier` qui retire le CHECK qui la bornait au
+point ligne).
 
 L'agrégat `domain/promotion.ts` : `pose` (`:76`), `revise` (`:133`), `pause`
 (`:146`), `resume` (`:160`), `archive` avec motif obligatoire (`:176`). Une
@@ -119,7 +153,7 @@ flowchart LR
       L1["promotionRulesFor"] --> L2["une règle de l'étage promotion"] --> L3["resolvePrice<br/>plancher, arrondi"]
     end
     subgraph Panier
-      P1["BasketPromotions"] --> P2["chooseBasketPromotion"] --> P3["discountCents de la commande"]
+      P1["BasketPromotions"] --> P2["basketPromotionPlanOf<br/>deux plans comparés"] --> P3["order_discounts<br/>une ligne par remise"]
     end
     L3 --> P1
 ```
@@ -127,34 +161,43 @@ flowchart LR
 - **Ligne** : `pricing/domain/promotion-as-rule.ts` présente la promotion
   comme une règle de l'étage `promotion` ; `resolve-price.ts:262` l'ajoute aux
   règles. Même place, même scellement par la mercuriale, même plancher que les
-  anciennes règles de promotion.
-- **Panier** : `orders/application/services/basket-promotions.service.ts:51`
-  et `orders/domain/services/basket-promotion-choice.ts:66`.
+  anciennes règles de promotion. Les cumulables passent par
+  `resolveCumulativeStage` (`pricing/domain/cumulative-promotions.ts:40`).
+- **Panier** : `orders/application/services/basket-promotions.service.ts`
+  (`BasketPromotions`, `:41`), `basket-promotion-choice.ts`
+  (`chooseBasketPromotion`, `:107`) et `basket-promotion-plan.ts`
+  (`basketPromotionPlanOf`, `:71`) — § 2.11.
 - **Spécificité et départage** : `domain/promotion-targeting.ts:184-205`
   (`PUBLIC_RANK` : société 4, société et sites 3, sous-publics 2, publics 1,
   tout le monde 0 ; `FULFILLMENT_RANK` : point 2, mode 1, tous 0). Au panier,
   le rang est `[public, acheminement, remise]` puis l'id
   (`basket-promotion-choice.ts:75`).
 
-### 2.3 La source et la bascule
+### 2.3 La source, la bascule, et l'ancien calcul retiré (L12)
 
-`domain/promotions-source.ts:18` : une ligne `promotions_source` en base
-(`promotion_settings`), jamais une variable d'environnement.
+`domain/promotions-source.ts:15` : la ligne `promotions_source`
+(`promotion_settings`) n'a plus qu'**une** valeur admise, `promotions`. Ce
+n'est plus un interrupteur mais un garde-fou : la migration
+`20261031150000_le_resserrement_des_promotions` refuse une base qui n'a pas
+basculé et resserre le CHECK. L'ancien chemin (`legacy`) et l'ombre
+(`shadow`) sont **retirés du code** ; la promotion est la source unique du
+prix promotionnel.
 
 ```mermaid
 flowchart LR
-    A["legacy<br/>règles d'étage promotion<br/>+ remise du site"] --> B["shadow<br/>l'ancien est servi<br/>le nouveau calculé à côté<br/>écart journalisé"]
-    B --> C["promotions<br/>le nouveau seul"]
+    A["legacy<br/>règles d'étage promotion<br/>+ remise du site"] --> B["shadow<br/>(retiré en L12)"]
+    B --> C["promotions<br/>seule valeur admise"]
 ```
 
-- Les écritures de promotion sont refusées tant que la source n'est pas
-  `promotions` (`PromotionsNotEditableYetError`), et les anciens éditeurs le
-  sont après (`LegacyPromotionEditorClosedError`).
-- La bascule est la migration `20261031130000_la_bascule_des_promotions` :
+- La bascule reste la migration `20261031130000_la_bascule_des_promotions` :
   `bascule_des_promotions()` rejoue la reprise, contrôle chaque source champ
   par champ, s'arrête en nommant tout écart, puis passe la source à
-  `promotions`, dans une transaction. Retour arrière :
-  `apps/lfd-api/prisma/rollback/20261031130000_la_bascule_des_promotions.sql`.
+  `promotions`, dans une transaction. Ses retours arrière (et celui de la
+  reprise) sont marqués **périmés** depuis L12 : il n'y a plus d'ancien code
+  vers lequel revenir.
+- Les anciens éditeurs refusent sans condition
+  (`LegacyPromotionEditorClosedError`) ; les règles d'étage promotion encore
+  vivantes ont été archivées avec leur acte.
 
 ### 2.4 La reprise
 
@@ -167,14 +210,26 @@ l'ancien chemin qu'elle comparait, 2026-10-30).
 
 ### 2.5 Les refus à la pose
 
-| Refus                                                                                   | Erreur (`domain/errors/promotion-errors.ts`)                                                                                   |
-| --------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| Deux promotions du même point qui se recouvrent (public, acheminement, portée, période) | `OverlappingPromotionError` (`domain/promotion-overlap.ts:54`)                                                                 |
-| Deux promotions panier possibles pour une même commande                                 | `BasketPromotionsWouldCombineError` (`promotion-overlap.ts:96`)                                                                |
-| Posée depuis la mauvaise surface (fiche d'un site ≠ son point)                          | `PromotionWrongSurfaceError` (`domain/promotion-surface.ts:29`)                                                                |
-| Un produit entier ciblé au point ligne                                                  | `PromotionProductTargetAtLineError` (`domain/promotion-terms.ts:108`)                                                          |
-| Effet non admis à ce point                                                              | `PromotionEffectPointMismatchError`                                                                                            |
-| Portée vide, fenêtre inversée, texte vide, effet hors bornes                            | `PromotionScopeIncludesNothingError`, `PromotionReversedWindowError`, `PromotionBlankTextError`, `PromotionInvalidEffectError` |
+| Refus                                                                                     | Erreur (`domain/errors/promotion-errors.ts`)                                                                                                     |
+| ----------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Deux promotions du même point qui se recouvrent (public, acheminement, portée, période)   | `OverlappingPromotionError` (`domain/promotion-overlap.ts:54`)                                                                                   |
+| Deux promotions panier possibles pour une même commande, sauf si les deux sont cumulables | `BasketPromotionsWouldCombineError` (`assertSingleBasketPromotion`, `promotion-overlap.ts:110`)                                                  |
+| Une sixième cumulable de panier qui pourrait s'appliquer avec cinq autres                 | `TooManyCumulativeBasketPromotionsError` (`promotion-errors.ts:344`) ; plafond `MAX_BASKET_DISCOUNTS_PER_ORDER = 5` (`promotion-overlap.ts:138`) |
+| Posée depuis la mauvaise surface (fiche d'un site ≠ son point)                            | `PromotionWrongSurfaceError` (`domain/promotion-surface.ts:29`)                                                                                  |
+| Un produit entier ciblé au point ligne                                                    | `PromotionProductTargetAtLineError` (`domain/promotion-terms.ts:108`)                                                                            |
+| Effet non admis à ce point                                                                | `PromotionEffectPointMismatchError`                                                                                                              |
+| Portée vide, fenêtre inversée, texte vide, effet hors bornes                              | `PromotionScopeIncludesNothingError`, `PromotionReversedWindowError`, `PromotionBlankTextError`, `PromotionInvalidEffectError`                   |
+
+Le refus de chevauchement ne s'applique pas entre deux promotions
+**cumulables**, ni au point ligne ni au panier. Le plafond de cinq est jugé
+**à la pose**, deux à deux avec la candidate (publics, acheminements,
+fenêtres) ; à la caisse, au-delà de cinq, les cinq premières dans l'ordre sont
+gardées et les autres écartées et journalisées par `BasketPromotions` — le
+devis et la passation ne lèvent jamais.
+
+**Une révision identique n'écrit rien** (`95679aeed`) : reposer une promotion
+sans changement ne trace plus d'acte « remplacée », et le bouton Enregistrer
+reste inactif sur une fiche intacte (`domain/promotion-terms-equality.ts`).
 
 ### 2.6 La révision d'une commande (L9)
 
@@ -187,13 +242,34 @@ acheminement, ou annulez la commande et repassez-la ». Une commande d'avant
 (id inconnu) est jugée sur sa remise figée. Avant L9, la remise était
 recalculée au changement de point.
 
+Depuis M3, L9 compare une **liste ordonnée** de remises : l'« avant » est lu
+dans `order_discounts` si la commande y a des lignes actives, sinon dans les
+colonnes (`fulfillment-promotion.ts`) ; le refus nomme le libellé figé de la
+remise en cause. Un changement de quantité recompose les montants : dans une
+seule transaction, les remises actives sont **archivées** (`archived_at`,
+jamais supprimées) et le nouvel ensemble est inséré. Une cumulable visant un
+point nommé passe avant une cumulable « au retrait » : changer de point peut
+donc changer la remise de rang 1, et la révision est alors refusée (assumé,
+plan § 18.6).
+
 ### 2.7 Invité ou inscrit
 
 `orders.buyer_kind` (`orders.prisma:130`, défaut `registered`) dit si la
 commande vient d'un invité ou d'un inscrit ; reprise des commandes
 existantes par la migration `20261031100000_la_porte_de_passation`. Côté
-calcul : `PromotionBuyerKind` (`domain/promotion-targeting.ts:20`). Le rayon
-public ne sait pas encore qui regarde : c'est L10.
+calcul : `PromotionBuyerKind` (`domain/promotion-targeting.ts:20`). Depuis
+L10, cette porte d'entrée va jusqu'au **prix de chaque article** : les
+publics invités / inscrits / pros en cours s'appliquent au point ligne, et
+« une société et ses sites » lit le principal.
+
+**Correctif d'horloge** (`db3efaa81`) : hors d'une requête HTTP (tâche de
+fond, semis, handler appelé directement), le calcul du prix lisait
+l'horloge deux fois ; la seconde lecture tombait une milliseconde plus tard,
+passait en relecture datée et rendait **le prix pro à un invité**.
+« Maintenant » est désormais lu une seule fois par la porte du prix, et une
+relecture datée pour un lecteur public est refusée
+(`DatedPublicPriceUnsupportedError`,
+`orders/domain/errors/dated-public-price.error.ts:14`).
 
 ### 2.8 Libellés figés
 
@@ -201,6 +277,9 @@ Le libellé de la promotion panier, dans l'audience de l'acheteur, est **figé
 à la passation** dans `orders.discount_label` (`orders.prisma:263-268`) : un
 document relu plus tard ne dépend pas d'une promotion modifiée depuis.
 L'audience du libellé : `labelAudienceOf` (`promotion-targeting.ts:142`).
+Avec plusieurs remises, chaque libellé est figé dans sa ligne
+`order_discounts.label`, et `orders.discount_label` vaut le libellé générique
+« Remises / Discounts / Sconti » (§ 2.11).
 
 ### 2.9 Écrans et droits
 
@@ -218,20 +297,125 @@ Actes `posed`, `paused`, `resumed`, `archived`, `replaced`
 
 ---
 
+### 2.11 Le cumul, et plusieurs remises de panier (§ 16, M1 à M7)
+
+**Au point ligne** (L12, `32e205d4b`) : les non cumulables désignent leur
+gagnant comme avant ; les cumulables forment une chaîne triée par rang puis
+par id, chacune sur le prix sortant de la précédente, en exact ; le plus bas
+des deux l'emporte (à égalité, la non cumulable) ; le plancher arrête la
+descente. Une étape de trace par promotion appliquée.
+
+**Au panier** (M7, `31d15f3ee`) : `basketPromotionPlanOf` retient une non
+cumulable par article (rangs disjoints) et la chaîne des cumulables, puis
+compare deux plans **dans l'unité de la commande** — en TTC pour une commande
+`exact_ht` (le particulier), en HT pour `line_ht` (le pro). À égalité, le plan
+non cumulable. Chaque étape remise le **reste exact** des lignes qu'elle
+couvre, arrondie une fois au centime ; la somme des étapes affichées est la
+remise totale. Une seule remise donne le prix d'hier au centime.
+
+**Une promotion qui ne retire rien ne concourt pas** (`0c43647b9`) : une
+promotion plus spécifique mais sans article commun avec le panier (ou dont le
+seuil n'est pas atteint) gagnait sur son rang et figeait une remise de 0 c à
+la place d'une vraie (`basket-promotion-choice.ts:102-116`).
+
+```mermaid
+sequenceDiagram
+    participant Q as Devis ou passation
+    participant B as BasketPromotions
+    participant P as basketPromotionPlanOf
+    participant O as Commande
+    participant D as order_discounts
+    Q->>B: candidates du panier
+    B->>P: non cumulables et cumulables, cinq au plus
+    P-->>B: plan retenu, une étape par remise
+    B->>O: remises ordonnées
+    O->>D: une ligne par remise, parts par taux
+```
+
+**La persistance** — migration `20261031170000_les_remises_de_panier` :
+
+| Table                     | Ce qu'elle porte                                                                                                                                                        |
+| ------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `order_discounts`         | une ligne par remise : `rank` (ordre d'application figé), promotion, ajustement, libellé figé, montant, parts par taux, `origin` (`computed` / `frozen`), `archived_at` |
+| `order_line_discounts`    | quelles lignes chaque remise couvre                                                                                                                                     |
+| `delivery_note_discounts` | les parts de chaque remise **sur un bon parti**                                                                                                                         |
+
+Les colonnes d'avant restent écrites : `discount_cents` est le total ; avec
+plusieurs remises, `discount_promotion_id`, `discount_adjustment` valent
+`NULL` et `discount_label` le libellé générique. Le repli unique
+`frozenBasketDiscountsOf` (`orders/domain/services/frozen-basket-discounts.ts:60`)
+lit la table si la commande y a des remises actives, sinon les colonnes comme
+une remise de rang 1.
+
+**Le déclencheur** — migration `20261031180000_le_controle_des_remises` : un
+déclencheur de contrainte différé refuse au commit une commande dont la somme
+des remises actives ≠ `discount_cents`, ou dont les parts par taux ne somment
+pas le montant. Il ne se déploie qu'au **temps 5 du runbook** (§ 2.12).
+
+**Les lecteurs** :
+
+- **Bons** (M4) : bon complet, partiel, reliquat (un % se recompose sur chaque
+  envoi, un montant fixe compte entier sur le premier bon), manquants ; le
+  papier porte une ligne par remise s'il en a plusieurs. La couverture se lit
+  par SKU ; `SplitSkuCoverageError` refuse un SKU couvert à moitié.
+- **Facture et Factur-X** (M5) : une remise de document (BG-20) **par
+  promotion et par taux**, motif = libellé figé en français, repli « Remise »,
+  sans BT-93/94. Tant qu'aucune commande de la facture n'a plusieurs remises,
+  la facture garde la clé unique et le motif « Remise client », octet pour
+  octet. Des parts qui ne tombent pas juste : facturée au bon montant sous la
+  clé unique, et journalisé.
+- **Affichage** (M6, M7) : la commande sert `discounts[]` seulement quand
+  elle en porte plusieurs ; bon de commande, e-mail (langue du destinataire),
+  récapitulatif du back-office, ticket, panier et confirmation de la boutique
+  (`ShopQuoteView.discounts`) écrivent une ligne par remise.
+- **Assumé** : l'annonce d'un point et l'offre de connexion n'annoncent
+  qu'**une** remise, la plus spécifique ; la caisse peut en retirer davantage.
+
+### 2.12 La reprise des remises existantes, et son runbook
+
+Le script `apps/lfd-api/prisma/backfill-order-discounts.ts`
+(`pnpm --filter lfd-api backfill:order-discounts`) remplit `order_discounts`
+pour les commandes d'avant M3 par la même arithmétique que la passation. Il
+tourne **à blanc** par défaut, `--write` après lecture du compte par Hugo ;
+une cible non locale demande `--production` et le nom de la base retapé.
+Une commande dont la recomposition ne redonne pas le figé est écrite
+`origin = 'frozen'` (valeurs figées recopiées, listée au rapport) ou, à
+plusieurs taux, listée « à trancher » sans être écrite. `--refresh-drifted`
+traite les commandes révisées entre deux passes.
+
+Ordre de mise en production (plan § 18.3, non encore joué : rien n'est sur
+`main`) :
+
+```mermaid
+flowchart TD
+    A["1. Déployer M2<br/>tables seules"] --> B["2. Première passe<br/>à blanc, compte lu, puis --write"]
+    B --> C["3. Déployer M3 à M6<br/>sans le déclencheur"]
+    C --> D["4. Seconde passe<br/>à blanc, puis --write"]
+    D --> E{"Zéro commande<br/>sans ligne ?"}
+    E -->|oui| F["5. Migration du déclencheur"]
+    E -->|non| D
+    F --> G["M7, sur ordre exprès de Hugo<br/>irréversible"]
+```
+
+M7 est irréversible : dès qu'une commande porte deux remises, sa facture, son
+Factur-X et ses bons les portent pour toujours.
+
+---
+
 ## Limites connues et reste à faire
 
-- **L10** : publics invités / inscrits / pros en cours actifs dans
-  l'éditeur ; le rayon connaît `buyerKind` ; mention « avec retrait à … » ;
-  message « Connectez-vous pour profiter de … » à tout invité ; promotions de
-  livraison visibles côté boutique. _(en cours de bâti au 2026-10-30)_
+- **Production** : rien n'est sur `main` ; le runbook du § 2.12 reste à jouer,
+  M7 sur ordre exprès de Hugo.
 - **L11** : docs d'état de la résolution de prix et du prix boutique mises à
-  jour, le plan devient doc d'état (celle-ci l'absorbera).
-- **L12** : resserrer — chemin `legacy` retiré, ancienne remise de retrait et
-  ses lecteurs retirés, règles d'étage promotion archivées ; plusieurs remises
-  panier par commande.
-- **Cumul sur demande** (plan § 16, avec L12) : case « Cumulable »,
-  combinaison successive (20 % puis 15 % = −32 %), plancher toujours tenu.
+  jour ; le plan devient doc d'état (celle-ci l'absorbera).
+- **Remise par ligne vérifiable par le client** (plan § 17) : option
+  documentée, non bâtie.
+- **Annonce et offre de connexion** : une seule remise annoncée, même quand
+  la caisse en cumule plusieurs (assumé).
+- **Dette du bon partiel, non aggravée** : un montant fixe est borné à
+  l'assiette du premier bon ; si elle est plus petite, la somme des bons est
+  inférieure à la remise de la commande.
 - **Améliorations notées** : onglets dans Tarification ; promotions affichées
   dans la grille des règles de prix.
-- **Limite actuelle** : une seule promotion par article et par point, une
-  seule remise panier par commande ; une seule condition (`min_quantity`).
+- **Limite actuelle** : cinq remises de panier au plus par commande ; une
+  seule condition (`min_quantity`).
