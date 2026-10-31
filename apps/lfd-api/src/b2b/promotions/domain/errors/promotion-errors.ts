@@ -6,9 +6,7 @@ import {
 } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus d'une promotion** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.3). Chaque message est lu par du personnel qui n'a pas le code sous
+ * **Les refus d'une promotion** (`documentation/promotions/promotions.md`, § 2.1). Chaque message est lu par du personnel qui n'a pas le code sous
  * les yeux : il nomme le cas et le geste de sortie.
  */
 
@@ -265,7 +263,7 @@ export class PromotionProductTargetAtLineError extends DomainError {
 }
 
 /**
- * Deux promotions qui se disputeraient un même article (plan, § 13.2,
+ * Deux promotions qui se disputeraient un même article (`promotions.md`, § 2.16,
  * CHEVAUCHEMENT) : même point d'application, publics qui se croisent, même acheminement,
  * fenêtres qui se recouvrent, un article vendable en commun.
  */
@@ -286,7 +284,7 @@ export class OverlappingPromotionError extends BusinessError {
 
 /**
  * Deux promotions de panier qui pourraient s'appliquer à une même commande
- * (plan, § 13.2) : la commande ne compose qu'une remise de panier jusqu'au
+ * (`promotions.md`, § 2.16) : la commande ne compose qu'une remise de panier jusqu'au
  * lot L12.
  */
 export class BasketPromotionsWouldCombineError extends BusinessError {
@@ -302,7 +300,7 @@ export class BasketPromotionsWouldCombineError extends BusinessError {
 }
 
 /**
- * Un ancien éditeur des promotions, fermé par la bascule (plan, § 13.10, L8) :
+ * Un ancien éditeur des promotions, fermé par la bascule (`promotions.md`, § 2.3, L8) :
  * le calcul ne lit plus ni les règles d'étage promotion ni la remise d'un
  * site — une écriture y serait acceptée sans agir sur aucun prix.
  */
@@ -312,7 +310,7 @@ export class LegacyPromotionEditorClosedError extends BusinessError {
       "promotions.legacy_editor_closed",
       editor === "price_rule"
         ? "Les promotions se règlent désormais dans l'écran Promotions : une règle d'étage promotion ne s'écrit plus et n'agit plus sur aucun prix. Posez-y une promotion, ou choisissez un autre étage."
-        : "La remise d'un site se règle désormais dans l'écran Promotions : depuis la fiche du site, « Nouvelle promotion pour ce site ». Ses anciennes colonnes n'agissent plus sur aucun prix.",
+        : "La remise d'un site se règle désormais dans l'écran Promotions : « Nouvelle promotion », remise au panier, retrait à ce point. Ses anciennes colonnes n'agissent plus sur aucun prix.",
     );
   }
 }

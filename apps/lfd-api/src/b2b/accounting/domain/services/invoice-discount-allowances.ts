@@ -5,9 +5,8 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 import type { OrderInvoiceSplit } from "./invoice-order-split.js";
 
 /**
- * **Les remises de panier de la facture, par clé** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4 et Q-M2, lot M5.
+ * **Les remises de panier de la facture, par clé** — `documentation/promotions/promotions.md`, § 2.11,
+ * et Q-M2, lot M5.
  *
  * Tant qu'aucun bon de la facture ne porte plusieurs remises, rien ne change :
  * une seule clé, {@link COMPANY_DISCOUNT_KEY}, qui additionne la remise de

@@ -7,8 +7,7 @@ export interface ZoneTargetingPromotion {
 }
 
 /**
- * **« Quelles promotions nomment cette zone ? »** — archivées comprises (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) : une
+ * **« Quelles promotions nomment cette zone ? »** — archivées comprises (`documentation/promotions/promotions.md`, § 2.14) : une
  * promotion garde la trace de ses zones. Déclaré par les zones de livraison,
  * implémenté par les promotions, relié par `appBootstrap`.
  *

@@ -5,9 +5,7 @@ import type { LabelAudience } from "./promotion-audience-set.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 
 /**
- * **Le ciblage** — « cette commande est-elle concernée ? » (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 12 et § 13.3, lot L5).
+ * **Le ciblage** — « cette commande est-elle concernée ? » (`documentation/promotions/promotions.md`, § 2.1, lot L5).
  *
  * Pur. Les faits sont **établis au serveur**, jamais reçus : le statut de la
  * société relu en base, la porte d'entrée posée par la route (L1), le point
@@ -47,8 +45,7 @@ export type PrincipalFact = "unknown" | { readonly companyId: string | null };
 /**
  * L'acheminement retenu ; `null` = inconnu (rayon, fiche, devis sans service).
  *
- * En livraison, la ZONE entre dans le fait (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.1) : résolue
+ * En livraison, la ZONE entre dans le fait (`documentation/promotions/promotions.md`, § 2.14) : résolue
  * par le code postal, à la règle même des frais (préfixe le plus long), et
  * reçue déjà résolue — les promotions ne lisent pas les zones. `null` = aucune
  * zone ne couvre ce code postal (l'annonce, les témoins : inatteignable à la
@@ -171,7 +168,7 @@ export function audienceNeedsStatus(audience: PromotionAudience): boolean {
  *
  * Retrait au point P : `pickup = all`, ou P nommé. Livraison dans la zone Z :
  * `delivery = all`, ou Z nommée ; une livraison sans zone n'est admise que par
- * `delivery = all` (plan des acheminements, § 3, § 8.1).
+ * `delivery = all` (`promotions.md`, § 2.14).
  */
 export function fulfillmentAdmits(
   fulfillment: PromotionFulfillment,
@@ -188,7 +185,7 @@ const LISTED_RANK = 2;
 const DISPLAYED_PRICE_RANK = 0;
 
 /**
- * **Le rang d'acheminement POUR CE FAIT** (plan des acheminements, § 8.3) —
+ * **Le rang d'acheminement POUR CE FAIT** (`promotions.md`, § 2.14) —
  * `null` = l'acheminement n'admet pas ce fait. Point nommé ou zone nommée = 2 ;
  * tous les points ou toutes les zones = 1 ; « dans le prix affiché » = 0.
  *

@@ -1,4 +1,4 @@
-# Plan — une remise acquise reste acquise, à la manière de Shopify et Salesforce
+# Plan — une remise acquise reste acquise, à la manière des grandes plateformes de commerce
 
 > 📝 **Plan du 2026-10-31**, doc-first. Touche l'**argent** : `vitruve` avant
 > le bâti. Rien n'est bâti. Préalable du plan
@@ -7,7 +7,7 @@
 
 ## 1. La décision (Hugo, 2026-10-31)
 
-> « On s'aligne sur Shopify et Salesforce. »
+> « On s'aligne sur [l'ancien canal de vente en ligne] et Salesforce. » (le nom de la plateforme est retiré du dépôt, cf. `lint:former-channel-name`)
 
 Ce qu'on en retient, pour **toutes** les promotions (pas seulement à
 heures) : la remise est figée à la passation, **par article et pour la
@@ -124,7 +124,7 @@ commande » sur la fiche commande ?).
 5. L9 refuse toute révision d'acheminement qui change l'ensemble des remises
    rang par rang : incompatible avec une chaîne mêlant acquis et neuf.
 
-**Les plateformes, vérifiées** (recherche du 2026-10-31) : Shopify étend une
+**Les plateformes, vérifiées** (recherche du 2026-10-31) : la plus répandue des plateformes de boutique en ligne étend une
 remise en pourcentage aux articles ajoutés et pas une remise fixe de
 commande, recalcule certains codes au changement de quantité ; Salesforce
 n'a pas de doc officielle claire trouvée (le service client recalcule avec

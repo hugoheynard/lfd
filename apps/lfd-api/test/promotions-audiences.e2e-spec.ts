@@ -1,7 +1,5 @@
 /**
- * E2E du **public à plusieurs cibles et des libellés par audience** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 15, lot L8b), sur le vrai Postgres.
+ * E2E du **public à plusieurs cibles et des libellés par audience** (`documentation/promotions/promotions.md`, § 2.1, lot L8b), sur le vrai Postgres.
  *
  * Au point PANIER — le seul où `buyerKind` est connu à la passation (§ 15.10,
  * S5) :

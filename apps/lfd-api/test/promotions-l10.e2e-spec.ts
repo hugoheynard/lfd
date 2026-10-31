@@ -1,7 +1,6 @@
 /**
- * E2E du lot **L10** du plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`
- * (§ 13.7, § 8, § 13.2 RAYON), sur le vrai Postgres :
+ * E2E du lot **L10** du `documentation/promotions/promotions.md`, § 2.7 et § 2.16
+ * (), sur le vrai Postgres :
  *
  * 1. au point LIGNE, la porte d'entrée de la route atteint le prix : pour un
  *    même article, un particulier inscrit et un invité ne paient pas le même

@@ -1,9 +1,7 @@
 import { LegacyPromotionEditorClosedError } from "./errors/promotion-errors.js";
 
 /**
- * **D'où le calcul tire les promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, § 13.10 L12) — une ligne de configuration en base.
+ * **D'où le calcul tire les promotions** (`documentation/promotions/promotions.md`, § 2.2 et § 2.3) — une ligne de configuration en base.
  *
  * Depuis L12, il n'en reste qu'une valeur : `promotions`. L'ancien chemin
  * (`legacy`, et l'ombre `shadow` qui le servait) est retiré du code, et la
@@ -25,7 +23,7 @@ export function asPromotionsSource(value: string): PromotionsSource | null {
 export type LegacyPromotionEditor = "price_rule" | "site_discount";
 
 /**
- * **Un ancien éditeur n'écrit plus** (plan, § 13.10, L8 puis L12) : le
+ * **Un ancien éditeur n'écrit plus** (`promotions.md`, § 2.3, L8 puis L12) : le
  * calcul ne lit plus ni les règles d'étage promotion ni la remise d'un site,
  * et l'écriture aurait l'air d'agir sans agir.
  *

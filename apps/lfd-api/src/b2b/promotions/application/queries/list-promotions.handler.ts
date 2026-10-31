@@ -11,7 +11,7 @@ import { promotionViewOf } from "./promotion-view.js";
 
 /**
  * La liste, et la source : l'écran est en lecture tant que la bascule n'est
- * pas faite (plan § 13.10, L7), et c'est le serveur qui le lui dit.
+ * pas faite (`promotions.md`, § 2.3, L7), et c'est le serveur qui le lui dit.
  */
 @QueryHandler(ListPromotionsQuery)
 export class ListPromotionsHandler implements IQueryHandler<
@@ -33,7 +33,7 @@ export class ListPromotionsHandler implements IQueryHandler<
       this.source.current(),
     ]);
     const { pickupId } = query;
-    // Celles qui NOMMENT ce point — le raccourci de la fiche du site.
+    // Celles qui NOMMENT ce point — le filtre par point de l'écran Promotions.
     const shown =
       pickupId === null
         ? all

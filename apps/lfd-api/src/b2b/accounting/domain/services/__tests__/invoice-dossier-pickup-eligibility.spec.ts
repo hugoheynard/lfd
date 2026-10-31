@@ -4,8 +4,7 @@ import { aggregateInvoiceLines } from "../invoice-lines.js";
 
 /**
  * La facture d'un cycle dont des lignes étaient exclues de la remise de
- * retrait (V3 du plan
- * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * retrait (V3 de l'ancien plan des exclusions, `documentation/promotions/promotions.md`, § 2.17).
  * Aucune date n'est comparée à une horloge.
  */
 const PAIN: FrozenInvoiceLine = {

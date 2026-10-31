@@ -6,9 +6,7 @@ import { sharesJson } from "./order-discount-backfill.rows.js";
 import { orderLineDataOf } from "./order-line.data.js";
 
 /**
- * **Les remises de panier d'une commande, telles qu'elles s'écrivent** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.2 et § 18.5, lot M3. Partagé par la passation et la révision : deux
+ * **Les remises de panier d'une commande, telles qu'elles s'écrivent** — `documentation/promotions/promotions.md`, § 2.6 et § 2.11, lot M3. Partagé par la passation et la révision : deux
  * écritures de la même remise finiraient par figer deux choses.
  *
  * Les remises partent dans le `create` imbriqué de la commande (passation) ou

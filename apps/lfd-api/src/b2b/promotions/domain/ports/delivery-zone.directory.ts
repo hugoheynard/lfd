@@ -1,6 +1,5 @@
 /**
- * **« Ces zones existent-elles, et comment s'appellent-elles ? »** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) — déclaré
+ * **« Ces zones existent-elles, et comment s'appellent-elles ? »** (`documentation/promotions/promotions.md`, § 2.14) — déclaré
  * par les promotions, implémenté par les zones de livraison, relié par
  * `appBootstrap`. Aucun des deux modules n'importe l'autre.
  *

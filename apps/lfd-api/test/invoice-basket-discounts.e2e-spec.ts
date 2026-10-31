@@ -1,7 +1,5 @@
 /**
- * E2E de **la facture et des remises de panier** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4, Q-M2 et Q-M3, lot M5.
+ * E2E de **la facture et des remises de panier** — `documentation/promotions/promotions.md`, § 2.11, Q-M2 et Q-M3, lot M5.
  *
  * Ce que seul le vrai Postgres prouve : la sélection de la facture relit
  * `order_discounts` (remises actives seulement), les parts des bons remis

@@ -76,7 +76,7 @@ export class PrismaPromotionRepository extends PromotionRepository {
   }
 
   /**
-   * Les points et les zones nommés (plan des acheminements, § 4) — des
+   * Les points et les zones nommés (`promotions.md`, § 2.14) — des
    * valeurs de l'agrégat, remplacées en bloc comme la portée. Leur existence
    * a été jugée avant, par l'application : une clé étrangère violée ici
    * serait une course, pas un refus attendu.

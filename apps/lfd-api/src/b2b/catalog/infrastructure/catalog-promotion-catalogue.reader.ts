@@ -11,9 +11,7 @@ import { CatalogReader, type ResolvedCatalogItem } from "../domain/ports/catalog
 import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
- * **Le catalogue vendable, pour les promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.2, lot L7) — ce que le refus de chevauchement compare et les noms que
+ * **Le catalogue vendable, pour les promotions** (`documentation/promotions/promotions.md`, § 2.16, lot L7) — ce que le refus de chevauchement compare et les noms que
  * l'écran montre.
  *
  * Sur le patron de `CatalogSellableArticlesReader` : les deux audiences, un

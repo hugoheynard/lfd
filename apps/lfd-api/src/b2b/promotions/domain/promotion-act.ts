@@ -5,9 +5,7 @@ import type { Promotion } from "./promotion.js";
 import type { PromotionTerms } from "./promotion-terms.js";
 
 /**
- * **Un acte sur une promotion** — l'unité du journal (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9). Il s'écrit dans `pricing_events`, sujet `promotion`, à côté des
+ * **Un acte sur une promotion** — l'unité du journal (`documentation/promotions/promotions.md`, § 2.9). Il s'écrit dans `pricing_events`, sujet `promotion`, à côté des
  * actes des règles qu'il remplacera, et en miroir au journal général
  * (`promotion.*`). Les clés écrites sont figées dès le premier fait.
  *
@@ -35,8 +33,7 @@ export interface PromotionAct {
 }
 
 /**
- * **Les noms des points et des zones au moment du fait** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4) : le
+ * **Les noms des points et des zones au moment du fait** (`documentation/promotions/promotions.md`, § 2.14) : le
  * journal nomme ce qu'il vise par son libellé, pas par son identifiant. Un
  * nom absent retombe sur l'identifiant (une zone supprimée depuis).
  */

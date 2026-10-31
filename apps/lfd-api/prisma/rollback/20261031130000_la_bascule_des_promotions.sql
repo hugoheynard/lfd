@@ -9,8 +9,8 @@ DO $$ BEGIN
 END $$;
 
 -- RETOUR ARRIÈRE de 20261031130000_la_bascule_des_promotions
--- (documentation/promotions/plan-promotions-par-audience-et-acheminement.md,
--- § 13.4 « Retour arrière », § 13.5).
+-- (documentation/promotions/promotions.md, § 2.2 et § 2.4,
+-- « Retour arrière »).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE, puis l'API se REDÉMARRE : la source est gardée sous le

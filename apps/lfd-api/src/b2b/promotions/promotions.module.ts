@@ -23,8 +23,7 @@ import {
 import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.repository.js";
 
 /**
- * **Les promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`) :
+ * **Les promotions** (`documentation/promotions/promotions.md`) :
  * l'agrégat, son dépôt et ses cinq gestes (L3), l'écran et ses refus (L7),
  * son ouverture à la bascule (L8).
  *

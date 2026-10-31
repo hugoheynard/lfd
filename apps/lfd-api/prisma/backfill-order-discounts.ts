@@ -14,9 +14,7 @@ import {
 } from "./backfill-order-discounts-options.js";
 
 /**
- * **Reprise des remises de panier** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.3, lot M2. `pnpm --filter lfd-api backfill:order-discounts`.
+ * **Reprise des remises de panier** — `documentation/promotions/promotions.md`, § 2.12, lot M2. `pnpm --filter lfd-api backfill:order-discounts`.
  *
  * Pour chaque commande remisée sans remise active : recompose la remise par
  * la fonction de M1 et la compare au figé ; à l'égalité écrit une ligne

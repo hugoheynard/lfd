@@ -5,9 +5,8 @@ import { MAX_BASKET_DISCOUNTS_PER_ORDER } from "../../../promotions/domain/promo
 import { TooManyBasketDiscountsError } from "../errors/basket-discount-errors.js";
 
 /**
- * **Les remises de panier d'une commande, dans leur ordre** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16.1 (point PANIER) et § 18.4, lot M1.
+ * **Les remises de panier d'une commande, dans leur ordre** — `documentation/promotions/promotions.md`, § 2.11
+ * (point PANIER) et § 18.4, lot M1.
  *
  * L'arithmétique vit dans `@lfd/money` (`chainBasketDiscounts`) ; ce module
  * garde ce qui appartient à la COMMANDE : le plafond, et la traduction des

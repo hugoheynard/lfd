@@ -136,7 +136,7 @@ describe("Promotion.pose — les invariants des termes", () => {
     ).toThrow(PromotionBlankFulfillmentTargetError);
   });
 
-  describe("l'acheminement à cocher (plan des acheminements, § 3)", () => {
+  describe("l'acheminement à cocher (`promotions.md`, § 2.14)", () => {
     const basket = (pickup: PickupReach, delivery: DeliveryReach) =>
       basketTerms({ fulfillment: { kind: "basket", pickup, delivery } });
 

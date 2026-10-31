@@ -28,9 +28,7 @@ export interface BasketPromotionRequest {
 }
 
 /**
- * **Le point PANIER** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lots L5 et L12) : la promotion panier de ce panier. Depuis L12, la
+ * **Le point PANIER** (`documentation/promotions/promotions.md`, § 2.2, lots L5 et L12) : la promotion panier de ce panier. Depuis L12, la
  * seule source — la remise d'un site n'est plus lue.
  *
  * La fenêtre se juge à l'instant de la question — le `now` du `Clock`, comme

@@ -1,6 +1,5 @@
 /**
- * **« Quelle zone livre ce code postal ? »** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.1) — la
+ * **« Quelle zone livre ce code postal ? »** (`documentation/promotions/promotions.md`, § 2.14) — la
  * règle même des frais (le préfixe le plus long), pour que le fait
  * d'acheminement jugé par les promotions porte la zone que la caisse
  * facturera. Déclaré par les commandes, implémenté par les zones de

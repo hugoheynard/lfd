@@ -28,9 +28,7 @@ const PROS: readonly Box[] = [
 ];
 
 /**
- * **Le public d'une promotion, en cases à cocher en étages** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 15.9, lot L8b) : Tout le monde · Particuliers (Invités, Inscrits) · Pros
+ * **Le public d'une promotion, en cases à cocher en étages** (`documentation/promotions/promotions.md`, § 2.1, lot L8b) : Tout le monde · Particuliers (Invités, Inscrits) · Pros
  * (Actifs, En cours d'inscription, une société ± ses sites).
  *
  * Un parent coché coche et grise ses enfants ; certains enfants cochés le

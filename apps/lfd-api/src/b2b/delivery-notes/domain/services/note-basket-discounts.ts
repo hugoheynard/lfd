@@ -7,8 +7,8 @@ import {
 
 /**
  * **Les remises de panier d'une commande, rejouées sur les lignes d'un bon**
- * — plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.2 et § 18.8 (arbitrage n° 3 : chaque remise est recomposée sur les
+ * — `documentation/promotions/promotions.md`, § 2.11
+ * (arbitrage n° 3 : chaque remise est recomposée sur les
  * lignes parties), lot M4.
  *
  * Chaque remise garde SON ajustement et couvre SES lignes du bon (par SKU, ou

@@ -1,8 +1,7 @@
 import { PromotionMissingTargetIdError } from "./errors/promotion-errors.js";
 
 /**
- * **Le public d'une promotion** — un seul menu (§ 9 du plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`) :
+ * **Le public d'une promotion** — un seul menu (`documentation/promotions/promotions.md`, § 2.16) :
  * tout le monde · particuliers (tous, invités, inscrits) · pros (tous,
  * actifs, en cours d'inscription, une société ± ses sites), plus
  * `everyone_but_active_pros`, le public de reprise qui reproduit exactement

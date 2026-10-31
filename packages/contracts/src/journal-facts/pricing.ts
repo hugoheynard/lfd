@@ -117,8 +117,7 @@ export const PRICING_FACTS = {
   "company_mercuriale.amended": act(),
 
   /**
-   * **Une promotion** (`plan-promotions-par-audience-et-acheminement.md`,
-   * § 13.9, lot L3) : miroir de `pricing_events`, sujet `promotion`.
+   * **Une promotion** (`promotions.md`, § 2.9, lot L3) : miroir de `pricing_events`, sujet `promotion`.
    * `replaced` = une révision des termes, l'identité gardée.
    */
   "promotion.posed": act(),

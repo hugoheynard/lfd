@@ -66,7 +66,7 @@ function scene(view?: readonly ZoneTargetingPromotion[]) {
   return { calls, zones, events, handler };
 }
 
-describe("RemoveDeliveryZoneHandler — une zone nommée par une promotion (plan des acheminements, § 9)", () => {
+describe("RemoveDeliveryZoneHandler — une zone nommée par une promotion (`promotions.md`, § 2.14)", () => {
   it("refuse tant qu'une promotion non archivée la nomme", async () => {
     const { zones, events, handler } = scene([
       { id: "promo_1", name: "Livraison offerte en vallée", archived: false },

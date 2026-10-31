@@ -1,6 +1,6 @@
 /**
- * E2E du plan `documentation/promotions/plan-acheminements-a-cocher.md`
- * (§ 6, § 8, § 9), sur le vrai Postgres : **un point + une zone en UNE
+ * E2E du `documentation/promotions/promotions.md`, § 2.14
+ * (), sur le vrai Postgres : **un point + une zone en UNE
  * promotion**.
  *
  * 1. la remise s'applique au retrait à ce point et en livraison dans cette

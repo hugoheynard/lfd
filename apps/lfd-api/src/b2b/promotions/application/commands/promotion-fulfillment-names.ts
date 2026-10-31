@@ -11,8 +11,7 @@ import {
 } from "../../domain/promotion-fulfillment.js";
 
 /**
- * **Les points et les zones d'une promotion, nommés** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4, § 9) —
+ * **Les points et les zones d'une promotion, nommés** (`documentation/promotions/promotions.md`, § 2.14) —
  * partagé par les cinq gestes : chacun fige une phrase au journal, qui nomme
  * ce qu'elle vise au moment du fait.
  */

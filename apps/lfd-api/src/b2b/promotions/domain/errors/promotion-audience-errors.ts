@@ -1,9 +1,7 @@
 import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus du public et des libellés d'une promotion** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 15.4, lot L8b). Lus par du personnel qui n'a pas le code sous les yeux :
+ * **Les refus du public et des libellés d'une promotion** (`documentation/promotions/promotions.md`, § 2.1, lot L8b). Lus par du personnel qui n'a pas le code sous les yeux :
  * chaque message nomme le cas et le geste de sortie.
  */
 

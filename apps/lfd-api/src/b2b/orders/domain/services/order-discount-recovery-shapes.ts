@@ -3,8 +3,7 @@ import type { SaleUnit } from "@lfd/money";
 
 /**
  * **Ce que la reprise des remises lit d'une commande, et ce qu'elle en tire**
- * — plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.3, lot M2.
+ * — `documentation/promotions/promotions.md`, § 2.12, lot M2.
  *
  * Des formes du domaine, sans un type Prisma : l'adaptateur les remplit depuis
  * les colonnes figées, la reprise les juge, l'adaptateur écrit ce qu'elle rend.

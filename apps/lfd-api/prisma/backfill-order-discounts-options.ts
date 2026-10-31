@@ -5,9 +5,8 @@ import type {
 import { refuseNonLocalTarget } from "./local-target.js";
 
 /**
- * **Les options de la reprise des remises, et son rapport** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.3 (Q-M1, décidée le 2026-10-30). Pur : le script les lit, les tests
+ * **Les options de la reprise des remises, et son rapport** — `documentation/promotions/promotions.md`, § 2.12
+ * (Q-M1, décidée le 2026-10-30). Pur : le script les lit, les tests
  * les éprouvent sans base.
  */
 export interface BackfillOptions {

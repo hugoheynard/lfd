@@ -1,6 +1,6 @@
 /**
  * **« Ces points de retrait existent-ils, et comment s'appellent-ils ? »**
- * (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) —
+ * (`documentation/promotions/promotions.md`, § 2.14) —
  * déclaré par les promotions, implémenté par les sites, relié par
  * `appBootstrap`.
  *

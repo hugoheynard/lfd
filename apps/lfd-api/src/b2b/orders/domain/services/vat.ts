@@ -58,8 +58,7 @@ export interface VatInput {
   readonly lines: readonly VatLine[];
   /**
    * Remise (retrait) déduite des seules lignes éligibles, HT, en centimes —
-   * ventilée au prorata de ces lignes-là (R1 du plan
-   * `plan-remise-retrait-par-clientele-et-exclusions.md`).
+   * ventilée au prorata de ces lignes-là (R1 de l'ancien plan des exclusions, cf. `promotions.md`, § 2.17).
    */
   readonly discountCents: number;
   /**

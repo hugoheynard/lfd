@@ -209,7 +209,7 @@ export class CartAdjustments {
         companyId: buyer.companyId,
         companyStatus: buyer.companyStatus,
         buyerKind: buyer.buyerKind,
-        // La zone des frais entre dans le fait (plan des acheminements, § 8.1).
+        // La zone des frais entre dans le fait (`promotions.md`, § 2.14).
         fulfillment: { method: "delivery", zoneId: zone.id },
       },
       known,

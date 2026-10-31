@@ -14,9 +14,7 @@ import {
 import { ASKED_AT, livePromotion } from "./live-promotion.fixture.js";
 
 /**
- * **L'acheminement à cocher** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 3, § 8.1,
- * § 8.3, § 8.4) — admission par point et par zone, rang par fait,
+ * **L'acheminement à cocher** (`documentation/promotions/promotions.md`, § 2.14) — admission par point et par zone, rang par fait,
  * recouvrement d'ensembles. Pur : aucune date n'est comparée à l'horloge.
  */
 

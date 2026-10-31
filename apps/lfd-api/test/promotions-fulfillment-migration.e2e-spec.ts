@@ -1,7 +1,6 @@
 /**
  * E2E de la migration **des acheminements à cocher** —
- * `20261031200000_les_acheminements_a_cocher` (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 4, § 6).
+ * `20261031200000_les_acheminements_a_cocher` (`documentation/promotions/promotions.md`, § 2.14).
  *
  * La migration est appliquée par le harnais ; on rejoue ici sa
  * correspondance (§ 4 du fichier) et ses CHECK (§ 6), LUS DANS LE FICHIER,

@@ -20,7 +20,7 @@ import { RemoveDeliveryZoneCommand } from "./remove-delivery-zone.command.js";
  * plan des phrases) : après, il n'y a plus rien à lire.
  *
  * Une zone qu'une promotion nomme, archivée comprise, ne se supprime pas
- * (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) :
+ * (`documentation/promotions/promotions.md`, § 2.14) :
  * contrôle et suppression dans la même transaction, la zone verrouillée.
  *
  * @throws {DeliveryZoneNotFoundError} la zone n'existe pas.

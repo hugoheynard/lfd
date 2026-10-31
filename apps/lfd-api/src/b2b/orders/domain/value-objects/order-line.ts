@@ -53,8 +53,7 @@ export interface OrderLineInput {
   readonly allergens?: OrderLineAllergens | null;
   /**
    * **La ligne entre-t-elle dans l'assiette de la remise de retrait ?** Décidé
-   * par la passation (`CartAdjustments.forPickup`) et figé ici (R2 du plan
-   * `plan-remise-retrait-par-clientele-et-exclusions.md`) : l'agrégat recalcule
+   * par la passation (`CartAdjustments.forPickup`) et figé ici (R2 de l'ancien plan des exclusions, `promotions.md`, § 2.17) : l'agrégat recalcule
    * la remise à partir de ce drapeau, jamais d'une assiette reçue. Absent =
    * éligible, ce qu'était toute ligne avant les exclusions.
    */

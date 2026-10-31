@@ -11,8 +11,7 @@ import { soldUnderShopSkus } from "./shop-sku-filter.js";
 import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
- * **Le rangement des SKU de commande, lu sur le catalogue servi** (V4 du plan
- * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * **Le rangement des SKU de commande, lu sur le catalogue servi** (V4 de l'ancien plan des exclusions, cf. `documentation/promotions/promotions.md`, § 2.17).
  *
  * Sur `catalog_items` et non `catalog_entries` : c'est la table que la caisse
  * résout déjà, et la seule dont la famille porte une clé étrangère. Le SKU de

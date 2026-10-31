@@ -1,5 +1,5 @@
 /**
- * E2E du plan `documentation/promotions/plan-un-seul-endroit.md` (2026-10-31),
+ * E2E du `documentation/promotions/promotions.md`, § 2.15 (2026-10-31),
  * sur le vrai Postgres : une promotion se règle à un seul endroit, l'écran
  * Promotions, et le passage d'un acheminement à l'autre n'y est plus refusé.
  *

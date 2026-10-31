@@ -7,8 +7,7 @@ import {
 } from "./errors/promotion-fulfillment-errors.js";
 
 /**
- * **L'acheminement d'une promotion** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 3, § 8, § 9).
+ * **L'acheminement d'une promotion** (`documentation/promotions/promotions.md`, § 2.14).
  *
  * Deux formes :
  *
@@ -62,7 +61,7 @@ export function listedZonesOf(fulfillment: PromotionFulfillment): readonly strin
 }
 
 /**
- * **La forme canonique** : points et zones TRIÉS (plan, § 8.4, révision L9).
+ * **La forme canonique** : points et zones TRIÉS (`promotions.md`, § 2.14, révision L9).
  * Reposer la même liste dans un autre ordre n'est donc pas une révision.
  */
 export function canonicalFulfillment(fulfillment: PromotionFulfillment): PromotionFulfillment {
@@ -87,7 +86,7 @@ function sorted(ids: readonly string[]): readonly string[] {
 }
 
 /**
- * **Les invariants de l'acheminement** (plan, § 3) : une remise au panier
+ * **Les invariants de l'acheminement** (`promotions.md`, § 2.14) : une remise au panier
  * coche au moins un mode ; une sélection n'est jamais vide, ni à blanc, ni
  * en double.
  *

@@ -88,7 +88,7 @@ export class GuestSignInOffer {
   /**
    * L'acheminement du devis, s'il est choisi. Un point non choisi reste
    * `null` (seul « tous les points » l'admet) ; une livraison porte la zone
-   * de son code postal, la règle des frais (plan des acheminements, § 8.1).
+   * de son code postal, la règle des frais (`promotions.md`, § 2.14).
    */
   private async fulfillmentFactOf(
     fulfillment: ShopQuoteFulfillment | null,

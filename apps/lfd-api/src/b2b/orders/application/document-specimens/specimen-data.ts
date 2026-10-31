@@ -109,8 +109,7 @@ function line(
  *
  * 🔴 **Seul le bon public porte la remise** : elle est celle d'un point de
  * retrait, et le bon pro part en livraison avec son port. Les deux ensemble
- * sont refusés par l'agrégat (V5 du plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ * sont refusés par l'agrégat (V5 de l'ancien plan des exclusions, cf. `promotions.md`, § 2.17, 2026-10-22).
  *
  * La remise se calcule sur l'assiette TTC des lignes éligibles, par
  * `composeExactOrder` — exactement la garde que l'agrégat refait.

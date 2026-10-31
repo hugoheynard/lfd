@@ -111,9 +111,7 @@ export async function boardMaterials(
 }
 
 /**
- * **Ce que le tableau lit** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lots L8 et L12) — comme le chargeur de la caisse
+ * **Ce que le tableau lit** (`documentation/promotions/promotions.md`, § 2.2, lots L8 et L12) — comme le chargeur de la caisse
  * (`PricingMaterialsLoader`) : les règles SANS l'étage promotion, qu'aucun
  * prix ne lit plus, et les promotions de ligne admises. Sans ça, l'écran
  * montrerait une règle que la caisse ignore.

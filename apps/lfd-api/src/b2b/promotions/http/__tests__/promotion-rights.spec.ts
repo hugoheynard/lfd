@@ -5,7 +5,7 @@ import {
 import { AdminPromotionsController } from "../admin-promotions.controller.js";
 
 /**
- * **Le droit unique des promotions** (`documentation/promotions/plan-un-seul-endroit.md`,
+ * **Le droit unique des promotions** (`documentation/promotions/promotions.md`, § 2.15,
  * 2026-10-31) : toute promotion s'écrit sous `b2b_pricing`, « retrait à un
  * point » compris ; `lfc_site_settings` ne garde que la lecture. Le décorateur
  * ne pose que des métadonnées que le guard lit ; ce qu'on éprouve ici est ce

@@ -1,8 +1,7 @@
 import { DomainError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus de l'acheminement d'une promotion** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 3, § 9). Lus
+ * **Les refus de l'acheminement d'une promotion** (`documentation/promotions/promotions.md`, § 2.14). Lus
  * par du personnel qui n'a pas le code sous les yeux : chaque message nomme
  * le cas et le geste de sortie.
  */
@@ -64,7 +63,7 @@ export class PromotionBlankFulfillmentTargetError extends DomainError {
 }
 
 /**
- * Un point ou une zone que la plateforme ne connaît pas (plan, § 9) — refusé
+ * Un point ou une zone que la plateforme ne connaît pas (`promotions.md`, § 2.14) — refusé
  * avant la base, jamais une violation de clé étrangère.
  */
 export class PromotionUnknownFulfillmentTargetError extends DomainError {

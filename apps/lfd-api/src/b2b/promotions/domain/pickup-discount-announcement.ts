@@ -17,8 +17,7 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
 
 /**
  * **Ce que la boutique ANNONCE d'un point de retrait**, tiré des promotions
- * (plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 14 B5, lot L8) — pur.
+ * (`documentation/promotions/promotions.md`, § 2.16, lot L8) — pur.
  *
  * Le contrat `PickupAddressView.discounts` porte UNE remise par acheteur
  * type. Après la bascule, la caisse applique la promotion panier gagnante ;

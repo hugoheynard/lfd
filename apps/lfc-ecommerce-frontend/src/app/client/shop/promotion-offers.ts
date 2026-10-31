@@ -32,7 +32,7 @@ export function offerDiscountLabel(
 
 /**
  * Les mentions d'UNE offre — une par acheminement qu'elle ouvre (une offre
- * porte l'ENSEMBLE depuis `documentation/promotions/plan-acheminements-a-cocher.md`).
+ * porte l'ENSEMBLE depuis `documentation/promotions/promotions.md`, § 2.14).
  * Un point qui n'est pas (ou pas encore) dans la liste servie n'est pas dit :
  * une mention sans lieu promettrait la remise partout. Une sélection de zones
  * ne se dit pas non plus : « en livraison » la promettrait à toute adresse, et

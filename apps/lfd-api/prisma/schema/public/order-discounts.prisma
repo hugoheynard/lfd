@@ -1,6 +1,5 @@
-/// **Une remise de panier appliquée à une commande** — plan
-/// `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
-/// § 18.2 (lot M2). Une ligne par remise ; les colonnes `discount_*` de la
+/// **Une remise de panier appliquée à une commande** — `documentation/promotions/promotions.md`, § 2.11
+/// (lot M2). Une ligne par remise ; les colonnes `discount_*` de la
 /// commande restent écrites et lues jusqu'à la bascule des lecteurs.
 ///
 /// Écrite par la reprise (`prisma/backfill-order-discounts.ts`, M2), par la

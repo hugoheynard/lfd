@@ -1,7 +1,5 @@
 /**
- * E2E de **la reprise des remises face aux bons prévus** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.3, décision du 2026-10-31 (lot M4).
+ * E2E de **la reprise des remises face aux bons prévus** — `documentation/promotions/promotions.md`, § 2.12, décision du 2026-10-31 (lot M4).
  *
  * Régression : la reprise de M2 écrivait une part `delivery_note_discounts`
  * pour TOUT bon non annulé, prévu compris. Une révision archive ensuite la

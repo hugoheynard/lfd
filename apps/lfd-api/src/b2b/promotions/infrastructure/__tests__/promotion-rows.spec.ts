@@ -68,7 +68,7 @@ describe("les mappers de la promotion", () => {
       basketTerms({ effect: { kind: "basket_amount_off", cents: 300 } }),
     ],
     [
-      "une promotion de panier sur deux points et une zone (plan des acheminements)",
+      "une promotion de panier sur deux points et une zone (`promotions.md`, § 2.14)",
       basketTerms({
         fulfillment: {
           kind: "basket",

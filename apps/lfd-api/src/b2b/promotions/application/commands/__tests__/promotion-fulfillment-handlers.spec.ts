@@ -8,8 +8,7 @@ import { PosePromotionCommand } from "../pose-promotion.command.js";
 import { RevisePromotionCommand } from "../revise-promotion.command.js";
 
 /**
- * Les gestes face aux points et aux zones qu'une promotion nomme (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4, § 9) :
+ * Les gestes face aux points et aux zones qu'une promotion nomme (`documentation/promotions/promotions.md`, § 2.14) :
  * un point ou une zone inconnu est un refus nommé AVANT toute écriture, et
  * le journal les nomme par leur libellé.
  */

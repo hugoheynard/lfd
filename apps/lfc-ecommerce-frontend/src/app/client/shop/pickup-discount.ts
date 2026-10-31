@@ -26,7 +26,7 @@ import { formatCents, formatRate } from '../format-money';
  * La réduction d'un point pour une clientèle, ou `null`.
  *
  * ⚠️ Depuis le 2026-10-22, chaque clientèle a SA remise, avec des familles ou
- * des produits exclus (plan `plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * des produits exclus (`promotions.md`, § 2.17).
  * L'étiquette le dit (« sur une sélection », {@link coversSelection}) ; le
  * panier dit l'assiette chiffrée que le devis rend (lot C, 2026-10-23).
  */

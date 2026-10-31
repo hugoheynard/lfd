@@ -55,9 +55,7 @@ export interface PromotionState extends PromotionTerms {
 }
 
 /**
- * **La promotion, en tant qu'agrégat** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 12 et § 13.3, lot L3).
+ * **La promotion, en tant qu'agrégat** (`documentation/promotions/promotions.md`, § 2.1, lot L3).
  *
  * Elle porte tout ce qui peut refuser une écriture : les cohérences que les
  * CHECK de la table répètent (point ⇔ acheminement, effet ⇔ point, public ⇔
@@ -203,7 +201,7 @@ export class Promotion {
 
 /**
  * Les seuls termes — sans quoi une révision pourrait réécrire l'identité —,
- * en forme canonique : points et zones triés (plan des acheminements, § 8.4).
+ * en forme canonique : points et zones triés (`promotions.md`, § 2.14).
  */
 function termsOf(terms: PromotionTerms): PromotionTerms {
   return {

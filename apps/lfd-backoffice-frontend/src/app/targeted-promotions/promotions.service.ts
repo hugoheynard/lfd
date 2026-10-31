@@ -15,13 +15,11 @@ import { B2B_API_BASE } from '../api/api-config';
 import { DeliveryZonesService } from '../b2b/reglages/delivery-zones.service';
 
 /**
- * **Les promotions** — `/admin/promotions` (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
+ * **Les promotions** — `/admin/promotions` (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
  *
  * L'écriture, de TOUTE promotion (« retrait à un point » compris), passe par
  * `/admin/promotions`, sous `b2b_pricing` seul : un seul endroit depuis le
- * 2026-10-31 (`documentation/promotions/plan-un-seul-endroit.md`).
+ * 2026-10-31 (`documentation/promotions/promotions.md`, § 2.15).
  */
 @Injectable({ providedIn: 'root' })
 export class PromotionsService {

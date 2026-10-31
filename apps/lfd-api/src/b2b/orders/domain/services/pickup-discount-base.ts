@@ -5,7 +5,7 @@ import { eligibleSubtotalCents } from "./pickup-discount-eligibility.js";
 /**
  * **« Remise retrait sur X € éligibles »** — l'assiette d'une remise de
  * retrait, dite au client quand elle ne couvre pas tout le panier (lot C du
- * plan `livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/promotions.md`, § 2.17).
  *
  * Pure, et partagée par le devis de la boutique, la lecture d'une commande et
  * le bon : le hors taxe passe par `eligibleSubtotalCents`, la fonction même

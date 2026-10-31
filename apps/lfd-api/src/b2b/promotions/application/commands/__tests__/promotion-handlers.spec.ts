@@ -66,7 +66,7 @@ describe("les gestes sur une promotion", () => {
       "resumed",
       "archived",
     ]);
-    // Le point par son nom au moment du fait (plan des acheminements, § 8.4).
+    // Le point par son nom au moment du fait (`promotions.md`, § 2.14).
     expect(s.promotions.acts[1]?.summary).toContain("retrait au point Cœur de station");
     expect(s.promotions.stored.get(id)?.status).toBe("archived");
   });

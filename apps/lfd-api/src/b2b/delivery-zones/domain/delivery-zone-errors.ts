@@ -18,8 +18,7 @@ export class DuplicatePostalCodeError extends BusinessError {
 }
 
 /**
- * Une zone qu'une promotion nomme, archivée comprise (**409**) — plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9 : une
+ * Une zone qu'une promotion nomme, archivée comprise (**409**) — `documentation/promotions/promotions.md`, § 2.14 : une
  * promotion garde la trace de ses zones.
  */
 export class DeliveryZoneTargetedByPromotionError extends BusinessError {

@@ -1,17 +1,23 @@
 # Les promotions
 
-> 🟧 **Doc d'état en cours de chantier — le plan fait foi pour la suite.**
-> Décrit le code **tel qu'il est sur `dev`** au 2026-10-31 : lots L0 à L10,
-> L8b et L12, le cumul au point ligne puis au panier, la multi-remise de
-> panier M1 à M7, et les correctifs de justesse du même soir (§ 2.13). Ce qui est décidé et pas
-> encore bâti vit dans le plan
-> [`plan-promotions-par-audience-et-acheminement.md`](plan-promotions-par-audience-et-acheminement.md).
+> ✅ **Doc d'état — état au 2026-10-31.** Le plan du chantier
+> (lots L0 à L12, M1 à M7) et les deux plans du 2026-10-31 (un seul endroit,
+> acheminements à cocher) sont bâtis, absorbés ici, puis supprimés ; leurs
+> décisions encore utiles sont résumées au § 2.16.
 >
-> **En production depuis le 2026-10-31** (`main` = `282c4e22b`, ordre exprès
-> de Hugo, cinq déploiements verts) : L0 à M7, déclencheur compris. Les
-> correctifs du § 2.13 sont sur `dev` seulement. La reprise des commandes
-> existantes (§ 2.12) **reste à jouer** ; tant qu'elle n'a pas rendu zéro écart,
-> aucune promotion de panier cumulable ne se pose en production.
+> **En production** (`main` = `e35b566c9`) : L0 à M7, déclencheur compris, et
+> les correctifs de justesse du § 2.13. **Sur `dev` seulement** : un seul
+> endroit (§ 2.15), la page unique d'une promotion (§ 2.9) et les
+> acheminements à cocher (§ 2.14). La reprise des commandes existantes
+> (§ 2.12) **reste à jouer** ; tant qu'elle n'a pas rendu zéro écart, aucune
+> promotion de panier cumulable ne se pose en production.
+>
+> **Études en cours, non bâties** :
+> [`plan-jours-et-heures.md`](plan-jours-et-heures.md) (promotions
+> récurrentes), [`plan-remises-acquises.md`](plan-remises-acquises.md) (la
+> remise acquise face à la révision) et
+> [`plan-remise-par-ligne.md`](plan-remise-par-ligne.md) (remise par ligne,
+> prix barré).
 
 ---
 
@@ -28,7 +34,7 @@ d'acheminement, sur une partie du catalogue, pendant une période**.
 flowchart LR
     P["Promotion<br/>−20 %, du 1er au 30"]
     P --> A["Public<br/>tout le monde · particuliers<br/>invités · inscrits · pros<br/>une société ± ses sites"]
-    P --> B["Acheminement<br/>tous · retrait<br/>un point de retrait · livraison"]
+    P --> B["Acheminement<br/>dans le prix affiché<br/>ou au panier : retrait et/ou livraison<br/>tous ou certains points, toutes ou certaines zones"]
     P --> C["Portée<br/>tout SAUF ... ou SEULEMENT ...<br/>familles · produits · déclinaisons"]
     P --> D["Conditions<br/>quantité minimale<br/>d'autres s'ajouteront"]
 ```
@@ -44,19 +50,22 @@ Une promotion a aussi :
 
 Une promotion agit à **un seul** des deux endroits, selon son acheminement :
 
-- **« tous les acheminements »** → sur le **prix de chaque article** ;
-- **un retrait, un point, une livraison** → sur le **total du panier**, une
-  fois l'acheminement connu.
+- **« dans le prix affiché »** → sur le **prix de chaque article**, quel que
+  soit l'acheminement ;
+- **« en remise au panier »** → sur le **total du panier**, une fois
+  l'acheminement connu : retrait (tous les points ou certains) et/ou
+  livraison (toutes les zones ou certaines), cochés ensemble dans UNE
+  promotion (§ 2.14).
 
 ```mermaid
 flowchart TD
     A["Prix de base de l'article"] --> B["Règles de prix<br/>société, volume, mercuriale"]
-    B --> C{"Promotion<br/>« tous acheminements »<br/>qui vise ce client ?"}
+    B --> C{"Promotion<br/>« dans le prix affiché »<br/>qui vise ce client ?"}
     C -->|oui| D["Prix de l'article réduit"]
     C -->|non| E["Prix de l'article"]
     D --> F["Total du panier"]
     E --> F
-    F --> G{"Promotion de retrait,<br/>de point ou de livraison<br/>qui vise ce client ?"}
+    F --> G{"Promotion au panier<br/>qui admet cet acheminement<br/>et vise ce client ?"}
     G -->|oui| H["Remise sur le panier"]
     G -->|non| I["Total à payer"]
     H --> I
@@ -64,8 +73,8 @@ flowchart TD
 
 Par défaut, une promotion **ne se cumule pas** : si plusieurs visent le même
 article, une seule s'applique — la plus précise sur le public (une société bat
-« les pros », qui bat « tout le monde »), puis sur l'acheminement (un point bat
-« le retrait »), puis la plus avantageuse.
+« les pros », qui bat « tout le monde »), puis sur l'acheminement (un point ou une zone nommés battent « tous les
+points » ou « toutes les zones »), puis la plus avantageuse.
 
 Une promotion **cochée « Cumulable »** s'enchaîne avec les autres cumulables :
 20 % puis 15 % du reste font −32 %, jamais −35 %. La meilleure des deux
@@ -87,8 +96,8 @@ flowchart LR
 | Ce qu'on veut                                                    | Public                       | Acheminement               | Portée                           | Où elle agit      |
 | ---------------------------------------------------------------- | ---------------------------- | -------------------------- | -------------------------------- | ----------------- |
 | −20 % pour les pros au retrait La Folie Bakery, sauf les gâteaux | Pros                         | Un point : La Folie Bakery | Tout **sauf** la famille Gâteaux | Total du panier   |
-| −20 % pour les particuliers inscrits et tous les pros            | Particuliers inscrits + Pros | Tous                       | Tout                             | Prix de l'article |
-| −5 € sur toute commande livrée                                   | Tout le monde                | Livraison                  | Tout                             | Total du panier   |
+| −20 % pour les particuliers inscrits et tous les pros            | Particuliers inscrits + Pros | Dans le prix affiché       | Tout                             | Prix de l'article |
+| −5 € sur toute commande livrée                                   | Tout le monde                | Livraison, toutes zones    | Tout                             | Total du panier   |
 
 Le premier cas est celui des anciennes « remises du point de retrait » : elles
 sont **devenues des promotions** à la bascule. Le troisième se pose aujourd'hui
@@ -98,17 +107,17 @@ dans le modèle, et la boutique l'affiche depuis L10.
 
 - **Tarification › Promotions**, et là seulement : toutes les promotions,
   « retrait à un point » compris (droit « tarifs B2B »). Un seul endroit
-  depuis le 2026-10-31 (décision de Hugo, [`plan-un-seul-endroit.md`](plan-un-seul-endroit.md)) :
+  depuis le 2026-10-31 (décision de Hugo, § 2.15) :
   la fiche d'un site ne parle plus de remises, elle décrit le lieu. L'écran
-  Promotions se filtre par point, et un passage « un point » → « tous
-  acheminements » y est une révision comme une autre (elle change de
+  Promotions se filtre par point, et un passage « en remise au panier » →
+  « dans le prix affiché » y est une révision comme une autre (elle change de
   mécanique : du panier aux lignes, et l'annonce du point disparaît).
 - L'ancienne grille s'appelle désormais **Règles de prix** ; elle ne pose plus
   de promotion (L12).
 
 ### Ce que voit le client
 
-- **Au rayon** : le prix tient compte des promotions « tous acheminements »
+- **Au rayon** : le prix tient compte des promotions « dans le prix affiché »
   qui le visent ; une promotion de retrait ou de livraison est **mentionnée**
   (« −X % avec retrait à … ») sans changer le prix affiché.
 - **Invité** : s'il existe une promotion réservée aux inscrits, il lit
@@ -138,8 +147,8 @@ multi-remise) l'ont été le 2026-10-31.
 | Effet                 | `domain/promotion-effect.ts:20-24`             | `percent_off`, `unit_amount_off`, `fixed_unit_price`, `basket_amount_off` ; effets admis par point `:31-36` (ligne : les trois premiers ; panier : `percent_off`, `basket_amount_off`) |
 | Public                | `domain/promotion-audience.ts:15-25`           | `everyone`, `individuals`, `individuals_guest`, `individuals_registered`, `pros`, `pros_active`, `pros_pending`, `company`, `company_and_sites`, `everyone_but_active_pros`            |
 | Public multiple (L8b) | `domain/promotion-audience-set.ts`             | un **ensemble normalisé** de cibles de l'arbre ; refus : vide, société en double, libellé d'audience sans audience (`errors/promotion-audience-errors.ts`)                             |
-| Acheminement          | `domain/promotion-fulfillment.ts:15-19`        | `any`, `pickup`, `pickup_point`, `delivery`                                                                                                                                            |
-| Point d'application   | `domain/promotion-fulfillment.ts:34-36`        | `any` → `line`, sinon `basket`                                                                                                                                                         |
+| Acheminement          | `domain/promotion-fulfillment.ts:25-37`        | `displayed_price`, ou `basket` avec `pickup` (`none` · `all` · `{points}`) et `delivery` (`none` · `all` · `{zones}`) — § 2.14                                                         |
+| Point d'application   | `domain/promotion-fulfillment.ts:46-48`        | `displayed_price` → `line`, `basket` → `basket` (`applicationPointOf`)                                                                                                                 |
 | Portée                | `domain/promotion-scope.ts:19-26`              | mode `all_except` / `only`, cibles `category` / `product` / `variant`                                                                                                                  |
 | Conditions            | `domain/promotion-condition.ts:15`             | `min_quantity` seule ; union extensible                                                                                                                                                |
 | Libellés              | `prisma/schema/public/promotions.prisma:15-27` | `label_*` (commun) + `label_individuals_*` + `label_pros_*`, FR/EN/IT                                                                                                                  |
@@ -198,7 +207,9 @@ pas choisi. Elle touche le calcul du prix affiché (argent) : plan et
   (`basketPromotionPlanOf`, `:71`) — § 2.11.
 - **Spécificité et départage** : `domain/promotion-targeting.ts:184-205`
   (`PUBLIC_RANK` : société 4, société et sites 3, sous-publics 2, publics 1,
-  tout le monde 0 ; `FULFILLMENT_RANK` : point 2, mode 1, tous 0). Au panier,
+  tout le monde 0) ; le rang d'acheminement se calcule **pour le fait jugé**
+  (`fulfillmentRankOf`, `:200` : point ou zone nommés 2, « tous » 1, prix
+  affiché 0 — § 2.14). Au panier,
   le rang est `[public, acheminement, remise]` puis l'id
   (`basket-promotion-choice.ts:75`).
 
@@ -277,8 +288,10 @@ remise en cause. Un changement de quantité recompose les montants : dans une
 seule transaction, les remises actives sont **archivées** (`archived_at`,
 jamais supprimées) et le nouvel ensemble est inséré. Une cumulable visant un
 point nommé passe avant une cumulable « au retrait » : changer de point peut
-donc changer la remise de rang 1, et la révision est alors refusée (assumé,
-plan § 18.6).
+donc changer la remise de rang 1, et la révision est alors refusée (assumé
+au lot M7, 2026-10-30). Depuis les acheminements à cocher, l'**adresse
+livrée** compte parmi les changements jugés : la zone entre dans le fait,
+une autre adresse peut retirer la promotion (§ 2.14).
 
 ### 2.7 Invité ou inscrit
 
@@ -319,8 +332,7 @@ Avec plusieurs remises, chaque libellé est figé dans sa ligne
 Il n'y a plus de **surface** (d'où une promotion est réglée) depuis le
 2026-10-31 : la route `admin/sites/:pickupId/promotions` (sous
 `lfc_site_settings`), le fichier de la surface (retiré), `PromotionWrongSurfaceError` et
-les cartes de remise de la fiche d'un site sont retirés
-([`plan-un-seul-endroit.md`](plan-un-seul-endroit.md)). Qui tenait
+les cartes de remise de la fiche d'un site sont retirés (§ 2.15). Qui tenait
 `lfc_site_settings:write` sans `b2b_pricing:write` ne règle plus la remise de
 son point : le droit des prix s'accorde à l'écran (`/admin/staff-roles`).
 Depuis le 2026-10-31 (décision de Hugo : « un seul layout avec les champs »),
@@ -337,8 +349,7 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 `b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
 `:id`.
 
-**L'acheminement se coche** (2026-10-31,
-[`plan-acheminements-a-cocher.md`](plan-acheminements-a-cocher.md) § 5). La
+**L'acheminement se coche** (2026-10-31, modèle au § 2.14). La
 carte « Sur quel mode d’acheminement et de consommation ? » s'ouvre sur un
 choix, « Où joue la promotion » : **Dans le prix affiché** (le prix de
 l'article baisse au catalogue, pour tous les acheminements) ou **En remise au
@@ -456,7 +467,7 @@ Une commande dont la recomposition ne redonne pas le figé est écrite
 plusieurs taux, listée « à trancher » sans être écrite. `--refresh-drifted`
 traite les commandes révisées entre deux passes.
 
-Le plan (§ 18.3) prévoyait M2, une passe, M3–M6, une seconde passe, le
+Le plan du chantier prévoyait M2, une passe, M3–M6, une seconde passe, le
 déclencheur, puis M7. **Ce qui a été joué** (2026-10-31, pré-release, aucune
 activité commerciale) : tout d'un coup, déclencheur et M7 compris. Ce qui
 reste :
@@ -495,16 +506,217 @@ Factur-X et ses bons les portent pour toujours.
   assiette (`order-discount-lines.ts`) — l'ancienne mention écrivait la somme
   sur une base qui n'était celle d'aucune.
 
+### 2.14 Les acheminements à cocher (2026-10-31, sur `dev`)
+
+Demande de Hugo : « Retrait et livraison devraient être des cases à cocher,
+car on pourrait avoir un seul point et la livraison », puis l'extension aux
+zones. Contredit deux fois par `vitruve` ; serveur au commit `0dec40d6e`,
+écran le même jour (§ 2.9).
+
+**Le modèle** (`domain/promotion-fulfillment.ts:25-37`) :
+
+```ts
+type PromotionFulfillment =
+  | { kind: "displayed_price" } // l'ancien `any` : point LIGNE
+  | { kind: "basket"; pickup: "none" | "all" | { points }; delivery: "none" | "all" | { zones } };
+```
+
+- **Invariants** (agrégat, pose et révision) : une promotion `basket` coche
+  au moins un acheminement (`PromotionReachesNothingError`) ; une liste n'est
+  jamais vide, sans doublon ni blanc ; un point ou une zone inconnus sont un
+  refus nommé (`PromotionUnknownFulfillmentTargetError`), jamais une
+  violation de clé étrangère (`domain/errors/promotion-fulfillment-errors.ts`).
+  Points et zones sont **triés** à la construction (`canonicalFulfillment`) :
+  reposer la même liste dans un autre ordre n'est pas une révision.
+- **Le fait jugé** (`promotion-targeting.ts:59-61`) : `{ method: "pickup",
+pickupId }` ou `{ method: "delivery", zoneId }`. Admission
+  (`fulfillmentAdmits`, `:176`) : un point est admis par « tous les points »
+  ou s'il est nommé ; une zone, par « toutes les zones » ou si elle est
+  nommée. Un point pas encore choisi (devis anonyme) ou une livraison sans
+  zone ne sont admis que par « tous ».
+- **La zone se résout par le code postal**, par la règle même des frais
+  (préfixe le plus long), exposée aux commandes par le port
+  `DeliveryZoneOfPostalCodeReader`
+  (`orders/domain/ports/delivery-zone-of-postal-code.reader.ts`) que
+  `delivery-zones` implémente. À la caisse, une livraison sans zone est
+  refusée avant (`NoDeliveryZoneForPostalCodeError`) ; « sans zone » ne
+  concerne que l'annonce et les témoins de recouvrement.
+- **Rang par fait** (`fulfillmentRankOf`, `:200`) : point ou zone nommés 2,
+  « tous » 1, prix affiché 0. Deux promotions disjointes ne se comparent
+  jamais : A = {point P1, toutes zones} et B = {tous points, zone Z} — en Z,
+  B passe avant A ; en P1, A avant B.
+- **Recouvrement d'ensembles** (`fulfillmentsMeet`,
+  `promotion-overlap.ts:291`) : deux promotions se recouvrent si une
+  commande peut être servie d'une façon que les deux admettent ; témoins :
+  chaque point et chaque zone nommés, « un autre point », « une autre zone »,
+  « livraison sans zone ».
+- **Ports, sans cycle** (`appBootstrap/promotion-fulfillment-targets.module.ts`) :
+  `promotions` déclare `DeliveryZoneDirectory` et `PickupPointDirectory`
+  (existence et libellés) ; `delivery-zones` déclare
+  `PromotionsTargetingZoneReader`. Aucun module n'importe l'autre.
+- **Une zone nommée ne se supprime pas** : `DeliveryZoneTargetedByPromotionError`
+  (409, `delivery-zones/domain/delivery-zone-errors.ts:25`), **promotion
+  archivée comprise** — contrôle et suppression dans la même transaction, la
+  zone verrouillée ; la clé étrangère `promotion_delivery_zones.zone_id` est
+  `RESTRICT`. Un point de retrait, lui, s'archive et ne se supprime pas : il
+  reste dans la promotion et n'admet plus rien.
+- **Journal** : les nouveaux faits nomment les points et les zones par leurs
+  libellés ; les faits passés restent tels qu'écrits.
+- **Contrat de la boutique** (`packages/contracts/src/promotion-offer.ts`) :
+  une offre porte l'ensemble (`pickup`, `delivery`) ; la boutique dit « au
+  retrait à … » ou « en livraison » selon ce que le client regarde. Cassé
+  dans le même déploiement (pré-release).
+
+**Les données** — migration `20261031200000_les_acheminements_a_cocher` :
+deux colonnes de mode, `fulfillment_pickup` et `fulfillment_delivery`
+(`none` · `all` · `listed`, `NULL` au point ligne), deux tables de liaison
+`promotion_pickup_points` et `promotion_delivery_zones` (clés primaires
+composées, FK `RESTRICT`), les CHECK de la forme neuve, et la correspondance
+une à une :
+
+| Ancien `fulfillment_kind` | Nouveau                                      |
+| ------------------------- | -------------------------------------------- |
+| `any`                     | `displayed_price`                            |
+| `pickup`                  | `basket`, `pickup = all`, `delivery = none`  |
+| `pickup_point` + id       | `basket`, `points = [id]`, `delivery = none` |
+| `delivery`                | `basket`, `pickup = none`, `delivery = all`  |
+
+La migration s'arrête en le nommant si le point d'une promotion « un point »
+n'existe pas. **Colonnes mortes** : `fulfillment_kind` (devenue nullable) et
+`fulfillment_pickup_id` restent en base, ni lues ni écrites (CLAUDE.md § 0) ;
+`application_point` reste un miroir dérivé. Les commandes ne sont pas
+touchées : elles figent leurs remises (`order_discounts`). L'e2e
+`test/promotions-fulfillment-migration.e2e-spec.ts` relit chaque ancienne
+forme ; `test/promotions-point-and-zone.e2e-spec.ts` éprouve « un point + une
+zone » en une promotion.
+
+**Retour arrière et vérification après déploiement** — le retour arrière
+n'est **pas gratuit** dès le déploiement :
+`apps/lfd-api/prisma/rollback/20261031200000_les_acheminements_a_cocher.sql`
+se joue à la main, par l'URL directe, **avant** le retour du code, puis l'API
+redémarre. Il recalcule les colonnes anciennes depuis la forme neuve et
+**archive** chaque promotion non archivée qu'elles ne savent pas dire (un
+point et la livraison, plusieurs points, des zones choisies), réduite à son
+premier élément. Après le déploiement, vérifier : la migration inscrite
+appliquée, chaque promotion lisible à l'écran Promotions avec le même
+acheminement qu'avant (la table ci-dessus), et aucune promotion `listed` sans
+ligne de liaison (erreur de lecture nommée, jamais un ensemble vide
+silencieux).
+
+```mermaid
+flowchart TD
+    A["Commande : retrait au point P<br/>ou livraison au code postal C"] --> B["Fait d'acheminement<br/>pickupId, ou zoneId résolu par C"]
+    B --> C{"fulfillmentAdmits<br/>pour chaque promotion basket"}
+    C -->|admise| D["Rang par fait<br/>nommé 2, tous 1"]
+    C -->|non| E["Écartée"]
+    D --> F["basketPromotionPlanOf<br/>§ 2.11"]
+```
+
+Hors champ : le mode de **consommation** (sur place / à emporter) n'a pas de
+donnée côté commande en ligne ; seul le titre de la carte le nomme.
+
+### 2.15 Un seul endroit (2026-10-31, sur `dev`)
+
+Décision de Hugo : « La réduction de retrait sur un site doit aller dans
+promotion générale, on ne peut pas avoir deux endroits », et « on peut
+laisser la page réglage d'un site agnostique de comment le commerce le
+traite ». Contredit par `vitruve` le même jour.
+
+- **Une seule route** : `admin/promotions` (`http/admin-promotions.controller.ts`),
+  sous `b2b_pricing`, pour toute promotion. La route
+  `admin/sites/:pickupId/promotions` (écritures et `GET`) est retirée ; la
+  liste se filtre par `?pickupId=`.
+- **Plus de surface** : le paramètre `surface` des cinq commandes, son garde
+  dans `PromotionWriteGuard` et `PromotionWrongSurfaceError` sont retirés ;
+  le garde ne juge plus que la source et le recouvrement.
+- **La fiche d'un site ne parle plus de remises** : les cartes de remise et
+  de promotions du point sont sorties de la page (Réglages › Sites).
+- **Le droit qui bouge** : qui tenait `lfc_site_settings:write` sans
+  `b2b_pricing:write` ne règle plus la remise de son point (perte assumée,
+  pré-release) ; le droit des prix s'accorde à l'écran, jamais par
+  migration. Rien ne s'ouvre à un droit qui ne l'avait pas.
+- Aucune migration ; retour arrière par le code seul. Régression :
+  `test/promotions-one-place.e2e-spec.ts`. Non fait au bâti : la lecture en
+  production des rôles qui avaient `lfc_site_settings:write` sans
+  `b2b_pricing:write`.
+
+### 2.16 Les décisions qui restent utiles (résumé, datées)
+
+Le plan du chantier (2026-10-30, supprimé le 2026-10-31) portait la
+discussion ; voici ce qui en reste opposable.
+
+- **Un modèle global** (Hugo, 2026-10-30) : la remise d'un point de retrait
+  est une promotion comme une autre, pas un second système ; le modèle est
+  **extensible** — chaque axe est un type somme, un critère neuf est une
+  variante et son évaluateur ; les conditions sont une liste typée (seule
+  `min_quantity` est bâtie ; panier minimum, jours et heures, première
+  commande, code promo, limite d'usage sont prévus).
+- **Vocabulaire** (Hugo, 2026-10-30) : _audience_ (particuliers, pros, tout
+  le monde) ; _sous-audience_, ce que le serveur reconnaît seul (invités,
+  inscrits ; pros actifs, en cours d'inscription, une société ± ses sites) ;
+  _segment_, une liste entretenue par le staff — chantier séparé, rien en
+  base.
+- **Invité ou inscrit** (Hugo, 2026-10-30) : un particulier qui commande
+  sans se connecter est invité, même si son adresse a un compte ; l'offre de
+  connexion s'affiche à **tout** invité tant qu'une promotion « inscrits »
+  vit, sans jamais révéler qu'une adresse a un compte.
+- **Le pro en cours d'inscription** est un pro, pas un particulier (Hugo,
+  2026-10-30) ; ses réglages vivent dans
+  [`plan-pros-en-cours-d-inscription.md`](../comptes-client/plan-pros-en-cours-d-inscription.md).
+- **Deux points d'application, cumul entre eux** (2026-10-30) : la ligne
+  (l'étage `promotion`, scellable par la mercuriale, bornée par la limite de
+  prix) puis le panier (sans scellement ni limite de prix). Dans un même
+  point, la plus spécifique — **public > acheminement > portée** — puis la
+  plus avantageuse, puis l'id. Une société nommée bat tout public de
+  clientèle, même moins généreuse (Q5 : la négociation nominative prime).
+- **Reproduire l'existant au centime** à la reprise : public
+  `everyone_but_active_pros` pour l'ancienne remise « particuliers »
+  (exactement `audienceOf`), `basket_amount_off` pour le montant fixe,
+  `fixed_unit_price` pour une règle `replace` ; `increase` et `segment`
+  arrêtaient la reprise en les nommant.
+- **Pas de contrainte d'exclusion en base** : le recouvrement se juge à la
+  pose sur la projection du catalogue (§ 2.5).
+- **Au rayon**, une promotion de panier ne baisse jamais le prix affiché ;
+  elle est mentionnée, sans barré.
+- **Révision** (option b, 2026-10-30) : refuser un changement d'acheminement
+  qui ajoute, retire ou remplace la promotion de panier, avec le geste de
+  sortie (§ 2.6).
+- **Plusieurs publics et libellés par audience** (L8b, Hugo, 2026-10-30) :
+  un ensemble minimal non vide, « tout le monde » exclusif ; nom interne
+  séparé des libellés ; libellés Particuliers et Pros, repli sur le commun.
+- **Cumul sur demande** (Hugo, 2026-10-30) : non cumulable par défaut ;
+  « Cumulable » enchaîne en successif ; la meilleure des deux formules, à
+  égalité la non cumulable (§ 2.11).
+- **Reprise des remises de panier** (mandat, 2026-10-30) : une commande en
+  écart s'écrit `origin = 'frozen'` ; `--production` et le nom de la base
+  retapé ; zéro écart **et** zéro désaccord avant de poser une cumulable de
+  panier (§ 2.12). Q-M2 (2026-10-30) : une même promotion figée sous deux
+  libellés sur une facture prend le libellé du bon le plus ancien.
+
+### 2.17 L'origine des exclusions
+
+La portée `all_except` / `only` vient de l'ancienne **remise de retrait par
+clientèle** (plan du 2026-10-22, « une remise par clientèle, avec ses
+exclusions par famille et par produit », supprimé le 2026-10-31) : ses
+exclusions et son assiette éligible ont été reprises telles quelles par les
+promotions à la bascule (L12), qui les ont remplacées.
+
 ---
 
 ## Limites connues et reste à faire
 
-- **Production** : déployée le 2026-10-31 ; la reprise du § 2.12 reste à
-  jouer, et les correctifs du § 2.13 attendent le prochain « pousse main ».
-- **L11** : docs d'état de la résolution de prix et du prix boutique mises à
-  jour ; le plan devient doc d'état (celle-ci l'absorbera).
-- **Remise par ligne vérifiable par le client** (plan § 17) : option
-  documentée, non bâtie.
+- **Production** : la reprise du § 2.12 reste à jouer ; un seul endroit,
+  page unique et acheminements à cocher attendent le prochain « pousse
+  main ». Contrôle préalable non fait : les rôles qui avaient
+  `lfc_site_settings:write` sans `b2b_pricing:write` (§ 2.15).
+- **Remise par ligne vérifiable par le client, prix barré** :
+  [`plan-remise-par-ligne.md`](plan-remise-par-ligne.md), option documentée,
+  non bâtie.
+- **Jours et heures, remises acquises** : études en cours,
+  [`plan-jours-et-heures.md`](plan-jours-et-heures.md) et
+  [`plan-remises-acquises.md`](plan-remises-acquises.md).
+- **Comparaison avec Salesforce B2C Commerce** (écarts classés par valeur et
+  coût) : [`comparaison-salesforce.md`](comparaison-salesforce.md).
 - **Annonce et offre de connexion** : une seule remise annoncée, même quand
   la caisse en cumule plusieurs (assumé : sous-annonce, jamais sur-annonce —
   § 2.13).

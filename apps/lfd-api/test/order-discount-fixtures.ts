@@ -3,9 +3,7 @@ import { randomUUID } from "node:crypto";
 import type { Prisma, PrismaClient } from "../src/platform/database/client/client.js";
 
 /**
- * **Les remises de panier dans les fixtures** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.2, lot M3.
+ * **Les remises de panier dans les fixtures** — `documentation/promotions/promotions.md`, § 2.11, lot M3.
  *
  * Depuis `20261031180000_le_controle_des_remises`, un déclencheur différé
  * refuse au COMMIT une commande dont `discount_cents` n'est pas la somme de

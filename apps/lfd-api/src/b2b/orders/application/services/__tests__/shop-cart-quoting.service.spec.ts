@@ -5,7 +5,7 @@ import { catalogItem, quotingOf } from "./shop-cart-quoting.doubles.js";
 
 /**
  * Le devis de la boutique dit « remise retrait sur X € éligibles » (lot C du
- * plan `livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/promotions.md`, § 2.17).
  * Le vrai service, et les vrais services qu'il compose, montés sur des ports
  * doublés à la main.
  */

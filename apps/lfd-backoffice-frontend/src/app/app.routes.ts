@@ -205,11 +205,9 @@ export const routes: Routes = [
       import('./b2b/tarification/simulateur/simulateur-page').then((m) => m.SimulateurPage),
   },
   {
-    // LES PROMOTIONS CIBLÉES — par public, acheminement et portée (plan
-    // `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
-    // § 13.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
+    // LES PROMOTIONS CIBLÉES — par public, acheminement et portée (`documentation/promotions/promotions.md`, § 2.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
     // serveur ; écrites sous `b2b_pricing:write` seul, « retrait à un point »
-    // compris (`documentation/promotions/plan-un-seul-endroit.md`). L'entrée
+    // compris (`documentation/promotions/promotions.md`, § 2.15). L'entrée
     // s'appelle « Promotions » depuis la bascule ; la grille, « Règles de prix ».
     path: 'promotions-ciblees',
     canActivate: [anyPermissionGuard('b2b_pricing:read', 'lfc_site_settings:read')],

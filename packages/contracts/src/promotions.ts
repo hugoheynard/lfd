@@ -3,9 +3,7 @@ import { z } from "zod";
 import type { PromotionOfferFulfillmentView } from "./promotion-offer.js";
 
 /**
- * **Les promotions, vues du back-office** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7).
+ * **Les promotions, vues du back-office** (`documentation/promotions/promotions.md`, § 2.9, lot L7).
  *
  * Les schémas ne valident que la FORME : les invariants (point ⇔
  * acheminement, effet ⇔ point, portée, fenêtre) sont tenus par l'agrégat
@@ -29,7 +27,7 @@ export type PromotionAudienceKindValue = (typeof PROMOTION_AUDIENCE_KIND_VALUES)
 /**
  * « Dans le prix affiché » (le prix de l'article baisse au catalogue, pour
  * tous les acheminements) ou « en remise au panier », où retrait et
- * livraison se cochent (plan `documentation/promotions/plan-acheminements-a-cocher.md`).
+ * livraison se cochent (`documentation/promotions/promotions.md`, § 2.14).
  */
 export const PROMOTION_FULFILLMENT_KIND_VALUES = ["displayed_price", "basket"] as const;
 export type PromotionFulfillmentKindValue = (typeof PROMOTION_FULFILLMENT_KIND_VALUES)[number];

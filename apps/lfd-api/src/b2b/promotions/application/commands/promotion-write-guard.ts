@@ -12,15 +12,13 @@ import {
 import type { Promotion } from "../../domain/promotion.js";
 
 /**
- * **Ce qui peut refuser une écriture et que l'agrégat ne voit pas** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.2, § 13.10 L7) : les rivales — pas de chevauchement, une seule
+ * **Ce qui peut refuser une écriture et que l'agrégat ne voit pas** (`documentation/promotions/promotions.md`, § 2.3 et § 2.16) : les rivales — pas de chevauchement, une seule
  * promotion de panier par commande. Jugées seulement là où la promotion
  * prend (ou reprend) sa place : pose, révision, reprise.
  *
  * Il a aussi jugé une **surface** (d'où la promotion était réglée) jusqu'au
  * 2026-10-31 : une promotion se règle désormais depuis un seul endroit
- * (`documentation/promotions/plan-un-seul-endroit.md`).
+ * (`documentation/promotions/promotions.md`, § 2.15).
  *
  * Le catalogue n'est lu que s'il existe une rivale.
  */

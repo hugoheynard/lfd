@@ -218,7 +218,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // **Promotions ciblées** (plan des promotions, L7) — lues sous l'un OU l'autre droit,
   // comme la route serveur.
   'promotions-ciblees': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
-  // Écrites sous b2b_pricing seul : un seul endroit (plan-un-seul-endroit.md, 2026-10-31).
+  // Écrites sous b2b_pricing seul : un seul endroit (promotions.md, § 2.15, 2026-10-31).
   'promotions-ciblees/nouvelle': 'b2b_pricing:write',
   'promotions-ciblees/:id': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
 

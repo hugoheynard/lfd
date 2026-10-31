@@ -1,6 +1,5 @@
 /**
- * E2E de **persistance des promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
+ * E2E de **persistance des promotions** (`documentation/promotions/promotions.md`,
  * lot L3), sur le vrai Postgres : l'agrégat fait l'aller-retour `save` →
  * `load` sans perte, sa portée est remplacée en bloc, son acte part au journal
  * tarifaire (`pricing_events`, sujet `promotion`) dans la même transaction, et

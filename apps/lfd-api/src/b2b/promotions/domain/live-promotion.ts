@@ -18,9 +18,7 @@ import {
 import type { Promotion } from "./promotion.js";
 
 /**
- * **Une promotion telle que le calcul la lit** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lot L5) — les termes qui agissent sur un prix, et rien du cycle
+ * **Une promotion telle que le calcul la lit** (`documentation/promotions/promotions.md`, § 2.2, lot L5) — les termes qui agissent sur un prix, et rien du cycle
  * de vie hors de sa pause.
  *
  * Un modèle de LECTURE, sans comportement : l'agrégat garde ses invariants
@@ -84,8 +82,7 @@ export interface AdmittedPromotion extends LivePromotion {
   /** Le plus haut rang parmi les cibles qui admettent l'acheteur. */
   readonly publicRank: number;
   /**
-   * Le rang d'acheminement POUR LE FAIT JUGÉ (plan
-   * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.3) : une
+   * Le rang d'acheminement POUR LE FAIT JUGÉ (`documentation/promotions/promotions.md`, § 2.14) : une
    * promotion qui coche un point et toutes les zones est plus spécifique à
    * ce point qu'en livraison.
    */

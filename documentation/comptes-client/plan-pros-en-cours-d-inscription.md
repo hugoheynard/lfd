@@ -2,7 +2,7 @@
 
 > 📐 **Doc-first : aucune ligne de code.** Décision de Hugo du 2026-10-30,
 > consignée au § 10 de
-> [`../promotions/plan-promotions-par-audience-et-acheminement.md`](../promotions/plan-promotions-par-audience-et-acheminement.md).
+> [`../promotions/promotions.md`](../promotions/promotions.md) (§ 2.16).
 > Le plan touche l'argent (prix pro, règlement) et une frontière de sécurité
 > (qui est « pro ») : **`vitruve` avant Hugo** (CLAUDE.md § 9 bis).
 > Chaque affirmation sur l'existant cite un fichier ouvert le 2026-10-30.

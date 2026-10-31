@@ -6,9 +6,7 @@ import type { PromotionApplicationPoint } from "./promotion-fulfillment.js";
 
 /**
  * **L'effet d'une promotion**, une unité par variante — jamais un nombre nu
- * dont l'unité dépendrait d'un autre champ (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.3) :
+ * dont l'unité dépendrait d'un autre champ (`documentation/promotions/promotions.md`, § 2.1) :
  *
  * - `percent_off` : points de base, 1 à 10 000 — ligne ou panier ;
  * - `unit_amount_off` : millicentimes retirés à l'unité — ligne ;

@@ -1,6 +1,4 @@
-/// **Une promotion** — l'agrégat `Promotion` de `src/b2b/promotions/` (plan
-/// `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
-/// § 13.3, lot L3). Trois axes — public, acheminement, portée — et une liste
+/// **Une promotion** — l'agrégat `Promotion` de `src/b2b/promotions/` (`documentation/promotions/promotions.md`, § 2.1, lot L3). Trois axes — public, acheminement, portée — et une liste
 /// de conditions. Aucun lecteur de prix ne la lit encore (L5).
 ///
 /// Les colonnes de sorte sont du TEXTE tenu par des CHECK (migration
@@ -54,8 +52,7 @@ model Promotion {
   audienceKind         String    @map("audience_kind")
   /// Identifiant opaque, sans clé étrangère.
   audienceCompanyId    String?   @map("audience_company_id")
-  /// MORTE depuis `20261031200000_les_acheminements_a_cocher` (plan
-  /// `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) : rendue
+  /// MORTE depuis `20261031200000_les_acheminements_a_cocher` (`documentation/promotions/promotions.md`, § 2.14) : rendue
   /// nullable, ni lue ni écrite, gardée en base (CLAUDE.md § 0). Elle dit
   /// l'acheminement d'une promotion à la date de la migration ; une révision
   /// ultérieure ne la met pas à jour.
@@ -139,8 +136,7 @@ model PromotionAudienceTarget {
   @@schema("public")
 }
 
-/// **Un point de retrait nommé par une promotion** (plan
-/// `documentation/promotions/plan-acheminements-a-cocher.md`, § 4, § 8.2) —
+/// **Un point de retrait nommé par une promotion** (`documentation/promotions/promotions.md`, § 2.14) —
 /// une valeur de l'agrégat, remplacée en bloc avec lui. Un site s'archive et
 /// ne se supprime pas : la clé étrangère est `RESTRICT`, et un point archivé
 /// reste dans la promotion sans plus rien admettre.
@@ -173,9 +169,7 @@ model PromotionDeliveryZone {
   @@schema("public")
 }
 
-/// **Les réglages du contexte des promotions** — une ligne par clé (plan
-/// `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
-/// § 13.5, § 14 S-bascule). Une seule clé aujourd'hui, `promotions_source` :
+/// **Les réglages du contexte des promotions** — une ligne par clé (`documentation/promotions/promotions.md`, § 2.2 et § 2.16). Une seule clé aujourd'hui, `promotions_source` :
 /// `legacy` | `shadow` | `promotions`, la source que le calcul lit. Créée à
 /// `legacy` par la migration de la reprise (L4) ; passée à `promotions` par
 /// celle de la bascule (L8), dans la transaction de son contrôle d'égalité.

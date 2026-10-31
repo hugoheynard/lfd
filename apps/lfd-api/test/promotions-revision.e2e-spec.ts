@@ -1,7 +1,5 @@
 /**
- * E2E du **refus de révision qui changerait la promotion** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.8, lot L9), sur le vrai Postgres, source `promotions`.
+ * E2E du **refus de révision qui changerait la promotion** (`documentation/promotions/promotions.md`, § 2.6, lot L9), sur le vrai Postgres, source `promotions`.
  *
  * 1. la passation FIGE `orders.discount_promotion_id` ;
  * 2. changer de point quand une promotion de retrait est en jeu est refusé

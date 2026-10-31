@@ -58,7 +58,7 @@ export interface PromotionRow {
   /** Projection de la table des cibles, qui fait foi (L8b) — jamais relue. */
   readonly audienceKind: string;
   readonly audienceCompanyId: string | null;
-  /** `none` | `all` | `listed` ; `NULL` au point ligne (plan des acheminements, § 4). */
+  /** `none` | `all` | `listed` ; `NULL` au point ligne (`promotions.md`, § 2.14). */
   readonly fulfillmentPickup: string | null;
   readonly fulfillmentDelivery: string | null;
   readonly scopeMode: string;

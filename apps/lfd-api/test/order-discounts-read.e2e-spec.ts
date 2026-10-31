@@ -1,7 +1,5 @@
 /**
- * E2E de **la lecture d'une commande à plusieurs remises** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.6, lot M6.
+ * E2E de **la lecture d'une commande à plusieurs remises** — `documentation/promotions/promotions.md`, § 2.11, lot M6.
  *
  * Ce que seul le vrai Postgres prouve : la vue client, la vue du personnel et
  * le bon de commande relisent `order_discounts` (remises actives seulement),

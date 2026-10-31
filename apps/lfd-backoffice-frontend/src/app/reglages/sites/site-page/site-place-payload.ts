@@ -23,7 +23,7 @@ export function placePayload(
     pays: site.pays,
     opening: site.opening,
     // Les remises sont absentes, donc inchangées : plus aucune carte de la
-    // fiche ne les envoie (2026-10-31, plan-un-seul-endroit.md).
+    // fiche ne les envoie (2026-10-31, promotions.md, § 2.15).
     ...change,
   };
 }

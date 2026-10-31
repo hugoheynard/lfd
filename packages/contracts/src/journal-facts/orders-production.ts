@@ -172,8 +172,7 @@ const audienceDiscount = () =>
   });
 
 /**
- * Un point de retrait, et la remise qu'on y consent à chaque clientèle (plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ * Un point de retrait, et la remise qu'on y consent à chaque clientèle (`promotions.md`, § 2.17, 2026-10-22).
  */
 const pickupPoint = () =>
   payload({

@@ -237,9 +237,7 @@ export interface PriceInputs {
   /** La mercuriale du client, ou `null`. Présentée au palier de la mesure. */
   readonly mercuriale: CompanyMercuriale | null;
   /**
-   * Les promotions du point LIGNE qui visent ce client à cet instant (plan
-   * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
-   * § 13.5). Présentées à l'étage `promotion` par `promotionAsRule`, pour CET
+   * Les promotions du point LIGNE qui visent ce client à cet instant (`documentation/promotions/promotions.md`, § 2.2). Présentées à l'étage `promotion` par `promotionAsRule`, pour CET
    * article.
    *
    * 🔴 **Obligatoire, pour la même raison que `ladders`** : `[]` est une

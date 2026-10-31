@@ -6,9 +6,7 @@ import type { BasketPromotionApplied } from "../../domain/services/basket-promot
 import { cumulatedDiscountsOf } from "../../domain/services/basket-promotion-plan.js";
 
 /**
- * **Le devis de plusieurs remises de panier** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.6, lot M7) — la chaîne même que l'agrégat rejouera à la passation
+ * **Le devis de plusieurs remises de panier** (`documentation/promotions/promotions.md`, § 2.11, lot M7) — la chaîne même que l'agrégat rejouera à la passation
  * (`lineHtCumulatedStepsOf`, `exactCumulatedStepsOf`) : un devis qui ne
  * prédit pas la commande au centime ne sert à rien.
  *

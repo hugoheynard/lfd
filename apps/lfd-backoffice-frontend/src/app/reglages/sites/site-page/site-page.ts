@@ -66,7 +66,7 @@ const NOT_FOUND = 404;
  * le 2026-09-16 ; le `CLAUDE.md` de cette app porte la règle.
  *
  * 🔴 **Elle ne parle plus de remises** (Hugo, 2026-10-31,
- * `documentation/promotions/plan-un-seul-endroit.md`) : « la page réglage
+ * `documentation/promotions/promotions.md`, § 2.15) : « la page réglage
  * d'un site [reste] agnostique de comment le commerce le traite ». La
  * réduction de retrait et les promotions du point se règlent à l'écran
  * Promotions, seul endroit.

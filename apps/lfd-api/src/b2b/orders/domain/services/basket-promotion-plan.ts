@@ -11,9 +11,8 @@ import { MAX_BASKET_DISCOUNTS } from "./basket-discounts.js";
 import type { BasketLine } from "./basket-promotion-choice.js";
 
 /**
- * **Les remises de panier d'une commande, choisies** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16.1 (point PANIER, étapes 1 et 2) et § 18.6, lot M7. Pur.
+ * **Les remises de panier d'une commande, choisies** — `documentation/promotions/promotions.md`, § 2.11
+ * (point PANIER, étapes 1 et 2) et § 18.6, lot M7. Pur.
  *
  * 1. Les non cumulables, triées par le rang de la caisse (public,
  *    acheminement, montant, id), sont retenues tant que leurs lignes ne

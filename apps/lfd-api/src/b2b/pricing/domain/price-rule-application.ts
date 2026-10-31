@@ -6,9 +6,7 @@ import { InvalidAlterationError } from "./pricing-errors.js";
 /**
  * **Ce qu'une règle fait au prix qui entre** — partagé par la chaîne
  * (`resolvePrice`) et l'étage des promotions cumulables
- * (`cumulative-promotions.ts`, plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16.1). Deux écritures de la même arithmétique finiraient par diverger
+ * (`cumulative-promotions.ts`, `documentation/promotions/promotions.md`, § 2.11). Deux écritures de la même arithmétique finiraient par diverger
  * d'un arrondi : il n'y en a qu'une, en exact.
  *
  * `replace` pose un prix ; `alter` modifie celui qui entre.

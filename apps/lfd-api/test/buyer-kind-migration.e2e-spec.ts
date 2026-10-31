@@ -1,8 +1,6 @@
 /**
  * E2E de la **reprise de la porte de passation** —
- * `20261031100000_la_porte_de_passation` (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.7, lot L1).
+ * `20261031100000_la_porte_de_passation` (`documentation/promotions/promotions.md`, § 2.7, lot L1).
  *
  * La migration est appliquée par le harnais ; on rejoue ici son seul
  * `UPDATE`, lu dans le fichier, sur des commandes remises à `registered` —

@@ -10,8 +10,7 @@ import { Order, type DraftOrderInput } from "../order.js";
 
 /**
  * La remise de retrait sur ses seules lignes éligibles — la garde de
- * l'agrégat (V1) et la ventilation (R1) du plan
- * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`.
+ * l'agrégat (V1) et la ventilation (R1) de l'ancien plan des exclusions, cf. `documentation/promotions/promotions.md`, § 2.17.
  */
 const ADDRESS: BillingAddressPayload = {
   label: "",

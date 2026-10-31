@@ -13,8 +13,7 @@ import { formatAdjustmentValue } from '@lfd/b2b-ui/pricing';
 
 /**
  * **La remise d'un point pour une clientèle, telle que l'écran l'édite** —
- * lot B du plan
- * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`.
+ * lot B de l'ancien plan des exclusions, cf. `documentation/promotions/promotions.md`, § 2.17.
  *
  * Le contrat (`AudiencePickupDiscount`) ne connaît pas « pas de réduction » :
  * une clientèle sans remise y vaut `null`, règles comprises. L'écran, lui,

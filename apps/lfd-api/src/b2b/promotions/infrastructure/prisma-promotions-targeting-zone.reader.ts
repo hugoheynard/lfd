@@ -8,8 +8,7 @@ import {
 
 /**
  * L'adaptateur de `PromotionsTargetingZoneReader` (zones de livraison) : les
- * promotions dont l'acheminement nomme la zone, archivées comprises (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9).
+ * promotions dont l'acheminement nomme la zone, archivées comprises (`documentation/promotions/promotions.md`, § 2.14).
  */
 @Injectable()
 export class PrismaPromotionsTargetingZoneReader extends PromotionsTargetingZoneReader {

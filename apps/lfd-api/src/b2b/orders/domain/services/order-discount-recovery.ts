@@ -9,9 +9,7 @@ import type {
 } from "./order-discount-recovery-shapes.js";
 
 /**
- * **La reprise d'une remise unique en ligne `order_discounts`** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.3, lot M2.
+ * **La reprise d'une remise unique en ligne `order_discounts`** — `documentation/promotions/promotions.md`, § 2.12, lot M2.
  *
  * 1. La remise est recomposée par la fonction de M1 et comparée au figé : à
  *    l'égalité, elle est écrite `computed`, avec ses parts recomposées.

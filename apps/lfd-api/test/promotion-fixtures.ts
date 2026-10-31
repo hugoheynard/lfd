@@ -1,8 +1,7 @@
 /**
- * **Poser une promotion par le vrai geste** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
+ * **Poser une promotion par le vrai geste** (`documentation/promotions/promotions.md`,
  * lot L12) — l'écran Promotions (`/admin/promotions`), seul endroit où une
- * promotion se règle depuis le 2026-10-31 (`plan-un-seul-endroit.md`).
+ * promotion se règle depuis le 2026-10-31 (`promotions.md`, § 2.15).
  *
  * Depuis L12, l'étage `promotion` n'est plus occupé que par les promotions et
  * la remise d'un site n'est plus lue : les suites qui posaient une règle
@@ -97,8 +96,7 @@ export async function poseSiteDiscount(
 }
 
 /**
- * **Un point de retrait à identifiant connu** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) : une
+ * **Un point de retrait à identifiant connu** (`documentation/promotions/promotions.md`, § 2.14) : une
  * promotion ne nomme plus qu'un site qui existe — clé étrangère, et refus
  * nommé avant elle. Les suites qui visaient un point inventé (`pk_coeur`) le
  * sèment ici. Écrit en Prisma : la route de création tire son identifiant,

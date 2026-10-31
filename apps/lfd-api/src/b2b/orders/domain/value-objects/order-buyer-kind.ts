@@ -2,9 +2,8 @@ import { GuestOrderOutsidePublicShopError } from "../errors/order-buyer-kind-err
 
 /**
  * **Par quelle porte la personne a commandé** : sans compte (`guest`) ou
- * reconnue par son compte (`registered`). Plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`
- * § 13.7 (lot L1).
+ * reconnue par son compte (`registered`). `documentation/promotions/promotions.md`, § 2.7
+ * (lot L1).
  *
  * Posé par le HANDLER selon sa route, jamais lu d'un payload : la valeur
  * `registered` ne naît que derrière une route qui a résolu un `Principal` en

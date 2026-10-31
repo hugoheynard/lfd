@@ -9,8 +9,8 @@ DO $$ BEGIN
 END $$;
 
 -- RETOUR ARRIÈRE de 20261031120000_la_reprise_des_promotions
--- (documentation/promotions/plan-promotions-par-audience-et-acheminement.md,
--- § 13.4 « Retour arrière »).
+-- (documentation/promotions/promotions.md, § 2.4,
+-- « Retour arrière »).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE. La migration reste inscrite « appliquée » : ne pas la

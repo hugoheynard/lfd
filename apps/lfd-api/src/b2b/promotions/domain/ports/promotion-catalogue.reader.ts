@@ -22,9 +22,7 @@ export interface PromotionCatalogue {
 }
 
 /**
- * **Le catalogue vendable, vu des promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.2, CHEVAUCHEMENT) — déclaré ici, implémenté par le catalogue, qui
+ * **Le catalogue vendable, vu des promotions** (`documentation/promotions/promotions.md`, § 2.16, CHEVAUCHEMENT) — déclaré ici, implémenté par le catalogue, qui
  * possède `catalog_items`. Le refus de chevauchement se juge sur ce qui se
  * vend, pas par une contrainte en base : une contrainte ne lit pas les
  * exceptions d'une portée.

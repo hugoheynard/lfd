@@ -7,9 +7,8 @@ import type { BasketDiscountStepAmounts } from "./order-basket-discounts.js";
 import type { DraftBasketDiscount, DraftOrderInput } from "./order-shapes.js";
 
 /**
- * **Plusieurs remises de panier sur une commande** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16.1 (point PANIER, étape 3), § 18.4 et § 18.6, lot M7.
+ * **Plusieurs remises de panier sur une commande** — `documentation/promotions/promotions.md`, § 2.11
+ * (point PANIER, étape 3), § 18.4 et § 18.6, lot M7.
  *
  * L'agrégat ne fait confiance à aucun appelant : il rejoue la chaîne de M1
  * (`chainBasketDiscounts`) sur SES lignes, et exige qu'elle redonne le total

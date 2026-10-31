@@ -4,9 +4,7 @@ import type { PriceFloor, PriceRule, PricingContext } from "../price-rule.js";
 import { resolvePrice } from "../resolve-price.js";
 
 /**
- * **Le cumul sur demande, au point ligne** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16 et § 16.1) : les promotions « Cumulable » se combinent l'une après
+ * **Le cumul sur demande, au point ligne** (`documentation/promotions/promotions.md`, § 2.11) : les promotions « Cumulable » se combinent l'une après
  * l'autre, dans un ordre déterministe ; une non cumulable face au résultat
  * cumulé, la plus avantageuse ; le plancher arrête la descente ; un seul
  * arrondi, en fin de chaîne. Les dates ne sont comparées qu'entre elles.

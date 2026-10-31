@@ -2,9 +2,7 @@ import { PromotionInvalidConditionError } from "./errors/promotion-errors.js";
 
 /**
  * **Les conditions d'une promotion** — une LISTE de conditions typées, toutes
- * doivent tenir ; vide = aucune condition (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 12 et § 13.3).
+ * doivent tenir ; vide = aucune condition (`documentation/promotions/promotions.md`, § 2.1).
  *
  * Une seule variante est bâtie : `min_quantity`, la reprise du `minQuantity`
  * d'une règle de prix (jugée sur la quantité de la ligne, et 4ᵉ critère de

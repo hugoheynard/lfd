@@ -1,8 +1,6 @@
 /**
  * E2E des **remises de panier écrites par la passation et la révision, sous
- * leur contrôle en base** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.2, § 18.5 et § 18.7, lot M3.
+ * leur contrôle en base** — `documentation/promotions/promotions.md`, § 2.6 et § 2.11, lot M3.
  *
  * Ce que seul le vrai SQL prouve :
  *

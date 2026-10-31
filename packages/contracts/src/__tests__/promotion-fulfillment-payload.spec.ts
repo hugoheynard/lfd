@@ -1,8 +1,7 @@
 import { promotionTermsPayloadSchema } from "../promotions.js";
 
 /**
- * L'acheminement d'une promotion, tel que l'éditeur l'envoie (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`) : la FORME
+ * L'acheminement d'une promotion, tel que l'éditeur l'envoie (`documentation/promotions/promotions.md`, § 2.14) : la FORME
  * seule. « Au moins un mode coché », « sélection non vide », « sans doublon »
  * sont des refus nommés de l'agrégat, pas du schéma.
  */

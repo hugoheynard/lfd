@@ -8,8 +8,7 @@ import { frozenBasketDiscountsOf, type FrozenBasketPromotion } from "./frozen-ba
 /**
  * Les changements qui peuvent faire entrer ou sortir une promotion
  * conditionnée par l'acheminement. L'adresse livrée en est depuis que la
- * ZONE entre dans le fait (plan `documentation/promotions/plan-acheminements-a-cocher.md`,
- * § 8.1) : une autre adresse peut tomber dans une autre zone.
+ * ZONE entre dans le fait (`documentation/promotions/promotions.md`, § 2.14) : une autre adresse peut tomber dans une autre zone.
  */
 const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set([
   "method",
@@ -18,9 +17,7 @@ const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set([
 ]);
 
 /**
- * **L9 — changer d'acheminement ne change pas les promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.8, étendu à un ENSEMBLE au § 18.5, lot M3). Seulement quand le mode, le
+ * **L9 — changer d'acheminement ne change pas les promotions** (`documentation/promotions/promotions.md`, § 2.6, étendu à un ENSEMBLE au, lot M3). Seulement quand le mode, le
  * point ou l'adresse livrée change : une révision qui garde l'acheminement se recompose comme
  * avant.
  *

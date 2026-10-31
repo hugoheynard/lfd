@@ -1,6 +1,6 @@
 -- RETOUR ARRIÈRE de 20261031140000_les_publics_et_libelles
--- (documentation/promotions/plan-promotions-par-audience-et-acheminement.md,
--- § 15.11 « Ordre, portes, irréversibilité »).
+-- (documentation/promotions/promotions.md, § 2.1,
+-- « Ordre, portes, irréversibilité »).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE, AVANT le retour du code, puis l'API se REDÉMARRE (les

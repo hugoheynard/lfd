@@ -2,9 +2,7 @@ import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DiscountLabelView } from "./discount-label.js";
 
 /**
- * **Une remise de panier d'une commande, telle qu'un écran la lit** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.6, lot M6) — une ligne de `order_discounts`, dans l'ordre
+ * **Une remise de panier d'une commande, telle qu'un écran la lit** (`documentation/promotions/promotions.md`, § 2.11, lot M6) — une ligne de `order_discounts`, dans l'ordre
  * d'application, ou la remise unique des colonnes pour une commande non
  * reprise (repli `frozenBasketDiscountsOf`).
  *

@@ -10,8 +10,7 @@ import {
 import type { Promotion } from "../domain/promotion.js";
 
 /**
- * **L'acheminement d'une promotion, ligne ↔ domaine** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 4, § 8.4) :
+ * **L'acheminement d'une promotion, ligne ↔ domaine** (`documentation/promotions/promotions.md`, § 2.14) :
  * deux colonnes de mode et deux tables de liaison. Les anciennes colonnes
  * (`fulfillment_kind`, `fulfillment_pickup_id`) ne sont ni lues ni écrites.
  */

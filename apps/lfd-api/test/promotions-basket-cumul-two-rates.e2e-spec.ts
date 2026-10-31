@@ -1,7 +1,6 @@
 /**
- * E2E du **cumul au panier sur deux taux de TVA, de bout en bout** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18 (lots M1–M7), doc d'état `documentation/promotions/promotions.md`.
+ * E2E du **cumul au panier sur deux taux de TVA, de bout en bout** — `documentation/promotions/promotions.md`, § 2.11
+ * (lots M1–M7), doc d'état `documentation/promotions/promotions.md`.
  *
  * `promotions-basket-cumul.e2e-spec.ts` éprouve le cumul sur un seul taux
  * (5,5 %) : « une remise de document par promotion ET par taux » s'y lit

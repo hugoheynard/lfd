@@ -42,13 +42,11 @@ import { ListPromotionsQuery } from "../application/queries/list-promotions.quer
 import { promotionTermsOf } from "./promotion-terms.mapper.js";
 
 /**
- * **L'écran Promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
+ * **L'écran Promotions** (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
  * qui posait une règle d'étage promotion pose une promotion.
  *
  * **Le seul endroit où une promotion s'écrit**, « retrait à un point »
- * compris (`documentation/promotions/plan-un-seul-endroit.md`, décision de
+ * compris (`documentation/promotions/promotions.md`, § 2.15, décision de
  * Hugo du 2026-10-31) : la route d'un site (`admin/sites/:pickupId/promotions`,
  * sous `lfc_site_settings`) a disparu, et avec elle la notion de surface.
  * Les lectures s'ouvrent encore à `lfc_site_settings:read`.

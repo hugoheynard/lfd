@@ -14,9 +14,7 @@ import type { PriceRule, PriceScope, PricingContext } from "./price-rule.js";
 
 /**
  * **Une promotion du point LIGNE, présentée à la chaîne comme une règle de
- * l'étage `promotion`** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lot L5) — sur le patron de `ladderAsRule` : la chaîne ne change
+ * l'étage `promotion`** (`documentation/promotions/promotions.md`, § 2.2, lot L5) — sur le patron de `ladderAsRule` : la chaîne ne change
  * pas, elle reçoit une règle de plus.
  *
  * Même place (entre volume et geste), même scellement par la mercuriale (sauf

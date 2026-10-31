@@ -5,8 +5,7 @@ import { DeliveryZoneDirectory } from "../../promotions/domain/ports/delivery-zo
 
 /**
  * L'adaptateur de `DeliveryZoneDirectory` (promotions) : le libellé de chaque
- * zone demandée qui existe encore (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9).
+ * zone demandée qui existe encore (`documentation/promotions/promotions.md`, § 2.14).
  */
 @Injectable()
 export class PrismaDeliveryZoneDirectory extends DeliveryZoneDirectory {

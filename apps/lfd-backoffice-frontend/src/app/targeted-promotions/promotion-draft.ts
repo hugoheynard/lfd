@@ -13,7 +13,7 @@ import { minimalAudiences, touchesBranch } from './promotion-audience-tree/audie
 /**
  * **Où la promotion joue** : dans le prix affiché (le prix de l'article baisse
  * au catalogue, pour tous les acheminements), ou en remise au panier selon
- * l'acheminement coché (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 5).
+ * l'acheminement coché (`documentation/promotions/promotions.md`, § 2.14).
  */
 export type DraftFulfillmentKind = 'displayed_price' | 'basket';
 
@@ -81,9 +81,7 @@ export function payloadFulfillmentOf(
 }
 
 /**
- * **Le brouillon de l'éditeur des promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L8) — pur : ce que l'écran saisit, dans les unités qu'un
+ * **Le brouillon de l'éditeur des promotions** (`documentation/promotions/promotions.md`, § 2.9, lot L8) — pur : ce que l'écran saisit, dans les unités qu'un
  * humain tape (« 20 » pour −20 %, « 0,50 » pour 50 centimes), et sa
  * traduction vers le corps que le serveur attend.
  *

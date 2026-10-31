@@ -14,9 +14,7 @@ import {
 } from "./promotion-targeting.js";
 
 /**
- * **Ce qu'une promotion promet sans s'appliquer encore** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 8 et § 13.2 RAYON, lot L10) — pur.
+ * **Ce qu'une promotion promet sans s'appliquer encore** (`documentation/promotions/promotions.md`, § 2.16, lot L10) — pur.
  *
  * Deux questions que le calcul ne pose pas, parce qu'il n'applique que ce qui
  * s'applique :
@@ -33,8 +31,7 @@ export type OfferEffect =
   | { readonly kind: "amount"; readonly millicents: number };
 
 /**
- * L'ENSEMBLE des acheminements qui ouvrent une promotion de panier (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.4) — la
+ * L'ENSEMBLE des acheminements qui ouvrent une promotion de panier (`documentation/promotions/promotions.md`, § 2.14) — la
  * boutique dit « au retrait à … » ou « en livraison » selon ce que le
  * client regarde.
  */

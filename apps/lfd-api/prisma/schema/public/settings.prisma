@@ -38,7 +38,7 @@ model Site {
   // remise, ces cases ne sont pas lues ; une remise qui n'en coche aucune est
   // refusée par `PickupDiscount`. Cf. `plan-remise-et-livraison-par-clientele.md`, D2.
   //
-  // ⚠️ Depuis le 2026-10-22 (plan `plan-remise-retrait-par-clientele-et-exclusions.md`),
+  // ⚠️ Depuis le 2026-10-22 (`promotions.md`, § 2.17),
   // `discount_mode`/`discount_value` portent la remise des PROS, lue seulement
   // si `discount_for_b2b` ; `discount_for_b2c` n'a plus de lecteur (colonne
   // morte, CLAUDE.md §0 — gardée pour qu'un retour arrière reste possible, V8).
@@ -139,7 +139,7 @@ model Site {
   /// La grille de tables de la salle (L2) — vide sauf sur un site `eatIn`.
   tables SiteTable[]
 
-  /// Les promotions qui nomment ce point (plan des acheminements, § 8.2).
+  /// Les promotions qui nomment ce point (`promotions.md`, § 2.14).
   promotionPoints PromotionPickupPoint[]
 
   @@map("pickup_addresses")
@@ -203,7 +203,7 @@ model DeliveryZone {
   createdAt DateTime @default(now()) @map("created_at")
   updatedAt DateTime @updatedAt @map("updated_at")
 
-  /// Les promotions qui nomment cette zone (plan des acheminements, § 9).
+  /// Les promotions qui nomment cette zone (`promotions.md`, § 2.14).
   promotionTargets PromotionDeliveryZone[]
 
   @@map("delivery_zones")
@@ -596,8 +596,7 @@ enum PickupDiscountTarget {
   @@schema("public")
 }
 
-/// **Une règle de portée de la remise d'un point de retrait** (plan
-/// `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`) :
+/// **Une règle de portée de la remise d'un point de retrait** (`documentation/promotions/promotions.md`, § 2.17) :
 /// telle famille, ou tel produit (toutes ses déclinaisons), est éligible ou
 /// non à la remise de telle clientèle. Une règle produit l'emporte sur celle
 /// de sa famille. `target_id` est un identifiant OPAQUE du catalogue, sans

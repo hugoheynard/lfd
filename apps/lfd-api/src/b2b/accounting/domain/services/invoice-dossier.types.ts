@@ -31,7 +31,7 @@ export interface FrozenInvoiceLine {
   readonly lineTotalCents: number;
   /**
    * La ligne entrait-elle dans l'assiette de la remise de retrait, figé à la
-   * passation (R2 du plan `plan-remise-retrait-par-clientele-et-exclusions.md`).
+   * passation (R2 de l'ancien plan des exclusions, `promotions.md`, § 2.17).
    * Absent = éligible : ce qu'étaient toutes les lignes avant les exclusions,
    * et ce que la colonne dit d'elles.
    */
@@ -57,9 +57,7 @@ export interface FrozenInvoiceDiscountPart {
 }
 
 /**
- * **Une remise de panier d'un bon**, dans l'ordre d'application (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4, lot M5). Lue par le repli unique `frozenBasketDiscountsOf` : la
+ * **Une remise de panier d'un bon**, dans l'ordre d'application (`documentation/promotions/promotions.md`, § 2.11, lot M5). Lue par le repli unique `frozenBasketDiscountsOf` : la
  * table `order_discounts` si la commande y a des remises actives, sinon les
  * colonnes `discount_*` comme une remise de rang 1.
  */

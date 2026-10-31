@@ -50,9 +50,7 @@ const TAB_LABELS: Readonly<Record<PromotionsTab, string>> = {
 const TAB_KEYS: readonly PromotionsTab[] = ['active', 'scheduled', 'paused', 'closed'];
 
 /**
- * **Promotions** — la liste (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7) : par public, par acheminement, par portée.
+ * **Promotions** — la liste (`documentation/promotions/promotions.md`, § 2.9, lot L7) : par public, par acheminement, par portée.
  *
  * « Nouvelle promotion » ne s'offre qu'une fois la bascule faite
  * (`editable`, dit par le serveur, lot L8). Le

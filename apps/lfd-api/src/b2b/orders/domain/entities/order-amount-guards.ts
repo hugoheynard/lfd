@@ -119,8 +119,7 @@ export function ensureDeliveryFeeMatches(
  * le chiffre se contrediraient sur la facture, et rien ne dirait lequel ment.
  *
  * 🔴 **L'assiette est celle des lignes éligibles**, recalculée par l'agrégat à
- * partir du drapeau de ses lignes (V1 du plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`) : recevoir l'assiette
+ * partir du drapeau de ses lignes (V1 de l'ancien plan des exclusions, cf. `promotions.md`, § 2.17) : recevoir l'assiette
  * de l'appelant, c'était lui faire confiance sur le seul nombre qui compte.
  *
  * 🔴 Il compare du **borné** à du borné (`discountCentsOf`), là où il comparait
@@ -149,8 +148,7 @@ export function ensureDiscountMatches(
 
 /**
  * Une remise de retrait n'existe que sur une commande **retirée** — frais ou
- * pas — et une commande retirée n'a pas de port (V5 du plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, Hugo, 2026-10-22).
+ * pas — et une commande retirée n'a pas de port (V5 de l'ancien plan des exclusions, cf. `promotions.md`, § 2.17, Hugo, 2026-10-22).
  * Lu sur le montant ET sur la trace figée : un ajustement de remise qui rend
  * zéro reste une remise de retrait posée au mauvais endroit.
  *

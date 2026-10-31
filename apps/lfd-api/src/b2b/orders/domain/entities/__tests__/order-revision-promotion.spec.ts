@@ -7,9 +7,7 @@ import type { RevisableOrder } from "../order-revision.js";
 import type { FrozenBasketPromotion } from "../../services/frozen-basket-discounts.js";
 
 /**
- * **L9 — changer d'acheminement ne change pas la promotion** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.8). Changement de comportement assumé : jusqu'à L9, la révision
+ * **L9 — changer d'acheminement ne change pas la promotion** (`documentation/promotions/promotions.md`, § 2.6). Changement de comportement assumé : jusqu'à L9, la révision
  * recalculait la remise au changement de point, en silence.
  *
  * Jour de service absolu, jamais comparé à une horloge (exception étroite du
@@ -241,7 +239,7 @@ describe("Order.revise — le MODE d'acheminement ne change pas la promotion non
 });
 
 /**
- * Plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.1 : la
+ * `documentation/promotions/promotions.md`, § 2.14 : la
  * ZONE entre dans le fait d'acheminement. Une autre adresse peut tomber dans
  * une autre zone — l'adresse livrée est donc un changement d'acheminement.
  */

@@ -198,8 +198,8 @@ const MISPLACED_PICKUP_DISCOUNT_MESSAGES: Readonly<Record<MisplacedPickupDiscoun
 
 /**
  * Une remise de retrait hors d'une commande retirée. Elle n'existe que sur une
- * commande retirée, frais ou pas, et une commande retirée n'a pas de port (V5
- * du plan `plan-remise-retrait-par-clientele-et-exclusions.md`, Hugo,
+ * commande retirée, frais ou pas, et une commande retirée n'a pas de port (V5 de l'ancien plan des
+ * exclusions, cf. `promotions.md`, § 2.17, Hugo,
  * 2026-10-22). Refus de forme (400) : aucun parcours ne le produit.
  */
 export class MisplacedPickupDiscountError extends DomainError {

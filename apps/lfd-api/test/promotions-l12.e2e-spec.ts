@@ -1,7 +1,6 @@
 /**
- * E2E du lot **L12** du plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`
- * (§ 13.10 L12), sur le vrai Postgres :
+ * E2E du lot **L12** du `documentation/promotions/promotions.md`, § 2.3
+ * (), sur le vrai Postgres :
  *
  * 1. la ligne `promotions_source` est un GARDE-FOU : elle ne vaut plus que
  *    `promotions`, le CHECK refuse les deux autres, et la reprise refuse de
@@ -224,9 +223,7 @@ describe("les anciens éditeurs", () => {
       .patch(`/admin/sites/${real}`)
       .send(siteBody("Cœur de station"))
       .expect(409);
-    expect(jsonBody<{ message: string }>(discount).message).toContain(
-      "Nouvelle promotion pour ce site",
-    );
+    expect(jsonBody<{ message: string }>(discount).message).toContain("retrait à ce point");
     const { discounts: _discounts, ...place } = siteBody("Cœur de station — gare");
     await staff().patch(`/admin/sites/${real}`).send(place).expect(204);
     await staff()

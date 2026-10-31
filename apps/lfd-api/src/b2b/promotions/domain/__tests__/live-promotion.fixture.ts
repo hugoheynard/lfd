@@ -43,7 +43,7 @@ export function livePromotion(overrides: LivePromotionOverrides = {}): LivePromo
 /**
  * Le rang d'acheminement d'une forme d'AVANT les cases, pour le fait qu'elle
  * admet : un point nommé 2, un mode 1, le prix affiché 0 — le départage
- * d'avant, que le rang par fait garde (plan des acheminements, § 8.3).
+ * d'avant, que le rang par fait garde (`promotions.md`, § 2.14).
  * Une forme à deux côtés n'a pas de rang sans fait : la passer en override.
  */
 function soleSideRank(fulfillment: PromotionFulfillment): number {

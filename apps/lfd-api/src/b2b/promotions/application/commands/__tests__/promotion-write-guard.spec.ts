@@ -28,8 +28,7 @@ function onlyFamily(familyId: string): PromotionTerms["scope"] {
 }
 
 /**
- * Il n'y a plus qu'un endroit pour régler une promotion (plan
- * `documentation/promotions/plan-un-seul-endroit.md`, 2026-10-31) : le geste
+ * Il n'y a plus qu'un endroit pour régler une promotion (`documentation/promotions/promotions.md`, § 2.15, 2026-10-31) : le geste
  * ne juge plus d'où il vient.
  */
 describe("un seul endroit", () => {

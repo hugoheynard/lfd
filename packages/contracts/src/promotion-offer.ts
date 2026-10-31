@@ -1,7 +1,5 @@
 /**
- * **Ce qu'une promotion promet sans s'appliquer encore** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 8 et § 13.2 RAYON, lot L10) — sans zod : la boutique le lit au rayon.
+ * **Ce qu'une promotion promet sans s'appliquer encore** (`documentation/promotions/promotions.md`, § 2.16, lot L10) — sans zod : la boutique le lit au rayon.
  *
  * Deux usages, une seule forme d'effet :
  *
@@ -24,7 +22,7 @@ export type PromotionOfferEffectView =
 
 /**
  * Le retrait d'une promotion de panier : aucun, tous les points, ou ceux-là
- * (plan `documentation/promotions/plan-acheminements-a-cocher.md`, § 3).
+ * (`documentation/promotions/promotions.md`, § 2.14).
  */
 export type PromotionPickupReachView = "none" | "all" | { readonly points: readonly string[] };
 

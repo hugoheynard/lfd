@@ -102,8 +102,7 @@ describe("points de retrait", () => {
 });
 
 /**
- * Les remises d'un point, une par clientèle (plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, lot A, 2026-10-22).
+ * Les remises d'un point, une par clientèle (`promotions.md`, § 2.17, lot A, 2026-10-22).
  *
  * RÉÉCRIT en L12 (2026-10-30, plan des promotions) : la remise d'un point se
  * règle dans l'écran Promotions, et les colonnes de la fiche ne sont plus ni
@@ -152,9 +151,7 @@ describe("points de retrait — une remise par clientèle", () => {
       .patch(`/admin/pickup-addresses/${id}`)
       .send({ ...point("Labo Paris"), discounts: { b2b: PRO, b2c: null } })
       .expect(409);
-    expect((refused.body as { message?: string }).message).toContain(
-      "Nouvelle promotion pour ce site",
-    );
+    expect((refused.body as { message?: string }).message).toContain("retrait à ce point");
 
     await staff()
       .patch(`/admin/pickup-addresses/${id}`)

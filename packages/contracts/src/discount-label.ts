@@ -1,7 +1,5 @@
 /**
- * **Le libellé d'une remise, figé dans les trois langues du client** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 15.8 et § 15.12 Q1, lot L8b) — celui de l'audience de l'acheteur, repli
+ * **Le libellé d'une remise, figé dans les trois langues du client** (`documentation/promotions/promotions.md`, § 2.1 et § 2.8, lot L8b) — celui de l'audience de l'acheteur, repli
  * sur le libellé commun déjà résolu : aucune langue n'y est vide.
  *
  * Sans zod : la boutique le lit au démarrage avec la remise d'un point.

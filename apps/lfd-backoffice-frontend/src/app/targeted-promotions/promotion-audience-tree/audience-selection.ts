@@ -1,9 +1,7 @@
 import type { PromotionAudienceKindValue, PromotionAudienceTargetView } from '@lfd/contracts';
 
 /**
- * **Le public de l'éditeur, en cases à cocher en étages** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 15.9, lot L8b) — pur.
+ * **Le public de l'éditeur, en cases à cocher en étages** (`documentation/promotions/promotions.md`, § 2.1, lot L8b) — pur.
  *
  * L'arbre a quatre feuilles — la partition de la clientèle — et deux
  * branches au-dessus, sous « Tout le monde ». Une société n'en est pas une

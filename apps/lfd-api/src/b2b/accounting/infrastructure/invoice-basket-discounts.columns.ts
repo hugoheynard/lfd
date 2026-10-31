@@ -12,9 +12,8 @@ import type {
 } from "../domain/services/invoice-dossier.types.js";
 
 /**
- * **Les remises de panier d'un bon, relues pour sa facture** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4 et rectification du 2026-10-31, lot M5.
+ * **Les remises de panier d'un bon, relues pour sa facture** — `documentation/promotions/promotions.md`, § 2.11,
+ * et rectification du 2026-10-31, lot M5.
  *
  * La liste passe par le repli UNIQUE du domaine des commandes
  * ({@link frozenBasketDiscountsOf}) : `order_discounts` si la commande y a

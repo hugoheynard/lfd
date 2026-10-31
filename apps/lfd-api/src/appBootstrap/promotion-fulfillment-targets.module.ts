@@ -8,8 +8,7 @@ import { PrismaPromotionsTargetingZoneReader } from "../b2b/promotions/infrastru
 import { PrismaPickupPointDirectory } from "../b2b/sites/infrastructure/prisma-pickup-point.directory.js";
 
 /**
- * Le fil entre **les promotions et ce que leur acheminement nomme** (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 9) :
+ * Le fil entre **les promotions et ce que leur acheminement nomme** (`documentation/promotions/promotions.md`, § 2.14) :
  *
  * - les promotions demandent « ces zones, ces points existent-ils, et leurs
  *   noms ? » (`DeliveryZoneDirectory`, `PickupPointDirectory`) ;

@@ -1,5 +1,5 @@
 -- RETOUR ARRIÈRE de 20261031200000_les_acheminements_a_cocher
--- (documentation/promotions/plan-acheminements-a-cocher.md, § 8.4, § 9).
+-- (documentation/promotions/promotions.md, § 2.14).
 --
 -- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
 -- par l'URL DIRECTE, AVANT le retour du code, puis l'API se REDÉMARRE (les

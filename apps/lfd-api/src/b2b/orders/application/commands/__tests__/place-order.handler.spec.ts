@@ -1025,7 +1025,7 @@ describe("PlaceOrderHandler", () => {
    * déclarant une société.
    */
   /**
-   * Plan `plan-remise-retrait-par-clientele-et-exclusions.md`, R1 et R2 : la
+   * `promotions.md`, § 2.17, R1 et R2 : la
    * remise ne porte que sur les lignes qu'elle couvre, et chaque ligne fige
    * son drapeau, son produit et sa famille.
    */

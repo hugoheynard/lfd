@@ -1,9 +1,7 @@
 import { BusinessError, TechnicalError } from "../../../../platform/shared/errors/app-error.js";
 
 /**
- * **Plus de remises de panier qu'une commande n'en porte** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.8, arbitrage n° 5). Un garde-fou de lisibilité : chaque remise est une
+ * **Plus de remises de panier qu'une commande n'en porte** (`documentation/promotions/promotions.md`, § 2.11, arbitrage n° 5). Un garde-fou de lisibilité : chaque remise est une
  * ligne du bon, de la facture et du récapitulatif, et au-delà le papier ne se
  * lit plus.
  */

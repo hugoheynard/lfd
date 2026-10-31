@@ -110,7 +110,7 @@ export function guestSignInOffer(
 
 /**
  * La zone d'un code postal : `zone_<code>` pour tout code postal, sauf ceux
- * de `uncovered` (plan des acheminements, § 8.1).
+ * de `uncovered` (`promotions.md`, § 2.14).
  */
 export class FixedZoneOfPostalCode extends DeliveryZoneOfPostalCodeReader {
   constructor(private readonly uncovered: readonly string[] = []) {

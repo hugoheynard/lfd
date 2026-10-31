@@ -8,8 +8,7 @@ import {
 } from "../pickup-errors.js";
 
 /**
- * Les règles de la remise d'un point (plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, et le mode de portée
+ * Les règles de la remise d'un point (`promotions.md`, § 2.17, et le mode de portée
  * décidé le 2026-10-22). « Pas de règle sans réduction » est structurel : une
  * clientèle sans remise vaut `null`, il n'y a rien à refuser.
  */

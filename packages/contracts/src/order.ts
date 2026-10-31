@@ -736,7 +736,7 @@ export type VatShareView = z.infer<typeof vatShareSchema>;
 
 /**
  * **L'assiette de la remise de retrait**, quand elle ne couvre pas tout le
- * panier (plan `livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`,
+ * panier (`documentation/promotions/promotions.md`, § 2.17,
  * lot C) : de quoi écrire « remise retrait sur X € éligibles ».
  *
  * Servie **seulement** quand une remise de retrait s'applique ET qu'au moins

@@ -25,9 +25,7 @@ import {
 } from "./promotion-targeting.js";
 
 /**
- * **Deux promotions qui ne doivent pas coexister** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.2, lot L7) — pur.
+ * **Deux promotions qui ne doivent pas coexister** (`documentation/promotions/promotions.md`, § 2.16, lot L7) — pur.
  *
  * L'agrégat ne voit qu'une promotion ; ces refus en comparent deux, sur le
  * catalogue vendable. Ils sont jugés à la pose, à la révision et à la reprise
@@ -43,7 +41,7 @@ export interface PromotionRival {
 
 /**
  * **CHEVAUCHEMENT** : même point d'application, des acheminements qui
- * admettent une même commande (plan des acheminements, § 3), des
+ * admettent une même commande (`promotions.md`, § 2.14), des
  * publics dont les COUVERTURES se croisent (une feuille de la partition, ou
  * une même société — § 15.6, L8b), fenêtres qui se recouvrent, et au moins
  * un article vendable couvert par les deux. Le message nomme l'autre
@@ -285,7 +283,7 @@ function buyer(
 
 /**
  * **Une commande peut-elle être servie d'une façon que les deux admettent ?**
- * Témoins (plan des acheminements, § 8.4) : chaque point et chaque zone
+ * Témoins (`promotions.md`, § 2.14) : chaque point et chaque zone
  * nommés, « un autre point », « une autre zone », « livraison sans zone ».
  */
 export function fulfillmentsMeet(left: PromotionFulfillment, right: PromotionFulfillment): boolean {

@@ -21,7 +21,7 @@ export interface LotBuyer {
  *
  * L'acheminement n'entre pas ici : une promotion de ligne est « dans le prix
  * affiché », sans critère d'acheminement (CHECK `promotions_point_follows_modes`,
- * plan `documentation/promotions/plan-acheminements-a-cocher.md`). La porte d'entrée
+ * `documentation/promotions/promotions.md`, § 2.14). La porte d'entrée
  * (`buyerKind`) arrive de la route depuis le lot L10 — rayon, devis,
  * passation, révision ; `unknown` pour le staff (tableau, projection), et
  * l'aperçu déclaré (`previewed`) ne joue que « tout le monde ».

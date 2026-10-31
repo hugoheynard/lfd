@@ -3,9 +3,7 @@ import { splitCents, type RatedCents, type VatLine } from "@lfd/money";
 import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
 /**
- * **Les remises de panier d'un bon, une par une, sur ses taux** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4, lot M5.
+ * **Les remises de panier d'un bon, une par une, sur ses taux** — `documentation/promotions/promotions.md`, § 2.11, lot M5.
  *
  * Un bon d'au plus une remise se découpe comme avant M5 (`splitOrderByRate`,
  * sur le total de sa remise) : c'est ce qui rend la facture d'une seule

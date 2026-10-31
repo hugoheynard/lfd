@@ -6,8 +6,7 @@ import { PickupPointDirectory } from "../../promotions/domain/ports/pickup-point
 /**
  * L'adaptateur de `PickupPointDirectory` (promotions) : le libellé de chaque
  * site demandé, ARCHIVÉS compris — un site s'archive, il ne se supprime pas,
- * et une promotion qui le nomme doit rester révisable (plan
- * `documentation/promotions/plan-acheminements-a-cocher.md`, § 8.2).
+ * et une promotion qui le nomme doit rester révisable (`documentation/promotions/promotions.md`, § 2.14).
  */
 @Injectable()
 export class PrismaPickupPointDirectory extends PickupPointDirectory {

@@ -3,9 +3,8 @@ import { splitCents } from "./order-vat-split.js";
 import { taxMultiplierBp, ttcOfHtAmount } from "./ttc-of-ht-amount.js";
 
 /**
- * **Plusieurs remises de panier, appliquées l'une après l'autre** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 16.1 (point PANIER, étapes 3 et 4) et § 18.4.
+ * **Plusieurs remises de panier, appliquées l'une après l'autre** — `documentation/promotions/promotions.md`, § 2.11
+ * (point PANIER, étapes 3 et 4) et § 18.4.
  *
  * Chaque ligne garde un **reste exact** (rationnel), initialisé à son
  * montant : HT au chemin `line_ht`, TTC au chemin `exact_ht`. Une étape :

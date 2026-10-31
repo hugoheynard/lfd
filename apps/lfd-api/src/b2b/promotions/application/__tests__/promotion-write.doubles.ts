@@ -61,7 +61,7 @@ export class InMemoryPromotionRivals extends PromotionRivalsReader {
   }
 }
 
-/** Ce que connaissent les annuaires doublés : deux points, deux zones (plan des acheminements, § 9). */
+/** Ce que connaissent les annuaires doublés : deux points, deux zones (`promotions.md`, § 2.14). */
 export const KNOWN_POINTS: ReadonlyMap<string, string> = new Map([
   ["pk_coeur", "Cœur de station"],
   ["pk_gare", "La gare"],

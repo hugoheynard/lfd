@@ -2,8 +2,7 @@ import type { SaleUnit } from "@lfd/money";
 
 /**
  * **La portée d'éligibilité d'une promotion** — « cet article est-il
- * concerné ? » (plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 12 et § 13.3, lot L2).
+ * concerné ? » (`documentation/promotions/promotions.md`, § 2.1, lot L2).
  *
  * Une seule mécanique, reprise de la remise d'un point de retrait : un MODE
  * (`all_except` : tout sauf ce que les règles retirent ; `only` : rien sauf ce

@@ -10,9 +10,7 @@ import type { FrozenInvoiceDiscount, FrozenInvoiceOrder } from "../invoice-dossi
 import { frozenBon, goodsLine } from "./per-order-cycle-fixtures.js";
 
 /**
- * **Plusieurs remises de panier sur une facture** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.4, Q-M2 et Q-M3, lot M5.
+ * **Plusieurs remises de panier sur une facture** — `documentation/promotions/promotions.md`, § 2.11, Q-M2 et Q-M3, lot M5.
  *
  * La preuve centrale : un bon d'UNE remise rend la facture, sa ventilation et
  * son XML d'hier, au caractère près — qu'on lui donne ses remises ou non.

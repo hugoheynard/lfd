@@ -1,13 +1,11 @@
 /**
- * E2E de **l'écran Promotions** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lots L7-L8), sur le vrai Postgres et le vrai catalogue semé :
+ * E2E de **l'écran Promotions** (`documentation/promotions/promotions.md`, § 2.9, lots L7-L8), sur le vrai Postgres et le vrai catalogue semé :
  *
  * 1. le verrou d'avant la bascule — en `legacy`, toute écriture rend 409, la
  *    lecture dit « non éditable » ;
  * 2. les droits — `b2b_pricing` pour écrire TOUTE promotion, « retrait à un
  *    point » compris (un seul endroit, décision de Hugo du 2026-10-31,
- *    `documentation/promotions/plan-un-seul-endroit.md`), `b2b_pricing` OU
+ *    `documentation/promotions/promotions.md`, § 2.15), `b2b_pricing` OU
  *    `lfc_site_settings` pour lire ;
  * 3. les refus nommés après la bascule — chevauchement (l'autre promotion et
  *    l'article), deux promotions de panier, produit entier au point ligne.
@@ -145,7 +143,7 @@ describe("les droits — un seul endroit", () => {
   });
 
   /**
-   * Le droit qui bouge (plan-un-seul-endroit.md § 4) : le réglage d'un site
+   * Le droit qui bouge (promotions.md, § 2.15) : le réglage d'un site
    * réglait la remise de SON point jusqu'au 2026-10-31. Il ne la règle plus.
    */
   it("lfc_site_settings:write sans b2b_pricing:write reçoit 403, même pour un point", async () => {

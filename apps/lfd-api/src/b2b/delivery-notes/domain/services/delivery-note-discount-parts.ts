@@ -38,9 +38,8 @@ interface ReplayedStep {
 }
 
 /**
- * **Les parts d'un bon, par remise, au départ** — plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 18.2 (`delivery_note_discounts`), lot M4.
+ * **Les parts d'un bon, par remise, au départ** — `documentation/promotions/promotions.md`, § 2.11
+ * (`delivery_note_discounts`), lot M4.
  *
  * Chaque remise de la commande est rejouée sur les lignes du bon par la
  * fonction qui a composé son en-tête (`chainLineHtBasketDiscounts` en

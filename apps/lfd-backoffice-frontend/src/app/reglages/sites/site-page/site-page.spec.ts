@@ -253,7 +253,7 @@ function identity(fixture: ComponentFixture<SitePage>): SiteIdentityCard {
 
 /**
  * La fiche d'un site ne parle plus de remises (Hugo, 2026-10-31,
- * `documentation/promotions/plan-un-seul-endroit.md` § 3.4) : le réglage d'un
+ * `documentation/promotions/promotions.md`, § 2.15) : le réglage d'un
  * site décrit le lieu, pas ce que le commerce en fait. Une promotion se règle
  * à l'écran Promotions, seul endroit.
  */

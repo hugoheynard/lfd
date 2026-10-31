@@ -82,8 +82,7 @@ export const DOORSTEP_RULE = domain('décision réglée d’avance à la porte',
 });
 
 /**
- * La portée de la remise d'un point de retrait (`pickup_address.*`, plan
- * `plan-remise-retrait-par-clientele-et-exclusions.md`, 2026-10-22).
+ * La portée de la remise d'un point de retrait (`pickup_address.*`, `promotions.md`, § 2.17, 2026-10-22).
  */
 export const PICKUP_DISCOUNT_SCOPE = domain('portée de la remise de retrait', {
   all_except: 'Tout, sauf les exclusions',

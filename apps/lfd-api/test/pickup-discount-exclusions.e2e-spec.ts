@@ -1,6 +1,5 @@
 /**
- * E2E de la **remise de retrait sur ses seules lignes éligibles** (plan
- * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`,
+ * E2E de la **remise de retrait sur ses seules lignes éligibles** (`documentation/promotions/promotions.md`, § 2.17,
  * lot A) — ce que seul le vrai chemin prouve : le rangement des SKU lu sur le
  * catalogue servi (V4), le même montant au devis et à la commande, et le
  * drapeau, le produit et la famille FIGÉS sur `order_lines` (R2).

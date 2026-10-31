@@ -163,8 +163,7 @@ function perOrderCycle(): Invoice {
 }
 
 /**
- * Deux promotions de panier cumulées sur deux taux (plan
- * `plan-promotions-par-audience-et-acheminement.md`, § 18.4, lot M5) : une
+ * Deux promotions de panier cumulées sur deux taux (`promotions.md`, § 2.11, lot M5) : une
  * remise de document par promotion ET par taux, libellé figé en motif. Le
  * second bon n'a qu'une remise et porte un port qui suit la marchandise.
  */

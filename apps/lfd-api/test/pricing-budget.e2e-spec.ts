@@ -164,9 +164,7 @@ async function coldOperationsOf(run: () => Promise<unknown>): Promise<number> {
  * RETIRÉE : le tri et le prix lisent la même résolution du catalogue.
  *
  * 🔴 **De 7 à 8 le 2026-10-30** : le chargeur des prix lit la SOURCE des
- * promotions (`promotion_settings.promotions_source`, plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.5, lot L5) — une ligne de configuration en base, pas une variable
+ * promotions (`promotion_settings.promotions_source`, `documentation/promotions/promotions.md`, § 2.2, lot L5) — une ligne de configuration en base, pas une variable
  * d'environnement, pour que la bascule n'existe que si la migration de
  * contrôle l'a posée. UNE lecture par devis à froid, constante, gardée sous
  * l'estampille du cache (zéro à chaud). Sous `legacy`, rien d'autre n'est lu.
