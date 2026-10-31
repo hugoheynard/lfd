@@ -132,3 +132,68 @@ Restent ouvertes :
   la limite d'usage, prévue et non bâtie.
 - L'anti-gaspi **au comptoir** : rien ne s'encaisse en boutique par notre
   système ; seules les commandes en ligne sont concernées.
+
+## 8. Après vitruve (2026-10-31) — fait foi là où il diverge
+
+Cinq BLOQUANTS, six SÉRIEUX. Ce qui est tranché :
+
+1. **La révision garde la remise par un mécanisme nommé** : une promotion à
+   `weekly_hours` de moment `ordered_at` se juge, en révision, **à l'instant
+   de passation** de la commande, pas à `clock.now()` — la composition de
+   révision (`order-revising.service.ts:173-208`) passe cet instant à
+   `BasketPromotions` (`basket-promotions.service.ts:53`) pour la seule
+   condition d'heure ; une ligne ajoutée en révision reçoit donc la même
+   remise de panier que les autres. (Aujourd'hui la révision rejuge tout à
+   `now` : sans ce mécanisme, Q3 serait faux.)
+2. **Le créneau entre dans L9** pour `handover_at` : `window` et `date`
+   rejoignent les changements jugés (`fulfillment-promotion.ts:14-18`), et le
+   refus nomme le cas réel — une erreur propre, « Ce créneau tombe hors des
+   heures de la promotion « X » (de 17 h à 19 h) », pas l'erreur
+   d'acheminement.
+3. **Créneau sans début** (« avant 10 h », `start` nul) : l'instant jugé est
+   la **fin** du créneau. Sans créneau du tout (livraison sans tranche,
+   `requestedWindow` absent) : une promotion `handover_at` ne s'applique pas.
+4. **`handover_at` est réservé au panier** : refus à la pose pour une
+   promotion « dans le prix affiché », dont le rayon ne connaît pas de
+   créneau.
+5. **Déploiement** : la condition vit dans le JSONB `conditions` (vérifié :
+   `20261031110000_les_promotions:51`, `promotions.prisma:74`) — pas de
+   migration. Le lecteur (`promotion-rows.ts:250`) refuse toute condition
+   inconnue et charge les promotions en bloc : une instance ancienne qui lit
+   une promotion à heures fait tomber toutes les promotions. Pré-release :
+   un seul déploiement, **et aucune promotion à heures posée avant que le
+   déploiement soit fini** (consigne dans le runbook). Au lancement
+   commercial, ce genre de variante se livre en deux temps (lecteur, puis
+   écriture).
+
+Sérieux, intégrés :
+
+- **Recouvrement** : deux promotions de `moment` différent se recouvrent dès
+  que leurs jours se croisent (une commande à 17 h 30 pour un retrait à 8 h
+  satisfait les deux) ; de même `moment`, seules les plages qui se croisent.
+- **Caches** : côté serveur, rien n'expire — `inForceAt` et l'évaluateur sont
+  jugés à chaque requête (`pricing-materials.cache.ts`), l'évaluateur appelé
+  dans `promotionsAdmitted` (`live-promotion.ts:114`). Le risque est le
+  **client** : un panier affiché à 18 h 59 et passé à 19 h 00. La caisse juge
+  à la passation ; le panier relu affiche alors « La remise sur le pain a
+  pris fin à 19 h » plutôt qu'un total qui change sans explication.
+- **Un seul évaluateur de Paris** : celui des suggestions existe déjà
+  (`suggestion-conditions-gate.ts:55`, `weekdayOfDate` ; migration
+  `20261018200000_les_conditions_des_suggestions`, qui refuse déjà de passer
+  minuit). Il est **extrait et partagé**, pas réécrit.
+- **Bascules d'heure** : heure murale de Paris — une plage de 2 h à 3 h
+  n'existe pas le dernier dimanche de mars et vaut deux fois le dernier
+  dimanche d'octobre.
+- **Annonce et offre de connexion** (`promotion-offers.ts:83`, `:170`,
+  `pickup-discount-announcement.ts:107`) : elles appellent l'évaluateur, et
+  distinguent trois cas — active maintenant, hors heures montrable (si
+  `announceOutside`, avec ses heures), hors heures tue.
+- **Types à élargir** : `PromotionWriteRow.conditions`
+  (`promotion-rows.ts:77`), le contrat Zod (`promotions.ts:146-147`, `:223`),
+  le domaine, le brouillon du back-office.
+- **Exemple corrigé** : un jour peut figurer dans plusieurs plages ; deux
+  plages ne se chevauchent pas un même jour.
+
+Questions 4 et 5, tranchées par défaut (cohérent avec les suggestions) : une
+plage **ne passe pas minuit** (deux plages) ; **jours fériés et fermetures
+ignorés** pour l'instant.
