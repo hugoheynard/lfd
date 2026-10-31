@@ -169,6 +169,24 @@ flowchart LR
     L3 --> P1
 ```
 
+**Pourquoi « dans le prix affiché » ne se limite pas à un acheminement**
+(Hugo l'a demandé le 2026-10-31). Le prix d'un article au catalogue est
+calculé **avant** que le client choisisse son acheminement, et il est le même
+pour tous ceux qui le regardent. Une remise limitée au retrait à un point,
+mise dans ce prix, afficherait à un client qui choisira la livraison un prix
+qu'il ne paiera pas. D'où les deux formes :
+
+| Forme                | Où la remise agit                  | Ce que voit le client au catalogue           | Limitable à un acheminement  |
+| -------------------- | ---------------------------------- | -------------------------------------------- | ---------------------------- |
+| Dans le prix affiché | le prix de chaque ligne (`line`)   | le prix déjà remisé                          | non : elle vaut partout      |
+| En remise au panier  | le panier, une fois le mode choisi | une **annonce** (« −20 % avec retrait à … ») | oui : retrait, points, zones |
+
+Piste notée, non bâtie : quand le client a déjà choisi son mode et son
+point dans le contexte de commande de la boutique, le catalogue pourrait
+afficher le prix remisé pour CE mode, et garder l'annonce tant qu'il ne l'a
+pas choisi. Elle touche le calcul du prix affiché (argent) : plan et
+`vitruve` avant tout bâti.
+
 - **Ligne** : `pricing/domain/promotion-as-rule.ts` présente la promotion
   comme une règle de l'étage `promotion` ; `resolve-price.ts:262` l'ajoute aux
   règles. Même place, même scellement par la mercuriale, même plancher que les
@@ -493,7 +511,8 @@ Factur-X et ses bons les portent pour toujours.
 - **Dette du bon partiel, non aggravée** : un montant fixe est borné à
   l'assiette du premier bon ; si elle est plus petite, la somme des bons est
   inférieure à la remise de la commande.
-- **Améliorations notées** : onglets dans Tarification ; promotions affichées
+- **Améliorations notées** : prix affiché remisé pour le mode déjà choisi
+  dans le contexte de commande (§ 2.2) ; onglets dans Tarification ; promotions affichées
   dans la grille des règles de prix.
 - **Limite actuelle** : cinq remises de panier au plus par commande ; une
   seule condition (`min_quantity`).
