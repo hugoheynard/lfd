@@ -8,7 +8,7 @@ import type { DraftOrderInput, OrderDiscountLabel } from "./order-shapes.js";
 
 /**
  * **Les remises de panier qu'une commande fige, une ligne par remise** —
- * plan `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.2 et § 18.6, lot M3. Ce que la passation et la révision écrivent dans
  * `order_discounts`, à côté des colonnes `discount_*` qui restent écrites.
  *

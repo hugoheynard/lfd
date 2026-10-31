@@ -27,7 +27,7 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
 
 /**
  * **Les promotions d'UN point de retrait** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9 et § 14 S-droits, lots L7-L8), sous `lfc_site_settings` — la
  * ressource de la fiche d'un site (`PATCH admin/sites/:id`), qui réglait la
  * remise de ce point : qui la réglait la règle encore, rien ne s'ouvre à un

@@ -33,7 +33,7 @@ type LoadState = 'loading' | 'error' | 'ready';
 /**
  * **Les promotions de ce point de retrait** — le raccourci de la fiche d'un
  * site vers l'écran Promotions (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7). Une lecture : celles dont l'acheminement est « retrait
  * à ce point », hors archivées, et le lien vers la liste pré-filtrée.
  *

@@ -317,7 +317,7 @@ de détail et une `fold-card` par sujet :
   `surface="sunken"` : heures de retrait, créneaux publics (+ fermetures),
   réductions de retrait. Créneaux absents à la création et sur un site
   archivé. Les réductions (lot B du plan
-  [`plan-remise-retrait-par-clientele-et-exclusions.md`](../livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md),
+  [`plan-remise-retrait-par-clientele-et-exclusions.md`](../promotions/plan-remise-retrait-par-clientele-et-exclusions.md),
   2026-10-23) sont **deux cartes**, « Pros » et « Particuliers », chacune
   avec son « Enregistrer » qui renvoie l'autre clientèle telle qu'enregistrée :
   la réduction (% ou €, ou aucune), le mode (`fold-choice-row` « Tout,

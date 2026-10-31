@@ -8,7 +8,7 @@ import type { DraftBasketDiscount, DraftOrderInput } from "./order-shapes.js";
 
 /**
  * **Plusieurs remises de panier sur une commande** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16.1 (point PANIER, étape 3), § 18.4 et § 18.6, lot M7.
  *
  * L'agrégat ne fait confiance à aucun appelant : il rejoue la chaîne de M1

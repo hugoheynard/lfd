@@ -1,5 +1,5 @@
 /// **Une promotion** — l'agrégat `Promotion` de `src/b2b/promotions/` (plan
-/// `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+/// `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
 /// § 13.3, lot L3). Trois axes — public, acheminement, portée — et une liste
 /// de conditions. Aucun lecteur de prix ne la lit encore (L5).
 ///
@@ -127,7 +127,7 @@ model PromotionAudienceTarget {
 }
 
 /// **Les réglages du contexte des promotions** — une ligne par clé (plan
-/// `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+/// `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
 /// § 13.5, § 14 S-bascule). Une seule clé aujourd'hui, `promotions_source` :
 /// `legacy` | `shadow` | `promotions`, la source que le calcul lit. Créée à
 /// `legacy` par la migration de la reprise (L4) ; passée à `promotions` par

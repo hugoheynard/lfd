@@ -20,7 +20,7 @@ export type { BasketPromotionApplied } from "./basket-promotion-plan.js";
 
 /**
  * **Le point PANIER d'une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.2 et § 13.5, lot L5) — pur. Ce que la remise de retrait fait
  * aujourd'hui, dit dans le vocabulaire des promotions : un montant en
  * centimes sur l'assiette des lignes couvertes, après le prix des lignes,

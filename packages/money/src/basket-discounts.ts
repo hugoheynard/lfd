@@ -4,7 +4,7 @@ import { taxMultiplierBp, ttcOfHtAmount } from "./ttc-of-ht-amount.js";
 
 /**
  * **Plusieurs remises de panier, appliquées l'une après l'autre** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16.1 (point PANIER, étapes 3 et 4) et § 18.4.
  *
  * Chaque ligne garde un **reste exact** (rationnel), initialisé à son

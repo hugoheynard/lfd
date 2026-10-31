@@ -69,7 +69,7 @@ export function actOf(
 
 /**
  * **Une règle d'étage promotion ne s'écrit plus** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.10, L8 puis L12) : le calcul lit les promotions, et la règle
  * n'agirait sur aucun prix.
  *

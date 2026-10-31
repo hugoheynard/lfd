@@ -12,7 +12,7 @@ import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
  * **Le rangement des SKU de commande, lu sur le catalogue servi** (V4 du plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
  *
  * Sur `catalog_items` et non `catalog_entries` : c'est la table que la caisse
  * résout déjà, et la seule dont la famille porte une clé étrangère. Le SKU de

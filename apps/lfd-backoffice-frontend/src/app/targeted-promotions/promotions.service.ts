@@ -14,7 +14,7 @@ import { B2B_API_BASE } from '../api/api-config';
 
 /**
  * **Les promotions** — `/admin/promotions` (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lots L7-L8). Lecture sous `b2b_pricing` OU `lfc_site_settings`.
  *
  * L'écriture passe par la SURFACE de la promotion : une promotion « retrait

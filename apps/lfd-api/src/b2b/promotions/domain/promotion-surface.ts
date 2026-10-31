@@ -3,7 +3,7 @@ import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 
 /**
  * **D'où une promotion est réglée** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9 et § 14 S-droits) — et donc sous quel droit.
  *
  * - `pricing` : l'écran Promotions, sous `b2b_pricing`, la ressource des

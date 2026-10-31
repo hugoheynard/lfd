@@ -20,7 +20,7 @@ const AUDIENCE_LABEL: Readonly<Record<CustomerAudience, string>> = {
 
 /**
  * **La remise d'un point de retrait, une par clientèle** (plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`,
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`,
  * 2026-10-22 — remplace « une réduction, deux cases » du plan D2).
  *
  * Un value object et pas un agrégat : des règles sans transition. Mais ces

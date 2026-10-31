@@ -2,7 +2,7 @@ import type { PromotionAudienceKindValue, PromotionAudienceTargetView } from '@l
 
 /**
  * **Le public de l'éditeur, en cases à cocher en étages** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 15.9, lot L8b) — pur.
  *
  * L'arbre a quatre feuilles — la partition de la clientèle — et deux

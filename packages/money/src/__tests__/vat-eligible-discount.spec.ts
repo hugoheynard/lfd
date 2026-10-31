@@ -4,7 +4,7 @@ import { ventilateVat, type VatLine } from "../vat.js";
 /**
  * La remise d'assiette RESTREINTE — celle d'un point de retrait dont des
  * catégories sont exclues (plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`, §3, R1).
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`, §3, R1).
  */
 const PAIN: VatLine = { htCents: 1000, vatRate: 5.5 };
 const BOISSON_EXCLUE: VatLine = { htCents: 1000, vatRate: 20, discountEligible: false };

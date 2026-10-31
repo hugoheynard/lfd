@@ -1,6 +1,6 @@
 /**
  * E2E de **la facture et des remises de panier** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4, Q-M2 et Q-M3, lot M5.
  *
  * Ce que seul le vrai Postgres prouve : la sélection de la facture relit

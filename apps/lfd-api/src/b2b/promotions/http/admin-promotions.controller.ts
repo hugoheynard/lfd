@@ -44,7 +44,7 @@ import { promotionTermsOf } from "./promotion-terms.mapper.js";
 
 /**
  * **L'écran Promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lots L7-L8), sous `b2b_pricing` — la ressource des règles de prix :
  * qui posait une règle d'étage promotion pose une promotion.
  *

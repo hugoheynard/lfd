@@ -10,7 +10,7 @@ import type { DraftBasketDiscount } from "../order-shapes.js";
 
 /**
  * **Plusieurs remises de panier sur une commande** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16.1, § 18.4 et § 18.6, lot M7. L'agrégat rejoue la chaîne de M1 sur ses
  * lignes, fige une remise par étape, et laisse les colonnes uniques à `NULL`
  * (arbitrage n° 1 du § 18.8).

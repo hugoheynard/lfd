@@ -58,7 +58,7 @@ export interface FrozenInvoiceDiscountPart {
 
 /**
  * **Une remise de panier d'un bon**, dans l'ordre d'application (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4, lot M5). Lue par le repli unique `frozenBasketDiscountsOf` : la
  * table `order_discounts` si la commande y a des remises actives, sinon les
  * colonnes `discount_*` comme une remise de rang 1.

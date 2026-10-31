@@ -13,7 +13,7 @@ import type {
 
 /**
  * **Les remises de panier d'un bon, relues pour sa facture** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4 et rectification du 2026-10-31, lot M5.
  *
  * La liste passe par le repli UNIQUE du domaine des commandes

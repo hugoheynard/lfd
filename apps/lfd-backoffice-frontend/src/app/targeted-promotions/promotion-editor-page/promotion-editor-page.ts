@@ -77,7 +77,7 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeTargetValue, string>> = {
 
 /**
  * **L'éditeur d'une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L8) — une page, parce qu'une promotion règle sept sujets :
  * identité, effet, fenêtre, public, acheminement, portée et ses exceptions,
  * condition.

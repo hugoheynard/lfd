@@ -17,7 +17,7 @@ import type { PromotionAudienceFacts } from "./promotion-targeting.js";
 
 /**
  * **Ce que la boutique ANNONCE d'un point de retrait**, tiré des promotions
- * (plan `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * (plan `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 14 B5, lot L8) — pur.
  *
  * Le contrat `PickupAddressView.discounts` porte UNE remise par acheteur

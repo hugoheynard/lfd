@@ -7,7 +7,7 @@ import { cumulatedDiscountsOf } from "../../domain/services/basket-promotion-pla
 
 /**
  * **Le devis de plusieurs remises de panier** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.6, lot M7) — la chaîne même que l'agrégat rejouera à la passation
  * (`lineHtCumulatedStepsOf`, `exactCumulatedStepsOf`) : un devis qui ne
  * prédit pas la commande au centime ne sert à rien.

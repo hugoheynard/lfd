@@ -10,7 +10,7 @@ const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set(["method", "pic
 
 /**
  * **L9 — changer d'acheminement ne change pas les promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.8, étendu à un ENSEMBLE au § 18.5, lot M3). Seulement quand le mode ou
  * le point change : une révision qui garde l'acheminement se recompose comme
  * avant.

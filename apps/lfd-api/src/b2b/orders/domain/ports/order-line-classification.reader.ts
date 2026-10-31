@@ -20,7 +20,7 @@ export interface OrderLineClassification {
 /**
  * **Où un SKU est rangé** — déclaré par la commande, implémenté par le
  * catalogue sur ses articles (V4 du plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
  *
  * Lu à la passation pour figer produit et famille sur la ligne et décider
  * son éligibilité à la remise de retrait, et son marqueur « sur mesure » ; lu au devis seulement quand la

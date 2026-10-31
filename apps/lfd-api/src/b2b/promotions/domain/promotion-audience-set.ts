@@ -13,7 +13,7 @@ import {
 
 /**
  * **Les feuilles de l'arbre des publics** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 9 et § 15.4, lot L8b) — la partition de la clientèle : tout acheteur
  * tombe dans exactement une. Une société n'en est pas une : elle peut être
  * active ou en attente, elle est hors partition.

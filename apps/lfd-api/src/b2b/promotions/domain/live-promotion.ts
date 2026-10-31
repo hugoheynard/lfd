@@ -20,7 +20,7 @@ import type { Promotion } from "./promotion.js";
 
 /**
  * **Une promotion telle que le calcul la lit** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.5, lot L5) — les termes qui agissent sur un prix, et rien du cycle
  * de vie hors de sa pause.
  *

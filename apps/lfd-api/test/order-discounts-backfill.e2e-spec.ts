@@ -1,6 +1,6 @@
 /**
  * E2E de la **reprise des remises de panier** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.3 et § 18.7 (lot M2).
  *
  * Ce que seul le vrai SQL prouve : les trois tables neuves et leurs

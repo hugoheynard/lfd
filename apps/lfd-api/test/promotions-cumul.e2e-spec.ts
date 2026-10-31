@@ -1,6 +1,6 @@
 /**
  * E2E du **cumul sur demande** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16 et § 16.1, lot L12), sur le vrai Postgres :
  *
  * 1. deux promotions « Cumulable » sur le même article se posent toutes deux

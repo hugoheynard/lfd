@@ -7,7 +7,7 @@
 >
 > **Doc-first, 2026-10-22.** Touche **l'argent** (TVA par taux
 > de la facture, Factur-X) : `vitruve` avant Hugo. Suite de V7 du plan
-> [`plan-remise-retrait-par-clientele-et-exclusions.md`](../../livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md).
+> [`plan-remise-retrait-par-clientele-et-exclusions.md`](../../promotions/plan-remise-retrait-par-clientele-et-exclusions.md).
 
 ## 0. Le problème (ouvert le 2026-10-22)
 

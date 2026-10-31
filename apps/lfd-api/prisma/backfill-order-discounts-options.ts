@@ -6,7 +6,7 @@ import { refuseNonLocalTarget } from "./local-target.js";
 
 /**
  * **Les options de la reprise des remises, et son rapport** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.3 (Q-M1, décidée le 2026-10-30). Pur : le script les lit, les tests
  * les éprouvent sans base.
  */

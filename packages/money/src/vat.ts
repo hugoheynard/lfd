@@ -50,7 +50,7 @@ export const DELIVERY_VAT_RATE = 20;
  * `discountEligible` dit si la ligne entre dans l'assiette de la remise
  * **restreinte** ({@link VatVentilationInput.eligibleDiscountCents}) — la remise
  * d'un point de retrait, dont certaines catégories ou produits sont exclus
- * (`documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`, R1).
+ * (`documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`, R1).
  * Absent = éligible : c'est ce qu'étaient toutes les lignes avant les exclusions.
  */
 export interface VatLine {

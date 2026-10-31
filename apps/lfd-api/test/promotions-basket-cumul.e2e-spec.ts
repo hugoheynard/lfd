@@ -1,6 +1,6 @@
 /**
  * E2E du **cumul au panier, de bout en bout** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16.1 et § 18.6, lot M7. Sur le vrai Postgres, par les vrais gestes :
  *
  * 1. deux promotions panier « Cumulable » se posent (le refus « une

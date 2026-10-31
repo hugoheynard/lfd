@@ -14,7 +14,7 @@ import type { Promotion } from "../../domain/promotion.js";
 
 /**
  * **Ce qui peut refuser une écriture et que l'agrégat ne voit pas** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.2, § 13.9, § 13.10 L7) — partagé par les cinq gestes :
  *
  * 1. la surface : une promotion de retrait à un point se règle depuis ce

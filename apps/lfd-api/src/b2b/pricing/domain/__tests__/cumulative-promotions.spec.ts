@@ -5,7 +5,7 @@ import { resolvePrice } from "../resolve-price.js";
 
 /**
  * **Le cumul sur demande, au point ligne** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16 et § 16.1) : les promotions « Cumulable » se combinent l'une après
  * l'autre, dans un ordre déterministe ; une non cumulable face au résultat
  * cumulé, la plus avantageuse ; le plancher arrête la descente ; un seul

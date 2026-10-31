@@ -39,7 +39,7 @@ interface ReplayedStep {
 
 /**
  * **Les parts d'un bon, par remise, au départ** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.2 (`delivery_note_discounts`), lot M4.
  *
  * Chaque remise de la commande est rejouée sur les lignes du bon par la

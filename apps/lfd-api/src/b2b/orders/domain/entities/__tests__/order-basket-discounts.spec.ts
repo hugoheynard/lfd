@@ -8,7 +8,7 @@ import { Order, type DraftOrderInput, type OrderToPlace } from "../order.js";
 
 /**
  * **La passation fige ses remises de panier, une ligne par remise** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.2, lot M3. Ce que l'agrégat rend ici est ce que `order_discounts`
  * reçoit ; le déclencheur différé exige Σ montants = `discount_cents`, et
  * Σ parts par taux = montant de la remise.

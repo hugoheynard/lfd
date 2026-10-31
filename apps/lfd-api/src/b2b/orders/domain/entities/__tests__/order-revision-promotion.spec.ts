@@ -8,7 +8,7 @@ import type { FrozenBasketPromotion } from "../../services/frozen-basket-discoun
 
 /**
  * **L9 — changer d'acheminement ne change pas la promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.8). Changement de comportement assumé : jusqu'à L9, la révision
  * recalculait la remise au changement de point, en silence.
  *

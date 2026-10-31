@@ -4,7 +4,7 @@ import type { FrozenInvoiceOrder } from "./invoice-dossier.types.js";
 
 /**
  * **Les remises de panier d'un bon, une par une, sur ses taux** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4, lot M5.
  *
  * Un bon d'au plus une remise se découpe comme avant M5 (`splitOrderByRate`,

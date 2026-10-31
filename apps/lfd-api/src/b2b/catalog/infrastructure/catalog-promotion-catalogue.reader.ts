@@ -12,7 +12,7 @@ import { shopSkuOf } from "../domain/shop-sku.js";
 
 /**
  * **Le catalogue vendable, pour les promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.2, lot L7) — ce que le refus de chevauchement compare et les noms que
  * l'écran montre.
  *

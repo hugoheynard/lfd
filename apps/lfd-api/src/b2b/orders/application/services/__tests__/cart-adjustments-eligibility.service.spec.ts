@@ -17,7 +17,7 @@ import { basketPromotions, pickupBuyer } from "./basket-promotions.doubles.js";
 
 /**
  * La remise du point sur ses seules lignes éligibles (plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`,
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`,
  * R1, Q1, Q2, et le mode de portée décidé par Hugo le 2026-10-22).
  */
 const TEN_PERCENT: AudiencePickupDiscount = {

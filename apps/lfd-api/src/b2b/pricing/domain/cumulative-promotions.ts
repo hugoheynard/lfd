@@ -18,7 +18,7 @@ export function isCumulative(rule: PriceRule): boolean {
 
 /**
  * **L'étage `promotion` quand une promotion CUMULABLE s'applique** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16 et § 16.1) — pur, en exact.
  *
  * 1. Les non cumulables désignent leur gagnant comme aujourd'hui (`winnerOf` :

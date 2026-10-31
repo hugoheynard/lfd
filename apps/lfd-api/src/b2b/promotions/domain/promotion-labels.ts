@@ -9,7 +9,7 @@ export interface PromotionLabel {
 
 /**
  * **Les libellés d'audience** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 15.1 décision 2, § 15.12 Q2, lot L8b) : facultatifs, ils REMPLACENT le
  * libellé commun pour l'audience qu'ils nomment. `null` = le commun suffit.
  */

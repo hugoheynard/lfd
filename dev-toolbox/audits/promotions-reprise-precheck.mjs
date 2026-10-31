@@ -1,6 +1,6 @@
 /**
  * **Ce que la reprise des promotions trouvera** — lot L0 du plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`
  * (§ 13.4, § 13.10). Hugo le lance en production AVANT L4 : un compte
  * bloquant non nul arrête le chantier jusqu'à décision.
  *

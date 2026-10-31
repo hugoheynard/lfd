@@ -7,7 +7,7 @@ import {
 
 /**
  * **Les refus d'une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.3). Chaque message est lu par du personnel qui n'a pas le code sous
  * les yeux : il nomme le cas et le geste de sortie.
  */

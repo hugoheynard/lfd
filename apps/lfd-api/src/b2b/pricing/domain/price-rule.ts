@@ -195,7 +195,7 @@ export type PriceRule = {
   readonly stacksOverMercuriale: boolean;
   /**
    * **Présent seulement pour une règle présentée par une PROMOTION** (plan
-   * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+   * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
    * § 13.5) : le rang de son public et de son acheminement, que la
    * spécificité lit en tête. Absent, la règle prend le rang de son audience.
    * Deux règles qui le portent toutes deux et s'égalent strictement ne lèvent

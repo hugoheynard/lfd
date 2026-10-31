@@ -6,7 +6,7 @@ import type { OrderInvoiceSplit } from "./invoice-order-split.js";
 
 /**
  * **Les remises de panier de la facture, par clé** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4 et Q-M2, lot M5.
  *
  * Tant qu'aucun bon de la facture ne porte plusieurs remises, rien ne change :

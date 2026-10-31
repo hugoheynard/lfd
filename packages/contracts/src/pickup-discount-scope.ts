@@ -8,7 +8,7 @@ import type { DiscountLabelView } from "./discount-label.js";
  * `pickup-discount-audiences.ts`), et le serveur s'en sert au devis comme à la
  * passation. `pickup.ts` porte le schéma, qui reste l'autorité sur la forme.
  *
- * Plan `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`
+ * Plan `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`
  * (Hugo, 2026-10-22) : une remise par clientèle, chacune avec un MODE de
  * portée et des règles par catégorie et par produit.
  */

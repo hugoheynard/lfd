@@ -51,7 +51,7 @@ const TAB_KEYS: readonly PromotionsTab[] = ['active', 'scheduled', 'paused', 'cl
 
 /**
  * **Promotions** — la liste (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7) : par public, par acheminement, par portée.
  *
  * « Nouvelle promotion » ne s'offre qu'une fois la bascule faite

@@ -6,7 +6,7 @@ import type { PromotionTerms } from "./promotion-terms.js";
 
 /**
  * **Un acte sur une promotion** — l'unité du journal (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9). Il s'écrit dans `pricing_events`, sujet `promotion`, à côté des
  * actes des règles qu'il remplacera, et en miroir au journal général
  * (`promotion.*`). Les clés écrites sont figées dès le premier fait.

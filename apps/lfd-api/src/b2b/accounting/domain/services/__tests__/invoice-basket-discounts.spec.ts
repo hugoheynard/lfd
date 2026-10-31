@@ -11,7 +11,7 @@ import { frozenBon, goodsLine } from "./per-order-cycle-fixtures.js";
 
 /**
  * **Plusieurs remises de panier sur une facture** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.4, Q-M2 et Q-M3, lot M5.
  *
  * La preuve centrale : un bon d'UNE remise rend la facture, sa ventilation et

@@ -31,7 +31,7 @@ import type {
 
 /**
  * Le rang de l'audience, **sur l'échelle du public des promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.3 et § 13.5) : `all` 0 et `company` 4 y sont `everyone` et `company`,
  * et `segment` reste entre les deux. L'ordre est celui d'avant (`all` <
  * `segment` < `company`), seules les valeurs ont bougé — aucun arbitrage

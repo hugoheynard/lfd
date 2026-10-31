@@ -35,7 +35,7 @@ export type PickupDiscountAudiences = z.infer<typeof pickupDiscountAudiencesSche
 /**
  * **La remise d'un point pour une clientèle** — sa réduction, son mode de
  * portée et ses règles (plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
  * La forme seulement : une règle en double, ou un mode `only` qui n'inclut
  * rien, est refusée par le serveur (`AudienceDiscount`). Le type sans zod est
  * `AudiencePickupDiscount` (`pickup-discount-scope.ts`).

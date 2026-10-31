@@ -15,7 +15,7 @@ import {
 
 /**
  * **Ce qu'une promotion promet sans s'appliquer encore** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 8 et § 13.2 RAYON, lot L10) — pur.
  *
  * Deux questions que le calcul ne pose pas, parce qu'il n'applique que ce qui

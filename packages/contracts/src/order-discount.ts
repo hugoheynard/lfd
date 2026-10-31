@@ -3,7 +3,7 @@ import type { DiscountLabelView } from "./discount-label.js";
 
 /**
  * **Une remise de panier d'une commande, telle qu'un écran la lit** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.6, lot M6) — une ligne de `order_discounts`, dans l'ordre
  * d'application, ou la remise unique des colonnes pour une commande non
  * reprise (repli `frozenBasketDiscountsOf`).

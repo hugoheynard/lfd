@@ -5,7 +5,7 @@ import { SplitSkuCoverageError } from "../errors/basket-discount-errors.js";
 /**
  * **Les remises de panier figées d'une commande, telles que ses lecteurs les
  * voient** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.9 et rectification du 2026-10-31 (lots M3 et M4).
  *
  * Le SEUL endroit où se décide d'où vient la liste : de `order_discounts`

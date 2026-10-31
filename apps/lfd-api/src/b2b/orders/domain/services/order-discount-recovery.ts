@@ -10,7 +10,7 @@ import type {
 
 /**
  * **La reprise d'une remise unique en ligne `order_discounts`** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.3, lot M2.
  *
  * 1. La remise est recomposée par la fonction de M1 et comparée au figé : à

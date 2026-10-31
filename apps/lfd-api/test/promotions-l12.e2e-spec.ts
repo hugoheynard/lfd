@@ -1,6 +1,6 @@
 /**
  * E2E du lot **L12** du plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`
  * (§ 13.10 L12), sur le vrai Postgres :
  *
  * 1. la ligne `promotions_source` est un GARDE-FOU : elle ne vaut plus que

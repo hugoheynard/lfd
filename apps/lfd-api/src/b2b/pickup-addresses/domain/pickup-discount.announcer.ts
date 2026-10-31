@@ -3,7 +3,7 @@ import type { AnnouncedPickupDiscounts } from "@lfd/contracts";
 /**
  * **Ce que la boutique annonce de la remise d'un point**, quand ce n'est plus
  * la fiche du site qui la porte (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 14 B5, lot L8).
  *
  * Déclaré ici, implémenté par les promotions : après la bascule, la caisse

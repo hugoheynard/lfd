@@ -1,6 +1,6 @@
 /**
  * **Poser une promotion par le vrai geste** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * lot L12) — l'écran Promotions (`/admin/promotions`), ou celui d'un point
  * (`/admin/sites/:id/promotions`) pour une promotion de retrait à ce point.
  *

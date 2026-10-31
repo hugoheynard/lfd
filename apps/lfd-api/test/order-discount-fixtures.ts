@@ -4,7 +4,7 @@ import type { Prisma, PrismaClient } from "../src/platform/database/client/clien
 
 /**
  * **Les remises de panier dans les fixtures** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.2, lot M3.
  *
  * Depuis `20261031180000_le_controle_des_remises`, un déclencheur différé

@@ -56,7 +56,7 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> =
 
 /**
  * **La fiche d'une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7) — les sept blocs de l'éditeur, en LECTURE : identité,
  * effet, fenêtre, public (dans l'arbre « Tout le monde / Particuliers /
  * Pros »), acheminement, portée et ses exceptions, conditions.

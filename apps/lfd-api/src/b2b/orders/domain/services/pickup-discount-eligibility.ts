@@ -1,7 +1,7 @@
 /**
  * **L'assiette de la remise de retrait** — pure, partagée par le devis de la
  * boutique et la passation (§4.A.3 du plan
- * `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`).
+ * `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`).
  */
 
 /** Une ligne chiffrée : son SKU et son hors taxe, déjà arrondi une fois. */

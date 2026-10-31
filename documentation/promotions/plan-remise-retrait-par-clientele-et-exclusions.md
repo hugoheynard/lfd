@@ -3,7 +3,7 @@
 > **Doc-first, 2026-10-22.** Rien n'est bâti. Touche **l'argent** (remise,
 > ventilation de TVA, facture) et porte une **migration** : `vitruve` avant
 > Hugo. Suite de
-> [`plan-remise-et-livraison-par-clientele.md`](plan-remise-et-livraison-par-clientele.md)
+> [`plan-remise-et-livraison-par-clientele.md`](../livraisons/clientele/plan-remise-et-livraison-par-clientele.md)
 > (D2 : une remise, deux cases).
 
 ## 0. La demande (Hugo, 2026-10-22)
@@ -105,7 +105,7 @@ l'appeler (corrigé après `vitruve`, 2026-10-22).
 
 ### ~~B — back-office~~ — bâti le 2026-10-23 (`f92df2f49`)
 
-> Décrit au présent dans [`sites.md`](../../sites/sites.md), « Paramétrage du
+> Décrit au présent dans [`sites.md`](../sites/sites.md), « Paramétrage du
 > retrait ». Le pont provisoire vers l'ancienne carte est retiré. Non bâti : le
 > nombre d'articles que chaque règle couvre aujourd'hui (seconde moitié de V9).
 

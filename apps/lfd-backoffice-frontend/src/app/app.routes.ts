@@ -206,7 +206,7 @@ export const routes: Routes = [
   },
   {
     // LES PROMOTIONS CIBLÉES — par public, acheminement et portée (plan
-    // `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+    // `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
     // § 13.9, lot L7). Lues sous l'un OU l'autre droit, comme la route
     // serveur : la tarification pose les promotions, les réglages celles d'un
     // point de retrait (`lfc_site_settings`, la fiche du site — L8). L'entrée

@@ -25,7 +25,7 @@ import {
 
 /**
  * **Deux promotions qui ne doivent pas coexister** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.2, lot L7) — pur.
  *
  * L'agrégat ne voit qu'une promotion ; ces refus en comparent deux, sur le

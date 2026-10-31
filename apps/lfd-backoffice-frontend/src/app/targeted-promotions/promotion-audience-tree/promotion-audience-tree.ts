@@ -29,7 +29,7 @@ const PROS: readonly Box[] = [
 
 /**
  * **Le public d'une promotion, en cases à cocher en étages** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 15.9, lot L8b) : Tout le monde · Particuliers (Invités, Inscrits) · Pros
  * (Actifs, En cours d'inscription, une société ± ses sites).
  *

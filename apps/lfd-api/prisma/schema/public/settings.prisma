@@ -591,7 +591,7 @@ enum PickupDiscountTarget {
 }
 
 /// **Une règle de portée de la remise d'un point de retrait** (plan
-/// `documentation/livraisons/clientele/plan-remise-retrait-par-clientele-et-exclusions.md`) :
+/// `documentation/promotions/plan-remise-retrait-par-clientele-et-exclusions.md`) :
 /// telle famille, ou tel produit (toutes ses déclinaisons), est éligible ou
 /// non à la remise de telle clientèle. Une règle produit l'emporte sur celle
 /// de sa famille. `target_id` est un identifiant OPAQUE du catalogue, sans

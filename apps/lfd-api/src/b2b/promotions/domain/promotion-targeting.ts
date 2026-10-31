@@ -6,7 +6,7 @@ import type { PromotionFulfillment, PromotionFulfillmentKind } from "./promotion
 
 /**
  * **Le ciblage** — « cette commande est-elle concernée ? » (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 12 et § 13.3, lot L5).
  *
  * Pur. Les faits sont **établis au serveur**, jamais reçus : le statut de la

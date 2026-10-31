@@ -2,7 +2,7 @@ import { LegacyPromotionEditorClosedError } from "./errors/promotion-errors.js";
 
 /**
  * **D'où le calcul tire les promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.5, § 13.10 L12) — une ligne de configuration en base.
  *
  * Depuis L12, il n'en reste qu'une valeur : `promotions`. L'ancien chemin

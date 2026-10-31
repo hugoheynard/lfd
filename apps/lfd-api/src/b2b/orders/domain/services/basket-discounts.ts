@@ -6,7 +6,7 @@ import { TooManyBasketDiscountsError } from "../errors/basket-discount-errors.js
 
 /**
  * **Les remises de panier d'une commande, dans leur ordre** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 16.1 (point PANIER) et § 18.4, lot M1.
  *
  * L'arithmétique vit dans `@lfd/money` (`chainBasketDiscounts`) ; ce module

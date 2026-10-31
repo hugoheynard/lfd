@@ -11,9 +11,9 @@ pour calculer, et **sortir le noyau de résolution en paquet partagé** — l'ob
 étant de pouvoir **mapper les promotions par canal**. C'est cette seconde
 proposition que le §5 pèse, et elle change le verdict.
 
-> Le chantier boutique : [`plan-boutique-sur-api.md`](plan-boutique-sur-api.md).
-> Le moteur : [`architecture-resolution-de-prix.md`](architecture-resolution-de-prix.md).
-> Ce que la boutique montre : [`architecture-prix-boutique.md`](architecture-prix-boutique.md).
+> Le chantier boutique : [`plan-boutique-sur-api.md`](../pricing/plan-boutique-sur-api.md).
+> Le moteur : [`architecture-resolution-de-prix.md`](../pricing/architecture-resolution-de-prix.md).
+> Ce que la boutique montre : [`architecture-prix-boutique.md`](../pricing/architecture-prix-boutique.md).
 
 > Ce document touche **l'argent** et une **frontière de droits**. Chaque
 > affirmation qu'il fait de l'existant a été ouverte dans le dépôt ; la table

@@ -15,7 +15,7 @@ import {
 
 /**
  * **Reprise des remises de panier** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.3, lot M2. `pnpm --filter lfd-api backfill:order-discounts`.
  *
  * Pour chaque commande remisée sans remise active : recompose la remise par

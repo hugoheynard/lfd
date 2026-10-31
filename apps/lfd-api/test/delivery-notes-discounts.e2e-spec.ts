@@ -1,6 +1,6 @@
 /**
  * E2E des **bons de livraison et des remises de panier** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.2 et rectification du 2026-10-31, lot M4.
  *
  * Ce que seul le vrai Postgres prouve :

@@ -3,7 +3,7 @@ import { PromotionMissingTargetIdError } from "./errors/promotion-errors.js";
 /**
  * **L'acheminement d'une promotion** : tous · retrait (tous les points) ·
  * retrait à un point · livraison (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 11 et § 13.3). La zone de livraison est prévue et non bâtie.
  *
  * Il décide aussi du **point d'application** (§ 13.2) : sans critère

@@ -1,6 +1,6 @@
 /**
  * E2E de **l'écran Promotions** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lots L7-L8), sur le vrai Postgres et le vrai catalogue semé :
  *
  * 1. le verrou d'avant la bascule — en `legacy`, toute écriture rend 409, la

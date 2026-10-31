@@ -3,7 +3,7 @@ import { BusinessError } from "../../../../platform/shared/errors/app-error.js";
 /**
  * **Un changement d'acheminement qui ajouterait, retirerait ou remplacerait
  * une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.8, lot L9 ; § 18.5, lot M3 : la promotion en cause est nommée).
  * Refusé plutôt que recalculé en silence : le client a commandé à un prix, et
  * changer de point ne doit pas le changer dans son dos.

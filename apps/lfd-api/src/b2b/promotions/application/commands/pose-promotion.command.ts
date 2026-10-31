@@ -3,7 +3,7 @@ import type { PromotionTerms } from "../../domain/promotion-terms.js";
 
 /**
  * **Poser une promotion** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * lots L3 et L7) — depuis l'écran Promotions ou depuis un point de retrait
  * (`surface`), après la bascule seulement.
  */

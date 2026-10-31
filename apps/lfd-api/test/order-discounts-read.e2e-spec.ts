@@ -1,6 +1,6 @@
 /**
  * E2E de **la lecture d'une commande à plusieurs remises** — plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 18.6, lot M6.
  *
  * Ce que seul le vrai Postgres prouve : la vue client, la vue du personnel et

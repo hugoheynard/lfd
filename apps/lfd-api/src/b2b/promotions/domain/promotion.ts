@@ -52,7 +52,7 @@ export interface PromotionState extends PromotionTerms {
 
 /**
  * **La promotion, en tant qu'agrégat** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 12 et § 13.3, lot L3).
  *
  * Elle porte tout ce qui peut refuser une écriture : les cohérences que les

@@ -2,7 +2,7 @@ import { z } from "zod";
 
 /**
  * **Les promotions, vues du back-office** (plan
- * `documentation/pricing/plan-promotions-par-audience-et-acheminement.md`,
+ * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
  * § 13.9, lot L7).
  *
  * Les schémas ne valident que la FORME : les invariants (point ⇔
