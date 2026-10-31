@@ -1,4 +1,4 @@
-import type { CartAdjustment } from "@lfd/contracts";
+import type { CartAdjustment, DiscountLabelView } from "@lfd/contracts";
 
 import { SplitSkuCoverageError } from "../errors/basket-discount-errors.js";
 
@@ -74,6 +74,57 @@ export function frozenBasketDiscountsOf(
       adjustment: columns.discountAdjustment,
       label: null,
       coveredSkus: null,
+    },
+  ];
+}
+
+/** Le libellé d'une remise sans libellé figé (plan des promotions, § 18.4). */
+export const DISCOUNT_FALLBACK_LABEL = "Remise";
+
+/**
+ * **Une remise chiffrée, telle qu'un écran ou un papier la lit** (lot M6) :
+ * son libellé figé dans les trois langues, sa règle, ses montants figés.
+ */
+export interface FrozenDiscountAmount {
+  readonly label: DiscountLabelView | null;
+  readonly adjustment: CartAdjustment | null;
+  readonly amountCents: number;
+  readonly amountTtcCents: number | null;
+}
+
+/** Les colonnes `discount_*` chiffrées — la remise unique d'hier, montants compris. */
+export interface FrozenDiscountAmountColumns {
+  readonly discountCents: number;
+  readonly discountTtcCents: number | null;
+  readonly discountAdjustment: CartAdjustment | null;
+  readonly discountLabel: DiscountLabelView | null;
+}
+
+/**
+ * Les remises chiffrées d'une commande, par le MÊME repli que
+ * {@link frozenBasketDiscountsOf} : la table si la commande y a des remises
+ * actives, sinon les colonnes comme une remise de rang 1.
+ *
+ * Seule différence, et elle est voulue : la colonne se lit dès que
+ * `discountCents > 0`, même sans ajustement figé. Un lecteur d'affichage dit
+ * un montant connu ; il ne recompose rien, il n'a donc pas besoin de la règle.
+ */
+export function frozenDiscountAmountsOf(
+  active: readonly FrozenDiscountAmount[],
+  columns: FrozenDiscountAmountColumns,
+): readonly FrozenDiscountAmount[] {
+  if (active.length > 0) {
+    return active;
+  }
+  if (columns.discountCents <= 0) {
+    return [];
+  }
+  return [
+    {
+      label: columns.discountLabel,
+      adjustment: columns.discountAdjustment,
+      amountCents: columns.discountCents,
+      amountTtcCents: columns.discountTtcCents,
     },
   ];
 }

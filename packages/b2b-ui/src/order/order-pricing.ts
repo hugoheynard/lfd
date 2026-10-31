@@ -79,6 +79,43 @@ function discountLabel(order: CustomerOrderView): string {
   return point === null || point.label === '' ? 'Remise retrait' : `Remise retrait ${point.label}`;
 }
 
+/** Le libellé d'une remise sans libellé figé (plan des promotions, § 18.4). */
+const DISCOUNT_FALLBACK_LABEL = 'Remise';
+
+/**
+ * Les lignes de remise. La remise se NOMME : d'où elle vient, à quel taux,
+ * pour combien — « Remise 70,68 € » toute seule oblige à ouvrir les réglages.
+ *
+ * **Une ligne par remise** quand la commande en porte plusieurs (plan des
+ * promotions, § 18.6, lot M6) : chacune son libellé figé, sa règle, son HT.
+ * Sinon LA ligne d'hier, inchangée.
+ */
+function discountRows(order: CustomerOrderView): readonly TotalRow[] {
+  const discounts = order.discounts;
+  if (discounts !== undefined && discounts.length > 1) {
+    return discounts.map((discount, index) => ({
+      key: `discount-${index + 1}`,
+      label: discount.label?.fr ?? DISCOUNT_FALLBACK_LABEL,
+      ...(discount.adjustment === null ? {} : { hint: formatAdjustment(discount.adjustment) }),
+      value: `− ${formatCents(discount.amountCents)}`,
+      strong: false,
+    }));
+  }
+  if (order.discountCents <= 0) {
+    return [];
+  }
+  const adjustment = order.discountAdjustment;
+  return [
+    {
+      key: 'discount',
+      label: discountLabel(order),
+      ...(adjustment === null ? {} : { hint: formatAdjustment(adjustment) }),
+      value: `− ${formatCents(order.discountCents)}`,
+      strong: false,
+    },
+  ];
+}
+
 /**
  * **Le récapitulatif des montants**, dans l'ordre où la formule du total les
  * additionne : sous-total, remise, livraison, surtaxe, TVA, total.
@@ -104,18 +141,7 @@ export function orderTotalRows(order: CustomerOrderView): readonly TotalRow[] {
       strong: false,
     },
   ];
-  if (order.discountCents > 0) {
-    // La remise se NOMME : d'où elle vient, à quel taux, pour combien. « Remise
-    // 70,68 € » toute seule oblige à ouvrir les réglages pour comprendre.
-    const adjustment = order.discountAdjustment;
-    rows.push({
-      key: 'discount',
-      label: discountLabel(order),
-      ...(adjustment === null ? {} : { hint: formatAdjustment(adjustment) }),
-      value: `− ${formatCents(order.discountCents)}`,
-      strong: false,
-    });
-  }
+  rows.push(...discountRows(order));
   if (order.voucherDiscountCents > 0) {
     // Le bon de fidélité, APRÈS la remise et sur sa propre ligne : la facture
     // et l'assiette des points les distinguent (plan des points, C7).

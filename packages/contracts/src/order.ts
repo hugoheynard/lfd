@@ -12,6 +12,7 @@ import {
 } from "./address.js";
 import type { CartAdjustment } from "./cart-adjustment.js";
 import type { DiscountLabelView } from "./discount-label.js";
+import type { OrderDiscountView } from "./order-discount.js";
 import type { DeliveryVatMode } from "./order-delivery-vat.js";
 import type { LateFeeAdjustment } from "./order-late-fee.js";
 import type { SettlementRegime } from "./order-sheet.js";
@@ -832,6 +833,14 @@ export interface OrderView {
    */
   readonly discountLabel?: DiscountLabelView;
   /**
+   * **Une entrée par remise de panier, dans l'ordre d'application** (plan des
+   * promotions, § 18.6, lot M6) — présente seulement quand la commande en
+   * porte PLUSIEURS ; leur somme est `discountCents`. Absente : une remise au
+   * plus, que `discountCents`, `discountAdjustment` et `discountLabel` disent
+   * comme hier. `discountLabel` reste servi, et se lit déprécié à côté.
+   */
+  readonly discounts?: readonly OrderDiscountView[];
+  /**
    * L'assiette de la remise de retrait, calculée sur les lignes **figées** —
    * présente seulement quand une remise s'applique et qu'une ligne en est
    * exclue. Cf. {@link PickupDiscountBaseView}.
@@ -1118,6 +1127,8 @@ export interface CustomerOrderView {
   readonly subtotalCents: number;
   readonly discountCents: number;
   readonly discountAdjustment: CartAdjustment | null;
+  /** Cf. {@link OrderView.discounts} — absente avec une remise au plus. */
+  readonly discounts?: readonly OrderDiscountView[];
   /** Cf. {@link OrderView.pickupDiscountBase}. */
   readonly pickupDiscountBase?: PickupDiscountBaseView;
   readonly voucherDiscountCents: number;
@@ -1185,6 +1196,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     subtotalCents: view.subtotalCents,
     discountCents: view.discountCents,
     discountAdjustment: view.discountAdjustment,
+    ...(view.discounts === undefined ? {} : { discounts: view.discounts }),
     ...(view.pickupDiscountBase === undefined
       ? {}
       : { pickupDiscountBase: view.pickupDiscountBase }),

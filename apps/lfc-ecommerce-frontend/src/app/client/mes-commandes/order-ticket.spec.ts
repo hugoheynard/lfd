@@ -110,3 +110,37 @@ describe('ticketRowsOf', () => {
     expect(rows[0]?.value).toBe('6,20 €');
   });
 });
+
+describe('le ticket et plusieurs remises (plan des promotions, M6)', () => {
+  const SUMMER = { fr: 'Été', en: 'Summer', it: 'Estate' };
+  const two = exact({
+    discountCents: 256,
+    discounts: [
+      { label: SUMMER, adjustment: null, amountCents: 200, amountTtcCents: 211 },
+      { adjustment: null, amountCents: 56, amountTtcCents: 59 },
+    ],
+  });
+
+  it('une ligne par remise, à son TTC, nommée dans la langue de l’écran', () => {
+    const ticket = ticketOf(two);
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders, 'en');
+    const text = rows.map((row) => `${row.label}=${row.value}`).join('\n');
+
+    expect(text).toContain('Summer=−2,11');
+    expect(text).toContain(`${FR.orders.detailPickupDiscount}=−0,59`);
+  });
+
+  it('une seule remise : la ligne d’hier, sans liste', () => {
+    expect(ticketOf(exact())?.discounts).toBeUndefined();
+  });
+
+  it('une remise sans TTC figé : le ticket garde sa ligne unique plutôt qu’un détail inventé', () => {
+    const partial = exact({
+      discounts: [
+        { adjustment: null, amountCents: 200, amountTtcCents: 211 },
+        { adjustment: null, amountCents: 56, amountTtcCents: null },
+      ],
+    });
+    expect(ticketOf(partial)?.discounts).toBeUndefined();
+  });
+});

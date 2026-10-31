@@ -74,3 +74,36 @@ export function pickupDiscountMailLabel(
       : [fill(copy.recapDiscountBase, { base: money(base.eligibleHtCents) })]),
   ].join(" ");
 }
+
+/** Une ligne de remise du récapitulatif : son libellé, son montant signé. */
+export interface DiscountMailRow {
+  readonly label: string;
+  readonly value: string;
+}
+
+/**
+ * **Les lignes de remise du récapitulatif** (plan des promotions, § 18.6,
+ * lot M6) — une par remise quand le bon en porte PLUSIEURS
+ * (`SheetMoney.discountLines`), chacune nommée dans la langue du destinataire
+ * (repli : le mot du dictionnaire) ; sinon LA ligne d'hier, au caractère près.
+ * Le montant est le TTC figé d'une commande composée en TTC, sinon le HT.
+ */
+export function discountMailRows(
+  sheet: Pick<ClientSheet, "fulfillment" | "money">,
+  copy: PickupDiscountMailCopy,
+  money: (cents: number) => string,
+  locale: ContentLocale,
+): readonly DiscountMailRow[] {
+  const ttc = sheet.money.ttcTerms !== undefined;
+  const lines = sheet.money.discountLines;
+  if (lines !== undefined && lines.length > 1) {
+    return lines.map((line) => ({
+      label: line.labels === undefined ? copy.recapDiscount : discountLabelIn(line.labels, locale),
+      value: `−${money(ttc ? (line.ttcCents ?? line.cents) : line.cents)}`,
+    }));
+  }
+  const cents = sheet.money.ttcTerms?.discountCents ?? sheet.money.discountCents;
+  return cents === 0
+    ? []
+    : [{ label: pickupDiscountMailLabel(sheet, copy, money, locale), value: `−${money(cents)}` }];
+}

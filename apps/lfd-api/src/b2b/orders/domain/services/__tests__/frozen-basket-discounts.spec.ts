@@ -5,6 +5,7 @@ import {
   coveredLinesOf,
   coveredSkusOf,
   frozenBasketDiscountsOf,
+  frozenDiscountAmountsOf,
   type FrozenBasketDiscount,
 } from "../frozen-basket-discounts.js";
 import { tableDiscount } from "./frozen-basket-discounts.fixture.js";
@@ -83,5 +84,37 @@ describe("coveredSkusOf — la couverture par SKU est sûre, pas supposée (cond
   it("refuse deux lignes d'un même SKU couvertes différemment, en nommant le SKU", () => {
     expect(() => coveredSkusOf("o_1", lines, ["l1"])).toThrow(SplitSkuCoverageError);
     expect(() => coveredSkusOf("o_1", lines, ["l1"])).toThrow("« PAIN »");
+  });
+});
+
+describe("frozenDiscountAmountsOf — les montants, par le même repli (plan des promotions, M6)", () => {
+  const LABEL = { fr: "Été", en: "Summer", it: "Estate" };
+  const COLUMNS = {
+    discountCents: 500,
+    discountTtcCents: 528,
+    discountAdjustment: TEN,
+    discountLabel: LABEL,
+  };
+
+  it("une commande non reprise se lit dans ses colonnes, comme une remise de rang 1", () => {
+    expect(frozenDiscountAmountsOf([], COLUMNS)).toEqual([
+      { label: LABEL, adjustment: TEN, amountCents: 500, amountTtcCents: 528 },
+    ]);
+  });
+
+  it("une commande d'avant l'ajustement figé garde son montant connu", () => {
+    expect(frozenDiscountAmountsOf([], { ...COLUMNS, discountAdjustment: null })).toHaveLength(1);
+  });
+
+  it("sans remise : rien", () => {
+    expect(frozenDiscountAmountsOf([], { ...COLUMNS, discountCents: 0 })).toEqual([]);
+  });
+
+  it("la table fait foi dès qu'elle a des lignes actives", () => {
+    const active = [
+      { label: null, adjustment: FIVE_EUROS, amountCents: 300, amountTtcCents: null },
+      { label: LABEL, adjustment: TEN, amountCents: 200, amountTtcCents: null },
+    ];
+    expect(frozenDiscountAmountsOf(active, COLUMNS)).toBe(active);
   });
 });

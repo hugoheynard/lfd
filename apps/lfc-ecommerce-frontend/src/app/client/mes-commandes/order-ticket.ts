@@ -1,4 +1,9 @@
-import type { CustomerOrderView, OrderRateAmounts, OrderSaleUnit } from '@lfd/contracts';
+import type {
+  CustomerOrderView,
+  DiscountLabelView,
+  OrderRateAmounts,
+  OrderSaleUnit,
+} from '@lfd/contracts';
 
 /**
  * **Le ticket d'une commande composée en TTC** — celle d'un particulier (plan
@@ -16,11 +21,23 @@ export interface OrderTicket {
   /** Σ des lignes TTC. */
   readonly articlesCents: number;
   readonly discountCents: number;
+  /**
+   * Une entrée par remise, à son TTC figé, quand la commande en porte
+   * PLUSIEURS (plan des promotions, § 18.6, lot M6) — absente sinon : la
+   * ligne de remise d'hier, au caractère près. Leur somme est `discountCents`.
+   */
+  readonly discounts?: readonly OrderTicketDiscount[];
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
   /** Le total payé : `articles − remise − bon + port`. */
   readonly totalCents: number;
   readonly byRate: readonly OrderRateAmounts[];
+}
+
+/** Une remise du ticket : son libellé figé (absent : le mot de l'écran), son TTC. */
+export interface OrderTicketDiscount {
+  readonly label?: DiscountLabelView;
+  readonly ttcCents: number;
 }
 
 export interface OrderTicketLine {
@@ -56,9 +73,34 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
     lines,
     articlesCents: lines.reduce((sum, line) => sum + line.lineTtcCents, 0),
     discountCents: ttcTerms.discountCents,
+    ...ticketDiscountsOf(order),
     voucherCents: ttcTerms.voucherCents,
     deliveryFeeCents: ttcTerms.deliveryFeeCents,
     totalCents: order.totalCents,
     byRate: ttcByRate,
   };
+}
+
+/**
+ * Les remises du ticket, une par une — seulement s'il y en a plusieurs et
+ * que chacune porte son TTC figé ; sinon rien, et le ticket garde sa ligne.
+ */
+function ticketDiscountsOf(order: CustomerOrderView): {
+  readonly discounts?: readonly OrderTicketDiscount[];
+} {
+  const discounts = order.discounts;
+  if (discounts === undefined || discounts.length < 2) {
+    return {};
+  }
+  const lines: OrderTicketDiscount[] = [];
+  for (const discount of discounts) {
+    if (discount.amountTtcCents === null) {
+      return {};
+    }
+    lines.push({
+      ...(discount.label === undefined ? {} : { label: discount.label }),
+      ttcCents: discount.amountTtcCents,
+    });
+  }
+  return { discounts: lines };
 }

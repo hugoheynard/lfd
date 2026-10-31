@@ -13,6 +13,7 @@ import type {
   StaffSheetLine,
 } from "@lfd/contracts";
 
+import { orderDiscountLinesOf } from "./order-sheet-discount-lines.js";
 import { frozenPickupDiscountBaseOf } from "./pickup-discount-base.js";
 
 /**
@@ -111,6 +112,7 @@ function moneyOf(order: OrderView): SheetMoney {
     discountAdjustment: order.discountAdjustment,
     // Le libellé figé à la passation (L8b) ; absent, le papier nomme le point.
     ...(order.discountLabel === undefined ? {} : { discountLabel: order.discountLabel }),
+    ...orderDiscountLinesOf(order),
     voucherDiscountCents: order.voucherDiscountCents,
     deliveryFeeCents: order.deliveryFeeCents,
     lateFeeCents: order.lateFeeCents,

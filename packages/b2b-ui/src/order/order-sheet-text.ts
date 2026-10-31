@@ -14,6 +14,7 @@ import {
   formatOrderInstant,
   fulfillmentLabel,
 } from './order-format';
+import { discountTextLines } from './order-sheet-discount-text';
 import { ticketSections } from './order-sheet-ticket-text';
 
 /**
@@ -115,9 +116,7 @@ function moneyLines(money: SheetMoney): readonly string[] {
     '',
     'DÉCOMPTE',
     `  Sous-total HT ${amount(formatCents(money.subtotalCents), 26)}`,
-    ...(money.discountCents === 0
-      ? []
-      : [`  Remise        ${amount(`−${formatCents(money.discountCents)}`, 26)}`]),
+    ...discountTextLines(money, money.discountCents, false),
     // Le bon de fidélité s'impute APRÈS la remise, et reste sa propre ligne :
     // la facture et l'assiette des points les distinguent (plan des points, C7).
     ...(money.voucherDiscountCents === 0

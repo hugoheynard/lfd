@@ -8,6 +8,7 @@ import type {
 
 import { saleQuantityLabel } from '../catalog/sale-terms';
 import { formatCents, formatVatPercent } from './order-format';
+import { discountTextLines } from './order-sheet-discount-text';
 
 /**
  * **Le bon texte d'une commande composée en TTC, au format du ticket** (plan
@@ -87,9 +88,7 @@ function gestureLines(
     '',
     'DÉCOMPTE (TTC)',
     `  Articles      ${amount(formatCents(goods), 26)}`,
-    ...(ttc.discountCents === 0
-      ? []
-      : [`  Remise        ${amount(`−${formatCents(ttc.discountCents)}`, 26)}`]),
+    ...discountTextLines(money, ttc.discountCents, true),
     ...(ttc.voucherCents === 0
       ? []
       : [`  Bon fidélité  ${amount(`−${formatCents(ttc.voucherCents)}`, 26)}`]),

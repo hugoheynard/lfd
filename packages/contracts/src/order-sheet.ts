@@ -173,6 +173,7 @@ export const sheetMoneySchema = z.object({
         label: z.string().min(1),
         cents: z.number().int(),
         ttcCents: z.number().int().nullable(),
+        labels: z.object({ fr: z.string(), en: z.string(), it: z.string() }).optional(),
       }),
     )
     .optional(),
@@ -201,6 +202,12 @@ export interface SheetDiscountLine {
   readonly label: string;
   readonly cents: number;
   readonly ttcCents: number | null;
+  /**
+   * Le libellé figé dans les trois langues (lot M6) — l'e-mail le dit dans
+   * la langue du destinataire. Absent : pas de libellé figé, ou un bon de
+   * livraison (le papier n'écrit que `label`).
+   */
+  readonly labels?: DiscountLabelView | undefined;
 }
 
 export interface SheetMoney {

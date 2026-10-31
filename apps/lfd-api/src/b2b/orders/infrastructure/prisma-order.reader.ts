@@ -50,6 +50,11 @@ import { orderOriginOf } from "../domain/services/order-origin.js";
 import { pickupDiscountBaseOf } from "../domain/services/pickup-discount-base.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import { ORDER_TTC_TERMS_SELECT, orderTtcTermsFieldOf } from "./order-ttc-terms.columns.js";
+import {
+  ORDER_DISCOUNT_AMOUNTS_SELECT,
+  orderDiscountsFieldOf,
+  type OrderDiscountAmountRow,
+} from "./order-discount-amounts.columns.js";
 
 /** Une commande telle que Prisma la sélectionne. */
 export interface OrderRow {
@@ -98,6 +103,8 @@ export interface OrderRow {
   readonly handedOverAt: Date | null;
   readonly createdAt: Date;
   readonly lines: readonly OrderLineRow[];
+  /** Les remises de panier actives, dans l'ordre des rangs (lot M6). */
+  readonly discounts: readonly OrderDiscountAmountRow[];
   readonly refunds: readonly {
     readonly amountCents: number;
     readonly status: OrderRefundStatus;
@@ -168,6 +175,8 @@ export const ORDER_SELECT = {
       pickupDiscountEligible: true,
     },
   },
+  // Les remises de panier actives (lot M6), lues avec leur repli sur les colonnes.
+  discounts: ORDER_DISCOUNT_AMOUNTS_SELECT,
   // Les remboursements Stripe constatés (lot R1), dans l'ordre du constat.
   refunds: {
     select: { amountCents: true, status: true, refundedAt: true },
@@ -528,6 +537,7 @@ export function toOrderView(row: OrderRow): OrderView {
     discountCents: row.discountCents,
     discountAdjustment: parseAdjustment(row.discountAdjustment),
     ...discountLabelFieldOf(row.discountLabel),
+    ...orderDiscountsFieldOf(row),
     ...pickupDiscountBaseFieldOf(row),
     voucherDiscountCents: row.voucherDiscountCents,
     ...orderTtcTermsFieldOf(row),

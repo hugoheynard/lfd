@@ -1,7 +1,7 @@
 import type { ClientSheet } from "@lfd/contracts";
 
 import { mailCopyOf } from "../copy/mail-copy.js";
-import { pickupDiscountMailLabel } from "../pickup-discount-mail-label.js";
+import { discountMailRows, pickupDiscountMailLabel } from "../pickup-discount-mail-label.js";
 
 /** Régression : le récapitulatif disait « Remise » sans dire laquelle (2026-10-25). */
 const ADDRESS = {
@@ -100,5 +100,52 @@ describe("pickupDiscountMailLabel", () => {
       "fr",
     );
     expect(squash(label)).toBe("Remise retrait Le Labo (5 %)");
+  });
+});
+
+describe("discountMailRows — une ligne par remise (plan des promotions, M6)", () => {
+  const SUMMER = { fr: "Été", en: "Summer", it: "Estate" };
+  const lines = [
+    { label: "Été", cents: 500, ttcCents: 528, labels: SUMMER },
+    { label: "Remise", cents: 300, ttcCents: 317 },
+  ];
+
+  it("une seule remise : la ligne d'hier, au caractère près", () => {
+    const sheet = sheetWith({ discountAdjustment: { mode: "percent", bp: 500 } });
+    expect(discountMailRows(sheet, fr, euros, "fr")).toEqual([
+      { label: pickupDiscountMailLabel(sheet, fr, euros, "fr"), value: "−5,00 €" },
+    ]);
+  });
+
+  it("sans remise : aucune ligne", () => {
+    expect(discountMailRows(sheetWith({ discountCents: 0 }), fr, euros, "fr")).toEqual([]);
+  });
+
+  it("deux remises : chacune nommée dans la langue du destinataire, repli sur le dictionnaire", () => {
+    const en = mailCopyOf("en")["customer.order-placed"];
+    const rows = discountMailRows(
+      sheetWith({ discountCents: 800, discountLines: lines }),
+      en,
+      euros,
+      "en",
+    );
+    expect(rows).toEqual([
+      { label: "Summer", value: "−5,00 €" },
+      { label: en.recapDiscount, value: "−3,00 €" },
+    ]);
+  });
+
+  it("une commande composée en TTC dit les TTC figés de chaque remise", () => {
+    const rows = discountMailRows(
+      sheetWith({
+        discountCents: 800,
+        discountLines: lines,
+        ttcTerms: { discountCents: 845, voucherCents: 0, deliveryFeeCents: 0 },
+      }),
+      fr,
+      euros,
+      "fr",
+    );
+    expect(rows.map((row) => row.value)).toEqual(["−5,28 €", "−3,17 €"]);
   });
 });

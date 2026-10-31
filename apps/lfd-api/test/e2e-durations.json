@@ -291,6 +291,7 @@
   "test/order-delivery-vat.e2e-spec.ts": 3500,
   "test/order-discounts-backfill.e2e-spec.ts": 15204,
   "test/order-discounts-control.e2e-spec.ts": 15000,
+  "test/order-discounts-read.e2e-spec.ts": 12769,
   "test/order-exact-ht.e2e-spec.ts": 10900,
   "test/order-guest-cancel.e2e-spec.ts": 10911,
   "test/order-handover-proof.e2e-spec.ts": 6126,

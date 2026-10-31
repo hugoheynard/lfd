@@ -2,6 +2,7 @@ import { ChangeDetectionStrategy, Component, computed, inject, input, output } f
 import { RouterLink } from '@angular/router';
 import { FoldButtonComponent } from 'fold-ng';
 
+import { ClientLocale } from '../../client-locale.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { discountLabel } from '../../shop/pickup-discount';
 import { OrderCancelSection } from '../../order-cancellation/order-cancel-section/order-cancel-section';
@@ -59,6 +60,7 @@ export class OrderDetail {
   readonly deliveryNoteRequested = output<void>();
 
   protected readonly t = inject(ClientCopyService).t;
+  private readonly locale = inject(ClientLocale);
   protected readonly stars = STARS;
 
   /** « Signaler un problème » n'existe que sur une commande retirée ou livrée. */
@@ -101,7 +103,9 @@ export class OrderDetail {
    */
   protected readonly ticketRows = computed(() => {
     const ticket = this.order().ticket;
-    return ticket === undefined ? null : ticketRowsOf(ticket, this.t().orders);
+    return ticket === undefined
+      ? null
+      : ticketRowsOf(ticket, this.t().orders, this.locale.current());
   });
 
   /**

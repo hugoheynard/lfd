@@ -46,7 +46,7 @@ import type { MandateMailScheme } from "./mandate-to-sign-wording.js";
 import { renderOrderShortfallMail, type OrderShortfallMailData } from "./order-shortfall-mail.js";
 import { type OrderSheetMailDocument, withAttachments } from "./order-sheet-mail-document.js";
 import { pickupItinerary, type PickupPoint } from "./pickup-itinerary.js";
-import { pickupDiscountMailLabel } from "./pickup-discount-mail-label.js";
+import { discountMailRows } from "./pickup-discount-mail-label.js";
 import { qrPng } from "./qr-image.js";
 import { renderVitrineNoticeMail, type VitrineNoticeMailData } from "./vitrine-notice-mail.js";
 import {
@@ -506,7 +506,6 @@ function recapRows(
   // Une commande de particulier composée en TTC écrit ses gestes tels qu'il
   // les a payés (plan du centime, lot C3) ; sinon, les montants HT figés.
   const ttc = sheet.money.ttcTerms;
-  const discountCents = ttc?.discountCents ?? sheet.money.discountCents;
   const voucherCents = ttc?.voucherCents ?? sheet.money.voucherDiscountCents;
   return [
     {
@@ -517,14 +516,7 @@ function recapRows(
       label: copy.recapContent,
       value: contentOf(sheet.lines, { pieces: copy.recapPieces, weighed: copy.recapWeighed }),
     },
-    ...(discountCents === 0
-      ? []
-      : [
-          {
-            label: pickupDiscountMailLabel(sheet, copy, (cents) => money(cents, locale), locale),
-            value: `−${money(discountCents, locale)}`,
-          },
-        ]),
+    ...discountMailRows(sheet, copy, (cents) => money(cents, locale), locale),
     ...(voucherCents === 0
       ? []
       : [{ label: copy.recapVoucher, value: `−${money(voucherCents, locale)}` }]),

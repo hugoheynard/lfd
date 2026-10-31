@@ -2447,6 +2447,24 @@ figées, somme ≠ remise, taux dépassé) est facturée au bon montant sous
 (`apps/lfd-api/src/b2b/accounting/infrastructure/invoice-basket-discount-fallback.warning.ts`). CSV et dossier ne lisent que
 des totaux, inchangés. L'avoir n'est pas touché.
 
+**M6 bâti le 2026-10-31 (non commité à l'écriture de cette ligne)** — la
+lecture d'une commande sert `discounts[]` (`OrderDiscountView`, contrat additif,
+types seuls) **seulement quand elle porte plusieurs remises** ; avec une seule,
+la clé est absente et chaque surface rend ce qu'elle rendait (même convention
+que `SheetMoney.discountLines`). Le repli est celui du domaine
+(`frozenDiscountAmountsOf`, à côté de `frozenBasketDiscountsOf`), lu par
+`apps/lfd-api/src/b2b/orders/infrastructure/order-discount-amounts.columns.ts`.
+Le bon de commande remplit `discountLines`
+(`apps/lfd-api/src/b2b/orders/domain/services/order-sheet-discount-lines.ts`),
+l'e-mail écrit une ligne par remise dans la langue du destinataire
+(`discountMailRows`), le récapitulatif partagé du back-office
+(`packages/b2b-ui`, `orderTotalRows`) et le bon texte une ligne par remise,
+le ticket de la boutique aussi (TTC figés). E2E
+`apps/lfd-api/test/order-discounts-read.e2e-spec.ts`. **Non fait, faute de
+donnée** : le panier et la confirmation de la boutique lisent le DEVIS
+(`ShopQuoteView`), qui ne porte qu'une remise tant que M7 n'a pas ouvert le
+cumul au panier.
+
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`
 / `discount_label` doit être basculé **avant M7**, seul lot qui peut les
@@ -2657,3 +2675,10 @@ lu ; texte EN 16931-1 et spécification Factur-X NON lus)** :
   la liste UNTDID 5189 n'a pas été lu dans le texte officiel.
   **Q-M2 décidée (mandat)** : une même promotion figée sous deux libellés sur une
   même facture prend le libellé du bon le plus ancien.
+
+**Décisions sur le rapport de M6 (mandat, 2026-10-31)** : le contrat du DEVIS
+(`ShopQuoteView`, panier et confirmation) s'étend en **M7**, avec le cumul au
+panier qui seul y fait naître plusieurs remises. `discounts[]` n'est servi qu'à
+partir de deux remises ; `discountLabel` reste donc servi. L'assiette propre de
+chaque remise (« sur X € éligibles ») n'est pas affichée : une seule mention,
+celle d'aujourd'hui — à rouvrir avec Hugo si le cumul au panier la rend trompeuse.

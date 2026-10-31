@@ -252,3 +252,31 @@ describe('le bon d’un pro au compte (F5)', () => {
     expect(text).not.toContain('facture du mois');
   });
 });
+
+describe('plusieurs remises de panier (plan des promotions, M6)', () => {
+  it('une seule remise : la ligne « Remise » d’hier, alignée au caractère près', () => {
+    const line = renderOrderSheetText(client())
+      .split('\n')
+      .find((text) => text.startsWith('  Remise'));
+    expect(line).toBe(`  Remise        ${'−1,00 €'.padStart(26, ' ')}`.replace(' €', ' €'));
+  });
+
+  it('deux remises : une ligne chacune, nommée par son libellé figé', () => {
+    const text = renderOrderSheetText(
+      client({
+        money: {
+          ...MONEY,
+          discountLines: [
+            { label: 'Été', cents: 70, ttcCents: null },
+            { label: 'Remise', cents: 30, ttcCents: null },
+          ],
+        },
+      }),
+    );
+    const labels = ['  Été ', '  Remise '];
+    const lines = text.split('\n').filter((line) => labels.some((label) => line.startsWith(label)));
+    expect(lines).toHaveLength(2);
+    expect(lines[0]).toContain('Été');
+    expect(lines.every((line) => line.length === lines[0]?.length)).toBe(true);
+  });
+});

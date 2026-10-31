@@ -211,3 +211,31 @@ describe('la ligne de remise', () => {
     expect(row(view, 'discount')?.hint).toBeUndefined();
   });
 });
+
+describe('plusieurs remises de panier (plan des promotions, M6)', () => {
+  const two = order({
+    discountCents: 1_300,
+    discountAdjustment: null,
+    discounts: [
+      {
+        label: { fr: 'Été', en: 'Summer', it: 'Estate' },
+        adjustment: { mode: 'percent', bp: 1000 },
+        amountCents: 1_000,
+        amountTtcCents: null,
+      },
+      { adjustment: { mode: 'amount', cents: 300 }, amountCents: 300, amountTtcCents: null },
+    ],
+  });
+
+  it('une ligne par remise, dans l’ordre, libellé figé ou repli « Remise »', () => {
+    expect(keys(two)).toEqual(['subtotal', 'discount-1', 'discount-2', 'vat', 'total']);
+    expect(row(two, 'discount-1')).toMatchObject({ label: 'Été', value: `− 10,00${EUR}` });
+    expect(row(two, 'discount-2')).toMatchObject({ label: 'Remise', value: `− 3,00${EUR}` });
+  });
+
+  it('une seule remise : la ligne d’hier, inchangée', () => {
+    const one = order({ discountCents: 1_000, discountAdjustment: { mode: 'percent', bp: 1000 } });
+    expect(keys(one)).toEqual(['subtotal', 'discount', 'vat', 'total']);
+    expect(row(one, 'discount')?.label).toBe('Remise retrait');
+  });
+});

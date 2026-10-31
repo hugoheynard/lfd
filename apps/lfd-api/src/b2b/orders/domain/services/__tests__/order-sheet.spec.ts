@@ -346,3 +346,28 @@ describe("la remise de retrait sur ses seules lignes éligibles (lot C)", () => 
     expect(sheet.money).not.toHaveProperty("pickupDiscountBase");
   });
 });
+
+describe("le bon de commande et ses remises (plan des promotions, M6)", () => {
+  it("une commande à deux remises porte une ligne par remise sur le bon client et le bon staff", () => {
+    const discounts = [
+      { adjustment: null, amountCents: 10_000, amountTtcCents: null },
+      {
+        label: { fr: "Été", en: "Summer", it: "Estate" },
+        adjustment: null,
+        amountCents: 2_846,
+        amountTtcCents: null,
+      },
+    ];
+    const withTwo = order({ discounts });
+
+    expect(clientSheetOf(withTwo).money.discountLines?.map((line) => line.label)).toEqual([
+      "Remise",
+      "Été",
+    ]);
+    expect(staffSheetOf(withTwo, CUSTOMER).money.discountLines).toHaveLength(2);
+  });
+
+  it("une commande à une remise garde le bon d'hier : aucune ligne de remise", () => {
+    expect(clientSheetOf(order()).money).not.toHaveProperty("discountLines");
+  });
+});
