@@ -110,7 +110,7 @@ Ces mots reviennent partout et ne veulent pas dire ce qu'on croit.
 | Qu'est-ce que la boutique a le droit de montrer ?                        | [`architecture-prix-boutique.md`](boutique-et-panier/architecture-prix-boutique.md) §4                 |
 | Qu'est-ce qu'un commercial voit quand il pose une règle ?                | [`ecrans-de-tarification.md`](saisie/ecrans-de-tarification.md)                                        |
 | **Qu'est-ce qu'une mercuriale, exactement ?**                            | [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md) — la définition |
-| Qui décide de poser une promotion, et où ?                               | [`decision-qui-pose-une-promotion.md`](../promotions/decision-qui-pose-une-promotion.md)               |
+| Qui décide de poser une promotion, et où ?                               | [`promotions.md` § 2.16](../promotions/promotions.md)                                                  |
 
 **Je veux IMPLÉMENTER.**
 
@@ -137,17 +137,17 @@ point, écrit dans son bandeau.
 
 ### La référence — ce qui décrit l'état réel
 
-| Document                                                                                 | État | Ce qu'il porte                                                                                                |
-| ---------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
-| [`comment-un-prix-se-fabrique.md`](comment-un-prix-se-fabrique.md)                       | ✅   | La référence courte, en schémas. 19 cas de figure chiffrés.                                                   |
-| [`architecture-pricer.md`](moteur/architecture-pricer.md)                                | ✅   | Les trois objets, le nom, et pourquoi le pipeline n'a qu'**une** entrée.                                      |
-| [`architecture-prix-ancre-ttc.md`](centime-et-tva/architecture-prix-ancre-ttc.md)        | ✅   | Le prix se saisit en TTC ; le HT est un **résultat**.                                                         |
-| [`ajouter-un-terme-au-panier.md`](boutique-et-panier/ajouter-un-terme-au-panier.md)      | ✅   | Les quatre questions, et la liste des ~20 fichiers.                                                           |
-| [`ecrans-de-tarification.md`](saisie/ecrans-de-tarification.md)                          | ✅   | Ce qu'un commercial voit, et ce que ça l'empêche de faire.                                                    |
-| [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md)   | ✅   | La définition, le scellement, et **cinq limites levées sur six** — la dernière est R11.                       |
-| [`architecture-resolution-de-prix.md`](moteur/architecture-resolution-de-prix.md)        | 🟡   | La **sémantique** des étages — irremplaçable. Son en-tête annonçait S5 comme restant : corrigé le 2026-09-09. |
-| [`architecture-prix-boutique.md`](boutique-et-panier/architecture-prix-boutique.md)      | 🟡   | Deux de ses décisions ont été **renversées** ; son bandeau dit lesquelles.                                    |
-| [`decision-qui-pose-une-promotion.md`](../promotions/decision-qui-pose-une-promotion.md) | ✅   | Pourquoi la promotion n'est pas au référentiel.                                                               |
+| Document                                                                               | État | Ce qu'il porte                                                                                                |
+| -------------------------------------------------------------------------------------- | ---- | ------------------------------------------------------------------------------------------------------------- |
+| [`comment-un-prix-se-fabrique.md`](comment-un-prix-se-fabrique.md)                     | ✅   | La référence courte, en schémas. 19 cas de figure chiffrés.                                                   |
+| [`architecture-pricer.md`](moteur/architecture-pricer.md)                              | ✅   | Les trois objets, le nom, et pourquoi le pipeline n'a qu'**une** entrée.                                      |
+| [`architecture-prix-ancre-ttc.md`](centime-et-tva/architecture-prix-ancre-ttc.md)      | ✅   | Le prix se saisit en TTC ; le HT est un **résultat**.                                                         |
+| [`ajouter-un-terme-au-panier.md`](boutique-et-panier/ajouter-un-terme-au-panier.md)    | ✅   | Les quatre questions, et la liste des ~20 fichiers.                                                           |
+| [`ecrans-de-tarification.md`](saisie/ecrans-de-tarification.md)                        | ✅   | Ce qu'un commercial voit, et ce que ça l'empêche de faire.                                                    |
+| [`mercuriales/comprendre-une-mercuriale.md`](mercuriales/comprendre-une-mercuriale.md) | ✅   | La définition, le scellement, et **cinq limites levées sur six** — la dernière est R11.                       |
+| [`architecture-resolution-de-prix.md`](moteur/architecture-resolution-de-prix.md)      | 🟡   | La **sémantique** des étages — irremplaçable. Son en-tête annonçait S5 comme restant : corrigé le 2026-09-09. |
+| [`architecture-prix-boutique.md`](boutique-et-panier/architecture-prix-boutique.md)    | 🟡   | Deux de ses décisions ont été **renversées** ; son bandeau dit lesquelles.                                    |
+| [`promotions.md` § 2.16](../promotions/promotions.md)                                  | ✅   | Pourquoi la promotion n'est pas au référentiel.                                                               |
 
 ### Les plans livrés — on les lit pour le raisonnement
 

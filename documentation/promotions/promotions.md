@@ -338,10 +338,7 @@ son point : le droit des prix s'accorde à l'écran (`/admin/staff-roles`).
 Depuis le 2026-10-31 (décision de Hugo : « un seul layout avec les champs »),
 une promotion n'a plus qu'**une page**, `promotions-ciblees/:id`
 (`targeted-promotions/promotion-page/`) : ses champs directement éditables,
-dans l'ordre où l'on pense une promotion — que reçoit le client, pour qui,
-sur quel mode d’acheminement et de consommation (et ce que ça change : prix baissé au catalogue, ou
-remise au panier), sur quels articles, quand et à quelles conditions — puis
-« Où en est-elle ? » (état, pause, reprise, archivage). Un résumé en une
+puis « Où en est-elle ? » (état, pause, reprise, archivage). Un résumé en une
 phrase, en tête, suit la saisie (`apps/lfd-backoffice-frontend/src/app/targeted-promotions/promotion-summary.ts`). Lue sous
 `b2b_pricing:read` ou `lfc_site_settings:read` ; sans `b2b_pricing:write`,
 avant la bascule de la source ou une fois archivée, les mêmes champs sont
@@ -349,12 +346,43 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 `b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
 `:id`.
 
-**L'acheminement se coche** (2026-10-31, modèle au § 2.14). La
-carte « Sur quel mode d’acheminement et de consommation ? » s'ouvre sur un
-choix, « Où joue la promotion » : **Dans le prix affiché** (le prix de
-l'article baisse au catalogue, pour tous les acheminements) ou **En remise au
-panier** (la remise s'applique au panier selon l'acheminement coché). Au
-panier viennent deux cases, **Retrait** et **Livraison** ; sous chaque case
+**Le genre de remise se choisit d'abord** (décision de Hugo du 2026-10-31,
+comme les grandes plateformes : le type, puis un formulaire qui ne montre que
+ce qui a du sens). Les cartes, dans l'ordre :
+
+1. **« Quel genre de remise ? »** — un `fold-view-toggle` à deux choix
+   illustrés : **Baisser le prix des articles** (`displayed_price` : le prix
+   baisse au catalogue, pour tous les acheminements) ou **Remise sur le
+   panier** (`basket` : limitable au retrait, à certains points, à la
+   livraison, à certaines zones). Le sous-titre dit la conséquence pour le
+   client. En lecture seule, les deux choix sont désactivés.
+2. **« Que reçoit le client (valeur de la réduction) ? »** — les effets que le
+   genre admet, ceux d'`EFFECTS_AT` côté serveur
+   (`apps/lfd-api/src/b2b/promotions/domain/promotion-effect.ts`) : pourcentage,
+   montant à l'unité ou prix posé pour baisser le prix ; pourcentage ou montant
+   sur le panier pour la remise sur le panier. Puis les libellés et le nom
+   interne.
+3. **« Pour qui (définir l'audience) ? »** — l'arbre des publics.
+4. **« Sur quel mode d’acheminement et de consommation ? »** — **seulement**
+   en remise sur le panier (détail ci-dessous).
+5. **« Sur quels articles ? »** — familles et déclinaisons pour baisser le
+   prix, familles et produits pour le panier (`targetsFor`).
+6. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
+   cumul ; « Aussi pour les clients à tarif négocié » **seulement** pour
+   baisser le prix (le panier ne la porte pas).
+7. **« Où en est-elle ? »** — une promotion existante seulement.
+
+Changer de genre dans une saisie met de côté ce que le genre quitté a en
+propre — son effet, ses cibles (déclinaisons ou produits), « tarif négocié » —
+et le rend au retour (`switchType`, `promotion-draft.ts`) : un aller-retour ne
+perd rien, et le corps envoyé ne porte que le genre choisi. Un effet que le
+nouveau genre lit suit la première bascule ; un autre repart vide plutôt que
+relu dans une autre unité. Le retrait et la livraison restent dans le
+brouillon, ignorés hors panier.
+
+**L'acheminement se coche** (2026-10-31, modèle au § 2.14). En remise sur le
+panier, la carte « Sur quel mode d’acheminement et de consommation ? » porte
+deux cases, **Retrait** et **Livraison** ; sous chaque case
 cochée, « Tous les points » / « Certains points » (ou « Toutes les zones » /
 « Certaines zones ») et, pour « certains », un `fold-multiselect` des sites
 actifs ou des zones (`GET /delivery-zones`). Un point archivé que la
@@ -644,6 +672,19 @@ traite ». Contredit par `vitruve` le même jour.
 
 Le plan du chantier (2026-10-30, supprimé le 2026-10-31) portait la
 discussion ; voici ce qui en reste opposable.
+
+- **Qui pose une promotion** (décision du 2026-09-03, document supprimé le
+  2026-10-31) : la plateforme commerciale, pas le référentiel produit. La
+  question était de faire tourner une même campagne sur l'ancien canal de
+  vente en ligne et sur la plateforme ; ce canal est retiré depuis le
+  2026-10-16, la question est close.
+- **Un droit à part pour les promotions, quand il le faudra** (même
+  décision, § 7, toujours vrai) : les promotions sont sous `b2b_pricing`,
+  qui permet aussi de poser une mercuriale sur un compte. Un rôle qui doit
+  poser des promotions publiques sans toucher aux prix négociés demandera
+  une ressource `b2b_promotions` détachée de `b2b_pricing` — un droit ne se
+  découpe pas dans l'écran seulement. Plus vrai encore depuis § 2.15 (un seul
+  endroit, sous `b2b_pricing`).
 
 - **Un modèle global** (Hugo, 2026-10-30) : la remise d'un point de retrait
   est une promotion comme une autre, pas un second système ; le modèle est

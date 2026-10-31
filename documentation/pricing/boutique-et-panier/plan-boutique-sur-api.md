@@ -18,8 +18,8 @@
 > la liste des vérifications est en fin de document.
 
 > **Qui pose une promotion**, et faut-il déplacer l'autorité du prix vers le
-> référentiel, est tranché à côté — sans changer les lots 1 et 2 :
-> [`decision-qui-pose-une-promotion.md`](../../promotions/decision-qui-pose-une-promotion.md).
+> référentiel, a été tranché à côté — sans changer les lots 1 et 2 ; la
+> décision vit dans [`promotions.md`](../../promotions/promotions.md) § 2.16.
 
 ---
 
