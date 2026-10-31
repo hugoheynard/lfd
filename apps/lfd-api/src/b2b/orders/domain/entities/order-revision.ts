@@ -20,8 +20,7 @@ import {
   ShortfallDecidedRevisionError,
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
-import { ensureFulfillmentKeepsPromotion } from "../services/fulfillment-promotion.js";
-import type { FrozenBasketDiscount } from "../services/frozen-basket-discounts.js";
+import type { RevisableDiscount } from "../services/basket-discount-replay.js";
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
@@ -30,6 +29,7 @@ import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderVatMethod } from "../value-objects/order-vat-method.js";
 import type { RefundPosition } from "./order-refund.js";
 import type {
+  OrderDiscountLabel,
   OrderFulfillmentInput,
   OrderPrincipal,
   OrderSalesTerms,
@@ -91,7 +91,13 @@ export interface RevisableOrder {
    * de ligne : remise nulle, ou commande pas encore reprise. L9 lit alors
    * les colonnes figées.
    */
-  readonly activeDiscounts: readonly FrozenBasketDiscount[];
+  readonly activeDiscounts: readonly RevisableDiscount[];
+  /** Le libellé figé de la remise unique (colonnes) — rejoué sans table (§ 10.2). */
+  readonly discountLabel: OrderDiscountLabel | null;
+  /** La remise figée, HT — ce que garde une remise reprise sans ajustement. */
+  readonly discountCents: number;
+  /** Son TTC, commande `exact_ht` seulement. */
+  readonly discountTtcCents: number | null;
   /** L'ajustement de la surtaxe tardive figé à la passation, `null` sans surtaxe (R4). */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
@@ -195,7 +201,6 @@ export function ensureNoShortfallDecision(order: RevisableOrder): void {
  * @throws {RevisionBelowVoucherError} le total passerait sous le bon imputé.
  * @throws {RevisionRequiresPaymentError} une commande gratuite deviendrait payante.
  * @throws {RevisionFreesAccountOrderError} une commande au compte deviendrait gratuite.
- * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement change la promotion panier (L9).
  */
 export function revisionOf(order: RevisableOrder, state: OrderToPlace): OrderRevisionToSave {
   ensureFrozenPrices(order.lines, state);
@@ -209,7 +214,6 @@ export function revisionOf(order: RevisableOrder, state: OrderToPlace): OrderRev
     throw new RevisionFreesAccountOrderError(order.orderId);
   }
   const changes = changesOf(order, state);
-  ensureFulfillmentKeepsPromotion(order, state, changes);
   const serviceDay = dayOf(state.requestedDeliveryDate);
   return {
     orderId: order.orderId,
@@ -294,7 +298,7 @@ function dayOf(date: Date | null): string | null {
 }
 
 /** Égalité de valeur, insensible à l'ordre des clés d'un objet (snapshot relu vs reçu). */
-function sameValue(a: unknown, b: unknown): boolean {
+export function sameValue(a: unknown, b: unknown): boolean {
   return canonical(a) === canonical(b);
 }
 

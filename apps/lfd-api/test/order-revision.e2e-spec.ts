@@ -230,7 +230,9 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
   it("une ligne déjà présente garde son prix d'origine ; une ligne nouvelle prend le prix du jour", async () => {
     const { orderId, pickupId } = await scene();
     // Le croissant a été passé à 1,80 € : le catalogue dit 2,00 € aujourd'hui.
-    // La trace de prix est retirée avec : elle expliquait l'ancien tarif.
+    // La trace de prix est retirée avec : elle expliquait l'ancien tarif. Sa
+    // quantité ne change pas — changer, ce serait changer son prix, refusé
+    // depuis le plan des remises acquises (`order-revision-locked-price`).
     await ctx.prisma.orderLine.updateMany({
       where: { orderId, sku: "VIE-001-1" },
       data: { unitPriceMillicents: 180_000, basePriceMillicents: null },
@@ -242,7 +244,7 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
         expectedRevision: 0,
         ...content(pickupId, {
           lines: [
-            { sku: "VIE-001-1", quantity: 12 },
+            { sku: "VIE-001-1", quantity: 10 },
             { sku: "VIE-002-1", quantity: 1 },
           ],
         }),
@@ -250,7 +252,7 @@ describe("POST /orders/:id/revisions — le client modifie sa commande au compte
       .expect(200);
 
     expect(await lineQuantities(orderId)).toEqual([
-      { sku: "VIE-001-1", quantity: 12, unitPriceMillicents: 180_000 },
+      { sku: "VIE-001-1", quantity: 10, unitPriceMillicents: 180_000 },
       { sku: "VIE-002-1", quantity: 1, unitPriceMillicents: 220_000 },
     ]);
   });

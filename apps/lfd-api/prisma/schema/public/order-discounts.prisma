@@ -14,34 +14,52 @@
 /// `jsonb_typeof(vat_shares) = 'array'`.
 model OrderDiscount {
   /// ULID.
-  id             String    @id
-  orderId        String    @map("order_id")
-  order          Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
+  id                       String    @id
+  orderId                  String    @map("order_id")
+  order                    Order     @relation(fields: [orderId], references: [id], onDelete: Restrict)
   /// `computed` : recomposée et égale au figé ; `frozen` : recopiée des
   /// colonnes figées par la reprise, sans recalcul (§ 18.3, point 4).
-  origin         String
+  origin                   String
   /// L'ordre d'application, à partir de 1 — figé, jamais recalculé (§ 18.4).
-  rank           Int
+  rank                     Int
   /// Opaque, sans clé étrangère ; `NULL` = remise reprise d'avant L9.
-  promotionId    String?   @map("promotion_id")
+  promotionId              String?   @map("promotion_id")
   /// L'ajustement figé (`CartAdjustment`) ; `NULL` = commande d'avant la
   /// colonne `orders.discount_adjustment`, reprise en `frozen`.
-  adjustment     Json?
+  adjustment               Json?
   /// `{fr, en, it}`, figé dans l'audience de l'acheteur.
-  label          Json?
+  label                    Json?
   /// L'assiette de l'étape (somme des restes de ses lignes), HT ou TTC selon
   /// `vat_method`, arrondie au centime le plus proche (moitié vers le haut).
   /// Information seulement : jamais relue pour calculer (§ 18.2).
-  baseCents      Int       @map("base_cents")
+  baseCents                Int       @map("base_cents")
   /// Le montant de l'étape, HT, positif.
-  amountCents    Int       @map("amount_cents")
+  amountCents              Int       @map("amount_cents")
   /// Son TTC — commande `exact_ht` seulement.
-  amountTtcCents Int?      @map("amount_ttc_cents")
+  amountTtcCents           Int?      @map("amount_ttc_cents")
   /// `[{rate, htCents, vatCents?, ttcCents?}]` — la ventilation de l'étape.
-  vatShares      Json      @map("vat_shares")
+  vatShares                Json      @map("vat_shares")
+  /// **Les termes figés** (`documentation/promotions/plan-remises-acquises.md`,
+  /// § 10.3) : ce que la révision REJOUE au lieu de relire la promotion. Tous
+  /// `NULL` ensemble = inconnus (remise d'avant la migration
+  /// `20261031210000_les_remises_acquises`, pas encore reprise) — CHECK
+  /// `order_discounts_terms_together`, écrit à la main.
+  cumulative               Boolean?
+  /// Le seuil `min_quantity` de la promotion ; `NULL` = sans seuil (ou inconnu).
+  minQuantity              Int?      @map("min_quantity")
+  /// `none` | `all` | `listed`, la forme de la promotion (§ 2.14).
+  fulfillmentPickup        String?   @map("fulfillment_pickup")
+  fulfillmentDelivery      String?   @map("fulfillment_delivery")
+  /// Les points nommés (`listed`), identifiants opaques sans clé étrangère.
+  fulfillmentPickupPoints  String[]  @default([]) @map("fulfillment_pickup_points")
+  /// Les zones nommées (`listed`), identifiants opaques sans clé étrangère.
+  fulfillmentDeliveryZones String[]  @default([]) @map("fulfillment_delivery_zones")
+  /// `placed` (figé à la passation) | `backfilled` (déduit de la promotion par
+  /// la reprise) ; `NULL` = inconnu.
+  frozenTermsOrigin        String?   @map("frozen_terms_origin")
   /// Une révision n'efface pas une remise, elle l'archive (§ 18.2, § 18.5).
-  archivedAt     DateTime? @map("archived_at") @db.Timestamptz(6)
-  createdAt      DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
+  archivedAt               DateTime? @map("archived_at") @db.Timestamptz(6)
+  createdAt                DateTime  @default(now()) @map("created_at") @db.Timestamptz(6)
 
   coveredLines OrderLineDiscount[]
   noteParts    DeliveryNoteDiscount[]

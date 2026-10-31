@@ -59,6 +59,7 @@ function draftLine(
     subtotalCents: 1_000,
     known,
     audience: "b2b",
+    refusals: [],
     fulfillment: {
       deliveryZoneId: null,
       deliveryAddress: null,
@@ -68,7 +69,8 @@ function draftLine(
       discountLabel: null,
       discountPromotionId: null,
       ineligibleSkus: new Set(),
-      applied: [],
+      basketDiscounts: undefined,
+      discountTerms: null,
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,
       globalWindowMode: null,

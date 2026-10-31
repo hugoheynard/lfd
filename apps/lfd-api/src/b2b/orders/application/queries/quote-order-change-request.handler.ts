@@ -41,11 +41,11 @@ export class QuoteOrderChangeRequestHandler implements IQueryHandler<
     const author = { kind: "customer", userId: query.actorUserId } as const;
     const current = await this.wall.find(query.orderId, author);
     ensureRequestable(current, await this.reading.verdictOf(current, "customer"));
-    const revision = await this.revising.compose(current, query.content, author, {
+    const quoted = await this.revising.quote(current, query.content, author, {
       requireChange: false,
       rulesOf: "staff",
     });
-    return quoteViewOf(current, revision);
+    return quoteViewOf(current, quoted);
   }
 }
 

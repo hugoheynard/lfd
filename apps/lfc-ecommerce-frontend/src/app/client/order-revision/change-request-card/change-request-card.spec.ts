@@ -26,6 +26,7 @@ const QUOTE: OrderRevisionQuoteView = {
   previousTotalCents: 635,
   differenceCents: 420,
   changes: ['lines'],
+  discountRefusals: [],
 };
 
 function mount(quote: QuoteState): HTMLElement {

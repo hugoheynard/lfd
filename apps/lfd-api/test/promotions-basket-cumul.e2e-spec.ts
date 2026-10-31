@@ -212,7 +212,7 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
     expect(discounts.every((discount) => discount.coveredLines.length === 1)).toBe(true);
   });
 
-  it("la révision réécrit l'ensemble, et refuse un point qui changerait l'ensemble", async () => {
+  it("la révision réécrit l'ensemble, et n'y ajoute pas la promotion d'un autre point", async () => {
     const order = await accountOrder(ctx, 3);
     const other = jsonBody<{ id: string }>(
       await staff()
@@ -252,11 +252,13 @@ describe("le cumul au panier, de bout en bout (M7)", () => {
       .post(`/admin/orders/${order.id}/revisions`)
       .send(content(other, 3))
       .expect(409);
-    // Plus spécifique (un point nommé), la promotion du point s'applique en
-    // premier : le rang 1 changerait, et le refus nomme celle qu'il perdrait.
+    // Depuis le plan des remises acquises (§ 10.2), la révision REJOUE les
+    // remises de la commande : la promotion du point ne s'ajoute pas, et les
+    // deux cumulées (« tous les points ») admettent ce point — L9 n'a rien à
+    // refuser. La commande étant inscrite, c'est la portée « quantités » qui
+    // refuse le changement de point ; l'ensemble, lui, reste intact.
     const body = jsonBody<{ code: string; message: string }>(refused);
-    expect(body.code).toBe("orders.revise.fulfillment_alters_promotion");
-    expect(body.message).toContain("remplacerait");
+    expect(body.code).toBe("orders.revise.quantities_only");
     expect((await activeDiscounts(order.id)).map((discount) => discount.promotionId)).toEqual(
       chained(),
     );

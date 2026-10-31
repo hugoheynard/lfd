@@ -46,6 +46,7 @@ const QUOTE: OrderRevisionQuoteView = {
       vatRate: 5.5,
       lineTotalCents: 1200,
       priceFrozen: true,
+      refusal: null,
     },
   ],
   subtotalCents: 1200,
@@ -58,6 +59,7 @@ const QUOTE: OrderRevisionQuoteView = {
   previousTotalCents: 844,
   differenceCents: 422,
   changes: ['lines'],
+  discountRefusals: [],
 };
 
 interface Wire {

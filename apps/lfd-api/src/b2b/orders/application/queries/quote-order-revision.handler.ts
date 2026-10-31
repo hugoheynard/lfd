@@ -32,12 +32,14 @@ export class QuoteOrderRevisionHandler implements IQueryHandler<
   async execute(query: QuoteOrderRevisionQuery): Promise<OrderRevisionQuoteView> {
     const current = await this.wall.find(query.orderId, query.actor);
     const scope = await this.revising.ensureRevisable(current, query.actor.kind);
-    const revision = await this.revising.compose(current, query.content, query.actor, {
+    // Le devis rend les refus de prix au lieu de les lever (plan des remises
+    // acquises, § 10.4) ; la modification, elle, les lève.
+    const quoted = await this.revising.quote(current, query.content, query.actor, {
       requireChange: false,
     });
-    if (scope === "quantities" && !isQuantitiesOnly(current.lines, revision)) {
+    if (scope === "quantities" && !isQuantitiesOnly(current.lines, quoted.revision)) {
       throw new QuantitiesOnlyAfterArrestError(current.orderId);
     }
-    return quoteViewOf(current, revision);
+    return quoteViewOf(current, quoted);
   }
 }

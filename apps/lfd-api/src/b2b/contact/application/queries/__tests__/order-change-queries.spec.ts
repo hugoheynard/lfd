@@ -23,6 +23,7 @@ const QUOTE: OrderRevisionQuoteView = {
   previousTotalCents: 0,
   differenceCents: 0,
   changes: ["lines"],
+  discountRefusals: [],
 };
 
 /** Les lectures de la demande de modification (M4) : l'écart pour l'équipe, l'état pour le client. */

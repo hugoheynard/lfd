@@ -1,0 +1,29 @@
+-- RETOUR ARRIÈRE de 20261031210000_les_remises_acquises
+-- (documentation/promotions/plan-remises-acquises.md, § 10.3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant n'écrit ni ne lit ces colonnes : elles peuvent RESTER en
+-- base (CLAUDE.md § 0), il suffit de retirer les CHECK qui refuseraient une
+-- écriture du code d'avant. Le seul qui le ferait est
+-- `order_discounts_terms_together` — et il ne le fait pas : le code d'avant
+-- n'écrit aucune de ces colonnes, qui restent toutes à NULL. Le retour
+-- arrière est donc le retour du code seul ; ce fichier n'a rien à jouer.
+--
+-- ⚠️ Ce qui est PERDU au retour du code : rien en base. Les remises posées
+-- entre-temps gardent leurs termes figés, que le code d'avant ignore (il
+-- rejuge les promotions à la révision, comme avant ce lot).
+--
+-- Si l'on veut malgré tout retirer les colonnes, c'est un resserrement : il
+-- se fait dans un déploiement ultérieur, après décision de Hugo, par :
+--
+--   ALTER TABLE public.order_discounts
+--     DROP CONSTRAINT order_discounts_terms_origin_known,
+--     DROP CONSTRAINT order_discounts_terms_together,
+--     DROP CONSTRAINT order_discounts_terms_modes_known,
+--     DROP CONSTRAINT order_discounts_min_quantity_positive;
+--
+-- (les colonnes elles-mêmes restent : une colonne morte reste en base.)
+
+SELECT 1;

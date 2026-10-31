@@ -74,13 +74,35 @@ describe("ReviseOrderHandler — le minimum d'une ligne gardée", () => {
     expect(revisions.saved).toHaveLength(1);
   });
 
-  it("laisse passer une ligne gardée dont l'article est sorti du catalogue : aucun minimum connu", async () => {
+  /**
+   * Changement de règle (plan des remises acquises, § 10.1, 2026-10-31) : la
+   * décision du 2026-10-29 laissait passer cette quantité, faute de minimum
+   * connu. Un article sorti du catalogue ne se retarife plus : changer sa
+   * quantité est refusé par son nom ; le garder tel quel, ou le retirer, passe.
+   */
+  it("refuse de changer la quantité d'une ligne gardée dont l'article est sorti du catalogue", async () => {
     const { handler, revisions } = reviseScene(await placedOrder(), {
       catalogItems: WITHOUT_CROISSANT,
     });
 
-    await handler.execute(revise([{ sku: "VIE-001", quantity: 1 }]));
+    await expect(handler.execute(revise([{ sku: "VIE-001", quantity: 1 }]))).rejects.toThrow(
+      "« Croissant » n'est plus vendu : gardez la quantité commandée ou retirez-le.",
+    );
+    expect(revisions.saved).toEqual([]);
+  });
 
-    expect(revisions.saved).toHaveLength(1);
+  it("une ligne gardée dont l'article est sorti du catalogue se retire, ou se garde telle quelle", async () => {
+    const removed = reviseScene(await placedOrder(), { catalogItems: WITHOUT_CROISSANT });
+    await removed.handler.execute(revise([{ sku: "PAI-001", quantity: 1 }]));
+    expect(removed.revisions.saved).toHaveLength(1);
+
+    const kept = reviseScene(await placedOrder(), { catalogItems: WITHOUT_CROISSANT });
+    await kept.handler.execute(
+      revise([
+        { sku: "VIE-001", quantity: 10 },
+        { sku: "PAI-001", quantity: 1 },
+      ]),
+    );
+    expect(kept.revisions.saved).toHaveLength(1);
   });
 });

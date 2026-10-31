@@ -3,6 +3,7 @@ import { chainBasketDiscounts, roundToCents, type TtcOrderComposition } from "@l
 
 import { InvalidOrderPaymentError } from "../errors/order-errors.js";
 import { chainLineHtBasketDiscounts } from "../services/basket-discounts.js";
+import type { FrozenDiscountTerms } from "../services/frozen-discount-terms.js";
 import type { DiscountVatShare } from "../services/order-discount-recovery-shapes.js";
 import type { DraftOrderInput, OrderDiscountLabel } from "./order-shapes.js";
 
@@ -38,12 +39,9 @@ export interface BasketDiscountStepAmounts {
 }
 
 /** Une remise appliquée : ses montants, et ce qui l'a produite, figé. */
-export interface AppliedBasketDiscount extends BasketDiscountStepAmounts {
+export interface AppliedBasketDiscount extends BasketDiscountStepAmounts, BasketDiscountTrace {
   /** À partir de 1 — l'ordre d'application, figé (§ 18.4). */
   readonly rank: number;
-  readonly promotionId: string | null;
-  readonly adjustment: CartAdjustment;
-  readonly label: OrderDiscountLabel | null;
 }
 
 /** Une ligne vue par l'étape : son montant (HT ou TTC selon le chemin), son taux, sa couverture. */
@@ -138,6 +136,8 @@ export interface BasketDiscountTrace {
   readonly promotionId: string | null;
   readonly adjustment: CartAdjustment;
   readonly label: OrderDiscountLabel | null;
+  /** Les termes figés, que la révision rejoue (plan des remises acquises) ; `null` = inconnus. */
+  readonly terms: FrozenDiscountTerms | null;
 }
 
 /**
@@ -161,6 +161,7 @@ export function singleBasketTraces(trace: {
   readonly promotionId: string | null;
   readonly adjustment: CartAdjustment | null;
   readonly label: OrderDiscountLabel | null;
+  readonly terms: FrozenDiscountTerms | null;
 }): readonly BasketDiscountTrace[] {
   const { adjustment } = trace;
   return adjustment === null ? [] : [{ ...trace, adjustment }];
@@ -172,16 +173,18 @@ export function singleBasketTraces(trace: {
  */
 export function basketTracesOf(input: DraftOrderInput): readonly BasketDiscountTrace[] {
   if (input.basketDiscounts !== undefined) {
-    return input.basketDiscounts.map(({ promotionId, adjustment, label }) => ({
+    return input.basketDiscounts.map(({ promotionId, adjustment, label, terms }) => ({
       promotionId,
       adjustment,
       label,
+      terms,
     }));
   }
   return singleBasketTraces({
     promotionId: input.discountPromotionId ?? null,
     adjustment: input.discountAdjustment,
     label: input.discountLabel ?? null,
+    terms: input.discountTerms ?? null,
   });
 }
 

@@ -29,7 +29,13 @@ import {
 } from "../../domain/services/order-revisability.js";
 import { OrderLocale } from "../../domain/value-objects/order-locale.js";
 import { CancellationRule } from "./cancellation-rule.js";
-import { OrderComposition, type ComposedDraft } from "./order-composition.service.js";
+import { revisionPriceErrorOf } from "../../domain/errors/revision-price-errors.js";
+import { replayableDiscountsOf } from "../../domain/services/basket-discount-replay.js";
+import {
+  OrderComposition,
+  type ComposedDraft,
+  type RevisionPriceRefusal,
+} from "./order-composition.service.js";
 import type { OrderContent } from "./order-content.js";
 import { OrderCutoffGate } from "./order-cutoff-gate.service.js";
 import { OrderIntake } from "./order-intake.service.js";
@@ -49,7 +55,10 @@ import { OrderPlanGate } from "./order-plan-gate.service.js";
  *   jamais pour l'équipe, ni dérogation dépensée ;
  * - **R2** : payeur, société, principal, clientèle, CGV et langue relus sur la
  *   commande, jamais recalculés ;
- * - **R3** : les lignes déjà présentes à leur prix figé ;
+ * - **R3** : les lignes déjà présentes à leur prix figé — et une quantité
+ *   qui changerait ce prix est refusée, comme une remise de panier qui
+ *   tomberait sous son seuil ; les remises sont REJOUÉES, jamais rejugées
+ *   (`documentation/promotions/plan-remises-acquises.md`, § 10) ;
  * - **R4** : la surtaxe d'origine, recalculée sur son ajustement figé ; le bon
  *   déjà imputé, borné par l'agrégat ;
  * - **R5** : la nouvelle journée ouverte — et, pour le client, pas avant le
@@ -174,8 +183,28 @@ export class OrderRevising {
     order: RevisableOrder,
     content: OrderContent,
     author: RevisionActor,
-    options: { readonly requireChange: boolean; readonly rulesOf?: RevisionActor["kind"] },
+    options: RevisionOptions,
   ): Promise<OrderRevisionToSave> {
+    const { revision, refusals } = await this.quote(order, content, author, options);
+    const [first] = refusals;
+    if (first !== undefined) {
+      throw revisionPriceErrorOf(first);
+    }
+    return revision;
+  }
+
+  /**
+   * **Le devis** (plan des remises acquises, § 10.4) : la même recomposition,
+   * mais un prix de ligne qui changerait ou une remise qui tomberait sous son
+   * seuil n'y lève pas — il est rendu, par ligne et par remise, et la ligne
+   * refusée est chiffrée à son prix figé. {@link compose} lève le premier.
+   */
+  async quote(
+    order: RevisableOrder,
+    content: OrderContent,
+    author: RevisionActor,
+    options: RevisionOptions,
+  ): Promise<QuotedRevision> {
     const actor = options.rulesOf ?? author.kind;
     await this.ensureDayOpen(order, content.requestedDeliveryDate, actor);
     await this.ensureFirstOrderableDay(order, content.requestedDeliveryDate, actor);
@@ -185,7 +214,12 @@ export class OrderRevising {
       placedByStaffId: order.placedByStaffId,
       buyerKind: order.buyerKind,
     };
-    const resolved = await this.composition.resolve(content, parties, order.lines, order.vatMethod);
+    const resolved = await this.composition.resolve(
+      content,
+      parties,
+      { lines: order.lines, discounts: replayableDiscountsOf(order) },
+      order.vatMethod,
+    );
     await this.ensureBeforeCutoff(order, content, actor);
     const arranged = await this.composition.arrange(
       content,
@@ -205,7 +239,10 @@ export class OrderRevising {
       OrderComposition.draftOf(content, resolved, kept, order.vatMethod),
       { deliveryVatMode: arranged.deliveryVatMode, subtotalCents: resolved.subtotalCents },
     );
-    return options.requireChange ? Order.revise(order, input) : Order.recompose(order, input);
+    const revision = options.requireChange
+      ? Order.revise(order, input)
+      : Order.recompose(order, input);
+    return { revision, refusals: resolved.refusals };
   }
 
   /**
@@ -293,6 +330,18 @@ export class OrderRevising {
       }
     }
   }
+}
+
+/** `requireChange` : R6 ; `rulesOf` : les règles de qui s'appliquent (cf. {@link OrderRevising.compose}). */
+export interface RevisionOptions {
+  readonly requireChange: boolean;
+  readonly rulesOf?: RevisionActor["kind"];
+}
+
+/** Une révision chiffrée, et les refus de prix que le devis montre (§ 10.4). */
+export interface QuotedRevision {
+  readonly revision: OrderRevisionToSave;
+  readonly refusals: readonly RevisionPriceRefusal[];
 }
 
 /**

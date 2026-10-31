@@ -17,6 +17,7 @@ import type {
 import type { VatShare } from "@lfd/money";
 
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
+import type { FrozenDiscountTerms } from "../services/frozen-discount-terms.js";
 import type { OrderBuyerKind } from "../value-objects/order-buyer-kind.js";
 import type { OrderLineInput, OrderLineSnapshot } from "../value-objects/order-line.js";
 import type { OrderLocale } from "../value-objects/order-locale.js";
@@ -46,6 +47,8 @@ export interface DraftBasketDiscount {
   readonly label: OrderDiscountLabel | null;
   /** Les indices, dans `DraftOrderInput.lines`, des lignes qu'elle couvre. */
   readonly coveredLines: readonly number[];
+  /** Ses termes figés (plan des remises acquises, § 10.3) ; `null` = inconnus. */
+  readonly terms: FrozenDiscountTerms | null;
 }
 
 export interface OrderFulfillmentInput {
@@ -147,6 +150,12 @@ export interface DraftOrderInput {
    * l'ancien chemin.
    */
   readonly discountPromotionId?: string | null;
+  /**
+   * Les termes figés de la remise unique (plan des remises acquises, § 10.3)
+   * — ce que la révision rejouera. Absent ou `null` : inconnus, ou aucune
+   * remise.
+   */
+  readonly discountTerms?: FrozenDiscountTerms | null;
   /**
    * **Plusieurs remises de panier** (lot M7, § 18.6), à partir de DEUX, dans
    * l'ordre d'application. Présente : `discountCents` est leur total (dans

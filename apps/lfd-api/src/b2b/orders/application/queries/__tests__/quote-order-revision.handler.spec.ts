@@ -1,5 +1,7 @@
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { CardOrderNotRevisableError } from "../../../domain/errors/order-revision-errors.js";
+import { RevisionLosesBasketDiscountError } from "../../../domain/errors/revision-price-errors.js";
+import type { RevisableDiscount } from "../../../domain/services/basket-discount-replay.js";
 import { RevisionWall } from "../../services/revision-wall.js";
 import {
   content,
@@ -72,5 +74,71 @@ describe("QuoteOrderRevisionHandler", () => {
     await expect(
       handlerFor(order).execute(new QuoteOrderRevisionQuery("ord_1", CUSTOMER, content())),
     ).rejects.toThrow(CardOrderNotRevisableError);
+  });
+
+  describe("les refus de prix, rendus au lieu d'être levés (plan des remises acquises, § 10.4)", () => {
+    it("une ligne dont le prix a changé : le refus et ses deux prix, la ligne au prix figé", async () => {
+      const placed = await placedOrder();
+      const order = {
+        ...placed,
+        lines: placed.lines.map((line) => ({ ...line, unitPriceMillicents: 180_000 })),
+      };
+
+      const quote = await handlerFor(order).execute(
+        new QuoteOrderRevisionQuery(
+          "ord_1",
+          CUSTOMER,
+          content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
+        ),
+      );
+
+      expect(quote.lines).toEqual([
+        expect.objectContaining({
+          sku: "VIE-001",
+          unitPriceMillicents: 180_000,
+          refusal: {
+            kind: "price_changed",
+            frozen: { unitPriceMillicents: 180_000, vatRate: 5.5, unitPriceTtcCents: null },
+            current: { unitPriceMillicents: 200_000, vatRate: 5.5, unitPriceTtcCents: null },
+          },
+        }),
+      ]);
+      expect(quote.discountRefusals).toEqual([]);
+    });
+
+    it("une remise à seuil quittée : le devis la montre, la modification la refuse", async () => {
+      const label = { fr: "Dès 10", en: "From 10", it: "Da 10" };
+      const fromTen: RevisableDiscount = {
+        orderDiscountId: "od_1",
+        promotionId: "promo_des_10",
+        adjustment: { mode: "percent", bp: 1_000 },
+        label: label.fr,
+        servedLabel: label,
+        coveredSkus: ["VIE-001"],
+        amountCents: 200,
+        amountTtcCents: null,
+        terms: {
+          cumulative: false,
+          minQuantity: 10,
+          pickup: "all",
+          delivery: "none",
+          origin: "placed",
+        },
+      };
+      const order = { ...(await placedOrder()), activeDiscounts: [fromTen] };
+      const smaller = content({ lines: [{ sku: "VIE-001", quantity: 1 }] });
+
+      const quote = await handlerFor(order).execute(
+        new QuoteOrderRevisionQuery("ord_1", CUSTOMER, smaller),
+      );
+
+      expect(quote.discountRefusals).toEqual([
+        { kind: "below_threshold", label, minQuantity: 10, sku: "VIE-001", quantity: 1 },
+      ]);
+      expect(quote.lines[0]?.refusal).toBeNull();
+      await expect(
+        revisingAt(new FixedClock(NOW)).compose(order, smaller, CUSTOMER, { requireChange: true }),
+      ).rejects.toBeInstanceOf(RevisionLosesBasketDiscountError);
+    });
   });
 });

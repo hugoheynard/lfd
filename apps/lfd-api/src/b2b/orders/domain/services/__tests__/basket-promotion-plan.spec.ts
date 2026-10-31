@@ -119,7 +119,15 @@ describe("chooseBasketPromotion — le cumul au panier (M7)", () => {
     const cumulated = chooseBasketPromotion([alone], LINES, CLASSES);
     const exclusive = chooseBasketPromotion([asExclusive], LINES, CLASSES);
 
-    expect(cumulated).toEqual(exclusive);
+    // Champ pour champ, sauf le caractère cumulable figé dans les termes —
+    // la seule chose qui distingue les deux promotions.
+    const withoutTerms = (outcome: typeof cumulated) => ({
+      ...outcome,
+      applied: outcome.applied.map((step) => ({ ...step, terms: null })),
+    });
+    expect(withoutTerms(cumulated)).toEqual(withoutTerms(exclusive));
+    expect(cumulated.applied[0]?.terms?.cumulative).toBe(true);
+    expect(exclusive.applied[0]?.terms?.cumulative).toBe(false);
     expect(cumulated.discountCents).toBe(512);
     expect(cumulated.promotionId).toBe("a");
   });

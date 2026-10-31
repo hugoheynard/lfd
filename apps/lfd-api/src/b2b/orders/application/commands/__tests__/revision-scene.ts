@@ -48,6 +48,7 @@ import { OrderAccessReader } from "../../../domain/ports/order-access.reader.js"
 import type { OrderRole } from "../../../domain/ports/order-guard.reader.js";
 import { OrderRevisionRepository } from "../../../domain/ports/order-revision.repository.js";
 import { RevisableOrderReader } from "../../../domain/ports/revisable-order.reader.js";
+import { OrderLine, type OrderLineInput } from "../../../domain/value-objects/order-line.js";
 import { FixedLineClassifications } from "../../../domain/ports/__tests__/line-classification-doubles.js";
 import { CancellationRule } from "../../services/cancellation-rule.js";
 import { CartAdjustments } from "../../services/cart-adjustments.service.js";
@@ -287,6 +288,9 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
     totalCents: state.totalCents,
     discountPromotionId: state.discountPromotionId,
     discountAdjustment: state.discountAdjustment,
+    discountLabel: state.discountLabel,
+    discountCents: state.discountCents,
+    discountTtcCents: state.discountTtcCents,
     fulfillment: {
       method: state.fulfillmentMethod,
       deliveryZoneId: state.deliveryZoneId,
@@ -299,6 +303,15 @@ export async function placedOrder(over: Partial<RevisableOrder> = {}): Promise<R
     ...over,
   };
 }
+
+const SEED_LINE: OrderLineInput = {
+  sku: "VIE-001",
+  productName: "Croissant",
+  unitPriceMillicents: 200_000,
+  vatRate: 5.5,
+  quantity: 10,
+  saleUnit: "piece",
+};
 
 /** Le squelette d'avant la composition — rien que des identités. */
 function seed(): RevisableOrder {
@@ -319,8 +332,13 @@ function seed(): RevisableOrder {
     // pas d'acheminement, et la règle L9 (§ 13.8) n'a rien à juger.
     discountPromotionId: null,
     discountAdjustment: { mode: "percent", bp: 1_000 },
-    // Sans ligne `order_discounts` : L9 lit les colonnes figées (§ 18.9).
+    // Sans ligne `order_discounts` : la révision rejoue les colonnes figées
+    // (§ 18.9), sur les lignes éligibles du squelette (plan des remises
+    // acquises, § 10.2).
     activeDiscounts: [],
+    discountLabel: null,
+    discountCents: 0,
+    discountTtcCents: null,
     totalCents: 1,
     stripePaymentIntentId: null,
     cancelledAt: null,
@@ -347,7 +365,9 @@ function seed(): RevisableOrder {
       signatureRequired: { value: false, source: "default" },
     },
     note: "",
-    lines: [],
+    // Les 10 croissants que la passation aurait figés, au prix du catalogue :
+    // la remise des colonnes les couvre (`pickup_discount_eligible`).
+    lines: [OrderLine.create({ ...SEED_LINE, pickupDiscountEligible: true }, "pro").toSnapshot()],
     deliveryVatMode: "standard",
     // Une commande de société : composée HT (plan du centime, § 7).
     vatMethod: "line_ht",

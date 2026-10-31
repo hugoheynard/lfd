@@ -1,3 +1,4 @@
+import { RevisedLinePriceChangedError } from "../../../domain/errors/revision-price-errors.js";
 import { FixedClock } from "../../../../../platform/time/fixed-clock.js";
 import { ORDER_REVISED } from "../../../domain/events/order-revised.event.js";
 import { OrderNotFoundError } from "../../../domain/errors/order-errors.js";
@@ -95,6 +96,7 @@ describe("ReviseOrderHandler — le geste", () => {
 
   it("garde le prix d'une ligne déjà présente et met une ligne nouvelle au prix du jour", async () => {
     // La ligne d'origine a été payée 1,80 € : le catalogue dit 2,00 € aujourd'hui.
+    // Sa quantité ne change pas : son prix est convenu, il n'est pas rejugé.
     const placed = await placedOrder();
     const order = {
       ...placed,
@@ -109,7 +111,7 @@ describe("ReviseOrderHandler — le geste", () => {
         0,
         content({
           lines: [
-            { sku: "VIE-001", quantity: 12 },
+            { sku: "VIE-001", quantity: 10 },
             { sku: "PAI-001", quantity: 1 },
           ],
         }),
@@ -118,9 +120,37 @@ describe("ReviseOrderHandler — le geste", () => {
 
     const lines = revisions.saved[0]?.revision.state.lines ?? [];
     expect(lines.map((line) => [line.sku, line.quantity, line.unitPriceMillicents])).toEqual([
-      ["VIE-001", 12, 180_000],
+      ["VIE-001", 10, 180_000],
       ["PAI-001", 1, 350_000],
     ]);
+  });
+
+  /**
+   * Régression (plan des remises acquises, § 8.1 et § 10.1) : une ligne déjà
+   * présente gardait son prix figé pour TOUTE quantité — 12 croissants au prix
+   * d'hier, l'équipe comprise. Changer sa quantité quand son prix a changé
+   * est désormais refusé, en nommant les deux prix.
+   */
+  it("refuse de changer la quantité d'une ligne dont le prix a changé, même à l'équipe", async () => {
+    const placed = await placedOrder();
+    const order = {
+      ...placed,
+      lines: placed.lines.map((line) => ({ ...line, unitPriceMillicents: 180_000, pricing: null })),
+    };
+    const { handler, revisions } = reviseScene(order);
+
+    const attempt = handler.execute(
+      new ReviseOrderCommand(
+        "ord_1",
+        STAFF,
+        0,
+        content({ lines: [{ sku: "VIE-001", quantity: 12 }] }),
+      ),
+    );
+
+    await expect(attempt).rejects.toBeInstanceOf(RevisedLinePriceChangedError);
+    await expect(attempt).rejects.toThrow(/\(1,80\s€ HT → 2,00\s€ HT\)/u);
+    expect(revisions.saved).toHaveLength(0);
   });
 
   it("RELIT la porte de passation sur la commande : un invité reste invité (L1)", async () => {
@@ -150,7 +180,7 @@ describe("ReviseOrderHandler — le geste", () => {
 
   it("passer du retrait à la livraison ajoute les frais de zone (commande sans remise)", async () => {
     // Sans remise avant ni après : L9 (§ 13.8) n'a rien à refuser.
-    const order = await placedOrder({ discountAdjustment: null });
+    const order = await placedOrder({ discountAdjustment: null, discountCents: 0 });
     const { handler, revisions, durable } = reviseScene(order);
 
     await handler.execute(new ReviseOrderCommand("ord_1", STAFF, 0, content(TO_DELIVERY)));

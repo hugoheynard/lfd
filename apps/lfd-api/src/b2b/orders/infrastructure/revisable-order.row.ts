@@ -21,10 +21,11 @@ import type { OrderSalesTerms } from "../domain/entities/order-shapes.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
 import { buyerKindOf } from "./order-buyer-kind.column.js";
 import {
-  ACTIVE_ORDER_DISCOUNTS_SELECT,
-  activeDiscountOf,
-  type ActiveOrderDiscountRow,
-} from "./order-discounts.columns.js";
+  frozenLabelOf,
+  REVISABLE_ORDER_DISCOUNTS_SELECT,
+  revisableDiscountOf,
+  type RevisableOrderDiscountRow,
+} from "./revisable-discounts.columns.js";
 import { fixedCustomerCancellationOf } from "./customer-cancellation.columns.js";
 import { fulfillmentOf } from "./order-fulfillment.parse.js";
 import { vatMethodOf } from "./order-money-columns.js";
@@ -99,6 +100,9 @@ export const REVISABLE_ORDER_SELECT = {
   lateFeeAdjustment: true,
   discountPromotionId: true,
   discountAdjustment: true,
+  discountLabel: true,
+  discountCents: true,
+  discountTtcCents: true,
   deliveryVatMode: true,
   loyaltyVoucherId: true,
   voucherDiscountCents: true,
@@ -115,8 +119,9 @@ export const REVISABLE_ORDER_SELECT = {
   // Un départ décidé sur UN envoi suffit à figer la commande (plan E7 reliquat, LB).
   shortfallDecisions: { select: { id: true }, take: 1 },
   lines: { select: LINE_SELECT, orderBy: { sku: "asc" } },
-  // Les remises ACTIVES, par rang : l'« avant » de L9 (plan des promotions, § 18.9, M3).
-  discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
+  // Les remises ACTIVES, par rang, avec leurs termes figés : ce que la
+  // révision rejoue (plan des remises acquises, § 10.2) et l'« avant » de L9.
+  discounts: REVISABLE_ORDER_DISCOUNTS_SELECT,
 } as const;
 
 interface RevisableLineRow extends OrderLineRow {
@@ -155,6 +160,9 @@ export interface RevisableOrderRow {
   readonly lateFeeAdjustment: Prisma.JsonValue | null;
   readonly discountPromotionId: string | null;
   readonly discountAdjustment: Prisma.JsonValue | null;
+  readonly discountLabel: Prisma.JsonValue | null;
+  readonly discountCents: number;
+  readonly discountTtcCents: number | null;
   readonly deliveryVatMode: string | null;
   readonly loyaltyVoucherId: string | null;
   readonly voucherDiscountCents: number;
@@ -170,7 +178,7 @@ export interface RevisableOrderRow {
   readonly customerCancellationHoursBefore: number | null;
   readonly shortfallDecisions: readonly { readonly id: string }[];
   readonly lines: readonly RevisableLineRow[];
-  readonly discounts: readonly ActiveOrderDiscountRow[];
+  readonly discounts: readonly RevisableOrderDiscountRow[];
 }
 
 /** Ligne → la commande telle qu'on la modifie. Les JSON sont validés, jamais castés. */
@@ -217,7 +225,12 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     discountPromotionId: row.discountPromotionId,
     discountAdjustment:
       row.discountAdjustment === null ? null : cartAdjustmentSchema.parse(row.discountAdjustment),
-    activeDiscounts: row.discounts.map((discount) => activeDiscountOf(row.id, discount, row.lines)),
+    activeDiscounts: row.discounts.map((discount) =>
+      revisableDiscountOf(row.id, discount, row.lines),
+    ),
+    discountLabel: frozenLabelOf(row.discountLabel),
+    discountCents: row.discountCents,
+    discountTtcCents: row.discountTtcCents,
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
     vatMethod: vatMethodOf(row.id, row.vatMethod),

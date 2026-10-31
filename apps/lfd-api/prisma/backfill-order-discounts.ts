@@ -3,6 +3,10 @@ import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
 import { PrismaOrderDiscountBackfill } from "../src/b2b/orders/infrastructure/prisma-order-discount-backfill.js";
+import {
+  PrismaOrderDiscountTermsBackfill,
+  termsBackfillReport,
+} from "../src/b2b/orders/infrastructure/prisma-order-discount-terms-backfill.js";
 import { PrismaClient } from "../src/platform/database/client/client.js";
 import { UlidGenerator } from "../src/platform/id/ulid-generator.js";
 import { SystemClock } from "../src/platform/time/system-clock.js";
@@ -28,6 +32,10 @@ import {
  *   Le temps 5 du runbook exige zéro écart ET zéro désaccord.
  * - Runbook en cinq temps : § 18.3 (première passe après M2, seconde après M3,
  *   le déclencheur seulement si la seconde ne laisse aucune commande sans ligne).
+ * - Puis, à chaque passe, les **termes figés** des remises actives qui n'en ont
+ *   pas (`documentation/promotions/plan-remises-acquises.md`, § 10.3) :
+ *   déduits de leur promotion, archivée comprise, et marqués `backfilled`. À
+ *   blanc comme le reste ; une remise sans promotion reste sans termes.
  *
  * Il ne démarre PAS l'`AppModule` (contrairement à `backfill-naf.ts`) : ses
  * tâches de fond tourneraient contre la base visée, production comprise. Un
@@ -53,6 +61,14 @@ async function main(): Promise<void> {
       }
       report.push(...refreshReport(refreshed, options.write));
     }
+    // Après les remises : une remise que cette passe vient d'écrire a, elle
+    // aussi, ses termes à déduire (à blanc, elle n'existe pas encore).
+    const terms = new PrismaOrderDiscountTermsBackfill(prisma);
+    const filled = [];
+    for (const discountId of await terms.pendingDiscountIds()) {
+      filled.push(await terms.fill(discountId, options.write));
+    }
+    report.push(...termsBackfillReport(filled, options.write));
     for (const text of report) {
       console.log(text);
     }

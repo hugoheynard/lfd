@@ -46,6 +46,7 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
     subtotalCents: 1_991,
     known: new Map(),
     audience: "b2c",
+    refusals: [],
     fulfillment: {
       deliveryZoneId: null,
       deliveryAddress: null,
@@ -56,7 +57,8 @@ function resolved(fulfillment: Partial<ResolvedContent["fulfillment"]> = {}): Re
       discountLabel: null,
       discountPromotionId: null,
       ineligibleSkus: new Set(),
-      applied: [],
+      basketDiscounts: undefined,
+      discountTerms: null,
       deliveryFeeAdjustment: null,
       deliveryFeeCents: 0,
       globalWindowMode: null,

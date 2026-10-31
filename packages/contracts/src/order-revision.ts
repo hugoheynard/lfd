@@ -1,5 +1,6 @@
 import { z } from "zod";
 
+import type { DiscountLabelView } from "./discount-label.js";
 import type { OrderRevisionChange } from "./order-revision.values.js";
 import {
   deliveryAddressIssue,
@@ -63,6 +64,48 @@ export interface OrderRevisionQuoteLineView {
   readonly vatRate: number;
   readonly lineTotalCents: number;
   readonly priceFrozen: boolean;
+  /**
+   * Pourquoi cette quantité ne passera pas (plan
+   * `documentation/promotions/plan-remises-acquises.md`, § 10.4) — `null` si
+   * elle passe. La ligne refusée est chiffrée à son prix figé : le devis ne
+   * montre jamais un prix substitué. La modification, elle, refuse (409).
+   */
+  readonly refusal: OrderRevisionLineRefusal | null;
+}
+
+/** Un prix unitaire comparé : le figé à la commande, ou celui du moment. */
+export interface OrderRevisionUnitPrice {
+  /** HT, millicentimes — au kilo pour une ligne au poids. */
+  readonly unitPriceMillicents: number;
+  readonly vatRate: number;
+  /** L'étiquette TTC d'une commande de particulier ; `null` sinon. */
+  readonly unitPriceTtcCents: number | null;
+}
+
+/**
+ * Le refus d'une ligne déjà commandée dont la quantité change (§ 10.1) : son
+ * prix changerait (les deux prix), ou l'article n'est plus vendu.
+ */
+export type OrderRevisionLineRefusal =
+  | {
+      readonly kind: "price_changed";
+      readonly frozen: OrderRevisionUnitPrice;
+      readonly current: OrderRevisionUnitPrice;
+    }
+  | { readonly kind: "withdrawn" };
+
+/**
+ * Une remise de panier que la modification ferait perdre (§ 10.2) : une ligne
+ * qu'elle couvre passerait sous son seuil figé.
+ */
+export interface OrderRevisionDiscountRefusal {
+  readonly kind: "below_threshold";
+  /** Le libellé figé de la remise ; `null` sans libellé. */
+  readonly label: DiscountLabelView | null;
+  readonly minQuantity: number;
+  /** La ligne en cause, et sa quantité révisée. */
+  readonly sku: string;
+  readonly quantity: number;
 }
 
 /**
@@ -87,6 +130,8 @@ export interface OrderRevisionQuoteView {
   /** `totalCents − previousTotalCents` : positif, la commande coûte plus. */
   readonly differenceCents: number;
   readonly changes: readonly OrderRevisionChange[];
+  /** Les remises que la modification ferait perdre — vide si aucune (§ 10.4). */
+  readonly discountRefusals: readonly OrderRevisionDiscountRefusal[];
 }
 
 /** Ce que la modification rend : la commande se relit ensuite (`GET :id`). */

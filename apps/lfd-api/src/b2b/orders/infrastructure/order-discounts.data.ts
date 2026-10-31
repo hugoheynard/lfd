@@ -3,6 +3,7 @@ import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
 import type { AppliedBasketDiscount } from "../domain/entities/order-basket-discounts.js";
 import type { OrderLineSnapshot } from "../domain/value-objects/order-line.js";
 import { sharesJson } from "./order-discount-backfill.rows.js";
+import { frozenTermsData } from "./order-discount-terms.columns.js";
 import { orderLineDataOf } from "./order-line.data.js";
 
 /**
@@ -74,6 +75,8 @@ export function orderDiscountsWriteOf(
       amountCents: discount.amountCents,
       amountTtcCents: discount.amountTtcCents,
       vatShares: sharesJson(discount.vatShares),
+      // Les termes que la révision rejouera (plan des remises acquises, § 10.3).
+      ...frozenTermsData(discount.terms),
     });
     for (const index of discount.coveredLines) {
       const orderLineId = lineIds[index];

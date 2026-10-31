@@ -275,3 +275,22 @@ Le devis partage `compose` : il ne lève pas pour un refus de prix ou de
 seuil ; il rend, par ligne et par remise, le refus et ses deux prix, et le
 front l'affiche à côté de la ligne ; la révision, elle, lève l'erreur
 nommée. Les deux fronts (boutique et back-office) affichent ces refus.
+
+### 10.5 Bâti côté serveur (2026-10-31) — trois lectures retenues
+
+1. Seules les lignes dont la **quantité change** sont retarifées ; une ligne
+   inchangée garde son figé (sinon changer une note de commande serait
+   bloqué par un prix qui a bougé).
+2. **L9 sans cible connue** (remise pas encore reprise) : tout changement
+   d'acheminement est refusé — plus strict qu'avant, jusqu'à la reprise.
+3. Jusqu'à la passe de reprise en `--write`, les remises existantes n'ont pas
+   de seuil connu : le refus `below_threshold` ne les protège pas encore.
+   Une promotion révisée depuis la commande donne à la reprise ses termes
+   d'aujourd'hui (limite écrite dans le script).
+
+Écart : `noteBasketDiscountsOf` (bons) n'est pas importé — il saute les
+remises sans ajustement, et l'importer ferait dépendre `orders` de
+`delivery-notes` ; son mécanisme de couverture est repris dans `orders`.
+Comportement changé : un article sorti du catalogue dont on change la
+quantité est refusé par son nom (admis depuis le 2026-10-29). Reste : les
+écrans (refus par ligne et par remise dans l'aperçu).

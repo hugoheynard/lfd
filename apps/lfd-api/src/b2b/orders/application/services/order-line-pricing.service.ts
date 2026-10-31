@@ -154,6 +154,40 @@ export class OrderLinePricing {
   }
 
   /**
+   * **Le prix du moment des lignes GARDÉES d'une révision dont la quantité
+   * change** (`documentation/promotions/plan-remises-acquises.md`, § 10.1) —
+   * pour le comparer au figé, jamais pour le substituer en silence.
+   *
+   * Même lecteur que {@link minimumsOf} (réservation levée : ces SKU sont déjà
+   * commandés par cette commande), même tarification que la passation, à
+   * l'instant de la requête. Un SKU sorti du catalogue est rendu à `null` —
+   * il ne se retarife plus, et c'est à l'appelant de le refuser par son nom,
+   * jamais à la résolution de lever une erreur brute.
+   */
+  async repriceKept(
+    lines: readonly OrderLineRequest[],
+    parties: ServedBuyer,
+  ): Promise<ReadonlyMap<string, ResolvedOrderLine["line"] | null>> {
+    if (lines.length === 0) {
+      return new Map();
+    }
+    const viewer = await this.viewers.forKeptLines(parties.companyId);
+    const catalogue = await this.catalog.resolveMany(
+      [...new Set(lines.map((line) => line.sku))],
+      viewer,
+    );
+    const present = lines.filter((line) => catalogue.has(line.sku));
+    const priced = await this.priceAll(
+      present,
+      { withTiers: false, caller: "checkout", viewer, parties },
+      undefined,
+      catalogue,
+    );
+    const bySku = new Map(priced.map((entry) => [entry.line.sku, entry.line]));
+    return new Map(lines.map((line) => [line.sku, bySku.get(line.sku) ?? null]));
+  }
+
+  /**
    * **Le panier sans ses lignes d'une unité périmée, puis son prix** — pour
    * le devis de la boutique (`plan-changer-l-unite-de-vente.md`, § 8).
    *

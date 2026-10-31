@@ -14,6 +14,7 @@ import {
   type BasketCandidate,
   type BasketPromotionApplied,
 } from "./basket-promotion-plan.js";
+import { placedTermsOf } from "./frozen-discount-terms.js";
 import { eligibleSubtotalCents, type PricedLine } from "./pickup-discount-eligibility.js";
 
 export type { BasketPromotionApplied } from "./basket-promotion-plan.js";
@@ -188,6 +189,7 @@ export function outcomeOf(
               label: promotion.servedLabel,
               ineligibleSkus,
               discountCents,
+              terms: placedTermsOf(promotion),
             },
           ],
   };

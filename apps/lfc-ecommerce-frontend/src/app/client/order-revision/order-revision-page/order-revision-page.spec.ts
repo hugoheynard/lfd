@@ -50,6 +50,7 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
         vatRate: 5.5,
         lineTotalCents: 1_137,
         priceFrozen: true,
+        refusal: null,
       },
     ],
     subtotalCents: 1_137,
@@ -62,6 +63,7 @@ function quoteOf(changes: OrderRevisionQuoteView['changes']): OrderRevisionQuote
     previousTotalCents: 1_200,
     differenceCents: 0,
     changes,
+    discountRefusals: [],
   };
 }
 

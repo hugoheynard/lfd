@@ -37,21 +37,19 @@ import {
   exactLineTtcsOf,
 } from "../../domain/services/exact-order-composition.js";
 import { agreeWithWindow, type WindowRequester } from "../../domain/services/delivery-window.js";
+import {
+  replayBasketDiscounts,
+  type BasketDiscountRefusal,
+  type ReplayedBasket,
+} from "../../domain/services/basket-discount-replay.js";
 import type {
   BasketLine,
-  BasketPromotionApplied,
+  BasketPromotionOutcome,
 } from "../../domain/services/basket-promotion-choice.js";
 import { cumulatedDiscountsOf } from "../../domain/services/basket-promotion-plan.js";
-import {
-  ensureKeptMinimums,
-  keptQuantityChanges,
-  revisedLineRequests,
-} from "../../domain/services/revised-lines.js";
-import {
-  quantityOf,
-  type OrderLineInput,
-  type OrderLineSnapshot,
-} from "../../domain/value-objects/order-line.js";
+import type { FrozenDiscountTerms } from "../../domain/services/frozen-discount-terms.js";
+import type { KeptLineRefusal } from "../../domain/services/kept-line-prices.js";
+import { quantityOf, type OrderLineInput } from "../../domain/value-objects/order-line.js";
 import {
   placementVatMethodOf,
   type OrderVatMethod,
@@ -62,6 +60,7 @@ import type { OrderContent } from "./order-content.js";
 import { OrderLinePricing } from "./order-line-pricing.service.js";
 import { OrderOperations } from "./order-operations.service.js";
 import type { OrderParties } from "./order-parties.js";
+import { priceRevisedLines, type RevisedFrom, type RevisedLines } from "./revised-line-pricing.js";
 
 /** Acheminement résolu : les snapshots à figer et les deux ajustements de prix. */
 interface ResolvedFulfillment {
@@ -77,8 +76,10 @@ interface ResolvedFulfillment {
   readonly discountPromotionId: string | null;
   /** Les SKU qu'aucune remise de panier ne couvre. */
   readonly ineligibleSkus: ReadonlySet<string>;
-  /** Les remises retenues, dans l'ordre d'application (lot M7) ; à partir de deux, cumulées. */
-  readonly applied: readonly BasketPromotionApplied[];
+  /** Les remises cumulées (lot M7), à partir de deux ; `undefined` pour la remise unique ou aucune. */
+  readonly basketDiscounts: readonly DraftBasketDiscount[] | undefined;
+  /** Les termes figés de la remise unique (plan des remises acquises, § 10.3). */
+  readonly discountTerms: FrozenDiscountTerms | null;
   /** Le barème de zone qui a produit les frais, ou `null` en retrait. */
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   readonly deliveryFeeCents: number;
@@ -97,7 +98,17 @@ export interface ResolvedContent {
   readonly known: ReadonlyMap<string, OrderLineClassification>;
   readonly audience: CustomerAudience;
   readonly fulfillment: ResolvedFulfillment;
+  /**
+   * Ce que la révision ne laisse pas passer en silence — un prix de ligne qui
+   * changerait, une remise qui tomberait sous son seuil (plan des remises
+   * acquises, § 10.4) : le devis les rend, la révision lève le premier. Vide
+   * à la passation.
+   */
+  readonly refusals: readonly RevisionPriceRefusal[];
 }
+
+/** Un refus de la règle « une modification ne change jamais un prix convenu en silence ». */
+export type RevisionPriceRefusal = KeptLineRefusal | BasketDiscountRefusal;
 
 /** Ce qui reste à décider après l'heure limite : l'acheminement convenu, le mode de TVA du port. */
 export interface ArrangedContent {
@@ -121,6 +132,7 @@ export type ComposedDraft = Pick<
   | "discountAdjustment"
   | "discountLabel"
   | "discountPromotionId"
+  | "discountTerms"
   | "basketDiscounts"
   | "deliveryFeeCents"
   | "deliveryFeeAdjustment"
@@ -155,18 +167,19 @@ export class OrderComposition {
 
   /**
    * Tarife le panier, classe ses lignes, lit la clientèle et résout
-   * l'acheminement. `frozen` : les lignes de la révision précédente, ou `null`
-   * à la passation.
+   * l'acheminement. `revised` : la commande qu'on révise — ses lignes figées
+   * et ses remises de panier, REJOUÉES au lieu d'être rejugées (plan des
+   * remises acquises, § 10.2) —, ou `null` à la passation.
    *
    * @throws {PickupClosedAtRequestedTimeError} la tranche ne tient dans aucune fenêtre du point.
    */
   async resolve(
     content: OrderContent,
     parties: OrderParties,
-    frozen: readonly OrderLineSnapshot[] | null,
+    revised: RevisedFrom | null,
     vatMethod: OrderVatMethod = placementVatMethodOf(parties.companyId),
   ): Promise<ResolvedContent> {
-    const lines = await this.priceLines(content.lines, parties, frozen);
+    const { lines, refusals } = await this.priceLines(content.lines, parties, revised, vatMethod);
     // Les plans de remise se comparent dans l'unité de la commande (M7) :
     // en TTC pour `exact_ht`, par la composition même de l'agrégat.
     const ttcLines = vatMethod === "exact_ht" ? exactLineTtcsOf(lines) : null;
@@ -188,14 +201,24 @@ export class OrderComposition {
     // Le statut d'où elle est tirée vient avec elle : les promotions panier
     // le lisent (plan des promotions, L5), sans seconde lecture.
     const { audience, companyStatus } = await this.audiences.standingOf(parties.companyId);
-    const fulfillment = await this.resolveFulfillment(
+    const resolved = await this.resolveFulfillment(
       content,
       priced,
       { audience, companyId: parties.companyId, companyStatus, buyerKind: parties.buyerKind },
       known,
     );
+    const replay =
+      revised === null ? null : replayBasketDiscounts(revised.discounts, revised.lines, priced);
+    const fulfillment = replay === null ? resolved : withReplayedDiscounts(resolved, replay);
     const subtotalCents = priced.reduce((sum, line) => sum + line.htCents, 0);
-    return { lines, subtotalCents, known, audience, fulfillment };
+    return {
+      lines,
+      subtotalCents,
+      known,
+      audience,
+      fulfillment,
+      refusals: [...refusals, ...(replay?.refusals ?? [])],
+    };
   }
 
   /**
@@ -246,7 +269,7 @@ export class OrderComposition {
     const lines = resolved.lines.map((line) =>
       classified(line, resolved.known, fulfillment.ineligibleSkus),
     );
-    const cumulated = cumulatedDiscountsOf(lines, fulfillment.applied);
+    const cumulated = fulfillment.basketDiscounts;
     const amounts =
       vatMethod === "exact_ht"
         ? exactTermsOf(lines, fulfillment, cumulated, arranged.deliveryVatMode)
@@ -275,6 +298,7 @@ export class OrderComposition {
       discountAdjustment: fulfillment.discountAdjustment,
       discountLabel: fulfillment.discountLabel,
       discountPromotionId: fulfillment.discountPromotionId,
+      discountTerms: fulfillment.discountTerms,
       ...(cumulated === undefined ? {} : { basketDiscounts: cumulated }),
       deliveryFeeAdjustment: fulfillment.deliveryFeeAdjustment,
       deliveryFeeCents: amounts.deliveryFeeCents,
@@ -284,35 +308,20 @@ export class OrderComposition {
 
   /**
    * Les lignes tarifées. À la passation, toutes passent par la résolution qui
-   * facture ; en révision, seules les NOUVELLES y passent — les autres
-   * reprennent leur prix figé (R3), et un SKU retiré du catalogue depuis ne
-   * fait donc pas refuser la quantité qu'on change. Seul le minimum en pièces
-   * d'une ligne gardée dont la quantité CHANGE se relit au catalogue
-   * (dérogation à R3, Hugo, 2026-10-29) — une lecture par lot, avant de
-   * tarifer les nouvelles.
+   * facture ; en révision, {@link priceRevisedLines} — les lignes gardées à
+   * leur prix figé, retarifées pour être comparées quand leur quantité change.
    */
   private async priceLines(
     requested: readonly OrderLineRequest[],
     parties: OrderParties,
-    frozen: readonly OrderLineSnapshot[] | null,
-  ): Promise<readonly OrderLineInput[]> {
-    if (frozen === null) {
+    revised: RevisedFrom | null,
+    vatMethod: OrderVatMethod,
+  ): Promise<RevisedLines> {
+    if (revised === null) {
       const resolved = await this.linePricing.resolve(requested, parties, "checkout");
-      return resolved.map((entry) => entry.line);
+      return { lines: resolved.map((entry) => entry.line), refusals: [] };
     }
-    const split = revisedLineRequests(frozen, requested);
-    const changes = keptQuantityChanges(frozen, split);
-    const minimums = await this.linePricing.minimumsOf(
-      changes.map((change) => change.sku),
-      parties,
-    );
-    ensureKeptMinimums(changes, minimums);
-    const fresh =
-      split.fresh.length === 0
-        ? []
-        : await this.linePricing.resolve(split.fresh, parties, "checkout");
-    const freshBySku = new Map(fresh.map((entry) => [entry.line.sku, entry.line]));
-    return split.order.map((sku) => split.frozen.get(sku) ?? freshBySku.get(sku)).filter(isLine);
+    return priceRevisedLines(this.linePricing, requested, parties, revised, vatMethod);
   }
 
   /**
@@ -376,8 +385,7 @@ export class OrderComposition {
         discountAdjustment: retrait.discountAdjustment,
         discountLabel: retrait.discountLabel,
         discountPromotionId: retrait.promotionId,
-        ineligibleSkus: retrait.ineligibleSkus,
-        applied: retrait.applied,
+        ...cumulatedOf(priced, retrait),
         deliveryFeeAdjustment: null,
         deliveryFeeCents: 0,
         globalWindowMode: null,
@@ -400,8 +408,7 @@ export class OrderComposition {
       discountAdjustment: discount.discountAdjustment,
       discountLabel: discount.label,
       discountPromotionId: discount.promotionId,
-      ineligibleSkus: discount.ineligibleSkus,
-      applied: discount.applied,
+      ...cumulatedOf(priced, discount),
       deliveryFeeCents: coursier.feeCents,
       // Le barème de la zone, figé avec son montant : `zone.fee` est mutable.
       deliveryFeeAdjustment: coursier.feeAdjustment,
@@ -437,8 +444,42 @@ function exactTermsOf(
   };
 }
 
-function isLine(line: OrderLineInput | undefined): line is OrderLineInput {
-  return line !== undefined;
+/**
+ * Les remises que la caisse a retenues, dans la forme que l'agrégat reçoit :
+ * cumulées à partir de deux (lot M7), sinon la remise unique et ses termes.
+ */
+function cumulatedOf(
+  lines: readonly BasketLine[],
+  outcome: Pick<BasketPromotionOutcome, "applied" | "ineligibleSkus">,
+): Pick<ResolvedFulfillment, "ineligibleSkus" | "basketDiscounts" | "discountTerms"> {
+  const [first] = outcome.applied;
+  return {
+    ineligibleSkus: outcome.ineligibleSkus,
+    basketDiscounts: cumulatedDiscountsOf(lines, outcome.applied),
+    discountTerms: outcome.applied.length === 1 && first !== undefined ? first.terms : null,
+  };
+}
+
+/**
+ * **La révision rejoue les remises de la commande** (plan des remises
+ * acquises, § 10.2) : l'acheminement résolu garde son point, sa zone et ses
+ * frais ; sa remise est remplacée par le rejeu, jamais par la caisse du
+ * moment.
+ */
+function withReplayedDiscounts(
+  resolved: ResolvedFulfillment,
+  replay: ReplayedBasket,
+): ResolvedFulfillment {
+  return {
+    ...resolved,
+    discountCents: replay.discountCents,
+    discountAdjustment: replay.discountAdjustment,
+    discountLabel: replay.discountLabel,
+    discountPromotionId: replay.discountPromotionId,
+    discountTerms: replay.discountTerms,
+    ineligibleSkus: replay.ineligibleSkus,
+    basketDiscounts: replay.basketDiscounts,
+  };
 }
 
 /**

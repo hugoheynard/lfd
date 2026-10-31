@@ -105,8 +105,14 @@ const FIVE_PERCENT: CartAdjustment = { mode: "percent", bp: 500 };
 
 /** 10 % sur les deux lignes éligibles, puis 5 % sur le seul croissant. */
 const CUMULATED: readonly DraftBasketDiscount[] = [
-  { promotionId: "promo_a", adjustment: TEN_PERCENT, label: LABEL, coveredLines: [0, 1] },
-  { promotionId: "promo_b", adjustment: FIVE_PERCENT, label: null, coveredLines: [0] },
+  {
+    promotionId: "promo_a",
+    adjustment: TEN_PERCENT,
+    label: LABEL,
+    coveredLines: [0, 1],
+    terms: null,
+  },
+  { promotionId: "promo_b", adjustment: FIVE_PERCENT, label: null, coveredLines: [0], terms: null },
 ];
 
 /** Le total HT que la chaîne de M1 rend sur ces lignes — ce que la composition enverra. */
@@ -235,8 +241,15 @@ describe("plusieurs remises de panier (M7)", () => {
         adjustment: { mode: "amount", cents: 99_999 },
         label: null,
         coveredLines: [0, 1],
+        terms: null,
       },
-      { promotionId: "promo_b", adjustment: FIVE_PERCENT, label: null, coveredLines: [0, 1] },
+      {
+        promotionId: "promo_b",
+        adjustment: FIVE_PERCENT,
+        label: null,
+        coveredLines: [0, 1],
+        terms: null,
+      },
     ];
     expect(() =>
       placed({ basketDiscounts: exhausting, discountCents: sum(chainedHt(exhausting)) }),
@@ -249,6 +262,7 @@ describe("plusieurs remises de panier (M7)", () => {
       adjustment: { mode: "percent", bp: 100 },
       label: null,
       coveredLines: [0, 1],
+      terms: null,
     }));
     expect(() => placed({ basketDiscounts: six, discountCents: 1 })).toThrow(
       TooManyBasketDiscountsError,

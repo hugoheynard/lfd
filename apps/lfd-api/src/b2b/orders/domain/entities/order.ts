@@ -1,3 +1,7 @@
+import {
+  ensureFulfillmentKeepsPromotion,
+  revisedFulfillmentOf,
+} from "../services/fulfillment-promotion.js";
 import { ProductionPlanClosedError } from "../errors/production-plan-closed.error.js";
 import type {
   // Aliasé : `OrderFulfillmentInput` désigne déjà ici le mode + les adresses.
@@ -174,6 +178,7 @@ export class Order {
    * @throws {CardOrderNotRevisableError} la commande se règle par carte (lot M2).
    * @throws {ShortfallDecidedRevisionError} son départ incomplet est décidé (E6b).
    * @throws {UnchangedOrderRevisionError} la modification ne change rien.
+   * @throws {FulfillmentChangeAltersPromotionError} le nouvel acheminement sort de la cible figée d'une remise (L9).
    */
   static revise(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
     const revision = Order.recompose(current, input);
@@ -185,6 +190,9 @@ export class Order {
   static recompose(current: RevisableOrder, input: DraftOrderInput): OrderRevisionToSave {
     ensureRevisableSettlement(current);
     ensureNoShortfallDecision(current);
+    // L9 avant les gardes de montant : une remise emportée hors de sa cible
+    // se refuse en nommant la promotion (plan des remises acquises, § 10.2).
+    ensureFulfillmentKeepsPromotion(current, revisedFulfillmentOf(input));
     const revised = Order.compose(input, current.vatMethod);
     revised.carryCustomerCancellation(
       effectiveFixedCancellation(current.customerCancellation, current.customerCancellableUntil, {

@@ -93,6 +93,14 @@ describe("BasketPromotions.resolve", () => {
           label: { fr: "−20 % sur tout", en: "−20 % sur tout", it: "−20 % sur tout" },
           ineligibleSkus: new Set(),
           discountCents: 200,
+          // Les termes que la commande fige pour les rejouer (plan des remises acquises).
+          terms: {
+            cumulative: false,
+            minQuantity: null,
+            pickup: { points: ["pk_coeur"] },
+            delivery: "none",
+            origin: "placed",
+          },
         },
       ],
     });

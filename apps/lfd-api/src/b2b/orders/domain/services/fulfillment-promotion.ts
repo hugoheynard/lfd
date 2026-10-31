@@ -1,106 +1,121 @@
-import type { CartAdjustment } from "@lfd/contracts";
-
-import type { RevisableOrder, RevisionChange } from "../entities/order-revision.js";
-import type { OrderToPlace } from "../entities/order-shapes.js";
+import { sameValue, type RevisableOrder } from "../entities/order-revision.js";
+import type { DraftOrderInput } from "../entities/order-shapes.js";
 import { FulfillmentChangeAltersPromotionError } from "../errors/fulfillment-promotion-errors.js";
-import { frozenBasketDiscountsOf, type FrozenBasketPromotion } from "./frozen-basket-discounts.js";
+import { replayableDiscountsOf, type RevisableDiscount } from "./basket-discount-replay.js";
+import { termsAdmit, type FulfillmentFact } from "./frozen-discount-terms.js";
+
+/** Une promotion telle que L9 la compare : son identifiant figé, et son libellé pour le refus. */
+interface ComparedPromotion {
+  readonly promotionId: string | null;
+  readonly label: string | null;
+}
 
 /**
- * Les changements qui peuvent faire entrer ou sortir une promotion
- * conditionnée par l'acheminement. L'adresse livrée en est depuis que la
- * ZONE entre dans le fait (`documentation/promotions/promotions.md`, § 2.14) : une autre adresse peut tomber dans une autre zone.
+ * L'acheminement de la composition révisée, et ses promotions — lu sur
+ * l'ENTRÉE de l'agrégat, pour que L9 se juge avant les gardes de montant :
+ * une remise de retrait emportée en livraison doit être refusée par L9, qui
+ * nomme la promotion et le geste, pas par la garde technique du montant.
  */
-const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set([
-  "method",
-  "pickup_point",
-  "delivery_address",
-]);
+export interface RevisedFulfillment {
+  readonly method: "pickup" | "delivery";
+  readonly pickupSiteId: string | null;
+  readonly zoneId: string | null;
+  readonly deliveryAddress: unknown;
+  readonly promotions: readonly ComparedPromotion[];
+}
+
+/** L'entrée, réduite comme `normalizeFulfillment` la réduira. */
+export function revisedFulfillmentOf(input: DraftOrderInput): RevisedFulfillment {
+  const { fulfillment } = input;
+  const pickup = fulfillment.method === "pickup";
+  return {
+    method: fulfillment.method,
+    pickupSiteId: pickup ? (fulfillment.pickupAddress?.siteId ?? null) : null,
+    zoneId: pickup ? null : fulfillment.deliveryZoneId,
+    deliveryAddress: pickup ? null : fulfillment.deliveryAddress,
+    promotions: promotionsAfter(input),
+  };
+}
 
 /**
- * **L9 — changer d'acheminement ne change pas les promotions** (`documentation/promotions/promotions.md`, § 2.6, étendu à un ENSEMBLE au, lot M3). Seulement quand le mode, le
- * point ou l'adresse livrée change : une révision qui garde l'acheminement se recompose comme
- * avant.
+ * **L9 — changer d'acheminement ne change pas les promotions**, jugé contre la
+ * **cible figée** de chaque remise (`documentation/promotions/plan-remises-acquises.md`,
+ * § 10.2, qui remplace la comparaison rang par rang du lot M3). Seulement quand
+ * le mode, le point ou l'adresse livrée change (l'adresse, parce que la ZONE
+ * entre dans le fait, `promotions.md` § 2.14) : une révision qui garde
+ * l'acheminement se recompose comme avant.
  *
- * La comparaison porte sur la liste ORDONNÉE des remises de panier, rang par
- * rang : l'identifiant figé de la promotion, ou, pour une remise reprise sans
- * identifiant (commande d'avant L9, `NULL` = « inconnu »), son ajustement
- * figé — même effet = accepté. Une remise ajoutée, retirée ou remplacée est
- * refusée en nommant laquelle.
+ * La révision REJOUE les remises de la commande, elle ne les rejuge plus :
+ * aucune ne s'ajoute, et une remise dont tous les articles sont retirés
+ * disparaît sans rien coûter. Reste à savoir si celles qui demeurent
+ * admettaient le nouvel acheminement — un point d'une autre liste, une zone
+ * d'une autre, le retrait quitté pour la livraison. Sinon, refus.
  *
- * L'« avant » se lit dans `order_discounts` quand la commande y a des lignes
- * actives ; sinon dans les colonnes `discount_*` figées, comme UNE remise de
- * rang 1 (§ 18.9). L'« après » est ce que la nouvelle composition retient :
- * la remise unique des colonnes, ou la liste des remises cumulées (M7). Les deux se lisent par la PRÉSENCE d'un
- * ajustement, pas par le montant : une remise arrondie à zéro n'a pas de
- * ligne en table, mais reste la promotion de la commande.
+ * Une remise sans termes figés (pas encore reprise, ou d'avant L9) ne dit pas
+ * sa cible : on ne peut pas affirmer qu'elle suit la commande, et le
+ * changement est refusé — jamais une remise gardée au hasard.
+ *
+ * Défense en profondeur : une promotion présente après et pas avant est
+ * refusée aussi (« ajoute »), ce que le rejeu ne produit pas.
  *
  * @throws {FulfillmentChangeAltersPromotionError}
  */
 export function ensureFulfillmentKeepsPromotion(
   order: RevisableOrder,
-  state: OrderToPlace,
-  changes: readonly RevisionChange[],
+  after: RevisedFulfillment,
 ): void {
-  if (!changes.some((change) => FULFILLMENT_CHANGES.has(change))) {
+  if (!fulfillmentChanged(order, after)) {
     return;
   }
-  const before = promotionsBefore(order);
-  const after = promotionsAfter(state);
-  const length = Math.max(before.length, after.length);
-  for (let rank = 0; rank < length; rank += 1) {
-    const had = before[rank];
-    const has = after[rank];
-    if (had === undefined && has !== undefined) {
-      throw new FulfillmentChangeAltersPromotionError(order.orderId, "adds", has.label);
-    }
-    if (had !== undefined && has === undefined) {
-      throw new FulfillmentChangeAltersPromotionError(order.orderId, "removes", had.label);
-    }
-    if (had !== undefined && has !== undefined && !samePromotion(had, has)) {
-      throw new FulfillmentChangeAltersPromotionError(order.orderId, "replaces", had.label);
+  const before = replayableDiscountsOf(order);
+  const knownIds = new Set(before.map((discount) => discount.promotionId));
+  const added = after.promotions.find((has) => !knownIds.has(has.promotionId));
+  if (added !== undefined) {
+    throw new FulfillmentChangeAltersPromotionError(order.orderId, "adds", added.label);
+  }
+  const fact: FulfillmentFact = {
+    method: after.method,
+    pickupId: after.pickupSiteId,
+    zoneId: after.zoneId,
+  };
+  for (const discount of before.filter((had) => stillApplied(had, after.promotions))) {
+    if (discount.terms === null || !termsAdmit(discount.terms, fact)) {
+      throw new FulfillmentChangeAltersPromotionError(order.orderId, "removes", discount.label);
     }
   }
 }
 
-/** La table si elle a des lignes actives, sinon les colonnes figées — le repli partagé. */
-function promotionsBefore(order: RevisableOrder): readonly FrozenBasketPromotion[] {
-  return frozenBasketDiscountsOf(order.activeDiscounts, order);
+/** Mode, point ou adresse livrée — les changements qui touchent une cible d'acheminement. */
+function fulfillmentChanged(order: RevisableOrder, after: RevisedFulfillment): boolean {
+  const before = order.fulfillment;
+  return (
+    before.method !== after.method ||
+    (before.pickupAddress?.siteId ?? null) !== after.pickupSiteId ||
+    !sameValue(before.deliveryAddress, after.deliveryAddress)
+  );
 }
 
-function promotionsAfter(state: OrderToPlace): readonly FrozenBasketPromotion[] {
-  if (state.discountAdjustment === null) {
-    // Plusieurs remises (M7) : les colonnes uniques sont à `null`, la liste
-    // de l'agrégat fait foi — aucune de ses étapes n'est nulle.
-    return state.basketDiscounts.map((discount) => ({
+/** La remise est-elle encore dans la nouvelle composition ? Par identifiant (`null` compris). */
+function stillApplied(had: RevisableDiscount, after: readonly ComparedPromotion[]): boolean {
+  return after.some((has) => has.promotionId === had.promotionId);
+}
+
+function promotionsAfter(input: DraftOrderInput): readonly ComparedPromotion[] {
+  if (input.basketDiscounts !== undefined) {
+    return input.basketDiscounts.map((discount) => ({
       promotionId: discount.promotionId,
-      adjustment: discount.adjustment,
       label: discount.label?.fr ?? null,
     }));
   }
+  // La remise unique se lit par la PRÉSENCE d'un ajustement, pas par le
+  // montant : arrondie à zéro, elle reste la promotion de la commande.
+  if (input.discountAdjustment === null) {
+    return [];
+  }
   return [
     {
-      promotionId: state.discountPromotionId,
-      adjustment: state.discountAdjustment,
-      label: state.discountLabel?.fr ?? null,
+      promotionId: input.discountPromotionId ?? null,
+      label: input.discountLabel?.fr ?? null,
     },
   ];
-}
-
-function samePromotion(had: FrozenBasketPromotion, has: FrozenBasketPromotion): boolean {
-  return had.promotionId === null
-    ? sameAdjustment(had.adjustment, has.adjustment)
-    : had.promotionId === has.promotionId;
-}
-
-function sameAdjustment(a: CartAdjustment | null, b: CartAdjustment | null): boolean {
-  if (a === null || b === null) {
-    return a === b;
-  }
-  if (a.mode === "percent" && b.mode === "percent") {
-    return a.bp === b.bp;
-  }
-  if (a.mode === "amount" && b.mode === "amount") {
-    return a.cents === b.cents;
-  }
-  return false;
 }

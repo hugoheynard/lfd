@@ -9,6 +9,7 @@ import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-
 import type { DraftBasketDiscount } from "../entities/order-shapes.js";
 import { MAX_BASKET_DISCOUNTS } from "./basket-discounts.js";
 import type { BasketLine } from "./basket-promotion-choice.js";
+import { placedTermsOf, type FrozenDiscountTerms } from "./frozen-discount-terms.js";
 
 /**
  * **Les remises de panier d'une commande, choisies** — `documentation/promotions/promotions.md`, § 2.11
@@ -52,6 +53,8 @@ export interface BasketPromotionApplied {
   readonly ineligibleSkus: ReadonlySet<string>;
   /** Son étape, positive, dans l'unité de la commande : HT (`line_ht`) ou TTC (`exact_ht`). */
   readonly discountCents: number;
+  /** Ses termes, que la commande fige pour les rejouer (plan des remises acquises, § 10.3). */
+  readonly terms: FrozenDiscountTerms | null;
 }
 
 /** Les remises retenues, et celles que le plafond a écartées. */
@@ -188,6 +191,7 @@ function applied(
             label: candidate.promotion.servedLabel,
             ineligibleSkus: candidate.ineligibleSkus,
             discountCents: amount,
+            terms: placedTermsOf(candidate.promotion),
           },
         ];
   });
@@ -223,5 +227,6 @@ export function cumulatedDiscountsOf(
     adjustment: discount.adjustment,
     label: discount.label,
     coveredLines: coveredLinesOf(lines, discount.ineligibleSkus),
+    terms: discount.terms,
   }));
 }

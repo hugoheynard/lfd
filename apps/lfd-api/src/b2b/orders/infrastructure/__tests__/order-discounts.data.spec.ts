@@ -21,6 +21,7 @@ const DISCOUNT: AppliedBasketDiscount = {
     { rate: 20, htCents: 95 },
   ],
   coveredLines: [0, 2],
+  terms: null,
 };
 
 describe("orderDiscountsWriteOf", () => {
@@ -46,6 +47,14 @@ describe("orderDiscountsWriteOf", () => {
           { rate: 5.5, htCents: 93 },
           { rate: 20, htCents: 95 },
         ],
+        // Termes inconnus : toutes les colonnes à NULL ensemble (CHECK).
+        cumulative: null,
+        minQuantity: null,
+        fulfillmentPickup: null,
+        fulfillmentDelivery: null,
+        fulfillmentPickupPoints: [],
+        fulfillmentDeliveryZones: [],
+        frozenTermsOrigin: null,
       },
     ]);
     expect(write.coverage).toEqual([

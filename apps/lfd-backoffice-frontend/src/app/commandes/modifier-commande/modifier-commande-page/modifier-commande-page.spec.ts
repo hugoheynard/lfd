@@ -60,6 +60,7 @@ const QUOTE: OrderRevisionQuoteView = {
   previousTotalCents: 1203,
   differenceCents: 380,
   changes: ['lines'],
+  discountRefusals: [],
 };
 
 interface Harness {

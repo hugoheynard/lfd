@@ -142,12 +142,33 @@ describe("POST /admin/orders/:id/revisions — le minimum d'une ligne gardée", 
     expect(await croissants(orderId)).toBe(ORDERED);
   });
 
-  it("une ligne gardée dont l'article est sorti du catalogue : aucun minimum connu, elle passe", async () => {
+  /**
+   * Changement de règle (`documentation/promotions/plan-remises-acquises.md`,
+   * § 10.1, 2026-10-31) : la décision du 2026-10-29 laissait passer cette
+   * quantité, faute de minimum connu. Un article sorti du catalogue ne se
+   * retarife plus : changer sa quantité est refusé par son nom ; le garder tel
+   * quel, ou le retirer, passe.
+   */
+  it("une ligne gardée dont l'article est sorti du catalogue : changer sa quantité est refusé (409)", async () => {
     const { orderId, pickupId } = await placed();
     await setCroissant({ proMinQuantity: PRO_MINIMUM, withdrawnAt: daysAgo(1) });
 
-    await revise(orderId, pickupId, [{ sku: "VIE-001-1", quantity: 1 }]).expect(200);
+    const response = await revise(orderId, pickupId, [{ sku: "VIE-001-1", quantity: 1 }]);
 
-    expect(await croissants(orderId)).toBe(1);
+    expect(response.status).toBe(409);
+    expect(jsonBody<{ code: string }>(response).code).toBe("orders.revise.line_withdrawn");
+    expect(await croissants(orderId)).toBe(ORDERED);
+  });
+
+  it("une ligne gardée dont l'article est sorti du catalogue se garde telle quelle", async () => {
+    const { orderId, pickupId } = await placed();
+    await setCroissant({ withdrawnAt: daysAgo(1) });
+
+    await revise(orderId, pickupId, [
+      { sku: "VIE-001-1", quantity: ORDERED },
+      { sku: "VIE-002-1", quantity: 1 },
+    ]).expect(200);
+
+    expect(await croissants(orderId)).toBe(ORDERED);
   });
 });

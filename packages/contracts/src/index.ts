@@ -1196,10 +1196,13 @@ export type {
 export { orderRevisionPayloadSchema, orderRevisionQuotePayloadSchema } from "./order-revision.js";
 export type {
   OrderRevisedResponse,
+  OrderRevisionDiscountRefusal,
+  OrderRevisionLineRefusal,
   OrderRevisionPayload,
   OrderRevisionQuoteLineView,
   OrderRevisionQuotePayload,
   OrderRevisionQuoteView,
+  OrderRevisionUnitPrice,
 } from "./order-revision.js";
 
 export {
