@@ -2,7 +2,7 @@ import { CommandHandler, type ICommandHandler } from "@nestjs/cqrs";
 
 import { Clock } from "../../../../platform/time/clock.js";
 import { PromotionRepository } from "../../domain/ports/promotion.repository.js";
-import { promotionActOf } from "../../domain/promotion-act.js";
+import { revisionActOf } from "../../domain/promotion-act.js";
 import { mustLoadPromotion } from "./promotion-support.js";
 import { PromotionFulfillmentNames } from "./promotion-fulfillment-names.js";
 import { PromotionWriteGuard } from "./promotion-write-guard.js";
@@ -29,7 +29,7 @@ export class RevisePromotionHandler implements ICommandHandler<RevisePromotionCo
     await this.guard.admitsPlace(revised);
     await this.promotions.save(
       revised,
-      promotionActOf(revised, "replaced", command.staffUserId, now, command.reason, names),
+      revisionActOf(promotion.terms, revised, command.staffUserId, now, command.reason, names),
     );
   }
 }

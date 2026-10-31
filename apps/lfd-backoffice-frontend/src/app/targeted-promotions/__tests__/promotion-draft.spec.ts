@@ -361,6 +361,20 @@ describe('le brouillon → le corps minimal, bords', () => {
     ]);
   });
 
+  it('la description est rognée ; blanche, elle part à null ; relue, elle revient', () => {
+    expect(termsOf({ ...base, description: '  Pour le mardi  ' }).description).toBe(
+      'Pour le mardi',
+    );
+    expect(termsOf({ ...base, description: '   ' }).description).toBeNull();
+    expect(draftOf(promotionView({ description: 'Pour le mardi' })).description).toBe(
+      'Pour le mardi',
+    );
+    expect(draftOf(promotionView()).description).toBe('');
+    expect(duplicateDraft(promotionView({ description: 'Pour le mardi' })).description).toBe(
+      'Pour le mardi',
+    );
+  });
+
   it('le nom interne est rogné et un nom blanc est refusé, comme un libellé blanc', () => {
     expect(termsOf({ ...base, internalName: '  Nom  ' }).internalName).toBe('Nom');
     expect(draftProblem({ ...base, internalName: '   ' })).toContain('nom interne');

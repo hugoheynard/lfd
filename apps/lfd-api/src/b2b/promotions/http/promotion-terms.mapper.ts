@@ -3,6 +3,7 @@ import type { PromotionTermsPayload } from "@lfd/contracts";
 import { PromotionMissingTargetIdError } from "../domain/errors/promotion-errors.js";
 import type { PromotionAudience } from "../domain/promotion-audience.js";
 import { PromotionAudienceSet } from "../domain/promotion-audience-set.js";
+import { promotionDescriptionOf } from "../domain/promotion-description.js";
 import type { PromotionEffect } from "../domain/promotion-effect.js";
 import type { PromotionFulfillment } from "../domain/promotion-fulfillment.js";
 import type { PromotionTerms } from "../domain/promotion-terms.js";
@@ -19,6 +20,7 @@ import type { PromotionTerms } from "../domain/promotion-terms.js";
 export function promotionTermsOf(payload: PromotionTermsPayload): PromotionTerms {
   return {
     internalName: payload.internalName,
+    description: promotionDescriptionOf(payload.description ?? null),
     label: payload.label,
     audienceLabels: payload.audienceLabels,
     reason: payload.reason,

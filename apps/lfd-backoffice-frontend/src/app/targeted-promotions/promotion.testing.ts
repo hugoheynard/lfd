@@ -5,6 +5,7 @@ export function promotionView(over: Partial<PromotionView> = {}): PromotionView 
   return {
     id: 'promo_1',
     internalName: 'Croissants d’automne',
+    description: null,
     label: { fr: '−20 % sur le croissant', en: null, it: null },
     reason: null,
     state: 'active',

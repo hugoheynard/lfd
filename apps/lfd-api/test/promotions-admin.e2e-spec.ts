@@ -387,3 +387,50 @@ describe("après la bascule — les refus nommés", () => {
     expect(events.map((event) => event.act)).toEqual(["posed", "paused", "resumed", "archived"]);
   });
 });
+
+describe("la description interne", () => {
+  it("se pose, se relit, se révise et se journalise sans être citée", async () => {
+    // Une seule fenêtre : la description doit être le SEUL changement.
+    const validFrom = daysAgo(1);
+    const created = await admin()
+      .post(PROMOTIONS)
+      .send(terms({ validFrom, description: "  Pour écouler les croissants du mardi  " }))
+      .expect(201);
+    const { id } = jsonBody<{ id: string }>(created);
+    const read = async (): Promise<PromotionView> =>
+      jsonBody<PromotionView>(await admin().get(`${PROMOTIONS}/${id}`).expect(200));
+    expect((await read()).description).toBe("Pour écouler les croissants du mardi");
+
+    await admin()
+      .put(`${PROMOTIONS}/${id}`)
+      .send({ terms: terms({ validFrom, description: "Vue avec le fournil" }), reason: null })
+      .expect(204);
+    expect((await read()).description).toBe("Vue avec le fournil");
+
+    await admin()
+      .put(`${PROMOTIONS}/${id}`)
+      .send({ terms: terms({ validFrom, description: "" }), reason: null })
+      .expect(204);
+    expect((await read()).description).toBeNull();
+
+    const events = await ctx.prisma.pricingEvent.findMany({
+      where: { subjectId: id },
+      orderBy: { id: "asc" },
+    });
+    const revisions = events.filter((event) => event.act === "replaced");
+    expect(events.map((event) => event.act).sort()).toEqual(["posed", "replaced", "replaced"]);
+    expect(revisions.map((event) => event.summary.endsWith(" · description modifiée"))).toEqual([
+      true,
+      true,
+    ]);
+    expect(events.map((event) => event.summary).join(" ")).not.toContain("fournil");
+  });
+
+  it("refuse au-delà de 1 000 caractères, en le nommant", async () => {
+    const response = await admin()
+      .post(PROMOTIONS)
+      .send(terms({ description: "a".repeat(1001) }))
+      .expect(400);
+    expect(refusalOf(response).code).toBe("promotions.description_too_long");
+  });
+});

@@ -15,6 +15,7 @@ describe("sameTerms — deux termes disent-ils la même chose ?", () => {
 
   it.each([
     ["le nom interne", lineTerms({ internalName: "Autre" })],
+    ["la description", lineTerms({ description: "Pour le fournil" })],
     ["le libellé", lineTerms({ label: { fr: "−20 % sur tout", en: "20% off", it: null } })],
     [
       "les libellés d'audience",

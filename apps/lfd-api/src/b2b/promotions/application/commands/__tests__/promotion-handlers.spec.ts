@@ -227,6 +227,16 @@ describe("les refus des gestes — l'erreur nommée, aucune écriture, aucun act
     expect(s.promotions.acts).toEqual(actsBefore);
   });
 
+  it("une description seule changée se révise et le journal le dit", async () => {
+    const { s, id, actsBefore } = await posed();
+    await s.revise.execute(
+      new RevisePromotionCommand(id, lineTerms({ description: "Pour le fournil" }), STAFF, null),
+    );
+    expect(s.promotions.stored.get(id)?.terms.description).toBe("Pour le fournil");
+    expect(s.promotions.acts).toHaveLength(actsBefore.length + 1);
+    expect(s.promotions.acts.at(-1)?.summary).toMatch(/description modifiée$/);
+  });
+
   it("une promotion suspendue se révise et reste suspendue", async () => {
     const { s, id } = await posed();
     await s.pause.execute(new PausePromotionCommand(id, STAFF, null));

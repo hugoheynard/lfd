@@ -206,6 +206,7 @@ export class Promotion {
 function termsOf(terms: PromotionTerms): PromotionTerms {
   return {
     internalName: terms.internalName,
+    description: terms.description,
     label: terms.label,
     audienceLabels: terms.audienceLabels,
     reason: terms.reason,

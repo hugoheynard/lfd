@@ -78,6 +78,11 @@
                         <fold-badge content="Reprise" variant="neutral" radius="pill" />
                       }
                     </div>
+                    @if (promotion.description; as description) {
+                      <p class="promotion-description" [title]="description">
+                        {{ description }}
+                      </p>
+                    }
                     <p class="promotion-summary">{{ summary(promotion) }}</p>
                     <p class="promotion-window">{{ window(promotion) }}</p>
                   </li>

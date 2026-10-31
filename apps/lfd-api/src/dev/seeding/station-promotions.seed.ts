@@ -37,6 +37,7 @@ export async function posePointDiscount(
       new PosePromotionCommand(
         {
           internalName: `Remise de retrait · ${audience.kind}`,
+          description: null,
           label: { fr: "Remise de retrait", en: null, it: null },
           audienceLabels: { individuals: null, pros: null },
           reason: null,

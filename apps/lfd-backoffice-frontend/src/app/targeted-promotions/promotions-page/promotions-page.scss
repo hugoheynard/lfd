@@ -28,8 +28,17 @@
 }
 
 .promotion-summary,
+.promotion-description,
 .promotion-window {
   margin: 0;
+}
+
+/* Une ligne, tronquée : la description entière est sur la fiche (et au survol). */
+.promotion-description {
+  overflow: hidden;
+  color: var(--fold-color-text-muted);
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .promotion-window {

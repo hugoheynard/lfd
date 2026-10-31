@@ -31,6 +31,7 @@ import {
 export interface PromotionRow {
   readonly id: string;
   readonly internalName: string;
+  readonly description: string | null;
   readonly labelFr: string;
   readonly labelEn: string | null;
   readonly labelIt: string | null;
@@ -111,6 +112,7 @@ export function toDomain(
   const promotion = Promotion.restore({
     id: row.id,
     internalName: row.internalName,
+    description: row.description,
     label: { fr: row.labelFr, en: row.labelEn, it: row.labelIt },
     audienceLabels: {
       individuals: audienceLabelOf(
@@ -156,6 +158,7 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
   return {
     id: state.id,
     internalName: state.internalName,
+    description: state.description,
     labelFr: state.label.fr,
     labelEn: state.label.en,
     labelIt: state.label.it,

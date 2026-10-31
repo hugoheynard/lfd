@@ -160,6 +160,18 @@ migration `20261031160000_les_promotions_cumulables`, et
 `20261031190000_le_cumul_au_panier` qui retire le CHECK qui la bornait au
 point ligne).
 
+**Nom interne et description** (2026-10-31) : le nom interne est obligatoire ;
+la **description** (`promotions.description`, nullable, migration
+`20261031220000_la_description_des_promotions`) est un texte libre pour
+l'équipe — le client ne la voit jamais. `apps/lfd-api/src/b2b/promotions/domain/promotion-description.ts` la
+met en forme (espaces de bord retirés, vide → `null`) et la borne à 1 000
+caractères (`PromotionDescriptionTooLongError`, 400) ; un CHECK en base tient
+la même forme. La changer **est** une révision (`sameTerms`), journalisée :
+la phrase figée ne la cite jamais, et dit « description modifiée » quand elle
+est le seul changement (`revisionActOf`, `domain/promotion-act.ts`). Le
+contrat la rend facultative (`description?: string | null`) : un corps
+d'avant qui ne l'envoie pas pose `null`.
+
 L'agrégat `domain/promotion.ts` : `pose` (`:76`), `revise` (`:133`), `pause`
 (`:146`), `resume` (`:160`), `archive` avec motif obligatoire (`:176`). Une
 promotion archivée est scellée (`ArchivedPromotionIsSealedError`). Une
@@ -346,26 +358,36 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 `b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
 `:id`.
 
-**Le genre de remise se choisit d'abord** (décision de Hugo du 2026-10-31,
+**Le genre de remise se choisit tôt** (décision de Hugo du 2026-10-31,
 comme les grandes plateformes : le type, puis un formulaire qui ne montre que
-ce qui a du sens). Les cartes, dans l'ordre :
+ce qui a du sens), juste après ce qui fait comprendre la promotion. Les
+cartes, dans l'ordre (réordonnées par Hugo le 2026-10-31 : la période
+remonte après la valeur) :
 
-1. **« Quel genre de remise ? »** — un `fold-view-toggle` à deux choix
+1. **« Nom interne et description »** — le nom interne (déplacé de la carte
+   de la valeur) et la description en `fold-textarea`, facultative ; aide
+   « Pour l'équipe seulement : le client ne la voit jamais ». Désactivée en
+   lecture seule ; « Dupliquer pour un autre public » reprend la
+   description. La liste des promotions la montre sous le nom, sur une ligne
+   tronquée (entière au survol).
+2. **« Quel genre de remise ? »** — un `fold-view-toggle` à deux choix
    illustrés : **Baisser le prix des articles** (`displayed_price` : le prix
    baisse au catalogue, pour tous les acheminements) ou **Remise sur le
    panier** (`basket` : limitable au retrait, à certains points, à la
    livraison, à certaines zones). Le sous-titre dit la conséquence pour le
    client. En lecture seule, les deux choix sont désactivés.
-2. **« Que reçoit le client (valeur de la réduction) ? »** — les effets que le
+3. **« Que reçoit le client (valeur de la réduction) ? »** — les effets que le
    genre admet, ceux d'`EFFECTS_AT` côté serveur
    (`apps/lfd-api/src/b2b/promotions/domain/promotion-effect.ts`) : pourcentage,
    montant à l'unité ou prix posé pour baisser le prix ; pourcentage ou montant
-   sur le panier pour la remise sur le panier. Puis les libellés et le nom
-   interne.
-3. **« Pour qui (définir l'audience) ? »** — l'arbre des publics.
-4. **« Sur quel mode d’acheminement et de consommation ? »** — **seulement**
+   sur le panier pour la remise sur le panier. Puis les libellés.
+4. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
+   cumul ; « Aussi pour les clients à tarif négocié » **seulement** pour
+   baisser le prix (le panier ne la porte pas).
+5. **« Pour qui (définir l'audience) ? »** — l'arbre des publics.
+6. **« Sur quel mode d’acheminement et de consommation ? »** — **seulement**
    en remise sur le panier (détail ci-dessous).
-5. **« Sur quels articles ? »** — familles et déclinaisons pour baisser le
+7. **« Sur quels articles ? »** — familles et déclinaisons pour baisser le
    prix, familles et produits pour le panier (`targetsFor`). Rangée **par
    famille** depuis le 2026-10-31 (demande de Hugo ; mise en page reprise de
    l'ancienne carte de remise de retrait des sites) :
@@ -393,10 +415,7 @@ ce qui a du sens). Les cartes, dans l'ordre :
    compte un article au poids que le moteur n'étend pas par famille ou mode au
    prix affiché.
 
-6. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
-   cumul ; « Aussi pour les clients à tarif négocié » **seulement** pour
-   baisser le prix (le panier ne la porte pas).
-7. **« Où en est-elle ? »** — une promotion existante seulement.
+8. **« Où en est-elle ? »** — une promotion existante seulement.
 
 Changer de genre dans une saisie met de côté ce que le genre quitté a en
 propre — son effet, ses cibles (déclinaisons ou produits), « tarif négocié » —

@@ -30,6 +30,7 @@ import {
   FoldLoadingStateComponent,
   FoldMultiselectComponent,
   FoldPageLayoutComponent,
+  FoldTextareaComponent,
   FoldViewToggleComponent,
 } from 'fold-ng';
 
@@ -132,6 +133,7 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
     FoldLoadingStateComponent,
     FoldMultiselectComponent,
     FoldPageLayoutComponent,
+    FoldTextareaComponent,
     FoldViewToggleComponent,
     PromotionAudienceTree,
     RouterLink,

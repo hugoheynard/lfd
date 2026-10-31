@@ -59,6 +59,21 @@ describe('PromotionsPage', () => {
     expect(root.textContent).toContain('−20 % · Tout le monde · Tous les acheminements');
   });
 
+  it('montre la description sous le nom, en une ligne ; sans description, rien', async () => {
+    const { root } = await render(async () => ({
+      ...LEGACY,
+      promotions: [
+        promotionView({ description: 'Pour écouler les croissants du mardi' }),
+        promotionView({ id: 'p4', internalName: 'Sans description' }),
+      ],
+    }));
+    const lines = [...root.querySelectorAll('.promotion-description')];
+    expect(lines.map((line) => line.textContent?.trim())).toEqual([
+      'Pour écouler les croissants du mardi',
+    ]);
+    expect(lines[0]?.getAttribute('title')).toBe('Pour écouler les croissants du mardi');
+  });
+
   it('se restreint au point demandé et le nomme', async () => {
     const { root, asked } = await render(
       async () => ({ ...LEGACY, editable: true, promotions: [] }),

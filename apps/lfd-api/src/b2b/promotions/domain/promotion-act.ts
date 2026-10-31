@@ -3,6 +3,7 @@ import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { Promotion } from "./promotion.js";
 import type { PromotionTerms } from "./promotion-terms.js";
+import { sameTerms } from "./promotion-terms-equality.js";
 
 /**
  * **Un acte sur une promotion** — l'unité du journal (`documentation/promotions/promotions.md`, § 2.9). Il s'écrit dans `pricing_events`, sujet `promotion`, à côté des
@@ -63,6 +64,35 @@ export function promotionActOf(
     summary: describePromotion(terms, names),
     subjectLabel: terms.internalName,
   };
+}
+
+/**
+ * **L'acte d'une révision.** La phrase figée ne cite jamais la description
+ * (pour l'équipe, et longue) ; quand elle est le SEUL changement, la phrase
+ * le dit — sans quoi le journal montrerait deux actes identiques.
+ */
+export function revisionActOf(
+  before: PromotionTerms,
+  revised: Promotion,
+  actor: string,
+  at: Date,
+  reason: string | null,
+  names: FulfillmentNames = NO_FULFILLMENT_NAMES,
+): PromotionAct {
+  const act = promotionActOf(revised, "replaced", actor, at, reason, names);
+  return onlyDescriptionChanged(before, revised.terms)
+    ? { ...act, summary: `${act.summary} · ${DESCRIPTION_CHANGED}` }
+    : act;
+}
+
+/** La mention ajoutée à la phrase quand seule la description a changé. */
+export const DESCRIPTION_CHANGED = "description modifiée";
+
+function onlyDescriptionChanged(before: PromotionTerms, after: PromotionTerms): boolean {
+  return (
+    before.description !== after.description &&
+    sameTerms({ ...before, description: null }, { ...after, description: null })
+  );
 }
 
 /**

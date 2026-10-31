@@ -99,6 +99,8 @@ export interface PromotionScopeRuleDraft {
 
 export interface PromotionDraft {
   readonly internalName: string;
+  /** La description interne, pour l'équipe ; vide = aucune. */
+  readonly description: string;
   readonly labelFr: string;
   readonly labelEn: string;
   readonly labelIt: string;
@@ -161,6 +163,7 @@ const NO_AUDIENCE_LABELS = {
 export function emptyDraft(today: string, pickupId: string | null): PromotionDraft {
   return {
     internalName: '',
+    description: '',
     labelFr: '',
     labelEn: '',
     labelIt: '',
@@ -215,6 +218,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
   const quantity = view.conditions.find((condition) => condition.kind === 'min_quantity');
   return {
     internalName: view.internalName,
+    description: view.description ?? '',
     labelFr: view.label.fr,
     labelEn: view.label.en ?? '',
     labelIt: view.label.it ?? '',
@@ -303,6 +307,7 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
   const minQuantity = draft.minQuantity.trim();
   return {
     internalName: draft.internalName.trim(),
+    description: draft.description.trim() === '' ? null : draft.description.trim(),
     label: labelOf(draft.labelFr, draft.labelEn, draft.labelIt) ?? { fr: '', en: null, it: null },
     // Un libellé d'une branche que le public ne touche plus n'est pas envoyé :
     // l'écran l'a caché, l'agrégat le refuserait.
@@ -469,7 +474,7 @@ export function targetIds(
 /**
  * **Le brouillon d'une copie pour un autre public** (« Dupliquer pour un
  * autre public », 2026-10-31) : tout de l'original — effet, libellés,
- * acheminement, portée, période, conditions, cumul — SAUF le public, laissé
+ * acheminement, portée, période, conditions, cumul, description — SAUF le public, laissé
  * vide pour que la forme réclame un choix. Le nom interne est marqué à revoir ;
  * le libellé client ne l'est pas, il serait publié tel quel.
  */

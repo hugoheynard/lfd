@@ -57,6 +57,12 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
     expect(closed.validTo).toEqual(new Date("2026-12-01T00:00:00.000Z"));
   });
 
+  it("la description perd ses espaces de bord ; absente ou vide, elle vaut null", () => {
+    expect(promotionTermsOf(payload()).description).toBeNull();
+    expect(promotionTermsOf(payload({ description: "   " })).description).toBeNull();
+    expect(promotionTermsOf(payload({ description: "  Fournil " })).description).toBe("Fournil");
+  });
+
   it("une saisie ne pose jamais de rang de cible", () => {
     const terms = promotionTermsOf(
       payload({

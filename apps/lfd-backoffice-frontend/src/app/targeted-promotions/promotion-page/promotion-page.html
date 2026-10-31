@@ -72,6 +72,32 @@
         <div class="block">
           <fold-element-title
             variant="title"
+            title="Nom interne et description"
+            subtitle="Pour l'équipe seulement : le client ne la voit jamais."
+          />
+          <fold-input
+            label="Nom interne"
+            hint="Ce que l'équipe lit dans la liste et au journal."
+            [value]="draft().internalName"
+            [disabled]="readOnly()"
+            (valueChange)="edit({ internalName: $event })"
+          />
+          <fold-textarea
+            label="Description"
+            optional
+            hint="Pourquoi elle existe, avec qui elle a été décidée — 1 000 caractères au plus."
+            [rows]="3"
+            [value]="draft().description"
+            [disabled]="readOnly()"
+            (valueChange)="edit({ description: $event })"
+          />
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
             title="Quel genre de remise ?"
             [subtitle]="typeHint()"
           />
@@ -136,13 +162,59 @@
               (valueChange)="edit({ labelIt: $event })"
             />
           </div>
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title variant="title" title="Quand, et à quelles conditions ?" />
+          <div class="pair">
+            <fold-date
+              label="À partir du"
+              [value]="draft().validFrom"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ validFrom: $event })"
+            />
+            <fold-date
+              label="Jusqu'au"
+              optional
+              hint="Vide : sans fin. Ce jour-là, elle ne s'applique plus."
+              [value]="draft().validTo"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ validTo: $event })"
+            />
+          </div>
           <fold-input
-            label="Nom interne"
-            hint="Ce que l'équipe lit dans la liste et au journal — le client ne le voit pas."
-            [value]="draft().internalName"
+            label="Quantité minimum par article"
+            hint="Le client la reçoit à partir de cette quantité sur la ligne. Vide : dès un."
+            [value]="draft().minQuantity"
             [disabled]="readOnly()"
-            (valueChange)="edit({ internalName: $event })"
+            (valueChange)="edit({ minQuantity: $event })"
           />
+          @if (atLine()) {
+            <fold-checkbox
+              label="Aussi pour les clients à tarif négocié"
+              hint="Sinon, un client sous mercuriale garde son prix négocié."
+              [checked]="draft().stacksOverMercuriale"
+              [disabled]="readOnly()"
+              (checkedChange)="edit({ stacksOverMercuriale: $event })"
+            />
+          }
+          <fold-checkbox
+            label="Cumulable"
+            [hint]="cumulativeHint()"
+            [checked]="draft().cumulative"
+            [disabled]="readOnly()"
+            (checkedChange)="edit({ cumulative: $event })"
+          />
+          @if (writable()) {
+            <fold-input
+              [label]="isNew() ? 'Motif de la pose' : 'Motif de la modification'"
+              hint="Pourquoi — il part au journal tarifaire avec l'enregistrement."
+              [value]="draft().reason"
+              (valueChange)="edit({ reason: $event })"
+            />
+          }
         </div>
       </fold-card>
 
@@ -365,59 +437,6 @@
               [value]="list.value"
               [disabled]="readOnly()"
               (valueChange)="setApart(list.target, list.eligible, $event)"
-            />
-          }
-        </div>
-      </fold-card>
-
-      <fold-card>
-        <div class="block">
-          <fold-element-title variant="title" title="Quand, et à quelles conditions ?" />
-          <div class="pair">
-            <fold-date
-              label="À partir du"
-              [value]="draft().validFrom"
-              [disabled]="readOnly()"
-              (valueChange)="edit({ validFrom: $event })"
-            />
-            <fold-date
-              label="Jusqu'au"
-              optional
-              hint="Vide : sans fin. Ce jour-là, elle ne s'applique plus."
-              [value]="draft().validTo"
-              [disabled]="readOnly()"
-              (valueChange)="edit({ validTo: $event })"
-            />
-          </div>
-          <fold-input
-            label="Quantité minimum par article"
-            hint="Le client la reçoit à partir de cette quantité sur la ligne. Vide : dès un."
-            [value]="draft().minQuantity"
-            [disabled]="readOnly()"
-            (valueChange)="edit({ minQuantity: $event })"
-          />
-          @if (atLine()) {
-            <fold-checkbox
-              label="Aussi pour les clients à tarif négocié"
-              hint="Sinon, un client sous mercuriale garde son prix négocié."
-              [checked]="draft().stacksOverMercuriale"
-              [disabled]="readOnly()"
-              (checkedChange)="edit({ stacksOverMercuriale: $event })"
-            />
-          }
-          <fold-checkbox
-            label="Cumulable"
-            [hint]="cumulativeHint()"
-            [checked]="draft().cumulative"
-            [disabled]="readOnly()"
-            (checkedChange)="edit({ cumulative: $event })"
-          />
-          @if (writable()) {
-            <fold-input
-              [label]="isNew() ? 'Motif de la pose' : 'Motif de la modification'"
-              hint="Pourquoi — il part au journal tarifaire avec l'enregistrement."
-              [value]="draft().reason"
-              (valueChange)="edit({ reason: $event })"
             />
           }
         </div>

@@ -18,6 +18,7 @@ export function lineTerms(overrides: TermsOverrides = {}): PromotionTerms {
   const { audience, ...rest } = overrides;
   return {
     internalName: "Promo d'automne",
+    description: null,
     label: { fr: "−20 % sur tout", en: null, it: null },
     audienceLabels: NO_AUDIENCE_LABELS,
     reason: null,

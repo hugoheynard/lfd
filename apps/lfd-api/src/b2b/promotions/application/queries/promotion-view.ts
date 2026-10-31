@@ -42,6 +42,7 @@ export function promotionViewOf(
   return {
     id: state.id,
     internalName: state.internalName,
+    description: state.description,
     label: state.label,
     reason: state.reason,
     state: lifecycleStateOf(promotion, now),

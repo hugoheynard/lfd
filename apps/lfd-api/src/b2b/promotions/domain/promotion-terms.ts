@@ -20,6 +20,7 @@ import {
   assertFulfillment,
   type PromotionFulfillment,
 } from "./promotion-fulfillment.js";
+import { assertDescription } from "./promotion-description.js";
 import type { PromotionScope } from "./promotion-scope.js";
 import { assertScope } from "./promotion-scope-checks.js";
 
@@ -45,6 +46,11 @@ export interface PromotionWindow {
  */
 export interface PromotionTerms extends PromotionWindow {
   readonly internalName: string;
+  /**
+   * La description interne, pour l'équipe seulement — le client ne la voit
+   * jamais. `null` = aucune ; sinon sans espaces de bord, bornée.
+   */
+  readonly description: string | null;
   /** Le libellé COMMUN — le repli de chaque audience (§ 15.4). */
   readonly label: PromotionLabel;
   /** Les libellés Particuliers / Pros, facultatifs (§ 15.12 Q2). */
@@ -75,6 +81,8 @@ export interface PromotionTerms extends PromotionWindow {
  * révision ET à la relecture.
  *
  * @throws {PromotionBlankTextError} nom interne ou libellé vide.
+ * @throws {PromotionDescriptionTooLongError} description au-delà de la borne.
+ * @throws {PromotionDescriptionNotCanonicalError} description vide ou bordée d'espaces.
  * @throws {PromotionReversedWindowError} fin avant le début.
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
  * @throws {PromotionLineOnlyOptionError} plancher propre ou cumul sur mercuriale au panier.
@@ -84,6 +92,7 @@ export interface PromotionTerms extends PromotionWindow {
  */
 export function assertTerms(terms: PromotionTerms): void {
   assertText("nom interne", terms.internalName);
+  assertDescription(terms.description);
   assertText("libellé", terms.label.fr);
   assertOptionalText("libellé anglais", terms.label.en);
   assertOptionalText("libellé italien", terms.label.it);

@@ -2,7 +2,8 @@ import type { PromotionTerms } from "./promotion-terms.js";
 
 /**
  * **Deux termes disent-ils la même chose ?** Comparaison structurelle de
- * chaque bloc — identité, libellés, effet, fenêtre, public, acheminement,
+ * chaque bloc — identité (description comprise : la changer est une
+ * révision, journalisée), libellés, effet, fenêtre, public, acheminement,
  * portée, conditions, cumul. Sert à la révision : reposer à l'identique ne
  * trace rien et n'écrit rien.
  *

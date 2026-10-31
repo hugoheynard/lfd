@@ -23,6 +23,7 @@ const STAFF = "fiche-tarifeur";
 
 const TERMS: PromotionTerms = {
   internalName: "Automne, inscrits",
+  description: "Pour relancer les inscrits à l'automne.",
   label: { fr: "−20 % pour les inscrits", en: "−20% for members", it: null },
   audienceLabels: { individuals: null, pros: null },
   reason: "lancement",

@@ -124,12 +124,83 @@ const typeChoice = (root: HTMLElement, label: string) =>
     entry.textContent?.includes(label),
   );
 
+const descriptionField = (root: HTMLElement) =>
+  root.querySelector<HTMLTextAreaElement>('fold-textarea textarea');
+
 describe('PromotionPage', () => {
+  describe('les cartes, dans l’ordre', () => {
+    it('nom et description, genre, valeur, période, public, acheminement, articles, état', async () => {
+      const { root, fixture } = await render();
+      typeChoice(root, 'Remise sur le panier')?.click();
+      fixture.detectChanges();
+      const text = root.textContent ?? '';
+      const order = [
+        'Nom interne et description',
+        'Quel genre de remise ?',
+        'Que reçoit le client (valeur de la réduction) ?',
+        'Quand, et à quelles conditions ?',
+        "Pour qui (définir l'audience) ?",
+        'Sur quel mode d’acheminement et de consommation ?',
+        'Sur quels articles ?',
+        'Où en est-elle ?',
+      ];
+      const positions = order.map((title) => text.indexOf(title));
+      expect(positions.every((position) => position > -1)).toBe(true);
+      expect(positions).toEqual([...positions].sort((left, right) => left - right));
+    });
+  });
+
+  describe('la carte « Nom interne et description »', () => {
+    it('porte le nom interne et la description relue, pour l’équipe seulement', async () => {
+      const { root } = await render({
+        get: async () =>
+          promotionView({ internalName: 'Croissants', description: 'Pour le mardi' }),
+      });
+      expect(root.textContent).toContain('le client ne la voit jamais');
+      expect(textInputs(root)[0]?.value).toBe('Croissants');
+      expect(descriptionField(root)?.value).toBe('Pour le mardi');
+    });
+
+    it('envoie la description saisie, sans ses espaces de bord ; effacée, elle part à null', async () => {
+      const { root, fixture, sent } = await render({
+        get: async () => promotionView({ internalName: 'Croissants', description: 'Ancienne' }),
+      });
+      const field = descriptionField(root);
+      if (!field) {
+        throw new Error('Champ « Description » introuvable.');
+      }
+      field.value = '  Vue avec le fournil  ';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised[0]?.terms.description).toBe('Vue avec le fournil');
+      field.value = '   ';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised[1]?.terms.description).toBeNull();
+    });
+
+    it('en lecture seule, la description se lit et ne se change pas', async () => {
+      const { root } = await render({
+        permissions: ['lfc_site_settings:read'],
+        get: async () =>
+          promotionView({ internalName: 'Croissants', description: 'Pour le mardi' }),
+      });
+      expect(descriptionField(root)?.value).toBe('Pour le mardi');
+      expect(descriptionField(root)?.disabled).toBe(true);
+    });
+  });
+
   describe('le genre de remise se choisit d’abord', () => {
-    it('la première carte est le choix du genre, puis la valeur', async () => {
+    it('le choix du genre précède la valeur', async () => {
       const { root } = await render({ inputs: {} });
       const text = root.textContent ?? '';
-      expect(text.indexOf('Quel genre de remise ?')).toBeGreaterThan(-1);
+      expect(text.indexOf('Nom interne et description')).toBeLessThan(
+        text.indexOf('Quel genre de remise ?'),
+      );
       expect(text.indexOf('Quel genre de remise ?')).toBeLessThan(
         text.indexOf('Que reçoit le client (valeur de la réduction) ?'),
       );
@@ -471,7 +542,12 @@ describe('PromotionPage', () => {
     });
 
     it('ouvre une pose préremplie de tout, sauf le public — rien n’est posé ni modifié', async () => {
-      const { root, sent } = await render({ inputs: { from: 'promo_1' } });
+      const { root, sent } = await render({
+        inputs: { from: 'promo_1' },
+        get: async () =>
+          promotionView({ internalName: 'Croissants', description: 'Pour le mardi' }),
+      });
+      expect(descriptionField(root)?.value).toBe('Pour le mardi');
       expect(root.textContent).toContain('Nouvelle promotion');
       expect(root.textContent).toContain('Copie de « Croissants »');
       expect(textInputs(root).map((field) => field.value)).toEqual(

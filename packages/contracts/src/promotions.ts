@@ -100,6 +100,12 @@ export const SEVERAL_AUDIENCES = "several";
 /** Les termes d'une promotion, tels que l'éditeur les envoie (L8). */
 export const promotionTermsPayloadSchema = z.object({
   internalName: textSchema,
+  /**
+   * La description interne, pour l'équipe seulement — le client ne la voit
+   * jamais. Absent ou `null` = aucune ; le serveur retire les espaces de bord,
+   * ramène le vide à `null` et refuse au-delà de 1 000 caractères.
+   */
+  description: z.string().nullable().optional(),
   /** Le libellé COMMUN — le repli de chaque audience. */
   label: labelSchema,
   /**
@@ -185,6 +191,8 @@ export interface PromotionAudienceTargetView {
 export interface PromotionView {
   readonly id: string;
   readonly internalName: string;
+  /** La description interne ; `null` = aucune. */
+  readonly description: string | null;
   /** Le libellé commun. */
   readonly label: PromotionLabelView;
   /** Les libellés Particuliers / Pros ; `null` = le commun (L8b). */

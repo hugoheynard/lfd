@@ -10,6 +10,9 @@ model Promotion {
   /// pour une remise de retrait reprise (§ 13.4).
   id                   String    @id
   internalName         String    @map("internal_name")
+  /// La description interne, pour l'équipe seulement (`NULL` = aucune) —
+  /// sans espaces de bord, 1 000 caractères au plus (CHECK).
+  description          String?
   labelFr              String    @map("label_fr")
   /// `NULL` = repli sur le français.
   labelEn              String?   @map("label_en")
