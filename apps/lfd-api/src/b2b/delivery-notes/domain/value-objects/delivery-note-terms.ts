@@ -1,12 +1,14 @@
-import { cartAdjustmentCents, discountCentsOf } from "@lfd/contracts";
+import { cartAdjustmentCents } from "@lfd/contracts";
+import type { VatBasketDiscount } from "@lfd/money";
 
 import {
   ensureDeliveryFeeMatches,
-  ensureDiscountMatches,
   ensureLateFeeMatches,
 } from "../../../orders/domain/entities/order-amount-guards.js";
 import type { FrozenOrderAdjustments } from "../../../orders/domain/ports/shortfall-decision.reader.js";
+import { chainLineHtBasketDiscounts } from "../../../orders/domain/services/basket-discounts.js";
 import { computeOrderTotals } from "../../../orders/domain/services/vat.js";
+import { noteBasketDiscountsOf } from "../services/note-basket-discounts.js";
 import { InvalidDeliveryNoteTermsError } from "../errors/delivery-note-errors.js";
 import type { OrderRateAmounts } from "../../../orders/domain/value-objects/order-rate-amounts.js";
 import type { DeliveryNoteSourceLine } from "./delivery-note-line.js";
@@ -179,9 +181,11 @@ export interface PartialTermsInput {
  * puis passe les mêmes gardes, puis `computeOrderTotals`. Aucune seconde
  * formule.
  *
- * - remise : `discountCentsOf` sur l'assiette ÉLIGIBLE des lignes qui partent —
- *   un pourcentage suit le livré, un montant fixe reste entier mais plafonné
- *   à cette assiette (Q-E6-2) ;
+ * - remises de panier : chacune sur SES lignes qui partent, dans son ordre, par
+ *   la chaîne de la passation (`chainLineHtBasketDiscounts`, plan des
+ *   promotions, § 18.4, lot M4) — un pourcentage suit le livré, un montant
+ *   fixe reste entier mais plafonné à son assiette (Q-E6-2). À une remise,
+ *   c'est `discountCentsOf` sur l'assiette éligible, au centime (M1) ;
  * - frais de livraison et surtaxe : `cartAdjustmentCents` sur le sous-total qui
  *   part — un pourcentage suit le livré (Q-E6-1), un montant fixe reste
  *   entier (Q-I2) ;
@@ -196,14 +200,8 @@ export interface PartialTermsInput {
 function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
   const { lines, adjustments } = input;
   const subtotalCents = lines.reduce((sum, line) => sum + line.lineTotalCents, 0);
-  const eligibleCents = lines.reduce(
-    (sum, line) => (line.pickupDiscountEligible ? sum + line.lineTotalCents : sum),
-    0,
-  );
+  const discounts = partialDiscountsOf(lines, adjustments);
   const terms = {
-    discountAdjustment: adjustments.discount,
-    discountCents:
-      adjustments.discount === null ? 0 : discountCentsOf(adjustments.discount, eligibleCents),
     deliveryFeeAdjustment: adjustments.deliveryFee,
     deliveryFeeCents:
       adjustments.deliveryFee === null
@@ -215,7 +213,6 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
         ? 0
         : cartAdjustmentCents(adjustments.lateFee.adjustment, subtotalCents),
   };
-  ensureDiscountMatches(terms, eligibleCents);
   ensureLateFeeMatches(terms, subtotalCents);
   ensureDeliveryFeeMatches(terms, subtotalCents);
   const totals = computeOrderTotals({
@@ -224,7 +221,8 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
       vatRate: line.vatRate,
       discountEligible: line.pickupDiscountEligible,
     })),
-    discountCents: terms.discountCents,
+    discountCents: 0,
+    eligibleDiscounts: discounts.steps,
     voucherDiscountCents: 0,
     deliveryFeeCents: terms.deliveryFeeCents,
     deliveryVatMode: adjustments.deliveryVatMode,
@@ -234,7 +232,7 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
   const lateFee = adjustments.lateFee;
   return copyOfTerms(input.orderNumber, {
     subtotalCents,
-    discountCents: terms.discountCents,
+    discountCents: discounts.totalCents,
     voucherDiscountCents: 0,
     deliveryFeeCents: terms.deliveryFeeCents,
     deliveryVatMode: adjustments.deliveryVatMode,
@@ -251,6 +249,23 @@ function composePartial(input: PartialTermsInput): DeliveryNoteTerms {
     totalCents: totals.totalCents,
     ttcTerms: null,
   });
+}
+
+/** Les remises de panier rejouées sur les lignes qui partent : leurs étapes et leur somme. */
+function partialDiscountsOf(
+  lines: readonly DeliveryNoteSourceLine[],
+  adjustments: FrozenOrderAdjustments,
+): { readonly steps: readonly VatBasketDiscount[]; readonly totalCents: number } {
+  const discounts = noteBasketDiscountsOf(adjustments.discounts, lines);
+  const chain = chainLineHtBasketDiscounts(
+    lines.map((line) => ({ htCents: line.lineTotalCents, vatRate: line.vatRate })),
+    discounts.map((discount) => discount.basket),
+  );
+  const steps = chain.steps.map((step, k) => ({
+    cents: step.amountCents,
+    coveredLines: discounts[k]?.basket.coveredLines ?? [],
+  }));
+  return { steps, totalCents: steps.reduce((sum, step) => sum + step.cents, 0) };
 }
 
 /** Les fabriques de l'en-tête d'un BL — `DeliveryNoteTerms.composePartial` du plan. */

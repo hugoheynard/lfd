@@ -4,6 +4,7 @@ import { millicentsFromCents } from "@lfd/money";
 import { FulfillmentChangeAltersPromotionError } from "../../errors/fulfillment-promotion-errors.js";
 import { Order, type DraftOrderInput } from "../order.js";
 import type { RevisableOrder } from "../order-revision.js";
+import type { FrozenBasketPromotion } from "../../services/frozen-basket-discounts.js";
 
 /**
  * **L9 — changer d'acheminement ne change pas la promotion** (plan
@@ -291,9 +292,16 @@ describe("Order.revise — l'« avant » se lit dans order_discounts quand la co
   /** La commande, ses colonnes figées ET ses remises actives relues en table. */
   function withActive(
     discount: Discount,
-    active: RevisableOrder["activeDiscounts"],
+    active: readonly FrozenBasketPromotion[],
   ): RevisableOrder {
-    return { ...placed(discount), activeDiscounts: active };
+    return {
+      ...placed(discount),
+      activeDiscounts: active.map((one, i) => ({
+        ...one,
+        orderDiscountId: `od_${i + 1}`,
+        coveredSkus: null,
+      })),
+    };
   }
 
   /**

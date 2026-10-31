@@ -17,6 +17,7 @@ import {
 } from "../../__tests__/delivery-note-doubles.js";
 import { HandOverRemainderNoteCommand } from "../hand-over-remainder-note.command.js";
 import { HandOverRemainderNoteHandler } from "../hand-over-remainder-note.handler.js";
+import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
 // Plan E7 reliquat, lot L4b : un reliquat remis passe SON BL remis, et
 // seulement lui — la commande et son BL-1 restent ceux du rang 1 jusqu'à L5.
@@ -121,6 +122,7 @@ async function scene(options: { readonly remainder?: boolean; readonly settles?:
     new DirectUnitOfWork(),
     settlement,
     billingCloserOf(notes, billings),
+    departureRecorderOf(),
   );
   return { notes, orders, handler, settlement, billings };
 }

@@ -13,6 +13,7 @@ import {
 import { DeliveryNoteAligner } from "../../services/delivery-note-aligner.js";
 import { RECONCILE_REPAIR_LIMIT } from "../reconcile-delivery-notes.command.js";
 import { ReconcileDeliveryNotesHandler } from "../reconcile-delivery-notes.handler.js";
+import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
 // Comparés entre eux seulement.
 const CONFIRMED_AT = new Date(1_000);
@@ -65,7 +66,7 @@ function scene() {
   const handler = new ReconcileDeliveryNotesHandler(
     orders.scan,
     notes,
-    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
+    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions(), departureRecorderOf()),
     new DirectUnitOfWork(),
     new FixedClock(NOW),
     new InMemoryShortfallDecisions(),

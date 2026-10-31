@@ -3,6 +3,7 @@ import type { ClientSheet } from "@lfd/contracts";
 import { totalRows } from "../../../../orders/domain/services/order-sheet-pdf-totals.js";
 import { LINE, sheet } from "../../../../orders/domain/services/__tests__/client-sheet.fixture.js";
 import { remainderAdjustmentsOf } from "../remainder-decision-source.js";
+import { columnDiscounts } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 
 /**
  * **Le port du reliquat masqué sur le papier** (décision de Hugo du
@@ -39,14 +40,14 @@ function remainderPaper(variant: ClientSheet["variant"]): ClientSheet {
 describe("le BL d'un reste, sur le papier", () => {
   it("le modèle garde port, surtaxe et remise fixe à zéro", () => {
     const adjustments = remainderAdjustmentsOf({
-      discount: { mode: "amount", cents: 500 },
+      discounts: columnDiscounts({ mode: "amount", cents: 500 }),
       deliveryFee: { mode: "amount", cents: 1_200 },
       lateFee: null,
       deliveryVatMode: "standard",
       exact: null,
     });
 
-    expect(adjustments).toMatchObject({ discount: null, deliveryFee: null, lateFee: null });
+    expect(adjustments).toMatchObject({ discounts: [], deliveryFee: null, lateFee: null });
   });
 
   it.each(["pro", "public"] as const)(

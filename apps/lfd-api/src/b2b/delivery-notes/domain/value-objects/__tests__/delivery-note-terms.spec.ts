@@ -7,6 +7,7 @@ import {
   type PartialTermsInput,
 } from "../delivery-note-terms.js";
 import { ORDER_TERMS } from "./delivery-note-terms.fixture.js";
+import { columnDiscounts } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 
 function line(overrides: Partial<DeliveryNoteSourceLine> = {}): DeliveryNoteSourceLine {
   return {
@@ -29,7 +30,7 @@ function input(overrides: Partial<PartialTermsInput> = {}): PartialTermsInput {
     orderNumber: "ORD-7",
     lines: [line()],
     adjustments: {
-      discount: null,
+      discounts: [],
       deliveryFee: null,
       lateFee: null,
       deliveryVatMode: null,
@@ -64,7 +65,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
           line({ sku: "BOISSON", lineTotalCents: 500, pickupDiscountEligible: false }),
         ],
         adjustments: {
-          discount: { mode: "percent", bp: 1_000 },
+          discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
@@ -82,7 +83,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
     const terms = DeliveryNoteTerms.composePartial(
       input({
         adjustments: {
-          discount: { mode: "amount", cents: 5_000 },
+          discounts: columnDiscounts({ mode: "amount", cents: 5_000 }),
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
@@ -99,7 +100,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
     const terms = DeliveryNoteTerms.composePartial(
       input({
         adjustments: {
-          discount: { mode: "amount", cents: 300 },
+          discounts: columnDiscounts({ mode: "amount", cents: 300 }),
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
@@ -116,7 +117,7 @@ describe("DeliveryNoteTerms.composePartial — les remises suivent ce qui part",
       input({
         lines: [line({ lineTotalCents: 1_005 })],
         adjustments: {
-          discount: { mode: "percent", bp: 1_000 },
+          discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
           deliveryFee: null,
           lateFee: null,
           deliveryVatMode: null,
@@ -139,7 +140,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
       input({
         lines: small,
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: { mode: "amount", cents: 700 },
           lateFee: null,
           deliveryVatMode: null,
@@ -151,7 +152,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
       input({
         lines: small,
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: { mode: "percent", bp: 1_000 },
           lateFee: null,
           deliveryVatMode: null,
@@ -170,7 +171,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
       input({
         lines: goods,
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: fee,
           lateFee: null,
           deliveryVatMode: "follows_goods",
@@ -182,7 +183,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
       input({
         lines: goods,
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: fee,
           lateFee: null,
           deliveryVatMode: null,
@@ -204,7 +205,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
       input({
         lines: [line({ vatRate: 5.5, lineTotalCents: 2_000 })],
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: null,
           lateFee: { adjustment: { mode: "percent", bp: 500 }, vatRatePercent: 20 },
           deliveryVatMode: null,
@@ -229,7 +230,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
     const terms = DeliveryNoteTerms.composePartial(
       input({
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: null,
           lateFee: { adjustment: { mode: "amount", cents: 0 }, vatRatePercent: 20 },
           deliveryVatMode: null,
@@ -247,7 +248,7 @@ describe("DeliveryNoteTerms.composePartial — port et surtaxe", () => {
     const terms = DeliveryNoteTerms.composePartial(
       input({
         adjustments: {
-          discount: null,
+          discounts: [],
           deliveryFee: null,
           lateFee,
           deliveryVatMode: null,

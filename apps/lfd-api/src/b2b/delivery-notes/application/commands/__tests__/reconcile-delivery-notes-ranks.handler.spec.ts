@@ -12,6 +12,7 @@ import {
 } from "../../__tests__/delivery-note-doubles.js";
 import { DeliveryNoteAligner } from "../../services/delivery-note-aligner.js";
 import { ReconcileDeliveryNotesHandler } from "../reconcile-delivery-notes.handler.js";
+import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
 // Plan E7, choix 3 (lot L2) : le rattrapage aligne le BL-1 et ignore les
 // reliquats — un BL-1 remis à côté d'un BL-2 vivant n'est plus un écart.
@@ -59,7 +60,12 @@ function scene() {
   const handler = new ReconcileDeliveryNotesHandler(
     orders.scan,
     notes,
-    new DeliveryNoteAligner(notes, new FixedIdGenerator("dn"), new InMemoryShortfallDecisions()),
+    new DeliveryNoteAligner(
+      notes,
+      new FixedIdGenerator("dn"),
+      new InMemoryShortfallDecisions(),
+      departureRecorderOf(),
+    ),
     new DirectUnitOfWork(),
     new FixedClock(NOW),
     new InMemoryShortfallDecisions(),

@@ -8,6 +8,7 @@ import type {
   RecoveryNote,
   RecoveryOrder,
 } from "../domain/services/order-discount-recovery-shapes.js";
+import { frozenCartAdjustmentOf } from "./order-discounts.columns.js";
 import { frozenAdjustmentsOf, vatMethodOf } from "./order-money-columns.js";
 import { orderLineSaleUnitOf } from "./order-line-row.js";
 
@@ -102,7 +103,9 @@ export interface BackfillOrderRow {
  * @throws {UnknownOrderVatMethodError}
  */
 export function toRecoveryOrder(row: BackfillOrderRow): RecoveryOrder {
-  const adjustments = frozenAdjustmentsOf(row.id, row);
+  // La reprise lit les colonnes figées, et elles seules : c'est elles qu'elle
+  // recopie dans la table (§ 18.3) — sans remises actives, le repli les rend.
+  const adjustments = frozenAdjustmentsOf(row.id, { ...row, discounts: [] });
   const byRate = orderRatesAmountsSchema.safeParse(row.ttcByRate);
   return {
     id: row.id,
@@ -110,7 +113,7 @@ export function toRecoveryOrder(row: BackfillOrderRow): RecoveryOrder {
     vatMethod: vatMethodOf(row.id, row.vatMethod),
     discountCents: row.discountCents,
     discountTtcCents: row.discountTtcCents,
-    discountAdjustment: adjustments.discount,
+    discountAdjustment: frozenCartAdjustmentOf(row.id, row.discountAdjustment, "remise"),
     deliveryFeeAdjustment: adjustments.deliveryFee,
     deliveryVatMode: adjustments.deliveryVatMode,
     voucherTtcCents: row.voucherTtcCents,

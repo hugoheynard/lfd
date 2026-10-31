@@ -4,6 +4,7 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { ShortfallDecision } from "../domain/entities/shortfall-decision.js";
+import { ACTIVE_ORDER_DISCOUNTS_SELECT, basketDiscountsOfRow } from "./order-discounts.columns.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import {
   ShortfallDecisionRepository,
@@ -23,7 +24,9 @@ const SUBJECT_SELECT = {
   totalCents: true,
   voucherDiscountCents: true,
   discountCents: true,
+  discountPromotionId: true,
   discountAdjustment: true,
+  discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
   deliveryFeeCents: true,
   deliveryFeeAdjustment: true,
   lateFeeCents: true,
@@ -52,7 +55,7 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
       settlementRegime: settlementRegimeOf(row.paymentStatus, row.totalCents),
       voucherDiscountCents: row.voucherDiscountCents,
       frozenTerms: [
-        { amountCents: row.discountCents, hasAdjustment: row.discountAdjustment !== null },
+        { amountCents: row.discountCents, hasAdjustment: discountsHaveAdjustments(row) },
         { amountCents: row.deliveryFeeCents, hasAdjustment: row.deliveryFeeAdjustment !== null },
         { amountCents: row.lateFeeCents, hasAdjustment: row.lateFeeAdjustment !== null },
       ],
@@ -64,6 +67,17 @@ function lockedOf(row: SubjectRow, shipment: ShipmentRows): LockedShortfallSubje
       shipment.shortfall,
     ),
   };
+}
+
+/**
+ * La remise figée se recompose-t-elle sur ce qui part ? Par le repli partagé
+ * (plan des promotions, M4) : la table si la commande y a des lignes actives,
+ * sinon la colonne. Une remise sans ajustement (commande d'avant la colonne,
+ * reprise `frozen`) ne se recompose pas.
+ */
+function discountsHaveAdjustments(row: SubjectRow): boolean {
+  const discounts = basketDiscountsOfRow(row.id, row);
+  return discounts.length > 0 && discounts.every((discount) => discount.adjustment !== null);
 }
 
 /**

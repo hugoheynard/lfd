@@ -21,6 +21,7 @@ import {
   UnchangedOrderRevisionError,
 } from "../errors/order-revision-errors.js";
 import { ensureFulfillmentKeepsPromotion } from "../services/fulfillment-promotion.js";
+import type { FrozenBasketDiscount } from "../services/frozen-basket-discounts.js";
 import type { FixedCustomerCancellation } from "../services/customer-cancellation-window.js";
 import { isCardSettlement } from "../services/order-revisability.js";
 import { settlementRegimeOf } from "../services/settlement-regime.js";
@@ -90,7 +91,7 @@ export interface RevisableOrder {
    * de ligne : remise nulle, ou commande pas encore reprise. L9 lit alors
    * les colonnes figées.
    */
-  readonly activeDiscounts: readonly FrozenBasketPromotion[];
+  readonly activeDiscounts: readonly FrozenBasketDiscount[];
   /** L'ajustement de la surtaxe tardive figé à la passation, `null` sans surtaxe (R4). */
   readonly lateFeeAdjustment: LateFeeAdjustment | null;
   /**
@@ -112,16 +113,6 @@ export interface RevisableOrder {
   readonly customerCancellation: FixedCustomerCancellation;
   /** L'instant figé ; seul, il dit le délai d'une commande d'avant la colonne du délai. */
   readonly customerCancellableUntil: Date | null;
-}
-
-/** Une remise active d'une commande, telle que L9 la compare (plan des promotions, § 18.5). */
-export interface FrozenBasketPromotion {
-  /** `NULL` = remise reprise d'avant L9 : on compare alors l'ajustement. */
-  readonly promotionId: string | null;
-  /** `NULL` = commande d'avant la colonne, reprise `frozen`. */
-  readonly adjustment: CartAdjustment | null;
-  /** Le libellé figé, en français — ce que le refus nomme ; `null` sans libellé. */
-  readonly label: string | null;
 }
 
 /**

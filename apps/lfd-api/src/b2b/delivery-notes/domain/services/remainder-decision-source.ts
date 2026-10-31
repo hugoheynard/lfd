@@ -6,6 +6,7 @@ import type { DeliveryNote, DeliveryNoteSource } from "../entities/delivery-note
 import { DecisionNoteNotFollowedError } from "../errors/delivery-note-errors.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import { departingSourceOf } from "./departing-source.js";
+import { remainderDiscountsOf } from "./note-basket-discounts.js";
 
 /**
  * **Les règles d'argent d'un reliquat** (plan E7 reliquat, choix 10) : la
@@ -13,10 +14,15 @@ import { departingSourceOf } from "./departing-source.js";
  * réappliqués ; une remise en montant fixe, le port et la surtaxe à zéro (ils
  * sont déjà comptés sur le BL-1). Le mode de TVA du port reste celui de la
  * commande, sans effet sur un port nul.
+ *
+ * Chaque remise de panier suit cette règle séparément (plan des promotions,
+ * § 18.2, lot M4) : les pourcentages restent, dans leur ordre ; les montants
+ * fixes sortent. La liste vient du repli partagé — une commande non reprise
+ * y a sa remise de rang 1, lue dans les colonnes.
  */
 export function remainderAdjustmentsOf(order: FrozenOrderAdjustments): FrozenOrderAdjustments {
   return {
-    discount: order.discount?.mode === "percent" ? order.discount : null,
+    discounts: remainderDiscountsOf(order.discounts),
     deliveryFee: null,
     lateFee: null,
     deliveryVatMode: order.deliveryVatMode,

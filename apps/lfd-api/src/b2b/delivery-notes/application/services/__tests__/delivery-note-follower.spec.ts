@@ -15,6 +15,7 @@ import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "../delivery-note-follower.js";
 import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
+import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
 // Comparés entre eux seulement.
 const CONFIRMED_AT = new Date(1_000);
@@ -79,7 +80,7 @@ function scene() {
   const follower = new DeliveryNoteFollower(
     planner,
     progress,
-    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
+    new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions(), departureRecorderOf()),
     clock,
     billingCloserOf(notes),
     notes,
@@ -213,7 +214,7 @@ describe("DeliveryNoteFollower — les gestes (plan E2, § 8.3)", () => {
         new InMemoryShortfallDecisions(),
       ),
       progress,
-      new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions()),
+      new DeliveryNoteAligner(notes, ids, new InMemoryShortfallDecisions(), departureRecorderOf()),
       clock,
       billingCloserOf(notes),
       notes,

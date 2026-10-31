@@ -11,6 +11,7 @@ import {
   DeliveryNoteNotPlannedError,
 } from "../../../domain/errors/delivery-note-errors.js";
 import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
+import { columnDiscounts } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 
 // Instants et jours comparés entre eux, jamais à l'horloge.
 const PLANNED_AT = new Date(1_000);
@@ -75,7 +76,7 @@ const ORDER: DeliveryNoteOrderProgress = {
 const DECISION: DecidedDeparture = {
   departing: [{ sku: "CRO", quantity: 1 }],
   adjustments: {
-    discount: { mode: "percent", bp: 1_000 },
+    discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
     deliveryFee: { mode: "amount", cents: 800 },
     lateFee: null,
     deliveryVatMode: "standard",
@@ -161,7 +162,10 @@ describe("RemainderDecisionFollower — le BL d'un reliquat suit sa décision (L
     const { notes, decisions, follower } = await scene();
     decisions.decided.set("ord_1:2", {
       ...DECISION,
-      adjustments: { ...DECISION.adjustments, discount: { mode: "amount", cents: 50 } },
+      adjustments: {
+        ...DECISION.adjustments,
+        discounts: columnDiscounts({ mode: "amount", cents: 50 }),
+      },
     });
 
     await follower.follow("ord_1", 2);

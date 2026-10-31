@@ -12,6 +12,7 @@ import type {
 import { composeExactOrder } from "../../../orders/domain/services/exact-order-composition.js";
 import type { DeliveryNoteSourceLine } from "../value-objects/delivery-note-line.js";
 import { copyOfTerms, type DeliveryNoteTerms } from "../value-objects/delivery-note-terms.js";
+import { noteBasketDiscountsOf } from "./note-basket-discounts.js";
 
 /** Ce qui part d'une commande `exact_ht` : ses lignes réécrites, et leur en-tête. */
 export interface ExactDeparture {
@@ -38,7 +39,8 @@ export interface ExactDepartureInput {
  *
  * - port en montant fixe : le TTC figé sur la commande, sans reconversion ;
  *   la garde le compare à ce TTC ;
- * - port en pourcentage et remise retrait : refaits sur le TTC livré ;
+ * - port en pourcentage et remises de panier : refaits sur le TTC livré,
+ *   chaque remise sur ses lignes, dans son ordre (plan des promotions, M4) ;
  * - bon de fidélité : le TTC imputé sur la commande, borné au TTC livré après
  *   remise (la composition borne).
  *
@@ -52,11 +54,14 @@ export function exactDepartureOf(input: ExactDepartureInput): ExactDeparture {
     throw new LateFeeOnPersonalOrderError();
   }
   const fixedFee = adjustments.deliveryFee?.mode === "amount";
+  // Chaque remise de panier sur SES lignes qui partent (plan des promotions, M4).
+  const discounts = noteBasketDiscountsOf(adjustments.discounts, input.lines);
   const composition = composeExactOrder({
     // Chaque ligne recompose dans SON unité, recopiée de la commande
     // (`vente-au-poids.md`, P5) : au poids, prix au kilo × grammes.
     lines: input.lines,
-    discountAdjustment: adjustments.discount,
+    discountAdjustment: null,
+    basketDiscounts: discounts.map((discount) => discount.basket),
     deliveryFeeAdjustment: adjustments.deliveryFee,
     deliveryVatMode: adjustments.deliveryVatMode,
     voucherFaceCents: exact.voucherTtcCents,

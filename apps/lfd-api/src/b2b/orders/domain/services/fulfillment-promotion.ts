@@ -1,12 +1,9 @@
 import type { CartAdjustment } from "@lfd/contracts";
 
-import type {
-  FrozenBasketPromotion,
-  RevisableOrder,
-  RevisionChange,
-} from "../entities/order-revision.js";
+import type { RevisableOrder, RevisionChange } from "../entities/order-revision.js";
 import type { OrderToPlace } from "../entities/order-shapes.js";
 import { FulfillmentChangeAltersPromotionError } from "../errors/fulfillment-promotion-errors.js";
+import { frozenBasketDiscountsOf, type FrozenBasketPromotion } from "./frozen-basket-discounts.js";
 
 /** Les changements qui peuvent faire entrer ou sortir une promotion conditionnée par l'acheminement. */
 const FULFILLMENT_CHANGES: ReadonlySet<RevisionChange> = new Set(["method", "pickup_point"]);
@@ -59,17 +56,9 @@ export function ensureFulfillmentKeepsPromotion(
   }
 }
 
-/** La table si elle a des lignes actives, sinon les colonnes figées. */
+/** La table si elle a des lignes actives, sinon les colonnes figées — le repli partagé. */
 function promotionsBefore(order: RevisableOrder): readonly FrozenBasketPromotion[] {
-  if (order.activeDiscounts.length > 0) {
-    return order.activeDiscounts;
-  }
-  if (order.discountAdjustment === null) {
-    return [];
-  }
-  return [
-    { promotionId: order.discountPromotionId, adjustment: order.discountAdjustment, label: null },
-  ];
+  return frozenBasketDiscountsOf(order.activeDiscounts, order);
 }
 
 function promotionsAfter(state: OrderToPlace): readonly FrozenBasketPromotion[] {

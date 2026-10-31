@@ -143,6 +143,7 @@
   "test/delivery-my-round-packing.e2e-spec.ts": 6144,
   "test/delivery-my-round-photo.e2e-spec.ts": 3829,
   "test/delivery-my-round.e2e-spec.ts": 7677,
+  "test/delivery-notes-discounts.e2e-spec.ts": 15372,
   "test/delivery-notes-following.e2e-spec.ts": 11503,
   "test/delivery-notes-planned.e2e-spec.ts": 9723,
   "test/delivery-notes-printed.e2e-spec.ts": 13044,

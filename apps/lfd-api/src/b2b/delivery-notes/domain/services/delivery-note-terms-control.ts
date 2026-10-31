@@ -29,6 +29,14 @@ export interface DeliveryNoteTermsGap {
  *
  * Rend un écart par BL fautif ; vide si tout concorde, ou si la commande
  * n'est pas contrôlée (`placed`, annulée, sans ligne).
+ *
+ * **Plusieurs remises de panier** (plan des promotions, § 18.2, lot M4) : le
+ * contrôle reste juste sans les lire une à une. Il compare le TOTAL de la
+ * remise (`discount_cents`, Σ des remises actives, que le déclencheur
+ * `order_discounts_match_order` tient en base) et l'éligibilité de chaque
+ * ligne, que le § 18.2 garde écrite comme le OU des couvertures. Un BL-1 complet
+ * recopie la commande : ses parts par remise sont celles de la commande, et
+ * ne se contrôlent pas une seconde fois ici.
  */
 export function termsGapsOf(
   order: FollowedOrder,

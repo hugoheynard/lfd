@@ -3,6 +3,7 @@ import type { Provider, Type } from "@nestjs/common";
 import { DecideOrderShortfallHandler } from "./application/commands/decide-order-shortfall.handler.js";
 import { WriteShortfallLetterHandler } from "./application/commands/write-shortfall-letter.handler.js";
 import { GetShortfallLetterDraftHandler } from "./application/queries/get-shortfall-letter-draft.handler.js";
+import { OrderBasketDiscountsReader } from "./domain/ports/order-basket-discounts.reader.js";
 import { OrderBillingRepository } from "./domain/ports/order-billing.repository.js";
 import {
   RemainderDecisionReader,
@@ -12,6 +13,7 @@ import { ShortfallDecisionRepository } from "./domain/ports/shortfall-decision.r
 import { ShortfallLetterReader } from "./domain/ports/shortfall-letter.reader.js";
 import { ShortfallNoticeRepository } from "./domain/ports/shortfall-notice.repository.js";
 import { AdminOrderShortfallController } from "./http/admin-order-shortfall.controller.js";
+import { PrismaOrderBasketDiscountsReader } from "./infrastructure/prisma-order-basket-discounts.reader.js";
 import { PrismaOrderBillingRepository } from "./infrastructure/prisma-order-billing.repository.js";
 import {
   PrismaRemainderDecisionReader,
@@ -33,6 +35,7 @@ export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
   { provide: ShortfallDecisionRepository, useClass: PrismaShortfallDecisionRepository },
   { provide: ShortfallDecisionReader, useClass: PrismaShortfallDecisionReader },
   { provide: RemainderDecisionReader, useClass: PrismaRemainderDecisionReader },
+  { provide: OrderBasketDiscountsReader, useClass: PrismaOrderBasketDiscountsReader },
   { provide: OrderBillingRepository, useClass: PrismaOrderBillingRepository },
   WriteShortfallLetterHandler,
   GetShortfallLetterDraftHandler,
@@ -44,6 +47,7 @@ export const ORDER_SHORTFALL_PROVIDERS: readonly Provider[] = [
 export const ORDER_SHORTFALL_EXPORTS = [
   ShortfallDecisionReader,
   RemainderDecisionReader,
+  OrderBasketDiscountsReader,
   OrderBillingRepository,
 ] as const;
 

@@ -19,6 +19,9 @@ import { AdminDeliveryNotesController } from "./http/admin-delivery-notes.contro
 import { DeliveryNotesReconcileController } from "./http/delivery-notes-reconcile.controller.js";
 import { DeliveryNotePlanner } from "./application/services/delivery-note-planner.js";
 import { DeliveryNoteAligner } from "./application/services/delivery-note-aligner.js";
+import { DeliveryNoteDepartureRecorder } from "./application/services/delivery-note-departure-recorder.js";
+import { DeliveryNoteDiscountWriter } from "./domain/ports/delivery-note-discount.writer.js";
+import { PrismaDeliveryNoteDiscountWriter } from "./infrastructure/prisma-delivery-note-discount.writer.js";
 import { DeliveryNoteFollower } from "./application/services/delivery-note-follower.js";
 import { RemainderDecisionFollower } from "./application/services/remainder-decision-follower.js";
 import { DeliveryNoteRepository } from "./domain/ports/delivery-note.repository.js";
@@ -75,6 +78,8 @@ import {
     { provide: DeliveryNoteReader, useClass: PrismaDeliveryNoteReader },
     DeliveryNotePlanner,
     DeliveryNoteAligner,
+    DeliveryNoteDepartureRecorder,
+    { provide: DeliveryNoteDiscountWriter, useClass: PrismaDeliveryNoteDiscountWriter },
     DeliveryNoteFollower,
     RemainderDecisionFollower,
     OrderBillingCloser,

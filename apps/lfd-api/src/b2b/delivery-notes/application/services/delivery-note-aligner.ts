@@ -14,6 +14,7 @@ import {
 import { departingSourceOf } from "../../domain/services/departing-source.js";
 import { DecisionNoteNotFollowedError } from "../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
+import { DeliveryNoteDepartureRecorder } from "./delivery-note-departure-recorder.js";
 
 /** Ce qu'un alignement a fait, après écriture. */
 export type AlignedOutcome =
@@ -39,6 +40,7 @@ export class DeliveryNoteAligner {
     private readonly notes: DeliveryNoteRepository,
     private readonly ids: IdGenerator,
     private readonly decisions: ShortfallDecisionReader,
+    private readonly departures: DeliveryNoteDepartureRecorder,
   ) {}
 
   /**
@@ -89,10 +91,16 @@ export class DeliveryNoteAligner {
       case "unrepairable":
         return alignment;
       case "created":
-        return (await this.notes.saveNew(alignment.created)) ? { change: "created" } : "rank_taken";
+        if (!(await this.notes.saveNew(alignment.created))) {
+          return "rank_taken";
+        }
+        await this.departures.recordIfDeparted(alignment.created);
+        return { change: "created" };
       default:
+        // Un bon qui part fige ses parts par remise, après lui (plan des promotions, M4).
         for (const note of alignment.writes) {
           await this.notes.save(note);
+          await this.departures.recordIfDeparted(note);
         }
         return { change: alignment.change };
     }

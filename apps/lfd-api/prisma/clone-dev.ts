@@ -21,7 +21,11 @@
 import "dotenv/config";
 import { PrismaPg } from "@prisma/adapter-pg";
 
-import { PrismaClient } from "../src/platform/database/client/client.js";
+import {
+  Prisma,
+  PrismaClient,
+  type OrderDiscount,
+} from "../src/platform/database/client/client.js";
 import { DEV_DATABASE_URL } from "./dev-db-url.js";
 import { refuseNonLocalTarget } from "./local-target.js";
 
@@ -61,6 +65,8 @@ async function main(): Promise<void> {
       supportRequests,
       orders,
       orderLines,
+      orderDiscounts,
+      orderLineDiscounts,
     ] = await Promise.all([
       source.company.findMany(),
       source.user.findMany(),
@@ -70,6 +76,8 @@ async function main(): Promise<void> {
       source.supportRequest.findMany(),
       source.order.findMany(),
       source.orderLine.findMany(),
+      source.orderDiscount.findMany(),
+      source.orderLineDiscount.findMany(),
     ]);
 
     // Purge de la cible en ordre FK INVERSE (enfants d'abord).
@@ -81,6 +89,12 @@ async function main(): Promise<void> {
     // Elle n'est pas recopiée : les points de la source ne sont pas des données
     // de démonstration.
     await target.$executeRaw`TRUNCATE "public"."loyalty_ledger_entries", "public"."loyalty_vouchers"`;
+    // Les remises de panier tiennent leur commande et leur bon en RESTRICT
+    // (plan des promotions, § 18.2) : leurs parts de bon, leurs couvertures,
+    // puis elles, avant les bons et les commandes.
+    await target.deliveryNoteDiscount.deleteMany();
+    await target.orderLineDiscount.deleteMany();
+    await target.orderDiscount.deleteMany();
     // Les bons de livraison tiennent leur commande en RESTRICT (lot E1) : d'abord eux.
     await target.deliveryNoteLine.deleteMany();
     await target.deliveryNote.deleteMany();
@@ -100,19 +114,43 @@ async function main(): Promise<void> {
     await target.companyContact.createMany({ data: contacts });
     await target.address.createMany({ data: addresses });
     await target.supportRequest.createMany({ data: supportRequests });
-    await target.order.createMany({ data: orders });
-    await target.orderLine.createMany({ data: orderLines });
+    // Une seule transaction pour la commande et ses remises : le déclencheur
+    // différé `order_discounts_match_order` juge au COMMIT que les remises
+    // actives somment `discount_cents` (migration `20261031180000`). Les bons
+    // ne sont pas recopiés, leurs parts (`delivery_note_discounts`) non plus.
+    await target.$transaction([
+      target.order.createMany({ data: orders }),
+      target.orderLine.createMany({ data: orderLines }),
+      target.orderDiscount.createMany({ data: orderDiscounts.map(orderDiscountData) }),
+      target.orderLineDiscount.createMany({ data: orderLineDiscounts }),
+    ]);
 
     process.stdout.write(
       `✔ clone terminé → ${targetUrl}\n` +
         `  companies=${companies.length} users=${users.length} memberships=${memberships.length}\n` +
         `  contacts=${contacts.length} addresses=${addresses.length} support=${supportRequests.length}\n` +
-        `  orders=${orders.length} orderLines=${orderLines.length}\n`,
+        `  orders=${orders.length} orderLines=${orderLines.length}\n` +
+        `  orderDiscounts=${orderDiscounts.length} orderLineDiscounts=${orderLineDiscounts.length}\n`,
     );
   } finally {
     await source.$disconnect();
     await target.$disconnect();
   }
+}
+
+/**
+ * Une remise relue → réécrite. Ses JSON nullables reviennent en `null` de
+ * JavaScript, que Prisma refuse en écriture : `DbNull`, la colonne `NULL`.
+ */
+function orderDiscountData(row: OrderDiscount): Prisma.OrderDiscountCreateManyInput {
+  return {
+    ...row,
+    adjustment: row.adjustment ?? Prisma.DbNull,
+    label: row.label ?? Prisma.DbNull,
+    // Colonne NOT NULL, un tableau (CHECK) : un `null` relu n'existe pas, et
+    // s'il existait, le CHECK le refuserait plutôt qu'on invente une part.
+    vatShares: row.vatShares ?? Prisma.JsonNull,
+  };
 }
 
 main().catch((error: unknown) => {

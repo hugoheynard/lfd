@@ -1,14 +1,21 @@
 import type { CartAdjustment, DeliveryVatMode, LateFeeAdjustment } from "@lfd/contracts";
 
 import type { DepartingQuantity } from "../entities/shortfall-decision.js";
+import type { FrozenBasketDiscount } from "../services/frozen-basket-discounts.js";
 
 /**
  * Les règles d'argent figées sur la commande — celles qu'un bon de livraison
- * partiel réapplique à ce qui part (plan E6, § 9.2 et § 11) : la remise, les
- * frais, la surtaxe et son taux, le mode de TVA du port.
+ * partiel réapplique à ce qui part (plan E6, § 9.2 et § 11) : les remises de
+ * panier, les frais, la surtaxe et son taux, le mode de TVA du port.
  */
 export interface FrozenOrderAdjustments {
-  readonly discount: CartAdjustment | null;
+  /**
+   * Les remises de panier, dans l'ordre d'application (plan des promotions,
+   * § 18.2, lot M4) — lues par le repli partagé `frozenBasketDiscountsOf` :
+   * la table si la commande y a des lignes actives, sinon les colonnes comme
+   * une remise de rang 1. Vide sans remise.
+   */
+  readonly discounts: readonly FrozenBasketDiscount[];
   readonly deliveryFee: CartAdjustment | null;
   readonly lateFee: LateFeeAdjustment | null;
   readonly deliveryVatMode: DeliveryVatMode | null;

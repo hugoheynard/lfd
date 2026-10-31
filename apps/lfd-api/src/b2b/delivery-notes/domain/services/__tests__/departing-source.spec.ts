@@ -4,6 +4,7 @@ import { DecisionOutsideOrderError } from "../../errors/delivery-note-errors.js"
 import type { DeliveryNoteSourceLine } from "../../value-objects/delivery-note-line.js";
 import { ORDER_TERMS } from "../../value-objects/__tests__/delivery-note-terms.fixture.js";
 import { departingSourceOf } from "../departing-source.js";
+import { columnDiscounts } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 
 /** 1,00 € HT la pièce, 5,5 % — des totaux qui se lisent de tête. */
 function line(sku: string, quantity: number, eligible = true): DeliveryNoteSourceLine {
@@ -29,7 +30,7 @@ const ORDER: DeliveryNoteSource = {
 };
 
 const NO_RULES = {
-  discount: null,
+  discounts: [],
   deliveryFee: null,
   lateFee: null,
   deliveryVatMode: null,
@@ -93,7 +94,7 @@ describe("DeliveryNoteTerms.composePartial — les montants de ce qui part (§ 9
   it("une remise en pourcentage suit le livré, sur l'assiette ÉLIGIBLE de la ligne de commande", () => {
     const { terms } = departingSourceOf(
       ORDER,
-      decided(SIX, { discount: { mode: "percent", bp: 1_000 } }),
+      decided(SIX, { discounts: columnDiscounts({ mode: "percent", bp: 1_000 }) }),
     );
     // 10 % de 6,00 € (CRO seul est éligible) — PAC ne compte pas.
     expect(terms.discountCents).toBe(60);
@@ -103,13 +104,15 @@ describe("DeliveryNoteTerms.composePartial — les montants de ce qui part (§ 9
   it("une remise fixe reste entière, plafonnée à l'assiette éligible qui part (Q-E6-2)", () => {
     const entire = departingSourceOf(
       ORDER,
-      decided(SIX, { discount: { mode: "amount", cents: 500 } }),
+      decided(SIX, { discounts: columnDiscounts({ mode: "amount", cents: 500 }) }),
     );
     expect(entire.terms.discountCents).toBe(500);
 
     const capped = departingSourceOf(
       ORDER,
-      decided([{ sku: "CRO", quantity: 3 }], { discount: { mode: "amount", cents: 500 } }),
+      decided([{ sku: "CRO", quantity: 3 }], {
+        discounts: columnDiscounts({ mode: "amount", cents: 500 }),
+      }),
     );
     expect(capped.terms.discountCents).toBe(300);
   });

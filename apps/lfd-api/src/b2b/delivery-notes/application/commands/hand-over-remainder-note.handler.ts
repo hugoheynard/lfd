@@ -6,6 +6,7 @@ import { OrdersToReconcileDeliveryNotes } from "../../../orders/domain/ports/ord
 import { HandedOverRemainderNoteNotFoundError } from "../../domain/errors/delivery-note-errors.js";
 import { RemainderSettlement } from "../../../orders/domain/ports/remainder-settlement.js";
 import { DeliveryNoteRepository } from "../../domain/ports/delivery-note.repository.js";
+import { DeliveryNoteDepartureRecorder } from "../services/delivery-note-departure-recorder.js";
 import { OrderBillingCloser } from "../services/order-billing-closer.js";
 import { remainderNoteOf } from "../services/remainder-note-of.js";
 import { HandOverRemainderNoteCommand } from "./hand-over-remainder-note.command.js";
@@ -47,6 +48,7 @@ export class HandOverRemainderNoteHandler implements ICommandHandler<
     private readonly uow: UnitOfWork,
     private readonly settlement: RemainderSettlement,
     private readonly billing: OrderBillingCloser,
+    private readonly departures: DeliveryNoteDepartureRecorder,
   ) {}
 
   async execute(command: HandOverRemainderNoteCommand): Promise<void> {
@@ -63,6 +65,7 @@ export class HandOverRemainderNoteHandler implements ICommandHandler<
       }
       note.handOver(command.handedOverAt, instantToLocal(command.handedOverAt).day);
       await this.notes.save(note);
+      await this.departures.recordIfDeparted(note);
       const settled = await this.settlement.settleIfComplete({
         orderId: command.orderId,
         handedOverBy: command.handedOverBy,

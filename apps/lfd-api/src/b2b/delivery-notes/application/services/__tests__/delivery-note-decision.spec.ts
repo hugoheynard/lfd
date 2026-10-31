@@ -20,6 +20,7 @@ import { DeliveryNoteAligner } from "../delivery-note-aligner.js";
 import { DeliveryNoteFollower } from "../delivery-note-follower.js";
 import { RemainderDecisionFollower } from "../remainder-decision-follower.js";
 import { DeliveryNotePlanner } from "../delivery-note-planner.js";
+import { departureRecorderOf } from "../../__tests__/departure-doubles.js";
 
 // Instants et jours comparés entre eux, jamais à l'horloge.
 const CONFIRMED_AT = new Date(1_000);
@@ -88,7 +89,7 @@ function order(overrides: Partial<DeliveryNoteOrderProgress> = {}): DeliveryNote
 const DECISION = {
   departing: [{ sku: "CRO", quantity: 6 }],
   adjustments: {
-    discount: null,
+    discounts: [],
     deliveryFee: { mode: "amount", cents: 800 },
     lateFee: null,
     deliveryVatMode: "standard",
@@ -105,7 +106,7 @@ function scene() {
   const ids = new FixedIdGenerator("dn");
   const clock = new FixedClock(NOW);
   const closer = billingCloserOf(notes, billings, engagements);
-  const aligner = new DeliveryNoteAligner(notes, ids, decisions);
+  const aligner = new DeliveryNoteAligner(notes, ids, decisions, departureRecorderOf());
   const follower = new DeliveryNoteFollower(
     new DeliveryNotePlanner(new FixedConfirmedOrders(), notes, ids, clock, decisions),
     progress,

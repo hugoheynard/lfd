@@ -8,12 +8,18 @@ import {
 
 import { Prisma } from "../../../platform/database/client/client.js";
 import { TechnicalError } from "../../../platform/shared/errors/app-error.js";
+import { FrozenAdjustmentUnreadableError } from "./frozen-adjustment-unreadable.error.js";
 import type { BillableAmounts } from "../domain/entities/billable-amounts.js";
 import type { OrderRateAmounts } from "../domain/value-objects/order-rate-amounts.js";
 import type {
   FrozenExactTerms,
   FrozenOrderAdjustments,
 } from "../domain/ports/shortfall-decision.reader.js";
+import {
+  ACTIVE_ORDER_DISCOUNTS_SELECT,
+  basketDiscountsOfRow,
+  type BasketDiscountColumnsRow,
+} from "./order-discounts.columns.js";
 import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/order-vat-method.js";
 
 /**
@@ -23,20 +29,16 @@ import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/o
  * la même chose.
  */
 
-/** Une colonne JSON d'ajustement que la passation n'a pas pu écrire ainsi. */
-export class FrozenAdjustmentUnreadableError extends TechnicalError {
-  constructor(orderId: string, column: string) {
-    super(
-      "orders.frozen_adjustment.unreadable",
-      `La règle figée « ${column} » de la commande ${orderId} est illisible : la colonne a été écrite hors de l'application. ` +
-        "Le bon de livraison partiel n'a pas été recomposé ; signalez-le à l'équipe technique.",
-    );
-  }
-}
+export { FrozenAdjustmentUnreadableError };
 
-/** Les colonnes des règles figées, telles que Prisma les relit. */
+/**
+ * Les colonnes des règles figées, telles que Prisma les relit — les remises
+ * de panier avec leur repli sur les colonnes (plan des promotions, M4).
+ */
 export const FROZEN_ADJUSTMENT_SELECT = {
+  discountPromotionId: true,
   discountAdjustment: true,
+  discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
   deliveryFeeAdjustment: true,
   lateFeeAdjustment: true,
   deliveryVatMode: true,
@@ -45,8 +47,7 @@ export const FROZEN_ADJUSTMENT_SELECT = {
   deliveryFeeTtcCents: true,
 } as const;
 
-interface FrozenAdjustmentRow {
-  readonly discountAdjustment: Prisma.JsonValue;
+interface FrozenAdjustmentRow extends BasketDiscountColumnsRow {
   readonly deliveryFeeAdjustment: Prisma.JsonValue;
   readonly lateFeeAdjustment: Prisma.JsonValue;
   readonly deliveryVatMode: string | null;
@@ -77,7 +78,7 @@ export function frozenAdjustmentsOf(
   row: FrozenAdjustmentRow,
 ): FrozenOrderAdjustments {
   return {
-    discount: parsed(cartAdjustmentSchema, row.discountAdjustment, orderId, "remise"),
+    discounts: basketDiscountsOfRow(orderId, row),
     deliveryFee: parsed(cartAdjustmentSchema, row.deliveryFeeAdjustment, orderId, "frais"),
     lateFee: parsed(lateFeeAdjustmentSchema, row.lateFeeAdjustment, orderId, "surtaxe"),
     deliveryVatMode: parsed(deliveryVatModeSchema, row.deliveryVatMode, orderId, "TVA du port"),

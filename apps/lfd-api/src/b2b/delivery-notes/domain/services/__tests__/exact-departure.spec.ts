@@ -9,6 +9,7 @@ import {
 import { ORDER_TERMS } from "../../value-objects/__tests__/delivery-note-terms.fixture.js";
 import { departingSourceOf } from "../departing-source.js";
 import { exactDepartureOf } from "../exact-departure.js";
+import { columnDiscounts } from "../../../../orders/domain/services/__tests__/frozen-basket-discounts.fixture.js";
 
 /**
  * Le BL partiel d'une commande de particulier composée en TTC (plan
@@ -49,7 +50,7 @@ function juice(quantity: number): DeliveryNoteSourceLine {
 }
 
 const NO_RULES: FrozenOrderAdjustments = {
-  discount: null,
+  discounts: [],
   deliveryFee: null,
   lateFee: null,
   deliveryVatMode: null,
@@ -132,7 +133,7 @@ describe("exactDepartureOf — le BL partiel d'une commande en TTC", () => {
 
   it("remise retrait en pourcentage : refaite sur le TTC éligible livré", () => {
     const { lines, terms } = depart([bananaBread(1), juice(1)], {
-      discount: { mode: "percent", bp: 1_000 },
+      discounts: columnDiscounts({ mode: "percent", bp: 1_000 }),
     });
 
     expect(terms.ttcTerms?.discountCents).toBe(240);

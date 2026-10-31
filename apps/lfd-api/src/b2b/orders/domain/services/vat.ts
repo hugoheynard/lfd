@@ -2,6 +2,7 @@ import type { DeliveryVatMode } from "@lfd/contracts";
 import {
   DELIVERY_VAT_RATE,
   ventilateVat,
+  type VatBasketDiscount,
   type VatExtra,
   type VatLine,
   type VatShare,
@@ -61,6 +62,12 @@ export interface VatInput {
    * `plan-remise-retrait-par-clientele-et-exclusions.md`).
    */
   readonly discountCents: number;
+  /**
+   * Les remises de panier, chacune sur SES lignes, dans leur ordre (plan des
+   * promotions, § 18.4, lot M4) — les montants de `chainLineHtBasketDiscounts`.
+   * Présente, elle remplace {@link discountCents}, qui vaut alors `0`.
+   */
+  readonly eligibleDiscounts?: readonly VatBasketDiscount[] | undefined;
   /**
    * La part du **bon de fidélité** imputée, HT, en centimes — `0` sans bon.
    *
@@ -144,7 +151,9 @@ export interface OrderTotals {
 export function computeOrderTotals(input: VatInput): OrderTotals {
   const ventilated = ventilateVat({
     lines: input.lines,
-    eligibleDiscountCents: input.discountCents,
+    ...(input.eligibleDiscounts === undefined
+      ? { eligibleDiscountCents: input.discountCents }
+      : { eligibleDiscounts: input.eligibleDiscounts }),
     discountCents: input.voucherDiscountCents ?? 0,
     extras: extrasOf(input),
   });
