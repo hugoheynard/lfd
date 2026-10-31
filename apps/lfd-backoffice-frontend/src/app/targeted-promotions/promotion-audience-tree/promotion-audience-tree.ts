@@ -47,6 +47,8 @@ const PROS: readonly Box[] = [
 })
 export class PromotionAudienceTree {
   readonly audiences = input.required<readonly PromotionAudienceTargetView[]>();
+  /** Lecture seule : sans droit d'écriture, ou une promotion archivée. */
+  readonly disabled = input(false);
   readonly audiencesChange = output<PromotionAudienceTargetView[]>();
 
   protected readonly individuals = INDIVIDUALS;

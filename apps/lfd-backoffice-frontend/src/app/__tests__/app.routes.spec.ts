@@ -220,7 +220,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'promotions-ciblees': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
   // Écrites sous b2b_pricing seul : un seul endroit (plan-un-seul-endroit.md, 2026-10-31).
   'promotions-ciblees/nouvelle': 'b2b_pricing:write',
-  'promotions-ciblees/:id/modifier': 'b2b_pricing:write',
   'promotions-ciblees/:id': { anyOf: ['b2b_pricing:read', 'lfc_site_settings:read'] },
 
   // **Vitrine** — hors de l'espace B2B, derrière SA ressource : sous `b2b`, le
@@ -870,6 +869,20 @@ describe("l'arbre de routes du back-office", () => {
       tourManager?.children?.find((child) => child.path === path)?.redirectTo;
     expect(redirectOf('')).toBe(toRoundsTab);
     expect(redirectOf('feuille-de-route')).toBe(toRoundsTab);
+  });
+
+  it('mène l’ancienne adresse de l’éditeur d’une promotion vers sa fiche, devenue le formulaire', () => {
+    // Un seul layout depuis le 2026-10-31 (décision de Hugo) : `:id/modifier`
+    // n'a plus d'écran, ses liens collés ouvrent la fiche. Déclarée avant
+    // `:id`, sans garde : la fiche porte la sienne.
+    const paths = routes.map((route) => route.path);
+    const legacy = routes.find((route) => route.path === 'promotions-ciblees/:id/modifier');
+
+    expect(legacy?.redirectTo).toBe('/promotions-ciblees/:id');
+    expect(legacy?.canActivate).toBeUndefined();
+    expect(paths.indexOf('promotions-ciblees/:id/modifier')).toBeLessThan(
+      paths.indexOf('promotions-ciblees/:id'),
+    );
   });
 
   it('ouvre le comptoir sur le premier onglet permis', () => {

@@ -125,7 +125,7 @@ const MILLICENTS_PER_EURO = 100_000;
 const CENTS_PER_EURO = 100;
 
 /** L'unité saisie de chaque effet, et son facteur vers l'entier du serveur. */
-const EFFECT_FACTOR: Readonly<Record<PromotionEffectKindValue, number>> = {
+export const EFFECT_FACTOR: Readonly<Record<PromotionEffectKindValue, number>> = {
   percent_off: BP_PER_PERCENT,
   unit_amount_off: MILLICENTS_PER_EURO,
   fixed_unit_price: MILLICENTS_PER_EURO,
@@ -133,7 +133,7 @@ const EFFECT_FACTOR: Readonly<Record<PromotionEffectKindValue, number>> = {
 };
 
 /** Un nombre français (« 0,50 ») ; `null` s'il ne se lit pas. */
-function decimalOf(text: string): number | null {
+export function decimalOf(text: string): number | null {
   const trimmed = text.trim().replace(',', '.');
   if (trimmed === '' || !/^\d+(\.\d+)?$/u.test(trimmed)) {
     return null;
@@ -321,4 +321,19 @@ export function targetIds(
       (rule) => rule.target === target && (target === 'category' || rule.eligible === eligible),
     )
     .map((rule) => rule.targetId);
+}
+
+/**
+ * **Le brouillon d'une copie pour un autre public** (« Dupliquer pour un
+ * autre public », 2026-10-31) : tout de l'original — effet, libellés,
+ * acheminement, portée, période, conditions, cumul — SAUF le public, laissé
+ * vide pour que la forme réclame un choix. Le nom interne est marqué à revoir ;
+ * le libellé client ne l'est pas, il serait publié tel quel.
+ */
+export function duplicateDraft(view: PromotionView): PromotionDraft {
+  return {
+    ...draftOf(view),
+    internalName: `${view.internalName} (copie à revoir)`,
+    audiences: [],
+  };
 }

@@ -43,3 +43,41 @@ export function catalogueChoicesOf(view: PublishedCatalogView): CatalogueChoices
     ),
   };
 }
+
+/** Tous les noms connus d'une portée, toutes cibles confondues — pour le résumé. */
+export function choiceNames(choices: CatalogueChoices): ReadonlyMap<string, string> {
+  return new Map(
+    Object.values(choices).flatMap((groups) =>
+      groups.flatMap((group) =>
+        group.options.map((option) => [option.value, option.label] as const),
+      ),
+    ),
+  );
+}
+
+/**
+ * Les choix, augmentés des cibles que la promotion porte et que le catalogue
+ * ne propose plus (retirées, archivées, ou catalogue illisible) : sans elles,
+ * une liste montrerait « Aucune » sur une exception bien réelle.
+ */
+export function withRuleTargets(
+  choices: CatalogueChoices,
+  rules: readonly {
+    readonly target: PromotionScopeTargetValue;
+    readonly targetId: string;
+    readonly name: string | null;
+  }[],
+): CatalogueChoices {
+  const known = choiceNames(choices);
+  const extra = (target: PromotionScopeTargetValue): ChoiceGroup[] => {
+    const options = rules
+      .filter((rule) => rule.target === target && !known.has(rule.targetId))
+      .map((rule) => ({ value: rule.targetId, label: rule.name ?? rule.targetId }));
+    return options.length === 0 ? [] : [{ label: 'Hors du catalogue publié', options }];
+  };
+  return {
+    category: [...choices.category, ...extra('category')],
+    product: [...choices.product, ...extra('product')],
+    variant: [...choices.variant, ...extra('variant')],
+  };
+}

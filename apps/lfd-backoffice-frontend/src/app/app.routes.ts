@@ -218,26 +218,22 @@ export const routes: Routes = [
       import('./targeted-promotions/promotions-page/promotions-page').then((m) => m.PromotionsPage),
   },
   {
-    // L'éditeur (L8) : une pose, `?pickupId=` pré-remplit « Retrait · ce point ».
-    // Déclarée AVANT `:id`, qui l'avalerait sinon.
+    // La pose (L8) : la même page que la fiche, sans promotion à relire ;
+    // `?pickupId=` pré-remplit « Retrait · ce point ». Déclarée AVANT `:id`,
+    // qui l'avalerait sinon.
     path: 'promotions-ciblees/nouvelle',
     canActivate: [permissionGuard('b2b_pricing:write')],
     title: 'Nouvelle promotion — LFC B2B admin',
     loadComponent: () =>
-      import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(
-        (m) => m.PromotionEditorPage,
-      ),
+      import('./targeted-promotions/promotion-page/promotion-page').then((m) => m.PromotionPage),
   },
+  // L'ancien éditeur à part : depuis le 2026-10-31, la fiche EST le
+  // formulaire (décision de Hugo, un seul layout). L'adresse reste pour les
+  // liens collés.
+  { path: 'promotions-ciblees/:id/modifier', redirectTo: '/promotions-ciblees/:id' },
   {
-    path: 'promotions-ciblees/:id/modifier',
-    canActivate: [permissionGuard('b2b_pricing:write')],
-    title: 'Modifier une promotion — LFC B2B admin',
-    loadComponent: () =>
-      import('./targeted-promotions/promotion-editor-page/promotion-editor-page').then(
-        (m) => m.PromotionEditorPage,
-      ),
-  },
-  {
+    // La fiche d'une promotion : ses champs, éditables sous `b2b_pricing:write`,
+    // désactivés sinon — un seul layout pour la lecture et la saisie.
     path: 'promotions-ciblees/:id',
     canActivate: [anyPermissionGuard('b2b_pricing:read', 'lfc_site_settings:read')],
     title: 'Promotion — LFC B2B admin',

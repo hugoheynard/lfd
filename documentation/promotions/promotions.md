@@ -293,10 +293,10 @@ Avec plusieurs remises, chaque libellé est figé dans sa ligne
 
 ### 2.9 Écrans et droits
 
-| Écran                                                 | Front                                                       | API                                   | Droit                                                               |
-| ----------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
-| Promotions (liste, fiche, éditeur, arbre des publics) | `apps/lfd-backoffice-frontend/src/app/targeted-promotions/` | `http/admin-promotions.controller.ts` | `b2b_pricing` (`:61`) ; lecture aussi sous `lfc_site_settings:read` |
-| Règles de prix (ancienne grille)                      | —                                                           | `b2b/pricing/http/`                   | `b2b_pricing`                                                       |
+| Écran                                                       | Front                                                       | API                                   | Droit                                                               |
+| ----------------------------------------------------------- | ----------------------------------------------------------- | ------------------------------------- | ------------------------------------------------------------------- |
+| Promotions (liste, page d'une promotion, arbre des publics) | `apps/lfd-backoffice-frontend/src/app/targeted-promotions/` | `http/admin-promotions.controller.ts` | `b2b_pricing` (`:61`) ; lecture aussi sous `lfc_site_settings:read` |
+| Règles de prix (ancienne grille)                            | —                                                           | `b2b/pricing/http/`                   | `b2b_pricing`                                                       |
 
 Il n'y a plus de **surface** (d'où une promotion est réglée) depuis le
 2026-10-31 : la route `admin/sites/:pickupId/promotions` (sous
@@ -305,8 +305,19 @@ les cartes de remise de la fiche d'un site sont retirés
 ([`plan-un-seul-endroit.md`](plan-un-seul-endroit.md)). Qui tenait
 `lfc_site_settings:write` sans `b2b_pricing:write` ne règle plus la remise de
 son point : le droit des prix s'accorde à l'écran (`/admin/staff-roles`).
-Les écrans `nouvelle` et `:id/modifier` du back-office sont gardés par
-`b2b_pricing:write` seul.
+Depuis le 2026-10-31 (décision de Hugo : « un seul layout avec les champs »),
+une promotion n'a plus qu'**une page**, `promotions-ciblees/:id`
+(`targeted-promotions/promotion-page/`) : ses champs directement éditables,
+dans l'ordre où l'on pense une promotion — que reçoit le client, pour qui,
+sur quel mode d’acheminement et de consommation (et ce que ça change : prix baissé au catalogue, ou
+remise au panier), sur quels articles, quand et à quelles conditions — puis
+« Où en est-elle ? » (état, pause, reprise, archivage). Un résumé en une
+phrase, en tête, suit la saisie (`apps/lfd-backoffice-frontend/src/app/targeted-promotions/promotion-summary.ts`). Lue sous
+`b2b_pricing:read` ou `lfc_site_settings:read` ; sans `b2b_pricing:write`,
+avant la bascule de la source ou une fois archivée, les mêmes champs sont
+désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée par
+`b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
+`:id`.
 
 ### 2.10 Journal
 

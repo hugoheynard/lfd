@@ -1,4 +1,4 @@
-<fold-page-layout [title]="promotion()?.internalName ?? 'Promotion'" headerBleed separator>
+<fold-page-layout [title]="title()" headerBleed separator>
   <fold-back-link
     pageEyebrow
     icon="arrow-back"
@@ -6,21 +6,35 @@
     routerLink="/promotions-ciblees"
   />
 
-  @if (canAct()) {
-    <div pageActions>
-      <a
-        foldButton
-        emphasis="outline"
-        intent="neutral"
-        [routerLink]="['/promotions-ciblees', id(), 'modifier']"
-      >
-        Modifier
-      </a>
-    </div>
-  }
-
   @if (stateLabel(); as label) {
     <fold-badge titleBadge [content]="label" [variant]="stateVariant()" radius="pill" />
+  }
+
+  @if ((writable() || canDuplicate()) && state() === 'ready') {
+    <div pageActions>
+      @if (canDuplicate()) {
+        <a
+          foldButton
+          emphasis="outline"
+          intent="neutral"
+          routerLink="/promotions-ciblees/nouvelle"
+          [queryParams]="{ from: id() }"
+        >
+          Dupliquer pour un autre public
+        </a>
+      }
+      @if (writable()) {
+        <button
+          foldButton
+          intent="primary"
+          [disabled]="!canSave()"
+          [loading]="saving()"
+          (click)="save()"
+        >
+          {{ isNew() ? 'Poser la promotion' : 'Enregistrer' }}
+        </button>
+      }
+    </div>
   }
 
   @switch (state()) {
@@ -29,25 +43,282 @@
     }
     @case ('error') {
       <fold-empty-state tone="alert" title="Promotion illisible">
-        <button foldButton (click)="load(id())">Réessayer</button>
+        <button foldButton (click)="reload()">Réessayer</button>
       </fold-empty-state>
     }
     @default {
-      @if (promotion(); as promotion) {
-        @if (refusal(); as message) {
-          <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
-        }
-        @if (canAct()) {
-          <fold-card>
-            <div class="block">
-              <fold-element-title
-                variant="title"
-                title="Gestes"
-                subtitle="La pause garde sa place face aux autres promotions ; l'archivage est définitif."
+      <fold-callout appearance="inset" variant="info">{{ summary() }}</fold-callout>
+
+      @if (copiedFrom(); as original) {
+        <fold-callout appearance="inset" variant="warning">
+          Copie de « {{ original }} », rien n'est posé tant que vous n'enregistrez pas. Choisissez
+          son public, puis relisez son nom et ce que lit le client.
+        </fold-callout>
+      }
+
+      @if (refusal(); as message) {
+        <fold-callout appearance="inset" variant="alert" announce>{{ message }}</fold-callout>
+      } @else if (writable() && problem(); as message) {
+        <fold-callout appearance="inset" variant="neutral">{{ message }}</fold-callout>
+      }
+      @if (catalogueMissing()) {
+        <fold-callout appearance="inset" variant="alert">
+          Le catalogue publié ne se lit pas : les listes de la portée ne proposent que ce que la
+          promotion porte déjà.
+        </fold-callout>
+      }
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
+            title="Que reçoit le client ?"
+            [subtitle]="
+              atLine()
+                ? 'Une baisse du prix de chaque article.'
+                : 'Une remise sur son panier, une fois les articles chiffrés.'
+            "
+          />
+          <div class="pair">
+            <fold-listbox
+              label="Remise"
+              hint="Le montant sur le panier se choisit avec un acheminement précis."
+              [options]="effectOptions()"
+              [value]="draft().effectKind"
+              [disabled]="readOnly()"
+              (selectionChange)="edit({ effectKind: $event })"
+            />
+            <fold-input
+              label="Valeur"
+              placeholder="20"
+              [value]="draft().effectValue"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ effectValue: $event })"
+            />
+          </div>
+          <fold-input
+            label="Ce que le client lit"
+            hint="Sur la fiche produit et au panier, quand son public n'a pas son propre libellé."
+            [value]="draft().labelFr"
+            [disabled]="readOnly()"
+            (valueChange)="edit({ labelFr: $event })"
+          />
+          <div class="pair">
+            <fold-input
+              label="En anglais"
+              hint="Vide : le français."
+              [value]="draft().labelEn"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ labelEn: $event })"
+            />
+            <fold-input
+              label="En italien"
+              hint="Vide : le français."
+              [value]="draft().labelIt"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ labelIt: $event })"
+            />
+          </div>
+          <fold-input
+            label="Nom interne"
+            hint="Ce que l'équipe lit dans la liste et au journal — le client ne le voit pas."
+            [value]="draft().internalName"
+            [disabled]="readOnly()"
+            (valueChange)="edit({ internalName: $event })"
+          />
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
+            title="Pour qui ?"
+            subtitle="Seuls les clients cochés la reçoivent ; les autres paient le prix habituel."
+          />
+          <app-promotion-audience-tree
+            [audiences]="draft().audiences"
+            [disabled]="readOnly()"
+            (audiencesChange)="setAudiences($event)"
+          >
+            <div individualsLabels class="pair">
+              <fold-input
+                label="Ce que lisent les particuliers"
+                hint="Vide : le libellé commun."
+                [value]="draft().individualsFr"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ individualsFr: $event })"
               />
               <fold-input
-                label="Motif"
-                hint="Au journal tarifaire — obligatoire pour archiver."
+                label="En anglais"
+                [value]="draft().individualsEn"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ individualsEn: $event })"
+              />
+              <fold-input
+                label="En italien"
+                [value]="draft().individualsIt"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ individualsIt: $event })"
+              />
+            </div>
+            <div prosLabels class="pair">
+              <fold-input
+                label="Ce que lisent les pros"
+                hint="Vide : le libellé commun."
+                [value]="draft().prosFr"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ prosFr: $event })"
+              />
+              <fold-input
+                label="En anglais"
+                [value]="draft().prosEn"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ prosEn: $event })"
+              />
+              <fold-input
+                label="En italien"
+                [value]="draft().prosIt"
+                [disabled]="readOnly()"
+                (valueChange)="edit({ prosIt: $event })"
+              />
+            </div>
+          </app-promotion-audience-tree>
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
+            title="Sur quel mode d’acheminement et de consommation ?"
+          />
+          <fold-listbox
+            label="Acheminement"
+            [hint]="fulfillmentHint()"
+            [options]="fulfillmentOptions"
+            [value]="draft().fulfillmentKind"
+            [disabled]="readOnly()"
+            (selectionChange)="setFulfillment($event)"
+          />
+          @if (draft().fulfillmentKind === 'pickup_point') {
+            <fold-listbox
+              label="Point de retrait"
+              [options]="pickupOptions()"
+              [value]="draft().pickupId"
+              [disabled]="readOnly()"
+              (selectionChange)="edit({ pickupId: $event })"
+            />
+          }
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title
+            variant="title"
+            title="Sur quels articles ?"
+            subtitle="Un produit ou une déclinaison réglé ici l'emporte sur sa famille."
+          />
+          <fold-listbox
+            label="Étendue"
+            [options]="scopeOptions"
+            [value]="draft().scopeMode"
+            [disabled]="readOnly()"
+            (selectionChange)="setScopeMode($event)"
+          />
+          @for (list of scopeLists(); track list.label) {
+            <fold-multiselect
+              searchable
+              [label]="list.label"
+              placeholder="Aucune"
+              [options]="list.options"
+              [value]="list.value"
+              [disabled]="readOnly()"
+              (valueChange)="setTargets(list.target, list.eligible, $event)"
+            />
+          }
+        </div>
+      </fold-card>
+
+      <fold-card>
+        <div class="block">
+          <fold-element-title variant="title" title="Quand, et à quelles conditions ?" />
+          <div class="pair">
+            <fold-date
+              label="À partir du"
+              [value]="draft().validFrom"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ validFrom: $event })"
+            />
+            <fold-date
+              label="Jusqu'au"
+              optional
+              hint="Vide : sans fin. Ce jour-là, elle ne s'applique plus."
+              [value]="draft().validTo"
+              [disabled]="readOnly()"
+              (valueChange)="edit({ validTo: $event })"
+            />
+          </div>
+          <fold-input
+            label="Quantité minimum par article"
+            hint="Le client la reçoit à partir de cette quantité sur la ligne. Vide : dès un."
+            [value]="draft().minQuantity"
+            [disabled]="readOnly()"
+            (valueChange)="edit({ minQuantity: $event })"
+          />
+          @if (atLine()) {
+            <fold-checkbox
+              label="Aussi pour les clients à tarif négocié"
+              hint="Sinon, un client sous mercuriale garde son prix négocié."
+              [checked]="draft().stacksOverMercuriale"
+              [disabled]="readOnly()"
+              (checkedChange)="edit({ stacksOverMercuriale: $event })"
+            />
+          }
+          <fold-checkbox
+            label="Cumulable"
+            [hint]="cumulativeHint()"
+            [checked]="draft().cumulative"
+            [disabled]="readOnly()"
+            (checkedChange)="edit({ cumulative: $event })"
+          />
+          @if (writable()) {
+            <fold-input
+              [label]="isNew() ? 'Motif de la pose' : 'Motif de la modification'"
+              hint="Pourquoi — il part au journal tarifaire avec l'enregistrement."
+              [value]="draft().reason"
+              (valueChange)="edit({ reason: $event })"
+            />
+          }
+        </div>
+      </fold-card>
+
+      @if (promotion(); as promotion) {
+        <fold-card>
+          <div class="block">
+            <fold-element-title
+              variant="title"
+              title="Où en est-elle ?"
+              [subtitle]="
+                'Posée le ' + instant(promotion.createdAt) + (origin() ? ' — ' + origin() : '')
+              "
+            />
+            @if (promotion.archived; as archived) {
+              <fold-callout appearance="inset" variant="neutral">
+                Archivée le {{ instant(archived.at) }} — « {{ archived.reason }} ». Elle se lit,
+                elle ne s'applique plus.
+              </fold-callout>
+            } @else if (promotion.paused; as paused) {
+              <fold-callout appearance="inset" variant="warning">
+                En pause depuis le {{ instant(paused.at) }} : elle ne s'applique pas, et garde sa
+                place face aux autres promotions.
+              </fold-callout>
+            }
+            @if (canAct()) {
+              <fold-input
+                label="Motif du geste"
+                hint="Au journal tarifaire — obligatoire pour archiver. La pause garde sa place face aux autres promotions ; l'archivage est définitif."
                 [value]="reason()"
                 (valueChange)="reason.set($event)"
               />
@@ -71,189 +342,6 @@
                   Archiver
                 </button>
               </div>
-            </div>
-          </fold-card>
-        }
-        @if (promotion.archived; as archived) {
-          <fold-callout appearance="inset" variant="neutral">
-            Archivée le {{ instant(archived.at) }} — « {{ archived.reason }} ». Elle se lit, elle ne
-            s'applique plus.
-          </fold-callout>
-        } @else if (promotion.paused; as paused) {
-          <fold-callout appearance="inset" variant="warning">
-            En pause depuis le {{ instant(paused.at) }} : elle ne s'applique pas, et garde sa place
-            face aux autres promotions.
-          </fold-callout>
-        }
-
-        <fold-card>
-          <div class="block">
-            <fold-element-title variant="title" title="Identité" />
-            <dl class="facts">
-              <div>
-                <dt>Libellé client</dt>
-                <dd>{{ promotion.label.fr }}</dd>
-              </div>
-              @if (promotion.label.en !== null) {
-                <div>
-                  <dt>Anglais</dt>
-                  <dd>{{ promotion.label.en }}</dd>
-                </div>
-              }
-              @if (promotion.label.it !== null) {
-                <div>
-                  <dt>Italien</dt>
-                  <dd>{{ promotion.label.it }}</dd>
-                </div>
-              }
-              <div>
-                <dt>Motif</dt>
-                <dd>{{ promotion.reason ?? 'Aucun' }}</dd>
-              </div>
-              @if (origin(); as origin) {
-                <div>
-                  <dt>Origine</dt>
-                  <dd>{{ origin }}</dd>
-                </div>
-              }
-            </dl>
-          </div>
-        </fold-card>
-
-        <fold-card>
-          <div class="block">
-            <fold-element-title
-              variant="title"
-              title="Effet et fenêtre"
-              [subtitle]="
-                promotion.applicationPoint === 'line'
-                  ? 'Sur le prix de chaque ligne, entre le volume et le geste.'
-                  : 'Sur le panier, une fois les lignes chiffrées.'
-              "
-            />
-            <dl class="facts">
-              <div>
-                <dt>Effet</dt>
-                <dd>{{ effect(promotion) }}</dd>
-              </div>
-              <div>
-                <dt>Fenêtre</dt>
-                <dd>{{ window(promotion) }}</dd>
-              </div>
-              @if (promotion.applicationPoint === 'line') {
-                <div>
-                  <dt>Tarifs négociés</dt>
-                  <dd>
-                    {{
-                      promotion.stacksOverMercuriale
-                        ? "S'applique aussi sous une mercuriale"
-                        : "Ne s'applique pas sous une mercuriale"
-                    }}
-                  </dd>
-                </div>
-              }
-              <div>
-                <dt>Cumul</dt>
-                <dd>
-                  {{
-                    promotion.cumulative
-                      ? 'Cumulable avec les autres promotions cumulables'
-                      : promotion.applicationPoint === 'line'
-                        ? 'Non cumulable : une seule promotion par article'
-                        : 'Non cumulable : une seule remise de panier par article'
-                  }}
-                </dd>
-              </div>
-              @for (condition of promotion.conditions; track condition.kind) {
-                <div>
-                  <dt>Condition</dt>
-                  <dd>À partir de {{ condition.value }} par ligne</dd>
-                </div>
-              }
-            </dl>
-          </div>
-        </fold-card>
-
-        <fold-card>
-          <div class="block">
-            <fold-element-title variant="title" title="Public" />
-            <div class="tree">
-              @for (group of audienceTree; track group.label) {
-                <div class="tree-group">
-                  <span class="tree-group-label">{{ group.label }}</span>
-                  <ul class="tree-nodes">
-                    @for (node of group.nodes; track node.kind) {
-                      @let chosen = targetOf(promotion, node.kind);
-                      <li class="tree-node" [class.is-chosen]="chosen !== undefined">
-                        @if (chosen !== undefined) {
-                          <fold-icon name="check" [size]="16" />
-                        }
-                        {{ node.label }}
-                        @if (chosen?.companyId) {
-                          — {{ chosen?.companyId }}
-                        }
-                      </li>
-                    }
-                  </ul>
-                </div>
-              }
-            </div>
-            @if (isLegacyAudience(promotion)) {
-              <fold-callout appearance="inset" variant="neutral">
-                Tous sauf les pros actifs — le public de la remise de retrait reprise :
-                particuliers, et sociétés en attente ou suspendues.
-              </fold-callout>
-            }
-          </div>
-        </fold-card>
-
-        <fold-card>
-          <div class="block">
-            <fold-element-title variant="title" title="Acheminement" />
-            <ul class="tree-nodes">
-              @for (choice of fulfillmentChoices; track choice.kind) {
-                <li
-                  class="tree-node"
-                  [class.is-chosen]="choice.kind === promotion.fulfillment.kind"
-                >
-                  @if (choice.kind === promotion.fulfillment.kind) {
-                    <fold-icon name="check" [size]="16" />
-                    {{ fulfillment(promotion) }}
-                  } @else {
-                    {{ choice.label }}
-                  }
-                </li>
-              }
-            </ul>
-          </div>
-        </fold-card>
-
-        <fold-card>
-          <div class="block">
-            <fold-element-title
-              variant="title"
-              title="Portée"
-              [subtitle]="
-                promotion.scope.mode === 'all_except'
-                  ? 'Tout le catalogue, sauf les exceptions.'
-                  : 'Seulement ce qui est inclus.'
-              "
-            />
-            @if (promotion.scope.rules.length === 0) {
-              <p class="muted">Aucune exception.</p>
-            } @else {
-              <ul class="rules">
-                @for (rule of promotion.scope.rules; track rule.target + rule.targetId) {
-                  <li class="rule">
-                    <fold-badge
-                      [content]="rule.eligible ? 'Incluse' : 'Exclue'"
-                      [variant]="rule.eligible ? 'success' : 'neutral'"
-                      radius="pill"
-                    />
-                    <span>{{ targetLabel[rule.target] }} · {{ rule.name ?? rule.targetId }}</span>
-                  </li>
-                }
-              </ul>
             }
           </div>
         </fold-card>

@@ -8,8 +8,12 @@ import {
   signal,
   untracked,
 } from '@angular/core';
-import { RouterLink } from '@angular/router';
-import type { PromotionScopeRuleView, PromotionView } from '@lfd/contracts';
+import { Router, RouterLink } from '@angular/router';
+import type {
+  PromotionAudienceTargetView,
+  PromotionScopeTargetValue,
+  PromotionView,
+} from '@lfd/contracts';
 import { httpErrorMessage } from '@lfd/endpoints';
 import {
   FoldBackLinkComponent,
@@ -17,53 +21,72 @@ import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
+  FoldCheckboxComponent,
+  FoldDateComponent,
   FoldElementTitleComponent,
   FoldEmptyStateComponent,
-  FoldIconComponent,
   FoldInputComponent,
+  FoldListboxComponent,
   FoldLoadingStateComponent,
+  FoldMultiselectComponent,
   FoldPageLayoutComponent,
 } from 'fold-ng';
 
+import { PermissionsStore } from '../../auth/permissions.store';
+import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
 import { NotifyService } from '../../notify.service';
-
+import { parisToday } from '../../shared/paris-today';
 import {
-  AUDIENCE_TREE,
-  STATE_LABEL,
-  STATE_VARIANT,
-  effectPhrase,
-  fulfillmentPhrase,
-  originPhrase,
-  windowPhrase,
-} from '../promotion-format';
+  catalogueChoicesOf,
+  choiceNames,
+  withRuleTargets,
+  type CatalogueChoices,
+} from '../catalogue-choices';
+import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
+import {
+  draftOf,
+  draftProblem,
+  duplicateDraft,
+  effectsFor,
+  emptyDraft,
+  targetIds,
+  targetsFor,
+  termsOf,
+  withFulfillment,
+  withScopeMode,
+  withTargets,
+  type PromotionDraft,
+} from '../promotion-draft';
+import { STATE_LABEL, STATE_VARIANT, originPhrase } from '../promotion-format';
+import { draftSummary } from '../promotion-summary';
 import { PromotionsService } from '../promotions.service';
+import {
+  EFFECT_LABEL,
+  FULFILLMENT_HINT,
+  FULFILLMENT_LABEL,
+  SCOPE_OPTIONS,
+  TARGET_LABEL,
+} from '../promotion-words';
 
 type LoadState = 'loading' | 'error' | 'ready';
 
-/** Les choix de l'acheminement, dans l'ordre de l'éditeur (plan § 11). */
-const FULFILLMENT_CHOICES = [
-  { kind: 'any', label: 'Tous les acheminements' },
-  { kind: 'pickup', label: 'Retrait · tous les points' },
-  { kind: 'pickup_point', label: 'Retrait · un point' },
-  { kind: 'delivery', label: 'Livraison' },
-] as const;
-
-const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> = {
-  category: 'Famille',
-  product: 'Produit (toutes ses déclinaisons)',
-  variant: 'Déclinaison',
-};
+const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
 
 /**
- * **La fiche d'une promotion** (plan
- * `documentation/promotions/plan-promotions-par-audience-et-acheminement.md`,
- * § 13.9, lot L7) — les sept blocs de l'éditeur, en LECTURE : identité,
- * effet, fenêtre, public (dans l'arbre « Tout le monde / Particuliers /
- * Pros »), acheminement, portée et ses exceptions, conditions.
+ * **La page d'une promotion — fiche ET formulaire** (décision de Hugo du
+ * 2026-10-31 : un seul layout, pas de mode lecture et de mode édition).
  *
- * Ses gestes (lot L8) : modifier (l'éditeur), mettre en pause, reprendre,
- * archiver — motif obligatoire pour archiver. Ils ne s'offrent qu'une fois
- * la bascule faite ; d'ici là, le serveur les refuserait.
+ * Les cartes suivent l'ordre où l'on pense une promotion : quoi, pour qui,
+ * comment le client la reçoit, sur quoi, quand — puis son état, ses gestes.
+ * Un résumé en une phrase, en tête, suit la saisie.
+ *
+ * Sans `id`, elle pose ; avec, elle révise (le motif part au journal). Sans
+ * `b2b_pricing:write`, avant la bascule de la source, ou une fois archivée,
+ * les mêmes champs sont désactivés et rien ne s'enregistre. `pickupId`
+ * pré-remplit « Retrait · ce point », depuis la fiche d'un site.
+ *
+ * Elle ne juge que la forme (`draftProblem`) ; tout refus métier vient du
+ * serveur, nommé, et reste affiché sans rien perdre de la saisie.
  */
 @Component({
   selector: 'app-promotion-page',
@@ -74,12 +97,16 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> =
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    FoldCheckboxComponent,
+    FoldDateComponent,
     FoldElementTitleComponent,
     FoldEmptyStateComponent,
-    FoldIconComponent,
     FoldInputComponent,
+    FoldListboxComponent,
     FoldLoadingStateComponent,
+    FoldMultiselectComponent,
     FoldPageLayoutComponent,
+    PromotionAudienceTree,
     RouterLink,
   ],
   templateUrl: './promotion-page.html',
@@ -87,26 +114,62 @@ const TARGET_LABEL: Readonly<Record<PromotionScopeRuleView['target'], string>> =
 })
 export class PromotionPage {
   private readonly api = inject(PromotionsService);
+  private readonly catalogueService = inject(CatalogueService);
+  private readonly permissions = inject(PermissionsStore);
   private readonly notify = inject(NotifyService);
+  private readonly router = inject(Router);
 
-  readonly id = input.required<string>();
+  /** La promotion ; absente = une pose. */
+  readonly id = input<string | undefined>();
+  /** Le point de retrait pré-rempli, depuis la fiche d'un site. */
+  readonly pickupId = input<string | undefined>();
+  /** La promotion à copier pour un autre public — une pose préremplie, sans public. */
+  readonly from = input<string | undefined>();
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly promotion = signal<PromotionView | null>(null);
-  private readonly pickupNames = signal<ReadonlyMap<string, string>>(new Map());
-
-  /** L'écran écrit-il ? Dit par le serveur (la source), relu avec la fiche. */
-  protected readonly editable = signal(false);
+  protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
+  /** Les termes relus, pour une révision ; `null` = une pose. */
+  private readonly loaded = signal<string | null>(null);
+  /** La source a basculé : le serveur accepte les écritures (relu avec la fiche). */
+  private readonly sourceEditable = signal(false);
+  protected readonly catalogueMissing = signal(false);
+  protected readonly refusal = signal<string | null>(null);
+  protected readonly saving = signal(false);
   protected readonly reason = signal('');
   protected readonly acting = signal(false);
-  protected readonly refusal = signal<string | null>(null);
-  protected readonly canAct = computed(
-    () => this.editable() && this.promotion()?.archived === null && !this.acting(),
-  );
+  private readonly catalogue = signal<CatalogueChoices>(NO_CHOICES);
+  private readonly pickupNames = signal<ReadonlyMap<string, string>>(new Map());
 
-  protected readonly audienceTree = AUDIENCE_TREE;
-  protected readonly fulfillmentChoices = FULFILLMENT_CHOICES;
-  protected readonly targetLabel = TARGET_LABEL;
+  protected readonly isNew = computed(() => this.id() === undefined);
+  /** Le nom de l'original, pour une copie ; `null` sinon. */
+  protected readonly copiedFrom = signal<string | null>(null);
+  /** Copier ne pose rien : il ouvre une pose préremplie, sous le seul droit d'écrire. */
+  protected readonly canDuplicate = computed(
+    () => !this.isNew() && this.permissions.can('b2b_pricing:write'),
+  );
+  /** Le droit, puis le serveur, puis la promotion : une seule réponse pour toute la page. */
+  protected readonly writable = computed(
+    () =>
+      this.permissions.can('b2b_pricing:write') &&
+      (this.isNew() || (this.sourceEditable() && this.promotion()?.archived === null)),
+  );
+  protected readonly readOnly = computed(() => !this.writable());
+  protected readonly title = computed(() =>
+    this.isNew() ? 'Nouvelle promotion' : (this.promotion()?.internalName ?? 'Promotion'),
+  );
+  protected readonly summary = computed(() =>
+    draftSummary(this.draft(), choiceNames(this.catalogue()), this.pickupNames()),
+  );
+  protected readonly problem = computed(() => draftProblem(this.draft()));
+  /** Reposée à l'identique, une révision ne trace rien : rien à enregistrer. */
+  private readonly unchanged = computed(
+    () => this.loaded() !== null && this.loaded() === JSON.stringify(termsOf(this.draft())),
+  );
+  protected readonly canSave = computed(
+    () => this.writable() && this.problem() === null && !this.saving() && !this.unchanged(),
+  );
+  protected readonly canAct = computed(() => this.writable() && !this.isNew() && !this.acting());
 
   protected readonly stateLabel = computed(() => {
     const promotion = this.promotion();
@@ -118,43 +181,143 @@ export class PromotionPage {
   });
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
-  protected readonly effect = (view: PromotionView): string => effectPhrase(view.effect);
-  /** La cible de ce nœud dans le public (L8b, plusieurs cibles), ou `undefined`. */
-  protected readonly targetOf = (
-    view: PromotionView,
-    kind: PromotionView['audiences'][number]['kind'],
-  ): PromotionView['audiences'][number] | undefined =>
-    view.audiences.find((target) => target.kind === kind);
-  protected readonly isLegacyAudience = (view: PromotionView): boolean =>
-    view.audiences.some((target) => target.kind === 'everyone_but_active_pros');
-  protected readonly window = (view: PromotionView): string =>
-    windowPhrase(view.validFrom, view.validTo);
-  protected readonly fulfillment = (view: PromotionView): string =>
-    fulfillmentPhrase(view.fulfillment, this.pickupNames());
+  protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'any');
+  protected readonly fulfillmentHint = computed(
+    () => FULFILLMENT_HINT[this.draft().fulfillmentKind],
+  );
+  /** Le cumul dit son effet au point où il joue : la ligne, ou le panier (M7). */
+  protected readonly cumulativeHint = computed(() =>
+    this.atLine()
+      ? "Elle s'ajoute aux autres promotions cumulables du même article (−20 % puis −15 % du reste = −32 %). Sinon, le client reçoit la plus avantageuse."
+      : "Sa remise s'ajoute aux autres remises de panier cumulables (−10 % puis −5 % du reste), cinq au plus. Sinon, le client reçoit la plus avantageuse.",
+  );
+  protected readonly fulfillmentOptions = Object.entries(FULFILLMENT_LABEL).map(
+    ([value, label]) => ({ value: value as PromotionDraft['fulfillmentKind'], label }),
+  );
+  protected readonly scopeOptions = SCOPE_OPTIONS;
+  protected readonly effectOptions = computed(() =>
+    effectsFor(this.draft().fulfillmentKind).map((kind) => ({
+      value: kind,
+      label: EFFECT_LABEL[kind],
+    })),
+  );
+  protected readonly pickupOptions = computed(() =>
+    [...this.pickupNames()].map(([value, label]) => ({ value, label })),
+  );
+  /** Les listes de la portée : une par cible du point, et par sens pour produit et déclinaison. */
+  protected readonly scopeLists = computed(() => {
+    const draft = this.draft();
+    const only = draft.scopeMode === 'only';
+    return targetsFor(draft.fulfillmentKind).flatMap((target) =>
+      (target === 'category' ? [only] : [true, false]).map((eligible) => ({
+        target,
+        eligible,
+        label: `${TARGET_LABEL[target]} ${eligible ? 'incluses' : 'exclues'}`,
+        options: this.catalogue()[target],
+        value: targetIds(draft, target, eligible),
+      })),
+    );
+  });
   protected readonly instant = (at: string): string =>
     new Date(at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
   constructor() {
     effect(() => {
       const id = this.id();
-      untracked(() => void this.load(id));
+      const pickupId = this.pickupId() ?? null;
+      const from = this.from() ?? null;
+      untracked(() => void this.load(id ?? null, pickupId, from));
     });
   }
 
-  protected async load(id: string): Promise<void> {
+  protected edit(change: Partial<PromotionDraft>): void {
+    this.draft.update((draft) => ({ ...draft, ...change }));
+    this.refusal.set(null);
+  }
+
+  protected setFulfillment(kind: PromotionDraft['fulfillmentKind']): void {
+    this.draft.update((draft) => withFulfillment(draft, kind));
+  }
+
+  protected setScopeMode(mode: 'all_except' | 'only'): void {
+    this.draft.update((draft) => withScopeMode(draft, mode));
+  }
+
+  protected setTargets(
+    target: PromotionScopeTargetValue,
+    eligible: boolean,
+    ids: readonly string[],
+  ): void {
+    this.draft.update((draft) => withTargets(draft, target, ids, eligible));
+  }
+
+  protected setAudiences(audiences: readonly PromotionAudienceTargetView[]): void {
+    this.edit({ audiences });
+  }
+
+  protected async load(
+    id: string | null,
+    pickupId: string | null,
+    from: string | null = null,
+  ): Promise<void> {
     this.state.set('loading');
     try {
-      const [promotion, names, source] = await Promise.all([
-        this.api.get(id),
+      const [catalogue, names, view, source, original] = await Promise.all([
+        // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
+        // le lire voit quand même la promotion, ses cibles nommées par elle.
+        this.catalogueService.published().then(catalogueChoicesOf, () => null),
         this.api.pickupNames(),
-        this.api.source(),
+        id === null ? Promise.resolve(null) : this.api.get(id),
+        id === null ? Promise.resolve(null) : this.api.source(),
+        id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
       ]);
-      this.promotion.set(promotion);
-      this.editable.set(source.editable);
+      this.catalogueMissing.set(catalogue === null);
+      const rules = (view ?? original)?.scope.rules ?? [];
+      this.catalogue.set(withRuleTargets(catalogue ?? NO_CHOICES, rules));
       this.pickupNames.set(names);
+      this.promotion.set(view);
+      this.sourceEditable.set(source?.editable ?? false);
+      this.copiedFrom.set(original?.internalName ?? null);
+      const draft =
+        view !== null
+          ? draftOf(view)
+          : original !== null
+            ? duplicateDraft(original)
+            : emptyDraft(parisToday(), pickupId);
+      this.draft.set(draft);
+      this.loaded.set(view === null ? null : JSON.stringify(termsOf(draft)));
       this.state.set('ready');
     } catch {
       this.state.set('error');
+    }
+  }
+
+  protected reload(): void {
+    void this.load(this.id() ?? null, this.pickupId() ?? null, this.from() ?? null);
+  }
+
+  protected async save(): Promise<void> {
+    if (!this.canSave()) {
+      return;
+    }
+    this.saving.set(true);
+    this.refusal.set(null);
+    const terms = termsOf(this.draft());
+    try {
+      const existing = this.id();
+      if (existing === undefined) {
+        const id = await this.api.pose(terms);
+        this.notify.success('Promotion posée.');
+        await this.router.navigate(['/promotions-ciblees', id]);
+      } else {
+        await this.api.revise(existing, terms, terms.reason);
+        this.notify.success('Promotion modifiée.');
+        await this.load(existing, null);
+      }
+    } catch (error) {
+      this.refusal.set(httpErrorMessage(error, "La promotion n'a pas pu être enregistrée."));
+    } finally {
+      this.saving.set(false);
     }
   }
 
@@ -187,7 +350,7 @@ export class PromotionPage {
       await gesture(view);
       this.notify.success(done);
       this.reason.set('');
-      await this.load(view.id);
+      await this.load(view.id, null);
     } catch (error) {
       this.refusal.set(httpErrorMessage(error, "Le geste n'a pas pu être fait."));
     } finally {

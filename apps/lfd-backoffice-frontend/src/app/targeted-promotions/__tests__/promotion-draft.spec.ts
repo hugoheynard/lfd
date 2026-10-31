@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest';
 import {
   draftOf,
   draftProblem,
+  duplicateDraft,
   emptyDraft,
   termsOf,
   withFulfillment,
@@ -322,5 +323,21 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
   it('une locale `null` se relit en champ vide, pas en « null »', () => {
     const draft = draftOf(promotionView());
     expect([draft.labelEn, draft.labelIt, draft.reason, draft.validTo]).toEqual(['', '', '', '']);
+  });
+
+  it('une copie pour un autre public garde tout sauf le public, et marque son nom', () => {
+    const original = promotionView({
+      fulfillment: { kind: 'delivery', pickupId: null },
+      applicationPoint: 'basket',
+      cumulative: true,
+      conditions: [{ kind: 'min_quantity', value: 3 }],
+    });
+    const copy = duplicateDraft(original);
+    const { audiences: _audiences, internalName, ...rest } = copy;
+    const { audiences: _kept, internalName: _name, ...same } = draftOf(original);
+    expect(rest).toEqual(same);
+    expect(copy.audiences).toEqual([]);
+    expect(internalName).toBe(`${original.internalName} (copie à revoir)`);
+    expect(draftProblem(copy)).toBe('Cochez au moins un public.');
   });
 });

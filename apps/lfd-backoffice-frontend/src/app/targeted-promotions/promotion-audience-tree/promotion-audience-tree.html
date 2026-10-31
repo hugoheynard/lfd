@@ -8,6 +8,7 @@
   label="Tout le monde"
   [checked]="state('everyone').checked"
   [indeterminate]="state('everyone').indeterminate"
+  [disabled]="disabled()"
   (checkedChange)="toggle('everyone', $event)"
 />
 <div class="branch">
@@ -15,7 +16,7 @@
     label="Particuliers"
     [checked]="state('individuals').checked"
     [indeterminate]="state('individuals').indeterminate"
-    [disabled]="state('individuals').disabled"
+    [disabled]="disabled() || state('individuals').disabled"
     (checkedChange)="toggle('individuals', $event)"
   />
   <div class="leaves">
@@ -23,7 +24,7 @@
       <fold-checkbox
         [label]="leaf.label"
         [checked]="state(leaf.box).checked"
-        [disabled]="state(leaf.box).disabled"
+        [disabled]="disabled() || state(leaf.box).disabled"
         (checkedChange)="toggle(leaf.box, $event)"
       />
     }
@@ -37,7 +38,7 @@
     label="Pros"
     [checked]="state('pros').checked"
     [indeterminate]="state('pros').indeterminate"
-    [disabled]="state('pros').disabled"
+    [disabled]="disabled() || state('pros').disabled"
     (checkedChange)="toggle('pros', $event)"
   />
   <div class="leaves">
@@ -45,14 +46,14 @@
       <fold-checkbox
         [label]="leaf.label"
         [checked]="state(leaf.box).checked"
-        [disabled]="state(leaf.box).disabled"
+        [disabled]="disabled() || state(leaf.box).disabled"
         (checkedChange)="toggle(leaf.box, $event)"
       />
     }
     <fold-checkbox
       label="Une société"
       [checked]="company() !== null"
-      [disabled]="everyoneChecked()"
+      [disabled]="disabled() || everyoneChecked()"
       (checkedChange)="toggleCompany($event)"
     />
     @if (company(); as named) {
@@ -60,11 +61,13 @@
         label="Identifiant de la société"
         hint="Celui de sa fiche client."
         [value]="named.companyId ?? ''"
+        [disabled]="disabled()"
         (valueChange)="setCompany($event)"
       />
       <fold-checkbox
         label="Et ses sites"
         [checked]="named.kind === 'company_and_sites'"
+        [disabled]="disabled()"
         (checkedChange)="setSites($event)"
       />
     }
