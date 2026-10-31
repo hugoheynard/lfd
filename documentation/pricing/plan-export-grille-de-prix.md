@@ -94,3 +94,32 @@ indicatif, non contractuel. »
 - Un article au poids → prix au kilo ; l'option prix au kilo saisi.
 - Parité : le prix après remises du prix affiché = celui du rayon pour le
   même public et la même date.
+
+## 7. Le « pro type » de l'aperçu staff (décision de Hugo, 2026-10-31, option a)
+
+L'export ne peut proposer « les pros » comme public : la porte du prix ne
+sait établir « société active » que d'une société réelle, et l'aperçu
+déclaré (`previewed`, `promotion-targeting.ts`) n'admet volontairement que
+« tout le monde » — sans quoi `?audience=pro` sur la boutique publierait une
+promotion réservée.
+
+**Proposition** : un acheteur **déclaré par le staff**, distinct de
+`previewed`, qui porte des faits d'audience types — le modèle existe déjà :
+`TYPICAL_BUYER` de l'annonce d'un point
+(`promotions/domain/pickup-discount-announcement.ts` : `b2b` = société active
+sans identité, `b2bPending`, `b2c`).
+
+- Nouveau `PricedBuyerKind` (ex. `staff_typical`) qui porte la clientèle
+  type (`pro_active` · `pro_pending` · `individual_registered` ·
+  `individual_guest`) ; `LinePromotionSupply` et les remises de panier
+  prennent ses faits **sans** lire de société ; le tarif (prix pro / prix
+  public, service `pro` ou `public`) suit la clientèle type.
+- **Mur** : ce genre d'acheteur ne se construit QUE dans un contrôleur admin
+  sous permission staff (ici `b2b_pricing:read`), jamais depuis une route de
+  la boutique — tenu par le type (la valeur n'est produite que par une
+  fabrique du module d'export) et par un test qui vérifie qu'aucune route
+  `/shop` ne l'accepte. Les publics nommés (une société, ses sites) n'y
+  jouent pas : un pro type n'est aucune société.
+- L'export propose alors : « Pros (société active) », « Pros en cours
+  d'inscription », « Particuliers inscrits », « Particuliers sans compte »,
+  ou « Une société précise ».
