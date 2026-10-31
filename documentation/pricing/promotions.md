@@ -3,15 +3,15 @@
 > 🟧 **Doc d'état en cours de chantier — le plan fait foi pour la suite.**
 > Décrit le code **tel qu'il est sur `dev`** au 2026-10-31 : lots L0 à L10,
 > L8b et L12, le cumul au point ligne puis au panier, la multi-remise de
-> panier M1 à M7, jusqu'au commit `31d15f3ee`. Ce qui est décidé et pas
+> panier M1 à M7, et les correctifs de justesse du même soir (§ 2.13). Ce qui est décidé et pas
 > encore bâti vit dans le plan
 > [`plan-promotions-par-audience-et-acheminement.md`](plan-promotions-par-audience-et-acheminement.md).
 >
-> **Sur `dev`, rien en production** : tout ce qui suit. Aucun commit des
-> promotions n'est sur `main` (vérifié le 2026-10-31 :
-> `git merge-base --is-ancestor 775483131 origin/main` répond non). M7 est
-> **irréversible une fois en production** et ne se déploie que sur ordre exprès
-> de Hugo, après la seconde passe de reprise (§ 2.12).
+> **En production depuis le 2026-10-31** (`main` = `282c4e22b`, ordre exprès
+> de Hugo, cinq déploiements verts) : L0 à M7, déclencheur compris. Les
+> correctifs du § 2.13 sont sur `dev` seulement. La reprise des commandes
+> existantes (§ 2.12) **reste à jouer** ; tant qu'elle n'a pas rendu zéro écart,
+> aucune promotion de panier cumulable ne se pose en production.
 
 ---
 
@@ -110,6 +110,13 @@ dans le modèle, et la boutique l'affiche depuis L10.
 - **Invité** : s'il existe une promotion réservée aux inscrits, il lit
   « Vous avez un compte ? Connectez-vous pour profiter de −X % ».
 - **Panier, confirmation, e-mail, bons, facture** : une ligne par remise.
+- **Remise d'un point de retrait** : une annonce par acheteur type —
+  société active (`b2b`), société **en attente** (`b2bPending`),
+  particulier (`b2c`). La boutique lit celle du statut de la société
+  agissante (`pickupAnnouncementOf`). Une société en attente est `b2c` pour
+  tout le reste (CGV, contact, livraison) mais la caisse la sert en pro :
+  jusqu'au 2026-10-31 elle lisait l'annonce `b2c` et se voyait promettre une
+  promotion « particuliers » que la caisse ne lui retirait pas.
 
 ---
 
@@ -370,6 +377,11 @@ pas le montant. Il ne se déploie qu'au **temps 5 du runbook** (§ 2.12).
   (`ShopQuoteView.discounts`) écrivent une ligne par remise.
 - **Assumé** : l'annonce d'un point et l'offre de connexion n'annoncent
   qu'**une** remise, la plus spécifique ; la caisse peut en retirer davantage.
+  L'annonce d'un point est faite à un acheteur type sans identité ni porte
+  d'entrée (`domain/pickup-discount-announcement.ts`) : un public « société »,
+  « invités » ou « inscrits » n'y est pas annoncé (sous-annonce). Les publics
+  qui ne dépendent que du statut de la société sont exacts pour les trois
+  acheteurs types, société en attente comprise (`b2bPending`, 2026-10-31).
 
 ### 2.12 La reprise des remises existantes, et son runbook
 
@@ -383,35 +395,58 @@ Une commande dont la recomposition ne redonne pas le figé est écrite
 plusieurs taux, listée « à trancher » sans être écrite. `--refresh-drifted`
 traite les commandes révisées entre deux passes.
 
-Ordre de mise en production (plan § 18.3, non encore joué : rien n'est sur
-`main`) :
+Le plan (§ 18.3) prévoyait M2, une passe, M3–M6, une seconde passe, le
+déclencheur, puis M7. **Ce qui a été joué** (2026-10-31, pré-release, aucune
+activité commerciale) : tout d'un coup, déclencheur et M7 compris. Ce qui
+reste :
 
 ```mermaid
 flowchart TD
-    A["1. Déployer M2<br/>tables seules"] --> B["2. Première passe<br/>à blanc, compte lu, puis --write"]
-    B --> C["3. Déployer M3 à M6<br/>sans le déclencheur"]
-    C --> D["4. Seconde passe<br/>à blanc, puis --write"]
-    D --> E{"Zéro commande<br/>sans ligne ?"}
-    E -->|oui| F["5. Migration du déclencheur"]
+    A["Déployé le 2026-10-31<br/>M2 à M7 et le déclencheur"] --> B["Passe à blanc<br/>compte lu par Hugo"]
+    B --> C["--write --production nom"]
+    C --> D["Seconde passe<br/>et --refresh-drifted"]
+    D --> E{"Zéro écart<br/>et zéro désaccord ?"}
     E -->|non| D
-    F --> G["M7, sur ordre exprès de Hugo<br/>irréversible"]
+    E -->|oui| F["Promotions de panier cumulables<br/>posables en production"]
 ```
 
 M7 est irréversible : dès qu'une commande porte deux remises, sa facture, son
 Factur-X et ses bons les portent pour toujours.
 
+### 2.13 La justesse, éprouvée le 2026-10-31
+
+- **Factur-X à plusieurs promotions** : la pièce témoin
+  `promotions-cumulees-deux-taux` (`facturx-samples.ts`) passe au Schematron
+  EN 16931 officiel des specs, à veraPDF (`verify:facturx-pdf`) et, une fois
+  à la main, à **Mustang** 2.26.0, validateur tiers : les dix pièces témoins
+  `valid`, un total falsifié refusé (BR-CO-15, BR-CO-16). Mustang n'est pas
+  dans la CI.
+- **De bout en bout** : `test/promotions-basket-cumul-two-rates.e2e-spec.ts`
+  — commande pro à deux taux, deux cumulables, de la passation à la facture.
+- **Annonce contre caisse** :
+  `orders/domain/services/__tests__/announcement-vs-checkout.spec.ts` — le
+  retiré est toujours au moins l'annoncé. Il a trouvé une sur-annonce : le
+  membre d'une société en attente lisait l'annonce des particuliers ; un
+  point annonce désormais `b2bPending` (contrat `AnnouncedPickupDiscounts`).
+- **Offre de connexion** : elle n'est plus faite quand la quantité minimum de
+  la promotion n'est atteinte par aucune ligne (`promotion-offers.ts`).
+- **« Mes commandes »** : à plusieurs remises, une ligne par remise sans
+  assiette (`order-discount-lines.ts`) — l'ancienne mention écrivait la somme
+  sur une base qui n'était celle d'aucune.
+
 ---
 
 ## Limites connues et reste à faire
 
-- **Production** : rien n'est sur `main` ; le runbook du § 2.12 reste à jouer,
-  M7 sur ordre exprès de Hugo.
+- **Production** : déployée le 2026-10-31 ; la reprise du § 2.12 reste à
+  jouer, et les correctifs du § 2.13 attendent le prochain « pousse main ».
 - **L11** : docs d'état de la résolution de prix et du prix boutique mises à
   jour ; le plan devient doc d'état (celle-ci l'absorbera).
 - **Remise par ligne vérifiable par le client** (plan § 17) : option
   documentée, non bâtie.
 - **Annonce et offre de connexion** : une seule remise annoncée, même quand
-  la caisse en cumule plusieurs (assumé).
+  la caisse en cumule plusieurs (assumé : sous-annonce, jamais sur-annonce —
+  § 2.13).
 - **Dette du bon partiel, non aggravée** : un montant fixe est borné à
   l'assiette du premier bon ; si elle est plus petite, la somme des bons est
   inférieure à la remise de la commande.
