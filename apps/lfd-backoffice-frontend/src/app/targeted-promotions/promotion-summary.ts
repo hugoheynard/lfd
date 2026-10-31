@@ -4,6 +4,7 @@ import { businessDayStart } from '../shared/business-day';
 import { decimalOf, EFFECT_FACTOR, type PromotionDraft } from './promotion-draft';
 import type { ScopeArticle } from './catalogue-choices';
 import { effectPhrase } from './promotion-format';
+import { hoursPhrase } from './promotion-hours';
 import { scopeLayout } from './scope-lines';
 
 /**
@@ -24,7 +25,10 @@ export function draftSummary(
     scopePart(draft, names, articles),
     fulfillmentPart(draft, pickupNames, zoneNames),
     windowPart(draft),
-  ].join(', ');
+    ...(draft.fulfillmentKind === 'basket' ? [hoursPhrase(draft.hours)] : []),
+  ]
+    .filter((part) => part !== null)
+    .join(', ');
 }
 
 function effectPart(draft: PromotionDraft): string {

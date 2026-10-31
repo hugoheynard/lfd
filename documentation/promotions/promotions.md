@@ -445,7 +445,7 @@ remonte après la valeur) :
    montant à l'unité ou prix posé pour baisser le prix ; pourcentage ou montant
    sur le panier pour la remise sur le panier. Puis les libellés.
 4. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
-   cumul. La case « Aussi pour les clients à tarif négocié » a disparu le
+   jours et heures (remise sur le panier seulement, § 2.18), cumul. La case « Aussi pour les clients à tarif négocié » a disparu le
    2026-10-31 : c'est la **mercuriale** de chaque client qui décide
    ([`plan-la-mercuriale-decide.md`](plan-la-mercuriale-decide.md), § 7). À sa
    place, sur une promotion existante et sous `b2b_pricing:read`, une ligne en
@@ -859,7 +859,7 @@ exclusions par famille et par produit », supprimé le 2026-10-31) : ses
 exclusions et son assiette éligible ont été reprises telles quelles par les
 promotions à la bascule (L12), qui les ont remplacées.
 
-### 2.18 Jours et heures (2026-10-31, serveur bâti, écran à venir)
+### 2.18 Jours et heures (2026-10-31, serveur et écrans bâtis)
 
 Plan : [`plan-jours-et-heures.md`](plan-jours-et-heures.md) (§ 11 fait foi).
 Une condition `weekly_hours` — instant jugé (`ordered_at`, la commande ;
@@ -874,6 +874,27 @@ suggestions (`clockRangeCovers`, `weeklyMomentOf` dans `@lfd/contracts`).
 Le devis de la boutique n'a pas de créneau : une promotion `handover_at` n'y
 est pas chiffrée, la passation l'applique. Le panier relu après la fin d'une
 plage porte `endedDiscounts` (« a pris fin à 19 h »).
+
+**Écrans** (2026-10-31). Back-office : dans la carte « Quand, et à quelles
+conditions ? », en « Remise sur le panier » seulement
+(`targeted-promotions/promotion-hours-fieldset/`), une case « Seulement
+certains jours et heures » ouvre l'heure jugée (« À la commande » / « Au
+créneau de retrait ou de livraison »), des plages — jours à cocher, raccourcis
+« Tous les jours » et « Du lundi au vendredi », heures de début et de fin,
+case « Jusqu'à minuit » (`24:00`, que le contrôle d'heure ne sait pas dire) —
+et la case « Hors des heures, la boutique dit les heures ». Les refus du
+domaine (fin ≤ début, chevauchement un même jour, aucun jour, aucune plage)
+sont dits avant l'envoi (`apps/lfd-backoffice-frontend/src/app/targeted-promotions/promotion-hours.ts`) ; le résumé dit « le mardi et
+le jeudi de 17 h à 19 h, à la commande ». Au prix affiché, les heures restent
+au brouillon mais ne partent pas. Le brouillon porte toutes les conditions :
+jusqu'au 2026-10-31, `termsOf` les réécrivait depuis la seule quantité
+minimum, et une promotion à heures ré-enregistrée perdait ses heures.
+Boutique : une offre de rayon hors de ses heures se dit avec elles
+(« −50 % en retrait, mardi et jeudi de 17 h à 19 h » ; « pour un créneau … »
+quand l'heure jugée est le créneau), active elle se dit comme avant ; au
+panier, `endedDiscounts` s'affiche en encadré informatif
+(`cart/ended-discounts-callout/`). L'offre de connexion (`signInOffer`) ne dit
+pas encore ses heures.
 
 **Runbook — déploiement** : 🔴 **aucune promotion à heures posée avant que
 le déploiement soit fini**, sur toutes les instances. Le lecteur d'avant
@@ -919,4 +940,4 @@ deux temps (lecteur, puis écriture).
   dans le contexte de commande (§ 2.2) ; onglets dans Tarification ; promotions affichées
   dans la grille des règles de prix.
 - **Limite actuelle** : cinq remises de panier au plus par commande ; une
-  seule condition (`min_quantity`).
+  condition de chaque sorte (`min_quantity`, `weekly_hours`).

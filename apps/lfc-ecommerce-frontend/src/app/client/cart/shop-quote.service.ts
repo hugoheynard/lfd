@@ -204,6 +204,13 @@ export class ShopQuote {
   });
 
   /**
+   * **Les remises à heures finies depuis le devis précédent**
+   * (`documentation/promotions/plan-jours-et-heures.md`, § 8) — dites plutôt
+   * qu'un total qui change sans explication.
+   */
+  readonly endedDiscounts = computed(() => this.view().endedDiscounts ?? []);
+
+  /**
    * **Ce qu'une connexion ouvrirait** (plan des promotions, § 8, lot L10) —
    * servi au seul devis anonyme ; `null` pour qui est déjà reconnu, même le
    * temps qu'un devis reconnu remplace l'anonyme.

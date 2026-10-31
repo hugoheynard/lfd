@@ -9,6 +9,13 @@ import type {
 import { businessDayStart } from '../shared/business-day';
 import { parisToday } from '../shared/paris-today';
 import { minimalAudiences, touchesBranch } from './promotion-audience-tree/audience-selection';
+import {
+  draftHoursOf,
+  hoursConditionOf,
+  hoursProblem,
+  NO_HOURS,
+  type DraftHours,
+} from './promotion-hours';
 
 /**
  * **Où la promotion joue** : dans le prix affiché (le prix de l'article baisse
@@ -132,6 +139,11 @@ export interface PromotionDraft {
   readonly rules: readonly PromotionScopeRuleDraft[];
   /** Vide = aucune condition de quantité. */
   readonly minQuantity: string;
+  /**
+   * Les jours et heures (`plan-jours-et-heures.md`) — remise au panier
+   * seulement : gardés au prix affiché, mais pas envoyés.
+   */
+  readonly hours: DraftHours;
   /** Cumulable avec les autres promotions cumulables (§ 16) — point ligne seulement. */
   readonly cumulative: boolean;
 }
@@ -186,6 +198,7 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
     scopeMode: 'all_except',
     rules: [],
     minQuantity: '',
+    hours: NO_HOURS,
     cumulative: false,
   };
 }
@@ -240,6 +253,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
       eligible,
     })),
     minQuantity: quantity === undefined ? '' : String(quantity.value),
+    hours: draftHoursOf(view.conditions),
     cumulative: view.cumulative,
   };
 }
@@ -271,7 +285,7 @@ export function draftProblem(draft: PromotionDraft): string | null {
   if (draft.minQuantity.trim() !== '' && !/^\d+$/u.test(draft.minQuantity.trim())) {
     return 'La quantité minimum est un nombre entier.';
   }
-  return null;
+  return draft.fulfillmentKind === 'basket' ? hoursProblem(draft.hours) : null;
 }
 
 /**
@@ -300,7 +314,6 @@ function fulfillmentProblem(draft: PromotionDraft): string | null {
  * refuserait en le nommant.
  */
 export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
-  const minQuantity = draft.minQuantity.trim();
   return {
     internalName: draft.internalName.trim(),
     description: draft.description.trim() === '' ? null : draft.description.trim(),
@@ -332,8 +345,24 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
     })),
     fulfillment: payloadFulfillmentOf(draft),
     scope: { mode: draft.scopeMode, rules: [...draft.rules] },
-    conditions: minQuantity === '' ? [] : [{ kind: 'min_quantity', value: Number(minQuantity) }],
+    conditions: conditionsOf(draft),
   };
+}
+
+/**
+ * Toutes les conditions du brouillon. Régression (2026-10-31) : elles se
+ * réécrivaient depuis la seule quantité minimum, et une promotion à heures
+ * ré-enregistrée perdait ses heures. Les heures ne partent qu'au panier :
+ * l'agrégat les refuse au prix affiché.
+ */
+function conditionsOf(draft: PromotionDraft): PromotionTermsPayload['conditions'] {
+  const minQuantity = draft.minQuantity.trim();
+  return [
+    ...(minQuantity === '' ? [] : [{ kind: 'min_quantity' as const, value: Number(minQuantity) }]),
+    ...(draft.fulfillmentKind === 'basket' && draft.hours.on
+      ? [hoursConditionOf(draft.hours)]
+      : []),
+  ];
 }
 
 /** Un libellé saisi ; `null` sans français — le commun suffit (§ 15.12 Q2). */

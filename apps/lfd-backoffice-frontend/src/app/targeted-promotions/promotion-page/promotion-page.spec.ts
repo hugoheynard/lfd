@@ -3,6 +3,7 @@ import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type {
   MercurialesAcceptingPromotionView,
+  PromotionConditionView,
   PromotionTermsPayload,
   PromotionView,
   PublishedCatalogView,
@@ -722,6 +723,108 @@ describe('PromotionPage', () => {
       });
       expect(root.querySelector('[data-accepting-missing]')).not.toBeNull();
       expect(root.textContent).toContain('Croissants');
+    });
+  });
+  describe('Seulement certains jours et heures', () => {
+    const HOURS: Extract<PromotionConditionView, { kind: 'weekly_hours' }> = {
+      kind: 'weekly_hours',
+      moment: 'ordered_at',
+      announceOutside: true,
+      windows: [{ weekdays: ['tue', 'thu'], start: '17:00', end: '19:00' }],
+    };
+    const atBasket = (over: Partial<PromotionView> = {}) =>
+      promotionView({
+        internalName: 'Goûter',
+        fulfillment: { kind: 'basket', pickup: 'all', delivery: 'none' },
+        scope: { mode: 'all_except', rules: [] },
+        conditions: [HOURS],
+        ...over,
+      });
+    const box = (root: HTMLElement, selector: string) =>
+      root.querySelector<HTMLInputElement>(`${selector} input[type=checkbox]`);
+    const setTime = (
+      scope: HTMLElement,
+      fixture: { detectChanges(): void },
+      selector: string,
+      value: string,
+    ) => {
+      const field = scope.querySelector<HTMLInputElement>(`${selector} input`);
+      if (field === null) {
+        throw new Error(`Heure « ${selector} » introuvable.`);
+      }
+      field.value = value;
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+    };
+
+    it('est invisible en « Baisser le prix »', async () => {
+      const { root } = await render();
+      expect(root.querySelector('app-promotion-hours-fieldset')).toBeNull();
+    });
+
+    it('relit les plages, et le résumé dit les jours et heures', async () => {
+      const { root } = await render({ get: async () => atBasket() });
+      expect(box(root, '[data-hours-on]')?.checked).toBe(true);
+      expect(box(root, '[data-day=tue]')?.checked).toBe(true);
+      expect(box(root, '[data-day=mon]')?.checked).toBe(false);
+      expect(root.textContent).toContain('le mardi et le jeudi de 17 h à 19 h, à la commande');
+    });
+
+    it('cocher l’option, une plage, « du lundi au vendredi » : le corps porte les heures', async () => {
+      const { root, fixture, sent } = await render({
+        get: async () => atBasket({ conditions: [] }),
+      });
+      box(root, '[data-hours-on]')?.click();
+      fixture.detectChanges();
+      button(root, 'Tous les jours')?.click();
+      fixture.detectChanges();
+      button(root, 'Du lundi au vendredi')?.click();
+      fixture.detectChanges();
+      setTime(root, fixture, '[data-start]', '07:00');
+      box(root, '[data-midnight]')?.click();
+      fixture.detectChanges();
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised[0]?.terms.conditions).toEqual([
+        {
+          kind: 'weekly_hours',
+          moment: 'ordered_at',
+          announceOutside: true,
+          windows: [
+            { weekdays: ['mon', 'tue', 'wed', 'thu', 'fri'], start: '07:00', end: '24:00' },
+          ],
+        },
+      ]);
+    });
+
+    it('refuse une plage à cheval sur minuit, et le chevauchement d’un même jour', async () => {
+      const { root, fixture, sent } = await render({ get: async () => atBasket() });
+      type(root, fixture, '17:00', '20:00');
+      expect(root.textContent).toContain('faites deux plages');
+      type(root, fixture, '20:00', '17:00');
+      button(root, 'Ajouter une plage')?.click();
+      fixture.detectChanges();
+      const second = root.querySelectorAll('[data-hours-window]')[1] as HTMLElement;
+      // Une plage neuve vaut du lundi au vendredi : elle croise le mardi.
+      setTime(second, fixture, '[data-start]', '18:00');
+      setTime(second, fixture, '[data-end]', '20:00');
+      expect(root.textContent).toContain('Le mardi, les plages de 17 h à 19 h et de 18 h à 20 h');
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised).toHaveLength(0);
+    });
+
+    it('en lecture seule, tout est désactivé et rien ne se retire', async () => {
+      const { root } = await render({
+        permissions: ['lfc_site_settings:read'],
+        get: async () => atBasket(),
+      });
+      const boxes = [
+        ...root.querySelectorAll<HTMLInputElement>('app-promotion-hours-fieldset input'),
+      ];
+      expect(boxes.length).toBeGreaterThan(0);
+      expect(boxes.every((entry) => entry.disabled)).toBe(true);
+      expect(button(root, 'Ajouter une plage')).toBeUndefined();
     });
   });
 });

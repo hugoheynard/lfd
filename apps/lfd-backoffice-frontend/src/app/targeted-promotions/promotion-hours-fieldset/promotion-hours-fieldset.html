@@ -1,0 +1,131 @@
+<fold-fieldset legend="Jours et heures" [disabled]="disabled()">
+  <div class="hours">
+    <fold-checkbox
+      label="Seulement certains jours et heures"
+      hint="Jours fériés ignorés : un jour compte comme les autres. Une plage ne passe pas minuit."
+      [checked]="hours().on"
+      [disabled]="disabled()"
+      (checkedChange)="patch({ on: $event })"
+      data-hours-on
+    />
+    @if (hours().on) {
+      <fold-listbox
+        label="L'heure jugée"
+        [hint]="momentHint()"
+        [options]="momentOptions"
+        [value]="hours().moment"
+        [disabled]="disabled()"
+        (selectionChange)="patch({ moment: $event })"
+        data-hours-moment
+      />
+      @for (window of hours().windows; track $index; let index = $index) {
+        <fold-card surface="sunken" padding="sm" data-hours-window>
+          <div class="hours">
+            <fold-element-title variant="title" [title]="'Plage ' + (index + 1)">
+              @if (!disabled()) {
+                <button
+                  foldButton
+                  titleAction
+                  size="sm"
+                  emphasis="soft"
+                  type="button"
+                  (click)="removeWindow(index)"
+                >
+                  Retirer
+                </button>
+              }
+            </fold-element-title>
+            <div class="days">
+              @for (day of week; track day) {
+                <fold-checkbox
+                  size="sm"
+                  [label]="dayLabel[day]"
+                  [checked]="window.weekdays.includes(day)"
+                  [disabled]="disabled()"
+                  (checkedChange)="toggleDay(index, day, $event)"
+                  [attr.data-day]="day"
+                />
+              }
+            </div>
+            @if (!disabled()) {
+              <div class="days">
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  (click)="everyDay(index)"
+                  data-every-day
+                >
+                  Tous les jours
+                </button>
+                <button
+                  foldButton
+                  size="sm"
+                  emphasis="outline"
+                  intent="neutral"
+                  type="button"
+                  (click)="workweek(index)"
+                  data-workweek
+                >
+                  Du lundi au vendredi
+                </button>
+              </div>
+            }
+            <div class="pair">
+              <fold-time
+                label="De"
+                [step]="60"
+                [value]="window.start"
+                [disabled]="disabled()"
+                (valueChange)="patchWindow(index, { start: $event })"
+                data-start
+              />
+              @if (window.end !== midnight) {
+                <fold-time
+                  label="À"
+                  hint="Fin exclue : « 19:00 » s'arrête à 18 h 59."
+                  [step]="60"
+                  [value]="window.end"
+                  [disabled]="disabled()"
+                  (valueChange)="patchWindow(index, { end: $event })"
+                  data-end
+                />
+              }
+            </div>
+            <fold-checkbox
+              label="Jusqu'à minuit"
+              [checked]="window.end === midnight"
+              [disabled]="disabled()"
+              (checkedChange)="untilMidnight(index, $event)"
+              data-midnight
+            />
+          </div>
+        </fold-card>
+      }
+      @if (!disabled()) {
+        <div>
+          <button
+            foldButton
+            size="sm"
+            emphasis="soft"
+            type="button"
+            (click)="addWindow()"
+            data-add-window
+          >
+            Ajouter une plage
+          </button>
+        </div>
+      }
+      <fold-checkbox
+        label="Hors des heures, la boutique dit les heures"
+        hint="Sinon, la remise se tait hors de ses heures."
+        [checked]="hours().announceOutside"
+        [disabled]="disabled()"
+        (checkedChange)="patch({ announceOutside: $event })"
+        data-announce
+      />
+    }
+  </div>
+</fold-fieldset>

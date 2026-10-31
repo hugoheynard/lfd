@@ -181,6 +181,8 @@ export class ClientCart {
 
   /** Les lignes retirées au devis faute d'être encore vendues dans leur unité — cf. {@link ShopQuote.removedLines}. */
   readonly removedLines = this.quote.removedLines;
+  /** Les remises à heures qui ont pris fin — cf. {@link ShopQuote.endedDiscounts}. */
+  readonly endedDiscounts = this.quote.endedDiscounts;
   /** Ce qu'une connexion ouvrirait à un invité — cf. {@link ShopQuote.signInOffer}. */
   readonly signInOffer = this.quote.signInOffer;
 

@@ -48,6 +48,7 @@ import {
   type ScopeArticle,
 } from '../catalogue-choices';
 import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
+import { PromotionHoursFieldset } from '../promotion-hours-fieldset/promotion-hours-fieldset';
 import {
   draftOf,
   draftProblem,
@@ -138,6 +139,7 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
     FoldTextareaComponent,
     FoldViewToggleComponent,
     PromotionAudienceTree,
+    PromotionHoursFieldset,
     RouterLink,
   ],
   templateUrl: './promotion-page.html',

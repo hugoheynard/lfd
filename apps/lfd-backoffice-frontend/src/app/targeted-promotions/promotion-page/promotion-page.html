@@ -191,6 +191,13 @@
             [disabled]="readOnly()"
             (valueChange)="edit({ minQuantity: $event })"
           />
+          @if (!atLine()) {
+            <app-promotion-hours-fieldset
+              [hours]="draft().hours"
+              [disabled]="readOnly()"
+              (hoursChange)="edit({ hours: $event })"
+            />
+          }
           <!-- Plus de case ici depuis le 2026-10-31 : c'est la mercuriale de
                chaque client qui décide (plan-la-mercuriale-decide.md, § 7).
                La page ne fait que le lire. -->

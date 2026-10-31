@@ -1,0 +1,17 @@
+.hours {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.days {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-sm);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--fold-space-md);
+}

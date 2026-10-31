@@ -36,6 +36,7 @@ import { serviceDayLabel } from '../../format-day';
 import { OrderContextStore } from '../../order-context.store';
 import { ClientOrders } from '../../client-orders.service';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
+import { EndedDiscountsCallout } from '../ended-discounts-callout/ended-discounts-callout';
 import { RemovedLinesCallout } from '../removed-lines-callout/removed-lines-callout';
 import { SignInOfferCallout } from '../sign-in-offer-callout/sign-in-offer-callout';
 import { ReservedLinesCallout } from '../reserved-lines-callout/reserved-lines-callout';
@@ -88,6 +89,7 @@ const AFTER_SIGN_IN = '/boutique';
   selector: 'app-cart-dialog',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    EndedDiscountsCallout,
     RemovedLinesCallout,
     ReservedLinesCallout,
     CartSummary,

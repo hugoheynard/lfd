@@ -1997,6 +1997,34 @@
           "variables": ["discount"]
         },
         {
+          "key": "product.offerWithHours",
+          "fr": "{offer}, {hours}",
+          "en": "{offer}, {hours}",
+          "it": "{offer}, {hours}",
+          "variables": ["offer", "hours"]
+        },
+        {
+          "key": "product.offerWithSlotHours",
+          "fr": "{offer}, pour un créneau {hours}",
+          "en": "{offer}, for a slot {hours}",
+          "it": "{offer}, per una fascia {hours}",
+          "variables": ["offer", "hours"]
+        },
+        {
+          "key": "product.offerHoursRange",
+          "fr": "de {start} à {end}",
+          "en": "from {start} to {end}",
+          "it": "dalle {start} alle {end}",
+          "variables": ["start", "end"]
+        },
+        {
+          "key": "product.offerMidnight",
+          "fr": "minuit",
+          "en": "midnight",
+          "it": "mezzanotte",
+          "variables": []
+        },
+        {
           "key": "product.discountPercent",
           "fr": "−{pct} %",
           "en": "−{pct}%",
@@ -3635,6 +3663,13 @@
           "en": "{name} is now sold by the piece: please add it again.",
           "it": "L’articolo {name} ora si vende al pezzo: aggiungilo di nuovo.",
           "variables": ["name"]
+        },
+        {
+          "key": "cart.discountEnded",
+          "fr": "La remise « {label} » a pris fin à {at}.",
+          "en": "The “{label}” discount ended at {at}.",
+          "it": "Lo sconto «{label}» è terminato alle {at}.",
+          "variables": ["label", "at"]
         },
         {
           "key": "cart.signInOffer",

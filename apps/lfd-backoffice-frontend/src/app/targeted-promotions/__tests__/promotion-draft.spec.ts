@@ -1,3 +1,4 @@
+import type { PromotionConditionView } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
 import {
@@ -474,5 +475,63 @@ describe('relire puis renvoyer : l’éditeur ne change rien sans qu’on y touc
     expect(termsOf(copy).fulfillment).toEqual(original.fulfillment);
     expect(internalName).toBe(`${original.internalName} (copie à revoir)`);
     expect(draftProblem(copy)).toBe('Cochez au moins un public.');
+  });
+});
+
+describe('les jours et heures du brouillon', () => {
+  const HOURS: Extract<PromotionConditionView, { kind: 'weekly_hours' }> = {
+    kind: 'weekly_hours',
+    moment: 'handover_at',
+    announceOutside: false,
+    windows: [
+      { weekdays: ['tue', 'thu'], start: '17:00', end: '19:00' },
+      { weekdays: ['sat'], start: '20:00', end: '24:00' },
+    ],
+  };
+  const atBasket = promotionView({
+    fulfillment: { kind: 'basket', pickup: 'all', delivery: 'none' },
+    scope: { mode: 'all_except', rules: [] },
+    conditions: [{ kind: 'min_quantity', value: 3 }, HOURS],
+  });
+
+  /**
+   * Régression (2026-10-31) : `termsOf` réécrivait les conditions depuis la
+   * seule quantité minimum — une promotion à heures ré-enregistrée perdait ses heures.
+   */
+  it('une promotion à heures ré-enregistrée garde ses heures', () => {
+    expect(termsOf(draftOf(atBasket)).conditions).toEqual([
+      { kind: 'min_quantity', value: 3 },
+      HOURS,
+    ]);
+  });
+
+  it('la copie pour un autre public reprend les heures', () => {
+    expect(termsOf({ ...duplicateDraft(atBasket), audiences: [] }).conditions).toContainEqual(
+      HOURS,
+    );
+  });
+
+  it('au prix affiché, les heures restent au brouillon mais ne partent pas', () => {
+    const draft = withFulfillment(draftOf(atBasket), 'displayed_price');
+    expect(draft.hours.on).toBe(true);
+    expect(termsOf(draft).conditions).toEqual([{ kind: 'min_quantity', value: 3 }]);
+    expect(draftProblem({ ...draft, hours: { ...draft.hours, windows: [] } })).toBeNull();
+  });
+
+  it('dit les refus du serveur avant l’envoi', () => {
+    const base = draftOf(atBasket);
+    const withWindows = (windows: (typeof HOURS)['windows']) =>
+      draftProblem({ ...base, hours: { ...base.hours, windows } });
+    expect(withWindows([{ weekdays: ['mon'], start: '19:00', end: '17:00' }])).toContain(
+      'faites deux plages',
+    );
+    expect(
+      withWindows([
+        { weekdays: ['mon', 'tue'], start: '08:00', end: '12:00' },
+        { weekdays: ['tue'], start: '11:00', end: '13:00' },
+      ]),
+    ).toContain('Le mardi, les plages de 8 h à 12 h et de 11 h à 13 h se chevauchent');
+    expect(withWindows([{ weekdays: [], start: '08:00', end: '12:00' }])).toContain('aucun jour');
+    expect(withWindows([])).toContain("n'a aucune plage");
   });
 });

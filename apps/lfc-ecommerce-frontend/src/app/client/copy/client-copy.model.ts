@@ -641,6 +641,14 @@ export interface ClientCopy {
     readonly offerOnPickup: string;
     /** `{discount}` — une promotion valable en livraison. */
     readonly offerOnDelivery: string;
+    /** `{offer}` = la mention, `{hours}` = ses jours et heures — hors des heures, jugée à la commande. */
+    readonly offerWithHours: string;
+    /** `{offer}`, `{hours}` — une promotion jugée au créneau de retrait ou de livraison. */
+    readonly offerWithSlotHours: string;
+    /** `{start}`, `{end}` — une plage horaire. */
+    readonly offerHoursRange: string;
+    /** La fin « 24:00 ». */
+    readonly offerMidnight: string;
     /** `{pct}` = le pourcentage, tel quel (« 20 », « 12,5 »). */
     readonly discountPercent: string;
     /** `{amount}` = le montant formaté (« 5,00 € »). */
@@ -727,6 +735,8 @@ export interface ClientCopy {
      */
     readonly unitChangedToWeight: string;
     readonly unitChangedToPiece: string;
+    /** `{label}` = la remise, `{at}` = l'heure de sa fin — une remise à heures finie depuis le dernier devis. */
+    readonly discountEnded: string;
     /**
      * Le devis anonyme sait qu'une promotion réservée aux inscrits toucherait
      * ce panier (plan des promotions, § 8, lot L10) — dit à TOUT invité, sans
