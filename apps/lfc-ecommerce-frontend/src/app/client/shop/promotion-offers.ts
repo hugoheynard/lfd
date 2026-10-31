@@ -35,7 +35,9 @@ export function offerDiscountLabel(
  * porte l'ENSEMBLE depuis `documentation/promotions/plan-acheminements-a-cocher.md`).
  * Un point qui n'est pas (ou pas encore) dans la liste servie n'est pas dit :
  * une mention sans lieu promettrait la remise partout. Une sélection de zones
- * se dit « en livraison » jusqu'au lot de la boutique.
+ * ne se dit pas non plus : « en livraison » la promettrait à toute adresse, et
+ * le rayon ne connaît pas encore l'adresse du client (2026-10-31) — on annonce
+ * moins que la caisse, jamais plus.
  */
 export function fulfillmentOfferLabels(
   offer: ShopItemFulfillmentOfferView,
@@ -55,7 +57,7 @@ export function fulfillmentOfferLabels(
       }
     }
   }
-  if (delivery !== 'none') {
+  if (delivery === 'all') {
     labels.push(fill(product.offerOnDelivery, { discount }));
   }
   return labels;
