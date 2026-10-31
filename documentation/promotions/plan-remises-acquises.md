@@ -149,3 +149,59 @@ Dynamics :
 Elle ferme la faille 1 et celle des promotions à heures sans couverture à
 mémoriser ni cas M7 insoluble. Le reste du plan (§§ 3-7) est en attente de
 cette décision.
+
+## 9. Décision de Hugo (2026-10-31) : A, le prix verrouillé — fait foi sur les §§ 3 à 7
+
+Options présentées : A prix verrouillé, B couverture quantité par quantité,
+C aucune hausse, D statu quo. **Hugo choisit A.** Les §§ 3 à 7 (la
+couverture) sont abandonnés.
+
+### 9.1 Les lignes (point ligne)
+
+- Une ligne déjà commandée garde son **prix figé** (R3) pour sa quantité.
+- **Baisser** ou **retirer** : toujours possible ; le prix figé ne bouge pas.
+- **Augmenter** une ligne déjà commandée : la composition tarife le SKU **au
+  moment de la révision** pour la quantité révisée ; si ce prix unitaire
+  diffère du prix figé, la révision est **refusée** par une erreur nommée
+  (« Le prix de « X » a changé depuis votre commande (1,20 € → 1,08 €) :
+  gardez la quantité commandée, ou passez une nouvelle commande pour en
+  ajouter »). S'il est identique, la hausse passe au prix figé (identique).
+  Ferme la faille du § 8.1 (`revised-lines.ts:49-76`,
+  `order-composition.service.ts:295-316`), palier de volume compris : une
+  quantité qui change de palier change de prix, donc est refusée à la hausse
+  — et à la **baisse**, le prix figé reste (un palier acquis le reste ; à
+  confirmer par vitruve : c'est une remise acquise de plus, pas une faille,
+  puisqu'on ne baisse pas pour gagner).
+- Un **SKU neuf** se tarife au moment de la révision.
+
+### 9.2 Les remises de panier
+
+- Les remises de panier d'une commande sont **celles de la passation**
+  (`order_discounts` actives : promotion, ajustement, rang, cumulable, SKU
+  couverts via `order_line_discounts`) ; la révision ne rejuge PAS les
+  promotions du moment et n'en ajoute aucune — à la manière de Commerce
+  Layer (« les promotions de la passation sont rafraîchies, les nouvelles ne
+  sont pas appliquées »).
+- Elles se **recalculent sur ce qui reste** : même ajustement, même rang, sur
+  les lignes révisées des SKU qu'elles couvraient ; un pourcentage suit
+  l'assiette, un montant fixe est borné à son assiette (`discountCentsOf`).
+- **Une condition qui ne tient plus fait tomber la remise** : la quantité
+  minimum se rejuge sur la quantité révisée. Pas d'acquis contre une
+  condition de seuil (bloquant 3 du § 8).
+- Un SKU neuf ne reçoit **aucune** remise de panier (ni acquise, ni du
+  moment) ; le client le voit au devis de révision.
+- Ce qu'il faut figer à la passation pour ne jamais relire une promotion
+  archivée (bloquant 4) : le caractère cumulable et la portée en SKU sont
+  déjà déductibles de `order_line_discounts` ; le caractère cumulable et le
+  point d'application sont à figer sur `order_discounts` si absents.
+- **L9** : un changement d'acheminement en révision ne rejuge pas non plus
+  les promotions — les remises de la passation restent, sauf si leur
+  acheminement ne correspond plus (ex. remise « retrait à l'adroit » et
+  passage en livraison) : alors la révision est refusée, comme aujourd'hui,
+  avec l'erreur d'acheminement.
+
+### 9.3 Les promotions à heures
+
+Rien de plus : une remise à heures acquise à la passation reste (§ 9.2) ; une
+hausse au même prix ne la change pas, un SKU neuf n'en reçoit pas. Les §§ 9-10
+de `plan-jours-et-heures.md` (la couverture) sont remplacés par ce plan.
