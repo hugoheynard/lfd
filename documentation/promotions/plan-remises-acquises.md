@@ -205,3 +205,73 @@ couverture) sont abandonnés.
 Rien de plus : une remise à heures acquise à la passation reste (§ 9.2) ; une
 hausse au même prix ne la change pas, un SKU neuf n'en reçoit pas. Les §§ 9-10
 de `plan-jours-et-heures.md` (la couverture) sont remplacés par ce plan.
+
+## 10. Après vitruve, la version validée par Hugo (2026-10-31) — fait foi sur le § 9
+
+> **Une modification ne change jamais un prix convenu en silence.**
+
+Trois BLOQUANTS du § 9 (seuil acquis à la baisse, seuil de panier non figé,
+comparaison de prix non définie) et six SÉRIEUX, levés ainsi :
+
+### 10.1 Les lignes déjà commandées
+
+- À chaque révision (et à son devis), chaque ligne déjà commandée est
+  **retarifée au moment de la révision pour sa quantité révisée**.
+- **Égal** au figé — même `unitPriceMillicents` (au kilo pour une vente au
+  poids), même `vatRate`, et en `exact_ht` même `unitPriceTtcCents` — : la
+  ligne garde son figé, la révision passe.
+- **Différent**, à la hausse comme à la baisse de quantité, quelle que soit la
+  cause (promotion finie, seuil de quantité ou palier de volume quitté,
+  canonique, mercuriale ou taux changés) : **refus** nommé, `BusinessError`
+  (409), distinct de `FrozenLinePriceChangedError`
+  (`order-revision-errors.ts:115`, qui reste l'alarme technique) :
+  « Changer la quantité de « X » change son prix (0,90 € → 1,20 €) : gardez
+  la quantité commandée, ou annulez et passez une nouvelle commande. »
+- Un SKU retiré du catalogue depuis la commande : ne peut plus se retarifer —
+  refus nommé (« « X » n'est plus vendu : gardez la quantité commandée ou
+  retirez-le »), jamais une erreur de résolution brute. Retirer la ligne
+  reste possible.
+- Même règle pour l'équipe (M4) : aucune dérogation.
+
+### 10.2 Les remises de panier
+
+- **Rejouées, jamais rejugées** : les remises actives de la commande, avec
+  leur ajustement, leur rang, leur caractère cumulable, leur seuil
+  (`min_quantity`), leur cible d'acheminement (mode, points, zones) et leurs
+  SKU couverts — à la manière des bons partiels
+  (`delivery-notes/domain/services/note-basket-discounts.ts`, qu'on
+  réutilise). Aucune promotion du moment n'est ajoutée ; une promotion
+  archivée depuis reste acquise.
+- **Seuil** : si la quantité révisée d'une ligne couverte passe sous le seuil
+  figé, **refus** nommé (« Cette modification ferait perdre la remise « X »
+  (dès 10 pièces) ») — jamais une perte silencieuse.
+- Un SKU couvert retiré entièrement sort de l'assiette ; une remise dont tous
+  les SKU sont retirés disparaît (aucune perte cachée : il n'y a plus rien à
+  remiser).
+- M7 : le plan choisi à la passation (chaîne ou non cumulable) est figé ; la
+  comparaison n'est pas refaite ; le plafond de cinq est sans objet (rien ne
+  s'ajoute).
+- **L9** : un changement d'acheminement se juge contre la **cible figée** de
+  chaque remise ; s'il sort de la cible (ex. « retrait à l'adroit » →
+  livraison, ou une adresse d'une autre zone), refus comme aujourd'hui.
+- Un SKU neuf ne reçoit aucune remise de panier.
+- Remise reprise en `origin = frozen` (sans ajustement ni promotion) : son
+  montant figé est gardé, borné à l'assiette restante de ses SKU.
+
+### 10.3 Données
+
+Migration additive sur `order_discounts` : `cumulative boolean`,
+`min_quantity int null`, et la cible d'acheminement figée
+(`fulfillment_pickup` / `fulfillment_delivery` + listes, même forme que la
+promotion, § 2.14 de `promotions.md`) ; une colonne `frozen_terms_origin`
+(`placed` · `backfilled`) distingue le figé réel du déduit. Reprise des
+remises actives existantes par le script de reprise (§ 2.12), depuis la
+promotion de chaque remise, marquée `backfilled`. `lecteur-de-migrations`
+avant `main`.
+
+### 10.4 Le devis de révision
+
+Le devis partage `compose` : il ne lève pas pour un refus de prix ou de
+seuil ; il rend, par ligne et par remise, le refus et ses deux prix, et le
+front l'affiche à côté de la ligne ; la révision, elle, lève l'erreur
+nommée. Les deux fronts (boutique et back-office) affichent ces refus.
