@@ -71,6 +71,7 @@ export function headerSettlement(state: InvoiceState): string {
     textElement("ram:InvoiceCurrencyCode", CURRENCY),
     paymentMeans(state),
     ...state.vat.categories.map(headerTradeTax),
+    billingPeriod(state),
     ...state.vat.categories.flatMap(allowanceCharges),
     paymentTerms(state),
     monetarySummation(state),
@@ -88,6 +89,41 @@ function paymentMeans(state: InvoiceState): string {
     "<ram:SpecifiedTradeSettlementPaymentMeans>",
     textElement("ram:TypeCode", state.paymentMeans.code),
     "</ram:SpecifiedTradeSettlementPaymentMeans>",
+  ].join("");
+}
+
+/**
+ * BG-14 — la période de facturation (BT-73, BT-74) d'une pièce qui couvre
+ * PLUSIEURS bons : du premier au dernier livré. Ce que la norme prévoit pour
+ * une facture récapitulative, là où BT-72 (une date de livraison unique) ne
+ * peut pas l'être. L'émission refuse déjà un bon sans date réelle
+ * (`InvoiceIssuanceBlockedError`, `invoice-parties.ts` — vérifié le
+ * 2026-10-31) ; le type la laisse nullable, d'où le garde : une période
+ * calculée sans ce bon en dirait une fausse. Une pièce d'un seul bon porte
+ * déjà BT-72 (`headerDelivery`).
+ */
+export function billingPeriod(state: InvoiceState): string {
+  if (state.orders.length < 2) {
+    return "";
+  }
+  const dates: string[] = [];
+  for (const order of state.orders) {
+    if (order.receivedOn === null) {
+      return "";
+    }
+    dates.push(order.receivedOn);
+  }
+  dates.sort();
+  const start = dates[0];
+  const end = dates[dates.length - 1];
+  if (start === undefined || end === undefined) {
+    return "";
+  }
+  return [
+    "<ram:BillingSpecifiedPeriod>",
+    dateElement("ram:StartDateTime", start, "udt"),
+    dateElement("ram:EndDateTime", end, "udt"),
+    "</ram:BillingSpecifiedPeriod>",
   ].join("");
 }
 

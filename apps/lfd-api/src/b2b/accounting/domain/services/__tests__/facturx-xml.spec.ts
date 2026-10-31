@@ -266,3 +266,38 @@ describe("facturXArithmeticViolations", () => {
     expect(facturXArithmeticViolations(unreadable)[0]).toMatch(/GrandTotalAmount illisible/u);
   });
 });
+
+describe("renderFacturXml — BG-14, la période d'une facture récapitulative", () => {
+  const PERIOD =
+    '<ram:BillingSpecifiedPeriod><ram:StartDateTime><udt:DateTimeString format="102">20260912</udt:DateTimeString></ram:StartDateTime><ram:EndDateTime><udt:DateTimeString format="102">20260913</udt:DateTimeString></ram:EndDateTime></ram:BillingSpecifiedPeriod>';
+
+  it("va du premier au dernier bon livré, quel que soit leur ordre", () => {
+    const xml = renderFacturXml(
+      Invoice.issue(
+        issueInput({
+          orders: [
+            { orderId: "o_2", reference: "ORD-002", receivedOn: "2026-09-13" },
+            { orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-12" },
+          ],
+        }),
+      ),
+    );
+    expect(xml).toContain(PERIOD);
+    // Entre les taxes et les remises de document, dans l'ordre du XSD.
+    expect(xml.indexOf("BillingSpecifiedPeriod")).toBeGreaterThan(
+      xml.lastIndexOf("</ram:ApplicableTradeTax>"),
+    );
+  });
+
+  it("laisse une pièce d'un seul bon à sa date de livraison (BT-72)", () => {
+    const xml = renderFacturXml(
+      Invoice.issue(
+        issueInput({
+          orders: [{ orderId: "o_1", reference: "ORD-001", receivedOn: "2026-09-12" }],
+        }),
+      ),
+    );
+    expect(xml).not.toContain("BillingSpecifiedPeriod");
+    expect(xml).toContain("ActualDeliverySupplyChainEvent");
+  });
+});

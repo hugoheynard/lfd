@@ -361,6 +361,12 @@ nouvelle.
   SIREN vendeur et acheteur en schéma `0002` (BR-FR-10/11) passent.
 - **R008** : `ApplicableHeaderTradeDelivery` est vide sans lieu de livraison
   distinct ni date de livraison unique ; le XSD l'exige quand même.
+- **BG-14, période de facturation** (2026-10-31) : une pièce de plusieurs bons
+  porte BT-73/BT-74, du premier au dernier bon livré (`billingPeriod`,
+  `facturx-settlement.ts`) ; une pièce d'un seul bon garde BT-72. Ne vide pas
+  R008 (le bloc livraison reste sans donnée vraie à y mettre). Vérifié aussi
+  par **Mustang** 2.26.0, validateur tiers, lancé à la main : pièces `valid`,
+  restent R008 et les manques BR-FR-12/13 ci-dessous.
 
 **Les manques de donnée** — règles BR-FR laissées rouges, rien d'inventé :
 
