@@ -322,8 +322,7 @@ en cours est arrêté dans le même avenant) et **arrêter une ligne**.
 **Bâtie le 2026-10-31** (plan
 [`plan-la-mercuriale-decide.md`](../../promotions/plan-la-mercuriale-decide.md),
 § 8, réorientation de Hugo le même jour : par la pose et les avenants, pas par
-une table à part). ✅ Décrit le code qui tourne côté serveur ; l'écran est le
-lot suivant.
+une table à part). ✅ Décrit le code qui tourne, serveur et écran.
 
 Sur les articles qu'elle **fixe** (à partir de leur premier palier), la
 mercuriale dit si son client profite des promotions : **aucune** (le défaut,
@@ -350,6 +349,28 @@ mentionnée sur l'article négocié. Une promotion archivée reste dans une list
 sans effet. Au journal, la phrase de la pose et de l'avenant nomme la
 politique (« promotions : au choix — « Rentrée » »).
 
+**L'écran** (onglet Tarifs d'un compte, back-office) :
+
+- **à la pose et sur le brouillon**, sous le nom et les dates, « Promotions
+  pour ce client » : trois positions (`fold-view-toggle`) — « Aucune
+  promotion » (le défaut, y compris pour une mercuriale qu'on prépare pendant
+  qu'une autre tourne : rien n'est hérité), « Toutes les promotions », « Au
+  choix » — et l'aide de la position choisie. « Au choix » ouvre une sélection
+  multiple avec recherche des promotions **non archivées**, chacune nommée et
+  résumée ; une archivée déjà choisie reste affichée « (archivée) ». Un « Au
+  choix » vide ne se pose pas. Composant :
+  `apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs/promotion-policy-picker/` ; règles d'écran :
+  `apps/lfd-backoffice-frontend/src/app/fiche-client/tarifs/promotion-policy.ts` ;
+- **sur la fiche d'une mercuriale posée**, sous sa fenêtre : « Promotions pour
+  ce client : <politique en vigueur> · depuis la pose » ou « · depuis
+  l'avenant du JJ/MM/AAAA » (le dernier avenant qui en porte une et a pris
+  effet) ;
+- **pour la changer**, le geste d'avenant « Changer les promotions » : le même
+  choix, parti de la politique en vigueur, une date d'effet (vide = dès
+  maintenant) et le motif. L'avenant ne porte que la politique ; il est
+  refusé s'il ne change rien. La liste des avenants dit la politique qu'un
+  avenant a ouverte.
+
 ### Le report sur une référence détachée
 
 Quand une déclinaison est détachée en fiche à elle, la mercuriale reste sur
@@ -373,7 +394,7 @@ référence née de l'ancienne, et vendue aux pros. Route :
 | **gabarit** (`PriceTemplate`) | une grille **préparée**, pour la reposer chez plusieurs clients | ne tarife personne tant qu'elle n'est pas posée                      |
 | **brouillon**                 | une négociation en cours, un par société                        | **ne tarife rien** : c'est ce qui autorise à l'enregistrer incomplet |
 | **barème de volume**          | un prix qui baisse avec la quantité                             | son propre objet, son propre étage ; ne scelle pas                   |
-| **promotion**                 | une opération datée, publique                                   | se compose ; transparente sous une mercuriale, sauf override         |
+| **promotion**                 | une opération datée, publique                                   | se compose ; sous une mercuriale, selon son réglage (§ 7 bis)        |
 | **plancher**                  | la limite basse d'un prix                                       | n'est pas une remise : il **relève** un prix trop bas                |
 
 ## 9. Les unités, parce que s'y tromper coûte cher

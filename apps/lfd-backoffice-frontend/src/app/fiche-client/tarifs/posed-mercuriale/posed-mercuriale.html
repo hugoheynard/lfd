@@ -47,6 +47,17 @@
     · {{ mercuriale().skuCount }} article(s) · établie par
     <strong>{{ author(mercuriale().createdBy, mercuriale().createdByName) }}</strong>
   </p>
+  <!-- La politique en vigueur et d'où elle vient. Elle se change par un
+       avenant daté (« Changer les promotions », sous la table) : jamais sur
+       place, qui ferait payer au passé le réglage d'aujourd'hui. -->
+  <p class="tf-meta" data-policy-line>
+    Promotions pour ce client : <strong>{{ policyLine() }}</strong> · {{ policySince() }}
+  </p>
+  @if (promotionsMissing()) {
+    <fold-callout variant="alert" data-promotions-missing>
+      Les noms des promotions n'ont pas pu être lus : elles sont désignées par leur identifiant.
+    </fold-callout>
+  }
   <div class="tf-head-actions">
     <button foldButton size="sm" emphasis="outline" (click)="exportCsv()">Exporter en CSV</button>
     <!-- Clore ARCHIVE ses règles : c'est ce qui rend leur place dans
@@ -148,5 +159,6 @@
   [companyId]="companyId()"
   [mercuriale]="mercuriale()"
   [categories]="categories()"
+  [promotions]="promotions()"
   (amended)="changed.emit()"
 />

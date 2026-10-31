@@ -76,21 +76,19 @@ describe('le brouillon de l’éditeur des promotions', () => {
         ...emptyDraft(TODAY, null),
         effectKind: 'fixed_unit_price',
         effectValue: '1,20',
-        stacksOverMercuriale: true,
       },
       'variant',
       ['VIE-001-1'],
       false,
     );
     const away = switchType(line, {}, 'basket');
-    // Au panier : ni prix posé, ni déclinaison, ni tarif négocié — et pas de
+    // Au panier : ni prix posé, ni déclinaison — et pas de
     // « 1,20 » relu en pourcentage.
     expect(away.draft).toMatchObject({
       fulfillmentKind: 'basket',
       effectKind: 'percent_off',
       effectValue: '',
       rules: [],
-      stacksOverMercuriale: false,
     });
     const back = switchType({ ...away.draft, labelFr: 'Gardé' }, away.setAside, 'displayed_price');
     expect(back.draft).toMatchObject({
@@ -98,7 +96,6 @@ describe('le brouillon de l’éditeur des promotions', () => {
       effectKind: 'fixed_unit_price',
       effectValue: '1,20',
       rules: line.rules,
-      stacksOverMercuriale: true,
       labelFr: 'Gardé',
     });
   });

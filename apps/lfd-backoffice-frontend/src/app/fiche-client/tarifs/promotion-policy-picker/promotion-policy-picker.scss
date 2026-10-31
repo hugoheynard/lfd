@@ -1,0 +1,10 @@
+.policy {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-sm);
+}
+
+.policy-hint {
+  margin: 0;
+  color: var(--fold-color-text-muted);
+}

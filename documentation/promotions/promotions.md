@@ -445,8 +445,15 @@ remonte après la valeur) :
    montant à l'unité ou prix posé pour baisser le prix ; pourcentage ou montant
    sur le panier pour la remise sur le panier. Puis les libellés.
 4. **« Quand, et à quelles conditions ? »** — période, quantité minimum,
-   cumul ; « Aussi pour les clients à tarif négocié » **seulement** pour
-   baisser le prix (le panier ne la porte pas).
+   cumul. La case « Aussi pour les clients à tarif négocié » a disparu le
+   2026-10-31 : c'est la **mercuriale** de chaque client qui décide
+   ([`plan-la-mercuriale-decide.md`](plan-la-mercuriale-decide.md), § 7). À sa
+   place, sur une promotion existante et sous `b2b_pricing:read`, une ligne en
+   lecture seule « Clients à tarif négocié : N mercuriales l'acceptent »
+   (`GET admin/pricing/mercuriales/accepting-promotion/:id`), chaque
+   mercuriale liée à l'onglet Tarifs de sa société, et l'aide « Le réglage se
+   fait sur la mercuriale de chaque client. » Une panne de cette lecture se
+   dit en alerte, la page reste.
 5. **« Pour qui (définir l'audience) ? »** — l'arbre des publics.
 6. **« Sur quel mode d’acheminement et de consommation ? »** — **seulement**
    en remise sur le panier (détail ci-dessous).
@@ -483,7 +490,7 @@ remonte après la valeur) :
 8. **« Où en est-elle ? »** — une promotion existante seulement.
 
 Changer de genre dans une saisie met de côté ce que le genre quitté a en
-propre — son effet, ses cibles (déclinaisons ou produits), « tarif négocié » —
+propre — son effet, ses cibles (déclinaisons ou produits) —
 et le rend au retour (`switchType`, `promotion-draft.ts`) : un aller-retour ne
 perd rien, et le corps envoyé ne porte que le genre choisi. Un effet que le
 nouveau genre lit suit la première bascule ; un autre repart vide plutôt que

@@ -12,6 +12,7 @@ import type {
   CompanyPricingCategoryView,
   PosedMercurialeAmendmentView,
   PosedMercurialeView,
+  PromotionView,
 } from '@lfd/contracts';
 import {
   FoldButtonComponent,
@@ -30,21 +31,24 @@ import {
   AMENDMENT_REASON_MAX_LENGTH,
   catalogueOptions,
   endAmendment,
+  policyAmendment,
   priceAmendment,
   runningOptions,
   runningSkus,
   type AmendmentDraft,
 } from './amendment-draft';
 import { amendmentLine } from './amendment-lines';
+import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from '../promotion-policy';
+import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
 
 /** Le geste ouvert, s'il y en a un. */
-type Gesture = 'price' | 'end' | null;
+type Gesture = 'price' | 'end' | 'policy' | null;
 
 /**
  * **Les avenants d'une mercuriale** (`plan-tarif-date-sur-une-reference.md`,
  * T6) — sous sa grille, sur la fiche tarifaire du client : la liste des
- * avenants écrits, et les deux gestes qui en écrivent un — ajouter ou changer
- * un prix, arrêter une ligne. La grille n'est jamais réécrite.
+ * avenants écrits, et les trois gestes qui en écrivent un — ajouter ou changer
+ * un prix, arrêter une ligne, changer les promotions acceptées. La grille n'est jamais réécrite.
  *
  * Le motif est obligatoire (invariant du domaine). Une mercuriale terminée ne
  * s'amende plus : les gestes disparaissent, la liste reste.
@@ -60,6 +64,7 @@ type Gesture = 'price' | 'end' | null;
     FoldElementTitleComponent,
     FoldNumberInputComponent,
     FoldTextareaComponent,
+    PromotionPolicyPicker,
   ],
   templateUrl: './mercuriale-amendments.html',
   styleUrl: './mercuriale-amendments.scss',
@@ -68,6 +73,8 @@ export class MercurialeAmendments {
   readonly companyId = input.required<string>();
   readonly mercuriale = input.required<PosedMercurialeView>();
   readonly categories = input.required<readonly CompanyPricingCategoryView[]>();
+  /** Les promotions, pour nommer celles d'un « Au choix » ; `null` = illisibles. */
+  readonly promotions = input<readonly PromotionView[] | null>(null);
 
   /** Un avenant est écrit : au parent de relire la fiche. */
   readonly amended = output<void>();
@@ -83,6 +90,8 @@ export class MercurialeAmendments {
   protected readonly fromDay = signal('');
   protected readonly toDay = signal('');
   protected readonly reason = signal('');
+  /** La politique que l'avenant ouvrira ; part de celle en vigueur. */
+  protected readonly policy = signal<PromotionPolicyForm>(NO_PROMOTION_POLICY);
   protected readonly refusal = signal<string | null>(null);
   protected readonly saving = signal(false);
 
@@ -96,7 +105,9 @@ export class MercurialeAmendments {
   protected readonly amendments = computed<readonly PosedMercurialeAmendmentView[]>(
     () => this.mercuriale().amendments ?? [],
   );
-  protected readonly lineOf = amendmentLine;
+  protected lineOf(amendment: PosedMercurialeAmendmentView): string {
+    return amendmentLine(amendment, this.promotions());
+  }
   protected readonly catalogue = computed(() => catalogueOptions(this.categories()));
   protected readonly running = computed(() => runningOptions(this.mercuriale()));
   /** L'article choisi a déjà un prix en cours : l'avenant le changera. */
@@ -110,6 +121,7 @@ export class MercurialeAmendments {
 
   protected open(gesture: Exclude<Gesture, null>): void {
     this.reset();
+    this.policy.set(this.currentPolicy());
     this.gesture.set(gesture);
   }
 
@@ -129,7 +141,17 @@ export class MercurialeAmendments {
     await this.send(draft.payload);
   }
 
+  private currentPolicy(): PromotionPolicyForm {
+    return this.mercuriale().promotionPolicy ?? NO_PROMOTION_POLICY;
+  }
+
   private draft(): AmendmentDraft {
+    if (this.gesture() === 'policy') {
+      return policyAmendment(
+        { policy: this.policy(), fromDay: this.fromDay(), reason: this.reason() },
+        this.currentPolicy(),
+      );
+    }
     return this.gesture() === 'end'
       ? endAmendment({ sku: this.sku(), fromDay: this.fromDay(), reason: this.reason() })
       : priceAmendment(
@@ -166,6 +188,7 @@ export class MercurialeAmendments {
     this.fromDay.set('');
     this.toDay.set('');
     this.reason.set('');
+    this.policy.set(NO_PROMOTION_POLICY);
     this.refusal.set(null);
   }
 }

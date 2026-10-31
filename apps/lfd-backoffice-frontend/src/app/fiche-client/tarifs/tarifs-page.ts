@@ -14,6 +14,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { PricingFollow } from '../pricing-follow/pricing-follow';
 import { CompanyPricingService } from './company-pricing.service';
 import { draftFromLines, draftFromView, type DraftPrices } from './draft-prices';
+import { NO_PROMOTION_POLICY, type PromotionPolicyForm } from './promotion-policy';
 import { MercurialeComposer } from './mercuriale-composer/mercuriale-composer';
 import { PosedMercuriale } from './posed-mercuriale/posed-mercuriale';
 import { TariffJournalCard } from './tariff-journal-card/tariff-journal-card';
@@ -100,6 +101,7 @@ export class ClientTarifsPage {
   protected readonly label = signal('');
   protected readonly validFrom = signal('');
   protected readonly validTo = signal('');
+  protected readonly promotionPolicy = signal<PromotionPolicyForm>(NO_PROMOTION_POLICY);
 
   /**
    * **Ce que l'écran montre**, et il ne montre qu'une chose à la fois.
@@ -173,6 +175,7 @@ export class ClientTarifsPage {
         this.validFrom.set(dayOf(saved.validFrom));
         this.validTo.set(dayOf(saved.validTo));
         this.draft.set(draftFromLines(saved.lines));
+        this.promotionPolicy.set(saved.promotionPolicy ?? NO_PROMOTION_POLICY);
         this.state.set('ready');
         return;
       }
@@ -181,6 +184,9 @@ export class ClientTarifsPage {
         // qu'on a déjà accordé, jamais d'une page blanche qui ferait retaper
         // une grille entière pour changer trois prix.
         this.draft.set(draftFromView(view));
+        // Une mercuriale neuve démarre en « Aucune promotion » (§ 8) : le
+        // commercial choisit, rien n'est hérité de la précédente.
+        this.promotionPolicy.set(NO_PROMOTION_POLICY);
       }
       this.state.set('ready');
     } catch {

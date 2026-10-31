@@ -9,6 +9,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { NotifyService } from '../../../notify.service';
+import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import { CompanyPricingService } from '../company-pricing.service';
 import { MercurialeAmendments } from './mercuriale-amendments';
 
@@ -78,6 +79,7 @@ function mount(mercuriale: PosedMercurialeView = MERCURIALE, granted = CAN) {
     providers: [
       { provide: CompanyPricingService, useValue: pricing },
       { provide: NotifyService, useValue: new StubNotify() },
+      { provide: PromotionsService, useValue: { list: async () => ({ promotions: [] }) } },
       { provide: PermissionsStore, useValue: { can: (p: StaffPermission) => granted.includes(p) } },
     ],
   });
@@ -161,5 +163,69 @@ describe('<app-mercuriale-amendments>', () => {
     expect(
       (fixture.nativeElement as HTMLElement).querySelector('[data-amend-refusal]')?.textContent,
     ).toContain('Le motif est obligatoire');
+  });
+
+  it('un avenant peut ne porter QUE la politique de promotions, à sa date d’effet', async () => {
+    const { fixture, pricing, amended } = mount();
+    const component = fixture.componentInstance;
+    component['open']('policy');
+    // Il part de la politique en vigueur — ici, faute d'en lire une, « Aucune ».
+    expect(component['policy']()).toEqual({ mode: 'none', promotionIds: [] });
+    component['policy'].set({ mode: 'selected', promotionIds: ['p_rentree'] });
+    component['fromDay'].set('2026-12-01');
+    component['reason'].set('Accord sur la rentrée');
+
+    await component['submit']();
+
+    expect(pricing.sent).toHaveLength(1);
+    expect(pricing.sent[0]?.payload).toMatchObject({
+      validTo: null,
+      reason: 'Accord sur la rentrée',
+      lines: [],
+      endedSkus: [],
+      promotionPolicy: { mode: 'selected', promotionIds: ['p_rentree'] },
+    });
+    expect(pricing.sent[0]?.payload.validFrom).toBeDefined();
+    expect(amended).toEqual(['amended']);
+  });
+
+  it('refuse un avenant de politique qui ne change rien, ou un « Au choix » vide', async () => {
+    const { fixture, pricing } = mount({
+      ...MERCURIALE,
+      promotionPolicy: { mode: 'all', promotionIds: [] },
+    });
+    const component = fixture.componentInstance;
+    component['open']('policy');
+    component['reason'].set('Rien');
+    await component['submit']();
+    expect(component['refusal']()).toContain('déjà la politique en vigueur');
+
+    component['policy'].set({ mode: 'selected', promotionIds: [] });
+    await component['submit']();
+    expect(component['refusal']()).toContain('au moins une');
+    expect(pricing.sent).toEqual([]);
+  });
+
+  it('nomme la politique qu’un avenant a ouverte', () => {
+    const { fixture, host } = mount({
+      ...MERCURIALE,
+      amendments: [
+        {
+          id: 'amd_p',
+          validFrom: '2026-03-01T00:00:00.000Z',
+          validTo: null,
+          reason: 'Rentrée',
+          openedSkus: [],
+          endedSkus: [],
+          promotionPolicy: { mode: 'all', promotionIds: [] },
+          createdBy: 'staff_1',
+          createdByName: 'Marie Curie',
+        },
+      ],
+    });
+    fixture.detectChanges();
+    expect(host.querySelector('[data-amendments]')?.textContent).toContain(
+      'promotions : Toutes les promotions',
+    );
   });
 });

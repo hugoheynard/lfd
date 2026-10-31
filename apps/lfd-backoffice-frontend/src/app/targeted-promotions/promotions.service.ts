@@ -2,6 +2,7 @@ import { HttpClient, HttpParams } from '@angular/common/http';
 import { inject, Injectable } from '@angular/core';
 import type {
   CreatedIdResponse,
+  MercurialesAcceptingPromotionView,
   PickupAddressView,
   SitePaletteView,
   PromotionListView,
@@ -36,6 +37,19 @@ export class PromotionsService {
 
   get(id: string): Promise<PromotionView> {
     return firstValueFrom(this.http.get<PromotionView>(`${this.base}/${encodeURIComponent(id)}`));
+  }
+
+  /**
+   * « Clients à tarif négocié : N mercuriales l'acceptent » — lecture seule,
+   * sous `b2b_pricing` : le réglage vit sur la mercuriale de chaque client
+   * (`plan-la-mercuriale-decide.md`, § 7).
+   */
+  acceptingMercuriales(id: string): Promise<MercurialesAcceptingPromotionView> {
+    return firstValueFrom(
+      this.http.get<MercurialesAcceptingPromotionView>(
+        `${B2B_API_BASE}/admin/pricing/mercuriales/accepting-promotion/${encodeURIComponent(id)}`,
+      ),
+    );
   }
 
   /** La source seule : les anciens éditeurs s'en disent en lecture seule. */

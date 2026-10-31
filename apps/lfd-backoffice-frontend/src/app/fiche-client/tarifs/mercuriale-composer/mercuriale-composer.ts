@@ -36,6 +36,8 @@ import {
 } from '../../../commercial/tarification/grille/mercuriale-row';
 import { CompanyPricingService } from '../company-pricing.service';
 import { toLines, withEuros, withoutPrice, type DraftPrices } from '../draft-prices';
+import { policyPayload, policyProblem, type PromotionPolicyForm } from '../promotion-policy';
+import { PromotionPolicyPicker } from '../promotion-policy-picker/promotion-policy-picker';
 import { tarifShelves, type TarifRow, type TarifShelf } from '../tarif-shelves';
 
 /** 10⁵ — d'un millicentime à l'euro. Dérivé une fois, jamais réécrit en dur. */
@@ -64,6 +66,7 @@ const MILLICENTS_PER_EURO = 100 * MILLICENTS_PER_CENT;
     FoldElementTitleComponent,
     FoldInputComponent,
     FoldNumberInputComponent,
+    PromotionPolicyPicker,
     VolumeEffort,
   ],
   templateUrl: './mercuriale-composer.html',
@@ -80,6 +83,8 @@ export class MercurialeComposer {
   readonly validFrom = model.required<string>();
   readonly validTo = model.required<string>();
   readonly draft = model.required<DraftPrices>();
+  /** « Promotions pour ce client » — « Aucune promotion » par défaut (§ 7). */
+  readonly promotionPolicy = model.required<PromotionPolicyForm>();
 
   /** Une mercuriale vient d'être posée : au parent de relire. */
   readonly posed = output<void>();
@@ -146,12 +151,16 @@ export class MercurialeComposer {
    */
   protected readonly rowTone = (row: TarifRow): FoldTableTone => (row.floored ? 'warning' : null);
 
+  /** Un « Au choix » vide ne se pose pas : le domaine le refuserait. */
+  protected readonly policyProblem = computed(() => policyProblem(this.promotionPolicy()));
+
   protected readonly canPose = computed(
     () =>
       this.label().trim() !== '' &&
       this.validFrom() !== '' &&
       this.validTo() !== '' &&
       this.lines().length > 0 &&
+      this.policyProblem() === null &&
       !this.busy(),
   );
 
@@ -191,6 +200,7 @@ export class MercurialeComposer {
         validFrom: businessDayStart(this.validFrom()) ?? '',
         validTo: businessDayStart(this.validTo()) ?? '',
         lines: [...this.lines()],
+        promotionPolicy: policyPayload(this.promotionPolicy()),
       });
       this.notify.success(`Mercuriale posée — ${String(affectedRules)} article(s).`);
       this.posed.emit();
@@ -259,6 +269,7 @@ export class MercurialeComposer {
         validFrom: isoDay(this.validFrom()),
         validTo: isoDay(this.validTo()),
         lines: [...this.lines()],
+        promotionPolicy: policyPayload(this.promotionPolicy()),
       });
       this.notify.success('Brouillon enregistré.');
     } catch (error) {

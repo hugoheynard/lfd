@@ -191,14 +191,33 @@
             [disabled]="readOnly()"
             (valueChange)="edit({ minQuantity: $event })"
           />
-          @if (atLine()) {
-            <fold-checkbox
-              label="Aussi pour les clients à tarif négocié"
-              hint="Sinon, un client sous mercuriale garde son prix négocié."
-              [checked]="draft().stacksOverMercuriale"
-              [disabled]="readOnly()"
-              (checkedChange)="edit({ stacksOverMercuriale: $event })"
-            />
+          <!-- Plus de case ici depuis le 2026-10-31 : c'est la mercuriale de
+               chaque client qui décide (plan-la-mercuriale-decide.md, § 7).
+               La page ne fait que le lire. -->
+          @if (accepting(); as accepting) {
+            <div class="negotiated" data-accepting>
+              <p class="negotiated-line">
+                Clients à tarif négocié :
+                <strong>{{ acceptingPhrase() }}</strong>
+              </p>
+              @if (accepting.mercuriales.length > 0) {
+                <ul class="negotiated-list">
+                  @for (mercuriale of accepting.mercuriales; track mercuriale.mercurialeId) {
+                    <li>
+                      <a [routerLink]="['/comptes-clients', mercuriale.companyId, 'tarifs']">{{
+                        mercuriale.label
+                      }}</a>
+                      · {{ mercuriale.mode === 'all' ? 'toutes les promotions' : 'au choix' }}
+                    </li>
+                  }
+                </ul>
+              }
+              <p class="negotiated-hint">Le réglage se fait sur la mercuriale de chaque client.</p>
+            </div>
+          } @else if (acceptingMissing()) {
+            <fold-callout variant="alert" data-accepting-missing>
+              Les mercuriales qui acceptent cette promotion n'ont pas pu être lues.
+            </fold-callout>
           }
           <fold-checkbox
             label="Cumulable"

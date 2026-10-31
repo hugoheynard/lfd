@@ -132,7 +132,6 @@ export interface PromotionDraft {
   readonly rules: readonly PromotionScopeRuleDraft[];
   /** Vide = aucune condition de quantité. */
   readonly minQuantity: string;
-  readonly stacksOverMercuriale: boolean;
   /** Cumulable avec les autres promotions cumulables (§ 16) — point ligne seulement. */
   readonly cumulative: boolean;
 }
@@ -187,7 +186,6 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
     scopeMode: 'all_except',
     rules: [],
     minQuantity: '',
-    stacksOverMercuriale: false,
     cumulative: false,
   };
 }
@@ -242,9 +240,6 @@ export function draftOf(view: PromotionView): PromotionDraft {
       eligible,
     })),
     minQuantity: quantity === undefined ? '' : String(quantity.value),
-    // Retirée du contrat le 2026-10-31 : la mercuriale décide
-    // (`plan-la-mercuriale-decide.md`, § 8). La case part au lot des écrans.
-    stacksOverMercuriale: false,
     cumulative: view.cumulative,
   };
 }
@@ -359,7 +354,6 @@ export function withFulfillment(draft: PromotionDraft, kind: DraftFulfillmentKin
     fulfillmentKind: kind,
     effectKind: effectsFor(kind).includes(draft.effectKind) ? draft.effectKind : 'percent_off',
     rules: draft.rules.filter((rule) => targets.includes(rule.target)),
-    stacksOverMercuriale: kind === 'displayed_price' && draft.stacksOverMercuriale,
   };
 }
 
@@ -369,7 +363,6 @@ export interface DraftTypeFields {
   readonly effect: { readonly kind: PromotionEffectKindValue; readonly value: string };
   /** Les cibles que l'autre genre ne lit pas (déclinaisons, ou produits). */
   readonly rules: readonly PromotionScopeRuleDraft[];
-  readonly stacksOverMercuriale: boolean;
 }
 
 /** Les champs mis de côté, par genre ; vide au chargement. */
@@ -377,7 +370,7 @@ export type DraftSetAside = Partial<Record<DraftFulfillmentKind, DraftTypeFields
 
 /**
  * **Changer de genre de remise dans une saisie** : ce que le genre quitté a
- * en propre — un effet qu'il est seul à lire, ses cibles, « tarif négocié » —
+ * en propre — un effet qu'il est seul à lire, ses cibles —
  * est mis de côté, et ce que le genre retrouvé avait laissé lui est rendu.
  * Un aller-retour ne perd rien ; le corps envoyé ne porte jamais que le genre
  * choisi. Le retrait et la livraison restent dans le brouillon, ignorés hors
@@ -395,7 +388,6 @@ export function switchType(
   const leaving: DraftTypeFields = {
     effect: { kind: draft.effectKind, value: draft.effectValue },
     rules: draft.rules.filter((rule) => !targets.includes(rule.target)),
-    stacksOverMercuriale: draft.stacksOverMercuriale,
   };
   const found = setAside[kind];
   const moved = withFulfillment(draft, kind);
@@ -413,7 +405,6 @@ export function switchType(
       ...moved,
       ...effect,
       rules: [...moved.rules, ...(found?.rules ?? [])],
-      stacksOverMercuriale: kind === 'displayed_price' && (found?.stacksOverMercuriale ?? false),
     },
     // Le genre retrouvé a repris ce qu'il avait laissé : il ne reste de côté que l'autre.
     setAside: { [draft.fulfillmentKind]: leaving },

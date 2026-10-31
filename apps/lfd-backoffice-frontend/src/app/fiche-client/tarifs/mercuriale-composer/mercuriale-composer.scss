@@ -27,6 +27,11 @@
   flex: 1 1 16rem;
 }
 
+// Le choix des promotions prend sa ligne : trois positions et une aide.
+.tf-pose-policy {
+  flex: 1 1 100%;
+}
+
 .tf-pose-field {
   display: flex;
   flex-direction: column;

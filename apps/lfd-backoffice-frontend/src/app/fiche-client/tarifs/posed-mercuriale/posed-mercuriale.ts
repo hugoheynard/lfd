@@ -1,6 +1,7 @@
 import {
   ChangeDetectionStrategy,
   Component,
+  type OnInit,
   computed,
   inject,
   input,
@@ -10,6 +11,7 @@ import {
 import {
   FoldBadgeComponent,
   FoldButtonComponent,
+  FoldCalloutComponent,
   FoldDangerZoneComponent,
   FoldDataTableCellDirective,
   FoldDataTableComponent,
@@ -24,6 +26,7 @@ import {
   type CompanyPricingCategoryView,
   type PosedMercurialeStatus,
   type PosedMercurialeView,
+  type PromotionView,
 } from '@lfd/contracts';
 import { formatEuros } from '@lfd/catalog-ui';
 
@@ -35,7 +38,9 @@ import {
   impactDirection,
   impactLabel,
 } from '../../../commercial/tarification/grille/mercuriale-row';
+import { PromotionsService } from '../../../targeted-promotions/promotions.service';
 import { CompanyPricingService } from '../company-pricing.service';
+import { NO_PROMOTION_POLICY, originPhrase, policyOrigin, policyPhrase } from '../promotion-policy';
 import { mercurialeCsv, mercurialeFileName } from '../mercuriale-csv';
 import { MercurialeAmendments } from '../mercuriale-amendments/mercuriale-amendments';
 import { mercurialeRowKey, mercurialeRows, type MercurialeRowView } from '../mercuriale-rows';
@@ -65,6 +70,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
   imports: [
     FoldBadgeComponent,
     FoldButtonComponent,
+    FoldCalloutComponent,
     FoldDangerZoneComponent,
     FoldDataTableComponent,
     FoldDataTableCellDirective,
@@ -76,7 +82,7 @@ const STATUS_TONE: Readonly<Record<PosedMercurialeStatus, 'success' | 'neutral' 
   templateUrl: './posed-mercuriale.html',
   styleUrl: './posed-mercuriale.scss',
 })
-export class PosedMercuriale {
+export class PosedMercuriale implements OnInit {
   readonly companyId = input.required<string>();
   readonly mercuriale = input.required<PosedMercurialeView>();
   readonly categories = input.required<readonly CompanyPricingCategoryView[]>();
@@ -87,6 +93,24 @@ export class PosedMercuriale {
   private readonly pricing = inject(CompanyPricingService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly promotionsApi = inject(PromotionsService);
+
+  /**
+   * Les promotions, pour NOMMER celles d'un « Au choix ». `null` tant qu'elles
+   * ne sont pas lues ; une lecture ratée laisse les identifiants à l'écran et
+   * le dit (`promotionsMissing`) — la politique, elle, reste lisible.
+   */
+  protected readonly promotions = signal<readonly PromotionView[] | null>(null);
+  protected readonly promotionsMissing = signal(false);
+
+  /** « Promotions pour ce client » en vigueur, en une phrase. */
+  protected readonly policyLine = computed(() =>
+    policyPhrase(this.mercuriale().promotionPolicy ?? NO_PROMOTION_POLICY, this.promotions()),
+  );
+  /** « depuis la pose » ou « depuis l'avenant du … ». */
+  protected readonly policySince = computed(() =>
+    originPhrase(policyOrigin(this.mercuriale(), new Date())),
+  );
 
   protected readonly euros = formatEuros;
   protected readonly percent = impactLabel;
@@ -130,6 +154,13 @@ export class PosedMercuriale {
     subtitle:
       "Elle n'accorde donc rien — ce qui ne devrait pas arriver : la pose refuse une grille vide.",
   };
+
+  ngOnInit(): void {
+    this.promotionsApi.list().then(
+      (list) => this.promotions.set(list.promotions),
+      () => this.promotionsMissing.set(true),
+    );
+  }
 
   /**
    * **Ouvrir le renommage**, sur le nom actuel. Pré-rempli et non vide : on

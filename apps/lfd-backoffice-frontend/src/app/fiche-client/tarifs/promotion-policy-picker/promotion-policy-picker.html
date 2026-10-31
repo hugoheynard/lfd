@@ -1,0 +1,40 @@
+<div class="policy" data-promotion-policy>
+  <fold-element-title variant="eyebrow" title="Promotions pour ce client" />
+  <fold-view-toggle
+    ariaLabel="Promotions pour ce client"
+    activeStyle="accent"
+    [options]="modeOptions()"
+    [value]="policy().mode"
+    (valueChange)="setMode($event)"
+  />
+  <p class="policy-hint" data-policy-hint>{{ hint() }}</p>
+
+  @if (policy().mode === 'selected') {
+    @switch (state()) {
+      @case ('loading') {
+        <fold-loading message="Lecture des promotions…" />
+      }
+      @case ('error') {
+        <fold-callout variant="alert" data-policy-error>
+          Les promotions n’ont pas pu être lues : le choix est indisponible.
+          <button foldButton actions size="sm" type="button" (click)="load()">Réessayer</button>
+        </fold-callout>
+      }
+      @default {
+        <fold-multiselect
+          label="Promotions acceptées"
+          placeholder="Choisir des promotions"
+          searchable
+          searchPlaceholder="Nom de la promotion"
+          emptyText="Aucune promotion ne correspond."
+          resultLabel="promotions"
+          [options]="choices()"
+          [value]="policy().promotionIds"
+          [disabled]="disabled()"
+          (valueChange)="setIds($event)"
+          data-policy-promotions
+        />
+      }
+    }
+  }
+</div>

@@ -21,3 +21,19 @@
   flex-wrap: wrap;
   gap: var(--fold-space-sm);
 }
+
+.negotiated {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-xs);
+}
+
+.negotiated-line,
+.negotiated-list,
+.negotiated-hint {
+  margin: 0;
+}
+
+.negotiated-hint {
+  color: var(--fold-color-text-muted);
+}

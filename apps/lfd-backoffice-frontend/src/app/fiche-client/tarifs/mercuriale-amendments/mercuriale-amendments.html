@@ -20,16 +20,37 @@
               Arrêter une ligne
             </button>
           }
+          <button
+            foldButton
+            size="sm"
+            emphasis="outline"
+            (click)="open('policy')"
+            data-amend-policy
+          >
+            Changer les promotions
+          </button>
         </div>
       }
       @default {
         <section
           class="amendments-form"
           [attr.aria-label]="
-            gesture() === 'end' ? 'Arrêter une ligne' : 'Ajouter ou changer un prix'
+            gesture() === 'end'
+              ? 'Arrêter une ligne'
+              : gesture() === 'policy'
+                ? 'Changer les promotions'
+                : 'Ajouter ou changer un prix'
           "
         >
-          @if (gesture() === 'end') {
+          @if (gesture() === 'policy') {
+            <app-promotion-policy-picker [(policy)]="policy" />
+            <fold-date
+              label="À partir du"
+              optional
+              optionalLabel="vide : dès maintenant"
+              [(value)]="fromDay"
+            />
+          } @else if (gesture() === 'end') {
             <fold-combobox
               label="Ligne à arrêter"
               placeholder="Nom ou référence"

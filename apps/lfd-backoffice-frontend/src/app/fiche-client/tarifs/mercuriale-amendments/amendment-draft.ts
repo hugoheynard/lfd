@@ -6,6 +6,12 @@ import type {
 
 import { millicentsOf } from '../../../commercial/tarification/grille/price-field';
 import { businessDayStart } from '../../../shared/business-day';
+import {
+  policyPayload,
+  policyProblem,
+  samePolicy,
+  type PromotionPolicyForm,
+} from '../promotion-policy';
 
 /** La borne du motif — celle du contrat (`amendCompanyMercurialePayloadSchema`). */
 export const AMENDMENT_REASON_MAX_LENGTH = 500;
@@ -95,6 +101,49 @@ export function endAmendment(form: EndAmendmentForm): AmendmentDraft {
   return {
     ok: true,
     payload: { ...window.bounds, reason, lines: [], endedSkus: [form.sku] },
+  };
+}
+
+export interface PolicyAmendmentForm {
+  readonly policy: PromotionPolicyForm;
+  readonly fromDay: string;
+  readonly reason: string;
+}
+
+/**
+ * **Changer les promotions de ce client** à une date d'effet
+ * (`plan-la-mercuriale-decide.md`, § 8) : un avenant qui ne porte QUE la
+ * politique — aucune ligne ouverte ni arrêtée. Refusé s'il ne change rien à la
+ * politique en vigueur : un avenant vide n'apprend rien au journal.
+ */
+export function policyAmendment(
+  form: PolicyAmendmentForm,
+  current: PromotionPolicyForm,
+): AmendmentDraft {
+  const reason = form.reason.trim();
+  const problem = policyProblem(form.policy);
+  if (problem !== null) {
+    return { ok: false, refusal: problem };
+  }
+  if (samePolicy(form.policy, current)) {
+    return { ok: false, refusal: 'C’est déjà la politique en vigueur : choisissez-en une autre.' };
+  }
+  if (reason === '') {
+    return { ok: false, refusal: 'Le motif est obligatoire : il reste au journal de l’accord.' };
+  }
+  const window = windowOf(form.fromDay, '');
+  if (!window.ok) {
+    return window;
+  }
+  return {
+    ok: true,
+    payload: {
+      ...window.bounds,
+      reason,
+      lines: [],
+      endedSkus: [],
+      promotionPolicy: policyPayload(form.policy),
+    },
   };
 }
 

@@ -28,6 +28,11 @@
     <input id="tf-to" type="date" [value]="validTo()" (change)="validTo.set(nativeValue($event))" />
   </div>
 
+  <app-promotion-policy-picker class="tf-pose-policy" [(policy)]="promotionPolicy" />
+  @if (policyProblem(); as problem) {
+    <p class="tf-tally" data-policy-problem>{{ problem }}</p>
+  }
+
   <div class="tf-pose-actions">
     <button foldButton [disabled]="!canPose()" (click)="pose()">
       {{ busy() ? 'Pose…' : 'Poser la mercuriale' }}
@@ -71,9 +76,9 @@
 }
 
 <p class="tf-caveat">
-  Une mercuriale <strong>scelle</strong> : ni palier de volume ni promotion ne s'ajoutent
-  par-dessus. La <strong>limite</strong>, elle, s'applique quand même — un prix saisi en dessous est
-  relevé, et c'est le prix relevé qui sera facturé.
+  Une mercuriale <strong>scelle</strong> : aucun palier de volume ne s'ajoute par-dessus, et seules
+  les promotions que son réglage accepte. La <strong>limite</strong>, elle, s'applique quand même —
+  un prix saisi en dessous est relevé, et c'est le prix relevé qui sera facturé.
 </p>
 
 @for (shelf of shelves(); track shelf.id) {

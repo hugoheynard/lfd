@@ -10,6 +10,7 @@ import {
 } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import type {
+  MercurialesAcceptingPromotionView,
   PromotionAudienceTargetView,
   PromotionScopeTargetValue,
   PromotionView,
@@ -158,6 +159,20 @@ export class PromotionPage {
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly promotion = signal<PromotionView | null>(null);
+  /**
+   * Les mercuriales qui l'acceptent — en lecture seule, le réglage vit sur
+   * chacune. `null` sans `b2b_pricing:read`, sur une pose, ou si la lecture a
+   * échoué (`acceptingMissing` le dit, la promotion reste à l'écran).
+   */
+  protected readonly accepting = signal<MercurialesAcceptingPromotionView | null>(null);
+  protected readonly acceptingMissing = signal(false);
+  /** « 1 mercuriale l'accepte », « 3 mercuriales l'acceptent ». */
+  protected readonly acceptingPhrase = computed(() => {
+    const count = this.accepting()?.count ?? 0;
+    return count > 1
+      ? `${String(count)} mercuriales l'acceptent`
+      : `${String(count)} mercuriale l'accepte`;
+  });
   protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
   /** Ce que l'autre genre de remise avait en propre, pour un aller-retour sans perte. */
   private readonly setAside = signal<DraftSetAside>({});
@@ -446,23 +461,25 @@ export class PromotionPage {
   ): Promise<void> {
     this.state.set('loading');
     try {
-      const [catalogue, active, sites, zones, view, source, original] = await Promise.all([
-        // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
-        // le lire voit quand même la promotion, ses cibles nommées par elle.
-        this.catalogueService.published().then(
-          (published) => ({
-            choices: catalogueChoicesOf(published),
-            articles: scopeArticlesOf(published),
-          }),
-          () => null,
-        ),
-        this.api.activePickupNames(),
-        this.api.everySiteName(),
-        this.api.zoneNames(),
-        id === null ? Promise.resolve(null) : this.api.get(id),
-        id === null ? Promise.resolve(null) : this.api.source(),
-        id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
-      ]);
+      const [catalogue, active, sites, zones, view, source, original, accepting] =
+        await Promise.all([
+          // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
+          // le lire voit quand même la promotion, ses cibles nommées par elle.
+          this.catalogueService.published().then(
+            (published) => ({
+              choices: catalogueChoicesOf(published),
+              articles: scopeArticlesOf(published),
+            }),
+            () => null,
+          ),
+          this.api.activePickupNames(),
+          this.api.everySiteName(),
+          this.api.zoneNames(),
+          id === null ? Promise.resolve(null) : this.api.get(id),
+          id === null ? Promise.resolve(null) : this.api.source(),
+          id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
+          this.readAccepting(id),
+        ]);
       this.catalogueMissing.set(catalogue === null);
       const rules = (view ?? original)?.scope.rules ?? [];
       this.catalogue.set(withRuleTargets(catalogue?.choices ?? NO_CHOICES, rules));
@@ -471,6 +488,8 @@ export class PromotionPage {
       this.siteNames.set(sites);
       this.zoneNames.set(zones);
       this.promotion.set(view);
+      this.accepting.set(accepting === 'failed' ? null : accepting);
+      this.acceptingMissing.set(accepting === 'failed');
       this.sourceEditable.set(source?.editable ?? false);
       this.copiedFrom.set(original?.internalName ?? null);
       const draft =
@@ -486,6 +505,16 @@ export class PromotionPage {
     } catch {
       this.state.set('error');
     }
+  }
+
+  /** Une panne de cette lecture ne retient pas la page : elle se dit à sa place. */
+  private readAccepting(
+    id: string | null,
+  ): Promise<MercurialesAcceptingPromotionView | null | 'failed'> {
+    if (id === null || !this.permissions.can('b2b_pricing:read')) {
+      return Promise.resolve(null);
+    }
+    return this.api.acceptingMercuriales(id).catch(() => 'failed' as const);
   }
 
   protected reload(): void {

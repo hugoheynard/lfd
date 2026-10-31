@@ -2,6 +2,7 @@ import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter, Router } from '@angular/router';
 import type {
+  MercurialesAcceptingPromotionView,
   PromotionTermsPayload,
   PromotionView,
   PublishedCatalogView,
@@ -38,6 +39,8 @@ interface Setup {
   readonly pose?: () => Promise<string>;
   /** Les points actifs ; `null` = la liste ne se lit pas (défaut : Cœur de station). */
   readonly active?: ReadonlyMap<string, string> | null;
+  /** Les mercuriales qui l'acceptent (défaut : aucune). */
+  readonly accepting?: () => Promise<MercurialesAcceptingPromotionView>;
 }
 
 async function render(setup: Setup = {}) {
@@ -76,6 +79,9 @@ async function render(setup: Setup = {}) {
             sent.posed.push(terms);
             return (await setup.pose?.()) ?? 'promo_neuve';
           },
+          acceptingMercuriales:
+            setup.accepting ??
+            (async (id: string) => ({ promotionId: id, count: 0, mercuriales: [] })),
           archive: async (_view: PromotionView, reason: string) => {
             sent.archived.push(reason);
           },
@@ -210,21 +216,20 @@ describe('PromotionPage', () => {
       expect(text).not.toContain('Où joue la promotion');
     });
 
-    it('baisser le prix : ni acheminement, ni montant sur le panier ; tarif négocié proposé', async () => {
+    it('baisser le prix : ni acheminement, ni montant sur le panier, ni case « tarif négocié »', async () => {
       const { root } = await render({ inputs: {} });
       const text = root.textContent ?? '';
       expect(text).not.toContain('Sur quel mode d’acheminement');
-      expect(text).toContain('Aussi pour les clients à tarif négocié');
+      expect(text).not.toContain('Aussi pour les clients à tarif négocié');
       expect(text).not.toContain('Montant sur le panier');
     });
 
-    it('remise sur le panier : l’acheminement apparaît, le tarif négocié disparaît', async () => {
+    it('remise sur le panier : l’acheminement apparaît', async () => {
       const { root, fixture } = await render({ inputs: {} });
       typeChoice(root, 'Remise sur le panier')?.click();
       fixture.detectChanges();
       const text = root.textContent ?? '';
       expect(text).toContain('Sur quel mode d’acheminement');
-      expect(text).not.toContain('Aussi pour les clients à tarif négocié');
       expect(text).toContain('Le prix au catalogue ne bouge pas');
     });
 
@@ -670,6 +675,53 @@ describe('PromotionPage', () => {
       expect(root.textContent).toContain('Exclue · 1 déclinaison concernée');
       expect(button(root, 'Retirer')).toBeUndefined();
       expect(root.querySelector('fold-listbox[label="Ajouter une famille"]')).toBeNull();
+    });
+  });
+
+  describe('clients à tarif négocié — lecture seule, réglée sur la mercuriale', () => {
+    it('dit combien de mercuriales l’acceptent, avec un lien vers chacune', async () => {
+      const { root } = await render({
+        accepting: async () => ({
+          promotionId: 'promo_1',
+          count: 2,
+          mercuriales: [
+            { mercurialeId: 'm1', companyId: 'co_a', label: 'Club 2027', mode: 'all' },
+            { mercurialeId: 'm2', companyId: 'co_b', label: 'Hôtel Alpes', mode: 'selected' },
+          ],
+        }),
+      });
+      const line = root.querySelector('[data-accepting]');
+      expect(line?.textContent).toContain('Clients à tarif négocié');
+      expect(line?.textContent).toContain("2 mercuriales l'acceptent");
+      expect(line?.textContent).toContain('Le réglage se fait sur la mercuriale de chaque client.');
+      const links = [...(line?.querySelectorAll('a') ?? [])].map((a) => a.getAttribute('href'));
+      expect(links).toEqual(['/comptes-clients/co_a/tarifs', '/comptes-clients/co_b/tarifs']);
+      expect(
+        root.querySelector('fold-checkbox[label="Aussi pour les clients à tarif négocié"]'),
+      ).toBeNull();
+    });
+
+    it('aucune : la ligne dit zéro, sans liste', async () => {
+      const { root } = await render();
+      expect(root.querySelector('[data-accepting]')?.textContent).toContain(
+        "0 mercuriale l'accepte",
+      );
+      expect(root.querySelector('[data-accepting] a')).toBeNull();
+    });
+
+    it('sans droit sur la tarification, la ligne ne se lit pas', async () => {
+      const { root } = await render({ permissions: ['lfc_site_settings:read'] });
+      expect(root.querySelector('[data-accepting]')).toBeNull();
+    });
+
+    it('une panne de cette lecture se dit, la promotion reste à l’écran', async () => {
+      const { root } = await render({
+        accepting: async () => {
+          throw new Error('panne');
+        },
+      });
+      expect(root.querySelector('[data-accepting-missing]')).not.toBeNull();
+      expect(root.textContent).toContain('Croissants');
     });
   });
 });
