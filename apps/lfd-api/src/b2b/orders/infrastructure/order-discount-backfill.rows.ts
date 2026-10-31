@@ -120,14 +120,19 @@ export function toRecoveryOrder(row: BackfillOrderRow): RecoveryOrder {
     deliveryFeeTtcCents: row.deliveryFeeTtcCents,
     ttcByRate: row.ttcByRate !== null && byRate.success ? byRate.data : null,
     lines: row.lines.map((line) => ({ id: line.id, ...recoveryLineOf(line) })),
-    notes: row.deliveryNotes.map((note): RecoveryNote => ({
-      id: note.id,
-      rank: note.rank,
-      voided: note.status === "voided",
-      discountCents: note.discountCents,
-      discountTtcCents: note.discountTtcCents,
-      lines: note.lines.map(recoveryLineOf),
-    })),
+    // Seuls les bons PARTIS reçoivent une part (décision du 2026-10-31, M4) :
+    // la même règle que l'écriture au départ. Un bon prévu peut encore être
+    // réécrit par une révision, qui archive la remise que sa part citerait.
+    notes: row.deliveryNotes
+      .filter((note) => note.status === "handed_over")
+      .map((note): RecoveryNote => ({
+        id: note.id,
+        rank: note.rank,
+        voided: note.status === "voided",
+        discountCents: note.discountCents,
+        discountTtcCents: note.discountTtcCents,
+        lines: note.lines.map(recoveryLineOf),
+      })),
   };
 }
 

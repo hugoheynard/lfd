@@ -3,8 +3,10 @@ import { z } from "zod";
 
 import type { Prisma } from "../../../platform/database/client/client.js";
 import {
+  coveredSkusOf,
   frozenBasketDiscountsOf,
   type FrozenBasketDiscount,
+  type IdentifiedSkuLine,
 } from "../domain/services/frozen-basket-discounts.js";
 import { FrozenAdjustmentUnreadableError } from "./frozen-adjustment-unreadable.error.js";
 
@@ -18,6 +20,9 @@ import { FrozenAdjustmentUnreadableError } from "./frozen-adjustment-unreadable.
  * Les couvertures se lisent par jointure sur la remise NON archivée (§ 18.7) :
  * le `where` porte sur la remise parente, ses couvertures suivent.
  */
+/** Les lignes que {@link basketDiscountsOfRow} lit à côté des remises. */
+export const DISCOUNT_COVERAGE_LINES_SELECT = { select: { id: true, sku: true } } as const;
+
 export const ACTIVE_ORDER_DISCOUNTS_SELECT = {
   where: { archivedAt: null },
   select: {
@@ -25,7 +30,7 @@ export const ACTIVE_ORDER_DISCOUNTS_SELECT = {
     promotionId: true,
     adjustment: true,
     label: true,
-    coveredLines: { select: { orderLine: { select: { sku: true } } } },
+    coveredLines: { select: { orderLineId: true } },
   },
   orderBy: { rank: "asc" },
 } as const satisfies Prisma.Order$discountsArgs;
@@ -36,12 +41,14 @@ export interface ActiveOrderDiscountRow {
   readonly promotionId: string | null;
   readonly adjustment: Prisma.JsonValue | null;
   readonly label: Prisma.JsonValue | null;
-  readonly coveredLines: readonly { readonly orderLine: { readonly sku: string } }[];
+  readonly coveredLines: readonly { readonly orderLineId: string }[];
 }
 
 /** Ce qu'une commande porte pour se lire avec son repli. */
 export interface BasketDiscountColumnsRow {
   readonly discountPromotionId: string | null;
+  /** Les lignes de la commande, pour rapporter chaque couverture à ses SKU. */
+  readonly lines: readonly IdentifiedSkuLine[];
   readonly discountAdjustment: Prisma.JsonValue | null;
   readonly discounts: readonly ActiveOrderDiscountRow[];
 }
@@ -57,7 +64,7 @@ export function basketDiscountsOfRow(
   row: BasketDiscountColumnsRow,
 ): readonly FrozenBasketDiscount[] {
   return frozenBasketDiscountsOf(
-    row.discounts.map((discount) => activeDiscountOf(orderId, discount)),
+    row.discounts.map((discount) => activeDiscountOf(orderId, discount, row.lines)),
     {
       discountPromotionId: row.discountPromotionId,
       discountAdjustment: frozenCartAdjustmentOf(orderId, row.discountAdjustment, "remise"),
@@ -65,17 +72,25 @@ export function basketDiscountsOfRow(
   );
 }
 
-/** @throws {FrozenAdjustmentUnreadableError} */
+/**
+ * @throws {FrozenAdjustmentUnreadableError}
+ * @throws {SplitSkuCoverageError} une couverture qui coupe un SKU en deux.
+ */
 export function activeDiscountOf(
   orderId: string,
   row: ActiveOrderDiscountRow,
+  lines: readonly IdentifiedSkuLine[],
 ): FrozenBasketDiscount {
   return {
     orderDiscountId: row.id,
     promotionId: row.promotionId,
     adjustment: frozenCartAdjustmentOf(orderId, row.adjustment, "remise de panier"),
     label: frenchLabelOf(row.label),
-    coveredSkus: [...new Set(row.coveredLines.map((covered) => covered.orderLine.sku))],
+    coveredSkus: coveredSkusOf(
+      orderId,
+      lines,
+      row.coveredLines.map((covered) => covered.orderLineId),
+    ),
   };
 }
 

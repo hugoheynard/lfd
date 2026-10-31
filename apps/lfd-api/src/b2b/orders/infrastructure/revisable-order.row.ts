@@ -42,6 +42,7 @@ const DOCUMENT_OF_ROW_KEY: ReadonlyMap<string, SalesTermsDocument> = new Map([
 ]);
 
 const LINE_SELECT = {
+  id: true,
   sku: true,
   productNameSnapshot: true,
   unitPriceMillicents: true,
@@ -119,6 +120,7 @@ export const REVISABLE_ORDER_SELECT = {
 } as const;
 
 interface RevisableLineRow extends OrderLineRow {
+  readonly id: string;
   readonly productId: string | null;
   readonly categoryId: string | null;
   readonly madeToOrder: boolean | null;
@@ -215,7 +217,7 @@ export function toRevisableOrder(row: RevisableOrderRow): RevisableOrder {
     discountPromotionId: row.discountPromotionId,
     discountAdjustment:
       row.discountAdjustment === null ? null : cartAdjustmentSchema.parse(row.discountAdjustment),
-    activeDiscounts: row.discounts.map((discount) => activeDiscountOf(row.id, discount)),
+    activeDiscounts: row.discounts.map((discount) => activeDiscountOf(row.id, discount, row.lines)),
     deliveryVatMode:
       row.deliveryVatMode === null ? null : deliveryVatModeSchema.parse(row.deliveryVatMode),
     vatMethod: vatMethodOf(row.id, row.vatMethod),

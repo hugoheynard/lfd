@@ -166,6 +166,16 @@ export const sheetMoneySchema = z.object({
   discountAdjustment: cartAdjustmentSchema.nullable(),
   /** Cf. {@link SheetMoney.discountLabel} — absent d'une feuille d'avant L8b. */
   discountLabel: z.object({ fr: z.string(), en: z.string(), it: z.string() }).optional(),
+  /** Cf. {@link SheetMoney.discountLines} — absente : une seule ligne de remise. */
+  discountLines: z
+    .array(
+      z.object({
+        label: z.string().min(1),
+        cents: z.number().int(),
+        ttcCents: z.number().int().nullable(),
+      }),
+    )
+    .optional(),
   /** La part du bon de fidélité — absente d'une feuille d'avant le lot C, lue zéro. */
   voucherDiscountCents: z.number().int().default(0),
   deliveryFeeCents: z.number().int(),
@@ -186,6 +196,13 @@ export const sheetMoneySchema = z.object({
   ttcTerms: orderTtcTermsSchema.optional(),
   ttcByRate: orderRatesAmountsSchema.optional(),
 });
+/** Une remise de panier sur un papier : son libellé figé, son HT, son TTC (`exact_ht`). */
+export interface SheetDiscountLine {
+  readonly label: string;
+  readonly cents: number;
+  readonly ttcCents: number | null;
+}
+
 export interface SheetMoney {
   readonly subtotalCents: number;
   readonly discountCents: number;
@@ -196,6 +213,14 @@ export interface SheetMoney {
    * d'avant, ou sans promotion.
    */
   readonly discountLabel?: DiscountLabelView | undefined;
+  /**
+   * **Une ligne par remise de panier** (plan des promotions, § 18.6, lot M4) —
+   * présente seulement quand le papier en porte PLUSIEURS : chacune son
+   * libellé figé en français (repli « Remise »), son montant HT, et son TTC
+   * pour un papier composé en TTC. Absente : la ligne de remise d'hier, au
+   * caractère près. Leur somme est {@link discountCents}.
+   */
+  readonly discountLines?: readonly SheetDiscountLine[] | undefined;
   /**
    * Le **bon de fidélité** imputé, HT — une ligne à part de la remise, jamais
    * fondue avec elle (plan des points, C7). `0` sans bon.

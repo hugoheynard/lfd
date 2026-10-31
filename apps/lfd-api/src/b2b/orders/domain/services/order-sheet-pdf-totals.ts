@@ -61,6 +61,36 @@ function discountLabel(sheet: PricedPaper, ttc: boolean): string {
   });
 }
 
+/** Une remise du pavé : son libellé, son HT et son TTC figé (`null` hors `exact_ht`), signés. */
+interface DiscountGesture {
+  readonly label: string;
+  readonly pretaxCents: number;
+  readonly ttcCents: number;
+}
+
+/**
+ * **Une ligne par remise de panier** quand le papier en porte plusieurs (plan
+ * des promotions, § 18.6, lot M4) ; sinon LA ligne d'hier, son libellé
+ * compris — une seule remise rend le papier d'aujourd'hui au caractère près.
+ */
+function discountGestures(sheet: PricedPaper, ttc: boolean): readonly DiscountGesture[] {
+  const lines = sheet.money.discountLines;
+  if (lines !== undefined && lines.length > 1) {
+    return lines.map((line) => ({
+      label: line.label,
+      pretaxCents: -line.cents,
+      ttcCents: -(line.ttcCents ?? 0),
+    }));
+  }
+  return [
+    {
+      label: discountLabel(sheet, ttc),
+      pretaxCents: -sheet.money.discountCents,
+      ttcCents: -(sheet.money.ttcTerms?.discountCents ?? 0),
+    },
+  ];
+}
+
 /**
  * Les gestes entre les articles et le total — remise, bon, livraison,
  * surtaxe —, chacun seulement s'il a eu lieu. Communs aux deux bons.
@@ -70,7 +100,10 @@ function adjustmentRows(sheet: PricedPaper): readonly TotalRow[] {
   return [
     ...(totals.discountCents === 0
       ? []
-      : [{ label: discountLabel(sheet, false), value: money(-totals.discountCents) }]),
+      : discountGestures(sheet, false).map((gesture) => ({
+          label: gesture.label,
+          value: money(gesture.pretaxCents),
+        }))),
     // Le bon de fidélité, après la remise et sur sa propre ligne (plan des points, C7).
     ...(totals.voucherDiscountCents === 0
       ? []
@@ -156,7 +189,7 @@ interface Gesture {
 function gesturesOf(sheet: PricedPaper, ttc: boolean): readonly Gesture[] {
   const totals = sheet.money;
   return [
-    { label: discountLabel(sheet, ttc), pretaxCents: -totals.discountCents },
+    ...discountGestures(sheet, ttc),
     { label: "Bon de fidélité", pretaxCents: -totals.voucherDiscountCents },
     { label: "Livraison", pretaxCents: totals.deliveryFeeCents },
     { label: "Surtaxe de commande tardive", pretaxCents: totals.lateFeeCents },
@@ -216,7 +249,10 @@ function frozenTtcGestureRows(sheet: PricedPaper): readonly TotalRow[] | null {
     return null;
   }
   return [
-    { label: discountLabel(sheet, true), cents: -ttc.discountCents },
+    ...discountGestures(sheet, true).map((gesture) => ({
+      label: gesture.label,
+      cents: gesture.ttcCents,
+    })),
     { label: "Bon de fidélité", cents: -ttc.voucherCents },
     { label: "Livraison", cents: ttc.deliveryFeeCents },
   ]

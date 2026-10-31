@@ -43,7 +43,7 @@ function row(over: Partial<BackfillOrderRow> = {}): BackfillOrderRow {
       {
         id: "n1",
         rank: 1,
-        status: "voided",
+        status: "handed_over",
         discountCents: 100,
         discountTtcCents: null,
         lines: [
@@ -64,15 +64,32 @@ function row(over: Partial<BackfillOrderRow> = {}): BackfillOrderRow {
 }
 
 describe("colonnes figées → commande à juger", () => {
-  it("lit le taux en nombre, l'ajustement validé, le bon annulé", () => {
+  it("lit le taux en nombre, l'ajustement validé, le bon parti", () => {
     const order = toRecoveryOrder(row());
 
     expect(order).toMatchObject({
       vatMethod: "line_ht",
       discountAdjustment: { mode: "percent", bp: 1000 },
       lines: [{ id: "l1", vatRate: 5.5, eligible: true }],
-      notes: [{ id: "n1", voided: true }],
+      notes: [{ id: "n1", voided: false }],
     });
+  });
+
+  /**
+   * Décision du 2026-10-31 (M4) : seuls les bons PARTIS reçoivent une part.
+   * Un bon prévu pouvait être réécrit par une révision qui archivait la remise
+   * que sa part citait — une part orpheline.
+   */
+  it("un bon prévu ou annulé n'entre pas dans la reprise", () => {
+    const [note] = row().deliveryNotes;
+    if (note === undefined) {
+      throw new TypeError("fixture sans bon");
+    }
+    const notes = [
+      { ...note, id: "n_planned", status: "planned" },
+      { ...note, id: "n_voided", rank: 2, status: "voided" },
+    ];
+    expect(toRecoveryOrder(row({ deliveryNotes: notes })).notes).toEqual([]);
   });
 
   it("une ligne de bon d'avant E4a (éligibilité NULL) compte éligible", () => {

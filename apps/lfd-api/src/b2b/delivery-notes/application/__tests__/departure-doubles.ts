@@ -1,7 +1,9 @@
 import { OrderBasketDiscountsReader } from "../../../orders/domain/ports/order-basket-discounts.reader.js";
 import type { FrozenBasketDiscount } from "../../../orders/domain/services/frozen-basket-discounts.js";
+import { DeliveryNoteDiscountPartsReader } from "../../domain/ports/delivery-note-discount-parts.reader.js";
 import { DeliveryNoteDiscountWriter } from "../../domain/ports/delivery-note-discount.writer.js";
 import type { DeliveryNoteDiscountPart } from "../../domain/services/delivery-note-discount-parts.js";
+import type { NoteDiscountPartView } from "../../domain/services/delivery-note-sheet.js";
 import { DeliveryNoteDepartureRecorder } from "../services/delivery-note-departure-recorder.js";
 
 /** Les remises figées d'une commande, par identifiant ; vide si on n'en dit rien. */
@@ -41,4 +43,21 @@ export function departureRecorderOf(
   writer: DeliveryNoteDiscountWriter = new RecordingNoteDiscounts(),
 ): DeliveryNoteDepartureRecorder {
   return new DeliveryNoteDepartureRecorder(discounts, writer);
+}
+
+/** Les parts par remise des bons, par identifiant de bon ; aucune si on n'en dit rien. */
+export class FixedNoteDiscountParts extends DeliveryNoteDiscountPartsReader {
+  constructor(
+    private readonly byNote: ReadonlyMap<string, readonly NoteDiscountPartView[]> = new Map(),
+  ) {
+    super();
+  }
+
+  partsOf(
+    noteIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly NoteDiscountPartView[]>> {
+    return Promise.resolve(
+      new Map([...this.byNote].filter(([noteId]) => noteIds.includes(noteId))),
+    );
+  }
 }

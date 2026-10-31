@@ -52,7 +52,8 @@ export class GetClientNotePdfHandler implements IQueryHandler<
     if (state === undefined) {
       throw new DeliveryNoteNotFoundError(query.orderId, "remis");
     }
-    const note = clientNoteOf(state, head, billing);
+    const parts = await this.documents.partsOf([state.id]);
+    const note = clientNoteOf(state, head, billing, parts.get(state.id));
     const bytes = await renderClientNotePdf(note, await this.documents.art());
     return { bytes, fileName: deliveryNotePdfFileName(note) };
   }

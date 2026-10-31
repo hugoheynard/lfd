@@ -19,6 +19,7 @@ export class ListOrderDeliveryNotesHandler implements IQueryHandler<
   async execute(query: ListOrderDeliveryNotesQuery): Promise<readonly StaffNote[]> {
     const { head, billing } = await this.documents.order(query.orderId);
     const notes = await this.documents.listFor(query.orderId);
-    return notes.map((note) => staffNoteOf(note, head, billing));
+    const parts = await this.documents.partsOf(notes.map((note) => note.id));
+    return notes.map((note) => staffNoteOf(note, head, billing, parts.get(note.id)));
   }
 }

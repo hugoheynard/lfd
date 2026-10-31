@@ -4,7 +4,11 @@ import type { Prisma } from "../../../platform/database/client/client.js";
 import { FIRST_SHIPMENT_RANK } from "../../../production/channels/commerce/index.js";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import type { ShortfallDecision } from "../domain/entities/shortfall-decision.js";
-import { ACTIVE_ORDER_DISCOUNTS_SELECT, basketDiscountsOfRow } from "./order-discounts.columns.js";
+import {
+  ACTIVE_ORDER_DISCOUNTS_SELECT,
+  basketDiscountsOfRow,
+  DISCOUNT_COVERAGE_LINES_SELECT,
+} from "./order-discounts.columns.js";
 import { settlementRegimeOf } from "../domain/services/settlement-regime.js";
 import {
   ShortfallDecisionRepository,
@@ -27,6 +31,7 @@ const SUBJECT_SELECT = {
   discountPromotionId: true,
   discountAdjustment: true,
   discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
+  lines: DISCOUNT_COVERAGE_LINES_SELECT,
   deliveryFeeCents: true,
   deliveryFeeAdjustment: true,
   lateFeeCents: true,

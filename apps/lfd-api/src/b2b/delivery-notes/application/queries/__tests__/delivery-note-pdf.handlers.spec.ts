@@ -23,6 +23,7 @@ import { GetClientNotePdfHandler } from "../get-client-note-pdf.handler.js";
 import { GetClientNotePdfQuery } from "../get-client-note-pdf.query.js";
 import { ListOrderDeliveryNotesHandler } from "../list-order-delivery-notes.handler.js";
 import { ListOrderDeliveryNotesQuery } from "../list-order-delivery-notes.query.js";
+import { FixedNoteDiscountParts } from "../../__tests__/departure-doubles.js";
 
 const COMPANY = "co_1";
 const BUYER = "user_buyer";
@@ -75,6 +76,7 @@ function documents(notes: readonly DeliveryNoteState[], order: OwnedOrder | null
     new OneOrderReader(order),
     new FixedNotes(notes),
     new FixedLogo(),
+    new FixedNoteDiscountParts(),
   );
 }
 
@@ -131,7 +133,12 @@ describe("GetCarrierNotePdfHandler — le BL de transport pour l'équipe", () =>
   it("refuse une commande inconnue avant de lire ses BL", async () => {
     const notes = new FixedNotes([handedOverNote()]);
     const handler = new GetCarrierNotePdfHandler(
-      new DeliveryNoteDocuments(new OneOrderReader(null), notes, new FixedLogo()),
+      new DeliveryNoteDocuments(
+        new OneOrderReader(null),
+        notes,
+        new FixedLogo(),
+        new FixedNoteDiscountParts(),
+      ),
     );
 
     await expect(

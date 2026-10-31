@@ -25,7 +25,8 @@ export class GetAdminClientNotePdfHandler implements IQueryHandler<
   async execute(query: GetAdminClientNotePdfQuery): Promise<DeliveryNotePdf> {
     const { head, billing } = await this.documents.order(query.orderId);
     const state = await this.documents.note(query.orderId, query.noteNumber);
-    const note = clientNoteOf(state, head, billing);
+    const parts = await this.documents.partsOf([state.id]);
+    const note = clientNoteOf(state, head, billing, parts.get(state.id));
     const bytes = await renderClientNotePdf(note, await this.documents.art());
     return { bytes, fileName: deliveryNotePdfFileName(note) };
   }

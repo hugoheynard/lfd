@@ -4,6 +4,7 @@ import type {
   ClientNote,
   ClientNoteLine,
   SheetCustomer,
+  SheetDiscountLine,
   SheetFulfillment,
   SheetMoney,
   SheetVariant,
@@ -57,6 +58,35 @@ export interface DeliveryNoteOrderBilling {
     SheetMoney,
     "discountAdjustment" | "currency" | "settlement" | "pickupDiscountBase"
   >;
+}
+
+/** La part d'une remise sur ce bon, avec le libellé figé de la remise (`null` sans libellé). */
+export interface NoteDiscountPartView {
+  readonly label: string | null;
+  readonly amountCents: number;
+  readonly amountTtcCents: number | null;
+}
+
+/** Le libellé d'une remise sans libellé figé (plan des promotions, § 18.4). */
+export const DISCOUNT_FALLBACK_LABEL = "Remise";
+
+/**
+ * Les lignes de remise du bon, une par part (`delivery_note_discounts`, dans
+ * l'ordre des rangs) — seulement s'il en porte PLUSIEURS : une seule remise
+ * garde la ligne d'hier, son libellé de point et d'assiette compris.
+ */
+function discountLinesOf(
+  parts: readonly NoteDiscountPartView[],
+): Pick<SheetMoney, "discountLines"> {
+  if (parts.length < 2) {
+    return {};
+  }
+  const discountLines: SheetDiscountLine[] = parts.map((part) => ({
+    label: part.label ?? DISCOUNT_FALLBACK_LABEL,
+    cents: part.amountCents,
+    ttcCents: part.amountTtcCents,
+  }));
+  return { discountLines };
 }
 
 /** L'instant du dernier pas du BL — pas celui du rendu. */
@@ -134,14 +164,22 @@ export function vatSharesOf(frozen: FrozenJson | null): readonly VatShareView[] 
  *
  * @throws {DeliveryNoteWithoutTermsError} le BL est antérieur à E4a et n'a pas encore son en-tête.
  */
-function moneyOf(note: DeliveryNoteState, billing: DeliveryNoteOrderBilling): SheetMoney {
+function moneyOf(
+  note: DeliveryNoteState,
+  billing: DeliveryNoteOrderBilling,
+  parts: readonly NoteDiscountPartView[],
+): SheetMoney {
   if (note.terms === null) {
     throw new DeliveryNoteWithoutTermsError(note.number);
   }
-  return moneyFrom(note.terms, billing);
+  return moneyFrom(note.terms, billing, parts);
 }
 
-function moneyFrom(terms: DeliveryNoteTerms, billing: DeliveryNoteOrderBilling): SheetMoney {
+function moneyFrom(
+  terms: DeliveryNoteTerms,
+  billing: DeliveryNoteOrderBilling,
+  parts: readonly NoteDiscountPartView[],
+): SheetMoney {
   const { pickupDiscountBase, ...meta } = billing.money;
   return {
     subtotalCents: terms.subtotalCents,
@@ -154,6 +192,7 @@ function moneyFrom(terms: DeliveryNoteTerms, billing: DeliveryNoteOrderBilling):
     totalCents: terms.totalCents,
     ...meta,
     ...(pickupDiscountBase === undefined ? {} : { pickupDiscountBase }),
+    ...discountLinesOf(parts),
     // Les TTC du BL lui-même — recomposés sur le livré (plan du centime, § 5).
     ...(terms.ttcTerms === null ? {} : ttcFieldsOf(terms.ttcTerms)),
   };
@@ -188,6 +227,7 @@ function pricedShapeOf(
 
 /**
  * Le BL **client** : chiffré, pro (HT) ou public (TTC) comme le bon de commande.
+ * `parts` : ses parts par remise, figées au départ (vide = la ligne d'hier).
  *
  * @throws {DeliveryNoteWithoutTermsError} le BL n'a pas encore son en-tête.
  */
@@ -195,10 +235,11 @@ export function clientNoteOf(
   note: DeliveryNoteState,
   head: DeliveryNoteOrderHead,
   billing: DeliveryNoteOrderBilling,
+  parts: readonly NoteDiscountPartView[] = [],
 ): ClientNote {
   return {
     ...pricedShapeOf(note, head, billing),
-    money: moneyOf(note, billing),
+    money: moneyOf(note, billing, parts),
     audience: "client",
   };
 }
@@ -212,10 +253,11 @@ export function staffNoteOf(
   note: DeliveryNoteState,
   head: DeliveryNoteOrderHead,
   billing: DeliveryNoteOrderBilling,
+  parts: readonly NoteDiscountPartView[] = [],
 ): StaffNote {
   return {
     ...pricedShapeOf(note, head, billing),
-    money: note.terms === null ? null : moneyFrom(note.terms, billing),
+    money: note.terms === null ? null : moneyFrom(note.terms, billing, parts),
     audience: "staff",
     status: note.status,
     plannedAt: note.plannedAt.toISOString(),

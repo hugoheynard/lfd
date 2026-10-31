@@ -2391,6 +2391,39 @@ lignes de commande reçoivent leur identifiant de l'`IdGenerator` (la
 couverture doit les citer dans la même transaction) ; la décision « parts
 d'une `frozen` tirées des seules lignes éligibles » est appliquée à la reprise.
 
+**M4 bâti le 2026-10-31 (`c3f1bb9cf`, complété ensuite, non commité à
+l'écriture de cette ligne)** — le repli UNIQUE `frozenBasketDiscountsOf`
+(`apps/lfd-api/src/b2b/orders/domain/services/frozen-basket-discounts.ts`) : la table si la commande y a des
+remises actives, sinon les colonnes comme une remise de rang 1. L9, la
+décision d'un départ incomplet, les manquants, le bon partiel (`line_ht` par
+`chainLineHtBasketDiscounts`, `exact_ht` par la liste de `composeExactOrder`)
+et le reliquat (les % restent, les fixes sortent) passent tous par lui. Au
+départ d'un bon (`handed_over`), ses parts par remise s'écrivent dans
+`delivery_note_discounts` (`apps/lfd-api/src/b2b/delivery-notes/application/services/delivery-note-departure-recorder.ts`) ;
+une commande non reprise n'en a pas, la reprise les écrira. Le papier du bon
+porte une ligne par remise s'il en a plusieurs (libellé figé fr, repli
+« Remise ») ; une seule remise rend le bon d'aujourd'hui au caractère près.
+`prisma/clone-dev.ts` recopie `order_discounts` et `order_line_discounts`
+(pas `delivery_note_discounts` : les bons ne sont pas recopiés). Écarts au
+texte, faits au bâti :
+
+- **la reprise n'écrit une part que pour un bon PARTI** (décision du
+  2026-10-31) : un bon prévu peut être réécrit par une révision, qui archive
+  la remise que sa part citerait ; c'était une part orpheline ;
+- **la couverture d'une remise sur un bon se lit par SKU** — un bon ne garde
+  pas l'identifiant de la ligne de commande. C'est juste si toutes les lignes
+  d'un même SKU sont couvertes ensemble ; une garde de domaine
+  (`SplitSkuCoverageError`) refuse le cas contraire au lieu de recomposer un
+  bon faux. **Condition de M7** : avant de lever le refus, s'assurer qu'une
+  promotion ne peut pas couvrir une ligne d'un SKU et pas une autre du même ;
+- le contrôle des termes (`delivery-note-terms-control.ts`) n'a pas changé :
+  il compare le total et l'éligibilité par ligne, qui restent écrits ;
+- un bon dont les remises rejouées ne redonnent pas l'en-tête n'a pas de part
+  (journalisé) ; sa remise reste lisible dans ses colonnes ;
+- `SheetMoney.discountLines` (contrat, additif) porte les lignes de remise ;
+  le pavé de totaux partagé (`order-sheet-pdf-totals.ts`) les lit — le bon de
+  commande ne les remplit pas encore (M6).
+
 Chaque lecteur de la remise unique est inscrit dans un lot (fichiers ouverts
 le 2026-10-30). Un lecteur de `discount_adjustment` / `discount_promotion_id`
 / `discount_label` doit être basculé **avant M7**, seul lot qui peut les

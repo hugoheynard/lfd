@@ -1,5 +1,7 @@
 import type { CartAdjustment } from "@lfd/contracts";
 
+import { SplitSkuCoverageError } from "../errors/basket-discount-errors.js";
+
 /**
  * **Les remises de panier figées d'une commande, telles que ses lecteurs les
  * voient** — plan
@@ -91,4 +93,35 @@ export function coveredLinesOf(
   return lines.flatMap((line, index) =>
     (skus === null ? line.pickupDiscountEligible : skus.has(line.sku)) ? [index] : [],
   );
+}
+
+/** Une ligne de commande vue par la couverture : son identifiant et son SKU. */
+export interface IdentifiedSkuLine {
+  readonly id: string;
+  readonly sku: string;
+}
+
+/**
+ * Les SKU qu'une remise couvre, depuis ses couvertures par ligne
+ * (`order_line_discounts`) — la forme que lit un bon.
+ *
+ * @throws {SplitSkuCoverageError} deux lignes d'un même SKU couvertes
+ *   différemment : la couverture par SKU serait fausse (condition de M7).
+ */
+export function coveredSkusOf(
+  orderId: string,
+  lines: readonly IdentifiedSkuLine[],
+  coveredLineIds: readonly string[],
+): readonly string[] {
+  const covered = new Set(coveredLineIds);
+  const bySku = new Map<string, boolean>();
+  for (const line of lines) {
+    const isCovered = covered.has(line.id);
+    const seen = bySku.get(line.sku);
+    if (seen !== undefined && seen !== isCovered) {
+      throw new SplitSkuCoverageError(orderId, line.sku);
+    }
+    bySku.set(line.sku, isCovered);
+  }
+  return [...bySku].flatMap(([sku, isCovered]) => (isCovered ? [sku] : []));
 }

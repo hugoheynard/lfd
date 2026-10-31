@@ -2087,6 +2087,7 @@ export type {
   SheetContact,
   SheetCustomer,
   SheetFulfillment,
+  SheetDiscountLine,
   SheetMoney,
   SheetVariant,
   AtelierSheetLine,

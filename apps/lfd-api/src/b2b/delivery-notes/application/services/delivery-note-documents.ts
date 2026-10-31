@@ -9,10 +9,12 @@ import { clientSheetOf } from "../../../orders/domain/services/order-sheet.js";
 import type { DeliveryNoteState } from "../../domain/entities/delivery-note.js";
 import { DeliveryNoteNotFoundError } from "../../domain/errors/delivery-note-errors.js";
 import { DeliveryNoteReader } from "../../domain/ports/delivery-note.reader.js";
+import { DeliveryNoteDiscountPartsReader } from "../../domain/ports/delivery-note-discount-parts.reader.js";
 import type { DeliveryNoteArt } from "../../domain/services/delivery-note-pdf-parts.js";
 import type {
   DeliveryNoteOrderBilling,
   DeliveryNoteOrderHead,
+  NoteDiscountPartView,
 } from "../../domain/services/delivery-note-sheet.js";
 
 /** Un BL rendu, et le nom proposé au téléchargement. */
@@ -60,7 +62,15 @@ export class DeliveryNoteDocuments {
     private readonly orders: OrderReader,
     private readonly notes: DeliveryNoteReader,
     private readonly logo: BrandLogoSource,
+    private readonly discountParts: DeliveryNoteDiscountPartsReader,
   ) {}
+
+  /** Les parts par remise de ces bons, pour leur papier (plan des promotions, M4). */
+  partsOf(
+    noteIds: readonly string[],
+  ): Promise<ReadonlyMap<string, readonly NoteDiscountPartView[]>> {
+    return this.discountParts.partsOf(noteIds);
+  }
 
   /** @throws {OrderNotFoundError} la commande n'existe pas. */
   async order(orderId: string): Promise<DeliveryNoteOnOrder> {

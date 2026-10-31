@@ -33,3 +33,20 @@ export class AmbiguousBasketDiscountsError extends TechnicalError {
     );
   }
 }
+
+/**
+ * **Une remise qui couvre une ligne d'un SKU et pas une autre du même SKU**
+ * (plan des promotions, § 18.6, condition de M7). Un bon ne garde pas
+ * l'identifiant de la ligne de commande : la couverture d'une remise y est
+ * rapportée par SKU, ce qui n'est juste que si toutes les lignes d'un SKU sont
+ * couvertes ensemble. Plutôt que de recomposer un bon faux, on refuse.
+ */
+export class SplitSkuCoverageError extends TechnicalError {
+  constructor(orderId: string, sku: string) {
+    super(
+      "orders.basket_discounts.split_sku_coverage",
+      `La commande ${orderId} a deux lignes « ${sku} » couvertes différemment par une même remise de panier : ` +
+        "son bon de livraison ne peut pas être recomposé. Prévenir l'équipe technique.",
+    );
+  }
+}

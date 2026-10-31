@@ -1,7 +1,9 @@
 import type { CartAdjustment } from "@lfd/contracts";
 
+import { SplitSkuCoverageError } from "../../errors/basket-discount-errors.js";
 import {
   coveredLinesOf,
+  coveredSkusOf,
   frozenBasketDiscountsOf,
   type FrozenBasketDiscount,
 } from "../frozen-basket-discounts.js";
@@ -63,5 +65,23 @@ describe("coveredLinesOf — ce que couvre une remise, ligne par ligne", () => {
   it("lue en table : ses SKU, toutes les lignes de chacun, éligibilité d'hier ignorée", () => {
     expect(coveredLinesOf(tableDiscount("od_1", TEN, ["JUS"]), lines)).toEqual([1]);
     expect(coveredLinesOf(tableDiscount("od_2", TEN, ["PAIN"]), lines)).toEqual([0, 2]);
+  });
+});
+
+describe("coveredSkusOf — la couverture par SKU est sûre, pas supposée (condition de M7)", () => {
+  const lines = [
+    { id: "l1", sku: "PAIN" },
+    { id: "l2", sku: "JUS" },
+    { id: "l3", sku: "PAIN" },
+  ];
+
+  it("rend les SKU dont toutes les lignes sont couvertes", () => {
+    expect(coveredSkusOf("o_1", lines, ["l1", "l3"])).toEqual(["PAIN"]);
+    expect(coveredSkusOf("o_1", lines, [])).toEqual([]);
+  });
+
+  it("refuse deux lignes d'un même SKU couvertes différemment, en nommant le SKU", () => {
+    expect(() => coveredSkusOf("o_1", lines, ["l1"])).toThrow(SplitSkuCoverageError);
+    expect(() => coveredSkusOf("o_1", lines, ["l1"])).toThrow("« PAIN »");
   });
 });

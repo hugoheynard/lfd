@@ -3,7 +3,11 @@ import { Injectable } from "@nestjs/common";
 import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { OrderBasketDiscountsReader } from "../domain/ports/order-basket-discounts.reader.js";
 import type { FrozenBasketDiscount } from "../domain/services/frozen-basket-discounts.js";
-import { ACTIVE_ORDER_DISCOUNTS_SELECT, basketDiscountsOfRow } from "./order-discounts.columns.js";
+import {
+  ACTIVE_ORDER_DISCOUNTS_SELECT,
+  basketDiscountsOfRow,
+  DISCOUNT_COVERAGE_LINES_SELECT,
+} from "./order-discounts.columns.js";
 
 /** Les remises figées d'une commande, par le client routé (transaction de l'appelant). */
 @Injectable()
@@ -20,6 +24,7 @@ export class PrismaOrderBasketDiscountsReader extends OrderBasketDiscountsReader
         discountPromotionId: true,
         discountAdjustment: true,
         discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
+        lines: DISCOUNT_COVERAGE_LINES_SELECT,
       },
     });
     return row === null ? [] : basketDiscountsOfRow(orderId, row);

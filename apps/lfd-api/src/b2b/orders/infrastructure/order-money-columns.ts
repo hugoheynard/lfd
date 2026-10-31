@@ -18,6 +18,7 @@ import type {
 import {
   ACTIVE_ORDER_DISCOUNTS_SELECT,
   basketDiscountsOfRow,
+  DISCOUNT_COVERAGE_LINES_SELECT,
   type BasketDiscountColumnsRow,
 } from "./order-discounts.columns.js";
 import { asOrderVatMethod, type OrderVatMethod } from "../domain/value-objects/order-vat-method.js";
@@ -39,6 +40,7 @@ export const FROZEN_ADJUSTMENT_SELECT = {
   discountPromotionId: true,
   discountAdjustment: true,
   discounts: ACTIVE_ORDER_DISCOUNTS_SELECT,
+  lines: DISCOUNT_COVERAGE_LINES_SELECT,
   deliveryFeeAdjustment: true,
   lateFeeAdjustment: true,
   deliveryVatMode: true,
