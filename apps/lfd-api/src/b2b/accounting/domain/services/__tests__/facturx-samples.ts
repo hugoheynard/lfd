@@ -162,6 +162,51 @@ function perOrderCycle(): Invoice {
   return invoiceFromDossier({ ...issue, computed });
 }
 
+/**
+ * Deux promotions de panier cumulées sur deux taux (plan
+ * `plan-promotions-par-audience-et-acheminement.md`, § 18.4, lot M5) : une
+ * remise de document par promotion ET par taux, libellé figé en motif. Le
+ * second bon n'a qu'une remise et porte un port qui suit la marchandise.
+ */
+function cumulatedBasketPromotions(): Invoice {
+  const computed = simulateInvoiceDossier([
+    {
+      ...frozenBon({
+        reference: "ORD-C1",
+        lines: [goodsLine("PAIN", 5.5, 1_000), goodsLine("JUS", 20, 500)],
+        pickupDiscountCents: 195,
+      }),
+      basketDiscounts: [
+        {
+          promotionId: "promo_retrait",
+          label: "Retrait -10 %",
+          parts: [
+            { rate: 5.5, amountCents: 100 },
+            { rate: 20, amountCents: 50 },
+          ],
+        },
+        {
+          promotionId: "promo_pain",
+          label: "Fidélité pain",
+          parts: [{ rate: 5.5, amountCents: 45 }],
+        },
+      ],
+    },
+    {
+      ...frozenBon({
+        reference: "ORD-C2",
+        lines: [goodsLine("PAIN", 5.5, 2_333), goodsLine("FLAN", 10, 499)],
+        pickupDiscountCents: 283,
+        deliveryFeeCents: 333,
+        deliveryVatMode: "follows_goods",
+      }),
+      basketDiscounts: [{ promotionId: "promo_retrait", label: "Retrait -10 %", parts: null }],
+    },
+  ]).invoice;
+  const { lines: _lines, vat: _vat, ...issue } = realisticInput({ id: "inv_cumulated" });
+  return invoiceFromDossier({ ...issue, computed });
+}
+
 /** 12,34567 € HT le kilo : un prix au millicentime, que trente arrondis écartent. */
 const GRAVLAX_PER_KILO = 1_234_567;
 
@@ -203,5 +248,6 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "quantites-au-kilo", invoice: weighed() },
     { name: "remises-bon-par-bon", invoice: perOrderCycle() },
     { name: "dossier-au-poids", invoice: weighedDossier() },
+    { name: "promotions-cumulees-deux-taux", invoice: cumulatedBasketPromotions() },
   ];
 }
