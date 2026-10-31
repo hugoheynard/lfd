@@ -197,3 +197,37 @@ Sérieux, intégrés :
 Questions 4 et 5, tranchées par défaut (cohérent avec les suggestions) : une
 plage **ne passe pas minuit** (deux plages) ; **jours fériés et fermetures
 ignorés** pour l'instant.
+
+## 9. La faille de la révision, et la règle juste (Hugo, 2026-10-31)
+
+Le § 8.1 ouvrait une faille : une baguette commandée à 17 h 30 dans la plage,
+puis cinquante ajoutées à 22 h, recevaient toutes le −50 %. L'heure limite de
+commande borne la révision, pas le principe. **Le § 8.1 est remplacé** :
+
+> La remise d'une promotion à heures est **acquise pour ce qui a été commandé
+> dans la plage, et pour cela seulement.**
+
+- **À la passation**, la commande retient, par ligne (SKU) et par promotion à
+  heures appliquée, la **quantité couverte** (pièces, ou grammes au poids).
+- **À la révision**, chaque promotion à heures s'applique à au plus
+  `min(quantité couverte, quantité de la ligne révisée)` ; le surplus — ligne
+  ajoutée, quantité augmentée — se juge à l'instant de la révision, comme une
+  commande neuve. Une quantité baissée fait baisser la couverture : on ne
+  garde jamais plus que ce qui reste commandé, et une couverture baissée ne
+  remonte pas.
+- **Exemple** : 2 baguettes à 17 h 30 (−50 %), puis +3 à 20 h → 2 à −50 %,
+  3 au prix plein. Puis −4 à 20 h 30 → 1 baguette, à −50 %.
+- **Où ça vit** : la couverture est figée avec les remises de la commande
+  (`order_discounts` porte déjà une remise par promotion ; la couverture par
+  SKU est une table fille ou un `jsonb` de cette ligne — à trancher par
+  vitruve), écrite à la passation et réduite à la révision, jamais accrue.
+- **Calcul** : au point **panier**, l'assiette d'une remise à heures en
+  révision est la somme, par ligne, de `min(couverte, révisée) × prix net
+unitaire de la ligne` ; le reste de la ligne entre dans l'assiette des
+  promotions jugées à `now`. Au point **ligne** (dans le prix affiché), la
+  ligne se scinde en deux prix — couverte au prix remisé, surplus au prix du
+  moment — ce qui demande deux lignes de commande ou une ligne à deux prix :
+  **à trancher par vitruve** (la forme Factur-X d'une ligne est quantité ×
+  prix net unique).
+- **`handover_at`** : la couverture ne s'applique pas (l'instant est le
+  créneau, pas la passation) ; changer de créneau reste jugé par L9 (§ 8.2).
