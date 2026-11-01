@@ -649,6 +649,14 @@ export const staffResourceSchema = z.enum([
   // ── `ops.` — L'EXPLOITATION ─────────────────────────────────────────────
   /** La carte de santé de l'écosystème : topologie, trafic. Staff only. */
   "ops_health",
+  /**
+   * **Les opérations après déploiement** — les reprises de données qu'un
+   * déploiement laisse à faire (`documentation/ops/plan-operations-apres-deploiement.md`).
+   * `read` : voir la liste et SIMULER ; `write` : APPLIQUER, c'est-à-dire
+   * écrire en production. Aucune migration ne l'accorde : il se règle à
+   * l'écran, avant le déploiement qui en a besoin (§ 7.9).
+   */
+  "ops_post_deploy",
 
   // ── SANS PRÉFIXE — l'exception, et elle est écrite ──────────────────────
   /**
@@ -821,6 +829,7 @@ export const STAFF_RESOURCE_LABELS: Readonly<Record<StaffResource, string>> = {
   staff_access: "Équipe et accès",
   staff_notifications: "Notifications internes",
   ops_health: "Santé de l'écosystème",
+  ops_post_deploy: "Opérations après déploiement",
   activity: "Journal d'activité",
 };
 
@@ -997,6 +1006,9 @@ export const ROLE_GRANTS: Readonly<Record<StaffRole, RoleGrants>> = {
     staff_access: "write",
     staff_notifications: "write",
     ops_health: "write",
+    // Graine seulement (dev, e2e) : en production, accordée à l'écran
+    // (plan des opérations après déploiement, § 7.9).
+    ops_post_deploy: "write",
     // `write` alors qu'aucune route ne le vérifiera jamais — le journal est
     // append-only, alimenté par les handlers. C'est le prix de l'invariant qui
     // compte le plus : `admin` couvre TOUT, sans trou. Un `read` ici ferait de

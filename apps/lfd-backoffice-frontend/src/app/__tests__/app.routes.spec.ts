@@ -158,6 +158,7 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   // la régler. Le jour où l'un s'ouvre à quelqu'un, l'autre n'a aucune raison
   // de suivre — et un écran qui expose la topologie interne mérite sa décision.
   sante: 'ops_health:read',
+  'sante/apres-deploiement': 'ops_post_deploy:read',
 
   // Les Réglages vidés le 2026-10-10 : la facturation est une page de la
   // Documentation, les réglages commerciaux une vue de l'Exploitation.

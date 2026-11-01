@@ -2476,6 +2476,15 @@
       "conservation": "aucune-limite-decidee",
       "purge": null,
       "information": false
+    },
+    {
+      "colonne": "ops.post_deploy_runs.simulated_by",
+      "personne": "staff",
+      "categorie": "auteur-geste",
+      "finalite": "Tracer quel membre du staff a simulé puis appliqué une reprise de données après déploiement : seule la personne qui a simulé peut appliquer (`documentation/ops/plan-operations-apres-deploiement.md`, § 3.6).",
+      "conservation": "aucune-limite-decidee",
+      "purge": null,
+      "information": false
     }
   ],
   "exclusions": [

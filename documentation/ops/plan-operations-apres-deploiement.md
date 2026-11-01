@@ -4,6 +4,8 @@
 > déploiement part avec). Touche une **frontière de sécurité** (qui écrit en
 > production), une **reprise de données** et le **runbook** : `vitruve` avant
 > le bâti.
+>
+> 🟦 **Bâti le 2026-11-01** (API, écran `/sante/apres-deploiement` et bandeau), sur dev ; pas encore en production.
 
 ## 1. Pourquoi (Hugo, 2026-11-01)
 
@@ -110,8 +112,11 @@ Plus d'URL de production sur le poste pour une reprise.
 3. **Une machine d'états** dans `ops.post_deploy_runs` : `simulated` →
    `running` → `succeeded` | `failed` | `interrupted`. L'application avance
    **par lots**, chaque lot dans sa transaction, l'avancement écrit après
-   chaque lot. Au démarrage, une image passe à `interrupted` toute ligne
-   `running` d'une autre révision. Relancer est permis (chaque ligne est
+   chaque lot. Au démarrage, l'image passe à `interrupted` **toute** ligne
+   `running`, quelle que soit sa révision (révisé le 2026-11-01 : le
+   conteneur tourne avec `max_instances: 1`, une ligne `running` au
+   démarrage est donc orpheline, et un crash sur la même image ne doit pas
+   bloquer l'opération). Relancer est permis (chaque ligne est
    idempotente) après une nouvelle simulation sur la révision courante.
 4. **Pas de verrou consultatif** (le pooler change de connexion) : l'unicité
    d'une application en cours est un **index unique partiel**

@@ -451,6 +451,18 @@ export const routes: Routes = [
     loadComponent: () => import('./ops/sante-page/sante-page').then((m) => m.SantePage),
   },
   {
+    // Les opérations après déploiement (plan-operations-apres-deploiement.md) :
+    // SOUS la carte de santé, pour que l'entrée OPS du menu reste allumée.
+    // Son propre droit : simuler et appliquer n'est pas regarder la flotte.
+    path: 'sante/apres-deploiement',
+    canActivate: [permissionGuard('ops_post_deploy:read')],
+    title: 'Après déploiement — LFC B2B admin',
+    loadComponent: () =>
+      import('./ops/apres-deploiement-page/apres-deploiement-page').then(
+        (m) => m.ApresDeploiementPage,
+      ),
+  },
+  {
     // 🔴 **Premier niveau, et ce n'est pas un choix d'arborescence.** Ce chemin
     // est une VALEUR : `production-paper.service.ts` l'encode dans le QR de
     // chaque feuille d'atelier, et ces feuilles sont imprimées, en circulation,

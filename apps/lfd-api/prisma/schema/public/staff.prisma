@@ -219,6 +219,10 @@ enum StaffResource {
   staff_notifications
 
   ops_health
+  /// LES OPÉRATIONS APRÈS DÉPLOIEMENT — simuler (lecture), appliquer
+  /// (écriture) une reprise de données (2026-11-01,
+  /// `documentation/ops/plan-operations-apres-deploiement.md`). Accordée à l'écran.
+  ops_post_deploy
 
   activity
 

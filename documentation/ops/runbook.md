@@ -59,6 +59,52 @@ La migration passe par le secret **`DATABASE_LFD_PROD_DIRECT_URL`** (URL
 directe), pas par celui du container ; absent, elle échoue en le nommant — cf.
 [`base-de-production.md`](base-de-production.md).
 
+## Après un déploiement vert : les opérations après déploiement
+
+Une reprise de données qu'un déploiement laisse à faire ne se lance plus du
+poste, avec l'URL de production dans l'environnement : elle se **simule** puis
+s'**applique** depuis le back-office
+([`plan-operations-apres-deploiement.md`](plan-operations-apres-deploiement.md)).
+
+**Le premier jour — avant le déploiement qui en a besoin** (§ 7.9) : accorder
+`ops_post_deploy` à l'écran (`/admin/staff-roles`) à qui fera le geste.
+Aucune migration ne l'accorde (`lint:no-role-grants-in-migrations`) ; sans lui,
+la liste et les gestes rendent `403`. Lecture = voir et simuler ; écriture =
+appliquer.
+
+**Après chaque déploiement vert :**
+
+1. **Sauvegarder la base** : une reprise n'a pas de retour arrière automatique.
+2. Ouvrir « Après déploiement » et lire la liste — `GET /admin/ops/post-deploy`.
+   `anyToDo: false` ⇒ rien à faire, on s'arrête là.
+3. Pour chaque opération **à faire**, **dans l'ordre de la liste** (les
+   politiques des mercuriales avant les remises des commandes, § 7.1) :
+   « Simuler » (`POST …/:key/simulate`), lire le compte, l'échantillon et la
+   limite, cocher « j'ai lu », « Appliquer » (`POST …/:key/apply`).
+4. Relire l'état jusqu'à `succeeded` (`GET …/runs/:runId`) ; l'avancement est
+   réécrit après chaque lot.
+5. Relire la liste : l'opération appliquée doit être « rien à faire ». Les cas
+   « à trancher à la main » restent listés, sans la tenir ouverte.
+
+**Les refus, et le geste de sortie** — tous en `409` :
+
+- « Simulez d'abord » : pas de simulation à son nom, simulation déjà
+  appliquée, faite par une autre image, ou de plus de 15 minutes ⇒ simuler de
+  nouveau ;
+- « déjà en cours » : une application de la même opération tourne ⇒ attendre
+  son issue ;
+- « ne s'applique qu'après … » : l'opération précédente est encore à faire.
+
+**Si l'application échoue ou est interrompue** (`failed`, ou `interrupted`
+quand le processus s'est arrêté avant la fin — tout redémarrage, même sur
+la même image, balaie les lignes `running`) : ce qui a été écrit lot par lot reste écrit, chaque ligne est
+rejouable. Lire `failure`, simuler de nouveau sur la révision courante, puis
+appliquer.
+
+⚠️ **État au 2026-11-01** : les routes sont livrées ; l'écran « Après
+déploiement » et le bandeau du back-office viennent au lot front suivant.
+D'ici là, les routes s'appellent directement, ou les scripts `backfill:*` servent de secours (`--production <nom de la base>` retapé).
+
 ## Après avoir changé une variable GitHub
 
 Rien ne se déclenche : les variables ne sont lues qu'au build.

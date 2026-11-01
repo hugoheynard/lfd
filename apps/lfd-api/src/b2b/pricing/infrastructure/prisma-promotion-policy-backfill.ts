@@ -12,13 +12,18 @@ import {
 } from "../domain/services/promotion-policy-backfill.js";
 import { promotionPolicyFromRow } from "./mercuriale-rows.js";
 
-/** L'acteur du journal tarifaire pour cette reprise. */
-const ACTOR = "system:reprise-politique-promotions";
+/**
+ * L'acteur du journal tarifaire quand la reprise tourne en ligne de commande.
+ * Depuis le back-office, c'est la fiche staff qui clique (plan des opérations
+ * après déploiement, § 7.5).
+ */
+export const SCRIPT_ACTOR = "system:reprise-politique-promotions";
 
 /**
  * **La reprise des politiques de promotions, en base** — lue et écrite par
  * le script `prisma/backfill-mercuriale-promotion-policies.ts`
- * (`plan-la-mercuriale-decide.md`, § 8). Le jugement est pur
+ * (`plan-la-mercuriale-decide.md`, § 8), et par l'opération après
+ * déploiement `MercurialePromotionPoliciesOperation`. Le jugement est pur
  * (`planPolicyBackfill`) ; ici, la lecture et l'écriture gardée.
  *
  * L'écriture ne passe que d'« Aucune » à « Au choix », et seulement si la
@@ -73,19 +78,25 @@ export class PrismaPromotionPolicyBackfill {
     return planPolicyBackfill(targets, stacked);
   }
 
-  /** Écrit une décision `set` ; rend `false` si la ligne a changé entre-temps. */
-  async apply(decision: PolicyBackfillDecision): Promise<boolean> {
+  /**
+   * Écrit une décision `set`, dans sa transaction — brouillon compris (§ 7.5) ;
+   * rend `false` si la ligne a changé entre-temps. `actor` est nommé dans le
+   * fait tarifaire d'une mercuriale.
+   */
+  async apply(decision: PolicyBackfillDecision, actor: string = SCRIPT_ACTOR): Promise<boolean> {
     if (decision.outcome !== "set") {
       return false;
     }
     const { target, policy } = decision;
     const data = { promotionMode: policy.mode, promotionIds: [...policy.promotionIds] };
     if (target.kind === "draft") {
-      const written = await this.prisma.mercurialeDraft.updateMany({
-        where: { companyId: target.id, promotionMode: "none" },
-        data,
+      return this.prisma.$transaction(async (tx) => {
+        const written = await tx.mercurialeDraft.updateMany({
+          where: { companyId: target.id, promotionMode: "none" },
+          data,
+        });
+        return written.count === 1;
       });
-      return written.count === 1;
     }
     return this.prisma.$transaction(async (tx) => {
       const written = await tx.companyMercuriale.updateMany({
@@ -101,7 +112,7 @@ export class PrismaPromotionPolicyBackfill {
           subjectType: "mercuriale",
           subjectId: target.id,
           act: "amended",
-          actor: ACTOR,
+          actor,
           occurredAt: this.clock.now(),
           reason: "Reprise : promotions cochées « aussi pour les tarifs négociés »",
           summary: `Reprise — ${describePolicyBackfill(decision)}`,

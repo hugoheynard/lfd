@@ -48,6 +48,7 @@ import { StaffAuth } from './auth/staff-auth';
 import { StaffLoginPage } from './auth/staff-login/staff-login';
 import { PushNotificationsService } from './shared/push/push-notifications.service';
 import { NewVersionBanner } from './shared/new-version-banner/new-version-banner';
+import { PostDeployBanner } from './shared/post-deploy-banner/post-deploy-banner';
 import { NotificationBell } from './shared/notifications/notification-bell/notification-bell';
 import { BRAND_PINK_TINT } from './shared/menu-tints';
 import { groupRailItems, WorkspaceRailStore } from './shared/workspace-rail/workspace-rail.store';
@@ -94,6 +95,7 @@ import { UserMenu } from './shared/user-menu/user-menu';
     FoldSurfaceDirective,
     FoldToastContainerComponent,
     NewVersionBanner,
+    PostDeployBanner,
     NotificationBell,
     StaffLoginPage,
   ],

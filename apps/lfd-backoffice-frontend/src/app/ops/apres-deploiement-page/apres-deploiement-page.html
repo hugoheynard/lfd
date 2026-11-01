@@ -1,0 +1,34 @@
+<fold-page-layout icon="ops" title="Après déploiement">
+  <fold-back-link pageEyebrow icon="arrow-back" label="Santé de l'écosystème" routerLink="/sante" />
+  <p description>
+    Les reprises de données que le dernier déploiement attend. Simulez d'abord : la simulation dit
+    ce qui serait écrit, sans rien écrire. Appliquez ensuite, après avoir sauvegardé la base.
+  </p>
+
+  <div class="stack">
+    @if (overview(); as board) {
+      <p class="revision" data-revision>Révision en service : {{ board.revision }}</p>
+      @for (operation of board.operations; track operation.key) {
+        <app-post-deploy-operation-card
+          [operation]="operation"
+          [titles]="titles()"
+          [canSimulate]="canSimulate()"
+          [canApply]="canApply()"
+          (finished)="load()"
+        />
+      } @empty {
+        <fold-empty-state
+          icon="check"
+          title="Aucune opération après déploiement"
+          subtitle="Ce déploiement n'attend aucune reprise de données."
+        />
+      }
+    } @else if (state() === 'error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les opérations après déploiement">
+        <button foldButton type="button" (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    } @else {
+      <fold-loading message="Simulation des opérations après déploiement…" />
+    }
+  </div>
+</fold-page-layout>

@@ -43,3 +43,13 @@ export type {
 } from "./capabilities.js";
 
 export type { PricingProbeReport, PricingProbeRow, PricingProbeState } from "./pricing.js";
+
+export type {
+  PostDeployApplyBody,
+  PostDeployOperationView,
+  PostDeployOverview,
+  PostDeployReportView,
+  PostDeployRunStarted,
+  PostDeployRunState,
+  PostDeployRunView,
+} from "./post-deploy.js";

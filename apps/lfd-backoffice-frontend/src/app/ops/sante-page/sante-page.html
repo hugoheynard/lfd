@@ -7,6 +7,10 @@
     </p>
   </div>
 
+  @if (canSeePostDeploy()) {
+    <a foldButton size="sm" emphasis="soft" [routerLink]="postDeployPath">Après déploiement</a>
+  }
+
   @if (health(); as board) {
     <p class="stamp">
       <!-- Le point de vie : il dit que l'écran se rafraîchit tout seul. Sans lui,

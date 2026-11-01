@@ -7,7 +7,8 @@ import {
   inject,
   signal,
 } from '@angular/core';
-import { FoldLoadingStateComponent } from 'fold-ng';
+import { RouterLink } from '@angular/router';
+import { FoldButtonComponent, FoldLoadingStateComponent } from 'fold-ng';
 import type {
   CapabilitiesReport,
   EcosystemHealth,
@@ -21,6 +22,8 @@ import { DeadLetters } from '../dead-letters/dead-letters';
 import { MediaThresholds } from '../media-thresholds/media-thresholds';
 import { PricingProbe } from '../pricing-probe/pricing-probe';
 import { EcosystemMap } from '../ecosystem-map/ecosystem-map';
+import { PermissionsStore } from '../../auth/permissions.store';
+import { POST_DEPLOY_PATH } from '../post-deploy-path';
 import { OpsService } from '../ops.service';
 import { elapsedSince } from '../elapsed';
 import { REASON_LABEL } from '../reason-label';
@@ -58,9 +61,11 @@ type LoadState = 'loading' | 'ready' | 'error';
     DeadLetters,
     DecimalPipe,
     EcosystemMap,
+    FoldButtonComponent,
     FoldLoadingStateComponent,
     MediaThresholds,
     PricingProbe,
+    RouterLink,
   ],
   templateUrl: './sante-page.html',
   styleUrl: './sante-page.scss',
@@ -79,6 +84,13 @@ export class SantePage {
     elapsedSince(since, Date.parse(this.health()?.generatedAt ?? since));
 
   private readonly ops = inject(OpsService);
+  private readonly permissions = inject(PermissionsStore);
+
+  /** « Après déploiement » vit sous la carte de santé, derrière son propre droit. */
+  protected readonly postDeployPath = POST_DEPLOY_PATH;
+  protected readonly canSeePostDeploy = computed(() =>
+    this.permissions.can('ops_post_deploy:read'),
+  );
 
   protected readonly state = signal<LoadState>('loading');
   protected readonly health = signal<EcosystemHealth | null>(null);

@@ -349,6 +349,11 @@ export const STAFF_RESOURCE_SCOPES: Readonly<Record<StaffResource, StaffResource
     read: "Voir la carte de santé de l'écosystème et son trafic.",
     write: "N'ajoute rien : la carte de santé se lit seulement.",
   },
+  ops_post_deploy: {
+    read: "Voir les reprises de données qu'un déploiement laisse à faire, et les simuler sans rien écrire.",
+    write:
+      "Appliquer une reprise après l'avoir simulée soi-même : elle écrit en production, sans retour arrière.",
+  },
   activity: {
     read: "Voir le journal d'activité : qui a fait quoi, dans tous les outils à la fois. L'écran vit dans Admin, qui demande aussi Comptes clients en lecture.",
     write: "N'ajoute rien : le journal se lit seulement.",

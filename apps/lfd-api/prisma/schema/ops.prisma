@@ -110,3 +110,56 @@ model WebhookEvent {
   @@map("webhook_event")
   @@schema("ops")
 }
+
+/// **Une opération après déploiement, simulée puis peut-être appliquée**
+/// (`documentation/ops/plan-operations-apres-deploiement.md`, § 7.3).
+///
+/// Une ligne par SIMULATION. « Appliquer » fait avancer CETTE ligne :
+/// `simulated` → `running` → `succeeded` | `failed` | `interrupted`. Une
+/// simulation ne s'applique donc qu'une fois ; relancer demande une nouvelle
+/// simulation, sur la révision courante.
+///
+/// 🔴 Une seule application en cours par opération : index unique partiel
+/// `post_deploy_runs_one_running_key` `(operation_key) WHERE state = 'running'`,
+/// écrit dans la migration (Prisma ne sait pas le déclarer). Pas de verrou
+/// consultatif : le pooler change de connexion (§ 7.4).
+///
+/// Seul `ops` l'écrit et la lit. Les rapports portent des comptes et des
+/// phrases, jamais une donnée personnelle.
+model PostDeployRun {
+  /// ULID préfixé `postdeploy_`.
+  id String @id
+
+  /// La clé stable de l'opération (`mercuriale-promotion-policies`, …).
+  operationKey String @map("operation_key")
+
+  /// simulated | running | succeeded | failed | interrupted (CHECK en base).
+  state String
+
+  /// La révision de l'image qui a simulé — « Appliquer » exige la même.
+  revision String
+
+  /// La fiche staff qui a simulé ; seule elle peut appliquer cette simulation.
+  simulatedBy String @map("simulated_by")
+
+  simulatedAt DateTime @map("simulated_at")
+
+  /// Le rapport de la simulation : comptes et phrases.
+  simulationReport Json @map("simulation_report")
+
+  /// L'instant où l'application a commencé ; nul tant qu'elle ne l'a pas fait.
+  startedAt DateTime? @map("started_at")
+
+  /// L'avancement de l'application, réécrit après chaque lot.
+  progressReport Json? @map("progress_report")
+
+  finishedAt DateTime? @map("finished_at")
+
+  /// Pourquoi l'application a échoué ou a été interrompue. Nul sinon.
+  failure String?
+
+  /// Le dernier passage de chaque opération : la seule lecture qu'on fait.
+  @@index([operationKey, simulatedAt(sort: Desc)])
+  @@map("post_deploy_runs")
+  @@schema("ops")
+}

@@ -33,6 +33,7 @@ import { ContainerMetricsReader } from "./container/container-metrics-reader.por
 import { ContainerUsageService } from "./container/container-usage.service.js";
 import { GraphqlContainerMetricsReader } from "./container/graphql-container-metrics.reader.js";
 import { UnconfiguredContainerMetricsReader } from "./container/unconfigured-container-metrics.reader.js";
+import { PostDeployModule } from "./post-deploy/post-deploy.module.js";
 
 /**
  * Les sondes de fronts sont **dérivées de la carte**, pas listées à la main :
@@ -61,6 +62,9 @@ const FRONTEND_PROBES: readonly NodeProbe[] = TOPOLOGY.flatMap((node) =>
  * les recréer ailleurs ferait deux vérités sur qui est staff.
  */
 @Module({
+  // Les opérations après déploiement : la seule partie d'OPS qui déclenche une
+  // écriture (plan des opérations après déploiement, § 7.12).
+  imports: [PostDeployModule],
   // La collecte des vitals est la SEULE route publique d'OPS, et elle doit
   // l'être : un visiteur de la boutique n'a pas de jeton, et c'est justement son
   // expérience qu'on mesure. Ce qui la rend acceptable est écrit sur elle.

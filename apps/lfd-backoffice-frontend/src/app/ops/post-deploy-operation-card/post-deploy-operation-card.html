@@ -1,0 +1,142 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    [title]="operation().title"
+    [subtitle]="operation().why"
+  >
+    <span titleAction>
+      @if (blockedByTitles().length > 0) {
+        <fold-status-badge status="error" label="Bloquée" />
+      } @else if (operation().toDo) {
+        <fold-status-badge status="pending" label="À faire" />
+      } @else {
+        <fold-status-badge status="active" label="Rien à faire" />
+      }
+    </span>
+  </fold-element-title>
+
+  <div class="body">
+    @if (blockedByTitles().length > 0) {
+      <fold-callout variant="warning" data-blocked>
+        Bloquée par : {{ blockedByTitles().join(', ') }}. Elle s'appliquera quand celle-ci n'aura
+        plus rien à faire.
+      </fold-callout>
+    }
+
+    @if (report(); as shown) {
+      <dl class="counts">
+        <div>
+          <dt>{{ running() || finalRun() ? 'Décisions écrites' : 'Décisions écrivables' }}</dt>
+          <dd data-writable>{{ shown.writable }}</dd>
+        </div>
+        <div>
+          <dt>À trancher à la main</dt>
+          <dd data-by-hand>{{ shown.byHand }}</dd>
+        </div>
+      </dl>
+      @if (shown.summary.length > 0) {
+        <ul class="lines">
+          @for (line of shown.summary; track $index) {
+            <li>{{ line }}</li>
+          }
+        </ul>
+      }
+      @if (shown.sample.length > 0) {
+        <div class="sample">
+          <strong>Échantillon</strong>
+          <ul class="lines">
+            @for (line of shown.sample; track $index) {
+              <li>{{ line }}</li>
+            }
+          </ul>
+        </div>
+      }
+    }
+
+    <fold-callout variant="warning" icon="alert">
+      <strong>Ce qu'elle ne sait pas défaire.</strong> {{ operation().limit }}
+    </fold-callout>
+
+    @if (operation().lastRun; as last) {
+      <p class="last-run" data-last-run>
+        Dernier passage : {{ runStateLabel(last.state) }}, simulée le
+        {{ last.simulatedAt | date: 'dd/MM/yyyy à HH:mm' }}
+        @if (last.finishedAt; as finishedAt) {
+          , terminée le {{ finishedAt | date: 'dd/MM/yyyy à HH:mm' }}
+        }
+        (révision {{ last.revision }}).
+      </p>
+    } @else {
+      <p class="last-run" data-last-run>Jamais passée.</p>
+    }
+
+    @if (running()) {
+      <fold-callout variant="info" announce data-running>
+        Application en cours — l'avancement se relit tout seul.
+      </fold-callout>
+    }
+
+    @if (finalRun(); as done) {
+      @if (done.state === 'succeeded') {
+        <fold-callout variant="success" announce data-final> Application réussie. </fold-callout>
+      } @else {
+        <fold-callout variant="alert" announce data-final>
+          Application {{ runStateLabel(done.state) }}.
+          @if (done.failure; as reason) {
+            {{ reason }}
+          }
+          Chaque ligne déjà écrite est acquise : vous pouvez simuler de nouveau, puis relancer.
+        </fold-callout>
+      }
+    }
+
+    @if (expired()) {
+      <fold-callout variant="info" data-expired>
+        Cette simulation n'est plus applicable : simulez de nouveau pour appliquer.
+      </fold-callout>
+    }
+
+    @if (failure(); as message) {
+      <fold-callout variant="alert" announce data-failure>{{ message }}</fold-callout>
+    }
+
+    @if (showApply()) {
+      <fold-checkbox
+        label="J'ai lu ce qu'elle ne sait pas défaire, et la base est sauvegardée"
+        [checked]="acknowledged()"
+        (checkedChange)="acknowledged.set($event)"
+        [disabled]="busy()"
+        data-acknowledge
+      />
+    }
+
+    <div class="actions">
+      @if (canSimulate()) {
+        <button
+          foldButton
+          type="button"
+          emphasis="soft"
+          [loading]="busy() && !running()"
+          [disabled]="busy() || running()"
+          (click)="simulate()"
+          data-simulate
+        >
+          Simuler
+        </button>
+      }
+      @if (showApply()) {
+        <button
+          foldButton
+          type="button"
+          intent="danger"
+          [disabled]="busy() || !acknowledged()"
+          (click)="apply()"
+          data-apply
+        >
+          Appliquer
+        </button>
+      }
+    </div>
+  </div>
+</fold-card>

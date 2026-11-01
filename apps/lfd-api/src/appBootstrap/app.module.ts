@@ -64,6 +64,7 @@ import { GeneralOrderCutoffModule } from "./general-order-cutoff.module.js";
 import { SaleReferenceUsageModule } from "./sale-reference-usage.module.js";
 import { ImageCatalogueModule } from "./image-catalogue.module.js";
 import { MediaLibraryCensusModule } from "./media-library-census.module.js";
+import { PostDeployOperationsModule } from "./post-deploy-operations.module.js";
 import { MediaCarriersModule } from "./media-carriers.module.js";
 import { OperationImageLibraryModule } from "./operation-image-library.module.js";
 import { JournalModule } from "./journal.module.js";
@@ -184,6 +185,7 @@ import { DevImpersonation } from "../platform/auth/dev-impersonation.js";
     // Le même fonds, décrit aux opérations du commerce (`b2b → media` interdit).
     OperationImageLibraryModule,
     MediaLibraryCensusModule,
+    PostDeployOperationsModule,
     MediaCarriersModule,
     JournalModule,
     // Contextes métier.
