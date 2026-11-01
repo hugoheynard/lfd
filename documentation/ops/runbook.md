@@ -77,8 +77,8 @@ appliquer.
 1. **Sauvegarder la base** : une reprise n'a pas de retour arrière automatique.
 2. Ouvrir « Après déploiement » et lire la liste — `GET /admin/ops/post-deploy`.
    `anyToDo: false` ⇒ rien à faire, on s'arrête là.
-3. Pour chaque opération **à faire**, **dans l'ordre de la liste** (les
-   politiques des mercuriales avant les remises des commandes, § 7.1) :
+3. Pour chaque opération **à faire**, **dans l'ordre de la liste** (§ 7.1 ;
+   une opération qui en attend une autre le dit, « ne s'applique qu'après … ») :
    « Simuler » (`POST …/:key/simulate`), lire le compte, l'échantillon et la
    limite, cocher « j'ai lu », « Appliquer » (`POST …/:key/apply`).
 4. Relire l'état jusqu'à `succeeded` (`GET …/runs/:runId`) ; l'avancement est
@@ -104,6 +104,14 @@ appliquer.
 ⚠️ **État au 2026-11-01** : les routes sont livrées ; l'écran « Après
 déploiement » et le bandeau du back-office viennent au lot front suivant.
 D'ici là, les routes s'appellent directement, ou les scripts `backfill:*` servent de secours (`--production <nom de la base>` retapé).
+
+**État au 2026-11-01, soir** : la liste est **vide**. Les deux premières
+opérations (politiques des mercuriales, remises des commandes) ont été
+simulées à zéro en production et retirées (plan, § 8). L'écran affiche
+« Aucune opération après déploiement » ; le geste ci-dessus vaut pour la
+prochaine reprise qu'un déploiement apportera. Le script
+`backfill:mercuriale-promotion-policies` n'existe plus ;
+`backfill:order-discounts` reste (`documentation/promotions/promotions.md`, § 2.12).
 
 ## Après avoir changé une variable GitHub
 

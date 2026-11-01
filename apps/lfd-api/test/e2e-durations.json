@@ -273,7 +273,6 @@
   "test/operations-switch.e2e-spec.ts": 12000,
   "test/ops-capabilities.e2e-spec.ts": 2800,
   "test/ops-media.e2e-spec.ts": 7554,
-  "test/ops-post-deploy-order-discounts.e2e-spec.ts": 9002,
   "test/ops-post-deploy.e2e-spec.ts": 13305,
   "test/ops-pricing-probe.e2e-spec.ts": 7000,
   "test/ops-traffic.e2e-spec.ts": 12040,

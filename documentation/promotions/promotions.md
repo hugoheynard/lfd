@@ -640,6 +640,13 @@ flowchart TD
 M7 est irréversible : dès qu'une commande porte deux remises, sa facture, son
 Factur-X et ses bons les portent pour toujours.
 
+**Jouée en production le 2026-11-01** par l'opération après déploiement
+« remises des commandes », qui enveloppait les trois passes : simulée à zéro
+(« tout à 0 »), puis retirée avec sa voisine des mercuriales
+([`../ops/plan-operations-apres-deploiement.md`](../ops/plan-operations-apres-deploiement.md), § 8).
+Le script et `--refresh-drifted` restent le secours documenté ci-dessus ; le
+script des mercuriales (`backfill:mercuriale-promotion-policies`) est retiré.
+
 ### 2.13 La justesse, éprouvée le 2026-10-31
 
 - **Factur-X à plusieurs promotions** : la pièce témoin
@@ -934,7 +941,8 @@ deux temps (lecteur, puis écriture).
   non bâtie) : « dès 500 g » posé article par article, en remplacement d'une
   quantité minimum qui n'a pas de sens au poids.
 
-- **Production** : la reprise du § 2.12 reste à jouer ; un seul endroit,
+- **Production** : la reprise du § 2.12 est faite (simulée à zéro le
+  2026-11-01) ; un seul endroit,
   page unique et acheminements à cocher attendent le prochain « pousse
   main ». Contrôle préalable non fait : les rôles qui avaient
   `lfc_site_settings:write` sans `b2b_pricing:write` (§ 2.15).

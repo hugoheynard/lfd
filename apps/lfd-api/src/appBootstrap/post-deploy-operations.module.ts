@@ -1,7 +1,5 @@
 import { Global, Module } from "@nestjs/common";
 
-import { OrderDiscountsOperation } from "../b2b/orders/infrastructure/order-discounts.operation.js";
-import { MercurialePromotionPoliciesOperation } from "../b2b/pricing/infrastructure/mercuriale-promotion-policies.operation.js";
 import {
   POST_DEPLOY_OPERATIONS,
   type PostDeployOperation,
@@ -13,10 +11,13 @@ import {
  *
  * Le contrat vit dans `platform/`, le commerce l'implémente, `ops` le conduit ;
  * seule la racine voit les trois. L'ORDRE de la liste est l'ordre d'affichage
- * et d'exécution : les mercuriales d'abord, les remises ensuite (§ 7.1).
+ * et d'exécution (§ 7.1).
  *
- * Une opération faite en production se retire au lot suivant : sa ligne ici,
- * son fichier, et la note dans le plan (§ 7.12).
+ * La liste est **vide** depuis le 2026-11-01 : les deux premières (politiques
+ * des mercuriales, remises des commandes) ont été simulées à zéro en
+ * production et retirées (§ 8). Le mécanisme, la trace et l'écran restent
+ * pour la prochaine reprise. Une opération faite en production se retire au
+ * lot suivant : sa ligne ici, son fichier, et la note dans le plan (§ 7.12).
  *
  * `@Global` : la liste est injectée par le module d'`ops`, qui ne peut pas
  * importer celui-ci.
@@ -24,13 +25,9 @@ import {
 @Global()
 @Module({
   providers: [
-    MercurialePromotionPoliciesOperation,
-    OrderDiscountsOperation,
     {
       provide: POST_DEPLOY_OPERATIONS,
-      inject: [MercurialePromotionPoliciesOperation, OrderDiscountsOperation],
-      useFactory: (...operations: PostDeployOperation[]): readonly PostDeployOperation[] =>
-        operations,
+      useValue: [] satisfies readonly PostDeployOperation[],
     },
   ],
   exports: [POST_DEPLOY_OPERATIONS],

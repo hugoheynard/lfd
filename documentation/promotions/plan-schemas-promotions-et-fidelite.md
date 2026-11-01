@@ -30,7 +30,8 @@ Aucun **bloc** neuf : un bloc à part casserait cette atomicité.
   `promotion_pickup_points`, `promotion_delivery_zones`, `promotion_settings`.
   Un seul écrivain : `b2b/promotions`. Lecteurs Prisma hors du contexte :
   `b2b/orders/infrastructure/prisma-order-discount-terms-backfill.ts`,
-  `b2b/pricing/infrastructure/prisma-promotion-policy-backfill.ts`,
+  `PrismaPromotionPolicyBackfill` dans `b2b/pricing/infrastructure/` (retiré
+  le 2026-11-01 avec son opération après déploiement),
   `b2b/pricing/infrastructure/prisma-policy-promotion-names.reader.ts`.
   `order_discounts.promotion_id` n'a **pas** de clé étrangère vers
   `promotions` (`order-discounts.prisma:26`, vérifié). Les tables de liaison

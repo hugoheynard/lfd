@@ -23,7 +23,7 @@ celui qu'on rate sous pression.
 
 - Deux reprises en attente pour le prochain déploiement, déjà découpées en
   « décider » / « écrire » :
-  - `PrismaPromotionPolicyBackfill` (`b2b/pricing/infrastructure/prisma-promotion-policy-backfill.ts`) :
+  - `PrismaPromotionPolicyBackfill` (`b2b/pricing/infrastructure/`, retiré le 2026-11-01, § 8) :
     `plan()` rend les décisions, `apply(decision)` écrit une décision dans sa
     transaction et rend `false` si la ligne a bougé ;
   - `PrismaOrderDiscountTermsBackfill` (`b2b/orders/infrastructure/prisma-order-discount-terms-backfill.ts`) :
@@ -151,5 +151,19 @@ Plus d'URL de production sur le poste pour une reprise.
 
 ## 8. Reste à faire
 
+- ✅ **Les deux premières opérations — politiques des mercuriales, remises
+  des commandes — retirées le 2026-11-01 après simulation à zéro en
+  production** (« tout à 0 », validé par Hugo, § 7.12). Retirés : les deux
+  opérations et leur décompte, l'adaptateur `PrismaPromotionPolicyBackfill`
+  et le script des mercuriales (`backfill:mercuriale-promotion-policies`),
+  qui n'avaient plus de lecteur. La liste de
+  `apps/lfd-api/src/appBootstrap/post-deploy-operations.module.ts` est vide ;
+  le mécanisme, la table `ops.post_deploy_runs` et l'écran restent, et l'e2e
+  `apps/lfd-api/test/ops-post-deploy.e2e-spec.ts` éprouve le mécanisme avec
+  des opérations déclarées dans le test. **Gardés** : le script
+  `prisma/backfill-order-discounts.ts` (`--refresh-drifted` compris) et ses
+  adaptateurs (`PrismaOrderDiscountBackfill`, `PrismaOrderDiscountTermsBackfill`),
+  parce que le runbook de la reprise des remises
+  (`documentation/promotions/promotions.md`, § 2.12) les cite encore.
 - ~~**Le bandeau ne doit apparaître que dans ops**~~ — fait le 2026-11-01 : il vit sur la page santé. (Hugo, 2026-11-01), pas en
   tête de tout le back-office.
