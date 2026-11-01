@@ -95,8 +95,10 @@ describe('une ligne, vue par produit', () => {
     const el: HTMLElement = render(line()).nativeElement;
 
     expect(text(el, '.wl-left-big')).toBe('60 / 120');
-    expect(text(el, '.wl-left-when')).toBe('avant 9 h 30');
-    expect(text(el, '.wl-left-total')).toBe('total : 60 / 240');
+    expect(text(el, '.wl-left-when')).toBe('à sortir avant 9 h 30');
+    // Régression (2026-11-01) : « total : 60 / 240 » était le RESTE sur le
+    // total, et « 365 / 365 » sur une ligne pas commencée se lisait « fini ».
+    expect(text(el, '.wl-left-total')).toBe('180 / 240 sorties');
     expect(text(el, '.wl-figures')).toBe('180 / 240 sorties');
   });
 
