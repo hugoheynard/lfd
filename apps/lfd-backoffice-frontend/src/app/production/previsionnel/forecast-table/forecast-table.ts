@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
-import { FoldSurfaceDirective } from 'fold-ng';
+import { FoldBadgeComponent, FoldSurfaceDirective } from 'fold-ng';
 
 import type { ForecastRayon } from '../previsionnel-matrix';
-import type { ForecastHeader } from '../previsionnel-range';
+import type { ForecastColumn, ForecastFootRow } from '../forecast-column';
 
 /**
  * Au-delà de ce nombre de références, la grille passe en **densité réduite**.
@@ -43,13 +43,22 @@ const DENSE_ABOVE = 24;
 @Component({
   selector: 'app-forecast-table',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective],
+  imports: [FoldBadgeComponent, FoldSurfaceDirective],
   templateUrl: './forecast-table.html',
   styleUrl: './forecast-table.scss',
 })
 export class ForecastTable {
-  /** Les colonnes, déjà datées, marquées et ordonnées. */
-  readonly headers = input.required<readonly ForecastHeader[]>();
+  /**
+   * Les colonnes, déjà titrées, marquées et ordonnées — des jours pour le
+   * prévisionnel, des tranches pour la journée (`forecast-column.ts`).
+   */
+  readonly columns = input.required<readonly ForecastColumn[]>();
+
+  /** Les lignes du pied ; chaque colonne porte ses valeurs dans le même ordre. */
+  readonly footRows = input.required<readonly ForecastFootRow[]>();
+
+  /** Le nom de la grille, pour les lecteurs d'écran. */
+  readonly label = input('Prévisionnel de production');
 
   /** Les rayons, déjà groupés et triés — la table ne range rien. */
   readonly rayons = input.required<readonly ForecastRayon[]>();
@@ -65,8 +74,8 @@ export class ForecastTable {
   protected readonly dense = computed(() => this.references() > DENSE_ABOVE);
 
   /** `230px` pour le produit, puis des colonnes strictement égales. */
-  protected readonly columns = computed(
-    () => `230px repeat(${String(this.headers().length)}, minmax(0, 1fr))`,
+  protected readonly template = computed(
+    () => `230px repeat(${String(this.columns().length)}, minmax(0, 1fr))`,
   );
 
   protected isFolded(label: string): boolean {

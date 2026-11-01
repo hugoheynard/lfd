@@ -10,6 +10,8 @@ import {
 } from '@lfd/contracts';
 import { arrangedShelf, catalogRootShelves, saleQuantityLabel } from '@lfd/b2b-ui/catalog';
 
+import type { SlotState } from '../fiche-atelier/workshop-deadlines';
+
 /**
  * La **matrice du prévisionnel**, telle que l'écran la lit — et rien d'autre.
  *
@@ -72,16 +74,32 @@ export interface ForecastCell {
   readonly exceptional: boolean;
   /** La part des réassorts dans `quantity` (lot R3d) — jamais en plus. */
   readonly resupply: number;
+  /**
+   * Ce qui est déjà sorti, et l'état de la tranche pour ce produit — la
+   * journée par tranche, le jour même ou passé. Absent du prévisionnel par jours.
+   */
+  readonly progress?: ForecastCellProgress;
+  /** Des mentions à signaler sous le chiffre (« 120 attendus à 04:30, avant la première tranche »). */
+  readonly notes?: readonly string[];
+}
+
+/** « 80 / 120 » et l'état de la tranche, en mot (le texte accessible) ET en état (le token). */
+export interface ForecastCellProgress {
+  readonly label: string;
+  readonly state: SlotState;
+  readonly stateLabel: string;
 }
 
 /** Une ligne de la grille : un produit, et ce qu'il pèse chaque jour. */
 export interface ForecastProduct {
   readonly sku: string;
   readonly productName: string;
-  /** L'unité du produit (`vente-au-poids.md`, P6). */
-  readonly saleUnit: OrderSaleUnit;
+  /** L'unité du produit (`vente-au-poids.md`, P6) ; `null` = inconnue (hors fiche d'atelier). */
+  readonly saleUnit: OrderSaleUnit | null;
   readonly cells: readonly ForecastCell[];
   readonly totalUnits: number;
+  /** Une alerte sur la ligne entière (journée par tranche : sources désynchronisées). */
+  readonly warning?: string;
 }
 
 /** Un rayon : son nom, son poids par jour, et ses produits. */
@@ -117,14 +135,28 @@ export function forecastRayons(
    */
   shelvesKnown = true,
 ): readonly ForecastRayon[] {
-  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const width = view.days.length;
   const peakColumn = view.days.findIndex((day) => day.date === view.peakDate);
   const products = view.lines.map((line) => productOf(line, width, peakColumn));
+  return shelvedRayons(products, width, catalogue, shelvesKnown, view.showSubcategories === true);
+}
 
+/**
+ * Range des produits déjà chiffrés en rayons — la règle de la matrice, que la
+ * journée par tranche partage : rayons racine dans l'ordre du référentiel,
+ * plus gros d'abord, intertitres si le réglage est allumé, et un total de
+ * rayon en PIÈCES (un produit au poids y pèse une pièce par case).
+ */
+export function shelvedRayons(
+  products: readonly ForecastProduct[],
+  width: number,
+  catalogue: readonly CatalogItemView[],
+  shelvesKnown: boolean,
+  showSubcategories: boolean,
+): readonly ForecastRayon[] {
+  const familyOf = new Map(catalogue.map((item) => [item.sku, item.family]));
   const byQuantity = (a: ForecastProduct, b: ForecastProduct): number =>
     piecesOf(b) - piecesOf(a) || a.productName.localeCompare(b.productName, 'fr');
-  const showSubcategories = view.showSubcategories === true;
 
   return catalogRootShelves(products, (product) => familyOf.get(product.sku) ?? null).map(
     (shelf) => {

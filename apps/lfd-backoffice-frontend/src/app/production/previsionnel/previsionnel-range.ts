@@ -1,5 +1,7 @@
 import type { ProductionForecastDay, ProductionForecastDayState } from '@lfd/contracts';
 
+import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from './forecast-column';
+
 /**
  * La **plage** du prévisionnel et ses en-têtes de colonne — de l'arithmétique
  * pure, séparée de la grille parce qu'elle change pour d'autres raisons.
@@ -54,9 +56,7 @@ export interface ForecastHeader {
   readonly stateLabel: string | null;
 }
 
-/** Les surcouches de colonne. Une journée future arrêtée n'en a pas : son mot suffit. */
-export type ForecastColumnTone = 'overdue' | 'current' | 'past' | 'closedDay';
-
+// Une journée future arrêtée n'a pas de surcouche : son mot suffit.
 function toneOf(state: ProductionForecastDayState, today: boolean): ForecastColumnTone | null {
   switch (state) {
     case 'overdue':
@@ -159,4 +159,35 @@ function offsetLabel(today: string, date: string): string {
     return 'aujourd’hui';
   }
   return days > 0 ? `J+${String(days)}` : `J−${String(-days)}`;
+}
+
+/** Le pied du prévisionnel par jours : pièces, part des réassorts, commandes. */
+export const DAY_FOOT_ROWS: readonly ForecastFootRow[] = [
+  { key: 'pieces', label: 'Total pièces', kind: 'total' },
+  { key: 'resupplies', label: 'dont réassorts', kind: 'resupplies' },
+  { key: 'orders', label: 'Commandes', kind: 'detail' },
+];
+
+/** Un nombre de pied : un zéro est une case vide, pas un « 0 ». */
+function footFigure(value: number): string {
+  return value === 0 ? '' : String(value);
+}
+
+/**
+ * Les en-têtes de jours, en colonnes de la table. Une journée arrêtée est un
+ * fait ; une journée ouverte, une prévision.
+ */
+export function dayColumns(headers: readonly ForecastHeader[]): readonly ForecastColumn[] {
+  return headers.map((day) => ({
+    key: day.date,
+    overline: `${day.offset}${day.peak ? ' · pic' : ''}`,
+    title: `${day.weekday} ${day.dayMonth}`,
+    subtitle: null,
+    figure: String(day.totalUnits),
+    mention: day.stateLabel,
+    settled: day.closed,
+    peak: day.peak,
+    tone: day.tone,
+    foot: [footFigure(day.totalUnits), footFigure(day.resupplyUnits), footFigure(day.orderCount)],
+  }));
 }

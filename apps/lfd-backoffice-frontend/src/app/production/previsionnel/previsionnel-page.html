@@ -83,6 +83,8 @@
               {{ headers().length }} jours.
             </h1>
           }
+        } @else if (view() === 'tranches') {
+          <h1 class="pv-title">{{ trancheTitle() }}</h1>
         } @else {
           <h1 class="pv-title">{{ dossierTitle() }}</h1>
         }
@@ -129,6 +131,17 @@
             (click)="view.set('dossier')"
           >
             Dossier du jour
+          </button>
+          <!-- Une journée dans la même table, une colonne par tranche (2026-11-01). -->
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            icon="clock"
+            data-open-tranches
+            (click)="view.set('tranches')"
+          >
+            Journée par tranche
           </button>
           <!--
             **Arrêter le plan**, sur la ligne des autres gestes et en accent plein
@@ -216,6 +229,32 @@
               />
             }
           }
+        } @else if (view() === 'tranches') {
+          <button
+            foldButton
+            emphasis="outline"
+            size="sm"
+            icon="chevron-left"
+            class="pv-back"
+            (click)="view.set('matrix')"
+          >
+            Retour au prévisionnel
+          </button>
+          <!-- Le même geste que le décalage de semaine, d'une journée. -->
+          <fold-button-icon
+            icon="chevron-left"
+            size="sm"
+            tooltip="Journée précédente"
+            data-tranche-previous
+            (clicked)="shiftTrancheDay(-1)"
+          />
+          <fold-button-icon
+            icon="chevron-right"
+            size="sm"
+            tooltip="Journée suivante"
+            data-tranche-next
+            (clicked)="shiftTrancheDay(1)"
+          />
         } @else {
           <button
             foldButton
@@ -309,10 +348,24 @@
           </fold-callout>
         }
 
-        <app-forecast-table [headers]="headers()" [rayons]="rayons()" />
+        <app-forecast-table [columns]="columns()" [footRows]="footRows" [rayons]="rayons()" />
       }
     }
   }
+} @else if (view() === 'tranches') {
+  <!--
+    **La journée par tranche.** Sœur du layout comme la matrice, et la même
+    table : une colonne par tranche. Sa journée est la sienne ; les rayons,
+    le réglage des sous-catégories et l'arrêt du plan viennent de ce que la
+    page a lu.
+  -->
+  <app-day-tranche-wall
+    [date]="trancheDate()"
+    [catalogue]="catalogue()"
+    [shelvesKnown]="!shelvesLost()"
+    [showSubcategories]="showSubcategories()"
+    [planClosed]="trancheClosed()"
+  />
 } @else {
   <!--
     **Le dossier du jour.** Sœur du layout comme la matrice, et pour la même

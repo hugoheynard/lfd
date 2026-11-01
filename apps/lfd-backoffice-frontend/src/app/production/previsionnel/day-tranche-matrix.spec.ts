@@ -1,5 +1,6 @@
 import type {
   ProductionDueThresholdsView,
+  ProductionForecastView,
   ProductionWorksheetView,
   WorkshopLine,
 } from '@lfd/contracts';
@@ -138,65 +139,152 @@ describe('trancheColumnKeys', () => {
   });
 });
 
+/**
+ * Le prévisionnel de la journée : CRO, PAIN et BAG ont des échéances, TAR
+ * (une pâtisserie) n'en a aucune, et CRO porte 12 réassorts au-delà de ses
+ * commandes. Le jour d'après, ignoré, prouve qu'on lit la bonne colonne.
+ */
+const FORECAST: ProductionForecastView = {
+  days: [
+    {
+      date: '2026-11-01',
+      totalUnits: 0,
+      orderCount: 0,
+      resupplyUnits: 12,
+      closed: false,
+      state: 'open',
+      closesAt: null,
+    },
+    {
+      date: '2026-11-02',
+      totalUnits: 0,
+      orderCount: 0,
+      resupplyUnits: 0,
+      closed: false,
+      state: 'open',
+      closesAt: null,
+    },
+  ],
+  peakDate: null,
+  totalUnits: 0,
+  lines: [
+    forecastLine('CRO', 'Croissant', [312, 999], [12, 0]),
+    forecastLine('PAIN', 'Pain au poids', [2500, 0], [0, 0], 'weight'),
+    forecastLine('BAG', 'Baguette', [50, 0], [0, 0]),
+    forecastLine('TAR', 'Tarte', [8, 0], [0, 0]),
+  ],
+};
+
+function forecastLine(
+  sku: string,
+  productName: string,
+  quantities: number[],
+  resupplyQuantities: number[],
+  saleUnit: 'piece' | 'weight' = 'piece',
+): ProductionForecastView['lines'][number] {
+  return {
+    sku,
+    productName,
+    saleUnit,
+    quantities,
+    resupplyQuantities,
+    totalUnits: quantities.reduce((sum, quantity) => sum + quantity, 0),
+  };
+}
+
+const DATE = '2026-11-01';
+
 describe('dayTrancheGrid', () => {
-  it('jour à venir : des quantités, aucun sorti ni état', () => {
-    const grid = dayTrancheGrid(DUE, SHEET, null);
-    const cro = grid.groups.flatMap((group) => group.rows).find((row) => row.sku === 'CRO');
-    expect(cro?.cells.map((cell) => cell?.label)).toEqual(['20', '100', '180']);
-    expect(cro?.cells.every((cell) => cell?.got === null)).toBe(true);
-    expect(grid.columns.map((column) => column.state)).toEqual([null, null, null]);
+  /**
+   * Régression (Hugo, 2026-11-01, « il me manque des catégories ») : la grille
+   * partait des échéances, et un produit sans heure — pâtisserie, traiteur,
+   * réassort — disparaissait de la journée par tranche.
+   */
+  it('toutes les catégories du prévisionnel sont dans la journée par tranche', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
+    expect(grid.rows.map((row) => row.sku)).toEqual(['CRO', 'PAIN', 'BAG', 'TAR']);
+    const tar = grid.rows.find((row) => row.sku === 'TAR');
+    expect(tar?.cells.at(-1)).toMatchObject({ quantity: 8 });
+  });
+
+  it('pour chaque produit, la somme des colonnes est le total de la matrice ce jour-là', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
+    for (const row of grid.rows) {
+      const sum = row.cells.reduce((total, cell) => total + (cell?.quantity ?? 0), 0);
+      const line = FORECAST.lines.find((candidate) => candidate.sku === row.sku);
+      expect(sum).toBe(line?.quantities[0]);
+    }
+  });
+
+  it('répartit par les échéances, et met le reste — réassorts compris — dans « Sans heure »', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
     expect(grid.columns.map((column) => column.label)).toEqual([
       'avant 05:00',
       'avant 09:00',
       'Sans heure',
     ]);
+    expect(grid.columns.at(-1)?.subtitle).toBe('réassorts compris');
+    const cro = grid.rows.find((row) => row.sku === 'CRO');
+    // 20 + 100 à heure ; 180 sans échéance + 12 réassorts.
+    expect(cro?.cells.map((cell) => cell?.quantity)).toEqual([20, 100, 192]);
+    expect(cro?.cells.at(-1)?.resupply).toBe(12);
   });
 
-  it('range par rayon, dans l’ordre de la fiche, puis par nom', () => {
-    const grid = dayTrancheGrid(DUE, SHEET, null);
-    expect(grid.groups.map((group) => group.label)).toEqual(['Viennoiserie', 'Boulangerie']);
-    expect(grid.groups[1]?.rows.map((row) => row.sku)).toEqual(['BAG', 'PAIN']);
+  it('jour à venir : des quantités, aucun sorti ni état', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
+    expect(
+      grid.rows.every((row) => row.cells.every((cell) => cell === null || cell.progress === null)),
+    ).toBe(true);
+    expect(grid.columns.map((column) => column.state)).toEqual([null, null, null]);
   });
 
   it('ne mélange jamais pièces et poids dans un total', () => {
-    const grid = dayTrancheGrid(DUE, SHEET, null);
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
     expect(grid.loads).toEqual([
-      { pieces: 70, grams: 0 },
-      { pieces: 100, grams: 2500 },
-      { pieces: 180, grams: 0 },
+      { pieces: 70, grams: 0, resupply: 0 },
+      { pieces: 100, grams: 2500, resupply: 0 },
+      { pieces: 200, grams: 0, resupply: 12 },
     ]);
-    expect(grid.total).toEqual({ pieces: 350, grams: 2500 });
-    const pain = grid.groups[1]?.rows.find((row) => row.sku === 'PAIN');
-    expect(pain?.totalLabel).toBe('2,5 kg');
+    expect(grid.total).toEqual({ pieces: 370, grams: 2500, resupply: 12 });
   });
 
   it('le jour même : sorti / à sortir et les états de la vue par tranche', () => {
-    const grid = dayTrancheGrid(DUE, SHEET, 6 * 60);
-    const cro = grid.groups[0]?.rows[0];
-    expect(cro?.cells[0]).toMatchObject({ got: 20, progress: '20 / 20', state: 'met' });
-    expect(cro?.cells[1]).toMatchObject({ got: 40, progress: '40 / 100', state: 'next' });
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, 6 * 60);
+    const cro = grid.rows[0];
+    expect(cro?.cells[0]).toMatchObject({ progress: '20 / 20', state: 'met' });
+    expect(cro?.cells[1]).toMatchObject({ progress: '40 / 100', state: 'next' });
+    expect(cro?.cells[2]).toMatchObject({ progress: null, state: null });
     expect(grid.columns[0]).toMatchObject({ state: 'met', stateLabel: 'Tenue' });
     expect(grid.columns[1]).toMatchObject({ state: 'next', stateLabel: 'La prochaine' });
-    expect(grid.columns[2]).toMatchObject({ state: 'upcoming', stateLabel: 'À venir' });
+    expect(grid.columns[2]).toMatchObject({ state: null });
   });
 
   it('signale le besoin d’avant la première tranche', () => {
-    const cro = dayTrancheGrid(DUE, SHEET, null).groups[0]?.rows[0];
+    const cro = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null).rows[0];
     expect(cro?.cells[0]?.beforeFirst).toBe('20 attendus à 04:30, avant la première tranche');
     expect(cro?.cells[1]?.beforeFirst).toBeNull();
   });
 
-  it('sans fiche : rangée par nom, sans rayon, unité inconnue hors des totaux', () => {
-    const grid = dayTrancheGrid(DUE, null, 6 * 60);
-    expect(grid.groups).toHaveLength(1);
-    expect(grid.groups[0]?.label).toBeNull();
-    expect(grid.groups[0]?.rows.map((row) => row.sku)).toEqual(['BAG', 'CRO', 'PAIN']);
-    expect(grid.total).toEqual({ pieces: 0, grams: 0 });
-    expect(grid.unknownUnit).toBe(3);
+  it('des échéances au-delà du prévisionnel : rien n’est réparti, et la ligne le dit', () => {
+    const short: ProductionForecastView = {
+      ...FORECAST,
+      lines: [forecastLine('BAG', 'Baguette', [30, 0], [0, 0])],
+    };
+    const bag = dayTrancheGrid(short, DATE, DUE, SHEET, null).rows[0];
+    expect(bag?.mismatch).toBe('Échéances au-delà du prévisionnel : 50 pour 30');
+    expect(bag?.cells).toEqual([expect.objectContaining({ quantity: 30 })]);
+  });
+
+  it('sans compte à rebours : tout reste « Sans heure », totaux justes', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, null, SHEET, null);
+    expect(grid.columns.map((column) => column.label)).toEqual(['Sans heure']);
+    expect(grid.rows.map((row) => row.cells[0]?.quantity)).toEqual([312, 2500, 50, 8]);
   });
 
   it('une case vide vaut null', () => {
-    const bag = dayTrancheGrid(DUE, SHEET, null).groups[1]?.rows[0];
+    const bag = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null).rows.find(
+      (row) => row.sku === 'BAG',
+    );
     expect(bag?.cells).toEqual([expect.objectContaining({ quantity: 50 }), null, null]);
   });
 });

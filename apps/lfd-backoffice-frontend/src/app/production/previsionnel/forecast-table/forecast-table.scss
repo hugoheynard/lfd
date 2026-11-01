@@ -113,7 +113,7 @@
 
 .pv-row--total,
 .pv-row--resupplies,
-.pv-row--orders {
+.pv-row--detail {
   background: var(--fold-color-bg-rail-primary);
 }
 
@@ -199,7 +199,7 @@
 .pv-rayon-sum.is-peak,
 .pv-foot-total.is-peak,
 .pv-foot-resupplies.is-peak,
-.pv-foot-orders.is-peak {
+.pv-foot-detail.is-peak {
   background: var(--fold-color-warning-surface);
 }
 
@@ -306,12 +306,12 @@
 
 .pv-row--total .pv-cell,
 .pv-row--resupplies .pv-cell,
-.pv-row--orders .pv-cell {
+.pv-row--detail .pv-cell {
   padding-block: var(--fold-space-xs);
 }
 
 .pv-foot-resupplies,
-.pv-foot-orders {
+.pv-foot-detail {
   font-family: var(--fold-font-mono);
   font-size: var(--fold-text-xs);
   font-variant-numeric: tabular-nums;
@@ -350,7 +350,7 @@
 .pv-rayon-sum,
 .pv-foot-total,
 .pv-foot-resupplies,
-.pv-foot-orders {
+.pv-foot-detail {
   align-self: stretch;
   display: flex;
   flex-direction: column;
@@ -496,4 +496,38 @@
   letter-spacing: var(--fold-tracking-wide);
   text-transform: uppercase;
   color: var(--fold-color-text-muted);
+}
+
+/* L'état d'une tranche pour ce produit (journée par tranche, 2026-11-01) :
+   le mot, sous « sorti / à sortir », dans la couleur de son état. */
+.pv-progress {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  letter-spacing: var(--fold-tracking-caps);
+  text-transform: uppercase;
+}
+
+.pv-progress[data-state='over'] {
+  color: var(--fold-color-alert-text);
+}
+
+.pv-progress[data-state='next'] {
+  color: var(--fold-color-info-text);
+}
+
+.pv-progress[data-state='met'] {
+  color: var(--fold-color-success-text);
+}
+
+.pv-progress[data-state='upcoming'] {
+  color: var(--fold-color-text-muted);
+}
+
+/* La qualification d'une colonne (« réassorts compris »), sous son titre, dans
+   la teinte des réassorts. */
+.pv-day-subtitle {
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-info-text);
 }

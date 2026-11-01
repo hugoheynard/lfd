@@ -6,29 +6,35 @@
 <section
   class="pv-grid"
   [class.is-dense]="dense()"
-  [style.--pv-columns]="columns()"
-  aria-label="Prévisionnel de production"
+  [style.--pv-columns]="template()"
+  [attr.aria-label]="label()"
 >
   <!-- La tête sur le CHROME, comme le pied : ce sont les deux bords
        du tableau, et ils encadrent le papier sur lequel on lit les
        produits. Chaque colonne dit sa distance, son jour, son poids —
-       la distance d'abord, c'est la vraie question. -->
+       la distance d'abord, c'est la vraie question. Une tranche dit son
+       heure, sa charge et, le jour même, son état. -->
   <div class="pv-row pv-row--head" foldSurface="chrome">
     <div class="pv-cell pv-cell--label">
       <span class="pv-col-label">Produit</span>
     </div>
-    @for (day of headers(); track day.date) {
+    @for (column of columns(); track column.key) {
       <div
         class="pv-cell pv-day"
-        [class.is-peak]="day.peak"
-        [class.is-open]="!day.closed"
-        [attr.data-tone]="day.tone"
+        [class.is-peak]="column.peak"
+        [class.is-open]="!column.settled"
+        [attr.data-tone]="column.tone"
       >
-        <span class="pv-day-offset">{{ day.offset }}{{ day.peak ? ' · pic' : '' }}</span>
-        <span class="pv-day-date">{{ day.weekday }} {{ day.dayMonth }}</span>
-        <span class="pv-day-total">{{ day.totalUnits }}</span>
-        @if (day.stateLabel; as label) {
-          <span class="pv-day-state">{{ label }}</span>
+        @if (column.overline; as overline) {
+          <span class="pv-day-offset">{{ overline }}</span>
+        }
+        <span class="pv-day-date">{{ column.title }}</span>
+        @if (column.subtitle; as subtitle) {
+          <span class="pv-day-subtitle">{{ subtitle }}</span>
+        }
+        <span class="pv-day-total">{{ column.figure }}</span>
+        @if (column.mention; as mention) {
+          <span class="pv-day-state">{{ mention }}</span>
         }
       </div>
     }
@@ -55,9 +61,13 @@
           >{{ rayon.lines.length }} réf.{{ isFolded(rayon.label) ? ' · replié' : '' }}</span
         >
       </span>
-      @for (day of headers(); track day.date; let column = $index) {
-        <span class="pv-cell pv-rayon-sum" [class.is-peak]="day.peak" [attr.data-tone]="day.tone">
-          {{ rayon.quantities[column] || '' }}
+      @for (column of columns(); track column.key; let index = $index) {
+        <span
+          class="pv-cell pv-rayon-sum"
+          [class.is-peak]="column.peak"
+          [attr.data-tone]="column.tone"
+        >
+          {{ rayon.quantities[index] || '' }}
         </span>
       }
     </button>
@@ -75,17 +85,32 @@
           <div class="pv-cell pv-cell--label">
             <span class="pv-product">{{ line.productName }}</span>
             <span class="pv-sku">{{ line.sku }}</span>
+            @if (line.warning; as warning) {
+              <fold-badge variant="warning" [content]="warning" data-forecast-warning />
+            }
           </div>
           @for (cell of line.cells; track $index; let column = $index) {
             <!-- Un zéro est une cellule VIDE, pas un « 0 » : une
                  grille de zéros se lit comme une grille pleine. -->
             <div
               class="pv-cell pv-qty"
-              [class.is-peak]="headers()[column]?.peak"
-              [attr.data-tone]="headers()[column]?.tone"
+              [class.is-peak]="columns()[column]?.peak"
+              [attr.data-tone]="columns()[column]?.tone"
             >
               @if (cell.quantity > 0) {
-                <span class="pv-qty-value">{{ cell.label }}</span>
+                <!-- La journée par tranche, le jour même ou passé : « sorti /
+                     à sortir », et l'état écrit — la couleur ne le dit pas seule. -->
+                @if (cell.progress; as progress) {
+                  <span class="pv-qty-value">{{ progress.label }}</span>
+                  <span class="pv-progress" [attr.data-state]="progress.state">{{
+                    progress.stateLabel
+                  }}</span>
+                } @else {
+                  <span class="pv-qty-value">{{ cell.label }}</span>
+                }
+                @for (note of cell.notes ?? []; track note) {
+                  <fold-badge variant="warning" [content]="note" data-forecast-note />
+                }
                 <!-- La part des réassorts, à part des commandes (lot R3d) : déjà
                      comptée dans le chiffre, jamais en plus. -->
                 @if (cell.resupply > 0) {
@@ -123,49 +148,34 @@
     total est ce qu'on vient lire.
   -->
   <div class="pv-foot">
-    <div class="pv-row pv-row--total" foldSurface="chrome">
-      <div class="pv-cell pv-cell--label">
-        <span class="pv-col-label">Total pièces</span>
-      </div>
-      @for (day of headers(); track day.date) {
-        <div
-          class="pv-cell pv-foot-total"
-          [class.is-peak]="day.peak"
-          [class.is-open]="!day.closed"
-          [attr.data-tone]="day.tone"
-        >
-          {{ day.totalUnits || '' }}
+    <!-- Le prévisionnel : pièces, dont réassorts (R3d), commandes. La
+         journée par tranche : la charge en pièces, et le poids à part. -->
+    @for (row of footRows(); track row.key; let line = $index) {
+      <div
+        class="pv-row"
+        [class.pv-row--total]="row.kind === 'total'"
+        [class.pv-row--detail]="row.kind === 'detail'"
+        [class.pv-row--resupplies]="row.kind === 'resupplies'"
+        foldSurface="chrome"
+      >
+        <div class="pv-cell pv-cell--label">
+          <span class="pv-col-label">{{ row.label }}</span>
         </div>
-      }
-    </div>
-
-    <!-- Les réassorts pour demain, en ligne à part (lot R3d, 2026-10-21) :
-         une part du total des pièces, jamais une commande. -->
-    <div class="pv-row pv-row--resupplies" foldSurface="chrome">
-      <div class="pv-cell pv-cell--label">
-        <span class="pv-col-label">dont réassorts</span>
+        @for (column of columns(); track column.key) {
+          <div
+            class="pv-cell"
+            [class.pv-foot-total]="row.kind === 'total'"
+            [class.pv-foot-detail]="row.kind === 'detail'"
+            [class.pv-foot-resupplies]="row.kind === 'resupplies'"
+            [class.is-peak]="column.peak"
+            [class.is-open]="row.kind === 'total' && !column.settled"
+            [attr.data-tone]="column.tone"
+            [attr.data-foot]="row.key"
+          >
+            {{ column.foot[line] }}
+          </div>
+        }
       </div>
-      @for (day of headers(); track day.date) {
-        <div
-          class="pv-cell pv-foot-resupplies"
-          [class.is-peak]="day.peak"
-          [attr.data-tone]="day.tone"
-          data-forecast-resupplies
-        >
-          {{ day.resupplyUnits || '' }}
-        </div>
-      }
-    </div>
-
-    <div class="pv-row pv-row--orders" foldSurface="chrome">
-      <div class="pv-cell pv-cell--label">
-        <span class="pv-col-label">Commandes</span>
-      </div>
-      @for (day of headers(); track day.date) {
-        <div class="pv-cell pv-foot-orders" [class.is-peak]="day.peak" [attr.data-tone]="day.tone">
-          {{ day.orderCount || '' }}
-        </div>
-      }
-    </div>
+    }
   </div>
 </section>

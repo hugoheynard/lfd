@@ -1,0 +1,47 @@
+@switch (state()) {
+  @case ('loading') {
+    <fold-loading message="Lecture de la journée…" />
+  }
+  @case ('error') {
+    <fold-empty-state
+      tone="alert"
+      title="Journée illisible"
+      subtitle="La lecture a échoué — les commandes, elles, sont intactes."
+    >
+      <button foldButton (click)="load()">Réessayer</button>
+    </fold-empty-state>
+  }
+  @default {
+    @if (grid(); as grid) {
+      @if (grid.rows.length === 0) {
+        <fold-empty-state
+          icon="production"
+          title="Rien à sortir ce jour-là"
+          subtitle="Aucune commande n’est au plan de cette journée."
+        />
+      } @else {
+        @if (dueLost()) {
+          <div class="dtw-note">
+            <fold-callout variant="warning">
+              Les échéances n’ont pas pu être lues : les totaux sont justes, mais tout reste « Sans
+              heure ». Réessayez pour les répartir.
+            </fold-callout>
+          </div>
+        }
+        @if (worksheetLost()) {
+          <div class="dtw-note">
+            <fold-callout variant="warning">
+              La fiche d’atelier n’a pas pu être lue : les quantités sont justes, mais pas le sorti.
+            </fold-callout>
+          </div>
+        }
+        <app-forecast-table
+          label="Production de la journée par tranche"
+          [columns]="columns()"
+          [footRows]="footRows()"
+          [rayons]="rayons()"
+        />
+      }
+    }
+  }
+}

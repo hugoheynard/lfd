@@ -28,7 +28,6 @@ import { AdminCatalogService } from '../../../commandes/catalog.service';
 import { FicheProduction } from '../../fiche-production/fiche-production';
 import { productionRecap, resupplyPieces, totalPieces } from '../../production-recap';
 import { ProductionService } from '../../production.service';
-import { DayTrancheGrid } from '../day-tranche-grid/day-tranche-grid';
 import { DayTranchesSection } from '../day-tranches-section/day-tranches-section';
 import { DueThresholdsSection } from '../due-thresholds-section/due-thresholds-section';
 import { BonReassort } from './bon-reassort/bon-reassort';
@@ -112,7 +111,6 @@ export function defaultDossierDate(): string {
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     BonReassort,
-    DayTrancheGrid,
     DayTranchesSection,
     DueThresholdsSection,
     FicheProduction,

@@ -29,12 +29,21 @@ import { AdminCatalogService } from '../../commandes/catalog.service';
 import { refreshWhileVisible } from '../../shared/periodic-refresh';
 import { ProductionService } from '../production.service';
 import { NotifyService } from '../../notify.service';
+import { DayTrancheWall } from './day-tranche-wall/day-tranche-wall';
 import { DossierDuJour, defaultDossierDate } from './dossier-du-jour/dossier-du-jour';
 import { ForecastTable } from './forecast-table/forecast-table';
 import { ReopenDay } from './reopen-day/reopen-day';
 import { forecastRayons, totalOfRayons } from './previsionnel-matrix';
 import { autoCloseAheadLabel } from './auto-close-label';
-import { FORECAST_DAYS, forecastHeaders, isoDay, shiftDay, windowEnd } from './previsionnel-range';
+import {
+  DAY_FOOT_ROWS,
+  FORECAST_DAYS,
+  dayColumns,
+  forecastHeaders,
+  isoDay,
+  shiftDay,
+  windowEnd,
+} from './previsionnel-range';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -59,8 +68,11 @@ const FORECAST_REFRESH_MS = 60_000;
  * on tire son dossier. La matrice ouvre donc l'écran ; le dossier s'ouvre par
  * un bouton et se referme par « Retour au prévisionnel » (2026-10-06 — il y
  * avait un onglet, dont l'un des deux libellés ne disait rien à l'équipe).
+ *
+ * `tranches` (Hugo, 2026-11-01) : une journée dans la table de la matrice,
+ * une colonne par tranche horaire — « voir dans le temps ». Mur, comme elle.
  */
-type ForecastView = 'matrix' | 'dossier';
+type ForecastView = 'matrix' | 'dossier' | 'tranches';
 
 /**
  * **Le prévisionnel** — la matrice `produits × jours` du fournil.
@@ -110,8 +122,9 @@ type ForecastView = 'matrix' | 'dossier';
   // 🔴 La classe suit la vue ouverte, et ELLE SEULE contraint la hauteur — cf.
   // le commentaire de `:host(.is-wall)` dans la feuille. Le dossier du jour
   // reste en flux.
-  host: { '[class.is-wall]': "view() === 'matrix'" },
+  host: { '[class.is-wall]': "view() !== 'dossier'" },
   imports: [
+    DayTrancheWall,
     DossierDuJour,
     ForecastTable,
     ReopenDay,
@@ -168,13 +181,35 @@ export class PrevisionnelPage {
    * lu (fenêtre affichée et fenêtre d'aujourd'hui) ? `null` hors de ces deux
    * lectures : le dossier s'en remet alors au refus du serveur.
    */
-  protected readonly dossierClosed = computed<boolean | null>(() => {
-    const date = this.dossierDate();
+  protected readonly dossierClosed = computed(() => this.planClosedOn(this.dossierDate()));
+
+  /** Arrêté, ouvert, ou `null` = hors des deux fenêtres lues. */
+  private planClosedOn(date: string): boolean | null {
     const day = [...(this.forecast()?.days ?? []), ...this.aheadDays()].find(
       (candidate) => candidate.date === date,
     );
     return day === undefined ? null : day.closed;
-  });
+  }
+
+  /**
+   * La journée de la vue par tranche — même défaut que le dossier, mais son
+   * propre signal : passer d'une vue à l'autre ne déplace pas l'autre journée.
+   */
+  protected readonly trancheDate = signal(defaultDossierDate());
+
+  /** « La journée du mercredi 7 octobre, par tranche ». */
+  protected readonly trancheTitle = computed(
+    () =>
+      `La journée du ${DOSSIER_DAY_LABEL.format(new Date(`${this.trancheDate()}T00:00:00`))}, par tranche`,
+  );
+
+  /** Le plan de la journée par tranche est-il arrêté, d'après ce que la page a lu ? */
+  protected readonly trancheClosed = computed(() => this.planClosedOn(this.trancheDate()));
+
+  /** Une journée en avant ou en arrière, dans la vue par tranche. */
+  protected shiftTrancheDay(days: number): void {
+    this.trancheDate.set(shiftDay(this.trancheDate(), days));
+  }
 
   /** Le jour du poste, lu une fois : un écran de planning ne vit pas la nuit. */
   private readonly today = isoDay(new Date());
@@ -184,7 +219,8 @@ export class PrevisionnelPage {
 
   /** La matrice lue. Nommée `forecast` et non `view` : `view` est la lecture ouverte. */
   private readonly forecast = signal<ProductionForecastView | null>(null);
-  private readonly catalogue = signal<readonly CatalogItemView[]>([]);
+  /** Lu avec la matrice — les rayons de la vue par tranche aussi. */
+  protected readonly catalogue = signal<readonly CatalogItemView[]>([]);
 
   /**
    * 🔴 La lecture du catalogue a-t-elle échoué ?
@@ -210,6 +246,11 @@ export class PrevisionnelPage {
     const forecast = this.forecast();
     return forecast === null ? [] : forecastHeaders(forecast.days, forecast.peakDate, this.today);
   });
+
+  /** Les jours, en colonnes de la table (`forecast-column.ts`). */
+  protected readonly columns = computed(() => dayColumns(this.headers()));
+
+  protected readonly footRows = DAY_FOOT_ROWS;
 
   protected readonly pieces = computed(() => totalOfRayons(this.rayons()));
 

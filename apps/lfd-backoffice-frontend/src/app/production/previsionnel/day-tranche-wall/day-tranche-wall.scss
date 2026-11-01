@@ -1,0 +1,13 @@
+/* Le mur prend la hauteur que la page lui laisse, comme la table qu'il porte :
+   `min-height: 0` laisse la table défiler en gardant sa tête et son pied. */
+:host {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+/* Les échecs partiels, dans les gouttières de la page — la table, elle, est
+   pleine largeur. */
+.dtw-note {
+  padding-inline: var(--fold-page-gutter);
+}
