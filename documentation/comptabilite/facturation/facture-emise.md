@@ -313,8 +313,8 @@ totale)`. Sinon, une ligne par bon, chacune à son prix et son montant
   serait pas celle de la promotion : plancher, prix ramené à zéro, geste après
   la promotion, trace absente ou d'avant le 2026-09-09, prix émis rattrapé.
   Validé par le Schematron EN 16931, le XSD Factur-X et la CIUS-FR
-  (témoin `promotion-dans-le-prix`) ; **pas encore par Mustang** (pas de Java
-  sur le poste du bâti).
+  (témoin `promotion-dans-le-prix`), et par **Mustang** 2.26.0 (job CI
+  `facturx-mustang`, essai du 2026-11-01 : `valid`, avertissements admis seuls).
 - **PDF/A-3b** : `renderInvoicePdf` (`domain/services/invoice-pdf.ts`,
   `facturx-pdf-document.ts`, `facturx-xmp.ts`, `invoice-pdf-*.ts`), `pdfkit`
   0.20.2, PDF 1.7. Le XML est joint octet pour octet (`factur-x.xml`,
@@ -396,9 +396,32 @@ nouvelle.
 - **BG-14, période de facturation** (2026-10-31) : une pièce de plusieurs bons
   porte BT-73/BT-74, du premier au dernier bon livré (`billingPeriod`,
   `facturx-settlement.ts`) ; une pièce d'un seul bon garde BT-72. Ne vide pas
-  R008 (le bloc livraison reste sans donnée vraie à y mettre). Vérifié aussi
-  par **Mustang** 2.26.0, validateur tiers, lancé à la main : pièces `valid`,
-  restent R008 et les manques BR-FR-12/13 ci-dessous.
+  R008 (le bloc livraison reste sans donnée vraie à y mettre).
+
+**Mustang en CI** (depuis le 2026-11-01, demande de Hugo). Mustang 2.26.0,
+validateur tiers, ne se lance plus à la main : le job `facturx-mustang` de
+`ci.yml` écrit les témoins (`pnpm --filter lfd-api facturx:samples <dossier>`,
+`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-samples.write.ts` — le XML du vrai générateur et le PDF/A-3
+qui l'embarque) et passe chacun, PDF et XML, à `--action validate`
+(`dev-toolbox/ci/facturx-mustang/validate.mjs`). Il échoue sur un statut autre
+que `valid`, une `<error`, ou un avertissement dont l'ID n'est pas dans
+`dev-toolbox/ci/facturx-mustang/allowed-warnings.json` : `PEPPOL-EN16931-R008`,
+`BR-FR-12_BT-49`, `BR-FR-13_BT-34`, `BR-FR-CO-05_BT-3` (les manques ci-dessous ;
+une entrée se retire quand le manque est comblé). Un avertissement **sans ID**
+n'est jamais admis. Le jar est vérifié par sa SHA-256 à chaque run. Il tourne
+quand le diff touche `src/b2b/accounting/`, `packages/money/`, le script ou le
+workflow.
+
+Premier passage (2026-11-01) : 20/20 `valid`, après une correction qu'il a
+lui-même provoquée. Deux témoins (`carte-acquittee`,
+`plusieurs-taux-remise-livraison`) portaient un prix net de 5,00 € quel que
+soit le montant de la ligne — la fixture `line()` fixe le prix, et ces témoins
+appelaient `Invoice.issue` sans le rattrapage `billedUnitPriceMillicents` que
+fait `invoiceFromDossier` en production. Mustang recalcule les lignes depuis
+le prix et l'a vu ; le Schematron CEN (sans R120) et
+`facturXArithmeticViolations` (qui ne lit que BT-131) ne le pouvaient pas.
+`apps/lfd-api/src/b2b/accounting/domain/services/__tests__/facturx-line-recomposition.spec.ts` le tient désormais en Jest :
+|BT-129 × BT-146 − BT-131| ≤ 0,02 € sur chaque ligne de chaque témoin.
 
 **Les manques de donnée** — règles BR-FR laissées rouges, rien d'inventé :
 

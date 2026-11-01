@@ -1,0 +1,21 @@
+{
+  "$comment": "Avertissements Mustang ADMIS sur les témoins Factur-X (job CI facturx-mustang). Tout autre avertissement fait échouer le job, et un avertissement sans ID n'est jamais admis. Chaque entrée est un manque connu, décrit dans documentation/comptabilite/facturation/facture-emise.md (« La conformité française ») ; une entrée se retire quand le manque est comblé.",
+  "warnings": [
+    {
+      "id": "PEPPOL-EN16931-R008",
+      "why": "ApplicableHeaderTradeDelivery vide : le XSD l'exige, et la pièce n'a ni lieu de livraison distinct ni date de livraison unique à y mettre."
+    },
+    {
+      "id": "BR-FR-12_BT-49",
+      "why": "Adresse électronique de l'acheteur (BT-49) : viendra de l'annuaire de la réforme, qu'aucun lecteur ne lit encore."
+    },
+    {
+      "id": "BR-FR-13_BT-34",
+      "why": "Adresse électronique du vendeur (BT-34) : attribuée par la plateforme agréée, pas encore connue."
+    },
+    {
+      "id": "BR-FR-CO-05_BT-3",
+      "why": "Avoir sans date de la facture corrigée (BT-26) : seul le numéro (BT-25) est figé à l'émission de l'avoir."
+    }
+  ]
+}

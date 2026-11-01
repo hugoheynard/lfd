@@ -63,6 +63,7 @@ jobs:
       front_platform: ${{ steps.scope.outputs.front_platform }}
       gateway: ${{ steps.scope.outputs.gateway }}
       route_planner: ${{ steps.scope.outputs.route_planner }}
+      facturx: ${{ steps.scope.outputs.facturx }}
     steps:
       # `fetch-depth: 0` — sans l'historique, aucune base n'est résoluble et le
       # script rendrait « tout » à chaque fois. Le filtrage serait inerte, et
@@ -825,6 +826,74 @@ jobs:
       - name: Tests
         run: pnpm --filter lfd-route-planner test
 
+  # ── Factur-X, par un validateur tiers ──────────────────────────────────────
+  # Le Schematron EN 16931 et BR-FR tournent déjà dans les unitaires
+  # (`facturx-schematron.spec.ts`, `facturx-fr-conformance.spec.ts`). Mustang
+  # est un AUTRE lecteur, tiers, qui juge aussi le PDF/A-3 et sa pièce jointe.
+  # Lancé à la main jusqu'au 2026-11-01, en CI depuis (demande de Hugo).
+  #
+  # Décidé par CHEMIN (`facturx` dans `affected.mjs`) : la comptabilité,
+  # `@lfd/money`, le script, ce fichier.
+  #
+  # Les avertissements admis sont une LISTE d'ID versionnée
+  # (`dev-toolbox/ci/facturx-mustang/allowed-warnings.json`) ; un nouvel
+  # avertissement, une erreur ou un statut autre que `valid` fait échouer.
+  facturx-mustang:
+    name: Factur-X · Mustang
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    needs: changes
+    if: needs.changes.outputs.facturx == 'true'
+    env:
+      MUSTANG_VERSION: 2.26.0
+      # SHA-256 du jar publié sur Maven Central. Central ne publie que SHA-1
+      # (8755fc333032f802ad7dcf3930201edfe64014e2) et MD5 ; celle-ci a été
+      # calculée le 2026-11-01 sur le jar téléchargé de Central, dont le SHA-1
+      # concordait avec celui publié.
+      MUSTANG_SHA256: 42d7868cb68264874a7b8cab4c3587b03b23ccc7cd72373da917f66758bb9736
+    steps:
+      - uses: actions/checkout@v7
+      - uses: pnpm/action-setup@v6
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - uses: actions/setup-java@v5
+        with:
+          distribution: temurin
+          java-version: "21"
+      - run: pnpm install --frozen-lockfile
+      - name: Construire les paquets dont dépend le backend
+        run: pnpm --filter "./packages/**" build
+      - name: Restaurer Mustang
+        id: mustang-cache
+        uses: actions/cache@v6
+        with:
+          path: ~/mustang
+          key: mustang-cli-${{ env.MUSTANG_VERSION }}-${{ env.MUSTANG_SHA256 }}
+      - name: Télécharger Mustang
+        if: steps.mustang-cache.outputs.cache-hit != 'true'
+        run: |
+          mkdir -p ~/mustang
+          curl -fsSL -o ~/mustang/Mustang-CLI.jar \
+            "https://repo1.maven.org/maven2/org/mustangproject/Mustang-CLI/${MUSTANG_VERSION}/Mustang-CLI-${MUSTANG_VERSION}.jar"
+      # Vérifiée à CHAQUE run, cache compris : un cache est une entrée comme
+      # une autre.
+      - name: Vérifier la somme de Mustang
+        run: echo "${MUSTANG_SHA256}  ${HOME}/mustang/Mustang-CLI.jar" | sha256sum --check --strict
+      - name: Écrire les témoins (XML + PDF/A-3)
+        run: pnpm --filter lfd-api facturx:samples "${RUNNER_TEMP}/facturx"
+      - name: Valider par Mustang
+        run: node dev-toolbox/ci/facturx-mustang/validate.mjs ~/mustang/Mustang-CLI.jar "${RUNNER_TEMP}/facturx"
+      - name: Garder les rapports
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: facturx-mustang
+          path: |
+            ${{ runner.temp }}/facturx
+            ${{ runner.temp }}/facturx-mustang
+
   ci-gate:
     name: ci-gate
     runs-on: ubuntu-latest
@@ -845,6 +914,7 @@ jobs:
         front-platform-a11y,
         gateway,
         route-planner,
+        facturx-mustang,
       ]
     if: always()
     steps:
@@ -872,6 +942,7 @@ jobs:
           echo "front-platform-a11y : ${{ needs.front-platform-a11y.result }}"
           echo "gateway       : ${{ needs.gateway.result }}"
           echo "route-planner : ${{ needs.route-planner.result }}"
+          echo "facturx-mustang     : ${{ needs.facturx-mustang.result }}"
 
           echo "gates         : ${{ needs.gates.result }}"
 
@@ -899,7 +970,8 @@ jobs:
             "${{ needs.front-platform-tests.result }}" \
             "${{ needs.front-platform-a11y.result }}" \
             "${{ needs.gateway.result }}" \
-            "${{ needs.route-planner.result }}"; do
+            "${{ needs.route-planner.result }}" \
+            "${{ needs.facturx-mustang.result }}"; do
             case "$etat" in
               success | skipped) ;;
               *) rouge=1 ;;

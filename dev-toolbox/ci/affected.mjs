@@ -44,7 +44,34 @@ const AREAS = {
   route_planner: (name) => name === "lfd-route-planner",
 };
 
-const ALL = Object.fromEntries(Object.keys(AREAS).map((key) => [key, true]));
+/**
+ * Les jobs décidés par CHEMIN, et non par paquet : `facturx-mustang` ne
+ * concerne qu'un coin de `lfd-api`, et le relancer sur tout commit du backend
+ * coûterait une minute pour rien. Les fichiers qui le décident sont nommés
+ * ici ; la racine touchée le relance comme les autres (cf. plus bas).
+ */
+const PATH_AREAS = {
+  facturx: (file) =>
+    file.startsWith("apps/lfd-api/src/b2b/accounting/") ||
+    file.startsWith("packages/money/") ||
+    file.startsWith("dev-toolbox/ci/facturx-mustang/") ||
+    file === "apps/lfd-api/package.json" ||
+    file === ".github/workflows/ci.yml",
+};
+
+const ALL = Object.fromEntries(
+  [...Object.keys(AREAS), ...Object.keys(PATH_AREAS)].map((key) => [key, true]),
+);
+
+/** Les fichiers modifiés depuis la base. Lève si git ne sait pas comparer. */
+function changedFiles(base) {
+  const output = execFileSync("git", ["diff", "--name-only", base, "HEAD"], {
+    encoding: "utf8",
+    stdio: ["ignore", "pipe", "ignore"],
+    maxBuffer: 32 * 1024 * 1024,
+  });
+  return output.split("\n").filter(Boolean);
+}
 
 /** Les paquets en aval du diff, selon le graphe de turbo. `null` = on ne sait pas. */
 function affectedPackages(base) {
@@ -70,12 +97,19 @@ function decide(base) {
   if (packages === null) {
     return { areas: ALL, why: "sortie de turbo illisible" };
   }
+  let files;
+  try {
+    files = changedFiles(base);
+  } catch {
+    return { areas: ALL, why: `git n'a pas su comparer à « ${base} »` };
+  }
   if (packages.includes("//")) {
     return { areas: ALL, why: "la racine du dépôt est touchée (CI, gates, lockfile…)" };
   }
-  const areas = Object.fromEntries(
-    Object.entries(AREAS).map(([key, matches]) => [key, packages.some(matches)]),
-  );
+  const areas = Object.fromEntries([
+    ...Object.entries(AREAS).map(([key, matches]) => [key, packages.some(matches)]),
+    ...Object.entries(PATH_AREAS).map(([key, matches]) => [key, files.some(matches)]),
+  ]);
   return { areas, why: `paquets en aval : ${packages.join(", ") || "aucun"}` };
 }
 

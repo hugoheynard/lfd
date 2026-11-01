@@ -17,6 +17,7 @@ import {
 } from "../../entities/invoice.types.js";
 import { InvoiceNumber } from "../../value-objects/invoice-number.js";
 import { simulateInvoiceDossier } from "../invoice-dossier.js";
+import { billedUnitPriceMillicents } from "../invoice-net-price.js";
 import { invoiceFromDossier } from "../invoice-from-dossier.js";
 import { refundCreditNote } from "../refund-credit-note.js";
 import type { FrozenInvoiceOrder } from "../invoice-dossier.types.js";
@@ -49,6 +50,24 @@ function realisticInput(overrides: Partial<IssueInvoiceInput>): IssueInvoiceInpu
   });
 }
 
+/**
+ * Une ligne au prix que l'émission écrirait. La fixture partagée `line()`
+ * porte un prix fixe de 5,00 € quel que soit son montant ; en production,
+ * `invoiceFromDossier` le rattrape par `billedUnitPriceMillicents`, mais un
+ * témoin qui appelle `Invoice.issue` directement le sautait — et deux pièces
+ * portaient BT-129 × BT-146 ≠ BT-131, refusées par Mustang (2026-11-01,
+ * `facturx-line-recomposition.spec.ts`).
+ */
+function billedLine(
+  sku: string,
+  vatRate: number,
+  amountCents: number,
+  pieces = 1,
+): InvoiceLineInput {
+  const raw = line(sku, vatRate, amountCents, pieces);
+  return { ...raw, unitPriceMillicents: billedUnitPriceMillicents(raw) };
+}
+
 export interface FacturXSample {
   /** Le nom du cas, et du fichier PDF rendu par le script veraPDF. */
   readonly name: string;
@@ -56,7 +75,10 @@ export interface FacturXSample {
 }
 
 function multiRateWithDiscountAndDelivery(): Invoice {
-  const lines: readonly InvoiceLineInput[] = [line("PAIN", 5.5, 1_333, 3), line("JUS", 20, 667)];
+  const lines: readonly InvoiceLineInput[] = [
+    billedLine("PAIN", 5.5, 1_333, 3),
+    billedLine("JUS", 20, 667),
+  ];
   const goods = lines.map((l) => ({ htCents: l.amountCents, vatRate: l.vatRate }));
   // Un seul bon : sa remise et son port qui suit la marchandise, découpés sur lui.
   const split = splitOrderByRate({
@@ -85,7 +107,7 @@ function directDebit(): Invoice {
   );
 }
 
-const CARD_LINES = [line("PAIN", 5.5, 1_000), line("JUS", 20, 500)];
+const CARD_LINES = [billedLine("PAIN", 5.5, 1_000), billedLine("JUS", 20, 500)];
 
 function paidByCard(): Invoice {
   const vat = breakdownOf(CARD_LINES);
