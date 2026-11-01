@@ -231,8 +231,9 @@ sequenceDiagram
   **propre à chaque adresse** (`delivery-routing-support.ts:140`) et l'attente
   à l'ouverture d'une fenêtre (`route-timing.ts:216`), et rend `null` pour un
   arrêt sans point (`round-timing-estimator.ts:101-105`, vitruve). La matrice
-  OSRM coûte un appel réseau : 20 s de délai et un nouvel essai
-  (`osrm-distance-matrix.ts:14-20`), démarrage à froid non mesuré.
+  OSRM coûte un appel réseau : 20 s de délai par essai, et depuis le
+  2026-11-01 de nouveaux essais pendant un réveil dans un budget de 90 s
+  (`OSRM_WAKE_BUDGET_MS`, `osrm-fetch.ts`) ; démarrage à froid non mesuré.
 - `departAndFreeze` s'appelle **dans** l'unité de travail, la tournée
   verrouillée (`delivery-departure-support.ts:52`, `depart-my-round.handler.ts:52-58`) ;
   un appel réseau n'y a pas sa place (`unit-of-work.ts:17-23`). Le précédent

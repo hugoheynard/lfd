@@ -106,7 +106,7 @@ la carte routière.
 | Le **colisage** : le bac est fait                                            | `production_order.packed_at`, et la commande passe `ready`                                     |
 | La **file du jour**, livraisons comprises                                    | `handover-queue.reader.ts` rend toute la journée ; le front écarte les livraisons au comptoir  |
 | La **Supervision** groupe déjà les livraisons par créneau                    | `supervision/handover-slots.ts` (`delivery: SlotGroup[]`, `deliveryExpected`)                  |
-| La **place** dans le back-office                                             | la route `/livraison`, vide exprès (la page de livraison, retirée depuis le 2026-10-26)                                       |
+| La **place** dans le back-office                                             | la route `/livraison`, vide exprès (la page de livraison, retirée depuis le 2026-10-26)        |
 
 Les données pour **préparer** une tournée existent donc presque toutes. Ce qui
 manque, c'est l'écran qui les rassemble et les gestes qui s'appuient dessus.
@@ -1768,6 +1768,20 @@ classe `Backend`) :
   « Proposer ». Il s'endort, se réveille au premier appel (le temps de charger
   le graphe), et reste chaud tant qu'on compose. Son `sleepAfter` se règle
   si le réveil gêne ;
+  [état au 2026-11-01, décision de Hugo : le réveil gênait — « le calcul
+  routier ne répond pas » souvent en production. Trois gestes. Le
+  `sleepAfter` passe de `10m` à `1h` (`apps/lfd-route-planner/src/worker.ts`) :
+  une séance de composition entière tient éveillée, et un conteneur endormi
+  n'est pas facturé. L'ouverture du Tour manager réveille l'instance
+  (`POST /admin/delivery/road-routing/wake`, sous `delivery_rounds:read`,
+  202 immédiat, au plus un réveil par minute ; le réveil part en tâche de fond
+  par un `/route` minimal sur Chambéry). Et l'API **attend** le réveil au lieu
+  d'un seul nouvel essai : sur 503 ou délai dépassé, nouveaux essais après
+  2, 5, 10 puis 15 s, dans un budget TOTAL de 90 s (`OSRM_WAKE_BUDGET_MS`,
+  `osrm-fetch.ts`), sous les 100 s de coupure du mandataire Cloudflare ; ni
+  la passerelle ni `lfd-api` ne posent de borne plus courte. Au bout du
+  budget, le refus dit que le calcul « se réveille » et de réessayer dans une
+  minute.]
 - **aucune adresse n'en sort** : OSRM ne reçoit que des coordonnées, et c'est
   notre service. La page de confidentialité n'a rien à ajouter pour lui.
 
@@ -2094,7 +2108,8 @@ retiré le même jour : il faisait tomber « Proposer », § 6 question 1) ;
 `estimate` vaut `road` ou `crow_flies`. [corrigé le 2026-10-07 : remplacé le
 jour même par L10b-C5 — délai de 20 s, UN nouvel essai sur délai ou 503,
 **aucun repli** : sans OSRM, « Proposer » refuse
-(`RoadRoutingUnavailableError`) ; `estimate` vaut toujours `road`, déprécié.]
+(`RoadRoutingUnavailableError`) ; `estimate` vaut toujours `road`, déprécié.] [2026-11-01 : le nouvel essai unique est remplacé par une attente du
+réveil dans un budget de 90 s — voir L8-C1.]
 `OSRM_URL` suit le chemin de
 `BAN_GEOCODER_URL` (variable GitHub → secret du Worker → conteneur) ; son
 absence est une capacité dégradée. **Rien n'est déployé** — ordre et retour
@@ -2773,6 +2788,17 @@ IGN publiques. La passerelle expose `/api/route-planner/tiles/…` hors de la
 garde du jeton (seul ce sous-chemin, GET/HEAD seulement), sous la même limite
 de débit (plus large pour les tuiles : une carte fait des dizaines de
 requêtes partielles). Le calcul (`/table`, `/route`) reste derrière le jeton.
+[état au 2026-11-01 : chaque plage coûtait trois lectures R2 en série
+(current.json, `head`, la plage) — 0,6 à 2,3 s pour 16 Ko, sans
+`cf-cache-status`. Désormais (`apps/lfd-route-planner/src/tile-cache.ts`) le
+préfixe en service et l'en-tête du fichier restent cinq minutes en mémoire du
+Worker (une bascule de current.json est donc vue en au plus cinq minutes), et
+chaque plage lue est rangée dans le cache de Cloudflare (API Cache, cache
+nommé `lfd-map-tiles`) sous une clé préfixe daté + fichier + plage, avec un
+`cache-control` d'un an immuable : le préfixe daté ne désigne jamais deux
+contenus. Le cache refusant un 206, la plage y est rangée en 200 et la réponse
+partielle se reconstruit à la sortie. Le navigateur garde, lui, son jour de
+cache sur l'adresse non versionnée.]
 Servir une tuile ne réveille JAMAIS le conteneur OSRM : le Worker répond
 seul.
 

@@ -121,8 +121,8 @@ export class UnknownCostPointError extends TechnicalError {
 }
 
 /**
- * **Le calcul routier ne répond pas** (L10b-C5) — OSRM muet après un nouvel
- * essai, un bloc de la table en échec, ou pas branché du tout. Il n'y a plus
+ * **Le calcul routier ne répond pas** (L10b-C5) — OSRM muet au bout du
+ * budget de réveil (`OSRM_WAKE_BUDGET_MS`, 2026-11-01), un bloc de la table en échec, ou pas branché du tout. Il n'y a plus
  * de repli à vol d'oiseau : proposer faux en montagne coûtait plus cher que
  * ne rien proposer. Rien n'est écrit, rien n'est touché.
  *
@@ -134,7 +134,7 @@ export class RoadRoutingUnavailableError extends BusinessError {
   constructor() {
     super(
       "delivery.road_routing_unavailable",
-      "Le calcul routier ne répond pas : réessayez dans une minute. Les tournées existantes ne sont pas touchées.",
+      "Le calcul routier se réveille et n'a pas encore répondu : réessayez dans une minute. Les tournées existantes ne sont pas touchées.",
     );
   }
 }

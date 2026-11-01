@@ -8,6 +8,7 @@ import { describe, expect, it, vi } from 'vitest';
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryRoundsService } from '../delivery-rounds.service';
+import { RoadRoutingWake } from '../road-routing-wake';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { parisDayOf, shiftDay } from '../run-sheet';
 import { daysBetween, TourManagerDay } from './tour-manager-day';
@@ -27,6 +28,7 @@ class TabStub {
 const ROUNDS: readonly StaffPermission[] = ['delivery_rounds:read'];
 
 const dayDossierPdf = vi.fn((_day: string) => Promise.resolve(new Blob()));
+const wake = vi.fn();
 
 async function open(url: string, granted: readonly StaffPermission[] = ROUNDS) {
   TestBed.resetTestingModule();
@@ -44,6 +46,7 @@ async function open(url: string, granted: readonly StaffPermission[] = ROUNDS) {
         useValue: { can: (permission: StaffPermission) => granted.includes(permission) },
       },
       { provide: DeliveryRoundsService, useValue: { dayDossierPdf } },
+      { provide: RoadRoutingWake, useValue: { wake } },
     ],
   });
   const harness = await RouterTestingHarness.create();
@@ -116,6 +119,20 @@ describe('le bandeau de Tour manager (2026-10-26)', () => {
     harness.detectChanges();
 
     expect(tabDay(element)).toBe(parisDayOf(new Date()));
+  });
+});
+
+describe('le réveil du calcul routier à l’ouverture (2026-11-01)', () => {
+  it('part une fois, à l’ouverture, sous le droit de lire les tournées', async () => {
+    wake.mockClear();
+    await open('/tour-manager/tournees?jour=2026-10-27');
+    expect(wake).toHaveBeenCalledTimes(1);
+  });
+
+  it('ne part pas sans le droit de lire les tournées', async () => {
+    wake.mockClear();
+    await open('/tour-manager/tournees?jour=2026-10-27', []);
+    expect(wake).not.toHaveBeenCalled();
   });
 });
 

@@ -19,6 +19,7 @@ import {
 
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DayCalendar } from '../../shared/day-calendar/day-calendar';
+import { RoadRoutingWake } from '../road-routing-wake';
 import { RoundPdf } from '../round-pdf';
 import { TOUR_MANAGER_DAY_OPTIONS, TourManagerDay } from './tour-manager-day';
 import { TourManagerSummary } from './tour-manager-summary';
@@ -61,6 +62,9 @@ export function dossierLabelOf(day: string): string {
  * l'heure à droite. Plus de switch d'onglets depuis le 2026-10-26 (Hugo) :
  * la « Feuille de route » est retirée, le dossier du jour porte ce qu'elle
  * montrait.
+ *
+ * À l'ouverture, elle réveille le calcul routier (`RoadRoutingWake`,
+ * 2026-11-01) : un appel, sans attente ni message.
  *
  * ⚠️ **Elle n'est pas une page** : aucun `fold-page-layout` ici, la vue
  * routée porte le sien. Le seul geste du bandeau, le dossier du jour, demande
@@ -106,6 +110,11 @@ export class TourManagerWorkspacePage {
 
   constructor() {
     if (isPlatformBrowser(inject(PLATFORM_ID))) {
+      // Le calcul routier se réveille dès l'ouverture (2026-11-01) — sous le
+      // droit de lire les tournées, celui que la route exige.
+      if (this.canPrintDossier()) {
+        inject(RoadRoutingWake).wake();
+      }
       const timer = setInterval(() => this.now.set(new Date()), CLOCK_TICK_MS);
       inject(DestroyRef).onDestroy(() => clearInterval(timer));
     }

@@ -8,14 +8,14 @@ import { type CostFn, DistanceMatrix } from "../domain/ports/distance-matrix.js"
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
 import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
-import { type OsrmFetchOutcome, osrmGet, withBearer } from "./osrm-fetch.js";
+import { type OsrmFetchOutcome, type OsrmWakePacing, osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
- * Le délai d'un appel à `/table`, puis UN nouvel essai (L10b-C5). Large parce
- * que le premier « Proposer » du matin réveille une instance `lite` endormie
- * (`sleepAfter = "10m"`, `apps/lfd-route-planner/src/worker.ts`) : 0,6 s mesurées en
- * local (L8-C6), le démarrage à froid sur Cloudflare n'est PAS encore mesuré
- * (L8-C10).
+ * Le délai d'UN appel à `/table`. Un réveil se rattrape par les nouveaux
+ * essais, dans le budget `OSRM_WAKE_BUDGET_MS` (`osrm-fetch.ts`, 2026-11-01) :
+ * l'instance `basic` endormie (`sleepAfter = "1h"`,
+ * `apps/lfd-route-planner/src/worker.ts`) copie sa carte puis la charge avant
+ * de répondre.
  */
 export const OSRM_TIMEOUT_MS = 20_000;
 
@@ -58,8 +58,8 @@ interface BlockTable {
  * coûts sont **asymétriques** (sens uniques, montées) et pris tels quels :
  * l'ordonnanceur est déjà ATSP.
  *
- * Plus de repli : un délai dépassé ou un 503 (le réveil) a droit à UN nouvel
- * essai ; au-delà, ou sur tout autre échec — refus, réponse illisible, trajet
+ * Plus de repli : un délai dépassé ou un 503 (le réveil) se rejoue tant que
+ * le budget de réveil tient (`OSRM_WAKE_BUDGET_MS`, 2026-11-01) ; au-delà, ou sur tout autre échec — refus, réponse illisible, trajet
  * introuvable, un seul bloc manquant —, {@link RoadRoutingUnavailableError}.
  * Jamais une table à moitié routière.
  */
@@ -73,7 +73,11 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
 
   private readonly baseUrl: string;
 
-  constructor(endpoint: RoutePlannerEndpoint, options: OsrmTableOptions = {}) {
+  constructor(
+    endpoint: RoutePlannerEndpoint,
+    private readonly pacing: OsrmWakePacing,
+    options: OsrmTableOptions = {},
+  ) {
     super();
     this.baseUrl = endpoint.url;
     this.fetchFn = withBearer(options.fetchFn ?? ((url, init) => fetch(url, init)), endpoint.token);
@@ -122,7 +126,7 @@ export class OsrmDistanceMatrix extends DistanceMatrix {
     partial: boolean,
   ): Promise<BlockTable> {
     const url = partial ? this.partialUrl(coordinates, block) : this.fullUrl(coordinates);
-    const outcome = await osrmGet(this.fetchFn, url, this.timeoutMs, (body) =>
+    const outcome = await osrmGet(this.fetchFn, url, this.timeoutMs, this.pacing, (body) =>
       tableOf(body, block.sources.length, block.destinations.length),
     );
     return this.tableOrRefuse(outcome);

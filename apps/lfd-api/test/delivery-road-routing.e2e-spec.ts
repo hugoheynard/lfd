@@ -36,7 +36,7 @@ import {
 
 const DAY = serviceDay();
 const REFUSAL =
-  "Le calcul routier ne répond pas : réessayez dans une minute. Les tournées existantes ne sont pas touchées.";
+  "Le calcul routier se réveille et n'a pas encore répondu : réessayez dans une minute. Les tournées existantes ne sont pas touchées.";
 
 let ctx: E2eContext;
 

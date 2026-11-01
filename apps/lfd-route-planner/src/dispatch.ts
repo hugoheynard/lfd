@@ -10,17 +10,20 @@
  */
 import { admit, isContainerFailure, unavailable } from "./osrm-request";
 import { isTilesPath, serveTiles } from "./tiles";
+import type { TileCaching } from "./tile-cache";
 import type { TileBucket } from "./tiles";
 
 /** Ce dont l'aiguillage a besoin : le bucket, et de quoi joindre le conteneur À LA DEMANDE. */
 export interface DispatchDeps {
   readonly tiles: TileBucket;
+  /** Le cache des tuiles (2026-11-01) ; absent, chaque requête relit R2. */
+  readonly tileCaching?: TileCaching;
   readonly container: () => { fetch(request: Request): Promise<Response> };
 }
 
 export async function dispatch(request: Request, deps: DispatchDeps): Promise<Response> {
   if (isTilesPath(new URL(request.url).pathname)) {
-    return serveTiles(request, deps.tiles);
+    return serveTiles(request, deps.tiles, deps.tileCaching);
   }
   const admission = admit(request);
   if (!admission.admitted) {

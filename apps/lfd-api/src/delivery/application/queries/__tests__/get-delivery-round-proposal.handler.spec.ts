@@ -19,6 +19,7 @@ import {
 } from "../../../domain/ports/__tests__/road-routing-doubles.js";
 import { type CostFn, DistanceMatrix } from "../../../domain/ports/distance-matrix.js";
 import type { GeoPoint } from "../../../domain/value-objects/geo-point.js";
+import { InstantPacing } from "../../../infrastructure/__tests__/osrm-pacing-double.js";
 import { OsrmDistanceMatrix } from "../../../infrastructure/osrm-distance-matrix.js";
 import { addressKeyOf } from "../../../domain/services/address-key.js";
 import { RoutingSettings } from "../../../domain/value-objects/routing-settings.js";
@@ -362,23 +363,22 @@ describe("GetDeliveryRoundProposalHandler — par la route (lot 8, L8-C3)", () =
   });
 
   /** L10b-C5 : le vol d'oiseau a disparu — un OSRM muet refuse, il ne retombe plus. */
-  it("refuse quand OSRM ne répond pas, après un nouvel essai — plus de vol d'oiseau", async () => {
+  it("refuse quand OSRM ne répond pas, au bout du budget de réveil — plus de vol d'oiseau", async () => {
     let calls = 0;
-    const silent = new OsrmDistanceMatrix(
-      { url: "http://localhost:5055", token: null },
-      {
-        fetchFn: () => {
-          calls += 1;
-          return Promise.resolve(new Response("indisponible", { status: 503 }));
-        },
+    const pacing = new InstantPacing();
+    const silent = new OsrmDistanceMatrix({ url: "http://localhost:5055", token: null }, pacing, {
+      fetchFn: () => {
+        calls += 1;
+        return Promise.resolve(new Response("indisponible", { status: 503 }));
       },
-    );
+    });
     const { handler } = scene({ matrix: silent });
 
     await expect(
       handler.execute(new GetDeliveryRoundProposalQuery(DAY, null, false)),
     ).rejects.toThrow(RoadRoutingUnavailableError);
-    expect(calls).toBe(2);
+    expect(calls).toBe(pacing.pauses.length + 1);
+    expect(calls).toBeGreaterThan(2);
   });
 });
 

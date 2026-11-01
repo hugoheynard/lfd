@@ -113,7 +113,7 @@ import { DayComposer } from "./application/day-composer.js";
 import { DeliveryStopsLocating } from "./application/delivery-stops-locating.js";
 import { DAY_READINESS_CONTROLLERS, DAY_READINESS_PROVIDERS } from "./day-readiness.providers.js";
 import { BIN_CATALOGUE_CONTROLLERS, BIN_CATALOGUE_PROVIDERS } from "./bin-catalogue.providers.js";
-import { ROAD_ROUTING_PROVIDERS } from "./road-routing.providers.js";
+import { ROAD_ROUTING_CONTROLLERS, ROAD_ROUTING_PROVIDERS } from "./road-routing.providers.js";
 import {
   INTERNAL_TRANSFER_CONTROLLERS,
   INTERNAL_TRANSFER_PROVIDERS,
@@ -181,6 +181,7 @@ import {
     ...BIN_LABELS_CONTROLLERS,
     ...DOORSTEP_CONTROLLERS,
     ...INTERNAL_TRANSFER_CONTROLLERS,
+    ...ROAD_ROUTING_CONTROLLERS,
   ],
   providers: [
     AddVehicleHandler,

@@ -4,7 +4,7 @@ import { RouteGeometry, type RouteLine } from "../domain/ports/route-geometry.js
 import type { GeoPoint } from "../domain/value-objects/geo-point.js";
 import type { FetchFn } from "./ban-geocoder.js";
 import type { RoutePlannerEndpoint } from "../../platform/config/route-planner-endpoint.js";
-import { osrmGet, withBearer } from "./osrm-fetch.js";
+import { type OsrmWakePacing, osrmGet, withBearer } from "./osrm-fetch.js";
 
 /**
  * Le délai d'un tracé. Plus court que celui de la table : quand on trace,
@@ -29,6 +29,7 @@ export class OsrmRouteGeometry extends RouteGeometry {
 
   constructor(
     endpoint: RoutePlannerEndpoint,
+    private readonly pacing: OsrmWakePacing,
     fetchFn: FetchFn = (url, init) => fetch(url, init),
     private readonly timeoutMs: number = OSRM_ROUTE_TIMEOUT_MS,
   ) {
@@ -44,7 +45,7 @@ export class OsrmRouteGeometry extends RouteGeometry {
     // OSRM lit `longitude,latitude`, dans cet ordre.
     const path = waypoints.map((point) => `${String(point.lng)},${String(point.lat)}`).join(";");
     const url = `${this.baseUrl.replace(/\/+$/u, "")}/route/v1/driving/${path}?overview=simplified&geometries=geojson`;
-    const outcome = await osrmGet(this.fetchFn, url, this.timeoutMs, lineOf);
+    const outcome = await osrmGet(this.fetchFn, url, this.timeoutMs, this.pacing, lineOf);
     if ("value" in outcome) {
       return outcome.value;
     }

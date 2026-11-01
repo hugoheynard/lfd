@@ -5,8 +5,9 @@
  * Le bucket `lfd-map-tiles` porte chaque fabrication sous un préfixe DATÉ
  * (`AAAA-MM-JJ/rues.pmtiles`, `AAAA-MM-JJ/relief.pmtiles`) et un `current.json`
  * qui désigne le préfixe en service. La bascule d'une carte à la suivante est
- * l'écriture de ce seul fichier : on le lit à chaque requête, donc un retour
- * arrière (le réécrire) prend effet sans redéployer.
+ * l'écriture de ce seul fichier : le Worker le relit au plus toutes les cinq
+ * minutes (`tile-cache.ts`, 2026-11-01), donc un retour arrière (le réécrire)
+ * prend effet sans redéployer, dans ce délai.
  *
  * MapLibre lit un PMTiles **par plages** : l'en-tête, puis le répertoire, puis
  * chaque tuile. Les requêtes partielles sont donc le cas normal, pas une
@@ -15,6 +16,9 @@
  * Aucun import du monde Workers au-delà des types : fonctions sur
  * `Request`/`Response`, exécutables sous Node pour les tests.
  */
+
+import { CACHED_RANGE_CONTROL, noTileCaching, rangeCacheKey } from "./tile-cache";
+import type { TileCaching } from "./tile-cache";
 
 /** Ce que ce module lit d'un objet R2 — un sous-ensemble de `R2Object`. */
 export interface TileObject {
@@ -52,7 +56,7 @@ const SERVED_FILES: ReadonlySet<string> = new Set(["rues.pmtiles", "relief.pmtil
 const DATED_PREFIX = /^\d{4}-\d{2}-\d{2}$/;
 
 /**
- * Un jour. L'adresse (`/tiles/rues.pmtiles`) ne porte PAS la version : un cache
+ * Un jour, pour le NAVIGATEUR. L'adresse (`/tiles/rues.pmtiles`) ne porte PAS la version : un cache
  * plus long garderait la carte précédente des semaines après la bascule. Un
  * mélange de deux versions reste sans dommage — l'`ETag` change avec l'objet,
  * et le lecteur PMTiles relit tout quand il le voit changer.
@@ -66,8 +70,15 @@ export function isTilesPath(pathname: string): boolean {
   return pathname === TILES_PATH || pathname.startsWith(`${TILES_PATH}/`);
 }
 
-/** Sert `GET|HEAD /tiles/{rues,relief}.pmtiles`. Ne touche qu'au bucket. */
-export async function serveTiles(request: Request, bucket: TileBucket): Promise<Response> {
+/**
+ * Sert `GET|HEAD /tiles/{rues,relief}.pmtiles`. Ne touche qu'au bucket et au
+ * cache ; sans cache donné, relit tout à chaque requête.
+ */
+export async function serveTiles(
+  request: Request,
+  bucket: TileBucket,
+  caching: TileCaching = noTileCaching(),
+): Promise<Response> {
   if (request.method !== "GET" && request.method !== "HEAD") {
     return new Response(null, { status: 405, headers: { allow: "GET, HEAD" } });
   }
@@ -75,12 +86,12 @@ export async function serveTiles(request: Request, bucket: TileBucket): Promise<
   if (!SERVED_FILES.has(file)) {
     return notFound();
   }
-  const prefix = await currentPrefix(bucket);
+  const prefix = await caching.memo.prefix(() => currentPrefix(bucket));
   if (prefix === null) {
     return new Response("Carte indisponible.", { status: 503 });
   }
   const key = `${prefix}/${file}`;
-  const object = await bucket.head(key);
+  const object = await caching.memo.head(key, () => bucket.head(key));
   if (object === null) {
     return notFound();
   }
@@ -93,7 +104,7 @@ export async function serveTiles(request: Request, bucket: TileBucket): Promise<
   }
   return range === null
     ? whole(request, bucket, key, object)
-    : partial(request, bucket, key, object, range);
+    : partial(request, { bucket, caching, key, object }, rangeCacheKey(prefix, file, range), range);
 }
 
 /**
@@ -175,24 +186,53 @@ async function whole(
   return body === null ? notFound() : new Response(body.body, { status: 200, headers });
 }
 
+/** Ce que lit une plage : le bucket, le cache, l'objet visé et son en-tête. */
+interface RangeSource {
+  readonly bucket: TileBucket;
+  readonly caching: TileCaching;
+  readonly key: string;
+  readonly object: TileObject;
+}
+
+/**
+ * Une plage : du cache si elle y est, sinon du bucket, puis rangée au cache
+ * APRÈS la réponse (`defer`). Rangée en `200` avec son seul corps — le cache
+ * refuse un `206` —, et la réponse partielle se reconstruit ici.
+ */
 async function partial(
   request: Request,
-  bucket: TileBucket,
-  key: string,
-  object: TileObject,
+  source: RangeSource,
+  cacheKey: string,
   range: ByteRange,
 ): Promise<Response> {
   const length = range.end - range.start + 1;
   const headers = {
-    ...commonHeaders(object),
+    ...commonHeaders(source.object),
     "content-length": String(length),
-    "content-range": `bytes ${range.start}-${range.end}/${object.size}`,
+    "content-range": `bytes ${range.start}-${range.end}/${source.object.size}`,
   };
   if (request.method === "HEAD") {
     return new Response(null, { status: 206, headers });
   }
-  const body = await bucket.get(key, { range: { offset: range.start, length } });
-  return body === null ? notFound() : new Response(body.body, { status: 206, headers });
+  const cached = await source.caching.cache.match(cacheKey);
+  if (cached !== undefined) {
+    return new Response(cached.body, { status: 206, headers });
+  }
+  const body = await source.bucket.get(source.key, { range: { offset: range.start, length } });
+  if (body === null) {
+    return notFound();
+  }
+  const bytes = await new Response(body.body).arrayBuffer();
+  source.caching.defer(
+    source.caching.cache.put(
+      cacheKey,
+      new Response(bytes, {
+        status: 200,
+        headers: { "cache-control": CACHED_RANGE_CONTROL, "content-type": PMTILES_CONTENT_TYPE },
+      }),
+    ),
+  );
+  return new Response(bytes, { status: 206, headers });
 }
 
 /**

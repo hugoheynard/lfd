@@ -19,12 +19,15 @@
 // (`dispatch.ts`, `tiles.ts`).
 //
 // POURQUOI aucun cron : OSRM ne sert qu'au matin, à « Proposer ». Endormi, un
-// conteneur ne coûte rien ; il se réveille au premier appel (0,6 s mesurées en
-// local, L8-C6 — le démarrage à froid d'une instance `lite` reste à mesurer
-// en production).
+// conteneur ne coûte rien ; il se réveille au premier appel — et, depuis le
+// 2026-11-01, dès l'ouverture du Tour manager, que `lfd-api` signale par un
+// `/route` minimal (`OsrmRoadRoutingWaker`) : la carte se charge pendant qu'on
+// lit l'écran.
 import { Container } from "@cloudflare/containers";
 
 import { dispatch } from "./dispatch";
+import { TileMetadataMemo } from "./tile-cache";
+import type { TileCache } from "./tile-cache";
 
 interface Env {
   readonly OSRM: DurableObjectNamespace<Osrm>;
@@ -38,11 +41,13 @@ interface Env {
 /** Le conteneur OSRM : `osrm-routed` sur le port 5000, graphe dans l'image. */
 export class Osrm extends Container<Env> {
   defaultPort = 5000;
-  // Délai d'INACTIVITÉ : dix minutes sans appel et l'instance s'endort. Assez
-  // pour tenir chaude une séance de composition des tournées (plusieurs
-  // « Proposer » d'affilée), assez court pour ne pas payer une heure de
-  // conteneur pour un calcul de 30 ms. À régler si le réveil gêne (L8-C1).
-  sleepAfter = "10m";
+  // Délai d'INACTIVITÉ : une heure sans appel et l'instance s'endort
+  // (2026-11-01, Hugo ; dix minutes avant). Une séance de composition entière
+  // tient éveillée, pauses comprises : en dix minutes, l'instance se rendormait
+  // entre deux « Proposer », et chaque réveil (copie de la carte, puis
+  // chargement) faisait dire « le calcul routier ne répond pas ». Endormi, un
+  // conteneur n'est pas facturé : l'heure de plus ne se paie qu'après usage.
+  sleepAfter = "1h";
 }
 
 /**
@@ -52,10 +57,37 @@ export class Osrm extends Container<Env> {
  */
 const INSTANCE = "savoie";
 
+/**
+ * La mémoire courte des tuiles (préfixe en service, en-têtes), au niveau du
+ * module : elle vit autant que l'isolat, et sert toutes ses requêtes. Le temps
+ * est celui du Worker (`Date.now()`, gelé pendant une entrée/sortie) : il ne
+ * sert qu'à l'échéance de cette mémoire, jamais à un fait.
+ */
+const TILE_MEMO = new TileMetadataMemo(() => Date.now());
+
+/** Le cache nommé des plages de tuiles, dans le cache de Cloudflare. */
+const TILE_CACHE_NAME = "lfd-map-tiles";
+
+/**
+ * Le port {@link TileCache} sur l'API Cache de Cloudflare, par un cache NOMMÉ
+ * (`caches.open`) : `caches.default` n'est pas typé ici, la bibliothèque
+ * `WebWorker` du `tsconfig` masquant celle de Cloudflare — et les deux se
+ * comportent pareil.
+ */
+const TILE_CACHE: TileCache = {
+  match: async (key) => (await caches.open(TILE_CACHE_NAME)).match(key),
+  put: async (key, response) => (await caches.open(TILE_CACHE_NAME)).put(key, response),
+};
+
 export default {
-  fetch(request: Request, env: Env): Promise<Response> {
+  fetch(request: Request, env: Env, ctx: ExecutionContext): Promise<Response> {
     return dispatch(request, {
       tiles: env.MAP_TILES,
+      tileCaching: {
+        cache: TILE_CACHE,
+        memo: TILE_MEMO,
+        defer: (work) => ctx.waitUntil(work),
+      },
       container: () => env.OSRM.get(env.OSRM.idFromName(INSTANCE)),
     });
   },

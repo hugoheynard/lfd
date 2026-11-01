@@ -16,6 +16,8 @@ import {
   OSRM_TABLE_SAVOIE,
   OSRM_TABLE_UNREACHABLE,
 } from "./osrm-responses.js";
+import { OSRM_WAKE_BUDGET_MS, OSRM_WAKE_PAUSES_MS } from "../osrm-fetch.js";
+import { InstantPacing } from "./osrm-pacing-double.js";
 
 /** Val d'Isère (le labo), Arc 1800, Courchevel 1850 — les points de la réponse enregistrée. */
 const POINTS: ReadonlyMap<string, GeoPoint> = new Map([
@@ -62,11 +64,15 @@ const blocks = (failing: string | null = null) =>
     );
   });
 
-function matrix(recorded: RecordedFetch, options: OsrmTableOptions = {}): OsrmDistanceMatrix {
-  return new OsrmDistanceMatrix(
-    { url: "http://localhost:5055/", token: null },
-    { fetchFn: recorded.fetch, ...options },
-  );
+function matrix(
+  recorded: RecordedFetch,
+  options: OsrmTableOptions = {},
+  pacing: InstantPacing = new InstantPacing(),
+): OsrmDistanceMatrix {
+  return new OsrmDistanceMatrix({ url: "http://localhost:5055/", token: null }, pacing, {
+    fetchFn: recorded.fetch,
+    ...options,
+  });
 }
 
 /** Deux points par bloc : quatre points font quatre blocs 2 × 2. */
@@ -104,6 +110,7 @@ describe("les coûts par la route — OSRM /table (lot 8)", () => {
 
     await new OsrmDistanceMatrix(
       { url: "https://lafoliecoffee.info/api/route-planner", token },
+      new InstantPacing(),
       { fetchFn: recorded.fetch },
     ).build(POINTS);
 
@@ -226,36 +233,60 @@ describe("plus de vol d'oiseau : refuse, en le nommant (L10b-C5)", () => {
     const recorded = new RecordedFetch(answer);
 
     await expect(matrix(recorded).build(POINTS)).rejects.toThrow(
-      "Le calcul routier ne répond pas : réessayez dans une minute. Les tournées existantes ne sont pas touchées.",
+      "Le calcul routier se réveille et n'a pas encore répondu : réessayez dans une minute. Les tournées existantes ne sont pas touchées.",
     );
     expect(recorded.calls).toHaveLength(1);
   });
 
-  it("réessaie UNE fois un 503 (le réveil), et rend la route si le second répond", async () => {
+  /**
+   * 2026-11-01 : un seul nouvel essai abandonnait pendant que l'instance
+   * `basic` chargeait encore sa carte — « le calcul routier ne répond pas »
+   * en production. Le réveil s'attend, dans un budget.
+   */
+  it("attend le réveil : rend la route après plusieurs 503, avec des pauses croissantes", async () => {
     let answered = 0;
     const recorded = new RecordedFetch(() => {
       answered += 1;
       return Promise.resolve(
-        answered === 1
+        answered <= 3
           ? Response.json({ code: "LfdOsrmRefused" }, { status: 503 })
           : Response.json(OSRM_TABLE_SAVOIE),
       );
     });
+    const pacing = new InstantPacing();
 
-    const cost = await matrix(recorded).build(POINTS);
+    const cost = await matrix(recorded, {}, pacing).build(POINTS);
 
-    expect(recorded.calls).toHaveLength(2);
+    expect(recorded.calls).toHaveLength(4);
+    expect(pacing.pauses).toEqual(OSRM_WAKE_PAUSES_MS.slice(0, 3));
     expect(cost.seconds("depot", "arc")).toBe(3052);
   });
 
-  it("refuse après deux 503 — pas de troisième essai", async () => {
+  it("abandonne quand une pause et un essai de plus dépasseraient le budget", async () => {
     const recorded = new RecordedFetch(json({ code: "LfdOsrmRefused" }, 503));
+    // 20 s par essai : 2 + 20 et 2 + 5 + 20 tiennent dans 30 s ; 2 + 5 + 10 + 20 non.
+    const pacing = new InstantPacing(30_000);
 
-    await expect(matrix(recorded).build(POINTS)).rejects.toThrow(RoadRoutingUnavailableError);
-    expect(recorded.calls).toHaveLength(2);
+    await expect(matrix(recorded, { timeoutMs: 20_000 }, pacing).build(POINTS)).rejects.toThrow(
+      RoadRoutingUnavailableError,
+    );
+    expect(pacing.pauses).toEqual([2_000, 5_000]);
+    expect(recorded.calls).toHaveLength(3);
   });
 
-  it("réessaie UNE fois un délai dépassé, puis refuse", async () => {
+  it("le budget par défaut tient 90 s, et l'attente ne le dépasse jamais", async () => {
+    const recorded = new RecordedFetch(json({ code: "LfdOsrmRefused" }, 503));
+    const pacing = new InstantPacing();
+
+    await expect(matrix(recorded, { timeoutMs: 20 }, pacing).build(POINTS)).rejects.toThrow(
+      RoadRoutingUnavailableError,
+    );
+    expect(OSRM_WAKE_BUDGET_MS).toBe(90_000);
+    expect(pacing.elapsedMs()).toBeLessThanOrEqual(OSRM_WAKE_BUDGET_MS);
+    expect(pacing.pauses.length).toBeGreaterThan(3);
+  });
+
+  it("réessaie un délai dépassé comme un réveil, puis refuse au bout du budget", async () => {
     // Un `fetch` qui ne répond jamais, et ne cède qu'au signal : c'est bien
     // le délai de l'adaptateur qui coupe, pas le double.
     const silent = new RecordedFetch(
@@ -264,11 +295,12 @@ describe("plus de vol d'oiseau : refuse, en le nommant (L10b-C5)", () => {
           init.signal?.addEventListener("abort", () => reject(new Error("aborted")));
         }),
     );
+    const pacing = new InstantPacing(2_000 + 5_000 + 40);
 
-    await expect(matrix(silent, { timeoutMs: 20 }).build(POINTS)).rejects.toThrow(
+    await expect(matrix(silent, { timeoutMs: 20 }, pacing).build(POINTS)).rejects.toThrow(
       RoadRoutingUnavailableError,
     );
-    expect(silent.calls).toHaveLength(2);
+    expect(silent.calls).toHaveLength(3);
   });
 
   it("sans ROUTE_PLANNER_URL, la matrice injectée refuse de la même façon", async () => {

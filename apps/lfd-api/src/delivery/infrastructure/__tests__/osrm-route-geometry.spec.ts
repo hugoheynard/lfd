@@ -2,6 +2,7 @@ import { geoPoint } from "../../domain/value-objects/geo-point.js";
 import type { FetchFn } from "../ban-geocoder.js";
 import { DisabledRouteGeometry } from "../disabled-road-routing.js";
 import { OsrmRouteGeometry } from "../osrm-route-geometry.js";
+import { InstantPacing } from "./osrm-pacing-double.js";
 import { OSRM_ROUTE_VAL_ARC } from "./osrm-responses.js";
 
 const VAL = geoPoint(45.4486, 6.9797);
@@ -12,7 +13,12 @@ function geometry(answer: () => Promise<Response>, calls: string[] = []): OsrmRo
     calls.push(url);
     return answer();
   };
-  return new OsrmRouteGeometry({ url: "http://localhost:5055/", token: null }, fetchFn, 20);
+  return new OsrmRouteGeometry(
+    { url: "http://localhost:5055/", token: null },
+    new InstantPacing(),
+    fetchFn,
+    20,
+  );
 }
 
 describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
@@ -36,6 +42,7 @@ describe("le tracé par la route — OSRM /route (L10b-C4)", () => {
     const token = "t".repeat(64);
     const traced = new OsrmRouteGeometry(
       { url: "https://lafoliecoffee.info/api/route-planner", token },
+      new InstantPacing(),
       (_url, init) => {
         seen.push(init);
         return Promise.resolve(Response.json(OSRM_ROUTE_VAL_ARC));
