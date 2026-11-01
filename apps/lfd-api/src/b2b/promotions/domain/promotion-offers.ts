@@ -120,6 +120,28 @@ export function offerHoursAt(promotion: LivePromotion, at: Date): OfferHours | "
   return { moment: hours.moment, windows: hours.windows, activeNow: standing === "active" };
 }
 
+/** Les acheminements que la clientèle du lecteur peut utiliser (réglage de livraison). */
+export interface OpenFulfillments {
+  readonly delivery: boolean;
+}
+
+/**
+ * **L'offre telle que ce lecteur peut la saisir** : un acheminement qui ne
+ * lui est pas ouvert n'est pas cité, et une offre dont aucun acheminement ne
+ * lui est ouvert n'est pas dite du tout (`null`). Sans quoi un particulier, à
+ * qui on ne livre pas, lisait « −20 % en livraison » (2026-11-01).
+ */
+export function offerOpenTo(
+  offer: FulfillmentOffer,
+  open: OpenFulfillments,
+): FulfillmentOffer | null {
+  const delivery = open.delivery ? offer.fulfillment.delivery : "none";
+  if (offer.fulfillment.pickup === "none" && delivery === "none") {
+    return null;
+  }
+  return { ...offer, fulfillment: { pickup: offer.fulfillment.pickup, delivery } };
+}
+
 /** Les candidates qui demandent le produit de l'article (cible `product`). */
 export function offersNeedProducts(candidates: readonly LivePromotion[]): boolean {
   return candidates.some((promotion) =>

@@ -3,6 +3,7 @@ import type { ShelfPromotionOffers } from "../../../../promotions/application/sh
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { shelfPromotionOffers } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { FixedLineClassifications } from "../../../../orders/domain/ports/__tests__/line-classification-doubles.js";
+import { GivenDeliveryAvailability } from "../../../../delivery-availability/domain/ports/__tests__/delivery-availability-doubles.js";
 import type { CatalogPricing, OrderCutoffView } from "@lfd/contracts";
 
 import {
@@ -221,7 +222,11 @@ function fixture(
     new GivenCutoffs(cutoffs),
     new GivenPricesPerKg(),
     new CatalogViewers(new InMemoryServedCompanies()),
-    new ShopCatalogueOffers(offers, new FixedLineClassifications()),
+    new ShopCatalogueOffers(
+      offers,
+      new FixedLineClassifications(),
+      new GivenDeliveryAvailability(),
+    ),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };
 }

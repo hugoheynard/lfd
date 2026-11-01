@@ -2,8 +2,10 @@ import {
   fulfillmentOffersFor,
   offerCandidates,
   offerEffectOf,
+  offerOpenTo,
   offersNeedProducts,
   signInOfferFor,
+  type FulfillmentOffer,
   type OfferedLine,
 } from "../promotion-offers.js";
 import type { PromotionAudienceFacts } from "../promotion-targeting.js";
@@ -264,5 +266,28 @@ describe("signInOfferFor — ce qu'une connexion ouvrirait à un invité", () =>
       effect: { kind: "amount", millicents: 9 },
     });
     expect(signInOfferFor([posed], ASKED_AT, [LINE_OF_PAIN], null)).toEqual({ effect: null });
+  });
+});
+
+describe("offerOpenTo — l'offre telle que ce lecteur peut la saisir", () => {
+  const offer = (pickup: FulfillmentOffer["fulfillment"]["pickup"]): FulfillmentOffer => ({
+    promotionId: "p",
+    effect: { kind: "percent", basisPoints: 2_000 },
+    fulfillment: { pickup, delivery: { zones: ["zone_1"] } },
+  });
+
+  it("livraison fermée : la livraison n'est plus citée, le retrait reste", () => {
+    expect(offerOpenTo(offer("all"), { delivery: false })?.fulfillment).toEqual({
+      pickup: "all",
+      delivery: "none",
+    });
+  });
+
+  it("livraison fermée et aucun retrait : rien à dire", () => {
+    expect(offerOpenTo(offer("none"), { delivery: false })).toBeNull();
+  });
+
+  it("livraison ouverte : l'offre est rendue telle quelle", () => {
+    expect(offerOpenTo(offer("none"), { delivery: true })).toEqual(offer("none"));
   });
 });

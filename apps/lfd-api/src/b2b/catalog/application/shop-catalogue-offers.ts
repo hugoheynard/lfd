@@ -1,16 +1,23 @@
-import type { ShopCatalogueView, ShopItemFulfillmentOfferView } from "@lfd/contracts";
+import {
+  deliveryOpenTo,
+  type ShopCatalogueView,
+  type ShopItemFulfillmentOfferView,
+} from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
+import { DeliveryAvailabilityReader } from "../../delivery-availability/domain/ports/delivery-availability.reader.js";
 import { OrderLineClassificationReader } from "../../orders/domain/ports/order-line-classification.reader.js";
 import { ShelfPromotionOffers } from "../../promotions/application/shelf-promotion-offers.js";
 import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
 import {
   fulfillmentOffersFor,
+  offerOpenTo,
   offersNeedProducts,
+  type OpenFulfillments,
   type FulfillmentOffer,
 } from "../../promotions/domain/promotion-offers.js";
 import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
-import type { ResolvedCatalogItem } from "../domain/ports/catalog.reader.js";
+import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
 import {
   admitsPromotion,
   type PromotionAdmission,
@@ -31,30 +38,51 @@ export interface ShelfOffered {
   readonly candidates: readonly LivePromotion[];
   /** Vide quand aucune candidate ne vise un produit — rien n'a été lu. */
   readonly productIds: ReadonlyMap<string, string | null>;
+  /** Ce que la clientèle du lecteur peut utiliser : un acheminement fermé ne se cite pas. */
+  readonly open: OpenFulfillments;
 }
 
 /**
  * **Ce que le rayon mentionne** (lot L10) — les candidates, et le produit des
  * articles, lu seulement quand une candidate vise un produit : une rafale de
  * visiteurs ne paie pas une lecture de plus pour une portée qui ne le demande pas.
+ *
+ * Le réglage de livraison n'est lu que s'il y a une candidate : la livraison
+ * fermée à la clientèle du rayon (`/delivery-availability`), une mention
+ * « en livraison » serait une fausse information (2026-11-01).
  */
 @Injectable()
 export class ShopCatalogueOffers {
   constructor(
     private readonly offers: ShelfPromotionOffers,
     private readonly classifications: OrderLineClassificationReader,
+    private readonly delivery: DeliveryAvailabilityReader,
   ) {}
 
-  async offeredFor(buyer: ShelfBuyer, catalogue: ShopCatalogueView): Promise<ShelfOffered> {
+  async offeredFor(
+    buyer: ShelfBuyer,
+    catalogue: ShopCatalogueView,
+    audience: ShopAudience,
+  ): Promise<ShelfOffered> {
     const candidates = await this.offers.candidatesFor({ kind: "real", ...buyer });
+    if (candidates.length === 0) {
+      return { candidates, productIds: new Map(), open: { delivery: false } };
+    }
+    const open = await this.openTo(audience);
     if (!offersNeedProducts(candidates)) {
-      return { candidates, productIds: new Map() };
+      return { candidates, productIds: new Map(), open };
     }
     const classified = await this.classifications.classify(catalogue.items.map((item) => item.sku));
     return {
       candidates,
       productIds: new Map([...classified].map(([sku, found]) => [sku, found.productId])),
+      open,
     };
+  }
+
+  private async openTo(audience: ShopAudience): Promise<OpenFulfillments> {
+    const settings = await this.delivery.current();
+    return { delivery: deliveryOpenTo(settings, audience === "pro" ? "b2b" : "b2c") };
   }
 }
 
@@ -94,7 +122,7 @@ export function sealingOfShelf(
 export function withFulfillmentOffers(
   catalogue: ShopCatalogueView,
   sellable: readonly ResolvedCatalogItem[],
-  { candidates, productIds }: ShelfOffered,
+  { candidates, productIds, open }: ShelfOffered,
   at: Date,
   sealing: ReadonlyMap<string, PromotionAdmission> = new Map(),
 ): ShopCatalogueView {
@@ -118,9 +146,11 @@ export function withFulfillmentOffers(
                 categoryPath: source.family.path,
               },
               at,
-            ).filter(
-              (offer) => admission === undefined || admitsPromotion(admission, offer.promotionId),
-            );
+            )
+              .filter(
+                (offer) => admission === undefined || admitsPromotion(admission, offer.promotionId),
+              )
+              .flatMap((offer) => offerOpenTo(offer, open) ?? []);
       return offers.length === 0 ? item : { ...item, fulfillmentOffers: offers.map(offerView) };
     }),
   };

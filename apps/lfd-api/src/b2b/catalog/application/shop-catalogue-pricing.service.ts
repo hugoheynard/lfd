@@ -208,7 +208,7 @@ export class ShopCataloguePricing {
       this.pricesPerKg.bySkus(shownVariantSkus(catalogue, sellable)),
       // Les promotions qu'un acheminement ouvrirait (L10) : MENTIONNÉES, jamais
       // appliquées au prix du rayon, où l'acheminement est inconnu.
-      this.offers.offeredFor(buyer, catalogue),
+      this.offers.offeredFor(buyer, catalogue, audience),
     ]);
     const mentioned = withFulfillmentOffers(
       priced.view,

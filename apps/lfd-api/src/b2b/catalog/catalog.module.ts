@@ -60,6 +60,7 @@ import { SaleOperations } from "./application/sale-operations.service.js";
 import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
+import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
 import { ShopCatalogueOffers } from "./application/shop-catalogue-offers.js";
 import { CatalogViewers } from "./application/catalog-viewers.service.js";
 import { ReservedArticleGuard } from "./application/reserved-article-guard.service.js";
@@ -135,7 +136,14 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
   // `limites-de-commande/limites-produit.md`, 2026-10-21).
   // `PricingModule` pour les promotions que le rayon mentionne (L10) : il
   // n'importe rien, donc aucun cycle.
-  imports: [PricerModule, PricingModule, CanonicalPriceHistoryModule, OrderCutoffsInForceModule],
+  imports: [
+    PricerModule,
+    PricingModule,
+    CanonicalPriceHistoryModule,
+    OrderCutoffsInForceModule,
+    // Le rayon ne cite pas un acheminement fermé à la clientèle du lecteur.
+    DeliveryAvailabilityModule,
+  ],
   controllers: [
     AdminCatalogController,
     // Le sur mesure et la réservation (`plan-articles-sur-mesure.md`, L1a).
