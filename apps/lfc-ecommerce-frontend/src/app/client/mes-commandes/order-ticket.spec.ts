@@ -144,3 +144,19 @@ describe('le ticket et plusieurs remises (plan des promotions, M6)', () => {
     expect(ticketOf(partial)?.discounts).toBeUndefined();
   });
 });
+
+describe('le ticket et une seule remise de promotion (2026-11-01)', () => {
+  /** Régression : une remise unique de promotion se lisait « Remise retrait ». */
+  it('une seule remise d’une promotion se lit par son nom, pas « Remise retrait au … »', () => {
+    const ticket = ticketOf(exact({ discountLabel: { fr: 'Été', en: 'Summer', it: 'Estate' } }));
+    const rows = ticket === null ? [] : ticketRowsOf(ticket, FR.orders, 'en');
+    const text = rows.map((row) => `${row.label}=${row.value}`).join('\n');
+
+    expect(text).toContain('Summer=−2,70');
+    expect(text).not.toContain(FR.orders.detailPickupDiscount);
+  });
+
+  it('sans libellé, la ligne d’hier reste', () => {
+    expect(ticketOf(exact())?.discountLabel).toBeUndefined();
+  });
+});

@@ -27,6 +27,11 @@ export interface OrderTicket {
    * ligne de remise d'hier, au caractère près. Leur somme est `discountCents`.
    */
   readonly discounts?: readonly OrderTicketDiscount[];
+  /**
+   * Le nom figé de la remise UNIQUE, quand une promotion la fait (décision
+   * du 2026-11-01) — absent sinon, et quand `discounts` dit déjà chacune.
+   */
+  readonly discountLabel?: DiscountLabelView;
   readonly voucherCents: number;
   readonly deliveryFeeCents: number;
   /** Le total payé : `articles − remise − bon + port`. */
@@ -87,10 +92,11 @@ export function ticketOf(order: CustomerOrderView): OrderTicket | null {
  */
 function ticketDiscountsOf(order: CustomerOrderView): {
   readonly discounts?: readonly OrderTicketDiscount[];
+  readonly discountLabel?: DiscountLabelView;
 } {
   const discounts = order.discounts;
   if (discounts === undefined || discounts.length < 2) {
-    return {};
+    return order.discountLabel === undefined ? {} : { discountLabel: order.discountLabel };
   }
   const lines: OrderTicketDiscount[] = [];
   for (const discount of discounts) {

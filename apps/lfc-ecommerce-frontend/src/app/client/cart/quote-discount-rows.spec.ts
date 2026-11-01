@@ -32,4 +32,15 @@ describe('quoteDiscountRows', () => {
     expect(rows.map((row) => row.label)).toEqual(['Pickup', expect.stringContaining('Remise')]);
     expect(rows.reduce((sum, row) => sum + row.cents, 0)).toBe(totals.discountCents);
   });
+
+  /** Régression (2026-11-01) : une remise unique de promotion se lisait « Remise retrait au … ». */
+  it('une seule remise d’une promotion se lit par son nom, pas « Remise retrait au … »', () => {
+    const totals = {
+      discountCents: 120,
+      discountLabel: { fr: 'Folie Coffee', en: 'Folie Coffee EN', it: 'Folie Coffee IT' },
+    };
+    expect(quoteDiscountRows(totals, 'Remise retrait Labo −10 %', unnamed, 'en')).toEqual([
+      { label: 'Folie Coffee EN', cents: 120 },
+    ]);
+  });
 });

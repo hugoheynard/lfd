@@ -1129,6 +1129,12 @@ export interface CustomerOrderView {
   readonly discountAdjustment: CartAdjustment | null;
   /** Cf. {@link OrderView.discounts} — absente avec une remise au plus. */
   readonly discounts?: readonly OrderDiscountView[];
+  /**
+   * Cf. {@link OrderView.discountLabel} — servi pour que « Mes commandes »
+   * nomme une remise SEULE par sa promotion (décision du 2026-11-01).
+   * Absent sans libellé figé : l'écran garde la phrase du point.
+   */
+  readonly discountLabel?: DiscountLabelView;
   /** Cf. {@link OrderView.pickupDiscountBase}. */
   readonly pickupDiscountBase?: PickupDiscountBaseView;
   readonly voucherDiscountCents: number;
@@ -1197,6 +1203,7 @@ export function toCustomerOrder(view: OrderView): CustomerOrderView {
     discountCents: view.discountCents,
     discountAdjustment: view.discountAdjustment,
     ...(view.discounts === undefined ? {} : { discounts: view.discounts }),
+    ...(view.discountLabel === undefined ? {} : { discountLabel: view.discountLabel }),
     ...(view.pickupDiscountBase === undefined
       ? {}
       : { pickupDiscountBase: view.pickupDiscountBase }),

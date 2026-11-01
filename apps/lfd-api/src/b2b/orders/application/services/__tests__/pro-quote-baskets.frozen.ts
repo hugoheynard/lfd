@@ -437,6 +437,9 @@ export const FROZEN_PRO_QUOTES = [
       subtotalHtCents: 666,
       discountCents: 67,
       discountAdjustment: { mode: "percent", bp: 1000 },
+      // Ajouté le 2026-11-01 : la remise unique se nomme par sa promotion — un
+      // libellé, aucun montant changé.
+      discountLabel: { fr: "Remise de retrait", en: "Remise de retrait", it: "Remise de retrait" },
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
@@ -474,6 +477,9 @@ export const FROZEN_PRO_QUOTES = [
       subtotalHtCents: 1750,
       discountCents: 200,
       discountAdjustment: { mode: "amount", cents: 200 },
+      // Ajouté le 2026-11-01 : la remise unique se nomme par sa promotion — un
+      // libellé, aucun montant changé.
+      discountLabel: { fr: "Remise de retrait", en: "Remise de retrait", it: "Remise de retrait" },
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
@@ -502,6 +508,9 @@ export const FROZEN_PRO_QUOTES = [
       subtotalHtCents: 150,
       discountCents: 150,
       discountAdjustment: { mode: "amount", cents: 5000 },
+      // Ajouté le 2026-11-01 : la remise unique se nomme par sa promotion — un
+      // libellé, aucun montant changé.
+      discountLabel: { fr: "Remise de retrait", en: "Remise de retrait", it: "Remise de retrait" },
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",
@@ -536,6 +545,9 @@ export const FROZEN_PRO_QUOTES = [
       subtotalHtCents: 2200,
       discountCents: 180,
       discountAdjustment: { mode: "percent", bp: 1500 },
+      // Ajouté le 2026-11-01 : la remise unique se nomme par sa promotion — un
+      // libellé, aucun montant changé.
+      discountLabel: { fr: "Remise de retrait", en: "Remise de retrait", it: "Remise de retrait" },
       pickupDiscountBase: {
         eligibleHtCents: 1200,
         eligibleTtcCents: 1266,
@@ -897,6 +909,9 @@ export const FROZEN_PRO_QUOTES = [
       subtotalHtCents: 2426,
       discountCents: 121,
       discountAdjustment: { mode: "percent", bp: 500 },
+      // Ajouté le 2026-11-01 : la remise unique se nomme par sa promotion — un
+      // libellé, aucun montant changé.
+      discountLabel: { fr: "Remise de retrait", en: "Remise de retrait", it: "Remise de retrait" },
       voucherDiscountCents: 0,
       deliveryFeeCents: 0,
       deliveryVatMode: "standard",

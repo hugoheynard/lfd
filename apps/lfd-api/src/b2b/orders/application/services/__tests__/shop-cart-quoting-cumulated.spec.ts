@@ -79,4 +79,20 @@ describe("ShopCartQuoting — deux promotions panier cumulables (M7)", () => {
     expect(view.discountAdjustment).toEqual({ mode: "percent", bp: 1_000 });
     expect(view).not.toHaveProperty("discounts");
   });
+
+  /** Régression (2026-11-01) : la remise unique d'une promotion n'avait pas de nom au devis. */
+  it.each([
+    ["un pro (line_ht)", "co_1"],
+    ["un particulier (exact_ht)", null],
+  ])("%s : une seule remise d'une promotion porte son nom", async (_label, companyId) => {
+    const view = await quoted([cumulative("a", 1_000)], companyId);
+
+    expect(view.discountLabel?.fr).toBe("Promo a");
+  });
+
+  it("plusieurs remises : chaque nom est dans `discounts`, pas de nom unique", async () => {
+    const view = await quoted([cumulative("a", 1_000), cumulative("b", 500)], "co_1");
+
+    expect(view).not.toHaveProperty("discountLabel");
+  });
 });

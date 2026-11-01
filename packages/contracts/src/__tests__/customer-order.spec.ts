@@ -187,6 +187,13 @@ describe("toCustomerOrder", () => {
     expect(order.lines[0]?.pickupDiscountEligible).toBe(false);
   });
 
+  /** 2026-11-01 : « Mes commandes » nomme une remise seule par sa promotion. */
+  it("laisse passer le libellé figé de la remise, et l'omet quand il manque", () => {
+    const label = { fr: "Folie Coffee", en: "Folie Coffee", it: "Folie Coffee" };
+    expect(toCustomerOrder({ ...STAFF_ORDER, discountLabel: label }).discountLabel).toEqual(label);
+    expect(toCustomerOrder(STAFF_ORDER)).not.toHaveProperty("discountLabel");
+  });
+
   it("n'ajoute aucune clé quand rien n'est exclu", () => {
     const order = toCustomerOrder(STAFF_ORDER);
 

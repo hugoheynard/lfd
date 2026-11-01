@@ -415,6 +415,12 @@ Avec plusieurs remises, chaque libellé est figé dans sa ligne
 `order_discounts.label`, et `orders.discount_label` vaut le libellé générique
 « Remises / Discounts / Sconti » (§ 2.11).
 
+Depuis le 2026-11-01 (décision de Hugo), une remise **seule** se nomme aussi
+par sa promotion : le devis de la boutique sert `ShopQuoteView.discountLabel`,
+et le panier, la confirmation et le ticket de « Mes commandes » écrivent
+« Folie Coffee −20 % » au lieu de « Remise retrait {point} » ; sans libellé
+(commande d'avant L8b), la phrase du point reste.
+
 ### 2.9 Écrans et droits
 
 | Écran                                                       | Front                                                       | API                                   | Droit                                                               |

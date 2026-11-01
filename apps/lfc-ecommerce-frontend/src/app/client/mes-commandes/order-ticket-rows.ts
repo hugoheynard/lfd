@@ -71,7 +71,8 @@ function signed(cents: number): string {
 /**
  * Les remises du ticket : une par remise quand la commande en porte plusieurs
  * (plan des promotions, lot M6), nommée par son libellé figé dans la langue
- * de l'écran ; sinon LA ligne d'hier.
+ * de l'écran ; une seule se nomme aussi par sa promotion quand elle en a une
+ * (décision du 2026-11-01) ; sinon LA ligne d'hier.
  */
 function discountGestures(
   ticket: OrderTicket,
@@ -79,7 +80,13 @@ function discountGestures(
   locale: string,
 ): readonly (readonly [string, number])[] {
   if (ticket.discounts === undefined) {
-    return [[copy.detailPickupDiscount, -ticket.discountCents]];
+    const named = ticket.discountLabel;
+    return [
+      [
+        named === undefined ? copy.detailPickupDiscount : discountLabelIn(named, locale),
+        -ticket.discountCents,
+      ],
+    ];
   }
   return ticket.discounts.map((discount) => [
     discount.label === undefined

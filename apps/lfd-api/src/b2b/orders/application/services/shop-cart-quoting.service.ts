@@ -32,6 +32,7 @@ import {
   type BasketPromotionApplied,
 } from "../../domain/services/basket-promotion-choice.js";
 import { voucherTotalEffectCents } from "../../domain/services/voucher-total-effect.js";
+import type { ServedPromotionLabel } from "../../../promotions/domain/promotion-labels.js";
 import type { EndedBasketPromotion } from "../../domain/services/ended-basket-promotions.js";
 import type { OrderVoucher } from "../../domain/entities/order.js";
 import { placementVatMethodOf } from "../../domain/value-objects/order-vat-method.js";
@@ -85,6 +86,8 @@ interface CartTerms {
   readonly deliveryFeeAdjustment: CartAdjustment | null;
   /** Les remises à heures finies aujourd'hui (plan jours et heures, § 8). */
   readonly ended: readonly EndedBasketPromotion[];
+  /** Le libellé de la promotion qui fait la remise ; `null` sans promotion. */
+  readonly discountLabel: ServedPromotionLabel | null;
 }
 
 const NO_TERMS: CartTerms = {
@@ -95,6 +98,7 @@ const NO_TERMS: CartTerms = {
   deliveryFeeCents: 0,
   deliveryFeeAdjustment: null,
   ended: [],
+  discountLabel: null,
 };
 
 /**
@@ -217,7 +221,10 @@ export class ShopCartQuoting {
     // d'un centime (plan du centime, § 8).
     if (placementVatMethodOf(query.companyId) === "exact_ht") {
       const exact = await this.exactQuote(query, resolved, terms);
-      return { ...exact, view: withEndedDiscounts(exact.view, terms.ended) };
+      return {
+        ...exact,
+        view: withEndedDiscounts(withDiscountLabel(exact.view, terms), terms.ended),
+      };
     }
     const voucherDiscountCents = await this.voucherDiscountOf(
       query,
@@ -278,7 +285,7 @@ export class ShopCartQuoting {
       totalCents: ventilated.totalCents,
     };
     return {
-      view: withEndedDiscounts(view, terms.ended),
+      view: withEndedDiscounts(withDiscountLabel(view, terms), terms.ended),
       voucherTotalEffectCents: voucherTotalEffectCents(ventilation, voucherDiscountCents),
     };
   }
@@ -398,6 +405,7 @@ export class ShopCartQuoting {
         deliveryFeeCents: 0,
         deliveryFeeAdjustment: null,
         ended: retrait.ended,
+        discountLabel: retrait.discountLabel,
       };
     }
     const coursier = await this.adjustments.forDelivery(
@@ -416,8 +424,24 @@ export class ShopCartQuoting {
       deliveryFeeCents: coursier.feeCents,
       deliveryFeeAdjustment: coursier.feeAdjustment,
       ended: coursier.discount.ended ?? [],
+      discountLabel: coursier.discount.label,
     };
   }
+}
+
+/**
+ * Le nom de la remise UNIQUE, quand une promotion la fait (décision du
+ * 2026-11-01) : la boutique écrit « −20 % Folie Coffee » plutôt que la phrase
+ * générique du point de retrait. Absent sans remise, sans libellé (remise d'un
+ * point d'avant les promotions) et quand `discounts` porte déjà chaque nom (M7).
+ */
+function withDiscountLabel(
+  view: ShopQuoteView,
+  terms: Pick<CartTerms, "discountLabel">,
+): ShopQuoteView {
+  return terms.discountLabel === null || view.discounts !== undefined || view.discountCents === 0
+    ? view
+    : { ...view, discountLabel: terms.discountLabel };
 }
 
 /**

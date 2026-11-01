@@ -184,6 +184,16 @@ export interface ShopQuoteView {
    */
   readonly discounts?: readonly OrderDiscountView[];
   /**
+   * **Le nom de la remise unique**, quand une promotion la fait — le libellé
+   * que la commande figera (`OrderView.discountLabel`). Décision du
+   * 2026-11-01 : une remise se nomme par sa promotion même quand elle est
+   * seule (« −20 % Folie Coffee »), comme chaque entrée de `discounts`.
+   * **Absent** sans remise, quand `discounts` est présent, et pour une remise
+   * de point de retrait d'avant les promotions : la boutique écrit alors la
+   * phrase du point, comme hier.
+   */
+  readonly discountLabel?: DiscountLabelView;
+  /**
    * L'assiette de la remise de retrait — **absente** sauf quand une remise
    * s'applique et qu'une ligne en est exclue (« remise retrait sur X €
    * éligibles »). `discountCents` est calculé sur `eligibleHtCents` : la

@@ -6,8 +6,10 @@ import { formatCents, formatRate } from '../format-money';
  * **Les lignes de remise d'un devis** (plan des promotions, § 18.6, lot M7) —
  * pur, partagé par le panier et la confirmation.
  *
- * Une remise au plus : LA ligne d'hier, au caractère près (`single`, déjà
- * mise en forme par l'écran). Plusieurs (`discounts`, servi à partir de
+ * Une remise au plus : nommée par sa promotion quand le devis en porte le
+ * libellé (`discountLabel`, décision du 2026-11-01 — « −20 % Folie Coffee »,
+ * plus « Remise retrait au … ») ; sinon LA ligne d'hier, au caractère près
+ * (`single`, déjà mise en forme par l'écran). Plusieurs (`discounts`, servi à partir de
  * deux) : une ligne par remise, dans l'ordre d'application, nommée par son
  * libellé figé dans la langue de l'écran — la règle du ticket (M6).
  */
@@ -18,14 +20,23 @@ export interface QuoteDiscountRow {
 }
 
 export function quoteDiscountRows(
-  totals: Pick<ShopQuoteView, 'discountCents' | 'discounts'>,
+  totals: Pick<ShopQuoteView, 'discountCents' | 'discounts' | 'discountLabel'>,
   single: string | null,
   unnamed: (value: string) => string,
   locale: string,
 ): readonly QuoteDiscountRow[] {
   const discounts = totals.discounts;
   if (discounts === undefined || discounts.length < 2) {
-    return single === null ? [] : [{ label: single, cents: totals.discountCents }];
+    if (single === null) {
+      return [];
+    }
+    const named = totals.discountLabel;
+    return [
+      {
+        label: named === undefined ? single : labelIn(named, locale),
+        cents: totals.discountCents,
+      },
+    ];
   }
   return discounts.map((discount) => ({
     label:
