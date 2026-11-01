@@ -5,7 +5,7 @@
 > production), une **reprise de données** et le **runbook** : `vitruve` avant
 > le bâti.
 >
-> 🟦 **Bâti le 2026-11-01** (API, écran `/sante/apres-deploiement` et bandeau), sur dev ; pas encore en production.
+> ✅ **Bâti le 2026-11-01** (API, écran `/sante/apres-deploiement` et bandeau), **en production le 2026-11-01**.
 
 ## 1. Pourquoi (Hugo, 2026-11-01)
 
