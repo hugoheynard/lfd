@@ -188,7 +188,7 @@ l'affichage ; et les prix pro portent souvent des décimales même sans remise
 Le particulier, les remises au panier, la grille d'export et le TTC affiché
 d'un pro ne changent pas.
 
-### 18.7 Avertir quand un pourcentage crée des décimales (Hugo, 2026-11-01) — non bâti
+### 18.7 Avertir quand un pourcentage crée des décimales (Hugo, 2026-11-01) — ✅ bâti le 2026-11-01
 
 Avec des prix pro saisis au centime, la seule source de décimales est une
 promotion **en pourcentage** « dans le prix affiché » (0,93 € − 12 % =
@@ -207,6 +207,13 @@ cause.
   refuser.
 - **Tests** : 0,93 à −12 % → compté ; 1,00 à −20 % → non ; montant fixe →
   jamais.
+
+> ✅ **Bâti le 2026-11-01** (non commité à l'écriture de cette ligne) :
+> `GET admin/promotions/:id/decimals`, `promotionDecimalNets`
+> (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`), callout
+> `targeted-promotions/promotion-decimals-callout/`. Avertit sur la promotion
+> ENREGISTRÉE, pas sur la saisie en cours. État décrit dans
+> [`promotions.md`](promotions.md).
 
 > ✅ **§ 18.6 bâti le 2026-11-01** (non commité à l'écriture de cette ligne) :
 > points 1 (option (b), `format-money.ts` `formatMillicents`), 2 (BT-148/BT-147

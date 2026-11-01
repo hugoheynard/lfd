@@ -97,6 +97,8 @@ import { OrderLineClassificationReader } from "../orders/domain/ports/order-line
 import { PrismaOrderLineClassificationReader } from "./infrastructure/prisma-order-line-classification.reader.js";
 import { PromotionCatalogueReader } from "../promotions/domain/ports/promotion-catalogue.reader.js";
 import { CatalogPromotionCatalogueReader } from "./infrastructure/catalog-promotion-catalogue.reader.js";
+import { PromotionProPricesReader } from "../promotions/domain/ports/promotion-pro-prices.reader.js";
+import { CatalogPromotionProPricesReader } from "./infrastructure/catalog-promotion-pro-prices.reader.js";
 import { DefaultSaleReferenceReader } from "./domain/ports/default-sale-reference.reader.js";
 import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-default-sale-reference.reader.js";
 
@@ -244,6 +246,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     // Le port que les promotions DÉCLARENT (plan des promotions, L7) : le
     // catalogue vendable, que le refus de chevauchement compare.
     { provide: PromotionCatalogueReader, useClass: CatalogPromotionCatalogueReader },
+    // Le prix pro de chaque article, que l'avertissement des décimales lit (§ 18.7).
+    { provide: PromotionProPricesReader, useClass: CatalogPromotionProPricesReader },
     // Ce qui fige l'unité de vente d'une déclinaison : le port est au
     // référentiel, `appBootstrap/` le relie (`plan-changer-l-unite-de-vente.md`, § 8).
     PrismaSaleReferenceUsage,
@@ -272,6 +276,7 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     OrderLineClassificationReader,
     // Pour les promotions : le refus de chevauchement et les noms de l'écran.
     PromotionCatalogueReader,
+    PromotionProPricesReader,
     // Pour `orders/`, qui sert la même vitrine à un client reconnu. Le sens est
     // le seul possible : `OrdersModule` importe déjà `CatalogModule`, et
     // l'inverse serait un cycle — c'est aussi pourquoi la table des rayons est

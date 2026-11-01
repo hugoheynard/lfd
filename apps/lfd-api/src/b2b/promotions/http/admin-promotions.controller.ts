@@ -6,6 +6,7 @@ import {
   type ArchivePromotionPayload,
   type CreatedIdResponse,
   type PricingReasonPayload,
+  type PromotionDecimalsView,
   type PromotionListView,
   type PromotionTermsPayload,
   type PromotionView,
@@ -36,6 +37,7 @@ import { PausePromotionCommand } from "../application/commands/pause-promotion.c
 import { PosePromotionCommand } from "../application/commands/pose-promotion.command.js";
 import { ResumePromotionCommand } from "../application/commands/resume-promotion.command.js";
 import { RevisePromotionCommand } from "../application/commands/revise-promotion.command.js";
+import { GetPromotionDecimalsQuery } from "../application/queries/get-promotion-decimals.query.js";
 import { GetPromotionQuery } from "../application/queries/get-promotion.query.js";
 import { GetPromotionsSourceQuery } from "../application/queries/get-promotions-source.query.js";
 import { ListPromotionsQuery } from "../application/queries/list-promotions.query.js";
@@ -95,6 +97,18 @@ export class AdminPromotionsController {
   @RequireAnyPermission("b2b_pricing:read", "lfc_site_settings:read")
   get(@Param("id") id: string): Promise<PromotionView> {
     return this.queries.execute<GetPromotionQuery, PromotionView>(new GetPromotionQuery(id));
+  }
+
+  /**
+   * Les articles visés dont le prix net aura plus de deux décimales — un
+   * avertissement de l'écran, jamais un refus (plan-remise-par-ligne.md, § 18.7).
+   */
+  @Get(":id/decimals")
+  @RequireAnyPermission("b2b_pricing:read")
+  decimals(@Param("id") id: string): Promise<PromotionDecimalsView> {
+    return this.queries.execute<GetPromotionDecimalsQuery, PromotionDecimalsView>(
+      new GetPromotionDecimalsQuery(id),
+    );
   }
 
   @Post()

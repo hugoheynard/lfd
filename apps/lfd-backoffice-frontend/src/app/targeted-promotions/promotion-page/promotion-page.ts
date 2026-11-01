@@ -11,6 +11,7 @@ import {
 import { Router, RouterLink } from '@angular/router';
 import type {
   MercurialesAcceptingPromotionView,
+  PromotionDecimalsView,
   PromotionAudienceTargetView,
   PromotionScopeTargetValue,
   PromotionView,
@@ -49,6 +50,7 @@ import {
 } from '../catalogue-choices';
 import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
 import { PromotionHoursFieldset } from '../promotion-hours-fieldset/promotion-hours-fieldset';
+import { PromotionDecimalsCallout } from '../promotion-decimals-callout/promotion-decimals-callout';
 import { PromotionTileTextFieldset } from '../promotion-tile-text-fieldset/promotion-tile-text-fieldset';
 import { tileTextPreview } from '../promotion-tile-text';
 import {
@@ -130,6 +132,7 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
     FoldButtonComponent,
     FoldCalloutComponent,
     FoldCardComponent,
+    PromotionDecimalsCallout,
     FoldCheckboxComponent,
     FoldDateComponent,
     FoldElementTitleComponent,
@@ -179,6 +182,12 @@ export class PromotionPage {
       ? `${String(count)} mercuriales l'acceptent`
       : `${String(count)} mercuriale l'accepte`;
   });
+  /**
+   * Les nets à plus de deux décimales de la promotion ENREGISTRÉE (§ 18.7) ;
+   * `null` sur une pose, sans `b2b_pricing:read`, ou si la lecture a échoué —
+   * un avertissement manquant ne retient pas la page.
+   */
+  protected readonly decimals = signal<PromotionDecimalsView | null>(null);
   protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
   /** Ce que l'autre genre de remise avait en propre, pour un aller-retour sans perte. */
   private readonly setAside = signal<DraftSetAside>({});
@@ -475,7 +484,7 @@ export class PromotionPage {
   ): Promise<void> {
     this.state.set('loading');
     try {
-      const [catalogue, active, sites, zones, view, source, original, accepting] =
+      const [catalogue, active, sites, zones, view, source, original, accepting, decimals] =
         await Promise.all([
           // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
           // le lire voit quand même la promotion, ses cibles nommées par elle.
@@ -493,6 +502,7 @@ export class PromotionPage {
           id === null ? Promise.resolve(null) : this.api.source(),
           id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
           this.readAccepting(id),
+          this.readDecimals(id),
         ]);
       this.catalogueMissing.set(catalogue === null);
       const rules = (view ?? original)?.scope.rules ?? [];
@@ -504,6 +514,7 @@ export class PromotionPage {
       this.promotion.set(view);
       this.accepting.set(accepting === 'failed' ? null : accepting);
       this.acceptingMissing.set(accepting === 'failed');
+      this.decimals.set(decimals);
       this.sourceEditable.set(source?.editable ?? false);
       this.copiedFrom.set(original?.internalName ?? null);
       const draft =
@@ -529,6 +540,13 @@ export class PromotionPage {
       return Promise.resolve(null);
     }
     return this.api.acceptingMercuriales(id).catch(() => 'failed' as const);
+  }
+
+  private readDecimals(id: string | null): Promise<PromotionDecimalsView | null> {
+    if (id === null || !this.permissions.can('b2b_pricing:read')) {
+      return Promise.resolve(null);
+    }
+    return this.api.decimals(id).catch(() => null);
   }
 
   protected reload(): void {

@@ -2972,6 +2972,8 @@ export type {
   PromotionView,
   PromotionListView,
   PromotionsSourceView,
+  PromotionDecimalsExampleView,
+  PromotionDecimalsView,
 } from "./promotions.js";
 export {
   MERCURIALE_PROMOTION_MODE_VALUES,

@@ -14,6 +14,7 @@
  * l'horloge.
  */
 import type {
+  PromotionDecimalsView,
   PromotionListView,
   PromotionTermsPayload,
   PromotionView,
@@ -431,5 +432,30 @@ describe("la description interne", () => {
       .send(terms({ description: "a".repeat(1001) }))
       .expect(400);
     expect(refusalOf(response).code).toBe("promotions.description_too_long");
+  });
+});
+
+describe("l'avertissement des décimales (plan-remise-par-ligne.md, § 18.7)", () => {
+  const decimalsOf = async (effect: PromotionTermsPayload["effect"]) => {
+    const scope: PromotionTermsPayload["scope"] = { mode: "all_except", rules: [] };
+    const created = await admin().post(PROMOTIONS).send(terms({ effect, scope })).expect(201);
+    const { id } = jsonBody<{ id: string }>(created);
+    return jsonBody<PromotionDecimalsView>(
+      await admin().get(`${PROMOTIONS}/${id}/decimals`).expect(200),
+    );
+  };
+
+  it("compte les nets sous le centime d'un pourcentage", async () => {
+    // −0,01 % : tout prix pro au-delà de 0,05 € perd une fraction de centime.
+    const percent = await decimalsOf({ kind: "percent_off", value: 1 });
+    expect(percent.count).toBeGreaterThan(0);
+    expect(percent.examples.every((example) => example.netMillicents % 1000 !== 0)).toBe(true);
+  });
+
+  it("ne compte jamais ceux d'un montant fixe", async () => {
+    expect(await decimalsOf({ kind: "unit_amount_off", value: 10_000 })).toEqual({
+      count: 0,
+      examples: [],
+    });
   });
 });

@@ -139,6 +139,9 @@
               (valueChange)="edit({ effectValue: $event })"
             />
           </div>
+          @if (atLine()) {
+            <app-promotion-decimals-callout [decimals]="decimals()" />
+          }
           <fold-input
             label="Ce que le client lit"
             hint="Sur la fiche produit et au panier, quand son public n'a pas son propre libellé."

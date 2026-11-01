@@ -9,6 +9,7 @@ import { PromotionFulfillmentNames } from "./application/commands/promotion-fulf
 import { PromotionWriteGuard } from "./application/commands/promotion-write-guard.js";
 import { ResumePromotionHandler } from "./application/commands/resume-promotion.handler.js";
 import { RevisePromotionHandler } from "./application/commands/revise-promotion.handler.js";
+import { GetPromotionDecimalsHandler } from "./application/queries/get-promotion-decimals.handler.js";
 import { GetPromotionHandler } from "./application/queries/get-promotion.handler.js";
 import { GetPromotionsSourceHandler } from "./application/queries/get-promotions-source.handler.js";
 import { ListPromotionsHandler } from "./application/queries/list-promotions.handler.js";
@@ -48,6 +49,7 @@ import { PrismaPromotionRepository } from "./infrastructure/prisma-promotion.rep
     ArchivePromotionHandler,
     ListPromotionsHandler,
     GetPromotionHandler,
+    GetPromotionDecimalsHandler,
     GetPromotionsSourceHandler,
   ],
 })

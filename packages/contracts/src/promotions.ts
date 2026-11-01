@@ -303,6 +303,28 @@ export interface PromotionsSourceView {
   readonly editable: boolean;
 }
 
+/** Un article dont le prix net passe sous le centime — l'exemple de l'avertissement. */
+export interface PromotionDecimalsExampleView {
+  readonly sku: string;
+  readonly name: string;
+  /** Le prix pro HT avant la promotion, millicentimes. */
+  readonly priceMillicents: number;
+  /** Le prix net HT après elle, millicentimes — pas un multiple de 1 000. */
+  readonly netMillicents: number;
+}
+
+/**
+ * **« Sur N articles visés, le prix net aura plus de 2 décimales »**
+ * (`documentation/promotions/plan-remise-par-ligne.md`, § 18.7) — un
+ * avertissement, jamais un refus. `count` vaut 0 hors d'une remise en
+ * pourcentage dans le prix affiché : un montant fixe n'en crée jamais.
+ */
+export interface PromotionDecimalsView {
+  readonly count: number;
+  /** Quelques-uns d'entre eux, rangés par nom. */
+  readonly examples: readonly PromotionDecimalsExampleView[];
+}
+
 /** La liste, et ce qui dit si l'écran peut écrire. */
 export interface PromotionListView {
   readonly source: PromotionsSourceValue;

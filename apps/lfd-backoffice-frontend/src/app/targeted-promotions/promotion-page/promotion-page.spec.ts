@@ -83,6 +83,7 @@ async function render(setup: Setup = {}) {
           acceptingMercuriales:
             setup.accepting ??
             (async (id: string) => ({ promotionId: id, count: 0, mercuriales: [] })),
+          decimals: async () => ({ count: 0, examples: [] }),
           archive: async (_view: PromotionView, reason: string) => {
             sent.archived.push(reason);
           },

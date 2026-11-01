@@ -439,6 +439,21 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 `b2b_pricing:write` seul ; l'ancienne adresse `:id/modifier` redirige vers
 `:id`.
 
+**Les décimales d'un pourcentage s'annoncent** (2026-11-01,
+[`plan-remise-par-ligne.md`](plan-remise-par-ligne.md), § 18.7) : sur une
+promotion enregistrée en pourcentage dans le prix affiché, la page avertit
+« Sur N articles visés, le prix net aura plus de 2 décimales (ex. 0,93 € →
+0,8184 €) », avec trois exemples au plus, et rappelle qu'un montant fixe n'en
+crée jamais (`promotion-decimals-callout/`). Un avertissement, jamais un
+refus. La lecture est `GET admin/promotions/:id/decimals`
+(`GetPromotionDecimalsQuery`, sous `b2b_pricing:read`) : le prix pro de
+chaque article (`PromotionProPricesReader`, implémenté par le catalogue)
+passe par `promotionDecimalNets` (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`),
+qui présente la promotion en règle (`promotionAsRule`) et l'applique par
+`applyRule` puis l'arrondi unique, comme la porte du prix — sans plancher
+ni cumul. Elle porte sur la promotion enregistrée : une saisie non
+enregistrée n'est avertie qu'après « Enregistrer ».
+
 **Le genre de remise se choisit tôt** (décision de Hugo du 2026-10-31,
 comme les grandes plateformes : le type, puis un formulaire qui ne montre que
 ce qui a du sens), juste après ce qui fait comprendre la promotion. Les

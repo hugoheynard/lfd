@@ -1,0 +1,11 @@
+@if (count() > 0) {
+  <fold-callout appearance="inset" variant="warning" data-decimals>
+    <p>{{ headline() }}</p>
+    <ul>
+      @for (example of examples(); track example.sku) {
+        <li>{{ example.text }}</li>
+      }
+    </ul>
+    <p>Une remise en montant fixe n'en crée jamais.</p>
+  </fold-callout>
+}

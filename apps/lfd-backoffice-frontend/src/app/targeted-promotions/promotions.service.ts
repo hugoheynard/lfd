@@ -5,6 +5,7 @@ import type {
   MercurialesAcceptingPromotionView,
   PickupAddressView,
   SitePaletteView,
+  PromotionDecimalsView,
   PromotionListView,
   PromotionsSourceView,
   PromotionTermsPayload,
@@ -49,6 +50,16 @@ export class PromotionsService {
       this.http.get<MercurialesAcceptingPromotionView>(
         `${B2B_API_BASE}/admin/pricing/mercuriales/accepting-promotion/${encodeURIComponent(id)}`,
       ),
+    );
+  }
+
+  /**
+   * Les articles visés dont le prix net aura plus de deux décimales — un
+   * avertissement, sous `b2b_pricing` (`plan-remise-par-ligne.md`, § 18.7).
+   */
+  decimals(id: string): Promise<PromotionDecimalsView> {
+    return firstValueFrom(
+      this.http.get<PromotionDecimalsView>(`${this.base}/${encodeURIComponent(id)}/decimals`),
     );
   }
 
