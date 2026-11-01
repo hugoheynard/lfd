@@ -140,6 +140,7 @@ const NON_PUBLIC_SCHEMA_OF_MODEL: Readonly<Record<string, string>> = {
   NodeStatusLog: "ops",
   MailSend: "ops",
   WebhookEvent: "ops",
+  PostDeployRun: "ops",
   // Le référentiel, depuis B4. Il avait sa propre BASE : ses opérations
   // n'apparaissaient donc nulle part dans ce compteur, et le forfait qu'elles
   // consommaient se lisait sur une autre facture. Elles comptent ici désormais,

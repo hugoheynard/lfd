@@ -135,6 +135,6 @@ describe('grantGroups', () => {
    * (catalogue/plan-articles-sur-mesure.md).
    */
   it('compte les domaines du catalogue', () => {
-    expect(RESOURCE_COUNT).toBe(67);
+    expect(RESOURCE_COUNT).toBe(68);
   });
 });
