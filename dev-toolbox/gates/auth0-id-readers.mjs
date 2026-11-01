@@ -134,6 +134,10 @@ const ADMITTED = new Map([
     "le semis de développement déclare les comptes des maisons des tournées de demain (sub fictifs `seed|…`), même raison",
   ],
   [
+    "apps/lfd-api/src/dev/seeding/seeded-founders.seed.ts",
+    "le semis de développement reconnaît SES personnes au préfixe `seed|` de leur sub fictif, pour accepter leur rattachement de fondateur (2026-11-01)",
+  ],
+  [
     `${STAFF_DIR}directory/domain/staff-user-state.ts`,
     "l'état d'une fiche porte son `sub` pour la seule propagation d'adresse",
   ],
