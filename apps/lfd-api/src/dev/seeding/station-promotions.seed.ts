@@ -58,6 +58,7 @@ export function pointDiscountTerms(
     description: null,
     label: { fr: "Remise de retrait", en: null, it: null },
     audienceLabels: { individuals: null, pros: null },
+    tileText: null,
     reason: null,
     effect: effectOf(adjustment),
     ownFloor: null,

@@ -21,6 +21,7 @@ export function lineTerms(overrides: TermsOverrides = {}): PromotionTerms {
     description: null,
     label: { fr: "−20 % sur tout", en: null, it: null },
     audienceLabels: NO_AUDIENCE_LABELS,
+    tileText: null,
     reason: null,
     effect: { kind: "percent_off", basisPoints: 2000 },
     ownFloor: null,

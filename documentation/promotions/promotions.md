@@ -117,9 +117,17 @@ dans le modèle, et la boutique l'affiche depuis L10.
 
 ### Ce que voit le client
 
-- **Au rayon** : le prix tient compte des promotions « dans le prix affiché »
-  qui le visent ; une promotion de retrait ou de livraison est **mentionnée**
-  (« −X % avec retrait à … ») sans changer le prix affiché.
+- **Au rayon** (vignette et fiche produit) : le prix tient compte des
+  promotions « dans le prix affiché » qui le visent ; une remise au panier est
+  **mentionnée** sans changer le prix affiché, par le **texte sur les
+  vignettes** réglé sur la promotion (« −20 % client Folie Coffee », fr/en/it,
+  60 caractères au plus, repli sur le français), sinon par **la valeur seule**
+  (« −20 % », « −5,00 € ») — jamais par l'acheminement
+  ([plan](plan-texte-de-la-vignette.md), bâti le 2026-11-01). Elle se dit
+  quand la promotion vise ce lecteur et cet article, qu'un de ses
+  acheminements lui est ouvert et que sa mercuriale l'admet ; hors de ses
+  heures, ses heures suivent le texte. La remise se chiffre au panier, une
+  fois l'acheminement choisi.
 - **Invité** : s'il existe une promotion réservée aux inscrits, il lit
   « Vous avez un compte ? Connectez-vous pour profiter de −X % ».
 - **Panier, confirmation, e-mail, bons, facture** : une ligne par remise.
@@ -207,10 +215,10 @@ pour tous ceux qui le regardent. Une remise limitée au retrait à un point,
 mise dans ce prix, afficherait à un client qui choisira la livraison un prix
 qu'il ne paiera pas. D'où les deux formes :
 
-| Forme                | Où la remise agit                  | Ce que voit le client au catalogue           | Limitable à un acheminement  |
-| -------------------- | ---------------------------------- | -------------------------------------------- | ---------------------------- |
-| Dans le prix affiché | le prix de chaque ligne (`line`)   | le prix déjà remisé                          | non : elle vaut partout      |
-| En remise au panier  | le panier, une fois le mode choisi | une **annonce** (« −20 % avec retrait à … ») | oui : retrait, points, zones |
+| Forme                | Où la remise agit                  | Ce que voit le client au catalogue             | Limitable à un acheminement  |
+| -------------------- | ---------------------------------- | ---------------------------------------------- | ---------------------------- |
+| Dans le prix affiché | le prix de chaque ligne (`line`)   | le prix déjà remisé                            | non : elle vaut partout      |
+| En remise au panier  | le panier, une fois le mode choisi | une **annonce** (texte réglé, sinon « −20 % ») | oui : retrait, points, zones |
 
 Piste notée, non bâtie : quand le client a déjà choisi son mode et son
 point dans le contexte de commande de la boutique, le catalogue pourrait
@@ -725,9 +733,12 @@ pickupId }` ou `{ method: "delivery", zoneId }`. Admission
 - **Journal** : les nouveaux faits nomment les points et les zones par leurs
   libellés ; les faits passés restent tels qu'écrits.
 - **Contrat de la boutique** (`packages/contracts/src/promotion-offer.ts`) :
-  une offre porte l'ensemble (`pickup`, `delivery`) ; la boutique dit « au
-  retrait à … » ou « en livraison » selon ce que le client regarde. Cassé
-  dans le même déploiement (pré-release).
+  depuis le 2026-11-01 ([plan](plan-texte-de-la-vignette.md)), une offre ne
+  porte plus d'acheminement — l'effet, le texte réglé dans la langue du rayon
+  (`text`, absent = la valeur seule) et les heures. Le serveur a déjà retiré
+  ce qu'aucun acheminement ouvert au lecteur n'applique (`offerOpenTo`).
+  Cassé dans le même déploiement (pré-release), comme la forme précédente le
+  2026-10-31.
 
 **Les données** — migration `20261031200000_les_acheminements_a_cocher` :
 deux colonnes de mode, `fulfillment_pickup` et `fulfillment_delivery`

@@ -1,4 +1,4 @@
-import { computed, inject, Injectable, untracked } from '@angular/core';
+import { inject, Injectable } from '@angular/core';
 
 import type {
   PromotionOfferEffectView,
@@ -12,7 +12,6 @@ import type { ClientCopy } from '../copy/client-copy.model';
 import { ClientLocale } from '../client-locale.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { formatCents } from '../format-money';
-import { ServicePoints } from './pickup-points.store';
 
 const BASIS_POINTS_PER_PERCENT = 100;
 const WEEK = ['mon', 'tue', 'wed', 'thu', 'fri', 'sat', 'sun'] as const;
@@ -104,72 +103,41 @@ export function offerDiscountLabel(
 }
 
 /**
- * Les mentions d'UNE offre — une par acheminement qu'elle ouvre (une offre
- * porte l'ENSEMBLE depuis `documentation/promotions/promotions.md`, § 2.14).
- * Un point qui n'est pas (ou pas encore) dans la liste servie n'est pas dit :
- * une mention sans lieu promettrait la remise partout. Une sélection de zones
- * ne se dit pas non plus : « en livraison » la promettrait à toute adresse, et
- * le rayon ne connaît pas encore l'adresse du client (2026-10-31) — on annonce
- * moins que la caisse, jamais plus.
+ * **La mention d'UNE offre** — le texte réglé sur la promotion, servi dans la
+ * langue du rayon, sinon la valeur seule (« −20 % »), et ses heures quand
+ * elle n'agit pas maintenant (`documentation/promotions/plan-texte-de-la-vignette.md`).
+ * Plus d'acheminement : le serveur a déjà jugé qu'un acheminement ouvert au
+ * lecteur l'applique, et la caisse le chiffre une fois l'acheminement choisi.
  */
-export function fulfillmentOfferLabels(
+export function offerMentionLabel(
   offer: ShopItemFulfillmentOfferView,
   product: ClientCopy['product'],
-  pickupLabel: (id: string) => string | null,
   locale = 'fr',
-): readonly string[] {
-  const discount = offerDiscountLabel(offer.effect, product);
-  const { pickup, delivery } = offer.fulfillment;
-  const labels: string[] = [];
-  if (pickup === 'all') {
-    labels.push(fill(product.offerOnPickup, { discount }));
-  } else if (pickup !== 'none') {
-    for (const id of pickup.points) {
-      const place = pickupLabel(id);
-      if (place !== null) {
-        labels.push(fill(product.offerAtPickupPoint, { discount, place }));
-      }
-    }
-  }
-  if (delivery === 'all') {
-    labels.push(fill(product.offerOnDelivery, { discount }));
-  }
-  return labels.map((label) => withHours(label, offer.hours, product, locale));
+): string {
+  const label = offer.text ?? offerDiscountLabel(offer.effect, product);
+  return withHours(label, offer.hours, product, locale);
 }
 
 /**
- * **Les mentions d'acheminement d'un article** — « −20 % avec retrait à Cœur
- * de station » (plan des promotions, § 13.2 RAYON, lot L10). Le prix du rayon
- * ne les compte pas : l'acheminement n'y est pas encore choisi, et le panier
- * les applique dès qu'il l'est.
- *
- * Le nom d'un point vient de la liste que la boutique sert déjà
- * (`ServicePoints`) ; une offre qui en nomme un la fait lire, une fois.
+ * **Les mentions d'un article**, sous le prix de la vignette et de la fiche
+ * (plan des promotions, § 13.2 RAYON, lot L10). Le prix du rayon ne les
+ * compte pas : l'acheminement n'y est pas encore choisi, et le panier les
+ * applique dès qu'il l'est. Deux offres qui se disent pareil ne se disent
+ * qu'une fois.
  */
 @Injectable({ providedIn: 'root' })
 export class FulfillmentOfferLabels {
-  private readonly points = inject(ServicePoints);
   private readonly t = inject(ClientCopyService).t;
   private readonly locale = inject(ClientLocale);
 
-  private readonly labelsById = computed(
-    () => new Map(this.points.pickups().map((point) => [point.id, point.label])),
-  );
-
-  /** À lire dans un `computed` : suit la langue et la liste des points. */
+  /** À lire dans un `computed` : suit la langue. */
   of(item: ShopItemView): readonly string[] {
     const offers = item.fulfillmentOffers ?? [];
     if (offers.length === 0) {
       return [];
     }
-    if (offers.some((offer) => typeof offer.fulfillment.pickup === 'object')) {
-      untracked(() => void this.points.hydrate());
-    }
-    const labels = this.labelsById();
     const product = this.t().product;
     const locale = this.locale.current();
-    return offers.flatMap((offer) =>
-      fulfillmentOfferLabels(offer, product, (id) => labels.get(id) ?? null, locale),
-    );
+    return [...new Set(offers.map((offer) => offerMentionLabel(offer, product, locale)))];
   }
 }

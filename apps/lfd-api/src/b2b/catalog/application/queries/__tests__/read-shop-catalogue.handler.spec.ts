@@ -336,14 +336,25 @@ describe("ReadShopCatalogueHandler", () => {
 
       expect(view.items[0]).toMatchObject({
         unitPriceMillicents: PUBLIC_MILLICENTS,
-        fulfillmentOffers: [
-          {
-            effect: { kind: "percent", basisPoints: 2_000 },
-            fulfillment: { pickup: { points: ["pickup_1"] }, delivery: "none" },
-          },
-        ],
+        fulfillmentOffers: [{ effect: { kind: "percent", basisPoints: 2_000 } }],
+      });
+      // La mention ne cite plus l'acheminement (`plan-texte-de-la-vignette.md`).
+      expect(view.items[0]?.fulfillmentOffers?.[0]).toEqual({
+        effect: { kind: "percent", basisPoints: 2_000 },
       });
       expect(view.items[0]).not.toHaveProperty("catalogPriceMillicents");
+    });
+
+    it("sert le texte réglé dans la langue demandée", async () => {
+      const worded = {
+        ...EN_RETRAIT,
+        tileText: { fr: "−20 % au retrait", en: "−20% at pickup", it: null },
+      };
+      const { handler } = fixture(undefined, undefined, shelfPromotionOffers([worded], NOW));
+
+      const view = await handler.execute(new ReadShopCatalogueQuery("en"));
+
+      expect(view.items[0]?.fulfillmentOffers?.[0]?.text).toBe("−20% at pickup");
     });
 
     // L12 : « ne mentionne rien sous l'ancien chemin » est retiré avec lui ;

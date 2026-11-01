@@ -1,5 +1,6 @@
 import {
   deliveryOpenTo,
+  type ContentLocale,
   type ShopCatalogueView,
   type ShopItemFulfillmentOfferView,
 } from "@lfd/contracts";
@@ -17,6 +18,7 @@ import {
   type FulfillmentOffer,
 } from "../../promotions/domain/promotion-offers.js";
 import type { PricedBuyerKind } from "../../promotions/domain/promotion-targeting.js";
+import { tileTextIn } from "../../promotions/domain/promotion-tile-text.js";
 import type { ResolvedCatalogItem, ShopAudience } from "../domain/ports/catalog.reader.js";
 import {
   admitsPromotion,
@@ -107,8 +109,10 @@ export function sealingOfShelf(
 /**
  * **Le rayon et ce qu'un acheminement y ouvrirait** (plan des promotions,
  * § 13.2 RAYON, lot L10) : chaque vignette porte les promotions de panier
- * qui la couvrent — « −20 % avec retrait à Cœur de station » —, sans que son
- * prix bouge. Une vignette sans promotion garde sa forme : la clé est absente
+ * qui la couvrent, sans que son prix bouge. Elle se dit par le texte réglé
+ * sur la promotion, dans la langue du rayon (« −20 % client Folie Coffee »),
+ * sinon par la valeur seule — jamais par l'acheminement
+ * (`plan-texte-de-la-vignette.md`). QUAND elle se dit ne change pas. Une vignette sans promotion garde sa forme : la clé est absente
  * du fil, la surface publique reste étroite.
  *
  * 🔴 Sur un article que la mercuriale du lecteur fixe, une promotion que sa
@@ -124,12 +128,16 @@ export function withFulfillmentOffers(
   sellable: readonly ResolvedCatalogItem[],
   { candidates, productIds, open }: ShelfOffered,
   at: Date,
+  language: ContentLocale,
   sealing: ReadonlyMap<string, PromotionAdmission> = new Map(),
 ): ShopCatalogueView {
   if (candidates.length === 0) {
     return catalogue;
   }
   const byShopSku = shownByShopSku(sellable);
+  const byId = new Map(candidates.map((promotion) => [promotion.id, promotion]));
+  const view = (offer: FulfillmentOffer): ShopItemFulfillmentOfferView =>
+    offerView(offer, tileTextIn(byId.get(offer.promotionId)?.tileText ?? null, language));
   return {
     ...catalogue,
     items: catalogue.items.map((item) => {
@@ -151,13 +159,18 @@ export function withFulfillmentOffers(
                 (offer) => admission === undefined || admitsPromotion(admission, offer.promotionId),
               )
               .flatMap((offer) => offerOpenTo(offer, open) ?? []);
-      return offers.length === 0 ? item : { ...item, fulfillmentOffers: offers.map(offerView) };
+      return offers.length === 0 ? item : { ...item, fulfillmentOffers: offers.map(view) };
     }),
   };
 }
 
-function offerView(offer: FulfillmentOffer): ShopItemFulfillmentOfferView {
-  const view = { effect: offer.effect, fulfillment: offer.fulfillment };
-  // Les jours et heures (plan jours et heures, § 8) : absents sans eux.
-  return offer.hours === undefined ? view : { ...view, hours: offer.hours };
+/** La mention servie : l'effet, le texte s'il est réglé, les heures s'il y en a. */
+function offerView(offer: FulfillmentOffer, text: string | null): ShopItemFulfillmentOfferView {
+  return {
+    effect: offer.effect,
+    // Sans texte, la clé est absente : la boutique dit la valeur seule.
+    ...(text === null ? {} : { text }),
+    // Les jours et heures (plan jours et heures, § 8) : absents sans eux.
+    ...(offer.hours === undefined ? {} : { hours: offer.hours }),
+  };
 }

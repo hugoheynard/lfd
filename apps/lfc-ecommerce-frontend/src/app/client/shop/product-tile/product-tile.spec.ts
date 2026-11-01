@@ -93,20 +93,15 @@ describe('ProductTile', () => {
   });
 
   // Lot L10 du plan des promotions : une promotion d'acheminement se MENTIONNE,
-  // et le prix du rayon ne la compte pas.
-  it('mentionne une promotion de retrait ou de livraison, au prix inchangé', () => {
+  // et le prix du rayon ne la compte pas. Depuis `plan-texte-de-la-vignette.md`,
+  // elle se dit par son texte réglé, sinon par la valeur seule.
+  it('mentionne le texte réglé, sinon la valeur seule, au prix inchangé', () => {
     const before = priceText();
     fixture.componentRef.setInput('product', {
       ...TEST_ITEMS[0],
       fulfillmentOffers: [
-        {
-          effect: { kind: 'percent', basisPoints: 2_000 },
-          fulfillment: { pickup: 'all', delivery: 'none' },
-        },
-        {
-          effect: { kind: 'amount', millicents: 500_000 },
-          fulfillment: { pickup: 'none', delivery: 'all' },
-        },
+        { effect: { kind: 'percent', basisPoints: 2_000 }, text: '−20 % client Folie Coffee' },
+        { effect: { kind: 'amount', millicents: 500_000 } },
       ],
     });
     fixture.detectChanges();
@@ -114,25 +109,23 @@ describe('ProductTile', () => {
     const offers = [
       ...(fixture.nativeElement as HTMLElement).querySelectorAll('[data-fulfillment-offer]'),
     ].map((node) => node.textContent?.trim());
-    expect(offers).toEqual(['−20 % en retrait', '−5,00 € en livraison']);
+    expect(offers).toEqual(['−20 % client Folie Coffee', '−5,00 €']);
     expect(priceText()).toBe(before);
   });
 
-  it('ne mentionne pas une promotion d’un point que la boutique ne connaît pas', () => {
+  it('ne dit qu’une fois deux offres qui se disent pareil', () => {
     fixture.componentRef.setInput('product', {
       ...TEST_ITEMS[0],
       fulfillmentOffers: [
-        {
-          effect: { kind: 'percent', basisPoints: 2_000 },
-          fulfillment: { pickup: { points: ['inconnu'] }, delivery: 'none' },
-        },
+        { effect: { kind: 'percent', basisPoints: 2_000 } },
+        { effect: { kind: 'percent', basisPoints: 2_000 } },
       ],
     });
     fixture.detectChanges();
 
     expect(
-      (fixture.nativeElement as HTMLElement).querySelector('[data-fulfillment-offer]'),
-    ).toBeNull();
+      (fixture.nativeElement as HTMLElement).querySelectorAll('[data-fulfillment-offer]'),
+    ).toHaveLength(1);
   });
 
   it('ne dit aucun minimum sans minimum', () => {

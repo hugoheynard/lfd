@@ -26,6 +26,7 @@ const TERMS: PromotionTerms = {
   description: "Pour relancer les inscrits à l'automne.",
   label: { fr: "−20 % pour les inscrits", en: "−20% for members", it: null },
   audienceLabels: { individuals: null, pros: null },
+  tileText: { fr: "−20 % inscrits", en: "−20% members", it: null },
   reason: "lancement",
   effect: { kind: "percent_off", basisPoints: 2000 },
   ownFloor: { mode: "percent", value: 6000 },

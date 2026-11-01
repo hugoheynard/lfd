@@ -1,0 +1,24 @@
+.tile-text {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.pair {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(10rem, 1fr));
+  gap: var(--fold-space-md);
+}
+
+.preview {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-sm);
+  margin: 0;
+}
+
+.caption {
+  color: var(--fold-color-text-muted);
+  font-size: var(--fold-text-sm);
+}

@@ -1,65 +1,55 @@
 import type { ShopItemFulfillmentOfferView } from '@lfd/contracts';
 
+import { EN } from '../copy/en';
 import { FR } from '../copy/fr';
-import { fulfillmentOfferLabels } from './promotion-offers';
+import { offerMentionLabel } from './promotion-offers';
 
 const TWENTY = { kind: 'percent', basisPoints: 2000 } as const;
-const PLACES: Readonly<Record<string, string>> = { pk_adroit: "L'adroit" };
-const placeOf = (id: string): string | null => PLACES[id] ?? null;
 
-function labelsOf(fulfillment: ShopItemFulfillmentOfferView['fulfillment']): readonly string[] {
-  return fulfillmentOfferLabels({ effect: TWENTY, fulfillment }, FR.product, placeOf);
-}
+const of = (offer: Partial<ShopItemFulfillmentOfferView>) =>
+  offerMentionLabel({ effect: TWENTY, ...offer }, FR.product);
 
-describe('fulfillmentOfferLabels — ce que le rayon promet', () => {
-  it('dit le retrait partout et la livraison partout', () => {
-    const labels = labelsOf({ pickup: 'all', delivery: 'all' });
-    expect(labels).toHaveLength(2);
-    expect(labels[1]).toBe('−20 % en livraison');
+describe('offerMentionLabel — ce que la vignette dit', () => {
+  it('dit le texte réglé tel que le serveur le sert', () => {
+    expect(of({ text: '−20 % client Folie Coffee' })).toBe('−20 % client Folie Coffee');
   });
 
-  it('nomme chaque point choisi, et tait un point inconnu', () => {
-    const labels = labelsOf({ pickup: { points: ['pk_adroit', 'pk_inconnu'] }, delivery: 'none' });
-    expect(labels).toHaveLength(1);
-    expect(labels[0]).toContain("L'adroit");
+  it('sans texte, dit la valeur seule — jamais l’acheminement', () => {
+    expect(of({})).toBe('−20 %');
+    expect(of({ effect: { kind: 'amount', millicents: 500_000 } })).toBe('−5,00 €');
   });
 
-  /**
-   * Régression : une promotion limitée à certaines zones se disait « en
-   * livraison », promesse faite à toute adresse livrée (fix 2026-10-31).
-   */
-  it('ne promet pas la livraison pour une sélection de zones', () => {
-    expect(labelsOf({ pickup: 'none', delivery: { zones: ['zone_centre'] } })).toEqual([]);
+  it('la valeur seule suit la langue de la boutique', () => {
+    expect(offerMentionLabel({ effect: TWENTY }, EN.product, 'en')).toBe('−20%');
   });
 });
 
-describe('fulfillmentOfferLabels — une offre à jours et heures', () => {
+describe('offerMentionLabel — une offre à jours et heures', () => {
   const FIFTY = { kind: 'percent', basisPoints: 5000 } as const;
   const hours = (activeNow: boolean, moment: 'ordered_at' | 'handover_at' = 'ordered_at') => ({
     moment,
     activeNow,
     windows: [{ weekdays: ['tue', 'thu'] as const, start: '17:00', end: '19:00' }],
   });
-  const of = (offer: Pick<ShopItemFulfillmentOfferView, 'hours'>) =>
-    fulfillmentOfferLabels(
-      { effect: FIFTY, fulfillment: { pickup: 'all', delivery: 'none' }, ...offer },
-      FR.product,
-      placeOf,
-    );
 
   it('hors des heures, se dit avec ses heures', () => {
-    expect(of({ hours: hours(false) })).toEqual([
-      '−50 % en retrait, mardi et jeudi de 17 h à 19 h',
-    ]);
+    expect(of({ effect: FIFTY, hours: hours(false) })).toBe('−50 %, mardi et jeudi de 17 h à 19 h');
   });
 
-  it('active maintenant, se dit comme aujourd’hui', () => {
-    expect(of({ hours: hours(true) })).toEqual(['−50 % en retrait']);
+  it('un texte réglé garde ses heures hors des heures', () => {
+    expect(of({ text: 'Anti-gaspi', hours: hours(false) })).toBe(
+      'Anti-gaspi, mardi et jeudi de 17 h à 19 h',
+    );
+  });
+
+  it('active maintenant, se dit sans heures', () => {
+    expect(of({ effect: FIFTY, hours: hours(true) })).toBe('−50 %');
   });
 
   it('jugée au créneau, dit le créneau ; tous les jours, les jours se taisent', () => {
     expect(
       of({
+        effect: FIFTY,
         hours: {
           moment: 'handover_at',
           activeNow: false,
@@ -72,6 +62,6 @@ describe('fulfillmentOfferLabels — une offre à jours et heures', () => {
           ],
         },
       }),
-    ).toEqual(['−50 % en retrait, pour un créneau de 20:30 à minuit']);
+    ).toBe('−50 %, pour un créneau de 20:30 à minuit');
   });
 });

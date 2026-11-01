@@ -827,4 +827,43 @@ describe('PromotionPage', () => {
       expect(button(root, 'Ajouter une plage')).toBeUndefined();
     });
   });
+  describe('le texte sur les vignettes (plan-texte-de-la-vignette.md)', () => {
+    const basket = (over: Partial<PromotionView> = {}) =>
+      promotionView({
+        internalName: 'Folie Coffee',
+        applicationPoint: 'basket',
+        fulfillment: { kind: 'basket', pickup: 'all', delivery: 'none' },
+        scope: { mode: 'all_except', rules: [] },
+        ...over,
+      });
+    const preview = (root: HTMLElement) =>
+      root.querySelector('[data-tile-text-preview] fold-badge')?.textContent?.trim();
+
+    it('est invisible en « Baisser le prix »', async () => {
+      const { root } = await render();
+      expect(root.querySelector('app-promotion-tile-text-fieldset')).toBeNull();
+    });
+
+    it('vide, l’aperçu dit la valeur seule ; saisi, il dit le texte et le corps le porte', async () => {
+      const { root, fixture, sent } = await render({ get: async () => basket() });
+      expect(preview(root)).toBe('−20 %');
+
+      const field = root.querySelector<HTMLInputElement>('[data-tile-text-fr] input');
+      if (field === null) {
+        throw new Error('Champ « Texte sur les vignettes » introuvable.');
+      }
+      field.value = ' −20 % client Folie Coffee ';
+      field.dispatchEvent(new Event('input'));
+      fixture.detectChanges();
+      expect(preview(root)).toBe('−20 % client Folie Coffee');
+
+      button(root, 'Enregistrer')?.click();
+      await fixture.whenStable();
+      expect(sent.revised[0]?.terms.tileText).toEqual({
+        fr: '−20 % client Folie Coffee',
+        en: null,
+        it: null,
+      });
+    });
+  });
 });

@@ -22,6 +22,7 @@ import {
   type PromotionFulfillment,
 } from "./promotion-fulfillment.js";
 import { assertDescription } from "./promotion-description.js";
+import { assertTileText, type PromotionTileText } from "./promotion-tile-text.js";
 import type { PromotionScope } from "./promotion-scope.js";
 import { assertScope } from "./promotion-scope-checks.js";
 
@@ -56,6 +57,11 @@ export interface PromotionTerms extends PromotionWindow {
   readonly label: PromotionLabel;
   /** Les libellés Particuliers / Pros, facultatifs (§ 15.12 Q2). */
   readonly audienceLabels: PromotionAudienceLabels;
+  /**
+   * Le texte sur les vignettes (`plan-texte-de-la-vignette.md`) ; `null` = la
+   * boutique dit la valeur seule. Il ne change pas QUAND la mention s'affiche.
+   */
+  readonly tileText: PromotionTileText | null;
   /** Le motif ; `null` = aucun. */
   readonly reason: string | null;
   readonly effect: PromotionEffect;
@@ -82,6 +88,8 @@ export interface PromotionTerms extends PromotionWindow {
  * @throws {PromotionBlankTextError} nom interne ou libellé vide.
  * @throws {PromotionDescriptionTooLongError} description au-delà de la borne.
  * @throws {PromotionDescriptionNotCanonicalError} description vide ou bordée d'espaces.
+ * @throws {PromotionTileTextTooLongError} texte sur les vignettes au-delà de la borne.
+ * @throws {PromotionTileTextNotCanonicalError} texte sur les vignettes vide ou bordé d'espaces.
  * @throws {PromotionReversedWindowError} fin avant le début.
  * @throws {PromotionEffectPointMismatchError} effet étranger au point d'application.
  * @throws {PromotionLineOnlyOptionError} plancher propre au panier.
@@ -97,6 +105,7 @@ export function assertTerms(terms: PromotionTerms): void {
   assertOptionalText("libellé anglais", terms.label.en);
   assertOptionalText("libellé italien", terms.label.it);
   assertAudienceLabels(terms);
+  assertTileText(terms.tileText);
   assertOptionalText("motif", terms.reason);
   if (terms.validTo !== null && terms.validTo.getTime() <= terms.validFrom.getTime()) {
     throw new PromotionReversedWindowError(terms.validFrom, terms.validTo);

@@ -16,6 +16,12 @@ import {
   NO_HOURS,
   type DraftHours,
 } from './promotion-hours';
+import {
+  draftTileTextOf,
+  NO_TILE_TEXT,
+  tileTextPayloadOf,
+  type DraftTileText,
+} from './promotion-tile-text';
 
 /**
  * **Où la promotion joue** : dans le prix affiché (le prix de l'article baisse
@@ -146,6 +152,12 @@ export interface PromotionDraft {
   readonly hours: DraftHours;
   /** Cumulable avec les autres promotions cumulables (§ 16) — point ligne seulement. */
   readonly cumulative: boolean;
+  /**
+   * Le texte sur les vignettes (`plan-texte-de-la-vignette.md`) — remise au
+   * panier seulement, la seule que la vignette mentionne : gardé au prix
+   * affiché, mais pas envoyé.
+   */
+  readonly tileText: DraftTileText;
 }
 
 /** Les effets d'un point : une promotion d'acheminement s'applique au panier. */
@@ -200,6 +212,7 @@ export function emptyDraft(today: string, pickupId: string | null): PromotionDra
     minQuantity: '',
     hours: NO_HOURS,
     cumulative: false,
+    tileText: NO_TILE_TEXT,
   };
 }
 
@@ -255,6 +268,7 @@ export function draftOf(view: PromotionView): PromotionDraft {
     minQuantity: quantity === undefined ? '' : String(quantity.value),
     hours: draftHoursOf(view.conditions),
     cumulative: view.cumulative,
+    tileText: draftTileTextOf(view),
   };
 }
 
@@ -328,6 +342,7 @@ export function termsOf(draft: PromotionDraft): PromotionTermsPayload {
         ? labelOf(draft.prosFr, draft.prosEn, draft.prosIt)
         : null,
     },
+    tileText: draft.fulfillmentKind === 'basket' ? tileTextPayloadOf(draft.tileText) : null,
     reason: draft.reason.trim() === '' ? null : draft.reason.trim(),
     effect: {
       kind: draft.effectKind,

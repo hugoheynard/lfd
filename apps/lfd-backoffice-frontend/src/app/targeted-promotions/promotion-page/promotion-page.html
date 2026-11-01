@@ -162,6 +162,14 @@
               (valueChange)="edit({ labelIt: $event })"
             />
           </div>
+          @if (!atLine()) {
+            <app-promotion-tile-text-fieldset
+              [text]="draft().tileText"
+              [preview]="tileTextPreview()"
+              [disabled]="readOnly()"
+              (textChange)="edit({ tileText: $event })"
+            />
+          }
         </div>
       </fold-card>
 

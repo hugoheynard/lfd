@@ -11,6 +11,7 @@ import { conditionsAdmitMoments, type PromotionCondition } from "./promotion-con
 import type { PromotionEffect } from "./promotion-effect.js";
 import type { PromotionFulfillment } from "./promotion-fulfillment.js";
 import type { PromotionScope } from "./promotion-scope.js";
+import type { PromotionTileText } from "./promotion-tile-text.js";
 import {
   admittingRankOf,
   fulfillmentRankOf,
@@ -34,6 +35,8 @@ export interface LivePromotion {
   readonly label: PromotionLabel;
   /** Les libellés Particuliers / Pros ; l'acheteur lit celui de son audience (§ 15.8). */
   readonly audienceLabels: PromotionAudienceLabels;
+  /** Le texte sur les vignettes ; `null` = la valeur seule (`plan-texte-de-la-vignette.md`). */
+  readonly tileText: PromotionTileText | null;
   readonly effect: PromotionEffect;
   /** « Cumulable » (§ 16) — aux deux points depuis M7 (§ 18.6). */
   readonly cumulative: boolean;
@@ -57,6 +60,7 @@ export function livePromotionOf(promotion: Promotion): LivePromotion {
     id: state.id,
     label: state.label,
     audienceLabels: state.audienceLabels,
+    tileText: state.tileText,
     effect: state.effect,
     cumulative: state.cumulative,
     validFrom: state.validFrom,

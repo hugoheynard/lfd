@@ -195,12 +195,8 @@ describe("un point + une zone en UNE promotion", () => {
     const item = jsonBody<ShopCatalogueView>(
       await ctx.http().get("/shop/catalogue").expect(200),
     ).items.find((entry) => entry.sku === SKU);
-    expect(item?.fulfillmentOffers).toEqual([
-      {
-        effect: { kind: "percent", basisPoints: 1_000 },
-        fulfillment: { pickup: { points: [sc.labo] }, delivery: { zones: [sc.vallee] } },
-      },
-    ]);
+    // La mention ne cite plus l'acheminement (`plan-texte-de-la-vignette.md`).
+    expect(item?.fulfillmentOffers).toEqual([{ effect: { kind: "percent", basisPoints: 1_000 } }]);
   });
 
   it("le devis anonyme offre la connexion au point et dans la zone, pas ailleurs", async () => {

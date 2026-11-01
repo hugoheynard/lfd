@@ -315,11 +315,7 @@ describe("la mention au rayon (L10)", () => {
     )?.unitPriceMillicents;
 
     expect(item?.unitPriceMillicents).toBe(priceBefore);
-    expect(item?.fulfillmentOffers).toEqual([
-      {
-        effect: { kind: "percent", basisPoints: 2_000 },
-        fulfillment: { pickup: { points: [site] }, delivery: "none" },
-      },
-    ]);
+    // Sans texte réglé, la valeur seule, sans acheminement (`plan-texte-de-la-vignette.md`).
+    expect(item?.fulfillmentOffers).toEqual([{ effect: { kind: "percent", basisPoints: 2_000 } }]);
   });
 });

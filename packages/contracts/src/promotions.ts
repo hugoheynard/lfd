@@ -161,6 +161,17 @@ export const promotionTermsPayloadSchema = z.object({
   audienceLabels: z
     .object({ individuals: labelSchema.nullable(), pros: labelSchema.nullable() })
     .default({ individuals: null, pros: null }),
+  /**
+   * Le texte sur les vignettes de la boutique (`plan-texte-de-la-vignette.md`)
+   * — « −20 % client Folie Coffee ». Absent ou `null` = la valeur seule ;
+   * anglais et italien `null` = repli sur le français. La FORME seule : le
+   * serveur retire les espaces de bord, ramène le vide à `null`, refuse une
+   * traduction sans français et un texte au-delà de 60 caractères.
+   */
+  tileText: z
+    .object({ fr: z.string(), en: z.string().nullable(), it: z.string().nullable() })
+    .nullable()
+    .optional(),
   reason: z.string().trim().min(1).max(280).nullable(),
   effect: z.object({ kind: z.enum(PROMOTION_EFFECT_KIND_VALUES), value: z.number().int() }),
   ownFloor: z.object({ mode: z.enum(["percent", "amount"]), value: z.number().int() }).nullable(),
@@ -246,6 +257,8 @@ export interface PromotionView {
     readonly individuals: PromotionLabelView | null;
     readonly pros: PromotionLabelView | null;
   };
+  /** Le texte sur les vignettes ; `null` = la valeur seule. */
+  readonly tileText: PromotionLabelView | null;
   readonly reason: string | null;
   readonly state: PromotionLifecycleState;
   readonly applicationPoint: "line" | "basket";

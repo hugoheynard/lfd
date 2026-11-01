@@ -1,0 +1,24 @@
+-- RETOUR ARRIÈRE de 20261101120000_le_texte_des_vignettes
+-- (documentation/promotions/plan-texte-de-la-vignette.md, § 2).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit `tile_text_*` : les colonnes restent à
+-- NULL sous lui, et les CHECK `promotions_tile_text_canonical` /
+-- `promotions_tile_text_whole` ne refusent aucune de ses écritures. Le retour
+-- arrière est donc le retour du code seul ; ce fichier n'a rien à jouer.
+--
+-- ⚠️ Ce qui est PERDU au retour du code : rien en base. Les textes réglés
+-- entre-temps restent dans les colonnes, invisibles du code d'avant (la
+-- boutique y redit « −20 % en retrait »), et reparaissent au retour du code
+-- d'après.
+--
+-- Retirer les colonnes serait un resserrement, dans un déploiement ultérieur,
+-- sur décision de Hugo (une colonne morte reste en base) :
+--
+--   ALTER TABLE public.promotions
+--     DROP CONSTRAINT promotions_tile_text_whole,
+--     DROP CONSTRAINT promotions_tile_text_canonical;
+
+SELECT 1;

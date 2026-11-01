@@ -53,6 +53,7 @@ export function promotionViewOf(
     validFrom: state.validFrom.toISOString(),
     validTo: state.validTo?.toISOString() ?? null,
     audienceLabels: state.audienceLabels,
+    tileText: state.tileText,
     audiences: state.audiences.targets.map((target) => ({
       kind: target.kind,
       companyId: audienceCompanyIdOf(target),

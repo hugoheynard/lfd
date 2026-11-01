@@ -56,6 +56,13 @@ describe("promotionTermsOf — le corps reçu devient les termes", () => {
     expect(closed.validTo).toEqual(new Date("2026-12-01T00:00:00.000Z"));
   });
 
+  it("le texte des vignettes : absent → null, espaces de bord retirés", () => {
+    expect(promotionTermsOf(payload()).tileText).toBeNull();
+    expect(
+      promotionTermsOf(payload({ tileText: { fr: " −20 % Coffee ", en: "", it: null } })).tileText,
+    ).toEqual({ fr: "−20 % Coffee", en: null, it: null });
+  });
+
   it("la description perd ses espaces de bord ; absente ou vide, elle vaut null", () => {
     expect(promotionTermsOf(payload()).description).toBeNull();
     expect(promotionTermsOf(payload({ description: "   " })).description).toBeNull();

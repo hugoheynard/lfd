@@ -45,7 +45,7 @@ async function mentions(
   });
   const buyer = { companyId: null, buyerKind: audience === "pro" ? "previewed" : "guest" } as const;
   const offered = await offers.offeredFor(buyer, catalogue, audience);
-  return withFulfillmentOffers(catalogue, SELLABLE, offered, NOW).items[0]?.fulfillmentOffers;
+  return withFulfillmentOffers(catalogue, SELLABLE, offered, NOW, "fr").items[0]?.fulfillmentOffers;
 }
 
 describe("la mention d'acheminement selon la livraison de la clientèle", () => {
@@ -53,31 +53,30 @@ describe("la mention d'acheminement selon la livraison de la clientèle", () => 
    * Régression (2026-11-01) : un particulier lisait « −20 % retrait » ET
    * « −20 % livraison » sur les vignettes, alors qu'on ne livre pas les particuliers.
    */
-  it("un particulier sans livraison ne lit pas « −20 % livraison », seulement le retrait", async () => {
+  it("un particulier sans livraison lit la valeur seule, sans acheminement", async () => {
+    // Depuis `plan-texte-de-la-vignette.md`, la mention ne cite plus
+    // l'acheminement : ce qui reste à éprouver ici est qu'elle se dit, parce
+    // que le retrait lui est ouvert (le filtre est éprouvé par `offerOpenTo`).
     const offers = await mentions([BOTH], "public", { openToB2c: false });
 
-    expect(offers?.map((offer) => offer.fulfillment)).toEqual([
-      { pickup: "all", delivery: "none" },
-    ]);
+    expect(offers).toEqual([{ effect: { kind: "percent", basisPoints: 2000 } }]);
   });
 
   it("une promotion de livraison seule n'est pas mentionnée du tout à qui n'est pas livré", async () => {
     expect(await mentions([DELIVERY_ONLY], "public", { openToB2c: false })).toBeUndefined();
   });
 
-  it("le pro, livré, garde la mention de livraison", async () => {
-    const offers = await mentions([BOTH], "pro", { openToB2c: false, openToB2b: true });
+  it("le pro, livré, lit la mention d'une promotion de livraison seule", async () => {
+    const offers = await mentions([DELIVERY_ONLY], "pro", { openToB2c: false, openToB2b: true });
 
-    expect(offers?.map((offer) => offer.fulfillment)).toEqual([{ pickup: "all", delivery: "all" }]);
+    expect(offers).toHaveLength(1);
   });
 
   it("le pro, livraison fermée aux pros, ne la lit pas non plus", async () => {
     expect(await mentions([DELIVERY_ONLY], "pro", { openToB2b: false })).toBeUndefined();
   });
 
-  it("un particulier livré lit les deux", async () => {
-    const offers = await mentions([BOTH], "public", { openToB2c: true });
-
-    expect(offers?.map((offer) => offer.fulfillment)).toEqual([{ pickup: "all", delivery: "all" }]);
+  it("un particulier livré lit la mention d'une promotion de livraison seule", async () => {
+    expect(await mentions([DELIVERY_ONLY], "public", { openToB2c: true })).toHaveLength(1);
   });
 });

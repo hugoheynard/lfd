@@ -26,6 +26,12 @@ model Promotion {
   labelProsFr          String?   @map("label_pros_fr")
   labelProsEn          String?   @map("label_pros_en")
   labelProsIt          String?   @map("label_pros_it")
+  /// Le texte sur les vignettes (`plan-texte-de-la-vignette.md`) ; `NULL` =
+  /// la valeur seule. 60 caractères au plus, sans espaces de bord ; l'anglais
+  /// et l'italien n'existent qu'avec le français (CHECK).
+  tileTextFr           String?   @map("tile_text_fr")
+  tileTextEn           String?   @map("tile_text_en")
+  tileTextIt           String?   @map("tile_text_it")
   reason               String?
   /// `line` | `basket` — miroir de `fulfillment_kind`, dérivé par l'agrégat.
   applicationPoint     String    @map("application_point")

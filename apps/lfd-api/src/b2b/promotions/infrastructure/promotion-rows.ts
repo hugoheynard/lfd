@@ -45,6 +45,9 @@ export interface PromotionRow {
   readonly labelProsFr: string | null;
   readonly labelProsEn: string | null;
   readonly labelProsIt: string | null;
+  readonly tileTextFr: string | null;
+  readonly tileTextEn: string | null;
+  readonly tileTextIt: string | null;
   readonly reason: string | null;
   readonly applicationPoint: string;
   readonly effectKind: string;
@@ -125,6 +128,7 @@ export function toDomain(
       ),
       pros: audienceLabelOf(row.labelProsFr, row.labelProsEn, row.labelProsIt),
     },
+    tileText: audienceLabelOf(row.tileTextFr, row.tileTextEn, row.tileTextIt),
     reason: row.reason,
     effect,
     ownFloor: ownFloorOf(row, unreadable),
@@ -170,6 +174,9 @@ export function toPersistence(promotion: Promotion): PromotionWriteRow {
     labelProsFr: state.audienceLabels.pros?.fr ?? null,
     labelProsEn: state.audienceLabels.pros?.en ?? null,
     labelProsIt: state.audienceLabels.pros?.it ?? null,
+    tileTextFr: state.tileText?.fr ?? null,
+    tileTextEn: state.tileText?.en ?? null,
+    tileTextIt: state.tileText?.it ?? null,
     reason: state.reason,
     applicationPoint: promotion.applicationPoint,
     effectKind: state.effect.kind,

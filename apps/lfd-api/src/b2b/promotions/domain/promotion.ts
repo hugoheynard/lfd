@@ -209,6 +209,7 @@ function termsOf(terms: PromotionTerms): PromotionTerms {
     description: terms.description,
     label: terms.label,
     audienceLabels: terms.audienceLabels,
+    tileText: terms.tileText,
     reason: terms.reason,
     effect: terms.effect,
     ownFloor: terms.ownFloor,

@@ -49,7 +49,10 @@ import {
 } from '../catalogue-choices';
 import { PromotionAudienceTree } from '../promotion-audience-tree/promotion-audience-tree';
 import { PromotionHoursFieldset } from '../promotion-hours-fieldset/promotion-hours-fieldset';
+import { PromotionTileTextFieldset } from '../promotion-tile-text-fieldset/promotion-tile-text-fieldset';
+import { tileTextPreview } from '../promotion-tile-text';
 import {
+  decimalOf,
   draftOf,
   draftProblem,
   duplicateDraft,
@@ -140,6 +143,7 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
     FoldViewToggleComponent,
     PromotionAudienceTree,
     PromotionHoursFieldset,
+    PromotionTileTextFieldset,
     RouterLink,
   ],
   templateUrl: './promotion-page.html',
@@ -241,6 +245,14 @@ export class PromotionPage {
   protected readonly origin = computed(() => originPhrase(this.promotion()?.legacySource ?? null));
 
   protected readonly atLine = computed(() => this.draft().fulfillmentKind === 'displayed_price');
+  /** Ce que la vignette dira de cette remise au panier (`plan-texte-de-la-vignette.md`). */
+  protected readonly tileTextPreview = computed(() => {
+    const draft = this.draft();
+    return tileTextPreview(draft.tileText, {
+      kind: draft.effectKind,
+      value: decimalOf(draft.effectValue),
+    });
+  });
   /** Le cumul dit son effet au point où il joue : la ligne, ou le panier (M7). */
   protected readonly cumulativeHint = computed(() =>
     this.atLine()

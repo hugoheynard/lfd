@@ -215,6 +215,7 @@ export class ShopCataloguePricing {
       sellable,
       offered,
       this.clock.now(),
+      language,
       priced.sealing,
     );
     return inShopLanguage(

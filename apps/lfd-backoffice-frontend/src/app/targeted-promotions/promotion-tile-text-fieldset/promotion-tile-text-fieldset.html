@@ -1,0 +1,37 @@
+<fold-fieldset legend="Texte sur les vignettes" [disabled]="disabled()">
+  <div class="tile-text">
+    <fold-input
+      label="Ce que la boutique écrit sous le prix"
+      placeholder="−20 % client Folie Coffee"
+      [hint]="frenchHint"
+      [value]="text().fr"
+      [disabled]="disabled()"
+      (valueChange)="patch({ fr: $event })"
+      data-tile-text-fr
+    />
+    <div class="pair">
+      <fold-input
+        label="En anglais"
+        hint="Vide : le français."
+        [value]="text().en"
+        [disabled]="disabled()"
+        (valueChange)="patch({ en: $event })"
+        data-tile-text-en
+      />
+      <fold-input
+        label="En italien"
+        hint="Vide : le français."
+        [value]="text().it"
+        [disabled]="disabled()"
+        (valueChange)="patch({ it: $event })"
+        data-tile-text-it
+      />
+    </div>
+    @if (preview(); as shown) {
+      <p class="preview" data-tile-text-preview>
+        <span class="caption">Sur la vignette :</span>
+        <fold-badge variant="accent" [content]="shown" />
+      </p>
+    }
+  </div>
+</fold-fieldset>

@@ -18,6 +18,7 @@ export function promotionView(over: Partial<PromotionView> = {}): PromotionView 
     audiences: [{ kind: 'everyone', companyId: null }],
     audience: { kind: 'everyone', companyId: null },
     audienceLabels: { individuals: null, pros: null },
+    tileText: null,
     fulfillment: { kind: 'displayed_price' },
     scope: {
       mode: 'only',

@@ -6,8 +6,10 @@ import type { Weekday } from "./address.js";
  * Deux usages, une seule forme d'effet :
  *
  * - au RAYON, une promotion conditionnée par l'acheminement ne baisse jamais
- *   le prix (l'acheminement y est inconnu) : la fiche la MENTIONNE —
- *   « −20 % avec retrait à Cœur de station » ;
+ *   le prix (l'acheminement y est inconnu) : la fiche la MENTIONNE — par le
+ *   texte réglé en back-office (« −20 % client Folie Coffee »), sinon par la
+ *   valeur seule (« −20 % »), sans acheminement
+ *   (`documentation/promotions/plan-texte-de-la-vignette.md`) ;
  * - au panier d'un INVITÉ, une promotion réservée aux inscrits se dit —
  *   « Vous avez un compte ? Connectez-vous pour profiter de −20 % » —, sans
  *   jamais vérifier l'adresse saisie (Hugo, 2026-10-30).
@@ -63,10 +65,19 @@ export interface PromotionOfferHoursView {
   readonly activeNow: boolean;
 }
 
-/** Une promotion de panier qu'un acheminement ouvrirait sur cet article. */
+/**
+ * Une promotion de panier qu'un acheminement ouvert au lecteur appliquerait
+ * sur cet article. Le serveur a déjà jugé QUAND elle se dit (public, portée,
+ * acheminement ouvert, mercuriale) ; la boutique ne dit plus l'acheminement
+ * (`plan-texte-de-la-vignette.md`, contrat cassé le 2026-11-01, pré-release).
+ */
 export interface ShopItemFulfillmentOfferView {
   readonly effect: PromotionOfferEffectView;
-  readonly fulfillment: PromotionOfferFulfillmentView;
+  /**
+   * Le texte réglé en back-office, dans la langue demandée (repli sur le
+   * français). **Absent** : la boutique dit la valeur seule (`effect`).
+   */
+  readonly text?: string;
   /** **Absente** pour une promotion sans jours ni heures. */
   readonly hours?: PromotionOfferHoursView;
 }

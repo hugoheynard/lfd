@@ -202,7 +202,7 @@ export class ProductTile {
 
   /** « 12,40 € / kg TTC » sous le prix d'une pièce, quand le référentiel l'a saisi. */
   /**
-   * « −20 % avec retrait à Cœur de station » — les promotions qu'un
+   * « −20 % client Folie Coffee », ou la valeur seule — les promotions qu'un
    * acheminement ouvrirait, sans que le prix affiché les compte (L10).
    */
   protected readonly offerLabels = computed(() => this.offers.of(this.product()));

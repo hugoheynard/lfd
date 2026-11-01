@@ -7,6 +7,7 @@ import { promotionDescriptionOf } from "../domain/promotion-description.js";
 import type { PromotionEffect } from "../domain/promotion-effect.js";
 import type { PromotionFulfillment } from "../domain/promotion-fulfillment.js";
 import type { PromotionTerms } from "../domain/promotion-terms.js";
+import { promotionTileTextOf } from "../domain/promotion-tile-text.js";
 
 /**
  * **Le corps reçu → les termes du domaine.** Une traduction, sans règle :
@@ -23,6 +24,7 @@ export function promotionTermsOf(payload: PromotionTermsPayload): PromotionTerms
     description: promotionDescriptionOf(payload.description ?? null),
     label: payload.label,
     audienceLabels: payload.audienceLabels,
+    tileText: promotionTileTextOf(payload.tileText ?? null),
     reason: payload.reason,
     effect: effectOf(payload.effect),
     ownFloor: payload.ownFloor,
