@@ -50,11 +50,24 @@
   left: 0;
   z-index: 1;
   background: inherit;
+  /* Toute la hauteur de la ligne : une case voisine plus haute (un badge
+     « exceptionnel ») laissait dépasser ses chiffres sous le nom. */
+  align-self: stretch;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
 }
 
-.pv-row--line .pv-cell--label,
-.pv-row--subcategory .pv-cell--label {
+.pv-row--line .pv-cell--label {
   background: var(--fold-color-bg-page);
+}
+
+/* L'intertitre d'une sous-catégorie, un cran plus sombre que le papier
+   (Hugo, 2026-11-01) : il se repère en descendant la grille, sans devenir un
+   bandeau de rayon. */
+.pv-row--subcategory,
+.pv-row--subcategory .pv-cell--label {
+  background: var(--fold-color-surface-band);
 }
 
 /* ── CE QUI TIENT LA TABLE EN BAS ───────────────────────────────────────────
@@ -163,6 +176,13 @@
 .pv-cell--label {
   padding-left: var(--fold-space-md);
   text-align: left;
+}
+
+/* Un filet entre deux colonnes (Hugo, 2026-11-01) : une case se lit dans SA
+   colonne — un jour, une tranche — sans suivre l'en-tête du doigt. Un filet
+   fin, pas une grille : les lignes restent séparées par leur seul rythme. */
+.pv-row > .pv-cell + .pv-cell {
+  border-left: 1px solid var(--fold-color-border-subtle);
 }
 
 .pv-col-label {
@@ -503,11 +523,15 @@
 }
 
 /* ── L'INTERTITRE D'UNE SOUS-CATÉGORIE (2026-10-30) ─────────────────────────
-   Dans le rayon de sa racine, sur le papier, sans zébrage : la ligne de rayon
-   reste le seul bandeau sombre de la grille. Une seule cellule, sur toute la
-   largeur — une sous-catégorie n'a pas de totaux à elle. */
+   Dans le rayon de sa racine, sans zébrage, sur un fond un cran plus sombre
+   que le papier (2026-11-01) : la ligne de rayon reste le bandeau sombre.
+   Une seule cellule, la colonne Produit — une sous-catégorie n'a pas de
+   totaux à elle. */
 .pv-subcategory {
-  grid-column: 1 / -1;
+  /* La SEULE colonne Produit, pas toute la largeur : un intertitre large
+     comme la grille partait avec elle quand on défile à droite, et la bande
+     restait vide. La ligne porte le fond sur le reste. */
+  grid-column: 1;
   font-size: var(--fold-text-2xs);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-wide);
