@@ -151,5 +151,5 @@ Plus d'URL de production sur le poste pour une reprise.
 
 ## 8. Reste à faire
 
-- **Le bandeau ne doit apparaître que dans ops** (Hugo, 2026-11-01), pas en
+- ~~**Le bandeau ne doit apparaître que dans ops**~~ — fait le 2026-11-01 : il vit sur la page santé. (Hugo, 2026-11-01), pas en
   tête de tout le back-office.

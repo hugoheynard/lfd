@@ -91,6 +91,23 @@
       }
     }
 
+    <!-- Le résultat d'une simulation se DIT : sans lui, une simulation qui ne
+         trouve rien laisse la carte identique, et le bouton paraît mort
+         (constaté en production le 2026-11-01). -->
+    @if (freshSimulation(); as sim) {
+      @if (sim.simulation.writable === 0) {
+        <fold-callout variant="info" announce data-simulated>
+          Simulée à {{ sim.simulatedAt | date: 'HH:mm:ss' }} : rien à appliquer.
+        </fold-callout>
+      } @else {
+        <fold-callout variant="success" announce data-simulated>
+          Simulée à {{ sim.simulatedAt | date: 'HH:mm:ss' }} : {{ sim.simulation.writable }}
+          décision(s) à écrire. Lisez-les, cochez, puis appliquez avant
+          {{ sim.applicableUntil | date: 'HH:mm' }}.
+        </fold-callout>
+      }
+    }
+
     @if (expired()) {
       <fold-callout variant="info" data-expired>
         Cette simulation n'est plus applicable : simulez de nouveau pour appliquer.

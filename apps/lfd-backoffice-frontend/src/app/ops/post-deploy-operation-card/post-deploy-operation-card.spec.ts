@@ -165,6 +165,9 @@ describe('PostDeployOperationCard', () => {
     const { fixture } = await render(service);
     await click(fixture, '[data-simulate]');
     expect(q(fixture, '[data-apply]')).toBeNull();
+    // Régression (2026-11-01, production) : sans cette ligne, « Simuler » ne
+    // changeait rien à l'écran et paraissait ne rien faire.
+    expect(q(fixture, '[data-simulated]')?.textContent).toContain('rien à appliquer');
   });
 
   it('en lecture seule : « Simuler » sans « Appliquer »', async () => {

@@ -1,3 +1,4 @@
+import { PostDeployBanner } from '../../shared/post-deploy-banner/post-deploy-banner';
 import { DatePipe, DecimalPipe } from '@angular/common';
 import {
   ChangeDetectionStrategy,
@@ -55,6 +56,7 @@ type LoadState = 'loading' | 'ready' | 'error';
   selector: 'app-sante-page',
   standalone: true,
   imports: [
+    PostDeployBanner,
     Capabilities,
     ChargeTable,
     DatePipe,

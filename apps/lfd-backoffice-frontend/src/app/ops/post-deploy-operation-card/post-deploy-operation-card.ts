@@ -129,6 +129,14 @@ export class PostDeployOperationCard {
     () => this.canApply() && this.applicable() && this.operation().blockedBy.length === 0,
   );
 
+  /** Ma simulation, encore valide : son résultat s'annonce, même vide. */
+  protected readonly freshSimulation = computed(() => {
+    const run = this.run();
+    return run !== null && run.state === 'simulated' && Date.parse(run.applicableUntil) > this.now()
+      ? run
+      : null;
+  });
+
   /** Ma simulation a expiré : la dire, plutôt que faire disparaître le bouton sans un mot. */
   protected readonly expired = computed(() => {
     const run = this.run();
