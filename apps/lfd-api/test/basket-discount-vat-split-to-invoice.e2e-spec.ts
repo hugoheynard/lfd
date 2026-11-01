@@ -33,7 +33,7 @@ import { OutboxRelay } from "../src/platform/outbox/outbox-relay.js";
 import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { addBillingAddress, attachTo, createCompany, createUser } from "./factories.js";
 import { cardGatewayDouble, pickupSite, placeOrder } from "./order-factory.js";
-import { posePromotion, promotionTerms } from "./promotion-fixtures.js";
+import { onlyVariant, posePromotion, promotionTerms } from "./promotion-fixtures.js";
 
 const ENTITIES = "/admin/accounting/legal-entities";
 const STAFF = "staff-e2e";
@@ -301,4 +301,182 @@ it("−20 % au panier : la remise se ventile juste par taux, du devis à la fact
   expect(placed.paymentStatus).toBe("paid");
   expect(invoice.prepaidCents).toBe(placed.totalCents);
   expect(vat.totalCents).toBe(invoice.totalTtcCents);
+});
+
+/** Arrondi au plus proche, la moitié vers le haut, en entiers : num / den. */
+function roundHalfUp(num: number, den: number): number {
+  return Math.floor((2 * num + den) / (2 * den));
+}
+
+/**
+ * Deux remises CUMULABLES : −20 % sur tout, puis −10 % sur le seul pain au
+ * chocolat (20 %). Ce que le fichier de cumul à deux taux
+ * (`promotions-basket-cumul-two-rates`) ne prouve pas : une portée inégale — la
+ * seconde ne vise qu'un article, son assiette est ce que la première a laissé
+ * sur cet article seul, et sa part va au seul taux de l'article — et la facture
+ * de la carte, qui doit garder le détail par promotion (sinon elle retombe sur
+ * le découpage global).
+ *
+ * À la main : croissants 413 c (5,5 %), pains 465 c (20 %), sous-total 878.
+ *   A : 20 % × 878 = 175,6 → 176 c ; planchers 82 + 93, le centime restant va
+ *       au plus fort reste (.6, le 5,5 %) → 83 c à 5,5 %, 93 c à 20 %.
+ *   Reste du pain après A : 465 × (878 − 176) / 878 = 371,8 c.
+ *   B : 10 % × 371,8 = 37,18 → 37 c, tout au 20 %.
+ */
+it("deux remises cumulables, la seconde sur un seul article : chaînées, ventilées, facturées une à une", async () => {
+  await entity();
+  const site = await pickupSite(ctx.prisma);
+  const everything = await posePromotion(
+    staff(),
+    promotionTerms({
+      internalName: "Moins vingt au panier",
+      label: { fr: "Moins vingt pour cent", en: null, it: null },
+      effect: { kind: "percent_off", value: DISCOUNT_BP },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "all" },
+      cumulative: true,
+    }),
+  );
+  const oneArticle = await posePromotion(
+    staff(),
+    promotionTerms({
+      internalName: "Moins dix sur le pain",
+      label: { fr: "Moins dix pour cent sur le pain", en: null, it: null },
+      effect: { kind: "percent_off", value: 1_000 },
+      fulfillment: { kind: "basket", pickup: "all", delivery: "all" },
+      scope: onlyVariant(PAIN_AU_CHOCOLAT),
+      cumulative: true,
+    }),
+  );
+  ctx.app.get(PricingMaterialsCache).invalidate();
+  const company = await createCompany(ctx.prisma, { raisonSociale: "Boulangerie deux remises" });
+  await addBillingAddress(ctx.prisma, company.id);
+  await ctx.prisma.company.update({
+    where: { id: company.id },
+    data: { vatNumber: "FR40303265045" },
+  });
+  const owner = await createUser(ctx.prisma, { auth0Sub: OWNER });
+  await attachTo(ctx.prisma, owner.id, company.id, CustomerRole.owner);
+
+  const quote = jsonBody<ShopQuoteView>(
+    await ctx
+      .asSub(OWNER)
+      .post("/shop/quote/mine")
+      .send({ lines: LINES, fulfillment: { method: "pickup", pickupAddressId: site } })
+      .expect(200),
+  );
+  const order = await placeOrder(ctx, {
+    buyerUserId: owner.id,
+    companyId: company.id,
+    settlement: "card",
+    placedAt: new Date(daysAgo(1)),
+    lines: LINES,
+    fulfillment: { method: "pickup", pickupSiteId: site },
+  });
+  const bus = ctx.app.get(CommandBus);
+  await bus.execute(
+    new MarkOrderFulfilledCommand(order.orderNumber, STAFF, new Date(daysAgo(0)), "manual"),
+  );
+  await settle();
+  await bus.execute(new ConfirmOrderPaymentCommand(order.paymentIntentId ?? "", "succeeded"));
+  await settle();
+
+  const placed = await ctx.prisma.order.findUniqueOrThrow({ where: { id: order.id } });
+  const parts = await ctx.prisma.orderDiscount.findMany({
+    where: { orderId: order.id, archivedAt: null },
+    orderBy: { rank: "asc" },
+  });
+  const [invoice, ...others] = await ctx.prisma.invoice.findMany({
+    where: { orders: { some: { orderId: order.id } } },
+  });
+  expect(others).toEqual([]);
+  if (invoice === undefined) {
+    throw new TypeError("La carte payée et retirée devait produire une facture.");
+  }
+  const vat = breakdownSchema.parse(invoice.vatBreakdown);
+
+  // Les montants, recalculés ici en entiers, sans le code testé.
+  const CROISSANTS = 7 * 59;
+  const PAINS = 5 * 93;
+  const SUBTOTAL = CROISSANTS + PAINS;
+  const firstAmount = roundHalfUp(SUBTOTAL * DISCOUNT_BP, BP);
+  const firstShares = expectedShares([CROISSANTS, PAINS], firstAmount);
+  const painLeft = { num: PAINS * (SUBTOTAL - firstAmount), den: SUBTOTAL };
+  const secondAmount = roundHalfUp(painLeft.num * 1_000, painLeft.den * BP);
+  expect(SUBTOTAL).toBe(878);
+  expect(firstAmount).toBe(176);
+  expect(firstShares).toEqual([83, 93]);
+  expect(secondAmount).toBe(37);
+  const taxable = [
+    CROISSANTS - (firstShares[0] ?? 0),
+    PAINS - (firstShares[1] ?? 0) - secondAmount,
+  ];
+  const vatByRate = [Math.round((taxable[0] ?? 0) * 0.055), Math.round((taxable[1] ?? 0) * 0.2)];
+  expect(taxable).toEqual([330, 335]);
+
+  // L'ordre : la plus ancienne (même rang) d'abord ; assiette = ce que la précédente laisse,
+  // sur les seules lignes couvertes (la seconde ne voit que le pain).
+  expect(parts.map((part) => part.promotionId)).toEqual([everything, oneArticle]);
+  expect(parts.map((part) => part.amountCents)).toEqual([firstAmount, secondAmount]);
+  expect(parts[0]?.baseCents).toBe(SUBTOTAL);
+  expect(parts[1]?.baseCents).toBe(roundHalfUp(painLeft.num, painLeft.den));
+  const sharesOfPart = (value: unknown): readonly number[] =>
+    z
+      .array(z.object({ rate: z.number(), htCents: z.number() }))
+      .parse(value)
+      .sort((a, b) => a.rate - b.rate)
+      .map((share) => share.htCents);
+  expect(sharesOfPart(parts[0]?.vatShares)).toEqual(firstShares);
+  // La seconde ne touche que le pain : une seule part, au taux de 20 %.
+  expect(
+    z.array(z.object({ rate: z.number(), htCents: z.number() })).parse(parts[1]?.vatShares),
+  ).toEqual([{ rate: 20, htCents: secondAmount }]);
+
+  // Devis = commande = order_discounts = facture.
+  const total = firstAmount + secondAmount;
+  expect(quote.subtotalHtCents).toBe(SUBTOTAL);
+  expect(quote.discountCents).toBe(total);
+  expect(placed.discountCents).toBe(total);
+  expect(vat.allowancesCents).toBe(total);
+
+  // La facture garde UN allowance par promotion et par taux (sinon : découpage global
+  // sous la clé « company_discount »). Les clés à zéro (remise client, bon) sont écartées.
+  const rates = [...vat.categories].sort((a, b) => a.rate - b.rate);
+  expect(rates.map((category) => category.rate)).toEqual([5.5, 20]);
+  const emptyCategory = {
+    rate: 0,
+    goodsHtCents: 0,
+    taxableBaseCents: 0,
+    vatCents: 0,
+    allowances: [],
+  };
+  const live = (category: (typeof rates)[number]): Record<string, number> =>
+    Object.fromEntries(
+      category.allowances.filter((a) => a.amountCents !== 0).map((a) => [a.key, a.amountCents]),
+    );
+  expect(live(rates[0] ?? emptyCategory)).toEqual({
+    [`basket_promotion:${everything}`]: firstShares[0],
+  });
+  expect(live(rates[1] ?? emptyCategory)).toEqual({
+    [`basket_promotion:${everything}`]: firstShares[1],
+    [`basket_promotion:${oneArticle}`]: secondAmount,
+  });
+
+  // Aucune base négative ; HT + TVA = TTC par taux et au total.
+  expect(rates.map((category) => category.taxableBaseCents)).toEqual(taxable);
+  expect(rates.map((category) => category.vatCents)).toEqual(vatByRate);
+  for (const category of rates) {
+    expect(category.taxableBaseCents).toBeGreaterThanOrEqual(0);
+  }
+  const ht = taxable.reduce((sum, cents) => sum + cents, 0);
+  const tva = vatByRate.reduce((sum, cents) => sum + cents, 0);
+  expect(invoice.totalHtCents).toBe(ht);
+  expect(invoice.totalVatCents).toBe(tva);
+  expect(invoice.totalHtCents + invoice.totalVatCents).toBe(invoice.totalTtcCents);
+
+  // Le total facturé est le total payé, et celui que le devis annonçait.
+  expect(invoice.totalTtcCents).toBe(ht + tva);
+  expect(invoice.totalTtcCents).toBe(placed.totalCents);
+  expect(invoice.totalTtcCents).toBe(quote.totalCents);
+  expect(placed.paymentStatus).toBe("paid");
+  expect(invoice.prepaidCents).toBe(placed.totalCents);
 });
