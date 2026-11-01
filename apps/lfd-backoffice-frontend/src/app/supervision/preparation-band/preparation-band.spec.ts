@@ -56,3 +56,30 @@ describe('PreparationBand', () => {
     expect(element.textContent).toContain('Pains');
   });
 });
+
+/** Hugo, 2026-11-01 : la colonne 1 se lit aussi par tranche. */
+describe('PreparationBand — la bascule Par rayon / Par tranche', () => {
+  it('s’ouvre par rayon, avec le filtre des rayons', async () => {
+    const fixture = await mount();
+    const element: HTMLElement = fixture.nativeElement;
+
+    expect(fixture.componentInstance.view()).toBe('shelves');
+    expect(element.querySelector('[data-preparation-view]')?.textContent).toContain('Par tranche');
+    expect(element.querySelector('fold-listbox')).not.toBeNull();
+  });
+
+  it('bascule par tranche au clic, et le filtre des rayons s’efface', async () => {
+    const fixture = await mount();
+    const element: HTMLElement = fixture.nativeElement;
+    const slots = [...element.querySelectorAll<HTMLElement>('[role="radio"]')].find((node) =>
+      node.textContent?.includes('Par tranche'),
+    );
+
+    slots?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(fixture.componentInstance.view()).toBe('slots');
+    expect(element.querySelector('fold-listbox')).toBeNull();
+  });
+});

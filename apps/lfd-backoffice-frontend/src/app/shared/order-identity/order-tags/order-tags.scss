@@ -1,0 +1,13 @@
+:host {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--fold-space-xs);
+  min-width: 0;
+}
+
+// En colonne étroite, la pastille de mode se coupe en points de suspension
+// plutôt que d'élargir la carte.
+.mode {
+  max-width: 100%;
+}

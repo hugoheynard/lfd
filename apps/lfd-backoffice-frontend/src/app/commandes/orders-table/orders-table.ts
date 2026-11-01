@@ -16,12 +16,10 @@ import {
   paymentStatusVariant,
 } from '@lfd/b2b-ui/order';
 
-import {
-  logisticsCategoryOf,
-  type LogisticsCategory,
-} from '../../shared/logistics-colors/logistics-category';
+import { fulfillmentModeOf } from '../../shared/logistics-colors/fulfillment-mode';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
 import { LogisticsSwatch } from '../../shared/logistics-colors/logistics-swatch/logistics-swatch';
-import { clienteleLabel, methodLabel } from '../order-list-filters';
+import { clienteleLabel } from '../order-list-filters';
 
 /** « 14:32 », à l'heure de Paris. */
 const PARIS_TIME = new Intl.DateTimeFormat('fr-FR', {
@@ -140,23 +138,12 @@ export class OrdersTable {
 
   /**
    * Le mode, à la couleur de sa catégorie logistique (Hugo, 2026-10-14) :
-   * « Livraison », ou « Retrait <site> ». Le libellé reste celui du MODE, sans
-   * la clientèle, que la colonne Client dit déjà ; la couleur, elle, vient de
-   * `logisticsCategoryOf`, qui seule sait la règle. Un retrait sans site connu
-   * dit le nom du point figé (« Retrait Boutique »), sinon « Retrait » — en
-   * teinte neutre dans les deux cas.
+   * « Livraison », ou « Retrait <site> » — la règle vit dans
+   * `fulfillmentModeOf`, partagée avec la Supervision. Le libellé reste celui
+   * du MODE, sans la clientèle, que la colonne Client dit déjà.
    */
   protected mode(row: AdminOrderRow): LogisticsCategory {
-    const palette = this.palette();
-    const category = logisticsCategoryOf(row, palette);
-    const method = methodLabel(row.fulfillmentMethod);
-    if (row.fulfillmentMethod === 'delivery') {
-      return { ...category, label: method };
-    }
-    // Le site d'abord ; à défaut, le nom du point FIGÉ (retraits sans `siteId`
-    // dans le snapshot), toujours en teinte neutre puisque sans site.
-    const place = palette.find((s) => s.id === row.siteId)?.label ?? row.pickupLabel;
-    return { ...category, label: place === null ? method : `${method} ${place}` };
+    return fulfillmentModeOf(row, this.palette());
   }
 
   protected day(row: AdminOrderRow): string | null {

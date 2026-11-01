@@ -13,8 +13,6 @@ import {
   PACKING_VISIBLE_MAX,
   packingBoard,
   packingMeta,
-  packingPoints,
-  pointFilterOptions,
   packingStateOf,
 } from './packing-cards';
 
@@ -138,13 +136,29 @@ describe('la colonne Colisage', () => {
     expect(board.visible.map((card) => card.reference)).toEqual(['TOT', 'TARD', 'SANS']);
   });
 
-  it('montre attend le four et en cours avant ce qui est à coliser', () => {
+  // Jusqu'au 2026-11-01, « au four » et « en cours » passaient devant « à
+  // coliser » ; Hugo veut la colonne classée par horaire, d'un seul tenant.
+  it('classe par échéance de la fiche, la plus proche d’abord, sans heure en fin', () => {
     const board = packingBoard(
-      packing([sheet('A'), sheet('C', { packedLines: 1 })]),
-      queue([entry('A', '06:00'), entry('C', '10:00')]),
+      packing([
+        sheet('NEUF', { dueAt: '09:00', packedLines: 1 }),
+        sheet('TOT', { dueAt: '06:30' }),
+        sheet('SANS', { lines: [packingLine({ awaitingProduction: true })] }),
+      ]),
+      null,
     );
 
-    expect(board.visible.map((card) => card.reference)).toEqual(['C', 'A']);
+    expect(board.visible.map((card) => card.reference)).toEqual(['TOT', 'NEUF', 'SANS']);
+    expect(board.visible[0]?.slotMinutes).toBe(390);
+  });
+
+  it('l’échéance de la fiche passe avant le créneau de la file', () => {
+    const board = packingBoard(
+      packing([sheet('A', { dueAt: '10:00' }), sheet('B')]),
+      queue([entry('A', '06:00'), entry('B', '08:00')]),
+    );
+
+    expect(board.visible.map((card) => card.reference)).toEqual(['B', 'A']);
   });
 
   /** Supervision v2, A4 : la colonne filtre par point AVANT de plafonner. */
@@ -201,33 +215,34 @@ describe('la colonne Colisage', () => {
     expect(meta.get('C')).toBe('C');
     expect(hourLabel(425)).toBe('7\u00a0h\u00a005');
   });
+});
 
-  it('compte les commandes par point de destination, colisées comprises', () => {
+/** Hugo, 2026-11-01 : la carte dit Pro / Particulier et le site du retrait. */
+describe('packingBoard — clientèle et acheminement des cartes', () => {
+  it('lit clientèle et site sur la fiche, le point figé dans la file', () => {
     const board = packingBoard(
-      packing([
-        sheet('A', { destination: 'Mairie' }),
-        sheet('B', { destination: 'Boutique' }),
-        sheet('C', { destination: 'Mairie', packedAt: 'x' }),
-      ]),
-      null,
+      packing([sheet('A', { clientele: 'public', siteId: 'adroit' })]),
+      queue([entry('A', '07:00')]),
     );
-
-    expect(packingPoints(board)).toEqual([
-      { destination: 'Boutique', count: 1 },
-      { destination: 'Mairie', count: 2 },
-    ]);
+    expect(board.visible[0]).toMatchObject({
+      clientele: 'public',
+      siteId: 'adroit',
+      pickupLabel: 'Boutique',
+    });
   });
 
-  it('ouvre le filtre sur « Tous les points », avec le compte de chaque entrée', () => {
-    const board = packingBoard(
-      packing([sheet('A', { destination: 'Mairie' }), sheet('B', { destination: 'Boutique' })]),
-      null,
-    );
+  it('🔴 fiche sans clientèle : `null`, jamais celle de la file', () => {
+    const board = packingBoard(packing([sheet('A')]), queue([entry('A', '07:00')]));
+    expect(board.visible[0]).toMatchObject({ clientele: null, siteId: null });
+  });
 
-    expect(pointFilterOptions(board)).toEqual([
-      { value: '', label: 'Tous les points', count: 2 },
-      { value: 'Boutique', label: 'Boutique', count: 1 },
-      { value: 'Mairie', label: 'Mairie', count: 1 },
-    ]);
+  it('les commandes attendues portent clientèle, mode et point de la file', () => {
+    const board = packingBoard(packing([], null), queue([entry('A', '07:00')]));
+    expect(board.upcoming[0]).toMatchObject({
+      clientele: 'pro',
+      method: 'pickup',
+      siteId: null,
+      pickupLabel: 'Boutique',
+    });
   });
 });

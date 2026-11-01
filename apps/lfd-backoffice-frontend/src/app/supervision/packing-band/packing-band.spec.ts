@@ -1,16 +1,23 @@
 import { TestBed } from '@angular/core/testing';
 import { describe, expect, it } from 'vitest';
 
-import { ALL_POINTS, type PackingBoard, type PackingCard } from '../packing-cards';
+import type { PackingBoard, PackingCard } from '../packing-cards';
 import { PackingBand } from './packing-band';
 
-function card(reference: string, destination: string): PackingCard {
+function card(
+  reference: string,
+  pickupLabel: string | null,
+  method: 'pickup' | 'delivery' = 'pickup',
+): PackingCard {
   return {
     reference,
     orderId: null,
     customerLabel: reference,
-    method: 'pickup',
-    destination,
+    clientele: null,
+    siteId: null,
+    pickupLabel,
+    method,
+    destination: pickupLabel ?? 'Livraison',
     state: 'to_pack',
     lineCount: 1,
     packedLines: 0,
@@ -28,7 +35,7 @@ function card(reference: string, destination: string): PackingCard {
 const BOARD: PackingBoard = {
   notClosed: false,
   upcoming: [],
-  visible: [card('A', 'Mairie'), card('B', 'Boutique')],
+  visible: [card('A', 'Mairie'), card('B', null, 'delivery')],
   overflow: 0,
   packed: [card('C', 'Mairie')],
   toPack: 2,
@@ -45,24 +52,26 @@ async function mount() {
 }
 
 describe('PackingBand', () => {
-  it('pose le repère et le filtre, sur « Tous les points » par défaut', async () => {
+  it('pose le repère et le filtre d’acheminement, rien de coché par défaut', async () => {
     const fixture = await mount();
     const element: HTMLElement = fixture.nativeElement;
 
     expect(element.textContent).toContain('Par heure de remise');
-    expect(element.textContent).toContain('Tous les points');
-    expect(fixture.componentInstance.point()).toBe(ALL_POINTS);
+    // Sans libellé au-dessus (Hugo, 2026-11-01) : le filtre se dit par son invite.
+    expect(element.textContent).not.toContain('Acheminement');
+    expect(element.textContent).toContain('Tous les acheminements');
+    expect(fixture.componentInstance.routes()).toEqual([]);
     expect(element.querySelector('.filter')?.classList).not.toContain('is-active');
   });
 
-  it('marque le filtre actif dès qu’un point est retenu', async () => {
+  it('marque le filtre actif dès qu’un acheminement est coché', async () => {
     const fixture = await mount();
-    fixture.componentInstance.point.set('Mairie');
+    fixture.componentInstance.routes.set(['Retrait Mairie', 'Livraison']);
     fixture.detectChanges();
     await fixture.whenStable();
-    const element: HTMLElement = fixture.nativeElement;
 
-    expect(element.querySelector('.filter')?.classList).toContain('is-active');
-    expect(element.textContent).toContain('Mairie');
+    expect((fixture.nativeElement as HTMLElement).querySelector('.filter')?.classList).toContain(
+      'is-active',
+    );
   });
 });

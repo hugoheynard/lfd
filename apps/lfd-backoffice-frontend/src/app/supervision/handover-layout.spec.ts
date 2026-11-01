@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { atPoint, isFinished, pickupPoints, slotLayout } from './handover-layout';
+import { atRoutes, isFinished, liveRows, slotLayout } from './handover-layout';
 import { groupOf } from './handover-slots';
 import type { SlotClock, SlotRow } from './handover-slots';
 
@@ -13,6 +13,8 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     time: null,
     totalUnits: 1,
     pickupLabel: 'Le Labo',
+    clientele: 'pro',
+    siteId: 'labo',
     handedOverAt: null,
     readyAt: null,
     overdueMinutes: null,
@@ -81,23 +83,29 @@ describe('slotLayout (Supervision v2, A8)', () => {
   });
 });
 
-describe('le filtre par point de retrait (A4)', () => {
+describe('le filtre d’acheminement (A4, multi-sélection depuis le 2026-11-01)', () => {
+  const modeOf = (r: SlotRow) => ({
+    key: r.pickupLabel ?? '',
+    label: `Retrait ${r.pickupLabel ?? ''}`,
+    color: null,
+  });
   const groups = [
     groupOf('h07', [row('A'), row('B', { pickupLabel: 'Centre' }), handed('C')]),
     groupOf('h08', [row('D', { pickupLabel: 'Centre', state: 'cancelled' })]),
   ];
 
   it('recalcule les comptes et retire les tranches vides', () => {
-    const [only, ...rest] = atPoint(groups, 'Le Labo');
+    const [only, ...rest] = atRoutes(groups, ['Retrait Le Labo'], modeOf);
 
     expect(rest).toEqual([]);
     expect(only).toMatchObject({ key: 'h07', expected: 2, handedOver: 1 });
   });
 
-  it('liste les points avec leur compte, annulées exclues', () => {
-    expect(pickupPoints(groups)).toEqual([
-      { label: 'Centre', count: 1 },
-      { label: 'Le Labo', count: 2 },
-    ]);
+  it('rien de coché = toutes les tranches', () => {
+    expect(atRoutes(groups, [], modeOf)).toHaveLength(2);
+  });
+
+  it('les lignes à compter excluent les annulées', () => {
+    expect(liveRows(groups).map((r) => r.reference)).toEqual(['A', 'B', 'C']);
   });
 });

@@ -14,6 +14,8 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     time: null,
     totalUnits: 1,
     pickupLabel: 'Le Labo',
+    clientele: null,
+    siteId: null,
     handedOverAt: null,
     readyAt: null,
     overdueMinutes: null,
@@ -63,15 +65,15 @@ describe('HandoverBand', () => {
     expect(fixture.componentInstance.method()).toBe('delivery');
   });
 
-  it('ne propose le filtre par point que sur le Retrait', async () => {
+  it('ne propose le filtre des points (multi-sélection) que sur le Retrait', async () => {
     const fixture = await mount();
     const element: HTMLElement = fixture.nativeElement;
-    expect(element.querySelector('fold-listbox')).not.toBeNull();
+    expect(element.querySelector('fold-multiselect')).not.toBeNull();
 
     fixture.componentInstance.method.set('delivery');
     fixture.detectChanges();
     await fixture.whenStable();
 
-    expect(element.querySelector('fold-listbox')).toBeNull();
+    expect(element.querySelector('fold-multiselect')).toBeNull();
   });
 });

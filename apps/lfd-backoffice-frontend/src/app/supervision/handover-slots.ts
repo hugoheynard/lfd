@@ -3,6 +3,7 @@ import type {
   DaySupervisionView,
   FulfillmentMethod,
   HandoverQueueEntryView,
+  OrderClientele,
   HandoverQueueRoundView,
   HandoverQueueView,
 } from '@lfd/contracts';
@@ -33,6 +34,10 @@ export interface SlotRow {
   readonly time: string | null;
   readonly totalUnits: number;
   readonly pickupLabel: string | null;
+  /** Pro ou particulier ; `null` : commande d'avant la distinction — pas de badge. */
+  readonly clientele: OrderClientele | null;
+  /** Le site qui remet un retrait ; `null` : livraison, ou commande d'avant le lot S2. */
+  readonly siteId: string | null;
   /** « Remis 7 h 04 » — `null` si l'heure est illisible. */
   readonly handedOverAt: string | null;
   /** « Prête depuis 6 h 48 » — l'heure où le sac a été déclaré prêt, `null` sinon. */
@@ -203,6 +208,8 @@ function rowOf(
     time: timeOf(entry),
     totalUnits: entry.totalUnits,
     pickupLabel: entry.pickupLabel,
+    clientele: entry.clientele,
+    siteId: entry.siteId ?? null,
     handedOverAt: entry.handedOverAt === null ? null : clockLabel(entry.handedOverAt),
     readyAt: entry.readyAt === null ? null : clockLabel(entry.readyAt),
     overdueMinutes:

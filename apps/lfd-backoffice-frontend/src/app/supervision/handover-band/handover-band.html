@@ -6,15 +6,25 @@
   [activeKey]="method()"
   (activeKeyChange)="method.set($event)"
 />
-@if (method() === 'pickup' && pointOptions().length > 1) {
-  <fold-listbox
+@if (method() === 'pickup' && options().length > 1) {
+  <fold-multiselect
     class="filter"
-    [class.is-active]="point() !== allPoints"
+    [class.is-active]="routes().length > 0"
     size="sm"
-    ariaLabel="Point de retrait"
+    placeholder="Tous les points"
     placement="bottom-end"
-    [options]="pointOptions()"
-    [value]="point()"
-    (selectionChange)="point.set($event)"
-  />
+    allowClear
+    clearLabel="Tout montrer"
+    [options]="options()"
+    [value]="routes()"
+    (valueChange)="routes.set($event)"
+  >
+    <ng-template #option let-o>
+      <span class="option" [attr.data-count]="byValue().get(o.value)?.count">
+        @if (byValue().get(o.value); as route) {
+          <app-logistics-swatch [category]="route.category" />
+        }
+      </span>
+    </ng-template>
+  </fold-multiselect>
 }

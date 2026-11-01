@@ -8,6 +8,8 @@ import type {
 import type { FoldSelectOption } from 'fold-ng';
 import { orderStatusLabel, paymentStatusLabel } from '@lfd/b2b-ui/order';
 
+import { CLIENTELE_LABELS, METHOD_LABELS } from '../shared/order-identity/order-identity';
+
 /**
  * **Les filtres de la liste des commandes, tels que l'URL les porte.**
  *
@@ -49,16 +51,6 @@ export const NO_FILTERS: OrderListFilters = {
   q: null,
 };
 
-const CLIENTELE_LABELS: Readonly<Record<OrderClientele, string>> = {
-  pro: 'Pro',
-  public: 'Particulier',
-};
-
-const METHOD_LABELS: Readonly<Record<FulfillmentMethod, string>> = {
-  pickup: 'Retrait',
-  delivery: 'Livraison',
-};
-
 /** Exhaustif : un état ajouté au contrat ne compile pas tant qu'il manque ici. */
 const STATUSES: Readonly<Record<OrderStatus, true>> = {
   draft: true,
@@ -98,14 +90,8 @@ function textOf(raw: unknown): string | null {
   return text === '' ? null : text;
 }
 
-/** Libellé de la clientèle d'une ligne — `null` pour une commande d'avant la distinction. */
-export function clienteleLabel(clientele: OrderClientele | null): string | null {
-  return clientele === null ? null : CLIENTELE_LABELS[clientele];
-}
-
-export function methodLabel(method: FulfillmentMethod): string {
-  return METHOD_LABELS[method];
-}
+// Les mots de la clientèle et du mode sont partagés avec la Supervision (2026-11-01).
+export { clienteleLabel, methodLabel } from '../shared/order-identity/order-identity';
 
 /**
  * Les paramètres d'URL → des filtres. Une valeur inconnue (une adresse tapée à

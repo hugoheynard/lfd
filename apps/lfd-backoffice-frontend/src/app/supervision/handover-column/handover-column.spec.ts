@@ -20,6 +20,8 @@ function row(reference: string, overrides: Partial<SlotRow> = {}): SlotRow {
     time: '7 h 15',
     totalUnits: 3,
     pickupLabel: 'Boutique',
+    clientele: null,
+    siteId: null,
     handedOverAt: null,
     readyAt: null,
     overdueMinutes: null,
@@ -155,15 +157,24 @@ describe('HandoverColumn', () => {
     expect(element.querySelector('[data-reference="PRETE"]')).toBeNull();
   });
 
-  it('ne montre que le point filtré, sans le répéter sur la ligne', async () => {
-    const fixture = await mount(BOARD);
-    fixture.componentRef.setInput('point', 'Boutique');
+  // Jusqu'au 2026-11-01, la ligne taisait son point sous un filtre de point.
+  // Hugo l'a voulu sur chaque ligne, à la couleur du site, comme la page Commandes.
+  it('ne montre que le point filtré, et chaque ligne dit son acheminement', async () => {
+    const elsewhere = row('AILLEURS', { pickupLabel: 'Centre' });
+    const fixture = await mount({
+      ...BOARD,
+      pickup: [{ ...BOARD.pickup[0]!, rows: [...BOARD.pickup[0]!.rows, elsewhere] }],
+    });
+    fixture.componentRef.setInput('routes', ['Retrait Boutique']);
     fixture.detectChanges();
     await fixture.whenStable();
     const element: HTMLElement = fixture.nativeElement;
 
     expect(element.querySelector('[data-reference="PRETE"]')).not.toBeNull();
-    expect(element.querySelector('[data-row-point]')).toBeNull();
+    expect(element.querySelector('[data-reference="AILLEURS"]')).toBeNull();
+    expect(element.querySelector('[data-reference="PRETE"] [data-mode]')?.textContent?.trim()).toBe(
+      'Retrait Boutique',
+    );
   });
 
   /** `plan-controle-qualite.md`, D7 : une commande retenue le dit, et sa carte passe en alerte. */
@@ -248,8 +259,8 @@ describe('HandoverColumn', () => {
       const element: HTMLElement = (await mount(BOARD)).nativeElement;
 
       expect(
-        element.querySelector('[data-reference="PRETE"] [data-row-point]')?.textContent?.trim(),
-      ).toBe('Boutique');
+        element.querySelector('[data-reference="PRETE"] [data-mode]')?.textContent?.trim(),
+      ).toBe('Retrait Boutique');
     });
   });
 });
@@ -443,5 +454,61 @@ describe('HandoverColumn — la carte de livraison', () => {
       expect(notified.error).toHaveBeenCalled();
       expect(button(el, 'ABSENT', 'remind')).not.toBeNull();
     });
+  });
+});
+
+/** Hugo, 2026-11-01 : « les badges Particulier / Pro et les couleurs Livraison / Retrait <site> ». */
+describe('HandoverColumn — clientèle et acheminement, comme la page Commandes', () => {
+  const PALETTE = [
+    {
+      id: 'adroit',
+      label: 'Adroit',
+      supply: 'on_site',
+      isDeparture: true,
+      pickupColorB2b: '#000080',
+      pickupColorB2c: null,
+      deliveryColorB2b: '#1e88e5',
+      deliveryColorB2c: null,
+      resupplyColor: null,
+      transferColor: null,
+    },
+  ] as const;
+
+  async function mountTagged(rows: readonly SlotRow[], method: 'pickup' | 'delivery') {
+    const group = { ...BOARD.pickup[0]!, rows };
+    const fixture = await mount({ ...BOARD, pickup: [group], delivery: [group] });
+    fixture.componentRef.setInput('palette', PALETTE);
+    fixture.componentRef.setInput('method', method);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('« Pro » et « Retrait Adroit » à la couleur du site', async () => {
+    const el = await mountTagged([row('PRO', { clientele: 'pro', siteId: 'adroit' })], 'pickup');
+    expect(el.querySelector('[data-reference="PRO"] [data-clientele]')?.textContent).toContain(
+      'Pro',
+    );
+    const mode = el.querySelector<HTMLElement>('[data-reference="PRO"] [data-mode] .ls-swatch');
+    expect(mode?.textContent?.trim()).toBe('Retrait Adroit');
+    expect(mode?.style.backgroundColor).toBe('rgb(0, 0, 128)');
+  });
+
+  it('« Particulier » et « Livraison »', async () => {
+    const el = await mountTagged(
+      [row('LIV', { method: 'delivery', clientele: 'public', pickupLabel: null })],
+      'delivery',
+    );
+    expect(el.querySelector('[data-reference="LIV"] [data-clientele]')?.textContent).toContain(
+      'Particulier',
+    );
+    expect(el.querySelector('[data-reference="LIV"] [data-mode]')?.textContent?.trim()).toBe(
+      'Livraison',
+    );
+  });
+
+  it('🔴 sans clientèle connue, aucun badge', async () => {
+    const el = await mountTagged([row('VIEILLE')], 'pickup');
+    expect(el.querySelector('[data-reference="VIEILLE"] [data-clientele]')).toBeNull();
   });
 });

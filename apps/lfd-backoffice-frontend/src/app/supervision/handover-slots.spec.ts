@@ -304,3 +304,22 @@ describe('la colonne Livraison', () => {
     expect(rows[0]?.loaded).toBe(true);
   });
 });
+
+/** Hugo, 2026-11-01 : chaque ligne dit Pro / Particulier et son site. */
+describe('handoverBoard — clientèle et site des lignes', () => {
+  it('recopie la clientèle et le site de la file', () => {
+    const board = handoverBoard(
+      { day: DAY, entries: [entry('A', null, { clientele: 'public', siteId: 'adroit' })] },
+      null,
+    );
+    expect(board.pickup[0]?.rows[0]).toMatchObject({ clientele: 'public', siteId: 'adroit' });
+  });
+
+  it('🔴 clientèle inconnue et site absent restent `null`', () => {
+    const board = handoverBoard(
+      { day: DAY, entries: [entry('A', null, { clientele: null })] },
+      null,
+    );
+    expect(board.pickup[0]?.rows[0]).toMatchObject({ clientele: null, siteId: null });
+  });
+});

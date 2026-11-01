@@ -18,6 +18,9 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
     reference,
     orderId: `o-${reference}`,
     customerLabel: `Client ${reference}`,
+    clientele: null,
+    siteId: null,
+    pickupLabel: 'Boutique',
     method: 'pickup',
     destination: 'Boutique',
     state: 'in_progress',
@@ -290,15 +293,15 @@ describe('PackingColumn', () => {
     expect(shown).toBe(1);
   });
 
-  it('filtre par point de destination, colisées comprises', async () => {
+  it('filtre par acheminement coché, colisées comprises', async () => {
     const board: PackingBoard = {
       ...BOARD,
-      visible: [...BOARD.visible, card('CMD-4', { destination: 'Mairie' })],
+      visible: [...BOARD.visible, card('CMD-4', { pickupLabel: 'Mairie' })],
     };
     const fixture = await mountFixture(board);
     const element: HTMLElement = fixture.nativeElement;
 
-    fixture.componentInstance.point.set('Mairie');
+    fixture.componentInstance.routes.set(['Retrait Mairie']);
     fixture.detectChanges();
     await fixture.whenStable();
 
@@ -310,16 +313,71 @@ describe('PackingColumn', () => {
     expect(element.querySelector('[data-done-divider]')).toBeNull();
   });
 
+  it('filtre par la livraison seule, puis par deux acheminements', async () => {
+    const board: PackingBoard = {
+      ...BOARD,
+      visible: [
+        card('CMD-1'),
+        card('LIV', { method: 'delivery', pickupLabel: null }),
+        card('CMD-4', { pickupLabel: 'Mairie' }),
+      ],
+      packed: [],
+    };
+    const fixture = await mountFixture(board);
+    const element: HTMLElement = fixture.nativeElement;
+    const keys = () =>
+      [...element.querySelectorAll('[data-hit-key]')].map((n) => n.getAttribute('data-hit-key'));
+
+    fixture.componentInstance.routes.set(['Livraison']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(keys()).toEqual(['LIV']);
+
+    fixture.componentInstance.routes.set(['Livraison', 'Retrait Mairie']);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(keys()).toEqual(['LIV', 'CMD-4']);
+
+    fixture.componentInstance.routes.set([]);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(keys()).toEqual(['CMD-1', 'LIV', 'CMD-4']);
+  });
+
   /** Hugo, 2026-09-28 : les colisées restent visibles, en bas et en vert. */
   it('compte au-delà de dix et garde les colisées en cartes, en bas', async () => {
     const open = Array.from({ length: 23 }, (_, i) => card(`R${String(i)}`));
     const element = await mount({ ...BOARD, visible: open });
     const packed = element.querySelector('[data-packing="packed"]');
 
-    expect(element.textContent).toContain('+ 13 commandes · triées par heure de retrait');
+    expect(element.textContent).toContain('Voir 13 commandes de plus · triées par heure');
     expect(element.querySelector('[data-done-divider]')).not.toBeNull();
     expect(packed?.textContent).toContain('Client CMD-3');
     expect(packed?.classList).toContain('is-done');
+  });
+
+  /**
+   * Régression du 2026-11-01 : « + N commandes » n'était qu'un texte, et les
+   * retraits du Village de 9 h, rangés après la dixième, n'apparaissaient pas
+   * au colisage.
+   */
+  it('montre les commandes au-delà de dix quand on déplie, puis replie', async () => {
+    const open = Array.from({ length: 12 }, (_, i) => card(`R${String(i)}`));
+    const fixture = await mountFixture({ ...BOARD, visible: [...open, card('VILLAGE-9H')] });
+    const element: HTMLElement = fixture.nativeElement;
+    const button = () => element.querySelector<HTMLButtonElement>('[data-overflow]');
+    expect(element.querySelector('[data-hit-key="VILLAGE-9H"]')).toBeNull();
+
+    button()?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(element.querySelector('[data-hit-key="VILLAGE-9H"]')).not.toBeNull();
+    expect(button()?.getAttribute('aria-expanded')).toBe('true');
+
+    button()?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+    expect(element.querySelector('[data-hit-key="VILLAGE-9H"]')).toBeNull();
   });
 
   it('dit que la journée n’est pas arrêtée', async () => {
@@ -338,6 +396,10 @@ describe('PackingColumn', () => {
         {
           reference: 'CMD-9',
           customerLabel: 'Le Petit Chaudron',
+          clientele: 'pro',
+          method: 'pickup',
+          siteId: null,
+          pickupLabel: 'Boutique',
           totalUnits: 36,
           slotMinutes: 540,
         },
@@ -402,5 +464,67 @@ describe('PackingColumn', () => {
 
     expect(badge?.textContent).toContain('Contrôle · Bloquant');
     expect(badge?.classList).toContain('alert');
+  });
+});
+
+/** Hugo, 2026-11-01 : « les badges Particulier / Pro et les couleurs Livraison / Retrait <site> ». */
+describe('PackingColumn — clientèle et acheminement, comme la page Commandes', () => {
+  const PALETTE = [
+    {
+      id: 'adroit',
+      label: 'Adroit',
+      supply: 'on_site',
+      isDeparture: true,
+      pickupColorB2b: null,
+      pickupColorB2c: '#fdd835',
+      deliveryColorB2b: '#000080',
+      deliveryColorB2c: null,
+      resupplyColor: null,
+      transferColor: null,
+    },
+  ] as const;
+
+  async function mountTagged(board: PackingBoard): Promise<HTMLElement> {
+    const fixture = await mountFixture(board);
+    fixture.componentRef.setInput('palette', PALETTE);
+    fixture.detectChanges();
+    await fixture.whenStable();
+    return fixture.nativeElement as HTMLElement;
+  }
+
+  it('« Particulier » et « Retrait Adroit » à la couleur du site, sans perdre la recherche', async () => {
+    const el = await mountTagged({
+      ...BOARD,
+      visible: [card('CMD-1', { clientele: 'public', siteId: 'adroit' })],
+    });
+    const tile = el.querySelector('[data-hit-key="CMD-1"]');
+    expect(tile?.querySelector('[data-clientele]')?.textContent).toContain('Particulier');
+    const mode = tile?.querySelector<HTMLElement>('[data-mode] .ls-swatch');
+    expect(mode?.textContent?.trim()).toBe('Retrait Adroit');
+    expect(mode?.style.backgroundColor).toBe('rgb(253, 216, 53)');
+  });
+
+  it('« Pro » et « Livraison » sur une carte colisée', async () => {
+    const el = await mountTagged({
+      ...BOARD,
+      packed: [
+        card('CMD-3', {
+          state: 'packed',
+          packedAt: '5 h 12',
+          clientele: 'pro',
+          method: 'delivery',
+        }),
+      ],
+    });
+    const tile = el.querySelector('[data-reference="CMD-3"]');
+    expect(tile?.querySelector('[data-clientele]')?.textContent).toContain('Pro');
+    expect(tile?.querySelector('[data-mode]')?.textContent?.trim()).toBe('Livraison');
+  });
+
+  it('🔴 sans clientèle connue, aucun badge — le mode reste', async () => {
+    const el = await mountTagged(BOARD);
+    const tile = el.querySelector('[data-reference="CMD-1"]');
+    expect(tile?.querySelector('[data-clientele]')).toBeNull();
+    expect(tile?.querySelector('[data-mode]')?.textContent?.trim()).toBe('Retrait Boutique');
   });
 });

@@ -1,5 +1,17 @@
-import { ChangeDetectionStrategy, Component, computed, input, model, output } from '@angular/core';
-import type { ShortfallAwaitingDecision, WithdrawnPackingSheet } from '@lfd/contracts';
+import {
+  ChangeDetectionStrategy,
+  Component,
+  computed,
+  input,
+  model,
+  output,
+  signal,
+} from '@angular/core';
+import type {
+  ShortfallAwaitingDecision,
+  SitePaletteEntryView,
+  WithdrawnPackingSheet,
+} from '@lfd/contracts';
 import { RouterLink } from '@angular/router';
 import type { FoldBadgeVariant } from 'fold-ng';
 import {
@@ -15,7 +27,6 @@ import { AbandonedRemainder } from '../../commandes/abandoned-remainder/abandone
 import { DeliveryNotePrintNotice } from '../../commandes/delivery-note-print-notice/delivery-note-print-notice';
 import { AwaitingBadge } from '../../shared/awaiting-badge/awaiting-badge';
 import {
-  ALL_POINTS,
   PACKING_VISIBLE_MAX,
   packingMeta,
   type PackingBoard,
@@ -27,7 +38,15 @@ import { PackingShortfall } from '../packing-shortfall/packing-shortfall';
 import { NO_QUALITY, type QualityBadge, type QualityRequest } from '../quality-badges';
 import { countLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
+import { inRoutes } from '../route-filter';
 import { NO_MATCHES } from '../supervision-search';
+
+import {
+  fulfillmentModeOf,
+  type SupervisionModeFacts,
+} from '../../shared/logistics-colors/fulfillment-mode';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
+import { OrderTags } from '../../shared/order-identity/order-tags/order-tags';
 
 /**
  * La pastille Mono de chaque état ouvert : le libellé porte l'état, jamais la
@@ -54,12 +73,13 @@ const BADGES: Readonly<
  *
  * Supervision v2 (A4, A5, A7, B7) : la colonne ne décide pas de la mise en
  * avant, elle la DEMANDE (`awaitedToggle`) et la LIT (`matches`, `awaitedOpen`).
- * Le filtre par point se choisit dans `app-packing-band` et se lit ici.
+ * Le filtre d'acheminement se choisit dans `app-packing-band` et se lit ici.
  */
 @Component({
   selector: 'app-packing-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    OrderTags,
     AbandonedRemainder,
     AwaitingBadge,
     DeliveryNotePrintNotice,
@@ -79,6 +99,8 @@ export class PackingColumn {
   readonly board = input.required<PackingBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
+  /** La palette des sites, d'où la couleur du mode ; vide (illisible) : teinte neutre. */
+  readonly palette = input<readonly SitePaletteEntryView[]>([]);
   /** Ce que la mise en avant désigne (recherche, pastille, commande dépliée). */
   readonly matches = input(NO_MATCHES);
   /**
@@ -113,10 +135,10 @@ export class PackingColumn {
   protected readonly link = SUPERVISION_LINKS.packing;
 
   /**
-   * Le point retenu — `[(point)]`, partagé avec `app-packing-band` que la
-   * page pose dans le slot `columnBand` ; `''` = tous.
+   * Les acheminements cochés — `[(routes)]`, partagés avec `app-packing-band`
+   * que la page pose dans le slot `columnBand` ; vide = tous.
    */
-  readonly point = model(ALL_POINTS);
+  readonly routes = model<readonly string[]>([]);
 
   /** Les commandes en décision attendue d'abord : ce sont elles qui demandent un geste. */
   private readonly open = computed(() => {
@@ -128,7 +150,16 @@ export class PackingColumn {
     ];
   });
 
-  protected readonly visible = computed(() => this.open().slice(0, PACKING_VISIBLE_MAX));
+  /**
+   * Les commandes au-delà de dix, dépliées à la demande. Régression du
+   * 2026-11-01 : « + 11 commandes » n'était qu'un texte — onze commandes de
+   * 9 h, dont les trois retraits du Village, n'apparaissaient nulle part.
+   */
+  protected readonly expanded = signal(false);
+
+  protected readonly visible = computed(() =>
+    this.expanded() ? this.open() : this.open().slice(0, PACKING_VISIBLE_MAX),
+  );
 
   protected readonly overflow = computed(() =>
     Math.max(0, this.open().length - PACKING_VISIBLE_MAX),
@@ -147,8 +178,10 @@ export class PackingColumn {
     () => `Annulées après l'arrêt · ${String(this.board().withdrawn.length)}`,
   );
 
-  protected readonly overflowLabel = computed(
-    () => `+ ${countLabel(this.overflow(), 'commande', 'commandes')} · triées par heure de retrait`,
+  protected readonly overflowLabel = computed(() =>
+    this.expanded()
+      ? 'Replier aux dix premières'
+      : `Voir ${countLabel(this.overflow(), 'commande de plus', 'commandes de plus')} · triées par heure`,
   );
 
   /** Une mise en avant PRODUITS : les commandes non visées reculent. */
@@ -244,7 +277,11 @@ export class PackingColumn {
   }
 
   private inPoint(cards: readonly PackingCard[]): readonly PackingCard[] {
-    const point = this.point();
-    return point === ALL_POINTS ? cards : cards.filter((card) => card.destination === point);
+    return inRoutes(cards, this.routes(), (card) => this.mode(card));
+  }
+
+  /** « Livraison » ou « Retrait <site> », à la couleur du site — la règle de la page Commandes. */
+  protected mode(order: SupervisionModeFacts): LogisticsCategory {
+    return fulfillmentModeOf({ ...order, fulfillmentMethod: order.method }, this.palette());
   }
 }

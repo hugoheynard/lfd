@@ -1,6 +1,7 @@
 import type {
   HandoverQueueEntryView,
   HandoverQueueView,
+  OrderClientele,
   PackingAbandonedLine,
   PackingDeliveryNotePrint,
   PackingSheet,
@@ -30,6 +31,15 @@ export interface PackingCard {
    */
   readonly orderId: string | null;
   readonly customerLabel: string;
+  /**
+   * Pro ou particulier, lu sur la fiche de colis — `null` : inconnue (commande
+   * d'avant la distinction, journée arrêtée avant le champ). Le badge se tait alors.
+   */
+  readonly clientele: OrderClientele | null;
+  /** Le site qui remet un retrait, lu sur la fiche ; `null` : livraison, ou inconnu. */
+  readonly siteId: string | null;
+  /** Le point de retrait figé, lu dans la file — le nom d'un retrait sans site connu. */
+  readonly pickupLabel: string | null;
   /** Retrait ou livraison : le mot de la méta (« retrait 8 h »). */
   readonly method: 'pickup' | 'delivery';
   /** Le point de destination de la fiche de colis — la clé du filtre « Tous les points ». */
@@ -42,7 +52,10 @@ export interface PackingCard {
   readonly awaited: readonly string[];
   /** Les initiales de qui a posé, sans doublon — la pastille « en cours · LT ». */
   readonly initials: readonly string[];
-  /** Minutes depuis minuit du créneau, joint par `reference` ; `null` = pas dans la file ou sans créneau. */
+  /**
+   * Minutes depuis minuit de l'échéance de la fiche (`dueAt`), sinon du créneau
+   * de la file joint par `reference` ; `null` = aucune heure — la carte va en fin.
+   */
   readonly slotMinutes: number | null;
   /**
    * « 5 h 12 » — quand la commande a été DÉCLARÉE prête, ou `null` tant
@@ -64,6 +77,10 @@ export interface PackingCard {
 export interface UpcomingOrder {
   readonly reference: string;
   readonly customerLabel: string;
+  readonly clientele: OrderClientele | null;
+  readonly method: 'pickup' | 'delivery';
+  readonly siteId: string | null;
+  readonly pickupLabel: string | null;
   readonly totalUnits: number;
   readonly slotMinutes: number | null;
 }
@@ -78,8 +95,8 @@ export interface PackingBoard {
    */
   readonly upcoming: readonly UpcomingOrder[];
   /**
-   * TOUTES les commandes ouvertes, triées (Supervision v2, A4) : la colonne
-   * filtre par point, PUIS montre les dix premières — plafonner ici aurait
+   * TOUTES les commandes ouvertes, par horaire (2026-11-01) : la colonne
+   * filtre par acheminement, PUIS montre les dix premières — plafonner ici aurait
    * perdu, au filtre, les commandes du point rangées au-delà de dix.
    */
   readonly visible: readonly PackingCard[];
@@ -138,11 +155,24 @@ function slotOf(entry: HandoverQueueEntryView | undefined): number | null {
   return window === null ? null : minutesOf(window.start ?? window.end);
 }
 
+/**
+ * L'échéance de la fiche (`dueAt`, figée à l'arrêt — celle que le poste de
+ * colisage sert d'abord), `null` si elle n'en porte pas : la carte retombe
+ * alors sur le créneau de la file.
+ */
+function dueMinutesOf(sheet: PackingSheet): number | null {
+  return sheet.dueAt === undefined || sheet.dueAt === null ? null : minutesOf(sheet.dueAt);
+}
+
 function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined): PackingCard {
   return {
     reference: sheet.reference,
     orderId: entry?.orderId ?? null,
     customerLabel: sheet.customerLabel,
+    // La fiche de colis porte clientèle et site, figés à l'arrêt : elle fait foi.
+    clientele: sheet.clientele,
+    siteId: sheet.siteId ?? null,
+    pickupLabel: entry?.pickupLabel ?? null,
     method: sheet.fulfillmentMethod,
     destination: sheet.destination,
     state: packingStateOf(sheet),
@@ -157,7 +187,7 @@ function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined):
           .filter((initials): initials is string => initials !== null && initials !== ''),
       ),
     ],
-    slotMinutes: slotOf(entry),
+    slotMinutes: dueMinutesOf(sheet) ?? slotOf(entry),
     packedAt: sheet.packedAt === null ? null : clockLabel(sheet.packedAt),
     sheetOrderId: sheet.orderId,
     deliveryNotePrint: sheet.deliveryNotePrint ?? null,
@@ -184,18 +214,18 @@ export function packingBoard(
 ): PackingBoard {
   const byReference = new Map((queue?.entries ?? []).map((entry) => [entry.reference, entry]));
   const cards = view.sheets.map((sheet) => cardOf(sheet, byReference.get(sheet.reference)));
-  const urgent = cards
-    .filter((card) => card.state === 'awaiting_oven' || card.state === 'in_progress')
-    .sort(bySlot);
-  const waiting = cards.filter((card) => card.state === 'to_pack').sort(bySlot);
-  const open = [...urgent, ...waiting];
+  // Par horaire, l'échéance la plus proche d'abord (Hugo, 2026-11-01) — un tri
+  // GLOBAL : la colonne n'a pas d'intertitres par état, et l'ancien rang
+  // « au four / en cours d'abord » faisait passer 9 h devant 6 h 30. `sort`
+  // est stable : à heure égale, l'ordre du serveur.
+  const open = cards.filter((card) => card.state !== 'packed').sort(bySlot);
   const notClosed = view.closedAt === null;
   return {
     notClosed,
     upcoming: notClosed ? upcomingOf(queue) : [],
     visible: open,
     overflow: Math.max(0, open.length - PACKING_VISIBLE_MAX),
-    packed: cards.filter((card) => card.state === 'packed'),
+    packed: cards.filter((card) => card.state === 'packed').sort(bySlot),
     toPack: open.length,
     awaitingOven: cards.filter((card) => card.state === 'awaiting_oven').length,
     withdrawn: view.withdrawnSheets,
@@ -209,6 +239,10 @@ function upcomingOf(queue: HandoverQueueView | null): UpcomingOrder[] {
     .map((entry) => ({
       reference: entry.reference,
       customerLabel: entry.tradeName ?? entry.customerLabel,
+      clientele: entry.clientele,
+      method: entry.fulfillmentMethod,
+      siteId: entry.siteId ?? null,
+      pickupLabel: entry.pickupLabel,
       totalUnits: entry.totalUnits,
       slotMinutes: slotOf(entry),
     }))
@@ -234,44 +268,4 @@ export function packingMeta(card: PackingCard): string {
   }
   const word = card.method === 'delivery' ? 'livraison' : 'retrait';
   return `${card.reference} · ${word} ${hourLabel(card.slotMinutes)}`;
-}
-
-/** Un point de destination et le nombre de commandes qui y vont. */
-export interface PackingPoint {
-  readonly destination: string;
-  readonly count: number;
-}
-
-/** Les points des cartes (ouvertes puis colisées), par ordre alphabétique. */
-export function packingPoints(board: PackingBoard): readonly PackingPoint[] {
-  const counts = new Map<string, number>();
-  for (const card of [...board.visible, ...board.packed]) {
-    counts.set(card.destination, (counts.get(card.destination) ?? 0) + 1);
-  }
-  return [...counts]
-    .map(([destination, count]) => ({ destination, count }))
-    .sort((a, b) => a.destination.localeCompare(b.destination, 'fr'));
-}
-
-/** La valeur « Tous les points » du filtre de la colonne 2. */
-export const ALL_POINTS = '';
-
-/** Une entrée du filtre de points, avec le compte de ses commandes. */
-export interface PointFilterOption {
-  readonly value: string;
-  readonly label: string;
-  readonly count: number;
-}
-
-/** « Tous les points » en tête, puis chaque point par ordre alphabétique. */
-export function pointFilterOptions(board: PackingBoard): readonly PointFilterOption[] {
-  const points = packingPoints(board);
-  return [
-    {
-      value: ALL_POINTS,
-      label: 'Tous les points',
-      count: board.visible.length + board.packed.length,
-    },
-    ...points.map((p) => ({ value: p.destination, label: p.destination, count: p.count })),
-  ];
 }

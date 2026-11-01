@@ -21,6 +21,7 @@ import { FoldPanelHostService } from 'fold-ng';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { DeliveryRoundsService } from '../../livraison/delivery-rounds.service';
+import { SitePaletteService } from '../../shared/logistics-colors/site-palette.service';
 import { PackingColumn } from '../packing-column/packing-column';
 import { PreparationColumn } from '../preparation-column/preparation-column';
 import { QualityService } from '../quality.service';
@@ -233,6 +234,10 @@ async function mount(
         useValue: {
           compositionGaps: reads.compositionGaps ?? (() => Promise.resolve({ gaps: [] })),
         },
+      },
+      {
+        provide: SitePaletteService,
+        useValue: { palette: () => Promise.resolve({ sites: [] }) },
       },
       {
         provide: QualityService,
@@ -761,5 +766,26 @@ describe('SupervisionPage', () => {
 
     expect(root(fixture).querySelector('[data-composition-gap]')).toBeNull();
     expect(asked).toBe(0);
+  });
+});
+
+/** Hugo, 2026-11-01 : la colonne Préparation se lit par rayon, ou par tranche. */
+describe('SupervisionPage — la colonne 1 par tranche', () => {
+  it('s’ouvre par rayon, puis montre la vue par tranche à la bascule', async () => {
+    const fixture = await mount();
+    const prep = () => column(fixture, 'preparation');
+    expect(prep()?.querySelector('app-preparation-column')).not.toBeNull();
+    expect(prep()?.querySelector('app-preparation-slots')).toBeNull();
+
+    const slots = [...(prep()?.querySelectorAll<HTMLElement>('[role="radio"]') ?? [])].find(
+      (node) => node.textContent?.includes('Par tranche'),
+    );
+    slots?.click();
+    fixture.detectChanges();
+    await fixture.whenStable();
+
+    expect(prep()?.querySelector('app-preparation-slots')).not.toBeNull();
+    expect(prep()?.querySelector('app-preparation-column')).toBeNull();
+    expect(prep()?.querySelector('app-preparation-slots button')).toBeNull();
   });
 });

@@ -14,6 +14,8 @@ function row(over: Partial<SlotRow> = {}): SlotRow {
     time: '7 h 00',
     totalUnits: 3,
     pickupLabel: 'Le Labo',
+    clientele: 'public',
+    siteId: 'labo',
     handedOverAt: null,
     readyAt: '6 h 48',
     overdueMinutes: 20,

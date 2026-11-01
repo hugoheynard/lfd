@@ -1,0 +1,4 @@
+@if (badge(); as who) {
+  <fold-badge radius="square" [variant]="who.variant" [content]="who.label" data-clientele />
+}
+<app-logistics-swatch class="mode" [category]="mode()" data-mode />

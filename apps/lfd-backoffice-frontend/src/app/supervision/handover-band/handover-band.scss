@@ -10,7 +10,12 @@
 .filter {
   align-self: center;
   margin-left: auto;
-  min-width: 0;
+  // Une seule ligne (Hugo, 2026-11-01) : le texte d'attente du déclencheur
+  // fold (`.lb-placeholder`) n'a pas de `nowrap`, et la bande le comprimait
+  // sur deux lignes. `white-space` s'hérite ; la largeur minimale du filtre
+  // devient celle de son texte.
+  flex: none;
+  white-space: nowrap;
 }
 
 // Filtre actif : la teinte primaire de la maquette, par les tokens du champ.
@@ -18,4 +23,22 @@
   --fold-color-surface-card: var(--fold-color-primary-surface);
   --fold-color-text: var(--fold-color-primary-strong);
   --fold-color-border: var(--fold-color-primary-border);
+}
+
+// Le compte d'une option passe par `::after`, comme la bande du colisage.
+.option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
+  width: 100%;
+}
+
+.option::after {
+  content: attr(data-count);
+  font-family: var(--fold-font-mono);
+  font-size: var(--fold-text-2xs);
+  font-weight: var(--fold-weight-bold);
+  font-variant-numeric: tabular-nums;
+  color: var(--fold-color-text-faded);
 }

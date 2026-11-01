@@ -353,7 +353,7 @@ async function staffWith(key: string, grants: readonly RoleGrant[]): Promise<str
 }
 
 describe("admin/sites/palette — la palette de la logistique (plan du tri et des couleurs, L1a)", () => {
-  it("se lit sous le colisage, la livraison ou les commandes, SANS `lfc_site_settings` — id, nom, couleurs", async () => {
+  it("se lit sous le colisage, la livraison, les commandes ou la supervision, SANS `lfc_site_settings` — id, nom, couleurs", async () => {
     const id = await create("Val Village");
     await staff()
       .put(`/admin/sites/${id}/couleurs`)
@@ -369,6 +369,8 @@ describe("admin/sites/palette — la palette de la logistique (plan du tri et de
       // clé `commercial` : c'est un rôle de la graine, que le reset remet, et
       // sa création répondrait 409.
       ["preneur-de-commandes", "b2b_orders"],
+      // La Supervision peint ses colonnes Colisage et Retrait (2026-11-01).
+      ["superviseur-du-jour", "b2b_supervision"],
     ] as const) {
       const sub = await staffWith(key, [{ resource, action: "read" }]);
       const response = await ctx.asSub(sub).get("/admin/sites/palette").expect(200);
@@ -386,7 +388,7 @@ describe("admin/sites/palette — la palette de la logistique (plan du tri et de
     }
   });
 
-  it("refuse (403) un membre sans aucun des cinq droits", async () => {
+  it("refuse (403) un membre sans aucun des six droits", async () => {
     const sub = await staffWith("compta", [{ resource: "b2b_settings", action: "write" }]);
 
     await ctx.asSub(sub).get("/admin/sites/palette").expect(403);

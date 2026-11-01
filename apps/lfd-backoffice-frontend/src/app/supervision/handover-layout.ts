@@ -1,39 +1,40 @@
-import { groupOf, MINUTES_PER_HOUR, type SlotClock, type SlotGroup } from './handover-slots';
+import type { LogisticsCategory } from '../shared/logistics-colors/logistics-category';
+import {
+  groupOf,
+  MINUTES_PER_HOUR,
+  type SlotClock,
+  type SlotGroup,
+  type SlotRow,
+} from './handover-slots';
+import { inRoutes } from './route-filter';
 
 /*
  * **La mise en page de la colonne 3** (Supervision v2, A8) — au-dessus des
- * tranches que `handover-slots.ts` construit : le filtre par point de retrait,
+ * tranches que `handover-slots.ts` construit : le filtre d'acheminement,
  * le repère « Maintenant », les tranches terminées descendues en bas.
  */
 
-/** Ne garder que les commandes d'un point de retrait ; `null` = tous les points. */
-export function atPoint(groups: readonly SlotGroup[], point: string | null): SlotGroup[] {
-  if (point === null) {
+/**
+ * Ne garder que les lignes retenues par le filtre d'acheminement (2026-11-01 :
+ * multi-sélection, `route-filter.ts`), comptes recalculés et tranches vides
+ * retirées. Rien de coché = toutes les tranches telles quelles.
+ */
+export function atRoutes(
+  groups: readonly SlotGroup[],
+  selected: readonly string[],
+  modeOf: (row: SlotRow) => LogisticsCategory,
+): SlotGroup[] {
+  if (selected.length === 0) {
     return [...groups];
   }
   return groups
-    .map((group) =>
-      groupOf(
-        group.key,
-        group.rows.filter((row) => row.pickupLabel === point),
-      ),
-    )
+    .map((group) => groupOf(group.key, inRoutes(group.rows, selected, modeOf)))
     .filter((group) => group.rows.length > 0);
 }
 
-/** Les points de retrait de la file, dans l'ordre alphabétique, avec leur compte. */
-export function pickupPoints(
-  groups: readonly SlotGroup[],
-): readonly { readonly label: string; readonly count: number }[] {
-  const counts = new Map<string, number>();
-  for (const row of groups.flatMap((group) => group.rows)) {
-    if (row.pickupLabel !== null && row.state !== 'cancelled') {
-      counts.set(row.pickupLabel, (counts.get(row.pickupLabel) ?? 0) + 1);
-    }
-  }
-  return [...counts]
-    .sort(([a], [b]) => a.localeCompare(b, 'fr'))
-    .map(([label, count]) => ({ label, count }));
+/** Les lignes non annulées des tranches — ce que comptent les options du filtre. */
+export function liveRows(groups: readonly SlotGroup[]): readonly SlotRow[] {
+  return groups.flatMap((group) => group.rows).filter((row) => row.state !== 'cancelled');
 }
 
 /** Une tranche PASSÉE où tout ce qui était attendu est parti (A8). */
@@ -86,9 +87,6 @@ export function slotLayout(
   }
   return items;
 }
-
-/** La valeur « tous les points » du filtre — aucun libellé de point n'est vide. */
-export const ALL_POINTS = '';
 
 /** Les commandes d'un métier, annulées exclues — le compteur de l'onglet. */
 export function totalOf(groups: readonly SlotGroup[]): number {

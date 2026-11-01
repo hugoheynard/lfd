@@ -11,7 +11,7 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CustomerNudgesView, FulfillmentMethod } from '@lfd/contracts';
+import type { CustomerNudgesView, FulfillmentMethod, SitePaletteEntryView } from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
@@ -24,13 +24,20 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { AdminOrdersService } from '../../commandes/orders.service';
 import { NotifyService } from '../../notify.service';
 import { rowNudgeOf, type RowNudge } from '../customer-nudges';
-import { ALL_POINTS, atPoint, slotLayout } from '../handover-layout';
+import { atRoutes, slotLayout } from '../handover-layout';
 import type { SlotItem } from '../handover-layout';
 import { UNPLACED_LINE } from '../handover-slots';
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
 import { countLabel, durationLabel } from '../supervision-labels';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { NO_MATCHES } from '../supervision-search';
+
+import {
+  fulfillmentModeOf,
+  type SupervisionModeFacts,
+} from '../../shared/logistics-colors/fulfillment-mode';
+import type { LogisticsCategory } from '../../shared/logistics-colors/logistics-category';
+import { OrderTags } from '../../shared/order-identity/order-tags/order-tags';
 
 /**
  * **Colonne 3 · Retrait / livraison — l'unité est le créneau.** Deux métiers,
@@ -53,6 +60,7 @@ import { NO_MATCHES } from '../supervision-search';
   selector: 'app-handover-column',
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
+    OrderTags,
     RouterLink,
     FoldButtonComponent,
     FoldCalloutComponent,
@@ -67,6 +75,8 @@ export class HandoverColumn {
   readonly board = input.required<HandoverBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
+  /** La palette des sites, d'où la couleur du mode ; vide (illisible) : teinte neutre. */
+  readonly palette = input<readonly SitePaletteEntryView[]>([]);
   /** Ce que la recherche du masthead désigne, par numéro de commande. */
   readonly matches = input(NO_MATCHES);
   /** `supervision/day` a échoué : la file reste, mais aucun retard n'est jugé. */
@@ -102,24 +112,19 @@ export class HandoverColumn {
 
   /** L'acheminement lu — choisi par la bande (`app-handover-band`), relié par la page. */
   readonly method = model<FulfillmentMethod>('pickup');
-  /** Le point de retrait filtré ; `ALL_POINTS` = tous. Sans effet sur la livraison. */
-  readonly point = model<string>(ALL_POINTS);
+  /** Les acheminements cochés (« Retrait <site> ») ; vide = tous. Sans effet sur la livraison. */
+  readonly routes = model<readonly string[]>([]);
   /** Les tranches terminées que l'on a dépliées, par clé. */
   private readonly unfolded = signal<ReadonlySet<string>>(new Set());
   private placedOnNow = false;
 
   protected readonly groups = computed<readonly SlotGroup[]>(() =>
     this.method() === 'pickup'
-      ? atPoint(this.board().pickup, this.point() === ALL_POINTS ? null : this.point())
+      ? atRoutes(this.board().pickup, this.routes(), (row) => this.mode(row))
       : this.board().delivery,
   );
 
   protected readonly items = computed(() => slotLayout(this.groups(), this.board().clock));
-
-  /** En « Tous les points », chaque ligne de retrait dit son point (A8). */
-  protected readonly showPoint = computed(
-    () => this.method() === 'pickup' && this.point() === ALL_POINTS,
-  );
 
   constructor() {
     // La colonne s'ouvre sur « Maintenant » (A8, B8) — une fois, au premier rendu qui le porte.
@@ -266,5 +271,10 @@ export class HandoverColumn {
       row.method === 'pickup' &&
       (row.state === 'ready' || row.state === 'overdue')
     );
+  }
+
+  /** « Livraison » ou « Retrait <site> », à la couleur du site — la règle de la page Commandes. */
+  protected mode(order: SupervisionModeFacts): LogisticsCategory {
+    return fulfillmentModeOf({ ...order, fulfillmentMethod: order.method }, this.palette());
   }
 }

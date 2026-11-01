@@ -28,6 +28,7 @@
         <div class="order-id">
           <span class="customer">{{ order.customerLabel }}</span>
           <span class="meta">{{ order.reference }} · {{ upcomingUnits(order) }}</span>
+          <app-order-tags [clientele]="order.clientele" [mode]="mode(order)" />
         </div>
       </fold-card>
     }
@@ -63,6 +64,7 @@
           <div class="order-id">
             <span class="customer">{{ card.customerLabel }}</span>
             <span class="meta">{{ meta(card) }}</span>
+            <app-order-tags [clientele]="card.clientele" [mode]="mode(card)" />
           </div>
           @if (card.state === 'awaiting_oven') {
             <!-- « Att. prod x/n » : lignes encore au four sur lignes de la
@@ -163,7 +165,18 @@
   }
 
   @if (overflow() > 0) {
-    <p class="overflow">{{ overflowLabel() }}</p>
+    <button
+      foldButton
+      type="button"
+      emphasis="soft"
+      intent="neutral"
+      size="sm"
+      data-overflow
+      [attr.aria-expanded]="expanded()"
+      (click)="expanded.set(!expanded())"
+    >
+      {{ overflowLabel() }}
+    </button>
   }
 
   <!-- Les colisées restent VISIBLES, en bas et en vert (Hugo, 2026-09-28). -->
@@ -192,6 +205,7 @@
             <div class="order-id">
               <span class="customer">{{ card.customerLabel }}</span>
               <span class="meta">{{ meta(card) }}</span>
+              <app-order-tags [clientele]="card.clientele" [mode]="mode(card)" />
             </div>
             @if (card.packedAt !== null) {
               <fold-badge

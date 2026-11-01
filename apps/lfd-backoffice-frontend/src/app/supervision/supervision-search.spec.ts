@@ -188,6 +188,8 @@ describe('lateSkusOf', () => {
     time: '5 h 30',
     totalUnits: 1,
     pickupLabel: 'Le Labo',
+    clientele: 'pro',
+    siteId: 'labo',
     handedOverAt: null,
     readyAt: null,
     overdueMinutes: 40,

@@ -202,9 +202,16 @@
           (retry)="reads.retry('preparation')"
         >
           @if (preparationBoard(); as board) {
-            <app-preparation-band columnBand [board]="board" [(filter)]="shelfFilter" />
+            <app-preparation-band
+              columnBand
+              [board]="board"
+              [(filter)]="shelfFilter"
+              [(view)]="preparationView"
+            />
           }
-          @if (preparationBoard(); as board) {
+          @if (preparationView() === 'slots' && worksheet(); as sheet) {
+            <app-preparation-slots [view]="sheet" [date]="sheet.date" [narrow]="narrow()" />
+          } @else if (preparationBoard(); as board) {
             <app-preparation-column
               [(shelfFilter)]="shelfFilter"
               [board]="board"
@@ -239,12 +246,18 @@
           (retry)="reads.retry('packing')"
         >
           @if (packingBoard(); as board) {
-            <app-packing-band columnBand [board]="board" [(point)]="packShop" />
+            <app-packing-band
+              columnBand
+              [board]="board"
+              [palette]="palette.sites()"
+              [(routes)]="packRoutes"
+            />
           }
           @if (packingBoard(); as board) {
             <app-packing-column
-              [(point)]="packShop"
+              [(routes)]="packRoutes"
               [board]="board"
+              [palette]="palette.sites()"
               [showLinks]="showLinks().packing"
               [narrow]="narrow()"
               [matches]="highlight.matches()"
@@ -288,14 +301,15 @@
               columnBand
               [board]="board"
               [(method)]="handoverMethod"
-              [(point)]="handoverShop"
+              [(routes)]="handoverRoutes"
             />
           }
           @if (handoverBoard(); as board) {
             <app-handover-column
               [(method)]="handoverMethod"
-              [(point)]="handoverShop"
+              [(routes)]="handoverRoutes"
               [board]="board"
+              [palette]="palette.sites()"
               [showLinks]="showLinks().handover"
               [nudges]="nudges()"
               (nudged)="reads.readNudges()"

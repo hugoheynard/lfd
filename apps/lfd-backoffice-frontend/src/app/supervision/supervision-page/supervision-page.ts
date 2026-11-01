@@ -30,12 +30,13 @@ import { dataOf } from '../column-state';
 import { handoverBoard } from '../handover-slots';
 import { HandoverBand } from '../handover-band/handover-band';
 import { HandoverColumn } from '../handover-column/handover-column';
-import { ALL_POINTS, packingBoard } from '../packing-cards';
+import { packingBoard } from '../packing-cards';
 import { PackingBand } from '../packing-band/packing-band';
 import { PackingColumn } from '../packing-column/packing-column';
 import { PreparationBand } from '../preparation-band/preparation-band';
 import { PreparationColumn } from '../preparation-column/preparation-column';
 import { ALL_SHELVES, preparationBoard } from '../preparation-shelves';
+import { PreparationSlots, type PreparationView } from '../preparation-slots/preparation-slots';
 import type { QualityRequest } from '../quality-badges';
 import { qualityContextOf } from '../quality-context';
 import { QualityBoardStore } from '../quality-board.store';
@@ -52,6 +53,7 @@ import {
   LINK_PERMISSIONS,
   type SupervisionColumn as Column,
 } from '../supervision-links';
+import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { DAY_REFRESH_MS, watchSupervisionDay } from '../supervision-refresh';
 import { SupervisionService } from '../supervision.service';
 import { StockBoard, SUPERVISION_VIEWS, type SupervisionView } from '../stock-board/stock-board';
@@ -87,6 +89,7 @@ const BOARD_NARROW = '(max-width: 900px)';
   changeDetection: ChangeDetectionStrategy.OnPush,
   imports: [
     CompositionGapsCallout,
+    PreparationSlots,
     FoldButtonComponent,
     FoldButtonIconComponent,
     FoldCalloutComponent,
@@ -119,6 +122,8 @@ export class SupervisionPage {
   protected readonly quality = inject(QualityBoardStore);
   /** « Envoyer en boutique » le pain rendu par une annulation (plan A1, lot A1.4). */
   protected readonly reserveShop = inject(ReserveShopLauncher);
+  /** La couleur du mode sur les cartes (Hugo, 2026-11-01) — relue à chaque ouverture. */
+  protected readonly palette = inject(SitePaletteStore);
 
   /** Le jour choisi à l'écran, ou `null` : on suit le jour du serveur. */
   protected readonly chosen = signal(
@@ -275,12 +280,19 @@ export class SupervisionPage {
 
   /** Les filtres des bandes (A4) : la page les tient, les colonnes les lisent. */
   protected readonly shelfFilter = signal(ALL_SHELVES);
-  protected readonly packShop = signal(ALL_POINTS);
+  /** Colonne 1 par rayon (défaut) ou par tranche (Hugo, 2026-11-01). */
+  protected readonly preparationView = signal<PreparationView>('shelves');
+  /** La fiche lue — la vue par tranche s'en sert telle quelle. */
+  protected readonly worksheet = computed(() => dataOf(this.preparation()));
+  /** Les acheminements cochés de la colonne 2 ; vide = tous (2026-11-01). */
+  protected readonly packRoutes = signal<readonly string[]>([]);
   protected readonly handoverMethod = signal<FulfillmentMethod>('pickup');
-  protected readonly handoverShop = signal(ALL_POINTS);
+  /** Les retraits cochés de la colonne 3 ; vide = tous. */
+  protected readonly handoverRoutes = signal<readonly string[]>([]);
 
   constructor() {
     void this.reads.load();
+    void this.palette.refresh();
     watchSupervisionDay(this.date, (columns) => this.reads.refresh(columns));
     this.followHits();
   }
