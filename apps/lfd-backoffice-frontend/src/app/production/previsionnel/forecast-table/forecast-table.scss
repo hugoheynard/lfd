@@ -36,8 +36,25 @@
   display: grid;
   grid-template-columns: var(--pv-columns);
   align-items: center;
-  min-width: 60rem;
+  min-width: var(--pv-row-min);
   flex: 0 0 auto;
+}
+
+/* ── LA COLONNE PRODUIT, COLLÉE À GAUCHE (2026-11-01) ───────────────────────
+   La grille défile dans les deux sens : le nom du produit reste à l'écran
+   quand on part à droite, comme la tête et le pied restent quand on descend.
+   Elle reprend le fond de sa ligne — sombre sur le chrome, papier ailleurs —
+   sans quoi les chiffres passeraient dessous en transparence. */
+.pv-cell--label {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: inherit;
+}
+
+.pv-row--line .pv-cell--label,
+.pv-row--subcategory .pv-cell--label {
+  background: var(--fold-color-bg-page);
 }
 
 /* ── CE QUI TIENT LA TABLE EN BAS ───────────────────────────────────────────

@@ -7,6 +7,7 @@
   class="pv-grid"
   [class.is-dense]="dense()"
   [style.--pv-columns]="template()"
+  [style.--pv-row-min]="rowMin()"
   [attr.aria-label]="label()"
 >
   <!-- La tête sur le CHROME, comme le pied : ce sont les deux bords
@@ -98,13 +99,15 @@
               [attr.data-tone]="columns()[column]?.tone"
             >
               @if (cell.quantity > 0) {
-                <!-- La journée par tranche, le jour même ou passé : « sorti /
-                     à sortir », et l'état écrit — la couleur ne le dit pas seule. -->
+                <!-- La journée par tranche : « sorti / à sortir » toujours, et le
+                     jour même l'état écrit — la couleur ne le dit pas seule. -->
                 @if (cell.progress; as progress) {
                   <span class="pv-qty-value">{{ progress.label }}</span>
-                  <span class="pv-progress" [attr.data-state]="progress.state">{{
-                    progress.stateLabel
-                  }}</span>
+                  @if (progress.stateLabel; as stateLabel) {
+                    <span class="pv-progress" [attr.data-state]="progress.state">{{
+                      stateLabel
+                    }}</span>
+                  }
                 } @else {
                   <span class="pv-qty-value">{{ cell.label }}</span>
                 }

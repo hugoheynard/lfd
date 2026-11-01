@@ -97,15 +97,18 @@ export class DayTrancheWall {
       : dayTrancheGrid(forecast, this.date(), this.due(), this.worksheet(), this.now());
   });
 
-  /** Les cases disent « sorti / à sortir » le jour même ou passé, fiche lue. */
-  private readonly withProgress = computed(() => this.now() !== null && this.worksheet() !== null);
+  /**
+   * L'état d'une tranche ne se dit que le jour même, fiche lue : sur un jour
+   * passé, toutes seraient « Dépassée » ; à venir, aucune n'a commencé. Le
+   * compte « sorti / à sortir », lui, est toujours là.
+   */
+  private readonly withState = computed(
+    () => this.now() !== null && this.worksheet() !== null && this.date() === this.today(),
+  );
 
   protected readonly columns = computed(() => {
     const grid = this.grid();
-    // Les en-têtes ne portent l'état que le jour même : sur un jour passé,
-    // toutes les tranches seraient « Dépassée ».
-    const withState = this.withProgress() && this.date() === this.today();
-    return grid === null ? [] : trancheColumns(grid, withState, this.planClosed());
+    return grid === null ? [] : trancheColumns(grid, this.withState(), this.planClosed());
   });
 
   protected readonly footRows = computed(() => {
@@ -122,7 +125,7 @@ export class DayTrancheWall {
           this.catalogue(),
           this.shelvesKnown(),
           this.showSubcategories(),
-          this.withProgress(),
+          this.withState(),
         );
   });
 

@@ -141,7 +141,13 @@ fold-page-layout {
   flex: 0 0 auto;
 }
 
-app-forecast-table {
+/* 🔴 La journée par tranche enveloppe la table dans son propre composant : si
+   l'enveloppe ne prend pas la hauteur restante, elle prend celle de son
+   contenu, la table ne défile plus, c'est l'espace qui défile, et le pied
+   collant ne colle à rien (vu par Hugo le 2026-11-01). Même maillon que la
+   table de la matrice, un cran plus haut. */
+app-forecast-table,
+app-day-tranche-wall {
   flex: 1 1 auto;
   min-height: 0;
 }

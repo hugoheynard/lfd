@@ -8,6 +8,13 @@
 
 /* Les échecs partiels, dans les gouttières de la page — la table, elle, est
    pleine largeur. */
+/* La table prend toute la hauteur qui reste sous les avertissements : c'est
+   elle qui défile, pas le mur. */
+app-forecast-table {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
 .dtw-note {
   padding-inline: var(--fold-page-gutter);
 }

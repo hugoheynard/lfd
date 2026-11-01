@@ -52,7 +52,11 @@ export interface TrancheCell {
   readonly label: string;
   /** La part des réassorts dans `quantity` — seulement dans le reste. */
   readonly resupply: number;
-  /** « 80 / 120 » ; `null` = pas de « sorti » à montrer. */
+  /**
+   * « sorti / à sortir dans cette tranche », TOUJOURS dans une tranche (Hugo,
+   * 2026-11-01) : « 0 / 120 » un jour à venir ou pour un produit absent de la
+   * fiche. `null` seulement dans « Sans heure », qui garde sa quantité seule.
+   */
   readonly progress: string | null;
   readonly state: SlotState | null;
   readonly stateLabel: string | null;
@@ -250,7 +254,7 @@ function progressCell(
     quantity,
     label,
     resupply: 0,
-    progress: progress === undefined ? null : `${saleQuantityLabel(progress.got, unit)} / ${label}`,
+    progress: `${saleQuantityLabel(progress?.got ?? 0, unit)} / ${label}`,
     state: progress?.state ?? null,
     stateLabel: progress === undefined ? null : slotStateLabel(progress.state),
     beforeFirst,

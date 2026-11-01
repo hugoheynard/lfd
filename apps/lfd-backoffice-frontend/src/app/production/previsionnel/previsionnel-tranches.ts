@@ -99,7 +99,7 @@ export function trancheColumns(
 function cellOf(
   cell: TrancheCell | null,
   unit: TrancheRow['saleUnit'],
-  withProgress: boolean,
+  withState: boolean,
 ): ForecastCell {
   if (cell === null) {
     return EMPTY_CELL;
@@ -113,12 +113,16 @@ function cellOf(
     resupply: cell.resupply,
     notes: cell.beforeFirst === null ? [] : [cell.beforeFirst],
   };
-  return withProgress && cell.progress !== null && cell.state !== null && cell.stateLabel !== null
-    ? {
+  return cell.progress === null
+    ? result
+    : {
         ...result,
-        progress: { label: cell.progress, state: cell.state, stateLabel: cell.stateLabel },
-      }
-    : result;
+        progress: {
+          label: cell.progress,
+          state: withState ? cell.state : null,
+          stateLabel: withState ? cell.stateLabel : null,
+        },
+      };
 }
 
 const EMPTY_CELL: ForecastCell = {
@@ -138,10 +142,11 @@ export function trancheRayons(
   catalogue: readonly CatalogItemView[],
   shelvesKnown: boolean,
   showSubcategories: boolean,
-  withProgress: boolean,
+  /** Le jour même, fiche lue : l'état de chaque case. Ailleurs, le compte seul. */
+  withState: boolean,
 ): readonly ForecastRayon[] {
   const products: ForecastProduct[] = grid.rows.map((row) => {
-    const cells = row.cells.map((cell) => cellOf(cell, row.saleUnit, withProgress));
+    const cells = row.cells.map((cell) => cellOf(cell, row.saleUnit, withState));
     const product: ForecastProduct = {
       sku: row.sku,
       productName: row.productName,

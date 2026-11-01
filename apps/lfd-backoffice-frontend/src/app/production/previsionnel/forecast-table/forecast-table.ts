@@ -78,6 +78,15 @@ export class ForecastTable {
     () => `230px repeat(${String(this.columns().length)}, minmax(0, 1fr))`,
   );
 
+  /**
+   * La largeur minimale d'une ligne : la référence (60rem, sept jours), ou
+   * plus quand les colonnes sont nombreuses — une journée à douze tranches ne
+   * s'écrase pas, elle défile à l'horizontale.
+   */
+  protected readonly rowMin = computed(
+    () => `max(60rem, calc(230px + ${String(this.columns().length)} * 6rem))`,
+  );
+
   protected isFolded(label: string): boolean {
     return this.folded().has(label);
   }

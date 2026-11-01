@@ -75,19 +75,22 @@ export interface ForecastCell {
   /** La part des réassorts dans `quantity` (lot R3d) — jamais en plus. */
   readonly resupply: number;
   /**
-   * Ce qui est déjà sorti, et l'état de la tranche pour ce produit — la
-   * journée par tranche, le jour même ou passé. Absent du prévisionnel par jours.
+   * « sorti / à sortir », et le jour même l'état de la tranche pour ce
+   * produit — la journée par tranche. Absent du prévisionnel par jours.
    */
   readonly progress?: ForecastCellProgress;
   /** Des mentions à signaler sous le chiffre (« 120 attendus à 04:30, avant la première tranche »). */
   readonly notes?: readonly string[];
 }
 
-/** « 80 / 120 » et l'état de la tranche, en mot (le texte accessible) ET en état (le token). */
+/**
+ * « 80 / 120 », et — le jour même seulement — l'état de la tranche, en mot
+ * (le texte accessible) ET en état (le token). `null` ailleurs : juste le compte.
+ */
 export interface ForecastCellProgress {
   readonly label: string;
-  readonly state: SlotState;
-  readonly stateLabel: string;
+  readonly state: SlotState | null;
+  readonly stateLabel: string | null;
 }
 
 /** Une ligne de la grille : un produit, et ce qu'il pèse chaque jour. */

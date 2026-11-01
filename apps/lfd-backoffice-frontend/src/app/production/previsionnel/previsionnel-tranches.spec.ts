@@ -150,19 +150,24 @@ describe('les rayons de la journée par tranche', () => {
     expect(rayons[1]?.quantities).toEqual([0, 1]);
   });
 
-  it('dit « sorti / à sortir » quand on le demande, et seulement alors', () => {
-    const shown = trancheRayons(GRID, [], true, false, true)[0]?.lines;
-    const hidden = trancheRayons(GRID, [], true, false, false)[0]?.lines;
-    const cro = (lines: typeof shown) => lines?.find((line) => line.sku === 'CRO')?.cells[0];
+  it('dit toujours « sorti / à sortir », et l’état le jour même seulement', () => {
+    const today = trancheRayons(GRID, [], true, false, true)[0]?.lines;
+    const elsewhere = trancheRayons(GRID, [], true, false, false)[0]?.lines;
+    const cro = (lines: typeof today) => lines?.find((line) => line.sku === 'CRO')?.cells;
 
-    expect(cro(shown)?.progress).toEqual({
+    expect(cro(today)?.[0]?.progress).toEqual({
       label: '80 / 120',
       state: 'over',
       stateLabel: 'Dépassée',
     });
-    expect(cro(shown)?.notes).toEqual(['20 attendus à 04:30, avant la première tranche']);
-    expect(cro(hidden)?.progress).toBeUndefined();
-    expect(cro(hidden)?.label).toBe('120');
+    expect(cro(today)?.[0]?.notes).toEqual(['20 attendus à 04:30, avant la première tranche']);
+    expect(cro(elsewhere)?.[0]?.progress).toEqual({
+      label: '80 / 120',
+      state: null,
+      stateLabel: null,
+    });
+    // « Sans heure » garde sa quantité seule.
+    expect(cro(today)?.[1]?.progress).toBeUndefined();
   });
 
   it('porte l’alerte d’une ligne désynchronisée, et la part des réassorts dans la case', () => {

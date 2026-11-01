@@ -8,10 +8,14 @@ import type {
 import { describe, expect, it } from 'vitest';
 
 import { ProductionService } from '../../production.service';
+import { parisToday } from '../../../shared/paris-today';
 import { WorksheetService } from '../../worksheet.service';
 import { DayTrancheWall } from './day-tranche-wall';
 
-/** La journée par tranche, dans la table du prévisionnel : rendu, jour à venir sans « sorti », jour même avec, vide, erreur. */
+/**
+ * La journée par tranche, dans la table du prévisionnel : rendu, « sorti / à
+ * sortir » toujours, l'état le jour même seulement, vide, erreur.
+ */
 
 const DUE: ProductionDueThresholdsView = {
   date: '2099-01-01',
@@ -78,8 +82,8 @@ const CRO: WorkshopLine = {
   done: false,
   initials: null,
   doneAt: null,
-  produced: 0,
-  remaining: 240,
+  produced: 150,
+  remaining: 90,
   surplus: 0,
   batches: [],
   container: null,
@@ -165,22 +169,37 @@ describe('la journée par tranche', () => {
     expect(texts(el, '[data-foot="pieces"]')).toEqual(['120', '120', '8']);
   });
 
-  it('un jour à venir ne montre que des quantités : ni « sorti », ni état', async () => {
+  it('un jour à venir dit « 0 / à sortir », sans état ; « Sans heure » garde sa quantité', async () => {
     const el: HTMLElement = (await mount(DUE)).nativeElement;
 
-    expect(texts(el, '.pv-qty-value')).toEqual(['120', '120', '8']);
+    expect(texts(el, '.pv-qty-value')).toEqual(['0 / 120', '0 / 120', '8']);
     expect(el.querySelectorAll('.pv-progress')).toHaveLength(0);
     expect(el.querySelectorAll('.pv-day-state')).toHaveLength(0);
   });
 
-  it('un jour passé dit « sorti / à sortir » et l’état, en mot', async () => {
+  it('un jour passé dit le sorti réel de la fiche, sans état', async () => {
     const el: HTMLElement = (await mount({ ...DUE, date: '2000-01-01' }, '2000-01-01'))
       .nativeElement;
 
-    expect(texts(el, '.pv-qty-value')).toEqual(['0 / 120', '0 / 120', '8']);
-    expect(texts(el, '.pv-progress')).toEqual(['Dépassée', 'Dépassée']);
-    // L'état des colonnes ne se dit que le jour même.
+    expect(texts(el, '.pv-qty-value')).toEqual(['120 / 120', '30 / 120', '8']);
+    expect(el.querySelectorAll('.pv-progress')).toHaveLength(0);
     expect(el.querySelectorAll('.pv-day-state')).toHaveLength(0);
+  });
+
+  it('le jour même dit le sorti ET l’état, en mot, en case comme en tête', async () => {
+    const today = parisToday();
+    const el: HTMLElement = (await mount({ ...DUE, date: today }, today)).nativeElement;
+
+    expect(texts(el, '.pv-qty-value')).toEqual(['120 / 120', '30 / 120', '8']);
+    expect(el.querySelectorAll('.pv-progress[data-state]')).toHaveLength(2);
+    expect(el.querySelectorAll('.pv-day-state')).toHaveLength(2);
+  });
+
+  it('élargit les lignes quand les tranches sont nombreuses, pour défiler plutôt qu’écraser', async () => {
+    const el: HTMLElement = (await mount(DUE)).nativeElement;
+    const grid = el.querySelector<HTMLElement>('.pv-grid');
+
+    expect(grid?.style.getPropertyValue('--pv-row-min')).toContain('3 * 6rem');
   });
 
   it('dit quand la journée est vide', async () => {

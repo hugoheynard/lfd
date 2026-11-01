@@ -230,12 +230,27 @@ describe('dayTrancheGrid', () => {
     expect(cro?.cells.at(-1)?.resupply).toBe(12);
   });
 
-  it('jour à venir : des quantités, aucun sorti ni état', () => {
+  it('jour à venir : « 0 / à sortir » dans chaque tranche, aucun état ; « Sans heure » sans compte', () => {
     const grid = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null);
-    expect(
-      grid.rows.every((row) => row.cells.every((cell) => cell === null || cell.progress === null)),
-    ).toBe(true);
+    const cro = grid.rows.find((row) => row.sku === 'CRO');
+    expect(cro?.cells.map((cell) => cell?.progress)).toEqual(['0 / 20', '0 / 100', null]);
+    expect(cro?.cells.every((cell) => cell?.state === null)).toBe(true);
     expect(grid.columns.map((column) => column.state)).toEqual([null, null, null]);
+  });
+
+  it('un produit au poids compte dans son unité', () => {
+    const pain = dayTrancheGrid(FORECAST, DATE, DUE, SHEET, null).rows.find(
+      (row) => row.sku === 'PAIN',
+    );
+    expect(pain?.cells[1]?.progress).toBe('0 g / 2,5 kg');
+  });
+
+  it('un produit absent de la fiche dit « 0 / à sortir », même le jour même', () => {
+    const grid = dayTrancheGrid(FORECAST, DATE, DUE, sheet([]), 6 * 60);
+    expect(grid.rows.find((row) => row.sku === 'BAG')?.cells[0]).toMatchObject({
+      progress: '0 / 50',
+      state: null,
+    });
   });
 
   it('ne mélange jamais pièces et poids dans un total', () => {
