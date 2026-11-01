@@ -1,5 +1,6 @@
 import type { ContentLocale } from "@lfd/contracts";
 
+import { pickupsOpenToAll } from "../../../pickup-addresses/application/__tests__/pickup-address-doubles.js";
 import { GivenDeliveryAvailability } from "../../../delivery-availability/domain/ports/__tests__/delivery-availability-doubles.js";
 import { FixedLineClassifications } from "../../../orders/domain/ports/__tests__/line-classification-doubles.js";
 import { shelfPromotionOffers } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
@@ -47,6 +48,7 @@ async function mentions(
     shelfPromotionOffers([...promotions], NOW),
     new FixedLineClassifications(),
     new GivenDeliveryAvailability({ openToB2c: false }),
+    pickupsOpenToAll(),
   );
   const catalogue = shopCatalogueOf(SELLABLE, {
     operations: [],

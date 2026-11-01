@@ -61,6 +61,7 @@ import { ArticleSaleUnits } from "./application/article-sale-units.service.js";
 import { PrismaSaleReferenceUsage } from "./infrastructure/prisma-sale-reference-usage.js";
 import { ShopCataloguePricing } from "./application/shop-catalogue-pricing.service.js";
 import { DeliveryAvailabilityModule } from "../delivery-availability/delivery-availability.module.js";
+import { PickupAddressesModule } from "../pickup-addresses/pickup-addresses.module.js";
 import { ShopCatalogueOffers } from "./application/shop-catalogue-offers.js";
 import { CatalogViewers } from "./application/catalog-viewers.service.js";
 import { ReservedArticleGuard } from "./application/reserved-article-guard.service.js";
@@ -145,6 +146,8 @@ import { PrismaDefaultSaleReferenceReader } from "./infrastructure/prisma-defaul
     OrderCutoffsInForceModule,
     // Le rayon ne cite pas un acheminement fermé à la clientèle du lecteur.
     DeliveryAvailabilityModule,
+    // … ni un point de retrait que sa clientèle ne peut pas choisir.
+    PickupAddressesModule,
   ],
   controllers: [
     AdminCatalogController,

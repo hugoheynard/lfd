@@ -7,6 +7,7 @@ import {
 import { Injectable } from "@nestjs/common";
 
 import { DeliveryAvailabilityReader } from "../../delivery-availability/domain/ports/delivery-availability.reader.js";
+import { PickupAddressRepository } from "../../pickup-addresses/domain/pickup-address.repository.js";
 import { OrderLineClassificationReader } from "../../orders/domain/ports/order-line-classification.reader.js";
 import { ShelfPromotionOffers } from "../../promotions/application/shelf-promotion-offers.js";
 import type { LivePromotion } from "../../promotions/domain/live-promotion.js";
@@ -28,6 +29,9 @@ import { shownByShopSku } from "./shop-catalogue-view.js";
 
 /** La porte d'entrée d'un rayon : la route (invité, reconnu) ou l'aperçu déclaré. */
 export type ShelfBuyerKind = Extract<PricedBuyerKind, "guest" | "registered" | "previewed">;
+
+/** Sans candidate, rien n'est lu : aucun acheminement n'a à être cité. */
+const NOTHING_OPEN: OpenFulfillments = { delivery: false, pickupPoints: new Set() };
 
 /** Pour qui le rayon se tarife — la société du LECTEUR et la porte de la route. */
 export interface ShelfBuyer {
@@ -51,7 +55,9 @@ export interface ShelfOffered {
  *
  * Le réglage de livraison n'est lu que s'il y a une candidate : la livraison
  * fermée à la clientèle du rayon (`/delivery-availability`), une mention
- * « en livraison » serait une fausse information (2026-11-01).
+ * « en livraison » serait une fausse information (2026-11-01). Les points de
+ * retrait de sa clientèle aussi : une remise sur un point qu'elle ne peut pas
+ * choisir ne se dit pas.
  */
 @Injectable()
 export class ShopCatalogueOffers {
@@ -59,6 +65,7 @@ export class ShopCatalogueOffers {
     private readonly offers: ShelfPromotionOffers,
     private readonly classifications: OrderLineClassificationReader,
     private readonly delivery: DeliveryAvailabilityReader,
+    private readonly pickups: PickupAddressRepository,
   ) {}
 
   async offeredFor(
@@ -68,7 +75,7 @@ export class ShopCatalogueOffers {
   ): Promise<ShelfOffered> {
     const candidates = await this.offers.candidatesFor({ kind: "real", ...buyer });
     if (candidates.length === 0) {
-      return { candidates, productIds: new Map(), open: { delivery: false } };
+      return { candidates, productIds: new Map(), open: NOTHING_OPEN };
     }
     const open = await this.openTo(audience);
     if (!offersNeedProducts(candidates)) {
@@ -83,8 +90,15 @@ export class ShopCatalogueOffers {
   }
 
   private async openTo(audience: ShopAudience): Promise<OpenFulfillments> {
-    const settings = await this.delivery.current();
-    return { delivery: deliveryOpenTo(settings, audience === "pro" ? "b2b" : "b2c") };
+    const clientele = audience === "pro" ? "b2b" : "b2c";
+    const [settings, points] = await Promise.all([
+      this.delivery.current(),
+      this.pickups.list(clientele),
+    ]);
+    return {
+      delivery: deliveryOpenTo(settings, clientele),
+      pickupPoints: new Set(points.map((point) => point.id)),
+    };
   }
 }
 

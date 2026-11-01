@@ -120,26 +120,43 @@ export function offerHoursAt(promotion: LivePromotion, at: Date): OfferHours | "
   return { moment: hours.moment, windows: hours.windows, activeNow: standing === "active" };
 }
 
-/** Les acheminements que la clientèle du lecteur peut utiliser (réglage de livraison). */
+/** Les acheminements que la clientèle du lecteur peut utiliser. */
 export interface OpenFulfillments {
+  /** Le réglage de livraison l'ouvre à sa clientèle. */
   readonly delivery: boolean;
+  /** Les points de retrait proposés à sa clientèle ; vide = aucun. */
+  readonly pickupPoints: ReadonlySet<string>;
+}
+
+/** Le retrait de l'offre, réduit aux points que le lecteur peut choisir. */
+function pickupOpenTo(reach: PickupReach, points: ReadonlySet<string>): PickupReach {
+  if (reach === "none" || points.size === 0) {
+    return "none";
+  }
+  if (reach === "all") {
+    return "all";
+  }
+  const open = reach.points.filter((point) => points.has(point));
+  return open.length === 0 ? "none" : { points: open };
 }
 
 /**
  * **L'offre telle que ce lecteur peut la saisir** : un acheminement qui ne
  * lui est pas ouvert n'est pas cité, et une offre dont aucun acheminement ne
  * lui est ouvert n'est pas dite du tout (`null`). Sans quoi un particulier, à
- * qui on ne livre pas, lisait « −20 % en livraison » (2026-11-01).
+ * qui on ne livre pas, lisait « −20 % en livraison » (2026-11-01) — et une
+ * remise réservée à un point que sa clientèle ne peut pas choisir.
  */
 export function offerOpenTo(
   offer: FulfillmentOffer,
   open: OpenFulfillments,
 ): FulfillmentOffer | null {
   const delivery = open.delivery ? offer.fulfillment.delivery : "none";
-  if (offer.fulfillment.pickup === "none" && delivery === "none") {
+  const pickup = pickupOpenTo(offer.fulfillment.pickup, open.pickupPoints);
+  if (pickup === "none" && delivery === "none") {
     return null;
   }
-  return { ...offer, fulfillment: { pickup: offer.fulfillment.pickup, delivery } };
+  return { ...offer, fulfillment: { pickup, delivery } };
 }
 
 /** Les candidates qui demandent le produit de l'article (cible `product`). */

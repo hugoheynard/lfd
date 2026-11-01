@@ -6,6 +6,7 @@ import {
 } from "../../../../platform/metrics/__tests__/metrics-doubles.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
 import { FixedLineClassifications } from "../../../orders/domain/ports/__tests__/line-classification-doubles.js";
+import { pickupsOpenToAll } from "../../../pickup-addresses/application/__tests__/pickup-address-doubles.js";
 import { GivenDeliveryAvailability } from "../../../delivery-availability/domain/ports/__tests__/delivery-availability-doubles.js";
 import { ownPricingParties } from "../../../pricing/application/__tests__/pricing-parties.doubles.js";
 import { Pricer } from "../../../pricing/application/pricer.js";
@@ -159,6 +160,7 @@ function shelf(policy: PromotionAdmission): ShopCataloguePricing {
       offers,
       new FixedLineClassifications(),
       new GivenDeliveryAvailability(),
+      pickupsOpenToAll(),
     ),
   );
 }

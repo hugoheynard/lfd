@@ -3,6 +3,7 @@ import type { ShelfPromotionOffers } from "../../../../promotions/application/sh
 import { livePromotion } from "../../../../promotions/domain/__tests__/live-promotion.fixture.js";
 import { shelfPromotionOffers } from "../../../../promotions/application/__tests__/promotion-supply.doubles.js";
 import { FixedLineClassifications } from "../../../../orders/domain/ports/__tests__/line-classification-doubles.js";
+import { pickupsOpenToAll } from "../../../../pickup-addresses/application/__tests__/pickup-address-doubles.js";
 import { GivenDeliveryAvailability } from "../../../../delivery-availability/domain/ports/__tests__/delivery-availability-doubles.js";
 import type { CatalogPricing, OrderCutoffView } from "@lfd/contracts";
 
@@ -226,6 +227,7 @@ function fixture(
       offers,
       new FixedLineClassifications(),
       new GivenDeliveryAvailability(),
+      pickupsOpenToAll("pickup_1"),
     ),
   );
   return { handler: new ReadShopCatalogueHandler(pricing), catalog, mercuriales, commitments };

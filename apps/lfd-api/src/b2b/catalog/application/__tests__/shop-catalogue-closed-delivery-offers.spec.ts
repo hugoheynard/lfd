@@ -1,3 +1,7 @@
+import {
+  FilteringPickups,
+  openPoint,
+} from "../../../pickup-addresses/application/__tests__/pickup-address-doubles.js";
 import { GivenDeliveryAvailability } from "../../../delivery-availability/domain/ports/__tests__/delivery-availability-doubles.js";
 import { FixedLineClassifications } from "../../../orders/domain/ports/__tests__/line-classification-doubles.js";
 import { shelfPromotionOffers } from "../../../promotions/application/__tests__/promotion-supply.doubles.js";
@@ -10,7 +14,7 @@ import { catalogItem } from "./sale-operations-doubles.js";
 
 /**
  * **Le rayon ne cite pas un acheminement fermé à la clientèle du lecteur**
- * (`/delivery-availability`). Les dates ne sont comparées qu'à l'horloge figée.
+ * (`/delivery-availability`, et les points de retrait de sa clientèle). Les dates ne sont comparées qu'à l'horloge figée.
  */
 
 const NOW = new Date(Date.UTC(2030, 0, 1));
@@ -21,6 +25,13 @@ const BOTH = livePromotion({
   fulfillment: { kind: "basket", pickup: "all", delivery: "all" },
   validFrom: new Date(0),
 });
+const PRO_POINT_ONLY = livePromotion({
+  id: "point_pro",
+  fulfillment: { kind: "basket", pickup: { points: ["pk_pro"] }, delivery: "none" },
+  validFrom: new Date(0),
+});
+/** Un point réservé aux pros, et un point ouvert aux deux. */
+const POINTS = [openPoint("pk_pro", { b2b: true, b2c: false }), openPoint("pk_tous")];
 const DELIVERY_ONLY = livePromotion({
   id: "livraison",
   fulfillment: { kind: "basket", pickup: "none", delivery: "all" },
@@ -31,11 +42,13 @@ async function mentions(
   promotions: readonly LivePromotion[],
   audience: ShopAudience,
   opening: { readonly openToB2b?: boolean; readonly openToB2c?: boolean },
+  points = POINTS,
 ) {
   const offers = new ShopCatalogueOffers(
     shelfPromotionOffers([...promotions], NOW),
     new FixedLineClassifications(),
     new GivenDeliveryAvailability(opening),
+    new FilteringPickups(points),
   );
   const catalogue = shopCatalogueOf(SELLABLE, {
     operations: [],
@@ -78,5 +91,24 @@ describe("la mention d'acheminement selon la livraison de la clientèle", () => 
 
   it("un particulier livré lit la mention d'une promotion de livraison seule", async () => {
     expect(await mentions([DELIVERY_ONLY], "public", { openToB2c: true })).toHaveLength(1);
+  });
+});
+
+describe("la mention d'acheminement selon les points de retrait de la clientèle", () => {
+  /**
+   * Régression (2026-11-01) : une remise réservée à un point que seuls les
+   * pros peuvent choisir se disait aussi aux particuliers.
+   */
+  it("un particulier ne lit pas une remise de retrait sur un point réservé aux pros", async () => {
+    expect(await mentions([PRO_POINT_ONLY], "public", { openToB2c: false })).toBeUndefined();
+  });
+
+  it("le pro, à qui ce point est ouvert, la lit", async () => {
+    expect(await mentions([PRO_POINT_ONLY], "pro", { openToB2b: false })).toHaveLength(1);
+  });
+
+  it("sans aucun point ouvert à sa clientèle, une remise « tout retrait » se tait", async () => {
+    const proOnly = [openPoint("pk_pro", { b2b: true, b2c: false })];
+    expect(await mentions([BOTH], "public", { openToB2c: false }, proOnly)).toBeUndefined();
   });
 });

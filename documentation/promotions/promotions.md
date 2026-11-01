@@ -753,8 +753,11 @@ pickupId }` ou `{ method: "delivery", zoneId }`. Admission
   depuis le 2026-11-01 ([plan](plan-texte-de-la-vignette.md)), une offre ne
   porte plus d'acheminement — l'effet, le texte réglé dans la langue du rayon
   (`text`, absent = la valeur seule) et les heures. Le serveur a déjà retiré
-  ce qu'aucun acheminement ouvert au lecteur n'applique (`offerOpenTo`).
-  Cassé dans le même déploiement (pré-release), comme la forme précédente le
+  ce qu'aucun acheminement ouvert au lecteur n'applique (`offerOpenTo`) :
+  la livraison fermée à sa clientèle (`/delivery-availability`), et les
+  points de retrait qu'elle ne peut pas choisir (`PickupAddressRepository.list`
+  de sa clientèle, depuis le 2026-11-01) — une remise « tout retrait » se tait
+  quand aucun point ne lui est ouvert. Cassé dans le même déploiement (pré-release), comme la forme précédente le
   2026-10-31.
 
 **Les données** — migration `20261031200000_les_acheminements_a_cocher` :

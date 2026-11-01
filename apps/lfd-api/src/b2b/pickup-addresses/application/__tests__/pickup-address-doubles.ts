@@ -70,3 +70,25 @@ export class FilteringPickups extends PickupAddressRepository {
     return Promise.resolve(null);
   }
 }
+
+/**
+ * Un point sans remise, ouvert à ces clientèles (aux deux par défaut) — pour
+ * les specs qui n'éprouvent que « à qui il remet ».
+ */
+export function openPoint(
+  id: string,
+  pickupAudiences: { readonly b2b: boolean; readonly b2c: boolean } = { b2b: true, b2c: true },
+): PickupAddressView {
+  return {
+    ...FIELDS,
+    id,
+    label: id,
+    discounts: { b2b: null, b2c: null },
+    pickupAudiences,
+    gps: null,
+  };
+}
+
+/** Ces points (un seul par défaut), ouverts aux deux clientèles : le retrait ne filtre rien. */
+export const pickupsOpenToAll = (...ids: readonly string[]): FilteringPickups =>
+  new FilteringPickups((ids.length === 0 ? ["pk_tous"] : ids).map((id) => openPoint(id)));

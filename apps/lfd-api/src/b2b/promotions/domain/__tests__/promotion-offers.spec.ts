@@ -270,6 +270,7 @@ describe("signInOfferFor — ce qu'une connexion ouvrirait à un invité", () =>
 });
 
 describe("offerOpenTo — l'offre telle que ce lecteur peut la saisir", () => {
+  const ALL_POINTS: ReadonlySet<string> = new Set(["pk_a", "pk_b"]);
   const offer = (pickup: FulfillmentOffer["fulfillment"]["pickup"]): FulfillmentOffer => ({
     promotionId: "p",
     effect: { kind: "percent", basisPoints: 2_000 },
@@ -277,17 +278,37 @@ describe("offerOpenTo — l'offre telle que ce lecteur peut la saisir", () => {
   });
 
   it("livraison fermée : la livraison n'est plus citée, le retrait reste", () => {
-    expect(offerOpenTo(offer("all"), { delivery: false })?.fulfillment).toEqual({
+    expect(
+      offerOpenTo(offer("all"), { delivery: false, pickupPoints: ALL_POINTS })?.fulfillment,
+    ).toEqual({
       pickup: "all",
       delivery: "none",
     });
   });
 
   it("livraison fermée et aucun retrait : rien à dire", () => {
-    expect(offerOpenTo(offer("none"), { delivery: false })).toBeNull();
+    expect(offerOpenTo(offer("none"), { delivery: false, pickupPoints: ALL_POINTS })).toBeNull();
   });
 
   it("livraison ouverte : l'offre est rendue telle quelle", () => {
-    expect(offerOpenTo(offer("none"), { delivery: true })).toEqual(offer("none"));
+    expect(offerOpenTo(offer("none"), { delivery: true, pickupPoints: ALL_POINTS })).toEqual(
+      offer("none"),
+    );
+  });
+
+  it("retrait sur des points : seuls ceux de sa clientèle restent", () => {
+    const open = { delivery: false, pickupPoints: new Set(["pk_a"]) };
+    expect(offerOpenTo(offer({ points: ["pk_a", "pk_z"] }), open)?.fulfillment.pickup).toEqual({
+      points: ["pk_a"],
+    });
+  });
+
+  it("retrait sur des points qu'aucun ne lui est ouvert, sans livraison : rien à dire", () => {
+    const open = { delivery: false, pickupPoints: new Set(["pk_a"]) };
+    expect(offerOpenTo(offer({ points: ["pk_z"] }), open)).toBeNull();
+  });
+
+  it("aucun point ouvert à sa clientèle : « tout retrait » ne se dit pas", () => {
+    expect(offerOpenTo(offer("all"), { delivery: false, pickupPoints: new Set() })).toBeNull();
   });
 });

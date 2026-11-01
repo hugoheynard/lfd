@@ -39,6 +39,21 @@ afterAll(async () => {
 beforeEach(async () => {
   await ctx.reset();
   await createUser(ctx.prisma, { auth0Sub: REGISTERED });
+  // Un point ouvert aux deux clientèles : sans lui, « tout retrait » ne se
+  // dit à personne — le rayon ne cite qu'un retrait que le lecteur peut choisir.
+  await ctx
+    .asSub(E2E_STAFF_SUB)
+    .post("/admin/pickup-addresses")
+    .send({
+      label: "Le Labo",
+      ligne1: "5 rue du Four",
+      ligne2: "",
+      codePostal: "73150",
+      ville: "Val d'Isère",
+      pays: "France",
+      discounts: { b2b: null, b2c: null },
+    })
+    .expect(201);
   await ctx.prisma.$executeRawUnsafe("SELECT public.bascule_des_promotions()");
   ctx.app.get(PricingMaterialsCache).invalidate();
 });
