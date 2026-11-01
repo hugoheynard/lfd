@@ -253,8 +253,6 @@
               [(routes)]="packRoutes"
             />
           }
-          <!-- Les transferts du jour et leur manifeste (2026-11-01) : là où leurs sacs attendent. -->
-          <app-day-transfers [date]="date()" [revision]="packing()" />
           @if (packingBoard(); as board) {
             <app-packing-column
               [(routes)]="packRoutes"
@@ -314,6 +312,7 @@
               [palette]="palette.sites()"
               [showLinks]="showLinks().handover"
               [nudges]="nudges()"
+              [transfers]="dayTransfers.view()"
               (nudged)="reads.readNudges()"
               [narrow]="narrow()"
               [latenessUnknown]="latenessUnknown()"

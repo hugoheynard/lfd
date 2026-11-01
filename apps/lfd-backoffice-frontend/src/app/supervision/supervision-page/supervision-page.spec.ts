@@ -27,6 +27,7 @@ import { PreparationColumn } from '../preparation-column/preparation-column';
 import { QualityService } from '../quality.service';
 import { SupervisionService } from '../supervision.service';
 import { shiftServiceDay } from '../supervision-day';
+import { DeliveryTransfersService } from '../../livraison/delivery-transfers.service';
 import { SupervisionPage } from './supervision-page';
 
 /**
@@ -234,6 +235,11 @@ async function mount(
         useValue: {
           compositionGaps: reads.compositionGaps ?? (() => Promise.resolve({ gaps: [] })),
         },
+      },
+      // Les transferts du jour (2026-11-01) : aucun ici, la colonne 3 a sa suite.
+      {
+        provide: DeliveryTransfersService,
+        useValue: { ofDay: (day: string) => Promise.resolve({ day, transfers: [] }) },
       },
       {
         provide: SitePaletteService,

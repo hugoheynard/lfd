@@ -4,6 +4,16 @@ export interface DayTransferRow {
   readonly siteId: string;
   readonly siteLabel: string;
   readonly departedAt: Date | null;
+  /**
+   * Le départ prévu de la tournée qui porte son arrêt vivant ; `null` : il
+   * n'est dans aucune tournée, ou la tournée n'a pas de départ prévu.
+   */
+  readonly plannedDepartureAt: Date | null;
+  /** Un arrêt vivant le porte : il est placé dans une tournée. */
+  readonly placed: boolean;
+  /** Les commandes et réassorts qu'il porte encore. */
+  readonly orderCount: number;
+  readonly resupplyCount: number;
 }
 
 /**

@@ -1,5 +1,5 @@
-import { inject, Injectable, signal } from '@angular/core';
-import type { DayInternalTransferView } from '@lfd/contracts';
+import { computed, inject, Injectable, signal } from '@angular/core';
+import type { DayInternalTransfersView, DayInternalTransferView } from '@lfd/contracts';
 
 import { DeliveryTransfersService } from './delivery-transfers.service';
 
@@ -16,8 +16,12 @@ import { DeliveryTransfersService } from './delivery-transfers.service';
 export class DayTransfersReader {
   private readonly service = inject(DeliveryTransfersService);
 
-  private readonly served = signal<readonly DayInternalTransferView[]>([]);
-  readonly transfers = this.served.asReadonly();
+  private readonly served = signal<DayInternalTransfersView | null>(null);
+  /** La vue lue, avec son jour ; `null` tant que rien n'est lu, ou après un échec. */
+  readonly view = this.served.asReadonly();
+  readonly transfers = computed<readonly DayInternalTransferView[]>(
+    () => this.served()?.transfers ?? [],
+  );
 
   private readonly readFailed = signal(false);
   /** La dernière lecture a échoué : l'écran peut le dire. */
@@ -32,12 +36,12 @@ export class DayTransfersReader {
     try {
       const view = await this.service.ofDay(day);
       if (seq === this.seq) {
-        this.served.set(view.transfers);
+        this.served.set(view);
         this.readFailed.set(false);
       }
     } catch {
       if (seq === this.seq) {
-        this.served.set([]);
+        this.served.set(null);
         this.readFailed.set(true);
       }
     }

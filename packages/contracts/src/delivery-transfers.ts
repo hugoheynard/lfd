@@ -188,6 +188,20 @@ export interface DayInternalTransferView {
   readonly siteLabel: string;
   /** Parti le, ou `null`. */
   readonly departedAt: string | null;
+  /**
+   * Le départ requis : celui, prévu, de la tournée qui porte son arrêt —
+   * l'heure « prête pour » de ses commandes au colisage. `null` : pas encore
+   * dans une tournée, ou tournée sans départ prévu.
+   */
+  readonly plannedDepartureAt: string | null;
+  /** Un arrêt vivant le porte : il est placé dans une tournée. */
+  readonly placed: boolean;
+  /** Les commandes qu'il porte encore. */
+  readonly orderCount: number;
+  /** Les réassorts qu'il porte encore. */
+  readonly resupplyCount: number;
+  /** Ses bacs (sacs) non annulés, ceux de ses commandes d'avant T3 compris. */
+  readonly binCount: number;
 }
 
 /**

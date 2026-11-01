@@ -46,6 +46,43 @@
       }
     </div>
 
+    <!-- Le transfert interne, au rang de son départ requis (Hugo, 2026-11-01) :
+         le gabarit d'une livraison, et le manifeste à la place d'un client. -->
+    @for (transfer of transfersAt(group.key); track transfer.transferId) {
+      <fold-card
+        radius="sm"
+        class="row"
+        [class.narrow]="narrow()"
+        [class.is-done]="transfer.departed"
+        [class.is-waiting]="!transfer.departed"
+        [attr.data-transfer-row]="transfer.transferId"
+      >
+        <div class="row-line">
+          <span class="time">{{ transfer.time ?? '—' }}</span>
+          <div class="who">
+            <span class="customer-line">
+              <span class="customer">Transfert → {{ transfer.siteLabel }}</span>
+            </span>
+            <app-order-tags [mode]="transfer.mode" />
+            <span class="sub" [class.is-done]="transfer.departed" data-transfer-state>{{
+              transfer.state
+            }}</span>
+            <span class="round" data-transfer-contents>{{ transfer.contents }}</span>
+          </div>
+          <button
+            foldButton
+            type="button"
+            emphasis="outline"
+            size="sm"
+            icon="list"
+            data-transfer-manifest
+            (click)="openManifest(transfer)"
+          >
+            Voir le manifeste
+          </button>
+        </div>
+      </fold-card>
+    }
     @for (row of group.rows; track row.orderId) {
       <fold-card
         radius="sm"

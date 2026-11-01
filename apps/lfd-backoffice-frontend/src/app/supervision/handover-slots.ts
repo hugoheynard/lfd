@@ -330,7 +330,7 @@ function endMinutesOf(key: string, kind: SlotKind): number | null {
  * Le rang d'une clé dans la journée, en minutes : une tranche par son début,
  * une échéance par elle-même ; l'heure d'ouverture puis le sans-créneau en fin.
  */
-function rankOf(key: string): number {
+export function rankOf(key: string): number {
   if (key === 'opening') {
     return Number.MAX_SAFE_INTEGER - 1;
   }

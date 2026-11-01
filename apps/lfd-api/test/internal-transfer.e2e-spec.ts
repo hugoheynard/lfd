@@ -340,7 +340,15 @@ describe("les transferts du jour et le manifeste, lus du colisage et de la Super
         await reader.get(`/admin/delivery/transfers?day=${DAY}`).expect(200),
       );
       expect(day.transfers).toEqual([
-        expect.objectContaining({ transferId, siteLabel: "Val Village", departedAt: null }),
+        expect.objectContaining({
+          transferId,
+          siteLabel: "Val Village",
+          departedAt: null,
+          placed: true,
+          orderCount: 1,
+          resupplyCount: 0,
+          binCount: 0,
+        }),
       ]);
       const manifest = jsonBody<InternalTransferManifestView>(
         await reader.get(`/admin/delivery/transfers/${transferId}/manifest`).expect(200),

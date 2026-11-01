@@ -2,6 +2,7 @@ import {
   DayTransfersReader,
   type DayTransferRow,
 } from "../../../domain/ports/day-transfers.reader.js";
+import { TransferBinCounts } from "../../../domain/ports/transfer-bin-counts.reader.js";
 import { GetDayInternalTransfersHandler } from "../get-day-internal-transfers.handler.js";
 import { GetDayInternalTransfersQuery } from "../get-day-internal-transfers.query.js";
 
@@ -22,37 +23,81 @@ class FixedDayTransfers extends DayTransfersReader {
   }
 }
 
-describe("GetDayInternalTransfersHandler — de quoi ouvrir le manifeste depuis l'encadré", () => {
-  it("rend chaque transfert du jour, son site et son départ", async () => {
-    const departed = new Date(0);
-    const reader = new FixedDayTransfers([
-      { id: "t_1", siteId: "s_village", siteLabel: "Le Village", departedAt: null },
-      { id: "t_2", siteId: "s_haut", siteLabel: "Le Haut", departedAt: departed },
-    ]);
+/** Les bacs comptés, par transfert ; un transfert absent n'en a pas. */
+class FixedBinCounts extends TransferBinCounts {
+  readonly asked: (readonly string[])[] = [];
 
-    const view = await new GetDayInternalTransfersHandler(reader).execute(
+  constructor(private readonly counts: ReadonlyMap<string, number>) {
+    super();
+  }
+
+  liveBinCounts(transferIds: readonly string[]): Promise<ReadonlyMap<string, number>> {
+    this.asked.push(transferIds);
+    return Promise.resolve(this.counts);
+  }
+}
+
+const ROW: DayTransferRow = {
+  id: "t_1",
+  siteId: "s_village",
+  siteLabel: "Le Village",
+  departedAt: null,
+  plannedDepartureAt: null,
+  placed: false,
+  orderCount: 0,
+  resupplyCount: 0,
+};
+
+describe("GetDayInternalTransfersHandler — la ligne du transfert et son manifeste", () => {
+  it("rend chaque transfert du jour : site, départ requis, ce qu'il porte, ses sacs, son départ", async () => {
+    const planned = new Date(0);
+    const departed = new Date(60_000);
+    const reader = new FixedDayTransfers([
+      { ...ROW, plannedDepartureAt: planned, placed: true, orderCount: 3, resupplyCount: 1 },
+      { ...ROW, id: "t_2", siteId: "s_haut", siteLabel: "Le Haut", departedAt: departed },
+    ]);
+    const bins = new FixedBinCounts(new Map([["t_1", 4]]));
+
+    const view = await new GetDayInternalTransfersHandler(reader, bins).execute(
       new GetDayInternalTransfersQuery(DAY),
     );
 
     expect(reader.asked).toEqual([DAY]);
+    expect(bins.asked).toEqual([["t_1", "t_2"]]);
     expect(view).toEqual({
       day: DAY,
       transfers: [
-        { transferId: "t_1", siteId: "s_village", siteLabel: "Le Village", departedAt: null },
+        {
+          transferId: "t_1",
+          siteId: "s_village",
+          siteLabel: "Le Village",
+          departedAt: null,
+          plannedDepartureAt: planned.toISOString(),
+          placed: true,
+          orderCount: 3,
+          resupplyCount: 1,
+          binCount: 4,
+        },
         {
           transferId: "t_2",
           siteId: "s_haut",
           siteLabel: "Le Haut",
           departedAt: departed.toISOString(),
+          plannedDepartureAt: null,
+          placed: false,
+          orderCount: 0,
+          resupplyCount: 0,
+          binCount: 0,
         },
       ],
     });
   });
 
   it("un jour sans transfert rend une liste vide", async () => {
-    const view = await new GetDayInternalTransfersHandler(new FixedDayTransfers([])).execute(
-      new GetDayInternalTransfersQuery(DAY),
-    );
+    const view = await new GetDayInternalTransfersHandler(
+      new FixedDayTransfers([]),
+      new FixedBinCounts(new Map()),
+    ).execute(new GetDayInternalTransfersQuery(DAY));
     expect(view).toEqual({ day: DAY, transfers: [] });
   });
 });

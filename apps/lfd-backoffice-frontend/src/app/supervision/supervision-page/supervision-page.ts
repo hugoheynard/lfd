@@ -4,9 +4,11 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  effect,
   ElementRef,
   inject,
   signal,
+  untracked,
 } from '@angular/core';
 import { ActivatedRoute, Router } from '@angular/router';
 import type { FulfillmentMethod, WithdrawnPackingSheet } from '@lfd/contracts';
@@ -45,7 +47,7 @@ import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
 import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '../supervision-day';
 import { SupervisionHighlight } from '../supervision-highlight';
-import { DayTransfers } from '../day-transfers/day-transfers';
+import { DayTransfersReader } from '../../livraison/day-transfers.reader';
 import { SupervisionReads } from '../supervision-reads';
 import { lateSkusOf } from '../supervision-search';
 import { scrollToHits } from '../supervision-hits';
@@ -108,11 +110,10 @@ const BOARD_NARROW = '(max-width: 900px)';
     PreparationBand,
     PreparationColumn,
     DayCalendar,
-    DayTransfers,
     SupervisionColumn,
     StockBoard,
   ],
-  providers: [QualityBoardStore],
+  providers: [QualityBoardStore, DayTransfersReader],
   templateUrl: './supervision-page.html',
   styleUrl: './supervision-page.scss',
 })
@@ -126,6 +127,8 @@ export class SupervisionPage {
   protected readonly reserveShop = inject(ReserveShopLauncher);
   /** La couleur du mode sur les cartes (Hugo, 2026-11-01) — relue à chaque ouverture. */
   protected readonly palette = inject(SitePaletteStore);
+  /** Les transferts du jour, lignes de l'onglet Livraison (2026-11-01) — relus avec la colonne 3. */
+  protected readonly dayTransfers = inject(DayTransfersReader);
 
   /** Le jour choisi à l'écran, ou `null` : on suit le jour du serveur. */
   protected readonly chosen = signal(
@@ -297,6 +300,13 @@ export class SupervisionPage {
     void this.palette.refresh();
     watchSupervisionDay(this.date, (columns) => this.reads.refresh(columns));
     this.followHits();
+    effect(() => {
+      const date = this.date();
+      this.handover();
+      if (date !== null) {
+        untracked(() => void this.dayTransfers.load(date));
+      }
+    });
   }
 
   protected selectTab(key: string): void {

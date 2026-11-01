@@ -11,13 +11,19 @@ import {
   signal,
 } from '@angular/core';
 import { RouterLink } from '@angular/router';
-import type { CustomerNudgesView, FulfillmentMethod, SitePaletteEntryView } from '@lfd/contracts';
+import type {
+  CustomerNudgesView,
+  DayInternalTransfersView,
+  FulfillmentMethod,
+  SitePaletteEntryView,
+} from '@lfd/contracts';
 import {
   FoldButtonComponent,
   FoldCalloutComponent,
   FoldCardComponent,
   FoldEmptyStateComponent,
   FoldIconComponent,
+  FoldPanelHostService,
 } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
@@ -29,6 +35,11 @@ import type { SlotItem } from '../handover-layout';
 import { UNPLACED_LINE } from '../handover-slots';
 import type { HandoverBoard, SlotGroup, SlotRow } from '../handover-slots';
 import { countLabel, durationLabel } from '../supervision-labels';
+import { type TransferSlotRow, transferRowsOf, withTransferSlots } from '../handover-transfers';
+import {
+  TransferManifestDialog,
+  type TransferManifestDialogData,
+} from '../../livraison/transfer-manifest-dialog/transfer-manifest-dialog';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { NO_MATCHES } from '../supervision-search';
 
@@ -83,6 +94,11 @@ export class HandoverColumn {
   readonly latenessUnknown = input(false);
   /** Les relances du jour — délais et traces ; `null` tant qu'elles ne sont pas lues. */
   readonly nudges = input<CustomerNudgesView | null>(null);
+  /**
+   * Les transferts internes du jour (2026-11-01) — une ligne chacun dans
+   * l'onglet Livraison, à son départ requis ; `null` : aucune ligne.
+   */
+  readonly transfers = input<DayInternalTransfersView | null>(null);
   /** Une relance vient de partir : la page relit les traces. */
   readonly nudged = output();
 
@@ -92,6 +108,7 @@ export class HandoverColumn {
   private readonly orders = inject(AdminOrdersService);
   private readonly notify = inject(NotifyService);
   private readonly permissions = inject(PermissionsStore);
+  private readonly panels = inject(FoldPanelHostService);
 
   /**
    * `POST /admin/orders/:id/pickup-reminder` et `…/delay-warning` exigent
@@ -118,11 +135,29 @@ export class HandoverColumn {
   private readonly unfolded = signal<ReadonlySet<string>>(new Set());
   private placedOnNow = false;
 
+  private readonly transferRows = computed(() => transferRowsOf(this.transfers(), this.palette()));
+
   protected readonly groups = computed<readonly SlotGroup[]>(() =>
     this.method() === 'pickup'
       ? atRoutes(this.board().pickup, this.routes(), (row) => this.mode(row))
-      : this.board().delivery,
+      : withTransferSlots(this.board().delivery, this.transferRows()),
   );
+
+  /** Les transferts d'une tranche — onglet Livraison seulement. */
+  protected transfersAt(key: string): readonly TransferSlotRow[] {
+    return this.method() === 'delivery'
+      ? this.transferRows()
+          .filter((one) => one.key === key)
+          .map(({ row }) => row)
+      : [];
+  }
+
+  /** « Voir le manifeste » : le dialogue de la livraison, tel quel. */
+  protected openManifest(row: TransferSlotRow): void {
+    this.panels.open<TransferManifestDialogData, void>(TransferManifestDialog, {
+      data: { transferId: row.transferId, siteLabel: row.siteLabel },
+    });
+  }
 
   protected readonly items = computed(() => slotLayout(this.groups(), this.board().clock));
 
@@ -161,6 +196,10 @@ export class HandoverColumn {
   }
 
   protected groupCount(group: SlotGroup): string {
+    const transfers = this.transfersAt(group.key).length;
+    if (group.rows.length === 0 && transfers > 0) {
+      return countLabel(transfers, 'transfert', 'transferts');
+    }
     const expected = countLabel(group.expected, 'attendue', 'attendues');
     if (group.handedOver === 0) {
       return expected;

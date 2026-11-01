@@ -297,6 +297,11 @@ describe('la liste des commandes du colisage', () => {
       siteId: 'vv',
       siteLabel: 'Val Village',
       departedAt: null,
+      plannedDepartureAt: null,
+      placed: false,
+      orderCount: 1,
+      resupplyCount: 0,
+      binCount: 0,
     };
 
     it('un bouton par transfert du site, et rien pour le transfert d’un autre site', () => {
