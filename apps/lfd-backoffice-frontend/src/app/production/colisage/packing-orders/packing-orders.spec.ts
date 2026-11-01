@@ -101,7 +101,7 @@ describe('la liste des commandes du colisage', () => {
     expect(said(host.querySelector('.co-stack'))).toContain('Prêtes 4');
   });
 
-  it('pose « Pro » ou « Public » après le nom, et rien quand la clientèle est inconnue', () => {
+  it('pose « Pro » ou « Particulier » après le nom, et rien quand la clientèle est inconnue', () => {
     const fixture = render({
       sheets: [
         sheet({ reference: 'CMD-001', customerLabel: 'Hôtel du Parc', clientele: 'pro' }),
@@ -114,7 +114,7 @@ describe('la liste des commandes du colisage', () => {
       (element) => said(element),
     );
 
-    expect(who).toEqual(['Hôtel du Parc Pro', 'Léa Martin Public', 'Café Neuf']);
+    expect(who).toEqual(['Hôtel du Parc Pro', 'Léa Martin Particulier', 'Café Neuf']);
   });
 
   it('émet la référence de la commande choisie', () => {

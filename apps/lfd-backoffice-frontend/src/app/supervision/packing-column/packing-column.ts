@@ -157,8 +157,21 @@ export class PackingColumn {
    */
   protected readonly expanded = signal(false);
 
+  /**
+   * Une commande que la recherche trouve au-delà de la dixième déplie la
+   * liste d'elle-même (Hugo, 2026-11-01) : un résultat replié est un résultat
+   * qu'on ne voit pas.
+   */
+  private readonly hitBeyondFold = computed(() =>
+    this.open()
+      .slice(PACKING_VISIBLE_MAX)
+      .some((card) => this.isHit(card.reference)),
+  );
+
+  protected readonly showsAll = computed(() => this.expanded() || this.hitBeyondFold());
+
   protected readonly visible = computed(() =>
-    this.expanded() ? this.open() : this.open().slice(0, PACKING_VISIBLE_MAX),
+    this.showsAll() ? this.open() : this.open().slice(0, PACKING_VISIBLE_MAX),
   );
 
   protected readonly overflow = computed(() =>
@@ -179,7 +192,7 @@ export class PackingColumn {
   );
 
   protected readonly overflowLabel = computed(() =>
-    this.expanded()
+    this.showsAll()
       ? 'Replier aux dix premières'
       : `Voir ${countLabel(this.overflow(), 'commande de plus', 'commandes de plus')} · triées par heure`,
   );

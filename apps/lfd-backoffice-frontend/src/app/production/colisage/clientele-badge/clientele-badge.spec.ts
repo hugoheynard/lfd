@@ -4,7 +4,7 @@ import { describe, expect, it } from 'vitest';
 
 import { ClienteleBadge } from './clientele-badge';
 
-/** Le badge de clientèle : « Pro », « Public », ou rien quand on ne sait pas. */
+/** Le badge de clientèle : « Pro », « Particulier », ou rien quand on ne sait pas. */
 function render(clientele: PackingSheet['clientele']): HTMLElement {
   const fixture = TestBed.createComponent(ClienteleBadge);
   fixture.componentRef.setInput('clientele', clientele);
@@ -18,9 +18,9 @@ describe('ClienteleBadge', () => {
     expect(badge?.textContent).toContain('Pro');
   });
 
-  it('dit « Public » sur une commande sans société', () => {
+  it('dit « Particulier » sur une commande sans société', () => {
     const badge = render('public').querySelector('fold-badge[data-clientele="public"]');
-    expect(badge?.textContent).toContain('Public');
+    expect(badge?.textContent).toContain('Particulier');
   });
 
   it('pose deux variantes sobres et distinctes : `info` pour le pro, `neutral` pour le public', () => {

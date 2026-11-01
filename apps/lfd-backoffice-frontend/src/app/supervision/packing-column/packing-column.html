@@ -172,8 +172,8 @@
       intent="neutral"
       size="sm"
       data-overflow
-      [attr.aria-expanded]="expanded()"
-      (click)="expanded.set(!expanded())"
+      [attr.aria-expanded]="showsAll()"
+      (click)="expanded.set(!showsAll())"
     >
       {{ overflowLabel() }}
     </button>

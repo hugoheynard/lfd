@@ -380,6 +380,21 @@ describe('PackingColumn', () => {
     expect(element.querySelector('[data-hit-key="VILLAGE-9H"]')).toBeNull();
   });
 
+  /**
+   * Régression (2026-11-01) : une commande trouvée par la recherche au-delà
+   * de la dixième restait repliée, invisible tant qu'on ne dépliait pas.
+   */
+  it('déplie d’elle-même quand la recherche trouve une commande au-delà de dix', async () => {
+    const open = Array.from({ length: 12 }, (_, i) => card(`R${String(i)}`));
+    const element = await mount(
+      { ...BOARD, visible: [...open, card('VILLAGE-9H')] },
+      { ...NO_MATCHES, references: new Set(['VILLAGE-9H']), mode: 'search', current: 'VILLAGE-9H' },
+    );
+
+    expect(element.querySelector('[data-hit-key="VILLAGE-9H"]')).not.toBeNull();
+    expect(element.querySelector('[data-overflow]')?.getAttribute('aria-expanded')).toBe('true');
+  });
+
   it('dit que la journée n’est pas arrêtée', async () => {
     const element = await mount({ ...BOARD, notClosed: true });
 
