@@ -100,14 +100,19 @@ export class AdminPromotionsController {
   }
 
   /**
-   * Les articles visés dont le prix net aura plus de deux décimales — un
-   * avertissement de l'écran, jamais un refus (plan-remise-par-ligne.md, § 18.7).
+   * Les articles visés dont le prix net aura plus de deux décimales sous les
+   * termes en cours de saisie — un avertissement de l'écran, jamais un refus,
+   * et rien n'est écrit (plan-remise-par-ligne.md, § 18.7). Un POST parce que
+   * les termes ne tiennent pas dans une adresse.
    */
-  @Get(":id/decimals")
+  @Post("decimals")
+  @HttpCode(HttpStatus.OK)
   @RequireAnyPermission("b2b_pricing:read")
-  decimals(@Param("id") id: string): Promise<PromotionDecimalsView> {
+  decimals(
+    @Body(new ZodBody(promotionTermsPayloadSchema)) payload: PromotionTermsPayload,
+  ): Promise<PromotionDecimalsView> {
     return this.queries.execute<GetPromotionDecimalsQuery, PromotionDecimalsView>(
-      new GetPromotionDecimalsQuery(id),
+      new GetPromotionDecimalsQuery(promotionTermsOf(payload)),
     );
   }
 

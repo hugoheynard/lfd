@@ -208,12 +208,13 @@ cause.
 - **Tests** : 0,93 à −12 % → compté ; 1,00 à −20 % → non ; montant fixe →
   jamais.
 
-> ✅ **Bâti le 2026-11-01** (non commité à l'écriture de cette ligne) :
-> `GET admin/promotions/:id/decimals`, `promotionDecimalNets`
+> ✅ **Bâti le 2026-11-01** (`3c5717bbf`, puis repris le même jour) :
+> `POST admin/promotions/decimals`, `promotionDecimalNets`
 > (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`), callout
-> `targeted-promotions/promotion-decimals-callout/`. Avertit sur la promotion
-> ENREGISTRÉE, pas sur la saisie en cours. État décrit dans
-> [`promotions.md`](promotions.md).
+> `targeted-promotions/promotion-decimals-callout/`. Avertit sur la SAISIE en
+> cours, relue après chaque frappe — la première version ne lisait que la
+> promotion enregistrée, et l'avertissement arrivait après le choix qu'il
+> devait éclairer. État décrit dans [`promotions.md`](promotions.md).
 
 > ✅ **§ 18.6 bâti le 2026-11-01** (non commité à l'écriture de cette ligne) :
 > points 1 (option (b), `format-money.ts` `formatMillicents`), 2 (BT-148/BT-147

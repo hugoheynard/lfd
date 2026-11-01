@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  DestroyRef,
   effect,
   inject,
   input,
@@ -123,6 +124,9 @@ const NO_CHOICES: CatalogueChoices = { category: [], product: [], variant: [] };
  * Elle ne juge que la forme (`draftProblem`) ; tout refus métier vient du
  * serveur, nommé, et reste affiché sans rien perdre de la saisie.
  */
+/** L'avertissement des décimales attend cette pause dans la frappe avant de relire. */
+export const DECIMALS_DEBOUNCE_MS = 400;
+
 @Component({
   selector: 'app-promotion-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
@@ -183,11 +187,15 @@ export class PromotionPage {
       : `${String(count)} mercuriale l'accepte`;
   });
   /**
-   * Les nets à plus de deux décimales de la promotion ENREGISTRÉE (§ 18.7) ;
-   * `null` sur une pose, sans `b2b_pricing:read`, ou si la lecture a échoué —
-   * un avertissement manquant ne retient pas la page.
+   * Les nets à plus de deux décimales des termes EN SAISIE (§ 18.7), relus
+   * après chaque frappe : l'avertissement sert à choisir avant d'enregistrer.
+   * `null` sans `b2b_pricing:read`, hors pourcentage, sur une saisie que le
+   * serveur refuse encore, ou si la lecture a échoué — un avertissement
+   * manquant ne retient pas la page.
    */
   protected readonly decimals = signal<PromotionDecimalsView | null>(null);
+  /** Le numéro de la dernière lecture demandée : une réponse plus vieille est jetée. */
+  private decimalsAsked = 0;
   protected readonly draft = signal<PromotionDraft>(emptyDraft(parisToday(), null));
   /** Ce que l'autre genre de remise avait en propre, pour un aller-retour sans perte. */
   private readonly setAside = signal<DraftSetAside>({});
@@ -395,6 +403,26 @@ export class PromotionPage {
     new Date(at).toLocaleString('fr-FR', { timeZone: 'Europe/Paris' });
 
   constructor() {
+    let pending: ReturnType<typeof setTimeout> | null = null;
+    inject(DestroyRef).onDestroy(() => {
+      if (pending !== null) clearTimeout(pending);
+    });
+    effect(() => {
+      const draft = this.draft();
+      const wanted =
+        this.state() === 'ready' &&
+        this.atLine() &&
+        draft.effectKind === 'percent_off' &&
+        this.permissions.can('b2b_pricing:read');
+      if (pending !== null) clearTimeout(pending);
+      pending = null;
+      if (!wanted) {
+        this.decimalsAsked += 1;
+        this.decimals.set(null);
+        return;
+      }
+      pending = setTimeout(() => void this.readDecimals(draft), DECIMALS_DEBOUNCE_MS);
+    });
     effect(() => {
       const id = this.id();
       const pickupId = this.pickupId() ?? null;
@@ -484,7 +512,7 @@ export class PromotionPage {
   ): Promise<void> {
     this.state.set('loading');
     try {
-      const [catalogue, active, sites, zones, view, source, original, accepting, decimals] =
+      const [catalogue, active, sites, zones, view, source, original, accepting] =
         await Promise.all([
           // Le catalogue n'est qu'une aide au choix : un lecteur qui ne peut pas
           // le lire voit quand même la promotion, ses cibles nommées par elle.
@@ -502,7 +530,6 @@ export class PromotionPage {
           id === null ? Promise.resolve(null) : this.api.source(),
           id === null && from !== null ? this.api.get(from) : Promise.resolve(null),
           this.readAccepting(id),
-          this.readDecimals(id),
         ]);
       this.catalogueMissing.set(catalogue === null);
       const rules = (view ?? original)?.scope.rules ?? [];
@@ -514,7 +541,6 @@ export class PromotionPage {
       this.promotion.set(view);
       this.accepting.set(accepting === 'failed' ? null : accepting);
       this.acceptingMissing.set(accepting === 'failed');
-      this.decimals.set(decimals);
       this.sourceEditable.set(source?.editable ?? false);
       this.copiedFrom.set(original?.internalName ?? null);
       const draft =
@@ -542,11 +568,18 @@ export class PromotionPage {
     return this.api.acceptingMercuriales(id).catch(() => 'failed' as const);
   }
 
-  private readDecimals(id: string | null): Promise<PromotionDecimalsView | null> {
-    if (id === null || !this.permissions.can('b2b_pricing:read')) {
-      return Promise.resolve(null);
+  /** Relit l'avertissement des décimales pour ce brouillon ; la réponse périmée est jetée. */
+  private async readDecimals(draft: PromotionDraft): Promise<void> {
+    const asked = ++this.decimalsAsked;
+    let decimals: PromotionDecimalsView | null = null;
+    try {
+      decimals = await this.api.decimals(termsOf(draft));
+    } catch {
+      // Saisie encore incomplète (400) ou panne : se taire, pas inventer.
     }
-    return this.api.decimals(id).catch(() => null);
+    if (asked === this.decimalsAsked) {
+      this.decimals.set(decimals);
+    }
   }
 
   protected reload(): void {

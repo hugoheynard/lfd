@@ -441,18 +441,20 @@ désactivés et rien ne s'enregistre. `nouvelle` (même composant) est gardée p
 
 **Les décimales d'un pourcentage s'annoncent** (2026-11-01,
 [`plan-remise-par-ligne.md`](plan-remise-par-ligne.md), § 18.7) : sur une
-promotion enregistrée en pourcentage dans le prix affiché, la page avertit
+promotion en pourcentage dans le prix affiché, la page avertit
 « Sur N articles visés, le prix net aura plus de 2 décimales (ex. 0,93 € →
 0,8184 €) », avec trois exemples au plus, et rappelle qu'un montant fixe n'en
 crée jamais (`promotion-decimals-callout/`). Un avertissement, jamais un
-refus. La lecture est `GET admin/promotions/:id/decimals`
+refus. La lecture est `POST admin/promotions/decimals`
 (`GetPromotionDecimalsQuery`, sous `b2b_pricing:read`) : le prix pro de
 chaque article (`PromotionProPricesReader`, implémenté par le catalogue)
 passe par `promotionDecimalNets` (`apps/lfd-api/src/b2b/pricing/domain/promotion-decimals.ts`),
 qui présente la promotion en règle (`promotionAsRule`) et l'applique par
 `applyRule` puis l'arrondi unique, comme la porte du prix — sans plancher
-ni cumul. Elle porte sur la promotion enregistrée : une saisie non
-enregistrée n'est avertie qu'après « Enregistrer ».
+ni cumul, ni mercuriale, palier ou grille : le callout le dit. Elle porte
+sur les termes EN SAISIE, relus 400 ms après la dernière frappe, sans rien
+écrire ; des termes que l'agrégat refuserait encore (saisie incomplète) font
+taire l'avertissement plutôt que d'en inventer un.
 
 **Le genre de remise se choisit tôt** (décision de Hugo du 2026-10-31,
 comme les grandes plateformes : le type, puis un formulaire qui ne montre que

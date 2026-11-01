@@ -24,6 +24,7 @@ describe('PromotionDecimalsCallout', () => {
     expect(text).toContain('Sur 1 article visé, le prix net aura plus de 2 décimales');
     expect(text).toContain('0,8184');
     expect(text).toContain('montant fixe');
+    expect(root.querySelector('[data-decimals-basis]')?.textContent).toContain('prix pro de base');
   });
 
   it('ne dit rien quand aucun article n’est concerné', async () => {

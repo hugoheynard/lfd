@@ -438,10 +438,9 @@ describe("la description interne", () => {
 describe("l'avertissement des décimales (plan-remise-par-ligne.md, § 18.7)", () => {
   const decimalsOf = async (effect: PromotionTermsPayload["effect"]) => {
     const scope: PromotionTermsPayload["scope"] = { mode: "all_except", rules: [] };
-    const created = await admin().post(PROMOTIONS).send(terms({ effect, scope })).expect(201);
-    const { id } = jsonBody<{ id: string }>(created);
+    // Des termes jamais posés : l'avertissement parle pendant la saisie.
     return jsonBody<PromotionDecimalsView>(
-      await admin().get(`${PROMOTIONS}/${id}/decimals`).expect(200),
+      await admin().post(`${PROMOTIONS}/decimals`).send(terms({ effect, scope })).expect(200),
     );
   };
 

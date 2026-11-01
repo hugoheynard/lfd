@@ -4,6 +4,7 @@ import { provideRouter, Router } from '@angular/router';
 import type {
   MercurialesAcceptingPromotionView,
   PromotionConditionView,
+  PromotionDecimalsView,
   PromotionTermsPayload,
   PromotionView,
   PublishedCatalogView,
@@ -15,7 +16,7 @@ import { PermissionsStore } from '../../auth/permissions.store';
 import { CatalogueService } from '../../b2b/catalogue/catalogue.service';
 import { promotionView } from '../promotion.testing';
 import { PromotionsService } from '../promotions.service';
-import { PromotionPage } from './promotion-page';
+import { DECIMALS_DEBOUNCE_MS, PromotionPage } from './promotion-page';
 
 const CATALOGUE: PublishedCatalogView = { shelves: [], entries: [], pendingReview: [] };
 
@@ -27,6 +28,7 @@ interface Sent {
   readonly revised: { id: string; terms: PromotionTermsPayload; reason: string | null }[];
   readonly posed: PromotionTermsPayload[];
   readonly archived: string[];
+  readonly decimals: PromotionTermsPayload[];
 }
 
 interface Setup {
@@ -42,10 +44,12 @@ interface Setup {
   readonly active?: ReadonlyMap<string, string> | null;
   /** Les mercuriales qui l'acceptent (défaut : aucune). */
   readonly accepting?: () => Promise<MercurialesAcceptingPromotionView>;
+  /** L'avertissement des décimales (défaut : aucun article). */
+  readonly decimals?: (terms: PromotionTermsPayload) => Promise<PromotionDecimalsView>;
 }
 
 async function render(setup: Setup = {}) {
-  const sent: Sent = { revised: [], posed: [], archived: [] };
+  const sent: Sent = { revised: [], posed: [], archived: [], decimals: [] };
   const granted = setup.permissions ?? ['b2b_pricing:read', 'b2b_pricing:write'];
   TestBed.configureTestingModule({
     imports: [PromotionPage],
@@ -83,7 +87,10 @@ async function render(setup: Setup = {}) {
           acceptingMercuriales:
             setup.accepting ??
             (async (id: string) => ({ promotionId: id, count: 0, mercuriales: [] })),
-          decimals: async () => ({ count: 0, examples: [] }),
+          decimals: async (terms: PromotionTermsPayload) => {
+            sent.decimals.push(terms);
+            return (await setup.decimals?.(terms)) ?? { count: 0, examples: [] };
+          },
           archive: async (_view: PromotionView, reason: string) => {
             sent.archived.push(reason);
           },
@@ -562,7 +569,13 @@ describe('PromotionPage', () => {
       expect(root.textContent).toContain('pour un public à choisir');
       expect(root.textContent).toContain('Cochez au moins un public');
       expect(button(root, 'Poser la promotion')?.disabled).toBe(true);
-      expect(sent).toEqual({ revised: [], posed: [], archived: [] });
+      // La relecture des décimales ne pose ni ne modifie rien : elle n’est pas comptée ici.
+      expect({ ...sent, decimals: [] }).toEqual({
+        revised: [],
+        posed: [],
+        archived: [],
+        decimals: [],
+      });
     });
 
     it('un recouvrement refusé par le serveur se lit tel quel, rivale nommée', async () => {
@@ -865,6 +878,41 @@ describe('PromotionPage', () => {
         en: null,
         it: null,
       });
+    });
+  });
+
+  describe('l’avertissement des décimales (§ 18.7)', () => {
+    const settleTyping = () =>
+      new Promise((resolve) => setTimeout(resolve, DECIMALS_DEBOUNCE_MS + 50));
+    const CROISSANT = {
+      count: 1,
+      examples: [
+        { sku: 'CRO-1', name: 'Croissant', priceMillicents: 93_000, netMillicents: 81_840 },
+      ],
+    };
+
+    it('se relit sur la saisie, avant d’enregistrer, et parle de la valeur tapée', async () => {
+      const { root, fixture, sent } = await render({
+        decimals: async (terms) =>
+          terms.effect.value === 1200 ? CROISSANT : { count: 0, examples: [] },
+      });
+      await settleTyping();
+      fixture.detectChanges();
+      expect(root.querySelector('[data-decimals]')).toBeNull();
+
+      type(root, fixture, '20', '12');
+      await settleTyping();
+      await fixture.whenStable();
+      fixture.detectChanges();
+      expect(sent.decimals.at(-1)?.effect).toEqual({ kind: 'percent_off', value: 1200 });
+      expect(root.querySelector('[data-decimals]')?.textContent).toContain('0,8184');
+      expect(sent.revised).toEqual([]);
+    });
+
+    it('sans `b2b_pricing:read`, ne demande rien', async () => {
+      const { sent } = await render({ permissions: ['lfc_site_settings:read'] });
+      await settleTyping();
+      expect(sent.decimals).toEqual([]);
     });
   });
 });

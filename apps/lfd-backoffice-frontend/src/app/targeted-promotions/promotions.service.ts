@@ -57,10 +57,8 @@ export class PromotionsService {
    * Les articles visés dont le prix net aura plus de deux décimales — un
    * avertissement, sous `b2b_pricing` (`plan-remise-par-ligne.md`, § 18.7).
    */
-  decimals(id: string): Promise<PromotionDecimalsView> {
-    return firstValueFrom(
-      this.http.get<PromotionDecimalsView>(`${this.base}/${encodeURIComponent(id)}/decimals`),
-    );
+  decimals(terms: PromotionTermsPayload): Promise<PromotionDecimalsView> {
+    return firstValueFrom(this.http.post<PromotionDecimalsView>(`${this.base}/decimals`, terms));
   }
 
   /** La source seule : les anciens éditeurs s'en disent en lecture seule. */
