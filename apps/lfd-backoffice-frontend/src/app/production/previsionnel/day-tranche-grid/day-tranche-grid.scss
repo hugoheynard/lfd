@@ -1,0 +1,91 @@
+.dtg-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.dtg-scroll {
+  overflow-x: auto;
+}
+
+.dtg-table {
+  border-collapse: collapse;
+  font-size: var(--fold-text-sm);
+  font-variant-numeric: tabular-nums;
+}
+
+.dtg-table th,
+.dtg-table td {
+  padding: var(--fold-space-xs) var(--fold-space-sm);
+  border-bottom: 1px solid var(--fold-color-border-subtle);
+  vertical-align: top;
+}
+
+/* L'en-tête de ligne reste à l'écran quand la grille défile. */
+.dtg-name {
+  position: sticky;
+  left: 0;
+  z-index: 1;
+  background: var(--fold-color-surface-card);
+  text-align: left;
+  white-space: nowrap;
+}
+
+.dtg-num {
+  text-align: right;
+  white-space: nowrap;
+}
+
+.dtg-head,
+.dtg-cell {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: var(--fold-space-xs);
+}
+
+.dtg-shelf th {
+  color: var(--fold-color-text-muted);
+  font-weight: var(--fold-weight-semibold);
+}
+
+.dtg-total,
+tfoot th,
+tfoot td {
+  font-weight: var(--fold-weight-semibold);
+}
+
+.dtg-none {
+  color: var(--fold-color-text-faded);
+}
+
+/* L'état se lit en couleur ET en texte (le mot visible ou masqué à côté). */
+.dtg-state {
+  font-size: var(--fold-text-xs);
+  font-weight: var(--fold-weight-regular);
+}
+
+[data-state='over'] {
+  color: var(--fold-color-alert-text);
+}
+
+[data-state='next'] {
+  color: var(--fold-color-info-text);
+}
+
+[data-state='met'] {
+  color: var(--fold-color-success-text);
+}
+
+[data-state='upcoming'] {
+  color: var(--fold-color-text-muted);
+}
+
+.dtg-sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
