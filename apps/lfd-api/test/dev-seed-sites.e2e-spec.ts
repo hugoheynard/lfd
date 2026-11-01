@@ -9,7 +9,7 @@ import type { DevSeedReport } from "@lfd/contracts";
 import { CLIENT_RAISON_SOCIALE } from "../src/dev/seeding/client.seed.js";
 import { FEATURED_SKUS } from "../src/dev/seeding/featured.seed.js";
 import { saleSkusOf } from "../src/dev/seeding/sale-references.seed.js";
-import { bootstrapE2e, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, watchSeed, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
@@ -221,6 +221,27 @@ describe("le semis, à la norme des sites", () => {
 
       expect(again.reset).toMatchObject({ sitelessPickups: 1, sitelessPickupsKept: 0 });
       expect(await ctx.prisma.order.count({ where: { id: victim.id } })).toBe(0);
+    },
+    TIMEOUT_MS,
+  );
+
+  /**
+   * Régression : « Tout recharger » retirait les commandes des sociétés
+   * d'essai sans leurs remises de panier, tenues en `RESTRICT`, et mourait en
+   * 409 « Une ressource liée est introuvable » (`order_discounts_order_id_fkey`).
+   * La remise de point naît au rechargement, valable à partir de son instant :
+   * seules les commandes semées APRÈS cet instant la portaient, si bien que la
+   * panne ne se voyait qu'avant 9 h (constaté le 2026-11-01). La promotion
+   * reculée rend le cas vrai à toute heure.
+   */
+  it(
+    "« Tout recharger » se rejoue quand les commandes retirées portent une remise de panier",
+    async () => {
+      await ctx.prisma.promotion.updateMany({ data: { validFrom: new Date(daysAgo(60)) } });
+      await reload();
+      expect(await ctx.prisma.orderDiscount.count()).toBeGreaterThan(0);
+
+      await reload();
     },
     TIMEOUT_MS,
   );

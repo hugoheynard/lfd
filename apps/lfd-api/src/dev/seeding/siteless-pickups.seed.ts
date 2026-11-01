@@ -1,4 +1,5 @@
 import type { PrismaClient } from "../../platform/database/client/client.js";
+import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
 
 /**
  * ⚠️ **Retire les retraits qui ne portent pas leur site.** Destructif, base
@@ -62,8 +63,7 @@ export async function dropSitelessPickups(prisma: PrismaClient): Promise<Siteles
   await prisma.shopOrderIdempotency.deleteMany({ where: ofOrders });
   await prisma.customerRequest.deleteMany({ where: ofOrders });
   await prisma.loyaltyLedgerEntry.deleteMany({ where: ofOrders });
-  await prisma.deliveryNoteLine.deleteMany({ where: { note: ofOrders } });
-  await prisma.deliveryNote.deleteMany({ where: ofOrders });
+  await dropOrderRestrictedChildren(prisma, { id: { in: orderIds } });
   const removed = await prisma.order.deleteMany({ where: { id: { in: orderIds } } });
   return { removed: removed.count, keptInAccounting: accounted.size };
 }

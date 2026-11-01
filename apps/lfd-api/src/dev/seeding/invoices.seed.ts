@@ -10,6 +10,7 @@ import { recordReturns } from "./invoice-returns.seed.js";
 import { InvoiceSeedPrerequisiteError } from "./invoice-seed-errors.js";
 import { planInvoiceCalendar, type WeekFate } from "./invoice-weeks.seed.js";
 import type { SeedContext } from "./order-placing.seed.js";
+import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
 
 /**
  * **Des factures sur les sites du groupe des Cimes** — pour voir la page
@@ -71,9 +72,7 @@ export async function seedInvoices(context: InvoiceSeedContext): Promise<Invoice
     return { kind: "already_seeded", invoices: existing, handedOver };
   }
   const seeded = { companyId: { in: payerIds }, note: INVOICE_SEED_NOTE };
-  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
-  await context.prisma.deliveryNoteLine.deleteMany({ where: { note: { order: seeded } } });
-  await context.prisma.deliveryNote.deleteMany({ where: { order: seeded } });
+  await dropOrderRestrictedChildren(context.prisma, seeded);
   await context.prisma.order.deleteMany({ where: seeded });
   const calendar = planInvoiceCalendar(context.now);
   const legalEntityId = await readyLegalEntity(context, calendar.modeSetAt);

@@ -10,6 +10,7 @@ import {
   shiftDays,
   targetOf,
 } from "./order-placing.seed.js";
+import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
 
 /**
  * **Les commandes des sous-comptes** — le mois dernier et ce mois-ci, par le
@@ -113,9 +114,7 @@ export async function seedSubAccountOrders(
   companies: OrderingCompanies,
 ): Promise<SubAccountOrdersReport> {
   const ofCompanies = { companyId: { in: [...companies.values()] } };
-  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
-  await context.prisma.deliveryNoteLine.deleteMany({ where: { note: { order: ofCompanies } } });
-  await context.prisma.deliveryNote.deleteMany({ where: { order: ofCompanies } });
+  await dropOrderRestrictedChildren(context.prisma, ofCompanies);
   const removed = await context.prisma.order.deleteMany({ where: ofCompanies });
   const days = {
     previous: PREVIOUS_MONTH_DAYS.map((day) => dayOfMonth(context.now, -1, day)),

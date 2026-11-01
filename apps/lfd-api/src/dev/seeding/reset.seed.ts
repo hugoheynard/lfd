@@ -2,6 +2,7 @@ import type { PrismaClient } from "../../platform/database/client/client.js";
 import { CLIENT_RAISON_SOCIALE } from "./client.seed.js";
 import { dropSitelessPickups } from "./siteless-pickups.seed.js";
 import { SEEDED_POINT_LABELS, SEEDED_ZONE_LABELS } from "./station.seed.js";
+import { dropOrderRestrictedChildren } from "./order-restricted-children.seed.js";
 
 /**
  * ⚠️ **Remet la base sur ce que le seed déclare.** Destructif, et c'est tout ce
@@ -190,9 +191,7 @@ async function wipe(prisma: PrismaClient, companyIds: string[], userIds: string[
       { placedByUserId: { in: userIds } },
     ],
   };
-  // Les bons de livraison tiennent leur commande en `Restrict` (plan E1).
-  await prisma.deliveryNoteLine.deleteMany({ where: { note: { order: ofOrders } } });
-  await prisma.deliveryNote.deleteMany({ where: { order: ofOrders } });
+  await dropOrderRestrictedChildren(prisma, ofOrders);
   await prisma.order.deleteMany({ where: ofOrders });
   // `company_id` en `Restrict` (N4e) : le panier d'une personne hors périmètre
   // posé sur une société du périmètre partirait sinon en erreur.
