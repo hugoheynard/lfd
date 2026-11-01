@@ -44,5 +44,12 @@ export function struck(
   if (resolved >= item.unitPriceMillicents) {
     return resolved === item.unitPriceMillicents ? item : priced;
   }
-  return { ...priced, catalogPriceMillicents: item.unitPriceMillicents };
+  // Le tarif TTC barré est celui de l'article AVANT résolution — la valeur
+  // saisie pour un particulier —, jamais le HT : formaté en TTC, le HT barrait
+  // 71,09 € au-dessus d'un 60,00 € TTC né de 75,00 € (constaté le 2026-11-01).
+  return {
+    ...priced,
+    catalogPriceMillicents: item.unitPriceMillicents,
+    catalogPriceTtcCents: item.unitPriceTtcCents,
+  };
 }

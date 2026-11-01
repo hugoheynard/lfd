@@ -237,9 +237,7 @@ export class ProductTile {
    * particulier, exact pour un pro (§ 18.6 du plan `plan-remise-par-ligne.md`,
    * option (b), 2026-11-01) — deux échelles côte à côte se lisent mal.
    */
-  protected readonly striked = computed(() =>
-    struckPriceLabel(this.product().catalogPriceMillicents, this.showsTtc()),
-  );
+  protected readonly striked = computed(() => struckPriceLabel(this.product(), this.showsTtc()));
 
   /** Ce qu'entend un lecteur d'écran à la place des deux prix (RGAA 3.1, lot A5). */
   protected readonly struckPhrase = computed(() => {

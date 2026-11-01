@@ -323,7 +323,7 @@ export class ProductSheet {
 
   /** Le tarif boutique barré — même règle que la vignette : l'absence EST la réponse. */
   protected readonly striked = computed(() =>
-    struckPriceLabel(this.product()?.catalogPriceMillicents, this.showsTtc()),
+    struckPriceLabel(this.product() ?? {}, this.showsTtc()),
   );
 
   /** Ce qu'entend un lecteur d'écran à la place des prix (RGAA 3.1, lot A5). */

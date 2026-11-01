@@ -244,6 +244,12 @@ export interface ShopItemView {
    */
   readonly catalogPriceMillicents?: number;
   /**
+   * Le même tarif, **taxe comprise** — ce qu'un écran en TTC barre. Présent
+   * exactement quand {@link catalogPriceMillicents} l'est. Le dériver du HT
+   * côté écran pourrait s'écarter d'un centime du TTC saisi d'un particulier.
+   */
+  readonly catalogPriceTtcCents?: number;
+  /**
    * **Les promotions qu'un acheminement ouvrirait sur cet article** (plan des
    * promotions, § 13.2 RAYON, lot L10) — « −20 % avec retrait à Cœur de
    * station ». Elles ne baissent JAMAIS {@link unitPriceMillicents} : au rayon,

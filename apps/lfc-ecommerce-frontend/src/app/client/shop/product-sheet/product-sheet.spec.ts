@@ -59,6 +59,7 @@ function providePick(pick: StaffPickDouble) {
 const NEGOTIATED: ShopItemView = {
   ...(TEST_ITEMS[0] as ShopItemView),
   catalogPriceMillicents: 155_560,
+  catalogPriceTtcCents: 164,
 };
 
 describe('ProductSheet', () => {

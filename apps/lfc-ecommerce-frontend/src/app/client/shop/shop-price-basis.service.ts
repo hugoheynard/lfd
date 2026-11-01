@@ -1,7 +1,6 @@
 import { computed, inject, Injectable } from '@angular/core';
 
 import type { ShopItemView } from '@lfd/contracts';
-import { unitPriceCents } from '@lfd/money';
 
 import { ClientCompany } from '../client-company.service';
 import { formatCents, formatMillicents } from '../format-money';
@@ -94,18 +93,20 @@ export function perKiloHintLabel(
 }
 
 /**
- * **Le tarif barré** dans l'assiette de qui regarde : au centime pour un
- * particulier (inchangé), exact pour un pro — même échelle que le prix servi
+ * **Le tarif barré** dans l'assiette de qui regarde : le TTC servi par le
+ * serveur pour un particulier, le HT exact pour un pro — même échelle que le prix servi
  * à côté de lui (§ 18.6, option (b)).
  */
 export function struckPriceLabel(
-  catalogMillicents: number | undefined,
+  item: Pick<ShopItemView, 'catalogPriceMillicents' | 'catalogPriceTtcCents'>,
   showsTtc: boolean,
 ): string | null {
-  if (catalogMillicents === undefined) {
-    return null;
+  // Régression (2026-11-01) : en TTC, le barré formatait le tarif HT —
+  // 71,09 € barré au-dessus de 60,00 € TTC, pour un article à 75,00 € TTC.
+  if (showsTtc) {
+    return item.catalogPriceTtcCents === undefined ? null : formatCents(item.catalogPriceTtcCents);
   }
-  return showsTtc
-    ? formatCents(unitPriceCents(catalogMillicents))
-    : formatMillicents(catalogMillicents);
+  return item.catalogPriceMillicents === undefined
+    ? null
+    : formatMillicents(item.catalogPriceMillicents);
 }

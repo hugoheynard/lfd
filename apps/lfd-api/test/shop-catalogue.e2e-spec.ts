@@ -432,6 +432,9 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
     // poussé au-dessus : la promotion s'applique à ce que la vitrine sert.
     expect(body.items[0]?.unitPriceMillicents).toBe(213_270);
     expect(body.items[0]?.catalogPriceMillicents).toBe(PUBLIC_LABEL.htMillicents);
+    // Régression (2026-11-01) : le particulier lisait le HT barré sous un prix
+    // TTC. Le tarif TTC barré est l'étiquette saisie, pas un HT reconverti.
+    expect(body.items[0]?.catalogPriceTtcCents).toBe(PUBLIC_LABEL.ttcCents);
   });
 
   /**
@@ -451,6 +454,7 @@ describe("la vitrine publique sert le prix RÉSOLU", () => {
 
     expect(body.items[0]?.unitPriceMillicents).toBe(260_664);
     expect(body.items[0]?.catalogPriceMillicents).toBeUndefined();
+    expect(body.items[0]?.catalogPriceTtcCents).toBeUndefined();
   });
 
   /**

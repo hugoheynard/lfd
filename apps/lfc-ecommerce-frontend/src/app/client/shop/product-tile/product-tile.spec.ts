@@ -248,6 +248,24 @@ describe('ProductTile', () => {
    * négociés. Une rature qui apparaîtrait partout ne dirait plus rien, et la
    * tuile ne doit pas en inventer une à partir d'un champ absent.
    */
+  /**
+   * Régression (2026-11-01, production) : un particulier lisait 71,09 € barré
+   * au-dessus de 60,00 € TTC — le tarif HT d'un article à 75,00 € TTC, −20 %.
+   */
+  it('barre le tarif TTC chez un particulier, jamais le HT', () => {
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      unitPriceMillicents: 5_687_200,
+      unitPriceTtcCents: 6_000,
+      catalogPriceMillicents: 7_109_000,
+      catalogPriceTtcCents: 7_500,
+    });
+    fixture.detectChanges();
+    const el = fixture.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.price-was')?.textContent?.trim()).toBe('75,00 €');
+  });
+
   it('ne barre RIEN sur un article que le client paie au tarif', () => {
     const el = fixture.nativeElement as HTMLElement;
 
@@ -260,12 +278,13 @@ describe('ProductTile', () => {
     fixture.componentRef.setInput('product', {
       ...TEST_ITEMS[0],
       catalogPriceMillicents: 155_560,
+      catalogPriceTtcCents: 164,
     });
     fixture.detectChanges();
     const el = fixture.nativeElement as HTMLElement;
 
     expect(el.querySelector('.price .sr-only')?.textContent?.trim()).toBe(
-      'Ancien prix : 1,56 €, nouveau prix : 1,48 € TTC',
+      'Ancien prix : 1,64 €, nouveau prix : 1,48 € TTC',
     );
     expect(el.querySelector('.price-was')?.getAttribute('aria-hidden')).toBe('true');
     expect(el.querySelector('.price-ht')?.getAttribute('aria-hidden')).toBe('true');
