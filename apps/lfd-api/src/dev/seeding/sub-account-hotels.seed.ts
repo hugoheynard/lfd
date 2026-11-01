@@ -7,6 +7,7 @@ import { SetGroupWithoutDeliveryCommand } from "../../b2b/account/application/co
 import { CompanyStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
 import { type NeighbourClient, seedFictiveClients } from "./neighbour-clients.seed.js";
+import { acceptSeededFounders } from "./seeded-founders.seed.js";
 import { asStaff, SEED_STAFF_SUB } from "./order-placing.seed.js";
 import { asCustomer, ensurePerson } from "./sub-account-people.seed.js";
 
@@ -132,6 +133,9 @@ async function seedGroup(context: ClientContext): Promise<string> {
       );
       return id;
     });
+    // Le fondateur du groupe ne se connecte jamais : son rattachement
+    // expirerait (cf. `acceptSeededFounders`).
+    await acceptSeededFounders(context);
   }
   if (existing === null || existing.status === CompanyStatus.pending) {
     const id = groupId;

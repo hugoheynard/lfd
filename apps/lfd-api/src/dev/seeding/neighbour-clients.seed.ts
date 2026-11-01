@@ -12,6 +12,7 @@ import { runWithRequestContext } from "../../platform/context/request-context.st
 import { newTraceId } from "../../platform/context/trace-context.js";
 import { CompanyStatus, DeferredTerm, UserStatus } from "../../platform/database/client/client.js";
 import type { ClientContext } from "./client.seed.js";
+import { acceptSeededFounders } from "./seeded-founders.seed.js";
 
 /**
  * **Les voisins du client de référence** — pour que demain ait TROIS clients
@@ -202,6 +203,9 @@ export async function seedFictiveClients(
   context: ClientContext,
   clients: readonly NeighbourClient[],
 ): Promise<void> {
+  // AVANT les maisons déjà semées : `refreshSite` agit en leur nom, et un
+  // rattachement expiré le refusait (« Entreprise introuvable », 2026-11-01).
+  await acceptSeededFounders(context);
   for (const client of clients) {
     const existing = await context.prisma.company.findFirst({
       where: { raisonSociale: client.raisonSociale },
@@ -217,6 +221,8 @@ export async function seedFictiveClients(
     }
     await refreshSite(context, existing.id, client);
   }
+  // APRÈS les créations : les fondateurs qu'on vient de semer.
+  await acceptSeededFounders(context);
 }
 
 async function seedNeighbour(context: ClientContext, neighbour: NeighbourClient): Promise<void> {

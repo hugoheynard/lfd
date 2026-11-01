@@ -19,7 +19,7 @@ import type {
   StaffNote,
 } from "@lfd/contracts";
 
-import { bootstrapE2e, jsonBody, type E2eContext } from "./e2e-harness.js";
+import { bootstrapE2e, daysAgo, jsonBody, type E2eContext } from "./e2e-harness.js";
 import { ADMIN_VERIFIER_OVERRIDE, admin } from "./delivery-rounds-scene.js";
 import { seedDriverRole } from "./delivery-driver-scene.js";
 import { PAYMENT_GATEWAY_OVERRIDE } from "./dev-scenario-scene.js";
@@ -144,6 +144,28 @@ describe("le scénario du jour, étape par étape", () => {
       expect((await state()).steps.map((step) => step.summary)).toEqual(
         reloaded.steps.map((step) => step.summary),
       );
+    },
+    TIMEOUT_MS,
+  );
+
+  /**
+   * Régression (2026-11-01) : les fondateurs semés ne se connectent jamais, et
+   * leur rattachement restait une invitation ; sept jours après le semis, la
+   * remise à l'état de base tombait sur « Entreprise introuvable ».
+   */
+  it(
+    "la remise tient sur une base semée il y a un mois, fondateurs jamais connectés",
+    async () => {
+      const seeded = { acceptedAt: null, user: { auth0Sub: { startsWith: "seed|" } } } as const;
+      await ctx.prisma.membership.updateMany({
+        where: { role: "owner", user: { auth0Sub: { startsWith: "seed|" } } },
+        data: { acceptedAt: null, invitedAt: new Date(daysAgo(30)) },
+      });
+      expect(await ctx.prisma.membership.count({ where: seeded })).toBeGreaterThan(0);
+
+      await reset();
+
+      expect(await ctx.prisma.membership.count({ where: { ...seeded, role: "owner" } })).toBe(0);
     },
     TIMEOUT_MS,
   );
