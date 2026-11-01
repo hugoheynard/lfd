@@ -42,6 +42,9 @@
   align-items: flex-end;
   gap: var(--fold-space-xs);
   align-self: start;
+  /* Au téléphone la colonne est `auto` : sans borne, « à sortir dans la
+     journée » la tirait sur une ligne et écrasait le nom du produit. */
+  max-inline-size: 14ch;
   font-family: var(--fold-font-mono);
   font-variant-numeric: tabular-nums;
   text-align: right;
@@ -70,11 +73,27 @@
   color: var(--fold-color-text-muted);
 }
 
+/*
+  « à sortir avant 13 h 30 », « à sortir dans la journée » : plus large que la
+  colonne de 112 px. Le texte revient à la ligne, à droite, sans déborder.
+*/
+.wl-left-when,
+.wl-left-step,
+.wl-left-total {
+  max-inline-size: 100%;
+  overflow-wrap: anywhere;
+  text-wrap: balance;
+}
+
 .wl-left-when {
   font-size: var(--fold-text-xs);
   font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text-muted);
-  white-space: nowrap;
+}
+
+.wl-left-step {
+  font-size: var(--fold-text-2xs);
+  color: var(--fold-color-text-muted);
 }
 
 .wl-left-total {
@@ -82,7 +101,6 @@
   border-top: 1px solid var(--fold-color-border-subtle);
   font-size: var(--fold-text-xs);
   color: var(--fold-color-text-secondary);
-  white-space: nowrap;
 }
 
 .wl-what {

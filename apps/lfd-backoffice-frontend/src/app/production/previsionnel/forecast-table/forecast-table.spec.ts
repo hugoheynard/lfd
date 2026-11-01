@@ -233,6 +233,68 @@ describe('ForecastTable', () => {
     expect(el.querySelectorAll('[data-foot]')).toHaveLength(1);
   });
 
+  /**
+   * Régression (Hugo, 2026-11-01) : toute la colonne d'une tranche dépassée
+   * était rouge, même la case d'un produit qui y était tenu. Le rouge dit
+   * « dépassée ET il manque des pièces ».
+   */
+  it('ne rougit dans une tranche dépassée que les produits qui y manquent', () => {
+    const fixture = TestBed.createComponent(ForecastTable);
+    fixture.componentRef.setInput('footRows', []);
+    fixture.componentRef.setInput('columns', [
+      {
+        key: '07:00',
+        overline: null,
+        title: 'avant 07:00',
+        figure: '240',
+        mention: 'Dépassée · 11 min',
+        settled: true,
+        peak: false,
+        tone: 'overdue',
+        foot: [],
+      },
+    ]);
+    const cellOf = (state: 'over' | 'met', label: string) => ({
+      quantity: 120,
+      label: '120',
+      pieces: 120,
+      exceptional: false,
+      resupply: 0,
+      progress: { label, state, stateLabel: state === 'over' ? 'Dépassée' : 'Tenue' },
+    });
+    fixture.componentRef.setInput('rayons', [
+      {
+        family: null,
+        label: 'Hors catalogue',
+        quantities: [240],
+        totalUnits: 240,
+        intertitles: new Map(),
+        lines: [
+          {
+            sku: 'CRO',
+            productName: 'Croissant',
+            saleUnit: 'piece',
+            totalUnits: 120,
+            cells: [cellOf('over', '0 / 120')],
+          },
+          {
+            sku: 'PAC',
+            productName: 'Pain au chocolat',
+            saleUnit: 'piece',
+            totalUnits: 120,
+            cells: [cellOf('met', '120 / 120')],
+          },
+        ],
+      },
+    ]);
+    fixture.detectChanges();
+    const tones = [...(fixture.nativeElement as HTMLElement).querySelectorAll('.pv-qty')].map(
+      (node) => node.getAttribute('data-tone'),
+    );
+
+    expect(tones).toEqual(['overdue', null]);
+  });
+
   it('porte le total des pièces et le nombre de commandes, chacun sur sa ligne', () => {
     const fixture = mount();
     const pieces = [...fixture.nativeElement.querySelectorAll('.pv-foot-total')].map(

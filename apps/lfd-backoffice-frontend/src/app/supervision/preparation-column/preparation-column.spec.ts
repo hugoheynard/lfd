@@ -5,6 +5,7 @@ import { describe, expect, it } from 'vitest';
 import type { PreparationBoard, ShelfCard } from '../preparation-shelves';
 import { lineBadge, type QualityLookup, type QualityRequest } from '../quality-badges';
 import { NO_MATCHES, type SupervisionMatches } from '../supervision-search';
+import { parisToday } from '../../shared/paris-today';
 import { PreparationColumn } from './preparation-column';
 
 function card(key: string, overrides: Partial<ShelfCard> = {}): ShelfCard {
@@ -58,12 +59,14 @@ async function mount(
   board: PreparationBoard,
   showLinks = true,
   matches: SupervisionMatches = NO_MATCHES,
+  date: string | null = null,
 ) {
   TestBed.configureTestingModule({ providers: [provideRouter([])] });
   const fixture = TestBed.createComponent(PreparationColumn);
   fixture.componentRef.setInput('board', board);
   fixture.componentRef.setInput('matches', matches);
   fixture.componentRef.setInput('showLinks', showLinks);
+  fixture.componentRef.setInput('date', date);
   fixture.detectChanges();
   await fixture.whenStable();
   const element: HTMLElement = fixture.nativeElement;
@@ -78,7 +81,44 @@ const BOARD: PreparationBoard = {
   shelvesKnown: true,
 };
 
+/** Le jour de Paris à `days` jours d'aujourd'hui — relatif, jamais un jour du calendrier. */
+const dayFromToday = (days: number): string =>
+  parisToday(new Date(Date.now() + days * 24 * 60 * 60 * 1000));
+
+/** Un rayon dont le pain au chocolat, pas commencé, est attendu avant 7 h. */
+const DUE_AT_SEVEN: PreparationBoard = {
+  ...BOARD,
+  open: [
+    card('Viennoiseries', {
+      pending: card('x').pending.map((line) => ({
+        ...line,
+        deadlines: [{ quantity: 96, before: '07:00' }],
+      })),
+    }),
+  ],
+};
+
 describe('PreparationColumn', () => {
+  // Le rouge : tranche DÉPASSÉE et pièces manquantes (Hugo, 2026-11-01) — un
+  // produit pas commencé encore à l'heure de sa tranche passait au rouge.
+  it('ne rougit pas un produit pas commencé dont la tranche est à venir', async () => {
+    const element = await mount(DUE_AT_SEVEN, true, NO_MATCHES, dayFromToday(2));
+
+    expect(element.querySelector('.line.is-late')).toBeNull();
+  });
+
+  it('rougit un produit qui manque quand sa tranche est dépassée', async () => {
+    const element = await mount(DUE_AT_SEVEN, true, NO_MATCHES, dayFromToday(-2));
+
+    expect(element.querySelectorAll('.line.is-late')).toHaveLength(1);
+  });
+
+  it('ne rougit rien tant que la journée n’est pas connue', async () => {
+    const element = await mount(DUE_AT_SEVEN);
+
+    expect(element.querySelector('.line.is-late')).toBeNull();
+  });
+
   it('liste les lignes à sortir sans case à cocher', async () => {
     const element = await mount(BOARD);
 

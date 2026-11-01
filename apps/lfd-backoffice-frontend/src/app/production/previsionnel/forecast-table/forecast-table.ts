@@ -1,8 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, input, signal } from '@angular/core';
 import { FoldBadgeComponent, FoldSurfaceDirective } from 'fold-ng';
 
-import type { ForecastRayon } from '../previsionnel-matrix';
-import type { ForecastColumn, ForecastFootRow } from '../forecast-column';
+import type { ForecastCell, ForecastRayon } from '../previsionnel-matrix';
+import type { ForecastColumn, ForecastColumnTone, ForecastFootRow } from '../forecast-column';
 
 /**
  * Au-delà de ce nombre de références, la grille passe en **densité réduite**.
@@ -86,6 +86,21 @@ export class ForecastTable {
   protected readonly rowMin = computed(
     () => `max(60rem, calc(230px + ${String(this.columns().length)} * 6rem))`,
   );
+
+  /**
+   * Le ton d'une case produit : celui de sa colonne, sauf le rouge d'une
+   * tranche dépassée sur un produit qui, LUI, n'y manque de rien. Le rouge dit
+   * « dépassée et il manque des pièces », pas « la colonne est dépassée »
+   * (Hugo, 2026-11-01) : une case « Tenue » sur fond rouge se lisait en retard.
+   */
+  protected cellTone(
+    cell: ForecastCell,
+    column: ForecastColumn | undefined,
+  ): ForecastColumnTone | null {
+    const tone = column?.tone ?? null;
+    const state = cell.progress?.state ?? null;
+    return tone === 'overdue' && state !== null && state !== 'over' ? null : tone;
+  }
 
   protected isFolded(label: string): boolean {
     return this.folded().has(label);

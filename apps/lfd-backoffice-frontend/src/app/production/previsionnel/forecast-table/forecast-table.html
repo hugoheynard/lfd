@@ -96,7 +96,7 @@
             <div
               class="pv-cell pv-qty"
               [class.is-peak]="columns()[column]?.peak"
-              [attr.data-tone]="columns()[column]?.tone"
+              [attr.data-tone]="cellTone(cell, columns()[column])"
             >
               @if (cell.quantity > 0) {
                 <!-- La journée par tranche : « sorti / à sortir » toujours, et le

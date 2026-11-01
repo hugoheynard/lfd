@@ -2,6 +2,7 @@ import {
   ChangeDetectionStrategy,
   Component,
   computed,
+  inject,
   input,
   model,
   output,
@@ -38,6 +39,10 @@ import { countLabel } from '../supervision-labels';
 import { NO_MATCHES } from '../supervision-search';
 import { SUPERVISION_LINKS } from '../supervision-links';
 import { SaleQuantityPipe } from '../../shared/sale-quantity/sale-quantity.pipe';
+import { tranchesNow } from '../../production/previsionnel/day-tranches-section/day-tranches-section';
+import { WorkshopClock } from '../../production/fiche-atelier/workshop-clock';
+import { currentStep, isLate } from '../../production/fiche-atelier/workshop-deadlines';
+import { parisToday } from '../../shared/paris-today';
 
 /** Une ligne du détail, et la liste du serveur qui la porte. */
 interface ShelfLine {
@@ -70,18 +75,24 @@ interface ShelfLine {
     FoldIconComponent,
     FoldMeterComponent,
   ],
+  providers: [WorkshopClock],
   templateUrl: './preparation-column.html',
   styleUrl: './preparation-column.scss',
 })
 export class PreparationColumn {
+  private readonly clock = inject(WorkshopClock);
+
   readonly board = input.required<PreparationBoard>();
   readonly showLinks = input(false);
   readonly narrow = input(false);
   /** Ce que la recherche du masthead désigne — les produits des commandes trouvées. */
   readonly matches = input(NO_MATCHES);
   /** Les pastilles du contrôle qualité, par SKU. */
-  /** Ceux dont l'absence a fait dépasser un créneau par nous : bord rouge. */
-  readonly lateSkus = input<ReadonlySet<string>>(new Set());
+  /**
+   * La journée supervisée, `AAAA-MM-JJ` — l'heure des tranches s'y lit ;
+   * `null` tant qu'elle n'est pas connue : rien n'est alors en retard.
+   */
+  readonly date = input<string | null>(null);
   readonly quality = input(NO_QUALITY);
   /** `b2b_supervision:write` : le bouton « Contrôler ». */
   readonly canCheck = input(false);
@@ -94,6 +105,26 @@ export class PreparationColumn {
   readonly shelfFilter = model<string>(ALL_SHELVES);
 
   protected readonly link = SUPERVISION_LINKS.preparation;
+
+  /** « Maintenant » pour les tranches du jour regardé — la règle de la fiche. */
+  private readonly now = computed(() => {
+    const date = this.date();
+    return date === null ? null : tranchesNow(date, parisToday(), this.clock.minutes());
+  });
+
+  /**
+   * Le bord rouge d'une ligne : son palier en cours est DÉPASSÉ et il y manque
+   * des pièces — la règle même de la fiche d'atelier (`isLate`). Jusqu'au
+   * 2026-11-01, il suivait les commandes au créneau de retrait dépassé « par
+   * nous » : un produit pas commencé, encore à l'heure de SA tranche, passait
+   * au rouge (Hugo, 2026-11-01).
+   */
+  protected isLate(line: WorkshopLine): boolean {
+    const now = this.now();
+    return (
+      now !== null && !line.done && isLate(currentStep(line, line.produced), line.produced, now)
+    );
+  }
   protected readonly empty = computed(
     () => this.board().open.length === 0 && this.board().finished.length === 0,
   );

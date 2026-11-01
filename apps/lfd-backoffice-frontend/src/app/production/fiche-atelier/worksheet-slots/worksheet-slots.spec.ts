@@ -44,10 +44,14 @@ const TARTE = line({
   deadlines: [{ quantity: 24, before: '07:45' }],
 });
 
-function render(lines: readonly WorkshopLine[], compact = false): ComponentFixture<WorksheetSlots> {
+function render(
+  lines: readonly WorkshopLine[],
+  compact = false,
+  now = NOW,
+): ComponentFixture<WorksheetSlots> {
   const fixture = TestBed.createComponent(WorksheetSlots);
   fixture.componentRef.setInput('lines', lines);
-  fixture.componentRef.setInput('now', NOW);
+  fixture.componentRef.setInput('now', now);
   fixture.componentRef.setInput('compact', compact);
   fixture.detectChanges();
   return fixture;
@@ -64,6 +68,23 @@ describe('la vue par tranche', () => {
     expect(el.textContent).toContain('Dépassée · 11 min');
     expect(el.textContent).toContain('La prochaine');
     expect(el.textContent).toContain('Tenue');
+  });
+
+  // Le rouge : tranche DÉPASSÉE et pièces manquantes, rien d'autre (Hugo, 2026-11-01).
+  it('ne rougit pas un produit pas commencé dont la tranche est à l’heure', () => {
+    const el: HTMLElement = render([TARTE], false, 7 * 60).nativeElement;
+
+    expect(states(el)).toEqual(['next']);
+    expect(el.querySelector('.ws-slot.is-over')).toBeNull();
+    expect(el.querySelector('fold-meter.alert')).toBeNull();
+  });
+
+  it('rougit un produit qui manque dans une tranche dépassée', () => {
+    const el: HTMLElement = render([TARTE], false, 8 * 60).nativeElement;
+
+    expect(states(el)).toEqual(['over']);
+    expect(el.querySelector('.ws-slot.is-over')).not.toBeNull();
+    expect(el.querySelector('fold-meter.alert')).not.toBeNull();
   });
 
   it('dit le manque du palier et « palier 2 sur 2 · plaque de 30 »', () => {

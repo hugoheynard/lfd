@@ -94,15 +94,39 @@ describe('une ligne, vue par produit', () => {
   it('ouvre sur le manque du palier en cours, son heure et le total', () => {
     const el: HTMLElement = render(line()).nativeElement;
 
-    expect(text(el, '.wl-left-big')).toBe('60 / 120');
+    expect(text(el, '.wl-left-big')).toBe('60');
     expect(text(el, '.wl-left-when')).toBe('à sortir avant 9 h 30');
+    expect(text(el, '.wl-left-step')).toBe('palier 2 sur 2 · 120');
     // Régression (2026-11-01) : « total : 60 / 240 » était le RESTE sur le
     // total, et « 365 / 365 » sur une ligne pas commencée se lisait « fini ».
     expect(text(el, '.wl-left-total')).toBe('180 / 240 sorties');
     expect(text(el, '.wl-figures')).toBe('180 / 240 sorties');
   });
 
-  it('ne dit pas « / q » quand la ligne n’a qu’un palier', () => {
+  /**
+   * Régression « max/max » (Hugo, 2026-11-01) : sur une ligne pas commencée,
+   * le gros chiffre disait « 365 / 365 » — le reste sur le palier — et se
+   * lisait comme une ligne finie.
+   */
+  it('ne dit jamais « max / max » sur une ligne pas commencée', () => {
+    const el: HTMLElement = render(
+      line({
+        quantity: 365,
+        produced: 0,
+        remaining: 365,
+        deadlines: [{ quantity: 365, before: '13:30' }],
+      }),
+      false,
+      7 * 60,
+    ).nativeElement;
+
+    expect(text(el, '.wl-left-big')).toBe('365');
+    expect(text(el, '.wl-left-big')).not.toContain('/');
+    expect(text(el, '.wl-left-when')).toBe('à sortir avant 13 h 30');
+    expect(text(el, '.wl-left-total')).toBe('0 / 365 sorties');
+  });
+
+  it('ne dit pas le palier quand la ligne n’en a qu’un', () => {
     const el: HTMLElement = render(
       line({
         quantity: 50,
@@ -115,6 +139,7 @@ describe('une ligne, vue par produit', () => {
     ).nativeElement;
 
     expect(text(el, '.wl-left-big')).toBe('50');
+    expect(el.querySelector('.wl-left-step')).toBeNull();
   });
 
   it('dit « ✓ fait » sur une ligne complète', () => {
@@ -130,6 +155,19 @@ describe('une ligne, vue par produit', () => {
 
     expect(text(el, '.wl-late')).toBe('En retard · 56 min');
     expect(el.classList.contains('is-late')).toBe(true);
+  });
+
+  // Le rouge : tranche DÉPASSÉE et pièces manquantes, rien d'autre (Hugo, 2026-11-01).
+  it('ne rougit pas une ligne pas commencée dont le palier est à l’heure', () => {
+    const el: HTMLElement = render(
+      line({ produced: 0, remaining: 240 }),
+      false,
+      6 * 60,
+    ).nativeElement;
+
+    expect(el.classList.contains('is-late')).toBe(false);
+    expect(el.querySelector('.wl-late')).toBeNull();
+    expect(el.querySelector('.m-seg.alert')).toBeNull();
   });
 
   it('n’est pas en retard quand le palier dépassé est tenu', () => {

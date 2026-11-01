@@ -49,7 +49,6 @@ import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '
 import { SupervisionHighlight } from '../supervision-highlight';
 import { DayTransfersReader } from '../../livraison/day-transfers.reader';
 import { SupervisionReads } from '../supervision-reads';
-import { lateSkusOf } from '../supervision-search';
 import { scrollToHits } from '../supervision-hits';
 import {
   landingColumnOf,
@@ -177,10 +176,6 @@ export class SupervisionPage {
     const view = dataOf(this.preparation());
     return view === null ? null : preparationBoard(view);
   });
-
-  protected readonly lateSkus = computed(() =>
-    lateSkusOf(dataOf(this.packing()), this.handoverBoard()),
-  );
 
   protected readonly packingBoard = computed(() => {
     const view = dataOf(this.packing());

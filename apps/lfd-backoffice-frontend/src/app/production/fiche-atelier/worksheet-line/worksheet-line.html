@@ -14,16 +14,13 @@
       >total {{ figure(line().produced) }} / {{ figure(line().quantity) }}</span
     >
   } @else {
-    <span class="wl-left-big"
-      >{{ figure(stepLeft()) }}
-      @if (stepOf(); as of) {
-        <span class="wl-left-of">{{ of }}</span>
-      }
-    </span>
-    <!-- « à sortir avant 7 h », puis ce qui est SORTI sur le total : « total :
-         365 / 365 » (le reste sur le total) se lisait comme une ligne finie,
-         en rouge quand la tranche était dépassée (Hugo, 2026-11-01). -->
+    <!-- Le reste du palier SEUL en gros : « 365 / 365 » (reste / palier) se
+         lisait comme une ligne finie (Hugo, 2026-11-01). -->
+    <span class="wl-left-big">{{ figure(stepLeft()) }}</span>
     <span class="wl-left-when">à sortir {{ stepBefore() }}</span>
+    @if (stepOf(); as of) {
+      <span class="wl-left-step">{{ of }}</span>
+    }
     <span class="wl-left-total"
       >{{ figure(line().produced) }} / {{ figure(line().quantity) }} sorties</span
     >

@@ -92,10 +92,20 @@ export class WorksheetLine {
   /** Le chiffre en gros : le manque du palier en cours. */
   protected readonly stepLeft = computed(() => stepRemaining(this.line(), this.line().produced));
 
-  /** « / 120 », seulement quand la ligne porte plusieurs paliers. */
+  /**
+   * « palier 1 sur 2 · 120 », seulement quand la ligne porte plusieurs paliers.
+   * Jamais « reste / palier » en gros : « 365 / 365 » sur une ligne pas
+   * commencée se lisait comme une ligne finie (Hugo, 2026-11-01).
+   */
   protected readonly stepOf = computed(() => {
     const current = this.current();
-    return current !== null && this.steps().length > 1 ? `/ ${String(current.q)}` : null;
+    const all = this.steps();
+    if (current === null || all.length < 2) {
+      return null;
+    }
+    // `current` vient d'un second calcul des paliers : on le retrouve par sa borne.
+    const rank = all.findIndex((step) => step.to === current.to) + 1;
+    return `palier ${String(rank)} sur ${String(all.length)} · ${this.figure(current.q)}`;
   });
 
   protected readonly stepBefore = computed(() => beforeLabel(this.current()?.before ?? null));

@@ -261,8 +261,9 @@
     0 2px 8px -3px color-mix(in srgb, var(--fold-ref-amber-700) 35%, transparent);
 }
 
-// Et si ce sac a déjà fait dépasser un créneau PAR NOUS : un liseré alerte
-// épais à gauche, et rien d'autre (Hugo, 2026-09-28).
+// Et si sa tranche est DÉPASSÉE et qu'il y manque des pièces : un liseré
+// alerte épais à gauche, et rien d'autre (Hugo, 2026-09-28 ; règle de la
+// fiche depuis le 2026-11-01).
 .line.is-late {
   box-shadow: inset 3px 0 0 var(--fold-color-alert);
 }

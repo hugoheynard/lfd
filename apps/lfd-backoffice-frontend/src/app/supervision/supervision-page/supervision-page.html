@@ -218,7 +218,7 @@
               [showLinks]="showLinks().preparation"
               [narrow]="narrow()"
               [matches]="highlight.matches()"
-              [lateSkus]="lateSkus()"
+              [date]="worksheet()?.date ?? null"
               [quality]="quality.lookup()"
               [canCheck]="quality.canCheckLines()"
               (check)="check($event)"
