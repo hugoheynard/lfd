@@ -3,6 +3,8 @@ import { RouterOutlet } from '@angular/router';
 import { FoldSurfaceDirective, FoldViewNavComponent } from 'fold-ng';
 
 import { PermissionsStore } from '../../auth/permissions.store';
+import { WorkshopClock } from '../fiche-atelier/workshop-clock';
+import { WorkshopWallClock } from '../fiche-atelier/workshop-wall-clock/workshop-wall-clock';
 import { permittedProdManagerViews } from './prod-manager-views';
 
 /**
@@ -15,10 +17,13 @@ import { permittedProdManagerViews } from './prod-manager-views';
  * (`inset: 0`) et défile elle-même : le prévisionnel est un mur qui descend
  * jusqu'au bas de la fenêtre, et il lui faut une hauteur définie sous la bande.
  */
+
 @Component({
   selector: 'app-prod-manager-workspace-page',
   changeDetection: ChangeDetectionStrategy.OnPush,
-  imports: [FoldSurfaceDirective, FoldViewNavComponent, RouterOutlet],
+  imports: [FoldSurfaceDirective, FoldViewNavComponent, RouterOutlet, WorkshopWallClock],
+  // Une horloge par espace ouvert : elle s'arrête quand on le quitte.
+  providers: [WorkshopClock],
   templateUrl: './prod-manager-workspace-page.html',
   styleUrl: './prod-manager-workspace-page.scss',
 })

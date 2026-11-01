@@ -13,6 +13,16 @@
    celui de la barre de l'app — la bande du prévisionnel la prolonge. */
 .masthead {
   flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--fold-space-md);
   padding: var(--fold-space-sm) var(--fold-page-gutter) 0;
   background: var(--fold-color-bg-header);
+}
+
+/* L'horloge à droite des onglets, dans l'encre du bandeau. */
+.masthead-clock {
+  flex: 0 0 auto;
+  color: var(--fold-color-text);
 }
