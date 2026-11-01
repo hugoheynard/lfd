@@ -43,7 +43,8 @@ import { OrderPresumedOrderReader } from "./infrastructure/order-presumed-order.
 import { PrismaRecentEmailRepliesReader } from "./infrastructure/prisma-recent-email-replies.reader.js";
 import { GetContactSettingsHandler } from "./application/queries/get-contact-settings.handler.js";
 import { GetCustomerRequestPhotoHandler } from "./application/queries/get-customer-request-photo.handler.js";
-import { GetPublicContactSettingsHandler } from "./application/queries/get-public-contact-settings.handler.js";
+import { GetMyShopContactSettingsHandler } from "./application/queries/get-my-shop-contact-settings.handler.js";
+import { GetShopContactSettingsHandler } from "./application/queries/get-shop-contact-settings.handler.js";
 import { ListContactPhonesHandler } from "./application/queries/list-contact-phones.handler.js";
 import { ListCustomerRequestsHandler } from "./application/queries/list-customer-requests.handler.js";
 import { ListOfferedRequestReasonsHandler } from "./application/queries/list-offered-request-reasons.handler.js";
@@ -69,6 +70,7 @@ import { ContactAnonymizationSweepController } from "./http/contact-anonymizatio
 import { ContactMessagesController } from "./http/contact-messages.controller.js";
 import { ContactController } from "./http/contact.controller.js";
 import { MyContactMessagesController } from "./http/my-contact-messages.controller.js";
+import { MyContactSettingsController } from "./http/my-contact-settings.controller.js";
 import { MyOrderProblemsController } from "./http/my-order-problems.controller.js";
 import { DocumentRequestPhotoStore } from "./infrastructure/document-request-photo.store.js";
 import { OrderReportableOrderReader } from "./infrastructure/order-reportable-order.reader.js";
@@ -112,6 +114,7 @@ import {
     ContactController,
     ContactMessagesController,
     MyContactMessagesController,
+    MyContactSettingsController,
     MyOrderProblemsController,
     MyOrderChangeRequestsController,
     AdminOrderChangeRequestsController,
@@ -159,7 +162,8 @@ import {
     ListContactPhonesHandler,
     UpdateContactSettingsHandler,
     GetContactSettingsHandler,
-    GetPublicContactSettingsHandler,
+    GetShopContactSettingsHandler,
+    GetMyShopContactSettingsHandler,
     MailCustomerRequest,
     MailOrderChangeApplied,
     MailOrderChangeRefused,

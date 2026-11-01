@@ -31,7 +31,7 @@ import { CartFulfillmentDays } from '../shop/cart-fulfillment-days.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { ShopPriceBasis } from '../shop/shop-price-basis.service';
 import { ShopWarmup } from '../shop/warmup/shop-warmup';
-import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
+import type { AudienceContactSettingsView } from '@lfd/contracts/shop-values';
 import { ContactSettingsStore, NO_CONTACT_SETTINGS } from '../shop/contact-settings.store';
 import type { StorefrontPageState } from '../shop/storefront/shop-storefront.store';
 import { ShopStorefront } from '../shop/storefront/shop-storefront.store';
@@ -196,7 +196,7 @@ function line(productName: string, quantity: number, sku = productName): Custome
 let homeState: StorefrontPageState | null = null;
 
 /** Le réglage de contact servi au montage suivant ; le défaut est vide. */
-let contactSettings: PublicContactSettingsView = NO_CONTACT_SETTINGS;
+let contactSettings: AudienceContactSettingsView = NO_CONTACT_SETTINGS;
 
 /** Le double des points du dernier montage, pour faire varier son état. */
 let lastPoints = new FakePoints();
@@ -218,7 +218,11 @@ async function mount(
       { provide: ServicePoints, useValue: store },
       {
         provide: ClientAudience,
-        useValue: { shown: signal('b2c' as const), servedAsPro: signal(false) },
+        // L'audience établie d'un pro (société active) : sa carte de contact est celle des pros.
+        useValue: {
+          shown: signal(who === 'pro' ? ('b2b' as const) : ('b2c' as const)),
+          servedAsPro: signal(false),
+        },
       },
       { provide: ClientOrderHistory, useValue: { orders: signal(orders) } },
       { provide: ShopCatalogue, useValue: boutique },
@@ -587,10 +591,7 @@ describe('AccueilPublic — les trois états', () => {
     const text = (fr: string) => ({ fr, en: '', it: '' });
     contactSettings = {
       ...NO_CONTACT_SETTINGS,
-      cards: {
-        ...NO_CONTACT_SETTINGS.cards,
-        b2c: { ...NO_CONTACT_SETTINGS.cards.b2c, kicker: text('Au Labo') },
-      },
+      card: { ...NO_CONTACT_SETTINGS.card, kicker: text('Au Labo') },
     };
     const fixture = await mount(POINTS, 'visiteur');
     contactSettings = NO_CONTACT_SETTINGS;

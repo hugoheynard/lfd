@@ -1,7 +1,7 @@
 import {
   contactAudienceQuerySchema,
   type CustomerAudience,
-  type PublicContactSettingsView,
+  type AudienceContactSettingsView,
   type PublicRequestReasonView,
   requestKindQuerySchema,
   type RequestKind,
@@ -9,11 +9,19 @@ import {
 import { Controller, Get, Query } from "@nestjs/common";
 import { QueryBus } from "@nestjs/cqrs";
 import { Throttle } from "@nestjs/throttler";
+import { z } from "zod";
 
 import { Public } from "../../../platform/auth/public.decorator.js";
 import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
-import { GetPublicContactSettingsQuery } from "../application/queries/get-public-contact-settings.query.js";
+import { GetShopContactSettingsQuery } from "../application/queries/get-shop-contact-settings.query.js";
 import { ListOfferedRequestReasonsQuery } from "../application/queries/list-offered-request-reasons.query.js";
+
+/**
+ * `?audience=pro` — la SEULE valeur admise (vitrine pro). Absent = les
+ * particuliers. Toute autre valeur est refusée (400) plutôt que ramenée aux
+ * particuliers : une faute de frappe ne doit pas servir en silence une autre carte.
+ */
+const settingsAudienceSchema = z.enum(["pro"]).optional();
 
 /**
  * Lecture **publique** des demandes clients : la carte de contact, et les
@@ -26,11 +34,17 @@ import { ListOfferedRequestReasonsQuery } from "../application/queries/list-offe
 export class ContactController {
   constructor(private readonly queries: QueryBus) {}
 
-  /** Les numéros publiés et les textes des cartes, en un appel. */
+  /**
+   * La carte d'UNE audience déclarée et ses numéros — particuliers par défaut,
+   * pros avec `?audience=pro` — jamais celle de l'autre public (Hugo,
+   * 2026-11-01). Un client connecté lit la sienne par `GET /me/contact-settings`.
+   */
   @Get("contact-settings")
-  settings(): Promise<PublicContactSettingsView> {
-    return this.queries.execute<GetPublicContactSettingsQuery, PublicContactSettingsView>(
-      new GetPublicContactSettingsQuery(),
+  settings(
+    @Query("audience", new ZodQuery(settingsAudienceSchema)) audience: "pro" | undefined,
+  ): Promise<AudienceContactSettingsView> {
+    return this.queries.execute<GetShopContactSettingsQuery, AudienceContactSettingsView>(
+      new GetShopContactSettingsQuery(audience === "pro" ? "b2b" : "b2c"),
     );
   }
 

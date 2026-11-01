@@ -98,6 +98,7 @@
   "test/company-siren.e2e-spec.ts": 4777,
   "test/company-standing-readers.e2e-spec.ts": 21402,
   "test/company-standing-workspace.e2e-spec.ts": 7357,
+  "test/contact-audience-information.e2e-spec.ts": 14400,
   "test/contact-messages.e2e-spec.ts": 6000,
   "test/contacts.e2e-spec.ts": 4493,
   "test/counter-customers.e2e-spec.ts": 4479,

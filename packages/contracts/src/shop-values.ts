@@ -58,7 +58,7 @@ export {
   type OrderChangeRequestStatusResponse,
   type OrderChangeRequestStatusView,
   type PublicContactPhoneView,
-  type PublicContactSettingsView,
+  type AudienceContactSettingsView,
   type PublicRequestReasonView,
   REQUEST_PHOTO_BOUNDS,
 } from "./contact.values.js";

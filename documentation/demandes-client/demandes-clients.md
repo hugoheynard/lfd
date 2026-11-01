@@ -127,8 +127,12 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
   interrupteurs, « Afficher le numéro de téléphone » et « Afficher le
   formulaire de contact » (affichés par défaut, migration
   `20261026120000_la_carte_de_contact_sans_contact`). Numéro coupé : aucun
-  numéro sur cette carte, et la route publique ne sert pas un numéro qu'aucune
-  carte de son public n'affiche (`servedPhones`). Formulaire coupé : pas de
+  numéro sur cette carte, et la boutique ne reçoit aucun numéro pour elle
+  (`audienceContactSettingsOf`). Depuis le 2026-11-01, la boutique ne reçoit
+  qu'**une** carte et ses numéros : `GET /contact-settings` (particuliers,
+  `?audience=pro` pour la vitrine pro) et `GET /me/contact-settings` (audience
+  établie : société active → pros, sinon particuliers) —
+  `promotions/plan-chaque-audience-son-information.md`, § 7.1. Formulaire coupé : pas de
   « Écrire ». Les deux coupés : la carte montre son **message sans contact**
   (fr, en, it ; « Nous vous contacterons bientôt »), sans repli —
   `ContactSettings.pose` refuse le réglage s'il est vide en français
@@ -156,6 +160,7 @@ la priorité, la cloche, le compteur et l'anonymisation ne bougent pas.
 | `GET /contact-settings`, `GET /request-reasons?kind=&audience=`                                 | publiques                                                             |
 | `POST /contact-messages`                                                                        | publique, débit par IP                                                |
 | `POST /me/contact-messages`                                                                     | client, débit par IP                                                  |
+| `GET /me/contact-settings` (2026-11-01)                                                         | client                                                                |
 | `POST /me/orders/:orderId/problems`                                                             | client, débit par compte                                              |
 | `GET                                                                                            | POST /admin/request-reasons?kind=`, `PUT …/:id`, `POST …/:id/archive` | `b2b_contact`                  |
 | `GET /admin/customer-requests?status=&kind=`, `POST …/:id/handled`, `GET …/:id/photos/:photoId` | `b2b_contact`                                                         |

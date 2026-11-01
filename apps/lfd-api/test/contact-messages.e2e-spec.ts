@@ -13,7 +13,7 @@ import type {
   ContactSettingsPayload,
   CreatedIdResponse,
   CustomerRequestView,
-  PublicContactSettingsView,
+  AudienceContactSettingsView,
   PublicRequestReasonView,
   RequestReasonPayload,
 } from "@lfd/contracts";
@@ -272,10 +272,10 @@ describe("le staff traite", () => {
   });
 
   it("la carte de contact posée par le staff est servie à la boutique", async () => {
-    const empty = jsonBody<PublicContactSettingsView>(
+    const empty = jsonBody<AudienceContactSettingsView>(
       await visitor().get("/contact-settings").expect(200),
     );
-    expect(empty).toEqual({ phones: [], cards: DEFAULT_CONTACT_SETTINGS.cards });
+    expect(empty).toEqual({ phones: [], card: DEFAULT_CONTACT_SETTINGS.cards.b2c });
 
     const payload: ContactSettingsPayload = {
       cards: {
@@ -309,8 +309,13 @@ describe("le staff traite", () => {
       .expect(400);
 
     expect(
-      jsonBody<PublicContactSettingsView>(await visitor().get("/contact-settings").expect(200)),
-    ).toEqual({ cards: payload.cards, phones: [{ ...shop, number: "04 79 00 00 00" }] });
+      jsonBody<AudienceContactSettingsView>(await visitor().get("/contact-settings").expect(200)),
+    ).toEqual({ card: payload.cards.b2c, phones: [{ ...shop, number: "04 79 00 00 00" }] });
+    expect(
+      jsonBody<AudienceContactSettingsView>(
+        await visitor().get("/contact-settings?audience=pro").expect(200),
+      ),
+    ).toEqual({ card: payload.cards.b2b, phones: [] });
   });
 
   /** Décision de Hugo du 2026-10-26 : une carte peut couper le numéro et le formulaire. */
@@ -340,11 +345,11 @@ describe("le staff traite", () => {
     };
     await staff().put("/admin/contact/settings").send(said).expect(204);
 
-    const served = jsonBody<PublicContactSettingsView>(
+    const served = jsonBody<AudienceContactSettingsView>(
       await visitor().get("/contact-settings").expect(200),
     );
     expect(served.phones.map((phone) => phone.number)).not.toContain("04 79 22 22 22");
-    expect(served.cards.b2c).toMatchObject({
+    expect(served.card).toMatchObject({
       showPhone: false,
       showForm: false,
       noContactMessage: soon,
@@ -382,8 +387,8 @@ describe("une carte n'existe pas sans geste", () => {
 
     const archive = await staff().post(`/admin/contact/phones/${pro}/archive`).expect(409);
     expect(JSON.stringify(archive.body)).toContain("Carte pros");
-    const shown = jsonBody<PublicContactSettingsView>(
-      await visitor().get("/contact-settings").expect(200),
+    const shown = jsonBody<AudienceContactSettingsView>(
+      await visitor().get("/contact-settings?audience=pro").expect(200),
     );
     expect(shown.phones.map((phone) => phone.number)).toContain("04 79 33 33 33");
   });

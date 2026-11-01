@@ -1,8 +1,8 @@
 import type {
   ActivationGate,
+  AudienceContactSettingsView,
   FeatureLevelsView,
   PlacedOrderResponse,
-  PublicContactSettingsView,
   PublicStorefrontPageView,
   PublishedLegalDocumentView,
   PublishedShopCopyView,
@@ -73,10 +73,10 @@ const EMPTY_CARD = {
   showForm: true,
   noContactMessage: EMPTY_TEXT,
 } as const;
-/** Cartes vides : la boutique garde alors ses propres textes — ceux qu'on édite. */
-const CONTACT_SETTINGS: PublicContactSettingsView = {
+/** Une carte vide : la boutique garde alors ses propres textes — ceux qu'on édite. */
+const CONTACT_SETTINGS: AudienceContactSettingsView = {
   phones: [],
-  cards: { b2b: EMPTY_CARD, b2c: EMPTY_CARD },
+  card: EMPTY_CARD,
 };
 const ACTIVATION: ActivationGate = { canActivate: true, blocking: [], checklist: [] };
 
@@ -194,8 +194,8 @@ export const DEMO_ROUTES: readonly DemoRoute[] = [
   },
   {
     method: 'GET',
-    pattern: /^\/contact-settings$/u,
-    serves: 'des cartes de contact vides — la boutique garde ses textes',
+    pattern: /^\/(me\/)?contact-settings$/u,
+    serves: 'une carte de contact vide — la boutique garde ses textes',
     answer: () => ok(CONTACT_SETTINGS),
   },
   {

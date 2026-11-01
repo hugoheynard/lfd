@@ -325,9 +325,9 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
     expect(browse.getAttribute('href')).toBe('/boutique#pro');
   });
 
-  it('le contact lit le réglage public, sans jeton, et « Appeler » compose le numéro', async () => {
+  it('le contact lit la carte des pros sur la route publique, sans jeton, et « Appeler » compose le numéro', async () => {
     const http = TestBed.inject(HttpTestingController);
-    const req = http.expectOne((r) => r.url.endsWith('/contact-settings'));
+    const req = http.expectOne((r) => r.url.endsWith('/contact-settings?audience=pro'));
     expect(req.request.headers.has('Authorization')).toBe(false);
     req.flush({
       ...NO_CONTACT_SETTINGS,
@@ -343,26 +343,24 @@ describe('ProLanding — l’accueil pro public (/pro)', () => {
   /** Régression : sans numéro réglé, le contact pro montrait un numéro inventé (retiré le 2026-10-26). */
   it('sans numéro réglé, aucun « Appeler »', async () => {
     const http = TestBed.inject(HttpTestingController);
-    http.expectOne((r) => r.url.endsWith('/contact-settings')).flush(NO_CONTACT_SETTINGS);
+    http
+      .expectOne((r) => r.url.endsWith('/contact-settings?audience=pro'))
+      .flush(NO_CONTACT_SETTINGS);
     await settle();
     expect(maybe('pro-call')).toBeNull();
   });
 
   it('carte pros sans numéro ni formulaire : son message, sans bouton (2026-10-26)', async () => {
     const http = TestBed.inject(HttpTestingController);
-    const pros = NO_CONTACT_SETTINGS.cards.b2b;
     http
-      .expectOne((r) => r.url.endsWith('/contact-settings'))
+      .expectOne((r) => r.url.endsWith('/contact-settings?audience=pro'))
       .flush({
         ...NO_CONTACT_SETTINGS,
-        cards: {
-          ...NO_CONTACT_SETTINGS.cards,
-          b2b: {
-            ...pros,
-            showPhone: false,
-            showForm: false,
-            noContactMessage: { fr: 'Nous vous contacterons bientôt', en: '', it: '' },
-          },
+        card: {
+          ...NO_CONTACT_SETTINGS.card,
+          showPhone: false,
+          showForm: false,
+          noContactMessage: { fr: 'Nous vous contacterons bientôt', en: '', it: '' },
         },
       });
     await settle();

@@ -9,7 +9,6 @@ import {
   FoldPanelRef,
 } from 'fold-ng';
 
-import { ClientAudience } from '../../../client/client-audience.service';
 import { ClientLocale } from '../../../client/client-locale.service';
 import {
   ContactSettingsStore,
@@ -52,17 +51,12 @@ export class ContactPanel {
   private readonly panelHost = inject(FoldPanelHostService);
 
   private readonly settings = inject(ContactSettingsStore);
-  private readonly audience = inject(ClientAudience).shown;
   private readonly locale = inject(ClientLocale).current;
 
-  /** Les numéros réglés au back-office pour ce public ; aucun → aucun numéro (2026-10-26). */
-  protected readonly phones = computed(() =>
-    phonesFor(this.settings.settings(), this.audience(), this.locale()),
-  );
-  /** « Afficher le formulaire de contact » de la carte de ce public (2026-10-26). */
-  protected readonly canWrite = computed(
-    () => this.settings.settings().cards[this.audience()].showForm !== false,
-  );
+  /** Les numéros de la carte servie à qui regarde ; aucun → aucun numéro (2026-10-26). */
+  protected readonly phones = computed(() => phonesFor(this.settings.settings(), this.locale()));
+  /** « Afficher le formulaire de contact » de la carte servie (2026-10-26). */
+  protected readonly canWrite = computed(() => this.settings.settings().card.showForm);
   protected readonly telHref = telHref;
 
   constructor() {

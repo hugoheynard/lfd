@@ -142,6 +142,8 @@ export class AccueilPublic {
 
   /** Un visiteur est `b2c` — et le défaut penche de ce côté tant qu'on ne sait pas. */
   private readonly servedAsPro = inject(ClientAudience).servedAsPro;
+  /** L'audience dont la carte de contact est servie : le repli suit la même. */
+  private readonly contactAudience = inject(ClientAudience).shown;
 
   private readonly auth = inject(AuthFacade);
   private readonly identity = inject(ClientIdentity);
@@ -286,21 +288,23 @@ export class AccueilPublic {
   /**
    * CE QUE DIT LA BANDE DE CONTACT, selon à qui elle parle.
    *
-   * Le réglage du back-office (`GET /contact-settings`) l'emporte, champ par
-   * champ ; vide, le repli partagé `CONTACT_CARD_DEFAULTS` (titre et phrase
-   * par public ; aucun surtitre) (plan « Nous écrire », §4 ; Hugo,
-   * 2026-10-09 : « pas de fallback trop compliqué »).
+   * La carte servie à qui regarde (`GET /contact-settings` pour un visiteur,
+   * `GET /me/contact-settings` connecté : UNE carte, Hugo 2026-11-01)
+   * l'emporte, champ par champ ; vide, le repli partagé `CONTACT_CARD_DEFAULTS`
+   * de la même audience — celle que le serveur établit (`ClientAudience`,
+   * société active → pros) (plan « Nous écrire », §4 ; Hugo, 2026-10-09 :
+   * « pas de fallback trop compliqué »).
    */
   protected readonly contact = computed<ContactBandCopy>(() => {
     const contact = this.c().contact;
     const settings = this.contactSettings.settings();
-    const card = this.pro() ? settings.cards.b2b : settings.cards.b2c;
-    const fallback = this.pro() ? CONTACT_CARD_DEFAULTS.cards.b2b : CONTACT_CARD_DEFAULTS.cards.b2c;
+    const { card } = settings;
+    const fallback = CONTACT_CARD_DEFAULTS.cards[this.contactAudience()];
     const locale = this.locale.current();
     return {
       // Pas de surtitre réglé, pas de surtitre (Hugo, 2026-10-09).
       kicker: localizedOr(card.kicker, locale, ''),
-      ...contactFor(settings, this.pro() ? 'b2b' : 'b2c', locale, contact),
+      ...contactFor(settings, locale, contact),
       title: localizedOr(card.title, locale, fallback.title[locale]),
       who: localizedOr(card.body, locale, fallback.body[locale]),
     };

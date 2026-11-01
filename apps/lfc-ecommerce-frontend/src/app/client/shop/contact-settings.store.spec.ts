@@ -1,22 +1,38 @@
-import type { PublicContactSettingsView } from '@lfd/contracts/shop-values';
+import { provideHttpClient } from '@angular/common/http';
+import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
+import { signal } from '@angular/core';
+import { TestBed } from '@angular/core/testing';
+import type { AudienceContactSettingsView } from '@lfd/contracts/shop-values';
+import { of } from 'rxjs';
 import { describe, expect, it } from 'vitest';
 
-import { contactFor, NO_CONTACT_SETTINGS, phonesFor } from './contact-settings.store';
+import { AuthFacade } from '../../auth/auth.facade';
+import {
+  provideWorkspace,
+  workspaceDouble,
+  type WorkspaceDouble,
+} from '../client-workspace.fixture';
+import {
+  contactFor,
+  ContactSettingsStore,
+  NO_CONTACT_SETTINGS,
+  phonesFor,
+} from './contact-settings.store';
 
 const label = (fr: string, en = '') => ({ fr, en, it: '' });
 
-const SETTINGS: PublicContactSettingsView = {
+/** Une carte servie : ses numéros, déjà ceux de son audience (`both` compris). */
+const SETTINGS: AudienceContactSettingsView = {
   ...NO_CONTACT_SETTINGS,
   phones: [
     { label: label('Service commercial', 'Sales'), number: '04 79 00 00 01', audience: 'b2b' },
     { label: label('Boutique'), number: '04 79 00 00 02', audience: 'both' },
-    { label: label('Particuliers'), number: '04 79 00 00 03', audience: 'b2c' },
   ],
 };
 
 describe('phonesFor', () => {
   it('garde `both` et le public de l’écran, dans l’ordre, libellé dans la langue (fr à défaut)', () => {
-    expect(phonesFor(SETTINGS, 'b2b', 'en')).toEqual([
+    expect(phonesFor(SETTINGS, 'en')).toEqual([
       { label: 'Sales', number: '04 79 00 00 01' },
       { label: 'Boutique', number: '04 79 00 00 02' },
     ]);
@@ -27,31 +43,28 @@ describe('phonesFor', () => {
    * inventé, en production (retiré le 2026-10-26, décision de Hugo).
    */
   it('aucun numéro réglé → aucun numéro, jamais un repli', () => {
-    expect(phonesFor(NO_CONTACT_SETTINGS, 'b2c', 'fr')).toEqual([]);
+    expect(phonesFor(NO_CONTACT_SETTINGS, 'fr')).toEqual([]);
   });
 
-  it('seuls les numéros de l’autre public → aucun numéro', () => {
-    expect(
-      phonesFor({ ...NO_CONTACT_SETTINGS, phones: [SETTINGS.phones[0]!] }, 'b2c', 'fr'),
-    ).toEqual([]);
+  it('carte qui coupe le numéro → aucun numéro, même servi', () => {
+    expect(phonesFor({ ...SETTINGS, card: { ...SETTINGS.card, showPhone: false } }, 'fr')).toEqual(
+      [],
+    );
   });
 });
 
 describe('contactFor — la carte selon ses deux interrupteurs (Hugo, 2026-10-26)', () => {
   const WORDS = { call: 'Appeler', write: 'Écrire' };
-  const withB2c = (
-    b2c: Partial<PublicContactSettingsView['cards']['b2c']>,
-  ): PublicContactSettingsView => ({
-    ...SETTINGS,
-    cards: { ...SETTINGS.cards, b2c: { ...SETTINGS.cards.b2c, ...b2c } },
-  });
+  const withCard = (
+    card: Partial<AudienceContactSettingsView['card']>,
+  ): AudienceContactSettingsView => ({ ...SETTINGS, card: { ...SETTINGS.card, ...card } });
   const SOON = { fr: 'Nous vous contacterons bientôt', en: 'We will contact you soon', it: '' };
 
   it('numéro et formulaire : les deux, aux mots du dictionnaire, sans message', () => {
-    expect(contactFor(withB2c({ noContactMessage: SOON }), 'b2c', 'fr', WORDS)).toEqual({
+    expect(contactFor(withCard({ noContactMessage: SOON }), 'fr', WORDS)).toEqual({
       phones: [
+        { label: 'Service commercial', number: '04 79 00 00 01' },
         { label: 'Boutique', number: '04 79 00 00 02' },
-        { label: 'Particuliers', number: '04 79 00 00 03' },
       ],
       call: 'Appeler',
       write: 'Écrire',
@@ -61,30 +74,135 @@ describe('contactFor — la carte selon ses deux interrupteurs (Hugo, 2026-10-26
   });
 
   it('numéro coupé, formulaire affiché : aucun numéro, « Écrire » reste', () => {
-    const shown = contactFor(withB2c({ showPhone: false }), 'b2c', 'fr', WORDS);
+    const shown = contactFor(withCard({ showPhone: false }), 'fr', WORDS);
     expect(shown).toMatchObject({ phones: [], canWrite: true, noContact: '' });
   });
 
   it('ni numéro ni formulaire : le message réglé, dans la langue (fr à défaut)', () => {
-    const silent = withB2c({ showPhone: false, showForm: false, noContactMessage: SOON });
-    expect(contactFor(silent, 'b2c', 'en', WORDS)).toMatchObject({
+    const silent = withCard({ showPhone: false, showForm: false, noContactMessage: SOON });
+    expect(contactFor(silent, 'en', WORDS)).toMatchObject({
       phones: [],
       canWrite: false,
       noContact: 'We will contact you soon',
     });
-    expect(contactFor(silent, 'b2c', 'it', WORDS).noContact).toBe('Nous vous contacterons bientôt');
+    expect(contactFor(silent, 'it', WORDS).noContact).toBe('Nous vous contacterons bientôt');
   });
 
   it('les mots des boutons réglés l’emportent sur le dictionnaire', () => {
     const shown = contactFor(
-      withB2c({
+      withCard({
         callLabel: { fr: 'Nous appeler', en: '', it: '' },
         writeLabel: { fr: '', en: 'Email us', it: '' },
       }),
-      'b2c',
       'en',
       WORDS,
     );
     expect(shown).toMatchObject({ call: 'Nous appeler', write: 'Email us' });
+  });
+});
+
+/**
+ * Hugo, 2026-11-01 : chaque audience ne reçoit que sa carte. Un visiteur lit
+ * la route publique (la vitrine pro y ajoute `?audience=pro`) ; un client
+ * connecté lit `/me/contact-settings`, relue — et vidée d'abord — quand il
+ * change d'espace.
+ */
+describe('ContactSettingsStore — la carte, par lecteur', () => {
+  const url = (path: string) => (request: { url: string }) => request.url.endsWith(path);
+  const PROS = { ...SETTINGS, card: { ...SETTINGS.card, title: label('Carte pros') } };
+  const flushed = () => new Promise((resolve) => setTimeout(resolve, 0));
+
+  function boot(authenticated: boolean, workspace: WorkspaceDouble = workspaceDouble()) {
+    const signedIn = signal(authenticated);
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspace),
+        {
+          provide: AuthFacade,
+          useValue: { isAuthenticated: signedIn, accessToken$: () => of('jeton') },
+        },
+      ],
+    });
+    return {
+      store: TestBed.inject(ContactSettingsStore),
+      http: TestBed.inject(HttpTestingController),
+      signedIn,
+    };
+  }
+
+  it('un visiteur lit la carte des particuliers, sans jeton', async () => {
+    const { store, http } = boot(false);
+    const hydrating = store.hydrate();
+    const request = http.expectOne(url('/contact-settings'));
+    expect(request.request.headers.has('Authorization')).toBe(false);
+    request.flush(SETTINGS);
+    await hydrating;
+
+    expect(store.settings()).toEqual(SETTINGS);
+    http.verify();
+  });
+
+  it('la vitrine pro lit la carte des pros par `?audience=pro`', async () => {
+    const { store, http } = boot(false);
+    const hydrating = store.hydrate('pro');
+    http.expectOne(url('/contact-settings?audience=pro')).flush(PROS);
+    await hydrating;
+
+    expect(store.settings().card.title.fr).toBe('Carte pros');
+    http.verify();
+  });
+
+  it('un client connecté lit la sienne, avec son jeton, quelle que soit la vitrine', async () => {
+    const { store, http } = boot(true);
+    const hydrating = store.hydrate('pro');
+    const request = http.expectOne(url('/me/contact-settings'));
+    expect(request.request.headers.get('Authorization')).toBe('Bearer jeton');
+    request.flush(SETTINGS);
+    await hydrating;
+
+    expect(store.settings()).toEqual(SETTINGS);
+    http.verify();
+  });
+
+  /**
+   * Une audience, une information (2026-11-01) : la carte de l'ancien lecteur
+   * ne se montre pas au nouveau — ni pendant la relecture, ni après son échec.
+   */
+  it('se vide au changement d’espace, et reste vide si la relecture échoue', async () => {
+    const workspace = workspaceDouble();
+    const { store, http } = boot(true, workspace);
+    const hydrating = store.hydrate();
+    http.expectOne(url('/me/contact-settings')).flush(PROS);
+    await hydrating;
+
+    workspace.choose('cmp_pro');
+    TestBed.tick();
+    expect(store.settings()).toEqual(NO_CONTACT_SETTINGS);
+    http
+      .expectOne(url('/me/contact-settings'))
+      .flush('panne', { status: 500, statusText: 'Server Error' });
+    await flushed();
+
+    expect(store.settings()).toEqual(NO_CONTACT_SETTINGS);
+    http.verify();
+  });
+
+  it('à la déconnexion, relit la route publique et ne garde rien du compte', async () => {
+    const { store, http, signedIn } = boot(true);
+    const hydrating = store.hydrate();
+    http.expectOne(url('/me/contact-settings')).flush(PROS);
+    await hydrating;
+
+    signedIn.set(false);
+    TestBed.tick();
+    expect(store.settings()).toEqual(NO_CONTACT_SETTINGS);
+    http.expectOne(url('/contact-settings')).flush(SETTINGS);
+    await flushed();
+
+    expect(store.settings()).toEqual(SETTINGS);
+    http.verify();
   });
 });

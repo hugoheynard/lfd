@@ -2277,7 +2277,7 @@ export type {
   OrderProblemDetailsView,
   OrderProblemPayload,
   PublicContactPhoneView,
-  PublicContactSettingsView,
+  AudienceContactSettingsView,
   PublicRequestReasonView,
   RequestKind,
   RequestPriority,

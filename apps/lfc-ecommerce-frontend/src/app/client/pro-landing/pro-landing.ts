@@ -139,15 +139,15 @@ export class ProLanding {
 
   /**
    * Les numéros et les deux verbes du contact, tels que `/bienvenue` les
-   * compose pour un PRO (`accueil-public.ts`, `contact`, relu le 2026-10-19) :
-   * le réglage public `GET /contact-settings` côté `b2b` ; aucun numéro réglé,
-   * aucun geste d'appel (plus de repli, Hugo 2026-10-26). Aucune lecture qui
-   * demande une connexion.
+   * compose (`accueil-public.ts`, `contact`, relu le 2026-10-19) : la carte
+   * des pros, `GET /contact-settings?audience=pro`, pour un visiteur ; un
+   * client connecté lit la sienne (`GET /me/contact-settings`, Hugo,
+   * 2026-11-01). Aucun numéro réglé, aucun geste d'appel (plus de repli,
+   * Hugo 2026-10-26).
    */
   protected readonly contact = computed(() => {
     return contactFor(
       this.contactSettings.settings(),
-      'b2b',
       this.locale.current(),
       this.welcome().contact,
     );
@@ -255,7 +255,7 @@ export class ProLanding {
     // double pas (Hugo, 2026-10-19).
     chrome.cart.set(false);
     chrome.entry.set(false);
-    void this.contactSettings.hydrate();
+    void this.contactSettings.hydrate('pro');
     // La page `home` de la vitrine, comme `/bienvenue` : relue si le lecteur change.
     effect(() => {
       this.storefront.reader();

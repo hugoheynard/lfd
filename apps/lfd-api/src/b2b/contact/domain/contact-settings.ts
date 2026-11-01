@@ -1,8 +1,4 @@
-import {
-  CONTACT_BOUNDS,
-  type ContactCardText,
-  type PublicContactSettingsView,
-} from "@lfd/contracts";
+import { CONTACT_BOUNDS, type ContactCardText, type ContactSettingsView } from "@lfd/contracts";
 
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
 import { assertCardsReachable, CARD_NAMES, type ReachPhone } from "./contact-reach.js";
@@ -28,7 +24,7 @@ export class ContactSettings {
   ) {}
 
   static pose(input: {
-    readonly settings: Pick<PublicContactSettingsView, "cards">;
+    readonly settings: Pick<ContactSettingsView, "cards">;
     readonly at: Date;
     readonly author: StaffTrace;
     /** Les numéros réglés : une carte qui affiche le numéro doit en avoir un. */

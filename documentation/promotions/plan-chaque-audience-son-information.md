@@ -143,3 +143,28 @@ une fois connectés. Donc :
   `?audience=pro`, `?audience=pending` → 400, pro actif, société en
   attente, particulier inscrit — réponse sérialisée sans clé par clientèle),
   unitaires des deux requêtes et de la projection.
+
+## 7. Les trois décisions de Hugo (2026-11-01)
+
+1. **La carte de contact suit la même règle** : `GET /contact-settings`
+   servait les deux cartes et les numéros des deux publics à tout visiteur.
+   Même forme que les points de retrait : la route publique sert **une**
+   carte et ses numéros — particuliers par défaut, `?audience=pro` pour la
+   vitrine pro (publique par choix) ; une route connectée
+   (`GET /me/contact-settings`) sert celle de l'audience **établie** (pro
+   d'une société active → pros, sinon particuliers). Vue distincte
+   `AudienceContactSettingsView { phones, card }` : aucun champ par public.
+   Le back-office garde la vue des deux cartes.
+2. **« Connectez-vous pour −X % »** à l'invité : **gardé** — une incitation,
+   qui n'annonce jamais plus que ce qu'il recevra.
+3. **Les horaires de retrait des pros** visibles d'un visiteur : **gardés** —
+   des horaires, pas une condition commerciale.
+
+**§ 7.1 bâti le 2026-11-01** : `GET /contact-settings` (particuliers, ou
+`?audience=pro`) et `GET /me/contact-settings` (audience établie par
+`ContactSenderAudience`, la règle des messages connectés) rendent
+`AudienceContactSettingsView` ; test
+`apps/lfd-api/test/contact-audience-information.e2e-spec.ts`. Une société en
+attente lit la carte des particuliers (même règle que ses messages, à la
+différence des points de retrait qui ont une remise « en cours
+d'inscription ») ; un client connecté sur la vitrine pro lit sa propre carte.

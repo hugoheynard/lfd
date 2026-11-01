@@ -176,18 +176,26 @@ export interface PublicContactPhoneView {
   readonly label: ContactLocalizedText;
   /** Tel que saisi ; la boutique en fait un `tel:` en ne gardant que `+` et les chiffres. */
   readonly number: string;
-  /** La boutique ne montre que `both` et le public de l'espace courant. */
+  /** `both`, ou l'audience servie : jamais celui de l'autre public. */
   readonly audience: ContactAudience;
 }
 
-/** La carte de contact de la boutique, telle que la route publique la sert (`GET /contact-settings`). */
-export interface PublicContactSettingsView {
+/**
+ * **La carte de contact d'UNE audience**, telle que la boutique la lit —
+ * `GET /contact-settings` (particuliers ; `?audience=pro` pour la vitrine pro)
+ * et `GET /me/contact-settings` (l'audience établie du client connecté).
+ *
+ * Aucun champ par public (Hugo, 2026-11-01 : « chaque audience n'a le droit
+ * qu'à son information ») : la carte de l'autre public et ses numéros ne
+ * partent pas. Le back-office garde les deux cartes (`ContactSettingsView`).
+ */
+export interface AudienceContactSettingsView {
   /**
-   * Les numéros actifs, par rang. Vide = aucun numéro affiché (plus de repli,
-   * 2026-10-26). Un numéro qu'aucune carte de son public n'affiche n'est pas servi.
+   * Les numéros de cette audience (`both` compris), actifs, par rang. Vide si
+   * la carte coupe le numéro, ou si aucun n'est réglé (plus de repli, 2026-10-26).
    */
   readonly phones: readonly PublicContactPhoneView[];
-  readonly cards: { readonly b2b: ContactCardText; readonly b2c: ContactCardText };
+  readonly card: ContactCardText;
 }
 
 /**
@@ -196,7 +204,7 @@ export interface PublicContactSettingsView {
  * (`/admin/contact/phones`).
  */
 export interface ContactSettingsView {
-  readonly cards: PublicContactSettingsView["cards"];
+  readonly cards: { readonly b2b: ContactCardText; readonly b2c: ContactCardText };
   /** `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   readonly updatedBy: string | null;

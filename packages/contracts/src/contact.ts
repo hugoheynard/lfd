@@ -43,7 +43,7 @@ export {
   type OrderChangeRequestStatusView,
   type OrderProblemDetailsView,
   type PublicContactPhoneView,
-  type PublicContactSettingsView,
+  type AudienceContactSettingsView,
   type PublicRequestReasonView,
   type RequestKind,
   type RequestPriority,
