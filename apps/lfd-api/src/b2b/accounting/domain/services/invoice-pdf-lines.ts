@@ -1,12 +1,17 @@
 import type { InvoiceLineInput, InvoiceState } from "../entities/invoice.types.js";
 import { type InvoiceSheet, LEFT, MM, MUTED, type TextStyle } from "./invoice-pdf-sheet.js";
 import { euros, quantityLabel, unitPrice, vatRateLabel } from "./invoice-pdf-wording.js";
+import { priceDiscountNote } from "./invoice-price-discount.js";
 
 /**
  * **Les lignes de la facture** (E3b) — une par produit, par prix et par taux
  * (D2), telles que la pièce les a figées : désignation et référence,
  * quantité et unité (H87 pièce, KGM kilogramme ; millièmes entiers), prix
  * unitaire HT, taux, montant HT. Rien n'est recalculé.
+ *
+ * Une ligne remisée par une promotion « dans le prix affiché » porte, sous sa
+ * désignation, le prix brut et la remise (taux et nom) : le prix unitaire de
+ * la colonne est le net (plan `plan-remise-par-ligne.md`, § 18.6, point 2).
  *
  * Une page qui déborde rouvre l'en-tête des colonnes : une ligne lue seule
  * en haut d'une page deux doit dire ce que sont ses nombres.
@@ -61,12 +66,20 @@ function drawHead(sheet: InvoiceSheet): void {
   sheet.advance(height + ROW_GAP + 1);
 }
 
+/** Sous la désignation : la référence, puis la remise de promotion s'il y en a une. */
+function detailOf(line: InvoiceLineInput): string {
+  const discount = line.priceDiscount;
+  return discount === undefined
+    ? `Réf. ${line.sku}`
+    : `Réf. ${line.sku}\nPrix brut HT ${unitPrice(discount.grossUnitPriceMillicents)} · ${priceDiscountNote(line.unitPriceMillicents, discount)}`;
+}
+
 function rowHeight(sheet: InvoiceSheet, line: InvoiceLineInput): number {
   const [label] = COLUMNS;
   const width = (label?.width ?? 0) - GUTTER;
   return (
     sheet.heightOf(line.label, { ...CELL, width }) +
-    sheet.heightOf(`Réf. ${line.sku}`, { ...REFERENCE, width })
+    sheet.heightOf(detailOf(line), { ...REFERENCE, width })
   );
 }
 
@@ -81,7 +94,7 @@ function drawRow(sheet: InvoiceSheet, line: InvoiceLineInput): void {
     const style = { ...CELL, width: column.width - GUTTER, align: column.align };
     const used = sheet.put(column.cell(line), columnX(index), top, style);
     if (index === 0) {
-      sheet.put(`Réf. ${line.sku}`, columnX(index), top + used, {
+      sheet.put(detailOf(line), columnX(index), top + used, {
         ...REFERENCE,
         width: style.width,
       });

@@ -1,5 +1,6 @@
 import type { InvoiceVatBreakdown } from "@lfd/money";
 
+import type { InvoicePriceDiscount } from "../services/invoice-price-discount.js";
 import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
 import type { StatementBuyer, StatementSeller } from "./billing-statement.js";
 
@@ -51,6 +52,13 @@ export interface InvoiceLineInput {
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly amountCents: number;
+  /**
+   * La remise d'une promotion « dans le prix affiché » (plan
+   * `plan-remise-par-ligne.md`, § 18.6) : le prix brut et ses noms ; le net
+   * est `unitPriceMillicents`. Absent = aucune remise à chiffrer, et toute
+   * facture émise avant ce lot.
+   */
+  readonly priceDiscount?: InvoicePriceDiscount;
 }
 
 /**

@@ -211,6 +211,36 @@ describe('ProductTile', () => {
   });
 
   /**
+   * 🔴 **Le hors taxe d'un pro est EXACT, barré compris** (plan
+   * `plan-remise-par-ligne.md`, § 18.6, option (b), 2026-11-01) : −12 % sur
+   * 0,93 € fait 0,8184 €, jamais 0,82 €.
+   */
+  it('🔴 écrit le prix exact d’un pro, et le tarif barré dans la même échelle', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [ProductTile],
+      providers: [
+        {
+          provide: ClientCompany,
+          useValue: { company: signal<Partial<CompanyView>>({ status: 'active' }) },
+        },
+      ],
+    });
+    const pro = TestBed.createComponent(ProductTile);
+    pro.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      unitPriceMillicents: 81_840,
+      catalogPriceMillicents: 93_000,
+    });
+    pro.detectChanges();
+    const el = pro.nativeElement as HTMLElement;
+
+    expect(el.querySelector('.price .sr-only')?.textContent?.trim()).toBe(
+      'Ancien prix : 0,93 €, nouveau prix : 0,8184 € HT',
+    );
+  });
+
+  /**
    * 🔴 **Rien n'est barré tant qu'il n'y a rien à barrer.**
    *
    * Le serveur ne remplit `catalogPriceMillicents` que sur les articles où le

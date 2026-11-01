@@ -283,6 +283,38 @@ flowchart LR
   vivent en note (BT-13 n'admet qu'une référence). BG-16 : `CreditorReferenceID`
   (ICS), type 59, `DirectDebitMandateID`. `facturXArithmeticViolations(xml)`
   rejoue BR-CO-10 à 16, BR-S-08, BR-S-09.
+- **Les lignes, sans prix moyen** (2026-11-01, plan
+  [`plan-remise-par-ligne.md`](../../promotions/plan-remise-par-ligne.md) § 18.6,
+  point 3) : `aggregateInvoiceLines` (`invoice-lines.ts`) ne regroupe les bons
+  d'un même article, prix, taux, éligibilité et remise de promotion en UNE
+  ligne que si Σ des montants des bons vaut `lineTotalCents(prix, quantité
+totale)`. Sinon, une ligne par bon, chacune à son prix et son montant
+  (trente bons de 5 pièces à 0,8184 € : trente lignes de 4,09 €, pas une
+  ligne de 150 pièces à un prix rattrapé). Le total ne bouge pas : la TVA se
+  calcule sur Σ des lignes par taux, inchangée. `billedUnitPriceMillicents`
+  (`invoice-net-price.ts`) ne joue plus que sur la ligne d'UN bon dont le HT
+  n'est pas prix × quantité — celle d'un particulier, HT déduit d'une
+  étiquette TTC arrondie.
+- **La remise d'une promotion « dans le prix affiché »** (même plan, point 2 ;
+  CGI art. 242 nonies A) : lue dans la trace de prix figée de la ligne de
+  commande (`order_lines.base_price_millicents`, `pricing_steps`,
+  `pricing_floored`, `pricing_clamped_to_zero` —
+  `invoice-line-price-discount.columns.ts`, `invoice-price-discount.ts`) ; une
+  ligne de BL la reprend de la ligne de commande au même article et au même
+  prix. Elle est portée par la ligne émise (`priceDiscount` : prix brut et
+  noms, colonne JSON `lines`, additive) et écrite en **BT-148** (prix brut) +
+  **BT-147** (rabais unitaire, brut − net exact), le nom et le taux en note
+  de ligne **BT-127** (« Remise 12 % : … ») ; BT-146 reste le net exact et
+  BT-131 le montant des bons. Choix contre une remise de ligne BG-27 : celle-ci
+  aurait fait de BT-146 le prix brut et de BT-131 un montant moins une remise
+  arrondie au centime, recalculée — la recomposition des bons (F6) se perdait.
+  Le PDF l'écrit sous la désignation (« Prix brut HT 0,93 € · Remise 12 % :
+  … »). On se tait (aucune remise chiffrée) quand la différence brut − net ne
+  serait pas celle de la promotion : plancher, prix ramené à zéro, geste après
+  la promotion, trace absente ou d'avant le 2026-09-09, prix émis rattrapé.
+  Validé par le Schematron EN 16931, le XSD Factur-X et la CIUS-FR
+  (témoin `promotion-dans-le-prix`) ; **pas encore par Mustang** (pas de Java
+  sur le poste du bâti).
 - **PDF/A-3b** : `renderInvoicePdf` (`domain/services/invoice-pdf.ts`,
   `facturx-pdf-document.ts`, `facturx-xmp.ts`, `invoice-pdf-*.ts`), `pdfkit`
   0.20.2, PDF 1.7. Le XML est joint octet pour octet (`factur-x.xml`,

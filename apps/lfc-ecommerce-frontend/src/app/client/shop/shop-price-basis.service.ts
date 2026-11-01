@@ -4,7 +4,7 @@ import type { ShopItemView } from '@lfd/contracts';
 import { unitPriceCents } from '@lfd/money';
 
 import { ClientCompany } from '../client-company.service';
-import { formatCents } from '../format-money';
+import { formatCents, formatMillicents } from '../format-money';
 import { ProVisit } from './pro-visit.service';
 import { isSoldByWeight } from './sale-unit';
 
@@ -46,7 +46,8 @@ export class ShopPriceBasis {
 
 /**
  * **Le prix unitaire d'un article tel que le rayon l'écrit**, dans l'assiette
- * choisie : le TTC servi, ou le HT arrondi au centime. Lu par la vignette et
+ * choisie : le TTC servi, ou le HT EXACT d'un pro (« 0,8184 € », plan
+ * `plan-remise-par-ligne.md`, § 18.6 — option (b)). Lu par la vignette et
  * par la carte de suggestion du panier — une seule mise en forme, pour qu'un
  * même article ne s'affiche pas à deux prix.
  */
@@ -57,7 +58,7 @@ export function shelfPriceLabel(
 ): string {
   const amount = showsTtc
     ? formatCents(item.unitPriceTtcCents)
-    : formatCents(unitPriceCents(item.unitPriceMillicents));
+    : formatMillicents(item.unitPriceMillicents);
   // Au poids, le prix servi EST le prix au kilo (P4) : « 12,40 € / kg ».
   return isSoldByWeight(item) ? `${amount} ${perKilogram}` : amount;
 }
@@ -80,10 +81,31 @@ export function perKiloHintLabel(
   if (isSoldByWeight(item)) {
     return null;
   }
-  const cents = showsTtc
-    ? (item.publicPricePerKgTtcCents ?? null)
-    : item.proPricePerKgMillicents == null
+  const ttc = item.publicPricePerKgTtcCents ?? null;
+  const ht = item.proPricePerKgMillicents ?? null;
+  const amount = showsTtc
+    ? ttc === null
       ? null
-      : unitPriceCents(item.proPricePerKgMillicents);
-  return cents === null ? null : `${formatCents(cents)} ${perKilogram} ${basisSuffix}`;
+      : formatCents(ttc)
+    : ht === null
+      ? null
+      : formatMillicents(ht);
+  return amount === null ? null : `${amount} ${perKilogram} ${basisSuffix}`;
+}
+
+/**
+ * **Le tarif barré** dans l'assiette de qui regarde : au centime pour un
+ * particulier (inchangé), exact pour un pro — même échelle que le prix servi
+ * à côté de lui (§ 18.6, option (b)).
+ */
+export function struckPriceLabel(
+  catalogMillicents: number | undefined,
+  showsTtc: boolean,
+): string | null {
+  if (catalogMillicents === undefined) {
+    return null;
+  }
+  return showsTtc
+    ? formatCents(unitPriceCents(catalogMillicents))
+    : formatMillicents(catalogMillicents);
 }

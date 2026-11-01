@@ -199,6 +199,39 @@ describe("renderFacturXml — quantité au kilo et prix à cinq décimales", () 
   });
 });
 
+describe("renderFacturXml — une promotion dans le prix affiché (plan-remise-par-ligne, § 18.6)", () => {
+  const croissant: InvoiceLineInput = {
+    ...line("CROI", 5.5, 409, 5),
+    unitPriceMillicents: 81_840,
+    priceDiscount: { grossUnitPriceMillicents: 93_000, labels: ["Printemps"] },
+  };
+  const plain = line("JUS", 20, 500);
+  const lines = [croissant, plain];
+  const xml = renderFacturXml(Invoice.issue(issueInput({ lines, vat: breakdownOf(lines) })));
+
+  it("pose BT-148 brut, BT-147 rabais et BT-146 net exact ; le montant reste celui du bon", () => {
+    expect(xml).toContain(
+      "<ram:SpecifiedLineTradeAgreement><ram:GrossPriceProductTradePrice><ram:ChargeAmount>0.93</ram:ChargeAmount>" +
+        "<ram:AppliedTradeAllowanceCharge><ram:ChargeIndicator><udt:Indicator>false</udt:Indicator></ram:ChargeIndicator>" +
+        "<ram:ActualAmount>0.1116</ram:ActualAmount></ram:AppliedTradeAllowanceCharge></ram:GrossPriceProductTradePrice>" +
+        "<ram:NetPriceProductTradePrice><ram:ChargeAmount>0.8184</ram:ChargeAmount>",
+    );
+    expect(xml).toContain("<ram:LineTotalAmount>4.09</ram:LineTotalAmount>");
+  });
+
+  it("nomme la promotion et son taux en note de ligne (BT-127)", () => {
+    expect(xml).toContain(
+      "<ram:IncludedNote><ram:Content>Remise 12 % : Printemps</ram:Content></ram:IncludedNote>",
+    );
+  });
+
+  it("ne touche ni BT-106 ni les bases par taux : les règles arithmétiques passent", () => {
+    expect(xml.match(/GrossPriceProductTradePrice>/gu)).toHaveLength(2);
+    expect(facturXArithmeticViolations(xml)).toEqual([]);
+    expect(xml).toContain("<ram:LineTotalAmount>9.09</ram:LineTotalAmount><ram:ChargeTotalAmount>");
+  });
+});
+
 describe("renderFacturXml — échappement et adresse de livraison", () => {
   const tricky: InvoiceLineInput = {
     ...line("PAIN", 5.5, 1_000, 2),

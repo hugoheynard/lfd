@@ -90,6 +90,28 @@ describe('CartProductLine', () => {
   });
 
   /**
+   * 🔴 **Le prix unitaire d'un pro est EXACT** (plan `plan-remise-par-ligne.md`,
+   * § 18.6, option (b), décision de Hugo du 2026-11-01) : arrondi à 0,82 €,
+   * 5 × 0,82 = 4,10 € ne tombait pas sur la ligne de 4,09 €.
+   */
+  it('🔴 un pro lit 0,8184 € HT, et 5 pièces font la ligne de 4,09 €', () => {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      imports: [CartProductLine],
+      providers: [
+        {
+          provide: ClientCompany,
+          useValue: { company: signal<Partial<CompanyView>>({ status: 'active' }) },
+        },
+      ],
+    });
+    render(5, 409, 432, { unitPriceMillicents: 81_840 });
+
+    expect(text('.unit')).toBe('0,8184 € HT');
+    expect(text('.sum')).toBe('4,09 €');
+  });
+
+  /**
    * 🔴 **La ligne ne multiplie plus rien** : le total lui est DONNÉ, tel que le
    * serveur l'a arrondi. Elle le calculait, ce qui donnait une seconde règle
    * d'arrondi et une multiplication qui deviendrait fausse en silence le jour

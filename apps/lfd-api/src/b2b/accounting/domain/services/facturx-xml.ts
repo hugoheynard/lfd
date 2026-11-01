@@ -10,6 +10,7 @@ import {
 import { documentNotes } from "./facturx-mentions.js";
 import { buyerParty, sellerParty, shipToParty } from "./facturx-parties.js";
 import { headerSettlement, lineTradeTax } from "./facturx-settlement.js";
+import { priceDiscountNote } from "./invoice-price-discount.js";
 
 /**
  * **Le XML Factur-X d'une facture émise** — CII D16B, profil EN 16931 (plan
@@ -120,12 +121,14 @@ function exchangedDocument(state: InvoiceState): string {
 function lineItem(line: InvoiceLineInput, index: number): string {
   return [
     "<ram:IncludedSupplyChainTradeLineItem>",
-    `<ram:AssociatedDocumentLineDocument>${textElement("ram:LineID", String(index + 1))}</ram:AssociatedDocumentLineDocument>`,
+    `<ram:AssociatedDocumentLineDocument>${textElement("ram:LineID", String(index + 1))}${lineNote(line)}</ram:AssociatedDocumentLineDocument>`,
     "<ram:SpecifiedTradeProduct>",
     textElement("ram:SellerAssignedID", line.sku),
     textElement("ram:Name", line.label),
     "</ram:SpecifiedTradeProduct>",
-    "<ram:SpecifiedLineTradeAgreement><ram:NetPriceProductTradePrice>",
+    "<ram:SpecifiedLineTradeAgreement>",
+    grossPrice(line),
+    "<ram:NetPriceProductTradePrice>",
     textElement("ram:ChargeAmount", millicentsPrice(line.unitPriceMillicents)),
     "</ram:NetPriceProductTradePrice></ram:SpecifiedLineTradeAgreement>",
     "<ram:SpecifiedLineTradeDelivery>",
@@ -143,6 +146,50 @@ function lineItem(line: InvoiceLineInput, index: number): string {
     "</ram:SpecifiedLineTradeSettlement>",
     "</ram:IncludedSupplyChainTradeLineItem>",
   ].join("");
+}
+
+/**
+ * **La remise d'une promotion « dans le prix affiché »** (plan
+ * `plan-remise-par-ligne.md`, § 18.6, point 2) : BT-148 prix brut et BT-147
+ * rabais unitaire (`GrossPriceProductTradePrice` / `AppliedTradeAllowanceCharge`),
+ * et non une remise de ligne BG-27.
+ *
+ * Pourquoi : avec BT-147, BT-146 reste le prix net EXACT et BT-131 le montant
+ * repris des bons — ni la somme des BT-131 (= BT-106), ni les bases par taux,
+ * ni la règle R120 ne bougent ; brut − rabais = net au millicentime, sans
+ * arrondi. Une BG-27 aurait obligé BT-146 à devenir le prix brut et BT-131 à
+ * absorber un montant de remise arrondi au centime (BR-DEC-24), recalculé
+ * ligne par ligne — la recomposition des bons (F6) se serait perdue, et
+ * BR-41/42 l'imposent chiffrée et motivée. Le profil EN 16931 n'admet sous
+ * BT-147 ni pourcentage ni motif (réservés au profil EXTENDED) : le nom de la
+ * promotion et son taux vont dans la note de ligne (BT-127).
+ */
+function grossPrice(line: InvoiceLineInput): string {
+  const discount = line.priceDiscount;
+  if (discount === undefined) {
+    return "";
+  }
+  return [
+    "<ram:GrossPriceProductTradePrice>",
+    textElement("ram:ChargeAmount", millicentsPrice(discount.grossUnitPriceMillicents)),
+    "<ram:AppliedTradeAllowanceCharge>",
+    "<ram:ChargeIndicator><udt:Indicator>false</udt:Indicator></ram:ChargeIndicator>",
+    textElement(
+      "ram:ActualAmount",
+      millicentsPrice(discount.grossUnitPriceMillicents - line.unitPriceMillicents),
+    ),
+    "</ram:AppliedTradeAllowanceCharge>",
+    "</ram:GrossPriceProductTradePrice>",
+  ].join("");
+}
+
+/** BT-127 — « Remise 12 % : Promo printemps », quand la ligne porte une remise de promotion. */
+function lineNote(line: InvoiceLineInput): string {
+  const discount = line.priceDiscount;
+  if (discount === undefined) {
+    return "";
+  }
+  return `<ram:IncludedNote>${textElement("ram:Content", priceDiscountNote(line.unitPriceMillicents, discount))}</ram:IncludedNote>`;
 }
 
 function headerAgreement(state: InvoiceState): string {

@@ -958,8 +958,15 @@ deux temps (lecteur, puis écriture).
   main ». Contrôle préalable non fait : les rôles qui avaient
   `lfc_site_settings:write` sans `b2b_pricing:write` (§ 2.15).
 - **Remise par ligne vérifiable par le client, prix barré** :
-  [`plan-remise-par-ligne.md`](plan-remise-par-ligne.md), option documentée,
-  non bâtie.
+  [`plan-remise-par-ligne.md`](plan-remise-par-ligne.md). Son § 18.6 est
+  **bâti le 2026-11-01, non commité** (calcul inchangé) : la boutique pro
+  affiche le prix HT exact (« 0,8184 € », `formatMillicents`) sur la
+  vignette, la fiche, le panier, le tarif barré et le prix au kilo — 5 ×
+  0,8184 = 4,09 €, la ligne ; la facture chiffre la remise d'une promotion
+  « dans le prix affiché » (BT-148/BT-147, note BT-127, PDF) et ne fait plus
+  de prix moyen (une ligne par bon quand le regroupement ne recompose pas) —
+  [`facture-emise.md`](../comptabilite/facturation/facture-emise.md), « Le
+  rendu Factur-X ». Reste du plan (§ 17) : option documentée, non bâtie.
 - **Jours et heures, remises acquises** : études en cours,
   [`plan-jours-et-heures.md`](plan-jours-et-heures.md) et
   [`plan-remises-acquises.md`](plan-remises-acquises.md).

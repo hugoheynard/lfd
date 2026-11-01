@@ -421,6 +421,7 @@
   "test/production-tranches.e2e-spec.ts": 27461,
   "test/production-weight.e2e-spec.ts": 12000,
   "test/production-worksheet.e2e-spec.ts": 8049,
+  "test/promotion-in-price-to-invoice.e2e-spec.ts": 7708,
   "test/promotions-admin.e2e-spec.ts": 13900,
   "test/promotions-audiences.e2e-spec.ts": 15498,
   "test/promotions-basket-cumul-two-rates.e2e-spec.ts": 12328,

@@ -21,8 +21,10 @@ describe('perKiloHintLabel — le prix au kilo sous une pièce', () => {
     expect(hint(PIECE, true)).toMatch(/^15,90\s€ \/ kg TTC$/);
   });
 
-  it('écrit le prix pro HT, arrondi au centime, pour un professionnel', () => {
-    expect(hint(PIECE, false)).toMatch(/^12,35\s€ \/ kg HT$/);
+  // Exact depuis le § 18.6 du plan `plan-remise-par-ligne.md` (option (b),
+  // 2026-11-01) : il valait « 12,35 € », arrondi au centime.
+  it('écrit le prix pro HT EXACT pour un professionnel', () => {
+    expect(hint(PIECE, false)).toMatch(/^12,3456\s€ \/ kg HT$/);
   });
 
   it("ne montre jamais l'autre assiette en repli quand la sienne manque", () => {

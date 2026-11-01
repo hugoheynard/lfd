@@ -11,6 +11,10 @@ import {
   invoiceBasketDiscountsOf,
 } from "./invoice-basket-discounts.columns.js";
 import { warnedOfBasketDiscountFallback } from "./invoice-basket-discount-fallback.warning.js";
+import {
+  ORDER_LINE_PRICE_TRACE_SELECT,
+  priceDiscountOfOrderLine,
+} from "./invoice-line-price-discount.columns.js";
 import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le jour `AAAA-MM-JJ` d'une colonne `@db.Date`, lue à minuit UTC. */
@@ -50,6 +54,7 @@ export const FROZEN_INVOICE_ORDER_SELECT = {
       saleUnit: true,
       lineTotalCents: true,
       pickupDiscountEligible: true,
+      ...ORDER_LINE_PRICE_TRACE_SELECT,
     },
   },
 } satisfies Prisma.OrderSelect;
@@ -66,21 +71,40 @@ export function toFrozenInvoiceOrder(row: FrozenInvoiceOrderRow): FrozenInvoiceO
 /** La même traduction, sans avertir : la base de la lecture facturable, qui avertit sur SON résultat. */
 export function frozenInvoiceOrderOf(row: FrozenInvoiceOrderRow): FrozenInvoiceOrder {
   return {
+    ...frozenInvoiceOrderWithoutLinesOf(row),
+    lines: row.lines.map((line) => frozenLineOf(row.orderNumber, line)),
+  };
+}
+
+type OrderLineRow = FrozenInvoiceOrderRow["lines"][number];
+
+function frozenLineOf(
+  orderNumber: string,
+  line: OrderLineRow,
+): FrozenInvoiceOrder["lines"][number] {
+  const priceDiscount = priceDiscountOfOrderLine(line);
+  return {
+    sku: line.sku,
+    productNameSnapshot: line.productNameSnapshot,
+    unitPriceMillicents: line.unitPriceMillicents,
+    // Lu tel quel (« 5.50 ») : le domaine normalise, jamais l'adaptateur.
+    vatRate: line.vatRate.toString(),
+    quantity: line.quantity,
+    saleUnit: invoiceLineSaleUnitOf(orderNumber, line.sku, line.saleUnit),
+    lineTotalCents: line.lineTotalCents,
+    pickupDiscountEligible: line.pickupDiscountEligible,
+    ...(priceDiscount === undefined ? {} : { priceDiscount }),
+  };
+}
+
+function frozenInvoiceOrderWithoutLinesOf(
+  row: FrozenInvoiceOrderRow,
+): Omit<FrozenInvoiceOrder, "lines"> {
+  return {
     reference: row.orderNumber,
     createdAt: row.createdAt,
     requestedDeliveryDate:
       row.requestedDeliveryDate?.toISOString().slice(0, ISO_DAY_LENGTH) ?? null,
-    lines: row.lines.map((line) => ({
-      sku: line.sku,
-      productNameSnapshot: line.productNameSnapshot,
-      unitPriceMillicents: line.unitPriceMillicents,
-      // Lu tel quel (« 5.50 ») : le domaine normalise, jamais l'adaptateur.
-      vatRate: line.vatRate.toString(),
-      quantity: line.quantity,
-      saleUnit: invoiceLineSaleUnitOf(row.orderNumber, line.sku, line.saleUnit),
-      lineTotalCents: line.lineTotalCents,
-      pickupDiscountEligible: line.pickupDiscountEligible,
-    })),
     discountCents: row.discountCents,
     basketDiscounts: invoiceBasketDiscountsOf(row),
     voucherDiscountCents: row.voucherDiscountCents,

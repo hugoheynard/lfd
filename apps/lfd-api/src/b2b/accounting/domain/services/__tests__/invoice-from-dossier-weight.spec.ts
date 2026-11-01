@@ -57,16 +57,18 @@ describe("invoiceFromDossier — la vente au poids", () => {
     expect(state.lines[0]).toMatchObject({ unitPriceMillicents: PER_KILO, amountCents: 1_543 });
   });
 
-  it("une facture du mois de 30 bons au poids : le montant est Σ des bons, le prix dérivé", () => {
+  // Avant le § 18.6 (plan `plan-remise-par-ligne.md`), ces trente bons
+  // faisaient une ligne à un prix dérivé (12,34765 €/kg) que personne n'avait
+  // payé ; ils font désormais une ligne par bon, au prix des bons, même total.
+  it("une facture du mois de 30 bons au poids : une ligne par bon, au prix des bons, total Σ des bons", () => {
     const bons = Array.from({ length: 30 }, (_, i) => mixedBon(`ORD-${String(i)}`, 1_001));
-    const [weighed] = issued(bons).lines;
+    const weighed = issued(bons).lines.filter((l) => l.unitCode === "KGM");
 
-    expect(weighed).toMatchObject({
-      unitCode: "KGM",
-      quantityThousandths: 30_030,
-      amountCents: 30 * 1_236,
-      unitPriceMillicents: 1_234_765,
-    });
+    expect(weighed).toHaveLength(30);
+    expect(
+      weighed.every((l) => l.unitPriceMillicents === PER_KILO && l.amountCents === 1_236),
+    ).toBe(true);
+    expect(weighed.reduce((total, l) => total + l.amountCents, 0)).toBe(30 * 1_236);
   });
 
   it("un particulier, 50 kg : le HT payé fait foi, le prix net en est dérivé", () => {

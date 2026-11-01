@@ -130,7 +130,9 @@ function toInvoiceState(row: InvoiceRow): InvoiceState {
         ? {}
         : { deliveryNoteNumbers: order.deliveryNoteNumbers }),
     })),
-    lines: read(invoiceLinesSchema, row.lines, "lines"),
+    lines: read(invoiceLinesSchema, row.lines, "lines").map(({ priceDiscount, ...line }) =>
+      priceDiscount === undefined ? line : { ...line, priceDiscount },
+    ),
     vat: read(vatBreakdownSchema, row.vatBreakdown, "vat_breakdown"),
     mentions: read(invoiceMentionsSchema, row.mentions, "mentions"),
     paymentMeans:

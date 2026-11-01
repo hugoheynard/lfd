@@ -1,6 +1,7 @@
 import type { InvoiceVatBreakdown, SaleUnit } from "@lfd/money";
 
 import type { InvoiceUnitCode } from "../value-objects/invoice-unit.js";
+import type { InvoicePriceDiscount } from "./invoice-price-discount.js";
 
 /**
  * Les types du **simulateur de dossier de facturation** (plan
@@ -42,6 +43,12 @@ export interface FrozenInvoiceLine {
    * L5b). Absent = le jour demandé du bon.
    */
   readonly deliveryDate?: string;
+  /**
+   * La promotion « dans le prix affiché » qui a fait ce prix, lue dans la
+   * trace figée de la ligne de commande (`invoice-price-discount.ts`).
+   * Absent = aucune, ou elle ne se chiffre pas honnêtement.
+   */
+  readonly priceDiscount?: InvoicePriceDiscount;
 }
 
 /** Une part de TVA figée sur un bon. */
@@ -133,6 +140,8 @@ export interface InvoiceLine {
    * Absent = éligibles, le cas de toute ligne d'avant les exclusions.
    */
   readonly pickupDiscountEligible?: false;
+  /** La remise de promotion commune aux bons de la ligne — elle fait partie de la clé. */
+  readonly priceDiscount?: InvoicePriceDiscount;
 }
 
 /** Une ligne de livraison de la facture — une par mode présent dans le cycle. */

@@ -81,6 +81,26 @@ export function assertLines(lines: readonly InvoiceLineInput[]): void {
         `taux de TVA ${String(line.vatRate)} illisible`,
       );
     }
+    assertPriceDiscount(line);
+  }
+}
+
+/** Une remise chiffrée a un prix brut entier au-dessus du net, et un nom. */
+function assertPriceDiscount(line: InvoiceLineInput): void {
+  const discount = line.priceDiscount;
+  if (discount === undefined) {
+    return;
+  }
+  if (
+    !isNonNegativeInteger(discount.grossUnitPriceMillicents) ||
+    discount.grossUnitPriceMillicents <= line.unitPriceMillicents ||
+    discount.labels.length === 0 ||
+    discount.labels.some((label) => label.trim() === "")
+  ) {
+    throw new InvalidInvoiceError(
+      `ligne ${line.sku}`,
+      "une remise de promotion porte un prix brut supérieur au prix net et le nom de la promotion",
+    );
   }
 }
 

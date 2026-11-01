@@ -1,10 +1,8 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
 import { FoldBadgeComponent, FoldIconComponent } from 'fold-ng';
 
-import { formatCents } from '../../../client/format-money';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
-import { unitPriceCents } from '@lfd/money';
 import {
   formatSpec,
   type MediaFit,
@@ -25,7 +23,12 @@ import { ShopCatalogue } from '../shop-catalogue.store';
 import { objectPositionOf, tileArtOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, TILE_WIDTHS } from '../media-source';
-import { perKiloHintLabel, shelfPriceLabel, ShopPriceBasis } from '../shop-price-basis.service';
+import {
+  perKiloHintLabel,
+  shelfPriceLabel,
+  ShopPriceBasis,
+  struckPriceLabel,
+} from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { FulfillmentOfferLabels } from '../promotion-offers';
 import { pieceMinimumOf, quantityLabel, saleUnitOf } from '../sale-unit';
@@ -230,15 +233,13 @@ export class ProductTile {
    * prix servi diffère du tarif : l'absence EST la réponse, et la revérifier
    * ici ferait une seconde règle qui pourrait diverger de la sienne.
    *
-   * Formaté comme le prix courant — centimes arrondis — et non en
-   * millicentimes : deux échelles côte à côte se lisent mal, et « 2,1327 € »
-   * barré au-dessus de « 1,73 € » ferait chercher une précision qui n'a pas de
-   * sens sur une vignette.
+   * Formaté comme le prix courant, dans la même échelle : au centime pour un
+   * particulier, exact pour un pro (§ 18.6 du plan `plan-remise-par-ligne.md`,
+   * option (b), 2026-11-01) — deux échelles côte à côte se lisent mal.
    */
-  protected readonly striked = computed(() => {
-    const catalogue = this.product().catalogPriceMillicents;
-    return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
-  });
+  protected readonly striked = computed(() =>
+    struckPriceLabel(this.product().catalogPriceMillicents, this.showsTtc()),
+  );
 
   /** Ce qu'entend un lecteur d'écran à la place des deux prix (RGAA 3.1, lot A5). */
   protected readonly struckPhrase = computed(() => {

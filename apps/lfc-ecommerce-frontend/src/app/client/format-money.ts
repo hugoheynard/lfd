@@ -30,3 +30,28 @@ export function formatCents(cents: number): string {
 export function formatRate(rate: number): string {
   return `${String(rate).replace('.', ',')} %`;
 }
+
+const MILLICENTS_PER_EURO = 100_000;
+const MILLICENT_DIGITS = 5;
+const CENT_DIGITS = 2;
+
+/**
+ * Un prix unitaire en **millicentimes** → « 0,8184 € » : deux décimales au
+ * moins, cinq au plus, zéros de queue retirés au-delà des centimes. Entiers
+ * seulement, aucun flottant.
+ *
+ * C'est le prix HT d'un pro tel qu'il est calculé (plan
+ * `documentation/promotions/plan-remise-par-ligne.md`, § 18.6 — option (b),
+ * décision de Hugo du 2026-11-01) : 5 × 0,8184 € = 4,092 € → 4,09 €, la ligne
+ * du panier. Arrondi au centime (0,82 €), la multiplication ne tombait pas juste.
+ */
+export function formatMillicents(millicents: number): string {
+  const sign = millicents < 0 ? '−' : '';
+  const absolute = Math.abs(millicents);
+  const whole = Math.floor(absolute / MILLICENTS_PER_EURO);
+  let fraction = String(absolute % MILLICENTS_PER_EURO).padStart(MILLICENT_DIGITS, '0');
+  while (fraction.length > CENT_DIGITS && fraction.endsWith('0')) {
+    fraction = fraction.slice(0, -1);
+  }
+  return `${sign}${String(whole)},${fraction} €`;
+}

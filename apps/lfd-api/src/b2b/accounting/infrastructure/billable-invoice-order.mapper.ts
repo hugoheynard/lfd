@@ -16,6 +16,7 @@ import {
   INVOICE_NOTE_DISCOUNTS_SELECT,
   invoiceBasketDiscountsOf,
 } from "./invoice-basket-discounts.columns.js";
+import { priceDiscountOfNoteLine } from "./invoice-line-price-discount.columns.js";
 import { invoiceLineSaleUnitOf } from "./invoice-sale-unit.column.js";
 
 /** Le statut d'un bon de livraison remis (`delivery_note.status`). */
@@ -123,9 +124,7 @@ export function toBillableInvoiceOrder(row: BillableInvoiceOrderRow): FrozenInvo
   // les six autres ; le repli ne sert qu'au typage.
   return warnedOfBasketDiscountFallback({
     ...ordered,
-    lines: fromNotes
-      ? row.deliveryNotes.flatMap((note) => noteLinesOf(row.orderNumber, note))
-      : ordered.lines,
+    lines: fromNotes ? row.deliveryNotes.flatMap((note) => noteLinesOf(row, note)) : ordered.lines,
     discountCents: row.billableDiscountCents ?? ordered.discountCents,
     // Ce qui est facturé est ce qui est parti : les parts des bons remis
     // quand ils en portent, celles de la commande sinon (lot M5).
@@ -150,12 +149,16 @@ export function handedOverNoteNumbersOf(row: {
 }
 
 /** Les lignes d'un BL remis ; celles d'un reste portent son jour (`service_day`, nul au rang 1). */
-function noteLinesOf(orderReference: string, note: NoteRow): readonly FrozenInvoiceLine[] {
+function noteLinesOf(row: BillableInvoiceOrderRow, note: NoteRow): readonly FrozenInvoiceLine[] {
   const day = note.serviceDay?.toISOString().slice(0, DAY_LENGTH);
-  return note.lines.map((line) => ({
-    ...noteLineOf(orderReference, line),
-    ...(day === undefined ? {} : { deliveryDate: day }),
-  }));
+  return note.lines.map((line) => {
+    const priceDiscount = priceDiscountOfNoteLine(row.lines, line);
+    return {
+      ...noteLineOf(row.orderNumber, line),
+      ...(priceDiscount === undefined ? {} : { priceDiscount }),
+      ...(day === undefined ? {} : { deliveryDate: day }),
+    };
+  });
 }
 
 function noteLineOf(orderReference: string, line: NoteLineRow): FrozenInvoiceLine {

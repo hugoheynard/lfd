@@ -8,6 +8,7 @@ import type { FoldBadgeVariant } from 'fold-ng';
 
 import type { LocaleCode } from '../client-locale.service';
 import { fill } from '../copy/client-copy.service';
+import { formatMillicents } from '../format-money';
 import type { AccountInvoicesCopy } from '../copy/screens/account-invoices.copy';
 
 /**
@@ -155,21 +156,11 @@ export function basisPoints(value: number): string {
   return rest === 0 ? `${String(whole)} %` : `${String(whole)},${String(rest).padStart(2, '0')} %`;
 }
 
-const MILLICENTS_PER_EURO = 100_000;
-const MILLICENT_DIGITS = 5;
-const CENT_DIGITS = 2;
-
 /**
  * Un prix unitaire en millicentimes → « 1,2345 € » : deux décimales au moins,
- * cinq au plus, sans zéro de traîne au-delà des centimes. Entiers seulement.
+ * cinq au plus, sans zéro de traîne au-delà des centimes — la même écriture
+ * que le prix HT d'un pro au rayon (`formatMillicents`).
  */
 export function unitPriceLabel(millicents: number): string {
-  const sign = millicents < 0 ? '−' : '';
-  const absolute = Math.abs(millicents);
-  const whole = Math.floor(absolute / MILLICENTS_PER_EURO);
-  let fraction = String(absolute % MILLICENTS_PER_EURO).padStart(MILLICENT_DIGITS, '0');
-  while (fraction.length > CENT_DIGITS && fraction.endsWith('0')) {
-    fraction = fraction.slice(0, -1);
-  }
-  return `${sign}${String(whole)},${fraction} €`;
+  return formatMillicents(millicents);
 }

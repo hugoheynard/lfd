@@ -237,6 +237,22 @@ function weighedDossier(): Invoice {
   return invoiceFromDossier({ ...issue, computed });
 }
 
+/**
+ * Une promotion « dans le prix affiché » chiffrée sur la ligne (plan
+ * `plan-remise-par-ligne.md`, § 18.6) : 0,93 € − 12 % = 0,8184 €, BT-148 et
+ * BT-147 posés, deux bons non regroupés (5 × 0,8184 = 4,09 €).
+ */
+function promotionInDisplayedPrice(): Invoice {
+  const croissant: InvoiceLineInput = {
+    ...line("CROI", 5.5, 409, 5),
+    label: "Croissant",
+    unitPriceMillicents: 81_840,
+    priceDiscount: { grossUnitPriceMillicents: 93_000, labels: ["Printemps"] },
+  };
+  const lines = [croissant, croissant, line("JUS", 20, 500)];
+  return Invoice.issue(realisticInput({ id: "inv_promo_line", lines, vat: breakdownOf(lines) }));
+}
+
 export function facturXSamples(): readonly FacturXSample[] {
   return [
     { name: "facture-du-mois", invoice: Invoice.issue(realisticInput({})) },
@@ -248,5 +264,6 @@ export function facturXSamples(): readonly FacturXSample[] {
     { name: "remises-bon-par-bon", invoice: perOrderCycle() },
     { name: "dossier-au-poids", invoice: weighedDossier() },
     { name: "promotions-cumulees-deux-taux", invoice: cumulatedBasketPromotions() },
+    { name: "promotion-dans-le-prix", invoice: promotionInDisplayedPrice() },
   ];
 }

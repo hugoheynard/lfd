@@ -237,8 +237,12 @@ describe("simulateInvoiceDossier — les écarts", () => {
     const orders = [bon({ lines: [line] }), bon({ lines: [line] }), bon({ lines: [line] })];
     const dossier = simulateInvoiceDossier(orders);
 
+    // Une ligne par bon : 0,33333 € × 3 ne retombe pas sur 0,99 € (plan
+    // `plan-remise-par-ligne.md`, § 18.6, point 3 — pas de prix moyen).
     expect(dossier.invoice.lines.map((l) => [l.quantityThousandths, l.amountCents])).toEqual([
-      [3_000, 99],
+      [1_000, 33],
+      [1_000, 33],
+      [1_000, 33],
     ]);
     expect(dossier.invoice.vat.goodsHtCents).toBe(99);
     expect(dossier.gaps).not.toHaveProperty("lineRounding");

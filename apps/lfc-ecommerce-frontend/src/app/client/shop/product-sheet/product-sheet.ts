@@ -13,7 +13,7 @@ import {
 import { NgTemplateOutlet } from '@angular/common';
 import { FoldCalloutComponent, FoldDisclosureComponent } from 'fold-ng';
 
-import { formatCents } from '../../../client/format-money';
+import { formatCents, formatMillicents } from '../../../client/format-money';
 import { ClientDialog } from '../../../client/dialog/client-dialog';
 import { ClientCopyService, fill } from '../../../client/copy/client-copy.service';
 import type { ShopItemView } from '@lfd/contracts';
@@ -27,7 +27,7 @@ import { artOf, objectPositionOf } from '../shelf-display';
 import { HouseMark } from '../house-mark/house-mark';
 import { mediaSrcset, sizedMedia, SHEET_WIDTHS } from '../media-source';
 import { ShopCatalogue } from '../shop-catalogue.store';
-import { perKiloHintLabel, ShopPriceBasis } from '../shop-price-basis.service';
+import { perKiloHintLabel, ShopPriceBasis, struckPriceLabel } from '../shop-price-basis.service';
 import { ProVisit } from '../pro-visit.service';
 import { FulfillmentOfferLabels } from '../promotion-offers';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
@@ -279,7 +279,12 @@ export class ProductSheet {
       : product.unitPriceMillicents;
   });
 
-  protected readonly price = computed(() => formatCents(unitPriceCents(this.unitMillicents())));
+  /** Au centime pour un particulier ; le HT exact pour un pro (§ 18.6, option (b)). */
+  protected readonly price = computed(() =>
+    this.showsTtc()
+      ? formatCents(unitPriceCents(this.unitMillicents()))
+      : formatMillicents(this.unitMillicents()),
+  );
 
   /** La mention d'assiette : la vignette la porte, la fiche ne la perd pas. */
   protected readonly basisSuffix = computed(() =>
@@ -317,10 +322,9 @@ export class ProductSheet {
   });
 
   /** Le tarif boutique barré — même règle que la vignette : l'absence EST la réponse. */
-  protected readonly striked = computed(() => {
-    const catalogue = this.product()?.catalogPriceMillicents;
-    return catalogue === undefined ? null : formatCents(unitPriceCents(catalogue));
-  });
+  protected readonly striked = computed(() =>
+    struckPriceLabel(this.product()?.catalogPriceMillicents, this.showsTtc()),
+  );
 
   /** Ce qu'entend un lecteur d'écran à la place des prix (RGAA 3.1, lot A5). */
   protected readonly struckPhrase = computed(() =>

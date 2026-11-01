@@ -13,6 +13,13 @@
  * arrondi au millicentime (cinq décimales). L'écart restant est alors d'au
  * plus un demi-millicentime par unité facturée — 0,005 € pour une tonne.
  *
+ * ⚠️ **Depuis le 2026-11-01** (plan `plan-remise-par-ligne.md`, § 18.6,
+ * point 3), une ligne qui regroupe plusieurs bons n'existe que si elle
+ * recompose son montant au centime (`invoice-lines.ts`) ; sinon la facture
+ * rend une ligne par bon. Le cas des « trente bons » ci-dessus ne passe donc
+ * plus par ici. Reste la ligne d'UN bon dont le HT n'est pas prix × quantité :
+ * celle d'un particulier, HT déduit d'une étiquette TTC arrondie (50 kg).
+ *
  * Le prix s'entend par UNE unité (1 H87, 1 KGM) : aucun `BasisQuantity`
  * (BT-149) n'est émis.
  */

@@ -46,6 +46,10 @@ export const invoiceLinesSchema = z.array(
     unitPriceMillicents: z.number().int(),
     vatRate: z.number(),
     amountCents: cents,
+    // Absent sur toute facture émise avant le § 18.6 (plan `plan-remise-par-ligne.md`).
+    priceDiscount: z
+      .object({ grossUnitPriceMillicents: z.number().int(), labels: z.array(z.string()) })
+      .optional(),
   }),
 );
 

@@ -1,8 +1,7 @@
 import { ChangeDetectionStrategy, Component, computed, inject, input, output } from '@angular/core';
-import { unitPriceCents } from '@lfd/money';
 import { FoldIconComponent, FoldNumberInputComponent } from 'fold-ng';
 
-import { formatCents } from '../../format-money';
+import { formatCents, formatMillicents } from '../../format-money';
 import { ClientCopyService, fill } from '../../copy/client-copy.service';
 import { ClientLocale } from '../../client-locale.service';
 import { madeToOrderLabel } from '../../shop/made-to-order';
@@ -143,7 +142,8 @@ export class CartProductLine {
     const label = this.basis.showsTtc()
       ? fill(this.t().shop.priceTtc, { price: formatCents(product.unitPriceTtcCents) })
       : fill(this.t().shop.priceHt, {
-          price: formatCents(unitPriceCents(product.unitPriceMillicents)),
+          // Le HT exact d'un pro : prix × quantité retombe sur la ligne (§ 18.6, option (b)).
+          price: formatMillicents(product.unitPriceMillicents),
         });
     // Au poids, l'étiquette est au kilo : « 12,40 € TTC / kg ».
     return this.byWeight() ? `${label} ${this.t().product.perKilogram}` : label;

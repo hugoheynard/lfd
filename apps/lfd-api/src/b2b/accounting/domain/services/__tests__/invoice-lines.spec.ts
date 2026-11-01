@@ -45,7 +45,12 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
    * 33,333 → 33, soit 99 ; l'ancien calcul arrondissait 99,999 → 100 une
    * fois, et la facture différait des bons d'un centime de HT.
    */
-  it("le montant d'une ligne agrégée est la somme des montants figés des bons", () => {
+  //
+  // Depuis le § 18.6 du plan `plan-remise-par-ligne.md` (2026-11-01), ce cas ne
+  // se regroupe plus : 0,33333 € × 3 = 1,00 € ≠ 0,99 €, et une ligne unique
+  // aurait affiché un prix (ou un montant) que personne n'a payé. Le total, lui,
+  // reste Σ des bons.
+  it("trois bons qui ne recomposent pas le prix × la quantité font trois lignes, au même total", () => {
     const orders = [
       bonOf("ORD-1", 1, "2026-10-02"),
       bonOf("ORD-2", 2, "2026-10-05"),
@@ -53,23 +58,18 @@ describe("aggregateInvoiceLines — le montant repris des bons (F6)", () => {
     ];
     const ordersSum = orders.reduce((total, o) => total + (o.lines[0]?.lineTotalCents ?? 0), 0);
 
-    const [line, ...rest] = aggregateInvoiceLines(orders);
+    const lines = aggregateInvoiceLines(orders);
 
-    expect(rest).toEqual([]);
     expect(ordersSum).toBe(99);
     expect(lineTotalCents(PRICE, pieces(3))).toBe(100);
-    expect(line).toMatchObject({
-      sku: "BAG-001",
-      unitPriceMillicents: PRICE,
-      vatRate: 5.5,
-      label: "Baguette",
-      unitCode: "H87",
-      quantityThousandths: 3_000,
-      amountCents: ordersSum,
-      ordersLineTotalCents: ordersSum,
-      firstDeliveryDate: "2026-10-02",
-      lastDeliveryDate: "2026-10-09",
-    });
+    expect(lines).toHaveLength(3);
+    expect(lines.every((l) => l.unitPriceMillicents === PRICE && l.amountCents === 33)).toBe(true);
+    expect(lines.reduce((total, l) => total + l.amountCents, 0)).toBe(ordersSum);
+    expect(lines.map((l) => l.firstDeliveryDate)).toEqual([
+      "2026-10-02",
+      "2026-10-05",
+      "2026-10-09",
+    ]);
   });
 });
 

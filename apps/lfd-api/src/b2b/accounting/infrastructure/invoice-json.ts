@@ -36,6 +36,14 @@ export function invoiceLinesJson(lines: readonly InvoiceLineInput[]): Prisma.Inp
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate: line.vatRate,
     amountCents: line.amountCents,
+    ...(line.priceDiscount === undefined
+      ? {}
+      : {
+          priceDiscount: {
+            grossUnitPriceMillicents: line.priceDiscount.grossUnitPriceMillicents,
+            labels: [...line.priceDiscount.labels],
+          },
+        }),
   }));
 }
 

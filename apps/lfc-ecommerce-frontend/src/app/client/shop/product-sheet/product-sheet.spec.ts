@@ -329,11 +329,30 @@ describe('ProductSheet', () => {
   it('dit l’ancien et le nouveau prix au lecteur d’écran, et cache le doublon', () => {
     mount(NEGOTIATED, 0, true);
 
+    // Le tarif barré d'un pro est exact, dans l'échelle du prix servi (§ 18.6 du
+    // plan `plan-remise-par-ligne.md`, option (b)) : il valait « 1,56 € ».
     expect(el().querySelector('.pricing .sr-only')?.textContent?.trim()).toBe(
-      'Ancien prix : 1,56 €, nouveau prix : 1,40 € HT / pièce',
+      'Ancien prix : 1,5556 €, nouveau prix : 1,40 € HT / pièce',
     );
     expect(el().querySelector('.price-was')?.getAttribute('aria-hidden')).toBe('true');
     expect(el().querySelector('.amount')?.getAttribute('aria-hidden')).toBe('true');
+  });
+
+  /**
+   * 🔴 Le prix d'un pro est EXACT, et × la quantité tombe sur le total (plan
+   * `plan-remise-par-ligne.md`, § 18.6, option (b), 2026-11-01).
+   */
+  it('🔴 un pro lit 0,8184 €, et 5 pièces font 4,09 €', () => {
+    mount({ ...(TEST_ITEMS[0] as ShopItemView), unitPriceMillicents: 81_840 }, 5, true);
+
+    expect(el().querySelector('.amount')?.textContent?.trim()).toBe('0,8184 €');
+    expect(el().querySelector('.cta-total')?.textContent?.trim()).toMatch(/^4,09 € HT/u);
+  });
+
+  it('un particulier garde le prix au centime', () => {
+    mount(TEST_ITEMS[0] as ShopItemView, 0, false);
+
+    expect(el().querySelector('.amount')?.textContent?.trim()).toBe('1,48 €');
   });
 
   it('sans tarif barré, ni rature ni pourcentage', () => {

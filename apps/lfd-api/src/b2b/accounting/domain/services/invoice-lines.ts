@@ -1,4 +1,4 @@
-import { saleQuantity, type SaleUnit } from "@lfd/money";
+import { lineTotalCents, saleQuantity, type SaleUnit } from "@lfd/money";
 
 import {
   InvoiceDossierMixedSaleUnitError,
@@ -14,6 +14,7 @@ import type {
   FrozenInvoiceOrder,
   InvoiceLine,
 } from "./invoice-dossier.types.js";
+import { priceDiscountKey, type InvoicePriceDiscount } from "./invoice-price-discount.js";
 
 /**
  * **Les lignes de la facture** : une par `(sku, unité, prix, taux normalisé,
@@ -42,6 +43,19 @@ import type {
  * `quantityThousandths` et son `unitCode` (`H87`, `KGM`). La conversion se
  * fait une fois, ligne de bon par ligne de bon (`invoiceThousandthsOf`) :
  * aucun lecteur en aval n'a à se demander ce que veut dire une quantité.
+ *
+ * ## Pas de prix moyen (plan `plan-remise-par-ligne.md`, § 18.6, point 3)
+ *
+ * Une clé ne se regroupe en UNE ligne que si Σ des montants des bons vaut
+ * `lineTotalCents(prix, quantité totale)` — que le prix des bons, multiplié
+ * par la quantité facturée, retombe sur le montant au centime. Sinon (trente
+ * bons de 5 pièces à 0,8184 € : 30 × 4,09 € = 122,70 €, contre 122,76 € pour
+ * 150 pièces), la clé rend une ligne PAR BON, chacune à son prix et à son
+ * montant : jamais un prix unitaire recalculé que personne n'a payé. Le
+ * total de la facture n'en bouge pas — il n'a jamais été que Σ des bons.
+ *
+ * La remise d'une promotion « dans le prix affiché » fait partie de la clé :
+ * une ligne remisée ne se fond pas dans une ligne au même prix net sans remise.
  */
 
 /**
@@ -63,6 +77,10 @@ interface LineAccumulator {
   readonly unitPriceMillicents: number;
   readonly vatRate: number;
   readonly eligible: boolean;
+  readonly saleUnit: SaleUnit;
+  readonly priceDiscount: InvoicePriceDiscount | undefined;
+  /** La quantité dans l'unité de vente (pièces, grammes) — pour rejouer `lineTotalCents`. */
+  saleAmount: number;
   quantityThousandths: number;
   ordersLineTotalCents: number;
   label: string;
@@ -72,28 +90,50 @@ interface LineAccumulator {
   lastDeliveryDate: string | null;
 }
 
+/** Une clé : la ligne regroupée, et la même découpée bon par bon. */
+interface KeyGroup {
+  readonly merged: LineAccumulator;
+  readonly byOrder: Map<string, LineAccumulator>;
+}
+
 /**
- * Agrège les lignes des bons en lignes de facture, triées par sku, prix puis taux.
+ * Agrège les lignes des bons en lignes de facture, triées par sku, prix puis
+ * taux ; une clé dont le regroupement ferait un prix moyen rend une ligne par bon.
  *
  * @throws {InvoiceDossierMixedSaleUnitError} un même sku arrive dans deux unités.
  */
 export function aggregateInvoiceLines(
   orders: readonly FrozenInvoiceOrder[],
 ): readonly InvoiceLine[] {
-  const byKey = new Map<string, LineAccumulator>();
+  const byKey = new Map<string, KeyGroup>();
   const unitOfSku = new Map<string, SaleUnit>();
   for (const order of orders) {
     for (const line of order.lines) {
       assertOneUnit(unitOfSku, line, order.reference);
       const vatRate = normalizedVatRate(line.vatRate, order.reference);
       const eligible = line.pickupDiscountEligible ?? true;
-      const key = `${line.sku}|${line.saleUnit}|${String(line.unitPriceMillicents)}|${String(vatRate)}|${String(eligible)}`;
-      const acc = byKey.get(key) ?? openAccumulator(line, vatRate, eligible);
-      byKey.set(key, acc);
-      accumulate(acc, order, line);
+      const key = `${line.sku}|${line.saleUnit}|${String(line.unitPriceMillicents)}|${String(vatRate)}|${String(eligible)}|${priceDiscountKey(line.priceDiscount)}`;
+      const group = byKey.get(key) ?? {
+        merged: openAccumulator(line, vatRate, eligible),
+        byOrder: new Map<string, LineAccumulator>(),
+      };
+      byKey.set(key, group);
+      accumulate(group.merged, order, line);
+      const own = group.byOrder.get(order.reference) ?? openAccumulator(line, vatRate, eligible);
+      group.byOrder.set(order.reference, own);
+      accumulate(own, order, line);
     }
   }
-  return [...byKey.values()].sort(compareLines).map(closeAccumulator);
+  return [...byKey.values()]
+    .sort((left, right) => compareLines(left.merged, right.merged))
+    .flatMap((group) => (recomposes(group.merged) ? [group.merged] : [...group.byOrder.values()]))
+    .map(closeAccumulator);
+}
+
+/** Le prix des bons × la quantité regroupée retombe-t-il sur Σ de leurs montants ? */
+function recomposes(acc: LineAccumulator): boolean {
+  const total = lineTotalCents(acc.unitPriceMillicents, saleQuantity(acc.saleAmount, acc.saleUnit));
+  return total === acc.ordersLineTotalCents;
 }
 
 /** Un article n'a qu'une unité : la première lue fait foi pour tout le dossier. */
@@ -121,6 +161,9 @@ function openAccumulator(
     unitPriceMillicents: line.unitPriceMillicents,
     vatRate,
     eligible,
+    saleUnit: line.saleUnit,
+    priceDiscount: line.priceDiscount,
+    saleAmount: 0,
     quantityThousandths: 0,
     ordersLineTotalCents: 0,
     label: "",
@@ -137,6 +180,7 @@ function accumulate(
   line: FrozenInvoiceLine,
 ): void {
   const name = line.productNameSnapshot;
+  acc.saleAmount += line.quantity;
   acc.quantityThousandths += invoiceThousandthsOf(saleQuantity(line.quantity, line.saleUnit));
   acc.ordersLineTotalCents += line.lineTotalCents;
   acc.labels.add(name);
@@ -169,6 +213,7 @@ function closeAccumulator(acc: LineAccumulator): InvoiceLine {
     firstDeliveryDate: acc.firstDeliveryDate,
     lastDeliveryDate: acc.lastDeliveryDate,
     ...(acc.eligible ? {} : { pickupDiscountEligible: false as const }),
+    ...(acc.priceDiscount === undefined ? {} : { priceDiscount: acc.priceDiscount }),
   };
 }
 

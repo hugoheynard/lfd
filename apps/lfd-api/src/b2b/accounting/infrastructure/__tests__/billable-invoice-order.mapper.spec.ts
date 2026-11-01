@@ -27,6 +27,11 @@ const ORDER_LINE = {
   saleUnit: "piece",
   lineTotalCents: 300,
   pickupDiscountEligible: true,
+  // Sans trace de prix : aucune remise de promotion à chiffrer (§ 18.6).
+  basePriceMillicents: null,
+  pricingSteps: null,
+  pricingFloored: null,
+  pricingClampedToZero: null,
 };
 
 function noteLine(sku: string, quantity: number, saleUnit = "piece") {
@@ -236,6 +241,45 @@ describe("l'unité de vente des lignes (plan vente au poids, P7)", () => {
         }),
       ),
     ).toThrow(/ORD-1042.*CRO/u);
+  });
+});
+
+describe("la remise de promotion « dans le prix affiché » (plan-remise-par-ligne, § 18.6)", () => {
+  const TRACED = {
+    ...ORDER_LINE,
+    basePriceMillicents: 120_000,
+    pricingSteps: [
+      { stage: "promotion", ruleId: "p1", label: "Printemps", resultMillicents: 100_000 },
+    ],
+    pricingFloored: false,
+    pricingClampedToZero: false,
+  };
+  const PRINTEMPS = { grossUnitPriceMillicents: 120_000, labels: ["Printemps"] };
+
+  it("la ligne de commande porte la remise lue dans sa trace", () => {
+    const frozen = toFrozenInvoiceOrder(row({ lines: [TRACED] }));
+
+    expect(frozen.lines[0]?.priceDiscount).toEqual(PRINTEMPS);
+  });
+
+  it("la ligne d'un BL remis la reprend de la ligne de commande au même article et au même prix", () => {
+    const frozen = toBillableInvoiceOrder(
+      row({
+        ...PARTIAL_BILLABLE,
+        lines: [TRACED],
+        shortfallDecisions: [{ id: "dec_1" }],
+        deliveryNotes: [
+          {
+            number: "BL-1042-1",
+            serviceDay: null,
+            discounts: [],
+            lines: [noteLine("CRO", 1), noteLine("PAI", 2)],
+          },
+        ],
+      }),
+    );
+
+    expect(frozen.lines.map((line) => line.priceDiscount)).toEqual([PRINTEMPS, undefined]);
   });
 });
 
