@@ -1,5 +1,4 @@
-import { inject } from '@angular/core';
-import { Router, type Routes } from '@angular/router';
+import { type Routes } from '@angular/router';
 import { NEW_VERSION_BANNER } from '@lfd/front-ops';
 
 import { anyPermissionGuard, permissionGuard } from './auth/permission.guard';
@@ -81,9 +80,6 @@ export const routes: Routes = [
         (m) => m.CommerceOperationPage,
       ),
   },
-  // L'adresse provisoire du lot 3 (avant le retrait) : elle vit dans des favoris.
-  { path: 'operations-commerce', pathMatch: 'full', redirectTo: '/operations' },
-  { path: 'operations-commerce/:key', redirectTo: '/operations/:key' },
   {
     // LA FIDÉLITÉ — le programme de points, ses soldes, ses bons — en Gestion
     // Boutique depuis le 2026-10-16, sous SON droit (`lfc_loyalty`) : la
@@ -121,14 +117,6 @@ export const routes: Routes = [
     loadComponent: () => import('./formules/bundle-page/bundle-page').then((m) => m.BundlePage),
   },
   {
-    // LE WEBHOOK DE LA VITRINE est parti en Admin le 2026-10-19 (Hugo) :
-    // l'ancienne adresse a pu être donnée à quelqu'un, elle redirige. Absolue,
-    // elle s'applique avant tout mur ; la vue porte le sien (`lfd_webhooks`).
-    path: 'webhook-vitrine',
-    pathMatch: 'full',
-    redirectTo: '/admin/webhook-vitrine',
-  },
-  {
     // LA MISE EN AVANT — les incontournables, par audience (Hugo, 2026-10-18),
     // en Gestion Boutique sous `lfc_catalog` : le droit que la route serveur
     // oppose, et dont le libellé nomme déjà la mise en avant.
@@ -138,10 +126,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./mise-en-avant/featured-page/featured-page').then((m) => m.FeaturedPage),
   },
-  // L'ancienne adresse, dans des favoris. ORDRE : avant `comptabiliteRoutes`,
-  // dont la coquille exige `b2b_accounting:read` — y loger la redirection
-  // refuserait qui n'a que `lfc_loyalty`.
-  { path: 'comptabilite/fidelite', pathMatch: 'full', redirectTo: '/fidelite' },
   {
     // LES LIMITES DE PRIX — pro et publiques — en Gestion Boutique depuis le
     // 2026-10-26 (décision de Hugo), sous LEUR droit (`lfc_price_limits`) :
@@ -155,15 +139,6 @@ export const routes: Routes = [
       import('./comptabilite/limites-de-prix/limites-de-prix-page').then(
         (m) => m.LimitesDePrixPage,
       ),
-  },
-  {
-    // L'ancienne adresse, dans des favoris : même raison d'ORDRE que la
-    // fidélité. Une fonction, pas une chaîne : une `redirectTo` absolue en
-    // chaîne PERD les paramètres de requête (constaté au test le 2026-10-26).
-    path: 'comptabilite/limites-de-prix',
-    pathMatch: 'full',
-    redirectTo: ({ queryParams }) =>
-      inject(Router).createUrlTree(['/limites-de-prix'], { queryParams }),
   },
   {
     // LES PROMOTIONS — l'ancienne « Tarification B2B », premier niveau depuis
@@ -225,10 +200,6 @@ export const routes: Routes = [
     loadComponent: () =>
       import('./targeted-promotions/promotion-page/promotion-page').then((m) => m.PromotionPage),
   },
-  // L'ancien éditeur à part : depuis le 2026-10-31, la fiche EST le
-  // formulaire (décision de Hugo, un seul layout). L'adresse reste pour les
-  // liens collés.
-  { path: 'promotions-ciblees/:id/modifier', redirectTo: '/promotions-ciblees/:id' },
   {
     // La fiche d'une promotion : ses champs, éditables sous `b2b_pricing:write`,
     // désactivés sinon — un seul layout pour la lecture et la saisie.
@@ -693,22 +664,6 @@ export const routes: Routes = [
     title: 'Colisage — LFC B2B admin',
     loadComponent: () => import('./production/colisage/colisage').then((m) => m.Colisage),
   },
-  // L'EXPLOITATION a ses propres écrans depuis le 2026-10-10 : les réglages
-  // commerciaux, venus des Réglages. Même coquille que la Production — elle
-  // publie le rail de l'Exploitation et ne dessine rien.
-  {
-    path: 'exploitation',
-    loadComponent: () =>
-      import('./production/production-workspace/production-workspace-page').then(
-        (m) => m.ProductionWorkspacePage,
-      ),
-    children: [
-      // Partie dans l'espace Commercial le 2026-10-13 (Hugo), découpée en
-      // trois vues, puis en Réglages › Commercial le même jour : l'adresse vit
-      // dans des favoris, elle mène à la première, sans détour.
-      { path: 'commercial', redirectTo: '/reglages/commercial/disponibilite' },
-    ],
-  },
   // PROD MANAGER (Hugo, 2026-10-10) : le prévisionnel sort de l'Exploitation
   // pour une entrée de premier niveau, juste au-dessus du Fournil — on regarde
   // ce qui tombe avant de lancer la fournée. L'ancienne adresse redirige.
@@ -784,7 +739,6 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./livraison/rounds-page/rounds-page').then((m) => m.RoundsPage),
       },
-      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRoundsTab },
     ],
   },
   // LE FOURNIL (2026-10-06) : la fournée du jour sort de la Production pour
@@ -797,14 +751,6 @@ export const routes: Routes = [
     title: 'Fournée du jour — LFC B2B admin',
     loadComponent: () =>
       import('./production/fiche-atelier/fiche-atelier').then((m) => m.FicheAtelier),
-  },
-  // RÉASSORTS À PRODUIRE (lot R1) n'est plus une entrée : c'est l'onglet
-  // « Réassorts » de Prod manager depuis le lot R3d (2026-10-21, Hugo :
-  // « n'a pas de sens en autonome »). L'ancienne adresse y mène.
-  {
-    path: 'reassorts-a-produire',
-    pathMatch: 'full',
-    redirectTo: '/prod-manager/reassorts',
   },
   // CHARGER MA TOURNÉE : le chargement du livreur a sa propre adresse, sous
   // le même droit — un rechargement le rouvre.
@@ -828,22 +774,13 @@ export const routes: Routes = [
         (m) => m.LivraisonWorkspacePage,
       ),
     children: [
-      // LA FEUILLE DE ROUTE est retirée (Hugo, 2026-10-26) : `/livraison` et
-      // `/livraison/feuille-de-route` vivent dans des favoris, et mènent aux
-      // tournées de Tour manager, `?jour=` compris.
+      // LA FEUILLE DE ROUTE est retirée (Hugo, 2026-10-26) : `/livraison`
+      // mène aux tournées de Tour manager, `?jour=` compris.
       { path: '', pathMatch: 'full', redirectTo: toRoundsTab },
-      { path: 'feuille-de-route', pathMatch: 'full', redirectTo: toRoundsTab },
-      // « MA TOURNÉE » A DÉMÉNAGÉ sous `/coursier` (2026-10-03) : un espace à
-      // part, que le livreur voit sans la Livraison. Les anciennes adresses
-      // vivent dans des favoris et des liens — elles redirigent.
-      { path: 'ma-tournee', pathMatch: 'full', redirectTo: '/coursier' },
-      {
-        path: 'ma-tournee/:roundId/chargement',
-        redirectTo: '/coursier/:roundId/chargement',
-      },
-      // Devenue « Tour manager », au premier niveau (2026-10-10) : favoris et
-      // liens portent `?jour=`, que la redirection garde — par une fonction
-      // depuis le 2026-10-26 : la chaîne absolue d'avant le jetait.
+      // `/livraison` est l'entrée de l'espace (le fil d'Ariane du chargement y
+      // pointe) ; `/livraison/tournees` est le lien que la cloche écrit encore
+      // (`delivery/application/*-bell.ts`, vérifié le 2026-11-01), `?jour=`
+      // compris — gardé par la fonction `toRoundsTab`.
       { path: 'tournees', pathMatch: 'full', redirectTo: toRoundsTab },
       // « NON REMIS » (a-la-porte.md, AP-D7) : une LECTURE, sous le droit
       // des tournées — c'est leur suite, et elle ne débloque rien.
@@ -934,14 +871,6 @@ export const routes: Routes = [
       // :transferId`) ne sont plus des pages depuis le 2026-10-25 : le serveur
       // les rend en PDF A6, que le colisage et le chargement ouvrent dans un
       // onglet (`shared/label-printer/`). Celles des sacs non plus.
-      // LES RÉGLAGES DE LA LIVRAISON sont partis sous `/reglages/livraison/`
-      // le 2026-10-13 (Hugo). Les anciennes adresses vivent dans des favoris ;
-      // absolues, elles redirigent avant tout garde.
-      { path: 'vehicules', pathMatch: 'full', redirectTo: '/reglages/livraison/vehicules' },
-      { path: 'bacs', pathMatch: 'full', redirectTo: '/reglages/livraison/bacs' },
-      { path: 'contenances', pathMatch: 'full', redirectTo: '/reglages/livraison/contenances' },
-      { path: 'depart', pathMatch: 'full', redirectTo: '/reglages/livraison/depart' },
-      { path: 'zones', pathMatch: 'full', redirectTo: '/reglages/livraison/zones' },
     ],
   },
   {
@@ -952,20 +881,6 @@ export const routes: Routes = [
     title: 'Obtenir l’app mobile — LFC B2B admin',
     loadComponent: () =>
       import('./app-mobile/app-mobile-page/app-mobile-page').then((m) => m.AppMobilePage),
-  },
-  {
-    // L'ANCIENNE FILE DE RETRAIT — devenue la vue `retrait` de l'espace Comptoir.
-    //
-    // ⚠️ Le chemin `remises` est une VALEUR : les signets du personnel pointent
-    // dessus, et une valeur n'est pas un nom (CLAUDE.md §8). Il redirige donc,
-    // il ne disparaît pas.
-    //
-    // ⚠️ Elle ne remplace PAS `retrait/:token`, et ne peut pas : ce chemin-là
-    // est ce que les QR déjà partis en courriel encodent. Celui-ci est la file
-    // qu'on ouvre le matin ; l'autre est la cible d'un scan.
-    path: 'remises',
-    pathMatch: 'full',
-    redirectTo: 'comptoir/retrait',
   },
   {
     // LA SUPERVISION DU JOUR — une VUE, pas un espace de travail : elle regarde
@@ -1064,18 +979,10 @@ export const routes: Routes = [
       // est renvoyé par le garde vers son atterrissage, `/fournil`.
       // Depuis le 2026-10-10, la première vue est partie en Prod manager.
       { path: '', pathMatch: 'full', redirectTo: '/prod-manager' },
-      // La fournée est un poste à part depuis le 2026-10-06, comme le
-      // colisage : l'ancienne adresse est le favori des postes de labo.
-      { path: 'journee', pathMatch: 'full', redirectTo: '/fournil' },
-      // Devenu « Prod manager », au premier niveau (2026-10-10) : favori.
+      // Devenu « Prod manager », au premier niveau (2026-10-10). Gardée : la
+      // cloche du plan arrêté écrit encore ce lien (`production/application/
+      // services/plan-arrest-bell.ts`, vérifié le 2026-11-01).
       { path: 'previsionnel', pathMatch: 'full', redirectTo: '/prod-manager/previsionnel' },
-      // Les réglages du fournil sont partis en Réglages › Production le
-      // 2026-10-13 (Hugo) : l'ancienne adresse est un favori.
-      { path: 'reglages', pathMatch: 'full', redirectTo: '/reglages/production/fournil' },
-      // Le colisage est un poste à part depuis le 2026-10-04
-      // (`documentation/colisage/colisage.md`, P0) : l'ancienne
-      // adresse reste valide — c'est le favori des postes de labo.
-      { path: 'colisage', pathMatch: 'full', redirectTo: '/colisage' },
     ],
   },
   ...commercialRoutes,

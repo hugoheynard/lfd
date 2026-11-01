@@ -158,7 +158,7 @@ export const COMMERCIAL_VIEWS: readonly CommercialView[] = [
  *
  * ⚠️ **La fournée du jour en est sortie le 2026-10-06** : c'est le poste
  * **Fournil** (`/fournil`), entrée de premier niveau comme le Colisage.
- * `/production/journee` y redirige, et `/production` ouvre le prévisionnel.
+ * `/production` ouvre Prod manager.
  * Les paragraphes ci-dessus parlent d'elle au passé de ce jour.
  *
  * Chaque vue porte son `needs` depuis le 2026-10-01 (`documentation/livraisons/droits/plan-droits-par-geste.md`,
@@ -170,8 +170,7 @@ export const PRODUCTION_VIEWS: readonly WorkspaceView[] = [
   // entrée de premier niveau au-dessus du Fournil (`/prod-manager`).
   {
     // Lot A1 du plan d'arrêt (2026-10-06) : l'arrêt du plan et les jours fermés.
-    // Sous `/reglages/` depuis le 2026-10-13 (Hugo) ; `/production/reglages`
-    // y redirige. Une seule vue : la page n'a pas d'onglets, ses deux cartes
+    // Sous `/reglages/` depuis le 2026-10-13 (Hugo). Une seule vue : la page n'a pas d'onglets, ses deux cartes
     // partagent une lecture.
     key: 'reglages',
     label: 'Fournil',
@@ -208,7 +207,7 @@ export const LIVRAISON_VIEWS: readonly WorkspaceView[] = [
   // « Organisation de tournées » en est sortie le 2026-10-10 (Hugo) : c'est
   // « Tour manager », au premier niveau sous Prod manager (`/tour-manager`).
   // La « Feuille de route » a été retirée le 2026-10-26 (Hugo) : le dossier du
-  // jour de Tour manager la remplace ; `/livraison/feuille-de-route` y redirige.
+  // jour de Tour manager la remplace.
   {
     // Les arrêts restés ouverts des tournées (AP-D7).
     key: 'non-remis',
@@ -800,10 +799,10 @@ export const COMPTABILITE_VIEWS: readonly WorkspaceView[] = [
   },
   // « Fidélité » est partie en Gestion Boutique le 2026-10-16 (Hugo), sous
   // son droit `lfc_loyalty` : elle est au rail principal et au lanceur mobile,
-  // dans `app.html`. `/comptabilite/fidelite` redirige vers `/fidelite`.
+  // dans `app.html`.
   // « Limites de prix » est partie en Gestion Boutique le 2026-10-26 (décision
   // de Hugo), sous `lfc_price_limits` : rail principal et lanceur mobile, dans
-  // `app.html`. `/comptabilite/limites-de-prix` redirige vers `/limites-de-prix`.
+  // `app.html`.
 
   {
     // Son propre droit aussi : la surtaxe de retard relève de `b2b_late_fee`,

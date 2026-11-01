@@ -1,7 +1,6 @@
-import { Component, Injector, runInInjectionContext } from '@angular/core';
+import { Injector, runInInjectionContext } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { type Route, Router, UrlTree, provideRouter } from '@angular/router';
-import { RouterTestingHarness } from '@angular/router/testing';
+import { type Route, Router, UrlTree } from '@angular/router';
 import {
   resolvePermissionsFromGrants,
   resolveStaffPermissions,
@@ -178,14 +177,13 @@ describe("l'espace Livraison", () => {
     expect((shell?.canActivate ?? []).filter(isPermissionGuard)).toEqual([]);
   });
 
-  it('renvoie `/livraison`, la feuille de route et les tournées vers les tournées de Tour manager (2026-10-26)', () => {
+  it('renvoie `/livraison` et les tournées vers les tournées de Tour manager (2026-10-26)', () => {
     const shell = routes.find((route) => route.path === 'livraison');
     const redirectOf = (path: string): unknown =>
       shell?.children?.find((child) => child.path === path)?.redirectTo;
     // Des fonctions, qui gardent `?jour=` (joué au vrai routeur dans
     // tour-manager-entry-access.spec.ts).
     expect(redirectOf('')).toBe(toRoundsTab);
-    expect(redirectOf('feuille-de-route')).toBe(toRoundsTab);
     expect(redirectOf('tournees')).toBe(toRoundsTab);
   });
 
@@ -204,18 +202,6 @@ describe("l'espace Livraison", () => {
     expect(await opens('comptoir', 'coursier/:roundId/chargement')).toBe(false);
   });
 
-  it('renvoie les anciennes adresses de « Ma tournée » vers le Coursier', () => {
-    // Elles vivent dans des favoris et des liens (déménagement du 2026-10-03).
-    const shell = routes.find((route) => route.path === 'livraison');
-    const moved = (shell?.children ?? [])
-      .filter((child) => child.path?.startsWith('ma-tournee'))
-      .map((child) => [child.path, child.redirectTo]);
-    expect(moved).toEqual([
-      ['ma-tournee', '/coursier'],
-      ['ma-tournee/:roundId/chargement', '/coursier/:roundId/chargement'],
-    ]);
-  });
-
   it('🔴 le livreur arrive sur sa page, pas sur les comptes clients (MT-D7 v2)', async () => {
     configure(LIVREUR);
     // La racine renvoie vers les comptes clients, que le garde ferme au livreur :
@@ -232,42 +218,5 @@ describe("l'espace Livraison", () => {
       guard?.(state.root, state),
     );
     expect(result instanceof UrlTree ? router.serializeUrl(result) : result).toBe('/coursier');
-  });
-});
-
-@Component({ selector: 'app-stub', template: '' })
-class Stub {}
-
-describe('les anciennes adresses de « Ma tournée »', () => {
-  /**
-   * Une vraie navigation : les redirections de l'arbre réel, devant des écrans
-   * factices aux adresses du Coursier — c'est la substitution de `:roundId`
-   * qu'une lecture de `redirectTo` ne prouverait pas.
-   */
-  async function landOn(url: string): Promise<string> {
-    const shell = routes.find((route) => route.path === 'livraison');
-    TestBed.configureTestingModule({
-      providers: [
-        provideRouter([
-          {
-            path: 'livraison',
-            children: (shell?.children ?? []).filter((child) =>
-              child.path?.startsWith('ma-tournee'),
-            ),
-          },
-          { path: 'coursier', component: Stub },
-          { path: 'coursier/:roundId/chargement', component: Stub },
-        ]),
-      ],
-    });
-    const harness = await RouterTestingHarness.create();
-    await harness.navigateByUrl(url);
-    return TestBed.inject(Router).url;
-  }
-
-  it('mènent au Coursier, la tournée gardée dans l’adresse du chargement', async () => {
-    expect(await landOn('/livraison/ma-tournee')).toBe('/coursier');
-    TestBed.resetTestingModule();
-    expect(await landOn('/livraison/ma-tournee/r-42/chargement')).toBe('/coursier/r-42/chargement');
   });
 });

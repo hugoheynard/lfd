@@ -19,8 +19,7 @@ export function redirectKeepingQuery(target: string): RedirectFunction {
 }
 
 /**
- * Les tournées : où mènent `/tour-manager`, les anciennes adresses de la
- * feuille de route (`/livraison`, `/livraison/feuille-de-route`,
- * `/tour-manager/feuille-de-route`) et `/livraison/tournees`.
+ * Les tournées : où mènent `/tour-manager`, `/livraison` et
+ * `/livraison/tournees` (le lien que la cloche écrit encore).
  */
 export const toRoundsTab = redirectKeepingQuery('/tour-manager/tournees');

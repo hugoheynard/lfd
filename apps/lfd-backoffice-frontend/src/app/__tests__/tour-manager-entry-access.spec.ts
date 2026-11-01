@@ -160,9 +160,7 @@ describe('les anciennes adresses de la feuille de route (2026-10-26)', () => {
 
   it.each([
     ['/livraison?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
-    ['/livraison/feuille-de-route?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
     ['/livraison/tournees?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
-    ['/tour-manager/feuille-de-route?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
     ['/tour-manager?jour=2026-10-27', '/tour-manager/tournees?jour=2026-10-27'],
   ])('%s → %s', async (from, to) => {
     expect(await land(from, ['delivery_rounds:read'])).toBe(to);

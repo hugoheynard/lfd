@@ -145,13 +145,10 @@ export const comptabiliteRoutes: Routes = [
           import('./liens-de-paiement/liens-de-paiement-page').then((m) => m.LiensDePaiementPage),
       },
       // La FIDÉLITÉ a quitté cet espace le 2026-10-16 pour Gestion Boutique,
-      // sous son droit `lfc_loyalty` : son écran est `/fidelite`, et
-      // `/comptabilite/fidelite` y redirige HORS de cette coquille (dans
-      // `app.routes.ts`) — sans quoi qui n'a que `lfc_loyalty` serait refusé.
+      // sous son droit `lfc_loyalty` : son écran est `/fidelite`.
       // Plan : documentation/comptabilite/fidelite/plan-fidelite-en-gestion-boutique.md, F2.
       // Les LIMITES DE PRIX ont quitté cet espace le 2026-10-26 (décision de
-      // Hugo) pour Gestion Boutique : `/limites-de-prix`, et l'ancienne adresse
-      // y redirige HORS de cette coquille (`app.routes.ts`).
+      // Hugo) pour Gestion Boutique : `/limites-de-prix`.
       {
         // La surtaxe de retard — ce qu'une dérogation coûte. Venue des Réglages
         // le 2026-09-29 avec son propre droit, `b2b_late_fee` (Hugo) : ni

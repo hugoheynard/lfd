@@ -1,6 +1,4 @@
-import { Component } from '@angular/core';
-import { TestBed } from '@angular/core/testing';
-import { provideRouter, Router, type Route } from '@angular/router';
+import { type Route } from '@angular/router';
 import type { StaffPermission } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -11,9 +9,6 @@ import { comptoirLanding } from '../comptoir/comptoir-landing';
 import { toRoundsTab } from '../livraison/tour-manager/tour-manager-views';
 import { prodManagerLanding } from '../production/prod-manager/prod-manager-views';
 import type { AnyPermissionGuard, PermissionGuard } from '../auth/permission.guard';
-
-@Component({ template: '' })
-class Blank {}
 
 /**
  * **Quel droit ouvre quel écran** — la table entière, écrite une fois.
@@ -165,7 +160,6 @@ const SCREENS: Readonly<Record<string, ScreenAccess>> = {
   'documentation/facturation': OPEN,
   'documentation/mediatheque': OPEN,
   'documentation/webhook-vitrine': OPEN,
-  exploitation: OPEN,
   // La même coquille, pour Réglages › Sites (S1, 2026-10-13) : elle ne
   // dessine rien, chaque écran porte son garde.
   reglages: OPEN,
@@ -564,14 +558,6 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === '')?.redirectTo).toBe('/commercial/demandes');
   });
 
-  it('renvoie l’ancienne adresse du webhook vitrine vers l’Admin', () => {
-    // Partie le 2026-10-19 (Hugo) : un lien a pu être donné. Absolue, elle
-    // s'applique avant tout mur ; la vue d'arrivée porte le sien.
-    const moved = routes.find((route) => route.path === 'webhook-vitrine');
-    expect(moved?.redirectTo).toBe('/admin/webhook-vitrine');
-    expect(moved?.pathMatch).toBe('full');
-  });
-
   it('renvoie l’ancienne adresse des règles comptables vers les produits', () => {
     // Page retirée le 2026-10-27 (lot R3 : plus rien à régler) — un favori ne
     // tombe pas en page blanche.
@@ -591,44 +577,6 @@ describe("l'arbre de routes du back-office", () => {
     expect(children.find((child) => child.path === 'contact/messages')?.redirectTo).toBe(
       '/commercial/demandes',
     );
-  });
-
-  it('renvoie l’ancienne adresse de la fidélité vers Gestion Boutique, HORS de la coquille comptable', () => {
-    // Partie le 2026-10-16 (F2) : la redirection vit au premier niveau, AVANT
-    // l'espace Comptabilité dont la coquille exige `b2b_accounting:read` — y
-    // loger la redirection refuserait qui n'a que `lfc_loyalty`.
-    const paths = routes.map((route) => route.path);
-    const legacy = routes.find((route) => route.path === 'comptabilite/fidelite');
-
-    expect(legacy?.redirectTo).toBe('/fidelite');
-    expect(legacy?.canActivate).toBeUndefined();
-    expect(paths.indexOf('comptabilite/fidelite')).toBeLessThan(paths.indexOf('comptabilite'));
-  });
-
-  it('renvoie l’ancienne adresse des limites de prix vers Gestion Boutique, HORS de la coquille comptable', () => {
-    // Parties le 2026-10-26 (décision de Hugo) : même raison d'ordre que la
-    // fidélité — la coquille exige `b2b_accounting:read`.
-    const paths = routes.map((route) => route.path);
-    const legacy = routes.find((route) => route.path === 'comptabilite/limites-de-prix');
-
-    expect(typeof legacy?.redirectTo).toBe('function');
-    expect(legacy?.canActivate).toBeUndefined();
-    expect(paths.indexOf('comptabilite/limites-de-prix')).toBeLessThan(
-      paths.indexOf('comptabilite'),
-    );
-  });
-
-  it('garde les paramètres de requête en suivant l’ancienne adresse des limites de prix', async () => {
-    const legacy = routes.find((route) => route.path === 'comptabilite/limites-de-prix');
-    if (legacy === undefined) throw new Error('redirection absente');
-    TestBed.configureTestingModule({
-      providers: [provideRouter([legacy, { path: 'limites-de-prix', component: Blank }])],
-    });
-    const router = TestBed.inject(Router);
-
-    await router.navigateByUrl('/comptabilite/limites-de-prix?portee=pro');
-
-    expect(router.url).toBe('/limites-de-prix?portee=pro');
   });
 
   it('renvoie l’ancienne adresse du pied de page vers la section Communication', () => {
@@ -719,26 +667,6 @@ describe("l'arbre de routes du back-office", () => {
     expect(formulaire?.redirectTo).toBe('/reglages/commercial/motifs-des-demandes');
   });
 
-  it('renvoie les anciens réglages du fournil et de la livraison vers les Réglages', () => {
-    // Partis le 2026-10-13 (Hugo) : des favoris de poste. Absolues.
-    const redirectsOf = (path: string): Record<string, unknown> =>
-      Object.fromEntries(
-        (routes.find((route) => route.path === path)?.children ?? [])
-          .filter((child) => typeof child.redirectTo === 'string')
-          .map((child) => [child.path, child.redirectTo]),
-      );
-    expect(redirectsOf('production')).toMatchObject({
-      reglages: '/reglages/production/fournil',
-    });
-    expect(redirectsOf('livraison')).toMatchObject({
-      vehicules: '/reglages/livraison/vehicules',
-      bacs: '/reglages/livraison/bacs',
-      contenances: '/reglages/livraison/contenances',
-      depart: '/reglages/livraison/depart',
-      zones: '/reglages/livraison/zones',
-    });
-  });
-
   it('renvoie les anciens réglages du Commercial vers Réglages › Commercial, sans détour', () => {
     // Partis le 2026-10-13 (Hugo). Absolues : sous `commercial`, elles
     // resteraient derrière le mur `b2b_companies` de l'espace.
@@ -753,8 +681,6 @@ describe("l'arbre de routes du back-office", () => {
       ['reglages/alertes', '/reglages/commercial/alertes'],
       ['reglages/motifs-des-demandes', '/reglages/commercial/motifs-des-demandes'],
     ]);
-    const exploitation = routes.find((route) => route.path === 'exploitation');
-    expect(exploitation?.children?.[0]?.redirectTo).toBe('/reglages/commercial/disponibilite');
   });
 
   it('ouvre Réglages › Commercial sans avaler ses propres vues', () => {
@@ -802,19 +728,15 @@ describe("l'arbre de routes du back-office", () => {
     ]);
   });
 
-  it('renvoie l’ancienne fournée vers le Fournil, et /production et le prévisionnel vers Prod manager', () => {
-    // `/production/journee` est le favori des postes de labo (2026-10-06).
+  it('renvoie /production et le prévisionnel vers Prod manager', () => {
+    // Le prévisionnel reste : la cloche du plan arrêté l'écrit (2026-11-01).
     const production = routes.find((route) => route.path === 'production');
     const moved = (production?.children ?? [])
       .filter((child) => typeof child.redirectTo === 'string')
       .map((child) => [child.path, child.redirectTo]);
     expect(moved).toEqual([
       ['', '/prod-manager'],
-      ['journee', '/fournil'],
       ['previsionnel', '/prod-manager/previsionnel'],
-      // Partis en Réglages › Production le 2026-10-13.
-      ['reglages', '/reglages/production/fournil'],
-      ['colisage', '/colisage'],
     ]);
   });
 
@@ -830,14 +752,6 @@ describe("l'arbre de routes du back-office", () => {
     const paths = (comptabilite?.children ?? []).map((child) => child.path);
     expect(paths).not.toContain('prelevement-du-mois');
     expect(paths).not.toContain('lots-de-prelevement');
-  });
-
-  it('renvoie l’ancienne file de retrait vers la vue du comptoir', () => {
-    // `/remises` vit dans les favoris du personnel : le passage à l'espace
-    // Comptoir ne doit pas le rendre 404.
-    const remises = routes.find((route) => route.path === 'remises');
-    expect(remises?.redirectTo).toBe('comptoir/retrait');
-    expect(remises?.loadComponent).toBeUndefined();
   });
 
   it('monte la saisie du comptoir avec l’origine « counter »', () => {
@@ -856,34 +770,17 @@ describe("l'arbre de routes du back-office", () => {
     expect(supervision && declaredPermission(supervision)).toEqual(['b2b_supervision:read']);
   });
 
-  it('ouvre Prod manager sur le premier onglet permis, et y mène les anciennes adresses (R3d)', () => {
+  it('ouvre Prod manager sur le premier onglet permis', () => {
     const prodManager = routes.find((route) => route.path === 'prod-manager');
     const root = prodManager?.children?.find((child) => child.path === '');
     expect(root?.redirectTo).toBe(prodManagerLanding);
-    const legacy = routes.find((route) => route.path === 'reassorts-a-produire');
-    expect(legacy?.redirectTo).toBe('/prod-manager/reassorts');
   });
 
-  it('ouvre Tour manager sur les tournées, et y mène la feuille de route retirée (2026-10-26)', () => {
+  it('ouvre Tour manager sur les tournées', () => {
     const tourManager = routes.find((route) => route.path === 'tour-manager');
     const redirectOf = (path: string): unknown =>
       tourManager?.children?.find((child) => child.path === path)?.redirectTo;
     expect(redirectOf('')).toBe(toRoundsTab);
-    expect(redirectOf('feuille-de-route')).toBe(toRoundsTab);
-  });
-
-  it('mène l’ancienne adresse de l’éditeur d’une promotion vers sa fiche, devenue le formulaire', () => {
-    // Un seul layout depuis le 2026-10-31 (décision de Hugo) : `:id/modifier`
-    // n'a plus d'écran, ses liens collés ouvrent la fiche. Déclarée avant
-    // `:id`, sans garde : la fiche porte la sienne.
-    const paths = routes.map((route) => route.path);
-    const legacy = routes.find((route) => route.path === 'promotions-ciblees/:id/modifier');
-
-    expect(legacy?.redirectTo).toBe('/promotions-ciblees/:id');
-    expect(legacy?.canActivate).toBeUndefined();
-    expect(paths.indexOf('promotions-ciblees/:id/modifier')).toBeLessThan(
-      paths.indexOf('promotions-ciblees/:id'),
-    );
   });
 
   it('ouvre le comptoir sur le premier onglet permis', () => {
