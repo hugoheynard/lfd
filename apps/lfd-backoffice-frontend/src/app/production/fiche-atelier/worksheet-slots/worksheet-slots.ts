@@ -63,6 +63,8 @@ export class WorksheetSlots {
   readonly busy = input<ReadonlySet<string>>(new Set());
   /** Téléphone : un seul bouton par rangée. */
   readonly compact = input(false);
+  /** Lecture seule (Prod manager) : aucun geste, rien d'autre ne change. */
+  readonly readOnly = input(false);
 
   readonly recorded = output<SlotRecord>();
   readonly entered = output<SlotEntry>();

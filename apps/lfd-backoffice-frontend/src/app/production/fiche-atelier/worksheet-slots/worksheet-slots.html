@@ -35,7 +35,7 @@
               />
               <span class="ws-figures">{{ row.got }} / {{ row.step.q }}</span>
             </span>
-            @if (row.missing > 0) {
+            @if (row.missing > 0 && !readOnly()) {
               <span class="ws-actions">
                 @if (row.line.container; as container) {
                   <button

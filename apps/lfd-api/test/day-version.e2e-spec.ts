@@ -435,6 +435,21 @@ describe("les routes de version (V2)", () => {
     },
   );
 
+  /**
+   * Le Prod manager montre la vue par tranche (2026-11-01) : la fiche datée se
+   * LIT sous `production_plan:read`, comme les échéances ; le geste « sorti »
+   * reste au fournil.
+   */
+  it("la fiche datée se lit sous `production_plan:read`, sans ouvrir la case « sorti »", async () => {
+    await allowRead("staff-prevision-fiche", "production_plan");
+    const planner = ctx.asSub("staff-prevision-fiche");
+    await planner.get(`/admin/production/worksheet?date=${DAY}`).expect(200);
+    await planner
+      .put(`/admin/production/worksheet/${DAY}/lines/${CROISSANT}/done`)
+      .send({ initials: "PM" })
+      .expect(403);
+  });
+
   it("🔴 `b2b_orders:read` n'ouvre plus la version du fournil", async () => {
     await allowRead("staff-version-commandes", "b2b_orders");
     const reader = ctx.asSub("staff-version-commandes");

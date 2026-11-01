@@ -86,8 +86,13 @@ export class ProductionWorksheetController {
    *
    * Le jour vient de la chaîne de requête pour qu'un lien soit partageable, comme
    * le prévisionnel : un fournil qui dit « regarde le 14 » envoie une adresse.
+   *
+   * Ouverte aussi au prévisionnel (`production_plan:read`) depuis le 2026-11-01 :
+   * le Prod manager montre la même vue par tranche, en lecture seule — la
+   * figure des échéances (`batch/:date/due-thresholds`), ouvertes aux deux.
    */
   @Get("worksheet")
+  @RequireAnyPermission("production_worksheet:read", "production_plan:read")
   async worksheet(
     @Query(new ZodQuery(productionWorksheetQuerySchema)) query: ProductionWorksheetQuery,
   ): Promise<ProductionWorksheetView> {

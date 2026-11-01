@@ -108,4 +108,23 @@ describe('la vue par tranche', () => {
       [...el.querySelectorAll('.ws-actions')].map((node) => node.querySelectorAll('button').length),
     ).toEqual([1, 1]);
   });
+
+  it('en lecture seule, aucun bouton', () => {
+    const fixture = TestBed.createComponent(WorksheetSlots);
+    fixture.componentRef.setInput('lines', [line(), TARTE]);
+    fixture.componentRef.setInput('now', NOW);
+    fixture.componentRef.setInput('readOnly', true);
+    fixture.detectChanges();
+    const el: HTMLElement = fixture.nativeElement;
+
+    expect(el.querySelectorAll('button').length).toBe(0);
+    expect(el.querySelectorAll('.ws-actions').length).toBe(0);
+    expect(el.querySelectorAll('[data-slot-row]').length).toBeGreaterThan(0);
+  });
+
+  it('sans lecture seule, les gestes restent', () => {
+    const el: HTMLElement = render([line(), TARTE]).nativeElement;
+
+    expect(el.querySelectorAll('button').length).toBeGreaterThan(0);
+  });
 });

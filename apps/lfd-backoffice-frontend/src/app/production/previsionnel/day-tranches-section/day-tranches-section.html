@@ -1,0 +1,29 @@
+<fold-card>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Par tranche"
+    subtitle="Ce qui reste à sortir avant chaque heure limite, tel que la fiche d’atelier le montre."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Lecture des tranches…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de lire les tranches">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @default {
+      @if (lines().length === 0) {
+        <fold-empty-state
+          title="Aucune tranche ce jour-là"
+          subtitle="Rien n’est à produire pour cette journée."
+        />
+      } @else {
+        <app-worksheet-slots [lines]="lines()" [now]="now()" [readOnly]="true" />
+      }
+    }
+  }
+</fold-card>
