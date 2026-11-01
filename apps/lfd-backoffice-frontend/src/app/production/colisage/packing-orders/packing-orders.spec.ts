@@ -1,5 +1,10 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type { PackingLine, PackingSheet, SitePaletteEntryView } from '@lfd/contracts';
+import type {
+  DayInternalTransferView,
+  PackingLine,
+  PackingSheet,
+  SitePaletteEntryView,
+} from '@lfd/contracts';
 import { By } from '@angular/platform-browser';
 import { FoldIconComponent } from 'fold-ng';
 import { describe, expect, it } from 'vitest';
@@ -62,6 +67,7 @@ interface Given {
   readonly openReference?: string | null;
   readonly hitLines?: ReadonlyMap<string, readonly PackingLine[]>;
   readonly palette?: readonly SitePaletteEntryView[];
+  readonly transfers?: readonly DayInternalTransferView[];
 }
 
 function render(given: Given): ComponentFixture<PackingOrders> {
@@ -75,6 +81,7 @@ function render(given: Given): ComponentFixture<PackingOrders> {
   fixture.componentRef.setInput('openReference', given.openReference ?? null);
   fixture.componentRef.setInput('hitLines', given.hitLines ?? new Map());
   fixture.componentRef.setInput('palette', given.palette ?? []);
+  fixture.componentRef.setInput('transfers', given.transfers ?? []);
   fixture.detectChanges();
   return fixture;
 }
@@ -269,5 +276,70 @@ describe('la liste des commandes du colisage', () => {
     expect(transfers[0]?.contains(bacs[1] ?? null)).toBe(true);
     expect(transfers[0]?.dataset['frameColor']).toBe('#7c3aed');
     expect(transfers[0]?.style.getPropertyValue('--co-frame-color')).toBe('#7c3aed');
+  });
+
+  describe('« Voir le manifeste » dans l’encadré du transfert (2026-11-01)', () => {
+    const VILLAGE: SitePaletteEntryView = {
+      id: 'vv',
+      label: 'Val Village',
+      supply: 'transfer',
+      isDeparture: false,
+      pickupColorB2b: null,
+      pickupColorB2c: null,
+      deliveryColorB2b: null,
+      deliveryColorB2c: null,
+      resupplyColor: null,
+      transferColor: null,
+    };
+    const PICKUP = sheet({ reference: 'CMD-VV', fulfillmentMethod: 'pickup', siteId: 'vv' });
+    const TRANSFER: DayInternalTransferView = {
+      transferId: 'tr_vv',
+      siteId: 'vv',
+      siteLabel: 'Val Village',
+      departedAt: null,
+    };
+
+    it('un bouton par transfert du site, et rien pour le transfert d’un autre site', () => {
+      const fixture = render({
+        sheets: [PICKUP],
+        palette: [VILLAGE],
+        transfers: [TRANSFER, { ...TRANSFER, transferId: 'tr_other', siteId: 'other' }],
+      });
+      const host: HTMLElement = fixture.nativeElement;
+      const buttons = host.querySelectorAll<HTMLElement>('.co-transfer [data-transfer-manifest]');
+      expect(Array.from(buttons).map((button) => button.dataset['transferManifest'])).toEqual([
+        'tr_vv',
+      ]);
+      expect(said(buttons[0])).toBe('Voir le manifeste');
+    });
+
+    it('un transfert parti le dit sur son bouton', () => {
+      const fixture = render({
+        sheets: [PICKUP],
+        palette: [VILLAGE],
+        transfers: [{ ...TRANSFER, departedAt: '2026-01-01T06:00:00.000Z' }],
+      });
+      const host: HTMLElement = fixture.nativeElement;
+      expect(said(host.querySelector('[data-transfer-manifest]'))).toBe(
+        'Voir le manifeste · parti',
+      );
+    });
+
+    it('émet le transfert choisi', () => {
+      const fixture = render({ sheets: [PICKUP], palette: [VILLAGE], transfers: [TRANSFER] });
+      const emitted: DayInternalTransferView[] = [];
+      fixture.componentInstance.manifestChosen.subscribe((transfer) => emitted.push(transfer));
+      (fixture.nativeElement as HTMLElement)
+        .querySelector<HTMLElement>('[data-transfer-manifest]')
+        ?.click();
+      expect(emitted).toEqual([TRANSFER]);
+    });
+
+    it('sans transfert lu, l’encadré ne propose pas le manifeste', () => {
+      const fixture = render({ sheets: [PICKUP], palette: [VILLAGE] });
+      const host: HTMLElement = fixture.nativeElement;
+      expect(host.querySelector('.co-transfer')).not.toBeNull();
+      expect(host.querySelector('[data-transfer-manifest]')).toBeNull();
+    });
   });
 });

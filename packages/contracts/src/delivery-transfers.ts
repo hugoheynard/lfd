@@ -178,3 +178,26 @@ export interface DriverTransferStopView {
   /** Le point GPS du site — « Y aller » ; `null` : non saisi. */
   readonly siteGps: GpsPoint | null;
 }
+
+/** Un transfert interne d'une journée, de quoi le reconnaître et ouvrir son manifeste. */
+export interface DayInternalTransferView {
+  readonly transferId: string;
+  /** Le site servi, identifiant opaque du commerce — celui des encadrés du colisage. */
+  readonly siteId: string;
+  /** Le nom du site, figé à l'ouverture du transfert. */
+  readonly siteLabel: string;
+  /** Parti le, ou `null`. */
+  readonly departedAt: string | null;
+}
+
+/**
+ * **Les transferts internes d'une journée** (`GET admin/delivery/transfers?day=`,
+ * 2026-11-01) : ceux qui portent au moins un élément. Lu par le poste de
+ * colisage et la Supervision pour ouvrir le manifeste depuis l'encadré d'un
+ * site servi par transfert.
+ */
+export interface DayInternalTransfersView {
+  readonly day: string;
+  /** Par site, puis du plus ancien au plus récent. */
+  readonly transfers: readonly DayInternalTransferView[];
+}

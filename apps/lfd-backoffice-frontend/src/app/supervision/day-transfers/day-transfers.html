@@ -1,0 +1,22 @@
+@for (transfer of reader.transfers(); track transfer.transferId) {
+  <div class="dt-row" [attr.data-day-transfer]="transfer.transferId">
+    <span class="dt-label">
+      <fold-icon name="truck" size="sm" />
+      Transfert → {{ transfer.siteLabel }}
+      @if (transfer.departedAt !== null) {
+        <span class="dt-departed">· parti</span>
+      }
+    </span>
+    <button
+      foldButton
+      size="sm"
+      emphasis="outline"
+      intent="neutral"
+      icon="list"
+      (click)="openManifest(transfer)"
+      data-transfer-manifest
+    >
+      Voir le manifeste
+    </button>
+  </div>
+}

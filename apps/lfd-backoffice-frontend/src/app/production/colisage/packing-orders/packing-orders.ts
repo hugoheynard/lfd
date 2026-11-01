@@ -2,12 +2,14 @@ import { NgTemplateOutlet } from '@angular/common';
 import { ChangeDetectionStrategy, Component, computed, input, output } from '@angular/core';
 import {
   FoldBadgeComponent,
+  FoldButtonComponent,
   FoldIconComponent,
   FoldViewToggleComponent,
   type FoldViewToggleOption,
 } from 'fold-ng';
 
 import type {
+  DayInternalTransferView,
   DeliveryPackingRoundView,
   PackingLine,
   PackingSheet,
@@ -18,6 +20,7 @@ import { methodLabel, type PackingStack } from '../../packing-board';
 import { ClienteleBadge } from '../clientele-badge/clientele-badge';
 import { type PackingItem, packingList } from '../packing-frames';
 import { readyByLabel } from '../packing-ready-by';
+import { transfersOfSite } from '../../../livraison/day-transfers.reader';
 import { packingRoundTitle } from '../packing-rounds';
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 
@@ -49,6 +52,7 @@ import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pi
     SaleQuantityPipe,
     ClienteleBadge,
     FoldBadgeComponent,
+    FoldButtonComponent,
     FoldIconComponent,
     FoldViewToggleComponent,
     NgTemplateOutlet,
@@ -109,6 +113,18 @@ export class PackingOrders {
   protected readonly items = computed<readonly PackingItem[]>(() =>
     packingList(this.sheets(), this.rounds(), this.palette()),
   );
+
+  /**
+   * Les transferts du jour, lus côté livraison (2026-11-01) — `[]` : l'encadré
+   * ne propose pas le manifeste.
+   */
+  readonly transfers = input<readonly DayInternalTransferView[]>([]);
+
+  protected readonly transfersOfSite = (siteId: string): readonly DayInternalTransferView[] =>
+    transfersOfSite(this.transfers(), siteId);
+
+  /** Le transfert dont on veut lire le manifeste — l'orchestrateur ouvre le dialogue. */
+  readonly manifestChosen = output<DayInternalTransferView>();
 
   protected readonly roundTitle = packingRoundTitle;
   protected readonly readyBy = readyByLabel;

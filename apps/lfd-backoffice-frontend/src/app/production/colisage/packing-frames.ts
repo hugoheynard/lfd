@@ -61,6 +61,8 @@ export interface PackingReplenishmentItem {
 export interface PackingTransferFrame {
   readonly kind: 'transfer';
   readonly key: string;
+  /** Le site servi — celui des transferts du jour, pour ouvrir leur manifeste. */
+  readonly siteId: string;
   readonly title: string;
   /** `#rrggbb`, ou `null` : la teinte neutre. */
   readonly color: string | null;
@@ -124,6 +126,7 @@ export function packingFrames(
     item: {
       kind: 'transfer',
       key: `transfer:${site.id}`,
+      siteId: site.id,
       title: `Transfert ${site.label}`,
       color: transferColorOf(site, palette),
       orders,

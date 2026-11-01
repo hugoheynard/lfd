@@ -37,7 +37,24 @@
           [attr.data-frame]="item.key"
           [attr.data-frame-color]="item.color ?? 'neutral'"
         >
-          <p class="co-transfer-title">{{ item.title }}</p>
+          <div class="co-transfer-head">
+            <p class="co-transfer-title">{{ item.title }}</p>
+            <!-- Le manifeste du transfert (Hugo, 2026-11-01) : le dialogue de
+                 la livraison, ouvert par le poste. Un par transfert du site. -->
+            @for (transfer of transfersOfSite(item.siteId); track transfer.transferId) {
+              <button
+                foldButton
+                size="sm"
+                emphasis="outline"
+                intent="neutral"
+                icon="list"
+                (click)="manifestChosen.emit(transfer)"
+                [attr.data-transfer-manifest]="transfer.transferId"
+              >
+                Voir le manifeste{{ transfer.departedAt === null ? '' : ' · parti' }}
+              </button>
+            }
+          </div>
           @for (order of item.orders; track order.key) {
             <ng-container *ngTemplateOutlet="bac; context: { $implicit: order }" />
           }

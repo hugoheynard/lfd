@@ -13,6 +13,7 @@
  * (OSRM n'est pas lancé en e2e) et le trajet du transfert (T0).
  */
 import type {
+  DayInternalTransfersView,
   DeliveryLoadingRoundView,
   DeliveryRoundsDayView,
   InternalTransferManifestView,
@@ -296,5 +297,67 @@ describe("la réception au site et le refus au comptoir (lot T2)", () => {
         data: { id: "i_dup", transferId: other.id, kind: "order", orderId, attachedAt: new Date() },
       }),
     ).rejects.toThrow();
+  });
+});
+
+/**
+ * Le manifeste vu du colisage et de la Supervision (Hugo, 2026-11-01) : les
+ * deux LECTURES s'ouvrent à `production_packing:read` et `b2b_supervision:read`,
+ * éprouvées sur des fiches aux droits RÉELS — une `communication` qui n'a que
+ * la dérogation donnée.
+ */
+describe("les transferts du jour et le manifeste, lus du colisage et de la Supervision", () => {
+  async function onlyRead(
+    sub: string,
+    resource: "production_packing" | "b2b_supervision" | null,
+  ): Promise<void> {
+    const row = await ctx.prisma.staffUser.create({
+      data: {
+        firstName: "Test",
+        lastName: sub,
+        email: `${sub}@lfc.test`,
+        role: "communication",
+        status: "active",
+        auth0Id: sub,
+      },
+    });
+    if (resource !== null) {
+      await ctx.prisma.staffPermissionOverride.create({
+        data: { staffUserId: row.id, resource, action: "read", effect: "allow" },
+      });
+    }
+  }
+
+  it.each(["production_packing", "b2b_supervision"] as const)(
+    "sous `%s:read` seul : la liste du jour et le manifeste se lisent",
+    async (resource) => {
+      const { transferId } = await composedTransfer(ctx, DAY);
+      const sub = `staff-transfer-${resource}`;
+      await onlyRead(sub, resource);
+      const reader = ctx.asSub(sub);
+
+      const day = jsonBody<DayInternalTransfersView>(
+        await reader.get(`/admin/delivery/transfers?day=${DAY}`).expect(200),
+      );
+      expect(day.transfers).toEqual([
+        expect.objectContaining({ transferId, siteLabel: "Val Village", departedAt: null }),
+      ]);
+      const manifest = jsonBody<InternalTransferManifestView>(
+        await reader.get(`/admin/delivery/transfers/${transferId}/manifest`).expect(200),
+      );
+      expect(manifest.transferId).toBe(transferId);
+    },
+  );
+
+  it("sans aucun de ces droits : 403 sur les deux lectures", async () => {
+    const { transferId } = await composedTransfer(ctx, DAY);
+    await onlyRead("staff-transfer-none", null);
+    const reader = ctx.asSub("staff-transfer-none");
+    await reader.get(`/admin/delivery/transfers?day=${DAY}`).expect(403);
+    await reader.get(`/admin/delivery/transfers/${transferId}/manifest`).expect(403);
+  });
+
+  it("refuse un jour mal formé (400)", async () => {
+    await admin(ctx).get(`/admin/delivery/transfers?day=demain`).expect(400);
   });
 });

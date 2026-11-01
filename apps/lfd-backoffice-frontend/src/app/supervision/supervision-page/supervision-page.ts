@@ -45,6 +45,7 @@ import { DayCalendar } from '../../shared/day-calendar/day-calendar';
 import { SupervisionColumn } from '../supervision-column/supervision-column';
 import { dayDiff, dayStripOf, serviceDayParam, shiftServiceDay, stampOf } from '../supervision-day';
 import { SupervisionHighlight } from '../supervision-highlight';
+import { DayTransfers } from '../day-transfers/day-transfers';
 import { SupervisionReads } from '../supervision-reads';
 import { lateSkusOf } from '../supervision-search';
 import { scrollToHits } from '../supervision-hits';
@@ -107,6 +108,7 @@ const BOARD_NARROW = '(max-width: 900px)';
     PreparationBand,
     PreparationColumn,
     DayCalendar,
+    DayTransfers,
     SupervisionColumn,
     StockBoard,
   ],

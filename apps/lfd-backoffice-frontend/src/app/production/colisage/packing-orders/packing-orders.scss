@@ -95,10 +95,18 @@
   border-left: 6px solid var(--co-frame-color, var(--fold-color-border));
 }
 
-.co-transfer-title {
-  margin: 0;
+.co-transfer-head {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--fold-space-xs) var(--fold-space-md);
+  align-items: center;
+  justify-content: space-between;
   padding: var(--fold-space-xs) var(--fold-space-md);
   background: var(--fold-color-surface-sunken);
+}
+
+.co-transfer-title {
+  margin: 0;
   font-size: var(--fold-text-sm);
   font-weight: var(--fold-weight-bold);
   letter-spacing: var(--fold-tracking-caps);

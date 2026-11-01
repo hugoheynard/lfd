@@ -13,6 +13,7 @@ import { beforeEach, describe, expect, it } from 'vitest';
 import { type DayWatch, DayVersionWatcher } from '../../shared/day-version/day-version-watcher';
 import { DeliveryBinsService } from '../../livraison/delivery-bins.service';
 import { DeliveryLoadingService } from '../../livraison/delivery-loading.service';
+import { DeliveryTransfersService } from '../../livraison/delivery-transfers.service';
 import { PermissionsStore } from '../../auth/permissions.store';
 import { PackingContainersService } from '../packing-containers.service';
 import { PackingService } from '../packing.service';
@@ -313,6 +314,11 @@ describe('le poste de colisage', () => {
         // ce poste de test n'a pas — il montre la phrase, sans service.
         { provide: PermissionsStore, useValue: { identity: () => ME, can: () => false } },
         { provide: DeliveryLoadingService, useValue: fakeDelivery },
+        // Les transferts du jour (2026-11-01) : aucun ici, le manifeste a sa suite.
+        {
+          provide: DeliveryTransfersService,
+          useValue: { ofDay: (day: string) => Promise.resolve({ day, transfers: [] }) },
+        },
         {
           provide: DeliveryBinsService,
           useValue: { binTypes: () => Promise.resolve({ types: [] }) },

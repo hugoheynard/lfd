@@ -9,11 +9,12 @@ import {
   FoldLoadingStateComponent,
   FoldPageLayoutComponent,
   FoldPageSectionComponent,
+  FoldPanelHostService,
   FoldSearchComponent,
   FoldSurfaceDirective,
 } from 'fold-ng';
 
-import type { PackingSheet, ProductionPackingView } from '@lfd/contracts';
+import type { DayInternalTransferView, PackingSheet, ProductionPackingView } from '@lfd/contracts';
 
 import { methodLabel, type PackingStack } from '../packing-board';
 import { isoDay } from '../worksheet-day';
@@ -30,6 +31,11 @@ import { PackingOrders } from './packing-orders/packing-orders';
 import { PackingResources } from './packing-resources/packing-resources';
 import { PackingResupplies } from './packing-resupplies/packing-resupplies';
 import { PackingRoundsReader } from './packing-rounds.reader';
+import { DayTransfersReader } from '../../livraison/day-transfers.reader';
+import {
+  TransferManifestDialog,
+  type TransferManifestDialogData,
+} from '../../livraison/transfer-manifest-dialog/transfer-manifest-dialog';
 import { SitePaletteStore } from '../../shared/logistics-colors/site-palette.store';
 import { sheetsInListOrder } from './packing-frames';
 import { foundOnlyElsewhere, hitLinesByOrder, normaliseTerm, searchHits } from './packing-search';
@@ -93,7 +99,13 @@ const COMPACT_MASTHEAD_QUERY = '(max-width: 1366px)';
   ],
   // Fournis ICI, pas à la racine : un poste ouvert deux fois ne partage ni sa
   // lecture ni ses envois.
-  providers: [PackingDayReader, PackingGestures, PackingShortfallGesture, PackingRoundsReader],
+  providers: [
+    PackingDayReader,
+    PackingGestures,
+    PackingShortfallGesture,
+    PackingRoundsReader,
+    DayTransfersReader,
+  ],
   templateUrl: './colisage.html',
   styleUrl: './colisage.scss',
 })
@@ -104,6 +116,9 @@ export class Colisage {
   protected readonly shortfall = inject(PackingShortfallGesture);
   /** Les tournées du jour, lues côté livraison (lot PC2) : l'ORDRE de la liste. */
   protected readonly rounds = inject(PackingRoundsReader);
+  /** Les transferts du jour, lus côté livraison : le manifeste depuis l'encadré (2026-11-01). */
+  protected readonly transfers = inject(DayTransfersReader);
+  private readonly panels = inject(FoldPanelHostService);
   /**
    * La palette des sites — les cadres de couleur de la liste (plan du tri et
    * des couleurs, L1b). Relue à l'ouverture et à chaque relecture : une
@@ -300,6 +315,8 @@ export class Colisage {
     this.shortfall.forget();
     const served = await this.day.load();
     if (served !== null) {
+      // Le manifeste ne retient pas l'ouverture du poste : lu à côté, sans attendre.
+      void this.transfers.load(served.date);
       await this.rounds.load(served.date);
       this.openAsked(served);
     }
@@ -315,6 +332,7 @@ export class Colisage {
     }
     const openBefore = this.current();
     if (await this.day.refresh()) {
+      void this.transfers.load(this.day.date());
       await Promise.all([this.rounds.load(this.day.date()), this.palette.refresh()]);
       this.noticeClosedElsewhere(openBefore);
     }
@@ -422,6 +440,13 @@ export class Colisage {
       this.stack.set('todo');
       this.chosen.set(sheet.reference);
     }
+  }
+
+  /** « Voir le manifeste » : le dialogue de la livraison, tel quel. */
+  protected openManifest(transfer: DayInternalTransferView): void {
+    this.panels.open<TransferManifestDialogData, void>(TransferManifestDialog, {
+      data: { transferId: transfer.transferId, siteLabel: transfer.siteLabel },
+    });
   }
 
   protected method(sheet: PackingSheet): string {

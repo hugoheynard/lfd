@@ -2618,6 +2618,8 @@ export type {
   MailSectionOrderResetPayload,
 } from "./mail-copy.js";
 export type {
+  DayInternalTransferView,
+  DayInternalTransfersView,
   InternalTransferManifestView,
   TransferManifestItemView,
   TransferManifestLineView,

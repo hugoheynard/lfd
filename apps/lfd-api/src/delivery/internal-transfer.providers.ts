@@ -16,6 +16,9 @@ import { TransferBinCounts } from "./domain/ports/transfer-bin-counts.reader.js"
 import { PrismaCarriedOrderTransfers } from "./infrastructure/prisma-carried-order-transfers.reader.js";
 import { PrismaResupplyOnlyTransfers } from "./infrastructure/prisma-resupply-only-transfers.reader.js";
 import { PrismaTransferBinCounts } from "./infrastructure/prisma-transfer-bin-counts.reader.js";
+import { GetDayInternalTransfersHandler } from "./application/queries/get-day-internal-transfers.handler.js";
+import { DayTransfersReader } from "./domain/ports/day-transfers.reader.js";
+import { PrismaDayTransfersReader } from "./infrastructure/prisma-day-transfers.reader.js";
 import { GetInternalTransferManifestHandler } from "./application/queries/get-internal-transfer-manifest.handler.js";
 import { TransferAttachment } from "./application/transfer-attachment.js";
 import { AsapTransferDispatch } from "./application/asap-transfer-dispatch.js";
@@ -60,6 +63,9 @@ export const INTERNAL_TRANSFER_PROVIDERS: readonly Provider[] = [
   TransferPlacement,
   { provide: TransferPlacer, useExisting: TransferPlacement },
   GetInternalTransferManifestHandler,
+  // 2026-11-01 : les transferts du jour, pour ouvrir le manifeste depuis le colisage et la Supervision.
+  GetDayInternalTransfersHandler,
+  { provide: DayTransfersReader, useClass: PrismaDayTransfersReader },
   // Lot T2 : la réception, la place d'une commande passée ou annulée.
   TransferReception,
   TransferMembership,
