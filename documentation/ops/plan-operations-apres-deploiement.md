@@ -148,3 +148,8 @@ Plus d'URL de production sur le poste pour une reprise.
     `ops_health` — `ops` n'a encore jamais déclenché d'écriture ; ce sera la
     première. Une opération terminée en production se retire au lot suivant,
     noté dans ce plan. `backfill-naf.ts` est hors périmètre.
+
+## 8. Reste à faire
+
+- **Le bandeau ne doit apparaître que dans ops** (Hugo, 2026-11-01), pas en
+  tête de tout le back-office.
