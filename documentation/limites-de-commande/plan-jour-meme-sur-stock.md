@@ -781,3 +781,8 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   Elle se retire à **L2b-3**.
 - La vue `ProductionDayResupplyLine` (contrat de l'écran du fournil) ne porte
   pas encore l'unité : **L2b-4**.
+
+**Validé par Hugo le 2026-11-02 (L2b-2)** : le total d'un bon de réassort compte
+une ligne au poids pour une pièce, ses grammes écrits sur sa ligne (« 1 terrine
+de 3,7 kg ») — le précédent P6 ; une commande à la pièce et un réassort au poids
+du même article font refuser l'arrêt, comme deux commandes d'unités différentes.
