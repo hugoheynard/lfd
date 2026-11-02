@@ -706,8 +706,7 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   (`resupply.receipt.below_shelf_draws`, 409). `send-reserve-to-shop` et
   `mark-arrived-on-transfer-received` n'écrivent que la demande de réassort,
   jamais un reçu (vérifié au bâti).
-- **Pour L4** : un article **vendu au poids** n'a pas de stock (le réassort ne
-  compte que des pièces) — la passation `shelf` doit le **refuser**, sinon il
-  se vendrait sur stock sans rien décompter.
+- ~~Pour L4 : refuser un article au poids~~ — **Hugo, 2026-11-02 : « un article
+  au poids doit avoir un stock au poids »**. Lot ajouté, **L2b** (§14).
 - **Pour L6** : un article pris sans avoir été reçu apparaîtrait avec un reste
   négatif ; aucun chemin ne le produit tant que la passation garde le reste.
