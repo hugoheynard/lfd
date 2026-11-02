@@ -12,6 +12,8 @@ import { GetResupplyReceiptHandler } from "../get-resupply-receipt.handler.js";
 import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "../receive-site-resupply.handler.js";
 import { WithdrawResupplyLineHandler } from "../withdraw-resupply-line.handler.js";
+import { DayShelfStock } from "../day-shelf-stock.js";
+import { ReceivedStockLowering } from "../received-stock-lowering.js";
 import {
   Catalogue,
   Directory,
@@ -21,6 +23,7 @@ import {
 } from "./resupply-doubles.js";
 import { InMemorySiteResupplies, InMemorySiteResupplyReader } from "./site-resupply-doubles.js";
 import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
+import { FixedShelfDraws, RecordingShelfStockLock } from "./shelf-stock-doubles.js";
 
 /** Le banc des handlers de la réception (lot R2) : doubles partagés, une horloge fixe. */
 /** 09:00 à Paris le jour du réassort : « Réceptionner » n'est permis qu'à partir de sa journée. */
@@ -89,7 +92,14 @@ export function setup() {
   const clock = new FixedClock(AT);
   const uow = new DirectUnitOfWork();
   const ids = new FixedIdGenerator("receipt");
+  const draws = new FixedShelfDraws();
+  const lock = new RecordingShelfStockLock();
+  const stock = new DayShelfStock(new InMemoryReceiptReader(receipts), draws);
+  const lowering = new ReceivedStockLowering(lock, stock);
   return {
+    draws,
+    lock,
+    stock,
     receipts,
     resupplies,
     alerts,
@@ -104,7 +114,7 @@ export function setup() {
       uow,
       packed,
     ),
-    correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow),
+    correctReceived: new CorrectReceivedResupplyLineHandler(receipts, staff, clock, uow, lowering),
     receive: new ReceiveResupplyLineHandler(
       receipts,
       alerts,
@@ -115,12 +125,13 @@ export function setup() {
       ids,
       uow,
     ),
-    correct: new CorrectResupplyLineHandler(receipts, staff, clock, uow),
-    withdraw: new WithdrawResupplyLineHandler(receipts, staff, clock, uow),
+    correct: new CorrectResupplyLineHandler(receipts, staff, clock, uow, lowering),
+    withdraw: new WithdrawResupplyLineHandler(receipts, staff, clock, uow, lowering),
     read: new GetResupplyReceiptHandler(
       new InMemoryReceiptReader(receipts),
       new InMemorySiteResupplyReader(resupplies),
       packed,
+      stock,
     ),
   };
 }

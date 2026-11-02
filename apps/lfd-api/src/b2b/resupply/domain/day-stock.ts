@@ -1,4 +1,4 @@
-import { estimateStock } from "./estimated-stock.js";
+import type { EstimatedStockLine } from "./estimated-stock.js";
 import { expectedLinesOf, type ResupplyReceipt } from "./resupply-receipt.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import type { PlacedSiteResupplySnapshot, ResupplyTarget } from "./site-resupply.js";
@@ -43,6 +43,8 @@ export interface DayStockInput {
   readonly resupplies: readonly PlacedSiteResupplySnapshot[];
   /** Ses reçus de la journée, réassort sans commande compris. */
   readonly receipts: readonly ResupplyReceipt[];
+  /** Son reste du jour, calculé par `DayShelfStock` sur ces mêmes reçus (lot L2). */
+  readonly stock: readonly EstimatedStockLine[];
   /** Ses alertes vivantes. */
   readonly alerts: readonly StockAlertSnapshot[];
   /** L'emballé au colisage par réassort, quand la fiche est close (R3b). */
@@ -57,7 +59,8 @@ export interface DayStockInput {
  *
  * - Un réassort annulé n'y est que s'il avait été réceptionné : ce qui est
  *   arrivé reste arrivé (même règle que la page de réception).
- * - Le stock est celui de `estimateStock` — la somme des reçus RÉCEPTIONNÉS ;
+ * - Le stock est le reste du jour reçu tout fait (`DayShelfStock`, lot L2) —
+ *   les reçus RÉCEPTIONNÉS moins ce que les commandes sur stock en ont pris ;
  *   l'attendu, l'emballé (sinon le demandé) des réassorts non annulés pas
  *   encore réceptionnés. Le stock ne monte jamais à l'envoi.
  * - Un produit n'y est que s'il a un reçu, une alerte ou un attendu ; tri :
@@ -130,7 +133,7 @@ function productsOf(
     tallies.set(sku, known);
     return known;
   };
-  for (const line of estimateStock(input.receipts)) {
+  for (const line of input.stock) {
     tallyOf(line.sku, line.label).stock += line.estimatedStock;
   }
   for (const resupply of pending) {

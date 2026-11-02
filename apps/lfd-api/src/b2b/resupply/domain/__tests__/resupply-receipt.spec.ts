@@ -202,7 +202,7 @@ describe("estimateStock", () => {
     rescue.receive(unorderedLine("BAG", 5), TRACE);
     rescue.receive(unorderedLine("PAC", 2), TRACE);
 
-    expect(estimateStock([morning, noon, notYet, rescue])).toEqual([
+    expect(estimateStock([morning, noon, notYet, rescue], [])).toEqual([
       { sku: "CRO", label: "Croissant", receivedQuantity: 32, estimatedStock: 32 },
       { sku: "PAC", label: "Pain au chocolat", receivedQuantity: 14, estimatedStock: 14 },
       { sku: "BAG", label: "Article BAG", receivedQuantity: 5, estimatedStock: 5 },
@@ -210,7 +210,51 @@ describe("estimateStock", () => {
   });
 
   it("une journée sans reçu n'a pas de stock", () => {
-    expect(estimateStock([expecting()])).toEqual([]);
+    expect(estimateStock([expecting()], [])).toEqual([]);
+  });
+});
+
+describe("estimateStock — les prélèvements des commandes sur stock (lot L2)", () => {
+  function receivedMorning(): ResupplyReceipt {
+    const morning = expecting();
+    morning.receiveAll(TRACE);
+    return morning;
+  }
+
+  it("soustrait ce que les commandes sur stock ont pris, sans toucher au reçu", () => {
+    expect(
+      estimateStock([receivedMorning()], [{ sku: "CRO", label: "Croissant", quantity: 5 }]),
+    ).toEqual([
+      { sku: "CRO", label: "Croissant", receivedQuantity: 24, estimatedStock: 19 },
+      { sku: "PAC", label: "Pain au chocolat", receivedQuantity: 12, estimatedStock: 12 },
+    ]);
+  });
+
+  it("additionne plusieurs prélèvements d'un même article", () => {
+    const rescue = unordered();
+    rescue.receive(unorderedLine("BAG", 5), TRACE);
+
+    expect(
+      estimateStock(
+        [rescue],
+        [
+          { sku: "BAG", label: "Baguette", quantity: 2 },
+          { sku: "BAG", label: "Baguette", quantity: 3 },
+        ],
+      ),
+    ).toEqual([{ sku: "BAG", label: "Article BAG", receivedQuantity: 5, estimatedStock: 0 }]);
+  });
+
+  it("montre en négatif un article pris sans avoir été reçu, avec le libellé de la commande", () => {
+    expect(estimateStock([], [{ sku: "TAR", label: "Tartelette", quantity: 2 }])).toEqual([
+      { sku: "TAR", label: "Tartelette", receivedQuantity: 0, estimatedStock: -2 },
+    ]);
+  });
+
+  it("ne déduit rien d'un reçu encore attendu : le prélèvement reste seul", () => {
+    expect(estimateStock([expecting()], [{ sku: "CRO", label: "Croissant", quantity: 1 }])).toEqual(
+      [{ sku: "CRO", label: "Croissant", receivedQuantity: 0, estimatedStock: -1 }],
+    );
   });
 });
 

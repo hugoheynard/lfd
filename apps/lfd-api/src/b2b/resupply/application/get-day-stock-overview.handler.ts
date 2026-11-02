@@ -5,9 +5,11 @@ import { PackedResuppliesReader } from "../../../packing/channels/commerce/index
 import { ClosedPlansReader } from "../../../production/channels/commerce/index.js";
 import { type DayStock, dayStockOf } from "../domain/day-stock.js";
 import { DayStockReader } from "../domain/day-stock.reader.js";
+import type { EstimatedStockLine } from "../domain/estimated-stock.js";
 import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import { ResupplySiteLabels } from "../domain/resupply-site-labels.js";
 import { StockAlertReader } from "../domain/stock-alert.reader.js";
+import { DayShelfStock } from "./day-shelf-stock.js";
 import { GetDayStockOverviewQuery } from "./get-day-stock-overview.query.js";
 
 /**
@@ -15,7 +17,8 @@ import { GetDayStockOverviewQuery } from "./get-day-stock-overview.query.js";
  * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-22) : pour la
  * journée regardée, une entrée par point — ses réassorts (envoyé, figé,
  * arrivé, réceptionné) et ses produits (stock du jour, alerte vivante,
- * attendu). Lecture pure.
+ * attendu). Lecture pure. Le stock est le reste du jour (`DayShelfStock`) :
+ * les reçus moins ce que les commandes sur stock en ont pris (lot L2).
  *
  * Tous les points non archivés y sont, dans l'ordre des points, même sans
  * rien ; un point archivé n'y est que s'il porte quelque chose ce jour-là,
@@ -33,6 +36,7 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
     private readonly plans: ClosedPlansReader,
     private readonly packed: PackedResuppliesReader,
     private readonly labels: ResupplySiteLabels,
+    private readonly stock: DayShelfStock,
   ) {}
 
   async execute(query: GetDayStockOverviewQuery): Promise<DayStockOverviewView> {
@@ -46,10 +50,12 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
     ]);
     const receipts = snapshots.map((snapshot) => ResupplyReceipt.restore(snapshot));
     const packed = await this.packed.packedOf(resupplies.map((resupply) => resupply.id));
+    const stocks = await this.stocksOf(day, [...sites.map((site) => site.id)], receipts);
     const dayOf = (siteId: string): DayStock =>
       dayStockOf({
         resupplies: resupplies.filter((r) => r.siteId === siteId),
         receipts: receipts.filter((r) => r.siteId === siteId),
+        stock: stocks.get(siteId) ?? [],
         alerts: alerts.filter((a) => a.siteId === siteId),
         packed,
         planStopped: stopped.includes(day),
@@ -65,6 +71,25 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
       dayOf,
     );
     return { serviceDay: day, sites: [...active, ...archived] };
+  }
+
+  /**
+   * Le reste de chaque point — la liste, plus ceux qui ont un reçu —, par le
+   * même calcul que la réception (`DayShelfStock`, lot L2).
+   */
+  private async stocksOf(
+    day: string,
+    listed: readonly string[],
+    receipts: readonly ResupplyReceipt[],
+  ): Promise<ReadonlyMap<string, readonly EstimatedStockLine[]>> {
+    const siteIds = [...new Set([...listed, ...receipts.map((r) => r.siteId)])];
+    const entries = await Promise.all(
+      siteIds.map(async (siteId) => {
+        const own = receipts.filter((r) => r.siteId === siteId);
+        return [siteId, await this.stock.of(siteId, day, own)] as const;
+      }),
+    );
+    return new Map(entries);
   }
 
   /** Les points hors de la liste qui portent quelque chose ce jour-là. */

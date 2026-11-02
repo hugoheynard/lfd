@@ -15,6 +15,12 @@ import type { ServiceDay } from "../value-objects/service-day.value-object.js";
  * serait relâché à la fin de sa propre requête. L'adaptateur le refuse.
  *
  * Un port à part (ISP) : les lecteurs de la journée n'ont rien à verrouiller.
+ *
+ * 🔴 **Jamais tenu avec le verrou du stock de la vitrine** (`ShelfStockLock`,
+ * `b2b/resupply`) : une commande prise sur la vitrine n'entre jamais au plan,
+ * et aucun chemin ne prend les deux — deux verrous qu'aucune transaction ne
+ * tient ensemble ne s'attendent pas en cercle (plan
+ * `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`, §11.2).
  */
 export abstract class ProductionDayLock {
   /** Prend le verrou jusqu'à la fin de l'unité de travail en cours. */

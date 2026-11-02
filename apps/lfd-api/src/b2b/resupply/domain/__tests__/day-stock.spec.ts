@@ -1,4 +1,5 @@
-import { dayStockOf } from "../day-stock.js";
+import { type DayStock, type DayStockInput, dayStockOf } from "../day-stock.js";
+import { estimateStock } from "../estimated-stock.js";
 import { ResupplyReceipt } from "../resupply-receipt.js";
 import type { PlacedSiteResupplySnapshot } from "../site-resupply.js";
 
@@ -34,13 +35,18 @@ function receivedFor(resupply: PlacedSiteResupplySnapshot): ResupplyReceipt {
   return receipt;
 }
 
+/** La journée, son stock calculé sur ses propres reçus — sans prélèvement, sauf mention. */
+function dayOf(input: Omit<DayStockInput, "stock">): DayStock {
+  return dayStockOf({ ...input, stock: estimateStock(input.receipts, []) });
+}
+
 const EMPTY = { alerts: [], packed: new Map(), planStopped: false };
 
 describe("la journée de stock d'un point (S1)", () => {
   it("garde un annulé déjà réceptionné, compté au stock : ce qui est arrivé reste arrivé", () => {
     const cancelled = sent("r1", 4, { cancelled: TRACE });
 
-    const day = dayStockOf({
+    const day = dayOf({
       ...EMPTY,
       resupplies: [cancelled],
       receipts: [receivedFor(cancelled)],
@@ -53,7 +59,7 @@ describe("la journée de stock d'un point (S1)", () => {
   });
 
   it("n'attend rien d'un annulé non reçu, et ne compte jamais au stock un réassort seulement envoyé", () => {
-    const day = dayStockOf({
+    const day = dayOf({
       ...EMPTY,
       resupplies: [sent("r1", 4, { cancelled: TRACE }), sent("r2", 7)],
       receipts: [],
@@ -68,7 +74,7 @@ describe("la journée de stock d'un point (S1)", () => {
   it("additionne le reçu et l'attendu d'un même produit", () => {
     const first = sent("r1", 4);
 
-    const day = dayStockOf({
+    const day = dayOf({
       ...EMPTY,
       resupplies: [first, sent("r2", 6)],
       receipts: [receivedFor(first)],
@@ -76,6 +82,24 @@ describe("la journée de stock d'un point (S1)", () => {
 
     expect(day.products).toEqual([
       { sku: "CRO", label: "Croissant", stock: 4, alert: null, expected: 6 },
+    ]);
+  });
+});
+
+describe("la journée de stock d'un point — le reste décompté (lot L2)", () => {
+  it("montre le stock reçu tout fait, prélèvements déjà déduits", () => {
+    const first = sent("r1", 4);
+    const receipts = [receivedFor(first)];
+
+    const day = dayStockOf({
+      ...EMPTY,
+      resupplies: [first],
+      receipts,
+      stock: estimateStock(receipts, [{ sku: "CRO", label: "Croissant", quantity: 3 }]),
+    });
+
+    expect(day.products).toEqual([
+      { sku: "CRO", label: "Croissant", stock: 1, alert: null, expected: 0 },
     ]);
   });
 });

@@ -80,6 +80,12 @@ import { PrismaSiteResupplyRepository } from "./infrastructure/prisma-site-resup
 import { PrismaStockAlertReader } from "./infrastructure/prisma-stock-alert.reader.js";
 import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.repository.js";
 import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-served-sites.js";
+import { PrismaShelfStockLock } from "./infrastructure/prisma-shelf-stock-lock.js";
+import { PrismaShelfDrawsReader } from "../orders/infrastructure/prisma-shelf-draws.reader.js";
+import { ShelfStockLock } from "./domain/shelf-stock-lock.js";
+import { ShelfDrawsReader } from "./domain/shelf-draws.reader.js";
+import { DayShelfStock } from "./application/day-shelf-stock.js";
+import { ReceivedStockLowering } from "./application/received-stock-lowering.js";
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
@@ -90,7 +96,7 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
  * enregistrée depuis R1c, et celle que le fournil envoie à part depuis R1d ;
  * et, depuis le lot R1b,
  * les alertes de stock du comptoir (`StockAlert`). Aucune dépendance au
- * modèle `Order`.
+ * modèle `Order` lu ici (cf. lot L2 plus bas).
  *
  * `CatalogModule` pour le catalogue publié ; `AccountModule` pour le seul
  * `StaffDirectory` (l'auteur figé du geste) ; `OrderCutoffsInForceModule`
@@ -109,6 +115,12 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
  *
  * Depuis le lot S1 (2026-10-22), l'onglet Stock de la Supervision
  * (`GetDayStockOverview`, sous `b2b_supervision`), en lecture seule.
+ *
+ * Depuis le lot L2 du plan du jour J (2026-11-02), le stock est DÉCOMPTÉ : les
+ * prélèvements des commandes sur stock (`ShelfDrawsReader`, déclaré ici,
+ * implémenté par `orders` qui possède les lignes — même bloc `b2b`) et le
+ * verrou du stock (`ShelfStockLock`). Le module ne lit toujours aucune table
+ * des commandes lui-même.
  */
 @Module({
   imports: [CatalogModule, AccountModule, OrderCutoffsInForceModule],
@@ -137,6 +149,10 @@ import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-serv
     { provide: StockAlertRepository, useClass: PrismaStockAlertRepository },
     { provide: StockAlertReader, useClass: PrismaStockAlertReader },
     { provide: DayStockReader, useClass: PrismaDayStockReader },
+    { provide: ShelfStockLock, useClass: PrismaShelfStockLock },
+    { provide: ShelfDrawsReader, useClass: PrismaShelfDrawsReader },
+    DayShelfStock,
+    ReceivedStockLowering,
     ReceiveResupplyLineHandler,
     CorrectResupplyLineHandler,
     WithdrawResupplyLineHandler,

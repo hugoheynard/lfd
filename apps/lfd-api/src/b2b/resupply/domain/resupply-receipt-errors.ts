@@ -170,3 +170,21 @@ export class UnreceivedReceiptNotPersistableError extends TechnicalError {
     );
   }
 }
+
+/**
+ * Une baisse de reçu passerait sous ce que les commandes sur stock ont déjà
+ * pris (plan du jour J, §11.2, lot L2) : la vitrine afficherait un reste
+ * négatif, et une commande déjà vendue n'aurait plus de marchandise.
+ */
+export class ShelfStockAlreadySoldError extends BusinessError {
+  constructor(
+    readonly sku: string,
+    readonly label: string,
+    readonly sold: number,
+  ) {
+    super(
+      "resupply.receipt.below_shelf_draws",
+      `${String(sold)} « ${label} » déjà vendus sur stock aujourd'hui : le reçu ne peut pas descendre sous ${String(sold)}. Annulez d'abord la commande concernée si l'article manque vraiment.`,
+    );
+  }
+}

@@ -2,11 +2,11 @@ import type { ResupplyReceiptView } from "@lfd/contracts";
 import { QueryHandler, type IQueryHandler } from "@nestjs/cqrs";
 
 import { PackedResuppliesReader } from "../../../packing/channels/commerce/index.js";
-import { estimateStock } from "../domain/estimated-stock.js";
 import { ResupplyReceipt } from "../domain/resupply-receipt.js";
 import { ResupplyReceiptReader } from "../domain/resupply-receipt.reader.js";
 import { isPlaced } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
+import { DayShelfStock } from "./day-shelf-stock.js";
 import { GetResupplyReceiptQuery } from "./get-resupply-receipt.query.js";
 import { receptionView, unorderedView } from "./resupply-receipt-view.js";
 
@@ -14,7 +14,8 @@ import { receptionView, unorderedView } from "./resupply-receipt-view.js";
  * Sert la page de réception d'un point pour une journée (lot R2) : les
  * réassorts envoyés qui la visent — « au plus tôt » du jour et « pour
  * demain » de la veille ont la même journée —, chacun avec sa réception, le
- * réassort sans commande, et le stock estimé, somme des reçus. Un réassort
+ * réassort sans commande, et le reste du jour (`DayShelfStock` : les reçus
+ * moins ce que les commandes sur stock en ont pris, lot L2). Un réassort
  * annulé n'est servi que s'il avait déjà été réceptionné : ce qui est arrivé
  * reste arrivé. Lecture pure : rien ne s'ouvre.
  */
@@ -27,6 +28,7 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
     private readonly receipts: ResupplyReceiptReader,
     private readonly resupplies: SiteResupplyReader,
     private readonly packed: PackedResuppliesReader,
+    private readonly stock: DayShelfStock,
   ) {}
 
   async execute(query: GetResupplyReceiptQuery): Promise<ResupplyReceiptView> {
@@ -56,7 +58,7 @@ export class GetResupplyReceiptHandler implements IQueryHandler<
       serviceDay: query.serviceDay,
       receptions,
       unordered: unorderedView(receipts.find((receipt) => receipt.resupplyId === null) ?? null),
-      stock: estimateStock(receipts),
+      stock: await this.stock.of(query.siteId, query.serviceDay, receipts),
     };
   }
 }

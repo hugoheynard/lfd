@@ -97,6 +97,7 @@ async function world(stopped: readonly string[], extra: readonly SiteResupplySna
     new FixedClosedPlans(stopped),
     bench.packed,
     new SiteLabels(new Map([[ARCHIVED, "Ancien kiosque"]])),
+    bench.stock,
   );
   return handler.execute(new GetDayStockOverviewQuery(DAY));
 }

@@ -6,6 +6,7 @@ import { StaffDirectory } from "../../account/domain/ports/staff-directory.js";
 import { ReceiptNotYetReceivedError } from "../domain/resupply-receipt-errors.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
 import { CorrectReceivedResupplyLineCommand } from "./correct-received-resupply-line.command.js";
+import { ReceivedStockLowering } from "./received-stock-lowering.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
@@ -13,6 +14,9 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * reçu d'une ligne change, l'attendu reste. Avant « Réceptionner », rien
  * n'est reçu, donc rien ne se corrige (409). Comme en R1b, une correction
  * ne lève aucune alerte : seule la réception le fait.
+ *
+ * Une baisse passe par `ReceivedStockLowering` (plan du jour J, lot L2) : elle
+ * ne descend pas sous ce que les commandes sur stock ont déjà pris.
  */
 @CommandHandler(CorrectReceivedResupplyLineCommand)
 export class CorrectReceivedResupplyLineHandler implements ICommandHandler<
@@ -24,6 +28,7 @@ export class CorrectReceivedResupplyLineHandler implements ICommandHandler<
     private readonly staff: StaffDirectory,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly lowering: ReceivedStockLowering,
   ) {}
 
   async execute(command: CorrectReceivedResupplyLineCommand): Promise<void> {
@@ -33,8 +38,13 @@ export class CorrectReceivedResupplyLineHandler implements ICommandHandler<
       if (receipt === null) {
         throw new ReceiptNotYetReceivedError();
       }
-      receipt.correct(command.sku, command.quantity, trace);
-      await this.receipts.save(receipt);
+      const article = { siteId: command.siteId, serviceDay: receipt.serviceDay, sku: command.sku };
+      // Chargé avant le verrou pour en connaître la journée : un reçu changé
+      // entre-temps est refusé par `save` (version), il ne s'écrase pas.
+      await this.lowering.lower(article, async () => {
+        receipt.correct(command.sku, command.quantity, trace);
+        await this.receipts.save(receipt);
+      });
     });
   }
 }

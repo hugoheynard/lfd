@@ -688,3 +688,26 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   `20261013300000` appliquée mais absente du dépôt). La migration a été
   appliquée par `migrate deploy`, qui n'efface rien. La dérive reste à
   réaligner (carte des chantiers, §0).
+
+### Le bâti de L2 (2026-11-02)
+
+- `ShelfStockLock` (`b2b/resupply/domain/shelf-stock-lock.ts`) et son adaptateur
+  `pg_advisory_xact_lock` ; la règle « jamais tenu avec le verrou de journée »
+  est écrite dans les deux ports.
+- `ShelfDrawsReader` (déclaré par `resupply`, implémenté par `orders`,
+  `prisma-shelf-draws.reader.ts`) : lignes **à la pièce** des commandes `shelf`
+  du jour au point, statut ni `draft` ni `cancelled`.
+- `estimateStock(receipts, draws)` reste pure ; `DayShelfStock` est le seul
+  endroit qui lui passe les prélèvements, lu par la réception et l'onglet Stock
+  de la Supervision. Le contrat servi garde sa forme : `estimatedStock` vaut
+  désormais « reçu − pris ».
+- `ReceivedStockLowering` : toute baisse d'une quantité reçue (les trois
+  chemins) prend le verrou et refuse de passer sous le déjà-pris
+  (`resupply.receipt.below_shelf_draws`, 409). `send-reserve-to-shop` et
+  `mark-arrived-on-transfer-received` n'écrivent que la demande de réassort,
+  jamais un reçu (vérifié au bâti).
+- **Pour L4** : un article **vendu au poids** n'a pas de stock (le réassort ne
+  compte que des pièces) — la passation `shelf` doit le **refuser**, sinon il
+  se vendrait sur stock sans rien décompter.
+- **Pour L6** : un article pris sans avoir été reçu apparaîtrait avec un reste
+  négatif ; aucun chemin ne le produit tant que la passation garde le reste.
