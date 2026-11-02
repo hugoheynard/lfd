@@ -83,6 +83,11 @@ Du 2026-11-02 :
 - **Le règlement par défaut d'une saisie de l'équipe devrait toujours être
   « au compte, à facturer »** — à concilier avec l'objection 4 du §9.1.
 - **Garder la donnée** du raccourci : combien de fois, quelle clientèle.
+- **Le nom de la marque** : `supply` (`planned` / `shelf`), d'où vient la
+  marchandise — pas « même jour », qu'une saisie hors plan cuite par un
+  retirage est aussi. `placed_off_plan` existant n'est qu'un badge et ne la
+  remplace pas.
+- **« Valider et remettre »** pour le retrait immédiat d'un pro (§5).
 
 Du 2026-11-02, après le schéma (Hugo) :
 
@@ -212,7 +217,7 @@ remise (règlement non clos), ni facture.
 
 - **Une commande « sur stock »** : pour aujourd'hui, au point, chaque ligne
   prise dans le stock du jour de ce point. **Une marque à la passation**
-  (`drawnFromStock`, colonne additive), et non un mode d'acheminement : elle
+  (`supply`, colonne additive à deux valeurs : `planned` — fabriquée pour elle — et `shelf` — prise dans la vitrine ; figée à la passation, jamais modifiable), et non un mode d'acheminement : elle
   reste un retrait pour la file, la remise, le BL et la facture.
 - **Le reste** = reçus réceptionnés − lignes des commandes sur stock non
   annulées, du jour, au point ; **un seul calcul**, servi par un port que le
@@ -222,8 +227,17 @@ remise (règlement non clos), ni facture.
   de réception.
 - **Pas d'heure limite générale** pour elle ; ce qui la limite : l'autorisation
   de sa clientèle, les créneaux restants du site, le reste.
-- **Le raccourci** du comptoir pose en plus `entryShortcut: "immediate_pickup"`
-  (le compte que veut Hugo) et impose `settlement: "account"` au serveur.
+- **Le raccourci** du comptoir pose en plus `entry_shortcut = immediate_pickup`
+  (le compte que veut Hugo, croisé avec la clientèle déjà figée sur la
+  commande) et le règlement au compte, selon l'option admin du pro sans crédit.
+- **« Valider et remettre »** (Hugo, 2026-11-02) : pour le retrait immédiat
+  d'un pro, le bouton de validation de la saisie devient **« Valider et
+  remettre »** — un seul geste du vendeur, qui passe la commande puis la remet.
+  La remise reste **celle du bloc du retrait** (`confirm-handover.handler.ts`,
+  le fait `OrderHandedOver`, le BL créé à la remise, la clôture du règlement) :
+  le commerce n'écrit jamais la remise lui-même (§9.2, 3). Si la remise est
+  refusée après une passation réussie, la commande reste dans la file du
+  comptoir, où le geste normal la remet ; l'écran le dit.
 
 Lots proposés : **J2a** (la marque, le reste, le verrou), **J2b** (la passation
 d'un particulier), **J2c** (la saisie de l'équipe et le raccourci), **J3/J4**
