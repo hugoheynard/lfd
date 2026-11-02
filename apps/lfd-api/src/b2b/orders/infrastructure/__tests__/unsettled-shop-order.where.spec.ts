@@ -30,4 +30,19 @@ describe("le périmètre de l'expiration", () => {
       OR: [unsettledShopOrderWhere(), unsettledShelfOrderWhere()],
     });
   });
+
+  // Une commande réglée ou annulée ne tient plus la vitrine et ne s'annule pas :
+  // les deux périmètres ne retiennent que « placée » et « non réglée ».
+  it("aucun périmètre n'admet une commande réglée, remboursée ou annulée", () => {
+    for (const where of [unsettledShopOrderWhere(), unsettledShelfOrderWhere()]) {
+      expect(where.status).toBe("placed");
+      expect(where.paymentStatus).toEqual({ in: ["pending", "failed"] });
+    }
+  });
+
+  it("la commande sur stock n'a pas besoin d'une clientèle ni d'une société : le pro y entre", () => {
+    const where = unsettledShelfOrderWhere();
+    expect(where).not.toHaveProperty("companyId");
+    expect(where).not.toHaveProperty("clientele");
+  });
 });

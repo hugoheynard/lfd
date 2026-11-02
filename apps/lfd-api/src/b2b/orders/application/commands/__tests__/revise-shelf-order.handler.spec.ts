@@ -258,6 +258,54 @@ describe("ReviseOrderHandler — une commande sur stock (L5)", () => {
   });
 });
 
+describe("ReviseOrderHandler — une commande sur stock, aux bornes de la journée et du reste", () => {
+  it("une commande sur stock d'un jour À VENIR ne se modifie pas non plus", async () => {
+    // « Aujourd'hui » est le seul jour servi : la veille de la scène, la commande est future.
+    const mount = shelfMount({ now: new Date("2026-11-09T09:00:00.000Z") });
+    const { handler, revisions } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
+
+    await expect(handler.execute(revise(STAFF, 11))).rejects.toBeInstanceOf(
+      ShelfOrderNotTodayError,
+    );
+    expect(revisions.saved).toEqual([]);
+    expect(mount.lock.taken).toEqual([]);
+  });
+
+  it("le verdict d'une commande d'un jour passé est shelf_closed, même pour l'équipe", async () => {
+    const mount = shelfMount({ now: new Date("2026-11-11T09:00:00.000Z") });
+    const revising = revisingAt(new FixedClock(new Date("2026-11-11T09:00:00.000Z")), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
+
+    expect(await revising.revisabilityOf(await shelfOrder(), "staff", null)).toMatchObject({
+      revisable: false,
+      block: { kind: "shelf_closed" },
+    });
+  });
+
+  it("une hausse égale au reste passe, d'une pièce de plus elle est refusée", async () => {
+    const mount = shelfMount({ left: 1 });
+    const { handler, revisions } = reviseScene(await shelfOrder(), {
+      plans: mount.plans,
+      shelf: mount.shelf,
+    });
+
+    await handler.execute(revise(STAFF, 11));
+    expect(revisions.saved).toHaveLength(1);
+
+    const refused = shelfMount({ left: 1 });
+    const scene = reviseScene(await shelfOrder(), { plans: refused.plans, shelf: refused.shelf });
+    await expect(scene.handler.execute(revise(STAFF, 12))).rejects.toBeInstanceOf(
+      ShelfStockShortError,
+    );
+    expect(scene.revisions.saved).toEqual([]);
+  });
+});
+
 describe("OrderRevising.revisabilityOf — une commande sur stock (L5)", () => {
   it("modifiable pour l'équipe, sans heure limite, sur un plan arrêté", async () => {
     const mount = shelfMount();

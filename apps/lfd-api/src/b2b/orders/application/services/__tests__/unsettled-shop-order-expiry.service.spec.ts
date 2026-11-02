@@ -285,3 +285,56 @@ describe("UnsettledShopOrderExpiry — la tenue du stock d'une commande sur stoc
     expect(calls).toEqual(["cancel-intent:pi_paying"]);
   });
 });
+
+/**
+ * Les bornes du délai, de bout en bout : strictement plus vieux que la durée
+ * expire, à la minute pile la commande tient encore — et la boutique
+ * fabriquée garde ses 30 minutes quel que soit le réglage de la vitrine.
+ */
+describe("UnsettledShopOrderExpiry — les bornes du délai", () => {
+  it.each([5, 30, 120])(
+    "durée réglée à %i : tient à la minute pile, expire une minute après",
+    async (hold) => {
+      const { expiry, calls } = build({
+        rows: [shelfRow("at_limit", hold), shelfRow("past", hold + 1)],
+        shelfHoldMinutes: hold,
+      });
+
+      const report = await expiry.expireLapsed();
+
+      expect(report).toEqual({ cancelled: 1, kept: 0 });
+      expect(calls).toEqual(["cancel-intent:pi_past", "cancel-order:past"]);
+    },
+  );
+
+  it("la boutique fabriquée ne suit PAS le réglage de la vitrine", async () => {
+    const { expiry, calls } = build({
+      rows: [row("shop_30", 30), row("shop_31", 31)],
+      shelfHoldMinutes: 120,
+    });
+
+    await expiry.expireLapsed();
+
+    expect(calls).toEqual(["cancel-intent:pi_shop_31", "cancel-order:shop_31"]);
+  });
+
+  it("une vitrine réglée à 5 minutes n'abrège pas la boutique fabriquée", async () => {
+    const { expiry, calls } = build({
+      rows: [row("shop_10", 10), shelfRow("shelf_10", 10)],
+      shelfHoldMinutes: 5,
+    });
+
+    const report = await expiry.expireLapsed();
+
+    expect(report).toEqual({ cancelled: 1, kept: 0 });
+    expect(calls).toEqual(["cancel-intent:pi_shelf_10", "cancel-order:shelf_10"]);
+  });
+
+  it("un passage compte ensemble une commande fabriquée et une commande sur stock", async () => {
+    const { expiry } = build({
+      rows: [row("shop", 31), shelfRow("shelf", 31)],
+    });
+
+    expect(await expiry.expireLapsed()).toEqual({ cancelled: 2, kept: 0 });
+  });
+});
