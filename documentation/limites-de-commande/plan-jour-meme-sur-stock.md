@@ -301,7 +301,7 @@ quantités, et éventuellement un stock »).
      `awaitingProduction` nourrit `OvenWaitingOrdersReader` — « attend le
      four » sur la fiche.
 
-   → **Inventaire lecteur par lecteur, chacun avec sa décision, avant tout bâti.**
+   → **Inventaire fait le 2026-11-02 : §9.3.**
 
 2. **La passation d'un particulier n'a pas de chemin** : `ensureDayOpen` et
    `receiveOffPlan` la refusent sur un plan arrêté, `OrderCutoffGate.ensure`
@@ -360,3 +360,54 @@ restent :
   — le réassort, d'où vient le stock du jour.
 - [`../comptoir/architecture-commande-au-comptoir.md`](../comptoir/architecture-commande-au-comptoir.md)
   — la saisie au comptoir.
+
+### 9.3 L'inventaire des lecteurs d'une journée (2026-11-02)
+
+Fait en ouvrant chaque adaptateur qui lit `orders` par
+`requestedDeliveryDate` (`grep` sur `b2b/**/infrastructure` et
+`handover/channels`), puis le port qu'il implémente et ses consommateurs. Une
+commande sur stock est un **retrait** de **statut `placed`** jusqu'à sa remise,
+au règlement clos (au compte) ou en cours (carte) — c'est sous cette forme
+qu'elle traverse chaque filtre.
+
+**Doivent l'ignorer — production et transport :**
+
+| Lecteur                                                                                                                                                                                                                     | Filtre aujourd'hui                                                                          | Ce qu'il nourrit                                                                                                                                                                                         | Sans geste, la commande sur stock…                                                                                                   |
+| --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `planWhere` (`plan-filter.ts:47`) — utilisé par `prisma-day-orders.source.ts` (`producibleFor`), `prisma-expected-production.reader.ts`, `prisma-pending-orders.reader.ts`, `prisma-order.repository.ts` (`absorbIntoPlan`) | `status: placed` + règlement ni refusé ni en vol                                            | fiche d'atelier, compte à produire, **retirage**, réassort lancé (`launch-resupply`), **alerte de rattrapage** (`run-auto-close-round.handler.ts:150`), prévisionnel, état de la journée                 | serait absorbée par un retirage et **cuite** ; ferait sonner « le plan d'aujourd'hui n'est pas arrêté » ; gonflerait le prévisionnel |
+| `PrismaOrderReader.listForProduction` (`prisma-order.reader.ts:308`, « la CINQUIÈME surface »)                                                                                                                              | `status ∉ {cancelled, draft}` + `settlementWhere`                                           | **le dossier du jour** : ses bons et leur numérotation                                                                                                                                                   | aurait un **bon imprimé**, et la pile « 3/14 » changerait en cours de journée                                                        |
+| `PrismaDeadlineOrdersReader` (`prisma-deadline-orders.reader.ts:30`)                                                                                                                                                        | statuts en attente de retrait + `settlementWhere`                                           | les **échéances du four** (`due-thresholds.service.ts`) → tranches, paliers de la fiche, calendrier du dossier                                                                                           | tirerait une échéance de four                                                                                                        |
+| `PrismaSiteArrivalOrdersReader` (`prisma-site-arrival-orders.reader.ts:27`)                                                                                                                                                 | retraits en attente + `settlementWhere`                                                     | l'**heure d'arrivée d'un transfert** au site (`commerce-transfer-sites.service.ts`)                                                                                                                      | avancerait la fenêtre du transfert, ou en ferait poser un                                                                            |
+| `PrismaTransferOrdersReader` et `PrismaTransferOrderContentsReader` (`prisma-transfer-orders.reader.ts:28,71`)                                                                                                              | retraits datés aux sites servis par transfert, statut actif — **aucun filtre de règlement** | le **rattachement au transfert**, son **manifeste**, les papiers et le départ de la tournée (`transfer-attachment.ts`, `get-internal-transfer-manifest.handler.ts`, `depart-delivery-round.handler.ts`…) | au Village, serait **ajoutée au transfert** et à son manifeste — alors que la marchandise est déjà dans la vitrine du Village        |
+| `PrismaUnsettledSettlementReader` (`prisma-unsettled-settlement.reader.ts:18`)                                                                                                                                              | `status: placed`, jour de service                                                           | le **balayage des règlements en attente** à la clôture (`pending-settlement-sweep.service.ts`)                                                                                                           | serait traitée comme une commande du plan au règlement pendant ; son expiration est celle de la boutique (§4.6)                      |
+
+**Doit la voir, autrement — la Supervision :**
+
+| Lecteur                                                              | Ce qu'il fait                                                                                                                                     | Le geste                                                                                                                        |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `PrismaDaySupervisionReader` (`prisma-day-supervision.reader.ts:46`) | toutes les commandes du jour (`status ≠ draft` + `settlementWhere`) ; `awaitingProduction` nourrit « attend le four » (`OvenWaitingOrdersReader`) | la montrer en **Retrait** (prête, en vitrine) et **jamais** en Préparation ni « attend le four » : la vue doit porter la marque |
+
+**Doivent la voir telle quelle — le retrait et l'argent :**
+
+- la **file du comptoir** (`prisma-handover-queue.reader.ts`, `expectedOnWhere`) et la **remise** (`handover-order.query.ts`, `handover-subject.reader.ts`) — c'est par là qu'elle est remise ;
+- les **rappels au client** (`prisma-customer-nudge-trace.reader.ts`, `prisma-order-customer-nudges.repository.ts`) ;
+- la **facture** et le **prélèvement** (`billableOrderWhere`, `prisma-procedure-orders.reader.ts`) ;
+- les **listes** du staff et du client (`prisma-admin-order-list.reader.ts`, `prisma-company-order-list.reader.ts`, `prisma-order.reader.ts` côté client) — avec un badge « sur stock ».
+
+**Sans objet :**
+
+- `PrismaDeliveryOrdersReader`, `PrismaDeliveryRunSheetReader` : livraisons seulement (`fulfillmentMethod: "delivery"`) — la commande sur stock est un retrait ;
+- `PrismaOrderPlanRelease` (`prisma-order-plan-release.ts`, réouverture du plan) : ne touche que les `confirmed` ; une commande sur stock reste `placed` jusqu'à sa remise ;
+- le colisage (`packing/`) : il lit les faits publiés à l'arrêt et au retirage, donc ce que `planWhere` laisse passer — couvert par la première ligne.
+
+**À vérifier au bâti** (non ouvert ici) : `prisma-unconfirmed-deliveries.reader.ts` (comptabilité) ; la révision d'une commande (`prisma-order-revision.repository.ts`, `revisable-order.row.ts`) — elle ne doit pas pouvoir **déplacer** une commande sur stock vers un autre jour.
+
+**Ce que l'inventaire propose** — interdire plutôt que vérifier : **un seul
+filtre** `notFromStock()` dans `plan-filter.ts`, versé **dans** `planWhere` (ce
+qui couvre d'un coup fiche, retirage, rattrapage, prévisionnel, état du jour,
+absorption) et dans une `productionWhere()` = `settlementWhere` + `notFromStock`
+que prennent les quatre autres lecteurs de production et de transport.
+`settlementWhere` seul ne disparaît pas : la Supervision et le reste le
+gardent. Une **e2e unique** sème une commande sur stock au Village et vérifie
+qu'elle est **absente** de chaque lecteur du premier tableau, **présente** dans
+la file du comptoir, et en **Retrait** à la Supervision.
