@@ -18,8 +18,6 @@ import { RetakeProductionDayHandler } from "../retake-production-day.handler.js"
 import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
-import { FreshDayOrders } from "../../services/fresh-day-orders.js";
-import { SteppedRevisionNotices } from "../../__tests__/revision-notice-doubles.js";
 
 /** Deux instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const TIRAGE = new Date("2026-09-13T04:20:00.000Z");
@@ -51,11 +49,15 @@ function order(orderId: string, quantity: number): ProducibleOrder {
 
 /** Le commerce doublé — il ÉTEND le port, donc aucun cast n'est nécessaire. */
 class Commerce extends DayOrdersReader {
-  constructor(private readonly rows: readonly ProducibleOrder[]) {
+  constructor(
+    private readonly rows: readonly ProducibleOrder[],
+    private readonly trace: string[] = [],
+  ) {
     super();
   }
 
   producibleFor(): Promise<readonly ProducibleOrder[]> {
+    this.trace.push("producibleFor");
     return Promise.resolve(this.rows);
   }
 }
@@ -107,10 +109,11 @@ function subject(
   lock: RecordingDayLock = new RecordingDayLock(),
   durable: RecordingDurable = new RecordingDurable(),
   withdrawals: InMemoryWithdrawals = new InMemoryWithdrawals(),
+  trace: string[] = [],
 ): RetakeProductionDayHandler {
   return new RetakeProductionDayHandler(
     days,
-    new FreshDayOrders(new Commerce(rows), new SteppedRevisionNotices()),
+    new Commerce(rows, trace),
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
@@ -176,6 +179,28 @@ describe("RetakeProductionDayHandler", () => {
     await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
 
     expect(events.published).toEqual(events.traced);
+  });
+
+  /**
+   * Régression : les commandes étaient lues AVANT le verrou, et une commande
+   * admise entre la lecture et le verrou manquait au tirage (2026-11-02).
+   */
+  it("lit les commandes du commerce SOUS le verrou de la journée", async () => {
+    const trace: string[] = [];
+    const handler = subject(
+      new Days(closedDay(), trace),
+      [order("ord_1", 30), order("ord_2", 12)],
+      new RecordingPublisher(),
+      new InMemoryBatches(),
+      new RecordingDayLock(trace),
+      new RecordingDurable(),
+      new InMemoryWithdrawals(),
+      trace,
+    );
+
+    await handler.execute(new RetakeProductionDayCommand(DAY, "staff-1"));
+
+    expect(trace).toEqual([`lock:${DAY}`, "load", "producibleFor", "save"]);
   });
 
   it("🔴 matérialise la coche héritée AVANT d'absorber, et ne la recopie plus", async () => {

@@ -6,6 +6,7 @@ import { DomainEventPublisher } from "../../../platform/events/domain-event-publ
 import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js";
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
+import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { DayResuppliesReader } from "../../channels/commerce/day-resupplies.reader.js";
 import { PendingSettlementSweeper } from "../../channels/commerce/pending-settlement.sweeper.js";
 import { ProductionDayClosedEvent } from "../../channels/commerce/production-day-closed.event.js";
@@ -22,7 +23,6 @@ import { ProductionDayRepository } from "../../domain/ports/production-day.repos
 import { refuseCloseBeforeCutoff } from "../../domain/services/early-close.js";
 import { planStopOf } from "../../domain/services/latest-order-cutoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { FreshDayOrders, type DayOrdersSnapshot } from "../services/fresh-day-orders.js";
 import { packingListFactsOf, resupplyListFactsOf } from "../services/packing-list-facts.js";
 import { PlanStopRules } from "../services/plan-stop-rules.js";
 import { CloseProductionDayCommand } from "./close-production-day.command.js";
@@ -36,8 +36,13 @@ import { CloseProductionDayCommand } from "./close-production-day.command.js";
  * clore, l'écrit, et **publie** — tout dans une unité de travail (lot A0 du
  * plan `fournil/arret-du-plan.md`, B1, 2026-10-06 : jusque-là le
  * chargement se faisait hors verrou, et deux clôtures concurrentes fermaient
- * toutes les deux). Le balayage et la lecture des commandes du commerce
- * restent AVANT le verrou : pas d'appel d'un autre bloc sous un verrou tenu. Il
+ * toutes les deux). Le balayage reste AVANT le verrou : il écrit chez le
+ * commerce. Les commandes, elles, sont lues SOUS le verrou depuis le
+ * 2026-11-02 (même trou que G-A de l'audit du réassort) : la passation prend
+ * le même verrou par le guichet d'admission, et une commande NOUVELLE admise
+ * entre une lecture faite avant et le verrou n'était pas figée — la journée
+ * s'arrêtait sans elle. Le repère des révisions (`FreshDayOrders`) ne voyait
+ * que les révisions ; il est retiré, la lecture sous verrou couvre les deux. Il
  * n'écrit rien chez le commerce : `confirmed` est un fait du commerce, tiré du
  * nôtre par un abonné qui vit chez lui. Chaque contexte n'écrit que ses tables.
  *
@@ -123,7 +128,7 @@ export class CloseProductionDayHandler implements ICommandHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly orders: FreshDayOrders,
+    private readonly orders: DayOrdersReader,
     private readonly settlements: PendingSettlementSweeper,
     private readonly events: DomainEventPublisher,
     private readonly clock: Clock,
@@ -154,13 +159,8 @@ export class CloseProductionDayHandler implements ICommandHandler<
     if (alreadyClosed) {
       return this.reannounce(day);
     }
-    // Les commandes du commerce sont lues AVANT le verrou, comme au retirage :
-    // pas de lecture d'un autre bloc sous un verrou tenu — sauf si une
-    // révision est passée entre-temps, et alors relues sous lui (§9.1 du plan
-    // de modification, `FreshDayOrders`).
-    const read = await this.orders.read(day);
     const signer = await this.signerOf(command);
-    return this.closeUnderLock(day, read, signer);
+    return this.closeUnderLock(day, signer);
   }
 
   /**
@@ -189,14 +189,14 @@ export class CloseProductionDayHandler implements ICommandHandler<
   }
 
   /**
-   * Verrouille, RECHARGE, puis décide (lot A0, 2026-10-06). Chargée hors
+   * Verrouille, RECHARGE, lit les commandes, puis décide (lot A0, 2026-10-06 ;
+   * commandes sous le verrou depuis le 2026-11-02). Chargée hors
    * verrou, deux clôtures concurrentes fermaient toutes les deux : deux
    * instantanés, deux `production_day.closed`, deux faits « frais ». La
    * seconde trouve désormais la journée close et réannonce.
    */
   private async closeUnderLock(
     day: ServiceDay,
-    read: DayOrdersSnapshot,
     signer: PlanSigner | null,
   ): Promise<ProductionPlanClosure> {
     const automatic = signer?.kind === "automatic";
@@ -214,7 +214,10 @@ export class CloseProductionDayHandler implements ICommandHandler<
       // d'admission, donc ce qui est lu ici est définitif — rien ne s'y
       // ajoute ni ne s'en retire après l'arrêt.
       const resupplies = await this.resupplies.placedFor(day);
-      const producible = await this.orders.underLock(day, read);
+      // Les commandes, SOUS le verrou (2026-11-02) : la passation et la
+      // révision prennent ce verrou par leur guichet, donc une commande admise
+      // avant est lue ici, et une commande admise après trouve le plan arrêté.
+      const producible = await this.orders.producibleFor(day);
       const now = this.clock.now();
       current.close(producible, withdrawn, now, signer, resupplies);
       await this.days.save(current);

@@ -17,8 +17,6 @@ import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
 import { RecordingDayLock } from "../../__tests__/batch-doubles.js";
 import { CloseProductionDayCommand } from "../close-production-day.command.js";
 import { CloseProductionDayHandler } from "../close-production-day.handler.js";
-import { FreshDayOrders } from "../../services/fresh-day-orders.js";
-import { SteppedRevisionNotices } from "../../__tests__/revision-notice-doubles.js";
 
 /**
  * Le verrou de la clôture (lot A0 du plan d'arrêt, B1, 2026-10-06) : la
@@ -114,17 +112,14 @@ function closed(): ProductionDay {
   return day;
 }
 
-function subject(
-  sequence: ProductionDay[],
-  notices: SteppedRevisionNotices = new SteppedRevisionNotices(),
-) {
+function subject(sequence: ProductionDay[]) {
   const trace: string[] = [];
   const days = new SequencedDays(sequence, trace);
   const events = new RecordingPublisher();
   const durable = new Durable();
   const handler = new CloseProductionDayHandler(
     days,
-    new FreshDayOrders(new Commerce(trace), notices),
+    new Commerce(trace),
     new Sweeper(),
     events,
     new FixedClock(NOW),
@@ -140,21 +135,26 @@ function subject(
 }
 
 describe("clore sous le verrou de la journée", () => {
-  it("lit le commerce, PUIS verrouille, PUIS recharge, PUIS écrit", async () => {
+  /**
+   * Régression : les commandes étaient lues AVANT le verrou ; une commande
+   * NOUVELLE admise entre la lecture et le verrou (la passation prend le même
+   * verrou par le guichet d'admission) n'était pas figée, et la journée
+   * s'arrêtait sans elle (constaté le 2026-11-02, même trou que G-A).
+   */
+  it("verrouille, PUIS recharge, PUIS lit les commandes, PUIS écrit", async () => {
     const { handler, trace } = subject([open(), open()]);
 
     await handler.execute(new CloseProductionDayCommand(DAY));
 
     expect(trace).toEqual([
       "load",
-      "producibleFor",
       `lock:${DAY}`,
       "load",
       // Les retraits de l'annulation staff, SOUS le verrou (C3.4).
       `withdrawals:${DAY}`,
-      // Les réassorts pour demain, SOUS le verrou (lot R3a) : leur envoi et
-      // leur annulation prennent le même verrou, la lecture est définitive.
+      // Les réassorts pour demain, SOUS le verrou (lot R3a).
       `resupplies:${DAY}`,
+      "producibleFor",
       "save",
     ]);
   });
@@ -174,36 +174,6 @@ describe("clore sous le verrou de la journée", () => {
     expect(durable.facts[0]?.key).toBe(
       `production.day_closed:${DAY}:${EARLIER.toISOString()}:reannounced:${NOW.toISOString()}`,
     );
-  });
-
-  /**
-   * §9.1 du plan de modification (2026-10-23) : une révision validée entre la
-   * lecture du commerce et le verrou aurait été inscrite dans son ancienne
-   * composition. Le repère a bougé : les commandes sont relues SOUS le verrou.
-   */
-  it("relit le commerce sous le verrou quand une révision a été notée depuis sa lecture", async () => {
-    const { handler, trace } = subject([open(), open()], new SteppedRevisionNotices([null, 1]));
-
-    await handler.execute(new CloseProductionDayCommand(DAY));
-
-    expect(trace).toEqual([
-      "load",
-      "producibleFor",
-      `lock:${DAY}`,
-      "load",
-      `withdrawals:${DAY}`,
-      `resupplies:${DAY}`,
-      "producibleFor",
-      "save",
-    ]);
-  });
-
-  it("ne relit pas le commerce quand aucune révision n'est passée", async () => {
-    const { handler, trace } = subject([open(), open()], new SteppedRevisionNotices([3, 3]));
-
-    await handler.execute(new CloseProductionDayCommand(DAY));
-
-    expect(trace.filter((step) => step === "producibleFor")).toHaveLength(1);
   });
 
   it("une journée déjà close hors verrou réannonce elle aussi sous le verrou", async () => {

@@ -5,7 +5,6 @@ import { ProductionOrderWithdrawalDesk } from "./application/services/production
 import { DayInscribedOrderHeaderReader } from "./application/services/day-inscribed-order-header.reader.js";
 import { DayOrderLabelHeadReader } from "./application/services/day-order-label-head.reader.js";
 import { ProductionOrderRevisionDesk } from "./application/services/production-order-revision.desk.js";
-import { FreshDayOrders } from "./application/services/fresh-day-orders.js";
 import { OrderRevisionNoticeLedger } from "./domain/ports/order-revision-notice.ledger.js";
 import { OrderRevisionNoticesReader } from "./domain/ports/order-revision-notices.reader.js";
 import { PrismaOrderRevisionNoticeLedger } from "./infrastructure/prisma-order-revision-notice.ledger.js";
@@ -338,10 +337,10 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     DayOrderLabelHeadReader,
     // La modification d'une commande (plan `commandes/modification/plan-modifier-une-commande.md`,
     // §9.1) : les notes de révision, écrites par le guichet sous le verrou de
-    // la journée, relues par la clôture et le retirage (`FreshDayOrders`).
+    // la journée. Plus aucun lecteur depuis le 2026-11-02 : la clôture et le
+    // retirage lisent les commandes sous le verrou, ce qui couvre les révisions.
     { provide: OrderRevisionNoticeLedger, useClass: PrismaOrderRevisionNoticeLedger },
     { provide: OrderRevisionNoticesReader, useClass: PrismaOrderRevisionNoticesReader },
-    FreshDayOrders,
     ProductionOrderRevisionDesk,
     // L'arrêt du plan comme limite (lot O3) : relié par `ProductionDeskFeedModule`.
     PrismaClosedPlansReader,

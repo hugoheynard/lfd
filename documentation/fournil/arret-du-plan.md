@@ -70,6 +70,7 @@ sequenceDiagram
     É->>F: arrêter le plan du jour J
     F->>C: annuler les paiements restés en suspens pour J
     F->>F: verrou de la journée J, relecture
+    F->>C: les commandes de J (sous le verrou)
     alt déjà arrêtée
         F-->>É: « déjà arrêté » (le fait est réannoncé)
     else ouverte, avec commandes
@@ -87,6 +88,13 @@ sequenceDiagram
   journée est verrouillée par un verrou consultatif sur sa clé, puis relue
   sous lui (`infrastructure/prisma-production-day.lock.ts`). Le second trouve
   la journée close et réannonce seulement. Le retirage passe par le même verrou.
+- **Les commandes sont lues sous le verrou** (depuis le 2026-11-02). La
+  passation et la révision prennent ce verrou par leur guichet jusqu'à leur
+  validation : une commande admise avant l'arrêt est figée, une commande qui
+  arrive après est refusée « plan arrêté » (ou reçue « hors plan » si
+  l'équipe la saisit). Lues avant le verrou, une commande admise entre la
+  lecture et lui manquait au plan sans qu'aucun refus ne le dise. Seul le
+  balayage des règlements reste avant le verrou : il écrit chez le commerce.
 - **Une commande arrivée après l'arrêt** n'est pas perdue : « Reprendre le
   tirage » (le retirage, fiche d'atelier) l'ajoute à la fournée.
 - **Un arrêt se défait** tant que rien n'a commencé : voir « Rouvrir une

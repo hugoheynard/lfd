@@ -7,6 +7,7 @@ import { DurablePublisher } from "../../../platform/outbox/durable-publisher.js"
 import { Clock } from "../../../platform/time/clock.js";
 import { StaffAuthorDirectory } from "../../../staff/directory/domain/staff-author-directory.js";
 import type { ProductionOrderSnapshot } from "../../domain/entities/production-day.js";
+import { DayOrdersReader } from "../../channels/commerce/day-orders.reader.js";
 import { ProductionDayRetakenEvent } from "../../channels/delivery/index.js";
 import { ProductionDayRetakenJournalEvent } from "../../domain/events/production-day.events.js";
 import { ProductionBatchRepository } from "../../domain/ports/production-batch.repository.js";
@@ -15,7 +16,6 @@ import { ProductionDayLock } from "../../domain/ports/production-day.lock.js";
 import { ProductionDayRepository } from "../../domain/ports/production-day.repository.js";
 import { arrivalsBetween } from "../../domain/services/production-handoff.js";
 import { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
-import { FreshDayOrders } from "../services/fresh-day-orders.js";
 import { packingListFactsOf } from "../services/packing-list-facts.js";
 import { ShipmentRef } from "../../domain/value-objects/shipment-ref.value-object.js";
 import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
@@ -60,8 +60,8 @@ import { RetakeProductionDayCommand } from "./retake-production-day.command.js";
  * `save` réécrit le colisage de chaque ligne depuis l'instantané : chargé
  * AVANT, il effaçait un colisage validé pendant le retirage. La journée est
  * donc verrouillée puis RECHARGÉE dans l'unité de travail, et c'est cet
- * agrégat-là qu'on écrit. Les commandes du commerce, elles, sont lues avant :
- * pas de lecture d'un autre bloc sous un verrou tenu.
+ * agrégat-là qu'on écrit. Les commandes du commerce sont lues SOUS le verrou
+ * (2026-11-02) : lues avant, une commande admise entre-temps manquait au tirage.
  *
  * Le retirage est le seul geste qui change une quantité. Avant d'absorber, il
  * écrit en vraies fournées les coches héritées (même `id` que le rattrapage) :
@@ -84,7 +84,7 @@ export class RetakeProductionDayHandler implements ICommandHandler<
 > {
   constructor(
     private readonly days: ProductionDayRepository,
-    private readonly orders: FreshDayOrders,
+    private readonly orders: DayOrdersReader,
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
@@ -97,9 +97,6 @@ export class RetakeProductionDayHandler implements ICommandHandler<
 
   async execute(command: RetakeProductionDayCommand): Promise<ProductionWorksheetRetake> {
     const day = ServiceDay.of(command.serviceDay);
-    // Hors verrou, avec le repère des révisions : relues sous lui si une
-    // révision est passée entre-temps (§9.1 du plan de modification).
-    const read = await this.orders.read(day);
     // Hors du verrou, comme toute lecture d'un autre bloc : le nom est FIGÉ au
     // retirage, le dossier dit « complété par … » sans relire l'annuaire.
     const byName = (await this.authors.identify([command.staffUserId])).nameOf(command.staffUserId);
@@ -111,7 +108,9 @@ export class RetakeProductionDayHandler implements ICommandHandler<
       const before = locked.orders;
       // Sous le verrou, comme à la clôture (plan d'annulation, C3.4).
       const withdrawn = await this.withdrawals.withdrawnOn(day);
-      const producible = await this.orders.underLock(day, read);
+      // SOUS le verrou, comme à la clôture (2026-11-02) : lue avant, une
+      // commande admise entre la lecture et le verrou manquait au tirage.
+      const producible = await this.orders.producibleFor(day);
       const now = this.clock.now();
       const absorbed = locked.retake(producible, withdrawn, now, command.staffUserId, byName);
       if (absorbed > 0) {
