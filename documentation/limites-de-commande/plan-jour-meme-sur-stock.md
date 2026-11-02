@@ -726,10 +726,9 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   veut dire **au comptoir seulement**.
 - **Rien ne lit encore ces réglages** : `same_day_allowed` garde son sens et
   ses lecteurs jusqu'à L4.
-- **À trancher en L4** : d'ici là, l'interrupteur actuel (le seul effectif) et
-  « Particuliers » peuvent diverger. Proposé : à L4, **les nouvelles colonnes
+- **Tranché par Hugo le 2026-11-02** : à L4, **les nouvelles colonnes
   font foi**, et `same_day_allowed` devient une colonne morte (elle reste en
   base, CLAUDE.md §0) — la page ne garde alors qu'un interrupteur par clientèle.
-- **Choix du bâtisseur, à confirmer par Hugo** : la tenue par défaut est 30
+- **Confirmé par Hugo le 2026-11-02** : la tenue par défaut est 30
   minutes (l'expiration boutique d'aujourd'hui ; le 2026-10-21 disait 15), bornée
   de 5 (le pas du balayage d'expiration) à 120.
