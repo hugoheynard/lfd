@@ -12,10 +12,10 @@ import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 import { TransferServedSites } from "../domain/transfer-served-sites.js";
 
 /**
- * {@link DayResuppliesReader} tel que le commerce l'implémente (lot R3a,
- * 2026-10-21) : les réassorts « pour demain » envoyés et non annulés de la
- * journée, avec le nom du point et, depuis R3b, s'il est servi par transfert. Un « au plus tôt » n'entre au plan que lancé,
- * un par un (`asapToLaunch`, R4a).
+ * {@link DayResuppliesReader} tel que le commerce l'implémente (le « pour demain » figé à l'arrêt,
+ * R3a, 2026-10-21) : les réassorts « pour demain » envoyés et non annulés de la
+ * journée, avec le nom du point et, depuis la fiche au colisage (R3b), s'il est servi par
+ * transfert. Un « au plus tôt » n'entre au plan que lancé, un par un (`asapToLaunch`, R4a).
  *
  * Lu par l'arrêt du plan SOUS le verrou de la journée : il ne lit que des
  * tables du commerce, sans verrou de ligne — pas de cycle avec l'envoi et
@@ -41,7 +41,7 @@ export class ProductionDayResupplies extends DayResuppliesReader {
   /**
    * R4a : LE réassort « au plus tôt » envoyé et non annulé que le fournil
    * lance, pour cette journée — `null` sinon (annulé, autre jour, autre
-   * visée, ou sortie de réserve : rien à fabriquer, plan A1, lot A1.4).
+   * visée, ou sortie de réserve : rien à fabriquer, A1.4).
    *
    * Il ne filtre PAS le déjà lancé, délibérément (M7, audit du 2026-11-02) :
    * la colonne `launched_at` du commerce n'est qu'un affichage posé par le

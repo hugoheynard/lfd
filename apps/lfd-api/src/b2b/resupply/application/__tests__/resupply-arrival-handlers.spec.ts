@@ -9,11 +9,11 @@ import {
   type StaffNotice,
 } from "../../../../staff/notifications/domain/ports/staff-notifier.js";
 import type { SiteResupplySnapshot } from "../../domain/site-resupply.js";
+import { SiteResupplyNotFoundError } from "../../domain/site-resupply-errors.js";
 import {
   ResupplyNotArrivableError,
   ResupplyNotLaunchedNotMountableError,
-  SiteResupplyNotFoundError,
-} from "../../domain/site-resupply-errors.js";
+} from "../../domain/site-resupply-gate-errors.js";
 import { RecordingAdmissionDesk } from "../../../orders/application/commands/__tests__/plan-doubles.js";
 import { MarkArrivedOnTransferReceived } from "../mark-arrived-on-transfer-received.handler.js";
 import { MarkResupplyMountedCommand } from "../mark-resupply-mounted.command.js";
@@ -29,7 +29,7 @@ import {
 } from "./site-resupply-doubles.js";
 
 /**
- * « Réassort arrivé » (lot R3e) : « Monté » au fournil pour un point servi
+ * « Réassort arrivé » (R3e) : « Monté » au fournil pour un point servi
  * sur place, la réception du transfert pour un point servi par transfert —
  * et la même cloche au comptoir. Des instants comparés entre eux seulement.
  */
@@ -192,7 +192,7 @@ describe("« Monté » (R3e, point servi sur place)", () => {
 describe("« Monté » sur un « au plus tôt » (R4c, Q4 : « Lancer » puis « Monté »)", () => {
   const ASAP = { target: "asap", serviceDay: "2030-03-12" } as const;
 
-  /** Régression : le serveur acceptait « Monté » sur un « au plus tôt » jamais lancé (R4b). */
+  /** Régression : le serveur acceptait « Monté » sur un « au plus tôt » jamais lancé (la réserve du « au plus tôt », R4b). */
   it("refuse tant que le fournil ne l'a pas lancé — question posée au fournil, rien ne sonne", async () => {
     const { resupplies, mounted, rung, launches } = world();
     resupplies.put(placed("rs_asap", LABO, ASAP));

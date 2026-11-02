@@ -10,7 +10,7 @@ import {
 } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * **Les refus de la fiche de réassort au colisage** (réassort, lot R3b,
+ * **Les refus de la fiche de réassort au colisage** (réassort, la fiche au colisage, R3b,
  * `reassort-boutiques/README.md`). Lus par l'équipe du
  * poste : chacun nomme le point et le geste de sortie.
  */
@@ -37,7 +37,7 @@ export class PackingResupplyLineNotFoundError extends ResourceNotFoundError {
 
 /**
  * La quantité emballée est hors de 0…demandée. Au poids, elle se dit en
- * grammes et le demandé « 1,25 kg » (lot L2b-3) : « 1250 » seul se lirait
+ * grammes et le demandé « 1,25 kg » (L2b-3) : « 1250 » seul se lirait
  * comme des pièces.
  */
 export class PackedResupplyQuantityOutOfRangeError extends DomainError {
@@ -75,7 +75,7 @@ export class PackingResupplyIncompleteError extends BusinessError {
 
 /**
  * Une réservation de réassort vide ou fractionnaire. Au poids, elle compte des
- * grammes (lot L2b-4) : le refus le dit, sans quoi « 1250 » se lirait en pièces.
+ * grammes (L2b-4) : le refus le dit, sans quoi « 1250 » se lirait en pièces.
  */
 export class StockReservationQuantityInvalidError extends DomainError {
   constructor(sku: string, quantity: number, unit: SaleUnit) {

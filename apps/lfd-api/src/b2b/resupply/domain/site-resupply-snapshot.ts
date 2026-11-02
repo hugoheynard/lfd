@@ -47,7 +47,7 @@ export interface SiteResupplyLaunch {
 export type SiteResupplyDeparture = SiteResupplyLaunch;
 
 /**
- * L'état persisté d'un réassort. Depuis le lot R1c (2026-10-21), le
+ * L'état persisté d'un réassort. Depuis le 2026-10-21 (R1c), le
  * brouillon — « la demande en cours » — se persiste aussi : `placed` est
  * alors `null`.
  */
@@ -57,11 +57,11 @@ export interface SiteResupplySnapshot {
   readonly target: ResupplyTarget;
   readonly serviceDay: string;
   readonly version: number;
-  /** Qui l'envoie (lot R1d) ; `counter` pour tout ce qui précède. */
+  /** Qui l'envoie (l'envoi du fournil, R1d) ; `counter` pour tout ce qui précède. */
   readonly origin: ResupplyOrigin;
-  /** Son nom libre (lot R1g) ; `null` : sans nom. */
+  /** Son nom libre (R1g) ; `null` : sans nom. */
   readonly name: string | null;
-  /** `saleUnit` figée à l'ajout (lot L2b-1) : la quantité compte des grammes si `weight`. */
+  /** `saleUnit` figée à l'ajout (le réassort au poids, L2b-1) : la quantité compte des grammes si `weight`. */
   readonly lines: readonly {
     readonly sku: string;
     readonly label: string;
@@ -71,7 +71,7 @@ export interface SiteResupplySnapshot {
   readonly placed: SiteResupplyTrace | null;
   readonly cancelled: SiteResupplyTrace | null;
   /**
-   * Le signal « il est là » (lot R3e) : la réception au site du transfert
+   * Le signal « il est là » (l'arrivée au point, R3e) : la réception au site du transfert
    * qui le porte, ou « Monté » au fournil ; `null` tant qu'il est attendu.
    */
   readonly arrived: SiteResupplyTrace | null;

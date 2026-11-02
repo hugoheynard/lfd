@@ -10,20 +10,20 @@ export interface ResupplyReceiptLineSnapshot {
   readonly label: string;
   readonly expectedQuantity: number | null;
   readonly receivedQuantity: number | null;
-  /** L'unité des deux quantités, figée à l'ajout (lot L2b-1) : des grammes si `weight`. */
+  /** L'unité des deux quantités, figée à l'ajout (L2b-1) : des grammes si `weight`. */
   readonly saleUnit: SaleUnit;
 }
 
 /**
  * **Une ligne d'un reçu** : un article (SKU produit), son libellé FIGÉ, ce qui
  * était **attendu** et ce qui a été **reçu**, dans l'unité figée de la ligne —
- * pièces, ou grammes au poids (lot L2b-1) (lot R2,
+ * pièces, ou grammes au poids (L2b-1) (R2,
  * `reassort-boutiques/README.md`). Aucun montant : un
  * réapprovisionnement est un mouvement interne, jamais une vente.
  *
  * - L'attendu est la quantité EMBALLÉE au colisage quand elle est connue
- *   (lot R3b), sinon la quantité DEMANDÉE au réassort ; `null` sur un réassort sans commande, où rien n'était
- *   attendu.
+ *   (R3b), sinon la quantité DEMANDÉE au réassort ; `null` sur un réassort sans commande, où rien
+ * n'était attendu.
  * - Le reçu est `null` tant que le comptoir n'a pas réceptionné : seul le
  *   reçu fait le stock.
  */

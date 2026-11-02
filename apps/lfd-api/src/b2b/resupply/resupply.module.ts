@@ -28,6 +28,7 @@ import { ProductionRangeResupplies } from "./application/production-range-resupp
 import { ResupplyPlanGate } from "./application/resupply-plan-gate.js";
 import { ReceiveResupplyLineHandler } from "./application/receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "./application/receive-site-resupply.handler.js";
+import { ResupplyReceiving } from "./application/resupply-receiving.js";
 import { SendBakehouseResupplyHandler } from "./application/send-bakehouse-resupply.handler.js";
 import { CreateBakehouseResupplyDraftHandler } from "./application/create-bakehouse-resupply-draft.handler.js";
 import { SaveBakehouseResupplyDraftHandler } from "./application/save-bakehouse-resupply-draft.handler.js";
@@ -57,6 +58,7 @@ import { PrismaResupplyUsedNames } from "./infrastructure/prisma-resupply-used-n
 import { NameSiteResupplyHandler } from "./application/name-site-resupply.handler.js";
 import { ListResupplyUsedNamesHandler } from "./application/list-resupply-used-names.handler.js";
 import { SiteResupplyRepository } from "./domain/site-resupply.repository.js";
+import { SiteResupplyPlanKeyReader } from "./domain/site-resupply-plan-key.reader.js";
 import { StockAlertReader } from "./domain/stock-alert.reader.js";
 import { StockAlertRepository } from "./domain/stock-alert.repository.js";
 import { TransferServedSites } from "./domain/transfer-served-sites.js";
@@ -77,6 +79,7 @@ import { PrismaResupplyReceiptRepository } from "./infrastructure/prisma-resuppl
 import { PrismaResupplySites } from "./infrastructure/prisma-resupply-sites.js";
 import { PrismaSiteResupplyReader } from "./infrastructure/prisma-site-resupply.reader.js";
 import { PrismaSiteResupplyRepository } from "./infrastructure/prisma-site-resupply.repository.js";
+import { PrismaSiteResupplyPlanKeyReader } from "./infrastructure/prisma-site-resupply-plan-key.reader.js";
 import { PrismaStockAlertReader } from "./infrastructure/prisma-stock-alert.reader.js";
 import { PrismaStockAlertRepository } from "./infrastructure/prisma-stock-alert.repository.js";
 import { PrismaTransferServedSites } from "./infrastructure/prisma-transfer-served-sites.js";
@@ -91,32 +94,33 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
  * **Le réapprovisionnement d'un site** (modèle B de
  * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21) — la RÉCEPTION (ce que la vitrine a reçu, lot J1 du plan du
- * jour même ; un reçu par réassort depuis le lot R2) et, depuis le lot R1 (2026-10-21), la DEMANDE au fournil
+ * jour même ; un reçu par réassort depuis la réception en un geste, R2) et,
+ * depuis le 2026-10-21 (R1), la DEMANDE au fournil
  * (`SiteResupply`), que le fournil lit en lecture — sa demande en cours
- * enregistrée depuis R1c, et celle que le fournil envoie à part depuis R1d ;
- * et, depuis le lot R1b,
- * les alertes de stock du comptoir (`StockAlert`). Aucune dépendance au
- * modèle `Order` lu ici (cf. lot L2 plus bas).
+ * enregistrée (la demande en cours, R1c), et celle que le fournil envoie à
+ * part (l'envoi du fournil, R1d) ; et les alertes de stock du comptoir
+ * (`StockAlert`, R1b). Aucune dépendance au
+ * modèle `Order` lu ici (cf. le stock du jour décompté, L2 plus bas).
  *
  * `CatalogModule` pour le catalogue publié ; `AccountModule` pour le seul
  * `StaffDirectory` (l'auteur figé du geste) ; `OrderCutoffsInForceModule`
- * pour l'heure du réassort (lot R3a).
+ * pour l'heure du réassort (R3a).
  *
- * Depuis le lot R3a (2026-10-21), l'envoi et l'annulation « pour demain »
+ * Depuis le 2026-10-21 (R3a), l'envoi et l'annulation « pour demain »
  * passent par le guichet d'admission du plan (`ResupplyPlanGate`, ports du
  * fournil reliés par `ProductionDeskFeedModule`), et le module publie
  * `ProductionDayResupplies`, que `ProductionFeedModule` relie au port
  * `DayResuppliesReader` du fournil.
  *
- * Depuis le lot R3e (2026-10-22), le réassort ARRIVÉ : « Monté » au fournil,
+ * Depuis le 2026-10-22 (R3e), le réassort ARRIVÉ : « Monté » au fournil,
  * ou la réception du transfert qui le porte (`MarkArrivedOnTransferReceived`,
  * abonné durable du fait `delivery.transfer_received`) ; la cloche sonne au
  * comptoir (`ResupplyArrivedBell`).
  *
- * Depuis le lot S1 (2026-10-22), l'onglet Stock de la Supervision
+ * Depuis le 2026-10-22 (S1), l'onglet Stock de la Supervision
  * (`GetDayStockOverview`, sous `b2b_supervision`), en lecture seule.
  *
- * Depuis le lot L2 du plan du jour J (2026-11-02), le stock est DÉCOMPTÉ : les
+ * Depuis le plan du jour J (L2, 2026-11-02), le stock est DÉCOMPTÉ : les
  * prélèvements des commandes sur stock (`ShelfDrawsReader`, déclaré ici,
  * implémenté par `orders` qui possède les lignes — même bloc `b2b`) et le
  * verrou du stock (`ShelfStockLock`). Le module ne lit toujours aucune table
@@ -141,6 +145,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     { provide: ResupplyCatalogue, useClass: CatalogResupplyCatalogue },
     { provide: ResupplySites, useClass: PrismaResupplySites },
     { provide: SiteResupplyRepository, useClass: PrismaSiteResupplyRepository },
+    { provide: SiteResupplyPlanKeyReader, useClass: PrismaSiteResupplyPlanKeyReader },
     { provide: SiteResupplyReader, useClass: PrismaSiteResupplyReader },
     { provide: ResupplyUsedNames, useClass: PrismaResupplyUsedNames },
     { provide: ResupplyCutoff, useClass: SettingsResupplyCutoff },
@@ -157,6 +162,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     CorrectResupplyLineHandler,
     WithdrawResupplyLineHandler,
     ReceiveSiteResupplyHandler,
+    ResupplyReceiving,
     CorrectReceivedResupplyLineHandler,
     GetResupplyProductionDayHandler,
     GetResupplyReceiptHandler,
@@ -171,7 +177,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     DiscardBakehouseResupplyDraftHandler,
     SendBakehouseResupplyDraftHandler,
     ListBakehouseResupplyDraftsHandler,
-    // « Envoyer en boutique » depuis la réserve du colisage (plan A1, lot A1.4).
+    // « Envoyer en boutique » depuis la réserve du colisage (A1.4).
     SendReserveToShopHandler,
     CancelSiteResupplyHandler,
     AddSiteResupplyLineHandler,

@@ -7,7 +7,7 @@ import { PackingStockRepository } from "../../domain/ports/packing-stock.reposit
 
 /**
  * L'implémentation de la sortie de réserve vers une boutique — cf.
- * {@link ReserveShopRelease} (plan A1, lot A1.4).
+ * {@link ReserveShopRelease} (A1.4).
  *
  * La réserve, article par article, triés par SKU (l'ordre de tous ceux qui
  * la verrouillent), sous verrou ; `sendToShop` refuse si le libre manque, et

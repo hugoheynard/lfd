@@ -32,7 +32,7 @@ import { draftLineOf } from "../domain/bakehouse-resupply-draft-content.js";
 import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resupply.command.js";
 
 /**
- * **Envoyer un réassort depuis le fournil** — « je t'envoie ça » (lot R1d,
+ * **Envoyer un réassort depuis le fournil** — « je t'envoie ça » (R1d,
  * `reassort-boutiques/README.md`, Hugo 2026-10-21).
  *
  * Sous SON droit, `production_resupply` — distinct de `handover_counter` :
@@ -85,7 +85,7 @@ export class AdminBakehouseResuppliesController {
   }
 
   /**
-   * « Monté » (lot R3e) : le réassort d'un point servi sur place est là — la
+   * « Monté » (R3e) : le réassort d'un point servi sur place est là — la
    * cloche sonne au comptoir. Sous `production_resupply:write`, le droit de
    * l'envoi du fournil. Idempotent : un second « Monté » répond 204 sans rien
    * changer.

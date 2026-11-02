@@ -6,7 +6,7 @@ import { InMemoryStocks } from "../../__tests__/station-doubles.js";
 import { PackingReserveShopRelease } from "../packing-reserve-shop-release.js";
 
 /**
- * La sortie de réserve vers une boutique (plan A1, lot A1.4). Un jour
+ * La sortie de réserve vers une boutique (A1.4). Un jour
  * recopié, jamais comparé à l'horloge.
  */
 const DAY = "2030-03-12";

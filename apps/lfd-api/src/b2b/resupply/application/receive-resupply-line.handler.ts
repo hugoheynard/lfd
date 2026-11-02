@@ -20,11 +20,11 @@ import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
  * **Ajoute un article au réassort sans commande** — la saisie de secours,
- * ligne par ligne (lot R2 : ce qui arrive sans avoir été commandé). Le libellé
- * est lu au catalogue publié, jamais pris du client. Le réassort sans
+ * ligne par ligne (la réception en un geste, R2 : ce qui arrive sans avoir été commandé). Le
+ * libellé est lu au catalogue publié, jamais pris du client. Le réassort sans
  * commande du jour s'ouvre au premier article, et compte au stock aussitôt.
  *
- * Depuis le lot R1b (2026-10-21), l'article reçu lève l'alerte de stock
+ * Depuis le 2026-10-21 (R1b), l'article reçu lève l'alerte de stock
  * vivante du point (rupture, stock faible), dans la même transaction.
  */
 @CommandHandler(ReceiveResupplyLineCommand)
@@ -51,7 +51,7 @@ export class ReceiveResupplyLineHandler implements ICommandHandler<
     if (article === null) {
       throw new ResupplyArticleUnknownError(command.sku);
     }
-    // L'unité se fige ici, lue au catalogue (lot L2b-1) : au poids, des grammes.
+    // L'unité se fige ici, lue au catalogue (L2b-1) : au poids, des grammes.
     const line = ResupplyReceiptLine.unordered({
       sku: article.sku,
       label: article.name,

@@ -8,13 +8,13 @@ import {
   FixedClosedPlans,
   RecordingAdmissionDesk,
 } from "../../../orders/application/commands/__tests__/plan-doubles.js";
+import { SiteResupplyNotFoundError } from "../../domain/site-resupply-errors.js";
 import {
   BakehouseResupplyAfterStopError,
   ResupplyAlreadyReceivedNotCancellableError,
   ResupplyFrozenInPlanError,
   ResupplyNotCancellableError,
-  SiteResupplyNotFoundError,
-} from "../../domain/site-resupply-errors.js";
+} from "../../domain/site-resupply-gate-errors.js";
 import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
 import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.handler.js";
@@ -34,6 +34,7 @@ import {
   InMemoryResupplyUsedNames,
   FixedLaunches,
   freshSendingKey,
+  InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier ; l'heure limite double est posée relativement à lui. */
@@ -61,7 +62,7 @@ const CATALOGUE = new Catalogue([
 ]);
 
 /**
- * `stopped` : les journées dont le plan est arrêté (lot R3a) — le guichet
+ * `stopped` : les journées dont le plan est arrêté (R3a) — le guichet
  * doublé les dit closes, et note chaque journée qu'on lui fait tenir.
  */
 function setup(
@@ -95,7 +96,15 @@ function setup(
       gate,
       uow,
     ),
-    cancel: new CancelSiteResupplyHandler(store, receptions, staff, clock, gate, uow),
+    cancel: new CancelSiteResupplyHandler(
+      store,
+      new InMemorySiteResupplyPlanKeys(store),
+      receptions,
+      staff,
+      clock,
+      gate,
+      uow,
+    ),
     list: new ListSiteResuppliesHandler(
       reader,
       cutoff,

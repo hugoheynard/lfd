@@ -1,7 +1,7 @@
 import type { SiteResupplyTrace } from "./site-resupply.js";
 
 /**
- * Port de **lecture** de la réception d'un réassort (lot R1d) : l'annulation
+ * Port de **lecture** de la réception d'un réassort (l'envoi du fournil, R1d) : l'annulation
  * la lit pour refuser d'annuler ce qui est déjà arrivé. Distinct du port
  * d'écriture du reçu (ISP) : l'annulation ne touche pas au reçu.
  */

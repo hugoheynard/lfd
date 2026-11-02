@@ -13,11 +13,11 @@ import { ZodBody, ZodQuery } from "../../../platform/shared/http/zod-body.pipe.j
 import { SendReserveToShopCommand } from "../application/send-reserve-to-shop.command.js";
 
 /**
- * **Envoyer en boutique depuis la réserve** (plan A1, lot A1.4,
+ * **Envoyer en boutique depuis la réserve** (A1.4,
  * `commandes/annulation/plan-a1-4-envoyer-en-boutique.md`) — le geste de
  * superviseur de la Supervision, sur le pain rendu par une annulation.
  *
- * Sous `production_resupply:write` (droit existant, lot R1d), accordé à
+ * Sous `production_resupply:write` (droit existant, l'envoi du fournil, R1d), accordé à
  * l'écran des rôles : envoyer un réassort au point, c'est le geste du
  * fournil. La journée de la réserve est dans l'URL ; le point, la clé de
  * l'écran et les lignes dans le corps.

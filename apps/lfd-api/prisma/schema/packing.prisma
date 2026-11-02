@@ -260,6 +260,11 @@ model PackingResupply {
   closedAt DateTime? @map("closed_at") @db.Timestamptz(6)
   closedBy String?   @map("closed_by")
 
+  /// Retirée par la réouverture du plan, jamais entamée (CHECK
+  /// `packing_resupply_withdrawn_untouched`) — plus effacée depuis le
+  /// 2026-11-02. Aucun lecteur ne la voit ; un nouvel arrêt la rétablit.
+  withdrawnAt DateTime? @map("withdrawn_at") @db.Timestamptz(6)
+
   lines PackingResupplyLine[]
 
   @@id([serviceDay, resupplyId])

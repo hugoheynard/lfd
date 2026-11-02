@@ -12,11 +12,11 @@ import { traceOf } from "./resupply-receipt-trace.js";
 /**
  * **Corrige un écart** sur un réassort réceptionné (bac abîmé, erreur) : le
  * reçu d'une ligne change, l'attendu reste. Avant « Réceptionner », rien
- * n'est reçu, donc rien ne se corrige (409). Comme en R1b, une correction
+ * n'est reçu, donc rien ne se corrige (409). Comme pour les alertes de stock (R1b), une correction
  * ne lève aucune alerte : seule la réception le fait.
  *
- * Une baisse passe par `ReceivedStockLowering` (plan du jour J, lot L2) : elle
- * ne descend pas sous ce que les commandes sur stock ont déjà pris.
+ * Une baisse passe par `ReceivedStockLowering` (plan du jour J, le stock du jour décompté, L2) :
+ * elle ne descend pas sous ce que les commandes sur stock ont déjà pris.
  */
 @CommandHandler(CorrectReceivedResupplyLineCommand)
 export class CorrectReceivedResupplyLineHandler implements ICommandHandler<

@@ -3,7 +3,7 @@ import { RESUPPLY_NAME_MAX } from "@lfd/contracts";
 import { ResupplyNameTooLongError } from "./site-resupply-errors.js";
 
 /**
- * **Le nom d'un réassort** (lot R1g, Hugo 2026-10-21 : « vitrine du
+ * **Le nom d'un réassort** (R1g, Hugo 2026-10-21 : « vitrine du
  * matin ») — libre et facultatif, sans liste à administrer. Rogné, ses
  * blancs intérieurs ramenés à un seul espace ; vide, il n'y a pas de nom
  * (`null`). Plus de {@link RESUPPLY_NAME_MAX} caractères : refusé, jamais

@@ -21,7 +21,7 @@ const RUNG = "resupply-arrived-bell";
 const RECEPTION_LINK = "/comptoir/reassort";
 
 /**
- * **« Réassort arrivé — à réceptionner »** (lot R3e de
+ * **« Réassort arrivé — à réceptionner »** (R3e de
  * `reassort-boutiques/README.md`) : le même son pour les
  * deux chemins — la réception du transfert, « Monté » au fournil.
  *

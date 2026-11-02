@@ -14,7 +14,7 @@ export interface ResupplyListLine {
   /** Des pièces, ou des GRAMMES si `saleUnit = "weight"` — toujours un entier. */
   readonly quantity: number;
   /**
-   * L'unité figée sur la ligne au commerce (lot L2b-3 du plan
+   * L'unité figée sur la ligne au commerce (L2b-3 du plan
    * `limites-de-commande/jour-meme-sur-stock.md`). Additive : une ligne
    * écrite avant le champ se relit `piece` — aucun réassort au poids n'a pu
    * partir au fournil avant elle (garde d'envoi de L2b-1).
@@ -41,7 +41,7 @@ export interface ResupplyToPack {
 /**
  * **Un réassort entre dans la liste à coliser** — publié par l'arrêt du plan
  * et sa réannonce, dans leur transaction, à côté des `packing_list_drawn`
- * (réassort, lot R3b, `reassort-boutiques/README.md`).
+ * (réassort, la fiche au colisage, R3b, `reassort-boutiques/README.md`).
  *
  * Seul le réassort d'un point SERVI PAR TRANSFERT est publié (§13.4, Q1
  * révisée) : celui du Labo va de la feuille à la vitrine, sans colisage.

@@ -112,7 +112,9 @@ four, et un retour du fournil ne reprend pas ce qui part au point.
 - **Progression** : une fiche entamée (ligne saisie, ou close) compte dans
   `DayPackingProgressReader.startedOn` — la réouverture est refusée.
 - **Réouverture** : `OnProductionDayReopened` retire aussi les fiches
-  intouchées (`resupplyIds`).
+  intouchées (`resupplyIds`) — par un statut, `withdrawn_at`, depuis le
+  2026-11-02 : la fiche reste en base, le poste et le dépôt l'écartent, et un
+  nouvel arrêt la rétablit.
 - **Commerce** : `packing/channels/commerce/PackedResuppliesReader`, déclaré et
   implémenté ici, rend l'emballé d'une fiche close ; la réception du point s'en
   pré-remplit (`b2b → packing : port uniquement`).
@@ -450,7 +452,9 @@ ordre explicite de Hugo (CLAUDE.md §0). Ces colonnes ne sont plus lues ni
 - `production.production_order.packed_at`, `packed_by`, `container_count` et
   `production.production_order_line.packed_*` — l'ancien poste du fournil.
   ⚠️ L'adaptateur de la journée les **recopie** à l'aveugle (`carriedPacking`)
-  quand un retirage efface puis recrée les commandes, pour ne pas perdre
+  quand une journée efface puis recrée ses commandes (arrêt, réouverture, ou
+  écriture d'une journée de base inconnue — un retirage n'ajoute plus que les
+  commandes arrivées depuis le 2026-11-02), pour ne pas perdre
   l'historique des journées colisées avant K3 ; l'e2e
   `production-batches-transition` le tient.
 - `packing.packing_order.container_count` et `container_mode` (la valeur

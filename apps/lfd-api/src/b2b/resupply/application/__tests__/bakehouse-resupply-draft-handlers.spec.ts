@@ -12,7 +12,7 @@ import {
 } from "../../domain/resupply-receipt-errors.js";
 import { BakehouseResupplyDraftKeyTakenError } from "../../domain/bakehouse-resupply-draft-errors.js";
 import { serviceDayFor } from "../../domain/site-resupply.js";
-import { BakehouseResupplyAfterStopError } from "../../domain/site-resupply-errors.js";
+import { BakehouseResupplyAfterStopError } from "../../domain/site-resupply-gate-errors.js";
 import { CreateBakehouseResupplyDraftCommand } from "../create-bakehouse-resupply-draft.command.js";
 import { CreateBakehouseResupplyDraftHandler } from "../create-bakehouse-resupply-draft.handler.js";
 import { DiscardBakehouseResupplyDraftCommand } from "../discard-bakehouse-resupply-draft.command.js";

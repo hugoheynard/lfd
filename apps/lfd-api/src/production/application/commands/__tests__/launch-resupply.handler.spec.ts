@@ -26,6 +26,9 @@ import { InMemoryBatches, RecordingDayLock } from "../../__tests__/batch-doubles
 import { RecordingDurable } from "../../__tests__/handoff-doubles.js";
 import { DayResupplies } from "../../__tests__/settings-doubles.js";
 import { InMemoryWithdrawals } from "../../__tests__/withdrawal-doubles.js";
+import { ResupplyLaunchGestures } from "../../services/resupply-launch-gesture.js";
+import { ResupplyLaunchReading } from "../../services/resupply-launch-reading.js";
+import { ResupplyLaunchRecording } from "../../services/resupply-launch-recording.js";
 import { LaunchResupplyCommand } from "../launch-resupply.command.js";
 import { LaunchResupplyHandler } from "../launch-resupply.handler.js";
 
@@ -120,19 +123,22 @@ function subject(day: ProductionDay, orders: readonly ProducibleOrder[] = [ORDER
   const events = new RecordingPublisher();
   const durable = new RecordingDurable(trace);
   const handler = new LaunchResupplyHandler(
-    days,
     new RecordingDayLock(trace),
     new DirectUnitOfWork(),
-    new FixedClock(NOW),
-    resupplies,
-    new Commerce(orders, trace),
-    new InMemoryWithdrawals(trace),
-    new InMemoryBatches(),
-    new FixedStaffAuthorDirectory(
-      authorsKnownAs({ firstName: "Max", lastName: "Martin" }, "s_max"),
+    new ResupplyLaunchGestures(
+      new FixedStaffAuthorDirectory(
+        authorsKnownAs({ firstName: "Max", lastName: "Martin" }, "s_max"),
+      ),
+      new FixedClock(NOW),
     ),
+    new ResupplyLaunchReading(
+      days,
+      resupplies,
+      new Commerce(orders, trace),
+      new InMemoryWithdrawals(trace),
+    ),
+    new ResupplyLaunchRecording(days, new InMemoryBatches(), durable),
     events,
-    durable,
   );
   return { handler, days, resupplies, events, durable, trace };
 }
@@ -238,8 +244,8 @@ describe("LaunchResupplyHandler", () => {
 describe("LaunchResupplyHandler — journée jamais arrêtée (Q5)", () => {
   /**
    * Régression G-A (audit du 2026-11-02) : les commandes étaient lues AVANT le
-   * verrou ; une commande admise entre-temps échappait à la garde de Q5, et le
-   * lancement arrêtait la journée sans la figer.
+   * verrou ; une commande admise entre-temps échappait à la garde « une journée jamais arrêtée ne
+   * s'ouvre pas avec ce seul réassort » (Q5), et le lancement arrêtait la journée sans la figer.
    */
   it("lit les commandes, les retraits et le soir SOUS le verrou, puis ouvre la journée arrêtée", async () => {
     const { handler, days, events, trace } = subject(ProductionDay.open(ServiceDay.of(DAY)), []);

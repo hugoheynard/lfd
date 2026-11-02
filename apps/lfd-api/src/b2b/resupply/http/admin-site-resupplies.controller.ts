@@ -42,18 +42,18 @@ const targetParamSchema = z.enum(RESUPPLY_TARGETS);
 
 /**
  * **Commander un réassort** — Comptoir › Réassort, pour le point du bandeau
- * (lot R1, `reassort-boutiques/README.md`, 2026-10-21).
+ * (R1, `reassort-boutiques/README.md`, 2026-10-21).
  *
  * Sous `handover_counter`, comme la réception : le comptoir du point
  * commande (Hugo : « le comptoir ; on verra la granularité du droit plus
  * tard »). Le point est dans l'URL et dans chaque `where`.
  *
- * Depuis le lot R1c (2026-10-21), la demande en cours d'une visée est
+ * Depuis le 2026-10-21 (R1c), la demande en cours d'une visée est
  * enregistrée : on y ajoute (`drafts/:target/lines`), on corrige, on retire,
  * on envoie (`send`) — les trois derniers sous la version vue par le poste.
  *
  * Le `POST :siteId` d'un seul tenant, qu'employait le bouton « Lancer un
- * réassort au plus tôt » du fournil, est retiré au lot R1d : il envoyait la
+ * réassort au plus tôt » du fournil, est retiré avec l'envoi du fournil (R1d) : il envoyait la
  * demande DU COMPTOIR. Le fournil envoie désormais les siens à part
  * (`AdminBakehouseResuppliesController`). Annuler un réassort déjà
  * réceptionné est refusé (409).

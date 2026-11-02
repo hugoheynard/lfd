@@ -8,7 +8,7 @@ export interface DayStockSite {
 }
 
 /**
- * Port de **lecture** de l'onglet Stock de la Supervision (lot S1) — une
+ * Port de **lecture** de l'onglet Stock de la Supervision (S1) — une
  * journée, TOUS points : la Supervision regarde, elle n'écrit rien. Distinct
  * des lecteurs du comptoir, qui lisent un point à la fois, et de celui du
  * fournil, qui écarte les annulés (ISP).

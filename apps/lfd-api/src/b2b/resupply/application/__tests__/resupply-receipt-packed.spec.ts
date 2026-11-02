@@ -4,7 +4,7 @@ import { ReceiveSiteResupplyCommand } from "../receive-site-resupply.command.js"
 import { CRO_24, DAY, placed, SITE, setup } from "./resupply-receipt-setup.js";
 
 /**
- * La réception pré-remplie de l'emballé au colisage (réassort, lot R3b,
+ * La réception pré-remplie de l'emballé au colisage (réassort, la fiche au colisage, R3b,
  * `reassort-boutiques/README.md`) : l'emballé s'il est connu,
  * sinon le demandé ; le compte du comptoir fait foi (décision C).
  */

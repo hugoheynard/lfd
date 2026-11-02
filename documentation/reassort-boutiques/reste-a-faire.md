@@ -118,8 +118,27 @@ Laissé, et pourquoi :
   fichiers de domaine du backend (compté le 2026-11-02) : un sous-chemin sans
   Zod pour quatre fichiers ferait une seconde convention. À trancher pour
   tout le dépôt.
-- **`site-resupply.ts` repasse à 339 lignes** (319 après le découpage) : la
-  garde de réception et le suivi des lignes changées s'y ajoutent.
+- ~~**`site-resupply.ts` repasse à 339 lignes**~~ — 295 le 2026-11-02 (commit
+  à venir) : le nom et les lignes de la demande en cours sortent dans
+  `site-resupply-content.ts`, les refus des gardes dans
+  `site-resupply-gate-errors.ts`.
+
+## 4 ter. Le contrôle de l'audit, 2026-11-02 (commit à venir)
+
+- La journée du fournil s'écrit **par différence** : `ProductionDay.changes`
+  dit ce que chaque geste a touché, et `writeDayChanges`
+  (`production/infrastructure/production-day-children.writer.ts`) n'écrit
+  que ça — un lancement « au plus tôt » n'écrit plus que son réassort et le
+  compte. Une journée de base inconnue (`fromSnapshot`) s'écrit en entier.
+- La fiche de réassort retirée par une réouverture n'est plus effacée : elle
+  porte `withdrawn_at` (migration additive
+  `20261102270000_la_fiche_de_reassort_retiree`), un nouvel arrêt la
+  rétablit. La liste des COMMANDES du colisage (`PrismaPackingListWithdrawal`)
+  efface encore les siennes — hors de ce contrôle.
+- L'annulation prend le verrou de la journée AVANT de charger le réassort
+  (`SiteResupplyPlanKeyReader`) ; le lancement et la réception délèguent
+  leurs lectures et leurs écritures (`ResupplyLaunchReading`,
+  `ResupplyLaunchRecording`, `ResupplyReceiving`).
 
 ## 5. Décidé, puis abandonné
 

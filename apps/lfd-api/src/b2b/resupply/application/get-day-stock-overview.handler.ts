@@ -13,12 +13,12 @@ import { DayShelfStock } from "./day-shelf-stock.js";
 import { GetDayStockOverviewQuery } from "./get-day-stock-overview.query.js";
 
 /**
- * Sert l'onglet **Stock** de la Supervision (lot S1,
+ * Sert l'onglet **Stock** de la Supervision (S1,
  * `reassort-boutiques/README.md`, 2026-10-22) : pour la
  * journée regardée, une entrée par point — ses réassorts (envoyé, figé,
  * arrivé, réceptionné) et ses produits (stock du jour, alerte vivante,
  * attendu). Lecture pure. Le stock est le reste du jour (`DayShelfStock`) :
- * les reçus moins ce que les commandes sur stock en ont pris (lot L2).
+ * les reçus moins ce que les commandes sur stock en ont pris (L2).
  *
  * Tous les points non archivés y sont, dans l'ordre des points, même sans
  * rien ; un point archivé n'y est que s'il porte quelque chose ce jour-là,
@@ -75,7 +75,7 @@ export class GetDayStockOverviewHandler implements IQueryHandler<
 
   /**
    * Le reste de chaque point — la liste, plus ceux qui ont un reçu —, par le
-   * même calcul que la réception (`DayShelfStock`, lot L2).
+   * même calcul que la réception (`DayShelfStock`, le stock du jour décompté, L2).
    */
   private async stocksOf(
     day: string,

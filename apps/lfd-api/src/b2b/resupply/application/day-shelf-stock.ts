@@ -7,7 +7,7 @@ import { ShelfDrawsReader } from "../domain/shelf-draws.reader.js";
 
 /**
  * **Le reste du jour d'un point, en un seul calcul** (plan du jour J, §11.2,
- * lot L2) : lit les prélèvements des commandes sur stock et les passe, avec
+ * le stock du jour décompté (L2)) : lit les prélèvements des commandes sur stock et les passe, avec
  * les reçus, à `estimateStock`. La Supervision, la réception et le refus
  * d'une baisse de reçu passent tous par ici : deux écrans ne peuvent pas
  * dire deux restes.

@@ -9,14 +9,16 @@ import { ResupplyArticleUnitChangedError } from "../../domain/resupply-sale-unit
 import {
   EmptyResupplyError,
   ResupplyAlreadyPlacedError,
-  ResupplyDayPassedError,
   ResupplyLineNotInDraftError,
-  ResupplyPastCutoffError,
-  ResupplyPlanStoppedError,
   SiteResupplyChangedMeanwhileError,
   SiteResupplyDraftOpenedMeanwhileError,
   SiteResupplyNotFoundError,
 } from "../../domain/site-resupply-errors.js";
+import {
+  ResupplyDayPassedError,
+  ResupplyPastCutoffError,
+  ResupplyPlanStoppedError,
+} from "../../domain/site-resupply-gate-errors.js";
 import { AddSiteResupplyLineCommand } from "../add-site-resupply-line.command.js";
 import { AddSiteResupplyLineHandler } from "../add-site-resupply-line.handler.js";
 import { CorrectSiteResupplyLineCommand } from "../correct-site-resupply-line.command.js";
@@ -50,7 +52,7 @@ const TOMORROW = "2026-01-03";
 const VILLAGE = "site_village";
 const LABO = "site_labo";
 
-/** `stopped` : les journées dont le plan du fournil est arrêté (lot R3a). */
+/** `stopped` : les journées dont le plan du fournil est arrêté (R3a). */
 function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
   const store = new InMemorySiteResupplies();
   const cutoff = new FixedResupplyCutoff(deadline);
@@ -71,7 +73,7 @@ function setup(deadline: Date | null = null, stopped: readonly string[] = []) {
       categoryName: "Viennoiseries",
       saleUnit: "piece",
     },
-    // Au poids : sa quantité compte des grammes (lot L2b-1).
+    // Au poids : sa quantité compte des grammes (L2b-1).
     {
       sku: "SAU",
       name: "Saumon gravlax",

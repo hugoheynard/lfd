@@ -7,7 +7,7 @@ import { siteResupplyView } from "./site-resupply-view.js";
 /**
  * Une journée de réassorts telle que le fournil la lit : par point, ses
  * réassorts envoyés, et le cumul par article. Partagé par l'écran
- * « Réassorts à produire » et l'onglet de Prod manager (lot R3d).
+ * « Réassorts à produire » et l'onglet de Prod manager (R3d).
  */
 export function resupplyDayView(
   serviceDay: string,

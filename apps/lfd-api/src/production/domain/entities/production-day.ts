@@ -20,6 +20,15 @@ import {
 import { ServiceDay } from "../value-objects/service-day.value-object.js";
 import * as batching from "./production-day.batches.js";
 import {
+  orderRevised,
+  ordersAdded,
+  planReplaced,
+  type ProductionDayChanges,
+  resupplyLaunched,
+  UNCHANGED_DAY,
+  WHOLE_DAY,
+} from "./production-day.changes.js";
+import {
   assertNotLaunched,
   assertNothingElseToFreeze,
   launchedOf,
@@ -41,6 +50,7 @@ import type {
 import { type PlanSigner, staffSigner } from "./plan-signer.js";
 
 // La forme de la journée vit à côté ; réexportée : l'agrégat reste le point d'entrée.
+export type { ProductionDayChanges } from "./production-day.changes.js";
 export type { DownstreamProgress } from "./production-day.reopening.js";
 export type { RaisedLine, RevisedLine } from "./production-day.revision.js";
 export {
@@ -105,18 +115,38 @@ export class ProductionDay {
     private reopenedValue: PackedMark | null = null,
     private resuppliesValue: readonly ProductionResupplySnapshot[] = [],
     private launchedValue: readonly LaunchedResupplySnapshot[] = [],
+    private changesValue: ProductionDayChanges = UNCHANGED_DAY,
   ) {}
 
   /**
    * Une journée qu'on n'a jamais arrêtée. C'est l'état de départ, et le seul
-   * qu'on puisse fabriquer sans lire la base.
+   * qu'on puisse fabriquer sans lire la base ; rien n'en est écrit, donc rien
+   * n'a changé ({@link changes}).
    */
   static open(day: ServiceDay): ProductionDay {
     return new ProductionDay(day, null, null, null, null, LEGACY_PACKING_OWNER, [], [], []);
   }
 
-  /** Rehydrate depuis l'adaptateur. Les value objects revalident au passage. */
+  /**
+   * Rehydrate une journée relue en base par l'adaptateur lui-même : rien n'a
+   * changé depuis, et `save` n'écrira que ce que les gestes suivants touchent.
+   */
+  static restore(snapshot: ProductionDaySnapshot): ProductionDay {
+    return ProductionDay.rehydrate(snapshot, UNCHANGED_DAY);
+  }
+
+  /**
+   * Rehydrate un état dont la base n'est pas connue (une lecture composée, un
+   * semis) : `save` l'écrira EN ENTIER. Les value objects revalident au passage.
+   */
   static fromSnapshot(snapshot: ProductionDaySnapshot): ProductionDay {
+    return ProductionDay.rehydrate(snapshot, WHOLE_DAY);
+  }
+
+  private static rehydrate(
+    snapshot: ProductionDaySnapshot,
+    changes: ProductionDayChanges,
+  ): ProductionDay {
     return new ProductionDay(
       ServiceDay.of(snapshot.serviceDay),
       snapshot.closedAt,
@@ -130,7 +160,13 @@ export class ProductionDay {
       snapshot.reopened ?? null,
       snapshot.resupplies ?? [],
       snapshot.launchedResupplies ?? [],
+      changes,
     );
+  }
+
+  /** Ce que les gestes ont touché depuis la lecture — l'adaptateur n'écrit que ça. */
+  get changes(): ProductionDayChanges {
+    return this.changesValue;
   }
 
   get isClosed(): boolean {
@@ -256,8 +292,8 @@ export class ProductionDay {
    * plus : elle ne se relit que depuis la base (`fromSnapshot`).
    *
    * @param withdrawn les commandes RETIRÉES par une annulation staff (doc
-   *   `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : l'appelant les lit sous
-   *   le verrou, l'agrégat les écarte. Les commandes du commerce sont lues
+   *   `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) : l'appelant les lit
+   * sous le verrou, l'agrégat les écarte. Les commandes du commerce sont lues
    *   avant le verrou ; une annulation validée entre les deux y figure encore.
    * @param by qui arrête — `null` quand on ne le sait pas (un semis) : le
    *   dossier dit alors « Arrêté le … », sans inventer d'auteur.
@@ -286,6 +322,7 @@ export class ProductionDay {
     this.ordersValue = kept.map(freezeOrder);
     this.resuppliesValue = resupplies.map(freezeResupply);
     this.countsValue = countOf([...kept, ...this.plannedResupplies]);
+    this.changesValue = planReplaced(this.changesValue);
     this.closedAtValue = at;
     this.closedByValue = by;
     // Écrit ici et nulle part ailleurs (colisage, §13, B1) : la journée garde
@@ -332,7 +369,13 @@ export class ProductionDay {
     if (absorbed.count === 0) {
       return 0;
     }
+    const known = new Set(this.ordersValue.map((order) => order.orderId));
+    const added = absorbed.orders.filter((order) => !known.has(order.orderId));
     this.ordersValue = absorbed.orders;
+    this.changesValue = ordersAdded(
+      this.changesValue,
+      added.map((order) => order.orderId),
+    );
     this.recount();
     this.retakenValue = { at, by };
     this.retakenByNameValue = byName;
@@ -367,6 +410,7 @@ export class ProductionDay {
     this.ordersValue = [];
     this.resuppliesValue = [];
     this.countsValue = [];
+    this.changesValue = planReplaced(this.changesValue);
     this.reopenedValue = { at, by };
     return released;
   }
@@ -397,6 +441,7 @@ export class ProductionDay {
       assertNothingElseToFreeze(this.day.value, pending);
     }
     this.launchedValue = [...this.launchedValue, launchedOf(resupply, gesture)];
+    this.changesValue = resupplyLaunched(this.changesValue, resupply.resupplyId);
     this.recount();
     if (opening) {
       this.closedAtValue = gesture.at;
@@ -424,6 +469,7 @@ export class ProductionDay {
     }
     const revised = revisedPlanOf(this.day.value, this.ordersValue, orderId, lines);
     this.ordersValue = revised.orders;
+    this.changesValue = orderRevised(this.changesValue, orderId);
     this.recount();
     return revised.raised;
   }

@@ -13,7 +13,7 @@ import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
- * **« Monté »** (lot R3e de `reassort-boutiques/README.md`)
+ * **« Monté »** (R3e de `reassort-boutiques/README.md`)
  * — le geste du fournil pour un point servi sur place (le Labo) : le réassort
  * passe d'attendu à arrivé, et la cloche sonne au comptoir.
  *
@@ -22,8 +22,8 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * ne refuse pas « Monté » à un point servi par transfert — l'écran ne le
  * propose qu'aux autres.
  *
- * Depuis R4c (Q4), un « au plus tôt » n'est monté qu'une fois LANCÉ : la
- * question est posée au fournil sous le verrou de la journée
+ * Depuis le transport du « au plus tôt » (R4c, Q4), un « au plus tôt » n'est monté qu'une fois
+ * LANCÉ : la question est posée au fournil sous le verrou de la journée
  * (`ResupplyPlanGate.launched`, comme l'annulation), jamais à la colonne
  * d'affichage.
  *

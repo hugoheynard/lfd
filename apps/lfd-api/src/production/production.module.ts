@@ -148,6 +148,9 @@ import { ProductionHandoffReader } from "./domain/ports/production-handoff.reade
 import { PrismaProductionHandoffLedger } from "./infrastructure/prisma-production-handoff.ledger.js";
 import { PrismaProductionHandoffReader } from "./infrastructure/prisma-production-handoff.reader.js";
 import { SealedDayReading } from "./application/services/sealed-day-reading.service.js";
+import { ResupplyLaunchGestures } from "./application/services/resupply-launch-gesture.js";
+import { ResupplyLaunchReading } from "./application/services/resupply-launch-reading.js";
+import { ResupplyLaunchRecording } from "./application/services/resupply-launch-recording.js";
 import { ChannelQualityHeldOrdersReader } from "./application/services/channel-quality-held-orders.reader.js";
 import { DayPlannedDestinationsReader } from "./application/services/day-planned-destinations.reader.js";
 import { OnPackingReturned } from "./application/handlers/on-packing-returned.handler.js";
@@ -291,6 +294,9 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     OnPackingReturned,
     // Les bacs fermés seulement — l'état du jour et le contrôle qualité (K3a).
     SealedDayReading,
+    ResupplyLaunchGestures,
+    ResupplyLaunchReading,
+    ResupplyLaunchRecording,
     // Publiés pour le poste servi par le colisage (K3a) ; reliés par
     // `PackingFeedModule`.
     ChannelQualityHeldOrdersReader,
@@ -322,8 +328,8 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     SendDossierOnDayRetaken,
     DossierDispatch,
     { provide: DossierDispatchLog, useClass: PrismaDossierDispatchLog },
-    // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`, C3.4) :
-    // le registre des retraits, lu par la clôture et le retirage sous le
+    // L'annulation staff (doc `documentation/commandes/annulation/annulation-par-le-staff.md`,
+    // C3.4) : le registre des retraits, lu par la clôture et le retirage sous le
     // verrou, et le guichet que le commerce appelle — relié par
     // `ProductionDeskFeedModule`, comme l'inscription qu'il affiche.
     { provide: OrderWithdrawalLedger, useClass: PrismaOrderWithdrawalLedger },

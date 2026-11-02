@@ -18,7 +18,7 @@ export interface ShopRelease {
 }
 
 /**
- * **La sortie de réserve vers une boutique** (plan A1, lot A1.4,
+ * **La sortie de réserve vers une boutique** (A1.4,
  * `documentation/commandes/annulation/plan-a1-4-envoyer-en-boutique.md` § 2)
  * — déclaré ET implémenté par le colisage, appelé par le commerce DANS la
  * transaction de « Envoyer en boutique », APRÈS l'écriture du réassort. Même

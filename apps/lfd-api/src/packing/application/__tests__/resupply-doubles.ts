@@ -10,15 +10,19 @@ import {
 import { PackingResupplyRepository } from "../../domain/ports/packing-resupply.repository.js";
 
 /**
- * Les fiches de réassort en mémoire (lot R3b) — une seule table, que la
+ * Les fiches de réassort en mémoire (R3b) — une seule table, que la
  * liste, le dépôt et la lecture partagent, avec la sémantique de la vraie :
  * inscrite une fois, retirée seulement intouchée et du soir.
  */
 export class InMemoryResupplies extends PackingResupplyListing {
+  /** Les fiches vivantes — celles que le poste et le dépôt voient. */
   readonly rows = new Map<string, PackingResupplySnapshot>();
+  /** Les fiches retirées par une réouverture, avec l'instant du retrait. */
+  readonly withdrawn = new Map<string, Date>();
 
   draw(resupply: ResupplyToDraw): Promise<void> {
     const key = `${resupply.serviceDay}/${resupply.resupplyId}`;
+    this.withdrawn.delete(key);
     if (!this.rows.has(key)) {
       this.rows.set(key, {
         serviceDay: resupply.serviceDay,
@@ -35,7 +39,7 @@ export class InMemoryResupplies extends PackingResupplyListing {
     return Promise.resolve();
   }
 
-  withdrawUntouched(serviceDay: string, resupplyIds: readonly string[]): Promise<number> {
+  withdrawUntouched(serviceDay: string, resupplyIds: readonly string[], at: Date): Promise<number> {
     let count = 0;
     for (const id of resupplyIds) {
       const key = `${serviceDay}/${id}`;
@@ -46,6 +50,7 @@ export class InMemoryResupplies extends PackingResupplyListing {
         !PackingResupply.fromSnapshot(row).started
       ) {
         this.rows.delete(key);
+        this.withdrawn.set(key, at);
         count += 1;
       }
     }

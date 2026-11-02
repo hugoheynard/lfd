@@ -15,14 +15,14 @@ export interface LoweredArticle {
 
 /**
  * **Toute baisse d'une quantité reçue passe par ici** (plan du jour J, §11.2
- * et §12 bloquant 1, lot L2) : corriger un reçu réceptionné, corriger ou
+ * et §12 bloquant 1, le stock du jour décompté (L2)) : corriger un reçu réceptionné, corriger ou
  * retirer un article du réassort sans commande.
  *
  * Prend `ShelfStockLock`, laisse le geste écrire, relit le reste dans la même
  * transaction, et refuse si l'article est passé sous ce que les commandes sur
  * stock en ont déjà pris. Le refus annule l'écriture avec la transaction.
  *
- * Le compte se fait par unité (lot L2b-1) : des grammes ne se comparent qu'à
+ * Le compte se fait par unité (L2b-1) : des grammes ne se comparent qu'à
  * des grammes, et le refus dit l'unité (« 1,25 kg … déjà vendus »).
  *
  * Seule une BAISSE est refusée : un geste qui remonte un reçu sans atteindre
@@ -64,7 +64,7 @@ export class ReceivedStockLowering {
   }
 }
 
-/** Les comptes de l'article, une entrée par unité (lot L2b-1) — jamais sommées. */
+/** Les comptes de l'article, une entrée par unité (L2b-1) — jamais sommées. */
 function linesOf(
   article: LoweredArticle,
   lines: readonly EstimatedStockLine[],

@@ -7,7 +7,7 @@ import {
 /**
  * **Une ligne demandée** : un article du catalogue publié (SKU produit), son
  * libellé et son unité FIGÉS au geste, la quantité demandée — des pièces, ou
- * des GRAMMES si l'unité est `weight` (lot L2b-1). Aucun montant : un
+ * des GRAMMES si l'unité est `weight` (L2b-1). Aucun montant : un
  * réassort est un mouvement interne, jamais une vente.
  */
 export class SiteResupplyLine {

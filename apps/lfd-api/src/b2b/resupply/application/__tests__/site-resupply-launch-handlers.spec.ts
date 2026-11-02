@@ -5,7 +5,7 @@ import {
   FixedClosedPlans,
   RecordingAdmissionDesk,
 } from "../../../orders/application/commands/__tests__/plan-doubles.js";
-import { ResupplyLaunchedNotCancellableError } from "../../domain/site-resupply-errors.js";
+import { ResupplyLaunchedNotCancellableError } from "../../domain/site-resupply-gate-errors.js";
 import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
 import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { ListResuppliesToProduceHandler } from "../list-resupplies-to-produce.handler.js";
@@ -25,6 +25,7 @@ import {
   KnownReceptions,
   SiteLabels,
   freshSendingKey,
+  InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
 
 /**
@@ -69,7 +70,15 @@ function setup() {
       gate,
       uow,
     ),
-    cancel: new CancelSiteResupplyHandler(store, new KnownReceptions(), staff, clock, gate, uow),
+    cancel: new CancelSiteResupplyHandler(
+      store,
+      new InMemorySiteResupplyPlanKeys(store),
+      new KnownReceptions(),
+      staff,
+      clock,
+      gate,
+      uow,
+    ),
     list: new ListSiteResuppliesHandler(
       reader,
       cutoff,

@@ -1,7 +1,7 @@
 import type { ResupplyTarget } from "../domain/site-resupply.js";
 
 /**
- * Nomme la demande en cours d'une visée (lot R1g) ; `null` ou vide retire le
+ * Nomme la demande en cours d'une visée (R1g) ; `null` ou vide retire le
  * nom. Rend l'identifiant de la demande.
  */
 export class NameSiteResupplyCommand {

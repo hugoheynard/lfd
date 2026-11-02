@@ -19,6 +19,10 @@ import {
   SiteResupplyChangedMeanwhileError,
   SiteResupplyDraftOpenedMeanwhileError,
 } from "../../domain/site-resupply-errors.js";
+import {
+  type SiteResupplyPlanKey,
+  SiteResupplyPlanKeyReader,
+} from "../../domain/site-resupply-plan-key.reader.js";
 import { SiteResupplyReader } from "../../domain/site-resupply.reader.js";
 import { SiteResupplyRepository } from "../../domain/site-resupply.repository.js";
 import { TransferServedSites } from "../../domain/transfer-served-sites.js";
@@ -59,7 +63,7 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
     );
   }
 
-  /** Lectures groupées (`loadMany`) — une par fait, pas une par réassort (M6). */
+  /** Lectures groupées (`loadMany`) — une par fait, pas une par réassort (les réassorts lus en une fois, M6). */
   manyReads = 0;
 
   loadMany(siteId: string, resupplyIds: readonly string[]): Promise<readonly SiteResupply[]> {
@@ -86,7 +90,7 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
       if (resupply.placed === null && open !== undefined) {
         return Promise.reject(new SiteResupplyDraftOpenedMeanwhileError());
       }
-      // La clé primaire : un envoyé déjà écrit sous cet id (A1.4).
+      // La clé primaire : un envoyé déjà écrit sous cet id (la sortie de réserve, A1.4).
       if (resupply.placed !== null && this.rows.has(resupply.id)) {
         return Promise.reject(new SiteResupplyAlreadyWrittenError(resupply.id));
       }
@@ -119,6 +123,24 @@ export class InMemorySiteResupplies extends SiteResupplyRepository {
         row.serviceDay === serviceDay &&
         row.origin === "counter" &&
         row.placed === null,
+    );
+  }
+}
+
+/** La clé de plan sur le même stockage ; `trace` note chaque lecture (ordre verrou → chargement). */
+export class InMemorySiteResupplyPlanKeys extends SiteResupplyPlanKeyReader {
+  constructor(
+    private readonly store: InMemorySiteResupplies,
+    private readonly trace: string[] = [],
+  ) {
+    super();
+  }
+
+  keyOf(siteId: string, resupplyId: string): Promise<SiteResupplyPlanKey | null> {
+    this.trace.push("keyOf");
+    const row = this.store.all().find((r) => r.id === resupplyId && r.siteId === siteId);
+    return Promise.resolve(
+      row === undefined ? null : { target: row.target, serviceDay: row.serviceDay },
     );
   }
 }
@@ -206,7 +228,7 @@ export class InMemoryResupplyUsedNames extends ResupplyUsedNames {
   }
 }
 
-/** Les points servis par transfert, posés à la main (lot R3e). */
+/** Les points servis par transfert, posés à la main (l'arrivée au point, R3e). */
 export class FixedTransferServedSites extends TransferServedSites {
   constructor(private readonly transferSites: readonly string[] = []) {
     super();
@@ -218,8 +240,8 @@ export class FixedTransferServedSites extends TransferServedSites {
 }
 
 /**
- * Le fournil doublé pour l'annulation d'un « au plus tôt » (R4a) : `launched`
- * dit quels réassorts il a lancés ; `asked` note chaque question, posée
+ * Le fournil doublé pour l'annulation d'un « au plus tôt » (le lancement « au plus tôt », R4a) :
+ * `launched` dit quels réassorts il a lancés ; `asked` note chaque question, posée
  * sous le verrou de la journée.
  */
 export class FixedLaunches extends LaunchedResupplies {

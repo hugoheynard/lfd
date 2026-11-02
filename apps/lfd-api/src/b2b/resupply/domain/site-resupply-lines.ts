@@ -12,7 +12,7 @@ import type { SiteResupplyLine } from "./site-resupply-line.js";
 /**
  * Ajoute un article. Déjà présent, sa quantité s'ADDITIONNE : deux postes
  * qui ajoutent des croissants en demandent la somme — dans la même unité
- * seulement (lot L2b-1).
+ * seulement (L2b-1).
  *
  * @throws {ResupplyLineUnitMismatchError} déjà présent dans l'autre unité.
  */

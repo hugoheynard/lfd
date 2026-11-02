@@ -16,7 +16,7 @@ import { linesBySku } from "../../domain/services/lines-by-sku.js";
 export const ON_RESUPPLY_LIST_DRAWN = "packing.draw-resupply";
 
 /**
- * **Un réassort entre au colisage** (réassort, lot R3b,
+ * **Un réassort entre au colisage** (réassort, la fiche au colisage, R3b,
  * `reassort-boutiques/README.md`) : sa fiche
  * s'ouvre, à part des commandes, titrée « Réassort <point> ».
  *

@@ -9,7 +9,7 @@ const EVE = 1;
 
 /**
  * {@link ResupplyCutoff} sur le réglage du commerce : l'heure du réassort
- * (lot R3a, 2026-10-21), la veille, à l'heure de Paris — la même conversion
+ * (R3a, 2026-10-21), la veille, à l'heure de Paris — la même conversion
  * que la passation (`orderLimitInstant`). Aucun rattrapage : c'est l'heure
  * que le plan du fournil suit, et il s'arrête dessus.
  */

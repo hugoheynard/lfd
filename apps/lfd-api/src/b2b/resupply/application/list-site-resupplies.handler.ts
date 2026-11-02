@@ -11,9 +11,9 @@ import { resupplyDays } from "./resupply-days.js";
 import { siteResupplyDraftView, siteResupplyView } from "./site-resupply-view.js";
 
 /**
- * Sert la liste du comptoir : les demandes en cours du point (lot R1c) et
+ * Sert la liste du comptoir : les demandes en cours du point (R1c) et
  * ses réassorts envoyés pour aujourd'hui et demain, annulés compris, et
- * jusqu'à quand « Pour demain » est accepté — et, depuis R1g, les noms
+ * jusqu'à quand « Pour demain » est accepté — et, depuis le nom du réassort (R1g), les noms
  * déjà employés au point, proposés à la saisie.
  */
 @QueryHandler(ListSiteResuppliesQuery)

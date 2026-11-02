@@ -1,7 +1,7 @@
 import type { PackingResupply } from "../entities/packing-resupply.js";
 
 /**
- * **La fiche de réassort, en écriture** (réassort, lot R3b). `lock` la charge
+ * **La fiche de réassort, en écriture** (réassort, la fiche au colisage, R3b). `lock` la charge
  * sous `SELECT … FOR UPDATE`, dans l'unité de travail de l'appelant ; `save`
  * écrit la saisie et la clôture depuis l'agrégat.
  */

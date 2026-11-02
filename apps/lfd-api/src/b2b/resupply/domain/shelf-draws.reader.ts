@@ -7,13 +7,13 @@ export interface ShelfDraw {
   readonly label: string;
   /** L'unité figée sur la ligne de commande (`order_lines.sale_unit`). */
   readonly saleUnit: SaleUnit;
-  /** Des pièces, ou des GRAMMES si `saleUnit = weight` (lot L2b-1). */
+  /** Des pièces, ou des GRAMMES si `saleUnit = weight` (L2b-1). */
   readonly quantity: number;
 }
 
 /**
  * Port de **lecture** des prélèvements de la vitrine (plan du jour J, §11.2,
- * lot L2) : déclaré par le réassort, qui possède le stock, et implémenté par
+ * (L2)) : déclaré par le réassort, qui possède le stock, et implémenté par
  * les commandes, qui possèdent les lignes (`lint:prisma-model-ownership`).
  *
  * Compte les lignes des commandes `supply = shelf` du jour au point, statut ni

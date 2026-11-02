@@ -11,6 +11,7 @@ import { CorrectResupplyLineHandler } from "../correct-resupply-line.handler.js"
 import { GetResupplyReceiptHandler } from "../get-resupply-receipt.handler.js";
 import { ReceiveResupplyLineHandler } from "../receive-resupply-line.handler.js";
 import { ReceiveSiteResupplyHandler } from "../receive-site-resupply.handler.js";
+import { ResupplyReceiving } from "../resupply-receiving.js";
 import { WithdrawResupplyLineHandler } from "../withdraw-resupply-line.handler.js";
 import { DayShelfStock } from "../day-shelf-stock.js";
 import { ReceivedStockLowering } from "../received-stock-lowering.js";
@@ -25,7 +26,7 @@ import { InMemorySiteResupplies, InMemorySiteResupplyReader } from "./site-resup
 import { InMemoryStockAlerts } from "./stock-alert-doubles.js";
 import { FixedShelfDraws, RecordingShelfStockLock } from "./shelf-stock-doubles.js";
 
-/** Le banc des handlers de la réception (lot R2) : doubles partagés, une horloge fixe. */
+/** Le banc des handlers de la réception (R2) : doubles partagés, une horloge fixe. */
 /** 09:00 à Paris le jour du réassort : « Réceptionner » n'est permis qu'à partir de sa journée. */
 export const AT = new Date("2026-01-02T08:00:00Z");
 export const SITE = "site_village";
@@ -46,7 +47,7 @@ export const CATALOGUE = new Catalogue([
     categoryName: "Viennoiseries",
     saleUnit: "piece",
   },
-  // Au poids : la quantité compte des grammes (lot L2b-1).
+  // Au poids : la quantité compte des grammes (L2b-1).
   {
     sku: "SAU",
     name: "Saumon gravlax",
@@ -80,7 +81,7 @@ export function placed(
 }
 
 /**
- * L'emballé au colisage, posé à la main (lot R3b) : un réassort absent de la
+ * L'emballé au colisage, posé à la main (R3b) : un réassort absent de la
  * table n'a pas de fiche close.
  */
 export class FixedPackedResupplies extends PackedResuppliesReader {
@@ -114,11 +115,9 @@ export function setup() {
     packed,
     receiveResupply: new ReceiveSiteResupplyHandler(
       resupplies,
-      receipts,
-      alerts,
+      new ResupplyReceiving(receipts, alerts, ids),
       staff,
       clock,
-      ids,
       uow,
       packed,
     ),

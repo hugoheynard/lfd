@@ -16,7 +16,7 @@ export const BAKEHOUSE_DRAFT_MAX_LINES = 200;
 
 /**
  * Une ligne de brouillon : un article, sa quantité et son unité, sans libellé.
- * Au poids, la quantité compte des grammes (lot L2b-1).
+ * Au poids, la quantité compte des grammes (L2b-1).
  */
 export interface BakehouseResupplyDraftLine {
   readonly sku: string;
@@ -26,7 +26,7 @@ export interface BakehouseResupplyDraftLine {
 
 /**
  * Une ligne telle que l'écran ou la base la donnent, l'unité lue : absente,
- * c'est la pièce — tout brouillon écrit avant le lot L2b-1 l'était, et le
+ * c'est la pièce — tout brouillon écrit avant (L2b-1) l'était, et le
  * contrat (`bakehouseResupplyDraftLineSchema`) le dit. À l'envoi, l'unité
  * est confrontée au catalogue (`catalogueLine`).
  */

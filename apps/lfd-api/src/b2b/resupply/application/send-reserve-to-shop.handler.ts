@@ -18,7 +18,7 @@ import { catalogueLine } from "./site-resupply-draft.js";
 
 /**
  * **« Envoyer en boutique »** — une sortie de la réserve du colisage (plan
- * A1, lot A1.4, `documentation/commandes/annulation/plan-a1-4-envoyer-en-boutique.md`
+ * A1.4, `documentation/commandes/annulation/plan-a1-4-envoyer-en-boutique.md`
  * § 2). Le pain est déjà fabriqué : le point le reçoit comme un réassort
  * d'origine `reserve`, envoyé « au plus tôt », jamais lancé — ni plan, ni
  * four, ni réservation, ni transfert.

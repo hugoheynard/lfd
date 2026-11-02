@@ -22,7 +22,7 @@ export interface DayStockResupply {
   readonly state: DayStockResupplyState;
   /** La somme des lignes à la pièce. */
   readonly pieces: number;
-  /** La somme des lignes au poids, en grammes (lot L2b-1). */
+  /** La somme des lignes au poids, en grammes (L2b-1). */
   readonly weightGrams: number;
 }
 
@@ -49,7 +49,7 @@ export interface DayStockInput {
   readonly resupplies: readonly PlacedSiteResupplySnapshot[];
   /** Ses reçus de la journée, réassort sans commande compris. */
   readonly receipts: readonly ResupplyReceipt[];
-  /** Son reste du jour, calculé par `DayShelfStock` sur ces mêmes reçus (lot L2). */
+  /** Son reste du jour, calculé par `DayShelfStock` sur ces mêmes reçus (L2). */
   readonly stock: readonly EstimatedStockLine[];
   /** Ses alertes vivantes. */
   readonly alerts: readonly StockAlertSnapshot[];
@@ -60,12 +60,12 @@ export interface DayStockInput {
 }
 
 /**
- * **La journée de stock d'un point** (lot S1, l'onglet Stock de la
+ * **La journée de stock d'un point** (S1, l'onglet Stock de la
  * Supervision) : ses réassorts et l'état de chacun, puis ses produits.
  *
  * - Un réassort annulé n'y est que s'il avait été réceptionné : ce qui est
  *   arrivé reste arrivé (même règle que la page de réception).
- * - Le stock est le reste du jour reçu tout fait (`DayShelfStock`, lot L2) —
+ * - Le stock est le reste du jour reçu tout fait (`DayShelfStock`, le stock du jour décompté, L2) —
  *   les reçus RÉCEPTIONNÉS moins ce que les commandes sur stock en ont pris ;
  *   l'attendu, l'emballé (sinon le demandé) des réassorts non annulés pas
  *   encore réceptionnés. Le stock ne monte jamais à l'envoi.
@@ -139,7 +139,7 @@ interface ProductTally {
 }
 
 /**
- * Par (article, unité) — jamais pièces et grammes ensemble (lot L2b-1). Une
+ * Par (article, unité) — jamais pièces et grammes ensemble (L2b-1). Une
  * alerte n'a pas d'unité : elle se pose sur chaque compte de l'article, ou
  * seule, sans unité, s'il n'en a aucun.
  */

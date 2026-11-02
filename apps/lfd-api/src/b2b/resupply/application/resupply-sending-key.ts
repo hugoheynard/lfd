@@ -13,7 +13,7 @@ export interface ResupplySendingKey {
 
 /**
  * **Un envoi, une fois** — la clé fournie par l'écran, une par ouverture du
- * panneau, devient l'identifiant du réassort (plan A1, lot A1.4 ; étendu à
+ * panneau, devient l'identifiant du réassort (la sortie de réserve, A1.4 ; étendu à
  * « Envoyer un réassort » du fournil, audit du réassort C-A, 2026-11-02).
  * Sa clé primaire est la contrainte unique : deux clics ne font qu'un réassort.
  *

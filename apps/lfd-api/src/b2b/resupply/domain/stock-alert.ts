@@ -59,7 +59,7 @@ export interface StockAlertSnapshot {
 
 /**
  * **Une alerte de stock** — « rupture » ou « stock faible » déclarée par le
- * comptoir sur un article, pour un point (lot R1b,
+ * comptoir sur un article, pour un point (R1b,
  * `reassort-boutiques/README.md`, Hugo 2026-10-21).
  *
  * Ce que l'agrégat garantit : une alerte levée ne se rouvre pas et ne se

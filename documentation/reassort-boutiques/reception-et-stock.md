@@ -79,7 +79,7 @@ ligne. Le reçu sans commande est dans le menu de chaque ligne de la table.
   implémenté par les commandes).
 - **Toute baisse d'un reçu** (corriger une ligne réceptionnée, corriger ou
   retirer une ligne sans commande) passe par `ReceivedStockLowering.lower`
-  (`application/received-stock-lowering.ts:34`), sous `ShelfStockLock`, et
+  (`application/received-stock-lowering.ts:38`), sous `ShelfStockLock`, et
   refuse de descendre sous le déjà-pris
   (`resupply.receipt.below_shelf_draws`, 409).
 - **Les commandes pour demain ne s'y soustraient pas** : elles sont dans le

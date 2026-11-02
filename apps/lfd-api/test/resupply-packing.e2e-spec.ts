@@ -173,6 +173,29 @@ describe("le réassort au colisage (R3b)", () => {
     expect(refused.status).toBe(409);
   });
 
+  /** La fiche retirée n'est plus effacée (2026-11-02) : elle porte l'instant du retrait. */
+  it("la fiche retirée reste en base, datée, et le nouvel arrêt la rétablit", async () => {
+    const id = await frozenResupply(await seedVillage(ctx), 6);
+
+    await reopen().expect(201);
+    await settle();
+    const key = { serviceDay_resupplyId: { serviceDay: SERVICE_DAY, resupplyId: id } };
+    const withdrawn = await ctx.prisma.packingResupply.findUnique({
+      where: key,
+      select: { withdrawnAt: true, lines: { select: { sku: true } } },
+    });
+    expect(withdrawn?.withdrawnAt).toBeInstanceOf(Date);
+    expect(withdrawn?.lines).toEqual([{ sku: CROISSANT }]);
+
+    await closePlan(ctx);
+    await settle();
+    const revived = await ctx.prisma.packingResupply.findUnique({
+      where: key,
+      select: { withdrawnAt: true },
+    });
+    expect(revived).toEqual({ withdrawnAt: null });
+  });
+
   it("la réception du point se pré-remplit de l'emballé, une fois la fiche close", async () => {
     const village = await seedVillage(ctx);
     const id = await frozenResupply(village, 6);

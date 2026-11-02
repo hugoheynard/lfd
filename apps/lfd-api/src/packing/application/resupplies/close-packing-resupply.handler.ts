@@ -9,7 +9,7 @@ import { ClosePackingResupplyCommand } from "./close-packing-resupply.command.js
 import { lockedResupply } from "./resupply-support.js";
 
 /**
- * **Clore une fiche de réassort** (réassort, lot R3b) : l'emballé de chaque
+ * **Clore une fiche de réassort** (réassort, la fiche au colisage, R3b) : l'emballé de chaque
  * ligne devient définitif, et `PackedResuppliesReader` le rend au commerce,
  * qui pré-remplit sa réception. Aucun fait : le commerce LIT, à la réception.
  * Une fiche déjà close n'est pas réécrite.

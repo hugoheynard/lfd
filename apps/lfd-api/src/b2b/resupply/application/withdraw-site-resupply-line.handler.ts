@@ -5,7 +5,7 @@ import { loadSiteResupply } from "./site-resupply-draft.js";
 import { WithdrawSiteResupplyLineCommand } from "./withdraw-site-resupply-line.command.js";
 
 /**
- * **Retire un article de la demande en cours** (lot R1c), sous la version
+ * **Retire un article de la demande en cours** (R1c), sous la version
  * que le poste a vue. La demande peut rester vide : elle attend le prochain
  * ajout, et ne s'envoie pas tant qu'elle l'est.
  */

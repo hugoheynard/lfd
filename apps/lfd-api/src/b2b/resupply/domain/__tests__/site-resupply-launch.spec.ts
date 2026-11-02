@@ -2,7 +2,7 @@ import { SiteResupply } from "../site-resupply.js";
 import {
   ResupplyFrozenInPlanError,
   ResupplyLaunchedNotCancellableError,
-} from "../site-resupply-errors.js";
+} from "../site-resupply-gate-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 import type { ResupplyTarget, SiteResupplySnapshot } from "../site-resupply.js";
 

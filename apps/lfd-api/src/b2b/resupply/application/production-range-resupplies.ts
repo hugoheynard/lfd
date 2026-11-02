@@ -9,7 +9,7 @@ import { resupplyTotals } from "../domain/resupply-totals.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
 
 /**
- * {@link ExpectedResuppliesReader} tel que le commerce l'implémente (lot R3d,
+ * {@link ExpectedResuppliesReader} tel que le commerce l'implémente (Prod manager, R3d,
  * 2026-10-21) : les réassorts « pour demain » envoyés et non annulés de la
  * plage, fusionnés par article et par journée, pour le prévisionnel. « Au
  * plus tôt » n'entre pas au plan (R4).
@@ -37,7 +37,7 @@ export class ProductionRangeResupplies extends ExpectedResuppliesReader {
         productName: total.label,
         quantity: total.quantity,
         // Le cumul est par (article, unité) : des grammes ne s'ajoutent jamais
-        // à des pièces (lot L2b-2).
+        // à des pièces (L2b-2).
         saleUnit: total.saleUnit,
       })),
     }));

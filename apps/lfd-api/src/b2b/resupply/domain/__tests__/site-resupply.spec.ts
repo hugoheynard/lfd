@@ -6,18 +6,20 @@ import {
   IncompleteResupplyLineError,
   InvalidRequestedQuantityError,
   ResupplyAlreadyPlacedError,
+  ResupplyLineNotInDraftError,
+  SiteResupplyChangedMeanwhileError,
+  UnknownResupplyOriginError,
+  UnknownResupplyTargetError,
+} from "../site-resupply-errors.js";
+import {
   ResupplyAlreadyReceivedNotCancellableError,
   ResupplyDayPassedError,
-  ResupplyLineNotInDraftError,
   ResupplyNotCancellableError,
   BakehouseResupplyAfterStopError,
   ResupplyFrozenInPlanError,
   ResupplyPastCutoffError,
   ResupplyPlanStoppedError,
-  SiteResupplyChangedMeanwhileError,
-  UnknownResupplyOriginError,
-  UnknownResupplyTargetError,
-} from "../site-resupply-errors.js";
+} from "../site-resupply-gate-errors.js";
 import { ResupplyNotReceivableError } from "../resupply-receipt-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 

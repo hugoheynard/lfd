@@ -1,7 +1,7 @@
 import type { RequestedResupplyLine } from "./send-bakehouse-resupply.command.js";
 
 /**
- * « Envoyer en boutique » (plan A1, lot A1.4) — sortir des pièces de la
+ * « Envoyer en boutique » (A1.4) — sortir des pièces de la
  * réserve du colisage de `serviceDay` vers un point. Acte de superviseur ;
  * rend l'identifiant du réassort né du geste.
  *

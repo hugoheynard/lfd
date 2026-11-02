@@ -4,7 +4,7 @@ import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 import { CorrectSiteResupplyLineCommand } from "./correct-site-resupply-line.command.js";
 import { loadSiteResupply } from "./site-resupply-draft.js";
 
-/** **Corrige une quantité de la demande en cours** (lot R1c), sous la version que le poste a vue. */
+/** **Corrige une quantité de la demande en cours** (R1c), sous la version que le poste a vue. */
 @CommandHandler(CorrectSiteResupplyLineCommand)
 export class CorrectSiteResupplyLineHandler implements ICommandHandler<
   CorrectSiteResupplyLineCommand,

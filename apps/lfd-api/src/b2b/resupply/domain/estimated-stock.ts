@@ -5,7 +5,7 @@ import type { ShelfDraw } from "./shelf-draws.reader.js";
 /**
  * Un article du point dans la journée, dans UNE unité : ce qui en a été reçu,
  * et ce qui devrait en rester en vitrine — des pièces, ou des grammes au
- * poids (lot L2b-1).
+ * poids (L2b-1).
  */
 export interface EstimatedStockLine {
   readonly sku: string;
@@ -16,8 +16,8 @@ export interface EstimatedStockLine {
 }
 
 /**
- * **Le reste du jour au point** (plan du jour même, §1 ; lot R2 ; décompté
- * depuis le lot L2 du plan du jour J, §11.2) : la SOMME des reçus de la
+ * **Le reste du jour au point** (plan du jour même, §1 ; la réception en un geste, R2 ; décompté
+ * depuis le stock du jour décompté (L2 du plan du jour J, §11.2) : la SOMME des reçus de la
  * journée, tous reçus confondus — réassorts réceptionnés et réassort sans
  * commande —, moins ce que les commandes sur stock (`supply = shelf`) en ont
  * pris. Calculé, jamais saisi.
@@ -36,7 +36,7 @@ export interface EstimatedStockLine {
  *   sous le déjà-pris ; la passation garde le reste au lot L4).
  *
  * - Le compte se fait par (article, unité), jamais pièces et grammes ensemble
- *   (lot L2b-1) : un article reçu au poids puis passé à la pièce au catalogue
+ *   (L2b-1) : un article reçu au poids puis passé à la pièce au catalogue
  *   donne deux lignes, chacune dans son unité.
  *
  * L'ordre est celui de la première apparition, reçus d'abord dans l'ordre

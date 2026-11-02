@@ -1,7 +1,7 @@
 import { BusinessError, TechnicalError } from "../../../platform/shared/errors/app-error.js";
 
 /**
- * Les refus propres à l'unité d'une ligne de réassort (lot L2b-1 du plan
+ * Les refus propres à l'unité d'une ligne de réassort (L2b-1 du plan
  * `documentation/limites-de-commande/jour-meme-sur-stock.md`) : une
  * ligne compte des pièces OU des grammes, figés à son ajout, et un même
  * article ne mélange jamais les deux.

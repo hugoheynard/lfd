@@ -9,9 +9,10 @@ import {
   SiteResupplyDraftOpenedMeanwhileError,
 } from "../domain/site-resupply-errors.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
-import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { dayColumn } from "./day-column.js";
 
-/** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
+/** Le nom (R1g) et les colonnes des trois gestes datés (l'arrivée au point depuis R3e), `null` tant qu'ils n'ont pas eu lieu. */
 function tracesOf(resupply: SiteResupply) {
   const { placed, cancelled, arrived } = resupply;
   // Le lancement (R4a) n'est qu'un affichage, posé par le fait du fournil.
@@ -142,7 +143,7 @@ export class PrismaSiteResupplyRepository extends SiteResupplyRepository {
       });
     } catch (error) {
       // Un brouillon : l'index de la demande en cours. Un envoyé : sa clé
-      // primaire, qu'un même envoi rejoué en même temps a déjà écrite (A1.4).
+      // primaire, qu'un même envoi rejoué en même temps a déjà écrite (la sortie de réserve, A1.4).
       if (isUniqueViolation(error)) {
         throw resupply.placed === null
           ? new SiteResupplyDraftOpenedMeanwhileError()

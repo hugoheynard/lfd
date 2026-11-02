@@ -15,7 +15,7 @@ import { ListSiteStockAlertsQuery } from "../application/list-site-stock-alerts.
 
 /**
  * **Rupture et stock faible** — Comptoir › Réassort, pour le point du
- * bandeau (lot R1b, `reassort-boutiques/README.md`,
+ * bandeau (R1b, `reassort-boutiques/README.md`,
  * 2026-10-21). Sous `handover_counter`, comme la commande et la réception du
  * réassort. Le point est dans l'URL et dans chaque `where`.
  */

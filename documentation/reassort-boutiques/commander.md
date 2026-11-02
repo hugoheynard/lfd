@@ -17,7 +17,7 @@ flowchart LR
 
 ## 1. L'agrégat `SiteResupply`
 
-`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:68` — un point, une
+`apps/lfd-api/src/b2b/resupply/domain/site-resupply.ts:65` — un point, une
 visée (`tomorrow` | `asap`), une **journée déduite** de l'instant du geste à
 l'heure de Paris (demain ou aujourd'hui), jamais saisie ; des lignes (SKU,
 libellé figé du catalogue publié, **unité** `piece` | `weight`, quantité
@@ -132,7 +132,7 @@ jamais. Le réassort naît `origin = bakehouse`, créé et envoyé d'un geste
 (CHECK `site_resupply_bakehouse_placed`), avec les règles du comptoir. Le
 chemin d'envoi est un seul, partagé par l'envoi direct et l'envoi d'un
 brouillon : `prepareBakehouseResupply` / `writeBakehouseResupply`
-(`application/bakehouse-resupply-sending.ts:56`, `:74`).
+(`application/bakehouse-resupply-sending.ts:56`, `:76`).
 
 **Les brouillons** (Hugo, 2026-10-28 : « un enregistrer comme brouillon »,
 retrouvé depuis n'importe quel poste) vivent dans leur propre table,
@@ -152,7 +152,7 @@ entier de l'écran et la version lue ; un refus laisse le brouillon `open`.
 Les écritures ne vont pas au journal, comme l'envoi qu'elles empruntent.
 
 **Routes** — `admin/bakehouse-resupplies`
-(`http/admin-bakehouse-resupplies.controller.ts:43`), `production_resupply` :
+(`http/admin-bakehouse-resupplies.controller.ts:44`), `production_resupply` :
 `GET articles`, `GET sites/:siteId/names`, `POST sites/:siteId`
 (`{ key, target, name, lines }` → `{ id }`), `POST sites/:siteId/:resupplyId/mounted`
 (« Monté », [`au-plan-du-fournil.md`](au-plan-du-fournil.md)),
@@ -188,7 +188,7 @@ Le pain rendu à la réserve du colisage par une annulation part en boutique
 depuis la Supervision (`POST admin/reserve-shop-releases/:serviceDay`,
 `production_resupply:write`). Il naît envoyé « au plus tôt »
 (CHECK `site_resupply_reserve_placed_asap`), ne se lance jamais et ne
-s'annule pas ; `isProducedByBakehouse` (`domain/resupply-origin.ts:21`)
+s'annule pas ; `isProducedByBakehouse` (`domain/resupply-origin.ts:20`)
 l'écarte des réassorts à produire et de l'onglet de Prod manager. Le comptoir
 le réceptionne comme les autres, marqué « Pain rendu, envoyé par la
 réserve ». Seule la réserve du jour sort. La clé du panneau est

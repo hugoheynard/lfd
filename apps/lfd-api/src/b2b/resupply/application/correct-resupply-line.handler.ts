@@ -12,7 +12,7 @@ import { traceOf } from "./resupply-receipt-trace.js";
 /**
  * **Corrige la quantité reçue** d'un article du réassort sans commande. Une
  * baisse ne descend pas sous le déjà-vendu sur stock (`ReceivedStockLowering`,
- * plan du jour J, lot L2).
+ * plan du jour J, (L2)).
  */
 @CommandHandler(CorrectResupplyLineCommand)
 export class CorrectResupplyLineHandler implements ICommandHandler<

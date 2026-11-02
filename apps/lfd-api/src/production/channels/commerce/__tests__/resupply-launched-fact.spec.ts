@@ -1,8 +1,8 @@
 import { ResupplyLaunchedEvent, ResupplyLaunchedPayloadError } from "../resupply-launched.event.js";
 
 /**
- * Le contrat du fait `production.resupply_launched` (R4a) : ce que l'abonné
- * relit est ce que le fournil a écrit, et un payload hors forme est refusé
+ * Le contrat du fait `production.resupply_launched` (le lancement « au plus tôt », R4a) : ce que
+ * l'abonné relit est ce que le fournil a écrit, et un payload hors forme est refusé
  * plutôt que deviné. Instants recopiés, jamais comparés à l'horloge.
  */
 const AT = new Date("2026-09-08T07:30:00.000Z");

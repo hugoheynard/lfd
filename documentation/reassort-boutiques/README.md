@@ -71,8 +71,8 @@ flowchart TD
 | Bloc        | Ce qu'il tient                                                                   | Chemins                                                                                                                                                                                                  |
 | ----------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | commerce    | demande, envoi, brouillons, réception, alertes, stock du jour, Supervision Stock | `apps/lfd-api/src/b2b/resupply/` (module `resupply.module.ts`)                                                                                                                                           |
-| fournil     | copie figée, « Lancer », dossier du jour, part sur place                         | `apps/lfd-api/src/production/` — `domain/entities/production-day.ts:389` (`launchResupply`), `domain/services/on-site-share.ts:38`                                                                       |
-| colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:136` (`reserve`)                                                                                                    |
+| fournil     | copie figée, « Lancer », dossier du jour, part sur place                         | `apps/lfd-api/src/production/` — `domain/entities/production-day.ts:433` (`launchResupply`), `domain/services/on-site-share.ts:37`                                                                       |
+| colisage    | fiche de réassort, emballé, réserve d'un lancé                                   | `apps/lfd-api/src/packing/domain/entities/packing-resupply.ts:76`, `packing-stock.ts:139` (`reserve`)                                                                                                    |
 | livraison   | élément `resupply` du transfert, placement, départ, réception                    | `apps/lfd-api/src/delivery/application/transfer-attachment.ts:59` (`attachResupplies`)                                                                                                                   |
 | back-office | comptoir, Prod manager, colisage, Supervision                                    | `comptoir/reassort-boutique-page/`, `production/reassorts-a-produire/`, `production/colisage/packing-resupplies/`, `supervision/stock-board/`                                                            |
 | contrats    | vues et charges                                                                  | `packages/contracts/src/site-resupply.ts`, `resupply-receipt.ts`, `bakehouse-resupply-draft.ts`, `site-stock-alert.ts`, `day-stock-overview.ts`, `production-day-resupplies.ts`, `packing-resupplies.ts` |
@@ -89,9 +89,9 @@ il attend « Lancer » au fournil.
 | `DayResuppliesReader`      | fournil, `production/channels/commerce/day-resupplies.reader.ts:54`     | commerce, `ProductionDayResupplies`      | l'arrêt fige les « pour demain » ; `asapToLaunch`     |
 | `ExpectedResuppliesReader` | fournil, `channels/commerce/expected-resupplies.reader.ts:26`           | commerce, `ProductionRangeResupplies`    | le prévisionnel d'une journée ouverte                 |
 | `ResupplyCutoffTimeReader` | fournil, `channels/commerce/resupply-cutoff-time.reader.ts:12`          | commerce                                 | l'arrêt à la plus tardive des heures                  |
-| `LaunchedResupplies`       | fournil, `channels/commerce/launched-resupplies.ts:23`                  | fournil, `ProductionLaunchedResupplies`  | refuser d'annuler un lancé, sous le verrou            |
+| `LaunchedResupplies`       | fournil, `channels/commerce/launched-resupplies.ts:22`                  | fournil, `ProductionLaunchedResupplies`  | refuser d'annuler un lancé, sous le verrou            |
 | `FrozenResuppliesReader`   | fournil, `channels/delivery/frozen-resupplies.reader.ts:49`             | fournil, `PrismaFrozenResuppliesReader`  | la livraison lit la copie figée                       |
-| `PackedResuppliesReader`   | colisage, `packing/channels/commerce/packed-resupplies.reader.ts:29`    | colisage, `PrismaPackedResuppliesReader` | réception et manifeste lisent l'emballé               |
+| `PackedResuppliesReader`   | colisage, `packing/channels/commerce/packed-resupplies.reader.ts:28`    | colisage, `PrismaPackedResuppliesReader` | réception et manifeste lisent l'emballé               |
 | `ResupplyTransfersReader`  | livraison, `delivery/channels/handover/resupply-transfers.reader.ts:12` | livraison, `ResupplyTransfersAtCounter`  | le comptoir réceptionne un transfert de réassort seul |
 
 **Les faits durables** : `production.resupply_list_drawn` (fournil →
@@ -136,7 +136,7 @@ Schéma `public` (commerce) : `site_resupply`, `site_resupply_line`,
 réassort est un élément `kind = resupply` de
 `delivery_internal_transfer_item`, à `resupply_id` opaque.
 
-Migrations, toutes additives sauf une : `20261021150000_la_reception_du_reapprovisionnement`,
+Migrations, toutes additives sauf deux : `20261021150000_la_reception_du_reapprovisionnement`,
 `20261021170000_le_reassort_commande_par_un_point`,
 `20261021190000_les_alertes_de_stock_du_comptoir`,
 `20261021210000_la_demande_de_reassort_en_cours`,
@@ -152,7 +152,13 @@ l'unicité (site, journée) d'une table jamais déployée),
 `20261028120000_les_brouillons_du_fournil`,
 `20261102210000_le_reassort_au_poids`,
 `20261102220000_le_reassort_au_poids_au_fournil`,
-`20261102230000_le_reassort_au_poids_au_colisage`.
+`20261102230000_le_reassort_au_poids_au_colisage`,
+`20261102250000_le_reassort_sans_interrupteur` (**non additive** : un
+`DROP COLUMN` de `order_cutoff_settings.resupply_subject_to_cutoff`, colonne
+morte retirée sur ordre de Hugo du 2026-11-02, retour dans
+`prisma/rollback/`), `20261102260000_le_reassort_lu_par_index` (deux index),
+`20261102270000_la_fiche_de_reassort_retiree` (`packing_resupply.withdrawn_at` :
+la réouverture retire une fiche par un statut, elle ne l'efface plus).
 
 ## 6. Les lots, pour lire les commentaires du code
 

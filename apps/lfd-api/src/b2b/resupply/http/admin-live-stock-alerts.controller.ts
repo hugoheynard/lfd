@@ -7,7 +7,7 @@ import { ListLiveStockAlertsQuery } from "../application/list-live-stock-alerts.
 
 /**
  * **Les alertes de stock vivantes de tous les points** — l'en-tête de
- * « Réassorts à produire » (lot R1b). Sous le même droit que
+ * « Réassorts à produire » (R1b). Sous le même droit que
  * `admin/site-resupplies/to-produce` : les réassorts (`production_resupply:read`).
  */
 @Controller("admin/site-stock-alerts/live")

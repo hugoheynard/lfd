@@ -11,7 +11,7 @@ import { GetResupplyProductionDayQuery } from "./get-resupply-production-day.que
 import { resupplyDayView } from "./resupply-day-view.js";
 
 /**
- * Sert l'onglet « Réassorts » de Prod manager (lot R3d,
+ * Sert l'onglet « Réassorts » de Prod manager (R3d,
  * `reassort-boutiques/README.md`, Hugo 2026-10-21) : une
  * journée, tous points, ses réassorts envoyés — « pour demain » et « au plus
  * tôt » — et le catalogue qui fait les lignes de la table.
@@ -25,10 +25,10 @@ import { resupplyDayView } from "./resupply-day-view.js";
  * fois la journée arrêtée (R3a), donc les deux listes sont les mêmes ; et
  * l'onglet a besoin des « au plus tôt », que le fournil ne fige jamais.
  *
- * Depuis R3e, il dit quels points sont servis par transfert : aux autres,
+ * Depuis l'arrivée au point (R3e), il dit quels points sont servis par transfert : aux autres,
  * l'onglet propose « Monté ».
  *
- * Une sortie de réserve (plan A1, lot A1.4) n'y est pas : rien à fabriquer,
+ * Une sortie de réserve (A1.4) n'y est pas : rien à fabriquer,
  * rien à lancer ni à monter — la carte « Au plus tôt » la proposerait sinon
  * au lancement. Le comptoir la réceptionne comme les autres.
  */

@@ -1,9 +1,8 @@
 import {
   ResupplyAlreadyPlacedError,
-  ReserveNotTodayError,
   SiteResupplyChangedMeanwhileError,
 } from "./site-resupply-errors.js";
-import { resupplyNameOf } from "./resupply-name.js";
+import { ReserveNotTodayError } from "./site-resupply-gate-errors.js";
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import {
   assertCancellable,
@@ -15,9 +14,9 @@ import type {
   CounterDraftInput,
   ReserveResupplyInput,
 } from "./site-resupply-inputs.js";
+import { SiteResupplyContent } from "./site-resupply-content.js";
 import { SiteResupplyLine } from "./site-resupply-line.js";
 import { type ProgressContext, SiteResupplyProgress } from "./site-resupply-progress.js";
-import { withLineAdded, withLineCorrected, withLineWithdrawn } from "./site-resupply-lines.js";
 import {
   type ResupplyTarget,
   serviceDayFor,
@@ -43,36 +42,27 @@ export {
 
 /**
  * **Le réassort d'un point de retrait** — ce que le comptoir demande au
- * fournil pour sa vitrine (lot R1, `reassort-boutiques/README.md`,
- * Hugo 2026-10-21). Modèle B : jamais une commande, aucun prix, aucune
- * dépendance à `Order`.
+ * fournil pour sa vitrine (Hugo 2026-10-21, `reassort-boutiques/README.md`) :
+ * jamais une commande, aucun prix, aucune dépendance à `Order`.
  *
  * La journée découle de la visée et de l'instant du geste, à l'heure de
  * Paris : `tomorrow` vise le lendemain, `asap` le jour même. Elle n'est pas
  * saisie, pour qu'un poste à l'horloge fausse ne vise pas un autre jour.
  *
  * Ce que l'agrégat garantit : un article au plus une fois (un second ajout
- * du même article ADDITIONNE sa quantité — le geste naturel en plein
- * service, lot R1c), des quantités entières > 0, au moins une ligne pour
- * passer, l'heure limite opposée à `tomorrow` quand elle s'applique (jamais
- * à `asap`), une journée pas encore passée à l'envoi, et
- * brouillon → passé → annulé, dans cet ordre seulement.
+ * ADDITIONNE sa quantité — le geste naturel en plein service), des quantités
+ * entières > 0, au moins une ligne pour passer, l'heure limite opposée à
+ * `tomorrow` (jamais à `asap`), une journée pas encore passée à l'envoi, et
+ * brouillon → passé → annulé, dans cet ordre seulement. Le nom et les lignes
+ * ne changent plus une fois envoyé.
  *
  * Le brouillon est « la demande en cours » du point pour une visée : une
  * seule par (point, visée, journée), tenue par un index unique partiel en
- * base ; les postes le remplissent sous verrou de version.
- *
- * Depuis R1d, le fournil envoie les siens (`bakehouse`), créés ET envoyés
- * d'un geste : sans brouillon, ils ne touchent jamais la demande du comptoir.
- *
- * Depuis R1g, il porte un nom libre et facultatif (« Vitrine du matin »),
- * posé sur la demande en cours tant qu'elle n'est pas envoyée, ou à l'envoi
- * du fournil ; envoyé, il ne change plus.
+ * base ; les postes le remplissent sous verrou de version. Le fournil et la
+ * réserve envoient les leurs créés ET envoyés d'un geste, sans brouillon :
+ * ils ne touchent jamais la demande du comptoir.
  */
 export class SiteResupply {
-  /** Les lignes ont-elles bougé depuis la lecture ? L'adaptateur ne réécrit qu'alors (M4). */
-  private linesTouched = false;
-
   private constructor(
     readonly id: string,
     readonly siteId: string,
@@ -80,8 +70,7 @@ export class SiteResupply {
     readonly serviceDay: string,
     readonly version: number,
     readonly origin: ResupplyOrigin,
-    private currentName: string | null,
-    private lineList: readonly SiteResupplyLine[],
+    private readonly content: SiteResupplyContent,
     private placedTrace: SiteResupplyTrace | null,
     private cancelledTrace: SiteResupplyTrace | null,
     private readonly progress: SiteResupplyProgress,
@@ -93,10 +82,8 @@ export class SiteResupply {
   }
 
   /**
-   * « Je t'envoie ça » — le réassort du fournil (lot R1d), créé et envoyé
-   * d'un geste : ses lignes (un même article deux fois s'additionne), puis
-   * `place` avec les règles du comptoir — au moins une ligne, l'heure limite
-   * de sa journée pour « pour demain », et le plan pas encore arrêté (R3a).
+   * « Je t'envoie ça » — le réassort que le fournil crée et envoie d'un geste,
+   * sous les règles d'envoi du comptoir (cf. {@link place}).
    */
   static sentByBakehouse(input: BakehouseResupplyInput): SiteResupply {
     const resupply = SiteResupply.blank(input, input.trace.at, "bakehouse");
@@ -109,12 +96,10 @@ export class SiteResupply {
   }
 
   /**
-   * **« Envoyer en boutique »** — une sortie de la réserve du colisage (plan
-   * A1, lot A1.4) : le pain est déjà fabriqué, le réassort naît envoyé « au
-   * plus tôt », pour la journée du geste, et ne se lance jamais
-   * ({@link recordLaunch}) ni ne s'annule ({@link cancel}). Seule la
-   * réserve du jour du geste sort. Ses lignes s'additionnent comme ailleurs ;
-   * au moins une.
+   * **« Envoyer en boutique »** — une sortie de la réserve du colisage : le
+   * pain est déjà fabriqué, le réassort naît envoyé « au plus tôt » pour la
+   * journée du geste, ne se lance ni ne s'annule. Seule la réserve du jour
+   * sort (A1.4).
    *
    * @throws {ReserveNotTodayError} `reserveDay` n'est pas la journée du geste.
    */
@@ -140,8 +125,10 @@ export class SiteResupply {
       snapshot.serviceDay,
       snapshot.version,
       snapshot.origin,
-      snapshot.name,
-      snapshot.lines.map((line) => SiteResupplyLine.of(line)),
+      new SiteResupplyContent(
+        snapshot.name,
+        snapshot.lines.map((line) => SiteResupplyLine.of(line)),
+      ),
       snapshot.placed,
       snapshot.cancelled,
       new SiteResupplyProgress(
@@ -158,41 +145,29 @@ export class SiteResupply {
     at: Date,
     origin: ResupplyOrigin,
   ): SiteResupply {
-    return new SiteResupply(
-      input.id,
-      input.siteId,
-      input.target,
-      serviceDayFor(input.target, at),
-      0,
-      origin,
-      null,
-      [],
-      null,
-      null,
-      new SiteResupplyProgress(null, null, null),
-    );
+    const { id, siteId, target } = input;
+    const serviceDay = serviceDayFor(target, at);
+    const empty = { name: null, lines: [], placed: null, cancelled: null, arrived: null };
+    return SiteResupply.restore({ id, siteId, target, serviceDay, version: 0, origin, ...empty });
   }
 
   get name(): string | null {
-    return this.currentName;
+    return this.content.name;
   }
 
-  /**
-   * Nomme la demande en cours (lot R1g) — rogné, vide retire le nom, plus de
-   * 60 caractères refusé. Envoyée, elle ne se renomme plus.
-   */
+  /** Nomme la demande en cours (« Vitrine du matin ») ; envoyée, elle ne se renomme plus. */
   rename(name: string | null): void {
     this.assertDraft();
-    this.currentName = resupplyNameOf(name);
+    this.content.rename(name);
   }
 
   get lines(): readonly SiteResupplyLine[] {
-    return this.lineList;
+    return this.content.lines;
   }
 
-  /** Vrai si un geste a changé les lignes depuis la réhydratation (ou la création). */
+  /** Cf. {@link SiteResupplyContent.linesChanged}. */
   get linesChanged(): boolean {
-    return this.linesTouched;
+    return this.content.linesChanged;
   }
 
   get status(): SiteResupplyStatus {
@@ -214,7 +189,7 @@ export class SiteResupply {
     return this.progress.arrived;
   }
 
-  /** « Lancé par X à HH:MM » au fournil (R4a), ou `null`. Un affichage, pas une garde. */
+  /** « Lancé par X à HH:MM » au fournil, ou `null`. Un affichage, pas une garde. */
   get launched(): SiteResupplyLaunch | null {
     return this.progress.launched;
   }
@@ -226,19 +201,19 @@ export class SiteResupply {
     return this.progress.recordLaunch(launchable, launch);
   }
 
-  /** « Parti à HH:MM » (R4d), ou `null`. Un affichage, pas une garde. */
+  /** « Parti à HH:MM », ou `null`. Un affichage, pas une garde. */
   get departed(): SiteResupplyDeparture | null {
     return this.progress.departed;
   }
 
   /** Cf. {@link SiteResupplyProgress.recordDeparture} : la règle et ses refus. */
   recordDeparture(departure: SiteResupplyDeparture): boolean {
-    return this.progress.recordDeparture(this.progressContext(), departure);
+    return this.progress.recordDeparture(this.gateContext(), departure);
   }
 
   /** Cf. {@link SiteResupplyProgress.markArrived} : la règle et ses refus. */
   markArrived(trace: SiteResupplyTrace, reception: SiteResupplyTrace | null): boolean {
-    return this.progress.markArrived(this.progressContext(), trace, reception);
+    return this.progress.markArrived(this.gateContext(), trace, reception);
   }
 
   /** Cf. {@link SiteResupplyProgress.markMounted} : la règle et ses refus. */
@@ -247,28 +222,25 @@ export class SiteResupply {
     reception: SiteResupplyTrace | null,
     launched: boolean,
   ): boolean {
-    return this.progress.markMounted(this.progressContext(), trace, reception, launched);
+    return this.progress.markMounted(this.gateContext(), trace, reception, launched);
   }
 
-  /** Ajoute un article au brouillon ; cf. {@link withLineAdded} (somme, unité). */
+  /** Ajoute un article au brouillon ; cf. `withLineAdded` (somme, unité). */
   addLine(line: SiteResupplyLine): void {
     this.assertDraft();
-    this.lineList = withLineAdded(this.lineList, line);
-    this.linesTouched = true;
+    this.content.add(line);
   }
 
   /** Remplace la quantité d'un article du brouillon (entière, un ou plus). */
   correctLine(sku: string, quantity: number): void {
     this.assertDraft();
-    this.lineList = withLineCorrected(this.lineList, sku, quantity);
-    this.linesTouched = true;
+    this.content.correct(sku, quantity);
   }
 
   /** Retire un article du brouillon. */
   withdrawLine(sku: string): void {
     this.assertDraft();
-    this.lineList = withLineWithdrawn(this.lineList, sku);
-    this.linesTouched = true;
+    this.content.withdraw(sku);
   }
 
   /**
@@ -288,19 +260,12 @@ export class SiteResupply {
    */
   place(trace: SiteResupplyTrace, deadline: Date | null, planStopped: boolean): void {
     this.assertDraft();
-    assertPlaceable({
-      lineCount: this.lineList.length,
-      target: this.target,
-      origin: this.origin,
-      serviceDay: this.serviceDay,
-      at: trace.at,
-      deadline,
-      planStopped,
-    });
+    const lineCount = this.content.lines.length;
+    assertPlaceable({ ...this.gateContext(), lineCount, at: trace.at, deadline, planStopped });
     this.placedTrace = trace;
   }
 
-  /** « Réceptionner » (G1) — cf. {@link assertReceivableStatus}, puis `save` sous la version. */
+  /** « Réceptionner » au point — cf. {@link assertReceivableStatus}, puis `save` sous la version. */
   assertReceivable(): void {
     assertReceivableStatus(this.status);
   }
@@ -315,20 +280,14 @@ export class SiteResupply {
     planStopped: boolean,
     launched: boolean,
   ): void {
-    assertCancellable({
-      status: this.status,
-      origin: this.origin,
-      target: this.target,
-      serviceDay: this.serviceDay,
-      reception,
-      planStopped,
-      launched,
-    });
+    assertCancellable({ ...this.gateContext(), reception, planStopped, launched });
     this.cancelledTrace = trace;
   }
 
-  private progressContext(): ProgressContext {
-    return { status: this.status, target: this.target, serviceDay: this.serviceDay };
+  /** Ce que les gardes et le suivi lisent du réassort à l'instant du geste. */
+  private gateContext(): ProgressContext & { readonly origin: ResupplyOrigin } {
+    const { status, target, serviceDay, origin } = this;
+    return { status, target, serviceDay, origin };
   }
 
   private assertDraft(): void {

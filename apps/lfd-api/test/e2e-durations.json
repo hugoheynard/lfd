@@ -412,6 +412,7 @@
   "test/production-closing-sweep.e2e-spec.ts": 6493,
   "test/production-day-close-race.e2e-spec.ts": 2600,
   "test/production-day-closed.e2e-spec.ts": 3641,
+  "test/production-day-persistence.e2e-spec.ts": 16024,
   "test/production-day-reopened.e2e-spec.ts": 6606,
   "test/production-display.e2e-spec.ts": 10000,
   "test/production-dossier-mail.e2e-spec.ts": 8308,

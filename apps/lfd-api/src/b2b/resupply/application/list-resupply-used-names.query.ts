@@ -1,4 +1,4 @@
-/** Les noms déjà employés au point pour ses réassorts (lot R1g). */
+/** Les noms déjà employés au point pour ses réassorts (R1g). */
 export class ListResupplyUsedNamesQuery {
   constructor(readonly siteId: string) {}
 }

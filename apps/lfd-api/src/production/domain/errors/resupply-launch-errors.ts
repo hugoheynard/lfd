@@ -36,7 +36,8 @@ export class ResupplyToLaunchNotFoundError extends ResourceNotFoundError {
 /**
  * La journée n'est pas arrêtée et porte encore des commandes ou des
  * réassorts du soir : l'ouvrir avec ce seul réassort les laisserait hors du
- * plan, sans que personne le sache (garde de Q5, qui suppose une journée vide).
+ * plan, sans que personne le sache (la garde « rien d'autre à figer », Q5, qui suppose une journée
+ * vide).
  */
 export class ResupplyLaunchOnUnarrestedPlanError extends BusinessError {
   constructor(serviceDay: string) {

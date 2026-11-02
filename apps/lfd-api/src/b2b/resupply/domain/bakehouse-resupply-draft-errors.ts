@@ -101,7 +101,7 @@ export class UnreadableBakehouseResupplyDraftError extends TechnicalError {
 
 /**
  * Un brouillon porte déjà cet identifiant — le même « Enregistrer » rejoué en
- * même temps depuis l'écran (C-C, 2026-11-02) : la base a refusé le second.
+ * même temps depuis l'écran (la clé d'envoi, C-C, 2026-11-02) : la base a refusé le second.
  * Le cas d'usage le relit ; l'écran ne voit cette erreur que si la relecture
  * échoue elle-même.
  */

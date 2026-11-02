@@ -15,13 +15,13 @@ import { resupplyDays } from "./resupply-days.js";
  * (aujourd'hui, puis demain), par point, les réassorts passés et le cumul
  * par article. Les annulés n'y sont pas : il n'y a rien à produire.
  *
- * Depuis le lot R3a (2026-10-21), un réassort « pour demain » d'une journée
+ * Depuis le 2026-10-21 (R3a), un réassort « pour demain » d'une journée
  * dont le plan est arrêté n'y est plus : il est figé dans la feuille du
  * fournil, et le compter ici aussi le ferait produire deux fois. L'écran ne
- * montre donc que ce qui n'est pas figé. Depuis R4a (2026-10-22), un « au
+ * montre donc que ce qui n'est pas figé. Depuis le 2026-10-22 (R4a), un « au
  * plus tôt » LANCÉ n'y est plus non plus, pour la même raison : il est au plan
- * du jour, compté dans les fournées. Une sortie de réserve (plan A1, lot
- * A1.4) n'y est jamais : le pain est déjà fait.
+ * du jour, compté dans les fournées. Une sortie de réserve (A1.4) n'y est
+ * jamais : le pain est déjà fait.
  */
 @QueryHandler(ListResuppliesToProduceQuery)
 export class ListResuppliesToProduceHandler implements IQueryHandler<

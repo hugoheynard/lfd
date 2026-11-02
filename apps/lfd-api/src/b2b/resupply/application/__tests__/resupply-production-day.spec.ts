@@ -26,6 +26,7 @@ import {
   SiteLabels,
   FixedLaunches,
   freshSendingKey,
+  InMemorySiteResupplyPlanKeys,
 } from "./site-resupply-doubles.js";
 
 /** 17 h à Paris le 2 janvier : les journées sont le SUJET, l'horloge est fixée. */
@@ -72,6 +73,7 @@ async function world() {
   );
   const cancel = new CancelSiteResupplyHandler(
     store,
+    new InMemorySiteResupplyPlanKeys(store),
     new KnownReceptions(),
     staff,
     clock,
@@ -168,7 +170,7 @@ describe("le prévisionnel lit les réassorts pour demain (R3d)", () => {
 /**
  * Un lecteur qui ajoute une ligne de saumon au poids à chaque réassort envoyé.
  * Écrit quand la garde d'envoi de L2b-1 empêchait d'en placer un par le
- * geste ; elle est retirée depuis L2b-3, le double reste un raccourci.
+ * geste ; elle est retirée depuis le poids au colisage (L2b-3), le double reste un raccourci.
  */
 class WeighedReader extends SiteResupplyReader {
   constructor(private readonly inner: SiteResupplyReader) {

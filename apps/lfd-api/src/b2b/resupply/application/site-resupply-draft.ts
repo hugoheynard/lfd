@@ -9,7 +9,7 @@ import { SiteResupplyLine } from "../domain/site-resupply-line.js";
 import { SiteResupplyRepository } from "../domain/site-resupply.repository.js";
 
 /**
- * Gardes et gestes PARTAGÉS par les cas de la demande en cours (lot R1c),
+ * Gardes et gestes PARTAGÉS par les cas de la demande en cours (R1c),
  * et la lecture d'une ligne au catalogue, que l'envoi du fournil (R1d)
  * partage aussi.
  */
@@ -27,7 +27,7 @@ export async function currentDraft(
 
 /**
  * Une ligne demandée, son libellé ET son unité lus au catalogue publié —
- * jamais pris du client (lot L2b-1 : l'unité se fige ici). `saleUnit`, quand
+ * jamais pris du client (L2b-1 : l'unité se fige ici). `saleUnit`, quand
  * l'appelant en garde une (le brouillon du fournil), doit être celle du
  * catalogue : sinon la quantité se lirait dans l'autre unité.
  *

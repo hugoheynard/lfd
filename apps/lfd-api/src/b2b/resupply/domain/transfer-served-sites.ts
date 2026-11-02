@@ -1,6 +1,6 @@
 /**
  * **« Lesquels de ces points sont servis par un transfert interne ? »** —
- * port de lecture étroit (réassort, lot R3b, 2026-10-21). Le fournil le fige
+ * port de lecture étroit (réassort, la fiche au colisage, R3b, 2026-10-21). Le fournil le fige
  * à l'arrêt : seul le réassort d'un point servi par transfert passe au
  * colisage (`reassort-boutiques/README.md`).
  */

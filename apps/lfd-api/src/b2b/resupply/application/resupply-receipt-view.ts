@@ -14,7 +14,7 @@ function nameOf(name: string): string | null {
 
 /**
  * Un réassort envoyé et sa réception. Avant « Réceptionner », ses lignes
- * attendues sont l'emballé au colisage s'il est connu (lot R3b), sinon le
+ * attendues sont l'emballé au colisage s'il est connu (R3b), sinon le
  * demandé ; après, celles du reçu (attendu figé à
  * la réception, reçu corrigé s'il y a eu un écart).
  */

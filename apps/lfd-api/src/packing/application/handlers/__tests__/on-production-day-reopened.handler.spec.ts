@@ -106,6 +106,38 @@ describe("OnProductionDayReopened (colisage)", () => {
     expect([...resupplies.rows.keys()]).toEqual([`${DAY}/rs_2`]);
   });
 
+  /** La fiche retirée n'est plus effacée (2026-11-02) : un statut daté de la réouverture. */
+  it("retire la fiche par un statut daté de la réouverture, que le nouvel arrêt lève", async () => {
+    const resupplies = new InMemoryResupplies();
+    const drawn = {
+      serviceDay: DAY,
+      resupplyId: "rs_1",
+      siteId: "site_village",
+      siteLabel: "Le Village",
+      name: null,
+      kind: "evening" as const,
+      drawnAt: CLOSED,
+      lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" as const }],
+    };
+    await resupplies.draw(drawn);
+    const delivery = {
+      ...DELIVERY,
+      payload: new ProductionDayReopenedEvent(DAY, REOPENED, CLOSED, [], ["rs_1"]).durableFact()
+        .payload,
+    };
+
+    await new OnProductionDayReopened(
+      new RecordingWithdrawal(),
+      new ClosedPlans([]),
+      resupplies,
+    ).handle(delivery);
+
+    expect([...resupplies.withdrawn]).toEqual([[`${DAY}/rs_1`, REOPENED]]);
+    await resupplies.draw(drawn);
+    expect([...resupplies.withdrawn]).toEqual([]);
+    expect([...resupplies.rows.keys()]).toEqual([`${DAY}/rs_1`]);
+  });
+
   /** Lot R4b : un réassort lancé survit à la réouverture (R4a), sa fiche aussi. */
   it("garde la fiche « au plus tôt » d'un réassort lancé, même intouchée", async () => {
     const resupplies = new InMemoryResupplies();

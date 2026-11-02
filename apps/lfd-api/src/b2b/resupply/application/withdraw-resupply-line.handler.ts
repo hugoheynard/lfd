@@ -12,7 +12,7 @@ import { traceOf } from "./resupply-receipt-trace.js";
 /**
  * **Retire un article** du réassort sans commande — saisi par erreur. Refusé
  * si les commandes sur stock en ont déjà pris plus que les autres reçus n'en
- * portent (`ReceivedStockLowering`, plan du jour J, lot L2).
+ * portent (`ReceivedStockLowering`, plan du jour J, le stock du jour décompté, L2).
  */
 @CommandHandler(WithdrawResupplyLineCommand)
 export class WithdrawResupplyLineHandler implements ICommandHandler<

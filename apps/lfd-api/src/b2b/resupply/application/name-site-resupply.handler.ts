@@ -9,7 +9,7 @@ import { NameSiteResupplyCommand } from "./name-site-resupply.command.js";
 import { currentDraft } from "./site-resupply-draft.js";
 
 /**
- * **Nomme la demande en cours** (lot R1g, Hugo 2026-10-21 : « vitrine du
+ * **Nomme la demande en cours** (R1g, Hugo 2026-10-21 : « vitrine du
  * matin »). La demande de la visée est ouverte si aucune ne l'est, comme
  * pour un ajout : on peut nommer avant le premier article. Sans version
  * attendue — le dernier nom posé l'emporte, et il ne touche pas aux lignes ;

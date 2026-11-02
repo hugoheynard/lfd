@@ -7,7 +7,7 @@ import { ZodQuery } from "../../../platform/shared/http/zod-body.pipe.js";
 import { GetDayStockOverviewQuery } from "../application/get-day-stock-overview.query.js";
 
 /**
- * **L'onglet Stock de la Supervision** (lot S1,
+ * **L'onglet Stock de la Supervision** (S1,
  * `reassort-boutiques/README.md`, 2026-10-22) — une
  * journée, tous points. Sous `b2b_supervision`, le droit de la page
  * `/supervision` : qui la regarde voit aussi son onglet. Lecture seule.

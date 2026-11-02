@@ -8,11 +8,11 @@ export interface ReceivedArticle {
 }
 
 /**
- * **Le point d'accroche de la réception** (lot R1b) : les articles reçus au
+ * **Le point d'accroche de la réception** (les alertes de stock, R1b) : les articles reçus au
  * point lèvent leurs alertes vivantes, dans la transaction de l'appelant.
  * C'est le SEUL chemin de la levée par réception ; l'appellent
  * `ReceiveSiteResupplyHandler` (« Réceptionner », toutes les lignes d'un
- * coup, lot R2) et `ReceiveResupplyLineHandler` (le réassort sans commande,
+ * coup, la réception en un geste, R2) et `ReceiveResupplyLineHandler` (le réassort sans commande,
  * une ligne) — vérifié le 2026-11-02.
  *
  * Les alertes vivantes sont lues en UNE requête pour tous les articles

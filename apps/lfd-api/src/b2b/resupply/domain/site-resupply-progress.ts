@@ -1,7 +1,7 @@
 import {
   ResupplyNotArrivableError,
   ResupplyNotLaunchedNotMountableError,
-} from "./site-resupply-errors.js";
+} from "./site-resupply-gate-errors.js";
 import type {
   ResupplyTarget,
   SiteResupplyDeparture,
@@ -79,7 +79,7 @@ export class SiteResupplyProgress {
   }
 
   /**
-   * **« Il est là »** (lot R3e) — le même signal pour les deux chemins : la
+   * **« Il est là »** (l'arrivée au point, R3e) — le même signal pour les deux chemins : la
    * réception au site du transfert qui le porte, ou « Monté » au fournil.
    * `reception`, lue par l'appelant (`null` avant « Réceptionner »).
    *
@@ -107,8 +107,8 @@ export class SiteResupplyProgress {
 
   /**
    * **« Monté »** (R3e) — « il est là » par le geste du fournil. Un « au plus
-   * tôt » n'est monté qu'une fois LANCÉ (Q4, R4c) : avant, il n'est pas au
-   * plan, rien n'a été fabriqué pour lui. Déjà arrivé ou réceptionné, rien
+   * tôt » n'est monté qu'une fois LANCÉ (« Lancer » puis « Monté », Q4, R4c) : avant, il n'est pas
+   * au plan, rien n'a été fabriqué pour lui. Déjà arrivé ou réceptionné, rien
    * ne change et rien n'est refusé. `launched` est lu au fournil par
    * l'appelant, jamais à la colonne d'affichage du commerce.
    *

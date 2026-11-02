@@ -8,7 +8,7 @@ import { EnterPackedResupplyLineCommand } from "./enter-packed-resupply-line.com
 import { lockedResupply } from "./resupply-support.js";
 
 /**
- * **Saisir l'emballé d'une ligne de réassort** (réassort, lot R3b) — 0 permis,
+ * **Saisir l'emballé d'une ligne de réassort** (réassort, la fiche au colisage, R3b) — 0 permis,
  * jamais plus que demandé (l'agrégat refuse).
  *
  * Les pièces emballées sortent de la réserve du jour comme une mise au bac :
@@ -17,8 +17,8 @@ import { lockedResupply } from "./resupply-support.js";
  * et on n'emballe pas ce qui n'est pas sorti du four. Ordre des verrous :
  * la fiche, puis la réserve — celui des bacs.
  *
- * Une fiche « au plus tôt » (R4b) prend sur sa réservation, jamais sur
- * celle d'un réassort lancé avant elle ; une fiche du soir n'a que le libre.
+ * Une fiche « au plus tôt » (la réserve du « au plus tôt », R4b) prend sur sa réservation, jamais
+ * sur celle d'un réassort lancé avant elle ; une fiche du soir n'a que le libre.
  *
  * @throws {PackingResupplyNotDrawnError} @throws {PackingResupplyClosedError}
  * @throws {PackingResupplyLineNotFoundError} @throws {PackedResupplyQuantityOutOfRangeError}

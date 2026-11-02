@@ -10,7 +10,7 @@ import { AddSiteResupplyLineCommand } from "./add-site-resupply-line.command.js"
 import { addArticle, currentDraft } from "./site-resupply-draft.js";
 
 /**
- * **Ajoute un article à la demande en cours** (lot R1c). La demande de la
+ * **Ajoute un article à la demande en cours** (R1c). La demande de la
  * visée est ouverte si aucune ne l'est — après un envoi, le prochain ajout
  * en ouvre une nouvelle ; un article déjà présent voit sa quantité
  * s'additionner. Sans version attendue : deux ajouts se cumulent, et une

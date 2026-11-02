@@ -5,12 +5,12 @@ import type { ResupplyTarget } from "../domain/site-resupply.js";
 export interface RequestedResupplyLine {
   readonly sku: string;
   readonly quantity: number;
-  /** Gardée par un brouillon (lot L2b-1) : doit être celle du catalogue. Absente : le catalogue la donne. */
+  /** Gardée par un brouillon (le réassort au poids, L2b-1) : doit être celle du catalogue. Absente : le catalogue la donne. */
   readonly saleUnit?: SaleUnit | undefined;
 }
 
 /**
- * « Envoyer un réassort » depuis le fournil, pour un point (lot R1d). Acte
+ * « Envoyer un réassort » depuis le fournil, pour un point (R1d). Acte
  * staff ; rend l'identifiant du réassort créé.
  *
  * `key` est fournie par l'écran, une par ouverture du panneau : elle devient

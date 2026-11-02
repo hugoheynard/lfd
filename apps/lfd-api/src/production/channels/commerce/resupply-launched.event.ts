@@ -15,8 +15,8 @@ export const PRODUCTION_RESUPPLY_LAUNCHED = "production.resupply_launched";
  * Il porte le réassort tel qu'il est entré au plan — lignes, point,
  * `servedByTransfer`, nom — pour que chaque abonné en tire ce qui le
  * concerne sans relire le fournil. Le commerce y pose l'affichage « Lancé par
- * X à HH:MM » ; le colisage (R4b) et la livraison (R4c) l'écouteront à leur
- * tour, en même temps (S5 de `vitruve`). Le fournil ne sait pas qui écoute.
+ * X à HH:MM » ; le colisage (la réserve du « au plus tôt », R4b) et la livraison (R4c) l'écouteront
+ * à leur tour, en même temps (S5 de `vitruve`). Le fournil ne sait pas qui écoute.
  *
  * Clé : `production.resupply_launched:<jour>:<resupplyId>`, suffixée
  * `:after-reopening:<instant>` quand la journée a été rouverte avant le
@@ -36,10 +36,10 @@ export class ResupplyLaunchedEvent implements DurableEvent {
     readonly reopenedAt: Date | null = null,
     /**
      * Ce lancement a ARRÊTÉ la journée (Q5 : une journée jamais arrêtée
-     * s'ouvre arrêtée avec ce seul réassort), à l'instant `launchedAt` (R4c).
-     * Le fournil ne publie pas `production.day_closed` dans ce cas — il
-     * renverrait le dossier (Q6) : c'est ce champ qui apprend l'arrêt à la
-     * livraison. Absent des faits écrits avant R4c : relu `false`.
+     * s'ouvre arrêtée avec ce seul réassort), à l'instant `launchedAt` (le transport du « au plus
+     * tôt », R4c). Le fournil ne publie pas `production.day_closed` dans ce cas — il
+     * renverrait le dossier du jour, ce que le lancement ne fait pas (Q6) : c'est ce champ qui
+     * apprend l'arrêt à la livraison. Absent des faits écrits avant R4c : relu `false`.
      */
     readonly openedPlan: boolean = false,
   ) {}

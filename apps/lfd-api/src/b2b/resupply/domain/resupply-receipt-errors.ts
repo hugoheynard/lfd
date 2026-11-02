@@ -106,7 +106,7 @@ export class ResupplyAlreadyReceivedError extends BusinessError {
 }
 
 /**
- * Le réassort vise une journée qui n'est pas encore venue (lot R1d, trou
+ * Le réassort vise une journée qui n'est pas encore venue (l'envoi du fournil, R1d, trou
  * laissé par R2) : « Réceptionner » aujourd'hui un réassort de demain
  * compterait au stock d'un jour où la vitrine ne l'a pas.
  */
@@ -164,9 +164,9 @@ export class UnreceivedReceiptNotPersistableError extends TechnicalError {
 
 /**
  * Une baisse de reçu passerait sous ce que les commandes sur stock ont déjà
- * pris (plan du jour J, §11.2, lot L2) : la vitrine afficherait un reste
+ * pris (plan du jour J, §11.2, le stock du jour décompté, L2) : la vitrine afficherait un reste
  * négatif, et une commande déjà vendue n'aurait plus de marchandise. La
- * quantité dit son unité (lot L2b-1) : « 12 », ou « 1,25 kg ».
+ * quantité dit son unité (L2b-1) : « 12 », ou « 1,25 kg ».
  */
 export class ShelfStockAlreadySoldError extends BusinessError {
   constructor(

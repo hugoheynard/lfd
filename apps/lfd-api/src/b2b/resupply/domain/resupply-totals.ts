@@ -6,7 +6,7 @@ export interface ResupplyQuantity {
   readonly sku: string;
   readonly label: string;
   readonly quantity: number;
-  /** Des grammes si `weight` (lot L2b-1) : jamais cumulés avec des pièces. */
+  /** Des grammes si `weight` (L2b-1) : jamais cumulés avec des pièces. */
   readonly saleUnit: SaleUnit;
 }
 

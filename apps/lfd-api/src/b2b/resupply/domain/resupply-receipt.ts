@@ -53,7 +53,7 @@ export interface ReceivableResupply {
 }
 
 /**
- * **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot R2 de
+ * **Un reçu de réassort** — ce que la vitrine d'un point a reçu (R2 de
  * `reassort-boutiques/README.md` ; décisions de Hugo du
  * 2026-10-21 : « personne ne fera du ligne par ligne en plein service », un
  * reçu par réassort, le stock du jour additionne les reçus).
@@ -85,7 +85,7 @@ export class ResupplyReceipt {
 
   /**
    * Le reçu attendu d'un réassort envoyé. Son attendu est la quantité
-   * EMBALLÉE au colisage quand elle est connue (lot R3b : `packed`, SKU →
+   * EMBALLÉE au colisage quand elle est connue (R3b : `packed`, SKU →
    * quantité et unité, d'une fiche close), sinon la quantité demandée.
    */
   static expecting(
@@ -151,7 +151,7 @@ export class ResupplyReceipt {
 
   /**
    * « Réceptionner » : toutes les lignes attendues deviennent reçues, d'un
-   * geste. Refusé avant sa journée, à l'heure de Paris (lot R1d) : le stock
+   * geste. Refusé avant sa journée, à l'heure de Paris (l'envoi du fournil, R1d) : le stock
    * d'un jour ne compte que ce qui est arrivé ce jour-là.
    */
   receiveAll(trace: ResupplyReceiptTrace): void {
@@ -170,7 +170,7 @@ export class ResupplyReceipt {
 
   /**
    * Réassort sans commande : ajoute un article reçu. Refusé s'il y est déjà —
-   * et, dans une autre unité, refusé en le disant (lot L2b-1).
+   * et, dans une autre unité, refusé en le disant (L2b-1).
    */
   receive(line: ResupplyReceiptLine, trace: ResupplyReceiptTrace): void {
     this.assertUnordered();
@@ -229,7 +229,7 @@ function assertServiceDay(serviceDay: string): void {
 
 /**
  * L'emballé d'une fiche de réassort close, tel que le colisage le rend :
- * SKU → quantité et unité (lot L2b-3). Déclaré ici pour que le domaine ne
+ * SKU → quantité et unité (L2b-3). Déclaré ici pour que le domaine ne
  * dépende pas du canal ; `PackedResupplyLines` lui est conforme.
  */
 export type PackedLines = ReadonlyMap<
@@ -246,7 +246,7 @@ function packedOf(packed: PackedLines | null, sku: string, saleUnit: SaleUnit): 
  * Les lignes attendues : l'emballé s'il est connu, sinon le demandé (lot
  * R3b, §13.1 point 6). Partagé avec la page de réception, qui montre
  * l'attendu avant « Réceptionner ». L'emballé du colisage porte son unité
- * (lot L2b-3) : des grammes au poids. Un emballé d'une autre unité que la
+ * (L2b-3) : des grammes au poids. Un emballé d'une autre unité que la
  * ligne ne la remplace pas — la ligne garde son demandé plutôt que de lire
  * des grammes comme des pièces (le fournil refuse ce mélange à l'arrêt).
  */

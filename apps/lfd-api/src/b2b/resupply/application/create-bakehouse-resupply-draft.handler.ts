@@ -20,7 +20,7 @@ import { traceOf } from "./resupply-receipt-trace.js";
  * exister ; les SKU ne sont pas lus au catalogue — un article retiré se
  * refuse à l'envoi.
  *
- * Un enregistrement, une fois (C-C, audit du 2026-11-02 — deux clics
+ * Un enregistrement, une fois (la clé d'envoi, C-C, audit du 2026-11-02 — deux clics
  * faisaient deux brouillons) : la clé de l'écran est l'identifiant du
  * brouillon. Déjà écrite pour ce point, le brouillon écrit est rendu tel
  * qu'il est, y compris quand deux enregistrements se croisent (le second bute

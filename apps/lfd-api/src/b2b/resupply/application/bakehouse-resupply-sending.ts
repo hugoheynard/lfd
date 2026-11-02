@@ -15,7 +15,7 @@ import type { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { catalogueLine } from "./site-resupply-draft.js";
 
 /**
- * **Le chemin de l'envoi du fournil** (lot R1d), partagé par « Envoyer un
+ * **Le chemin de l'envoi du fournil** (R1d), partagé par « Envoyer un
  * réassort » et « Envoyer un brouillon » (plan
  * `documentation/reassort-boutiques/commander.md`) : ce
  * qui part d'un brouillon part par les mêmes règles, sans copie.

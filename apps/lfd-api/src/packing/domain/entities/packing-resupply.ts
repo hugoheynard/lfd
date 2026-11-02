@@ -20,7 +20,7 @@ export interface PackingResupplyLineSnapshot {
   /** La quantité demandée par le point, figée à l'arrêt — des grammes si `saleUnit = "weight"`. */
   readonly quantity: number;
   /**
-   * L'unité figée par le fournil (lot L2b-3). Un article au poids s'emballe en
+   * L'unité figée par le fournil (L2b-3). Un article au poids s'emballe en
    * UN lot, comme une ligne de commande (P6) : l'emballé est son poids réel,
    * en grammes, entre 0 et le demandé.
    */
@@ -31,8 +31,8 @@ export interface PackingResupplyLineSnapshot {
 
 /**
  * Le genre d'une fiche : `evening`, un réassort figé à l'arrêt du soir (R3b) ;
- * `asap`, un réassort « au plus tôt » lancé dans la journée (R4b), qui
- * réserve ses pièces et passe en tête du poste.
+ * `asap`, un réassort « au plus tôt » lancé dans la journée (la réserve du « au plus tôt », R4b),
+ * qui réserve ses pièces et passe en tête du poste.
  */
 export const PACKING_RESUPPLY_KINDS = ["evening", "asap"] as const;
 export type PackingResupplyKind = (typeof PACKING_RESUPPLY_KINDS)[number];
@@ -56,12 +56,12 @@ export interface PackedChange {
   readonly sku: string;
   readonly productName: string;
   readonly delta: number;
-  /** L'unité de la ligne : la réserve compte alors des grammes (lot L2b-4). */
+  /** L'unité de la ligne : la réserve compte alors des grammes (L2b-4). */
   readonly saleUnit: SaleUnit;
 }
 
 /**
- * **La fiche de réassort au colisage** (réassort, lot R3b, 2026-10-21 —
+ * **La fiche de réassort au colisage** (réassort, la fiche au colisage, R3b, 2026-10-21 —
  * `reassort-boutiques/README.md`).
  *
  * À part de `PackingSheet` : un réassort n'a ni client, ni bon, ni bac
@@ -103,7 +103,7 @@ export class PackingResupply {
   /**
    * « Vitrine du matin — <point> » s'il est nommé (R1g), sinon « Réassort
    * <point> » — le nom du point, ou son identifiant s'il est inconnu ;
-   * suffixé « · au plus tôt » pour un réassort lancé (R4b).
+   * suffixé « · au plus tôt » pour un réassort lancé (la réserve du « au plus tôt », R4b).
    */
   get title(): string {
     return titleOf(this.siteLabel, this.siteId, this.name, this.kind);

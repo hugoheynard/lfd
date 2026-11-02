@@ -1,10 +1,6 @@
+import { serviceDayOfColumn } from "./day-column.js";
 import { resupplySaleUnitOf } from "../domain/resupply-sale-unit.js";
 import type { ResupplyReceiptSnapshot } from "../domain/resupply-receipt.js";
-
-/** Une journée civile en colonne `DATE` : minuit UTC, que Postgres tronque au jour. */
-export function receiptDayColumn(serviceDay: string): Date {
-  return new Date(`${serviceDay}T00:00:00.000Z`);
-}
 
 /** Les lignes, dans l'ordre du réassort ou de la saisie. */
 export const RECEIPT_LINES = {
@@ -41,7 +37,7 @@ export function receiptSnapshotOf(row: ResupplyReceiptRow): ResupplyReceiptSnaps
   return {
     id: row.id,
     siteId: row.siteId,
-    serviceDay: row.serviceDay.toISOString().slice(0, 10),
+    serviceDay: serviceDayOfColumn(row.serviceDay),
     resupplyId: row.resupplyId,
     version: row.version,
     lines: row.lines.map((line) => ({

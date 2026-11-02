@@ -51,7 +51,7 @@ sequenceDiagram
 ```
 
 - **L'agrégat** : `ProductionDay.launchResupply`
-  (`apps/lfd-api/src/production/domain/entities/production-day.ts:389`,
+  (`apps/lfd-api/src/production/domain/entities/production-day.ts:433`,
   règles dans `production-day.launch.ts`) — un geste à part du retirage, qui
   n'absorbe que des commandes. Le lancé est rangé à part des réassorts du
   soir (`launchedResupplies`, `production_resupply.kind = asap`, CHECK « asap
@@ -67,7 +67,7 @@ sequenceDiagram
   (`production.resupply.launch_on_unarrested_plan`). Ni
   `production.day_closed`, ni dossier.
 - **Le refus d'annuler est synchrone** : `LaunchedResupplies.isLaunched`
-  (`production/channels/commerce/launched-resupplies.ts:23`, déclaré et
+  (`production/channels/commerce/launched-resupplies.ts:22`, déclaré et
   implémenté par le fournil) est lu par `ResupplyPlanGate.launched` sous le
   même verrou que le lancement ; l'un des deux gagne
   (`resupply.order.launched`, 409). La colonne `launched_at` du commerce
@@ -97,9 +97,9 @@ sequenceDiagram
 ```
 
 - **L'abonné** `OnResupplyLaunched`
-  (`packing/application/handlers/on-resupply-launched.handler.ts:40`) : rien
+  (`packing/application/handlers/on-resupply-launched.handler.ts:42`) : rien
   pour un point servi sur place. Rejeu sans effet.
-- **La réserve** (`PackingStock.reserve`, `packing/domain/entities/packing-stock.ts:136` ;
+- **La réserve** (`PackingStock.reserve`, `packing/domain/entities/packing-stock.ts:139` ;
   règle pure dans `packing/domain/services/stock-reservations.ts`) : le reste
   dû d'une réservation = sa quantité − l'emballé de sa ligne, déduit. Le
   libre des commandes = reçu − rendu − au bac − réservé dû. Les réservations
@@ -150,7 +150,7 @@ sequenceDiagram
 ## 5. Le suivi
 
 `SiteResupply.recordLaunch` et `recordDeparture`
-(`b2b/resupply/domain/site-resupply.ts:211`, `:223`, la règle dans
+(`b2b/resupply/domain/site-resupply.ts:198`, `:210`, la règle dans
 `site-resupply-progress.ts`) posent l'affichage ;
 rejoués, ils ne changent rien. Le comptoir (`resupply-receptions-card`,
 `shared/resupply-steps.ts`) montre Envoyé → Lancé → Parti → Arrivé, chacun

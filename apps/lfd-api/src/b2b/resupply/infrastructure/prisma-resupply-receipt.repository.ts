@@ -9,7 +9,8 @@ import {
   UnreceivedReceiptNotPersistableError,
 } from "../domain/resupply-receipt-errors.js";
 import { ResupplyReceiptRepository } from "../domain/resupply-receipt.repository.js";
-import { RECEIPT_LINES, receiptDayColumn, receiptSnapshotOf } from "./resupply-receipt.row.js";
+import { RECEIPT_LINES, receiptSnapshotOf } from "./resupply-receipt.row.js";
+import { dayColumn } from "./day-column.js";
 
 function linesOf(receipt: ResupplyReceipt) {
   return receipt.lines.map((line, position) => ({
@@ -48,7 +49,7 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
 
   async loadUnordered(siteId: string, serviceDay: string): Promise<ResupplyReceipt | null> {
     const row = await this.prisma.resupplyReceipt.findFirst({
-      where: { siteId, serviceDay: receiptDayColumn(serviceDay), resupplyId: null },
+      where: { siteId, serviceDay: dayColumn(serviceDay), resupplyId: null },
       include: { lines: RECEIPT_LINES },
     });
     return row === null ? null : ResupplyReceipt.restore(receiptSnapshotOf(row));
@@ -98,7 +99,7 @@ export class PrismaResupplyReceiptRepository extends ResupplyReceiptRepository {
         data: {
           id: receipt.id,
           siteId: receipt.siteId,
-          serviceDay: receiptDayColumn(receipt.serviceDay),
+          serviceDay: dayColumn(receipt.serviceDay),
           resupplyId: receipt.resupplyId,
           version: 1,
           receivedAt: received.at,

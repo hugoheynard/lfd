@@ -21,7 +21,7 @@ import { ResupplyArrivedBell } from "./resupply-arrived-bell.js";
 export const MARK_ARRIVED_ON_TRANSFER_RECEIVED = "b2b.resupply-arrived-on-transfer-received";
 
 /**
- * **Le transfert est reçu : ses réassorts sont arrivés** (lot R3e de
+ * **Le transfert est reçu : ses réassorts sont arrivés** (R3e de
  * `reassort-boutiques/README.md`) — le chemin d'un point
  * servi par transfert (le Village). L'instant et l'auteur sont ceux de la
  * réception du transfert, jamais ceux de la livraison du fait.

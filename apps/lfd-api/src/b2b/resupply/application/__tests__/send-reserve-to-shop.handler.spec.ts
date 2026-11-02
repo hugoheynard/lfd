@@ -11,7 +11,8 @@ import {
   ResupplySiteUnknownError,
 } from "../../domain/resupply-receipt-errors.js";
 import { ResupplySendingKeyTakenError } from "../../domain/resupply-sending-key-errors.js";
-import { EmptyResupplyError, ReserveNotTodayError } from "../../domain/site-resupply-errors.js";
+import { EmptyResupplyError } from "../../domain/site-resupply-errors.js";
+import { ReserveNotTodayError } from "../../domain/site-resupply-gate-errors.js";
 import type { SiteResupply } from "../../domain/site-resupply.js";
 import { GetResupplyProductionDayHandler } from "../get-resupply-production-day.handler.js";
 import { GetResupplyProductionDayQuery } from "../get-resupply-production-day.query.js";
@@ -29,7 +30,7 @@ import {
 } from "./site-resupply-doubles.js";
 
 /**
- * « Envoyer en boutique » depuis la réserve (plan A1, lot A1.4). L'horloge
+ * « Envoyer en boutique » depuis la réserve (A1.4). L'horloge
  * est fixée ; les journées sont le sujet, jamais comparées au mur.
  */
 const NOW = new Date("2026-01-02T08:00:00Z");

@@ -11,11 +11,11 @@ import { GetResupplyReceiptQuery } from "./get-resupply-receipt.query.js";
 import { receptionView, unorderedView } from "./resupply-receipt-view.js";
 
 /**
- * Sert la page de réception d'un point pour une journée (lot R2) : les
+ * Sert la page de réception d'un point pour une journée (R2) : les
  * réassorts envoyés qui la visent — « au plus tôt » du jour et « pour
  * demain » de la veille ont la même journée —, chacun avec sa réception, le
  * réassort sans commande, et le reste du jour (`DayShelfStock` : les reçus
- * moins ce que les commandes sur stock en ont pris, lot L2). Un réassort
+ * moins ce que les commandes sur stock en ont pris, (L2)). Un réassort
  * annulé n'est servi que s'il avait déjà été réceptionné : ce qui est arrivé
  * reste arrivé. Lecture pure : rien ne s'ouvre.
  */

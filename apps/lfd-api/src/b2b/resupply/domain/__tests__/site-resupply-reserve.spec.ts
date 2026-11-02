@@ -1,12 +1,12 @@
+import { EmptyResupplyError } from "../site-resupply-errors.js";
 import {
-  EmptyResupplyError,
   ReserveNotTodayError,
   ReserveResupplyNotCancellableError,
-} from "../site-resupply-errors.js";
+} from "../site-resupply-gate-errors.js";
 import { SiteResupply } from "../site-resupply.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 
-/** Plan A1, lot A1.4 — instants comparés entre eux seulement, jamais au mur. */
+/** La sortie de réserve (A1.4) — instants comparés entre eux seulement, jamais au mur. */
 const SENT_AT = new Date("2026-01-02T08:00:00Z");
 const LAUNCHED_AT = new Date("2026-01-02T08:05:00Z");
 const LOU = { staffUserId: "staff_lou", name: "Lou", role: "supervisor" };

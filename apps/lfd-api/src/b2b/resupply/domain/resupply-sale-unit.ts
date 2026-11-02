@@ -6,7 +6,7 @@ export type { SaleUnit } from "@lfd/money";
 
 /**
  * L'unité d'une ligne de réassort relue en base (`sale_unit`, TEXT contraint
- * `piece` | `weight`, lot L2b-1 du plan du jour J). Aucun repli sur la pièce :
+ * `piece` | `weight`, (L2b-1) du plan du jour J). Aucun repli sur la pièce :
  * des grammes lus en pièces compteraient mille fois le stock.
  *
  * @throws {UnknownResupplySaleUnitError} valeur hors de la contrainte.

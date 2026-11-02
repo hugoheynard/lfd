@@ -21,8 +21,8 @@ export const ON_PRODUCTION_DAY_REOPENED = "packing.withdraw-reopened-list";
  * 2026-10-14). Au prochain arrêt, le fournil la tirera de nouveau, commande
  * par commande, dans l'état du moment.
  *
- * Les fiches de réassort du plan défait (`resupplyIds`, lot R3b) se retirent
- * de même, dans la même unité de travail.
+ * Les fiches de réassort du plan défait (`resupplyIds`) se retirent de même,
+ * dans la même unité de travail — par un statut daté de la réouverture.
  *
  * Rien si la journée est de nouveau arrêtée quand le fait arrive : la boîte
  * d'envoi ne garantit pas l'ordre, et le nouveau tirage est peut-être déjà
@@ -44,6 +44,6 @@ export class OnProductionDayReopened implements DurableSubscriber {
       return;
     }
     await this.withdrawal.withdrawUntouched(event.serviceDay, event.orderIds);
-    await this.resupplies.withdrawUntouched(event.serviceDay, event.resupplyIds);
+    await this.resupplies.withdrawUntouched(event.serviceDay, event.resupplyIds, event.reopenedAt);
   }
 }

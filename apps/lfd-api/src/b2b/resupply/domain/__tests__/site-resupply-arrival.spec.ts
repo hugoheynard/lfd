@@ -2,11 +2,11 @@ import { SiteResupply } from "../site-resupply.js";
 import {
   ResupplyNotArrivableError,
   ResupplyNotLaunchedNotMountableError,
-} from "../site-resupply-errors.js";
+} from "../site-resupply-gate-errors.js";
 import { SiteResupplyLine } from "../site-resupply-line.js";
 
 /**
- * « Réassort arrivé » (lot R3e) : un seul signal, deux gestes — la réception
+ * « Réassort arrivé » (R3e) : un seul signal, deux gestes — la réception
  * du transfert, « Monté » au fournil. Des instants comparés entre eux
  * seulement, jamais à l'horloge.
  */

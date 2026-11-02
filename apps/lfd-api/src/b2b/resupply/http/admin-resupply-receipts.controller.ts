@@ -35,12 +35,12 @@ import { WithdrawResupplyLineCommand } from "../application/withdraw-resupply-li
  * **La réception du réapprovisionnement** — Comptoir › Réassort boutique
  * (plan `limites-de-commande/jour-meme-sur-stock.md`, J1, 2026-10-21).
  *
- * Depuis le lot R2 (2026-10-21) : un reçu par réassort envoyé —
+ * Depuis le 2026-10-21 (R2) : un reçu par réassort envoyé —
  * « Réceptionner » d'un geste, puis la correction d'un écart par ligne — et
  * les routes `:siteId/:day/lines` tiennent le « réassort sans commande ».
  *
  * Sous `handover_counter`, le droit qui garde déjà l'onglet au back-office :
- * c'est le poste du comptoir qui voit arriver la marchandise (Q1, Hugo).
+ * c'est le poste du comptoir qui voit arriver la marchandise (décision de Hugo, Q1).
  * Les gestes rendent `204` ; l'écran relit.
  */
 @Controller("admin/resupply-receipts")

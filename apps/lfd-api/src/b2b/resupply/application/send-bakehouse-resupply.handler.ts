@@ -20,7 +20,7 @@ import { prepareBakehouseResupply, writeBakehouseResupply } from "./bakehouse-re
  * et envoyé d'un geste : il n'ouvre ni ne touche la demande en cours du
  * comptoir, et le port n'en est jamais consulté. Les règles d'envoi sont
  * celles du comptoir — au moins une ligne, libellés lus au catalogue publié,
- * l'heure du réassort pour « pour demain ». Depuis le lot R3a, « pour
+ * l'heure du réassort pour « pour demain ». Depuis le plan figé du « pour demain » (R3a), « pour
  * demain » s'admet au plan sous le verrou de la journée : après l'arrêt, il
  * est refusé, et le message dit au fournil son recours.
  *

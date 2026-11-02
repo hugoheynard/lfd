@@ -17,8 +17,8 @@ import { linesBySku } from "../../domain/services/lines-by-sku.js";
 export const ON_RESUPPLY_LAUNCHED = "packing.draw-launched-resupply";
 
 /**
- * **Un réassort « au plus tôt » lancé entre au colisage** (réassort, lot R4b —
- * `reassort-boutiques/au-plus-tot.md`). Seulement s'il part par
+ * **Un réassort « au plus tôt » lancé entre au colisage** (réassort, la réserve du « au plus tôt »,
+ * R4b — `reassort-boutiques/au-plus-tot.md`). Seulement s'il part par
  * transfert : celui du Labo va de la feuille à la vitrine (« Monté »).
  *
  * Deux gestes, dans l'unité de travail du reçu :

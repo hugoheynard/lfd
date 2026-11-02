@@ -4,13 +4,9 @@ import { PrismaService } from "../../platform/database/prisma.service.js";
 import { ProductionDay } from "../domain/entities/production-day.js";
 import { ProductionDayRepository } from "../domain/ports/production-day.repository.js";
 import type { ServiceDay } from "../domain/value-objects/service-day.value-object.js";
-import { BATCH_COLUMNS, batchOf, returnsByBatch } from "./prisma-production-batch.repository.js";
-import { carriedPacking } from "./production-day-carried-packing.js";
-import { writeDayChildren } from "./production-day-children.writer.js";
-import { productionSaleUnitOf } from "./sale-unit.column.js";
-import { signerColumns, signerOf } from "./production-day-signer.columns.js";
-import { RESUPPLY_COLUMNS, splitResupplies } from "./production-resupply.columns.js";
-import { SHEET_COLUMNS, clienteleOf, sheetDetailsOf } from "./production-order-sheet.columns.js";
+import { writeDayChanges } from "./production-day-children.writer.js";
+import { DAY_COLUMNS, daySnapshotOf } from "./production-day.row.js";
+import { signerColumns } from "./production-day-signer.columns.js";
 
 /**
  * L'adaptateur Prisma de la journée de production.
@@ -38,158 +34,45 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
   async load(day: ServiceDay): Promise<ProductionDay> {
     const row = await this.prisma.productionDay.findUnique({
       where: { serviceDay: day.value },
-      select: {
-        serviceDay: true,
-        closedAt: true,
-        retakenAt: true,
-        retakenBy: true,
-        reopenedAt: true,
-        reopenedBy: true,
-        closedBy: true,
-        closedByName: true,
-        retakenByName: true,
-        packingOwner: true,
-        orders: {
-          select: {
-            orderId: true,
-            rank: true,
-            reference: true,
-            customerLabel: true,
-            fulfillmentMethod: true,
-            destination: true,
-            dueAt: true,
-            clientele: true,
-            siteId: true,
-            ...SHEET_COLUMNS,
-            lines: {
-              select: {
-                sku: true,
-                productName: true,
-                quantity: true,
-                saleUnit: true,
-                madeToOrder: true,
-              },
-            },
-          },
-        },
-        // Les réassorts figés à l'arrêt (lot R3a) et les lancés (R4a) — à part des commandes.
-        resupplies: RESUPPLY_COLUMNS,
-        counts: {
-          select: {
-            sku: true,
-            productName: true,
-            quantity: true,
-            saleUnit: true,
-            doneAt: true,
-            doneBy: true,
-            doneInitials: true,
-          },
-        },
-        // Annulées comprises : « aucune fournée » (qui décide d'une fournée
-        // implicite, §5.2 des fournées) se lit annulées comprises.
-        batches: { select: BATCH_COLUMNS, orderBy: [{ recordedAt: "asc" }, { id: "asc" }] },
-        // Les retours demandés au colisage (K2) : ce qu'il a rendu, ce qui attend.
-        returns: { select: { batchId: true, quantity: true, returned: true } },
-      },
+      select: DAY_COLUMNS,
     });
     if (row === null) {
       return ProductionDay.open(day);
     }
-    const returns = returnsByBatch(row.returns);
-    return ProductionDay.fromSnapshot({
-      serviceDay: row.serviceDay,
-      closedAt: row.closedAt,
-      closedBy: signerOf(row.closedBy, row.closedByName),
-      retakenByName: row.retakenByName,
-      // Les deux colonnes sont nullables : le mapper les recolle en un couple,
-      // ou en `null` — l'agrégat ne connaît pas l'état où l'instant existe
-      // sans son auteur.
-      retaken:
-        row.retakenAt === null || row.retakenBy === null
-          ? null
-          : { at: row.retakenAt, by: row.retakenBy },
-      // Même couple que `retaken`, pour la même raison.
-      reopened:
-        row.reopenedAt === null || row.reopenedBy === null
-          ? null
-          : { at: row.reopenedAt, by: row.reopenedBy },
-      // Le CHECK de la base n'admet que ces deux valeurs.
-      packingOwner: row.packingOwner === "packing" ? "packing" : "legacy",
-      orders: row.orders.map((order) => ({
-        // Le colisage n'est plus lu ici depuis K3c (§17.3) : c'est le colisage
-        // qui le tient, et `SealedDayReading` le pose en lecture.
-        packed: null,
-        orderId: order.orderId,
-        rank: order.rank,
-        reference: order.reference,
-        customerLabel: order.customerLabel,
-        // Le mode d'acheminement est un mot du domaine, pas une colonne : on le
-        // ramène dans son union plutôt que de laisser une `string` circuler.
-        fulfillmentMethod: order.fulfillmentMethod === "delivery" ? "delivery" : "pickup",
-        destination: order.destination,
-        dueAt: order.dueAt,
-        clientele: clienteleOf(order.clientele),
-        siteId: order.siteId,
-        lines: order.lines.map((line) => ({
-          sku: line.sku,
-          productName: line.productName,
-          quantity: line.quantity,
-          saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
-          madeToOrder: line.madeToOrder,
-        })),
-        sheetDetails: sheetDetailsOf(order),
-      })),
-      ...splitResupplies(row.resupplies),
-      counts: row.counts.map((count) => ({
-        sku: count.sku,
-        productName: count.productName,
-        quantity: count.quantity,
-        saleUnit: productionSaleUnitOf(count.sku, count.saleUnit),
-        // `doneAt` seul décide : c'est la colonne nullable, et les initiales ont
-        // un défaut vide. Une ligne faite sans signature reste une ligne faite.
-        done:
-          count.doneAt === null || count.doneBy === null
-            ? null
-            : { at: count.doneAt, by: count.doneBy, initials: count.doneInitials },
-      })),
-      batches: row.batches.map((batch) => batchOf(batch, returns.get(batch.id))),
-    });
+    return ProductionDay.restore(daySnapshotOf(row));
   }
 
   /**
-   * Écrit la journée **en entier**, dans une seule transaction.
+   * Écrit la journée dans une seule transaction : son en-tête, puis **ce que
+   * ses gestes ont changé** depuis la lecture (`ProductionDay.changes`).
    *
-   * ⚠️ Les enfants sont remplacés, pas fusionnés : l'agrégat est l'autorité, et
-   * une fusion laisserait vivre une commande que la journée ne porte plus. Le
-   * coût n'est PAS nul : la journée s'écrit à la clôture, au retirage, à la
-   * réouverture, à chaque lancement d'un réassort « au plus tôt » et à chaque
-   * révision de commande inscrite (vérifié le 2026-11-02), toujours sous
-   * `FOR UPDATE`. D'où des écritures EN LOTS (`writeDayChildren`, M-A de
-   * l'audit du réassort) : cinq requêtes au plus, quel que soit le nombre de
-   * commandes et de réassorts.
+   * Le coût se lit dans `writeDayChanges` : un lancement de réassort n'écrit
+   * plus que ce réassort et le compte, là où chaque `save` effaçait puis
+   * recréait toutes les commandes, tous les comptes et tous les réassorts du
+   * jour, sous `FOR UPDATE` (corrigé le 2026-11-02). La journée s'écrit à
+   * l'arrêt, au retirage, à la réouverture, à chaque lancement « au plus
+   * tôt » et à chaque révision de commande inscrite (vérifié le 2026-11-02).
+   * Une journée dont la base n'est pas connue (`fromSnapshot`) s'écrit en
+   * entier, comme avant.
    *
    * Un compte à produire enregistré sans ses commandes décrirait une journée que
    * personne ne pourrait relire ; d'où la transaction, et non trois écritures.
    *
-   * 🔴 Elle prend d'abord le verrou de la journée (D4 des fournées) — la même
-   * requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit viser
-   * `tx`. Ce verrou-ci ne protège QUE l'écriture : il ne rend pas juste un
-   * agrégat chargé avant lui. Les appelants qui décident sur la journée
+   * 🔴 Elle prend d'abord le verrou de la journée (verrou des fournées) — la
+   * même requête que `PrismaProductionDayLock`, écrite ici parce qu'elle doit
+   * viser `tx`. Ce verrou-ci ne protège QUE l'écriture : il ne rend pas juste
+   * un agrégat chargé avant lui. Les appelants qui décident sur la journée
    * (clôture, retirage) prennent `ProductionDayLock` dans leur unité de
-   * travail PUIS la rechargent (vérifié le 2026-10-06 ; la clôture ne le
-   * faisait pas avant le lot A0).
+   * travail PUIS la rechargent (vérifié le 2026-10-06).
    *
    * 🔴 **Le colisage de l'ancien poste est RECOPIÉ, jamais interprété.** Les
    * colonnes `packed_*` et `container_count` ne sont plus ni lues par le
-   * domaine ni écrites par un geste (K3c, §17.3), mais les journées colisées
-   * avant la bascule les portent : effacer puis recréer les commandes d'un
-   * retirage les remettrait à vide, et un historique réel disparaîtrait
-   * (CLAUDE.md §0). Elles passent donc de l'ancienne ligne à la nouvelle, telles
-   * quelles, par `carriedPacking`.
+   * domaine ni écrites par un geste, mais les journées colisées avant la
+   * bascule les portent : une commande effacée puis recréée les recopie
+   * (`carriedPacking`), une commande que le geste ne touche pas les garde.
    *
    * Les fournées ne sont ni lues ni écrites ici : elles ne dépendent pas du
-   * compte, et un retirage les laisse intactes. `done_*` n'est plus écrit (§5 :
-   * le nouveau binaire n'y écrit jamais) — le compte recréé naît sans coche.
+   * compte, et un retirage les laisse intactes.
    */
   async save(day: ProductionDay): Promise<void> {
     const snapshot = day.toSnapshot();
@@ -198,35 +81,22 @@ export class PrismaProductionDayRepository extends ProductionDayRepository {
         SELECT "service_day" FROM "production"."production_day"
          WHERE "service_day" = ${snapshot.serviceDay}
            FOR UPDATE`;
+      const header = {
+        closedAt: snapshot.closedAt,
+        retakenAt: snapshot.retaken?.at ?? null,
+        retakenBy: snapshot.retaken?.by ?? null,
+        reopenedAt: snapshot.reopened?.at ?? null,
+        reopenedBy: snapshot.reopened?.by ?? null,
+        ...signerColumns(snapshot.closedBy),
+        retakenByName: snapshot.retakenByName,
+        packingOwner: snapshot.packingOwner,
+      };
       await tx.productionDay.upsert({
         where: { serviceDay: snapshot.serviceDay },
-        create: {
-          serviceDay: snapshot.serviceDay,
-          closedAt: snapshot.closedAt,
-          retakenAt: snapshot.retaken?.at ?? null,
-          retakenBy: snapshot.retaken?.by ?? null,
-          reopenedAt: snapshot.reopened?.at ?? null,
-          reopenedBy: snapshot.reopened?.by ?? null,
-          ...signerColumns(snapshot.closedBy),
-          retakenByName: snapshot.retakenByName,
-          packingOwner: snapshot.packingOwner,
-        },
-        update: {
-          closedAt: snapshot.closedAt,
-          retakenAt: snapshot.retaken?.at ?? null,
-          retakenBy: snapshot.retaken?.by ?? null,
-          reopenedAt: snapshot.reopened?.at ?? null,
-          reopenedBy: snapshot.reopened?.by ?? null,
-          ...signerColumns(snapshot.closedBy),
-          retakenByName: snapshot.retakenByName,
-          packingOwner: snapshot.packingOwner,
-        },
+        create: { serviceDay: snapshot.serviceDay, ...header },
+        update: header,
       });
-      const carried = await carriedPacking(tx, snapshot.serviceDay);
-      await tx.productionOrder.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
-      await tx.productionCount.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
-      await tx.productionResupply.deleteMany({ where: { serviceDay: snapshot.serviceDay } });
-      await writeDayChildren(tx, snapshot, carried);
+      await writeDayChanges(tx, snapshot, day.changes);
     });
   }
 }

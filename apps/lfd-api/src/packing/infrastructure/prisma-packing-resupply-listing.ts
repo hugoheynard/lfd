@@ -7,13 +7,20 @@ import {
 } from "../domain/ports/packing-resupply-listing.js";
 
 /**
- * L'adaptateur Prisma de la liste des fiches de réassort (lot R3b). Il tourne
- * dans l'unité de travail que la garde du relais ouvre pour le fait.
+ * L'adaptateur Prisma de la liste des fiches de réassort. Il tourne dans
+ * l'unité de travail que la garde du relais ouvre pour le fait.
  *
- * 🔴 **Le retrait est un effacement, délibéré** — même raison que
- * `PrismaPackingListWithdrawal` : ces lignes ne sont que l'inscription posée
- * par le tirage du fournil, que la réouverture défait. Seules les fiches
- * intouchées partent ; aucune ne porte de geste.
+ * 🔴 **Le retrait est un STATUT, plus un effacement** (2026-11-02). La fiche
+ * est un agrégat (`PackingResupply`, verrouillé et clos au poste) que trois
+ * lecteurs relisent : le poste (`PrismaPackingResupplyBoardReader`),
+ * l'avancement du colisage (`PrismaDayPackingProgressReader`) et la réception
+ * au point (`PrismaPackedResuppliesReader`) — vérifié le 2026-11-02. Une
+ * fiche retirée porte `withdrawn_at` ; le dépôt et le poste l'écartent, et les
+ * deux autres ne lisent que des fiches entamées ou closes, ce qu'une fiche
+ * retirée n'est jamais (CHECK `packing_resupply_withdrawn_untouched`).
+ *
+ * ⚠️ La liste des COMMANDES (`PrismaPackingListWithdrawal`) efface encore les
+ * siennes : elle n'est pas dans ce lot.
  */
 @Injectable()
 export class PrismaPackingResupplyListing extends PackingResupplyListing {
@@ -23,22 +30,28 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
 
   async draw(resupply: ResupplyToDraw): Promise<void> {
     const key = { serviceDay: resupply.serviceDay, resupplyId: resupply.resupplyId };
+    const header = {
+      siteId: resupply.siteId,
+      siteLabel: resupply.siteLabel,
+      name: resupply.name,
+      kind: resupply.kind,
+      drawnAt: resupply.drawnAt,
+    };
+    // Une fiche retirée par une réouverture est rétablie par le nouvel arrêt,
+    // son en-tête refait comme l'ancien effacement le refaisait.
+    await this.prisma.packingResupply.updateMany({
+      where: { ...key, withdrawnAt: { not: null } },
+      data: { ...header, withdrawnAt: null },
+    });
     await this.prisma.packingResupply.createMany({
-      data: [
-        {
-          ...key,
-          siteId: resupply.siteId,
-          siteLabel: resupply.siteLabel,
-          name: resupply.name,
-          kind: resupply.kind,
-          drawnAt: resupply.drawnAt,
-        },
-      ],
+      data: [{ ...key, ...header }],
       skipDuplicates: true,
     });
     await this.prisma.packingResupplyLine.createMany({
       // Colonne par colonne : un champ ajouté aux lignes du fait n'atteint
-      // pas Prisma par un étalement, qui refuserait l'écriture.
+      // pas Prisma par un étalement, qui refuserait l'écriture. Une fiche
+      // rétablie garde ses lignes : un réassort envoyé ne change plus de
+      // lignes (`SiteResupply.assertDraft`, vérifié le 2026-11-02).
       data: resupply.lines.map((line) => ({
         ...key,
         sku: line.sku,
@@ -50,29 +63,24 @@ export class PrismaPackingResupplyListing extends PackingResupplyListing {
     });
   }
 
-  async withdrawUntouched(serviceDay: string, resupplyIds: readonly string[]): Promise<number> {
+  async withdrawUntouched(
+    serviceDay: string,
+    resupplyIds: readonly string[],
+    at: Date,
+  ): Promise<number> {
     if (resupplyIds.length === 0) {
       return 0;
     }
-    const untouched = await this.prisma.packingResupply.findMany({
+    const { count } = await this.prisma.packingResupply.updateMany({
       where: {
         serviceDay,
         resupplyId: { in: [...resupplyIds] },
         kind: "evening",
         closedAt: null,
+        withdrawnAt: null,
         lines: { none: { packed: { not: null } } },
       },
-      select: { resupplyId: true },
-    });
-    const ids = untouched.map((row) => row.resupplyId);
-    if (ids.length === 0) {
-      return 0;
-    }
-    await this.prisma.packingResupplyLine.deleteMany({
-      where: { serviceDay, resupplyId: { in: ids } },
-    });
-    const { count } = await this.prisma.packingResupply.deleteMany({
-      where: { serviceDay, resupplyId: { in: ids } },
+      data: { withdrawnAt: at },
     });
     return count;
   }

@@ -12,7 +12,7 @@ import { GetResupplyProductionDayQuery } from "../application/get-resupply-produ
 import { ListResuppliesToProduceQuery } from "../application/list-resupplies-to-produce.query.js";
 
 /**
- * **Réassorts à produire** — l'écran du fournil, EN LECTURE (lot R1, §12).
+ * **Réassorts à produire** — l'écran du fournil, EN LECTURE (R1, §12).
  *
  * Servi par le commerce, qui possède le réassort, et lu par l'écran du
  * fournil côté navigateur : aucun bloc serveur ne traverse
@@ -36,7 +36,7 @@ export class AdminResuppliesToProduceController {
 
   /**
    * Une journée, réassorts figés compris : l'onglet « Réassorts » de Prod
-   * manager (lot R3d, 2026-10-21). Sous le même droit.
+   * manager (R3d, 2026-10-21). Sous le même droit.
    */
   @Get(":day")
   @RequirePermission("production_resupply:read")

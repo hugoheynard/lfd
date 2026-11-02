@@ -7,7 +7,8 @@ import {
   type SiteResupplySnapshot,
 } from "../domain/site-resupply.js";
 import { SiteResupplyReader } from "../domain/site-resupply.reader.js";
-import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { dayColumn } from "./day-column.js";
 
 /** Lecture Prisma des réassorts, pour le comptoir et pour le fournil. */
 @Injectable()

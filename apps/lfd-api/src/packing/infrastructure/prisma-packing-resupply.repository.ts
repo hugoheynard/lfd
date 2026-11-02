@@ -9,7 +9,7 @@ import { assertInsideUnitOfWork } from "./packing-lock.js";
 import { RESUPPLY_SELECT, resupplyOf } from "./packing-resupply.rows.js";
 
 /**
- * L'adaptateur Prisma de la fiche de réassort (lot R3b). `lock` pose
+ * L'adaptateur Prisma de la fiche de réassort (R3b). `lock` pose
  * `FOR UPDATE` sur la fiche — le verrou tient jusqu'au `COMMIT` de l'unité de
  * travail ; `save` écrit la saisie de toutes les lignes (une requête) et la
  * clôture.
@@ -26,8 +26,9 @@ export class PrismaPackingResupplyRepository extends PackingResupplyRepository {
       SELECT "resupply_id" FROM "packing"."packing_resupply"
        WHERE "service_day" = ${serviceDay} AND "resupply_id" = ${resupplyId}
          FOR UPDATE`;
-    const row = await this.prisma.packingResupply.findUnique({
-      where: { serviceDay_resupplyId: { serviceDay, resupplyId } },
+    // Une fiche retirée par la réouverture n'existe plus pour le poste.
+    const row = await this.prisma.packingResupply.findFirst({
+      where: { serviceDay, resupplyId, withdrawnAt: null },
       select: RESUPPLY_SELECT,
     });
     return row === null ? null : PackingResupply.fromSnapshot(resupplyOf(row));
@@ -62,7 +63,7 @@ export class PrismaPackingResupplyRepository extends PackingResupplyRepository {
   }
 }
 
-/** Les fiches de réassort d'une journée, pour le poste (lot R3b). */
+/** Les fiches de réassort d'une journée, pour le poste (R3b). */
 @Injectable()
 export class PrismaPackingResupplyBoardReader extends PackingResupplyBoardReader {
   constructor(private readonly prisma: PrismaService) {
@@ -71,7 +72,7 @@ export class PrismaPackingResupplyBoardReader extends PackingResupplyBoardReader
 
   async on(serviceDay: string): Promise<readonly PackingResupplySnapshot[]> {
     const rows = await this.prisma.packingResupply.findMany({
-      where: { serviceDay },
+      where: { serviceDay, withdrawnAt: null },
       select: RESUPPLY_SELECT,
       orderBy: [{ siteLabel: "asc" }, { resupplyId: "asc" }],
     });

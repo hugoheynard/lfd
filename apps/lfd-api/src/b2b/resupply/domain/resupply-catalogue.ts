@@ -10,7 +10,7 @@ export interface ResupplyArticle {
   readonly categoryId: string;
   readonly categoryName: string;
   /**
-   * L'unité de vente, FIGÉE sur la ligne de réassort à son ajout (lot L2b-1,
+   * L'unité de vente, FIGÉE sur la ligne de réassort à son ajout (L2b-1,
    * Hugo 2026-11-02 : « un article au poids doit avoir un stock au poids ») :
    * au poids, la quantité compte des grammes.
    */

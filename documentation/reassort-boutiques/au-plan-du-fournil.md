@@ -118,11 +118,11 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   commande » pour une journée à réassorts seuls.
 - **La part sur place ne descend pas** : une fournée ne remet au colisage que
   la part du colisage ; celle d'un réassort servi sur place monte directement
-  (`production/domain/services/on-site-share.ts:38` — le colisage d'abord,
+  (`production/domain/services/on-site-share.ts:37` — le colisage d'abord,
   puis le point sur place, puis le surplus au colisage). Une demande de
   retour ne porte que ce qui a été remis.
 - **L'emballé** se lit par `PackedResuppliesReader`
-  (`packing/channels/commerce/packed-resupplies.reader.ts:29`, déclaré et
+  (`packing/channels/commerce/packed-resupplies.reader.ts:28`, déclaré et
   implémenté par le colisage) : `null` tant que la fiche n'est pas close.
   D'où la case `b2b → packing : port uniquement` de la matrice des blocs.
 
@@ -172,7 +172,7 @@ fournil, figé à l'arrêt (`served_by_transfer`) ; le fait
   l'annuaire et figé). Affichage seulement.
 - **Arrivé** : les deux chemins de la réception d'un transfert écrivent
   `delivery.transfer_received` ; `MarkArrivedOnTransferReceived` appelle
-  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:228`, règle dans `site-resupply-progress.ts`) à
+  `SiteResupply.markArrived` (`b2b/resupply/domain/site-resupply.ts:215`, règle dans `site-resupply-progress.ts`) à
   l'instant et sous l'auteur de la réception. Au Labo, « Monté » :
   `POST admin/bakehouse-resupplies/sites/:siteId/:resupplyId/mounted`
   (`production_resupply:write`). Déjà arrivé ou déjà réceptionné : rien ne

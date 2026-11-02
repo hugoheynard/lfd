@@ -8,7 +8,7 @@ import {
 import type { ResupplyTarget } from "../domain/site-resupply.js";
 
 /**
- * **Le guichet d'admission du plan, pour le réassort** (lot R3a,
+ * **Le guichet d'admission du plan, pour le réassort** (R3a,
  * `documentation/reassort-boutiques/README.md`) — la
  * même figure qu'`OrderPlanGate` pour une commande.
  *
@@ -43,8 +43,8 @@ export class ResupplyPlanGate {
   }
 
   /**
-   * R4a — verrouille la journée jusqu'à la fin de l'unité de travail EN
-   * COURS, puis dit si le fournil a lancé ce réassort « au plus tôt ». Le
+   * Le lancement « au plus tôt » (R4a) — verrouille la journée jusqu'à la fin de l'unité de travail
+   * EN COURS, puis dit si le fournil a lancé ce réassort « au plus tôt ». Le
    * lancement prend le même verrou : l'annulation voit le lancement, ou le
    * lancement voit l'annulation. Un « pour demain » ne se lance jamais.
    */

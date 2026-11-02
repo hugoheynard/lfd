@@ -1,11 +1,7 @@
+import { serviceDayOfColumn } from "./day-column.js";
 import { resupplySaleUnitOf } from "../domain/resupply-sale-unit.js";
 import { resupplyOriginOf } from "../domain/resupply-origin.js";
 import { resupplyTargetOf, type SiteResupplySnapshot } from "../domain/site-resupply.js";
-
-/** Une journée civile en colonne `DATE` : minuit UTC, que Postgres tronque au jour. */
-export function dayColumn(serviceDay: string): Date {
-  return new Date(`${serviceDay}T00:00:00.000Z`);
-}
 
 /** Les lignes, dans l'ordre de saisie. */
 export const SITE_RESUPPLY_LINES = {
@@ -48,15 +44,15 @@ export interface SiteResupplyRow {
 
 /**
  * Ligne → instantané du domaine. La visée et l'origine revalident ; la journée se relit en
- * UTC. Un envoi, comme une arrivée, est entier en base (CHECK `site_resupply_placement_whole`, `…_arrival_whole`) :
- * un auteur absent à côté d'un instant n'arrive pas.
+ * UTC. Un envoi, comme une arrivée, est entier en base (CHECK `site_resupply_placement_whole`,
+ * `…_arrival_whole`) : un auteur absent à côté d'un instant n'arrive pas.
  */
 export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
   return {
     id: row.id,
     siteId: row.siteId,
     target: resupplyTargetOf(row.target),
-    serviceDay: row.serviceDay.toISOString().slice(0, 10),
+    serviceDay: serviceDayOfColumn(row.serviceDay),
     version: row.version,
     origin: resupplyOriginOf(row.origin),
     name: row.name,
@@ -66,42 +62,33 @@ export function snapshotOf(row: SiteResupplyRow): SiteResupplySnapshot {
       quantity: line.quantity,
       saleUnit: resupplySaleUnitOf(line.sku, line.saleUnit),
     })),
-    placed:
-      row.placedAt === null
-        ? null
-        : {
-            at: row.placedAt,
-            author: {
-              staffUserId: row.placedByStaffId ?? "",
-              name: row.placedByName ?? "",
-              role: row.placedByRole ?? "",
-            },
-          },
-    cancelled:
-      row.cancelledAt === null
-        ? null
-        : {
-            at: row.cancelledAt,
-            author: {
-              staffUserId: row.cancelledByStaffId ?? "",
-              name: row.cancelledByName ?? "",
-              role: row.cancelledByRole ?? "",
-            },
-          },
-    arrived:
-      row.arrivedAt === null
-        ? null
-        : {
-            at: row.arrivedAt,
-            author: {
-              staffUserId: row.arrivedByStaffId ?? "",
-              name: row.arrivedByName ?? "",
-              role: row.arrivedByRole ?? "",
-            },
-          },
+    placed: traceOf(row.placedAt, row.placedByStaffId, row.placedByName, row.placedByRole),
+    cancelled: traceOf(
+      row.cancelledAt,
+      row.cancelledByStaffId,
+      row.cancelledByName,
+      row.cancelledByRole,
+    ),
+    arrived: traceOf(row.arrivedAt, row.arrivedByStaffId, row.arrivedByName, row.arrivedByRole),
     // L'affichage du lancement (R4a) : un nom absent reste `null`.
     launched: row.launchedAt === null ? null : { at: row.launchedAt, byName: row.launchedByName },
     // L'affichage du départ (R4d) : une tournée sans livreur laisse le nom `null`.
     departed: row.departedAt === null ? null : { at: row.departedAt, byName: row.departedByName },
   };
+}
+
+/**
+ * Un geste daté relu : `null` sans instant. Le CHECK de la base le tient
+ * entier ; le repli vide ne sert qu'au typage des colonnes nullables.
+ */
+function traceOf(
+  at: Date | null,
+  staffUserId: string | null,
+  name: string | null,
+  role: string | null,
+): SiteResupplySnapshot["placed"] {
+  if (at === null) {
+    return null;
+  }
+  return { at, author: { staffUserId: staffUserId ?? "", name: name ?? "", role: role ?? "" } };
 }

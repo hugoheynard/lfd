@@ -4,10 +4,24 @@ import { PrismaService } from "../../../platform/database/prisma.service.js";
 import { type DayStockSite, DayStockReader } from "../domain/day-stock.reader.js";
 import type { ResupplyReceiptSnapshot } from "../domain/resupply-receipt.js";
 import { isPlaced, type PlacedSiteResupplySnapshot } from "../domain/site-resupply.js";
-import { RECEIPT_LINES, receiptDayColumn, receiptSnapshotOf } from "./resupply-receipt.row.js";
-import { dayColumn, SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
+import { dayColumn } from "./day-column.js";
+import { RECEIPT_LINES, receiptSnapshotOf } from "./resupply-receipt.row.js";
+import { SITE_RESUPPLY_LINES, snapshotOf } from "./site-resupply.row.js";
 
-/** Lecture Prisma de l'onglet Stock : une journée, tous points. */
+/**
+ * Lecture Prisma de l'onglet Stock : une journée, tous points.
+ *
+ * **Sans `take`, délibérément** (2026-11-02). Les deux lectures sont bornées
+ * par la donnée elle-même : UNE journée × les points actifs × les gestes
+ * d'une journée de comptoir — quelques réassorts envoyés et autant de reçus
+ * par point et par jour, jamais l'historique (le filtre porte sur la
+ * journée, servi par un index : `site_resupply (service_day, site_id)` et
+ * `resupply_receipt (service_day)`, migration `20261102260000`). Une borne
+ * tronquerait EN SILENCE : le stock affiché compterait moins que ce qui est
+ * arrivé, ce qui est pire qu'une lecture plus longue. Si un point devait un
+ * jour envoyer des centaines de réassorts par jour, c'est l'onglet qu'il
+ * faudrait paginer, pas cette lecture qu'il faudrait couper.
+ */
 @Injectable()
 export class PrismaDayStockReader extends DayStockReader {
   constructor(private readonly prisma: PrismaService) {
@@ -33,7 +47,7 @@ export class PrismaDayStockReader extends DayStockReader {
 
   async receiptsOn(serviceDay: string): Promise<readonly ResupplyReceiptSnapshot[]> {
     const rows = await this.prisma.resupplyReceipt.findMany({
-      where: { serviceDay: receiptDayColumn(serviceDay) },
+      where: { serviceDay: dayColumn(serviceDay) },
       include: { lines: RECEIPT_LINES },
       orderBy: [{ receivedAt: "asc" }, { id: "asc" }],
     });

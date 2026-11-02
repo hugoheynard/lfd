@@ -10,7 +10,7 @@ const ASAP_KIND = "asap";
 
 /**
  * Les colonnes d'un réassort au plan (`production_resupply`) et leurs deux
- * mappers. Un seul tableau pour deux genres (R4a) : `evening`, figé à
+ * mappers. Un seul tableau pour deux genres (le lancement « au plus tôt », R4a) : `evening`, figé à
  * l'arrêt du soir, et `asap`, lancé dans la journée — que le CHECK
  * `production_resupply_asap_launched` lie à son lancement.
  */
@@ -68,7 +68,7 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
       siteLabel: row.siteLabel,
       name: row.name,
       servedByTransfer: row.servedByTransfer,
-      // L'unité figée à l'arrêt (lot L2b-2) ; une ligne figée avant la
+      // L'unité figée à l'arrêt (L2b-2) ; une ligne figée avant la
       // colonne est née `piece`, ce qu'elle était.
       lines: row.lines.map((line) => ({
         sku: line.sku,

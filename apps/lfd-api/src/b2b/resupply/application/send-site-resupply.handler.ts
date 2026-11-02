@@ -11,12 +11,12 @@ import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { loadSiteResupply } from "./site-resupply-draft.js";
 
 /**
- * **Envoie la demande en cours** (lot R1c) : `place()` sous la version que
+ * **Envoie la demande en cours** (R1c) : `place()` sous la version que
  * le poste a vue — l'heure du réassort pour « pour demain », jamais pour
  * « au plus tôt » ; une demande vide ou d'une journée passée ne part pas. Le
  * prochain ajout de la visée ouvrira une nouvelle demande.
  *
- * Depuis le lot R3a (2026-10-21), « pour demain » s'admet au plan SOUS le
+ * Depuis le 2026-10-21 (R3a), « pour demain » s'admet au plan SOUS le
  * verrou de la journée (`ResupplyPlanGate`), dans l'unité de travail qui
  * écrit : l'arrêt du plan voit l'envoi, ou l'envoi voit l'arrêt.
  */

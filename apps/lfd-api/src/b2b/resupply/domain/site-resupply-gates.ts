@@ -2,9 +2,9 @@ import { instantToLocal } from "@lfd/contracts";
 
 import type { ResupplyOrigin } from "./resupply-origin.js";
 import { ResupplyNotReceivableError } from "./resupply-receipt-errors.js";
+import { EmptyResupplyError } from "./site-resupply-errors.js";
 import {
   BakehouseResupplyAfterStopError,
-  EmptyResupplyError,
   ResupplyDayPassedError,
   ResupplyAlreadyReceivedNotCancellableError,
   ResupplyFrozenInPlanError,
@@ -13,7 +13,7 @@ import {
   ResupplyPastCutoffError,
   ResupplyPlanStoppedError,
   ReserveResupplyNotCancellableError,
-} from "./site-resupply-errors.js";
+} from "./site-resupply-gate-errors.js";
 import type {
   ResupplyTarget,
   SiteResupplyStatus,
@@ -42,7 +42,7 @@ export interface PlacementState {
  * Au moins une ligne, une journée pas encore passée, et — pour « pour
  * demain » seulement — avant l'heure du réassort et avant l'arrêt du plan.
  * `deadline` est l'heure du réassort pour sa journée (« la veille, HH:MM »,
- * lot R3a), `null` si elle n'existe pas ce jour-là ; `planStopped` dit si le
+ * (R3a)), `null` si elle n'existe pas ce jour-là ; `planStopped` dit si le
  * plan du fournil pour cette journée est arrêté, lu SOUS le verrou de la
  * journée. « Au plus tôt » ignore les deux. Une demande au poids part comme
  * une autre : le fournil, le colisage et le transfert portent son unité
@@ -100,11 +100,11 @@ export interface CancellationState {
 /**
  * Un réassort ne s'annule qu'envoyé et hors réserve. `reception`, lue par
  * l'appelant (`null` avant « Réceptionner ») : arrivé et attesté, il ne
- * s'annule plus (R1d). `planStopped`, lu SOUS le verrou de la journée : un
+ * s'annule plus (l'envoi du fournil, R1d). `planStopped`, lu SOUS le verrou de la journée : un
  * réassort « pour demain » figé dans un plan arrêté ne s'annule plus (R3a,
  * Q3) ; rouvert, il s'annule de nouveau. `launched`, lu au fournil SOUS le
- * même verrou (R4a) : un « au plus tôt » lancé est au plan, il ne s'annule
- * plus.
+ * même verrou (le lancement « au plus tôt », R4a) : un « au plus tôt » lancé est au plan, il ne
+ * s'annule plus.
  */
 export function assertCancellable(state: CancellationState): void {
   if (state.status !== "placed") {
