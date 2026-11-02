@@ -22,7 +22,7 @@ const RECEPTION_LINK = "/comptoir/reassort";
 
 /**
  * **« Réassort arrivé — à réceptionner »** (lot R3e de
- * `reassort-boutiques/plan-reapprovisionnement.md`) : le même son pour les
+ * `reassort-boutiques/README.md`) : le même son pour les
  * deux chemins — la réception du transfert, « Monté » au fournil.
  *
  * Sonne APRÈS la validation (`AfterCommit`) : une arrivée annulée ne

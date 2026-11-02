@@ -18,7 +18,7 @@ type LoadState = 'loading' | 'ready' | 'error';
 
 /**
  * **L'heure limite du réassort boutique** — sur la page de l'heure limite
- * (lot R3a, `reassort-boutiques/plan-reapprovisionnement.md` §13.3, Hugo
+ * (lot R3a, `reassort-boutiques/README.md`, Hugo
  * 2026-10-21) : « la veille, HH:MM », 20:00 par défaut.
  *
  * Elle remplace l'interrupteur « soumis / sans limite » : passé cette heure,

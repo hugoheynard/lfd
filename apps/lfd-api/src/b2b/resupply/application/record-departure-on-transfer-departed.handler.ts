@@ -18,7 +18,7 @@ export const RECORD_DEPARTURE_ON_TRANSFER_DEPARTED = "b2b.resupply-departure-on-
 
 /**
  * **La tournée qui porte le transfert est partie : ses réassorts sont
- * « partis »** (R4d, `reassort-boutiques/plan-au-plus-tot.md` §1). Pose
+ * « partis »** (R4d, `reassort-boutiques/au-plus-tot.md`). Pose
  * « Parti à HH:MM (livreur) », à l'instant du départ et au nom du livreur,
  * jamais à ceux de la livraison du fait.
  *

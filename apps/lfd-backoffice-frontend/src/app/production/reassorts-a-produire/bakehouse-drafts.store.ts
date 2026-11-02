@@ -10,7 +10,7 @@ export interface DraftInHand {
 }
 
 /**
- * **Les brouillons du fournil, côté écran** (`plan-brouillons-du-fournil.md`,
+ * **Les brouillons du fournil, côté écran** (`reassort-boutiques/commander.md`,
  * Hugo 2026-10-28) : la liste des ouverts, et celui que la carte a en main.
  *
  * Il ne garde rien que le serveur n'ait pas : chaque geste relit la liste. Un

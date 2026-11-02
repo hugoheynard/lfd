@@ -67,7 +67,7 @@ interface SiteChoice {
 
 /**
  * **« Envoyer un réassort »** — le fournil dit « je t'envoie ça » à un point
- * (lot R1d, `reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * (lot R1d, `reassort-boutiques/README.md`, Hugo
  * 2026-10-21 : « si le comptoir demande au téléphone, le fournil peut entrer
  * la demande »). Choisir le point, la visée (aujourd'hui au plus tôt, ou
  * pour demain — sous l'heure limite du comptoir si le réassort y est

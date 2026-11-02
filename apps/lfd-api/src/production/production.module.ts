@@ -192,7 +192,7 @@ import { PrismaProductionReturnRequests } from "./infrastructure/prisma-producti
     AdminDayPapersSpecimensController,
     ProductionDossierRecipientsController,
     AutoCloseController,
-    // « Lancer » un réassort « au plus tôt » (R4a, `plan-au-plus-tot.md`).
+    // « Lancer » un réassort « au plus tôt » (R4a, `reassort-boutiques/au-plus-tot.md`).
     ProductionResupplyLaunchController,
   ],
   providers: [

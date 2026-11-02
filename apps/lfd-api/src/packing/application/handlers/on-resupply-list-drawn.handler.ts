@@ -17,7 +17,7 @@ export const ON_RESUPPLY_LIST_DRAWN = "packing.draw-resupply";
 
 /**
  * **Un réassort entre au colisage** (réassort, lot R3b,
- * `reassort-boutiques/plan-reapprovisionnement.md` §13.1 point 5) : sa fiche
+ * `reassort-boutiques/README.md`) : sa fiche
  * s'ouvre, à part des commandes, titrée « Réassort <point> ».
  *
  * Le fournil ne publie que le réassort d'un point servi par transfert (§13.4,

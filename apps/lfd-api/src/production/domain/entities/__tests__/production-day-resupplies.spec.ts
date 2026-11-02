@@ -5,8 +5,8 @@ import { ServiceDay } from "../../value-objects/service-day.value-object.js";
 import { ProductionDay } from "../production-day.js";
 
 /**
- * Le réassort au plan figé (lot R3a, `reassort-boutiques/plan-reapprovisionnement.md`
- * §13) : l'agrégat fige les réassorts à part des commandes, et les compte au
+ * Le réassort au plan figé (lot R3a, `reassort-boutiques/README.md`) :
+ * l'agrégat fige les réassorts à part des commandes, et les compte au
  * total. Dates comparées entre elles seulement.
  */
 

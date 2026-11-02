@@ -54,7 +54,7 @@ export interface ReceivableResupply {
 
 /**
  * **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot R2 de
- * `reassort-boutiques/plan-reapprovisionnement.md` §12 ; décisions de Hugo du
+ * `reassort-boutiques/README.md` ; décisions de Hugo du
  * 2026-10-21 : « personne ne fera du ligne par ligne en plein service », un
  * reçu par réassort, le stock du jour additionne les reçus).
  *

@@ -2,7 +2,7 @@
  * E2E du **parcours du Village**, d'un seul tenant : le réassort « pour
  * demain » d'un point servi par transfert, de l'envoi au comptoir jusqu'au
  * stock du jour lu par la Supervision (R3a–R3e, S1 de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13).
+ * `documentation/reassort-boutiques/README.md`).
  *
  * Chaque maillon a sa suite (`resupply-frozen-plan`, `resupply-packing`,
  * `resupply-transfer`, `resupply-arrived`, `resupply-transfer-reception`,

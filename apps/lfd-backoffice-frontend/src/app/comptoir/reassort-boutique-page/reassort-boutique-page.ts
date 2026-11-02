@@ -33,7 +33,7 @@ type LoadState = 'loading' | 'ready' | 'error';
  * pour une journée, et le stock estimé qui en découle (plan
  * `limites-de-commande/jour-meme-sur-stock.md`, J1, 2026-10-21).
  *
- * Depuis le lot R1 (`reassort-boutiques/plan-reapprovisionnement.md` §12,
+ * Depuis le lot R1 (`reassort-boutiques/README.md`,
  * 2026-10-21), la page commande aussi le réassort au fournil
  * (`ResupplyOrderCard`), au-dessus de la réception, qui ne change pas (R2 la
  * refera).

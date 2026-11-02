@@ -7,7 +7,7 @@ export const DELIVERY_TRANSFER_RECEIVED = "delivery.transfer_received";
 
 /**
  * **Un transfert interne est reçu à son site** — fait DURABLE (lot R3e de
- * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-22).
+ * `reassort-boutiques/README.md`, 2026-10-22).
  *
  * Écrit dans la boîte d'envoi par les DEUX chemins de la réception — « Remis
  * au site » du livreur, « Réceptionner » au comptoir — dans leur transaction :

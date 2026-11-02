@@ -16,7 +16,7 @@ export const RECORD_LAUNCH_ON_RESUPPLY_LAUNCHED = "b2b.resupply-launch-on-resupp
 
 /**
  * **Le fournil a lancé un réassort « au plus tôt » : l'écran le dit** (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md` §2). Pose « Lancé par X à HH:MM »
+ * `reassort-boutiques/au-plus-tot.md`). Pose « Lancé par X à HH:MM »
  * sur le réassort, à l'instant et au nom du lancement, jamais à ceux de la
  * livraison du fait.
  *

@@ -19,7 +19,7 @@ export interface LaunchedTransferResupply {
 
 /**
  * **Placer le transfert d'un réassort « au plus tôt », et sonner s'il reste
- * sans tournée** (R4c, `reassort-boutiques/plan-au-plus-tot.md` §2 ④).
+ * sans tournée** (R4c, `reassort-boutiques/au-plus-tot.md`).
  *
  * Le placement est celui du soir, tel quel (`TransferPlacer.placeDay` — ce
  * que `placeDaySoon` diffère) : tournée intégrée, sinon dédiée sur un

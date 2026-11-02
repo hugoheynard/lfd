@@ -1,7 +1,7 @@
 /**
  * E2E du **réassort dans le transfert** (lot R3c de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, §13.1
- * point 7, §13.3, §13.4 « Après R3b » — Hugo 2026-10-21).
+ * `documentation/reassort-boutiques/README.md`
+ * — Hugo 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : `production.day_closed` par la vraie boîte
  * d'envoi jusqu'au transfert du point (élément `kind = resupply`, index

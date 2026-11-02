@@ -6,7 +6,7 @@ import { FoldButtonComponent, FoldInlineConfirmComponent } from 'fold-ng';
 const TARGET_LABELS = { asap: 'au plus tôt', tomorrow: 'pour demain' } as const;
 
 /**
- * **Les brouillons ouverts du fournil** (`plan-brouillons-du-fournil.md`,
+ * **Les brouillons ouverts du fournil** (`reassort-boutiques/commander.md`,
  * Hugo 2026-10-28) : au-dessus de la carte, une ligne par brouillon — son nom,
  * son point, sa visée, son nombre d'articles, qui l'a enregistré et quand.
  * « Reprendre » le charge dans la carte ; « Supprimer » le clôt, confirmé.

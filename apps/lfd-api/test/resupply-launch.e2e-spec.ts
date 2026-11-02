@@ -1,6 +1,6 @@
 /**
  * E2E de **« Lancer » un réassort « au plus tôt »** (R4a,
- * `documentation/reassort-boutiques/plan-au-plus-tot.md` §2) sur le vrai
+ * `documentation/reassort-boutiques/au-plus-tot.md`) sur le vrai
  * Postgres : le verrou de la journée, les colonnes et les CHECK de la
  * migration, le fait durable et son abonné du commerce.
  *

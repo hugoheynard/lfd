@@ -6,7 +6,7 @@ import { RESUPPLY_TARGETS, type ResupplyTarget } from "./site-resupply.js";
 /**
  * **Le brouillon d'un réassort du fournil** (Hugo, 2026-10-28 : « j'ai besoin
  * d'un enregistrer comme brouillon ») — plan
- * `documentation/reassort-boutiques/plan-brouillons-du-fournil.md`.
+ * `documentation/reassort-boutiques/commander.md`.
  *
  * Une composition gardée AU SERVEUR, retrouvée depuis n'importe quel poste du
  * fournil, et qui ne devient un réassort qu'à l'envoi. À part de la demande en

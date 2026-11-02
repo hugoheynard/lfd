@@ -1,6 +1,6 @@
 /**
  * E2E des **alertes de stock du comptoir** (lot R1b de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21).
+ * `documentation/reassort-boutiques/README.md`, 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : l'index unique partiel (une alerte vivante par
  * point et article, une levée en garde la trace), le mur par point, les

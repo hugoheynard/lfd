@@ -30,8 +30,8 @@ import { LaunchResupplyCommand } from "../launch-resupply.command.js";
 import { LaunchResupplyHandler } from "../launch-resupply.handler.js";
 
 /**
- * « Lancer » un réassort « au plus tôt » (R4a, `reassort-boutiques/plan-au-plus-tot.md`
- * §2) : sous le verrou de la journée, le réassort lu au commerce APRÈS le
+ * « Lancer » un réassort « au plus tôt » (R4a, `reassort-boutiques/au-plus-tot.md`) :
+ * sous le verrou de la journée, le réassort lu au commerce APRÈS le
  * verrou, l'agrégat qui décide, le journal et le fait. Instants recopiés,
  * jamais comparés à l'horloge — exception étroite du §5.
  */

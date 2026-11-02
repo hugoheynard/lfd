@@ -402,7 +402,7 @@ Depuis le 2026-10-21, `packing/channels/commerce/` porte un lecteur de la même
 forme : `PackedResuppliesReader`, **déclaré et implémenté par le colisage**,
 que la réception d'un réassort lit pour se pré-remplir de la quantité
 réellement emballée (plan
-[`documentation/reassort-boutiques/plan-reapprovisionnement.md`](documentation/reassort-boutiques/plan-reapprovisionnement.md) §13, R3b).
+[`documentation/reassort-boutiques/README.md`](documentation/reassort-boutiques/README.md), R3b).
 D'où la case `b2b → packing : port uniquement` ; `packing → b2b` reste interdit.
 
 🔴 **`delivery` écoute la clôture du fournil par un canal** (2026-10-04,

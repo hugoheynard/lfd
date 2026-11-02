@@ -14,7 +14,7 @@ import type { ManifestLine } from "../domain/services/transfer-manifest.js";
 
 /**
  * **Ce que contient un réassort dans un transfert** (réassort, lot R3c,
- * 2026-10-21 — `reassort-boutiques/plan-reapprovisionnement.md` §13.3 :
+ * 2026-10-21 — `reassort-boutiques/README.md` :
  * « l'emballé s'il est connu, sinon le demandé ») :
  *
  * - les lignes FIGÉES à l'arrêt du fournil (`production/channels/delivery/`),

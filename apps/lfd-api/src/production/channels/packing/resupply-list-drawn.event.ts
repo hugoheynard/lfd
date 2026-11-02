@@ -41,8 +41,7 @@ export interface ResupplyToPack {
 /**
  * **Un réassort entre dans la liste à coliser** — publié par l'arrêt du plan
  * et sa réannonce, dans leur transaction, à côté des `packing_list_drawn`
- * (réassort, lot R3b, `reassort-boutiques/plan-reapprovisionnement.md` §13.1
- * point 5, §13.3).
+ * (réassort, lot R3b, `reassort-boutiques/README.md`).
  *
  * Seul le réassort d'un point SERVI PAR TRANSFERT est publié (§13.4, Q1
  * révisée) : celui du Labo va de la feuille à la vitrine, sans colisage.

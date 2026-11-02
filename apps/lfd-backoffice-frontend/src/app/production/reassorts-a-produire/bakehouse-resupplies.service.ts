@@ -17,7 +17,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Envoyer un réassort depuis le fournil** — `/admin/bakehouse-resupplies`,
  * sous le droit `production_resupply` (lot R1d,
- * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21). Un réassort
+ * `reassort-boutiques/README.md`, 2026-10-21). Un réassort
  * à part : la demande en cours du comptoir n'est jamais touchée.
  */
 @Injectable({ providedIn: 'root' })
@@ -48,7 +48,7 @@ export class BakehouseResuppliesService {
     );
   }
 
-  /** Les brouillons ouverts, le plus récent d'abord (`plan-brouillons-du-fournil.md`). */
+  /** Les brouillons ouverts, le plus récent d'abord (`reassort-boutiques/commander.md`). */
   drafts(): Promise<readonly BakehouseResupplyDraftView[]> {
     return firstValueFrom(
       this.http.get<readonly BakehouseResupplyDraftView[]>(`${this.base()}/drafts`),
@@ -108,7 +108,7 @@ export class BakehouseResuppliesService {
   }
 
   /**
-   * « Lancer » (R4a, `reassort-boutiques/plan-au-plus-tot.md`) : le fournil
+   * « Lancer » (R4a, `reassort-boutiques/au-plus-tot.md`) : le fournil
    * ajoute un réassort « au plus tôt » au plan du jour. Une route du fournil
    * (`admin/production`), sous le même droit `production_resupply:write`.
    */

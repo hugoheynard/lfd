@@ -1,6 +1,6 @@
 /**
  * E2E des **brouillons du réassort du fournil** (plan
- * `documentation/reassort-boutiques/plan-brouillons-du-fournil.md`, Hugo
+ * `documentation/reassort-boutiques/commander.md`, Hugo
  * 2026-10-28).
  *
  * Ce qui ne s'éprouve qu'ici : la table et ses CHECK, le verrou de version

@@ -8,7 +8,7 @@ import { SiteResuppliesStore } from './site-resupplies.store';
 
 /**
  * Le comptoir annule un réassort « au plus tôt » que le fournil a LANCÉ (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md`) : le serveur refuse (409), et le
+ * `reassort-boutiques/au-plus-tot.md`) : le serveur refuse (409), et le
  * comptoir lit SON message — c'est lui qui nomme la sortie, pas l'écran.
  */
 const REFUSAL =

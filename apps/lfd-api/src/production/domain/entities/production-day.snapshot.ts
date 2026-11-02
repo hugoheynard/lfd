@@ -184,7 +184,7 @@ export interface ProductionResupplySnapshot {
 
 /**
  * **Un réassort « au plus tôt » lancé** par le fournil (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md` §2) — ajouté au plan du jour par
+ * `reassort-boutiques/au-plus-tot.md`) — ajouté au plan du jour par
  * son geste, compté dans les fournées comme celui du soir. `launched` : quand
  * et par qui (identifiant staff). Rangé À PART des réassorts du soir : la
  * réouverture ne l'efface pas, et le ré-arrêt le garde.

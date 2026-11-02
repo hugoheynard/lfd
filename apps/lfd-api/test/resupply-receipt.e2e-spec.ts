@@ -1,7 +1,7 @@
 /**
  * E2E de la **réception du réassort** — Comptoir › Réassort boutique (lot J1
  * du plan `documentation/limites-de-commande/jour-meme-sur-stock.md`,
- * refait au lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
+ * refait au lot R2 de `documentation/reassort-boutiques/README.md`,
  * 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : le droit du comptoir (`handover_counter`), le

@@ -1,6 +1,6 @@
 /**
  * E2E du **réassort « au plus tôt » au colisage, et de sa réserve** (lot R4b
- * de `documentation/reassort-boutiques/plan-au-plus-tot.md`, §2 ③, Q7 — Hugo
+ * de `documentation/reassort-boutiques/au-plus-tot.md` — Hugo
  * 2026-10-22 : « le colisage réserve les pièces d'un réassort lancé »).
  *
  * Ce qui ne s'éprouve qu'ici : le fait `production.resupply_launched` par la

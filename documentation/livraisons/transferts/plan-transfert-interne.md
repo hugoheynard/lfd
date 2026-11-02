@@ -97,7 +97,7 @@ jamais lu comme une livraison.
 >   son contenu se lit « inconnu », et le manifeste ne l'invente pas. Le
 >   manifeste a le **même format de ligne** pour les deux genres, pour que le
 >   réapprovisionnement s'y branche sans le changer.
->   Son plan : [`plan-reapprovisionnement.md`](../../reassort-boutiques/plan-reapprovisionnement.md) (2026-10-14).
+>   Son état : [`reassort-boutiques/README.md`](../../reassort-boutiques/README.md).
 >
 > **⚠️ Bâti depuis le 2026-10-21 (réassort, lot R3c)** — la phrase « NON
 > BÂTI » ci-dessus date du 2026-10-13. Le genre `resupply` a son écrivain :

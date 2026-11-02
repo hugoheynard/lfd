@@ -42,7 +42,7 @@ const targetParamSchema = z.enum(RESUPPLY_TARGETS);
 
 /**
  * **Commander un réassort** — Comptoir › Réassort, pour le point du bandeau
- * (lot R1, `reassort-boutiques/plan-reapprovisionnement.md` §12, 2026-10-21).
+ * (lot R1, `reassort-boutiques/README.md`, 2026-10-21).
  *
  * Sous `handover_counter`, comme la réception : le comptoir du point
  * commande (Hugo : « le comptoir ; on verra la granularité du droit plus

@@ -2,7 +2,7 @@ import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Les réassorts d'une journée, tels que le dossier du jour les montre**
- * (lot R3d du réassort, `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
+ * (lot R3d du réassort, `documentation/reassort-boutiques/README.md`).
  *
  * Une journée arrêtée rend ses réassorts FIGÉS (`frozen: true`) — ceux que la
  * feuille et le PDF impriment. Une journée ouverte rend ceux qui sont envoyés

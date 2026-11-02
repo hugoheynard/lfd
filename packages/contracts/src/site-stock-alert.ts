@@ -3,7 +3,7 @@ import { z } from "zod";
 /**
  * **Rupture et stock faible au comptoir** — l'alerte qu'un point de retrait
  * déclare sur un article de sa vitrine (lot R1b de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21). Elle avertit le fournil ; elle n'a encore AUCUN effet sur la
  * boutique ni sur la passation (lot J2).
  */

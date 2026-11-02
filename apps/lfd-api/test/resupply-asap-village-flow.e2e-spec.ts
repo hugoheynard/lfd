@@ -2,7 +2,7 @@
  * E2E du **parcours « au plus tôt » du Village**, d'un seul tenant : le
  * réassort du jour même d'un point servi par transfert, du lancement au
  * fournil jusqu'à la réception au comptoir (R4a–R4c de
- * `documentation/reassort-boutiques/plan-au-plus-tot.md`).
+ * `documentation/reassort-boutiques/au-plus-tot.md`).
  *
  * Chaque maillon a sa suite (`resupply-launch`, `resupply-asap-packing`,
  * `resupply-asap-transfer`, `resupply-transfer-reception`, `resupply-receipt`).

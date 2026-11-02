@@ -1,6 +1,6 @@
 /**
  * E2E du **transfert de réassort seul**, vu de la livraison et du comptoir
- * (R3c, R3e de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
+ * (R3c, R3e de `documentation/reassort-boutiques/README.md`,
  * « Ce qui reste » du README du réassort — 2026-10-22).
  *
  * Ce qui ne s'éprouve qu'ici : le compte des réassorts d'un arrêt de

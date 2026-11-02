@@ -16,7 +16,7 @@ export interface ResupplyMountRow {
   readonly arrivedBy: string | null;
   /**
    * « Monté » s'offre : un réassort du soir, ou un « au plus tôt » LANCÉ —
-   * au Labo, on lance puis on monte (Q4, `plan-au-plus-tot.md` §9).
+   * au Labo, on lance puis on monte (Q4, `reassort-boutiques/au-plus-tot.md`).
    */
   readonly mountable: boolean;
 }

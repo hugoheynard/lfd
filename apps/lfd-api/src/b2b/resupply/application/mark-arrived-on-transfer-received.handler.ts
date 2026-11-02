@@ -22,7 +22,7 @@ export const MARK_ARRIVED_ON_TRANSFER_RECEIVED = "b2b.resupply-arrived-on-transf
 
 /**
  * **Le transfert est reçu : ses réassorts sont arrivés** (lot R3e de
- * `reassort-boutiques/plan-reapprovisionnement.md`) — le chemin d'un point
+ * `reassort-boutiques/README.md`) — le chemin d'un point
  * servi par transfert (le Village). L'instant et l'auteur sont ceux de la
  * réception du transfert, jamais ceux de la livraison du fait.
  *

@@ -33,7 +33,7 @@ import { ResupplyReceiptsService } from '../resupply-receipts.service';
 
 /**
  * **Réceptionner les réassorts du jour** (lot R2,
- * `reassort-boutiques/plan-reapprovisionnement.md` §12, Hugo 2026-10-21 :
+ * `reassort-boutiques/README.md`, Hugo 2026-10-21 :
  * « personne ne fera du ligne par ligne en plein service »).
  *
  * Chaque réassort envoyé pour la journée — « au plus tôt » du jour, « pour

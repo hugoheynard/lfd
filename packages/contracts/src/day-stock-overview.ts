@@ -4,7 +4,7 @@ import type { StockAlertLevel } from "./site-stock-alert.js";
 
 /**
  * **L'onglet Stock de la Supervision** (lot S1 de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
+ * `documentation/reassort-boutiques/README.md`,
  * 2026-10-22) — une journée, tous points : leurs réassorts et le stock de
  * leurs produits. Lecture seule ; aucun montant, un réassort n'est jamais une
  * vente.

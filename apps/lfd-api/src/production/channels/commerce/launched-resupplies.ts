@@ -3,8 +3,7 @@ import type { ServiceDay } from "../../domain/value-objects/service-day.value-ob
 /**
  * **« Ce réassort est-il lancé ? »** — port que le fournil DÉCLARE et
  * IMPLÉMENTE, et que le commerce appelle quand il annule un réassort « au
- * plus tôt » (R4a, `reassort-boutiques/plan-au-plus-tot.md` §2, BLOQUANT 3
- * de `vitruve`).
+ * plus tôt » (R4a, `reassort-boutiques/au-plus-tot.md`).
  *
  * ## Pourquoi synchrone, et sous le verrou
  *

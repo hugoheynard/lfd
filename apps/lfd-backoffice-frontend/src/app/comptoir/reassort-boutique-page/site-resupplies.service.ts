@@ -12,7 +12,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Commander un réassort** — `/admin/site-resupplies/sites/:siteId`, sous
  * le droit du comptoir (`handover_counter`), lots R1 et R1c du plan
- * `reassort-boutiques/plan-reapprovisionnement.md`. Depuis R1c, le comptoir
+ * `reassort-boutiques/README.md`. Depuis R1c, le comptoir
  * remplit la demande en cours de chaque visée (ajouter, corriger, retirer,
  * envoyer). L'écran relit la liste après chaque geste. Le geste d'un seul
  * tenant du fournil (`place`) est retiré au lot R1d : il envoyait la

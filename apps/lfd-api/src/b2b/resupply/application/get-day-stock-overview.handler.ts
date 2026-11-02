@@ -14,7 +14,7 @@ import { GetDayStockOverviewQuery } from "./get-day-stock-overview.query.js";
 
 /**
  * Sert l'onglet **Stock** de la Supervision (lot S1,
- * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-22) : pour la
+ * `reassort-boutiques/README.md`, 2026-10-22) : pour la
  * journée regardée, une entrée par point — ses réassorts (envoyé, figé,
  * arrivé, réceptionné) et ses produits (stock du jour, alerte vivante,
  * attendu). Lecture pure. Le stock est le reste du jour (`DayShelfStock`) :

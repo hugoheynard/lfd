@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Les alertes de stock des points** — `/admin/site-stock-alerts/live`, sous
  * les mêmes droits que les réassorts à produire (fournée ou prévisionnel),
- * lot R1b du plan `reassort-boutiques/plan-reapprovisionnement.md`.
+ * lot R1b, `reassort-boutiques/README.md`.
  */
 @Injectable({ providedIn: 'root' })
 export class LiveStockAlertsService {

@@ -2,7 +2,7 @@
  * E2E du **parcours du Labo**, d'un seul tenant : le réassort « pour demain »
  * d'un point SERVI SUR PLACE, de l'envoi au comptoir jusqu'au stock du jour
  * lu par la Supervision — le pendant de `resupply-village-flow.e2e-spec.ts`
- * (R3a–R3e, S1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
+ * (R3a–R3e, S1 de `documentation/reassort-boutiques/README.md`).
  *
  * Ce qui ne s'éprouve qu'ici : que les maillons S'ENCHAÎNENT sans transfert
  * ni colisage du réassort — la part du Labo monte de la feuille à la vitrine

@@ -126,7 +126,7 @@ describe('grantGroups', () => {
    * 2026-10-20 : `allergen_matrix`, la matrice des allergènes et ses exports
    * (pim/plan-matrice-des-allergenes.md, AM2). 64 le 2026-10-21 :
    * `production_resupply`, le réassort envoyé par le fournil
-   * (reassort-boutiques/plan-reapprovisionnement.md, R1d). 65 le 2026-10-22 :
+   * (reassort-boutiques/README.md, R1d). 65 le 2026-10-22 :
    * `collection_test`, le prélèvement d'essai
    * (comptabilite/prelevement/plan-prelevement-d-essai.md). 66 le 2026-10-25 :
    * `b2b_orders_shortfall`, décider du départ incomplet

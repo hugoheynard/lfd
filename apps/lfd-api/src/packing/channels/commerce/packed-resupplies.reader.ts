@@ -15,8 +15,7 @@ export type PackedResupplyLines = ReadonlyMap<string, PackedResupplyQuantity>;
 
 /**
  * **« Qu'a-t-on réellement emballé pour ces réassorts ? »** (réassort, lot
- * R3b, 2026-10-21 — `reassort-boutiques/plan-reapprovisionnement.md` §13.1
- * point 6, Q4).
+ * R3b, 2026-10-21 — `reassort-boutiques/README.md`, Q4).
  *
  * Le colisage DÉCLARE et IMPLÉMENTE ce port, le commerce le lit pour
  * pré-remplir la réception d'un réassort — même figure que

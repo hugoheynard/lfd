@@ -1,6 +1,6 @@
 /**
  * E2E du **réassort arrivé** (lot R3e de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md` — Hugo
+ * `documentation/reassort-boutiques/README.md` — Hugo
  * 2026-10-21 : « un seul signal, deux gestes »).
  *
  * Ce qui ne s'éprouve qu'ici : le fait `delivery.transfer_received` par la

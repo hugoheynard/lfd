@@ -4,8 +4,8 @@ import type { OrderSaleUnit } from "./order.js";
 
 /**
  * **Les fiches de réassort au poste de colisage** (réassort, lot R3b,
- * 2026-10-21 — `documentation/reassort-boutiques/plan-reapprovisionnement.md`
- * §13). Une fiche par réassort d'un point servi par transfert, à part des
+ * 2026-10-21 — `documentation/reassort-boutiques/README.md`).
+ * Une fiche par réassort d'un point servi par transfert, à part des
  * commandes : le poste saisit la quantité réellement emballée, puis clôt.
  * Aucun montant : un réassort est un mouvement interne.
  */

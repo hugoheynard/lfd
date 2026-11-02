@@ -8,8 +8,8 @@ import { ServiceDay } from "../../value-objects/service-day.value-object.js";
 import { NOTHING_PENDING, ProductionDay, type ResupplyLaunchGesture } from "../production-day.js";
 
 /**
- * Le réassort « au plus tôt » lancé (R4a, `reassort-boutiques/plan-au-plus-tot.md`
- * §2) : un geste à part du retirage, rangé à part des réassorts du soir,
+ * Le réassort « au plus tôt » lancé (R4a, `reassort-boutiques/au-plus-tot.md`) :
+ * un geste à part du retirage, rangé à part des réassorts du soir,
  * compté au total, qui survit à la réouverture. Dates recopiées et comparées
  * entre elles seulement — exception étroite du §5.
  */

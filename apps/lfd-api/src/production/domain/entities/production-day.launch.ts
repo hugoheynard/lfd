@@ -10,7 +10,7 @@ import type { LaunchedResupplySnapshot } from "./production-day.snapshot.js";
 /**
  * **Ce que l'arrêt du plan figerait aujourd'hui** — lu par l'appelant pour un
  * lancement sur une journée qui n'est pas arrêtée (Q5 du plan
- * `reassort-boutiques/plan-au-plus-tot.md`) : les commandes du commerce, les
+ * `reassort-boutiques/au-plus-tot.md`) : les commandes du commerce, les
  * retraits de l'annulation staff, et les réassorts « pour demain » envoyés.
  */
 export interface PendingPlan {

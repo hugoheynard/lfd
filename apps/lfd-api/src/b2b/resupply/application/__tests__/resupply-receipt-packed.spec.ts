@@ -5,7 +5,7 @@ import { CRO_24, DAY, placed, SITE, setup } from "./resupply-receipt-setup.js";
 
 /**
  * La réception pré-remplie de l'emballé au colisage (réassort, lot R3b,
- * `plan-reapprovisionnement.md` §13.1 point 6) : l'emballé s'il est connu,
+ * `reassort-boutiques/README.md`) : l'emballé s'il est connu,
  * sinon le demandé ; le compte du comptoir fait foi (décision C).
  */
 describe("la réception d'un réassort colisé", () => {

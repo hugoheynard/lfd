@@ -20,7 +20,7 @@ export const ATTACH_LAUNCHED_RESUPPLY = "delivery.attach-launched-resupply";
 
 /**
  * **La livraison emporte un réassort « au plus tôt » lancé** (R4c,
- * `reassort-boutiques/plan-au-plus-tot.md` §2 ④ ; arête `delivery →
+ * `reassort-boutiques/au-plus-tot.md` ; arête `delivery →
  * production` par `production/channels/delivery/`, comme `day_closed`).
  *
  * Les mécanismes du soir, sans réinvention (S6 de `vitruve`) :

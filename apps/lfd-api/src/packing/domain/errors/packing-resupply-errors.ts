@@ -10,7 +10,7 @@ import {
 
 /**
  * **Les refus de la fiche de réassort au colisage** (réassort, lot R3b,
- * `reassort-boutiques/plan-reapprovisionnement.md` §13). Lus par l'équipe du
+ * `reassort-boutiques/README.md`). Lus par l'équipe du
  * poste : chacun nomme le point et le geste de sortie.
  */
 

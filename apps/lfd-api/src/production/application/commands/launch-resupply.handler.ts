@@ -31,7 +31,7 @@ import { LaunchResupplyCommand } from "./launch-resupply.command.js";
 
 /**
  * **« Lancer » un réassort « au plus tôt »** (R4a,
- * `documentation/reassort-boutiques/plan-au-plus-tot.md` §2).
+ * `documentation/reassort-boutiques/au-plus-tot.md`).
  *
  * ## Sous le verrou de la journée
  *

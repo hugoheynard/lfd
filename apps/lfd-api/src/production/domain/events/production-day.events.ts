@@ -115,7 +115,7 @@ export class ProductionDayReopenedJournalEvent implements JournaledEvent {
 
 /**
  * Fait : **un réassort « au plus tôt » est lancé** (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md` §2) — entré au plan du jour par le
+ * `reassort-boutiques/au-plus-tot.md`) — entré au plan du jour par le
  * geste du fournil. Le réassort se cite par son nom et son point, figés au
  * lancement. `openedPlan` : la journée n'était pas arrêtée, et ce lancement
  * l'a ouverte arrêtée avec ce seul réassort (Q5) — le journal le dit en

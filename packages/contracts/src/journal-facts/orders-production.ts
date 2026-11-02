@@ -750,7 +750,7 @@ export const ORDERS_PRODUCTION_FACTS = {
   "production_day.reopened": fact(dayFact()),
   /**
    * Un réassort « au plus tôt » lancé par le fournil (R4a,
-   * `reassort-boutiques/plan-au-plus-tot.md`) : son nom et son point, figés
+   * `reassort-boutiques/au-plus-tot.md`) : son nom et son point, figés
    * au lancement. `openedPlan` : la journée n'était pas arrêtée, et ce
    * lancement l'a ouverte arrêtée avec ce seul réassort (Q5).
    */

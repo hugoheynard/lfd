@@ -23,7 +23,7 @@ import { resupplyMountRows, type ResupplyMountRow } from './resupply-mount-rows'
 
 /**
  * **« Monté »** — le signal du fournil au comptoir d'un point servi sur place
- * (lot R3e, `reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * (lot R3e, `reassort-boutiques/README.md`, Hugo
  * 2026-10-21 : « comment le fournil dit à la boutique Labo : je t'envoie
  * ça ? »). Le même signal que la réception du transfert au Village : le
  * réassort passe à « arrivé » et la cloche sonne au comptoir.

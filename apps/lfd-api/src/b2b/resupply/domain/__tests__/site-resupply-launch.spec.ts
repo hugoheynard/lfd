@@ -8,7 +8,7 @@ import type { ResupplyTarget, SiteResupplySnapshot } from "../site-resupply.js";
 
 /**
  * Le réassort « au plus tôt » lancé au fournil (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md`) : l'annulation refusée sur la
+ * `reassort-boutiques/au-plus-tot.md`) : l'annulation refusée sur la
  * réponse SYNCHRONE du fournil, et l'affichage « lancé » posé par le fait.
  * Des instants comparés entre eux seulement, jamais à l'horloge.
  */

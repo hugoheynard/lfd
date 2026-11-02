@@ -498,7 +498,7 @@ export const staffResourceSchema = z.enum([
    * **Les réassorts au fournil** — la lecture ouvre l'onglet Réassorts de Prod
    * manager (les réassorts demandés, les alertes des points) ; l'écriture
    * envoie, lance et monte (Hugo, 2026-10-21,
-   * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d). Un
+   * `documentation/reassort-boutiques/README.md`, R1d). Un
    * droit à part depuis le 2026-10-28 : la fiche d'atelier n'ouvre plus
    * l'onglet. Ajoutée sans être accordée : elle s'accorde à l'écran.
    */

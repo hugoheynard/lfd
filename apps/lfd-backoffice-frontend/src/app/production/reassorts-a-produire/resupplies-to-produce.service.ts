@@ -10,7 +10,7 @@ import { B2B_API_BASE } from '../../api/api-config';
  * `/admin/site-resupplies/to-produce/:day`, en lecture, sous les droits du
  * fournil (fournée ou prévisionnel). Le commerce sert le réassort ; l'onglet
  * « Réassorts » de Prod manager le lit côté navigateur (lot R3d,
- * `reassort-boutiques/plan-reapprovisionnement.md`), figés compris.
+ * `reassort-boutiques/README.md`), figés compris.
  */
 @Injectable({ providedIn: 'root' })
 export class ResuppliesToProduceService {

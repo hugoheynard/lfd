@@ -49,7 +49,7 @@ function normalize(text: string): string {
 
 /**
  * **L'onglet « Réassorts » de Prod manager** (lot R3d,
- * `reassort-boutiques/plan-reapprovisionnement.md`, Hugo 2026-10-21 :
+ * `reassort-boutiques/README.md`, Hugo 2026-10-21 :
  * « reprendre la structure de la demande de réassort, en table »).
  *
  * La table de la demande du comptoir (R1e), vue du fournil : une ligne par

@@ -9,7 +9,7 @@ export const PRODUCTION_RESUPPLY_LAUNCHED = "production.resupply_launched";
 
 /**
  * **Le fournil a lancé un réassort « au plus tôt »** — fait DURABLE (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md` §2), publié dans l'unité de
+ * `reassort-boutiques/au-plus-tot.md`), publié dans l'unité de
  * travail du lancement, sous le verrou de la journée.
  *
  * Il porte le réassort tel qu'il est entré au plan — lignes, point,

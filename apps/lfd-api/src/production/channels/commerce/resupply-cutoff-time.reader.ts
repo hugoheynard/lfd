@@ -1,7 +1,7 @@
 /**
  * **L'heure limite du réassort pour demain** — « la veille, HH:MM », telle
  * que le commerce la règle (Réglages › Commandes › Heure limite ; lot R3a,
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13.3).
+ * `documentation/reassort-boutiques/README.md`).
  *
  * Le fournil en a besoin parce que **le plan s'arrête à la plus tardive** de
  * cette heure et de la fin du rattrapage de l'heure limite générale : un seul

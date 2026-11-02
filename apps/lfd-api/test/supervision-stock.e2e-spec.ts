@@ -1,6 +1,6 @@
 /**
  * E2E de **l'onglet Stock de la Supervision** (lot S1 de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-22).
+ * `documentation/reassort-boutiques/README.md`, 2026-10-22).
  *
  * Ce qui ne s'éprouve qu'ici : le droit de la page (`b2b_supervision:read`
  * suffit, le comptoir seul est refusé), et la lecture de tous les points en

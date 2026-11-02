@@ -8,7 +8,7 @@ import { GetDayResuppliesQuery } from "./get-day-resupplies.query.js";
 
 /**
  * **Les réassorts d'une journée, au dossier du jour** (lot R3d,
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
+ * `documentation/reassort-boutiques/README.md`).
  *
  * Arrêtée : la copie FIGÉE (`production_resupply`) — ce que le PDF imprime.
  * Ouverte : ce que le commerce a envoyé « pour demain » à ce jour, par le

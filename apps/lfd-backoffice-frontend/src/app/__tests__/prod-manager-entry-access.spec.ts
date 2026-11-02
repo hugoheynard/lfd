@@ -14,7 +14,7 @@ import { PushNotificationsService } from '../shared/push/push-notifications.serv
 
 /**
  * **L'entrée « Prod manager »** depuis le lot R3d
- * (`reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) : l'ancienne
+ * (`reassort-boutiques/README.md`, 2026-10-21) : l'ancienne
  * entrée « Réassorts » est devenue un onglet de Prod manager. L'entrée
  * s'ouvre donc à qui tient le prévisionnel OU la seule fournée (le droit de
  * l'ancienne entrée), au rail ET aux tuiles ; « Réassorts » n'y est plus.

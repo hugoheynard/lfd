@@ -1,6 +1,6 @@
 /**
  * **La part de la réserve du jour retenue par un réassort lancé** (réassort,
- * lot R4b — `reassort-boutiques/plan-au-plus-tot.md` §2 ③, Q7 : « le colisage
+ * lot R4b — `reassort-boutiques/au-plus-tot.md` : « le colisage
  * réserve les pièces d'un réassort lancé »).
  *
  * Une réservation ne déplace aucune pièce : elle dit combien des pièces

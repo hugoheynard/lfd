@@ -12,7 +12,7 @@ import { resupplyDayView } from "./resupply-day-view.js";
 
 /**
  * Sert l'onglet « Réassorts » de Prod manager (lot R3d,
- * `reassort-boutiques/plan-reapprovisionnement.md`, Hugo 2026-10-21) : une
+ * `reassort-boutiques/README.md`, Hugo 2026-10-21) : une
  * journée, tous points, ses réassorts envoyés — « pour demain » et « au plus
  * tôt » — et le catalogue qui fait les lignes de la table.
  *

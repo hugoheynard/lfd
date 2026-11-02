@@ -32,7 +32,7 @@ import { SendBakehouseResupplyCommand } from "../application/send-bakehouse-resu
 
 /**
  * **Envoyer un réassort depuis le fournil** — « je t'envoie ça » (lot R1d,
- * `reassort-boutiques/plan-reapprovisionnement.md`, Hugo 2026-10-21).
+ * `reassort-boutiques/README.md`, Hugo 2026-10-21).
  *
  * Sous SON droit, `production_resupply` — distinct de `handover_counter` :
  * envoyer depuis le fournil n'est pas tenir le comptoir. Le point est dans

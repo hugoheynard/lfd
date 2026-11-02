@@ -372,8 +372,8 @@ export class ProductionDay {
   }
 
   /**
-   * **Lance un réassort « au plus tôt »** (R4a, `reassort-boutiques/plan-au-plus-tot.md`
-   * §2) : un geste à part du retirage, qui n'absorbe que des commandes. Le
+   * **Lance un réassort « au plus tôt »** (R4a, `reassort-boutiques/au-plus-tot.md`) :
+   * un geste à part du retirage, qui n'absorbe que des commandes. Le
    * réassort, lu par l'appelant SOUS le verrou de la journée, entre au plan
    * à part de ceux du soir, et ses lignes au compte (décision B). Le compte se
    * refait par la même fonction que l'arrêt — l'appelant a matérialisé les

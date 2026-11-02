@@ -65,7 +65,7 @@ const STEPS: readonly {
 
 /**
  * Les étapes ATTEINTES d'un réassort, dans l'ordre Envoyé → Lancé → Parti →
- * Arrivé (R4d, `reassort-boutiques/plan-au-plus-tot.md` §1). Une étape qui
+ * Arrivé (R4d, `reassort-boutiques/au-plus-tot.md`). Une étape qui
  * ne s'applique pas — « Lancé » pour un « pour demain », « Parti » pour un
  * point servi sur place — n'est simplement jamais atteinte. Un affichage :
  * aucune n'ouvre ni ne ferme un geste.

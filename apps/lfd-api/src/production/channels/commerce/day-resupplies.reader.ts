@@ -38,7 +38,7 @@ export interface PlacedResupply {
 /**
  * **« Quels réassorts sont envoyés pour cette journée ? »** — port que le
  * fournil DÉCLARE et que le commerce implémente (lot R3a,
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13.1 point 1).
+ * `documentation/reassort-boutiques/README.md`).
  *
  * Un canal À PART de {@link DayOrdersReader} : un réassort n'a ni client, ni
  * mode d'acheminement, ni bon — le mêler à `ProducibleOrder` obligerait à
@@ -56,7 +56,7 @@ export abstract class DayResuppliesReader {
 
   /**
    * **Le réassort « au plus tôt » que le fournil lance** (R4a,
-   * `reassort-boutiques/plan-au-plus-tot.md` §2) : celui-là seulement, envoyé
+   * `reassort-boutiques/au-plus-tot.md`) : celui-là seulement, envoyé
    * pour cette journée et non annulé — `null` sinon. Un port CIBLÉ, et pas
    * un élargissement de {@link placedFor} : l'arrêt relirait sinon tous les
    * « au plus tôt » comme s'ils étaient du soir (SÉRIEUX 4).

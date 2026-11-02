@@ -89,7 +89,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
 
 /**
  * **Le réapprovisionnement d'un site** (modèle B de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21) — la RÉCEPTION (ce que la vitrine a reçu, lot J1 du plan du
  * jour même ; un reçu par réassort depuis le lot R2) et, depuis le lot R1 (2026-10-21), la DEMANDE au fournil
  * (`SiteResupply`), que le fournil lit en lecture — sa demande en cours
@@ -163,7 +163,7 @@ import { ReceivedStockLowering } from "./application/received-stock-lowering.js"
     GetDayStockOverviewHandler,
     ListResupplyArticlesHandler,
     SendBakehouseResupplyHandler,
-    // Les brouillons du fournil (plan-brouillons-du-fournil.md, 2026-10-28).
+    // Les brouillons du fournil (reassort-boutiques/commander.md, 2026-10-28).
     { provide: BakehouseResupplyDraftRepository, useClass: PrismaBakehouseResupplyDraftRepository },
     { provide: BakehouseResupplyDraftReader, useClass: PrismaBakehouseResupplyDraftReader },
     CreateBakehouseResupplyDraftHandler,

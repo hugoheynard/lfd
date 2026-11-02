@@ -247,7 +247,7 @@ const PORT_SURFACE = {
   "b2b→delivery": "delivery/channels/commerce/",
   // Le commerce LIT la quantité réellement emballée d'un réassort, pour
   // pré-remplir sa réception (2026-10-21, réassort R3b,
-  // `reassort-boutiques/plan-reapprovisionnement.md` §13.1 point 6) : le
+  // `reassort-boutiques/README.md`) : le
   // colisage DÉCLARE ET IMPLÉMENTE `PackedResuppliesReader`, même figure que
   // `OrderHandoverHistoryReader`. Le commerce ne lit aucune table du colisage.
   //

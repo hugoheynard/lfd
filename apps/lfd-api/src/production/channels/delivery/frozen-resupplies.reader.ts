@@ -35,8 +35,8 @@ export interface FrozenResupply {
 
 /**
  * **« Qu'a-t-on figé pour ces réassorts ? »** (réassort, lot R3c,
- * 2026-10-21 — `reassort-boutiques/plan-reapprovisionnement.md` §13.1
- * point 7, §13.3) — port que le fournil DÉCLARE et IMPLÉMENTE, que la
+ * 2026-10-21 — `reassort-boutiques/README.md`) —
+ * port que le fournil DÉCLARE et IMPLÉMENTE, que la
  * livraison lit pour attacher un réassort au transfert de son point et dire
  * ce qu'il contient.
  *

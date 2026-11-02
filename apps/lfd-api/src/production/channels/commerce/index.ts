@@ -106,7 +106,7 @@ export {
   ProductionDayReopenedEvent,
   ProductionDayReopenedPayloadError,
 } from "./production-day-reopened.event.js";
-// Le réassort « au plus tôt » lancé (R4a, `reassort-boutiques/plan-au-plus-tot.md`,
+// Le réassort « au plus tôt » lancé (R4a, `reassort-boutiques/au-plus-tot.md`,
 // 2026-10-22) : le port que le fournil DÉCLARE et IMPLÉMENTE pour refuser,
 // sous le verrou de la journée, l'annulation d'un réassort lancé ; et le fait
 // que le commerce écoute pour afficher « Lancé par X à HH:MM ».

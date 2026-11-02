@@ -18,8 +18,8 @@ export interface OrderCutoffSettingsView {
   readonly sameDayAllowed: boolean;
   /**
    * **L'heure limite du réassort pour demain**, `HH:MM`, la VEILLE, heure de
-   * Paris (lot R3a, `documentation/reassort-boutiques/plan-reapprovisionnement.md`
-   * §13.3, Hugo 2026-10-21). Passé cette heure, un réassort « pour demain »
+   * Paris (lot R3a, `documentation/reassort-boutiques/README.md`,
+   * Hugo 2026-10-21). Passé cette heure, un réassort « pour demain »
    * est refusé ; le plan du fournil s'arrête à la plus tardive de cette heure
    * et de la fin du rattrapage de l'heure limite générale. `20:00` par défaut.
    * Remplace l'interrupteur `resupplySubjectToCutoff` (oui/non), retiré du

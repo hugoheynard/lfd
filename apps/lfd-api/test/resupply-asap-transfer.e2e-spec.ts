@@ -1,6 +1,6 @@
 /**
  * E2E du **réassort « au plus tôt » au transport** (lot R4c de
- * `documentation/reassort-boutiques/plan-au-plus-tot.md`, §2 ④).
+ * `documentation/reassort-boutiques/au-plus-tot.md`).
  *
  * Ce qui ne s'éprouve qu'ici : le fait `production.resupply_launched` par la
  * vraie boîte d'envoi jusqu'au transfert du point et à sa tournée — le

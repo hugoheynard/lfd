@@ -180,7 +180,7 @@ enum StaffResource {
   production_settings
   /// LE RÉASSORT ENVOYÉ PAR LE FOURNIL — « je t'envoie ça » à un point,
   /// à part de la demande du comptoir (2026-10-21,
-  /// `documentation/reassort-boutiques/plan-reapprovisionnement.md`, R1d).
+  /// `documentation/reassort-boutiques/README.md`, R1d).
   /// Accordée à l'écran.
   production_resupply
   /// LE RETRAIT AU COMPTOIR — la file, la remise, le scan (même plan).

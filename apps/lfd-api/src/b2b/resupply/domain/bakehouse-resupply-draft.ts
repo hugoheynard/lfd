@@ -47,7 +47,7 @@ export interface BakehouseResupplyDraftSnapshot {
 
 /**
  * **Le brouillon d'un réassort du fournil** (plan
- * `documentation/reassort-boutiques/plan-brouillons-du-fournil.md`, Hugo
+ * `documentation/reassort-boutiques/commander.md`, Hugo
  * 2026-10-28) — une composition gardée au serveur, À PART de la demande en
  * cours du comptoir et des réassorts envoyés : il n'a pas de journée, et ne
  * devient un réassort qu'à l'envoi, par le chemin de l'envoi du fournil.

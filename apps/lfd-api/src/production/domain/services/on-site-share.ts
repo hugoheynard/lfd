@@ -6,8 +6,7 @@ import type {
 
 /**
  * **Ce qui part au colisage, et ce qui monte directement** (réassort, R3c,
- * décision 3 de Hugo du 2026-10-21 — `reassort-boutiques/plan-reapprovisionnement.md`
- * §13.4, « Après R3b »).
+ * décision 3 de Hugo du 2026-10-21 — `reassort-boutiques/README.md`).
  *
  * Les fournées se cochent sur le TOTAL (commandes + réassorts, décision B) ;
  * mais un réassort d'un point servi SUR PLACE (le Labo) va de la feuille à la

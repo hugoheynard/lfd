@@ -12,7 +12,7 @@ const DAY = new ZodParam(productionBatchQuerySchema.shape.date, "date");
 
 /**
  * **« Lancer » un réassort « au plus tôt »** — Prod manager › Réassorts (R4a,
- * `documentation/reassort-boutiques/plan-au-plus-tot.md` §2).
+ * `documentation/reassort-boutiques/au-plus-tot.md`).
  *
  * Sous `production_resupply`, le droit du réassort au fournil (envoyer,
  * « Monté ») : un `POST` exige `production_resupply:write`. Aucun droit

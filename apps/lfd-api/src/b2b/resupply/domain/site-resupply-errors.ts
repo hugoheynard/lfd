@@ -118,7 +118,7 @@ export class ResupplyFrozenInPlanError extends BusinessError {
 
 /**
  * Le réassort « au plus tôt » est LANCÉ au fournil (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md`) : il est au plan du jour et compté
+ * `reassort-boutiques/au-plus-tot.md`) : il est au plan du jour et compté
  * dans les fournées. Le geste de sortie : réceptionner ce qui arrive
  * vraiment, avec l'écart — ou voir le fournil.
  */

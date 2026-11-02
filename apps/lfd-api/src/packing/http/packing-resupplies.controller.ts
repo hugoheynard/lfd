@@ -19,7 +19,7 @@ const NO_CONTENT = 204;
 
 /**
  * **Les fiches de réassort au poste de colisage** (réassort, lot R3b,
- * `reassort-boutiques/plan-reapprovisionnement.md` §13) — routes minimales,
+ * `reassort-boutiques/README.md`) — routes minimales,
  * l'écran vient en R3d.
  *
  * - `GET …/resupplies` — les fiches du jour ;

@@ -7,7 +7,7 @@ export const DELIVERY_TRANSFER_DEPARTED = "delivery.transfer_departed";
 
 /**
  * **Un transfert interne part avec sa tournée** — fait DURABLE (lot R4d de
- * `reassort-boutiques/plan-au-plus-tot.md`, 2026-10-22).
+ * `reassort-boutiques/au-plus-tot.md`, 2026-10-22).
  *
  * Écrit dans la boîte d'envoi par `departAndFreeze`, le chemin commun aux deux
  * portes du départ, dans la transaction du départ, pour chaque transfert qui

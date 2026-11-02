@@ -79,7 +79,7 @@ export function planClosesAt(rule: OrderCutoffRule | null, day: string): Date | 
 
 /**
  * **Les heures qui arrêtent le plan** (lot R3a du réassort, Hugo 2026-10-21,
- * `reassort-boutiques/plan-reapprovisionnement.md` §13.3) : l'heure limite
+ * `reassort-boutiques/README.md`) : l'heure limite
  * générale et l'heure du réassort (« la veille, HH:MM », sans rattrapage).
  * Le plan s'arrête à la PLUS TARDIVE — un seul compte total imprimé.
  *

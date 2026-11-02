@@ -24,7 +24,7 @@ import { resupplyLaunchRows, type ResupplyLaunchRow } from './resupply-launch-ro
 
 /**
  * **« Lancer »** un réassort « au plus tôt » (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md`, Hugo 2026-10-22 : le fournil lance,
+ * `reassort-boutiques/au-plus-tot.md`, Hugo 2026-10-22 : le fournil lance,
  * pas de lancement automatique). Lancé, le réassort entre au plan du jour et
  * compte dans les fournées ; le comptoir ne peut plus l'annuler.
  *

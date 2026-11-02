@@ -14,7 +14,7 @@ export interface ProdManagerView extends FoldViewNavItem {
 
 /**
  * Les onglets de **Prod manager** (lot R3d,
- * `reassort-boutiques/plan-reapprovisionnement.md`, Hugo 2026-10-21) — sur
+ * `reassort-boutiques/README.md`, Hugo 2026-10-21) — sur
  * le modèle du comptoir : un espace à routes enfants, chacune gardée par son
  * droit. « Réassorts » garde celui de l'ancienne entrée « Réassorts à
  * produire » : la fournée OU le prévisionnel.

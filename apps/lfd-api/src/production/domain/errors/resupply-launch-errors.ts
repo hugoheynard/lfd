@@ -2,7 +2,7 @@ import { BusinessError, ResourceNotFoundError } from "../../../platform/shared/e
 
 /**
  * Les refus du **lancement d'un réassort « au plus tôt »** (R4a,
- * `documentation/reassort-boutiques/plan-au-plus-tot.md` §2). Lus au Prod
+ * `documentation/reassort-boutiques/au-plus-tot.md`). Lus au Prod
  * manager par le fournil, sans le code sous les yeux : chacun nomme le cas
  * et le geste de sortie.
  */

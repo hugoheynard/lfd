@@ -1,6 +1,6 @@
 /**
  * E2E de la **demande de réassort en cours, enregistrée** (lot R1c de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21).
+ * `documentation/reassort-boutiques/README.md`, 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : l'index unique partiel (une seule demande en
  * cours par point, visée et journée), le verrou de version entre deux

@@ -1,6 +1,6 @@
 /**
  * E2E du **nom d'un réassort** (lot R1g de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21 : « vitrine du matin »).
  *
  * Ce qui ne s'éprouve qu'ici : la colonne et sa CHECK, le regroupement des

@@ -13,7 +13,7 @@ import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
  * « Enregistrer comme brouillon » au fournil, la première fois (plan
- * `reassort-boutiques/plan-brouillons-du-fournil.md`). Le point doit
+ * `reassort-boutiques/commander.md`). Le point doit
  * exister ; les SKU ne sont pas lus au catalogue — un article retiré se
  * refuse à l'envoi.
  *

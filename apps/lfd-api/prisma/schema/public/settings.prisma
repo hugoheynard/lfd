@@ -358,7 +358,7 @@ model OrderCutoffSettings {
   /// liste des colonnes à retirer (`limites-de-commande/schema-des-reglages.md`).
   resupplySubjectToCutoff    Boolean                 @default(true) @map("resupply_subject_to_cutoff")
   /// **L'heure limite du réassort pour demain**, `HH:MM` la VEILLE, heure de
-  /// Paris (lot R3a, `reassort-boutiques/plan-reapprovisionnement.md` §13.3).
+  /// Paris (lot R3a, `reassort-boutiques/README.md`).
   /// Le plan du fournil s'arrête à la plus tardive de cette heure et de la fin
   /// du rattrapage de l'heure limite générale. `20:00` par défaut (Hugo).
   resupplyCutoffTime         String                  @default("20:00") @map("resupply_cutoff_time") @db.VarChar(5)

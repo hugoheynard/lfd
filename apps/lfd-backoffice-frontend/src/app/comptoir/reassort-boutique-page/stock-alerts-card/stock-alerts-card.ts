@@ -28,7 +28,7 @@ const LEVEL_VARIANTS: Readonly<Record<StockAlertLevel, FoldBadgeVariant>> = {
 
 /**
  * **Rupture et stock faible** — en tête de la page Réassort (lot R1b,
- * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-21) : les alertes
+ * `reassort-boutiques/README.md`, 2026-10-21) : les alertes
  * vivantes du point, et la déclaration sur n'importe quel article du
  * catalogue. Chaque alerte propose « Ajouter à la demande au plus tôt »
  * (lot R1c) : l'article rejoint la demande en cours du point, plutôt qu'un

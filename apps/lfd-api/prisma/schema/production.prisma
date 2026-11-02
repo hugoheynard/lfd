@@ -819,7 +819,7 @@ model OrderRevisionNotice {
 }
 
 /// **Un réassort figé à l'arrêt du plan** (lot R3a du réassort,
-/// `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13) : ce
+/// `documentation/reassort-boutiques/README.md`) : ce
 /// que le commerce a envoyé « pour demain » à un point, recopié sous le
 /// verrou de la journée. Comme `ProductionOrder`, une copie et pas une
 /// référence : `resupply_id` et `site_id` sont OPAQUES, aucune clé étrangère

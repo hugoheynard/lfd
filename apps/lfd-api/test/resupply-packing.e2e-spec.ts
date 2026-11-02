@@ -1,7 +1,7 @@
 /**
  * E2E du **réassort au colisage** (lot R3b de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, §13.1
- * points 5–6, §13.3, §13.4 — Hugo 2026-10-21).
+ * `documentation/reassort-boutiques/README.md`
+ * — Hugo 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : le fait `production.resupply_list_drawn` par
  * la vraie boîte d'envoi jusqu'à la fiche du colisage, seulement pour un

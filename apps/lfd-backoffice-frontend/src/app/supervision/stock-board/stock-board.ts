@@ -60,7 +60,7 @@ const ALERT_BADGES: Readonly<
 
 /**
  * **L'onglet Stock de la Supervision** (lot S1,
- * `reassort-boutiques/plan-reapprovisionnement.md`, 2026-10-22) — une
+ * `reassort-boutiques/README.md`, 2026-10-22) — une
  * `fold-card` par point, dans l'ordre des points : ses réassorts du jour en
  * tête (nom, visée, origine, état), puis la table de ses produits (stock
  * réceptionné, alerte vivante, attendu). Le serveur trie ; l'écran lit.

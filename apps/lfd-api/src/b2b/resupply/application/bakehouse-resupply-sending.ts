@@ -18,7 +18,7 @@ import { catalogueLine } from "./site-resupply-draft.js";
 /**
  * **Le chemin de l'envoi du fournil** (lot R1d), partagé par « Envoyer un
  * réassort » et « Envoyer un brouillon » (plan
- * `documentation/reassort-boutiques/plan-brouillons-du-fournil.md` §3) : ce
+ * `documentation/reassort-boutiques/commander.md`) : ce
  * qui part d'un brouillon part par les mêmes règles, sans copie.
  *
  * En deux temps : {@link prepareBakehouseResupply} lit — le point, les

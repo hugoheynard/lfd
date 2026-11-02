@@ -47,8 +47,8 @@ export {
 
 /**
  * **Le réassort d'un point de retrait** — ce que le comptoir demande au
- * fournil pour sa vitrine (lot R1, `reassort-boutiques/plan-reapprovisionnement.md`
- * §12, Hugo 2026-10-21). Modèle B : jamais une commande, aucun prix, aucune
+ * fournil pour sa vitrine (lot R1, `reassort-boutiques/README.md`,
+ * Hugo 2026-10-21). Modèle B : jamais une commande, aucun prix, aucune
  * dépendance à `Order`.
  *
  * La journée découle de la visée et de l'instant du geste, à l'heure de

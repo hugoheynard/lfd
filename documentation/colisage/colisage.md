@@ -100,7 +100,7 @@ Le fournil fige à l'arrêt si le point d'un réassort est servi par transfert
 ne publie `production.resupply_list_drawn` que pour ceux-là — clé
 `…:<jour>:<resupplyId>`, suffixée `:after-reopening:<instant>` après une
 réouverture. Le Labo (servi sur place) n'a pas de fiche
-([plan du réassort](../reassort-boutiques/plan-reapprovisionnement.md) §13.4).
+([réassort](../reassort-boutiques/au-plan-du-fournil.md)).
 
 La fiche (`PackingResupply`) est **à part** de `PackingSheet` : titre
 « Réassort <point> », destination le transfert du point. Le poste saisit la
@@ -134,7 +134,7 @@ four, et un retour du fournil ne reprend pas ce qui part au point.
 Un réassort lancé dans la journée (R4a) d'un point servi par transfert ouvre
 la même fiche, genre `asap` (`packing_resupply.kind`), titrée « … · au plus
 tôt », en tête du poste
-([plan](../reassort-boutiques/plan-au-plus-tot.md) §2 ③, Q7).
+([réassort au plus tôt](../reassort-boutiques/au-plus-tot.md)).
 
 Son lancement **réserve** ses pièces sur la réserve `(jour, SKU)`, sous le
 verrou de `packing_stock` (`packing_stock_reservation`). L'invariant du §10.1

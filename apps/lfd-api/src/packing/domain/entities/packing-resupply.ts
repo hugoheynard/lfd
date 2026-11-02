@@ -62,7 +62,7 @@ export interface PackedChange {
 
 /**
  * **La fiche de réassort au colisage** (réassort, lot R3b, 2026-10-21 —
- * `reassort-boutiques/plan-reapprovisionnement.md` §13.1 point 5, §13.3).
+ * `reassort-boutiques/README.md`).
  *
  * À part de `PackingSheet` : un réassort n'a ni client, ni bon, ni bac
  * déclaré. Le poste saisit la quantité RÉELLEMENT emballée de chaque ligne —

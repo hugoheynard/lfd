@@ -106,7 +106,7 @@ function normalize(text: string): string {
 }
 
 /**
- * **La table du réassort** (lot R1e, `reassort-boutiques/plan-reapprovisionnement.md`,
+ * **La table du réassort** (lot R1e, `reassort-boutiques/README.md`,
  * Hugo 2026-10-21 : « pense comptoir, un clic ») : tous les produits du
  * catalogue publié, leur stock du jour (la somme des reçus réceptionnés),
  * leur état (OK · Faible · Rupture) en un clic, et la demande en cours de

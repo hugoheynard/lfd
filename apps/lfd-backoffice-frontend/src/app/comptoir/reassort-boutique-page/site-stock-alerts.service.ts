@@ -8,7 +8,7 @@ import { B2B_API_BASE } from '../../api/api-config';
 /**
  * **Rupture et stock faible** — `/admin/site-stock-alerts/sites/:siteId`,
  * sous le droit du comptoir (`handover_counter`), lot R1b du plan
- * `reassort-boutiques/plan-reapprovisionnement.md`.
+ * `reassort-boutiques/README.md`.
  */
 @Injectable({ providedIn: 'root' })
 export class SiteStockAlertsService {

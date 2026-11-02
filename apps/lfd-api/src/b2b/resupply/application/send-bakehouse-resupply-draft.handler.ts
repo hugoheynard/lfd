@@ -21,8 +21,8 @@ import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { SendBakehouseResupplyDraftCommand } from "./send-bakehouse-resupply-draft.command.js";
 
 /**
- * **Envoyer un brouillon** (plan `reassort-boutiques/plan-brouillons-du-fournil.md`
- * §3) : ce qui part est ce que l'écran montre. Le réassort naît par le chemin
+ * **Envoyer un brouillon** (`reassort-boutiques/commander.md`) :
+ * ce qui part est ce que l'écran montre. Le réassort naît par le chemin
  * de l'envoi du fournil (`bakehouse-resupply-sending.ts`), puis le brouillon
  * passe `sent` avec son id — dans UNE unité de travail : un refus de l'envoi
  * (heure limite, plan arrêté, article retiré) laisse le brouillon ouvert et

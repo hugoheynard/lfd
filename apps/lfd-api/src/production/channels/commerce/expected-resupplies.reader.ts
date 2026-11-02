@@ -11,7 +11,7 @@ export interface ExpectedDayResupplies {
 /**
  * **« Quels réassorts pour demain sont envoyés sur ces journées ? »** — le
  * prévisionnel les compte à part des commandes (lot R3d,
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+ * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21). Port que le fournil DÉCLARE et que le commerce implémente.
  *
  * Un port à part d'{@link ExpectedProductionReader} (ISP) : la fiche

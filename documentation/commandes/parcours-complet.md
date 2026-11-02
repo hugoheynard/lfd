@@ -116,7 +116,7 @@ flowchart TD
 Documents d'état : [`../fournil/arret-du-plan.md`](../fournil/arret-du-plan.md),
 [`../fournil/architecture-contexte-production.md`](../fournil/architecture-contexte-production.md),
 [`reglement/architecture-reglement-et-compte-de-production.md`](reglement/architecture-reglement-et-compte-de-production.md),
-[`../reassort-boutiques/plan-reapprovisionnement.md`](../reassort-boutiques/plan-reapprovisionnement.md).
+[`../reassort-boutiques/README.md`](../reassort-boutiques/README.md).
 
 ```mermaid
 flowchart TD

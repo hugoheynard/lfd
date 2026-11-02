@@ -1,6 +1,6 @@
 /**
  * E2E du **réassort au plan figé** (lot R3a de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, §13.3, Hugo
+ * `documentation/reassort-boutiques/README.md`, Hugo
  * 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : l'arrêt automatique à la plus tardive des deux

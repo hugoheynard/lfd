@@ -13,7 +13,7 @@ import { ResupplyPlanGate } from "./resupply-plan-gate.js";
 import { traceOf } from "./resupply-receipt-trace.js";
 
 /**
- * **« Monté »** (lot R3e de `reassort-boutiques/plan-reapprovisionnement.md`)
+ * **« Monté »** (lot R3e de `reassort-boutiques/README.md`)
  * — le geste du fournil pour un point servi sur place (le Labo) : le réassort
  * passe d'attendu à arrivé, et la cloche sonne au comptoir.
  *

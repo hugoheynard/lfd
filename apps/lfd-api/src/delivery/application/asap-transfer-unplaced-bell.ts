@@ -23,7 +23,7 @@ export interface AsapTransferUnplacedNotice {
 
 /**
  * **La cloche du répartiteur : un réassort « au plus tôt » n'a pas de
- * tournée** (R4c, `reassort-boutiques/plan-au-plus-tot.md` §2 ④, §6).
+ * tournée** (R4c, `reassort-boutiques/au-plus-tot.md`).
  *
  * Le placement automatique laisse un transfert sans arrêt quand aucune
  * tournée ne passe et qu'aucun véhicule n'est libre (ou que le point n'a pas

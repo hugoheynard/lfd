@@ -1,6 +1,6 @@
 /// **Un reçu de réassort** — ce que la vitrine d'un point a reçu (lot J1 de
 /// `documentation/limites-de-commande/jour-meme-sur-stock.md`, refait au
-/// lot R2 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`).
+/// lot R2 de `documentation/reassort-boutiques/README.md`).
 ///
 /// Un mouvement interne, JAMAIS une commande — aucun prix, aucune TVA, aucun
 /// règlement. Un reçu par réassort envoyé (`resupplyId`), et au plus un
@@ -72,8 +72,8 @@ model ResupplyReceiptLine {
 }
 
 /// **Le réassort d'un point** — ce que le comptoir demande au fournil pour sa
-/// vitrine (lot R1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
-/// §12, Hugo 2026-10-21). JAMAIS une commande : aucun prix, aucune TVA, aucun
+/// vitrine (lot R1 de `documentation/reassort-boutiques/README.md`,
+/// Hugo 2026-10-21). JAMAIS une commande : aucun prix, aucune TVA, aucun
 /// règlement, aucune clé vers `orders`. Depuis R1c, la demande en cours
 /// (brouillon, `placed_at` nul) est écrite aussi ; depuis R1d, le fournil
 /// envoie les siens (`origin`), créés déjà envoyés. Une annulation est un
@@ -173,7 +173,7 @@ model SiteResupplyLine {
 
 /// **Une alerte de stock** — « rupture » ou « stock faible » déclarée par le
 /// comptoir sur un article, pour un point (lot R1b de
-/// `documentation/reassort-boutiques/plan-reapprovisionnement.md`, Hugo
+/// `documentation/reassort-boutiques/README.md`, Hugo
 /// 2026-10-21). Aucun effet sur la boutique ni la passation (lot J2).
 ///
 /// Une seule alerte VIVANTE (`lifted_at IS NULL`) par (point, article) : index
@@ -213,7 +213,7 @@ model SiteStockAlert {
 }
 
 /// **Le brouillon d'un réassort du fournil** (plan
-/// `documentation/reassort-boutiques/plan-brouillons-du-fournil.md`, Hugo
+/// `documentation/reassort-boutiques/commander.md`, Hugo
 /// 2026-10-28) — une composition gardée au serveur, À PART de
 /// `site_resupply` : sans journée (elle se calcule à l'envoi), elle
 /// n'occupe jamais la place de la demande en cours du comptoir. Elle ne

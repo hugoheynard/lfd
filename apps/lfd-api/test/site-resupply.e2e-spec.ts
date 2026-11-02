@@ -1,6 +1,6 @@
 /**
  * E2E du **réassort commandé par un point** (lot R1 de
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md`, §12,
+ * `documentation/reassort-boutiques/README.md`,
  * 2026-10-21).
  *
  * Ce qui ne s'éprouve qu'ici : le droit du comptoir (`handover_counter`) et

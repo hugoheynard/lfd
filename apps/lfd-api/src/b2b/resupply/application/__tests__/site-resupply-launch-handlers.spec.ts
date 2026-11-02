@@ -29,7 +29,7 @@ import {
 
 /**
  * Le commerce face au lancement d'un « au plus tôt » (R4a,
- * `reassort-boutiques/plan-au-plus-tot.md` §2) : l'annulation refusée sur la
+ * `reassort-boutiques/au-plus-tot.md`) : l'annulation refusée sur la
  * réponse du fournil, sous le verrou ; l'affichage « lancé » posé par le
  * fait. L'horloge fixe n'est comparée qu'aux journées qu'elle-même désigne.
  */

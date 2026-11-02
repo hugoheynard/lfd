@@ -5,8 +5,8 @@ import type { ResupplyArticleView } from "./resupply-receipt.js";
 
 /**
  * **Commander un réassort** — la demande d'un point de retrait au fournil
- * (lot R1 de `documentation/reassort-boutiques/plan-reapprovisionnement.md`,
- * §12, Hugo 2026-10-21). Jamais une commande : aucun prix, aucune TVA, aucun
+ * (lot R1 de `documentation/reassort-boutiques/README.md`,
+ * Hugo 2026-10-21). Jamais une commande : aucun prix, aucune TVA, aucun
  * règlement. Ce qui arrive en vitrine est un autre agrégat, la réception
  * (`resupply-receipt.ts`).
  */
@@ -90,7 +90,7 @@ export interface SiteResupplyView {
   /** Nom figé de qui l'a dit arrivé ; `null` s'il est attendu ou inconnu. */
   readonly arrivedBy: string | null;
   /**
-   * « Au plus tôt » LANCÉ au fournil (R4a, `reassort-boutiques/plan-au-plus-tot.md`) :
+   * « Au plus tôt » LANCÉ au fournil (R4a, `reassort-boutiques/au-plus-tot.md`) :
    * il est au plan du jour et ne s'annule plus ; `null` tant qu'il ne l'est
    * pas — et toujours pour un « pour demain ». Posé par le fait du fournil :
    * il peut suivre le lancement d'un instant.
@@ -268,7 +268,7 @@ export interface ResuppliesToProduceView {
 
 /**
  * `GET /admin/site-resupplies/to-produce/:day` — l'onglet « Réassorts » de
- * Prod manager (lot R3d, `reassort-boutiques/plan-reapprovisionnement.md`,
+ * Prod manager (lot R3d, `reassort-boutiques/README.md`,
  * Hugo 2026-10-21) : UNE journée, et ses réassorts pour demain MÊME figés.
  *
  * Là où `ResuppliesToProduceView` tait les réassorts figés (ils sont sur la

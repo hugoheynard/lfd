@@ -231,7 +231,7 @@ model PackingContainerLine {
 }
 
 /// **Une fiche de réassort au colisage** (réassort, lot R3b, 2026-10-21 —
-/// `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13). À part
+/// `documentation/reassort-boutiques/README.md`). À part
 /// de `PackingOrder` : un réassort n'a ni client, ni bon, ni acheminement.
 /// Inscrite par `production.resupply_list_drawn`, seulement pour un point
 /// servi par transfert (§13.4, Q1 révisée). Titrée « Réassort <point> » ;
@@ -298,7 +298,7 @@ model PackingResupplyLine {
 }
 
 /// **La part de la réserve du jour retenue par un réassort lancé** (réassort,
-/// lot R4b — `reassort-boutiques/plan-au-plus-tot.md` §2 ③, Q7). Posée par le
+/// lot R4b — `reassort-boutiques/au-plus-tot.md`). Posée par le
 /// fait `production.resupply_launched` sous le verrou de `packing_stock`
 /// `(jour, SKU)` : une commande ne prend pas une pièce réservée, et la fiche
 /// prend la sienne en premier. Reste dû = `quantity` − emballé de la ligne.

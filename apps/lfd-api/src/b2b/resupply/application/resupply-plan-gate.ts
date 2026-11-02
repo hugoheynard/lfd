@@ -9,7 +9,7 @@ import type { ResupplyTarget } from "../domain/site-resupply.js";
 
 /**
  * **Le guichet d'admission du plan, pour le réassort** (lot R3a,
- * `documentation/reassort-boutiques/plan-reapprovisionnement.md` §13.3) — la
+ * `documentation/reassort-boutiques/README.md`) — la
  * même figure qu'`OrderPlanGate` pour une commande.
  *
  * L'envoi et l'annulation d'un réassort « pour demain » prennent le verrou de
