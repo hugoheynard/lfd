@@ -980,6 +980,26 @@ app-service-doors {
   right: var(--fold-space-md);
 }
 
+/* 🔴 SUR LA LIGNE DE L'ADRESSE, pas du nom (Hugo, 2026-11-02) : un nom long
+   passait sous le bouton. Le bouton s'ancre à l'adresse de SA carte
+   (`anchor-scope`), qui lui réserve sa place ; le nom a toute la largeur.
+   Sans ancrage (navigateur ancien), il reste en haut, comme avant. */
+@supports (anchor-scope: --a) {
+  .houses > li {
+    anchor-scope: --house-place;
+  }
+
+  .house-place {
+    anchor-name: --house-place;
+    padding-inline-end: var(--fold-space-4xl);
+  }
+
+  .house-gps {
+    top: anchor(--house-place center);
+    translate: 0 -50%;
+  }
+}
+
 /* ── Au téléphone (Hugo, 2026-10-27) ──────────────────────────────────────────
    Les maisons les unes au-dessus des autres ; le bandeau de retrait n'est plus
    une carte, il sort de la gouttière et remonte jusqu'au bandeau de page, et

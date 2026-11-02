@@ -150,45 +150,39 @@
   cursor: pointer;
 }
 
-.note {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  /* Deux lignes RÉSERVÉES, même quand le texte n'en prend qu'une : sans elles,
-     une carte à note courte aurait son prix plus haut que sa voisine. */
-  min-height: calc(2 * var(--lfc-leading-body) * 1em);
-  font-size: var(--lfc-text-note);
-  line-height: var(--lfc-leading-body);
-  color: var(--fold-color-text-secondary);
-}
-
-/* La limite propre de l'article : discrète mais lisible — le corps de la
-   note, en gras. Deux lignes au plus sur une colonne étroite ; la rangée,
-   étirée par la grille, garde ses prix alignés (`.body` pousse le pied). */
-.allergens {
-  display: -webkit-box;
-  -webkit-box-orient: vertical;
-  -webkit-line-clamp: 2;
-  overflow: hidden;
-  font-size: var(--lfc-text-note);
-  line-height: var(--lfc-leading-body);
-  color: var(--fold-color-text-secondary);
-}
-
+.note,
+.allergens,
 .made-to-order {
   display: -webkit-box;
   -webkit-box-orient: vertical;
   -webkit-line-clamp: 2;
   overflow: hidden;
   font-size: var(--lfc-text-note);
-  font-weight: var(--fold-weight-bold);
   line-height: var(--lfc-leading-body);
+}
+
+.note {
+  /* Deux lignes RÉSERVÉES, même quand le texte n'en prend qu'une : sans elles,
+     une carte à note courte aurait son prix plus haut que sa voisine. */
+  min-height: calc(2 * var(--lfc-leading-body) * 1em);
+  color: var(--fold-color-text-secondary);
+}
+
+.allergens {
+  color: var(--fold-color-text-secondary);
+}
+
+/* La limite propre de l'article : discrète mais lisible — le corps de la
+   note, en gras. Deux lignes au plus sur une colonne étroite ; la rangée,
+   étirée par la grille, garde ses prix alignés (`.body` pousse le pied). */
+.made-to-order {
+  font-weight: var(--fold-weight-bold);
   color: var(--fold-color-text);
 }
 
 .foot {
   display: flex;
+  flex-wrap: wrap;
   align-items: center;
   justify-content: space-between;
   gap: var(--fold-space-sm);
@@ -276,9 +270,16 @@
 /* Au panier, le bouton élargit sa pastille : la quantité se lit avant le prix. */
 .steps {
   flex: none;
+  margin-inline-start: auto;
   display: flex;
   align-items: center;
   gap: var(--fold-space-xs);
+}
+
+/* Prix barré : le prix sur sa ligne, le « − + » dessous, centré. */
+.foot.stacked > * {
+  flex-basis: 100%;
+  justify-content: center;
 }
 
 /* Le « − » : plus petit, et en retrait — retirer est le geste rare. */

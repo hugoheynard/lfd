@@ -60,17 +60,22 @@
     <app-pro-visit-note class="pro-visit" />
   }
 
-  <fold-search
-    class="search"
-    [(value)]="shop.query"
-    [placeholder]="t().shop.searchPlaceholder"
-    [ariaLabel]="t().shop.searchPlaceholder"
-    [clearLabel]="t().shop.clearSearch"
-    [resultCount]="shop.products().length"
-    [resultLabel]="t().shop.piecesUnit"
-  />
+  <!-- Le filtre : en pile, la recherche et les rayons restent collés en haut,
+       seules les vignettes défilent (Hugo, 2026-11-02). Au bureau, la boîte
+       s'efface (`display: contents`) et chacun garde sa case. -->
+  <div class="filters">
+    <fold-search
+      class="search"
+      [(value)]="shop.query"
+      [placeholder]="t().shop.searchPlaceholder"
+      [ariaLabel]="t().shop.searchPlaceholder"
+      [clearLabel]="t().shop.clearSearch"
+      [resultCount]="shop.products().length"
+      [resultLabel]="t().shop.piecesUnit"
+    />
 
-  <app-shelf-nav class="shelves" [active]="shop.activeShelf()" (picked)="shop.browse($event)" />
+    <app-shelf-nav class="shelves" [active]="shop.activeShelf()" (picked)="shop.browse($event)" />
+  </div>
 
   @switch (status()) {
     @case ('failed') {
@@ -140,6 +145,8 @@
 @if (!proVisit()) {
   <app-cart-bar
     class="cartbar"
+    [class.hushed]="rest.scrolling()"
+    [attr.inert]="rest.scrolling() ? '' : null"
     (pay)="void pay()"
     (edit)="void doors.modify()"
     (resume)="void doors.resume()"

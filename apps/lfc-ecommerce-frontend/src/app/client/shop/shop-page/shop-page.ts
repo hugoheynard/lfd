@@ -4,8 +4,10 @@ import {
   computed,
   DestroyRef,
   effect,
+  ElementRef,
   inject,
   untracked,
+  viewChild,
 } from '@angular/core';
 import {
   FoldButtonComponent,
@@ -44,6 +46,8 @@ import { CartAnnouncement } from '../cart-announcement/cart-announcement';
 import { PieceQuantity } from '../piece-quantity.service';
 import { ShelfGrid } from './shelf-grid/shelf-grid';
 import { ShelfNav } from './shelf-nav/shelf-nav';
+import { ScrollRest } from '../scroll-rest/scroll-rest';
+import { NARROW_QUERY } from '../../panel-side';
 
 /**
  * La boutique — une vitrine, pas une liste.
@@ -92,7 +96,7 @@ import { ShelfNav } from './shelf-nav/shelf-nav';
    * parcouru — défendable, mais c'est un choix de produit, pas une conséquence
    * de la découpe. Cf. {@link ShopStore}.
    */
-  providers: [ShopStore, Shop, ShelfAddress, PickupLink, PieceAddress, PieceHead],
+  providers: [ScrollRest, ShopStore, Shop, ShelfAddress, PickupLink, PieceAddress, PieceHead],
 })
 export class ShopPage {
   protected readonly chrome = inject(ClientChrome);
@@ -104,6 +108,14 @@ export class ShopPage {
   protected readonly cart = inject(ClientCart);
 
   protected readonly shop = inject(Shop);
+
+  /**
+   * En pile, le pied s'efface pendant que le rayon défile et revient une
+   * seconde après (Hugo, 2026-11-02). Jamais au bureau — il n'y est pas —, et
+   * jamais quand le focus est dedans : on ne retire pas ce qu'on manipule.
+   */
+  protected readonly rest = inject(ScrollRest);
+  private readonly cartBarHost = viewChild(CartBar, { read: ElementRef<HTMLElement> });
   private readonly catalogue = inject(ShopCatalogue);
 
   /** L'état du chargement, tel que l'écran le rend. */
@@ -181,6 +193,12 @@ export class ShopPage {
   }
 
   constructor() {
+    this.rest.holdWhile(() => {
+      const bar: HTMLElement | undefined = this.cartBarHost()?.nativeElement;
+      return (
+        !window.matchMedia(NARROW_QUERY).matches || (bar?.contains(document.activeElement) ?? false)
+      );
+    });
     // Une fiche demandée d'ailleurs — une suggestion du staff à l'accueil, au
     // panier, dans « Ajouté ! » ou sur une autre fiche (Hugo, 2026-10-18) —
     // s'ouvre ici, une fois, comme si sa tuile avait été touchée.

@@ -85,6 +85,65 @@
   .terms {
     display: none;
   }
+
+  /* 🔴 LE FILTRE RESTE, LES VIGNETTES DÉFILENT, en pile aussi (Hugo,
+     2026-11-02). Collé dans la boîte qui défile plutôt qu'une seconde boîte :
+     pas de hauteur en `dvh` à calculer, et le clavier d'iOS ne la fausse pas.
+     L'ombre pleine couvre la gouttière, que les cartes traverseraient. */
+  .shop {
+    grid-template-areas: 'filters' 'grid';
+  }
+
+  .shop.with-pro-visit {
+    grid-template-areas: 'pro-visit' 'filters' 'grid';
+  }
+
+  .filters {
+    grid-area: filters;
+    position: sticky;
+    top: 0;
+    z-index: 2;
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--fold-space-md);
+    padding-block: var(--fold-space-sm);
+    background: var(--fold-color-bg-page);
+    box-shadow: 0 0 0 var(--fold-space-lg) var(--fold-color-bg-page);
+  }
+
+  /* Leurs cases nommées sont celles du bureau : dans la boîte, à la file. */
+  .filters > :is(.search, .shelves) {
+    grid-area: auto;
+  }
+
+  /* Le pied s'efface pendant le défilement, et revient une seconde après. */
+  .cartbar {
+    transition:
+      opacity 240ms ease,
+      transform 240ms ease;
+  }
+
+  .cartbar.hushed {
+    opacity: 0;
+    transform: translateY(var(--fold-space-md));
+    pointer-events: none;
+  }
+}
+
+@media (max-width: 899.98px) and (prefers-reduced-motion: reduce) {
+  .cartbar {
+    transition: none;
+  }
+
+  .cartbar.hushed {
+    transform: none;
+  }
+}
+
+@media (min-width: 900px) {
+  .filters {
+    display: contents;
+  }
 }
 
 /* ── Le pli ───────────────────────────────────────────────────────────────── */
@@ -150,7 +209,7 @@
      1400 px le 2026-09-24) : collées à 0, elles passeraient SOUS la barre.
      Le fond et l'ombre pleine masquent les cartes qui glissent dessous, y
      compris dans la gouttière entre les deux cases. */
-  .shop > :is(.search, .shelves) {
+  .filters > :is(.search, .shelves) {
     position: sticky;
     top: 0;
     z-index: 2;
@@ -168,7 +227,7 @@
       0 -77px 0 10px var(--fold-color-bg-page);
   }
 
-  .shop.under-bar > :is(.search, .shelves) {
+  .shop.under-bar .filters > :is(.search, .shelves) {
     top: 77px;
   }
 

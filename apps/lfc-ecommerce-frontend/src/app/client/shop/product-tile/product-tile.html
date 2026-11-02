@@ -74,7 +74,10 @@
       }
     </div>
 
-    <div class="foot">
+    <!-- Un prix barré allonge la ligne : le « − + » passe dessous, centré,
+         au lieu d'être rogné (Hugo, 2026-11-02). Sans rature, il ne descend
+         que si la ligne manque de place (retour à la ligne). -->
+    <div class="foot" [class.stacked]="striked() !== null">
       <span class="price-block">
         <span class="price">
           <!-- Le tarif catalogue, barré, quand ce client paie moins. Il ne

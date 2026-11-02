@@ -266,6 +266,23 @@ describe('ProductTile', () => {
     expect(el.querySelector('.price-was')?.textContent?.trim()).toBe('75,00 €');
   });
 
+  /** Régression (2026-11-02) : avec un prix barré, le « − + » était rogné. */
+  it('descend le « − + » sous un prix barré, et seulement là', () => {
+    const el = fixture.nativeElement as HTMLElement;
+    expect(el.querySelector('.foot')?.classList.contains('stacked')).toBe(false);
+
+    fixture.componentRef.setInput('product', {
+      ...TEST_ITEMS[0],
+      unitPriceMillicents: 5_687_200,
+      unitPriceTtcCents: 6_000,
+      catalogPriceMillicents: 7_109_000,
+      catalogPriceTtcCents: 7_500,
+    });
+    fixture.detectChanges();
+
+    expect(el.querySelector('.foot')?.classList.contains('stacked')).toBe(true);
+  });
+
   it('ne barre RIEN sur un article que le client paie au tarif', () => {
     const el = fixture.nativeElement as HTMLElement;
 
