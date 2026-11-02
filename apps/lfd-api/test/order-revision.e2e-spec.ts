@@ -9,9 +9,7 @@
  * journée — et la course avec la clôture, qui doit inscrire la NOUVELLE
  * composition.
  *
- * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe. Une
- * ENVELOPPE autour du vrai lecteur des commandes du jour glisse une
- * modification entre la lecture de la clôture et son verrou.
+ * Doublés : la signature des jetons (le jeton EST le `sub`) et Stripe.
  */
 import {
   PERSONAL_WORKSPACE,
@@ -21,7 +19,6 @@ import {
 } from "@lfd/contracts";
 import { randomUUID } from "node:crypto";
 
-import { SitedDayOrders } from "../src/b2b/orders/application/services/sited-day-orders.service.js";
 import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js";
 import {
   CompanyStatus,
@@ -29,11 +26,6 @@ import {
   DeferredTerm,
 } from "../src/platform/database/client/client.js";
 import { PaymentGateway } from "../src/b2b/payments/domain/payment-gateway.js";
-import {
-  DayOrdersReader,
-  type ProducibleOrder,
-  type ServiceDay,
-} from "../src/production/channels/commerce/index.js";
 import {
   bootstrapE2e,
   daysAgo,
@@ -75,21 +67,11 @@ const fakeGateway = {
   cancelIntent: () => Promise.resolve({ kind: "cancelled" as const }),
 };
 
-/** Joué une fois, juste après la lecture des commandes du jour par la clôture. */
-let afterDayRead: (() => Promise<void>) | null = null;
-
-/** Le vrai lecteur, encadré du crochet : la clôture lit, PUIS une révision passe. */
-const hookedDayOrders = {
-  producibleFor: async (day: ServiceDay): Promise<readonly ProducibleOrder[]> => {
-    const read = await ctx.app.get(SitedDayOrders, { strict: false }).producibleFor(day);
-    const hook = afterDayRead;
-    afterDayRead = null;
-    if (hook !== null) {
-      await hook();
-    }
-    return read;
-  },
-};
+/** La clé du verrou de la journée — celle de `PrismaProductionDayLock`. */
+const DAY_LOCK_KEY = `production_day:${DAY}`;
+/** Assez pour mettre deux requêtes en file sur une machine lente. */
+const HOLD_TIMEOUT_MS = 20_000;
+const POLL_MS = 25;
 
 let ctx: E2eContext;
 
@@ -98,7 +80,6 @@ beforeAll(async () => {
     overrides: [
       { token: AdminTokenVerifier, value: stubAdminVerifier },
       { token: PaymentGateway, value: fakeGateway },
-      { token: DayOrdersReader, value: hookedDayOrders },
     ],
   });
 });
@@ -108,7 +89,6 @@ afterAll(async () => {
 });
 
 beforeEach(async () => {
-  afterDayRead = null;
   await ctx.reset();
 });
 
@@ -439,25 +419,76 @@ describe("POST /orders/:id/revisions — les refus", () => {
   });
 });
 
+/** Le nombre de demandes de verrou consultatif encore en attente. */
+async function advisoryWaiters(): Promise<number> {
+  const rows = await ctx.prisma.$queryRaw<{ readonly waiting: bigint }[]>`
+    SELECT count(*) AS waiting FROM pg_locks WHERE locktype = 'advisory' AND NOT granted`;
+  return Number(rows[0]?.waiting ?? 0n);
+}
+
+async function untilWaiters(count: number): Promise<void> {
+  while ((await advisoryWaiters()) < count) {
+    await new Promise((resolve) => setTimeout(resolve, POLL_MS));
+  }
+}
+
+/** Tient le verrou de la journée dans une troisième transaction, jusqu'à `release()`. */
+async function holdDayLock(): Promise<{ readonly release: () => Promise<void> }> {
+  let release: () => void = () => undefined;
+  const released = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  let held: () => void = () => undefined;
+  const lockHeld = new Promise<void>((resolve) => {
+    held = resolve;
+  });
+  const holder = ctx.prisma.$transaction(
+    async (tx) => {
+      await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${DAY_LOCK_KEY}, 0))`;
+      held();
+      await released;
+    },
+    { timeout: HOLD_TIMEOUT_MS },
+  );
+  await lockHeld;
+  return {
+    release: async () => {
+      release();
+      await holder;
+    },
+  };
+}
+
 describe("§9.1 — la course avec la clôture", () => {
   /**
-   * La clôture lit les commandes AVANT le verrou de la journée. Une révision
-   * validée entre les deux aurait été inscrite dans son ancienne composition :
-   * le repère des notes a bougé, la clôture relit sous son verrou.
+   * Régression (2026-11-02, commit 52561f210) : la clôture lisait les commandes
+   * AVANT le verrou de la journée, et une révision validée entre les deux était
+   * inscrite dans son ancienne composition. Désormais la clôture lit sous son
+   * verrou, que la révision prend aussi : la révision mise en file AVANT
+   * l'arrêt valide la première (Postgres accorde un verrou consultatif dans
+   * l'ordre d'attente), et l'arrêt doit inscrire la nouvelle composition —
+   * ni perdue, ni un 500.
    */
-  it("une révision passée entre la lecture de la clôture et son verrou est inscrite à jour", async () => {
+  it("une révision en file avant l'arrêt est inscrite à jour", async () => {
     const { orderId, pickupId } = await scene();
-    afterDayRead = async () => {
-      await buyer()
-        .post(`/orders/${orderId}/revisions`)
-        .send({
-          expectedRevision: 0,
-          ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 33 }] }),
-        })
-        .expect(200);
-    };
+    const lock = await holdDayLock();
 
-    await staff().post(`/admin/production/batch/${DAY}/close`).expect(201);
+    const revision = buyer()
+      .post(`/orders/${orderId}/revisions`)
+      .send({
+        expectedRevision: 0,
+        ...content(pickupId, { lines: [{ sku: "VIE-001-1", quantity: 33 }] }),
+      })
+      .then((response) => response);
+    await untilWaiters(1);
+    const closing = staff()
+      .post(`/admin/production/batch/${DAY}/close`)
+      .then((response) => response);
+    await untilWaiters(2);
+    await lock.release();
+
+    expect((await revision).status).toBe(200);
+    expect((await closing).status).toBe(201);
 
     const inscribed = await ctx.prisma.productionOrderLine.findMany({
       where: { order: { orderId } },
