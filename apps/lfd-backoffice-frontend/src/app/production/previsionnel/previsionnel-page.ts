@@ -44,6 +44,7 @@ import {
   shiftDay,
   windowEnd,
 } from './previsionnel-range';
+import { batchWithOrders, capitalized } from './batch-wording';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -309,10 +310,19 @@ export class PrevisionnelPage {
     return autoCloseAheadLabel(day?.closesAt ?? null, this.now());
   });
 
+  /** « la fournée de demain (commandes du mar. 3 nov.) » — cf. `batch-wording.ts`. */
+  protected batchLabel(day: {
+    readonly date: string;
+    readonly weekday: string;
+    readonly dayMonth: string;
+  }): string {
+    return batchWithOrders(day.date, this.today, day);
+  }
+
   protected readonly nothingToArrestLabel = computed(() => {
     const tomorrow = this.aheadHeaders().find((header) => header.date > this.today);
     return tomorrow?.closed === true
-      ? `Plan du ${tomorrow.weekday} ${tomorrow.dayMonth} arrêté`
+      ? `${capitalized(batchWithOrders(tomorrow.date, this.today, tomorrow))} arrêtée`
       : 'Rien à arrêter';
   });
 
@@ -497,17 +507,20 @@ export class PrevisionnelPage {
     this.arresting.set(true);
     this.arrestFailed.set(false);
     const named = this.aheadHeaders().find((header) => header.date === date);
-    const plan = named === undefined ? 'Plan' : `Plan du ${named.weekday} ${named.dayMonth}`;
+    const plan =
+      named === undefined
+        ? 'La fournée'
+        : capitalized(batchWithOrders(named.date, this.today, named));
     try {
       const closure = await this.production.closeDay(date);
       // Un CHIFFRE, jamais « c'est fait » : c'est la seule façon de voir qu'on
       // vient d'arrêter une journée à trois commandes quand on en attendait trente.
       if (closure.alreadyClosed) {
-        this.notify.info(`${plan} : déjà arrêté — rien n’a été recalculé.`);
+        this.notify.info(`${plan} : déjà arrêtée — rien n’a été recalculé.`);
       } else {
         const n = closure.absorbed;
         this.notify.success(
-          `${plan} arrêté : ${n} commande${n > 1 ? 's' : ''} inscrite${n > 1 ? 's' : ''}.`,
+          `${plan} arrêtée : ${n} commande${n > 1 ? 's' : ''} inscrite${n > 1 ? 's' : ''}.`,
         );
       }
       await this.load();

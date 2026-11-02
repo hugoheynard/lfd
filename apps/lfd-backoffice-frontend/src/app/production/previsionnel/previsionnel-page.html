@@ -23,8 +23,9 @@
     @if (dayToCatchUp(); as day) {
       <fold-page-section bleed class="pv-catch-up">
         <fold-callout variant="alert" appearance="flat">
-          Le plan d’aujourd’hui, {{ day.weekday }} {{ day.dayMonth }}, n’a pas été arrêté hier soir.
-          Tant qu’il ne l’est pas, rien ne part en fournée.
+          La fournée de ce matin n’a pas été arrêtée hier soir : les commandes à remettre le
+          {{ day.weekday }} {{ day.dayMonth }} peuvent encore changer, et rien ne part au four tant
+          qu’elle ne l’est pas.
           <!-- Le geste suit `production_count_stop:write` ; l'alerte, elle, se dit à
                tout lecteur du plan. La garde est À PLAT, dans chaque branche : un
                `@if` imbriqué ôterait au bloc sa racine unique, et le bouton
@@ -37,11 +38,11 @@
               keepOpenOnConfirm
               intent="danger"
               [message]="
-                'Arrêter maintenant le plan du ' +
+                'Arrêter maintenant la fournée de ce matin (commandes du ' +
                 day.weekday +
                 ' ' +
                 day.dayMonth +
-                ' ? Les commandes reçues après ne rentreront plus dans cette fournée.'
+                ') ? Les commandes reçues après n’y entreront plus.'
               "
               (confirmed)="arrest(day.date)"
               (cancelled)="arrestingDay.set(null)"
@@ -58,7 +59,7 @@
               intent="danger"
               (click)="arrestingDay.set(day.date)"
             >
-              Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }} maintenant
+              Arrêter la fournée de ce matin
             </button>
           }
         </fold-callout>
@@ -178,10 +179,8 @@
                   keepOpenOnConfirm
                   intent="primary"
                   [message]="
-                    'Arrêter le plan du ' +
-                    day.weekday +
-                    ' ' +
-                    day.dayMonth +
+                    'Arrêter ' +
+                    batchLabel(day) +
                     ' — ' +
                     day.orderCount +
                     ' commande(s), ' +
@@ -204,7 +203,7 @@
                   class="pv-arrest"
                   (click)="arrestingDay.set(day.date)"
                 >
-                  Arrêter le plan du {{ day.weekday }} {{ day.dayMonth }}
+                  Arrêter {{ batchLabel(day) }}
                 </button>
               }
             } @else {

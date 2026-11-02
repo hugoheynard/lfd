@@ -226,10 +226,10 @@ describe('le prévisionnel — arrêter le plan', () => {
     const el = await render(forecast([day(dayIn(0), { closed: true }), day(dayIn(1))]));
 
     const bouton = [...el.querySelectorAll('button')].find((b) =>
-      b.textContent?.includes('Arrêter le plan'),
+      b.textContent?.includes('Arrêter la fournée'),
     );
     expect(bouton).toBeDefined();
-    expect(bouton?.textContent?.trim()).toContain('Arrêter le plan du');
+    expect(bouton?.textContent?.trim()).toContain('Arrêter la fournée');
     // La date, et pas seulement les mots : c'est elle qui manquait.
     expect(bouton?.textContent).toContain(dayMonthOf(1));
   });
@@ -298,11 +298,13 @@ describe('le prévisionnel — arrêter le plan', () => {
       const el = await render(forecast([day(dayIn(0)), day(dayIn(1))]));
 
       const texte = el.textContent ?? '';
-      expect(texte).toContain('n’a pas été arrêté hier soir');
+      expect(texte).toContain('n’a pas été arrêtée hier soir');
+      // Le jour des commandes se dit dans la phrase ; le bouton dit « ce matin ».
+      expect(texte).toContain(dayMonthOf(0));
       const bouton = [...el.querySelectorAll('button')].find((b) =>
-        b.textContent?.includes('maintenant'),
+        b.textContent?.includes('de ce matin'),
       );
-      expect(bouton?.textContent).toContain(dayMonthOf(0));
+      expect(bouton).toBeDefined();
     });
 
     it('ne propose pas le rattrapage quand aujourd’hui est déjà arrêté', async () => {
@@ -329,10 +331,12 @@ describe('le prévisionnel — arrêter le plan', () => {
 
       const boutons = [...el.querySelectorAll('button')]
         .map((b) => b.textContent?.trim() ?? '')
-        .filter((t) => t.startsWith('Arrêter le plan du'));
+        .filter((t) => t.startsWith('Arrêter la fournée'));
       expect(boutons).toHaveLength(2);
-      expect(boutons[0]).toContain(dayMonthOf(0));
-      expect(boutons[0]).toContain('maintenant');
+      // Régression du 2026-11-02 : « le plan du lun. » se lisait « fait lundi »
+      // et faisait croire, à 7 h, qu'on arrêtait la production de mardi.
+      expect(boutons[0]).toBe('Arrêter la fournée de ce matin');
+      expect(boutons[1]).toContain('la fournée de demain');
       expect(boutons[1]).toContain(dayMonthOf(1));
     });
 
@@ -387,19 +391,19 @@ describe('le prévisionnel — arrêter le plan', () => {
 
     it('visible sur la semaine suivante quand aujourd’hui est ouvert avec commandes', async () => {
       const { el } = await mountAway(7, false);
-      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+      expect(el.textContent).toContain('n’a pas été arrêtée hier soir');
       expect(el.textContent).toContain(dayMonthOf(0));
     });
 
     it('visible sur la semaine précédente', async () => {
       const { el } = await mountAway(-7, false);
-      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+      expect(el.textContent).toContain('n’a pas été arrêtée hier soir');
     });
 
     it('absent quand aujourd’hui est arrêté', async () => {
       const { page, el } = await mountAway(7, true);
       expect(page['dayToCatchUp']()).toBeUndefined();
-      expect(el.textContent).not.toContain('n’a pas été arrêté hier soir');
+      expect(el.textContent).not.toContain('n’a pas été arrêtée hier soir');
     });
 
     it('l’arrêt depuis une autre semaine vise aujourd’hui et éteint la bande', async () => {
@@ -458,7 +462,7 @@ describe('le prévisionnel — arrêter le plan', () => {
         const { el } = await mountOn(offset, {});
         const bouton = arrestButton(el);
         expect(bouton?.disabled).toBe(false);
-        expect(bouton?.textContent).toContain('Arrêter le plan du');
+        expect(bouton?.textContent).toContain('Arrêter la fournée');
         expect(bouton?.textContent).toContain(dayMonthOf(1));
       },
     );
@@ -494,7 +498,7 @@ describe('le prévisionnel — arrêter le plan', () => {
     function arrestButtons(el: HTMLElement): readonly string[] {
       return [...el.querySelectorAll('button')]
         .map((b) => b.textContent?.trim() ?? '')
-        .filter((t) => t.startsWith('Arrêter le plan'));
+        .filter((t) => t.startsWith('Arrêter la fournée'));
     }
 
     it('montre les deux boutons d’arrêt à qui tient production_count_stop:write', async () => {
@@ -510,7 +514,7 @@ describe('le prévisionnel — arrêter le plan', () => {
       expect(arrestButtons(el)).toEqual([]);
       expect(el.querySelector('button.pv-arrest')).toBeNull();
       // L'oubli reste dit : c'est un fait sur la journée, pas un geste.
-      expect(el.textContent).toContain('n’a pas été arrêté hier soir');
+      expect(el.textContent).toContain('n’a pas été arrêtée hier soir');
     });
 
     it('sans le droit, pas même le bouton du soir désactivé', async () => {
