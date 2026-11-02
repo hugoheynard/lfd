@@ -33,7 +33,10 @@ section qui déborde dit « (1/2) », « (2/2) » dans son titre. L'ordre :
    réassorts. Rien que les pages suivantes ne détaillent.
 2. **Un rayon par page** — « Viennoiseries — total à produire ».
    **Suivi de son calendrier** (2026-11-02, Hugo) — « Viennoiseries — par
-   tranche horaire », en **paysage** : les produits du rayon en lignes (avec
+   tranche horaire », **tournée d'un quart de tour sur une feuille A4
+   portrait** — une vraie page paysage au milieu du dossier ferait poser la
+   question du sens à l'impression, et un pilote qui la tranche mal recadre
+   (Hugo, 2026-11-02) ; on la lit en tournant la feuille. Les produits du rayon en lignes (avec
    leurs sous-catégories si le réglage est actif), les tranches horaires en
    colonnes (« avant 05:00 »…, puis « Dans la journée » et « Sans heure »), la
    quantité à sortir dans chaque case avec **une case à cocher**, le total du
@@ -184,7 +187,7 @@ l'a pas reçu. Journal : « Le dossier du … a été envoyé à N destinataires
 - Mise en page : `day-dossier-pdf.ts`, sur la trousse `paper-pdf-kit.ts`.
 - Calendrier par tranche : `day-dossier-calendar.ts` (la grille) et
   `day-dossier-calendar-pdf.ts` (la page paysage) ; le cadre d'une section en
-  paysage au milieu d'un papier en portrait : `PaperPages.openLandscape`
+  paysage, tournée sur une feuille portrait : `PaperPages.openLandscape`
   (`apps/lfd-api/src/platform/pdf/paper-pages.ts`).
 - Archive et tirage : `application/services/production-paper.service.ts`
   (`dossierOf`).

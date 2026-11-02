@@ -31,10 +31,13 @@ import { strokeBox } from "./paper-pdf-shapes.js";
  * Une page **étrangère** (le BL que le commerce dessine) garde son propre
  * en-tête : le cadre n'y pose que le numéro de page.
  *
- * Une section peut être en **paysage** au milieu d'un papier en portrait (le
- * calendrier du dossier du jour, 2026-11-02) : ses pages tournent en paysage,
- * et l'en-tête comme le pied se posent à la largeur et à la hauteur de CETTE
- * page.
+ * Une section peut être **tournée** au milieu d'un papier en portrait (le
+ * calendrier du dossier du jour, 2026-11-02) : la feuille reste un A4
+ * PORTRAIT, et son contenu — en-tête et pied compris — est dessiné en paysage
+ * puis tourné d'un quart de tour. Hugo, le même jour : une vraie page paysage
+ * au milieu d'un PDF portrait fait poser la question du sens à l'impression,
+ * et un pilote qui la tranche mal recadre ou réduit la page. Une feuille
+ * toujours portrait s'imprime sans question ; on la lit en la tournant.
  */
 
 const LOGO_TOP = 8 * MM;
@@ -98,7 +101,7 @@ export class PaperPages {
   /** Ouvre une section sur une page neuve (la première page du document sert à la première). */
   open(title: string): number {
     if (this.marks.length > 0) {
-      this.doc.addPage(this.pageOptions(this.base));
+      this.newPage(this.base);
     }
     this.section += 1;
     this.marks.push({ section: this.section, title, layout: this.base });
@@ -111,7 +114,7 @@ export class PaperPages {
    * sens du document par `open`.
    */
   openLandscape(title: string): number {
-    this.doc.addPage(this.pageOptions("landscape"));
+    this.newPage("landscape");
     this.section += 1;
     this.marks.push({ section: this.section, title, layout: "landscape" });
     return CONTENT_TOP;
@@ -129,7 +132,7 @@ export class PaperPages {
       return y;
     }
     const last = this.marks[this.marks.length - 1];
-    this.doc.addPage(this.pageOptions(layout));
+    this.newPage(layout);
     this.marks.push({ section: last?.section ?? 0, title: last?.title ?? null, layout });
     return CONTENT_TOP;
   }
@@ -151,7 +154,7 @@ export class PaperPages {
 
   private handOver(title: string | null, draw: (doc: Doc) => void): void {
     if (this.marks.length > 0) {
-      this.doc.addPage(this.pageOptions(this.base));
+      this.newPage(this.base);
     }
     const before = this.count() - 1;
     draw(this.doc);
@@ -163,9 +166,15 @@ export class PaperPages {
 
   /** Les en-têtes et les pieds, une fois le compte des pages connu. */
   finish(frame: PaperFrame): void {
+    this.untwist();
     const range = this.doc.bufferedPageRange();
     this.marks.forEach((mark, index) => {
       this.doc.switchToPage(range.start + index);
+      const turned = mark.layout === "landscape" && this.base === "portrait";
+      if (turned) {
+        this.doc.save();
+        turn(this.doc);
+      }
       const folio = `${String(index + 1)}/${String(range.count)}`;
       const right = contentRightOf(mark.layout);
       const folioTop = folioTopOf(mark.layout);
@@ -178,6 +187,9 @@ export class PaperPages {
         });
       }
       drawFolio(this.doc, folio, right, folioTop);
+      if (turned) {
+        this.doc.restore();
+      }
     });
   }
 
@@ -194,18 +206,42 @@ export class PaperPages {
     return ` (${String(rank)}/${String(pages.length)})`;
   }
 
+  /** Une page tournée est ouverte : sa rotation est à refermer avant de la quitter. */
+  private twisted = false;
+
   /**
-   * Les options d'une page neuve : celles du document, sens changé. pdfkit
-   * REMPLACE les options par celles qu'on lui passe — un `{ layout }` seul
-   * tournerait la page en Letter, marges de 72 points.
+   * Une feuille neuve, toujours du sens du DOCUMENT ; tournée si la section
+   * l'est. La rotation de la page quittée est refermée d'abord : `finish`
+   * reviendra y poser le cadre, et une matrice laissée ouverte l'y tournerait.
    */
-  private pageOptions(layout: PageLayout): PDFKit.PDFDocumentOptions {
-    return { ...this.doc.options, layout };
+  private newPage(layout: PageLayout): void {
+    this.untwist();
+    this.doc.addPage(this.doc.options);
+    if (layout === "landscape" && this.base === "portrait") {
+      this.doc.save();
+      turn(this.doc);
+      this.twisted = true;
+    }
+  }
+
+  private untwist(): void {
+    if (this.twisted) {
+      this.doc.restore();
+      this.twisted = false;
+    }
   }
 
   private count(): number {
     return this.doc.bufferedPageRange().count;
   }
+}
+
+/**
+ * Le quart de tour : un point (x, y) du paysage va en (hauteur − y, x) sur la
+ * feuille portrait — le haut du paysage longe le bord droit de la feuille.
+ */
+function turn(doc: Doc): void {
+  doc.transform(0, 1, -1, 0, PAGE_WIDTH, 0);
 }
 
 /** Un trait sur toute la largeur du contenu, quel que soit le sens de la page. */

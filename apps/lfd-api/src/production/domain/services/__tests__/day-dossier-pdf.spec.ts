@@ -535,7 +535,7 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
     expect(pages[5]).toContain("BON 2/2");
   });
 
-  it("pose le calendrier d'un rayon juste après sa page de total, en paysage, sans changer les autres pages", async () => {
+  it("pose le calendrier d'un rayon juste après sa page de total, tourné sur une feuille portrait", async () => {
     const calendar = dossierCalendarOf(
       DOSSIER.recap,
       new Map([
@@ -565,10 +565,12 @@ describe("renderDayDossierPdf — la mise en page du 2026-10-25 (Hugo)", () => {
     expect(pages[2]).toContain("avant 05:00");
     expect(pages[2]).toContain("Sans heure");
     expect(pages[2]).toContain("TOTAL PIÈCES");
-    // La page du calendrier est en paysage, les autres restent en portrait.
+    // Toutes les feuilles restent des A4 portrait : le calendrier est TOURNÉ
+    // dedans (Hugo, 2026-11-02 — une page paysage fait poser la question du
+    // sens à l'impression, et un pilote qui la tranche mal recadre).
     const boxes = [
       ...pdf.toString("latin1").matchAll(/\/MediaBox \[0 0 ([\d.]+) ([\d.]+)\]/gu),
     ].map((match) => Number(match[1]) > Number(match[2]));
-    expect(boxes).toEqual([false, false, true, false, false]);
+    expect(boxes).toEqual([false, false, false, false, false]);
   });
 });
