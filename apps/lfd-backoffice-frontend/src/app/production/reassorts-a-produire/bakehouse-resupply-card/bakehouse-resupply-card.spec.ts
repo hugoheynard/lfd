@@ -429,7 +429,10 @@ describe('BakehouseResupplyCard', () => {
         (node) => node.getAttribute('data-bakehouse-row') === sku,
       );
 
-    expect(row('GRA')?.querySelectorAll('[data-bakehouse-step]')).toHaveLength(0);
+    expect(row('GRA')?.querySelector('[data-bakehouse-step="500"]')?.textContent?.trim()).toBe(
+      '+500 g',
+    );
+    expect(row('GRA')?.querySelectorAll('[data-bakehouse-step]')).toHaveLength(6);
     expect(row('CRO')?.querySelectorAll('[data-bakehouse-step]')).toHaveLength(8);
     card['setQuantity']('GRA', 1250);
     add('CRO', 12);

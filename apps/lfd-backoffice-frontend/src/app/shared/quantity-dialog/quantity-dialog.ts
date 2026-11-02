@@ -18,19 +18,19 @@ import {
   type FoldPanelDefaults,
 } from 'fold-ng';
 
+import { SaleQuantityPipe } from '../sale-quantity/sale-quantity.pipe';
+import { quantityDownStepsFor, quantityStepsFor } from '../quantity-steps/quantity-steps';
+
 /** Ce qu'on règle : le nom de l'article, et la quantité déjà saisie. */
 export interface QuantityDialogData {
   readonly label: string;
   readonly quantity: number | null;
   /**
    * Au poids (lot L2b-4), la quantité est en GRAMMES : saisie en grammes,
-   * relue « 1,25 kg », sans les pas de pièces. Absente = des pièces.
+   * relue « 1,25 kg », avec des pas en grammes. Absente = des pièces.
    */
   readonly saleUnit?: OrderSaleUnit | undefined;
 }
-
-/** Les pas, de part et d'autre du chiffre — les mêmes que la table au bureau. */
-const STEPS = [1, 10, 50, 100] as const;
 
 /**
  * **La quantité d'un article, en mobile** (Hugo, 2026-10-28) : sur un
@@ -47,6 +47,7 @@ const STEPS = [1, 10, 50, 100] as const;
     FoldPanelBodyComponent,
     FoldPanelFooterComponent,
     FoldPanelHeaderComponent,
+    SaleQuantityPipe,
   ],
   templateUrl: './quantity-dialog.html',
   styleUrl: './quantity-dialog.scss',
@@ -58,8 +59,9 @@ export class QuantityDialog {
   readonly data = input.required<QuantityDialogData>();
 
   protected readonly weighed = computed(() => this.data().saleUnit === 'weight');
-  protected readonly steps = computed(() => (this.weighed() ? [] : STEPS));
-  protected readonly downSteps = computed(() => (this.weighed() ? [] : [...STEPS].reverse()));
+  /** Les pas de part et d'autre du chiffre — les mêmes que la table au bureau, en grammes au poids. */
+  protected readonly steps = computed(() => quantityStepsFor(this.data().saleUnit));
+  protected readonly downSteps = computed(() => quantityDownStepsFor(this.data().saleUnit));
   protected readonly draft = linkedSignal(() => this.data().quantity);
   protected readonly empty = computed(() => (this.draft() ?? 0) === 0);
   /** Au poids, la saisie en grammes relue en kilos sous la case. */

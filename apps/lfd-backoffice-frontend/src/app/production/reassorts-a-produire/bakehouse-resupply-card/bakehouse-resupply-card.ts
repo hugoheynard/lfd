@@ -40,17 +40,14 @@ import {
 } from '../../../shared/quantity-dialog/quantity-dialog';
 import { resupplyLinesAmountLabel } from '../../../shared/resupply-labels';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
+import {
+  quantityDownStepsFor,
+  quantityStepsFor,
+} from '../../../shared/quantity-steps/quantity-steps';
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { ALL_FAMILIES, articlesMatching, familyOptionsOf } from './article-filters';
 import { BakehouseDraftsStore } from '../bakehouse-drafts.store';
 import { BakehouseResuppliesService } from '../bakehouse-resupplies.service';
-
-/**
- * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
- * retire à gauche, on ajoute à droite, du plus fin au plus large en
- * s'éloignant de la case.
- */
-const STEPS = [1, 10, 50, 100] as const;
 
 /** Le téléphone — le même seuil que la feuille de style. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -152,14 +149,17 @@ export class BakehouseResupplyCard {
   protected readonly familyOptions = computed(() =>
     familyOptionsOf(this.articles(), this.quantities()),
   );
-  protected readonly steps = STEPS;
+  /**
+   * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
+   * retire à gauche, on ajoute à droite ; en grammes au poids (L2b-4).
+   */
+  protected readonly stepsOf = quantityStepsFor;
   /** En mobile, la famille est dans le filtre : la table garde produit et quantité. */
   protected readonly columns = computed(() =>
     this.phone() ? COLUMNS.filter((column) => column.key !== 'family') : COLUMNS,
   );
   protected readonly skuOf = (article: ResupplyArticleView): string => article.sku;
-  /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
-  protected readonly downSteps = [...STEPS].reverse();
+  protected readonly downStepsOf = quantityDownStepsFor;
   /** Le nom du réassort (R1g), envoyé avec lui ; vide : sans nom. */
   protected readonly name = signal('');
   /** Les noms déjà employés au point choisi ; vides tant qu'aucun n'est choisi. */

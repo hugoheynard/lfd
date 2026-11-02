@@ -27,7 +27,7 @@
           [disabled]="empty()"
           (click)="step(-quantity)"
         >
-          −{{ quantity }}
+          −{{ quantity | saleQuantity: data().saleUnit }}
         </button>
       }
     </div>
@@ -41,7 +41,7 @@
           [attr.data-quantity-step]="quantity"
           (click)="step(quantity)"
         >
-          +{{ quantity }}
+          +{{ quantity | saleQuantity: data().saleUnit }}
         </button>
       }
     </div>

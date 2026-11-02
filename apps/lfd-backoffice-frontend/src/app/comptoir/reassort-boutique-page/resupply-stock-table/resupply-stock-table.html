@@ -85,8 +85,8 @@
           (focusout)="commit(target(), row)"
           (keydown.enter)="commit(target(), row)"
         >
-          <!-- Au poids, la case compte des grammes : les pas de pièces n'y ont pas de sens. -->
-          @for (quantity of row.saleUnit === 'weight' ? [] : downSteps; track quantity) {
+          <!-- Au poids, la case compte des grammes : ses pas aussi (100 g, 500 g, 1 kg). -->
+          @for (quantity of downStepsOf(row.saleUnit); track quantity) {
             <button
               class="shortcut"
               foldButton
@@ -97,7 +97,7 @@
               [disabled]="resuppliesPending() || !quantityOf(target(), row)"
               (click)="stepDown(target(), row, quantity)"
             >
-              −{{ quantity }}
+              −{{ quantity | saleQuantity: row.saleUnit }}
             </button>
           }
           <!-- En mobile, la case seule ouvre le dialogue des raccourcis. -->
@@ -123,7 +123,7 @@
               }
             </span>
           }
-          @for (quantity of row.saleUnit === 'weight' ? [] : steps; track quantity) {
+          @for (quantity of stepsOf(row.saleUnit); track quantity) {
             <button
               class="shortcut"
               foldButton
@@ -134,7 +134,7 @@
               [disabled]="resuppliesPending()"
               (click)="step(target(), row, quantity)"
             >
-              +{{ quantity }}
+              +{{ quantity | saleQuantity: row.saleUnit }}
             </button>
           }
         </div>

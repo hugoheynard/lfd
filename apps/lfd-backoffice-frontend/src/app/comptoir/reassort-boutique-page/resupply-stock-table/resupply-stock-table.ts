@@ -42,6 +42,10 @@ import {
   type QuantityDialogData,
 } from '../../../shared/quantity-dialog/quantity-dialog';
 import { ResupplyNameField } from '../../../shared/resupply-name-field/resupply-name-field';
+import {
+  quantityDownStepsFor,
+  quantityStepsFor,
+} from '../../../shared/quantity-steps/quantity-steps';
 import { SaleQuantityPipe } from '../../../shared/sale-quantity/sale-quantity.pipe';
 import { ResupplyReceiptsService } from '../resupply-receipts.service';
 import { SiteResuppliesStore } from '../site-resupplies.store';
@@ -82,13 +86,6 @@ const TARGET_LABELS: Readonly<Record<ResupplyTarget, string>> = {
   asap: 'Au plus tôt',
   tomorrow: 'Pour demain',
 };
-
-/**
- * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
- * retire à gauche, on ajoute à droite, du plus fin au plus large en
- * s'éloignant de la case.
- */
-const STEPS = [1, 10, 50, 100] as const;
 
 /** Le téléphone — le même seuil que la feuille de style. */
 const PHONE_QUERY = '(max-width: 768px)';
@@ -209,9 +206,12 @@ export class ResupplyStockTable {
   /** La rupture en alerte, le stock faible en avertissement. */
   protected readonly toneOf = (row: StockRow): FoldTableTone =>
     row.state === 'out_of_stock' ? 'alert' : row.state === 'low' ? 'warning' : null;
-  protected readonly steps = STEPS;
-  /** Les mêmes pas, retirés : le plus large le plus loin de la case. */
-  protected readonly downSteps = [...STEPS].reverse();
+  /**
+   * Les pas rapides, de part et d'autre de la case (Hugo, 2026-10-28) : on
+   * retire à gauche, on ajoute à droite ; en grammes au poids (L2b-4).
+   */
+  protected readonly stepsOf = quantityStepsFor;
+  protected readonly downStepsOf = quantityDownStepsFor;
   /** La visée choisie d'un clic ; `null` tant que personne n'a cliqué. */
   private readonly chosenTarget = signal<ResupplyTarget | null>(null);
 

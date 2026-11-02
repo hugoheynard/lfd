@@ -117,8 +117,8 @@
         </ng-template>
         <ng-template foldCell="quantity" let-article>
           <div class="stepper" [attr.data-bakehouse-row]="article.sku">
-            <!-- Au poids, la case compte des grammes : pas de pas de pièces (L2b-4). -->
-            @for (quantity of article.saleUnit === 'weight' ? [] : downSteps; track quantity) {
+            <!-- Au poids, la case compte des grammes : ses pas aussi (L2b-4). -->
+            @for (quantity of downStepsOf(article.saleUnit); track quantity) {
               <button
                 class="shortcut"
                 foldButton
@@ -130,7 +130,7 @@
                 [disabled]="!quantityOf(article.sku)"
                 (click)="step(article.sku, -quantity)"
               >
-                −{{ quantity }}
+                −{{ quantity | saleQuantity: article.saleUnit }}
               </button>
             }
             <!-- En mobile, la case seule : la toucher ouvre le dialogue qui porte
@@ -156,7 +156,7 @@
                 }
               </span>
             }
-            @for (quantity of article.saleUnit === 'weight' ? [] : steps; track quantity) {
+            @for (quantity of stepsOf(article.saleUnit); track quantity) {
               <button
                 class="shortcut"
                 foldButton
@@ -167,7 +167,7 @@
                 [attr.data-bakehouse-step]="quantity"
                 (click)="step(article.sku, quantity)"
               >
-                +{{ quantity }}
+                +{{ quantity | saleQuantity: article.saleUnit }}
               </button>
             }
           </div>

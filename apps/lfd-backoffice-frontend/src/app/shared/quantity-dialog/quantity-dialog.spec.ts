@@ -50,11 +50,23 @@ describe('QuantityDialog', () => {
   it('au poids, saisit des grammes, les relit « 1,25 kg » et ne propose pas les pas de pièces (L2b-4)', () => {
     const { closed, submit, root } = mount(1250, 'weight');
 
-    expect(root.querySelector('[data-quantity-step]')).toBeNull();
+    expect(root.querySelector('[data-quantity-step="10"]')).toBeNull();
     expect(root.textContent).toContain('Quantité en grammes');
     expect(root.textContent).toContain('1,25 kg');
     submit();
 
     expect(closed).toEqual([1250]);
+  });
+
+  it('au poids, ajoute et retire par pas de 100 g, 500 g et 1 kg, dits en grammes et kilos', () => {
+    const { closed, press, submit, root } = mount(1250, 'weight');
+
+    expect(root.querySelector('[data-quantity-step="1000"]')?.textContent?.trim()).toBe('+1 kg');
+    expect(root.querySelector('[data-quantity-step="-500"]')?.textContent?.trim()).toBe('−500 g');
+    press(1000);
+    press(-100);
+    submit();
+
+    expect(closed).toEqual([2150]);
   });
 });

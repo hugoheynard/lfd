@@ -493,7 +493,7 @@ describe('ResupplyStockTable', () => {
       saleUnit: 'weight',
     };
 
-    it('dit le stock « 3,75 kg », saisit en grammes sans pas de pièces, et envoie des grammes', async () => {
+    it('dit le stock « 3,75 kg », saisit en grammes avec des pas en grammes, et envoie des grammes', async () => {
       const { fixture, table, resupplies } = await mount({
         articles: [...ARTICLES, GRAVLAX],
         stock: [
@@ -520,7 +520,11 @@ describe('ResupplyStockTable', () => {
       expect(stockOf('CRO')).toBe('14');
       const shortcuts = (sku: string): number =>
         el.querySelectorAll(`[data-resupply-quantity="${sku}"] .shortcut`).length;
-      expect(shortcuts('GRA')).toBe(0);
+      const labels = (sku: string): string[] =>
+        [...el.querySelectorAll(`[data-resupply-quantity="${sku}"] .shortcut`)].map(
+          (button) => button.textContent?.trim() ?? '',
+        );
+      expect(labels('GRA')).toEqual(['−1 kg', '−500 g', '−100 g', '+100 g', '+500 g', '+1 kg']);
       expect(shortcuts('CRO')).toBe(8);
 
       // La visée affichée par défaut : « Pour demain », sans heure limite.
