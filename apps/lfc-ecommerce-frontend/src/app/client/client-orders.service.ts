@@ -30,6 +30,7 @@ import { ClientLocale, type LocaleCode } from './client-locale.service';
 import { ClientWorkspace } from './client-workspace.service';
 import { OrderContextStore, type ServiceChoice } from './order-context.store';
 import { OrderAdmissionStore } from './shop/order-admission.store';
+import { ShelfStockToday } from './shop/shelf-stock-today.store';
 import { ServicePoints } from './shop/pickup-points.store';
 import { clearLocal, isRecord, readLocal, readNumber, readString, writeLocal } from './local-store';
 import { isSoldByWeight, lineTermsOf, requestedLine, type SaleTerms } from './shop/sale-unit';
@@ -296,6 +297,7 @@ export class ClientOrders {
   private readonly locale = inject(ClientLocale);
   private readonly admission = inject(OrderAdmissionStore);
   private readonly points = inject(ServicePoints);
+  private readonly shelfStock = inject(ShelfStockToday);
 
   /**
    * **Le dernier refus de la passation**, dit DANS le panier (RGAA 11.10,
@@ -780,6 +782,8 @@ export class ClientOrders {
     // refuser.
     if (isShelfRefusal(httpErrorCode(error))) {
       this.points.refreshDaysNow();
+      // Le reste par article aussi : la vignette ne promet plus ce qui est parti.
+      this.shelfStock.refresh();
     }
   }
 

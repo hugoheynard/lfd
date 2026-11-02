@@ -8,6 +8,7 @@ import { ShopQuote } from './shop-quote.service';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { isLocked } from '../shop/locked-item';
 import { ProVisit } from '../shop/pro-visit.service';
+import { exceedsShelf, ShelfStockToday } from '../shop/shelf-stock-today.store';
 import { nextQuantity, previousQuantity, isSoldByWeight, saleUnitOf } from '../shop/sale-unit';
 import { SignInDialog } from '../../login/sign-in-dialog/sign-in-dialog';
 
@@ -19,7 +20,7 @@ const PRO_VISIT_SIGN_IN = '/mon-compte';
  * connexion (visite pro). L'appelant le lit pour ne pas compter un ajout qui
  * n'a pas eu lieu.
  */
-export type CartGesture = 'applied' | 'signInRequired';
+export type CartGesture = 'applied' | 'signInRequired' | 'shelfLimited';
 
 /**
  * **Le panier en cours** — un seul, partagé par le rayon, la fiche et le panier.
@@ -57,6 +58,7 @@ export class ClientCart {
   private readonly catalogue = inject(ShopCatalogue);
   private readonly proVisit = inject(ProVisit);
   private readonly panels = inject(FoldPanelHostService);
+  private readonly shelf = inject(ShelfStockToday);
 
   private readonly injector = inject(Injector);
 
@@ -224,14 +226,15 @@ export class ClientCart {
     }
     const item = this.catalogue.itemOf(productId);
     if (item !== null && !isLocked(item)) {
+      const next = nextQuantity(item, this.store.quantityOf(productId));
+      // Le jour J (`plan-jour-meme-sur-stock.md`, L7) : rien au-delà de ce qui
+      // reste en vitrine — une annonce, la passation reste juge.
+      if (exceedsShelf(this.shelf.stateOf(productId), next)) {
+        return 'shelfLimited';
+      }
       // Une pièce de plus ; au poids, un pas de plus — ou le minimum au premier geste.
       // L'unité se fige au premier ajout (`plan-changer-l-unite-de-vente.md`, § 8).
-      this.store.setQuantity(
-        productId,
-        nextQuantity(item, this.store.quantityOf(productId)),
-        undefined,
-        saleUnitOf(item),
-      );
+      this.store.setQuantity(productId, next, undefined, saleUnitOf(item));
     }
     return 'applied';
   }
@@ -262,6 +265,12 @@ export class ClientCart {
     }
     const item = this.catalogue.itemOf(productId);
     if (item !== null && !isLocked(item)) {
+      if (
+        quantity > this.store.quantityOf(productId) &&
+        exceedsShelf(this.shelf.stateOf(productId), quantity)
+      ) {
+        return 'shelfLimited';
+      }
       this.store.setQuantity(productId, quantity, undefined, saleUnitOf(item));
     }
     return 'applied';

@@ -313,6 +313,11 @@ export const IT: ClientCopy = {
     reservedToOtherAccount: 'Riservato a un altro account',
     reservedToOtherAccountHint:
       'Questo articolo è riservato a un altro account: non puoi ordinarlo.',
+    shelfLeft: 'Ne restano solo {left} oggi',
+    shelfAllTaken: 'Tutto ciò che resta oggi è nel carrello ({left})',
+    shelfGone: 'Esaurito per oggi',
+    shelfGoneHint: 'Oggi non ne resta più in vetrina: scegli un altro giorno per ordinarlo.',
+    shelfLimitReached: '{name}: ne restano solo {left} in vetrina oggi, già nel carrello.',
     operationBadgeFrom: 'Dal {date}',
     operationBadgeDays: 'G‑{days}',
     operationBadgeLastDay: 'Ultimo giorno',

@@ -16,6 +16,7 @@ import {
   TEST_ITEMS,
 } from '../shop/shop-catalogue.fixture';
 import { CartStore } from './cart.store';
+import { ShelfStockToday, type ShelfState } from '../shop/shelf-stock-today.store';
 import { ShopCatalogue } from '../shop/shop-catalogue.store';
 import { provideWorkspace, workspaceDouble } from '../client-workspace.fixture';
 
@@ -319,5 +320,46 @@ describe('Le panier, au poids', () => {
     const placed = await placing;
     expect(placed?.lines[0]).toMatchObject({ quantity: 500, saleUnit: 'weight' });
     expect(placed?.pieces).toBe(1);
+  });
+});
+
+/** Le jour J sur stock (`plan-jour-meme-sur-stock.md`, L7) : le panier s'arrête au reste. */
+describe('Le panier, aujourd’hui, sur le reste en vitrine', () => {
+  function withShelf(states: Record<string, ShelfState>): ClientCart {
+    TestBed.resetTestingModule();
+    TestBed.configureTestingModule({
+      providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
+        provideWorkspace(workspaceDouble()),
+        provideRecognised(),
+        {
+          provide: ShelfStockToday,
+          useValue: { stateOf: (sku: string): ShelfState => states[sku] ?? null },
+        },
+      ],
+    });
+    hydrateWith(TestBed.inject(ShopCatalogue), TEST_CATALOGUE);
+    return TestBed.inject(ClientCart);
+  }
+
+  it('refuse le « + » au-delà du reste, et tout ajout d’un article épuisé', () => {
+    localStorage.clear();
+    const [first, second] = TEST_ITEMS;
+    if (first === undefined || second === undefined) {
+      throw new Error('fixture : deux articles attendus');
+    }
+    const cart = withShelf({
+      [first.sku]: { saleUnit: 'piece', left: 1 },
+      [second.sku]: 'absent',
+    });
+
+    expect(cart.add(first.sku)).toBe('applied');
+    expect(cart.add(first.sku)).toBe('shelfLimited');
+    expect(cart.quantityOf(first.sku)).toBe(1);
+    expect(cart.setQuantity(first.sku, 2)).toBe('shelfLimited');
+
+    expect(cart.add(second.sku)).toBe('shelfLimited');
+    expect(cart.quantityOf(second.sku)).toBe(0);
   });
 });

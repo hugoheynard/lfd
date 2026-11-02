@@ -26,7 +26,13 @@ export class PieceQuantity {
    */
   set(id: string, quantity: number): boolean {
     const entering = this.cart.quantityOf(id) === 0 && quantity > 0;
-    if (this.cart.setQuantity(id, quantity) === 'signInRequired') {
+    const gesture = this.cart.setQuantity(id, quantity);
+    if (gesture === 'signInRequired') {
+      return false;
+    }
+    // Au-delà du reste d'aujourd'hui : la fiche reste ouverte, et le dit.
+    if (gesture === 'shelfLimited') {
+      this.announcer.announceShelfLimit(id);
       return false;
     }
     if (entering) {

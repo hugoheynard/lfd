@@ -204,11 +204,17 @@
 
 /* Le prix au kilo d'une pièce, le minimum de pièces : des mentions, pas un second prix. */
 .per-kilo,
-.minimum {
+.minimum,
+.shelf-left {
   font-size: var(--fold-text-2xs);
   font-variant-numeric: tabular-nums;
   color: var(--lfc-color-text-subtle);
   white-space: nowrap;
+}
+
+/* Le reste d'aujourd'hui : la même mention, en gras. */
+.shelf-left {
+  font-weight: var(--fold-weight-bold);
 }
 
 /* Une promotion qu'un acheminement ouvrirait (L10) : une mention, le nom du point peut être long. */

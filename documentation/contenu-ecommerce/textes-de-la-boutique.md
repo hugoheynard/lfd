@@ -4,7 +4,7 @@
 >
 > La base de la reformulation (plan [`plan-textes-de-la-boutique.md`](plan-textes-de-la-boutique.md), §7 bis). Il dit le texte **du code**. `∅` : la clé manque dans cette langue ; `_(vide)_` : elle y vaut la chaîne vide.
 
-## Sommaire — 1742 textes
+## Sommaire — 1747 textes
 
 Clés présentes dans une langue et absentes d'une autre : 0.
 
@@ -18,7 +18,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Accueil — la carte d'événement](#espace-event) | `event` | 5 |
 | [Connexion et création de compte](#espace-signup) | `signup` | 24 |
 | [Commander — l'écran d'entrée de la commande](#espace-commande) | `commande` | 39 |
-| [Rayon / boutique](#espace-shop) | `shop` | 78 |
+| [Rayon / boutique](#espace-shop) | `shop` | 83 |
 | [Rayon — la fiche produit](#espace-product) | `product` | 35 |
 | [Barre de commande — la maison et l’heure retenues](#espace-commandterms) | `commandTerms` | 39 |
 | [Choix du jour — la première question d’une commande](#espace-daypicker) | `dayPicker` | 20 |
@@ -49,7 +49,7 @@ Clés présentes dans une langue et absentes d'une autre : 0.
 | [Le dialogue « Nous écrire »](#espace-contactdialog) | `contactDialog` | 25 |
 | [Les documents légaux](#espace-legaldocument) | `legalDocument` | 14 |
 | [Le suivi des corrections d’accessibilité — sous la déclaration](#espace-accessibilityfollowup) | `accessibilityFollowUp` | 28 |
-| **Total** | | **1742** |
+| **Total** | | **1747** |
 
 ## Le parcours de commande
 
@@ -309,7 +309,7 @@ Source : `fr.ts · en.ts · it.ts` · 39 textes.
 
 ### Rayon / boutique — `shop`
 
-Source : `fr.ts · en.ts · it.ts` · 78 textes.
+Source : `fr.ts · en.ts · it.ts` · 83 textes.
 
 | Clé | FR | EN | IT | Variables |
 | --- | --- | --- | --- | --- |
@@ -383,6 +383,11 @@ Source : `fr.ts · en.ts · it.ts` · 78 textes.
 | `shop.operationClosed` | Commandes closes | Orders closed | Ordini chiusi |  |
 | `shop.reservedToOtherAccount` | Réservé à un autre compte | Reserved for another account | Riservato a un altro account |  |
 | `shop.reservedToOtherAccountHint` | Cet article est réservé à un autre compte : vous ne pouvez pas le commander. | This item is reserved for another account: you cannot order it. | Questo articolo è riservato a un altro account: non puoi ordinarlo. |  |
+| `shop.shelfLeft` | Plus que {left} aujourd’hui | Only {left} left today | Ne restano solo {left} oggi | `{left}` |
+| `shop.shelfAllTaken` | Tout le reste d’aujourd’hui est au panier ({left}) | All that is left today is in your basket ({left}) | Tutto ciò che resta oggi è nel carrello ({left}) | `{left}` |
+| `shop.shelfGone` | Épuisé pour aujourd’hui | Sold out for today | Esaurito per oggi |  |
+| `shop.shelfGoneHint` | Il n’en reste plus en vitrine aujourd’hui : choisissez un autre jour pour le commander. | None left on the counter today: choose another day to order it. | Oggi non ne resta più in vetrina: scegli un altro giorno per ordinarlo. |  |
+| `shop.shelfLimitReached` | {name} : plus que {left} en vitrine aujourd’hui, vous avez déjà tout pris. | {name}: only {left} left on the counter today, already in your basket. | {name}: ne restano solo {left} in vetrina oggi, già nel carrello. | `{name}` `{left}` |
 | `shop.operationBadgeFrom` | Dès le {date} | From {date} | Dal {date} | `{date}` |
 | `shop.operationBadgeDays` | J‑{days} | D‑{days} | G‑{days} | `{days}` |
 | `shop.operationBadgeLastDay` | Dernier jour | Last day | Ultimo giorno |  |

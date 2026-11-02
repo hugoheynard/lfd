@@ -32,6 +32,7 @@ import {
 import { ProVisit } from '../pro-visit.service';
 import { FulfillmentOfferLabels } from '../promotion-offers';
 import { pieceMinimumOf, quantityLabel, saleUnitOf } from '../sale-unit';
+import { ShelfStockToday } from '../shelf-stock-today.store';
 
 /**
  * Une pièce du rayon — la vignette de la grille.
@@ -136,7 +137,38 @@ export class ProductTile {
    * nom, seul arrêt de la tuile, est décrit par cette raison — le lecteur
    * d'écran l'entend en ouvrant, pas seulement en parcourant.
    */
-  protected readonly locked = computed(() => lockedReason(this.product(), this.t()));
+  protected readonly locked = computed(() => {
+    const reserved = lockedReason(this.product(), this.t());
+    if (reserved !== null) {
+      return reserved;
+    }
+    // Plus rien en vitrine aujourd'hui (`plan-jour-meme-sur-stock.md`, L7) :
+    // grisé comme un article réservé, et la raison DITE, pas seulement vue.
+    if (this.shelfState() === 'absent') {
+      const shop = this.t().shop;
+      return { short: shop.shelfGone, sentence: shop.shelfGoneHint };
+    }
+    return null;
+  });
+
+  private readonly shelf = inject(ShelfStockToday);
+
+  /** Le reste d'aujourd'hui de l'article — `null` hors aujourd'hui. */
+  private readonly shelfState = computed(() => this.shelf.stateOf(this.product().sku));
+
+  /**
+   * « Plus que 3 aujourd'hui », ou « Tout le reste … est au panier » quand le
+   * « + » ne peut plus rien ajouter — `null` hors aujourd'hui.
+   */
+  protected readonly shelfLabel = computed(() => {
+    const state = this.shelfState();
+    if (state === null || state === 'absent') {
+      return null;
+    }
+    const left = quantityLabel(state.left, state.saleUnit);
+    const shop = this.t().shop;
+    return fill(this.quantity() >= state.left ? shop.shelfAllTaken : shop.shelfLeft, { left });
+  });
 
   /** L'identifiant de la raison, propre à la tuile : plusieurs tuiles cohabitent. */
   protected readonly lockedId = `tile-locked-${++tileSequence}`;

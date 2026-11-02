@@ -1861,6 +1861,41 @@
           "variables": []
         },
         {
+          "key": "shop.shelfLeft",
+          "fr": "Plus que {left} aujourd’hui",
+          "en": "Only {left} left today",
+          "it": "Ne restano solo {left} oggi",
+          "variables": ["left"]
+        },
+        {
+          "key": "shop.shelfAllTaken",
+          "fr": "Tout le reste d’aujourd’hui est au panier ({left})",
+          "en": "All that is left today is in your basket ({left})",
+          "it": "Tutto ciò che resta oggi è nel carrello ({left})",
+          "variables": ["left"]
+        },
+        {
+          "key": "shop.shelfGone",
+          "fr": "Épuisé pour aujourd’hui",
+          "en": "Sold out for today",
+          "it": "Esaurito per oggi",
+          "variables": []
+        },
+        {
+          "key": "shop.shelfGoneHint",
+          "fr": "Il n’en reste plus en vitrine aujourd’hui : choisissez un autre jour pour le commander.",
+          "en": "None left on the counter today: choose another day to order it.",
+          "it": "Oggi non ne resta più in vetrina: scegli un altro giorno per ordinarlo.",
+          "variables": []
+        },
+        {
+          "key": "shop.shelfLimitReached",
+          "fr": "{name} : plus que {left} en vitrine aujourd’hui, vous avez déjà tout pris.",
+          "en": "{name}: only {left} left on the counter today, already in your basket.",
+          "it": "{name}: ne restano solo {left} in vetrina oggi, già nel carrello.",
+          "variables": ["name", "left"]
+        },
+        {
           "key": "shop.operationBadgeFrom",
           "fr": "Dès le {date}",
           "en": "From {date}",

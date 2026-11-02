@@ -31,6 +31,7 @@ import { perKiloHintLabel, ShopPriceBasis, struckPriceLabel } from '../shop-pric
 import { ProVisit } from '../pro-visit.service';
 import { FulfillmentOfferLabels } from '../promotion-offers';
 import { QuantityRail } from '../quantity-rail/quantity-rail';
+import { exceedsShelf, ShelfStockToday } from '../shelf-stock-today.store';
 import {
   firstQuantityOf,
   pieceMinimumOf,
@@ -137,9 +138,14 @@ export class ProductSheet {
     // Réservé à un autre compte (`plan-articles-sur-mesure.md`, L3) : ni
     // quantité, ni ajout — la raison en phrase, à leur place.
     const locked = lockedReason(product, this.t());
-    return locked !== null
-      ? { orderable: false, label: locked.sentence }
-      : operationGate(product, this.operation(), this.locale.current(), this.t());
+    if (locked !== null) {
+      return { orderable: false, label: locked.sentence };
+    }
+    // Plus rien en vitrine aujourd'hui (`plan-jour-meme-sur-stock.md`, L7).
+    if (this.shelfStock.stateOf(product.sku) === 'absent') {
+      return { orderable: false, label: this.t().shop.shelfGoneHint };
+    }
+    return operationGate(product, this.operation(), this.locale.current(), this.t());
   });
 
   protected readonly showsTtc = this.basis.showsTtc;
@@ -414,9 +420,28 @@ export class ProductSheet {
     ];
   }
 
+  private readonly shelfStock = inject(ShelfStockToday);
+
+  /** « Plus que 3 aujourd'hui » — `null` hors aujourd'hui ou sans reste connu. */
+  protected readonly shelfLabel = computed(() => {
+    const product = this.product();
+    const state = product === null ? null : this.shelfStock.stateOf(product.sku);
+    if (state === null || state === 'absent') {
+      return null;
+    }
+    return fill(this.t().shop.shelfLeft, { left: quantityLabel(state.left, state.saleUnit) });
+  });
+
+  /** Le « + » s'arrête au reste d'aujourd'hui ; la mention dit pourquoi. */
   protected increment(): void {
     const product = this.product();
-    this.draft.update((n) => (product === null ? n + 1 : nextQuantity(product, n)));
+    this.draft.update((n) => {
+      if (product === null) {
+        return n + 1;
+      }
+      const next = nextQuantity(product, n);
+      return exceedsShelf(this.shelfStock.stateOf(product.sku), next) ? n : next;
+    });
   }
 
   /** Un pas de moins, jamais sous la première quantité : la fiche n'ajoute pas zéro. */

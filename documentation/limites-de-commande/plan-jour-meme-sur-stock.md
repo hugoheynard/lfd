@@ -1103,3 +1103,37 @@ et par article**, tenu par la clientèle de l'appelant.
   sur mesure non attribué absent ; grammes au poids ; plus de créneau public).
 - **Reste à L7 (boutique)** : brancher la vignette (« plus que 3 », « plus
   que 1,2 kg ») et l'article grisé sur ces deux routes.
+
+### Le bâti de L7b (boutique) (2026-11-02)
+
+Le reste d'aujourd'hui branché sur la vignette, la fiche et le panier.
+
+- **Le lecteur** : `ShelfStockToday`
+  (`apps/lfc-ecommerce-frontend/src/app/client/shop/shelf-stock-today.store.ts`).
+  Il ne lit que si le retrait choisi (ou le brouillon de maison) vise un point
+  **et** que sa journée est aujourd'hui à Paris ; sinon, aucune requête et rien
+  ne change. Visiteur : `GET /shelf-stock/today?pickupAddressId=…&audience=…`
+  (la clientèle annoncée, comme `/fulfillment-days`) ; client reconnu :
+  `GET /shelf-stock/today/mine?pickupAddressId=…`. Type seulement de
+  `@lfd/contracts`. Un échec de lecture ne contraint rien : la passation reste
+  juge.
+- **La vignette** (`product-tile`) : « Plus que 3 aujourd'hui » / « Plus que
+  1,2 kg aujourd'hui » (`quantityLabel`, donc `weightLabel` de `@lfd/money`),
+  puis « Tout le reste d'aujourd'hui est au panier (3) » quand le panier l'a
+  atteint. Un article absent de la réponse est grisé comme un article réservé :
+  « Épuisé pour aujourd'hui » à la place du « + », et la phrase décrit le nom
+  au lecteur d'écran (`aria-describedby`).
+- **La fiche** (`product-sheet`) : la même mention ; un article épuisé n'a ni
+  quantité ni ajout (sa raison en phrase) ; le « + » s'arrête au reste.
+- **Le panier** (`ClientCart.add` / `setQuantity`) refuse au-delà du reste et
+  rend `shelfLimited` ; la grille et la fiche le disent par la région d'état
+  (`CartAnnouncer.announceShelfLimit`), la fiche reste ouverte. Un panier
+  composé AVANT le choix d'aujourd'hui n'est pas rogné : la passation refuse.
+- **Après un refus** `orders.shelf.*`, `ClientOrders.refuse` relit aussi le
+  reste (`ShelfStockToday.refresh`).
+- **Textes** : `shop.shelfLeft`, `shelfAllTaken`, `shelfGone`, `shelfGoneHint`,
+  `shelfLimitReached` (fr, en, it), puis `pnpm copy:digest`.
+- **Tests** : `apps/lfc-ecommerce-frontend/src/app/client/shop/shelf-stock-today.store.spec.ts` (hors aujourd'hui aucune
+  requête ; route visiteur et route reconnue ; absent = épuisé ; relecture ;
+  échec sans contrainte) et `client-cart.service.spec.ts` (le « + » bloqué).
+  Reste à voir **à l'écran**.

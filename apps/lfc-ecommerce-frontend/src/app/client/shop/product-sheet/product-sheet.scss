@@ -165,11 +165,17 @@
 /* Le prix au kilo d'une pièce, le minimum de pièces, sous le prix : des mentions, pas un second prix. */
 .per-kilo,
 .minimum,
+.shelf-left,
 .offer {
   flex-basis: 100%;
   font-size: var(--fold-text-sm);
   font-variant-numeric: tabular-nums;
   color: var(--fold-color-text-muted);
+}
+
+/* Le reste d'aujourd'hui compte : en gras. */
+.shelf-left {
+  font-weight: var(--fold-weight-bold);
 }
 
 .price-was {

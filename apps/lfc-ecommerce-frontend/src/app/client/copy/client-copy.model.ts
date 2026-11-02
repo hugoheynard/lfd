@@ -580,6 +580,19 @@ export interface ClientCopy {
     /** La même raison, en phrase, à la place de l'ajout sur la fiche. */
     readonly reservedToOtherAccountHint: string;
     /**
+     * Le jour J sur stock (`plan-jour-meme-sur-stock.md`, L7) : le reste en
+     * vitrine aujourd'hui sur la vignette. `{left}` = « 3 » ou « 1,2 kg ».
+     */
+    readonly shelfLeft: string;
+    /** Le reste entier est déjà au panier : un « + » de plus est refusé. */
+    readonly shelfAllTaken: string;
+    /** Plus rien en vitrine aujourd'hui, en court sur la vignette. */
+    readonly shelfGone: string;
+    /** La même raison, en phrase, sur la fiche. */
+    readonly shelfGoneHint: string;
+    /** Dit quand un ajout dépasse le reste. `{name}`, `{left}`. */
+    readonly shelfLimitReached: string;
+    /**
      * La pastille CALCULÉE d'une annonce liée à une opération (D11), quand la
      * vitrine n'en a pas saisi : annoncée, `{date}` = l'ouverture courte
      * (« 15 nov. ») ; ouverte, `{days}` = les jours calendaires de Paris

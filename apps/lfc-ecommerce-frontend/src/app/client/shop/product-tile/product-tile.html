@@ -95,6 +95,9 @@
         @if (perKiloHint(); as hint) {
           <span class="per-kilo">{{ hint }}</span>
         }
+        @if (shelfLabel(); as shelfLeft) {
+          <span class="shelf-left" data-shelf-left>{{ shelfLeft }}</span>
+        }
         @if (minimumLabel(); as minimum) {
           <span class="minimum" data-minimum>{{ minimum }}</span>
         }

@@ -4,6 +4,7 @@ import { ClientCart } from '../cart/client-cart.service';
 import { ClientCopyService, fill } from '../copy/client-copy.service';
 import { ShopCatalogue } from './shop-catalogue.store';
 import { quantityLabel, saleUnitOf } from './sale-unit';
+import { ShelfStockToday } from './shelf-stock-today.store';
 
 /**
  * **Ce que le panier vient de devenir, dit à voix haute** (RGAA 7.5, lot A2).
@@ -21,6 +22,7 @@ export class CartAnnouncer {
   private readonly cart = inject(ClientCart);
   private readonly catalogue = inject(ShopCatalogue);
   private readonly t = inject(ClientCopyService).t;
+  private readonly shelf = inject(ShelfStockToday);
 
   private readonly said = signal('');
 
@@ -40,6 +42,27 @@ export class CartAnnouncer {
       count > 0
         ? fill(shop.cartStatusCount, { name, count: quantityLabel(count, saleUnitOf(item)) })
         : fill(shop.cartStatusRemoved, { name }),
+    );
+  }
+
+  /**
+   * Dit qu'un ajout est refusé : il dépasse le reste en vitrine aujourd'hui
+   * (`plan-jour-meme-sur-stock.md`, L7). La vignette le montre ; ceci le dit.
+   */
+  announceShelfLimit(sku: string): void {
+    const item = this.catalogue.itemOf(sku);
+    const state = this.shelf.stateOf(sku);
+    if (item === null || state === null) {
+      return;
+    }
+    const shop = this.t().shop;
+    this.said.set(
+      state === 'absent'
+        ? `${item.name} : ${shop.shelfGoneHint}`
+        : fill(shop.shelfLimitReached, {
+            name: item.name,
+            left: quantityLabel(state.left, state.saleUnit),
+          }),
     );
   }
 }

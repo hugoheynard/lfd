@@ -116,7 +116,12 @@ export class ShelfGrid {
   protected addPiece(sku: string): void {
     const entering = this.cart.quantityOf(sku) === 0;
     // La visite pro détourne le geste vers la connexion : rien n'est compté.
-    if (this.cart.add(sku) === 'signInRequired') {
+    const gesture = this.cart.add(sku);
+    if (gesture === 'signInRequired') {
+      return;
+    }
+    if (gesture === 'shelfLimited') {
+      this.announcer.announceShelfLimit(sku);
       return;
     }
     if (entering) {
