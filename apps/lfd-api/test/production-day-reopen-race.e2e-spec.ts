@@ -16,21 +16,16 @@
 import { UnitOfWork } from "../src/platform/database/unit-of-work.js";
 import { ArrestedPlanHold } from "../src/production/channels/packing/index.js";
 import { createUser } from "./factories.js";
-import { type E2eContext, jsonBody } from "./e2e-harness.js";
+import type { E2eContext } from "./e2e-harness.js";
 import {
   bootstrapProductionDay,
   closePlan,
   MEMBER,
-  packingOrderPath,
   place,
   SERVICE_DAY,
   STAFF,
 } from "./production-day-fixture.js";
 
-/** La clé du verrou de la journée — celle de `PrismaProductionDayLock`. */
-const DAY_LOCK_KEY = `production_day:${SERVICE_DAY}`;
-/** Assez pour mettre deux requêtes en file sur une machine lente. */
-const HOLD_TIMEOUT_MS = 20_000;
 const POLL_MS = 25;
 
 let ctx: E2eContext;
@@ -79,52 +74,10 @@ async function closedAt(): Promise<Date | null> {
   return day.closedAt;
 }
 
-async function onlyOrderId(): Promise<string> {
-  const row = await ctx.prisma.packingOrder.findFirstOrThrow({
-    where: { serviceDay: SERVICE_DAY },
-    select: { orderId: true },
-  });
-  return row.orderId;
-}
-
 describe("rouvrir pendant que le colisage commence", () => {
-  it("🔴 un sac ouvert pendant que la réouverture attend le verrou la fait refuser", async () => {
-    await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 2 }]);
-    await closePlan(ctx);
-    await ctx.drain();
-    const orderId = await onlyOrderId();
-
-    const release = gate();
-    const held = gate();
-    const holder = ctx.prisma.$transaction(
-      async (tx) => {
-        await tx.$executeRaw`SELECT pg_advisory_xact_lock(hashtextextended(${DAY_LOCK_KEY}, 0))`;
-        held.open();
-        await release.opened;
-      },
-      { timeout: HOLD_TIMEOUT_MS },
-    );
-    await held.opened;
-
-    const reopening = ctx
-      .asSub(STAFF)
-      .post(`/admin/production/batch/${SERVICE_DAY}/reopen`)
-      .then((response) => response);
-    await untilWaiters(1);
-    // Le colisage commence pendant que la réouverture attend : un sac ouvert.
-    await ctx
-      .asSub(STAFF)
-      .post(`${packingOrderPath(orderId)}/containers`)
-      .send({ nature: "bag" })
-      .expect(201);
-    release.open();
-    await holder;
-
-    const response = await reopening;
-    expect(response.status).toBe(409);
-    expect(jsonBody<{ message: string }>(response).message).toContain("colisage");
-    expect(await closedAt()).not.toBeNull();
-  });
+  // Le test « un sac ouvert pendant que la réouverture attend » est retiré le
+  // 2026-11-03 : depuis que le colisage tient le plan, ce sac attend derrière
+  // la réouverture — son issue est éprouvée par `packing-plan-hold-race`.
 
   it("un geste qui tient le plan fait attendre la réouverture ; arrivé après, il lit le plan rouvert", async () => {
     await place(ctx, issued, [{ sku: "VIE-001-1", quantity: 2 }]);
@@ -152,8 +105,8 @@ describe("rouvrir pendant que le colisage commence", () => {
     expect(await closedAt()).not.toBeNull();
     release.open();
 
-    expect(await gesture).toBe(true);
+    expect(await gesture).toBe("arrested");
     expect((await reopening).status).toBe(201);
-    expect(await uow.run(() => hold.hold(SERVICE_DAY))).toBe(false);
+    expect(await uow.run(() => hold.hold(SERVICE_DAY))).toBe("reopened");
   });
 });

@@ -12,6 +12,7 @@ import { GetShareableHalvesHandler } from "../get-shareable-halves.handler.js";
 import { GetShareableHalvesQuery } from "../get-shareable-halves.query.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -49,6 +50,7 @@ function setup(posed: PackingSettings | null) {
       new RecordingPublisher(),
       new DirectUnitOfWork(),
       settings,
+      new RecordingPlanHold(),
     ),
     halves: new GetShareableHalvesHandler(desk, settings),
   };

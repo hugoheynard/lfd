@@ -15,11 +15,11 @@
  * était effacé sous un sac déjà ouvert.
  *
  * `hold` prend le verrou de la journée en mode PARTAGÉ, dans la transaction
- * de l'appelant et jusqu'à son `COMMIT`, puis dit si le plan est arrêté. Les
+ * de l'appelant et jusqu'à son `COMMIT`, puis rend l'état du plan (`PlanHoldState`). Les
  * gestes du colisage ne s'attendent donc pas entre eux ; la réouverture (et
  * l'arrêt, et le retirage), qui prennent le verrou EXCLUSIF, attendent qu'ils
  * aient validé — et voient alors ce qu'ils ont écrit. Un geste qui arrive
- * après une réouverture lit `false` et refuse.
+ * après une réouverture lit `reopened` et refuse.
  *
  * 🔴 Dans une unité de travail seulement (l'adaptateur refuse sinon). Ne pas
  * appeler, dans la même transaction, un geste du fournil qui prend le verrou
@@ -30,6 +30,20 @@
  * fournil ne sait pas qui l'appelle.
  */
 export abstract class ArrestedPlanHold {
-  /** Verrou partagé de la journée jusqu'au `COMMIT` de l'appelant ; `true` si le plan est arrêté. */
-  abstract hold(serviceDay: string): Promise<boolean>;
+  /** Verrou partagé de la journée jusqu'au `COMMIT` de l'appelant ; l'état du plan, lu après lui. */
+  abstract hold(serviceDay: string): Promise<PlanHoldState>;
 }
+
+/**
+ * L'état du plan d'une journée, lu sous le verrou partagé (2026-11-02).
+ *
+ * `reopened` et `never_arrested` se distinguent parce que la livraison ne
+ * refuse que le premier : charger ou faire partir une tournée n'a jamais
+ * exigé un plan arrêté, mais ne doit pas s'appuyer sur un plan qu'on vient
+ * d'effacer. Le colisage, lui, refuse tout ce qui n'est pas `arrested`.
+ *
+ * - `arrested` : `closed_at` posé (une journée rouverte puis réarrêtée aussi) ;
+ * - `reopened` : `closed_at` nul, `reopened_at` posé — arrêtée puis rouverte ;
+ * - `never_arrested` : aucune ligne, ou ni l'un ni l'autre.
+ */
+export type PlanHoldState = "arrested" | "reopened" | "never_arrested";

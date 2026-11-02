@@ -198,6 +198,24 @@ tient le même verrou en mode **partagé** (`ArrestedPlanHold`,
 `production/channels/packing/`) ; validé avant la réouverture, elle le voit ;
 arrivé après, il trouve le plan rouvert.
 
+Le port rend l'état du plan, lu sous le verrou : `arrested` (`closed_at`
+posé), `reopened` (`closed_at` nul, `reopened_at` posé — arrêtée puis
+rouverte), `never_arrested` (sinon). Branché le 2026-11-02 :
+
+- au **colisage** — ouvrir un contenant, appliquer « Proposer », mettre au
+  bac, fermer le bac, saisir ou clore une fiche de réassort : en premier dans
+  la transaction, refus `packing.plan_reopened` si le plan n'est pas
+  `arrested` ([colisage](../colisage/colisage.md) §2 ; e2e
+  `packing-plan-hold-race`) ;
+- à la **livraison** — charger un bac (`LoadDeliveryBinHandler`, que le
+  chargement du livreur réutilise), faire partir une tournée
+  (`departAndFreeze`, commun aux deux portes du départ) : après la lecture qui
+  donne la journée, avant toute écriture, refus `delivery.plan_reopened` si le
+  plan est `reopened` **seulement**. Une journée jamais arrêtée se charge et
+  part comme avant (décision du 2026-11-02 ; e2e `delivery-plan-hold-race`).
+  Pas d'inter-blocage : la réouverture, qui tient l'exclusif, ne verrouille
+  aucune ligne de la livraison.
+
 ```mermaid
 sequenceDiagram
     participant É as Prod manager

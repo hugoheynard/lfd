@@ -17,6 +17,7 @@ import { GetShareableHalvesQuery } from "../get-shareable-halves.query.js";
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -71,7 +72,16 @@ function setup(received = 70) {
     stocks,
     desk,
     events,
-    apply: new ApplyPackingProposalHandler(sheets, stocks, desk, ids, clock, events, uow),
+    apply: new ApplyPackingProposalHandler(
+      sheets,
+      stocks,
+      desk,
+      ids,
+      clock,
+      events,
+      uow,
+      new RecordingPlanHold(),
+    ),
     open: new OpenPackingContainerHandler(
       sheets,
       desk,
@@ -80,6 +90,7 @@ function setup(received = 70) {
       events,
       uow,
       InMemoryPackingSettings.sharingOpen().reader(),
+      new RecordingPlanHold(),
     ),
   };
 }
@@ -224,6 +235,7 @@ describe("ApplyPackingProposalHandler — un lot au poids ne se coupe jamais", (
       new FixedClock(new Date(0)),
       new RecordingPublisher(),
       new DirectUnitOfWork(),
+      new RecordingPlanHold(),
     );
     return { apply, sheets, stocks, desk: ctx.desk };
   }

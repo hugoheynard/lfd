@@ -11,6 +11,7 @@ import { ClosePackingOrderCommand } from "../close-packing-order.command.js";
 import { ClosePackingOrderHandler } from "../close-packing-order.handler.js";
 import { ReopenPackingOrderCommand } from "../reopen-packing-order.command.js";
 import { ReopenPackingOrderHandler } from "../reopen-packing-order.handler.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 // Un jour et des instants comparés entre eux, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -77,7 +78,7 @@ function setup(snapshot: PackingSheetSnapshot) {
     durable,
     desk,
     clock,
-    close: new ClosePackingOrderHandler(sheets, durable, clock, uow),
+    close: new ClosePackingOrderHandler(sheets, durable, clock, uow, new RecordingPlanHold()),
     reopen: new ReopenPackingOrderHandler(sheets, desk, uow),
   };
 }

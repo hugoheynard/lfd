@@ -26,6 +26,7 @@ import { OpenPackingContainerHandler } from "../../containers/open-packing-conta
 import { PackingContainerVoiding } from "../../containers/packing-container-voiding.js";
 import { PackingSheetWithdrawalDesk } from "../packing-sheet-withdrawal.desk.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 /**
  * Le guichet du retrait au colisage (plan A1,
@@ -128,8 +129,17 @@ function setup() {
     events,
     uow,
     InMemoryPackingSettings.sharingOpen().reader(),
+    new RecordingPlanHold(),
   );
-  const allocate = new AllocateToContainerHandler(sheets, stocks, binDesk, clock, events, uow);
+  const allocate = new AllocateToContainerHandler(
+    sheets,
+    stocks,
+    binDesk,
+    clock,
+    events,
+    uow,
+    new RecordingPlanHold(),
+  );
   return { desk, sheets, stocks, binDesk, events, durable, tombstones, open, allocate };
 }
 

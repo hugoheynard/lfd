@@ -22,6 +22,7 @@ import { deliveryOn, FixedDeliveryOrders, InMemoryDeliveryRounds } from "./round
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
 import { DELIVERY_ROUND_DEPARTED } from "../../../channels/handover/index.js";
 import { DELIVERY_TRANSFER_DEPARTED } from "../../../channels/commerce/index.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 /*
  * « Partir » avec un arrêt de transfert interne (plan du transfert interne,
@@ -105,6 +106,7 @@ function setup(transferLoaded: boolean, receivedByHand = false, withBins = true)
       new Map([["o_v1", [{ sku: "PAIN", name: "Pain", quantity: 4, saleUnit: "piece" as const }]]]),
     ),
     resupplyContentsOver(),
+    new ScriptedPlanHold(),
   );
   return { handler, transfers, durable, departed };
 }

@@ -19,6 +19,7 @@ import { EnterPackedResupplyLineCommand } from "../enter-packed-resupply-line.co
 import { EnterPackedResupplyLineHandler } from "../enter-packed-resupply-line.handler.js";
 import { ListPackingResuppliesHandler } from "../list-packing-resupplies.handler.js";
 import { ListPackingResuppliesQuery } from "../list-packing-resupplies.query.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 /** Instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const DAY = "2026-10-22";
@@ -60,8 +61,14 @@ async function setup(received: number) {
     shadow,
     stocks,
     launch,
-    enter: new EnterPackedResupplyLineHandler(repository, stocks, clock, uow),
-    close: new ClosePackingResupplyHandler(repository, stocks, clock, uow),
+    enter: new EnterPackedResupplyLineHandler(
+      repository,
+      stocks,
+      clock,
+      uow,
+      new RecordingPlanHold(),
+    ),
+    close: new ClosePackingResupplyHandler(repository, stocks, clock, uow, new RecordingPlanHold()),
     list: new ListPackingResuppliesHandler(
       new InMemoryResupplyBoard(table),
       new InMemoryDayStocks(stocks),

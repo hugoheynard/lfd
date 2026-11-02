@@ -16,6 +16,8 @@ import { PackingSettingsReader } from "../../domain/ports/packing-settings.reade
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { citedOrderOf, lockedSheet } from "./container-support.js";
 import { OpenPackingContainerCommand } from "./open-packing-container.command.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **Crée un contenant** dans la colonne Contenants (K2b,
@@ -51,10 +53,12 @@ export class OpenPackingContainerHandler implements ICommandHandler<
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
     private readonly settings: PackingSettingsReader,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: OpenPackingContainerCommand): Promise<string> {
     return this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       // Le bac du colisage refuse AVANT qu'un bac ne naisse chez la livraison.
       sheet.assertCanOpenContainer();

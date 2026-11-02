@@ -23,6 +23,7 @@ import {
   InMemoryInternalTransfers,
 } from "../../__tests__/transfer-doubles.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 /*
  * « Partir » du dépôt refuse une commande retenue au contrôle qualité
@@ -71,6 +72,7 @@ function depart(holds: FixedDepartureHolds) {
     new InMemoryInternalTransfers(),
     new FixedTransferContents(),
     resupplyContentsOver(),
+    new ScriptedPlanHold(),
   );
   return { handler, rounds, departed, events, durable };
 }

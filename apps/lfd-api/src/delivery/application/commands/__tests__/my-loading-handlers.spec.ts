@@ -20,6 +20,7 @@ import { UnloadMyBinCommand } from "../unload-my-bin.command.js";
 import { UnloadMyBinHandler } from "../unload-my-bin.handler.js";
 import { binOf, InMemoryBins, InMemoryStopLoadings, stopOf } from "./loading-doubles.js";
 import { deliveryOn, FixedDeliveryOrders } from "./round-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -45,6 +46,7 @@ function loader(loadings: InMemoryStopLoadings, wall = WALL()) {
     new FixedClock(NOW),
     events,
     new DirectUnitOfWork(),
+    new ScriptedPlanHold(),
   );
   return { handler: new LoadMyBinHandler(wall, inner, new DirectUnitOfWork()), events };
 }

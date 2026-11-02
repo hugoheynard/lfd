@@ -19,6 +19,7 @@ import { departAndFreeze } from "../delivery-departure-support.js";
 import { DepartDeliveryRoundCommand } from "./depart-delivery-round.command.js";
 import { InternalTransferRepository } from "../../domain/ports/internal-transfer.repository.js";
 import { TransferResupplyContents } from "../transfer-resupply-contents.js";
+import { ArrestedPlanHold } from "../../../production/channels/delivery/index.js";
 
 /**
  * **« Partir »** (lot 4, L4-C4, Q14) — la porte du CHARGEUR, une seule
@@ -66,6 +67,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
     private readonly transfers: InternalTransferRepository,
     private readonly contents: TransferOrderContentsReader,
     private readonly resupplies: TransferResupplyContents,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: DepartDeliveryRoundCommand): Promise<void> {
@@ -88,6 +90,7 @@ export class DepartDeliveryRoundHandler implements ICommandHandler<
         transfers: this.transfers,
         contents: this.contents,
         resupplies: this.resupplies,
+        plan: this.plan,
       });
       await this.events.publishTraced(departed);
     });

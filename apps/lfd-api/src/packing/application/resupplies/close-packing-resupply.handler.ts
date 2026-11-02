@@ -7,6 +7,8 @@ import { PackingResupplyRepository } from "../../domain/ports/packing-resupply.r
 import { PackingStockRepository } from "../../domain/ports/packing-stock.repository.js";
 import { ClosePackingResupplyCommand } from "./close-packing-resupply.command.js";
 import { lockedResupply } from "./resupply-support.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **Clore une fiche de réassort** (réassort, la fiche au colisage, R3b) : l'emballé de chaque
@@ -30,10 +32,12 @@ export class ClosePackingResupplyHandler implements ICommandHandler<
     private readonly stocks: PackingStockRepository,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: ClosePackingResupplyCommand): Promise<void> {
     await this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedResupply(this.resupplies, command.serviceDay, command.resupplyId);
       const at = this.clock.now();
       if (sheet.close({ at, by: command.staffUserId })) {

@@ -13,6 +13,8 @@ import { PackingSheetRepository } from "../../domain/ports/packing-sheet.reposit
 import { PackingStockRepository } from "../../domain/ports/packing-stock.repository.js";
 import { AllocateToContainerCommand } from "./allocate-to-container.command.js";
 import { citedOrderOf, lockedSheet } from "./container-support.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **Glisse des pièces d'une ligne dans un contenant** (K2b, décision 2 de
@@ -45,10 +47,12 @@ export class AllocateToContainerHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: AllocateToContainerCommand): Promise<void> {
     await this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       const container = sheet.liveContainer(command.containerId);
       if (container.bin !== null) {

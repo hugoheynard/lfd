@@ -39,6 +39,7 @@ import {
   InternalTransfersReaderOver,
 } from "../../__tests__/transfer-doubles.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -71,6 +72,7 @@ describe("LoadDeliveryBinHandler — L4-C2, L4-C18", () => {
       clock,
       events,
       uow,
+      new ScriptedPlanHold(),
     );
     return { handler, events };
   }
@@ -205,6 +207,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       new InMemoryInternalTransfers(),
       new FixedTransferContents(),
       resupplyContentsOver(),
+      new ScriptedPlanHold(),
     );
     return { handler, rounds, departed, events, durable };
   }
@@ -338,6 +341,7 @@ describe("DepartDeliveryRoundHandler — L4-C4, Q14", () => {
       new InMemoryInternalTransfers(),
       new FixedTransferContents(),
       resupplyContentsOver(),
+      new ScriptedPlanHold(),
     );
 
     await expect(

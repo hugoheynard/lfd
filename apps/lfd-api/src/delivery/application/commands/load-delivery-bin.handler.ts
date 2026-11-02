@@ -12,6 +12,8 @@ import { InternalTransfersReader } from "../../domain/ports/internal-transfers.r
 import { type BinOwnerNames, composedLoadingOf } from "../bin-owner-support.js";
 import { resolveBin } from "../delivery-loading-support.js";
 import { LoadDeliveryBinCommand } from "./load-delivery-bin.command.js";
+import { ArrestedPlanHold } from "../../../production/channels/delivery/index.js";
+import { refuseReopenedPlan } from "../reopened-plan-support.js";
 
 /**
  * **Charge un bac** dans une tournée (lot 4, L4-C2, L4-C18), par son QR ou son
@@ -40,12 +42,15 @@ export class LoadDeliveryBinHandler implements ICommandHandler<LoadDeliveryBinCo
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: LoadDeliveryBinCommand): Promise<void> {
     await this.uow.run(async () => {
       const { bin, via } = await resolveBin(this.bins, command.payload);
       const { loading, owner } = await composedLoadingOf(this.loadings, this.names(), bin);
+      // La journée n'est connue qu'ici ; rien n'est encore écrit.
+      await refuseReopenedPlan(this.plan, loading.serviceDay);
       const loaded = loading.load({
         roundId: command.roundId,
         binId: bin.id,

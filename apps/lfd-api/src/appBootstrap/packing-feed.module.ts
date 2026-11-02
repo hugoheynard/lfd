@@ -19,7 +19,9 @@ import { PackingShortfallDesk } from "../packing/application/station/packing-sho
 import { PrismaPackedResuppliesReader } from "../packing/infrastructure/prisma-packed-resupplies.reader.js";
 import { PrismaOrderPackingStateReader } from "../packing/infrastructure/prisma-order-packing-state.reader.js";
 import { PackingModule } from "../packing/packing.module.js";
+import { PrismaArrestedPlanHold } from "../production/infrastructure/prisma-arrested-plan.hold.js";
 import {
+  ArrestedPlanHold,
   DayPackingProgressReader,
   InscribedOrderHeaderReader,
   OrderLabelHeadReader,
@@ -57,6 +59,9 @@ import { ProductionModule } from "../production/production.module.js";
  * - `PackedResuppliesReader` (réassort R3b, 2026-10-21) — le colisage
  *   DÉCLARE ET IMPLÉMENTE, le commerce lit : l'emballé d'un réassort, pour
  *   pré-remplir sa réception (`packing/channels/commerce/`).
+ * - `ArrestedPlanHold` (2026-11-02) — la production DÉCLARE ET IMPLÉMENTE,
+ *   le colisage appelle : le verrou partagé de la journée, contre la
+ *   réouverture (`fournil/arret-du-plan.md`).
  *
  * Les faits, eux, ne passent pas par ici : ils vont par la boîte d'envoi, et
  * les abonnés les trouvent par `@DurableHandler`.
@@ -95,6 +100,14 @@ import { ProductionModule } from "../production/production.module.js";
     // La révision des quantités d'une commande inscrite (plan A2, 2026-10-25) —
     // le colisage déclare ET implémente, le commerce l'appelle après le fournil.
     { provide: PackingRevisionDesk, useExisting: PackingSheetRevisionDesk },
+    // Tenir le plan arrêté pendant un geste du colisage (audit du réassort,
+    // 2026-11-02) — la production déclare ET implémente, le colisage appelle
+    // au début de la transaction de ses gestes, la livraison au chargement et
+    // au départ (le module est global : relié une seule fois, ici). `useClass` et non
+    // `useExisting` : le jeton est celui que `ProductionModule` fournit
+    // localement, il ne peut pas se désigner lui-même ici ; l'adaptateur est
+    // sans état.
+    { provide: ArrestedPlanHold, useClass: PrismaArrestedPlanHold },
   ],
   exports: [
     PackingDayVersionReader,
@@ -111,6 +124,7 @@ import { ProductionModule } from "../production/production.module.js";
     OrderLabelHeadReader,
     ReserveShopRelease,
     PackingRevisionDesk,
+    ArrestedPlanHold,
   ],
 })
 export class PackingFeedModule {}

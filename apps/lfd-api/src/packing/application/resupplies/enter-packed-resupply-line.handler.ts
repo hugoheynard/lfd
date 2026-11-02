@@ -6,6 +6,8 @@ import { PackingResupplyRepository } from "../../domain/ports/packing-resupply.r
 import { PackingStockRepository } from "../../domain/ports/packing-stock.repository.js";
 import { EnterPackedResupplyLineCommand } from "./enter-packed-resupply-line.command.js";
 import { lockedResupply } from "./resupply-support.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **Saisir l'emballé d'une ligne de réassort** (réassort, la fiche au colisage, R3b) — 0 permis,
@@ -34,10 +36,12 @@ export class EnterPackedResupplyLineHandler implements ICommandHandler<
     private readonly stocks: PackingStockRepository,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: EnterPackedResupplyLineCommand): Promise<void> {
     await this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedResupply(this.resupplies, command.serviceDay, command.resupplyId);
       const change = sheet.enterPacked(command.sku, command.quantity, {
         at: this.clock.now(),

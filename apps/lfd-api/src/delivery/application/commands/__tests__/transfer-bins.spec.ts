@@ -32,6 +32,7 @@ import {
   stopOf,
 } from "./loading-doubles.js";
 import { FixedDeliveryOrders } from "./round-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 /*
  * **Les bacs du transfert** (plan du transfert interne, Q-T4 révisée par Hugo
@@ -186,6 +187,7 @@ describe("charger et annuler un bac de transfert (lot T3)", () => {
       new FixedClock(LATER),
       events,
       new DirectUnitOfWork(),
+      new ScriptedPlanHold(),
     );
     return { handler, events };
   }

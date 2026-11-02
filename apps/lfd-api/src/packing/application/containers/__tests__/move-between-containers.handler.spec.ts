@@ -17,6 +17,7 @@ import { MoveBetweenContainersHandler } from "../move-between-containers.handler
 import { OpenPackingContainerCommand } from "../open-packing-container.command.js";
 import { OpenPackingContainerHandler } from "../open-packing-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -54,12 +55,19 @@ async function setup(target: typeof BAG | typeof BIN = BAG) {
     events,
     uow,
     InMemoryPackingSettings.sharingOpen().reader(),
+    new RecordingPlanHold(),
   );
   const from = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", BAG, STAFF));
   const to = await open.execute(new OpenPackingContainerCommand(DAY, "ord_1", target, STAFF));
-  await new AllocateToContainerHandler(sheets, stocks, desk, clock, events, uow).execute(
-    new AllocateToContainerCommand(DAY, "ord_1", from, "CRO", 18, STAFF),
-  );
+  await new AllocateToContainerHandler(
+    sheets,
+    stocks,
+    desk,
+    clock,
+    events,
+    uow,
+    new RecordingPlanHold(),
+  ).execute(new AllocateToContainerCommand(DAY, "ord_1", from, "CRO", 18, STAFF));
   events.traced.length = 0;
   const move = new MoveBetweenContainersHandler(sheets, desk, events, uow);
   return { sheets, stocks, desk, events, move, from, to };

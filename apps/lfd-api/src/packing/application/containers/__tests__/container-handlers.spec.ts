@@ -27,6 +27,7 @@ import { VoidPackingContainerHandler } from "../void-packing-container.handler.j
 import { WithdrawFromContainerCommand } from "../withdraw-from-container.command.js";
 import { WithdrawFromContainerHandler } from "../withdraw-from-container.handler.js";
 import { InMemoryPackingSettings } from "../../__tests__/packing-settings-doubles.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 // Un jour comparé à rien, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -75,8 +76,17 @@ function setup(options: { readonly mode?: ContainerMode; readonly received?: num
       events,
       uow,
       InMemoryPackingSettings.sharingOpen().reader(),
+      new RecordingPlanHold(),
     ),
-    allocate: new AllocateToContainerHandler(sheets, stocks, desk, clock, events, uow),
+    allocate: new AllocateToContainerHandler(
+      sheets,
+      stocks,
+      desk,
+      clock,
+      events,
+      uow,
+      new RecordingPlanHold(),
+    ),
     withdraw: new WithdrawFromContainerHandler(sheets, stocks, events, uow),
     void: new VoidPackingContainerHandler(
       sheets,

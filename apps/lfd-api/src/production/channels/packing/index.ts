@@ -57,7 +57,7 @@ export {
   PackingReturnedEvent,
   PackingReturnedPayloadError,
 } from "./packing-returned.event.js";
-export { ArrestedPlanHold } from "./arrested-plan.hold.js";
+export { ArrestedPlanHold, type PlanHoldState } from "./arrested-plan.hold.js";
 export { PackingDayVersionReader } from "./packing-day-version.reader.js";
 export { PackedOrdersReader, type PackedOrderSeal } from "./packed-orders.reader.js";
 export { OvenWaitingOrdersReader, type OvenWaitingOrders } from "./oven-waiting-orders.reader.js";

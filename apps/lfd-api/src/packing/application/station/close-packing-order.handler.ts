@@ -8,6 +8,8 @@ import { PackingShortfallClearedEvent } from "../../channels/commerce/index.js";
 import { PackingSheetRepository } from "../../domain/ports/packing-sheet.repository.js";
 import { lockedSheet } from "../containers/container-support.js";
 import { ClosePackingOrderCommand } from "./close-packing-order.command.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **Fermer le bac** — « Déclarer prête », servi par le colisage lui-même (plan
@@ -46,10 +48,12 @@ export class ClosePackingOrderHandler implements ICommandHandler<ClosePackingOrd
     private readonly durable: DurablePublisher,
     private readonly clock: Clock,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: ClosePackingOrderCommand): Promise<void> {
     await this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(
         this.sheets,
         command.serviceDay,

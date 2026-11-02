@@ -31,6 +31,7 @@ import {
   InMemoryInternalTransfers,
 } from "../../__tests__/transfer-doubles.js";
 import { resupplyContentsOver } from "../../__tests__/resupply-transfer-doubles.js";
+import { ScriptedPlanHold } from "../../__tests__/plan-hold-doubles.js";
 
 // Des jours comparés entre eux seulement, jamais à l'horloge.
 const DAY = "2030-03-12";
@@ -109,6 +110,7 @@ function departMine(
     new InMemoryInternalTransfers(),
     new FixedTransferContents(),
     resupplyContentsOver(),
+    new ScriptedPlanHold(),
   );
   return { handler, rounds, departed, events, durable };
 }

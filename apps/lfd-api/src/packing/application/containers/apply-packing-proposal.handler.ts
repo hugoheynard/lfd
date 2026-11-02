@@ -22,6 +22,8 @@ import {
 } from "../../domain/services/proposal-distribution.js";
 import { ApplyPackingProposalCommand } from "./apply-packing-proposal.command.js";
 import { citedOrderOf, lockedSheet } from "./container-support.js";
+import { ArrestedPlanHold } from "../../../production/channels/packing/index.js";
+import { holdArrestedPlan } from "../arrested-plan-support.js";
 
 /**
  * **« Proposer », appliqué par le serveur d'un seul coup** (suite de K2b,
@@ -56,10 +58,12 @@ export class ApplyPackingProposalHandler implements ICommandHandler<
     private readonly clock: Clock,
     private readonly events: DomainEventPublisher,
     private readonly uow: UnitOfWork,
+    private readonly plan: ArrestedPlanHold,
   ) {}
 
   async execute(command: ApplyPackingProposalCommand): Promise<void> {
     await this.uow.run(async () => {
+      await holdArrestedPlan(this.plan, command.serviceDay);
       const sheet = await lockedSheet(this.sheets, command.serviceDay, command.orderId);
       sheet.assertCanApplyProposal();
       const entries = await this.entriesOf(sheet);

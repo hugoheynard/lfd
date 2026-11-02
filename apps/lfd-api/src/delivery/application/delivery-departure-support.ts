@@ -27,6 +27,8 @@ import type { TransferResupplyContents } from "./transfer-resupply-contents.js";
 import type { DepartedStopRepository } from "../domain/ports/departed-stop.repository.js";
 import type { DoorstepSettingsReader } from "../domain/ports/doorstep-settings.reader.js";
 import type { StopLoadingRepository } from "../domain/ports/stop-loading.repository.js";
+import { ArrestedPlanHold } from "../../production/channels/delivery/index.js";
+import { refuseReopenedPlan } from "./reopened-plan-support.js";
 
 /** Les ports du départ — ceux des deux portes (chargeur et livreur). */
 export interface DepartureDeps {
@@ -46,6 +48,8 @@ export interface DepartureDeps {
   readonly contents: TransferOrderContentsReader;
   /** Le contenu de leurs réassorts — l'emballé si la fiche est close (R3c). */
   readonly resupplies: TransferResupplyContents;
+  /** Le plan de la journée, tenu contre la réouverture (2026-11-02). */
+  readonly plan: ArrestedPlanHold;
 }
 
 /**
@@ -55,6 +59,8 @@ export interface DepartureDeps {
  * pas leur handler : chacune charge la tournée à sa façon — avec ou sans mur
  * — dans SA transaction, et vérifie la version.
  *
+ * 00. le plan de la journée est tenu (`ArrestedPlanHold`) et un plan rouvert
+ *     refuse — avant toute écriture (2026-11-02) ;
  * 0. le livreur affecté doit ENCORE tenir les deux droits — conduire et les
  *    gestes à la porte (Hugo, 2026-10-07, audit § 3.3) : affecté avec les
  *    deux, puis privé de l'un, il partait et prenait 403 au premier arrêt.
@@ -84,6 +90,8 @@ export async function departAndFreeze(
   round: DeliveryRound,
   deps: DepartureDeps,
 ): Promise<DeliveryRoundDepartedEvent> {
+  // Avant toute écriture : un plan rouvert ne fait partir personne.
+  await refuseReopenedPlan(deps.plan, round.serviceDay);
   if (round.driverStaffId !== null) {
     (await driverAccessNow(deps.holders)).ensureCanDeliver(round.driverStaffId, round.vehicleName);
   }

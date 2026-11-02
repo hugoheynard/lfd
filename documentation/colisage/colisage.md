@@ -59,6 +59,7 @@ flowchart LR
 | ------------------------------ | ----------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------- |
 | `production/channels/packing/` | le fournil  | les cinq faits (§2.1), et les lecteurs `QualityHeldOrdersReader`, `PlannedDestinationsReader` (que le colisage lit)                                         | le fournil (`appBootstrap/packing-feed.module.ts`)                               |
 | idem                           | le fournil  | `PackedOrdersReader` (« cette commande est-elle colisée ? », pour l'état du jour et le contrôle qualité) et `PackingDayVersionReader` (la version du poste) | le colisage (`PrismaPackedOrdersReader`, `PrismaPackingDayVersionReader`)        |
+| idem                           | le fournil  | `ArrestedPlanHold` (2026-11-02) : le verrou PARTAGÉ de la journée, tenu jusqu'au `COMMIT` du geste ; rend « le plan est-il arrêté ? »                       | le fournil (`PrismaArrestedPlanHold`, relié par `packing-feed.module.ts`)        |
 | `packing/channels/delivery/`   | le colisage | `BinDesk` : déclarer, annuler, partager un bac ; proposer ; contenances ; moitiés libres ; `assertAtHand` (aucun bac chargé ni tournée partie) ; `liveBins` | la livraison (`DeliveryBinDesk`, `appBootstrap/packing-delivery-feed.module.ts`) |
 | idem                           | le colisage | `ContainerManagedOrders` : l'annulation d'un bac par la livraison refuse une commande que le colisage tient (seule route restante depuis le 2026-10-10)     | le colisage (`PrismaContainerManagedOrders`)                                     |
 
@@ -66,6 +67,22 @@ flowchart LR
 publie sans savoir qui écoute, et le colisage déclare `BinDesk` sans savoir qui
 le branche. `BinDesk` rejoint la transaction de l'appelant : déclarer un bac et
 ouvrir le contenant se font dans la même unité de travail.
+
+**Le plan tenu contre la réouverture** (audit du réassort, 2026-11-02). Six
+gestes font « commencer » une journée au sens de `DayPackingProgressReader`, et
+chacun appelle `ArrestedPlanHold.hold(jour)` en **premier** dans son unité de
+travail, avant tout verrou de ligne et toute écriture
+(`apps/lfd-api/src/packing/application/arrested-plan-support.ts`) : ouvrir un contenant (sac ou
+bac), appliquer « Proposer » (il ouvre des bacs), mettre au bac, fermer le bac
+(« Déclarer prête »), saisir une ligne de réassort, clore une fiche de
+réassort. Plan rouvert : refus `packing.plan_reopened` (409), rien d'écrit —
+« réarrêtez la journée, puis recommencez ». Déplacer, retirer d'un contenant,
+l'annuler ou rouvrir un bac ne le tiennent pas : ils ne font rien commencer.
+« Compter des contenants » n'a plus de geste depuis K3c (`counted` est en
+lecture seule). Aucun de ces gestes n'appelle ensuite un geste du fournil qui
+prendrait le verrou exclusif (vérifié le 2026-11-02 : ils n'appellent que
+`BinDesk`, la livraison, et publient par la boîte d'envoi). Le refus vit dans
+l'application, pas dans `PackingSheet` : l'état du plan est au fournil.
 
 ### 2.1 Les faits
 

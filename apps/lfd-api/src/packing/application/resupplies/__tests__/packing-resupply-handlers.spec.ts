@@ -19,6 +19,7 @@ import { EnterPackedResupplyLineCommand } from "../enter-packed-resupply-line.co
 import { EnterPackedResupplyLineHandler } from "../enter-packed-resupply-line.handler.js";
 import { ListPackingResuppliesHandler } from "../list-packing-resupplies.handler.js";
 import { ListPackingResuppliesQuery } from "../list-packing-resupplies.query.js";
+import { RecordingPlanHold } from "../../__tests__/arrested-plan-doubles.js";
 
 /** Instants recopiés, jamais comparés à l'horloge — exception étroite du §5. */
 const AT = new Date("2026-10-21T04:00:00.000Z");
@@ -45,8 +46,14 @@ async function setup(received = 24) {
   return {
     table,
     stocks,
-    enter: new EnterPackedResupplyLineHandler(repository, stocks, clock, uow),
-    close: new ClosePackingResupplyHandler(repository, stocks, clock, uow),
+    enter: new EnterPackedResupplyLineHandler(
+      repository,
+      stocks,
+      clock,
+      uow,
+      new RecordingPlanHold(),
+    ),
+    close: new ClosePackingResupplyHandler(repository, stocks, clock, uow, new RecordingPlanHold()),
     list: new ListPackingResuppliesHandler(
       new InMemoryResupplyBoard(table),
       new InMemoryDayStocks(stocks),
@@ -144,7 +151,13 @@ describe("une ligne de réassort au poids au poste (L2b-3)", () => {
     const uow = new DirectUnitOfWork();
     return {
       stocks,
-      enter: new EnterPackedResupplyLineHandler(repository, stocks, clock, uow),
+      enter: new EnterPackedResupplyLineHandler(
+        repository,
+        stocks,
+        clock,
+        uow,
+        new RecordingPlanHold(),
+      ),
       list: new ListPackingResuppliesHandler(
         new InMemoryResupplyBoard(table),
         new InMemoryDayStocks(stocks),
