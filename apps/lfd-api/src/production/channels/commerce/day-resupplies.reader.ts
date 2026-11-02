@@ -1,10 +1,19 @@
+import type { SaleUnit } from "@lfd/money";
+
 import type { ServiceDay } from "../../domain/value-objects/service-day.value-object.js";
 
 /** Une ligne d'un réassort : l'article, son nom, la quantité demandée. Aucun prix. */
 export interface PlacedResupplyLine {
   readonly sku: string;
   readonly productName: string;
+  /** Des pièces, ou des GRAMMES si `saleUnit = "weight"` — toujours un entier. */
   readonly quantity: number;
+  /**
+   * L'unité figée sur la ligne au commerce (`site_resupply_line.sale_unit`,
+   * lot L2b-1 du plan `limites-de-commande/plan-jour-meme-sur-stock.md`) ;
+   * le fournil la recopie à l'arrêt comme celle d'une commande (L2b-2).
+   */
+  readonly saleUnit: SaleUnit;
 }
 
 /** Un réassort envoyé « pour demain » à un point, tel que le fournil le figera. */

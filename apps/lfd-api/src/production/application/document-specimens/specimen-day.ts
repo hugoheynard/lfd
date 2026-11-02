@@ -61,6 +61,9 @@ export const SPECIMEN_DAY_RESUPPLIES: readonly ProductionResupplySnapshot[] = [
     lines: [
       { sku: "EXEMPLE-CRO", productName: "Croissant pur beurre", quantity: 20, saleUnit: "piece" },
       { sku: "EXEMPLE-BAG", productName: "Baguette tradition", quantity: 15, saleUnit: "piece" },
+      // Un réassort au poids (lot L2b-2) : le bon dit « 2 kg », le total ne
+      // le compte que pour une ligne.
+      { sku: "EXEMPLE-SAU", productName: "Saumon gravlax", quantity: 2000, saleUnit: "weight" },
     ],
   },
 ];

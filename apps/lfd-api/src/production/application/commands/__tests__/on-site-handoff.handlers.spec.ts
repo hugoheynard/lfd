@@ -55,7 +55,7 @@ function resupply(servedByTransfer: boolean, quantity: number): PlacedResupply {
     siteLabel: servedByTransfer ? "Val Village" : "Le Labo",
     name: null,
     servedByTransfer,
-    lines: [{ sku: SKU, productName: "Croissant", quantity }],
+    lines: [{ sku: SKU, productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 

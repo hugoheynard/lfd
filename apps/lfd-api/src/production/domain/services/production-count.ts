@@ -68,9 +68,9 @@ export function freezeResupply(resupply: PlacedResupply): ProductionResupplySnap
       sku: line.sku,
       productName: line.productName,
       quantity: line.quantity,
-      // Le commerce refuse un article au poids au réassort (plan
-      // `pricing/vente-au-poids.md`, § 2) : un réassort compte des pièces.
-      saleUnit: "piece",
+      // L'unité de la ligne au commerce (lot L2b-2 du plan du jour J) : un
+      // réassort au poids se compte en grammes, comme une commande (P6).
+      saleUnit: line.saleUnit,
     })),
   };
 }
@@ -96,10 +96,13 @@ export function countOf(orders: readonly CountedItem[]): readonly ProducedItemSn
       const known = bySku.get(line.sku);
       if (known !== undefined && known.saleUnit !== line.saleUnit) {
         // Additionner des pièces et des grammes d'un même article rendrait un
-        // nombre qui ne veut rien dire. Le référentiel refuse de changer l'unité
-        // d'une référence déjà commandée (`Variant.changeSaleTerms`, vérifié le
-        // 2026-10-29) : ce cas ne naît que d'une course entre le geste et une
-        // première commande, ou d'un commerce qui a menti.
+        // nombre qui ne veut rien dire — entre deux commandes comme entre une
+        // commande et un réassort (lot L2b-2). Le référentiel refuse de changer
+        // l'unité d'une référence déjà commandée (`Variant.changeSaleTerms`,
+        // vérifié le 2026-10-29) ou déjà demandée en réassort (le commerce
+        // compte `site_resupply_line` comme un usage, `prisma-sale-reference-
+        // usage.ts`, vérifié le 2026-11-02) : ce cas ne naît que d'une course
+        // entre le geste et une première ligne, ou d'un commerce qui a menti.
         throw new MixedSaleUnitCountError(line.sku);
       }
       bySku.set(line.sku, {

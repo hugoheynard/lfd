@@ -1,3 +1,4 @@
+import { Buffer } from "node:buffer";
 import { randomUUID } from "node:crypto";
 
 import type {
@@ -10,6 +11,10 @@ import type {
 } from "@lfd/contracts";
 import { htMillicentsOf } from "@lfd/pim-contracts";
 
+import { pdfPages } from "../src/platform/pdf/__tests__/pdf-text.js";
+import type { PlacedResupply } from "../src/production/channels/commerce/index.js";
+import { ProductionDayRepository } from "../src/production/domain/ports/production-day.repository.js";
+import { ServiceDay } from "../src/production/domain/value-objects/service-day.value-object.js";
 import { settleCardPayments } from "./card-payments.js";
 import { jsonBody, type E2eContext } from "./e2e-harness.js";
 import { createUser } from "./factories.js";
@@ -337,5 +342,96 @@ describe("le colisage, au poids", () => {
     expect(day.awaitingDecision[0]?.lines).toEqual(
       expect.arrayContaining([expect.objectContaining({ sku: WEIGHED, saleUnit: "weight" })]),
     );
+  });
+});
+
+/**
+ * Le réassort au poids au fournil (lot L2b-2 du plan
+ * `limites-de-commande/plan-jour-meme-sur-stock.md`). La garde d'envoi de
+ * L2b-1 empêche encore le commerce d'en envoyer un (le colisage ne sait pas
+ * l'unité, L2b-3) : la journée est arrêtée par l'agrégat, avec le réassort tel
+ * que le canal le servira, puis écrite et relue par le VRAI adaptateur — c'est
+ * `production_resupply_line.sale_unit`, sous son CHECK, qu'on éprouve.
+ */
+describe("le réassort au poids, au fournil (L2b-2)", () => {
+  const RESUPPLY: PlacedResupply = {
+    resupplyId: "rs_weight",
+    siteId: "site_village",
+    siteLabel: "Village",
+    name: null,
+    servedByTransfer: false,
+    lines: [
+      { sku: CROISSANT, productName: "Croissant", quantity: 6, saleUnit: "piece" },
+      { sku: WEIGHED, productName: "Pain au chocolat", quantity: 2000, saleUnit: "weight" },
+    ],
+  };
+
+  async function closeWithResupply(): Promise<void> {
+    const days = ctx.app.get(ProductionDayRepository);
+    const day = await days.load(ServiceDay.of(SERVICE_DAY));
+    day.close([], new Set<string>(), new Date(), null, [RESUPPLY]);
+    await days.save(day);
+  }
+
+  async function dossierPages(): Promise<readonly string[]> {
+    const response = await ctx
+      .asSub(STAFF)
+      .get(`/admin/production/batch/${SERVICE_DAY}/dossier.pdf`)
+      .buffer()
+      .parse((res, callback) => {
+        const chunks: Buffer[] = [];
+        res.on("data", (chunk: Buffer) => chunks.push(chunk));
+        res.on("end", () => {
+          callback(null, Buffer.concat(chunks));
+        });
+      })
+      .expect(200);
+    return Buffer.isBuffer(response.body) ? pdfPages(response.body) : [];
+  }
+
+  it("fige la ligne en grammes et la relit telle quelle ; la pièce reste la pièce", async () => {
+    await closeWithResupply();
+
+    expect(
+      await ctx.prisma.productionResupplyLine.findMany({
+        where: { resupply: { serviceDay: SERVICE_DAY } },
+        select: { sku: true, quantity: true, saleUnit: true },
+        orderBy: { sku: "asc" },
+      }),
+    ).toEqual([
+      { sku: CROISSANT, quantity: 6, saleUnit: "piece" },
+      { sku: WEIGHED, quantity: 2000, saleUnit: "weight" },
+    ]);
+    const day = await ctx.app.get(ProductionDayRepository).load(ServiceDay.of(SERVICE_DAY));
+    expect(day.resupplies[0]?.lines.map((line) => line.saleUnit)).toEqual(["piece", "weight"]);
+  });
+
+  it("compte le réassort en grammes à la fiche d'atelier et au prévisionnel", async () => {
+    await closeWithResupply();
+
+    expect(await worksheetLine(ctx, WEIGHED)).toMatchObject({ quantity: 2000, saleUnit: "weight" });
+    expect(await worksheetLine(ctx)).toMatchObject({ quantity: 6, saleUnit: "piece" });
+    const view = jsonBody<ProductionForecastView>(
+      await ctx
+        .asSub(STAFF)
+        .get(`/admin/production/forecast?from=${SERVICE_DAY}&to=${SERVICE_DAY}`)
+        .expect(200),
+    );
+    expect(view.lines.find((line) => line.sku === WEIGHED)).toMatchObject({
+      saleUnit: "weight",
+      quantities: [2000],
+      resupplyQuantities: [2000],
+    });
+    // Six croissants et UN lot au poids.
+    expect(view.days[0]?.totalUnits).toBe(7);
+  });
+
+  it("le bon de réassort imprime « 2 kg », jamais 2 000 pièces", async () => {
+    await closeWithResupply();
+
+    const sheet = (await dossierPages()).find((page) => page.includes("RÉASSORT 1/1")) ?? "";
+    expect(sheet).toContain("2 kg");
+    expect(sheet).toContain("7 pièces");
+    expect(sheet).not.toContain("2006");
   });
 });

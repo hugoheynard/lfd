@@ -24,8 +24,17 @@ function resupply(resupplyId: string, quantity: number): PlacedResupply {
     siteLabel: "Village",
     name: null,
     servedByTransfer: true,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
+}
+
+/**
+ * Le réassort tel que la vue le rend : sans l'unité, que le contrat
+ * `ProductionDayResupplyLine` ne porte pas encore (écrans, lot L2b-4).
+ */
+function viewOf(resupplyId: string, quantity: number) {
+  const { lines, ...rest } = resupply(resupplyId, quantity);
+  return { ...rest, lines: lines.map(({ saleUnit: _unit, ...line }) => line) };
 }
 
 const ORDER: ProducibleOrder = {
@@ -71,7 +80,7 @@ describe("GetDayResuppliesHandler", () => {
       new DayResupplies([resupply("r-1", 18)], trace),
     );
     const view = await handler.execute(new GetDayResuppliesQuery(DAY));
-    expect(view).toEqual({ date: DAY, frozen: false, resupplies: [resupply("r-1", 18)] });
+    expect(view).toEqual({ date: DAY, frozen: false, resupplies: [viewOf("r-1", 18)] });
     expect(trace).toEqual([`resupplies:${DAY}`]);
   });
 
@@ -84,7 +93,7 @@ describe("GetDayResuppliesHandler", () => {
       new DayResupplies([resupply("r-2", 99)], trace),
     );
     const view = await handler.execute(new GetDayResuppliesQuery(DAY));
-    expect(view).toEqual({ date: DAY, frozen: true, resupplies: [resupply("r-1", 18)] });
+    expect(view).toEqual({ date: DAY, frozen: true, resupplies: [viewOf("r-1", 18)] });
     expect(trace).toEqual([]);
   });
 });

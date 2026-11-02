@@ -41,7 +41,7 @@ function launchedDay(): ProductionDay {
       siteLabel: null,
       name: null,
       servedByTransfer: true,
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8 }],
+      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" }],
     },
     { at: AT, staffUserId: "s_max", name: null },
     { orders: [], withdrawn: new Set<string>(), resupplies: [] },

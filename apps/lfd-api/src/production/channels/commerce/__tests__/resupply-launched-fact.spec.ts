@@ -12,7 +12,7 @@ const RESUPPLY = {
   siteLabel: null,
   name: null,
   servedByTransfer: false,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" as const }],
 };
 
 describe("ResupplyLaunchedEvent", () => {
@@ -66,6 +66,47 @@ describe("ResupplyLaunchedEvent — la journée ouverte par le lancement (R4c)",
     const fact = new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, RESUPPLY).durableFact();
 
     expect(() => ResupplyLaunchedEvent.fromPayload({ ...fact.payload, openedPlan: "yes" })).toThrow(
+      ResupplyLaunchedPayloadError,
+    );
+  });
+});
+
+describe("ResupplyLaunchedEvent — l'unité des lignes (lot L2b-2)", () => {
+  const WEIGHED = {
+    ...RESUPPLY,
+    lines: [
+      {
+        sku: "TRA-SAU",
+        productName: "Saumon gravlax",
+        quantity: 2000,
+        saleUnit: "weight" as const,
+      },
+    ],
+  };
+
+  it("une ligne au poids va et revient en grammes", () => {
+    const fact = new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, WEIGHED).durableFact();
+
+    expect(ResupplyLaunchedEvent.fromPayload(fact.payload).resupply.lines).toEqual(WEIGHED.lines);
+  });
+
+  it("une ligne écrite avant l'unité, sans `saleUnit`, se relit à la pièce", () => {
+    const fact = new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, RESUPPLY).durableFact();
+    const before = {
+      ...RESUPPLY,
+      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8 }],
+    };
+
+    expect(
+      ResupplyLaunchedEvent.fromPayload({ ...fact.payload, resupply: before }).resupply.lines,
+    ).toEqual(RESUPPLY.lines);
+  });
+
+  it("refuse une unité inconnue plutôt que de la lire en pièces", () => {
+    const fact = new ResupplyLaunchedEvent("2026-09-08", AT, "s_max", null, RESUPPLY).durableFact();
+    const odd = { ...RESUPPLY, lines: [{ ...RESUPPLY.lines[0], saleUnit: "litre" }] };
+
+    expect(() => ResupplyLaunchedEvent.fromPayload({ ...fact.payload, resupply: odd })).toThrow(
       ResupplyLaunchedPayloadError,
     );
   });

@@ -53,7 +53,7 @@ async function setup(received: number) {
         siteLabel: "Le Village",
         name: "Rupture de midi",
         servedByTransfer: true,
-        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6 }],
+        lines: [{ sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" }],
       }).durableFact().payload,
     });
   return {

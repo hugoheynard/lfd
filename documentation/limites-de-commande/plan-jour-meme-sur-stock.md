@@ -755,3 +755,29 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
 - E2E `shelf-stock-weight` : 5 kg reçus − 1 250 g sur stock = 3 750 g à la
   réception et à la Supervision ; baisse refusée ; demande au poids refusée à
   l'envoi.
+
+### Le bâti de L2b-2 (2026-11-02)
+
+- Migration `20261102220000_le_reassort_au_poids_au_fournil` : `sale_unit`
+  (TEXT + CHECK `piece` / `weight`, défaut `piece`) sur
+  `production.production_resupply_line`.
+- Le canal `DayResuppliesReader` porte l'unité de chaque ligne
+  (`PlacedResupplyLine.saleUnit`) ; le commerce la transmet, à l'arrêt comme au
+  prévisionnel (`production-range-resupplies.ts` ne pose plus `piece`). Le fait
+  `production.resupply_launched` la porte ; une ligne écrite avant se relit
+  `piece`, une valeur inconnue rend le fait illisible.
+- `freezeResupply`, `RESUPPLY_COLUMNS` et le prévisionnel figé recopient
+  l'unité ; le compte à produire additionne commandes et réassorts en grammes
+  pour un article au poids. **Un même article à la pièce d'un côté et au poids
+  de l'autre fait refuser l'arrêt** (`MixedSaleUnitCountError`, comme entre deux
+  commandes) : le référentiel refuse de changer l'unité d'une référence déjà
+  demandée en réassort, ce cas ne naît que d'une course.
+- Le bon de réassort PDF dit « 1,25 kg » sur la ligne ; son total
+  « N pièces » compte une ligne au poids pour une, comme le bon de commande (P6).
+  Le réassort d'exemple de la planche porte une ligne au poids.
+- **La garde d'envoi reste** : le fait `production.resupply_list_drawn`, sa
+  lecture au colisage et `packing_resupply_line` ne portent pas l'unité — un
+  réassort de 2 000 g y deviendrait 2 000 pièces à coliser et au manifeste.
+  Elle se retire à **L2b-3**.
+- La vue `ProductionDayResupplyLine` (contrat de l'écran du fournil) ne porte
+  pas encore l'unité : **L2b-4**.

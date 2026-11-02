@@ -67,7 +67,7 @@ const ASAP: PlacedResupply = {
   siteLabel: "Le Village",
   name: "Vitrine du midi",
   servedByTransfer: true,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 8, saleUnit: "piece" }],
 };
 
 class Commerce extends DayOrdersReader {

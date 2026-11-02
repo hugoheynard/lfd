@@ -1,4 +1,9 @@
 import type { ProducibleOrder } from "../../../channels/commerce/day-orders.reader.js";
+import type {
+  PlacedResupply,
+  PlacedResupplyLine,
+} from "../../../channels/commerce/day-resupplies.reader.js";
+import { MixedSaleUnitCountError } from "../../errors/production-sale-unit-errors.js";
 import { countOf, floorCounts, freezeOrder, freezeResupply } from "../production-count.js";
 
 /**
@@ -23,6 +28,30 @@ const salmon = (grams: number): Line => ({
   saleUnit: "weight",
   madeToOrder: null,
 });
+
+const croissantLine = (quantity: number): PlacedResupplyLine => ({
+  sku: "VIE-001",
+  productName: "Croissant",
+  quantity,
+  saleUnit: "piece",
+});
+const salmonLine = (grams: number): PlacedResupplyLine => ({
+  sku: "TRA-SAU",
+  productName: "Saumon gravlax",
+  quantity: grams,
+  saleUnit: "weight",
+});
+
+function resupply(lines: readonly PlacedResupplyLine[]): PlacedResupply {
+  return {
+    resupplyId: "r",
+    siteId: "s",
+    siteLabel: null,
+    name: null,
+    servedByTransfer: false,
+    lines,
+  };
+}
 
 function order(orderId: string, lines: readonly Line[]): ProducibleOrder {
   return {
@@ -132,18 +161,35 @@ describe("freezeOrder / freezeResupply — l'unité est recopiée, jamais dédui
     ]);
   });
 
-  it("fige un réassort à la pièce : le commerce refuse le poids au réassort", () => {
-    const frozen = freezeResupply({
-      resupplyId: "r",
-      siteId: "s",
-      siteLabel: null,
-      name: null,
-      servedByTransfer: false,
-      lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
-    });
+  it("fige un réassort dans l'unité de ses lignes : des grammes restent des grammes (L2b-2)", () => {
+    const frozen = freezeResupply(resupply([croissantLine(6), salmonLine(2000)]));
 
     expect(frozen.lines).toEqual([
       { sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+      { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 2000, saleUnit: "weight" },
     ]);
+  });
+
+  it("additionne les grammes d'une commande et d'un réassort au poids du même article", () => {
+    const counted = countOf([
+      freezeOrder(order("a", [salmon(1250), croissants(3)])),
+      freezeResupply(resupply([salmonLine(2000), croissantLine(6)])),
+    ]);
+
+    expect(counted.map(({ sku, quantity, saleUnit }) => ({ sku, quantity, saleUnit }))).toEqual([
+      { sku: "TRA-SAU", quantity: 3250, saleUnit: "weight" },
+      { sku: "VIE-001", quantity: 9, saleUnit: "piece" },
+    ]);
+  });
+
+  it("refuse d'arrêter une commande à la pièce et un réassort au poids du même article", () => {
+    const pieceSalmon: Line = { ...salmon(2), saleUnit: "piece" };
+
+    expect(() =>
+      countOf([
+        freezeOrder(order("a", [pieceSalmon])),
+        freezeResupply(resupply([salmonLine(2000)])),
+      ]),
+    ).toThrow(MixedSaleUnitCountError);
   });
 });

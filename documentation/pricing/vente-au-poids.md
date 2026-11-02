@@ -142,10 +142,11 @@ unité ; les ouvrir est un autre chantier, inscrit à la
 jour J ([`../limites-de-commande/plan-jour-meme-sur-stock.md`](../limites-de-commande/plan-jour-meme-sur-stock.md) §14).
 Bâti : le commerce (L2b-1) — chaque ligne de demande et de reçu porte son
 unité figée (`sale_unit`), le stock du jour se compte par article et unité ;
-une demande au poids **ne part pas encore au fournil** (refus
-`resupply.sale_unit.weight_not_sendable`) tant que le fournil, le colisage et
-les écrans (L2b-2 à L2b-4) ne la savent pas ; le réassort sans commande du
-comptoir l'accepte.
+le fournil (L2b-2) — l'unité recopiée à l'arrêt, comptée en grammes et
+imprimée « 1,25 kg » sur le bon de réassort. Une demande au poids **ne part
+pas encore au fournil** (refus `resupply.sale_unit.weight_not_sendable`) tant
+que le colisage, le transfert et les écrans (L2b-3, L2b-4) ne la savent pas ;
+le réassort sans commande du comptoir l'accepte.
 
 Aucune pesée réelle, aucun ajustement après la commande.
 

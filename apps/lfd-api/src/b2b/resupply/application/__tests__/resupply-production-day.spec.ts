@@ -1,7 +1,9 @@
 import { DirectUnitOfWork } from "../../../../platform/database/__tests__/direct-unit-of-work.js";
 import { FixedIdGenerator } from "../../../../platform/id/fixed-id-generator.js";
 import { FixedClock } from "../../../../platform/time/fixed-clock.js";
-import { ServiceRange } from "../../../../production/channels/commerce/index.js";
+import { ServiceDay, ServiceRange } from "../../../../production/channels/commerce/index.js";
+import type { PlacedSiteResupplySnapshot } from "../../domain/site-resupply.js";
+import { SiteResupplyReader } from "../../domain/site-resupply.reader.js";
 import {
   FixedClosedPlans,
   RecordingAdmissionDesk,
@@ -10,6 +12,7 @@ import { CancelSiteResupplyCommand } from "../cancel-site-resupply.command.js";
 import { CancelSiteResupplyHandler } from "../cancel-site-resupply.handler.js";
 import { GetResupplyProductionDayHandler } from "../get-resupply-production-day.handler.js";
 import { GetResupplyProductionDayQuery } from "../get-resupply-production-day.query.js";
+import { ProductionDayResupplies } from "../production-day-resupplies.js";
 import { ProductionRangeResupplies } from "../production-range-resupplies.js";
 import { ResupplyPlanGate } from "../resupply-plan-gate.js";
 import { SendBakehouseResupplyCommand } from "../send-bakehouse-resupply.command.js";
@@ -159,5 +162,72 @@ describe("le prévisionnel lit les réassorts pour demain (R3d)", () => {
         ],
       },
     ]);
+  });
+});
+
+/**
+ * Un lecteur qui ajoute une ligne de saumon au poids à chaque réassort envoyé.
+ * La garde d'envoi (`weight-resupply-guard.ts`) empêche encore d'en placer un
+ * par le geste : le double tient lieu de l'état d'après L2b-3.
+ */
+class WeighedReader extends SiteResupplyReader {
+  constructor(private readonly inner: SiteResupplyReader) {
+    super();
+  }
+
+  forSite(siteId: string, days: readonly string[]) {
+    return this.inner.forSite(siteId, days);
+  }
+
+  async placedOn(days: readonly string[]): Promise<readonly PlacedSiteResupplySnapshot[]> {
+    return (await this.inner.placedOn(days)).map((row) => ({
+      ...row,
+      lines: [
+        ...row.lines,
+        { sku: "SAU", label: "Saumon gravlax", quantity: 1250, saleUnit: "weight" as const },
+      ],
+    }));
+  }
+}
+
+describe("le fournil reçoit l'unité des lignes de réassort (lot L2b-2)", () => {
+  it("le prévisionnel cumule les grammes à part des pièces", async () => {
+    const { reader } = await world();
+
+    const days = await new ProductionRangeResupplies(new WeighedReader(reader)).expectedBetween(
+      ServiceRange.of(TODAY, TOMORROW),
+    );
+
+    expect(days[0]?.items).toContainEqual({
+      sku: "SAU",
+      productName: "Saumon gravlax",
+      quantity: 3750,
+      saleUnit: "weight",
+    });
+    expect(days[0]?.items).toContainEqual({
+      sku: "CRO",
+      productName: "Croissant",
+      quantity: 11,
+      saleUnit: "piece",
+    });
+  });
+
+  it("l'arrêt reçoit chaque ligne avec son unité", async () => {
+    const { reader } = await world();
+    const day = new ProductionDayResupplies(
+      new WeighedReader(reader),
+      new SiteLabels(new Map()),
+      new FixedTransferServedSites([VILLAGE]),
+    );
+
+    const placed = await day.placedFor(ServiceDay.of(TOMORROW));
+
+    expect(placed.flatMap((resupply) => resupply.lines)).toContainEqual({
+      sku: "SAU",
+      productName: "Saumon gravlax",
+      quantity: 1250,
+      saleUnit: "weight",
+    });
+    expect(placed[0]?.lines[0]?.saleUnit).toBe("piece");
   });
 });

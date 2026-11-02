@@ -1,3 +1,4 @@
+import { productionSaleUnitOf } from "./sale-unit.column.js";
 import type {
   LaunchedResupplySnapshot,
   ProductionResupplySnapshot,
@@ -23,7 +24,7 @@ export const RESUPPLY_COLUMNS = {
     kind: true,
     launchedAt: true,
     launchedBy: true,
-    lines: { select: { sku: true, productName: true, quantity: true } },
+    lines: { select: { sku: true, productName: true, quantity: true, saleUnit: true } },
   },
   orderBy: { resupplyId: "asc" },
 } as const;
@@ -42,6 +43,7 @@ interface ResupplyRow {
     readonly sku: string;
     readonly productName: string;
     readonly quantity: number;
+    readonly saleUnit: string;
   }[];
 }
 
@@ -66,9 +68,14 @@ export function splitResupplies(rows: readonly ResupplyRow[]): SplitResupplies {
       siteLabel: row.siteLabel,
       name: row.name,
       servedByTransfer: row.servedByTransfer,
-      // Un réassort est toujours à la pièce : le commerce refuse un article au
-      // poids au réassort (plan `pricing/vente-au-poids.md`, § 2).
-      lines: row.lines.map((line) => ({ ...line, saleUnit: "piece" })),
+      // L'unité figée à l'arrêt (lot L2b-2) ; une ligne figée avant la
+      // colonne est née `piece`, ce qu'elle était.
+      lines: row.lines.map((line) => ({
+        sku: line.sku,
+        productName: line.productName,
+        quantity: line.quantity,
+        saleUnit: productionSaleUnitOf(line.sku, line.saleUnit),
+      })),
     };
     if (row.launchedAt === null || row.launchedBy === null) {
       resupplies.push(resupply);
@@ -99,6 +106,7 @@ export function resupplyRowOf(resupply: ProductionResupplySnapshot | LaunchedRes
         sku: line.sku,
         productName: line.productName,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
       })),
     },
   };

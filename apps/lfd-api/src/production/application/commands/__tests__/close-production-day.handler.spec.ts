@@ -564,8 +564,8 @@ const VILLAGE_RESUPPLY = {
   name: null,
   servedByTransfer: true,
   lines: [
-    { sku: "VIE-001", productName: "Croissant", quantity: 12 },
-    { sku: "PAIN-001", productName: "Baguette", quantity: 5 },
+    { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
+    { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece" as const },
   ],
 };
 
@@ -583,7 +583,7 @@ describe("le réassort au plan figé (lot R3a)", () => {
     expect(days.saved?.resupplies).toEqual([
       {
         ...VILLAGE_RESUPPLY,
-        lines: VILLAGE_RESUPPLY.lines.map((line) => ({ ...line, saleUnit: "piece" })),
+        lines: VILLAGE_RESUPPLY.lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
       },
     ]);
     expect(days.saved?.counts).toEqual([
@@ -666,7 +666,7 @@ const LABO_RESUPPLY = {
   siteLabel: "Le Labo",
   name: null,
   servedByTransfer: false,
-  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6 }],
+  lines: [{ sku: "VIE-001", productName: "Croissant", quantity: 6, saleUnit: "piece" as const }],
 };
 
 describe("le réassort à coliser (lot R3b)", () => {
@@ -686,7 +686,8 @@ describe("le réassort à coliser (lot R3b)", () => {
         siteId: "site_village",
         siteLabel: "Le Village",
         name: null,
-        lines: VILLAGE_RESUPPLY.lines,
+        // Le fait de colisage ne porte pas encore l'unité (lot L2b-3).
+        lines: VILLAGE_RESUPPLY.lines.map(({ saleUnit: _unit, ...line }) => line),
       }).durableFact(),
     ]);
     expect(drawn[0]?.key).toBe(`${PRODUCTION_RESUPPLY_LIST_DRAWN}:${DAY}:rs_1`);

@@ -1,5 +1,6 @@
 import type { ProductionResupplySnapshot } from "../entities/production-day.js";
 import { resupplySheetTitleOf } from "./day-dossier.js";
+import { figureFontSize, lineFigure, piecesOfLines } from "./line-tally.js";
 import { drawOrderSwatch } from "./order-color-swatch.js";
 import {
   LEFT,
@@ -61,14 +62,16 @@ export function drawResupplySheet(
   }
   y += 5.5 * MM;
   rule(doc, y, 2);
-  const pieces = resupply.lines.reduce((sum, line) => sum + line.quantity, 0);
+  // Un article au poids compte pour une ligne dans ce total, comme sur le bon
+  // de commande (P6) ; ses grammes se lisent sur sa ligne (lot L2b-2).
+  const pieces = piecesOfLines(resupply.lines);
   y += 5 * MM;
   putCaps(doc, `À PRÉPARER — ${String(pieces)} pièce${pieces > 1 ? "s" : ""}`, LEFT, y);
   putCaps(doc, "FAIT", RIGHT - 8 * MM, y);
   y += 6 * MM;
   for (const line of resupply.lines) {
     y = room(y, 10 * MM);
-    put(doc, String(line.quantity), LEFT, y - 1.2 * MM, { size: 18, bold: true });
+    put(doc, lineFigure(line), LEFT, y - 1.2 * MM, { size: figureFontSize(line, 18), bold: true });
     put(doc, line.productName, LEFT + 18 * MM, y, { size: 13, width: WIDTH - 70 * MM });
     putRight(doc, line.sku, RIGHT - 14 * MM, y + 1 * MM, 9);
     doc

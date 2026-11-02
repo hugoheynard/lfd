@@ -70,19 +70,23 @@ export class PrismaProductionPlanReader extends ProductionPlanReader {
         sku: true,
         productName: true,
         quantity: true,
+        saleUnit: true,
         resupply: { select: { serviceDay: true } },
       },
     });
     const byDay = new Map<string, Map<string, DemandItem>>();
     for (const line of lines) {
       const items = byDay.get(line.resupply.serviceDay) ?? new Map<string, DemandItem>();
-      const item = items.get(line.sku);
-      items.set(line.sku, {
+      const saleUnit = productionSaleUnitOf(line.sku, line.saleUnit);
+      // Par (article, unité) comme le cumul du commerce : des grammes ne
+      // s'ajoutent jamais à des pièces (lot L2b-2).
+      const key = `${line.sku}|${saleUnit}`;
+      const item = items.get(key);
+      items.set(key, {
         sku: line.sku,
         productName: item?.productName ?? line.productName,
         quantity: (item?.quantity ?? 0) + line.quantity,
-        // Un réassort est toujours à la pièce (plan `pricing/vente-au-poids.md`, § 2).
-        saleUnit: "piece",
+        saleUnit,
       });
       byDay.set(line.resupply.serviceDay, items);
     }

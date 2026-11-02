@@ -317,6 +317,29 @@ describe("dayDossierPdfKey", () => {
     expect(pages[3]).not.toContain("€");
   });
 
+  it("le bon d'un réassort au poids dit « 1,25 kg », et son total ne compte la ligne que pour une (L2b-2)", async () => {
+    const dossier = dayDossierOf([], new Map(), [
+      {
+        resupplyId: "r-1",
+        siteId: "site-v",
+        siteLabel: "Village",
+        name: null,
+        servedByTransfer: true,
+        lines: [
+          { sku: "VIE-002", productName: "Pain au chocolat", quantity: 18, saleUnit: "piece" },
+          { sku: "TRA-SAU", productName: "Saumon gravlax", quantity: 1250, saleUnit: "weight" },
+        ],
+      },
+    ]);
+    const pages = pdfPages(await rendered(dossier, STAMP, () => "", NO_COLORS, NO_COLORS));
+    const sheet = pages[pages.length - 1] ?? "";
+    expect(sheet).toContain("RÉASSORT 1/1");
+    expect(sheet).toContain("1,25 kg");
+    expect(sheet).toContain("19 pièces");
+    expect(sheet).not.toContain("1268");
+    expect(sheet).not.toContain("1250");
+  });
+
   it("une journée à réassorts seuls : le récapitulatif, puis le bon de réassort", async () => {
     const dossier = dayDossierOf([], new Map(), [
       {

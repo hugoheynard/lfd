@@ -19,7 +19,8 @@ export class StoredProductionSaleUnitUnknownError extends TechnicalError {
 }
 
 /**
- * Lit `sale_unit` (`production_order_line`, `production_count`) dans le
+ * Lit `sale_unit` (`production_order_line`, `production_count`,
+ * `production_resupply_line`) dans le
  * vocabulaire du domaine. Refuse plutôt que de replier sur `piece` : des
  * grammes relus en pièces feraient cuire mille fois trop.
  *

@@ -21,9 +21,9 @@ function fact(servedByTransfer: boolean) {
     name: "Rupture de midi",
     servedByTransfer,
     lines: [
-      { sku: "PAC", productName: "Pain au chocolat", quantity: 4 },
-      { sku: "CRO", productName: "Croissant", quantity: 6 },
-      { sku: "CRO", productName: "Croissant", quantity: 2 },
+      { sku: "PAC", productName: "Pain au chocolat", quantity: 4, saleUnit: "piece" },
+      { sku: "CRO", productName: "Croissant", quantity: 6, saleUnit: "piece" },
+      { sku: "CRO", productName: "Croissant", quantity: 2, saleUnit: "piece" },
     ],
   }).durableFact();
 }

@@ -38,14 +38,17 @@ const RESUPPLY: PlacedResupply = {
   name: null,
   servedByTransfer: true,
   lines: [
-    { sku: "VIE-001", productName: "Croissant", quantity: 12 },
-    { sku: "PAIN-001", productName: "Baguette", quantity: 5 },
+    { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
+    { sku: "PAIN-001", productName: "Baguette", quantity: 5, saleUnit: "piece" as const },
   ],
 };
 
 /** Un réassort tel que la journée le fige : à la pièce (plan `pricing/vente-au-poids.md`, § 2). */
 function frozen<T extends { readonly lines: readonly object[] }>(resupply: T): T {
-  return { ...resupply, lines: resupply.lines.map((line) => ({ ...line, saleUnit: "piece" })) };
+  return {
+    ...resupply,
+    lines: resupply.lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
+  };
 }
 
 function opened(): ProductionDay {
@@ -71,11 +74,13 @@ describe("ProductionDay — le réassort figé à l'arrêt (R3a)", () => {
   });
 
   it("recopie le réassort : le muter ensuite ne touche pas la journée", () => {
-    const lines = [{ sku: "VIE-001", productName: "Croissant", quantity: 12 }];
+    const lines = [
+      { sku: "VIE-001", productName: "Croissant", quantity: 12, saleUnit: "piece" as const },
+    ];
     const day = opened();
 
     day.close([], NO_WITHDRAWAL, AT, null, [{ ...RESUPPLY, lines }]);
-    lines.push({ sku: "X", productName: "Intrus", quantity: 1 });
+    lines.push({ sku: "X", productName: "Intrus", quantity: 1, saleUnit: "piece" as const });
 
     expect(day.resupplies[0]?.lines).toHaveLength(1);
   });

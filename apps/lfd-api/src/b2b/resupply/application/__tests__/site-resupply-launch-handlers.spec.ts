@@ -94,7 +94,7 @@ function launched(resupplyId: string, siteId = VILLAGE) {
     siteLabel: "Le Village",
     name: null,
     servedByTransfer: true,
-    lines: [{ sku: "CRO", productName: "Croissant", quantity: 3 }],
+    lines: [{ sku: "CRO", productName: "Croissant", quantity: 3, saleUnit: "piece" }],
   }).durableFact();
   return { eventId: "evt_1", type: fact.type, payload: fact.payload };
 }

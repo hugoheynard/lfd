@@ -72,6 +72,7 @@ export class ProductionDayResupplies extends DayResuppliesReader {
         sku: line.sku,
         productName: line.label,
         quantity: line.quantity,
+        saleUnit: line.saleUnit,
       })),
     }));
   }

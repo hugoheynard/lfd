@@ -173,7 +173,7 @@ describe("ReopenProductionDayHandler", () => {
         siteLabel: "Le Village",
         name: null,
         servedByTransfer: true,
-        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3 }],
+        lines: [{ sku: "PAI-SEI", productName: "Pain de seigle", quantity: 3, saleUnit: "piece" }],
       },
     ]);
     const { handler, days, durable } = setup(day);

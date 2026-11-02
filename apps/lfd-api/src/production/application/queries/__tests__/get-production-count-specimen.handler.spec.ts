@@ -20,7 +20,8 @@ describe("GetProductionCountSpecimenHandler", () => {
     // sur sa propre ligne marquée.
     expect(text).toContain("7 articles, 229 pièces");
     expect(text).toContain("SUR MESURE");
-    expect(text).toContain("1,25 kg");
+    // 1,25 kg commandés + 2 kg de réassort au poids (lot L2b-2), en grammes.
+    expect(text).toContain("3,25 kg");
     expect(text).not.toContain("€");
   });
 });

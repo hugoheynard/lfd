@@ -96,7 +96,14 @@ function setup(options: { readonly vehicle?: boolean } = {}) {
       LAUNCHED,
       "staff_paul",
       "Paul",
-      { resupplyId, siteId, siteLabel, name, servedByTransfer, lines },
+      {
+        resupplyId,
+        siteId,
+        siteLabel,
+        name,
+        servedByTransfer,
+        lines: lines.map((line) => ({ ...line, saleUnit: "piece" as const })),
+      },
       null,
       openedPlan,
     );

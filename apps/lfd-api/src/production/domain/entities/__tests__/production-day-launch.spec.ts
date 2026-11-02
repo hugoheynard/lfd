@@ -45,7 +45,7 @@ function resupply(resupplyId: string, quantity: number, servedByTransfer = true)
     siteLabel: servedByTransfer ? "Le Village" : "Le Labo",
     name: "Vitrine du midi",
     servedByTransfer,
-    lines: [{ sku: "VIE-001", productName: "Croissant", quantity }],
+    lines: [{ sku: "VIE-001", productName: "Croissant", quantity, saleUnit: "piece" }],
   };
 }
 

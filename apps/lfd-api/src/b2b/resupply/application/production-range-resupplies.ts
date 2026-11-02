@@ -36,9 +36,9 @@ export class ProductionRangeResupplies extends ExpectedResuppliesReader {
         sku: total.sku,
         productName: total.label,
         quantity: total.quantity,
-        // Aucun réassort envoyé ne porte de ligne au poids : la garde d'envoi
-        // (`weight-resupply-guard.ts`, lot L2b-1) l'interdit jusqu'au lot L2b-2.
-        saleUnit: "piece" as const,
+        // Le cumul est par (article, unité) : des grammes ne s'ajoutent jamais
+        // à des pièces (lot L2b-2).
+        saleUnit: total.saleUnit,
       })),
     }));
   }
