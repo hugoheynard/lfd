@@ -145,6 +145,29 @@ describe("GetDaySupervisionHandler", () => {
     expect(view.late.map((late) => late.supply)).toEqual(["shelf"]);
   });
 
+  /**
+   * Régression (2026-11-02) : une commande sur stock À L'HEURE ne montrait pas
+   * « Sur stock » en Supervision — la marque n'était servie que dans `late`.
+   */
+  it("liste toutes les commandes du jour prises sur stock, en retard ou non", async () => {
+    const onTime: SupervisedOrder = {
+      ...LATE,
+      orderId: "o2",
+      reference: "ORD-0002",
+      supply: "shelf",
+      status: "placed",
+      window: { start: "18:00", end: "19:00", source: "override" },
+    };
+    const view = await new GetDaySupervisionHandler(
+      new StubReader([LATE, onTime], 0),
+      new FixedClock(NOW),
+      new FixedPackingStates(),
+    ).execute(new GetDaySupervisionQuery(DAY));
+
+    expect(view.late.map((late) => late.orderId)).toEqual(["o1"]);
+    expect(view.shelfOrderIds).toEqual(["o2"]);
+  });
+
   it("plan A1 : compte à part les annulées dont le colisage a retiré la feuille", async () => {
     const cancelled: SupervisedOrder = { ...LATE, status: "cancelled", window: null };
     const packing = new FixedPackingStates({ o1: "withdrawn", o9: "packed" });

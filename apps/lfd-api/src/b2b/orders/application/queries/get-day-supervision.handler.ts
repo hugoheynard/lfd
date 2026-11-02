@@ -55,6 +55,9 @@ export class GetDaySupervisionHandler implements IQueryHandler<
       flow: [...flow],
       late: late.map(toLateOrder),
       awaitingDecision: awaitingDecisionOf(orders).map(toAwaitingDecision),
+      shelfOrderIds: orders
+        .filter((order) => order.supply === "shelf")
+        .map((order) => order.orderId),
       undated,
     };
   }

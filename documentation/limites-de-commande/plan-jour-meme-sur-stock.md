@@ -1032,6 +1032,12 @@ sert.
 - **Le badge « Sur stock »** : liste des Commandes (à côté du numéro),
   Supervision (carte de retrait en retard, lu dans `LateOrder.supply` ;
   carte de manque au colisage).
+- **Corrigé le 2026-11-02 (retour de Hugo)** : le badge n'apparaissait en
+  Supervision que sur une commande en retard. `DaySupervisionView` sert
+  désormais `shelfOrderIds` (toutes les commandes du jour sur stock,
+  `.default([])` à la lecture), que lisent la colonne Retrait / livraison
+  (`handover-slots.ts`) et la colonne Colisage (cartes et commandes attendues,
+  `packing-cards.ts`) ; le retrait ne lit toujours pas `supply`.
 - **Réglages › Commandes › Jour même** : l'encadré « ne prennent pas encore
   effet » et l'interrupteur `same_day_allowed` sont retirés ; la page ne porte
   plus que la carte du circuit.

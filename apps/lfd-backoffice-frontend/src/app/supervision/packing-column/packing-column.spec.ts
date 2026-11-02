@@ -34,6 +34,7 @@ function card(reference: string, overrides: Partial<PackingCard> = {}): PackingC
     sheetOrderId: `o-${reference}`,
     deliveryNotePrint: null,
     abandoned: [],
+    shelf: false,
     ...overrides,
   };
 }
@@ -418,6 +419,7 @@ describe('PackingColumn', () => {
           pickupLabel: 'Boutique',
           totalUnits: 36,
           slotMinutes: 540,
+          shelf: false,
         },
       ],
     });
@@ -428,6 +430,36 @@ describe('PackingColumn', () => {
     );
     expect(upcoming?.textContent).toContain('Le Petit Chaudron');
     expect(upcoming?.querySelector('a, button')).toBeNull();
+  });
+
+  /** Régression (Hugo, 2026-11-02) : « Sur stock » manquait au colisage. */
+  it('montre « Sur stock » sur une carte et une attendue prises en vitrine (L6)', async () => {
+    const closed = await mount({
+      ...BOARD,
+      visible: [card('CMD-S', { shelf: true }), card('CMD-P')],
+    });
+    expect(closed.querySelector('[data-reference="CMD-S"] [data-packing-shelf]')).not.toBeNull();
+    expect(closed.querySelector('[data-reference="CMD-P"] [data-packing-shelf]')).toBeNull();
+
+    TestBed.resetTestingModule();
+    const upcoming = await mount({
+      ...BOARD,
+      notClosed: true,
+      upcoming: [
+        {
+          reference: 'CMD-9',
+          customerLabel: 'Le Petit Chaudron',
+          clientele: 'pro',
+          method: 'pickup',
+          siteId: null,
+          pickupLabel: 'Boutique',
+          totalUnits: 36,
+          slotMinutes: 540,
+          shelf: true,
+        },
+      ],
+    });
+    expect(upcoming.querySelector('[data-reference="CMD-9"] [data-packing-shelf]')).not.toBeNull();
   });
 
   /** `plan-controle-qualite.md`, §5 : seule une commande colisée se juge. */

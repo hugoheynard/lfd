@@ -218,6 +218,38 @@ describe('la colonne Colisage', () => {
 });
 
 /** Hugo, 2026-11-01 : la carte dit Pro / Particulier et le site du retrait. */
+/**
+ * Régression (Hugo, 2026-11-02) : une commande sur stock ne montrait pas
+ * « Sur stock » en Supervision hors des retards — la colonne Colisage non plus.
+ */
+describe('packingBoard — la marque « sur stock » (lot L6)', () => {
+  it('marque les cartes dont la commande est sur stock, par l’id de la fiche', () => {
+    const board = packingBoard(packing([sheet('S'), sheet('P')]), null, ['o-S']);
+
+    expect(board.visible.map((card) => [card.reference, card.shelf])).toEqual([
+      ['S', true],
+      ['P', false],
+    ]);
+  });
+
+  it('marque aussi les commandes attendues avant l’arrêt', () => {
+    const board = packingBoard(
+      packing([], null),
+      queue([entry('S', '07:00'), entry('P', '08:00')]),
+      ['o-S'],
+    );
+
+    expect(board.upcoming.map((order) => [order.reference, order.shelf])).toEqual([
+      ['S', true],
+      ['P', false],
+    ]);
+  });
+
+  it('sans la lecture du jour, ne marque rien', () => {
+    expect(packingBoard(packing([sheet('S')]), null).visible[0]?.shelf).toBe(false);
+  });
+});
+
 describe('packingBoard — clientèle et acheminement des cartes', () => {
   it('lit clientèle et site sur la fiche, le point figé dans la file', () => {
     const board = packingBoard(

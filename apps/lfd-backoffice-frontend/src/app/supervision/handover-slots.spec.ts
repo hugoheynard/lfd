@@ -42,12 +42,17 @@ const promised = (start: string | null, end: string): HandoverQueueWindowView =>
   source: 'override',
 });
 
-function late(orders: readonly Partial<LateOrder>[], asOf: string): DaySupervisionView {
+function late(
+  orders: readonly Partial<LateOrder>[],
+  asOf: string,
+  shelfOrderIds: readonly string[] = [],
+): DaySupervisionView {
   return {
     date: DAY,
     asOf,
     flow: [],
     awaitingDecision: [],
+    shelfOrderIds: [...shelfOrderIds],
     undated: 0,
     late: orders.map((order) => ({
       orderId: 'o',
@@ -126,13 +131,35 @@ describe('la colonne Retrait / livraison', () => {
         day: DAY,
         entries: [entry('S', promised('07:00', '08:00')), entry('P', promised('07:00', '08:00'))],
       },
-      late([{ orderId: 'o-S', supply: 'shelf' }, { orderId: 'o-P' }], '2026-09-25T06:55:00.000Z'),
+      late([{ orderId: 'o-S', supply: 'shelf' }, { orderId: 'o-P' }], '2026-09-25T06:55:00.000Z', [
+        'o-S',
+      ]),
     );
 
     const rows = board.pickup[0]?.rows ?? [];
     expect(rows.map((row) => [row.reference, row.shelf])).toEqual([
       ['S', true],
       ['P', false],
+    ]);
+  });
+
+  /**
+   * Régression (Hugo, 2026-11-02) : une commande sur stock À L'HEURE ne
+   * montrait pas « Sur stock » — la marque n'était lue que dans les retards.
+   */
+  it('marque « sur stock » une commande à l’heure, absente des retards', () => {
+    const board = handoverBoard(
+      {
+        day: DAY,
+        entries: [entry('S', promised('07:00', '08:00')), entry('P', promised('07:00', '08:00'))],
+      },
+      late([], '2026-09-25T06:55:00.000Z', ['o-S']),
+    );
+
+    const rows = board.pickup[0]?.rows ?? [];
+    expect(rows.map((row) => [row.reference, row.state, row.shelf])).toEqual([
+      ['S', 'ready', true],
+      ['P', 'ready', false],
     ]);
   });
 

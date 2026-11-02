@@ -48,6 +48,7 @@ const DAY: DaySupervisionView = {
   asOf: '2026-09-25T07:42:00.000Z',
   flow: [],
   awaitingDecision: [],
+  shelfOrderIds: [],
   late: [
     {
       orderId: 'o-late',

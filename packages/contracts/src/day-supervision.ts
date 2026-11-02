@@ -143,6 +143,14 @@ export const daySupervisionViewSchema = z.object({
   late: z.array(lateOrderSchema),
   /** Les commandes du jour au manque signalé, par numéro (E6a). */
   awaitingDecision: z.array(shortfallAwaitingDecisionSchema),
+  /**
+   * Les commandes du jour prises « sur stock » (`shelf`, plan du jour J, lot
+   * L6), annulées comprises — que les colonnes du colisage et du retrait, qui
+   * lisent des files d'autres blocs, marquent sans connaître `supply`. Vide
+   * d'un serveur d'avant le champ (2026-11-02 : le badge n'apparaissait que
+   * sur une commande en retard).
+   */
+  shelfOrderIds: z.array(z.string().min(1)).default([]),
   /** Les commandes OUVERTES sans date de service : elles n'appartiennent à aucun jour, et attendent encore un geste. */
   undated: z.number().int().nonnegative(),
 });

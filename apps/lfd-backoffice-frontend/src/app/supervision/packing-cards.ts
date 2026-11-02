@@ -68,6 +68,8 @@ export interface PackingCard {
   readonly deliveryNotePrint: PackingDeliveryNotePrint | null;
   /** Le reste abandonné d'un départ incomplet décidé ; vide sinon (Hugo, 2026-10-25). */
   readonly abandoned: readonly PackingAbandonedLine[];
+  /** « Sur stock » (lot L6), lu dans `supervision/day` — faux si la journée n'est pas lue. */
+  readonly shelf: boolean;
 }
 
 /**
@@ -83,6 +85,8 @@ export interface UpcomingOrder {
   readonly pickupLabel: string | null;
   readonly totalUnits: number;
   readonly slotMinutes: number | null;
+  /** « Sur stock » (lot L6), lu dans `supervision/day`. */
+  readonly shelf: boolean;
 }
 
 export interface PackingBoard {
@@ -164,7 +168,11 @@ function dueMinutesOf(sheet: PackingSheet): number | null {
   return sheet.dueAt === undefined || sheet.dueAt === null ? null : minutesOf(sheet.dueAt);
 }
 
-function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined): PackingCard {
+function cardOf(
+  sheet: PackingSheet,
+  entry: HandoverQueueEntryView | undefined,
+  shelf: ReadonlySet<string>,
+): PackingCard {
   return {
     reference: sheet.reference,
     orderId: entry?.orderId ?? null,
@@ -192,6 +200,7 @@ function cardOf(sheet: PackingSheet, entry: HandoverQueueEntryView | undefined):
     sheetOrderId: sheet.orderId,
     deliveryNotePrint: sheet.deliveryNotePrint ?? null,
     abandoned: sheet.abandonedRemainder ?? [],
+    shelf: shelf.has(sheet.orderId),
   };
 }
 
@@ -206,14 +215,17 @@ function bySlot(a: PackingCard, b: PackingCard): number {
 /**
  * Les cartes de la colonne. La file de retrait est facultative : si sa lecture
  * a échoué, le colisage reste lisible — seul le tri par heure se perd, et toutes
- * les commandes vont « en fin », dans l'ordre du serveur.
+ * les commandes vont « en fin », dans l'ordre du serveur. `shelfOrderIds` :
+ * les commandes sur stock du jour (`supervision/day`), vide si non lue.
  */
 export function packingBoard(
   view: ProductionPackingView,
   queue: HandoverQueueView | null,
+  shelfOrderIds: readonly string[] = [],
 ): PackingBoard {
   const byReference = new Map((queue?.entries ?? []).map((entry) => [entry.reference, entry]));
-  const cards = view.sheets.map((sheet) => cardOf(sheet, byReference.get(sheet.reference)));
+  const shelf = new Set(shelfOrderIds);
+  const cards = view.sheets.map((sheet) => cardOf(sheet, byReference.get(sheet.reference), shelf));
   // Par horaire, l'échéance la plus proche d'abord (Hugo, 2026-11-01) — un tri
   // GLOBAL : la colonne n'a pas d'intertitres par état, et l'ancien rang
   // « au four / en cours d'abord » faisait passer 9 h devant 6 h 30. `sort`
@@ -222,7 +234,7 @@ export function packingBoard(
   const notClosed = view.closedAt === null;
   return {
     notClosed,
-    upcoming: notClosed ? upcomingOf(queue) : [],
+    upcoming: notClosed ? upcomingOf(queue, shelf) : [],
     visible: open,
     overflow: Math.max(0, open.length - PACKING_VISIBLE_MAX),
     packed: cards.filter((card) => card.state === 'packed').sort(bySlot),
@@ -233,7 +245,7 @@ export function packingBoard(
 }
 
 /** Les commandes attendues, hors annulées, par heure de retrait. */
-function upcomingOf(queue: HandoverQueueView | null): UpcomingOrder[] {
+function upcomingOf(queue: HandoverQueueView | null, shelf: ReadonlySet<string>): UpcomingOrder[] {
   return (queue?.entries ?? [])
     .filter((entry) => entry.state !== 'cancelled')
     .map((entry) => ({
@@ -245,6 +257,7 @@ function upcomingOf(queue: HandoverQueueView | null): UpcomingOrder[] {
       pickupLabel: entry.pickupLabel,
       totalUnits: entry.totalUnits,
       slotMinutes: slotOf(entry),
+      shelf: shelf.has(entry.orderId),
     }))
     .sort((a, b) => (a.slotMinutes ?? Infinity) - (b.slotMinutes ?? Infinity));
 }

@@ -29,6 +29,10 @@
           <span class="customer">{{ order.customerLabel }}</span>
           <span class="meta">{{ order.reference }} · {{ upcomingUnits(order) }}</span>
           <app-order-tags [clientele]="order.clientele" [mode]="mode(order)" />
+          @if (order.shelf) {
+            <!-- Lot L6 : prise sur le stock de la vitrine (lu dans supervision/day). -->
+            <fold-badge variant="success" content="Sur stock" data-packing-shelf />
+          }
         </div>
       </fold-card>
     }
@@ -65,6 +69,10 @@
             <span class="customer">{{ card.customerLabel }}</span>
             <span class="meta">{{ meta(card) }}</span>
             <app-order-tags [clientele]="card.clientele" [mode]="mode(card)" />
+            @if (card.shelf) {
+              <!-- Lot L6 : prise sur le stock de la vitrine (lu dans supervision/day). -->
+              <fold-badge variant="success" content="Sur stock" data-packing-shelf />
+            }
           </div>
           @if (card.state === 'awaiting_oven') {
             <!-- « Att. prod x/n » : lignes encore au four sur lignes de la
@@ -206,6 +214,10 @@
               <span class="customer">{{ card.customerLabel }}</span>
               <span class="meta">{{ meta(card) }}</span>
               <app-order-tags [clientele]="card.clientele" [mode]="mode(card)" />
+              @if (card.shelf) {
+                <!-- Lot L6 : prise sur le stock de la vitrine (lu dans supervision/day). -->
+                <fold-badge variant="success" content="Sur stock" data-packing-shelf />
+              }
             </div>
             @if (card.packedAt !== null) {
               <fold-badge

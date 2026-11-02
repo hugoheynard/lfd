@@ -76,3 +76,27 @@ describe("lateOrderSchema — la marque « sur stock » (lot L6)", () => {
     expect(() => lateOrderSchema.parse({ ...LATE, supply: "vitrine" })).toThrow();
   });
 });
+
+describe("daySupervisionViewSchema — les commandes sur stock du jour (lot L6)", () => {
+  const VIEW = {
+    date: "2026-10-03",
+    asOf: "2026-10-03T06:00:00.000Z",
+    flow: [],
+    late: [],
+    awaitingDecision: [],
+    undated: 0,
+  } as const;
+
+  it("lit une liste vide d'un serveur d'avant le champ", () => {
+    expect(daySupervisionViewSchema.parse(VIEW).shelfOrderIds).toEqual([]);
+  });
+
+  it("garde les identifiants servis, et refuse un identifiant vide", () => {
+    expect(
+      daySupervisionViewSchema.parse({ ...VIEW, shelfOrderIds: ["o1"] }).shelfOrderIds,
+    ).toEqual(["o1"]);
+    expect(daySupervisionViewSchema.safeParse({ ...VIEW, shelfOrderIds: [""] }).success).toBe(
+      false,
+    );
+  });
+});

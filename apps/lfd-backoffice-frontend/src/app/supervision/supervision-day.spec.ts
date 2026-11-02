@@ -51,6 +51,7 @@ function view(date: string, now: number, ageMs: number): DaySupervisionView {
     flow: [],
     late: [],
     awaitingDecision: [],
+    shelfOrderIds: [],
     undated: 0,
   };
 }

@@ -63,9 +63,8 @@ export interface SlotRow {
   readonly heldForQuality: boolean;
   /**
    * **Sur stock** (plan du jour J, lot L6) : prise dans la vitrine, jamais
-   * fabriquée pour elle. Lu dans les retards de `supervision/day`
-   * (`LateOrder.supply`) — la file du retrait ne la porte pas ; faux quand la
-   * commande n'est pas en retard ou que la journée n'a pas été lue.
+   * fabriquée pour elle. Lu dans `supervision/day` (`shelfOrderIds`) — la file
+   * du retrait ne la porte pas ; faux quand la journée n'a pas été lue.
    */
   readonly shelf: boolean;
   /**
@@ -204,9 +203,9 @@ function rowOf(
       (order) => order.orderId === entry.orderId && order.rule === 'not_handed_over_after_window',
     ) ?? false;
   const state = stateOf(entry, overdue && slotKindOf(entry) === 'hour');
-  const shelf =
-    late?.late.some((order) => order.orderId === entry.orderId && order.supply === 'shelf') ??
-    false;
+  // Toutes les commandes sur stock du jour, pas seulement les retards
+  // (2026-11-02 : une commande à l'heure ne montrait pas « Sur stock »).
+  const shelf = late?.shelfOrderIds.includes(entry.orderId) ?? false;
   const window = entry.window;
   return {
     orderId: entry.orderId,

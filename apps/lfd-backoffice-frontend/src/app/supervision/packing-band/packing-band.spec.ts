@@ -29,6 +29,7 @@ function card(
     sheetOrderId: reference,
     deliveryNotePrint: null,
     abandoned: [],
+    shelf: false,
   };
 }
 

@@ -44,6 +44,7 @@ function card(reference: string, state: PackingState): PackingCard {
     sheetOrderId: reference,
     deliveryNotePrint: null,
     abandoned: [],
+    shelf: false,
   };
 }
 
