@@ -82,6 +82,19 @@ const exemptionFact = () =>
     company: named("company").nullable(),
   });
 
+/** L'état du jour même et de ses voisins, tel que posé (forme du lot L3, 2026-11-02). */
+const orderCutoffSettingsState = () => ({
+  sameDayAllowed: z.boolean(),
+  resupplyCutoffTime: z.string(),
+  pickupReminderDelayMinutes: minutes(),
+  delayWarningDelayMinutes: minutes(),
+  sameDayPublicAllowed: z.boolean(),
+  sameDayProAllowed: z.boolean(),
+  sameDayProOnline: z.boolean(),
+  sameDayProWithoutCredit: z.enum(["refuse", "payment_link"]),
+  shelfHoldMinutes: minutes(),
+});
+
 /** Le nom et la plaque d'un véhicule de la flotte, tels qu'écrits. */
 const vehicleIdentity = () =>
   payload({
@@ -568,19 +581,21 @@ export const ORDERS_PRODUCTION_FACTS = {
    * avant gardent leur forme — l'historique ci-dessous.
    */
   "order_cutoff_settings.updated": fact(
-    payload({
-      sameDayAllowed: z.boolean(),
-      resupplyCutoffTime: z.string(),
-      pickupReminderDelayMinutes: minutes(),
-      delayWarningDelayMinutes: minutes(),
-      previous: payload({
+    payload({ ...orderCutoffSettingsState(), previous: payload(orderCutoffSettingsState()) }),
+    [
+      // Jusqu'au 2026-11-02, avant les réglages du circuit du jour J (lot L3).
+      payload({
         sameDayAllowed: z.boolean(),
         resupplyCutoffTime: z.string(),
         pickupReminderDelayMinutes: minutes(),
         delayWarningDelayMinutes: minutes(),
+        previous: payload({
+          sameDayAllowed: z.boolean(),
+          resupplyCutoffTime: z.string(),
+          pickupReminderDelayMinutes: minutes(),
+          delayWarningDelayMinutes: minutes(),
+        }),
       }),
-    }),
-    [
       // Jusqu'au 2026-10-25, avant les délais des deux relances d'un retrait
       // en retard (Rappel au client, Avertir le client).
       payload({

@@ -1,0 +1,21 @@
+-- RETOUR ARRIÈRE de 20261102200000_les_reglages_du_jour_j
+-- (documentation/limites-de-commande/plan-jour-meme-sur-stock.md, §14, L3).
+--
+-- 🔴 NON APPLIQUÉ, et Prisma ne le lit pas. Il se joue À LA MAIN, une fois,
+-- par l'URL DIRECTE. La migration reste inscrite « appliquée ».
+--
+-- Le code d'avant ne lit ni n'écrit les cinq colonnes : son `upsert` laisse
+-- leurs défauts, que le CHECK admet. Le retour arrière est donc le retour du
+-- code seul ; ce fichier n'a rien à jouer.
+--
+-- ⚠️ Ce qui est PERDU au retour du code : les réglages posés à l'écran depuis
+-- (ils restent en base, plus personne ne les lit ni ne les montre). Aucun
+-- comportement ne les lit avant le lot L4.
+--
+-- Retirer les colonnes serait un resserrement, dans un déploiement ultérieur,
+-- sur décision de Hugo (une colonne morte reste en base) :
+--
+--   ALTER TABLE public.order_cutoff_settings
+--     DROP CONSTRAINT order_cutoff_settings_shelf_hold_minutes_check;
+
+SELECT 1;

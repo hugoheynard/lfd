@@ -29,18 +29,22 @@ export class OrderCutoffSettingsUpdatedEvent implements JournaledEvent {
       type: ORDER_CUTOFF_SETTINGS_FACTS.updated,
       subjectType: "order_cutoff_settings",
       subjectId: ORDER_CUTOFF_SETTINGS_SUBJECT,
-      payload: {
-        sameDayAllowed: this.next.sameDayAllowed,
-        resupplyCutoffTime: this.next.resupplyCutoffTime,
-        pickupReminderDelayMinutes: this.next.pickupReminderDelayMinutes,
-        delayWarningDelayMinutes: this.next.delayWarningDelayMinutes,
-        previous: {
-          sameDayAllowed: this.previous.sameDayAllowed,
-          resupplyCutoffTime: this.previous.resupplyCutoffTime,
-          pickupReminderDelayMinutes: this.previous.pickupReminderDelayMinutes,
-          delayWarningDelayMinutes: this.previous.delayWarningDelayMinutes,
-        },
-      },
+      payload: { ...stateOf(this.next), previous: stateOf(this.previous) },
     };
   }
+}
+
+/** L'état seul, sans rien d'autre que ses clés : la charge est stricte. */
+function stateOf(state: OrderCutoffSettingsState): OrderCutoffSettingsState {
+  return {
+    sameDayAllowed: state.sameDayAllowed,
+    resupplyCutoffTime: state.resupplyCutoffTime,
+    pickupReminderDelayMinutes: state.pickupReminderDelayMinutes,
+    delayWarningDelayMinutes: state.delayWarningDelayMinutes,
+    sameDayPublicAllowed: state.sameDayPublicAllowed,
+    sameDayProAllowed: state.sameDayProAllowed,
+    sameDayProOnline: state.sameDayProOnline,
+    sameDayProWithoutCredit: state.sameDayProWithoutCredit,
+    shelfHoldMinutes: state.shelfHoldMinutes,
+  };
 }

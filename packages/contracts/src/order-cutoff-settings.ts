@@ -34,6 +34,25 @@ export interface OrderCutoffSettingsView {
   readonly pickupReminderDelayMinutes: number;
   /** **« Avertir le client »** (sa commande prend du retard) : même règle, son propre délai. */
   readonly delayWarningDelayMinutes: number;
+  /**
+   * **Le circuit du jour J** (lot L3, `documentation/limites-de-commande/plan-jour-meme-sur-stock.md`
+   * §3, Hugo 2026-11-02) : les particuliers peuvent-ils commander pour
+   * aujourd'hui, sur le stock de la vitrine. Aucun effet avant le lot L4 ;
+   * jusque-là, seul `sameDayAllowed` décide.
+   */
+  readonly sameDayPublicAllowed: boolean;
+  /** Les pros peuvent-ils commander pour aujourd'hui (au comptoir). Aucun effet avant L4. */
+  readonly sameDayProAllowed: boolean;
+  /** Un pro peut-il aussi commander pour aujourd'hui en ligne, hors comptoir (Q6). Aucun effet avant L4. */
+  readonly sameDayProOnline: boolean;
+  /** Un pro sans crédit au compte, au comptoir : refuser, ou lien de paiement (Q7). Aucun effet avant L4. */
+  readonly sameDayProWithoutCredit: SameDayProWithoutCredit;
+  /**
+   * Combien de minutes un paiement par carte en cours tient le stock de la
+   * vitrine (Q3 bis), entier de `SHELF_HOLD_MINUTES_MIN` à `SHELF_HOLD_MINUTES_MAX`.
+   * Aucun effet avant L4 : l'expiration boutique reste à 30 minutes.
+   */
+  readonly shelfHoldMinutes: number;
   /** Instant du dernier geste ; `null` tant que personne n'a rien réglé. */
   readonly updatedAt: string | null;
   /** Le nom de qui l'a posé, figé au geste ; `null` tant que personne n'a rien réglé. */
@@ -43,12 +62,32 @@ export interface OrderCutoffSettingsView {
 /** L'heure du réassort tant que personne ne l'a posée : la veille, 20 h (Hugo, 2026-10-21). */
 export const DEFAULT_RESUPPLY_CUTOFF_TIME = "20:00";
 
+/** Ce que devient, au comptoir, la commande du jour d'un pro sans crédit au compte (Q7). */
+export const SAME_DAY_PRO_WITHOUT_CREDIT = ["refuse", "payment_link"] as const;
+export type SameDayProWithoutCredit = (typeof SAME_DAY_PRO_WITHOUT_CREDIT)[number];
+
+/**
+ * Les bornes de la tenue du stock par un paiement en cours (lot L3). En deçà
+ * de 5 minutes, le balayage de l'expiration (toutes les 5 minutes) ne la
+ * tiendrait pas ; au-delà de 2 heures, une vitrine resterait gelée par un
+ * panier abandonné.
+ */
+export const SHELF_HOLD_MINUTES_MIN = 5;
+export const SHELF_HOLD_MINUTES_MAX = 120;
+/** La tenue tant que personne ne l'a posée : l'expiration boutique d'aujourd'hui, 30 minutes. */
+export const DEFAULT_SHELF_HOLD_MINUTES = 30;
+
 /** Le réglage tant que personne ne l'a posé : jour même fermé — rien ne s'ouvre au déploiement. */
 export const DEFAULT_ORDER_CUTOFF_SETTINGS: OrderCutoffSettingsView = {
   sameDayAllowed: false,
   resupplyCutoffTime: DEFAULT_RESUPPLY_CUTOFF_TIME,
   pickupReminderDelayMinutes: 0,
   delayWarningDelayMinutes: 0,
+  sameDayPublicAllowed: false,
+  sameDayProAllowed: false,
+  sameDayProOnline: false,
+  sameDayProWithoutCredit: "refuse",
+  shelfHoldMinutes: DEFAULT_SHELF_HOLD_MINUTES,
   updatedAt: null,
   updatedBy: null,
 };
@@ -72,6 +111,13 @@ export const orderCutoffSettingsPatchSchema = z
     // La FORME seulement — un entier ; « pas négatif » est la règle du domaine.
     pickupReminderDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
     delayWarningDelayMinutes: z.number().int("nombre entier de minutes attendu").optional(),
+    // Le circuit du jour J (lot L3, 2026-11-02).
+    sameDayPublicAllowed: z.boolean().optional(),
+    sameDayProAllowed: z.boolean().optional(),
+    sameDayProOnline: z.boolean().optional(),
+    sameDayProWithoutCredit: z.enum(SAME_DAY_PRO_WITHOUT_CREDIT).optional(),
+    // La FORME seulement — un entier ; les bornes sont la règle du domaine.
+    shelfHoldMinutes: z.number().int("nombre entier de minutes attendu").optional(),
   })
   .strict()
   .refine((patch) => Object.values(patch).some((value) => value !== undefined), {

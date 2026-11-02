@@ -1,8 +1,9 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type {
-  OrderCutoffSettingsPatch,
-  OrderCutoffSettingsView,
-  StaffPermission,
+import {
+  DEFAULT_ORDER_CUTOFF_SETTINGS,
+  type OrderCutoffSettingsPatch,
+  type OrderCutoffSettingsView,
+  type StaffPermission,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -48,14 +49,7 @@ async function mount(
   return { fixture, patches };
 }
 
-const VIEW: OrderCutoffSettingsView = {
-  sameDayAllowed: false,
-  resupplyCutoffTime: '20:00',
-  pickupReminderDelayMinutes: 0,
-  delayWarningDelayMinutes: 0,
-  updatedAt: null,
-  updatedBy: null,
-};
+const VIEW: OrderCutoffSettingsView = DEFAULT_ORDER_CUTOFF_SETTINGS;
 
 const root = (fixture: ComponentFixture<ResupplyCutoffCard>): HTMLElement =>
   fixture.nativeElement as HTMLElement;

@@ -1,5 +1,15 @@
+import {
+  type SameDayProWithoutCredit,
+  SHELF_HOLD_MINUTES_MAX,
+  SHELF_HOLD_MINUTES_MIN,
+} from "@lfd/contracts";
+
 import type { StaffTrace } from "../../account/domain/value-objects/staff-trace.js";
-import { InvalidNudgeDelayError, InvalidResupplyCutoffTimeError } from "./order-cutoff-errors.js";
+import {
+  InvalidNudgeDelayError,
+  InvalidResupplyCutoffTimeError,
+  InvalidShelfHoldMinutesError,
+} from "./order-cutoff-errors.js";
 
 /** `HH:MM` sur 24 h : l'heure qui existe sur une pendule. */
 const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
@@ -17,6 +27,9 @@ const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
  * du réassort pour demain** (« la veille, HH:MM ») ; l'interrupteur
  * `resupply_subject_to_cutoff` qu'elle remplace reste en base, ni lu ni écrit.
  *
+ * Porte aussi, depuis le lot L3 du circuit du jour J (2026-11-02), les
+ * réglages de ce circuit — sans effet avant le lot L4.
+ *
  * Il portait aussi l'interrupteur de l'heure limite générale (lot O3) : retiré
  * le 2026-10-21, l'heure limite déclenche l'arrêt du plan et reste donc
  * toujours en vigueur (`limites-de-commande/plan-une-seule-heure.md` §5). La
@@ -27,15 +40,32 @@ const CLOCK_TIME = /^([01]\d|2[0-3]):[0-5]\d$/u;
  * n'écrit alors rien. Copié sur `OrderOpening` : ce que cette classe garantit
  * est la TRACE, un geste porte son instant et son auteur.
  */
-export class OrderCutoffSettings {
+export class OrderCutoffSettings implements OrderCutoffSettingsState {
+  readonly sameDayAllowed: boolean;
+  readonly resupplyCutoffTime: string;
+  readonly pickupReminderDelayMinutes: number;
+  readonly delayWarningDelayMinutes: number;
+  readonly sameDayPublicAllowed: boolean;
+  readonly sameDayProAllowed: boolean;
+  readonly sameDayProOnline: boolean;
+  readonly sameDayProWithoutCredit: SameDayProWithoutCredit;
+  readonly shelfHoldMinutes: number;
+
   private constructor(
-    readonly sameDayAllowed: boolean,
-    readonly resupplyCutoffTime: string,
-    readonly pickupReminderDelayMinutes: number,
-    readonly delayWarningDelayMinutes: number,
+    state: OrderCutoffSettingsState,
     readonly at: Date,
     readonly author: StaffTrace,
-  ) {}
+  ) {
+    this.sameDayAllowed = state.sameDayAllowed;
+    this.resupplyCutoffTime = state.resupplyCutoffTime;
+    this.pickupReminderDelayMinutes = state.pickupReminderDelayMinutes;
+    this.delayWarningDelayMinutes = state.delayWarningDelayMinutes;
+    this.sameDayPublicAllowed = state.sameDayPublicAllowed;
+    this.sameDayProAllowed = state.sameDayProAllowed;
+    this.sameDayProOnline = state.sameDayProOnline;
+    this.sameDayProWithoutCredit = state.sameDayProWithoutCredit;
+    this.shelfHoldMinutes = state.shelfHoldMinutes;
+  }
 
   /**
    * Le réglage posé, avec son instant et son auteur. Une clé absente du geste
@@ -44,38 +74,40 @@ export class OrderCutoffSettings {
    *
    * @throws {InvalidResupplyCutoffTimeError} l'heure du réassort n'existe pas.
    * @throws {InvalidNudgeDelayError} un délai de relance n'est pas un entier ≥ 0.
+   * @throws {InvalidShelfHoldMinutesError} la tenue du stock sort de ses bornes.
    */
   static pose(input: {
     readonly current: OrderCutoffSettingsState;
-    readonly sameDayAllowed?: boolean | undefined;
-    readonly resupplyCutoffTime?: string | undefined;
-    readonly pickupReminderDelayMinutes?: number | undefined;
-    readonly delayWarningDelayMinutes?: number | undefined;
+    readonly patch: OrderCutoffSettingsChange;
     readonly at: Date;
     readonly author: StaffTrace;
   }): OrderCutoffSettings {
-    const resupplyCutoffTime = input.resupplyCutoffTime ?? input.current.resupplyCutoffTime;
+    const { current, patch } = input;
+    const resupplyCutoffTime = patch.resupplyCutoffTime ?? current.resupplyCutoffTime;
     if (!CLOCK_TIME.test(resupplyCutoffTime)) {
       throw new InvalidResupplyCutoffTimeError(resupplyCutoffTime);
     }
-    return new OrderCutoffSettings(
-      input.sameDayAllowed ?? input.current.sameDayAllowed,
+    const state: OrderCutoffSettingsState = {
+      sameDayAllowed: patch.sameDayAllowed ?? current.sameDayAllowed,
       resupplyCutoffTime,
-      nudgeDelay(input.pickupReminderDelayMinutes ?? input.current.pickupReminderDelayMinutes),
-      nudgeDelay(input.delayWarningDelayMinutes ?? input.current.delayWarningDelayMinutes),
-      input.at,
-      input.author,
-    );
+      pickupReminderDelayMinutes: nudgeDelay(
+        patch.pickupReminderDelayMinutes ?? current.pickupReminderDelayMinutes,
+      ),
+      delayWarningDelayMinutes: nudgeDelay(
+        patch.delayWarningDelayMinutes ?? current.delayWarningDelayMinutes,
+      ),
+      sameDayPublicAllowed: patch.sameDayPublicAllowed ?? current.sameDayPublicAllowed,
+      sameDayProAllowed: patch.sameDayProAllowed ?? current.sameDayProAllowed,
+      sameDayProOnline: patch.sameDayProOnline ?? current.sameDayProOnline,
+      sameDayProWithoutCredit: patch.sameDayProWithoutCredit ?? current.sameDayProWithoutCredit,
+      shelfHoldMinutes: shelfHold(patch.shelfHoldMinutes ?? current.shelfHoldMinutes),
+    };
+    return new OrderCutoffSettings(state, input.at, input.author);
   }
 
   /** Le geste ne change rien à l'état courant. */
   sameAs(current: OrderCutoffSettingsState): boolean {
-    return (
-      this.sameDayAllowed === current.sameDayAllowed &&
-      this.resupplyCutoffTime === current.resupplyCutoffTime &&
-      this.pickupReminderDelayMinutes === current.pickupReminderDelayMinutes &&
-      this.delayWarningDelayMinutes === current.delayWarningDelayMinutes
-    );
+    return STATE_KEYS.every((key) => this[key] === current[key]);
   }
 }
 
@@ -88,6 +120,47 @@ export interface OrderCutoffSettingsState {
   readonly pickupReminderDelayMinutes: number;
   /** « Avertir le client » : minutes après la fin du créneau d'un retrait (2026-10-25). */
   readonly delayWarningDelayMinutes: number;
+  /**
+   * Le circuit du jour J (lot L3, `limites-de-commande/plan-jour-meme-sur-stock.md`
+   * §3, 2026-11-02) : autoriser les particuliers, les pros, les pros en ligne ;
+   * le sort d'un pro sans crédit au comptoir ; la tenue du stock par un
+   * paiement en cours. Rien ne les lit avant le lot L4.
+   */
+  readonly sameDayPublicAllowed: boolean;
+  readonly sameDayProAllowed: boolean;
+  readonly sameDayProOnline: boolean;
+  readonly sameDayProWithoutCredit: SameDayProWithoutCredit;
+  readonly shelfHoldMinutes: number;
+}
+
+/** Le geste : chaque clé absente garde sa valeur courante. */
+export type OrderCutoffSettingsChange = {
+  readonly [K in keyof OrderCutoffSettingsState]?: OrderCutoffSettingsState[K] | undefined;
+};
+
+/** Les clés de l'état, pour la comparaison : une clé ajoutée ici est comparée. */
+const STATE_KEYS = [
+  "sameDayAllowed",
+  "resupplyCutoffTime",
+  "pickupReminderDelayMinutes",
+  "delayWarningDelayMinutes",
+  "sameDayPublicAllowed",
+  "sameDayProAllowed",
+  "sameDayProOnline",
+  "sameDayProWithoutCredit",
+  "shelfHoldMinutes",
+] as const satisfies readonly (keyof OrderCutoffSettingsState)[];
+
+/** La tenue du stock : un nombre entier de minutes, dans ses bornes (lot L3). */
+function shelfHold(minutes: number): number {
+  if (
+    !Number.isInteger(minutes) ||
+    minutes < SHELF_HOLD_MINUTES_MIN ||
+    minutes > SHELF_HOLD_MINUTES_MAX
+  ) {
+    throw new InvalidShelfHoldMinutesError(minutes);
+  }
+  return minutes;
 }
 
 /** Un délai de relance : un nombre entier de minutes, jamais négatif. */

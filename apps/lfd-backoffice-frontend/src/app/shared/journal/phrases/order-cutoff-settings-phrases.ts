@@ -11,7 +11,8 @@ import { byActor, text, type Phrase, type PhraseFact, type Segment } from '../ph
  * réassort boutique (`resupplyCutoffTime`, lot R3a) ; les lignes du même jour
  * d'avant R3a portent l'interrupteur `resupplySubjectToCutoff`, celles d'avant
  * aussi `enabled` (l'interrupteur de l'heure limite générale, lot O3), et leur
- * phrase le dit toujours.
+ * phrase le dit toujours. Depuis le 2026-11-02 (lot L3), elle porte aussi les
+ * réglages du circuit du jour J.
  */
 /** L'avant et l'après d'une clé booléenne, ou `null` si la charge ne les porte pas. */
 function change(fact: PhraseFact, key: string): { before: boolean; after: boolean } | null {
@@ -57,7 +58,72 @@ function changes(fact: PhraseFact): string[] {
       said.push(`a réglé « ${gesture} » à ${String(delay.after)} min après la fin du créneau`);
     }
   }
+  return [...said, ...circuitChanges(fact)];
+}
+
+/**
+ * Les réglages du circuit du jour J (lot L3, 2026-11-02) : les interrupteurs
+ * par clientèle, et la phrase de chaque sens.
+ */
+const CIRCUIT_SWITCHES = [
+  [
+    'sameDayPublicAllowed',
+    'a autorisé les particuliers à commander pour aujourd’hui sur le stock de la vitrine',
+    'a fermé aux particuliers la commande pour aujourd’hui sur le stock de la vitrine',
+  ],
+  [
+    'sameDayProAllowed',
+    'a autorisé les pros à commander pour aujourd’hui sur le stock de la vitrine',
+    'a fermé aux pros la commande pour aujourd’hui sur le stock de la vitrine',
+  ],
+  [
+    'sameDayProOnline',
+    'a ouvert aux pros la commande en ligne pour aujourd’hui',
+    'a fermé aux pros la commande en ligne pour aujourd’hui',
+  ],
+] as const;
+
+/** Ce que devient un pro sans crédit au comptoir, dit en clair. */
+const WITHOUT_CREDIT: Readonly<Record<string, string>> = {
+  refuse: 'sa commande pour aujourd’hui est refusée',
+  payment_link: 'il reçoit un lien de paiement',
+};
+
+/** Les phrases des réglages du jour J qui ont changé (lignes d'après le 2026-11-02). */
+function circuitChanges(fact: PhraseFact): string[] {
+  const said: string[] = [];
+  for (const [key, on, off] of CIRCUIT_SWITCHES) {
+    const switched = change(fact, key);
+    if (switched !== null && switched.before !== switched.after) {
+      said.push(switched.after ? on : off);
+    }
+  }
+  const credit = stringChange(fact, 'sameDayProWithoutCredit');
+  const creditSaid = credit === null ? undefined : WITHOUT_CREDIT[credit.after];
+  if (credit !== null && credit.before !== credit.after && creditSaid !== undefined) {
+    said.push(`a réglé qu’un pro sans crédit au compte, au comptoir : ${creditSaid}`);
+  }
+  const hold = minutesChange(fact, 'shelfHoldMinutes');
+  if (hold !== null && hold.before !== hold.after) {
+    said.push(`a réglé à ${String(hold.after)} min la tenue du stock par un paiement en cours`);
+  }
   return said;
+}
+
+/** L'avant et l'après d'une clé texte, ou `null` si la charge ne les porte pas. */
+function stringChange(fact: PhraseFact, key: string): { before: string; after: string } | null {
+  const before = recordOf(fact.payload['previous'])?.[key];
+  const after = fact.payload[key];
+  return typeof before === 'string' && typeof after === 'string' ? { before, after } : null;
+}
+
+/** Les clés du jour J que la charge porte (lignes d'après le 2026-11-02). */
+function circuitKeys(fact: PhraseFact): string[] {
+  const switches = CIRCUIT_SWITCHES.map(([key]) => key).filter((key) => change(fact, key) !== null);
+  const credit =
+    stringChange(fact, 'sameDayProWithoutCredit') === null ? [] : ['sameDayProWithoutCredit'];
+  const hold = minutesChange(fact, 'shelfHoldMinutes') === null ? [] : ['shelfHoldMinutes'];
+  return [...switches, ...credit, ...hold];
 }
 
 /** Les délais des deux relances d'un retrait en retard (2026-10-25), et le nom de leur geste. */
@@ -102,7 +168,7 @@ function saidKeys(fact: PhraseFact): string[] {
   const delays = NUDGE_DELAYS.map(([key]) => key).filter(
     (key) => minutesChange(fact, key) !== null,
   );
-  return [...optional, ...time, ...delays, 'sameDayAllowed', 'previous'];
+  return [...optional, ...time, ...delays, ...circuitKeys(fact), 'sameDayAllowed', 'previous'];
 }
 
 function orderCutoffSettings(fact: PhraseFact): Segment[] {

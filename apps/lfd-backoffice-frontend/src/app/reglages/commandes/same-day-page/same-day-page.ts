@@ -15,6 +15,7 @@ import {
 
 import { PermissionsStore } from '../../../auth/permissions.store';
 import { OrderCutoffSettingsService } from '../order-cutoff-settings.service';
+import { SameDayCircuitCard } from '../same-day-circuit-card/same-day-circuit-card';
 
 type LoadState = 'loading' | 'ready' | 'error';
 
@@ -36,6 +37,9 @@ const CLOSE_EFFECT =
  * — la commande pour aujourd'hui sur le stock de la vitrine (schéma des
  * réglages §0).
  *
+ * Porte aussi, depuis le lot L3 du circuit du jour J (2026-11-02), la carte
+ * de ses réglages (`SameDayCircuitCard`), sans effet avant le lot L4.
+ *
  * La bascule passe par une confirmation qui dit son effet, comme l'ouverture
  * du e-commerce. Écriture sous `lfc_order_settings:write`.
  */
@@ -52,6 +56,7 @@ const CLOSE_EFFECT =
     FoldInlineConfirmComponent,
     FoldLoadingStateComponent,
     FoldPageLayoutComponent,
+    SameDayCircuitCard,
   ],
   templateUrl: './same-day-page.html',
   styleUrl: './same-day-page.scss',

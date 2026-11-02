@@ -1,0 +1,12 @@
+// Les réglages de haut en bas, puis les deux gestes.
+.form {
+  display: flex;
+  flex-direction: column;
+  gap: var(--fold-space-md);
+}
+
+.actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--fold-space-sm);
+}

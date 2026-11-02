@@ -10,6 +10,7 @@ import {
 import {
   InvalidNudgeDelayError,
   InvalidResupplyCutoffTimeError,
+  InvalidShelfHoldMinutesError,
 } from "../../domain/order-cutoff-errors.js";
 import type { OrderCutoffSettings } from "../../domain/order-cutoff-settings.js";
 import { OrderCutoffSettingsReader } from "../../domain/order-cutoff-settings.reader.js";
@@ -49,13 +50,20 @@ class Directory extends StaffDirectory {
 }
 
 const SAME_DAY_OPEN: OrderCutoffSettingsView = {
+  ...DEFAULT_ORDER_CUTOFF_SETTINGS,
   sameDayAllowed: true,
-  resupplyCutoffTime: "20:00",
-  pickupReminderDelayMinutes: 0,
-  delayWarningDelayMinutes: 0,
   updatedAt: AT.toISOString(),
   updatedBy: "Alex",
 };
+
+/** Les réglages du circuit du jour J (lot L3), tels qu'une ligne neuve les porte. */
+const JOUR_J_CLOSED = {
+  sameDayPublicAllowed: false,
+  sameDayProAllowed: false,
+  sameDayProOnline: false,
+  sameDayProWithoutCredit: "refuse",
+  shelfHoldMinutes: 30,
+} as const;
 
 function handler(
   current: OrderCutoffSettingsView,
@@ -108,11 +116,13 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
       subjectId: "orders",
     });
     expect(events.traced[0]?.journalFact().payload).toEqual({
+      ...JOUR_J_CLOSED,
       sameDayAllowed: false,
       resupplyCutoffTime: "20:00",
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
       previous: {
+        ...JOUR_J_CLOSED,
         sameDayAllowed: true,
         resupplyCutoffTime: "20:00",
         pickupReminderDelayMinutes: 0,
@@ -133,11 +143,13 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     expect(written.puts[0]?.sameDayAllowed).toBe(true);
     expect(written.puts[0]?.resupplyCutoffTime).toBe("21:30");
     expect(events.traced[0]?.journalFact().payload).toEqual({
+      ...JOUR_J_CLOSED,
       sameDayAllowed: true,
       resupplyCutoffTime: "21:30",
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
       previous: {
+        ...JOUR_J_CLOSED,
         sameDayAllowed: true,
         resupplyCutoffTime: "20:00",
         pickupReminderDelayMinutes: 0,
@@ -225,6 +237,79 @@ describe("UpdateOrderCutoffSettingsHandler", () => {
     );
 
     expect(written.puts[0]?.author).toEqual({ staffUserId: "staff_inconnu", name: "", role: "" });
+  });
+});
+
+/** Le circuit du jour J (lot L3, 2026-11-02) : ses réglages se posent sans effet sur le reste. */
+describe("UpdateOrderCutoffSettingsHandler — le circuit du jour J", () => {
+  it("pose les réglages du jour J sans toucher à l'interrupteur actuel, et les journalise", async () => {
+    const written = new Written();
+    const events = new RecordingPublisher();
+
+    await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, events).execute(
+      new UpdateOrderCutoffSettingsCommand(
+        {
+          sameDayPublicAllowed: true,
+          sameDayProAllowed: true,
+          sameDayProOnline: true,
+          sameDayProWithoutCredit: "payment_link",
+          shelfHoldMinutes: 15,
+        },
+        "staff_agent",
+      ),
+    );
+
+    expect(written.puts[0]).toMatchObject({
+      sameDayAllowed: false,
+      sameDayPublicAllowed: true,
+      sameDayProAllowed: true,
+      sameDayProOnline: true,
+      sameDayProWithoutCredit: "payment_link",
+      shelfHoldMinutes: 15,
+    });
+    expect(events.traced[0]?.journalFact().payload).toMatchObject({
+      sameDayPublicAllowed: true,
+      sameDayProWithoutCredit: "payment_link",
+      shelfHoldMinutes: 15,
+      previous: { ...JOUR_J_CLOSED, sameDayAllowed: false },
+    });
+  });
+
+  it("ouvrir les particuliers n'ouvre pas l'interrupteur actuel, ni les pros", async () => {
+    const written = new Written();
+
+    await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, new RecordingPublisher()).execute(
+      new UpdateOrderCutoffSettingsCommand({ sameDayPublicAllowed: true }, "staff_agent"),
+    );
+
+    expect(written.puts[0]?.sameDayAllowed).toBe(false);
+    expect(written.puts[0]?.sameDayProAllowed).toBe(false);
+  });
+
+  it.each([4, 121, 12.5])(
+    "refuse une tenue du stock de %s minute(s), sans rien écrire ni journaliser",
+    async (minutes) => {
+      const written = new Written();
+      const events = new RecordingPublisher();
+
+      const refusal = handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, events).execute(
+        new UpdateOrderCutoffSettingsCommand({ shelfHoldMinutes: minutes }, "staff_agent"),
+      );
+
+      await expect(refusal).rejects.toThrow(InvalidShelfHoldMinutesError);
+      expect(written.puts).toEqual([]);
+      expect(events.factTypes()).toEqual([]);
+    },
+  );
+
+  it("reposer la même tenue n'écrit rien", async () => {
+    const written = new Written();
+
+    await handler(DEFAULT_ORDER_CUTOFF_SETTINGS, written, new RecordingPublisher()).execute(
+      new UpdateOrderCutoffSettingsCommand({ shelfHoldMinutes: 30 }, "staff_agent"),
+    );
+
+    expect(written.puts).toEqual([]);
   });
 });
 

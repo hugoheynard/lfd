@@ -2315,9 +2315,17 @@ export type {
 export {
   DEFAULT_ORDER_CUTOFF_SETTINGS,
   DEFAULT_RESUPPLY_CUTOFF_TIME,
+  DEFAULT_SHELF_HOLD_MINUTES,
   orderCutoffSettingsPatchSchema,
+  SAME_DAY_PRO_WITHOUT_CREDIT,
+  SHELF_HOLD_MINUTES_MAX,
+  SHELF_HOLD_MINUTES_MIN,
 } from "./order-cutoff-settings.js";
-export type { OrderCutoffSettingsPatch, OrderCutoffSettingsView } from "./order-cutoff-settings.js";
+export type {
+  OrderCutoffSettingsPatch,
+  OrderCutoffSettingsView,
+  SameDayProWithoutCredit,
+} from "./order-cutoff-settings.js";
 export {
   correctResupplyLineSchema,
   receiveResupplyLineSchema,

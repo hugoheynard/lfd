@@ -96,6 +96,15 @@ beforeEach(async () => {
 
 const staff = () => ctx.asSub(STAFF);
 
+/** Les réglages du circuit du jour J (lot L3) quand personne ne les a posés : fermé. */
+const JOUR_J_CLOSED = {
+  sameDayPublicAllowed: false,
+  sameDayProAllowed: false,
+  sameDayProOnline: false,
+  sameDayProWithoutCredit: "refuse",
+  shelfHoldMinutes: 30,
+} as const;
+
 /** La limite générale, posée par la route de l'écran : la veille à 00:01. */
 async function seedGeneralRule(): Promise<void> {
   await staff()
@@ -180,6 +189,8 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
       // Les délais des relances d'un retrait en retard (2026-10-25), 0 par défaut.
       pickupReminderDelayMinutes: 0,
       delayWarningDelayMinutes: 0,
+      // Le circuit du jour J (lot L3, 2026-11-02) : fermé tant que personne ne l'a réglé.
+      ...JOUR_J_CLOSED,
       updatedAt: null,
       updatedBy: null,
     });
@@ -230,11 +241,13 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
           resupplyCutoffTime: "20:00",
           pickupReminderDelayMinutes: 0,
           delayWarningDelayMinutes: 0,
+          ...JOUR_J_CLOSED,
           previous: {
             sameDayAllowed: false,
             resupplyCutoffTime: "20:00",
             pickupReminderDelayMinutes: 0,
             delayWarningDelayMinutes: 0,
+            ...JOUR_J_CLOSED,
           },
         },
       },
@@ -258,6 +271,63 @@ describe("l'interrupteur de l'heure limite générale, retiré le 2026-10-21", (
 
   it("refuse (400) une charge vide", async () => {
     await staff().patch(ROUTE).send({}).expect(400);
+
+    expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
+  });
+});
+
+/**
+ * Le circuit du jour J — ses réglages (lot L3, `plan-jour-meme-sur-stock.md`
+ * §14). Aucun effet avant L4 : seul `sameDayAllowed` ouvre encore aujourd'hui.
+ */
+describe("les réglages du circuit du jour J (L3)", () => {
+  it("se posent, se relisent, et laissent l'interrupteur actuel fermé", async () => {
+    await staff()
+      .patch(ROUTE)
+      .send({
+        sameDayPublicAllowed: true,
+        sameDayProAllowed: true,
+        sameDayProOnline: true,
+        sameDayProWithoutCredit: "payment_link",
+        shelfHoldMinutes: 15,
+      })
+      .expect(204);
+
+    const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
+    expect(view).toMatchObject({
+      sameDayAllowed: false,
+      sameDayPublicAllowed: true,
+      sameDayProAllowed: true,
+      sameDayProOnline: true,
+      sameDayProWithoutCredit: "payment_link",
+      shelfHoldMinutes: 15,
+    });
+    // Sans effet avant L4 : aujourd'hui n'est toujours pas proposé.
+    const days = jsonBody<readonly FulfillmentDayView[]>(
+      await ctx.http().get("/fulfillment-days").expect(200),
+    );
+    expect(days.map((day) => day.date)).not.toContain(serviceDay(0));
+  });
+
+  it("une ligne posée avant L3 lit le jour J fermé", async () => {
+    await leaveResidualSwitchOff();
+
+    const view = jsonBody<OrderCutoffSettingsView>(await staff().get(ROUTE).expect(200));
+    expect(view).toMatchObject({ sameDayAllowed: true, ...JOUR_J_CLOSED });
+  });
+
+  it.each([4, 121])(
+    "refuse (400) une tenue du stock de %s minutes, sans rien écrire",
+    async (shelfHoldMinutes) => {
+      const refused = await staff().patch(ROUTE).send({ shelfHoldMinutes }).expect(400);
+
+      expect(refused.body).toMatchObject({ code: "order_cutoff_settings.invalid_shelf_hold" });
+      expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
+    },
+  );
+
+  it("refuse (400) un sort inconnu du pro sans crédit", async () => {
+    await staff().patch(ROUTE).send({ sameDayProWithoutCredit: "accept" }).expect(400);
 
     expect(await ctx.prisma.orderCutoffSettings.count()).toBe(0);
   });

@@ -286,6 +286,12 @@ export const ORDER_REVISION_CHANGE = domain('ce qu’une modification a changé'
   note: 'Note',
 });
 
+/** Le sort d'un pro sans crédit au comptoir, pour aujourd'hui (`order_cutoff_settings.updated`, lot L3). */
+export const SAME_DAY_PRO_WITHOUT_CREDIT = domain('sort d’un pro sans crédit, pour aujourd’hui', {
+  refuse: 'Commande refusée',
+  payment_link: 'Lien de paiement',
+});
+
 export const ORDERS_VALUES: ValueFamily = {
   enums: [
     WEEKDAY,
@@ -326,6 +332,7 @@ export const ORDERS_VALUES: ValueFamily = {
     DOSSIER_RECIPIENT_KIND,
     DELIVERY_VAT_MODE,
     ORDER_OPENING_EXEMPTION_KIND,
+    SAME_DAY_PRO_WITHOUT_CREDIT,
   ],
   literals: {
     // Ce qu'un contrôle qualité juge (`target.kind`).

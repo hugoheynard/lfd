@@ -1,8 +1,9 @@
 import { type ComponentFixture, TestBed } from '@angular/core/testing';
-import type {
-  OrderCutoffSettingsPatch,
-  OrderCutoffSettingsView,
-  StaffPermission,
+import {
+  DEFAULT_ORDER_CUTOFF_SETTINGS,
+  type OrderCutoffSettingsPatch,
+  type OrderCutoffSettingsView,
+  type StaffPermission,
 } from '@lfd/contracts';
 import { describe, expect, it } from 'vitest';
 
@@ -16,14 +17,7 @@ import { SameDayPage } from './same-day-page';
  * bascule dit son effet avant d'écrire.
  */
 
-const CLOSED: OrderCutoffSettingsView = {
-  sameDayAllowed: false,
-  resupplyCutoffTime: '20:00',
-  pickupReminderDelayMinutes: 0,
-  delayWarningDelayMinutes: 0,
-  updatedAt: null,
-  updatedBy: null,
-};
+const CLOSED: OrderCutoffSettingsView = DEFAULT_ORDER_CUTOFF_SETTINGS;
 
 class FakeSettings {
   readonly patches: OrderCutoffSettingsPatch[] = [];
@@ -45,10 +39,9 @@ class FakeSettings {
     }
     const before = this.current instanceof Error ? CLOSED : this.current;
     this.current = {
+      ...before,
       sameDayAllowed: patch.sameDayAllowed ?? before.sameDayAllowed,
       resupplyCutoffTime: patch.resupplyCutoffTime ?? before.resupplyCutoffTime,
-      pickupReminderDelayMinutes: before.pickupReminderDelayMinutes,
-      delayWarningDelayMinutes: before.delayWarningDelayMinutes,
       updatedAt: '2026-10-21T08:00:00.000Z',
       updatedBy: 'Hugo',
     };

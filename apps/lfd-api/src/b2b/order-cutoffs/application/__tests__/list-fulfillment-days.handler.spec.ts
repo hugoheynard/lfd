@@ -1,4 +1,5 @@
 import {
+  DEFAULT_ORDER_CUTOFF_SETTINGS,
   nextFulfillmentDay,
   type OrderCutoffSettingsView,
   type OrderCutoffView,
@@ -22,15 +23,7 @@ class SameDay extends OrderCutoffSettingsReader {
     super();
   }
   current(): Promise<OrderCutoffSettingsView> {
-    return Promise.resolve({
-      enabled: true,
-      sameDayAllowed: this.allowed,
-      resupplyCutoffTime: "20:00",
-      pickupReminderDelayMinutes: 0,
-      delayWarningDelayMinutes: 0,
-      updatedAt: null,
-      updatedBy: null,
-    });
+    return Promise.resolve({ ...DEFAULT_ORDER_CUTOFF_SETTINGS, sameDayAllowed: this.allowed });
   }
 }
 import { ListFulfillmentDaysHandler } from "../list-fulfillment-days.handler.js";

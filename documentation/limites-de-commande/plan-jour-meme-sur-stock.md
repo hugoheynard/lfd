@@ -710,3 +710,26 @@ les abonnements (visent-ils aujourd'hui ?) ; `CancellationRule.stateOf` pour une
   au poids doit avoir un stock au poids »**. Lot ajouté, **L2b** (§14).
 - **Pour L6** : un article pris sans avoir été reçu apparaîtrait avec un reste
   négatif ; aucun chemin ne le produit tant que la passation garde le reste.
+
+### Le bâti de L3 (2026-11-02)
+
+- Migration additive sur `order_cutoff_settings` : `same_day_public_allowed`,
+  `same_day_pro_allowed`, `same_day_pro_online` (faux par défaut),
+  `same_day_pro_without_credit` (`refuse` / `payment_link`, défaut `refuse`),
+  `shelf_hold_minutes` (défaut 30, CHECK 5–120). `same_day_public_allowed`
+  reprend la valeur de `same_day_allowed` à la migration.
+- Domaine, vue, PATCH strict, fait du journal `order_cutoff_settings.updated`
+  étendus ; une tenue hors bornes est refusée (`order_cutoff_settings.invalid_shelf_hold`).
+- Back-office : la carte « Le circuit du jour J » sous la carte actuelle de la
+  page Jour même, avec un encadré qui dit que ces réglages ne prennent pas
+  encore effet. « Pros : commander pour aujourd'hui » sans l'option en ligne
+  veut dire **au comptoir seulement**.
+- **Rien ne lit encore ces réglages** : `same_day_allowed` garde son sens et
+  ses lecteurs jusqu'à L4.
+- **À trancher en L4** : d'ici là, l'interrupteur actuel (le seul effectif) et
+  « Particuliers » peuvent diverger. Proposé : à L4, **les nouvelles colonnes
+  font foi**, et `same_day_allowed` devient une colonne morte (elle reste en
+  base, CLAUDE.md §0) — la page ne garde alors qu'un interrupteur par clientèle.
+- **Choix du bâtisseur, à confirmer par Hugo** : la tenue par défaut est 30
+  minutes (l'expiration boutique d'aujourd'hui ; le 2026-10-21 disait 15), bornée
+  de 5 (le pas du balayage d'expiration) à 120.

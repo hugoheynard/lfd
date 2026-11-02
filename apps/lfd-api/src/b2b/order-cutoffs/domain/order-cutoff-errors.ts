@@ -1,3 +1,5 @@
+import { SHELF_HOLD_MINUTES_MAX, SHELF_HOLD_MINUTES_MIN } from "@lfd/contracts";
+
 import { BusinessError, DomainError } from "../../../platform/shared/errors/app-error.js";
 
 /**
@@ -50,6 +52,19 @@ export class InvalidNudgeDelayError extends DomainError {
     super(
       "order_cutoff_settings.invalid_nudge_delay",
       `Le délai d'une relance se compte en minutes entières après la fin du créneau, 0 ou plus (reçu : ${String(minutes)}). Saisissez par exemple 0 pour proposer le geste dès la fin du créneau, ou 15.`,
+    );
+  }
+}
+
+/**
+ * La durée pendant laquelle un paiement en cours tient le stock de la vitrine
+ * sort de ses bornes, ou n'est pas un nombre entier de minutes (lot L3, 2026-11-02).
+ */
+export class InvalidShelfHoldMinutesError extends DomainError {
+  constructor(readonly minutes: number) {
+    super(
+      "order_cutoff_settings.invalid_shelf_hold",
+      `Un paiement en cours garde le stock pendant un nombre entier de minutes, de ${String(SHELF_HOLD_MINUTES_MIN)} à ${String(SHELF_HOLD_MINUTES_MAX)} (reçu : ${String(minutes)}). Saisissez par exemple 15 ou 30.`,
     );
   }
 }

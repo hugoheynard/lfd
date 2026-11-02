@@ -1,0 +1,107 @@
+<fold-card data-same-day-circuit>
+  <fold-element-title
+    cardHeader
+    variant="title"
+    title="Commander pour aujourd’hui, sur le stock de la vitrine"
+    subtitle="Qui peut commander pour aujourd’hui, et comment, dans ce qui est en vitrine."
+  />
+
+  @switch (state()) {
+    @case ('loading') {
+      <fold-loading message="Chargement des réglages du jour J…" />
+    }
+    @case ('error') {
+      <fold-empty-state tone="alert" title="Impossible de charger les réglages du jour J">
+        <button foldButton (click)="load()">Réessayer</button>
+      </fold-empty-state>
+    }
+    @case ('ready') {
+      @if (draft(); as current) {
+        <div class="form">
+          <fold-callout variant="info" data-same-day-circuit-pending>
+            Ces réglages ne prennent pas encore effet : la commande pour aujourd’hui sur le stock de
+            la vitrine n’est pas encore ouverte. D’ici là, seul le réglage ci-dessus décide.
+          </fold-callout>
+
+          <fold-checkbox
+            label="Particuliers : commander pour aujourd’hui"
+            [checked]="current.sameDayPublicAllowed"
+            (checkedChange)="set('sameDayPublicAllowed', $event)"
+            [disabled]="!canWrite() || pending()"
+            data-same-day-public
+          />
+          <fold-checkbox
+            label="Pros : commander pour aujourd’hui"
+            hint="Au comptoir, saisi par l’équipe."
+            [checked]="current.sameDayProAllowed"
+            (checkedChange)="set('sameDayProAllowed', $event)"
+            [disabled]="!canWrite() || pending()"
+            data-same-day-pro
+          />
+          <fold-checkbox
+            label="Pros en ligne (hors comptoir)"
+            hint="Un pro peut aussi commander pour aujourd’hui depuis la boutique en ligne."
+            [checked]="current.sameDayProOnline"
+            (checkedChange)="set('sameDayProOnline', $event)"
+            [disabled]="!canWrite() || pending()"
+            data-same-day-pro-online
+          />
+          <fold-listbox
+            label="Pro sans crédit au compte, au comptoir"
+            [options]="withoutCreditOptions"
+            [value]="current.sameDayProWithoutCredit"
+            (selectionChange)="set('sameDayProWithoutCredit', $event)"
+            [disabled]="!canWrite() || pending()"
+            data-same-day-pro-without-credit
+          />
+          <fold-number-input
+            label="Un paiement en cours garde le stock pendant … minutes"
+            [hint]="
+              'De ' +
+              holdMin +
+              ' à ' +
+              holdMax +
+              ' minutes. Passé ce délai, un paiement abandonné rend la quantité à la vitrine.'
+            "
+            [value]="current.shelfHoldMinutes"
+            (valueChange)="set('shelfHoldMinutes', $event)"
+            [min]="holdMin"
+            [max]="holdMax"
+            integer
+            [readOnly]="!canWrite()"
+            [disabled]="pending()"
+            data-shelf-hold-minutes
+          />
+
+          @if (failure(); as message) {
+            <fold-callout variant="alert" announce>{{ message }}</fold-callout>
+          }
+
+          @if (canWrite()) {
+            <div class="actions">
+              <button
+                foldButton
+                emphasis="outline"
+                size="sm"
+                [disabled]="patch() === null || pending()"
+                (click)="reset()"
+              >
+                Annuler
+              </button>
+              <button
+                foldButton
+                size="sm"
+                [disabled]="!canSave()"
+                [loading]="pending()"
+                (click)="save()"
+                data-same-day-circuit-save
+              >
+                Enregistrer
+              </button>
+            </div>
+          }
+        </div>
+      }
+    }
+  }
+</fold-card>

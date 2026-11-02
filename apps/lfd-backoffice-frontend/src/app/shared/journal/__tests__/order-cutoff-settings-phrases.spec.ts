@@ -112,3 +112,39 @@ describe('l’heure limite générale (order_cutoff_settings.updated)', () => {
     expect(renderFact(input).detail).toEqual([]);
   });
 });
+
+/** Les réglages du circuit du jour J (lot L3, 2026-11-02). */
+describe('le circuit du jour J (order_cutoff_settings.updated)', () => {
+  const CLOSED = {
+    sameDayAllowed: false,
+    resupplyCutoffTime: '20:00',
+    pickupReminderDelayMinutes: 0,
+    delayWarningDelayMinutes: 0,
+    sameDayPublicAllowed: false,
+    sameDayProAllowed: false,
+    sameDayProOnline: false,
+    sameDayProWithoutCredit: 'refuse',
+    shelfHoldMinutes: 30,
+  };
+
+  it('dit chaque réglage changé, et ne laisse aucune clé sans phrase', () => {
+    const input = updated({
+      ...CLOSED,
+      sameDayPublicAllowed: true,
+      sameDayProWithoutCredit: 'payment_link',
+      shelfHoldMinutes: 15,
+      previous: CLOSED,
+    });
+
+    expect(sentence(input)).toBe(
+      'Colette Martin a autorisé les particuliers à commander pour aujourd’hui sur le stock de la vitrine et a réglé qu’un pro sans crédit au compte, au comptoir : il reçoit un lien de paiement et a réglé à 15 min la tenue du stock par un paiement en cours',
+    );
+    expect(renderFact(input).detail).toEqual([]);
+  });
+
+  it('dit la fermeture aux pros en ligne', () => {
+    expect(sentence(updated({ ...CLOSED, previous: { ...CLOSED, sameDayProOnline: true } }))).toBe(
+      'Colette Martin a fermé aux pros la commande en ligne pour aujourd’hui',
+    );
+  });
+});

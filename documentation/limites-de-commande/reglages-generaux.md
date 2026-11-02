@@ -159,6 +159,12 @@ Sa page depuis le 2026-10-21 : **Réglages › Commandes › Jour même**
 du rail et des tuiles), sous `lfc_order_settings` — il quittait l'écran de
 l'heure limite avec l'interrupteur ([`plan-une-seule-heure.md`](plan-une-seule-heure.md) §6).
 
+Depuis le 2026-11-02 (lot L3 du circuit du jour J,
+[`plan-jour-meme-sur-stock.md`](plan-jour-meme-sur-stock.md) §14), la même
+ligne porte aussi les réglages du circuit — particuliers, pros, pros en ligne,
+pro sans crédit, tenue du stock par un paiement en cours — **posés mais lus
+par rien** jusqu'au lot L4 ; seul `same_day_allowed` agit aujourd'hui.
+
 `same_day_allowed` à `false` (défaut) : aujourd'hui n'est pas proposé par la
 boutique et toute passation qui vise une journée non postérieure à aujourd'hui
 est refusée (`orders.same_day_closed`) — client, invité et équipe. Exception :
