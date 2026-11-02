@@ -300,8 +300,8 @@ Chemins sous `apps/lfd-api/src/` sauf mention.
 - **Garde du fournil (§9.1)** : `production/channels/commerce/order-revision.desk.ts`
   (déclaré et implémenté par le fournil, relié par `ProductionDeskFeedModule`),
   la clôture ET le retirage lisent les commandes SOUS le verrou de la journée
-  (depuis le 2026-11-02 ; `fresh-day-orders.ts` et son repère des révisions
-  sont retirés : la lecture sous verrou couvre les révisions ET les commandes
+  (depuis le 2026-11-02 ; l'ancien repère des révisions du fournil est
+  retiré : la lecture sous verrou couvre les révisions ET les commandes
   nouvelles, que le repère ne voyait pas).
 - **Compte** : `AccountOrderRevaluation` (port de la commande) →
   `b2b/accounting/application/services/account-order-revaluing.ts` →
