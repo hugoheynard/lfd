@@ -25,8 +25,10 @@ import { AdminTokenVerifier } from "../src/platform/auth/admin-token.verifier.js
 import { attachTo, createCompany, createUser } from "./factories.js";
 import {
   bootstrapE2e,
+  daysAgo,
   placedDaysAgo,
   E2E_STAFF_ID,
+  E2E_STAFF_SUB,
   jsonBody,
   serviceDay,
   type E2eContext,
@@ -167,6 +169,34 @@ describe("vos habituels (R1)", () => {
         reason: { source: "data", kind: "weekly_rhythm", weekday: "tue" },
       },
     ]);
+  });
+
+  /**
+   * Régression : les suggestions tarifaient le rayon ENTIER pour en garder un
+   * article (constat du 2026-11-02). Tarifées seules, elles doivent rendre la
+   * même vue que le rayon de la société — mercuriale comprise.
+   */
+  it("sous mercuriale, l'habituel porte le prix négocié du rayon de la société", async () => {
+    const negotiated = 123_000;
+    await ctx
+      .asSub(E2E_STAFF_SUB)
+      .post(`/admin/pricing/companies/${companyA}/mercuriale`)
+      .send({
+        label: "Mercuriale des habitudes",
+        validFrom: daysAgo(30),
+        validTo: daysAgo(-365),
+        lines: [{ sku: "VIE-001-1", unitPriceMillicents: negotiated }],
+      })
+      .expect(201);
+    await tuesdays(3, companyA, ["VIE-001-1"]);
+
+    const shelf = jsonBody<ShopCatalogueView>(
+      await ctx.asSub(MEMBER_A).get("/shop/catalogue/mine").expect(200),
+    );
+    const [usual] = await usualsOf(MEMBER_A);
+
+    expect(usual?.item).toEqual(shelf.items.find((item) => item.sku === "VIE-001-1"));
+    expect(usual?.item.unitPriceMillicents).toBe(negotiated);
   });
 
   it("deux commandes : rien — une habitude commence à trois", async () => {

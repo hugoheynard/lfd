@@ -39,9 +39,9 @@ export class CatalogCartFamilyReader extends CartFamilyReader {
 /**
  * L'article suggéré, pris dans la vitrine elle-même (`ShopCataloguePricing`,
  * la logique des deux routes `/shop/catalogue`) : son prix est celui du rayon,
- * promotions et mercuriale comprises. La vitrine entière est tarifée pour en
- * garder un ou deux articles — le coût du rayon, porté par le cache des
- * matériaux de prix ; l'appelant ne la demande que s'il reste un candidat.
+ * promotions et mercuriale comprises. Seuls les articles demandés sont
+ * tarifés (`pricedItems`, depuis le 2026-11-02) : la vitrine entière l'était
+ * pour en garder un ou deux, trois à quatre fois par changement d'espace.
  * Sans société, la vitrine de l'audience demandée : `public` pour la
  * boutique, `pro` pour l'aperçu du staff.
  */
@@ -59,14 +59,12 @@ export class ShopSuggestedArticleReader extends SuggestedArticleReader {
     if (skus.length === 0) {
       return new Map();
     }
-    const wanted = new Set(skus);
-    const shelf =
-      companyId === null
-        ? await this.pricing.pricedWithoutCompany(audience)
-        : // Une société résolue : la route reconnue.
-          await this.pricing.priced(companyId, "registered", CATALOG_SOURCE_LANGUAGE);
-    return new Map(
-      shelf.items.filter((item) => wanted.has(item.sku)).map((item) => [item.sku, item]),
+    const items = await this.pricing.pricedItems(
+      skus,
+      // Une société résolue : la route reconnue.
+      companyId === null ? { audience } : { companyId },
+      CATALOG_SOURCE_LANGUAGE,
     );
+    return new Map(items.map((item) => [item.sku, item]));
   }
 }

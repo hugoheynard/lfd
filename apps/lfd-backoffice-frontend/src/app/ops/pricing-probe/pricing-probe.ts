@@ -57,6 +57,7 @@ const CALLER_LABEL: Readonly<Record<string, string>> = {
   cart: 'Panier',
   checkout: 'Passation',
   'back-office': 'Back-office',
+  suggestions: 'Suggestions',
 };
 
 const AUDIENCE_LABEL: Readonly<Record<string, string>> = {

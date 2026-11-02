@@ -1,4 +1,4 @@
-import type { ContentLocale, ShopCatalogueView } from "@lfd/contracts";
+import type { ContentLocale, ShopCatalogueView, ShopItemView } from "@lfd/contracts";
 import { Injectable } from "@nestjs/common";
 
 import { Pricer } from "../../pricing/application/pricer.js";
@@ -25,15 +25,12 @@ import { CATALOG_SOURCE_LANGUAGE } from "../domain/catalog-translations.js";
 import { ShopOrderCutoffsReader } from "../domain/ports/shop-order-cutoffs.reader.js";
 import { withOrderLimits } from "./shop-catalogue-order-limits.js";
 import { CatalogViewers } from "./catalog-viewers.service.js";
-import {
-  anonymousViewer,
-  pricingCompanyOf,
-  viewerAudience,
-  type CatalogViewer,
-} from "../domain/catalog-viewer.js";
+import { pricingCompanyOf, viewerAudience, type CatalogViewer } from "../domain/catalog-viewer.js";
 import { shownVariantSkus, withPricesPerKg } from "./shop-catalogue-price-per-kg.js";
 import { inShopLanguage, shopCatalogueOf, shownByShopSku } from "./shop-catalogue-view.js";
 import { struck } from "./shop-catalogue-struck.js";
+import { SHELF_SCOPE, scopedTo, withoutCompany, type ShelfScope } from "./shop-catalogue-scope.js";
+import type { PricingCaller } from "../../pricing/application/pricing-caller.js";
 
 /**
  * **La vitrine à son prix — la même logique pour le visiteur et pour le client.**
@@ -94,6 +91,10 @@ import { struck } from "./shop-catalogue-struck.js";
  * par requête, et c'est le moment où un cache de réponse se posera (vérifié le
  * 2026-09-09).
  *
+ * Les suggestions ne tarifient que leurs articles (`pricedItems`, 2026-11-02) :
+ * elles payaient chacune le rayon entier, trois à quatre fois par changement
+ * d'espace, et ce calcul en mémoire n'est pas dans la durée de la sonde.
+ *
  * Aucun cache de réponse n'est posé ici : celui des matériaux suffit tant que la
  * porte de volume reste absente, et un cache de plus amènerait une seconde
  * invalidation à tenir d'accord avec la première.
@@ -140,7 +141,42 @@ export class ShopCataloguePricing {
     // (`plan-pros-en-cours-d-inscription.md`, P0) : servie au public, elle ne
     // passe PAS son identifiant au tarificateur — ni mercuriale, ni tarif de canal.
     const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
-    return this.pricedFor(viewer, { companyId: pricingCompanyOf(viewer), buyerKind }, language);
+    return this.pricedFor(
+      viewer,
+      { companyId: pricingCompanyOf(viewer), buyerKind },
+      language,
+      SHELF_SCOPE,
+    );
+  }
+
+  /** Le lecteur et l'acheteur de la route reconnue — la déduction de {@link priced}. */
+  private async recognised(
+    companyId: string,
+  ): Promise<{ readonly viewer: CatalogViewer; readonly buyer: ShelfBuyer }> {
+    const viewer = await this.viewers.forCompany(companyId, "served_and_locked");
+    return { viewer, buyer: { companyId: pricingCompanyOf(viewer), buyerKind: "registered" } };
+  }
+
+  /**
+   * **Quelques articles du rayon, à leur prix** — les suggestions. Le MÊME
+   * chemin que {@link priced} (une société) ou {@link pricedWithoutCompany}
+   * (une audience) ; seul le lot remis au tarificateur est réduit. Un SKU
+   * absent du rayon de ce lecteur est absent du résultat ; ordre du rayon.
+   */
+  async pricedItems(
+    skus: readonly string[],
+    shelfOf: { readonly companyId: string } | { readonly audience: ShopAudience },
+    language: ContentLocale = CATALOG_SOURCE_LANGUAGE,
+  ): Promise<readonly ShopItemView[]> {
+    if (skus.length === 0) {
+      return [];
+    }
+    const scope: ShelfScope = { only: new Set(skus), caller: "suggestions" };
+    const { viewer, buyer } =
+      "companyId" in shelfOf
+        ? await this.recognised(shelfOf.companyId)
+        : withoutCompany(shelfOf.audience);
+    return (await this.pricedFor(viewer, buyer, language, scope)).items;
   }
 
   /**
@@ -166,18 +202,15 @@ export class ShopCataloguePricing {
     audience: ShopAudience,
     language: ContentLocale = CATALOG_SOURCE_LANGUAGE,
   ): Promise<ShopCatalogueView> {
-    // Sans société, un pro est anonyme : jamais un article réservé (Q2).
-    return this.pricedFor(
-      anonymousViewer(audience),
-      { companyId: null, buyerKind: audience === "pro" ? "previewed" : "guest" },
-      language,
-    );
+    const { viewer, buyer } = withoutCompany(audience);
+    return this.pricedFor(viewer, buyer, language, SHELF_SCOPE);
   }
 
   private async pricedFor(
     viewer: CatalogViewer,
     buyer: ShelfBuyer,
     language: ContentLocale,
+    scope: ShelfScope,
   ): Promise<ShopCatalogueView> {
     const audience = viewerAudience(viewer);
     // Les opérations datées se lisent avec le rayon (D5) : deux lectures de
@@ -197,12 +230,12 @@ export class ShopCataloguePricing {
       audience,
       now: this.clock.now(),
     });
-    const catalogue = withOrderLimits(shown, sellable, cutoffs);
+    const catalogue = scopedTo(withOrderLimits(shown, sellable, cutoffs), scope);
     if (catalogue.items.length === 0) {
       return catalogue;
     }
     const [priced, perKg, offered] = await Promise.all([
-      this.withPrices(catalogue, sellable, { ...buyer, audience }),
+      this.withPrices(catalogue, sellable, { ...buyer, audience }, scope.caller),
       // Lus À CÔTÉ de la résolution, jamais par elle : informatifs
       // (`plan-prix-au-kilo.md`, K3).
       this.pricesPerKg.bySkus(shownVariantSkus(catalogue, sellable)),
@@ -230,6 +263,7 @@ export class ShopCataloguePricing {
     catalogue: ShopCatalogueView,
     sellable: readonly ResolvedCatalogItem[],
     { companyId, buyerKind, audience }: ShelfBuyer & { readonly audience: ShopAudience },
+    caller: PricingCaller,
   ): Promise<ShelfPrices> {
     // 🔴 La LIGNÉE de la famille, lue sur l'article du catalogue et non sur la
     // vue : `ShopItemView.shelfId` ne porte que la famille elle-même, et une
@@ -271,7 +305,7 @@ export class ShopCataloguePricing {
     const lot = await this.pricer.load({
       articles,
       buyer: { kind: "real", companyId, buyerKind },
-      caller: "shelf",
+      caller,
     });
     const lines = articles.map(({ article, quantity }) => ({ sku: article.sku, quantity }));
     const all = lot.all(lines);

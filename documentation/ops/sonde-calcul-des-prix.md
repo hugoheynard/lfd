@@ -25,24 +25,33 @@ il appelle `PricingMaterialsLoader` et tend le tarificateur. Le calcul de
 chaque ligne qui suit est synchrone et en mémoire (`PricedLot`) ; il n'est
 **pas** dans la durée. Un lot refusé (vide, SKU en double) n'est pas mesuré.
 
-| Champ      | Ce que c'est                                             |
-| ---------- | -------------------------------------------------------- |
-| `caller`   | qui demande : `shelf`, `cart`, `checkout`, `back-office` |
-| `audience` | `pro` ou `public`                                        |
-| `items`    | nombre d'articles du lot                                 |
-| `ms`       | durée de la résolution, lectures en base comprises       |
+⚠️ **Le CPU n'est donc pas compté** (constaté le 2026-11-02, Hugo voyait le
+processeur de l'API monter à chaque changement d'espace pro sans que la sonde
+bouge). Ce que la durée couvre, c'est surtout l'attente des lectures ; le
+calcul en mémoire qui suit — `PricedLot.all`, la composition de la vitrine
+(prix barrés, offres d'acheminement, prix au kilo, langue) — n'y est pas. Un
+lot de deux cents articles peut coûter peu ici et beaucoup au processeur :
+lire `items` (taille moyenne d'un lot) avec la durée, jamais la durée seule.
+
+| Champ      | Ce que c'est                                                            |
+| ---------- | ----------------------------------------------------------------------- |
+| `caller`   | qui demande : `shelf`, `cart`, `checkout`, `back-office`, `suggestions` |
+| `audience` | `pro` ou `public`                                                       |
+| `items`    | nombre d'articles du lot                                                |
+| `ms`       | durée de la résolution, lectures en base comprises                      |
 
 Les valeurs de `caller` sont en anglais (lexique) et s'affichent Rayon,
-Panier, Passation, Back-office. `caller` est **obligatoire** sur `LotRequest` :
+Panier, Passation, Back-office, Suggestions. `caller` est **obligatoire** sur `LotRequest` :
 un appelant neuf ne compile pas sans se nommer. Qui dit quoi (vérifié le
 2026-10-15) :
 
-| `caller`      | Appelant                                                                 |
-| ------------- | ------------------------------------------------------------------------ |
-| `shelf`       | `ShopCataloguePricing` — vitrine publique et rayon reconnu               |
-| `cart`        | `ShopCartQuoting` (panier boutique) et `OrderDrafting.quote` (devis pro) |
-| `checkout`    | `OrderDrafting.draft` — client, boutique et saisie de l'équipe           |
-| `back-office` | `PriceProjectionQuery` (projection de l'écran de tarification)           |
+| `caller`      | Appelant                                                                                                                                                                  |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `shelf`       | `ShopCataloguePricing` — vitrine publique et rayon reconnu                                                                                                                |
+| `cart`        | `ShopCartQuoting` (panier boutique) et `OrderDrafting.quote` (devis pro)                                                                                                  |
+| `checkout`    | `OrderDrafting.draft` — client, boutique et saisie de l'équipe                                                                                                            |
+| `back-office` | `PriceProjectionQuery` (projection de l'écran de tarification)                                                                                                            |
+| `suggestions` | `ShopCataloguePricing.pricedItems` — habitudes, suggestions du staff, « souvent pris avec » (depuis le 2026-11-02 ; avant, chacune tarifait le rayon ENTIER sous `shelf`) |
 
 L'`audience` se déduit comme partout : sans société, `public` ; sinon `pro`.
 

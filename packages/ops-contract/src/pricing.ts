@@ -14,7 +14,7 @@ export type PricingProbeState = "ok" | "attention" | "exceeded";
 
 /** Une ligne : un appelant, une audience. */
 export interface PricingProbeRow {
-  /** Qui demande : `shelf`, `cart`, `checkout`, `back-office`. */
+  /** Qui demande : `shelf`, `cart`, `checkout`, `back-office`, `suggestions`. */
   readonly caller: string;
   /** `pro` ou `public`. */
   readonly audience: string;

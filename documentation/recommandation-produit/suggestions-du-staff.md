@@ -244,6 +244,15 @@ déduit de la société agissante, comme partout dans le commerce : la route
 publique sert un particulier ; la route `…/mine` laisse l'espace courant
 décider (un pro y reçoit son tarif de société).
 
+Seuls les articles suggérés sont tarifés (`ShopCataloguePricing.pricedItems`,
+depuis le 2026-11-02) : même lecture du catalogue, mêmes règles d'audience, de
+réservation et de promotions, même porte du prix — le lot remis au
+tarificateur est réduit à ces articles, sous l'appelant `suggestions` de la
+sonde. Avant, chaque carte tarifait le rayon entier pour en garder deux ou
+trois articles, soit trois à quatre tarifications complètes par changement
+d'espace. L'équivalence avec le rayon filtré est tenue par
+`apps/lfd-api/src/b2b/catalog/application/__tests__/shop-catalogue-priced-items.spec.ts`.
+
 ## 7. L'aperçu de l'écran
 
 `POST /admin/suggestions/preview` (un `POST` parce que le corps porte un
