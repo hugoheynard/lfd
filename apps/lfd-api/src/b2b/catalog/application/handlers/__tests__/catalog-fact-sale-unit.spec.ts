@@ -141,3 +141,22 @@ describe("receivedProductOf — la quantité minimale", () => {
     ).toThrow(CatalogFactPayloadError);
   });
 });
+
+/**
+ * Fil v17 (`plan-articles-sur-mesure.md`, 13.6-4) : trois états, pas deux.
+ * `true` pose, `false` rouvre, ABSENT ne touche pas — lire l'absence `false`
+ * réécrirait une fiche reportée à `true` par la migration et l'ouvrirait au public.
+ */
+describe("receivedProductOf — le sur mesure", () => {
+  it.each([true, false])("range `%s` sur chaque article de la fiche", (customRecipe) => {
+    const fact = CatalogProductChangedFact.fromPayload(payload({ product: { customRecipe } }));
+
+    expect(receivedProductOf(fact).items[0]?.customRecipe).toBe(customRecipe);
+  });
+
+  it("laisse la valeur ABSENTE sur un fait d'avant la v17, sans la lire `false`", () => {
+    const fact = CatalogProductChangedFact.fromPayload(payload({}));
+
+    expect(receivedProductOf(fact).items[0]?.customRecipe).toBeUndefined();
+  });
+});

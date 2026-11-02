@@ -167,6 +167,49 @@ describe("servedToViewer — un article sur mesure (D3)", () => {
   });
 });
 
+/**
+ * Les bornes de D3 que la table ne tient pas : les lignes gardées d'une
+ * révision lèvent la RÉSERVATION, jamais le masquage, l'audience ni la
+ * validation (13.6, bloquant 1 : `waiveReservation` passe après `servedTo`).
+ */
+describe("servedToViewer — sur mesure : ce que rien ne rouvre", () => {
+  const KEPT_B = keptLinesViewer({ companyId: B, activePrincipalId: null });
+  const custom = (over: Partial<ServableItem> = {}): ServableItem =>
+    item({ isCustomRecipe: true, isReserved: false, ...over });
+
+  it.each<[string, Partial<ServableItem>]>([
+    ["masqué aux pros", { isHidden: true }],
+    ["en attente de validation pro", { proReviewPending: true }],
+    ["réservé à l'audience publique seule", { audience: "public" }],
+  ])("les lignes gardées ne rouvrent pas un article %s", (_label, over) => {
+    expect(servedToViewer(custom(over), reservedTo(KEPT_B, [], "hidden"), KEPT_B)).toBe("absent");
+  });
+
+  it("le masquage PUBLIC n'ôte rien aux pros : il ne retire qu'au public", () => {
+    const hiddenPublic = custom({ isHiddenPublic: true, isReserved: true });
+    expect(servedToViewer(hiddenPublic, reservedTo(PRO_A, [A], "hidden"), PRO_A)).toBe("served");
+  });
+
+  it("l'attente de validation PUBLIQUE n'ôte rien aux pros", () => {
+    const pending = custom({ publicReviewPending: true, isReserved: true });
+    expect(servedToViewer(pending, reservedTo(PRO_A, [A], "hidden"), PRO_A)).toBe("served");
+  });
+
+  it("une audience `pro` seule : le titulaire le sert, le staff au tarif public non", () => {
+    const proOnly = custom({ audience: "pro", isReserved: true });
+    expect(servedToViewer(proOnly, reservedTo(PRO_A, [A], "hidden"), PRO_A)).toBe("served");
+    const staffPublic = staffViewer("public");
+    expect(servedToViewer(proOnly, reservedTo(staffPublic, [A], "hidden"), staffPublic)).toBe(
+      "absent",
+    );
+  });
+
+  it("le personnel regardant AU NOM d'un pro voit l'article non attribué (« à attribuer »)", () => {
+    const viewer = staffViewer("pro", { companyId: B, activePrincipalId: null });
+    expect(servedToViewer(custom(), reservedTo(viewer, [], "hidden"), viewer)).toBe("served");
+  });
+});
+
 describe("reservationMarkOf — l'étiquette", () => {
   it.each<[string, CatalogViewer, ReturnType<typeof reservationMarkOf>]>([
     ["A", PRO_A, "mine"],

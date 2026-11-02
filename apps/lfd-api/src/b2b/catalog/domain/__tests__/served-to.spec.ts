@@ -114,4 +114,26 @@ describe("S3 — réservé ou sur mesure, jamais au public", () => {
   it("un article ouvert reste servi à quelqu'un par sa branche pro", () => {
     expect(servedToAnyone(item({ audience: "pro" }))).toBe(true);
   });
+
+  /**
+   * `servedToAnyone` sert les pages publiques : un sur mesure ne passe jamais
+   * pour « servi à quelqu'un », même si une réservation s'y ajoute ou non, et
+   * quelle que soit l'audience — mais un article masqué aux pros reste faux
+   * pour une autre raison, jamais vrai.
+   */
+  it.each(["pro", "public", "both"] as const)(
+    "sur mesure, audience %s : jamais servi à tout le monde, réservé ou non",
+    (audience) => {
+      expect(servedToAnyone(item({ audience, isCustomRecipe: true }))).toBe(false);
+      expect(servedToAnyone(item({ audience, isCustomRecipe: true, isReserved: true }))).toBe(
+        false,
+      );
+    },
+  );
+
+  it("sur mesure et en attente de validation pro : absent de tous les lecteurs", () => {
+    const pending = item({ audience: "both", isCustomRecipe: true, proReviewPending: true });
+    expect(servedTo(pending, "pro")).toBe(false);
+    expect(servedTo(pending, "public")).toBe(false);
+  });
 });

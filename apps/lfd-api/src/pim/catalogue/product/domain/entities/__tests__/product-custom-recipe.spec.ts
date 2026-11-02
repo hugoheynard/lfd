@@ -91,4 +91,20 @@ describe("Product — sur mesure", () => {
     expect(detachSecond(twoVariants(true)).snapshot().customRecipe).toBe(true);
     expect(detachSecond(twoVariants(false)).snapshot().customRecipe).toBe(false);
   });
+
+  /** L'héritage copie la case, il ne la déplace pas : la fiche d'origine garde la sienne. */
+  it("détacher ne change pas la case de la fiche d'origine", () => {
+    const origin = twoVariants(true);
+    detachSecond(origin);
+    expect(origin.customRecipe).toBe(true);
+  });
+
+  it("la fiche née du détachement se décoche seule, sans toucher l'origine", () => {
+    const origin = twoVariants(true);
+    const born = detachSecond(origin);
+
+    expect(born.declareCustomRecipe(false)).toBe(true);
+    expect(born.customRecipe).toBe(false);
+    expect(origin.customRecipe).toBe(true);
+  });
 });
